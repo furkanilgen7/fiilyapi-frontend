@@ -11,6 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:visual": "playwright test",
+    "test:visual:update": "playwright test --update-snapshots",
     "gen:api": "openapi-typescript openapi/openapi.json -o src/lib/api/schema.d.ts"
   },
   "dependencies": {
@@ -22,6 +24,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2",
+    "@playwright/test": "^1.49",
     "@testing-library/jest-dom": "^6.6",
     "@testing-library/react": "^16.1",
     "@testing-library/user-event": "^14",
