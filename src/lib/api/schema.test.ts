@@ -1,7 +1,7 @@
 import { describe, it, expect, expectTypeOf } from "vitest";
 
-import { apiClient } from "./client";
-import type { components } from "./schema";
+import { apiClient } from "@/lib/api/client";
+import type { components } from "@/lib/api/schema";
 
 describe("API tip üretimi", () => {
   it("apiClient tanımlıdır ve GET/POST metodları vardır", () => {
