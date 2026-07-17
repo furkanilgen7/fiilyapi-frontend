@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
-import { defineConfig } from "vitest/config";
+import { defineConfig, configDefaults } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
 // tsconfig.json "@/*" -> "./src/*" eşlemesini Vite/Vitest okumadığı için
@@ -20,6 +20,6 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
     // e2e/ Playwright'a ait; Vitest'in bu dosyalari test olarak toplamasini engelle
-    exclude: ["node_modules/**", "e2e/**"],
+    exclude: [...configDefaults.exclude, "e2e/**"],
   },
 });
