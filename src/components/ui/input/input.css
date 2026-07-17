@@ -3,6 +3,9 @@
   width: 100%;
   font-family: var(--font-sans);
   font-size: var(--text-body);
+  /* Tam sayi satir yuksekligi: kesirli yukseklik subpixel yuvarlama ile
+     gorsel snapshot'ta 1px oynamaya yol aciyordu. */
+  line-height: 20px;
   color: var(--color-text);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
