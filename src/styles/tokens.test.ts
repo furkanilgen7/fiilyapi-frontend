@@ -37,6 +37,17 @@ describe("tokens.css", () => {
       "--text-lg",
       "--space-4",
       "--radius-md",
+      // F1 eklemeleri
+      "--text-page-title",
+      "--text-section",
+      "--text-numeric",
+      "--text-table-head",
+      "--radius-14",
+      "--shadow-card",
+      "--focus-ring",
+      "--color-surface-2",
+      "--color-divider",
+      "--anim-fade-up",
     ]) {
       expect(tokensCss).toContain(token);
     }

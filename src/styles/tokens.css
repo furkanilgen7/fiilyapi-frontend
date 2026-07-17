@@ -13,10 +13,17 @@
   --color-primary-soft: #dbeafe;
   --color-success: #16a34a;
   --color-success-soft: #dcfce7;
-  --color-warning: #d97706;
+  --color-warning: #f59e0b;
   --color-warning-soft: #fef3c7;
   --color-danger: #ef4444;
   --color-danger-soft: #fee2e2;
+  --color-neutral-soft: #f1f5f9;
+
+  /* F1: ek yuzey/ayirici/metin renkleri (§6.1) */
+  --color-surface-2: #f8fafc; /* ikincil yuzey */
+  --color-divider: #f1f5f9; /* ayirici */
+  --color-text-strong: #0f172a;
+  --color-label: #475569; /* sabitlenmis label rengi */
 
   /* Tipografi — Inter (gövde), JetBrains Mono (sayısal/tablo) */
   --font-sans: var(--font-inter), "Inter", system-ui, sans-serif;
@@ -32,6 +39,16 @@
   --weight-medium: 500;
   --weight-semibold: 600;
   --weight-bold: 700;
+
+  /* F1: tipografi olcegi (§6.1) — boyut/agirlik/izleme */
+  --text-page-title: 26px; /* sayfa basligi 26/700 ls -0.5 */
+  --text-section: 16px; /* bolum basligi 16/600 */
+  --text-body: 13px; /* govde 13/400 */
+  --text-small: 11px; /* kucuk 11/400 */
+  --text-table-head: 11px; /* tablo basligi 11/600 uppercase ls 0.8 */
+  --text-numeric: 22px; /* sayisal 22/700 Mono */
+  --tracking-tight: -0.5px;
+  --tracking-wide: 0.8px;
 
   /* Boşluk — 4px tabanlı ölçek */
   --space-1: 0.25rem;
@@ -49,8 +66,36 @@
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
   --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
 
+  /* F1: radius olcegi (§6.1) */
+  --radius-6: 6px;
+  --radius-8: 8px;
+  --radius-10: 10px;
+  --radius-14: 14px;
+
+  /* F1: golgeler (§6.1 — sabitlenmis .06) */
+  --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.06);
+  --shadow-topbar: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.1);
+
+  /* F1: layout sabitleri (F3'te kullanilir) */
+  --sidebar-width: 220px;
+
+  /* F1: animasyon */
+  --anim-fade-up: fadeUp 0.4s ease;
+
   /* Hareket */
   --duration-fast: 150ms;
   --duration-normal: 250ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
