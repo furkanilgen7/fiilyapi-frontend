@@ -1,4 +1,7 @@
-/* Global reset — token katmani Task 2'de eklenecek */
+/* Token katmanı — @import CSS gereği dosyanın başında olmalıdır */
+@import "../styles/tokens.css";
+
+/* Global reset */
 *,
 *::before,
 *::after {
@@ -10,4 +13,12 @@
 html,
 body {
   min-height: 100vh;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  background: var(--color-bg);
+  color: var(--color-text);
 }
