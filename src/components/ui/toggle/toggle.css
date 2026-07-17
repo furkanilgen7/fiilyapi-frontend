@@ -1,0 +1,48 @@
+.toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  color: var(--color-text);
+  cursor: pointer;
+}
+/* Native input gorsel olarak gizlenir ama erisilebilir kalir */
+.toggle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  margin: 0;
+}
+.toggle-track {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: var(--color-border-strong);
+  border-radius: 999px;
+  transition: background-color 0.15s ease;
+}
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.15s ease;
+}
+.toggle:checked + .toggle-track {
+  background: var(--color-primary);
+}
+.toggle:checked + .toggle-track .toggle-thumb {
+  transform: translateX(16px);
+}
+.toggle:focus-visible + .toggle-track {
+  box-shadow: var(--focus-ring);
+}
+.toggle:disabled + .toggle-track {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
