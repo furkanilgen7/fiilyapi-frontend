@@ -1,0 +1,13 @@
+/* Global reset — token katmani Task 2'de eklenecek */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  min-height: 100vh;
+}
