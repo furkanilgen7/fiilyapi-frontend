@@ -76,6 +76,7 @@
   --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.06);
   --shadow-topbar: 0 1px 3px rgba(0, 0, 0, 0.06);
   --focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  --focus-ring-danger: 0 0 0 3px var(--color-danger-soft);
 
   /* F1: layout sabitleri (F3'te kullanilir) */
   --sidebar-width: 220px;

@@ -98,10 +98,10 @@ export default function DesignSystemPage() {
 
       <section data-testid="section-alerts" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", maxWidth: 480 }}>
         <h2 style={{ fontSize: "var(--text-section)", fontWeight: 600 }}>Alert</h2>
-        <Alert type="info" title="Bilgi">Bir bilgilendirme mesaji.</Alert>
-        <Alert type="success" title="Basarili">Islem tamamlandi.</Alert>
-        <Alert type="warning" title="Uyari">Dikkat edilmesi gereken durum.</Alert>
-        <Alert type="danger" title="Hata">Bir sorun olustu.</Alert>
+        <Alert variant="info" title="Bilgi">Bir bilgilendirme mesaji.</Alert>
+        <Alert variant="success" title="Basarili">Islem tamamlandi.</Alert>
+        <Alert variant="warning" title="Uyari">Dikkat edilmesi gereken durum.</Alert>
+        <Alert variant="danger" title="Hata">Bir sorun olustu.</Alert>
       </section>
 
       <section data-testid="section-cards" style={{ maxWidth: 480 }}>

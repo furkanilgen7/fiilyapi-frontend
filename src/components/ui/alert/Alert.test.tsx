@@ -7,8 +7,8 @@ describe("Alert", () => {
     render(<Alert>Bir sorun olustu</Alert>);
     expect(screen.getByRole("alert")).toHaveTextContent("Bir sorun olustu");
   });
-  it("type sinifini uygular", () => {
-    render(<Alert type="danger">Hata</Alert>);
+  it("variant sinifini uygular", () => {
+    render(<Alert variant="danger">Hata</Alert>);
     expect(screen.getByRole("alert").className).toContain("alert--danger");
   });
   it("baslik verilince basligi render eder", () => {

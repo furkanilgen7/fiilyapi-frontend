@@ -17,7 +17,7 @@
 .input:focus { outline: none; border-color: var(--color-primary); box-shadow: var(--focus-ring); }
 .input:disabled { background: var(--color-surface-2); color: var(--color-text-muted); cursor: not-allowed; }
 .input--error { border-color: var(--color-danger); }
-.input--error:focus { box-shadow: 0 0 0 3px var(--color-danger-soft); }
+.input--error:focus { box-shadow: var(--focus-ring-danger); }
 .input--success { border-color: var(--color-success); }
 .input--numeric { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
 
