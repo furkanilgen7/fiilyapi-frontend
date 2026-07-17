@@ -1,0 +1,51 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+  font-weight: var(--weight-medium);
+  border: 1px solid transparent;
+  border-radius: var(--radius-8);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+.btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Boyutlar */
+.btn--sm { padding: var(--space-1) var(--space-3); font-size: var(--text-small); }
+.btn--md { padding: var(--space-2) var(--space-4); font-size: var(--text-body); }
+.btn--lg { padding: var(--space-3) var(--space-6); font-size: var(--text-base); }
+.btn--xl { padding: var(--space-4) var(--space-8); font-size: var(--text-lg); }
+
+/* Varyantlar (ana renkler token; hover-turevi degerler istisna) */
+.btn--primary { background: var(--color-primary); color: #fff; }
+.btn--primary:hover:not(:disabled) { background: var(--color-primary-hover); }
+
+.btn--secondary { background: var(--color-surface); color: var(--color-text); border-color: var(--color-border-strong); }
+.btn--secondary:hover:not(:disabled) { background: var(--color-surface-2); }
+
+.btn--light-blue { background: var(--color-primary-soft); color: var(--color-primary); }
+.btn--light-blue:hover:not(:disabled) { background: #cfe0fd; }
+
+.btn--success { background: var(--color-success); color: #fff; }
+.btn--success:hover:not(:disabled) { background: #15803d; }
+
+.btn--danger { background: var(--color-danger); color: #fff; }
+.btn--danger:hover:not(:disabled) { background: #dc2626; }
+
+.btn--warning { background: var(--color-warning); color: #fff; }
+.btn--warning:hover:not(:disabled) { background: #d97706; }
+
+.btn--ghost { background: transparent; color: var(--color-text-muted); }
+.btn--ghost:hover:not(:disabled) { background: var(--color-surface-2); color: var(--color-text); }
