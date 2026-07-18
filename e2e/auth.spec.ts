@@ -1,14 +1,29 @@
 import { test, expect } from "@playwright/test";
 
-test("giris → ana sayfa → cikis akisi", async ({ page }) => {
+async function login(page: import("@playwright/test").Page) {
   await page.goto("/login");
   await page.getByLabel(/e-posta/i).fill("patron@fiil.com");
   await page.getByLabel(/^şifre$/i).fill("dogruparola");
   await page.getByRole("button", { name: /giriş yap/i }).click();
+}
 
-  await expect(page.getByText(/Ahmet Yılmaz/)).toBeVisible();
+test("giris → kabuk → yakinda → cikis akisi", async ({ page }) => {
+  await login(page);
 
-  await page.getByRole("button", { name: /çıkış yap/i }).click();
+  // Kabuk gorunur: sidebar grup basligi + kullanici adi + karsilama
+  await expect(page.getByText("Genel")).toBeVisible();
+  await expect(page.getByText("Ahmet Yılmaz", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Hoş geldiniz/)).toBeVisible();
+  // Gosterge Paneli aktif
+  await expect(page.getByRole("link", { name: /Gösterge Paneli/ })).toHaveAttribute("aria-current", "page");
+
+  // Yapilmamis modul → yakinda
+  await page.getByRole("link", { name: /Projeler/ }).click();
+  await expect(page).toHaveURL(/\/projeler/);
+  await expect(page.getByText(/yakında/i)).toBeVisible();
+
+  // Sidebar'dan cikis
+  await page.getByRole("button", { name: /çıkış/i }).click();
   await expect(page).toHaveURL(/\/login/);
 });
 
@@ -26,11 +41,8 @@ test("oturumsuz korumali rota /login'e yonlendirir", async ({ page }) => {
 });
 
 test("token cookie httpOnly — document.cookie'de gorunmez", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByLabel(/e-posta/i).fill("patron@fiil.com");
-  await page.getByLabel(/^şifre$/i).fill("dogruparola");
-  await page.getByRole("button", { name: /giriş yap/i }).click();
-  await expect(page.getByText(/Ahmet Yılmaz/)).toBeVisible();
+  await login(page);
+  await expect(page.getByText("Ahmet Yılmaz", { exact: true })).toBeVisible();
   const cookieStr = await page.evaluate(() => document.cookie);
   expect(cookieStr).not.toContain("fiil_access");
 });
