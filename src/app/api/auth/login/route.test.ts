@@ -59,4 +59,22 @@ describe("POST /api/auth/login", () => {
     const res = await POST(loginReq({ email: "a@b.com", password: "x" }));
     expect(res.status).toBe(500);
   });
+
+  it("malformed backend 200 body error zarfina donusur", async () => {
+    // Test non-JSON response (missing access_token/refresh_token)
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 200 })));
+    const res = await POST(loginReq({ email: "a@b.com", password: "x" }));
+    const json = await res.json();
+    expect(res.status).toBe(502);
+    expect(json).toEqual({ ok: false, code: "unavailable" });
+    expect(res.cookies.get(ACCESS_COOKIE)?.value).toBeFalsy();
+  });
+
+  it("backend 500'de login_failed kodu doner", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 500 })));
+    const res = await POST(loginReq({ email: "a@b.com", password: "x" }));
+    const json = await res.json();
+    expect(res.status).toBe(500);
+    expect(json.code).toBe("login_failed");
+  });
 });

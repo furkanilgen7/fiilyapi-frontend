@@ -50,10 +50,28 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
   if (!backendRes.ok) {
     // Ham backend mesajini sizdirma; yalniz statuyu gecir.
-    return NextResponse.json({ ok: false, code: "invalid_credentials" }, { status: backendRes.status });
+    // 401/403 invalid_credentials; diger non-2xx: login_failed
+    const code = backendRes.status === 401 || backendRes.status === 403 ? "invalid_credentials" : "login_failed";
+    return NextResponse.json({ ok: false, code }, { status: backendRes.status });
   }
-  const pair = (await backendRes.json()) as TokenPair;
+  let pair: unknown;
+  try {
+    pair = await backendRes.json();
+  } catch {
+    return NextResponse.json({ ok: false, code: "unavailable" }, { status: 502 });
+  }
+  // Validate pair has access_token and refresh_token (non-empty strings)
+  if (
+    typeof pair !== "object" ||
+    pair === null ||
+    typeof (pair as Record<string, unknown>).access_token !== "string" ||
+    (pair as Record<string, unknown>).access_token === "" ||
+    typeof (pair as Record<string, unknown>).refresh_token !== "string" ||
+    (pair as Record<string, unknown>).refresh_token === ""
+  ) {
+    return NextResponse.json({ ok: false, code: "unavailable" }, { status: 502 });
+  }
   const res = NextResponse.json({ ok: true });
-  applyAuthCookies(res, buildAuthCookies(pair, parsed.remember));
+  applyAuthCookies(res, buildAuthCookies(pair as TokenPair, parsed.remember));
   return res;
 }
