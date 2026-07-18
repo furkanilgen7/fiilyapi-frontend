@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 import { POST } from "./route";
-import { ACCESS_COOKIE } from "@/lib/auth/constants";
+import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/auth/constants";
 
 function logoutReq(headers: Record<string, string> = {}): NextRequest {
   return new NextRequest("http://localhost:3000/api/auth/logout", {
@@ -14,9 +14,12 @@ describe("POST /api/auth/logout", () => {
   it("cookie'leri siler ve 204 doner", async () => {
     const res = await POST(logoutReq());
     expect(res.status).toBe(204);
-    const cleared = res.cookies.get(ACCESS_COOKIE);
-    expect(cleared?.value).toBe("");
-    expect(cleared?.maxAge).toBe(0);
+    const clearedAccess = res.cookies.get(ACCESS_COOKIE);
+    expect(clearedAccess?.value).toBe("");
+    expect(clearedAccess?.maxAge).toBe(0);
+    const clearedRefresh = res.cookies.get(REFRESH_COOKIE);
+    expect(clearedRefresh?.value).toBe("");
+    expect(clearedRefresh?.maxAge).toBe(0);
   });
   it("kotu origin'de 403", async () => {
     const res = await POST(logoutReq({ origin: "http://evil.com" }));
