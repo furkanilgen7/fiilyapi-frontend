@@ -1,0 +1,16 @@
+.home {
+  max-width: 640px;
+}
+.home__title {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 32px;
+  letter-spacing: -0.5px;
+  color: var(--color-text);
+  margin-bottom: 8px;
+}
+.home__note {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--color-text-muted);
+}

@@ -1,0 +1,7 @@
+.app-content {
+  margin-top: 52px;
+  margin-left: 220px;
+  min-height: calc(100vh - 52px);
+  background: var(--color-bg);
+  padding: 24px;
+}
