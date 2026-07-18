@@ -12,12 +12,14 @@ export default function HomePage() {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Efekt yalnizca mount'ta çalışmalı. useRouter() App Router'da kararlı referans dondurür.
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     let active = true;
     fetch("/api/auth/me")
       .then((res) => {
         if (!res.ok) {
-          router.push("/login");
+          if (active) router.push("/login");
           return null;
         }
         return res.json();
@@ -34,7 +36,8 @@ export default function HomePage() {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, []);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
