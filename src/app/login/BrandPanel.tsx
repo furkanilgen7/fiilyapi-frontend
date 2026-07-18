@@ -11,11 +11,11 @@ export default function BrandPanel() {
     <aside className="login-brand">
       <div className="login-brand__logo">
         <div className="login-brand__logo-mark">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <rect x="3" y="3" width="8" height="8" rx="1.5" fill="#2563eb" />
-            <rect x="13" y="3" width="8" height="8" rx="1.5" fill="#2563eb" opacity=".6" />
-            <rect x="3" y="13" width="8" height="8" rx="1.5" fill="#2563eb" opacity=".6" />
-            <rect x="13" y="13" width="8" height="8" rx="1.5" fill="#2563eb" opacity=".3" />
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="login-brand__logo-svg">
+            <rect x="3" y="3" width="8" height="8" rx="1.5" fill="currentColor" />
+            <rect x="13" y="3" width="8" height="8" rx="1.5" fill="currentColor" opacity=".6" />
+            <rect x="3" y="13" width="8" height="8" rx="1.5" fill="currentColor" opacity=".6" />
+            <rect x="13" y="13" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3" />
           </svg>
         </div>
         <div>

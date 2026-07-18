@@ -7,7 +7,7 @@
   width: 420px;
   flex-shrink: 0;
   background: var(--gradient-brand-panel);
-  color: #fff;
+  color: var(--color-on-brand);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -25,7 +25,7 @@
 .login-brand__logo-mark {
   width: 44px;
   height: 44px;
-  background: #fff;
+  background: var(--color-on-brand);
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -40,7 +40,7 @@
 
 .login-brand__sub {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-on-brand-60);
   letter-spacing: 2px;
   font-weight: 500;
 }
@@ -55,7 +55,7 @@
 
 .login-brand__desc {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-on-brand-70);
   line-height: 24px;
   margin-bottom: 32px;
 }
@@ -71,13 +71,13 @@
   align-items: center;
   gap: 12px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--color-on-brand-85);
 }
 
 .login-brand__feature-icon {
   width: 28px;
   height: 28px;
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--color-on-brand-15);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -87,7 +87,7 @@
 
 .login-brand__copyright {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--color-on-brand-40);
 }
 
 .login-form-panel {
@@ -96,10 +96,14 @@
   align-items: center;
   justify-content: center;
   padding: 40px;
-  background: var(--color-surface-2, #f8fafc);
+  background: var(--color-surface-2);
 }
 
 .login-form {
   width: 100%;
   max-width: 400px;
+}
+
+.login-brand__logo-svg {
+  color: var(--color-primary);
 }

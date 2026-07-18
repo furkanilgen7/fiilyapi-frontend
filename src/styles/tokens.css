@@ -29,6 +29,14 @@
   /* F1: ek yuzey/ayirici/metin renkleri (§6.1) */
   --color-surface-2: #f8fafc; /* ikincil yuzey */
   --color-divider: #f1f5f9; /* ayirici */
+
+  /* on-brand: gradient marka paneli uzeri on-plan renkleri */
+  --color-on-brand: #ffffff;
+  --color-on-brand-85: rgba(255, 255, 255, 0.85);
+  --color-on-brand-70: rgba(255, 255, 255, 0.7);
+  --color-on-brand-60: rgba(255, 255, 255, 0.6);
+  --color-on-brand-40: rgba(255, 255, 255, 0.4);
+  --color-on-brand-15: rgba(255, 255, 255, 0.15);
   --color-text-strong: #0f172a;
   --color-label: #475569; /* sabitlenmis label rengi */
 
