@@ -14,15 +14,26 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, code: "unavailable" }, { status: 502 });
   }
 
+  if (result.status === 200) {
+    const res = NextResponse.json(result.body, { status: 200 });
+    if (result.refreshedAccessToken) {
+      applyAuthCookies(res, [buildAccessCookie(result.refreshedAccessToken)]);
+    }
+    return res;
+  }
+
   if (result.status === 401) {
     const res = NextResponse.json({ ok: false, code: "unauthenticated" }, { status: 401 });
     applyAuthCookies(res, clearedAuthCookies());
     return res;
   }
 
-  const res = NextResponse.json(result.body, { status: result.status });
-  if (result.refreshedAccessToken) {
-    applyAuthCookies(res, [buildAccessCookie(result.refreshedAccessToken)]);
+  if (result.status === 403) {
+    const res = NextResponse.json({ ok: false, code: "forbidden" }, { status: 403 });
+    applyAuthCookies(res, clearedAuthCookies());
+    return res;
   }
-  return res;
+
+  // Any other status: return generic response without forwarding backend body
+  return NextResponse.json({ ok: false, code: "unavailable" }, { status: result.status });
 }

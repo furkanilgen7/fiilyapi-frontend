@@ -47,4 +47,32 @@ describe("GET /api/auth/me", () => {
     expect(res.status).toBe(401);
     expect(res.cookies.get(ACCESS_COOKIE)?.maxAge).toBe(0);
   });
+
+  it("403'te cookie temizler ve ham govdeyi sizdirmaz", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ detail: "hesap pasif" }), { status: 403 }),
+    ));
+    const res = await GET(meReq({ [ACCESS_COOKIE]: "acc", [REFRESH_COOKIE]: "ref" }));
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.ok).toBe(false);
+    expect(body.code).toBe("forbidden");
+    expect(JSON.stringify(body)).not.toContain("hesap pasif");
+    expect(JSON.stringify(body)).not.toContain("detail");
+    expect(res.cookies.get(ACCESS_COOKIE)?.maxAge).toBe(0);
+    expect(res.cookies.get(REFRESH_COOKIE)?.maxAge).toBe(0);
+  });
+
+  it("500'de jenerik unavailable doner, ham govde sizmaz", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ detail: "boom" }), { status: 500 }),
+    ));
+    const res = await GET(meReq({ [ACCESS_COOKIE]: "acc", [REFRESH_COOKIE]: "ref" }));
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.ok).toBe(false);
+    expect(body.code).toBe("unavailable");
+    expect(JSON.stringify(body)).not.toContain("boom");
+    expect(JSON.stringify(body)).not.toContain("detail");
+  });
 });
