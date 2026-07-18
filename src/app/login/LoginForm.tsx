@@ -8,6 +8,15 @@ import DemoAccounts from "./DemoAccounts";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Acik-yonlendirme korkulugu: yalnizca ayni-kaynak ic yol kabul edilir.
+export function isSafeInternalPath(next: string | null): next is string {
+  if (!next) return false;
+  if (!next.startsWith("/")) return false;
+  if (next.startsWith("//")) return false;
+  if (next.startsWith("/\\")) return false;
+  return true;
+}
+
 // Backend statu kodunu kullanici-dostu jenerik mesaja esler (alan sizdirmadan).
 function messageForStatus(status: number | "network"): string {
   if (status === 401) return "E-posta veya şifre hatalı.";
@@ -63,7 +72,7 @@ export default function LoginForm() {
       });
       if (res.ok) {
         const next = searchParams.get("next");
-        router.push(next && next.startsWith("/") ? next : "/");
+        router.push(isSafeInternalPath(next) ? next : "/");
         return;
       }
       setFormError(messageForStatus(res.status));

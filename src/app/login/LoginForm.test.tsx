@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import LoginForm from "./LoginForm";
+import LoginForm, { isSafeInternalPath } from "./LoginForm";
 
 const pushMock = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -47,5 +47,29 @@ describe("LoginForm", () => {
     expect(pw.type).toBe("password");
     await userEvent.click(screen.getByRole("button", { name: /şifreyi göster/i }));
     expect(pw.type).toBe("text");
+  });
+});
+
+describe("isSafeInternalPath", () => {
+  it("accepts valid internal paths", () => {
+    expect(isSafeInternalPath("/dashboard")).toBe(true);
+    expect(isSafeInternalPath("/")).toBe(true);
+  });
+
+  it("rejects protocol-relative URLs", () => {
+    expect(isSafeInternalPath("//evil.com")).toBe(false);
+  });
+
+  it("rejects backslash-prefixed URLs", () => {
+    expect(isSafeInternalPath("/\\evil.com")).toBe(false);
+  });
+
+  it("rejects absolute URLs", () => {
+    expect(isSafeInternalPath("https://evil.com")).toBe(false);
+  });
+
+  it("rejects null and empty strings", () => {
+    expect(isSafeInternalPath(null)).toBe(false);
+    expect(isSafeInternalPath("")).toBe(false);
   });
 });
