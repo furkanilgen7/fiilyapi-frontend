@@ -1,0 +1,26 @@
+.coming-soon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 52px - 48px);
+}
+.coming-soon__card {
+  text-align: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  padding: 40px 48px;
+}
+.coming-soon__title {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 28px;
+  color: var(--color-text);
+  margin-bottom: 8px;
+}
+.coming-soon__note {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-text-muted);
+}
