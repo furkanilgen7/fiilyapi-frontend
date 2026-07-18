@@ -1,4 +1,5 @@
 import BrandPanel from "./BrandPanel";
+import LoginForm from "./LoginForm";
 import "./login.css";
 
 export default function LoginPage() {
@@ -6,7 +7,9 @@ export default function LoginPage() {
     <main className="login">
       <BrandPanel />
       <div className="login-form-panel">
-        <div className="login-form">{/* LoginForm Task 10'da eklenir */}</div>
+        <div className="login-form">
+          <LoginForm />
+        </div>
       </div>
     </main>
   );
