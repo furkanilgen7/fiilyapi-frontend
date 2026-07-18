@@ -10,6 +10,13 @@
   --color-border-strong: #cbd5e1;
   --color-primary: #2563eb;
   --color-primary-hover: #1d4ed8;
+  --color-primary-900: #1e3a8a;
+  --gradient-brand-panel: linear-gradient(
+    160deg,
+    var(--color-primary-900) 0%,
+    var(--color-primary-hover) 50%,
+    var(--color-primary) 100%
+  );
   --color-primary-soft: #dbeafe;
   --color-success: #16a34a;
   --color-success-soft: #dcfce7;
