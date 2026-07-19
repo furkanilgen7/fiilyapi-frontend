@@ -4,6 +4,7 @@ import { unwrap } from "@/lib/api/unwrap";
 import type { ProjectResponse, ProjectAccessResponse } from "@/lib/api/models";
 
 export const PROJECTS_QUERY_KEY = "projects";
+export const PROJECT_ACCESS_QUERY_KEY = "project-access";
 
 export function useProjects(): UseQueryResult<ProjectResponse[], Error> {
   return useQuery({
@@ -14,7 +15,7 @@ export function useProjects(): UseQueryResult<ProjectResponse[], Error> {
 
 export function useProjectAccess(userId: string): UseQueryResult<ProjectAccessResponse, Error> {
   return useQuery({
-    queryKey: ["project-access", userId],
+    queryKey: [PROJECT_ACCESS_QUERY_KEY, userId],
     queryFn: async () =>
       unwrap(
         await backendClient.GET("/users/{user_id}/project-access", {

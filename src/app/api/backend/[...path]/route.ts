@@ -13,6 +13,11 @@ async function handle(request: NextRequest, method: string, routeCtx: RouteCtx):
   if (path.length === 0 || !ALLOWED_ROOTS.has(path[0])) {
     return NextResponse.json({ ok: false, code: "not_found" }, { status: 404 });
   }
+  // Path traversal sertlestirmesi: ".." veya "." (veya bos) segment fetch tarafindan
+  // normalize edilip allow-list disina cikabilir; bu yuzden burada erken reddedilir.
+  if (path.some((segment) => segment === ".." || segment === "." || segment === "")) {
+    return NextResponse.json({ ok: false, code: "not_found" }, { status: 404 });
+  }
 
   const backendPath = "/" + path.join("/");
   const query: Record<string, string> = {};

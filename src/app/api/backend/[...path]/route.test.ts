@@ -44,6 +44,17 @@ describe("BFF /api/backend/[...path]", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("path-traversal segmenti (..) — 404 doner, backend cagrilmaz", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const res = await GET(
+      req("/api/backend/users/../roles", "GET", { [ACCESS_COOKIE]: "acc" }),
+      ctx(["users", "..", "roles"]),
+    );
+    expect(res.status).toBe(404);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("POST body iletir ve 409 govdesini gecirir (Turkce hata gorunsun)", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ detail: "e-posta kullanimda" }), { status: 409 }),

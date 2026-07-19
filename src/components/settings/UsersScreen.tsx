@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui";
 import { useUsers, PAGE_SIZE } from "@/lib/api/hooks/useUsers";
@@ -68,6 +68,17 @@ export function UsersScreen() {
     });
   }
 
+  const total = usersQuery.data?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  // Silme sonrasi son sayfa daralirsa kullaniciyi bos sayfada birakma; son gecerli sayfaya don.
+  useEffect(() => {
+    if (usersQuery.data && page > pageCount) {
+      goToPage(pageCount);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, pageCount, usersQuery.data]);
+
   if (usersQuery.isLoading) {
     return <p className="settings-note">Yükleniyor…</p>;
   }
@@ -80,8 +91,11 @@ export function UsersScreen() {
     return <p className="settings-note settings-note--error">Kullanıcılar yüklenemedi.</p>;
   }
 
-  const { items, total } = usersQuery.data;
-  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (page > pageCount) {
+    return null;
+  }
+
+  const { items } = usersQuery.data;
 
   return (
     <div className="settings-panel">
