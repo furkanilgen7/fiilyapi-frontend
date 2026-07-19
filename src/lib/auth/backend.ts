@@ -7,6 +7,12 @@ export interface ProxyResult {
   refreshedAccessToken?: string;
 }
 
+export interface ProxyOptions {
+  method?: string;
+  body?: unknown;
+  query?: Record<string, string>;
+}
+
 export function backendUrl(): string {
   const url = process.env.BACKEND_URL;
   if (!url) throw new Error("BACKEND_URL tanimli degil");
@@ -21,22 +27,34 @@ async function parseBody(res: Response): Promise<unknown> {
   }
 }
 
-function get(path: string, accessToken: string | undefined): Promise<Response> {
-  return fetch(backendUrl() + path, {
-    method: "GET",
-    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-  });
+function buildUrl(path: string, query: Record<string, string> | undefined): string {
+  if (!query || Object.keys(query).length === 0) return backendUrl() + path;
+  const qs = new URLSearchParams(query).toString();
+  return backendUrl() + path + "?" + qs;
+}
+
+// Backend'e Bearer ile tek istek — method/body/query destekli.
+function request(path: string, accessToken: string | undefined, options: ProxyOptions): Promise<Response> {
+  const { method = "GET", body, query } = options;
+  const headers: Record<string, string> = {};
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  const init: RequestInit = { method, headers };
+  if (body !== undefined) {
+    headers["content-type"] = "application/json";
+    init.body = JSON.stringify(body);
+  }
+  return fetch(buildUrl(path, query), init);
 }
 
 // Backend'i Bearer ile cagirir; 401'de refresh token varsa /auth/refresh dener,
-// basarili ise yeni access token ile bir kez retry eder. Refresh token (stateless,
-// backend'de rotasyonsuz) tarayicida yenilenmez — yalniz access cookie'si guncellenir.
+// basarili ise yeni access token ile AYNI method+body+query ile bir kez retry eder.
 export async function proxyAuthenticated(
   accessToken: string | undefined,
   refreshToken: string | undefined,
   path: string,
+  options: ProxyOptions = {},
 ): Promise<ProxyResult> {
-  const first = await get(path, accessToken);
+  const first = await request(path, accessToken, options);
   if (first.status !== 401) {
     return { status: first.status, body: await parseBody(first) };
   }
@@ -55,7 +73,7 @@ export async function proxyAuthenticated(
   if (!pair?.access_token) {
     return { status: 401, body: null };
   }
-  const retry = await get(path, pair.access_token);
+  const retry = await request(path, pair.access_token, options);
   return {
     status: retry.status,
     body: await parseBody(retry),

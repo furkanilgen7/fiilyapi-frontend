@@ -69,3 +69,53 @@ describe("proxyAuthenticated", () => {
     expect(r.status).toBe(401);
   });
 });
+
+describe("proxyAuthenticated (method/body/query)", () => {
+  it("varsayilan GET — mevcut davranis korunur", async () => {
+    process.env.BACKEND_URL = "http://backend:8000";
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: 1 }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const res = await proxyAuthenticated("acc", "ref", "/auth/me");
+    expect(res.status).toBe(200);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://backend:8000/auth/me");
+    expect(init.method).toBe("GET");
+    expect(init.body).toBeUndefined();
+    expect(init.headers.Authorization).toBe("Bearer acc");
+  });
+
+  it("POST + body + query iletir", async () => {
+    process.env.BACKEND_URL = "http://backend:8000";
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: "u1" }), { status: 201 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const res = await proxyAuthenticated("acc", "ref", "/users", {
+      method: "POST",
+      body: { email: "a@b.com" },
+      query: { limit: "20", offset: "0" },
+    });
+    expect(res.status).toBe(201);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://backend:8000/users?limit=20&offset=0");
+    expect(init.method).toBe("POST");
+    expect(init.headers["content-type"]).toBe("application/json");
+    expect(JSON.parse(init.body)).toEqual({ email: "a@b.com" });
+  });
+
+  it("401 + refresh — ayni method+body ile retry eder", async () => {
+    process.env.BACKEND_URL = "http://backend:8000";
+    const jwt = `h.${Buffer.from(JSON.stringify({ exp: 9999999999 })).toString("base64url")}.s`;
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response("{}", { status: 401 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: jwt, refresh_token: jwt }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: 1 }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const res = await proxyAuthenticated("old", "ref", "/roles", { method: "PATCH", body: { name: "X" } });
+    expect(res.status).toBe(200);
+    expect(res.refreshedAccessToken).toBe(jwt);
+    // 3. cagri retry: ayni method+body, yeni token
+    const [, retryInit] = fetchMock.mock.calls[2];
+    expect(retryInit.method).toBe("PATCH");
+    expect(JSON.parse(retryInit.body)).toEqual({ name: "X" });
+    expect(retryInit.headers.Authorization).toBe(`Bearer ${jwt}`);
+  });
+});
