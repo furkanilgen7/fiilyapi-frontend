@@ -6,7 +6,13 @@ import { useModules } from "@/lib/api/hooks/useModules";
 import { useRoles } from "@/lib/api/hooks/useRoles";
 import { useAllRolePermissions } from "@/lib/api/hooks/useRolePermissions";
 import { usePermissionMutation } from "@/lib/api/hooks/usePermissionMutation";
-import { PRESETS, matchPreset, presetToUpdate, type PresetKey } from "@/lib/api/permission-presets";
+import {
+  PRESETS,
+  PRESET_DESCRIPTIONS,
+  matchPreset,
+  presetToUpdate,
+  type PresetKey,
+} from "@/lib/api/permission-presets";
 import { isForbidden } from "@/lib/api/unwrap";
 import { AccessDenied } from "./AccessDenied";
 import type { ModuleGroup, ModuleResponse, PermissionCell } from "@/lib/api/models";
@@ -74,7 +80,25 @@ export function PermissionMatrix() {
   }
 
   return (
-    <div className="matrix-scroll">
+    <div className="matrix-wrap">
+      <section className="matrix-legend" aria-labelledby="matrix-legend-title">
+        <p id="matrix-legend-title" className="matrix-legend__title">
+          Erişim düzeyleri
+        </p>
+        <p className="matrix-legend__hint">
+          Her hücre, rolün o modülde ne yapabileceğini belirler. Silme yalnızca “Süper” düzeyindedir.
+        </p>
+        <dl className="matrix-legend__list">
+          {PRESETS.map((preset) => (
+            <div key={preset.key} className="matrix-legend__item">
+              <dt className="matrix-legend__term">{preset.label}</dt>
+              <dd className="matrix-legend__desc">{PRESET_DESCRIPTIONS[preset.key]}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      <div className="matrix-scroll">
       <table className="matrix-table">
         <thead>
           <tr>
@@ -135,6 +159,7 @@ export function PermissionMatrix() {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

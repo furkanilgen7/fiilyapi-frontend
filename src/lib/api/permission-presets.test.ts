@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PRESETS, matchPreset, presetToUpdate } from "./permission-presets";
+import { PRESETS, PRESET_DESCRIPTIONS, matchPreset, presetToUpdate } from "./permission-presets";
 
 describe("permission-presets", () => {
   it("12 preset tanimlar", () => {
@@ -29,5 +29,11 @@ describe("permission-presets", () => {
     expect(presetToUpdate("draft")).toEqual({ access_level: "draft", scope: "project" });
     expect(presetToUpdate("finance")).toEqual({ access_level: "view", scope: "finance" });
     expect(presetToUpdate("super")).toEqual({ access_level: "admin", scope: "all" });
+  });
+
+  it("her preset icin bos olmayan aciklama vardir", () => {
+    for (const preset of PRESETS) {
+      expect(PRESET_DESCRIPTIONS[preset.key]).toBeTruthy();
+    }
   });
 });

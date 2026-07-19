@@ -53,5 +53,8 @@ describe("PermissionMatrix", () => {
     expect(screen.getByText("Saha")).toBeInTheDocument();
     // hucre secimi mevcut preset'i ("Görüntüle") gosterir
     expect(await screen.findByDisplayValue("Görüntüle")).toBeInTheDocument();
+    // lejant erisim duzeyi acikamalarini gosterir
+    expect(screen.getByText("Erişim düzeyleri")).toBeInTheDocument();
+    expect(screen.getByText("Modülde her şey: oluştur, düzenle ve sil. En üst yetki.")).toBeInTheDocument();
   });
 });
