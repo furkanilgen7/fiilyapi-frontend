@@ -16,7 +16,14 @@ export const apiClient = createClient<paths>({
 /**
  * F4 kaynak istemcisi — genel BFF catch-all proxy'sine (/api/backend/[...path])
  * gider; JWT cookie + refresh BFF'te eklenir.
+ *
+ * `fetch` seçeneği burada bilinçli olarak `globalThis.fetch`'i çağrı anında
+ * çözer (yakalama zamanında değil): openapi-fetch, `fetch`'i istemci
+ * oluşturulduğu anda değişkene sabitler, bu da `backendClient` modül
+ * yüklenirken bir kez oluşturulduğu için testlerde `vi.stubGlobal("fetch", …)`
+ * ile mocklamayı imkansız kılar. Tarayıcıda davranış aynıdır (gerçek fetch).
  */
 export const backendClient = createClient<paths>({
   baseUrl: "/api/backend",
+  fetch: (input: Request) => globalThis.fetch(input),
 });
