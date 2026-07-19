@@ -7,6 +7,8 @@ import { useDeleteRole } from "@/lib/api/hooks/useRoleMutations";
 import { RoleFormModal } from "./RoleFormModal";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { backendErrorMessage } from "@/lib/settings/error-message";
+import { isForbidden } from "@/lib/api/unwrap";
+import { AccessDenied } from "./AccessDenied";
 import type { RoleResponse } from "@/lib/api/models";
 import "./settings.css";
 
@@ -33,6 +35,9 @@ export function RolesScreen() {
 
   if (rolesQuery.isLoading) {
     return <p className="settings-note">Yükleniyor…</p>;
+  }
+  if (isForbidden(rolesQuery.error)) {
+    return <AccessDenied />;
   }
   if (rolesQuery.isError || !rolesQuery.data) {
     return <p className="settings-note settings-note--error">Roller yüklenemedi.</p>;

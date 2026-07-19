@@ -12,6 +12,8 @@ import { PasswordResetModal } from "./PasswordResetModal";
 import { ProjectAccessModal } from "./ProjectAccessModal";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { backendErrorMessage } from "@/lib/settings/error-message";
+import { isForbidden } from "@/lib/api/unwrap";
+import { AccessDenied } from "./AccessDenied";
 import type { RoleResponse, UserResponse } from "@/lib/api/models";
 import "./settings.css";
 
@@ -68,6 +70,10 @@ export function UsersScreen() {
 
   if (usersQuery.isLoading) {
     return <p className="settings-note">Yükleniyor…</p>;
+  }
+
+  if (isForbidden(usersQuery.error)) {
+    return <AccessDenied />;
   }
 
   if (usersQuery.isError || !usersQuery.data) {

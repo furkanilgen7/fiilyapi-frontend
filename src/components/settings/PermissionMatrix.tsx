@@ -7,6 +7,8 @@ import { useRoles } from "@/lib/api/hooks/useRoles";
 import { useAllRolePermissions } from "@/lib/api/hooks/useRolePermissions";
 import { usePermissionMutation } from "@/lib/api/hooks/usePermissionMutation";
 import { PRESETS, matchPreset, presetToUpdate, type PresetKey } from "@/lib/api/permission-presets";
+import { isForbidden } from "@/lib/api/unwrap";
+import { AccessDenied } from "./AccessDenied";
 import type { ModuleGroup, ModuleResponse, PermissionCell } from "@/lib/api/models";
 import "./settings.css";
 
@@ -39,6 +41,10 @@ export function PermissionMatrix() {
 
   if (modulesQuery.isLoading || rolesQuery.isLoading) {
     return <p className="settings-note">Yükleniyor…</p>;
+  }
+  const permForbidden = permQueries.some((q) => isForbidden(q.error));
+  if (isForbidden(modulesQuery.error) || isForbidden(rolesQuery.error) || permForbidden) {
+    return <AccessDenied />;
   }
   if (modulesQuery.isError || rolesQuery.isError || !modulesQuery.data || !rolesQuery.data) {
     return <p className="settings-note settings-note--error">İzin matrisi yüklenemedi.</p>;
