@@ -1,12 +1,27 @@
 "use client";
 
+import { useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui";
 import { useUsers, PAGE_SIZE } from "@/lib/api/hooks/useUsers";
 import { useRoles } from "@/lib/api/hooks/useRoles";
+import { useDeleteUser } from "@/lib/api/hooks/useUserMutations";
 import { StatusBadge } from "./StatusBadge";
-import type { RoleResponse } from "@/lib/api/models";
+import { UserFormModal } from "./UserFormModal";
+import { PasswordResetModal } from "./PasswordResetModal";
+import { ProjectAccessModal } from "./ProjectAccessModal";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { backendErrorMessage } from "@/lib/settings/error-message";
+import type { RoleResponse, UserResponse } from "@/lib/api/models";
 import "./settings.css";
+
+type ModalState =
+  | { type: "create" }
+  | { type: "edit"; user: UserResponse }
+  | { type: "password"; user: UserResponse }
+  | { type: "project"; user: UserResponse }
+  | { type: "delete"; user: UserResponse }
+  | null;
 
 function roleName(roles: RoleResponse[] | undefined, roleId: string): string {
   return roles?.find((r) => r.id === roleId)?.name ?? "—";
@@ -27,11 +42,28 @@ export function UsersScreen() {
 
   const usersQuery = useUsers({ limit: PAGE_SIZE, offset });
   const rolesQuery = useRoles();
+  const deleteUser = useDeleteUser();
+
+  const [modal, setModal] = useState<ModalState>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   function goToPage(next: number) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("sayfa", String(next));
     router.push(`${pathname}?${params.toString()}`);
+  }
+
+  function closeModal() {
+    setModal(null);
+    setDeleteError(null);
+  }
+
+  function confirmDelete(user: UserResponse) {
+    setDeleteError(null);
+    deleteUser.mutate(user.id, {
+      onSuccess: closeModal,
+      onError: (err) => setDeleteError(backendErrorMessage(err)),
+    });
   }
 
   if (usersQuery.isLoading) {
@@ -49,6 +81,9 @@ export function UsersScreen() {
     <div className="settings-panel">
       <div className="settings-panel__toolbar">
         <span className="settings-panel__count">{total} kullanıcı</span>
+        <Button variant="primary" size="sm" onClick={() => setModal({ type: "create" })}>
+          Yeni Kullanıcı
+        </Button>
       </div>
 
       <table className="settings-table">
@@ -59,6 +94,7 @@ export function UsersScreen() {
             <th>Unvan</th>
             <th>Rol</th>
             <th>Durum</th>
+            <th aria-label="İşlemler" />
           </tr>
         </thead>
         <tbody>
@@ -70,6 +106,22 @@ export function UsersScreen() {
               <td>{roleName(rolesQuery.data, user.role_id)}</td>
               <td>
                 <StatusBadge status={user.status} />
+              </td>
+              <td>
+                <div className="settings-row-actions">
+                  <Button variant="ghost" size="sm" onClick={() => setModal({ type: "edit", user })}>
+                    Düzenle
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setModal({ type: "password", user })}>
+                    Parola
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setModal({ type: "project", user })}>
+                    Projeler
+                  </Button>
+                  <Button variant="danger" size="sm" onClick={() => setModal({ type: "delete", user })}>
+                    Sil
+                  </Button>
+                </div>
               </td>
             </tr>
           ))}
@@ -87,6 +139,23 @@ export function UsersScreen() {
           Sonraki
         </Button>
       </div>
+
+      {modal?.type === "create" && <UserFormModal mode="create" onClose={closeModal} />}
+      {modal?.type === "edit" && <UserFormModal mode="edit" user={modal.user} onClose={closeModal} />}
+      {modal?.type === "password" && <PasswordResetModal user={modal.user} onClose={closeModal} />}
+      {modal?.type === "project" && <ProjectAccessModal user={modal.user} onClose={closeModal} />}
+      {modal?.type === "delete" && (
+        <ConfirmDialog
+          title="Kullanıcıyı Sil"
+          message={`"${modal.user.full_name}" kullanıcısını silmek istediğinize emin misiniz?`}
+          confirmLabel="Sil"
+          danger
+          isPending={deleteUser.isPending}
+          errorText={deleteError}
+          onConfirm={() => confirmDelete(modal.user)}
+          onClose={closeModal}
+        />
+      )}
     </div>
   );
 }

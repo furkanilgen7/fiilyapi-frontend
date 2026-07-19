@@ -1,0 +1,124 @@
+"use client";
+
+import { useState } from "react";
+import { Button, Input, Select } from "@/components/ui";
+import { Modal } from "./Modal";
+import { useRoles } from "@/lib/api/hooks/useRoles";
+import { useCreateUser, useUpdateUser } from "@/lib/api/hooks/useUserMutations";
+import { backendErrorMessage } from "@/lib/settings/error-message";
+import type { UserResponse, UserStatus } from "@/lib/api/models";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_PASSWORD = 8;
+
+interface UserFormModalProps {
+  mode: "create" | "edit";
+  user?: UserResponse;
+  onClose: () => void;
+}
+
+export function UserFormModal({ mode, user, onClose }: UserFormModalProps) {
+  const rolesQuery = useRoles();
+  const createUser = useCreateUser();
+  const updateUser = useUpdateUser();
+
+  const [email, setEmail] = useState(user?.email ?? "");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState(user?.full_name ?? "");
+  const [title, setTitle] = useState(user?.title ?? "");
+  const [roleId, setRoleId] = useState(user?.role_id ?? "");
+  const [status, setStatus] = useState<UserStatus>(user?.status ?? "active");
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const isPending = createUser.isPending || updateUser.isPending;
+
+  function validate(): string | null {
+    if (!fullName.trim()) return "Ad soyad zorunludur.";
+    if (mode === "create") {
+      if (!EMAIL_RE.test(email)) return "Geçerli bir e-posta girin.";
+      if (password.length < MIN_PASSWORD) return `Parola en az ${MIN_PASSWORD} karakter olmalıdır.`;
+    }
+    if (!roleId) return "Rol seçin.";
+    return null;
+  }
+
+  function handleSubmit() {
+    const problem = validate();
+    if (problem) {
+      setFormError(problem);
+      return;
+    }
+    setFormError(null);
+    if (mode === "create") {
+      createUser.mutate(
+        { email, password, full_name: fullName, title, role_id: roleId, status },
+        { onSuccess: onClose, onError: (err) => setFormError(backendErrorMessage(err)) },
+      );
+    } else if (user) {
+      updateUser.mutate(
+        { id: user.id, body: { full_name: fullName, title, role_id: roleId, status } },
+        { onSuccess: onClose, onError: (err) => setFormError(backendErrorMessage(err)) },
+      );
+    }
+  }
+
+  return (
+    <Modal
+      title={mode === "create" ? "Yeni Kullanıcı" : "Kullanıcıyı Düzenle"}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose} disabled={isPending}>
+            Vazgeç
+          </Button>
+          <Button variant="primary" onClick={handleSubmit} disabled={isPending}>
+            Kaydet
+          </Button>
+        </>
+      }
+    >
+      <div className="settings-form">
+        <label className="settings-field">
+          <span className="settings-field__label">Ad Soyad</span>
+          <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+        </label>
+        {mode === "create" && (
+          <>
+            <label className="settings-field">
+              <span className="settings-field__label">E-posta</span>
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            </label>
+            <label className="settings-field">
+              <span className="settings-field__label">Parola</span>
+              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            </label>
+          </>
+        )}
+        <label className="settings-field">
+          <span className="settings-field__label">Unvan</span>
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+        </label>
+        <label className="settings-field">
+          <span className="settings-field__label">Rol</span>
+          <Select value={roleId} onChange={(e) => setRoleId(e.target.value)}>
+            <option value="">Seçin…</option>
+            {rolesQuery.data?.map((role) => (
+              <option key={role.id} value={role.id}>
+                {role.name}
+              </option>
+            ))}
+          </Select>
+        </label>
+        <label className="settings-field">
+          <span className="settings-field__label">Durum</span>
+          <Select value={status} onChange={(e) => setStatus(e.target.value as UserStatus)}>
+            <option value="active">Aktif</option>
+            <option value="on_leave">İzinli</option>
+            <option value="passive">Pasif</option>
+          </Select>
+        </label>
+        {formError && <p className="settings-note settings-note--error">{formError}</p>}
+      </div>
+    </Modal>
+  );
+}
