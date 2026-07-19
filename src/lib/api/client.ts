@@ -12,3 +12,11 @@ import type { paths } from "./schema";
 export const apiClient = createClient<paths>({
   baseUrl: "/api",
 });
+
+/**
+ * F4 kaynak istemcisi — genel BFF catch-all proxy'sine (/api/backend/[...path])
+ * gider; JWT cookie + refresh BFF'te eklenir.
+ */
+export const backendClient = createClient<paths>({
+  baseUrl: "/api/backend",
+});
