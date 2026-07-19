@@ -1,3 +1,5 @@
+import { PermissionMatrix } from "@/components/settings/PermissionMatrix";
+
 export default function IzinMatrisiPage() {
-  return <p>İzin matrisi yakında.</p>;
+  return <PermissionMatrix />;
 }
