@@ -4,16 +4,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cx } from "@/lib/cx";
 import { initials } from "@/lib/shell/initials";
+import { isActivePath } from "@/lib/shell/isActive";
 import { SettingsIcon } from "@/components/ui/icons";
 import { NAV_GROUPS } from "./nav-config";
 import { useSession } from "./SessionProvider";
 import "./sidebar.css";
-
-// Aktif eslestirme: "/" tam eslesme; digerleri prefix (alt rotalar da aktif).
-function isActive(pathname: string, href: string): boolean {
-  if (href === "/") return pathname === "/";
-  return pathname === href || pathname.startsWith(href + "/");
-}
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -32,7 +27,7 @@ export default function Sidebar() {
           <div key={group.heading} className="sidebar-group">
             <div className="sidebar-group__heading">{group.heading}</div>
             {group.items.map(({ label, href, Icon }) => {
-              const active = isActive(pathname, href);
+              const active = isActivePath(pathname, href);
               return (
                 <Link
                   key={href}
