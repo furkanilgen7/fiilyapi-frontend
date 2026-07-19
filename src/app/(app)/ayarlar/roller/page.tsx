@@ -1,3 +1,5 @@
+import { RolesScreen } from "@/components/settings/RolesScreen";
+
 export default function RollerPage() {
-  return <p>Roller yakında.</p>;
+  return <RolesScreen />;
 }
