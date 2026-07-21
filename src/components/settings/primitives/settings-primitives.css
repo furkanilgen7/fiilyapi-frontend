@@ -1,0 +1,96 @@
+/* Kart — mockup ref §A.4 (tüm 9 sayfada aynı) */
+.s-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14);
+  box-shadow: var(--shadow-card);
+}
+.s-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-border);
+}
+.s-card__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.s-card__count {
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  padding: 2px 8px;
+  border-radius: var(--radius-10);
+}
+.s-card__actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.s-card__body {
+  padding: 20px;
+}
+.s-card__body--flush {
+  padding: 0;
+} /* tablo gövdeleri için */
+.s-card__body--tight {
+  padding: 18px;
+} /* Entegrasyonlar kartı */
+
+/* Rol pill — ref §A.5 */
+.role-pill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: var(--radius-10);
+}
+
+/* Gradyan avatar — ref §A.5 */
+.user-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-on-brand);
+  flex-shrink: 0;
+}
+
+/* Erişim çipi — ref §A.7 */
+.access-chip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-8);
+}
+.access-chip--full {
+  color: var(--color-success);
+  font-weight: 700;
+  background: transparent;
+  padding: 0;
+}
+.access-chip--none {
+  color: var(--color-border-strong);
+  background: transparent;
+  padding: 0;
+}
+.access-chip--blue {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+.access-chip--amber {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+}
+.access-chip--green {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}

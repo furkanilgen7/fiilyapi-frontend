@@ -105,6 +105,36 @@
   --duration-fast: 150ms;
   --duration-normal: 250ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Ayarlar redesign — layout + accent tokens (mockup-derived, ref §A) */
+  --settings-sidebar-width: 240px;
+  --text-settings-nav-label: 10px; /* sidebar grup etiketi */
+  --text-page-title-settings: 22px; /* Ayarlar alt-sayfa h1 (26px genel değil) */
+
+  /* Muhasebe (mor) ailesi */
+  --color-accent-purple: #7c3aed; /* pill/metin */
+  --color-accent-purple-soft: #ede9fe; /* pill zemin */
+  --color-accent-purple-grad-start: #8b5cf6;
+  --color-accent-purple-grad-end: #a78bfa;
+
+  /* Avatar gradyan uçları */
+  --color-accent-teal-start: #0f766e;
+  --color-accent-teal-end: #14b8a6;
+  --color-avatar-amber-end: #fbbf24;
+  --color-avatar-blue-end: #60a5fa;
+  --color-avatar-slate-end: #cbd5e1;
+
+  /* Yeşil ton varyantı (info banner / vurgulu izin satırı) */
+  --color-success-tint: #f0fdf4;
+  --color-success-tint-border: #bbf7d0;
+
+  /* Sistem rolü gradyan/çerçeve + koyu grup başlığı */
+  --color-slate-700: #334155;
+
+  /* İkinci ton uyarı/tehlike (pill metni + audit satır tinti) */
+  --color-warning-strong: #d97706;
+  --color-danger-strong: #dc2626;
+  --color-audit-danger-row-bg: #fff7f7;
 }
 
 @keyframes fadeUp {
