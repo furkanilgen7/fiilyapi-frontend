@@ -120,9 +120,18 @@
   cursor: pointer;
 }
 
-/* İçerik alanı — 240px sidebar'a göre (shell 220px override) */
+/* İçerik alanı — 240px sidebar'a göre.
+   Bu alan global <main class="app-content">'in İÇİNDE render edilir; o kutu
+   zaten margin-left: var(--sidebar-width) (220px) + padding: var(--space-6)
+   (24px, dört yön) uyguluyor. Offsetler üst üste binmesin diye o kutuyu bu
+   alt-ağaçta negatif margin ile iptal edip yerine kendi 240px sidebar offsetini
+   ve kendi iç boşluğunu (28/32px) koyuyoruz — sonuç: sol kenar viewport'ta
+   x = 240px'te (sabit Ayarlar sidebar'ının hemen sağında), global .app-content
+   diğer route'larda 220px olarak kalmaya devam eder (bu kural yalnız
+   .ayarlar-content'e uygulanıyor). */
 .ayarlar-content {
-  margin-left: var(--settings-sidebar-width);
+  margin: calc(-1 * var(--space-6)) calc(-1 * var(--space-6)) calc(-1 * var(--space-6))
+    calc(var(--settings-sidebar-width) - var(--sidebar-width) - var(--space-6));
   padding: 28px 32px;
 }
 @media (prefers-reduced-motion: no-preference) {

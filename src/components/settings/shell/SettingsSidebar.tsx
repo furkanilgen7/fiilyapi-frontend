@@ -1,20 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { cx } from "@/lib/cx";
 import { isActivePath } from "@/lib/shell/isActive";
+import { useLogout } from "@/lib/shell/useLogout";
 import { SETTINGS_NAV } from "./settings-nav-config";
 import "./settings-shell.css";
 
 export function SettingsSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-
-  async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
-  }
+  const handleLogout = useLogout();
 
   return (
     <aside className="settings-sidebar" aria-label="Ayarlar menüsü">

@@ -1,19 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useLogout } from "@/lib/shell/useLogout";
 import { settingsLabelForPath } from "./settings-nav-config";
 import "./settings-shell.css";
 
 export function SettingsBreadcrumb() {
   const pathname = usePathname();
-  const router = useRouter();
   const current = settingsLabelForPath(pathname);
-
-  async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
-  }
+  const handleLogout = useLogout();
 
   return (
     <div className="settings-breadcrumb">
