@@ -18,7 +18,7 @@ test("gorsel: ayarlar kullanicilar", async ({ page }) => {
 test("gorsel: ayarlar roller", async ({ page }) => {
   await login(page);
   await page.goto("/ayarlar/roller");
-  await expect(page.getByText("Sistem Yöneticisi")).toBeVisible();
+  await expect(page.getByText("Modül Erişimleri")).toBeVisible();
   await expect(page).toHaveScreenshot("ayarlar-roller.png", { fullPage: true });
 });
 
