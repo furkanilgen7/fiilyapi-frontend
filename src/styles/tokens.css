@@ -11,6 +11,7 @@
   --color-border-strong: #cbd5e1;
   --color-primary: #2563eb;
   --color-primary-hover: #1d4ed8;
+  --color-primary-light: #3b82f6;
   --color-primary-900: #1e3a8a;
   --gradient-brand-panel: linear-gradient(
     160deg,
@@ -18,7 +19,9 @@
     var(--color-primary-hover) 50%,
     var(--color-primary) 100%
   );
+  --gradient-logo-tile: linear-gradient(135deg, var(--color-primary-hover), var(--color-primary-light));
   --color-primary-soft: #dbeafe;
+  --color-primary-ring: #bfdbfe;
   --color-nav-active-bg: #eff6ff;
   --color-success: #16a34a;
   --color-success-soft: #dcfce7;
