@@ -601,6 +601,38 @@
         ]
       }
     },
+    "/dashboard/summary": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Get Dashboard Summary Endpoint",
+        "operationId": "get_dashboard_summary_endpoint_dashboard_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSummaryResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/projects": {
       "get": {
         "tags": [
@@ -2203,6 +2235,92 @@
         "title": "CompanyUpdate",
         "description": "Kismi guncelleme — tum alanlar opsiyonel. Gonderilmeyen alan degismez."
       },
+      "DashboardProjectCard": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectStatus"
+          },
+          "budget": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Budget"
+          },
+          "progress_pct": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Progress Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "status",
+          "budget",
+          "progress_pct"
+        ],
+        "title": "DashboardProjectCard"
+      },
+      "DashboardSummaryResponse": {
+        "properties": {
+          "role_name": {
+            "type": "string",
+            "title": "Role Name"
+          },
+          "active_project_count": {
+            "type": "integer",
+            "title": "Active Project Count"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardProjectCard"
+            },
+            "type": "array",
+            "title": "Projects"
+          },
+          "portfolio": {
+            "$ref": "#/components/schemas/MetricPlaceholder"
+          },
+          "receivables": {
+            "$ref": "#/components/schemas/MetricPlaceholder"
+          },
+          "average_margin": {
+            "$ref": "#/components/schemas/MetricPlaceholder"
+          },
+          "pending_approvals": {
+            "$ref": "#/components/schemas/PendingApprovalsPlaceholder"
+          },
+          "risks": {
+            "$ref": "#/components/schemas/ListPlaceholder"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role_name",
+          "active_project_count",
+          "projects",
+          "portfolio",
+          "receivables",
+          "average_margin",
+          "pending_approvals",
+          "risks"
+        ],
+        "title": "DashboardSummaryResponse"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2215,6 +2333,32 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "ListPlaceholder": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "default": false
+          },
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "pending_module": {
+            "type": "string",
+            "title": "Pending Module"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pending_module"
+        ],
+        "title": "ListPlaceholder",
+        "description": "Liste tipli kart (risk uyarilari)."
       },
       "LoginRequest": {
         "properties": {
@@ -2273,6 +2417,37 @@
           "status"
         ],
         "title": "MeResponse"
+      },
+      "MetricPlaceholder": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "default": false
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "pending_module": {
+            "type": "string",
+            "title": "Pending Module"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pending_module"
+        ],
+        "title": "MetricPlaceholder",
+        "description": "Tek degerli KPI karti. v1'de veri kaynagi olmayan kartlar icin.\n\navailable alani bilincli olarak vardir: frontend sabite degil veriye dallanir,\nilgili alt-proje geldiginde backend true dondurmeye baslar (spec §2.3)."
       },
       "ModuleGroup": {
         "type": "string",
@@ -2411,6 +2586,37 @@
           "new_password"
         ],
         "title": "PasswordReset"
+      },
+      "PendingApprovalsPlaceholder": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "default": false
+          },
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "pending_module": {
+            "type": "string",
+            "title": "Pending Module"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "pending_module"
+        ],
+        "title": "PendingApprovalsPlaceholder",
+        "description": "Onay bekleyenler karti — rozet sayaci tasir."
       },
       "PermissionCell": {
         "properties": {

@@ -156,6 +156,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dashboard/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Dashboard Summary Endpoint */
+        get: operations["get_dashboard_summary_endpoint_dashboard_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/projects": {
         parameters: {
             query?: never;
@@ -555,10 +572,56 @@ export interface components {
             /** Auto Einvoice */
             auto_einvoice?: boolean | null;
         };
+        /** DashboardProjectCard */
+        DashboardProjectCard: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            status: components["schemas"]["ProjectStatus"];
+            /** Budget */
+            budget: string;
+            /** Progress Pct */
+            progress_pct: string;
+        };
+        /** DashboardSummaryResponse */
+        DashboardSummaryResponse: {
+            /** Role Name */
+            role_name: string;
+            /** Active Project Count */
+            active_project_count: number;
+            /** Projects */
+            projects: components["schemas"]["DashboardProjectCard"][];
+            portfolio: components["schemas"]["MetricPlaceholder"];
+            receivables: components["schemas"]["MetricPlaceholder"];
+            average_margin: components["schemas"]["MetricPlaceholder"];
+            pending_approvals: components["schemas"]["PendingApprovalsPlaceholder"];
+            risks: components["schemas"]["ListPlaceholder"];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * ListPlaceholder
+         * @description Liste tipli kart (risk uyarilari).
+         */
+        ListPlaceholder: {
+            /**
+             * Available
+             * @default false
+             */
+            available: boolean;
+            /** Items */
+            items?: string[];
+            /** Pending Module */
+            pending_module: string;
         };
         /** LoginRequest */
         LoginRequest: {
@@ -589,6 +652,24 @@ export interface components {
             /** Role Key */
             role_key: string;
             status: components["schemas"]["UserStatus"];
+        };
+        /**
+         * MetricPlaceholder
+         * @description Tek degerli KPI karti. v1'de veri kaynagi olmayan kartlar icin.
+         *
+         *     available alani bilincli olarak vardir: frontend sabite degil veriye dallanir,
+         *     ilgili alt-proje geldiginde backend true dondurmeye baslar (spec §2.3).
+         */
+        MetricPlaceholder: {
+            /**
+             * Available
+             * @default false
+             */
+            available: boolean;
+            /** Value */
+            value?: string | null;
+            /** Pending Module */
+            pending_module: string;
         };
         /**
          * ModuleGroup
@@ -643,6 +724,26 @@ export interface components {
         PasswordReset: {
             /** New Password */
             new_password: string;
+        };
+        /**
+         * PendingApprovalsPlaceholder
+         * @description Onay bekleyenler karti — rozet sayaci tasir.
+         */
+        PendingApprovalsPlaceholder: {
+            /**
+             * Available
+             * @default false
+             */
+            available: boolean;
+            /** Items */
+            items?: string[];
+            /** Pending Module */
+            pending_module: string;
+            /**
+             * Count
+             * @default 0
+             */
+            count: number;
         };
         /** PermissionCell */
         PermissionCell: {
@@ -1299,6 +1400,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_dashboard_summary_endpoint_dashboard_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardSummaryResponse"];
+                };
             };
             /** @description Yetkisiz işlem */
             403: {
