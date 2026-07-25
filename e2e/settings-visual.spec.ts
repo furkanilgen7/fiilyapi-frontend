@@ -31,3 +31,47 @@ test("gorsel: ayarlar izin matrisi", async ({ page }) => {
   await expect(page.locator(".matrix-wrap").getByText("Genel")).toBeVisible();
   await expect(page).toHaveScreenshot("ayarlar-izin-matrisi.png", { fullPage: true });
 });
+
+test("gorsel: ayarlar sirket bilgileri", async ({ page }) => {
+  await login(page);
+  await page.goto("/ayarlar/sirket-bilgileri");
+  await expect(page.getByText("Firma Bilgileri")).toBeVisible();
+  await expect(page).toHaveScreenshot("ayarlar-sirket-bilgileri.png", { fullPage: true });
+});
+
+test("gorsel: ayarlar bildirimler", async ({ page }) => {
+  await login(page);
+  await page.goto("/ayarlar/bildirimler");
+  await expect(page.getByText("Hakediş & Ödeme")).toBeVisible();
+  await expect(page).toHaveScreenshot("ayarlar-bildirimler.png", { fullPage: true });
+});
+
+test("gorsel: ayarlar gorunum", async ({ page }) => {
+  await login(page);
+  await page.goto("/ayarlar/gorunum");
+  // "Tema" hem karta baslik hem de olasi baska yerlerde gecebilir; kart basligina
+  // (span.s-card__title) sabitleyerek sidebar'daki "Görünüm" ile karisikligi onluyoruz.
+  await expect(page.getByText("Tema", { exact: true })).toBeVisible();
+  await expect(page).toHaveScreenshot("ayarlar-gorunum.png", { fullPage: true });
+});
+
+test("gorsel: ayarlar entegrasyonlar", async ({ page }) => {
+  await login(page);
+  await page.goto("/ayarlar/entegrasyonlar");
+  await expect(page.getByText("GİB e-Fatura")).toBeVisible();
+  await expect(page).toHaveScreenshot("ayarlar-entegrasyonlar.png", { fullPage: true });
+});
+
+test("gorsel: ayarlar yedekleme", async ({ page }) => {
+  await login(page);
+  await page.goto("/ayarlar/yedekleme");
+  await expect(page.getByText("Depolama Kullanımı")).toBeVisible();
+  await expect(page).toHaveScreenshot("ayarlar-yedekleme.png", { fullPage: true });
+});
+
+test("gorsel: ayarlar denetim gunlugu", async ({ page }) => {
+  await login(page);
+  await page.goto("/ayarlar/denetim-gunlugu");
+  await expect(page.getByText("Sistemdeki tüm işlemler ve değişiklikler")).toBeVisible();
+  await expect(page).toHaveScreenshot("ayarlar-denetim-gunlugu.png", { fullPage: true });
+});

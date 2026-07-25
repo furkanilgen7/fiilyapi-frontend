@@ -44,3 +44,17 @@ test("ayarlar: sidebar gezinme + rol goruntule + matris hucre degisimi", async (
   await cell.selectOption({ label: "Tam" });
   await expect(cell).toHaveValue("full");
 });
+
+test("ayarlar: geri don linki gosterge paneline doner", async ({ page }) => {
+  await login(page);
+
+  await page.goto("/ayarlar/kullanicilar");
+  await expect(page.getByRole("cell", { name: "Ahmet Yılmaz" })).toBeVisible();
+
+  await settingsSidebar(page)
+    .getByRole("link", { name: /Gösterge Paneli/ })
+    .click();
+
+  await expect(page).toHaveURL("/");
+  await expect(page.getByRole("heading", { name: /Hoş geldiniz/ })).toBeVisible();
+});
