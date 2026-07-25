@@ -113,7 +113,7 @@ export function PermissionMatrix() {
                   <th
                     key={role.id}
                     className="matrix-role-head"
-                    style={{ color: roleVisual(role.key).badgeText }}
+                    style={{ color: roleVisual(role.key).headText }}
                   >
                     <span className="matrix-role-head__emoji" aria-hidden="true">
                       {role.emoji}

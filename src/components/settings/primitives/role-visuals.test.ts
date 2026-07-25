@@ -20,4 +20,17 @@ describe("roleVisual", () => {
     expect(v.badgeText).toBe("var(--color-text-muted)");
     expect(v.gradFrom).toBe("var(--color-text-subtle)");
   });
+  it("system_admin için matris başlığında koyu metin (headText) döner, badgeText beyaz kalır", () => {
+    const v = roleVisual("system_admin");
+    expect(v.headText).toBe("var(--color-text)");
+    expect(v.badgeText).toBe("var(--color-on-brand)");
+  });
+  it("accounting için headText mor aile ile eşleşir", () => {
+    const v = roleVisual("accounting");
+    expect(v.headText).toBe("var(--color-accent-purple)");
+  });
+  it("bilinmeyen rol için headText nötr text-secondary fallback döner", () => {
+    const v = roleVisual("unknown_xyz");
+    expect(v.headText).toBe("var(--color-text-secondary)");
+  });
 });
