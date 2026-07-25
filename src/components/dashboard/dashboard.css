@@ -65,3 +65,78 @@
   color: var(--color-text-subtle);
   margin-top: 2px;
 }
+
+/* Proje izgarasi — mockup satir 258-299 */
+.dash-projects {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.dash-projects-empty {
+  margin-bottom: 16px;
+}
+.dash-project {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14);
+  box-shadow: var(--shadow-card);
+  padding: 18px;
+}
+.dash-project__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--color-text-subtle);
+  margin-bottom: 4px;
+}
+.dash-project__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-success-strong);
+}
+.dash-project--on_hold .dash-project__dot {
+  background: var(--color-warning);
+}
+.dash-project--completed .dash-project__dot {
+  background: var(--color-text-muted);
+}
+.dash-project__name {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 18px;
+  color: var(--color-text);
+  margin-bottom: 12px;
+}
+.dash-project__value {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 26px;
+  color: var(--color-text);
+  margin-bottom: 2px;
+}
+.dash-project__value-label {
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--color-text-subtle);
+  margin-bottom: 10px;
+}
+.dash-bar--project {
+  height: 3px;
+}
+.dash-project--on_hold .dash-project__fill {
+  background: var(--color-warning);
+}
+.dash-project--completed .dash-project__fill {
+  background: var(--color-text-muted);
+}
+.dash-project__progress {
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--color-text-subtle);
+  margin-top: 6px;
+}
