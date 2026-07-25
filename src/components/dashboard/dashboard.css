@@ -140,3 +140,84 @@
   color: var(--color-text-subtle);
   margin-top: 6px;
 }
+
+/* Sayfa duzeni ve alt satir — mockup satir 181-352 */
+.dash {
+  animation: var(--anim-fade-up);
+}
+.dash__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-text-subtle);
+  margin-bottom: 6px;
+}
+.dash__title {
+  font-size: var(--text-page-title);
+  font-weight: 700;
+  line-height: 32px;
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+  margin-bottom: 24px;
+}
+.dash__top-row {
+  display: grid;
+  grid-template-columns: 1fr 280px 280px;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.dash__bottom-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.dash-list-card {
+  padding: 20px;
+}
+.dash-list-card__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+  color: var(--color-text);
+  margin-bottom: 16px;
+}
+.dash-list-card__badge {
+  background: var(--color-danger);
+  color: var(--color-on-brand);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  padding: 2px 7px;
+  border-radius: var(--radius-10);
+}
+.dash-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dash-list__row {
+  padding: 10px 12px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  font-size: 13px;
+  line-height: 18px;
+}
+.dash-risk {
+  padding: 12px;
+  border-radius: var(--radius-8);
+  border-left: 4px solid var(--color-warning);
+  background: var(--color-surface-2);
+  font-size: 13px;
+  line-height: 18px;
+}
+.dash-message {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--color-text-muted);
+}
