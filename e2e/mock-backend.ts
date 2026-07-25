@@ -37,7 +37,7 @@ interface MockState {
     brand_color: string;
     gib_integration_code: string | null;
     earsiv_portal: string | null;
-    default_vat_rate: number;
+    default_vat_rate: string;
     auto_einvoice: boolean;
     has_logo: boolean;
     logo_url: string;
@@ -111,7 +111,7 @@ function seedState(): MockState {
       brand_color: "#2563eb",
       gib_integration_code: null,
       earsiv_portal: null,
-      default_vat_rate: 20,
+      default_vat_rate: "20.00",
       auto_einvoice: false,
       has_logo: false,
       logo_url: "",
