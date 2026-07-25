@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
 import { AccessChip } from "@/components/settings/primitives/AccessChip";
+import { roleVisual } from "@/components/settings/primitives/role-visuals";
 import { useModules } from "@/lib/api/hooks/useModules";
 import { useRoles } from "@/lib/api/hooks/useRoles";
 import { useAllRolePermissions } from "@/lib/api/hooks/useRolePermissions";
@@ -15,6 +15,20 @@ import "./users-preview.css";
 // Kullanıcılar sayfasının altındaki koşullandırılmış "İzin Matrisi" özet kartı
 // (ref §B.1: 9 modül, gruplama yok, tam editör Ayarlar > İzin Matrisi sayfasındadır).
 const PREVIEW_MODULE_COUNT = 9;
+
+// Mockup'ta (Ayarlar.dc.html §242-246) kolon başlıkları kısa rol adları kullanır
+// (Patron/Şef/Muhasebe/PM/Satın.); tanımsız roller için tam ada düşülür.
+const SHORT_COLUMN_LABEL: Record<string, string> = {
+  patron: "Patron",
+  site_chief: "Şef",
+  accounting: "Muhasebe",
+  project_manager: "PM",
+  procurement: "Satın.",
+};
+
+function columnLabel(role: RoleResponse): string {
+  return SHORT_COLUMN_LABEL[role.key] ?? role.name;
+}
 
 function presetForCell(cell: PermissionCell | undefined): { key: PresetKey | ""; label: string } {
   const level = cell?.access_level ?? "none";
@@ -29,7 +43,6 @@ export function PermissionMatrixPreviewCard() {
   const roles: RoleResponse[] = rolesQuery.data ?? [];
   const roleIds = roles.map((r) => r.id);
   const permQueries = useAllRolePermissions(roleIds);
-  const router = useRouter();
 
   const isLoading = modulesQuery.isLoading || rolesQuery.isLoading;
   const forbidden =
@@ -50,7 +63,15 @@ export function PermissionMatrixPreviewCard() {
   });
 
   return (
-    <SettingsCard title="İzin Matrisi" bodyPad="flush">
+    <SettingsCard
+      title={
+        <span className="matrix-preview-heading">
+          İzin Matrisi
+          <span className="matrix-preview-heading__sub">Modül bazlı erişim kontrolü</span>
+        </span>
+      }
+      bodyPad="flush"
+    >
       {isLoading && <p className="settings-note">Yükleniyor…</p>}
       {forbidden && <p className="settings-note">Bu içeriği görüntüleme izniniz yok.</p>}
       {!forbidden && isError && !isLoading && (
@@ -60,10 +81,12 @@ export function PermissionMatrixPreviewCard() {
         <table className="matrix-preview-table">
           <thead>
             <tr>
-              <th>Modül</th>
+              <th className="matrix-preview-table__head-module">Modül</th>
               {roles.map((role) => (
-                <th key={role.id}>
-                  <span aria-hidden="true">{role.emoji}</span> {role.name}
+                <th key={role.id} className="matrix-preview-table__head-role" style={{ color: roleVisual(role.key).headText }}>
+                  <span aria-hidden="true">{role.emoji}</span>
+                  <br />
+                  {columnLabel(role)}
                 </th>
               ))}
             </tr>
@@ -78,7 +101,7 @@ export function PermissionMatrixPreviewCard() {
                   const cell = permByRole[role.id]?.[module.key];
                   const { key, label } = presetForCell(cell);
                   return (
-                    <td key={role.id}>
+                    <td key={role.id} className="matrix-preview-table__cell">
                       <AccessChip presetKey={key} label={label} />
                     </td>
                   );
@@ -88,9 +111,6 @@ export function PermissionMatrixPreviewCard() {
           </tbody>
         </table>
       )}
-      <button className="users-edit matrix-preview-link" onClick={() => router.push("/ayarlar/izin-matrisi")}>
-        Tüm izin matrisini görüntüle →
-      </button>
     </SettingsCard>
   );
 }

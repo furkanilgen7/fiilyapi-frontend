@@ -1,4 +1,5 @@
 .company-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.company-card__title { font-size: 14px; font-weight: 600; color: var(--color-text); margin-bottom: 16px; }
 .company-form { display: flex; flex-direction: column; gap: 12px; }
 .company-field { display: flex; flex-direction: column; gap: 4px; }
 .company-field__label { font-size: 12px; font-weight: 500; color: var(--color-text-muted); }
@@ -13,11 +14,13 @@
   width: 80px; height: 80px; border-radius: var(--radius-lg); background: var(--gradient-logo-tile);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
+.company-logo__name { font-size: 13px; font-weight: 600; color: var(--color-text); margin-bottom: 4px; }
 .company-logo__caption { font-size: 12px; color: var(--color-text-subtle); margin-bottom: 10px; }
+.company-color-field { margin-top: 14px; }
 .company-color-row { display: flex; align-items: center; gap: 8px; }
 .company-color-row input { width: 100px; flex: 0 0 auto; font-size: 12px; padding: 6px 10px; border-radius: 7px; }
 .company-swatch {
-  width: 32px; height: 32px; border-radius: var(--radius-8);
+  width: 32px; height: 32px; border-radius: var(--radius-6);
   border: 2px solid var(--color-primary-ring); cursor: pointer; flex-shrink: 0;
 }
 .company-toggle-row {

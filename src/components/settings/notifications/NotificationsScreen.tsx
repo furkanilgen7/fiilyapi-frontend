@@ -44,26 +44,28 @@ export function NotificationsScreen() {
             <div className="notif-card__head">
               <span aria-hidden="true">{g.emoji}</span> {g.heading}
             </div>
-            {g.items.map((it) => {
-              const display = NOTIF_EVENT_DISPLAY[it.event_key];
-              const name = display?.name ?? it.label;
-              const desc = display?.desc ?? "";
-              return (
-                <div key={it.event_key} className="notif-row">
-                  <div>
-                    <div className="notif-row__name">{name}</div>
-                    {desc && <div className="notif-row__desc">{desc}</div>}
+            <div className="notif-card__rows">
+              {g.items.map((it) => {
+                const display = NOTIF_EVENT_DISPLAY[it.event_key];
+                const name = display?.name ?? it.label;
+                const desc = display?.desc ?? "";
+                return (
+                  <div key={it.event_key} className="notif-row">
+                    <div>
+                      <div className="notif-row__name">{name}</div>
+                      {desc && <div className="notif-row__desc">{desc}</div>}
+                    </div>
+                    <div className="notif-row__channels">
+                      {CHANNELS.map((ch) => (
+                        <label key={ch} className="notif-channel">
+                          <input type="checkbox" checked={it[ch]} onChange={() => toggle(it.event_key, ch)} /> {CHANNEL_LABEL[ch]}
+                        </label>
+                      ))}
+                    </div>
                   </div>
-                  <div className="notif-row__channels">
-                    {CHANNELS.map((ch) => (
-                      <label key={ch} className="notif-channel">
-                        <input type="checkbox" checked={it[ch]} onChange={() => toggle(it.event_key, ch)} /> {CHANNEL_LABEL[ch]}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </SettingsCard>
         ))}
       </div>

@@ -80,7 +80,8 @@ export function AppearanceScreen() {
   return (
     <>
       <div className="appearance-grid">
-        <SettingsCard title="Tema">
+        <SettingsCard>
+          <div className="appearance-card__title">Tema</div>
           <div className="theme-cards">
             {THEMES.map((t) => {
               const active = t.enabled && form.theme === t.key;
@@ -107,7 +108,8 @@ export function AppearanceScreen() {
           </div>
         </SettingsCard>
 
-        <SettingsCard title="Vurgu Rengi">
+        <SettingsCard>
+          <div className="appearance-card__title">Vurgu Rengi</div>
           <div className="accent-swatches">
             {ACCENT_COLORS.map((color) => (
               <button
@@ -122,7 +124,8 @@ export function AppearanceScreen() {
           </div>
         </SettingsCard>
 
-        <SettingsCard title="Dil & Bölge">
+        <SettingsCard>
+          <div className="appearance-card__title">Dil &amp; Bölge</div>
           <div className="pref-fields">
             <label className="pref-field">
               <span className="pref-field__label">Arayüz Dili</span>
@@ -157,7 +160,8 @@ export function AppearanceScreen() {
           </div>
         </SettingsCard>
 
-        <SettingsCard title="Arayüz Yoğunluğu">
+        <SettingsCard>
+          <div className="appearance-card__title">Arayüz Yoğunluğu</div>
           <div className="density-rows">
             {DENSITY_OPTIONS.map((opt) => {
               const active = form.density === opt.value;

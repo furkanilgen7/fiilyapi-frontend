@@ -26,6 +26,7 @@
   --color-success: #16a34a;
   --color-success-strong: #22c55e;
   --color-success-soft: #dcfce7;
+  --color-success-deep: #15803d; /* Rol Yönetimi: "tam erisim" banner metni */
   --color-warning: #f59e0b;
   --color-warning-soft: #fef3c7;
   --color-danger: #ef4444;
@@ -40,9 +41,13 @@
   --color-on-brand: #ffffff;
   --color-on-brand-85: rgba(255, 255, 255, 0.85);
   --color-on-brand-70: rgba(255, 255, 255, 0.7);
+  --color-on-brand-65: rgba(255, 255, 255, 0.65); /* Rol Yönetimi: sistem rol karti ozet metni */
   --color-on-brand-60: rgba(255, 255, 255, 0.6);
+  --color-on-brand-50: rgba(255, 255, 255, 0.5); /* Rol Yönetimi: sistem rol karti kullanici sayisi */
   --color-on-brand-40: rgba(255, 255, 255, 0.4);
+  --color-on-brand-20: rgba(255, 255, 255, 0.2);
   --color-on-brand-15: rgba(255, 255, 255, 0.15);
+  --color-on-brand-80: rgba(255, 255, 255, 0.8);
   --color-text-strong: #0f172a;
   --color-label: #475569; /* sabitlenmis label rengi */
 
@@ -132,6 +137,10 @@
   --color-success-tint: #f0fdf4;
   --color-success-tint-border: #bbf7d0;
 
+  /* Entegrasyon ikon rozeti tonlari (Ayarlar > Entegrasyonlar, mockup-derived) */
+  --color-amber-tint: #fef9f0;
+  --color-purple-tint: #fdf4ff;
+
   /* Sistem rolü gradyan/çerçeve + koyu grup başlığı */
   --color-slate-700: #334155;
 
@@ -139,6 +148,15 @@
   --color-warning-strong: #d97706;
   --color-danger-strong: #dc2626;
   --color-audit-danger-row-bg: #fff7f7;
+
+  /* Kabuk sidebar (mockup Ekran 1) — kullanıcı avatarı gradyanı + Çıkış butonu tonu */
+  --gradient-avatar-blue: linear-gradient(135deg, var(--color-primary), var(--color-avatar-blue-end));
+  --color-danger-tint: #fff0f0;
+  --color-danger-tint-border: #fecaca;
+
+  /* Giriş ekranı (mockup Giriş.dc.html) — form etiketi ve birincil buton gölgesi */
+  --color-form-label: #374151;
+  --shadow-primary-btn: 0 4px 12px rgba(37, 99, 235, 0.25);
 }
 
 @keyframes fadeUp {

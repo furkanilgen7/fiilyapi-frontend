@@ -17,6 +17,7 @@ import {
   type PresetKey,
 } from "@/lib/api/permission-presets";
 import { isForbidden } from "@/lib/api/unwrap";
+import { cx } from "@/lib/cx";
 import { AccessDenied } from "../AccessDenied";
 import type { ModuleGroup, ModuleResponse, PermissionCell } from "@/lib/api/models";
 import "../settings.css";
@@ -143,9 +144,13 @@ export function PermissionMatrix() {
                         const readOnly = role.key === SYSTEM_ADMIN_KEY;
                         if (readOnly) {
                           const label = PRESETS.find((p) => p.key === presetKey)?.label ?? "Özel";
+                          const isFull = presetKey === "super" || presetKey === "full";
                           return (
-                            <td key={role.id} className="matrix-cell--readonly">
-                              {label}
+                            <td
+                              key={role.id}
+                              className={cx("matrix-cell--readonly", isFull && "matrix-cell--full")}
+                            >
+                              {isFull ? `✓ ${label}` : label}
                             </td>
                           );
                         }

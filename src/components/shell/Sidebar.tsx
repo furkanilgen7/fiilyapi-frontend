@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { cx } from "@/lib/cx";
 import { initials } from "@/lib/shell/initials";
 import { isActivePath } from "@/lib/shell/isActive";
-import { SettingsIcon } from "@/components/ui/icons";
+import { LockIcon } from "@/components/ui/icons";
 import { NAV_GROUPS } from "./nav-config";
 import { useSession } from "./SessionProvider";
 import "./sidebar.css";
@@ -35,7 +35,7 @@ export default function Sidebar() {
                   className={cx("sidebar-item", active && "sidebar-item--active")}
                   aria-current={active ? "page" : undefined}
                 >
-                  <Icon width={18} height={18} className="sidebar-item__icon" />
+                  <Icon width={16} height={16} className="sidebar-item__icon" />
                   <span>{label}</span>
                 </Link>
               );
@@ -51,13 +51,14 @@ export default function Sidebar() {
             <span className="sidebar-user__name">{me?.full_name ?? ""}</span>
             <span className="sidebar-user__role">{me?.title ?? ""}</span>
           </span>
+          <LockIcon className="sidebar-user__lock" />
         </Link>
         <div className="sidebar-user__actions">
           <Link href="/ayarlar" className="sidebar-user__btn">
-            <SettingsIcon width={14} height={14} /> Ayarlar
+            <span aria-hidden="true">⚙️</span> Ayarlar
           </Link>
           <button type="button" className="sidebar-user__btn sidebar-user__btn--logout" onClick={handleLogout}>
-            Çıkış
+            <span aria-hidden="true">🚪</span> Çıkış
           </button>
         </div>
       </div>

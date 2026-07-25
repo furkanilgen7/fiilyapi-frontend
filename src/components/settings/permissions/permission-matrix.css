@@ -31,6 +31,12 @@
   display: block;
 }
 
+/* Mockup ref: thead satiri #f8fafc zemin + 2px alt cizgi (§B.3). */
+.matrix-table thead th {
+  background: var(--color-surface-2);
+  border-bottom: 2px solid var(--color-border);
+}
+
 /* Grup başlığı satırı — mockup'ta GENEL koyu, diğerleri (SAHA/STOK & SATINALMA/MALİ/SİSTEM) açık. */
 .matrix-group-row--dark th {
   background: var(--color-text);
@@ -68,8 +74,13 @@
   font-weight: 500;
 }
 
+/* Mockup ref: Sistem Yoneticisi kolonu her zaman salt-okunur; tam erisim yesil/kalin (§B.3). */
 .matrix-cell--readonly {
-  color: var(--color-text-muted);
+  color: var(--color-border-strong);
+}
+.matrix-cell--readonly.matrix-cell--full {
+  color: var(--color-success);
+  font-weight: 700;
 }
 
 .matrix-actions {

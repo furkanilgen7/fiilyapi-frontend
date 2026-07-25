@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui";
 import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
+import { roleVisual } from "@/components/settings/primitives/role-visuals";
 import { useRoles } from "@/lib/api/hooks/useRoles";
 import type { RoleResponse, UserResponse } from "@/lib/api/models";
 import "@/components/settings/settings.css";
@@ -35,21 +36,33 @@ export function RolesPreviewCard({ users }: { users: UserResponse[] }) {
       {rolesQuery.isError && <p className="settings-note settings-note--error">Roller yüklenemedi.</p>}
       {roles.length > 0 && (
         <div className="roles-preview-list">
-          {roles.map((role) => (
-            <div key={role.id} className="roles-preview-item">
-              <span className="roles-preview-item__emoji" aria-hidden="true">
-                {role.emoji}
-              </span>
-              <div className="roles-preview-item__body">
-                <div className="roles-preview-item__name">{role.name}</div>
+          {roles.map((role) => {
+            const visual = roleVisual(role.key);
+            return (
+              <div key={role.id} className="roles-preview-item">
+                <div className="roles-preview-item__head">
+                  <span className="roles-preview-item__label">
+                    <span className="roles-preview-item__emoji" aria-hidden="true">
+                      {role.emoji}
+                    </span>
+                    <span className="roles-preview-item__name">{role.name}</span>
+                  </span>
+                  <span className="roles-preview-item__meta">
+                    <span
+                      className="roles-preview-item__count"
+                      style={{ background: visual.badgeBg, color: visual.badgeText }}
+                    >
+                      {countByRole(users, role.id)} kullanıcı
+                    </span>
+                    <button className="users-edit" onClick={() => router.push("/ayarlar/roller")}>
+                      Düzenle
+                    </button>
+                  </span>
+                </div>
                 <div className="roles-preview-item__summary">{role.description}</div>
               </div>
-              <span className="roles-preview-item__count">{countByRole(users, role.id)} kullanıcı</span>
-              <button className="users-edit" onClick={() => router.push("/ayarlar/roller")}>
-                Düzenle
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </SettingsCard>

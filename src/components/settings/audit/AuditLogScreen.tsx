@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui";
+import { SearchIcon } from "@/components/ui/icons";
 import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { useAuditLog, AUDIT_PAGE_SIZE } from "@/lib/api/hooks/useAuditLog";
@@ -67,13 +68,18 @@ export function AuditLogScreen() {
 
   const filterBar = (
     <div className="audit-filters">
-      <input
-        type="search"
-        placeholder="Kullanıcı veya işlem ara..."
-        aria-label="Kullanıcı veya işlem ara"
-        disabled
-        title="Metin araması backend'de henüz desteklenmiyor"
-      />
+      {/* Mockup'ta kutu içinde büyüteç ikonu var; arama backend'de `q` desteklenmediği
+          için kutu görsel olarak birebir ama devre dışı bırakılmış durumda. */}
+      <span className="audit-search">
+        <SearchIcon />
+        <input
+          type="text"
+          placeholder="Kullanıcı veya işlem ara..."
+          aria-label="Kullanıcı veya işlem ara"
+          disabled
+          title="Metin araması backend'de henüz desteklenmiyor"
+        />
+      </span>
       <select
         aria-label="Kullanıcı filtresi"
         value={filters.actorUserId ?? ALL_VALUE}
@@ -113,8 +119,13 @@ export function AuditLogScreen() {
           </option>
         ))}
       </select>
-      <span className="audit-filters__spacer" />
-      <Button variant="ghost" size="sm" onClick={handleExport} disabled={isExporting}>
+      <Button
+        variant="secondary"
+        size="sm"
+        className="audit-export"
+        onClick={handleExport}
+        disabled={isExporting}
+      >
         Excel
       </Button>
     </div>
@@ -132,7 +143,7 @@ export function AuditLogScreen() {
             <tr>
               <th>Zaman</th>
               <th>Kullanıcı</th>
-              <th>İşlem</th>
+              <th className="audit-table__center">İşlem</th>
               <th>Detay</th>
               <th>IP Adresi</th>
             </tr>
@@ -145,13 +156,13 @@ export function AuditLogScreen() {
                   <div className="audit-user__name">{auditActorName(item.actor)}</div>
                   <div className="audit-user__role">{auditActorRole(item.actor)}</div>
                 </td>
-                <td>
+                <td className="audit-table__center">
                   <span className={cx("audit-badge", `audit-badge--${item.action}`)}>
                     {AUDIT_ACTION_LABEL[item.action]}
                   </span>
                 </td>
                 <td>{item.detail}</td>
-                <td className="is-mono">{auditIpText(item.ip_address)}</td>
+                <td className="is-mono is-ip">{auditIpText(item.ip_address)}</td>
               </tr>
             ))}
           </tbody>
@@ -190,10 +201,6 @@ export function AuditLogScreen() {
           </Button>
         </div>
       )}
-
-      <p className="settings-note">
-        {"Metin araması backend'de henüz desteklenmiyor; kullanıcı, işlem ve tarih filtreleri etkindir."}
-      </p>
     </>
   );
 }

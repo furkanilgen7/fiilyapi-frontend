@@ -109,7 +109,12 @@ export default function LoginForm() {
       </div>
 
       <div className="login-field">
-        <label htmlFor="password">Şifre</label>
+        <div className="login-field__head">
+          <label htmlFor="password">Şifre</label>
+          {/* Mockup'ta "Şifremi unuttum" bağlantısı var; şifre sıfırlama akışı henüz
+              yok, bu yüzden görsel olarak birebir ama tıklanabilir değil. */}
+          <span className="login-field__link">Şifremi unuttum</span>
+        </div>
         <Input
           id="password"
           type={showPassword ? "text" : "password"}

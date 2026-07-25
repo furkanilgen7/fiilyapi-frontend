@@ -7,6 +7,7 @@ type Status = "connected" | "unconfigured" | "off";
 
 type IntegrationCard = {
   emoji: string;
+  iconTint: "success" | "brand" | "amber" | "purple";
   name: string;
   sub: string;
   desc: string;
@@ -18,7 +19,8 @@ type IntegrationCard = {
 // Sabit ornek veri; backend entegrasyonu yok (informational-only).
 const CARDS: IntegrationCard[] = [
   {
-    emoji: "🧾",
+    emoji: "🏛️",
+    iconTint: "success",
     name: "GİB e-Fatura",
     sub: "Gelir İdaresi Başkanlığı",
     desc: "Otomatik e-fatura gönderimi ve e-arşiv entegrasyonu",
@@ -27,7 +29,8 @@ const CARDS: IntegrationCard[] = [
     primary: false,
   },
   {
-    emoji: "📗",
+    emoji: "📄",
+    iconTint: "brand",
     name: "Logo e-Fatura",
     sub: "Logo Yazılım",
     desc: "Logo Tiger / Wings muhasebe entegrasyonu",
@@ -37,15 +40,17 @@ const CARDS: IntegrationCard[] = [
   },
   {
     emoji: "🏦",
+    iconTint: "amber",
     name: "Ziraat Bankası API",
-    sub: "Açık Bankacılık",
+    sub: "Banka ekstresi otomatik çekme",
     desc: "Günlük ekstre ve mutabakat otomasyonu",
     status: "connected",
     action: "Ayarlar",
     primary: false,
   },
   {
-    emoji: "📋",
+    emoji: "🏥",
+    iconTint: "purple",
     name: "SGK e-Bildirge",
     sub: "Sosyal Güvenlik Kurumu",
     desc: "Aylık SGK bildirgesi otomatik hazırlama",
@@ -54,7 +59,8 @@ const CARDS: IntegrationCard[] = [
     primary: true,
   },
   {
-    emoji: "💬",
+    emoji: "📱",
+    iconTint: "success",
     name: "WhatsApp Business",
     sub: "Bildirim ve onay mesajları",
     desc: "Hakediş ve onay bildirimlerini WhatsApp ile gönder",
@@ -64,6 +70,7 @@ const CARDS: IntegrationCard[] = [
   },
   {
     emoji: "☁️",
+    iconTint: "brand",
     name: "Bulut Depolama",
     sub: "OneDrive / Google Drive",
     desc: "Belge arşivini otomatik buluta yedekle",
@@ -89,7 +96,10 @@ export function IntegrationsScreen() {
         {CARDS.map((c) => (
           <SettingsCard key={c.name} bodyPad="tight">
             <div className="integration-card__head">
-              <span className="integration-card__icon" aria-hidden="true">
+              <span
+                className={cx("integration-card__icon", `integration-card__icon--${c.iconTint}`)}
+                aria-hidden="true"
+              >
                 {c.emoji}
               </span>
               <div>

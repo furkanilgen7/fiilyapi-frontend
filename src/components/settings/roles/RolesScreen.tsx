@@ -11,6 +11,7 @@ import { useUsers } from "@/lib/api/hooks/useUsers";
 import { RoleFormModal } from "@/components/settings/RoleFormModal";
 import { ConfirmDialog } from "@/components/settings/ConfirmDialog";
 import { AccessDenied } from "@/components/settings/AccessDenied";
+import { CheckCircleIcon } from "@/components/ui/icons";
 import { matchPreset } from "@/lib/api/permission-presets";
 import { roleModuleSummary } from "./role-summary";
 import { isForbidden } from "@/lib/api/unwrap";
@@ -197,7 +198,10 @@ export function RolesScreen() {
           </div>
           {copyError && <p className="settings-note settings-note--error role-detail__copy-error">{copyError}</p>}
           {selected.is_system && (
-            <div className="role-banner">✓ Bu rol tüm modüllere ve tüm sistem ayarlarına tam erişime sahiptir.</div>
+            <div className="role-banner">
+              <CheckCircleIcon className="role-banner__icon" aria-hidden="true" />
+              <span>Bu rol tüm modüllere ve tüm sistem ayarlarına tam erişime sahiptir.</span>
+            </div>
           )}
           <div className="role-modules__label">Modül Erişimleri</div>
           <div className="role-modules__list">
