@@ -3,6 +3,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PermissionMatrix } from "./PermissionMatrix";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ back: vi.fn(), refresh: vi.fn() }),
+}));
+
 function renderMatrix() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
