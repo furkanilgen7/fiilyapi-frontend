@@ -4,7 +4,7 @@ import { applyAuthCookies, buildAccessCookie, clearedAuthCookies } from "@/lib/a
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/auth/constants";
 
 // Yalniz beklenen kokler forward edilir (SSRF/kesif yuzeyini daraltir).
-const ALLOWED_ROOTS = new Set(["users", "roles", "modules", "projects", "company"]);
+const ALLOWED_ROOTS = new Set(["users", "roles", "modules", "projects", "company", "settings"]);
 
 type RouteCtx = { params: Promise<{ path: string[] }> };
 

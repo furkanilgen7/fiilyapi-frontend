@@ -1,0 +1,63 @@
+.notif-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.notif-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 18px;
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.notif-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.notif-row:last-child {
+  border-bottom: none;
+}
+
+.notif-row__name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.notif-row__desc {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+
+.notif-row__channels {
+  margin-left: auto;
+  display: flex;
+  gap: 20px;
+}
+
+.notif-channel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.notif-channel input {
+  accent-color: var(--color-primary);
+}
+
+.notif-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
