@@ -1,0 +1,67 @@
+.integrations-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.integration-card__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.integration-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  background: var(--color-primary-soft);
+}
+
+.integration-card__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.integration-card__sub {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+
+.integration-card__desc {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin: 12px 0;
+}
+
+.integration-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.integration-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: var(--radius-10);
+}
+
+.integration-badge--connected {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.integration-badge--unconfigured {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+}
+
+.integration-badge--off {
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+}
