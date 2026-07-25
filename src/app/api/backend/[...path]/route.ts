@@ -1,12 +1,61 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { proxyAuthenticated } from "@/lib/auth/backend";
+import { proxyAuthenticated, proxyAuthenticatedBinary } from "@/lib/auth/backend";
 import { applyAuthCookies, buildAccessCookie, clearedAuthCookies } from "@/lib/auth/cookies";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/auth/constants";
 
 // Yalniz beklenen kokler forward edilir (SSRF/kesif yuzeyini daraltir).
-const ALLOWED_ROOTS = new Set(["users", "roles", "modules", "projects", "company", "settings"]);
+const ALLOWED_ROOTS = new Set(["users", "roles", "modules", "projects", "company", "settings", "audit-log"]);
+
+// Ikili (binary) olarak aynen gecirilecek indirme uclari; JSON ayristirilmaz.
+const BINARY_DOWNLOAD_SUFFIXES = [".xlsx"];
+
+function isBinaryDownload(method: string, path: string[]): boolean {
+  if (method !== "GET") return false;
+  const last = path[path.length - 1];
+  return BINARY_DOWNLOAD_SUFFIXES.some((suffix) => last.endsWith(suffix));
+}
+
+function errorCodeFor(status: number): string {
+  if (status === 403) return "forbidden";
+  if (status >= 500) return "unavailable";
+  return "error";
+}
 
 type RouteCtx = { params: Promise<{ path: string[] }> };
+
+async function handleBinary(
+  method: string,
+  backendPath: string,
+  query: Record<string, string>,
+  access: string | undefined,
+  refresh: string | undefined,
+): Promise<NextResponse> {
+  let result;
+  try {
+    result = await proxyAuthenticatedBinary(access, refresh, backendPath, { method, query });
+  } catch {
+    return NextResponse.json({ ok: false, code: "unavailable" }, { status: 502 });
+  }
+
+  if (result.status === 401) {
+    const res = NextResponse.json({ ok: false, code: "unauthenticated" }, { status: 401 });
+    applyAuthCookies(res, clearedAuthCookies());
+    return res;
+  }
+
+  if (result.status >= 400 || !result.data) {
+    return NextResponse.json({ ok: false, code: errorCodeFor(result.status) }, { status: result.status });
+  }
+
+  const headers = new Headers();
+  headers.set("content-type", result.contentType ?? "application/octet-stream");
+  if (result.contentDisposition) headers.set("content-disposition", result.contentDisposition);
+  headers.set("cache-control", "no-store");
+
+  const res = new NextResponse(result.data, { status: result.status, headers });
+  if (result.refreshedAccessToken) applyAuthCookies(res, [buildAccessCookie(result.refreshedAccessToken)]);
+  return res;
+}
 
 async function handle(request: NextRequest, method: string, routeCtx: RouteCtx): Promise<NextResponse> {
   const { path } = await routeCtx.params;
@@ -25,6 +74,13 @@ async function handle(request: NextRequest, method: string, routeCtx: RouteCtx):
     query[key] = value;
   });
 
+  const access = request.cookies.get(ACCESS_COOKIE)?.value;
+  const refresh = request.cookies.get(REFRESH_COOKIE)?.value;
+
+  if (isBinaryDownload(method, path)) {
+    return handleBinary(method, backendPath, query, access, refresh);
+  }
+
   let body: unknown;
   if (method !== "GET" && method !== "DELETE") {
     try {
@@ -33,9 +89,6 @@ async function handle(request: NextRequest, method: string, routeCtx: RouteCtx):
       body = undefined;
     }
   }
-
-  const access = request.cookies.get(ACCESS_COOKIE)?.value;
-  const refresh = request.cookies.get(REFRESH_COOKIE)?.value;
 
   let result;
   try {

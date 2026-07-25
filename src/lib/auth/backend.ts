@@ -46,6 +46,52 @@ function request(path: string, accessToken: string | undefined, options: ProxyOp
   return fetch(buildUrl(path, query), init);
 }
 
+// Ikili (binary) indirmeler icin sonuc: govde ArrayBuffer olarak aynen tasinir,
+// Content-Type/Content-Disposition basliklari korunur (or. .xlsx disa aktarim).
+export interface ProxyBinaryResult {
+  status: number;
+  contentType: string | null;
+  contentDisposition: string | null;
+  data: ArrayBuffer | null;
+  refreshedAccessToken?: string;
+}
+
+async function binaryResult(response: Response, refreshedAccessToken?: string): Promise<ProxyBinaryResult> {
+  return {
+    status: response.status,
+    contentType: response.headers.get("content-type"),
+    contentDisposition: response.headers.get("content-disposition"),
+    // Hata govdesi cagirana sizdirilmaz; yalnizca basarili yanit tasinir.
+    data: response.ok ? await response.arrayBuffer() : null,
+    refreshedAccessToken,
+  };
+}
+
+// proxyAuthenticated ile ayni refresh davranisi, JSON ayristirmasi olmadan.
+export async function proxyAuthenticatedBinary(
+  accessToken: string | undefined,
+  refreshToken: string | undefined,
+  path: string,
+  options: ProxyOptions = {},
+): Promise<ProxyBinaryResult> {
+  const first = await request(path, accessToken, options);
+  if (first.status !== 401) return binaryResult(first);
+  if (!refreshToken) return { status: 401, contentType: null, contentDisposition: null, data: null };
+
+  const refreshed = await fetch(backendUrl() + "/auth/refresh", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+  if (!refreshed.ok) return { status: 401, contentType: null, contentDisposition: null, data: null };
+
+  const pair = (await parseBody(refreshed)) as TokenPair | null;
+  if (!pair?.access_token) return { status: 401, contentType: null, contentDisposition: null, data: null };
+
+  const retry = await request(path, pair.access_token, options);
+  return binaryResult(retry, pair.access_token);
+}
+
 // Backend'i Bearer ile cagirir; 401'de refresh token varsa /auth/refresh dener,
 // basarili ise yeni access token ile AYNI method+body+query ile bir kez retry eder.
 export async function proxyAuthenticated(

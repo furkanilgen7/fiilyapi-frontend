@@ -1,108 +1,130 @@
+"use client";
+
+import { useState } from "react";
 import { Button } from "@/components/ui";
 import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
+import { AccessDenied } from "@/components/settings/AccessDenied";
+import { useAuditLog, AUDIT_PAGE_SIZE } from "@/lib/api/hooks/useAuditLog";
+import { useUsers } from "@/lib/api/hooks/useUsers";
+import { downloadAuditExport } from "@/lib/api/audit-client";
+import { isForbidden } from "@/lib/api/unwrap";
+import { backendErrorMessage } from "@/lib/settings/error-message";
+import {
+  AUDIT_DATE_PRESETS,
+  DEFAULT_AUDIT_FILTERS,
+  buildAuditFilterQuery,
+  type AuditDatePreset,
+  type AuditFilters,
+} from "@/lib/settings/audit-query";
+import {
+  AUDIT_ACTION_LABEL,
+  auditActorName,
+  auditActorRole,
+  auditIpText,
+  formatAuditTime,
+} from "@/lib/settings/audit-format";
+import { isAuditAction, type AuditAction } from "@/lib/api/audit-types";
 import { cx } from "@/lib/cx";
+import "@/components/settings/settings.css";
 import "./audit-screen.css";
 
-type ActionType = "login" | "create" | "approve" | "update" | "delete" | "backup";
+const ALL_VALUE = "all";
+const USER_OPTIONS_LIMIT = 200;
 
-type AuditRow = {
-  time: string;
-  userName: string;
-  userRole: string;
-  actionType: ActionType;
-  actionLabel: string;
-  detail: string;
-  ip: string;
-  danger?: boolean;
-};
-
-const ACTION_BADGE_LABEL: Record<ActionType, string> = {
-  login: "Giriş",
-  create: "Oluşturma",
-  approve: "Onay",
-  update: "Güncelleme",
-  delete: "Silme",
-  backup: "Yedekleme",
-};
-
-// Sabit ornek veri; canli denetim gunlugu henuz aktif degil (informational-only).
-const ROWS: AuditRow[] = [
-  {
-    time: "17.07 09:14",
-    userName: "Ahmet Yılmaz",
-    userRole: "Patron",
-    actionType: "login",
-    actionLabel: ACTION_BADGE_LABEL.login,
-    detail: "Sisteme giriş yapıldı",
-    ip: "192.168.1.100",
-  },
-  {
-    time: "17.07 08:52",
-    userName: "Sercan Öztürk",
-    userRole: "Şantiye Şefi",
-    actionType: "create",
-    actionLabel: ACTION_BADGE_LABEL.create,
-    detail: "Günlük kayıt oluşturuldu · A-Blok · 17 Tem",
-    ip: "10.0.0.45",
-  },
-  {
-    time: "17.07 08:30",
-    userName: "Ayşe Demir",
-    userRole: "Muhasebe",
-    actionType: "approve",
-    actionLabel: ACTION_BADGE_LABEL.approve,
-    detail: "Hakediş #47 onaylandı · ₺1.240.000",
-    ip: "192.168.1.55",
-  },
-  {
-    time: "16.07 17:20",
-    userName: "Ahmet Yılmaz",
-    userRole: "Patron",
-    actionType: "update",
-    actionLabel: ACTION_BADGE_LABEL.update,
-    detail: "Kullanıcı rolü değiştirildi: Kadir Arslan → PM",
-    ip: "192.168.1.100",
-  },
-  {
-    time: "15.07 14:05",
-    userName: "Yusuf Kaya",
-    userRole: "Satınalma",
-    actionType: "delete",
-    actionLabel: ACTION_BADGE_LABEL.delete,
-    detail: "Taslak satın alma talebi silindi · SAT-2026-0041",
-    ip: "10.0.0.88",
-    danger: true,
-  },
-  {
-    time: "15.07 09:00",
-    userName: "Sistem",
-    userRole: "Otomatik",
-    actionType: "backup",
-    actionLabel: ACTION_BADGE_LABEL.backup,
-    detail: "Otomatik yedekleme tamamlandı · 2,3 GB",
-    ip: "—",
-  },
-];
+// Mockup'taki işlem seçicisi bu beş seçeneği listeler; `backup` yalnızca tablo
+// rozetinde görünür (mockup'ta seçici seçeneği yok — birebir korunur).
+const ACTION_OPTIONS: ReadonlyArray<AuditAction> = ["login", "create", "update", "delete", "approve"];
 
 export function AuditLogScreen() {
+  const [filters, setFilters] = useState<AuditFilters>(DEFAULT_AUDIT_FILTERS);
+  const [offset, setOffset] = useState(0);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const auditQuery = useAuditLog(filters, offset);
+  const usersQuery = useUsers({ limit: USER_OPTIONS_LIMIT, offset: 0 });
+
+  function updateFilters(patch: Partial<AuditFilters>) {
+    setFilters((current) => ({ ...current, ...patch }));
+    setOffset(0);
+  }
+
+  async function handleExport() {
+    setExportError(null);
+    setIsExporting(true);
+    try {
+      await downloadAuditExport(buildAuditFilterQuery(filters));
+    } catch (error) {
+      setExportError(backendErrorMessage(error, "Excel dosyası indirilemedi."));
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  const total = auditQuery.data?.total ?? 0;
+  const page = Math.floor(offset / AUDIT_PAGE_SIZE) + 1;
+  const pageCount = Math.max(1, Math.ceil(total / AUDIT_PAGE_SIZE));
+
+  const filterBar = (
+    <div className="audit-filters">
+      <input
+        type="search"
+        placeholder="Kullanıcı veya işlem ara..."
+        aria-label="Kullanıcı veya işlem ara"
+        disabled
+        title="Metin araması backend'de henüz desteklenmiyor"
+      />
+      <select
+        aria-label="Kullanıcı filtresi"
+        value={filters.actorUserId ?? ALL_VALUE}
+        onChange={(event) =>
+          updateFilters({ actorUserId: event.target.value === ALL_VALUE ? null : event.target.value })
+        }
+      >
+        <option value={ALL_VALUE}>Tüm Kullanıcılar</option>
+        {usersQuery.data?.items.map((user) => (
+          <option key={user.id} value={user.id}>
+            {user.full_name}
+          </option>
+        ))}
+      </select>
+      <select
+        aria-label="İşlem filtresi"
+        value={filters.action ?? ALL_VALUE}
+        onChange={(event) =>
+          updateFilters({ action: isAuditAction(event.target.value) ? event.target.value : null })
+        }
+      >
+        <option value={ALL_VALUE}>Tüm İşlemler</option>
+        {ACTION_OPTIONS.map((action) => (
+          <option key={action} value={action}>
+            {AUDIT_ACTION_LABEL[action]}
+          </option>
+        ))}
+      </select>
+      <select
+        aria-label="Tarih aralığı"
+        value={filters.datePreset}
+        onChange={(event) => updateFilters({ datePreset: event.target.value as AuditDatePreset })}
+      >
+        {AUDIT_DATE_PRESETS.map((preset) => (
+          <option key={preset.value} value={preset.value}>
+            {preset.label}
+          </option>
+        ))}
+      </select>
+      <span className="audit-filters__spacer" />
+      <Button variant="ghost" size="sm" onClick={handleExport} disabled={isExporting}>
+        Excel
+      </Button>
+    </div>
+  );
+
+  if (isForbidden(auditQuery.error)) return <AccessDenied />;
+
   return (
     <>
-      <div className="audit-filters">
-        <input type="search" placeholder="Kullanıcı veya işlem ara..." disabled />
-        <select disabled defaultValue="all-users">
-          <option value="all-users">Tüm Kullanıcılar</option>
-        </select>
-        <select disabled defaultValue="all-actions">
-          <option value="all-actions">Tüm İşlemler</option>
-        </select>
-        <select disabled defaultValue="last-7-days">
-          <option value="last-7-days">Son 7 Gün</option>
-        </select>
-        <span className="audit-filters__spacer" />
-        <Button variant="ghost" size="sm" disabled>
-          Excel
-        </Button>
-      </div>
+      {filterBar}
 
       <SettingsCard bodyPad="flush">
         <table className="audit-table">
@@ -116,25 +138,62 @@ export function AuditLogScreen() {
             </tr>
           </thead>
           <tbody>
-            {ROWS.map((row) => (
-              <tr key={`${row.time}-${row.userName}`} className={cx(row.danger && "audit-row--danger")}>
-                <td className="is-mono">{row.time}</td>
+            {auditQuery.data?.items.map((item) => (
+              <tr key={item.id} className={cx(item.action === "delete" && "audit-row--danger")}>
+                <td className="is-mono">{formatAuditTime(item.occurred_at)}</td>
                 <td>
-                  <div className="audit-user__name">{row.userName}</div>
-                  <div className="audit-user__role">{row.userRole}</div>
+                  <div className="audit-user__name">{auditActorName(item.actor)}</div>
+                  <div className="audit-user__role">{auditActorRole(item.actor)}</div>
                 </td>
                 <td>
-                  <span className={cx("audit-badge", `audit-badge--${row.actionType}`)}>{row.actionLabel}</span>
+                  <span className={cx("audit-badge", `audit-badge--${item.action}`)}>
+                    {AUDIT_ACTION_LABEL[item.action]}
+                  </span>
                 </td>
-                <td>{row.detail}</td>
-                <td className="is-mono">{row.ip}</td>
+                <td>{item.detail}</td>
+                <td className="is-mono">{auditIpText(item.ip_address)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </SettingsCard>
 
-      <p className="settings-note">Örnek kayıtlar (canlı denetim günlüğü henüz aktif değil).</p>
+      {auditQuery.isLoading && <p className="settings-note">Yükleniyor…</p>}
+      {!auditQuery.isLoading && auditQuery.isError && (
+        <p className="settings-note settings-note--error">Denetim günlüğü yüklenemedi.</p>
+      )}
+      {!auditQuery.isLoading && !auditQuery.isError && total === 0 && (
+        <p className="settings-note">Seçilen filtrelerle kayıt bulunamadı.</p>
+      )}
+      {exportError && <p className="settings-note settings-note--error">{exportError}</p>}
+
+      {pageCount > 1 && (
+        <div className="audit-pager">
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setOffset(Math.max(0, offset - AUDIT_PAGE_SIZE))}
+          >
+            Önceki
+          </Button>
+          <span className="audit-pager__label">
+            Sayfa {page} / {pageCount}
+          </span>
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={page >= pageCount}
+            onClick={() => setOffset(offset + AUDIT_PAGE_SIZE)}
+          >
+            Sonraki
+          </Button>
+        </div>
+      )}
+
+      <p className="settings-note">
+        {"Metin araması backend'de henüz desteklenmiyor; kullanıcı, işlem ve tarih filtreleri etkindir."}
+      </p>
     </>
   );
 }

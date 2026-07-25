@@ -45,6 +45,29 @@ test("ayarlar: sidebar gezinme + rol goruntule + matris hucre degisimi", async (
   await expect(cell).toHaveValue("full");
 });
 
+test("ayarlar: denetim gunlugu listeler, filtreler ve excel indirir", async ({ page }) => {
+  await login(page);
+  await page.goto("/ayarlar/denetim-gunlugu");
+
+  // Gercek kayitlar + aktorsuz satirin "Sistem / Otomatik" dususu
+  await expect(page.getByRole("cell", { name: "Sisteme giriş yapıldı" })).toBeVisible();
+  await expect(page.getByText("Sistem", { exact: true })).toBeVisible();
+  await expect(page.getByText("Otomatik", { exact: true })).toBeVisible();
+  await expect(page.locator(".audit-table tbody tr")).toHaveCount(6);
+
+  // Islem filtresi -> yalnizca silme satiri kalir
+  await page.getByLabel("İşlem filtresi").selectOption("delete");
+  await expect(page.locator(".audit-table tbody tr")).toHaveCount(1);
+  await expect(page.getByRole("cell", { name: /SAT-2026-0041/ })).toBeVisible();
+
+  // Excel indirmesi BFF ikili gecisinden gelir
+  await page.getByLabel("İşlem filtresi").selectOption("all");
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Excel" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("denetim-gunlugu.xlsx");
+});
+
 test("ayarlar: geri don linki gosterge paneline doner", async ({ page }) => {
   await login(page);
 

@@ -23,6 +23,18 @@
   flex: 1;
 }
 
+.audit-pager {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.audit-pager__label {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
 .audit-table {
   width: 100%;
   border-collapse: collapse;
