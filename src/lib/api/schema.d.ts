@@ -49,7 +49,8 @@ export interface paths {
         put?: never;
         /**
          * Logout
-         * @description Token'lar durumsuzdur; oturumu sonlandırmak cookie'yi silen BFF katmanının işidir.
+         * @description token_version'ı artırır — o ana dek basılmış tüm token'lar (access + refresh) geçersiz
+         *     olur (gerçek sunucu-taraflı çıkış). BFF ayrıca httpOnly cookie'yi siler.
          */
         post: operations["logout_auth_logout_post"];
         delete?: never;
@@ -70,6 +71,43 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/company": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Company Endpoint */
+        get: operations["get_company_endpoint_company_get"];
+        /** Update Company Endpoint */
+        put: operations["update_company_endpoint_company_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/company/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Logo Endpoint */
+        get: operations["get_logo_endpoint_company_logo_get"];
+        put?: never;
+        /** Upload Logo Endpoint */
+        post: operations["upload_logo_endpoint_company_logo_post"];
+        /** Delete Logo Endpoint */
+        delete: operations["delete_logo_endpoint_company_logo_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -196,6 +234,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/settings/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Preferences Endpoint */
+        get: operations["get_preferences_endpoint_settings_preferences_get"];
+        /** Update Preferences Endpoint */
+        put: operations["update_preferences_endpoint_settings_preferences_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settings/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Notifications Endpoint */
+        get: operations["get_notifications_endpoint_settings_notifications_get"];
+        /** Update Notifications Endpoint */
+        put: operations["update_notifications_endpoint_settings_notifications_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users": {
         parameters: {
             query?: never;
@@ -297,6 +371,88 @@ export interface components {
          * @enum {string}
          */
         AccessLevel: "none" | "view" | "draft" | "request" | "approve" | "full" | "admin";
+        /** Body_upload_logo_endpoint_company_logo_post */
+        Body_upload_logo_endpoint_company_logo_post: {
+            /** File */
+            file: string;
+        };
+        /**
+         * CompanyRead
+         * @description Sirket okuma modeli. Logo bytea'si ASLA burada donmez; yalnizca has_logo + logo_url.
+         */
+        CompanyRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string | null;
+            /** Tax Number */
+            tax_number: string | null;
+            /** Tax Office */
+            tax_office: string | null;
+            /** Trade Registry No */
+            trade_registry_no: string | null;
+            /** Kep Address */
+            kep_address: string | null;
+            /** Phone */
+            phone: string | null;
+            /** Email */
+            email: string | null;
+            /** Website */
+            website: string | null;
+            /** Address */
+            address: string | null;
+            /** Brand Color */
+            brand_color: string;
+            /** Gib Integration Code */
+            gib_integration_code: string | null;
+            /** Earsiv Portal */
+            earsiv_portal: string | null;
+            /** Default Vat Rate */
+            default_vat_rate: string;
+            /** Auto Einvoice */
+            auto_einvoice: boolean;
+            /** Has Logo */
+            has_logo: boolean;
+            /** Logo Url */
+            logo_url: string;
+        };
+        /**
+         * CompanyUpdate
+         * @description Kismi guncelleme — tum alanlar opsiyonel. Gonderilmeyen alan degismez.
+         */
+        CompanyUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Tax Number */
+            tax_number?: string | null;
+            /** Tax Office */
+            tax_office?: string | null;
+            /** Trade Registry No */
+            trade_registry_no?: string | null;
+            /** Kep Address */
+            kep_address?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Website */
+            website?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Brand Color */
+            brand_color?: string | null;
+            /** Gib Integration Code */
+            gib_integration_code?: string | null;
+            /** Earsiv Portal */
+            earsiv_portal?: string | null;
+            /** Default Vat Rate */
+            default_vat_rate?: number | string | null;
+            /** Auto Einvoice */
+            auto_einvoice?: boolean | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -352,6 +508,35 @@ export interface components {
             /** Sort Order */
             sort_order: number;
         };
+        /** NotificationPrefItem */
+        NotificationPrefItem: {
+            /** Event Key */
+            event_key: string;
+            /** Label */
+            label: string;
+            /** Email */
+            email: boolean;
+            /** In App */
+            in_app: boolean;
+            /** Sms */
+            sms: boolean;
+        };
+        /** NotificationPrefUpdateItem */
+        NotificationPrefUpdateItem: {
+            /** Event Key */
+            event_key: string;
+            /** Email */
+            email: boolean;
+            /** In App */
+            in_app: boolean;
+            /** Sms */
+            sms: boolean;
+        };
+        /** NotificationPrefsUpdate */
+        NotificationPrefsUpdate: {
+            /** Items */
+            items: components["schemas"]["NotificationPrefUpdateItem"][];
+        };
         /** PasswordReset */
         PasswordReset: {
             /** New Password */
@@ -368,6 +553,28 @@ export interface components {
         PermissionUpdate: {
             access_level: components["schemas"]["AccessLevel"];
             scope: components["schemas"]["Scope"];
+        };
+        /** PreferencesRead */
+        PreferencesRead: {
+            locale: components["schemas"]["UILocale"];
+            currency: components["schemas"]["UICurrency"];
+            /** Date Format */
+            date_format: string;
+            density: components["schemas"]["UIDensity"];
+            theme: components["schemas"]["UITheme"];
+            /** Accent Color */
+            accent_color: string;
+        };
+        /** PreferencesUpdate */
+        PreferencesUpdate: {
+            locale?: components["schemas"]["UILocale"] | null;
+            currency?: components["schemas"]["UICurrency"] | null;
+            /** Date Format */
+            date_format?: string | null;
+            density?: components["schemas"]["UIDensity"] | null;
+            theme?: components["schemas"]["UITheme"] | null;
+            /** Accent Color */
+            accent_color?: string | null;
         };
         /** ProjectAccessInput */
         ProjectAccessInput: {
@@ -481,6 +688,26 @@ export interface components {
              */
             token_type: string;
         };
+        /**
+         * UICurrency
+         * @enum {string}
+         */
+        UICurrency: "TRY" | "USD" | "EUR";
+        /**
+         * UIDensity
+         * @enum {string}
+         */
+        UIDensity: "comfortable" | "normal" | "compact";
+        /**
+         * UILocale
+         * @enum {string}
+         */
+        UILocale: "tr" | "en";
+        /**
+         * UITheme
+         * @enum {string}
+         */
+        UITheme: "light" | "dark" | "system";
         /** UserCreate */
         UserCreate: {
             /**
@@ -538,6 +765,8 @@ export interface components {
              */
             role_id: string;
             status: components["schemas"]["UserStatus"];
+            /** Last Login At */
+            last_login_at?: string | null;
         };
         /**
          * UserStatus
@@ -677,6 +906,205 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["MeResponse"];
                 };
+            };
+        };
+    };
+    get_company_endpoint_company_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    update_company_endpoint_company_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompanyUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_logo_endpoint_company_logo_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    upload_logo_endpoint_company_logo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_logo_endpoint_company_logo_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Logo boyutu cok buyuk */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Gecersiz logo bicimi veya icerigi */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    delete_logo_endpoint_company_logo_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -1034,6 +1462,168 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PermissionCell"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_preferences_endpoint_settings_preferences_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferencesRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    update_preferences_endpoint_settings_preferences_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreferencesUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreferencesRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_notifications_endpoint_settings_notifications_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPrefItem"][];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    update_notifications_endpoint_settings_notifications_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationPrefsUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPrefItem"][];
                 };
             };
             /** @description Yetkisiz işlem */

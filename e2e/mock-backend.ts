@@ -23,6 +23,34 @@ interface MockState {
   projects: Array<{ id: string; code: string; name: string; status: string; budget: string; progress_pct: string }>;
   permissions: Record<string, Record<string, { access_level: string; scope: string }>>;
   projectAccess: Record<string, { all_projects: boolean; project_ids: string[] }>;
+  company: {
+    id: string;
+    name: string | null;
+    tax_number: string | null;
+    tax_office: string | null;
+    trade_registry_no: string | null;
+    kep_address: string | null;
+    phone: string | null;
+    email: string | null;
+    website: string | null;
+    address: string | null;
+    brand_color: string;
+    gib_integration_code: string | null;
+    earsiv_portal: string | null;
+    default_vat_rate: number;
+    auto_einvoice: boolean;
+    has_logo: boolean;
+    logo_url: string;
+  };
+  preferences: {
+    locale: string;
+    currency: string;
+    date_format: string;
+    density: string;
+    theme: string;
+    accent_color: string;
+  };
+  notifications: Array<{ event_key: string; label: string; email: boolean; in_app: boolean; sms: boolean }>;
 }
 
 function seedState(): MockState {
@@ -69,6 +97,42 @@ function seedState(): MockState {
       "u-1": { all_projects: true, project_ids: [] },
       "u-2": { all_projects: false, project_ids: ["p-1"] },
     },
+    company: {
+      id: "company-1",
+      name: "FİİL Yapı Ltd. Şti.",
+      tax_number: "1234567890",
+      tax_office: null,
+      trade_registry_no: null,
+      kep_address: null,
+      phone: null,
+      email: null,
+      website: null,
+      address: null,
+      brand_color: "#2563eb",
+      gib_integration_code: null,
+      earsiv_portal: null,
+      default_vat_rate: 20,
+      auto_einvoice: false,
+      has_logo: false,
+      logo_url: "",
+    },
+    preferences: {
+      locale: "tr",
+      currency: "TRY",
+      date_format: "DD.MM.YYYY",
+      density: "normal",
+      theme: "light",
+      accent_color: "#2563eb",
+    },
+    notifications: [
+      { event_key: "progress_payment_created", label: "Hakediş oluşturuldu", email: true, in_app: true, sms: false },
+      { event_key: "progress_payment_approved", label: "Hakediş onaylandı", email: true, in_app: true, sms: false },
+      { event_key: "vat_due_soon", label: "KDV ödemesi yaklaşıyor", email: true, in_app: true, sms: false },
+      { event_key: "purchase_approval_pending", label: "Satınalma onay bekliyor", email: false, in_app: true, sms: false },
+      { event_key: "stock_low", label: "Stok kritik seviyede", email: false, in_app: true, sms: false },
+      { event_key: "payroll_payday", label: "Bordro ödeme günü", email: true, in_app: true, sms: false },
+      { event_key: "daily_log_missing", label: "Günlük kayıt girilmedi", email: false, in_app: true, sms: false },
+    ],
   };
 }
 
@@ -236,6 +300,40 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const userId = userIdMatch[1];
       state.users = state.users.filter((u) => u.id !== userId);
       return send(204);
+    }
+
+    // /company
+    if (method === "GET" && path === "/company") return send(200, state.company);
+    if (method === "PUT" && path === "/company") {
+      return withBody((body) => {
+        state.company = { ...state.company, ...body } as MockState["company"];
+        return send(200, state.company);
+      });
+    }
+
+    // /settings/preferences
+    if (method === "GET" && path === "/settings/preferences") return send(200, state.preferences);
+    if (method === "PUT" && path === "/settings/preferences") {
+      return withBody((body) => {
+        state.preferences = { ...state.preferences, ...body } as MockState["preferences"];
+        return send(200, state.preferences);
+      });
+    }
+
+    // /settings/notifications
+    if (method === "GET" && path === "/settings/notifications") return send(200, state.notifications);
+    if (method === "PUT" && path === "/settings/notifications") {
+      return withBody((body) => {
+        const items = Array.isArray(body.items) ? (body.items as Array<Record<string, unknown>>) : [];
+        for (const item of items) {
+          const target = state.notifications.find((n) => n.event_key === item.event_key);
+          if (!target) continue;
+          if (item.email !== undefined) target.email = Boolean(item.email);
+          if (item.in_app !== undefined) target.in_app = Boolean(item.in_app);
+          if (item.sms !== undefined) target.sms = Boolean(item.sms);
+        }
+        return send(200, state.notifications);
+      });
     }
 
     return send(404, { detail: "not found" });
