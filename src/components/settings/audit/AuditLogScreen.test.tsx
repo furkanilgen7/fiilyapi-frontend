@@ -14,7 +14,8 @@ const USERS = {
 const ITEMS = [
   {
     id: "a1",
-    occurred_at: "2026-07-17T09:14:00",
+    // UTC saklanır; ekranda TR saatiyle (09:14) görünür.
+    occurred_at: "2026-07-17T06:14:00Z",
     action: "login",
     detail: "Sisteme giriş yapıldı",
     ip_address: "192.168.1.100",
@@ -22,7 +23,7 @@ const ITEMS = [
   },
   {
     id: "a2",
-    occurred_at: "2026-07-15T09:00:00",
+    occurred_at: "2026-07-15T06:00:00Z",
     action: "backup",
     detail: "Otomatik yedekleme tamamlandı · 2,3 GB",
     ip_address: null,
@@ -108,6 +109,33 @@ describe("AuditLogScreen", () => {
     await userEvent.selectOptions(screen.getByLabelText("Kullanıcı filtresi"), "u1");
 
     await waitFor(() => expect(calls.some((url) => url.includes("actor_user_id=u1"))).toBe(true));
+  });
+
+  it("arama kutusunu q parametresine bağlar ve her tuş için istek atmaz", async () => {
+    const calls = stubFetch(() => json({ items: [], total: 0, limit: 50, offset: 0 }));
+
+    renderScreen();
+    await waitFor(() => expect(calls.length).toBeGreaterThan(0));
+
+    await userEvent.type(screen.getByLabelText("Kullanıcı veya işlem ara"), "abc");
+
+    await waitFor(() => expect(calls.some((url) => url.includes("q=abc"))).toBe(true));
+    // Debounce: "a" ve "ab" ara adımları için ayrı istek çıkmaz.
+    expect(calls.filter((url) => url.includes("q=")).length).toBe(1);
+  });
+
+  it("yalnızca boşluktan oluşan aramada q göndermez", async () => {
+    const calls = stubFetch(() => json({ items: [], total: 0, limit: 50, offset: 0 }));
+
+    renderScreen();
+    await waitFor(() => expect(calls.length).toBeGreaterThan(0));
+    const callsBefore = calls.length;
+
+    await userEvent.type(screen.getByLabelText("Kullanıcı veya işlem ara"), "   ");
+
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(calls.some((url) => url.includes("q="))).toBe(false);
+    expect(calls.length).toBe(callsBefore);
   });
 
   it("sonraki sayfada offset'i sayfa boyutu kadar ilerletir", async () => {

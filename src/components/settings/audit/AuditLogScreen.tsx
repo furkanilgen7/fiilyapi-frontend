@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui";
 import { SearchIcon } from "@/components/ui/icons";
 import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
@@ -23,8 +23,10 @@ import {
   auditActorRole,
   auditIpText,
   formatAuditTime,
+  isAuditAction,
 } from "@/lib/settings/audit-format";
-import { isAuditAction, type AuditAction } from "@/lib/api/audit-types";
+import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
+import type { AuditAction } from "@/lib/api/models";
 import { cx } from "@/lib/cx";
 import "@/components/settings/settings.css";
 import "./audit-screen.css";
@@ -36,17 +38,29 @@ const USER_OPTIONS_LIMIT = 200;
 // rozetinde görünür (mockup'ta seçici seçeneği yok — birebir korunur).
 const ACTION_OPTIONS: ReadonlyArray<AuditAction> = ["login", "create", "update", "delete", "approve"];
 
+// Her tuş vuruşunda istek atmamak için arama metni sakinleşene kadar beklenir.
+const SEARCH_DEBOUNCE_MS = 300;
+
 export function AuditLogScreen() {
-  const [filters, setFilters] = useState<AuditFilters>(DEFAULT_AUDIT_FILTERS);
+  const [selectFilters, setSelectFilters] = useState<AuditFilters>(DEFAULT_AUDIT_FILTERS);
+  const [searchInput, setSearchInput] = useState("");
   const [offset, setOffset] = useState(0);
   const [exportError, setExportError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+
+  const search = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS);
+  const filters = useMemo<AuditFilters>(() => ({ ...selectFilters, search }), [selectFilters, search]);
 
   const auditQuery = useAuditLog(filters, offset);
   const usersQuery = useUsers({ limit: USER_OPTIONS_LIMIT, offset: 0 });
 
   function updateFilters(patch: Partial<AuditFilters>) {
-    setFilters((current) => ({ ...current, ...patch }));
+    setSelectFilters((current) => ({ ...current, ...patch }));
+    setOffset(0);
+  }
+
+  function handleSearchChange(value: string) {
+    setSearchInput(value);
     setOffset(0);
   }
 
@@ -68,16 +82,15 @@ export function AuditLogScreen() {
 
   const filterBar = (
     <div className="audit-filters">
-      {/* Mockup'ta kutu içinde büyüteç ikonu var; arama backend'de `q` desteklenmediği
-          için kutu görsel olarak birebir ama devre dışı bırakılmış durumda. */}
+      {/* Mockup'ta kutu içinde büyüteç ikonu var; görünüm birebir korunur. */}
       <span className="audit-search">
         <SearchIcon />
         <input
           type="text"
           placeholder="Kullanıcı veya işlem ara..."
           aria-label="Kullanıcı veya işlem ara"
-          disabled
-          title="Metin araması backend'de henüz desteklenmiyor"
+          value={searchInput}
+          onChange={(event) => handleSearchChange(event.target.value)}
         />
       </span>
       <select

@@ -216,14 +216,15 @@ function seedState(): MockState {
       { event_key: "daily_log_missing", label: "Günlük kayıt girilmedi", email: false, in_app: true, sms: false },
     ],
     // Mockup'taki satirlarla hizali (../projedesign/Ayarlar - Denetim Günlüğü.dc.html);
-    // occurred_at yerel-saat ISO'su, boylece gorsel baseline TZ'den etkilenmez.
+    // occurred_at gercek backend gibi UTC'dir (Z), ekran Europe/Istanbul'a cevirir —
+    // yani UTC 06:14 mockup'taki 09:14 olarak gorunur ve baseline TZ'den etkilenmez.
     auditLog: [
-      { id: "al-1", occurred_at: "2026-07-17T09:14:00", action: "login", detail: "Sisteme giriş yapıldı", ip_address: "192.168.1.100", actor: { id: "u-1", full_name: "Ahmet Yılmaz", role_name: "Patron" } },
-      { id: "al-2", occurred_at: "2026-07-17T08:52:00", action: "create", detail: "Günlük kayıt oluşturuldu · A-Blok · 17 Tem", ip_address: "10.0.0.45", actor: { id: "u-2", full_name: "Sercan Öztürk", role_name: "Şantiye Şefi" } },
-      { id: "al-3", occurred_at: "2026-07-17T08:30:00", action: "approve", detail: "Hakediş #47 onaylandı · ₺1.240.000", ip_address: "192.168.1.55", actor: { id: "u-3", full_name: "Ayşe Demir", role_name: "Muhasebe" } },
-      { id: "al-4", occurred_at: "2026-07-16T17:20:00", action: "update", detail: "Kullanıcı rolü değiştirildi: Kadir Arslan → PM", ip_address: "192.168.1.100", actor: { id: "u-1", full_name: "Ahmet Yılmaz", role_name: "Patron" } },
-      { id: "al-5", occurred_at: "2026-07-15T14:05:00", action: "delete", detail: "Taslak satın alma talebi silindi · SAT-2026-0041", ip_address: "10.0.0.88", actor: { id: "u-5", full_name: "Yusuf Kaya", role_name: "Satınalma" } },
-      { id: "al-6", occurred_at: "2026-07-15T09:00:00", action: "backup", detail: "Otomatik yedekleme tamamlandı · 2,3 GB", ip_address: null, actor: null },
+      { id: "al-1", occurred_at: "2026-07-17T06:14:00Z", action: "login", detail: "Sisteme giriş yapıldı", ip_address: "192.168.1.100", actor: { id: "u-1", full_name: "Ahmet Yılmaz", role_name: "Patron" } },
+      { id: "al-2", occurred_at: "2026-07-17T05:52:00Z", action: "create", detail: "Günlük kayıt oluşturuldu · A-Blok · 17 Tem", ip_address: "10.0.0.45", actor: { id: "u-2", full_name: "Sercan Öztürk", role_name: "Şantiye Şefi" } },
+      { id: "al-3", occurred_at: "2026-07-17T05:30:00Z", action: "approve", detail: "Hakediş #47 onaylandı · ₺1.240.000", ip_address: "192.168.1.55", actor: { id: "u-3", full_name: "Ayşe Demir", role_name: "Muhasebe" } },
+      { id: "al-4", occurred_at: "2026-07-16T14:20:00Z", action: "update", detail: "Kullanıcı rolü değiştirildi: Kadir Arslan → PM", ip_address: "192.168.1.100", actor: { id: "u-1", full_name: "Ahmet Yılmaz", role_name: "Patron" } },
+      { id: "al-5", occurred_at: "2026-07-15T11:05:00Z", action: "delete", detail: "Taslak satın alma talebi silindi · SAT-2026-0041", ip_address: "10.0.0.88", actor: { id: "u-5", full_name: "Yusuf Kaya", role_name: "Satınalma" } },
+      { id: "al-6", occurred_at: "2026-07-15T06:00:00Z", action: "backup", detail: "Otomatik yedekleme tamamlandı · 2,3 GB", ip_address: null, actor: null },
     ],
   };
 }
@@ -344,9 +345,18 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const offset = Number(parsed.searchParams.get("offset") ?? "0");
       const action = parsed.searchParams.get("action");
       const actorUserId = parsed.searchParams.get("actor_user_id");
+      // `q`: detay metni veya aktor adinda kismi arama; bos/whitespace = filtre yok.
+      const search = (parsed.searchParams.get("q") ?? "").trim().toLocaleLowerCase("tr");
       let rows = state.auditLog;
       if (action) rows = rows.filter((row) => row.action === action);
       if (actorUserId) rows = rows.filter((row) => row.actor?.id === actorUserId);
+      if (search) {
+        rows = rows.filter(
+          (row) =>
+            row.detail.toLocaleLowerCase("tr").includes(search) ||
+            (row.actor?.full_name ?? "").toLocaleLowerCase("tr").includes(search),
+        );
+      }
       return send(200, { items: rows.slice(offset, offset + limit), total: rows.length, limit, offset });
     }
 

@@ -1,17 +1,15 @@
-import { BackendError } from "@/lib/api/unwrap";
-import type { AuditListResponse } from "@/lib/api/audit-types";
+import { backendClient } from "@/lib/api/client";
+import { BackendError, unwrap } from "@/lib/api/unwrap";
+import { toSearchParams } from "@/lib/settings/audit-query";
+import type { AuditExportQuery, AuditListResponse, AuditLogQuery } from "@/lib/api/models";
 
-/**
- * GEÇİCİ: `/audit-log` uçları OpenAPI şemasında olmadığı için `backendClient`
- * (openapi-fetch) üzerinden çağrılamıyor. Şema Task 6'da güncellenince bu dosya
- * `backendClient.GET("/audit-log", …)` + `unwrap` ile değiştirilecek.
- *
- * Hata sözleşmesi aynı: 2xx dışı → BackendError (403 → `isForbidden`).
- */
-
-const AUDIT_LOG_PATH = "/api/backend/audit-log";
 const AUDIT_EXPORT_PATH = "/api/backend/audit-log/export.xlsx";
 const DEFAULT_EXPORT_FILENAME = "denetim-gunlugu.xlsx";
+
+/** Liste ucu şemada olduğu için tip-güvenli `backendClient` + `unwrap` kullanır. */
+export async function fetchAuditLog(query: AuditLogQuery): Promise<AuditListResponse> {
+  return unwrap(await backendClient.GET("/audit-log", { params: { query } }));
+}
 
 function withQuery(path: string, query: Record<string, string>): string {
   const qs = new URLSearchParams(query).toString();
@@ -21,16 +19,6 @@ function withQuery(path: string, query: Record<string, string>): string {
 async function toBackendError(response: Response): Promise<BackendError> {
   const body = await response.json().catch(() => null);
   return new BackendError(response.status, body);
-}
-
-export async function fetchAuditLog(query: Record<string, string>): Promise<AuditListResponse> {
-  const response = await globalThis.fetch(withQuery(AUDIT_LOG_PATH, query), {
-    method: "GET",
-    credentials: "same-origin",
-    headers: { accept: "application/json" },
-  });
-  if (!response.ok) throw await toBackendError(response);
-  return (await response.json()) as AuditListResponse;
 }
 
 // Content-Disposition'dan yalnızca güvenli bir dosya adı çıkarır (yol ayracı/kontrol
@@ -44,11 +32,15 @@ export function exportFilename(contentDisposition: string | null): string {
 }
 
 /**
- * Excel dosyasını BFF üzerinden indirir. Token yalnızca httpOnly cookie'de kalır —
- * URL'e imzalı token/parametre KOYULMAZ, istek `credentials: "same-origin"` ile gider.
+ * Excel dosyasını BFF üzerinden indirir. Uç şemada olsa da burada bilinçli olarak ham
+ * `fetch` kullanılır: openapi-fetch yanıtı içerik tipine göre JSON/metin olarak çözer ve
+ * ikili gövde (xlsx) için `Blob` vermez. Hata sözleşmesi aynı — 2xx dışı → BackendError.
+ *
+ * Token yalnızca httpOnly cookie'de kalır — URL'e imzalı token/parametre KOYULMAZ,
+ * istek `credentials: "same-origin"` ile gider.
  */
-export async function downloadAuditExport(query: Record<string, string>): Promise<void> {
-  const response = await globalThis.fetch(withQuery(AUDIT_EXPORT_PATH, query), {
+export async function downloadAuditExport(query: AuditExportQuery): Promise<void> {
+  const response = await globalThis.fetch(withQuery(AUDIT_EXPORT_PATH, toSearchParams(query)), {
     method: "GET",
     credentials: "same-origin",
   });

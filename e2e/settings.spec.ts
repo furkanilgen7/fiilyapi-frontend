@@ -60,8 +60,15 @@ test("ayarlar: denetim gunlugu listeler, filtreler ve excel indirir", async ({ p
   await expect(page.locator(".audit-table tbody tr")).toHaveCount(1);
   await expect(page.getByRole("cell", { name: /SAT-2026-0041/ })).toBeVisible();
 
-  // Excel indirmesi BFF ikili gecisinden gelir
+  // Arama kutusu backend `q` parametresine baglanir (debounce'lu)
   await page.getByLabel("İşlem filtresi").selectOption("all");
+  await page.getByLabel("Kullanıcı veya işlem ara").fill("yedekleme");
+  await expect(page.locator(".audit-table tbody tr")).toHaveCount(1);
+  await expect(page.getByRole("cell", { name: /2,3 GB/ })).toBeVisible();
+  await page.getByLabel("Kullanıcı veya işlem ara").fill("");
+  await expect(page.locator(".audit-table tbody tr")).toHaveCount(6);
+
+  // Excel indirmesi BFF ikili gecisinden gelir
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Excel" }).click();
   const download = await downloadPromise;

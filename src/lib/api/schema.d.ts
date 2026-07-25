@@ -4,6 +4,49 @@
  */
 
 export interface paths {
+    "/audit-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Audit Log Endpoint
+         * @description Filtrelenebilir/sayfalanabilir denetim gunlugu listesi (`occurred_at DESC`).
+         */
+        get: operations["list_audit_log_endpoint_audit_log_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/audit-log/export.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Audit Log Endpoint
+         * @description Filtrelenmis denetim gunlugunu Excel dosyasi olarak doner.
+         *
+         *     Liste ucuyle AYNI filtreler gecerlidir; `limit`/`offset` YOKTUR — eslesen tum
+         *     kayitlar yazilir (sessiz kirpma yapilmaz, bkz. plan Task 5 sinir notu).
+         */
+        get: operations["export_audit_log_endpoint_audit_log_export_xlsx_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -371,6 +414,65 @@ export interface components {
          * @enum {string}
          */
         AccessLevel: "none" | "view" | "draft" | "request" | "approve" | "full" | "admin";
+        /**
+         * AuditAction
+         * @description Denetim gunlugunde kaydedilen islem turleri.
+         *
+         *     `approve` ve `backup` degerleri simdiden tanimlidir; uretici uclari sonraki
+         *     fazlarda (hakedis onayi, yedekleme) eklenecek.
+         *
+         *     Proje geneli deseni (`str, enum.Enum`) korunur; StrEnum'a gecis `__str__`
+         *     davranisini degistirir (bkz. pyproject.toml UP042 notu).
+         * @enum {string}
+         */
+        AuditAction: "login" | "create" | "update" | "delete" | "approve" | "backup";
+        /**
+         * AuditActorRead
+         * @description Denetim satirini yapan kullanici.
+         *
+         *     `role_name` ZORUNLUDUR: ekranin kullanici hucresi ad + rol adini birlikte gosterir.
+         */
+        AuditActorRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Full Name */
+            full_name: string;
+            /** Role Name */
+            role_name: string;
+        };
+        /** AuditItem */
+        AuditItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            action: components["schemas"]["AuditAction"];
+            /** Detail */
+            detail: string;
+            /** Ip Address */
+            ip_address?: string | null;
+            actor?: components["schemas"]["AuditActorRead"] | null;
+        };
+        /** AuditListResponse */
+        AuditListResponse: {
+            /** Items */
+            items: components["schemas"]["AuditItem"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
         /** Body_upload_logo_endpoint_company_logo_post */
         Body_upload_logo_endpoint_company_logo_post: {
             /** File */
@@ -805,6 +907,112 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    list_audit_log_endpoint_audit_log_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                actor_user_id?: string | null;
+                action?: components["schemas"]["AuditAction"] | null;
+                /** @description YYYY-MM-DD — o gunun 00:00'indan itibaren (Europe/Istanbul, dahil) */
+                date_from?: string | null;
+                /** @description YYYY-MM-DD — o gunun sonuna kadar (Europe/Istanbul, dahil) */
+                date_to?: string | null;
+                /** @description Detay metni veya aktor adinda kismi arama */
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_audit_log_endpoint_audit_log_export_xlsx_get: {
+        parameters: {
+            query?: {
+                actor_user_id?: string | null;
+                action?: components["schemas"]["AuditAction"] | null;
+                /** @description YYYY-MM-DD — o gunun 00:00'indan itibaren (Europe/Istanbul, dahil) */
+                date_from?: string | null;
+                /** @description YYYY-MM-DD — o gunun sonuna kadar (Europe/Istanbul, dahil) */
+                date_to?: string | null;
+                /** @description Detay metni veya aktor adinda kismi arama */
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Excel dosyasi */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": unknown;
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     login_auth_login_post: {
         parameters: {
             query?: never;
