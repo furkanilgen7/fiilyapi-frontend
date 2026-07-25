@@ -135,7 +135,9 @@ export function PermissionMatrix() {
                   </tr>
                   {section.items.map((module) => (
                     <tr key={module.id}>
-                      <th className="matrix-module-name">{module.name}</th>
+                      <th className="matrix-module-name" scope="row">
+                        {module.name}
+                      </th>
                       {roles.map((role) => {
                         const presetKey = currentPresetKey(role.id, module.key);
                         const readOnly = role.key === SYSTEM_ADMIN_KEY;

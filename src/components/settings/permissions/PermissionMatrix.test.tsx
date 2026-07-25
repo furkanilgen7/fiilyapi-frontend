@@ -61,4 +61,35 @@ describe("PermissionMatrix", () => {
     expect(screen.getByText("Erişim düzeyleri")).toBeInTheDocument();
     expect(screen.getByText("Modülde her şey: oluştur, düzenle ve sil. En üst yetki.")).toBeInTheDocument();
   });
+
+  it("mali grubunda modulleri sort_order ile siralar (fatura yonetimi dahil)", async () => {
+    // Matris veri-guduml: modul sayisi/sirasi tamamen /modules yanitindan gelir.
+    const modules = [
+      { id: "m-treasury", key: "treasury", name: "Hazine", group: "MALI", sort_order: 12 },
+      { id: "m-accounting", key: "accounting", name: "Muhasebe", group: "MALI", sort_order: 10 },
+      { id: "m-invoicing", key: "invoicing", name: "Fatura Yönetimi", group: "MALI", sort_order: 11 },
+    ];
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        const json = (body: unknown) =>
+          new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
+        if (url.includes("/api/backend/modules")) return json(modules);
+        if (url.includes("/permissions")) {
+          return json(modules.map((m) => ({ module_key: m.key, access_level: "view", scope: "all" })));
+        }
+        if (url.includes("/api/backend/roles")) {
+          return json([{ id: "r1", key: "accounting", name: "Muhasebe", emoji: "", description: "", is_system: false }]);
+        }
+        return json([]);
+      }),
+    );
+
+    renderMatrix();
+    expect(await screen.findByText("Fatura Yönetimi")).toBeInTheDocument();
+    const rowHeaders = screen.getAllByRole("rowheader").map((el) => el.textContent);
+    expect(rowHeaders).toEqual(["Muhasebe", "Fatura Yönetimi", "Hazine"]);
+  });
 });
