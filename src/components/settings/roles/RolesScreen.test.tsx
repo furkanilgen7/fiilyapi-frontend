@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { RolesScreen } from "./RolesScreen";
@@ -62,5 +63,33 @@ describe("RolesScreen", () => {
     expect((await screen.findAllByText("Sistem Yöneticisi")).length).toBeGreaterThan(0);
     expect(screen.getByText("Saha")).toBeInTheDocument();
     expect(await screen.findByText("Modül Erişimleri")).toBeInTheDocument();
+  });
+
+  it("farklı bir rol kartına tıklayınca detay panelinde o rolün adı görünür", async () => {
+    stubFetch();
+    const user = userEvent.setup();
+    renderScreen();
+    await screen.findByText("Modül Erişimleri");
+
+    await user.click(screen.getByText("Saha"));
+
+    const head = document.querySelector(".role-detail__head");
+    expect(head).not.toBeNull();
+    expect(within(head as HTMLElement).getByText("Saha")).toBeInTheDocument();
+  });
+
+  it("sistem rolünde Sil kontrolü yokken özel rolde etkin Sil kontrolü vardır", async () => {
+    stubFetch();
+    const user = userEvent.setup();
+    renderScreen();
+    await screen.findByText("Modül Erişimleri");
+
+    // Varsayılan seçili rol sistem rolüdür (Sistem Yöneticisi) → Sil butonu olmamalı.
+    expect(screen.queryByRole("button", { name: "Sil" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByText("Saha"));
+
+    const deleteButton = await screen.findByRole("button", { name: "Sil" });
+    expect(deleteButton).toBeEnabled();
   });
 });

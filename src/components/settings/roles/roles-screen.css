@@ -32,7 +32,11 @@
 .role-detail__emoji { font-size: 28px; }
 .role-detail__name { font-size: 16px; font-weight: 700; color: var(--color-text); }
 .role-detail__sub { font-size: 12px; color: var(--color-text-subtle); }
-.role-detail__copy { margin-left: auto; background: var(--color-surface-muted); color: var(--color-text-secondary); border: none; padding: 7px 14px; border-radius: var(--radius-8); font-size: 12px; cursor: pointer; }
+.role-detail__actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.role-detail__copy { background: var(--color-surface-muted); color: var(--color-text-secondary); border: none; padding: 7px 14px; border-radius: var(--radius-8); font-size: 12px; cursor: pointer; }
+.role-detail__action { background: var(--color-surface-muted); color: var(--color-text-secondary); border: none; padding: 7px 14px; border-radius: var(--radius-8); font-size: 12px; cursor: pointer; }
+.role-detail__action--danger { background: var(--color-danger-soft); color: var(--color-danger); }
+.role-detail__copy-error { margin-top: -8px; margin-bottom: 12px; }
 .role-banner {
   display: flex; align-items: center; gap: 8px;
   background: var(--color-success-tint); border: 1px solid var(--color-success-tint-border);

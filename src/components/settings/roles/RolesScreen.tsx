@@ -15,7 +15,7 @@ import { matchPreset } from "@/lib/api/permission-presets";
 import { roleModuleSummary } from "./role-summary";
 import { isForbidden } from "@/lib/api/unwrap";
 import { cx } from "@/lib/cx";
-import type { PermissionCell } from "@/lib/api/models";
+import type { PermissionCell, RoleResponse } from "@/lib/api/models";
 import "./roles-screen.css";
 
 // SİSTEM vurgulu modül anahtarları (ref §A.6 — koyu/ters badge):
@@ -51,9 +51,11 @@ export function RolesScreen() {
   const permMutation = usePermissionMutation();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [modal, setModal] = useState<{ type: "create" } | { type: "delete"; id: string; name: string } | null>(
-    null,
-  );
+  const [modal, setModal] = useState<
+    { type: "create" } | { type: "edit"; role: RoleResponse } | { type: "delete"; id: string; name: string } | null
+  >(null);
+  const [isCopying, setIsCopying] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
 
   if (rolesQuery.isLoading || modulesQuery.isLoading) {
     return <p className="settings-note">Yükleniyor…</p>;
@@ -78,20 +80,47 @@ export function RolesScreen() {
 
   async function handleCopy() {
     if (!selected) return;
-    const created = await createRole.mutateAsync({
-      key: `${selected.key}_kopya_${Date.now()}`,
-      name: `${selected.name} (Kopya)`,
-      emoji: selected.emoji,
-      description: selected.description,
-    });
-    // 13 izin satırını replike et (ref §C.2)
-    for (const cell of cellsByRole[selected.id] ?? []) {
-      await permMutation.mutateAsync({
-        roleId: created.id,
-        moduleKey: cell.module_key,
-        update: { access_level: cell.access_level, scope: cell.scope },
+    setCopyError(null);
+    setIsCopying(true);
+    let created: RoleResponse | null = null;
+    try {
+      created = await createRole.mutateAsync({
+        key: `${selected.key}_kopya_${Date.now()}`,
+        name: `${selected.name} (Kopya)`,
+        emoji: selected.emoji,
+        description: selected.description,
       });
+      // 13 izin satırını replike et (ref §C.2)
+      for (const cell of cellsByRole[selected.id] ?? []) {
+        await permMutation.mutateAsync({
+          roleId: created.id,
+          moduleKey: cell.module_key,
+          update: { access_level: cell.access_level, scope: cell.scope },
+        });
+      }
+    } catch {
+      // Rol oluşturuldu ama izin replikasyonu başarısız oldu → yetim rolü temizlemeyi dene (en iyi çaba).
+      if (created) {
+        try {
+          await deleteRole.mutateAsync(created.id);
+        } catch {
+          // Temizlik de başarısız oldu; kullanıcıya yine de hata gösterilecek.
+        }
+      }
+      setCopyError("Rol kopyalanamadı.");
+    } finally {
+      setIsCopying(false);
     }
+  }
+
+  function handleDeleteConfirm(id: string) {
+    deleteRole.mutate(id, {
+      onSuccess: () => {
+        setModal(null);
+        const remaining = roles.filter((r) => r.id !== id);
+        setSelectedId(remaining[0]?.id ?? null);
+      },
+    });
   }
 
   return (
@@ -142,10 +171,31 @@ export function RolesScreen() {
               <div className="role-detail__name">{selected.name}</div>
               <div className="role-detail__sub">{selected.description}</div>
             </div>
-            <button type="button" className="role-detail__copy" onClick={handleCopy} disabled={createRole.isPending}>
-              Kopyala
-            </button>
+            <div className="role-detail__actions">
+              {!selected.is_system && (
+                <>
+                  <button
+                    type="button"
+                    className="role-detail__action"
+                    onClick={() => setModal({ type: "edit", role: selected })}
+                  >
+                    Düzenle
+                  </button>
+                  <button
+                    type="button"
+                    className="role-detail__action role-detail__action--danger"
+                    onClick={() => setModal({ type: "delete", id: selected.id, name: selected.name })}
+                  >
+                    Sil
+                  </button>
+                </>
+              )}
+              <button type="button" className="role-detail__copy" onClick={handleCopy} disabled={isCopying}>
+                Kopyala
+              </button>
+            </div>
           </div>
+          {copyError && <p className="settings-note settings-note--error role-detail__copy-error">{copyError}</p>}
           {selected.is_system && (
             <div className="role-banner">✓ Bu rol tüm modüllere ve tüm sistem ayarlarına tam erişime sahiptir.</div>
           )}
@@ -174,6 +224,9 @@ export function RolesScreen() {
       )}
 
       {modal?.type === "create" && <RoleFormModal mode="create" onClose={() => setModal(null)} />}
+      {modal?.type === "edit" && (
+        <RoleFormModal mode="edit" role={modal.role} onClose={() => setModal(null)} />
+      )}
       {modal?.type === "delete" && (
         <ConfirmDialog
           title="Rolü Sil"
@@ -181,7 +234,7 @@ export function RolesScreen() {
           confirmLabel="Sil"
           danger
           isPending={deleteRole.isPending}
-          onConfirm={() => deleteRole.mutate(modal.id, { onSuccess: () => setModal(null) })}
+          onConfirm={() => handleDeleteConfirm(modal.id)}
           onClose={() => setModal(null)}
         />
       )}
