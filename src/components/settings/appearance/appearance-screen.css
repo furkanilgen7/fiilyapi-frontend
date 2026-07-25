@@ -1,0 +1,183 @@
+.appearance-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* Tema kartlari */
+.theme-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.theme-card {
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-10);
+  overflow: hidden;
+  background: var(--color-surface);
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+}
+
+.theme-card--active {
+  border-color: var(--color-primary);
+}
+
+.theme-card--disabled {
+  cursor: not-allowed;
+}
+
+.theme-card__preview {
+  height: 40px;
+  display: flex;
+  gap: 3px;
+  padding: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.theme-card__preview--light {
+  background: var(--color-bg);
+}
+
+.theme-card__preview--dark {
+  background: var(--color-text-strong);
+  border-bottom-color: var(--color-text);
+}
+
+.theme-card__preview--system {
+  background: linear-gradient(180deg, var(--color-bg) 50%, var(--color-text-strong) 50%);
+}
+
+.theme-card__bar {
+  border-radius: 3px;
+}
+
+.theme-card__bar--sm {
+  width: 24px;
+}
+
+.theme-card__bar--lg {
+  flex: 1;
+}
+
+.theme-card__bar--light {
+  background: var(--color-surface);
+}
+
+.theme-card__bar--dark {
+  background: var(--color-text);
+}
+
+.theme-card__bar--system {
+  background: var(--color-on-brand-40);
+}
+
+.theme-card__label {
+  padding: 8px;
+  text-align: center;
+  font-size: 11px;
+}
+
+.theme-card__label--active {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.theme-card__label--muted {
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+/* Vurgu rengi */
+.accent-swatches {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.accent-swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.accent-swatch--active {
+  border-color: var(--color-primary-ring);
+}
+
+/* Dil & Bolge alanlari */
+.pref-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pref-field__label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.pref-field select {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.pref-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Yogunluk satirlari */
+.density-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.density-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-10);
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.density-row--active {
+  border-color: var(--color-primary);
+  background: var(--color-nav-active-bg);
+}
+
+.density-row__radio {
+  accent-color: var(--color-primary);
+}
+
+.density-row__name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.density-row__desc {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+
+.appearance-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
