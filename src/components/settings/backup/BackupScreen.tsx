@@ -41,48 +41,54 @@ export function BackupScreen() {
       </div>
 
       <div className="backup-grid">
-        <SettingsCard title="Otomatik Yedekleme">
-          <div className="backup-toggle-row">
-            <div>
-              <div className="backup-toggle-row__name">Günlük Yedekleme</div>
-              <div className="backup-toggle-row__sub">Her gün 02:00</div>
+        <SettingsCard>
+          <div className="backup-card__title">Otomatik Yedekleme</div>
+          <div className="backup-auto-rows">
+            <div className="backup-toggle-row">
+              <div>
+                <div className="backup-toggle-row__name">Günlük Yedekleme</div>
+                <div className="backup-toggle-row__sub">Her gün 02:00</div>
+              </div>
+              <Toggle checked disabled />
             </div>
-            <Toggle checked disabled />
-          </div>
-          <div className="backup-toggle-row">
-            <div>
-              <div className="backup-toggle-row__name">Haftalık Yedekleme</div>
-              <div className="backup-toggle-row__sub">Her Pazar 03:00</div>
+            <div className="backup-toggle-row">
+              <div>
+                <div className="backup-toggle-row__name">Haftalık Yedekleme</div>
+                <div className="backup-toggle-row__sub">Her Pazar 03:00</div>
+              </div>
+              <Toggle checked disabled />
             </div>
-            <Toggle checked disabled />
-          </div>
-          <div className="backup-field">
-            <span className="backup-field__label">Saklama Süresi</span>
-            <Select disabled defaultValue="90">
-              <option value="90">90 Gün</option>
-            </Select>
-          </div>
-          <div className="backup-field">
-            <span className="backup-field__label">Depolama Konumu</span>
-            <Select disabled defaultValue="aws-frankfurt">
-              <option value="aws-frankfurt">AWS S3 (Frankfurt)</option>
-            </Select>
+            <div className="backup-field">
+              <span className="backup-field__label">Saklama Süresi</span>
+              <Select disabled defaultValue="90">
+                <option value="90">90 Gün</option>
+              </Select>
+            </div>
+            <div className="backup-field">
+              <span className="backup-field__label">Depolama Konumu</span>
+              <Select disabled defaultValue="aws-frankfurt">
+                <option value="aws-frankfurt">AWS S3 (Frankfurt)</option>
+              </Select>
+            </div>
           </div>
         </SettingsCard>
 
-        <SettingsCard title="Depolama Kullanımı">
+        <SettingsCard>
+          <div className="backup-card__title">Depolama Kullanımı</div>
           <div className="storage-stat">24,8 GB</div>
           <div className="storage-stat__total">/ 100 GB toplam</div>
           <div className="storage-bar">
             <div className="storage-bar__fill" style={{ width: "24.8%" }} />
           </div>
           <div className="storage-caption">%24,8 kullanıldı · 75,2 GB boş</div>
-          {STORAGE_BREAKDOWN.map((row) => (
-            <div className="storage-row" key={row.name}>
-              <span>{row.name}</span>
-              <span className="storage-row__value">{row.value}</span>
-            </div>
-          ))}
+          <div className="storage-rows">
+            {STORAGE_BREAKDOWN.map((row) => (
+              <div className="storage-row" key={row.name}>
+                <span>{row.name}</span>
+                <span className="storage-row__value">{row.value}</span>
+              </div>
+            ))}
+          </div>
         </SettingsCard>
       </div>
 
@@ -91,23 +97,23 @@ export function BackupScreen() {
           <table className="backup-history">
             <thead>
               <tr>
-                <th>Tarih</th>
+                <th className="is-first">Tarih</th>
                 <th>Tür</th>
-                <th>Boyut</th>
-                <th>Durum</th>
-                <th />
+                <th className="is-right">Boyut</th>
+                <th className="is-center">Durum</th>
+                <th className="is-center" />
               </tr>
             </thead>
             <tbody>
               {HISTORY.map((row) => (
                 <tr key={row.date}>
-                  <td className="is-mono">{row.date}</td>
+                  <td className="is-mono is-first">{row.date}</td>
                   <td>{row.type}</td>
-                  <td className="is-mono">{row.size}</td>
-                  <td>
+                  <td className="is-mono is-right">{row.size}</td>
+                  <td className="is-center">
                     <span className="backup-success-badge">Başarılı</span>
                   </td>
-                  <td className="is-right">
+                  <td className="is-center">
                     <button type="button" className="backup-history__restore" disabled>
                       Geri Yükle
                     </button>

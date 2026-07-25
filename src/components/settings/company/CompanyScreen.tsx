@@ -75,7 +75,8 @@ export function CompanyScreen() {
   return (
     <>
       <div className="company-grid">
-        <SettingsCard title="Firma Bilgileri">
+        <SettingsCard>
+          <div className="company-card__title">Firma Bilgileri</div>
           <div className="company-form">
             {field("Firma Adı", "name")}
             {field("Vergi No", "tax_number")}
@@ -85,7 +86,8 @@ export function CompanyScreen() {
           </div>
         </SettingsCard>
 
-        <SettingsCard title="İletişim & Adres">
+        <SettingsCard>
+          <div className="company-card__title">İletişim &amp; Adres</div>
           <div className="company-form">
             {field("Telefon", "phone")}
             {field("E-posta", "email")}
@@ -97,7 +99,8 @@ export function CompanyScreen() {
           </div>
         </SettingsCard>
 
-        <SettingsCard title="Logo & Marka">
+        <SettingsCard>
+          <div className="company-card__title">Logo &amp; Marka</div>
           <div className="company-logo">
             <span className="company-logo__preview" aria-hidden="true">
               <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
@@ -108,7 +111,7 @@ export function CompanyScreen() {
               </svg>
             </span>
             <div>
-              <div className="company-field__label">FİİL Yapı Logo</div>
+              <div className="company-logo__name">FİİL Yapı Logo</div>
               <div className="company-logo__caption">PNG, SVG · Önerilen 200×200px</div>
               {/* Logo yükleme (POST /company/logo) kapsam dışı — buton pasif, takip görevi. */}
               <Button variant="secondary" size="sm">
@@ -116,7 +119,7 @@ export function CompanyScreen() {
               </Button>
             </div>
           </div>
-          <label className="company-field" style={{ marginTop: 16 }}>
+          <label className="company-field company-color-field">
             <span className="company-field__label">Birincil Renk</span>
             <span className="company-color-row">
               <span className="company-swatch" style={{ background: form.brand_color ?? "#2563eb" }} />
@@ -129,7 +132,8 @@ export function CompanyScreen() {
           </label>
         </SettingsCard>
 
-        <SettingsCard title="Fatura & e-Fatura Ayarları">
+        <SettingsCard>
+          <div className="company-card__title">Fatura &amp; e-Fatura Ayarları</div>
           <div className="company-form">
             {field("GİB Entegrasyon Kodu", "gib_integration_code", true)}
             <label className="company-field">

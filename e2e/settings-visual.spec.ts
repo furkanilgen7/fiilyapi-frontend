@@ -35,7 +35,11 @@ test("gorsel: ayarlar izin matrisi", async ({ page }) => {
 test("gorsel: ayarlar sirket bilgileri", async ({ page }) => {
   await login(page);
   await page.goto("/ayarlar/sirket-bilgileri");
-  await expect(page.getByText("Firma Bilgileri")).toBeVisible();
+  // "Firma Bilgileri" hem kart basligi hem de sayfa alt basligindaki "Firma bilgilerini…"
+  // metniyle esleser; iddiayi kart basligina (.company-card__title — mockup'ta kart
+  // basligi ayirici cizgisiz, kart govdesinin icinde) sabitleyerek strict-mode
+  // "resolved to 2 elements" hatasini onluyoruz (bkz. ayni dosyadaki matris/gorunum notlari).
+  await expect(page.locator(".company-card__title", { hasText: "Firma Bilgileri" })).toBeVisible();
   await expect(page).toHaveScreenshot("ayarlar-sirket-bilgileri.png", { fullPage: true });
 });
 

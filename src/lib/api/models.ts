@@ -1,4 +1,4 @@
-import type { components } from "./schema";
+import type { components, paths } from "./schema";
 
 export type UserResponse = components["schemas"]["UserResponse"];
 export type UserListResponse = components["schemas"]["UserListResponse"];
@@ -24,3 +24,12 @@ export type PreferencesRead = components["schemas"]["PreferencesRead"];
 export type PreferencesUpdate = components["schemas"]["PreferencesUpdate"];
 export type NotificationPrefItem = components["schemas"]["NotificationPrefItem"];
 export type NotificationPrefsUpdate = components["schemas"]["NotificationPrefsUpdate"];
+export type AuditAction = components["schemas"]["AuditAction"];
+export type AuditActorRead = components["schemas"]["AuditActorRead"];
+export type AuditItem = components["schemas"]["AuditItem"];
+export type AuditListResponse = components["schemas"]["AuditListResponse"];
+
+/** `/audit-log` sorgu parametreleri (limit/offset dahil). */
+export type AuditLogQuery = NonNullable<paths["/audit-log"]["get"]["parameters"]["query"]>;
+/** Excel dışa aktarımının sorgu parametreleri (limit/offset YOK). */
+export type AuditExportQuery = NonNullable<paths["/audit-log/export.xlsx"]["get"]["parameters"]["query"]>;

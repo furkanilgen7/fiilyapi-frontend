@@ -134,7 +134,37 @@
 .login-field label {
   font-size: 13px;
   font-weight: 600;
+  color: var(--color-form-label);
+}
+.login-field__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.login-field__link {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-primary);
+}
+
+/* Giriş formu alanları — mockup Giriş.dc.html: 1.5px çerçeve, 10px yarıçap,
+   11/14 iç boşluk, 14px metin (tasarım sistemi varsayılanından farklı). */
+.login-form .input {
+  border-width: 1.5px;
+  border-radius: var(--radius-10);
+  padding: 11px 14px;
+  font-size: 14px;
+}
+.login-form .input-wrap--right .input {
+  padding-right: 44px;
+}
+.login-form .checkbox-label {
+  gap: 10px;
   color: var(--color-text-secondary);
+}
+.login-form .checkbox {
+  width: 15px;
+  height: 15px;
 }
 .login-field__error {
   font-size: 12px;
@@ -150,7 +180,13 @@
 }
 .login-submit {
   width: 100%;
-  margin-top: 8px;
+  margin-top: 16px;
+  padding: 13px;
+  border-radius: var(--radius-10);
+  font-size: 14px;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.3px;
+  box-shadow: var(--shadow-primary-btn);
 }
 .login-footer {
   margin-top: 24px;

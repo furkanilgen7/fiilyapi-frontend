@@ -1,25 +1,26 @@
 .backup-banner {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 20px;
   background: linear-gradient(135deg, var(--color-success), var(--color-success-strong));
   color: var(--color-on-brand);
   border-radius: var(--radius-14);
-  padding: 18px 20px;
+  padding: 20px 24px;
 }
 
 .backup-banner__icon {
-  font-size: 24px;
+  font-size: 36px;
 }
 
 .backup-banner__title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
+  margin-bottom: 3px;
 }
 
 .backup-banner__detail {
-  font-size: 12px;
-  color: var(--color-on-brand-85);
+  font-size: 13px;
+  color: var(--color-on-brand-80);
 }
 
 .backup-banner__spacer {
@@ -27,11 +28,11 @@
 }
 
 .backup-banner__btn {
-  background: var(--color-on-brand-15);
+  background: var(--color-on-brand-20);
   color: var(--color-on-brand);
-  border: 1px solid var(--color-on-brand-40);
+  border: none;
   border-radius: var(--radius-8);
-  padding: 8px 14px;
+  padding: 8px 16px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -44,15 +45,32 @@
   margin-top: 20px;
 }
 
+/* Kart basligi — mockup'ta ayri kenarlikli header yok, sade baslik satiri */
+.backup-card__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 14px;
+}
+
+.backup-auto-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .backup-toggle-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 0;
+  padding: 10px 12px;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-8);
 }
 
 .backup-toggle-row__name {
   font-size: 13px;
+  font-weight: 500;
   color: var(--color-text);
 }
 
@@ -61,22 +79,18 @@
   color: var(--color-text-subtle);
 }
 
-.backup-field {
-  margin-top: 14px;
-}
-
 .backup-field__label {
   display: block;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--color-text-muted);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .storage-stat {
   text-align: center;
   font-family: var(--font-mono);
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
   color: var(--color-primary);
 }
@@ -85,6 +99,7 @@
   text-align: center;
   font-size: 12px;
   color: var(--color-text-subtle);
+  margin-top: 2px;
 }
 
 .storage-bar {
@@ -92,7 +107,7 @@
   border-radius: 4px;
   background: var(--color-surface-muted);
   overflow: hidden;
-  margin: 14px 0;
+  margin-top: 10px;
 }
 
 .storage-bar__fill {
@@ -104,19 +119,32 @@
   font-size: 11px;
   color: var(--color-text-subtle);
   text-align: center;
-  margin-bottom: 14px;
+  margin: 4px 0 16px;
+}
+
+.storage-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .storage-row {
   display: flex;
   justify-content: space-between;
   padding: 6px 0;
-  font-size: 13px;
-  color: var(--color-text-secondary);
+  font-size: 12px;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.storage-row:last-child {
+  border-bottom: none;
 }
 
 .storage-row__value {
   font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--color-text);
 }
 
 .backup-history {
@@ -126,7 +154,7 @@
 
 .backup-history th {
   text-align: left;
-  padding: 10px 12px;
+  padding: 9px 12px;
   font-size: 11px;
   font-weight: 600;
   color: var(--color-text-muted);
@@ -135,18 +163,34 @@
   background: var(--color-surface-2);
 }
 
+.backup-history th.is-first {
+  padding-left: 16px;
+}
+
 .backup-history td {
-  padding: 12px;
+  padding: 11px 12px;
   font-size: 13px;
   border-bottom: 1px solid var(--color-divider);
+}
+
+.backup-history tr:last-child td {
+  border-bottom: none;
+}
+
+.backup-history td.is-first {
+  padding-left: 16px;
 }
 
 .backup-history td.is-mono {
   font-family: var(--font-mono);
 }
 
-.backup-history td.is-right {
+.backup-history .is-right {
   text-align: right;
+}
+
+.backup-history .is-center {
+  text-align: center;
 }
 
 .backup-history__restore {
@@ -161,7 +205,7 @@
 .backup-success-badge {
   font-size: 11px;
   font-weight: 600;
-  padding: 3px 10px;
+  padding: 2px 8px;
   border-radius: var(--radius-10);
   background: var(--color-success-soft);
   color: var(--color-success);

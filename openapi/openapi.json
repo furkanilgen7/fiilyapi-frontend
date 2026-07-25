@@ -1,1 +1,3069 @@
-{"openapi": "3.1.0", "info": {"title": "FİİL Yapı ERP API", "version": "0.1.0"}, "paths": {"/auth/login": {"post": {"tags": ["auth"], "summary": "Login", "operationId": "login_auth_login_post", "requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/LoginRequest"}}}, "required": true}, "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TokenPair"}}}}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}}, "/auth/refresh": {"post": {"tags": ["auth"], "summary": "Refresh", "operationId": "refresh_auth_refresh_post", "requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/RefreshRequest"}}}, "required": true}, "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TokenPair"}}}}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}}, "/auth/logout": {"post": {"tags": ["auth"], "summary": "Logout", "description": "token_version'ı artırır — o ana dek basılmış tüm token'lar (access + refresh) geçersiz\nolur (gerçek sunucu-taraflı çıkış). BFF ayrıca httpOnly cookie'yi siler.", "operationId": "logout_auth_logout_post", "responses": {"204": {"description": "Successful Response"}}, "security": [{"HTTPBearer": []}]}}, "/auth/me": {"get": {"tags": ["auth"], "summary": "Me", "operationId": "me_auth_me_get", "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/MeResponse"}}}}}, "security": [{"HTTPBearer": []}]}}, "/company": {"get": {"tags": ["company"], "summary": "Get Company Endpoint", "operationId": "get_company_endpoint_company_get", "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CompanyRead"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}}, "security": [{"HTTPBearer": []}]}, "put": {"tags": ["company"], "summary": "Update Company Endpoint", "operationId": "update_company_endpoint_company_put", "requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/CompanyUpdate"}}}, "required": true}, "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CompanyRead"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}, "security": [{"HTTPBearer": []}]}}, "/company/logo": {"get": {"tags": ["company"], "summary": "Get Logo Endpoint", "operationId": "get_logo_endpoint_company_logo_get", "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}}, "security": [{"HTTPBearer": []}]}, "post": {"tags": ["company"], "summary": "Upload Logo Endpoint", "operationId": "upload_logo_endpoint_company_logo_post", "requestBody": {"content": {"multipart/form-data": {"schema": {"$ref": "#/components/schemas/Body_upload_logo_endpoint_company_logo_post"}}}, "required": true}, "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CompanyRead"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}, "413": {"description": "Logo boyutu cok buyuk"}, "422": {"description": "Gecersiz logo bicimi veya icerigi"}}, "security": [{"HTTPBearer": []}]}, "delete": {"tags": ["company"], "summary": "Delete Logo Endpoint", "operationId": "delete_logo_endpoint_company_logo_delete", "responses": {"204": {"description": "Successful Response"}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}}, "security": [{"HTTPBearer": []}]}}, "/projects": {"get": {"tags": ["projects"], "summary": "List Projects Endpoint", "operationId": "list_projects_endpoint_projects_get", "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"items": {"$ref": "#/components/schemas/ProjectResponse"}, "type": "array", "title": "Response List Projects Endpoint Projects Get"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}}, "security": [{"HTTPBearer": []}]}}, "/projects/{project_id}": {"get": {"tags": ["projects"], "summary": "Get Project Endpoint", "operationId": "get_project_endpoint_projects__project_id__get", "security": [{"HTTPBearer": []}], "parameters": [{"name": "project_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "title": "Project Id"}}], "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ProjectResponse"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}}, "/roles": {"get": {"tags": ["roles"], "summary": "List Roles Endpoint", "operationId": "list_roles_endpoint_roles_get", "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"items": {"$ref": "#/components/schemas/RoleResponse"}, "type": "array", "title": "Response List Roles Endpoint Roles Get"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}}, "security": [{"HTTPBearer": []}]}, "post": {"tags": ["roles"], "summary": "Create Role Endpoint", "operationId": "create_role_endpoint_roles_post", "requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/RoleCreate"}}}, "required": true}, "responses": {"201": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/RoleResponse"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}, "security": [{"HTTPBearer": []}]}}, "/modules": {"get": {"tags": ["roles"], "summary": "List Modules Endpoint", "operationId": "list_modules_endpoint_modules_get", "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"items": {"$ref": "#/components/schemas/ModuleResponse"}, "type": "array", "title": "Response List Modules Endpoint Modules Get"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}}, "security": [{"HTTPBearer": []}]}}, "/roles/{role_id}/permissions": {"get": {"tags": ["roles"], "summary": "Get Role Permissions Endpoint", "operationId": "get_role_permissions_endpoint_roles__role_id__permissions_get", "security": [{"HTTPBearer": []}], "parameters": [{"name": "role_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "title": "Role Id"}}], "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/PermissionCell"}, "title": "Response Get Role Permissions Endpoint Roles  Role Id  Permissions Get"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}}, "/roles/{role_id}": {"patch": {"tags": ["roles"], "summary": "Rename Role Endpoint", "operationId": "rename_role_endpoint_roles__role_id__patch", "security": [{"HTTPBearer": []}], "parameters": [{"name": "role_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "title": "Role Id"}}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/RoleRename"}}}}, "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/RoleResponse"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}, "delete": {"tags": ["roles"], "summary": "Delete Role Endpoint", "operationId": "delete_role_endpoint_roles__role_id__delete", "security": [{"HTTPBearer": []}], "parameters": [{"name": "role_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "title": "Role Id"}}], "responses": {"204": {"description": "Successful Response"}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}}, "/roles/{role_id}/permissions/{module_key}": {"put": {"tags": ["roles"], "summary": "Update Permission Endpoint", "operationId": "update_permission_endpoint_roles__role_id__permissions__module_key__put", "security": [{"HTTPBearer": []}], "parameters": [{"name": "role_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "title": "Role Id"}}, {"name": "module_key", "in": "path", "required": true, "schema": {"type": "string", "title": "Module Key"}}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PermissionUpdate"}}}}, "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PermissionCell"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}}, "/settings/preferences": {"get": {"tags": ["settings"], "summary": "Get Preferences Endpoint", "operationId": "get_preferences_endpoint_settings_preferences_get", "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PreferencesRead"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}}, "security": [{"HTTPBearer": []}]}, "put": {"tags": ["settings"], "summary": "Update Preferences Endpoint", "operationId": "update_preferences_endpoint_settings_preferences_put", "requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/PreferencesUpdate"}}}, "required": true}, "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PreferencesRead"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}, "security": [{"HTTPBearer": []}]}}, "/settings/notifications": {"get": {"tags": ["settings"], "summary": "Get Notifications Endpoint", "operationId": "get_notifications_endpoint_settings_notifications_get", "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"items": {"$ref": "#/components/schemas/NotificationPrefItem"}, "type": "array", "title": "Response Get Notifications Endpoint Settings Notifications Get"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}}, "security": [{"HTTPBearer": []}]}, "put": {"tags": ["settings"], "summary": "Update Notifications Endpoint", "operationId": "update_notifications_endpoint_settings_notifications_put", "requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/NotificationPrefsUpdate"}}}, "required": true}, "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"items": {"$ref": "#/components/schemas/NotificationPrefItem"}, "type": "array", "title": "Response Update Notifications Endpoint Settings Notifications Put"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}, "security": [{"HTTPBearer": []}]}}, "/users": {"get": {"tags": ["users"], "summary": "List Users Endpoint", "operationId": "list_users_endpoint_users_get", "security": [{"HTTPBearer": []}], "parameters": [{"name": "limit", "in": "query", "required": false, "schema": {"type": "integer", "maximum": 200, "minimum": 1, "default": 50, "title": "Limit"}}, {"name": "offset", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 0, "default": 0, "title": "Offset"}}], "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UserListResponse"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}, "post": {"tags": ["users"], "summary": "Create User Endpoint", "operationId": "create_user_endpoint_users_post", "security": [{"HTTPBearer": []}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UserCreate"}}}}, "responses": {"201": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UserResponse"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}}, "/users/{user_id}": {"get": {"tags": ["users"], "summary": "Get User Endpoint", "operationId": "get_user_endpoint_users__user_id__get", "security": [{"HTTPBearer": []}], "parameters": [{"name": "user_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "title": "User Id"}}], "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UserResponse"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}, "patch": {"tags": ["users"], "summary": "Update User Endpoint", "operationId": "update_user_endpoint_users__user_id__patch", "security": [{"HTTPBearer": []}], "parameters": [{"name": "user_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "title": "User Id"}}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UserUpdate"}}}}, "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/UserResponse"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}, "delete": {"tags": ["users"], "summary": "Delete User Endpoint", "operationId": "delete_user_endpoint_users__user_id__delete", "security": [{"HTTPBearer": []}], "parameters": [{"name": "user_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "title": "User Id"}}], "responses": {"204": {"description": "Successful Response"}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}}, "/users/{user_id}/password": {"patch": {"tags": ["users"], "summary": "Reset Password Endpoint", "operationId": "reset_password_endpoint_users__user_id__password_patch", "security": [{"HTTPBearer": []}], "parameters": [{"name": "user_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "title": "User Id"}}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PasswordReset"}}}}, "responses": {"204": {"description": "Successful Response"}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}}, "/users/{user_id}/project-access": {"put": {"tags": ["users"], "summary": "Set Project Access Endpoint", "operationId": "set_project_access_endpoint_users__user_id__project_access_put", "security": [{"HTTPBearer": []}], "parameters": [{"name": "user_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "title": "User Id"}}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ProjectAccessInput"}}}}, "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ProjectAccessResponse"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}, "get": {"tags": ["users"], "summary": "Get Project Access Endpoint", "operationId": "get_project_access_endpoint_users__user_id__project_access_get", "security": [{"HTTPBearer": []}], "parameters": [{"name": "user_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "title": "User Id"}}], "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ProjectAccessResponse"}}}}, "403": {"description": "Yetkisiz işlem"}, "404": {"description": "Kayıt bulunamadı"}, "422": {"description": "Validation Error", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}}}}}, "/health": {"get": {"tags": ["system"], "summary": "Health", "operationId": "health_health_get", "responses": {"200": {"description": "Successful Response", "content": {"application/json": {"schema": {"additionalProperties": {"type": "string"}, "type": "object", "title": "Response Health Health Get"}}}}}}}}, "components": {"schemas": {"AccessLevel": {"type": "string", "enum": ["none", "view", "draft", "request", "approve", "full", "admin"], "title": "AccessLevel", "description": "Erişim seviyesi. Sıralıdır: none < view < draft < request < approve < full < admin.\n\nfull silmeyi KAPSAMAZ — silme yalnızca admin seviyesindedir (spec §5.0)."}, "Body_upload_logo_endpoint_company_logo_post": {"properties": {"file": {"type": "string", "contentMediaType": "application/octet-stream", "title": "File"}}, "type": "object", "required": ["file"], "title": "Body_upload_logo_endpoint_company_logo_post"}, "CompanyRead": {"properties": {"id": {"type": "string", "format": "uuid", "title": "Id"}, "name": {"anyOf": [{"type": "string"}, {"type": "null"}], "title": "Name"}, "tax_number": {"anyOf": [{"type": "string"}, {"type": "null"}], "title": "Tax Number"}, "tax_office": {"anyOf": [{"type": "string"}, {"type": "null"}], "title": "Tax Office"}, "trade_registry_no": {"anyOf": [{"type": "string"}, {"type": "null"}], "title": "Trade Registry No"}, "kep_address": {"anyOf": [{"type": "string"}, {"type": "null"}], "title": "Kep Address"}, "phone": {"anyOf": [{"type": "string"}, {"type": "null"}], "title": "Phone"}, "email": {"anyOf": [{"type": "string"}, {"type": "null"}], "title": "Email"}, "website": {"anyOf": [{"type": "string"}, {"type": "null"}], "title": "Website"}, "address": {"anyOf": [{"type": "string"}, {"type": "null"}], "title": "Address"}, "brand_color": {"type": "string", "title": "Brand Color"}, "gib_integration_code": {"anyOf": [{"type": "string"}, {"type": "null"}], "title": "Gib Integration Code"}, "earsiv_portal": {"anyOf": [{"type": "string"}, {"type": "null"}], "title": "Earsiv Portal"}, "default_vat_rate": {"type": "string", "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$", "title": "Default Vat Rate"}, "auto_einvoice": {"type": "boolean", "title": "Auto Einvoice"}, "has_logo": {"type": "boolean", "title": "Has Logo"}, "logo_url": {"type": "string", "title": "Logo Url"}}, "type": "object", "required": ["id", "name", "tax_number", "tax_office", "trade_registry_no", "kep_address", "phone", "email", "website", "address", "brand_color", "gib_integration_code", "earsiv_portal", "default_vat_rate", "auto_einvoice", "has_logo", "logo_url"], "title": "CompanyRead", "description": "Sirket okuma modeli. Logo bytea'si ASLA burada donmez; yalnizca has_logo + logo_url."}, "CompanyUpdate": {"properties": {"name": {"anyOf": [{"type": "string", "maxLength": 200}, {"type": "null"}], "title": "Name"}, "tax_number": {"anyOf": [{"type": "string", "maxLength": 50}, {"type": "null"}], "title": "Tax Number"}, "tax_office": {"anyOf": [{"type": "string", "maxLength": 100}, {"type": "null"}], "title": "Tax Office"}, "trade_registry_no": {"anyOf": [{"type": "string", "maxLength": 100}, {"type": "null"}], "title": "Trade Registry No"}, "kep_address": {"anyOf": [{"type": "string", "maxLength": 255}, {"type": "null"}], "title": "Kep Address"}, "phone": {"anyOf": [{"type": "string", "maxLength": 50}, {"type": "null"}], "title": "Phone"}, "email": {"anyOf": [{"type": "string", "format": "email"}, {"type": "null"}], "title": "Email"}, "website": {"anyOf": [{"type": "string", "maxLength": 255}, {"type": "null"}], "title": "Website"}, "address": {"anyOf": [{"type": "string"}, {"type": "null"}], "title": "Address"}, "brand_color": {"anyOf": [{"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"}, {"type": "null"}], "title": "Brand Color"}, "gib_integration_code": {"anyOf": [{"type": "string", "maxLength": 100}, {"type": "null"}], "title": "Gib Integration Code"}, "earsiv_portal": {"anyOf": [{"type": "string", "maxLength": 255}, {"type": "null"}], "title": "Earsiv Portal"}, "default_vat_rate": {"anyOf": [{"type": "number", "maximum": 100.0, "minimum": 0.0}, {"type": "string", "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"}, {"type": "null"}], "title": "Default Vat Rate"}, "auto_einvoice": {"anyOf": [{"type": "boolean"}, {"type": "null"}], "title": "Auto Einvoice"}}, "additionalProperties": false, "type": "object", "title": "CompanyUpdate", "description": "Kismi guncelleme — tum alanlar opsiyonel. Gonderilmeyen alan degismez."}, "HTTPValidationError": {"properties": {"detail": {"items": {"$ref": "#/components/schemas/ValidationError"}, "type": "array", "title": "Detail"}}, "type": "object", "title": "HTTPValidationError"}, "LoginRequest": {"properties": {"email": {"type": "string", "format": "email", "title": "Email"}, "password": {"type": "string", "title": "Password"}}, "type": "object", "required": ["email", "password"], "title": "LoginRequest"}, "MeResponse": {"properties": {"id": {"type": "string", "format": "uuid", "title": "Id"}, "email": {"type": "string", "format": "email", "title": "Email"}, "full_name": {"type": "string", "title": "Full Name"}, "title": {"type": "string", "title": "Title"}, "role_key": {"type": "string", "title": "Role Key"}, "status": {"$ref": "#/components/schemas/UserStatus"}}, "type": "object", "required": ["id", "email", "full_name", "title", "role_key", "status"], "title": "MeResponse"}, "ModuleGroup": {"type": "string", "enum": ["GENEL", "SAHA", "STOK_SATINALMA", "MALI", "SISTEM"], "title": "ModuleGroup"}, "ModuleResponse": {"properties": {"id": {"type": "string", "format": "uuid", "title": "Id"}, "key": {"type": "string", "title": "Key"}, "name": {"type": "string", "title": "Name"}, "group": {"$ref": "#/components/schemas/ModuleGroup"}, "sort_order": {"type": "integer", "title": "Sort Order"}}, "type": "object", "required": ["id", "key", "name", "group", "sort_order"], "title": "ModuleResponse"}, "NotificationPrefItem": {"properties": {"event_key": {"type": "string", "title": "Event Key"}, "label": {"type": "string", "title": "Label"}, "email": {"type": "boolean", "title": "Email"}, "in_app": {"type": "boolean", "title": "In App"}, "sms": {"type": "boolean", "title": "Sms"}}, "type": "object", "required": ["event_key", "label", "email", "in_app", "sms"], "title": "NotificationPrefItem"}, "NotificationPrefUpdateItem": {"properties": {"event_key": {"type": "string", "title": "Event Key"}, "email": {"type": "boolean", "title": "Email"}, "in_app": {"type": "boolean", "title": "In App"}, "sms": {"type": "boolean", "title": "Sms"}}, "additionalProperties": false, "type": "object", "required": ["event_key", "email", "in_app", "sms"], "title": "NotificationPrefUpdateItem"}, "NotificationPrefsUpdate": {"properties": {"items": {"items": {"$ref": "#/components/schemas/NotificationPrefUpdateItem"}, "type": "array", "maxItems": 9, "title": "Items"}}, "type": "object", "required": ["items"], "title": "NotificationPrefsUpdate"}, "PasswordReset": {"properties": {"new_password": {"type": "string", "maxLength": 128, "minLength": 8, "title": "New Password"}}, "type": "object", "required": ["new_password"], "title": "PasswordReset"}, "PermissionCell": {"properties": {"module_key": {"type": "string", "title": "Module Key"}, "access_level": {"$ref": "#/components/schemas/AccessLevel"}, "scope": {"$ref": "#/components/schemas/Scope"}}, "type": "object", "required": ["module_key", "access_level", "scope"], "title": "PermissionCell"}, "PermissionUpdate": {"properties": {"access_level": {"$ref": "#/components/schemas/AccessLevel"}, "scope": {"$ref": "#/components/schemas/Scope"}}, "type": "object", "required": ["access_level", "scope"], "title": "PermissionUpdate"}, "PreferencesRead": {"properties": {"locale": {"$ref": "#/components/schemas/UILocale"}, "currency": {"$ref": "#/components/schemas/UICurrency"}, "date_format": {"type": "string", "title": "Date Format"}, "density": {"$ref": "#/components/schemas/UIDensity"}, "theme": {"$ref": "#/components/schemas/UITheme"}, "accent_color": {"type": "string", "title": "Accent Color"}}, "type": "object", "required": ["locale", "currency", "date_format", "density", "theme", "accent_color"], "title": "PreferencesRead"}, "PreferencesUpdate": {"properties": {"locale": {"anyOf": [{"$ref": "#/components/schemas/UILocale"}, {"type": "null"}]}, "currency": {"anyOf": [{"$ref": "#/components/schemas/UICurrency"}, {"type": "null"}]}, "date_format": {"anyOf": [{"type": "string", "maxLength": 20}, {"type": "null"}], "title": "Date Format"}, "density": {"anyOf": [{"$ref": "#/components/schemas/UIDensity"}, {"type": "null"}]}, "theme": {"anyOf": [{"$ref": "#/components/schemas/UITheme"}, {"type": "null"}]}, "accent_color": {"anyOf": [{"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"}, {"type": "null"}], "title": "Accent Color"}}, "additionalProperties": false, "type": "object", "title": "PreferencesUpdate"}, "ProjectAccessInput": {"properties": {"all_projects": {"type": "boolean", "title": "All Projects", "default": false}, "project_ids": {"items": {"type": "string", "format": "uuid"}, "type": "array", "title": "Project Ids"}}, "type": "object", "title": "ProjectAccessInput"}, "ProjectAccessResponse": {"properties": {"all_projects": {"type": "boolean", "title": "All Projects"}, "project_ids": {"items": {"type": "string", "format": "uuid"}, "type": "array", "title": "Project Ids"}}, "type": "object", "required": ["all_projects", "project_ids"], "title": "ProjectAccessResponse"}, "ProjectResponse": {"properties": {"id": {"type": "string", "format": "uuid", "title": "Id"}, "code": {"type": "string", "title": "Code"}, "name": {"type": "string", "title": "Name"}, "status": {"$ref": "#/components/schemas/ProjectStatus"}, "budget": {"type": "string", "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$", "title": "Budget"}, "progress_pct": {"type": "string", "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$", "title": "Progress Pct"}}, "type": "object", "required": ["id", "code", "name", "status", "budget", "progress_pct"], "title": "ProjectResponse"}, "ProjectStatus": {"type": "string", "enum": ["active", "on_hold", "completed"], "title": "ProjectStatus"}, "RefreshRequest": {"properties": {"refresh_token": {"type": "string", "title": "Refresh Token"}}, "type": "object", "required": ["refresh_token"], "title": "RefreshRequest"}, "RoleCreate": {"properties": {"key": {"type": "string", "maxLength": 50, "minLength": 2, "pattern": "^[a-z][a-z0-9_]*$", "title": "Key"}, "name": {"type": "string", "maxLength": 100, "minLength": 1, "title": "Name"}, "emoji": {"type": "string", "maxLength": 8, "title": "Emoji", "default": ""}, "description": {"type": "string", "maxLength": 2000, "title": "Description", "default": ""}}, "type": "object", "required": ["key", "name"], "title": "RoleCreate"}, "RoleRename": {"properties": {"name": {"type": "string", "maxLength": 100, "minLength": 1, "title": "Name"}, "emoji": {"type": "string", "maxLength": 8, "title": "Emoji", "default": ""}, "description": {"type": "string", "maxLength": 2000, "title": "Description", "default": ""}}, "type": "object", "required": ["name"], "title": "RoleRename"}, "RoleResponse": {"properties": {"id": {"type": "string", "format": "uuid", "title": "Id"}, "key": {"type": "string", "title": "Key"}, "name": {"type": "string", "title": "Name"}, "emoji": {"type": "string", "title": "Emoji"}, "description": {"type": "string", "title": "Description"}, "is_system": {"type": "boolean", "title": "Is System"}}, "type": "object", "required": ["id", "key", "name", "emoji", "description", "is_system"], "title": "RoleResponse"}, "Scope": {"type": "string", "enum": ["all", "own", "project", "finance", "stock", "limited"], "title": "Scope", "description": "Veri kapsamı — aktörün modül içinde hangi kayıtları görebildiği."}, "TokenPair": {"properties": {"access_token": {"type": "string", "title": "Access Token"}, "refresh_token": {"type": "string", "title": "Refresh Token"}, "token_type": {"type": "string", "title": "Token Type", "default": "bearer"}}, "type": "object", "required": ["access_token", "refresh_token"], "title": "TokenPair"}, "UICurrency": {"type": "string", "enum": ["TRY", "USD", "EUR"], "title": "UICurrency"}, "UIDensity": {"type": "string", "enum": ["comfortable", "normal", "compact"], "title": "UIDensity"}, "UILocale": {"type": "string", "enum": ["tr", "en"], "title": "UILocale"}, "UITheme": {"type": "string", "enum": ["light", "dark", "system"], "title": "UITheme"}, "UserCreate": {"properties": {"email": {"type": "string", "format": "email", "title": "Email"}, "password": {"type": "string", "maxLength": 128, "minLength": 8, "title": "Password"}, "full_name": {"type": "string", "maxLength": 150, "minLength": 1, "title": "Full Name"}, "title": {"type": "string", "maxLength": 150, "title": "Title", "default": ""}, "role_id": {"type": "string", "format": "uuid", "title": "Role Id"}, "status": {"$ref": "#/components/schemas/UserStatus", "default": "active"}}, "type": "object", "required": ["email", "password", "full_name", "role_id"], "title": "UserCreate"}, "UserListResponse": {"properties": {"items": {"items": {"$ref": "#/components/schemas/UserResponse"}, "type": "array", "title": "Items"}, "total": {"type": "integer", "title": "Total"}, "limit": {"type": "integer", "title": "Limit"}, "offset": {"type": "integer", "title": "Offset"}}, "type": "object", "required": ["items", "total", "limit", "offset"], "title": "UserListResponse"}, "UserResponse": {"properties": {"id": {"type": "string", "format": "uuid", "title": "Id"}, "email": {"type": "string", "format": "email", "title": "Email"}, "full_name": {"type": "string", "title": "Full Name"}, "title": {"type": "string", "title": "Title"}, "role_id": {"type": "string", "format": "uuid", "title": "Role Id"}, "status": {"$ref": "#/components/schemas/UserStatus"}, "last_login_at": {"anyOf": [{"type": "string", "format": "date-time"}, {"type": "null"}], "title": "Last Login At"}}, "type": "object", "required": ["id", "email", "full_name", "title", "role_id", "status"], "title": "UserResponse"}, "UserStatus": {"type": "string", "enum": ["active", "on_leave", "passive"], "title": "UserStatus"}, "UserUpdate": {"properties": {"full_name": {"anyOf": [{"type": "string", "maxLength": 150, "minLength": 1}, {"type": "null"}], "title": "Full Name"}, "title": {"anyOf": [{"type": "string", "maxLength": 150}, {"type": "null"}], "title": "Title"}, "role_id": {"anyOf": [{"type": "string", "format": "uuid"}, {"type": "null"}], "title": "Role Id"}, "status": {"anyOf": [{"$ref": "#/components/schemas/UserStatus"}, {"type": "null"}]}}, "type": "object", "title": "UserUpdate"}, "ValidationError": {"properties": {"loc": {"items": {"anyOf": [{"type": "string"}, {"type": "integer"}]}, "type": "array", "title": "Location"}, "msg": {"type": "string", "title": "Message"}, "type": {"type": "string", "title": "Error Type"}, "input": {"title": "Input"}, "ctx": {"type": "object", "title": "Context"}}, "type": "object", "required": ["loc", "msg", "type"], "title": "ValidationError"}}, "securitySchemes": {"HTTPBearer": {"type": "http", "scheme": "bearer"}}}}
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FİİL Yapı ERP API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/audit-log": {
+      "get": {
+        "tags": [
+          "audit"
+        ],
+        "summary": "List Audit Log Endpoint",
+        "description": "Filtrelenebilir/sayfalanabilir denetim gunlugu listesi (`occurred_at DESC`).",
+        "operationId": "list_audit_log_endpoint_audit_log_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "actor_user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Actor User Id"
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AuditAction"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM-DD — o gunun 00:00'indan itibaren (Europe/Istanbul, dahil)",
+              "title": "Date From"
+            },
+            "description": "YYYY-MM-DD — o gunun 00:00'indan itibaren (Europe/Istanbul, dahil)"
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM-DD — o gunun sonuna kadar (Europe/Istanbul, dahil)",
+              "title": "Date To"
+            },
+            "description": "YYYY-MM-DD — o gunun sonuna kadar (Europe/Istanbul, dahil)"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Detay metni veya aktor adinda kismi arama",
+              "title": "Q"
+            },
+            "description": "Detay metni veya aktor adinda kismi arama"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/audit-log/export.xlsx": {
+      "get": {
+        "tags": [
+          "audit"
+        ],
+        "summary": "Export Audit Log Endpoint",
+        "description": "Filtrelenmis denetim gunlugunu Excel dosyasi olarak doner.\n\nListe ucuyle AYNI filtreler gecerlidir; `limit`/`offset` YOKTUR — eslesen tum\nkayitlar yazilir (sessiz kirpma yapilmaz, bkz. plan Task 5 sinir notu).",
+        "operationId": "export_audit_log_endpoint_audit_log_export_xlsx_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "actor_user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Actor User Id"
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AuditAction"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM-DD — o gunun 00:00'indan itibaren (Europe/Istanbul, dahil)",
+              "title": "Date From"
+            },
+            "description": "YYYY-MM-DD — o gunun 00:00'indan itibaren (Europe/Istanbul, dahil)"
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "YYYY-MM-DD — o gunun sonuna kadar (Europe/Istanbul, dahil)",
+              "title": "Date To"
+            },
+            "description": "YYYY-MM-DD — o gunun sonuna kadar (Europe/Istanbul, dahil)"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Detay metni veya aktor adinda kismi arama",
+              "title": "Q"
+            },
+            "description": "Detay metni veya aktor adinda kismi arama"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Excel dosyasi",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {}
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Login",
+        "operationId": "login_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPair"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Refresh",
+        "operationId": "refresh_auth_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPair"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Logout",
+        "description": "token_version'ı artırır — o ana dek basılmış tüm token'lar (access + refresh) geçersiz\nolur (gerçek sunucu-taraflı çıkış). BFF ayrıca httpOnly cookie'yi siler.",
+        "operationId": "logout_auth_logout_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Me",
+        "operationId": "me_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/company": {
+      "get": {
+        "tags": [
+          "company"
+        ],
+        "summary": "Get Company Endpoint",
+        "operationId": "get_company_endpoint_company_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyRead"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "company"
+        ],
+        "summary": "Update Company Endpoint",
+        "operationId": "update_company_endpoint_company_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyRead"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/company/logo": {
+      "get": {
+        "tags": [
+          "company"
+        ],
+        "summary": "Get Logo Endpoint",
+        "operationId": "get_logo_endpoint_company_logo_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "company"
+        ],
+        "summary": "Upload Logo Endpoint",
+        "operationId": "upload_logo_endpoint_company_logo_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_logo_endpoint_company_logo_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyRead"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "413": {
+            "description": "Logo boyutu cok buyuk"
+          },
+          "422": {
+            "description": "Gecersiz logo bicimi veya icerigi"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "company"
+        ],
+        "summary": "Delete Logo Endpoint",
+        "operationId": "delete_logo_endpoint_company_logo_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/projects": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "List Projects Endpoint",
+        "operationId": "list_projects_endpoint_projects_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Projects Endpoint Projects Get"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/projects/{project_id}": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Get Project Endpoint",
+        "operationId": "get_project_endpoint_projects__project_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/roles": {
+      "get": {
+        "tags": [
+          "roles"
+        ],
+        "summary": "List Roles Endpoint",
+        "operationId": "list_roles_endpoint_roles_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RoleResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Roles Endpoint Roles Get"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "roles"
+        ],
+        "summary": "Create Role Endpoint",
+        "operationId": "create_role_endpoint_roles_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/modules": {
+      "get": {
+        "tags": [
+          "roles"
+        ],
+        "summary": "List Modules Endpoint",
+        "operationId": "list_modules_endpoint_modules_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ModuleResponse"
+                  },
+                  "type": "array",
+                  "title": "Response List Modules Endpoint Modules Get"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/roles/{role_id}/permissions": {
+      "get": {
+        "tags": [
+          "roles"
+        ],
+        "summary": "Get Role Permissions Endpoint",
+        "operationId": "get_role_permissions_endpoint_roles__role_id__permissions_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "role_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Role Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PermissionCell"
+                  },
+                  "title": "Response Get Role Permissions Endpoint Roles  Role Id  Permissions Get"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/roles/{role_id}": {
+      "patch": {
+        "tags": [
+          "roles"
+        ],
+        "summary": "Rename Role Endpoint",
+        "operationId": "rename_role_endpoint_roles__role_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "role_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Role Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleRename"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoleResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "roles"
+        ],
+        "summary": "Delete Role Endpoint",
+        "operationId": "delete_role_endpoint_roles__role_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "role_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Role Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/roles/{role_id}/permissions/{module_key}": {
+      "put": {
+        "tags": [
+          "roles"
+        ],
+        "summary": "Update Permission Endpoint",
+        "operationId": "update_permission_endpoint_roles__role_id__permissions__module_key__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "role_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Role Id"
+            }
+          },
+          {
+            "name": "module_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Module Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PermissionUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionCell"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings/preferences": {
+      "get": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Get Preferences Endpoint",
+        "operationId": "get_preferences_endpoint_settings_preferences_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferencesRead"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Update Preferences Endpoint",
+        "operationId": "update_preferences_endpoint_settings_preferences_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreferencesUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferencesRead"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/settings/notifications": {
+      "get": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Get Notifications Endpoint",
+        "operationId": "get_notifications_endpoint_settings_notifications_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationPrefItem"
+                  },
+                  "type": "array",
+                  "title": "Response Get Notifications Endpoint Settings Notifications Get"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Update Notifications Endpoint",
+        "operationId": "update_notifications_endpoint_settings_notifications_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationPrefsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationPrefItem"
+                  },
+                  "type": "array",
+                  "title": "Response Update Notifications Endpoint Settings Notifications Put"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "List Users Endpoint",
+        "operationId": "list_users_endpoint_users_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Create User Endpoint",
+        "operationId": "create_user_endpoint_users_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{user_id}": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Get User Endpoint",
+        "operationId": "get_user_endpoint_users__user_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Update User Endpoint",
+        "operationId": "update_user_endpoint_users__user_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Delete User Endpoint",
+        "operationId": "delete_user_endpoint_users__user_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{user_id}/password": {
+      "patch": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Reset Password Endpoint",
+        "operationId": "reset_password_endpoint_users__user_id__password_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordReset"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{user_id}/project-access": {
+      "put": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Set Project Access Endpoint",
+        "operationId": "set_project_access_endpoint_users__user_id__project_access_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectAccessInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectAccessResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Get Project Access Endpoint",
+        "operationId": "get_project_access_endpoint_users__user_id__project_access_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectAccessResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Health Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AccessLevel": {
+        "type": "string",
+        "enum": [
+          "none",
+          "view",
+          "draft",
+          "request",
+          "approve",
+          "full",
+          "admin"
+        ],
+        "title": "AccessLevel",
+        "description": "Erişim seviyesi. Sıralıdır: none < view < draft < request < approve < full < admin.\n\nfull silmeyi KAPSAMAZ — silme yalnızca admin seviyesindedir (spec §5.0)."
+      },
+      "AuditAction": {
+        "type": "string",
+        "enum": [
+          "login",
+          "create",
+          "update",
+          "delete",
+          "approve",
+          "backup"
+        ],
+        "title": "AuditAction",
+        "description": "Denetim gunlugunde kaydedilen islem turleri.\n\n`approve` ve `backup` degerleri simdiden tanimlidir; uretici uclari sonraki\nfazlarda (hakedis onayi, yedekleme) eklenecek.\n\nProje geneli deseni (`str, enum.Enum`) korunur; StrEnum'a gecis `__str__`\ndavranisini degistirir (bkz. pyproject.toml UP042 notu)."
+      },
+      "AuditActorRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "role_name": {
+            "type": "string",
+            "title": "Role Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "full_name",
+          "role_name"
+        ],
+        "title": "AuditActorRead",
+        "description": "Denetim satirini yapan kullanici.\n\n`role_name` ZORUNLUDUR: ekranin kullanici hucresi ad + rol adini birlikte gosterir."
+      },
+      "AuditItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "action": {
+            "$ref": "#/components/schemas/AuditAction"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "ip_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip Address"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuditActorRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "occurred_at",
+          "action",
+          "detail"
+        ],
+        "title": "AuditItem"
+      },
+      "AuditListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AuditItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "AuditListResponse"
+      },
+      "Body_upload_logo_endpoint_company_logo_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_logo_endpoint_company_logo_post"
+      },
+      "CompanyRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "tax_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Number"
+          },
+          "tax_office": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Office"
+          },
+          "trade_registry_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trade Registry No"
+          },
+          "kep_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kep Address"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "brand_color": {
+            "type": "string",
+            "title": "Brand Color"
+          },
+          "gib_integration_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gib Integration Code"
+          },
+          "earsiv_portal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Earsiv Portal"
+          },
+          "default_vat_rate": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Default Vat Rate"
+          },
+          "auto_einvoice": {
+            "type": "boolean",
+            "title": "Auto Einvoice"
+          },
+          "has_logo": {
+            "type": "boolean",
+            "title": "Has Logo"
+          },
+          "logo_url": {
+            "type": "string",
+            "title": "Logo Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "tax_number",
+          "tax_office",
+          "trade_registry_no",
+          "kep_address",
+          "phone",
+          "email",
+          "website",
+          "address",
+          "brand_color",
+          "gib_integration_code",
+          "earsiv_portal",
+          "default_vat_rate",
+          "auto_einvoice",
+          "has_logo",
+          "logo_url"
+        ],
+        "title": "CompanyRead",
+        "description": "Sirket okuma modeli. Logo bytea'si ASLA burada donmez; yalnizca has_logo + logo_url."
+      },
+      "CompanyUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "tax_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Number"
+          },
+          "tax_office": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Office"
+          },
+          "trade_registry_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trade Registry No"
+          },
+          "kep_address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kep Address"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "brand_color": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand Color"
+          },
+          "gib_integration_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gib Integration Code"
+          },
+          "earsiv_portal": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Earsiv Portal"
+          },
+          "default_vat_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Vat Rate"
+          },
+          "auto_einvoice": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Einvoice"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CompanyUpdate",
+        "description": "Kismi guncelleme — tum alanlar opsiyonel. Gonderilmeyen alan degismez."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest"
+      },
+      "MeResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "role_key": {
+            "type": "string",
+            "title": "Role Key"
+          },
+          "status": {
+            "$ref": "#/components/schemas/UserStatus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "full_name",
+          "title",
+          "role_key",
+          "status"
+        ],
+        "title": "MeResponse"
+      },
+      "ModuleGroup": {
+        "type": "string",
+        "enum": [
+          "GENEL",
+          "SAHA",
+          "STOK_SATINALMA",
+          "MALI",
+          "SISTEM"
+        ],
+        "title": "ModuleGroup"
+      },
+      "ModuleResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "group": {
+            "$ref": "#/components/schemas/ModuleGroup"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "key",
+          "name",
+          "group",
+          "sort_order"
+        ],
+        "title": "ModuleResponse"
+      },
+      "NotificationPrefItem": {
+        "properties": {
+          "event_key": {
+            "type": "string",
+            "title": "Event Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "email": {
+            "type": "boolean",
+            "title": "Email"
+          },
+          "in_app": {
+            "type": "boolean",
+            "title": "In App"
+          },
+          "sms": {
+            "type": "boolean",
+            "title": "Sms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_key",
+          "label",
+          "email",
+          "in_app",
+          "sms"
+        ],
+        "title": "NotificationPrefItem"
+      },
+      "NotificationPrefUpdateItem": {
+        "properties": {
+          "event_key": {
+            "type": "string",
+            "title": "Event Key"
+          },
+          "email": {
+            "type": "boolean",
+            "title": "Email"
+          },
+          "in_app": {
+            "type": "boolean",
+            "title": "In App"
+          },
+          "sms": {
+            "type": "boolean",
+            "title": "Sms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "event_key",
+          "email",
+          "in_app",
+          "sms"
+        ],
+        "title": "NotificationPrefUpdateItem"
+      },
+      "NotificationPrefsUpdate": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationPrefUpdateItem"
+            },
+            "type": "array",
+            "maxItems": 9,
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "NotificationPrefsUpdate"
+      },
+      "PasswordReset": {
+        "properties": {
+          "new_password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "New Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "new_password"
+        ],
+        "title": "PasswordReset"
+      },
+      "PermissionCell": {
+        "properties": {
+          "module_key": {
+            "type": "string",
+            "title": "Module Key"
+          },
+          "access_level": {
+            "$ref": "#/components/schemas/AccessLevel"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          }
+        },
+        "type": "object",
+        "required": [
+          "module_key",
+          "access_level",
+          "scope"
+        ],
+        "title": "PermissionCell"
+      },
+      "PermissionUpdate": {
+        "properties": {
+          "access_level": {
+            "$ref": "#/components/schemas/AccessLevel"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_level",
+          "scope"
+        ],
+        "title": "PermissionUpdate"
+      },
+      "PreferencesRead": {
+        "properties": {
+          "locale": {
+            "$ref": "#/components/schemas/UILocale"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/UICurrency"
+          },
+          "date_format": {
+            "type": "string",
+            "title": "Date Format"
+          },
+          "density": {
+            "$ref": "#/components/schemas/UIDensity"
+          },
+          "theme": {
+            "$ref": "#/components/schemas/UITheme"
+          },
+          "accent_color": {
+            "type": "string",
+            "title": "Accent Color"
+          }
+        },
+        "type": "object",
+        "required": [
+          "locale",
+          "currency",
+          "date_format",
+          "density",
+          "theme",
+          "accent_color"
+        ],
+        "title": "PreferencesRead"
+      },
+      "PreferencesUpdate": {
+        "properties": {
+          "locale": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UILocale"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UICurrency"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "date_format": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Format"
+          },
+          "density": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UIDensity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "theme": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UITheme"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "accent_color": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^#[0-9A-Fa-f]{6}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accent Color"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PreferencesUpdate"
+      },
+      "ProjectAccessInput": {
+        "properties": {
+          "all_projects": {
+            "type": "boolean",
+            "title": "All Projects",
+            "default": false
+          },
+          "project_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Project Ids"
+          }
+        },
+        "type": "object",
+        "title": "ProjectAccessInput"
+      },
+      "ProjectAccessResponse": {
+        "properties": {
+          "all_projects": {
+            "type": "boolean",
+            "title": "All Projects"
+          },
+          "project_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Project Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "all_projects",
+          "project_ids"
+        ],
+        "title": "ProjectAccessResponse"
+      },
+      "ProjectResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectStatus"
+          },
+          "budget": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Budget"
+          },
+          "progress_pct": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Progress Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "status",
+          "budget",
+          "progress_pct"
+        ],
+        "title": "ProjectResponse"
+      },
+      "ProjectStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "on_hold",
+          "completed"
+        ],
+        "title": "ProjectStatus"
+      },
+      "RefreshRequest": {
+        "properties": {
+          "refresh_token": {
+            "type": "string",
+            "title": "Refresh Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "refresh_token"
+        ],
+        "title": "RefreshRequest"
+      },
+      "RoleCreate": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 2,
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "emoji": {
+            "type": "string",
+            "maxLength": 8,
+            "title": "Emoji",
+            "default": ""
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Description",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "name"
+        ],
+        "title": "RoleCreate"
+      },
+      "RoleRename": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "emoji": {
+            "type": "string",
+            "maxLength": 8,
+            "title": "Emoji",
+            "default": ""
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Description",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "RoleRename"
+      },
+      "RoleResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "emoji": {
+            "type": "string",
+            "title": "Emoji"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "is_system": {
+            "type": "boolean",
+            "title": "Is System"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "key",
+          "name",
+          "emoji",
+          "description",
+          "is_system"
+        ],
+        "title": "RoleResponse"
+      },
+      "Scope": {
+        "type": "string",
+        "enum": [
+          "all",
+          "own",
+          "project",
+          "finance",
+          "stock",
+          "limited"
+        ],
+        "title": "Scope",
+        "description": "Veri kapsamı — aktörün modül içinde hangi kayıtları görebildiği."
+      },
+      "TokenPair": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "refresh_token": {
+            "type": "string",
+            "title": "Refresh Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "bearer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "refresh_token"
+        ],
+        "title": "TokenPair"
+      },
+      "UICurrency": {
+        "type": "string",
+        "enum": [
+          "TRY",
+          "USD",
+          "EUR"
+        ],
+        "title": "UICurrency"
+      },
+      "UIDensity": {
+        "type": "string",
+        "enum": [
+          "comfortable",
+          "normal",
+          "compact"
+        ],
+        "title": "UIDensity"
+      },
+      "UILocale": {
+        "type": "string",
+        "enum": [
+          "tr",
+          "en"
+        ],
+        "title": "UILocale"
+      },
+      "UITheme": {
+        "type": "string",
+        "enum": [
+          "light",
+          "dark",
+          "system"
+        ],
+        "title": "UITheme"
+      },
+      "UserCreate": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Password"
+          },
+          "full_name": {
+            "type": "string",
+            "maxLength": 150,
+            "minLength": 1,
+            "title": "Full Name"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 150,
+            "title": "Title",
+            "default": ""
+          },
+          "role_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Role Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/UserStatus",
+            "default": "active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password",
+          "full_name",
+          "role_id"
+        ],
+        "title": "UserCreate"
+      },
+      "UserListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/UserResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "UserListResponse"
+      },
+      "UserResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "role_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Role Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/UserStatus"
+          },
+          "last_login_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Login At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "full_name",
+          "title",
+          "role_id",
+          "status"
+        ],
+        "title": "UserResponse"
+      },
+      "UserStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "on_leave",
+          "passive"
+        ],
+        "title": "UserStatus"
+      },
+      "UserUpdate": {
+        "properties": {
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 150,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 150
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "role_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "UserUpdate"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

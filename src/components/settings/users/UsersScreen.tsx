@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui";
 import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
@@ -18,12 +19,23 @@ import { ConfirmDialog } from "@/components/settings/ConfirmDialog";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { backendErrorMessage } from "@/lib/settings/error-message";
 import { isForbidden } from "@/lib/api/unwrap";
+import { cx } from "@/lib/cx";
 import type { ProjectResponse, RoleResponse, UserResponse } from "@/lib/api/models";
 import { RolesPreviewCard } from "./RolesPreviewCard";
 import { PermissionMatrixPreviewCard } from "./PermissionMatrixPreviewCard";
 import "@/components/settings/settings.css";
 import "./users-screen.css";
 import "./users-preview.css";
+
+// Ayarlar ana ekranı sekme şeridi — yalnız bu ekranda (mockup Ayarlar.dc.html §70-75);
+// diğer Ayarlar alt sayfaları (Rol Yönetimi, İzin Matrisi, Şirket...) kendi sub-header'ına
+// sahip, bu şeridi tekrar etmiyor.
+const SETTINGS_TABS = [
+  { href: "/ayarlar/kullanicilar", label: "Kullanıcılar" },
+  { href: "/ayarlar/roller", label: "Rol Yönetimi" },
+  { href: "/ayarlar/izin-matrisi", label: "İzin Matrisi" },
+  { href: "/ayarlar/sirket-bilgileri", label: "Şirket" },
+] as const;
 
 type ModalState =
   | { type: "create" }
@@ -106,6 +118,22 @@ export function UsersScreen() {
 
   return (
     <>
+      <nav className="settings-tabs" aria-label="Ayarlar sekmeleri">
+        {SETTINGS_TABS.map((tab) => {
+          const isActive = pathname.startsWith(tab.href);
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={cx("settings-tabs__item", isActive && "settings-tabs__item--active")}
+              aria-current={isActive ? "page" : undefined}
+            >
+              {tab.label}
+            </Link>
+          );
+        })}
+      </nav>
+
       <SettingsCard
         title="Kullanıcı Listesi"
         count={`${total} kullanıcı`}
@@ -178,17 +206,19 @@ export function UsersScreen() {
         </table>
       </SettingsCard>
 
-      <div className="users-pager">
-        <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => goToPage(page - 1)}>
-          Önceki
-        </Button>
-        <span className="users-pager__label">
-          Sayfa {page} / {pageCount}
-        </span>
-        <Button variant="secondary" size="sm" disabled={page >= pageCount} onClick={() => goToPage(page + 1)}>
-          Sonraki
-        </Button>
-      </div>
+      {pageCount > 1 && (
+        <div className="users-pager">
+          <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => goToPage(page - 1)}>
+            Önceki
+          </Button>
+          <span className="users-pager__label">
+            Sayfa {page} / {pageCount}
+          </span>
+          <Button variant="secondary" size="sm" disabled={page >= pageCount} onClick={() => goToPage(page + 1)}>
+            Sonraki
+          </Button>
+        </div>
+      )}
 
       <div className="users-preview-grid">
         <RolesPreviewCard users={items} />

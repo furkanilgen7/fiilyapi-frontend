@@ -4,6 +4,14 @@
   gap: 20px;
 }
 
+/* Kart basligi — mockup'ta ayri kenarlikli header yok, sade baslik satiri */
+.appearance-card__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 16px;
+}
+
 /* Tema kartlari */
 .theme-cards {
   display: grid;
@@ -71,7 +79,7 @@
 }
 
 .theme-card__bar--system {
-  background: var(--color-on-brand-40);
+  background: var(--color-on-brand-50);
 }
 
 .theme-card__label {
@@ -149,15 +157,15 @@
 .density-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius-10);
-  padding: 12px 14px;
+  gap: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: 10px 12px;
   cursor: pointer;
 }
 
 .density-row--active {
-  border-color: var(--color-primary);
+  border: 2px solid var(--color-primary);
   background: var(--color-nav-active-bg);
 }
 

@@ -51,6 +51,14 @@ interface MockState {
     accent_color: string;
   };
   notifications: Array<{ event_key: string; label: string; email: boolean; in_app: boolean; sms: boolean }>;
+  auditLog: Array<{
+    id: string;
+    occurred_at: string;
+    action: string;
+    detail: string;
+    ip_address: string | null;
+    actor: { id: string; full_name: string; role_name: string } | null;
+  }>;
 }
 
 function seedState(): MockState {
@@ -207,6 +215,17 @@ function seedState(): MockState {
       { event_key: "payroll_payday", label: "Bordro ödeme günü", email: true, in_app: true, sms: false },
       { event_key: "daily_log_missing", label: "Günlük kayıt girilmedi", email: false, in_app: true, sms: false },
     ],
+    // Mockup'taki satirlarla hizali (../projedesign/Ayarlar - Denetim Günlüğü.dc.html);
+    // occurred_at gercek backend gibi UTC'dir (Z), ekran Europe/Istanbul'a cevirir —
+    // yani UTC 06:14 mockup'taki 09:14 olarak gorunur ve baseline TZ'den etkilenmez.
+    auditLog: [
+      { id: "al-1", occurred_at: "2026-07-17T06:14:00Z", action: "login", detail: "Sisteme giriş yapıldı", ip_address: "192.168.1.100", actor: { id: "u-1", full_name: "Ahmet Yılmaz", role_name: "Patron" } },
+      { id: "al-2", occurred_at: "2026-07-17T05:52:00Z", action: "create", detail: "Günlük kayıt oluşturuldu · A-Blok · 17 Tem", ip_address: "10.0.0.45", actor: { id: "u-2", full_name: "Sercan Öztürk", role_name: "Şantiye Şefi" } },
+      { id: "al-3", occurred_at: "2026-07-17T05:30:00Z", action: "approve", detail: "Hakediş #47 onaylandı · ₺1.240.000", ip_address: "192.168.1.55", actor: { id: "u-3", full_name: "Ayşe Demir", role_name: "Muhasebe" } },
+      { id: "al-4", occurred_at: "2026-07-16T14:20:00Z", action: "update", detail: "Kullanıcı rolü değiştirildi: Kadir Arslan → PM", ip_address: "192.168.1.100", actor: { id: "u-1", full_name: "Ahmet Yılmaz", role_name: "Patron" } },
+      { id: "al-5", occurred_at: "2026-07-15T11:05:00Z", action: "delete", detail: "Taslak satın alma talebi silindi · SAT-2026-0041", ip_address: "10.0.0.88", actor: { id: "u-5", full_name: "Yusuf Kaya", role_name: "Satınalma" } },
+      { id: "al-6", occurred_at: "2026-07-15T06:00:00Z", action: "backup", detail: "Otomatik yedekleme tamamlandı · 2,3 GB", ip_address: null, actor: null },
+    ],
   };
 }
 
@@ -310,6 +329,35 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const roleId = roleIdMatch[1];
       state.roles = state.roles.filter((r) => r.id !== roleId);
       return send(204);
+    }
+
+    // /audit-log (B5) — ikili export ucu JSON degil, xlsx imzasi doner
+    if (method === "GET" && path === "/audit-log/export.xlsx") {
+      res.writeHead(200, {
+        "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "content-disposition": 'attachment; filename="denetim-gunlugu.xlsx"',
+      });
+      res.end(Buffer.from([0x50, 0x4b, 0x03, 0x04]));
+      return;
+    }
+    if (method === "GET" && path === "/audit-log") {
+      const limit = Number(parsed.searchParams.get("limit") ?? "50");
+      const offset = Number(parsed.searchParams.get("offset") ?? "0");
+      const action = parsed.searchParams.get("action");
+      const actorUserId = parsed.searchParams.get("actor_user_id");
+      // `q`: detay metni veya aktor adinda kismi arama; bos/whitespace = filtre yok.
+      const search = (parsed.searchParams.get("q") ?? "").trim().toLocaleLowerCase("tr");
+      let rows = state.auditLog;
+      if (action) rows = rows.filter((row) => row.action === action);
+      if (actorUserId) rows = rows.filter((row) => row.actor?.id === actorUserId);
+      if (search) {
+        rows = rows.filter(
+          (row) =>
+            row.detail.toLocaleLowerCase("tr").includes(search) ||
+            (row.actor?.full_name ?? "").toLocaleLowerCase("tr").includes(search),
+        );
+      }
+      return send(200, { items: rows.slice(offset, offset + limit), total: rows.length, limit, offset });
     }
 
     // /users list + create

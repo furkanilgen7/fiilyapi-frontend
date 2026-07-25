@@ -29,6 +29,22 @@ export const EyeOffIcon = (p: IconProps) => (
   </svg>
 );
 
+// Buyutec — mockup'taki arama kutusu ikonu (daire + sap, 1.4 kalinlik)
+export const SearchIcon = (p: IconProps) => (
+  <svg {...base({ viewBox: "0 0 13 13", strokeWidth: 1.4, width: 13, height: 13, ...p })}>
+    <circle cx="5.5" cy="5.5" r="4" />
+    <path d="M9 9l2 2" />
+  </svg>
+);
+
+// Dairesel onay ikonu — mockup'taki "tam erisim" banner ikonu (daire 1.4, tik 1.6 kalinlik).
+export const CheckCircleIcon = (p: IconProps) => (
+  <svg {...base({ viewBox: "0 0 16 16", strokeWidth: 1.4, width: 16, height: 16, ...p })}>
+    <circle cx="8" cy="8" r="7" />
+    <path d="M5 8l2 2 4-4" strokeWidth={1.6} />
+  </svg>
+);
+
 export const ChevronDownIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <polyline points="6 9 12 15 18 9" />
@@ -172,6 +188,13 @@ export const BellIcon = (p: IconProps) => (
     <path d="M13.73 21a2 2 0 0 1-3.46 0" />
   </svg>
 );
+// Asma kilit — kabuk sidebar'indaki kullanici kartinin sag ucundaki ikon
+export const LockIcon = (p: IconProps) => (
+  <svg {...base({ viewBox: "0 0 14 14", strokeWidth: 1.2, width: 14, height: 14, ...p })}>
+    <path d="M5 5a2 2 0 014 0v1H5V5zM3 8h8v4H3z" />
+  </svg>
+);
+
 export const SettingsIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <circle cx="12" cy="12" r="3" />

@@ -16,7 +16,7 @@
   height: 100%;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   padding: 0 20px;
   border-right: 1px solid var(--color-border);
 }
@@ -33,12 +33,14 @@
 .topbar-logo__name {
   font-size: 15px;
   font-weight: 700;
+  letter-spacing: -0.3px;
   color: var(--color-text);
 }
 .topbar-logo__sub {
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 1px;
+  margin-left: -4px;
   color: var(--color-text-subtle);
 }
 .topbar-actions {
@@ -53,7 +55,7 @@
   height: 32px;
   border: none;
   border-radius: 8px;
-  background: var(--color-primary-soft);
+  background: var(--color-nav-active-bg);
   color: var(--color-primary);
   display: flex;
   align-items: center;

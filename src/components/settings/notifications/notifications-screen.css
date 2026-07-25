@@ -8,12 +8,16 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 13px 18px;
+  padding: 14px 18px;
   background: var(--color-surface-2);
   border-bottom: 1px solid var(--color-border);
   font-size: 14px;
   font-weight: 600;
   color: var(--color-text);
+}
+
+.notif-card__rows {
+  padding: 8px 0;
 }
 
 .notif-row {
@@ -41,13 +45,13 @@
 .notif-row__channels {
   margin-left: auto;
   display: flex;
-  gap: 20px;
+  gap: 10px;
 }
 
 .notif-channel {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   font-size: 12px;
   color: var(--color-text-secondary);
 }

@@ -1,26 +1,61 @@
+/* Filtre çubuğu — mockup: arama kutusu + 3 seçici + Excel butonu, sola paketli */
 .audit-filters {
   display: flex;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
-.audit-filters input,
-.audit-filters select {
+.audit-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  max-width: 300px;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-8);
   padding: 7px 14px;
-  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+
+.audit-search input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.audit-filters select {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: 7px 12px;
+  font-size: 13px;
   color: var(--color-text-secondary);
   background: var(--color-surface);
 }
 
-.audit-filters input {
-  max-width: 300px;
-  flex: 1;
+/* Excel — mockup'ta çerçeveli beyaz buton (ghost değil) */
+.audit-export.btn {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: var(--weight-regular);
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
 }
 
-.audit-filters__spacer {
-  flex: 1;
+.audit-pager {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.audit-pager__label {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
 }
 
 .audit-table {
@@ -28,27 +63,53 @@
   border-collapse: collapse;
 }
 
+.audit-table thead tr {
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
 .audit-table th {
   text-align: left;
   padding: 10px 12px;
-  font-size: 11px;
+  font-size: var(--text-table-head);
   font-weight: 600;
   color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.8px;
-  background: var(--color-surface-2);
+  letter-spacing: var(--tracking-wide);
 }
 
 .audit-table td {
-  padding: 12px;
-  font-size: 13px;
+  padding: 11px 12px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
   border-bottom: 1px solid var(--color-divider);
+}
+
+/* Zaman sütunu mockup'ta 16px dış boşlukla başlar */
+.audit-table th:first-child,
+.audit-table td:first-child {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.audit-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.audit-table__center {
+  text-align: center;
 }
 
 .audit-table td.is-mono {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.audit-table td.is-ip {
+  color: var(--color-text-subtle);
+  white-space: normal;
 }
 
 .audit-user__name {
@@ -67,9 +128,10 @@
 }
 
 .audit-badge {
+  display: inline-block;
   font-size: 11px;
   font-weight: 600;
-  padding: 3px 9px;
+  padding: 2px 8px;
   border-radius: var(--radius-10);
 }
 
