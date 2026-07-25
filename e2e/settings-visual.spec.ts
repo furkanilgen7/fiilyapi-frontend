@@ -25,6 +25,9 @@ test("gorsel: ayarlar roller", async ({ page }) => {
 test("gorsel: ayarlar izin matrisi", async ({ page }) => {
   await login(page);
   await page.goto("/ayarlar/izin-matrisi");
-  await expect(page.getByText("Genel")).toBeVisible();
+  // "Genel" hem ayarlar sidebar grup basligi hem matris icerik grup basligi olarak
+  // gectigi icin iddiayi yalnizca matris icerik bolgesine (.matrix-wrap) sabitliyoruz —
+  // aksi halde strict-mode "resolved to N elements" hatasi alinir.
+  await expect(page.locator(".matrix-wrap").getByText("Genel")).toBeVisible();
   await expect(page).toHaveScreenshot("ayarlar-izin-matrisi.png", { fullPage: true });
 });

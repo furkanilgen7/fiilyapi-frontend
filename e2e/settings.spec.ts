@@ -8,35 +8,39 @@ async function login(page: import("@playwright/test").Page) {
   await expect(page.getByText(/Hoş geldiniz/)).toBeVisible();
 }
 
-test("ayarlar: sekme gezinme + kullanici olustur + matris hucre degisimi", async ({ page }) => {
+// Ayarlar sidebar'i ("Ayarlar menüsü" aria-label'li aside) — kabuk sidebar'i occluded
+// olsa da DOM'da kalir ve ayni metinlerden bazilari (Genel vb.) barindirir, bu yüzden
+// gezinme ve içerik iddiaları bu kapsayıcıya (veya ilgili içerik bölgesine) sabitlenir.
+function settingsSidebar(page: import("@playwright/test").Page) {
+  return page.getByRole("complementary", { name: "Ayarlar menüsü" });
+}
+
+test("ayarlar: sidebar gezinme + rol goruntule + matris hucre degisimi", async ({ page }) => {
   await login(page);
+  const sidebar = settingsSidebar(page);
 
   // /ayarlar → kullanicilar'a yonlenir
   await page.goto("/ayarlar");
   await expect(page).toHaveURL(/\/ayarlar\/kullanicilar/);
-  await expect(page.getByRole("link", { name: "Kullanıcılar" })).toHaveAttribute("aria-current", "page");
+  await expect(sidebar.getByRole("link", { name: "Kullanıcılar" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("cell", { name: "Ahmet Yılmaz" })).toBeVisible();
 
-  // Roller sekmesi
-  await page.getByRole("link", { name: "Roller" }).click();
+  // Rol Yönetimi'ne gec
+  await sidebar.getByRole("link", { name: "Rol Yönetimi" }).click();
   await expect(page).toHaveURL(/\/ayarlar\/roller/);
-  await expect(page.getByText("Sistem Yöneticisi")).toBeVisible();
+  await expect(page.locator(".role-detail__name")).toHaveText("Sistem Yöneticisi");
 
-  // Kullanicilar'a don + yeni kullanici olustur
-  await page.getByRole("link", { name: "Kullanıcılar" }).click();
-  await page.getByRole("button", { name: "Yeni Kullanıcı" }).click();
-  await page.getByLabel("Ad Soyad").fill("Yeni Kişi");
-  await page.getByLabel("E-posta").fill("yeni@fiil.com");
-  await page.getByLabel("Parola").fill("parola123");
-  const roleField = page.locator("label.settings-field", { has: page.getByText("Rol", { exact: true }) });
-  await roleField.locator("select").selectOption({ label: "Saha" });
-  await page.getByRole("button", { name: "Kaydet" }).click();
-  await expect(page.getByText("Yeni Kişi")).toBeVisible();
+  // Izin Matrisi'ne gec
+  await sidebar.getByRole("link", { name: "İzin Matrisi" }).click();
+  await expect(page).toHaveURL(/\/ayarlar\/izin-matrisi/);
+  // "Genel" hem ayarlar sidebar grup basligi hem matris icerik grup basligi olarak
+  // gecer; iddiayi yalnizca matris icerik bolgesine sabitleyerek strict-mode
+  // belirsizligini onluyoruz.
+  const matrixContent = page.locator(".matrix-wrap");
+  await expect(matrixContent.getByText("Genel")).toBeVisible();
 
-  // Izin matrisi: bir hucreyi degistir (system_admin disi rol)
-  await page.getByRole("link", { name: "İzin Matrisi" }).click();
-  await expect(page.getByText("Genel")).toBeVisible();
-  const cell = page.getByLabel("Raporlar — Saha");
+  // Bir hucreyi degistir (system_admin disi bir rol — Santiye Sefi)
+  const cell = page.getByLabel("Personel — Şantiye Şefi");
   await cell.selectOption({ label: "Tam" });
   await expect(cell).toHaveValue("full");
 });

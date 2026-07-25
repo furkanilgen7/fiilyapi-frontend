@@ -26,25 +26,27 @@ interface MockState {
 }
 
 function seedState(): MockState {
+  // Gerçek backend seed'iyle hizalı (bkz. backend/app/modules/roles/seed_data.py):
+  // aynı rol/modül anahtarları, isimleri, gruplar ve sıralama.
   const roles = [
-    { id: "role-admin", key: "system_admin", name: "Sistem Yöneticisi", emoji: "🛡️", description: "Tam yetki", is_system: true },
-    { id: "role-patron", key: "patron", name: "Patron", emoji: "👑", description: "Üst yönetim", is_system: true },
-    { id: "role-saha", key: "saha", name: "Saha", emoji: "👷", description: "Saha ekibi", is_system: false },
+    { id: "role-admin", key: "system_admin", name: "Sistem Yöneticisi", emoji: "🛡️", description: "Tüm modüller · Tüm projeler · Ayarlar · Kullanıcı yönetimi · Silme yetkisi", is_system: true },
+    { id: "role-patron", key: "patron", name: "Patron", emoji: "👔", description: "Tüm modüller · Tüm projeler (ayarlar hariç)", is_system: true },
+    { id: "role-saha", key: "site_chief", name: "Şantiye Şefi", emoji: "👷", description: "Günlük kayıt, puantaj, stok görüntüle", is_system: false },
   ];
   const modules = [
-    { id: "m-gosterge", key: "gosterge", name: "Gösterge Paneli", group: "GENEL", sort_order: 1 },
-    { id: "m-raporlar", key: "raporlar", name: "Raporlar", group: "GENEL", sort_order: 2 },
-    { id: "m-projeler", key: "projeler", name: "Projeler", group: "GENEL", sort_order: 3 },
-    { id: "m-puantaj", key: "puantaj", name: "Puantaj", group: "SAHA", sort_order: 1 },
-    { id: "m-personel", key: "personel", name: "Personel", group: "SAHA", sort_order: 2 },
-    { id: "m-makine", key: "makine", name: "Makine", group: "SAHA", sort_order: 3 },
-    { id: "m-stok", key: "stok", name: "Stok", group: "STOK_SATINALMA", sort_order: 1 },
-    { id: "m-satinalma", key: "satinalma", name: "Satınalma", group: "STOK_SATINALMA", sort_order: 2 },
-    { id: "m-sozlesmeler", key: "sozlesmeler", name: "Sözleşmeler", group: "MALI", sort_order: 1 },
-    { id: "m-muhasebe", key: "muhasebe", name: "Muhasebe", group: "MALI", sort_order: 2 },
-    { id: "m-hazine", key: "hazine", name: "Hazine", group: "MALI", sort_order: 3 },
-    { id: "m-hakedisler", key: "hakedisler", name: "Hakedişler", group: "MALI", sort_order: 4 },
-    { id: "m-ayarlar", key: "ayarlar", name: "Ayarlar", group: "SISTEM", sort_order: 1 },
+    { id: "m-dashboard", key: "dashboard", name: "Gösterge Paneli", group: "GENEL", sort_order: 1 },
+    { id: "m-approvals", key: "approvals", name: "Onay Kutusu", group: "GENEL", sort_order: 2 },
+    { id: "m-site-diary", key: "site_diary", name: "Günlük Kayıt", group: "SAHA", sort_order: 3 },
+    { id: "m-timesheet", key: "timesheet", name: "Puantaj", group: "SAHA", sort_order: 4 },
+    { id: "m-personnel", key: "personnel", name: "Personel", group: "SAHA", sort_order: 5 },
+    { id: "m-payroll", key: "payroll", name: "Bordro", group: "SAHA", sort_order: 6 },
+    { id: "m-inventory", key: "inventory", name: "Stok & Depo", group: "STOK_SATINALMA", sort_order: 7 },
+    { id: "m-procurement", key: "procurement", name: "Satınalma & Teklif", group: "STOK_SATINALMA", sort_order: 8 },
+    { id: "m-progress-payments", key: "progress_payments", name: "Hakedişler", group: "MALI", sort_order: 9 },
+    { id: "m-accounting", key: "accounting", name: "Muhasebe", group: "MALI", sort_order: 10 },
+    { id: "m-treasury", key: "treasury", name: "Hazine", group: "MALI", sort_order: 11 },
+    { id: "m-settings", key: "settings", name: "Ayarlar", group: "SISTEM", sort_order: 12 },
+    { id: "m-user-management", key: "user_management", name: "Kullanıcı & Rol Yönetimi", group: "SISTEM", sort_order: 13 },
   ];
   const permissions: MockState["permissions"] = {
     "role-admin": Object.fromEntries(modules.map((m) => [m.key, { access_level: "admin", scope: "all" }])),
