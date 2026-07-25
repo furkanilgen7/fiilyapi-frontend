@@ -1,0 +1,98 @@
+/* Kullanıcı Listesi zengin tablo — ref §A.5 */
+.users-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.users-toolbar__spacer {
+  flex: 1;
+}
+.users-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: 6px 12px;
+}
+.users-search input {
+  border: none;
+  background: none;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  width: 120px;
+  outline: none;
+}
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.users-table thead tr {
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.users-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.users-table th:first-child,
+.users-table td:first-child {
+  padding-left: 18px;
+}
+.users-table th.users-table__center,
+.users-table td.users-table__center {
+  text-align: center;
+}
+.users-table tbody tr {
+  border-bottom: 1px solid var(--color-divider);
+}
+.users-table tbody tr:last-child {
+  border-bottom: none;
+}
+.users-table td {
+  padding: 12px;
+  font-size: 13px;
+  color: var(--color-text);
+}
+.users-cell-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.users-cell-user__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.users-cell-user__sub {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+.users-cell-access {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.users-edit {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.users-pager {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+.users-pager__label {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}

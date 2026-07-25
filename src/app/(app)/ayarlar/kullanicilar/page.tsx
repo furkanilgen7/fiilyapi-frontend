@@ -1,10 +1,14 @@
 import { Suspense } from "react";
-import { UsersScreen } from "@/components/settings/UsersScreen";
+import { SettingsHeader } from "@/components/settings/shell/SettingsHeader";
+import { UsersScreen } from "@/components/settings/users/UsersScreen";
 
 export default function KullanicilarPage() {
   return (
-    <Suspense fallback={<p>Yükleniyor…</p>}>
-      <UsersScreen />
-    </Suspense>
+    <>
+      <SettingsHeader variant="root" title="Ayarlar" subtitle="FİİL Yapı ERP sistem yönetimi" />
+      <Suspense fallback={<p className="settings-note">Yükleniyor…</p>}>
+        <UsersScreen />
+      </Suspense>
+    </>
   );
 }

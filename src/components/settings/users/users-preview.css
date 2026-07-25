@@ -1,0 +1,82 @@
+/* Kullanıcılar sayfası alt önizleme kartları — ref §B.1 (Roller + İzin Matrisi özet) */
+.users-preview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+/* Roller önizleme kartı */
+.roles-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.roles-preview-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-10);
+  background: var(--color-surface-2);
+}
+.roles-preview-item__emoji {
+  font-size: 16px;
+}
+.roles-preview-item__body {
+  flex: 1;
+  min-width: 0;
+}
+.roles-preview-item__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.roles-preview-item__summary {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.roles-preview-item__count {
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  padding: 2px 8px;
+  border-radius: var(--radius-10);
+}
+
+/* İzin Matrisi önizleme kartı */
+.matrix-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.matrix-preview-table th,
+.matrix-preview-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-divider);
+}
+.matrix-preview-table th {
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-size: 10px;
+}
+.matrix-preview-table tbody tr:last-child th,
+.matrix-preview-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.matrix-preview-table__module {
+  color: var(--color-text);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.matrix-preview-link {
+  display: inline-block;
+  margin: 12px 18px;
+}

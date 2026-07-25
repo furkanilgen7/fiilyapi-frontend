@@ -18,7 +18,7 @@ export function SettingsCard({
   className,
   children,
 }: Props) {
-  const hasHeader = title || actions || count;
+  const hasHeader = title != null || actions != null || count != null;
   const bodyClass =
     bodyPad === "flush"
       ? "s-card__body--flush"

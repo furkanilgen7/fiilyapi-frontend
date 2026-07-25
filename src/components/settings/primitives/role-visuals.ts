@@ -11,8 +11,8 @@ const MAP: Record<string, RoleVisual> = {
   system_admin: {
     badgeBg: "var(--color-text)",
     badgeText: "var(--color-on-brand)",
-    gradFrom: "var(--color-slate-700)",
-    gradTo: "var(--color-text)",
+    gradFrom: "var(--color-text)",
+    gradTo: "var(--color-slate-700)",
   },
   patron: {
     badgeBg: "var(--color-text)",

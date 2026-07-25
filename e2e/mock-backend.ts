@@ -63,7 +63,10 @@ function seedState(): MockState {
       { id: "p-2", code: "PRJ-2", name: "Villa B", status: "active", budget: "500000", progress_pct: "40" },
     ],
     permissions,
-    projectAccess: {},
+    projectAccess: {
+      "u-1": { all_projects: true, project_ids: [] },
+      "u-2": { all_projects: false, project_ids: ["p-1"] },
+    },
   };
 }
 
