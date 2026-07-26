@@ -31,3 +31,10 @@ export function formatCurrency(value: string | number): string {
 export function formatPercent(value: string | number): string {
   return `%${short(toNumber(value))}`;
 }
+
+/** Kart tarihleri: mockup'taki "Mar 2025" gosterimi. */
+export function formatMonthYear(iso: string): string {
+  return new Intl.DateTimeFormat(LOCALE, { month: "short", year: "numeric" }).format(
+    new Date(iso),
+  );
+}

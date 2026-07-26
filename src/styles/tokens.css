@@ -157,6 +157,19 @@
   /* Giriş ekranı (mockup Giriş.dc.html) — form etiketi ve birincil buton gölgesi */
   --color-form-label: #374151;
   --shadow-primary-btn: 0 4px 12px rgba(37, 99, 235, 0.25);
+
+  /* P1 Projeler — tip aileleri (mockup Ekran 4) */
+  --color-accent-purple-deep: #6d28d9; /* kendi yatirim gradyan koyu ucu + sayi metni */
+  --color-accent-purple-tint: #f5f3ff; /* aciklama karti zemini */
+  --color-accent-purple-line: #ddd6fe; /* aciklama + proje karti kenarligi */
+  --color-accent-teal-tint: #f0fdfa; /* aciklama karti zemini */
+  --color-accent-teal-line: #99f6e4; /* aciklama + proje karti kenarligi */
+  --color-accent-teal-light: #5eead4; /* teal gradyan acik ucu */
+  --shadow-card-purple: 0 2px 8px rgba(139, 92, 246, 0.12);
+  --shadow-card-teal: 0 2px 8px rgba(15, 118, 110, 0.12);
+  --gradient-type-taahhut: linear-gradient(90deg, var(--color-primary), var(--color-avatar-blue-end));
+  --gradient-type-kendi-yatirim: linear-gradient(90deg, var(--color-accent-purple-deep), var(--color-accent-purple-grad-end));
+  --gradient-type-kat-karsiligi: linear-gradient(90deg, var(--color-accent-teal-start), var(--color-accent-teal-light));
 }
 
 @keyframes fadeUp {

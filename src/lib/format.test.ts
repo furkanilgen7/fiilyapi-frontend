@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { formatCompactCurrency, formatCurrency, formatPercent } from "./format";
+import { formatCompactCurrency, formatCurrency, formatMonthYear, formatPercent } from "./format";
 
 describe("formatCompactCurrency", () => {
   it("milyonu M kisaltmasiyla verir", () => {
@@ -32,5 +32,14 @@ describe("formatPercent", () => {
   });
   it("sifiri basar", () => {
     expect(formatPercent(0)).toBe("%0");
+  });
+});
+
+describe("formatMonthYear", () => {
+  it("tr-TR kisa ay adiyla basar", () => {
+    expect(formatMonthYear("2025-03-15")).toBe("Mar 2025");
+  });
+  it("aralik ayini Ara olarak basar", () => {
+    expect(formatMonthYear("2026-12-01")).toBe("Ara 2026");
   });
 });
