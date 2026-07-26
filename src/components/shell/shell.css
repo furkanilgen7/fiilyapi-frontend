@@ -3,5 +3,6 @@
   margin-left: 220px;
   min-height: calc(100vh - 52px);
   background: var(--color-bg);
-  padding: 24px;
+  /* Kanon: tum mockup'larin icerik alani padding:28px 32px (Ekran 1 satir 181). */
+  padding: 28px 32px;
 }

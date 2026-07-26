@@ -13,7 +13,7 @@ test("giris → kabuk → yakinda → cikis akisi", async ({ page }) => {
   // Kabuk gorunur: sidebar grup basligi + kullanici adi + karsilama
   await expect(page.getByText("Genel")).toBeVisible();
   await expect(page.getByText("Ahmet Yılmaz", { exact: true })).toBeVisible();
-  await expect(page.getByText(/Hoş geldiniz/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Gösterge Paneli" })).toBeVisible();
   // Gosterge Paneli aktif
   await expect(page.getByRole("link", { name: /Gösterge Paneli/ })).toHaveAttribute("aria-current", "page");
 

@@ -5,7 +5,7 @@ async function login(page: import("@playwright/test").Page) {
   await page.getByLabel(/e-posta/i).fill("patron@fiil.com");
   await page.getByLabel(/^şifre$/i).fill("dogruparola");
   await page.getByRole("button", { name: /giriş yap/i }).click();
-  await expect(page.getByText(/Hoş geldiniz/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Gösterge Paneli" })).toBeVisible();
 }
 
 test("gorsel: ayarlar kullanicilar", async ({ page }) => {

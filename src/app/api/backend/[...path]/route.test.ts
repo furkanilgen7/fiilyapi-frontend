@@ -85,6 +85,19 @@ describe("BFF /api/backend/[...path]", () => {
     expect(String(fetchMock.mock.calls[0][0])).toContain("/audit-log?action=login&limit=50");
   });
 
+  it("dashboard izinli kok — ozet ucu backend'e iletilir", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ role_name: "Patron" }), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const res = await GET(
+      req("/api/backend/dashboard/summary", "GET", { [ACCESS_COOKIE]: "acc" }),
+      ctx(["dashboard", "summary"]),
+    );
+    expect(res.status).toBe(200);
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/dashboard/summary");
+  });
+
   it(".xlsx — ikili govde ve indirme basliklari aynen gecirilir", async () => {
     const bytes = new Uint8Array([0x50, 0x4b, 0x03, 0x04]);
     vi.stubGlobal(

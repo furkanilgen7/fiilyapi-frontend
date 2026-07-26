@@ -29,6 +29,12 @@ describe("NAV_GROUPS", () => {
     expect(dash.label).toBe("Gösterge Paneli");
     expect(dash.href).toBe("/");
   });
+  it("sirket varliklari kalemi bordro ile belge arsivi arasindadir", () => {
+    const mali = NAV_GROUPS.find((g) => g.heading === "Sözleşme & Mali");
+    const labels = mali!.items.map((i) => i.label);
+    expect(labels.indexOf("Şirket Varlıkları")).toBe(labels.indexOf("Bordro") + 1);
+    expect(labels.indexOf("Belge Arşivi")).toBe(labels.indexOf("Şirket Varlıkları") + 1);
+  });
 });
 
 describe("moduleNameForSlug", () => {

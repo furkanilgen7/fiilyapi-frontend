@@ -60,6 +60,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Hakedişler", href: "/hakedisler", Icon: ClockIcon },
       { label: "Mali Tablolar", href: "/mali-tablolar", Icon: TrendingUpIcon },
       { label: "Bordro", href: "/bordro", Icon: ListIcon },
+      { label: "Şirket Varlıkları", href: "/sirket-varliklari", Icon: BuildingIcon },
       { label: "Belge Arşivi", href: "/belge-arsivi", Icon: FolderIcon },
     ],
   },

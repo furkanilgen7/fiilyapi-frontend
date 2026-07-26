@@ -270,6 +270,27 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       req.on("end", () => handler(JSON.parse(raw || "{}")));
     };
 
+    // Gosterge paneli ozeti (F6) — v1'de kartlar bos durum doner.
+    if (method === "GET" && path === "/dashboard/summary") {
+      return send(200, {
+        role_name: "Patron",
+        active_project_count: state.projects.filter((p) => p.status === "active").length,
+        projects: state.projects.map((p) => ({
+          id: p.id,
+          code: p.code,
+          name: p.name,
+          status: p.status,
+          budget: p.budget,
+          progress_pct: p.progress_pct,
+        })),
+        portfolio: { available: false, value: null, pending_module: "progress_payments" },
+        receivables: { available: false, value: null, pending_module: "invoicing" },
+        average_margin: { available: false, value: null, pending_module: "progress_payments" },
+        pending_approvals: { available: false, items: [], count: 0, pending_module: "approvals" },
+        risks: { available: false, items: [], pending_module: "inventory" },
+      });
+    }
+
     // /modules, /projects, /roles listeleri
     if (method === "GET" && path === "/modules") return send(200, state.modules);
     if (method === "GET" && path === "/projects") return send(200, state.projects);
