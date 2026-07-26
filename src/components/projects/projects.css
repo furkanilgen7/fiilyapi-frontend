@@ -1,0 +1,152 @@
+/* Sayfa iskeleti */
+.prj {
+  animation: var(--anim-fade-up);
+}
+.prj__breadcrumb {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+  margin-bottom: 6px;
+}
+.prj__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.prj__title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--color-text);
+}
+.prj__new-btn {
+  background: var(--color-primary);
+  color: var(--color-on-brand);
+  border: none;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.prj__new-btn:hover {
+  background: var(--color-primary-hover);
+}
+.prj-message {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+/* Tip aciklama kartlari (mockup satir 69-91) */
+.prj-legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.prj-legend__card {
+  border-radius: 12px;
+  padding: 14px 16px;
+  border: 1px solid transparent;
+}
+.prj-legend__card--taahhut {
+  background: var(--color-nav-active-bg);
+  border-color: var(--color-primary-ring);
+}
+.prj-legend__card--kendi_yatirim {
+  background: var(--color-accent-purple-tint);
+  border-color: var(--color-accent-purple-line);
+}
+.prj-legend__card--kat_karsiligi {
+  background: var(--color-accent-teal-tint);
+  border-color: var(--color-accent-teal-line);
+}
+.prj-legend__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.prj-legend__count {
+  font-size: 13px;
+  font-weight: 600;
+}
+.prj-legend__card--taahhut .prj-legend__count {
+  color: var(--color-primary-hover);
+}
+.prj-legend__card--kendi_yatirim .prj-legend__count {
+  color: var(--color-accent-purple-deep);
+}
+.prj-legend__card--kat_karsiligi .prj-legend__count {
+  color: var(--color-accent-teal-start);
+}
+.prj-legend__desc {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.prj-legend__card--taahhut .prj-legend__desc {
+  color: var(--color-primary-light);
+}
+.prj-legend__card--kendi_yatirim .prj-legend__desc {
+  color: var(--color-accent-purple-grad-start);
+}
+.prj-legend__card--kat_karsiligi .prj-legend__desc {
+  color: var(--color-accent-teal-end);
+}
+
+/* Tip rozeti — legend 10px, kart 9px (mockup satir 72 / 112) */
+.prj-type-badge {
+  color: var(--color-on-brand);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.prj-type-badge--legend {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+.prj-type-badge--card {
+  display: inline-block;
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 7px;
+  margin-bottom: 4px;
+}
+.prj-legend__card--taahhut .prj-type-badge,
+.prj-card--taahhut .prj-type-badge {
+  background: var(--color-primary);
+}
+.prj-legend__card--kendi_yatirim .prj-type-badge,
+.prj-card--kendi_yatirim .prj-type-badge {
+  background: var(--color-accent-purple-grad-start);
+}
+.prj-legend__card--kat_karsiligi .prj-type-badge,
+.prj-card--kat_karsiligi .prj-type-badge {
+  background: var(--color-accent-teal-start);
+}
+
+/* Sekme bari (mockup satir 94-100) */
+.prj-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 4px;
+  width: fit-content;
+  margin-bottom: 24px;
+}
+.prj-tabs__tab {
+  padding: 7px 18px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.prj-tabs__tab--active {
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--color-nav-active-bg);
+}
