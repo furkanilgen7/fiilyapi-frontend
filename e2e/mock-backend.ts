@@ -16,11 +16,84 @@ const ME = {
   status: "active",
 };
 
+// NOT: Gercek backend semasi (bkz. src/lib/api/schema.d.ts) tip-basi metrikleri duz
+// alanlar olarak degil, ContractingCard/InvestmentCard/LandShareCard icine gomulu
+// MetricPlaceholder/CountPlaceholder olarak doner — plan Task 7'nin varsaydigi duz
+// spent/headcount/subcontractor_count/sales/profit alanlari yerine bu yapi kullanildi.
+interface MockMetric {
+  available: boolean;
+  value: string | null;
+  pending_module: string;
+}
+interface MockCount {
+  available: boolean;
+  count: number | null;
+  pending_module: string;
+}
+interface MockContracting {
+  spent: MockMetric;
+  physical_progress: MockMetric;
+  final_progress_payment: MockMetric;
+  worker_count: MockCount;
+  subcontractor_count: MockCount;
+}
+interface MockInvestment {
+  sales_target: string | null;
+  land_cost: string | null;
+  sold_amount: MockMetric;
+  sales_ratio: MockMetric;
+  unit_summary: MockCount;
+  total_cost: MockMetric;
+  estimated_profit: MockMetric;
+  margin: MockMetric;
+}
+interface MockLandShare {
+  landowner_name: string;
+  our_share_pct: string;
+  owner_share_pct: string;
+  land_cost: string;
+  contract_no: string | null;
+  notary_date: string | null;
+  land_area_m2: string | null;
+  construction_area_m2: string | null;
+  delivery_date: string | null;
+  daily_penalty: string | null;
+  guarantee_amount: string | null;
+  shareholder_count: number;
+  shareholders: Array<{ id: string; name: string; share_pct: string }>;
+  our_unit_count: MockCount;
+  owner_unit_count: MockCount;
+  our_share_value: MockMetric;
+  construction_cost: MockMetric;
+  estimated_profit: MockMetric;
+  margin: MockMetric;
+  construction_progress: MockMetric;
+}
+interface MockProject {
+  id: string;
+  code: string;
+  name: string;
+  project_type: string;
+  status: string;
+  category: string | null;
+  city: string | null;
+  employer_name: string | null;
+  contract_no: string | null;
+  contract_amount: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  budget: string;
+  progress_pct: string;
+  contracting: MockContracting | null;
+  investment: MockInvestment | null;
+  land_share: MockLandShare | null;
+}
+
 interface MockState {
   users: Array<{ id: string; email: string; full_name: string; title: string; role_id: string; status: string }>;
   roles: Array<{ id: string; key: string; name: string; emoji: string; description: string; is_system: boolean }>;
   modules: Array<{ id: string; key: string; name: string; group: string; sort_order: number }>;
-  projects: Array<{ id: string; code: string; name: string; status: string; budget: string; progress_pct: string }>;
+  projects: MockProject[];
   permissions: Record<string, Record<string, { access_level: string; scope: string }>>;
   projectAccess: Record<string, { all_projects: boolean; project_ids: string[] }>;
   company: {
@@ -61,6 +134,88 @@ interface MockState {
   }>;
 }
 
+const METRIC_PENDING = (m: string): MockMetric => ({ available: false, value: null, pending_module: m });
+const COUNT_PENDING = (m: string): MockCount => ({ available: false, count: null, pending_module: m });
+
+const CONTRACTING_PLACEHOLDERS = (): MockContracting => ({
+  spent: METRIC_PENDING("project_costs"),
+  physical_progress: METRIC_PENDING("progress_payments"),
+  final_progress_payment: METRIC_PENDING("progress_payments"),
+  worker_count: COUNT_PENDING("timesheet"),
+  subcontractor_count: COUNT_PENDING("subcontracts"),
+});
+
+const INVESTMENT_PLACEHOLDERS = (salesTarget: string, landCost: string): MockInvestment => ({
+  sales_target: salesTarget,
+  land_cost: landCost,
+  sold_amount: METRIC_PENDING("units"),
+  sales_ratio: METRIC_PENDING("units"),
+  unit_summary: COUNT_PENDING("units"),
+  total_cost: METRIC_PENDING("project_costs"),
+  estimated_profit: METRIC_PENDING("progress_payments"),
+  margin: METRIC_PENDING("progress_payments"),
+});
+
+const LAND_SHARE_PLACEHOLDERS = (
+  landownerName: string,
+  ourSharePct: string,
+  ownerSharePct: string,
+): MockLandShare => ({
+  landowner_name: landownerName,
+  our_share_pct: ourSharePct,
+  owner_share_pct: ownerSharePct,
+  land_cost: "0",
+  contract_no: null,
+  notary_date: null,
+  land_area_m2: null,
+  construction_area_m2: null,
+  delivery_date: null,
+  daily_penalty: null,
+  guarantee_amount: null,
+  shareholder_count: 0,
+  shareholders: [],
+  our_unit_count: COUNT_PENDING("units"),
+  owner_unit_count: COUNT_PENDING("units"),
+  our_share_value: METRIC_PENDING("units"),
+  construction_cost: METRIC_PENDING("project_costs"),
+  estimated_profit: METRIC_PENDING("progress_payments"),
+  margin: METRIC_PENDING("progress_payments"),
+  construction_progress: METRIC_PENDING("progress_payments"),
+});
+
+// Dört tip/durumu da kapsar; "Kule A"/"Villa B" adları korunur — mevcut
+// dashboard/settings e2e'leri onlara bakıyor (plan Task 7).
+const PROJECT_FIXTURES: MockProject[] = [
+  {
+    id: "p-1", code: "PRJ-1", name: "Kule A", project_type: "taahhut", status: "active",
+    category: "Konut", city: "Ankara", employer_name: "Güneşkent A.Ş.", contract_no: "SZL-2025-01",
+    contract_amount: "11200000", start_date: "2025-03-01", end_date: "2026-12-01",
+    budget: "1000000", progress_pct: "20", contracting: CONTRACTING_PLACEHOLDERS(),
+    investment: null, land_share: null,
+  },
+  {
+    id: "p-2", code: "PRJ-2", name: "Villa B", project_type: "kendi_yatirim", status: "active",
+    category: "Konut Geliştirme", city: "Ankara", employer_name: null, contract_no: null,
+    contract_amount: null, start_date: "2025-01-01", end_date: "2026-06-01",
+    budget: "500000", progress_pct: "40", contracting: null,
+    investment: INVESTMENT_PLACEHOLDERS("48200000", "5000000"), land_share: null,
+  },
+  {
+    id: "p-3", code: "PRJ-3", name: "Bahçelievler Konut", project_type: "kat_karsiligi",
+    status: "active", category: "Konut", city: "Ankara", employer_name: null, contract_no: null,
+    contract_amount: null, start_date: "2025-06-01", end_date: "2027-03-01",
+    budget: "700000", progress_pct: "42", contracting: null, investment: null,
+    land_share: LAND_SHARE_PLACEHOLDERS("Yılmaz Ailesi", "55", "45"),
+  },
+  {
+    id: "p-4", code: "PRJ-4", name: "Güneşkent B-Blok", project_type: "taahhut",
+    status: "completed", category: "Konut", city: "Ankara", employer_name: "Güneşkent A.Ş.",
+    contract_no: "SZL-2023-04", contract_amount: "9400000", start_date: "2023-01-01",
+    end_date: "2025-01-01", budget: "900000", progress_pct: "100",
+    contracting: CONTRACTING_PLACEHOLDERS(), investment: null, land_share: null,
+  },
+];
+
 function seedState(): MockState {
   // Gerçek backend seed'iyle hizalı (bkz. backend/app/modules/roles/seed_data.py):
   // aynı rol/modül anahtarları, isimleri, gruplar ve sıralama.
@@ -75,6 +230,7 @@ function seedState(): MockState {
   const modules = [
     { id: "m-dashboard", key: "dashboard", name: "Gösterge Paneli", group: "GENEL", sort_order: 1 },
     { id: "m-approvals", key: "approvals", name: "Onay Kutusu", group: "GENEL", sort_order: 2 },
+    { id: "m-projects", key: "projects", name: "Projeler", group: "GENEL", sort_order: 15 },
     { id: "m-site-diary", key: "site_diary", name: "Günlük Kayıt", group: "SAHA", sort_order: 3 },
     { id: "m-timesheet", key: "timesheet", name: "Puantaj", group: "SAHA", sort_order: 4 },
     { id: "m-personnel", key: "personnel", name: "Personel", group: "SAHA", sort_order: 5 },
@@ -167,10 +323,7 @@ function seedState(): MockState {
     ],
     roles,
     modules,
-    projects: [
-      { id: "p-1", code: "PRJ-1", name: "Kule A", status: "active", budget: "1000000", progress_pct: "20" },
-      { id: "p-2", code: "PRJ-2", name: "Villa B", status: "active", budget: "500000", progress_pct: "40" },
-    ],
+    projects: PROJECT_FIXTURES,
     permissions,
     projectAccess: {
       "u-1": { all_projects: true, project_ids: [] },
@@ -291,10 +444,65 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       });
     }
 
-    // /modules, /projects, /roles listeleri
+    // /modules, /roles listeleri
     if (method === "GET" && path === "/modules") return send(200, state.modules);
-    if (method === "GET" && path === "/projects") return send(200, state.projects);
     if (method === "GET" && path === "/roles") return send(200, state.roles);
+
+    // /projects — sayaçlar filtreden bağımsız, item listesi filtrelenir (spec §3).
+    if (method === "GET" && path === "/projects") {
+      const type = parsed.searchParams.get("type");
+      const status = parsed.searchParams.get("status");
+      const counts = {
+        all: state.projects.length,
+        taahhut: state.projects.filter((p) => p.project_type === "taahhut").length,
+        kendi_yatirim: state.projects.filter((p) => p.project_type === "kendi_yatirim").length,
+        kat_karsiligi: state.projects.filter((p) => p.project_type === "kat_karsiligi").length,
+        completed: state.projects.filter((p) => p.status === "completed").length,
+      };
+      let items = state.projects;
+      if (type) items = items.filter((p) => p.project_type === type);
+      if (status) items = items.filter((p) => p.status === status);
+      return send(200, { counts, items });
+    }
+    if (method === "POST" && path === "/projects") {
+      return withBody((body) => {
+        const projectType = String(body.project_type ?? "taahhut");
+        const project: MockProject = {
+          id: `p-${state.projects.length + 1}`,
+          code: String(body.code ?? ""),
+          name: String(body.name ?? ""),
+          project_type: projectType,
+          status: "active",
+          category: body.category ? String(body.category) : null,
+          city: body.city ? String(body.city) : null,
+          employer_name: body.employer_name ? String(body.employer_name) : null,
+          contract_no: body.contract_no ? String(body.contract_no) : null,
+          contract_amount: body.contract_amount ? String(body.contract_amount) : null,
+          start_date: null,
+          end_date: null,
+          budget: "0",
+          progress_pct: "0",
+          contracting: projectType === "taahhut" ? CONTRACTING_PLACEHOLDERS() : null,
+          investment:
+            projectType === "kendi_yatirim" && body.investment
+              ? INVESTMENT_PLACEHOLDERS(
+                  String((body.investment as { sales_target?: unknown }).sales_target ?? ""),
+                  String((body.investment as { land_cost?: unknown }).land_cost ?? "0"),
+                )
+              : null,
+          land_share:
+            projectType === "kat_karsiligi" && body.land_share
+              ? LAND_SHARE_PLACEHOLDERS(
+                  String((body.land_share as { landowner_name?: unknown }).landowner_name ?? ""),
+                  String((body.land_share as { our_share_pct?: unknown }).our_share_pct ?? "0"),
+                  String((body.land_share as { owner_share_pct?: unknown }).owner_share_pct ?? "0"),
+                )
+              : null,
+        };
+        state.projects.push(project);
+        return send(201, project);
+      });
+    }
 
     if (method === "POST" && path === "/roles") {
       return withBody((body) => {

@@ -18,8 +18,10 @@ test("giris → kabuk → yakinda → cikis akisi", async ({ page }) => {
   await expect(page.getByRole("link", { name: /Gösterge Paneli/ })).toHaveAttribute("aria-current", "page");
 
   // Yapilmamis modul → yakinda
-  await page.getByRole("link", { name: /Projeler/ }).click();
-  await expect(page).toHaveURL(/\/projeler/);
+  // NOT: P1 oncesi bu senaryo /projeler kullaniyordu; ekran artik gercek (bkz.
+  // e2e/projects.spec.ts) — hala catch-all'a dusen /raporlar'a gecirildi.
+  await page.getByRole("link", { name: /Raporlar/ }).click();
+  await expect(page).toHaveURL(/\/raporlar/);
   await expect(page.getByText(/yakında/i)).toBeVisible();
 
   // Sidebar'dan cikis
