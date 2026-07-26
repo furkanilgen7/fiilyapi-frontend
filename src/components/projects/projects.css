@@ -150,3 +150,204 @@
   color: var(--color-primary);
   background: var(--color-nav-active-bg);
 }
+
+/* Kart izgarasi (mockup satir 103) */
+.prj-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+/* Proje karti kabugu (mockup satir 106/134/166/265) */
+.prj-card {
+  background: var(--color-surface);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.prj-card--taahhut {
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+}
+.prj-card--kendi_yatirim {
+  border: 2px solid var(--color-accent-purple-line);
+  box-shadow: var(--shadow-card-purple);
+}
+.prj-card--kat_karsiligi {
+  border: 2px solid var(--color-accent-teal-line);
+  box-shadow: var(--shadow-card-teal);
+}
+.prj-card__strip {
+  height: 6px;
+}
+.prj-card--taahhut .prj-card__strip,
+.prj-card--taahhut .prj-progress__fill {
+  background: var(--gradient-type-taahhut);
+}
+.prj-card--kendi_yatirim .prj-card__strip,
+.prj-card--kendi_yatirim .prj-progress__fill {
+  background: var(--gradient-type-kendi-yatirim);
+}
+.prj-card--kat_karsiligi .prj-card__strip,
+.prj-card--kat_karsiligi .prj-progress__fill {
+  background: var(--gradient-type-kat-karsiligi);
+}
+/* Tamamlanmis: notr serit + soluk kart + yesil cubuk (mockup satir 265-279) */
+.prj-card--completed {
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+  opacity: 0.85;
+}
+.prj-card--completed .prj-card__strip {
+  background: var(--color-border);
+}
+.prj-card--completed .prj-progress__bar {
+  background: var(--color-success-soft);
+}
+.prj-card--completed .prj-progress__fill {
+  background: var(--color-success);
+}
+.prj-card__body {
+  padding: 20px;
+}
+.prj-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.prj-card__name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+.prj-card__meta {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+
+/* Durum rozeti (spec §6) */
+.prj-status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.prj-status--active {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+.prj-status--on_hold {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+}
+.prj-status--completed {
+  background: var(--color-neutral-soft);
+  color: var(--color-text-muted);
+}
+
+/* KPI izgarasi (mockup satir 119, 179) */
+.prj-kpis {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.prj-kpi__label {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  margin-bottom: 3px;
+}
+.prj-kpi__value {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.prj-kpi__value--date {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+.prj-kpi__value--success {
+  color: var(--color-success);
+}
+.prj-kpi__value--danger {
+  color: var(--color-danger);
+}
+.prj-kpi__value--profit {
+  font-weight: 700;
+}
+.prj-card--kendi_yatirim .prj-kpi__value--profit {
+  color: var(--color-accent-purple-grad-start);
+}
+.prj-card--kat_karsiligi .prj-kpi__value--profit {
+  color: var(--color-accent-teal-start);
+}
+.prj-kpi__value--pending {
+  color: var(--color-text-subtle);
+  font-weight: 400;
+}
+
+/* Kat karsiligi pay cubugu (mockup satir 147-150) */
+.prj-share {
+  display: flex;
+  height: 32px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.prj-share__ours,
+.prj-share__owner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-on-brand);
+  font-size: 11px;
+  font-weight: 700;
+}
+.prj-share__ours {
+  background: var(--color-accent-teal-start);
+}
+.prj-share__owner {
+  background: var(--color-text-subtle);
+}
+
+/* Ilerleme satiri (mockup satir 125, 185) */
+.prj-progress {
+  margin-bottom: 8px;
+}
+.prj-progress__labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.prj-progress__pct {
+  font-weight: 600;
+}
+.prj-card--taahhut .prj-progress__pct {
+  color: var(--color-primary);
+}
+.prj-card--kendi_yatirim .prj-progress__pct {
+  color: var(--color-accent-purple-grad-start);
+}
+.prj-card--kat_karsiligi .prj-progress__pct {
+  color: var(--color-accent-teal-start);
+}
+.prj-card--completed .prj-progress__pct {
+  color: var(--color-success);
+}
+.prj-progress__bar {
+  height: 6px;
+  background: var(--color-neutral-soft);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.prj-progress__fill {
+  height: 100%;
+  border-radius: 3px;
+}
