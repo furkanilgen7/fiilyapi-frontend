@@ -351,3 +351,21 @@
   height: 100%;
   border-radius: 3px;
 }
+
+/* Bos liste durumu (mockup'ta tanimsiz — F6 sifir-proje deseni, spec §7.9) */
+.prj-empty {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+}
+.prj-empty__title {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.prj-empty__hint {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}

@@ -1,0 +1,103 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+
+import { ProjectsView } from "./ProjectsView";
+import { useProjects } from "@/lib/api/hooks/useProjects";
+import { BackendError } from "@/lib/api/unwrap";
+
+vi.mock("@/lib/api/hooks/useProjects", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useProjects")>()),
+  useProjects: vi.fn(),
+}));
+
+const nav = vi.hoisted(() => ({ search: "", replace: vi.fn() }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: nav.replace }),
+  usePathname: () => "/projeler",
+  useSearchParams: () => new URLSearchParams(nav.search),
+}));
+
+const CONTRACTING_PLACEHOLDERS = {
+  spent: { available: false, value: null, pending_module: "project_costs" },
+  physical_progress: { available: false, value: null, pending_module: "progress_payments" },
+  final_progress_payment: { available: false, value: null, pending_module: "progress_payments" },
+  worker_count: { available: false, count: null, pending_module: "timesheet" },
+  subcontractor_count: { available: false, count: null, pending_module: "subcontracts" },
+};
+
+const item = {
+  id: "11111111-1111-1111-1111-111111111111",
+  code: "GK-A",
+  name: "Güneşkent A-Blok",
+  project_type: "taahhut" as const,
+  status: "active" as const,
+  category: "Konut",
+  city: "Ankara",
+  employer_name: "Güneşkent A.Ş.",
+  contract_no: null,
+  contract_amount: "11200000.00",
+  start_date: "2025-03-01",
+  end_date: "2026-12-01",
+  budget: "1000000.00",
+  progress_pct: "75.00",
+  contracting: CONTRACTING_PLACEHOLDERS,
+  investment: null,
+  land_share: null,
+};
+const data = {
+  counts: { all: 4, taahhut: 2, kendi_yatirim: 1, kat_karsiligi: 1, completed: 1 },
+  items: [item],
+};
+
+function mockQuery(value: Partial<ReturnType<typeof useProjects>>) {
+  vi.mocked(useProjects).mockReturnValue({
+    data: undefined, isLoading: false, isError: false, error: null, ...value,
+  } as never);
+}
+
+describe("ProjectsView", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    nav.search = "";
+  });
+
+  it("breadcrumb aktif sayisi counts'tan turer (all - completed)", () => {
+    mockQuery({ data });
+    render(<ProjectsView />);
+    expect(screen.getByText("Portföy · 3 Aktif Proje")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Projeler" })).toBeInTheDocument();
+    expect(screen.getByText("Güneşkent A-Blok")).toBeInTheDocument();
+  });
+
+  it("sekme tiklaninca URL'e yazar", () => {
+    mockQuery({ data });
+    render(<ProjectsView />);
+    fireEvent.click(screen.getByRole("tab", { name: "Taahhüt (2)" }));
+    expect(nav.replace).toHaveBeenCalledWith("/projeler?tab=taahhut", { scroll: false });
+  });
+
+  it("tumu sekmesi bosken kurulum bos durumu basar", () => {
+    mockQuery({ data: { ...data, items: [] } });
+    render(<ProjectsView />);
+    expect(screen.getByText("Henüz proje tanımlanmadı")).toBeInTheDocument();
+  });
+
+  it("filtreli sekme bosken sekme bos durumu basar", () => {
+    nav.search = "tab=completed";
+    mockQuery({ data: { ...data, items: [] } });
+    render(<ProjectsView />);
+    expect(screen.getByText("Bu sekmede proje yok")).toBeInTheDocument();
+  });
+
+  it("403'te erisim reddi basar", () => {
+    mockQuery({ isError: true, error: new BackendError(403, { detail: "yasak" }) });
+    render(<ProjectsView />);
+    expect(screen.queryByRole("heading", { name: "Projeler" })).not.toBeInTheDocument();
+  });
+
+  it("diger hatalarda mesaj basar", () => {
+    mockQuery({ isError: true, error: new Error("patladi") });
+    render(<ProjectsView />);
+    expect(screen.getByText("Projeler yüklenemedi")).toBeInTheDocument();
+  });
+});
