@@ -4,7 +4,9 @@ import { formatCurrency } from "@/lib/format";
 import { CardEmptyState } from "./CardEmptyState";
 import "./dashboard.css";
 
-type MetricPlaceholder = components["schemas"]["MetricPlaceholder"];
+// NOT: openapi-typescript "MetricPlaceholder" adini iki modulde (dashboard/projects) gordugu
+// icin ad-alani onekiyle ayristirdi; gosterge paneli kendi semasini kullanir.
+type MetricPlaceholder = components["schemas"]["app__modules__dashboard__schemas__MetricPlaceholder"];
 
 export function PortfolioCard({ metric }: { metric: MetricPlaceholder }) {
   return (

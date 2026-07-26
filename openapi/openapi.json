@@ -640,17 +640,52 @@
         ],
         "summary": "List Projects Endpoint",
         "operationId": "list_projects_endpoint_projects_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProjectType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProjectStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/ProjectResponse"
-                  },
-                  "type": "array",
-                  "title": "Response List Projects Endpoint Projects Get"
+                  "$ref": "#/components/schemas/ProjectListResponse"
                 }
               }
             }
@@ -660,13 +695,68 @@
           },
           "404": {
             "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
-        },
+        }
+      },
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Create Project Endpoint",
+        "operationId": "create_project_endpoint_projects_post",
         "security": [
           {
             "HTTPBearer": []
           }
-        ]
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/projects/{project_id}": {
@@ -699,7 +789,69 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProjectResponse"
+                  "$ref": "#/components/schemas/ProjectDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Update Project Endpoint",
+        "operationId": "update_project_endpoint_projects__project_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDetailResponse"
                 }
               }
             }
@@ -2235,6 +2387,65 @@
         "title": "CompanyUpdate",
         "description": "Kismi guncelleme — tum alanlar opsiyonel. Gonderilmeyen alan degismez."
       },
+      "ContractingCard": {
+        "properties": {
+          "spent": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "physical_progress": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "final_progress_payment": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "worker_count": {
+            "$ref": "#/components/schemas/CountPlaceholder"
+          },
+          "subcontractor_count": {
+            "$ref": "#/components/schemas/CountPlaceholder"
+          }
+        },
+        "type": "object",
+        "required": [
+          "spent",
+          "physical_progress",
+          "final_progress_payment",
+          "worker_count",
+          "subcontractor_count"
+        ],
+        "title": "ContractingCard",
+        "description": "Taahhut karti — sozlesme bedeli/isveren ustte gercek, gerisi bos durum."
+      },
+      "CountPlaceholder": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "default": false
+          },
+          "count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Count"
+          },
+          "pending_module": {
+            "type": "string",
+            "title": "Pending Module"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pending_module"
+        ],
+        "title": "CountPlaceholder",
+        "description": "Veri kaynagi henuz yazilmamis sayac alani (\"48 isci\", \"3 hissedar\" gibi)."
+      },
       "DashboardProjectCard": {
         "properties": {
           "id": {
@@ -2293,13 +2504,13 @@
             "title": "Projects"
           },
           "portfolio": {
-            "$ref": "#/components/schemas/MetricPlaceholder"
+            "$ref": "#/components/schemas/app__modules__dashboard__schemas__MetricPlaceholder"
           },
           "receivables": {
-            "$ref": "#/components/schemas/MetricPlaceholder"
+            "$ref": "#/components/schemas/app__modules__dashboard__schemas__MetricPlaceholder"
           },
           "average_margin": {
-            "$ref": "#/components/schemas/MetricPlaceholder"
+            "$ref": "#/components/schemas/app__modules__dashboard__schemas__MetricPlaceholder"
           },
           "pending_approvals": {
             "$ref": "#/components/schemas/PendingApprovalsPlaceholder"
@@ -2333,6 +2544,226 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "InvestmentCard": {
+        "properties": {
+          "sales_target": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sales Target"
+          },
+          "land_cost": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Land Cost"
+          },
+          "sold_amount": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "sales_ratio": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "unit_summary": {
+            "$ref": "#/components/schemas/CountPlaceholder"
+          },
+          "total_cost": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "estimated_profit": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "margin": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sales_target",
+          "land_cost",
+          "sold_amount",
+          "sales_ratio",
+          "unit_summary",
+          "total_cost",
+          "estimated_profit",
+          "margin"
+        ],
+        "title": "InvestmentCard"
+      },
+      "LandShareCard": {
+        "properties": {
+          "landowner_name": {
+            "type": "string",
+            "title": "Landowner Name"
+          },
+          "our_share_pct": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Our Share Pct"
+          },
+          "owner_share_pct": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Owner Share Pct"
+          },
+          "land_cost": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Land Cost"
+          },
+          "contract_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract No"
+          },
+          "notary_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notary Date"
+          },
+          "land_area_m2": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Land Area M2"
+          },
+          "construction_area_m2": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Construction Area M2"
+          },
+          "delivery_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Date"
+          },
+          "daily_penalty": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Penalty"
+          },
+          "guarantee_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guarantee Amount"
+          },
+          "shareholder_count": {
+            "type": "integer",
+            "title": "Shareholder Count"
+          },
+          "shareholders": {
+            "items": {
+              "$ref": "#/components/schemas/ShareholderResponse"
+            },
+            "type": "array",
+            "title": "Shareholders"
+          },
+          "our_unit_count": {
+            "$ref": "#/components/schemas/CountPlaceholder"
+          },
+          "owner_unit_count": {
+            "$ref": "#/components/schemas/CountPlaceholder"
+          },
+          "our_share_value": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "construction_cost": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "estimated_profit": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "margin": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "construction_progress": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          }
+        },
+        "type": "object",
+        "required": [
+          "landowner_name",
+          "our_share_pct",
+          "owner_share_pct",
+          "land_cost",
+          "contract_no",
+          "notary_date",
+          "land_area_m2",
+          "construction_area_m2",
+          "delivery_date",
+          "daily_penalty",
+          "guarantee_amount",
+          "shareholder_count",
+          "shareholders",
+          "our_unit_count",
+          "owner_unit_count",
+          "our_share_value",
+          "construction_cost",
+          "estimated_profit",
+          "margin",
+          "construction_progress"
+        ],
+        "title": "LandShareCard"
       },
       "ListPlaceholder": {
         "properties": {
@@ -2417,37 +2848,6 @@
           "status"
         ],
         "title": "MeResponse"
-      },
-      "MetricPlaceholder": {
-        "properties": {
-          "available": {
-            "type": "boolean",
-            "title": "Available",
-            "default": false
-          },
-          "value": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Value"
-          },
-          "pending_module": {
-            "type": "string",
-            "title": "Pending Module"
-          }
-        },
-        "type": "object",
-        "required": [
-          "pending_module"
-        ],
-        "title": "MetricPlaceholder",
-        "description": "Tek degerli KPI karti. v1'de veri kaynagi olmayan kartlar icin.\n\navailable alani bilincli olarak vardir: frontend sabite degil veriye dallanir,\nilgili alt-proje geldiginde backend true dondurmeye baslar (spec §2.3)."
       },
       "ModuleGroup": {
         "type": "string",
@@ -2801,7 +3201,178 @@
         ],
         "title": "ProjectAccessResponse"
       },
-      "ProjectResponse": {
+      "ProjectCounts": {
+        "properties": {
+          "all": {
+            "type": "integer",
+            "title": "All"
+          },
+          "taahhut": {
+            "type": "integer",
+            "title": "Taahhut"
+          },
+          "kendi_yatirim": {
+            "type": "integer",
+            "title": "Kendi Yatirim"
+          },
+          "kat_karsiligi": {
+            "type": "integer",
+            "title": "Kat Karsiligi"
+          },
+          "completed": {
+            "type": "integer",
+            "title": "Completed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "all",
+          "taahhut",
+          "kendi_yatirim",
+          "kat_karsiligi",
+          "completed"
+        ],
+        "title": "ProjectCounts"
+      },
+      "ProjectCreate": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 150,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "project_type": {
+            "$ref": "#/components/schemas/ProjectType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectStatus",
+            "default": "active"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "contract_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract No"
+          },
+          "contract_amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract Amount"
+          },
+          "employer_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employer Name"
+          },
+          "investment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectInvestmentInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "land_share": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectLandShareInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "project_type"
+        ],
+        "title": "ProjectCreate"
+      },
+      "ProjectDetailResponse": {
         "properties": {
           "id": {
             "type": "string",
@@ -2816,8 +3387,91 @@
             "type": "string",
             "title": "Name"
           },
+          "project_type": {
+            "$ref": "#/components/schemas/ProjectType"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
           "status": {
             "$ref": "#/components/schemas/ProjectStatus"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "contract_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract No"
+          },
+          "contract_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract Amount"
+          },
+          "employer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employer Name"
           },
           "budget": {
             "type": "string",
@@ -2828,6 +3482,36 @@
             "type": "string",
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Progress Pct"
+          },
+          "contracting": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContractingCard"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "investment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InvestmentCard"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "land_share": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LandShareCard"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -2835,11 +3519,396 @@
           "id",
           "code",
           "name",
+          "project_type",
+          "category",
+          "city",
           "status",
+          "start_date",
+          "end_date",
+          "contract_no",
+          "contract_amount",
+          "employer_name",
           "budget",
-          "progress_pct"
+          "progress_pct",
+          "contracting",
+          "investment",
+          "land_share"
         ],
-        "title": "ProjectResponse"
+        "title": "ProjectDetailResponse"
+      },
+      "ProjectInvestmentInput": {
+        "properties": {
+          "sales_target": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sales Target"
+          },
+          "land_cost": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Land Cost"
+          }
+        },
+        "type": "object",
+        "title": "ProjectInvestmentInput"
+      },
+      "ProjectLandShareInput": {
+        "properties": {
+          "landowner_name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Landowner Name"
+          },
+          "our_share_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMaximum": 100.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Our Share Pct"
+          },
+          "owner_share_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMaximum": 100.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Owner Share Pct"
+          },
+          "contract_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract No"
+          },
+          "notary_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notary Date"
+          },
+          "land_area_m2": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Land Area M2"
+          },
+          "construction_area_m2": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Construction Area M2"
+          },
+          "delivery_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Date"
+          },
+          "daily_penalty": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Penalty"
+          },
+          "guarantee_amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guarantee Amount"
+          },
+          "shareholders": {
+            "items": {
+              "$ref": "#/components/schemas/ShareholderInput"
+            },
+            "type": "array",
+            "title": "Shareholders"
+          }
+        },
+        "type": "object",
+        "required": [
+          "landowner_name",
+          "our_share_pct",
+          "owner_share_pct"
+        ],
+        "title": "ProjectLandShareInput"
+      },
+      "ProjectListItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "project_type": {
+            "$ref": "#/components/schemas/ProjectType"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectStatus"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "contract_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract No"
+          },
+          "contract_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract Amount"
+          },
+          "employer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employer Name"
+          },
+          "budget": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Budget"
+          },
+          "progress_pct": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Progress Pct"
+          },
+          "contracting": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContractingCard"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "investment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InvestmentCard"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "land_share": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LandShareCard"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "project_type",
+          "category",
+          "city",
+          "status",
+          "start_date",
+          "end_date",
+          "contract_no",
+          "contract_amount",
+          "employer_name",
+          "budget",
+          "progress_pct",
+          "contracting",
+          "investment",
+          "land_share"
+        ],
+        "title": "ProjectListItem"
+      },
+      "ProjectListResponse": {
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/ProjectCounts"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectListItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "counts",
+          "items"
+        ],
+        "title": "ProjectListResponse"
       },
       "ProjectStatus": {
         "type": "string",
@@ -2849,6 +3918,154 @@
           "completed"
         ],
         "title": "ProjectStatus"
+      },
+      "ProjectType": {
+        "type": "string",
+        "enum": [
+          "taahhut",
+          "kendi_yatirim",
+          "kat_karsiligi"
+        ],
+        "title": "ProjectType",
+        "description": "Üç iş modeli — kart düzenini ve gelir mantığını belirler (spec §3.1)."
+      },
+      "ProjectUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 150,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "contract_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract No"
+          },
+          "contract_amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract Amount"
+          },
+          "employer_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employer Name"
+          },
+          "investment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectInvestmentInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "land_share": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectLandShareInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ProjectUpdate",
+        "description": "project_type YOK — tip PATCH ile degistirilemez (spec §3.5)."
       },
       "RefreshRequest": {
         "properties": {
@@ -2976,6 +4193,61 @@
         ],
         "title": "Scope",
         "description": "Veri kapsamı — aktörün modül içinde hangi kayıtları görebildiği."
+      },
+      "ShareholderInput": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "share_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Share Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "share_pct"
+        ],
+        "title": "ShareholderInput"
+      },
+      "ShareholderResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "share_pct": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Share Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "share_pct"
+        ],
+        "title": "ShareholderResponse"
       },
       "TokenPair": {
         "properties": {
@@ -3263,6 +4535,68 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "app__modules__dashboard__schemas__MetricPlaceholder": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "default": false
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "pending_module": {
+            "type": "string",
+            "title": "Pending Module"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pending_module"
+        ],
+        "title": "MetricPlaceholder",
+        "description": "Tek degerli KPI karti. v1'de veri kaynagi olmayan kartlar icin.\n\navailable alani bilincli olarak vardir: frontend sabite degil veriye dallanir,\nilgili alt-proje geldiginde backend true dondurmeye baslar (spec §2.3)."
+      },
+      "app__modules__projects__schemas__MetricPlaceholder": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "default": false
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "pending_module": {
+            "type": "string",
+            "title": "Pending Module"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pending_module"
+        ],
+        "title": "MetricPlaceholder",
+        "description": "Veri kaynagi henuz yazilmamis tek degerli alan. Sahte rakam yerine durust bos durum."
       }
     },
     "securitySchemes": {

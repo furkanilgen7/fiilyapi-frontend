@@ -61,7 +61,7 @@ export function ProjectAccessModal({ user, onClose }: { user: UserResponse; onCl
         </div>
         {!allProjects && (
           <div className="settings-checklist">
-            {projectsQuery.data?.map((project) => (
+            {projectsQuery.data?.items.map((project) => (
               <label key={project.id} className="settings-checklist__item">
                 <Checkbox checked={selectedIds.includes(project.id)} onChange={() => toggleProject(project.id)} />
                 <span>

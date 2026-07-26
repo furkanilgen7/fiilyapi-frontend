@@ -178,7 +178,7 @@ export function UsersScreen() {
                   <td>{user.email}</td>
                   <td className="users-table__center">{r ? <RolePill roleKey={r.key} name={r.name} /> : "—"}</td>
                   <td>
-                    <ProjectAccessCell userId={user.id} projects={projectsQuery.data} />
+                    <ProjectAccessCell userId={user.id} projects={projectsQuery.data?.items} />
                   </td>
                   <td className="users-table__center">
                     <StatusBadge status={user.status} />

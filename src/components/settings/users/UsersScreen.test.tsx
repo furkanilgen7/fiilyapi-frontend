@@ -42,10 +42,13 @@ describe("UsersScreen", () => {
           return new Response(JSON.stringify(MODULES), { status: 200, headers: { "content-type": "application/json" } });
         }
         if (url.includes("/api/backend/projects")) {
-          return new Response(JSON.stringify([{ id: "p1", code: "PRJ-1", name: "Kule A", status: "active", budget: "0", progress_pct: "0" }]), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({
+              counts: { all: 1, taahhut: 1, kendi_yatirim: 0, kat_karsiligi: 0, completed: 0 },
+              items: [{ id: "p1", code: "PRJ-1", name: "Kule A", status: "active", budget: "0", progress_pct: "0" }],
+            }),
+            { status: 200, headers: { "content-type": "application/json" } },
+          );
         }
         if (url.includes("/project-access")) {
           return new Response(JSON.stringify({ all_projects: true, project_ids: [] }), {

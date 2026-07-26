@@ -183,7 +183,8 @@ export interface paths {
         /** List Projects Endpoint */
         get: operations["list_projects_endpoint_projects_get"];
         put?: never;
-        post?: never;
+        /** Create Project Endpoint */
+        post: operations["create_project_endpoint_projects_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -204,7 +205,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Update Project Endpoint */
+        patch: operations["update_project_endpoint_projects__project_id__patch"];
         trace?: never;
     };
     "/roles": {
@@ -572,6 +574,32 @@ export interface components {
             /** Auto Einvoice */
             auto_einvoice?: boolean | null;
         };
+        /**
+         * ContractingCard
+         * @description Taahhut karti — sozlesme bedeli/isveren ustte gercek, gerisi bos durum.
+         */
+        ContractingCard: {
+            spent: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            physical_progress: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            final_progress_payment: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            worker_count: components["schemas"]["CountPlaceholder"];
+            subcontractor_count: components["schemas"]["CountPlaceholder"];
+        };
+        /**
+         * CountPlaceholder
+         * @description Veri kaynagi henuz yazilmamis sayac alani ("48 isci", "3 hissedar" gibi).
+         */
+        CountPlaceholder: {
+            /**
+             * Available
+             * @default false
+             */
+            available: boolean;
+            /** Count */
+            count?: number | null;
+            /** Pending Module */
+            pending_module: string;
+        };
         /** DashboardProjectCard */
         DashboardProjectCard: {
             /**
@@ -597,9 +625,9 @@ export interface components {
             active_project_count: number;
             /** Projects */
             projects: components["schemas"]["DashboardProjectCard"][];
-            portfolio: components["schemas"]["MetricPlaceholder"];
-            receivables: components["schemas"]["MetricPlaceholder"];
-            average_margin: components["schemas"]["MetricPlaceholder"];
+            portfolio: components["schemas"]["app__modules__dashboard__schemas__MetricPlaceholder"];
+            receivables: components["schemas"]["app__modules__dashboard__schemas__MetricPlaceholder"];
+            average_margin: components["schemas"]["app__modules__dashboard__schemas__MetricPlaceholder"];
             pending_approvals: components["schemas"]["PendingApprovalsPlaceholder"];
             risks: components["schemas"]["ListPlaceholder"];
         };
@@ -607,6 +635,55 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** InvestmentCard */
+        InvestmentCard: {
+            /** Sales Target */
+            sales_target: string | null;
+            /** Land Cost */
+            land_cost: string | null;
+            sold_amount: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            sales_ratio: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            unit_summary: components["schemas"]["CountPlaceholder"];
+            total_cost: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            estimated_profit: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            margin: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+        };
+        /** LandShareCard */
+        LandShareCard: {
+            /** Landowner Name */
+            landowner_name: string;
+            /** Our Share Pct */
+            our_share_pct: string;
+            /** Owner Share Pct */
+            owner_share_pct: string;
+            /** Land Cost */
+            land_cost: string;
+            /** Contract No */
+            contract_no: string | null;
+            /** Notary Date */
+            notary_date: string | null;
+            /** Land Area M2 */
+            land_area_m2: string | null;
+            /** Construction Area M2 */
+            construction_area_m2: string | null;
+            /** Delivery Date */
+            delivery_date: string | null;
+            /** Daily Penalty */
+            daily_penalty: string | null;
+            /** Guarantee Amount */
+            guarantee_amount: string | null;
+            /** Shareholder Count */
+            shareholder_count: number;
+            /** Shareholders */
+            shareholders: components["schemas"]["ShareholderResponse"][];
+            our_unit_count: components["schemas"]["CountPlaceholder"];
+            owner_unit_count: components["schemas"]["CountPlaceholder"];
+            our_share_value: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            construction_cost: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            estimated_profit: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            margin: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            construction_progress: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
         };
         /**
          * ListPlaceholder
@@ -652,24 +729,6 @@ export interface components {
             /** Role Key */
             role_key: string;
             status: components["schemas"]["UserStatus"];
-        };
-        /**
-         * MetricPlaceholder
-         * @description Tek degerli KPI karti. v1'de veri kaynagi olmayan kartlar icin.
-         *
-         *     available alani bilincli olarak vardir: frontend sabite degil veriye dallanir,
-         *     ilgili alt-proje geldiginde backend true dondurmeye baslar (spec §2.3).
-         */
-        MetricPlaceholder: {
-            /**
-             * Available
-             * @default false
-             */
-            available: boolean;
-            /** Value */
-            value?: string | null;
-            /** Pending Module */
-            pending_module: string;
         };
         /**
          * ModuleGroup
@@ -796,8 +855,47 @@ export interface components {
             /** Project Ids */
             project_ids: string[];
         };
-        /** ProjectResponse */
-        ProjectResponse: {
+        /** ProjectCounts */
+        ProjectCounts: {
+            /** All */
+            all: number;
+            /** Taahhut */
+            taahhut: number;
+            /** Kendi Yatirim */
+            kendi_yatirim: number;
+            /** Kat Karsiligi */
+            kat_karsiligi: number;
+            /** Completed */
+            completed: number;
+        };
+        /** ProjectCreate */
+        ProjectCreate: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            project_type: components["schemas"]["ProjectType"];
+            /** @default active */
+            status: components["schemas"]["ProjectStatus"];
+            /** Category */
+            category?: string | null;
+            /** City */
+            city?: string | null;
+            /** Start Date */
+            start_date?: string | null;
+            /** End Date */
+            end_date?: string | null;
+            /** Contract No */
+            contract_no?: string | null;
+            /** Contract Amount */
+            contract_amount?: number | string | null;
+            /** Employer Name */
+            employer_name?: string | null;
+            investment?: components["schemas"]["ProjectInvestmentInput"] | null;
+            land_share?: components["schemas"]["ProjectLandShareInput"] | null;
+        };
+        /** ProjectDetailResponse */
+        ProjectDetailResponse: {
             /**
              * Id
              * Format: uuid
@@ -807,17 +905,139 @@ export interface components {
             code: string;
             /** Name */
             name: string;
+            project_type: components["schemas"]["ProjectType"];
+            /** Category */
+            category: string | null;
+            /** City */
+            city: string | null;
             status: components["schemas"]["ProjectStatus"];
+            /** Start Date */
+            start_date: string | null;
+            /** End Date */
+            end_date: string | null;
+            /** Contract No */
+            contract_no: string | null;
+            /** Contract Amount */
+            contract_amount: string | null;
+            /** Employer Name */
+            employer_name: string | null;
             /** Budget */
             budget: string;
             /** Progress Pct */
             progress_pct: string;
+            contracting: components["schemas"]["ContractingCard"] | null;
+            investment: components["schemas"]["InvestmentCard"] | null;
+            land_share: components["schemas"]["LandShareCard"] | null;
+        };
+        /** ProjectInvestmentInput */
+        ProjectInvestmentInput: {
+            /** Sales Target */
+            sales_target?: number | string | null;
+            /** Land Cost */
+            land_cost?: number | string | null;
+        };
+        /** ProjectLandShareInput */
+        ProjectLandShareInput: {
+            /** Landowner Name */
+            landowner_name: string;
+            /** Our Share Pct */
+            our_share_pct: number | string;
+            /** Owner Share Pct */
+            owner_share_pct: number | string;
+            /** Contract No */
+            contract_no?: string | null;
+            /** Notary Date */
+            notary_date?: string | null;
+            /** Land Area M2 */
+            land_area_m2?: number | string | null;
+            /** Construction Area M2 */
+            construction_area_m2?: number | string | null;
+            /** Delivery Date */
+            delivery_date?: string | null;
+            /** Daily Penalty */
+            daily_penalty?: number | string | null;
+            /** Guarantee Amount */
+            guarantee_amount?: number | string | null;
+            /** Shareholders */
+            shareholders?: components["schemas"]["ShareholderInput"][];
+        };
+        /** ProjectListItem */
+        ProjectListItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            project_type: components["schemas"]["ProjectType"];
+            /** Category */
+            category: string | null;
+            /** City */
+            city: string | null;
+            status: components["schemas"]["ProjectStatus"];
+            /** Start Date */
+            start_date: string | null;
+            /** End Date */
+            end_date: string | null;
+            /** Contract No */
+            contract_no: string | null;
+            /** Contract Amount */
+            contract_amount: string | null;
+            /** Employer Name */
+            employer_name: string | null;
+            /** Budget */
+            budget: string;
+            /** Progress Pct */
+            progress_pct: string;
+            contracting: components["schemas"]["ContractingCard"] | null;
+            investment: components["schemas"]["InvestmentCard"] | null;
+            land_share: components["schemas"]["LandShareCard"] | null;
+        };
+        /** ProjectListResponse */
+        ProjectListResponse: {
+            counts: components["schemas"]["ProjectCounts"];
+            /** Items */
+            items: components["schemas"]["ProjectListItem"][];
         };
         /**
          * ProjectStatus
          * @enum {string}
          */
         ProjectStatus: "active" | "on_hold" | "completed";
+        /**
+         * ProjectType
+         * @description Üç iş modeli — kart düzenini ve gelir mantığını belirler (spec §3.1).
+         * @enum {string}
+         */
+        ProjectType: "taahhut" | "kendi_yatirim" | "kat_karsiligi";
+        /**
+         * ProjectUpdate
+         * @description project_type YOK — tip PATCH ile degistirilemez (spec §3.5).
+         */
+        ProjectUpdate: {
+            /** Name */
+            name?: string | null;
+            status?: components["schemas"]["ProjectStatus"] | null;
+            /** Category */
+            category?: string | null;
+            /** City */
+            city?: string | null;
+            /** Start Date */
+            start_date?: string | null;
+            /** End Date */
+            end_date?: string | null;
+            /** Contract No */
+            contract_no?: string | null;
+            /** Contract Amount */
+            contract_amount?: number | string | null;
+            /** Employer Name */
+            employer_name?: string | null;
+            investment?: components["schemas"]["ProjectInvestmentInput"] | null;
+            land_share?: components["schemas"]["ProjectLandShareInput"] | null;
+        };
         /** RefreshRequest */
         RefreshRequest: {
             /** Refresh Token */
@@ -879,6 +1099,25 @@ export interface components {
          * @enum {string}
          */
         Scope: "all" | "own" | "project" | "finance" | "stock" | "limited";
+        /** ShareholderInput */
+        ShareholderInput: {
+            /** Name */
+            name: string;
+            /** Share Pct */
+            share_pct: number | string;
+        };
+        /** ShareholderResponse */
+        ShareholderResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Share Pct */
+            share_pct: string;
+        };
         /** TokenPair */
         TokenPair: {
             /** Access Token */
@@ -998,6 +1237,39 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /**
+         * MetricPlaceholder
+         * @description Tek degerli KPI karti. v1'de veri kaynagi olmayan kartlar icin.
+         *
+         *     available alani bilincli olarak vardir: frontend sabite degil veriye dallanir,
+         *     ilgili alt-proje geldiginde backend true dondurmeye baslar (spec §2.3).
+         */
+        app__modules__dashboard__schemas__MetricPlaceholder: {
+            /**
+             * Available
+             * @default false
+             */
+            available: boolean;
+            /** Value */
+            value?: string | null;
+            /** Pending Module */
+            pending_module: string;
+        };
+        /**
+         * MetricPlaceholder
+         * @description Veri kaynagi henuz yazilmamis tek degerli alan. Sahte rakam yerine durust bos durum.
+         */
+        app__modules__projects__schemas__MetricPlaceholder: {
+            /**
+             * Available
+             * @default false
+             */
+            available: boolean;
+            /** Value */
+            value?: string | null;
+            /** Pending Module */
+            pending_module: string;
         };
     };
     responses: never;
@@ -1453,7 +1725,10 @@ export interface operations {
     };
     list_projects_endpoint_projects_get: {
         parameters: {
-            query?: never;
+            query?: {
+                type?: components["schemas"]["ProjectType"] | null;
+                status?: components["schemas"]["ProjectStatus"] | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1466,7 +1741,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectResponse"][];
+                    "application/json": components["schemas"]["ProjectListResponse"];
                 };
             };
             /** @description Yetkisiz işlem */
@@ -1482,6 +1757,62 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_project_endpoint_projects_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };
@@ -1502,7 +1833,56 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProjectResponse"];
+                    "application/json": components["schemas"]["ProjectDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_project_endpoint_projects__project_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectDetailResponse"];
                 };
             };
             /** @description Yetkisiz işlem */
