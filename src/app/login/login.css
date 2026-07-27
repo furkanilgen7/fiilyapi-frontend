@@ -147,10 +147,10 @@
   color: var(--color-primary);
 }
 
-/* Giriş formu alanları — mockup Giriş.dc.html: 1.5px çerçeve, 10px yarıçap,
-   11/14 iç boşluk, 14px metin (tasarım sistemi varsayılanından farklı). */
+/* Giriş formu alanları — mockup Giriş.dc.html: 10px yarıçap, 11/14 iç boşluk,
+   14px metin (tasarım sistemi varsayılanından farklı). Çerçeve kalınlığı artık
+   ortak form token'ından (1.5px) geldiği için burada tekrarlanmaz. */
 .login-form .input {
-  border-width: 1.5px;
   border-radius: var(--radius-10);
   padding: 11px 14px;
   font-size: 14px;

@@ -85,6 +85,14 @@
   --space-8: 2rem;
   --space-12: 3rem;
 
+  /* Form kontrolü ölçüleri — projedesign "Form - *.dc.html" ortak `.f-in`
+     sınıfı kanon: 1.5px çerçeve, 9px/12px iç boşluk. Uygulamadaki TÜM form
+     kontrolleri (input, select, textarea, arama kutusu) bu token'ları kullanır
+     ki hiçbiri diğerinden farklı görünmesin. */
+  --border-width-form: 1.5px;
+  --space-form-y: 9px; /* dikey iç boşluk */
+  --space-form-x: var(--space-3); /* yatay iç boşluk = 12px */
+
   /* Yarıçap ve yükseltme */
   --radius-sm: 4px;
   --radius-md: 8px;

@@ -12,9 +12,9 @@
   flex: 1;
   max-width: 300px;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-form) solid var(--color-border);
   border-radius: var(--radius-8);
-  padding: 7px 14px;
+  padding: var(--space-form-y) var(--space-form-x);
   color: var(--color-text-subtle);
 }
 
