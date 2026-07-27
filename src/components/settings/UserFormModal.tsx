@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Input, Select } from "@/components/ui";
+import { Button, Field, Input, Select } from "@/components/ui";
 import { Modal } from "./Modal";
 import { useRoles } from "@/lib/api/hooks/useRoles";
 import { useCreateUser, useUpdateUser } from "@/lib/api/hooks/useUserMutations";
@@ -78,45 +78,54 @@ export function UserFormModal({ mode, user, onClose }: UserFormModalProps) {
       }
     >
       <div className="settings-form">
-        <label className="settings-field">
-          <span className="settings-field__label">Ad Soyad</span>
-          <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
-        </label>
+        <Field label="Ad Soyad" required>
+          {(control) => (
+            <Input {...control} value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          )}
+        </Field>
         {mode === "create" && (
           <>
-            <label className="settings-field">
-              <span className="settings-field__label">E-posta</span>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-            </label>
-            <label className="settings-field">
-              <span className="settings-field__label">Parola</span>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-            </label>
+            <Field label="E-posta" required>
+              {(control) => (
+                <Input {...control} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              )}
+            </Field>
+            <Field label="Parola" required hint={`En az ${MIN_PASSWORD} karakter.`}>
+              {(control) => (
+                <Input
+                  {...control}
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              )}
+            </Field>
           </>
         )}
-        <label className="settings-field">
-          <span className="settings-field__label">Unvan</span>
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-        </label>
-        <label className="settings-field">
-          <span className="settings-field__label">Rol</span>
-          <Select value={roleId} onChange={(e) => setRoleId(e.target.value)}>
-            <option value="">Seçin…</option>
-            {rolesQuery.data?.map((role) => (
-              <option key={role.id} value={role.id}>
-                {role.name}
-              </option>
-            ))}
-          </Select>
-        </label>
-        <label className="settings-field">
-          <span className="settings-field__label">Durum</span>
-          <Select value={status} onChange={(e) => setStatus(e.target.value as UserStatus)}>
-            <option value="active">Aktif</option>
-            <option value="on_leave">İzinli</option>
-            <option value="passive">Pasif</option>
-          </Select>
-        </label>
+        <Field label="Unvan">
+          {(control) => <Input {...control} value={title} onChange={(e) => setTitle(e.target.value)} />}
+        </Field>
+        <Field label="Rol" required>
+          {(control) => (
+            <Select {...control} value={roleId} onChange={(e) => setRoleId(e.target.value)}>
+              <option value="">Seçin…</option>
+              {rolesQuery.data?.map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.name}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+        <Field label="Durum">
+          {(control) => (
+            <Select {...control} value={status} onChange={(e) => setStatus(e.target.value as UserStatus)}>
+              <option value="active">Aktif</option>
+              <option value="on_leave">İzinli</option>
+              <option value="passive">Pasif</option>
+            </Select>
+          )}
+        </Field>
         {formError && <p className="settings-note settings-note--error">{formError}</p>}
       </div>
     </Modal>

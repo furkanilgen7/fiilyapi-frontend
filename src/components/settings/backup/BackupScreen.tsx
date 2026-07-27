@@ -1,5 +1,4 @@
-import { Select } from "@/components/ui";
-import { Toggle } from "@/components/ui";
+import { Field, Select, Toggle } from "@/components/ui";
 import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
 import "./backup-screen.css";
 
@@ -58,18 +57,20 @@ export function BackupScreen() {
               </div>
               <Toggle checked disabled />
             </div>
-            <div className="backup-field">
-              <span className="backup-field__label">Saklama Süresi</span>
-              <Select disabled defaultValue="90">
-                <option value="90">90 Gün</option>
-              </Select>
-            </div>
-            <div className="backup-field">
-              <span className="backup-field__label">Depolama Konumu</span>
-              <Select disabled defaultValue="aws-frankfurt">
-                <option value="aws-frankfurt">AWS S3 (Frankfurt)</option>
-              </Select>
-            </div>
+            <Field label="Saklama Süresi">
+              {(control) => (
+                <Select {...control} disabled defaultValue="90">
+                  <option value="90">90 Gün</option>
+                </Select>
+              )}
+            </Field>
+            <Field label="Depolama Konumu">
+              {(control) => (
+                <Select {...control} disabled defaultValue="aws-frankfurt">
+                  <option value="aws-frankfurt">AWS S3 (Frankfurt)</option>
+                </Select>
+              )}
+            </Field>
           </div>
         </SettingsCard>
 

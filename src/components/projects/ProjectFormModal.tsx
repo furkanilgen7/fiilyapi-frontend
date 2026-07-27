@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 
-import { Button, Input, Select } from "@/components/ui";
+import { Button, Field, Input, Select } from "@/components/ui";
 import { Modal } from "@/components/settings/Modal";
 import { useCreateProject } from "@/lib/api/hooks/useProjectMutations";
 import type { ProjectTypeFilter } from "@/lib/api/hooks/useProjects";
 import { backendErrorMessage } from "@/lib/settings/error-message";
 // Mockup'siz tek yuzey — Ayarlar form kanonu birebir izlenir (spec §8):
-// settings-form/settings-field siniflari settings.css'ten gelir.
+// settings-form sinifi settings.css'ten, etiket katmani ui/field/Field'den gelir.
 import "@/components/settings/settings.css";
 
 interface ProjectFormModalProps {
@@ -122,75 +122,89 @@ export function ProjectFormModal({ onClose }: ProjectFormModalProps) {
       }
     >
       <div className="settings-form">
-        <label className="settings-field">
-          <span className="settings-field__label">Kod</span>
-          <Input value={code} onChange={(e) => setCode(e.target.value)} />
-        </label>
-        <label className="settings-field">
-          <span className="settings-field__label">Ad</span>
-          <Input value={name} onChange={(e) => setName(e.target.value)} />
-        </label>
-        <label className="settings-field">
-          <span className="settings-field__label">Tip</span>
-          <Select
-            value={projectType}
-            onChange={(e) => setProjectType(e.target.value as ProjectTypeFilter)}
-          >
-            <option value="taahhut">Taahhüt</option>
-            <option value="kendi_yatirim">Kendi Yatırım</option>
-            <option value="kat_karsiligi">Kat Karşılığı</option>
-          </Select>
-        </label>
-        <label className="settings-field">
-          <span className="settings-field__label">Kategori</span>
-          <Input value={category} onChange={(e) => setCategory(e.target.value)} />
-        </label>
-        <label className="settings-field">
-          <span className="settings-field__label">Şehir</span>
-          <Input value={city} onChange={(e) => setCity(e.target.value)} />
-        </label>
+        <Field label="Kod" required>
+          {(control) => (
+            <Input {...control} value={code} onChange={(e) => setCode(e.target.value)} />
+          )}
+        </Field>
+        <Field label="Ad" required>
+          {(control) => (
+            <Input {...control} value={name} onChange={(e) => setName(e.target.value)} />
+          )}
+        </Field>
+        <Field label="Tip" required>
+          {(control) => (
+            <Select
+              {...control}
+              value={projectType}
+              onChange={(e) => setProjectType(e.target.value as ProjectTypeFilter)}
+            >
+              <option value="taahhut">Taahhüt</option>
+              <option value="kendi_yatirim">Kendi Yatırım</option>
+              <option value="kat_karsiligi">Kat Karşılığı</option>
+            </Select>
+          )}
+        </Field>
+        <Field label="Kategori">
+          {(control) => (
+            <Input {...control} value={category} onChange={(e) => setCategory(e.target.value)} />
+          )}
+        </Field>
+        <Field label="Şehir">
+          {(control) => (
+            <Input {...control} value={city} onChange={(e) => setCity(e.target.value)} />
+          )}
+        </Field>
         {projectType === "taahhut" && (
           <>
-            <label className="settings-field">
-              <span className="settings-field__label">İşveren</span>
-              <Input value={employerName} onChange={(e) => setEmployerName(e.target.value)} />
-            </label>
-            <label className="settings-field">
-              <span className="settings-field__label">Sözleşme No</span>
-              <Input value={contractNo} onChange={(e) => setContractNo(e.target.value)} />
-            </label>
-            <label className="settings-field">
-              <span className="settings-field__label">Sözleşme Bedeli</span>
-              <Input value={contractAmount} onChange={(e) => setContractAmount(e.target.value)} />
-            </label>
+            <Field label="İşveren" required>
+              {(control) => (
+                <Input {...control} value={employerName} onChange={(e) => setEmployerName(e.target.value)} />
+              )}
+            </Field>
+            <Field label="Sözleşme No">
+              {(control) => (
+                <Input {...control} value={contractNo} onChange={(e) => setContractNo(e.target.value)} />
+              )}
+            </Field>
+            <Field label="Sözleşme Bedeli">
+              {(control) => (
+                <Input {...control} value={contractAmount} onChange={(e) => setContractAmount(e.target.value)} />
+              )}
+            </Field>
           </>
         )}
         {projectType === "kendi_yatirim" && (
           <>
-            <label className="settings-field">
-              <span className="settings-field__label">Satış Hedefi</span>
-              <Input value={salesTarget} onChange={(e) => setSalesTarget(e.target.value)} />
-            </label>
-            <label className="settings-field">
-              <span className="settings-field__label">Arsa Maliyeti</span>
-              <Input value={landCost} onChange={(e) => setLandCost(e.target.value)} />
-            </label>
+            <Field label="Satış Hedefi" required>
+              {(control) => (
+                <Input {...control} value={salesTarget} onChange={(e) => setSalesTarget(e.target.value)} />
+              )}
+            </Field>
+            <Field label="Arsa Maliyeti">
+              {(control) => (
+                <Input {...control} value={landCost} onChange={(e) => setLandCost(e.target.value)} />
+              )}
+            </Field>
           </>
         )}
         {projectType === "kat_karsiligi" && (
           <>
-            <label className="settings-field">
-              <span className="settings-field__label">Arsa Sahibi</span>
-              <Input value={landownerName} onChange={(e) => setLandownerName(e.target.value)} />
-            </label>
-            <label className="settings-field">
-              <span className="settings-field__label">Bizim Pay (%)</span>
-              <Input value={ourSharePct} onChange={(e) => setOurSharePct(e.target.value)} />
-            </label>
-            <label className="settings-field">
-              <span className="settings-field__label">Arsa Sahibi Payı (%)</span>
-              <Input value={ownerSharePct} onChange={(e) => setOwnerSharePct(e.target.value)} />
-            </label>
+            <Field label="Arsa Sahibi" required>
+              {(control) => (
+                <Input {...control} value={landownerName} onChange={(e) => setLandownerName(e.target.value)} />
+              )}
+            </Field>
+            <Field label="Bizim Pay (%)" required>
+              {(control) => (
+                <Input {...control} value={ourSharePct} onChange={(e) => setOurSharePct(e.target.value)} />
+              )}
+            </Field>
+            <Field label="Arsa Sahibi Payı (%)" required>
+              {(control) => (
+                <Input {...control} value={ownerSharePct} onChange={(e) => setOwnerSharePct(e.target.value)} />
+              )}
+            </Field>
           </>
         )}
         {formError && <p className="settings-note settings-note--error">{formError}</p>}

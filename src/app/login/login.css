@@ -125,21 +125,9 @@
 .login-alert {
   margin-bottom: 16px;
 }
+/* Etiket/hata katmani ui/field/Field'den gelir (size="lg" varyanti). */
 .login-field {
   margin-bottom: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.login-field label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-form-label);
-}
-.login-field__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 .login-field__link {
   font-size: 12px;
@@ -165,11 +153,6 @@
 .login-form .checkbox {
   width: 15px;
   height: 15px;
-}
-.login-field__error {
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--color-danger);
 }
 .login-password-toggle {
   background: none;

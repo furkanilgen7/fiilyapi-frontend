@@ -1,8 +1,8 @@
 .company-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .company-card__title { font-size: 14px; font-weight: 600; color: var(--color-text); margin-bottom: 16px; }
 .company-form { display: flex; flex-direction: column; gap: 12px; }
-.company-field { display: flex; flex-direction: column; gap: 4px; }
-.company-field__label { font-size: 12px; font-weight: 500; color: var(--color-text-muted); }
+/* Etiket katmani ui/field/Field'den gelir; .company-field yalnizca bu karttaki
+   ham input/textarea kontrollerini hedeflemek icin isaretci sinif olarak kalir. */
 /* Secici gorunumu Select primitive'inden gelir (bkz. ui/select/select.css). */
 .company-field input, .company-field textarea {
   width: 100%; border: var(--border-width-form) solid var(--color-border); border-radius: var(--radius-8);

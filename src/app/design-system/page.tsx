@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   Button,
+  Field,
   Input,
   Select,
   Checkbox,
@@ -74,6 +75,27 @@ export default function DesignSystemPage() {
           <option value="ist">Istanbul</option>
           <option value="ank">Ankara</option>
         </Select>
+      </section>
+
+      <section data-testid="section-fields" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", maxWidth: 360 }}>
+        <h2 style={{ fontSize: "var(--text-section)", fontWeight: 600 }}>Field</h2>
+        <Field label="Proje Adi" required hint="Bos birakilirsa otomatik uretilir">
+          {(control) => <Input {...control} placeholder="Ornek Konut Projesi" />}
+        </Field>
+        <Field label="Sehir">
+          {(control) => (
+            <Select {...control} defaultValue="ist">
+              <option value="ist">Istanbul</option>
+              <option value="ank">Ankara</option>
+            </Select>
+          )}
+        </Field>
+        <Field label="Kod" required error="Kod zorunludur.">
+          {(control) => <Input {...control} status="error" />}
+        </Field>
+        <Field label="Sifre" size="lg" labelAside={<span>Sifremi unuttum</span>}>
+          {(control) => <Input {...control} type="password" placeholder="Sifrenizi girin" />}
+        </Field>
       </section>
 
       <section data-testid="section-controls" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
