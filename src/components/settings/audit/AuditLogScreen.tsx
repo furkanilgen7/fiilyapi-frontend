@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui";
+import { Select } from "@/components/ui/select";
 import { SearchIcon } from "@/components/ui/icons";
 import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
 import { AccessDenied } from "@/components/settings/AccessDenied";
@@ -93,7 +94,7 @@ export function AuditLogScreen() {
           onChange={(event) => handleSearchChange(event.target.value)}
         />
       </span>
-      <select
+      <Select
         aria-label="Kullanıcı filtresi"
         value={filters.actorUserId ?? ALL_VALUE}
         onChange={(event) =>
@@ -106,8 +107,8 @@ export function AuditLogScreen() {
             {user.full_name}
           </option>
         ))}
-      </select>
-      <select
+      </Select>
+      <Select
         aria-label="İşlem filtresi"
         value={filters.action ?? ALL_VALUE}
         onChange={(event) =>
@@ -120,8 +121,8 @@ export function AuditLogScreen() {
             {AUDIT_ACTION_LABEL[action]}
           </option>
         ))}
-      </select>
-      <select
+      </Select>
+      <Select
         aria-label="Tarih aralığı"
         value={filters.datePreset}
         onChange={(event) => updateFilters({ datePreset: event.target.value as AuditDatePreset })}
@@ -131,7 +132,7 @@ export function AuditLogScreen() {
             {preset.label}
           </option>
         ))}
-      </select>
+      </Select>
       <Button
         variant="secondary"
         size="sm"

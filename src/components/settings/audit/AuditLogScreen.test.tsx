@@ -79,6 +79,21 @@ describe("AuditLogScreen", () => {
     expect(screen.getByText("—")).toBeInTheDocument();
   });
 
+  it("filtre seçicilerini Select primitive'i ile render eder", async () => {
+    stubFetch(() => json({ items: [], total: 0, limit: 50, offset: 0 }));
+
+    renderScreen();
+
+    const labels = ["Kullanıcı filtresi", "İşlem filtresi", "Tarih aralığı"];
+    for (const label of labels) {
+      const control = await screen.findByLabelText(label);
+      expect(control.tagName).toBe("SELECT");
+      // Ham <select> degil, token tabanli .select primitive'i kullanilir.
+      expect(control.className).toContain("select");
+      expect(control.parentElement?.className).toContain("select-wrap");
+    }
+  });
+
   it("403 yanıtında yetki uyarısı gösterir", async () => {
     stubFetch(() => json({ detail: "Yetkisiz işlem" }, 403));
 

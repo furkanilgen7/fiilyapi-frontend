@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui";
+import { Select } from "@/components/ui/select";
 import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { isForbidden } from "@/lib/api/unwrap";
@@ -129,33 +130,36 @@ export function AppearanceScreen() {
           <div className="pref-fields">
             <label className="pref-field">
               <span className="pref-field__label">Arayüz Dili</span>
-              <select value={form.locale} onChange={(e) => set({ locale: e.target.value as PreferencesRead["locale"] })}>
+              <Select value={form.locale} onChange={(e) => set({ locale: e.target.value as PreferencesRead["locale"] })}>
                 {LOCALE_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label className="pref-field">
               <span className="pref-field__label">Para Birimi</span>
-              <select value={form.currency} onChange={(e) => set({ currency: e.target.value as PreferencesRead["currency"] })}>
+              <Select
+                value={form.currency}
+                onChange={(e) => set({ currency: e.target.value as PreferencesRead["currency"] })}
+              >
                 {CURRENCY_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label className="pref-field">
               <span className="pref-field__label">Tarih Formatı</span>
-              <select value={form.date_format} onChange={(e) => set({ date_format: e.target.value })}>
+              <Select value={form.date_format} onChange={(e) => set({ date_format: e.target.value })}>
                 {DATE_FORMAT_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
           </div>
         </SettingsCard>

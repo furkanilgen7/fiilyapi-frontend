@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button, Toggle } from "@/components/ui";
+import { Select } from "@/components/ui/select";
 import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
 import { useCompany, useUpdateCompany } from "@/lib/api/hooks/useCompany";
 import { AccessDenied } from "@/components/settings/AccessDenied";
@@ -138,17 +139,17 @@ export function CompanyScreen() {
             {field("GİB Entegrasyon Kodu", "gib_integration_code", true)}
             <label className="company-field">
               <span className="company-field__label">e-Arşiv Portalı</span>
-              <select value={form.earsiv_portal ?? ""} onChange={(e) => set({ earsiv_portal: e.target.value })}>
+              <Select value={form.earsiv_portal ?? ""} onChange={(e) => set({ earsiv_portal: e.target.value })}>
                 {EARSIV_PORTAL_OPTIONS.map((opt) => (
                   <option key={opt} value={opt}>
                     {opt}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label className="company-field">
               <span className="company-field__label">KDV Oranı (Varsayılan)</span>
-              <select
+              <Select
                 value={vatRateToSelectValue(form.default_vat_rate)}
                 onChange={(e) => set({ default_vat_rate: e.target.value })}
               >
@@ -157,7 +158,7 @@ export function CompanyScreen() {
                     %{rate}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <div className="company-toggle-row">
               <span className="company-toggle-row__text">

@@ -28,13 +28,14 @@
   color: var(--color-text-secondary);
 }
 
-.audit-filters select {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-8);
-  padding: 7px 12px;
-  font-size: 13px;
-  color: var(--color-text-secondary);
-  background: var(--color-surface);
+/* Secici gorunumu Select primitive'inden gelir; burada yalnizca yerlesim var:
+   filtre cubugunda seciciler icerige gore daralir, %100 genislemez. */
+.audit-filters .select-wrap {
+  width: auto;
+}
+
+.audit-filters .select {
+  width: auto;
 }
 
 /* Excel — mockup'ta çerçeveli beyaz buton (ghost değil) */
