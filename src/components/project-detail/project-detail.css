@@ -1,0 +1,123 @@
+/* Proje Detay › Şantiyeler — spec §4.1, §4.2 (mockup: Proje Detay - Şantiyeler.dc.html) */
+
+/* İçerik alanı — drill sidebar (260px) genişliğine göre; ayarlar-content ile
+   ayni teknik (bkz. settings-shell.css yorumu): global .app-content zaten
+   margin-left: var(--sidebar-width) (220px) + padding: var(--space-6)
+   uyguluyor, burada iptal edip 260px + kendi iç boşluğunu koyuyoruz. Şantiye
+   Detay içerik alanıyla aynı 24px/32px kullanılır (spec §5.1) — Proje Detay
+   için mockup drill sidebar öncesi çizildiğinden (§3.2) ayrı bir ölçü vermiyor,
+   Karar 1'in kabuk birliği burada da uygulanır. */
+.project-detail-content {
+  margin: calc(-1 * var(--space-6)) calc(-1 * var(--space-6)) calc(-1 * var(--space-6))
+    calc(var(--drill-sidebar-width) - var(--sidebar-width) - var(--space-6));
+  padding: 24px 32px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .project-detail-content {
+    animation: var(--anim-fade-up);
+  }
+}
+
+.project-hero {
+  background: var(--gradient-hero-project);
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  color: var(--color-on-brand);
+}
+.project-hero__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.project-hero__breadcrumb {
+  font-size: 12px;
+  color: var(--color-on-brand-70);
+  margin-bottom: 6px;
+}
+.project-hero__title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  margin-bottom: 6px;
+}
+.project-hero__meta {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--color-on-brand-80);
+}
+.project-hero__contract {
+  text-align: right;
+}
+.project-hero__contract-label {
+  font-size: 11px;
+  color: var(--color-on-brand-70);
+  margin-bottom: 4px;
+}
+.project-hero__contract-value {
+  font-size: 28px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+.project-hero__contract-value--pending {
+  cursor: help;
+}
+.project-hero__contract-note {
+  font-size: 12px;
+  color: var(--color-on-brand-70);
+  margin-top: 2px;
+}
+
+.project-hero__tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: 20px;
+}
+.project-hero__tab {
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--color-on-brand-70);
+  background: transparent;
+  border-radius: var(--radius-7);
+  text-decoration: none;
+}
+.project-hero__tab--active {
+  font-weight: 600;
+  color: var(--color-on-brand);
+  background: var(--color-on-brand-20);
+}
+
+.project-detail__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.project-detail__section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.project-detail__add-btn {
+  background: var(--color-primary);
+  color: var(--color-on-brand);
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--radius-8);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.project-detail__add-btn:hover {
+  background: var(--color-primary-hover);
+}
+
+.project-detail__empty {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  color: var(--color-text-muted);
+}

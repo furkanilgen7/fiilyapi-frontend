@@ -81,6 +81,7 @@
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
+  --space-5: 1.25rem;
   --space-6: 1.5rem;
   --space-8: 2rem;
   --space-12: 3rem;
@@ -111,6 +112,7 @@
 
   /* F1: radius olcegi (§6.1) */
   --radius-6: 6px;
+  --radius-7: 7px;
   --radius-8: 8px;
   --radius-10: 10px;
   --radius-14: 14px;
@@ -134,6 +136,9 @@
 
   /* P2: drill-in sidebar (Proje/Şantiye Detay), ana sidebar 220px'ten ayrı */
   --drill-sidebar-width: 260px;
+
+  /* P2: Proje Detay hero seridi (spec §4.1, §6) */
+  --gradient-hero-project: linear-gradient(135deg, var(--color-primary-hover), var(--color-primary-light));
 
   /* Ayarlar redesign — layout + accent tokens (mockup-derived, ref §A) */
   --settings-sidebar-width: 240px;

@@ -3,7 +3,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
-import { useProjects } from "./useProjects";
+import { useProjects, useProject } from "./useProjects";
 import { backendClient } from "@/lib/api/client";
 
 vi.mock("@/lib/api/client", () => ({ backendClient: { GET: vi.fn() } }));
@@ -43,6 +43,25 @@ describe("useProjects", () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(backendClient.GET).toHaveBeenCalledWith("/projects", {
       params: { query: { type: "taahhut" } },
+    });
+  });
+});
+
+describe("useProject", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("proje_id ile tekil proje ceker", async () => {
+    const detail = { id: "p-1", name: "Güneşkent Konut", site_count: 2 };
+    vi.mocked(backendClient.GET).mockResolvedValue({
+      data: detail, error: undefined, response: new Response(),
+    } as never);
+
+    const { result } = renderHook(() => useProject("p-1"), { wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.name).toBe("Güneşkent Konut");
+    expect(backendClient.GET).toHaveBeenCalledWith("/projects/{project_id}", {
+      params: { path: { project_id: "p-1" } },
     });
   });
 });

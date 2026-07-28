@@ -17,6 +17,14 @@ describe("pendingModuleLabel", () => {
     expect(pendingModuleLabel("project_costs")).toBe("Maliyet takibiyle birlikte gelir");
   });
 
+  it("P2 anahtarlarini esler", () => {
+    expect(pendingModuleLabel("contracts")).toBe("Sözleşme modülüyle birlikte gelir");
+    expect(pendingModuleLabel("boq")).toBe("İş kalemleri modülüyle birlikte gelir");
+    expect(pendingModuleLabel("stock")).toBe("Stok modülüyle birlikte gelir");
+    expect(pendingModuleLabel("documents")).toBe("Belge modülüyle birlikte gelir");
+    expect(pendingModuleLabel("site_diary")).toBe("Şantiye günlüğüyle birlikte gelir");
+  });
+
   it("bilinmeyen anahtarda genel metin doner", () => {
     expect(pendingModuleLabel("bilinmeyen")).toBe("İlgili modülle birlikte gelir");
   });
