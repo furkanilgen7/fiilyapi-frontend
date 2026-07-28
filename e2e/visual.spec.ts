@@ -9,6 +9,7 @@ test.beforeEach(async ({ page }) => {
 const sections = [
   "section-buttons",
   "section-inputs",
+  "section-fields",
   "section-controls",
   "section-badges",
   "section-alerts",

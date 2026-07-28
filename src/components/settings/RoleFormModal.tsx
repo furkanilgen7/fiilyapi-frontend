@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Input } from "@/components/ui";
+import { Button, Field, Input } from "@/components/ui";
 import { Modal } from "./Modal";
 import { useCreateRole, useRenameRole } from "@/lib/api/hooks/useRoleMutations";
 import { backendErrorMessage } from "@/lib/settings/error-message";
@@ -70,23 +70,32 @@ export function RoleFormModal({ mode, role, onClose }: RoleFormModalProps) {
     >
       <div className="settings-form">
         {mode === "create" && (
-          <label className="settings-field">
-            <span className="settings-field__label">Anahtar (key)</span>
-            <Input value={key} onChange={(e) => setKey(e.target.value)} placeholder="or. saha_muduru" />
-          </label>
+          <Field
+            label="Anahtar (key)"
+            required
+            hint="Küçük harf, rakam ve alt çizgi; harfle başlamalı."
+          >
+            {(control) => (
+              <Input
+                {...control}
+                value={key}
+                onChange={(e) => setKey(e.target.value)}
+                placeholder="or. saha_muduru"
+              />
+            )}
+          </Field>
         )}
-        <label className="settings-field">
-          <span className="settings-field__label">Ad</span>
-          <Input value={name} onChange={(e) => setName(e.target.value)} />
-        </label>
-        <label className="settings-field">
-          <span className="settings-field__label">Emoji</span>
-          <Input value={emoji} onChange={(e) => setEmoji(e.target.value)} />
-        </label>
-        <label className="settings-field">
-          <span className="settings-field__label">Açıklama</span>
-          <Input value={description} onChange={(e) => setDescription(e.target.value)} />
-        </label>
+        <Field label="Ad" required>
+          {(control) => <Input {...control} value={name} onChange={(e) => setName(e.target.value)} />}
+        </Field>
+        <Field label="Emoji">
+          {(control) => <Input {...control} value={emoji} onChange={(e) => setEmoji(e.target.value)} />}
+        </Field>
+        <Field label="Açıklama">
+          {(control) => (
+            <Input {...control} value={description} onChange={(e) => setDescription(e.target.value)} />
+          )}
+        </Field>
         {formError && <p className="settings-note settings-note--error">{formError}</p>}
       </div>
     </Modal>

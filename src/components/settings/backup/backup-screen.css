@@ -79,14 +79,6 @@
   color: var(--color-text-subtle);
 }
 
-.backup-field__label {
-  display: block;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  margin-bottom: 4px;
-}
-
 .storage-stat {
   text-align: center;
   font-family: var(--font-mono);

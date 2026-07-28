@@ -8,9 +8,9 @@
   line-height: 20px;
   color: var(--color-text);
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-form) solid var(--color-border);
   border-radius: var(--radius-8);
-  padding: var(--space-2) var(--space-8) var(--space-2) var(--space-3);
+  padding: var(--space-form-y) var(--space-8) var(--space-form-y) var(--space-form-x);
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }

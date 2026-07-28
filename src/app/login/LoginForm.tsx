@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Alert, Button, Checkbox, Input } from "@/components/ui";
+import { Alert, Button, Checkbox, Field, Input } from "@/components/ui";
 import { EyeIcon, EyeOffIcon } from "@/components/ui/icons";
 import DemoAccounts from "./DemoAccounts";
 
@@ -94,48 +94,59 @@ export default function LoginForm() {
         <Alert variant="danger" className="login-alert">{formError}</Alert>
       )}
 
-      <div className="login-field">
-        <label htmlFor="email">E-posta Adresi</label>
-        <Input
-          id="email"
-          type="email"
-          autoComplete="email"
-          placeholder="ornek@sirket.com"
-          value={email}
-          status={emailError ? "error" : "default"}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        {emailError && <span className="login-field__error">{emailError}</span>}
-      </div>
+      {/* Giriş etiketleri 13px: mockup Giriş.dc.html bilinçli istisnası (size="lg"). */}
+      <Field
+        label="E-posta Adresi"
+        required
+        size="lg"
+        className="login-field"
+        error={emailError}
+      >
+        {(control) => (
+          <Input
+            {...control}
+            type="email"
+            autoComplete="email"
+            placeholder="ornek@sirket.com"
+            value={email}
+            status={emailError ? "error" : "default"}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        )}
+      </Field>
 
-      <div className="login-field">
-        <div className="login-field__head">
-          <label htmlFor="password">Şifre</label>
-          {/* Mockup'ta "Şifremi unuttum" bağlantısı var; şifre sıfırlama akışı henüz
-              yok, bu yüzden görsel olarak birebir ama tıklanabilir değil. */}
-          <span className="login-field__link">Şifremi unuttum</span>
-        </div>
-        <Input
-          id="password"
-          type={showPassword ? "text" : "password"}
-          autoComplete="current-password"
-          placeholder="Şifrenizi girin"
-          value={password}
-          status={passwordError ? "error" : "default"}
-          onChange={(e) => setPassword(e.target.value)}
-          rightIcon={
-            <button
-              type="button"
-              className="login-password-toggle"
-              aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
-              onClick={() => setShowPassword((v) => !v)}
-            >
-              {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-            </button>
-          }
-        />
-        {passwordError && <span className="login-field__error">{passwordError}</span>}
-      </div>
+      <Field
+        label="Şifre"
+        required
+        size="lg"
+        className="login-field"
+        error={passwordError}
+        /* Mockup'ta "Şifremi unuttum" bağlantısı var; şifre sıfırlama akışı henüz
+           yok, bu yüzden görsel olarak birebir ama tıklanabilir değil. */
+        labelAside={<span className="login-field__link">Şifremi unuttum</span>}
+      >
+        {(control) => (
+          <Input
+            {...control}
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            placeholder="Şifrenizi girin"
+            value={password}
+            status={passwordError ? "error" : "default"}
+            onChange={(e) => setPassword(e.target.value)}
+            rightIcon={
+              <button
+                type="button"
+                className="login-password-toggle"
+                aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
+                onClick={() => setShowPassword((v) => !v)}
+              >
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            }
+          />
+        )}
+      </Field>
 
       <Checkbox
         label="30 gün boyunca beni hatırla"

@@ -1,11 +1,13 @@
 .company-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .company-card__title { font-size: 14px; font-weight: 600; color: var(--color-text); margin-bottom: 16px; }
 .company-form { display: flex; flex-direction: column; gap: 12px; }
-.company-field { display: flex; flex-direction: column; gap: 4px; }
-.company-field__label { font-size: 12px; font-weight: 500; color: var(--color-text-muted); }
-.company-field input, .company-field textarea, .company-field select {
-  width: 100%; border: 1px solid var(--color-border); border-radius: var(--radius-8);
-  padding: 8px 12px; font-size: 13px; color: var(--color-text); background: var(--color-surface);
+/* Etiket katmani ui/field/Field'den gelir; .company-field yalnizca bu karttaki
+   ham input/textarea kontrollerini hedeflemek icin isaretci sinif olarak kalir. */
+/* Secici gorunumu Select primitive'inden gelir (bkz. ui/select/select.css). */
+.company-field input, .company-field textarea {
+  width: 100%; border: var(--border-width-form) solid var(--color-border); border-radius: var(--radius-8);
+  padding: var(--space-form-y) var(--space-form-x); font-size: var(--text-body);
+  color: var(--color-text); background: var(--color-surface);
 }
 .company-field textarea { resize: none; height: 72px; line-height: 1.5; }
 .company-field input.is-mono { font-family: var(--font-mono); }
@@ -18,6 +20,8 @@
 .company-logo__caption { font-size: 12px; color: var(--color-text-subtle); margin-bottom: 10px; }
 .company-color-field { margin-top: 14px; }
 .company-color-row { display: flex; align-items: center; gap: 8px; }
+/* Renk kodu alani bilerek kompakt kalir (mockup: 32px renk kutusuyla ayni satirda
+   hizali); cerceve kalinligi yine ortak form token'indan gelir. */
 .company-color-row input { width: 100px; flex: 0 0 auto; font-size: 12px; padding: 6px 10px; border-radius: 7px; }
 .company-swatch {
   width: 32px; height: 32px; border-radius: var(--radius-6);

@@ -77,22 +77,12 @@
   gap: var(--space-4);
 }
 
-.settings-field {
+/* Etiketli form alanlari ui/field/Field primitive'ini kullanir; burada yalnizca
+   etiketi kendi ustunde tasiyan tekil kontrol (Toggle vb.) icin satir duzeni var. */
+.settings-field-row {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.settings-field--row {
-  flex-direction: row;
   align-items: center;
   gap: var(--space-3);
-}
-
-.settings-field__label {
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--color-label);
 }
 
 .settings-checklist {

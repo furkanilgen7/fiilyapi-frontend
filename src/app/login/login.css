@@ -125,21 +125,9 @@
 .login-alert {
   margin-bottom: 16px;
 }
+/* Etiket/hata katmani ui/field/Field'den gelir (size="lg" varyanti). */
 .login-field {
   margin-bottom: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.login-field label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-form-label);
-}
-.login-field__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 .login-field__link {
   font-size: 12px;
@@ -147,10 +135,10 @@
   color: var(--color-primary);
 }
 
-/* Giriş formu alanları — mockup Giriş.dc.html: 1.5px çerçeve, 10px yarıçap,
-   11/14 iç boşluk, 14px metin (tasarım sistemi varsayılanından farklı). */
+/* Giriş formu alanları — mockup Giriş.dc.html: 10px yarıçap, 11/14 iç boşluk,
+   14px metin (tasarım sistemi varsayılanından farklı). Çerçeve kalınlığı artık
+   ortak form token'ından (1.5px) geldiği için burada tekrarlanmaz. */
 .login-form .input {
-  border-width: 1.5px;
   border-radius: var(--radius-10);
   padding: 11px 14px;
   font-size: 14px;
@@ -165,11 +153,6 @@
 .login-form .checkbox {
   width: 15px;
   height: 15px;
-}
-.login-field__error {
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--color-danger);
 }
 .login-password-toggle {
   background: none;

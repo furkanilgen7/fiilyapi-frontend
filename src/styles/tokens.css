@@ -85,6 +85,23 @@
   --space-8: 2rem;
   --space-12: 3rem;
 
+  /* Form kontrolü ölçüleri — projedesign "Form - *.dc.html" ortak `.f-in`
+     sınıfı kanon: 1.5px çerçeve, 9px/12px iç boşluk. Uygulamadaki TÜM form
+     kontrolleri (input, select, textarea, arama kutusu) bu token'ları kullanır
+     ki hiçbiri diğerinden farklı görünmesin. */
+  --border-width-form: 1.5px;
+  --space-form-y: 9px; /* dikey iç boşluk */
+  --space-form-x: var(--space-3); /* yatay iç boşluk = 12px */
+
+  /* Form etiket katmanı — aynı mockup ailesinin `.lbl` / `.req` / `.hint`
+     sınıfları kanon. Uygulamadaki TÜM etiketler ui/field/Field üzerinden bu
+     token'ları kullanır; ekranlar kendi `.*__label` kuralını yazmaz. */
+  --text-form-label: 12px; /* .lbl — 12/600 */
+  --text-form-label-lg: 13px; /* Giriş ekranı istisnası (mockup Giriş.dc.html) */
+  --text-form-hint: var(--text-small); /* .hint — 11px */
+  --space-form-label-gap: 5px; /* etiket → kontrol (.lbl margin-bottom) */
+  --space-form-hint-gap: 4px; /* kontrol → ipucu/hata (.hint margin-top) */
+
   /* Yarıçap ve yükseltme */
   --radius-sm: 4px;
   --radius-md: 8px;

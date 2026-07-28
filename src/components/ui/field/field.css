@@ -1,0 +1,55 @@
+/* Form alani etiket/ipucu/hata katmani.
+   Kanon: projedesign "Form - *.dc.html" ortak <style> blogu —
+   .lbl{font-size:12px;font-weight:600;color:#475569;margin-bottom:5px}
+   .req{color:#ef4444}  .hint{font-size:11px;color:#94a3b8;margin-top:4px}
+   Ciplak px/hex yok; degerler tokens.css uzerinden gelir. */
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.field__label-row {
+  display: flex;
+  align-items: baseline;
+  /* Mockup'ta etiket ile yildiz arasinda tek bosluk karakteri var. */
+  gap: 0.25em;
+  margin-bottom: var(--space-form-label-gap);
+}
+
+.field__label {
+  font-size: var(--text-form-label);
+  font-weight: var(--weight-semibold);
+  color: var(--color-label);
+}
+
+.field__req {
+  font-size: var(--text-form-label);
+  color: var(--color-danger);
+}
+
+.field__aside {
+  margin-left: auto;
+}
+
+.field__hint {
+  margin-top: var(--space-form-hint-gap);
+  font-size: var(--text-form-hint);
+  color: var(--color-text-subtle);
+}
+
+.field__error {
+  margin-top: var(--space-form-hint-gap);
+  font-size: var(--text-form-hint);
+  color: var(--color-danger);
+}
+
+/* Giris ekrani istisnasi (mockup Giris.dc.html): 13/600 #374151. */
+.field--lg .field__label {
+  font-size: var(--text-form-label-lg);
+  color: var(--color-form-label);
+}
+
+.field--lg .field__req {
+  font-size: var(--text-form-label-lg);
+}

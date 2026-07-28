@@ -52,7 +52,7 @@ export function ProjectAccessModal({ user, onClose }: { user: UserResponse; onCl
       }
     >
       <div className="settings-form">
-        <div className="settings-field settings-field--row">
+        <div className="settings-field-row">
           <Toggle
             label="Tüm projeler"
             checked={allProjects}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Input } from "@/components/ui";
+import { Button, Field, Input } from "@/components/ui";
 import { Modal } from "./Modal";
 import { useResetPassword } from "@/lib/api/hooks/useUserMutations";
 import { backendErrorMessage } from "@/lib/settings/error-message";
@@ -42,10 +42,16 @@ export function PasswordResetModal({ user, onClose }: { user: UserResponse; onCl
       }
     >
       <div className="settings-form">
-        <label className="settings-field">
-          <span className="settings-field__label">Yeni Parola</span>
-          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        </label>
+        <Field label="Yeni Parola" required hint={`En az ${MIN_PASSWORD} karakter.`}>
+          {(control) => (
+            <Input
+              {...control}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          )}
+        </Field>
         {formError && <p className="settings-note settings-note--error">{formError}</p>}
       </div>
     </Modal>

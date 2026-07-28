@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Toggle } from "@/components/ui";
+import { Button, Field, Toggle } from "@/components/ui";
+import { Select } from "@/components/ui/select";
 import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
 import { useCompany, useUpdateCompany } from "@/lib/api/hooks/useCompany";
 import { AccessDenied } from "@/components/settings/AccessDenied";
@@ -57,14 +58,16 @@ export function CompanyScreen() {
   const set = (patch: Partial<CompanyUpdate>) => setForm((f) => ({ ...f, ...patch }));
 
   const field = (label: string, key: keyof CompanyUpdate, mono = false) => (
-    <label className="company-field">
-      <span className="company-field__label">{label}</span>
-      <input
-        className={mono ? "is-mono" : undefined}
-        value={(form[key] as string) ?? ""}
-        onChange={(e) => set({ [key]: e.target.value } as Partial<CompanyUpdate>)}
-      />
-    </label>
+    <Field key={key} label={label} className="company-field">
+      {(control) => (
+        <input
+          {...control}
+          className={mono ? "is-mono" : undefined}
+          value={(form[key] as string) ?? ""}
+          onChange={(e) => set({ [key]: e.target.value } as Partial<CompanyUpdate>)}
+        />
+      )}
+    </Field>
   );
 
   function save() {
@@ -92,10 +95,15 @@ export function CompanyScreen() {
             {field("Telefon", "phone")}
             {field("E-posta", "email")}
             {field("Web Sitesi", "website")}
-            <label className="company-field">
-              <span className="company-field__label">Adres</span>
-              <textarea value={form.address ?? ""} onChange={(e) => set({ address: e.target.value })} />
-            </label>
+            <Field label="Adres" className="company-field">
+              {(control) => (
+                <textarea
+                  {...control}
+                  value={form.address ?? ""}
+                  onChange={(e) => set({ address: e.target.value })}
+                />
+              )}
+            </Field>
           </div>
         </SettingsCard>
 
@@ -119,46 +127,55 @@ export function CompanyScreen() {
               </Button>
             </div>
           </div>
-          <label className="company-field company-color-field">
-            <span className="company-field__label">Birincil Renk</span>
-            <span className="company-color-row">
-              <span className="company-swatch" style={{ background: form.brand_color ?? "#2563eb" }} />
-              <input
-                className="is-mono"
-                value={form.brand_color ?? ""}
-                onChange={(e) => set({ brand_color: e.target.value })}
-              />
-            </span>
-          </label>
+          <Field label="Birincil Renk" className="company-field company-color-field">
+            {(control) => (
+              <span className="company-color-row">
+                <span className="company-swatch" style={{ background: form.brand_color ?? "#2563eb" }} />
+                <input
+                  {...control}
+                  className="is-mono"
+                  value={form.brand_color ?? ""}
+                  onChange={(e) => set({ brand_color: e.target.value })}
+                />
+              </span>
+            )}
+          </Field>
         </SettingsCard>
 
         <SettingsCard>
           <div className="company-card__title">Fatura &amp; e-Fatura Ayarları</div>
           <div className="company-form">
             {field("GİB Entegrasyon Kodu", "gib_integration_code", true)}
-            <label className="company-field">
-              <span className="company-field__label">e-Arşiv Portalı</span>
-              <select value={form.earsiv_portal ?? ""} onChange={(e) => set({ earsiv_portal: e.target.value })}>
-                {EARSIV_PORTAL_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="company-field">
-              <span className="company-field__label">KDV Oranı (Varsayılan)</span>
-              <select
-                value={vatRateToSelectValue(form.default_vat_rate)}
-                onChange={(e) => set({ default_vat_rate: e.target.value })}
-              >
-                {VAT_RATE_OPTIONS.map((rate) => (
-                  <option key={rate} value={rate}>
-                    %{rate}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <Field label="e-Arşiv Portalı" className="company-field">
+              {(control) => (
+                <Select
+                  {...control}
+                  value={form.earsiv_portal ?? ""}
+                  onChange={(e) => set({ earsiv_portal: e.target.value })}
+                >
+                  {EARSIV_PORTAL_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+            <Field label="KDV Oranı (Varsayılan)" className="company-field">
+              {(control) => (
+                <Select
+                  {...control}
+                  value={vatRateToSelectValue(form.default_vat_rate)}
+                  onChange={(e) => set({ default_vat_rate: e.target.value })}
+                >
+                  {VAT_RATE_OPTIONS.map((rate) => (
+                    <option key={rate} value={rate}>
+                      %{rate}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </Field>
             <div className="company-toggle-row">
               <span className="company-toggle-row__text">
                 <span className="company-toggle-row__label">Otomatik e-Fatura</span>

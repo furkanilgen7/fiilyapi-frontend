@@ -118,28 +118,8 @@
   border-color: var(--color-primary-ring);
 }
 
-/* Dil & Bolge alanlari */
-.pref-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.pref-field__label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--color-text-muted);
-}
-
-.pref-field select {
-  width: 100%;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-8);
-  padding: 8px 12px;
-  font-size: 13px;
-  color: var(--color-text);
-  background: var(--color-surface);
-}
+/* Dil & Bolge alanlari — etiket/duzen ui/field/Field'den gelir. */
+/* Secici gorunumu Select primitive'inden gelir (bkz. ui/select/select.css). */
 
 .pref-fields {
   display: flex;
