@@ -132,6 +132,9 @@
   --duration-normal: 250ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
+  /* P2: drill-in sidebar (Proje/Şantiye Detay), ana sidebar 220px'ten ayrı */
+  --drill-sidebar-width: 260px;
+
   /* Ayarlar redesign — layout + accent tokens (mockup-derived, ref §A) */
   --settings-sidebar-width: 240px;
   --text-settings-nav-label: 10px; /* sidebar grup etiketi */
