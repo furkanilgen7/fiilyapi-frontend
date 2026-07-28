@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "FİİL Yapı ERP API",
+    "title": "F\u0130\u0130L Yap\u0131 ERP API",
     "version": "0.1.0"
   },
   "paths": {
@@ -89,10 +89,10 @@
                   "type": "null"
                 }
               ],
-              "description": "YYYY-MM-DD — o gunun 00:00'indan itibaren (Europe/Istanbul, dahil)",
+              "description": "YYYY-MM-DD \u2014 o gunun 00:00'indan itibaren (Europe/Istanbul, dahil)",
               "title": "Date From"
             },
-            "description": "YYYY-MM-DD — o gunun 00:00'indan itibaren (Europe/Istanbul, dahil)"
+            "description": "YYYY-MM-DD \u2014 o gunun 00:00'indan itibaren (Europe/Istanbul, dahil)"
           },
           {
             "name": "date_to",
@@ -108,10 +108,10 @@
                   "type": "null"
                 }
               ],
-              "description": "YYYY-MM-DD — o gunun sonuna kadar (Europe/Istanbul, dahil)",
+              "description": "YYYY-MM-DD \u2014 o gunun sonuna kadar (Europe/Istanbul, dahil)",
               "title": "Date To"
             },
-            "description": "YYYY-MM-DD — o gunun sonuna kadar (Europe/Istanbul, dahil)"
+            "description": "YYYY-MM-DD \u2014 o gunun sonuna kadar (Europe/Istanbul, dahil)"
           },
           {
             "name": "q",
@@ -144,10 +144,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -168,7 +168,7 @@
           "audit"
         ],
         "summary": "Export Audit Log Endpoint",
-        "description": "Filtrelenmis denetim gunlugunu Excel dosyasi olarak doner.\n\nListe ucuyle AYNI filtreler gecerlidir; `limit`/`offset` YOKTUR — eslesen tum\nkayitlar yazilir (sessiz kirpma yapilmaz, bkz. plan Task 5 sinir notu).",
+        "description": "Filtrelenmis denetim gunlugunu Excel dosyasi olarak doner.\n\nListe ucuyle AYNI filtreler gecerlidir; `limit`/`offset` YOKTUR \u2014 eslesen tum\nkayitlar yazilir (sessiz kirpma yapilmaz, bkz. plan Task 5 sinir notu).",
         "operationId": "export_audit_log_endpoint_audit_log_export_xlsx_get",
         "security": [
           {
@@ -223,10 +223,10 @@
                   "type": "null"
                 }
               ],
-              "description": "YYYY-MM-DD — o gunun 00:00'indan itibaren (Europe/Istanbul, dahil)",
+              "description": "YYYY-MM-DD \u2014 o gunun 00:00'indan itibaren (Europe/Istanbul, dahil)",
               "title": "Date From"
             },
-            "description": "YYYY-MM-DD — o gunun 00:00'indan itibaren (Europe/Istanbul, dahil)"
+            "description": "YYYY-MM-DD \u2014 o gunun 00:00'indan itibaren (Europe/Istanbul, dahil)"
           },
           {
             "name": "date_to",
@@ -242,10 +242,10 @@
                   "type": "null"
                 }
               ],
-              "description": "YYYY-MM-DD — o gunun sonuna kadar (Europe/Istanbul, dahil)",
+              "description": "YYYY-MM-DD \u2014 o gunun sonuna kadar (Europe/Istanbul, dahil)",
               "title": "Date To"
             },
-            "description": "YYYY-MM-DD — o gunun sonuna kadar (Europe/Istanbul, dahil)"
+            "description": "YYYY-MM-DD \u2014 o gunun sonuna kadar (Europe/Istanbul, dahil)"
           },
           {
             "name": "q",
@@ -274,10 +274,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -380,7 +380,7 @@
           "auth"
         ],
         "summary": "Logout",
-        "description": "token_version'ı artırır — o ana dek basılmış tüm token'lar (access + refresh) geçersiz\nolur (gerçek sunucu-taraflı çıkış). BFF ayrıca httpOnly cookie'yi siler.",
+        "description": "token_version'\u0131 art\u0131r\u0131r \u2014 o ana dek bas\u0131lm\u0131\u015f t\u00fcm token'lar (access + refresh) ge\u00e7ersiz\nolur (ger\u00e7ek sunucu-tarafl\u0131 \u00e7\u0131k\u0131\u015f). BFF ayr\u0131ca httpOnly cookie'yi siler.",
         "operationId": "logout_auth_logout_post",
         "responses": {
           "204": {
@@ -439,10 +439,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           }
         },
         "security": [
@@ -479,10 +479,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -519,10 +519,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           }
         },
         "security": [
@@ -559,10 +559,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "413": {
             "description": "Logo boyutu cok buyuk"
@@ -588,10 +588,10 @@
             "description": "Successful Response"
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           }
         },
         "security": [
@@ -620,10 +620,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           }
         },
         "security": [
@@ -691,10 +691,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -741,10 +741,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -795,10 +795,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -857,10 +857,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -898,10 +898,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           }
         },
         "security": [
@@ -938,10 +938,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -984,10 +984,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           }
         },
         "security": [
@@ -1037,10 +1037,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -1101,10 +1101,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -1146,10 +1146,10 @@
             "description": "Successful Response"
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -1219,10 +1219,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -1256,10 +1256,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           }
         },
         "security": [
@@ -1296,10 +1296,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -1342,10 +1342,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           }
         },
         "security": [
@@ -1386,10 +1386,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -1407,6 +1407,418 @@
             "HTTPBearer": []
           }
         ]
+      }
+    },
+    "/projects/{project_id}/sites": {
+      "get": {
+        "tags": [
+          "sites"
+        ],
+        "summary": "List Sites Endpoint",
+        "operationId": "list_sites_endpoint_projects__project_id__sites_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz i\u015flem"
+          },
+          "404": {
+            "description": "Kay\u0131t bulunamad\u0131"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "sites"
+        ],
+        "summary": "Create Site Endpoint",
+        "operationId": "create_site_endpoint_projects__project_id__sites_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz i\u015flem"
+          },
+          "404": {
+            "description": "Kay\u0131t bulunamad\u0131"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sites/{site_id}": {
+      "get": {
+        "tags": [
+          "sites"
+        ],
+        "summary": "Get Site Endpoint",
+        "operationId": "get_site_endpoint_sites__site_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz i\u015flem"
+          },
+          "404": {
+            "description": "Kay\u0131t bulunamad\u0131"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "sites"
+        ],
+        "summary": "Update Site Endpoint",
+        "operationId": "update_site_endpoint_sites__site_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz i\u015flem"
+          },
+          "404": {
+            "description": "Kay\u0131t bulunamad\u0131"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sites/{site_id}/sections": {
+      "get": {
+        "tags": [
+          "sites"
+        ],
+        "summary": "List Sections Endpoint",
+        "operationId": "list_sections_endpoint_sites__site_id__sections_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SectionListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz i\u015flem"
+          },
+          "404": {
+            "description": "Kay\u0131t bulunamad\u0131"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "sites"
+        ],
+        "summary": "Create Section Endpoint",
+        "operationId": "create_section_endpoint_sites__site_id__sections_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SectionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SectionResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz i\u015flem"
+          },
+          "404": {
+            "description": "Kay\u0131t bulunamad\u0131"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sections/{section_id}": {
+      "patch": {
+        "tags": [
+          "sites"
+        ],
+        "summary": "Update Section Endpoint",
+        "operationId": "update_section_endpoint_sections__section_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "section_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Section Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SectionUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SectionResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz i\u015flem"
+          },
+          "404": {
+            "description": "Kay\u0131t bulunamad\u0131"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/users": {
@@ -1458,10 +1870,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -1508,10 +1920,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -1562,10 +1974,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -1624,10 +2036,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -1669,10 +2081,10 @@
             "description": "Successful Response"
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -1726,10 +2138,10 @@
             "description": "Successful Response"
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -1790,10 +2202,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -1842,10 +2254,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz işlem"
+            "description": "Yetkisiz i\u015flem"
           },
           "404": {
-            "description": "Kayıt bulunamadı"
+            "description": "Kay\u0131t bulunamad\u0131"
           },
           "422": {
             "description": "Validation Error",
@@ -1900,7 +2312,7 @@
           "admin"
         ],
         "title": "AccessLevel",
-        "description": "Erişim seviyesi. Sıralıdır: none < view < draft < request < approve < full < admin.\n\nfull silmeyi KAPSAMAZ — silme yalnızca admin seviyesindedir (spec §5.0)."
+        "description": "Eri\u015fim seviyesi. S\u0131ral\u0131d\u0131r: none < view < draft < request < approve < full < admin.\n\nfull silmeyi KAPSAMAZ \u2014 silme yaln\u0131zca admin seviyesindedir (spec \u00a75.0)."
       },
       "AuditAction": {
         "type": "string",
@@ -2385,7 +2797,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "CompanyUpdate",
-        "description": "Kismi guncelleme — tum alanlar opsiyonel. Gonderilmeyen alan degismez."
+        "description": "Kismi guncelleme \u2014 tum alanlar opsiyonel. Gonderilmeyen alan degismez."
       },
       "ContractingCard": {
         "properties": {
@@ -2414,7 +2826,7 @@
           "subcontractor_count"
         ],
         "title": "ContractingCard",
-        "description": "Taahhut karti — sozlesme bedeli/isveren ustte gercek, gerisi bos durum."
+        "description": "Taahhut karti \u2014 sozlesme bedeli/isveren ustte gercek, gerisi bos durum."
       },
       "CountPlaceholder": {
         "properties": {
@@ -3016,7 +3428,7 @@
           "pending_module"
         ],
         "title": "PendingApprovalsPlaceholder",
-        "description": "Onay bekleyenler karti — rozet sayaci tasir."
+        "description": "Onay bekleyenler karti \u2014 rozet sayaci tasir."
       },
       "PermissionCell": {
         "properties": {
@@ -3512,6 +3924,10 @@
                 "type": "null"
               }
             ]
+          },
+          "site_count": {
+            "type": "integer",
+            "title": "Site Count"
           }
         },
         "type": "object",
@@ -3532,7 +3948,8 @@
           "progress_pct",
           "contracting",
           "investment",
-          "land_share"
+          "land_share",
+          "site_count"
         ],
         "title": "ProjectDetailResponse"
       },
@@ -3927,7 +4344,7 @@
           "kat_karsiligi"
         ],
         "title": "ProjectType",
-        "description": "Üç iş modeli — kart düzenini ve gelir mantığını belirler (spec §3.1)."
+        "description": "\u00dc\u00e7 i\u015f modeli \u2014 kart d\u00fczenini ve gelir mant\u0131\u011f\u0131n\u0131 belirler (spec \u00a73.1)."
       },
       "ProjectUpdate": {
         "properties": {
@@ -4065,7 +4482,7 @@
         },
         "type": "object",
         "title": "ProjectUpdate",
-        "description": "project_type YOK — tip PATCH ile degistirilemez (spec §3.5)."
+        "description": "project_type YOK \u2014 tip PATCH ile degistirilemez (spec \u00a73.5)."
       },
       "RefreshRequest": {
         "properties": {
@@ -4192,7 +4609,321 @@
           "limited"
         ],
         "title": "Scope",
-        "description": "Veri kapsamı — aktörün modül içinde hangi kayıtları görebildiği."
+        "description": "Veri kapsam\u0131 \u2014 akt\u00f6r\u00fcn mod\u00fcl i\u00e7inde hangi kay\u0131tlar\u0131 g\u00f6rebildi\u011fi."
+      },
+      "SectionCreate": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 150,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SectionStatus",
+            "default": "planned"
+          },
+          "manager_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manager Name"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "sort_order": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Sort Order",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "SectionCreate",
+        "description": "`budget` YOK (spec \u00a72.2) \u2014 bolum bedeli BOQ kalemlerinin toplamidir."
+      },
+      "SectionListResponse": {
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/SectionStatusCounts"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SectionResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "counts",
+          "items"
+        ],
+        "title": "SectionListResponse"
+      },
+      "SectionResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SectionStatus"
+          },
+          "manager_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manager Name"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order"
+          },
+          "progress_pct": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "boq_item_count": {
+            "$ref": "#/components/schemas/CountPlaceholder"
+          },
+          "budget": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "worker_count": {
+            "$ref": "#/components/schemas/CountPlaceholder"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "status",
+          "manager_name",
+          "start_date",
+          "end_date",
+          "sort_order",
+          "progress_pct",
+          "boq_item_count",
+          "budget",
+          "worker_count"
+        ],
+        "title": "SectionResponse",
+        "description": "Spec \u00a74.1. \"gecikme riski\" alani KASITLI olarak yok (spec \u00a73.3): hesabin\ngirdisi henuz uretilmedigi icin yer tutucu bile dondurulmez."
+      },
+      "SectionStatus": {
+        "type": "string",
+        "enum": [
+          "planned",
+          "active",
+          "completed"
+        ],
+        "title": "SectionStatus"
+      },
+      "SectionStatusCounts": {
+        "properties": {
+          "planned": {
+            "type": "integer",
+            "title": "Planned"
+          },
+          "active": {
+            "type": "integer",
+            "title": "Active"
+          },
+          "completed": {
+            "type": "integer",
+            "title": "Completed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "planned",
+          "active",
+          "completed"
+        ],
+        "title": "SectionStatusCounts",
+        "description": "Mockup'taki \"3 aktif \u00b7 2 bekliyor\" kirilimi (spec \u00a73.2)."
+      },
+      "SectionUpdate": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 150,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SectionStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "manager_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manager Name"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "type": "object",
+        "title": "SectionUpdate",
+        "description": "`site_id` YOK \u2014 bolum baska santiyeye tasinamaz."
       },
       "ShareholderInput": {
         "properties": {
@@ -4248,6 +4979,648 @@
           "share_pct"
         ],
         "title": "ShareholderResponse"
+      },
+      "SiteCard": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SiteStatus"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "city_inherited": {
+            "type": "boolean",
+            "title": "City Inherited"
+          },
+          "site_manager_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Manager Name"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "delivery_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Date"
+          },
+          "remaining_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remaining Days"
+          },
+          "section_count": {
+            "type": "integer",
+            "title": "Section Count"
+          },
+          "worker_count": {
+            "$ref": "#/components/schemas/CountPlaceholder"
+          },
+          "progress_pct": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "status",
+          "address",
+          "city",
+          "city_inherited",
+          "site_manager_name",
+          "start_date",
+          "end_date",
+          "delivery_date",
+          "remaining_days",
+          "section_count",
+          "worker_count",
+          "progress_pct"
+        ],
+        "title": "SiteCard",
+        "description": "Spec \u00a74.1 SiteCard. `remaining_days` negatif olabilir (spec \u00a74.2) \u2014\ngecikmeyi kirmizi gostermek frontend'in isi, backend gercegi bastirmaz."
+      },
+      "SiteCounts": {
+        "properties": {
+          "all": {
+            "type": "integer",
+            "title": "All"
+          },
+          "active": {
+            "type": "integer",
+            "title": "Active"
+          },
+          "on_hold": {
+            "type": "integer",
+            "title": "On Hold"
+          },
+          "completed": {
+            "type": "integer",
+            "title": "Completed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "all",
+          "active",
+          "on_hold",
+          "completed"
+        ],
+        "title": "SiteCounts"
+      },
+      "SiteCreate": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 150,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SiteStatus",
+            "default": "active"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "site_manager_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Manager Name"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "delivery_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "SiteCreate",
+        "description": "`contract_amount` YOK (spec \u00a72.1) \u2014 santiye payi BOQ dagitiminin turevidir."
+      },
+      "SiteDetailResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SiteStatus"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "city_inherited": {
+            "type": "boolean",
+            "title": "City Inherited"
+          },
+          "site_manager_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Manager Name"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "delivery_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Date"
+          },
+          "remaining_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remaining Days"
+          },
+          "section_count": {
+            "type": "integer",
+            "title": "Section Count"
+          },
+          "worker_count": {
+            "$ref": "#/components/schemas/CountPlaceholder"
+          },
+          "progress_pct": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "project": {
+            "$ref": "#/components/schemas/SiteProjectSummary"
+          },
+          "section_status_counts": {
+            "$ref": "#/components/schemas/SectionStatusCounts"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/SectionResponse"
+            },
+            "type": "array",
+            "title": "Sections"
+          },
+          "total_progress_payment": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "contract_amount": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "status",
+          "address",
+          "city",
+          "city_inherited",
+          "site_manager_name",
+          "start_date",
+          "end_date",
+          "delivery_date",
+          "remaining_days",
+          "section_count",
+          "worker_count",
+          "progress_pct",
+          "project",
+          "section_status_counts",
+          "sections",
+          "total_progress_payment",
+          "contract_amount"
+        ],
+        "title": "SiteDetailResponse"
+      },
+      "SiteListResponse": {
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/SiteCounts"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SiteCard"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/SiteListTotals"
+          }
+        },
+        "type": "object",
+        "required": [
+          "counts",
+          "items",
+          "totals"
+        ],
+        "title": "SiteListResponse"
+      },
+      "SiteListTotals": {
+        "properties": {
+          "total_progress_payment": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "subcontractor_count": {
+            "$ref": "#/components/schemas/CountPlaceholder"
+          },
+          "active_worker_count": {
+            "$ref": "#/components/schemas/CountPlaceholder"
+          },
+          "average_margin": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_progress_payment",
+          "subcontractor_count",
+          "active_worker_count",
+          "average_margin"
+        ],
+        "title": "SiteListTotals",
+        "description": "Alt KPI seridi \u2014 bu dilimde TAMAMI yer tutucu (spec \u00a74.1)."
+      },
+      "SiteProjectSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "employer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employer Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "city",
+          "employer_name"
+        ],
+        "title": "SiteProjectSummary",
+        "description": "Santiye Detay ust satiri: proje adi + isveren (spec \u00a73.2)."
+      },
+      "SiteStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "on_hold",
+          "completed"
+        ],
+        "title": "SiteStatus",
+        "description": "project_status ile ayni ucludur ama AYRI enum'dur (spec \u00a72.3): sirf bugun\nayni olduklari icin paylasilan bir enum'a baglamak, santiyeye ileride\n`suspended` gibi bir durum eklemeyi imkansiz kilar."
+      },
+      "SiteUpdate": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 150,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SiteStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "site_manager_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Manager Name"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "delivery_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Date"
+          }
+        },
+        "type": "object",
+        "title": "SiteUpdate",
+        "description": "`project_id` YOK \u2014 santiye baska projeye tasinamaz."
       },
       "TokenPair": {
         "properties": {
@@ -4565,7 +5938,7 @@
           "pending_module"
         ],
         "title": "MetricPlaceholder",
-        "description": "Tek degerli KPI karti. v1'de veri kaynagi olmayan kartlar icin.\n\navailable alani bilincli olarak vardir: frontend sabite degil veriye dallanir,\nilgili alt-proje geldiginde backend true dondurmeye baslar (spec §2.3)."
+        "description": "Tek degerli KPI karti. v1'de veri kaynagi olmayan kartlar icin.\n\navailable alani bilincli olarak vardir: frontend sabite degil veriye dallanir,\nilgili alt-proje geldiginde backend true dondurmeye baslar (spec \u00a72.3)."
       },
       "app__modules__projects__schemas__MetricPlaceholder": {
         "properties": {
