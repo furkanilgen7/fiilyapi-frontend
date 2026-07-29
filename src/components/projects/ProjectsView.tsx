@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
@@ -8,7 +8,6 @@ import { useProjects } from "@/lib/api/hooks/useProjects";
 import { isForbidden } from "@/lib/api/unwrap";
 
 import { ProjectCard } from "./ProjectCard";
-import { ProjectFormModal } from "./ProjectFormModal";
 import { ProjectTabs } from "./ProjectTabs";
 import { TypeLegend } from "./TypeLegend";
 import { parseProjectTab, tabToFilter, type ProjectTab } from "./tabs";
@@ -19,7 +18,6 @@ export function ProjectsView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tab = parseProjectTab(searchParams.get("tab"));
-  const [isFormOpen, setFormOpen] = useState(false);
 
   const projectsQuery = useProjects(tabToFilter(tab));
 
@@ -46,9 +44,9 @@ export function ProjectsView() {
       <p className="prj__breadcrumb">Portföy · {activeCount} Aktif Proje</p>
       <div className="prj__title-row">
         <h1 className="prj__title">Projeler</h1>
-        <button type="button" className="prj__new-btn" onClick={() => setFormOpen(true)}>
+        <Link href="/projeler/yeni" className="prj__new-btn">
           + Yeni Proje
-        </button>
+        </Link>
       </div>
       <TypeLegend counts={counts} />
       <ProjectTabs active={tab} counts={counts} onChange={handleTabChange} />
@@ -68,7 +66,6 @@ export function ProjectsView() {
           ))}
         </div>
       )}
-      {isFormOpen && <ProjectFormModal onClose={() => setFormOpen(false)} />}
     </div>
   );
 }

@@ -1,0 +1,113 @@
+/* P1.1a Proje Oluştur formu — kanon: projedesign "Form - Proje Oluştur.dc.html".
+   Ölçüler spec §4.2–§4.9'da satır numaralarıyla. Çıplak hex/px yok. */
+
+/* İçerik sütunu (satır 43, 44) */
+.pf {
+  max-width: var(--form-column-max);
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-8);
+  /* Sayfa alt boşluğu 40px (satır 43) = 32px + 8px */
+  padding-bottom: calc(var(--space-8) + var(--space-2));
+  animation: var(--anim-fade-up);
+}
+
+/* Yapışkan form başlığı — mockup üst barı (satır 34–40). Uygulama kabuğu
+   korunur (§7.10); bu bar içerik sütununun üstünde yapışkan durur. */
+.pf-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-3) var(--space-8);
+}
+
+/* Kırıntı yolu (satır 34–36): 12px, gap 5px, ayraç #e2e8f0, aktif 600/#1e293b */
+.pf-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-form-label-gap);
+  font-size: var(--text-xs); /* 12px (satır 34) — etiket token'ı değil */
+}
+.pf-breadcrumb a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+.pf-breadcrumb a:hover {
+  color: var(--color-primary);
+}
+.pf-breadcrumb__sep {
+  color: var(--color-border);
+}
+.pf-breadcrumb__current {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.pf-topbar__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+/* Üst bar eylemleri daha küçük (satır 37–40): 8px 14px / 8px 18px */
+.pf-topbar__actions .pf-topbar-cancel {
+  padding: var(--space-2) 14px;
+  border-width: var(--border-width-form);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+.pf-topbar__actions .pf-topbar-submit {
+  padding: var(--space-2) 18px;
+}
+
+/* Sayfa başlığı (satır 46–47) */
+.pf-head {
+  margin-bottom: var(--space-5);
+}
+.pf-title {
+  font-size: 22px;
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.3px;
+  margin-bottom: var(--space-1);
+  color: var(--color-text);
+}
+.pf-subtitle {
+  font-size: var(--text-body);
+  color: var(--color-text-subtle);
+}
+
+/* Kartlar F6–F11'de bu gövdeye eklenir */
+.pf-body {
+  display: block;
+}
+
+/* Alt eylem şeridi (satır 212–216) */
+.pf-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+.pf-actions .pf-action {
+  padding: 10px 20px;
+  font-size: var(--text-body);
+}
+.pf-actions .pf-action--cancel {
+  border-width: var(--border-width-form);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+/* Taslak Kaydet: beyaz zemin, primary metin, #bfdbfe kenar (satır 214) */
+.pf-actions .pf-action--draft {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border: var(--border-width-form) solid var(--color-form-card-accent);
+  font-weight: var(--weight-semibold);
+}
+.pf-actions .pf-action--submit {
+  padding: 10px 24px;
+  font-weight: var(--weight-semibold);
+}
