@@ -29,6 +29,24 @@ describe("buildProjectNav — bağlam bloğu", () => {
     expect(contextGroup.items[1].href).toBe("/projeler/1");
   });
 
+  // KOD INCELEME BULGUSU: ikisi de daha derin rotaların atasıdır; `exact`
+  // olmadan ön ek eşleşmesi üçünü birden aktif işaretliyordu.
+  it("bağlam bloğunun iki öğesi de exact (tam eşleşme) işaretlidir", () => {
+    const nav = buildProjectNav({ projectId: "1", projectName: "Güneşkent Konut" });
+    expect(nav.groups[0].items.map((i) => i.exact)).toEqual([true, true]);
+  });
+
+  it("şantiye sekmeleri exact DEĞİLDİR (alt rotalar ön ekle aktif kalır)", () => {
+    const nav = buildProjectNav({
+      projectId: "1",
+      projectName: "Güneşkent Konut",
+      siteId: "9",
+      siteName: "A-Blok Şantiyesi",
+    });
+    const siteGroup = nav.groups.find((g) => g.heading === "A-Blok Şantiyesi");
+    expect(siteGroup?.items.every((i) => i.exact !== true)).toBe(true);
+  });
+
   it("aktif şantiye yokken şantiyenin 6 sekmesi görünmez", () => {
     const nav = buildProjectNav({ projectId: "1", projectName: "Güneşkent Konut" });
     const allLabels = nav.groups.flatMap((g) => g.items.map((i) => i.label));

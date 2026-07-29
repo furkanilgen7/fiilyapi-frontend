@@ -58,12 +58,15 @@ function backTarget(ctx: ProjectNavContext): Pick<ProjectNavResult, "backLabel" 
   return { backLabel: "Projeler", backHref: "/projeler" };
 }
 
+// Bağlam bloğunun iki öğesi de daha derin rotaların ATASIDIR ("/projeler" ⊂
+// "/projeler/1" ⊂ "/projeler/1/santiyeler/9"); ön ek eşleşmesiyle üçü birden
+// aktif işaretlenirdi (kod inceleme bulgusu) — bu yüzden `exact` taşırlar.
 function contextGroup(ctx: ProjectNavContext): DrillNavGroup {
   return {
     heading: "PROJELER",
     items: [
-      { label: "Tüm Projeler", href: "/projeler", emoji: "📁" },
-      { label: ctx.projectName, href: `/projeler/${ctx.projectId}`, emoji: "●" },
+      { label: "Tüm Projeler", href: "/projeler", emoji: "📁", exact: true },
+      { label: ctx.projectName, href: `/projeler/${ctx.projectId}`, emoji: "●", exact: true },
     ],
   };
 }

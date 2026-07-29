@@ -59,6 +59,63 @@ describe("DrillSidebar", () => {
     expect(screen.getByRole("link", { name: /Puantaj/ })).toHaveAttribute("aria-current", "page");
   });
 
+  // KOD INCELEME BULGUSU: ata (ancestor) href'ler ön ek eşleşmesiyle daha
+  // derindeki rotalarda da aktif işaretleniyordu — "/projeler" hem proje
+  // detayda hem şantiye detayda aria-current tasiyordu.
+  it("ata href'i (exact) yalniz tam eslesmede aktiftir, torun rotada degil", () => {
+    const ancestorGroups: DrillNavGroup[] = [
+      {
+        heading: "PROJELER",
+        items: [
+          { label: "Tüm Projeler", href: "/projeler", emoji: "📁", exact: true },
+          { label: "Güneşkent", href: "/projeler/1", emoji: "●", exact: true },
+          { label: "Bölümler", href: "/projeler/1/santiyeler/9", emoji: "📍" },
+        ],
+      },
+    ];
+
+    const { unmount } = render(
+      <DrillSidebar
+        backLabel="Projeler"
+        backHref="/projeler"
+        ariaLabel="Proje gezinme"
+        groups={ancestorGroups}
+        activePath="/projeler/1/santiyeler/9"
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: /Tüm Projeler/ })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("link", { name: /Güneşkent/ })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("link", { name: /Bölümler/ })).toHaveAttribute("aria-current", "page");
+    expect(document.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
+    unmount();
+
+    render(
+      <DrillSidebar
+        backLabel="Projeler"
+        backHref="/projeler"
+        ariaLabel="Proje gezinme"
+        groups={ancestorGroups}
+        activePath="/projeler"
+      />,
+    );
+    expect(screen.getByRole("link", { name: /Tüm Projeler/ })).toHaveAttribute("aria-current", "page");
+    expect(document.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
+  });
+
+  it("exact tasimayan ogeler ON EK davranisini korur (alt rotalar aktif kalir)", () => {
+    render(
+      <DrillSidebar
+        backLabel="Projeler"
+        backHref="/projeler"
+        ariaLabel="Proje gezinme"
+        groups={groups}
+        activePath="/projeler/1/puantaj/2026-01"
+      />,
+    );
+    expect(screen.getByRole("link", { name: /Puantaj/ })).toHaveAttribute("aria-current", "page");
+  });
+
   it("grup basliklarini gosterir", () => {
     render(
       <DrillSidebar

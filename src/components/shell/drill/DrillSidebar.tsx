@@ -7,6 +7,13 @@ export interface DrillNavItem {
   label: string;
   href: string;
   emoji: string;
+  /**
+   * Yalnız tam eşleşmede aktif sayılır. Bir öğenin href'i daha derindeki bir
+   * öğenin href'inin ÖN EKİ olduğunda (ör. "/projeler" ile "/projeler/1")
+   * varsayılan ön ek eşleşmesi ikisini birden aktif işaretler; ata (ancestor)
+   * öğeler bu bayrakla işaretlenir (kod inceleme bulgusu).
+   */
+  exact?: boolean;
 }
 
 export interface DrillNavGroup {
@@ -43,7 +50,9 @@ export function DrillSidebar({ backLabel, backHref, ariaLabel, groups, activePat
             <div className="drill-group__label">{group.heading}</div>
             <div className="drill-nav-list">
               {group.items.map((item) => {
-                const active = isActivePath(activePath, item.href);
+                const active = item.exact
+                  ? activePath === item.href
+                  : isActivePath(activePath, item.href);
                 return (
                   <Link
                     key={item.href}
