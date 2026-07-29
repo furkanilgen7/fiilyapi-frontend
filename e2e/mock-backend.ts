@@ -89,11 +89,43 @@ interface MockProject {
   land_share: MockLandShare | null;
 }
 
+// Task 8/9 — Proje Detay/Şantiye Detay ekranlarını görsel testler için besler
+// (bkz. SiteDetailResponse/SectionResponse şeması, src/lib/api/schema.d.ts).
+interface MockSite {
+  id: string;
+  project_id: string;
+  code: string;
+  name: string;
+  status: "active" | "on_hold" | "completed";
+  address: string | null;
+  city: string | null;
+  city_inherited: boolean;
+  site_manager_name: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  delivery_date: string | null;
+  remaining_days: number | null;
+}
+
+interface MockSection {
+  id: string;
+  site_id: string;
+  code: string | null;
+  name: string;
+  status: "planned" | "active" | "completed";
+  manager_name: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  sort_order: number;
+}
+
 interface MockState {
   users: Array<{ id: string; email: string; full_name: string; title: string; role_id: string; status: string }>;
   roles: Array<{ id: string; key: string; name: string; emoji: string; description: string; is_system: boolean }>;
   modules: Array<{ id: string; key: string; name: string; group: string; sort_order: number }>;
   projects: MockProject[];
+  sites: MockSite[];
+  sections: MockSection[];
   permissions: Record<string, Record<string, { access_level: string; scope: string }>>;
   projectAccess: Record<string, { all_projects: boolean; project_ids: string[] }>;
   company: {
@@ -313,6 +345,32 @@ function seedState(): MockState {
       user_management: NONE,
     },
   };
+  // Proje Detay/Şantiye Detay görsel testleri (Task 12) için p-1 (Kule A) altına
+  // iki şantiye + s-1 altına iki bölüm. Alanlar SiteCard/SiteDetailResponse/
+  // SectionResponse (schema.d.ts) ile birebir, sayfa testlerindeki (page.test.tsx)
+  // sabit değerlerle hizalı.
+  const sites: MockSite[] = [
+    {
+      id: "s-1", project_id: "p-1", code: "A-BLOK", name: "A-Blok Şantiyesi", status: "active",
+      address: "Kuyubaşı Mah.", city: "Ankara", city_inherited: false, site_manager_name: "S. Öztürk",
+      start_date: "2025-03-01", end_date: "2026-12-31", delivery_date: null, remaining_days: 157,
+    },
+    {
+      id: "s-2", project_id: "p-1", code: "B-BLOK", name: "B-Blok Şantiyesi", status: "completed",
+      address: "Kuyubaşı Mah.", city: "Ankara", city_inherited: false, site_manager_name: "K. Arslan",
+      start_date: "2024-01-01", end_date: null, delivery_date: "2026-05-01", remaining_days: null,
+    },
+  ];
+  const sections: MockSection[] = [
+    {
+      id: "sec-1", site_id: "s-1", code: "A-01", name: "Kat 6–10 Kaba İnşaat", status: "active",
+      manager_name: "Sercan Öztürk", start_date: "2026-01-01", end_date: "2026-09-30", sort_order: 0,
+    },
+    {
+      id: "sec-2", site_id: "s-1", code: "A-02", name: "Zemin Kat Kaba İnşaat", status: "completed",
+      manager_name: "M. Arslan", start_date: "2025-03-01", end_date: "2025-12-01", sort_order: 1,
+    },
+  ];
   return {
     users: [
       { id: "u-1", email: "patron@fiilinsaat.com", full_name: "Ahmet Yılmaz", title: "Patron", role_id: "role-patron", status: "active" },
@@ -324,6 +382,8 @@ function seedState(): MockState {
     roles,
     modules,
     projects: PROJECT_FIXTURES,
+    sites,
+    sections,
     permissions,
     projectAccess: {
       "u-1": { all_projects: true, project_ids: [] },
@@ -501,6 +561,90 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         };
         state.projects.push(project);
         return send(201, project);
+      });
+    }
+
+    // /projects/{project_id} — Proje Detay hero + sekmeler (Task 8, spec §4.1).
+    const projectIdMatch = path.match(/^\/projects\/([^/]+)$/);
+    if (method === "GET" && projectIdMatch) {
+      const projectId = projectIdMatch[1];
+      const project = state.projects.find((p) => p.id === projectId);
+      if (!project) return send(404, { detail: "proje yok" });
+      const siteCount = state.sites.filter((s) => s.project_id === projectId).length;
+      return send(200, { ...project, site_count: siteCount });
+    }
+
+    // /projects/{project_id}/sites — Proje Detay şantiye ızgarası (Task 5, spec §4.3).
+    const projectSitesMatch = path.match(/^\/projects\/([^/]+)\/sites$/);
+    if (method === "GET" && projectSitesMatch) {
+      const projectId = projectSitesMatch[1];
+      const items = state.sites
+        .filter((s) => s.project_id === projectId)
+        .map((s) => ({
+          id: s.id, code: s.code, name: s.name, status: s.status, address: s.address, city: s.city,
+          city_inherited: s.city_inherited, site_manager_name: s.site_manager_name,
+          start_date: s.start_date, end_date: s.end_date, delivery_date: s.delivery_date,
+          remaining_days: s.remaining_days,
+          section_count: state.sections.filter((sec) => sec.site_id === s.id).length,
+          worker_count: COUNT_PENDING("timesheet"),
+          progress_pct: METRIC_PENDING("progress_payments"),
+        }));
+      return send(200, {
+        counts: {
+          all: items.length,
+          active: items.filter((i) => i.status === "active").length,
+          on_hold: items.filter((i) => i.status === "on_hold").length,
+          completed: items.filter((i) => i.status === "completed").length,
+        },
+        items,
+        totals: {
+          total_progress_payment: METRIC_PENDING("progress_payments"),
+          subcontractor_count: COUNT_PENDING("subcontracts"),
+          active_worker_count: COUNT_PENDING("timesheet"),
+          average_margin: METRIC_PENDING("project_costs"),
+        },
+      });
+    }
+
+    // /sites/{site_id} — Şantiye Detay hero + sekmeler + bölüm listesi (Task 8/9, spec §5).
+    const siteIdMatch = path.match(/^\/sites\/([^/]+)$/);
+    if (method === "GET" && siteIdMatch) {
+      const siteId = siteIdMatch[1];
+      const site = state.sites.find((s) => s.id === siteId);
+      if (!site) return send(404, { detail: "santiye yok" });
+      const project = state.projects.find((p) => p.id === site.project_id);
+      const sectionItems = state.sections
+        .filter((sec) => sec.site_id === siteId)
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((sec) => ({
+          id: sec.id, code: sec.code, name: sec.name, status: sec.status, manager_name: sec.manager_name,
+          start_date: sec.start_date, end_date: sec.end_date, sort_order: sec.sort_order,
+          progress_pct: METRIC_PENDING("boq"),
+          boq_item_count: COUNT_PENDING("boq"),
+          budget: METRIC_PENDING("boq"),
+          worker_count: COUNT_PENDING("timesheet"),
+        }));
+      return send(200, {
+        id: site.id, code: site.code, name: site.name, status: site.status, address: site.address,
+        city: site.city, city_inherited: site.city_inherited, site_manager_name: site.site_manager_name,
+        start_date: site.start_date, end_date: site.end_date, delivery_date: site.delivery_date,
+        remaining_days: site.remaining_days, section_count: sectionItems.length,
+        worker_count: COUNT_PENDING("timesheet"),
+        progress_pct: METRIC_PENDING("progress_payments"),
+        project: {
+          id: project?.id ?? site.project_id,
+          name: project?.name ?? "",
+          city: project?.city ?? null,
+          employer_name: project?.employer_name ?? null,
+        },
+        section_status_counts: {
+          planned: sectionItems.filter((s) => s.status === "planned").length,
+          active: sectionItems.filter((s) => s.status === "active").length,
+          completed: sectionItems.filter((s) => s.status === "completed").length,
+        },
+        sections: sectionItems,
+        total_progress_payment: METRIC_PENDING("progress_payments"),
+        contract_amount: METRIC_PENDING("project_costs"),
       });
     }
 
