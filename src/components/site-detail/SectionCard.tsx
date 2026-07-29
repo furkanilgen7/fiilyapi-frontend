@@ -40,6 +40,15 @@ const STATUS_CARD_CLASS: Record<SectionStatus, string> = {
   planned: "section-card--planned",
 };
 
+// İlerleme değeri/çubuğu renk şeması durum bazlı (mockup satır 169-170,
+// 206-207 tamamlandı=yeşil; 243-244 aktif=mavi; 280-281, 316-317
+// planlandı=nötr gri). Aynı STATUS_BADGE_CLASS deseni — durum -> sınıf haritası.
+const STATUS_PROGRESS_CLASS: Record<SectionStatus, string> = {
+  completed: "section-card__metric-progress--completed",
+  active: "section-card__metric-progress--active",
+  planned: "section-card__metric-progress--planned",
+};
+
 // Yer tutucu metrik hucresi — duzeni korur, "—" basar, title'da aciklama verir
 // (spec §7.1, SiteHeroBar/SiteCard'daki PlaceholderValue deseniyle ayni).
 function PlaceholderValue({ valueClassName, pendingModule }: { valueClassName: string; pendingModule: string }) {
@@ -88,14 +97,31 @@ function MetricCell({ label, valueClassName = "section-card__metric-value", plac
 // "İlerleme" hucresi mockup'ta her durumda mini bir cubuk cizer (satir 170,
 // 207, 244, 281, 317). Yer tutucuyken sahte %0 izlenimi vermemek icin dolgu
 // basilmaz, yalniz bos iz birakilir (spec §7.1, SiteHeroBar/SiteCard ile ayni
-// desen — kod inceleme bulgusu: bu hucre daha once cubugu hic cizmiyordu).
-function ProgressMetricCell({ progress }: { progress: SectionResponse["progress_pct"] }) {
+// desen). Gercek deger geldiginde renk semasi duruma gore degisir (kod
+// inceleme bulgusu — ilk surumde her zaman "aktif/mavi" semasi sabitti):
+// tamamlandi=yesil, aktif=mavi, planlandi=notr gri (mockup satir 169-170,
+// 206-207, 243-244, 280-281, 316-317). Yer tutucuyken durum rengi
+// uygulanmaz — bilinmeyen bir degere yanlislikla yesil/mavi boyamamak icin.
+function ProgressMetricCell({
+  progress,
+  status,
+}: {
+  progress: SectionResponse["progress_pct"];
+  status: SectionStatus;
+}) {
   const isReal = progress.available && progress.value !== null && progress.value !== undefined;
+  const progressClass = isReal ? STATUS_PROGRESS_CLASS[status] : undefined;
   return (
     <div className="section-card__metric">
       <div className="section-card__metric-label">İlerleme</div>
       {isReal ? (
-        <div className="section-card__metric-value section-card__metric-value--progress">
+        <div
+          className={cx(
+            "section-card__metric-value",
+            "section-card__metric-value--progress",
+            progressClass,
+          )}
+        >
           %{progress.value}
         </div>
       ) : (
@@ -104,10 +130,13 @@ function ProgressMetricCell({ progress }: { progress: SectionResponse["progress_
           pendingModule={progress.pending_module}
         />
       )}
-      <div className="section-card__metric-track" data-testid="section-card-progress-track">
+      <div
+        className={cx("section-card__metric-track", progressClass)}
+        data-testid="section-card-progress-track"
+      >
         {isReal && (
           <div
-            className="section-card__metric-track-fill"
+            className={cx("section-card__metric-track-fill", progressClass)}
             data-testid="section-card-progress-fill"
             style={{ width: `${Math.min(Number(progress.value), 100)}%` }}
           />
@@ -141,7 +170,7 @@ export function SectionCard({ projectId, siteId, section }: SectionCardProps) {
           <div className="section-card__meta">{sectionMeta(section)}</div>
         </div>
 
-        <ProgressMetricCell progress={section.progress_pct} />
+        <ProgressMetricCell progress={section.progress_pct} status={section.status} />
 
         <MetricCell label="İş Kalemleri" placeholder={section.boq_item_count}>
           {section.boq_item_count.count}

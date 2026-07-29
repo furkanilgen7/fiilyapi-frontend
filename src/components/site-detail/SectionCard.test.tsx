@@ -103,6 +103,50 @@ describe("SectionCard — İlerleme çubuğu (spec §7.1, mockup her durumda çi
     const fill = screen.getByTestId("section-card-progress-fill");
     expect(fill).toHaveStyle({ width: "62%" });
   });
+
+  it("tamamlandi durumunda yesil (basari) sinifi tasir, aktif sinifi tasimaz (mockup satir 169-170/206-207)", () => {
+    renderCard({
+      status: "completed",
+      progress_pct: { available: true, value: "100", pending_module: "boq" },
+    });
+    const track = screen.getByTestId("section-card-progress-track");
+    const fill = screen.getByTestId("section-card-progress-fill");
+    const value = screen.getByText("%100");
+
+    expect(track.className).toContain("section-card__metric-progress--completed");
+    expect(fill.className).toContain("section-card__metric-progress--completed");
+    expect(value.className).toContain("section-card__metric-progress--completed");
+
+    expect(track.className).not.toContain("section-card__metric-progress--active");
+    expect(fill.className).not.toContain("section-card__metric-progress--active");
+    expect(value.className).not.toContain("section-card__metric-progress--active");
+  });
+
+  it("aktif durumunda mavi sinifi tasir, tamamlandi sinifi tasimaz (mockup satir 243-244)", () => {
+    renderCard({
+      status: "active",
+      progress_pct: { available: true, value: "62", pending_module: "boq" },
+    });
+    const track = screen.getByTestId("section-card-progress-track");
+    const fill = screen.getByTestId("section-card-progress-fill");
+    const value = screen.getByText("%62");
+
+    expect(track.className).toContain("section-card__metric-progress--active");
+    expect(fill.className).toContain("section-card__metric-progress--active");
+    expect(value.className).toContain("section-card__metric-progress--active");
+
+    expect(track.className).not.toContain("section-card__metric-progress--completed");
+    expect(fill.className).not.toContain("section-card__metric-progress--completed");
+    expect(value.className).not.toContain("section-card__metric-progress--completed");
+  });
+
+  it("yer tutucuyken durum siniflarindan hicbiri uygulanmaz", () => {
+    renderCard({ status: "completed" });
+    const track = screen.getByTestId("section-card-progress-track");
+    expect(track.className).not.toContain("section-card__metric-progress--completed");
+    expect(track.className).not.toContain("section-card__metric-progress--active");
+    expect(track.className).not.toContain("section-card__metric-progress--planned");
+  });
 });
 
 describe("SectionCard — '3 gecikme riski' BASILMAZ (spec §7.2)", () => {

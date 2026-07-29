@@ -299,6 +299,38 @@
   border-radius: 2px;
 }
 
+/* İlerleme renk şeması durum bazlı (mockup satır 169-170/206-207 tamamlandı=
+   yeşil; 243-244 aktif=mavi; 280-281/316-317 planlandı=nötr gri). Yalnız
+   gerçek değer varken uygulanır — kod inceleme bulgusu (Task 11 review):
+   ilk sürümde her durum "aktif/mavi" şemasını kullanıyordu. */
+.section-card__metric-value--progress.section-card__metric-progress--completed {
+  color: var(--color-success);
+}
+.section-card__metric-value--progress.section-card__metric-progress--active {
+  color: var(--color-primary);
+}
+.section-card__metric-value--progress.section-card__metric-progress--planned {
+  color: var(--color-text-subtle);
+}
+.section-card__metric-track.section-card__metric-progress--completed {
+  background: var(--color-success-soft);
+}
+.section-card__metric-track.section-card__metric-progress--active {
+  background: var(--color-neutral-soft);
+}
+.section-card__metric-track.section-card__metric-progress--planned {
+  background: var(--color-neutral-soft);
+}
+.section-card__metric-track-fill.section-card__metric-progress--completed {
+  background: var(--color-success);
+}
+.section-card__metric-track-fill.section-card__metric-progress--active {
+  background: var(--color-primary);
+}
+.section-card__metric-track-fill.section-card__metric-progress--planned {
+  background: var(--color-text-subtle);
+}
+
 .section-card__action {
   display: flex;
   justify-content: flex-end;
