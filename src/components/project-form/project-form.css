@@ -374,3 +374,24 @@
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
+
+/* ── Sözleşme kartı (mockup satır 104–131, spec §4.5) ────────────────────── */
+.pf-grid--3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+.pf-grid--2 {
+  grid-template-columns: 1fr 1fr;
+}
+.pf-divider {
+  height: 1px;
+  background: var(--color-divider);
+  margin: var(--space-4) 0;
+}
+.pf-escalation {
+  margin-top: 14px;
+}
+/* Endeks alt bloğu: kutucuğun altında girintili (satır 127) */
+.pf-escalation__fields {
+  margin-top: var(--space-2);
+  padding-left: 23px;
+}
