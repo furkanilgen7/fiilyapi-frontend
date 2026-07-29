@@ -332,6 +332,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/projects/{project_id}/sites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Sites Endpoint */
+        get: operations["list_sites_endpoint_projects__project_id__sites_get"];
+        put?: never;
+        /** Create Site Endpoint */
+        post: operations["create_site_endpoint_projects__project_id__sites_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Site Endpoint */
+        get: operations["get_site_endpoint_sites__site_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Site Endpoint */
+        patch: operations["update_site_endpoint_sites__site_id__patch"];
+        trace?: never;
+    };
+    "/sites/{site_id}/sections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Sections Endpoint */
+        get: operations["list_sections_endpoint_sites__site_id__sections_get"];
+        put?: never;
+        /** Create Section Endpoint */
+        post: operations["create_section_endpoint_sites__site_id__sections_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sections/{section_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Section Endpoint */
+        patch: operations["update_section_endpoint_sections__section_id__patch"];
+        trace?: never;
+    };
     "/users": {
         parameters: {
             query?: never;
@@ -928,6 +999,8 @@ export interface components {
             contracting: components["schemas"]["ContractingCard"] | null;
             investment: components["schemas"]["InvestmentCard"] | null;
             land_share: components["schemas"]["LandShareCard"] | null;
+            /** Site Count */
+            site_count: number;
         };
         /** ProjectInvestmentInput */
         ProjectInvestmentInput: {
@@ -1099,6 +1172,100 @@ export interface components {
          * @enum {string}
          */
         Scope: "all" | "own" | "project" | "finance" | "stock" | "limited";
+        /**
+         * SectionCreate
+         * @description `budget` YOK (spec §2.2) — bolum bedeli BOQ kalemlerinin toplamidir.
+         */
+        SectionCreate: {
+            /** Code */
+            code?: string | null;
+            /** Name */
+            name: string;
+            /** @default planned */
+            status: components["schemas"]["SectionStatus"];
+            /** Manager Name */
+            manager_name?: string | null;
+            /** Start Date */
+            start_date?: string | null;
+            /** End Date */
+            end_date?: string | null;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** SectionListResponse */
+        SectionListResponse: {
+            counts: components["schemas"]["SectionStatusCounts"];
+            /** Items */
+            items: components["schemas"]["SectionResponse"][];
+        };
+        /**
+         * SectionResponse
+         * @description Spec §4.1. "gecikme riski" alani KASITLI olarak yok (spec §3.3): hesabin
+         *     girdisi henuz uretilmedigi icin yer tutucu bile dondurulmez.
+         */
+        SectionResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string | null;
+            /** Name */
+            name: string;
+            status: components["schemas"]["SectionStatus"];
+            /** Manager Name */
+            manager_name: string | null;
+            /** Start Date */
+            start_date: string | null;
+            /** End Date */
+            end_date: string | null;
+            /** Sort Order */
+            sort_order: number;
+            progress_pct: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            boq_item_count: components["schemas"]["CountPlaceholder"];
+            budget: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            worker_count: components["schemas"]["CountPlaceholder"];
+        };
+        /**
+         * SectionStatus
+         * @enum {string}
+         */
+        SectionStatus: "planned" | "active" | "completed";
+        /**
+         * SectionStatusCounts
+         * @description Mockup'taki "3 aktif · 2 bekliyor" kirilimi (spec §3.2).
+         */
+        SectionStatusCounts: {
+            /** Planned */
+            planned: number;
+            /** Active */
+            active: number;
+            /** Completed */
+            completed: number;
+        };
+        /**
+         * SectionUpdate
+         * @description `site_id` YOK — bolum baska santiyeye tasinamaz.
+         */
+        SectionUpdate: {
+            /** Code */
+            code?: string | null;
+            /** Name */
+            name?: string | null;
+            status?: components["schemas"]["SectionStatus"] | null;
+            /** Manager Name */
+            manager_name?: string | null;
+            /** Start Date */
+            start_date?: string | null;
+            /** End Date */
+            end_date?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
         /** ShareholderInput */
         ShareholderInput: {
             /** Name */
@@ -1117,6 +1284,182 @@ export interface components {
             name: string;
             /** Share Pct */
             share_pct: string;
+        };
+        /**
+         * SiteCard
+         * @description Spec §4.1 SiteCard. `remaining_days` negatif olabilir (spec §4.2) —
+         *     gecikmeyi kirmizi gostermek frontend'in isi, backend gercegi bastirmaz.
+         */
+        SiteCard: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            status: components["schemas"]["SiteStatus"];
+            /** Address */
+            address: string | null;
+            /** City */
+            city: string | null;
+            /** City Inherited */
+            city_inherited: boolean;
+            /** Site Manager Name */
+            site_manager_name: string | null;
+            /** Start Date */
+            start_date: string | null;
+            /** End Date */
+            end_date: string | null;
+            /** Delivery Date */
+            delivery_date: string | null;
+            /** Remaining Days */
+            remaining_days: number | null;
+            /** Section Count */
+            section_count: number;
+            worker_count: components["schemas"]["CountPlaceholder"];
+            progress_pct: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+        };
+        /** SiteCounts */
+        SiteCounts: {
+            /** All */
+            all: number;
+            /** Active */
+            active: number;
+            /** On Hold */
+            on_hold: number;
+            /** Completed */
+            completed: number;
+        };
+        /**
+         * SiteCreate
+         * @description `contract_amount` YOK (spec §2.1) — santiye payi BOQ dagitiminin turevidir.
+         */
+        SiteCreate: {
+            /** Code */
+            code?: string | null;
+            /** Name */
+            name: string;
+            /** @default active */
+            status: components["schemas"]["SiteStatus"];
+            /** Address */
+            address?: string | null;
+            /** City */
+            city?: string | null;
+            /** Site Manager Name */
+            site_manager_name?: string | null;
+            /** Start Date */
+            start_date?: string | null;
+            /** End Date */
+            end_date?: string | null;
+            /** Delivery Date */
+            delivery_date?: string | null;
+        };
+        /** SiteDetailResponse */
+        SiteDetailResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            status: components["schemas"]["SiteStatus"];
+            /** Address */
+            address: string | null;
+            /** City */
+            city: string | null;
+            /** City Inherited */
+            city_inherited: boolean;
+            /** Site Manager Name */
+            site_manager_name: string | null;
+            /** Start Date */
+            start_date: string | null;
+            /** End Date */
+            end_date: string | null;
+            /** Delivery Date */
+            delivery_date: string | null;
+            /** Remaining Days */
+            remaining_days: number | null;
+            /** Section Count */
+            section_count: number;
+            worker_count: components["schemas"]["CountPlaceholder"];
+            progress_pct: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            project: components["schemas"]["SiteProjectSummary"];
+            section_status_counts: components["schemas"]["SectionStatusCounts"];
+            /** Sections */
+            sections: components["schemas"]["SectionResponse"][];
+            total_progress_payment: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            contract_amount: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+        };
+        /** SiteListResponse */
+        SiteListResponse: {
+            counts: components["schemas"]["SiteCounts"];
+            /** Items */
+            items: components["schemas"]["SiteCard"][];
+            totals: components["schemas"]["SiteListTotals"];
+        };
+        /**
+         * SiteListTotals
+         * @description Alt KPI seridi — bu dilimde TAMAMI yer tutucu (spec §4.1).
+         */
+        SiteListTotals: {
+            total_progress_payment: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            subcontractor_count: components["schemas"]["CountPlaceholder"];
+            active_worker_count: components["schemas"]["CountPlaceholder"];
+            average_margin: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+        };
+        /**
+         * SiteProjectSummary
+         * @description Santiye Detay ust satiri: proje adi + isveren (spec §3.2).
+         */
+        SiteProjectSummary: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** City */
+            city: string | null;
+            /** Employer Name */
+            employer_name: string | null;
+        };
+        /**
+         * SiteStatus
+         * @description project_status ile ayni ucludur ama AYRI enum'dur (spec §2.3): sirf bugun
+         *     ayni olduklari icin paylasilan bir enum'a baglamak, santiyeye ileride
+         *     `suspended` gibi bir durum eklemeyi imkansiz kilar.
+         * @enum {string}
+         */
+        SiteStatus: "active" | "on_hold" | "completed";
+        /**
+         * SiteUpdate
+         * @description `project_id` YOK — santiye baska projeye tasinamaz.
+         */
+        SiteUpdate: {
+            /** Code */
+            code?: string | null;
+            /** Name */
+            name?: string | null;
+            status?: components["schemas"]["SiteStatus"] | null;
+            /** Address */
+            address?: string | null;
+            /** City */
+            city?: string | null;
+            /** Site Manager Name */
+            site_manager_name?: string | null;
+            /** Start Date */
+            start_date?: string | null;
+            /** End Date */
+            end_date?: string | null;
+            /** Delivery Date */
+            delivery_date?: string | null;
         };
         /** TokenPair */
         TokenPair: {
@@ -2347,6 +2690,337 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NotificationPrefItem"][];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sites_endpoint_projects__project_id__sites_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_site_endpoint_projects__project_id__sites_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SiteCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_site_endpoint_sites__site_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_site_endpoint_sites__site_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SiteUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sections_endpoint_sites__site_id__sections_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SectionListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_section_endpoint_sites__site_id__sections_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SectionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SectionResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_section_endpoint_sections__section_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                section_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SectionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SectionResponse"];
                 };
             };
             /** @description Yetkisiz işlem */

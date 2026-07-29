@@ -1,3 +1,6 @@
+import { readFileSync, readdirSync } from "node:fs";
+import { join, resolve } from "node:path";
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { GET, POST } from "./route";
@@ -157,5 +160,47 @@ describe("BFF /api/backend/[...path]", () => {
     const body = await res.json();
     expect(body.code).toBe("unavailable");
     expect(JSON.stringify(body)).not.toContain("boom");
+  });
+
+  // Regresyon korkulugu: uygulama katmani yeni bir backend koku cagirdiginda
+  // (or. Santiye Detay'in "/sites/{site_id}" ucu) BFF allow-list'i guncellenmezse
+  // ekran sessizce 404 alir ve yalniz gorsel/e2e testte patlar. Bu test istemci
+  // kaynagindan cagrilan tum kokleri cikarip her birinin forward edildigini dogrular.
+  describe("allow-list, istemcinin cagirdigi tum kokleri kapsar", () => {
+    const apiSourceDir = resolve(process.cwd(), "src/lib/api");
+
+    function collectSourceFiles(dir: string): string[] {
+      return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) return collectSourceFiles(full);
+        if (!entry.name.endsWith(".ts") || entry.name.endsWith(".test.ts")) return [];
+        return [full];
+      });
+    }
+
+    const calledRoots = [
+      ...new Set(
+        collectSourceFiles(apiSourceDir)
+          .flatMap((file) => [
+            ...readFileSync(file, "utf8").matchAll(/backendClient\.[A-Z]+\(\s*"\/([a-z0-9-]+)/g),
+          ])
+          .map((match) => match[1]),
+      ),
+    ].sort();
+
+    it("istemci kaynagindan en az bir kok cikarilabilir", () => {
+      expect(calledRoots.length).toBeGreaterThan(0);
+    });
+
+    it.each(calledRoots)("%s koku forward edilir", async (root) => {
+      const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+      vi.stubGlobal("fetch", fetchMock);
+      const res = await GET(
+        req(`/api/backend/${root}`, "GET", { [ACCESS_COOKIE]: "acc" }),
+        ctx([root]),
+      );
+      expect(res.status).toBe(200);
+      expect(String(fetchMock.mock.calls[0][0])).toContain(`/${root}`);
+    });
   });
 });

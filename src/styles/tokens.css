@@ -45,6 +45,7 @@
   --color-on-brand-60: rgba(255, 255, 255, 0.6);
   --color-on-brand-50: rgba(255, 255, 255, 0.5); /* Rol Yönetimi: sistem rol karti kullanici sayisi */
   --color-on-brand-40: rgba(255, 255, 255, 0.4);
+  --color-on-brand-30: rgba(255, 255, 255, 0.3); /* Şantiye Detay: Günlük Kayıt buton kenarlığı */
   --color-on-brand-20: rgba(255, 255, 255, 0.2);
   --color-on-brand-15: rgba(255, 255, 255, 0.15);
   --color-on-brand-80: rgba(255, 255, 255, 0.8);
@@ -81,6 +82,7 @@
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
+  --space-5: 1.25rem;
   --space-6: 1.5rem;
   --space-8: 2rem;
   --space-12: 3rem;
@@ -111,6 +113,7 @@
 
   /* F1: radius olcegi (§6.1) */
   --radius-6: 6px;
+  --radius-7: 7px;
   --radius-8: 8px;
   --radius-10: 10px;
   --radius-14: 14px;
@@ -131,6 +134,25 @@
   --duration-fast: 150ms;
   --duration-normal: 250ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* P2: drill-in sidebar (Proje/Şantiye Detay), ana sidebar 220px'ten ayrı */
+  --drill-sidebar-width: 260px;
+
+  /* P2: Proje Detay hero seridi (spec §4.1, §6) */
+  --gradient-hero-project: linear-gradient(135deg, var(--color-primary-hover), var(--color-primary-light));
+
+  /* P2: Şantiye Detay hero seridi (spec §5.2, §6) */
+  --gradient-hero-site: linear-gradient(
+    135deg,
+    var(--color-primary-hover) 0%,
+    var(--color-primary) 60%,
+    var(--color-primary-light) 100%
+  );
+  --surface-hero-tile: rgba(255, 255, 255, 0.12);
+  --text-on-hero-muted: rgba(255, 255, 255, 0.65);
+
+  /* P2: Bölüm kartı — aktif durumda vurgulu kenarlık/gölge (spec §5.4, --shadow-card-purple/teal deseni) */
+  --shadow-card-primary: 0 2px 8px rgba(37, 99, 235, 0.12);
 
   /* Ayarlar redesign — layout + accent tokens (mockup-derived, ref §A) */
   --settings-sidebar-width: 240px;

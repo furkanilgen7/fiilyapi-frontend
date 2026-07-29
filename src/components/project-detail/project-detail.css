@@ -1,0 +1,315 @@
+/* Proje Detay › Şantiyeler — spec §4.1, §4.2 (mockup: Proje Detay - Şantiyeler.dc.html) */
+
+/* İçerik alanı ofseti burada DEĞİL — drill-sidebar.css içindeki .drill-content
+   kuralında tanımlıdır (tek sahip, tek uygulama). */
+
+.project-hero {
+  background: var(--gradient-hero-project);
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  color: var(--color-on-brand);
+}
+.project-hero__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.project-hero__breadcrumb {
+  font-size: 12px;
+  color: var(--color-on-brand-70);
+  margin-bottom: 6px;
+}
+.project-hero__title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  margin-bottom: 6px;
+}
+.project-hero__meta {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--color-on-brand-80);
+}
+.project-hero__contract {
+  text-align: right;
+}
+.project-hero__contract-label {
+  font-size: 11px;
+  color: var(--color-on-brand-70);
+  margin-bottom: 4px;
+}
+.project-hero__contract-value {
+  font-size: 28px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+.project-hero__contract-value--pending {
+  cursor: help;
+}
+.project-hero__contract-note {
+  font-size: 12px;
+  color: var(--color-on-brand-70);
+  margin-top: 2px;
+}
+
+.project-hero__tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: 20px;
+}
+.project-hero__tab {
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--color-on-brand-70);
+  background: transparent;
+  border-radius: var(--radius-7);
+  text-decoration: none;
+}
+.project-hero__tab--active {
+  font-weight: 600;
+  color: var(--color-on-brand);
+  background: var(--color-on-brand-20);
+}
+/* Sekmeler marka degradesi ustunde durur — jenerik --focus-ring (mavi, dusuk
+   opaklik) burada goze carpmaz; on-brand renginde belirgin bir dis hat kullanilir. */
+.project-hero__tab:focus-visible {
+  outline: 2px solid var(--color-on-brand);
+  outline-offset: 2px;
+}
+
+.project-detail__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.project-detail__section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.project-detail__add-btn {
+  background: var(--color-primary);
+  color: var(--color-on-brand);
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--radius-8);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.project-detail__add-btn:hover {
+  background: var(--color-primary-hover);
+}
+
+.project-detail__empty {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+/* Şantiye kartı ızgarası (spec §4.3, mockup: Proje Detay - Şantiyeler.dc.html 101–169) */
+.project-detail__site-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5);
+  margin-bottom: 24px;
+}
+
+.site-card {
+  background: var(--color-surface);
+  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.site-card--completed {
+  opacity: 0.8;
+}
+
+.site-card__strip {
+  height: 5px;
+  background: var(--gradient-type-taahhut);
+}
+.site-card--completed .site-card__strip {
+  background: var(--color-border);
+}
+
+.site-card__body {
+  padding: 20px;
+}
+
+.site-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.site-card__name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.site-card__subtitle {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+
+.site-card__status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.site-card__status--active {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+.site-card__status--muted {
+  background: var(--color-neutral-soft);
+  color: var(--color-text-muted);
+}
+.site-card__status--pending {
+  /* on_hold ("Beklemede") — mockup'ta ornegi yok; ne aktif-yesil ne
+     tamamlanmis-notr grubuna dusmesin diye kendi rengi (spec-inceleme bulgusu). */
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+}
+
+.site-card__kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.site-card__kpi {
+  background: var(--color-surface-2);
+  border-radius: var(--radius-8);
+  padding: 10px;
+  text-align: center;
+}
+.site-card__kpi-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.site-card__kpi-value--days {
+  font-size: 16px;
+}
+.site-card__kpi-value--pending {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+.site-card__kpi-value--delay {
+  color: var(--color-danger);
+}
+.site-card__kpi-value--delivered {
+  color: var(--color-success);
+}
+.site-card__kpi-label {
+  font-size: 10px;
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+
+/* Tamamlanmış kartta İşçi soluklaşır, İlerleme yeşile döner (spec §4.3 KPI renk kuralı) */
+.site-card--completed .site-card__kpi-value--worker {
+  color: var(--color-text-subtle);
+}
+.site-card--completed .site-card__kpi-value--progress {
+  color: var(--color-success);
+}
+.site-card__kpi-value--progress {
+  color: var(--color-primary);
+}
+
+.site-card__progress-track {
+  height: 6px;
+  background: var(--color-neutral-soft);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.site-card--completed .site-card__progress-track {
+  background: var(--color-success-soft);
+}
+.site-card__progress-fill {
+  height: 100%;
+  background: var(--gradient-type-taahhut);
+  border-radius: 3px;
+}
+.site-card--completed .site-card__progress-fill {
+  background: var(--color-success);
+}
+
+.site-card__chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.site-card__chip {
+  background: var(--color-neutral-soft);
+  color: var(--color-text-secondary);
+  padding: 5px 12px;
+  border-radius: var(--radius-6);
+  font-size: 12px;
+  text-decoration: none;
+}
+.site-card__chip--detay {
+  background: var(--color-nav-active-bg);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+.site-card--completed .site-card__chip--detay {
+  background: var(--color-neutral-soft);
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+.site-card__chip:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Alt KPI seridi (spec §4.4, mockup: Proje Detay - Şantiyeler.dc.html 176–191).
+   Dordu de bu dilimde yer tutucu (backend spec §4.1) — deger rengi bu yuzden
+   soluk kalir, mockup'taki yesil/mono bicimler gercek veri gelince uygulanir. */
+.site-totals {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+}
+.site-totals__card {
+  background: var(--color-surface);
+  border-radius: 12px;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+}
+.site-totals__label {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.site-totals__value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.site-totals__value--pending {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+
+/* Bos durum (spec §7.4) — hata degil, gecerli bir durum; noturak yuzey +
+   eylem butonu (project-detail__add-btn ile ayni bicim, top buton ile ayni
+   eylemi paylasir). */
+.project-detail__empty-action {
+  margin-top: var(--space-4);
+}

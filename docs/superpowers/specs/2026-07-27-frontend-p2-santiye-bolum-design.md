@@ -212,10 +212,25 @@ Başlık: `font-size:14px; font-weight:600; color:#1e293b; margin-bottom:14px`
 — `A-Blok Bölümleri (5)`. Liste: `display:flex; flex-direction:column; gap:12px`
 (**dikey liste, ızgara değil**).
 
-Kart içeriği: ad + durum rozeti, tarih·sorumlu satırı, 4 metrik (İlerleme ·
-İş Kalemleri · Bölüm Bedeli · İşçi) ve sağda `Detay →` / `Düzenle` bağlantısı.
-Kalan ölçüler kart bloğundan (satır 153+) uygulama sırasında okunur — görsel
-karşılaştırma kapısı bunu zorunlu kılar.
+Kart içeriği: ad + durum rozeti, tarih·sorumlu satırı, 4 metrik ve sağda
+`Detay →` / `Düzenle` bağlantısı. Kalan ölçüler kart bloğundan (satır 153+)
+uygulama sırasında okunur — görsel karşılaştırma kapısı bunu zorunlu kılar.
+
+**Metrik etiketleri duruma göre değişir — MOCKUP KAZANIR.** Bu spec'in ilk
+sürümü sabit bir dörtlü (İlerleme · İş Kalemleri · Bölüm Bedeli · İşçi)
+yazıyordu; canonical mockup ise satır bazında farklı etiket basıyor. Mockup ile
+bu doküman çeliştiğinde mockup geçerlidir, dolayısıyla bağlayıcı etiket seti:
+
+| Metrik | `completed` | `active` | `planned` |
+|---|---|---|---|
+| 1 | `İlerleme` (168/205) | `İlerleme` (242) | `İlerleme` (279/315) |
+| 2 | `İş Kalemleri` (173/210) | `İş Kalemleri` (247) | `İş Kalemleri` (284/320) |
+| 3 | `Bölüm Bedeli` (178/215) | `Bölüm Bedeli` (252) | `Tahmini Bedel` (288/324) |
+| 4 | `İşçi (zirve)` (182/219) | `Aktif İşçi` (256) | `Planlanan İşçi` (292/328) |
+
+Parantezdeki sayılar `../projedesign/Şantiye Detay.dc.html` satır numaralarıdır.
+İlk iki etiket hiçbir durumda değişmez. Uygulama `STATUS_BADGE_CLASS` ile aynı
+durum→harita desenini kullanır (`STATUS_BUDGET_LABEL`, `STATUS_WORKER_LABEL`).
 
 Durum etiketleri mockup'tan birebir: **`Tamamlandı`** · **`Aktif — Devam Ediyor`** ·
 **`Planlandı`**. Eylem bağlantısı duruma göre: `planned` → `Düzenle`, diğerleri →

@@ -9,6 +9,12 @@ const MODULE_LABELS: Record<string, string> = {
   subcontracts: "Taşeron sözleşmeleriyle birlikte gelir",
   units: "Ünite satış modülüyle birlikte gelir",
   project_costs: "Maliyet takibiyle birlikte gelir",
+  // P2 (Şantiye & Bölüm) — spec §7.1
+  contracts: "Sözleşme modülüyle birlikte gelir",
+  boq: "İş kalemleri modülüyle birlikte gelir",
+  stock: "Stok modülüyle birlikte gelir",
+  documents: "Belge modülüyle birlikte gelir",
+  site_diary: "Şantiye günlüğüyle birlikte gelir",
 };
 
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";
