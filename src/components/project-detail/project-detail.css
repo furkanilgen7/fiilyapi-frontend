@@ -121,3 +121,156 @@
   text-align: center;
   color: var(--color-text-muted);
 }
+
+/* Şantiye kartı ızgarası (spec §4.3, mockup: Proje Detay - Şantiyeler.dc.html 101–169) */
+.project-detail__site-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5);
+  margin-bottom: 24px;
+}
+
+.site-card {
+  background: var(--color-surface);
+  border-radius: 16px;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.site-card--completed {
+  opacity: 0.8;
+}
+
+.site-card__strip {
+  height: 5px;
+  background: var(--gradient-type-taahhut);
+}
+.site-card--completed .site-card__strip {
+  background: var(--color-border);
+}
+
+.site-card__body {
+  padding: 20px;
+}
+
+.site-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.site-card__name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.site-card__subtitle {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+
+.site-card__status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.site-card__status--active {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+.site-card__status--muted {
+  background: var(--color-neutral-soft);
+  color: var(--color-text-muted);
+}
+
+.site-card__kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.site-card__kpi {
+  background: var(--color-surface-2);
+  border-radius: var(--radius-8);
+  padding: 10px;
+  text-align: center;
+}
+.site-card__kpi-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.site-card__kpi-value--days {
+  font-size: 16px;
+}
+.site-card__kpi-value--pending {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+.site-card__kpi-value--delay {
+  color: var(--color-danger);
+}
+.site-card__kpi-value--delivered {
+  color: var(--color-success);
+}
+.site-card__kpi-label {
+  font-size: 10px;
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+
+/* Tamamlanmış kartta İşçi soluklaşır, İlerleme yeşile döner (spec §4.3 KPI renk kuralı) */
+.site-card--completed .site-card__kpi-value--worker {
+  color: var(--color-text-subtle);
+}
+.site-card--completed .site-card__kpi-value--progress {
+  color: var(--color-success);
+}
+.site-card__kpi-value--progress {
+  color: var(--color-primary);
+}
+
+.site-card__progress-track {
+  height: 6px;
+  background: var(--color-neutral-soft);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.site-card--completed .site-card__progress-track {
+  background: var(--color-success-soft);
+}
+.site-card__progress-fill {
+  height: 100%;
+  background: var(--gradient-type-taahhut);
+  border-radius: 3px;
+}
+.site-card--completed .site-card__progress-fill {
+  background: var(--color-success);
+}
+
+.site-card__chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.site-card__chip {
+  background: var(--color-neutral-soft);
+  color: var(--color-text-secondary);
+  padding: 5px 12px;
+  border-radius: var(--radius-6);
+  font-size: 12px;
+  text-decoration: none;
+}
+.site-card__chip--detay {
+  background: var(--color-nav-active-bg);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+.site-card--completed .site-card__chip--detay {
+  background: var(--color-neutral-soft);
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}

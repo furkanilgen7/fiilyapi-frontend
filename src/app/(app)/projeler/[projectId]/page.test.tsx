@@ -3,11 +3,17 @@ import { render, screen } from "@testing-library/react";
 
 import ProjectDetailPage from "./page";
 import { useProject } from "@/lib/api/hooks/useProjects";
+import { useSites } from "@/lib/api/hooks/useSites";
 import { BackendError } from "@/lib/api/unwrap";
 
 vi.mock("@/lib/api/hooks/useProjects", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useProjects")>()),
   useProject: vi.fn(),
+}));
+
+vi.mock("@/lib/api/hooks/useSites", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useSites")>()),
+  useSites: vi.fn(),
 }));
 
 const PROJECT_ID = "11111111-1111-1111-1111-111111111111";
@@ -44,8 +50,46 @@ function mockQuery(value: Partial<ReturnType<typeof useProject>>) {
   } as never);
 }
 
+const SITE = {
+  id: "44444444-4444-4444-4444-444444444444",
+  code: "A-BLOK",
+  name: "A-Blok Şantiyesi",
+  status: "active" as const,
+  address: "Kuyubaşı Mah.",
+  city: "Ankara",
+  city_inherited: false,
+  site_manager_name: "S. Öztürk",
+  start_date: "2025-03-01",
+  end_date: "2026-12-31",
+  delivery_date: null,
+  remaining_days: 157,
+  section_count: 5,
+  worker_count: { available: false, count: null, pending_module: "timesheet" },
+  progress_pct: { available: false, value: null, pending_module: "progress_payments" },
+};
+
+function mockSites(value: Partial<ReturnType<typeof useSites>>) {
+  vi.mocked(useSites).mockReturnValue({
+    data: undefined, isLoading: false, isError: false, error: null, ...value,
+  } as never);
+}
+
 describe("ProjectDetailPage", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSites({
+      data: {
+        counts: { all: 1, active: 1, on_hold: 0, completed: 0 },
+        items: [SITE],
+        totals: {
+          total_progress_payment: { available: false, value: null, pending_module: "progress_payments" },
+          subcontractor_count: { available: false, count: null, pending_module: "subcontracts" },
+          active_worker_count: { available: false, count: null, pending_module: "timesheet" },
+          average_margin: { available: false, value: null, pending_module: "project_costs" },
+        },
+      },
+    });
+  });
 
   it("yuklenirken mesaj basar", () => {
     mockQuery({ isLoading: true });
@@ -77,13 +121,21 @@ describe("ProjectDetailPage", () => {
     mockQuery({ data: { ...PROJECT, site_count: 0 } });
     render(<ProjectDetailPage />);
     expect(screen.getByText("Bu projede henüz şantiye yok.")).toBeInTheDocument();
-    expect(screen.queryByTestId("site-list-slot")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("site-list-grid")).not.toBeInTheDocument();
   });
 
-  it("santiyesi olan projede liste alani (Task 5) icin yer birakir, sahte veri basmaz", () => {
+  it("santiyesi olan projede SiteCard izgarasini gercek veriyle basar", () => {
     mockQuery({ data: PROJECT });
     render(<ProjectDetailPage />);
-    expect(screen.getByTestId("site-list-slot")).toBeInTheDocument();
+    expect(screen.getByTestId("site-list-grid")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 3, name: "A-Blok Şantiyesi" })).toBeInTheDocument();
     expect(screen.queryByText("Bu projede henüz şantiye yok.")).not.toBeInTheDocument();
+  });
+
+  it("santiye listesi yuklenirken mesaj basar", () => {
+    mockQuery({ data: PROJECT });
+    mockSites({ isLoading: true });
+    render(<ProjectDetailPage />);
+    expect(screen.getAllByText("Yükleniyor…").length).toBeGreaterThan(0);
   });
 });
