@@ -9,6 +9,11 @@ const ALLOWED_ROOTS = new Set([
   "roles",
   "modules",
   "projects",
+  // Şantiye Detay (/sites/{site_id}) ve bölüm uçları (/sites/{site_id}/sections)
+  // bu kökten geçer; eksikse tüm şantiye ekranı 404 alır.
+  // Şantiye Detay (/sites/{site_id}) ve bölüm uçları (/sites/{site_id}/sections)
+  // bu kökten geçer; eksikse tüm şantiye ekranı 404 alır.
+  "sites",
   "company",
   "settings",
   "audit-log",
