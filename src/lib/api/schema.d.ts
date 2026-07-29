@@ -173,6 +173,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/employers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Employers Endpoint */
+        get: operations["list_employers_endpoint_employers_get"];
+        put?: never;
+        /** Create Employer Endpoint */
+        post: operations["create_employer_endpoint_employers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/projects": {
         parameters: {
             query?: never;
@@ -702,6 +720,36 @@ export interface components {
             pending_approvals: components["schemas"]["PendingApprovalsPlaceholder"];
             risks: components["schemas"]["ListPlaceholder"];
         };
+        /** EmployerCreate */
+        EmployerCreate: {
+            /** Name */
+            name: string;
+            /** Tax Number */
+            tax_number?: string | null;
+            /** Contact Person */
+            contact_person?: string | null;
+        };
+        /** EmployerListResponse */
+        EmployerListResponse: {
+            /** Items */
+            items: components["schemas"]["EmployerResponse"][];
+        };
+        /** EmployerResponse */
+        EmployerResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Tax Number */
+            tax_number: string | null;
+            /** Contact Person */
+            contact_person: string | null;
+            /** Is Active */
+            is_active: boolean;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -909,6 +957,12 @@ export interface components {
             /** Accent Color */
             accent_color?: string | null;
         };
+        /**
+         * PriceIndexType
+         * @description Fiyat farki endeks tipi (spec §2.4). Mockup satir 128 sirasi.
+         * @enum {string}
+         */
+        PriceIndexType: "ufe" | "tufe" | "construction_cost" | "fixed_coefficient";
         /** ProjectAccessInput */
         ProjectAccessInput: {
             /**
@@ -926,6 +980,112 @@ export interface components {
             /** Project Ids */
             project_ids: string[];
         };
+        /**
+         * ProjectBudgetInput
+         * @description Dört bütçe kalemi (spec §3.3). Toplam `budget`'i servis hesaplar; istemci `budget` yok.
+         */
+        ProjectBudgetInput: {
+            /**
+             * Material
+             * @default 0
+             */
+            material: number | string;
+            /**
+             * Labor
+             * @default 0
+             */
+            labor: number | string;
+            /**
+             * Subcontractor
+             * @default 0
+             */
+            subcontractor: number | string;
+            /**
+             * Overhead
+             * @default 0
+             */
+            overhead: number | string;
+        };
+        /**
+         * ProjectBudgetLines
+         * @description Dört bütçe kalemi okuma yanıtı (spec §3.3). Toplam `budget` ayrı alanda durur.
+         */
+        ProjectBudgetLines: {
+            /** Material */
+            material: string;
+            /** Labor */
+            labor: string;
+            /** Subcontractor */
+            subcontractor: string;
+            /** Overhead */
+            overhead: string;
+        };
+        /**
+         * ProjectContractInput
+         * @description İşveren sözleşmesi girişi (spec §2.4, §3.3). Yalnız `taahhut` projelerinde.
+         *
+         *     Yüzdeler alan düzeyinde 0..100 (§3.6 kural 6). `has_price_escalation=true` iken
+         *     endeks alanlarının zorunluluğu (kural 5) ve endeks kapalıyken NULL olması
+         *     (ck_contract_escalation) servis + DB CHECK ile denetlenir.
+         */
+        ProjectContractInput: {
+            /** Contract No */
+            contract_no?: string | null;
+            /** Signature Date */
+            signature_date?: string | null;
+            /** Amount */
+            amount?: number | string | null;
+            /**
+             * Advance Pct
+             * @default 20
+             */
+            advance_pct: number | string;
+            /**
+             * Retainage Pct
+             * @default 5
+             */
+            retainage_pct: number | string;
+            /**
+             * Vat Pct
+             * @default 20
+             */
+            vat_pct: number | string;
+            /** Late Penalty Daily */
+            late_penalty_daily?: number | string | null;
+            /**
+             * Has Price Escalation
+             * @default true
+             */
+            has_price_escalation: boolean;
+            index_type?: components["schemas"]["PriceIndexType"] | null;
+            /** Base Index Value */
+            base_index_value?: number | string | null;
+        };
+        /**
+         * ProjectContractResponse
+         * @description Detay/liste yanıtında sözleşme (spec §2.4). Yalnız okuma; giriş `ProjectContractInput`.
+         */
+        ProjectContractResponse: {
+            /** Contract No */
+            contract_no: string | null;
+            /** Signature Date */
+            signature_date: string | null;
+            /** Amount */
+            amount: string | null;
+            /** Advance Pct */
+            advance_pct: string;
+            /** Retainage Pct */
+            retainage_pct: string;
+            /** Vat Pct */
+            vat_pct: string;
+            /** Late Penalty Daily */
+            late_penalty_daily: string | null;
+            /** Has Price Escalation */
+            has_price_escalation: boolean;
+            index_type: components["schemas"]["PriceIndexType"] | null;
+            /** Base Index Value */
+            base_index_value: string | null;
+        };
         /** ProjectCounts */
         ProjectCounts: {
             /** All */
@@ -938,11 +1098,13 @@ export interface components {
             kat_karsiligi: number;
             /** Completed */
             completed: number;
+            /** Draft */
+            draft: number;
         };
         /** ProjectCreate */
         ProjectCreate: {
             /** Code */
-            code: string;
+            code?: string | null;
             /** Name */
             name: string;
             project_type: components["schemas"]["ProjectType"];
@@ -952,16 +1114,25 @@ export interface components {
             category?: string | null;
             /** City */
             city?: string | null;
+            /** Parcel */
+            parcel?: string | null;
+            /** Address */
+            address?: string | null;
             /** Start Date */
             start_date?: string | null;
             /** End Date */
             end_date?: string | null;
-            /** Contract No */
-            contract_no?: string | null;
-            /** Contract Amount */
-            contract_amount?: number | string | null;
-            /** Employer Name */
-            employer_name?: string | null;
+            /** Employer Id */
+            employer_id?: string | null;
+            contract?: components["schemas"]["ProjectContractInput"] | null;
+            budget_lines?: components["schemas"]["ProjectBudgetInput"];
+            /** Sites */
+            sites?: components["schemas"]["ProjectSiteInput"][];
+            /**
+             * Is Draft
+             * @default false
+             */
+            is_draft: boolean;
             investment?: components["schemas"]["ProjectInvestmentInput"] | null;
             land_share?: components["schemas"]["ProjectLandShareInput"] | null;
         };
@@ -992,6 +1163,11 @@ export interface components {
             contract_amount: string | null;
             /** Employer Name */
             employer_name: string | null;
+            employer: components["schemas"]["EmployerResponse"] | null;
+            contract: components["schemas"]["ProjectContractResponse"] | null;
+            budget_lines: components["schemas"]["ProjectBudgetLines"];
+            /** Is Draft */
+            is_draft: boolean;
             /** Budget */
             budget: string;
             /** Progress Pct */
@@ -1061,6 +1237,11 @@ export interface components {
             contract_amount: string | null;
             /** Employer Name */
             employer_name: string | null;
+            employer: components["schemas"]["EmployerResponse"] | null;
+            contract: components["schemas"]["ProjectContractResponse"] | null;
+            budget_lines: components["schemas"]["ProjectBudgetLines"];
+            /** Is Draft */
+            is_draft: boolean;
             /** Budget */
             budget: string;
             /** Progress Pct */
@@ -1076,10 +1257,24 @@ export interface components {
             items: components["schemas"]["ProjectListItem"][];
         };
         /**
+         * ProjectSiteInput
+         * @description Satır içi şantiye (spec §3.4). Kod verilmezse P2 türeticisi çalışır (B5).
+         */
+        ProjectSiteInput: {
+            /** Name */
+            name: string;
+            /** Code */
+            code?: string | null;
+            /** Site Manager Name */
+            site_manager_name?: string | null;
+            /** Construction Area M2 */
+            construction_area_m2?: number | string | null;
+        };
+        /**
          * ProjectStatus
          * @enum {string}
          */
-        ProjectStatus: "active" | "on_hold" | "completed";
+        ProjectStatus: "planning" | "active" | "on_hold" | "completed";
         /**
          * ProjectType
          * @description Üç iş modeli — kart düzenini ve gelir mantığını belirler (spec §3.1).
@@ -2063,6 +2258,99 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    list_employers_endpoint_employers_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                active_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployerListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_employer_endpoint_employers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmployerCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployerResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };

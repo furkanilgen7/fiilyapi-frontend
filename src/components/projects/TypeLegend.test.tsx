@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 
 import { TypeLegend } from "./TypeLegend";
 
-const counts = { all: 8, taahhut: 4, kendi_yatirim: 2, kat_karsiligi: 2, completed: 2 };
+const counts = { all: 8, taahhut: 4, kendi_yatirim: 2, kat_karsiligi: 2, completed: 2, draft: 0 };
 
 describe("TypeLegend", () => {
   it("uc tip kartini gercek sayaclarla basar", () => {

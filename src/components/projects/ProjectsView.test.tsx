@@ -34,6 +34,10 @@ const item = {
   category: "Konut",
   city: "Ankara",
   employer_name: "Güneşkent A.Ş.",
+  employer: null,
+  contract: null,
+  budget_lines: { material: "0", labor: "0", subcontractor: "0", overhead: "0" },
+  is_draft: false,
   contract_no: null,
   contract_amount: "11200000.00",
   start_date: "2025-03-01",
@@ -45,7 +49,7 @@ const item = {
   land_share: null,
 };
 const data = {
-  counts: { all: 4, taahhut: 2, kendi_yatirim: 1, kat_karsiligi: 1, completed: 1 },
+  counts: { all: 4, taahhut: 2, kendi_yatirim: 1, kat_karsiligi: 1, completed: 1, draft: 0 },
   items: [item],
 };
 

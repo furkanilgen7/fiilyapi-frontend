@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 
 import { ProjectTabs } from "./ProjectTabs";
 
-const counts = { all: 8, taahhut: 4, kendi_yatirim: 2, kat_karsiligi: 2, completed: 2 };
+const counts = { all: 8, taahhut: 4, kendi_yatirim: 2, kat_karsiligi: 2, completed: 2, draft: 0 };
 
 describe("ProjectTabs", () => {
   it("sayaclari basar ve aktif sekmeyi isaretler", () => {
