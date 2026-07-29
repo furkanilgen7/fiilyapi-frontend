@@ -45,6 +45,7 @@
   --color-on-brand-60: rgba(255, 255, 255, 0.6);
   --color-on-brand-50: rgba(255, 255, 255, 0.5); /* Rol Yönetimi: sistem rol karti kullanici sayisi */
   --color-on-brand-40: rgba(255, 255, 255, 0.4);
+  --color-on-brand-30: rgba(255, 255, 255, 0.3); /* Şantiye Detay: Günlük Kayıt buton kenarlığı */
   --color-on-brand-20: rgba(255, 255, 255, 0.2);
   --color-on-brand-15: rgba(255, 255, 255, 0.15);
   --color-on-brand-80: rgba(255, 255, 255, 0.8);
@@ -139,6 +140,16 @@
 
   /* P2: Proje Detay hero seridi (spec §4.1, §6) */
   --gradient-hero-project: linear-gradient(135deg, var(--color-primary-hover), var(--color-primary-light));
+
+  /* P2: Şantiye Detay hero seridi (spec §5.2, §6) */
+  --gradient-hero-site: linear-gradient(
+    135deg,
+    var(--color-primary-hover) 0%,
+    var(--color-primary) 60%,
+    var(--color-primary-light) 100%
+  );
+  --surface-hero-tile: rgba(255, 255, 255, 0.12);
+  --text-on-hero-muted: rgba(255, 255, 255, 0.65);
 
   /* Ayarlar redesign — layout + accent tokens (mockup-derived, ref §A) */
   --settings-sidebar-width: 240px;

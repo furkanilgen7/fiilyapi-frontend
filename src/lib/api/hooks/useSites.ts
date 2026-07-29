@@ -7,8 +7,12 @@ import type { components } from "@/lib/api/schema";
 // adiyla catisir, bu yuzden "SiteListItem" olarak takma ad verildi.
 export type SiteListResponse = components["schemas"]["SiteListResponse"];
 export type SiteListItem = components["schemas"]["SiteCard"];
+// Task 8 — Şantiye Detay tekil kaynağı (spec §5). Bileşen adıyla çakışmasın
+// diye "SiteDetail" (SiteCard deseniyle aynı) takma adı verildi.
+export type SiteDetail = components["schemas"]["SiteDetailResponse"];
 
 export const SITES_QUERY_KEY = "sites";
+export const SITE_QUERY_KEY = "site";
 
 export function useSites(projectId: string): UseQueryResult<SiteListResponse, Error> {
   return useQuery({
@@ -17,6 +21,19 @@ export function useSites(projectId: string): UseQueryResult<SiteListResponse, Er
       unwrap(
         await backendClient.GET("/projects/{project_id}/sites", {
           params: { path: { project_id: projectId } },
+        }),
+      ),
+  });
+}
+
+// Şantiye Detay hero + sekmeler + bölüm listesi için tekil şantiye (spec §5).
+export function useSite(siteId: string): UseQueryResult<SiteDetail, Error> {
+  return useQuery({
+    queryKey: [SITE_QUERY_KEY, siteId],
+    queryFn: async () =>
+      unwrap(
+        await backendClient.GET("/sites/{site_id}", {
+          params: { path: { site_id: siteId } },
         }),
       ),
   });
