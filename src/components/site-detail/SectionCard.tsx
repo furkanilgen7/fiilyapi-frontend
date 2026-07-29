@@ -85,6 +85,38 @@ function MetricCell({ label, valueClassName = "section-card__metric-value", plac
   );
 }
 
+// "İlerleme" hucresi mockup'ta her durumda mini bir cubuk cizer (satir 170,
+// 207, 244, 281, 317). Yer tutucuyken sahte %0 izlenimi vermemek icin dolgu
+// basilmaz, yalniz bos iz birakilir (spec §7.1, SiteHeroBar/SiteCard ile ayni
+// desen — kod inceleme bulgusu: bu hucre daha once cubugu hic cizmiyordu).
+function ProgressMetricCell({ progress }: { progress: SectionResponse["progress_pct"] }) {
+  const isReal = progress.available && progress.value !== null && progress.value !== undefined;
+  return (
+    <div className="section-card__metric">
+      <div className="section-card__metric-label">İlerleme</div>
+      {isReal ? (
+        <div className="section-card__metric-value section-card__metric-value--progress">
+          %{progress.value}
+        </div>
+      ) : (
+        <PlaceholderValue
+          valueClassName="section-card__metric-value section-card__metric-value--progress"
+          pendingModule={progress.pending_module}
+        />
+      )}
+      <div className="section-card__metric-track" data-testid="section-card-progress-track">
+        {isReal && (
+          <div
+            className="section-card__metric-track-fill"
+            data-testid="section-card-progress-fill"
+            style={{ width: `${Math.min(Number(progress.value), 100)}%` }}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Bölüm kartı (spec §5.4, mockup Şantiye Detay.dc.html satır 153+). Dört metrik
 // (İlerleme · İş Kalemleri · Bölüm Bedeli · İşçi) bu dilimde HEPSI yer tutucudur —
 // backend henuz gercek deger uretmiyor. "3 gecikme riski" satiri KASITLI olarak
@@ -109,13 +141,7 @@ export function SectionCard({ projectId, siteId, section }: SectionCardProps) {
           <div className="section-card__meta">{sectionMeta(section)}</div>
         </div>
 
-        <MetricCell
-          label="İlerleme"
-          valueClassName="section-card__metric-value section-card__metric-value--progress"
-          placeholder={section.progress_pct}
-        >
-          {section.progress_pct.available && section.progress_pct.value != null ? `%${section.progress_pct.value}` : null}
-        </MetricCell>
+        <ProgressMetricCell progress={section.progress_pct} />
 
         <MetricCell label="İş Kalemleri" placeholder={section.boq_item_count}>
           {section.boq_item_count.count}

@@ -90,6 +90,21 @@ describe("SectionCard — 4 metrik hepsi yer tutucu (spec §5.4, §7.1)", () => 
   });
 });
 
+describe("SectionCard — İlerleme çubuğu (spec §7.1, mockup her durumda çizer)", () => {
+  it("yer tutucuyken bos iz cizilir, dolgu basilmaz", () => {
+    renderCard();
+    const track = screen.getByTestId("section-card-progress-track");
+    expect(track).toBeInTheDocument();
+    expect(screen.queryByTestId("section-card-progress-fill")).not.toBeInTheDocument();
+  });
+
+  it("gercek deger geldiginde dolgu yuzdeye gore genislik alir", () => {
+    renderCard({ progress_pct: { available: true, value: "62", pending_module: "boq" } });
+    const fill = screen.getByTestId("section-card-progress-fill");
+    expect(fill).toHaveStyle({ width: "62%" });
+  });
+});
+
 describe("SectionCard — '3 gecikme riski' BASILMAZ (spec §7.2)", () => {
   it("mockup'ta olsa da bu metin hicbir statude gorunmez", () => {
     renderCard({ status: "active" });
