@@ -1,20 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import { useParams, usePathname } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { SectionCard } from "@/components/site-detail/SectionCard";
+import { SectionFormModal } from "@/components/site-detail/SectionFormModal";
 import { SiteDetailTabs } from "@/components/site-detail/SiteDetailTabs";
 import { SiteHeroBar } from "@/components/site-detail/SiteHeroBar";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { isForbidden } from "@/lib/api/unwrap";
 import "@/components/site-detail/site-detail.css";
 
-// "Bölüm Ekle" — SectionFormModal Task 10'da eklenecek; o zamana kadar
-// "+ Şantiye Ekle" butonunun Task 7 öncesindeki hali gibi no-op kalır.
-function AddSectionButton({ className }: { className?: string }) {
+// Bos durumdaki "+ Bölüm Ekle" eylemi — SiteHeroBar'daki ust bar butonuyla ayni
+// modali acar (Task 10).
+function AddSectionButton({ className, onClick }: { className?: string; onClick: () => void }) {
   return (
-    <button type="button" className={className}>
+    <button type="button" className={className} onClick={onClick}>
       + Bölüm Ekle
     </button>
   );
@@ -27,12 +29,13 @@ function sectionListTitle(siteName: string, count: number): string {
 }
 
 // Şantiye Detay › Bölümler (spec §5). Hero + sekme barı Task 8'de kuruldu;
-// bu task (9) SectionCard listesini ve dürüst boş durumu (§7.4) ekler.
-// SectionFormModal (Task 10) henüz yok — "+ Bölüm Ekle" no-op kalır.
+// Task 9 SectionCard listesini ve dürüst boş durumu (§7.4) ekledi; Task 10
+// "+ Bölüm Ekle" eylemlerini SectionFormModal'e bağlar.
 export default function SiteDetailPage() {
   const pathname = usePathname();
   const { siteId } = useParams<{ projectId: string; siteId: string }>();
   const siteQuery = useSite(siteId);
+  const [isSectionModalOpen, setSectionModalOpen] = useState(false);
 
   if (isForbidden(siteQuery.error)) return <AccessDenied />;
   if (siteQuery.isError) {
@@ -46,12 +49,15 @@ export default function SiteDetailPage() {
 
   return (
     <div className="site-detail">
-      <SiteHeroBar site={site} />
+      <SiteHeroBar site={site} onAddSection={() => setSectionModalOpen(true)} />
       <SiteDetailTabs projectId={site.project.id} siteId={site.id} activePath={pathname} />
       {site.section_count === 0 ? (
         <div className="site-detail__empty">
           <p>Bu şantiyede henüz bölüm tanımlanmadı.</p>
-          <AddSectionButton className="site-detail__empty-action" />
+          <AddSectionButton
+            className="site-detail__empty-action"
+            onClick={() => setSectionModalOpen(true)}
+          />
         </div>
       ) : (
         <>
@@ -64,6 +70,9 @@ export default function SiteDetailPage() {
             ))}
           </ul>
         </>
+      )}
+      {isSectionModalOpen && (
+        <SectionFormModal siteId={site.id} onClose={() => setSectionModalOpen(false)} />
       )}
     </div>
   );
