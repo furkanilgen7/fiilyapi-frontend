@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 
 import SiteDetailPage from "./page";
 import { useSite } from "@/lib/api/hooks/useSites";
@@ -90,12 +90,36 @@ describe("SiteDetailPage", () => {
   it("bolumsuz santiyede durust bos durum basar (spec §7.4)", () => {
     mockQuery({ data: { ...SITE, section_count: 0 } });
     render(<SiteDetailPage />);
-    expect(screen.getByText("Bu şantiyede henüz bölüm tanımlanmadı.")).toBeInTheDocument();
+    const message = screen.getByText("Bu şantiyede henüz bölüm tanımlanmadı.");
+    expect(message).toBeInTheDocument();
+    expect(within(message.parentElement as HTMLElement).getByRole("button", { name: "+ Bölüm Ekle" })).toBeInTheDocument();
   });
 
-  it("bolumlu santiyede bos durum metnini basmaz", () => {
-    mockQuery({ data: SITE });
+  it("bolumlu santiyede bos durum metnini basmaz, kart listesini basar", () => {
+    const site: SiteDetail = {
+      ...SITE,
+      section_count: 1,
+      sections: [
+        {
+          id: "66666666-6666-6666-6666-666666666666",
+          code: null,
+          name: "Temel & Bodrum Katlar",
+          status: "completed",
+          manager_name: "M. Arslan",
+          start_date: "2025-04-01",
+          end_date: "2025-07-01",
+          sort_order: 0,
+          progress_pct: { available: false, value: null, pending_module: "boq" },
+          boq_item_count: { available: false, count: null, pending_module: "boq" },
+          budget: { available: false, value: null, pending_module: "boq" },
+          worker_count: { available: false, count: null, pending_module: "timesheet" },
+        },
+      ],
+    };
+    mockQuery({ data: site });
     render(<SiteDetailPage />);
     expect(screen.queryByText("Bu şantiyede henüz bölüm tanımlanmadı.")).not.toBeInTheDocument();
+    expect(screen.getByText("A-Blok Bölümleri (1)")).toBeInTheDocument();
+    expect(screen.getByText("Temel & Bodrum Katlar")).toBeInTheDocument();
   });
 });

@@ -151,6 +151,9 @@
   --surface-hero-tile: rgba(255, 255, 255, 0.12);
   --text-on-hero-muted: rgba(255, 255, 255, 0.65);
 
+  /* P2: Bölüm kartı — aktif durumda vurgulu kenarlık/gölge (spec §5.4, --shadow-card-purple/teal deseni) */
+  --shadow-card-primary: 0 2px 8px rgba(37, 99, 235, 0.12);
+
   /* Ayarlar redesign — layout + accent tokens (mockup-derived, ref §A) */
   --settings-sidebar-width: 240px;
   --text-settings-nav-label: 10px; /* sidebar grup etiketi */
