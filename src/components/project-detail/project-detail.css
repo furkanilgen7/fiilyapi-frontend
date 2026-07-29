@@ -87,6 +87,12 @@
   color: var(--color-on-brand);
   background: var(--color-on-brand-20);
 }
+/* Sekmeler marka degradesi ustunde durur — jenerik --focus-ring (mavi, dusuk
+   opaklik) burada goze carpmaz; on-brand renginde belirgin bir dis hat kullanilir. */
+.project-hero__tab:focus-visible {
+  outline: 2px solid var(--color-on-brand);
+  outline-offset: 2px;
+}
 
 .project-detail__section-head {
   display: flex;
@@ -279,6 +285,10 @@
   background: var(--color-neutral-soft);
   color: var(--color-text-secondary);
   font-weight: 600;
+}
+.site-card__chip:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 /* Alt KPI seridi (spec §4.4, mockup: Proje Detay - Şantiyeler.dc.html 176–191).

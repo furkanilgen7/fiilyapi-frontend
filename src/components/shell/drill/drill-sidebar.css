@@ -26,6 +26,10 @@
 .drill-sidebar__back:hover {
   background: var(--color-nav-active-bg);
 }
+.drill-sidebar__back:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
 .drill-group {
   margin-bottom: 4px;
 }
@@ -55,6 +59,10 @@
 }
 .drill-nav-item:hover {
   background: var(--color-surface-2);
+}
+.drill-nav-item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 .drill-nav-item--active {
   background: var(--color-nav-active-bg);

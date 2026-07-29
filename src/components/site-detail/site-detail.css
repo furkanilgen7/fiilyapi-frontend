@@ -70,6 +70,12 @@
   color: var(--color-primary);
   font-weight: 700;
 }
+/* Marka degradesi ustunde durur (project-hero__tab ile ayni gerekce) —
+   jenerik --focus-ring goze carpmaz, on-brand renginde dis hat kullanilir. */
+.site-hero__btn:focus-visible {
+  outline: 2px solid var(--color-on-brand);
+  outline-offset: 2px;
+}
 
 .site-hero__kpis {
   display: grid;
@@ -141,6 +147,10 @@
   font-weight: 600;
   color: var(--color-primary);
   background: var(--color-nav-active-bg);
+}
+.site-detail-tabs__tab:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .site-detail__section-head {
@@ -356,4 +366,8 @@
 .section-card__action-btn--edit {
   background: var(--color-surface-muted);
   color: var(--color-text-muted);
+}
+.section-card__action-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
