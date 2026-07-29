@@ -84,6 +84,16 @@
   display: block;
 }
 
+/* Sunucu hatası şeridi (mockup'ta yok; §7.8 alan dışı hata gösterimi) */
+.pf-form-error {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-danger-soft);
+  border-radius: var(--radius-8);
+  font-size: var(--text-body);
+  color: var(--color-danger-text);
+}
+
 /* Alt eylem şeridi (satır 212–216) */
 .pf-actions {
   display: flex;

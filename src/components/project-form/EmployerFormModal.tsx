@@ -7,6 +7,7 @@ import { Modal } from "@/components/settings/Modal";
 import { useCreateEmployer } from "@/lib/api/hooks/useEmployerMutations";
 import type { EmployerListItem } from "@/lib/api/hooks/useEmployers";
 import { backendErrorMessage } from "@/lib/settings/error-message";
+import { taxNumberError } from "./validate";
 // SiteFormModal/SectionFormModal kanonu birebir izlenir: settings-form sinifi
 // settings.css'ten, etiket katmani ui/field/Field'den gelir.
 import "@/components/settings/settings.css";
@@ -41,7 +42,8 @@ export function EmployerFormModal({ onClose, onCreated }: EmployerFormModalProps
 
   function validate(): string | null {
     if (!name.trim()) return "Ticari Ünvan zorunludur.";
-    return null;
+    // VKN biçimi (spec §4.10) — boş bırakılabilir, doluysa 10/11 hane.
+    return taxNumberError(taxNumber) ?? null;
   }
 
   function handleSubmit() {

@@ -22,6 +22,8 @@ const NEW_EMPLOYER_OPTION = "__new__";
 interface EmployerCardProps {
   values: EmployerValues;
   onChange: <K extends keyof EmployerValues>(field: K, value: EmployerValues[K]) => void;
+  /** İşveren seçici hatası (§4.10; F12 doldurur). */
+  error?: string;
 }
 
 /**
@@ -33,7 +35,7 @@ interface EmployerCardProps {
  * değerleridir (işveren kartoteksi tek kaynak). Seçim yokken ikisi boş +
  * disabled; seçim varken readOnly (doldurulmuş ama değiştirilemez).
  */
-export function EmployerCard({ values, onChange }: EmployerCardProps) {
+export function EmployerCard({ values, onChange, error }: EmployerCardProps) {
   const { data } = useEmployers();
   const employers = data?.items ?? [];
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -68,9 +70,14 @@ export function EmployerCard({ values, onChange }: EmployerCardProps) {
       </h2>
 
       <div className="pf-grid pf-grid--2-1-1">
-        <Field label="İşveren Firma" required>
+        <Field label="İşveren Firma" required error={error}>
           {(control) => (
-            <Select {...control} value={values.employerId} onChange={handleSelectChange}>
+            <Select
+              {...control}
+              value={values.employerId}
+              status={error ? "error" : "default"}
+              onChange={handleSelectChange}
+            >
               <option value="">Seçiniz veya yeni ekle…</option>
               {employers.map((employer) => (
                 <option key={employer.id} value={employer.id}>
