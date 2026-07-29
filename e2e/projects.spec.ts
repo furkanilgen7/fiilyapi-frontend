@@ -24,10 +24,11 @@ test("projeler ekrani yuklenir ve sekme gecisi calisir", async ({ page }) => {
   await expect(page.getByRole("tab", { name: "Tümü (4)" })).toBeVisible();
 });
 
-test("yeni proje modali acilir", async ({ page }) => {
+test("yeni proje sayfasi acilir", async ({ page }) => {
   await login(page);
   await page.goto("/projeler");
-  await page.getByRole("button", { name: "+ Yeni Proje" }).click();
-  await expect(page.getByText("Yeni Proje", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("İşveren")).toBeVisible();
+  // F5'ten sonra "+ Yeni Proje" artik modal degil, /projeler/yeni'ye yonlendiren bir link.
+  await page.getByRole("link", { name: "+ Yeni Proje" }).click();
+  await expect(page).toHaveURL(/\/projeler\/yeni$/);
+  await expect(page.getByRole("heading", { name: "Yeni Proje" })).toBeVisible();
 });
