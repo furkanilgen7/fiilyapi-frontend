@@ -154,11 +154,14 @@
 }
 
 /* ── Proje Tipi ikon kartları (satır 50–77, spec §4.3) ───────────────────── */
+/* Kart başlığındaki zorunluluk yıldızı (satır 51 "*") — .req (mockup) ile aynı renk. */
+.pf-card__req {
+  color: var(--color-danger);
+}
 .pf-type__grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: var(--space-3);
-  margin-bottom: var(--space-4);
 }
 .pf-type-card {
   display: flex;

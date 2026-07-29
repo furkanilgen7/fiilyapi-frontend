@@ -112,7 +112,7 @@ describe("ProjectCreateView — kart montajı (F12)", () => {
     render(<ProjectCreateView />);
     expect(screen.getByLabelText("Proje Adı")).toBeInTheDocument();
     expect(screen.getByLabelText("Şantiye Adı")).toBeInTheDocument();
-    expect(screen.getByLabelText("Malzeme Bütçesi")).toBeInTheDocument();
+    expect(screen.getByLabelText("Malzeme Bütçesi (₺)")).toBeInTheDocument();
     expect(screen.getByText("📎 Proje Belgeleri")).toBeInTheDocument();
   });
 

@@ -32,7 +32,7 @@ interface BasicInfoCardProps {
 export function BasicInfoCard({ values, onChange, errors }: BasicInfoCardProps) {
   return (
     <section className="pf-card">
-      <h2 className="pf-card__title">Temel Bilgiler</h2>
+      <h2 className="pf-card__title">📋 Temel Bilgiler</h2>
       <div className="pf-grid pf-grid--2-1">
         <Field label="Proje Adı" required error={errors?.name}>
           {(control) => (

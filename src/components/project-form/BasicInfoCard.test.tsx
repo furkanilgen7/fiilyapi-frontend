@@ -16,10 +16,10 @@ const values: BasicInfoValues = {
 };
 
 describe("BasicInfoCard (F6)", () => {
-  it("kart başlığı <h2> 'Temel Bilgiler'", () => {
+  it("kart başlığı <h2> 'Temel Bilgiler' (mockup satır 82 emoji ön eki ile)", () => {
     render(<BasicInfoCard values={values} onChange={() => {}} />);
     expect(
-      screen.getByRole("heading", { level: 2, name: "Temel Bilgiler" }),
+      screen.getByRole("heading", { level: 2, name: "📋 Temel Bilgiler" }),
     ).toBeInTheDocument();
   });
 

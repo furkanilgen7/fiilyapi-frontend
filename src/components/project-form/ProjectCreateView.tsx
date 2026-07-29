@@ -198,8 +198,10 @@ export function ProjectCreateView() {
 
       <div className="pf">
         <header className="pf-head">
-          <h1 className="pf-title">Yeni Proje</h1>
-          <p className="pf-subtitle">Alanlar seçime göre değişir</p>
+          <h1 className="pf-title">Yeni Proje Oluştur</h1>
+          <p className="pf-subtitle">
+            Proje tipini seçin — alanlar seçime göre değişir
+          </p>
         </header>
 
         <div className="pf-body" ref={formRef}>

@@ -43,8 +43,15 @@ interface ProjectTypeCardsProps {
 export function ProjectTypeCards({ value, onChange }: ProjectTypeCardsProps) {
   const groupName = useId();
   return (
-    <div className="pf-type__grid" role="radiogroup" aria-label="Proje Tipi">
-      {OPTIONS.map((opt) => {
+    <section className="pf-card">
+      <h2 className="pf-card__title">
+        📁 Proje Tipi
+        <span className="pf-card__req" aria-hidden="true">
+          *
+        </span>
+      </h2>
+      <div className="pf-type__grid" role="radiogroup" aria-label="Proje Tipi">
+        {OPTIONS.map((opt) => {
           const selected = opt.value === value;
           return (
             <label
@@ -67,6 +74,7 @@ export function ProjectTypeCards({ value, onChange }: ProjectTypeCardsProps) {
             </label>
           );
         })}
-    </div>
+      </div>
+    </section>
   );
 }
