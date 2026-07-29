@@ -202,3 +202,62 @@
 .pf-type-card--selected .pf-type-card__desc {
   color: var(--color-type-card-desc);
 }
+
+/* Dört sütunlu ızgara (bütçe/sözleşme alt satırı, satır 116, 151) */
+.pf-grid--4 {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+
+/* ── Kâr marjı kutusu (satır 157–160, spec §4.8, §7.8) ───────────────────── */
+.pf-margin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding: var(--space-3) 14px;
+  background: var(--color-surface-success-soft);
+  border-radius: var(--radius-8);
+}
+.pf-margin__label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.pf-margin__title {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-success);
+}
+.pf-margin__sub {
+  font-size: var(--text-small);
+  color: var(--color-success-text-soft);
+}
+.pf-margin__value {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+}
+.pf-margin__amount {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: var(--weight-bold);
+  color: var(--color-success);
+}
+.pf-margin__pct {
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-success);
+}
+/* Zarar durumu: yeşilden kırmızıya (§7.8) */
+.pf-margin--loss {
+  background: var(--color-danger-soft);
+}
+.pf-margin--loss .pf-margin__title,
+.pf-margin--loss .pf-margin__amount,
+.pf-margin--loss .pf-margin__pct {
+  color: var(--color-danger-text);
+}
+.pf-margin--loss .pf-margin__sub {
+  color: var(--color-danger-strong);
+}
