@@ -209,6 +209,20 @@
   --gradient-type-taahhut: linear-gradient(90deg, var(--color-primary), var(--color-avatar-blue-end));
   --gradient-type-kendi-yatirim: linear-gradient(90deg, var(--color-accent-purple-deep), var(--color-accent-purple-grad-end));
   --gradient-type-kat-karsiligi: linear-gradient(90deg, var(--color-accent-teal-start), var(--color-accent-teal-light));
+
+  /* P1.1a Proje formu (spec §6). Mevcut degeri olan token'lar ciplak hex yerine
+     semantik takma ad olarak baglanir; yalnizca gercekten yeni degerler ham. */
+  --color-form-card-accent: var(--color-primary-ring); /* #bfdbfe — işveren kartı kenarlığı, Taslak butonu (95, 214) */
+  --color-badge-info-bg: var(--color-primary-soft); /* #dbeafe — "Taahhüt projesi" rozeti (96) */
+  --color-type-card-desc: var(--color-primary-light); /* #3b82f6 — seçili tip kartı açıklaması (58) */
+  --color-surface-success-soft: var(--color-success-tint); /* #f0fdf4 — kâr marjı kutusu (157) */
+  --color-success-text-soft: var(--color-success-deep); /* #15803d — kâr marjı alt satırı (158) */
+  --color-danger-border-soft: #fca5a5; /* şantiye satırı sil butonu kenarı (142) */
+  --color-danger-text: var(--color-danger-strong); /* #dc2626 — sil butonu metni (142) */
+  --color-dashed-border: var(--color-border-strong); /* #cbd5e1 — "+ Şantiye Ekle", .drop (25, 144) */
+  --radius-form-card: var(--radius-14); /* 14px — .card (23) */
+  --radius-type-card: var(--radius-lg); /* 12px — tip kartları (55) */
+  --form-column-max: 1000px; /* içerik sütunu genişliği (44) */
 }
 
 @keyframes fadeUp {

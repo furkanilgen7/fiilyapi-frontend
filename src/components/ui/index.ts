@@ -1,6 +1,7 @@
 export * from "./button";
 export * from "./input";
 export * from "./select";
+export * from "./textarea";
 export * from "./field";
 export * from "./checkbox";
 export * from "./toggle";

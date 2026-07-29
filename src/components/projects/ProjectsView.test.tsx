@@ -69,6 +69,13 @@ describe("ProjectsView", () => {
     expect(screen.getByText("Güneşkent A-Blok")).toBeInTheDocument();
   });
 
+  it("'+ Yeni Proje' artik /projeler/yeni'ye giden bir link", () => {
+    mockQuery({ data });
+    render(<ProjectsView />);
+    const link = screen.getByRole("link", { name: "+ Yeni Proje" });
+    expect(link).toHaveAttribute("href", "/projeler/yeni");
+  });
+
   it("sekme tiklaninca URL'e yazar", () => {
     mockQuery({ data });
     render(<ProjectsView />);

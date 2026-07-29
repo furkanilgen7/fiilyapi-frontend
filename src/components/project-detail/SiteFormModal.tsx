@@ -8,8 +8,8 @@ import { useCreateSite } from "@/lib/api/hooks/useSiteMutations";
 import type { SiteCreateRequest } from "@/lib/api/hooks/useSiteMutations";
 import { backendErrorMessage } from "@/lib/settings/error-message";
 import { BackendError } from "@/lib/api/unwrap";
-// Mockup'siz tek yuzey — ProjectFormModal kanonu birebir izlenir: settings-form
-// sinifi settings.css'ten, etiket katmani ui/field/Field'den gelir.
+// Mockup'siz tek yuzey — Ayarlar form kanonu (settings-form) birebir izlenir:
+// settings-form sinifi settings.css'ten, etiket katmani ui/field/Field'den gelir.
 import "@/components/settings/settings.css";
 
 interface SiteFormModalProps {

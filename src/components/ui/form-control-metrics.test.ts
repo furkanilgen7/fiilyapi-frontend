@@ -11,6 +11,7 @@ const read = (relative: string): string =>
 const tokensCss = read("../../styles/tokens.css");
 const inputCss = read("./input/input.css");
 const selectCss = read("./select/select.css");
+const textareaCss = read("./textarea/textarea.css");
 
 /** Verilen selector'un ilk kural blogunu (suslu parantez icini) dondurur. */
 function ruleBlock(css: string, selector: string): string {
@@ -31,6 +32,7 @@ function declaration(block: string, property: string): string {
 
 const inputBlock = ruleBlock(inputCss, ".input");
 const selectBlock = ruleBlock(selectCss, ".select");
+const textareaBlock = ruleBlock(textareaCss, ".textarea");
 
 describe("form kontrolu olcu token'lari", () => {
   it("tokens.css form kontrolu olcu token'larini tanimlar (mockup .f-in)", () => {
@@ -44,6 +46,7 @@ describe("form kontrolu olcu token'lari", () => {
     const controlCss = {
       "input.css": inputCss,
       "select.css": selectCss,
+      "textarea.css": textareaCss,
       "company-screen.css": read("../settings/company/company-screen.css"),
       "audit-screen.css": read("../settings/audit/audit-screen.css"),
       "users-screen.css": read("../settings/users/users-screen.css"),
@@ -103,5 +106,26 @@ describe("Input ve Select ayni satir yuksekligini uretir", () => {
     expect(declaration(selectBlock, "padding")).toBe(
       "var(--space-form-y) var(--space-8) var(--space-form-y) var(--space-form-x)",
     );
+  });
+});
+
+describe("Textarea ayni form kontrolu olculerini tasir (F2)", () => {
+  it("ayni cerceve, yazi tipi olcusu ve olcu token'lari (.f-in ailesi)", () => {
+    expect(declaration(textareaBlock, "border")).toBe(
+      declaration(inputBlock, "border"),
+    );
+    expect(declaration(textareaBlock, "font-size")).toBe(
+      declaration(inputBlock, "font-size"),
+    );
+    expect(declaration(textareaBlock, "padding")).toBe(
+      "var(--space-form-y) var(--space-form-x)",
+    );
+  });
+
+  it("cok satirli olcu: line-height 1.5 ve resize kapali (spec §4.4)", () => {
+    // Textarea tek satir degil; deterministik 20px yerine 1.5 satir yuksekligi
+    // (Acik Adres rows=2). Kutu genisleyebilir gorunmesin diye resize kapatilir.
+    expect(declaration(textareaBlock, "line-height")).toBe("1.5");
+    expect(declaration(textareaBlock, "resize")).toBe("none");
   });
 });

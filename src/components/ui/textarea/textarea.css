@@ -1,0 +1,21 @@
+.textarea {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  /* Cok satirli: Input/Select'in 20px deterministik yuksekligi yerine 1.5 satir
+     yuksekligi (Acik Adres rows=2). Olcu token'lari (.f-in ailesi) ayni. */
+  line-height: 1.5;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: var(--border-width-form) solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: var(--space-form-y) var(--space-form-x);
+  resize: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.textarea::placeholder { color: var(--color-text-subtle); }
+.textarea:focus { outline: none; border-color: var(--color-primary); box-shadow: var(--focus-ring); }
+.textarea:disabled { background: var(--color-surface-2); color: var(--color-text-muted); cursor: not-allowed; }
+.textarea--error { border-color: var(--color-danger); }
+.textarea--error:focus { box-shadow: var(--focus-ring-danger); }
+.textarea--success { border-color: var(--color-success); }
