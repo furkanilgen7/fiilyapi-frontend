@@ -124,12 +124,35 @@ describe("ProjectDetailPage", () => {
     expect(screen.queryByTestId("site-list-grid")).not.toBeInTheDocument();
   });
 
+  it("bos durum kendi + Santiye Ekle eylemini tasir ve hata gibi gorunmez", () => {
+    mockQuery({ data: { ...PROJECT, site_count: 0 } });
+    render(<ProjectDetailPage />);
+    const buttons = screen.getAllByRole("button", { name: "+ Şantiye Ekle" });
+    // Ust bar + bos durum: ayni eylemi paylasan iki buton (spec §7.4).
+    expect(buttons).toHaveLength(2);
+    const emptyState = screen.getByText("Bu projede henüz şantiye yok.").closest("div");
+    expect(emptyState?.className).not.toMatch(/error|warning|danger/i);
+  });
+
+  it("bos durumda da Alt KPI seridi basar (yer tutucu totals gecerli veri kalir)", () => {
+    mockQuery({ data: { ...PROJECT, site_count: 0 } });
+    render(<ProjectDetailPage />);
+    expect(screen.getByTestId("site-totals-strip")).toBeInTheDocument();
+  });
+
   it("santiyesi olan projede SiteCard izgarasini gercek veriyle basar", () => {
     mockQuery({ data: PROJECT });
     render(<ProjectDetailPage />);
     expect(screen.getByTestId("site-list-grid")).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: "A-Blok Şantiyesi" })).toBeInTheDocument();
     expect(screen.queryByText("Bu projede henüz şantiye yok.")).not.toBeInTheDocument();
+  });
+
+  it("santiyesi olan projede Alt KPI seridi de basar (spec §4.4)", () => {
+    mockQuery({ data: PROJECT });
+    render(<ProjectDetailPage />);
+    expect(screen.getByTestId("site-totals-strip")).toBeInTheDocument();
+    expect(screen.getByText("Toplam Hakediş")).toBeInTheDocument();
   });
 
   it("santiye listesi yuklenirken mesaj basar", () => {

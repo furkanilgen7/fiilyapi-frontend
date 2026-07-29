@@ -280,3 +280,41 @@
   color: var(--color-text-secondary);
   font-weight: 600;
 }
+
+/* Alt KPI seridi (spec §4.4, mockup: Proje Detay - Şantiyeler.dc.html 176–191).
+   Dordu de bu dilimde yer tutucu (backend spec §4.1) — deger rengi bu yuzden
+   soluk kalir, mockup'taki yesil/mono bicimler gercek veri gelince uygulanir. */
+.site-totals {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+}
+.site-totals__card {
+  background: var(--color-surface);
+  border-radius: 12px;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+}
+.site-totals__label {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.site-totals__value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.site-totals__value--pending {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+
+/* Bos durum (spec §7.4) — hata degil, gecerli bir durum; noturak yuzey +
+   eylem butonu (project-detail__add-btn ile ayni bicim, top buton ile ayni
+   eylemi paylasir). */
+.project-detail__empty-action {
+  margin-top: var(--space-4);
+}
