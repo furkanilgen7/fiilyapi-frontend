@@ -119,6 +119,16 @@ interface MockSection {
   sort_order: number;
 }
 
+// P1.1a (F14) — Yeni Proje formunun İşveren seçicisini besler (bkz. EmployerResponse,
+// src/lib/api/schema.d.ts). Mockup satır 98'deki statik seçeneklerle isim hizalı.
+interface MockEmployer {
+  id: string;
+  name: string;
+  tax_number: string | null;
+  contact_person: string | null;
+  is_active: boolean;
+}
+
 interface MockState {
   users: Array<{ id: string; email: string; full_name: string; title: string; role_id: string; status: string }>;
   roles: Array<{ id: string; key: string; name: string; emoji: string; description: string; is_system: boolean }>;
@@ -126,6 +136,7 @@ interface MockState {
   projects: MockProject[];
   sites: MockSite[];
   sections: MockSection[];
+  employers: MockEmployer[];
   permissions: Record<string, Record<string, { access_level: string; scope: string }>>;
   projectAccess: Record<string, { all_projects: boolean; project_ids: string[] }>;
   company: {
@@ -384,6 +395,12 @@ function seedState(): MockState {
     projects: PROJECT_FIXTURES,
     sites,
     sections,
+    // Mockup satır 98 statik seçenekleriyle isim hizalı (Form - Proje Oluştur.dc.html).
+    employers: [
+      { id: "emp-1", name: "Güneşkent Gayrimenkul A.Ş.", tax_number: "9876543210", contact_person: "Ahmet Güneş", is_active: true },
+      { id: "emp-2", name: "Çelik Holding A.Ş.", tax_number: "1122334455", contact_person: "Fatma Çelik", is_active: true },
+      { id: "emp-3", name: "Bursa Belediyesi", tax_number: null, contact_person: "Kurumsal İletişim", is_active: true },
+    ],
     permissions,
     projectAccess: {
       "u-1": { all_projects: true, project_ids: [] },
@@ -645,6 +662,33 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         sections: sectionItems,
         total_progress_payment: METRIC_PENDING("progress_payments"),
         contract_amount: METRIC_PENDING("project_costs"),
+      });
+    }
+
+    // /employers — Yeni Proje formu İşveren seçicisi (P1.1a F14, spec §3.1/§3.2).
+    if (method === "GET" && path === "/employers") {
+      const q = (parsed.searchParams.get("q") ?? "").trim().toLocaleLowerCase("tr");
+      const activeOnly = parsed.searchParams.get("active_only") !== "false";
+      let items = state.employers;
+      if (activeOnly) items = items.filter((e) => e.is_active);
+      if (q) items = items.filter((e) => e.name.toLocaleLowerCase("tr").includes(q));
+      return send(200, { items: [...items].sort((a, b) => a.name.localeCompare(b.name, "tr")) });
+    }
+    if (method === "POST" && path === "/employers") {
+      return withBody((body) => {
+        const taxNumber = body.tax_number ? String(body.tax_number) : null;
+        if (taxNumber && state.employers.some((e) => e.tax_number === taxNumber)) {
+          return send(409, { detail: "Bu VKN ile kayıtlı bir işveren zaten var." });
+        }
+        const employer: MockEmployer = {
+          id: `emp-${state.employers.length + 1}`,
+          name: String(body.name ?? ""),
+          tax_number: taxNumber,
+          contact_person: body.contact_person ? String(body.contact_person) : null,
+          is_active: true,
+        };
+        state.employers.push(employer);
+        return send(201, employer);
       });
     }
 

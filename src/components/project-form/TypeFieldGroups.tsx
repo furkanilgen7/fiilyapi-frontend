@@ -62,7 +62,17 @@ export function InvestmentFields({
   );
 }
 
+// Satır eklenip silinebildiği için React key'i index olamaz (silme, sonraki
+// satırları reindex eder) — her satıra oluşturulduğu anda kararlı bir istemci
+// id'si verilir (react-reviewer bulgusu, bkz. SiteRepeaterCard'daki aynı desen).
+let nextShareholderRowId = 0;
+function createShareholderRowId(): string {
+  nextShareholderRowId += 1;
+  return `shareholder-row-${nextShareholderRowId}`;
+}
+
 export interface ShareholderRow {
+  id: string;
   name: string;
   sharePct: string;
 }
@@ -79,7 +89,7 @@ export interface LandShareValues {
 }
 
 export function emptyShareholderRow(): ShareholderRow {
-  return { name: "", sharePct: "" };
+  return { id: createShareholderRowId(), name: "", sharePct: "" };
 }
 
 export function emptyLandShareValues(): LandShareValues {
@@ -209,7 +219,7 @@ export function LandShareFields({
       <h3 className="pf-subtitle pf-subheading">Hissedarlar</h3>
       <div className="pf-sites">
         {values.shareholders.map((row, index) => (
-          <div className="pf-shareholder-row" key={index}>
+          <div className="pf-shareholder-row" key={row.id}>
             <Field label="Hissedar Adı">
               {(control) => (
                 <Input

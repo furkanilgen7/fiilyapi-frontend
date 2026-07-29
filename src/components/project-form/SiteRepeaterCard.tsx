@@ -1,6 +1,16 @@
 import { Field, Input, Select } from "@/components/ui";
 
+// Satır eklenip silinebildiği için React key'i index olamaz (silme, sonraki
+// satırları reindex eder ve odak/seçim yanlış satıra yapışabilir) — her satıra
+// oluşturulduğu anda kararlı bir istemci id'si verilir (react-reviewer bulgusu).
+let nextSiteRowId = 0;
+function createSiteRowId(): string {
+  nextSiteRowId += 1;
+  return `site-row-${nextSiteRowId}`;
+}
+
 export interface SiteRow {
+  id: string;
   name: string;
   /** Seçilen kullanıcının tam adı — metin, FK değil (§7.9). */
   siteManagerName: string;
@@ -15,7 +25,7 @@ export interface SiteInputDraft {
 }
 
 export function emptySiteRow(): SiteRow {
-  return { name: "", siteManagerName: "", constructionAreaM2: "" };
+  return { id: createSiteRowId(), name: "", siteManagerName: "", constructionAreaM2: "" };
 }
 
 export function isSiteRowEmpty(row: SiteRow): boolean {
@@ -86,7 +96,7 @@ export function SiteRepeaterCard({
 
       <div className="pf-sites">
         {rows.map((row, index) => (
-          <div className="pf-site-row" key={index}>
+          <div className="pf-site-row" key={row.id}>
             <Field label="Şantiye Adı" error={errors?.[index] ?? undefined}>
               {(control) => (
                 <Input

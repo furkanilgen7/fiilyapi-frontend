@@ -124,7 +124,7 @@ describe("validateProjectForm — tutarlılık kuralları", () => {
   it("adı boş ama dolu şantiye satırı hata verir", () => {
     const errors = validateProjectForm(
       withValues({
-        sites: [{ name: "", siteManagerName: "", constructionAreaM2: "6420" }],
+        sites: [{ id: "site-1", name: "", siteManagerName: "", constructionAreaM2: "6420" }],
       }),
       { isDraft: true },
     );

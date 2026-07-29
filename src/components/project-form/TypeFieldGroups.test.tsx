@@ -50,10 +50,14 @@ describe("LandShareFields (F8, kat_karsiligi)", () => {
       />,
     );
     await userEvent.click(screen.getByRole("button", { name: "+ Hissedar Ekle" }));
-    expect(onChange).toHaveBeenCalledWith("shareholders", [
-      emptyShareholderRow(),
-      emptyShareholderRow(),
-    ]);
+    // id'ler kararlı-benzersiz üretilir (react-reviewer: index key yerine); içerik
+    // karşılaştırması id'yi hariç tutar.
+    expect(onChange).toHaveBeenCalledTimes(1);
+    const [, shareholders] = onChange.mock.calls[0] as [string, { id: string; name: string; sharePct: string }[]];
+    expect(shareholders).toHaveLength(2);
+    expect(shareholders[0]).toMatchObject({ name: "", sharePct: "" });
+    expect(shareholders[1]).toMatchObject({ name: "", sharePct: "" });
+    expect(shareholders[0].id).not.toBe(shareholders[1].id);
 
     onChange.mockClear();
     await userEvent.click(
