@@ -9,7 +9,7 @@ const NO_END_DATE_TITLE = "Bitiş tarihi girilmemiş";
 
 export interface SiteHeroBarProps {
   site: SiteDetail;
-  onAddSection?: () => void;
+  onAddSection: () => void;
 }
 
 // "Güneşkent Konut Projesi · İşveren: Güneşkent Gayrimenkul A.Ş." — işveren

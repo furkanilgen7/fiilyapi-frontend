@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import SiteDetailPage from "./page";
 import { useSite } from "@/lib/api/hooks/useSites";
@@ -57,6 +59,18 @@ function mockQuery(value: Partial<ReturnType<typeof useSite>>) {
   } as never);
 }
 
+// SectionFormModal (Task 10) kullanir useCreateSection -> useMutation/useQueryClient,
+// bu yuzden QueryClientProvider'a sarmali render gerekir (UserFormModal.test.tsx
+// deseni, satir 1-13).
+function renderPage() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={client}>
+      <SiteDetailPage />
+    </QueryClientProvider>,
+  );
+}
+
 describe("SiteDetailPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -64,32 +78,32 @@ describe("SiteDetailPage", () => {
 
   it("yuklenirken mesaj basar", () => {
     mockQuery({ isLoading: true });
-    render(<SiteDetailPage />);
+    renderPage();
     expect(screen.getByText("Yükleniyor…")).toBeInTheDocument();
   });
 
   it("403'te erisim reddi basar", () => {
     mockQuery({ isError: true, error: new BackendError(403, { detail: "yasak" }) });
-    render(<SiteDetailPage />);
+    renderPage();
     expect(screen.getByText("Bu alana yetkiniz yok")).toBeInTheDocument();
   });
 
   it("diger hatalarda mesaj basar", () => {
     mockQuery({ isError: true, error: new Error("patladi") });
-    render(<SiteDetailPage />);
+    renderPage();
     expect(screen.getByText("Şantiye yüklenemedi")).toBeInTheDocument();
   });
 
   it("basariyla hero + sekme barini basar", () => {
     mockQuery({ data: SITE });
-    render(<SiteDetailPage />);
+    renderPage();
     expect(screen.getByRole("heading", { level: 1, name: "A-Blok Şantiyesi" })).toBeInTheDocument();
     expect(screen.getByRole("tablist", { name: "Şantiye detay sekmeleri" })).toBeInTheDocument();
   });
 
   it("bolumsuz santiyede durust bos durum basar (spec §7.4)", () => {
     mockQuery({ data: { ...SITE, section_count: 0 } });
-    render(<SiteDetailPage />);
+    renderPage();
     const message = screen.getByText("Bu şantiyede henüz bölüm tanımlanmadı.");
     expect(message).toBeInTheDocument();
     expect(within(message.parentElement as HTMLElement).getByRole("button", { name: "+ Bölüm Ekle" })).toBeInTheDocument();
@@ -117,9 +131,31 @@ describe("SiteDetailPage", () => {
       ],
     };
     mockQuery({ data: site });
-    render(<SiteDetailPage />);
+    renderPage();
     expect(screen.queryByText("Bu şantiyede henüz bölüm tanımlanmadı.")).not.toBeInTheDocument();
     expect(screen.getByText("A-Blok Bölümleri (1)")).toBeInTheDocument();
     expect(screen.getByText("Temel & Bodrum Katlar")).toBeInTheDocument();
+  });
+
+  it("hero'daki + Bolum Ekle SectionFormModal'i acar (Task 10)", async () => {
+    const user = userEvent.setup();
+    mockQuery({ data: SITE });
+    renderPage();
+    expect(screen.queryByRole("dialog", { name: "Yeni Bölüm" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "+ Bölüm Ekle" }));
+    expect(screen.getByRole("dialog", { name: "Yeni Bölüm" })).toBeInTheDocument();
+  });
+
+  it("bos durumdaki + Bolum Ekle de ayni SectionFormModal'i acar (Task 10)", async () => {
+    const user = userEvent.setup();
+    mockQuery({ data: { ...SITE, section_count: 0 } });
+    renderPage();
+    const message = screen.getByText("Bu şantiyede henüz bölüm tanımlanmadı.");
+    const emptyStateButton = within(message.parentElement as HTMLElement).getByRole("button", {
+      name: "+ Bölüm Ekle",
+    });
+    expect(screen.queryByRole("dialog", { name: "Yeni Bölüm" })).not.toBeInTheDocument();
+    await user.click(emptyStateButton);
+    expect(screen.getByRole("dialog", { name: "Yeni Bölüm" })).toBeInTheDocument();
   });
 });

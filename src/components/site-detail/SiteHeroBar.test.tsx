@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, within, fireEvent } from "@testing-library/react";
 
 import { SiteHeroBar } from "./SiteHeroBar";
 import type { SiteDetail } from "@/lib/api/hooks/useSites";
@@ -34,7 +34,7 @@ const SITE: SiteDetail = {
 
 describe("SiteHeroBar — baslik ve meta (spec §5.2)", () => {
   it("ust satir, baslik ve meta satirini basar", () => {
-    render(<SiteHeroBar site={SITE} />);
+    render(<SiteHeroBar site={SITE} onAddSection={() => {}} />);
     expect(
       screen.getByText("Güneşkent Konut Projesi · İşveren: Güneşkent Gayrimenkul A.Ş."),
     ).toBeInTheDocument();
@@ -44,7 +44,7 @@ describe("SiteHeroBar — baslik ve meta (spec §5.2)", () => {
   });
 
   it("Gunluk Kayit ve + Bolum Ekle eylemlerini basar", () => {
-    render(<SiteHeroBar site={SITE} />);
+    render(<SiteHeroBar site={SITE} onAddSection={() => {}} />);
     const gunlukKayit = screen.getByRole("link", { name: "Günlük Kayıt" });
     expect(gunlukKayit).toHaveAttribute(
       "href",
@@ -53,11 +53,18 @@ describe("SiteHeroBar — baslik ve meta (spec §5.2)", () => {
     expect(gunlukKayit).toHaveAttribute("title", "Bu bölüm yakında");
     expect(screen.getByRole("button", { name: "+ Bölüm Ekle" })).toBeInTheDocument();
   });
+
+  it("+ Bolum Ekle tiklaninca onAddSection cagirir", () => {
+    const onAddSection = vi.fn();
+    render(<SiteHeroBar site={SITE} onAddSection={onAddSection} />);
+    fireEvent.click(screen.getByRole("button", { name: "+ Bölüm Ekle" }));
+    expect(onAddSection).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("SiteHeroBar — 5 KPI hucresi gercek/yer tutucu ayrimi (spec §5.2, task-8 brief)", () => {
   it("Fiziksel Ilerleme yer tutucudur — '—' basar, title ile aciklama verir, cubuk cizilmez", () => {
-    render(<SiteHeroBar site={SITE} />);
+    render(<SiteHeroBar site={SITE} onAddSection={() => {}} />);
     const cell = screen.getByTestId("site-hero-kpi-progress");
     expect(within(cell).getByText("Fiziksel İlerleme")).toBeInTheDocument();
     const value = within(cell).getByTitle("Hakediş modülüyle birlikte gelir");
@@ -70,13 +77,13 @@ describe("SiteHeroBar — 5 KPI hucresi gercek/yer tutucu ayrimi (spec §5.2, ta
       ...SITE,
       progress_pct: { available: true, value: "75", pending_module: "" },
     };
-    render(<SiteHeroBar site={withProgress} />);
+    render(<SiteHeroBar site={withProgress} onAddSection={() => {}} />);
     expect(within(screen.getByTestId("site-hero-kpi-progress")).getByText("%75")).toBeInTheDocument();
     expect(screen.getByTestId("site-hero-progress-fill")).toBeInTheDocument();
   });
 
   it("Aktif Isci yer tutucudur", () => {
-    render(<SiteHeroBar site={SITE} />);
+    render(<SiteHeroBar site={SITE} onAddSection={() => {}} />);
     const cell = screen.getByTestId("site-hero-kpi-worker");
     expect(within(cell).getByText("Aktif İşçi")).toBeInTheDocument();
     const value = within(cell).getByTitle("Puantaj modülüyle birlikte gelir");
@@ -88,12 +95,12 @@ describe("SiteHeroBar — 5 KPI hucresi gercek/yer tutucu ayrimi (spec §5.2, ta
       ...SITE,
       worker_count: { available: true, count: 48, pending_module: "" },
     };
-    render(<SiteHeroBar site={withWorkers} />);
+    render(<SiteHeroBar site={withWorkers} onAddSection={() => {}} />);
     expect(within(screen.getByTestId("site-hero-kpi-worker")).getByText("48")).toBeInTheDocument();
   });
 
   it("Toplam Hakedis yer tutucudur", () => {
-    render(<SiteHeroBar site={SITE} />);
+    render(<SiteHeroBar site={SITE} onAddSection={() => {}} />);
     const cell = screen.getByTestId("site-hero-kpi-payment");
     expect(within(cell).getByText("Toplam Hakediş")).toBeInTheDocument();
     const value = within(cell).getByTitle("Hakediş modülüyle birlikte gelir");
@@ -101,7 +108,7 @@ describe("SiteHeroBar — 5 KPI hucresi gercek/yer tutucu ayrimi (spec §5.2, ta
   });
 
   it("Kalan Gun gercek degerdir — yer tutucu degil, ay-yil alt notu tasir", () => {
-    render(<SiteHeroBar site={SITE} />);
+    render(<SiteHeroBar site={SITE} onAddSection={() => {}} />);
     const cell = screen.getByTestId("site-hero-kpi-days");
     expect(within(cell).getByText("Kalan Gün")).toBeInTheDocument();
     expect(within(cell).getByText("157")).toBeInTheDocument();
@@ -111,13 +118,13 @@ describe("SiteHeroBar — 5 KPI hucresi gercek/yer tutucu ayrimi (spec §5.2, ta
 
   it("Kalan Gun negatifse kirmizi 'X gun gecikme' basar (spec §7.5)", () => {
     const delayed: SiteDetail = { ...SITE, remaining_days: -12 };
-    render(<SiteHeroBar site={delayed} />);
+    render(<SiteHeroBar site={delayed} onAddSection={() => {}} />);
     const value = within(screen.getByTestId("site-hero-kpi-days")).getByText("12 gün gecikme");
     expect(value.className).toContain("site-hero__kpi-value--delay");
   });
 
   it("Bolum Sayisi gercek degerdir — section_count + aktif/bekliyor kirilimi (task-8 brief)", () => {
-    render(<SiteHeroBar site={SITE} />);
+    render(<SiteHeroBar site={SITE} onAddSection={() => {}} />);
     const cell = screen.getByTestId("site-hero-kpi-sections");
     expect(within(cell).getByText("Bölüm Sayısı")).toBeInTheDocument();
     expect(within(cell).getByText("5")).toBeInTheDocument();
@@ -131,7 +138,7 @@ describe("SiteHeroBar — 5 KPI hucresi gercek/yer tutucu ayrimi (spec §5.2, ta
       section_count: 0,
       section_status_counts: { planned: 0, active: 0, completed: 0 },
     };
-    render(<SiteHeroBar site={empty} />);
+    render(<SiteHeroBar site={empty} onAddSection={() => {}} />);
     const cell = screen.getByTestId("site-hero-kpi-sections");
     const value = within(cell).getByText("0");
     expect(value.className).not.toContain("pending");
