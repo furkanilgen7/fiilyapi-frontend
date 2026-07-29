@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { SiteDetailTabs } from "./SiteDetailTabs";
 
@@ -46,5 +47,22 @@ describe("SiteDetailTabs (spec §5.3)", () => {
   it("Bolumler sekmesi title tasimaz (yazilmis rota)", () => {
     render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={BASE} />);
     expect(screen.getByRole("tab", { name: "Bölümler" })).not.toHaveAttribute("title");
+  });
+});
+
+// Davranissal klavye odak testi (kod inceleme bulgusu duzeltmesi — Task 12 takibi):
+// css.test.ts yalniz CSS metnini dogrular; gercek odaklanabilirlik/Tab sirasi
+// jsdom + Testing Library ile burada dogrulanir.
+describe("SiteDetailTabs — klavye ile odaklanabilirlik ve sekme sirasi (davranissal)", () => {
+  it("Tab ile butun sekmelere sirayla odaklanilabilir", async () => {
+    const user = userEvent.setup();
+    render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={BASE} />);
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs).toHaveLength(6);
+
+    for (const tab of tabs) {
+      await user.tab();
+      expect(tab).toHaveFocus();
+    }
   });
 });

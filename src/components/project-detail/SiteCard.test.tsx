@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { SiteCard } from "./SiteCard";
 import type { SiteListItem } from "@/lib/api/hooks/useSites";
@@ -125,5 +126,22 @@ describe("SiteCard — gecikmis teslim (spec §7.5)", () => {
     render(<SiteCard projectId={PROJECT_ID} site={delayed} />);
     const value = screen.getByText("12 gün gecikme");
     expect(value.className).toContain("site-card__kpi-value--delay");
+  });
+});
+
+// Davranissal klavye odak testi (kod inceleme bulgusu duzeltmesi — Task 12 takibi):
+// css.test.ts yalniz CSS metnini dogrular; gercek odaklanabilirlik/Tab sirasi
+// jsdom + Testing Library ile burada dogrulanir.
+describe("SiteCard — kart cipleri klavyeyle odaklanabilir ve Tab sirasindadir (davranissal)", () => {
+  it("4 cip de sirayla Tab ile odaklanir", async () => {
+    const user = userEvent.setup();
+    render(<SiteCard projectId={PROJECT_ID} site={ACTIVE_SITE} />);
+    const chips = screen.getAllByRole("link");
+    expect(chips).toHaveLength(4);
+
+    for (const chip of chips) {
+      await user.tab();
+      expect(chip).toHaveFocus();
+    }
   });
 });

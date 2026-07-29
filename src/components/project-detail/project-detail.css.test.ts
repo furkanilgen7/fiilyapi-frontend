@@ -1,15 +1,24 @@
 // @vitest-environment node
 // Not: tokens.test.ts ile aynı gerekçe — dosya sistemi okuyan saf metin testi.
+//
+// KAPSAM UYARISI (kod inceleme bulgusu düzeltmesi, Task 12 takibi): bu dosya
+// SADECE stylesheet metninde ilgili :focus-visible kuralının VAR OLDUĞUNU
+// doğrular (regex ile string eşleşmesi). Şunları DOĞRULAMAZ:
+//   - ilgili elemanın gerçekten odaklanabilir olduğunu (tabIndex/semantik etiket)
+//   - elemanın Tab sırasında yer aldığını
+//   - bu kuralın cascade'de daha sonra gelen başka bir kuralla (ör. outline: none)
+//     ezilmediğini
+// Bu, kasıtlı bir CSS-yazım regresyon korumasıdır — kural stylesheet'ten yanlışlıkla
+// silinirse testi kırar. Gerçek klavye davranışı (odaklanabilirlik, Tab sırası) için
+// bkz. eşlik eden ProjectDetailTabs.test.tsx ve SiteCard.test.tsx içindeki
+// "(davranışsal)" bloklar.
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 
 const css = readFileSync(fileURLToPath(new URL("./project-detail.css", import.meta.url)), "utf8");
 
-// Erişilebilirlik incelemesi (Task 12, madde 3): sekme barı ve kart çipleri
-// (ProjectDetailTabs, SiteCard) gerçek <a> etiketleri — klavyeyle erişilebilirler,
-// ama düzeltmeden önce tasarlanmış bir :focus-visible durumu yoktu.
-describe("project-detail.css — odak durumları", () => {
+describe("project-detail.css — focus-visible kural metni var mı (regresyon koruması)", () => {
   it("proje sekmesi marka zemininde belirgin bir on-brand dış hat tanımlar", () => {
     // Jenerik --focus-ring (mavi, düşük opaklık) marka degradesi üstünde
     // görünmez kalır — bu yüzden burada --color-on-brand tabanlı outline gerekir.

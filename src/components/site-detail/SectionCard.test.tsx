@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { SectionCard } from "./SectionCard";
 import type { SectionResponse } from "./SectionCard";
@@ -165,5 +166,31 @@ describe("SectionCard — tarih ve sorumlu satiri", () => {
   it("sorumlu atanmamissa 'Atanmadı' basar", () => {
     renderCard({ manager_name: null });
     expect(screen.getByText(/Atanmadı/)).toBeInTheDocument();
+  });
+});
+
+// Davranissal klavye odak testi (kod inceleme bulgusu duzeltmesi — Task 12 takibi):
+// css.test.ts yalniz CSS metnini dogrular; gercek odaklanabilirlik/Tab sirasi
+// jsdom + Testing Library ile burada dogrulanir.
+describe("SectionCard — eylem klavyeyle odaklanabilir (davranissal)", () => {
+  it("planned -> 'Duzenle' butonu Tab ile odaklanir", async () => {
+    const user = userEvent.setup();
+    renderCard({ status: "planned" });
+    await user.tab();
+    expect(screen.getByRole("button", { name: "Düzenle" })).toHaveFocus();
+  });
+
+  it("active -> 'Detay →' baglantisi Tab ile odaklanir", async () => {
+    const user = userEvent.setup();
+    renderCard({ status: "active" });
+    await user.tab();
+    expect(screen.getByRole("link", { name: "Detay →" })).toHaveFocus();
+  });
+
+  it("completed -> 'Detay →' baglantisi Tab ile odaklanir", async () => {
+    const user = userEvent.setup();
+    renderCard({ status: "completed" });
+    await user.tab();
+    expect(screen.getByRole("link", { name: "Detay →" })).toHaveFocus();
   });
 });

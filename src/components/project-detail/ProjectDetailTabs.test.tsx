@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { ProjectDetailTabs } from "./ProjectDetailTabs";
 
@@ -56,5 +57,22 @@ describe("ProjectDetailTabs", () => {
       "href",
       `${BASE}/belgeler`,
     );
+  });
+});
+
+// Davranissal klavye odak testi (kod inceleme bulgusu duzeltmesi — Task 12 takibi):
+// css.test.ts yalniz CSS metnini dogrular; gercek odaklanabilirlik/Tab sirasi
+// jsdom + Testing Library ile burada dogrulanir.
+describe("ProjectDetailTabs — klavye ile odaklanabilirlik ve sekme sirasi (davranissal)", () => {
+  it("Tab ile butun sekmelere sirayla odaklanilabilir", async () => {
+    const user = userEvent.setup();
+    render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} />);
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs).toHaveLength(5);
+
+    for (const tab of tabs) {
+      await user.tab();
+      expect(tab).toHaveFocus();
+    }
   });
 });
