@@ -27,3 +27,27 @@ describe("drill-sidebar.css — focus-visible kural metni var mı (regresyon kor
     expect(css).toMatch(/\.drill-nav-item:focus-visible\s*{[^}]*--focus-ring/);
   });
 });
+
+// KOD INCELEME BULGUSU (kritik): içerik ofseti (.project-detail-content ve
+// .site-detail-content) iki stylesheet'te birebir aynı şekilde duruyordu; iç
+// içe geçen layout'larda margin/padding iki kez uygulanıyordu. Ofset artık
+// TEK bir kuralda (.drill-content) yaşar.
+describe("drill içerik ofseti tek yerde tanımlıdır (regresyon koruması)", () => {
+  const projectCss = readFileSync(
+    fileURLToPath(new URL("../../project-detail/project-detail.css", import.meta.url)),
+    "utf8",
+  );
+  const siteCss = readFileSync(
+    fileURLToPath(new URL("../../site-detail/site-detail.css", import.meta.url)),
+    "utf8",
+  );
+
+  it(".drill-content ofseti drill-sidebar.css içinde tanımlıdır", () => {
+    expect(css).toMatch(/\.drill-content\s*{[^}]*--drill-sidebar-width/);
+  });
+
+  it("proje ve şantiye stylesheet'leri kendi içerik ofsetini TEKRARLAMAZ", () => {
+    expect(projectCss).not.toMatch(/\.project-detail-content\s*{/);
+    expect(siteCss).not.toMatch(/\.site-detail-content\s*{/);
+  });
+});

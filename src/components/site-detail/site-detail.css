@@ -1,19 +1,7 @@
 /* Şantiye Detay › Bölümler — spec §5.1–§5.3 (mockup: Şantiye Detay.dc.html) */
 
-/* İçerik alanı — drill sidebar (260px) genişliğine göre; Proje Detay ile ayni
-   teknik (bkz. project-detail.css yorumu): global .app-content zaten
-   margin-left: var(--sidebar-width) (220px) + padding: var(--space-6)
-   uyguluyor, burada iptal edip 260px + kendi iç boşluğunu koyuyoruz (spec §5.1). */
-.site-detail-content {
-  margin: calc(-1 * var(--space-6)) calc(-1 * var(--space-6)) calc(-1 * var(--space-6))
-    calc(var(--drill-sidebar-width) - var(--sidebar-width) - var(--space-6));
-  padding: 24px 32px;
-}
-@media (prefers-reduced-motion: no-preference) {
-  .site-detail-content {
-    animation: var(--anim-fade-up);
-  }
-}
+/* İçerik alanı ofseti burada DEĞİL — drill-sidebar.css içindeki .drill-content
+   kuralında tanımlıdır (tek sahip, tek uygulama). */
 
 .site-hero {
   background: var(--gradient-hero-site);

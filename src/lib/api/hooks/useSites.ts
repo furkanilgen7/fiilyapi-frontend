@@ -27,8 +27,12 @@ export function useSites(projectId: string): UseQueryResult<SiteListResponse, Er
 }
 
 // Şantiye Detay hero + sekmeler + bölüm listesi için tekil şantiye (spec §5).
+// `siteId` boşsa sorgu çalışmaz: drill kabuğu (proje layout'u) şantiye
+// seviyesinde olmadığında bu hook'u boş id ile çağırır (hook'lar koşullu
+// çağrılamaz), ağa çıkmamalıdır.
 export function useSite(siteId: string): UseQueryResult<SiteDetail, Error> {
   return useQuery({
+    enabled: siteId.length > 0,
     queryKey: [SITE_QUERY_KEY, siteId],
     queryFn: async () =>
       unwrap(

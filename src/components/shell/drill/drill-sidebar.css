@@ -12,6 +12,23 @@
   padding: 14px 0;
   z-index: 90;
 }
+/* Drill-in içerik alanı — TEK yerde tanımlıdır (kod inceleme bulgusu: proje ve
+   şantiye stylesheet'lerinde birebir aynı kural iki kez duruyordu, App Router
+   layout'ları iç içe geçince ofset iki kez uygulanıyordu). Global .app-content
+   zaten margin-left: var(--sidebar-width) (220px) + padding: var(--space-6)
+   uyguluyor; burada iptal edip drill genişliği (260px) + kendi iç boşluğunu
+   koyuyoruz (spec §5.1; Proje Detay için Karar 1'in kabuk birliği). */
+.drill-content {
+  margin: calc(-1 * var(--space-6)) calc(-1 * var(--space-6)) calc(-1 * var(--space-6))
+    calc(var(--drill-sidebar-width) - var(--sidebar-width) - var(--space-6));
+  padding: 24px 32px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .drill-content {
+    animation: var(--anim-fade-up);
+  }
+}
+
 .drill-sidebar__back {
   display: flex;
   align-items: center;
