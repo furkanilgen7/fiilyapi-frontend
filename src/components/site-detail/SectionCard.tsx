@@ -68,6 +68,25 @@ const STATUS_PROGRESS_CLASS: Record<SectionStatus, string> = {
   planned: "section-card__metric-progress--planned",
 };
 
+// Metrik etiketleri duruma gore degisir — mockup KAZANIR (spec §5.4 sabit
+// dortluyu yaziyordu, mockup ise satir bazinda farkli etiket basiyor):
+//   tamamlandi (satir 178, 215) "Bölüm Bedeli" · (182, 219) "İşçi (zirve)"
+//   aktif      (satir 252)      "Bölüm Bedeli" · (256)      "Aktif İşçi"
+//   planlandi  (satir 288, 324) "Tahmini Bedel" · (292, 328) "Planlanan İşçi"
+// "İlerleme" (168/205/242/279/315) ve "İş Kalemleri" (173/210/247/284/320)
+// her durumda AYNI kalir — bu yuzden sabit metin olarak basilir.
+const STATUS_BUDGET_LABEL: Record<SectionStatus, string> = {
+  completed: "Bölüm Bedeli",
+  active: "Bölüm Bedeli",
+  planned: "Tahmini Bedel",
+};
+
+const STATUS_WORKER_LABEL: Record<SectionStatus, string> = {
+  completed: "İşçi (zirve)",
+  active: "Aktif İşçi",
+  planned: "Planlanan İşçi",
+};
+
 // Yer tutucu metrik hucresi — duzeni korur, "—" basar, title'da aciklama verir
 // (spec §7.1, SiteHeroBar/SiteCard'daki PlaceholderValue deseniyle ayni).
 function PlaceholderValue({ valueClassName, pendingModule }: { valueClassName: string; pendingModule: string }) {
@@ -166,7 +185,8 @@ function ProgressMetricCell({
 }
 
 // Bölüm kartı (spec §5.4, mockup Şantiye Detay.dc.html satır 153+). Dört metrik
-// (İlerleme · İş Kalemleri · Bölüm Bedeli · İşçi) bu dilimde HEPSI yer tutucudur —
+// (İlerleme · İş Kalemleri · bedel · işçi — son ikisinin etiketi duruma gore
+// degisir, bkz. STATUS_BUDGET_LABEL/STATUS_WORKER_LABEL) bu dilimde HEPSI yer tutucudur —
 // backend henuz gercek deger uretmiyor. "3 gecikme riski" satiri KASITLI olarak
 // basilmaz (spec §7.2) — backend bu alani hic dondurmuyor.
 export function SectionCard({ projectId, siteId, section }: SectionCardProps) {
@@ -196,14 +216,14 @@ export function SectionCard({ projectId, siteId, section }: SectionCardProps) {
         </MetricCell>
 
         <MetricCell
-          label="Bölüm Bedeli"
+          label={STATUS_BUDGET_LABEL[section.status]}
           valueClassName="section-card__metric-value section-card__metric-value--money"
           placeholder={section.budget}
         >
           {formatCompactCurrency(section.budget.value ?? 0)}
         </MetricCell>
 
-        <MetricCell label="İşçi" placeholder={section.worker_count}>
+        <MetricCell label={STATUS_WORKER_LABEL[section.status]} placeholder={section.worker_count}>
           {section.worker_count.count}
         </MetricCell>
 

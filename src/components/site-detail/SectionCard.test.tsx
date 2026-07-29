@@ -76,14 +76,46 @@ describe("SectionCard — eylem duruma gore degisir (spec §5.4)", () => {
   });
 });
 
-describe("SectionCard — 4 metrik hepsi yer tutucu (spec §5.4, §7.1)", () => {
-  it("İlerleme, İş Kalemleri, Bölüm Bedeli, İşçi — dördü de '—' basar ve title tasir", () => {
-    renderCard();
+// Mockup KAZANIR: metrik etiketleri duruma gore degisir (mockup satir
+// 168-182 / 242-256 / 279-292). Spec §5.4 sabit dortlu yaziyordu, guncellendi.
+describe("SectionCard — metrik etiketleri duruma gore degisir (mockup birebir)", () => {
+  it("completed -> İlerleme · İş Kalemleri · Bölüm Bedeli · İşçi (zirve)", () => {
+    renderCard({ status: "completed" });
     expect(screen.getByText("İlerleme")).toBeInTheDocument();
     expect(screen.getByText("İş Kalemleri")).toBeInTheDocument();
     expect(screen.getByText("Bölüm Bedeli")).toBeInTheDocument();
-    expect(screen.getByText("İşçi")).toBeInTheDocument();
+    expect(screen.getByText("İşçi (zirve)")).toBeInTheDocument();
+    expect(screen.queryByText("Aktif İşçi")).not.toBeInTheDocument();
+    expect(screen.queryByText("Tahmini Bedel")).not.toBeInTheDocument();
+    expect(screen.queryByText("Planlanan İşçi")).not.toBeInTheDocument();
+  });
 
+  it("active -> İlerleme · İş Kalemleri · Bölüm Bedeli · Aktif İşçi", () => {
+    renderCard({ status: "active" });
+    expect(screen.getByText("İlerleme")).toBeInTheDocument();
+    expect(screen.getByText("İş Kalemleri")).toBeInTheDocument();
+    expect(screen.getByText("Bölüm Bedeli")).toBeInTheDocument();
+    expect(screen.getByText("Aktif İşçi")).toBeInTheDocument();
+    expect(screen.queryByText("İşçi (zirve)")).not.toBeInTheDocument();
+    expect(screen.queryByText("Tahmini Bedel")).not.toBeInTheDocument();
+    expect(screen.queryByText("Planlanan İşçi")).not.toBeInTheDocument();
+  });
+
+  it("planned -> İlerleme · İş Kalemleri · Tahmini Bedel · Planlanan İşçi", () => {
+    renderCard({ status: "planned" });
+    expect(screen.getByText("İlerleme")).toBeInTheDocument();
+    expect(screen.getByText("İş Kalemleri")).toBeInTheDocument();
+    expect(screen.getByText("Tahmini Bedel")).toBeInTheDocument();
+    expect(screen.getByText("Planlanan İşçi")).toBeInTheDocument();
+    expect(screen.queryByText("Bölüm Bedeli")).not.toBeInTheDocument();
+    expect(screen.queryByText("İşçi (zirve)")).not.toBeInTheDocument();
+    expect(screen.queryByText("Aktif İşçi")).not.toBeInTheDocument();
+  });
+});
+
+describe("SectionCard — 4 metrik hepsi yer tutucu (spec §5.4, §7.1)", () => {
+  it("dort metrigin dordu de '—' basar ve title tasir", () => {
+    renderCard();
     const dashes = screen.getAllByText("—");
     expect(dashes).toHaveLength(4);
     dashes.forEach((el) => expect(el).toHaveAttribute("title"));
