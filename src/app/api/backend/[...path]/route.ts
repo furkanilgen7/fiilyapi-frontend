@@ -11,13 +11,14 @@ const ALLOWED_ROOTS = new Set([
   "projects",
   // Şantiye Detay (/sites/{site_id}) ve bölüm uçları (/sites/{site_id}/sections)
   // bu kökten geçer; eksikse tüm şantiye ekranı 404 alır.
-  // Şantiye Detay (/sites/{site_id}) ve bölüm uçları (/sites/{site_id}/sections)
-  // bu kökten geçer; eksikse tüm şantiye ekranı 404 alır.
   "sites",
   "company",
   "settings",
   "audit-log",
   "dashboard",
+  // Task F4 — Yeni Proje formunun İşveren seçici/oluşturma uçları (spec §3.1-3.2).
+  // Eksikse işveren akışı canlıda 404 alır; jsdom testleri bunu görmez.
+  "employers",
 ]);
 
 // Ikili (binary) olarak aynen gecirilecek indirme uclari; JSON ayristirilmaz.
