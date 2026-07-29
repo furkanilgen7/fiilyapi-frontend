@@ -162,3 +162,33 @@ describe("ProjectDetailPage", () => {
     expect(screen.getAllByText("Yükleniyor…").length).toBeGreaterThan(0);
   });
 });
+
+// KOD INCELEME BULGUSU: santiye sorgusu proje sorgusundan BAGIMSIZ basarisiz
+// olabilir; yalniz `.data` dallanildigi icin 500/403 durumunda ekran sonsuza
+// kadar "Yükleniyor…" gosteriyor, kullaniciya hicbir sey soylenmiyordu.
+describe("ProjectDetailPage — santiye sorgusu bagimsiz basarisiz olabilir", () => {
+  beforeEach(() => mockQuery({ data: PROJECT }));
+
+  it("santiye listesi 500 verirse durust hata mesaji basar, 'Yükleniyor…'da takilmaz", () => {
+    mockSites({ isError: true, error: new Error("patladi") });
+    render(<ProjectDetailPage />);
+    expect(screen.getByText("Şantiyeler yüklenemedi")).toBeInTheDocument();
+    expect(screen.queryByText("Yükleniyor…")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("site-list-grid")).not.toBeInTheDocument();
+    // Proje hero'su ayakta kalir — yalniz liste dilimi hata gosterir.
+    expect(screen.getByRole("heading", { level: 1, name: "Güneşkent Konut" })).toBeInTheDocument();
+  });
+
+  it("santiye listesi 403 verirse erisim reddi basar", () => {
+    mockSites({ isError: true, error: new BackendError(403, { detail: "yasak" }) });
+    render(<ProjectDetailPage />);
+    expect(screen.getByText("Bu alana yetkiniz yok")).toBeInTheDocument();
+    expect(screen.queryByText("Yükleniyor…")).not.toBeInTheDocument();
+  });
+
+  it("hata durumunda alt KPI seridi uydurma deger basmaz", () => {
+    mockSites({ isError: true, error: new Error("patladi") });
+    render(<ProjectDetailPage />);
+    expect(screen.queryByTestId("site-totals-strip")).not.toBeInTheDocument();
+  });
+});

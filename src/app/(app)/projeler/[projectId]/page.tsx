@@ -25,6 +25,34 @@ function AddSiteButton({ className, onClick }: { className?: string; onClick: ()
   );
 }
 
+// Şantiye listesi kendi sorgusuna sahiptir ve proje sorgusundan BAĞIMSIZ
+// başarısız olabilir (kod inceleme bulgusu: yalnız `.data` dallanınca 403/500
+// sonsuza kadar "Yükleniyor…" gösteriyordu). Şantiye Detay'daki sıralamanın
+// aynısı: 403 → erişim reddi, diğer hatalar → dürüst hata metni, yükleniyor.
+function SiteListSection({
+  projectId,
+  sitesQuery,
+}: {
+  projectId: string;
+  sitesQuery: ReturnType<typeof useSites>;
+}) {
+  if (isForbidden(sitesQuery.error)) return <AccessDenied />;
+  if (sitesQuery.isError) {
+    return <p className="project-detail__message">Şantiyeler yüklenemedi</p>;
+  }
+  if (sitesQuery.isLoading || !sitesQuery.data) {
+    return <p className="project-detail__message">Yükleniyor…</p>;
+  }
+
+  return (
+    <div className="project-detail__site-grid" data-testid="site-list-grid">
+      {sitesQuery.data.items.map((site) => (
+        <SiteCard key={site.id} projectId={projectId} site={site} />
+      ))}
+    </div>
+  );
+}
+
 // Proje Detay › Şantiyeler (spec §4). SiteCard ızgarası Task 5'te eklendi;
 // SiteTotalsStrip (§4.4) + bos durum eylemi Task 6'da eklendi; SiteFormModal
 // Task 7'de eklendi (§7.4 — iki "+ Şantiye Ekle" butonu da ayni modali acar).
@@ -60,14 +88,8 @@ export default function ProjectDetailPage() {
             onClick={() => setIsSiteFormOpen(true)}
           />
         </div>
-      ) : sitesQuery.data ? (
-        <div className="project-detail__site-grid" data-testid="site-list-grid">
-          {sitesQuery.data.items.map((site) => (
-            <SiteCard key={site.id} projectId={projectId} site={site} />
-          ))}
-        </div>
       ) : (
-        <p className="project-detail__message">Yükleniyor…</p>
+        <SiteListSection projectId={projectId} sitesQuery={sitesQuery} />
       )}
       {sitesQuery.data && <SiteTotalsStrip totals={sitesQuery.data.totals} />}
       {isSiteFormOpen && (
