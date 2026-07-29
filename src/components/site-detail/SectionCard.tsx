@@ -1,12 +1,31 @@
 import Link from "next/link";
 
 import { cx } from "@/lib/cx";
-import { formatMonthYear } from "@/lib/format";
+import { formatCompactCurrency, formatMonthYear, formatPercent } from "@/lib/format";
 import { pendingModuleLabel } from "@/lib/pending-modules";
 import type { components } from "@/lib/api/schema";
 
 export type SectionResponse = components["schemas"]["SectionResponse"];
 type SectionStatus = SectionResponse["status"];
+type CountPlaceholder = components["schemas"]["CountPlaceholder"];
+type MetricPlaceholder = components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+
+// Yer tutucu "gercek deger tasiyor mu?" — `available` TEK BASINA yetmez:
+// available: true + deger null gelirse hucre bos kalirdi (kod inceleme
+// bulgusu). SiteCard/SiteHeroBar ile ayni kural: bayrak VE deger.
+function hasRealValue(placeholder: AnyPlaceholder): boolean {
+  const raw = placeholder.count ?? placeholder.value;
+  return placeholder.available && raw !== null && raw !== undefined;
+}
+
+// Iki yer tutucu seklinin ortak okuma yuzeyi: sayaclar `count`, tutar/yuzde
+// `value` tasir.
+type AnyPlaceholder = {
+  available: boolean;
+  count?: number | null;
+  value?: string | null;
+  pending_module: string;
+};
 
 export interface SectionCardProps {
   projectId: string;
@@ -77,7 +96,7 @@ function sectionMeta(section: SectionResponse): string {
 interface MetricCellProps {
   label: string;
   valueClassName?: string;
-  placeholder: { available: boolean; pending_module: string };
+  placeholder: CountPlaceholder | MetricPlaceholder;
   children: React.ReactNode;
 }
 
@@ -85,7 +104,7 @@ function MetricCell({ label, valueClassName = "section-card__metric-value", plac
   return (
     <div className="section-card__metric">
       <div className="section-card__metric-label">{label}</div>
-      {placeholder.available ? (
+      {hasRealValue(placeholder) ? (
         <div className={valueClassName}>{children}</div>
       ) : (
         <PlaceholderValue valueClassName={valueClassName} pendingModule={placeholder.pending_module} />
@@ -109,7 +128,7 @@ function ProgressMetricCell({
   progress: SectionResponse["progress_pct"];
   status: SectionStatus;
 }) {
-  const isReal = progress.available && progress.value !== null && progress.value !== undefined;
+  const isReal = hasRealValue(progress);
   const progressClass = isReal ? STATUS_PROGRESS_CLASS[status] : undefined;
   return (
     <div className="section-card__metric">
@@ -122,7 +141,7 @@ function ProgressMetricCell({
             progressClass,
           )}
         >
-          %{progress.value}
+          {formatPercent(progress.value ?? 0)}
         </div>
       ) : (
         <PlaceholderValue
@@ -181,7 +200,7 @@ export function SectionCard({ projectId, siteId, section }: SectionCardProps) {
           valueClassName="section-card__metric-value section-card__metric-value--money"
           placeholder={section.budget}
         >
-          {section.budget.value}
+          {formatCompactCurrency(section.budget.value ?? 0)}
         </MetricCell>
 
         <MetricCell label="İşçi" placeholder={section.worker_count}>
@@ -190,7 +209,13 @@ export function SectionCard({ projectId, siteId, section }: SectionCardProps) {
 
         <div className="section-card__action">
           {isPlanned ? (
-            <button type="button" className="section-card__action-btn section-card__action-btn--edit">
+            // Bölüm düzenleme ekrani henuz yazilmadi — §7.3 deseni: gorunur
+            // kalir, aria-disabled verilmez, title ile durustce soylenir.
+            <button
+              type="button"
+              title="Bu bölüm yakında"
+              className="section-card__action-btn section-card__action-btn--edit"
+            >
               Düzenle
             </button>
           ) : (

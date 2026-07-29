@@ -47,10 +47,16 @@ describe("SectionCard — durum etiketleri (spec §5.4, mockup birebir)", () => 
 });
 
 describe("SectionCard — eylem duruma gore degisir (spec §5.4)", () => {
-  it("planned -> 'Düzenle' butonu (no-op, Task 10'a kadar)", () => {
+  // KOD INCELEME BULGUSU: buton olay isleyicisi olmayan sessiz bir kontroldu.
+  // Bolum duzenleme ekrani henuz yok — daldaki diger yazilmamis eylemlerle ayni
+  // §7.3 muamelesi: gorunur kalir, aria-disabled verilmez, title ile soylenir.
+  it("planned -> 'Düzenle' butonu gorunur kalir ve 'Bu bölüm yakında' title'i tasir (§7.3)", () => {
     renderCard({ status: "planned" });
     const btn = screen.getByRole("button", { name: "Düzenle" });
     expect(btn).toBeInTheDocument();
+    expect(btn).toHaveAttribute("title", "Bu bölüm yakında");
+    expect(btn).not.toHaveAttribute("aria-disabled");
+    expect(btn).not.toBeDisabled();
     expect(screen.queryByRole("link", { name: /Detay/ })).not.toBeInTheDocument();
   });
 
@@ -88,6 +94,34 @@ describe("SectionCard — 4 metrik hepsi yer tutucu (spec §5.4, §7.1)", () => 
       boq_item_count: { available: true, count: 14, pending_module: "boq" },
     });
     expect(screen.getByText("14")).toBeInTheDocument();
+  });
+
+  // KOD INCELEME BULGUSU: MetricCell yalniz `available` bayragina bakiyordu —
+  // available: true + deger null gelirse hucre BOS kaliyordu. Daldaki diger tum
+  // yer tutucular (SiteCard/SiteHeroBar) bayrak VE deger kontrol eder.
+  it("available: true ama deger null ise em dash basar, hucre bos kalmaz", () => {
+    renderCard({
+      boq_item_count: { available: true, count: null, pending_module: "boq" },
+      budget: { available: true, value: null, pending_module: "boq" },
+    });
+    const dashes = screen.getAllByText("—");
+    expect(dashes).toHaveLength(4);
+    dashes.forEach((el) => expect(el).toHaveAttribute("title"));
+  });
+});
+
+// KOD INCELEME BULGUSU: bu iki metrik ham basiliyordu ("%62", "8400000.00")
+// oysa SiteCard/SiteHeroBar ayni sekilleri paylasilan bicimlendiricilerden
+// geciriyor.
+describe("SectionCard — sayilar paylasilan bicimlendiricilerden gecer", () => {
+  it("ilerleme formatPercent ile basilir (tr-TR ondalik)", () => {
+    renderCard({ progress_pct: { available: true, value: "62.5", pending_module: "boq" } });
+    expect(screen.getByText("%62,5")).toBeInTheDocument();
+  });
+
+  it("bolum bedeli formatCompactCurrency ile basilir", () => {
+    renderCard({ budget: { available: true, value: "8400000.00", pending_module: "boq" } });
+    expect(screen.getByText("₺ 8,4M")).toBeInTheDocument();
   });
 });
 

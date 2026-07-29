@@ -37,6 +37,24 @@ describe("SiteTotalsStrip", () => {
     expect(screen.getByTitle("Maliyet takibiyle birlikte gelir")).toBeInTheDocument();
   });
 
+  // KOD INCELEME BULGUSU: bilesen `totals`i hic okumuyor, dort pending_module
+  // anahtarini koda gomuyordu — backend anahtari degistirse title yanlis kalirdi.
+  it("bekleyen modul anahtarlarini KODDAN degil gelen yukten okur", () => {
+    render(
+      <SiteTotalsStrip
+        totals={{
+          ...TOTALS,
+          total_progress_payment: { available: false, value: null, pending_module: "invoicing" },
+          average_margin: { available: false, value: null, pending_module: "contracts" },
+        }}
+      />,
+    );
+    expect(screen.getByTitle("Fatura yönetimiyle birlikte gelir")).toBeInTheDocument();
+    expect(screen.getByTitle("Sözleşme modülüyle birlikte gelir")).toBeInTheDocument();
+    expect(screen.queryByTitle("Hakediş modülüyle birlikte gelir")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("Maliyet takibiyle birlikte gelir")).not.toBeInTheDocument();
+  });
+
   it("hicbir KPI karti sessizce dusurulmez — dort etiket + dort deger birlikte var", () => {
     const { container } = render(<SiteTotalsStrip totals={TOTALS} />);
     const cards = container.querySelectorAll(".site-totals__card");

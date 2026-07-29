@@ -14,24 +14,23 @@ interface KpiCardDef {
 
 // Alt KPI seridi (spec §4.4). Backend spec §4.1'e gore SiteListTotals'in
 // TAMAMI bu dilimde yer tutucu — dordu de ayni desenle basilir, hicbiri
-// sessizce atlanmaz (spec §7.1).
-const CARDS: KpiCardDef[] = [
-  { label: "Toplam Hakediş", pendingModule: "progress_payments" },
-  { label: "Toplam Taşeron", pendingModule: "subcontracts" },
-  { label: "Aktif İşçi", pendingModule: "timesheet" },
-  { label: "Ortalama Marj", pendingModule: "project_costs" },
-];
+// sessizce atlanmaz (spec §7.1). "Hangi modul bekleniyor" bilgisi KODA
+// GOMULU DEGIL, gelen yukten okunur (kod inceleme bulgusu — daldaki diger tum
+// yer tutucular gibi): backend modulu degistirirse title da degisir.
+function cardsFrom(totals: SiteTotalsStripProps["totals"]): KpiCardDef[] {
+  return [
+    { label: "Toplam Hakediş", pendingModule: totals.total_progress_payment.pending_module },
+    { label: "Toplam Taşeron", pendingModule: totals.subcontractor_count.pending_module },
+    { label: "Aktif İşçi", pendingModule: totals.active_worker_count.pending_module },
+    { label: "Ortalama Marj", pendingModule: totals.average_margin.pending_module },
+  ];
+}
 
 export function SiteTotalsStrip({ totals }: SiteTotalsStripProps) {
-  // `totals` suanda tamamen yer tutucu oldugundan degerleri okumuyoruz; ileride
-  // backend gercek veri saglarsa her hucre kendi alanini (totals.*) okuyacak
-  // sekilde genisletilir. Prop yine de arayuz sozlesmesi icin tutulur.
-  void totals;
-
   return (
     <div className="site-totals" data-testid="site-totals-strip">
-      {CARDS.map((card) => (
-        <div key={card.pendingModule} className="site-totals__card">
+      {cardsFrom(totals).map((card) => (
+        <div key={card.label} className="site-totals__card">
           <div className="site-totals__label">{card.label}</div>
           <div
             className="site-totals__value site-totals__value--pending"
