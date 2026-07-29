@@ -18,6 +18,14 @@ const STATUS_LABELS: Record<SiteListItem["status"], string> = {
   completed: "Tamamlandı",
 };
 
+// Rozet stili duruma gore ayri sinif tasir — on_hold'u "aktif" (yesil) grubuna
+// dusurmemek icin kendi (--pending, notr) sinifi var (kod inceleme bulgusu).
+const STATUS_BADGE_CLASS: Record<SiteListItem["status"], string> = {
+  active: "site-card__status--active",
+  on_hold: "site-card__status--pending",
+  completed: "site-card__status--muted",
+};
+
 const NO_END_DATE_TITLE = "Bitiş tarihi girilmemiş";
 
 // "Kuyubaşı Mah. · Şantiye Şefi: S. Öztürk" — ikisi de bos olabilir (spec §4.3).
@@ -152,12 +160,7 @@ export function SiteCard({ projectId, site }: SiteCardProps) {
             <h3 className="site-card__name">{site.name}</h3>
             {sub && <p className="site-card__subtitle">{sub}</p>}
           </div>
-          <span
-            className={cx(
-              "site-card__status",
-              isCompleted ? "site-card__status--muted" : "site-card__status--active",
-            )}
-          >
+          <span className={cx("site-card__status", STATUS_BADGE_CLASS[site.status])}>
             {STATUS_LABELS[site.status]}
           </span>
         </div>

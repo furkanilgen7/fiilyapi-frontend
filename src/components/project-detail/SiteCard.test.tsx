@@ -62,6 +62,16 @@ describe("SiteCard — aktif varyant (spec §4.3)", () => {
   });
 });
 
+describe("SiteCard — on_hold rozeti (kod inceleme bulgusu)", () => {
+  it("Beklemede rozeti kendi sinifini tasir, aktif (yesil) sinifina dusmez", () => {
+    const onHoldSite: SiteListItem = { ...ACTIVE_SITE, status: "on_hold" };
+    render(<SiteCard projectId={PROJECT_ID} site={onHoldSite} />);
+    const badge = screen.getByText("Beklemede");
+    expect(badge.className).toContain("site-card__status--pending");
+    expect(badge.className).not.toContain("site-card__status--active");
+  });
+});
+
 describe("SiteCard — tamamlanmis varyant (spec §4.3)", () => {
   it("Tamamlandi rozetini basar", () => {
     render(<SiteCard projectId={PROJECT_ID} site={COMPLETED_SITE} />);

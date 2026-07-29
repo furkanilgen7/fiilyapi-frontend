@@ -184,6 +184,12 @@
   background: var(--color-neutral-soft);
   color: var(--color-text-muted);
 }
+.site-card__status--pending {
+  /* on_hold ("Beklemede") — mockup'ta ornegi yok; ne aktif-yesil ne
+     tamamlanmis-notr grubuna dusmesin diye kendi rengi (spec-inceleme bulgusu). */
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+}
 
 .site-card__kpis {
   display: grid;
