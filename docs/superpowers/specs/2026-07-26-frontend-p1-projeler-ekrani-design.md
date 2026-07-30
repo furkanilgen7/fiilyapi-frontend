@@ -390,6 +390,21 @@ minimal oluşturma yüzeyi budur.
 
 ## 9. Gezinme kararları (ONAYLANMIŞ)
 
+> **GEÇERSİZ — 2026-07-30.** Aşağıdaki "kart tıklanmaz" kararı P1 sırasında, proje
+> detay ekranı henüz yokken verilmişti. P2'de `/projeler/[projectId]` geldi ama karar
+> geri alınmadı; sonuç olarak listede detaya giden hiçbir giriş noktası kalmadı ve
+> sayfaya yalnızca URL elle yazılarak ulaşılabiliyordu (kullanıcı bildirdi, 2026-07-30).
+> **Yürürlükteki karar:** proje kartının tamamı `/projeler/{id}` linkidir — mockup
+> `Ekran 4 - Projeler.dc.html` satır 106/134 kartları zaten `<a href=... cursor:pointer;
+> text-decoration:none;display:block>` olarak basıyor. Yani bu mockup'tan sapma değil,
+> mockup'a dönüştür; "spec'e aykırı" diye geri alınmamalıdır. Erişilebilirlik:
+> kart içinde başka etkileşimli öğe yok, tek `<a>`, `aria-label="<proje adı> projesini aç"`,
+> odakta `--focus-ring` + dış hat. Kendi yatırım / kat karşılığı kartlarının hedefi de
+> aynı ortak detay ekranıdır (mockup'taki tip-özel dosyalar P9/P10'da ayrışırsa
+> o zaman güncellenir).
+
+Tarihsel kayıt (artık uygulanmıyor):
+
 - **Taahhüt kartı P2 gelene kadar tıklanmaz** — mockup'ta da taahhüt kartlarında
   `href` yok (`div`), yalnızca `cursor: pointer` süsü var. Kart `article` olarak
   basılır, link/onClick verilmez.
@@ -415,7 +430,7 @@ kısa ay adlarıyla birebir örtüşür.
 
 | Katman | Kapsam |
 |---|---|
-| Birim | `ProjectCard` üç tip varyantı + tamamlanmış görünüm (KPI etiketleri, yer tutucu `—`, rozetler, tıklanmazlık) · `ShareBar` yüzdeler · `ProjectTabs` sayaçlar + aktif sekme · `tabs.ts` parse/filtre eşlemesi · boş liste iki dalı · `ProjectFormModal` tip-koşullu alanlar + pay toplamı doğrulaması · `pendingModuleLabel` eşlemeleri · `formatMonthYear` |
+| Birim | `ProjectCard` üç tip varyantı + tamamlanmış görünüm (KPI etiketleri, yer tutucu `—`, rozetler, ~~tıklanmazlık~~ → 2026-07-30: kart linki + klavye odağı) · `ShareBar` yüzdeler · `ProjectTabs` sayaçlar + aktif sekme · `tabs.ts` parse/filtre eşlemesi · boş liste iki dalı · `ProjectFormModal` tip-koşullu alanlar + pay toplamı doğrulaması · `pendingModuleLabel` eşlemeleri · `formatMonthYear` |
 | Görsel regresyon | `/projeler` @ 1440px, oturumlu. Baseline'lar **YALNIZ Linux CI** (`visual-baselines.yml` workflow_dispatch → `linux-baselines` artifact → `e2e/` altına kopya). macOS'ta PNG üretilmez. |
 | E2E | Giriş → sidebar "Projeler" → `/projeler` → başlık + en az bir kart görünür → sekme geçişi (`?tab=` değişir, liste filtrelenir, sayaçlar sabit kalır) → "+ Yeni Proje" modalı açılır |
 
@@ -424,7 +439,7 @@ Ana spec kuralı gereği responsive hedef yok; tek kırılım 1440px.
 ## 12. Kapsam dışı
 
 - Proje detay ekranları (P2 taahhüt, P9 kendi yatırım, P10 kat karşılığı) — kartlar
-  tıklanmaz (§9).
+  tıklanmaz (§9). — 2026-07-30: P2 detay ekranı geldi, kartlar artık ona link (§9 notu).
 - Şantiye ekranları.
 - Gösterge panelinde tip rozeti gösterimi — F6 kartları değişmez.
 - `PATCH /projects/{id}` düzenleme yüzeyi.

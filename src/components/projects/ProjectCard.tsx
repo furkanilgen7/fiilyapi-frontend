@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { cx } from "@/lib/cx";
@@ -166,7 +167,13 @@ function KatKarsiligiKpis({ project }: { project: Project }) {
   );
 }
 
-// Kart tiklanmaz: link/onClick yok, mockup'taki cursor:pointer susu uygulanmaz (spec §9).
+// 2026-07-30: Kart artik proje detayina goturen bir link. Onceki karar ("kart
+// tiklanmaz", spec §9) P1'de verilmisti; o sirada detay ekrani yoktu. P2'de
+// `/projeler/[projectId]` geldi ve liste tarafinda baska giris noktasi olmadigi
+// icin sayfaya yalnizca URL elle yazilarak ulasilabiliyordu (kullanici bildirimi).
+// Mockup zaten kartlari link diyor: "Ekran 4 - Projeler.dc.html" satir 106/134
+// `<a href="Proje - ...dc.html" ... cursor:pointer;text-decoration:none;display:block>`.
+// Yani bu mockup'tan sapma DEGIL, mockup'a donus — geri alma.
 export function ProjectCard({ project }: { project: Project }) {
   const isCompleted = project.status === "completed";
   return (
@@ -177,39 +184,46 @@ export function ProjectCard({ project }: { project: Project }) {
         isCompleted && "prj-card--completed",
       )}
     >
-      <div className="prj-card__strip" aria-hidden="true" />
-      <div className="prj-card__body">
-        <div className="prj-card__head">
-          <div>
-            <span className="prj-type-badge prj-type-badge--card">
-              {TYPE_LABELS[project.project_type]}
+      {/* Kart icinde baska etkilesimli oge yok; tum govde tek link olarak sarilir. */}
+      <Link
+        href={`/projeler/${project.id}`}
+        className="prj-card__link"
+        aria-label={`${project.name} projesini aç`}
+      >
+        <div className="prj-card__strip" aria-hidden="true" />
+        <div className="prj-card__body">
+          <div className="prj-card__head">
+            <div>
+              <span className="prj-type-badge prj-type-badge--card">
+                {TYPE_LABELS[project.project_type]}
+              </span>
+              <h3 className="prj-card__name">{project.name}</h3>
+              <p className="prj-card__meta">{metaLine(project)}</p>
+            </div>
+            <span className={`prj-status prj-status--${project.status}`}>
+              {STATUS_LABELS[project.status]}
             </span>
-            <h3 className="prj-card__name">{project.name}</h3>
-            <p className="prj-card__meta">{metaLine(project)}</p>
           </div>
-          <span className={`prj-status prj-status--${project.status}`}>
-            {STATUS_LABELS[project.status]}
-          </span>
-        </div>
-        {project.project_type === "kat_karsiligi" && project.land_share && (
-          <ShareBar share={project.land_share} />
-        )}
-        {project.project_type === "taahhut" && <TaahhutKpis project={project} />}
-        {project.project_type === "kendi_yatirim" && <KendiYatirimKpis project={project} />}
-        {project.project_type === "kat_karsiligi" && <KatKarsiligiKpis project={project} />}
-        <div className="prj-progress">
-          <div className="prj-progress__labels">
-            <span>{PROGRESS_LABELS[project.project_type]}</span>
-            <span className="prj-progress__pct">{formatPercent(project.progress_pct)}</span>
-          </div>
-          <div className="prj-progress__bar">
-            <div
-              className="prj-progress__fill"
-              style={{ width: `${Math.min(Number(project.progress_pct), 100)}%` }}
-            />
+          {project.project_type === "kat_karsiligi" && project.land_share && (
+            <ShareBar share={project.land_share} />
+          )}
+          {project.project_type === "taahhut" && <TaahhutKpis project={project} />}
+          {project.project_type === "kendi_yatirim" && <KendiYatirimKpis project={project} />}
+          {project.project_type === "kat_karsiligi" && <KatKarsiligiKpis project={project} />}
+          <div className="prj-progress">
+            <div className="prj-progress__labels">
+              <span>{PROGRESS_LABELS[project.project_type]}</span>
+              <span className="prj-progress__pct">{formatPercent(project.progress_pct)}</span>
+            </div>
+            <div className="prj-progress__bar">
+              <div
+                className="prj-progress__fill"
+                style={{ width: `${Math.min(Number(project.progress_pct), 100)}%` }}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      </Link>
     </article>
   );
 }

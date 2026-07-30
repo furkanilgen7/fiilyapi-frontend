@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { ProjectCard } from "./ProjectCard";
 import type { ProjectListItem } from "@/lib/api/hooks/useProjects";
@@ -59,10 +60,22 @@ describe("ProjectCard — taahhut", () => {
     expect(screen.getByText("%75")).toBeInTheDocument();
   });
 
-  it("tiklanabilir degildir (spec §9)", () => {
+  // 2026-07-30: eski "kart tiklanmaz" kurali (spec §9) gecersiz — detay ekrani P2'de
+  // geldi, mockup satir 106/134 kartlari <a> olarak basiyor.
+  it("kartin tamami proje detayina goturen tek link olur", () => {
     render(<ProjectCard project={base} />);
-    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    const link = screen.getByRole("link", { name: /Güneşkent A-Blok/ });
+    expect(link).toHaveAttribute("href", `/projeler/${base.id}`);
+    // Ic ice etkilesim yok: kartta tek bir etkilesimli oge var.
+    expect(screen.getAllByRole("link")).toHaveLength(1);
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("link klavyeyle odaklanabilir", async () => {
+    const user = userEvent.setup();
+    render(<ProjectCard project={base} />);
+    await user.tab();
+    expect(screen.getByRole("link", { name: /Güneşkent A-Blok/ })).toHaveFocus();
   });
 
   it("tamamlanmis kart iki KPI hucresine iner", () => {

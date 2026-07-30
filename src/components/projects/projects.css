@@ -178,6 +178,23 @@
   border: 2px solid var(--color-accent-teal-line);
   box-shadow: var(--shadow-card-teal);
 }
+/* Kartin tamami detay linki — mockup satir 106/134 anchor'i:
+   `cursor:pointer;text-decoration:none;display:block`. */
+.prj-card__link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+/* Odak halkasi: .prj-card `overflow: hidden` oldugu icin linkin kendi disa dogru
+   golgesi kirpilirdi; halka karta tasinir (pf-type-card deseni, project-form.css).
+   Jenerik --focus-ring tek basina soluk kaldigindan site-hero__btn'deki gibi bir
+   dis hat esligindedir. */
+.prj-card:has(.prj-card__link:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  box-shadow: var(--focus-ring);
+}
 .prj-card__strip {
   height: 6px;
 }
