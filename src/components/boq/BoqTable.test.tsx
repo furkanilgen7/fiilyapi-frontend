@@ -256,4 +256,18 @@ describe("BoqTable — boş durum (spec §9)", () => {
     const cell = screen.getByTestId("boq-empty");
     expect(cell).toHaveAttribute("colspan", "7");
   });
+
+  // Boş durumdaki eylem, başlık şeridindeki "+ İş Kalemi" butonunun ikizidir →
+  // aynı izin kapısına bağlanır (spec §2.5): salt-okunur kullanıcıya çalışmayan
+  // yazma yüzeyi bırakılmaz.
+  it("canWrite false iken boş durumda + İş Kalemi butonu basılmaz, metin kalır", () => {
+    render(<BoqTable groups={[]} totals={TOTALS} canWrite={false} />);
+    expect(screen.getByText("Bu şantiyede henüz iş kalemi tanımlanmadı.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "+ İş Kalemi" })).not.toBeInTheDocument();
+  });
+
+  it("canWrite belirtilmezse buton görünür (bilinmezlik kuralı, spec §2.5.3)", () => {
+    render(<BoqTable groups={[]} totals={TOTALS} />);
+    expect(screen.getByRole("button", { name: "+ İş Kalemi" })).toBeInTheDocument();
+  });
 });

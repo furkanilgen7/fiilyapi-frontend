@@ -12,13 +12,18 @@ export interface BoqTableProps {
   groups: BoqGroup[];
   /** GENEL TOPLAM satırının kaynağı (mockup 174–177). */
   totals: BoqTotals;
+  /**
+   * Yazma yüzeyleri kapısı (spec §2.5). Varsayılan `true` — seviye bilinmiyorsa
+   * buton görünür kalır (bilinmezlik kuralı §2.5.3).
+   */
+  canWrite?: boolean;
 }
 
 const COLUMN_COUNT = 7;
 
 // Poz tablosu (mockup 92–171). Mockup'in 7 sutunlu duzeni korunur: eylem
 // sutunu / kebap menusu / 8. sutun EKLENMEZ (spec §7 karar 4).
-export function BoqTable({ groups, totals }: BoqTableProps) {
+export function BoqTable({ groups, totals, canWrite = true }: BoqTableProps) {
   const totalHint = pendingModuleLabel(totals.grand_progress_pct.pending_module);
   return (
     <div className="boq-table-card">
@@ -55,10 +60,14 @@ export function BoqTable({ groups, totals }: BoqTableProps) {
               <td className="boq-table__empty" colSpan={COLUMN_COUNT} data-testid="boq-empty">
                 <p className="boq-table__empty-text">Bu şantiyede henüz iş kalemi tanımlanmadı.</p>
                 {/* Davranis F8'de baglanir; bu task'ta baslik seridindeki
-                    ikizi gibi islevsizdir. */}
-                <Button variant="primary" className="boq-action boq-action--primary">
-                  + İş Kalemi
-                </Button>
+                    ikizi gibi islevsizdir. Ikizi gibi ayni izin kapisina da
+                    baglidir (spec §2.5): salt-okunur kullaniciya calismayan
+                    yazma yuzeyi birakilmaz. */}
+                {canWrite && (
+                  <Button variant="primary" className="boq-action boq-action--primary">
+                    + İş Kalemi
+                  </Button>
+                )}
               </td>
             </tr>
           ) : (

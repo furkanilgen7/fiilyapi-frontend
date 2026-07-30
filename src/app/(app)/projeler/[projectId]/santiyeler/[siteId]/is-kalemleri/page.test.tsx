@@ -5,6 +5,7 @@ import BoqPage from "./page";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { useBoq } from "@/lib/api/hooks/useBoq";
 import { BackendError } from "@/lib/api/unwrap";
+import { useSession } from "@/components/shell/SessionProvider";
 import type { SiteDetail } from "@/lib/api/hooks/useSites";
 import type { BoqListResponse } from "@/lib/api/hooks/useBoq";
 
@@ -24,6 +25,19 @@ const SITE_ID = "44444444-4444-4444-4444-444444444444";
 vi.mock("next/navigation", () => ({
   useParams: () => ({ projectId: PROJECT_ID, siteId: SITE_ID }),
 }));
+
+// Izin kapisi oturum yukunden okunur (spec §2.5.2); sayfa testinde gercek
+// hook calisir, yalniz oturum kaynagi taklit edilir.
+vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
+
+/** `level` verilmezse bugünkü hâl: MeResponse'ta izin alanı yok. */
+function mockPermission(level?: string) {
+  const base = { id: "u1", email: "a@b.c", full_name: "A", role_key: "admin", status: "active" };
+  vi.mocked(useSession).mockReturnValue({
+    me: (level === undefined ? base : { ...base, permissions: { boq: level } }) as never,
+    isLoading: false,
+  });
+}
 
 const SITE = {
   id: SITE_ID,
@@ -66,6 +80,7 @@ function mockBoq(value: Partial<ReturnType<typeof useBoq>>) {
 describe("BoqPage — durum dalları (spec §9)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPermission();
     mockSite({ data: SITE });
   });
 
@@ -92,6 +107,7 @@ describe("BoqPage — durum dalları (spec §9)", () => {
 describe("BoqPage — başlık şeridi ve breadcrumb (mockup 62–67)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPermission();
     mockSite({ data: SITE });
     mockBoq({ data: EMPTY_BOQ });
   });
@@ -150,5 +166,49 @@ describe("BoqPage — başlık şeridi ve breadcrumb (mockup 62–67)", () => {
     render(<BoqPage />);
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1, name: "İş Kalemleri (BOQ)" })).toBeInTheDocument();
+  });
+});
+
+describe("BoqPage — istemci izin kapısı (spec §2.5)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSite({ data: SITE });
+    mockBoq({ data: EMPTY_BOQ });
+  });
+
+  it("canWrite false iken + İş Kalemi butonu DOM'da yok", () => {
+    mockPermission("view");
+    render(<BoqPage />);
+    expect(screen.queryByRole("button", { name: "+ İş Kalemi" })).not.toBeInTheDocument();
+  });
+
+  // "Excel İndir" okuma ucudur (`boq:view` yeter) — gizlenmez.
+  it("canWrite false iken Excel İndir butonu görünür kalır", () => {
+    mockPermission("view");
+    render(<BoqPage />);
+    expect(screen.getByRole("button", { name: "Excel İndir" })).toBeInTheDocument();
+  });
+
+  it("canWrite true iken + İş Kalemi butonu görünür", () => {
+    mockPermission("full");
+    render(<BoqPage />);
+    expect(screen.getAllByRole("button", { name: "+ İş Kalemi" }).length).toBeGreaterThan(0);
+  });
+
+  // ⚠️ Bilinmezlik kuralı (spec §2.5.3): MeResponse'ta izin alanı BE-A'ya kadar
+  // YOK. Kural ters çevrilirse tam yetkili kullanıcı ekranı salt-okunur görür.
+  it("izin alanı yokken yazma butonu görünür kalır (bugünkü davranış)", () => {
+    mockPermission();
+    render(<BoqPage />);
+    expect(screen.getAllByRole("button", { name: "+ İş Kalemi" }).length).toBeGreaterThan(0);
+  });
+
+  // Boş durumdaki buton başlık şeridindeki butonun ikizidir; aynı kapıya bağlanır,
+  // yoksa salt-okunur kullanıcıya çalışmayan bir yazma yüzeyi kalır.
+  it("canWrite false iken boş durumdaki + İş Kalemi butonu da basılmaz", () => {
+    mockPermission("view");
+    render(<BoqPage />);
+    expect(screen.getByText("Bu şantiyede henüz iş kalemi tanımlanmadı.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "+ İş Kalemi" })).not.toBeInTheDocument();
   });
 });

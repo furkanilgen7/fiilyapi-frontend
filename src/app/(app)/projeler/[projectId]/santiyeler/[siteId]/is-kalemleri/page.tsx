@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button/Button";
 import { useBoq, type BoqListResponse } from "@/lib/api/hooks/useBoq";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { isForbidden } from "@/lib/api/unwrap";
+import { useModulePermission } from "@/lib/auth/useModulePermission";
 import "@/components/boq/boq.css";
 
 // Ekran 13 · İş Kalemleri (BOQ) — spec §2.1. Rota `[projectId]/layout.tsx`
@@ -21,6 +22,9 @@ export default function BoqPage() {
   // cektiginden ikinci bir ag istegi olusmaz (React Query onbellegi).
   const siteQuery = useSite(siteId);
   const boqQuery = useBoq(siteId);
+  // Yazma yuzeyleri kapisi (spec §2.5). Yetki zorlamasi HER ZAMAN backend'de;
+  // bu kapi yalniz salt-okunur role calismayan buton gostermemek icin.
+  const { canWrite } = useModulePermission("boq");
 
   if (isForbidden(boqQuery.error) || isForbidden(siteQuery.error)) return <AccessDenied />;
 
@@ -41,14 +45,18 @@ export default function BoqPage() {
 
       <div className="boq__title-bar">
         <h1 className="boq__title">İş Kalemleri (BOQ)</h1>
-        {/* Iki buton da bu task'ta islevsizdir; davranis F8/F9'da baglanir. */}
+        {/* Iki buton da bu task'ta islevsizdir; davranis F8/F9'da baglanir.
+            "Excel Indir" okuma ucudur (`boq:view` yeter) → HER ZAMAN gorunur;
+            "+ Is Kalemi" yazma yuzeyidir → izin kapisinin arkasinda (§2.5). */}
         <div className="boq__actions">
           <Button variant="secondary" className="boq-action">
             Excel İndir
           </Button>
-          <Button variant="primary" className="boq-action boq-action--primary">
-            + İş Kalemi
-          </Button>
+          {canWrite && (
+            <Button variant="primary" className="boq-action boq-action--primary">
+              + İş Kalemi
+            </Button>
+          )}
         </div>
       </div>
 
@@ -56,15 +64,23 @@ export default function BoqPage() {
           dordu de yer tutucudur (spec §4). */}
       <BoqTotalsStrip totals={boqQuery.data?.totals} />
 
-      <BoqBody isError={boqQuery.isError} data={boqQuery.data} />
+      <BoqBody isError={boqQuery.isError} data={boqQuery.data} canWrite={canWrite} />
     </div>
   );
 }
 
 // Durum dallari (spec §9): 403 sayfa duzeyinde yakalanir, kalan iki dal burada.
 // Baslik seridi ve kart seridi her durumda basilir, yalniz govde degisir.
-function BoqBody({ isError, data }: { isError: boolean; data?: BoqListResponse }) {
+function BoqBody({
+  isError,
+  data,
+  canWrite,
+}: {
+  isError: boolean;
+  data?: BoqListResponse;
+  canWrite: boolean;
+}) {
   if (isError) return <p className="boq__message">İş kalemleri yüklenemedi</p>;
   if (!data) return <p className="boq__message">Yükleniyor…</p>;
-  return <BoqTable groups={data.groups} totals={data.totals} />;
+  return <BoqTable groups={data.groups} totals={data.totals} canWrite={canWrite} />;
 }
