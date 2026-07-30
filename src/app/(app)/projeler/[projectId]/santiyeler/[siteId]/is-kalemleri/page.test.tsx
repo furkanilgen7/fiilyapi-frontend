@@ -1,0 +1,133 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen } from "@testing-library/react";
+
+import BoqPage from "./page";
+import { useSite } from "@/lib/api/hooks/useSites";
+import { useBoq } from "@/lib/api/hooks/useBoq";
+import { BackendError } from "@/lib/api/unwrap";
+import type { SiteDetail } from "@/lib/api/hooks/useSites";
+import type { BoqListResponse } from "@/lib/api/hooks/useBoq";
+
+vi.mock("@/lib/api/hooks/useSites", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useSites")>()),
+  useSite: vi.fn(),
+}));
+
+vi.mock("@/lib/api/hooks/useBoq", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useBoq")>()),
+  useBoq: vi.fn(),
+}));
+
+const PROJECT_ID = "11111111-1111-1111-1111-111111111111";
+const SITE_ID = "44444444-4444-4444-4444-444444444444";
+
+vi.mock("next/navigation", () => ({
+  useParams: () => ({ projectId: PROJECT_ID, siteId: SITE_ID }),
+}));
+
+const SITE = {
+  id: SITE_ID,
+  name: "A-Blok Şantiyesi",
+  project: { id: PROJECT_ID, name: "Güneşkent Konut" },
+} as unknown as SiteDetail;
+
+const EMPTY_BOQ: BoqListResponse = {
+  groups: [],
+  totals: {
+    contract_total: { available: false, value: null, pending_module: "contracts" },
+    realized_total: { available: false, value: null, pending_module: "progress_payments" },
+    remaining_total: { available: false, value: null, pending_module: "progress_payments" },
+    revision_total: { available: false, value: null, pending_module: "contracts" },
+    grand_total: "0.00",
+    grand_progress_pct: { available: false, value: null, pending_module: "progress_payments" },
+  },
+};
+
+function mockSite(value: Partial<ReturnType<typeof useSite>>) {
+  vi.mocked(useSite).mockReturnValue({
+    data: undefined,
+    isLoading: false,
+    isError: false,
+    error: null,
+    ...value,
+  } as never);
+}
+
+function mockBoq(value: Partial<ReturnType<typeof useBoq>>) {
+  vi.mocked(useBoq).mockReturnValue({
+    data: undefined,
+    isLoading: false,
+    isError: false,
+    error: null,
+    ...value,
+  } as never);
+}
+
+describe("BoqPage — durum dalları (spec §9)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSite({ data: SITE });
+  });
+
+  it("yükleniyorken Yükleniyor… basar", () => {
+    mockBoq({ isLoading: true });
+    render(<BoqPage />);
+    expect(screen.getByText("Yükleniyor…")).toBeInTheDocument();
+  });
+
+  it("403 alındığında AccessDenied basar", () => {
+    mockBoq({ isError: true, error: new BackendError(403, { detail: "yasak" }) });
+    render(<BoqPage />);
+    expect(screen.getByText("Bu alana yetkiniz yok")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 1, name: "İş Kalemleri (BOQ)" })).not.toBeInTheDocument();
+  });
+
+  it("diğer hatada İş kalemleri yüklenemedi basar", () => {
+    mockBoq({ isError: true, error: new Error("patladi") });
+    render(<BoqPage />);
+    expect(screen.getByText("İş kalemleri yüklenemedi")).toBeInTheDocument();
+  });
+});
+
+describe("BoqPage — başlık şeridi ve breadcrumb (mockup 62–67)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSite({ data: SITE });
+    mockBoq({ data: EMPTY_BOQ });
+  });
+
+  it("başlık İş Kalemleri (BOQ) olarak tek h1 ile basılır", () => {
+    render(<BoqPage />);
+    const headings = screen.getAllByRole("heading", { level: 1 });
+    expect(headings).toHaveLength(1);
+    expect(headings[0]).toHaveTextContent("İş Kalemleri (BOQ)");
+  });
+
+  it("iki eylem butonu mockup metinleriyle basılır (66, 67)", () => {
+    render(<BoqPage />);
+    expect(screen.getByRole("button", { name: "Excel İndir" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "+ İş Kalemi" })).toBeInTheDocument();
+  });
+
+  it("breadcrumb şantiyeye geri link verir ve proje/şantiye adını gösterir", () => {
+    render(<BoqPage />);
+    const back = screen.getByRole("link", { name: "← A-Blok Şantiyesi" });
+    expect(back).toHaveAttribute("href", `/projeler/${PROJECT_ID}/santiyeler/${SITE_ID}`);
+    expect(screen.getByText(/Güneşkent Konut \/ A-Blok Şantiyesi/)).toBeInTheDocument();
+  });
+
+  // Onaylı sapma C (spec §2.3, §13): sözleşme numarası uydurulmaz, görünür yer
+  // tutucu da basılmaz.
+  it("breadcrumb sözleşme numarası basmaz", () => {
+    render(<BoqPage />);
+    expect(screen.queryByText(/SZL-/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Sözleşme/)).not.toBeInTheDocument();
+  });
+
+  it("şantiye yüklenmemişken breadcrumb hiç basılmaz (uydurma etiket yok)", () => {
+    mockSite({ isLoading: true });
+    render(<BoqPage />);
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "İş Kalemleri (BOQ)" })).toBeInTheDocument();
+  });
+});

@@ -71,14 +71,18 @@ function contextGroup(ctx: ProjectNavContext): DrillNavGroup {
   };
 }
 
-// Aktif şantiyenin 6 sekmesi (spec §3.3): Bölümler kendi rotası, kalan 5'i
-// henüz yazılmamış — catch-all'a düşer.
+// Aktif şantiyenin 7 sekmesi (spec §3.3): Bölümler ve İş Kalemleri kendi
+// rotaları, kalan 5'i henüz yazılmamış — catch-all'a düşer.
+//
+// "İş Kalemleri" Ekran 13 spec §2.2 ile eklendi (onaylı sapma B, §13); sıra
+// SiteDetailTabs.tsx ile birebir aynıdır — ikisi ayrışmamalıdır.
 function activeSiteGroup(ctx: Required<Pick<ProjectNavContext, "siteId" | "siteName">> & ProjectNavContext): DrillNavGroup {
   const base = `/projeler/${ctx.projectId}/santiyeler/${ctx.siteId}`;
   return {
     heading: ctx.siteName,
     items: [
       { label: "Bölümler", href: base, emoji: "📍" },
+      { label: "İş Kalemleri", href: `${base}/is-kalemleri`, emoji: "📐" },
       { label: "Puantaj", href: `${base}/puantaj`, emoji: "👷" },
       { label: "Stok", href: `${base}/stok`, emoji: "📦" },
       { label: "Hakedişler", href: `${base}/hakedisler`, emoji: "📋" },
