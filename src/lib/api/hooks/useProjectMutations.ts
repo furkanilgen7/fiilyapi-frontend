@@ -10,7 +10,7 @@ export type ProjectCreateRequest = components["schemas"]["ProjectCreate"];
 
 // Task F4 — spec §3.3: "code" bos birakilirsa sunucu otomatik uretir (§3.5),
 // ama bu yalniz alan HIC GONDERILMEZSE calisir — bos string "" gonderilirse
-// 1..50 dogrulamasi patlar. SiteFormModal'daki cagiran-taraf deseninin (spec
+// 1..50 dogrulamasi patlar. Santiye formundaki cagiran-taraf deseninin (spec
 // yorumu, satir 58) aksine burada hook seviyesinde normallestiriyoruz: F12
 // henuz yazilmadigindan tek cagiran nokta bu, ileride cagiranlar da bos
 // string yollarsa gene korunur.

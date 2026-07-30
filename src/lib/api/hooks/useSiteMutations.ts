@@ -2,16 +2,22 @@ import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/r
 import { backendClient } from "@/lib/api/client";
 import { unwrap } from "@/lib/api/unwrap";
 import type { components } from "@/lib/api/schema";
-import { SITES_QUERY_KEY, type SiteListItem } from "./useSites";
+import { SITES_QUERY_KEY } from "./useSites";
 import { PROJECT_QUERY_KEY } from "./useProjects";
 
 export type SiteCreateRequest = components["schemas"]["SiteCreate"];
 
-// Task 7 — SiteFormModal'in olusturma ucu. useSites(projectId) deseniyle ayni:
+/**
+ * 201 yaniti `SiteDetailResponse`'tur (openapi.json). Yeni santiyenin detay
+ * sayfasina yonlendirme bu tipin `id` alanina dayanir (spec §12).
+ */
+export type SiteCreateResponse = components["schemas"]["SiteDetailResponse"];
+
+// Santiye olusturma ucu (T10'dan beri tam sayfa form kullanir). useSites(projectId) deseniyle ayni:
 // projectId hook'a baglanir, mutate yalnizca govdeyi alir. site_count (proje
 // hero seridinde) proje detay sorgusundan geldigi icin hem SITES hem PROJECT
 // sorgu anahtari gecersiz kilinir (liste + hero ayni anda tazelenmeli).
-export function useCreateSite(projectId: string): UseMutationResult<SiteListItem, Error, SiteCreateRequest> {
+export function useCreateSite(projectId: string): UseMutationResult<SiteCreateResponse, Error, SiteCreateRequest> {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (body) =>

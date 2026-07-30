@@ -12,9 +12,16 @@ import { backendErrorMessage } from "@/lib/settings/error-message";
 import { BasicInfoCard } from "./BasicInfoCard";
 import { BudgetCard, type BudgetValues } from "./BudgetCard";
 import { ContractCard, type ContractValues } from "./ContractCard";
-import { DocumentsPlaceholderCard } from "./DocumentsPlaceholderCard";
+import { DocumentsPlaceholderCard, FormActions } from "@/components/form-shell";
 import { EmployerCard, type EmployerValues } from "./EmployerCard";
-import { FormActions } from "./FormActions";
+import {
+  PROJECT_DOCUMENTS,
+  PROJECT_DOCUMENTS_DROP_SUBTITLE,
+  PROJECT_DOCUMENTS_DROP_TITLE,
+  PROJECT_DOCUMENTS_NOTE,
+  PROJECT_DOCUMENTS_SOON_TITLE,
+  PROJECT_DOCUMENTS_TITLE,
+} from "./documents";
 import { ProjectTypeCards } from "./ProjectTypeCards";
 import { SiteRepeaterCard, type SiteRow } from "./SiteRepeaterCard";
 import {
@@ -37,6 +44,8 @@ import {
   validateProjectForm,
   type ProjectFormErrors,
 } from "./validate";
+// Sıra önemli: önce paylaşılan kabuk, sonra forma özgü bloklar (özgü kazansın).
+import "@/styles/form-shell.css";
 import "./project-form.css";
 
 /** Şantiye Şefi seçicisini besleyen kullanıcı listesi (§4.7, §7.9). */
@@ -262,7 +271,14 @@ export function ProjectCreateView() {
             errors={errors.budget}
           />
 
-          <DocumentsPlaceholderCard />
+          <DocumentsPlaceholderCard
+            title={PROJECT_DOCUMENTS_TITLE}
+            note={PROJECT_DOCUMENTS_NOTE}
+            items={PROJECT_DOCUMENTS}
+            dropTitle={PROJECT_DOCUMENTS_DROP_TITLE}
+            dropSubtitle={PROJECT_DOCUMENTS_DROP_SUBTITLE}
+            soonTitle={PROJECT_DOCUMENTS_SOON_TITLE}
+          />
         </div>
 
         {formError && (
@@ -275,6 +291,7 @@ export function ProjectCreateView() {
           onCancel={handleCancel}
           onSaveDraft={() => submit(true)}
           onSubmit={() => submit(false)}
+          submitLabel="Projeyi Oluştur"
           isPending={createProject.isPending}
         />
       </div>

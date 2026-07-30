@@ -227,10 +227,14 @@ export interface paths {
          * Delete Boq Item Endpoint
          * @description Frontend F13 (kalem silme) bu uca baglidir.
          *
-         *     Kapi `_FULL`'dir — PATCH ile AYNI: silme BOQ yazma izninin parcasi sayilir.
-         *     (`app/core/access.py` §5.0'in "silme yalniz admin" kurali `can_delete`
-         *     uzerinden taslak yasam dongusu tasiyan kayitlar icindir; `BoqItem`'da
-         *     `created_by`/`is_draft` yoktur, dolayisiyla o kural uygulanamaz.)
+         *     KULLANICI KARARI 2026-07-30: kapi `_ADMIN`'dir, PATCH'ten (`_FULL`) BIR
+         *     SEVIYE YUKARI. Gerekce `app/core/access.py`'deki kuraldir: "full silmeyi
+         *     KAPSAMAZ — silme yalnizca admin seviyesindedir". Boylece uc, mevcut
+         *     `users`/`roles`/sirket logosu DELETE uclariyla tutarli hâle gelir.
+         *
+         *     BILINEN SONUC (kabul edildi): seed matrisinde `boq:admin` yalniz
+         *     `system_admin`'dedir; proje muduru dahil kimse kalem SILEMEZ, silme talebi
+         *     sistem yoneticisine gider. Bu BEKLENEN davranistir, hata degil.
          */
         delete: operations["delete_boq_item_endpoint_boq_items__item_id__delete"];
         options?: never;
@@ -499,7 +503,19 @@ export interface paths {
         get: operations["get_site_endpoint_sites__site_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Site Endpoint
+         * @description Spec §7.1. CASCADE KORKULUGU servistedir — bolum/poz/blok varsa 409.
+         *
+         *     Yetki kapisi korkuluktan ONCE calisir: yetkisiz aktor 403 alir ve santiyenin
+         *     bagli kayit tasiyip tasimadigini OGRENEMEZ. Gorunmeyen santiye 404 doner ve
+         *     govdesi var olmayan UUID'ninkiyle BIREBIR AYNIDIR.
+         *
+         *     Yanit `204 No Content`, GOVDESIZ. Denetim metni servis icinde, satir yok
+         *     olmadan ONCE kurulur; engellenen silme (409) istisna attigi icin buraya hic
+         *     gelmez ve gunluge satir dusmez.
+         */
+        delete: operations["delete_site_endpoint_sites__site_id__delete"];
         options?: never;
         head?: never;
         /** Update Site Endpoint */
@@ -534,7 +550,17 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Section Endpoint
+         * @description Spec §7.1. Bolum silme KOSULSUZDUR: `sections.id`'yi hedefleyen FK yok.
+         *
+         *     Kapi `_ADMIN`'dir — bolum santiyenin ic kirilimi oldugu icin `sites`
+         *     modulunun seviyeleri kullanilir, AYRI izin modulu acilmaz.
+         *
+         *     Yanit `204 No Content`, GOVDESIZ. Denetim metni servis icinde, satir yok
+         *     olmadan ONCE kurulur.
+         */
+        delete: operations["delete_section_endpoint_sections__section_id__delete"];
         options?: never;
         head?: never;
         /** Update Section Endpoint */
@@ -605,6 +631,11 @@ export interface paths {
          * Delete Block Endpoint
          * @description Spec §7.9. CASCADE YOK: unitesi olan blok 409 ile reddedilir — 24 daireyi
          *     tek istekte silmek geri alinamaz veri kaybidir.
+         *
+         *     KULLANICI KARARI 2026-07-30: kapi `_ADMIN`'dir (bkz. `delete_unit_endpoint`
+         *     gerekcesi) — `app/core/access.py`: "full silmeyi KAPSAMAZ". Yetki kapisi
+         *     409 korkulugundan ONCE calisir: yetkisiz aktor 403 alir, blogun unite
+         *     tasiyip tasimadigini OGRENEMEZ.
          */
         delete: operations["delete_block_endpoint_blocks__block_id__delete"];
         options?: never;
@@ -630,7 +661,19 @@ export interface paths {
         /**
          * Delete Unit Endpoint
          * @description Spec §7.9. Unite silme kosulsuzdur (P3'te uniteye bagli tablo yok, §1.3).
-         *     Gorunmeyen projenin unitesi 404 doner, 403 DEGIL.
+         *
+         *     KULLANICI KARARI 2026-07-30: kapi `_ADMIN`'dir, PATCH'ten (`_FULL`) BIR
+         *     SEVIYE YUKARI — `app/core/access.py`: "full silmeyi KAPSAMAZ — silme
+         *     yalnizca admin seviyesindedir". `users`/`roles`/sirket logosu DELETE
+         *     uclariyla tutarlilik saglanir.
+         *
+         *     BILINEN SONUC (kabul edildi): seed matrisinde `projects:admin` yalniz
+         *     `system_admin`'dedir; proje muduru dahil kimse silemez.
+         *
+         *     Gorunurluk kurali DEGISMEDI (gorunmeyen projenin unitesi 404, 403 degil)
+         *     fakat `projects:admin` gorunurluk suzgecini zaten atladigindan (spec §5.2)
+         *     bu dalin HTTP uzerinden ULASILABILIR bir senaryosu kalmamistir; kural
+         *     `guards.visible_unit`'te ve PATCH ucunda (hâlâ `full`) yerinde durur.
          */
         delete: operations["delete_unit_endpoint_units__unit_id__delete"];
         options?: never;
@@ -1864,6 +1907,8 @@ export interface components {
             name: string;
             /** @default planned */
             status: components["schemas"]["SectionStatus"];
+            /** Manager User Id */
+            manager_user_id?: string | null;
             /** Manager Name */
             manager_name?: string | null;
             /** Start Date */
@@ -1898,6 +1943,8 @@ export interface components {
             /** Name */
             name: string;
             status: components["schemas"]["SectionStatus"];
+            /** Manager User Id */
+            manager_user_id?: string | null;
             /** Manager Name */
             manager_name: string | null;
             /** Start Date */
@@ -1938,6 +1985,8 @@ export interface components {
             /** Name */
             name?: string | null;
             status?: components["schemas"]["SectionStatus"] | null;
+            /** Manager User Id */
+            manager_user_id?: string | null;
             /** Manager Name */
             manager_name?: string | null;
             /** Start Date */
@@ -2002,6 +2051,37 @@ export interface components {
             section_count: number;
             worker_count: components["schemas"]["CountPlaceholder"];
             progress_pct: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            /** Is Draft */
+            is_draft: boolean;
+            /** Site Manager User Id */
+            site_manager_user_id: string | null;
+            /** Safety Officer User Id */
+            safety_officer_user_id: string | null;
+            /** Safety Officer Name */
+            safety_officer_name: string | null;
+            /** Safety Officer Is Outsourced */
+            safety_officer_is_outsourced: boolean;
+            /** Neighborhood */
+            neighborhood: string | null;
+            /** Parcel */
+            parcel: string | null;
+            /** Gps Coordinates */
+            gps_coordinates: string | null;
+            /** Land Area M2 */
+            land_area_m2: string | null;
+            /** Construction Area M2 */
+            construction_area_m2: string | null;
+            /** Floor Info */
+            floor_info: string | null;
+            /** Budget */
+            budget: string | null;
+            facilities: components["schemas"]["SiteFacilities"];
+            /** Electricity Subscription No */
+            electricity_subscription_no: string | null;
+            /** Water Subscription No */
+            water_subscription_no: string | null;
+            /** Planned Worker Count */
+            planned_worker_count: number | null;
         };
         /** SiteCounts */
         SiteCounts: {
@@ -2013,28 +2093,70 @@ export interface components {
             on_hold: number;
             /** Completed */
             completed: number;
+            /** Draft */
+            draft: number;
         };
         /**
          * SiteCreate
-         * @description `contract_amount` YOK (spec §2.1) — santiye payi BOQ dagitiminin turevidir.
+         * @description Mockup "Şantiye Ekle" formunun tam govdesi (spec §6.1).
+         *
+         *     `contract_amount` YOK (spec §2.1) — santiye payi BOQ dagitiminin turevidir.
+         *     `duration_days` YOK (§3.6) — sure turevdir. `latitude`/`longitude` YOK (§3.5).
          */
         SiteCreate: {
-            /** Code */
-            code?: string | null;
             /** Name */
             name: string;
+            /** Code */
+            code?: string | null;
             /** @default active */
             status: components["schemas"]["SiteStatus"];
-            /** Address */
-            address?: string | null;
+            /** Site Manager User Id */
+            site_manager_user_id?: string | null;
+            /** Safety Officer User Id */
+            safety_officer_user_id?: string | null;
+            /**
+             * Safety Officer Is Outsourced
+             * @default false
+             */
+            safety_officer_is_outsourced: boolean;
             /** City */
             city?: string | null;
-            /** Site Manager Name */
-            site_manager_name?: string | null;
+            /** Neighborhood */
+            neighborhood?: string | null;
+            /** Parcel */
+            parcel?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Gps Coordinates */
+            gps_coordinates?: string | null;
+            /** Land Area M2 */
+            land_area_m2?: number | string | null;
+            /** Construction Area M2 */
+            construction_area_m2?: number | string | null;
+            /** Floor Info */
+            floor_info?: string | null;
             /** Start Date */
             start_date?: string | null;
             /** End Date */
             end_date?: string | null;
+            /** Budget */
+            budget?: number | string | null;
+            facilities?: components["schemas"]["SiteFacilitiesInput"];
+            /** Electricity Subscription No */
+            electricity_subscription_no?: string | null;
+            /** Water Subscription No */
+            water_subscription_no?: string | null;
+            /** Planned Worker Count */
+            planned_worker_count?: number | null;
+            /** Sections */
+            sections?: components["schemas"]["SiteSectionInput"][];
+            /**
+             * Is Draft
+             * @default false
+             */
+            is_draft: boolean;
+            /** Site Manager Name */
+            site_manager_name?: string | null;
             /** Delivery Date */
             delivery_date?: string | null;
         };
@@ -2070,12 +2192,142 @@ export interface components {
             section_count: number;
             worker_count: components["schemas"]["CountPlaceholder"];
             progress_pct: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            /** Is Draft */
+            is_draft: boolean;
+            /** Site Manager User Id */
+            site_manager_user_id: string | null;
+            /** Safety Officer User Id */
+            safety_officer_user_id: string | null;
+            /** Safety Officer Name */
+            safety_officer_name: string | null;
+            /** Safety Officer Is Outsourced */
+            safety_officer_is_outsourced: boolean;
+            /** Neighborhood */
+            neighborhood: string | null;
+            /** Parcel */
+            parcel: string | null;
+            /** Gps Coordinates */
+            gps_coordinates: string | null;
+            /** Land Area M2 */
+            land_area_m2: string | null;
+            /** Construction Area M2 */
+            construction_area_m2: string | null;
+            /** Floor Info */
+            floor_info: string | null;
+            /** Budget */
+            budget: string | null;
+            facilities: components["schemas"]["SiteFacilities"];
+            /** Electricity Subscription No */
+            electricity_subscription_no: string | null;
+            /** Water Subscription No */
+            water_subscription_no: string | null;
+            /** Planned Worker Count */
+            planned_worker_count: number | null;
             project: components["schemas"]["SiteProjectSummary"];
             section_status_counts: components["schemas"]["SectionStatusCounts"];
             /** Sections */
             sections: components["schemas"]["SectionResponse"][];
             total_progress_payment: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
             contract_amount: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+        };
+        /**
+         * SiteFacilities
+         * @description Cikis karsiligi — girisle AYNI sekiz alan (§6.2). Ayri sinif, cunku
+         *     giris/cikis sozlesmeleri zamanla ayrisabilir; bugun ayrisma yok.
+         */
+        SiteFacilities: {
+            /**
+             * Closed Warehouse
+             * @default false
+             */
+            closed_warehouse: boolean;
+            /**
+             * Open Storage
+             * @default false
+             */
+            open_storage: boolean;
+            /**
+             * Cold Storage
+             * @default false
+             */
+            cold_storage: boolean;
+            /**
+             * Site Office
+             * @default false
+             */
+            site_office: boolean;
+            /**
+             * Canteen
+             * @default false
+             */
+            canteen: boolean;
+            /**
+             * Changing Room Wc
+             * @default false
+             */
+            changing_room_wc: boolean;
+            /**
+             * Dormitory
+             * @default false
+             */
+            dormitory: boolean;
+            /**
+             * Infirmary
+             * @default false
+             */
+            infirmary: boolean;
+        };
+        /**
+         * SiteFacilitiesInput
+         * @description Mockup 153-155 (depo) + 161-165 (tesis). DB'de 8 DUZ Boolean kolon (§4).
+         *
+         *     API'de GRUPLU, DB'de duz: grup, mockup'taki gorsel kumelenmeyi tasir; duz
+         *     kolonlar ise sorgulanabilir ve indekslenebilir kalir (§4.2, JSONB DEGIL).
+         *
+         *     Sekizinin de varsayilani `False` — mockup'taki on-isaretler ORNEK VERIDIR,
+         *     varsayilan degildir (§14.2, karar 2026-07-30).
+         */
+        SiteFacilitiesInput: {
+            /**
+             * Closed Warehouse
+             * @default false
+             */
+            closed_warehouse: boolean;
+            /**
+             * Open Storage
+             * @default false
+             */
+            open_storage: boolean;
+            /**
+             * Cold Storage
+             * @default false
+             */
+            cold_storage: boolean;
+            /**
+             * Site Office
+             * @default false
+             */
+            site_office: boolean;
+            /**
+             * Canteen
+             * @default false
+             */
+            canteen: boolean;
+            /**
+             * Changing Room Wc
+             * @default false
+             */
+            changing_room_wc: boolean;
+            /**
+             * Dormitory
+             * @default false
+             */
+            dormitory: boolean;
+            /**
+             * Infirmary
+             * @default false
+             */
+            infirmary: boolean;
         };
         /** SiteListResponse */
         SiteListResponse: {
@@ -2112,33 +2364,93 @@ export interface components {
             employer_name: string | null;
         };
         /**
-         * SiteStatus
-         * @description project_status ile ayni ucludur ama AYRI enum'dur (spec §2.3): sirf bugun
-         *     ayni olduklari icin paylasilan bir enum'a baglamak, santiyeye ileride
-         *     `suspended` gibi bir durum eklemeyi imkansiz kilar.
-         * @enum {string}
+         * SiteSectionInput
+         * @description Form ici bolum satiri (mockup 119-124).
+         *
+         *     P2 `SectionCreate`'in YERINE GECMEZ; onun yaninda durur ve ayni `Section`
+         *     modelini yazar. Iki alan bilincli olarak YOKTUR:
+         *
+         *     * `estimated_amount` — "Tahmini Bedel" yer tutucudur, saklanmaz (§3.4).
+         *       Govdede gelirse Pydantic onu sessizce yok sayar.
+         *     * `sort_order` — sira govdeden gelmez, dizideki sirasindan atanir (0,1,2...).
          */
-        SiteStatus: "active" | "on_hold" | "completed";
-        /**
-         * SiteUpdate
-         * @description `project_id` YOK — santiye baska projeye tasinamaz.
-         */
-        SiteUpdate: {
+        SiteSectionInput: {
+            /** Name */
+            name: string;
             /** Code */
             code?: string | null;
-            /** Name */
-            name?: string | null;
-            status?: components["schemas"]["SiteStatus"] | null;
-            /** Address */
-            address?: string | null;
-            /** City */
-            city?: string | null;
-            /** Site Manager Name */
-            site_manager_name?: string | null;
+            /** Manager User Id */
+            manager_user_id?: string | null;
             /** Start Date */
             start_date?: string | null;
             /** End Date */
             end_date?: string | null;
+        };
+        /**
+         * SiteStatus
+         * @description project_status ile ayni ucludur ama AYRI enum'dur (spec §2.3): sirf bugun
+         *     ayni olduklari icin paylasilan bir enum'a baglamak, santiyeye ileride
+         *     `suspended` gibi bir durum eklemeyi imkansiz kilar.
+         *
+         *     Sira mockup satir 71'den gelir: Hazirlik · Aktif (secili) · Beklemede.
+         *     `completed` UI'da gorunmez ama KALIR — `SiteCounts.completed`, `_remaining_days`
+         *     ve P2 liste sekmesi ona baglidir (spec §3.1).
+         * @enum {string}
+         */
+        SiteStatus: "preparation" | "active" | "on_hold" | "completed";
+        /**
+         * SiteUpdate
+         * @description `project_id` YOK — santiye baska projeye tasinamaz.
+         *     `sections` YOK — bolumler mevcut P2 uclariyla yonetilir (§7.3).
+         *
+         *     Tum alanlar istege bagli; "gonderilmedi" ile "null yapildi" ayrimi
+         *     `model_fields_set`/`exclude_unset` ile korunur.
+         */
+        SiteUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Code */
+            code?: string | null;
+            status?: components["schemas"]["SiteStatus"] | null;
+            /** Site Manager User Id */
+            site_manager_user_id?: string | null;
+            /** Safety Officer User Id */
+            safety_officer_user_id?: string | null;
+            /** Safety Officer Is Outsourced */
+            safety_officer_is_outsourced?: boolean | null;
+            /** City */
+            city?: string | null;
+            /** Neighborhood */
+            neighborhood?: string | null;
+            /** Parcel */
+            parcel?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Gps Coordinates */
+            gps_coordinates?: string | null;
+            /** Land Area M2 */
+            land_area_m2?: number | string | null;
+            /** Construction Area M2 */
+            construction_area_m2?: number | string | null;
+            /** Floor Info */
+            floor_info?: string | null;
+            /** Start Date */
+            start_date?: string | null;
+            /** End Date */
+            end_date?: string | null;
+            /** Budget */
+            budget?: number | string | null;
+            facilities?: components["schemas"]["SiteFacilitiesInput"] | null;
+            /** Electricity Subscription No */
+            electricity_subscription_no?: string | null;
+            /** Water Subscription No */
+            water_subscription_no?: string | null;
+            /** Planned Worker Count */
+            planned_worker_count?: number | null;
+            /** Is Draft */
+            is_draft?: boolean | null;
+            /** Site Manager Name */
+            site_manager_name?: string | null;
             /** Delivery Date */
             delivery_date?: string | null;
         };
@@ -4243,6 +4555,49 @@ export interface operations {
             };
         };
     };
+    delete_site_endpoint_sites__site_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     update_site_endpoint_sites__site_id__patch: {
         parameters: {
             query?: never;
@@ -4360,6 +4715,49 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SectionResponse"];
                 };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_section_endpoint_sections__section_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                section_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Yetkisiz işlem */
             403: {

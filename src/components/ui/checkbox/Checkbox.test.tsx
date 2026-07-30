@@ -19,6 +19,22 @@ describe("Checkbox", () => {
     render(<Checkbox label="Kabul" disabled />);
     expect(screen.getByRole("checkbox")).toBeDisabled();
   });
+
+  // T2 — alt eylem şeridi kutucuğu (şantiye mockup satır 221: 15×15)
+  it("size verilmezse md kalir", () => {
+    render(<Checkbox label="Kabul" />);
+    expect(screen.getByRole("checkbox").className).not.toContain("checkbox--lg");
+  });
+
+  it("size=lg ui-checkbox--lg sinifini ekler", () => {
+    render(<Checkbox label="Kabul" size="lg" />);
+    expect(screen.getByRole("checkbox").className).toContain("checkbox--lg");
+  });
+
+  it("size prop'u DOM'un size ozniteligine sizmaz", () => {
+    render(<Checkbox label="Kabul" size="lg" />);
+    expect(screen.getByRole("checkbox")).not.toHaveAttribute("size");
+  });
 });
 
 describe("Radio", () => {

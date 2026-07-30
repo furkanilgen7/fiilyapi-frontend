@@ -8,7 +8,7 @@ import { useCreateEmployer } from "@/lib/api/hooks/useEmployerMutations";
 import type { EmployerListItem } from "@/lib/api/hooks/useEmployers";
 import { backendErrorMessage } from "@/lib/settings/error-message";
 import { taxNumberError } from "./validate";
-// SiteFormModal/SectionFormModal kanonu birebir izlenir: settings-form sinifi
+// SectionFormModal kanonu birebir izlenir: settings-form sinifi
 // settings.css'ten, etiket katmani ui/field/Field'den gelir.
 import "@/components/settings/settings.css";
 
@@ -24,7 +24,7 @@ interface EmployerFormModalProps {
  * cari kod, vergi dairesi, adres, IBAN, risk limiti, hissedar tekrarlayıcısı,
  * firma belgeleri) burada kısayol verilmez — henüz yok.
  *
- * SiteFormModal/SectionFormModal'dan tek sapma: oradaki 409 mesajı istemci
+ * SectionFormModal'dan tek sapma: oradaki 409 mesajı istemci
  * tarafında sabit bir Türkçe string (backend generic bir unique-violation
  * döndürdüğü için); burada backend zaten kullanıcıya hazır Türkçe mesaj
  * veriyor (bkz. backend service._DUPLICATE_TAX_NUMBER), bu yüzden

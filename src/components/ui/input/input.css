@@ -26,3 +26,12 @@
 .input-icon { position: absolute; display: inline-flex; color: var(--color-text-muted); pointer-events: none; }
 .input-icon--left { left: var(--space-3); }
 .input-icon--right { right: var(--space-3); }
+
+/* Satır-içi düzenleme tablosu varyantı — şantiye mockup `.row-in` (satır 27):
+   1px kenar, 6px köşe, 6/8px iç boşluk, 12px yazı. Ölçüler token'dan gelir. */
+.input--row {
+  font-size: var(--text-row-control);
+  border-width: var(--border-width-row-control);
+  border-radius: var(--radius-row-control);
+  padding: var(--space-row-control-y) var(--space-row-control-x);
+}

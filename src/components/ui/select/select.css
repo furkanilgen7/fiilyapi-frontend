@@ -22,3 +22,13 @@
   position: absolute; right: var(--space-3);
   display: inline-flex; color: var(--color-text-muted); pointer-events: none;
 }
+
+/* Satır-içi düzenleme tablosu varyantı — şantiye mockup `.row-in` (satır 27).
+   Sağ iç boşluk chevron'a yer açar; dikey ölçü .input--row ile birebir aynı. */
+.select--row {
+  font-size: var(--text-row-control);
+  border-width: var(--border-width-row-control);
+  border-radius: var(--radius-row-control);
+  padding: var(--space-row-control-y) var(--space-6) var(--space-row-control-y)
+    var(--space-row-control-x);
+}

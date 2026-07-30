@@ -101,3 +101,116 @@ describe("BOQ tip üretimi (Ekran 13 kapısı)", () => {
     expect([write, read]).toEqual(["full", "view"]);
   });
 });
+
+// Şantiye Ekle formu · Task T0 — sözleşme senkronu KAPISI (plan T0, spec §3, §3.2).
+// Bu blok `pnpm gen:api` çıktısını doğrular. Tipler elle yazılmaz; eksikse
+// `openapi/openapi.json` yeniden kopyalanıp üretici koşulur.
+describe("Şantiye formu sözleşmesi (T0 kapısı)", () => {
+  type SiteCreate = components["schemas"]["SiteCreate"];
+  type SiteUpdate = components["schemas"]["SiteUpdate"];
+  type SiteCard = components["schemas"]["SiteCard"];
+
+  it("SiteCreate 14 yeni skaler alanı taşır", () => {
+    expectTypeOf<SiteCreate>().toHaveProperty("site_manager_user_id");
+    expectTypeOf<SiteCreate>().toHaveProperty("safety_officer_user_id");
+    expectTypeOf<SiteCreate>().toHaveProperty("safety_officer_is_outsourced");
+    expectTypeOf<SiteCreate>().toHaveProperty("neighborhood");
+    expectTypeOf<SiteCreate>().toHaveProperty("parcel");
+    expectTypeOf<SiteCreate>().toHaveProperty("gps_coordinates");
+    expectTypeOf<SiteCreate>().toHaveProperty("land_area_m2");
+    expectTypeOf<SiteCreate>().toHaveProperty("construction_area_m2");
+    expectTypeOf<SiteCreate>().toHaveProperty("floor_info");
+    expectTypeOf<SiteCreate>().toHaveProperty("budget");
+    expectTypeOf<SiteCreate>().toHaveProperty("electricity_subscription_no");
+    expectTypeOf<SiteCreate>().toHaveProperty("water_subscription_no");
+    expectTypeOf<SiteCreate>().toHaveProperty("planned_worker_count");
+    expectTypeOf<SiteCreate>().toHaveProperty("is_draft");
+    expect(true).toBe(true);
+  });
+
+  it("aynı 14 alan SiteUpdate ve SiteCard şemalarında da vardır", () => {
+    expectTypeOf<SiteUpdate>().toHaveProperty("site_manager_user_id");
+    expectTypeOf<SiteUpdate>().toHaveProperty("safety_officer_is_outsourced");
+    expectTypeOf<SiteUpdate>().toHaveProperty("gps_coordinates");
+    expectTypeOf<SiteUpdate>().toHaveProperty("planned_worker_count");
+    expectTypeOf<SiteUpdate>().toHaveProperty("is_draft");
+    expectTypeOf<SiteCard>().toHaveProperty("site_manager_user_id");
+    expectTypeOf<SiteCard>().toHaveProperty("safety_officer_is_outsourced");
+    expectTypeOf<SiteCard>().toHaveProperty("gps_coordinates");
+    expectTypeOf<SiteCard>().toHaveProperty("planned_worker_count");
+    expectTypeOf<SiteCard>().toHaveProperty("is_draft");
+    expect(true).toBe(true);
+  });
+
+  it("facilities sekiz anahtarlı İÇ NESNEDİR, düz has_* alanı sızmaz", () => {
+    // İç nesne: gövdede `facilities: { ... }` olarak gider (spec §3.2.1).
+    const facilities = {
+      closed_warehouse: false,
+      open_storage: false,
+      cold_storage: false,
+      site_office: false,
+      canteen: false,
+      changing_room_wc: false,
+      dormitory: false,
+      infirmary: false,
+    } satisfies NonNullable<SiteCreate["facilities"]>;
+
+    expect(Object.keys(facilities)).toHaveLength(8);
+    // Düz `has_*` alanı üretilmemiş olmalı — eski anahtar seti kullanılmaz.
+    expectTypeOf<SiteCreate>().not.toHaveProperty("has_closed_warehouse");
+    expectTypeOf<SiteCreate>().not.toHaveProperty("has_site_office");
+    expectTypeOf<SiteCard>().toHaveProperty("facilities");
+    expectTypeOf<SiteUpdate>().toHaveProperty("facilities");
+  });
+
+  it("SiteCounts draft sayacını taşır", () => {
+    type SiteCounts = components["schemas"]["SiteCounts"];
+    expectTypeOf<SiteCounts>().toHaveProperty("draft");
+    expectTypeOf<SiteCounts["draft"]>().toEqualTypeOf<number>();
+    expect(true).toBe(true);
+  });
+
+  it("SiteStatus preparation değerini içerir", () => {
+    type SiteStatus = components["schemas"]["SiteStatus"];
+    const statuses: SiteStatus[] = ["preparation", "active", "on_hold", "completed"];
+    expect(statuses).toContain("preparation");
+  });
+
+  it("sections[] SiteSectionInput dizisidir: manager_user_id var, estimated_amount/sort_order YOK", () => {
+    type SectionInput = components["schemas"]["SiteSectionInput"];
+    const row = {
+      name: "A Blok",
+      manager_user_id: "11111111-1111-1111-1111-111111111111",
+      start_date: "2026-01-01",
+      end_date: "2026-06-30",
+    } satisfies SectionInput;
+
+    expectTypeOf<SectionInput>().toHaveProperty("manager_user_id");
+    expectTypeOf<SectionInput>().not.toHaveProperty("estimated_amount");
+    expectTypeOf<SectionInput>().not.toHaveProperty("sort_order");
+    expectTypeOf<SectionInput>().not.toHaveProperty("manager_name");
+    expectTypeOf<NonNullable<SiteCreate["sections"]>>().toEqualTypeOf<SectionInput[]>();
+    expect(row.name).toBe("A Blok");
+  });
+
+  it("SectionResponse manager_user_id taşır", () => {
+    type SectionResponse = components["schemas"]["SectionResponse"];
+    expectTypeOf<SectionResponse>().toHaveProperty("manager_user_id");
+    expect(true).toBe(true);
+  });
+
+  it("duration_days hiçbir şantiye şemasında YOKTUR (süre türevdir, spec §3.6)", () => {
+    expectTypeOf<SiteCreate>().not.toHaveProperty("duration_days");
+    expectTypeOf<SiteUpdate>().not.toHaveProperty("duration_days");
+    expectTypeOf<SiteCard>().not.toHaveProperty("duration_days");
+    expectTypeOf<components["schemas"]["SiteDetailResponse"]>().not.toHaveProperty("duration_days");
+    expect(true).toBe(true);
+  });
+
+  it("UserResponse title alanını taşır (seçici etiketi buna bağlı, spec §11.2)", () => {
+    type UserResponse = components["schemas"]["UserResponse"];
+    expectTypeOf<UserResponse>().toHaveProperty("title");
+    expectTypeOf<UserResponse>().toHaveProperty("full_name");
+    expect(true).toBe(true);
+  });
+});

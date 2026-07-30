@@ -12,6 +12,7 @@ const tokensCss = read("../../styles/tokens.css");
 const inputCss = read("./input/input.css");
 const selectCss = read("./select/select.css");
 const textareaCss = read("./textarea/textarea.css");
+const checkboxCss = read("./checkbox/checkbox.css");
 
 /** Verilen selector'un ilk kural blogunu (suslu parantez icini) dondurur. */
 function ruleBlock(css: string, selector: string): string {
@@ -127,5 +128,65 @@ describe("Textarea ayni form kontrolu olculerini tasir (F2)", () => {
     // (Acik Adres rows=2). Kutu genisleyebilir gorunmesin diye resize kapatilir.
     expect(declaration(textareaBlock, "line-height")).toBe("1.5");
     expect(declaration(textareaBlock, "resize")).toBe("none");
+  });
+});
+
+/* ── T2: satır-içi kontrol varyantı (şantiye mockup .row-in, satır 27) ─────── */
+
+const inputRowBlock = ruleBlock(inputCss, ".input--row");
+const selectRowBlock = ruleBlock(selectCss, ".select--row");
+
+describe("row-control varyanti (mockup .row-in, satir 27)", () => {
+  it("tokens.css row-control olculerini tanimlar", () => {
+    expect(tokensCss).toMatch(/--space-row-control-y:\s*6px/);
+    expect(tokensCss).toMatch(/--space-row-control-x:\s*8px/);
+    expect(tokensCss).toMatch(/--text-row-control:\s*12px/);
+    expect(tokensCss).toMatch(/--border-width-row-control:\s*1px/);
+    expect(tokensCss).toMatch(/--radius-row-control:\s*var\(--radius-6\)/);
+  });
+
+  it("tokens.css --size-checkbox-lg tanimlar", () => {
+    expect(tokensCss).toMatch(/--size-checkbox-lg:\s*15px/);
+  });
+
+  it("input size=row ve select size=row ayni yuksekligi uretir", () => {
+    // Yukseklik = dikey ic bosluk + kenarlik + satir yuksekligi. Ucu de esit olmali.
+    const verticalPadding = (block: string): string =>
+      declaration(block, "padding").split(" ")[0];
+    expect(verticalPadding(inputRowBlock)).toBe("var(--space-row-control-y)");
+    expect(verticalPadding(selectRowBlock)).toBe("var(--space-row-control-y)");
+    expect(declaration(inputRowBlock, "border-width")).toBe(
+      declaration(selectRowBlock, "border-width"),
+    );
+    expect(declaration(inputRowBlock, "font-size")).toBe(
+      declaration(selectRowBlock, "font-size"),
+    );
+  });
+
+  it("row varyanti cıplak px kullanmaz, token'a baglidir", () => {
+    for (const block of [inputRowBlock, selectRowBlock]) {
+      expect(block).not.toMatch(/\d+px/);
+      expect(declaration(block, "font-size")).toBe("var(--text-row-control)");
+      expect(declaration(block, "border-width")).toBe(
+        "var(--border-width-row-control)",
+      );
+      expect(declaration(block, "border-radius")).toBe(
+        "var(--radius-row-control)",
+      );
+    }
+  });
+
+  it("checkbox lg varyanti --size-checkbox-lg'ye baglidir", () => {
+    const block = ruleBlock(checkboxCss, ".checkbox--lg");
+    expect(declaration(block, "width")).toBe("var(--size-checkbox-lg)");
+    expect(declaration(block, "height")).toBe("var(--size-checkbox-lg)");
+    expect(block).not.toMatch(/\d+px/);
+  });
+
+  it("varsayilan (size'siz) olculer degismedi — mevcut cagri noktalari korunur", () => {
+    // Regresyon kapisi: .input / .select temel bloklari .f-in olcusunde kalir.
+    expect(declaration(inputBlock, "font-size")).toBe("var(--text-body)");
+    expect(declaration(selectBlock, "font-size")).toBe("var(--text-body)");
+    expect(declaration(inputBlock, "border")).toMatch(/var\(--border-width-form\)/);
   });
 });

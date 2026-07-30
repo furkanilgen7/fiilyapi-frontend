@@ -1,0 +1,225 @@
+/* Şantiye Ekle formuna özgü bloklar.
+   Mockup: projedesign "Form - Santiye Ekle.dc.html" (1440px).
+   Paylaşılan `.pf-*` kabuğu `src/styles/form-shell.css`'tedir; bu dosya ONDAN
+   SONRA import edilir (özgü olan kazansın). Çıplak hex/px yok — tokens.css. */
+
+/* ── "Bağlı Proje" bilgi kutusu (mockup satır 53–60) ─────────────────────── */
+/* 53: bg #eff6ff; border 1px #bfdbfe; radius 12px; padding 14px 18px; mb 16px */
+.site-form__info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--color-nav-active-bg);
+  border: 1px solid var(--color-primary-ring);
+  border-radius: var(--radius-lg);
+  padding: var(--space-info-banner-y) var(--space-info-banner-x);
+  margin-bottom: var(--space-4);
+}
+
+/* 54: 20×20 svg, çizgi #2563eb */
+.site-form__info-icon {
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+/* 55: 12px #1d4ed8; line-height 1.7 */
+.site-form__info-text {
+  flex: 1;
+  font-size: var(--text-xs);
+  color: var(--color-primary-hover);
+  line-height: var(--leading-loose);
+}
+
+/* 59: 12px/600; white-space nowrap — edilgen (§1.2, tıklanamaz yer tutucu) */
+.site-form__info-link {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  color: var(--color-primary);
+  cursor: default;
+}
+
+/* Proje yüklenirken (spec §12): satır yüksekliğini koruyan gri şerit. */
+.site-form__info-skeleton {
+  display: block;
+  width: 60%;
+  /* 12px yazı × 1.7 satır yüksekliği = bilgi kutusunun iki satırından biri */
+  height: calc(var(--text-xs) * var(--leading-loose));
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-6);
+}
+
+/* ── Alt eylem şeridi (mockup satır 219–223) ─────────────────────────────── */
+/* 220: kutucuk metni 13px #475569. Kutucuk edilgen yer tutucudur (spec §4.7),
+   bu yüzden imleç "pointer" değil "default" kalır. */
+.pf-actions--split > .checkbox-label {
+  color: var(--color-text-secondary);
+  cursor: default;
+}
+
+/* Proje bulunamadı / yüklenemedi durumu (spec §12) */
+.site-form__message {
+  padding: var(--space-8);
+  text-align: center;
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+}
+.site-form__message a {
+  color: var(--color-primary);
+}
+
+/* Kişi seçicilerinin altındaki durum notu (spec §9.2.1, §10.1.1).
+   Ölçü `.field__hint` ile aynıdır; sessiz boş açılır liste yasak olduğu için
+   bu satır HER durumda basılır. */
+.site-form__picker-note {
+  margin-top: var(--space-2);
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* ── 🏗 Bölümler (Fazlar) tablosu (mockup satır 102–144, spec §4.4) ───────── */
+/* Kart diğerlerinden farklıdır: iç boşluk yok, tablo kenarlara dayanır (102). */
+.pf-card--flush {
+  padding: 0;
+  overflow: hidden;
+}
+.sections__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-card-head-gap);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+.sections__title {
+  margin-bottom: 0;
+}
+.sections__note {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+.sections__add-link {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+.sections__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.sections__table thead tr {
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.sections__th {
+  padding: var(--space-section-cell-y) var(--space-section-cell-x);
+  text-align: left;
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-section-head);
+}
+.sections__th--name {
+  padding-left: var(--space-section-cell-x-lead);
+  padding-right: var(--space-section-cell-x-lead);
+}
+.sections__th--responsible {
+  width: var(--width-col-responsible);
+}
+.sections__th--date {
+  width: var(--width-col-date);
+  text-align: center;
+}
+.sections__th--amount {
+  width: var(--width-col-amount);
+  text-align: right;
+}
+.sections__th--action {
+  width: var(--width-col-action);
+}
+.sections__row {
+  border-bottom: 1px solid var(--color-divider);
+}
+.sections__cell {
+  padding: var(--space-section-cell-y) var(--space-section-cell-x);
+}
+.sections__cell--lead {
+  padding-left: var(--space-section-cell-x-lead);
+  padding-right: var(--space-section-cell-x-lead);
+}
+/* Yer tutucu hücre: kontrol yok, yalnız "—" (123). */
+.sections__cell--amount {
+  text-align: right;
+  color: var(--color-text-subtle);
+}
+.sections__cell--action {
+  text-align: center;
+}
+.sections__remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-subtle);
+  font-size: var(--text-body);
+}
+.sections__empty {
+  padding: var(--space-5);
+  text-align: center;
+  font-size: var(--text-body);
+  color: var(--color-text-subtle);
+}
+.sections__add-row {
+  background: var(--color-surface-2);
+}
+.sections__add-row > td {
+  padding: var(--space-section-cell-y) var(--space-section-cell-x-lead);
+}
+.sections__add-dashed {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: none;
+  border: 1px dashed var(--color-dashed-border);
+  border-radius: var(--radius-7);
+  padding: var(--space-dashed-btn-y) var(--space-dashed-btn-x);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+/* Hatalar TABLONUN ALTINDA listelenir: hücre içi mesaj tabloyu zıplatır (§6.5). */
+.sections__issues {
+  margin: 0;
+  padding: var(--space-3) var(--space-5);
+  list-style: none;
+  font-size: var(--text-small);
+  color: var(--color-danger);
+}
+.sections__picker-note {
+  padding: 0 var(--space-5) var(--space-4);
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* ── 📦 Depo & Şantiye Altyapısı (mockup satır 147–174, spec §4.5) ────────── */
+.facilities__groups {
+  margin-bottom: var(--space-4);
+}
+/* Grup etiketi: tek kontrolü değil bir kümeyi adlandırır → <label> değil.
+   Tipografi `field.css`'in `.field__label` kuralından gelir (tek kaynak,
+   `field-adoption.test.ts` bunu kapıya bağlar); burada yalnız yerleşim var. */
+.facilities__group-label {
+  display: block;
+  margin-bottom: var(--space-form-label-gap);
+}
+.facilities__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-checkbox-list-gap);
+  padding: var(--space-3);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-9);
+}

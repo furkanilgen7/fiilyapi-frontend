@@ -7,6 +7,7 @@ import SiteDetailPage from "./page";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { BackendError } from "@/lib/api/unwrap";
 import type { SiteDetail } from "@/lib/api/hooks/useSites";
+import { SITE_CONTRACT_DEFAULTS } from "@/lib/api/hooks/site-fixtures";
 
 vi.mock("@/lib/api/hooks/useSites", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useSites")>()),
@@ -22,6 +23,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 const SITE: SiteDetail = {
+  ...SITE_CONTRACT_DEFAULTS,
   id: SITE_ID,
   code: "A-BLOK",
   name: "A-Blok Şantiyesi",

@@ -13,6 +13,8 @@ export interface SiteCardProps {
 }
 
 const STATUS_LABELS: Record<SiteListItem["status"], string> = {
+  // T0 (2026-07-30): backend `site_status`'e `preparation` eklendi.
+  preparation: "Hazırlık",
   active: "Aktif",
   on_hold: "Beklemede",
   completed: "Tamamlandı",
@@ -21,6 +23,8 @@ const STATUS_LABELS: Record<SiteListItem["status"], string> = {
 // Rozet stili duruma gore ayri sinif tasir — on_hold'u "aktif" (yesil) grubuna
 // dusurmemek icin kendi (--pending, notr) sinifi var (kod inceleme bulgusu).
 const STATUS_BADGE_CLASS: Record<SiteListItem["status"], string> = {
+  // Hazirlik henuz basslamamis is demek — notr rozet grubuna girer.
+  preparation: "site-card__status--pending",
   active: "site-card__status--active",
   on_hold: "site-card__status--pending",
   completed: "site-card__status--muted",

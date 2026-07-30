@@ -30,4 +30,29 @@ describe("Input", () => {
     render(<Input aria-label="Ad" disabled />);
     expect(screen.getByRole("textbox")).toBeDisabled();
   });
+
+  // T2 — satır-içi düzenleme tablosu varyantı (şantiye mockup .row-in, satır 27)
+  it("size verilmezse form varyanti sinifi basilir (row YOK)", () => {
+    render(<Input aria-label="Ad" />);
+    const el = screen.getByRole("textbox");
+    expect(el.className).toContain("input");
+    expect(el.className).not.toContain("input--row");
+  });
+
+  it("size=row ui-input--row sinifini ekler", () => {
+    render(<Input aria-label="Bolum adi" size="row" />);
+    expect(screen.getByRole("textbox").className).toContain("input--row");
+  });
+
+  it("size=row status=error ile birlikte calisir", () => {
+    render(<Input aria-label="Bolum adi" size="row" status="error" />);
+    const el = screen.getByRole("textbox");
+    expect(el.className).toContain("input--row");
+    expect(el.className).toContain("input--error");
+  });
+
+  it("size prop'u DOM'un size ozniteligine sizmaz", () => {
+    render(<Input aria-label="Bolum adi" size="row" />);
+    expect(screen.getByRole("textbox")).not.toHaveAttribute("size");
+  });
 });

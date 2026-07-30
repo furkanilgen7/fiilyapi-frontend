@@ -3,8 +3,10 @@ import { render, screen, within, fireEvent } from "@testing-library/react";
 
 import { SiteHeroBar } from "./SiteHeroBar";
 import type { SiteDetail } from "@/lib/api/hooks/useSites";
+import { SITE_CONTRACT_DEFAULTS } from "@/lib/api/hooks/site-fixtures";
 
 const SITE: SiteDetail = {
+  ...SITE_CONTRACT_DEFAULTS,
   id: "44444444-4444-4444-4444-444444444444",
   code: "A-BLOK",
   name: "A-Blok Şantiyesi",
