@@ -29,3 +29,15 @@ describe("project-detail.css — focus-visible kural metni var mı (regresyon ko
     expect(css).toMatch(/\.site-card__chip:focus-visible\s*{[^}]*--focus-ring/);
   });
 });
+
+describe("project-detail.css — '+ Şantiye Ekle' <a> olarak da buton gibi görünür (T11)", () => {
+  // Buton → bağlantı dönüşümü (spec §2.3): sınıf korunur ama tarayıcının
+  // varsayılan <a> davranışı (altı çizili, satır içi kutu) stili kaydırır.
+  it("add-btn alti cizili DEGILDIR", () => {
+    expect(css).toMatch(/\.project-detail__add-btn\s*{[^}]*text-decoration:\s*none/);
+  });
+
+  it("add-btn inline-block kutu uretir (dolgu ve satir yuksekligi butonla ayni kalsin)", () => {
+    expect(css).toMatch(/\.project-detail__add-btn\s*{[^}]*display:\s*inline-block/);
+  });
+});

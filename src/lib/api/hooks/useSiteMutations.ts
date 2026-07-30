@@ -13,7 +13,7 @@ export type SiteCreateRequest = components["schemas"]["SiteCreate"];
  */
 export type SiteCreateResponse = components["schemas"]["SiteDetailResponse"];
 
-// Task 7 — SiteFormModal'in olusturma ucu. useSites(projectId) deseniyle ayni:
+// Santiye olusturma ucu (T10'dan beri tam sayfa form kullanir). useSites(projectId) deseniyle ayni:
 // projectId hook'a baglanir, mutate yalnizca govdeyi alir. site_count (proje
 // hero seridinde) proje detay sorgusundan geldigi icin hem SITES hem PROJECT
 // sorgu anahtari gecersiz kilinir (liste + hero ayni anda tazelenmeli).

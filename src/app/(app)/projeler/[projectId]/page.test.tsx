@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import ProjectDetailPage from "./page";
 import { useProject } from "@/lib/api/hooks/useProjects";
@@ -120,7 +121,7 @@ describe("ProjectDetailPage", () => {
     render(<ProjectDetailPage />);
     expect(screen.getByRole("heading", { level: 1, name: "Güneşkent Konut" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Şantiyeler (2)" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "+ Şantiye Ekle" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "+ Şantiye Ekle" })).toBeInTheDocument();
   });
 
   it("santiyesiz projede durust bos durum basar (spec §7.4)", () => {
@@ -133,9 +134,9 @@ describe("ProjectDetailPage", () => {
   it("bos durum kendi + Santiye Ekle eylemini tasir ve hata gibi gorunmez", () => {
     mockQuery({ data: { ...PROJECT, site_count: 0 } });
     render(<ProjectDetailPage />);
-    const buttons = screen.getAllByRole("button", { name: "+ Şantiye Ekle" });
-    // Ust bar + bos durum: ayni eylemi paylasan iki buton (spec §7.4).
-    expect(buttons).toHaveLength(2);
+    const links = screen.getAllByRole("link", { name: "+ Şantiye Ekle" });
+    // Ust bar + bos durum: ayni rotaya giden iki baglanti (spec §7.4, §2.3).
+    expect(links).toHaveLength(2);
     const emptyState = screen.getByText("Bu projede henüz şantiye yok.").closest("div");
     expect(emptyState?.className).not.toMatch(/error|warning|danger/i);
   });
@@ -196,5 +197,44 @@ describe("ProjectDetailPage — santiye sorgusu bagimsiz basarisiz olabilir", ()
     mockSites({ isError: true, error: new Error("patladi") });
     render(<ProjectDetailPage />);
     expect(screen.queryByTestId("site-totals-strip")).not.toBeInTheDocument();
+  });
+});
+
+describe("ProjectDetailPage — '+ Şantiye Ekle' tam sayfa forma gider (T11, spec §2.3)", () => {
+  const SITE_FORM_HREF = `/projeler/${PROJECT_ID}/santiyeler/yeni`;
+
+  it("ust bardaki '+ Santiye Ekle' /projeler/{id}/santiyeler/yeni linkidir", () => {
+    mockQuery({ data: PROJECT });
+    render(<ProjectDetailPage />);
+    expect(screen.getByRole("link", { name: "+ Şantiye Ekle" })).toHaveAttribute(
+      "href",
+      SITE_FORM_HREF,
+    );
+  });
+
+  it("bos durumdaki '+ Santiye Ekle' ayni linke gider", () => {
+    mockQuery({ data: { ...PROJECT, site_count: 0 } });
+    render(<ProjectDetailPage />);
+    const links = screen.getAllByRole("link", { name: "+ Şantiye Ekle" });
+    expect(links).toHaveLength(2);
+    for (const link of links) expect(link).toHaveAttribute("href", SITE_FORM_HREF);
+  });
+
+  it("iki baglanti da project-detail__add-btn sinifini korur (gorsel stil degismez)", () => {
+    mockQuery({ data: { ...PROJECT, site_count: 0 } });
+    render(<ProjectDetailPage />);
+    const links = screen.getAllByRole("link", { name: "+ Şantiye Ekle" });
+    for (const link of links) expect(link.className).toMatch(/project-detail__add-btn/);
+    // Bos durumdaki ikinci baglanti ek konum sinifini de korur.
+    expect(links[1].className).toMatch(/project-detail__empty-action/);
+  });
+
+  it("SiteFormModal artik render EDILMEZ: tiklamak modal acmaz", async () => {
+    const user = userEvent.setup();
+    mockQuery({ data: PROJECT });
+    render(<ProjectDetailPage />);
+    await user.click(screen.getByRole("link", { name: "+ Şantiye Ekle" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByText("Yeni Şantiye")).toBeNull();
   });
 });

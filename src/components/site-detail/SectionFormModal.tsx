@@ -8,7 +8,7 @@ import { useCreateSection } from "@/lib/api/hooks/useSectionMutations";
 import type { SectionCreateRequest } from "@/lib/api/hooks/useSectionMutations";
 import { backendErrorMessage } from "@/lib/settings/error-message";
 import { BackendError } from "@/lib/api/unwrap";
-// SiteFormModal (Task 7) kanonu birebir izlenir: settings-form sinifi
+// Ayarlar modal kanonu birebir izlenir: settings-form sinifi
 // settings.css'ten, etiket katmani ui/field/Field'den gelir.
 import "@/components/settings/settings.css";
 
@@ -51,7 +51,7 @@ export function SectionFormModal({ siteId, onClose }: SectionFormModalProps) {
     createSection.mutate(
       {
         name,
-        // Kod bos birakilirsa alan hic gonderilmez (SiteFormModal deseni).
+        // Kod bos birakilirsa alan hic gonderilmez (santiye formu deseni).
         ...(code.trim() ? { code: code.trim() } : {}),
         status,
         ...(managerName.trim() ? { manager_name: managerName.trim() } : {}),

@@ -5,7 +5,7 @@ import { collectSectionInputs, type SectionRow } from "./sections-validate";
 
 export type SiteCreateBody = components["schemas"]["SiteCreate"];
 
-/** Boş/boşluk metin → `null` (mevcut `SiteFormModal` deseni, spec §9.3). */
+/** Boş/boşluk metin → `null` (spec §9.3). */
 export function textOrNull(value: string): string | null {
   return value.trim() || null;
 }

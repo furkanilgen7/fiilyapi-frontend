@@ -90,7 +90,11 @@
   font-weight: 600;
   color: var(--color-text);
 }
+/* <a> olarak render edilir (spec §2.3): tarayıcının varsayılan bağlantı
+   biçimi (alt çizgi + satır içi kutu) buton görünümünü kaydırır. */
 .project-detail__add-btn {
+  display: inline-block;
+  text-decoration: none;
   background: var(--color-primary);
   color: var(--color-on-brand);
   border: none;
