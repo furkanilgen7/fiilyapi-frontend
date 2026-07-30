@@ -13,6 +13,8 @@ import { PROJECT_TABS } from "@/components/projects/tabs";
 import { SiteInfoCard } from "./SiteInfoCard";
 import { LocationCard } from "./LocationCard";
 import { ScheduleCard } from "./ScheduleCard";
+import { SectionsCard } from "./SectionsCard";
+import { emptySectionRow, type SectionRow } from "./sections-validate";
 import { emptySiteFormValues, type SiteFormValues } from "./form-state";
 import { SiteDocumentsCard } from "./SiteDocumentsCard";
 import { SiteFormActions } from "./SiteFormActions";
@@ -95,6 +97,8 @@ export function SiteCreateView() {
   const { projectId } = useParams<{ projectId: string }>();
   const projectQuery = useProject(projectId);
   const [values, setValues] = useState<SiteFormValues>(emptySiteFormValues);
+  // Bölüm satırları ayrı tutulur: kendi satır modeli var (spec §6.1).
+  const [sectionRows, setSectionRows] = useState<SectionRow[]>(() => [emptySectionRow()]);
 
   // Mutasyon yok: her degisiklik yeni nesne uretir (immutability kurali).
   function handleChange<K extends keyof SiteFormValues>(field: K, value: SiteFormValues[K]) {
@@ -162,7 +166,7 @@ export function SiteCreateView() {
 
         <ProjectInfoBanner project={project} />
 
-        {/* Kart yuvası — T7 (bölümler) ve T8 (altyapı) bu gövdeye eklenecek. */}
+        {/* Kart yuvası — T8 (altyapı) bu gövdeye eklenecek. */}
         <div className="pf-body" data-testid="site-form-body">
           <SiteInfoCard
             values={values}
@@ -171,6 +175,7 @@ export function SiteCreateView() {
           />
           <LocationCard values={values} onChange={handleChange} />
           <ScheduleCard values={values} onChange={handleChange} />
+          <SectionsCard rows={sectionRows} onRowsChange={setSectionRows} />
           <SiteDocumentsCard />
         </div>
 
