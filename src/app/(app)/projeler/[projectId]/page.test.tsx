@@ -5,6 +5,7 @@ import ProjectDetailPage from "./page";
 import { useProject } from "@/lib/api/hooks/useProjects";
 import { useSites } from "@/lib/api/hooks/useSites";
 import { BackendError } from "@/lib/api/unwrap";
+import { SITE_CONTRACT_DEFAULTS } from "@/lib/api/hooks/site-fixtures";
 
 vi.mock("@/lib/api/hooks/useProjects", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useProjects")>()),
@@ -55,6 +56,7 @@ function mockQuery(value: Partial<ReturnType<typeof useProject>>) {
 }
 
 const SITE = {
+  ...SITE_CONTRACT_DEFAULTS,
   id: "44444444-4444-4444-4444-444444444444",
   code: "A-BLOK",
   name: "A-Blok Şantiyesi",
@@ -83,7 +85,7 @@ describe("ProjectDetailPage", () => {
     vi.clearAllMocks();
     mockSites({
       data: {
-        counts: { all: 1, active: 1, on_hold: 0, completed: 0 },
+        counts: { all: 1, active: 1, on_hold: 0, completed: 0, draft: 0 },
         items: [SITE],
         totals: {
           total_progress_payment: { available: false, value: null, pending_module: "progress_payments" },

@@ -786,7 +786,7 @@
           "boq"
         ],
         "summary": "Delete Boq Item Endpoint",
-        "description": "Frontend F13 (kalem silme) bu uca baglidir.\n\nKapi `_FULL`'dir — PATCH ile AYNI: silme BOQ yazma izninin parcasi sayilir.\n(`app/core/access.py` §5.0'in \"silme yalniz admin\" kurali `can_delete`\nuzerinden taslak yasam dongusu tasiyan kayitlar icindir; `BoqItem`'da\n`created_by`/`is_draft` yoktur, dolayisiyla o kural uygulanamaz.)",
+        "description": "Frontend F13 (kalem silme) bu uca baglidir.\n\nKULLANICI KARARI 2026-07-30: kapi `_ADMIN`'dir, PATCH'ten (`_FULL`) BIR\nSEVIYE YUKARI. Gerekce `app/core/access.py`'deki kuraldir: \"full silmeyi\nKAPSAMAZ — silme yalnizca admin seviyesindedir\". Boylece uc, mevcut\n`users`/`roles`/sirket logosu DELETE uclariyla tutarli hâle gelir.\n\nBILINEN SONUC (kabul edildi): seed matrisinde `boq:admin` yalniz\n`system_admin`'dedir; proje muduru dahil kimse kalem SILEMEZ, silme talebi\nsistem yoneticisine gider. Bu BEKLENEN davranistir, hata degil.",
         "operationId": "delete_boq_item_endpoint_boq_items__item_id__delete",
         "security": [
           {
@@ -2167,6 +2167,52 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "sites"
+        ],
+        "summary": "Delete Site Endpoint",
+        "description": "Spec §7.1. CASCADE KORKULUGU servistedir — bolum/poz/blok varsa 409.\n\nYetki kapisi korkuluktan ONCE calisir: yetkisiz aktor 403 alir ve santiyenin\nbagli kayit tasiyip tasimadigini OGRENEMEZ. Gorunmeyen santiye 404 doner ve\ngovdesi var olmayan UUID'ninkiyle BIREBIR AYNIDIR.\n\nYanit `204 No Content`, GOVDESIZ. Denetim metni servis icinde, satir yok\nolmadan ONCE kurulur; engellenen silme (409) istisna attigi icin buraya hic\ngelmez ve gunluge satir dusmez.",
+        "operationId": "delete_site_endpoint_sites__site_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/sites/{site_id}/sections": {
@@ -2286,6 +2332,52 @@
       }
     },
     "/sections/{section_id}": {
+      "delete": {
+        "tags": [
+          "sites"
+        ],
+        "summary": "Delete Section Endpoint",
+        "description": "Spec §7.1. Bolum silme KOSULSUZDUR: `sections.id`'yi hedefleyen FK yok.\n\nKapi `_ADMIN`'dir — bolum santiyenin ic kirilimi oldugu icin `sites`\nmodulunun seviyeleri kullanilir, AYRI izin modulu acilmaz.\n\nYanit `204 No Content`, GOVDESIZ. Denetim metni servis icinde, satir yok\nolmadan ONCE kurulur.",
+        "operationId": "delete_section_endpoint_sections__section_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "section_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Section Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "patch": {
         "tags": [
           "sites"
@@ -2720,7 +2812,7 @@
           "units"
         ],
         "summary": "Delete Block Endpoint",
-        "description": "Spec §7.9. CASCADE YOK: unitesi olan blok 409 ile reddedilir — 24 daireyi\ntek istekte silmek geri alinamaz veri kaybidir.",
+        "description": "Spec §7.9. CASCADE YOK: unitesi olan blok 409 ile reddedilir — 24 daireyi\ntek istekte silmek geri alinamaz veri kaybidir.\n\nKULLANICI KARARI 2026-07-30: kapi `_ADMIN`'dir (bkz. `delete_unit_endpoint`\ngerekcesi) — `app/core/access.py`: \"full silmeyi KAPSAMAZ\". Yetki kapisi\n409 korkulugundan ONCE calisir: yetkisiz aktor 403 alir, blogun unite\ntasiyip tasimadigini OGRENEMEZ.",
         "operationId": "delete_block_endpoint_blocks__block_id__delete",
         "security": [
           {
@@ -2831,7 +2923,7 @@
           "units"
         ],
         "summary": "Delete Unit Endpoint",
-        "description": "Spec §7.9. Unite silme kosulsuzdur (P3'te uniteye bagli tablo yok, §1.3).\nGorunmeyen projenin unitesi 404 doner, 403 DEGIL.",
+        "description": "Spec §7.9. Unite silme kosulsuzdur (P3'te uniteye bagli tablo yok, §1.3).\n\nKULLANICI KARARI 2026-07-30: kapi `_ADMIN`'dir, PATCH'ten (`_FULL`) BIR\nSEVIYE YUKARI — `app/core/access.py`: \"full silmeyi KAPSAMAZ — silme\nyalnizca admin seviyesindedir\". `users`/`roles`/sirket logosu DELETE\nuclariyla tutarlilik saglanir.\n\nBILINEN SONUC (kabul edildi): seed matrisinde `projects:admin` yalniz\n`system_admin`'dedir; proje muduru dahil kimse silemez.\n\nGorunurluk kurali DEGISMEDI (gorunmeyen projenin unitesi 404, 403 degil)\nfakat `projects:admin` gorunurluk suzgecini zaten atladigindan (spec §5.2)\nbu dalin HTTP uzerinden ULASILABILIR bir senaryosu kalmamistir; kural\n`guards.visible_unit`'te ve PATCH ucunda (hâlâ `full`) yerinde durur.",
         "operationId": "delete_unit_endpoint_units__unit_id__delete",
         "security": [
           {
@@ -7016,6 +7108,18 @@
             "$ref": "#/components/schemas/SectionStatus",
             "default": "planned"
           },
+          "manager_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manager User Id"
+          },
           "manager_name": {
             "anyOf": [
               {
@@ -7110,6 +7214,18 @@
           },
           "status": {
             "$ref": "#/components/schemas/SectionStatus"
+          },
+          "manager_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manager User Id"
           },
           "manager_name": {
             "anyOf": [
@@ -7251,6 +7367,18 @@
                 "type": "null"
               }
             ]
+          },
+          "manager_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manager User Id"
           },
           "manager_name": {
             "anyOf": [
@@ -7471,6 +7599,165 @@
           },
           "progress_pct": {
             "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "is_draft": {
+            "type": "boolean",
+            "title": "Is Draft"
+          },
+          "site_manager_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Manager User Id"
+          },
+          "safety_officer_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Safety Officer User Id"
+          },
+          "safety_officer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Safety Officer Name"
+          },
+          "safety_officer_is_outsourced": {
+            "type": "boolean",
+            "title": "Safety Officer Is Outsourced"
+          },
+          "neighborhood": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neighborhood"
+          },
+          "parcel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parcel"
+          },
+          "gps_coordinates": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gps Coordinates"
+          },
+          "land_area_m2": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Land Area M2"
+          },
+          "construction_area_m2": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Construction Area M2"
+          },
+          "floor_info": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Floor Info"
+          },
+          "budget": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget"
+          },
+          "facilities": {
+            "$ref": "#/components/schemas/SiteFacilities"
+          },
+          "electricity_subscription_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Electricity Subscription No"
+          },
+          "water_subscription_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Water Subscription No"
+          },
+          "planned_worker_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Worker Count"
           }
         },
         "type": "object",
@@ -7489,7 +7776,23 @@
           "remaining_days",
           "section_count",
           "worker_count",
-          "progress_pct"
+          "progress_pct",
+          "is_draft",
+          "site_manager_user_id",
+          "safety_officer_user_id",
+          "safety_officer_name",
+          "safety_officer_is_outsourced",
+          "neighborhood",
+          "parcel",
+          "gps_coordinates",
+          "land_area_m2",
+          "construction_area_m2",
+          "floor_info",
+          "budget",
+          "facilities",
+          "electricity_subscription_no",
+          "water_subscription_no",
+          "planned_worker_count"
         ],
         "title": "SiteCard",
         "description": "Spec §4.1 SiteCard. `remaining_days` negatif olabilir (spec §4.2) —\ngecikmeyi kirmizi gostermek frontend'in isi, backend gercegi bastirmaz."
@@ -7511,6 +7814,10 @@
           "completed": {
             "type": "integer",
             "title": "Completed"
+          },
+          "draft": {
+            "type": "integer",
+            "title": "Draft"
           }
         },
         "type": "object",
@@ -7518,12 +7825,19 @@
           "all",
           "active",
           "on_hold",
-          "completed"
+          "completed",
+          "draft"
         ],
         "title": "SiteCounts"
       },
       "SiteCreate": {
         "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 150,
+            "minLength": 1,
+            "title": "Name"
+          },
           "code": {
             "anyOf": [
               {
@@ -7537,27 +7851,38 @@
             ],
             "title": "Code"
           },
-          "name": {
-            "type": "string",
-            "maxLength": 150,
-            "minLength": 1,
-            "title": "Name"
-          },
           "status": {
             "$ref": "#/components/schemas/SiteStatus",
             "default": "active"
           },
-          "address": {
+          "site_manager_user_id": {
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 300
+                "format": "uuid"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Address"
+            "title": "Site Manager User Id"
+          },
+          "safety_officer_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Safety Officer User Id"
+          },
+          "safety_officer_is_outsourced": {
+            "type": "boolean",
+            "title": "Safety Officer Is Outsourced",
+            "default": false
           },
           "city": {
             "anyOf": [
@@ -7571,17 +7896,97 @@
             ],
             "title": "City"
           },
-          "site_manager_name": {
+          "neighborhood": {
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 200
+                "maxLength": 150
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Site Manager Name"
+            "title": "Neighborhood"
+          },
+          "parcel": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parcel"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "gps_coordinates": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gps Coordinates"
+          },
+          "land_area_m2": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Land Area M2"
+          },
+          "construction_area_m2": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Construction Area M2"
+          },
+          "floor_info": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Floor Info"
           },
           "start_date": {
             "anyOf": [
@@ -7607,6 +8012,85 @@
             ],
             "title": "End Date"
           },
+          "budget": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget"
+          },
+          "facilities": {
+            "$ref": "#/components/schemas/SiteFacilitiesInput"
+          },
+          "electricity_subscription_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Electricity Subscription No"
+          },
+          "water_subscription_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Water Subscription No"
+          },
+          "planned_worker_count": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Worker Count"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/SiteSectionInput"
+            },
+            "type": "array",
+            "title": "Sections"
+          },
+          "is_draft": {
+            "type": "boolean",
+            "title": "Is Draft",
+            "default": false
+          },
+          "site_manager_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Manager Name"
+          },
           "delivery_date": {
             "anyOf": [
               {
@@ -7625,7 +8109,7 @@
           "name"
         ],
         "title": "SiteCreate",
-        "description": "`contract_amount` YOK (spec §2.1) — santiye payi BOQ dagitiminin turevidir."
+        "description": "Mockup \"Şantiye Ekle\" formunun tam govdesi (spec §6.1).\n\n`contract_amount` YOK (spec §2.1) — santiye payi BOQ dagitiminin turevidir.\n`duration_days` YOK (§3.6) — sure turevdir. `latitude`/`longitude` YOK (§3.5)."
       },
       "SiteDetailResponse": {
         "properties": {
@@ -7739,6 +8223,165 @@
           "progress_pct": {
             "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
           },
+          "is_draft": {
+            "type": "boolean",
+            "title": "Is Draft"
+          },
+          "site_manager_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Manager User Id"
+          },
+          "safety_officer_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Safety Officer User Id"
+          },
+          "safety_officer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Safety Officer Name"
+          },
+          "safety_officer_is_outsourced": {
+            "type": "boolean",
+            "title": "Safety Officer Is Outsourced"
+          },
+          "neighborhood": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Neighborhood"
+          },
+          "parcel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parcel"
+          },
+          "gps_coordinates": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gps Coordinates"
+          },
+          "land_area_m2": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Land Area M2"
+          },
+          "construction_area_m2": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Construction Area M2"
+          },
+          "floor_info": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Floor Info"
+          },
+          "budget": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget"
+          },
+          "facilities": {
+            "$ref": "#/components/schemas/SiteFacilities"
+          },
+          "electricity_subscription_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Electricity Subscription No"
+          },
+          "water_subscription_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Water Subscription No"
+          },
+          "planned_worker_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Worker Count"
+          },
           "project": {
             "$ref": "#/components/schemas/SiteProjectSummary"
           },
@@ -7776,6 +8419,22 @@
           "section_count",
           "worker_count",
           "progress_pct",
+          "is_draft",
+          "site_manager_user_id",
+          "safety_officer_user_id",
+          "safety_officer_name",
+          "safety_officer_is_outsourced",
+          "neighborhood",
+          "parcel",
+          "gps_coordinates",
+          "land_area_m2",
+          "construction_area_m2",
+          "floor_info",
+          "budget",
+          "facilities",
+          "electricity_subscription_no",
+          "water_subscription_no",
+          "planned_worker_count",
           "project",
           "section_status_counts",
           "sections",
@@ -7783,6 +8442,100 @@
           "contract_amount"
         ],
         "title": "SiteDetailResponse"
+      },
+      "SiteFacilities": {
+        "properties": {
+          "closed_warehouse": {
+            "type": "boolean",
+            "title": "Closed Warehouse",
+            "default": false
+          },
+          "open_storage": {
+            "type": "boolean",
+            "title": "Open Storage",
+            "default": false
+          },
+          "cold_storage": {
+            "type": "boolean",
+            "title": "Cold Storage",
+            "default": false
+          },
+          "site_office": {
+            "type": "boolean",
+            "title": "Site Office",
+            "default": false
+          },
+          "canteen": {
+            "type": "boolean",
+            "title": "Canteen",
+            "default": false
+          },
+          "changing_room_wc": {
+            "type": "boolean",
+            "title": "Changing Room Wc",
+            "default": false
+          },
+          "dormitory": {
+            "type": "boolean",
+            "title": "Dormitory",
+            "default": false
+          },
+          "infirmary": {
+            "type": "boolean",
+            "title": "Infirmary",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "SiteFacilities",
+        "description": "Cikis karsiligi — girisle AYNI sekiz alan (§6.2). Ayri sinif, cunku\ngiris/cikis sozlesmeleri zamanla ayrisabilir; bugun ayrisma yok."
+      },
+      "SiteFacilitiesInput": {
+        "properties": {
+          "closed_warehouse": {
+            "type": "boolean",
+            "title": "Closed Warehouse",
+            "default": false
+          },
+          "open_storage": {
+            "type": "boolean",
+            "title": "Open Storage",
+            "default": false
+          },
+          "cold_storage": {
+            "type": "boolean",
+            "title": "Cold Storage",
+            "default": false
+          },
+          "site_office": {
+            "type": "boolean",
+            "title": "Site Office",
+            "default": false
+          },
+          "canteen": {
+            "type": "boolean",
+            "title": "Canteen",
+            "default": false
+          },
+          "changing_room_wc": {
+            "type": "boolean",
+            "title": "Changing Room Wc",
+            "default": false
+          },
+          "dormitory": {
+            "type": "boolean",
+            "title": "Dormitory",
+            "default": false
+          },
+          "infirmary": {
+            "type": "boolean",
+            "title": "Infirmary",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "SiteFacilitiesInput",
+        "description": "Mockup 153-155 (depo) + 161-165 (tesis). DB'de 8 DUZ Boolean kolon (§4).\n\nAPI'de GRUPLU, DB'de duz: grup, mockup'taki gorsel kumelenmeyi tasir; duz\nkolonlar ise sorgulanabilir ve indekslenebilir kalir (§4.2, JSONB DEGIL).\n\nSekizinin de varsayilani `False` — mockup'taki on-isaretler ORNEK VERIDIR,\nvarsayilan degildir (§14.2, karar 2026-07-30)."
       },
       "SiteListResponse": {
         "properties": {
@@ -7877,18 +8630,14 @@
         "title": "SiteProjectSummary",
         "description": "Santiye Detay ust satiri: proje adi + isveren (spec §3.2)."
       },
-      "SiteStatus": {
-        "type": "string",
-        "enum": [
-          "active",
-          "on_hold",
-          "completed"
-        ],
-        "title": "SiteStatus",
-        "description": "project_status ile ayni ucludur ama AYRI enum'dur (spec §2.3): sirf bugun\nayni olduklari icin paylasilan bir enum'a baglamak, santiyeye ileride\n`suspended` gibi bir durum eklemeyi imkansiz kilar."
-      },
-      "SiteUpdate": {
+      "SiteSectionInput": {
         "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 150,
+            "minLength": 1,
+            "title": "Name"
+          },
           "code": {
             "anyOf": [
               {
@@ -7902,6 +8651,63 @@
             ],
             "title": "Code"
           },
+          "manager_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manager User Id"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "SiteSectionInput",
+        "description": "Form ici bolum satiri (mockup 119-124).\n\nP2 `SectionCreate`'in YERINE GECMEZ; onun yaninda durur ve ayni `Section`\nmodelini yazar. Iki alan bilincli olarak YOKTUR:\n\n* `estimated_amount` — \"Tahmini Bedel\" yer tutucudur, saklanmaz (§3.4).\n  Govdede gelirse Pydantic onu sessizce yok sayar.\n* `sort_order` — sira govdeden gelmez, dizideki sirasindan atanir (0,1,2...)."
+      },
+      "SiteStatus": {
+        "type": "string",
+        "enum": [
+          "preparation",
+          "active",
+          "on_hold",
+          "completed"
+        ],
+        "title": "SiteStatus",
+        "description": "project_status ile ayni ucludur ama AYRI enum'dur (spec §2.3): sirf bugun\nayni olduklari icin paylasilan bir enum'a baglamak, santiyeye ileride\n`suspended` gibi bir durum eklemeyi imkansiz kilar.\n\nSira mockup satir 71'den gelir: Hazirlik · Aktif (secili) · Beklemede.\n`completed` UI'da gorunmez ama KALIR — `SiteCounts.completed`, `_remaining_days`\nve P2 liste sekmesi ona baglidir (spec §3.1)."
+      },
+      "SiteUpdate": {
+        "properties": {
           "name": {
             "anyOf": [
               {
@@ -7915,6 +8721,19 @@
             ],
             "title": "Name"
           },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
           "status": {
             "anyOf": [
               {
@@ -7925,17 +8744,40 @@
               }
             ]
           },
-          "address": {
+          "site_manager_user_id": {
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 300
+                "format": "uuid"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Address"
+            "title": "Site Manager User Id"
+          },
+          "safety_officer_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Safety Officer User Id"
+          },
+          "safety_officer_is_outsourced": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Safety Officer Is Outsourced"
           },
           "city": {
             "anyOf": [
@@ -7949,17 +8791,97 @@
             ],
             "title": "City"
           },
-          "site_manager_name": {
+          "neighborhood": {
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 200
+                "maxLength": 150
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Site Manager Name"
+            "title": "Neighborhood"
+          },
+          "parcel": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parcel"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "gps_coordinates": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gps Coordinates"
+          },
+          "land_area_m2": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Land Area M2"
+          },
+          "construction_area_m2": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Construction Area M2"
+          },
+          "floor_info": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Floor Info"
           },
           "start_date": {
             "anyOf": [
@@ -7985,6 +8907,91 @@
             ],
             "title": "End Date"
           },
+          "budget": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget"
+          },
+          "facilities": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SiteFacilitiesInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "electricity_subscription_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Electricity Subscription No"
+          },
+          "water_subscription_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Water Subscription No"
+          },
+          "planned_worker_count": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Worker Count"
+          },
+          "is_draft": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Draft"
+          },
+          "site_manager_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Manager Name"
+          },
           "delivery_date": {
             "anyOf": [
               {
@@ -8000,7 +9007,7 @@
         },
         "type": "object",
         "title": "SiteUpdate",
-        "description": "`project_id` YOK — santiye baska projeye tasinamaz."
+        "description": "`project_id` YOK — santiye baska projeye tasinamaz.\n`sections` YOK — bolumler mevcut P2 uclariyla yonetilir (§7.3).\n\nTum alanlar istege bagli; \"gonderilmedi\" ile \"null yapildi\" ayrimi\n`model_fields_set`/`exclude_unset` ile korunur."
       },
       "TokenPair": {
         "properties": {

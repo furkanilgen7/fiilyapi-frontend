@@ -58,6 +58,10 @@ export function SiteFormModal({ projectId, onClose }: SiteFormModalProps) {
         // Kod bos birakilirsa alan hic gonderilmez — backend turetir (brief).
         ...(code.trim() ? { code: code.trim() } : {}),
         status,
+        // T0 (2026-07-30) sozlesme senkronu: iki alan varsayilanli ama zorunlu
+        // uretildi. Bu modal T11'de silinecek; deger backend varsayilaniyla ayni.
+        safety_officer_is_outsourced: false,
+        is_draft: false,
         address: address || null,
         city: city || null,
         site_manager_name: siteManagerName || null,

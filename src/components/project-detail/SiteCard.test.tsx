@@ -4,10 +4,12 @@ import userEvent from "@testing-library/user-event";
 
 import { SiteCard } from "./SiteCard";
 import type { SiteListItem } from "@/lib/api/hooks/useSites";
+import { SITE_CONTRACT_DEFAULTS } from "@/lib/api/hooks/site-fixtures";
 
 const PROJECT_ID = "11111111-1111-1111-1111-111111111111";
 
 const ACTIVE_SITE: SiteListItem = {
+  ...SITE_CONTRACT_DEFAULTS,
   id: "22222222-2222-2222-2222-222222222222",
   code: "A-BLOK",
   name: "A-Blok Şantiyesi",
@@ -26,6 +28,7 @@ const ACTIVE_SITE: SiteListItem = {
 };
 
 const COMPLETED_SITE: SiteListItem = {
+  ...SITE_CONTRACT_DEFAULTS,
   ...ACTIVE_SITE,
   id: "33333333-3333-3333-3333-333333333333",
   name: "B-Blok Şantiyesi",
