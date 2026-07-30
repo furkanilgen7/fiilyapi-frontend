@@ -1039,6 +1039,17 @@ Onaylı sapma §11.15.
 **GPS için istemci doğrulaması YOKTUR** (§4.2.1): ne biçim regex'i, ne
 "koordinat okunamadı" mesajı, ne normalleştirme. Alan serbest metindir.
 
+**Uzunluk koruması (2026-07-30, sessiz 422 sınıfı).** Sunucu sözleşmesinde
+`maxLength` ilan eden **on** metin alanının hepsi istemcide `maxLength`
+niteliğiyle korunur: `name`(150), `code`(50), `city`(100), `neighborhood`(150),
+`parcel`(50), `address`(300), `gps_coordinates`(50), `floor_info`(100),
+`electricity_subscription_no`(50), `water_subscription_no`(50). Sınırlar
+`SITE_FIELD_MAX_LENGTH` haritasında durur ve `field-limits.test.ts` onları
+**üretilen `openapi.json` ile karşılaştırır** — elle yazılmış sayı yoktur, yeni
+bir sınır eklenirse test kırmızı olur. **YALNIZ uzunluktur:** hiçbir alana
+biçim doğrulaması, regex ya da yeni hata metni eklenmemiştir; GPS'in "biçim
+doğrulaması yok" kuralı (§4.2.1, §11.13) aynen geçerlidir.
+
 **Kısmi başarı durumu yoktur**: gönderim atomiktir (§3.4), ya hepsi yazılır ya
 hiçbiri. Önceki sürümdeki "Şantiye oluşturuldu, ancak {n} bölüm eklenemedi…"
 mesajı **kaldırılmıştır**.

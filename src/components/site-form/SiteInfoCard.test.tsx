@@ -190,3 +190,24 @@ describe("SiteInfoCard · kullanici listesi 403 zarif dususu", () => {
     expect(screen.queryByText("Bu alana yetkiniz yok")).not.toBeInTheDocument();
   });
 });
+
+describe("SiteInfoCard — sessiz 422 koruması (sözleşme maxLength)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUsers({ options: OPTIONS });
+  });
+
+  it.each([
+    ["Şantiye Adı", "150"],
+    ["Şantiye Kodu", "50"],
+  ])("%s alani sozlesme sinirinda kesilir (maxLength=%s)", (label, limit) => {
+    renderCard();
+    expect(screen.getByLabelText(label)).toHaveAttribute("maxlength", limit);
+  });
+
+  it("uzunluk disinda yeni bicim kurali eklenmedi", () => {
+    renderCard();
+    expect(screen.getByLabelText("Şantiye Adı")).not.toHaveAttribute("pattern");
+    expect(screen.getByLabelText("Şantiye Kodu")).not.toHaveAttribute("pattern");
+  });
+});

@@ -1,5 +1,5 @@
 import { Field, Input, Textarea } from "@/components/ui";
-import { GPS_MAX_LENGTH } from "./constants";
+import { SITE_FIELD_MAX_LENGTH } from "./constants";
 import type { SiteFormValues } from "./form-state";
 
 type FieldErrors = Partial<Record<keyof SiteFormValues, string>>;
@@ -20,6 +20,7 @@ export function LocationCard({ values, onChange, errors }: LocationCardProps) {
           {(control) => (
             <Input
               {...control}
+              maxLength={SITE_FIELD_MAX_LENGTH.city}
               value={values.city}
               placeholder="Çankaya / Ankara"
               status={errors?.city ? "error" : "default"}
@@ -32,6 +33,7 @@ export function LocationCard({ values, onChange, errors }: LocationCardProps) {
           {(control) => (
             <Input
               {...control}
+              maxLength={SITE_FIELD_MAX_LENGTH.neighborhood}
               value={values.neighborhood}
               placeholder="Kuyubaşı Mah."
               onChange={(e) => onChange("neighborhood", e.target.value)}
@@ -44,6 +46,7 @@ export function LocationCard({ values, onChange, errors }: LocationCardProps) {
             <Input
               {...control}
               numeric
+              maxLength={SITE_FIELD_MAX_LENGTH.parcel}
               value={values.parcel}
               placeholder="1234 / 5"
               onChange={(e) => onChange("parcel", e.target.value)}
@@ -56,6 +59,7 @@ export function LocationCard({ values, onChange, errors }: LocationCardProps) {
             <Textarea
               {...control}
               rows={2}
+              maxLength={SITE_FIELD_MAX_LENGTH.address}
               value={values.address}
               placeholder="Cadde, sokak, no"
               onChange={(e) => onChange("address", e.target.value)}
@@ -75,7 +79,7 @@ export function LocationCard({ values, onChange, errors }: LocationCardProps) {
               // Sözleşme sınırı (`gps_coordinates`, maxLength=50). YALNIZ
               // uzunluk: biçim doğrulaması hâlâ YOKTUR (§4.2.1, §11.13).
               // Bu koruma olmadan 51. karakter hiç uyarı almadan 422 alıyordu.
-              maxLength={GPS_MAX_LENGTH}
+              maxLength={SITE_FIELD_MAX_LENGTH.gps_coordinates}
               value={values.gpsCoordinates}
               placeholder="39.9042, 32.8597"
               onChange={(e) => onChange("gpsCoordinates", e.target.value)}
@@ -120,6 +124,7 @@ export function LocationCard({ values, onChange, errors }: LocationCardProps) {
             <Input
               {...control}
               type="text"
+              maxLength={SITE_FIELD_MAX_LENGTH.floor_info}
               value={values.floorInfo}
               placeholder="2 bodrum + 10 normal"
               onChange={(e) => onChange("floorInfo", e.target.value)}

@@ -110,6 +110,22 @@ describe("FacilitiesCard", () => {
   });
 });
 
+describe("FacilitiesCard — sessiz 422 koruması (sözleşme maxLength=50)", () => {
+  it.each([["Elektrik Aboneliği"], ["Su Aboneliği"]])(
+    "%s abone no alani 50 karakterde kesilir",
+    (label) => {
+      renderCard();
+      expect(screen.getByLabelText(label)).toHaveAttribute("maxlength", "50");
+    },
+  );
+
+  it("uzunluk disinda yeni bicim kurali eklenmedi", () => {
+    renderCard();
+    expect(screen.getByLabelText("Elektrik Aboneliği")).not.toHaveAttribute("pattern");
+    expect(screen.getByLabelText("Su Aboneliği")).not.toHaveAttribute("pattern");
+  });
+});
+
 describe("facility-items", () => {
   it("iki grup YALNIZ GORSELDIR; anahtarlar tek duz facilities nesnesine yazar", () => {
     expect(STORAGE_FACILITIES.map((item) => item.key)).toEqual([

@@ -40,8 +40,26 @@ export const SITE_STATUS_OPTIONS: readonly { value: SiteStatusOption; label: str
 export const LINKED_PROJECT_TITLE = "Şantiye, girildiği projeye bağlıdır";
 
 /**
- * `gps_coordinates` sunucu sözleşmesindeki uzunluk sınırı (openapi.json:
- * `maxLength: 50`). YALNIZ uzunluktur — GPS için biçim doğrulaması, regex ve
- * normalleştirme YOKTUR (spec §4.2.1, §11.13).
+ * `SiteCreate`'in metin alanları için SUNUCU sözleşmesindeki uzunluk sınırları
+ * (`openapi/openapi.json` → `components.schemas.SiteCreate`).
+ *
+ * Anahtarlar **sözleşme adlarıdır** (form alan adları değil): kapı testi
+ * `field-limits.test.ts` bu haritayı üretilen sözleşmeyle karşılaştırır, yani
+ * sayılar burada elle "uydurulamaz" — sözleşme değişirse test kırmızı olur.
+ *
+ * YALNIZ UZUNLUKTUR. Hiçbir alana biçim doğrulaması, regex, normalleştirme ya
+ * da yeni hata metni eklenmez (spec §4.2.1, §11.13). Bu koruma olmadan sınırı
+ * aşan girdi kullanıcıya HİÇ uyarı vermeden sunucu 422'sine çarpıyordu.
  */
-export const GPS_MAX_LENGTH = 50;
+export const SITE_FIELD_MAX_LENGTH = {
+  name: 150,
+  code: 50,
+  city: 100,
+  neighborhood: 150,
+  parcel: 50,
+  address: 300,
+  gps_coordinates: 50,
+  floor_info: 100,
+  electricity_subscription_no: 50,
+  water_subscription_no: 50,
+} as const satisfies Record<string, number>;

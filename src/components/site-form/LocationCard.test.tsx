@@ -80,6 +80,28 @@ describe("LocationCard", () => {
   });
 });
 
+describe("LocationCard — sessiz 422 koruması: kalan metin alanları", () => {
+  // GPS'te yapılanın aynısı: sunucu sınırı olan ve istemci koruması olmayan
+  // alanlar 422'ye sessizce çarpıyordu. YALNIZ uzunluk — biçim kuralı yok.
+  it.each([
+    ["İl / İlçe", "100"],
+    ["Mahalle", "150"],
+    ["Ada / Parsel", "50"],
+    ["Açık Adres", "300"],
+    ["Kat Sayısı", "100"],
+  ])("%s alani sozlesme sinirinda kesilir (maxLength=%s)", (label, limit) => {
+    renderCard();
+    expect(screen.getByLabelText(label)).toHaveAttribute("maxlength", limit);
+  });
+
+  it("uzunluk disinda yeni bicim kurali eklenmedi", () => {
+    renderCard();
+    for (const label of ["İl / İlçe", "Mahalle", "Ada / Parsel", "Açık Adres", "Kat Sayısı"]) {
+      expect(screen.getByLabelText(label)).not.toHaveAttribute("pattern");
+    }
+  });
+});
+
 describe("LocationCard — GPS uzunluk koruması (sözleşme maxLength=50)", () => {
   // Sunucu `gps_coordinates` icin maxLength=50 ilan ediyor (openapi.json).
   // Istemcide karsiligi yoksa 51. karakter HIC UYARI OLMADAN 422 aliyordu.

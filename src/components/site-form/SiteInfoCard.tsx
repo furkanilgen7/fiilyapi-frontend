@@ -5,6 +5,7 @@ import { useUserOptions } from "@/lib/api/hooks/useUserOptions";
 import {
   LINKED_PROJECT_TITLE,
   OUTSOURCED_SAFETY_OFFICER,
+  SITE_FIELD_MAX_LENGTH,
   SITE_STATUS_OPTIONS,
   type SiteStatusOption,
 } from "./constants";
@@ -44,6 +45,7 @@ export function SiteInfoCard({ values, onChange, projectName, errors }: SiteInfo
           {(control) => (
             <Input
               {...control}
+              maxLength={SITE_FIELD_MAX_LENGTH.name}
               value={values.name}
               placeholder="C-Blok Şantiyesi"
               status={errors?.name ? "error" : "default"}
@@ -57,6 +59,7 @@ export function SiteInfoCard({ values, onChange, projectName, errors }: SiteInfo
             <Input
               {...control}
               numeric
+              maxLength={SITE_FIELD_MAX_LENGTH.code}
               value={values.code}
               placeholder="SNT-2026-003"
               status={errors?.code ? "error" : "default"}

@@ -1,6 +1,7 @@
 import { useId } from "react";
 
 import { Checkbox, Field, Input } from "@/components/ui";
+import { SITE_FIELD_MAX_LENGTH } from "./constants";
 import { SITE_FACILITIES, STORAGE_FACILITIES, type FacilityItem } from "./facility-items";
 import type { FacilityKey, SiteFormValues } from "./form-state";
 
@@ -78,6 +79,7 @@ export function FacilitiesCard({ values, onChange, errors }: FacilitiesCardProps
               {...control}
               type="text"
               numeric
+              maxLength={SITE_FIELD_MAX_LENGTH.electricity_subscription_no}
               value={values.electricitySubscriptionNo}
               placeholder="Abone no"
               onChange={(e) => onChange("electricitySubscriptionNo", e.target.value)}
@@ -91,6 +93,7 @@ export function FacilitiesCard({ values, onChange, errors }: FacilitiesCardProps
               {...control}
               type="text"
               numeric
+              maxLength={SITE_FIELD_MAX_LENGTH.water_subscription_no}
               value={values.waterSubscriptionNo}
               placeholder="Abone no"
               onChange={(e) => onChange("waterSubscriptionNo", e.target.value)}
