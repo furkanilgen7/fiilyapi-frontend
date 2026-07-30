@@ -43,7 +43,7 @@ vi.mock("@/lib/api/boq-client", () => ({ downloadBoqExport: vi.fn() }));
 // hook calisir, yalniz oturum kaynagi taklit edilir.
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
 
-/** `level` verilmezse bugünkü hâl: MeResponse'ta izin alanı yok. */
+/** `level` verilmezse alanı taşımayan eski oturum (bilinmezlik dalı, §2.5.3). */
 function mockPermission(level?: string) {
   const base = { id: "u1", email: "a@b.c", full_name: "A", role_key: "admin", status: "active" };
   vi.mocked(useSession).mockReturnValue({
@@ -233,9 +233,9 @@ describe("BoqPage — istemci izin kapısı (spec §2.5)", () => {
     expect(screen.getAllByRole("button", { name: "+ İş Kalemi" }).length).toBeGreaterThan(0);
   });
 
-  // ⚠️ Bilinmezlik kuralı (spec §2.5.3): MeResponse'ta izin alanı BE-A'ya kadar
-  // YOK. Kural ters çevrilirse tam yetkili kullanıcı ekranı salt-okunur görür.
-  it("izin alanı yokken yazma butonu görünür kalır (bugünkü davranış)", () => {
+  // ⚠️ Bilinmezlik kuralı (spec §2.5.3): alanı taşımayan ESKİ oturum. Kural ters
+  // çevrilirse tam yetkili kullanıcı ekranı salt-okunur görür.
+  it("izin alanı yokken yazma butonu görünür kalır (eski oturum)", () => {
     mockPermission();
     render(<BoqPage />);
     expect(screen.getAllByRole("button", { name: "+ İş Kalemi" }).length).toBeGreaterThan(0);

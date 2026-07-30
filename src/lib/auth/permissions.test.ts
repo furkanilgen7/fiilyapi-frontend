@@ -4,6 +4,24 @@ import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 
 import { ACCESS_LEVELS, WRITE_LEVELS, canWrite, isAccessLevel } from "./permissions";
+import type { MeResponse } from "./types";
+
+describe("permissions — /auth/me sözleşmesi (BE-A)", () => {
+  // ⚠️ SOZLESME KORKULUGU (derleme zamani). `MeResponse.permissions` degeri
+  // `AccessLevel` olmali. Backend alani `dict[str, str]` olarak yayimlarsa tip
+  // `string`'e genisler, asagidaki `@ts-expect-error` KULLANILMAZ hale gelir ve
+  // `pnpm typecheck` kirmizi doner — sessizce genisleme mumkun degildir.
+  it("MeResponse.permissions değeri AccessLevel olarak tiplenir", () => {
+    const valid: MeResponse["permissions"] = { boq: "full", contracts: "view" };
+    // @ts-expect-error tanınmayan seviye dizesi derlemede reddedilmelidir
+    const invalid: MeResponse["permissions"] = { boq: "superuser" };
+
+    expect(valid.boq).toBe("full");
+    // Calisma aninda dogrulama sinirimiz `isAccessLevel`'dir: derleyici
+    // atlatilsa bile uydurma seviye yazma yetkisi dogurmaz.
+    expect(isAccessLevel(invalid.boq)).toBe(false);
+  });
+});
 
 describe("permissions — seviye listeleri (spec §2.5.2)", () => {
   // Backend `AccessLevel` sıralaması (schema.d.ts): none < view < draft <
@@ -29,9 +47,10 @@ describe("permissions — seviye listeleri (spec §2.5.2)", () => {
 });
 
 describe("permissions — canWrite (spec §2.5.3 bilinmezlik kuralı)", () => {
-  // ⚠️ KAPI TESTİ: bu kural ters çevrilirse (bilinmiyorsa gizle) tam yetkili
-  // kullanıcı ekranı salt-okunur görür — sessiz yetenek kaybı. MeResponse'ta
-  // izin alanı BE-A'ya kadar YOK, yani bugün fiilen tek geçerli dal budur.
+  // ⚠️ KAPI TESTİ — BE-A'dan SONRA DA KALIR: bu kural ters çevrilirse
+  // (bilinmiyorsa gizle) tam yetkili kullanıcı ekranı salt-okunur görür —
+  // sessiz yetenek kaybı. Alanı taşımayan eski oturum, henüz yüklenmemiş
+  // oturum ve haritada olmayan modül anahtarı hâlâ bu dala düşer.
   it("canWrite(undefined) true döner — bilinmezlik yasak sayılmaz", () => {
     expect(canWrite(undefined)).toBe(true);
   });

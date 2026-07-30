@@ -15,9 +15,10 @@ export interface ModulePermission {
 /**
  * Oturum yükünden tek modülün izin seviyesini okur (spec §2.5.2).
  *
- * `MeResponse` bugün `permissions` alanı TASIMIYOR (backend takip isi BE-A),
- * bu yuzden yuk bicimsel olarak dogrulanir: alan geldigi gun `pnpm gen:api`
- * disinda degisiklik gerekmez, hook oldugu gibi calisir.
+ * `MeResponse` artik `permissions` alanini TASIYOR; yuk yine de bicimsel
+ * olarak dogrulanir (tip degil, calisma ani verisi): alani tasimayan eski
+ * oturum ya da taninmayan seviye dizesi `undefined`'a duser, bilinmezlik
+ * kurali orada devreye girer.
  */
 function readLevel(me: unknown, moduleKey: string): AccessLevel | undefined {
   if (typeof me !== "object" || me === null) return undefined;

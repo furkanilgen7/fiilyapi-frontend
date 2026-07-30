@@ -35,10 +35,12 @@ export function isAccessLevel(value: unknown): value is AccessLevel {
 /**
  * Seviye bilinmiyorsa `true` döner — bilinmezlik yasak sayılmaz (spec §2.5.3).
  *
- * ⚠️ Bu kural TERS ÇEVRİLEMEZ. `MeResponse` bugün izin alanı taşımıyor
- * (backend takip işi BE-A); alan gelmeden gizleme yapmak tam yetkili
- * kullanıcıya ekranı salt-okunur gösterir — sessiz yetenek kaybı olur.
- * Alan geldiği gün gizleme kendiliğinden devreye girer, ikinci sürüm gerekmez.
+ * ⚠️ Bu kural TERS ÇEVRİLEMEZ. `MeResponse` artık `permissions` taşıyor
+ * (backend takip işi BE-A kapandı) → seviye BİLİNDİĞİNDE gerçek gizleme
+ * devrededir. Bilinmezlik dalı yine de kalır ve kalmalıdır: yükü henüz
+ * gelmemiş oturum, alanı taşımayan eski token ve haritada bulunmayan modül
+ * anahtarı bu dala düşer; orada gizleme yapmak tam yetkili kullanıcıya
+ * ekranı salt-okunur gösterir — sessiz yetenek kaybı olur.
  */
 export function canWrite(level: AccessLevel | undefined): boolean {
   if (level === undefined) return true;

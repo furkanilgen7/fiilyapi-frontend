@@ -18,7 +18,8 @@ const BASE_ME = {
   status: "active",
 } as unknown as MeResponse;
 
-/** BE-A sonrası `permissions` alanının geleceği hâli taklit eder. */
+/** BE-A sonrası gelen `permissions` yükünü taklit eder; `undefined` = alanı
+ *  taşımayan eski oturum (bilinmezlik dalı). */
 function mockSession(permissions?: Record<string, string>) {
   const me = permissions === undefined ? BASE_ME : { ...BASE_ME, permissions };
   vi.mocked(useSession).mockReturnValue({ me: me as MeResponse, isLoading: false });
@@ -27,7 +28,7 @@ function mockSession(permissions?: Record<string, string>) {
 describe("useModulePermission — bilinmezlik kuralı (spec §2.5.3)", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  // ⚠️ KAPI: MeResponse'ta izin alanı BE-A'ya kadar YOK. Gizleme bu hâlde
+  // ⚠️ KAPI — BE-A'dan SONRA DA KALIR: alanı taşımayan eski oturumda gizleme
   // devreye girerse tam yetkili kullanıcı ekranı salt-okunur görür.
   it("permissions alanı yokken canWrite true (bilinmezlik kuralı)", () => {
     mockSession();
