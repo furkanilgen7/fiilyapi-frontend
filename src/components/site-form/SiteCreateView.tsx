@@ -14,6 +14,7 @@ import { SiteInfoCard } from "./SiteInfoCard";
 import { LocationCard } from "./LocationCard";
 import { ScheduleCard } from "./ScheduleCard";
 import { SectionsCard } from "./SectionsCard";
+import { FacilitiesCard } from "./FacilitiesCard";
 import { emptySectionRow, type SectionRow } from "./sections-validate";
 import { emptySiteFormValues, type SiteFormValues } from "./form-state";
 import { SiteDocumentsCard } from "./SiteDocumentsCard";
@@ -166,7 +167,7 @@ export function SiteCreateView() {
 
         <ProjectInfoBanner project={project} />
 
-        {/* Kart yuvası — T8 (altyapı) bu gövdeye eklenecek. */}
+        {/* Altı kartın tamamı bağlı; gönderim mantığı T10'da bağlanacak. */}
         <div className="pf-body" data-testid="site-form-body">
           <SiteInfoCard
             values={values}
@@ -176,6 +177,7 @@ export function SiteCreateView() {
           <LocationCard values={values} onChange={handleChange} />
           <ScheduleCard values={values} onChange={handleChange} />
           <SectionsCard rows={sectionRows} onRowsChange={setSectionRows} />
+          <FacilitiesCard values={values} onChange={handleChange} />
           <SiteDocumentsCard />
         </div>
 

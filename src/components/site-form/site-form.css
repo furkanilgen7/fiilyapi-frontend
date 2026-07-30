@@ -203,3 +203,23 @@
   font-size: var(--text-small);
   color: var(--color-text-subtle);
 }
+
+/* ── 📦 Depo & Şantiye Altyapısı (mockup satır 147–174, spec §4.5) ────────── */
+.facilities__groups {
+  margin-bottom: var(--space-4);
+}
+/* Grup etiketi: tek kontrolü değil bir kümeyi adlandırır → <label> değil.
+   Tipografi `field.css`'in `.field__label` kuralından gelir (tek kaynak,
+   `field-adoption.test.ts` bunu kapıya bağlar); burada yalnız yerleşim var. */
+.facilities__group-label {
+  display: block;
+  margin-bottom: var(--space-form-label-gap);
+}
+.facilities__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-checkbox-list-gap);
+  padding: var(--space-3);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-9);
+}
