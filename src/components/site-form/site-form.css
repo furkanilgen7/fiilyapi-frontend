@@ -49,6 +49,14 @@
   border-radius: var(--radius-6);
 }
 
+/* ── Alt eylem şeridi (mockup satır 219–223) ─────────────────────────────── */
+/* 220: kutucuk metni 13px #475569. Kutucuk edilgen yer tutucudur (spec §4.7),
+   bu yüzden imleç "pointer" değil "default" kalır. */
+.pf-actions--split > .checkbox-label {
+  color: var(--color-text-secondary);
+  cursor: default;
+}
+
 /* Proje bulunamadı / yüklenemedi durumu (spec §12) */
 .site-form__message {
   padding: var(--space-8);

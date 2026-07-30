@@ -105,10 +105,45 @@ describe("SiteCreateView — kabuk (mockup 35–60)", () => {
   });
 });
 
+describe("SiteCreateView — belgeler + alt eylem şeridi (T9)", () => {
+  it("belgeler karti govdeye baglidir", () => {
+    render(<SiteCreateView />);
+    expect(
+      screen.getByRole("heading", { name: /📎 Şantiye Belgeleri/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("tum sayfada input[type=file] YOK", () => {
+    const { container } = render(<SiteCreateView />);
+    expect(container.querySelector('input[type="file"]')).toBeNull();
+  });
+
+  it("ust bar ve alt serit ayni uc eylemi sunar", () => {
+    const { container } = render(<SiteCreateView />);
+    const topbar = container.querySelector(".pf-topbar__actions");
+    const strip = container.querySelector(".pf-actions");
+
+    // Üst bar: İptal + Şantiyeyi Oluştur (mockup 41–42)
+    expect(within(topbar as HTMLElement).getByRole("button", { name: "İptal" })).toBeInTheDocument();
+    expect(
+      within(topbar as HTMLElement).getByRole("button", { name: "Şantiyeyi Oluştur" }),
+    ).toBeInTheDocument();
+
+    // Alt şerit: İptal + Taslak Kaydet + Şantiyeyi Oluştur (mockup 225–227)
+    expect(within(strip as HTMLElement).getByRole("button", { name: "İptal" })).toBeInTheDocument();
+    expect(
+      within(strip as HTMLElement).getByRole("button", { name: "Taslak Kaydet" }),
+    ).toBeInTheDocument();
+    expect(
+      within(strip as HTMLElement).getByRole("button", { name: "Şantiyeyi Oluştur" }),
+    ).toBeInTheDocument();
+  });
+});
+
 describe("SiteCreateView — proje sorgusu durumlari (spec §12)", () => {
   it("proje yuklenirken kirinti yolunda ... basar, form alanlari devre disi degildir", () => {
     mockProject({ data: undefined, isLoading: true });
-    render(<SiteCreateView />);
+    const { container } = render(<SiteCreateView />);
 
     const nav = screen.getByRole("navigation", { name: "Kırıntı yolu" });
     expect(within(nav).getByText("…")).toBeInTheDocument();
@@ -116,8 +151,9 @@ describe("SiteCreateView — proje sorgusu durumlari (spec §12)", () => {
     expect(screen.getByTestId("site-form-project-info-skeleton")).toBeInTheDocument();
     // Form gövdesi basılır ve eylemler devre dışı DEĞİLDİR.
     expect(screen.getByTestId("site-form-body")).toBeInTheDocument();
+    const topbar = container.querySelector(".pf-topbar__actions") as HTMLElement;
     expect(
-      screen.getByRole("button", { name: "Şantiyeyi Oluştur" }),
+      within(topbar).getByRole("button", { name: "Şantiyeyi Oluştur" }),
     ).not.toBeDisabled();
   });
 

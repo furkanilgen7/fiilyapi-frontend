@@ -31,6 +31,29 @@ describe("FormActions (paylaşılan alt eylem şeridi)", () => {
     expect(container.querySelector(".pf-actions")).toHaveClass("pf-actions--split");
   });
 
+  it("varsayılan variant butonları grup sarmalayıcısına almaz", () => {
+    const { container } = renderActions();
+    expect(container.querySelector(".pf-actions__group")).toBeNull();
+  });
+
+  it("variant=split butonları tek gruba alır (space-between'in sağ ucu)", () => {
+    const { container } = renderActions({ variant: "split" });
+    const group = container.querySelector(".pf-actions__group");
+    expect(group?.querySelectorAll("button")).toHaveLength(3);
+  });
+
+  it("variant=split leading yuvasını grup dışında, solda basar", () => {
+    const { container } = renderActions({
+      variant: "split",
+      leading: <span data-testid="leading-slot">sol</span>,
+    });
+    const strip = container.querySelector(".pf-actions") as HTMLElement;
+    expect(strip.firstElementChild).toHaveAttribute("data-testid", "leading-slot");
+    expect(
+      container.querySelector(".pf-actions__group [data-testid='leading-slot']"),
+    ).toBeNull();
+  });
+
   it("submitLabel prop'unu birincil butona basar", () => {
     renderActions({ submitLabel: "Şantiyeyi Oluştur" });
     expect(

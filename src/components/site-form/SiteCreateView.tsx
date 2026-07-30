@@ -9,6 +9,8 @@ import { useProject, type ProjectDetail } from "@/lib/api/hooks/useProjects";
 import { BackendError, isForbidden } from "@/lib/api/unwrap";
 import { pendingModuleLabel } from "@/lib/pending-modules";
 import { PROJECT_TABS } from "@/components/projects/tabs";
+import { SiteDocumentsCard } from "./SiteDocumentsCard";
+import { SiteFormActions } from "./SiteFormActions";
 // Sıra önemli: önce paylaşılan kabuk, sonra forma özgü bloklar (özgü kazansın).
 import "@/styles/form-shell.css";
 import "./site-form.css";
@@ -149,9 +151,13 @@ export function SiteCreateView() {
 
         <ProjectInfoBanner project={project} />
 
-        {/* Kart yuvası — T6 (bilgi/konum/takvim), T7 (bölümler), T8 (altyapı),
-            T9 (belgeler) bu gövdeye bağlanır. */}
-        <div className="pf-body" data-testid="site-form-body" />
+        {/* Kart yuvası — T6 (bilgi/konum/takvim), T7 (bölümler), T8 (altyapı)
+            bu gövdeye eklenecek; belgeler kartı T9'da bağlandı. */}
+        <div className="pf-body" data-testid="site-form-body">
+          <SiteDocumentsCard />
+        </div>
+
+        <SiteFormActions onCancel={handleCancel} onSaveDraft={noop} onSubmit={noop} />
       </div>
     </div>
   );

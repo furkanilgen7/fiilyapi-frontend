@@ -15,6 +15,11 @@ interface FormActionsProps {
    * `"split"` şeridi `space-between` yapar — şantiye formu (mockup satır 219).
    */
   variant?: "end" | "split";
+  /**
+   * `"split"` şeridinin SOL ucuna basılan içerik (şantiye mockup satır 220–223:
+   * edilgen "poz dağılımı" kutucuğu). `"end"` varyantında yok sayılır.
+   */
+  leading?: React.ReactNode;
 }
 
 /**
@@ -28,12 +33,10 @@ export function FormActions({
   submitLabel,
   isPending,
   variant = "end",
+  leading,
 }: FormActionsProps) {
-  const className =
-    variant === "split" ? "pf-actions pf-actions--split" : "pf-actions";
-
-  return (
-    <div className={className}>
+  const buttons = (
+    <>
       <Button
         variant="secondary"
         className="pf-action pf-action--cancel"
@@ -58,6 +61,20 @@ export function FormActions({
       >
         {submitLabel}
       </Button>
+    </>
+  );
+
+  // `"end"` varyantının DOM'u DEĞİŞMEZ (P1.1a görsel regresyonu): butonlar
+  // doğrudan şeridin çocuklarıdır. `"split"` `space-between` istediği için
+  // üçlü tek gruba alınır, sol uçta `leading` durur (şantiye mockup 219).
+  if (variant !== "split") {
+    return <div className="pf-actions">{buttons}</div>;
+  }
+
+  return (
+    <div className="pf-actions pf-actions--split">
+      {leading}
+      <div className="pf-actions__group">{buttons}</div>
     </div>
   );
 }
