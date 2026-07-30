@@ -595,6 +595,7 @@ Yer tutucu kuralları (P1.1a §8 ile birebir):
 | `--text-row-control` | `12px` | `.row-in` yazı boyu | 27 |
 | `--border-width-row-control` | `1px` | `.row-in` kenarlık | 27 |
 | `--radius-row-control` | `var(--radius-6)` | `.row-in` köşe | 27 |
+| `--space-form-action-gap` | `10px` | alt eylem grubu boşluğu (İptal · Taslak · Birincil). Kabuk `--space-2`=8px kullanıyordu; **proje mockup'ı 212 de 10px ister**, düzeltme paylaşılan kabuktadır (2026-07-30) | 224 |
 
 **Kart başlığı düzeltmesi (2026-07-30, kullanıcı kararı).** Paylaşılan
 `.pf-card__title` `--text-body` (13px) kullanıyordu; **iki mockup da**

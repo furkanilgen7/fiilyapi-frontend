@@ -277,6 +277,9 @@
   --text-row-control: 12px; /* .row-in yazı boyu (27) */
   --border-width-row-control: 1px; /* .row-in kenarlık (27) */
   --radius-row-control: var(--radius-6); /* .row-in köşe (27) — yeni px yok */
+  /* Alt eylem grubu — şantiye mockup 224 ve proje mockup 212'de `gap:10px`.
+     --space-2 8px'tir; kabuk 2026-07-30'a kadar onu kullanıyordu. */
+  --space-form-action-gap: 10px; /* İptal · Taslak · Birincil arası (224) */
 }
 
 @keyframes fadeUp {

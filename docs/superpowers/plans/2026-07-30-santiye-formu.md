@@ -70,12 +70,13 @@ korunsa bile tarayıcı varsayılan `<a>` davranışı, `line-height`/`text-deco
 | 1 | `e2e/site-form-visual.spec.ts-snapshots/santiye-formu-chromium-linux.png` | **yeni** ekran (T13) |
 | 2 | `e2e/project-detail-visual.spec.ts-snapshots/proje-detay-chromium-linux.png` | T11 — buton → link dönüşümü |
 | 3 | `e2e/projects-visual.spec.ts-snapshots/projects-chromium-linux.png` | **risk**: T1'in CSS taşıması `.pf-*` bloklarını global `form-shell.css`'e alıyor; import sırası değişirse kaskad kayar. T1'in kabul kriteri "sıfır görsel fark" — ama tur açılırken bu üçüncüsü de **kontrol edilir** |
-| 4 | `e2e/project-form-visual.spec.ts-snapshots/project-form-new-chromium-linux.png` | **BEKLENEN** (kullanıcı kararı 2026-07-30): `.pf-card__title` 13px → **14px**. Mockup `.card-t` (satır 24) kanondur; paylaşılan kabukta düzeltildiği için **P1.1a proje formu da kayar** |
+| 4 | `e2e/project-form-visual.spec.ts-snapshots/project-form-new-chromium-linux.png` | **BEKLENEN** (kullanıcı kararı 2026-07-30), iki paylaşılan kabuk düzeltmesi: (a) `.pf-card__title` 13px → **14px** (`.card-t`, iki mockup da satır 24); (b) `.pf-actions` boşluğu 8px → **10px** (şantiye 224, proje 212). İkisi de `form-shell.css`'te olduğu için **P1.1a proje formu da kayar** |
 
 > **TZ-3'ün eski "P1.1a baseline'ı kaymamalı" kuralı 2026-07-30'da GEÇERSİZDİR.**
-> Kart başlığı düzeltmesi P1.1a baseline'ını bilerek kaydırır. T13'te
+> Yukarıdaki iki düzeltme P1.1a baseline'ını bilerek kaydırır. T13'te
 > `project-form-new-*` üzerindeki fark **beklenmeyen kayma değildir**; yalnızca
-> farkın *tek* farkın başlık yazı boyu olduğu doğrulanır.
+> farkın kart başlığı yazı boyu + eylem butonları arası boşlukla sınırlı
+> kaldığı doğrulanır.
 
 **Ayrı turlar açılmaz.** Tek `workflow_dispatch` koşusunun artifact'i açılır, tek commit
 ile işlenir (T13).

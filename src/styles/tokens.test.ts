@@ -109,8 +109,9 @@ describe("tokens.css", () => {
       ["--text-row-control", "12px"], // .row-in yazı boyu (27)
       ["--border-width-row-control", "1px"], // .row-in kenarlık (27)
       ["--radius-row-control", "var\\(--radius-6\\)"], // .row-in köşe (27)
+      ["--space-form-action-gap", "10px"], // alt eylem grubu boşluğu (224)
     ];
-    expect(siteFormTokens).toHaveLength(22);
+    expect(siteFormTokens).toHaveLength(23);
     for (const [token, value] of siteFormTokens) {
       expect(tokensCss, `${token} tanımlı değil ya da değeri farklı`).toMatch(
         new RegExp(`${token}:\\s*${value}\\s*;`),

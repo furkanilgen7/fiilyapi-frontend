@@ -113,6 +113,17 @@ describe("form-shell.css — paylaşılan form kabuğu", () => {
     );
   });
 
+  it("eylem grubu boşluğu 10px token'ıdır, --space-2 (8px) değil (satır 224)", () => {
+    // Şantiye mockup 224 ve proje mockup 212: `display:flex; gap:10px`.
+    // --space-2 8px'tir; iki formda da butonlar birbirine 2px fazla yakındı.
+    expect(shellCss).toMatch(
+      /\.pf-actions\s*\{[^}]*gap:\s*var\(--space-form-action-gap\)/,
+    );
+    expect(shellCss).toMatch(
+      /\.pf-actions--split \.pf-actions__group\s*\{[^}]*gap:\s*var\(--space-form-action-gap\)/,
+    );
+  });
+
   it("alt eylem şeridinin split varyantını tanımlar (mockup satır 219)", () => {
     expect(shellCss).toMatch(
       /\.pf-actions--split[^{]*{[^}]*justify-content:\s*space-between/,
