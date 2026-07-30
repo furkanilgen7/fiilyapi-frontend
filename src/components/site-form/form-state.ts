@@ -15,7 +15,10 @@ export const FACILITY_KEYS = [
   "changing_room_wc",
   "dormitory",
   "infirmary",
-] as const;
+  // `satisfies` şemaya bağlar: yeniden adlandırılan/kaldırılan bir anahtar
+  // burada derleme hatası verir. Yeni anahtar eklenmesini `buildFacilities`
+  // yakalar (orada sekizi de tek tek yazılıdır).
+] as const satisfies readonly (keyof components["schemas"]["SiteFacilitiesInput"])[];
 
 export type FacilityKey = (typeof FACILITY_KEYS)[number];
 export type FacilityValues = Record<FacilityKey, boolean>;
@@ -90,7 +93,17 @@ export function emptySiteFormValues(): SiteFormValues {
 export function buildFacilities(
   values: FacilityValues,
 ): components["schemas"]["SiteFacilitiesInput"] {
-  return Object.fromEntries(
-    FACILITY_KEYS.map((key) => [key, values[key]]),
-  ) as components["schemas"]["SiteFacilitiesInput"];
+  // Anahtarlar TEK TEK yazılır, `Object.fromEntries` + `as` ile DEĞİL:
+  // üretilmiş şemaya yeni bir tesis anahtarı eklendiğinde `as` sessizce
+  // yutardı ve alan gövdeden düşerdi. Bu hâliyle `pnpm typecheck` kırılır.
+  return {
+    closed_warehouse: values.closed_warehouse,
+    open_storage: values.open_storage,
+    cold_storage: values.cold_storage,
+    site_office: values.site_office,
+    canteen: values.canteen,
+    changing_room_wc: values.changing_room_wc,
+    dormitory: values.dormitory,
+    infirmary: values.infirmary,
+  };
 }
