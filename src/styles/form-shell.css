@@ -1,0 +1,259 @@
+/* Paylaşılan tam sayfa form kabuğu (`.pf-*`).
+   T1'de `project-form.css`'ten TAŞINDI (kopyalanmadı — çift tanım kaskad
+   kaydırır, `form-shell.test.ts` bunu kapıya bağlar). Sınıf adları değişmedi,
+   bildirimlerin içeriği birebir korundu.
+
+   Kaynak mockup'lar: projedesign "Form - Proje Oluştur.dc.html" (P1.1a) ve
+   "Form - Santiye Ekle.dc.html". Satır numaralı gerekçeler blokların üstünde.
+
+   İMPORT SIRASI: bu dosya forma özgü CSS'ten ÖNCE import edilir; özgü olan
+   kazansın. Global `globals.css`'e eklenmez (kapsam sızıntısı). */
+
+/* İçerik sütunu (proje mockup satır 43, 44) */
+.pf {
+  max-width: var(--form-column-max);
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-8);
+  /* Sayfa alt boşluğu 40px (satır 43) = 32px + 8px */
+  padding-bottom: calc(var(--space-8) + var(--space-2));
+  animation: var(--anim-fade-up);
+}
+
+/* Yapışkan form başlığı — mockup üst barı (proje 34–40, şantiye 35–43).
+   Uygulama kabuğu korunur; bu bar içerik sütununun üstünde yapışkan durur. */
+.pf-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-3) var(--space-8);
+}
+
+/* Kırıntı yolu (satır 34–36): 12px, gap 5px, ayraç #e2e8f0, aktif 600/#1e293b */
+.pf-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-form-label-gap);
+  font-size: var(--text-xs); /* 12px (satır 34) — etiket token'ı değil */
+}
+.pf-breadcrumb a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+.pf-breadcrumb a:hover {
+  color: var(--color-primary);
+}
+.pf-breadcrumb__sep {
+  color: var(--color-border);
+}
+.pf-breadcrumb__current {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.pf-topbar__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+/* Üst bar eylemleri daha küçük (satır 37–40): 8px 14px / 8px 18px */
+.pf-topbar__actions .pf-topbar-cancel {
+  padding: var(--space-2) 14px;
+  border-width: var(--border-width-form);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+.pf-topbar__actions .pf-topbar-submit {
+  padding: var(--space-2) 18px;
+}
+
+/* Sayfa başlığı (proje 46–47, şantiye 49–50) */
+.pf-head {
+  margin-bottom: var(--space-5);
+}
+.pf-title {
+  font-size: 22px;
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.3px;
+  margin-bottom: var(--space-1);
+  color: var(--color-text);
+}
+.pf-subtitle {
+  font-size: var(--text-body);
+  color: var(--color-text-subtle);
+}
+
+/* Kart yuvası */
+.pf-body {
+  display: block;
+}
+
+/* Sunucu hatası şeridi (mockup'ta yok; alan dışı hata gösterimi) */
+.pf-form-error {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-danger-soft);
+  border-radius: var(--radius-8);
+  font-size: var(--text-body);
+  color: var(--color-danger-text);
+}
+
+/* Alt eylem şeridi (proje 212–216, şantiye 219–229) */
+.pf-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+/* Şantiye formunda şerit iki uca yaslanır (şantiye mockup satır 219:
+   `justify-content: space-between`) — solda poz dağılımı kutucuğu durur. */
+.pf-actions--split {
+  justify-content: space-between;
+}
+.pf-actions .pf-action {
+  padding: 10px 20px;
+  font-size: var(--text-body);
+}
+.pf-actions .pf-action--cancel {
+  border-width: var(--border-width-form);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+/* Taslak Kaydet: beyaz zemin, primary metin, #bfdbfe kenar (satır 214) */
+.pf-actions .pf-action--draft {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border: var(--border-width-form) solid var(--color-form-card-accent);
+  font-weight: var(--weight-semibold);
+}
+.pf-actions .pf-action--submit {
+  padding: 10px 24px;
+  font-weight: var(--weight-semibold);
+}
+
+/* ── Ortak kart (mockup .card, proje satır 23–24) ────────────────────────── */
+.pf-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-form-card);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-card);
+  margin-bottom: var(--space-4);
+}
+.pf-card__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-body); /* 14→13 govde; baslik 14/600 */
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-4);
+  color: var(--color-text);
+}
+/* Kart başlığındaki zorunluluk yıldızı (satır 51 "*") — .req (mockup) ile aynı renk. */
+.pf-card__req {
+  color: var(--color-danger);
+}
+/* Kart başlığının sağındaki "yakında" notu */
+.pf-card__note {
+  margin-left: auto;
+  font-size: var(--text-small);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-subtle);
+  max-width: 60%;
+  text-align: right;
+}
+
+/* Alan ızgaraları (proje satır 83, 97, 107, 116, 151; şantiye 65, 78, 93) */
+.pf-grid {
+  display: grid;
+  gap: 14px;
+}
+.pf-grid--2 {
+  grid-template-columns: 1fr 1fr;
+}
+.pf-grid--3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+.pf-grid--4 {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+.pf-grid--2-1 {
+  grid-template-columns: 2fr 1fr;
+}
+.pf-grid--2-1-1 {
+  grid-template-columns: 2fr 1fr 1fr;
+}
+.pf-col-span-2 {
+  grid-column: span 2;
+}
+
+/* ── Belge yer tutucu kartı (mockup .drop, proje satır 25/162–209,
+      şantiye 177–217) ────────────────────────────────────────────────────── */
+.pf-docs__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+/* Şantiye formu belge ızgarası üç sütunludur (şantiye mockup satır 179). */
+.pf-docs__grid--3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+/* Yükleme kapalı: tıklanamaz, hover efekti yok, cursor default. */
+.pf-doc {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border: 2px dashed var(--color-dashed-border);
+  border-radius: var(--radius-10);
+  padding: 14px;
+  background: var(--color-surface-2);
+  cursor: default;
+}
+.pf-doc--drop {
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  margin-top: var(--space-3);
+}
+.pf-doc__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.pf-doc__text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.pf-doc__text--center {
+  align-items: center;
+  text-align: center;
+}
+.pf-doc__title {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.pf-doc__sub {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-top: 1px;
+}
+.pf-doc__badge {
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  padding: 4px 10px;
+  border-radius: var(--radius-7);
+}
