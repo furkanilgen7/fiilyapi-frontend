@@ -3,7 +3,7 @@ import { Fragment } from "react";
 import { Button } from "@/components/ui/button/Button";
 import { formatAmount, formatQuantity } from "@/lib/format";
 import { pendingModuleLabel } from "@/lib/pending-modules";
-import type { BoqGroup, BoqTotals } from "@/lib/api/hooks/useBoq";
+import type { BoqGroup, BoqItem, BoqTotals } from "@/lib/api/hooks/useBoq";
 
 import "./boq.css";
 
@@ -17,13 +17,26 @@ export interface BoqTableProps {
    * buton görünür kalır (bilinmezlik kuralı §2.5.3).
    */
   canWrite?: boolean;
+  /** Boş durumdaki "+ İş Kalemi" eylemi (spec §9). */
+  onCreate?: () => void;
+  /** Satır tetikleyicisi — düzenleme kipini açar (spec §7.2). */
+  onEditItem?: (item: BoqItem, groupId: string) => void;
 }
 
 const COLUMN_COUNT = 7;
 
 // Poz tablosu (mockup 92–171). Mockup'in 7 sutunlu duzeni korunur: eylem
 // sutunu / kebap menusu / 8. sutun EKLENMEZ (spec §7 karar 4).
-export function BoqTable({ groups, totals, canWrite = true }: BoqTableProps) {
+export function BoqTable({
+  groups,
+  totals,
+  canWrite = true,
+  onCreate,
+  onEditItem,
+}: BoqTableProps) {
+  // Duzenleme yalniz yazma yetkisi VE bir tetikleyici varken baglanir; aksi
+  // halde "gorunup calismayan" odaklanabilir oge birakilmaz (spec §7.2).
+  const isRowEditable = canWrite && Boolean(onEditItem);
   const totalHint = pendingModuleLabel(totals.grand_progress_pct.pending_module);
   return (
     <div className="boq-table-card">
@@ -64,7 +77,11 @@ export function BoqTable({ groups, totals, canWrite = true }: BoqTableProps) {
                     baglidir (spec §2.5): salt-okunur kullaniciya calismayan
                     yazma yuzeyi birakilmaz. */}
                 {canWrite && (
-                  <Button variant="primary" className="boq-action boq-action--primary">
+                  <Button
+                    variant="primary"
+                    className="boq-action boq-action--primary"
+                    onClick={onCreate}
+                  >
                     + İş Kalemi
                   </Button>
                 )}
@@ -91,9 +108,30 @@ export function BoqTable({ groups, totals, canWrite = true }: BoqTableProps) {
                 {group.items.map((item) => {
                   const hint = pendingModuleLabel(item.progress_pct.pending_module);
                   return (
-                    <tr key={item.id} className="boq-table__row">
+                    <tr
+                      key={item.id}
+                      className={
+                        isRowEditable
+                          ? "boq-table__row boq-table__row--editable"
+                          : "boq-table__row"
+                      }
+                    >
+                      {/* Tetikleyici Poz No hucresindeki GERCEK <button>'dir;
+                          <tr tabIndex role="button"> satir semantigini bozar
+                          (spec §7.2). Gorunusu duz metindir. */}
                       <td className="boq-table__cell boq-table__cell--code boq-table__col--code">
-                        {item.code}
+                        {isRowEditable ? (
+                          <button
+                            type="button"
+                            className="boq-table__row-trigger"
+                            aria-label={`${item.code} — ${item.description} kalemini düzenle`}
+                            onClick={() => onEditItem?.(item, group.id)}
+                          >
+                            {item.code}
+                          </button>
+                        ) : (
+                          <span>{item.code}</span>
+                        )}
                       </td>
                       <td className="boq-table__cell boq-table__col--desc">{item.description}</td>
                       <td className="boq-table__cell boq-table__cell--unit boq-table__col--unit">

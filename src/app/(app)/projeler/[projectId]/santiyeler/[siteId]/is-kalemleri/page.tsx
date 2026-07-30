@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 
+import { BoqItemFormModal, type BoqItemFormMode } from "@/components/boq/BoqItemFormModal";
 import { BoqTable } from "@/components/boq/BoqTable";
 import { BoqTotalsStrip } from "@/components/boq/BoqTotalsStrip";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Button } from "@/components/ui/button/Button";
-import { useBoq, type BoqListResponse } from "@/lib/api/hooks/useBoq";
+import { useBoq, type BoqItem, type BoqListResponse } from "@/lib/api/hooks/useBoq";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
@@ -25,6 +27,8 @@ export default function BoqPage() {
   // Yazma yuzeyleri kapisi (spec §2.5). Yetki zorlamasi HER ZAMAN backend'de;
   // bu kapi yalniz salt-okunur role calismayan buton gostermemek icin.
   const { canWrite } = useModulePermission("boq");
+  // Tek modal, iki kip (spec §7.1): `null` = kapali.
+  const [formMode, setFormMode] = useState<BoqItemFormMode | null>(null);
 
   if (isForbidden(boqQuery.error) || isForbidden(siteQuery.error)) return <AccessDenied />;
 
@@ -53,7 +57,11 @@ export default function BoqPage() {
             Excel İndir
           </Button>
           {canWrite && (
-            <Button variant="primary" className="boq-action boq-action--primary">
+            <Button
+              variant="primary"
+              className="boq-action boq-action--primary"
+              onClick={() => setFormMode({ kind: "create" })}
+            >
               + İş Kalemi
             </Button>
           )}
@@ -64,7 +72,22 @@ export default function BoqPage() {
           dordu de yer tutucudur (spec §4). */}
       <BoqTotalsStrip totals={boqQuery.data?.totals} />
 
-      <BoqBody isError={boqQuery.isError} data={boqQuery.data} canWrite={canWrite} />
+      <BoqBody
+        isError={boqQuery.isError}
+        data={boqQuery.data}
+        canWrite={canWrite}
+        onCreate={() => setFormMode({ kind: "create" })}
+        onEditItem={(item, groupId) => setFormMode({ kind: "edit", item, groupId })}
+      />
+
+      {formMode && (
+        <BoqItemFormModal
+          siteId={siteId}
+          groups={boqQuery.data?.groups ?? []}
+          mode={formMode}
+          onClose={() => setFormMode(null)}
+        />
+      )}
     </div>
   );
 }
@@ -75,12 +98,24 @@ function BoqBody({
   isError,
   data,
   canWrite,
+  onCreate,
+  onEditItem,
 }: {
   isError: boolean;
   data?: BoqListResponse;
   canWrite: boolean;
+  onCreate: () => void;
+  onEditItem: (item: BoqItem, groupId: string) => void;
 }) {
   if (isError) return <p className="boq__message">İş kalemleri yüklenemedi</p>;
   if (!data) return <p className="boq__message">Yükleniyor…</p>;
-  return <BoqTable groups={data.groups} totals={data.totals} canWrite={canWrite} />;
+  return (
+    <BoqTable
+      groups={data.groups}
+      totals={data.totals}
+      canWrite={canWrite}
+      onCreate={onCreate}
+      onEditItem={onEditItem}
+    />
+  );
 }

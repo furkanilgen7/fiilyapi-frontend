@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, within, fireEvent } from "@testing-library/react";
 
 import BoqPage from "./page";
 import { useSite } from "@/lib/api/hooks/useSites";
@@ -24,6 +24,14 @@ const SITE_ID = "44444444-4444-4444-4444-444444444444";
 
 vi.mock("next/navigation", () => ({
   useParams: () => ({ projectId: PROJECT_ID, siteId: SITE_ID }),
+}));
+
+// Modal gercek bilesen olarak render edilir (baglantiyi dogrulamak icin);
+// yalniz yazma uclari taklit edilir — sayfa testi aga cikmaz.
+vi.mock("@/lib/api/hooks/useBoqMutations", () => ({
+  useCreateBoqGroup: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateBoqItem: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateBoqItem: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
 // Izin kapisi oturum yukunden okunur (spec §2.5.2); sayfa testinde gercek
@@ -55,6 +63,31 @@ const EMPTY_BOQ: BoqListResponse = {
     grand_total: "0.00",
     grand_progress_pct: { available: false, value: null, pending_module: "progress_payments" },
   },
+};
+
+const FULL_BOQ: BoqListResponse = {
+  ...EMPTY_BOQ,
+  groups: [
+    {
+      id: "gggggggg-0000-0000-0000-000000000001",
+      name: "Toprak ve Temel İşleri",
+      sort_order: 10,
+      group_total: "347200.00",
+      items: [
+        {
+          id: "aaaaaaaa-0000-0000-0000-000000000001",
+          code: "01.001",
+          description: "Kazı (Makine ile)",
+          unit: "m³",
+          quantity: "1240.000",
+          unit_price: "280.00",
+          amount: "347200.00",
+          sort_order: 0,
+          progress_pct: { available: false, value: null, pending_module: "progress_payments" },
+        },
+      ],
+    },
+  ],
 };
 
 function mockSite(value: Partial<ReturnType<typeof useSite>>) {
@@ -210,5 +243,59 @@ describe("BoqPage — istemci izin kapısı (spec §2.5)", () => {
     render(<BoqPage />);
     expect(screen.getByText("Bu şantiyede henüz iş kalemi tanımlanmadı.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "+ İş Kalemi" })).not.toBeInTheDocument();
+  });
+});
+
+// F8: yazma yüzeylerinin modale bağlanması (spec §7.1, §7.2).
+describe("BoqPage — BoqItemFormModal bağlantısı (spec §7)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPermission("full");
+    mockSite({ data: SITE });
+    mockBoq({ data: FULL_BOQ });
+  });
+
+  it("başlangıçta modal kapalıdır", () => {
+    render(<BoqPage />);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("+ İş Kalemi modalı create kipinde açar", () => {
+    render(<BoqPage />);
+    fireEvent.click(screen.getByRole("button", { name: "+ İş Kalemi" }));
+    expect(screen.getByRole("dialog", { name: "Yeni İş Kalemi" })).toBeInTheDocument();
+  });
+
+  it("boş durumdaki + İş Kalemi de modalı açar", () => {
+    mockBoq({ data: EMPTY_BOQ });
+    render(<BoqPage />);
+    // Başlık şeridindeki ikiziyle karışmaması için boş durum hücresine kapsanır.
+    const emptyCell = screen.getByTestId("boq-empty");
+    fireEvent.click(within(emptyCell).getByRole("button", { name: "+ İş Kalemi" }));
+    expect(screen.getByRole("dialog", { name: "Yeni İş Kalemi" })).toBeInTheDocument();
+  });
+
+  it("poz satırına tıklamak modalı edit kipinde ve dolu açar", () => {
+    render(<BoqPage />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "01.001 — Kazı (Makine ile) kalemini düzenle" }),
+    );
+    expect(screen.getByRole("dialog", { name: "İş Kalemi Düzenle" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Poz No")).toHaveValue("01.001");
+  });
+
+  it("Vazgeç modalı kapatır", () => {
+    render(<BoqPage />);
+    fireEvent.click(screen.getByRole("button", { name: "+ İş Kalemi" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vazgeç" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("canWrite false iken satır tetikleyicisi hiç basılmaz", () => {
+    mockPermission("view");
+    render(<BoqPage />);
+    expect(
+      screen.queryByRole("button", { name: "01.001 — Kazı (Makine ile) kalemini düzenle" }),
+    ).not.toBeInTheDocument();
   });
 });

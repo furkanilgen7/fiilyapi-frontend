@@ -1,0 +1,413 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+
+import { BoqItemFormModal } from "./BoqItemFormModal";
+import { useCreateBoqGroup, useCreateBoqItem, useUpdateBoqItem } from "@/lib/api/hooks/useBoqMutations";
+import { BackendError } from "@/lib/api/unwrap";
+import type { BoqGroup, BoqItem } from "@/lib/api/hooks/useBoq";
+
+vi.mock("@/lib/api/hooks/useBoqMutations", () => ({
+  useCreateBoqGroup: vi.fn(),
+  useCreateBoqItem: vi.fn(),
+  useUpdateBoqItem: vi.fn(),
+}));
+
+const SITE_ID = "44444444-4444-4444-4444-444444444444";
+const GROUP_1 = "gggggggg-0000-0000-0000-000000000001";
+const GROUP_2 = "gggggggg-0000-0000-0000-000000000002";
+
+function item(overrides: Partial<BoqItem> = {}): BoqItem {
+  return {
+    id: "aaaaaaaa-0000-0000-0000-000000000001",
+    code: "01.001",
+    description: "Kazı (Makine ile)",
+    unit: "m³",
+    quantity: "1240.000",
+    unit_price: "280.00",
+    amount: "347200.00",
+    sort_order: 5,
+    progress_pct: { available: false, value: null, pending_module: "progress_payments" },
+    ...overrides,
+  };
+}
+
+const GROUPS: BoqGroup[] = [
+  {
+    id: GROUP_1,
+    name: "Toprak ve Temel İşleri",
+    sort_order: 10,
+    group_total: "347200.00",
+    items: [item(), item({ id: "aaaaaaaa-0000-0000-0000-000000000002", sort_order: 12 })],
+  },
+  {
+    id: GROUP_2,
+    name: "Betonarme İşleri",
+    sort_order: 20,
+    group_total: "0.00",
+    items: [],
+  },
+];
+
+const createGroup = vi.fn();
+const createItem = vi.fn();
+const updateItem = vi.fn();
+const onClose = vi.fn();
+
+function mockMutations() {
+  vi.mocked(useCreateBoqGroup).mockReturnValue({
+    mutateAsync: createGroup,
+    isPending: false,
+  } as never);
+  vi.mocked(useCreateBoqItem).mockReturnValue({
+    mutateAsync: createItem,
+    isPending: false,
+  } as never);
+  vi.mocked(useUpdateBoqItem).mockReturnValue({
+    mutateAsync: updateItem,
+    isPending: false,
+  } as never);
+}
+
+function renderCreate(groups: BoqGroup[] = GROUPS) {
+  render(
+    <BoqItemFormModal siteId={SITE_ID} groups={groups} mode={{ kind: "create" }} onClose={onClose} />,
+  );
+}
+
+function renderEdit(mode?: { item: BoqItem; groupId: string }) {
+  render(
+    <BoqItemFormModal
+      siteId={SITE_ID}
+      groups={GROUPS}
+      mode={{ kind: "edit", item: mode?.item ?? item(), groupId: mode?.groupId ?? GROUP_1 }}
+      onClose={onClose}
+    />,
+  );
+}
+
+function setField(label: string, value: string) {
+  fireEvent.change(screen.getByLabelText(label), { target: { value } });
+}
+
+/** Geçerli bir create formunu doldurur; `skip` verilen alan boş bırakılır. */
+function fillValidCreateForm(skip?: string) {
+  const values: Record<string, string> = {
+    Grup: GROUP_1,
+    "Poz No": "01.003",
+    "İş Kalemi Tarifi": "Grobeton",
+    Birim: "m³",
+    Miktar: "10",
+    "Birim Fiyat": "100",
+  };
+  for (const [label, value] of Object.entries(values)) {
+    if (label === skip) continue;
+    setField(label, value);
+  }
+}
+
+function save() {
+  fireEvent.click(screen.getByRole("button", { name: "Kaydet" }));
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockMutations();
+  createGroup.mockResolvedValue({ id: "gggggggg-0000-0000-0000-000000000009" });
+  createItem.mockResolvedValue({ id: "new-item" });
+  updateItem.mockResolvedValue({ id: "edited-item" });
+});
+
+describe("BoqItemFormModal — ortak yapı (spec §7.1)", () => {
+  it("create kipinde başlık Yeni İş Kalemi'dir", () => {
+    renderCreate();
+    expect(screen.getByRole("dialog", { name: "Yeni İş Kalemi" })).toBeInTheDocument();
+  });
+
+  it("edit kipinde başlık İş Kalemi Düzenle'dir", () => {
+    renderEdit();
+    expect(screen.getByRole("dialog", { name: "İş Kalemi Düzenle" })).toBeInTheDocument();
+  });
+
+  it("altı alan tablo sütun başlıklarıyla birebir etiketlenir", () => {
+    renderCreate();
+    for (const label of ["Grup", "Poz No", "İş Kalemi Tarifi", "Birim", "Miktar", "Birim Fiyat"]) {
+      expect(screen.getByLabelText(label)).toBeInTheDocument();
+    }
+  });
+
+  // §7.1.1: mockup'ta karşılığı olmadığı için "Sıra" alanı KOPYALANMAZ
+  // (SectionFormModal'dan sızmaması gereken tek alan).
+  it("görünür Sıra alanı yoktur", () => {
+    renderCreate();
+    expect(screen.queryByLabelText("Sıra")).not.toBeInTheDocument();
+  });
+
+  // T6 / §7.5: DELETE ucu backend'de yok — Sil butonu bu dilime SIZMAZ.
+  it("edit kipinde bile Sil butonu basılmaz (F13 bloklu)", () => {
+    renderEdit();
+    expect(screen.queryByRole("button", { name: "Sil" })).not.toBeInTheDocument();
+  });
+
+  it("alt şeritte Vazgeç ve Kaydet vardır", () => {
+    renderCreate();
+    expect(screen.getByRole("button", { name: "Vazgeç" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Kaydet" })).toBeInTheDocument();
+  });
+});
+
+describe("BoqItemFormModal — doğrulama (spec §7.1.4)", () => {
+  const CASES: [string, string][] = [
+    ["Grup", "Grup seçin."],
+    ["Poz No", "Poz No zorunludur."],
+    ["İş Kalemi Tarifi", "İş Kalemi Tarifi zorunludur."],
+    ["Birim", "Birim zorunludur."],
+    ["Miktar", "Miktar sıfırdan büyük olmalıdır."],
+    ["Birim Fiyat", "Birim Fiyat negatif olamaz."],
+  ];
+
+  it.each(CASES)("%s boşken '%s' basılır", (field, message) => {
+    renderCreate();
+    fillValidCreateForm(field);
+    if (field === "Birim Fiyat") setField("Birim Fiyat", "-1");
+    save();
+    expect(screen.getByText(message)).toBeInTheDocument();
+  });
+
+  it("Kaydet doğrulama geçmeden istek atmaz", () => {
+    renderCreate();
+    save();
+    expect(createItem).not.toHaveBeenCalled();
+    expect(createGroup).not.toHaveBeenCalled();
+  });
+
+  it("Miktar sıfırken de reddedilir (backend CHECK > 0)", () => {
+    renderCreate();
+    fillValidCreateForm();
+    setField("Miktar", "0");
+    save();
+    expect(screen.getByText("Miktar sıfırdan büyük olmalıdır.")).toBeInTheDocument();
+    expect(createItem).not.toHaveBeenCalled();
+  });
+
+  it("ilk hatalı alan odaklanır", () => {
+    renderCreate();
+    fillValidCreateForm("Poz No");
+    save();
+    expect(document.activeElement).toBe(screen.getByLabelText("Poz No"));
+  });
+
+  it("hiçbir alan doldurulmadıysa odak Grup seçicisine gider", () => {
+    renderCreate();
+    save();
+    expect(document.activeElement).toBe(screen.getByLabelText("Grup"));
+  });
+});
+
+describe("BoqItemFormModal — create kipi (spec §7.1.2)", () => {
+  it("sort_order seçili grubun max sort_order + 1 olarak gönderilir", async () => {
+    renderCreate();
+    fillValidCreateForm();
+    save();
+    await waitFor(() => expect(createItem).toHaveBeenCalled());
+    expect(createItem).toHaveBeenCalledWith(
+      expect.objectContaining({ group_id: GROUP_1, code: "01.003", sort_order: 13 }),
+    );
+  });
+
+  it("kalemi olmayan gruba eklenen ilk kalemin sort_order'ı 0'dır", async () => {
+    renderCreate();
+    fillValidCreateForm();
+    setField("Grup", GROUP_2);
+    save();
+    await waitFor(() => expect(createItem).toHaveBeenCalled());
+    expect(createItem).toHaveBeenCalledWith(expect.objectContaining({ sort_order: 0 }));
+  });
+
+  it("başarıda modal kapanır", async () => {
+    renderCreate();
+    fillValidCreateForm();
+    save();
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it("409 → 'Bu poz numarası bu şantiyede zaten kullanılıyor.' basılır", async () => {
+    createItem.mockRejectedValue(new BackendError(409, { detail: "duplicate key value" }));
+    renderCreate();
+    fillValidCreateForm();
+    save();
+    expect(
+      await screen.findByText("Bu poz numarası bu şantiyede zaten kullanılıyor."),
+    ).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("422 gövdesindeki Türkçe mesaj aynen basılır", async () => {
+    createItem.mockRejectedValue(new BackendError(422, { detail: "Grup başka bir şantiyeye ait." }));
+    renderCreate();
+    fillValidCreateForm();
+    save();
+    expect(await screen.findByText("Grup başka bir şantiyeye ait.")).toBeInTheDocument();
+  });
+});
+
+describe("BoqItemFormModal — + Yeni Grup (spec §7.3)", () => {
+  const NEW_GROUP_OPTION = "__new__";
+
+  it("Grup açılırının son seçeneği + Yeni Grup'tur", () => {
+    renderCreate();
+    const options = Array.from(screen.getByLabelText("Grup").querySelectorAll("option"));
+    expect(options[options.length - 1]).toHaveTextContent("+ Yeni Grup");
+  });
+
+  it("+ Yeni Grup seçilince Grup Adı alanı belirir ve boşsa 'Grup adı zorunludur.' der", () => {
+    renderCreate();
+    expect(screen.queryByLabelText("Grup Adı")).not.toBeInTheDocument();
+    setField("Grup", NEW_GROUP_OPTION);
+    expect(screen.getByLabelText("Grup Adı")).toBeInTheDocument();
+    fillValidCreateForm("Grup");
+    save();
+    expect(screen.getByText("Grup adı zorunludur.")).toBeInTheDocument();
+    expect(createGroup).not.toHaveBeenCalled();
+  });
+
+  it("+ Yeni Grup ile kaydetme önce grubu, sonra kalemi POST eder", async () => {
+    renderCreate();
+    fillValidCreateForm("Grup");
+    setField("Grup", NEW_GROUP_OPTION);
+    setField("Grup Adı", "Çatı İşleri");
+    save();
+    await waitFor(() => expect(createItem).toHaveBeenCalled());
+    expect(createGroup).toHaveBeenCalledWith({ name: "Çatı İşleri", sort_order: 21 });
+    expect(createItem).toHaveBeenCalledWith(
+      expect.objectContaining({ group_id: "gggggggg-0000-0000-0000-000000000009", sort_order: 0 }),
+    );
+    expect(createGroup.mock.invocationCallOrder[0]).toBeLessThan(
+      createItem.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("ikinci istek hata verirse 'Grup oluşturuldu, kalem eklenemedi: …' basılır (sessiz yutma yok)", async () => {
+    createItem.mockRejectedValue(new BackendError(500, { detail: "sunucu hatası" }));
+    renderCreate();
+    fillValidCreateForm("Grup");
+    setField("Grup", NEW_GROUP_OPTION);
+    setField("Grup Adı", "Çatı İşleri");
+    save();
+    expect(
+      await screen.findByText("Grup oluşturuldu, kalem eklenemedi: sunucu hatası"),
+    ).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("grup isteği hata verirse kalem POST edilmez", async () => {
+    createGroup.mockRejectedValue(new BackendError(403, { detail: "Bu işlem için yetkiniz yok" }));
+    renderCreate();
+    fillValidCreateForm("Grup");
+    setField("Grup", NEW_GROUP_OPTION);
+    setField("Grup Adı", "Çatı İşleri");
+    save();
+    expect(await screen.findByText("Bu işlem için yetkiniz yok")).toBeInTheDocument();
+    expect(createItem).not.toHaveBeenCalled();
+  });
+
+  // §7.3 son madde: BOQ tamamen boşsa modal doğrudan "+ Yeni Grup" seçili açılır.
+  it("groups boşken + Yeni Grup seçili açılır ve Grup Adı görünür", () => {
+    renderCreate([]);
+    expect(screen.getByLabelText("Grup")).toHaveValue(NEW_GROUP_OPTION);
+    expect(screen.getByLabelText("Grup Adı")).toBeInTheDocument();
+  });
+});
+
+describe("BoqItemFormModal — edit kipi (spec §7.1.2)", () => {
+  it("alanlar mode.item'dan dolu açılır", () => {
+    renderEdit();
+    expect(screen.getByLabelText("Grup")).toHaveValue(GROUP_1);
+    expect(screen.getByLabelText("Poz No")).toHaveValue("01.001");
+    expect(screen.getByLabelText("İş Kalemi Tarifi")).toHaveValue("Kazı (Makine ile)");
+    expect(screen.getByLabelText("Birim")).toHaveValue("m³");
+  });
+
+  it("quantity/unit_price string olarak doldurulur, Number'a çevrilip geri yazılmaz", () => {
+    renderEdit();
+    // `toHaveValue` number input'ta sayıya çevirir; ham DOM değeri okunur ki
+    // sondaki sıfırların korunduğu (Decimal hassasiyeti) görülsün.
+    expect((screen.getByLabelText("Miktar") as HTMLInputElement).value).toBe("1240.000");
+    expect((screen.getByLabelText("Birim Fiyat") as HTMLInputElement).value).toBe("280.00");
+  });
+
+  it("PATCH gövdesi yalnız değişen alanı taşır", async () => {
+    renderEdit();
+    setField("İş Kalemi Tarifi", "Kazı (El ile)");
+    save();
+    await waitFor(() => expect(updateItem).toHaveBeenCalled());
+    expect(updateItem).toHaveBeenCalledWith({
+      itemId: "aaaaaaaa-0000-0000-0000-000000000001",
+      body: { description: "Kazı (El ile)" },
+    });
+  });
+
+  it("hiçbir alan değişmediyse istek atılmaz, modal kapanır", () => {
+    renderEdit();
+    save();
+    expect(updateItem).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("sort_order edit kipinde hiç gönderilmez", async () => {
+    renderEdit();
+    setField("Miktar", "2000");
+    save();
+    await waitFor(() => expect(updateItem).toHaveBeenCalled());
+    expect(updateItem.mock.calls[0][0].body).not.toHaveProperty("sort_order");
+  });
+
+  it("group_id değişimi kalemi başka gruba taşır", async () => {
+    renderEdit();
+    setField("Grup", GROUP_2);
+    save();
+    await waitFor(() => expect(updateItem).toHaveBeenCalled());
+    expect(updateItem.mock.calls[0][0].body).toEqual({ group_id: GROUP_2 });
+  });
+
+  it("edit kipinde de 409 özel mesajı basılır", async () => {
+    updateItem.mockRejectedValue(new BackendError(409, { detail: "duplicate" }));
+    renderEdit();
+    setField("Poz No", "02.001");
+    save();
+    expect(
+      await screen.findByText("Bu poz numarası bu şantiyede zaten kullanılıyor."),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("BoqItemFormModal — Tutar (hesaplanan) önizlemesi (spec §7.1.3)", () => {
+  it("Tutar (hesaplanan) miktar × birim fiyattan hesaplanır", () => {
+    renderCreate();
+    setField("Miktar", "1240");
+    setField("Birim Fiyat", "280");
+    expect(screen.getByTestId("boq-amount-preview")).toHaveTextContent("347.200");
+    expect(screen.getByText("Tutar (hesaplanan)")).toBeInTheDocument();
+  });
+
+  it("girdilerden biri boşken önizleme — basar (0 basmaz)", () => {
+    renderCreate();
+    setField("Miktar", "1240");
+    const preview = screen.getByTestId("boq-amount-preview");
+    expect(preview).toHaveTextContent("—");
+    expect(preview.textContent).not.toContain("0");
+  });
+
+  it("önizleme değeri istek gövdesine girmez", async () => {
+    renderCreate();
+    fillValidCreateForm();
+    save();
+    await waitFor(() => expect(createItem).toHaveBeenCalled());
+    expect(createItem.mock.calls[0][0]).not.toHaveProperty("amount");
+  });
+
+  // <Field>/<Input> DEĞİL: forma girmeyen salt-okunur satır (spec §7.1.3).
+  it("önizleme bir form kontrolü değildir", () => {
+    renderCreate();
+    expect(screen.queryByLabelText("Tutar (hesaplanan)")).not.toBeInTheDocument();
+  });
+});

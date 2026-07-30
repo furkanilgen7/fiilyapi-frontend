@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, within, fireEvent } from "@testing-library/react";
 
 import { BoqTable } from "./BoqTable";
 import type { BoqGroup, BoqItem, BoqTotals } from "@/lib/api/hooks/useBoq";
@@ -269,5 +269,57 @@ describe("BoqTable — boş durum (spec §9)", () => {
   it("canWrite belirtilmezse buton görünür (bilinmezlik kuralı, spec §2.5.3)", () => {
     render(<BoqTable groups={[]} totals={TOTALS} />);
     expect(screen.getByRole("button", { name: "+ İş Kalemi" })).toBeInTheDocument();
+  });
+
+  it("boş durumdaki + İş Kalemi butonu onCreate'i çağırır", () => {
+    const onCreate = vi.fn();
+    render(<BoqTable groups={[]} totals={TOTALS} onCreate={onCreate} />);
+    fireEvent.click(screen.getByRole("button", { name: "+ İş Kalemi" }));
+    expect(onCreate).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Satır tıklaması ile düzenleme (spec §7.2). Tetikleyici Poz No hücresindeki
+// gerçek <button>'dır; <tr tabIndex role="button"> KULLANILMAZ.
+describe("BoqTable — satır düzenleme tetikleyicisi (spec §7.2)", () => {
+  const ARIA_LABEL = "01.001 — Kazı (Makine ile) kalemini düzenle";
+
+  it("canWrite true iken Poz No hücresi düzenleme butonu içerir ve aria-label taşır", () => {
+    render(<BoqTable groups={[GROUPS[1]]} totals={TOTALS} onEditItem={vi.fn()} />);
+    const trigger = screen.getByRole("button", {
+      name: "02.001 — Kazı (Makine ile) kalemini düzenle",
+    });
+    expect(trigger.tagName).toBe("BUTTON");
+    expect(trigger).toHaveAttribute("type", "button");
+    expect(trigger).toHaveTextContent("02.001");
+  });
+
+  it("tetikleyici kalemi ve grup kimliğini geri verir", () => {
+    const onEditItem = vi.fn();
+    render(<BoqTable groups={[GROUPS[0]]} totals={TOTALS} onEditItem={onEditItem} />);
+    fireEvent.click(screen.getByRole("button", { name: ARIA_LABEL }));
+    expect(onEditItem).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "aaaaaaaa-0000-0000-0000-000000000001" }),
+      GROUPS[0].id,
+    );
+  });
+
+  it("canWrite false iken satır tetikleyici buton yok, Poz No düz span", () => {
+    render(<BoqTable groups={[GROUPS[0]]} totals={TOTALS} canWrite={false} onEditItem={vi.fn()} />);
+    expect(screen.queryByRole("button", { name: ARIA_LABEL })).not.toBeInTheDocument();
+    expect(screen.getAllByText("01.001")[0].tagName).toBe("SPAN");
+  });
+
+  it("satır semantiği bozulmaz: tr role=button veya tabIndex almaz", () => {
+    render(<BoqTable groups={[GROUPS[0]]} totals={TOTALS} onEditItem={vi.fn()} />);
+    for (const row of screen.getAllByRole("row")) {
+      expect(row).not.toHaveAttribute("role");
+      expect(row).not.toHaveAttribute("tabindex");
+    }
+  });
+
+  it("tetikleyici eklenince tabloya 8. sütun gelmez", () => {
+    render(<BoqTable groups={GROUPS} totals={TOTALS} onEditItem={vi.fn()} />);
+    expect(columnHeads()).toHaveLength(7);
   });
 });

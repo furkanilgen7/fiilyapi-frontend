@@ -190,6 +190,30 @@
 .boq-table tbody tr:last-child {
   border-bottom: none;
 }
+/* Satır tıklaması ile düzenleme (spec §7.2) — mockup'ta hover tanımı yok;
+   `settings-table tbody tr:hover` repo kanonu. YENİ PİKSEL EKLENMEZ: boyut,
+   sütun ve dolgu değişmez, böylece görsel baseline sapmaz. */
+.boq-table__row--editable {
+  cursor: pointer;
+}
+.boq-table__row--editable:hover {
+  background: var(--color-surface-2);
+}
+/* Tetikleyici görünüşte düz metindir: hücre biçimini (mono, xs, muted)
+   miras alır, buton kabuğu bırakmaz. */
+.boq-table__row-trigger {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.boq-table__row-trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 .boq-table__cell {
   padding: var(--space-boq-cell-y) var(--space-3);
   font-size: var(--text-body);
@@ -261,6 +285,26 @@
 }
 .boq-table__empty-text {
   margin-bottom: var(--space-4);
+}
+
+/* Modal (spec §7) — mockup'ta karşılığı yok, tamamı onaylı kullanıcı kararı
+   (§13.1). Yalnız "Tutar (hesaplanan)" önizleme satırı ekran sınıfı ister;
+   geri kalan her şey `settings-form` + ui/ primitive'lerinden gelir. */
+.boq-modal__preview {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.boq-modal__preview-label {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+.boq-modal__preview-value {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  font-family: var(--font-mono);
 }
 
 /* Durum metinleri (spec §9) — Şantiye Detay `site-detail__message` deseni. */
