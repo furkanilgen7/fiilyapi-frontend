@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
+import { BoqTable } from "@/components/boq/BoqTable";
 import { BoqTotalsStrip } from "@/components/boq/BoqTotalsStrip";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Button } from "@/components/ui/button/Button";
-import { useBoq } from "@/lib/api/hooks/useBoq";
+import { useBoq, type BoqListResponse } from "@/lib/api/hooks/useBoq";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { isForbidden } from "@/lib/api/unwrap";
 import "@/components/boq/boq.css";
@@ -24,13 +25,6 @@ export default function BoqPage() {
   if (isForbidden(boqQuery.error) || isForbidden(siteQuery.error)) return <AccessDenied />;
 
   const site = siteQuery.data;
-  // Durum dallari (spec §9): 403 yukarida yakalandi; kalan iki dal burada.
-  // Baslik seridi her durumda basilir, yalniz govde degisir.
-  const message = boqQuery.isError
-    ? "İş kalemleri yüklenemedi"
-    : boqQuery.isLoading || !boqQuery.data
-      ? "Yükleniyor…"
-      : null;
 
   return (
     <div className="boq">
@@ -62,7 +56,15 @@ export default function BoqPage() {
           dordu de yer tutucudur (spec §4). */}
       <BoqTotalsStrip totals={boqQuery.data?.totals} />
 
-      {message !== null && <p className="boq__message">{message}</p>}
+      <BoqBody isError={boqQuery.isError} data={boqQuery.data} />
     </div>
   );
+}
+
+// Durum dallari (spec §9): 403 sayfa duzeyinde yakalanir, kalan iki dal burada.
+// Baslik seridi ve kart seridi her durumda basilir, yalniz govde degisir.
+function BoqBody({ isError, data }: { isError: boolean; data?: BoqListResponse }) {
+  if (isError) return <p className="boq__message">İş kalemleri yüklenemedi</p>;
+  if (!data) return <p className="boq__message">Yükleniyor…</p>;
+  return <BoqTable groups={data.groups} />;
 }

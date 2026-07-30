@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 
 import BoqPage from "./page";
 import { useSite } from "@/lib/api/hooks/useSites";
@@ -104,9 +104,16 @@ describe("BoqPage — başlık şeridi ve breadcrumb (mockup 62–67)", () => {
   });
 
   it("iki eylem butonu mockup metinleriyle basılır (66, 67)", () => {
+    const { container } = render(<BoqPage />);
+    const titleBar = container.querySelector(".boq__title-bar") as HTMLElement;
+    expect(within(titleBar).getByRole("button", { name: "Excel İndir" })).toBeInTheDocument();
+    expect(within(titleBar).getByRole("button", { name: "+ İş Kalemi" })).toBeInTheDocument();
+  });
+
+  it("veri geldiğinde poz tablosunu basar", () => {
     render(<BoqPage />);
-    expect(screen.getByRole("button", { name: "Excel İndir" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "+ İş Kalemi" })).toBeInTheDocument();
+    expect(screen.getByText("İş kalemleri listesi")).toBeInTheDocument();
+    expect(screen.getByText("Bu şantiyede henüz iş kalemi tanımlanmadı.")).toBeInTheDocument();
   });
 
   it("breadcrumb şantiyeye geri link verir ve proje/şantiye adını gösterir", () => {

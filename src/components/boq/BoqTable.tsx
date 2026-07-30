@@ -1,0 +1,121 @@
+import { Fragment } from "react";
+
+import { Button } from "@/components/ui/button/Button";
+import { formatAmount, formatQuantity } from "@/lib/format";
+import { pendingModuleLabel } from "@/lib/pending-modules";
+import type { BoqGroup } from "@/lib/api/hooks/useBoq";
+
+import "./boq.css";
+
+export interface BoqTableProps {
+  /** Gruplar yükten geldiği sırada basılır — frontend yeniden sıralamaz. */
+  groups: BoqGroup[];
+}
+
+const COLUMN_COUNT = 7;
+
+// Poz tablosu (mockup 92–171). Mockup'in 7 sutunlu duzeni korunur: eylem
+// sutunu / kebap menusu / 8. sutun EKLENMEZ (spec §7 karar 4).
+export function BoqTable({ groups }: BoqTableProps) {
+  return (
+    <div className="boq-table-card">
+      <table className="boq-table">
+        <caption className="sr-only">İş kalemleri listesi</caption>
+        <thead>
+          <tr className="boq-table__head-row">
+            <th scope="col" className="boq-table__th boq-table__col--code">
+              Poz No
+            </th>
+            <th scope="col" className="boq-table__th boq-table__col--desc">
+              İş Kalemi Tarifi
+            </th>
+            <th scope="col" className="boq-table__th boq-table__col--unit">
+              Birim
+            </th>
+            <th scope="col" className="boq-table__th boq-table__col--quantity">
+              Miktar
+            </th>
+            <th scope="col" className="boq-table__th boq-table__col--price">
+              Birim Fiyat
+            </th>
+            <th scope="col" className="boq-table__th boq-table__col--amount">
+              Tutar
+            </th>
+            <th scope="col" className="boq-table__th boq-table__col--pct">
+              Gerç. %
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {groups.length === 0 ? (
+            <tr>
+              <td className="boq-table__empty" colSpan={COLUMN_COUNT} data-testid="boq-empty">
+                <p className="boq-table__empty-text">Bu şantiyede henüz iş kalemi tanımlanmadı.</p>
+                {/* Davranis F8'de baglanir; bu task'ta baslik seridindeki
+                    ikizi gibi islevsizdir. */}
+                <Button variant="primary" className="boq-action boq-action--primary">
+                  + İş Kalemi
+                </Button>
+              </td>
+            </tr>
+          ) : (
+            groups.map((group, index) => (
+              <Fragment key={group.id}>
+                <tr className="boq-table__group-row">
+                  {/* Numara DIZINDEN turetilir, `sort_order`in ham degerinden
+                      degil (spec §5.2): sort_order seyrek olabilir (10/20/30),
+                      mockup 1-2-3 kesintisiz sayar. Buyuk harf CSS ile. */}
+                  <th
+                    scope="colgroup"
+                    colSpan={COLUMN_COUNT}
+                    className="boq-table__group"
+                    data-testid="boq-group"
+                  >
+                    {`${index + 1}. ${group.name}`}
+                  </th>
+                </tr>
+                {/* `group_total` backend'de var ama mockup'ta grup alt-toplam
+                    satiri YOK → basilmaz (spec §5.3). */}
+                {group.items.map((item) => {
+                  const hint = pendingModuleLabel(item.progress_pct.pending_module);
+                  return (
+                    <tr key={item.id} className="boq-table__row">
+                      <td className="boq-table__cell boq-table__cell--code boq-table__col--code">
+                        {item.code}
+                      </td>
+                      <td className="boq-table__cell boq-table__col--desc">{item.description}</td>
+                      <td className="boq-table__cell boq-table__cell--unit boq-table__col--unit">
+                        {item.unit}
+                      </td>
+                      <td className="boq-table__cell boq-table__cell--num boq-table__col--quantity">
+                        {formatQuantity(item.quantity)}
+                      </td>
+                      <td className="boq-table__cell boq-table__cell--num boq-table__col--price">
+                        {formatAmount(item.unit_price)}
+                      </td>
+                      {/* `amount` backend turevidir; miktar × fiyat frontend'de
+                          YENIDEN HESAPLANMAZ (spec §3.4 sonu). */}
+                      <td className="boq-table__cell boq-table__cell--num boq-table__cell--amount boq-table__col--amount">
+                        {formatAmount(item.amount)}
+                      </td>
+                      {/* Gerç. % tamamen yer tutucu (spec §5.4): mockup'in dort
+                          renkli rozeti hic render edilmez, esik renkleri P7'ye
+                          birakildi — notr basilir. */}
+                      <td
+                        className="boq-table__pct boq-table__pct--pending"
+                        data-testid="boq-pct"
+                        title={hint}
+                      >
+                        —<span className="sr-only">{hint}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </Fragment>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}

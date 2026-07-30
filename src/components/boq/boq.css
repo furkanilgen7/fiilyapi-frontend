@@ -101,6 +101,137 @@
   cursor: help;
 }
 
+/* Poz tablosu (92–171). Ham <table> + ekran sınıfı — yasak olan ham
+   <input>/<select>/<label>'dır, tablo değil (spec §3.6). */
+.boq-table-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-14);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+.boq-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Başlık satırı (95–102) */
+.boq-table__head-row {
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.boq-table__th {
+  padding: var(--space-boq-cell-y) var(--space-3);
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  text-align: center;
+}
+
+/* Sütun genişlikleri + hizalama — mockup 96–102 birebir. Genişlikler bu
+   ekrana özgü tek kullanımlık ölçülerdir, token'a çıkarılmaz. */
+.boq-table__col--code {
+  width: 80px; /* 96 */
+  text-align: left;
+  padding-left: var(--space-boq-cell-x); /* 96, 111 */
+  padding-right: var(--space-boq-cell-x);
+}
+.boq-table__col--desc {
+  /* genişlik verilmez, esner (97) */
+  text-align: left;
+  padding-left: var(--space-boq-cell-x); /* 97, 112 */
+  padding-right: var(--space-boq-cell-x);
+}
+.boq-table__col--unit {
+  width: 60px; /* 98 */
+  text-align: center;
+}
+.boq-table__col--quantity {
+  width: 80px; /* 99 */
+  text-align: right;
+}
+.boq-table__col--price {
+  width: 110px; /* 100 */
+  text-align: right;
+}
+.boq-table__col--amount {
+  width: 120px; /* 101 */
+  text-align: right;
+}
+.boq-table__col--pct {
+  width: 80px; /* 102 */
+  text-align: center;
+}
+
+/* Grup başlık satırı (107–108) */
+.boq-table__group-row {
+  background: var(--color-nav-active-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+.boq-table__group {
+  padding: var(--space-form-y) var(--space-boq-cell-x);
+  font-size: var(--text-boq-group);
+  font-weight: var(--weight-bold);
+  color: var(--color-primary);
+  text-align: left;
+  /* Büyük harf CSS ile: <html lang="tr"> sayesinde tarayıcı i → İ dönüşümünü
+     doğru yapar; JS toLocaleUpperCase kullanılmaz (spec §5.2). */
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-group);
+}
+
+/* Poz satırları (110–171) */
+.boq-table__row {
+  border-bottom: 1px solid var(--color-divider);
+}
+/* Mockup 163: son satırda alt çizgi yok. */
+.boq-table tbody tr:last-child {
+  border-bottom: none;
+}
+.boq-table__cell {
+  padding: var(--space-boq-cell-y) var(--space-3);
+  font-size: var(--text-body);
+  color: var(--color-text);
+}
+.boq-table__cell--code {
+  font-size: var(--text-xs); /* 111 */
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+}
+.boq-table__cell--unit {
+  color: var(--color-text-muted); /* 113 */
+}
+.boq-table__cell--num {
+  font-family: var(--font-mono); /* 114, 115 */
+}
+.boq-table__cell--amount {
+  font-weight: var(--weight-semibold); /* 116 */
+}
+
+/* Gerç. % — bu dilimde tamamı yer tutucu (spec §5.4). Eşik renkleri P7'ye
+   bırakıldı: --success/--warning/--danger gibi ölü sınıf YAZILMAZ. */
+.boq-table__pct {
+  padding: var(--space-boq-cell-y) var(--space-3); /* 117 */
+  text-align: center;
+  font-size: var(--text-body);
+  color: var(--color-text-subtle);
+}
+.boq-table__pct--pending {
+  cursor: help;
+}
+
+/* Boş BOQ (spec §9) — tablo başlığı korunur, gövdede tek satır. */
+.boq-table__empty {
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+.boq-table__empty-text {
+  margin-bottom: var(--space-4);
+}
+
 /* Durum metinleri (spec §9) — Şantiye Detay `site-detail__message` deseni. */
 .boq__message {
   color: var(--color-text-muted);
