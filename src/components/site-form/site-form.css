@@ -67,3 +67,12 @@
 .site-form__message a {
   color: var(--color-primary);
 }
+
+/* Kişi seçicilerinin altındaki durum notu (spec §9.2.1, §10.1.1).
+   Ölçü `.field__hint` ile aynıdır; sessiz boş açılır liste yasak olduğu için
+   bu satır HER durumda basılır. */
+.site-form__picker-note {
+  margin-top: var(--space-2);
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}

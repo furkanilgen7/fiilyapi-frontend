@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
@@ -9,6 +10,10 @@ import { useProject, type ProjectDetail } from "@/lib/api/hooks/useProjects";
 import { BackendError, isForbidden } from "@/lib/api/unwrap";
 import { pendingModuleLabel } from "@/lib/pending-modules";
 import { PROJECT_TABS } from "@/components/projects/tabs";
+import { SiteInfoCard } from "./SiteInfoCard";
+import { LocationCard } from "./LocationCard";
+import { ScheduleCard } from "./ScheduleCard";
+import { emptySiteFormValues, type SiteFormValues } from "./form-state";
 import { SiteDocumentsCard } from "./SiteDocumentsCard";
 import { SiteFormActions } from "./SiteFormActions";
 // Sıra önemli: önce paylaşılan kabuk, sonra forma özgü bloklar (özgü kazansın).
@@ -89,6 +94,12 @@ export function SiteCreateView() {
   const router = useRouter();
   const { projectId } = useParams<{ projectId: string }>();
   const projectQuery = useProject(projectId);
+  const [values, setValues] = useState<SiteFormValues>(emptySiteFormValues);
+
+  // Mutasyon yok: her degisiklik yeni nesne uretir (immutability kurali).
+  function handleChange<K extends keyof SiteFormValues>(field: K, value: SiteFormValues[K]) {
+    setValues((prev) => ({ ...prev, [field]: value }));
+  }
 
   function handleCancel() {
     router.push(`/projeler/${projectId}`);
@@ -151,9 +162,15 @@ export function SiteCreateView() {
 
         <ProjectInfoBanner project={project} />
 
-        {/* Kart yuvası — T6 (bilgi/konum/takvim), T7 (bölümler), T8 (altyapı)
-            bu gövdeye eklenecek; belgeler kartı T9'da bağlandı. */}
+        {/* Kart yuvası — T7 (bölümler) ve T8 (altyapı) bu gövdeye eklenecek. */}
         <div className="pf-body" data-testid="site-form-body">
+          <SiteInfoCard
+            values={values}
+            onChange={handleChange}
+            projectName={project?.name ?? ""}
+          />
+          <LocationCard values={values} onChange={handleChange} />
+          <ScheduleCard values={values} onChange={handleChange} />
           <SiteDocumentsCard />
         </div>
 

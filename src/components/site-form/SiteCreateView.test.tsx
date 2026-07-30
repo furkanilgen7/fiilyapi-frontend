@@ -13,6 +13,18 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 
+// Kisi seciciler kendi sorgusunu acar; bu dosya KABUGU test eder, seciciyi degil.
+// Ayrintili durumlar (403 dahil) SiteInfoCard.test.tsx'te sinanir.
+vi.mock("@/lib/api/hooks/useUserOptions", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useUserOptions")>()),
+  useUserOptions: vi.fn(() => ({
+    options: [],
+    isForbidden: false,
+    isLoading: false,
+    isError: false,
+  })),
+}));
+
 vi.mock("@/lib/api/hooks/useProjects", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useProjects")>()),
   useProject: vi.fn(),
