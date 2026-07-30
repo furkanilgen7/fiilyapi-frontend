@@ -1,29 +1,65 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { SiteCreateView } from "./SiteCreateView";
 import { useProject } from "@/lib/api/hooks/useProjects";
+import { useCreateSite } from "@/lib/api/hooks/useSiteMutations";
+import { useUserOptions } from "@/lib/api/hooks/useUserOptions";
 import { BackendError } from "@/lib/api/unwrap";
 import { pendingModuleLabel } from "@/lib/pending-modules";
+import { MESSAGES } from "./validate";
 
 const PROJECT_ID = "11111111-1111-1111-1111-111111111111";
+const NEW_SITE_ID = "22222222-2222-4222-8222-222222222222";
+const CHIEF_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+
+const pushMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useParams: () => ({ projectId: PROJECT_ID }),
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({ push: pushMock, replace: vi.fn() }),
 }));
 
-// Kisi seciciler kendi sorgusunu acar; bu dosya KABUGU test eder, seciciyi degil.
-// Ayrintili durumlar (403 dahil) SiteInfoCard.test.tsx'te sinanir.
+// Kisi seciciler kendi sorgusunu acar; bu dosya KABUGU + GONDERIMI test eder.
+// Ayrintili secici durumlari (403 dahil) SiteInfoCard.test.tsx'te sinanir.
 vi.mock("@/lib/api/hooks/useUserOptions", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useUserOptions")>()),
-  useUserOptions: vi.fn(() => ({
-    options: [],
+  useUserOptions: vi.fn(),
+}));
+
+vi.mock("@/lib/api/hooks/useSiteMutations", () => ({
+  useCreateSite: vi.fn(),
+}));
+
+// Bolumler AYNI govdede gider (§3.4): bu hook'un cagrilmadigi sinanir.
+const createSectionMock = vi.fn();
+vi.mock("@/lib/api/hooks/useSectionMutations", () => ({
+  useCreateSection: () => {
+    createSectionMock();
+    return { mutate: vi.fn(), isPending: false };
+  },
+}));
+
+const mutateMock = vi.fn();
+
+function mockCreateSite(overrides: Record<string, unknown> = {}) {
+  vi.mocked(useCreateSite).mockReturnValue({
+    mutate: mutateMock,
+    isPending: false,
+    ...overrides,
+  } as never);
+}
+
+function mockUsers(overrides: Record<string, unknown> = {}) {
+  vi.mocked(useUserOptions).mockReturnValue({
+    options: [{ id: CHIEF_ID, full_name: "Ali Vural", title: "Şantiye Şefi" }],
     isForbidden: false,
     isLoading: false,
     isError: false,
-  })),
-}));
+    ...overrides,
+  } as never);
+}
 
 vi.mock("@/lib/api/hooks/useProjects", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useProjects")>()),
@@ -50,7 +86,29 @@ function mockProject(overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockProject();
+  mockCreateSite();
+  mockUsers();
 });
+
+/** Zorunlu alanları doldurur (spec §10.1) — gönderim testlerinin ön koşulu. */
+async function fillRequired(user: ReturnType<typeof userEvent.setup>) {
+  await user.type(screen.getByLabelText("Şantiye Adı"), "C-Blok Şantiyesi");
+  await user.selectOptions(screen.getByLabelText("Şantiye Şefi"), CHIEF_ID);
+  await user.type(screen.getByLabelText("İl / İlçe"), "Çankaya / Ankara");
+  await user.type(screen.getByLabelText("İnşaat Alanı (m²)"), "6420");
+  // type="date" jsdom'da userEvent.type ile guvenilir degil.
+  fireEvent.change(screen.getByLabelText("Başlangıç Tarihi"), {
+    target: { value: "2026-01-01" },
+  });
+  fireEvent.change(screen.getByLabelText("Planlanan Bitiş"), {
+    target: { value: "2026-06-01" },
+  });
+}
+
+function clickSubmit(user: ReturnType<typeof userEvent.setup>) {
+  const strip = document.querySelector(".pf-actions") as HTMLElement;
+  return user.click(within(strip).getByRole("button", { name: "Şantiyeyi Oluştur" }));
+}
 
 describe("SiteCreateView — kabuk (mockup 35–60)", () => {
   it("kirinti yolu uc seviyelidir: Projeler / {proje adi} / Yeni Santiye", () => {
@@ -197,5 +255,189 @@ describe("SiteCreateView — proje sorgusu durumlari (spec §12)", () => {
 
     expect(screen.getByText("Bu alana yetkiniz yok")).toBeInTheDocument();
     expect(screen.queryByTestId("site-form-body")).toBeNull();
+  });
+});
+
+describe("SiteCreateView — gönderim (T10, spec §9.3, §9.4, §12)", () => {
+  it("'Santiyeyi Olustur' tek POST atar ve bolumleri ayni govdede gonderir", async () => {
+    const user = userEvent.setup();
+    render(<SiteCreateView />);
+    await fillRequired(user);
+
+    const rows = screen.getAllByTestId("section-row");
+    await user.type(within(rows[0]).getByLabelText("1. bölümün adı"), "Kaba Yapı");
+    await clickSubmit(user);
+
+    expect(mutateMock).toHaveBeenCalledTimes(1);
+    const body = mutateMock.mock.calls[0][0];
+    expect(body.name).toBe("C-Blok Şantiyesi");
+    expect(body.site_manager_user_id).toBe(CHIEF_ID);
+    expect(body.sections).toEqual([{ name: "Kaba Yapı" }]);
+    expect(body.is_draft).toBe(false);
+  });
+
+  it("govdede safety_officer_is_outsourced ve is_draft HER ZAMAN vardir", async () => {
+    const user = userEvent.setup();
+    render(<SiteCreateView />);
+    await fillRequired(user);
+    await clickSubmit(user);
+
+    const body = mutateMock.mock.calls[0][0];
+    expect("safety_officer_is_outsourced" in body).toBe(true);
+    expect("is_draft" in body).toBe(true);
+  });
+
+  it("useCreateSection HIC cagrilmaz", async () => {
+    const user = userEvent.setup();
+    render(<SiteCreateView />);
+    await fillRequired(user);
+    await clickSubmit(user);
+
+    expect(createSectionMock).not.toHaveBeenCalled();
+  });
+
+  it("basarida /projeler/{id}/santiyeler/{yeni siteId}'e yonlendirir", async () => {
+    const user = userEvent.setup();
+    render(<SiteCreateView />);
+    await fillRequired(user);
+    await clickSubmit(user);
+
+    const options = mutateMock.mock.calls[0][1];
+    options.onSuccess({ id: NEW_SITE_ID });
+    expect(pushMock).toHaveBeenCalledWith(
+      `/projeler/${PROJECT_ID}/santiyeler/${NEW_SITE_ID}`,
+    );
+  });
+
+  it("'Taslak Kaydet' is_draft=true ile POST atar (eksik zorunlulara ragmen)", async () => {
+    const user = userEvent.setup();
+    render(<SiteCreateView />);
+    await user.type(screen.getByLabelText("Şantiye Adı"), "C-Blok Şantiyesi");
+    await user.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
+
+    expect(mutateMock).toHaveBeenCalledTimes(1);
+    expect(mutateMock.mock.calls[0][0].is_draft).toBe(true);
+  });
+
+  it("taslakta ad bosken POST ATILMAZ", async () => {
+    const user = userEvent.setup();
+    render(<SiteCreateView />);
+    await user.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
+
+    expect(mutateMock).not.toHaveBeenCalled();
+  });
+
+  it("taslak basarisinda /projeler/{id}'e yonlendirir", async () => {
+    const user = userEvent.setup();
+    render(<SiteCreateView />);
+    await user.type(screen.getByLabelText("Şantiye Adı"), "C-Blok Şantiyesi");
+    await user.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
+
+    mutateMock.mock.calls[0][1].onSuccess({ id: NEW_SITE_ID });
+    expect(pushMock).toHaveBeenCalledWith(`/projeler/${PROJECT_ID}`);
+  });
+
+  it("'Iptal' /projeler/{id}'e gider ve beforeunload uyarisi vermez", async () => {
+    const user = userEvent.setup();
+    const addListener = vi.spyOn(window, "addEventListener");
+    render(<SiteCreateView />);
+    await user.type(screen.getByLabelText("Şantiye Adı"), "kirli form");
+
+    const strip = document.querySelector(".pf-actions") as HTMLElement;
+    await user.click(within(strip).getByRole("button", { name: "İptal" }));
+
+    expect(pushMock).toHaveBeenCalledWith(`/projeler/${PROJECT_ID}`);
+    expect(addListener.mock.calls.some(([type]) => type === "beforeunload")).toBe(false);
+    addListener.mockRestore();
+  });
+
+  it("kaydederken uc buton da disabled, birincil metni 'Kaydediliyor…'", () => {
+    mockCreateSite({ isPending: true });
+    render(<SiteCreateView />);
+
+    const strip = document.querySelector(".pf-actions") as HTMLElement;
+    expect(within(strip).getByRole("button", { name: "İptal" })).toBeDisabled();
+    expect(within(strip).getByRole("button", { name: "Taslak Kaydet" })).toBeDisabled();
+    expect(within(strip).getByRole("button", { name: "Kaydediliyor…" })).toBeDisabled();
+    expect(
+      within(strip).queryByRole("button", { name: "Şantiyeyi Oluştur" }),
+    ).toBeNull();
+  });
+
+  it("kaydederken form alanlari disabled DEGIL", () => {
+    mockCreateSite({ isPending: true });
+    render(<SiteCreateView />);
+    expect(screen.getByLabelText("Şantiye Adı")).not.toBeDisabled();
+    expect(screen.getByLabelText("İl / İlçe")).not.toBeDisabled();
+  });
+
+  it("409'da 'Bu santiye kodu zaten kullaniliyor…' mesaji basar", async () => {
+    const user = userEvent.setup();
+    render(<SiteCreateView />);
+    await fillRequired(user);
+    await clickSubmit(user);
+
+    mutateMock.mock.calls[0][1].onError(new BackendError(409, "conflict"));
+    expect(await screen.findAllByText(MESSAGES.siteCodeConflict)).not.toHaveLength(0);
+  });
+
+  it("409 disi sunucu hatasinda backendErrorMessage basilir", async () => {
+    const user = userEvent.setup();
+    render(<SiteCreateView />);
+    await fillRequired(user);
+    await clickSubmit(user);
+
+    await act(async () => {
+      mutateMock.mock.calls[0][1].onError(new BackendError(500, "boom"));
+    });
+    const banner = document.querySelector(".pf-form-error") as HTMLElement;
+    expect(banner).toBeInTheDocument();
+    expect(banner.textContent).not.toBe(MESSAGES.siteCodeConflict);
+  });
+
+  it("dogrulama basarisizsa POST ATILMAZ ve ilk hatali alana odak tasinir", async () => {
+    const user = userEvent.setup();
+    render(<SiteCreateView />);
+    await clickSubmit(user);
+
+    expect(mutateMock).not.toHaveBeenCalled();
+    // Alanın altında + özet şeridinde: ikisi de basılır (§12).
+    expect(screen.getAllByText(MESSAGES.nameRequired).length).toBeGreaterThan(0);
+    expect(document.activeElement).toBe(screen.getByLabelText("Şantiye Adı"));
+  });
+
+  it("hata ozeti role=alert ile duyurulur", async () => {
+    const user = userEvent.setup();
+    render(<SiteCreateView />);
+    await clickSubmit(user);
+
+    const alerts = screen.getAllByRole("alert");
+    expect(alerts.some((el) => el.textContent === MESSAGES.nameRequired)).toBe(true);
+  });
+
+  it("bolum satiri hatasi gonderimi engeller", async () => {
+    const user = userEvent.setup();
+    render(<SiteCreateView />);
+    await fillRequired(user);
+
+    const rows = screen.getAllByTestId("section-row");
+    // Adı boş ama tarihi dolu satır: sessizce atılmaz, hata verir (§6.5).
+    fireEvent.change(within(rows[0]).getByLabelText("1. bölümün başlangıç tarihi"), {
+      target: { value: "2026-02-01" },
+    });
+    await clickSubmit(user);
+
+    expect(mutateMock).not.toHaveBeenCalled();
+    expect(screen.getByText(/1\. satır: Bölüm adı zorunludur\./)).toBeInTheDocument();
+  });
+
+  it("kismi basari mesaji YOKTUR", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<SiteCreateView />);
+    await fillRequired(user);
+    await clickSubmit(user);
+    mutateMock.mock.calls[0][1].onError(new BackendError(500, "boom"));
+
+    expect(container.textContent).not.toMatch(/bölüm eklenemedi/i);
   });
 });

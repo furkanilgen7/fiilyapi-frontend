@@ -9,6 +9,11 @@ interface FormActionsProps {
   onSubmit: () => void;
   /** Birincil buton metni: "Projeyi Oluştur" / "Şantiyeyi Oluştur". */
   submitLabel: string;
+  /**
+   * `isPending` iken birincil butonun metni. Verilmezse `submitLabel` kalır —
+   * P1.1a'nın bugünkü davranışı korunur, yeni dize sızmaz.
+   */
+  pendingLabel?: string;
   isPending?: boolean;
   /**
    * `"end"` (varsayılan) üçlüyü sağa yaslar — proje formu (mockup satır 212).
@@ -31,6 +36,7 @@ export function FormActions({
   onSaveDraft,
   onSubmit,
   submitLabel,
+  pendingLabel,
   isPending,
   variant = "end",
   leading,
@@ -59,7 +65,7 @@ export function FormActions({
         onClick={onSubmit}
         disabled={isPending}
       >
-        {submitLabel}
+        {isPending && pendingLabel ? pendingLabel : submitLabel}
       </Button>
     </>
   );

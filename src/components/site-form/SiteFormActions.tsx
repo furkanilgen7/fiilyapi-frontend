@@ -39,6 +39,7 @@ export function SiteFormActions({
       onSaveDraft={onSaveDraft}
       onSubmit={onSubmit}
       submitLabel="Şantiyeyi Oluştur"
+      pendingLabel="Kaydediliyor…"
       isPending={isPending}
     />
   );

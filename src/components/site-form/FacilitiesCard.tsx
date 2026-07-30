@@ -4,9 +4,12 @@ import { Checkbox, Field, Input } from "@/components/ui";
 import { SITE_FACILITIES, STORAGE_FACILITIES, type FacilityItem } from "./facility-items";
 import type { FacilityKey, SiteFormValues } from "./form-state";
 
+type FieldErrors = Partial<Record<keyof SiteFormValues, string>>;
+
 export interface FacilitiesCardProps {
   values: SiteFormValues;
   onChange: <K extends keyof SiteFormValues>(field: K, value: SiteFormValues[K]) => void;
+  errors?: FieldErrors;
 }
 
 interface FacilityGroupProps {
@@ -43,7 +46,7 @@ function FacilityGroup({ label, items, values, onToggle }: FacilityGroupProps) {
 }
 
 /** 📦 Depo & Şantiye Altyapısı kartı (mockup satır 147–174, spec §4.5, §7). */
-export function FacilitiesCard({ values, onChange }: FacilitiesCardProps) {
+export function FacilitiesCard({ values, onChange, errors }: FacilitiesCardProps) {
   // Sayaç, rozet, çip ve arama YOKTUR (spec §7) — düz kutucuk listesi.
   function toggle(key: FacilityKey, checked: boolean) {
     onChange("facilities", { ...values.facilities, [key]: checked });
@@ -95,7 +98,7 @@ export function FacilitiesCard({ values, onChange }: FacilitiesCardProps) {
           )}
         </Field>
 
-        <Field label="Planlanan İşçi Sayısı">
+        <Field label="Planlanan İşçi Sayısı" error={errors?.plannedWorkerCount}>
           {(control) => (
             <Input
               {...control}
@@ -103,6 +106,7 @@ export function FacilitiesCard({ values, onChange }: FacilitiesCardProps) {
               numeric
               value={values.plannedWorkerCount}
               placeholder="48"
+              status={errors?.plannedWorkerCount ? "error" : "default"}
               onChange={(e) => onChange("plannedWorkerCount", e.target.value)}
             />
           )}
