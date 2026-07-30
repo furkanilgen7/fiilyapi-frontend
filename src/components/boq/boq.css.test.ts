@@ -45,6 +45,13 @@ describe("boq.css — mockup kuralları (regresyon koruması)", () => {
     expect(css).toMatch(/\.boq__crumb-link:focus-visible\s*{[^}]*--focus-ring/);
   });
 
+  // Spec §10: satır tetikleyicisi buton kabuğunu atar (`border:0`, `background:none`)
+  // — bu, tarayıcının varsayılan odak göstergesini de zayıflatır. Halka açıkça
+  // geri verilmezse klavye kullanıcısı satırlar arasında kaybolur.
+  it("satır düzenleme tetikleyicisi :focus-visible odak halkası tanımlar (--focus-ring)", () => {
+    expect(css).toMatch(/\.boq-table__row-trigger:focus-visible\s*{[^}]*--focus-ring/);
+  });
+
   // Mockup 111/112: Poz No ve Tarif hücrelerinde yatay dolgu 16px. `.boq-table__cell`
   // kısayolu aynı özgüllükte ve daha sonra geldiğinden sütun kuralını eziyordu;
   // bileşik seçici olmadan hücreler 12px'e düşer (F10'da ölçülerek yakalandı).

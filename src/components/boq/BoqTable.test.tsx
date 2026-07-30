@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, within, fireEvent } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { BoqTable } from "./BoqTable";
 import type { BoqGroup, BoqItem, BoqTotals } from "@/lib/api/hooks/useBoq";
@@ -321,5 +322,37 @@ describe("BoqTable — satır düzenleme tetikleyicisi (spec §7.2)", () => {
   it("tetikleyici eklenince tabloya 8. sütun gelmez", () => {
     render(<BoqTable groups={GROUPS} totals={TOTALS} onEditItem={vi.fn()} />);
     expect(columnHeads()).toHaveLength(7);
+  });
+});
+
+// Spec §10 klavye denetimi (F11). Tabloda ÖZEL bir klavye idaresi (ok tuşlarıyla
+// hücre gezinme, roving tabindex) YOKTUR ve olmamalıdır: doğal Tab sırası satır
+// sırasını izler. Aşağıdaki testler o sözleşmeyi sabitler.
+describe("BoqTable — klavye gezinmesi ve odak sırası (spec §10)", () => {
+  const FOCUSABLE = 'a[href],button,input,select,textarea,[tabindex]:not([tabindex="-1"])';
+
+  it("Tab sırası doğal satır sırasını izler, hücre atlamaz", async () => {
+    const user = userEvent.setup();
+    render(<BoqTable groups={GROUPS} totals={TOTALS} onEditItem={vi.fn()} />);
+    // GROUPS: 1. grupta 01.001/01.002, 2. grupta 02.001, 3. grup boş.
+    for (const code of ["01.001", "01.002", "02.001"]) {
+      await user.tab();
+      expect(document.activeElement).toHaveTextContent(code);
+    }
+  });
+
+  it("canWrite false iken tabloda hiç odaklanabilir öğe kalmaz (ölü odak yok)", () => {
+    const { container } = render(
+      <BoqTable groups={GROUPS} totals={TOTALS} canWrite={false} onEditItem={vi.fn()} />,
+    );
+    expect(container.querySelectorAll(FOCUSABLE)).toHaveLength(0);
+  });
+
+  it("yer tutucu hücreler odak sırasına girmez (title taşıyan td tabindex almaz)", () => {
+    render(<BoqTable groups={GROUPS} totals={TOTALS} onEditItem={vi.fn()} />);
+    for (const cell of screen.getAllByTestId("boq-pct")) {
+      expect(cell).not.toHaveAttribute("tabindex");
+    }
+    expect(screen.getByTestId("boq-total-pct")).not.toHaveAttribute("tabindex");
   });
 });

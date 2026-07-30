@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within, fireEvent, waitFor, act } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import BoqPage from "./page";
 import { downloadBoqExport } from "@/lib/api/boq-client";
@@ -370,5 +371,57 @@ describe("BoqPage — Excel İndir (spec §8.3)", () => {
     render(<BoqPage />);
     fireEvent.click(excelButton());
     await waitFor(() => expect(downloadBoqExport).toHaveBeenCalledWith(SITE_ID));
+  });
+});
+
+// Spec §10 — sayfa düzeyinde a11y sözleşmesi (F11 denetimi).
+describe("BoqPage — a11y (spec §10)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSite({ data: SITE });
+    mockBoq({ data: FULL_BOQ });
+  });
+
+  it("odak sırası okuma yönünü izler: breadcrumb → Excel İndir → + İş Kalemi → satır", async () => {
+    mockPermission("full");
+    const user = userEvent.setup();
+    render(<BoqPage />);
+    const expected = [
+      "← A-Blok Şantiyesi",
+      "Excel İndir",
+      "+ İş Kalemi",
+      "01.001",
+    ];
+    for (const label of expected) {
+      await user.tab();
+      expect(document.activeElement).toHaveTextContent(label);
+    }
+  });
+
+  it("salt-okunur kullanıcıda gövde yalnız breadcrumb ve Excel İndir odağı bırakır", async () => {
+    mockPermission("view");
+    const user = userEvent.setup();
+    render(<BoqPage />);
+    await user.tab();
+    expect(document.activeElement).toHaveTextContent("← A-Blok Şantiyesi");
+    await user.tab();
+    expect(document.activeElement).toHaveTextContent("Excel İndir");
+    // Yazma yüzeyleri hiç basılmadığı için sıradaki Tab sayfadan çıkar (body).
+    await user.tab();
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it("sayfada tek h1 vardır ve başlık hiyerarşisi atlamaz", () => {
+    mockPermission("full");
+    render(<BoqPage />);
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+  });
+
+  it("indirme hatası canlı bölge olarak duyurulur (role=alert)", async () => {
+    mockPermission("full");
+    vi.mocked(downloadBoqExport).mockRejectedValue(new Error("bozuk"));
+    render(<BoqPage />);
+    fireEvent.click(screen.getByRole("button", { name: /Excel İndir/ }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Excel dosyası indirilemedi.");
   });
 });
