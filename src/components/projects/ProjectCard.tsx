@@ -22,6 +22,7 @@ const TYPE_LABELS: Record<Project["project_type"], string> = {
 };
 
 const STATUS_LABELS: Record<Project["status"], string> = {
+  planning: "Planlama",
   active: "Aktif",
   on_hold: "Beklemede",
   completed: "Tamamlandı",

@@ -22,10 +22,10 @@ const empty: BudgetValues = {
 describe("BudgetCard (F10)", () => {
   it("dört bütçe kalemi Field ile bağlı label taşır", () => {
     render(<BudgetCard values={empty} onChange={() => {}} contractAmount={null} />);
-    expect(screen.getByLabelText("Malzeme Bütçesi")).toBeInTheDocument();
-    expect(screen.getByLabelText("İşçilik Bütçesi")).toBeInTheDocument();
-    expect(screen.getByLabelText("Taşeron Bütçesi")).toBeInTheDocument();
-    expect(screen.getByLabelText("Genel Gider")).toBeInTheDocument();
+    expect(screen.getByLabelText("Malzeme Bütçesi (₺)")).toBeInTheDocument();
+    expect(screen.getByLabelText("İşçilik Bütçesi (₺)")).toBeInTheDocument();
+    expect(screen.getByLabelText("Taşeron Bütçesi (₺)")).toBeInTheDocument();
+    expect(screen.getByLabelText("Genel Gider (₺)")).toBeInTheDocument();
   });
 
   it("mockup örneği: kâr 540.000 / %2,4 ve pozitif (kâr) durumu", () => {
@@ -68,7 +68,7 @@ describe("BudgetCard (F10)", () => {
   it("kalem değişince onChange(field, value)", async () => {
     const onChange = vi.fn();
     render(<BudgetCard values={empty} onChange={onChange} contractAmount={null} />);
-    await userEvent.type(screen.getByLabelText("Malzeme Bütçesi"), "5");
+    await userEvent.type(screen.getByLabelText("Malzeme Bütçesi (₺)"), "5");
     expect(onChange).toHaveBeenCalledWith("material", "5");
   });
 });

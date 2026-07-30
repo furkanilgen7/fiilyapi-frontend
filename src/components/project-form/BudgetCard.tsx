@@ -19,11 +19,16 @@ interface BudgetCardProps {
   errors?: FieldErrors;
 }
 
-const LINE_FIELDS: readonly { key: keyof BudgetValues; label: string }[] = [
-  { key: "material", label: "Malzeme Bütçesi" },
-  { key: "labor", label: "İşçilik Bütçesi" },
-  { key: "subcontractor", label: "Taşeron Bütçesi" },
-  { key: "overhead", label: "Genel Gider" },
+/** Etiket + yer tutucu mockup satır 152–155'ten birebir. */
+const LINE_FIELDS: readonly {
+  key: keyof BudgetValues;
+  label: string;
+  placeholder: string;
+}[] = [
+  { key: "material", label: "Malzeme Bütçesi (₺)", placeholder: "12480000" },
+  { key: "labor", label: "İşçilik Bütçesi (₺)", placeholder: "5840000" },
+  { key: "subcontractor", label: "Taşeron Bütçesi (₺)", placeholder: "3120000" },
+  { key: "overhead", label: "Genel Gider (₺)", placeholder: "420000" },
 ];
 
 /** Boş/geçersiz giriş 0 sayılır; hesap katmanı (derive) sayı bekler. */
@@ -53,15 +58,16 @@ export function BudgetCard({
 
   return (
     <section className="pf-card">
-      <h2 className="pf-card__title">Bütçe Planlaması</h2>
+      <h2 className="pf-card__title">💰 Bütçe Planlaması</h2>
       <div className="pf-grid pf-grid--4">
-        {LINE_FIELDS.map(({ key, label }) => (
+        {LINE_FIELDS.map(({ key, label, placeholder }) => (
           <Field key={key} label={label} error={errors?.[key]}>
             {(control) => (
               <Input
                 {...control}
                 numeric
                 value={values[key]}
+                placeholder={placeholder}
                 status={errors?.[key] ? "error" : "default"}
                 onChange={(e) => onChange(key, e.target.value)}
               />

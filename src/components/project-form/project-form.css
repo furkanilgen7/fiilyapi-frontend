@@ -84,6 +84,16 @@
   display: block;
 }
 
+/* Sunucu hatası şeridi (mockup'ta yok; §7.8 alan dışı hata gösterimi) */
+.pf-form-error {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-danger-soft);
+  border-radius: var(--radius-8);
+  font-size: var(--text-body);
+  color: var(--color-danger-text);
+}
+
 /* Alt eylem şeridi (satır 212–216) */
 .pf-actions {
   display: flex;
@@ -144,11 +154,14 @@
 }
 
 /* ── Proje Tipi ikon kartları (satır 50–77, spec §4.3) ───────────────────── */
+/* Kart başlığındaki zorunluluk yıldızı (satır 51 "*") — .req (mockup) ile aynı renk. */
+.pf-card__req {
+  color: var(--color-danger);
+}
 .pf-type__grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: var(--space-3);
-  margin-bottom: var(--space-4);
 }
 .pf-type-card {
   display: flex;
@@ -394,6 +407,24 @@
 .pf-escalation__fields {
   margin-top: var(--space-2);
   padding-left: 23px;
+}
+
+/* ── İşveren kartı (mockup satır 94–102, spec §4.6) ──────────────────────── */
+.pf-card--employer {
+  border-color: var(--color-form-card-accent);
+}
+.pf-grid--2-1-1 {
+  grid-template-columns: 2fr 1fr 1fr;
+}
+/* "Taahhüt projesi" rozeti (satır 96) — genel Badge primitive'i 999px pill
+   kullanır, mockup burada 7px köşe istiyor; bu yüzden yerel bir sınıf. */
+.pf-badge-employer {
+  font-size: var(--text-small);
+  font-weight: var(--weight-regular);
+  background: var(--color-badge-info-bg);
+  color: var(--color-primary);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-7);
 }
 
 /* Alt başlık (grup içi, or. Hissedarlar) */

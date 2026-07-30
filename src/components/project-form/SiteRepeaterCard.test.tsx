@@ -75,7 +75,14 @@ describe("SiteRepeaterCard bileşeni (F9)", () => {
       />,
     );
     await userEvent.click(screen.getByRole("button", { name: "+ Şantiye Ekle" }));
-    expect(onChange).toHaveBeenCalledWith([emptySiteRow(), emptySiteRow()]);
+    // id'ler kararlı-benzersiz üretilir (react-reviewer: index key yerine); içerik
+    // karşılaştırması id'yi hariç tutar, ikinci satırın yeni/farklı id'si doğrulanır.
+    expect(onChange).toHaveBeenCalledTimes(1);
+    const rows = onChange.mock.calls[0][0] as SiteRow[];
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ name: "", siteManagerName: "", constructionAreaM2: "" });
+    expect(rows[1]).toMatchObject({ name: "", siteManagerName: "", constructionAreaM2: "" });
+    expect(rows[0].id).not.toBe(rows[1].id);
   });
 
   it("Sil son satırı da kaldırabilir (sıfır satır geçerli)", async () => {

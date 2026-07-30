@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "F\u0130\u0130L Yap\u0131 ERP API",
+    "title": "FİİL Yapı ERP API",
     "version": "0.1.0"
   },
   "paths": {
@@ -89,10 +89,10 @@
                   "type": "null"
                 }
               ],
-              "description": "YYYY-MM-DD \u2014 o gunun 00:00'indan itibaren (Europe/Istanbul, dahil)",
+              "description": "YYYY-MM-DD — o gunun 00:00'indan itibaren (Europe/Istanbul, dahil)",
               "title": "Date From"
             },
-            "description": "YYYY-MM-DD \u2014 o gunun 00:00'indan itibaren (Europe/Istanbul, dahil)"
+            "description": "YYYY-MM-DD — o gunun 00:00'indan itibaren (Europe/Istanbul, dahil)"
           },
           {
             "name": "date_to",
@@ -108,10 +108,10 @@
                   "type": "null"
                 }
               ],
-              "description": "YYYY-MM-DD \u2014 o gunun sonuna kadar (Europe/Istanbul, dahil)",
+              "description": "YYYY-MM-DD — o gunun sonuna kadar (Europe/Istanbul, dahil)",
               "title": "Date To"
             },
-            "description": "YYYY-MM-DD \u2014 o gunun sonuna kadar (Europe/Istanbul, dahil)"
+            "description": "YYYY-MM-DD — o gunun sonuna kadar (Europe/Istanbul, dahil)"
           },
           {
             "name": "q",
@@ -144,10 +144,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -168,7 +168,7 @@
           "audit"
         ],
         "summary": "Export Audit Log Endpoint",
-        "description": "Filtrelenmis denetim gunlugunu Excel dosyasi olarak doner.\n\nListe ucuyle AYNI filtreler gecerlidir; `limit`/`offset` YOKTUR \u2014 eslesen tum\nkayitlar yazilir (sessiz kirpma yapilmaz, bkz. plan Task 5 sinir notu).",
+        "description": "Filtrelenmis denetim gunlugunu Excel dosyasi olarak doner.\n\nListe ucuyle AYNI filtreler gecerlidir; `limit`/`offset` YOKTUR — eslesen tum\nkayitlar yazilir (sessiz kirpma yapilmaz, bkz. plan Task 5 sinir notu).",
         "operationId": "export_audit_log_endpoint_audit_log_export_xlsx_get",
         "security": [
           {
@@ -223,10 +223,10 @@
                   "type": "null"
                 }
               ],
-              "description": "YYYY-MM-DD \u2014 o gunun 00:00'indan itibaren (Europe/Istanbul, dahil)",
+              "description": "YYYY-MM-DD — o gunun 00:00'indan itibaren (Europe/Istanbul, dahil)",
               "title": "Date From"
             },
-            "description": "YYYY-MM-DD \u2014 o gunun 00:00'indan itibaren (Europe/Istanbul, dahil)"
+            "description": "YYYY-MM-DD — o gunun 00:00'indan itibaren (Europe/Istanbul, dahil)"
           },
           {
             "name": "date_to",
@@ -242,10 +242,10 @@
                   "type": "null"
                 }
               ],
-              "description": "YYYY-MM-DD \u2014 o gunun sonuna kadar (Europe/Istanbul, dahil)",
+              "description": "YYYY-MM-DD — o gunun sonuna kadar (Europe/Istanbul, dahil)",
               "title": "Date To"
             },
-            "description": "YYYY-MM-DD \u2014 o gunun sonuna kadar (Europe/Istanbul, dahil)"
+            "description": "YYYY-MM-DD — o gunun sonuna kadar (Europe/Istanbul, dahil)"
           },
           {
             "name": "q",
@@ -274,10 +274,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -380,7 +380,7 @@
           "auth"
         ],
         "summary": "Logout",
-        "description": "token_version'\u0131 art\u0131r\u0131r \u2014 o ana dek bas\u0131lm\u0131\u015f t\u00fcm token'lar (access + refresh) ge\u00e7ersiz\nolur (ger\u00e7ek sunucu-tarafl\u0131 \u00e7\u0131k\u0131\u015f). BFF ayr\u0131ca httpOnly cookie'yi siler.",
+        "description": "token_version'ı artırır — o ana dek basılmış tüm token'lar (access + refresh) geçersiz\nolur (gerçek sunucu-taraflı çıkış). BFF ayrıca httpOnly cookie'yi siler.",
         "operationId": "logout_auth_logout_post",
         "responses": {
           "204": {
@@ -439,10 +439,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           }
         },
         "security": [
@@ -479,10 +479,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -519,10 +519,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           }
         },
         "security": [
@@ -559,10 +559,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "413": {
             "description": "Logo boyutu cok buyuk"
@@ -588,10 +588,10 @@
             "description": "Successful Response"
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           }
         },
         "security": [
@@ -620,10 +620,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           }
         },
         "security": [
@@ -631,6 +631,126 @@
             "HTTPBearer": []
           }
         ]
+      }
+    },
+    "/employers": {
+      "get": {
+        "tags": [
+          "employers"
+        ],
+        "summary": "List Employers Endpoint",
+        "operationId": "list_employers_endpoint_employers_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "active_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Active Only"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployerListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "employers"
+        ],
+        "summary": "Create Employer Endpoint",
+        "operationId": "create_employer_endpoint_employers_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmployerCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployerResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/projects": {
@@ -691,10 +811,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -741,10 +861,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -795,10 +915,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -857,10 +977,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -898,10 +1018,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           }
         },
         "security": [
@@ -938,10 +1058,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -984,10 +1104,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           }
         },
         "security": [
@@ -1037,10 +1157,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -1101,10 +1221,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -1146,10 +1266,10 @@
             "description": "Successful Response"
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -1219,10 +1339,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -1256,10 +1376,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           }
         },
         "security": [
@@ -1296,10 +1416,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -1342,10 +1462,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           }
         },
         "security": [
@@ -1386,10 +1506,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -1445,10 +1565,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -1507,10 +1627,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -1561,10 +1681,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -1623,10 +1743,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -1677,10 +1797,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -1739,10 +1859,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -1803,10 +1923,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -1870,10 +1990,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -1920,10 +2040,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -1974,10 +2094,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -2036,10 +2156,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -2081,10 +2201,10 @@
             "description": "Successful Response"
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -2138,10 +2258,10 @@
             "description": "Successful Response"
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -2202,10 +2322,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -2254,10 +2374,10 @@
             }
           },
           "403": {
-            "description": "Yetkisiz i\u015flem"
+            "description": "Yetkisiz işlem"
           },
           "404": {
-            "description": "Kay\u0131t bulunamad\u0131"
+            "description": "Kayıt bulunamadı"
           },
           "422": {
             "description": "Validation Error",
@@ -2312,7 +2432,7 @@
           "admin"
         ],
         "title": "AccessLevel",
-        "description": "Eri\u015fim seviyesi. S\u0131ral\u0131d\u0131r: none < view < draft < request < approve < full < admin.\n\nfull silmeyi KAPSAMAZ \u2014 silme yaln\u0131zca admin seviyesindedir (spec \u00a75.0)."
+        "description": "Erişim seviyesi. Sıralıdır: none < view < draft < request < approve < full < admin.\n\nfull silmeyi KAPSAMAZ — silme yalnızca admin seviyesindedir (spec §5.0)."
       },
       "AuditAction": {
         "type": "string",
@@ -2797,7 +2917,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "CompanyUpdate",
-        "description": "Kismi guncelleme \u2014 tum alanlar opsiyonel. Gonderilmeyen alan degismez."
+        "description": "Kismi guncelleme — tum alanlar opsiyonel. Gonderilmeyen alan degismez."
       },
       "ContractingCard": {
         "properties": {
@@ -2826,7 +2946,7 @@
           "subcontractor_count"
         ],
         "title": "ContractingCard",
-        "description": "Taahhut karti \u2014 sozlesme bedeli/isveren ustte gercek, gerisi bos durum."
+        "description": "Taahhut karti — sozlesme bedeli/isveren ustte gercek, gerisi bos durum."
       },
       "CountPlaceholder": {
         "properties": {
@@ -2943,6 +3063,109 @@
           "risks"
         ],
         "title": "DashboardSummaryResponse"
+      },
+      "EmployerCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "tax_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 11
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Number"
+          },
+          "contact_person": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Person"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "EmployerCreate"
+      },
+      "EmployerListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EmployerResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "EmployerListResponse"
+      },
+      "EmployerResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "tax_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Number"
+          },
+          "contact_person": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Person"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "tax_number",
+          "contact_person",
+          "is_active"
+        ],
+        "title": "EmployerResponse"
       },
       "HTTPValidationError": {
         "properties": {
@@ -3428,7 +3651,7 @@
           "pending_module"
         ],
         "title": "PendingApprovalsPlaceholder",
-        "description": "Onay bekleyenler karti \u2014 rozet sayaci tasir."
+        "description": "Onay bekleyenler karti — rozet sayaci tasir."
       },
       "PermissionCell": {
         "properties": {
@@ -3572,6 +3795,17 @@
         "type": "object",
         "title": "PreferencesUpdate"
       },
+      "PriceIndexType": {
+        "type": "string",
+        "enum": [
+          "ufe",
+          "tufe",
+          "construction_cost",
+          "fixed_coefficient"
+        ],
+        "title": "PriceIndexType",
+        "description": "Fiyat farki endeks tipi (spec §2.4). Mockup satir 128 sirasi."
+      },
       "ProjectAccessInput": {
         "properties": {
           "all_projects": {
@@ -3613,6 +3847,348 @@
         ],
         "title": "ProjectAccessResponse"
       },
+      "ProjectBudgetInput": {
+        "properties": {
+          "material": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Material",
+            "default": "0"
+          },
+          "labor": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Labor",
+            "default": "0"
+          },
+          "subcontractor": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Subcontractor",
+            "default": "0"
+          },
+          "overhead": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Overhead",
+            "default": "0"
+          }
+        },
+        "type": "object",
+        "title": "ProjectBudgetInput",
+        "description": "Dört bütçe kalemi (spec §3.3). Toplam `budget`'i servis hesaplar; istemci `budget` yok."
+      },
+      "ProjectBudgetLines": {
+        "properties": {
+          "material": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Material"
+          },
+          "labor": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Labor"
+          },
+          "subcontractor": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Subcontractor"
+          },
+          "overhead": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Overhead"
+          }
+        },
+        "type": "object",
+        "required": [
+          "material",
+          "labor",
+          "subcontractor",
+          "overhead"
+        ],
+        "title": "ProjectBudgetLines",
+        "description": "Dört bütçe kalemi okuma yanıtı (spec §3.3). Toplam `budget` ayrı alanda durur."
+      },
+      "ProjectContractInput": {
+        "properties": {
+          "contract_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract No"
+          },
+          "signature_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signature Date"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "advance_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Advance Pct",
+            "default": "20"
+          },
+          "retainage_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Retainage Pct",
+            "default": "5"
+          },
+          "vat_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Vat Pct",
+            "default": "20"
+          },
+          "late_penalty_daily": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Late Penalty Daily"
+          },
+          "has_price_escalation": {
+            "type": "boolean",
+            "title": "Has Price Escalation",
+            "default": true
+          },
+          "index_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PriceIndexType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "base_index_value": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Index Value"
+          }
+        },
+        "type": "object",
+        "title": "ProjectContractInput",
+        "description": "İşveren sözleşmesi girişi (spec §2.4, §3.3). Yalnız `taahhut` projelerinde.\n\nYüzdeler alan düzeyinde 0..100 (§3.6 kural 6). `has_price_escalation=true` iken\nendeks alanlarının zorunluluğu (kural 5) ve endeks kapalıyken NULL olması\n(ck_contract_escalation) servis + DB CHECK ile denetlenir."
+      },
+      "ProjectContractResponse": {
+        "properties": {
+          "contract_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract No"
+          },
+          "signature_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signature Date"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "advance_pct": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Advance Pct"
+          },
+          "retainage_pct": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Retainage Pct"
+          },
+          "vat_pct": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Vat Pct"
+          },
+          "late_penalty_daily": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Late Penalty Daily"
+          },
+          "has_price_escalation": {
+            "type": "boolean",
+            "title": "Has Price Escalation"
+          },
+          "index_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PriceIndexType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "base_index_value": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Index Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contract_no",
+          "signature_date",
+          "amount",
+          "advance_pct",
+          "retainage_pct",
+          "vat_pct",
+          "late_penalty_daily",
+          "has_price_escalation",
+          "index_type",
+          "base_index_value"
+        ],
+        "title": "ProjectContractResponse",
+        "description": "Detay/liste yanıtında sözleşme (spec §2.4). Yalnız okuma; giriş `ProjectContractInput`."
+      },
       "ProjectCounts": {
         "properties": {
           "all": {
@@ -3634,6 +4210,10 @@
           "completed": {
             "type": "integer",
             "title": "Completed"
+          },
+          "draft": {
+            "type": "integer",
+            "title": "Draft"
           }
         },
         "type": "object",
@@ -3642,16 +4222,24 @@
           "taahhut",
           "kendi_yatirim",
           "kat_karsiligi",
-          "completed"
+          "completed",
+          "draft"
         ],
         "title": "ProjectCounts"
       },
       "ProjectCreate": {
         "properties": {
           "code": {
-            "type": "string",
-            "maxLength": 50,
-            "minLength": 1,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Code"
           },
           "name": {
@@ -3691,6 +4279,30 @@
             ],
             "title": "City"
           },
+          "parcel": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parcel"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
           "start_date": {
             "anyOf": [
               {
@@ -3715,45 +4327,42 @@
             ],
             "title": "End Date"
           },
-          "contract_no": {
+          "employer_id": {
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 100
+                "format": "uuid"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Contract No"
+            "title": "Employer Id"
           },
-          "contract_amount": {
+          "contract": {
             "anyOf": [
               {
-                "type": "number",
-                "minimum": 0.0
-              },
-              {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+                "$ref": "#/components/schemas/ProjectContractInput"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Contract Amount"
+            ]
           },
-          "employer_name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 200
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Employer Name"
+          "budget_lines": {
+            "$ref": "#/components/schemas/ProjectBudgetInput"
+          },
+          "sites": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectSiteInput"
+            },
+            "type": "array",
+            "title": "Sites"
+          },
+          "is_draft": {
+            "type": "boolean",
+            "title": "Is Draft",
+            "default": false
           },
           "investment": {
             "anyOf": [
@@ -3778,7 +4387,6 @@
         },
         "type": "object",
         "required": [
-          "code",
           "name",
           "project_type"
         ],
@@ -3885,6 +4493,33 @@
             ],
             "title": "Employer Name"
           },
+          "employer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmployerResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contract": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectContractResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "budget_lines": {
+            "$ref": "#/components/schemas/ProjectBudgetLines"
+          },
+          "is_draft": {
+            "type": "boolean",
+            "title": "Is Draft"
+          },
           "budget": {
             "type": "string",
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -3944,6 +4579,10 @@
           "contract_no",
           "contract_amount",
           "employer_name",
+          "employer",
+          "contract",
+          "budget_lines",
+          "is_draft",
           "budget",
           "progress_pct",
           "contracting",
@@ -4244,6 +4883,33 @@
             ],
             "title": "Employer Name"
           },
+          "employer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmployerResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contract": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectContractResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "budget_lines": {
+            "$ref": "#/components/schemas/ProjectBudgetLines"
+          },
+          "is_draft": {
+            "type": "boolean",
+            "title": "Is Draft"
+          },
           "budget": {
             "type": "string",
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -4299,6 +4965,10 @@
           "contract_no",
           "contract_amount",
           "employer_name",
+          "employer",
+          "contract",
+          "budget_lines",
+          "is_draft",
           "budget",
           "progress_pct",
           "contracting",
@@ -4327,9 +4997,66 @@
         ],
         "title": "ProjectListResponse"
       },
+      "ProjectSiteInput": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 150,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "site_manager_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Manager Name"
+          },
+          "construction_area_m2": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Construction Area M2"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ProjectSiteInput",
+        "description": "Satır içi şantiye (spec §3.4). Kod verilmezse P2 türeticisi çalışır (B5)."
+      },
       "ProjectStatus": {
         "type": "string",
         "enum": [
+          "planning",
           "active",
           "on_hold",
           "completed"
@@ -4344,7 +5071,7 @@
           "kat_karsiligi"
         ],
         "title": "ProjectType",
-        "description": "\u00dc\u00e7 i\u015f modeli \u2014 kart d\u00fczenini ve gelir mant\u0131\u011f\u0131n\u0131 belirler (spec \u00a73.1)."
+        "description": "Üç iş modeli — kart düzenini ve gelir mantığını belirler (spec §3.1)."
       },
       "ProjectUpdate": {
         "properties": {
@@ -4482,7 +5209,7 @@
         },
         "type": "object",
         "title": "ProjectUpdate",
-        "description": "project_type YOK \u2014 tip PATCH ile degistirilemez (spec \u00a73.5)."
+        "description": "project_type YOK — tip PATCH ile degistirilemez (spec §3.5)."
       },
       "RefreshRequest": {
         "properties": {
@@ -4609,7 +5336,7 @@
           "limited"
         ],
         "title": "Scope",
-        "description": "Veri kapsam\u0131 \u2014 akt\u00f6r\u00fcn mod\u00fcl i\u00e7inde hangi kay\u0131tlar\u0131 g\u00f6rebildi\u011fi."
+        "description": "Veri kapsamı — aktörün modül içinde hangi kayıtları görebildiği."
       },
       "SectionCreate": {
         "properties": {
@@ -4684,7 +5411,7 @@
           "name"
         ],
         "title": "SectionCreate",
-        "description": "`budget` YOK (spec \u00a72.2) \u2014 bolum bedeli BOQ kalemlerinin toplamidir."
+        "description": "`budget` YOK (spec §2.2) — bolum bedeli BOQ kalemlerinin toplamidir."
       },
       "SectionListResponse": {
         "properties": {
@@ -4799,7 +5526,7 @@
           "worker_count"
         ],
         "title": "SectionResponse",
-        "description": "Spec \u00a74.1. \"gecikme riski\" alani KASITLI olarak yok (spec \u00a73.3): hesabin\ngirdisi henuz uretilmedigi icin yer tutucu bile dondurulmez."
+        "description": "Spec §4.1. \"gecikme riski\" alani KASITLI olarak yok (spec §3.3): hesabin\ngirdisi henuz uretilmedigi icin yer tutucu bile dondurulmez."
       },
       "SectionStatus": {
         "type": "string",
@@ -4832,7 +5559,7 @@
           "completed"
         ],
         "title": "SectionStatusCounts",
-        "description": "Mockup'taki \"3 aktif \u00b7 2 bekliyor\" kirilimi (spec \u00a73.2)."
+        "description": "Mockup'taki \"3 aktif · 2 bekliyor\" kirilimi (spec §3.2)."
       },
       "SectionUpdate": {
         "properties": {
@@ -4923,7 +5650,7 @@
         },
         "type": "object",
         "title": "SectionUpdate",
-        "description": "`site_id` YOK \u2014 bolum baska santiyeye tasinamaz."
+        "description": "`site_id` YOK — bolum baska santiyeye tasinamaz."
       },
       "ShareholderInput": {
         "properties": {
@@ -5112,7 +5839,7 @@
           "progress_pct"
         ],
         "title": "SiteCard",
-        "description": "Spec \u00a74.1 SiteCard. `remaining_days` negatif olabilir (spec \u00a74.2) \u2014\ngecikmeyi kirmizi gostermek frontend'in isi, backend gercegi bastirmaz."
+        "description": "Spec §4.1 SiteCard. `remaining_days` negatif olabilir (spec §4.2) —\ngecikmeyi kirmizi gostermek frontend'in isi, backend gercegi bastirmaz."
       },
       "SiteCounts": {
         "properties": {
@@ -5245,7 +5972,7 @@
           "name"
         ],
         "title": "SiteCreate",
-        "description": "`contract_amount` YOK (spec \u00a72.1) \u2014 santiye payi BOQ dagitiminin turevidir."
+        "description": "`contract_amount` YOK (spec §2.1) — santiye payi BOQ dagitiminin turevidir."
       },
       "SiteDetailResponse": {
         "properties": {
@@ -5451,7 +6178,7 @@
           "average_margin"
         ],
         "title": "SiteListTotals",
-        "description": "Alt KPI seridi \u2014 bu dilimde TAMAMI yer tutucu (spec \u00a74.1)."
+        "description": "Alt KPI seridi — bu dilimde TAMAMI yer tutucu (spec §4.1)."
       },
       "SiteProjectSummary": {
         "properties": {
@@ -5495,7 +6222,7 @@
           "employer_name"
         ],
         "title": "SiteProjectSummary",
-        "description": "Santiye Detay ust satiri: proje adi + isveren (spec \u00a73.2)."
+        "description": "Santiye Detay ust satiri: proje adi + isveren (spec §3.2)."
       },
       "SiteStatus": {
         "type": "string",
@@ -5505,7 +6232,7 @@
           "completed"
         ],
         "title": "SiteStatus",
-        "description": "project_status ile ayni ucludur ama AYRI enum'dur (spec \u00a72.3): sirf bugun\nayni olduklari icin paylasilan bir enum'a baglamak, santiyeye ileride\n`suspended` gibi bir durum eklemeyi imkansiz kilar."
+        "description": "project_status ile ayni ucludur ama AYRI enum'dur (spec §2.3): sirf bugun\nayni olduklari icin paylasilan bir enum'a baglamak, santiyeye ileride\n`suspended` gibi bir durum eklemeyi imkansiz kilar."
       },
       "SiteUpdate": {
         "properties": {
@@ -5620,7 +6347,7 @@
         },
         "type": "object",
         "title": "SiteUpdate",
-        "description": "`project_id` YOK \u2014 santiye baska projeye tasinamaz."
+        "description": "`project_id` YOK — santiye baska projeye tasinamaz."
       },
       "TokenPair": {
         "properties": {
@@ -5938,7 +6665,7 @@
           "pending_module"
         ],
         "title": "MetricPlaceholder",
-        "description": "Tek degerli KPI karti. v1'de veri kaynagi olmayan kartlar icin.\n\navailable alani bilincli olarak vardir: frontend sabite degil veriye dallanir,\nilgili alt-proje geldiginde backend true dondurmeye baslar (spec \u00a72.3)."
+        "description": "Tek degerli KPI karti. v1'de veri kaynagi olmayan kartlar icin.\n\navailable alani bilincli olarak vardir: frontend sabite degil veriye dallanir,\nilgili alt-proje geldiginde backend true dondurmeye baslar (spec §2.3)."
       },
       "app__modules__projects__schemas__MetricPlaceholder": {
         "properties": {

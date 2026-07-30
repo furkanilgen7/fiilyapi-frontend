@@ -8,6 +8,7 @@ type Project = components["schemas"]["DashboardProjectCard"];
 // Mockup Ekran 1'de yalnizca Aktif/Beklemede var; Tamamlandi rozeti
 // "Ekran 4 - Projeler.dc.html" satir 273'ten alindi (spec §3.4).
 const STATUS_LABELS: Record<Project["status"], string> = {
+  planning: "Planlama",
   active: "Aktif",
   on_hold: "Beklemede",
   completed: "Tamamlandı",
