@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
+import { downloadBoqExport } from "@/lib/api/boq-client";
 import { BoqItemFormModal, type BoqItemFormMode } from "@/components/boq/BoqItemFormModal";
 import { BoqTable } from "@/components/boq/BoqTable";
 import { BoqTotalsStrip } from "@/components/boq/BoqTotalsStrip";
@@ -29,6 +30,25 @@ export default function BoqPage() {
   const { canWrite } = useModulePermission("boq");
   // Tek modal, iki kip (spec §7.1): `null` = kapali.
   const [formMode, setFormMode] = useState<BoqItemFormMode | null>(null);
+  // Excel indirme durumu (spec §8.3). Sunucu hatasi sayfada gorunur kalir;
+  // sessiz basarisizlik yok.
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  async function handleExport() {
+    setIsExporting(true);
+    setExportError(null);
+    try {
+      await downloadBoqExport(siteId);
+    } catch (error: unknown) {
+      // Metinler §9.2 envanterinden; envanterde olmayan dize uydurulmaz.
+      setExportError(
+        isForbidden(error) ? "Bu işlem için yetkiniz yok" : "Excel dosyası indirilemedi.",
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   if (isForbidden(boqQuery.error) || isForbidden(siteQuery.error)) return <AccessDenied />;
 
@@ -49,12 +69,16 @@ export default function BoqPage() {
 
       <div className="boq__title-bar">
         <h1 className="boq__title">İş Kalemleri (BOQ)</h1>
-        {/* Iki buton da bu task'ta islevsizdir; davranis F8/F9'da baglanir.
-            "Excel Indir" okuma ucudur (`boq:view` yeter) → HER ZAMAN gorunur;
+        {/* "Excel Indir" okuma ucudur (`boq:view` yeter) → HER ZAMAN gorunur;
             "+ Is Kalemi" yazma yuzeyidir → izin kapisinin arkasinda (§2.5). */}
         <div className="boq__actions">
-          <Button variant="secondary" className="boq-action">
-            Excel İndir
+          <Button
+            variant="secondary"
+            className="boq-action"
+            onClick={handleExport}
+            disabled={isExporting}
+          >
+            {isExporting ? "İndiriliyor…" : "Excel İndir"}
           </Button>
           {canWrite && (
             <Button
@@ -67,6 +91,12 @@ export default function BoqPage() {
           )}
         </div>
       </div>
+
+      {exportError && (
+        <p className="boq__message" role="alert">
+          {exportError}
+        </p>
+      )}
 
       {/* Kart seridi yukleme/hata/bos durumlarinda da basilir (spec §9 sonu);
           dordu de yer tutucudur (spec §4). */}

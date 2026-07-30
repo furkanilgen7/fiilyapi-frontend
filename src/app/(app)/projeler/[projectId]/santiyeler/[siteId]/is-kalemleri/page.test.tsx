@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, within, fireEvent } from "@testing-library/react";
+import { render, screen, within, fireEvent, waitFor, act } from "@testing-library/react";
 
 import BoqPage from "./page";
+import { downloadBoqExport } from "@/lib/api/boq-client";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { useBoq } from "@/lib/api/hooks/useBoq";
 import { BackendError } from "@/lib/api/unwrap";
@@ -33,6 +34,9 @@ vi.mock("@/lib/api/hooks/useBoqMutations", () => ({
   useCreateBoqItem: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateBoqItem: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
+
+// Indirme istemcisi (F9) — tarayici indirme akisi ayri dosyada testli.
+vi.mock("@/lib/api/boq-client", () => ({ downloadBoqExport: vi.fn() }));
 
 // Izin kapisi oturum yukunden okunur (spec §2.5.2); sayfa testinde gercek
 // hook calisir, yalniz oturum kaynagi taklit edilir.
@@ -297,5 +301,74 @@ describe("BoqPage — BoqItemFormModal bağlantısı (spec §7)", () => {
     expect(
       screen.queryByRole("button", { name: "01.001 — Kazı (Makine ile) kalemini düzenle" }),
     ).not.toBeInTheDocument();
+  });
+});
+
+// F9: "Excel İndir" durumları (spec §8.3, metin envanteri §9.2 #4-6).
+describe("BoqPage — Excel İndir (spec §8.3)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPermission("full");
+    mockSite({ data: SITE });
+    mockBoq({ data: EMPTY_BOQ });
+  });
+
+  function excelButton(): HTMLElement {
+    return screen.getByRole("button", { name: /Excel İndir|İndiriliyor…/ });
+  }
+
+  it("tıklanınca şantiyenin export ucunu çağırır", async () => {
+    vi.mocked(downloadBoqExport).mockResolvedValue(undefined);
+    render(<BoqPage />);
+    fireEvent.click(excelButton());
+    await waitFor(() => expect(downloadBoqExport).toHaveBeenCalledWith(SITE_ID));
+  });
+
+  it("indirme sürerken buton disabled ve İndiriliyor… yazar", async () => {
+    let release: () => void = () => {};
+    vi.mocked(downloadBoqExport).mockReturnValue(
+      new Promise<void>((resolve) => {
+        release = resolve;
+      }),
+    );
+    render(<BoqPage />);
+    fireEvent.click(excelButton());
+    await waitFor(() => expect(screen.getByRole("button", { name: "İndiriliyor…" })).toBeDisabled());
+    await act(async () => {
+      release();
+    });
+    expect(await screen.findByRole("button", { name: "Excel İndir" })).toBeEnabled();
+  });
+
+  it("403'te 'Bu işlem için yetkiniz yok' satırı basılır", async () => {
+    vi.mocked(downloadBoqExport).mockRejectedValue(new BackendError(403, { detail: "yasak" }));
+    render(<BoqPage />);
+    fireEvent.click(excelButton());
+    expect(await screen.findByText("Bu işlem için yetkiniz yok")).toBeInTheDocument();
+  });
+
+  it("diğer hatada 'Excel dosyası indirilemedi.' basılır", async () => {
+    vi.mocked(downloadBoqExport).mockRejectedValue(new BackendError(500, null));
+    render(<BoqPage />);
+    fireEvent.click(excelButton());
+    expect(await screen.findByText("Excel dosyası indirilemedi.")).toBeInTheDocument();
+  });
+
+  it("başarıda ek geri bildirim basılmaz", async () => {
+    vi.mocked(downloadBoqExport).mockResolvedValue(undefined);
+    render(<BoqPage />);
+    fireEvent.click(excelButton());
+    await waitFor(() => expect(downloadBoqExport).toHaveBeenCalled());
+    expect(screen.queryByText("Excel dosyası indirilemedi.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Bu işlem için yetkiniz yok")).not.toBeInTheDocument();
+  });
+
+  // Okuma ucudur: `boq:view` yeter → izin kapısı bu butona uygulanmaz.
+  it("canWrite false iken de indirme çalışır", async () => {
+    mockPermission("view");
+    vi.mocked(downloadBoqExport).mockResolvedValue(undefined);
+    render(<BoqPage />);
+    fireEvent.click(excelButton());
+    await waitFor(() => expect(downloadBoqExport).toHaveBeenCalledWith(SITE_ID));
   });
 });
