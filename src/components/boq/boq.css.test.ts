@@ -45,6 +45,21 @@ describe("boq.css — mockup kuralları (regresyon koruması)", () => {
     expect(css).toMatch(/\.boq__crumb-link:focus-visible\s*{[^}]*--focus-ring/);
   });
 
+  // Mockup 111/112: Poz No ve Tarif hücrelerinde yatay dolgu 16px. `.boq-table__cell`
+  // kısayolu aynı özgüllükte ve daha sonra geldiğinden sütun kuralını eziyordu;
+  // bileşik seçici olmadan hücreler 12px'e düşer (F10'da ölçülerek yakalandı).
+  it("Poz No / Tarif hücrelerinin 16px yatay dolgusunu bileşik seçiciyle korur", () => {
+    expect(css).toMatch(
+      /\.boq-table__cell\.boq-table__col--code,\s*\.boq-table__cell\.boq-table__col--desc\s*{[^}]*padding-left:\s*var\(--space-boq-cell-x\)[^}]*padding-right:\s*var\(--space-boq-cell-x\)/,
+    );
+  });
+
+  // Mockup 67: birincil buton `border:none`. Button primitive'inin 1px saydam
+  // kenarlığı bırakılırsa buton 2px genişler (F10'da ölçüldü).
+  it("birincil eylem butonunun kenarlığını kaldırır (mockup 67 border:none)", () => {
+    expect(css).toMatch(/\.boq-action--primary\s*{[^}]*border:\s*0/);
+  });
+
   it("çıplak hex renk içermez (tüm renkler token'dan gelir)", () => {
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });

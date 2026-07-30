@@ -54,6 +54,10 @@
 .boq-action--primary {
   padding: var(--space-form-y) var(--space-boq-btn-x);
   font-weight: var(--weight-semibold);
+  /* Mockup 67 `border:none`. Button primitive'i 1px saydam kenarlık taşır;
+     bırakılırsa birincil buton mockup'tan 2px geniş olur (ölçüldü: 106.3px
+     yerine 104.3px olmalı). İkincil butonda kenarlık mockup'ta VAR (66). */
+  border: 0;
 }
 
 /* Özet kartı şeridi (72–89). `ui/card/Card` KULLANILMAZ: Card radius-14 +
@@ -232,6 +236,15 @@
 }
 .boq-table__cell--amount {
   font-weight: var(--weight-semibold); /* 116 */
+}
+/* Poz No (111) ve Tarif (112) hücrelerinde yatay dolgu 16px'tir, 12px değil.
+   `.boq-table__col--*` kuralı bunu veriyor ama `.boq-table__cell` kısayolu
+   AYNI özgüllükte ve DAHA SONRA geldiği için padding-left/right'ı eziyordu.
+   Bileşik seçici özgüllüğü yükseltir → kural sıradan bağımsız hâle gelir. */
+.boq-table__cell.boq-table__col--code,
+.boq-table__cell.boq-table__col--desc {
+  padding-left: var(--space-boq-cell-x);
+  padding-right: var(--space-boq-cell-x);
 }
 
 /* Gerç. % — bu dilimde tamamı yer tutucu (spec §5.4). Eşik renkleri P7'ye
