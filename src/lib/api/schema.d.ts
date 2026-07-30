@@ -119,6 +119,112 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sites/{site_id}/boq": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Boq Endpoint */
+        get: operations["get_boq_endpoint_sites__site_id__boq_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/boq/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Boq Endpoint
+         * @description Spec §5.3: BOQ'yu xlsx olarak indirir. Okuma ucudur — `record_audit`
+         *     cagirmaz (T7 kurali: okumalar denetim gunlugune yazmaz).
+         */
+        get: operations["export_boq_endpoint_sites__site_id__boq_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/boq/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Boq Group Endpoint */
+        post: operations["create_boq_group_endpoint_sites__site_id__boq_groups_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/boq/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Boq Item Endpoint */
+        post: operations["create_boq_item_endpoint_sites__site_id__boq_items_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/boq/groups/{group_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Boq Group Endpoint */
+        patch: operations["update_boq_group_endpoint_boq_groups__group_id__patch"];
+        trace?: never;
+    };
+    "/boq/items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Boq Item Endpoint */
+        patch: operations["update_boq_item_endpoint_boq_items__item_id__patch"];
+        trace?: never;
+    };
     "/company": {
         parameters: {
             query?: never;
@@ -585,6 +691,137 @@ export interface components {
         Body_upload_logo_endpoint_company_logo_post: {
             /** File */
             file: string;
+        };
+        /** BoqGroupCreate */
+        BoqGroupCreate: {
+            /** Name */
+            name: string;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /**
+         * BoqGroupResponse
+         * @description Spec §5.1 grup satiri. `group_total` turevdir: kalem tutarlarinin toplami.
+         */
+        BoqGroupResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Items */
+            items: components["schemas"]["BoqItemResponse"][];
+            /** Group Total */
+            readonly group_total: string;
+        };
+        /**
+         * BoqGroupUpdate
+         * @description `site_id` YOK — grup baska santiyeye tasinamaz (spec §3.3 invariant 4).
+         */
+        BoqGroupUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
+        /** BoqItemCreate */
+        BoqItemCreate: {
+            /**
+             * Group Id
+             * Format: uuid
+             */
+            group_id: string;
+            /** Code */
+            code: string;
+            /** Description */
+            description: string;
+            /** Unit */
+            unit: string;
+            /** Quantity */
+            quantity: number | string;
+            /** Unit Price */
+            unit_price: number | string;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /**
+         * BoqItemResponse
+         * @description Spec §5.1 poz kalemi satiri. `amount` turevdir, saklanmaz — quantity *
+         *     unit_price, para hassasiyetine (0.01) yuvarlanir. `progress_pct` hakediş
+         *     (P7) yer tutucusudur (spec §3.2).
+         */
+        BoqItemResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Description */
+            description: string;
+            /** Unit */
+            unit: string;
+            /** Quantity */
+            quantity: string;
+            /** Unit Price */
+            unit_price: string;
+            progress_pct: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            /** Sort Order */
+            sort_order: number;
+            /** Amount */
+            readonly amount: string;
+        };
+        /**
+         * BoqItemUpdate
+         * @description `site_id` YOK (spec §3.3 invariant 4). `group_id` verilirse ayni santiye
+         *     kontrolu servis katmaninda tekrarlanir (spec §3.3 invariant 1).
+         */
+        BoqItemUpdate: {
+            /** Group Id */
+            group_id?: string | null;
+            /** Code */
+            code?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Unit */
+            unit?: string | null;
+            /** Quantity */
+            quantity?: number | string | null;
+            /** Unit Price */
+            unit_price?: number | string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
+        /** BoqListResponse */
+        BoqListResponse: {
+            totals: components["schemas"]["BoqTotals"];
+            /** Groups */
+            groups: components["schemas"]["BoqGroupResponse"][];
+        };
+        /**
+         * BoqTotals
+         * @description Spec §5.1 ust KPI seridi. `grand_total` GERCEK deger, geri kalani yer
+         *     tutucu (sozlesme/hakediş bu dilimde yazilmiyor).
+         */
+        BoqTotals: {
+            contract_total: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            realized_total: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            remaining_total: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            revision_total: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            /** Grand Total */
+            grand_total: string;
+            grand_progress_pct: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
         };
         /**
          * CompanyRead
@@ -2024,6 +2261,292 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+        };
+    };
+    get_boq_endpoint_sites__site_id__boq_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoqListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_boq_endpoint_sites__site_id__boq_export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Excel dosyasi */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": unknown;
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_boq_group_endpoint_sites__site_id__boq_groups_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoqGroupCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoqGroupResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_boq_item_endpoint_sites__site_id__boq_items_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoqItemCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoqItemResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_boq_group_endpoint_boq_groups__group_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoqGroupUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoqGroupResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_boq_item_endpoint_boq_items__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoqItemUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoqItemResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
