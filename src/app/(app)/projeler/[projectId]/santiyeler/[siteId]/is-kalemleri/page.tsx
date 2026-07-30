@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
+import { BoqTotalsStrip } from "@/components/boq/BoqTotalsStrip";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Button } from "@/components/ui/button/Button";
 import { useBoq } from "@/lib/api/hooks/useBoq";
@@ -56,6 +57,10 @@ export default function BoqPage() {
           </Button>
         </div>
       </div>
+
+      {/* Kart seridi yukleme/hata/bos durumlarinda da basilir (spec §9 sonu);
+          dordu de yer tutucudur (spec §4). */}
+      <BoqTotalsStrip totals={boqQuery.data?.totals} />
 
       {message !== null && <p className="boq__message">{message}</p>}
     </div>

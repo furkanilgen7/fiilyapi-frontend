@@ -119,9 +119,23 @@ describe("BoqPage — başlık şeridi ve breadcrumb (mockup 62–67)", () => {
   // Onaylı sapma C (spec §2.3, §13): sözleşme numarası uydurulmaz, görünür yer
   // tutucu da basılmaz.
   it("breadcrumb sözleşme numarası basmaz", () => {
+    const { container } = render(<BoqPage />);
+    const crumb = container.querySelector(".boq__crumb") as HTMLElement;
+    expect(crumb).toBeInTheDocument();
+    expect(crumb.textContent).not.toMatch(/SZL-/);
+    expect(crumb.textContent).not.toMatch(/Sözleşme/);
+  });
+
+  // spec §9 sonu: şeridin verisi zaten sorguya bağlı değil (dördü de yer tutucu).
+  it("kart şeridi yükleme ve hata durumlarında da basılır", () => {
+    mockBoq({ isLoading: true });
+    const { unmount } = render(<BoqPage />);
+    expect(screen.getAllByTestId("boq-kpi")).toHaveLength(4);
+    unmount();
+
+    mockBoq({ isError: true, error: new Error("patladi") });
     render(<BoqPage />);
-    expect(screen.queryByText(/SZL-/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Sözleşme/)).not.toBeInTheDocument();
+    expect(screen.getAllByTestId("boq-kpi")).toHaveLength(4);
   });
 
   it("şantiye yüklenmemişken breadcrumb hiç basılmaz (uydurma etiket yok)", () => {

@@ -56,6 +56,51 @@
   font-weight: var(--weight-semibold);
 }
 
+/* Özet kartı şeridi (72–89). `ui/card/Card` KULLANILMAZ: Card radius-14 +
+   shadow-card + 24px gövde taşır, mockup 12px / gölgesiz / 16px ister
+   (spec §3.2) — SiteTotalsStrip deseniyle ekran sınıfı yazılır. */
+.boq-totals {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-boq-strip-gap);
+}
+.boq-kpi {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+}
+.boq-kpi__label {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-bottom: var(--space-boq-kpi-label-gap);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+.boq-kpi__value {
+  font-size: var(--text-kpi-value);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+}
+/* Mockup renkleri (79, 83, 87) TANIMLI KALIR: veri geldiği gün yalnız
+   `--pending` sınıfı düşer, ekran mockup'a döner (spec §4). */
+.boq-kpi__value--realized {
+  color: var(--color-primary);
+}
+.boq-kpi__value--remaining {
+  color: var(--color-warning);
+}
+.boq-kpi__value--revision {
+  color: var(--color-accent-purple-grad-start);
+}
+/* Sırası önemli: yer tutucu hâl renk sınıflarını ezer (aynı özgüllük). */
+.boq-kpi__value--pending {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+
 /* Durum metinleri (spec §9) — Şantiye Detay `site-detail__message` deseni. */
 .boq__message {
   color: var(--color-text-muted);
