@@ -403,6 +403,24 @@ describe("BFF /api/backend/[...path]", () => {
       expect(calledRoots.length).toBeGreaterThan(0);
     });
 
+    // Santiye formunun (T5–T12) uc bagimliligi: proje bilgi kutusu, gonderim
+    // ucu ve kisi seciciler. Dinamik tarama bunlari zaten yakalar; bu ADLI
+    // kapi, koklerden biri sessizce dusurulurse gerekcesini de birlikte kirar.
+    it.each(["projects", "sites", "users"])(
+      "%s koku santiye formu icin allow-list'te tanimlidir",
+      (root) => {
+        const source = readFileSync(
+          resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+          "utf8",
+        );
+        const allowList = source.slice(
+          source.indexOf("const ALLOWED_ROOTS"),
+          source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+        );
+        expect(allowList).toContain(`"${root}"`);
+      },
+    );
+
     it.each(calledRoots)("%s koku forward edilir", async (root) => {
       const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
       vi.stubGlobal("fetch", fetchMock);
