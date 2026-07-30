@@ -9,6 +9,13 @@ import { describe, it, expect } from "vitest";
 const css = readFileSync(fileURLToPath(new URL("./boq.css", import.meta.url)), "utf8");
 
 describe("boq.css — mockup kuralları (regresyon koruması)", () => {
+  // F13 / spec §7.5.1: `Sil` alt şeridin SOLUNDA durur. `.modal__footer`
+  // flex-end hizaladığı için konum yalnız bu kuralla korunur; silinirse buton
+  // sessizce Kaydet'in yanına kayar.
+  it("Sil butonunu alt şeridin soluna iter", () => {
+    expect(css).toMatch(/\.boq-modal__delete[^{]*{[^}]*margin-right:\s*auto/);
+  });
+
   // Mockup 163: son poz satırında alt çizgi YOK. Satıra sınıf eklenmez, kural
   // :last-child ile yazılır (spec §3.3).
   it("son gövde satırının alt çizgisini :last-child ile kaldırır", () => {

@@ -320,6 +320,18 @@
   font-family: var(--font-mono);
 }
 
+/* Silme (F13, spec §7.5). `.modal__footer` flex-end hizalar; `Sil` alt şeridin
+   SOLUNA `margin-right: auto` ile itilir — footer'a ikinci bir sarmalayıcı
+   eklenmez (modal.css ekran başına değiştirilmez). */
+.boq-modal__delete {
+  margin-right: auto;
+}
+/* Onay adımının tek satır uyarısı; ayrı diyalog değil, aynı gövde (§7.5.2). */
+.boq-modal__confirm {
+  color: var(--color-text);
+  line-height: var(--leading-normal);
+}
+
 /* Durum metinleri (spec §9) — Şantiye Detay `site-detail__message` deseni. */
 .boq__message {
   color: var(--color-text-muted);

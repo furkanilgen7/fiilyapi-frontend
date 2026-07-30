@@ -16,8 +16,8 @@ import {
 // Optimistik guncelleme YOK: `amount` / `group_total` / `grand_total` sunucu
 // turevidir, iyimser yazmak yanlis toplam gosterir.
 //
-// `useDeleteBoqItem` ve grup PATCH hook'u BILEREK yazilmadi (spec §7.4, §7.5):
-// DELETE ucu backend'de yok, grup guncelleme UI'dan cagrilmiyor — olu kod olurdu.
+// Grup PATCH hook'u BILEREK yazilmadi (spec §7.4): grup guncelleme UI'dan
+// cagrilmiyor — olu kod olurdu. `useDeleteBoqItem` F13 ile geldi (BE-B kapandi).
 
 function useBoqInvalidator(siteId: string): () => void {
   const queryClient = useQueryClient();
@@ -75,6 +75,28 @@ export function useUpdateBoqItem(
           body,
         }),
       ),
+    onSuccess: invalidate,
+  });
+}
+
+/**
+ * Kalem silme (spec §7.5). `useUpdateBoqItem` ile ayni sekil: yol santiyesizdir,
+ * `siteId` YALNIZ gecersiz kilma anahtari icin alinir.
+ *
+ * Basari `204 No Content` — govde yoktur; `unwrap` yalniz `response.ok`'a bakar.
+ * Optimistik silme YOK: `group_total`/`grand_total` sunucu turevidir, satiri
+ * once dusurmek toplamlari kisa sureligine yanlis gosterirdi.
+ */
+export function useDeleteBoqItem(siteId: string): UseMutationResult<void, Error, string> {
+  const invalidate = useBoqInvalidator(siteId);
+  return useMutation({
+    mutationFn: async (itemId: string) => {
+      unwrap(
+        await backendClient.DELETE("/boq/items/{item_id}", {
+          params: { path: { item_id: itemId } },
+        }),
+      );
+    },
     onSuccess: invalidate,
   });
 }

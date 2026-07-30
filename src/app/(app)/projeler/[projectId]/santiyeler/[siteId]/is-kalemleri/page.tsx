@@ -115,6 +115,7 @@ export default function BoqPage() {
           siteId={siteId}
           groups={boqQuery.data?.groups ?? []}
           mode={formMode}
+          canWrite={canWrite}
           onClose={() => setFormMode(null)}
         />
       )}

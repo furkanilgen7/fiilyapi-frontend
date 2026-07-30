@@ -34,6 +34,7 @@ vi.mock("@/lib/api/hooks/useBoqMutations", () => ({
   useCreateBoqGroup: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCreateBoqItem: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateBoqItem: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useDeleteBoqItem: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
 // Indirme istemcisi (F9) — tarayici indirme akisi ayri dosyada testli.
@@ -287,6 +288,16 @@ describe("BoqPage — BoqItemFormModal bağlantısı (spec §7)", () => {
     );
     expect(screen.getByRole("dialog", { name: "İş Kalemi Düzenle" })).toBeInTheDocument();
     expect(screen.getByLabelText("Poz No")).toHaveValue("01.001");
+  });
+
+  // F13 / §7.5.6: sayfanin izin kapisi modale KADAR tasinmali — modal kendi
+  // kapisini kurmaz, aksi halde iki ayri dogruluk kaynagi olur.
+  it("edit modalinde Sil butonu basılır (canWrite modale geçer)", () => {
+    render(<BoqPage />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "01.001 — Kazı (Makine ile) kalemini düzenle" }),
+    );
+    expect(screen.getByRole("button", { name: "Sil" })).toBeInTheDocument();
   });
 
   it("Vazgeç modalı kapatır", () => {

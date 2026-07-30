@@ -10,6 +10,7 @@ import { BackendError } from "@/lib/api/unwrap";
 import {
   useCreateBoqGroup,
   useCreateBoqItem,
+  useDeleteBoqItem,
   useUpdateBoqItem,
 } from "@/lib/api/hooks/useBoqMutations";
 import type { BoqGroup, BoqItem, BoqItemUpdate } from "@/lib/api/hooks/useBoq";
@@ -27,6 +28,8 @@ export interface BoqItemFormModalProps {
   /** Grup açılırını doldurur; listeden gelir, yeniden çekilmez (spec §7.1). */
   groups: BoqGroup[];
   mode: BoqItemFormMode;
+  /** Yazma kapısı (spec §2.5); `false` iken `Sil` hiç basılmaz (§7.5.6). */
+  canWrite: boolean;
   onClose: () => void;
 }
 
@@ -34,6 +37,8 @@ export interface BoqItemFormModalProps {
 const NEW_GROUP_OPTION = "__new__";
 
 const DUPLICATE_CODE_MESSAGE = "Bu poz numarası bu şantiyede zaten kullanılıyor.";
+const DELETE_NOT_FOUND_MESSAGE = "Kalem bulunamadı, listeyi tazeleyin.";
+const DELETE_FALLBACK_MESSAGE = "İş kalemi silinemedi.";
 
 /** Bos/gecersiz metin → null; aksi halde sayi. Frontend hicbir tutar SAKLAMAZ. */
 function toNumberOrNull(text: string): number | null {
@@ -52,18 +57,32 @@ function itemErrorMessage(err: unknown): string {
   return backendErrorMessage(err);
 }
 
+// Silme hatalari (spec §7.5.4): 404 kendi metnini alir, 403 backend'in Turkce
+// govdesini aynen basar, kalan her sey tek genel metne duser.
+function deleteErrorMessage(err: unknown): string {
+  if (err instanceof BackendError && err.status === 404) return DELETE_NOT_FOUND_MESSAGE;
+  return backendErrorMessage(err, DELETE_FALLBACK_MESSAGE);
+}
+
 /**
  * İş kalemi formu — tek bileşen, iki kip (spec §7.1). Mockup'ta karşılığı
  * yoktur; tamamı *kullanıcı kararı* olarak spec §7'de sabitlenmiştir, o
  * sınırların dışına çıkılmaz.
  *
  * Tabloya eylem sütunu EKLENMEZ; düzenleme satır tetikleyicisinden açılır.
- * `Sil` bu dilimde YOKTUR — backend DELETE ucu gelene kadar bloklu (§7.5).
+ * `Sil` yalnız `edit` kipinde ve yazma kapısının arkasında basılır (§7.5).
  */
-export function BoqItemFormModal({ siteId, groups, mode, onClose }: BoqItemFormModalProps) {
+export function BoqItemFormModal({
+  siteId,
+  groups,
+  mode,
+  canWrite,
+  onClose,
+}: BoqItemFormModalProps) {
   const createGroup = useCreateBoqGroup(siteId);
   const createItem = useCreateBoqItem(siteId);
   const updateItem = useUpdateBoqItem(siteId);
+  const deleteItem = useDeleteBoqItem(siteId);
 
   const editItem = mode.kind === "edit" ? mode.item : null;
   // BOQ tamamen bossa modal dogrudan "+ Yeni Grup" secili acilir (spec §7.3).
@@ -80,6 +99,8 @@ export function BoqItemFormModal({ siteId, groups, mode, onClose }: BoqItemFormM
   const [quantity, setQuantity] = useState(editItem?.quantity ?? "");
   const [unitPrice, setUnitPrice] = useState(editItem?.unit_price ?? "");
   const [formError, setFormError] = useState<string | null>(null);
+  // Onay adimi AYNI diyalogun icindedir; ikinci modal acilmaz (spec §7.5.2).
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
   const groupRef = useRef<HTMLSelectElement>(null);
   const groupNameRef = useRef<HTMLInputElement>(null);
@@ -90,7 +111,10 @@ export function BoqItemFormModal({ siteId, groups, mode, onClose }: BoqItemFormM
   const unitPriceRef = useRef<HTMLInputElement>(null);
 
   const isNewGroup = groupId === NEW_GROUP_OPTION;
-  const isPending = createGroup.isPending || createItem.isPending || updateItem.isPending;
+  const isPending =
+    createGroup.isPending || createItem.isPending || updateItem.isPending || deleteItem.isPending;
+  // Grup silme YOKTUR (spec §7.5.5): son kalem silinse bile grup basligi kalir.
+  const canDelete = canWrite && mode.kind === "edit";
 
   const quantityValue = toNumberOrNull(quantity);
   const unitPriceValue = toNumberOrNull(unitPrice);
@@ -201,12 +225,72 @@ export function BoqItemFormModal({ siteId, groups, mode, onClose }: BoqItemFormM
     }
   }
 
+  async function handleDelete() {
+    if (mode.kind !== "edit") return;
+    setFormError(null);
+    try {
+      await deleteItem.mutateAsync(mode.item.id);
+      onClose();
+    } catch (err) {
+      // Modal ACIK kalir: hata onay adiminda gorunur, sessiz basarisizlik yok.
+      setFormError(deleteErrorMessage(err));
+    }
+  }
+
+  if (isConfirmingDelete && mode.kind === "edit") {
+    return (
+      <Modal
+        title="İş Kalemi Düzenle"
+        onClose={onClose}
+        footer={
+          <>
+            {/* Vazgec onay adimini iptal eder, DUZENLEMEYI degil: yanlislikla
+                Sil'e basan kullanici doldurdugu formu kaybetmez. */}
+            <Button
+              variant="secondary"
+              onClick={() => setIsConfirmingDelete(false)}
+              disabled={isPending}
+            >
+              Vazgeç
+            </Button>
+            <Button variant="danger" onClick={handleDelete} disabled={isPending}>
+              Evet, sil
+            </Button>
+          </>
+        }
+      >
+        <div className="settings-form">
+          {/* Metin §9.2 envanteri #26 ile birebir. */}
+          <p className="boq-modal__confirm">
+            {`${mode.item.code} — ${mode.item.description} kalemi silinecek. Bu işlem geri alınamaz.`}
+          </p>
+          {formError && <p className="settings-note settings-note--error">{formError}</p>}
+        </div>
+      </Modal>
+    );
+  }
+
   return (
     <Modal
       title={mode.kind === "create" ? "Yeni İş Kalemi" : "İş Kalemi Düzenle"}
       onClose={onClose}
       footer={
         <>
+          {canDelete && (
+            // Alt seridin SOLUNDA (spec §7.5.1); .modal__footer flex-end
+            // hizaladigindan konum `margin-right: auto` ile alinir (boq.css).
+            <Button
+              variant="danger"
+              className="boq-modal__delete"
+              onClick={() => {
+                setFormError(null);
+                setIsConfirmingDelete(true);
+              }}
+              disabled={isPending}
+            >
+              Sil
+            </Button>
+          )}
           <Button variant="secondary" onClick={onClose} disabled={isPending}>
             Vazgeç
           </Button>
