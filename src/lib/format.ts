@@ -32,6 +32,28 @@ export function formatPercent(value: string | number): string {
   return `%${short(toNumber(value))}`;
 }
 
+/**
+ * Ekran 13 · Is Kalemleri (BOQ) tablo sayilari (spec §3.4).
+ * ₺ YOK — mockup 114–116 ve 176'da sembol basilmiyor; `formatCurrency` bastigi
+ * icin bu ekranda kullanilamaz. tr-TR binlik ayrac, sondaki sifirlar atilir.
+ * Backend Decimal alanlari string gonderir (`quantity: "1240.000"`).
+ */
+export function formatDecimal(value: string | number, maxFractionDigits: number): string {
+  return new Intl.NumberFormat(LOCALE, { maximumFractionDigits: maxFractionDigits }).format(
+    toNumber(value),
+  );
+}
+
+/** Miktar sutunu: en fazla 3 ondalik — numeric(14,3) (mockup 114). */
+export function formatQuantity(value: string | number): string {
+  return formatDecimal(value, 3);
+}
+
+/** Birim fiyat / tutar / genel toplam: en fazla 2 ondalik (mockup 115, 116, 176). */
+export function formatAmount(value: string | number): string {
+  return formatDecimal(value, 2);
+}
+
 /** Kart tarihleri: mockup'taki "Mar 2025" gosterimi. */
 export function formatMonthYear(iso: string): string {
   return new Intl.DateTimeFormat(LOCALE, { month: "short", year: "numeric" }).format(

@@ -53,6 +53,29 @@ describe("tokens.css", () => {
     }
   });
 
+  it("Ekran 13 (BOQ) token'ları tanımlı ve mockup değerlerini taşır", () => {
+    // spec §3.5 — 13 yeni token; her değer mockup satır no ile gerekçeli.
+    const boqTokens: ReadonlyArray<readonly [string, string]> = [
+      ["--color-info-tint", "#f0f9ff"], // GENEL TOPLAM zemini (174)
+      ["--border-width-total", "2px"], // GENEL TOPLAM üst çizgisi (174)
+      ["--text-kpi-value", "20px"], // özet kartı değeri (75, 79, 83, 87)
+      ["--text-boq-group", "12px"], // grup başlık satırı (108)
+      ["--text-total-amount", "15px"], // genel toplam tutarı (176)
+      ["--tracking-group", "0.5px"], // grup başlığı harf aralığı (108)
+      ["--space-boq-cell-y", "11px"], // tablo hücre dikey iç boşluğu (96, 111)
+      ["--space-boq-cell-x", "16px"], // Poz No / Tarif yatay iç boşluğu (96, 111)
+      ["--space-boq-total-y", "13px"], // tfoot hücre dikey iç boşluğu (175, 176)
+      ["--space-boq-kpi-label-gap", "5px"], // kart etiketi → değer (74)
+      ["--space-boq-strip-gap", "20px"], // kart şeridi alt boşluğu (72)
+      ["--space-boq-action-gap", "10px"], // iki buton arası (65)
+      ["--space-boq-btn-x", "18px"], // birincil buton yatay iç boşluğu (67)
+      ["--space-boq-crumb-gap", "6px"], // breadcrumb alt boşluğu (62)
+    ];
+    for (const [token, value] of boqTokens) {
+      expect(tokensCss).toMatch(new RegExp(`${token}:\\s*${value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*;`));
+    }
+  });
+
   it("koyu tema varsayılanı yoktur — açık tema kanon", () => {
     // Açık tema kanon (README); koyu tema bu fazda YOK.
     expect(tokensCss).not.toContain("prefers-color-scheme: dark");

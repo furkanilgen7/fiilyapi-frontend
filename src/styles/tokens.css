@@ -223,6 +223,25 @@
   --radius-form-card: var(--radius-14); /* 14px — .card (23) */
   --radius-type-card: var(--radius-lg); /* 12px — tip kartları (55) */
   --form-column-max: 1000px; /* içerik sütunu genişliği (44) */
+
+  /* Ekran 13 — İş Kalemleri (BOQ), spec §3.5. Değerlerin tamamı
+     `projedesign/Ekran 13 - İş Kalemleri.dc.html` satır no ile gerekçeli.
+     Mevcut karşılığı olan renkler (#fff, #f8fafc, #eff6ff, #e2e8f0 …) burada
+     YENİDEN TANIMLANMAZ; ekran CSS'i doğrudan mevcut token'ları kullanır. */
+  --color-info-tint: #f0f9ff; /* GENEL TOPLAM satırı zemini (174) */
+  --border-width-total: 2px; /* GENEL TOPLAM üst çizgisi (174) */
+  --text-kpi-value: 20px; /* özet kartı değeri (75, 79, 83, 87) */
+  --text-boq-group: 12px; /* grup başlık satırı (108) */
+  --text-total-amount: 15px; /* genel toplam tutarı (176) */
+  --tracking-group: 0.5px; /* grup başlığı harf aralığı (108) */
+  --space-boq-cell-y: 11px; /* tablo hücre dikey iç boşluğu (96, 111) */
+  --space-boq-cell-x: 16px; /* Poz No / Tarif yatay iç boşluğu (96, 97, 111, 112) */
+  --space-boq-total-y: 13px; /* tfoot hücre dikey iç boşluğu (175, 176) */
+  --space-boq-kpi-label-gap: 5px; /* kart etiketi → değer (74) */
+  --space-boq-strip-gap: 20px; /* kart şeridi alt boşluğu (72) */
+  --space-boq-action-gap: 10px; /* iki buton arası (65) */
+  --space-boq-btn-x: 18px; /* birincil buton yatay iç boşluğu (67) */
+  --space-boq-crumb-gap: 6px; /* breadcrumb alt boşluğu (62) */
 }
 
 @keyframes fadeUp {
