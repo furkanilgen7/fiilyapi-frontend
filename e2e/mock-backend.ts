@@ -96,7 +96,8 @@ interface MockSite {
   project_id: string;
   code: string;
   name: string;
-  status: "active" | "on_hold" | "completed";
+  // `SiteStatus` (schema.d.ts) dördü de: form "Hazırlık"ı da gönderebilir.
+  status: "preparation" | "active" | "on_hold" | "completed";
   address: string | null;
   city: string | null;
   city_inherited: boolean;
@@ -522,6 +523,53 @@ function seedState(): MockState {
   };
 }
 
+/** FK → ad çözümü: sunucu `site_manager_name`/`manager_name`'i kimlikten yazar. */
+function userNameById(state: MockState, userId: unknown): string | null {
+  if (typeof userId !== "string" || !userId) return null;
+  return state.users.find((u) => u.id === userId)?.full_name ?? null;
+}
+
+/**
+ * `SiteDetailResponse` gövdesi (schema.d.ts) — `GET /sites/{id}` ve
+ * `POST /projects/{id}/sites` AYNI şekli döndürür, tek yerde kurulur.
+ */
+function buildSiteDetail(state: MockState, site: MockSite) {
+  const project = state.projects.find((p) => p.id === site.project_id);
+  const sectionItems = state.sections
+    .filter((sec) => sec.site_id === site.id)
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((sec) => ({
+      id: sec.id, code: sec.code, name: sec.name, status: sec.status, manager_name: sec.manager_name,
+      start_date: sec.start_date, end_date: sec.end_date, sort_order: sec.sort_order,
+      progress_pct: METRIC_PENDING("boq"),
+      boq_item_count: COUNT_PENDING("boq"),
+      budget: METRIC_PENDING("boq"),
+      worker_count: COUNT_PENDING("timesheet"),
+    }));
+  return {
+    id: site.id, code: site.code, name: site.name, status: site.status, address: site.address,
+    city: site.city, city_inherited: site.city_inherited, site_manager_name: site.site_manager_name,
+    start_date: site.start_date, end_date: site.end_date, delivery_date: site.delivery_date,
+    remaining_days: site.remaining_days, section_count: sectionItems.length,
+    worker_count: COUNT_PENDING("timesheet"),
+    progress_pct: METRIC_PENDING("progress_payments"),
+    project: {
+      id: project?.id ?? site.project_id,
+      name: project?.name ?? "",
+      city: project?.city ?? null,
+      employer_name: project?.employer_name ?? null,
+    },
+    section_status_counts: {
+      planned: sectionItems.filter((s) => s.status === "planned").length,
+      active: sectionItems.filter((s) => s.status === "active").length,
+      completed: sectionItems.filter((s) => s.status === "completed").length,
+    },
+    sections: sectionItems,
+    total_progress_payment: METRIC_PENDING("progress_payments"),
+    contract_amount: METRIC_PENDING("project_costs"),
+  };
+}
+
 // Gercek FastAPI yerine gecen minik mock — hermetik E2E icin.
 export function startMockBackend(port: number): { server: Server; close: () => Promise<void> } {
   const state = seedState();
@@ -686,46 +734,58 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       });
     }
 
+    // POST /projects/{project_id}/sites — Şantiye Ekle formunun ATOMİK gönderimi
+    // (plan T13, spec §3.4/§9.3): şantiye + bölümler tek gövdede gelir, yanıt
+    // `SiteDetailResponse`'tur (form başarıda `site.id`'ye yönlendirir).
+    if (method === "POST" && projectSitesMatch) {
+      const projectId = projectSitesMatch[1];
+      const project = state.projects.find((p) => p.id === projectId);
+      if (!project) return send(404, { detail: "proje yok" });
+      return withBody((body) => {
+        const siteId = `s-${state.sites.length + 1}`;
+        const city = body.city ? String(body.city) : null;
+        const site: MockSite = {
+          id: siteId,
+          project_id: projectId,
+          // Kod boş gelirse sunucu üretir (spec §3.6) — mock da aynısını yapar.
+          code: body.code ? String(body.code) : `SNT-2026-${state.sites.length + 1}`,
+          name: String(body.name ?? ""),
+          status: String(body.status ?? "preparation") as MockSite["status"],
+          address: body.address ? String(body.address) : null,
+          city: city ?? project.city,
+          city_inherited: city === null,
+          site_manager_name: userNameById(state, body.site_manager_user_id),
+          start_date: body.start_date ? String(body.start_date) : null,
+          end_date: body.end_date ? String(body.end_date) : null,
+          delivery_date: null,
+          remaining_days: null,
+        };
+        state.sites.push(site);
+        const rows = Array.isArray(body.sections) ? (body.sections as Array<Record<string, unknown>>) : [];
+        rows.forEach((row, index) => {
+          state.sections.push({
+            id: `sec-${state.sections.length + 1}`,
+            site_id: siteId,
+            code: row.code ? String(row.code) : null,
+            name: String(row.name ?? ""),
+            status: "planned",
+            manager_name: userNameById(state, row.manager_user_id),
+            start_date: row.start_date ? String(row.start_date) : null,
+            end_date: row.end_date ? String(row.end_date) : null,
+            sort_order: index,
+          });
+        });
+        return send(201, buildSiteDetail(state, site));
+      });
+    }
+
     // /sites/{site_id} — Şantiye Detay hero + sekmeler + bölüm listesi (Task 8/9, spec §5).
     const siteIdMatch = path.match(/^\/sites\/([^/]+)$/);
     if (method === "GET" && siteIdMatch) {
       const siteId = siteIdMatch[1];
       const site = state.sites.find((s) => s.id === siteId);
       if (!site) return send(404, { detail: "santiye yok" });
-      const project = state.projects.find((p) => p.id === site.project_id);
-      const sectionItems = state.sections
-        .filter((sec) => sec.site_id === siteId)
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .map((sec) => ({
-          id: sec.id, code: sec.code, name: sec.name, status: sec.status, manager_name: sec.manager_name,
-          start_date: sec.start_date, end_date: sec.end_date, sort_order: sec.sort_order,
-          progress_pct: METRIC_PENDING("boq"),
-          boq_item_count: COUNT_PENDING("boq"),
-          budget: METRIC_PENDING("boq"),
-          worker_count: COUNT_PENDING("timesheet"),
-        }));
-      return send(200, {
-        id: site.id, code: site.code, name: site.name, status: site.status, address: site.address,
-        city: site.city, city_inherited: site.city_inherited, site_manager_name: site.site_manager_name,
-        start_date: site.start_date, end_date: site.end_date, delivery_date: site.delivery_date,
-        remaining_days: site.remaining_days, section_count: sectionItems.length,
-        worker_count: COUNT_PENDING("timesheet"),
-        progress_pct: METRIC_PENDING("progress_payments"),
-        project: {
-          id: project?.id ?? site.project_id,
-          name: project?.name ?? "",
-          city: project?.city ?? null,
-          employer_name: project?.employer_name ?? null,
-        },
-        section_status_counts: {
-          planned: sectionItems.filter((s) => s.status === "planned").length,
-          active: sectionItems.filter((s) => s.status === "active").length,
-          completed: sectionItems.filter((s) => s.status === "completed").length,
-        },
-        sections: sectionItems,
-        total_progress_payment: METRIC_PENDING("progress_payments"),
-        contract_amount: METRIC_PENDING("project_costs"),
-      });
+      return send(200, buildSiteDetail(state, site));
     }
 
     // /sites/{site_id}/boq — Ekran 13 İş Kalemleri (F11, spec §6.1). Tablo ve üst
