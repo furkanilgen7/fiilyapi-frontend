@@ -226,7 +226,7 @@
   justify-content: center;
   width: 38px;
   height: 38px;
-  border-radius: 9px;
+  border-radius: var(--radius-9); /* şantiye mockup 182 — çıplak px kaldırıldı */
   font-size: 18px;
   flex-shrink: 0;
 }

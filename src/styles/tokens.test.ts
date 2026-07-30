@@ -12,6 +12,13 @@ const tokensCss = readFileSync(
   "utf8",
 );
 
+/**
+ * tokens.css'teki hex renk literali sayısı. Palet burada TANIMLANIR, bu yüzden
+ * hex'in tek meşru yeri burasıdır; ama sayı sabittir — artması yeni bir rengin
+ * gözden kaçtığı anlamına gelir (şantiye formu spec §5.1: yeni renk gerekmiyor).
+ */
+const EXPECTED_HEX_COUNT = 69;
+
 describe("tokens.css", () => {
   it("çekirdek renk token'larını tanımlar (açık tema Slate + Blue)", () => {
     for (const token of [
@@ -74,6 +81,61 @@ describe("tokens.css", () => {
     for (const [token, value] of boqTokens) {
       expect(tokensCss).toMatch(new RegExp(`${token}:\\s*${value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*;`));
     }
+  });
+
+  it("Şantiye formu token'ları tanımlı ve mockup değerlerini taşır", () => {
+    // spec §5.1 — 22 yeni token; kanon: projedesign "Form - Santiye Ekle.dc.html".
+    // Her değer mockup satır no ile gerekçeli (parantez içi).
+    const siteFormTokens: ReadonlyArray<readonly [string, string]> = [
+      ["--radius-9", "9px"], // kutucuk kutusu, belge ikon kutusu (152, 160, 182)
+      ["--leading-loose", "1.7"], // bilgi kutusu metni (55)
+      ["--space-info-banner-y", "14px"], // bilgi kutusu dikey iç boşluk (53)
+      ["--space-info-banner-x", "18px"], // bilgi kutusu yatay iç boşluk (53)
+      ["--space-card-head-gap", "10px"], // Bölümler kartı başlık şeridi (103)
+      ["--space-section-cell-y", "10px"], // bölüm tablosu hücre dikey (110–124)
+      ["--space-section-cell-x", "12px"], // bölüm tablosu hücre yatay (111–124)
+      ["--space-section-cell-x-lead", "16px"], // ilk sütun yatay (110, 119)
+      ["--tracking-section-head", "0.7px"], // tablo başlığı harf aralığı (110–114)
+      ["--width-col-responsible", "170px"], // Sorumlu sütunu (111)
+      ["--width-col-date", "130px"], // Başlangıç / Bitiş sütunları (112, 113)
+      ["--width-col-amount", "130px"], // Tahmini Bedel sütunu (114)
+      ["--width-col-action", "40px"], // sil sütunu (115)
+      ["--space-dashed-btn-y", "7px"], // "Bölüm ekle" butonu (136)
+      ["--space-dashed-btn-x", "14px"], // "Bölüm ekle" butonu (136)
+      ["--space-checkbox-list-gap", "7px"], // kutucuk listesi satır aralığı (152, 160)
+      ["--size-checkbox-lg", "15px"], // alt şerit kutucuğu (221)
+      ["--space-row-control-y", "6px"], // .row-in dikey iç boşluk (27)
+      ["--space-row-control-x", "8px"], // .row-in yatay iç boşluk (27)
+      ["--text-row-control", "12px"], // .row-in yazı boyu (27)
+      ["--border-width-row-control", "1px"], // .row-in kenarlık (27)
+      ["--radius-row-control", "var\\(--radius-6\\)"], // .row-in köşe (27)
+    ];
+    expect(siteFormTokens).toHaveLength(22);
+    for (const [token, value] of siteFormTokens) {
+      expect(tokensCss, `${token} tanımlı değil ya da değeri farklı`).toMatch(
+        new RegExp(`${token}:\\s*${value}\\s*;`),
+      );
+    }
+  });
+
+  it("--radius-row-control yeni px icat etmez, mevcut --radius-6'ya bağlıdır", () => {
+    // Mockup .row-in 6px köşe ister (27); repoda --radius-6 zaten var.
+    expect(tokensCss).toMatch(/--radius-row-control:\s*var\(--radius-6\)\s*;/);
+    expect(tokensCss).toMatch(/--radius-6:\s*6px\s*;/);
+  });
+
+  it("--tracking-section-head mevcut --tracking-wide'dan ayrı bir token'dır", () => {
+    // Spec §5.1: mevcut --text-table-head 0.8px kullanır, bu form 0.7px ister.
+    // Mevcut token'ı değiştirmek başka ekranları kaydırırdı → yeni token açıldı.
+    expect(tokensCss).toMatch(/--tracking-wide:\s*0\.8px\s*;/);
+    expect(tokensCss).toMatch(/--tracking-section-head:\s*0\.7px\s*;/);
+  });
+
+  it("şantiye formu için yeni renk token'ı eklenmedi", () => {
+    // Spec §5.1 sonu: mockup'ın 19 rengi mevcut token'larda karşılanıyor.
+    // Bu sayı artarsa yeni bir çıplak renk sızmış demektir.
+    const hexCount = (tokensCss.match(/#[0-9a-fA-F]{3,8}\b/g) ?? []).length;
+    expect(hexCount).toBe(EXPECTED_HEX_COUNT);
   });
 
   it("koyu tema varsayılanı yoktur — açık tema kanon", () => {
