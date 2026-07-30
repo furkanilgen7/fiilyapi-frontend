@@ -596,6 +596,14 @@ Yer tutucu kuralları (P1.1a §8 ile birebir):
 | `--border-width-row-control` | `1px` | `.row-in` kenarlık | 27 |
 | `--radius-row-control` | `var(--radius-6)` | `.row-in` köşe | 27 |
 
+**Kart başlığı düzeltmesi (2026-07-30, kullanıcı kararı).** Paylaşılan
+`.pf-card__title` `--text-body` (13px) kullanıyordu; **iki mockup da**
+(`Form - Santiye Ekle.dc.html:24` ve `Form - Proje Oluştur.dc.html:24`)
+`.card-t{font-size:14px}` ilan ediyor. Bu bilinçli bir sapma değil, P1.1a'da
+fark edilmemiş bir kaymaydı — **mockup kazanır**. Düzeltme paylaşılan kabukta
+yapıldığı için (`--text-form-card-title: 14px`) **Proje Oluştur formu da 14px
+olur**; bu beklenen ve kabul edilen sonuçtur. Görsel etkisi için plan TZ-3.
+
 **Mevcut olduğu doğrulanan** ve yeniden kullanılan renkler: `#1e293b`, `#475569`,
 `#64748b`, `#94a3b8`, `#e2e8f0`, `#cbd5e1`, `#f8fafc`, `#f1f5f9`, `#eff6ff`,
 `#dbeafe`, `#bfdbfe`, `#2563eb`, `#1d4ed8`, `#ef4444`, `#fee2e2`, `#fef3c7`,

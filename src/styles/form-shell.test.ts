@@ -102,6 +102,17 @@ describe("form-shell.css — paylaşılan form kabuğu", () => {
     }
   });
 
+  it(".pf-card__title mockup'ın 14px başlık ölçüsünü kullanır (satır 24)", () => {
+    // Şantiye VE proje mockup'ında `.card-t{font-size:14px}` (ikisinde de
+    // satır 24). Kabuk 13px gövde token'ına bağlıysa iki form da kaymış olur.
+    expect(shellCss).toMatch(
+      /\.pf-card__title[^{]*\{[^}]*font-size:\s*var\(--text-form-card-title\)/,
+    );
+    expect(shellCss).not.toMatch(
+      /\.pf-card__title[^{]*\{[^}]*font-size:\s*var\(--text-body\)/,
+    );
+  });
+
   it("alt eylem şeridinin split varyantını tanımlar (mockup satır 219)", () => {
     expect(shellCss).toMatch(
       /\.pf-actions--split[^{]*{[^}]*justify-content:\s*space-between/,

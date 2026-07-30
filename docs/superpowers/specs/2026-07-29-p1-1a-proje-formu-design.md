@@ -385,6 +385,14 @@ satırları):
 |---|---|---|
 | `.card` | `background:#fff; border-radius:14px; border:1px solid #e2e8f0; padding:20px; box-shadow:0 1px 4px rgba(0,0,0,.06); margin-bottom:16px` | 23 |
 | `.card-t` | `font-size:14px; font-weight:600; margin-bottom:16px; display:flex; gap:8px` | 24 |
+
+> **Düzeltme, 2026-07-30.** Bu satırdaki **14px** uygulamaya yanlış geçmişti:
+> `.pf-card__title` `--text-body` (13px) kullanıyordu. Şantiye formu dilimi
+> paylaşılan `form-shell.css`'i mockup'a döndürdü (`--text-form-card-title:
+> 14px`). Proje formunun görsel baseline'ı (`project-form-new-*`) bu yüzden
+> **bilerek** kayar — kullanıcı kararı, bkz. `2026-07-30-santiye-formu-design.md`
+> §5.1 ve plan TZ-3.
+
 | `.lbl` | `font-size:12px; font-weight:600; color:#475569; margin-bottom:5px` | 20 |
 | `.f-in` | `border:1.5px solid #e2e8f0; border-radius:8px; padding:9px 12px; font-size:13px; background:#fff` | 17 |
 | `.f-in:focus` | `border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.1)` | 18 |

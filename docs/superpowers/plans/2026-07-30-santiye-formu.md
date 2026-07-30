@@ -59,7 +59,7 @@ visual-baselines.yml → workflow_dispatch (ilgili dalda)
   → tek commit ile işle
 ```
 
-### TZ-3 — Bu dilim ÜÇ baseline'ı birden kaydırır; tur TEK'tir
+### TZ-3 — Bu dilim DÖRT baseline'ı birden kaydırır; tur TEK'tir
 
 T11 `SiteFormModal`'ı silip iki "+ Şantiye Ekle" butonunu `Link`'e çeviriyor. Buton
 `<button>` → `<a>` olduğu için **proje detay** anlık görüntüsü kayabilir (stil sınıfı
@@ -70,6 +70,12 @@ korunsa bile tarayıcı varsayılan `<a>` davranışı, `line-height`/`text-deco
 | 1 | `e2e/site-form-visual.spec.ts-snapshots/santiye-formu-chromium-linux.png` | **yeni** ekran (T13) |
 | 2 | `e2e/project-detail-visual.spec.ts-snapshots/proje-detay-chromium-linux.png` | T11 — buton → link dönüşümü |
 | 3 | `e2e/projects-visual.spec.ts-snapshots/projects-chromium-linux.png` | **risk**: T1'in CSS taşıması `.pf-*` bloklarını global `form-shell.css`'e alıyor; import sırası değişirse kaskad kayar. T1'in kabul kriteri "sıfır görsel fark" — ama tur açılırken bu üçüncüsü de **kontrol edilir** |
+| 4 | `e2e/project-form-visual.spec.ts-snapshots/project-form-new-chromium-linux.png` | **BEKLENEN** (kullanıcı kararı 2026-07-30): `.pf-card__title` 13px → **14px**. Mockup `.card-t` (satır 24) kanondur; paylaşılan kabukta düzeltildiği için **P1.1a proje formu da kayar** |
+
+> **TZ-3'ün eski "P1.1a baseline'ı kaymamalı" kuralı 2026-07-30'da GEÇERSİZDİR.**
+> Kart başlığı düzeltmesi P1.1a baseline'ını bilerek kaydırır. T13'te
+> `project-form-new-*` üzerindeki fark **beklenmeyen kayma değildir**; yalnızca
+> farkın *tek* farkın başlık yazı boyu olduğu doğrulanır.
 
 **Ayrı turlar açılmaz.** Tek `workflow_dispatch` koşusunun artifact'i açılır, tek commit
 ile işlenir (T13).

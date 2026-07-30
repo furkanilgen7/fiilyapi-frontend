@@ -98,6 +98,10 @@
   /* Form etiket katmanı — aynı mockup ailesinin `.lbl` / `.req` / `.hint`
      sınıfları kanon. Uygulamadaki TÜM etiketler ui/field/Field üzerinden bu
      token'ları kullanır; ekranlar kendi `.*__label` kuralını yazmaz. */
+  /* Kart başlığı — `.card-t` (Form - Santiye Ekle.dc.html 24, Form - Proje
+     Oluştur.dc.html 24): 14px/600. 2026-07-30'a kadar `.pf-card__title`
+     yanlışlıkla --text-body (13px) kullanıyordu; mockup kazandı. */
+  --text-form-card-title: 14px;
   --text-form-label: 12px; /* .lbl — 12/600 */
   --text-form-label-lg: 13px; /* Giriş ekranı istisnası (mockup Giriş.dc.html) */
   --text-form-hint: var(--text-small); /* .hint — 11px */

@@ -154,7 +154,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: var(--text-body); /* 14→13 govde; baslik 14/600 */
+  font-size: var(--text-form-card-title); /* .card-t 14/600 (satır 24) */
   font-weight: var(--weight-semibold);
   margin-bottom: var(--space-4);
   color: var(--color-text);

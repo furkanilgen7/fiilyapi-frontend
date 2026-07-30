@@ -118,6 +118,13 @@ describe("tokens.css", () => {
     }
   });
 
+  it("kart başlığı 14px token'ı tanımlıdır (mockup .card-t, satır 24)", () => {
+    // 2026-07-30 düzeltmesi: `.pf-card__title` --text-body (13px) kullanıyordu.
+    // İKİ form mockup'ı da (.card-t, satır 24) 14px/600 ilan ediyor; mockup
+    // kazanır. Bu bilinçli bir sapma değil, fark edilmemiş bir kaymaydı.
+    expect(tokensCss).toMatch(/--text-form-card-title:\s*14px\s*;/);
+  });
+
   it("--radius-row-control yeni px icat etmez, mevcut --radius-6'ya bağlıdır", () => {
     // Mockup .row-in 6px köşe ister (27); repoda --radius-6 zaten var.
     expect(tokensCss).toMatch(/--radius-row-control:\s*var\(--radius-6\)\s*;/);
