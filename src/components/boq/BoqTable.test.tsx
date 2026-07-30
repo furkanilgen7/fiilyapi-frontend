@@ -305,6 +305,34 @@ describe("BoqTable — satır düzenleme tetikleyicisi (spec §7.2)", () => {
     );
   });
 
+  // Spec §7.2 "poz satırının TAMAMI tıklanabilir". Hover/cursor tüm satıra
+  // uygulandığı için tıklama kapısı da satırda olmalı: yalnız Poz No hücresini
+  // bağlamak satırın geri kalanında sessizce çalışmayan bir vaat bırakır.
+  it("satırın Poz No dışındaki hücrelerine tıklamak da düzenlemeyi açar", () => {
+    const onEditItem = vi.fn();
+    render(<BoqTable groups={[GROUPS[0]]} totals={TOTALS} onEditItem={onEditItem} />);
+    fireEvent.click(screen.getAllByText("Kazı (Makine ile)")[0]);
+    expect(onEditItem).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "aaaaaaaa-0000-0000-0000-000000000001" }),
+      GROUPS[0].id,
+    );
+  });
+
+  it("tetikleyiciye tıklamak kabarma yüzünden çift çağrı üretmez", () => {
+    const onEditItem = vi.fn();
+    render(<BoqTable groups={[GROUPS[0]]} totals={TOTALS} onEditItem={onEditItem} />);
+    fireEvent.click(screen.getByRole("button", { name: ARIA_LABEL }));
+    expect(onEditItem).toHaveBeenCalledTimes(1);
+  });
+
+  it("canWrite false iken satırın hiçbir hücresi tıklamaya cevap vermez", () => {
+    const onEditItem = vi.fn();
+    render(<BoqTable groups={[GROUPS[0]]} totals={TOTALS} canWrite={false} onEditItem={onEditItem} />);
+    fireEvent.click(screen.getAllByText("Kazı (Makine ile)")[0]);
+    fireEvent.click(screen.getAllByText("01.001")[0]);
+    expect(onEditItem).not.toHaveBeenCalled();
+  });
+
   it("canWrite false iken satır tetikleyici buton yok, Poz No düz span", () => {
     render(<BoqTable groups={[GROUPS[0]]} totals={TOTALS} canWrite={false} onEditItem={vi.fn()} />);
     expect(screen.queryByRole("button", { name: ARIA_LABEL })).not.toBeInTheDocument();

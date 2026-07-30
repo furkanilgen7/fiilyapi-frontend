@@ -115,17 +115,24 @@ export function BoqTable({
                           ? "boq-table__row boq-table__row--editable"
                           : "boq-table__row"
                       }
+                      // Spec §7.2: POZ SATIRININ TAMAMI tiklanabilir. Kapi burada
+                      // olmali — hover/cursor tum satira uygulandigi icin yalniz
+                      // Poz No hucresini baglamak, satirin geri kalaninda sessizce
+                      // calismayan bir tiklama vaadi birakir (kod inceleme bulgusu).
+                      // Ic butonun tiklamasi da buraya kabarcigi ile gelir: tek
+                      // cagri, cift tetikleme yok.
+                      onClick={isRowEditable ? () => onEditItem?.(item, group.id) : undefined}
                     >
-                      {/* Tetikleyici Poz No hucresindeki GERCEK <button>'dir;
+                      {/* Klavye yolu Poz No hucresindeki GERCEK <button>'dir;
                           <tr tabIndex role="button"> satir semantigini bozar
-                          (spec §7.2). Gorunusu duz metindir. */}
+                          (spec §7.2). Gorunusu duz metindir; Enter/Space ile
+                          uretilen tiklama satira kabarir. */}
                       <td className="boq-table__cell boq-table__cell--code boq-table__col--code">
                         {isRowEditable ? (
                           <button
                             type="button"
                             className="boq-table__row-trigger"
                             aria-label={`${item.code} — ${item.description} kalemini düzenle`}
-                            onClick={() => onEditItem?.(item, group.id)}
                           >
                             {item.code}
                           </button>
