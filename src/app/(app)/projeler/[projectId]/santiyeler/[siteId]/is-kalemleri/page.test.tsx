@@ -34,6 +34,7 @@ vi.mock("@/lib/api/hooks/useBoqMutations", () => ({
   useCreateBoqGroup: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCreateBoqItem: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateBoqItem: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useDeleteBoqItem: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
 // Indirme istemcisi (F9) — tarayici indirme akisi ayri dosyada testli.
@@ -43,7 +44,7 @@ vi.mock("@/lib/api/boq-client", () => ({ downloadBoqExport: vi.fn() }));
 // hook calisir, yalniz oturum kaynagi taklit edilir.
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
 
-/** `level` verilmezse bugünkü hâl: MeResponse'ta izin alanı yok. */
+/** `level` verilmezse alanı taşımayan eski oturum (bilinmezlik dalı, §2.5.3). */
 function mockPermission(level?: string) {
   const base = { id: "u1", email: "a@b.c", full_name: "A", role_key: "admin", status: "active" };
   vi.mocked(useSession).mockReturnValue({
@@ -233,9 +234,9 @@ describe("BoqPage — istemci izin kapısı (spec §2.5)", () => {
     expect(screen.getAllByRole("button", { name: "+ İş Kalemi" }).length).toBeGreaterThan(0);
   });
 
-  // ⚠️ Bilinmezlik kuralı (spec §2.5.3): MeResponse'ta izin alanı BE-A'ya kadar
-  // YOK. Kural ters çevrilirse tam yetkili kullanıcı ekranı salt-okunur görür.
-  it("izin alanı yokken yazma butonu görünür kalır (bugünkü davranış)", () => {
+  // ⚠️ Bilinmezlik kuralı (spec §2.5.3): alanı taşımayan ESKİ oturum. Kural ters
+  // çevrilirse tam yetkili kullanıcı ekranı salt-okunur görür.
+  it("izin alanı yokken yazma butonu görünür kalır (eski oturum)", () => {
     mockPermission();
     render(<BoqPage />);
     expect(screen.getAllByRole("button", { name: "+ İş Kalemi" }).length).toBeGreaterThan(0);
@@ -287,6 +288,40 @@ describe("BoqPage — BoqItemFormModal bağlantısı (spec §7)", () => {
     );
     expect(screen.getByRole("dialog", { name: "İş Kalemi Düzenle" })).toBeInTheDocument();
     expect(screen.getByLabelText("Poz No")).toHaveValue("01.001");
+  });
+
+  // F13 / §7.5.6: sayfanin silme kapisi modale KADAR tasinmali — modal kendi
+  // kapisini kurmaz, aksi halde iki ayri dogruluk kaynagi olur.
+  //
+  // ⚠️ Kapi `canWrite` DEGIL `canDelete`'tir (kullanici karari: silme yalniz
+  // sistem yoneticisinde). `full` seviyeli kullanici yazar ama silemez.
+  it("boq: 'full' kullanıcı Sil'i görmez ama Kaydet'i görür", () => {
+    mockPermission("full");
+    render(<BoqPage />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "01.001 — Kazı (Makine ile) kalemini düzenle" }),
+    );
+    expect(screen.getByRole("button", { name: "Kaydet" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Sil" })).not.toBeInTheDocument();
+  });
+
+  it("boq: 'admin' kullanıcı Sil'i görür", () => {
+    mockPermission("admin");
+    render(<BoqPage />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "01.001 — Kazı (Makine ile) kalemini düzenle" }),
+    );
+    expect(screen.getByRole("button", { name: "Sil" })).toBeInTheDocument();
+  });
+
+  // Bilinmezlik kurali: alani tasimayan eski oturumda silme yuzeyi KALIR.
+  it("izin alanı yokken (eski oturum) Sil görünür kalır", () => {
+    mockPermission();
+    render(<BoqPage />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "01.001 — Kazı (Makine ile) kalemini düzenle" }),
+    );
+    expect(screen.getByRole("button", { name: "Sil" })).toBeInTheDocument();
   });
 
   it("Vazgeç modalı kapatır", () => {

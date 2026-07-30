@@ -27,6 +27,16 @@ export const WRITE_LEVELS: readonly AccessLevel[] = [
   "admin",
 ];
 
+/**
+ * Silme yetkisi sayılan seviyeler — YAZMANIN ALT KÜMESİ, `WRITE_LEVELS`'ten
+ * ayrıdır (kullanıcı kararı: silme yalnız sistem yöneticisinde).
+ *
+ * Backend'de silme uçları `admin` kapısındadır; `full` seviyeli kullanıcı yazar
+ * ama silemez. Bu liste `WRITE_LEVELS`'e eşitlenirse `full` kullanıcı çalışmayan
+ * bir silme butonu görür ve tıklayınca 403 alır.
+ */
+export const DELETE_LEVELS: readonly AccessLevel[] = ["admin"];
+
 /** Dış veriden gelen seviye dizesini doğrular; tanınmayan değer `false`. */
 export function isAccessLevel(value: unknown): value is AccessLevel {
   return typeof value === "string" && (ACCESS_LEVELS as readonly string[]).includes(value);
@@ -35,12 +45,26 @@ export function isAccessLevel(value: unknown): value is AccessLevel {
 /**
  * Seviye bilinmiyorsa `true` döner — bilinmezlik yasak sayılmaz (spec §2.5.3).
  *
- * ⚠️ Bu kural TERS ÇEVRİLEMEZ. `MeResponse` bugün izin alanı taşımıyor
- * (backend takip işi BE-A); alan gelmeden gizleme yapmak tam yetkili
- * kullanıcıya ekranı salt-okunur gösterir — sessiz yetenek kaybı olur.
- * Alan geldiği gün gizleme kendiliğinden devreye girer, ikinci sürüm gerekmez.
+ * ⚠️ Bu kural TERS ÇEVRİLEMEZ. `MeResponse` artık `permissions` taşıyor
+ * (backend takip işi BE-A kapandı) → seviye BİLİNDİĞİNDE gerçek gizleme
+ * devrededir. Bilinmezlik dalı yine de kalır ve kalmalıdır: yükü henüz
+ * gelmemiş oturum, alanı taşımayan eski token ve haritada bulunmayan modül
+ * anahtarı bu dala düşer; orada gizleme yapmak tam yetkili kullanıcıya
+ * ekranı salt-okunur gösterir — sessiz yetenek kaybı olur.
  */
 export function canWrite(level: AccessLevel | undefined): boolean {
   if (level === undefined) return true;
   return WRITE_LEVELS.includes(level);
+}
+
+/**
+ * Silme kapısı — `canWrite` ile AYNI bilinmezlik kuralı (spec §2.5.3):
+ * seviye bilinmiyorsa `true`. Alanı taşımayan eski oturumda gizleme devreye
+ * girerse sistem yöneticisi silme yüzeyini sessizce kaybeder.
+ *
+ * `canWrite`'ten AYRI çağrılır; silme yüzeyleri `canWrite` ile kapılanamaz.
+ */
+export function canDelete(level: AccessLevel | undefined): boolean {
+  if (level === undefined) return true;
+  return DELETE_LEVELS.includes(level);
 }

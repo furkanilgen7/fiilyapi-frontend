@@ -2,13 +2,19 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 import { BoqItemFormModal } from "./BoqItemFormModal";
-import { useCreateBoqGroup, useCreateBoqItem, useUpdateBoqItem } from "@/lib/api/hooks/useBoqMutations";
+import {
+  useCreateBoqGroup,
+  useCreateBoqItem,
+  useDeleteBoqItem,
+  useUpdateBoqItem,
+} from "@/lib/api/hooks/useBoqMutations";
 import { BackendError } from "@/lib/api/unwrap";
 import type { BoqGroup, BoqItem } from "@/lib/api/hooks/useBoq";
 
 vi.mock("@/lib/api/hooks/useBoqMutations", () => ({
   useCreateBoqGroup: vi.fn(),
   useCreateBoqItem: vi.fn(),
+  useDeleteBoqItem: vi.fn(),
   useUpdateBoqItem: vi.fn(),
 }));
 
@@ -51,6 +57,7 @@ const GROUPS: BoqGroup[] = [
 const createGroup = vi.fn();
 const createItem = vi.fn();
 const updateItem = vi.fn();
+const deleteItem = vi.fn();
 const onClose = vi.fn();
 
 function mockMutations() {
@@ -66,20 +73,31 @@ function mockMutations() {
     mutateAsync: updateItem,
     isPending: false,
   } as never);
+  vi.mocked(useDeleteBoqItem).mockReturnValue({
+    mutateAsync: deleteItem,
+    isPending: false,
+  } as never);
 }
 
 function renderCreate(groups: BoqGroup[] = GROUPS) {
   render(
-    <BoqItemFormModal siteId={SITE_ID} groups={groups} mode={{ kind: "create" }} onClose={onClose} />,
+    <BoqItemFormModal
+      siteId={SITE_ID}
+      groups={groups}
+      mode={{ kind: "create" }}
+      canDelete
+      onClose={onClose}
+    />,
   );
 }
 
-function renderEdit(mode?: { item: BoqItem; groupId: string }) {
+function renderEdit(mode?: { item: BoqItem; groupId: string; canDelete?: boolean }) {
   render(
     <BoqItemFormModal
       siteId={SITE_ID}
       groups={GROUPS}
       mode={{ kind: "edit", item: mode?.item ?? item(), groupId: mode?.groupId ?? GROUP_1 }}
+      canDelete={mode?.canDelete ?? true}
       onClose={onClose}
     />,
   );
@@ -113,6 +131,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockMutations();
   createGroup.mockResolvedValue({ id: "gggggggg-0000-0000-0000-000000000009" });
+  deleteItem.mockResolvedValue(undefined);
   createItem.mockResolvedValue({ id: "new-item" });
   updateItem.mockResolvedValue({ id: "edited-item" });
 });
@@ -142,9 +161,9 @@ describe("BoqItemFormModal — ortak yapı (spec §7.1)", () => {
     expect(screen.queryByLabelText("Sıra")).not.toBeInTheDocument();
   });
 
-  // T6 / §7.5: DELETE ucu backend'de yok — Sil butonu bu dilime SIZMAZ.
-  it("edit kipinde bile Sil butonu basılmaz (F13 bloklu)", () => {
-    renderEdit();
+  // §7.5.1: Sil YALNIZ edit kipinde basılır — create kipinde silinecek kayıt yok.
+  it("create kipinde Sil butonu basılmaz", () => {
+    renderCreate();
     expect(screen.queryByRole("button", { name: "Sil" })).not.toBeInTheDocument();
   });
 
@@ -409,5 +428,112 @@ describe("BoqItemFormModal — Tutar (hesaplanan) önizlemesi (spec §7.1.3)", (
   it("önizleme bir form kontrolü değildir", () => {
     renderCreate();
     expect(screen.queryByLabelText("Tutar (hesaplanan)")).not.toBeInTheDocument();
+  });
+});
+
+describe("BoqItemFormModal — kalem silme (F13, spec §7.5)", () => {
+  const CONFIRM_TEXT =
+    "01.001 — Kazı (Makine ile) kalemi silinecek. Bu işlem geri alınamaz.";
+
+  function clickDelete() {
+    fireEvent.click(screen.getByRole("button", { name: "Sil" }));
+  }
+  function confirmDelete() {
+    fireEvent.click(screen.getByRole("button", { name: "Evet, sil" }));
+  }
+
+  // §7.5.1: alt şeritte solda, `edit` kipinde.
+  it("edit kipinde Sil butonu basılır", () => {
+    renderEdit();
+    expect(screen.getByRole("button", { name: "Sil" })).toBeInTheDocument();
+  });
+
+  // §7.5.6 / §2.5: silme kapısı (yalnız `admin`) kapalıysa çalışmayan buton
+  // GÖSTERİLMEZ — `full` seviyeli kullanıcı tıklarsa 403 alırdı.
+  it("canDelete false iken Sil butonu DOM'da yok", () => {
+    renderEdit({ item: item(), groupId: GROUP_1, canDelete: false });
+    expect(screen.queryByRole("button", { name: "Sil" })).not.toBeInTheDocument();
+  });
+
+  // §7.5.2: ikinci modal AÇILMAZ — onay aynı diyalogun içinde.
+  it("Sil'e basınca aynı modal içinde onay adımına geçilir", () => {
+    renderEdit();
+    clickDelete();
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    expect(screen.getByText(CONFIRM_TEXT)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Evet, sil" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Vazgeç" })).toBeInTheDocument();
+  });
+
+  it("onay adımında form alanları ve Kaydet gizlenir", () => {
+    renderEdit();
+    clickDelete();
+    for (const label of ["Grup", "Poz No", "İş Kalemi Tarifi", "Birim", "Miktar", "Birim Fiyat"]) {
+      expect(screen.queryByLabelText(label)).not.toBeInTheDocument();
+    }
+    expect(screen.queryByRole("button", { name: "Kaydet" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Sil" })).not.toBeInTheDocument();
+  });
+
+  // Vazgeç onay adımını iptal eder; DÜZENLEMEYİ değil (yanlışlıkla silmeye
+  // basan kullanıcı form verisini kaybetmez).
+  it("onay adımında Vazgeç forma geri döner, istek atılmaz", () => {
+    renderEdit();
+    clickDelete();
+    fireEvent.click(screen.getByRole("button", { name: "Vazgeç" }));
+    expect(screen.getByLabelText("Poz No")).toBeInTheDocument();
+    expect(deleteItem).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("Sil tek başına istek atmaz — yalnız onay atar", () => {
+    renderEdit();
+    clickDelete();
+    expect(deleteItem).not.toHaveBeenCalled();
+  });
+
+  it("onayda itemId ile DELETE çağrılır ve modal kapanır", async () => {
+    renderEdit();
+    clickDelete();
+    confirmDelete();
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(deleteItem).toHaveBeenCalledWith("aaaaaaaa-0000-0000-0000-000000000001");
+  });
+
+  it("404 → 'Kalem bulunamadı, listeyi tazeleyin.' basılır, modal açık kalır", async () => {
+    deleteItem.mockRejectedValue(new BackendError(404, { detail: "Kayıt bulunamadı" }));
+    renderEdit();
+    clickDelete();
+    confirmDelete();
+    expect(await screen.findByText("Kalem bulunamadı, listeyi tazeleyin.")).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("403 → backend'in Türkçe gövdesi aynen basılır", async () => {
+    deleteItem.mockRejectedValue(new BackendError(403, { detail: "Bu işlem için yetkiniz yok" }));
+    renderEdit();
+    clickDelete();
+    confirmDelete();
+    expect(await screen.findByText("Bu işlem için yetkiniz yok")).toBeInTheDocument();
+  });
+
+  it("diğer hatalarda 'İş kalemi silinemedi.' basılır", async () => {
+    deleteItem.mockRejectedValue(new BackendError(500, null));
+    renderEdit();
+    clickDelete();
+    confirmDelete();
+    expect(await screen.findByText("İş kalemi silinemedi.")).toBeInTheDocument();
+  });
+
+  // §9.2: onay metni envanter #26 ile birebir; kayıt alanlarından kurulur.
+  it("onay metni kalemin code ve description'ından kurulur", () => {
+    renderEdit({
+      item: item({ code: "02.007", description: "Kalıp Yapımı" }),
+      groupId: GROUP_1,
+    });
+    clickDelete();
+    expect(
+      screen.getByText("02.007 — Kalıp Yapımı kalemi silinecek. Bu işlem geri alınamaz."),
+    ).toBeInTheDocument();
   });
 });

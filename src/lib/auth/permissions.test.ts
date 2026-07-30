@@ -3,7 +3,32 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 
-import { ACCESS_LEVELS, WRITE_LEVELS, canWrite, isAccessLevel } from "./permissions";
+import {
+  ACCESS_LEVELS,
+  DELETE_LEVELS,
+  WRITE_LEVELS,
+  canDelete,
+  canWrite,
+  isAccessLevel,
+} from "./permissions";
+import type { MeResponse } from "./types";
+
+describe("permissions — /auth/me sözleşmesi (BE-A)", () => {
+  // ⚠️ SOZLESME KORKULUGU (derleme zamani). `MeResponse.permissions` degeri
+  // `AccessLevel` olmali. Backend alani `dict[str, str]` olarak yayimlarsa tip
+  // `string`'e genisler, asagidaki `@ts-expect-error` KULLANILMAZ hale gelir ve
+  // `pnpm typecheck` kirmizi doner — sessizce genisleme mumkun degildir.
+  it("MeResponse.permissions değeri AccessLevel olarak tiplenir", () => {
+    const valid: MeResponse["permissions"] = { boq: "full", contracts: "view" };
+    // @ts-expect-error tanınmayan seviye dizesi derlemede reddedilmelidir
+    const invalid: MeResponse["permissions"] = { boq: "superuser" };
+
+    expect(valid.boq).toBe("full");
+    // Calisma aninda dogrulama sinirimiz `isAccessLevel`'dir: derleyici
+    // atlatilsa bile uydurma seviye yazma yetkisi dogurmaz.
+    expect(isAccessLevel(invalid.boq)).toBe(false);
+  });
+});
 
 describe("permissions — seviye listeleri (spec §2.5.2)", () => {
   // Backend `AccessLevel` sıralaması (schema.d.ts): none < view < draft <
@@ -29,9 +54,10 @@ describe("permissions — seviye listeleri (spec §2.5.2)", () => {
 });
 
 describe("permissions — canWrite (spec §2.5.3 bilinmezlik kuralı)", () => {
-  // ⚠️ KAPI TESTİ: bu kural ters çevrilirse (bilinmiyorsa gizle) tam yetkili
-  // kullanıcı ekranı salt-okunur görür — sessiz yetenek kaybı. MeResponse'ta
-  // izin alanı BE-A'ya kadar YOK, yani bugün fiilen tek geçerli dal budur.
+  // ⚠️ KAPI TESTİ — BE-A'dan SONRA DA KALIR: bu kural ters çevrilirse
+  // (bilinmiyorsa gizle) tam yetkili kullanıcı ekranı salt-okunur görür —
+  // sessiz yetenek kaybı. Alanı taşımayan eski oturum, henüz yüklenmemiş
+  // oturum ve haritada olmayan modül anahtarı hâlâ bu dala düşer.
   it("canWrite(undefined) true döner — bilinmezlik yasak sayılmaz", () => {
     expect(canWrite(undefined)).toBe(true);
   });
@@ -52,6 +78,39 @@ describe("permissions — canWrite (spec §2.5.3 bilinmezlik kuralı)", () => {
       ["full", true],
       ["admin", true],
     ]);
+  });
+});
+
+describe("permissions — canDelete (kullanıcı kararı: silme yalnız sistem yöneticisinde)", () => {
+  // Backend'de üç silme ucu (`DELETE /boq/items`, `/units`, `/blocks`) `admin`
+  // kapısına çekildi. `full` seviyeli kullanıcı YAZAR ama SİLEMEZ — silme
+  // yüzeyi `canWrite` ile kapılanırsa tıklayınca 403 alır.
+  it("yalnız admin siler; full dahil diğer hiçbir seviye silemez", () => {
+    const decisions = ACCESS_LEVELS.map((level) => [level, canDelete(level)]);
+    expect(decisions).toEqual([
+      ["none", false],
+      ["view", false],
+      ["draft", false],
+      ["request", false],
+      ["approve", false],
+      ["full", false],
+      ["admin", true],
+    ]);
+  });
+
+  it("DELETE_LEVELS yalnız admin'i sayar", () => {
+    expect([...DELETE_LEVELS]).toEqual(["admin"]);
+  });
+
+  // ⚠️ KAPI TESTİ — `canWrite` ile AYNI gerekçe: alanı taşımayan eski oturumda
+  // gizleme devreye girerse sistem yöneticisi silme yüzeyini kaybeder.
+  it("canDelete(undefined) true döner — bilinmezlik yasak sayılmaz", () => {
+    expect(canDelete(undefined)).toBe(true);
+  });
+
+  // Silme yazmanın ALT KÜMESİDİR: silebilen herkes yazabilmelidir, tersi değil.
+  it("silebilen her seviye yazabilir de", () => {
+    for (const level of DELETE_LEVELS) expect(canWrite(level)).toBe(true);
   });
 });
 

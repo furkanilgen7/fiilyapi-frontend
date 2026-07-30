@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "@/components/shell/SessionProvider";
-import { canWrite, isAccessLevel, type AccessLevel } from "./permissions";
+import { canDelete, canWrite, isAccessLevel, type AccessLevel } from "./permissions";
 
 export interface ModulePermission {
   /** Seviye bilinmiyorsa undefined (oturum yükleniyor ya da alan yok). */
@@ -10,14 +10,21 @@ export interface ModulePermission {
   canView: boolean;
   /** level === undefined → true (bilinmezlik kuralı, spec §2.5.3). */
   canWrite: boolean;
+  /**
+   * Silme kapısı — `canWrite`'ten AYRIDIR: backend silme uçları `admin`
+   * kapısındadır, `full` seviyeli kullanıcı yazar ama silemez.
+   * level === undefined → true (bilinmezlik kuralı).
+   */
+  canDelete: boolean;
 }
 
 /**
  * Oturum yükünden tek modülün izin seviyesini okur (spec §2.5.2).
  *
- * `MeResponse` bugün `permissions` alanı TASIMIYOR (backend takip isi BE-A),
- * bu yuzden yuk bicimsel olarak dogrulanir: alan geldigi gun `pnpm gen:api`
- * disinda degisiklik gerekmez, hook oldugu gibi calisir.
+ * `MeResponse` artik `permissions` alanini TASIYOR; yuk yine de bicimsel
+ * olarak dogrulanir (tip degil, calisma ani verisi): alani tasimayan eski
+ * oturum ya da taninmayan seviye dizesi `undefined`'a duser, bilinmezlik
+ * kurali orada devreye girer.
  */
 function readLevel(me: unknown, moduleKey: string): AccessLevel | undefined {
   if (typeof me !== "object" || me === null) return undefined;
@@ -42,5 +49,6 @@ export function useModulePermission(moduleKey: string): ModulePermission {
     // olduğunda okuma da kapanır.
     canView: level !== "none",
     canWrite: canWrite(level),
+    canDelete: canDelete(level),
   };
 }

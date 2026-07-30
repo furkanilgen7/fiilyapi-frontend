@@ -18,7 +18,8 @@ const BASE_ME = {
   status: "active",
 } as unknown as MeResponse;
 
-/** BE-A sonrası `permissions` alanının geleceği hâli taklit eder. */
+/** BE-A sonrası gelen `permissions` yükünü taklit eder; `undefined` = alanı
+ *  taşımayan eski oturum (bilinmezlik dalı). */
 function mockSession(permissions?: Record<string, string>) {
   const me = permissions === undefined ? BASE_ME : { ...BASE_ME, permissions };
   vi.mocked(useSession).mockReturnValue({ me: me as MeResponse, isLoading: false });
@@ -27,7 +28,7 @@ function mockSession(permissions?: Record<string, string>) {
 describe("useModulePermission — bilinmezlik kuralı (spec §2.5.3)", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  // ⚠️ KAPI: MeResponse'ta izin alanı BE-A'ya kadar YOK. Gizleme bu hâlde
+  // ⚠️ KAPI — BE-A'dan SONRA DA KALIR: alanı taşımayan eski oturumda gizleme
   // devreye girerse tam yetkili kullanıcı ekranı salt-okunur görür.
   it("permissions alanı yokken canWrite true (bilinmezlik kuralı)", () => {
     mockSession();
@@ -92,6 +93,34 @@ describe("useModulePermission — seviye bilindiğinde (spec §2.5)", () => {
     expect(
       renderHook(() => useModulePermission("progress_payments")).result.current.level,
     ).toBe("approve");
+  });
+});
+
+describe("useModulePermission — canDelete (silme yalnız sistem yöneticisinde)", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("boq: 'full' iken canWrite true ama canDelete false", () => {
+    mockSession({ boq: "full" });
+    const { result } = renderHook(() => useModulePermission("boq"));
+    expect(result.current.canWrite).toBe(true);
+    expect(result.current.canDelete).toBe(false);
+  });
+
+  it("boq: 'admin' iken canDelete true", () => {
+    mockSession({ boq: "admin" });
+    expect(renderHook(() => useModulePermission("boq")).result.current.canDelete).toBe(true);
+  });
+
+  it("boq: 'view' iken canDelete false", () => {
+    mockSession({ boq: "view" });
+    expect(renderHook(() => useModulePermission("boq")).result.current.canDelete).toBe(false);
+  });
+
+  // ⚠️ KAPI: alanı taşımayan eski oturumda gizleme devreye girerse sistem
+  // yöneticisi silme yüzeyini kaybeder (bilinmezlik kuralı, spec §2.5.3).
+  it("izin alanı yokken canDelete true", () => {
+    mockSession();
+    expect(renderHook(() => useModulePermission("boq")).result.current.canDelete).toBe(true);
   });
 });
 

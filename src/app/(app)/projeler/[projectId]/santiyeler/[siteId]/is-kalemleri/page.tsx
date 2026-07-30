@@ -27,7 +27,8 @@ export default function BoqPage() {
   const boqQuery = useBoq(siteId);
   // Yazma yuzeyleri kapisi (spec §2.5). Yetki zorlamasi HER ZAMAN backend'de;
   // bu kapi yalniz salt-okunur role calismayan buton gostermemek icin.
-  const { canWrite } = useModulePermission("boq");
+  // `canDelete` AYRI kapidir: silme uclari `admin` seviyesindedir (§7.5.6).
+  const { canWrite, canDelete } = useModulePermission("boq");
   // Tek modal, iki kip (spec §7.1): `null` = kapali.
   const [formMode, setFormMode] = useState<BoqItemFormMode | null>(null);
   // Excel indirme durumu (spec §8.3). Sunucu hatasi sayfada gorunur kalir;
@@ -115,6 +116,7 @@ export default function BoqPage() {
           siteId={siteId}
           groups={boqQuery.data?.groups ?? []}
           mode={formMode}
+          canDelete={canDelete}
           onClose={() => setFormMode(null)}
         />
       )}

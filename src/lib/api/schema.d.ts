@@ -109,7 +109,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Me */
+        /**
+         * Me
+         * @description Matris mantigi YENIDEN YAZILMAZ: `roles.repository.get_role_matrix`
+         *     aynen kullanilir — `/roles/{id}/permissions` ucuyla ayni kaynak, tek fark
+         *     rol kimliginin aktörün kendi rolü olmasi ve ek yetki aranmamasi.
+         */
         get: operations["me_auth_me_get"];
         put?: never;
         post?: never;
@@ -218,7 +223,16 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Boq Item Endpoint
+         * @description Frontend F13 (kalem silme) bu uca baglidir.
+         *
+         *     Kapi `_FULL`'dir — PATCH ile AYNI: silme BOQ yazma izninin parcasi sayilir.
+         *     (`app/core/access.py` §5.0'in "silme yalniz admin" kurali `can_delete`
+         *     uzerinden taslak yasam dongusu tasiyan kayitlar icindir; `BoqItem`'da
+         *     `created_by`/`is_draft` yoktur, dolayisiyla o kural uygulanamaz.)
+         */
+        delete: operations["delete_boq_item_endpoint_boq_items__item_id__delete"];
         options?: never;
         head?: never;
         /** Update Boq Item Endpoint */
@@ -527,6 +541,186 @@ export interface paths {
         patch: operations["update_section_endpoint_sections__section_id__patch"];
         trace?: never;
     };
+    "/projects/{project_id}/blocks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Blocks Endpoint
+         * @description Spec §7.1. Blok seciciler (unite formu, toplu uretim formu) bu ucu kullanir.
+         */
+        get: operations["list_blocks_endpoint_projects__project_id__blocks_get"];
+        put?: never;
+        /**
+         * Create Block Endpoint
+         * @description Spec §7.2. Tek santiyeli projede `site_id` gonderilmezse otomatik atanir
+         *     (§4.5) — mockup'ta santiye secici yoktur (KY 38 / KK 39).
+         */
+        post: operations["create_block_endpoint_projects__project_id__blocks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/units": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Units Endpoint
+         * @description Spec §7.4. Suzgecler YALNIZ listeyi daraltir; `totals` daima projenin
+         *     tamamini sayar. `site_id` blok uzerinden cozulur (`units`'te `site_id` yok).
+         */
+        get: operations["list_units_endpoint_projects__project_id__units_get"];
+        put?: never;
+        /**
+         * Create Unit Endpoint
+         * @description Spec §7.5. Govdedeki `block_id` bu projeye ait olmali (IDOR-9), aksi hâlde 404.
+         */
+        post: operations["create_unit_endpoint_projects__project_id__units_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/blocks/{block_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Block Endpoint
+         * @description Spec §7.9. CASCADE YOK: unitesi olan blok 409 ile reddedilir — 24 daireyi
+         *     tek istekte silmek geri alinamaz veri kaybidir.
+         */
+        delete: operations["delete_block_endpoint_blocks__block_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Block Endpoint
+         * @description Spec §7.3. Kimlik YUKARI cozumlenir (blok → proje → gorunurluk);
+         *     gorunmeyen projenin blogu 404 doner, 403 DEGIL.
+         */
+        patch: operations["update_block_endpoint_blocks__block_id__patch"];
+        trace?: never;
+    };
+    "/units/{unit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Unit Endpoint
+         * @description Spec §7.9. Unite silme kosulsuzdur (P3'te uniteye bagli tablo yok, §1.3).
+         *     Gorunmeyen projenin unitesi 404 doner, 403 DEGIL.
+         */
+        delete: operations["delete_unit_endpoint_units__unit_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Unit Endpoint
+         * @description Spec §7.6. Kimlik YUKARI cozumlenir (unite → proje → gorunurluk);
+         *     `block_id` ile ayni proje icinde tasima serbesttir.
+         */
+        patch: operations["update_unit_endpoint_units__unit_id__patch"];
+        trace?: never;
+    };
+    "/projects/{project_id}/units/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bulk Create Units Endpoint
+         * @description Spec §7.7. HEP-YA-HIC: uretilen numaralardan biri bile blokta varsa
+         *     HICBIRI yazilmaz (409). Yanit guncel tam listedir — ekran tabloyu yeniden
+         *     cizer, ikinci bir GET'e gerek kalmaz.
+         *
+         *     Denetim: 24 unite uretilse de ISTEK BASINA TEK satir yazilir (spec §9).
+         */
+        post: operations["bulk_create_units_endpoint_projects__project_id__units_bulk_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/units/allocation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Allocation Endpoint
+         * @description Spec §7.10 (KKP 25). Paylar TOPLU URETIMDE atanmaz, SONRADAN bu ucla
+         *     girilir: paylasim noterden sonra belli olur (KKP 78).
+         *
+         *     ATOMIK: tek satir bile reddedilirse hicbiri yazilmaz. Listedeki bir unite
+         *     BASKA projeye aitse 404 doner (IDOR-8) ve bu projenin hicbir satiri
+         *     degismez. Yanit guncel tam listedir — ekran tabloyu yeniden cizer.
+         *
+         *     Denetim: 42 unitelik bir kayit TEK satir yazar (spec §9) — satir basina
+         *     gunluk, denetim gunlugunu okunamaz hâle getirirdi.
+         */
+        patch: operations["update_allocation_endpoint_projects__project_id__units_allocation_patch"];
+        trace?: never;
+    };
+    "/projects/{project_id}/units/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Units Endpoint
+         * @description Spec §7.8. BELGE SAKLAMA ALTYAPISI GEREKMEZ ve kurulmayacaktir: dosya
+         *     bellekte okunur, uniteler yaratilir, dosya ATILIR. Diske, S3'e, veritabanina
+         *     hicbir sey yazilmaz — P3'e sigmasinin tek sebebi budur.
+         *
+         *     Boyut IKI KEZ olculur: once istemcinin bildirdigi `size` ile (henuz govde
+         *     bellege alinmadan), sonra GERCEKTEN okunan `bytes` uzunluguyla
+         *     (`parse_units_file`) — istemci basligina guvenilmez.
+         */
+        post: operations["import_units_endpoint_projects__project_id__units_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users": {
         parameters: {
             query?: never;
@@ -686,6 +880,57 @@ export interface components {
             limit: number;
             /** Offset */
             offset: number;
+        };
+        /** BlockCreate */
+        BlockCreate: {
+            /** Name */
+            name: string;
+            /** Site Id */
+            site_id?: string | null;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** BlockListResponse */
+        BlockListResponse: {
+            /** Blocks */
+            blocks: components["schemas"]["BlockResponse"][];
+        };
+        /** BlockResponse */
+        BlockResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Site Id
+             * Format: uuid
+             */
+            site_id: string;
+            /** Site Name */
+            site_name: string;
+            /** Sort Order */
+            sort_order: number;
+            counts: components["schemas"]["UnitKindBreakdown"];
+        };
+        /** BlockUpdate */
+        BlockUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Site Id */
+            site_id?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
+        /** Body_import_units_endpoint_projects__project_id__units_import_post */
+        Body_import_units_endpoint_projects__project_id__units_import_post: {
+            /** File */
+            file: string;
         };
         /** Body_upload_logo_endpoint_company_logo_post */
         Body_upload_logo_endpoint_company_logo_post: {
@@ -1085,6 +1330,10 @@ export interface components {
             /** Role Key */
             role_key: string;
             status: components["schemas"]["UserStatus"];
+            /** Permissions */
+            permissions: {
+                [key: string]: components["schemas"]["AccessLevel"];
+            };
         };
         /**
          * ModuleGroup
@@ -1925,6 +2174,290 @@ export interface components {
          * @enum {string}
          */
         UITheme: "light" | "dark" | "system";
+        /**
+         * UnitAllocationItem
+         * @description KKP 25 "Paylasimi Kaydet". `owner_side=None` atamayi kaldirir (spec §5.3).
+         */
+        UnitAllocationItem: {
+            /**
+             * Unit Id
+             * Format: uuid
+             */
+            unit_id: string;
+            owner_side: components["schemas"]["UnitOwnerSide"] | null;
+        };
+        /** UnitAllocationRequest */
+        UnitAllocationRequest: {
+            /** Items */
+            items: components["schemas"]["UnitAllocationItem"][];
+        };
+        /**
+         * UnitBlockGroup
+         * @description SY 74 / 104 blok basliklari. Unitesi olmayan blok da doner (bos `units`
+         *     ile): yeni acilan blok ekranda gorunmezse kullanici kaydettigini goremez.
+         */
+        UnitBlockGroup: {
+            block: components["schemas"]["BlockResponse"];
+            /** Units */
+            units: components["schemas"]["UnitResponse"][];
+        };
+        /** UnitBulkCreate */
+        UnitBulkCreate: {
+            /**
+             * Block Id
+             * Format: uuid
+             */
+            block_id: string;
+            unit_kind: components["schemas"]["UnitKind"];
+            /** Start Floor */
+            start_floor: number;
+            /** End Floor */
+            end_floor: number;
+            /** Units Per Floor */
+            units_per_floor: number;
+            /** @default sequential */
+            numbering: components["schemas"]["UnitNumberingPattern"];
+            /**
+             * Prefix
+             * @default
+             */
+            prefix: string;
+            /**
+             * Start Number
+             * @default 1
+             */
+            start_number: number;
+            /** Layout */
+            layout?: string | null;
+            /** Gross Area M2 */
+            gross_area_m2?: number | string | null;
+            /** Net Area M2 */
+            net_area_m2?: number | string | null;
+            /** List Price */
+            list_price?: number | string | null;
+            /** Appraisal Value */
+            appraisal_value?: number | string | null;
+        };
+        /** UnitCreate */
+        UnitCreate: {
+            /**
+             * Block Id
+             * Format: uuid
+             */
+            block_id: string;
+            /** Unit No */
+            unit_no: string;
+            unit_kind: components["schemas"]["UnitKind"];
+            /** Layout */
+            layout?: string | null;
+            /** Gross Area M2 */
+            gross_area_m2?: number | string | null;
+            /** Net Area M2 */
+            net_area_m2?: number | string | null;
+            /** List Price */
+            list_price?: number | string | null;
+            /** Appraisal Value */
+            appraisal_value?: number | string | null;
+            owner_side?: components["schemas"]["UnitOwnerSide"] | null;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** UnitImportResult */
+        UnitImportResult: {
+            /** Created */
+            created: number;
+            /** Blocks Created */
+            blocks_created: number;
+            /** Errors */
+            errors: components["schemas"]["UnitImportRowError"][];
+        };
+        /** UnitImportRowError */
+        UnitImportRowError: {
+            /** Row */
+            row: number;
+            /** Column */
+            column: string | null;
+            /** Message */
+            message: string;
+        };
+        /**
+         * UnitKind
+         * @description KY 71 "48 Daire + 4 Dukkan", KY 308 "Dukkan 2", SY 104/132-135.
+         * @enum {string}
+         */
+        UnitKind: "apartment" | "shop";
+        /**
+         * UnitKindBreakdown
+         * @description KY 71 "48 Daire + 4 Dukkan", KK 121, SY 104. `total` turevdir: iki sayacin
+         *     toplami saklanmaz, yoksa zamanla kayabilir.
+         */
+        UnitKindBreakdown: {
+            /**
+             * Apartment
+             * @default 0
+             */
+            apartment: number;
+            /**
+             * Shop
+             * @default 0
+             */
+            shop: number;
+            /** Total */
+            readonly total: number;
+        };
+        /** UnitListResponse */
+        UnitListResponse: {
+            totals: components["schemas"]["UnitTotals"];
+            /** Blocks */
+            blocks: components["schemas"]["UnitBlockGroup"][];
+        };
+        /**
+         * UnitNumberingPattern
+         * @enum {string}
+         */
+        UnitNumberingPattern: "sequential" | "floor_based";
+        /**
+         * UnitOwnerSide
+         * @description KKP 90 "Sahip" sutunu: 100 `BIZ` (contractor), 109 `ARSA` (landowner).
+         * @enum {string}
+         */
+        UnitOwnerSide: "contractor" | "landowner";
+        /**
+         * UnitOwnerSideFilter
+         * @description `GET .../units` sorgu suzgeci (spec §7.4).
+         *
+         *     `UnitOwnerSide`'in kendisi KULLANILAMAZ: atanmamis uniteleri (NULL) secmek
+         *     icin ucuncu bir deger gerekir ve bu deger sutunda saklanan bir durum degil,
+         *     yalnizca sorgu dilidir — modele sizmasi yanlis olurdu.
+         * @enum {string}
+         */
+        UnitOwnerSideFilter: "contractor" | "landowner" | "unassigned";
+        /**
+         * UnitResponse
+         * @description KY 271-274 ve KKP 86-90 sutunlari. Satis alanlari (KY 275-277, KKP 91-92)
+         *     P8'in isidir ve yer tutucu doner — `units`'te saklanmaz (spec §4.6).
+         */
+        UnitResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Block Id
+             * Format: uuid
+             */
+            block_id: string;
+            /** Block Name */
+            block_name: string;
+            /** Unit No */
+            unit_no: string;
+            unit_kind: components["schemas"]["UnitKind"];
+            /** Layout */
+            layout: string | null;
+            /** Gross Area M2 */
+            gross_area_m2: string | null;
+            /** Net Area M2 */
+            net_area_m2: string | null;
+            /** List Price */
+            list_price: string | null;
+            /** Appraisal Value */
+            appraisal_value: string | null;
+            owner_side: components["schemas"]["UnitOwnerSide"] | null;
+            /** Sort Order */
+            sort_order: number;
+            sales_status: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            sale_price: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            buyer_name: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            shareholder: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            unit_cost: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            /** Label */
+            readonly label: string;
+            /**
+             * Unit Price Per M2
+             * @description FDS 61. Tabani HER ZAMAN `list_price`'tir: FDS 60-61 ikisini ayni
+             *     formda yan yana gosterir; `appraisal_value` birim fiyati mockup'ta yok.
+             */
+            readonly unit_price_per_m2: string | null;
+            /** Is Landowner Share */
+            readonly is_landowner_share: boolean;
+        };
+        /**
+         * UnitSideSummary
+         * @description KK 116-122 / 150-156, KKP 161-168 tfoot toplamlari.
+         */
+        UnitSideSummary: {
+            side: components["schemas"]["UnitOwnerSide"] | null;
+            counts: components["schemas"]["UnitKindBreakdown"];
+            /** Total Value */
+            total_value: string;
+            /** Average Value */
+            average_value: string | null;
+            /** Share Pct */
+            share_pct: string | null;
+            sold: components["schemas"]["CountPlaceholder"];
+            reserved: components["schemas"]["CountPlaceholder"];
+            listed: components["schemas"]["CountPlaceholder"];
+        };
+        /** UnitTotals */
+        UnitTotals: {
+            counts: components["schemas"]["UnitKindBreakdown"];
+            value_basis: components["schemas"]["UnitValueBasis"];
+            /** Total Value */
+            total_value: string;
+            /** Average Value */
+            average_value: string | null;
+            /** Total List Price */
+            total_list_price: string;
+            /** Total Appraisal Value */
+            total_appraisal_value: string;
+            /** Total Gross Area M2 */
+            total_gross_area_m2: string;
+            /** Sides */
+            sides: components["schemas"]["UnitSideSummary"][];
+            sold_units: components["schemas"]["CountPlaceholder"];
+            reserved_units: components["schemas"]["CountPlaceholder"];
+            available_units: components["schemas"]["CountPlaceholder"];
+            sales_revenue: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            average_sale_price: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+        };
+        /**
+         * UnitUpdate
+         * @description TUM alanlar opsiyoneldir; "gonderilmedi" ile "null yapildi" ayrimi servis
+         *     katmaninda `model_fields_set` ile cozulur (P1/P2/P4 deseni).
+         */
+        UnitUpdate: {
+            /** Block Id */
+            block_id?: string | null;
+            /** Unit No */
+            unit_no?: string | null;
+            unit_kind?: components["schemas"]["UnitKind"] | null;
+            /** Layout */
+            layout?: string | null;
+            /** Gross Area M2 */
+            gross_area_m2?: number | string | null;
+            /** Net Area M2 */
+            net_area_m2?: number | string | null;
+            /** List Price */
+            list_price?: number | string | null;
+            /** Appraisal Value */
+            appraisal_value?: number | string | null;
+            owner_side?: components["schemas"]["UnitOwnerSide"] | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
+        /**
+         * UnitValueBasis
+         * @description Toplamlarin hangi sutundan hesaplandigi (spec §4.4).
+         *
+         *     `kat_karsiligi` → `appraisal_value`, digerleri → `list_price`. Yanitta ACIKCA
+         *     bildirilir ki ekran hangi sutunu gosterdigini tahmin etmek zorunda kalmasin.
+         * @enum {string}
+         */
+        UnitValueBasis: "list_price" | "appraisal_value";
         /** UserCreate */
         UserCreate: {
             /**
@@ -2476,6 +3009,49 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["BoqGroupResponse"];
                 };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_boq_item_endpoint_boq_items__item_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Yetkisiz işlem */
             403: {
@@ -3832,6 +4408,530 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SectionResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_blocks_endpoint_projects__project_id__blocks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlockListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_block_endpoint_projects__project_id__blocks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlockCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlockResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_units_endpoint_projects__project_id__units_get: {
+        parameters: {
+            query?: {
+                block_id?: string | null;
+                site_id?: string | null;
+                kind?: components["schemas"]["UnitKind"] | null;
+                owner_side?: components["schemas"]["UnitOwnerSideFilter"] | null;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnitListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_unit_endpoint_projects__project_id__units_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnitCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnitResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_block_endpoint_blocks__block_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                block_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_block_endpoint_blocks__block_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                block_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlockUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlockResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_unit_endpoint_units__unit_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                unit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_unit_endpoint_units__unit_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                unit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnitUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnitResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bulk_create_units_endpoint_projects__project_id__units_bulk_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnitBulkCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnitListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_allocation_endpoint_projects__project_id__units_allocation_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnitAllocationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnitListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_units_endpoint_projects__project_id__units_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_units_endpoint_projects__project_id__units_import_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnitImportResult"];
                 };
             };
             /** @description Yetkisiz işlem */

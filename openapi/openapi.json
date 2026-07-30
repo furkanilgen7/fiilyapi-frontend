@@ -400,6 +400,7 @@
           "auth"
         ],
         "summary": "Me",
+        "description": "Matris mantigi YENIDEN YAZILMAZ: `roles.repository.get_role_matrix`\naynen kullanilir — `/roles/{id}/permissions` ucuyla ayni kaynak, tek fark\nrol kimliginin aktörün kendi rolü olmasi ve ek yetki aranmamasi.",
         "operationId": "me_auth_me_get",
         "responses": {
           "200": {
@@ -761,6 +762,52 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "boq"
+        ],
+        "summary": "Delete Boq Item Endpoint",
+        "description": "Frontend F13 (kalem silme) bu uca baglidir.\n\nKapi `_FULL`'dir — PATCH ile AYNI: silme BOQ yazma izninin parcasi sayilir.\n(`app/core/access.py` §5.0'in \"silme yalniz admin\" kurali `can_delete`\nuzerinden taslak yasam dongusu tasiyan kayitlar icindir; `BoqItem`'da\n`created_by`/`is_draft` yoktur, dolayisiyla o kural uygulanamaz.)",
+        "operationId": "delete_boq_item_endpoint_boq_items__item_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
           },
           "403": {
             "description": "Yetkisiz işlem"
@@ -2302,6 +2349,725 @@
         }
       }
     },
+    "/projects/{project_id}/blocks": {
+      "get": {
+        "tags": [
+          "units"
+        ],
+        "summary": "List Blocks Endpoint",
+        "description": "Spec §7.1. Blok seciciler (unite formu, toplu uretim formu) bu ucu kullanir.",
+        "operationId": "list_blocks_endpoint_projects__project_id__blocks_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "units"
+        ],
+        "summary": "Create Block Endpoint",
+        "description": "Spec §7.2. Tek santiyeli projede `site_id` gonderilmezse otomatik atanir\n(§4.5) — mockup'ta santiye secici yoktur (KY 38 / KK 39).",
+        "operationId": "create_block_endpoint_projects__project_id__blocks_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/units": {
+      "get": {
+        "tags": [
+          "units"
+        ],
+        "summary": "List Units Endpoint",
+        "description": "Spec §7.4. Suzgecler YALNIZ listeyi daraltir; `totals` daima projenin\ntamamini sayar. `site_id` blok uzerinden cozulur (`units`'te `site_id` yok).",
+        "operationId": "list_units_endpoint_projects__project_id__units_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "block_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Block Id"
+            }
+          },
+          {
+            "name": "site_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/UnitKind"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "owner_side",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/UnitOwnerSideFilter"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Owner Side"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "units"
+        ],
+        "summary": "Create Unit Endpoint",
+        "description": "Spec §7.5. Govdedeki `block_id` bu projeye ait olmali (IDOR-9), aksi hâlde 404.",
+        "operationId": "create_unit_endpoint_projects__project_id__units_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnitCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/blocks/{block_id}": {
+      "patch": {
+        "tags": [
+          "units"
+        ],
+        "summary": "Update Block Endpoint",
+        "description": "Spec §7.3. Kimlik YUKARI cozumlenir (blok → proje → gorunurluk);\ngorunmeyen projenin blogu 404 doner, 403 DEGIL.",
+        "operationId": "update_block_endpoint_blocks__block_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Block Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "units"
+        ],
+        "summary": "Delete Block Endpoint",
+        "description": "Spec §7.9. CASCADE YOK: unitesi olan blok 409 ile reddedilir — 24 daireyi\ntek istekte silmek geri alinamaz veri kaybidir.",
+        "operationId": "delete_block_endpoint_blocks__block_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Block Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/units/{unit_id}": {
+      "patch": {
+        "tags": [
+          "units"
+        ],
+        "summary": "Update Unit Endpoint",
+        "description": "Spec §7.6. Kimlik YUKARI cozumlenir (unite → proje → gorunurluk);\n`block_id` ile ayni proje icinde tasima serbesttir.",
+        "operationId": "update_unit_endpoint_units__unit_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "unit_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Unit Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnitUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "units"
+        ],
+        "summary": "Delete Unit Endpoint",
+        "description": "Spec §7.9. Unite silme kosulsuzdur (P3'te uniteye bagli tablo yok, §1.3).\nGorunmeyen projenin unitesi 404 doner, 403 DEGIL.",
+        "operationId": "delete_unit_endpoint_units__unit_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "unit_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Unit Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/units/bulk": {
+      "post": {
+        "tags": [
+          "units"
+        ],
+        "summary": "Bulk Create Units Endpoint",
+        "description": "Spec §7.7. HEP-YA-HIC: uretilen numaralardan biri bile blokta varsa\nHICBIRI yazilmaz (409). Yanit guncel tam listedir — ekran tabloyu yeniden\ncizer, ikinci bir GET'e gerek kalmaz.\n\nDenetim: 24 unite uretilse de ISTEK BASINA TEK satir yazilir (spec §9).",
+        "operationId": "bulk_create_units_endpoint_projects__project_id__units_bulk_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnitBulkCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/units/allocation": {
+      "patch": {
+        "tags": [
+          "units"
+        ],
+        "summary": "Update Allocation Endpoint",
+        "description": "Spec §7.10 (KKP 25). Paylar TOPLU URETIMDE atanmaz, SONRADAN bu ucla\ngirilir: paylasim noterden sonra belli olur (KKP 78).\n\nATOMIK: tek satir bile reddedilirse hicbiri yazilmaz. Listedeki bir unite\nBASKA projeye aitse 404 doner (IDOR-8) ve bu projenin hicbir satiri\ndegismez. Yanit guncel tam listedir — ekran tabloyu yeniden cizer.\n\nDenetim: 42 unitelik bir kayit TEK satir yazar (spec §9) — satir basina\ngunluk, denetim gunlugunu okunamaz hâle getirirdi.",
+        "operationId": "update_allocation_endpoint_projects__project_id__units_allocation_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnitAllocationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/units/import": {
+      "post": {
+        "tags": [
+          "units"
+        ],
+        "summary": "Import Units Endpoint",
+        "description": "Spec §7.8. BELGE SAKLAMA ALTYAPISI GEREKMEZ ve kurulmayacaktir: dosya\nbellekte okunur, uniteler yaratilir, dosya ATILIR. Diske, S3'e, veritabanina\nhicbir sey yazilmaz — P3'e sigmasinin tek sebebi budur.\n\nBoyut IKI KEZ olculur: once istemcinin bildirdigi `size` ile (henuz govde\nbellege alinmadan), sonra GERCEKTEN okunan `bytes` uzunluguyla\n(`parse_units_file`) — istemci basligina guvenilmez.",
+        "operationId": "import_units_endpoint_projects__project_id__units_import_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_units_endpoint_projects__project_id__units_import_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitImportResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/users": {
       "get": {
         "tags": [
@@ -2913,6 +3679,151 @@
           "offset"
         ],
         "title": "AuditListResponse"
+      },
+      "BlockCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "sort_order": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Sort Order",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "BlockCreate"
+      },
+      "BlockListResponse": {
+        "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/BlockResponse"
+            },
+            "type": "array",
+            "title": "Blocks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "blocks"
+        ],
+        "title": "BlockListResponse"
+      },
+      "BlockResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "site_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Site Id"
+          },
+          "site_name": {
+            "type": "string",
+            "title": "Site Name"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/UnitKindBreakdown"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "site_id",
+          "site_name",
+          "sort_order",
+          "counts"
+        ],
+        "title": "BlockResponse"
+      },
+      "BlockUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "type": "object",
+        "title": "BlockUpdate"
+      },
+      "Body_import_units_endpoint_projects__project_id__units_import_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_units_endpoint_projects__project_id__units_import_post"
       },
       "Body_upload_logo_endpoint_company_logo_post": {
         "properties": {
@@ -4205,6 +5116,13 @@
           },
           "status": {
             "$ref": "#/components/schemas/UserStatus"
+          },
+          "permissions": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AccessLevel"
+            },
+            "type": "object",
+            "title": "Permissions"
           }
         },
         "type": "object",
@@ -4214,7 +5132,8 @@
           "full_name",
           "title",
           "role_key",
-          "status"
+          "status",
+          "permissions"
         ],
         "title": "MeResponse"
       },
@@ -7140,6 +8059,916 @@
           "system"
         ],
         "title": "UITheme"
+      },
+      "UnitAllocationItem": {
+        "properties": {
+          "unit_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Unit Id"
+          },
+          "owner_side": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UnitOwnerSide"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "unit_id",
+          "owner_side"
+        ],
+        "title": "UnitAllocationItem",
+        "description": "KKP 25 \"Paylasimi Kaydet\". `owner_side=None` atamayi kaldirir (spec §5.3)."
+      },
+      "UnitAllocationRequest": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/UnitAllocationItem"
+            },
+            "type": "array",
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "UnitAllocationRequest"
+      },
+      "UnitBlockGroup": {
+        "properties": {
+          "block": {
+            "$ref": "#/components/schemas/BlockResponse"
+          },
+          "units": {
+            "items": {
+              "$ref": "#/components/schemas/UnitResponse"
+            },
+            "type": "array",
+            "title": "Units"
+          }
+        },
+        "type": "object",
+        "required": [
+          "block",
+          "units"
+        ],
+        "title": "UnitBlockGroup",
+        "description": "SY 74 / 104 blok basliklari. Unitesi olmayan blok da doner (bos `units`\nile): yeni acilan blok ekranda gorunmezse kullanici kaydettigini goremez."
+      },
+      "UnitBulkCreate": {
+        "properties": {
+          "block_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Block Id"
+          },
+          "unit_kind": {
+            "$ref": "#/components/schemas/UnitKind"
+          },
+          "start_floor": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": -5.0,
+            "title": "Start Floor"
+          },
+          "end_floor": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": -5.0,
+            "title": "End Floor"
+          },
+          "units_per_floor": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Units Per Floor"
+          },
+          "numbering": {
+            "$ref": "#/components/schemas/UnitNumberingPattern",
+            "default": "sequential"
+          },
+          "prefix": {
+            "type": "string",
+            "maxLength": 10,
+            "title": "Prefix",
+            "default": ""
+          },
+          "start_number": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Start Number",
+            "default": 1
+          },
+          "layout": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Layout"
+          },
+          "gross_area_m2": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gross Area M2"
+          },
+          "net_area_m2": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Net Area M2"
+          },
+          "list_price": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "List Price"
+          },
+          "appraisal_value": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Appraisal Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "block_id",
+          "unit_kind",
+          "start_floor",
+          "end_floor",
+          "units_per_floor"
+        ],
+        "title": "UnitBulkCreate"
+      },
+      "UnitCreate": {
+        "properties": {
+          "block_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Block Id"
+          },
+          "unit_no": {
+            "type": "string",
+            "maxLength": 30,
+            "minLength": 1,
+            "title": "Unit No"
+          },
+          "unit_kind": {
+            "$ref": "#/components/schemas/UnitKind"
+          },
+          "layout": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Layout"
+          },
+          "gross_area_m2": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gross Area M2"
+          },
+          "net_area_m2": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Net Area M2"
+          },
+          "list_price": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "List Price"
+          },
+          "appraisal_value": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Appraisal Value"
+          },
+          "owner_side": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UnitOwnerSide"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sort_order": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Sort Order",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "block_id",
+          "unit_no",
+          "unit_kind"
+        ],
+        "title": "UnitCreate"
+      },
+      "UnitImportResult": {
+        "properties": {
+          "created": {
+            "type": "integer",
+            "title": "Created"
+          },
+          "blocks_created": {
+            "type": "integer",
+            "title": "Blocks Created"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/UnitImportRowError"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created",
+          "blocks_created",
+          "errors"
+        ],
+        "title": "UnitImportResult"
+      },
+      "UnitImportRowError": {
+        "properties": {
+          "row": {
+            "type": "integer",
+            "title": "Row"
+          },
+          "column": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Column"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "row",
+          "column",
+          "message"
+        ],
+        "title": "UnitImportRowError"
+      },
+      "UnitKind": {
+        "type": "string",
+        "enum": [
+          "apartment",
+          "shop"
+        ],
+        "title": "UnitKind",
+        "description": "KY 71 \"48 Daire + 4 Dukkan\", KY 308 \"Dukkan 2\", SY 104/132-135."
+      },
+      "UnitKindBreakdown": {
+        "properties": {
+          "apartment": {
+            "type": "integer",
+            "title": "Apartment",
+            "default": 0
+          },
+          "shop": {
+            "type": "integer",
+            "title": "Shop",
+            "default": 0
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "total"
+        ],
+        "title": "UnitKindBreakdown",
+        "description": "KY 71 \"48 Daire + 4 Dukkan\", KK 121, SY 104. `total` turevdir: iki sayacin\ntoplami saklanmaz, yoksa zamanla kayabilir."
+      },
+      "UnitListResponse": {
+        "properties": {
+          "totals": {
+            "$ref": "#/components/schemas/UnitTotals"
+          },
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/UnitBlockGroup"
+            },
+            "type": "array",
+            "title": "Blocks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "totals",
+          "blocks"
+        ],
+        "title": "UnitListResponse"
+      },
+      "UnitNumberingPattern": {
+        "type": "string",
+        "enum": [
+          "sequential",
+          "floor_based"
+        ],
+        "title": "UnitNumberingPattern"
+      },
+      "UnitOwnerSide": {
+        "type": "string",
+        "enum": [
+          "contractor",
+          "landowner"
+        ],
+        "title": "UnitOwnerSide",
+        "description": "KKP 90 \"Sahip\" sutunu: 100 `BIZ` (contractor), 109 `ARSA` (landowner)."
+      },
+      "UnitOwnerSideFilter": {
+        "type": "string",
+        "enum": [
+          "contractor",
+          "landowner",
+          "unassigned"
+        ],
+        "title": "UnitOwnerSideFilter",
+        "description": "`GET .../units` sorgu suzgeci (spec §7.4).\n\n`UnitOwnerSide`'in kendisi KULLANILAMAZ: atanmamis uniteleri (NULL) secmek\nicin ucuncu bir deger gerekir ve bu deger sutunda saklanan bir durum degil,\nyalnizca sorgu dilidir — modele sizmasi yanlis olurdu."
+      },
+      "UnitResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "block_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Block Id"
+          },
+          "block_name": {
+            "type": "string",
+            "title": "Block Name"
+          },
+          "unit_no": {
+            "type": "string",
+            "title": "Unit No"
+          },
+          "unit_kind": {
+            "$ref": "#/components/schemas/UnitKind"
+          },
+          "layout": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Layout"
+          },
+          "gross_area_m2": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gross Area M2"
+          },
+          "net_area_m2": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Net Area M2"
+          },
+          "list_price": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "List Price"
+          },
+          "appraisal_value": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Appraisal Value"
+          },
+          "owner_side": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UnitOwnerSide"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order"
+          },
+          "sales_status": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "sale_price": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "buyer_name": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "shareholder": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "unit_cost": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "readOnly": true
+          },
+          "unit_price_per_m2": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Price Per M2",
+            "description": "FDS 61. Tabani HER ZAMAN `list_price`'tir: FDS 60-61 ikisini ayni\nformda yan yana gosterir; `appraisal_value` birim fiyati mockup'ta yok.",
+            "readOnly": true
+          },
+          "is_landowner_share": {
+            "type": "boolean",
+            "title": "Is Landowner Share",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "block_id",
+          "block_name",
+          "unit_no",
+          "unit_kind",
+          "layout",
+          "gross_area_m2",
+          "net_area_m2",
+          "list_price",
+          "appraisal_value",
+          "owner_side",
+          "sort_order",
+          "sales_status",
+          "sale_price",
+          "buyer_name",
+          "shareholder",
+          "unit_cost",
+          "label",
+          "unit_price_per_m2",
+          "is_landowner_share"
+        ],
+        "title": "UnitResponse",
+        "description": "KY 271-274 ve KKP 86-90 sutunlari. Satis alanlari (KY 275-277, KKP 91-92)\nP8'in isidir ve yer tutucu doner — `units`'te saklanmaz (spec §4.6)."
+      },
+      "UnitSideSummary": {
+        "properties": {
+          "side": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UnitOwnerSide"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "counts": {
+            "$ref": "#/components/schemas/UnitKindBreakdown"
+          },
+          "total_value": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Value"
+          },
+          "average_value": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Value"
+          },
+          "share_pct": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share Pct"
+          },
+          "sold": {
+            "$ref": "#/components/schemas/CountPlaceholder"
+          },
+          "reserved": {
+            "$ref": "#/components/schemas/CountPlaceholder"
+          },
+          "listed": {
+            "$ref": "#/components/schemas/CountPlaceholder"
+          }
+        },
+        "type": "object",
+        "required": [
+          "side",
+          "counts",
+          "total_value",
+          "average_value",
+          "share_pct",
+          "sold",
+          "reserved",
+          "listed"
+        ],
+        "title": "UnitSideSummary",
+        "description": "KK 116-122 / 150-156, KKP 161-168 tfoot toplamlari."
+      },
+      "UnitTotals": {
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/UnitKindBreakdown"
+          },
+          "value_basis": {
+            "$ref": "#/components/schemas/UnitValueBasis"
+          },
+          "total_value": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Value"
+          },
+          "average_value": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Value"
+          },
+          "total_list_price": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total List Price"
+          },
+          "total_appraisal_value": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Appraisal Value"
+          },
+          "total_gross_area_m2": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Gross Area M2"
+          },
+          "sides": {
+            "items": {
+              "$ref": "#/components/schemas/UnitSideSummary"
+            },
+            "type": "array",
+            "title": "Sides"
+          },
+          "sold_units": {
+            "$ref": "#/components/schemas/CountPlaceholder"
+          },
+          "reserved_units": {
+            "$ref": "#/components/schemas/CountPlaceholder"
+          },
+          "available_units": {
+            "$ref": "#/components/schemas/CountPlaceholder"
+          },
+          "sales_revenue": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "average_sale_price": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          }
+        },
+        "type": "object",
+        "required": [
+          "counts",
+          "value_basis",
+          "total_value",
+          "average_value",
+          "total_list_price",
+          "total_appraisal_value",
+          "total_gross_area_m2",
+          "sides",
+          "sold_units",
+          "reserved_units",
+          "available_units",
+          "sales_revenue",
+          "average_sale_price"
+        ],
+        "title": "UnitTotals"
+      },
+      "UnitUpdate": {
+        "properties": {
+          "block_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Id"
+          },
+          "unit_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 30,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit No"
+          },
+          "unit_kind": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UnitKind"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "layout": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Layout"
+          },
+          "gross_area_m2": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gross Area M2"
+          },
+          "net_area_m2": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Net Area M2"
+          },
+          "list_price": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "List Price"
+          },
+          "appraisal_value": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Appraisal Value"
+          },
+          "owner_side": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UnitOwnerSide"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "type": "object",
+        "title": "UnitUpdate",
+        "description": "TUM alanlar opsiyoneldir; \"gonderilmedi\" ile \"null yapildi\" ayrimi servis\nkatmaninda `model_fields_set` ile cozulur (P1/P2/P4 deseni)."
+      },
+      "UnitValueBasis": {
+        "type": "string",
+        "enum": [
+          "list_price",
+          "appraisal_value"
+        ],
+        "title": "UnitValueBasis",
+        "description": "Toplamlarin hangi sutundan hesaplandigi (spec §4.4).\n\n`kat_karsiligi` → `appraisal_value`, digerleri → `list_price`. Yanitta ACIKCA\nbildirilir ki ekran hangi sutunu gosterdigini tahmin etmek zorunda kalmasin."
       },
       "UserCreate": {
         "properties": {
