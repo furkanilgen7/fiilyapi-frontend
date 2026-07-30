@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "@/components/shell/SessionProvider";
-import { canWrite, isAccessLevel, type AccessLevel } from "./permissions";
+import { canDelete, canWrite, isAccessLevel, type AccessLevel } from "./permissions";
 
 export interface ModulePermission {
   /** Seviye bilinmiyorsa undefined (oturum yükleniyor ya da alan yok). */
@@ -10,6 +10,12 @@ export interface ModulePermission {
   canView: boolean;
   /** level === undefined → true (bilinmezlik kuralı, spec §2.5.3). */
   canWrite: boolean;
+  /**
+   * Silme kapısı — `canWrite`'ten AYRIDIR: backend silme uçları `admin`
+   * kapısındadır, `full` seviyeli kullanıcı yazar ama silemez.
+   * level === undefined → true (bilinmezlik kuralı).
+   */
+  canDelete: boolean;
 }
 
 /**
@@ -43,5 +49,6 @@ export function useModulePermission(moduleKey: string): ModulePermission {
     // olduğunda okuma da kapanır.
     canView: level !== "none",
     canWrite: canWrite(level),
+    canDelete: canDelete(level),
   };
 }

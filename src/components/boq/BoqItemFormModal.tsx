@@ -28,8 +28,12 @@ export interface BoqItemFormModalProps {
   /** Grup açılırını doldurur; listeden gelir, yeniden çekilmez (spec §7.1). */
   groups: BoqGroup[];
   mode: BoqItemFormMode;
-  /** Yazma kapısı (spec §2.5); `false` iken `Sil` hiç basılmaz (§7.5.6). */
-  canWrite: boolean;
+  /**
+   * Silme kapısı (spec §2.5, §7.5.6); `false` iken `Sil` hiç basılmaz.
+   * Yazma kapısı DEĞİLDİR: silme uçları `admin` seviyesindedir, `full`
+   * kullanıcı formu kaydeder ama silemez.
+   */
+  canDelete: boolean;
   onClose: () => void;
 }
 
@@ -70,13 +74,13 @@ function deleteErrorMessage(err: unknown): string {
  * sınırların dışına çıkılmaz.
  *
  * Tabloya eylem sütunu EKLENMEZ; düzenleme satır tetikleyicisinden açılır.
- * `Sil` yalnız `edit` kipinde ve yazma kapısının arkasında basılır (§7.5).
+ * `Sil` yalnız `edit` kipinde ve SİLME kapısının arkasında basılır (§7.5).
  */
 export function BoqItemFormModal({
   siteId,
   groups,
   mode,
-  canWrite,
+  canDelete,
   onClose,
 }: BoqItemFormModalProps) {
   const createGroup = useCreateBoqGroup(siteId);
@@ -113,8 +117,9 @@ export function BoqItemFormModal({
   const isNewGroup = groupId === NEW_GROUP_OPTION;
   const isPending =
     createGroup.isPending || createItem.isPending || updateItem.isPending || deleteItem.isPending;
-  // Grup silme YOKTUR (spec §7.5.5): son kalem silinse bile grup basligi kalir.
-  const canDelete = canWrite && mode.kind === "edit";
+  // Silinecek kayit yalniz edit kipinde vardir. Grup silme YOKTUR
+  // (spec §7.5.5): son kalem silinse bile grup basligi kalir.
+  const isDeletable = canDelete && mode.kind === "edit";
 
   const quantityValue = toNumberOrNull(quantity);
   const unitPriceValue = toNumberOrNull(unitPrice);
@@ -276,7 +281,7 @@ export function BoqItemFormModal({
       onClose={onClose}
       footer={
         <>
-          {canDelete && (
+          {isDeletable && (
             // Alt seridin SOLUNDA (spec §7.5.1); .modal__footer flex-end
             // hizaladigindan konum `margin-right: auto` ile alinir (boq.css).
             <Button

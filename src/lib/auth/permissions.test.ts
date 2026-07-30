@@ -3,7 +3,14 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 
-import { ACCESS_LEVELS, WRITE_LEVELS, canWrite, isAccessLevel } from "./permissions";
+import {
+  ACCESS_LEVELS,
+  DELETE_LEVELS,
+  WRITE_LEVELS,
+  canDelete,
+  canWrite,
+  isAccessLevel,
+} from "./permissions";
 import type { MeResponse } from "./types";
 
 describe("permissions — /auth/me sözleşmesi (BE-A)", () => {
@@ -71,6 +78,39 @@ describe("permissions — canWrite (spec §2.5.3 bilinmezlik kuralı)", () => {
       ["full", true],
       ["admin", true],
     ]);
+  });
+});
+
+describe("permissions — canDelete (kullanıcı kararı: silme yalnız sistem yöneticisinde)", () => {
+  // Backend'de üç silme ucu (`DELETE /boq/items`, `/units`, `/blocks`) `admin`
+  // kapısına çekildi. `full` seviyeli kullanıcı YAZAR ama SİLEMEZ — silme
+  // yüzeyi `canWrite` ile kapılanırsa tıklayınca 403 alır.
+  it("yalnız admin siler; full dahil diğer hiçbir seviye silemez", () => {
+    const decisions = ACCESS_LEVELS.map((level) => [level, canDelete(level)]);
+    expect(decisions).toEqual([
+      ["none", false],
+      ["view", false],
+      ["draft", false],
+      ["request", false],
+      ["approve", false],
+      ["full", false],
+      ["admin", true],
+    ]);
+  });
+
+  it("DELETE_LEVELS yalnız admin'i sayar", () => {
+    expect([...DELETE_LEVELS]).toEqual(["admin"]);
+  });
+
+  // ⚠️ KAPI TESTİ — `canWrite` ile AYNI gerekçe: alanı taşımayan eski oturumda
+  // gizleme devreye girerse sistem yöneticisi silme yüzeyini kaybeder.
+  it("canDelete(undefined) true döner — bilinmezlik yasak sayılmaz", () => {
+    expect(canDelete(undefined)).toBe(true);
+  });
+
+  // Silme yazmanın ALT KÜMESİDİR: silebilen herkes yazabilmelidir, tersi değil.
+  it("silebilen her seviye yazabilir de", () => {
+    for (const level of DELETE_LEVELS) expect(canWrite(level)).toBe(true);
   });
 });
 

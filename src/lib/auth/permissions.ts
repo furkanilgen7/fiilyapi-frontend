@@ -27,6 +27,16 @@ export const WRITE_LEVELS: readonly AccessLevel[] = [
   "admin",
 ];
 
+/**
+ * Silme yetkisi sayılan seviyeler — YAZMANIN ALT KÜMESİ, `WRITE_LEVELS`'ten
+ * ayrıdır (kullanıcı kararı: silme yalnız sistem yöneticisinde).
+ *
+ * Backend'de silme uçları `admin` kapısındadır; `full` seviyeli kullanıcı yazar
+ * ama silemez. Bu liste `WRITE_LEVELS`'e eşitlenirse `full` kullanıcı çalışmayan
+ * bir silme butonu görür ve tıklayınca 403 alır.
+ */
+export const DELETE_LEVELS: readonly AccessLevel[] = ["admin"];
+
 /** Dış veriden gelen seviye dizesini doğrular; tanınmayan değer `false`. */
 export function isAccessLevel(value: unknown): value is AccessLevel {
   return typeof value === "string" && (ACCESS_LEVELS as readonly string[]).includes(value);
@@ -45,4 +55,16 @@ export function isAccessLevel(value: unknown): value is AccessLevel {
 export function canWrite(level: AccessLevel | undefined): boolean {
   if (level === undefined) return true;
   return WRITE_LEVELS.includes(level);
+}
+
+/**
+ * Silme kapısı — `canWrite` ile AYNI bilinmezlik kuralı (spec §2.5.3):
+ * seviye bilinmiyorsa `true`. Alanı taşımayan eski oturumda gizleme devreye
+ * girerse sistem yöneticisi silme yüzeyini sessizce kaybeder.
+ *
+ * `canWrite`'ten AYRI çağrılır; silme yüzeyleri `canWrite` ile kapılanamaz.
+ */
+export function canDelete(level: AccessLevel | undefined): boolean {
+  if (level === undefined) return true;
+  return DELETE_LEVELS.includes(level);
 }

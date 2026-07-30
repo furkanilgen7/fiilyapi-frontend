@@ -85,19 +85,19 @@ function renderCreate(groups: BoqGroup[] = GROUPS) {
       siteId={SITE_ID}
       groups={groups}
       mode={{ kind: "create" }}
-      canWrite
+      canDelete
       onClose={onClose}
     />,
   );
 }
 
-function renderEdit(mode?: { item: BoqItem; groupId: string; canWrite?: boolean }) {
+function renderEdit(mode?: { item: BoqItem; groupId: string; canDelete?: boolean }) {
   render(
     <BoqItemFormModal
       siteId={SITE_ID}
       groups={GROUPS}
       mode={{ kind: "edit", item: mode?.item ?? item(), groupId: mode?.groupId ?? GROUP_1 }}
-      canWrite={mode?.canWrite ?? true}
+      canDelete={mode?.canDelete ?? true}
       onClose={onClose}
     />,
   );
@@ -448,9 +448,10 @@ describe("BoqItemFormModal — kalem silme (F13, spec §7.5)", () => {
     expect(screen.getByRole("button", { name: "Sil" })).toBeInTheDocument();
   });
 
-  // §7.5.6 / §2.5: yazma kapısı kapalıysa çalışmayan buton GÖSTERİLMEZ.
-  it("canWrite false iken Sil butonu DOM'da yok", () => {
-    renderEdit({ item: item(), groupId: GROUP_1, canWrite: false });
+  // §7.5.6 / §2.5: silme kapısı (yalnız `admin`) kapalıysa çalışmayan buton
+  // GÖSTERİLMEZ — `full` seviyeli kullanıcı tıklarsa 403 alırdı.
+  it("canDelete false iken Sil butonu DOM'da yok", () => {
+    renderEdit({ item: item(), groupId: GROUP_1, canDelete: false });
     expect(screen.queryByRole("button", { name: "Sil" })).not.toBeInTheDocument();
   });
 

@@ -96,6 +96,34 @@ describe("useModulePermission — seviye bilindiğinde (spec §2.5)", () => {
   });
 });
 
+describe("useModulePermission — canDelete (silme yalnız sistem yöneticisinde)", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("boq: 'full' iken canWrite true ama canDelete false", () => {
+    mockSession({ boq: "full" });
+    const { result } = renderHook(() => useModulePermission("boq"));
+    expect(result.current.canWrite).toBe(true);
+    expect(result.current.canDelete).toBe(false);
+  });
+
+  it("boq: 'admin' iken canDelete true", () => {
+    mockSession({ boq: "admin" });
+    expect(renderHook(() => useModulePermission("boq")).result.current.canDelete).toBe(true);
+  });
+
+  it("boq: 'view' iken canDelete false", () => {
+    mockSession({ boq: "view" });
+    expect(renderHook(() => useModulePermission("boq")).result.current.canDelete).toBe(false);
+  });
+
+  // ⚠️ KAPI: alanı taşımayan eski oturumda gizleme devreye girerse sistem
+  // yöneticisi silme yüzeyini kaybeder (bilinmezlik kuralı, spec §2.5.3).
+  it("izin alanı yokken canDelete true", () => {
+    mockSession();
+    expect(renderHook(() => useModulePermission("boq")).result.current.canDelete).toBe(true);
+  });
+});
+
 describe("useModulePermission — ağ davranışı (spec §2.5.2)", () => {
   const originalFetch = globalThis.fetch;
 

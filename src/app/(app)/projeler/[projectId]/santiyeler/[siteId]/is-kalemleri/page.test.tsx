@@ -290,9 +290,33 @@ describe("BoqPage — BoqItemFormModal bağlantısı (spec §7)", () => {
     expect(screen.getByLabelText("Poz No")).toHaveValue("01.001");
   });
 
-  // F13 / §7.5.6: sayfanin izin kapisi modale KADAR tasinmali — modal kendi
+  // F13 / §7.5.6: sayfanin silme kapisi modale KADAR tasinmali — modal kendi
   // kapisini kurmaz, aksi halde iki ayri dogruluk kaynagi olur.
-  it("edit modalinde Sil butonu basılır (canWrite modale geçer)", () => {
+  //
+  // ⚠️ Kapi `canWrite` DEGIL `canDelete`'tir (kullanici karari: silme yalniz
+  // sistem yoneticisinde). `full` seviyeli kullanici yazar ama silemez.
+  it("boq: 'full' kullanıcı Sil'i görmez ama Kaydet'i görür", () => {
+    mockPermission("full");
+    render(<BoqPage />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "01.001 — Kazı (Makine ile) kalemini düzenle" }),
+    );
+    expect(screen.getByRole("button", { name: "Kaydet" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Sil" })).not.toBeInTheDocument();
+  });
+
+  it("boq: 'admin' kullanıcı Sil'i görür", () => {
+    mockPermission("admin");
+    render(<BoqPage />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "01.001 — Kazı (Makine ile) kalemini düzenle" }),
+    );
+    expect(screen.getByRole("button", { name: "Sil" })).toBeInTheDocument();
+  });
+
+  // Bilinmezlik kurali: alani tasimayan eski oturumda silme yuzeyi KALIR.
+  it("izin alanı yokken (eski oturum) Sil görünür kalır", () => {
+    mockPermission();
     render(<BoqPage />);
     fireEvent.click(
       screen.getByRole("button", { name: "01.001 — Kazı (Makine ile) kalemini düzenle" }),
