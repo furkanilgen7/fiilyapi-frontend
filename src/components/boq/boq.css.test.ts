@@ -25,6 +25,22 @@ describe("boq.css — mockup kuralları (regresyon koruması)", () => {
     expect(css).not.toMatch(/\.boq-table__pct--(success|warning|danger)/);
   });
 
+  // Mockup 174: GENEL TOPLAM satırının zemini ve 2px üst çizgisi F2'de token'a
+  // çevrildi; çıplak değere dönülmesini engeller.
+  it("GENEL TOPLAM satırını --color-info-tint ve --border-width-total ile boyar", () => {
+    expect(css).toMatch(
+      /\.boq-table__total-row[^{]*{[^}]*--color-info-tint[^}]*--border-width-total/s,
+    );
+  });
+
+  // Yer tutucu hâl mockup renginden (177 `--color-primary`) SONRA gelmeli,
+  // yoksa aynı özgüllükte kaybeder ve `—` mavi/vurgulu basılır (spec §5.4).
+  it("--pending kuralı --total-pct kuralından sonra gelir (cascade sırası)", () => {
+    const totalPctAt = css.indexOf(".boq-table__total-pct");
+    expect(totalPctAt).toBeGreaterThan(-1);
+    expect(css.indexOf(".boq-table__pct--pending")).toBeGreaterThan(totalPctAt);
+  });
+
   it("breadcrumb linki :focus-visible ile tasarlanmış odak halkası tanımlar (--focus-ring)", () => {
     expect(css).toMatch(/\.boq__crumb-link:focus-visible\s*{[^}]*--focus-ring/);
   });

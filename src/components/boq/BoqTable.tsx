@@ -3,20 +3,23 @@ import { Fragment } from "react";
 import { Button } from "@/components/ui/button/Button";
 import { formatAmount, formatQuantity } from "@/lib/format";
 import { pendingModuleLabel } from "@/lib/pending-modules";
-import type { BoqGroup } from "@/lib/api/hooks/useBoq";
+import type { BoqGroup, BoqTotals } from "@/lib/api/hooks/useBoq";
 
 import "./boq.css";
 
 export interface BoqTableProps {
   /** Gruplar yükten geldiği sırada basılır — frontend yeniden sıralamaz. */
   groups: BoqGroup[];
+  /** GENEL TOPLAM satırının kaynağı (mockup 174–177). */
+  totals: BoqTotals;
 }
 
 const COLUMN_COUNT = 7;
 
 // Poz tablosu (mockup 92–171). Mockup'in 7 sutunlu duzeni korunur: eylem
 // sutunu / kebap menusu / 8. sutun EKLENMEZ (spec §7 karar 4).
-export function BoqTable({ groups }: BoqTableProps) {
+export function BoqTable({ groups, totals }: BoqTableProps) {
+  const totalHint = pendingModuleLabel(totals.grand_progress_pct.pending_module);
   return (
     <div className="boq-table-card">
       <table className="boq-table">
@@ -115,6 +118,31 @@ export function BoqTable({ groups }: BoqTableProps) {
             ))
           )}
         </tbody>
+        {/* GENEL TOPLAM (mockup 174–177). Bos BOQ'da bile basilir: backend
+            `grand_total: "0.00"` doner (spec §5.5). Toplam frontend'de
+            HESAPLANMAZ, backend degeri oldugu gibi bicimlenir. */}
+        <tfoot>
+          <tr className="boq-table__total-row" data-testid="boq-total-row">
+            <th scope="row" colSpan={5} className="boq-table__total-label">
+              GENEL TOPLAM
+            </th>
+            <td
+              className="boq-table__total-amount boq-table__col--amount"
+              data-testid="boq-total-amount"
+            >
+              {formatAmount(totals.grand_total)}
+            </td>
+            {/* Mockup 177 `%75` basiyor; veri hakedis modulunu bekliyor
+                (spec §5.5) — rozet degil duz metin, sahte yuzde uydurulmaz. */}
+            <td
+              className="boq-table__total-pct boq-table__pct--pending boq-table__col--pct"
+              data-testid="boq-total-pct"
+              title={totalHint}
+            >
+              —<span className="sr-only">{totalHint}</span>
+            </td>
+          </tr>
+        </tfoot>
       </table>
     </div>
   );

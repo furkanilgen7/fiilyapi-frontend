@@ -66,5 +66,5 @@ export default function BoqPage() {
 function BoqBody({ isError, data }: { isError: boolean; data?: BoqListResponse }) {
   if (isError) return <p className="boq__message">İş kalemleri yüklenemedi</p>;
   if (!data) return <p className="boq__message">Yükleniyor…</p>;
-  return <BoqTable groups={data.groups} />;
+  return <BoqTable groups={data.groups} totals={data.totals} />;
 }

@@ -218,7 +218,38 @@
   font-size: var(--text-body);
   color: var(--color-text-subtle);
 }
+/* GENEL TOPLAM satırı (174–177) — tfoot, boş BOQ'da da basılır (spec §5.5). */
+.boq-table__total-row {
+  background: var(--color-info-tint); /* 174 */
+  border-top: var(--border-width-total) solid var(--color-border); /* 174 */
+}
+.boq-table__total-label {
+  padding: var(--space-boq-total-y) var(--space-boq-cell-x); /* 175 */
+  text-align: left;
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.boq-table__total-amount {
+  padding: var(--space-boq-total-y) var(--space-3); /* 176 */
+  font-size: var(--text-total-amount);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+}
+/* Mockup 177: rozet değil düz metin. Renk TANIMLI KALIR — veri geldiği gün
+   yalnız `--pending` sınıfı düşer, ekran mockup'a döner (BoqTotalsStrip deseni). */
+.boq-table__total-pct {
+  padding: var(--space-boq-total-y) var(--space-3); /* 177 */
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--color-primary);
+}
+
+/* Sırası önemli: yer tutucu hâl mockup renklerini ezer (aynı özgüllük).
+   Eşik renkleri P7'ye bırakıldı — ölü --success/--warning/--danger yazılmaz. */
 .boq-table__pct--pending {
+  color: var(--color-text-subtle);
   cursor: help;
 }
 
