@@ -161,7 +161,8 @@ describe("SiteCreateView — kabuk (mockup 35–60)", () => {
     render(<SiteCreateView />);
     const info = screen.getByTestId("site-form-project-info");
     expect(info).toHaveTextContent("Bağlı Proje:");
-    expect(info).toHaveTextContent("Güneşkent Konut (SZL-2025-001) · Taahhüt");
+    // Mockup satır 56 birebir: "· Taahhüt Projesi" (sekme adı "Taahhüt" DEĞİL).
+    expect(info).toHaveTextContent("Güneşkent Konut (SZL-2025-001) · Taahhüt Projesi");
     expect(info).toHaveTextContent(
       "Şantiye oluşturulduktan sonra poz dağılımı ekranından bu şantiyeye kota atayabilirsiniz.",
     );

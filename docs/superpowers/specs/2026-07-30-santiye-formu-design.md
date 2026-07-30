@@ -1175,6 +1175,7 @@ gerçek** üçlüsüyle raporlanır, göz kararıyla değil.
 | 6 | Yeni Şantiye Ekle | 49 | `h1` |
 | 7 | Şantiye bir projeye bağlıdır — poz kotaları proje sözleşmesinden dağıtılır | 50 | alt başlık |
 | 8 | Bağlı Proje: | 56 | bilgi kutusu (kalın) |
+| 8a | Taahhüt Projesi / Kendi Yatırım Projesi / Kat Karşılığı Projesi | 56 | bilgi kutusundaki proje tipi etiketi. Mockup 56 **"Taahhüt Projesi"** yazar — sekme sözlüğündeki kısa "Taahhüt" değil; ayrı sözlük (`project-type-label.ts`), `PROJECT_TABS` **bozulmaz**. `kendi_yatirim` karşılığı "Proje - Kendi Yatırım.dc.html" 57'de kanıtlı; `kat_karsiligi` bu bağlamda mockup'ta geçmiyor, kanıtlı `{tip} Projesi` kalıbı uygulandı (2026-07-30) |
 | 9 | Şantiye oluşturulduktan sonra **poz dağılımı** ekranından bu şantiyeye kota atayabilirsiniz. | 57 | bilgi kutusu |
 | 10 | Poz Dağılımı → | 59 | edilgen bağlantı |
 | 11 | 📍 Şantiye Bilgileri | 64 | kart başlığı |

@@ -25,6 +25,7 @@ import {
   SITE_DOCUMENTS_TITLE,
 } from "./document-items";
 import { SITE_FACILITIES, STORAGE_FACILITIES } from "./facility-items";
+import { PROJECT_TYPE_BANNER_LABELS } from "./project-type-label";
 import { SECTION_MESSAGES } from "./sections-validate";
 import { MESSAGES } from "./validate";
 
@@ -49,6 +50,12 @@ describe("metin envanteri — seçici ve durum dizeleri", () => {
 
   it("uc durum etiketi envanterdedir", () => {
     for (const option of SITE_STATUS_OPTIONS) expectInInventory(option.label);
+  });
+
+  it("uc proje tipi banner etiketi envanterdedir (§15/8a)", () => {
+    for (const label of Object.values(PROJECT_TYPE_BANNER_LABELS)) {
+      expectInInventory(label);
+    }
   });
 
   it("kisi listesi notlarinin dordu de envanterdedir (403 notu dahil)", () => {

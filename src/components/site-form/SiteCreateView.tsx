@@ -12,7 +12,7 @@ import { useUserOptions } from "@/lib/api/hooks/useUserOptions";
 import { BackendError, isForbidden } from "@/lib/api/unwrap";
 import { backendErrorMessage } from "@/lib/settings/error-message";
 import { pendingModuleLabel } from "@/lib/pending-modules";
-import { PROJECT_TABS } from "@/components/projects/tabs";
+import { projectTypeBannerLabel } from "./project-type-label";
 import { SiteInfoCard } from "./SiteInfoCard";
 import { LocationCard } from "./LocationCard";
 import { ScheduleCard } from "./ScheduleCard";
@@ -38,14 +38,6 @@ import { SiteFormActions } from "./SiteFormActions";
 // Sıra önemli: önce paylaşılan kabuk, sonra forma özgü bloklar (özgü kazansın).
 import "@/styles/form-shell.css";
 import "./site-form.css";
-
-/**
- * Proje tipi etiketi — P1.1a/P1'in MEVCUT eşlemesinden okunur (yeni sözlük
- * açılmaz, plan T5 tuzağı). Bilinmeyen tip ham anahtarla basılır.
- */
-function projectTypeLabel(projectType: string): string {
-  return PROJECT_TABS.find((tab) => tab.key === projectType)?.label ?? projectType;
-}
 
 function isNotFound(err: unknown): boolean {
   return err instanceof BackendError && err.status === 404;
@@ -82,7 +74,7 @@ function ProjectInfoBanner({ project }: { project: ProjectDetail | undefined }) 
         {project ? (
           <>
             <strong>Bağlı Proje:</strong> {project.name} ({project.code}) ·{" "}
-            {projectTypeLabel(project.project_type)}
+            {projectTypeBannerLabel(project.project_type)}
             <br />
             Şantiye oluşturulduktan sonra <strong>poz dağılımı</strong> ekranından bu
             şantiyeye kota atayabilirsiniz.
