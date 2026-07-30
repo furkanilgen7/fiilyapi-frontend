@@ -1,0 +1,326 @@
+/* Ekran 13 · İş Kalemleri (BOQ) — spec §3.1–§3.3.
+   Mockup kanonu: `projedesign/Ekran 13 - İş Kalemleri.dc.html` (içerik 61–182).
+   Her ölçü mockup satır numarasıyla gerekçelidir; çıplak hex/px yazılmaz. */
+
+/* İçerik alanı ofseti burada DEĞİL — .drill-content (drill-sidebar.css) sahibidir.
+   Mockup 61 `padding:28px 32px` ister, kabuk 24px 32px verir: onaylı sapma A (§13). */
+
+/* Breadcrumb (62) — onaylı sapma C: sözleşme numarası basılmaz. */
+.boq__crumb {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+  margin-bottom: var(--space-boq-crumb-gap);
+}
+.boq__crumb-link {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.boq__crumb-link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Başlık şeridi (63–67) */
+.boq__title-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-6);
+}
+.boq__title {
+  font-size: var(--text-page-title);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  letter-spacing: var(--tracking-tight);
+}
+.boq__actions {
+  display: flex;
+  gap: var(--space-boq-action-gap);
+}
+
+/* Eylem butonları — Button primitive'i (btn--md 8px 16px) mockup'ın 9px'ine
+   çekilir; ikincil kenarlık --color-border-strong yerine mockup'ın
+   --color-border'ına iner (66). */
+.boq-action {
+  padding: var(--space-form-y) var(--space-4);
+  font-size: var(--text-body);
+  font-weight: var(--weight-regular);
+  border-radius: var(--radius-8);
+}
+.boq-action.btn--secondary {
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+}
+.boq-action--primary {
+  padding: var(--space-form-y) var(--space-boq-btn-x);
+  font-weight: var(--weight-semibold);
+  /* Mockup 67 `border:none`. Button primitive'i 1px saydam kenarlık taşır;
+     bırakılırsa birincil buton mockup'tan 2px geniş olur (ölçüldü: 106.3px
+     yerine 104.3px olmalı). İkincil butonda kenarlık mockup'ta VAR (66). */
+  border: 0;
+}
+
+/* Özet kartı şeridi (72–89). `ui/card/Card` KULLANILMAZ: Card radius-14 +
+   shadow-card + 24px gövde taşır, mockup 12px / gölgesiz / 16px ister
+   (spec §3.2) — SiteTotalsStrip deseniyle ekran sınıfı yazılır. */
+.boq-totals {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-boq-strip-gap);
+}
+.boq-kpi {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+}
+.boq-kpi__label {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-bottom: var(--space-boq-kpi-label-gap);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+.boq-kpi__value {
+  font-size: var(--text-kpi-value);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+}
+/* Mockup renkleri (79, 83, 87) TANIMLI KALIR: veri geldiği gün yalnız
+   `--pending` sınıfı düşer, ekran mockup'a döner (spec §4). */
+.boq-kpi__value--realized {
+  color: var(--color-primary);
+}
+.boq-kpi__value--remaining {
+  color: var(--color-warning);
+}
+.boq-kpi__value--revision {
+  color: var(--color-accent-purple-grad-start);
+}
+/* Sırası önemli: yer tutucu hâl renk sınıflarını ezer (aynı özgüllük). */
+.boq-kpi__value--pending {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+
+/* Poz tablosu (92–171). Ham <table> + ekran sınıfı — yasak olan ham
+   <input>/<select>/<label>'dır, tablo değil (spec §3.6). */
+.boq-table-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-14);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+.boq-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Başlık satırı (95–102) */
+.boq-table__head-row {
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.boq-table__th {
+  padding: var(--space-boq-cell-y) var(--space-3);
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  text-align: center;
+}
+
+/* Sütun genişlikleri + hizalama — mockup 96–102 birebir. Genişlikler bu
+   ekrana özgü tek kullanımlık ölçülerdir, token'a çıkarılmaz. */
+.boq-table__col--code {
+  width: 80px; /* 96 */
+  text-align: left;
+  padding-left: var(--space-boq-cell-x); /* 96, 111 */
+  padding-right: var(--space-boq-cell-x);
+}
+.boq-table__col--desc {
+  /* genişlik verilmez, esner (97) */
+  text-align: left;
+  padding-left: var(--space-boq-cell-x); /* 97, 112 */
+  padding-right: var(--space-boq-cell-x);
+}
+.boq-table__col--unit {
+  width: 60px; /* 98 */
+  text-align: center;
+}
+.boq-table__col--quantity {
+  width: 80px; /* 99 */
+  text-align: right;
+}
+.boq-table__col--price {
+  width: 110px; /* 100 */
+  text-align: right;
+}
+.boq-table__col--amount {
+  width: 120px; /* 101 */
+  text-align: right;
+}
+.boq-table__col--pct {
+  width: 80px; /* 102 */
+  text-align: center;
+}
+
+/* Grup başlık satırı (107–108) */
+.boq-table__group-row {
+  background: var(--color-nav-active-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+.boq-table__group {
+  padding: var(--space-form-y) var(--space-boq-cell-x);
+  font-size: var(--text-boq-group);
+  font-weight: var(--weight-bold);
+  color: var(--color-primary);
+  text-align: left;
+  /* Büyük harf CSS ile: <html lang="tr"> sayesinde tarayıcı i → İ dönüşümünü
+     doğru yapar; JS toLocaleUpperCase kullanılmaz (spec §5.2). */
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-group);
+}
+
+/* Poz satırları (110–171) */
+.boq-table__row {
+  border-bottom: 1px solid var(--color-divider);
+}
+/* Mockup 163: son satırda alt çizgi yok. */
+.boq-table tbody tr:last-child {
+  border-bottom: none;
+}
+/* Satır tıklaması ile düzenleme (spec §7.2) — mockup'ta hover tanımı yok;
+   `settings-table tbody tr:hover` repo kanonu. YENİ PİKSEL EKLENMEZ: boyut,
+   sütun ve dolgu değişmez, böylece görsel baseline sapmaz. */
+.boq-table__row--editable {
+  cursor: pointer;
+}
+.boq-table__row--editable:hover {
+  background: var(--color-surface-2);
+}
+/* Tetikleyici görünüşte düz metindir: hücre biçimini (mono, xs, muted)
+   miras alır, buton kabuğu bırakmaz. */
+.boq-table__row-trigger {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.boq-table__row-trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.boq-table__cell {
+  padding: var(--space-boq-cell-y) var(--space-3);
+  font-size: var(--text-body);
+  color: var(--color-text);
+}
+.boq-table__cell--code {
+  font-size: var(--text-xs); /* 111 */
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+}
+.boq-table__cell--unit {
+  color: var(--color-text-muted); /* 113 */
+}
+.boq-table__cell--num {
+  font-family: var(--font-mono); /* 114, 115 */
+}
+.boq-table__cell--amount {
+  font-weight: var(--weight-semibold); /* 116 */
+}
+/* Poz No (111) ve Tarif (112) hücrelerinde yatay dolgu 16px'tir, 12px değil.
+   `.boq-table__col--*` kuralı bunu veriyor ama `.boq-table__cell` kısayolu
+   AYNI özgüllükte ve DAHA SONRA geldiği için padding-left/right'ı eziyordu.
+   Bileşik seçici özgüllüğü yükseltir → kural sıradan bağımsız hâle gelir. */
+.boq-table__cell.boq-table__col--code,
+.boq-table__cell.boq-table__col--desc {
+  padding-left: var(--space-boq-cell-x);
+  padding-right: var(--space-boq-cell-x);
+}
+
+/* Gerç. % — bu dilimde tamamı yer tutucu (spec §5.4). Eşik renkleri P7'ye
+   bırakıldı: --success/--warning/--danger gibi ölü sınıf YAZILMAZ. */
+.boq-table__pct {
+  padding: var(--space-boq-cell-y) var(--space-3); /* 117 */
+  text-align: center;
+  font-size: var(--text-body);
+  color: var(--color-text-subtle);
+}
+/* GENEL TOPLAM satırı (174–177) — tfoot, boş BOQ'da da basılır (spec §5.5). */
+.boq-table__total-row {
+  background: var(--color-info-tint); /* 174 */
+  border-top: var(--border-width-total) solid var(--color-border); /* 174 */
+}
+.boq-table__total-label {
+  padding: var(--space-boq-total-y) var(--space-boq-cell-x); /* 175 */
+  text-align: left;
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.boq-table__total-amount {
+  padding: var(--space-boq-total-y) var(--space-3); /* 176 */
+  font-size: var(--text-total-amount);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+}
+/* Mockup 177: rozet değil düz metin. Renk TANIMLI KALIR — veri geldiği gün
+   yalnız `--pending` sınıfı düşer, ekran mockup'a döner (BoqTotalsStrip deseni). */
+.boq-table__total-pct {
+  padding: var(--space-boq-total-y) var(--space-3); /* 177 */
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--color-primary);
+}
+
+/* Sırası önemli: yer tutucu hâl mockup renklerini ezer (aynı özgüllük).
+   Eşik renkleri P7'ye bırakıldı — ölü --success/--warning/--danger yazılmaz. */
+.boq-table__pct--pending {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+
+/* Boş BOQ (spec §9) — tablo başlığı korunur, gövdede tek satır. */
+.boq-table__empty {
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+.boq-table__empty-text {
+  margin-bottom: var(--space-4);
+}
+
+/* Modal (spec §7) — mockup'ta karşılığı yok, tamamı onaylı kullanıcı kararı
+   (§13.1). Yalnız "Tutar (hesaplanan)" önizleme satırı ekran sınıfı ister;
+   geri kalan her şey `settings-form` + ui/ primitive'lerinden gelir. */
+.boq-modal__preview {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.boq-modal__preview-label {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+.boq-modal__preview-value {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+}
+
+/* Durum metinleri (spec §9) — Şantiye Detay `site-detail__message` deseni. */
+.boq__message {
+  color: var(--color-text-muted);
+}

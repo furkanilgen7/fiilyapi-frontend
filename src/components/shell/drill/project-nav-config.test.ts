@@ -54,7 +54,21 @@ describe("buildProjectNav — bağlam bloğu", () => {
     expect(allLabels).not.toContain("Günlük Kayıt");
   });
 
-  it("aktif şantiye varken onun 6 sekmesi görünür ve doğru rotalara gider", () => {
+  // Onaylı sapma B (spec §2.2, §13): drill sidebar ile sekme barı ayrışmamalı —
+  // "İş Kalemleri" ikisinde de Bölümler'den hemen sonra gelir.
+  it("aktif şantiye grubunda İş Kalemleri öğesi var ve sekme barıyla aynı sırada", () => {
+    const nav = buildProjectNav({
+      projectId: "1",
+      projectName: "Güneşkent Konut",
+      siteId: "9",
+      siteName: "A-Blok Şantiyesi",
+    });
+    const siteGroup = nav.groups.find((g) => g.heading === "A-Blok Şantiyesi");
+    expect(siteGroup?.items[1].label).toBe("İş Kalemleri");
+    expect(siteGroup?.items[1].href).toBe("/projeler/1/santiyeler/9/is-kalemleri");
+  });
+
+  it("aktif şantiye varken onun 7 sekmesi görünür ve doğru rotalara gider", () => {
     const nav = buildProjectNav({
       projectId: "1",
       projectName: "Güneşkent Konut",
@@ -63,9 +77,10 @@ describe("buildProjectNav — bağlam bloğu", () => {
     });
     const siteGroup = nav.groups.find((g) => g.heading === "A-Blok Şantiyesi");
     expect(siteGroup).toBeDefined();
-    expect(siteGroup?.items).toHaveLength(6);
+    expect(siteGroup?.items).toHaveLength(7);
     expect(siteGroup?.items.map((i) => i.label)).toEqual([
       "Bölümler",
+      "İş Kalemleri",
       "Puantaj",
       "Stok",
       "Hakedişler",
@@ -73,7 +88,7 @@ describe("buildProjectNav — bağlam bloğu", () => {
       "Belgeler",
     ]);
     expect(siteGroup?.items[0].href).toBe("/projeler/1/santiyeler/9");
-    expect(siteGroup?.items[1].href).toBe("/projeler/1/santiyeler/9/puantaj");
+    expect(siteGroup?.items[2].href).toBe("/projeler/1/santiyeler/9/puantaj");
   });
 });
 

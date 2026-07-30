@@ -1,5 +1,6 @@
 import { backendClient } from "@/lib/api/client";
 import { BackendError, unwrap } from "@/lib/api/unwrap";
+import { exportFilename } from "@/lib/api/export-filename";
 import { toSearchParams } from "@/lib/settings/audit-query";
 import type { AuditExportQuery, AuditListResponse, AuditLogQuery } from "@/lib/api/models";
 
@@ -19,16 +20,6 @@ function withQuery(path: string, query: Record<string, string>): string {
 async function toBackendError(response: Response): Promise<BackendError> {
   const body = await response.json().catch(() => null);
   return new BackendError(response.status, body);
-}
-
-// Content-Disposition'dan yalnızca güvenli bir dosya adı çıkarır (yol ayracı/kontrol
-// karakteri kabul edilmez); aksi halde sabit varsayılan kullanılır.
-export function exportFilename(contentDisposition: string | null): string {
-  const match = contentDisposition?.match(/filename="?([^";]+)"?/i);
-  const candidate = match?.[1]?.trim();
-  if (!candidate) return DEFAULT_EXPORT_FILENAME;
-  if (!/^[\w.\- ]+\.xlsx$/i.test(candidate)) return DEFAULT_EXPORT_FILENAME;
-  return candidate;
 }
 
 /**
@@ -51,7 +42,10 @@ export async function downloadAuditExport(query: AuditExportQuery): Promise<void
   try {
     const link = document.createElement("a");
     link.href = objectUrl;
-    link.download = exportFilename(response.headers.get("content-disposition"));
+    link.download = exportFilename(
+      response.headers.get("content-disposition"),
+      DEFAULT_EXPORT_FILENAME,
+    );
     document.body.appendChild(link);
     link.click();
     link.remove();

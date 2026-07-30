@@ -46,50 +46,57 @@ function request(path: string, accessToken: string | undefined, options: ProxyOp
   return fetch(buildUrl(path, query), init);
 }
 
-// Ikili (binary) indirmeler icin sonuc: govde ArrayBuffer olarak aynen tasinir,
-// Content-Type/Content-Disposition basliklari korunur (or. .xlsx disa aktarim).
-export interface ProxyBinaryResult {
+/**
+ * Ham (ayristirilmamis) proxy sonucu — govde HER DURUMDA `ArrayBuffer` olarak
+ * okunur, hata yanitlari dahil (spec §8.1).
+ *
+ * Neden hata govdesi de okunuyor: ikili/JSON karari artik `Content-Type`
+ * geldikten SONRA veriliyor. Onceki `proxyAuthenticatedBinary` `!res.ok` iken
+ * govdeyi dusuruyordu; boyle bir yolda backend'in 403/409/422 Turkce hata
+ * mesajlari kullaniciya hic ulasmazdi.
+ */
+export interface ProxyRawResult {
   status: number;
   contentType: string | null;
   contentDisposition: string | null;
-  data: ArrayBuffer | null;
+  data: ArrayBuffer;
   refreshedAccessToken?: string;
 }
 
-async function binaryResult(response: Response, refreshedAccessToken?: string): Promise<ProxyBinaryResult> {
+async function rawResult(response: Response, refreshedAccessToken?: string): Promise<ProxyRawResult> {
   return {
     status: response.status,
     contentType: response.headers.get("content-type"),
     contentDisposition: response.headers.get("content-disposition"),
-    // Hata govdesi cagirana sizdirilmaz; yalnizca basarili yanit tasinir.
-    data: response.ok ? await response.arrayBuffer() : null,
+    data: await response.arrayBuffer(),
     refreshedAccessToken,
   };
 }
 
-// proxyAuthenticated ile ayni refresh davranisi, JSON ayristirmasi olmadan.
-export async function proxyAuthenticatedBinary(
+// proxyAuthenticated ile ayni 401 → /auth/refresh → tek retry davranisi,
+// JSON ayristirmasi olmadan.
+export async function proxyAuthenticatedRaw(
   accessToken: string | undefined,
   refreshToken: string | undefined,
   path: string,
   options: ProxyOptions = {},
-): Promise<ProxyBinaryResult> {
+): Promise<ProxyRawResult> {
   const first = await request(path, accessToken, options);
-  if (first.status !== 401) return binaryResult(first);
-  if (!refreshToken) return { status: 401, contentType: null, contentDisposition: null, data: null };
+  if (first.status !== 401) return rawResult(first);
+  if (!refreshToken) return rawResult(first);
 
   const refreshed = await fetch(backendUrl() + "/auth/refresh", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ refresh_token: refreshToken }),
   });
-  if (!refreshed.ok) return { status: 401, contentType: null, contentDisposition: null, data: null };
+  if (!refreshed.ok) return rawResult(first);
 
   const pair = (await parseBody(refreshed)) as TokenPair | null;
-  if (!pair?.access_token) return { status: 401, contentType: null, contentDisposition: null, data: null };
+  if (!pair?.access_token) return rawResult(first);
 
   const retry = await request(path, pair.access_token, options);
-  return binaryResult(retry, pair.access_token);
+  return rawResult(retry, pair.access_token);
 }
 
 // Backend'i Bearer ile cagirir; 401'de refresh token varsa /auth/refresh dener,

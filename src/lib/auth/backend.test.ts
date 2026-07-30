@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { backendUrl, proxyAuthenticated } from "./backend";
+import { backendUrl, proxyAuthenticated, proxyAuthenticatedRaw } from "./backend";
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -117,5 +117,87 @@ describe("proxyAuthenticated (method/body/query)", () => {
     expect(retryInit.method).toBe("PATCH");
     expect(JSON.parse(retryInit.body)).toEqual({ name: "X" });
     expect(retryInit.headers.Authorization).toBe(`Bearer ${jwt}`);
+  });
+});
+
+// F9 · spec §8.1: ikili/JSON karari ARTIK yanit geldikten sonra veriliyor, bu
+// yuzden proxy gövdeyi HER DURUMDA ArrayBuffer olarak okur. Eski
+// `proxyAuthenticatedBinary` `!res.ok` iken gövdeyi düşürüyordu → backend'in
+// 403/409/422 Türkçe hata gövdeleri kayboluyordu.
+describe("proxyAuthenticatedRaw (spec §8.1)", () => {
+  beforeEach(() => {
+    process.env.BACKEND_URL = "http://backend:8000";
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    delete process.env.BACKEND_URL;
+  });
+
+  function bytesOf(buffer: ArrayBuffer): number[] {
+    return Array.from(new Uint8Array(buffer));
+  }
+
+  it("basarili ikili yaniti bayt bayt ve basliklariyla tasir", async () => {
+    const bytes = new Uint8Array([0x50, 0x4b, 0x03, 0x04]);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(bytes, {
+          status: 200,
+          headers: {
+            "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "content-disposition": 'attachment; filename="is-kalemleri-STE-01.xlsx"',
+          },
+        }),
+      ),
+    );
+    const r = await proxyAuthenticatedRaw("acc", "ref", "/sites/s1/boq/export");
+    expect(r.status).toBe(200);
+    expect(bytesOf(r.data)).toEqual([0x50, 0x4b, 0x03, 0x04]);
+    expect(r.contentType).toContain("spreadsheetml");
+    expect(r.contentDisposition).toContain("is-kalemleri-STE-01.xlsx");
+  });
+
+  it("hata yanitinda da govdeyi okur (403 Turkce govde kaybolmaz)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse(403, { detail: "Bu işlem için yetkiniz yok" })),
+    );
+    const r = await proxyAuthenticatedRaw("acc", "ref", "/sites/s1/boq/export");
+    expect(r.status).toBe(403);
+    expect(new TextDecoder().decode(r.data)).toContain("Bu işlem için yetkiniz yok");
+  });
+
+  it("401'de refresh sonrasi tek retry yapar", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(401, { detail: "expired" }))
+      .mockResolvedValueOnce(jsonResponse(200, { access_token: "new-acc", refresh_token: "r2" }))
+      .mockResolvedValueOnce(
+        new Response(new Uint8Array([1, 2]), {
+          status: 200,
+          headers: { "content-type": "application/octet-stream" },
+        }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    const r = await proxyAuthenticatedRaw("old", "ref", "/sites/s1/boq/export");
+    expect(r.status).toBe(200);
+    expect(r.refreshedAccessToken).toBe("new-acc");
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(String(fetchMock.mock.calls[2][1].headers.Authorization)).toContain("new-acc");
+  });
+
+  it("refresh token yoksa 401 dogrudan doner", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(401, {})));
+    const r = await proxyAuthenticatedRaw("acc", undefined, "/sites/s1/boq/export");
+    expect(r.status).toBe(401);
+  });
+});
+
+// Olu kod kapisi (spec §8.1 madde 1): tek cagirani route.ts'ti, silindi.
+describe("proxyAuthenticatedBinary — olu kod kapisi", () => {
+  it("artik export edilmiyor", async () => {
+    const backendModule = await import("./backend");
+    expect("proxyAuthenticatedBinary" in backendModule).toBe(false);
   });
 });

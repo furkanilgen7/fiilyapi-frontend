@@ -11,12 +11,19 @@ export interface SiteDetailTabsProps {
 interface TabDef {
   label: string;
   slug: string | null;
+  /** Rotasi yazildi mi — yazilmamis sekmeler "Bu bölüm yakında" ipucu tasir. */
+  written?: boolean;
 }
 
-// Sekmeler (spec §5.3, §7.3): yalniz Bölümler yazildi; digerleri gorunur
-// kalir ve henuz yazilmamis rotalara gider (catch-all -> ComingSoon).
+// Sekmeler (spec §5.3, §7.3): Bölümler ve İş Kalemleri yazildi; digerleri
+// gorunur kalir ve henuz yazilmamis rotalara gider (catch-all -> ComingSoon).
+//
+// "İş Kalemleri" Ekran 13 spec §2.2 ile eklendi — Şantiye Detay mockup'inda bu
+// sekme YOKTUR, onayli sapma B'dir (§13). Drill sidebar ile ayrismamasi icin
+// project-nav-config.ts'teki sira ile birebir ayni: Bölümler'den hemen sonra.
 const TABS: TabDef[] = [
-  { label: "Bölümler", slug: null },
+  { label: "Bölümler", slug: null, written: true },
+  { label: "İş Kalemleri", slug: "is-kalemleri", written: true },
   { label: "Puantaj", slug: "puantaj" },
   { label: "Stok", slug: "stok" },
   { label: "Hakedişler", slug: "hakedisler" },
@@ -38,7 +45,7 @@ export function SiteDetailTabs({ projectId, siteId, activePath }: SiteDetailTabs
             href={href}
             role="tab"
             aria-selected={active}
-            title={tab.slug ? "Bu bölüm yakında" : undefined}
+            title={tab.written ? undefined : "Bu bölüm yakında"}
             className={cx("site-detail-tabs__tab", active && "site-detail-tabs__tab--active")}
           >
             {tab.label}

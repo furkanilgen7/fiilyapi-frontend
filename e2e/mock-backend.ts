@@ -119,6 +119,28 @@ interface MockSection {
   sort_order: number;
 }
 
+// Ekran 13 · İş Kalemleri (BOQ) — BoqGroupResponse/BoqItemResponse ile birebir
+// (bkz. src/lib/api/schema.d.ts). `progress_pct` yanıtta üretilir, fikstürde
+// tutulmaz: altı kalemin hepsi aynı yer tutucudur (spec §5.4).
+interface MockBoqItem {
+  id: string;
+  code: string;
+  description: string;
+  unit: string;
+  quantity: string;
+  unit_price: string;
+  amount: string;
+  sort_order: number;
+}
+
+interface MockBoqGroup {
+  id: string;
+  name: string;
+  sort_order: number;
+  group_total: string;
+  items: MockBoqItem[];
+}
+
 // P1.1a (F14) — Yeni Proje formunun İşveren seçicisini besler (bkz. EmployerResponse,
 // src/lib/api/schema.d.ts). Mockup satır 98'deki statik seçeneklerle isim hizalı.
 interface MockEmployer {
@@ -259,6 +281,36 @@ const PROJECT_FIXTURES: MockProject[] = [
   },
 ];
 
+// Ekran 13 · İş Kalemleri (BOQ) — görsel baseline yükü (F11, spec §11.2).
+// Değerler `Ekran 13 - İş Kalemleri.dc.html` satır 106–178'den BİREBİR alınmıştır:
+// 3 grup / 6 kalem, `grand_total` 12.399.900. `amount` gerçek backend'de türev
+// alandır; burada mockup'ın bastığı tutar aynen verilir (frontend hesaplamaz).
+// Mockup'ın renkli `Gerç. %` rozetleri veri tarafında da yer tutucudur (spec §5.4):
+// altı kalem + genel toplam yüzdesi hakediş modülünü bekler.
+const BOQ_FIXTURE: MockBoqGroup[] = [
+  {
+    id: "bg-1", name: "TOPRAK VE TEMEL İŞLERİ", sort_order: 10, group_total: "471900.00",
+    items: [
+      { id: "bi-1", code: "01.001", description: "Kazı (Makine ile)", unit: "m³", quantity: "1240.000", unit_price: "280.00", amount: "347200.00", sort_order: 0 },
+      { id: "bi-2", code: "01.002", description: "Geri Dolgu ve Sıkıştırma", unit: "m³", quantity: "860.000", unit_price: "145.00", amount: "124700.00", sort_order: 1 },
+    ],
+  },
+  {
+    id: "bg-2", name: "BETONARME İŞLERİ", sort_order: 20, group_total: "9250000.00",
+    items: [
+      { id: "bi-3", code: "02.001", description: "C25/30 Beton (Döşeme)", unit: "m³", quantity: "3200.000", unit_price: "1850.00", amount: "5920000.00", sort_order: 0 },
+      { id: "bi-4", code: "02.002", description: "Demir Donatı (Ø8-Ø20)", unit: "Ton", quantity: "180.000", unit_price: "18500.00", amount: "3330000.00", sort_order: 1 },
+    ],
+  },
+  {
+    id: "bg-3", name: "DUVAR VE KAPLAMA İŞLERİ", sort_order: 30, group_total: "2678000.00",
+    items: [
+      { id: "bi-5", code: "03.001", description: "Tuğla Duvar (19cm)", unit: "m²", quantity: "4800.000", unit_price: "280.00", amount: "1344000.00", sort_order: 0 },
+      { id: "bi-6", code: "03.002", description: "İç Sıva (Çimento+Alçı)", unit: "m²", quantity: "9200.000", unit_price: "145.00", amount: "1334000.00", sort_order: 1 },
+    ],
+  },
+];
+
 function seedState(): MockState {
   // Gerçek backend seed'iyle hizalı (bkz. backend/app/modules/roles/seed_data.py):
   // aynı rol/modül anahtarları, isimleri, gruplar ve sıralama.
@@ -286,6 +338,9 @@ function seedState(): MockState {
     { id: "m-treasury", key: "treasury", name: "Hazine", group: "MALI", sort_order: 12 },
     { id: "m-settings", key: "settings", name: "Ayarlar", group: "SISTEM", sort_order: 13 },
     { id: "m-user-management", key: "user_management", name: "Kullanıcı & Rol Yönetimi", group: "SISTEM", sort_order: 14 },
+    // P4 (BOQ) — backend seed_data.py'de 17. modül olarak eklendi (spec §4, 2026-07-30).
+    // Ayarlar - İzin Matrisi mockup'ında bu satır yok; bilinçli sapma, backend'in gerçeği.
+    { id: "m-boq", key: "boq", name: "İş Kalemleri", group: "GENEL", sort_order: 17 },
   ];
   const NONE = { access_level: "none", scope: "all" };
   const permissions: MockState["permissions"] = {
@@ -306,6 +361,8 @@ function seedState(): MockState {
       treasury: NONE,
       settings: NONE,
       user_management: NONE,
+      // backend seed_data.py MATRIX["boq"]: site_chief=view/limited (görür).
+      boq: { access_level: "view", scope: "limited" },
     },
     "role-accounting": {
       dashboard: { access_level: "full", scope: "all" },
@@ -322,6 +379,8 @@ function seedState(): MockState {
       treasury: { access_level: "full", scope: "all" },
       settings: NONE,
       user_management: NONE,
+      // backend seed_data.py MATRIX["boq"]: accounting=view/finance (görür).
+      boq: { access_level: "view", scope: "finance" },
     },
     "role-pm": {
       dashboard: { access_level: "full", scope: "all" },
@@ -338,6 +397,8 @@ function seedState(): MockState {
       treasury: NONE,
       settings: NONE,
       user_management: NONE,
+      // backend seed_data.py MATRIX["boq"]: project_manager=full/all (görür).
+      boq: { access_level: "full", scope: "all" },
     },
     "role-procurement": {
       dashboard: NONE,
@@ -354,6 +415,8 @@ function seedState(): MockState {
       treasury: NONE,
       settings: NONE,
       user_management: NONE,
+      // backend seed_data.py MATRIX["boq"]: procurement=none (görmez).
+      boq: NONE,
     },
   };
   // Proje Detay/Şantiye Detay görsel testleri (Task 12) için p-1 (Kule A) altına
@@ -662,6 +725,34 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         sections: sectionItems,
         total_progress_payment: METRIC_PENDING("progress_payments"),
         contract_amount: METRIC_PENDING("project_costs"),
+      });
+    }
+
+    // /sites/{site_id}/boq — Ekran 13 İş Kalemleri (F11, spec §6.1). Tablo ve üst
+    // KPI şeridi tek yanıttan beslenir. Fikstür şantiyeden bağımsızdır: görsel test
+    // tek şantiyeye bakar, ikinci bir yük çeşidi baseline'a değer katmaz.
+    const boqMatch = path.match(/^\/sites\/([^/]+)\/boq$/);
+    if (method === "GET" && boqMatch) {
+      const site = state.sites.find((s) => s.id === boqMatch[1]);
+      if (!site) return send(404, { detail: "santiye yok" });
+      return send(200, {
+        groups: BOQ_FIXTURE.map((group) => ({
+          ...group,
+          items: group.items.map((item) => ({
+            ...item,
+            progress_pct: METRIC_PENDING("progress_payments"),
+          })),
+        })),
+        totals: {
+          // Dördü de yer tutucu (spec §3.2/§4): sözleşme P5'i, hakediş P7'yi bekler.
+          contract_total: METRIC_PENDING("contracts"),
+          realized_total: METRIC_PENDING("progress_payments"),
+          remaining_total: METRIC_PENDING("progress_payments"),
+          revision_total: METRIC_PENDING("contracts"),
+          // Mockup 176 — tek gerçek toplam; frontend yeniden hesaplamaz.
+          grand_total: "12399900.00",
+          grand_progress_pct: METRIC_PENDING("progress_payments"),
+        },
       });
     }
 
