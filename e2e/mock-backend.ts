@@ -286,6 +286,9 @@ function seedState(): MockState {
     { id: "m-treasury", key: "treasury", name: "Hazine", group: "MALI", sort_order: 12 },
     { id: "m-settings", key: "settings", name: "Ayarlar", group: "SISTEM", sort_order: 13 },
     { id: "m-user-management", key: "user_management", name: "Kullanıcı & Rol Yönetimi", group: "SISTEM", sort_order: 14 },
+    // P4 (BOQ) — backend seed_data.py'de 17. modül olarak eklendi (spec §4, 2026-07-30).
+    // Ayarlar - İzin Matrisi mockup'ında bu satır yok; bilinçli sapma, backend'in gerçeği.
+    { id: "m-boq", key: "boq", name: "İş Kalemleri", group: "GENEL", sort_order: 17 },
   ];
   const NONE = { access_level: "none", scope: "all" };
   const permissions: MockState["permissions"] = {
@@ -306,6 +309,8 @@ function seedState(): MockState {
       treasury: NONE,
       settings: NONE,
       user_management: NONE,
+      // backend seed_data.py MATRIX["boq"]: site_chief=view/limited (görür).
+      boq: { access_level: "view", scope: "limited" },
     },
     "role-accounting": {
       dashboard: { access_level: "full", scope: "all" },
@@ -322,6 +327,8 @@ function seedState(): MockState {
       treasury: { access_level: "full", scope: "all" },
       settings: NONE,
       user_management: NONE,
+      // backend seed_data.py MATRIX["boq"]: accounting=view/finance (görür).
+      boq: { access_level: "view", scope: "finance" },
     },
     "role-pm": {
       dashboard: { access_level: "full", scope: "all" },
@@ -338,6 +345,8 @@ function seedState(): MockState {
       treasury: NONE,
       settings: NONE,
       user_management: NONE,
+      // backend seed_data.py MATRIX["boq"]: project_manager=full/all (görür).
+      boq: { access_level: "full", scope: "all" },
     },
     "role-procurement": {
       dashboard: NONE,
@@ -354,6 +363,8 @@ function seedState(): MockState {
       treasury: NONE,
       settings: NONE,
       user_management: NONE,
+      // backend seed_data.py MATRIX["boq"]: procurement=none (görmez).
+      boq: NONE,
     },
   };
   // Proje Detay/Şantiye Detay görsel testleri (Task 12) için p-1 (Kule A) altına
