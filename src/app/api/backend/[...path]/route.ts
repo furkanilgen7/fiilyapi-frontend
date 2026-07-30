@@ -19,6 +19,11 @@ const ALLOWED_ROOTS = new Set([
   // Task F4 — Yeni Proje formunun İşveren seçici/oluşturma uçları (spec §3.1-3.2).
   // Eksikse işveren akışı canlıda 404 alır; jsdom testleri bunu görmez.
   "employers",
+  // P4 — İş Kalemleri (BOQ) grup/kalem güncelleme uçları /boq/groups/{id} ve
+  // /boq/items/{id} bu kokten gecer (liste/olusturma /sites/{site_id}/boq* uzerinden
+  // gelir, o da "sites" kokunden gecer). Eksikse PATCH akislari canlida 404 alir;
+  // jsdom testleri bunu gormez.
+  "boq",
 ]);
 
 // Ikili (binary) olarak aynen gecirilecek indirme uclari; JSON ayristirilmaz.
