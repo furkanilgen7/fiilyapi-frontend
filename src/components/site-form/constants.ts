@@ -38,3 +38,10 @@ export const SITE_STATUS_OPTIONS: readonly { value: SiteStatusOption; label: str
 
 /** "Bağlı Proje" kilitli seçicisinin açıklaması (spec §4.1.1, §15/18). */
 export const LINKED_PROJECT_TITLE = "Şantiye, girildiği projeye bağlıdır";
+
+/**
+ * `gps_coordinates` sunucu sözleşmesindeki uzunluk sınırı (openapi.json:
+ * `maxLength: 50`). YALNIZ uzunluktur — GPS için biçim doğrulaması, regex ve
+ * normalleştirme YOKTUR (spec §4.2.1, §11.13).
+ */
+export const GPS_MAX_LENGTH = 50;

@@ -79,3 +79,19 @@ describe("LocationCard", () => {
     expect(screen.getByLabelText("Kat Sayısı")).toHaveAttribute("placeholder", "2 bodrum + 10 normal");
   });
 });
+
+describe("LocationCard — GPS uzunluk koruması (sözleşme maxLength=50)", () => {
+  // Sunucu `gps_coordinates` icin maxLength=50 ilan ediyor (openapi.json).
+  // Istemcide karsiligi yoksa 51. karakter HIC UYARI OLMADAN 422 aliyordu.
+  it("GPS alani 50 karakterde kesilir", () => {
+    renderCard();
+    expect(screen.getByLabelText("GPS Koordinatı")).toHaveAttribute("maxlength", "50");
+  });
+
+  it("uzunluk disinda BICIM kurali eklenmez: pattern yok, type text kalir", () => {
+    renderCard();
+    const gps = screen.getByLabelText("GPS Koordinatı");
+    expect(gps).not.toHaveAttribute("pattern");
+    expect(gps).toHaveAttribute("type", "text");
+  });
+});

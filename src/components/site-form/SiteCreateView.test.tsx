@@ -8,7 +8,8 @@ import { useCreateSite } from "@/lib/api/hooks/useSiteMutations";
 import { useUserOptions } from "@/lib/api/hooks/useUserOptions";
 import { BackendError } from "@/lib/api/unwrap";
 import { pendingModuleLabel } from "@/lib/pending-modules";
-import { MESSAGES } from "./validate";
+import { MESSAGES, validateSiteForm } from "./validate";
+import { emptySiteFormValues } from "./form-state";
 
 const PROJECT_ID = "11111111-1111-1111-1111-111111111111";
 const NEW_SITE_ID = "22222222-2222-4222-8222-222222222222";
@@ -439,5 +440,75 @@ describe("SiteCreateView — gönderim (T10, spec §9.3, §9.4, §12)", () => {
     mutateMock.mock.calls[0][1].onError(new BackendError(500, "boom"));
 
     expect(container.textContent).not.toMatch(/bölüm eklenemedi/i);
+  });
+});
+
+describe("SiteCreateView — her doğrulama hatası EKRANDA görünür (§10, §12)", () => {
+  // Kapsam korkuluğu: `validateSiteForm` bir anahtar üretip kart onu Field'e
+  // geçirmezse mesaj SESSİZCE kaybolur — kullanıcı neyi düzelteceğini bilemez.
+  // Mesaj METNİ birden çok alanda aynı olabildiği için (ör. "Değer negatif
+  // olamaz.") kontrol ALAN BAZINDA yapılır: hatalı alan `aria-invalid` alır.
+  const FIELD_LABELS: Record<string, string> = {
+    name: "Şantiye Adı",
+    code: "Şantiye Kodu",
+    siteManagerUserId: "Şantiye Şefi",
+    city: "İl / İlçe",
+    landAreaM2: "Arsa Alanı (m²)",
+    constructionAreaM2: "İnşaat Alanı (m²)",
+    startDate: "Başlangıç Tarihi",
+    endDate: "Planlanan Bitiş",
+    budget: "Şantiye Bütçesi (₺)",
+    plannedWorkerCount: "Planlanan İşçi Sayısı",
+  };
+
+  it("validateSiteForm'un urettigi TUM anahtarlarin bir etiket karsiligi vardir", () => {
+    // Yeni bir hata anahtarı eklenir ve karta bağlanmazsa bu liste eksik kalır.
+    const everyKey = validateSiteForm(
+      {
+        ...emptySiteFormValues(),
+        landAreaM2: "abc",
+        constructionAreaM2: "-1",
+        budget: "-1",
+        plannedWorkerCount: "4.5",
+        startDate: "2026-06-01",
+        endDate: "2026-01-01",
+      },
+      { isDraft: false, isUserListUnavailable: false },
+    );
+    for (const key of Object.keys(everyKey)) {
+      expect(FIELD_LABELS[key], `"${key}" icin ekran alani eslenmemis`).toBeDefined();
+    }
+  });
+
+  it("negatif sayi girilen UC alanin da kendisi aria-invalid olur", async () => {
+    const user = userEvent.setup();
+    render(<SiteCreateView />);
+    await fillRequired(user);
+
+    await user.type(screen.getByLabelText(FIELD_LABELS.landAreaM2), "-1");
+    await user.type(screen.getByLabelText(FIELD_LABELS.budget), "-1");
+    await user.type(screen.getByLabelText(FIELD_LABELS.plannedWorkerCount), "-1");
+    await clickSubmit(user);
+
+    expect(mutateMock).not.toHaveBeenCalled();
+    for (const key of ["landAreaM2", "budget", "plannedWorkerCount"]) {
+      expect(
+        screen.getByLabelText(FIELD_LABELS[key]),
+        `"${key}" alani hatali isaretlenmemis`,
+      ).toHaveAttribute("aria-invalid", "true");
+    }
+  });
+
+  it("zorunlu alanlar bosken hepsi aria-invalid olur", async () => {
+    const user = userEvent.setup();
+    render(<SiteCreateView />);
+    await clickSubmit(user);
+
+    for (const key of ["name", "siteManagerUserId", "city", "constructionAreaM2", "startDate", "endDate"]) {
+      expect(
+        screen.getByLabelText(FIELD_LABELS[key]),
+        `"${key}" alani hatali isaretlenmemis`,
+      ).toHaveAttribute("aria-invalid", "true");
+    }
   });
 });

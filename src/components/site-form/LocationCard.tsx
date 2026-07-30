@@ -1,4 +1,5 @@
 import { Field, Input, Textarea } from "@/components/ui";
+import { GPS_MAX_LENGTH } from "./constants";
 import type { SiteFormValues } from "./form-state";
 
 type FieldErrors = Partial<Record<keyof SiteFormValues, string>>;
@@ -71,6 +72,10 @@ export function LocationCard({ values, onChange, errors }: LocationCardProps) {
               {...control}
               type="text"
               numeric
+              // Sözleşme sınırı (`gps_coordinates`, maxLength=50). YALNIZ
+              // uzunluk: biçim doğrulaması hâlâ YOKTUR (§4.2.1, §11.13).
+              // Bu koruma olmadan 51. karakter hiç uyarı almadan 422 alıyordu.
+              maxLength={GPS_MAX_LENGTH}
               value={values.gpsCoordinates}
               placeholder="39.9042, 32.8597"
               onChange={(e) => onChange("gpsCoordinates", e.target.value)}
@@ -78,7 +83,9 @@ export function LocationCard({ values, onChange, errors }: LocationCardProps) {
           )}
         </Field>
 
-        <Field label="Arsa Alanı (m²)">
+        {/* Zorunlu DEĞİL ama sayı kurallarına tabidir (§10.3): negatif ya da
+            sayı olmayan girdi burada, alanın altında görünür. */}
+        <Field label="Arsa Alanı (m²)" error={errors?.landAreaM2}>
           {(control) => (
             <Input
               {...control}
@@ -86,6 +93,7 @@ export function LocationCard({ values, onChange, errors }: LocationCardProps) {
               numeric
               value={values.landAreaM2}
               placeholder="2840"
+              status={errors?.landAreaM2 ? "error" : "default"}
               onChange={(e) => onChange("landAreaM2", e.target.value)}
             />
           )}
