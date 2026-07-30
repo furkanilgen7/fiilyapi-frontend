@@ -30,4 +30,20 @@ describe("Select", () => {
     );
     expect(screen.getByRole("combobox")).toBeDisabled();
   });
+
+  // T2 — satır-içi düzenleme tablosu varyantı (şantiye mockup .row-in, satır 27)
+  it("size verilmezse form varyanti kalir (row YOK)", () => {
+    render(<Select aria-label="Sorumlu"><option value="">Seciniz…</option></Select>);
+    expect(screen.getByRole("combobox").className).not.toContain("select--row");
+  });
+
+  it("size=row ui-select--row sinifini ekler", () => {
+    render(<Select aria-label="Sorumlu" size="row"><option value="">Seciniz…</option></Select>);
+    expect(screen.getByRole("combobox").className).toContain("select--row");
+  });
+
+  it("size prop'u DOM'un size ozniteligine sizmaz", () => {
+    render(<Select aria-label="Sorumlu" size="row"><option value="">Seciniz…</option></Select>);
+    expect(screen.getByRole("combobox")).not.toHaveAttribute("size");
+  });
 });

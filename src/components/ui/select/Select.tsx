@@ -5,17 +5,28 @@ import "./select.css";
 
 export type SelectStatus = "default" | "error" | "success";
 
+/** Ölçü varyantı — `Input` ile aynı sözleşme (mockup `.f-in` / `.row-in`). */
+export type SelectSize = "form" | "row";
+
+// DOM'un kendi `size` ozniteligi (gorunur satir sayisi) gizlenir; bu
+// primitive'de `size` olcu varyantidir.
 export interface SelectProps
-  extends React.SelectHTMLAttributes<HTMLSelectElement> {
+  extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size"> {
   status?: SelectStatus;
+  size?: SelectSize;
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ status = "default", className, children, ...rest }, ref) => (
+  ({ status = "default", size = "form", className, children, ...rest }, ref) => (
     <span className="select-wrap">
       <select
         ref={ref}
-        className={cx("select", status !== "default" && `select--${status}`, className)}
+        className={cx(
+          "select",
+          status !== "default" && `select--${status}`,
+          size !== "form" && `select--${size}`,
+          className,
+        )}
         {...rest}
       >
         {children}
