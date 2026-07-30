@@ -911,6 +911,17 @@ Kurallar:
 - Boş metin alanları `null` gönderilir (`SiteFormModal.tsx:61-66` deseni).
 - `code` boşsa **anahtar hiç gönderilmez** (mevcut desen, satır 59).
 - Sayısal alanlar boşsa `null`; girilmişse `Number(...)`.
+
+  > **Karara bağlandı (kullanıcı, 2026-07-30) — DEĞİŞMEYECEK.** TypeScript
+  > reviewer'ı para/alan alanlarının `Number(...)` ile gönderilmesini kayan
+  > nokta kaybı riski olarak işaretledi; sunucu şeması `number | string`
+  > kabul ediyor, yani dize geçirmek teknik olarak mümkün. **Düzeltme
+  > yapılmıyor:** bu satır sözleşmeyi birebir dayatıyor ve P1.1a proje formu
+  > da aynısını yapıyor; tek formu ayırmak iki gerçek üretirdi. Gerekçe:
+  > IEEE-754 çift duyarlık 2^53 (≈9.0×10^15) altındaki tam sayıları
+  > **kayıpsız** taşır; TRY bütçesinin kayba uğraması için ~16 anlamlı hane
+  > gerekir — bu alanların erişim aralığında değil. Not kayda geçmiştir;
+  > yeniden tartışılmaz.
 - **Gönderilmeyen alanlar** ve nedenleri:
   - `site_manager_name` / `safety_officer_name` / `sections[].manager_name` →
     sunucu FK'den anlık görüntü yazar (backend spec §6.1 notu). İstemciden
