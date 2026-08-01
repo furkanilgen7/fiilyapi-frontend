@@ -49,10 +49,22 @@
   align-items: center;
   gap: 10px;
 }
-/* Sonraki task'ın (durum aksiyonları) boş alanı — bu dilimde içi boş kalır. */
+/* Durum aksiyon alanı (P7 T4) — buton kümesi durum makinesinden türer,
+   `position: relative` altındaki hata bandını (.pp-detail__action-error)
+   konumlandırmak için taşıyıcı görevi görür. */
 .pp-detail__actions {
+  position: relative;
   display: flex;
   gap: 10px;
+}
+/* Aksiyon hatası: buton satırının hemen altına, sağa yaslı taşan bir bant
+   (mockup'ta bu alan yok — S1 onaylı sapma, üst akışı bozmayan yerleşim). */
+.pp-detail__action-error {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  z-index: 5;
 }
 
 .pp-detail__alert {

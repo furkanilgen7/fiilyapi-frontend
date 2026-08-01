@@ -68,3 +68,24 @@ export function canDelete(level: AccessLevel | undefined): boolean {
   if (level === undefined) return true;
   return DELETE_LEVELS.includes(level);
 }
+
+/**
+ * Sıralama tabanlı ortak izin kapısı — `canWrite`/`canDelete` yalnız iki sabit
+ * eşiği (draft+, admin) biliyor; hakediş durum aksiyonları (P7 T4 brief) araya
+ * `approve` eşiğini de ekliyor. Ekrana özgü izin yardımcısı yazmak YASAK
+ * (brief §Buton görünürlüğü) — yeni eşik gerektiğinde BU fonksiyon çağrılır.
+ *
+ * Bilinmezlik kuralı `canWrite`/`canDelete` ile BİREBİR aynı ve TERS
+ * ÇEVRİLEMEZ: seviye bilinmiyorsa `true` (oturum yükü henüz gelmemiş
+ * olabilir; burada gizleme tam yetkili kullanıcıya sessiz yetenek kaybı
+ * yaşatır). Tanınmayan `required` ya da `level` değeri de `ACCESS_LEVELS`te
+ * bulunamaz → `indexOf` -1 döner, bu durumda güvenli taraf seçilir: `level`
+ * tanınmıyorsa üstteki bilinmezlik dalına düşer (zaten `isAccessLevel` ile
+ * daraltılmış tip aldığından bu yalnız `required` için önemlidir).
+ */
+export function hasAtLeast(level: AccessLevel | undefined, required: AccessLevel): boolean {
+  if (level === undefined) return true;
+  const requiredIndex = ACCESS_LEVELS.indexOf(required);
+  const levelIndex = ACCESS_LEVELS.indexOf(level);
+  return levelIndex >= requiredIndex;
+}

@@ -10,7 +10,7 @@ import { useAuditLog, AUDIT_PAGE_SIZE } from "@/lib/api/hooks/useAuditLog";
 import { useUsers } from "@/lib/api/hooks/useUsers";
 import { downloadAuditExport } from "@/lib/api/audit-client";
 import { isForbidden } from "@/lib/api/unwrap";
-import { backendErrorMessage } from "@/lib/settings/error-message";
+import { backendErrorMessage } from "@/lib/api/error-message";
 import {
   AUDIT_DATE_PRESETS,
   DEFAULT_AUDIT_FILTERS,

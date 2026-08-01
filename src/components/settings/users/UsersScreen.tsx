@@ -17,7 +17,7 @@ import { PasswordResetModal } from "@/components/settings/PasswordResetModal";
 import { ProjectAccessModal } from "@/components/settings/ProjectAccessModal";
 import { ConfirmDialog } from "@/components/settings/ConfirmDialog";
 import { AccessDenied } from "@/components/settings/AccessDenied";
-import { backendErrorMessage } from "@/lib/settings/error-message";
+import { backendErrorMessage } from "@/lib/api/error-message";
 import { isForbidden } from "@/lib/api/unwrap";
 import { cx } from "@/lib/cx";
 import type { ProjectResponse, RoleResponse, UserResponse } from "@/lib/api/models";

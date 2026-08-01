@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { ProgressPaymentDetailView } from "./ProgressPaymentDetailView";
 import {
@@ -14,6 +15,20 @@ vi.mock("@/lib/api/hooks/useProgressPayments", async (importOriginal) => ({
   useProgressPayment: vi.fn(),
   useProgressPaymentSummary: vi.fn(),
 }));
+
+// P7 T4: başlık aksiyon alanı artık gerçek (taklit edilmemiş) mutasyon
+// hook'larını (`useSubmitProgressPayment` vb.) kullanıyor — bunlar
+// `useMutation`/`useQueryClient` çağırdığından bir `QueryClientProvider`
+// bağlamı gerekir (bu dosyanın testleri butona tıklamıyor, yalnız
+// render'ı doğruluyor; UserFormModal.test.tsx ile aynı desen).
+function renderDetail() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={client}>
+      <ProgressPaymentDetailView paymentId={PAYMENT_ID} />
+    </QueryClientProvider>,
+  );
+}
 
 function mockDetailQuery(value: Partial<ReturnType<typeof useProgressPayment>>) {
   vi.mocked(useProgressPayment).mockReturnValue({
@@ -104,28 +119,28 @@ describe("ProgressPaymentDetailView", () => {
   it("yukleniyor durumunu basar", () => {
     mockDetailQuery({ isLoading: true });
     mockSummaryQuery({});
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.getByText("Yükleniyor…")).toBeInTheDocument();
   });
 
   it("hata durumunda mesaj basar", () => {
     mockDetailQuery({ isError: true, error: new Error("patladi") });
     mockSummaryQuery({});
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.getByText("Hakediş yüklenemedi")).toBeInTheDocument();
   });
 
   it("403'te erisim reddi basar", () => {
     mockDetailQuery({ isError: true, error: new BackendError(403, { detail: "yasak" }) });
     mockSummaryQuery({});
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.getByText("Bu alana yetkiniz yok")).toBeInTheDocument();
   });
 
   it("baslik, durum rozeti ve proje meta bilgisini basar", () => {
     mockDetailQuery({ data: baseDetail });
     mockSummaryQuery({ data: baseSummary, isSuccess: true });
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.getByText("#5 — Temmuz 2026")).toBeInTheDocument();
     expect(screen.getByText("Güneşkent Konut · Kaba inşaat")).toBeInTheDocument();
     expect(screen.getByText("Onay Bekliyor")).toBeInTheDocument();
@@ -134,7 +149,7 @@ describe("ProgressPaymentDetailView", () => {
   it("KPI seridini basar: bu hakedis, kumulatif, kalan", () => {
     mockDetailQuery({ data: baseDetail });
     mockSummaryQuery({ data: baseSummary, isSuccess: true });
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.getByText("Bu Hakediş")).toBeInTheDocument();
     expect(screen.getByText("₺ 2.110.000")).toBeInTheDocument();
     expect(screen.getByText("Toplam Hakediş")).toBeInTheDocument();
@@ -146,14 +161,14 @@ describe("ProgressPaymentDetailView", () => {
   it("ozet null remaining tasirsa Kalan karti basilmaz", () => {
     mockDetailQuery({ data: baseDetail });
     mockSummaryQuery({ data: { ...baseSummary, remaining: null }, isSuccess: true });
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.queryByText("Kalan")).not.toBeInTheDocument();
   });
 
   it("ozet sorgusu hata verirse sayfa kirilmaz, yalniz ozet KPI'lari basilmaz", () => {
     mockDetailQuery({ data: baseDetail });
     mockSummaryQuery({ isError: true, isSuccess: false, error: new Error("patladi") });
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.getByText("Bu Hakediş")).toBeInTheDocument();
     expect(screen.queryByText("Toplam Hakediş")).not.toBeInTheDocument();
     expect(screen.queryByText("Kalan")).not.toBeInTheDocument();
@@ -163,7 +178,7 @@ describe("ProgressPaymentDetailView", () => {
   it("grup tablosunu basar: is kalemi/sozlesme/onceki/bu ay/toplam", () => {
     mockDetailQuery({ data: baseDetail });
     mockSummaryQuery({ data: baseSummary, isSuccess: true });
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.getByText("Betonarme İşleri")).toBeInTheDocument();
     // Tek grup varken Ara Toplam satırı aynı rakamları tekrar bastığından
     // (toplam = tek terim) getAllByText kullanılır — bkz. "Ara Toplam" testi.
@@ -178,7 +193,7 @@ describe("ProgressPaymentDetailView", () => {
       data: { ...baseDetail, groups: [{ ...baseDetail.groups[0], group_name: null }] },
     });
     mockSummaryQuery({ data: baseSummary, isSuccess: true });
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.queryByText("Gruplanmamış")).not.toBeInTheDocument();
   });
 
@@ -195,7 +210,7 @@ describe("ProgressPaymentDetailView", () => {
     ];
     mockDetailQuery({ data: { ...baseDetail, groups } });
     mockSummaryQuery({ data: baseSummary, isSuccess: true });
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.getByText("Ara Toplam")).toBeInTheDocument();
     // contract: 5.920.000 + 1.240.000 = 7.160.000
     expect(screen.getByText("7.160.000")).toBeInTheDocument();
@@ -210,14 +225,14 @@ describe("ProgressPaymentDetailView", () => {
   it("gruplar bosken Ara Toplam satirini basmaz", () => {
     mockDetailQuery({ data: { ...baseDetail, groups: [] } });
     mockSummaryQuery({ data: baseSummary, isSuccess: true });
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.queryByText("Ara Toplam")).not.toBeInTheDocument();
   });
 
   it("Odeme Hesabi kartini oranlarla basar", () => {
     mockDetailQuery({ data: baseDetail });
     mockSummaryQuery({ data: baseSummary, isSuccess: true });
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.getByText("Ödeme Hesabı")).toBeInTheDocument();
     expect(screen.getByText("Brüt Hakediş")).toBeInTheDocument();
     expect(screen.getByText("KDV (%20)")).toBeInTheDocument();
@@ -233,7 +248,7 @@ describe("ProgressPaymentDetailView", () => {
   it("Sozlesme Ilerlemesi kartini basar: finansal/fiziksel/sure", () => {
     mockDetailQuery({ data: baseDetail });
     mockSummaryQuery({ data: baseSummary, isSuccess: true });
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.getByText("Sözleşme İlerlemesi")).toBeInTheDocument();
     expect(screen.getByText("Finansal")).toBeInTheDocument();
     expect(screen.getByText("Fiziksel")).toBeInTheDocument();
@@ -250,7 +265,7 @@ describe("ProgressPaymentDetailView", () => {
       },
     });
     mockSummaryQuery({ data: baseSummary, isSuccess: true });
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.getByText("Finansal")).toBeInTheDocument();
     expect(screen.queryByText("Fiziksel")).not.toBeInTheDocument();
     expect(screen.queryByText("Süre")).not.toBeInTheDocument();
@@ -264,21 +279,21 @@ describe("ProgressPaymentDetailView", () => {
       },
     });
     mockSummaryQuery({ data: baseSummary, isSuccess: true });
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.queryByText("Sözleşme İlerlemesi")).not.toBeInTheDocument();
   });
 
   it("dropped_orphan_count 0 iken uyari bandini basmaz", () => {
     mockDetailQuery({ data: baseDetail });
     mockSummaryQuery({ data: baseSummary, isSuccess: true });
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.queryByTestId("pp-detail-orphan-alert")).not.toBeInTheDocument();
   });
 
   it("dropped_orphan_count > 0 iken uyari bandini basar ve sayiyi metne gomer", () => {
     mockDetailQuery({ data: { ...baseDetail, dropped_orphan_count: 3 } });
     mockSummaryQuery({ data: baseSummary, isSuccess: true });
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.getByTestId("pp-detail-orphan-alert")).toHaveTextContent(
       "Sözleşmeden kaldırılan 3 kalem bu hakedişten düşürüldü.",
     );
@@ -287,32 +302,43 @@ describe("ProgressPaymentDetailView", () => {
   it("PDF butonu basilmaz (backend'de uc yok)", () => {
     mockDetailQuery({ data: baseDetail });
     mockSummaryQuery({ data: baseSummary, isSuccess: true });
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.queryByRole("button", { name: /PDF/i })).not.toBeInTheDocument();
   });
 
-  it("durum aksiyon butonlari basilmaz (sonraki task), yalniz bos alan hazir", () => {
+  it("pending_approval durumunda durum aksiyon butonlari basilir (P7 T4, izin bilinmiyorken bilinmezlik kurali gorunur kilar)", () => {
+    // Bu test dosyasi SessionProvider'i taklit etmiyor — SessionContext
+    // varsayilani `{ me: null }`dir, yani izin seviyesi `undefined` okunur.
+    // Bilinmezlik kurali (permissions.ts) o dalda `true` dondugunden Onayla/
+    // Reddet gorunur olmalidir; izin kapisinin kendi testleri
+    // ProgressPaymentStatusActions.test.tsx'te.
     mockDetailQuery({ data: baseDetail });
     mockSummaryQuery({ data: baseSummary, isSuccess: true });
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.queryByRole("button", { name: /Onaya Gönder/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Onayla/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Reddet/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Onayla" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reddet" })).toBeInTheDocument();
     expect(screen.getByTestId("pp-detail-actions")).toBeInTheDocument();
+  });
+
+  it("paid durumunda aksiyon alani bos kalir — hicbir buton basilmaz", () => {
+    mockDetailQuery({ data: { ...baseDetail, status: "paid" } });
+    mockSummaryQuery({ data: baseSummary, isSuccess: true });
+    renderDetail();
     expect(screen.getByTestId("pp-detail-actions")).toBeEmptyDOMElement();
   });
 
   it("Kar Analizi karti basilmaz (tasoron hakedisi modulunu bekliyor)", () => {
     mockDetailQuery({ data: baseDetail });
     mockSummaryQuery({ data: baseSummary, isSuccess: true });
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.queryByText(/Kar Analizi/i)).not.toBeInTheDocument();
   });
 
   it("aciklama null ise proje adini tek basina basar", () => {
     mockDetailQuery({ data: { ...baseDetail, description: null } });
     mockSummaryQuery({ data: baseSummary, isSuccess: true });
-    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    renderDetail();
     expect(screen.getByText("Güneşkent Konut")).toBeInTheDocument();
   });
 });

@@ -17,6 +17,7 @@ import { formatCurrencyPrecise } from "@/lib/format";
 import { PaymentCalculationCard } from "./PaymentCalculationCard";
 import { PaymentGroupTable } from "./PaymentGroupTable";
 import { PaymentProgressCard } from "./PaymentProgressCard";
+import { ProgressPaymentStatusActions } from "./ProgressPaymentStatusActions";
 import { PROGRESS_PAYMENT_STATUS_BADGE } from "./status";
 import { formatPaymentTitle } from "./title";
 import "./progress-payment-detail.css";
@@ -25,11 +26,12 @@ export interface ProgressPaymentDetailViewProps {
   paymentId: string;
 }
 
-// Ekran 15 · İşveren Hakedişi detayı (P7 T3). Mockup
+// Ekran 15 · İşveren Hakedişi detayı (P7 T3+T4). Mockup
 // `Ekran 15 - İşveren Hakedişi.dc.html` satır 61-193: breadcrumb + başlık
 // şeridi (62-73), üç KPI kartı (79-92), kalem tablosu (94-145), Ödeme
 // Hesabı (150-174) ve Sözleşme İlerlemesi (177-191) kartları. Durum aksiyon
-// butonları (70-71: PDF/Onaya Gönder) SONRAKİ task'ta — brief §Bağlam.
+// butonları (70-71: PDF/Onaya Gönder) mockup'ta YOK — kullanıcı kararı S1
+// ile durum makinesinden türetildi (P7 T4 brief §Bağlam).
 export function ProgressPaymentDetailView({ paymentId }: ProgressPaymentDetailViewProps) {
   const detailQuery = useProgressPayment(paymentId);
   // Özet sorgusu detay yüklenmeden ağa çıkmaz — hook'un `enabled` kapısı bos
@@ -66,10 +68,7 @@ export function ProgressPaymentDetailView({ paymentId }: ProgressPaymentDetailVi
         </div>
         <div className="pp-detail__header-side">
           <Badge variant={badge.variant}>{badge.label}</Badge>
-          {/* Durum aksiyon alanı (Onaya Gönder / Onayla / Reddet / Ödendi
-              İşaretle / Onayı Geri Al) sonraki task'ta buraya eklenir — bu
-              dilimde yalnız alan ayrılır, buton basılmaz. */}
-          <div className="pp-detail__actions" data-testid="pp-detail-actions" />
+          <ProgressPaymentStatusActions detail={detail} />
         </div>
       </div>
 

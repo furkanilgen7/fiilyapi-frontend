@@ -5,7 +5,7 @@ import { Button, Toggle, Checkbox } from "@/components/ui";
 import { Modal } from "./Modal";
 import { useProjects, useProjectAccess } from "@/lib/api/hooks/useProjects";
 import { useSetProjectAccess } from "@/lib/api/hooks/useUserMutations";
-import { backendErrorMessage } from "@/lib/settings/error-message";
+import { backendErrorMessage } from "@/lib/api/error-message";
 import type { UserResponse } from "@/lib/api/models";
 
 export function ProjectAccessModal({ user, onClose }: { user: UserResponse; onClose: () => void }) {

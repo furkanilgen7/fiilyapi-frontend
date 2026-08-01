@@ -7,7 +7,7 @@ import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
 import { useCompany, useUpdateCompany } from "@/lib/api/hooks/useCompany";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { isForbidden } from "@/lib/api/unwrap";
-import { backendErrorMessage } from "@/lib/settings/error-message";
+import { backendErrorMessage } from "@/lib/api/error-message";
 import type { CompanyUpdate } from "@/lib/api/models";
 import "./company-screen.css";
 

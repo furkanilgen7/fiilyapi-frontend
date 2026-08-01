@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button, Field, Input } from "@/components/ui";
 import { Modal } from "./Modal";
 import { useResetPassword } from "@/lib/api/hooks/useUserMutations";
-import { backendErrorMessage } from "@/lib/settings/error-message";
+import { backendErrorMessage } from "@/lib/api/error-message";
 import type { UserResponse } from "@/lib/api/models";
 
 const MIN_PASSWORD = 8;

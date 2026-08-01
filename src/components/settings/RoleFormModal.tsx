@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button, Field, Input } from "@/components/ui";
 import { Modal } from "./Modal";
 import { useCreateRole, useRenameRole } from "@/lib/api/hooks/useRoleMutations";
-import { backendErrorMessage } from "@/lib/settings/error-message";
+import { backendErrorMessage } from "@/lib/api/error-message";
 import type { RoleResponse } from "@/lib/api/models";
 
 const KEY_RE = /^[a-z][a-z0-9_]*$/;
