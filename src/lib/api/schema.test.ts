@@ -214,3 +214,105 @@ describe("Şantiye formu sözleşmesi (T0 kapısı)", () => {
     expect(true).toBe(true);
   });
 });
+
+// P7 · İşveren Hakedişi ekranları — Task T1 (Altyapı) tip doğrulama kapısı.
+// Bu blok bir KAPIDIR: tipler `pnpm gen:api` ile üretilmediyse `pnpm typecheck`
+// kırmızı olur. Elle tip yazmak yasak — eksikse openapi.json yeniden kopyalanır.
+describe("Hakediş (progress-payments) tip üretimi (P7 T1 kapısı)", () => {
+  it("ProgressPaymentListResponse/ListItem beklenen alanları taşır", () => {
+    type ListResponse = components["schemas"]["ProgressPaymentListResponse"];
+    type ListItem = components["schemas"]["ProgressPaymentListItem"];
+
+    expectTypeOf<ListResponse>().toHaveProperty("items");
+    expectTypeOf<ListItem>().toHaveProperty("id");
+    expectTypeOf<ListItem>().toHaveProperty("project_id");
+    expectTypeOf<ListItem>().toHaveProperty("sequence_no");
+    expectTypeOf<ListItem>().toHaveProperty("status");
+    expectTypeOf<ListItem>().toHaveProperty("gross_total");
+    expectTypeOf<ListItem>().toHaveProperty("net_total");
+    // Tutarlar Decimal — string olarak gelir (hassasiyet korunur).
+    expectTypeOf<ListItem["gross_total"]>().toEqualTypeOf<string>();
+    expect(true).toBe(true);
+  });
+
+  it("ProgressPaymentDetail lines/groups/calculation/progress bloklarını taşır", () => {
+    type Detail = components["schemas"]["ProgressPaymentDetail"];
+
+    expectTypeOf<Detail>().toHaveProperty("id");
+    expectTypeOf<Detail>().toHaveProperty("project_id");
+    expectTypeOf<Detail>().toHaveProperty("status");
+    expectTypeOf<Detail>().toHaveProperty("lines");
+    expectTypeOf<Detail>().toHaveProperty("groups");
+    expectTypeOf<Detail>().toHaveProperty("calculation");
+    expectTypeOf<Detail>().toHaveProperty("progress");
+    expect(true).toBe(true);
+  });
+
+  it("ProgressPaymentStatus akışın dört durumunu içerir (spec §7: red taslağa geri döner)", () => {
+    type Status = components["schemas"]["ProgressPaymentStatus"];
+    const statuses: Status[] = ["draft", "pending_approval", "approved", "paid"];
+    expect(statuses).toContain("draft");
+    expect(statuses).toContain("approved");
+  });
+
+  it("ProgressPaymentCreate/Update ve ProgressPaymentLinesSave tipleri üretilmiş", () => {
+    type Create = components["schemas"]["ProgressPaymentCreate"];
+    type Update = components["schemas"]["ProgressPaymentUpdate"];
+    type LinesSave = components["schemas"]["ProgressPaymentLinesSave"];
+    type LineInput = components["schemas"]["ProgressPaymentLineInput"];
+
+    const createBody = { period_year: 2026, period_month: 7, lines: [] } satisfies Create;
+    const updateBody = { description: "Ağustos hakedişi" } satisfies Update;
+    const lineInput = {
+      contract_item_id: "11111111-1111-1111-1111-111111111111",
+      site_id: "22222222-2222-2222-2222-222222222222",
+      quantity: "1240.000",
+    } satisfies LineInput;
+    const linesSave = { lines: [lineInput] } satisfies LinesSave;
+
+    expect(createBody.period_year).toBe(2026);
+    expect(updateBody.description).toBe("Ağustos hakedişi");
+    expect(linesSave.lines).toHaveLength(1);
+  });
+
+  it("RejectBody gerekçe alanının adı 'reason'dır (POST …/reject gövdesi)", () => {
+    type Reject = components["schemas"]["RejectBody"];
+    const withReason = { reason: "eksik metraj" } satisfies Reject;
+    const empty = {} satisfies Reject;
+    expectTypeOf<Reject>().toHaveProperty("reason");
+    expect(withReason.reason).toBe("eksik metraj");
+    expect(empty).toEqual({});
+  });
+
+  it("RefreshPricesResponse yalnız refreshed_count döner (spec §9.3)", () => {
+    type RefreshResponse = components["schemas"]["RefreshPricesResponse"];
+    const response = { refreshed_count: 3 } satisfies RefreshResponse;
+    expectTypeOf<RefreshResponse>().toHaveProperty("refreshed_count");
+    expectTypeOf<RefreshResponse["refreshed_count"]>().toEqualTypeOf<number>();
+    expect(response.refreshed_count).toBe(3);
+  });
+
+  it("ProgressPaymentSummary spec §9.6 sekiz alanını taşır", () => {
+    type Summary = components["schemas"]["ProgressPaymentSummary"];
+    expectTypeOf<Summary>().toHaveProperty("contract_amount");
+    expectTypeOf<Summary>().toHaveProperty("cumulative_gross");
+    expectTypeOf<Summary>().toHaveProperty("progress_pct");
+    expectTypeOf<Summary>().toHaveProperty("advance_deduction_total");
+    expectTypeOf<Summary>().toHaveProperty("retention_total");
+    expectTypeOf<Summary>().toHaveProperty("net_total");
+    expectTypeOf<Summary>().toHaveProperty("payment_count");
+    expectTypeOf<Summary>().toHaveProperty("pending_count");
+    expectTypeOf<Summary>().toHaveProperty("remaining");
+    expect(true).toBe(true);
+  });
+
+  it("28 yeni yoldan biri: GET /progress-payments/{payment_id} üretilmiş (paths tip kapısı)", () => {
+    // `openapi.json` yeniden kopyalanıp `pnpm gen:api` çalışmazsa bu tip
+    // hiç var olmaz — derleme zamanında yakalanır (schema.d.ts'ten üretilir).
+    type Paths = import("@/lib/api/schema").paths;
+    expectTypeOf<Paths>().toHaveProperty("/progress-payments/{payment_id}");
+    expectTypeOf<Paths>().toHaveProperty("/progress-payments/{payment_id}/reject");
+    expectTypeOf<Paths>().toHaveProperty("/projects/{project_id}/progress-payments/summary");
+    expect(true).toBe(true);
+  });
+});
