@@ -292,6 +292,11 @@
   --gradient-progress-financial: linear-gradient(90deg, var(--color-primary), var(--color-avatar-blue-end));
   --gradient-progress-physical: linear-gradient(90deg, var(--color-success), var(--color-success-light));
   --gradient-progress-duration: linear-gradient(90deg, var(--color-warning), var(--color-avatar-amber-end));
+  /* "Ara Toplam" satırı (P7 T3 review fix, mockup 141): "Bu Ay" toplam
+     hücresi diğer üç hücreden (13px) farklı — 14px. BOQ'un GENEL TOPLAM
+     eşdeğeri (--text-total-amount) 15px'tir, mockup değeri farklı olduğundan
+     tekrar kullanılmadı. */
+  --text-table-total-this: 14px;
 }
 
 @keyframes fadeUp {

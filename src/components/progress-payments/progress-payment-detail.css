@@ -166,6 +166,25 @@
   color: var(--color-text);
 }
 
+/* Ara Toplam satırı (mockup 136-142) — GENEL TOPLAM (BOQ) ile aynı token
+   ikilisi: zemin --color-info-tint, üst çizgi --border-width-total. */
+.pp-table__total-row {
+  background: var(--color-info-tint);
+  border-top: var(--border-width-total) solid var(--color-border);
+}
+.pp-table__total-label {
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.pp-table__total-value {
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.pp-table__total-value--this {
+  font-size: var(--text-table-total-this);
+  color: var(--color-primary);
+}
+
 /* Ödeme Hesabı kartı (150-174) */
 .pp-calc-card {
   background: var(--color-surface);

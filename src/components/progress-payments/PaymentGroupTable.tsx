@@ -1,3 +1,4 @@
+import { sumDecimalStrings } from "@/lib/decimal";
 import { formatAmount } from "@/lib/format";
 import type { ProgressPaymentDetail } from "@/lib/api/hooks/useProgressPayments";
 
@@ -11,10 +12,12 @@ export interface PaymentGroupTableProps {
 // `group_name` null olduğunda uydurma bir "Gruplanmamış" başlığı YAZILMAZ,
 // hücre boş bırakılır (brief açık talimatı).
 //
-// Mockup 136-142'deki "Ara Toplam" satırı BİLEREK basılmaz: şema grup
-// toplamları için ayrı bir alan taşımıyor, istemci tarafında dört sütunu
-// toplamak brief'in listelemediği bir hesaptır (§BASILMAYACAKLAR: "ara
-// çözüm/sahte hesap yazılmaz") — rapora soru olarak düşüldü.
+// Mockup 136-142'deki "Ara Toplam" satırı review düzeltmesiyle EKLENDİ:
+// dört sütunun bileşenleri `groups[]` payload'ında tam olarak mevcut, bu
+// yüzden istemci tarafında toplamak veri uydurmak değil TÜRETMEKTİR
+// (kontrolcü kararı). Toplama `sumDecimalStrings` ile kuruş hassasiyetli
+// yapılır — `Number()` ile toplama float yuvarlama hatası riski taşır.
+// `groups` boşken satır basılmaz (boş dizi toplamı anlamsız).
 export function PaymentGroupTable({ groups }: PaymentGroupTableProps) {
   return (
     <section className="pp-table-card">
@@ -50,7 +53,37 @@ export function PaymentGroupTable({ groups }: PaymentGroupTableProps) {
             </tr>
           ))}
         </tbody>
+        {groups.length > 0 && <PaymentGroupTableFoot groups={groups} />}
       </table>
     </section>
+  );
+}
+
+// Mockup 136-142: zemin --color-info-tint, üst çizgi 2px (--border-width-total),
+// "Bu Ay" sütunu 14px + primary (diğerleri 13px + text) — BOQ'un GENEL TOPLAM
+// satırıyla aynı token kullanımı.
+function PaymentGroupTableFoot({ groups }: { groups: ProgressPaymentGroupSummary[] }) {
+  const contractTotal = sumDecimalStrings(groups.map((g) => g.contract_amount));
+  const previousTotal = sumDecimalStrings(groups.map((g) => g.previous_amount));
+  const thisTotal = sumDecimalStrings(groups.map((g) => g.this_amount));
+  const cumulativeTotal = sumDecimalStrings(groups.map((g) => g.cumulative_amount));
+  return (
+    <tfoot>
+      <tr className="pp-table__total-row">
+        <td className="pp-table__cell pp-table__col--item pp-table__total-label">Ara Toplam</td>
+        <td className="pp-table__cell pp-table__col--amount pp-table__total-value">
+          {formatAmount(contractTotal)}
+        </td>
+        <td className="pp-table__cell pp-table__col--amount pp-table__total-value">
+          {formatAmount(previousTotal)}
+        </td>
+        <td className="pp-table__cell pp-table__col--amount pp-table__total-value pp-table__total-value--this">
+          {formatAmount(thisTotal)}
+        </td>
+        <td className="pp-table__cell pp-table__col--amount pp-table__total-value">
+          {formatAmount(cumulativeTotal)}
+        </td>
+      </tr>
+    </tfoot>
   );
 }

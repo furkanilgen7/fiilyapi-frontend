@@ -165,10 +165,12 @@ describe("ProgressPaymentDetailView", () => {
     mockSummaryQuery({ data: baseSummary, isSuccess: true });
     render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
     expect(screen.getByText("Betonarme İşleri")).toBeInTheDocument();
-    expect(screen.getByText("5.920.000")).toBeInTheDocument();
-    expect(screen.getByText("3.800.000")).toBeInTheDocument();
-    expect(screen.getByText("640.000")).toBeInTheDocument();
-    expect(screen.getByText("4.440.000")).toBeInTheDocument();
+    // Tek grup varken Ara Toplam satırı aynı rakamları tekrar bastığından
+    // (toplam = tek terim) getAllByText kullanılır — bkz. "Ara Toplam" testi.
+    expect(screen.getAllByText("5.920.000").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("3.800.000").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("640.000").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("4.440.000").length).toBeGreaterThanOrEqual(1);
   });
 
   it("group_name null ise hucreyi bos birakir, uydurma baslik yazmaz", () => {
@@ -180,8 +182,33 @@ describe("ProgressPaymentDetailView", () => {
     expect(screen.queryByText("Gruplanmamış")).not.toBeInTheDocument();
   });
 
-  it("Ara Toplam satirini basmaz (semada grup toplami alani yok)", () => {
-    mockDetailQuery({ data: baseDetail });
+  it("Ara Toplam satirini basar, gruplari kurus hassasiyetli toplar", () => {
+    const groups = [
+      { ...baseDetail.groups[0] },
+      {
+        group_name: "Elektrik Tesisatı",
+        contract_amount: "1240000.00",
+        previous_amount: "620000.00",
+        this_amount: "380000.00",
+        cumulative_amount: "1000000.00",
+      },
+    ];
+    mockDetailQuery({ data: { ...baseDetail, groups } });
+    mockSummaryQuery({ data: baseSummary, isSuccess: true });
+    render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
+    expect(screen.getByText("Ara Toplam")).toBeInTheDocument();
+    // contract: 5.920.000 + 1.240.000 = 7.160.000
+    expect(screen.getByText("7.160.000")).toBeInTheDocument();
+    // previous: 3.800.000 + 620.000 = 4.420.000
+    expect(screen.getByText("4.420.000")).toBeInTheDocument();
+    // this: 640.000 + 380.000 = 1.020.000
+    expect(screen.getByText("1.020.000")).toBeInTheDocument();
+    // cumulative: 4.440.000 + 1.000.000 = 5.440.000
+    expect(screen.getByText("5.440.000")).toBeInTheDocument();
+  });
+
+  it("gruplar bosken Ara Toplam satirini basmaz", () => {
+    mockDetailQuery({ data: { ...baseDetail, groups: [] } });
     mockSummaryQuery({ data: baseSummary, isSuccess: true });
     render(<ProgressPaymentDetailView paymentId={PAYMENT_ID} />);
     expect(screen.queryByText("Ara Toplam")).not.toBeInTheDocument();
