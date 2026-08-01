@@ -60,3 +60,41 @@ export function formatMonthYear(iso: string): string {
     new Date(iso),
   );
 }
+
+/**
+ * Hakediş liste tutarı (P7 T2, spec §S6: `gross_total` — brüt). Kuruş
+ * hassasiyetli: `formatAmount` gibi en fazla 2 ondalık basar, sondaki
+ * sıfırlar atılır — ama burada `₺` öneki de vardır (mockup 99, 103'te tutar
+ * `₺` ile başlar). `toLocaleString("tr-TR")` gibi ortam-bağımlı bir çağrı
+ * DEĞİL; `Intl.NumberFormat` ile aynı desen (`formatCurrency`/`formatAmount`).
+ */
+export function formatCurrencyPrecise(value: string | number): string {
+  return `₺ ${formatDecimal(value, 2)}`;
+}
+
+/** Türkçe ay adları — yalnız bu dosyada kullanılır, dışa aktarılmaz. */
+const TR_MONTHS = [
+  "Ocak",
+  "Şubat",
+  "Mart",
+  "Nisan",
+  "Mayıs",
+  "Haziran",
+  "Temmuz",
+  "Ağustos",
+  "Eylül",
+  "Ekim",
+  "Kasım",
+  "Aralık",
+];
+
+/**
+ * Hakediş dönemi (P7 T2 brief): "Mayıs 2026". `month` 1-12 aralığında
+ * beklenir; `Intl.DateTimeFormat`/`toLocaleString("tr-TR")` kullanılmaz —
+ * jsdom/CI'da ICU verisi eksik olabilir, ortam-bağımsız sabit dizi tercih
+ * edilir.
+ */
+export function formatPeriod(year: number, month: number): string {
+  const name = TR_MONTHS[month - 1];
+  return name ? `${name} ${year}` : `${month}/${year}`;
+}

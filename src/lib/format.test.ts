@@ -4,9 +4,11 @@ import {
   formatAmount,
   formatCompactCurrency,
   formatCurrency,
+  formatCurrencyPrecise,
   formatDecimal,
   formatMonthYear,
   formatPercent,
+  formatPeriod,
   formatQuantity,
 } from "./format";
 
@@ -86,6 +88,32 @@ describe("BOQ biçimlendiricileri ₺ basmaz", () => {
   it("formatQuantity ve formatAmount ₺ sembolü basmaz", () => {
     expect(formatQuantity("1240.000")).not.toContain("₺");
     expect(formatAmount("12399900.00")).not.toContain("₺");
+  });
+});
+
+// P7 T2 · Hakediş listesi tutar sütunu (spec §S6: gross_total, kuruş hassasiyetli).
+describe("formatCurrencyPrecise", () => {
+  it("₺ öneki + binlik ayraçla tam tutar verir", () => {
+    expect(formatCurrencyPrecise("2100000.00")).toBe("₺ 2.100.000");
+  });
+  it("kuruşu atmaz: 2100000.50 → ₺ 2.100.000,5", () => {
+    expect(formatCurrencyPrecise("2100000.50")).toBe("₺ 2.100.000,5");
+  });
+  it("sifiri basar", () => {
+    expect(formatCurrencyPrecise("0.00")).toBe("₺ 0");
+  });
+});
+
+// P7 T2 · Hakediş dönemi (period_year/period_month → "Mayıs 2026").
+describe("formatPeriod", () => {
+  it("ay + yil basar", () => {
+    expect(formatPeriod(2026, 5)).toBe("Mayıs 2026");
+  });
+  it("aralik ayini basar (12)", () => {
+    expect(formatPeriod(2026, 12)).toBe("Aralık 2026");
+  });
+  it("ocak ayini basar (1)", () => {
+    expect(formatPeriod(2026, 1)).toBe("Ocak 2026");
   });
 });
 
