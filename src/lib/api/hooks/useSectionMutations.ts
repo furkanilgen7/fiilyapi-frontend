@@ -6,7 +6,6 @@ import { SITE_QUERY_KEY } from "./useSites";
 import { SECTION_QUERY_KEY, type SectionDetailResponse } from "./useSection";
 
 export type SectionCreateRequest = components["schemas"]["SectionCreate"];
-export type SectionResponse = components["schemas"]["SectionResponse"];
 export type SectionUpdateRequest = components["schemas"]["SectionUpdate"];
 
 // Task 10 — SectionFormModal'in olusturma ucu (T3'te tam sayfa form bu hook'u
@@ -18,7 +17,20 @@ export type SectionUpdateRequest = components["schemas"]["SectionUpdate"];
 // detay sorgusu (SECTION_QUERY_KEY) henuz cache'te YOKTUR (id olusturmadan
 // once bilinmez) — gecersiz kilinacak bir sey yok, bu yuzden burada
 // dokunulmuyor.
-export function useCreateSection(siteId: string): UseMutationResult<SectionResponse, Error, SectionCreateRequest> {
+//
+// DUZELTME TURU 1 (review bulgusu): donus tipi ONCEDEN `SectionResponse`
+// (dar govde) idi ama gercek uc (`POST /sites/{site_id}/sections`,
+// schema.d.ts:8632 `create_section_endpoint_sites__site_id__sections_post`)
+// `SectionDetailResponse` doner — `is_draft`/`budget_amount`/`section_type`/
+// `site_id` dahil TUM P6 kolonlarini tasir. Yapisal alt-kume iliskisi
+// yuzunden typecheck bunu yakalamiyordu ama T3'teki "taslak kaydet → olusan
+// kaydi duzenleme kipine al" akisi bu alanlari tip duzeyinde okuyamazdi.
+// `SectionResponse` alias'i BURADAN kaldirildi (baska hicbir yerden import
+// edilmiyordu, bkz. grep) — dar govde SectionCard.tsx'in KENDI alias'inda
+// yasamaya devam ediyor (liste ucu icin, ayri kaynak).
+export function useCreateSection(
+  siteId: string,
+): UseMutationResult<SectionDetailResponse, Error, SectionCreateRequest> {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (body) =>
