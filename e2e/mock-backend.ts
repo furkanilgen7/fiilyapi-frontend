@@ -242,6 +242,17 @@ interface MockProgressPayment {
   calculation: MockPaymentCalculation;
   progress: MockPaymentProgress;
   dropped_orphan_count: number;
+  // TEST İZOLASYONU (bkz. `buildProgressPaymentFixtures` üstündeki not):
+  // `true` ise bu kayıt liste (`GET /progress-payments`) ve özet
+  // (`buildProgressPaymentSummary`) uçlarından DIŞLANIR — yalnız kimliğe
+  // göre okunur/mutasyona uğratılır (detay, PATCH, PUT .../lines, durum
+  // geçişleri). `e2e/progress-payments.spec.ts` (TEK mutasyon yapan
+  // fonksiyonel spec) `pp-6`yı bu bayrakla işaretler; böylece görsel liste
+  // spec'leri (`progress-payments-visual.spec.ts`,
+  // `site-progress-payments-visual.spec.ts`) fonksiyonel spec'in aynı
+  // paylaşılan mock sunucuda ne zaman/hangi sırada koştuğundan TAMAMEN
+  // bağımsız kalır — `fullyParallel` altında sıra garanti değildir.
+  hiddenFromLists?: boolean;
 }
 
 interface MockState {
@@ -496,11 +507,17 @@ const EMPLOYER_CONTRACT_P1 = {
 // BİREBİR — 11.200.000 (sözleşme) − 8.400.000 (kümülatif) = 2.800.000 kalan,
 // 8.400.000/11.200.000 = %75 aritmetiği de mockup'la örtüşüyor.
 // `payment_count`/`pending_count` YALNIZ bunlar dinamik — gerçek
-// `progressPayments` dizisinden hesaplanır (brief §dört durum kuralı: bu
-// dilim mockup'ın 4 kaydına EK olarak bir taslak (#6) ekliyor, bu yüzden
-// sayı mockup'ın "4 hakediş" METNİYLE birebir eşleşmez — bilinçli sapma).
+// `progressPayments` dizisinden hesaplanır. `hiddenFromLists` (bkz.
+// `MockProgressPayment`) işaretli kayıtlar (pp-6 — fonksiyonel e2e'nin
+// mutasyona uğrattığı test-izoleli taslak) bu sayıma KATILMAZ; bu yüzden
+// sayı mockup'ın "4 hakediş" metniyle birebir eşleşir (P7 T7'nin ilk
+// sürümünde #6 sayıma dahildi ve "5 hakediş" basıyordu — test determinizmi
+// düzeltmesiyle mockup'a daha sadık hâle geldi, bkz. `buildProgressPayment
+// Fixtures`'taki İZOLASYON notu).
 function buildProgressPaymentSummary(state: MockState, projectId: string) {
-  const projectPayments = state.progressPayments.filter((p) => p.project_id === projectId);
+  const projectPayments = state.progressPayments.filter(
+    (p) => p.project_id === projectId && !p.hiddenFromLists,
+  );
   const paymentCount = projectPayments.length;
   const pendingCount = projectPayments.filter((p) => p.status === "pending_approval").length;
   if (projectId !== "p-1") {
@@ -772,6 +789,49 @@ function buildProgressPaymentFixtures(): MockProgressPayment[] {
   // hakediş `draft` olduğundan düzenlenebilir (form pivot tablosu bunu
   // render eder), fonksiyonel e2e'nin durum-geçişi + form-kaydetme akışı
   // BU kayıt üzerinden çalışır.
+  //
+  // İZOLASYON (test determinizmi düzeltmesi, bkz. `MockProgressPayment.
+  // hiddenFromLists`): `e2e/progress-payments.spec.ts` bu kaydı GERÇEKTEN
+  // mutasyona uğratır (satır miktarı + durum: draft → pending_approval).
+  // `fullyParallel: true` altında TÜM spec dosyaları aynı paylaşılan mock
+  // sunucuyu (`e2e/global-setup.ts`) kullandığından, pp-6 sıradan bir liste
+  // kaydı olsaydı hem proje-genel listede (`/hakedisler`) hem şantiye
+  // sekmesinde (`/projeler/p-1/santiyeler/s-1/hakedisler`) görünür ve o
+  // ekranların görsel baseline'ları mutasyon testinin o ana kadar koşup
+  // koşmadığına göre değişirdi (kanıt: CI run 30744996743'ün ürettiği iki
+  // baseline'da aynı kayıt farklı içerikteydi). Bu YALNIZCA "mutasyon
+  // testini sona koy" ile çözülemez — `fullyParallel` sıra garantisi
+  // vermez ve mutasyon süresince (PATCH/PUT sırasında) bir görsel spec'in
+  // tam da o anda ekran görüntüsü alması hâlâ mümkündür. Bu yüzden pp-6
+  // `hiddenFromLists: true` ile işaretlenir: liste (`GET /progress-
+  // payments`) ve özet (`buildProgressPaymentSummary`) uçlarından TAMAMEN
+  // dışlanır, yalnız doğrudan kimlikle erişilir (detay + PATCH + PUT
+  // .../lines + durum geçişleri) — tıpkı fonksiyonel spec'in zaten yaptığı
+  // gibi (`/hakedisler/pp-6/duzenle`, `/hakedisler/pp-6` doğrudan URL'lerle,
+  // hiçbir zaman liste satırından tıklanarak DEĞİL). Sonuç: görsel spec'ler
+  // artık mutasyon testinin çalışıp çalışmadığından/ne zaman çalıştığından
+  // yapısal olarak bağımsız — zamanlamaya güvenen bir çözüm değil.
+  //
+  // Elenen alternatifler:
+  //  - Sıralamaya güvenmek (mutasyonu sona koymak): yukarıda açıklandığı
+  //    gibi `fullyParallel` altında sıra garanti değil, YETERSİZ.
+  //  - Test-only reset ucu + `afterAll`: sıfırlama yalnız test bittikten
+  //    SONRA çalışır; mutasyonun sürdüğü pencerede (PATCH/PUT arası) hâlâ
+  //    paralel bir görsel spec kirli veriyi görebilir — zamanlamaya bağımlı
+  //    kalır, aynı kök sorunu tam çözmez.
+  //  - `fullyParallel: false` + `workers: 1`: TÜM suite'i serileştirir
+  //    (yavaş), yine de dosya çalışma sırası playwright'ın iç keşif
+  //    sırasına bağlıdır — açıkça garanti edilen bir sözleşme değil, ayrıca
+  //    her yeni spec dosyasında kırılgan.
+  //  - Ayrı proje/mock backend per test dosyası: `playwright.config.ts`
+  //    `webServer` TEK bir Next.js sunucusu + TEK `BACKEND_URL` üzerine
+  //    kurulu; worker başına ayrı mock backend başlatmak Next sunucusunun
+  //    hangi backend'e bağlanacağını build zamanında sabitlemesi yüzünden
+  //    mimari çapta bir değişiklik gerektirir — bu görevin kapsamı dışı.
+  //  - Seçilen: kaydı SAKLA (id/`#6` başlığı/pivot satırları DEĞİŞMEDİ,
+  //    fonksiyonel spec'in hiçbir assertion'ı bozulmadı) ama liste/özet
+  //    uçlarından bayrakla DIŞLA — en az invaziv, zamanlamadan tamamen
+  //    bağımsız, ürün koduna dokunmaz.
   const line1 = computeLine("ci-1", "s-1", 100, "1.000", undefined, 0);
   const line2 = computeLine("ci-2", "s-1", 50, "1.000", undefined, 1);
   const pp6: MockProgressPayment = {
@@ -784,6 +844,7 @@ function buildProgressPaymentFixtures(): MockProgressPayment[] {
     groups: [], calculation: { gross: "0.00", vat: "0.00", advance_deduction: "0.00", retention: "0.00", net: "0.00" },
     progress: { financial_pct: null, physical_pct: null, duration_pct: null },
     dropped_orphan_count: 0,
+    hiddenFromLists: true,
   };
   recomputePaymentTotals(pp6);
 
@@ -1388,11 +1449,14 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     // --- P7 T7 · Hakediş (İşveren) uçları ---------------------------------
 
     // GET /progress-payments — liste (proje/şantiye/durum filtresi).
+    // `hiddenFromLists` işaretli kayıtlar (pp-6) burada HİÇ görünmez — bkz.
+    // `MockProgressPayment.hiddenFromLists` + `buildProgressPaymentFixtures`
+    // İZOLASYON notu (test determinizmi düzeltmesi).
     if (method === "GET" && path === "/progress-payments") {
       const projectId = parsed.searchParams.get("project_id");
       const siteId = parsed.searchParams.get("site_id");
       const status = parsed.searchParams.get("status");
-      let items = state.progressPayments;
+      let items = state.progressPayments.filter((p) => !p.hiddenFromLists);
       if (projectId) items = items.filter((p) => p.project_id === projectId);
       if (siteId) items = items.filter((p) => p.lines.some((l) => l.site_id === siteId));
       if (status) items = items.filter((p) => p.status === status);

@@ -11,6 +11,14 @@ import { test, expect } from "@playwright/test";
 // (`e2e/global-setup.ts`) — bu test `pp-6` (taslak) kaydını gerçekten
 // mutasyona uğratır (satır miktarı + durum). `pp-2`..`pp-5` (görsel
 // spec'lerin dayandığı sabit veri) hiç dokunulmaz.
+//
+// Test determinizmi: `pp-6` mock-backend'de `hiddenFromLists: true` ile
+// işaretlidir (bkz. `e2e/mock-backend.ts` · `buildProgressPaymentFixtures`
+// İZOLASYON notu) — liste (`GET /progress-payments`) ve özet uçlarından
+// dışlanır, yalnız BURADA yapıldığı gibi doğrudan kimlikle okunur/mutasyona
+// uğratılır. Bu sayede `progress-payments-visual.spec.ts` ve
+// `site-progress-payments-visual.spec.ts` bu testin `fullyParallel` altında
+// ne zaman/hangi sırada koştuğundan yapısal olarak bağımsızdır.
 
 async function login(page: import("@playwright/test").Page) {
   await page.goto("/login");

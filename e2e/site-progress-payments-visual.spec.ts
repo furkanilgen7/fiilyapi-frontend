@@ -16,6 +16,13 @@ import { test, expect } from "@playwright/test";
 // gereği tüm yazma yüzeyleri ("+ Hakediş Oluştur") GÖRÜNÜR hâlde baseline'a
 // girer.
 //
+// Test determinizmi (bkz. `e2e/mock-backend.ts` · `MockProgressPayment.
+// hiddenFromLists`): `pp-6` — `e2e/progress-payments.spec.ts`in mutasyona
+// uğrattığı taslak — liste/özet uçlarından TAMAMEN dışlanır, bu yüzden
+// KPI sayısı mockup'ın "4 hakediş" metniyle birebir eşleşir (pp-2..pp-5).
+// Bu satır artık mutasyon testinin ne zaman/hangi sırada koştuğundan
+// bağımsızdır.
+//
 // Baseline `.png` YALNIZ Linux CI'da üretilir (visual-baselines.yml →
 // workflow_dispatch); macOS'ta koşturulup commit edilmez.
 test("santiye hakedisler sekmesi ekrani gorsel", async ({ page }) => {
@@ -32,7 +39,7 @@ test("santiye hakedisler sekmesi ekrani gorsel", async ({ page }) => {
   // ucundan) basılı olmadan ekran görüntüsü alınırsa baseline yükleme
   // durumunu dondurur.
   await expect(page.getByText("Kat 6–8 döşeme")).toBeVisible();
-  await expect(page.getByTestId("pp-kpi-subtitle")).toHaveText("5 hakediş · %75");
+  await expect(page.getByTestId("pp-kpi-subtitle")).toHaveText("4 hakediş · %75");
   // Taşeron kartı — pendingModuleLabel("subcontracts") metni kadrajda.
   const pendingCards = page.getByTestId("pp-kpi-pending");
   await expect(pendingCards.first()).toHaveAttribute("title", "Taşeron sözleşmeleriyle birlikte gelir");
