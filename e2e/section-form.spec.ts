@@ -43,8 +43,12 @@ test("ekleme kipi: zorunlu alan hatalari, taslak/tam ayrimi, tam zincir (olustur
   // taslak-dışı yolda uygulanır) hâlâ hata verir.
   await page.getByLabel("Bölüm Adı").fill("Peyzaj E2E Test");
   await footerButton(page, "Bölümü Oluştur").click();
-  await expect(page.getByText("Bölüm tipi seçiniz.")).toBeVisible();
-  await expect(page.getByText("Bölüm sorumlusu seçiniz.")).toBeVisible();
+  // Düzeltme turu 1: aynı mesaj banner'da (role="alert") DA basılıyor —
+  // `getByText(...)` strict-mode ihlali verirdi (iki eleman). Alan hatasını
+  // `.field__error` sınıfına SCOPE ederek yalnız ilgili Field'in altındaki
+  // paragrafı hedefliyoruz (`Field.tsx:100-104`), banner'ı hariç tutuyoruz.
+  await expect(page.locator(".field__error", { hasText: "Bölüm tipi seçiniz." })).toBeVisible();
+  await expect(page.locator(".field__error", { hasText: "Bölüm sorumlusu seçiniz." })).toBeVisible();
   await expect(page.getByRole("heading", { level: 1, name: "Yeni Bölüm (Faz) Ekle" })).toBeVisible();
 
   // 3) Aynı (yalnız ad dolu) form + "Taslak Kaydet" → BAŞARILI — ayrımın

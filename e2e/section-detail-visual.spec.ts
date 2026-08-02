@@ -7,18 +7,26 @@ import { test, expect } from "@playwright/test";
 // kayıtlarla yürütür, bkz. o dosyanın başlık yorumu) — P7'deki `pp-6` yarışı
 // burada tekrarlanmıyor.
 //
-// ⚠️ Bilinen zamana-bağlı risk: "Kalan Gün" hücresi `remainingDays.ts` ile
-// `new Date()`e göre İSTEMCİ TARAFINDA hesaplanır (sec-1 `end_date`:
-// "2026-09-30"), test-enjekte edilebilir bir "bugün" parametresi YOK (T2'de
-// böyle kuruldu). Bu yüzden bu baseline, üretildiği GÜNE göre donar ve
-// zaman ilerledikçe (gün sayısı azaldıkça) metin küçük bir pikselde kayabilir
-// — mockup'ın kendisinde sabit örnek veri var, gerçek ekranda yok. T4 kapsamı
-// dışı bir düzeltme (SiteHeroBar.remaining_days gibi sunucu-taraflı sabit bir
-// alana çevrilmedikçe kalıcı çözülmez); rapora not düşüldü.
+// Düzeltme turu 1 (kalite review bulgusu — Important): "Kalan Gün" hücresi
+// `remainingDays.ts` ile `new Date()`e göre İSTEMCİ TARAFINDA hesaplanır
+// (sec-1 `end_date`: "2026-09-30") — uygulama kodunda test-enjekte edilebilir
+// bir "bugün" parametresi YOK (T2'de böyle kuruldu, bu task'ın kapsamı dışı:
+// uygulama kodu DEĞİŞTİRİLMEDİ). Sabitlenmemiş bırakılırsa baseline üretildiği
+// güne göre donar ve her gün "Kalan Gün" metni bir azalarak baseline'ı kırardı.
+// Çözüm TEST TARAFINDA: Playwright'ın saat sabitleme API'si (`page.clock.
+// setFixedTime`) NAVİGASYONDAN ÖNCE kurulur — böylece bileşenin `new Date()`
+// çağrısı (her render'da yeniden hesaplanıyor, memoize edilmiyor) sabit bir
+// zaman görür, sonuç deterministik olur. `mask:` YERİNE bu seçildi çünkü KPI
+// hücresi anlamlı bir SAYI basmalı (mockup D91-93 "Kalan Gün" gerçek bir
+// değerdir, maskelenmiş gri kutu mockup sadakatini bozardı). Sabit "bugün"
+// (2026-09-01, öğlen UTC — TZ kaymasından kaçınmak için) sec-1'in
+// `start_date` (2026-01-01) ile `end_date` (2026-09-30) ARASINDA: bölüm hâlâ
+// "Aktif" durumuyla tutarlı, Kalan Gün pozitif ve sabit (29) basar.
 //
 // Baseline `.png` YALNIZ Linux CI'da üretilir (visual-baselines.yml →
 // workflow_dispatch); macOS'ta koşturulup commit edilmez.
 test("bolum detay ekrani gorsel", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-09-01T12:00:00Z"));
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/login");
   await page.getByLabel(/e-posta/i).fill("patron@fiil.com");
@@ -34,6 +42,8 @@ test("bolum detay ekrani gorsel", async ({ page }) => {
   await expect(page.getByText("İş Kalemleri — bu bölümde henüz görüntülenemiyor")).toBeVisible();
   // Alt satır kartları (Bu Bölümdeki İşçiler / Bölüm Malzeme Durumu) kadrajda.
   await expect(page.getByText("Bölüm Malzeme Durumu")).toBeVisible();
+  // Saat sabitlemesi işledi: Kalan Gün deterministik (2026-09-01 → 2026-09-30 = 29 gün).
+  await expect(page.getByTestId("section-hero-kpi-days")).toContainText("29");
 
   await expect(page).toHaveScreenshot("bolum-detay.png", { fullPage: true });
 });
