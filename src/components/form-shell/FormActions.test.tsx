@@ -90,4 +90,11 @@ describe("FormActions (paylaşılan alt eylem şeridi)", () => {
       expect(screen.getByRole("button", { name })).toBeDisabled();
     }
   });
+
+  it("onSaveDraft verilmezse Taslak Kaydet hiç basılmaz (düzenleme kipi)", () => {
+    renderActions({ onSaveDraft: undefined });
+    expect(screen.queryByRole("button", { name: "Taslak Kaydet" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "İptal" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Projeyi Oluştur" })).toBeInTheDocument();
+  });
 });

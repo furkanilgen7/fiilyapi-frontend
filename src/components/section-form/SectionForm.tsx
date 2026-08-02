@@ -242,7 +242,11 @@ export function SectionForm(props: SectionFormProps) {
             />
           }
           onCancel={handleCancel}
-          onSaveDraft={() => submit(true)}
+          // Kullanıcı kararı: düzenleme kipinde "Taslak Kaydet" YOK — yayına
+          // alınmış (`is_draft: false`) bir bölümü uyarısız taslağa geri
+          // düşürmesin. Mockup'ta düzenleme kipi hiç çizilmedi; ekleme
+          // kipinde (F242) aynen kalır.
+          onSaveDraft={isEdit ? undefined : () => submit(true)}
           onSubmit={() => submit(false)}
           submitLabel={isEdit ? "Kaydet" : "Bölümü Oluştur"}
           pendingLabel="Kaydediliyor…"

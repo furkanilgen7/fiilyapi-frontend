@@ -283,6 +283,22 @@ describe("SectionForm — 409 kod çakışması", () => {
   });
 });
 
+describe("SectionForm — Taslak Kaydet yalnız ekleme kipinde", () => {
+  it("ekleme kipinde 'Taslak Kaydet' basılır", () => {
+    renderCreate();
+    const strip = document.querySelector(".pf-actions") as HTMLElement;
+    expect(within(strip).getByRole("button", { name: "Taslak Kaydet" })).toBeInTheDocument();
+  });
+
+  it("düzenleme kipinde 'Taslak Kaydet' basılmaz — yayına alınmış bölüm uyarısız taslağa düşmez", () => {
+    renderEdit();
+    const strip = document.querySelector(".pf-actions") as HTMLElement;
+    expect(within(strip).queryByRole("button", { name: "Taslak Kaydet" })).not.toBeInTheDocument();
+    expect(within(strip).getByRole("button", { name: "İptal" })).toBeInTheDocument();
+    expect(within(strip).getByRole("button", { name: "Kaydet" })).toBeInTheDocument();
+  });
+});
+
 describe("SectionForm — edit kipi", () => {
   it("mevcut bölümden alanları doldurur", () => {
     renderEdit();
