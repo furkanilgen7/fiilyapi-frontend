@@ -34,10 +34,15 @@ export interface SectionCardProps {
 }
 
 // Durum etiketleri mockup'tan birebir (spec §5.4).
+// NOT (F-P6 borcu): `on_hold` backend P6'da eklendi, mockup'ta bu durum icin
+// ayri bir gorsel tasarim YOK. Derlenebilirlik icin `planned` ile ayni notr
+// muamele gecici olarak yeniden kullanilir — gercek mockup/metin F-P6'da
+// belirlenecek.
 const STATUS_LABELS: Record<SectionStatus, string> = {
   completed: "Tamamlandı",
   active: "Aktif — Devam Ediyor",
   planned: "Planlandı",
+  on_hold: "Planlandı",
 };
 
 // Task 5'in STATUS_BADGE_CLASS deseni: durum -> sinif, satir ici ternary yok.
@@ -45,18 +50,21 @@ const STATUS_BADGE_CLASS: Record<SectionStatus, string> = {
   completed: "section-card__status--completed",
   active: "section-card__status--active",
   planned: "section-card__status--planned",
+  on_hold: "section-card__status--planned",
 };
 
 const STATUS_STRIP_CLASS: Record<SectionStatus, string> = {
   completed: "section-card__strip--completed",
   active: "section-card__strip--active",
   planned: "section-card__strip--planned",
+  on_hold: "section-card__strip--planned",
 };
 
 const STATUS_CARD_CLASS: Record<SectionStatus, string> = {
   completed: "section-card--completed",
   active: "section-card--active",
   planned: "section-card--planned",
+  on_hold: "section-card--planned",
 };
 
 // İlerleme değeri/çubuğu renk şeması durum bazlı (mockup satır 169-170,
@@ -66,6 +74,7 @@ const STATUS_PROGRESS_CLASS: Record<SectionStatus, string> = {
   completed: "section-card__metric-progress--completed",
   active: "section-card__metric-progress--active",
   planned: "section-card__metric-progress--planned",
+  on_hold: "section-card__metric-progress--planned",
 };
 
 // Metrik etiketleri duruma gore degisir — mockup KAZANIR (spec §5.4 sabit
@@ -79,12 +88,14 @@ const STATUS_BUDGET_LABEL: Record<SectionStatus, string> = {
   completed: "Bölüm Bedeli",
   active: "Bölüm Bedeli",
   planned: "Tahmini Bedel",
+  on_hold: "Tahmini Bedel",
 };
 
 const STATUS_WORKER_LABEL: Record<SectionStatus, string> = {
   completed: "İşçi (zirve)",
   active: "Aktif İşçi",
   planned: "Planlanan İşçi",
+  on_hold: "Planlanan İşçi",
 };
 
 // Yer tutucu metrik hucresi — duzeni korur, "—" basar, title'da aciklama verir

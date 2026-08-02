@@ -58,6 +58,10 @@ export function SectionFormModal({ siteId, onClose }: SectionFormModalProps) {
         ...(startDate ? { start_date: startDate } : {}),
         ...(endDate ? { end_date: endDate } : {}),
         sort_order: Number(sortOrder) || 0,
+        // F-P6 borcu: P6'da eklenen `is_draft` semada zorunlu (default `false`);
+        // bu form taslak-dışı akışı temsil ettiğinden şema varsayılanı elle
+        // gönderilir — davranış degismez, yeni UI/dogrulama YOK.
+        is_draft: false,
       },
       {
         onSuccess: onClose,
