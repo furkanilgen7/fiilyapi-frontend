@@ -426,6 +426,54 @@ describe("ProgressPaymentForm — Ödeme Hesabı kartı (kontrolcü düzeltmesi 
   });
 });
 
+describe("ProgressPaymentForm — tahsisi kaldırılmış kayıtlı hücre uyarısı (final inceleme #2)", () => {
+  it("kayıtlı ama tahsisi kaldırılmış hücre varsa uyarı basar ve miktarı gösterir (—'ya düşmez)", async () => {
+    // item-2 fikstürde yalnız A-Blok'a dağıtılmış; burada B-Blok'a önceden
+    // kaydedilmiş bir satır simüle edilir — tahsis SONRADAN kaldırılmış.
+    vi.mocked(useProgressPayment).mockReturnValue(
+      queryResult({
+        data: detailFixture({
+          status: "draft",
+          lines: [
+            {
+              id: "line-orphan",
+              contract_item_id: ITEM_2.id,
+              site_id: SITE_B.id,
+              code: ITEM_2.code,
+              description: ITEM_2.description,
+              unit: ITEM_2.unit,
+              contract_unit_price: ITEM_2.unit_price,
+              coefficient: "1.000",
+              quantity: "150.000",
+              group_name: "A — Betonarme İşleri",
+              sort_order: 1,
+              adjusted_unit_price: ITEM_2.unit_price,
+              line_total: "315000.00",
+              previous_quantity: "0.000",
+              previous_amount: "0.00",
+              cumulative_quantity: "150.000",
+              cumulative_amount: "315000.00",
+              is_price_stale: false,
+            },
+          ] as never,
+        }),
+      }),
+    );
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+    const alert = await screen.findByTestId("pp-form-orphaned-alert");
+    expect(alert).toHaveTextContent(ITEM_2.code);
+    expect(alert).toHaveTextContent(SITE_B.name);
+    // Kilitli hücre artık sabit "—" değil, kayıtlı miktarı gösterir.
+    expect(screen.getByText("150")).toBeInTheDocument();
+  });
+
+  it("hiçbir hücrenin tahsisi kaldırılmamışsa uyarı bandı basılmaz", async () => {
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    await screen.findByText("İşveren Hakediş Oluştur");
+    expect(screen.queryByTestId("pp-form-orphaned-alert")).not.toBeInTheDocument();
+  });
+});
+
 describe("ProgressPaymentForm — hata gösterimi (Türkçe, hiçbiri sessiz değil)", () => {
   function backendError(status: number, detail: string) {
     return new BackendError(status, { detail });

@@ -84,16 +84,32 @@ describe("ProgressPaymentsView", () => {
     expect(screen.getByText("Henüz hakediş oluşturulmadı")).toBeInTheDocument();
   });
 
-  it("satiri basar: baslik, aciklama, tutar, rozet, detay linki", () => {
+  it("satiri basar: baslik, aciklama, tutar (kompakt), rozet, detay linki", () => {
     mockQuery({ data: { items: [baseItem] } });
-    render(<ProgressPaymentsView />);
+    const { container } = render(<ProgressPaymentsView />);
     expect(screen.getByText("Güneşkent A-Blok")).toBeInTheDocument();
     expect(screen.getByText("#5 — Mayıs 2026")).toBeInTheDocument();
     expect(screen.getByText("Kat 6–8 döşeme")).toBeInTheDocument();
-    expect(screen.getByText("₺ 2.100.000")).toBeInTheDocument();
+    // Final inceleme #4: liste satırı tutarı artık `formatCompactCurrency`
+    // ile basılır (mockup + KPI şeridiyle tutarlı) — `formatCurrencyPrecise`
+    // yalnız Ekran 15 detayında kalır. KPI kartı da aynı biçimi bastığından
+    // (T2/T6 ortak şerit) sınıfa göre daraltılır, tekil metin sorgusu
+    // birden fazla eşleşme verir.
+    expect(container.querySelector(".pp-row__amount")).toHaveTextContent("₺ 2,1M");
     expect(screen.getByText("Onay Bekliyor")).toBeInTheDocument();
     const link = screen.getByRole("link", { name: /Güneşkent A-Blok/ });
     expect(link).toHaveAttribute("href", "/hakedisler/22222222-2222-2222-2222-222222222222");
+  });
+
+  // Final inceleme #3: yalnız pending_approval durumundaki tutar primary
+  // mavi modifier sınıfını taşır (mockup satır 99).
+  it("pending_approval satirinda tutar primary renk sinifi tasir, diger durumlarda tasimaz", () => {
+    mockQuery({ data: { items: [baseItem, { ...baseItem, id: "id-2", status: "paid" as const }] } });
+    const { container } = render(<ProgressPaymentsView />);
+    const amounts = container.querySelectorAll(".pp-row__amount");
+    expect(amounts).toHaveLength(2);
+    expect(amounts[0]).toHaveClass("pp-row__amount--pending");
+    expect(amounts[1]).not.toHaveClass("pp-row__amount--pending");
   });
 
   it("aciklama null ise satiri basmaz", () => {

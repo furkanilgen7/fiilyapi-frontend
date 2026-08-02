@@ -107,6 +107,12 @@
 .pp-form__header-grid-full {
   grid-column: 1 / -1;
 }
+/* "Hakediş Dönemi" alanı: ay seçici + yıl girişi yan yana (final inceleme
+   #6 — satır-içi `style={{display:"flex",gap:8}}` yerine CSS sınıfı). */
+.pp-form__period-row {
+  display: flex;
+  gap: var(--space-2);
+}
 .pp-form__readonly {
   border: 1px solid var(--color-border);
   background: var(--color-surface-2);

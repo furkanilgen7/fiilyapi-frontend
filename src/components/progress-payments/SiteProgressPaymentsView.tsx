@@ -76,10 +76,14 @@ export function SiteProgressPaymentsView() {
 
       <ProgressPaymentsTotalsStrip items={paymentsQuery.data?.items} summary={summary} />
 
+      {/* Final inceleme #5: proje adı burada breadcrumb'ta zaten görünür —
+          liste satırında tekrar basılmaz (`/hakedisler`de kalır, orada
+          proje-genel liste birden fazla projeyi aynı anda gösterir). */}
       <ProgressPaymentsListBody
         isError={paymentsQuery.isError}
         isLoading={paymentsQuery.isLoading}
         data={paymentsQuery.data}
+        showProjectName={false}
       />
     </div>
   );

@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildPivotRows,
   buildLinesSaveBody,
+  findOrphanedAllocationCells,
   rowQuantityTotal,
   rowAmountTotal,
   sanitizeQuantityInput,
@@ -199,6 +200,44 @@ describe("sanitizeQuantityInput — geçersiz-değer koruması (kontrolcü bulgu
     expect(sanitizeQuantityInput("12.")).toBe("12.");
     expect(sanitizeQuantityInput("900.500")).toBe("900.500");
     expect(sanitizeQuantityInput("")).toBe("");
+  });
+});
+
+describe("findOrphanedAllocationCells — final inceleme #2 (tahsisi kaldırılmış kayıtlı hücre)", () => {
+  it("tahsis YOKSA ve hiç kayıtlı satır da yoksa (normal kapalı hücre) uyarı üretmez", () => {
+    const rows = buildPivotRows(DISTRIBUTION);
+    // item-2 × B-Blok zaten kapalı VE hiç kaydedilmemiş (mevcut fikstür).
+    expect(findOrphanedAllocationCells(rows, DISTRIBUTION.sites)).toEqual([]);
+  });
+
+  it("kayıtlı bir satırın tahsisi SONRADAN kaldırılmışsa (allocations'ta yok) hücreyi tespit eder", () => {
+    // item-2 önceden B-Blok'a da dağıtılmış gibi bir satır kaydedilmiş, ama
+    // güncel `allocations` yalnız A-Blok'u listeliyor (DISTRIBUTION fikstürü)
+    // — B-Blok tahsisi sonradan kaldırılmış senaryosu.
+    const lines = [
+      line({
+        contract_item_id: ITEM_2.id,
+        site_id: SITE_B.id,
+        quantity: "150.000",
+        line_total: "315000.00",
+      }),
+    ];
+    const rows = buildPivotRows(DISTRIBUTION, lines);
+    const orphaned = findOrphanedAllocationCells(rows, DISTRIBUTION.sites);
+    expect(orphaned).toHaveLength(1);
+    expect(orphaned[0]).toMatchObject({
+      siteId: SITE_B.id,
+      siteName: SITE_B.name,
+      quantity: "150.000",
+    });
+    expect(orphaned[0].item.id).toBe(ITEM_2.id);
+  });
+
+  it("hücre düzenlenebilirse (tahsis hâlâ varsa) orphan sayılmaz — editable hücreler hiç dahil edilmez", () => {
+    const lines = [line({ site_id: SITE_A.id, quantity: "900.000" })];
+    const rows = buildPivotRows(DISTRIBUTION, lines);
+    // item-1 × A-Blok hâlâ tahsisli (editable:true) — kaydedilmiş olsa da orphan DEĞİL.
+    expect(findOrphanedAllocationCells(rows, DISTRIBUTION.sites)).toEqual([]);
   });
 });
 

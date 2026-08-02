@@ -57,6 +57,9 @@ export function PaymentFormPivotTable({
             {rows.map((row, index) => {
               const previousGroup = index > 0 ? rows[index - 1].groupName : null;
               const showGroupHeader = row.groupName !== previousGroup;
+              // Tek çağrı: `rowAmountTotal` iki kez çağrılıp `!` ile
+              // daraltmak yerine (final inceleme #6) sonuç bir kez hesaplanır.
+              const amountTotal = rowAmountTotal(row);
               return (
                 <PivotRowGroup key={row.item.id}>
                   {showGroupHeader && (
@@ -97,11 +100,21 @@ export function PaymentFormPivotTable({
                             }
                           />
                         ) : (
+                          // FİNAL İNCELEME düzeltmesi #2: hücre kilitli AMA
+                          // sunucuda kayıtlı bir miktar taşıyorsa (tahsisi
+                          // SONRADAN kaldırılmış satır) sabit "—" yerine o
+                          // miktar basılır — aksi halde kullanıcı "Taslak
+                          // Kaydet"e basınca sessizce sileceği veriyi hiç
+                          // görmez (bkz. `findOrphanedAllocationCells`).
                           <span
                             className="pp-form-table__locked-cell"
-                            title="Bu poz seçilen şantiyeye dağıtılmadı; önce poz dağılımını yapın."
+                            title={
+                              cell.lineTotal !== null
+                                ? "Bu pozun bu şantiyeye tahsisi kaldırıldı; kaydedince bu miktar SİLİNECEK."
+                                : "Bu poz seçilen şantiyeye dağıtılmadı; önce poz dağılımını yapın."
+                            }
                           >
-                            —
+                            {cell.lineTotal !== null ? formatQuantity(cell.quantity) : "—"}
                           </span>
                         )}
                       </td>
@@ -110,7 +123,7 @@ export function PaymentFormPivotTable({
                       {formatQuantity(rowQuantityTotal(row))}
                     </td>
                     <td className="pp-table__cell pp-table__cell--total">
-                      {rowAmountTotal(row) !== null ? formatAmount(rowAmountTotal(row)!) : "—"}
+                      {amountTotal !== null ? formatAmount(amountTotal) : "—"}
                     </td>
                   </tr>
                 </PivotRowGroup>

@@ -2,6 +2,7 @@ import { sumDecimalStrings } from "@/lib/decimal";
 import type {
   ContractDistributionItem,
   ContractDistributionResponse,
+  ContractDistributionSite,
 } from "@/lib/api/hooks/useContract";
 import type { ProgressPaymentLineDetail } from "@/lib/api/hooks/useProgressPayments";
 import type { ProgressPaymentLineInput } from "@/lib/api/hooks/useProgressPaymentMutations";
@@ -166,4 +167,46 @@ export function rowAmountTotal(row: PivotRow): string | null {
   const totals = row.cells.filter((c) => c.lineTotal !== null).map((c) => c.lineTotal as string);
   if (totals.length === 0) return null;
   return sumDecimalStrings(totals);
+}
+
+export interface OrphanedAllocationCell {
+  item: ContractDistributionItem;
+  groupName: string;
+  siteId: string;
+  siteName: string;
+  /** Sunucudaki kayıtlı miktar — kaydedilince (PUT gövdesinden düşeceği için) kaybolacak değer. */
+  quantity: string;
+}
+
+/**
+ * FİNAL İNCELEME düzeltmesi #2: bir (kalem, şantiye) çifti daha önce
+ * kaydedilmiş (`ProgressPaymentLineDetail` var) AMA o kalemin o şantiyeye
+ * tahsisi (`allocations`) SONRADAN kaldırılmışsa hücre `editable:false` olur
+ * — `buildPivotRows`daki `existing ? existing.quantity : …` önceliği
+ * yüzünden `cell.quantity`/`cell.lineTotal` yine DOLU kalır (kilitli ama
+ * veri taşıyor). `buildLinesSaveBody` düzenlenemez hücreleri ATLADIĞI için
+ * ilk "Taslak Kaydet" bu satırı PUT gövdesinden düşürür → backend'de SİLİNİR.
+ * Kaydetmeden önce kullanıcıya göstermek için bu hücreler tek yerde tespit
+ * edilir — `editable:false` VE `lineTotal !== null` (hiç kayıt yoksa
+ * kaybedilecek bir şey de yoktur, o hücre bu listeye girmez).
+ */
+export function findOrphanedAllocationCells(
+  rows: readonly PivotRow[],
+  sites: readonly ContractDistributionSite[],
+): OrphanedAllocationCell[] {
+  const siteNameById = new Map(sites.map((site) => [site.id, site.name]));
+  const orphaned: OrphanedAllocationCell[] = [];
+  for (const row of rows) {
+    for (const cell of row.cells) {
+      if (cell.editable || cell.lineTotal === null) continue;
+      orphaned.push({
+        item: row.item,
+        groupName: row.groupName,
+        siteId: cell.siteId,
+        siteName: siteNameById.get(cell.siteId) ?? cell.siteId,
+        quantity: cell.quantity,
+      });
+    }
+  }
+  return orphaned;
 }

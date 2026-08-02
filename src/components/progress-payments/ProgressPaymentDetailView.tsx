@@ -11,6 +11,7 @@ import {
   type ProgressPaymentDetail,
 } from "@/lib/api/hooks/useProgressPayments";
 import { isForbidden } from "@/lib/api/unwrap";
+import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { cx } from "@/lib/cx";
 import { formatCurrencyPrecise } from "@/lib/format";
 
@@ -37,6 +38,7 @@ export function ProgressPaymentDetailView({ paymentId }: ProgressPaymentDetailVi
   // Özet sorgusu detay yüklenmeden ağa çıkmaz — hook'un `enabled` kapısı bos
   // id'yi zaten engelliyor (brief §Belirsizlik çözümü).
   const summaryQuery = useProgressPaymentSummary(detailQuery.data?.project_id ?? "");
+  const { canWrite } = useModulePermission("progress_payments");
 
   if (isForbidden(detailQuery.error)) return <AccessDenied />;
   if (detailQuery.isError) return <p className="pp-detail__message">Hakediş yüklenemedi</p>;
@@ -68,6 +70,21 @@ export function ProgressPaymentDetailView({ paymentId }: ProgressPaymentDetailVi
         </div>
         <div className="pp-detail__header-side">
           <Badge variant={badge.variant}>{badge.label}</Badge>
+          {/* FİNAL İNCELEME düzeltmesi #1 · ONAYLI SAPMA: mockup'ta "Düzenle"
+              butonu YOK, ama `/hakedisler/{id}/duzenle` rotasına (pivot
+              tablosu, "Fiyatları Tazele", PUT …/lines) hiçbir giriş noktası
+              yoktu — form yalnız doğrudan URL ile ulaşılabiliyordu. Yalnız
+              `draft` durumunda (düzenleme yalnız orada anlamlı, bkz.
+              `ProgressPaymentForm`) VE yazma izni varken görünür; bilinmezlik
+              kuralı `useModulePermission.canWrite` üzerinden zaten uygulanır. */}
+          {detail.status === "draft" && canWrite && (
+            <Link
+              href={`/hakedisler/${detail.id}/duzenle`}
+              className={cx("btn", "btn--secondary", "btn--md")}
+            >
+              Düzenle
+            </Link>
+          )}
           <ProgressPaymentStatusActions detail={detail} />
         </div>
       </div>

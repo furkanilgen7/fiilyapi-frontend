@@ -8,13 +8,35 @@ import {
   useProgressPaymentSummary,
   type ProgressPaymentDetail,
 } from "@/lib/api/hooks/useProgressPayments";
+import { useSession } from "@/components/shell/SessionProvider";
 import { BackendError } from "@/lib/api/unwrap";
+import type { MeResponse } from "@/lib/auth/types";
 
 vi.mock("@/lib/api/hooks/useProgressPayments", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useProgressPayments")>()),
   useProgressPayment: vi.fn(),
   useProgressPaymentSummary: vi.fn(),
 }));
+
+// FİNAL İNCELEME düzeltmesi #1 · "Düzenle" linkinin izin kapısı testleri
+// icin gercek oturum verisi lazim — mock'lanmazsa Context default'u
+// (`{ me: null }`) kullanilir, bu da bilinmezlik kurali geregi HER ZAMAN
+// gorunur demektir (asagidaki mevcut testlerin varsaydigi davranis).
+vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
+
+const BASE_ME = {
+  id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  email: "ayse@ornek.com",
+  full_name: "Ayşe Yılmaz",
+  title: null,
+  role_key: "procurement",
+  status: "active",
+} as unknown as MeResponse;
+
+function mockSession(permissions?: Record<string, string>) {
+  const me = permissions === undefined ? BASE_ME : { ...BASE_ME, permissions };
+  vi.mocked(useSession).mockReturnValue({ me: me as MeResponse, isLoading: false });
+}
 
 // P7 T4: başlık aksiyon alanı artık gerçek (taklit edilmemiş) mutasyon
 // hook'larını (`useSubmitProgressPayment` vb.) kullanıyor — bunlar
@@ -114,6 +136,11 @@ const baseSummary = {
 describe("ProgressPaymentDetailView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Varsayılan: SessionProvider'ın gerçek Context default'uyla (`{me:null}`)
+    // AYNI — izin seviyesi `undefined` okunur, bilinmezlik kuralı devreye
+    // girer. "Düzenle" izin testleri kendi `mockSession(...)` çağrısıyla
+    // BU varsayılanı override eder.
+    mockSession(undefined);
   });
 
   it("yukleniyor durumunu basar", () => {
@@ -340,5 +367,47 @@ describe("ProgressPaymentDetailView", () => {
     mockSummaryQuery({ data: baseSummary, isSuccess: true });
     renderDetail();
     expect(screen.getByText("Güneşkent Konut")).toBeInTheDocument();
+  });
+
+  // FİNAL İNCELEME düzeltmesi #1: `/hakedisler/{id}/duzenle` rotasına tek
+  // giriş noktası bu link — draft + yazma izni kesişimi test edilir.
+  describe("Düzenle linki (final inceleme #1)", () => {
+    it("draft + yazma izni varken 'Düzenle' linki görünür ve dogru href'e gider", () => {
+      mockSession({ progress_payments: "draft" });
+      mockDetailQuery({ data: { ...baseDetail, status: "draft" } });
+      mockSummaryQuery({ data: baseSummary, isSuccess: true });
+      renderDetail();
+      expect(screen.getByRole("link", { name: "Düzenle" })).toHaveAttribute(
+        "href",
+        `/hakedisler/${PAYMENT_ID}/duzenle`,
+      );
+    });
+
+    it("draft + salt-okunur izinde 'Düzenle' linki görünmez", () => {
+      mockSession({ progress_payments: "view" });
+      mockDetailQuery({ data: { ...baseDetail, status: "draft" } });
+      mockSummaryQuery({ data: baseSummary, isSuccess: true });
+      renderDetail();
+      expect(screen.queryByRole("link", { name: "Düzenle" })).not.toBeInTheDocument();
+    });
+
+    it("izin seviyesi bilinmiyorken (level undefined) bilinmezlik kurali geregi görünür", () => {
+      mockSession(undefined);
+      mockDetailQuery({ data: { ...baseDetail, status: "draft" } });
+      mockSummaryQuery({ data: baseSummary, isSuccess: true });
+      renderDetail();
+      expect(screen.getByRole("link", { name: "Düzenle" })).toBeInTheDocument();
+    });
+
+    it.each(["pending_approval", "approved", "paid"] as const)(
+      "durum %s iken 'Düzenle' linki görünmez (yazma izni olsa bile)",
+      (status) => {
+        mockSession({ progress_payments: "admin" });
+        mockDetailQuery({ data: { ...baseDetail, status } });
+        mockSummaryQuery({ data: baseSummary, isSuccess: true });
+        renderDetail();
+        expect(screen.queryByRole("link", { name: "Düzenle" })).not.toBeInTheDocument();
+      },
+    );
   });
 });

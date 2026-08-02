@@ -19,7 +19,7 @@ import { useProgressPayment } from "@/lib/api/hooks/useProgressPayments";
 import { useProject } from "@/lib/api/hooks/useProjects";
 import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
-import { PERIOD_MONTHS, formatPercent } from "@/lib/format";
+import { PERIOD_MONTHS, formatPercent, formatQuantity } from "@/lib/format";
 
 import { PaymentCalculationCard } from "./PaymentCalculationCard";
 import { PaymentFormPivotTable } from "./PaymentFormPivotTable";
@@ -27,6 +27,7 @@ import { ProgressPaymentStatusActions } from "./ProgressPaymentStatusActions";
 import {
   buildLinesSaveBody,
   buildPivotRows,
+  findOrphanedAllocationCells,
   normalizePivotRowsForSave,
   type PivotRow,
 } from "./pivot";
@@ -238,6 +239,11 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
   }
 
   const staleLines = (detail?.lines ?? []).filter((line) => line.is_price_stale === true);
+  // FİNAL İNCELEME düzeltmesi #2: tahsisi sonradan kaldırılmış ama kayıtlı
+  // miktarı olan hücreler — "Taslak Kaydet" bunları PUT gövdesinden düşürür,
+  // yani sunucuda SİLİNİR. Kaydetmeden ÖNCE görünür uyarı basılır (bkz.
+  // `findOrphanedAllocationCells` yorumu, `pivot.ts`).
+  const orphanedCells = findOrphanedAllocationCells(rows, distribution.sites);
 
   return (
     <div className="pp-form">
@@ -283,6 +289,20 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
         <Alert variant="warning" className="pp-form__alert" data-testid="pp-form-stale-price-alert">
           {staleLines.length} satırın birim fiyatı sözleşmeden bu yana değişmiş olabilir (bayat
           fiyat). Güncel fiyatları uygulamak için &quot;Fiyatları Tazele&quot; kullanın.
+        </Alert>
+      )}
+
+      {/* FİNAL İNCELEME düzeltmesi #2: tahsisi kaldırılmış ama kayıtlı
+          hücreler — kaydetmeden ÖNCE hangi poz/şantiyenin kaybolacağını
+          Türkçe açıkça söyler; sessiz veri kaybı önlenir. */}
+      {orphanedCells.length > 0 && (
+        <Alert variant="warning" className="pp-form__alert" data-testid="pp-form-orphaned-alert">
+          {orphanedCells.length} satırın tahsisi bu şantiyeden kaldırılmış — kaydedince bu
+          satırlar SİLİNECEK:{" "}
+          {orphanedCells
+            .map((cell) => `${cell.item.code} — ${cell.siteName} (${formatQuantity(cell.quantity)})`)
+            .join(", ")}
+          .
         </Alert>
       )}
 
@@ -333,7 +353,7 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
           </Field>
           <Field label="Hakediş Dönemi">
             {(control) => (
-              <div style={{ display: "flex", gap: 8 }}>
+              <div className="pp-form__period-row">
                 <Select
                   {...control}
                   value={periodMonth ?? ""}
