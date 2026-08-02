@@ -5,6 +5,9 @@ S1 Ekran 15 başlığına durum-bazlı buton seti (approve/reject/mark-paid/unap
 S2 PDF butonu bu dilimde basılmaz · S3 FF/endeks sözleşmeden salt-okunur (`contracts` BFF kökü açılır) ·
 S4 şantiye sekmesi proje-düzeyi liste · S5 Hakediş Özeti ekranı bu dilimden ÇIKARILDI (site_diary dilimine) ·
 S6 liste tutarı brüt (`gross_total`).
+**ONAYLI SAPMA (2026-08-02, kapanışta):** proje-genel `/hakedisler` liste satırında `project_name`
+etiketi basılır (mockup'ta yok — mockup şantiye-bağlamlı çizilmiş; proje adı olmadan "#5" belirsiz).
+Şantiye sekmesinde basılmaz. Sapma diye geri alınmaz.
 Mockup'lar: `Ekran 15 - İşveren Hakedişi` · `İşveren Hakediş Oluştur` · `Şantiye - Hakedişler` · `Şantiye - Hakediş Özeti`
 Backend sözleşmesi: `progress_payments` şemaları (13 uç, canlıda) + backend spec 2026-07-31 §10/4.
 
