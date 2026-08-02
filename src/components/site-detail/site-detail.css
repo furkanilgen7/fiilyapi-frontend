@@ -196,6 +196,12 @@
 .section-card--planned {
   opacity: 0.8;
 }
+/* F-P6 T2: on_hold GERÇEK tasarımı — tasarım sistemindeki uyarı/bekletme
+   tonu (`--color-warning` ailesi). Mockup'ta bu durum için özel görsel YOK,
+   bilinçli seçim (bkz. task-2-report.md, section-labels.ts). */
+.section-card--on-hold {
+  border: 1px solid var(--color-warning);
+}
 
 .section-card__strip {
   width: 6px;
@@ -211,6 +217,9 @@
 }
 .section-card__strip--planned {
   background: var(--color-border);
+}
+.section-card__strip--on-hold {
+  background: var(--color-warning);
 }
 
 .section-card__body {
@@ -258,6 +267,10 @@
 .section-card__status--planned {
   background: var(--color-surface-muted);
   color: var(--color-text-muted);
+}
+.section-card__status--on-hold {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
 }
 
 .section-card__metric-label {
@@ -310,6 +323,11 @@
 .section-card__metric-value--progress.section-card__metric-progress--planned {
   color: var(--color-text-subtle);
 }
+/* F-P6 T2: on_hold ilerleme rengi de uyarı tonuyla eşleşir (tek kaynak,
+   bkz. section-card--on-hold gerekçesi). */
+.section-card__metric-value--progress.section-card__metric-progress--on-hold {
+  color: var(--color-warning-strong);
+}
 .section-card__metric-track.section-card__metric-progress--completed {
   background: var(--color-success-soft);
 }
@@ -319,6 +337,9 @@
 .section-card__metric-track.section-card__metric-progress--planned {
   background: var(--color-neutral-soft);
 }
+.section-card__metric-track.section-card__metric-progress--on-hold {
+  background: var(--color-warning-soft);
+}
 .section-card__metric-track-fill.section-card__metric-progress--completed {
   background: var(--color-success);
 }
@@ -327,6 +348,9 @@
 }
 .section-card__metric-track-fill.section-card__metric-progress--planned {
   background: var(--color-text-subtle);
+}
+.section-card__metric-track-fill.section-card__metric-progress--on-hold {
+  background: var(--color-warning-strong);
 }
 
 .section-card__action {

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { cx } from "@/lib/cx";
 import { formatCompactCurrency, formatMonthYear, formatPercent } from "@/lib/format";
 import { pendingModuleLabel } from "@/lib/pending-modules";
+import { SECTION_STATUS_CLASS_SUFFIX, SECTION_STATUS_LABELS } from "@/lib/section-labels";
 import type { components } from "@/lib/api/schema";
 
 export type SectionResponse = components["schemas"]["SectionResponse"];
@@ -33,49 +34,25 @@ export interface SectionCardProps {
   section: SectionResponse;
 }
 
-// Durum etiketleri mockup'tan birebir (spec §5.4).
-// NOT (F-P6 borcu): `on_hold` backend P6'da eklendi, mockup'ta bu durum icin
-// ayri bir gorsel tasarim YOK. Derlenebilirlik icin `planned` ile ayni notr
-// muamele gecici olarak yeniden kullanilir — gercek mockup/metin F-P6'da
-// belirlenecek.
+// Durum etiketleri mockup'tan birebir (spec §5.4). `on_hold` F-P6 T2'de
+// GERÇEK tasarımını aldı — metni `section-labels.ts`teki tek kaynaktan gelir
+// (Bölüm Detay hero rozetiyle PAYLAŞILIR, artık `planned` kopyası DEĞİL).
+// Diğer üç durumun kart-özel (daha uzun) metni burada kalır — o metinler
+// yalnız bu listede kullanılır, T2 hero'da kısa biçim basılır.
 const STATUS_LABELS: Record<SectionStatus, string> = {
   completed: "Tamamlandı",
   active: "Aktif — Devam Ediyor",
   planned: "Planlandı",
-  on_hold: "Planlandı",
+  on_hold: SECTION_STATUS_LABELS.on_hold,
 };
 
-// Task 5'in STATUS_BADGE_CLASS deseni: durum -> sinif, satir ici ternary yok.
-const STATUS_BADGE_CLASS: Record<SectionStatus, string> = {
-  completed: "section-card__status--completed",
-  active: "section-card__status--active",
-  planned: "section-card__status--planned",
-  on_hold: "section-card__status--planned",
-};
-
-const STATUS_STRIP_CLASS: Record<SectionStatus, string> = {
-  completed: "section-card__strip--completed",
-  active: "section-card__strip--active",
-  planned: "section-card__strip--planned",
-  on_hold: "section-card__strip--planned",
-};
-
-const STATUS_CARD_CLASS: Record<SectionStatus, string> = {
-  completed: "section-card--completed",
-  active: "section-card--active",
-  planned: "section-card--planned",
-  on_hold: "section-card--planned",
-};
-
-// İlerleme değeri/çubuğu renk şeması durum bazlı (mockup satır 169-170,
-// 206-207 tamamlandı=yeşil; 243-244 aktif=mavi; 280-281, 316-317
-// planlandı=nötr gri). Aynı STATUS_BADGE_CLASS deseni — durum -> sınıf haritası.
-const STATUS_PROGRESS_CLASS: Record<SectionStatus, string> = {
-  completed: "section-card__metric-progress--completed",
-  active: "section-card__metric-progress--active",
-  planned: "section-card__metric-progress--planned",
-  on_hold: "section-card__metric-progress--planned",
-};
+// Durum -> sınıf eki TEK KAYNAKTAN gelir (`SECTION_STATUS_CLASS_SUFFIX`,
+// SectionDetailView ile PAYLAŞILIR). Dört ayrı Record'a "on_hold: planned"
+// kopyalamak yerine tek haritadan türetilir (kod inceleme bulgusu düzeltmesi,
+// F-P6 T2).
+function statusClass(prefix: string, status: SectionStatus): string {
+  return `${prefix}--${SECTION_STATUS_CLASS_SUFFIX[status]}`;
+}
 
 // Metrik etiketleri duruma gore degisir — mockup KAZANIR (spec §5.4 sabit
 // dortluyu yaziyordu, mockup ise satir bazinda farkli etiket basiyor):
@@ -159,7 +136,7 @@ function ProgressMetricCell({
   status: SectionStatus;
 }) {
   const isReal = hasRealValue(progress);
-  const progressClass = isReal ? STATUS_PROGRESS_CLASS[status] : undefined;
+  const progressClass = isReal ? statusClass("section-card__metric-progress", status) : undefined;
   return (
     <div className="section-card__metric">
       <div className="section-card__metric-label">İlerleme</div>
@@ -200,20 +177,28 @@ function ProgressMetricCell({
 // degisir, bkz. STATUS_BUDGET_LABEL/STATUS_WORKER_LABEL) bu dilimde HEPSI yer tutucudur —
 // backend henuz gercek deger uretmiyor. "3 gecikme riski" satiri KASITLI olarak
 // basilmaz (spec §7.2) — backend bu alani hic dondurmuyor.
+//
+// F-P6 T2: Bölüm Detay ekranı artık GERÇEK olduğu için kart her durumda ORAYA
+// linklenir (task-2-brief.md "SectionCard güncellemesi") — önceki "planned ->
+// devre dışı Düzenle" placeholder'ı kaldırıldı (T3 ayrı bir düzenleme rotası
+// açacak, kart eylemi yalnız DETAYA gider).
 export function SectionCard({ projectId, siteId, section }: SectionCardProps) {
   const isPlanned = section.status === "planned";
   const detayHref = `/projeler/${projectId}/santiyeler/${siteId}/bolumler/${section.id}`;
 
   return (
-    <div className={cx("section-card", STATUS_CARD_CLASS[section.status])}>
-      <div className={cx("section-card__strip", STATUS_STRIP_CLASS[section.status])} aria-hidden="true" />
+    <div className={cx("section-card", statusClass("section-card", section.status))}>
+      <div
+        className={cx("section-card__strip", statusClass("section-card__strip", section.status))}
+        aria-hidden="true"
+      />
       <div className="section-card__body">
         <div>
           <div className="section-card__name-row">
             <span className={cx("section-card__name", isPlanned && "section-card__name--muted")}>
               {section.name}
             </span>
-            <span className={cx("section-card__status", STATUS_BADGE_CLASS[section.status])}>
+            <span className={cx("section-card__status", statusClass("section-card__status", section.status))}>
               {STATUS_LABELS[section.status]}
             </span>
           </div>
@@ -239,30 +224,17 @@ export function SectionCard({ projectId, siteId, section }: SectionCardProps) {
         </MetricCell>
 
         <div className="section-card__action">
-          {isPlanned ? (
-            // Bölüm düzenleme ekrani henuz yazilmadi — §7.3 deseni: gorunur
-            // kalir, aria-disabled verilmez, title ile durustce soylenir.
-            <button
-              type="button"
-              title="Bu bölüm yakında"
-              className="section-card__action-btn section-card__action-btn--edit"
-            >
-              Düzenle
-            </button>
-          ) : (
-            <Link
-              href={detayHref}
-              title="Bu bölüm yakında"
-              className={cx(
-                "section-card__action-btn",
-                section.status === "active"
-                  ? "section-card__action-btn--solid"
-                  : "section-card__action-btn--ghost",
-              )}
-            >
-              Detay →
-            </Link>
-          )}
+          <Link
+            href={detayHref}
+            className={cx(
+              "section-card__action-btn",
+              section.status === "active"
+                ? "section-card__action-btn--solid"
+                : "section-card__action-btn--ghost",
+            )}
+          >
+            Detay →
+          </Link>
         </div>
       </div>
     </div>
