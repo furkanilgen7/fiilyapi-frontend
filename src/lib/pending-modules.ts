@@ -15,6 +15,9 @@ const MODULE_LABELS: Record<string, string> = {
   stock: "Stok modülüyle birlikte gelir",
   documents: "Belge modülüyle birlikte gelir",
   site_diary: "Şantiye günlüğüyle birlikte gelir",
+  // F-P6 T3 (Bölüm formu) — devre dışı kartlar
+  equipment: "Ekipman/makine modülüyle birlikte gelir",
+  gantt: "Proje takvimi (Gantt) modülüyle birlikte gelir",
 };
 
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";

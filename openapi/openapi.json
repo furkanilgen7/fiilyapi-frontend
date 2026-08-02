@@ -2370,6 +2370,233 @@
         }
       }
     },
+    "/customers": {
+      "get": {
+        "tags": [
+          "customers"
+        ],
+        "summary": "List Customers Endpoint",
+        "description": "`q` ad / TCKN / VKN üzerinde kısmi arar (spec §4).",
+        "operationId": "list_customers_endpoint_customers_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "customers"
+        ],
+        "summary": "Create Customer Endpoint",
+        "operationId": "create_customer_endpoint_customers_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/customers/{customer_id}": {
+      "get": {
+        "tags": [
+          "customers"
+        ],
+        "summary": "Get Customer Endpoint",
+        "operationId": "get_customer_endpoint_customers__customer_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Customer Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "customers"
+        ],
+        "summary": "Update Customer Endpoint",
+        "operationId": "update_customer_endpoint_customers__customer_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Customer Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/dashboard/summary": {
       "get": {
         "tags": [
@@ -3915,6 +4142,756 @@
         }
       }
     },
+    "/projects/{project_id}/sales": {
+      "get": {
+        "tags": [
+          "sales"
+        ],
+        "summary": "List Sales Endpoint",
+        "description": "S150-212. \"Tahsil Edilen\"/\"Kalan\" TÜREVDİR (`sale_installments`), kolon değil.",
+        "operationId": "list_sales_endpoint_projects__project_id__sales_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitSaleListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "sales"
+        ],
+        "summary": "Create Sale Endpoint",
+        "description": "Üç kapı: ünite bu projeye ait olmalı (404) · `landowner` ünite satılamaz\n\n(422, spec §8 S3) · ünitede ikinci AÇIK kayıt olamaz (409).",
+        "operationId": "create_sale_endpoint_projects__project_id__sales_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnitSaleCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitSaleResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sales/{sale_id}": {
+      "get": {
+        "tags": [
+          "sales"
+        ],
+        "summary": "Get Sale Endpoint",
+        "description": "Kimlik YUKARI çözümlenir (satış → proje → görünürlük); görünmeyen projenin\nsatışı 404 döner, 403 DEĞİL — üstelik var olmayanla AYNI gövdeyi verir.",
+        "operationId": "get_sale_endpoint_sales__sale_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sale_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Sale Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitSaleResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "sales"
+        ],
+        "summary": "Update Sale Endpoint",
+        "description": "Durum geçişleri BU UÇTAN YAPILMAZ: `status` şemada yoktur, `activate` /\n`transfer-deed` / `cancel` uçları T5'in işidir.",
+        "operationId": "update_sale_endpoint_sales__sale_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sale_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Sale Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnitSaleUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitSaleResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "sales"
+        ],
+        "summary": "Delete Sale Endpoint",
+        "description": "Spec §4: YALNIZ `reservation` silinir; `active`/`deed_transferred` 409 ile\n\nreddedilir ve iptal edilerek (T5 `cancel`) kapatılır. Kapı `_ADMIN`dir —\n`units`/`blocks` DELETE uçlarıyla tutarlı (kalıcı karar 2026-07-30). Yetki\nkapısı durum korkuluğundan ÖNCE çalışır: yetkisiz aktör 403 alır ve kaydın\nhangi durumda olduğunu ÖĞRENEMEZ.",
+        "operationId": "delete_sale_endpoint_sales__sale_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sale_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Sale Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sales/{sale_id}/generate-plan": {
+      "post": {
+        "tags": [
+          "sales"
+        ],
+        "summary": "Generate Sale Plan Endpoint",
+        "description": "F100 \"Plan Oluştur\" — SUNUCU OTORİTESİ: satırlar satış kaydının plan\nsütunlarından (F103-106) üretilir, gövde ALINMAZ.\n\nMevcut plan üzerine yazılır; tahsilatı olan plan 409 ile korunur.",
+        "operationId": "generate_sale_plan_endpoint_sales__sale_id__generate_plan_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sale_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Sale Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalePlanResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sales/{sale_id}/installments": {
+      "put": {
+        "tags": [
+          "sales"
+        ],
+        "summary": "Save Sale Installments Endpoint",
+        "description": "⚠️ **DEĞİŞTİRME** semantiği (`PUT /progress-payments/{id}/lines` ikizi):\n\ngövde planın TAMAMIDIR, gövdede geçmeyen satır SİLİNİR. `contracts`\ndağıtımının BİRLEŞTİRME ucuyla karıştırılmamalıdır.\n\nΣ `amount` = `sale_price` sunucuda doğrulanır (422); tahsilatı olan satır\nplandan çıkarılamaz (409).",
+        "operationId": "save_sale_installments_endpoint_sales__sale_id__installments_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sale_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Sale Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaleInstallmentsSave"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalePlanResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "sales"
+        ],
+        "summary": "Get Sale Plan Endpoint",
+        "description": "F110-147 plan tablosunu OKUR (T5'te eklendi).\n\nT4 planı yazan üç ucu kapattı ama okuyan bir uç bırakmamıştı; plan yalnız\nyazma yanıtlarında görülebiliyordu ve `GET /sales/{id}` satırları taşımıyor.\nYanıt zarfı T4'ün `SalePlanResponse`udur — PAYLAŞILIR, kopyalanmaz.\n\nKapı `_VIEW`dir: plan okumak bir YAZMA değildir, muhasebe (`sales=view`)\ntahsilat takibi için planı görebilmelidir.",
+        "operationId": "get_sale_plan_endpoint_sales__sale_id__installments_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sale_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Sale Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalePlanResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sales/installments/{installment_id}/pay": {
+      "post": {
+        "tags": [
+          "sales"
+        ],
+        "summary": "Pay Sale Installment Endpoint",
+        "description": "§8 S2 tahsilatı — kısmi ödeme destekli; aşırı ödeme 422.\n\n## Kapı neden `sales:full` (karar + gerekçe)\n\nTahsilat bir YAZMA işlemidir ve `AccessLevel` merdiveninde yazmanın karşılığı\n`full`tür; `draft`/`request`/`approve` ara seviyeleri BELGE İŞ AKIŞLARI\niçindir (hakediş taslak→onay zinciri) ve tahsilatın böyle bir akışı YOKTUR.\nAyrı bir \"tahsilat\" seviyesi AÇILMADI: `sales` izin modülü T1'de matrise\n(19.) tek satır olarak girdi, ikinci bir satır matrisin seed'i + migration'ı\n+ testini birlikte değiştirmeyi gerektirirdi ve spec §4 böyle bir ayrım\ntarif etmiyor. `accounting` rolü bugün `sales=(view, finance)` olduğundan\ntahsilat İŞLEYEMEZ — bu bilinçli sonuçtur; değişmesi gerekiyorsa doğru yer\nizin matrisi seed'idir, uç kapısı değil.\n\nKimlik YUKARI çözümlenir (taksit → satış → proje): görünmeyen taksit 404\ndöner ve var olmayanla AYNI gövdeyi verir.",
+        "operationId": "pay_sale_installment_endpoint_sales_installments__installment_id__pay_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "installment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Installment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstallmentPayInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaleInstallmentResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sales/{sale_id}/activate": {
+      "post": {
+        "tags": [
+          "sales"
+        ],
+        "summary": "Activate Sale Endpoint",
+        "description": "S56 \"Rezerve\" → S55 \"Satılan\": kapora sözleşmeye dönüştü.\n\nÜnite `reserved`tan `sold`a geçer (spec §3). `reservation` DIŞINDAKİ her\ndurum 409'dur.",
+        "operationId": "activate_sale_endpoint_sales__sale_id__activate_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sale_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Sale Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitSaleResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sales/{sale_id}/transfer-deed": {
+      "post": {
+        "tags": [
+          "sales"
+        ],
+        "summary": "Transfer Sale Deed Endpoint",
+        "description": "S166 \"Tapu Devredildi\" — TERMİNAL durum; ünite `sold` KALIR (spec §3).",
+        "operationId": "transfer_sale_deed_endpoint_sales__sale_id__transfer_deed_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sale_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Sale Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitSaleResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sales/{sale_id}/cancel": {
+      "post": {
+        "tags": [
+          "sales"
+        ],
+        "summary": "Cancel Sale Endpoint",
+        "description": "`reservation`/`active` → `cancelled`; ünite vitrine (`listed`) döner.\n\nGEREKÇE ZORUNLUDUR (422) ve `unit_sales`e DEĞİL denetim günlüğüne yazılır:\niptal kaydın bir niteliği değil bir olaydır, kolon açılmaz (`transitions.py`).",
+        "operationId": "cancel_sale_endpoint_sales__sale_id__cancel_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sale_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Sale Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaleCancelInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnitSaleResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/sales/summary": {
+      "get": {
+        "tags": [
+          "sales"
+        ],
+        "summary": "Sales Summary Endpoint",
+        "description": "S55-59 KPI'ları + S218-234 \"Yaklaşan Tahsilatlar (30 Gün)\".\n\nGecikme faizi (S223) ve rezervasyon \"süresi doldu\" (S188) YALNIZ GÖSTERİM\ntürevidir (§8 S4/S5): ne tahakkuk yazılır ne otomatik iptal koşar.\n\nOkuma ucudur → denetim satırı ÜRETMEZ (P4 T7 kuralı).",
+        "operationId": "sales_summary_endpoint_projects__project_id__sales_summary_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalesSummaryResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/settings/preferences": {
       "get": {
         "tags": [
@@ -4621,6 +5598,927 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SectionDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subcontractor-progress-payments": {
+      "get": {
+        "tags": [
+          "subcontractor-progress-payments"
+        ],
+        "summary": "List Subcontractor Progress Payments Endpoint",
+        "description": "L83-101 filtreleri + `audit`/`users` sayfalama deseni (`total`/`limit`/`offset`).",
+        "operationId": "list_subcontractor_progress_payments_endpoint_subcontractor_progress_payments_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "period_year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Period Year"
+            }
+          },
+          {
+            "name": "period_month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 12,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Period Month"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SubcontractorPaymentStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Taşeron adı veya sözleşme no araması",
+              "title": "Q"
+            },
+            "description": "Taşeron adı veya sözleşme no araması"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubcontractorProgressPaymentListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subcontractor-progress-payments/summary": {
+      "get": {
+        "tags": [
+          "subcontractor-progress-payments"
+        ],
+        "summary": "Subcontractor Progress Payment Summary Endpoint",
+        "description": "L105-122 KPI şeridi (4 kart). Kapı `_VIEW`: özet yalnız OKUMA'dır.\n\n⚠️ Bu tanım `/{payment_id}` ŞABLONUNDAN ÖNCE durmak ZORUNDADIR: FastAPI\nrotaları TANIM SIRASINA göre eşler, sonra tanımlansaydı `summary` bir UUID\nsanılır ve uç 422 ile ulaşılamaz olurdu.\n\nSüzgeçler liste ucuyla BİREBİR aynıdır (aynı `_list_stmt` gövdesi) — KPI\nşeridi ile altındaki tablo aynı kümeyi göstermek zorundadır.",
+        "operationId": "subcontractor_progress_payment_summary_endpoint_subcontractor_progress_payments_summary_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "period_year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Period Year"
+            }
+          },
+          {
+            "name": "period_month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 12,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Period Month"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SubcontractorPaymentStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Taşeron adı veya sözleşme no araması",
+              "title": "Q"
+            },
+            "description": "Taşeron adı veya sözleşme no araması"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubcontractorProgressPaymentSummary"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subcontractor-progress-payments/{payment_id}": {
+      "get": {
+        "tags": [
+          "subcontractor-progress-payments"
+        ],
+        "summary": "Get Subcontractor Progress Payment Endpoint",
+        "operationId": "get_subcontractor_progress_payment_endpoint_subcontractor_progress_payments__payment_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Payment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubcontractorProgressPaymentDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "subcontractor-progress-payments"
+        ],
+        "summary": "Update Subcontractor Progress Payment Endpoint",
+        "description": "Yalnız `status=draft` (spec §5); aksi 409 `INVALID_STATUS_TRANSITION`.",
+        "operationId": "update_subcontractor_progress_payment_endpoint_subcontractor_progress_payments__payment_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Payment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubcontractorProgressPaymentUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubcontractorProgressPaymentDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "subcontractor-progress-payments"
+        ],
+        "summary": "Delete Subcontractor Progress Payment Endpoint",
+        "description": "Kapı `_DRAFT`tir (işveren silme ucunun aynı gerekçesi): `_ADMIN` olsaydı\ntaslağı üreten şef/saha rollerinin KENDİ taslağını silme istisnası ölü kural\nolurdu. Kesin karar `service.delete_payment`tadır.",
+        "operationId": "delete_subcontractor_progress_payment_endpoint_subcontractor_progress_payments__payment_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Payment Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subcontractor-contracts/{contract_id}/progress-payments": {
+      "post": {
+        "tags": [
+          "subcontractor-progress-payments"
+        ],
+        "summary": "Create Subcontractor Progress Payment Endpoint",
+        "description": "O66: satırlar sözleşme kalemlerinden OTOMATİK yüklenir; gövdede satır YOK.\n\nFiyatsız kalem 422, aynı sözleşmede açık hakediş 409 (spec §2/§5).\nYanıt `read.build_detail`den gelir — `get_detail` çağrılsaydı kapsam\nsorgusu istek başına İKİ KEZ koşardı (işveren H4 denetimi O3).",
+        "operationId": "create_subcontractor_progress_payment_endpoint_subcontractor_contracts__contract_id__progress_payments_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contract_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Contract Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubcontractorProgressPaymentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubcontractorProgressPaymentDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subcontractor-progress-payments/{payment_id}/lines": {
+      "put": {
+        "tags": [
+          "subcontractor-progress-payments"
+        ],
+        "summary": "Save Subcontractor Progress Payment Lines Endpoint",
+        "description": "O formunun tek \"Taslak Kaydet\" gövdesi — **DEĞİŞTİRME** semantiği.\n\n⚠️ Gövdede geçmeyen satır SİLİNİR (`PUT …/contract/distribution`\nBİRLEŞTİRMESİNİN tersi). Yalnız `status=draft` (409); kalem sahipliği, fiyat\nguard'ı ve kota tavanı (spec §4) her yazımda koşar.\n\nKalemi silinmiş satırlar gövdeden adreslenemediği için düşer; sayıları\nyanıtın `dropped_orphan_count` alanında BİLDİRİLİR (sessiz atlama yok).\nDetay `build_detail`den KAPSAM SORGUSU TEKRARLANMADAN kurulur.",
+        "operationId": "save_subcontractor_progress_payment_lines_endpoint_subcontractor_progress_payments__payment_id__lines_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Payment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubcontractorProgressPaymentLinesSave"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubcontractorProgressPaymentDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subcontractor-progress-payments/{payment_id}/refresh-prices": {
+      "post": {
+        "tags": [
+          "subcontractor-progress-payments"
+        ],
+        "summary": "Refresh Subcontractor Progress Payment Prices Endpoint",
+        "description": "Yalnız `draft`ta snapshot beşlisini + yüzde üçlüsünü bilinçli tazeler.\n\nYanıt YALNIZ `{refreshed_count}`tur (işveren deseni): güncel ekran ayrı bir\n`GET` ile okunur, tek gövdede sayaç + tam detay BİRLEŞTİRİLMEZ.",
+        "operationId": "refresh_subcontractor_progress_payment_prices_endpoint_subcontractor_progress_payments__payment_id__refresh_prices_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Payment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubcontractorRefreshPricesResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subcontractor-progress-payments/{payment_id}/submit": {
+      "post": {
+        "tags": [
+          "subcontractor-progress-payments",
+          "subcontractor-progress-payments"
+        ],
+        "summary": "Submit Subcontractor Progress Payment Endpoint",
+        "description": "`draft → pending_approval`. Zorunluluk kuralları (dönem + Σmiktar>0)\nYALNIZ burada koşar: taslak eksik veriyle serbestçe saklanır.\n\n\"Revize Gerekli\" damgası (`rejected_at`/`rejection_reason`) burada TEMİZLENİR.",
+        "operationId": "submit_subcontractor_progress_payment_endpoint_subcontractor_progress_payments__payment_id__submit_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Payment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubcontractorProgressPaymentDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subcontractor-progress-payments/{payment_id}/approve": {
+      "post": {
+        "tags": [
+          "subcontractor-progress-payments",
+          "subcontractor-progress-payments"
+        ],
+        "summary": "Approve Subcontractor Progress Payment Endpoint",
+        "description": "`pending_approval → approved`; kota KİLİT ALTINDA sırasız TAM küme\nüzerinden YENİDEN doğrulanır (spec §4) — aşım 422, onay GERÇEKLEŞMEZ.",
+        "operationId": "approve_subcontractor_progress_payment_endpoint_subcontractor_progress_payments__payment_id__approve_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Payment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubcontractorProgressPaymentDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subcontractor-progress-payments/{payment_id}/reject": {
+      "post": {
+        "tags": [
+          "subcontractor-progress-payments",
+          "subcontractor-progress-payments"
+        ],
+        "summary": "Reject Subcontractor Progress Payment Endpoint",
+        "description": "`pending_approval → draft` — ret BEŞİNCİ durum DEĞİLDİR (spec §5).\n\nİşverenden AYRILAN nokta: gövde ZORUNLUDUR ve gerekçe `rejection_reason`\nKOLONUNA yazılır; `rejected_at` ile birlikte L177 \"Revize Gerekli\" rozetinin\n(`is_revision_required` türevi) kaynağıdır.",
+        "operationId": "reject_subcontractor_progress_payment_endpoint_subcontractor_progress_payments__payment_id__reject_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Payment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubcontractorRejectBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubcontractorProgressPaymentDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subcontractor-progress-payments/{payment_id}/mark-paid": {
+      "post": {
+        "tags": [
+          "subcontractor-progress-payments",
+          "subcontractor-progress-payments"
+        ],
+        "summary": "Mark Paid Subcontractor Progress Payment Endpoint",
+        "description": "`approved → paid`. Ödeme detayı formu mockup'ta YOK → tek tıkla\nişaretleme, yalnız `paid_at` damgalanır (fatura/ödeme bağı mali dilimlere).",
+        "operationId": "mark_paid_subcontractor_progress_payment_endpoint_subcontractor_progress_payments__payment_id__mark_paid_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Payment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubcontractorProgressPaymentDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subcontractor-progress-payments/{payment_id}/unapprove": {
+      "post": {
+        "tags": [
+          "subcontractor-progress-payments",
+          "subcontractor-progress-payments"
+        ],
+        "summary": "Unapprove Subcontractor Progress Payment Endpoint",
+        "description": "`approved → pending_approval` (geri çek) — YALNIZ `admin`.\n\n`paid` kaynak DEĞİLDİR: ödenmiş hakedişin geri dönüşü yoktur, denemesi 409.\nDenetim mesajı ESKİ onaylayanı taşır — `transitions.perform` bu ikisini\ndamgalar NULL'lanmadan ÖNCE yakalar, router yeniden sorgulayamaz.",
+        "operationId": "unapprove_subcontractor_progress_payment_endpoint_subcontractor_progress_payments__payment_id__unapprove_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Payment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubcontractorProgressPaymentDetail"
                 }
               }
             }
@@ -6189,6 +8087,26 @@
         ],
         "title": "AuditListResponse"
       },
+      "AvailableUnitsKpi": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "list_price_total": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "List Price Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "count",
+          "list_price_total"
+        ],
+        "title": "AvailableUnitsKpi",
+        "description": "S57 \"Boş Ünite\" · 13 · ₺12,6M stok.\n\nKaynak `unit_sales` DEĞİL `units.sales_status`tur: boş ünitenin satış kaydı\nyoktur, dolayısıyla satış tablosundan sayılamaz. Değer LİSTE FİYATIDIR\n(stok değeri), satış bedeli değil — henüz bir bedel üzerinde anlaşılmamıştır."
+      },
       "BlockCreate": {
         "properties": {
           "code": {
@@ -7281,6 +9199,40 @@
         "title": "BoqTotals",
         "description": "Spec §5.1 ust KPI seridi. `grand_total` GERCEK deger, geri kalani yer\ntutucu (sozlesme/hakediş bu dilimde yazilmiyor)."
       },
+      "CollectionKpi": {
+        "properties": {
+          "collected_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Collected Amount"
+          },
+          "contracted_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Contracted Amount"
+          },
+          "collection_pct": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collection Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "collected_amount",
+          "contracted_amount",
+          "collection_pct"
+        ],
+        "title": "CollectionKpi",
+        "description": "S58 \"Tahsil Edilen\" · ₺24,8M · \"%79 tahsilat\".\n\nPayda tfoot TOPLAM'ıdır (S208-210): 24,82 / 31,42 = %79,0 — yani oran\n\"tahsil edilen / açık satışların satış bedeli toplamı\"dır. Satış yoksa oran\n`None`dır: 0/0'ı %0 diye basmak \"hiç satış yok\" ile \"hiç tahsilat yok\"u\naynı ekrana düşürürdü."
+      },
       "CompanyRead": {
         "properties": {
           "id": {
@@ -8166,6 +10118,280 @@
         "title": "CountPlaceholder",
         "description": "Veri kaynagi henuz yazilmamis sayac alani (\"48 isci\", \"3 hissedar\" gibi)."
       },
+      "CustomerCreate": {
+        "properties": {
+          "customer_type": {
+            "$ref": "#/components/schemas/CustomerType"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "national_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 11
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "National Id"
+          },
+          "tax_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 11
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Number"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 254
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer_type",
+          "name"
+        ],
+        "title": "CustomerCreate"
+      },
+      "CustomerListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "CustomerListResponse"
+      },
+      "CustomerResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "customer_type": {
+            "$ref": "#/components/schemas/CustomerType"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "national_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "National Id"
+          },
+          "tax_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Number"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "customer_type",
+          "name",
+          "national_id",
+          "tax_number",
+          "phone",
+          "email",
+          "address"
+        ],
+        "title": "CustomerResponse"
+      },
+      "CustomerType": {
+        "type": "string",
+        "enum": [
+          "person",
+          "company"
+        ],
+        "title": "CustomerType",
+        "description": "Form - Daire Satisi 70 \"Alici Tipi\": Gercek Kisi · Tuzel Kisi (Firma)."
+      },
+      "CustomerUpdate": {
+        "properties": {
+          "customer_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "national_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 11
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "National Id"
+          },
+          "tax_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 11
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Number"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 254
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          }
+        },
+        "type": "object",
+        "title": "CustomerUpdate"
+      },
       "DashboardProjectCard": {
         "properties": {
           "id": {
@@ -8252,6 +10478,16 @@
         ],
         "title": "DashboardSummaryResponse"
       },
+      "DeedCondition": {
+        "type": "string",
+        "enum": [
+          "full_payment",
+          "after_down_payment",
+          "at_contract"
+        ],
+        "title": "DeedCondition",
+        "description": "F156 \"Tapu Devir Kosulu\": Tum odeme tamamlaninca · Pesinat sonrasi · Sozlesme imzasinda."
+      },
       "EmployerContractDetail": {
         "properties": {
           "project_id": {
@@ -8324,6 +10560,16 @@
           "has_price_escalation": {
             "type": "boolean",
             "title": "Has Price Escalation"
+          },
+          "index_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PriceIndexType"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "status": {
             "$ref": "#/components/schemas/ContractStatus"
@@ -8419,6 +10665,7 @@
           "vat_pct",
           "late_penalty_daily",
           "has_price_escalation",
+          "index_type",
           "status",
           "start_date",
           "end_date",
@@ -8893,6 +11140,55 @@
         ],
         "title": "EmployerResponse"
       },
+      "ExpiredReservation": {
+        "properties": {
+          "sale_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Sale Id"
+          },
+          "unit_label": {
+            "type": "string",
+            "title": "Unit Label"
+          },
+          "customer_name": {
+            "type": "string",
+            "title": "Customer Name"
+          },
+          "reservation_due_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Reservation Due Date"
+          },
+          "days_expired": {
+            "type": "integer",
+            "title": "Days Expired"
+          },
+          "reservation_deposit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reservation Deposit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sale_id",
+          "unit_label",
+          "customer_name",
+          "reservation_due_date",
+          "days_expired",
+          "reservation_deposit"
+        ],
+        "title": "ExpiredReservation",
+        "description": "S188 \"Kapora alındı · 15 gün süre\" süresi DOLMUŞ hâli (§8 S4).\n\nZamanlanmış iş YOKTUR: kayıt `reservation` KALIR, bu liste yalnızca\nkullanıcıyı elle iptale (ya da aktifleştirmeye) yönlendirir."
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -8905,6 +11201,40 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "InstallmentPayInput": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              }
+            ],
+            "title": "Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "amount"
+        ],
+        "title": "InstallmentPayInput",
+        "description": "Tahsilat (§8 S2) — kısmi ödeme desteklenir, bu yüzden bayrak değil TUTAR.\n\n`paid_at` istemciden ALINMAZ: satır TAM ödendiğinde sunucu saati yazılır\n(geriye dönük tarih girişi bir muhasebe kaydıdır ve hazine dilimine aittir)."
+      },
+      "InstallmentPaymentMethod": {
+        "type": "string",
+        "enum": [
+          "transfer",
+          "cash",
+          "cheque",
+          "auto_payment"
+        ],
+        "title": "InstallmentPaymentMethod",
+        "description": "F122/129 \"Odeme Sekli\": Havale/EFT · Nakit · Cek · Otomatik Odeme."
       },
       "InvestmentCard": {
         "properties": {
@@ -9341,6 +11671,32 @@
         ],
         "title": "NotificationPrefsUpdate"
       },
+      "OverdueKpi": {
+        "properties": {
+          "installment_count": {
+            "type": "integer",
+            "title": "Installment Count"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount"
+          },
+          "late_fee_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Late Fee Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "installment_count",
+          "amount",
+          "late_fee_amount"
+        ],
+        "title": "OverdueKpi",
+        "description": "S59 \"Vadesi Geçen\" · ₺840K · \"3 taksit\".\n\nTutar taksitin TAMAMI değil KALANIDIR: kısmen tahsil edilmiş bir taksitin\nödenmiş kısmı borç değildir. `late_fee_amount` §8 S5 gereği yalnız GÖSTERİM\ntürevidir (tahakkuk YAZILMAZ)."
+      },
       "PasswordReset": {
         "properties": {
           "new_password": {
@@ -9404,6 +11760,17 @@
         ],
         "title": "PaymentPeriod",
         "description": "Hakediş periyodu — FORM 101 açılır sırası (spec §3.5)."
+      },
+      "PaymentPlanType": {
+        "type": "string",
+        "enum": [
+          "cash",
+          "down_payment_installments",
+          "bank_loan",
+          "barter"
+        ],
+        "title": "PaymentPlanType",
+        "description": "F99 \"Odeme Plani\": Pesin · Pesinat + Taksit · Banka Kredisi · Takas/Trampa."
       },
       "PendingApprovalsPlaceholder": {
         "properties": {
@@ -11803,6 +14170,15 @@
         "title": "ProjectUpdate",
         "description": "project_type YOK — tip PATCH ile degistirilemez (spec §3.5)."
       },
+      "QuantitySource": {
+        "type": "string",
+        "enum": [
+          "manual",
+          "diary"
+        ],
+        "title": "QuantitySource",
+        "description": "Satır miktarının kaynağı — O87 \"Günlük kayıttan\" rozetinin altyapısı (spec §2).\n\n`site_diary` modülü bu dilimde YOKTUR; bu yüzden bu dilimde üretilen her satır\n`manual`dır. `diary` değeri şantiye günlüğü dilimi geldiğinde dolar."
+      },
       "RefreshPricesResponse": {
         "properties": {
           "refreshed_count": {
@@ -11847,6 +14223,31 @@
         "type": "object",
         "title": "RejectBody",
         "description": "`POST …/reject` gövdesi (spec §7, K12: ek form YOK) — yalnız isteğe\nbağlı gerekçe, denetim günlüğüne taşınır (ayrı kolon AÇILMAZ).\n\n`max_length=500` (H10 denetimi Y3, spec §10/6): DB kolonu yok, TEK kalıcı\niz denetim metnidir (`audit/messages.py.progress_payment_rejected`) —\nsınırsız gövde keyfi uzunlukta metni günlüğe yazardı. Modülde bu deseni\n(kalıcı kolonu olmayan, yalnız günlüğe taşınan serbest metin) paylaşan\nbaşka bir alan yok; en yakın emsaller (`roles.RoleCreate.description`\nmax_length=2000, uzun biçim rol açıklaması) amaç bakımından farklı — 500,\ntek satırlık kısa bir ret gerekçesi için yeterli ve günlük okunabilirliğini\n(çok satırlı/şişirilmiş metin) koruyan bir üst sınırdır."
+      },
+      "ReservedKpi": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "expired_count": {
+            "type": "integer",
+            "title": "Expired Count"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "count",
+          "expired_count",
+          "amount"
+        ],
+        "title": "ReservedKpi",
+        "description": "S56 \"Rezerve\" · 5 · ₺4,2M potansiyel + §8 S4'ün \"süresi doldu\" sayacı."
       },
       "RoleCreate": {
         "properties": {
@@ -11948,6 +14349,295 @@
           "is_system"
         ],
         "title": "RoleResponse"
+      },
+      "SaleCancelInput": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "SaleCancelInput",
+        "description": "`POST /sales/{id}/cancel` gövdesi — gerekçe ZORUNLUDUR.\n\nGerekçe `unit_sales`te bir kolona DEĞİL denetim günlüğüne yazılır\n(`transitions.py` gerekçesi): iptal kaydın bir niteliği değil bir olaydır.\nBoşluk kırpılır ki \" \" gönderen istemci \"gerekçe verdim\" sanmasın."
+      },
+      "SaleInstallmentInput": {
+        "properties": {
+          "sequence_no": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Sequence No"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Label"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Due Date"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              }
+            ],
+            "title": "Amount"
+          },
+          "payment_method": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InstallmentPaymentMethod"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "sequence_no",
+          "label",
+          "due_date",
+          "amount"
+        ],
+        "title": "SaleInstallmentInput",
+        "description": "`PUT /sales/{id}/installments` gövdesinin TEK satırı.\n\n`paid_amount`/`paid_at` gövdede YOKTUR: tahsilat yalnız `pay` ucundan işlenir\n(§8 S2). Plan düzenlemesiyle tahsilat aynı gövdeden gelseydi, kullanıcı bir\nsatırın tutarını değiştirirken tahsilatını da sessizce sıfırlayabilirdi."
+      },
+      "SaleInstallmentResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "sale_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Sale Id"
+          },
+          "sequence_no": {
+            "type": "integer",
+            "title": "Sequence No"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Due Date"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount"
+          },
+          "payment_method": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InstallmentPaymentMethod"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "paid_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Paid Amount"
+          },
+          "paid_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At"
+          },
+          "remaining_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Remaining Amount"
+          },
+          "is_overdue": {
+            "type": "boolean",
+            "title": "Is Overdue",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sale_id",
+          "sequence_no",
+          "label",
+          "due_date",
+          "amount",
+          "payment_method",
+          "paid_amount",
+          "paid_at",
+          "remaining_amount"
+        ],
+        "title": "SaleInstallmentResponse"
+      },
+      "SaleInstallmentsSave": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SaleInstallmentInput"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "SaleInstallmentsSave",
+        "description": "DEĞİŞTİRME semantiği: `items` planın YENİ HÂLİDİR, gövdede geçmeyen satır SİLİNİR."
+      },
+      "SalePlanResponse": {
+        "properties": {
+          "sale_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Sale Id"
+          },
+          "sale_price": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Sale Price"
+          },
+          "total_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Amount"
+          },
+          "paid_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Paid Amount"
+          },
+          "term_interest_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Term Interest Amount"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SaleInstallmentResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sale_id",
+          "sale_price",
+          "total_amount",
+          "paid_amount",
+          "term_interest_amount",
+          "items"
+        ],
+        "title": "SalePlanResponse",
+        "description": "F110-147 tablosu + F143 TOPLAM satırı.\n\n`total_amount` HER ZAMAN `sale_price`a eşittir (sunucu doğrular, spec §2);\nyine de yanıtta durur ki ekran toplamı kendisi toplamak zorunda kalmasın."
+      },
+      "SaleType": {
+        "type": "string",
+        "enum": [
+          "sale",
+          "reservation",
+          "pre_contract"
+        ],
+        "title": "SaleType",
+        "description": "F56 \"Satis Tipi\": Kesin Satis · Rezervasyon (Kapora) · On Sozlesme."
+      },
+      "SalesSummaryResponse": {
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "sold": {
+            "$ref": "#/components/schemas/SoldKpi"
+          },
+          "reserved": {
+            "$ref": "#/components/schemas/ReservedKpi"
+          },
+          "available_units": {
+            "$ref": "#/components/schemas/AvailableUnitsKpi"
+          },
+          "collection": {
+            "$ref": "#/components/schemas/CollectionKpi"
+          },
+          "overdue": {
+            "$ref": "#/components/schemas/OverdueKpi"
+          },
+          "upcoming_collections": {
+            "items": {
+              "$ref": "#/components/schemas/UpcomingCollection"
+            },
+            "type": "array",
+            "title": "Upcoming Collections"
+          },
+          "expired_reservations": {
+            "items": {
+              "$ref": "#/components/schemas/ExpiredReservation"
+            },
+            "type": "array",
+            "title": "Expired Reservations"
+          },
+          "pending_modules": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Pending Modules"
+          }
+        },
+        "type": "object",
+        "required": [
+          "project_id",
+          "as_of",
+          "sold",
+          "reserved",
+          "available_units",
+          "collection",
+          "overdue",
+          "upcoming_collections",
+          "expired_reservations"
+        ],
+        "title": "SalesSummaryResponse",
+        "description": "`GET /projects/{id}/sales/summary` — S55-59 + S218-234 TEK yanıtta."
       },
       "Scope": {
         "type": "string",
@@ -14269,6 +16959,31 @@
         "title": "SiteUpdate",
         "description": "`project_id` YOK — santiye baska projeye tasinamaz.\n`sections` YOK — bolumler mevcut P2 uclariyla yonetilir (§7.3).\n\nTum alanlar istege bagli; \"gonderilmedi\" ile \"null yapildi\" ayrimi\n`model_fields_set`/`exclude_unset` ile korunur."
       },
+      "SoldKpi": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "deed_transferred_count": {
+            "type": "integer",
+            "title": "Deed Transferred Count"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "count",
+          "deed_transferred_count",
+          "amount"
+        ],
+        "title": "SoldKpi",
+        "description": "S55 \"Satılan (Tapulu)\" · 34 · ₺31,4M.\n\nBaşlık iki şeyi birden söylüyor (\"satılan\" ve \"tapulu\"), bu yüzden sayaç\nİKİYE ayrılır: `count` gerçekleşmiş satışların tamamıdır (`active` +\n`deed_transferred`), `deed_transferred_count` ise tapusu devredilmiş\nolanlardır. Tek sayaç dönseydi ekran hangisini gösterdiğini bilemezdi."
+      },
       "SubcontractorContractCreate": {
         "properties": {
           "site_id": {
@@ -14405,6 +17120,20 @@
             ],
             "title": "Retainage Pct",
             "default": "5"
+          },
+          "vat_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+              }
+            ],
+            "title": "Vat Pct",
+            "default": "20"
           },
           "payment_period": {
             "$ref": "#/components/schemas/PaymentPeriod",
@@ -14583,6 +17312,11 @@
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Retainage Pct"
           },
+          "vat_pct": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Vat Pct"
+          },
           "payment_period": {
             "$ref": "#/components/schemas/PaymentPeriod"
           },
@@ -14657,6 +17391,7 @@
           "late_penalty_daily",
           "advance_pct",
           "retainage_pct",
+          "vat_pct",
           "payment_period",
           "payment_term_days",
           "materials_by_contractor",
@@ -15117,6 +17852,22 @@
             ],
             "title": "Retainage Pct"
           },
+          "vat_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vat Pct"
+          },
           "payment_period": {
             "anyOf": [
               {
@@ -15293,6 +18044,858 @@
           "items"
         ],
         "title": "SubcontractorListResponse"
+      },
+      "SubcontractorPaymentCalculation": {
+        "properties": {
+          "gross": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Gross"
+          },
+          "vat": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Vat"
+          },
+          "advance_deduction": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Advance Deduction"
+          },
+          "retention": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Retention"
+          },
+          "net": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Net"
+          }
+        },
+        "type": "object",
+        "required": [
+          "gross",
+          "vat",
+          "advance_deduction",
+          "retention",
+          "net"
+        ],
+        "title": "SubcontractorPaymentCalculation",
+        "description": "O147-163 tfoot'u (spec §3) — `calculations.py` çıktısı, SAKLANMAZ (türev).\n\nTeminat kesintisi ve fiyat farkı katsayısı ONAYLI SAPMA olarak dahildir;\nKDV tevkifatı bu dilimde hesaba GİRMEZ (spec §8 S4)."
+      },
+      "SubcontractorPaymentStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "pending_approval",
+          "approved",
+          "paid"
+        ],
+        "title": "SubcontractorPaymentStatus",
+        "description": "Taşeron hakedişi durum makinesi — işveren hakedişiyle BİREBİR aynı dört durum\n(spec §5). Enum tipi yine de AYRIDIR (`subcontractor_payment_status`): iki evrak\nailesinin durum kümesi ileride ayrışabilir, paylaşılan tip ikisini birbirine kilitler.\n\n\"Revize Gerekli\" (L177) BEŞİNCİ durum DEĞİLDİR — `reject` kaydı `draft`a döndürür,\nrozet `draft AND rejected_at IS NOT NULL` türevidir (spec §5)."
+      },
+      "SubcontractorProgressPaymentCreate": {
+        "properties": {
+          "period_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Year"
+          },
+          "period_month": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 12.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Month"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "default_coefficient": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Coefficient"
+          },
+          "section_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Id"
+          }
+        },
+        "type": "object",
+        "title": "SubcontractorProgressPaymentCreate",
+        "description": "`POST /subcontractor-contracts/{id}/progress-payments` gövdesi.\n\n`lines[]` YOKTUR (işveren şemasından ayrılan nokta): satırlar sözleşme\nkalemlerinden OTOMATİK yüklenir (O66) ve miktarlar `PUT …/lines` ile\ngirilir (T3). Tüm alanlar isteğe bağlıdır — taslak boş gövdeyle açılır."
+      },
+      "SubcontractorProgressPaymentDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "contract_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Contract Id"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "project_name": {
+            "type": "string",
+            "title": "Project Name"
+          },
+          "subcontractor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontractor Name"
+          },
+          "contract_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract No"
+          },
+          "sequence_no": {
+            "type": "integer",
+            "title": "Sequence No"
+          },
+          "period_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Year"
+          },
+          "period_month": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Month"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SubcontractorPaymentStatus"
+          },
+          "vat_pct": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Vat Pct"
+          },
+          "advance_pct": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Advance Pct"
+          },
+          "retainage_pct": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Retainage Pct"
+          },
+          "default_coefficient": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Default Coefficient"
+          },
+          "section_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Id"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "approved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "approved_by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By"
+          },
+          "paid_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At"
+          },
+          "rejected_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejected At"
+          },
+          "rejection_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejection Reason"
+          },
+          "is_revision_required": {
+            "type": "boolean",
+            "title": "Is Revision Required"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Created By"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/SubcontractorProgressPaymentLineRead"
+            },
+            "type": "array",
+            "title": "Lines"
+          },
+          "calculation": {
+            "$ref": "#/components/schemas/SubcontractorPaymentCalculation"
+          },
+          "dropped_orphan_count": {
+            "type": "integer",
+            "title": "Dropped Orphan Count",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "contract_id",
+          "project_id",
+          "project_name",
+          "subcontractor_name",
+          "contract_no",
+          "sequence_no",
+          "period_year",
+          "period_month",
+          "description",
+          "status",
+          "vat_pct",
+          "advance_pct",
+          "retainage_pct",
+          "default_coefficient",
+          "section_id",
+          "submitted_at",
+          "approved_at",
+          "approved_by",
+          "paid_at",
+          "rejected_at",
+          "rejection_reason",
+          "is_revision_required",
+          "created_by",
+          "created_at",
+          "updated_at",
+          "lines",
+          "calculation"
+        ],
+        "title": "SubcontractorProgressPaymentDetail",
+        "description": "`GET /subcontractor-progress-payments/{id}` — O ekranının başlığı + satırları."
+      },
+      "SubcontractorProgressPaymentLineInput": {
+        "properties": {
+          "contract_item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Contract Item Id"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "coefficient": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coefficient"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contract_item_id",
+          "quantity"
+        ],
+        "title": "SubcontractorProgressPaymentLineInput",
+        "description": "`PUT …/lines` gövdesindeki tek satır (T3).\n\nİşveren `ProgressPaymentLineInput`tan İKİ FARK:\n* `site_id` YOK — taşeron satırında şantiye kırılımı yoktur (spec §2);\n* `coefficient` KİLİTSİZ (yalnız `> 0`): taşeron sözleşmesinde\n  `has_price_escalation` kolonu yoktur, işverendeki FF kilidi uygulanmaz\n  (şef kararı 2026-08-02).\n\n`quantity_source` BİLEREK YOKTUR: bu dilimde her satır `manual`dır (spec §2),\nistekten alınması `diary` rozetini sahte doldurmanın yolu olurdu.\n`coefficient` gönderilmezse yeni satır hakedişin `default_coefficient`'ını\nalır, MEVCUT satırın katsayısı KORUNUR."
+      },
+      "SubcontractorProgressPaymentLineRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "contract_item_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract Item Id"
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Code"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Unit"
+          },
+          "contract_unit_price": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Contract Unit Price"
+          },
+          "coefficient": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Coefficient"
+          },
+          "quantity": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Quantity"
+          },
+          "group_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Name"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order"
+          },
+          "quantity_source": {
+            "$ref": "#/components/schemas/QuantitySource"
+          },
+          "adjusted_unit_price": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Adjusted Unit Price"
+          },
+          "line_total": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Line Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "contract_item_id",
+          "code",
+          "description",
+          "unit",
+          "contract_unit_price",
+          "coefficient",
+          "quantity",
+          "sort_order",
+          "quantity_source",
+          "adjusted_unit_price",
+          "line_total"
+        ],
+        "title": "SubcontractorProgressPaymentLineRead",
+        "description": "O72-100 satırı. Şantiye kırılımı YOKTUR — taşeron sözleşmesi zaten tek\nşantiyeye (ya da proje geneline) bağlıdır (spec §2)."
+      },
+      "SubcontractorProgressPaymentLinesSave": {
+        "properties": {
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/SubcontractorProgressPaymentLineInput"
+            },
+            "type": "array",
+            "title": "Lines"
+          }
+        },
+        "type": "object",
+        "title": "SubcontractorProgressPaymentLinesSave",
+        "description": "`PUT …/lines` gövdesi — DEĞİŞTİRME semantiği: gövdede olmayan satır\nSİLİNİR. Boş liste = tüm satırları temizle."
+      },
+      "SubcontractorProgressPaymentListItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "contract_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Contract Id"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "project_name": {
+            "type": "string",
+            "title": "Project Name"
+          },
+          "subcontractor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontractor Name"
+          },
+          "contract_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract No"
+          },
+          "sequence_no": {
+            "type": "integer",
+            "title": "Sequence No"
+          },
+          "period_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Year"
+          },
+          "period_month": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Month"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SubcontractorPaymentStatus"
+          },
+          "section_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "gross_total": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Gross Total"
+          },
+          "net_total": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Net Total"
+          },
+          "is_revision_required": {
+            "type": "boolean",
+            "title": "Is Revision Required"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "contract_id",
+          "project_id",
+          "project_name",
+          "subcontractor_name",
+          "contract_no",
+          "sequence_no",
+          "period_year",
+          "period_month",
+          "description",
+          "status",
+          "section_id",
+          "created_at",
+          "gross_total",
+          "net_total",
+          "is_revision_required"
+        ],
+        "title": "SubcontractorProgressPaymentListItem",
+        "description": "L112-180 liste satırı."
+      },
+      "SubcontractorProgressPaymentListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SubcontractorProgressPaymentListItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "SubcontractorProgressPaymentListResponse",
+        "description": "`audit`/`users` liste deseninin aynısı: `total` + `limit`/`offset`."
+      },
+      "SubcontractorProgressPaymentSummary": {
+        "properties": {
+          "total_gross": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Gross"
+          },
+          "pending_gross": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Pending Gross"
+          },
+          "paid_period_gross": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Paid Period Gross"
+          },
+          "active_subcontractor_count": {
+            "type": "integer",
+            "title": "Active Subcontractor Count"
+          },
+          "period_year": {
+            "type": "integer",
+            "title": "Period Year"
+          },
+          "period_month": {
+            "type": "integer",
+            "title": "Period Month"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_gross",
+          "pending_gross",
+          "paid_period_gross",
+          "active_subcontractor_count",
+          "period_year",
+          "period_month"
+        ],
+        "title": "SubcontractorProgressPaymentSummary",
+        "description": "L105-122 KPI şeridi — DÖRT kart (T4). Gövde `summary.py`dedir.\n\nPara KPI'ları BRÜTtür (mockup kanıtı: L118 \"Onay Bekliyor ₺1,24M\" = L143\nBrüt Tutar hücresi ₺1.240.000, Net Ödeme ₺1.016.800 DEĞİL)."
+      },
+      "SubcontractorProgressPaymentUpdate": {
+        "properties": {
+          "period_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Year"
+          },
+          "period_month": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 12.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Month"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "default_coefficient": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Coefficient"
+          },
+          "section_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Id"
+          }
+        },
+        "type": "object",
+        "title": "SubcontractorProgressPaymentUpdate",
+        "description": "`PATCH /subcontractor-progress-payments/{id}` — yalnız başlık alanları.\n\n`status`/`sequence_no`/satırlar YOK: durum yalnız geçiş uçlarıyla (T4),\nsatırlar yalnız `PUT …/lines` (T3) ile değişir. Servis `status != draft`\nise 409 döner (kural burada TEKRARLANMAZ)."
+      },
+      "SubcontractorRefreshPricesResponse": {
+        "properties": {
+          "refreshed_count": {
+            "type": "integer",
+            "title": "Refreshed Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "refreshed_count"
+        ],
+        "title": "SubcontractorRefreshPricesResponse",
+        "description": "`POST …/refresh-prices` yanıtı — güncel ekran ayrı bir `GET` ile okunur\n(işveren `RefreshPricesResponse` deseni)."
+      },
+      "SubcontractorRejectBody": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "SubcontractorRejectBody",
+        "description": "`POST …/reject` gövdesi (T4, spec §5).\n\nİşveren `RejectBody`den AYRILIR: gerekçe ZORUNLUDUR (`str`, opsiyonel değil)\nçünkü burada `rejection_reason` KOLONUNA yazılır ve L177 \"Revize Gerekli\"\nrozetinin kullanıcıya gösterilen açıklamasıdır — gerekçesiz bir rozet\ntaşerona neyi revize edeceğini söylemez.\n\nBoş/yalnız boşluktan oluşan metnin reddi `min_length` ile YAPILMAZ (\"   \" üç\nkarakterdir): kırpma kuralı `guards.validate_reject`te TEK kopyadır.\n`max_length=500` işveren gövdesindeki gerekçenin aynısıdır."
       },
       "SubcontractorResponse": {
         "properties": {
@@ -16704,10 +20307,27 @@
             ]
           },
           "sale_price": {
-            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sale Price"
           },
           "buyer_name": {
-            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Buyer Name"
           },
           "shareholder": {
             "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
@@ -16776,6 +20396,884 @@
         ],
         "title": "UnitResponse",
         "description": "KY 271-274 ve KKP 86-90 sutunlari. Satis alanlari (KY 275-277, KKP 91-92)\nP8'in isidir ve yer tutucu doner — `units`'te saklanmaz (spec §4.6)."
+      },
+      "UnitSaleCreate": {
+        "properties": {
+          "discount_amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discount Amount"
+          },
+          "vat_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vat Pct"
+          },
+          "advisor_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Advisor User Id"
+          },
+          "reservation_deposit": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reservation Deposit"
+          },
+          "reservation_due_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reservation Due Date"
+          },
+          "deed_condition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeedCondition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "planned_deed_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Deed Date"
+          },
+          "delivery_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Date"
+          },
+          "has_condominium_easement": {
+            "type": "boolean",
+            "title": "Has Condominium Easement",
+            "default": false
+          },
+          "has_mortgage": {
+            "type": "boolean",
+            "title": "Has Mortgage",
+            "default": false
+          },
+          "late_fee_monthly_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Late Fee Monthly Pct"
+          },
+          "payment_plan_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaymentPlanType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "down_payment": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Down Payment"
+          },
+          "installment_count": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Installment Count"
+          },
+          "first_installment_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Installment Date"
+          },
+          "term_interest_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Term Interest Pct"
+          },
+          "unit_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Unit Id"
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Customer Id"
+          },
+          "sale_type": {
+            "$ref": "#/components/schemas/SaleType"
+          },
+          "sale_price": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              }
+            ],
+            "title": "Sale Price"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unit_id",
+          "customer_id",
+          "sale_type",
+          "sale_price"
+        ],
+        "title": "UnitSaleCreate"
+      },
+      "UnitSaleListResponse": {
+        "properties": {
+          "totals": {
+            "$ref": "#/components/schemas/UnitSaleTotals"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/UnitSaleResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "totals",
+          "items"
+        ],
+        "title": "UnitSaleListResponse"
+      },
+      "UnitSaleResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "unit_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Unit Id"
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Customer Id"
+          },
+          "sale_type": {
+            "$ref": "#/components/schemas/SaleType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/UnitSaleStatus"
+          },
+          "block_name": {
+            "type": "string",
+            "title": "Block Name"
+          },
+          "unit_no": {
+            "type": "string",
+            "title": "Unit No"
+          },
+          "unit_label": {
+            "type": "string",
+            "title": "Unit Label"
+          },
+          "customer_name": {
+            "type": "string",
+            "title": "Customer Name"
+          },
+          "customer_type": {
+            "$ref": "#/components/schemas/CustomerType"
+          },
+          "customer_national_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer National Id"
+          },
+          "customer_tax_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Tax Number"
+          },
+          "list_price_snapshot": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "List Price Snapshot"
+          },
+          "discount_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discount Amount"
+          },
+          "sale_price": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Sale Price"
+          },
+          "vat_pct": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vat Pct"
+          },
+          "advisor_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Advisor User Id"
+          },
+          "advisor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Advisor Name"
+          },
+          "reservation_deposit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reservation Deposit"
+          },
+          "reservation_due_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reservation Due Date"
+          },
+          "deed_condition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeedCondition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "planned_deed_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Deed Date"
+          },
+          "delivery_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Date"
+          },
+          "has_condominium_easement": {
+            "type": "boolean",
+            "title": "Has Condominium Easement"
+          },
+          "has_mortgage": {
+            "type": "boolean",
+            "title": "Has Mortgage"
+          },
+          "late_fee_monthly_pct": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Late Fee Monthly Pct"
+          },
+          "payment_plan_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaymentPlanType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "down_payment": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Down Payment"
+          },
+          "installment_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Installment Count"
+          },
+          "first_installment_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Installment Date"
+          },
+          "term_interest_pct": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Term Interest Pct"
+          },
+          "paid_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Paid Amount"
+          },
+          "remaining_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Remaining Amount"
+          },
+          "installment_total": {
+            "type": "integer",
+            "title": "Installment Total"
+          },
+          "installment_paid_count": {
+            "type": "integer",
+            "title": "Installment Paid Count"
+          },
+          "overdue_installment_count": {
+            "type": "integer",
+            "title": "Overdue Installment Count"
+          },
+          "unit_cost": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "sale_profit": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "pending_modules": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Pending Modules"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "project_id",
+          "unit_id",
+          "customer_id",
+          "sale_type",
+          "status",
+          "block_name",
+          "unit_no",
+          "unit_label",
+          "customer_name",
+          "customer_type",
+          "customer_national_id",
+          "customer_tax_number",
+          "list_price_snapshot",
+          "discount_amount",
+          "sale_price",
+          "vat_pct",
+          "advisor_user_id",
+          "advisor_name",
+          "reservation_deposit",
+          "reservation_due_date",
+          "deed_condition",
+          "planned_deed_date",
+          "delivery_date",
+          "has_condominium_easement",
+          "has_mortgage",
+          "late_fee_monthly_pct",
+          "payment_plan_type",
+          "down_payment",
+          "installment_count",
+          "first_installment_date",
+          "term_interest_pct",
+          "paid_amount",
+          "remaining_amount",
+          "installment_total",
+          "installment_paid_count",
+          "overdue_installment_count"
+        ],
+        "title": "UnitSaleResponse"
+      },
+      "UnitSaleStatus": {
+        "type": "string",
+        "enum": [
+          "reservation",
+          "active",
+          "deed_transferred",
+          "cancelled"
+        ],
+        "title": "UnitSaleStatus",
+        "description": "Satis kaydinin yasam dongusu (spec §2/§3).\n\n`units.sales_status` (UnitSalesStatus) ile KARISTIRILMAMALI: o unitenin\nvitrin durumudur (`listed/reserved/sold/closed`), bu ise satis kaydinin\ndurumudur. Enum tipi adlari da ayridir: `unit_sales_status` (unite) ve\n`unit_sale_status` (satis kaydi).\n\n`reservation` → `active` (sozlesmeli/taksitli) → `deed_transferred`\n(S166 \"Tapu Devredildi\"); `cancelled` her durumdan gelinebilen son duraktir.\nGecis matrisinin KODU T5'in isidir; T1 yalniz kumeyi tanimlar."
+      },
+      "UnitSaleTotals": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "sale_price_total": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Sale Price Total"
+          },
+          "paid_total": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Paid Total"
+          },
+          "remaining_total": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Remaining Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "count",
+          "sale_price_total",
+          "paid_total",
+          "remaining_total"
+        ],
+        "title": "UnitSaleTotals",
+        "description": "S205-215 TOPLAM satırı — satır türevleriyle AYNI kaynaktan toplanır."
+      },
+      "UnitSaleUpdate": {
+        "properties": {
+          "discount_amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discount Amount"
+          },
+          "vat_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vat Pct"
+          },
+          "advisor_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Advisor User Id"
+          },
+          "reservation_deposit": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reservation Deposit"
+          },
+          "reservation_due_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reservation Due Date"
+          },
+          "deed_condition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeedCondition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "planned_deed_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Deed Date"
+          },
+          "delivery_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Date"
+          },
+          "has_condominium_easement": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Condominium Easement"
+          },
+          "has_mortgage": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Mortgage"
+          },
+          "late_fee_monthly_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Late Fee Monthly Pct"
+          },
+          "payment_plan_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaymentPlanType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "down_payment": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Down Payment"
+          },
+          "installment_count": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Installment Count"
+          },
+          "first_installment_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Installment Date"
+          },
+          "term_interest_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Term Interest Pct"
+          },
+          "sale_price": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sale Price"
+          }
+        },
+        "type": "object",
+        "title": "UnitSaleUpdate",
+        "description": "TÜM alanlar opsiyoneldir; \"gönderilmedi\" ile \"null yapıldı\" ayrımı serviste\n\n`model_dump(exclude_unset=True)` ile çözülür (P1/P2/P4 deseni).\n\n`has_condominium_easement`/`has_mortgage` burada `None` varsayılanı alır:\n`False` varsayılanı, gönderilmeyen kutucuğu her PATCH'te SESSİZCE temizlerdi."
       },
       "UnitSalesStatus": {
         "type": "string",
@@ -16929,10 +21427,21 @@
             "title": "Available Units"
           },
           "sales_revenue": {
-            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Sales Revenue"
           },
           "average_sale_price": {
-            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Sale Price"
           }
         },
         "type": "object",
@@ -17180,21 +21689,11 @@
               }
             ],
             "title": "Sort Order"
-          },
-          "sales_status": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/UnitSalesStatus"
-              },
-              {
-                "type": "null"
-              }
-            ]
           }
         },
         "type": "object",
         "title": "UnitUpdate",
-        "description": "TUM alanlar opsiyoneldir; \"gonderilmedi\" ile \"null yapildi\" ayrimi servis\nkatmaninda `model_fields_set` ile cozulur (P1/P2/P4 deseni)."
+        "description": "TUM alanlar opsiyoneldir; \"gonderilmedi\" ile \"null yapildi\" ayrimi servis\nkatmaninda `model_fields_set` ile cozulur (P1/P2/P4 deseni).\n\n**`sales_status` BU SEMADAN CIKARILDI (P8 T3, satis spec §3).** Sinif\ndocstring'indeki (`models.py:232-240`) \"GELECEK IS — P8\" notunun kapanisidir:\nunitenin vitrin durumu artik SATIS KAYDINDAN turetilir\n(`sales/service.sync_unit_sales_status`) ve elle giris kilitlenir. Iki yazma\nyolu birakmak, satis kaydiyla vitrin durumunun sessizce ayrismasi demekti.\nKirici DEGILDIR: alani kullanan bir UI henuz yoktur (spec §3). `UnitCreate`te\nKALIR — orada henuz satis kaydi yoktur, deger yalnizca acilis vitrinidir."
       },
       "UnitValueBasis": {
         "type": "string",
@@ -17204,6 +21703,87 @@
         ],
         "title": "UnitValueBasis",
         "description": "Toplamlarin hangi sutundan hesaplandigi (spec §4.4).\n\n`kat_karsiligi` → `appraisal_value`, digerleri → `list_price`. Yanitta ACIKCA\nbildirilir ki ekran hangi sutunu gosterdigini tahmin etmek zorunda kalmasin."
+      },
+      "UpcomingCollection": {
+        "properties": {
+          "installment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Installment Id"
+          },
+          "sale_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Sale Id"
+          },
+          "unit_label": {
+            "type": "string",
+            "title": "Unit Label"
+          },
+          "customer_name": {
+            "type": "string",
+            "title": "Customer Name"
+          },
+          "sequence_no": {
+            "type": "integer",
+            "title": "Sequence No"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Due Date"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount"
+          },
+          "paid_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Paid Amount"
+          },
+          "remaining_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Remaining Amount"
+          },
+          "is_overdue": {
+            "type": "boolean",
+            "title": "Is Overdue"
+          },
+          "days_overdue": {
+            "type": "integer",
+            "title": "Days Overdue"
+          },
+          "late_fee_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Late Fee Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "installment_id",
+          "sale_id",
+          "unit_label",
+          "customer_name",
+          "sequence_no",
+          "label",
+          "due_date",
+          "amount",
+          "paid_amount",
+          "remaining_amount",
+          "is_overdue",
+          "days_overdue",
+          "late_fee_amount"
+        ],
+        "title": "UpcomingCollection",
+        "description": "S220-234'ün tek satırı: \"A · Daire 19 — Hasan Demir · Taksit 6 & 7 …\"."
       },
       "UserCreate": {
         "properties": {

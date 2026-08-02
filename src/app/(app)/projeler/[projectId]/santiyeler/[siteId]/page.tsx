@@ -1,26 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { SectionCard } from "@/components/site-detail/SectionCard";
-import { SectionFormModal } from "@/components/site-detail/SectionFormModal";
 import { SiteDetailTabs } from "@/components/site-detail/SiteDetailTabs";
 import { SiteHeroBar } from "@/components/site-detail/SiteHeroBar";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { isForbidden } from "@/lib/api/unwrap";
 import "@/components/site-detail/site-detail.css";
-
-// Bos durumdaki "+ Bölüm Ekle" eylemi — SiteHeroBar'daki ust bar butonuyla ayni
-// modali acar (Task 10).
-function AddSectionButton({ className, onClick }: { className?: string; onClick: () => void }) {
-  return (
-    <button type="button" className={className} onClick={onClick}>
-      + Bölüm Ekle
-    </button>
-  );
-}
 
 // "A-Blok Bölümleri (5)" — site adının sonundaki " Şantiyesi" ekini kırpar
 // (mockup deseni, spec §5.4 satır 211).
@@ -29,13 +18,13 @@ function sectionListTitle(siteName: string, count: number): string {
 }
 
 // Şantiye Detay › Bölümler (spec §5). Hero + sekme barı Task 8'de kuruldu;
-// Task 9 SectionCard listesini ve dürüst boş durumu (§7.4) ekledi; Task 10
-// "+ Bölüm Ekle" eylemlerini SectionFormModal'e bağlar.
+// Task 9 SectionCard listesini ve dürüst boş durumu (§7.4) ekledi. "+ Bölüm
+// Ekle" eylemleri F-P6 T3'te tam sayfa forma link verir (`SectionFormModal`
+// EMEKLİ edildi, bkz. task-3-brief.md).
 export default function SiteDetailPage() {
   const pathname = usePathname();
   const { siteId } = useParams<{ projectId: string; siteId: string }>();
   const siteQuery = useSite(siteId);
-  const [isSectionModalOpen, setSectionModalOpen] = useState(false);
 
   if (isForbidden(siteQuery.error)) return <AccessDenied />;
   if (siteQuery.isError) {
@@ -46,18 +35,18 @@ export default function SiteDetailPage() {
   }
 
   const site = siteQuery.data;
+  const newSectionHref = `/projeler/${site.project.id}/santiyeler/${site.id}/bolumler/yeni`;
 
   return (
     <div className="site-detail">
-      <SiteHeroBar site={site} onAddSection={() => setSectionModalOpen(true)} />
+      <SiteHeroBar site={site} />
       <SiteDetailTabs projectId={site.project.id} siteId={site.id} activePath={pathname} />
       {site.section_count === 0 ? (
         <div className="site-detail__empty">
           <p>Bu şantiyede henüz bölüm tanımlanmadı.</p>
-          <AddSectionButton
-            className="site-detail__empty-action"
-            onClick={() => setSectionModalOpen(true)}
-          />
+          <Link href={newSectionHref} className="site-detail__empty-action">
+            + Bölüm Ekle
+          </Link>
         </div>
       ) : (
         <>
@@ -70,9 +59,6 @@ export default function SiteDetailPage() {
             ))}
           </ul>
         </>
-      )}
-      {isSectionModalOpen && (
-        <SectionFormModal siteId={site.id} onClose={() => setSectionModalOpen(false)} />
       )}
     </div>
   );

@@ -3,8 +3,12 @@ import { Button } from "@/components/ui";
 interface FormActionsProps {
   /** İptal → formun liste/detay rotasına döner. */
   onCancel: () => void;
-  /** Taslak Kaydet → is_draft:true. */
-  onSaveDraft: () => void;
+  /**
+   * Taslak Kaydet → is_draft:true. Verilmezse buton hiç basılmaz — düzenleme
+   * kipinde yayına alınmış bir kaydı uyarısız taslağa geri düşürmemek için
+   * (bkz. SectionForm: yalnız ekleme kipinde geçirilir).
+   */
+  onSaveDraft?: () => void;
   /** Birincil eylem → is_draft:false. */
   onSubmit: () => void;
   /** Birincil buton metni: "Projeyi Oluştur" / "Şantiyeyi Oluştur". */
@@ -51,14 +55,16 @@ export function FormActions({
       >
         İptal
       </Button>
-      <Button
-        variant="secondary"
-        className="pf-action pf-action--draft"
-        onClick={onSaveDraft}
-        disabled={isPending}
-      >
-        Taslak Kaydet
-      </Button>
+      {onSaveDraft && (
+        <Button
+          variant="secondary"
+          className="pf-action pf-action--draft"
+          onClick={onSaveDraft}
+          disabled={isPending}
+        >
+          Taslak Kaydet
+        </Button>
+      )}
       <Button
         variant="primary"
         className="pf-action pf-action--submit"

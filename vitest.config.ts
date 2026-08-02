@@ -19,6 +19,11 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
+    // Varsayilan 5 sn, 168 dosyalik paket paralel kosarken agir form gonderim
+    // testlerinde (ProjectCreateView/SiteCreateView/FacilitiesCard) asiliyordu:
+    // ayni dosyalar izole kosuda geciyor, tam kosuda her seferinde BASKA dosya
+    // zaman asimina ugruyordu. Assert'leri zayiflatmadan tampon acilir (F-P6).
+    testTimeout: 15000,
     // e2e/ Playwright'a ait; Vitest'in bu dosyalari test olarak toplamasini engelle
     exclude: [...configDefaults.exclude, "e2e/**"],
   },

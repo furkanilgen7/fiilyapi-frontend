@@ -44,20 +44,30 @@ describe("SectionCard — durum etiketleri (spec §5.4, mockup birebir)", () => 
     renderCard({ status: "planned" });
     expect(screen.getByText("Planlandı")).toBeInTheDocument();
   });
+
+  // F-P6 T2: on_hold artik GERCEK rozet metnini/sinifini tasir — eskiden
+  // "planned" ile ayni notr placeholder'di.
+  it("on_hold durumu icin 'Beklemede' basar ve kendine ozgu sinif tasir", () => {
+    renderCard({ status: "on_hold" });
+    const badge = screen.getByText("Beklemede");
+    expect(badge).toBeInTheDocument();
+    expect(badge.className).toContain("section-card__status--on-hold");
+    expect(badge.className).not.toContain("section-card__status--planned");
+  });
 });
 
-describe("SectionCard — eylem duruma gore degisir (spec §5.4)", () => {
-  // KOD INCELEME BULGUSU: buton olay isleyicisi olmayan sessiz bir kontroldu.
-  // Bolum duzenleme ekrani henuz yok — daldaki diger yazilmamis eylemlerle ayni
-  // §7.3 muamelesi: gorunur kalir, aria-disabled verilmez, title ile soylenir.
-  it("planned -> 'Düzenle' butonu gorunur kalir ve 'Bu bölüm yakında' title'i tasir (§7.3)", () => {
+describe("SectionCard — eylem her durumda bölüm detayına linklenir (F-P6 T2, spec §5.4)", () => {
+  // F-P6 T2: Bölüm Detay ekranı gerçek olduğu için kart artık HER durumda
+  // oraya link basar — önceki "planned -> devre dışı Düzenle" placeholder'ı
+  // kaldırıldı.
+  it("planned -> 'Detay →' baglantisi", () => {
     renderCard({ status: "planned" });
-    const btn = screen.getByRole("button", { name: "Düzenle" });
-    expect(btn).toBeInTheDocument();
-    expect(btn).toHaveAttribute("title", "Bu bölüm yakında");
-    expect(btn).not.toHaveAttribute("aria-disabled");
-    expect(btn).not.toBeDisabled();
-    expect(screen.queryByRole("link", { name: /Detay/ })).not.toBeInTheDocument();
+    const link = screen.getByRole("link", { name: "Detay →" });
+    expect(link).toHaveAttribute(
+      "href",
+      `/projeler/${PROJECT_ID}/santiyeler/${SITE_ID}/bolumler/${BASE_SECTION.id}`,
+    );
+    expect(screen.queryByRole("button", { name: "Düzenle" })).not.toBeInTheDocument();
   });
 
   it("active -> 'Detay →' baglantisi", () => {
@@ -239,11 +249,11 @@ describe("SectionCard — tarih ve sorumlu satiri", () => {
 // css.test.ts yalniz CSS metnini dogrular; gercek odaklanabilirlik/Tab sirasi
 // jsdom + Testing Library ile burada dogrulanir.
 describe("SectionCard — eylem klavyeyle odaklanabilir (davranissal)", () => {
-  it("planned -> 'Duzenle' butonu Tab ile odaklanir", async () => {
+  it("planned -> 'Detay →' baglantisi Tab ile odaklanir", async () => {
     const user = userEvent.setup();
     renderCard({ status: "planned" });
     await user.tab();
-    expect(screen.getByRole("button", { name: "Düzenle" })).toHaveFocus();
+    expect(screen.getByRole("link", { name: "Detay →" })).toHaveFocus();
   });
 
   it("active -> 'Detay →' baglantisi Tab ile odaklanir", async () => {

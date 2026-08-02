@@ -9,7 +9,6 @@ const NO_END_DATE_TITLE = "Bitiş tarihi girilmemiş";
 
 export interface SiteHeroBarProps {
   site: SiteDetail;
-  onAddSection: () => void;
 }
 
 // "Güneşkent Konut Projesi · İşveren: Güneşkent Gayrimenkul A.Ş." — işveren
@@ -160,7 +159,7 @@ function SectionCountCell({ site }: { site: SiteDetail }) {
 // Şantiye Detay hero şeridi (spec §5.2). Beş KPI hücresinden yalnız Bölüm
 // Sayısı ve Kalan Gün gerçek değerdir; Fiziksel İlerleme/Aktif İşçi/Toplam
 // Hakediş `progress_payments`/`timesheet` modülleriyle birlikte gelir (§7.1).
-export function SiteHeroBar({ site, onAddSection }: SiteHeroBarProps) {
+export function SiteHeroBar({ site }: SiteHeroBarProps) {
   const base = `/projeler/${site.project.id}/santiyeler/${site.id}`;
   const meta = metaParts(site);
 
@@ -189,9 +188,11 @@ export function SiteHeroBar({ site, onAddSection }: SiteHeroBarProps) {
           >
             Günlük Kayıt
           </Link>
-          <button type="button" className="site-hero__btn site-hero__btn--solid" onClick={onAddSection}>
+          {/* SectionFormModal EMEKLİ edildi (F-P6 T3) — "+ Bölüm Ekle" artık
+              tam sayfa forma link verir. */}
+          <Link href={`${base}/bolumler/yeni`} className="site-hero__btn site-hero__btn--solid">
             + Bölüm Ekle
-          </button>
+          </Link>
         </div>
       </div>
       <div className="site-hero__kpis">

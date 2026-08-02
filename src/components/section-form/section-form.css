@@ -1,0 +1,155 @@
+/* Bölüm Ekle/Düzenle formuna özgü bloklar.
+   Mockup: projedesign "Form - Bolum Ekle.dc.html" (1000px sütun).
+   Paylaşılan `.pf-*` kabuğu `src/styles/form-shell.css`'tedir; bu dosya ONDAN
+   SONRA import edilir. Bağlam bilgi kutusu `.site-form__info` sınıfını
+   YENİDEN KULLANIR (site-form.css'te tanımlı, aynı görsel — çift tanım
+   önlemek için burada tekrar YAZILMAZ). Çıplak hex/px yok — tokens.css. */
+
+/* F73: "Bölüm Bilgileri" kartında açıklama ızgarasının üstü (mockup satır
+   içi margin-top:14px) — paylaşılan `.pf-grid` ile aynı sütun/gap, yalnız
+   üst boşluk eklenir. */
+.sf-grid--follow-up {
+  margin-top: var(--space-form-section-gap);
+}
+
+/* F87: "Sorumlu & Ekip" / "Takvim & Bütçe" kartlarındaki 1px ayraç. */
+.sf-divider {
+  height: 1px;
+  background: var(--color-surface-muted);
+  margin: var(--space-4) 0;
+}
+
+/* F88-98: Görevli Taşeronlar / Kullanılacak Makineler — devre dışı iki panel. */
+.sf-team-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.sf-team-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-9);
+  cursor: default;
+}
+.sf-team-panel__title {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
+}
+.sf-team-panel__note {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* Kişi seçicisi altı açıklama — SectionsCard/SiteInfoCard deseniyle aynı. */
+.sf-picker-note {
+  margin-top: var(--space-2);
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* F119-123: Milestone Ekle satırı — metin + tarih yan yana. */
+.sf-milestone-row {
+  display: flex;
+  gap: var(--space-2);
+}
+.sf-milestone-row__text {
+  flex: 1;
+}
+.sf-milestone-row__date {
+  width: 150px;
+}
+
+/* F131-211: Bölüme Atanacak İş Kalemleri — devre dışı kart. */
+.sf-boq-card {
+  cursor: default;
+}
+.sf-boq-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5) 0;
+}
+.sf-boq-card__title {
+  font-size: var(--text-form-card-title);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.sf-boq-card__badge {
+  font-size: var(--text-small);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  padding: 2px 8px;
+  border-radius: var(--radius-8);
+  font-weight: var(--weight-regular);
+}
+.sf-boq-card__add {
+  margin-left: auto;
+}
+.sf-boq-card__note {
+  margin: var(--space-3) var(--space-5) 0;
+  padding: var(--space-3);
+  background: var(--color-warning-soft);
+  border-radius: var(--radius-8);
+  font-size: var(--text-small);
+  color: var(--color-text-secondary);
+}
+
+.sf-boq-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--space-3);
+}
+.sf-boq-table th {
+  padding: var(--space-2) var(--space-4);
+  text-align: left;
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.sf-boq-table__empty {
+  padding: var(--space-5);
+  text-align: center;
+  font-size: var(--text-body);
+  color: var(--color-text-subtle);
+}
+/* Final review M1: F194-201 "Şantiye kotasından poz seç" satır-butonu —
+   `.sections__add-dashed` (site-form/SectionsCard.tsx) deseniyle aynı token
+   seti; kart devre dışı olduğu için buton da `disabled`dır (kalıcı karar 1). */
+.sf-boq-table__add-row {
+  background: var(--color-surface-2);
+}
+.sf-boq-table__add-row > td {
+  padding: var(--space-3) var(--space-4);
+}
+.sf-boq-table__add-dashed {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: none;
+  border: 1px dashed var(--color-dashed-border);
+  border-radius: var(--radius-7);
+  padding: var(--space-dashed-btn-y) var(--space-dashed-btn-x);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+.sf-boq-table tfoot td {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  border-top: 2px solid var(--color-primary);
+  background: var(--color-primary-soft);
+}
+.sf-boq-table__total {
+  text-align: right;
+  color: var(--color-text-subtle);
+}
