@@ -1122,7 +1122,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get Section Endpoint
+         * @description P6 §5 — Bolum Detay ekraninin veri ucu.
+         *
+         *     Izin modulu `sites`tir, AYRI bir modul acilmaz: bolum santiyenin ic
+         *     kirilimidir (bkz. router docstring'i). Gorunurluk servistedir
+         *     (`_visible_section`) — gorunmeyen bolum 404 doner ve govdesi var olmayan bir
+         *     UUID'ninkiyle BIREBIR AYNIDIR.
+         */
+        get: operations["get_section_endpoint_sections__section_id__get"];
         put?: never;
         post?: never;
         /**
@@ -3427,7 +3436,16 @@ export interface components {
         Scope: "all" | "own" | "project" | "finance" | "stock" | "limited";
         /**
          * SectionCreate
-         * @description `budget` YOK (spec §2.2) — bolum bedeli BOQ kalemlerinin toplamidir.
+         * @description `Form - Bolum Ekle`in tam govdesi (P6 §5, T3).
+         *
+         *     Yer tutucu `budget` alani BURADA DA YOKTUR (spec §2.2): o BOQ turevidir ve
+         *     girdi olarak alinmaz. Elle girilen `budget_amount` onun yerine GECMEZ, ayri
+         *     bir kolondur (bkz. `Section` docstring'i, §7 S2a).
+         *
+         *     Mockup'ta gorunup burada OLMAYANLAR — spec §6, bu dilimde ARA COZUM
+         *     YAZILMAZ: BOQ atamalari (Form 131-211), taseron/makine (88-98),
+         *     bagimlilik/milestone/Gantt (115-123, 237), belgeler (214-233).
+         *     "Süre (Gün)" (Form 109) `readonly` bir TUREVDIR, saklanmaz.
          */
         SectionCreate: {
             /** Code */
@@ -3449,6 +3467,94 @@ export interface components {
              * @default 0
              */
             sort_order: number;
+            section_type?: components["schemas"]["SectionType"] | null;
+            /** Description */
+            description?: string | null;
+            /** Deputy Manager User Id */
+            deputy_manager_user_id?: string | null;
+            /** Deputy Manager Name */
+            deputy_manager_name?: string | null;
+            /** Planned Worker Count */
+            planned_worker_count?: number | null;
+            /** Budget Amount */
+            budget_amount?: number | string | null;
+            /**
+             * Is Draft
+             * @default false
+             */
+            is_draft: boolean;
+        };
+        /**
+         * SectionDetailResponse
+         * @description P6 §5 — `GET /sections/{section_id}` govdesi: `sections`in TUM kolonlari.
+         *
+         *     `SectionResponse`ten TUREYIR, YERINE GECMEZ: liste ucu (`SectionListResponse`)
+         *     dar govdeyi tasimaya devam eder. Miras alinan DORT YER TUTUCU
+         *     (`progress_pct`/`boq_item_count`/`budget`/`worker_count`) BILINCLI OLARAK
+         *     KALIR (spec §6): hero KPI'lari bu dilimde placeholder desenindedir.
+         *
+         *     `budget` (BOQ turevi yer tutucu) ile `budget_amount` (elle girilen gercek
+         *     kolon) AYNI SEY DEGILDIR ve biri digerinin yerine gecmez — bkz. `Section`
+         *     docstring'i (P6 §7 S2a). BOQ-bolum bagi acildiginda yer tutucu gercege
+         *     donusecek, `budget_amount` ise turev degere cevrilecektir.
+         *
+         *     Mockup'ta gorunup burada OLMAYAN her sey `Section` modelinde de yoktur
+         *     (BOQ atamalari, taseron/makine, bagimlilik/milestone, belgeler): spec §6
+         *     listesi — bu dilimde ARA COZUM yazilmaz.
+         */
+        SectionDetailResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string | null;
+            /** Name */
+            name: string;
+            status: components["schemas"]["SectionStatus"];
+            /** Manager User Id */
+            manager_user_id?: string | null;
+            /** Manager Name */
+            manager_name: string | null;
+            /** Start Date */
+            start_date: string | null;
+            /** End Date */
+            end_date: string | null;
+            /** Sort Order */
+            sort_order: number;
+            progress_pct: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            boq_item_count: components["schemas"]["CountPlaceholder"];
+            budget: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            worker_count: components["schemas"]["CountPlaceholder"];
+            /**
+             * Site Id
+             * Format: uuid
+             */
+            site_id: string;
+            section_type: components["schemas"]["SectionType"] | null;
+            /** Description */
+            description: string | null;
+            /** Deputy Manager User Id */
+            deputy_manager_user_id: string | null;
+            /** Deputy Manager Name */
+            deputy_manager_name: string | null;
+            /** Planned Worker Count */
+            planned_worker_count: number | null;
+            /** Budget Amount */
+            budget_amount: string | null;
+            /** Is Draft */
+            is_draft: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /** SectionListResponse */
         SectionListResponse: {
@@ -3489,9 +3595,11 @@ export interface components {
         };
         /**
          * SectionStatus
+         * @description Sira `Form - Bolum Ekle` satir 71'den gelir: Planlandi · Aktif · Beklemede.
+         *     `on_hold` P6'da eklendi (spec §4 / §7 S1 onayi); `completed` KALIR.
          * @enum {string}
          */
-        SectionStatus: "planned" | "active" | "completed";
+        SectionStatus: "planned" | "active" | "on_hold" | "completed";
         /**
          * SectionStatusCounts
          * @description Mockup'taki "3 aktif · 2 bekliyor" kirilimi (spec §3.2).
@@ -3504,6 +3612,14 @@ export interface components {
             /** Completed */
             completed: number;
         };
+        /**
+         * SectionType
+         * @description Bolum turu (`Form - Bolum Ekle` satir 70, spec §3). Etiketler:
+         *     Temel & Altyapi · Kaba Insaat · Ince Isler · Cephe & Cati · Mekanik-Elektrik ·
+         *     Peyzaj · Teslimat & Kabul. Nullable — taslak destegi (kalici karar 4).
+         * @enum {string}
+         */
+        SectionType: "foundation_infra" | "structural" | "finishing" | "facade_roof" | "mep" | "landscape" | "handover";
         /**
          * SectionUpdate
          * @description `site_id` YOK — bolum baska santiyeye tasinamaz.
@@ -3524,6 +3640,19 @@ export interface components {
             end_date?: string | null;
             /** Sort Order */
             sort_order?: number | null;
+            section_type?: components["schemas"]["SectionType"] | null;
+            /** Description */
+            description?: string | null;
+            /** Deputy Manager User Id */
+            deputy_manager_user_id?: string | null;
+            /** Deputy Manager Name */
+            deputy_manager_name?: string | null;
+            /** Planned Worker Count */
+            planned_worker_count?: number | null;
+            /** Budget Amount */
+            budget_amount?: number | string | null;
+            /** Is Draft */
+            is_draft?: boolean | null;
         };
         /** ShareholderInput */
         ShareholderInput: {
@@ -8500,7 +8629,52 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SectionResponse"];
+                    "application/json": components["schemas"]["SectionDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_section_endpoint_sections__section_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                section_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SectionDetailResponse"];
                 };
             };
             /** @description Yetkisiz işlem */
@@ -8592,7 +8766,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SectionResponse"];
+                    "application/json": components["schemas"]["SectionDetailResponse"];
                 };
             };
             /** @description Yetkisiz işlem */
