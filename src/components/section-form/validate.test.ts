@@ -7,7 +7,7 @@ function values(overrides: Partial<SectionFormValues> = {}): SectionFormValues {
   return { ...emptySectionFormValues(), ...overrides };
 }
 
-const AVAILABLE = { isUserListUnavailable: false };
+const AVAILABLE = { isUserListUnavailable: false, hasExistingManagerName: false };
 
 describe("validateSectionForm — taslak (is_draft: true)", () => {
   it("ad HARİÇ hiçbir zorunluluk uygulanmaz", () => {
@@ -59,6 +59,21 @@ describe("validateSectionForm — taslak dışı (is_draft: false, Bölümü Olu
     const errors = validateSectionForm(values({ ...base, managerUserId: "" }), {
       isDraft: false,
       isUserListUnavailable: true,
+      hasExistingManagerName: false,
+    });
+    expect(errors.managerUserId).toBeUndefined();
+  });
+
+  // final review I1: sec-2 senaryosu (mock-backend.ts) — manager_user_id
+  // null, manager_name "M. Arslan" dolu, eski (serbest-metin) sorumlulu
+  // kayıt. Backend "manager_user_id BOŞ VEYA manager_name BOŞ DEĞİL"
+  // ikisinden birini yeter sayar; form bu bayrak olmadan böyle kayıtları
+  // asla kaydedemezdi.
+  it("hasExistingManagerName true iken managerUserId boş olsa da hata YOK (eski serbest-metin sorumlu)", () => {
+    const errors = validateSectionForm(values({ ...base, managerUserId: "" }), {
+      isDraft: false,
+      isUserListUnavailable: false,
+      hasExistingManagerName: true,
     });
     expect(errors.managerUserId).toBeUndefined();
   });

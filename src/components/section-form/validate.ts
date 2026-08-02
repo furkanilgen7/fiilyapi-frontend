@@ -34,6 +34,16 @@ interface ValidateOptions {
    * yokken tek yol da kapanmış olur, bu yüzden kural gevşer).
    */
   isUserListUnavailable: boolean;
+  /**
+   * Düzenleme kipinde, mevcut kayıtta serbest-metin `manager_name` doluysa
+   * `true` (final review I1). Backend kuralı "manager_user_id BOŞ VEYA
+   * manager_name BOŞ DEĞİL" ikisinden birini yeter sayar; form `manager_name`
+   * alanını ne okur ne yazar (build-body.ts PATCH gövdesine hiç sızdırmaz),
+   * bu yüzden eski (yalnız-isim) sorumlu kayıtlı bölümler bu bayrak olmadan
+   * "Bölüm sorumlusu seçiniz." duvarına çarpar — kullanıcı hiçbir şey
+   * değiştirmese bile kaydedemez.
+   */
+  hasExistingManagerName: boolean;
 }
 
 /**
@@ -43,7 +53,7 @@ interface ValidateOptions {
  */
 export function validateSectionForm(
   values: SectionFormValues,
-  { isDraft, isUserListUnavailable }: ValidateOptions,
+  { isDraft, isUserListUnavailable, hasExistingManagerName }: ValidateOptions,
 ): SectionFormErrors {
   const errors: SectionFormErrors = {};
 
@@ -61,7 +71,7 @@ export function validateSectionForm(
   if (!isDraft) {
     if (!values.sectionType) errors.sectionType = MESSAGES.sectionTypeRequired;
 
-    if (!values.managerUserId && !isUserListUnavailable) {
+    if (!values.managerUserId && !isUserListUnavailable && !hasExistingManagerName) {
       errors.managerUserId = MESSAGES.managerRequired;
     }
 

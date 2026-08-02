@@ -12,8 +12,6 @@ export const SELECT_PLACEHOLDER = "Seçiniz...";
 export const SECTION_FIELD_MAX_LENGTH = {
   name: 150,
   code: 50,
-  manager_name: 200,
-  deputy_manager_name: 200,
 } as const satisfies Record<string, number>;
 
 /** Bölüm Tipi seçenekleri — F70 sırasıyla (`section-labels.ts` tek kaynak). */

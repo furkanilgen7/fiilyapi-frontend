@@ -1,6 +1,15 @@
 import { Button } from "@/components/ui";
 import { pendingModuleLabel } from "@/lib/pending-modules";
 
+/** F198-199 artı ikonu — `SectionsCard.tsx`'teki `PlusIcon` deseniyle aynı. */
+function PlusIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+      <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 const COLUMNS = [
   "Poz No",
   "Poz Adı",
@@ -48,6 +57,17 @@ export function BoqAssignmentCard() {
           <tr>
             <td colSpan={COLUMNS.length + 1} className="sf-boq-table__empty">
               Bu bölüme henüz iş kalemi atanmadı — iş kalemi bağları ile birlikte gelir.
+            </td>
+          </tr>
+          {/* F194-201: "Şantiye kotasından poz seç" satır-butonu — bir veri
+              satırı değil, kontroldür; ÜST KURAL gereği devre dışı basılır
+              (F135 "+ Poz Seç" zaten yukarıda basılı). */}
+          <tr className="sf-boq-table__add-row">
+            <td colSpan={COLUMNS.length + 1}>
+              <button type="button" className="sf-boq-table__add-dashed" disabled>
+                <PlusIcon />
+                Şantiye kotasından poz seç
+              </button>
             </td>
           </tr>
         </tbody>

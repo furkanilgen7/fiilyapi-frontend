@@ -120,6 +120,27 @@
   font-size: var(--text-body);
   color: var(--color-text-subtle);
 }
+/* Final review M1: F194-201 "Şantiye kotasından poz seç" satır-butonu —
+   `.sections__add-dashed` (site-form/SectionsCard.tsx) deseniyle aynı token
+   seti; kart devre dışı olduğu için buton da `disabled`dır (kalıcı karar 1). */
+.sf-boq-table__add-row {
+  background: var(--color-surface-2);
+}
+.sf-boq-table__add-row > td {
+  padding: var(--space-3) var(--space-4);
+}
+.sf-boq-table__add-dashed {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: none;
+  border: 1px dashed var(--color-dashed-border);
+  border-radius: var(--radius-7);
+  padding: var(--space-dashed-btn-y) var(--space-dashed-btn-x);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
 .sf-boq-table tfoot td {
   padding: var(--space-3) var(--space-4);
   font-size: var(--text-body);

@@ -164,6 +164,8 @@ describe("SectionForm — create kipi kabuk (F35-60)", () => {
     renderCreate();
     expect(screen.getByRole("button", { name: "+ Poz Seç" })).toBeDisabled();
     expect(screen.getByText("Bu bölüme henüz iş kalemi atanmadı — iş kalemi bağları ile birlikte gelir.")).toBeInTheDocument();
+    // final review M1: F194-201 satır-butonu da basılmalı, devre dışı.
+    expect(screen.getByRole("button", { name: "Şantiye kotasından poz seç" })).toBeDisabled();
     const gantt = screen.getByLabelText("Bölümü proje takvimine (Gantt) otomatik ekle");
     expect(gantt).toBeDisabled();
     expect(gantt).toBeChecked();
@@ -299,5 +301,37 @@ describe("SectionForm — edit kipi", () => {
     const [, opts] = updateMutate.mock.calls[0];
     act(() => opts.onSuccess({ id: SECTION_ID }));
     expect(pushMock).toHaveBeenCalledWith(`/projeler/${PROJECT_ID}/santiyeler/${SITE_ID}/bolumler/${SECTION_ID}`);
+  });
+
+  // final review I3: detay sorgusu 403 DIŞI bir hatayla (404/500) başarısız
+  // olursa `isLoading:false` + `data:undefined` olur — düzeltmeden önce ekran
+  // kalıcı "Yükleniyor…" mesajında donuyordu.
+  it("detay sorgusu hata verirse (403 dışı) 'Bölüm yüklenemedi' basar, sonsuz yüklenmede kalmaz", () => {
+    vi.mocked(useSection).mockReturnValue(
+      queryResult({ data: undefined, isLoading: false, isError: true, error: new Error("500") }),
+    );
+    render(<SectionForm mode="edit" projectId={PROJECT_ID} siteId={SITE_ID} sectionId={SECTION_ID} />);
+
+    expect(screen.getByText("Bölüm yüklenemedi")).toBeInTheDocument();
+    expect(screen.queryByText("Yükleniyor…")).not.toBeInTheDocument();
+  });
+
+  // final review I1: sec-2 senaryosu (mock-backend.ts) — `manager_user_id`
+  // null, `manager_name` "M. Arslan" dolu (eski, serbest-metin sorumlulu
+  // kayıt). Form bu alanı yazmaz ama zorunluluk düşmeli — kullanıcı hiçbir
+  // şeyi değiştirmeden "Kaydet"e basabilmeli.
+  it("mevcut kayıtta manager_user_id null ama manager_name doluysa (eski kayıt) sorumlu zorunlu değildir", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useSection).mockReturnValue(
+      queryResult({
+        data: { ...(SECTION_DETAIL as Record<string, unknown>), manager_user_id: null, manager_name: "M. Arslan" },
+      }),
+    );
+    render(<SectionForm mode="edit" projectId={PROJECT_ID} siteId={SITE_ID} sectionId={SECTION_ID} />);
+
+    await clickFooterAction(user, "Kaydet");
+
+    expect(screen.queryByText(MESSAGES.managerRequired)).not.toBeInTheDocument();
+    expect(updateMutate).toHaveBeenCalledTimes(1);
   });
 });

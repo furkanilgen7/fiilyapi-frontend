@@ -92,6 +92,13 @@ export function SectionForm(props: SectionFormProps) {
   if (isForbidden(siteQuery.error) || isForbidden(projectQuery.error) || isForbidden(detailQuery.error)) {
     return <AccessDenied />;
   }
+  // final review I3: 403 dışı hatalarda (404/500) `isLoading:false` +
+  // `data:undefined` olur — `isError` dalı olmadan ekran kalıcı "Yükleniyor…"
+  // mesajında donar, hata yutulurdu. `SectionDetailView.tsx`teki desenin
+  // birebiri.
+  if (isEdit && detailQuery.isError) {
+    return <p className="site-form__message">Bölüm yüklenemedi</p>;
+  }
   if (isEdit && (detailQuery.isLoading || !detail)) {
     return <p className="site-form__message">Yükleniyor…</p>;
   }
@@ -129,6 +136,10 @@ export function SectionForm(props: SectionFormProps) {
     const nextErrors = validateSectionForm(values, {
       isDraft,
       isUserListUnavailable: isUserListUnavailable(users),
+      // final review I1: eski (yalnız-isim) sorumlu kayıtlı bölümler için
+      // sorumlu zorunluluğunu düşürür — detay.manager_name doluysa form hiç
+      // dokunmasa da backend kuralı zaten karşılanmış demektir.
+      hasExistingManagerName: isEdit ? Boolean(detail?.manager_name?.trim()) : false,
     });
     setErrors(nextErrors);
 

@@ -31,7 +31,13 @@ test("santiye detayindan bolum detayina link, hero + KPI + sekmeler + Hakedis Ol
   // 2) Hero alanları (D54-96): başlık, durum rozeti, meta satırı.
   await expect(page.getByRole("heading", { level: 1, name: "Kat 6–10 Kaba İnşaat" })).toBeVisible();
   await expect(page.getByText("Aktif", { exact: true })).toBeVisible();
-  await expect(page.getByText("A-Blok Şantiyesi", { exact: false })).toBeVisible();
+  // Düzeltme turu 2 (final review C1): "A-Blok Şantiyesi" hem hero meta
+  // satırında (D62) HEM DE DrillSidebar'ın `.drill-group__label`'ında
+  // (project-nav-config.ts:83, activeSiteGroup heading) basılıyor —
+  // kapsamsız `getByText` strict-mode ihlali verirdi (section-form.spec.ts'te
+  // `.field__error` ile kapatılan aynı sınıf hata). Assert'i hero meta
+  // satırına SCOPE ediyoruz.
+  await expect(page.locator(".section-hero__meta")).toContainText("A-Blok Şantiyesi");
   await expect(page.getByText("Sorumlu: Sercan Öztürk")).toBeVisible();
 
   // 3) KPI ayrımı — Bölüm Bedeli (budget_amount) VE Kalan Gün (end_date türevi)
