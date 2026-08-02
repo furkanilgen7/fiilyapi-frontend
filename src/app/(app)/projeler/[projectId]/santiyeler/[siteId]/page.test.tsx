@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import SiteDetailPage from "./page";
@@ -61,9 +60,8 @@ function mockQuery(value: Partial<ReturnType<typeof useSite>>) {
   } as never);
 }
 
-// SectionFormModal (Task 10) kullanir useCreateSection -> useMutation/useQueryClient,
-// bu yuzden QueryClientProvider'a sarmali render gerekir (UserFormModal.test.tsx
-// deseni, satir 1-13).
+// Sayfa `useSite` disinda ag cagrisi yapmaz ama diger sayfalar QueryClientProvider
+// bekler (tutarlilik icin ayni sarmalayici korunur).
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -108,7 +106,13 @@ describe("SiteDetailPage", () => {
     renderPage();
     const message = screen.getByText("Bu şantiyede henüz bölüm tanımlanmadı.");
     expect(message).toBeInTheDocument();
-    expect(within(message.parentElement as HTMLElement).getByRole("button", { name: "+ Bölüm Ekle" })).toBeInTheDocument();
+    const emptyStateLink = within(message.parentElement as HTMLElement).getByRole("link", {
+      name: "+ Bölüm Ekle",
+    });
+    expect(emptyStateLink).toHaveAttribute(
+      "href",
+      `/projeler/${PROJECT_ID}/santiyeler/${SITE_ID}/bolumler/yeni`,
+    );
   });
 
   it("bolumlu santiyede bos durum metnini basmaz, kart listesini basar", () => {
@@ -139,25 +143,13 @@ describe("SiteDetailPage", () => {
     expect(screen.getByText("Temel & Bodrum Katlar")).toBeInTheDocument();
   });
 
-  it("hero'daki + Bolum Ekle SectionFormModal'i acar (Task 10)", async () => {
-    const user = userEvent.setup();
+  it("hero'daki + Bolum Ekle tam sayfa forma link verir (F-P6 T3, SectionFormModal emekli)", () => {
     mockQuery({ data: SITE });
     renderPage();
-    expect(screen.queryByRole("dialog", { name: "Yeni Bölüm" })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "+ Bölüm Ekle" }));
-    expect(screen.getByRole("dialog", { name: "Yeni Bölüm" })).toBeInTheDocument();
-  });
-
-  it("bos durumdaki + Bolum Ekle de ayni SectionFormModal'i acar (Task 10)", async () => {
-    const user = userEvent.setup();
-    mockQuery({ data: { ...SITE, section_count: 0 } });
-    renderPage();
-    const message = screen.getByText("Bu şantiyede henüz bölüm tanımlanmadı.");
-    const emptyStateButton = within(message.parentElement as HTMLElement).getByRole("button", {
-      name: "+ Bölüm Ekle",
-    });
-    expect(screen.queryByRole("dialog", { name: "Yeni Bölüm" })).not.toBeInTheDocument();
-    await user.click(emptyStateButton);
-    expect(screen.getByRole("dialog", { name: "Yeni Bölüm" })).toBeInTheDocument();
+    const addSection = screen.getByRole("link", { name: "+ Bölüm Ekle" });
+    expect(addSection).toHaveAttribute(
+      "href",
+      `/projeler/${PROJECT_ID}/santiyeler/${SITE_ID}/bolumler/yeni`,
+    );
   });
 });
