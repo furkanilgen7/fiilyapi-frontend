@@ -8,6 +8,10 @@ import type { components } from "@/lib/api/schema";
 export type ProgressPaymentListResponse = components["schemas"]["ProgressPaymentListResponse"];
 export type ProgressPaymentListItem = components["schemas"]["ProgressPaymentListItem"];
 export type ProgressPaymentDetail = components["schemas"]["ProgressPaymentDetail"];
+// P7 T5 eklemesi: `ProgressPaymentDetail.lines[]`in eleman tipi zaten
+// üretilmişti ama takma ad olarak dışa aktarılmamıştı — hakediş formunun
+// pivot modülü (`pivot.ts`) mevcut satırları önceden doldururken kullanır.
+export type ProgressPaymentLineDetail = components["schemas"]["ProgressPaymentLineDetail"];
 export type ProgressPaymentSummary = components["schemas"]["ProgressPaymentSummary"];
 export type ProgressPaymentStatus = components["schemas"]["ProgressPaymentStatus"];
 

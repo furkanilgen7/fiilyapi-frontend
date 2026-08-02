@@ -72,7 +72,7 @@ export function formatCurrencyPrecise(value: string | number): string {
   return `₺ ${formatDecimal(value, 2)}`;
 }
 
-/** Türkçe ay adları — yalnız bu dosyada kullanılır, dışa aktarılmaz. */
+/** Türkçe ay adları. */
 const TR_MONTHS = [
   "Ocak",
   "Şubat",
@@ -87,6 +87,15 @@ const TR_MONTHS = [
   "Kasım",
   "Aralık",
 ];
+
+/**
+ * Dönem seçici seçenekleri (P7 T5): hakediş oluştur/düzenle formunun ay
+ * `Select`i BUNU kullanır — `TR_MONTHS`i KOPYALAMAZ, aynı diziden türetir
+ * (brief §Form üst bölümü: "T2'de yazılmış ay yardımcısını YENİDEN KULLAN").
+ */
+export const PERIOD_MONTHS: readonly { value: number; label: string }[] = TR_MONTHS.map(
+  (label, index) => ({ value: index + 1, label }),
+);
 
 /**
  * Hakediş dönemi (P7 T2 brief): "Mayıs 2026". `month` 1-12 aralığında

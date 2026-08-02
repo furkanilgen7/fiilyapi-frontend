@@ -14,6 +14,13 @@ import {
 export type ProgressPaymentCreate = components["schemas"]["ProgressPaymentCreate"];
 export type ProgressPaymentUpdate = components["schemas"]["ProgressPaymentUpdate"];
 export type ProgressPaymentLinesSave = components["schemas"]["ProgressPaymentLinesSave"];
+// P7 T5 eklemesi: `ProgressPaymentLineInput` şemada zaten üretilmişti
+// (`ProgressPaymentCreate.lines[]` / `ProgressPaymentLinesSave.lines[]`
+// içinde kullanılıyordu) ama takma ad olarak DIŞA AKTARILMAMIŞTI — hakediş
+// formunun pivot modülü (`pivot.ts`) `PUT …/lines` gövdesini üretirken bu
+// tipi tek satır şekli olarak kullanır. `schema.d.ts`/`openapi.json`
+// DEĞİŞMEDİ, yalnız var olan şemaya yeni bir takma ad eklendi.
+export type ProgressPaymentLineInput = components["schemas"]["ProgressPaymentLineInput"];
 export type RejectBody = components["schemas"]["RejectBody"];
 export type RefreshPricesResponse = components["schemas"]["RefreshPricesResponse"];
 

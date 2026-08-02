@@ -1,0 +1,435 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+import { ProgressPaymentForm } from "./ProgressPaymentForm";
+import { useSession } from "@/components/shell/SessionProvider";
+import type { MeResponse } from "@/lib/auth/types";
+import { useContractDistribution, useEmployerContract } from "@/lib/api/hooks/useContract";
+import { useProgressPayment, type ProgressPaymentDetail } from "@/lib/api/hooks/useProgressPayments";
+import { useProject } from "@/lib/api/hooks/useProjects";
+import {
+  useCreateProgressPayment,
+  useRefreshProgressPaymentPrices,
+  useReplaceProgressPaymentLines,
+  useUpdateProgressPayment,
+} from "@/lib/api/hooks/useProgressPaymentMutations";
+import { BackendError } from "@/lib/api/unwrap";
+
+vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
+
+const pushMock = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: pushMock }),
+  useParams: () => ({ paymentId: PAYMENT_ID }),
+}));
+
+vi.mock("@/lib/api/hooks/useContract", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useContract")>()),
+  useContractDistribution: vi.fn(),
+  useEmployerContract: vi.fn(),
+}));
+
+vi.mock("@/lib/api/hooks/useProgressPayments", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useProgressPayments")>()),
+  useProgressPayment: vi.fn(),
+}));
+
+vi.mock("@/lib/api/hooks/useProjects", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useProjects")>()),
+  useProject: vi.fn(),
+}));
+
+vi.mock("@/lib/api/hooks/useProgressPaymentMutations", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useProgressPaymentMutations")>()),
+  useCreateProgressPayment: vi.fn(),
+  useUpdateProgressPayment: vi.fn(),
+  useReplaceProgressPaymentLines: vi.fn(),
+  useRefreshProgressPaymentPrices: vi.fn(),
+}));
+
+const PROJECT_ID = "11111111-1111-1111-1111-111111111111";
+const PAYMENT_ID = "22222222-2222-2222-2222-222222222222";
+const SITE_A = { id: "site-a", name: "A-Blok" };
+const SITE_B = { id: "site-b", name: "B-Blok" };
+
+const ITEM_1 = {
+  id: "item-1",
+  code: "03.001",
+  description: "Kat Döşemesi C25/30",
+  unit: "m³",
+  quantity: "1500.000",
+  unit_price: "1850.00",
+  allocations: [
+    { site_id: SITE_A.id, quantity: "900.000", boq_item_id: "boq-1" },
+    { site_id: SITE_B.id, quantity: "420.000", boq_item_id: "boq-2" },
+  ],
+  remaining_quantity: "180.000",
+};
+// Yalnız A-Blok'a dağıtılmış — B-Blok hücresi kapalı olmalı.
+const ITEM_2 = {
+  id: "item-2",
+  code: "03.002",
+  description: "Kolon Betonu C30/37",
+  unit: "m³",
+  quantity: "300.000",
+  unit_price: "2100.00",
+  allocations: [{ site_id: SITE_A.id, quantity: "300.000", boq_item_id: "boq-3" }],
+  remaining_quantity: "0.000",
+};
+
+function distributionFixture(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    sites: [SITE_A, SITE_B],
+    groups: [{ id: "g-1", name: "A — Betonarme İşleri", sort_order: 10, items: [ITEM_1, ITEM_2] }],
+    undistributed_item_count: 0,
+    undistributed_item_names: [],
+    site_summaries: [],
+    distributed_item_count: 2,
+    total_item_count: 2,
+    ...overrides,
+  };
+}
+
+function contractFixture(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    project_id: PROJECT_ID,
+    contract_no: "SZL-2025-001",
+    employer_name: "Güneşkent Gayrimenkul",
+    has_price_escalation: true,
+    status: "active",
+    ...overrides,
+  };
+}
+
+function detailFixture(overrides: Partial<ProgressPaymentDetail> = {}): ProgressPaymentDetail {
+  return {
+    id: PAYMENT_ID,
+    project_id: PROJECT_ID,
+    project_name: "Güneşkent Konut",
+    sequence_no: 5,
+    period_year: 2026,
+    period_month: 7,
+    description: "Kaba inşaat",
+    status: "draft",
+    vat_pct: "20.00",
+    advance_pct: "20.00",
+    retainage_pct: "5.00",
+    default_coefficient: "1.000",
+    submitted_at: null,
+    approved_at: null,
+    approved_by: null,
+    paid_at: null,
+    created_by: "44444444-4444-4444-4444-444444444444",
+    created_at: "2026-07-01T00:00:00Z",
+    updated_at: "2026-07-01T00:00:00Z",
+    lines: [],
+    groups: [],
+    calculation: { gross: "0", vat: "0", advance_deduction: "0", retention: "0", net: "0" },
+    progress: { financial_pct: null, physical_pct: null, duration_pct: null },
+    dropped_orphan_count: 0,
+    ...overrides,
+  } as ProgressPaymentDetail;
+}
+
+const BASE_ME = {
+  id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  email: "ayse@ornek.com",
+  full_name: "Ayşe Yılmaz",
+  title: null,
+  role_key: "procurement",
+  status: "active",
+} as unknown as MeResponse;
+
+function mockSession(permissions?: Record<string, string>) {
+  const me = permissions === undefined ? BASE_ME : { ...BASE_ME, permissions };
+  vi.mocked(useSession).mockReturnValue({ me: me as MeResponse, isLoading: false });
+}
+
+function queryResult<T>(value: Partial<{ data: T; isLoading: boolean; isError: boolean; error: unknown }>) {
+  return { data: undefined, isLoading: false, isError: false, error: null, ...value } as never;
+}
+
+function mutationResult(overrides: Partial<{ mutate: ReturnType<typeof vi.fn>; isPending: boolean }> = {}) {
+  return { mutate: vi.fn(), isPending: false, ...overrides } as never;
+}
+
+function setupCommonMocks() {
+  mockSession({ progress_payments: "draft" });
+  vi.mocked(useProject).mockReturnValue(queryResult({ data: { id: PROJECT_ID, name: "Güneşkent Konut" } }));
+  vi.mocked(useContractDistribution).mockReturnValue(queryResult({ data: distributionFixture() }));
+  vi.mocked(useEmployerContract).mockReturnValue(queryResult({ data: contractFixture() }));
+  vi.mocked(useProgressPayment).mockReturnValue(queryResult({}));
+  vi.mocked(useCreateProgressPayment).mockReturnValue(mutationResult());
+  vi.mocked(useUpdateProgressPayment).mockReturnValue(mutationResult());
+  vi.mocked(useReplaceProgressPaymentLines).mockReturnValue(mutationResult());
+  vi.mocked(useRefreshProgressPaymentPrices).mockReturnValue(mutationResult());
+}
+
+function renderForm(props: Parameters<typeof ProgressPaymentForm>[0]) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={client}>
+      <ProgressPaymentForm {...props} />
+    </QueryClientProvider>,
+  );
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  setupCommonMocks();
+});
+
+describe("ProgressPaymentForm — izin", () => {
+  it("yazma izni yoksa AccessDenied basar", () => {
+    mockSession({ progress_payments: "view" });
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    expect(screen.getByText("Bu alana yetkiniz yok")).toBeInTheDocument();
+  });
+});
+
+describe("ProgressPaymentForm — create ve edit kiplerinin aynı bileşeni kullanması", () => {
+  it("create kipinde pivot tablosunu şantiye başlıklarıyla basar", async () => {
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    expect(await screen.findByText("İşveren Hakediş Oluştur")).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: SITE_A.name })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: SITE_B.name })).toBeInTheDocument();
+  });
+
+  it("edit kipinde AYNI pivot tablo yapısını (aynı şantiye başlıkları) basar", async () => {
+    vi.mocked(useProgressPayment).mockReturnValue(queryResult({ data: detailFixture() }));
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+    expect(await screen.findByText("İşveren Hakediş #5")).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: SITE_A.name })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: SITE_B.name })).toBeInTheDocument();
+  });
+
+  it("edit kipinde draft değilse Türkçe uyarı basar, form gösterilmez", () => {
+    vi.mocked(useProgressPayment).mockReturnValue(
+      queryResult({ data: detailFixture({ status: "pending_approval" }) }),
+    );
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+    expect(
+      screen.getByText("Bu hakediş artık taslak durumunda değil, düzenlenemez."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: SITE_A.name })).not.toBeInTheDocument();
+  });
+});
+
+describe("ProgressPaymentForm — Fiyat Farkı bandı", () => {
+  it("has_price_escalation false iken katsayı girişi kilitlidir", async () => {
+    vi.mocked(useEmployerContract).mockReturnValue(
+      queryResult({ data: contractFixture({ has_price_escalation: false }) }),
+    );
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    const coefficientInput = await screen.findByLabelText("Katsayı (Dn/D0)");
+    expect(coefficientInput).toBeDisabled();
+    expect(coefficientInput).toHaveValue("1");
+  });
+
+  it("has_price_escalation true iken katsayı girişi düzenlenebilir", async () => {
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    const coefficientInput = await screen.findByLabelText("Katsayı (Dn/D0)");
+    expect(coefficientInput).not.toBeDisabled();
+  });
+
+  it("Endeks seçici HİÇ BASILMAZ (index_type şemada yok)", async () => {
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    await screen.findByText("İşveren Hakediş Oluştur");
+    expect(screen.queryByText("Endeks")).not.toBeInTheDocument();
+  });
+});
+
+describe("ProgressPaymentForm — dağıtılmamış poz uyarısı", () => {
+  it("undistributed_item_count > 0 iken Türkçe uyarı bandı basar", async () => {
+    vi.mocked(useContractDistribution).mockReturnValue(
+      queryResult({
+        data: distributionFixture({
+          undistributed_item_count: 1,
+          undistributed_item_names: ["04.005 — Sıva İşleri"],
+        }),
+      }),
+    );
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    const alert = await screen.findByTestId("pp-form-undistributed-alert");
+    expect(alert).toHaveTextContent("04.005 — Sıva İşleri");
+  });
+
+  it("undistributed_item_count 0 iken uyarı bandı YOK", async () => {
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    await screen.findByText("İşveren Hakediş Oluştur");
+    expect(screen.queryByTestId("pp-form-undistributed-alert")).not.toBeInTheDocument();
+  });
+});
+
+describe("ProgressPaymentForm — refresh-prices görünürlüğü ve bayat fiyat uyarısı", () => {
+  it("create kipinde Fiyatları Tazele butonu YOK", async () => {
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    await screen.findByText("İşveren Hakediş Oluştur");
+    expect(screen.queryByTestId("pp-form-refresh-prices")).not.toBeInTheDocument();
+  });
+
+  it("edit kipinde draft durumunda Fiyatları Tazele butonu görünür", async () => {
+    vi.mocked(useProgressPayment).mockReturnValue(queryResult({ data: detailFixture({ status: "draft" }) }));
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+    expect(await screen.findByTestId("pp-form-refresh-prices")).toBeInTheDocument();
+  });
+
+  it("is_price_stale true olan satır varsa bayat fiyat uyarısı basar", async () => {
+    vi.mocked(useProgressPayment).mockReturnValue(
+      queryResult({
+        data: detailFixture({
+          status: "draft",
+          lines: [
+            {
+              id: "line-1",
+              contract_item_id: ITEM_1.id,
+              site_id: SITE_A.id,
+              code: ITEM_1.code,
+              description: ITEM_1.description,
+              unit: ITEM_1.unit,
+              contract_unit_price: ITEM_1.unit_price,
+              coefficient: "1.000",
+              quantity: "900.000",
+              group_name: "A — Betonarme İşleri",
+              sort_order: 0,
+              adjusted_unit_price: ITEM_1.unit_price,
+              line_total: "1665000.00",
+              previous_quantity: "0.000",
+              previous_amount: "0.00",
+              cumulative_quantity: "900.000",
+              cumulative_amount: "1665000.00",
+              is_price_stale: true,
+            },
+          ] as never,
+        }),
+      }),
+    );
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+    expect(await screen.findByTestId("pp-form-stale-price-alert")).toBeInTheDocument();
+  });
+});
+
+describe("ProgressPaymentForm — kaydetme gövdesi (EN KRİTİK)", () => {
+  it("create: TÜM düzenlenebilir hücreleri (0 miktarlılar dahil) tek gövdede gönderir", async () => {
+    const mutate = vi.fn();
+    vi.mocked(useCreateProgressPayment).mockReturnValue(mutationResult({ mutate }));
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+
+    const saveButtons = await screen.findAllByRole("button", { name: "Taslak Kaydet" });
+    await userEvent.click(saveButtons[0]);
+
+    expect(mutate).toHaveBeenCalledTimes(1);
+    const [{ body }] = mutate.mock.calls[0];
+    // item-1: A + B (2 hücre), item-2: yalnız A (1 hücre) → toplam 3
+    expect(body.lines).toHaveLength(3);
+    expect(body.lines.every((l: { quantity: string }) => l.quantity === "0")).toBe(true);
+    const keys = body.lines.map((l: { contract_item_id: string; site_id: string }) => `${l.contract_item_id}::${l.site_id}`);
+    expect(new Set(keys).size).toBe(keys.length);
+    // item-2 × B-Blok dağıtılmadığı için gövdede OLMAMALI.
+    expect(
+      body.lines.some(
+        (l: { contract_item_id: string; site_id: string }) =>
+          l.contract_item_id === ITEM_2.id && l.site_id === SITE_B.id,
+      ),
+    ).toBe(false);
+  });
+
+  it("edit: PATCH başarılı olunca PUT …/lines TÜM düzenlenebilir hücrelerle çağrılır", async () => {
+    const updateMutate = vi.fn((_vars, opts) => opts?.onSuccess?.());
+    const replaceMutate = vi.fn();
+    vi.mocked(useProgressPayment).mockReturnValue(queryResult({ data: detailFixture() }));
+    vi.mocked(useUpdateProgressPayment).mockReturnValue(mutationResult({ mutate: updateMutate }));
+    vi.mocked(useReplaceProgressPaymentLines).mockReturnValue(mutationResult({ mutate: replaceMutate }));
+
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+    const saveButtons = await screen.findAllByRole("button", { name: "Taslak Kaydet" });
+    await userEvent.click(saveButtons[0]);
+
+    expect(updateMutate).toHaveBeenCalledTimes(1);
+    expect(replaceMutate).toHaveBeenCalledTimes(1);
+    const [{ body }] = replaceMutate.mock.calls[0];
+    expect(body.lines).toHaveLength(3);
+    expect(body.lines.every((l: { quantity: string }) => l.quantity === "0")).toBe(true);
+  });
+});
+
+describe("ProgressPaymentForm — hata gösterimi (Türkçe, hiçbiri sessiz değil)", () => {
+  function backendError(status: number, detail: string) {
+    return new BackendError(status, { detail });
+  }
+
+  it("409 — açık hakediş var mesajını gösterir (create)", async () => {
+    const mutate = vi.fn((_vars, opts) =>
+      opts?.onError?.(backendError(409, "Bu sözleşmede açık bir hakediş var; önce onu tamamlayın.")),
+    );
+    vi.mocked(useCreateProgressPayment).mockReturnValue(mutationResult({ mutate }));
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    const [saveButton] = await screen.findAllByRole("button", { name: "Taslak Kaydet" });
+    await userEvent.click(saveButton);
+    expect(
+      await screen.findByText("Bu sözleşmede açık bir hakediş var; önce onu tamamlayın."),
+    ).toBeInTheDocument();
+  });
+
+  it("422 — kota aşımı mesajını gösterir (edit, PUT lines hatası)", async () => {
+    const updateMutate = vi.fn((_vars, opts) => opts?.onSuccess?.());
+    const replaceMutate = vi.fn((_vars, opts) =>
+      opts?.onError?.(backendError(422, "Kümülatif hakediş miktarı şantiye kotasını aşamaz.")),
+    );
+    vi.mocked(useProgressPayment).mockReturnValue(queryResult({ data: detailFixture() }));
+    vi.mocked(useUpdateProgressPayment).mockReturnValue(mutationResult({ mutate: updateMutate }));
+    vi.mocked(useReplaceProgressPaymentLines).mockReturnValue(mutationResult({ mutate: replaceMutate }));
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+    const [saveButton] = await screen.findAllByRole("button", { name: "Taslak Kaydet" });
+    await userEvent.click(saveButton);
+    expect(
+      await screen.findByText("Kümülatif hakediş miktarı şantiye kotasını aşamaz."),
+    ).toBeInTheDocument();
+  });
+
+  it("422 — dağıtılmamış poz mesajını gösterir", async () => {
+    const mutate = vi.fn((_vars, opts) =>
+      opts?.onError?.(
+        backendError(422, "Bu poz seçilen şantiyeye dağıtılmadı; önce poz dağılımını yapın."),
+      ),
+    );
+    vi.mocked(useCreateProgressPayment).mockReturnValue(mutationResult({ mutate }));
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    const [saveButton] = await screen.findAllByRole("button", { name: "Taslak Kaydet" });
+    await userEvent.click(saveButton);
+    expect(
+      await screen.findByText("Bu poz seçilen şantiyeye dağıtılmadı; önce poz dağılımını yapın."),
+    ).toBeInTheDocument();
+  });
+
+  it("422 — çift satır mesajını gösterir", async () => {
+    const mutate = vi.fn((_vars, opts) =>
+      opts?.onError?.(backendError(422, "Aynı poz ve şantiye için tek satır gönderilebilir.")),
+    );
+    vi.mocked(useCreateProgressPayment).mockReturnValue(mutationResult({ mutate }));
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    const [saveButton] = await screen.findAllByRole("button", { name: "Taslak Kaydet" });
+    await userEvent.click(saveButton);
+    expect(
+      await screen.findByText("Aynı poz ve şantiye için tek satır gönderilebilir."),
+    ).toBeInTheDocument();
+  });
+
+  it("422 — sözleşmesiz proje mesajını gösterir (sözleşme sorgusu hatası)", async () => {
+    vi.mocked(useEmployerContract).mockReturnValue(
+      queryResult({ isError: true, error: backendError(422, "Bu projenin işveren sözleşmesi yok.") }),
+    );
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    expect(await screen.findByText("Bu projenin işveren sözleşmesi yok.")).toBeInTheDocument();
+  });
+
+  it("403 — AccessDenied basar (dağıtım sorgusu yasak)", async () => {
+    vi.mocked(useContractDistribution).mockReturnValue(
+      queryResult({ isError: true, error: backendError(403, "yetkiniz yok") }),
+    );
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    expect(await screen.findByText("Bu alana yetkiniz yok")).toBeInTheDocument();
+  });
+});

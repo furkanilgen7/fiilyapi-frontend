@@ -1,0 +1,433 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+import { AccessDenied } from "@/components/settings/AccessDenied";
+import { ConfirmDialog } from "@/components/settings/ConfirmDialog";
+import { Alert, Button, Field, Input, Select, Textarea } from "@/components/ui";
+import { backendErrorMessage } from "@/lib/api/error-message";
+import { useContractDistribution, useEmployerContract } from "@/lib/api/hooks/useContract";
+import {
+  useCreateProgressPayment,
+  useRefreshProgressPaymentPrices,
+  useReplaceProgressPaymentLines,
+  useUpdateProgressPayment,
+} from "@/lib/api/hooks/useProgressPaymentMutations";
+import { useProgressPayment } from "@/lib/api/hooks/useProgressPayments";
+import { useProject } from "@/lib/api/hooks/useProjects";
+import { isForbidden } from "@/lib/api/unwrap";
+import { useModulePermission } from "@/lib/auth/useModulePermission";
+import { PERIOD_MONTHS, formatPercent } from "@/lib/format";
+
+import { PaymentFormPivotTable } from "./PaymentFormPivotTable";
+import { ProgressPaymentStatusActions } from "./ProgressPaymentStatusActions";
+import { buildLinesSaveBody, buildPivotRows, type PivotRow } from "./pivot";
+import "./progress-payment-form.css";
+
+export type ProgressPaymentFormProps =
+  | { mode: "create"; projectId: string }
+  | { mode: "edit"; paymentId: string };
+
+const DEFAULT_COEFFICIENT_WHEN_LOCKED = "1";
+
+/**
+ * Hakediş oluştur/düzenle formu (P7 T5). `create` ve `edit` kipleri AYNI
+ * bileşendir (brief §Rotalar) — iki kopya form YOK.
+ *
+ * Kaydetme yolu (brief §Belirsizlik çözümü 3, kontrolcü kararı):
+ * - `create`: TEK atomik `POST` — başlık + satırlar birlikte gönderilir
+ *   (`ProgressPaymentCreate.lines`). Şema açıklaması bunu açıkça destekliyor
+ *   ("Satırlar iç içe ve atomik gönderilebilir") — iki adımlı POST→PUT akışı
+ *   ara adımda ağ hatası olursa yetim (satırsız) bir taslak bırakabilirdi;
+ *   atomik yol bu riski taşımaz.
+ * - `edit`: başlık alanları yalnız `PATCH` (`ProgressPaymentUpdate` satır
+ *   TAŞIMAZ), satırlar yalnız `PUT …/lines` ile değişir — iki uç ayrı
+ *   kaynaklara yazdığı için sırayla çağrılır (PATCH önce, başarısız olursa
+ *   PUT hiç denenmez — kısmi kaydetme belirsizliği bırakmaz).
+ */
+export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
+  const router = useRouter();
+  const { canWrite } = useModulePermission("progress_payments");
+
+  const isEdit = props.mode === "edit";
+  const detailQuery = useProgressPayment(isEdit ? props.paymentId : "");
+  const detail = isEdit ? detailQuery.data : undefined;
+
+  const resolvedProjectId = isEdit ? (detail?.project_id ?? "") : props.projectId;
+  const projectQuery = useProject(resolvedProjectId);
+  const distributionQuery = useContractDistribution(resolvedProjectId);
+  const contractQuery = useEmployerContract(resolvedProjectId);
+
+  const createPayment = useCreateProgressPayment();
+  const updatePayment = useUpdateProgressPayment();
+  const replaceLines = useReplaceProgressPaymentLines();
+  const refreshPrices = useRefreshProgressPaymentPrices();
+
+  const [rows, setRows] = useState<PivotRow[] | null>(null);
+  const [periodYear, setPeriodYear] = useState<number | null>(null);
+  const [periodMonth, setPeriodMonth] = useState<number | null>(null);
+  const [description, setDescription] = useState("");
+  const [defaultCoefficient, setDefaultCoefficient] = useState("1");
+  const [formError, setFormError] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const [refreshConfirmOpen, setRefreshConfirmOpen] = useState(false);
+
+  // Tohumlama (seed) YALNIZ BİR KEZ çalışır — sonraki `detailQuery`/`distributionQuery`
+  // yenilemeleri (ör. kaydetme sonrası invalidation) kullanıcının o anki
+  // düzenlemesini SİLMEZ. `refresh-prices` başarısı istisnadır, aşağıda ayrı
+  // ele alınır (`handleRefreshPrices`).
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (seededRef.current) return;
+    if (!distributionQuery.data) return;
+    if (isEdit && !detail) return;
+    seededRef.current = true;
+    setRows(buildPivotRows(distributionQuery.data, detail?.lines ?? []));
+    setPeriodYear(detail?.period_year ?? new Date().getFullYear());
+    setPeriodMonth(detail?.period_month ?? new Date().getMonth() + 1);
+    setDescription(detail?.description ?? "");
+    setDefaultCoefficient(detail?.default_coefficient ?? "1");
+  }, [distributionQuery.data, detail, isEdit]);
+
+  if (!canWrite) return <AccessDenied />;
+  if (isForbidden(detailQuery.error) || isForbidden(distributionQuery.error) || isForbidden(contractQuery.error)) {
+    return <AccessDenied />;
+  }
+
+  if (isEdit && (detailQuery.isLoading || !detail)) {
+    return <p className="pp-form__message">Yükleniyor…</p>;
+  }
+
+  // Düzenleme yalnız `draft` durumunda anlamlıdır (brief §Rotalar) — sessizce
+  // boş form gösterilmez, Türkçe uyarı + detaya dönüş linki basılır.
+  if (isEdit && detail && detail.status !== "draft") {
+    return (
+      <div className="pp-form">
+        <Alert variant="warning" className="pp-form__alert">
+          Bu hakediş artık taslak durumunda değil, düzenlenemez.
+        </Alert>
+        <Link href={`/hakedisler/${detail.id}`} className="pp-form__crumb-link">
+          ← Hakediş detayına dön
+        </Link>
+      </div>
+    );
+  }
+
+  if (distributionQuery.isError) {
+    return (
+      <Alert variant="danger" className="pp-form__alert">
+        {backendErrorMessage(distributionQuery.error, "Poz dağılımı yüklenemedi.")}
+      </Alert>
+    );
+  }
+  if (contractQuery.isError) {
+    return (
+      <Alert variant="danger" className="pp-form__alert">
+        {backendErrorMessage(contractQuery.error, "Sözleşme bilgisi yüklenemedi.")}
+      </Alert>
+    );
+  }
+  if (
+    distributionQuery.isLoading ||
+    contractQuery.isLoading ||
+    !distributionQuery.data ||
+    !contractQuery.data ||
+    rows === null
+  ) {
+    return <p className="pp-form__message">Yükleniyor…</p>;
+  }
+
+  const distribution = distributionQuery.data;
+  const contract = contractQuery.data;
+  const hasPriceEscalation = contract.has_price_escalation;
+  const isSaving = createPayment.isPending || updatePayment.isPending || replaceLines.isPending;
+
+  function updateCellQuantity(itemId: string, siteId: string, value: string) {
+    setDirty(true);
+    setRows((prev) =>
+      (prev ?? []).map((row) =>
+        row.item.id !== itemId
+          ? row
+          : {
+              ...row,
+              cells: row.cells.map((cell) =>
+                cell.siteId !== siteId ? cell : { ...cell, quantity: value },
+              ),
+            },
+      ),
+    );
+  }
+
+  function coefficientToSend(): string {
+    return hasPriceEscalation ? defaultCoefficient || "1" : DEFAULT_COEFFICIENT_WHEN_LOCKED;
+  }
+
+  function handleSave() {
+    setFormError(null);
+    const linesBody = buildLinesSaveBody(rows ?? []);
+    const headerBody = {
+      period_year: periodYear,
+      period_month: periodMonth,
+      description: description.trim() ? description.trim() : null,
+      default_coefficient: coefficientToSend(),
+    };
+
+    if (props.mode === "create") {
+      createPayment.mutate(
+        { projectId: props.projectId, body: { ...headerBody, lines: linesBody } },
+        {
+          onSuccess: (data) => router.push(`/hakedisler/${data.id}`),
+          onError: (err) => setFormError(backendErrorMessage(err, "Hakediş oluşturulamadı.")),
+        },
+      );
+      return;
+    }
+
+    const paymentId = props.paymentId;
+    updatePayment.mutate(
+      { paymentId, body: headerBody },
+      {
+        onSuccess: () => {
+          replaceLines.mutate(
+            { paymentId, body: { lines: linesBody } },
+            {
+              onSuccess: () => setDirty(false),
+              onError: (err) =>
+                setFormError(backendErrorMessage(err, "Hakediş satırları kaydedilemedi.")),
+            },
+          );
+        },
+        onError: (err) => setFormError(backendErrorMessage(err, "Hakediş güncellenemedi.")),
+      },
+    );
+  }
+
+  function runRefreshPrices() {
+    if (!isEdit) return;
+    setFormError(null);
+    refreshPrices.mutate(props.paymentId, {
+      onSuccess: async () => {
+        setRefreshConfirmOpen(false);
+        const fresh = await detailQuery.refetch();
+        if (fresh.data) {
+          setRows(buildPivotRows(distribution, fresh.data.lines));
+          setDirty(false);
+        }
+      },
+      onError: (err) => setFormError(backendErrorMessage(err, "Fiyatlar tazelenemedi.")),
+    });
+  }
+
+  function handleRefreshPricesClick() {
+    if (dirty) {
+      setRefreshConfirmOpen(true);
+      return;
+    }
+    runRefreshPrices();
+  }
+
+  const staleLines = (detail?.lines ?? []).filter((line) => line.is_price_stale === true);
+
+  return (
+    <div className="pp-form">
+      <p className="pp-form__crumb">
+        <Link href="/hakedisler" className="pp-form__crumb-link">
+          ← Hakedişler
+        </Link>
+        {" · İşveren Hakediş "}
+        {isEdit && detail ? `#${detail.sequence_no} Düzenle` : "Oluştur"}
+        {projectQuery.data && ` · ${projectQuery.data.name}`}
+      </p>
+
+      <div className="pp-form__title-row">
+        <h1 className="pp-form__title">
+          {isEdit && detail ? `İşveren Hakediş #${detail.sequence_no}` : "İşveren Hakediş Oluştur"}
+        </h1>
+        <div className="pp-form__title-actions">
+          {isEdit && detail && <ProgressPaymentStatusActions detail={detail} />}
+          <Button variant="secondary" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? "Kaydediliyor…" : "Taslak Kaydet"}
+          </Button>
+        </div>
+      </div>
+
+      <div className="pp-form__info">
+        <span aria-hidden="true">📋</span>
+        <div>
+          <strong>İşveren hakedişinde birim fiyatlar sözleşmeden sabit gelir.</strong> Sözleşmenizde
+          fiyat farkı şartı varsa, Fiyat Farkı Katsayısı girerek düzeltilmiş birim fiyat otomatik
+          hesaplanır. Katsayı 1 ise fiyat farkı yok demektir.
+        </div>
+      </div>
+
+      {distribution.undistributed_item_count > 0 && (
+        <Alert variant="warning" className="pp-form__alert" data-testid="pp-form-undistributed-alert">
+          {distribution.undistributed_item_count} poz henüz hiçbir şantiyeye dağıtılmadı:{" "}
+          {distribution.undistributed_item_names.join(", ")}. Bu pozlar bu hakedişte
+          düzenlenemez — önce poz dağılımını tamamlayın.
+        </Alert>
+      )}
+
+      {staleLines.length > 0 && (
+        <Alert variant="warning" className="pp-form__alert" data-testid="pp-form-stale-price-alert">
+          {staleLines.length} satırın birim fiyatı sözleşmeden bu yana değişmiş olabilir (bayat
+          fiyat). Güncel fiyatları uygulamak için &quot;Fiyatları Tazele&quot; kullanın.
+        </Alert>
+      )}
+
+      {formError && (
+        <Alert variant="danger" className="pp-form__alert" data-testid="pp-form-error">
+          {formError}
+        </Alert>
+      )}
+
+      {/* Fiyat Farkı bandı — SALT OKUNUR (brief §Form üst bölümü, kullanıcı
+          kararı S3): açma/kapama YOK, `has_price_escalation` sözleşmeden
+          gelir. Endeks seçici basılmıyor (`index_type` şemada yok). */}
+      <div className="pp-form__ff-band" data-testid="pp-form-ff-band">
+        <span>Fiyat Farkı: {hasPriceEscalation ? "Var" : "Yok"}</span>
+        <div className="pp-form__ff-coefficient">
+          <Field label="Katsayı (Dn/D0)" size="md">
+            {(control) => (
+              <Input
+                {...control}
+                size="row"
+                numeric
+                inputMode="decimal"
+                value={hasPriceEscalation ? defaultCoefficient : DEFAULT_COEFFICIENT_WHEN_LOCKED}
+                disabled={!hasPriceEscalation}
+                onChange={(event) => setDefaultCoefficient(event.target.value)}
+              />
+            )}
+          </Field>
+        </div>
+        {hasPriceEscalation && (
+          <span className="pp-form__ff-pct">{coefficientPercentLabel(defaultCoefficient)}</span>
+        )}
+        {!hasPriceEscalation && (
+          <span className="pp-form__ff-hint">
+            Bu sözleşmede fiyat farkı şartı yok — katsayı 1&apos;de kilitli.
+          </span>
+        )}
+      </div>
+
+      <div className="pp-form__header-card">
+        <div className="pp-form__header-grid">
+          <Field label="İşveren">
+            {(control) => (
+              <div className="pp-form__readonly" {...pickAriaProps(control)}>
+                {contract.employer_name ?? "—"}
+              </div>
+            )}
+          </Field>
+          <Field label="Hakediş Dönemi">
+            {(control) => (
+              <div style={{ display: "flex", gap: 8 }}>
+                <Select
+                  {...control}
+                  value={periodMonth ?? ""}
+                  onChange={(event) => setPeriodMonth(Number(event.target.value))}
+                >
+                  {PERIOD_MONTHS.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </Select>
+                <Input
+                  type="number"
+                  numeric
+                  aria-label="Hakediş yılı"
+                  value={periodYear ?? ""}
+                  onChange={(event) => setPeriodYear(Number(event.target.value))}
+                />
+              </div>
+            )}
+          </Field>
+          <Field label="Kapsam">
+            {(control) => (
+              <div className="pp-form__readonly" {...pickAriaProps(control)}>
+                {distribution.sites.map((s) => s.name).join(" + ") || "—"}
+              </div>
+            )}
+          </Field>
+          <Field label="Hakediş No">
+            {(control) => (
+              <div className="pp-form__readonly" {...pickAriaProps(control)}>
+                {isEdit && detail ? `#${detail.sequence_no}` : "Kaydedince atanır"}
+              </div>
+            )}
+          </Field>
+          <Field label="Açıklama" className="pp-form__header-grid-full">
+            {(control) => (
+              <Textarea
+                {...control}
+                rows={2}
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+              />
+            )}
+          </Field>
+        </div>
+      </div>
+
+      <PaymentFormPivotTable
+        sites={distribution.sites}
+        rows={rows}
+        disabled={isSaving}
+        onQuantityChange={updateCellQuantity}
+      />
+
+      <div className="pp-form__actions">
+        {isEdit && detail && detail.status === "draft" && (
+          <Button
+            variant="secondary"
+            onClick={handleRefreshPricesClick}
+            disabled={refreshPrices.isPending}
+            data-testid="pp-form-refresh-prices"
+          >
+            {refreshPrices.isPending ? "Tazeleniyor…" : "Fiyatları Tazele"}
+          </Button>
+        )}
+        <Button variant="primary" onClick={handleSave} disabled={isSaving}>
+          {isSaving ? "Kaydediliyor…" : "Taslak Kaydet"}
+        </Button>
+      </div>
+
+      {refreshConfirmOpen && (
+        <ConfirmDialog
+          title="Fiyatları Tazele"
+          message="Kaydedilmemiş miktar değişiklikleriniz var. Fiyatları tazelemek satırları sunucudaki son kayıtlı hâline döndürür, kaydedilmemiş girdileriniz kaybolur. Devam edilsin mi?"
+          confirmLabel="Tazele"
+          danger
+          isPending={refreshPrices.isPending}
+          onConfirm={runRefreshPrices}
+          onClose={() => setRefreshConfirmOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// `Field`in render-prop `control`ünden yalnız aria/`id` alanlarını salt-okunur
+// gösterim `div`ine geçirir — `<input>` olmadığından `value`/`onChange` yok.
+function pickAriaProps(control: { id: string; "aria-describedby"?: string }) {
+  return { id: control.id, "aria-describedby": control["aria-describedby"] };
+}
+
+/**
+ * `(katsayı − 1) × 100` yüzde rozeti (brief: "1,05 → %5") — yalnız GÖSTERİM
+ * amaçlı, kaydedilen hiçbir alanı etkilemez. `formatPercent`i YENİDEN
+ * KULLANIR (kod tabanındaki tüm yüzde alanları — `vat_pct`, `advance_pct` —
+ * aynı şekilde `Number()` tabanlıdır, bkz. `PaymentCalculationCard`); bu
+ * dosyada ikinci bir yüzde biçimlendirici YAZILMAZ. Para/miktar KAYDETME
+ * yolunda float YASAK kuralı burada ihlal edilmiyor — hesaplanan değer
+ * hiçbir API gövdesine yazılmıyor, yalnız ekrana basılıyor.
+ */
+function coefficientPercentLabel(coefficient: string): string {
+  const value = Number(coefficient);
+  if (!Number.isFinite(value)) return formatPercent(0);
+  return formatPercent((value - 1) * 100);
+}
