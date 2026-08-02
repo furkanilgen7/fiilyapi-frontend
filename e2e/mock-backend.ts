@@ -152,6 +152,98 @@ interface MockEmployer {
   is_active: boolean;
 }
 
+// P7 · Hakediş (İşveren) — poz dağılımı kalemi. `GET .../contract/distribution`
+// yanıtının kaynağı; hakediş formunun (`ProgressPaymentForm`) pivot tablosu
+// satırlarını besler. Kod/açıklama/birim/birim fiyat
+// `İşveren Hakediş Oluştur.dc.html` satır 106-172'den BİREBİR (bkz. aşağıdaki
+// CONTRACT_ITEMS_P1 yorumu — mockup satır numaraları orada).
+interface MockContractItem {
+  id: string;
+  code: string;
+  description: string;
+  unit: string;
+  quantity: string;
+  unit_price: string;
+  groupName: string;
+  groupSortOrder: number;
+  allocations: Array<{ site_id: string; quantity: string }>;
+}
+
+// `ProgressPaymentLineDetail` (schema.d.ts) ile birebir alan kümesi.
+interface MockPaymentLine {
+  id: string;
+  contract_item_id: string | null;
+  site_id: string;
+  code: string;
+  description: string;
+  unit: string;
+  contract_unit_price: string;
+  coefficient: string;
+  quantity: string;
+  group_name: string | null;
+  sort_order: number;
+  adjusted_unit_price: string;
+  line_total: string;
+  previous_quantity: string;
+  previous_amount: string;
+  cumulative_quantity: string;
+  cumulative_amount: string;
+  is_price_stale: boolean | null;
+}
+
+// `ProgressPaymentGroupSummary` ile birebir.
+interface MockPaymentGroup {
+  group_name: string | null;
+  previous_amount: string;
+  this_amount: string;
+  cumulative_amount: string;
+  contract_amount: string;
+}
+
+// `PaymentCalculationBlock` ile birebir.
+interface MockPaymentCalculation {
+  gross: string;
+  vat: string;
+  advance_deduction: string;
+  retention: string;
+  net: string;
+}
+
+// `ProgressBlock` ile birebir.
+interface MockPaymentProgress {
+  financial_pct: string | null;
+  physical_pct: string | null;
+  duration_pct: string | null;
+}
+
+// `ProgressPaymentDetail` ile birebir (liste satırı `gross_total`/`net_total`
+// `calculation`den türetilir, ayrıca saklanmaz — bkz. `buildPaymentListItem`).
+interface MockProgressPayment {
+  id: string;
+  project_id: string;
+  sequence_no: number;
+  period_year: number | null;
+  period_month: number | null;
+  description: string | null;
+  status: "draft" | "pending_approval" | "approved" | "paid";
+  vat_pct: string;
+  advance_pct: string;
+  retainage_pct: string;
+  default_coefficient: string;
+  submitted_at: string | null;
+  approved_at: string | null;
+  approved_by: string | null;
+  paid_at: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  lines: MockPaymentLine[];
+  groups: MockPaymentGroup[];
+  calculation: MockPaymentCalculation;
+  progress: MockPaymentProgress;
+  dropped_orphan_count: number;
+}
+
 interface MockState {
   users: Array<{ id: string; email: string; full_name: string; title: string; role_id: string; status: string }>;
   roles: Array<{ id: string; key: string; name: string; emoji: string; description: string; is_system: boolean }>;
@@ -160,6 +252,9 @@ interface MockState {
   sites: MockSite[];
   sections: MockSection[];
   employers: MockEmployer[];
+  // P7 T7 — İşveren hakedişleri (mevcut proje evrenine bağlı, bkz.
+  // CONTRACT_ITEMS_P1/EMPLOYER_CONTRACT_P1 yorumları).
+  progressPayments: MockProgressPayment[];
   permissions: Record<string, Record<string, { access_level: string; scope: string }>>;
   projectAccess: Record<string, { all_projects: boolean; project_ids: string[] }>;
   company: {
@@ -311,6 +406,479 @@ const BOQ_FIXTURE: MockBoqGroup[] = [
     ],
   },
 ];
+
+// --- P7 T7 · Hakediş (İşveren) fikstürleri --------------------------------
+// Kimlikler MEVCUT evrene bağlanır (brief §Belirsizlik çözümü 1): proje p-1
+// ("Kule A"), şantiyeler s-1 ("A-Blok Şantiyesi") / s-2 ("B-Blok Şantiyesi").
+// Proje/şantiye İSİMLERİ mockup'takiyle (Güneşkent Konut / A-Blok) AYNI
+// DEĞİL — brief kimlikleri bağlamayı istiyor, ismi değil.
+function money2(n: number): string {
+  return n.toFixed(2);
+}
+function qty3(n: number): string {
+  return n.toFixed(3);
+}
+
+// Poz dağılımı — `İşveren Hakediş Oluştur.dc.html` satır 106-172'den
+// BİREBİR: kod/açıklama/birim/sözleşme birim fiyatı + A-Blok/B-Blok miktar
+// girdileri (satır 121-172 `qty-input` value'ları). Toplam sözleşme miktarı
+// (`quantity`) mockup'ta YOK — iki şantiyeye dağıtılan miktarların (`900+420`,
+// `204+96`, `40.8+20.4`, `2880+0`) üstüne makul bir pay eklenerek türetildi,
+// tamamı dağıtılmış (`remaining_quantity` sıfır) sayılır.
+const CONTRACT_ITEMS_P1: MockContractItem[] = [
+  {
+    id: "ci-1", code: "03.001", description: "Kat Döşemesi C25/30", unit: "m³",
+    quantity: "3200.000", unit_price: "1850.00", groupName: "Betonarme İşleri", groupSortOrder: 10,
+    allocations: [
+      { site_id: "s-1", quantity: "1800.000" },
+      { site_id: "s-2", quantity: "1400.000" },
+    ],
+  },
+  {
+    id: "ci-2", code: "03.002", description: "Kolon Betonu C30/37", unit: "m³",
+    quantity: "620.000", unit_price: "2100.00", groupName: "Betonarme İşleri", groupSortOrder: 10,
+    allocations: [
+      { site_id: "s-1", quantity: "420.000" },
+      { site_id: "s-2", quantity: "200.000" },
+    ],
+  },
+  {
+    id: "ci-3", code: "03.003", description: "Nervürlü Demir Ø12–Ø20", unit: "Ton",
+    quantity: "180.000", unit_price: "21500.00", groupName: "Betonarme İşleri", groupSortOrder: 10,
+    allocations: [
+      { site_id: "s-1", quantity: "120.000" },
+      { site_id: "s-2", quantity: "60.000" },
+    ],
+  },
+  {
+    id: "ci-4", code: "03.010", description: "Döşeme Kalıbı", unit: "m²",
+    quantity: "5200.000", unit_price: "185.00", groupName: "Kalıp İşleri", groupSortOrder: 20,
+    allocations: [
+      { site_id: "s-1", quantity: "3200.000" },
+      { site_id: "s-2", quantity: "2000.000" },
+    ],
+  },
+];
+
+function findContractItem(itemId: string): MockContractItem | undefined {
+  return CONTRACT_ITEMS_P1.find((i) => i.id === itemId);
+}
+
+// İşveren sözleşmesi (E14/hakediş formu FF bandı) — `amount`/`contract_no`
+// mevcut proje fikstürü (p-1) ile hizalı (11.200.000 / SZL-2025-01), diğer
+// alanlar `İşveren Hakediş Oluştur.dc.html` (Fiyat Farkı: Var, Katsayı
+// 1,142) + `Ekran 15…` (KDV %20 / Avans %20 / Teminat %5) satırlarından.
+const EMPLOYER_CONTRACT_P1 = {
+  project_id: "p-1",
+  contract_no: "SZL-2025-01",
+  signature_date: "2025-03-01",
+  amount: "11200000.00",
+  advance_pct: "20.00",
+  retainage_pct: "5.00",
+  vat_pct: "20.00",
+  late_penalty_daily: null as string | null,
+  has_price_escalation: true,
+  status: "active" as const,
+  start_date: "2025-03-01",
+  end_date: "2026-12-01",
+  employer_name: "Güneşkent A.Ş.",
+  contractor_name: "FİİL Yapı Ltd. Şti.",
+  // 4 poz kaleminin sözleşme tutarları toplamı (3200×1850 + 620×2100 +
+  // 180×21500 + 5200×185).
+  items_total: "12054000.00",
+  items_total_diff: "0.00",
+  advance_amount: "2240000.00",
+};
+
+// `ProgressPaymentSummary` — SABİT (liste uzunluğundan bağımsız), BOQ_FIXTURE
+// totals'ının aynı deseni: `Ekran 15…`in KPI'ları (Toplam Hakediş ₺8,4M /
+// Kalan ₺2,8M) + `Şantiye - Hakedişler.dc.html`in "%75" ilerlemesiyle
+// BİREBİR — 11.200.000 (sözleşme) − 8.400.000 (kümülatif) = 2.800.000 kalan,
+// 8.400.000/11.200.000 = %75 aritmetiği de mockup'la örtüşüyor.
+// `payment_count`/`pending_count` YALNIZ bunlar dinamik — gerçek
+// `progressPayments` dizisinden hesaplanır (brief §dört durum kuralı: bu
+// dilim mockup'ın 4 kaydına EK olarak bir taslak (#6) ekliyor, bu yüzden
+// sayı mockup'ın "4 hakediş" METNİYLE birebir eşleşmez — bilinçli sapma).
+function buildProgressPaymentSummary(state: MockState, projectId: string) {
+  const projectPayments = state.progressPayments.filter((p) => p.project_id === projectId);
+  const paymentCount = projectPayments.length;
+  const pendingCount = projectPayments.filter((p) => p.status === "pending_approval").length;
+  if (projectId !== "p-1") {
+    const project = state.projects.find((p) => p.id === projectId);
+    const contractAmount = project?.contract_amount ? money2(Number(project.contract_amount)) : null;
+    return {
+      contract_amount: contractAmount,
+      cumulative_gross: "0.00",
+      progress_pct: contractAmount ? "0.00" : null,
+      advance_deduction_total: "0.00",
+      retention_total: "0.00",
+      net_total: "0.00",
+      payment_count: paymentCount,
+      pending_count: pendingCount,
+      remaining: contractAmount,
+    };
+  }
+  return {
+    contract_amount: "11200000.00",
+    cumulative_gross: "8400000.00",
+    progress_pct: "75.00",
+    advance_deduction_total: "1680000.00",
+    retention_total: "420000.00",
+    net_total: "7980000.00",
+    payment_count: paymentCount,
+    pending_count: pendingCount,
+    remaining: "2800000.00",
+  };
+}
+
+// Sabit satır → hesaplanmış satır. `PUT …/lines` gövdesinden ve `create`
+// atomik `lines[]`'ından çağrılır. `previous_*`: mock'ta geçmiş hakediş
+// kümülatifi izlenmez (basitleştirme, rapora not düşüldü) — var olan satır
+// bu değerleri korur, yeni satır "0" ile başlar.
+function computeLine(
+  itemId: string,
+  siteId: string,
+  quantityRaw: number | string,
+  coefficientRaw: number | string | null | undefined,
+  existing: MockPaymentLine | undefined,
+  sortOrder: number,
+): MockPaymentLine {
+  const item = findContractItem(itemId);
+  const quantity = Number(quantityRaw) || 0;
+  const coefficient =
+    coefficientRaw !== undefined && coefficientRaw !== null && coefficientRaw !== ""
+      ? Number(coefficientRaw)
+      : existing
+        ? Number(existing.coefficient)
+        : 1;
+  const unitPrice = item ? Number(item.unit_price) : 0;
+  const adjustedUnitPrice = unitPrice * coefficient;
+  const lineTotal = adjustedUnitPrice * quantity;
+  const previousQuantity = existing ? Number(existing.previous_quantity) : 0;
+  const previousAmount = existing ? Number(existing.previous_amount) : 0;
+  return {
+    id: existing?.id ?? `ppl-${itemId}-${siteId}`,
+    contract_item_id: itemId,
+    site_id: siteId,
+    code: item?.code ?? "",
+    description: item?.description ?? "",
+    unit: item?.unit ?? "",
+    contract_unit_price: item ? item.unit_price : "0.00",
+    coefficient: money2(coefficient),
+    quantity: qty3(quantity),
+    group_name: item?.groupName ?? null,
+    sort_order: sortOrder,
+    adjusted_unit_price: money2(adjustedUnitPrice),
+    line_total: money2(lineTotal),
+    previous_quantity: qty3(previousQuantity),
+    previous_amount: money2(previousAmount),
+    cumulative_quantity: qty3(previousQuantity + quantity),
+    cumulative_amount: money2(previousAmount + lineTotal),
+    // Sözleşme kalemi fiyatı mock'ta hiç değişmez → hiçbir satır bayat değil.
+    is_price_stale: item ? false : null,
+  };
+}
+
+// `lines[]`den `groups[]`/`calculation` türetir — YALNIZ gerçek
+// `CONTRACT_ITEMS_P1`e bağlı satırlar (PUT …/lines, create, refresh-prices)
+// için çağrılır. Fikstür-tohumlu geçmiş hakedişlerin (#2-#5) elle yazılmış
+// `groups`/`calculation`'ı BURADAN GEÇMEZ — `Ekran 15…` mockup'ının grup
+// adları (Betonarme/Elektrik/Mekanik/Duvar) `CONTRACT_ITEMS_P1`in gruplarıyla
+// (Betonarme/Kalıp) örtüşmüyor, yeniden hesaplama onları BOZARDI.
+function recomputePaymentTotals(payment: MockProgressPayment): void {
+  const groupMap = new Map<string, { previous: number; thisAmt: number; cumulative: number }>();
+  for (const line of payment.lines) {
+    const key = line.group_name ?? "";
+    const acc = groupMap.get(key) ?? { previous: 0, thisAmt: 0, cumulative: 0 };
+    acc.previous += Number(line.previous_amount);
+    acc.thisAmt += Number(line.line_total);
+    acc.cumulative += Number(line.cumulative_amount);
+    groupMap.set(key, acc);
+  }
+  payment.groups = Array.from(groupMap.entries()).map(([groupName, acc]) => {
+    const contractTotal = CONTRACT_ITEMS_P1.filter((i) => i.groupName === groupName).reduce(
+      (sum, i) => sum + Number(i.quantity) * Number(i.unit_price),
+      0,
+    );
+    return {
+      group_name: groupName || null,
+      previous_amount: money2(acc.previous),
+      this_amount: money2(acc.thisAmt),
+      cumulative_amount: money2(acc.cumulative),
+      contract_amount: money2(contractTotal),
+    };
+  });
+  const gross = payment.lines.reduce((sum, l) => sum + Number(l.line_total), 0);
+  const vat = gross * (Number(payment.vat_pct) / 100);
+  const advance = gross * (Number(payment.advance_pct) / 100);
+  const retention = gross * (Number(payment.retainage_pct) / 100);
+  payment.calculation = {
+    gross: money2(gross),
+    vat: money2(vat),
+    advance_deduction: money2(advance),
+    retention: money2(retention),
+    net: money2(gross + vat - advance - retention),
+  };
+}
+
+// İşveren hakedişleri (proje p-1) — `Şantiye - Hakedişler.dc.html` satır
+// 90-107 (İşveren Hakedişleri kartları #2-#5) BİREBİR taşınır: dönem,
+// açıklama, tutar. `Ekran 15…` yalnız #5'i (pending_approval) tam
+// detaylandırır (KPI/gruplar/Ödeme Hesabı/İlerleme, satır 61-193) — diğer
+// üçü (#2/#4 ödendi, #3) basit tek-grup özetlerle doldurulur (mockup'ta
+// kalem kırılımları YOK, yalnız kart tutarları var).
+//
+// Brief'in "dört durumun hepsi temsil edilsin" kuralı mockup'ın kendi
+// durumlarıyla (yalnız pending_approval + ödendi) ÇELİŞİR — bilinçli sapma:
+// #3 mockup'ta "Ödendi" iken burada `approved` yapıldı (aksiyon butonu seti
+// görselleşsin diye) VE mockup'ta olmayan bir taslak (#6) eklendi.
+function buildProgressPaymentFixtures(): MockProgressPayment[] {
+  const patronId = "11111111-1111-1111-1111-111111111111"; // ME.id — onaylayan aktör
+  const singleGroupPayment = (params: {
+    id: string;
+    sequenceNo: number;
+    year: number;
+    month: number;
+    description: string;
+    status: MockProgressPayment["status"];
+    gross: number;
+    previous: number;
+    contractTotal: number;
+    createdAt: string;
+    submittedAt: string | null;
+    approvedAt: string | null;
+    approvedBy: string | null;
+    paidAt: string | null;
+  }): MockProgressPayment => {
+    const vat = params.gross * 0.2;
+    const advance = params.gross * 0.2;
+    const retention = params.gross * 0.05;
+    return {
+      id: params.id,
+      project_id: "p-1",
+      sequence_no: params.sequenceNo,
+      period_year: params.year,
+      period_month: params.month,
+      description: params.description,
+      status: params.status,
+      vat_pct: "20.00",
+      advance_pct: "20.00",
+      retainage_pct: "5.00",
+      default_coefficient: "1.000",
+      submitted_at: params.submittedAt,
+      approved_at: params.approvedAt,
+      approved_by: params.approvedBy,
+      paid_at: params.paidAt,
+      created_by: "u-2",
+      created_at: params.createdAt,
+      updated_at: params.paidAt ?? params.approvedAt ?? params.submittedAt ?? params.createdAt,
+      lines: [
+        {
+          id: `ppl-${params.id}-1`,
+          contract_item_id: null,
+          site_id: "s-1",
+          code: "02.000",
+          description: "Kaba İnşaat (dönem toplamı)",
+          unit: "kalem",
+          contract_unit_price: money2(params.gross),
+          coefficient: "1.000",
+          quantity: "1.000",
+          group_name: "Kaba İnşaat",
+          sort_order: 0,
+          adjusted_unit_price: money2(params.gross),
+          line_total: money2(params.gross),
+          previous_quantity: "0.000",
+          previous_amount: money2(params.previous),
+          cumulative_quantity: "1.000",
+          cumulative_amount: money2(params.previous + params.gross),
+          is_price_stale: null,
+        },
+      ],
+      groups: [
+        {
+          group_name: "Kaba İnşaat",
+          previous_amount: money2(params.previous),
+          this_amount: money2(params.gross),
+          cumulative_amount: money2(params.previous + params.gross),
+          contract_amount: money2(params.contractTotal),
+        },
+      ],
+      calculation: {
+        gross: money2(params.gross),
+        vat: money2(vat),
+        advance_deduction: money2(advance),
+        retention: money2(retention),
+        net: money2(params.gross + vat - advance - retention),
+      },
+      progress: {
+        financial_pct: money2(Math.min(100, ((params.previous + params.gross) / params.contractTotal) * 100)),
+        physical_pct: money2(Math.min(100, ((params.previous + params.gross) / params.contractTotal) * 100)),
+        duration_pct: money2(Math.min(100, params.sequenceNo * 15)),
+      },
+      dropped_orphan_count: 0,
+    };
+  };
+
+  const pp2 = singleGroupPayment({
+    id: "pp-2", sequenceNo: 2, year: 2026, month: 3, description: "Bodrum + kat 1–2",
+    status: "paid", gross: 2100000, previous: 0, contractTotal: 9000000,
+    createdAt: "2026-03-01T08:00:00Z", submittedAt: "2026-03-05T09:00:00Z",
+    approvedAt: "2026-03-08T10:00:00Z", approvedBy: patronId, paidAt: "2026-03-20T12:00:00Z",
+  });
+  const pp3 = singleGroupPayment({
+    id: "pp-3", sequenceNo: 3, year: 2026, month: 5, description: "Kaba inşaat 3. dönem",
+    // Mockup'ta "Ödendi" — dört durum kuralı için bilinçli sapma: approved.
+    status: "approved", gross: 1960000, previous: 2100000, contractTotal: 9000000,
+    createdAt: "2026-05-01T08:00:00Z", submittedAt: "2026-05-04T09:00:00Z",
+    approvedAt: "2026-05-07T10:00:00Z", approvedBy: patronId, paidAt: null,
+  });
+  const pp4 = singleGroupPayment({
+    id: "pp-4", sequenceNo: 4, year: 2026, month: 6, description: "Kat 1–5 tamamlama",
+    status: "paid", gross: 2240000, previous: 4060000, contractTotal: 9000000,
+    createdAt: "2026-06-01T08:00:00Z", submittedAt: "2026-06-04T09:00:00Z",
+    approvedAt: "2026-06-07T10:00:00Z", approvedBy: patronId, paidAt: "2026-06-25T12:00:00Z",
+  });
+
+  // #5 — `Ekran 15 - İşveren Hakedişi.dc.html` satır 61-193 BİREBİR: dört
+  // grup (Betonarme/Elektrik/Mekanik/Duvar), Ödeme Hesabı, İlerleme.
+  const pp5: MockProgressPayment = {
+    id: "pp-5", project_id: "p-1", sequence_no: 5, period_year: 2026, period_month: 7,
+    description: "Kat 6–8 döşeme", status: "pending_approval",
+    vat_pct: "20.00", advance_pct: "20.00", retainage_pct: "5.00", default_coefficient: "1.142",
+    submitted_at: "2026-07-28T09:00:00Z", approved_at: null, approved_by: null, paid_at: null,
+    created_by: "u-2", created_at: "2026-07-25T08:00:00Z", updated_at: "2026-07-28T09:00:00Z",
+    // `lines[]` bu ekranda HİÇ render edilmez (`PaymentGroupTable` yalnız
+    // `groups[]` okur) — grup başına tek özet satır şema geçerliliği için
+    // yeterli; mockup'ta kalem kırılımı YOK, yalnız grup toplamları var.
+    lines: [
+      { id: "ppl-pp-5-1", contract_item_id: null, site_id: "s-1", code: "02.100", description: "Betonarme İşleri (kümülatif)", unit: "kalem", contract_unit_price: "5920000.00", coefficient: "1.000", quantity: "1.000", group_name: "Betonarme İşleri", sort_order: 0, adjusted_unit_price: "5920000.00", line_total: "640000.00", previous_quantity: "0.000", previous_amount: "3800000.00", cumulative_quantity: "1.000", cumulative_amount: "4440000.00", is_price_stale: null },
+      { id: "ppl-pp-5-2", contract_item_id: null, site_id: "s-1", code: "02.200", description: "Elektrik Tesisatı (kümülatif)", unit: "kalem", contract_unit_price: "1240000.00", coefficient: "1.000", quantity: "1.000", group_name: "Elektrik Tesisatı", sort_order: 1, adjusted_unit_price: "1240000.00", line_total: "380000.00", previous_quantity: "0.000", previous_amount: "620000.00", cumulative_quantity: "1.000", cumulative_amount: "1000000.00", is_price_stale: null },
+      { id: "ppl-pp-5-3", contract_item_id: null, site_id: "s-1", code: "02.300", description: "Mekanik Tesisat (kümülatif)", unit: "kalem", contract_unit_price: "980000.00", coefficient: "1.000", quantity: "1.000", group_name: "Mekanik Tesisat", sort_order: 2, adjusted_unit_price: "980000.00", line_total: "280000.00", previous_quantity: "0.000", previous_amount: "480000.00", cumulative_quantity: "1.000", cumulative_amount: "760000.00", is_price_stale: null },
+      { id: "ppl-pp-5-4", contract_item_id: null, site_id: "s-1", code: "02.400", description: "Duvar & Kaplama (kümülatif)", unit: "kalem", contract_unit_price: "2678000.00", coefficient: "1.000", quantity: "1.000", group_name: "Duvar & Kaplama", sort_order: 3, adjusted_unit_price: "2678000.00", line_total: "810000.00", previous_quantity: "0.000", previous_amount: "1390000.00", cumulative_quantity: "1.000", cumulative_amount: "2200000.00", is_price_stale: null },
+    ],
+    groups: [
+      { group_name: "Betonarme İşleri", previous_amount: "3800000.00", this_amount: "640000.00", cumulative_amount: "4440000.00", contract_amount: "5920000.00" },
+      { group_name: "Elektrik Tesisatı", previous_amount: "620000.00", this_amount: "380000.00", cumulative_amount: "1000000.00", contract_amount: "1240000.00" },
+      { group_name: "Mekanik Tesisat", previous_amount: "480000.00", this_amount: "280000.00", cumulative_amount: "760000.00", contract_amount: "980000.00" },
+      { group_name: "Duvar & Kaplama", previous_amount: "1390000.00", this_amount: "810000.00", cumulative_amount: "2200000.00", contract_amount: "2678000.00" },
+    ],
+    calculation: { gross: "2110000.00", vat: "422000.00", advance_deduction: "422000.00", retention: "105500.00", net: "2004500.00" },
+    progress: { financial_pct: "75.00", physical_pct: "75.00", duration_pct: "62.00" },
+    dropped_orphan_count: 0,
+  };
+
+  // #6 — mockup'ta YOK (dört durum kuralı için eklendi, bkz. üstteki not).
+  // `contract_item_id` GERÇEKTEN `CONTRACT_ITEMS_P1`e bağlı — yalnız bu
+  // hakediş `draft` olduğundan düzenlenebilir (form pivot tablosu bunu
+  // render eder), fonksiyonel e2e'nin durum-geçişi + form-kaydetme akışı
+  // BU kayıt üzerinden çalışır.
+  const line1 = computeLine("ci-1", "s-1", 100, "1.000", undefined, 0);
+  const line2 = computeLine("ci-2", "s-1", 50, "1.000", undefined, 1);
+  const pp6: MockProgressPayment = {
+    id: "pp-6", project_id: "p-1", sequence_no: 6, period_year: 2026, period_month: 8,
+    description: null, status: "draft",
+    vat_pct: "20.00", advance_pct: "20.00", retainage_pct: "5.00", default_coefficient: "1.000",
+    submitted_at: null, approved_at: null, approved_by: null, paid_at: null,
+    created_by: "u-1", created_at: "2026-08-01T08:00:00Z", updated_at: "2026-08-01T08:00:00Z",
+    lines: [line1, line2],
+    groups: [], calculation: { gross: "0.00", vat: "0.00", advance_deduction: "0.00", retention: "0.00", net: "0.00" },
+    progress: { financial_pct: null, physical_pct: null, duration_pct: null },
+    dropped_orphan_count: 0,
+  };
+  recomputePaymentTotals(pp6);
+
+  return [pp2, pp3, pp4, pp5, pp6];
+}
+
+// `GET .../contract/distribution` yanıtı — `CONTRACT_ITEMS_P1`den türetilir.
+function buildContractDistributionResponse(state: MockState, projectId: string) {
+  const sites = state.sites
+    .filter((s) => s.project_id === projectId)
+    .map((s) => ({ id: s.id, name: s.name }));
+  const groupNames = Array.from(new Set(CONTRACT_ITEMS_P1.map((i) => i.groupName)));
+  const groups = groupNames.map((name, index) => ({
+    id: `cg-${index + 1}`,
+    name,
+    sort_order: CONTRACT_ITEMS_P1.find((i) => i.groupName === name)?.groupSortOrder ?? 0,
+    items: CONTRACT_ITEMS_P1.filter((i) => i.groupName === name).map((item) => ({
+      id: item.id, code: item.code, description: item.description, unit: item.unit,
+      quantity: item.quantity, unit_price: item.unit_price,
+      allocations: item.allocations.map((a) => ({ site_id: a.site_id, quantity: a.quantity, boq_item_id: item.id })),
+      remaining_quantity: money2(
+        Number(item.quantity) - item.allocations.reduce((sum, a) => sum + Number(a.quantity), 0),
+      ),
+    })),
+  }));
+  const siteSummaries = sites.map((site) => {
+    const items = CONTRACT_ITEMS_P1.map((item) => {
+      const allocation = item.allocations.find((a) => a.site_id === site.id);
+      if (!allocation) return null;
+      const amount = Number(allocation.quantity) * Number(item.unit_price);
+      return { code: item.code, description: item.description, quantity: allocation.quantity, unit_price: item.unit_price, amount: money2(amount) };
+    }).filter((x): x is NonNullable<typeof x> => x !== null);
+    return {
+      site_id: site.id,
+      site_name: site.name,
+      items,
+      total_amount: money2(items.reduce((sum, i) => sum + Number(i.amount), 0)),
+    };
+  });
+  return {
+    sites,
+    groups,
+    undistributed_item_count: 0,
+    undistributed_item_names: [] as string[],
+    site_summaries: siteSummaries,
+    distributed_item_count: CONTRACT_ITEMS_P1.length,
+    total_item_count: CONTRACT_ITEMS_P1.length,
+  };
+}
+
+function buildPaymentDetail(state: MockState, payment: MockProgressPayment) {
+  const project = state.projects.find((p) => p.id === payment.project_id);
+  return {
+    id: payment.id,
+    project_id: payment.project_id,
+    project_name: project?.name ?? "",
+    sequence_no: payment.sequence_no,
+    period_year: payment.period_year,
+    period_month: payment.period_month,
+    description: payment.description,
+    status: payment.status,
+    vat_pct: payment.vat_pct,
+    advance_pct: payment.advance_pct,
+    retainage_pct: payment.retainage_pct,
+    default_coefficient: payment.default_coefficient,
+    submitted_at: payment.submitted_at,
+    approved_at: payment.approved_at,
+    approved_by: payment.approved_by,
+    paid_at: payment.paid_at,
+    created_by: payment.created_by,
+    created_at: payment.created_at,
+    updated_at: payment.updated_at,
+    lines: payment.lines,
+    groups: payment.groups,
+    calculation: payment.calculation,
+    progress: payment.progress,
+    dropped_orphan_count: payment.dropped_orphan_count,
+  };
+}
+
+function buildPaymentListItem(state: MockState, payment: MockProgressPayment) {
+  const project = state.projects.find((p) => p.id === payment.project_id);
+  return {
+    id: payment.id,
+    project_id: payment.project_id,
+    project_name: project?.name ?? "",
+    sequence_no: payment.sequence_no,
+    period_year: payment.period_year,
+    period_month: payment.period_month,
+    description: payment.description,
+    status: payment.status,
+    gross_total: payment.calculation.gross,
+    net_total: payment.calculation.net,
+  };
+}
 
 function seedState(): MockState {
   // Gerçek backend seed'iyle hizalı (bkz. backend/app/modules/roles/seed_data.py):
@@ -465,6 +1033,7 @@ function seedState(): MockState {
       { id: "emp-2", name: "Çelik Holding A.Ş.", tax_number: "1122334455", contact_person: "Fatma Çelik", is_active: true },
       { id: "emp-3", name: "Bursa Belediyesi", tax_number: null, contact_person: "Kurumsal İletişim", is_active: true },
     ],
+    progressPayments: buildProgressPaymentFixtures(),
     permissions,
     projectAccess: {
       "u-1": { all_projects: true, project_ids: [] },
@@ -813,6 +1382,226 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           grand_total: "12399900.00",
           grand_progress_pct: METRIC_PENDING("progress_payments"),
         },
+      });
+    }
+
+    // --- P7 T7 · Hakediş (İşveren) uçları ---------------------------------
+
+    // GET /progress-payments — liste (proje/şantiye/durum filtresi).
+    if (method === "GET" && path === "/progress-payments") {
+      const projectId = parsed.searchParams.get("project_id");
+      const siteId = parsed.searchParams.get("site_id");
+      const status = parsed.searchParams.get("status");
+      let items = state.progressPayments;
+      if (projectId) items = items.filter((p) => p.project_id === projectId);
+      if (siteId) items = items.filter((p) => p.lines.some((l) => l.site_id === siteId));
+      if (status) items = items.filter((p) => p.status === status);
+      return send(200, { items: items.map((p) => buildPaymentListItem(state, p)) });
+    }
+
+    // POST /projects/{project_id}/progress-payments — atomik oluşturma
+    // (başlık + satırlar tek gövdede, spec §9.2).
+    const createPaymentMatch = path.match(/^\/projects\/([^/]+)\/progress-payments$/);
+    if (method === "POST" && createPaymentMatch) {
+      const projectId = createPaymentMatch[1];
+      const project = state.projects.find((p) => p.id === projectId);
+      if (!project) return send(404, { detail: "proje yok" });
+      return withBody((body) => {
+        const existingForProject = state.progressPayments.filter((p) => p.project_id === projectId);
+        const nextSeq = existingForProject.length > 0 ? Math.max(...existingForProject.map((p) => p.sequence_no)) + 1 : 1;
+        const contract = projectId === "p-1" ? EMPLOYER_CONTRACT_P1 : null;
+        const rawLines = Array.isArray(body.lines) ? (body.lines as Array<Record<string, unknown>>) : [];
+        const lines = rawLines.map((l, index) =>
+          computeLine(
+            String(l.contract_item_id ?? ""),
+            String(l.site_id ?? ""),
+            (l.quantity as number | string) ?? 0,
+            l.coefficient as number | string | null | undefined,
+            undefined,
+            index,
+          ),
+        );
+        const payment: MockProgressPayment = {
+          id: `pp-${state.progressPayments.length + 2}`,
+          project_id: projectId,
+          sequence_no: nextSeq,
+          period_year: (body.period_year as number | null | undefined) ?? null,
+          period_month: (body.period_month as number | null | undefined) ?? null,
+          description: body.description ? String(body.description) : null,
+          status: "draft",
+          vat_pct: contract?.vat_pct ?? "20.00",
+          advance_pct: contract?.advance_pct ?? "20.00",
+          retainage_pct: contract?.retainage_pct ?? "5.00",
+          default_coefficient: body.default_coefficient ? String(body.default_coefficient) : "1",
+          submitted_at: null, approved_at: null, approved_by: null, paid_at: null,
+          created_by: "11111111-1111-1111-1111-111111111111",
+          created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+          lines,
+          groups: [],
+          calculation: { gross: "0.00", vat: "0.00", advance_deduction: "0.00", retention: "0.00", net: "0.00" },
+          progress: { financial_pct: null, physical_pct: null, duration_pct: null },
+          dropped_orphan_count: 0,
+        };
+        recomputePaymentTotals(payment);
+        state.progressPayments.push(payment);
+        return send(201, buildPaymentDetail(state, payment));
+      });
+    }
+
+    // GET /projects/{project_id}/progress-payments/summary — Ekran 14 sekmesi
+    // + Şantiye - Hakedişler KPI şeridi (brief §Ortak KPI şeridi ZORUNLU ucu).
+    const summaryMatch = path.match(/^\/projects\/([^/]+)\/progress-payments\/summary$/);
+    if (method === "GET" && summaryMatch) {
+      const project = state.projects.find((p) => p.id === summaryMatch[1]);
+      if (!project) return send(404, { detail: "proje yok" });
+      return send(200, buildProgressPaymentSummary(state, summaryMatch[1]));
+    }
+
+    // GET /projects/{project_id}/contract — hakediş formu Fiyat Farkı bandı.
+    const contractMatch = path.match(/^\/projects\/([^/]+)\/contract$/);
+    if (method === "GET" && contractMatch) {
+      const projectId = contractMatch[1];
+      const project = state.projects.find((p) => p.id === projectId);
+      if (!project) return send(404, { detail: "proje yok" });
+      if (projectId !== "p-1") return send(404, { detail: "bu proje icin sozlesme yok" });
+      return send(200, {
+        ...EMPLOYER_CONTRACT_P1,
+        progress_payment_summary: buildProgressPaymentSummary(state, projectId),
+        milestones: null,
+        documents: null,
+        pending_modules: [] as string[],
+      });
+    }
+
+    // GET /projects/{project_id}/contract/distribution — hakediş formu pivot
+    // tablosu kaynağı (`İşveren Hakediş Oluştur.dc.html`).
+    const distributionMatch = path.match(/^\/projects\/([^/]+)\/contract\/distribution$/);
+    if (method === "GET" && distributionMatch) {
+      const projectId = distributionMatch[1];
+      const project = state.projects.find((p) => p.id === projectId);
+      if (!project) return send(404, { detail: "proje yok" });
+      if (projectId !== "p-1") return send(404, { detail: "bu proje icin poz dagilimi yok" });
+      return send(200, buildContractDistributionResponse(state, projectId));
+    }
+
+    // /progress-payments/{payment_id}/lines — DEĞİŞTİRME semantiği (spec §9.2).
+    const linesMatch = path.match(/^\/progress-payments\/([^/]+)\/lines$/);
+    if (method === "PUT" && linesMatch) {
+      const payment = state.progressPayments.find((p) => p.id === linesMatch[1]);
+      if (!payment) return send(404, { detail: "hakedis yok" });
+      return withBody((body) => {
+        const rawLines = Array.isArray(body.lines) ? (body.lines as Array<Record<string, unknown>>) : [];
+        payment.lines = rawLines.map((l, index) => {
+          const itemId = String(l.contract_item_id ?? "");
+          const siteId = String(l.site_id ?? "");
+          const existing = payment.lines.find((pl) => pl.contract_item_id === itemId && pl.site_id === siteId);
+          return computeLine(itemId, siteId, (l.quantity as number | string) ?? 0, l.coefficient as number | string | null | undefined, existing, index);
+        });
+        recomputePaymentTotals(payment);
+        payment.updated_at = new Date().toISOString();
+        return send(200, buildPaymentDetail(state, payment));
+      });
+    }
+
+    // /progress-payments/{payment_id}/refresh-prices — draft-only fiyat/katsayı
+    // tazeleme (spec §9.3). Mock'ta sözleşme kalemi fiyatı hiç değişmediğinden
+    // yalnız bağı sağlam (contract_item_id != null) satırlar yeniden hesaplanır.
+    const refreshMatch = path.match(/^\/progress-payments\/([^/]+)\/refresh-prices$/);
+    if (method === "POST" && refreshMatch) {
+      const payment = state.progressPayments.find((p) => p.id === refreshMatch[1]);
+      if (!payment) return send(404, { detail: "hakedis yok" });
+      if (payment.status !== "draft") return send(409, { detail: "yalniz taslak tazelenebilir" });
+      let refreshedCount = 0;
+      payment.lines = payment.lines.map((line, index) => {
+        if (!line.contract_item_id) return line;
+        refreshedCount += 1;
+        return computeLine(line.contract_item_id, line.site_id, line.quantity, payment.default_coefficient, line, index);
+      });
+      recomputePaymentTotals(payment);
+      payment.updated_at = new Date().toISOString();
+      return send(200, { refreshed_count: refreshedCount });
+    }
+
+    // Durum geçişleri (spec §7) — govde almazlar (reject harici), yalniz
+    // payment_id. Gecersiz gecis 409 dondurur; guncel detay HER ZAMAN
+    // durumu yansitir (brief §Belirsizlik çözümü 3 — sabit tek yanit YETMEZ).
+    const submitMatch = path.match(/^\/progress-payments\/([^/]+)\/submit$/);
+    if (method === "POST" && submitMatch) {
+      const payment = state.progressPayments.find((p) => p.id === submitMatch[1]);
+      if (!payment) return send(404, { detail: "hakedis yok" });
+      if (payment.status !== "draft") return send(409, { detail: "yalniz taslak onaya gonderilebilir" });
+      payment.status = "pending_approval";
+      payment.submitted_at = new Date().toISOString();
+      payment.updated_at = payment.submitted_at;
+      return send(200, buildPaymentDetail(state, payment));
+    }
+    const approveMatch = path.match(/^\/progress-payments\/([^/]+)\/approve$/);
+    if (method === "POST" && approveMatch) {
+      const payment = state.progressPayments.find((p) => p.id === approveMatch[1]);
+      if (!payment) return send(404, { detail: "hakedis yok" });
+      if (payment.status !== "pending_approval") return send(409, { detail: "yalniz onay bekleyen onaylanabilir" });
+      payment.status = "approved";
+      payment.approved_at = new Date().toISOString();
+      payment.approved_by = "11111111-1111-1111-1111-111111111111";
+      payment.updated_at = payment.approved_at;
+      return send(200, buildPaymentDetail(state, payment));
+    }
+    const rejectMatch = path.match(/^\/progress-payments\/([^/]+)\/reject$/);
+    if (method === "POST" && rejectMatch) {
+      const payment = state.progressPayments.find((p) => p.id === rejectMatch[1]);
+      if (!payment) return send(404, { detail: "hakedis yok" });
+      if (payment.status !== "pending_approval") return send(409, { detail: "yalniz onay bekleyen reddedilebilir" });
+      // RejectBody.reason denetim gunlugune yazilir (kalici kolon YOK, spec
+      // §7 K12) — mock'ta ayrica saklanmaz, yalniz durum geri alinir.
+      payment.status = "draft";
+      payment.submitted_at = null;
+      payment.updated_at = new Date().toISOString();
+      return send(200, buildPaymentDetail(state, payment));
+    }
+    const markPaidMatch = path.match(/^\/progress-payments\/([^/]+)\/mark-paid$/);
+    if (method === "POST" && markPaidMatch) {
+      const payment = state.progressPayments.find((p) => p.id === markPaidMatch[1]);
+      if (!payment) return send(404, { detail: "hakedis yok" });
+      if (payment.status !== "approved") return send(409, { detail: "yalniz onaylanmis odendi isaretlenebilir" });
+      payment.status = "paid";
+      payment.paid_at = new Date().toISOString();
+      payment.updated_at = payment.paid_at;
+      return send(200, buildPaymentDetail(state, payment));
+    }
+    const unapproveMatch = path.match(/^\/progress-payments\/([^/]+)\/unapprove$/);
+    if (method === "POST" && unapproveMatch) {
+      const payment = state.progressPayments.find((p) => p.id === unapproveMatch[1]);
+      if (!payment) return send(404, { detail: "hakedis yok" });
+      if (payment.status !== "approved") return send(409, { detail: "yalniz onaylanmis onayi geri alinabilir" });
+      payment.status = "pending_approval";
+      payment.approved_at = null;
+      payment.approved_by = null;
+      payment.updated_at = new Date().toISOString();
+      return send(200, buildPaymentDetail(state, payment));
+    }
+
+    // GET/PATCH /progress-payments/{payment_id} — TEKİL rota son sırada
+    // kontrol edilir (yukarıdaki alt-yol regex'leri her zaman önce eşleşir,
+    // sıralama önemli değildir ama okunabilirlik için aksiyon uçlarından
+    // sonra yerleştirildi).
+    const paymentIdMatch = path.match(/^\/progress-payments\/([^/]+)$/);
+    if (method === "GET" && paymentIdMatch) {
+      const payment = state.progressPayments.find((p) => p.id === paymentIdMatch[1]);
+      if (!payment) return send(404, { detail: "hakedis yok" });
+      return send(200, buildPaymentDetail(state, payment));
+    }
+    if (method === "PATCH" && paymentIdMatch) {
+      const payment = state.progressPayments.find((p) => p.id === paymentIdMatch[1]);
+      if (!payment) return send(404, { detail: "hakedis yok" });
+      return withBody((body) => {
+        if (body.period_year !== undefined) payment.period_year = body.period_year as number | null;
+        if (body.period_month !== undefined) payment.period_month = body.period_month as number | null;
+        if (body.description !== undefined) payment.description = body.description ? String(body.description) : null;
+        if (body.default_coefficient !== undefined && body.default_coefficient !== null) {
+          payment.default_coefficient = String(body.default_coefficient);
+        }
+        payment.updated_at = new Date().toISOString();
+        return send(200, buildPaymentDetail(state, payment));
       });
     }
 

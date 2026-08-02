@@ -55,16 +55,19 @@
 .pp-detail__actions {
   position: relative;
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
-/* Aksiyon hatası: buton satırının hemen altına, sağa yaslı taşan bir bant
-   (mockup'ta bu alan yok — S1 onaylı sapma, üst akışı bozmayan yerleşim). */
+/* Aksiyon hatası: buton satırının hemen altına, tam genişlikte akış içi bant
+   (mockup'ta bu alan yok — S1 onaylı sapma). T7 T4-devri düzeltmesi: eskiden
+   `position: absolute` + sabit `width: 320px` kullanıyordu, `max-width`/medya
+   sorgusu yoktu — dar viewport'ta (320-375px) taşma/üste binme riski
+   somuttu. `flex-wrap` ile aynı satırın devamına AKAR, hiçbir genişlikte
+   taşmaz; sabit px yerine token (`--space-2`) kullanılır. */
 .pp-detail__action-error {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 320px;
-  z-index: 5;
+  flex-basis: 100%;
+  max-width: 100%;
+  margin-top: var(--space-2);
 }
 
 .pp-detail__alert {
