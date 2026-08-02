@@ -262,7 +262,7 @@ describe("SectionForm — taslak / taslak dışı ayrımı", () => {
 });
 
 describe("SectionForm — 409 kod çakışması", () => {
-  it("Bölüm Kodu alanının altında Türkçe hata gösterir", async () => {
+  it("Bölüm Kodu alanının altında Türkçe hata gösterir, TAM OLARAK BİR KEZ, genel banner BASILMAZ", async () => {
     const user = userEvent.setup();
     renderCreate();
     await fillRequired(user);
@@ -274,7 +274,10 @@ describe("SectionForm — 409 kod çakışması", () => {
 
     const codeField = screen.getByLabelText("Bölüm Kodu");
     expect(codeField).toHaveAttribute("aria-invalid", "true");
-    expect(screen.getAllByText(MESSAGES.sectionCodeConflict).length).toBeGreaterThan(0);
+    // Brief §409: YALNIZ alan hatası — genel banner (role="alert", .pf-form-error) BASILMAZ.
+    expect(screen.getAllByText(MESSAGES.sectionCodeConflict)).toHaveLength(1);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(document.querySelector(".pf-form-error")).not.toBeInTheDocument();
   });
 });
 

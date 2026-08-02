@@ -11,7 +11,10 @@ export const SECTION_TYPE_LABELS: Record<SectionType, string> = {
   structural: "Kaba İnşaat",
   finishing: "İnce İşler",
   facade_roof: "Cephe & Çatı",
-  mep: "Mekanik-Elektrik",
+  // Düzeltme turu 1: brifingde backend docstring'inden "Mekanik-Elektrik" alınmıştı;
+  // mockup'un kendisi (`Form - Bolum Ekle.dc.html` F70) "Mekanik / Elektrik" diyor —
+  // 100% mockup sadakati kuralı gereği mockup kazanır.
+  mep: "Mekanik / Elektrik",
   landscape: "Peyzaj",
   handover: "Teslimat & Kabul",
 };

@@ -13,7 +13,7 @@ describe("section-labels — bölüm türü eşlemesi (Form - Bölüm Ekle satı
       structural: "Kaba İnşaat",
       finishing: "İnce İşler",
       facade_roof: "Cephe & Çatı",
-      mep: "Mekanik-Elektrik",
+      mep: "Mekanik / Elektrik",
       landscape: "Peyzaj",
       handover: "Teslimat & Kabul",
     });

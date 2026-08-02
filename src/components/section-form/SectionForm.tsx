@@ -116,9 +116,13 @@ export function SectionForm(props: SectionFormProps) {
   function handleMutationError(err: unknown) {
     const isCodeConflict = err instanceof BackendError && err.status === 409;
     if (isCodeConflict) {
+      // Brief §409 kod çakışması: YALNIZ Bölüm Kodu alanının altında hata —
+      // genel banner set edilmez (site-form'un 409 deseninden bilinçli sapma,
+      // brief burada kazanır).
       setErrors((prev) => ({ ...prev, code: MESSAGES.sectionCodeConflict }));
+      return;
     }
-    setFormError(isCodeConflict ? MESSAGES.sectionCodeConflict : backendErrorMessage(err));
+    setFormError(backendErrorMessage(err));
   }
 
   function submit(isDraft: boolean) {
