@@ -36,7 +36,10 @@ test("ekleme kipi: zorunlu alan hatalari, taslak/tam ayrimi, tam zincir (olustur
   await page.goto("/projeler/p-1/santiyeler/s-2/bolumler/yeni");
   await expect(page.getByRole("heading", { level: 1, name: "Yeni Bölüm (Faz) Ekle" })).toBeVisible();
   await footerButton(page, "Bölümü Oluştur").click();
-  await expect(page.getByRole("alert")).toHaveText("Bölüm adı zorunludur.");
+  // Next.js her sayfaya `<div role="alert" id="__next-route-announcer__">` enjekte
+  // ediyor; `getByRole("alert")` bu yuzden HER ZAMAN ikinci bir elemana cozuluyor.
+  // Genel banner'i kendi sinifiyla hedefle (`SectionForm.tsx:228`).
+  await expect(page.locator(".pf-form-error")).toHaveText("Bölüm adı zorunludur.");
   await expect(page.getByRole("heading", { level: 1, name: "Yeni Bölüm (Faz) Ekle" })).toBeVisible();
 
   // 2) Yalnız ad dolu + "Bölümü Oluştur" → diğer zorunluluklar (yalnız
@@ -110,8 +113,9 @@ test("409 kod cakismasi: Bolum Kodu alaninin altinda tek hata, genel banner basi
   const message =
     "Bu bölüm kodu bu şantiyede zaten kullanılıyor. Farklı bir kod girin veya kodu boş bırakın.";
   await expect(page.getByText(message)).toHaveCount(1);
-  // Brief §409: YALNIZ alan hatası — genel banner (role="alert") basılmaz.
-  await expect(page.getByRole("alert")).toHaveCount(0);
+  // Brief §409: YALNIZ alan hatası — genel banner basılmaz. `getByRole("alert")`
+  // kullanilamaz: Next.js'in route announcer'i her sayfada bir `role="alert"` tasir.
+  await expect(page.locator(".pf-form-error")).toHaveCount(0);
   // Form gönderilmedi: hâlâ ekleme sayfasındayız.
   await expect(page.getByRole("heading", { level: 1, name: "Yeni Bölüm (Faz) Ekle" })).toBeVisible();
 });
