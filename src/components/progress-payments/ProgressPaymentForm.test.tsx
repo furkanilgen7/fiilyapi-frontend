@@ -355,6 +355,77 @@ describe("ProgressPaymentForm — kaydetme gövdesi (EN KRİTİK)", () => {
   });
 });
 
+describe("ProgressPaymentForm — geçersiz-değer koruması (kontrolcü bulgusu §2)", () => {
+  it("miktar hücresine harf/işaret yazılırsa süzülür, state'e girmez", async () => {
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    const qtyInput = await screen.findByLabelText(`${ITEM_1.description} — ${SITE_A.name} miktar`);
+    await userEvent.clear(qtyInput);
+    await userEvent.type(qtyInput, "12a-3.5.6");
+    expect(qtyInput).toHaveValue("123.56");
+  });
+
+  it("miktar hücresi boş bırakılıp kaydedilirse gövdeye '0' gider (reddedilmez)", async () => {
+    const mutate = vi.fn();
+    vi.mocked(useCreateProgressPayment).mockReturnValue(mutationResult({ mutate }));
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+
+    const qtyInput = await screen.findByLabelText(`${ITEM_1.description} — ${SITE_A.name} miktar`);
+    await userEvent.clear(qtyInput);
+
+    const [saveButton] = await screen.findAllByRole("button", { name: "Taslak Kaydet" });
+    await userEvent.click(saveButton);
+
+    const [{ body }] = mutate.mock.calls[0];
+    const cell = body.lines.find(
+      (l: { contract_item_id: string; site_id: string }) =>
+        l.contract_item_id === ITEM_1.id && l.site_id === SITE_A.id,
+    );
+    expect(cell.quantity).toBe("0");
+  });
+
+  it("Hakediş yılı boş bırakılırsa gövdeye period_year: null gider (0 UYDURULMAZ)", async () => {
+    const mutate = vi.fn();
+    vi.mocked(useCreateProgressPayment).mockReturnValue(mutationResult({ mutate }));
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+
+    const yearInput = await screen.findByLabelText("Hakediş yılı");
+    await userEvent.clear(yearInput);
+
+    const [saveButton] = await screen.findAllByRole("button", { name: "Taslak Kaydet" });
+    await userEvent.click(saveButton);
+
+    const [{ body }] = mutate.mock.calls[0];
+    expect(body.period_year).toBeNull();
+  });
+});
+
+describe("ProgressPaymentForm — Ödeme Hesabı kartı (kontrolcü düzeltmesi §1)", () => {
+  it("edit kipinde detail.calculation'ı PaymentCalculationCard ile basar", async () => {
+    vi.mocked(useProgressPayment).mockReturnValue(
+      queryResult({
+        data: detailFixture({
+          calculation: {
+            gross: "4920600.00",
+            vat: "984120.00",
+            advance_deduction: "984120.00",
+            retention: "246030.00",
+            net: "4674570.00",
+          },
+        }),
+      }),
+    );
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+    expect(await screen.findByText("Ödeme Hesabı")).toBeInTheDocument();
+    expect(screen.getByText("Net Tahsil")).toBeInTheDocument();
+  });
+
+  it("create kipinde Ödeme Hesabı kartı basılmaz (henüz calculation yok)", async () => {
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    await screen.findByText("İşveren Hakediş Oluştur");
+    expect(screen.queryByText("Ödeme Hesabı")).not.toBeInTheDocument();
+  });
+});
+
 describe("ProgressPaymentForm — hata gösterimi (Türkçe, hiçbiri sessiz değil)", () => {
   function backendError(status: number, detail: string) {
     return new BackendError(status, { detail });

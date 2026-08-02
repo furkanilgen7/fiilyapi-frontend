@@ -104,6 +104,53 @@ export function buildLinesSaveBody(rows: readonly PivotRow[]): ProgressPaymentLi
   return Array.from(map.values());
 }
 
+/**
+ * Miktar hücresine YAZARKEN uygulanan filtre (kontrolcü incelemesi bulgusu:
+ * ham `event.target.value` doğrulamasız state'e giriyordu). Rakam/nokta
+ * DIŞI her karakter (harf, işaret, boşluk) süzülür; ikinci nokta atılır.
+ * Miktar şeması negatif kabul etmediğinden (`ProgressPaymentLineInput.quantity
+ * >= 0`) eksi işareti hiç üretilmez. Kullanıcı yazarken geçici ara haller
+ * ("12.", "") serbest bırakılır — kaydetmeden hemen önce
+ * `normalizeQuantityForSave` bunları güvenli hale getirir.
+ */
+export function sanitizeQuantityInput(raw: string): string {
+  const digitsAndDots = raw.replace(/[^0-9.]/g, "");
+  const firstDot = digitsAndDots.indexOf(".");
+  if (firstDot === -1) return digitsAndDots;
+  return digitsAndDots.slice(0, firstDot + 1) + digitsAndDots.slice(firstDot + 1).replace(/\./g, "");
+}
+
+/**
+ * Kaydetmeden HEMEN ÖNCE çağrılır (brief-fix §2): boş ("") veya yalnız nokta
+ * (".") gibi geçersiz ara haller `PUT …/lines` gövdesine sızmadan `"0"`a
+ * normalize edilir — REDDETMEK yerine geçerli bir varsayılana düşmek tercih
+ * edildi, çünkü `"0"` zaten bu formda MEŞRU bir miktardır (bkz.
+ * `buildLinesSaveBody` yorumu); kullanıcıyı "boş bıraktın, düzelt" diye
+ * engellemek bu bağlamda gereksiz sürtünme yaratır. `Number()`/`parseFloat`
+ * KULLANILMAZ — string zaten geçerli ondalık biçimindeyse (sanitize
+ * filtresinden geçmiş) olduğu gibi döner, kuruş hassasiyeti bozulmaz.
+ */
+export function normalizeQuantityForSave(raw: string): string {
+  if (raw === "" || raw === ".") return "0";
+  return raw;
+}
+
+/**
+ * `buildLinesSaveBody`e vermeden önce TÜM düzenlenebilir hücreleri
+ * `normalizeQuantityForSave`ten geçirir. `buildLinesSaveBody`nin kendisi
+ * BİLEREK değiştirilmedi (brief'in atlanmaması istediği 3 kritik test bu
+ * fonksiyona kilitli) — normalize etme sorumluluğu ayrı, dar kapsamlı bir
+ * fonksiyona verildi.
+ */
+export function normalizePivotRowsForSave(rows: readonly PivotRow[]): PivotRow[] {
+  return rows.map((row) => ({
+    ...row,
+    cells: row.cells.map((cell) =>
+      cell.editable ? { ...cell, quantity: normalizeQuantityForSave(cell.quantity) } : cell,
+    ),
+  }));
+}
+
 /** Satırın düzenlenebilir hücrelerindeki miktar toplamı — kuruş hassasiyetli TOPLAMA (çarpma yok, güvenli). */
 export function rowQuantityTotal(row: PivotRow): string {
   const editableQuantities = row.cells.filter((c) => c.editable).map((c) => c.quantity || "0");

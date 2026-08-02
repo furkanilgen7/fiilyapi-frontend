@@ -1,6 +1,14 @@
 import { describe, it, expect } from "vitest";
 
-import { buildPivotRows, buildLinesSaveBody, rowQuantityTotal, rowAmountTotal } from "./pivot";
+import {
+  buildPivotRows,
+  buildLinesSaveBody,
+  rowQuantityTotal,
+  rowAmountTotal,
+  sanitizeQuantityInput,
+  normalizeQuantityForSave,
+  normalizePivotRowsForSave,
+} from "./pivot";
 import type { ContractDistributionResponse } from "@/lib/api/hooks/useContract";
 import type { ProgressPaymentLineDetail } from "@/lib/api/hooks/useProgressPayments";
 
@@ -172,5 +180,62 @@ describe("rowAmountTotal", () => {
     ];
     const rows = buildPivotRows(DISTRIBUTION, lines);
     expect(rowAmountTotal(rows[0])).toBe("2442000.00");
+  });
+});
+
+describe("sanitizeQuantityInput — geçersiz-değer koruması (kontrolcü bulgusu §2)", () => {
+  it("rakam/nokta dışı karakterleri süzer", () => {
+    expect(sanitizeQuantityInput("12a3")).toBe("123");
+    expect(sanitizeQuantityInput("-5")).toBe("5");
+    expect(sanitizeQuantityInput("12,5")).toBe("125");
+    expect(sanitizeQuantityInput("abc")).toBe("");
+  });
+
+  it("birden fazla nokta varsa yalnız ilkini korur", () => {
+    expect(sanitizeQuantityInput("1.2.3")).toBe("1.23");
+  });
+
+  it("geçerli ondalık girişi olduğu gibi bırakır (ara hal '12.' dahil)", () => {
+    expect(sanitizeQuantityInput("12.")).toBe("12.");
+    expect(sanitizeQuantityInput("900.500")).toBe("900.500");
+    expect(sanitizeQuantityInput("")).toBe("");
+  });
+});
+
+describe("normalizeQuantityForSave / normalizePivotRowsForSave — kaydetmeden önce", () => {
+  it("boş veya yalnız nokta olan miktarı '0'a çevirir (reddetmez)", () => {
+    expect(normalizeQuantityForSave("")).toBe("0");
+    expect(normalizeQuantityForSave(".")).toBe("0");
+  });
+
+  it("geçerli miktarı DEĞİŞTİRMEZ (kuruş hassasiyeti korunur)", () => {
+    expect(normalizeQuantityForSave("900.500")).toBe("900.500");
+    expect(normalizeQuantityForSave("0")).toBe("0");
+  });
+
+  it("yalnız düzenlenebilir hücreleri normalize eder, kapalı hücreye dokunmaz", () => {
+    const rows = buildPivotRows(DISTRIBUTION);
+    // item-1 × A-Blok'u boş bırakılmış gibi simüle et.
+    const withBlank = [
+      { ...rows[0], cells: rows[0].cells.map((c) => (c.siteId === SITE_A.id ? { ...c, quantity: "" } : c)) },
+      rows[1],
+    ];
+    const normalized = normalizePivotRowsForSave(withBlank);
+    const cellA = normalized[0].cells.find((c) => c.siteId === SITE_A.id)!;
+    const cellBLocked = normalized[1].cells.find((c) => c.siteId === SITE_B.id)!;
+    expect(cellA.quantity).toBe("0");
+    expect(cellBLocked.editable).toBe(false);
+    expect(cellBLocked.quantity).toBe(""); // kapalı hücre normalize edilmez, "" kalır (zaten gövdeye girmiyor)
+  });
+
+  it("normalize edilmiş satırlar buildLinesSaveBody'e verildiğinde boş hücre '0' olarak gövdeye girer", () => {
+    const rows = buildPivotRows(DISTRIBUTION);
+    const withBlank = rows.map((row) => ({
+      ...row,
+      cells: row.cells.map((c) => (c.editable ? { ...c, quantity: "" } : c)),
+    }));
+    const body = buildLinesSaveBody(normalizePivotRowsForSave(withBlank));
+    expect(body.every((l) => l.quantity === "0")).toBe(true);
+    expect(body).toHaveLength(3);
   });
 });

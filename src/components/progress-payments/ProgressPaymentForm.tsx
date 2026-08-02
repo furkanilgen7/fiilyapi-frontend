@@ -21,9 +21,15 @@ import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { PERIOD_MONTHS, formatPercent } from "@/lib/format";
 
+import { PaymentCalculationCard } from "./PaymentCalculationCard";
 import { PaymentFormPivotTable } from "./PaymentFormPivotTable";
 import { ProgressPaymentStatusActions } from "./ProgressPaymentStatusActions";
-import { buildLinesSaveBody, buildPivotRows, type PivotRow } from "./pivot";
+import {
+  buildLinesSaveBody,
+  buildPivotRows,
+  normalizePivotRowsForSave,
+  type PivotRow,
+} from "./pivot";
 import "./progress-payment-form.css";
 
 export type ProgressPaymentFormProps =
@@ -166,7 +172,10 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
 
   function handleSave() {
     setFormError(null);
-    const linesBody = buildLinesSaveBody(rows ?? []);
+    // Kaydetmeden HEMEN önce normalize edilir (kontrolcü bulgusu §2): boş/
+    // geçersiz ara haller ("", ".") `"0"`a çevrilir — `buildLinesSaveBody`nin
+    // KENDİSİ değiştirilmedi, kritik testleri korunur (bkz. `pivot.ts`).
+    const linesBody = buildLinesSaveBody(normalizePivotRowsForSave(rows ?? []));
     const headerBody = {
       period_year: periodYear,
       period_month: periodMonth,
@@ -341,7 +350,7 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
                   numeric
                   aria-label="Hakediş yılı"
                   value={periodYear ?? ""}
-                  onChange={(event) => setPeriodYear(Number(event.target.value))}
+                  onChange={(event) => setPeriodYear(parsePeriodYear(event.target.value))}
                 />
               </div>
             )}
@@ -379,6 +388,16 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
         disabled={isSaving}
         onQuantityChange={updateCellQuantity}
       />
+
+      {/* Mockup 177-200'deki tfoot toplamları (TOPLAM HAKEDİŞ/KDV/Avans/
+          Teminat/NET) burada YENİDEN YAZILMAZ — T3'te yazılan
+          `PaymentCalculationCard` aynen içe aktarılır (kontrolcü düzeltmesi:
+          `detail.calculation` yetkili toplamdır, brief §tfoot). YALNIZ edit
+          kipinde basılır: create kipinde henüz kaydedilmiş bir hakediş
+          olmadığından `calculation` YOKTUR — backend'in hesaplamadığı bir
+          toplamı client'ta uydurmak (çarpma gerektirir) float riskidir, bu
+          yüzden create kipinde bilerek HİÇ toplam basılmaz. */}
+      {isEdit && detail && <PaymentCalculationCard detail={detail} />}
 
       <div className="pp-form__actions">
         {isEdit && detail && detail.status === "draft" && (
@@ -426,6 +445,19 @@ function pickAriaProps(control: { id: string; "aria-describedby"?: string }) {
  * yolunda float YASAK kuralı burada ihlal edilmiyor — hesaplanan değer
  * hiçbir API gövdesine yazılmıyor, yalnız ekrana basılıyor.
  */
+/**
+ * "Hakediş yılı" alanı için Türkçe koruma (kontrolcü bulgusu §2): ham
+ * `Number(event.target.value)` boş girişte `0` üretiyordu ve bu `0` gövdeye
+ * `period_year: 0` olarak sızabiliyordu. Boş VEYA sayısal olmayan girişte
+ * `null` döner — `period_year` şemada nullable olduğundan bu alan gövdede
+ * "gönderilmemiş" (boş) olarak kalır, uydurma bir `0` asla gitmez.
+ */
+function parsePeriodYear(raw: string): number | null {
+  if (raw === "") return null;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : null;
+}
+
 function coefficientPercentLabel(coefficient: string): string {
   const value = Number(coefficient);
   if (!Number.isFinite(value)) return formatPercent(0);

@@ -2,7 +2,7 @@ import { Input } from "@/components/ui";
 import { formatAmount, formatQuantity } from "@/lib/format";
 import type { ContractDistributionSite } from "@/lib/api/hooks/useContract";
 
-import { rowAmountTotal, rowQuantityTotal, type PivotRow } from "./pivot";
+import { rowAmountTotal, rowQuantityTotal, sanitizeQuantityInput, type PivotRow } from "./pivot";
 
 export interface PaymentFormPivotTableProps {
   sites: ContractDistributionSite[];
@@ -84,7 +84,16 @@ export function PaymentFormPivotTable({
                             value={cell.quantity}
                             disabled={disabled}
                             onChange={(event) =>
-                              onQuantityChange(row.item.id, cell.siteId, event.target.value)
+                              // Ham deger degil, sanitize edilmis deger state'e yazilir
+                              // (kontrolcu bulgusu §2): harf/isaret hicbir zaman
+                              // state'e girmez, "12." gibi gecici ara haller
+                              // serbest birakilir — kaydetmeden hemen once
+                              // `normalizePivotRowsForSave` bunlari "0"a cevirir.
+                              onQuantityChange(
+                                row.item.id,
+                                cell.siteId,
+                                sanitizeQuantityInput(event.target.value),
+                              )
                             }
                           />
                         ) : (
