@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 import SiteHakedislerPage from "./page";
-import { useProgressPayments } from "@/lib/api/hooks/useProgressPayments";
+import { useProgressPayments, useProgressPaymentSummary } from "@/lib/api/hooks/useProgressPayments";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { useSession } from "@/components/shell/SessionProvider";
 import { BackendError } from "@/lib/api/unwrap";
@@ -12,6 +12,7 @@ import type { SiteDetail } from "@/lib/api/hooks/useSites";
 vi.mock("@/lib/api/hooks/useProgressPayments", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useProgressPayments")>()),
   useProgressPayments: vi.fn(),
+  useProgressPaymentSummary: vi.fn(),
 }));
 vi.mock("@/lib/api/hooks/useSites", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useSites")>()),
@@ -73,6 +74,19 @@ function mockPayments(value: Partial<ReturnType<typeof useProgressPayments>>) {
   } as never);
 }
 
+// Varsayılan: özet sorgusu HENÜZ BAŞARILI DEĞİL (isSuccess: false) — round 2
+// testleri özeti başarıyla döndüren senaryoyu açıkça override eder.
+function mockSummary(value: Partial<ReturnType<typeof useProgressPaymentSummary>>) {
+  vi.mocked(useProgressPaymentSummary).mockReturnValue({
+    data: undefined,
+    isLoading: false,
+    isError: false,
+    isSuccess: false,
+    error: null,
+    ...value,
+  } as never);
+}
+
 // P7 T6: [...slug] catch-all bu segment için devre dışı kalır; sayfa
 // ComingSoon YERİNE gerçek şantiye hakediş görünümünü basar.
 describe("SiteHakedislerPage rotasi", () => {
@@ -80,6 +94,7 @@ describe("SiteHakedislerPage rotasi", () => {
     vi.clearAllMocks();
     mockPermission("draft");
     mockSite({ data: SITE });
+    mockSummary({ isSuccess: false });
   });
 
   it("ComingSoon DEGIL gercek gorunumu basar", () => {
@@ -93,6 +108,12 @@ describe("SiteHakedislerPage rotasi", () => {
     mockPayments({ data: { items: [] } });
     render(<SiteHakedislerPage />);
     expect(useProgressPayments).toHaveBeenCalledWith({ project_id: PROJECT_ID });
+  });
+
+  it("KPI alt metni için proje özetini rota parametresindeki project_id ile çeker (round 2)", () => {
+    mockPayments({ data: { items: [] } });
+    render(<SiteHakedislerPage />);
+    expect(useProgressPaymentSummary).toHaveBeenCalledWith(PROJECT_ID);
   });
 
   it("yukleniyor durumunu basar", () => {
@@ -190,5 +211,63 @@ describe("SiteHakedislerPage rotasi", () => {
     mockPayments({ isLoading: true });
     render(<SiteHakedislerPage />);
     expect(screen.queryByTestId("pp-totals-strip")).not.toBeInTheDocument();
+  });
+
+  // Round 2 (coordinator review): mockup satır 82 "4 hakediş · %75" alt
+  // metni — bu ekranda proje bağlamı bilindiğinden `useProgressPaymentSummary`
+  // ile TAM (sayı + yüzde) basılır.
+  describe("KPI alt metni — özet sorgusu (round 2)", () => {
+    it("özet başarılı ve progress_pct doluyken sayı VE yüzde birlikte basılır", () => {
+      mockPayments({ data: { items: [PAYMENT_ITEM] } });
+      mockSummary({
+        isSuccess: true,
+        data: {
+          contract_amount: "10000000.00",
+          cumulative_gross: "8400000.00",
+          progress_pct: "75.00",
+          advance_deduction_total: "0.00",
+          retention_total: "0.00",
+          net_total: "8400000.00",
+          payment_count: 4,
+          pending_count: 1,
+          remaining: "1600000.00",
+        },
+      });
+      render(<SiteHakedislerPage />);
+      expect(screen.getByTestId("pp-kpi-subtitle")).toHaveTextContent("4 hakediş · %75");
+    });
+
+    it("progress_pct null iken (sözleşme bedeli eksik) yalnız sayı basılır, yüzde düşer — sayfa kırılmaz", () => {
+      mockPayments({ data: { items: [PAYMENT_ITEM] } });
+      mockSummary({
+        isSuccess: true,
+        data: {
+          contract_amount: null,
+          cumulative_gross: "8400000.00",
+          progress_pct: null,
+          advance_deduction_total: "0.00",
+          retention_total: "0.00",
+          net_total: "8400000.00",
+          payment_count: 4,
+          pending_count: 1,
+          remaining: null,
+        },
+      });
+      render(<SiteHakedislerPage />);
+      expect(screen.getByTestId("pp-kpi-subtitle")).toHaveTextContent("4 hakediş");
+      expect(screen.getByTestId("pp-kpi-subtitle").textContent).not.toMatch(/%/);
+    });
+
+    it("özet sorgusu hata verirse (403 dahil) sayfa KIRILMAZ — liste ve şerit yine basılır, alt metin yüzdesiz kalır", () => {
+      mockPayments({ data: { items: [PAYMENT_ITEM] } });
+      mockSummary({ isSuccess: false, isError: true, error: new BackendError(403, { detail: "yasak" }) });
+      render(<SiteHakedislerPage />);
+      expect(screen.getByRole("heading", { name: "A-Blok Şantiyesi — Hakedişler" })).toBeInTheDocument();
+      expect(screen.getByTestId("pp-totals-strip")).toBeInTheDocument();
+      // Özet başarısız olunca sayı `items.length`e düşer (fallback), yüzde YOK.
+      expect(screen.getByTestId("pp-kpi-subtitle")).toHaveTextContent("1 hakediş");
+      expect(screen.getByTestId("pp-kpi-subtitle").textContent).not.toMatch(/%/);
+      expect(screen.getByRole("link", { name: /Güneşkent Konut/ })).toBeInTheDocument();
+    });
   });
 });

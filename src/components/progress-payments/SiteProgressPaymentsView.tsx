@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
-import { useProgressPayments } from "@/lib/api/hooks/useProgressPayments";
+import { useProgressPayments, useProgressPaymentSummary } from "@/lib/api/hooks/useProgressPayments";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
@@ -21,7 +21,12 @@ import "./site-progress-payments.css";
 // süzülmüş sahte bir liste üretilmez, proje-düzeyi liste aynen basılır.
 //
 // KPI şeridi (satır 81-86) coordinator review T6 fix ile EKLENDİ — karma
-// basılır (`ProgressPaymentsTotalsStrip.tsx`, T2 ile PAYLAŞILIR).
+// basılır (`ProgressPaymentsTotalsStrip.tsx`, T2 ile PAYLAŞILIR). Round 2
+// (coordinator review): "4 hakediş · %75" alt metni (satır 82) proje bağlamı
+// bu ekranda BİLİNDİĞİNDEN `useProgressPaymentSummary(projectId)` ile TAM
+// basılır — T3'ün detay ekranındaki desenin aynısı (`ProgressPaymentDetailView`
+// satır 39, 52). `/hakedisler` genel listesinde tek bir proje yok, o yüzden
+// bu sorgu ORADA HİÇ ÇAĞRILMAZ (bkz. `ProgressPaymentsView.tsx`).
 //
 // BASILMAYANLAR (mockup'ta var, bu dilimde veri yok — brief
 // §pending-modules ile BOŞ kalanlar):
@@ -35,11 +40,19 @@ export function SiteProgressPaymentsView() {
   const siteQuery = useSite(siteId);
   // Proje-düzeyi liste (S4 kararı) — `site_id` filtresi KULLANILMAZ.
   const paymentsQuery = useProgressPayments({ project_id: projectId });
+  // KPI alt metni için — özet sorgusu hata verirse/yüklenmemişse SAYFA
+  // KIRILMAZ, yalnız alt metin yüzdesiz kalır (T3 "özet hata verirse KPI
+  // basılmaz" deseninin aynısı: `isSuccess` kontrolü, `isForbidden` sayfa
+  // düzeyinde KULLANILMAZ — özet 403 dönse bile liste görünür kalmalı).
+  const summaryQuery = useProgressPaymentSummary(projectId);
   const { canWrite } = useModulePermission("progress_payments");
 
   if (isForbidden(paymentsQuery.error) || isForbidden(siteQuery.error)) return <AccessDenied />;
 
   const site = siteQuery.data;
+  const summary = summaryQuery.isSuccess
+    ? { paymentCount: summaryQuery.data.payment_count, progressPct: summaryQuery.data.progress_pct }
+    : undefined;
 
   return (
     <div className="pp spp">
@@ -61,7 +74,7 @@ export function SiteProgressPaymentsView() {
         )}
       </div>
 
-      <ProgressPaymentsTotalsStrip items={paymentsQuery.data?.items} />
+      <ProgressPaymentsTotalsStrip items={paymentsQuery.data?.items} summary={summary} />
 
       <ProgressPaymentsListBody
         isError={paymentsQuery.isError}

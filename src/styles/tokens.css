@@ -247,6 +247,9 @@
   --space-boq-btn-x: 18px; /* birincil buton yatay iç boşluğu (67) */
   --space-boq-crumb-gap: 6px; /* breadcrumb alt boşluğu (62) */
 
+  /* ── Şantiye - Hakedişler.dc.html KPI şeridi (P7 T6 fix, coordinator review round 2) */
+  --space-ppt-subtitle-gap: 3px; /* KPI değeri → alt metin ("4 hakediş · %75") (82) */
+
   /* ── Şantiye Ekle formu (spec §5.1) ────────────────────────────────────────
      Kanon: projedesign "Form - Santiye Ekle.dc.html". Parantez içi sayılar o
      dosyanın SATIR numaralarıdır; göz kararı ölçü yoktur.

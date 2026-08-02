@@ -18,6 +18,12 @@ import "./progress-payments.css";
 // yok. KPI şeridi (satır 81-86) coordinator review T6 fix ile EKLENDİ; karma
 // basılır — bkz. `ProgressPaymentsTotalsStrip.tsx`. Satır gövdesi T6'nın
 // şantiye sekmesiyle PAYLAŞILIR (`ProgressPaymentsList.tsx`) — kopyalanmaz.
+//
+// Round 2 (coordinator review): "N hakediş · %P" alt metninin (satır 82)
+// yüzde kısmı `useProgressPaymentSummary(project_id)`den gelir — bu ekranda
+// TEK bir proje YOK (liste proje-genel), o yüzden özet sorgusu BURADA HİÇ
+// ÇAĞRILMAZ; `summary` prop'u verilmez, şerit yalnız `items.length` sayısını
+// basar, yüzdeyi hiç basmaz (bkz. `ProgressPaymentsTotalsStrip.tsx`).
 export function ProgressPaymentsView() {
   const paymentsQuery = useProgressPayments();
   // Yazma yüzeyi kapısı (spec §2.5): "Yeni Hakediş" yalnız `draft` ve üstü

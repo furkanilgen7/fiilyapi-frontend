@@ -28,6 +28,13 @@
   color: var(--color-text);
   font-family: var(--font-mono);
 }
+/* Mockup 82: "4 hakediş · %75" — sayı HER ZAMAN, yüzde yalnız `summary`
+   verilmiş VE `progress_pct` null değilse (coordinator review round 2). */
+.ppt__subtitle {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-top: var(--space-ppt-subtitle-gap);
+}
 /* Yer tutucu hâl — gerçek değer YOKKEN sahte/0 basılmaz (SiteTotalsStrip/
    BoqTotalsStrip deseniyle aynı durustluk kurali): taşeron hakediş modülüne
    bağlı iki kart (Toplam Taşeron Ödemesi, Brüt Kar Marjı) bu sınıfı taşır. */

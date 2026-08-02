@@ -145,4 +145,14 @@ describe("ProgressPaymentsView", () => {
     render(<ProgressPaymentsView />);
     expect(screen.queryByRole("link", { name: "+ Yeni Hakediş" })).not.toBeInTheDocument();
   });
+
+  // Round 2 (coordinator review): bu ekranda TEK bir proje yok (liste
+  // proje-genel), o yüzden `useProgressPaymentSummary` HİÇ ÇAĞRILMAZ — KPI
+  // alt metni yalnız kalem sayısını basar, mockup 82'deki yüzde BURADA YOK.
+  it("KPI alt metni yalnız hakediş sayısını basar, yüzde BASILMAZ (proje bağlamı yok)", () => {
+    mockQuery({ data: { items: [baseItem, { ...baseItem, id: "44444444-4444-4444-4444-444444444444" }] } });
+    render(<ProgressPaymentsView />);
+    expect(screen.getByTestId("pp-kpi-subtitle")).toHaveTextContent("2 hakediş");
+    expect(screen.getByTestId("pp-kpi-subtitle").textContent).not.toMatch(/%/);
+  });
 });
