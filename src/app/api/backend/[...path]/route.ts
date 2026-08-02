@@ -33,6 +33,12 @@ const ALLOWED_ROOTS = new Set([
   // P7 — Hakediş formundaki Fiyat Farkı/Endeks bandi sozlesmeden SALT-OKUNUR okunur
   // (spec karari S3); bu kok olmadan o okuma canlida 404 alir.
   "contracts",
+  // P6 — Bölüm Detay ekrani + tam sayfa Bölüm formu. GET/PATCH/DELETE
+  // /sections/{section_id} uclarinin ilk path segmenti "sites" DEGIL,
+  // "sections"tir (olusturma /sites/{site_id}/sections uzerinden "sites"
+  // kokunden gecer, ama detay/guncelleme kendi kokunu kullanir). Eksikse
+  // bolum detay ekrani canlida 404 alir; jsdom testleri bunu gormez.
+  "sections",
 ]);
 
 // JSON/metin sayilan icerik tipleri: govde metne cozulup JSON olarak islenir.

@@ -439,6 +439,23 @@ describe("BFF /api/backend/[...path]", () => {
       },
     );
 
+    // P6 · T1 — Bölüm Detay ekraninin GET/PATCH ucu ("sites" DEGIL, kendi
+    // koku "sections" uzerinden gecer) ADLI olarak da kapiya baglanir.
+    it.each(["sections"])(
+      "%s koku bolum detay ekrani icin allow-list'te tanimlidir",
+      (root) => {
+        const source = readFileSync(
+          resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+          "utf8",
+        );
+        const allowList = source.slice(
+          source.indexOf("const ALLOWED_ROOTS"),
+          source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+        );
+        expect(allowList).toContain(`"${root}"`);
+      },
+    );
+
     it.each(calledRoots)("%s koku forward edilir", async (root) => {
       const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
       vi.stubGlobal("fetch", fetchMock);

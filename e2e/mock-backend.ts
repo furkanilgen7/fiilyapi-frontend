@@ -108,16 +108,32 @@ interface MockSite {
   remaining_days: number | null;
 }
 
+// P6 · T1 — `Section` modelinin TUM kolonlari (bkz. schema.d.ts
+// SectionDetailResponse/SectionCreate/SectionUpdate). `status` P6'da
+// `on_hold` ile genisledi (spec: SectionStatus docstring). Yer tutucu
+// alanlar (progress_pct/boq_item_count/budget/worker_count) burada
+// TUTULMAZ — GET yanitinda uretilir (buildSectionDetail), tipki
+// buildSiteDetail'daki desende oldugu gibi.
 interface MockSection {
   id: string;
   site_id: string;
   code: string | null;
   name: string;
-  status: "planned" | "active" | "completed";
+  status: "planned" | "active" | "on_hold" | "completed";
+  manager_user_id: string | null;
   manager_name: string | null;
   start_date: string | null;
   end_date: string | null;
   sort_order: number;
+  section_type: string | null;
+  description: string | null;
+  deputy_manager_user_id: string | null;
+  deputy_manager_name: string | null;
+  planned_worker_count: number | null;
+  budget_amount: string | null;
+  is_draft: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 // Ekran 13 · İş Kalemleri (BOQ) — BoqGroupResponse/BoqItemResponse ile birebir
@@ -1083,14 +1099,35 @@ function seedState(): MockState {
       start_date: "2024-01-01", end_date: null, delivery_date: "2026-05-01", remaining_days: null,
     },
   ];
+  // P6 · T1 — sec-1 "en az bir dolu bölüm" fikstürüdür (spec kabul kriteri):
+  // TÜM P6 alanları dolu, `is_draft: false`. sec-2/sec-3 durum çeşitliliği
+  // sağlar (completed / on_hold+taslak). name/code/status/manager_name/
+  // start_date/end_date/sort_order DEĞİŞMEDİ — `e2e/site-detail-visual.spec.ts`
+  // bu değerlere metinle bağlı (görsel baseline kırılmasın diye).
   const sections: MockSection[] = [
     {
       id: "sec-1", site_id: "s-1", code: "A-01", name: "Kat 6–10 Kaba İnşaat", status: "active",
-      manager_name: "Sercan Öztürk", start_date: "2026-01-01", end_date: "2026-09-30", sort_order: 0,
+      manager_user_id: "u-2", manager_name: "Sercan Öztürk", start_date: "2026-01-01", end_date: "2026-09-30",
+      sort_order: 0, section_type: "structural", description: "6-10 kat arası kaba inşaat imalatları.",
+      deputy_manager_user_id: "u-4", deputy_manager_name: "Kadir Arslan", planned_worker_count: 24,
+      budget_amount: "1250000.00", is_draft: false,
+      created_at: "2026-01-01T08:00:00Z", updated_at: "2026-01-01T08:00:00Z",
     },
     {
       id: "sec-2", site_id: "s-1", code: "A-02", name: "Zemin Kat Kaba İnşaat", status: "completed",
-      manager_name: "M. Arslan", start_date: "2025-03-01", end_date: "2025-12-01", sort_order: 1,
+      manager_user_id: null, manager_name: "M. Arslan", start_date: "2025-03-01", end_date: "2025-12-01",
+      sort_order: 1, section_type: "structural", description: null, deputy_manager_user_id: null,
+      deputy_manager_name: null, planned_worker_count: 12, budget_amount: "480000.00", is_draft: false,
+      created_at: "2025-03-01T08:00:00Z", updated_at: "2025-12-01T08:00:00Z",
+    },
+    // Taslak + `on_hold` — §4 zorunluluk kuralinin YALNIZ `is_draft: false`
+    // iken uyguladigini kanitlayan kayit (bolum tipi/sorumlu/tarih/bedel bos).
+    {
+      id: "sec-3", site_id: "s-1", code: null, name: "Peyzaj Düzenlemesi (Taslak)", status: "on_hold",
+      manager_user_id: null, manager_name: null, start_date: null, end_date: null, sort_order: 2,
+      section_type: null, description: null, deputy_manager_user_id: null, deputy_manager_name: null,
+      planned_worker_count: null, budget_amount: null, is_draft: true,
+      created_at: "2026-02-01T08:00:00Z", updated_at: "2026-02-01T08:00:00Z",
     },
   ];
   return {
@@ -1216,6 +1253,73 @@ function buildSiteDetail(state: MockState, site: MockSite) {
     total_progress_payment: METRIC_PENDING("progress_payments"),
     contract_amount: METRIC_PENDING("project_costs"),
   };
+}
+
+/**
+ * `SectionDetailResponse` gövdesi (schema.d.ts) — `GET /sections/{id}`,
+ * `POST /sites/{site_id}/sections` VE `PATCH /sections/{id}` AYNI şekli
+ * döndürür (tıpkı `buildSiteDetail` gibi tek yerde kurulur). Dört yer
+ * tutucu (`progress_pct`/`boq_item_count`/`budget`/`worker_count`) burada
+ * üretilir, fikstürde SAKLANMAZ — `budget` (BOQ türevi) ile `budget_amount`
+ * (elle girilen gerçek kolon) AYNI ŞEY DEĞİLDİR (P6 §7 S2a).
+ */
+function buildSectionDetail(section: MockSection) {
+  return {
+    id: section.id,
+    code: section.code,
+    name: section.name,
+    status: section.status,
+    manager_user_id: section.manager_user_id,
+    manager_name: section.manager_name,
+    start_date: section.start_date,
+    end_date: section.end_date,
+    sort_order: section.sort_order,
+    progress_pct: METRIC_PENDING("boq"),
+    boq_item_count: COUNT_PENDING("boq"),
+    budget: METRIC_PENDING("boq"),
+    worker_count: COUNT_PENDING("timesheet"),
+    site_id: section.site_id,
+    section_type: section.section_type,
+    description: section.description,
+    deputy_manager_user_id: section.deputy_manager_user_id,
+    deputy_manager_name: section.deputy_manager_name,
+    planned_worker_count: section.planned_worker_count,
+    budget_amount: section.budget_amount,
+    is_draft: section.is_draft,
+    created_at: section.created_at,
+    updated_at: section.updated_at,
+  };
+}
+
+/**
+ * Backend'in çalışma-zamanı doğrulama kuralı — `app/modules/sites/guards.py::
+ * validate_section` (P6 §7 spec, OpenAPI'de KODLU DEĞİL). Tutarlılık kuralı
+ * taslakta DA uygulanır; zorunluluk kuralları YALNIZ `is_draft: false` iken.
+ * `budget_amount` kontrolü `=== null` — `0` GEÇERLİ bir bedeldir, falsy
+ * kontrolü YANLIŞ olurdu.
+ */
+function validateSectionInput(input: {
+  is_draft: boolean;
+  section_type: string | null;
+  manager_user_id: string | null;
+  manager_name: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  budget_amount: string | null;
+}): string | null {
+  if (input.start_date && input.end_date && input.end_date < input.start_date) {
+    return "Planlanan bitiş tarihi başlangıçtan önce olamaz.";
+  }
+  if (input.is_draft) return null;
+  if (input.section_type === null) return "Bölüm tipi seçiniz.";
+  const hasManager =
+    input.manager_user_id !== null || (input.manager_name !== null && input.manager_name.trim() !== "");
+  if (!hasManager) return "Bölüm sorumlusu seçiniz.";
+  if (input.start_date === null || input.end_date === null) {
+    return "Başlangıç ve planlanan bitiş tarihi zorunludur.";
+  }
+  if (input.budget_amount === null) return "Bölüm bedeli zorunludur.";
+  return null;
 }
 
 // Gercek FastAPI yerine gecen minik mock — hermetik E2E icin.
@@ -1410,17 +1514,33 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         };
         state.sites.push(site);
         const rows = Array.isArray(body.sections) ? (body.sections as Array<Record<string, unknown>>) : [];
+        const nowIso = new Date().toISOString();
         rows.forEach((row, index) => {
+          // Şantiye Ekle formu (bu uç) P6 alanlarını TOPLAMAZ — bölüm satırı
+          // yalnız kod/ad/sorumlu/tarih taşır, kalan P6 kolonları boş/varsayılan
+          // başlar (taslak değil ama zorunluluk kuralı burada uygulanmaz —
+          // bu form P6'nın SectionCreate/§4 doğrulamasından ayrı bir uçtur).
+          const managerUserId = typeof row.manager_user_id === "string" ? row.manager_user_id : null;
           state.sections.push({
             id: `sec-${state.sections.length + 1}`,
             site_id: siteId,
             code: row.code ? String(row.code) : null,
             name: String(row.name ?? ""),
             status: "planned",
+            manager_user_id: managerUserId,
             manager_name: userNameById(state, row.manager_user_id),
             start_date: row.start_date ? String(row.start_date) : null,
             end_date: row.end_date ? String(row.end_date) : null,
             sort_order: index,
+            section_type: null,
+            description: null,
+            deputy_manager_user_id: null,
+            deputy_manager_name: null,
+            planned_worker_count: null,
+            budget_amount: null,
+            is_draft: false,
+            created_at: nowIso,
+            updated_at: nowIso,
           });
         });
         return send(201, buildSiteDetail(state, site));
@@ -1434,6 +1554,141 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const site = state.sites.find((s) => s.id === siteId);
       if (!site) return send(404, { detail: "santiye yok" });
       return send(200, buildSiteDetail(state, site));
+    }
+
+    // POST /sites/{site_id}/sections — Bölüm Detay dilimi (P6 §5, T3'te tam
+    // sayfa form): tekil bölüm oluşturma. Şantiye Ekle formunun atomik satır
+    // gönderiminden (yukarıdaki `projectSitesMatch` POST'u) AYRI bir uçtur —
+    // orada P6 doğrulaması uygulanmaz, burada uygulanır (`useCreateSection`
+    // hook'unun çağırdığı uç budur).
+    const siteSectionsMatch = path.match(/^\/sites\/([^/]+)\/sections$/);
+    if (method === "POST" && siteSectionsMatch) {
+      const siteId = siteSectionsMatch[1];
+      const site = state.sites.find((s) => s.id === siteId);
+      if (!site) return send(404, { detail: "santiye yok" });
+      return withBody((body) => {
+        const code = body.code ? String(body.code) : null;
+        if (code && state.sections.some((sec) => sec.site_id === siteId && sec.code === code)) {
+          return send(409, { detail: "Bu bölüm kodu bu şantiyede zaten kullanılıyor" });
+        }
+        const isDraft = body.is_draft === true;
+        const managerUserId = typeof body.manager_user_id === "string" ? body.manager_user_id : null;
+        const managerName = body.manager_name ? String(body.manager_name) : null;
+        const startDate = body.start_date ? String(body.start_date) : null;
+        const endDate = body.end_date ? String(body.end_date) : null;
+        const sectionType = body.section_type ? String(body.section_type) : null;
+        const budgetAmount =
+          body.budget_amount === undefined || body.budget_amount === null ? null : String(body.budget_amount);
+        const validationError = validateSectionInput({
+          is_draft: isDraft,
+          section_type: sectionType,
+          manager_user_id: managerUserId,
+          manager_name: managerName ?? userNameById(state, managerUserId),
+          start_date: startDate,
+          end_date: endDate,
+          budget_amount: budgetAmount,
+        });
+        if (validationError) return send(422, { detail: validationError });
+        const nowIso = new Date().toISOString();
+        const section: MockSection = {
+          id: `sec-${state.sections.length + 1}`,
+          site_id: siteId,
+          // Kod boş gelirse sunucu `BLM-NN` biçiminde üretir (spec §5).
+          code: code ?? `BLM-${String(state.sections.length + 1).padStart(2, "0")}`,
+          name: String(body.name ?? ""),
+          status: (body.status ? String(body.status) : "planned") as MockSection["status"],
+          manager_user_id: managerUserId,
+          manager_name: managerName ?? userNameById(state, managerUserId),
+          start_date: startDate,
+          end_date: endDate,
+          sort_order: typeof body.sort_order === "number" ? body.sort_order : state.sections.length,
+          section_type: sectionType,
+          description: body.description ? String(body.description) : null,
+          deputy_manager_user_id: typeof body.deputy_manager_user_id === "string" ? body.deputy_manager_user_id : null,
+          deputy_manager_name: body.deputy_manager_name ? String(body.deputy_manager_name) : null,
+          planned_worker_count: typeof body.planned_worker_count === "number" ? body.planned_worker_count : null,
+          budget_amount: budgetAmount,
+          is_draft: isDraft,
+          created_at: nowIso,
+          updated_at: nowIso,
+        };
+        state.sections.push(section);
+        return send(201, buildSectionDetail(section));
+      });
+    }
+
+    // GET /sections/{section_id} — Bölüm Detay ekranının tekil kaynağı (P6 §5).
+    const sectionIdMatch = path.match(/^\/sections\/([^/]+)$/);
+    if (method === "GET" && sectionIdMatch) {
+      const sectionId = sectionIdMatch[1];
+      const section = state.sections.find((sec) => sec.id === sectionId);
+      if (!section) return send(404, { detail: "bolum yok" });
+      return send(200, buildSectionDetail(section));
+    }
+
+    // PATCH /sections/{section_id} — tam sayfa Bölüm formunun güncelleme ucu
+    // (T3). `SectionUpdate`te `site_id` YOKTUR (bölüm başka şantiyeye
+    // taşınamaz), bu yüzden burada da değişmez. §4 doğrulaması, gövdede
+    // GELMEYEN alanlar için MEVCUT kayıttan (merge) kontrol edilir — kısmi
+    // PATCH ile taslak-dışı bir bölümü eksik bırakmak engellenir.
+    if (method === "PATCH" && sectionIdMatch) {
+      const sectionId = sectionIdMatch[1];
+      const section = state.sections.find((sec) => sec.id === sectionId);
+      if (!section) return send(404, { detail: "bolum yok" });
+      return withBody((body) => {
+        const hasCode = Object.prototype.hasOwnProperty.call(body, "code");
+        const code = hasCode ? (body.code ? String(body.code) : null) : section.code;
+        if (
+          code &&
+          state.sections.some((sec) => sec.id !== sectionId && sec.site_id === section.site_id && sec.code === code)
+        ) {
+          return send(409, { detail: "Bu bölüm kodu bu şantiyede zaten kullanılıyor" });
+        }
+        const pick = <K extends keyof MockSection>(key: K, transform: (v: unknown) => MockSection[K]): MockSection[K] =>
+          Object.prototype.hasOwnProperty.call(body, key) ? transform((body as Record<string, unknown>)[key]) : section[key];
+
+        const isDraft = pick("is_draft", (v) => (v === true) as MockSection["is_draft"]);
+        const managerUserId = pick("manager_user_id", (v) => (typeof v === "string" ? v : null));
+        const managerNameRaw = pick("manager_name", (v) => (v ? String(v) : null));
+        const startDate = pick("start_date", (v) => (v ? String(v) : null));
+        const endDate = pick("end_date", (v) => (v ? String(v) : null));
+        const sectionType = pick("section_type", (v) => (v ? String(v) : null));
+        const budgetAmount = pick("budget_amount", (v) => (v === undefined || v === null ? null : String(v)));
+        const managerName = managerNameRaw ?? userNameById(state, managerUserId);
+
+        const validationError = validateSectionInput({
+          is_draft: isDraft,
+          section_type: sectionType,
+          manager_user_id: managerUserId,
+          manager_name: managerName,
+          start_date: startDate,
+          end_date: endDate,
+          budget_amount: budgetAmount,
+        });
+        if (validationError) return send(422, { detail: validationError });
+
+        const updated: MockSection = {
+          ...section,
+          code,
+          name: pick("name", (v) => (v ? String(v) : section.name)),
+          status: pick("status", (v) => (v ? (String(v) as MockSection["status"]) : section.status)),
+          manager_user_id: managerUserId,
+          manager_name: managerName,
+          start_date: startDate,
+          end_date: endDate,
+          sort_order: pick("sort_order", (v) => (typeof v === "number" ? v : section.sort_order)),
+          section_type: sectionType,
+          description: pick("description", (v) => (v ? String(v) : null)),
+          deputy_manager_user_id: pick("deputy_manager_user_id", (v) => (typeof v === "string" ? v : null)),
+          deputy_manager_name: pick("deputy_manager_name", (v) => (v ? String(v) : null)),
+          planned_worker_count: pick("planned_worker_count", (v) => (typeof v === "number" ? v : null)),
+          budget_amount: budgetAmount,
+          is_draft: isDraft,
+          updated_at: new Date().toISOString(),
+        };
+        Object.assign(section, updated);
+        return send(200, buildSectionDetail(section));
+      });
     }
 
     // /sites/{site_id}/boq — Ekran 13 İş Kalemleri (F11, spec §6.1). Tablo ve üst
