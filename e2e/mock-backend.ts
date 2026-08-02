@@ -509,11 +509,11 @@ const EMPLOYER_CONTRACT_P1 = {
 // `payment_count`/`pending_count` YALNIZ bunlar dinamik — gerçek
 // `progressPayments` dizisinden hesaplanır. `hiddenFromLists` (bkz.
 // `MockProgressPayment`) işaretli kayıtlar (pp-6 — fonksiyonel e2e'nin
-// mutasyona uğrattığı test-izoleli taslak) bu sayıma KATILMAZ; bu yüzden
-// sayı mockup'ın "4 hakediş" metniyle birebir eşleşir (P7 T7'nin ilk
-// sürümünde #6 sayıma dahildi ve "5 hakediş" basıyordu — test determinizmi
-// düzeltmesiyle mockup'a daha sadık hâle geldi, bkz. `buildProgressPayment
-// Fixtures`'taki İZOLASYON notu).
+// mutasyona uğrattığı test-izoleli taslak) bu sayıma KATILMAZ; SABİT
+// `pp-7` (dört durum kuralı için eklenen, dokunulmayan taslak) KATILIR —
+// bu yüzden sayı mockup'ın "4 kaydına EK olarak" pp-2..pp-5 + pp-7 = 5
+// kayıt üzerinden "5 hakediş" basar (bkz. `buildProgressPaymentFixtures`
+// İZOLASYON notu — pp-7'nin eklenme gerekçesi).
 function buildProgressPaymentSummary(state: MockState, projectId: string) {
   const projectPayments = state.progressPayments.filter(
     (p) => p.project_id === projectId && !p.hiddenFromLists,
@@ -848,7 +848,25 @@ function buildProgressPaymentFixtures(): MockProgressPayment[] {
   };
   recomputePaymentTotals(pp6);
 
-  return [pp2, pp3, pp4, pp5, pp6];
+  // #7 — mockup'ta YOK (pp-6 ile AYNI "dört durum kuralı" gerekçesiyle
+  // eklendi, bkz. üstteki not), ama pp-6'dan farklı olarak HİÇBİR test
+  // buna dokunmaz/mutasyona uğratmaz — yalnız `draft` rozetinin görsel
+  // kapsamda kalmasını sağlayan SABİT bir kayıt. pp-6 `hiddenFromLists`
+  // ile liste/özet uçlarından dışlanınca (yukarıdaki İZOLASYON notu) hiçbir
+  // liste ekranı `draft` rozeti basmaz hâle geldi — bu, koordinatör
+  // incelemesinde kabul edilmeyen bir yan etki olarak işaretlendi. pp-7,
+  // pp-6'nın YERİNE değil YANINA eklenir: `hiddenFromLists` YOK, dolayısıyla
+  // liste + özet sayımına (`payment_count`) katılır ve `#1` sırasıyla
+  // (dönemsel olarak pp-2'den ÖNCE, projenin ilk hakedişi) render edilir.
+  // `singleGroupPayment` deseni pp-2..pp-4 ile BİREBİR — yalnız `status`
+  // "draft" ve tüm onay/ödeme alanları `null`.
+  const pp7 = singleGroupPayment({
+    id: "pp-7", sequenceNo: 1, year: 2026, month: 1, description: "Hafriyat + şantiye kurulumu",
+    status: "draft", gross: 850000, previous: 0, contractTotal: 9000000,
+    createdAt: "2026-01-15T08:00:00Z", submittedAt: null, approvedAt: null, approvedBy: null, paidAt: null,
+  });
+
+  return [pp7, pp2, pp3, pp4, pp5, pp6];
 }
 
 // `GET .../contract/distribution` yanıtı — `CONTRACT_ITEMS_P1`den türetilir.
