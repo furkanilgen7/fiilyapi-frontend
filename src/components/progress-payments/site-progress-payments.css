@@ -1,8 +1,9 @@
 /* Şantiye "Hakedişler" sekmesi (P7 T6). Mockup `Şantiye - Hakedişler.dc.html`
-   satır 75-77 — başlık şeridi. KPI şeridi (81-86), panel başlığı (92-95) ve
-   taşeron sütunu (116-140) bu dilimde BASILMAZ (brief §pending-modules) —
-   liste gövdesi `ProgressPaymentsList.tsx` ile PAYLAŞILIR, burada yalnız
-   sayfa iskeleti (breadcrumb + başlık) var. */
+   satır 75-77 — başlık şeridi. KPI şeridi (81-86) `progress-payments-totals.css`
+   ile ayrı dosyada (T2 ile PAYLAŞILIR, coordinator review T6 fix). Panel
+   başlığı (92-95) ve taşeron sütunu (116-140) bu dilimde BASILMAZ (brief
+   §pending-modules) — liste gövdesi `ProgressPaymentsList.tsx` ile
+   PAYLAŞILIR, burada yalnız sayfa iskeleti (breadcrumb + başlık) var. */
 .spp__crumb {
   font-size: var(--text-xs);
   color: var(--color-text-subtle);

@@ -8,15 +8,16 @@ import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 
 import { ProgressPaymentsListBody } from "./ProgressPaymentsList";
+import { ProgressPaymentsTotalsStrip } from "./ProgressPaymentsTotalsStrip";
 import "./progress-payments.css";
 
 // Ekran 14 · Hakedişler (P7 T2) — proje-genel İŞVEREN hakediş listesi.
 // Mockup `Şantiye - Hakedişler.dc.html`ın İŞVEREN HAKEDİŞLERİ yarısından
 // (satır 90-113) alınır: kart-içi satır listesi, sol başlık+açıklama, sağ
-// tutar+rozet. Taşeron yarısı ve KPI şeridi bu ekranda YOK (brief
-// §BASILMAYACAKLAR) — taşeron hakediş modülü henüz yok, kar/marj KPI'ları
-// bu veri sözleşmesinde tanımsız. Satır gövdesi T6'nın şantiye sekmesiyle
-// PAYLAŞILIR (`ProgressPaymentsList.tsx`) — kopyalanmaz.
+// tutar+rozet. Taşeron yarısı bu ekranda YOK — taşeron hakediş modülü henüz
+// yok. KPI şeridi (satır 81-86) coordinator review T6 fix ile EKLENDİ; karma
+// basılır — bkz. `ProgressPaymentsTotalsStrip.tsx`. Satır gövdesi T6'nın
+// şantiye sekmesiyle PAYLAŞILIR (`ProgressPaymentsList.tsx`) — kopyalanmaz.
 export function ProgressPaymentsView() {
   const paymentsQuery = useProgressPayments();
   // Yazma yüzeyi kapısı (spec §2.5): "Yeni Hakediş" yalnız `draft` ve üstü
@@ -35,6 +36,8 @@ export function ProgressPaymentsView() {
           </Link>
         )}
       </div>
+
+      <ProgressPaymentsTotalsStrip items={paymentsQuery.data?.items} />
 
       <ProgressPaymentsListBody
         isError={paymentsQuery.isError}

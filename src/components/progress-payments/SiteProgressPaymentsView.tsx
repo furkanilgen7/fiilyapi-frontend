@@ -10,6 +10,7 @@ import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 
 import { ProgressPaymentsListBody } from "./ProgressPaymentsList";
+import { ProgressPaymentsTotalsStrip } from "./ProgressPaymentsTotalsStrip";
 import "./progress-payments.css";
 import "./site-progress-payments.css";
 
@@ -19,16 +20,12 @@ import "./site-progress-payments.css";
 // Bu sekme `/hakedisler` ile AYNI kaydın başka görünümüdür — şantiyeye göre
 // süzülmüş sahte bir liste üretilmez, proje-düzeyi liste aynen basılır.
 //
+// KPI şeridi (satır 81-86) coordinator review T6 fix ile EKLENDİ — karma
+// basılır (`ProgressPaymentsTotalsStrip.tsx`, T2 ile PAYLAŞILIR).
+//
 // BASILMAYANLAR (mockup'ta var, bu dilimde veri yok — brief
 // §pending-modules ile BOŞ kalanlar):
 //   - Taşeron Hakedişleri sütunu (satır 116-140) — taşeron hakediş modülü yok.
-//   - KPI şeridi (satır 81-86): Toplam İşveren Hakedişi, Toplam Taşeron
-//     Ödemesi, Onay Bekleyen, Brüt Kar Marjı — ikisi taşeron modülüne
-//     bağlı, ikisi (toplam/onay bekleyen sayısı) istemci tarafında
-//     hesaplanabilir olsa da mockup'ta TEK şerit olarak tasarlanmış; kısmi
-//     bir şerit basmak yarım/bozuk görünürdü. T2 aynı mockup için aynı
-//     kararı verdi (KPI şeridi hiç basılmaz) — tutarlılık için aynı yol
-//     izlendi. Rapora açık soru olarak not düşüldü.
 //   - Satır içi "%62 ilerleme" (satır 98) — liste şemasında ilerleme alanı yok.
 //   - PDF / dışa aktarma — backend'de uç yok.
 export function SiteProgressPaymentsView() {
@@ -63,6 +60,8 @@ export function SiteProgressPaymentsView() {
           </Link>
         )}
       </div>
+
+      <ProgressPaymentsTotalsStrip items={paymentsQuery.data?.items} />
 
       <ProgressPaymentsListBody
         isError={paymentsQuery.isError}

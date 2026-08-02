@@ -161,17 +161,34 @@ describe("SiteHakedislerPage rotasi", () => {
 
   // Brief §pending-modules ile BOŞ kalanlar — bu dilimde veri kaynağı YOK,
   // ara çözüm/sahte veri yasak; negatif testler sessizce eklenmediklerini korur.
-  it("taşeron sütunu, kâr KPI'ları, '%62 ilerleme' ve PDF butonu BASILMAZ", () => {
+  // KPI şeridi (coordinator review T6 fix) İSTİSNADIR: dört etiket de basılır,
+  // yalnız taşeron/kâr kartları GERÇEK DEĞER taşımaz (pending-modül ipucu).
+  it("taşeron sütunu, satır içi '%62 ilerleme' ve PDF butonu BASILMAZ", () => {
     mockPayments({ data: { items: [PAYMENT_ITEM] } });
     render(<SiteHakedislerPage />);
-    expect(screen.queryByText(/Taşeron/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Brüt Kar Marjı/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Toplam İşveren Hakedişi/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Toplam Taşeron Ödemesi/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Onay Bekleyen/)).not.toBeInTheDocument();
+    // Taşeron SÜTUNU (satır içi ikinci liste) basılmaz — yalnız KPI kartı
+    // etiketi olarak "Taşeron" geçer, o yüzden satır bazlı proje adı arar.
+    expect(screen.queryByText("Akın İnşaat #47")).not.toBeInTheDocument();
+    expect(screen.queryByText(/^%\d/)).not.toBeInTheDocument();
     expect(screen.queryByText(/ilerleme/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/%\d/)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /PDF/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/PDF/)).not.toBeInTheDocument();
+  });
+
+  it("KPI şeridi basılır: gerçek kartlar değer taşır, taşeron/kâr kartları pending-modül ipucu taşır", () => {
+    mockPayments({ data: { items: [PAYMENT_ITEM] } });
+    render(<SiteHakedislerPage />);
+    const strip = screen.getByTestId("pp-totals-strip");
+    expect(strip).toBeInTheDocument();
+    expect(screen.getByText("Onay Bekleyen").nextSibling).toHaveTextContent("1");
+    const taseronValue = screen.getByText("Toplam Taşeron Ödemesi").nextSibling as HTMLElement;
+    expect(taseronValue.textContent).not.toMatch(/\d/);
+    expect(taseronValue).toHaveAttribute("title", "Taşeron sözleşmeleriyle birlikte gelir");
+  });
+
+  it("hakediş listesi henüz yüklenmemişken (yükleniyor/hata) KPI şeridi basılmaz", () => {
+    mockPayments({ isLoading: true });
+    render(<SiteHakedislerPage />);
+    expect(screen.queryByTestId("pp-totals-strip")).not.toBeInTheDocument();
   });
 });
