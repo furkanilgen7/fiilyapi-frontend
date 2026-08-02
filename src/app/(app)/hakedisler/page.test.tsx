@@ -1,0 +1,39 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen } from "@testing-library/react";
+
+import HakedislerPage from "./page";
+import { useProgressPayments } from "@/lib/api/hooks/useProgressPayments";
+import { useSession } from "@/components/shell/SessionProvider";
+import type { MeResponse } from "@/lib/auth/types";
+
+vi.mock("@/lib/api/hooks/useProgressPayments", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useProgressPayments")>()),
+  useProgressPayments: vi.fn(),
+}));
+vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
+
+// P7 T2 brief: `/hakedisler` gercek rota eklenince [...slug] catch-all bu
+// segment icin devre disi kalir — bu test, sayfanin ComingSoon YERİNE
+// gercek hakedis listesini bastigini dogrular (catch-all'in kendisi Next.js
+// dosya-tabanli yonlendirmenin bir garantisidir, ayrica test edilmez).
+describe("HakedislerPage rotasi", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(useSession).mockReturnValue({
+      me: { permissions: { progress_payments: "view" } } as unknown as MeResponse,
+      isLoading: false,
+    });
+    vi.mocked(useProgressPayments).mockReturnValue({
+      data: { items: [] },
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as never);
+  });
+
+  it("ComingSoon DEGIL gercek Hakedisler gorunumunu basar", () => {
+    render(<HakedislerPage />);
+    expect(screen.getByRole("heading", { name: "Hakedişler" })).toBeInTheDocument();
+    expect(screen.queryByText("Bu modül yakında eklenecek.")).not.toBeInTheDocument();
+  });
+});

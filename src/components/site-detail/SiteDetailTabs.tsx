@@ -21,12 +21,15 @@ interface TabDef {
 // "İş Kalemleri" Ekran 13 spec §2.2 ile eklendi — Şantiye Detay mockup'inda bu
 // sekme YOKTUR, onayli sapma B'dir (§13). Drill sidebar ile ayrismamasi icin
 // project-nav-config.ts'teki sira ile birebir ayni: Bölümler'den hemen sonra.
+//
+// "Hakedişler" P7 T6 ile yazildi (`Şantiye - Hakedişler.dc.html`) —
+// project-nav-config.ts'teki sira ile ayrismamali.
 const TABS: TabDef[] = [
   { label: "Bölümler", slug: null, written: true },
   { label: "İş Kalemleri", slug: "is-kalemleri", written: true },
   { label: "Puantaj", slug: "puantaj" },
   { label: "Stok", slug: "stok" },
-  { label: "Hakedişler", slug: "hakedisler" },
+  { label: "Hakedişler", slug: "hakedisler", written: true },
   { label: "Günlük Kayıt", slug: "gunluk-kayit" },
   { label: "Belgeler", slug: "belgeler" },
 ];

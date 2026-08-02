@@ -1,0 +1,324 @@
+/* Ekran 15 · İşveren Hakedişi detayı (P7 T3).
+   Mockup kanonu: `projedesign/Ekran 15 - İşveren Hakedişi.dc.html` (içerik
+   61-193). Her ölçü mockup satır numarasıyla gerekçelidir. */
+
+.pp-detail {
+  animation: var(--anim-fade-up);
+}
+.pp-detail__message {
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+}
+
+/* Breadcrumb (mockup 62) — onaylı sapma: sözleşme numarası (SZL-2025-001)
+   şemada olmadığından basılmaz (BOQ ekranının "onaylı sapma C" ile aynı). */
+.pp-detail__crumb {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+  margin-bottom: 6px;
+}
+.pp-detail__crumb-link {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.pp-detail__crumb-link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Başlık şeridi (63-73) */
+.pp-detail__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-6);
+}
+.pp-detail__title {
+  font-size: var(--text-page-title);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  letter-spacing: var(--tracking-tight);
+}
+.pp-detail__meta {
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+  margin-top: 3px;
+}
+.pp-detail__header-side {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+/* Durum aksiyon alanı (P7 T4) — buton kümesi durum makinesinden türer,
+   `position: relative` altındaki hata bandını (.pp-detail__action-error)
+   konumlandırmak için taşıyıcı görevi görür. */
+.pp-detail__actions {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+/* Aksiyon hatası: buton satırının hemen altına, tam genişlikte akış içi bant
+   (mockup'ta bu alan yok — S1 onaylı sapma). T7 T4-devri düzeltmesi: eskiden
+   `position: absolute` + sabit `width: 320px` kullanıyordu, `max-width`/medya
+   sorgusu yoktu — dar viewport'ta (320-375px) taşma/üste binme riski
+   somuttu. `flex-wrap` ile aynı satırın devamına AKAR, hiçbir genişlikte
+   taşmaz; sabit px yerine token (`--space-2`) kullanılır. */
+.pp-detail__action-error {
+  flex-basis: 100%;
+  max-width: 100%;
+  margin-top: var(--space-2);
+}
+
+.pp-detail__alert {
+  margin-bottom: var(--space-4);
+}
+
+/* Özet kartları (79-92) */
+.pp-detail__kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.pp-kpi {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+}
+.pp-kpi__label {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+.pp-kpi__value {
+  font-size: var(--text-numeric);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+}
+.pp-kpi__value--primary {
+  color: var(--color-primary);
+}
+.pp-kpi__value--warning {
+  color: var(--color-warning);
+}
+
+/* İçerik grid'i (75): sol 2fr (tablo), sağ 1fr (Ödeme Hesabı + İlerleme). */
+.pp-detail__grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.pp-detail__side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Hakediş Kalemleri tablosu (94-145) */
+.pp-table-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-14);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+.pp-table-card__head {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.pp-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.pp-table__th {
+  padding: 10px 12px;
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  text-align: right;
+}
+.pp-table__col--item {
+  padding-left: 20px;
+  text-align: left;
+}
+.pp-table__row {
+  border-bottom: 1px solid var(--color-divider);
+}
+.pp-table__row:last-child {
+  border-bottom: none;
+}
+.pp-table__cell {
+  padding: 12px;
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  text-align: right;
+}
+.pp-table__cell.pp-table__col--item {
+  padding-left: 20px;
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  text-align: left;
+}
+.pp-table__cell--this {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+.pp-table__cell--total {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+/* Ara Toplam satırı (mockup 136-142) — GENEL TOPLAM (BOQ) ile aynı token
+   ikilisi: zemin --color-info-tint, üst çizgi --border-width-total. */
+.pp-table__total-row {
+  background: var(--color-info-tint);
+  border-top: var(--border-width-total) solid var(--color-border);
+}
+.pp-table__total-label {
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.pp-table__total-value {
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.pp-table__total-value--this {
+  font-size: var(--text-table-total-this);
+  color: var(--color-primary);
+}
+
+/* Ödeme Hesabı kartı (150-174) */
+.pp-calc-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-14);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+}
+.pp-calc-card__title {
+  font-size: var(--text-section);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--space-4);
+}
+.pp-calc-card__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.pp-calc-row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+.pp-calc-row__label {
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+}
+.pp-calc-row__value {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+}
+.pp-calc-row__value--positive {
+  color: var(--color-success);
+}
+.pp-calc-row__value--negative {
+  color: var(--color-danger);
+}
+.pp-calc-card__net {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-8);
+  margin-top: 4px;
+}
+.pp-calc-card__net-label {
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.pp-calc-card__net-value {
+  font-size: 16px;
+  font-weight: var(--weight-bold);
+  color: var(--color-primary);
+  font-family: var(--font-mono);
+}
+
+/* Sözleşme İlerlemesi kartı (177-191) */
+.pp-progress-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-14);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+}
+.pp-progress-card__title {
+  font-size: var(--text-section);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin-bottom: 14px;
+}
+.pp-progress-row {
+  margin-bottom: 12px;
+}
+.pp-progress-row:last-child {
+  margin-bottom: 0;
+}
+.pp-progress-row__head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+.pp-progress-row__label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.pp-progress-row__pct {
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+}
+.pp-progress-row__pct--financial {
+  color: var(--color-primary);
+}
+.pp-progress-row__pct--physical {
+  color: var(--color-success);
+}
+.pp-progress-row__pct--duration {
+  color: var(--color-warning);
+}
+.pp-progress-track {
+  height: 8px;
+  background: var(--color-divider);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.pp-progress-track__fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+}
+.pp-progress-track__fill--financial {
+  background: var(--gradient-progress-financial);
+}
+.pp-progress-track__fill--physical {
+  background: var(--gradient-progress-physical);
+}
+.pp-progress-track__fill--duration {
+  background: var(--gradient-progress-duration);
+}

@@ -10,7 +10,7 @@ import { useProject, type ProjectDetail } from "@/lib/api/hooks/useProjects";
 import { useCreateSite } from "@/lib/api/hooks/useSiteMutations";
 import { useUserOptions } from "@/lib/api/hooks/useUserOptions";
 import { BackendError, isForbidden } from "@/lib/api/unwrap";
-import { backendErrorMessage } from "@/lib/settings/error-message";
+import { backendErrorMessage } from "@/lib/api/error-message";
 import { pendingModuleLabel } from "@/lib/pending-modules";
 import { projectTypeBannerLabel } from "./project-type-label";
 import { SiteInfoCard } from "./SiteInfoCard";

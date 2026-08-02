@@ -70,6 +70,20 @@ describe("SiteDetailTabs (spec §5.3)", () => {
     expect(screen.getByRole("tab", { name: "İş Kalemleri" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: "Bölümler" })).toHaveAttribute("aria-selected", "false");
   });
+
+  // P7 T6: "Hakedişler" gerçek rotaya bağlandı — artık "yazılmamış" degildir.
+  it("Hakedişler sekmesi /hakedisler rotasina gider ve 'yakinda' basligi tasimaz", () => {
+    render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={BASE} />);
+    const tab = screen.getByRole("tab", { name: "Hakedişler" });
+    expect(tab).toHaveAttribute("href", `${BASE}/hakedisler`);
+    expect(tab).not.toHaveAttribute("title");
+  });
+
+  it("Hakedişler rotasindayken yalniz o sekme aria-selected tasir", () => {
+    render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={`${BASE}/hakedisler`} />);
+    expect(screen.getByRole("tab", { name: "Hakedişler" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Bölümler" })).toHaveAttribute("aria-selected", "false");
+  });
 });
 
 // Davranissal klavye odak testi (kod inceleme bulgusu duzeltmesi — Task 12 takibi):

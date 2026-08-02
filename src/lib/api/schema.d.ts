@@ -280,6 +280,296 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/contracts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Contracts Endpoint */
+        get: operations["list_contracts_endpoint_contracts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/contract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Employer Contract Endpoint */
+        get: operations["get_employer_contract_endpoint_projects__project_id__contract_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/contract/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Employer Contract Items Endpoint */
+        get: operations["get_employer_contract_items_endpoint_projects__project_id__contract_items_get"];
+        put?: never;
+        /** Create Employer Contract Item Endpoint */
+        post: operations["create_employer_contract_item_endpoint_projects__project_id__contract_items_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/contract/distribution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Contract Distribution Endpoint */
+        get: operations["get_contract_distribution_endpoint_projects__project_id__contract_distribution_get"];
+        /**
+         * Save Contract Distribution Endpoint
+         * @description `POZ` 24 "Dağılımı Kaydet" — ekranın tamamı tek atomik istekte.
+         */
+        put: operations["save_contract_distribution_endpoint_projects__project_id__contract_distribution_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/contract/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Employer Contract Group Endpoint */
+        post: operations["create_employer_contract_group_endpoint_projects__project_id__contract_groups_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/employer/groups/{group_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Employer Contract Group Endpoint
+         * @description Spec §7. 409 `GROUP_HAS_ITEMS`: grupta poz varsa silinmez. Kapı `_ADMIN`
+         *
+         *     (`boq/router.py.delete_boq_item_endpoint` deseninin birebiri).
+         */
+        delete: operations["delete_employer_contract_group_endpoint_contracts_employer_groups__group_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Employer Contract Group Endpoint */
+        patch: operations["update_employer_contract_group_endpoint_contracts_employer_groups__group_id__patch"];
+        trace?: never;
+    };
+    "/contracts/employer/items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Employer Contract Item Endpoint
+         * @description Spec §7. Engel YOK: bağlı `boq_items.contract_item_id` DB'de `ON DELETE
+         *
+         *     SET NULL` ile serbest kalır, satır SİLİNMEZ. Kapı `_ADMIN`
+         *     (`boq/router.py.delete_boq_item_endpoint` deseninin birebiri).
+         */
+        delete: operations["delete_employer_contract_item_endpoint_contracts_employer_items__item_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Employer Contract Item Endpoint */
+        patch: operations["update_employer_contract_item_endpoint_contracts_employer_items__item_id__patch"];
+        trace?: never;
+    };
+    "/subcontractors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Subcontractors Endpoint */
+        get: operations["list_subcontractors_endpoint_subcontractors_get"];
+        put?: never;
+        /** Create Subcontractor Endpoint */
+        post: operations["create_subcontractor_endpoint_subcontractors_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/subcontractors/{subcontractor_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Subcontractor Endpoint
+         * @description Spec §7. 409 `SUBCONTRACTOR_HAS_CONTRACTS`: taşeronun sözleşmesi varsa
+         *
+         *     silinmez. Kapı `_ADMIN` — `boq/router.py.delete_boq_item_endpoint`/
+         *     `sites/router.py.delete_site_endpoint` deseninin BİREBİRİ, `can_delete`
+         *     istisnası YOK (yalnız `subcontractor-contracts` silme ucunda geçerli).
+         */
+        delete: operations["delete_subcontractor_endpoint_subcontractors__subcontractor_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Subcontractor Endpoint */
+        patch: operations["update_subcontractor_endpoint_subcontractors__subcontractor_id__patch"];
+        trace?: never;
+    };
+    "/projects/{project_id}/subcontractor-contracts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Subcontractor Contract Endpoint */
+        post: operations["create_subcontractor_contract_endpoint_projects__project_id__subcontractor_contracts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/subcontractor-contracts/{contract_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Subcontractor Contract Endpoint */
+        get: operations["get_subcontractor_contract_endpoint_subcontractor_contracts__contract_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Subcontractor Contract Endpoint
+         * @description Spec §7, §5.0. KAPI KARARI (task C12, belirsizlik notu): bu ucun dısındaki
+         *
+         *     DÖRT DELETE ucu (`subcontractors`, kalemler, işveren grup/kalem) `boq`/
+         *     `sites` deseninin BİREBİRİ — saf `_ADMIN` kapısı, servis katmanında ek
+         *     kontrol YOK. Bu uç TEK istisna: kapı `_FULL`'dir, kesin yetki kararını
+         *     `subcontracts.delete_subcontractor_contract` içindeki `can_delete`
+         *     (`app/core/access.py`, spec §5.0 taslak istisnası) verir. Gerekçe: `boq`/
+         *     `sites` DELETE uçlarının HİÇBİRİ `can_delete`'i KULLANMIYOR (kod taraması
+         *     doğrulandı) — saf `_ADMIN` kapısı proje müdürünün KENDİ taslağını silmesini
+         *     de engellerdi, bu da spec §5.0'ın taslak istisnasını uçta ANLAMSIZ
+         *     bırakırdı. En yakın emsal `projects/service.py.visible_projects`'in
+         *     `get_permission` ile aktörün gerçek erişim seviyesini SERVİSTE okuma
+         *     deseni — o da router kapısının (`_VIEW`) ötesinde ek bir servis içi karar
+         *     örneğidir.
+         */
+        delete: operations["delete_subcontractor_contract_endpoint_subcontractor_contracts__contract_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Subcontractor Contract Endpoint */
+        patch: operations["update_subcontractor_contract_endpoint_subcontractor_contracts__contract_id__patch"];
+        trace?: never;
+    };
+    "/subcontractor-contracts/{contract_id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Subcontract Item Endpoint */
+        post: operations["create_subcontract_item_endpoint_subcontractor_contracts__contract_id__items_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/subcontractor-contracts/items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Subcontract Item Endpoint
+         * @description Spec §7. Engel YOK. Kapı `_ADMIN` — `can_delete` istisnası burada YOK,
+         *
+         *     yalnız `DELETE /subcontractor-contracts/{contract_id}` ucunda geçerlidir
+         *     (task brief kararı).
+         */
+        delete: operations["delete_subcontract_item_endpoint_subcontractor_contracts_items__item_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Subcontract Item Endpoint */
+        patch: operations["update_subcontract_item_endpoint_subcontractor_contracts_items__item_id__patch"];
+        trace?: never;
+    };
+    "/subcontractor-contracts/{contract_id}/items/load-from-employer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Load Subcontract Items From Employer Endpoint */
+        post: operations["load_subcontract_items_from_employer_endpoint_subcontractor_contracts__contract_id__items_load_from_employer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/dashboard/summary": {
         parameters: {
             query?: never;
@@ -309,6 +599,291 @@ export interface paths {
         put?: never;
         /** Create Employer Endpoint */
         post: operations["create_employer_endpoint_employers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/progress-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Progress Payments Endpoint */
+        get: operations["list_progress_payments_endpoint_progress_payments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/progress-payments/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Progress Payment Summary Endpoint
+         * @description E14 127-147 "Hakediş Özeti" kartı + SHK 82-84 şantiye kartları (spec §9.6).
+         *
+         *     Kapı `_VIEW`: özet yalnız OKUMA'dır. Aynı gövde `contracts` modülünün E14
+         *     detayına da gömülür (`EmployerContractDetail.progress_payment_summary`) —
+         *     izin matrisinde `contracts ≥ view` olan HER rolün `progress_payments ≥ view`
+         *     olduğu doğrulanmıştır (`seed_data.py:169/187`), bu yüzden gömme bir izin
+         *     arka kapısı açmaz.
+         */
+        get: operations["get_progress_payment_summary_endpoint_projects__project_id__progress_payments_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/progress-payments/{payment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Progress Payment Endpoint */
+        get: operations["get_progress_payment_endpoint_progress_payments__payment_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Progress Payment Endpoint
+         * @description K8 iki katmanlı kural (spec §7.1). Kapı `_DRAFT`dir — `_ADMIN` olsaydı
+         *
+         *     taslağı üreten şef/saha rollerinin (draft seviyesi) KENDİ taslaklarını
+         *     silme istisnası ölü kural olurdu (`subcontracts.delete_subcontractor_
+         *     contract`in `_FULL` kapı kararının aynı gerekçesi, spec §7.1 girişi).
+         *     Kesin karar `service.delete_payment`'tadır: `approved`/`paid` ADMİN DAHİL
+         *     kimseye açık değildir; kalanında `can_delete` (admin koşulsuz, aksi hâlde
+         *     yalnız kaydı açan aktörün KENDİ taslağı).
+         *
+         *     H8'den devredilen not (plan H10, spec §11): `service.delete_payment`
+         *     kaydın özetini (`sequence_no`/durum/tutar) `session.delete`den ÖNCE
+         *     çıkarıp döner — kayıt gittiğinde bunlar bir daha okunamaz.
+         */
+        delete: operations["delete_progress_payment_endpoint_progress_payments__payment_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Progress Payment Endpoint
+         * @description Yalnız `status=draft` (spec §7); aksi 409 `INVALID_STATUS_TRANSITION`.
+         */
+        patch: operations["update_progress_payment_endpoint_progress_payments__payment_id__patch"];
+        trace?: never;
+    };
+    "/projects/{project_id}/progress-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Progress Payment Endpoint
+         * @description D8/K9: sözleşmede açık hakediş varsa 409; sözleşme yoksa 422 (spec §9.2).
+         *
+         *     Yanıt hesap türevleri (`calculation`/`progress`/`groups`) taşıdığı için
+         *     TEK detay inşa yolundan (`service.build_detail`) geçer — iki kopya hesap
+         *     mantığı riski taşınmaz. `get_detail` DEĞİL `build_detail` çağrılır (H4
+         *     denetimi O3): `create` kapsam süzgecini zaten koşturmuş ve `(payment,
+         *     project)` çiftini çözmüştür; `get_detail` ikinci bir `visible_projects`
+         *     sorgusu daha koştururdu.
+         */
+        post: operations["create_progress_payment_endpoint_projects__project_id__progress_payments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/progress-payments/{payment_id}/lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save Progress Payment Lines Endpoint
+         * @description OLU formunun tek "Taslak Kaydet" gövdesi — **DEĞİŞTİRME** semantiği.
+         *
+         *     ⚠️ Gövdede geçmeyen satır SİLİNİR. P5'in `PUT …/contract/distribution`
+         *     **BİRLEŞTİRME** ucunun TERSİDİR (orada gövdede geçmeyen hücre KORUNUR) —
+         *     frontend'de ikisi yan yana kullanılacağı için karıştırılmamalıdır (spec §10/2).
+         *
+         *     Yalnız `status=draft` (409 `INVALID_STATUS_TRANSITION`); §6.5 korkulukları
+         *     (dağıtım ön şartı, kota tavanı, sahiplik, FF kilidi) her yazımda koşar.
+         *
+         *     Kalemi silinmiş satırlar gövdeden adreslenemediği için düşer; sayıları
+         *     yanıtın `dropped_orphan_count` alanında BİLDİRİLİR (spec §10/7, sessiz
+         *     atlama yok). `get_detail` bu bilgiyi bilemez — `model_copy` ile üzerine
+         *     yazılır (mutasyon yok, yeni nesne).
+         *
+         *     Denetim mesajı `payment.lines` (kaydedilmiş NİHAİ durum) uzunluğunu taşır
+         *     (spec §11 `progress_payment_lines_saved(…, count)`) — gövdedeki `len(data.
+         *     lines)` DEĞİL, çünkü ikisi düşen bağı-kopmuş satırlar YOKSA zaten eşittir
+         *     ama tutarlılık için TEK doğruluk kaynağı (kalıcı hâl) tercih edilir.
+         */
+        put: operations["save_progress_payment_lines_endpoint_progress_payments__payment_id__lines_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/progress-payments/{payment_id}/refresh-prices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh Progress Payment Prices Endpoint
+         * @description §5.1/§9.3: yalnız `draft`'ta bağı kopmamış satırların snapshot beşlisini
+         *     + hakedişin yüzde üçlüsünü kalemden/sözleşmeden bilinçli tazeler.
+         *
+         *     Yanıt YALNIZ `{refreshed_count}`'tur (plan Adım 1'in test şeması) — güncel
+         *     ekran ayrı bir `GET /progress-payments/{id}` ile okunur; `PUT …/lines`'ın
+         *     aksine burada tek gövdede iki bilgi (sayaç + tam detay) BİRLEŞTİRİLMEZ,
+         *     çünkü tazeleme sonrası frontend zaten ekranı yeniden çizmek için detayı
+         *     ayrıca çeker (spec §9.3, `RefreshPricesResponse`).
+         */
+        post: operations["refresh_progress_payment_prices_endpoint_progress_payments__payment_id__refresh_prices_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/progress-payments/{payment_id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Progress Payment Endpoint
+         * @description E15 71 / OLU 25 "Onaya Gönder" — `draft → pending_approval`.
+         *
+         *     Zorunluluk kuralları (dönem, satır/Σ>0, sözleşme bedeli) YALNIZ burada koşar
+         *     (§7): taslak eksik veriyle serbestçe saklanır (kalıcı karar 4).
+         */
+        post: operations["submit_progress_payment_endpoint_progress_payments__payment_id__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/progress-payments/{payment_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve Progress Payment Endpoint
+         * @description `pending_approval → approved`; kota kilit altında YENİDEN doğrulanır.
+         */
+        post: operations["approve_progress_payment_endpoint_progress_payments__payment_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/progress-payments/{payment_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject Progress Payment Endpoint
+         * @description `pending_approval → draft` — ret sonrası taslak yeniden düzenlenebilir.
+         *
+         *     Gövde İSTEĞE BAĞLIDIR (K12: mockup'ta ret formu yok). `reason` hiçbir
+         *     kolona yazılmaz — TEK kalıcı izi denetim günlüğüdür (spec §11).
+         */
+        post: operations["reject_progress_payment_endpoint_progress_payments__payment_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/progress-payments/{payment_id}/mark-paid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark Paid Progress Payment Endpoint
+         * @description `approved → paid` (K11: onay seviyesi). Ödeme detayı formu mockup'ta YOK
+         *     → tek tıkla işaretleme, yalnız `paid_at` damgalanır.
+         */
+        post: operations["mark_paid_progress_payment_endpoint_progress_payments__payment_id__mark_paid_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/progress-payments/{payment_id}/unapprove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unapprove Progress Payment Endpoint
+         * @description `approved → pending_approval` (geri çek) — YALNIZ `admin` (§7 tablosu).
+         *
+         *     `paid` kaynak DEĞİLDİR (K7): ödenmiş hakedişin geri dönüşü yoktur, denemesi
+         *     409'dur.
+         *
+         *     H6'dan devredilen ZORUNLULUK (plan H10, spec §11): bugüne kadar `unapprove`
+         *     geriye HİÇBİR iz bırakmıyordu — `transitions.perform` eski `approved_by`/
+         *     `approved_at`'ı damgalar NULL'lanmadan ÖNCE yakalar (`TransitionResult`),
+         *     mesaj bu ikisini taşır.
+         */
+        post: operations["unapprove_progress_payment_endpoint_progress_payments__payment_id__unapprove_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -547,7 +1122,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get Section Endpoint
+         * @description P6 §5 — Bolum Detay ekraninin veri ucu.
+         *
+         *     Izin modulu `sites`tir, AYRI bir modul acilmaz: bolum santiyenin ic
+         *     kirilimidir (bkz. router docstring'i). Gorunurluk servistedir
+         *     (`_visible_section`) — gorunmeyen bolum 404 doner ve govdesi var olmayan bir
+         *     UUID'ninkiyle BIREBIR AYNIDIR.
+         */
+        get: operations["get_section_endpoint_sections__section_id__get"];
         put?: never;
         post?: never;
         /**
@@ -710,6 +1294,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/projects/{project_id}/units/bulk/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Bulk Units Endpoint
+         * @description Spec §5.4 (TU 159-182). **HICBIR SEY YAZMAZ** ve **DENETIM URETMEZ**.
+         *
+         *     `dry_run` bayragi yerine AYRI UC olmasinin uc gerekcesi (spec §5.4):
+         *     1. Yanit sekilleri farklidir — gercek uretim `201 UnitListResponse` doner;
+         *        onizlemede `id`'si olan unite yoktur. Tek uc `response_model`'i bir
+         *        `Union`'a zorlar ve `gen:api` ciktisinda sessiz `undefined` sinifi dogar.
+         *     2. Denetim ayrimi temiz kalir: "yazan uc denetim yazar" kurali bir bayraga
+         *        BAGLI HALE GELMEZ. Bu yuzden bu fonksiyon `_audit` CAGIRMAZ ve `Request`
+         *        parametresi bile ALMAZ — denetim yazmak icin gereken IP bu ucta yoktur.
+         *     3. Uretim mantigi tek kopyadir: iki uc da `bulk.generate_units`'i cagirir.
+         *
+         *     Izin `full` KALIR: onizleme yazma akisinin parcasidir ve `view` kullanicisina
+         *     fiyat uretim kurallarini acmaz. Cakisma HATA DEGILDIR (TU 177) — satirlar
+         *     `conflict=true` ile 200 doner; blokaj yalniz `POST …/units/bulk`'tadir (409).
+         */
+        post: operations["preview_bulk_units_endpoint_projects__project_id__units_bulk_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/projects/{project_id}/units/allocation": {
         parameters: {
             query?: never;
@@ -738,6 +1355,38 @@ export interface paths {
         patch: operations["update_allocation_endpoint_projects__project_id__units_allocation_patch"];
         trace?: never;
     };
+    "/projects/{project_id}/units/import/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate Import Endpoint
+         * @description Spec §6.2 (EI 92-197, "Yeniden Doğrula"). **HICBIR SEY YAZMAZ.**
+         *
+         *     `bulk/preview` ile AYNI uc gerekceyle ayri uctur (`dry_run` bayragi DEGIL):
+         *     1. Yanit sekli farklidir (`UnitImportValidation` != `UnitImportResult`); tek
+         *        uc `response_model`'i bir `Union`'a zorlar ve `gen:api` ciktisinda sessiz
+         *        `undefined` sinifi dogar.
+         *     2. Denetim ayrimi temiz kalir: bu fonksiyon `_audit` CAGIRMAZ ve `Request`
+         *        parametresi bile ALMAZ — denetim yazmak icin gereken IP burada YOKTUR.
+         *     3. Kural TEK KOPYADIR: iki uc de `batch._plan_rows`'tan beslenir.
+         *
+         *     DOSYA SAKLANMADIGI ICIN (P3 §7.8'in degismeyen siniri) "Yeniden Doğrula →
+         *     Aktar" akisinda dosya IKI KEZ yuklenir. Tarayicida bu bedavadir: `File`
+         *     nesnesi zaten istemcinin bellegindedir. Frontend dilimi bunu bilerek yazar.
+         */
+        post: operations["validate_import_endpoint_projects__project_id__units_import_validate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/projects/{project_id}/units/import": {
         parameters: {
             query?: never;
@@ -749,15 +1398,52 @@ export interface paths {
         put?: never;
         /**
          * Import Units Endpoint
-         * @description Spec §7.8. BELGE SAKLAMA ALTYAPISI GEREKMEZ ve kurulmayacaktir: dosya
+         * @description Spec §6.1-§6.5. BELGE SAKLAMA ALTYAPISI GEREKMEZ ve kurulmayacaktir: dosya
          *     bellekte okunur, uniteler yaratilir, dosya ATILIR. Diske, S3'e, veritabanina
          *     hicbir sey yazilmaz — P3'e sigmasinin tek sebebi budur.
+         *
+         *     KISMI AKTARIM (P3'un hep-ya-hic karari BILEREK tersine cevrildi, spec §6.1):
+         *     gecerli satirlar yazilir, hatalilar raporlanir. Hic gecerli satir yoksa 422 —
+         *     `created=0` ile 200 donmek kullanicinin "aktarildi" sanmasina yol acardi.
+         *
+         *     `site_id` (EI 61 "Hedef Şantiye", karar 3) YALNIZ yeni blok acarken kullanilir.
+         *     `include_warnings` EI 192 kutucugudur; varsayilani mockup'taki gibi ISARETLIDIR.
          *
          *     Boyut IKI KEZ olculur: once istemcinin bildirdigi `size` ile (henuz govde
          *     bellege alinmadan), sonra GERCEKTEN okunan `bytes` uzunluguyla
          *     (`parse_units_file`) — istemci basligina guvenilmez.
          */
         post: operations["import_units_endpoint_projects__project_id__units_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/units/import/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Units Import Template Endpoint
+         * @description Spec §6.7 (EI 37, 87 "Şablon İndir"). 12 baslikli BOS `.xlsx`.
+         *
+         *     IZIN `view`'DIR ve bu, modulun tek "view yeter" yazma-akisi ucudur (spec
+         *     §6.2 karari): sablon hicbir proje verisi tasimaz, `full`'a kapatmak veri
+         *     GIRECEK kullaniciyi akisin ilk adimindan mahrum birakirdi.
+         *
+         *     GORUNURLUK KAPISI YINE DE VARDIR (spec §12.6/I3): govde proje verisi
+         *     tasimasa da 200/404 farki tek basina bir PROJE VARLIK ORAKULUDUR.
+         *
+         *     Okuma ucudur — `_audit` CAGIRMAZ ve `Request` parametresi bile ALMAZ
+         *     (P4 T7 kurali; `validate` ucuyle ayni gerekce).
+         */
+        get: operations["units_import_template_endpoint_projects__project_id__units_import_template_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -926,6 +1612,28 @@ export interface components {
         };
         /** BlockCreate */
         BlockCreate: {
+            /** Code */
+            code?: string | null;
+            /** Basement Floor Count */
+            basement_floor_count?: number | null;
+            /** Floor Count */
+            floor_count?: number | null;
+            roof_type?: components["schemas"]["BlockRoofType"] | null;
+            /** Units Per Floor */
+            units_per_floor?: number | null;
+            ground_floor_usage?: components["schemas"]["BlockGroundUsage"] | null;
+            /** Shop Count */
+            shop_count?: number | null;
+            /** Construction Area M2 */
+            construction_area_m2?: number | string | null;
+            /** Elevator Count */
+            elevator_count?: number | null;
+            parking_type?: components["schemas"]["BlockParkingType"] | null;
+            /** Estimated Delivery Date */
+            estimated_delivery_date?: string | null;
+            status?: components["schemas"]["BlockStatus"] | null;
+            /** Notes */
+            notes?: string | null;
             /** Name */
             name: string;
             /** Site Id */
@@ -936,11 +1644,23 @@ export interface components {
              */
             sort_order: number;
         };
+        /**
+         * BlockGroundUsage
+         * @description BE 82 "Zemin Kat Kullanimi": Ticari · Konut · Ortak Alan.
+         * @enum {string}
+         */
+        BlockGroundUsage: "commercial" | "apartment" | "common";
         /** BlockListResponse */
         BlockListResponse: {
             /** Blocks */
             blocks: components["schemas"]["BlockResponse"][];
         };
+        /**
+         * BlockParkingType
+         * @description BE 86 "Otopark": Kapali · Acik · Yok.
+         * @enum {string}
+         */
+        BlockParkingType: "closed" | "open" | "none";
         /** BlockResponse */
         BlockResponse: {
             /**
@@ -960,9 +1680,79 @@ export interface components {
             /** Sort Order */
             sort_order: number;
             counts: components["schemas"]["UnitKindBreakdown"];
+            /** Code */
+            code: string | null;
+            /** Basement Floor Count */
+            basement_floor_count: number | null;
+            /** Floor Count */
+            floor_count: number | null;
+            roof_type: components["schemas"]["BlockRoofType"] | null;
+            /** Units Per Floor */
+            units_per_floor: number | null;
+            ground_floor_usage: components["schemas"]["BlockGroundUsage"] | null;
+            /** Shop Count */
+            shop_count: number | null;
+            /** Construction Area M2 */
+            construction_area_m2: string | null;
+            /** Elevator Count */
+            elevator_count: number | null;
+            parking_type: components["schemas"]["BlockParkingType"] | null;
+            /** Estimated Delivery Date */
+            estimated_delivery_date: string | null;
+            status: components["schemas"]["BlockStatus"] | null;
+            /** Notes */
+            notes: string | null;
+            /**
+             * Estimated Unit Count
+             * @description BE 90-93: "8 kat × 3 daire + 2 dükkan" = 26 (spec §3.3).
+             *
+             *     SAKLANMAZ: saklansaydi uc girdiden biri degistiginde sessizce bayatlardi.
+             *     Uc girdi de bossa **None** doner — 0 "hesaplandi ve sifir" der ve bu
+             *     yanlis bilgidir. `counts` (GERCEK unite adedi) ile karistirilmamalidir:
+             *     biri plan, digeri gercektir ve ikisi bilerek ayri alanlardir.
+             */
+            readonly estimated_unit_count: number | null;
         };
+        /**
+         * BlockRoofType
+         * @description BE 80 "Cati Tipi": Yok · Dubleks · Teras.
+         * @enum {string}
+         */
+        BlockRoofType: "none" | "duplex" | "terrace";
+        /**
+         * BlockStatus
+         * @description BE 101 "Durum": Planlama · Insaat Halinde · Tamamlandi.
+         *
+         *     Sunucu varsayilani `construction` (mockup 101 `selected`), fakat sutun
+         *     NULLABLE kalir: mevcut canli bloklara "Insaat Halinde" varsaymak yanlis
+         *     olabilirdi ve karar 8 canli satirlara dokunan veri migration'ini yasaklar.
+         * @enum {string}
+         */
+        BlockStatus: "planning" | "construction" | "completed";
         /** BlockUpdate */
         BlockUpdate: {
+            /** Code */
+            code?: string | null;
+            /** Basement Floor Count */
+            basement_floor_count?: number | null;
+            /** Floor Count */
+            floor_count?: number | null;
+            roof_type?: components["schemas"]["BlockRoofType"] | null;
+            /** Units Per Floor */
+            units_per_floor?: number | null;
+            ground_floor_usage?: components["schemas"]["BlockGroundUsage"] | null;
+            /** Shop Count */
+            shop_count?: number | null;
+            /** Construction Area M2 */
+            construction_area_m2?: number | string | null;
+            /** Elevator Count */
+            elevator_count?: number | null;
+            parking_type?: components["schemas"]["BlockParkingType"] | null;
+            /** Estimated Delivery Date */
+            estimated_delivery_date?: string | null;
+            status?: components["schemas"]["BlockStatus"] | null;
+            /** Notes */
+            notes?: string | null;
             /** Name */
             name?: string | null;
             /** Site Id */
@@ -974,11 +1764,30 @@ export interface components {
         Body_import_units_endpoint_projects__project_id__units_import_post: {
             /** File */
             file: string;
+            /** Site Id */
+            site_id?: string | null;
+            /**
+             * Include Warnings
+             * @default true
+             */
+            include_warnings: boolean;
         };
         /** Body_upload_logo_endpoint_company_logo_post */
         Body_upload_logo_endpoint_company_logo_post: {
             /** File */
             file: string;
+        };
+        /** Body_validate_import_endpoint_projects__project_id__units_import_validate_post */
+        Body_validate_import_endpoint_projects__project_id__units_import_validate_post: {
+            /** File */
+            file: string;
+            /** Site Id */
+            site_id?: string | null;
+            /**
+             * Include Warnings
+             * @default true
+             */
+            include_warnings: boolean;
         };
         /** BoqGroupCreate */
         BoqGroupCreate: {
@@ -1189,6 +1998,210 @@ export interface components {
             auto_einvoice?: boolean | null;
         };
         /**
+         * ContractAllocationInput
+         * @description `quantity=None` gönderilmesi kaldırma anlamına gelir (spec §6.3 adım 1).
+         */
+        ContractAllocationInput: {
+            /**
+             * Contract Item Id
+             * Format: uuid
+             */
+            contract_item_id: string;
+            /**
+             * Site Id
+             * Format: uuid
+             */
+            site_id: string;
+            /** Quantity */
+            quantity?: number | string | null;
+        };
+        /** ContractDistributionAllocation */
+        ContractDistributionAllocation: {
+            /**
+             * Site Id
+             * Format: uuid
+             */
+            site_id: string;
+            /** Quantity */
+            quantity: string;
+            /**
+             * Boq Item Id
+             * Format: uuid
+             */
+            boq_item_id: string;
+        };
+        /** ContractDistributionGroup */
+        ContractDistributionGroup: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Items */
+            items: components["schemas"]["ContractDistributionItem"][];
+        };
+        /** ContractDistributionItem */
+        ContractDistributionItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Description */
+            description: string;
+            /** Unit */
+            unit: string;
+            /** Quantity */
+            quantity: string;
+            /** Unit Price */
+            unit_price: string;
+            /** Allocations */
+            allocations: components["schemas"]["ContractDistributionAllocation"][];
+            /** Remaining Quantity */
+            remaining_quantity: string;
+        };
+        /**
+         * ContractDistributionResponse
+         * @description `GET .../contract/distribution` yanıtı — `POZ` ekranının gerektirdiği kadarı.
+         */
+        ContractDistributionResponse: {
+            /** Sites */
+            sites: components["schemas"]["ContractDistributionSite"][];
+            /** Groups */
+            groups: components["schemas"]["ContractDistributionGroup"][];
+            /** Undistributed Item Count */
+            undistributed_item_count: number;
+            /** Undistributed Item Names */
+            undistributed_item_names: string[];
+            /** Site Summaries */
+            site_summaries: components["schemas"]["ContractDistributionSiteSummary"][];
+            /** Distributed Item Count */
+            distributed_item_count: number;
+            /** Total Item Count */
+            total_item_count: number;
+        };
+        /**
+         * ContractDistributionSave
+         * @description `PUT .../contract/distribution` gövdesi — ekranın tamamı tek istekte.
+         */
+        ContractDistributionSave: {
+            /** Allocations */
+            allocations?: components["schemas"]["ContractAllocationInput"][];
+        };
+        /**
+         * ContractDistributionSite
+         * @description `POZ` 82-83 dağıtım kolon başlığı.
+         */
+        ContractDistributionSite: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /**
+         * ContractDistributionSiteItem
+         * @description `site_summaries[]` içindeki kalem satırı (`POZ` 168-187).
+         */
+        ContractDistributionSiteItem: {
+            /** Code */
+            code: string;
+            /** Description */
+            description: string;
+            /** Quantity */
+            quantity: string;
+            /** Unit Price */
+            unit_price: string;
+            /** Amount */
+            amount: string;
+        };
+        /** ContractDistributionSiteSummary */
+        ContractDistributionSiteSummary: {
+            /**
+             * Site Id
+             * Format: uuid
+             */
+            site_id: string;
+            /** Site Name */
+            site_name: string;
+            /** Items */
+            items: components["schemas"]["ContractDistributionSiteItem"][];
+            /** Total Amount */
+            total_amount: string;
+        };
+        /**
+         * ContractListItem
+         * @description `SZL` 44-51 satırı. `title`/`counterparty_name` işveren/taşeron için farklı
+         *     kaynaklardan servis tarafından doldurulur (spec §6.1 alan eşlemesi).
+         */
+        ContractListItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Contract No */
+            contract_no: string | null;
+            /** Counterparty Name */
+            counterparty_name: string | null;
+            /** Amount */
+            amount: string;
+            /** Start Date */
+            start_date: string | null;
+            /** End Date */
+            end_date: string | null;
+            /** Progress Pct */
+            progress_pct?: string | null;
+            status: components["schemas"]["ContractStatus"];
+            /** Is Draft */
+            is_draft: boolean;
+        };
+        /** ContractListResponse */
+        ContractListResponse: {
+            summary: components["schemas"]["ContractSummary"];
+            /** Items */
+            items: components["schemas"]["ContractListItem"][];
+        };
+        /**
+         * ContractStatus
+         * @description Sözleşme durumu — SZL 61/71/91 rozetleri (spec §3.1).
+         * @enum {string}
+         */
+        ContractStatus: "active" | "completed" | "on_hold";
+        /**
+         * ContractSummary
+         * @description `SZL` 34-38 üst KPI şeridi.
+         *
+         *     `progress_payment_total` (P7/H9, spec §9.6): işveren listesinde listelenen
+         *     sözleşmelerin KÜMÜLATİF BRÜT hakediş toplamı — artık `MetricPlaceholder`
+         *     DEĞİL düz `Decimal`. Taşeron listesinde `None`'dır: taşeron hakedişi ayrı
+         *     dilimdir (spec §1.2), sahte bir 0 yerine dürüst boş değer döner.
+         *
+         *     ⚠️ **Frontend için kırıcı değişiklik** (spec §10/4): alan artık
+         *     `{available, value, pending_module}` sarmalayıcısı değildir; `gen:api`
+         *     yenilenmeden tüketilemez.
+         */
+        ContractSummary: {
+            /** Total Amount */
+            total_amount: string;
+            /** Active Count */
+            active_count: number;
+            /** Progress Payment Total */
+            progress_payment_total?: string | null;
+            /** Expiring This Month Count */
+            expiring_this_month_count: number;
+        };
+        /**
          * ContractingCard
          * @description Taahhut karti — sozlesme bedeli/isveren ustte gercek, gerisi bos durum.
          */
@@ -1244,6 +2257,191 @@ export interface components {
             average_margin: components["schemas"]["app__modules__dashboard__schemas__MetricPlaceholder"];
             pending_approvals: components["schemas"]["PendingApprovalsPlaceholder"];
             risks: components["schemas"]["ListPlaceholder"];
+        };
+        /**
+         * EmployerContractDetail
+         * @description `E14` başlığı. Sözleşmenin kendi alanları için YENİ yazma ucu AÇILMAZ
+         *     (spec §6.2) — bu yalnız okuma şemasıdır.
+         *
+         *     Kapsam dışı (spec §2.2): milestone takvimi (P11), belgeler (kalıcı karar
+         *     8) — ikisi de burada AÇIKÇA `None` döner. Hakediş özeti (P7) artık kapsam
+         *     dışı DEĞİL (P7/H9): `progress_payment_summary` ZORUNLUDUR, `None` döndürmez.
+         */
+        EmployerContractDetail: {
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Contract No */
+            contract_no: string | null;
+            /** Signature Date */
+            signature_date: string | null;
+            /** Amount */
+            amount: string | null;
+            /** Advance Pct */
+            advance_pct: string;
+            /** Retainage Pct */
+            retainage_pct: string;
+            /** Vat Pct */
+            vat_pct: string;
+            /** Late Penalty Daily */
+            late_penalty_daily: string | null;
+            /** Has Price Escalation */
+            has_price_escalation: boolean;
+            status: components["schemas"]["ContractStatus"];
+            /** Start Date */
+            start_date: string | null;
+            /** End Date */
+            end_date: string | null;
+            /** Employer Name */
+            employer_name: string | null;
+            /** Contractor Name */
+            contractor_name: string | null;
+            /** Items Total */
+            items_total: string;
+            /** Items Total Diff */
+            items_total_diff: string;
+            /** Advance Amount */
+            advance_amount: string;
+            progress_payment_summary: components["schemas"]["ProgressPaymentSummary"];
+            /** Milestones */
+            milestones?: null;
+            /** Documents */
+            documents?: null;
+            /** Pending Modules */
+            pending_modules?: string[];
+        };
+        /** EmployerContractGroupCreate */
+        EmployerContractGroupCreate: {
+            /** Name */
+            name: string;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** EmployerContractGroupItems */
+        EmployerContractGroupItems: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Items */
+            items: components["schemas"]["EmployerContractItemResponse"][];
+        };
+        /** EmployerContractGroupResponse */
+        EmployerContractGroupResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Sort Order */
+            sort_order: number;
+        };
+        /**
+         * EmployerContractGroupUpdate
+         * @description `project_id` YOK — grup başka projeye taşınamaz (`BoqGroupUpdate` deseni).
+         */
+        EmployerContractGroupUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
+        /** EmployerContractItemCreate */
+        EmployerContractItemCreate: {
+            /**
+             * Group Id
+             * Format: uuid
+             */
+            group_id: string;
+            /** Code */
+            code: string;
+            /** Description */
+            description: string;
+            /** Unit */
+            unit: string;
+            /** Quantity */
+            quantity: number | string;
+            /** Unit Price */
+            unit_price: number | string;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /**
+         * EmployerContractItemResponse
+         * @description `POZ` tablo satırı. `distributed_quantity`/`remaining_quantity` türevdir,
+         *     servis `boq_items.contract_item_id` bağlarından hesaplar (spec §3.3, §6.2).
+         */
+        EmployerContractItemResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Group Id
+             * Format: uuid
+             */
+            group_id: string;
+            /** Code */
+            code: string;
+            /** Description */
+            description: string;
+            /** Unit */
+            unit: string;
+            /** Quantity */
+            quantity: string;
+            /** Unit Price */
+            unit_price: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Distributed Quantity */
+            distributed_quantity: string;
+            /** Remaining Quantity */
+            remaining_quantity: string;
+        };
+        /**
+         * EmployerContractItemUpdate
+         * @description `project_id` YOK. `group_id` verilirse aynı proje kontrolü servis
+         *     katmanında tekrarlanır (`BoqItemUpdate` deseni).
+         */
+        EmployerContractItemUpdate: {
+            /** Group Id */
+            group_id?: string | null;
+            /** Code */
+            code?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Unit */
+            unit?: string | null;
+            /** Quantity */
+            quantity?: number | string | null;
+            /** Unit Price */
+            unit_price?: number | string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
+        /**
+         * EmployerContractItemsResponse
+         * @description `GET /projects/{project_id}/contract/items` yanıtı (spec §6.2).
+         */
+        EmployerContractItemsResponse: {
+            /** Groups */
+            groups: components["schemas"]["EmployerContractGroupItems"][];
         };
         /** EmployerCreate */
         EmployerCreate: {
@@ -1433,6 +2631,29 @@ export interface components {
             new_password: string;
         };
         /**
+         * PaymentCalculationBlock
+         * @description E15 151-172 / OLU 179-196 ödeme hesabı (spec §6.2-§6.4) — H2
+         *     `calculations` fonksiyonlarının çıktısı, saklanmaz.
+         */
+        PaymentCalculationBlock: {
+            /** Gross */
+            gross: string;
+            /** Vat */
+            vat: string;
+            /** Advance Deduction */
+            advance_deduction: string;
+            /** Retention */
+            retention: string;
+            /** Net */
+            net: string;
+        };
+        /**
+         * PaymentPeriod
+         * @description Hakediş periyodu — FORM 101 açılır sırası (spec §3.5).
+         * @enum {string}
+         */
+        PaymentPeriod: "monthly" | "biweekly" | "on_completion";
+        /**
          * PendingApprovalsPlaceholder
          * @description Onay bekleyenler karti — rozet sayaci tasir.
          */
@@ -1492,6 +2713,300 @@ export interface components {
          * @enum {string}
          */
         PriceIndexType: "ufe" | "tufe" | "construction_cost" | "fixed_coefficient";
+        /**
+         * ProgressBlock
+         * @description E15 177-190 sözleşme ilerlemesi (spec §8). Eksik veri → `None` (zarif düşüş).
+         */
+        ProgressBlock: {
+            /** Financial Pct */
+            financial_pct: string | null;
+            /** Physical Pct */
+            physical_pct: string | null;
+            /** Duration Pct */
+            duration_pct: string | null;
+        };
+        /**
+         * ProgressPaymentCreate
+         * @description `POST /projects/{project_id}/progress-payments` gövdesi (spec §9.2).
+         *
+         *     Tüm alanlar isteğe bağlıdır (kalıcı karar 4: taslak boş gövdeyle açılabilir,
+         *     `sequence_no`/`status`/snapshot yüzdeler sunucu üretir). Satırlar iç içe ve
+         *     atomik gönderilebilir (`contracts`/`sites` deseninin aynısı).
+         */
+        ProgressPaymentCreate: {
+            /** Period Year */
+            period_year?: number | null;
+            /** Period Month */
+            period_month?: number | null;
+            /** Description */
+            description?: string | null;
+            /** Default Coefficient */
+            default_coefficient?: number | string | null;
+            /** Lines */
+            lines?: components["schemas"]["ProgressPaymentLineInput"][] | null;
+        };
+        /**
+         * ProgressPaymentDetail
+         * @description `GET /progress-payments/{id}` yanıtı — E15 ekranının tamamı (spec §9.1).
+         */
+        ProgressPaymentDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Project Name */
+            project_name: string;
+            /** Sequence No */
+            sequence_no: number;
+            /** Period Year */
+            period_year: number | null;
+            /** Period Month */
+            period_month: number | null;
+            /** Description */
+            description: string | null;
+            status: components["schemas"]["ProgressPaymentStatus"];
+            /** Vat Pct */
+            vat_pct: string;
+            /** Advance Pct */
+            advance_pct: string;
+            /** Retainage Pct */
+            retainage_pct: string;
+            /** Default Coefficient */
+            default_coefficient: string;
+            /** Submitted At */
+            submitted_at: string | null;
+            /** Approved At */
+            approved_at: string | null;
+            /** Approved By */
+            approved_by: string | null;
+            /** Paid At */
+            paid_at: string | null;
+            /**
+             * Created By
+             * Format: uuid
+             */
+            created_by: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Lines */
+            lines: components["schemas"]["ProgressPaymentLineDetail"][];
+            /** Groups */
+            groups: components["schemas"]["ProgressPaymentGroupSummary"][];
+            calculation: components["schemas"]["PaymentCalculationBlock"];
+            progress: components["schemas"]["ProgressBlock"];
+            /**
+             * Dropped Orphan Count
+             * @default 0
+             */
+            dropped_orphan_count: number;
+        };
+        /**
+         * ProgressPaymentGroupSummary
+         * @description E15 96-141 grup toplulaştırması (`group_name` üzerinden, spec §6.6).
+         */
+        ProgressPaymentGroupSummary: {
+            /** Group Name */
+            group_name: string | null;
+            /** Previous Amount */
+            previous_amount: string;
+            /** This Amount */
+            this_amount: string;
+            /** Cumulative Amount */
+            cumulative_amount: string;
+            /** Contract Amount */
+            contract_amount: string;
+        };
+        /**
+         * ProgressPaymentLineDetail
+         * @description E15 96-141 satırı + OLU'nun düzenlenebilir alanları. Türev alanlar
+         *     (`adjusted_unit_price`/`line_total`/`previous_*`/`cumulative_*`) saklanmaz,
+         *     her okuyuşta H2 `calculations` fonksiyonlarıyla hesaplanır (spec §4.2, §6.6).
+         *
+         *     `is_price_stale`: `contract_unit_price != kalem.unit_price` iken `True`;
+         *     bağ (`contract_item_id`) koptuysa `None` (spec §5.1 — kalem silinmiş,
+         *     kıyaslanacak canlı fiyat yok).
+         */
+        ProgressPaymentLineDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Contract Item Id */
+            contract_item_id: string | null;
+            /**
+             * Site Id
+             * Format: uuid
+             */
+            site_id: string;
+            /** Code */
+            code: string;
+            /** Description */
+            description: string;
+            /** Unit */
+            unit: string;
+            /** Contract Unit Price */
+            contract_unit_price: string;
+            /** Coefficient */
+            coefficient: string;
+            /** Quantity */
+            quantity: string;
+            /** Group Name */
+            group_name: string | null;
+            /** Sort Order */
+            sort_order: number;
+            /** Adjusted Unit Price */
+            adjusted_unit_price: string;
+            /** Line Total */
+            line_total: string;
+            /** Previous Quantity */
+            previous_quantity: string;
+            /** Previous Amount */
+            previous_amount: string;
+            /** Cumulative Quantity */
+            cumulative_quantity: string;
+            /** Cumulative Amount */
+            cumulative_amount: string;
+            /** Is Price Stale */
+            is_price_stale: boolean | null;
+        };
+        /**
+         * ProgressPaymentLineInput
+         * @description `PUT …/lines` gövdesindeki tek satır (spec §9.2) — hem POST'un iç içe
+         *     `lines[]`'ında hem `PUT …/lines`'ta kullanılır.
+         *
+         *     `quantity >= 0`: OLU 172 `value="0"` kanıtıyla 0 meşru — P5 dağılımının
+         *     "boş hücre `null`, `0` 422" kuralı hakedişe TAŞINMAZ (spec §10/3).
+         *     `coefficient` gönderilmezse `None` kalır: servis katmanı yeni satıra
+         *     hakedişin `default_coefficient`'ını uygular (§4.1), var olan satırın
+         *     katsayısını DEĞİŞTİRMEZ.
+         */
+        ProgressPaymentLineInput: {
+            /**
+             * Contract Item Id
+             * Format: uuid
+             */
+            contract_item_id: string;
+            /**
+             * Site Id
+             * Format: uuid
+             */
+            site_id: string;
+            /** Quantity */
+            quantity: number | string;
+            /** Coefficient */
+            coefficient?: number | string | null;
+        };
+        /**
+         * ProgressPaymentLinesSave
+         * @description `PUT …/lines` gövdesi — DEĞİŞTİRME semantiği (spec §9.2/§10-2): gövdede
+         *     olmayan satır SİLİNİR. Boş liste = hakedişin tüm satırlarını temizle.
+         */
+        ProgressPaymentLinesSave: {
+            /** Lines */
+            lines?: components["schemas"]["ProgressPaymentLineInput"][];
+        };
+        /**
+         * ProgressPaymentListItem
+         * @description `GET /progress-payments` satırı (SHK 93-113).
+         */
+        ProgressPaymentListItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Project Name */
+            project_name: string;
+            /** Sequence No */
+            sequence_no: number;
+            /** Period Year */
+            period_year: number | null;
+            /** Period Month */
+            period_month: number | null;
+            /** Description */
+            description: string | null;
+            status: components["schemas"]["ProgressPaymentStatus"];
+            /** Gross Total */
+            gross_total: string;
+            /** Net Total */
+            net_total: string;
+        };
+        /** ProgressPaymentListResponse */
+        ProgressPaymentListResponse: {
+            /** Items */
+            items: components["schemas"]["ProgressPaymentListItem"][];
+        };
+        /**
+         * ProgressPaymentStatus
+         * @description Hakediş durum makinesi — spec §7. OLU 24 / E15 69 "Onay Bekliyor" / SHK 129
+         *     "Onaylandı" rozeti / SHK 103 "Ödendi".
+         * @enum {string}
+         */
+        ProgressPaymentStatus: "draft" | "pending_approval" | "approved" | "paid";
+        /**
+         * ProgressPaymentSummary
+         * @description `GET /projects/{project_id}/progress-payments/summary` yanıtı (E14
+         *     sekmesi + SHK kartları, spec §9.6). Eksik sözleşme bedeli → `progress_pct`/
+         *     `remaining` `None` (zarif düşüş, §8 deseninin aynısı).
+         */
+        ProgressPaymentSummary: {
+            /** Contract Amount */
+            contract_amount: string | null;
+            /** Cumulative Gross */
+            cumulative_gross: string;
+            /** Progress Pct */
+            progress_pct: string | null;
+            /** Advance Deduction Total */
+            advance_deduction_total: string;
+            /** Retention Total */
+            retention_total: string;
+            /** Net Total */
+            net_total: string;
+            /** Payment Count */
+            payment_count: number;
+            /** Pending Count */
+            pending_count: number;
+            /** Remaining */
+            remaining: string | null;
+        };
+        /**
+         * ProgressPaymentUpdate
+         * @description `PATCH /progress-payments/{id}` gövdesi — yalnız başlık alanları (spec §9.2).
+         *
+         *     `status`/`sequence_no`/satırlar YOK: durum yalnız geçiş uçlarıyla (H6),
+         *     satırlar yalnız `PUT …/lines` (H5) ile değişir. Servis `status != draft`
+         *     ise 409 `INVALID_STATUS_TRANSITION` döner (kural burada TEKRARLANMAZ).
+         */
+        ProgressPaymentUpdate: {
+            /** Period Year */
+            period_year?: number | null;
+            /** Period Month */
+            period_month?: number | null;
+            /** Description */
+            description?: string | null;
+            /** Default Coefficient */
+            default_coefficient?: number | string | null;
+        };
         /** ProjectAccessInput */
         ProjectAccessInput: {
             /**
@@ -1835,10 +3350,33 @@ export interface components {
             investment?: components["schemas"]["ProjectInvestmentInput"] | null;
             land_share?: components["schemas"]["ProjectLandShareInput"] | null;
         };
+        /** RefreshPricesResponse */
+        RefreshPricesResponse: {
+            /** Refreshed Count */
+            refreshed_count: number;
+        };
         /** RefreshRequest */
         RefreshRequest: {
             /** Refresh Token */
             refresh_token: string;
+        };
+        /**
+         * RejectBody
+         * @description `POST …/reject` gövdesi (spec §7, K12: ek form YOK) — yalnız isteğe
+         *     bağlı gerekçe, denetim günlüğüne taşınır (ayrı kolon AÇILMAZ).
+         *
+         *     `max_length=500` (H10 denetimi Y3, spec §10/6): DB kolonu yok, TEK kalıcı
+         *     iz denetim metnidir (`audit/messages.py.progress_payment_rejected`) —
+         *     sınırsız gövde keyfi uzunlukta metni günlüğe yazardı. Modülde bu deseni
+         *     (kalıcı kolonu olmayan, yalnız günlüğe taşınan serbest metin) paylaşan
+         *     başka bir alan yok; en yakın emsaller (`roles.RoleCreate.description`
+         *     max_length=2000, uzun biçim rol açıklaması) amaç bakımından farklı — 500,
+         *     tek satırlık kısa bir ret gerekçesi için yeterli ve günlük okunabilirliğini
+         *     (çok satırlı/şişirilmiş metin) koruyan bir üst sınırdır.
+         */
+        RejectBody: {
+            /** Reason */
+            reason?: string | null;
         };
         /** RoleCreate */
         RoleCreate: {
@@ -1898,7 +3436,16 @@ export interface components {
         Scope: "all" | "own" | "project" | "finance" | "stock" | "limited";
         /**
          * SectionCreate
-         * @description `budget` YOK (spec §2.2) — bolum bedeli BOQ kalemlerinin toplamidir.
+         * @description `Form - Bolum Ekle`in tam govdesi (P6 §5, T3).
+         *
+         *     Yer tutucu `budget` alani BURADA DA YOKTUR (spec §2.2): o BOQ turevidir ve
+         *     girdi olarak alinmaz. Elle girilen `budget_amount` onun yerine GECMEZ, ayri
+         *     bir kolondur (bkz. `Section` docstring'i, §7 S2a).
+         *
+         *     Mockup'ta gorunup burada OLMAYANLAR — spec §6, bu dilimde ARA COZUM
+         *     YAZILMAZ: BOQ atamalari (Form 131-211), taseron/makine (88-98),
+         *     bagimlilik/milestone/Gantt (115-123, 237), belgeler (214-233).
+         *     "Süre (Gün)" (Form 109) `readonly` bir TUREVDIR, saklanmaz.
          */
         SectionCreate: {
             /** Code */
@@ -1920,6 +3467,94 @@ export interface components {
              * @default 0
              */
             sort_order: number;
+            section_type?: components["schemas"]["SectionType"] | null;
+            /** Description */
+            description?: string | null;
+            /** Deputy Manager User Id */
+            deputy_manager_user_id?: string | null;
+            /** Deputy Manager Name */
+            deputy_manager_name?: string | null;
+            /** Planned Worker Count */
+            planned_worker_count?: number | null;
+            /** Budget Amount */
+            budget_amount?: number | string | null;
+            /**
+             * Is Draft
+             * @default false
+             */
+            is_draft: boolean;
+        };
+        /**
+         * SectionDetailResponse
+         * @description P6 §5 — `GET /sections/{section_id}` govdesi: `sections`in TUM kolonlari.
+         *
+         *     `SectionResponse`ten TUREYIR, YERINE GECMEZ: liste ucu (`SectionListResponse`)
+         *     dar govdeyi tasimaya devam eder. Miras alinan DORT YER TUTUCU
+         *     (`progress_pct`/`boq_item_count`/`budget`/`worker_count`) BILINCLI OLARAK
+         *     KALIR (spec §6): hero KPI'lari bu dilimde placeholder desenindedir.
+         *
+         *     `budget` (BOQ turevi yer tutucu) ile `budget_amount` (elle girilen gercek
+         *     kolon) AYNI SEY DEGILDIR ve biri digerinin yerine gecmez — bkz. `Section`
+         *     docstring'i (P6 §7 S2a). BOQ-bolum bagi acildiginda yer tutucu gercege
+         *     donusecek, `budget_amount` ise turev degere cevrilecektir.
+         *
+         *     Mockup'ta gorunup burada OLMAYAN her sey `Section` modelinde de yoktur
+         *     (BOQ atamalari, taseron/makine, bagimlilik/milestone, belgeler): spec §6
+         *     listesi — bu dilimde ARA COZUM yazilmaz.
+         */
+        SectionDetailResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string | null;
+            /** Name */
+            name: string;
+            status: components["schemas"]["SectionStatus"];
+            /** Manager User Id */
+            manager_user_id?: string | null;
+            /** Manager Name */
+            manager_name: string | null;
+            /** Start Date */
+            start_date: string | null;
+            /** End Date */
+            end_date: string | null;
+            /** Sort Order */
+            sort_order: number;
+            progress_pct: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            boq_item_count: components["schemas"]["CountPlaceholder"];
+            budget: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            worker_count: components["schemas"]["CountPlaceholder"];
+            /**
+             * Site Id
+             * Format: uuid
+             */
+            site_id: string;
+            section_type: components["schemas"]["SectionType"] | null;
+            /** Description */
+            description: string | null;
+            /** Deputy Manager User Id */
+            deputy_manager_user_id: string | null;
+            /** Deputy Manager Name */
+            deputy_manager_name: string | null;
+            /** Planned Worker Count */
+            planned_worker_count: number | null;
+            /** Budget Amount */
+            budget_amount: string | null;
+            /** Is Draft */
+            is_draft: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /** SectionListResponse */
         SectionListResponse: {
@@ -1960,9 +3595,11 @@ export interface components {
         };
         /**
          * SectionStatus
+         * @description Sira `Form - Bolum Ekle` satir 71'den gelir: Planlandi · Aktif · Beklemede.
+         *     `on_hold` P6'da eklendi (spec §4 / §7 S1 onayi); `completed` KALIR.
          * @enum {string}
          */
-        SectionStatus: "planned" | "active" | "completed";
+        SectionStatus: "planned" | "active" | "on_hold" | "completed";
         /**
          * SectionStatusCounts
          * @description Mockup'taki "3 aktif · 2 bekliyor" kirilimi (spec §3.2).
@@ -1975,6 +3612,14 @@ export interface components {
             /** Completed */
             completed: number;
         };
+        /**
+         * SectionType
+         * @description Bolum turu (`Form - Bolum Ekle` satir 70, spec §3). Etiketler:
+         *     Temel & Altyapi · Kaba Insaat · Ince Isler · Cephe & Cati · Mekanik-Elektrik ·
+         *     Peyzaj · Teslimat & Kabul. Nullable — taslak destegi (kalici karar 4).
+         * @enum {string}
+         */
+        SectionType: "foundation_infra" | "structural" | "finishing" | "facade_roof" | "mep" | "landscape" | "handover";
         /**
          * SectionUpdate
          * @description `site_id` YOK — bolum baska santiyeye tasinamaz.
@@ -1995,6 +3640,19 @@ export interface components {
             end_date?: string | null;
             /** Sort Order */
             sort_order?: number | null;
+            section_type?: components["schemas"]["SectionType"] | null;
+            /** Description */
+            description?: string | null;
+            /** Deputy Manager User Id */
+            deputy_manager_user_id?: string | null;
+            /** Deputy Manager Name */
+            deputy_manager_name?: string | null;
+            /** Planned Worker Count */
+            planned_worker_count?: number | null;
+            /** Budget Amount */
+            budget_amount?: number | string | null;
+            /** Is Draft */
+            is_draft?: boolean | null;
         };
         /** ShareholderInput */
         ShareholderInput: {
@@ -2454,6 +4112,339 @@ export interface components {
             /** Delivery Date */
             delivery_date?: string | null;
         };
+        /**
+         * SubcontractorContractCreate
+         * @description `FORM` gövdesi. Kalemler İÇ İÇE ve atomik gönderilebilir (spec §6.5,
+         *     `sites` + bölümler deseninin aynısı).
+         */
+        SubcontractorContractCreate: {
+            /** Site Id */
+            site_id?: string | null;
+            /** Subcontractor Id */
+            subcontractor_id?: string | null;
+            /** Work Category */
+            work_category?: string | null;
+            /** Contract No */
+            contract_no?: string | null;
+            /** Signature Date */
+            signature_date?: string | null;
+            /**
+             * Is Notarized
+             * @default false
+             */
+            is_notarized: boolean;
+            /** Start Date */
+            start_date?: string | null;
+            /** End Date */
+            end_date?: string | null;
+            /** Late Penalty Daily */
+            late_penalty_daily?: number | string | null;
+            /**
+             * Advance Pct
+             * @default 10
+             */
+            advance_pct: number | string;
+            /**
+             * Retainage Pct
+             * @default 5
+             */
+            retainage_pct: number | string;
+            /** @default monthly */
+            payment_period: components["schemas"]["PaymentPeriod"];
+            /**
+             * Payment Term Days
+             * @default 30
+             */
+            payment_term_days: number;
+            /**
+             * Materials By Contractor
+             * @default false
+             */
+            materials_by_contractor: boolean;
+            /**
+             * Subcontractor Files Own Sgk
+             * @default false
+             */
+            subcontractor_files_own_sgk: boolean;
+            /**
+             * Vat Withholding
+             * @default false
+             */
+            vat_withholding: boolean;
+            /** @default active */
+            status: components["schemas"]["ContractStatus"];
+            /**
+             * Is Draft
+             * @default false
+             */
+            is_draft: boolean;
+            /** Items */
+            items?: components["schemas"]["SubcontractorContractItemCreate"][];
+        };
+        /**
+         * SubcontractorContractDetail
+         * @description `TSD` başlığı + bağlantı zinciri + kalemler + türev toplam (spec §6.5).
+         *
+         *     Kapsam dışı (spec §2.2): hakediş özeti (P7), belgeler (kalıcı karar 8) —
+         *     burada AÇIKÇA `None` döner.
+         */
+        SubcontractorContractDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Site Id */
+            site_id: string | null;
+            /** Subcontractor Id */
+            subcontractor_id: string | null;
+            /** Subcontractor Name */
+            subcontractor_name: string | null;
+            /** Work Category */
+            work_category: string | null;
+            /** Contract No */
+            contract_no: string | null;
+            /** Signature Date */
+            signature_date: string | null;
+            /** Is Notarized */
+            is_notarized: boolean;
+            /** Start Date */
+            start_date: string | null;
+            /** End Date */
+            end_date: string | null;
+            /** Late Penalty Daily */
+            late_penalty_daily: string | null;
+            /** Advance Pct */
+            advance_pct: string;
+            /** Retainage Pct */
+            retainage_pct: string;
+            payment_period: components["schemas"]["PaymentPeriod"];
+            /** Payment Term Days */
+            payment_term_days: number;
+            /** Materials By Contractor */
+            materials_by_contractor: boolean;
+            /** Subcontractor Files Own Sgk */
+            subcontractor_files_own_sgk: boolean;
+            /** Vat Withholding */
+            vat_withholding: boolean;
+            status: components["schemas"]["ContractStatus"];
+            /** Is Draft */
+            is_draft: boolean;
+            /** Items */
+            items: components["schemas"]["SubcontractorContractItemResponse"][];
+            /** Contract Total */
+            contract_total: string;
+            /** Items Missing Price */
+            items_missing_price: number;
+            /** Progress Payment Summary */
+            progress_payment_summary?: null;
+            /** Documents */
+            documents?: null;
+            /** Pending Modules */
+            pending_modules?: string[];
+        };
+        /** SubcontractorContractItemCreate */
+        SubcontractorContractItemCreate: {
+            /** Code */
+            code: string;
+            /** Description */
+            description: string;
+            /** Unit */
+            unit: string;
+            /** Quantity */
+            quantity: number | string;
+            /** Unit Price */
+            unit_price?: number | string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+            /** Source Contract Item Id */
+            source_contract_item_id?: string | null;
+        };
+        /**
+         * SubcontractorContractItemGroup
+         * @description Grup başlığı `source_contract_item_id` → `employer_contract_items.group_id`
+         *     üzerinden TÜRER; ayrı grup tablosu açılmaz (spec §3.6).
+         */
+        SubcontractorContractItemGroup: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /**
+         * SubcontractorContractItemResponse
+         * @description `FORM`/`TSD` kalem satırı. `line_total` türevdir, saklanmaz — `unit_price`
+         *     NULL olan satır toplama 0 katkı verir (spec §3.6).
+         */
+        SubcontractorContractItemResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Contract Id
+             * Format: uuid
+             */
+            contract_id: string;
+            /** Source Contract Item Id */
+            source_contract_item_id: string | null;
+            /** Code */
+            code: string;
+            /** Description */
+            description: string;
+            /** Unit */
+            unit: string;
+            /** Quantity */
+            quantity: string;
+            /** Unit Price */
+            unit_price: string | null;
+            /** Sort Order */
+            sort_order: number;
+            group?: components["schemas"]["SubcontractorContractItemGroup"] | null;
+            /** Line Total */
+            readonly line_total: string;
+        };
+        /** SubcontractorContractItemUpdate */
+        SubcontractorContractItemUpdate: {
+            /** Code */
+            code?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Unit */
+            unit?: string | null;
+            /** Quantity */
+            quantity?: number | string | null;
+            /** Unit Price */
+            unit_price?: number | string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
+        /**
+         * SubcontractorContractItemsLoadResponse
+         * @description `POST .../items/load-from-employer` yanıtı (spec §6.5) — idempotent
+         *
+         *     kopyalamanın kaç kalem yazdığını/atladığını bildirir.
+         */
+        SubcontractorContractItemsLoadResponse: {
+            /** Created Count */
+            created_count: number;
+            /** Skipped Count */
+            skipped_count: number;
+        };
+        /**
+         * SubcontractorContractUpdate
+         * @description `project_id` YOK — sözleşme başka projeye taşınamaz. `items` YOK — kalemler
+         *     ayrı uçlarla yönetilir (spec §6.5). Tüm alanlar isteğe bağlı (kısmi PATCH).
+         */
+        SubcontractorContractUpdate: {
+            /** Site Id */
+            site_id?: string | null;
+            /** Subcontractor Id */
+            subcontractor_id?: string | null;
+            /** Work Category */
+            work_category?: string | null;
+            /** Contract No */
+            contract_no?: string | null;
+            /** Signature Date */
+            signature_date?: string | null;
+            /** Is Notarized */
+            is_notarized?: boolean | null;
+            /** Start Date */
+            start_date?: string | null;
+            /** End Date */
+            end_date?: string | null;
+            /** Late Penalty Daily */
+            late_penalty_daily?: number | string | null;
+            /** Advance Pct */
+            advance_pct?: number | string | null;
+            /** Retainage Pct */
+            retainage_pct?: number | string | null;
+            payment_period?: components["schemas"]["PaymentPeriod"] | null;
+            /** Payment Term Days */
+            payment_term_days?: number | null;
+            /** Materials By Contractor */
+            materials_by_contractor?: boolean | null;
+            /** Subcontractor Files Own Sgk */
+            subcontractor_files_own_sgk?: boolean | null;
+            /** Vat Withholding */
+            vat_withholding?: boolean | null;
+            status?: components["schemas"]["ContractStatus"] | null;
+            /** Is Draft */
+            is_draft?: boolean | null;
+        };
+        /** SubcontractorCreate */
+        SubcontractorCreate: {
+            /** Name */
+            name: string;
+            /** Tax Number */
+            tax_number?: string | null;
+            /** Contact Person */
+            contact_person?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Category */
+            category?: string | null;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+        };
+        /** SubcontractorListResponse */
+        SubcontractorListResponse: {
+            /** Items */
+            items: components["schemas"]["SubcontractorResponse"][];
+        };
+        /** SubcontractorResponse */
+        SubcontractorResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Tax Number */
+            tax_number: string | null;
+            /** Contact Person */
+            contact_person: string | null;
+            /** Phone */
+            phone: string | null;
+            /** Email */
+            email: string | null;
+            /** Category */
+            category: string | null;
+            /** Is Active */
+            is_active: boolean;
+        };
+        /** SubcontractorUpdate */
+        SubcontractorUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Tax Number */
+            tax_number?: string | null;
+            /** Contact Person */
+            contact_person?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Category */
+            category?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
         /** TokenPair */
         TokenPair: {
             /** Access Token */
@@ -2525,6 +4516,11 @@ export interface components {
             start_floor: number;
             /** End Floor */
             end_floor: number;
+            /**
+             * Roof Floor
+             * @default false
+             */
+            roof_floor: boolean;
             /** Units Per Floor */
             units_per_floor: number;
             /** @default sequential */
@@ -2539,6 +4535,10 @@ export interface components {
              * @default 1
              */
             start_number: number;
+            /** Slots */
+            slots?: components["schemas"]["UnitBulkSlot"][];
+            /** Floor Price Increase Pct */
+            floor_price_increase_pct?: number | string | null;
             /** Layout */
             layout?: string | null;
             /** Gross Area M2 */
@@ -2550,8 +4550,90 @@ export interface components {
             /** Appraisal Value */
             appraisal_value?: number | string | null;
         };
+        /**
+         * UnitBulkPreview
+         * @description AYRI UC'un yaniti (spec §5.4) — `UnitListResponse` ile birlestirilemez.
+         *
+         *     Ortada `id`'si olan unite yoktur, `totals` projenin tamamini sayar, `blocks`
+         *     gruplari MEVCUT kayitlardir. Tek uca `dry_run` bayragi konsaydi
+         *     `response_model` iki seklin BIRLESIMINE (`Union`) zorlanir ve `gen:api`
+         *     ciktisinda her iki alan da `optional` gorunerek istemci tarafinda sessiz
+         *     `undefined` sinifi dogardi.
+         */
+        UnitBulkPreview: {
+            /** Total Units */
+            total_units: number;
+            /** Total List Value */
+            total_list_value: string;
+            /** Conflicting Unit Nos */
+            conflicting_unit_nos: string[];
+            /** Rows */
+            rows: components["schemas"]["UnitBulkPreviewRow"][];
+        };
+        /**
+         * UnitBulkPreviewRow
+         * @description TU 151-156 onizleme tablosunun BIR satiri (spec §5.4).
+         *
+         *     `floor` ile `floor_label` AYRI alanlardir ve birlestirilmemelidir (karar 4):
+         *     `floor` uretim turunun SAYISIDIR (TU 152 1/2/3 basiyor, numaralandirmanin
+         *     girdisi), `floor_label` ise uniteye YAZILACAK metindir ("1. Kat", "Zemin",
+         *     "Çatı Katı"). Tek alana indirilseydi ekran ya sayiyi ya etiketi kaybederdi.
+         */
+        UnitBulkPreviewRow: {
+            /** Unit No */
+            unit_no: string;
+            /** Floor */
+            floor: number;
+            /** Floor Label */
+            floor_label: string;
+            /** Layout */
+            layout: string | null;
+            /** Gross Area M2 */
+            gross_area_m2: string | null;
+            /** Net Area M2 */
+            net_area_m2: string | null;
+            facing: components["schemas"]["UnitFacing"] | null;
+            /** List Price */
+            list_price: string | null;
+            /** Conflict */
+            conflict: boolean;
+        };
+        /**
+         * UnitBulkSlot
+         * @description TU 107-133 "Kat Sablonu" tablosunun BIR satiri. Her katta tekrarlanir (TU 94).
+         *
+         *     Ortak varsayilanlardan (bir alt siniftaki `layout`/`gross_area_m2`/…) farki:
+         *     ortak varsayilan TUM uretilen uniteye ayni degeri verir, slot ise KAT ICI
+         *     her daireye ayrisik deger verir (TU 96-133 uc farkli oda tipi/m²/cephe/fiyat
+         *     gosteriyor ve mevcut uc bunu HIC karsilayamiyordu, spec §5.1).
+         */
+        UnitBulkSlot: {
+            /** Sequence */
+            sequence: number;
+            /** Layout */
+            layout?: string | null;
+            /** Gross Area M2 */
+            gross_area_m2?: number | string | null;
+            /** Net Area M2 */
+            net_area_m2?: number | string | null;
+            facing?: components["schemas"]["UnitFacing"] | null;
+            /** List Price */
+            list_price?: number | string | null;
+        };
         /** UnitCreate */
         UnitCreate: {
+            /** Floor */
+            floor?: string | null;
+            facing?: components["schemas"]["UnitFacing"] | null;
+            /** Balcony Area M2 */
+            balcony_area_m2?: number | string | null;
+            /** Bathroom Count */
+            bathroom_count?: number | null;
+            parking_right?: components["schemas"]["UnitParkingRight"] | null;
+            /** Min Sale Price */
+            min_sale_price?: number | string | null;
+            /** Vat Rate */
+            vat_rate?: number | string | null;
             /**
              * Block Id
              * Format: uuid
@@ -2576,31 +4658,116 @@ export interface components {
              * @default 0
              */
             sort_order: number;
+            /** @default listed */
+            sales_status: components["schemas"]["UnitSalesStatus"] | null;
         };
-        /** UnitImportResult */
+        /**
+         * UnitFacing
+         * @description UE 78 / TU 112 "Cephe" — karar 7: mockup'ta gecen TAM OLARAK bes deger.
+         *
+         *     Pusulanin kalan uc yonu (`northeast`, `northwest`, `southeast`) ICAT EDILMEZ;
+         *     ihtiyac dogarsa additive olarak enum takasiyla eklenir (spec §4.2).
+         * @enum {string}
+         */
+        UnitFacing: "south" | "southwest" | "east" | "north" | "west";
+        /**
+         * UnitImportResult
+         * @description P3'teki sema GENISLEDI (spec §6.3).
+         *
+         *     `errors: list[UnitImportRowError]` alani KALDIRILDI; yerini `rows` aldi —
+         *     uyari ve basari satirlarini da tasiyabilen TEK liste. Iki liste olsaydi
+         *     (hatalar ayri, satirlar ayri) EI 118-126 tablosu iki kaynaktan birlestirilir
+         *     ve biri bayatladiginda ekran sessizce yanlis satiri gosterirdi.
+         */
         UnitImportResult: {
+            summary: components["schemas"]["UnitImportSummary"];
             /** Created */
             created: number;
+            /** Skipped */
+            skipped: number;
             /** Blocks Created */
             blocks_created: number;
-            /** Errors */
-            errors: components["schemas"]["UnitImportRowError"][];
+            /** Rows */
+            rows: components["schemas"]["UnitImportRowReport"][];
         };
-        /** UnitImportRowError */
-        UnitImportRowError: {
+        /**
+         * UnitImportRowReport
+         * @description EI 118-126 sutunlari BIREBIR.
+         *
+         *     `messages` LISTEDIR, tek metin degil: EI 161 bir satirda IKI mesaj
+         *     gosteriyor ("Oda Tipi boş · Brüt m² sıfır olamaz") ve birlestirilmis tek
+         *     metin istemcinin mesajlari ayri gostermesini imkânsiz kilardi.
+         */
+        UnitImportRowReport: {
             /** Row */
             row: number;
-            /** Column */
-            column: string | null;
-            /** Message */
-            message: string;
+            status: components["schemas"]["UnitImportRowStatus"];
+            /** Unit No */
+            unit_no: string | null;
+            /** Block Name */
+            block_name: string | null;
+            /** Floor */
+            floor: string | null;
+            /** Layout */
+            layout: string | null;
+            /** Gross Area M2 */
+            gross_area_m2: string | null;
+            /** List Price */
+            list_price: string | null;
+            /** Messages */
+            messages: string[];
+            /** Imported */
+            imported: boolean;
+        };
+        /**
+         * UnitImportRowStatus
+         * @description EI 119 "Durum" sutunu — satir basina TEK durum.
+         *
+         *     Hatali satir ayrica "uyarili" OLMAZ: EI tablosu her satira tek bir simge
+         *     basiyor (✓ / ⚠ / ✗) ve iki durumu ayni anda tasiyan satir "yazildi mi"
+         *     sorusunu belirsiz birakirdi.
+         * @enum {string}
+         */
+        UnitImportRowStatus: "ok" | "warning" | "error";
+        /**
+         * UnitImportSummary
+         * @description EI 94-99 dort sayac kutusu. `valid + warning + error == total_rows`.
+         */
+        UnitImportSummary: {
+            /** Total Rows */
+            total_rows: number;
+            /** Valid */
+            valid: number;
+            /** Warning */
+            warning: number;
+            /** Error */
+            error: number;
+        };
+        /**
+         * UnitImportValidation
+         * @description `POST …/units/import/validate` yaniti (spec §6.2) — HICBIR SEY YAZILMAZ.
+         */
+        UnitImportValidation: {
+            summary: components["schemas"]["UnitImportSummary"];
+            /** Rows */
+            rows: components["schemas"]["UnitImportRowReport"][];
+            /** Blocks To Create */
+            blocks_to_create: string[];
         };
         /**
          * UnitKind
          * @description KY 71 "48 Daire + 4 Dukkan", KY 308 "Dukkan 2", SY 104/132-135.
+         *
+         *     P3.1 §4.3: UE 74 bes secenek gosterir (Daire · Dukkan/Ticari · Ofis · Depo ·
+         *     Otopark), bu yuzden `office` / `warehouse` / `parking` eklendi. Enum genislemesi
+         *     `ALTER TYPE ... ADD VALUE` ile DEGIL, tip TAKASIYLA yapilir (izole revizyon
+         *     `c1d2e3f4a5b6`) — `ADD VALUE` ayni islem icinde kullanilamaz ve GERI ALINAMAZ.
+         *
+         *     Karar 13: ekran etiketleri DEGISMEZ (KY 71 / KK 72 / SY 74 hala "Daire +
+         *     Dukkan" der); uc yeni deger yalniz sayaclara eklenir ve sifirsa gorunmez.
          * @enum {string}
          */
-        UnitKind: "apartment" | "shop";
+        UnitKind: "apartment" | "shop" | "office" | "warehouse" | "parking";
         /**
          * UnitKindBreakdown
          * @description KY 71 "48 Daire + 4 Dukkan", KK 121, SY 104. `total` turevdir: iki sayacin
@@ -2617,6 +4784,21 @@ export interface components {
              * @default 0
              */
             shop: number;
+            /**
+             * Office
+             * @default 0
+             */
+            office: number;
+            /**
+             * Warehouse
+             * @default 0
+             */
+            warehouse: number;
+            /**
+             * Parking
+             * @default 0
+             */
+            parking: number;
             /** Total */
             readonly total: number;
         };
@@ -2628,9 +4810,19 @@ export interface components {
         };
         /**
          * UnitNumberingPattern
+         * @description TU 79'un DORT deseni + korunan `sequential` (plan §0.C, koordinator karari).
+         *
+         *     Mockup dort desen listeliyor ama hicbiri CIPLAK SAYI uretmiyor
+         *     (`label_sequence` → "Daire 1"). SY 76-99/132-135 ekrani ciplak sayi ve
+         *     `prefix + sayi` (D1..D4) uretiyor ve bu ekran bugun CALISIYOR — dort desene
+         *     indirgemek onu sessizce kirardi. Bu yuzden enum BES degerlidir.
+         *
+         *     `floor_based` → `floor_sequence` olarak yeniden ADLANDIRILDI: davranisi
+         *     karar 1 ile zaten degisti (basa sifir kalkti), eski ad yeni davranisi
+         *     yanlis tarif ediyordu.
          * @enum {string}
          */
-        UnitNumberingPattern: "sequential" | "floor_based";
+        UnitNumberingPattern: "sequential" | "block_sequence" | "floor_sequence" | "label_sequence" | "block_floor_sequence";
         /**
          * UnitOwnerSide
          * @description KKP 90 "Sahip" sutunu: 100 `BIZ` (contractor), 109 `ARSA` (landowner).
@@ -2647,6 +4839,12 @@ export interface components {
          * @enum {string}
          */
         UnitOwnerSideFilter: "contractor" | "landowner" | "unassigned";
+        /**
+         * UnitParkingRight
+         * @description UE 81 "Otopark Hakki": Yok · 1 Kapali · 2.
+         * @enum {string}
+         */
+        UnitParkingRight: "none" | "one_closed" | "two";
         /**
          * UnitResponse
          * @description KY 271-274 ve KKP 86-90 sutunlari. Satis alanlari (KY 275-277, KKP 91-92)
@@ -2681,11 +4879,24 @@ export interface components {
             owner_side: components["schemas"]["UnitOwnerSide"] | null;
             /** Sort Order */
             sort_order: number;
-            sales_status: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            /** Floor */
+            floor: string | null;
+            facing: components["schemas"]["UnitFacing"] | null;
+            /** Balcony Area M2 */
+            balcony_area_m2: string | null;
+            /** Bathroom Count */
+            bathroom_count: number | null;
+            parking_right: components["schemas"]["UnitParkingRight"] | null;
+            /** Min Sale Price */
+            min_sale_price: string | null;
+            /** Vat Rate */
+            vat_rate: string | null;
+            sales_status: components["schemas"]["UnitSalesStatus"] | null;
             sale_price: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
             buyer_name: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
             shareholder: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
             unit_cost: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            expected_profit: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
             /** Label */
             readonly label: string;
             /**
@@ -2697,6 +4908,16 @@ export interface components {
             /** Is Landowner Share */
             readonly is_landowner_share: boolean;
         };
+        /**
+         * UnitSalesStatus
+         * @description UE 94 "Satis Durumu": Satista (Bos) · Rezerve · Satildi · Satisa Kapali.
+         *
+         *     "Arsa Sahibinde" (KKP 92) bu kumeye GIRMEZ: o `owner_side='landowner'`
+         *     turevidir ve zaten `is_landowner_share` olarak doner. KY 276'nin "Tapulu"
+         *     degeri de girmez — tapu devri P8'in kaydidir ve `sold` ile eslenir.
+         * @enum {string}
+         */
+        UnitSalesStatus: "listed" | "reserved" | "sold" | "closed";
         /**
          * UnitSideSummary
          * @description KK 116-122 / 150-156, KKP 161-168 tfoot toplamlari.
@@ -2710,9 +4931,12 @@ export interface components {
             average_value: string | null;
             /** Share Pct */
             share_pct: string | null;
-            sold: components["schemas"]["CountPlaceholder"];
-            reserved: components["schemas"]["CountPlaceholder"];
-            listed: components["schemas"]["CountPlaceholder"];
+            /** Sold */
+            sold: number;
+            /** Reserved */
+            reserved: number;
+            /** Listed */
+            listed: number;
         };
         /** UnitTotals */
         UnitTotals: {
@@ -2730,9 +4954,16 @@ export interface components {
             total_gross_area_m2: string;
             /** Sides */
             sides: components["schemas"]["UnitSideSummary"][];
-            sold_units: components["schemas"]["CountPlaceholder"];
-            reserved_units: components["schemas"]["CountPlaceholder"];
-            available_units: components["schemas"]["CountPlaceholder"];
+            /** By Sales Status */
+            by_sales_status: {
+                [key: string]: number;
+            };
+            /** Sold Units */
+            sold_units: number;
+            /** Reserved Units */
+            reserved_units: number;
+            /** Available Units */
+            available_units: number;
             sales_revenue: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
             average_sale_price: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
         };
@@ -2742,6 +4973,18 @@ export interface components {
          *     katmaninda `model_fields_set` ile cozulur (P1/P2/P4 deseni).
          */
         UnitUpdate: {
+            /** Floor */
+            floor?: string | null;
+            facing?: components["schemas"]["UnitFacing"] | null;
+            /** Balcony Area M2 */
+            balcony_area_m2?: number | string | null;
+            /** Bathroom Count */
+            bathroom_count?: number | null;
+            parking_right?: components["schemas"]["UnitParkingRight"] | null;
+            /** Min Sale Price */
+            min_sale_price?: number | string | null;
+            /** Vat Rate */
+            vat_rate?: number | string | null;
             /** Block Id */
             block_id?: string | null;
             /** Unit No */
@@ -2760,6 +5003,7 @@ export interface components {
             owner_side?: components["schemas"]["UnitOwnerSide"] | null;
             /** Sort Order */
             sort_order?: number | null;
+            sales_status?: components["schemas"]["UnitSalesStatus"] | null;
         };
         /**
          * UnitValueBasis
@@ -3638,6 +5882,1077 @@ export interface operations {
             };
         };
     };
+    list_contracts_endpoint_contracts_get: {
+        parameters: {
+            query: {
+                type: "employer" | "subcontractor";
+                project_id?: string | null;
+                status?: components["schemas"]["ContractStatus"] | null;
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_employer_contract_endpoint_projects__project_id__contract_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployerContractDetail"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_employer_contract_items_endpoint_projects__project_id__contract_items_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployerContractItemsResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_employer_contract_item_endpoint_projects__project_id__contract_items_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmployerContractItemCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployerContractItemResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_contract_distribution_endpoint_projects__project_id__contract_distribution_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractDistributionResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_contract_distribution_endpoint_projects__project_id__contract_distribution_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContractDistributionSave"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractDistributionResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_employer_contract_group_endpoint_projects__project_id__contract_groups_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmployerContractGroupCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployerContractGroupResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_employer_contract_group_endpoint_contracts_employer_groups__group_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_employer_contract_group_endpoint_contracts_employer_groups__group_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmployerContractGroupUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployerContractGroupResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_employer_contract_item_endpoint_contracts_employer_items__item_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_employer_contract_item_endpoint_contracts_employer_items__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmployerContractItemUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployerContractItemResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_subcontractors_endpoint_subcontractors_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                active_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubcontractorListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_subcontractor_endpoint_subcontractors_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubcontractorCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubcontractorResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_subcontractor_endpoint_subcontractors__subcontractor_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                subcontractor_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_subcontractor_endpoint_subcontractors__subcontractor_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                subcontractor_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubcontractorUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubcontractorResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_subcontractor_contract_endpoint_projects__project_id__subcontractor_contracts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubcontractorContractCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubcontractorContractDetail"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_subcontractor_contract_endpoint_subcontractor_contracts__contract_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contract_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubcontractorContractDetail"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_subcontractor_contract_endpoint_subcontractor_contracts__contract_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contract_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_subcontractor_contract_endpoint_subcontractor_contracts__contract_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contract_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubcontractorContractUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubcontractorContractDetail"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_subcontract_item_endpoint_subcontractor_contracts__contract_id__items_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contract_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubcontractorContractItemCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubcontractorContractItemResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_subcontract_item_endpoint_subcontractor_contracts_items__item_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_subcontract_item_endpoint_subcontractor_contracts_items__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubcontractorContractItemUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubcontractorContractItemResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    load_subcontract_items_from_employer_endpoint_subcontractor_contracts__contract_id__items_load_from_employer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contract_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubcontractorContractItemsLoadResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_dashboard_summary_endpoint_dashboard_summary_get: {
         parameters: {
             query?: never;
@@ -3738,6 +7053,607 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EmployerResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_progress_payments_endpoint_progress_payments_get: {
+        parameters: {
+            query?: {
+                project_id?: string | null;
+                site_id?: string | null;
+                status?: components["schemas"]["ProgressPaymentStatus"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressPaymentListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_progress_payment_summary_endpoint_projects__project_id__progress_payments_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressPaymentSummary"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_progress_payment_endpoint_progress_payments__payment_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressPaymentDetail"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_progress_payment_endpoint_progress_payments__payment_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_progress_payment_endpoint_progress_payments__payment_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgressPaymentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressPaymentDetail"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_progress_payment_endpoint_projects__project_id__progress_payments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgressPaymentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressPaymentDetail"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_progress_payment_lines_endpoint_progress_payments__payment_id__lines_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgressPaymentLinesSave"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressPaymentDetail"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_progress_payment_prices_endpoint_progress_payments__payment_id__refresh_prices_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefreshPricesResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_progress_payment_endpoint_progress_payments__payment_id__submit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressPaymentDetail"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_progress_payment_endpoint_progress_payments__payment_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressPaymentDetail"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_progress_payment_endpoint_progress_payments__payment_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RejectBody"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressPaymentDetail"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_paid_progress_payment_endpoint_progress_payments__payment_id__mark_paid_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressPaymentDetail"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unapprove_progress_payment_endpoint_progress_payments__payment_id__unapprove_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressPaymentDetail"];
                 };
             };
             /** @description Yetkisiz işlem */
@@ -4713,7 +8629,52 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SectionResponse"];
+                    "application/json": components["schemas"]["SectionDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_section_endpoint_sections__section_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                section_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SectionDetailResponse"];
                 };
             };
             /** @description Yetkisiz işlem */
@@ -4805,7 +8766,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SectionResponse"];
+                    "application/json": components["schemas"]["SectionDetailResponse"];
                 };
             };
             /** @description Yetkisiz işlem */
@@ -4934,6 +8895,8 @@ export interface operations {
                 site_id?: string | null;
                 kind?: components["schemas"]["UnitKind"] | null;
                 owner_side?: components["schemas"]["UnitOwnerSideFilter"] | null;
+                floor?: string | null;
+                sales_status?: components["schemas"]["UnitSalesStatus"] | null;
             };
             header?: never;
             path: {
@@ -5259,6 +9222,55 @@ export interface operations {
             };
         };
     };
+    preview_bulk_units_endpoint_projects__project_id__units_bulk_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnitBulkCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnitBulkPreview"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     update_allocation_endpoint_projects__project_id__units_allocation_patch: {
         parameters: {
             query?: never;
@@ -5308,6 +9320,55 @@ export interface operations {
             };
         };
     };
+    validate_import_endpoint_projects__project_id__units_import_validate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_validate_import_endpoint_projects__project_id__units_import_validate_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnitImportValidation"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     import_units_endpoint_projects__project_id__units_import_post: {
         parameters: {
             query?: never;
@@ -5330,6 +9391,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UnitImportResult"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    units_import_template_endpoint_projects__project_id__units_import_template_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Excel sablonu */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": unknown;
                 };
             };
             /** @description Yetkisiz işlem */

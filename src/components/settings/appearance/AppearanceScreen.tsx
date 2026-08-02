@@ -6,7 +6,7 @@ import { Select } from "@/components/ui/select";
 import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { isForbidden } from "@/lib/api/unwrap";
-import { backendErrorMessage } from "@/lib/settings/error-message";
+import { backendErrorMessage } from "@/lib/api/error-message";
 import { cx } from "@/lib/cx";
 import { usePreferences, useUpdatePreferences } from "@/lib/api/hooks/usePreferences";
 import type { PreferencesRead, PreferencesUpdate } from "@/lib/api/models";

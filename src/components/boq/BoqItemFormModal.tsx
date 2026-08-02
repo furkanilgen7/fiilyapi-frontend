@@ -5,7 +5,7 @@ import { useRef, useState } from "react";
 import { Button, Field, Input, Select } from "@/components/ui";
 import { Modal } from "@/components/settings/Modal";
 import { formatAmount } from "@/lib/format";
-import { backendErrorMessage } from "@/lib/settings/error-message";
+import { backendErrorMessage } from "@/lib/api/error-message";
 import { BackendError } from "@/lib/api/unwrap";
 import {
   useCreateBoqGroup,

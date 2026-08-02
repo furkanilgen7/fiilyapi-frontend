@@ -1,0 +1,236 @@
+import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
+import { backendClient } from "@/lib/api/client";
+import { unwrap } from "@/lib/api/unwrap";
+import type { components } from "@/lib/api/schema";
+import {
+  PROGRESS_PAYMENTS_QUERY_KEY,
+  PROGRESS_PAYMENT_QUERY_KEY,
+  PROGRESS_PAYMENT_SUMMARY_QUERY_KEY,
+  type ProgressPaymentDetail,
+} from "./useProgressPayments";
+
+// P7 · İşveren Hakedişi ekranları — yazma/aksiyon uçları. Tipler `pnpm gen:api`
+// çıktısından takma ad olarak alınır; elle arayüz yazmak yasak.
+export type ProgressPaymentCreate = components["schemas"]["ProgressPaymentCreate"];
+export type ProgressPaymentUpdate = components["schemas"]["ProgressPaymentUpdate"];
+export type ProgressPaymentLinesSave = components["schemas"]["ProgressPaymentLinesSave"];
+// P7 T5 eklemesi: `ProgressPaymentLineInput` şemada zaten üretilmişti
+// (`ProgressPaymentCreate.lines[]` / `ProgressPaymentLinesSave.lines[]`
+// içinde kullanılıyordu) ama takma ad olarak DIŞA AKTARILMAMIŞTI — hakediş
+// formunun pivot modülü (`pivot.ts`) `PUT …/lines` gövdesini üretirken bu
+// tipi tek satır şekli olarak kullanır. `schema.d.ts`/`openapi.json`
+// DEĞİŞMEDİ, yalnız var olan şemaya yeni bir takma ad eklendi.
+export type ProgressPaymentLineInput = components["schemas"]["ProgressPaymentLineInput"];
+export type RejectBody = components["schemas"]["RejectBody"];
+export type RefreshPricesResponse = components["schemas"]["RefreshPricesResponse"];
+
+// Tum yazma/aksiyon hook'lari sonrasi ortak gecersiz kilma: liste (filtre
+// varyantlari dahil, prefix eslesme), tekil detay ve — govde `project_id`
+// tasiyorsa — proje bazli ozet (spec §9.6, hakedis sayaclari degisir).
+function useProgressPaymentInvalidator() {
+  const queryClient = useQueryClient();
+  return (paymentId: string, projectId?: string) => {
+    queryClient.invalidateQueries({ queryKey: [PROGRESS_PAYMENTS_QUERY_KEY] });
+    queryClient.invalidateQueries({ queryKey: [PROGRESS_PAYMENT_QUERY_KEY, paymentId] });
+    if (projectId) {
+      queryClient.invalidateQueries({ queryKey: [PROGRESS_PAYMENT_SUMMARY_QUERY_KEY, projectId] });
+    }
+  };
+}
+
+/**
+ * Hakediş oluşturma (Ekran 14 → oluştur formu). Yeni hakediş bir proje
+ * altında açılır; başarıda o projenin özeti de gecersiz kilinir (sayim degisir).
+ */
+export function useCreateProgressPayment(): UseMutationResult<
+  ProgressPaymentDetail,
+  Error,
+  { projectId: string; body: ProgressPaymentCreate }
+> {
+  const invalidate = useProgressPaymentInvalidator();
+  return useMutation({
+    mutationFn: async ({ projectId, body }) =>
+      unwrap(
+        await backendClient.POST("/projects/{project_id}/progress-payments", {
+          params: { path: { project_id: projectId } },
+          body,
+        }),
+      ),
+    onSuccess: (data) => invalidate(data.id, data.project_id),
+  });
+}
+
+/**
+ * Hakediş üst bilgi güncelleme (dönem, açıklama, varsayılan katsayı).
+ * Satırlar bu uçtan GEÇMEZ — bkz. `useReplaceProgressPaymentLines`.
+ */
+export function useUpdateProgressPayment(): UseMutationResult<
+  ProgressPaymentDetail,
+  Error,
+  { paymentId: string; body: ProgressPaymentUpdate }
+> {
+  const invalidate = useProgressPaymentInvalidator();
+  return useMutation({
+    mutationFn: async ({ paymentId, body }) =>
+      unwrap(
+        await backendClient.PATCH("/progress-payments/{payment_id}", {
+          params: { path: { payment_id: paymentId } },
+          body,
+        }),
+      ),
+    onSuccess: (data) => invalidate(data.id, data.project_id),
+  });
+}
+
+/**
+ * Hakediş satırlarını DEĞİŞTİRİR (PUT semantiği): gövdede geçmeyen her satır
+ * SİLİNİR. İsimlendirme bilinçli — "update" değil "replace". Ekrandan
+ * çağrılırken TÜM güncel satır listesi (kalıcı kalması gerekenler dahil)
+ * gönderilmelidir; kısmi liste veri kaybına yol açar.
+ */
+export function useReplaceProgressPaymentLines(): UseMutationResult<
+  ProgressPaymentDetail,
+  Error,
+  { paymentId: string; body: ProgressPaymentLinesSave }
+> {
+  const invalidate = useProgressPaymentInvalidator();
+  return useMutation({
+    mutationFn: async ({ paymentId, body }) =>
+      unwrap(
+        await backendClient.PUT("/progress-payments/{payment_id}/lines", {
+          params: { path: { payment_id: paymentId } },
+          body,
+        }),
+      ),
+    onSuccess: (data) => invalidate(data.id, data.project_id),
+  });
+}
+
+/**
+ * Hakediş silme. Başarı `204 No Content` — `unwrap` yalnız `response.ok`'a
+ * bakar. Silinen kaydın `project_id`'si gövdede gelmediğinden özet
+ * gecersiz kilinmaz; cagiran taraf gerekirse ayrica `useProgressPaymentSummary`
+ * sorgusunu tazeleyebilir.
+ */
+export function useDeleteProgressPayment(): UseMutationResult<void, Error, string> {
+  const invalidate = useProgressPaymentInvalidator();
+  return useMutation({
+    mutationFn: async (paymentId: string) => {
+      unwrap(
+        await backendClient.DELETE("/progress-payments/{payment_id}", {
+          params: { path: { payment_id: paymentId } },
+        }),
+      );
+    },
+    onSuccess: (_data, paymentId) => invalidate(paymentId),
+  });
+}
+
+// Durum aksiyonları (spec §7) — govde almazlar, yalniz payment_id. Dort ucun
+// yolu literal string oldugundan (openapi-fetch tip cikarimi govde/parametre
+// seklini uctan uca dogrular) ortak bir factory'ye sarilmiyor — dinamik yol
+// olusturmak `as` ile tip zorlamayi gerektirirdi, bu da yasak (`as any` degil
+// ama ayni riski tasir: yanlis uc adi calisma zamanina kadar yakalanmaz).
+
+/** Taslak → beklemede (spec §7.1). */
+export function useSubmitProgressPayment(): UseMutationResult<ProgressPaymentDetail, Error, string> {
+  const invalidate = useProgressPaymentInvalidator();
+  return useMutation({
+    mutationFn: async (paymentId: string) =>
+      unwrap(
+        await backendClient.POST("/progress-payments/{payment_id}/submit", {
+          params: { path: { payment_id: paymentId } },
+        }),
+      ),
+    onSuccess: (data) => invalidate(data.id, data.project_id),
+  });
+}
+
+/** Beklemede → onaylandı (spec §7.2). */
+export function useApproveProgressPayment(): UseMutationResult<ProgressPaymentDetail, Error, string> {
+  const invalidate = useProgressPaymentInvalidator();
+  return useMutation({
+    mutationFn: async (paymentId: string) =>
+      unwrap(
+        await backendClient.POST("/progress-payments/{payment_id}/approve", {
+          params: { path: { payment_id: paymentId } },
+        }),
+      ),
+    onSuccess: (data) => invalidate(data.id, data.project_id),
+  });
+}
+
+/** Onaylandı → ödendi (spec §7.3). */
+export function useMarkProgressPaymentPaid(): UseMutationResult<ProgressPaymentDetail, Error, string> {
+  const invalidate = useProgressPaymentInvalidator();
+  return useMutation({
+    mutationFn: async (paymentId: string) =>
+      unwrap(
+        await backendClient.POST("/progress-payments/{payment_id}/mark-paid", {
+          params: { path: { payment_id: paymentId } },
+        }),
+      ),
+    onSuccess: (data) => invalidate(data.id, data.project_id),
+  });
+}
+
+/** Onaylandı → beklemede (onay geri alma, spec §7.4). */
+export function useUnapproveProgressPayment(): UseMutationResult<ProgressPaymentDetail, Error, string> {
+  const invalidate = useProgressPaymentInvalidator();
+  return useMutation({
+    mutationFn: async (paymentId: string) =>
+      unwrap(
+        await backendClient.POST("/progress-payments/{payment_id}/unapprove", {
+          params: { path: { payment_id: paymentId } },
+        }),
+      ),
+    onSuccess: (data) => invalidate(data.id, data.project_id),
+  });
+}
+
+/**
+ * Beklemede → taslak + red gerekçesi (spec §7, K12: ek form YOK — yalnız
+ * isteğe bağlı `reason`, denetim günlüğüne taşınır). Şemadaki alan adı
+ * `reason`'dır (`RejectBody`).
+ */
+export function useRejectProgressPayment(): UseMutationResult<
+  ProgressPaymentDetail,
+  Error,
+  { paymentId: string; body?: RejectBody }
+> {
+  const invalidate = useProgressPaymentInvalidator();
+  return useMutation({
+    mutationFn: async ({ paymentId, body }) =>
+      unwrap(
+        await backendClient.POST("/progress-payments/{payment_id}/reject", {
+          params: { path: { payment_id: paymentId } },
+          body: body ?? null,
+        }),
+      ),
+    onSuccess: (data) => invalidate(data.id, data.project_id),
+  });
+}
+
+/**
+ * Fiyat/katsayı tazeleme (spec §5.1/§9.3): yalnız `draft`'ta, bağı kopmamış
+ * satırların snapshot beşlisi + hakedişin yüzde üçlüsünü kalemden/sözleşmeden
+ * tazeler. Yanıt YALNIZ `{refreshed_count}` döner — güncel ekran ayrı bir
+ * detay sorgusuyla okunur, bu yüzden burada detay sorgusu gecersiz kilinir
+ * (govde detay tipini tasimadigindan `data` yerine cagiranin verdigi id kullanilir).
+ */
+export function useRefreshProgressPaymentPrices(): UseMutationResult<
+  RefreshPricesResponse,
+  Error,
+  string
+> {
+  const invalidate = useProgressPaymentInvalidator();
+  return useMutation({
+    mutationFn: async (paymentId: string) =>
+      unwrap(
+        await backendClient.POST("/progress-payments/{payment_id}/refresh-prices", {
+          params: { path: { payment_id: paymentId } },
+        }),
+      ),
+    onSuccess: (_data, paymentId) => invalidate(paymentId),
+  });
+}

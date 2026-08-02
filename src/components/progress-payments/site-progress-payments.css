@@ -1,0 +1,33 @@
+/* Şantiye "Hakedişler" sekmesi (P7 T6). Mockup `Şantiye - Hakedişler.dc.html`
+   satır 75-77 — başlık şeridi. KPI şeridi (81-86) `progress-payments-totals.css`
+   ile ayrı dosyada (T2 ile PAYLAŞILIR, coordinator review T6 fix). Panel
+   başlığı (92-95) ve taşeron sütunu (116-140) bu dilimde BASILMAZ (brief
+   §pending-modules) — liste gövdesi `ProgressPaymentsList.tsx` ile
+   PAYLAŞILIR, burada yalnız sayfa iskeleti (breadcrumb + başlık) var. */
+.spp__crumb {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+  margin-bottom: var(--space-boq-crumb-gap);
+}
+.spp__crumb-link {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.spp__crumb-link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Başlık şeridi (mockup 75-77): sol başlık, sağ "+ Hakediş Oluştur". */
+.spp__title-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-6);
+}
+.spp__title {
+  font-size: var(--text-page-title);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  letter-spacing: var(--tracking-tight);
+}

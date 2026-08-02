@@ -5,7 +5,7 @@ import { Button, Field, Input, Select } from "@/components/ui";
 import { Modal } from "./Modal";
 import { useRoles } from "@/lib/api/hooks/useRoles";
 import { useCreateUser, useUpdateUser } from "@/lib/api/hooks/useUserMutations";
-import { backendErrorMessage } from "@/lib/settings/error-message";
+import { backendErrorMessage } from "@/lib/api/error-message";
 import type { UserResponse, UserStatus } from "@/lib/api/models";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

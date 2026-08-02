@@ -16,8 +16,13 @@ const tokensCss = readFileSync(
  * tokens.css'teki hex renk literali sayısı. Palet burada TANIMLANIR, bu yüzden
  * hex'in tek meşru yeri burasıdır; ama sayı sabittir — artması yeni bir rengin
  * gözden kaçtığı anlamına gelir (şantiye formu spec §5.1: yeni renk gerekmiyor).
+ *
+ * P7 T3 (Ekran 15 "Sözleşme İlerlemesi" çubukları): 69 → 70. Fiziksel çubuğunun
+ * açık ucu (#4ade80, mockup 185) mevcut tonlarla karşılanmadığı için tek yeni
+ * hex eklendi (`--color-success-light`); diğer iki gradyan mevcut token
+ * çiftleriyle kuruldu, yeni hex taşımıyor.
  */
-const EXPECTED_HEX_COUNT = 69;
+const EXPECTED_HEX_COUNT = 70;
 
 describe("tokens.css", () => {
   it("çekirdek renk token'larını tanımlar (açık tema Slate + Blue)", () => {

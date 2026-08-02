@@ -6,7 +6,7 @@ import { Button, Field, Input } from "@/components/ui";
 import { Modal } from "@/components/settings/Modal";
 import { useCreateEmployer } from "@/lib/api/hooks/useEmployerMutations";
 import type { EmployerListItem } from "@/lib/api/hooks/useEmployers";
-import { backendErrorMessage } from "@/lib/settings/error-message";
+import { backendErrorMessage } from "@/lib/api/error-message";
 import { taxNumberError } from "./validate";
 // SectionFormModal kanonu birebir izlenir: settings-form sinifi
 // settings.css'ten, etiket katmani ui/field/Field'den gelir.

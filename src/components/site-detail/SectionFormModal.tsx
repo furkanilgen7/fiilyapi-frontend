@@ -6,7 +6,7 @@ import { Button, Field, Input, Select } from "@/components/ui";
 import { Modal } from "@/components/settings/Modal";
 import { useCreateSection } from "@/lib/api/hooks/useSectionMutations";
 import type { SectionCreateRequest } from "@/lib/api/hooks/useSectionMutations";
-import { backendErrorMessage } from "@/lib/settings/error-message";
+import { backendErrorMessage } from "@/lib/api/error-message";
 import { BackendError } from "@/lib/api/unwrap";
 // Ayarlar modal kanonu birebir izlenir: settings-form sinifi
 // settings.css'ten, etiket katmani ui/field/Field'den gelir.
@@ -58,6 +58,10 @@ export function SectionFormModal({ siteId, onClose }: SectionFormModalProps) {
         ...(startDate ? { start_date: startDate } : {}),
         ...(endDate ? { end_date: endDate } : {}),
         sort_order: Number(sortOrder) || 0,
+        // F-P6 borcu: P6'da eklenen `is_draft` semada zorunlu (default `false`);
+        // bu form taslak-dışı akışı temsil ettiğinden şema varsayılanı elle
+        // gönderilir — davranış degismez, yeni UI/dogrulama YOK.
+        is_draft: false,
       },
       {
         onSuccess: onClose,

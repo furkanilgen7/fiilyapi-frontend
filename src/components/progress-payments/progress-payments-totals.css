@@ -1,0 +1,44 @@
+/* KPI şeridi (P7 T6 fix — coordinator review). Mockup
+   `Şantiye - Hakedişler.dc.html` satır 81-86: 4 kart, `repeat(4,1fr)` grid.
+   Token seçimi `boq-kpi`/`site-totals` ile AYNI aile (`--text-kpi-value`,
+   `--space-boq-strip-gap`, `--space-boq-kpi-label-gap`) — bu değerler zaten
+   önceki dilimlerde mockup'tan token'a çevrildi, tekrar icat edilmez. */
+.ppt {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-boq-strip-gap);
+}
+.ppt__card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+}
+.ppt__label {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-bottom: var(--space-boq-kpi-label-gap);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+.ppt__value {
+  font-size: var(--text-kpi-value);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+}
+/* Mockup 82: "4 hakediş · %75" — sayı HER ZAMAN, yüzde yalnız `summary`
+   verilmiş VE `progress_pct` null değilse (coordinator review round 2). */
+.ppt__subtitle {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-top: var(--space-ppt-subtitle-gap);
+}
+/* Yer tutucu hâl — gerçek değer YOKKEN sahte/0 basılmaz (SiteTotalsStrip/
+   BoqTotalsStrip deseniyle aynı durustluk kurali): taşeron hakediş modülüne
+   bağlı iki kart (Toplam Taşeron Ödemesi, Brüt Kar Marjı) bu sınıfı taşır. */
+.ppt__value--pending {
+  color: var(--color-text-subtle);
+  cursor: help;
+}

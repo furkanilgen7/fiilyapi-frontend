@@ -8,7 +8,7 @@ import { Button } from "@/components/ui";
 import { useCreateProject } from "@/lib/api/hooks/useProjectMutations";
 import { useUsers } from "@/lib/api/hooks/useUsers";
 import { BackendError } from "@/lib/api/unwrap";
-import { backendErrorMessage } from "@/lib/settings/error-message";
+import { backendErrorMessage } from "@/lib/api/error-message";
 import { BasicInfoCard } from "./BasicInfoCard";
 import { BudgetCard, type BudgetValues } from "./BudgetCard";
 import { ContractCard, type ContractValues } from "./ContractCard";

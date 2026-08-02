@@ -24,6 +24,15 @@ const ALLOWED_ROOTS = new Set([
   // gelir, o da "sites" kokunden gecer). Eksikse PATCH akislari canlida 404 alir;
   // jsdom testleri bunu gormez.
   "boq",
+  // P7 — İşveren Hakedişi ekranlarinin durum/govde uclari (/progress-payments/{id},
+  // .../submit|approve|reject|mark-paid|unapprove|refresh-prices) bu kokten gecer
+  // (liste/olusturma/ozet /projects/{project_id}/progress-payments* uzerinden gelir,
+  // o da "projects" kokunden gecer). Eksikse hakediş ekrani canlida tumuyle 404 alir;
+  // jsdom testleri bunu gormez.
+  "progress-payments",
+  // P7 — Hakediş formundaki Fiyat Farkı/Endeks bandi sozlesmeden SALT-OKUNUR okunur
+  // (spec karari S3); bu kok olmadan o okuma canlida 404 alir.
+  "contracts",
 ]);
 
 // JSON/metin sayilan icerik tipleri: govde metne cozulup JSON olarak islenir.

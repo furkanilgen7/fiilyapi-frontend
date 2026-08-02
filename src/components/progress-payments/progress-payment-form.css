@@ -1,0 +1,168 @@
+/* P7 T5 · Hakediş oluştur/düzenle formu.
+   Mockup kanonu: `İşveren Hakediş Oluştur.dc.html`. Her ölçü mockup satır
+   numarasıyla gerekçelidir; sadakat sapmaları bu dosyanın kullanıldığı
+   bileşenlerde yorum olarak not düşülür. */
+
+.pp-form {
+  animation: var(--anim-fade-up);
+  max-width: 1080px;
+}
+
+.pp-form__crumb {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+  margin-bottom: 6px;
+}
+.pp-form__crumb-link {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.pp-form__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.pp-form__title {
+  font-size: var(--text-page-title);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.pp-form__title-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.pp-form__message {
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+}
+
+/* Bilgi kutusu (mockup 43-50). */
+.pp-form__info {
+  background: var(--color-success-tint);
+  border: 1px solid var(--color-success-tint-border);
+  border-radius: var(--radius-10);
+  padding: 12px 16px;
+  margin-bottom: var(--space-4);
+  display: flex;
+  gap: 10px;
+  font-size: var(--text-small);
+  color: var(--color-success-deep);
+  line-height: 1.7;
+}
+
+/* Fiyat Farkı bandı (mockup 52-76) — SALT OKUNUR (brief §Form üst bölümü):
+   toggle YOK (kullanıcı kararı), yalnız durum rozeti + katsayı girişi. Endeks
+   seçici hiç basılmaz — `index_type` şemada yok (brief §zarif düşüş). */
+.pp-form__ff-band {
+  background: var(--color-surface);
+  border-radius: var(--radius-10);
+  border: 1px solid var(--color-border);
+  padding: 14px 18px;
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  box-shadow: var(--shadow-card);
+}
+.pp-form__ff-coefficient {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pp-form__ff-pct {
+  padding: 6px 12px;
+  background: var(--color-warning-soft);
+  border-radius: var(--radius-8);
+  font-size: var(--text-small);
+  color: var(--color-warning-strong);
+  font-weight: var(--weight-semibold);
+}
+.pp-form__ff-hint {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-left: auto;
+}
+
+/* Üst form (mockup 78-86). */
+.pp-form__header-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-14);
+  border: 1px solid var(--color-border);
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+  box-shadow: var(--shadow-card);
+}
+.pp-form__header-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.pp-form__header-grid-full {
+  grid-column: 1 / -1;
+}
+/* "Hakediş Dönemi" alanı: ay seçici + yıl girişi yan yana (final inceleme
+   #6 — satır-içi `style={{display:"flex",gap:8}}` yerine CSS sınıfı). */
+.pp-form__period-row {
+  display: flex;
+  gap: var(--space-2);
+}
+.pp-form__readonly {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-8);
+  padding: 8px 12px;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+/* Uyarı bantları (dağıtılmamış poz / bayat fiyat). */
+.pp-form__alert {
+  margin-bottom: var(--space-4);
+}
+
+/* Pivot tablosu — `pp-table` sınıflarını miras alır, ek gerekenler burada. */
+.pp-table-card__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.pp-form-table__head-note {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  font-weight: var(--weight-regular);
+}
+.pp-form-table__scroll {
+  overflow-x: auto;
+}
+.pp-form-table__group-row td {
+  padding: 8px 14px;
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  background: var(--color-info-tint);
+}
+.pp-form-table__qty-cell {
+  min-width: 96px;
+}
+.pp-form-table__locked-cell {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+
+/* Alt eylem şeridi. */
+.pp-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: var(--space-4);
+}

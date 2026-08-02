@@ -247,6 +247,9 @@
   --space-boq-btn-x: 18px; /* birincil buton yatay iç boşluğu (67) */
   --space-boq-crumb-gap: 6px; /* breadcrumb alt boşluğu (62) */
 
+  /* ── Şantiye - Hakedişler.dc.html KPI şeridi (P7 T6 fix, coordinator review round 2) */
+  --space-ppt-subtitle-gap: 3px; /* KPI değeri → alt metin ("4 hakediş · %75") (82) */
+
   /* ── Şantiye Ekle formu (spec §5.1) ────────────────────────────────────────
      Kanon: projedesign "Form - Santiye Ekle.dc.html". Parantez içi sayılar o
      dosyanın SATIR numaralarıdır; göz kararı ölçü yoktur.
@@ -280,6 +283,23 @@
   /* Alt eylem grubu — şantiye mockup 224 ve proje mockup 212'de `gap:10px`.
      --space-2 8px'tir; kabuk 2026-07-30'a kadar onu kullanıyordu. */
   --space-form-action-gap: 10px; /* İptal · Taslak · Birincil arası (224) */
+
+  /* Ekran 15 — İşveren Hakedişi detayı (P7 T3, spec §6/§8). "Sözleşme
+     İlerlemesi" çubuk gradyanları (179-190). Finansal/Süre gradyanları
+     mevcut token çiftleriyle birebir eşleşiyor (--color-primary/
+     --color-avatar-blue-end; --color-warning/--color-avatar-amber-end);
+     yalnız Fiziksel'in açık ucu yeni — en yakın mevcut ton
+     (--color-success-strong) mockup'tan farklı olduğu için yeni bir ton
+     eklendi (mockup 185). */
+  --color-success-light: #4ade80; /* Fiziksel çubuğunun açık ucu (185) */
+  --gradient-progress-financial: linear-gradient(90deg, var(--color-primary), var(--color-avatar-blue-end));
+  --gradient-progress-physical: linear-gradient(90deg, var(--color-success), var(--color-success-light));
+  --gradient-progress-duration: linear-gradient(90deg, var(--color-warning), var(--color-avatar-amber-end));
+  /* "Ara Toplam" satırı (P7 T3 review fix, mockup 141): "Bu Ay" toplam
+     hücresi diğer üç hücreden (13px) farklı — 14px. BOQ'un GENEL TOPLAM
+     eşdeğeri (--text-total-amount) 15px'tir, mockup değeri farklı olduğundan
+     tekrar kullanılmadı. */
+  --text-table-total-this: 14px;
 }
 
 @keyframes fadeUp {

@@ -9,7 +9,9 @@ import {
   WRITE_LEVELS,
   canDelete,
   canWrite,
+  hasAtLeast,
   isAccessLevel,
+  type AccessLevel,
 } from "./permissions";
 import type { MeResponse } from "./types";
 
@@ -126,6 +128,63 @@ describe("permissions — isAccessLevel (sınır doğrulaması)", () => {
     expect(isAccessLevel(null)).toBe(false);
     expect(isAccessLevel(undefined)).toBe(false);
     expect(isAccessLevel({ level: "full" })).toBe(false);
+  });
+});
+
+describe("permissions — hasAtLeast (P7 T4 brief: sıralama tabanlı ortak eşik)", () => {
+  // ⚠️ KAPI TESTİ — `canWrite`/`canDelete` ile BİREBİR aynı bilinmezlik kuralı
+  // ve TERS ÇEVRİLEMEZ: seviye bilinmiyorsa `true`. Aksi halde oturum yükü
+  // henüz gelmemiş tam yetkili kullanıcı butonları sessizce kaybeder.
+  it("hasAtLeast(undefined, ...) true döner — bilinmezlik yasak sayılmaz", () => {
+    expect(hasAtLeast(undefined, "approve")).toBe(true);
+    expect(hasAtLeast(undefined, "admin")).toBe(true);
+  });
+
+  it("eşik seviyenin tam kendisinde true döner (sınır değer dahil)", () => {
+    expect(hasAtLeast("approve", "approve")).toBe(true);
+    expect(hasAtLeast("admin", "admin")).toBe(true);
+  });
+
+  it("eşiğin altındaki seviyede false, üstündeki seviyede true döner", () => {
+    expect(hasAtLeast("request", "approve")).toBe(false);
+    expect(hasAtLeast("full", "approve")).toBe(true);
+    expect(hasAtLeast("full", "admin")).toBe(false);
+  });
+
+  it("yedi seviyenin tamamı için 'approve' eşiğine göre karar verir", () => {
+    const decisions = ACCESS_LEVELS.map((level) => [level, hasAtLeast(level, "approve")]);
+    expect(decisions).toEqual([
+      ["none", false],
+      ["view", false],
+      ["draft", false],
+      ["request", false],
+      ["approve", true],
+      ["full", true],
+      ["admin", true],
+    ]);
+  });
+
+  it("yedi seviyenin tamamı için 'admin' eşiğine göre karar verir", () => {
+    const decisions = ACCESS_LEVELS.map((level) => [level, hasAtLeast(level, "admin")]);
+    expect(decisions).toEqual([
+      ["none", false],
+      ["view", false],
+      ["draft", false],
+      ["request", false],
+      ["approve", false],
+      ["full", false],
+      ["admin", true],
+    ]);
+  });
+
+  it("sınır değer: indexOf tanımadığı 'required' -1 döner, her seviye onu geçer", () => {
+    // `hasAtLeast`in çağrı sözleşmesi `required: AccessLevel` — TypeScript bu
+    // dalı derleme zamanında engeller. Yine de çalışma zamanı davranışını
+    // BİLEREK belgeler: `ACCESS_LEVELS.indexOf` tanımadığı değerde -1 döner,
+    // `levelIndex >= -1` her zaman doğrudur (`"as"` ile tip sınırı burada
+    // yalnız testin kendisinde aşılır, üretim kodunda YASAK kalır).
+    const unknownRequired = "superuser" as AccessLevel;
+    expect(hasAtLeast("none", unknownRequired)).toBe(true);
   });
 });
 

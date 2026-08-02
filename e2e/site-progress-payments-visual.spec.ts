@@ -1,0 +1,48 @@
+import { test, expect } from "@playwright/test";
+
+// P7 T7 · Şantiye "Hakedişler" sekmesi görsel testi. `e2e/boq-visual.spec.ts`
+// deseninin BİREBİR aynısı (`is-kalemleri` sekmesiyle aynı drill-kabuk
+// deseni). Değerler `Şantiye - Hakedişler.dc.html` satır 90-113'ten:
+// İşveren Hakedişleri kart listesi + ortak KPI şeridi (satır 81-86).
+//
+// KPI alt başlığı brief'in "ortak KPI şeridi ZORUNLU ucu" notuna göre
+// `GET /projects/{project_id}/progress-payments/summary`den `payment_count`
+// + `progress_pct` okur — bu uç `e2e/mock-backend.ts`te sunulmazsa alt
+// başlık eksik kalır ve baseline yanlış donar (brief'in eklediği belirsizlik
+// çözümü). Taşeron kartı `pendingModuleLabel("subcontracts")` metnini basar
+// (gerçek veri değil, kadrajda olduğu aşağıda doğrulanır).
+//
+// Mock oturumda (`ME`) `permissions` alanı YOKTUR → bilinmezlik kuralı
+// gereği tüm yazma yüzeyleri ("+ Hakediş Oluştur") GÖRÜNÜR hâlde baseline'a
+// girer.
+//
+// Test determinizmi (bkz. `e2e/mock-backend.ts` · `MockProgressPayment.
+// hiddenFromLists`): `pp-6` — `e2e/progress-payments.spec.ts`in mutasyona
+// uğrattığı taslak — liste/özet uçlarından TAMAMEN dışlanır; bu satır artık
+// mutasyon testinin ne zaman/hangi sırada koştuğundan bağımsızdır. `draft`
+// rozetinin görsel kapsamı ise DOKUNULMAYAN, sabit bir kayıt olan `pp-7`
+// ile korunur (bkz. `buildProgressPaymentFixtures`'taki not) — KPI sayısı
+// bu yüzden pp-2..pp-5 + pp-7 = 5 kayıt üzerinden "5 hakediş" basar.
+//
+// Baseline `.png` YALNIZ Linux CI'da üretilir (visual-baselines.yml →
+// workflow_dispatch); macOS'ta koşturulup commit edilmez.
+test("santiye hakedisler sekmesi ekrani gorsel", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/login");
+  await page.getByLabel(/e-posta/i).fill("patron@fiil.com");
+  await page.getByLabel(/^şifre$/i).fill("dogruparola");
+  await page.getByRole("button", { name: /giriş yap/i }).click();
+  await expect(page.getByRole("heading", { name: "Gösterge Paneli" })).toBeVisible();
+
+  await page.goto("/projeler/p-1/santiyeler/s-1/hakedisler");
+  await expect(page.getByRole("heading", { name: "A-Blok Şantiyesi — Hakedişler" })).toBeVisible();
+  // İçerik yüklendi: liste satırı + KPI alt başlığı (proje bağlamlı özet
+  // ucundan) basılı olmadan ekran görüntüsü alınırsa baseline yükleme
+  // durumunu dondurur.
+  await expect(page.getByText("Kat 6–8 döşeme")).toBeVisible();
+  await expect(page.getByTestId("pp-kpi-subtitle")).toHaveText("5 hakediş · %75");
+  // Taşeron kartı — pendingModuleLabel("subcontracts") metni kadrajda.
+  const pendingCards = page.getByTestId("pp-kpi-pending");
+  await expect(pendingCards.first()).toHaveAttribute("title", "Taşeron sözleşmeleriyle birlikte gelir");
+  await expect(page).toHaveScreenshot("santiye-hakedisler.png", { fullPage: true });
+});

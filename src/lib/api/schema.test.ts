@@ -214,3 +214,179 @@ describe("Şantiye formu sözleşmesi (T0 kapısı)", () => {
     expect(true).toBe(true);
   });
 });
+
+// P7 · İşveren Hakedişi ekranları — Task T1 (Altyapı) tip doğrulama kapısı.
+// Bu blok bir KAPIDIR: tipler `pnpm gen:api` ile üretilmediyse `pnpm typecheck`
+// kırmızı olur. Elle tip yazmak yasak — eksikse openapi.json yeniden kopyalanır.
+describe("Hakediş (progress-payments) tip üretimi (P7 T1 kapısı)", () => {
+  it("ProgressPaymentListResponse/ListItem beklenen alanları taşır", () => {
+    type ListResponse = components["schemas"]["ProgressPaymentListResponse"];
+    type ListItem = components["schemas"]["ProgressPaymentListItem"];
+
+    expectTypeOf<ListResponse>().toHaveProperty("items");
+    expectTypeOf<ListItem>().toHaveProperty("id");
+    expectTypeOf<ListItem>().toHaveProperty("project_id");
+    expectTypeOf<ListItem>().toHaveProperty("sequence_no");
+    expectTypeOf<ListItem>().toHaveProperty("status");
+    expectTypeOf<ListItem>().toHaveProperty("gross_total");
+    expectTypeOf<ListItem>().toHaveProperty("net_total");
+    // Tutarlar Decimal — string olarak gelir (hassasiyet korunur).
+    expectTypeOf<ListItem["gross_total"]>().toEqualTypeOf<string>();
+    expect(true).toBe(true);
+  });
+
+  it("ProgressPaymentDetail lines/groups/calculation/progress bloklarını taşır", () => {
+    type Detail = components["schemas"]["ProgressPaymentDetail"];
+
+    expectTypeOf<Detail>().toHaveProperty("id");
+    expectTypeOf<Detail>().toHaveProperty("project_id");
+    expectTypeOf<Detail>().toHaveProperty("status");
+    expectTypeOf<Detail>().toHaveProperty("lines");
+    expectTypeOf<Detail>().toHaveProperty("groups");
+    expectTypeOf<Detail>().toHaveProperty("calculation");
+    expectTypeOf<Detail>().toHaveProperty("progress");
+    expect(true).toBe(true);
+  });
+
+  it("ProgressPaymentStatus akışın dört durumunu içerir (spec §7: red taslağa geri döner)", () => {
+    type Status = components["schemas"]["ProgressPaymentStatus"];
+    const statuses: Status[] = ["draft", "pending_approval", "approved", "paid"];
+    expect(statuses).toContain("draft");
+    expect(statuses).toContain("approved");
+  });
+
+  it("ProgressPaymentCreate/Update ve ProgressPaymentLinesSave tipleri üretilmiş", () => {
+    type Create = components["schemas"]["ProgressPaymentCreate"];
+    type Update = components["schemas"]["ProgressPaymentUpdate"];
+    type LinesSave = components["schemas"]["ProgressPaymentLinesSave"];
+    type LineInput = components["schemas"]["ProgressPaymentLineInput"];
+
+    const createBody = { period_year: 2026, period_month: 7, lines: [] } satisfies Create;
+    const updateBody = { description: "Ağustos hakedişi" } satisfies Update;
+    const lineInput = {
+      contract_item_id: "11111111-1111-1111-1111-111111111111",
+      site_id: "22222222-2222-2222-2222-222222222222",
+      quantity: "1240.000",
+    } satisfies LineInput;
+    const linesSave = { lines: [lineInput] } satisfies LinesSave;
+
+    expect(createBody.period_year).toBe(2026);
+    expect(updateBody.description).toBe("Ağustos hakedişi");
+    expect(linesSave.lines).toHaveLength(1);
+  });
+
+  it("RejectBody gerekçe alanının adı 'reason'dır (POST …/reject gövdesi)", () => {
+    type Reject = components["schemas"]["RejectBody"];
+    const withReason = { reason: "eksik metraj" } satisfies Reject;
+    const empty = {} satisfies Reject;
+    expectTypeOf<Reject>().toHaveProperty("reason");
+    expect(withReason.reason).toBe("eksik metraj");
+    expect(empty).toEqual({});
+  });
+
+  it("RefreshPricesResponse yalnız refreshed_count döner (spec §9.3)", () => {
+    type RefreshResponse = components["schemas"]["RefreshPricesResponse"];
+    const response = { refreshed_count: 3 } satisfies RefreshResponse;
+    expectTypeOf<RefreshResponse>().toHaveProperty("refreshed_count");
+    expectTypeOf<RefreshResponse["refreshed_count"]>().toEqualTypeOf<number>();
+    expect(response.refreshed_count).toBe(3);
+  });
+
+  it("ProgressPaymentSummary spec §9.6 sekiz alanını taşır", () => {
+    type Summary = components["schemas"]["ProgressPaymentSummary"];
+    expectTypeOf<Summary>().toHaveProperty("contract_amount");
+    expectTypeOf<Summary>().toHaveProperty("cumulative_gross");
+    expectTypeOf<Summary>().toHaveProperty("progress_pct");
+    expectTypeOf<Summary>().toHaveProperty("advance_deduction_total");
+    expectTypeOf<Summary>().toHaveProperty("retention_total");
+    expectTypeOf<Summary>().toHaveProperty("net_total");
+    expectTypeOf<Summary>().toHaveProperty("payment_count");
+    expectTypeOf<Summary>().toHaveProperty("pending_count");
+    expectTypeOf<Summary>().toHaveProperty("remaining");
+    expect(true).toBe(true);
+  });
+
+  it("28 yeni yoldan biri: GET /progress-payments/{payment_id} üretilmiş (paths tip kapısı)", () => {
+    // `openapi.json` yeniden kopyalanıp `pnpm gen:api` çalışmazsa bu tip
+    // hiç var olmaz — derleme zamanında yakalanır (schema.d.ts'ten üretilir).
+    type Paths = import("@/lib/api/schema").paths;
+    expectTypeOf<Paths>().toHaveProperty("/progress-payments/{payment_id}");
+    expectTypeOf<Paths>().toHaveProperty("/progress-payments/{payment_id}/reject");
+    expectTypeOf<Paths>().toHaveProperty("/projects/{project_id}/progress-payments/summary");
+    expect(true).toBe(true);
+  });
+});
+
+// Backend P6 dilimi — bölüm (section) sözleşmesi genişlemesi (ARA GÖREV: openapi
+// yenileme). Bu blok bir KAPIDIR: tipler `pnpm gen:api` ile üretilmediyse
+// `pnpm typecheck` kırmızı olur. Elle tip yazmak yasak — eksikse openapi.json
+// yeniden kopyalanır. NOT: form/UI tarafı bu dilimin kapsamında DEĞİLDİR
+// (F-P6'ya devredilir); bu blok yalnız üretilen tipleri doğrular.
+describe("Bölüm (section) tip üretimi — P6 sözleşme genişlemesi", () => {
+  it("GET /sections/{section_id} yolu üretilmiş", () => {
+    type Paths = import("@/lib/api/schema").paths;
+    expectTypeOf<Paths>().toHaveProperty("/sections/{section_id}");
+  });
+
+  it("SectionStatus 'on_hold' değerini içerir (planned/active/on_hold/completed)", () => {
+    type Status = components["schemas"]["SectionStatus"];
+    const statuses: Status[] = ["planned", "active", "on_hold", "completed"];
+    expect(statuses).toContain("on_hold");
+  });
+
+  it("SectionType yeni şeması yedi bölüm türünü içerir", () => {
+    type Type = components["schemas"]["SectionType"];
+    const types: Type[] = [
+      "foundation_infra",
+      "structural",
+      "finishing",
+      "facade_roof",
+      "mep",
+      "landscape",
+      "handover",
+    ];
+    expect(types).toHaveLength(7);
+  });
+
+  it("SectionDetailResponse GET tekil bölüm gövdesini taşır (progress_pct/budget yer tutucudur)", () => {
+    type Detail = components["schemas"]["SectionDetailResponse"];
+    expectTypeOf<Detail>().toHaveProperty("id");
+    expectTypeOf<Detail>().toHaveProperty("site_id");
+    expectTypeOf<Detail>().toHaveProperty("section_type");
+    expectTypeOf<Detail>().toHaveProperty("budget_amount");
+    expectTypeOf<Detail>().toHaveProperty("is_draft");
+    expectTypeOf<Detail>().toHaveProperty("progress_pct");
+    expectTypeOf<Detail>().toHaveProperty("boq_item_count");
+  });
+
+  it("SectionCreate/SectionUpdate yeni alanları taşır, hepsi opsiyoneldir (yalnız 'name' zorunlu kalır)", () => {
+    type Create = components["schemas"]["SectionCreate"];
+    type Update = components["schemas"]["SectionUpdate"];
+
+    expectTypeOf<Create>().toHaveProperty("section_type");
+    expectTypeOf<Create>().toHaveProperty("description");
+    expectTypeOf<Create>().toHaveProperty("deputy_manager_user_id");
+    expectTypeOf<Create>().toHaveProperty("deputy_manager_name");
+    expectTypeOf<Create>().toHaveProperty("planned_worker_count");
+    expectTypeOf<Create>().toHaveProperty("budget_amount");
+    expectTypeOf<Create>().toHaveProperty("is_draft");
+
+    // Yeni alanlar (section_type/description/deputy_*/planned_worker_count/
+    // budget_amount) hepsi opsiyoneldir — backend'in taslak-dışı bölümde
+    // uyguladığı ek zorunluluk çalışma zamanı doğrulamasıdır, OpenAPI şemasına
+    // yansımaz. `status`/`sort_order`/`is_draft` ise varsayılan (`default`)
+    // taşıdıkları için openapi-typescript'te ZORUNLU üretilir (SectionCreate'in
+    // önceki `status`/`sort_order` alanlarıyla aynı, önceden kurulu desen).
+    // Form tarafının davranışı bu dilimin kapsamı dışındadır.
+    const minimalCreate = {
+      name: "A Blok",
+      status: "planned",
+      sort_order: 0,
+      is_draft: false,
+    } satisfies Create;
+    const minimalUpdate = {} satisfies Update;
+
+    expect(minimalCreate.name).toBe("A Blok");
+    expect(minimalUpdate).toEqual({});
+  });
+});

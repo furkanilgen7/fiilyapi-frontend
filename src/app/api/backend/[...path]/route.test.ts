@@ -421,6 +421,24 @@ describe("BFF /api/backend/[...path]", () => {
       },
     );
 
+    // P7 · T1 — hakediş ekranlari icin yeni eklenen iki kok ADLI olarak da
+    // kapiya baglanir: dinamik tarama zaten yakalar, ama bu test kokler
+    // sessizce dusurulurse gerekcesini de birlikte kirar.
+    it.each(["progress-payments", "contracts"])(
+      "%s koku hakediş ekranlari icin allow-list'te tanimlidir",
+      (root) => {
+        const source = readFileSync(
+          resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+          "utf8",
+        );
+        const allowList = source.slice(
+          source.indexOf("const ALLOWED_ROOTS"),
+          source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+        );
+        expect(allowList).toContain(`"${root}"`);
+      },
+    );
+
     it.each(calledRoots)("%s koku forward edilir", async (root) => {
       const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
       vi.stubGlobal("fetch", fetchMock);
