@@ -54,7 +54,11 @@ export const SUBCONTRACTOR_PROGRESS_PAYMENTS_QUERY_KEY = "subcontractor-progress
 export const SUBCONTRACTOR_PROGRESS_PAYMENT_QUERY_KEY = "subcontractor-progress-payment";
 export const SUBCONTRACTOR_PROGRESS_PAYMENT_SUMMARY_QUERY_KEY = "subcontractor-progress-payment-summary";
 export const SUBCONTRACTOR_CONTRACT_QUERY_KEY = "subcontractor-contract";
-export const SUBCONTRACTOR_CONTRACTS_LIST_QUERY_KEY = "subcontractor-contracts-list";
+// Coordinator review (Minor 2) — modül-özel (export EDİLMEZ): bu dilimde
+// sözleşme oluşturma/güncelleme ucu YOK (brief §Yasaklar), dolayısıyla bu
+// listeyi invalidate edecek bir mutasyon da YOK. Dışarıdan tüketen olmadığı
+// için kullanılmayan bir kamu yüzeyi bırakmamak adına export edilmiyor.
+const SUBCONTRACTOR_CONTRACTS_LIST_QUERY_KEY = "subcontractor-contracts-list";
 
 function filterQuery(
   filter: SubcontractorProgressPaymentFilter,

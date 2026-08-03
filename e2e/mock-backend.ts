@@ -1127,8 +1127,21 @@ const SUBCONTRACTOR_CONTRACTS: MockSubcontractorContract[] = [
   // (hakedişten türetme) bu sözleşmeyi seçim adımında HİÇ göstermezdi — U1'e
   // geçişin kanıtı budur (bkz. `subcontractor-progress-payments.spec.ts`
   // "hiç hakedişi olmayan sözleşme de listelenir").
+  //
+  // ⚠️ Coordinator review (Important) — `subcontractor_id` BİLİNÇLİ olarak
+  // sc-1 ile AYNI (`sub-1`) tutuldu: `buildSubcontractorPaymentSummary`teki
+  // `active_subcontractor_count` (satır ~1497) `state.subcontractorContracts`
+  // üzerinden projeye/hakedişe göre SÜZÜLMEDEN, TÜM aktif sözleşmelerin
+  // distinct `subcontractor_id`sini sayar. Yeni bir subcontractor_id
+  // eklemek bu sayıyı 2→3 yapar ve `subcontractor-progress-payments-
+  // visual.spec.ts`teki "Aktif Taşeron" KPI'ını (dolayısıyla
+  // `taseron-hakedisleri-listesi.png` baseline'ını) SESSİZCE bozardı. U1
+  // kanıtı `subcontractor_id`nin tekil olmasına bağlı DEĞİL — yalnız
+  // `subcontractor_name`in seçim kutusunda göründüğü test ediliyor, o farklı
+  // (`Yılmaz Boya A.Ş.`) kalabilir. `active_subcontractor_count`ın 2'de
+  // kaldığı `mock-backend.test.ts`te kilitlenmiştir.
   {
-    id: "sc-3", project_id: "p-1", site_id: null, subcontractor_id: "sub-3",
+    id: "sc-3", project_id: "p-1", site_id: null, subcontractor_id: "sub-1",
     subcontractor_name: "Yılmaz Boya A.Ş.", work_category: "Boya",
     contract_no: "TSD-2026-03", signature_date: "2026-03-01", is_notarized: false,
     start_date: "2026-04-01", end_date: "2026-10-01", late_penalty_daily: null,

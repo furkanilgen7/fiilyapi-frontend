@@ -51,9 +51,11 @@ import "./site-progress-payments.css";
 //   - Satır içi "%62 ilerleme" (satır 98, işveren) — liste şemasında yok.
 //   - PDF / dışa aktarma — backend'de uç yok.
 /**
- * Görünür bant metni — üç ayrı neden (uç hatası / kısmi sözleşme hatası /
- * sunucu tavanı) AYRI cümlelerle basılır; kullanıcı hangi sayının neden
- * eksik olduğunu görür (final inceleme F-3).
+ * Görünür bant metni — İKİ ayrı neden (uç hatası / sunucu tavanı) AYRI
+ * cümlelerle basılır; kullanıcı hangi sayının neden eksik olduğunu görür
+ * (final inceleme F-3). TB2 takip: üçüncü kanal ("kısmi sözleşme hatası" —
+ * N+1 fan-out'un bir kısmı hata verirse) N+1 kaldırılınca ANLAMSIZLAŞTI ve
+ * silindi; `isPartial` artık YALNIZ `truncation.isTruncated`e eşit.
  */
 function subcontractorBandMessage(state: UseSiteSubcontractorPaymentsResult): string {
   if (state.isError) {

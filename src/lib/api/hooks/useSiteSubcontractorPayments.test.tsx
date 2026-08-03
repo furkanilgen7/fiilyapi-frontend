@@ -110,7 +110,7 @@ describe("useSiteSubcontractorPayments", () => {
     });
   });
 
-  it("workCategory join'i: U2 ile PARALEL TEK U1 isteği gider — sözleşme sayısından BAĞIMSIZ (N+1 YOK)", async () => {
+  it("workCategory join'i: TEK U1 isteği gider — sözleşme sayısından BAĞIMSIZ (N+1 YOK)", async () => {
     mockGet({
       payments: [
         paymentItem({ id: "scpp-1", contract_id: "sc-1" }),
@@ -127,18 +127,48 @@ describe("useSiteSubcontractorPayments", () => {
     });
 
     await waitFor(() => expect(result.current.items).toHaveLength(2));
-    // TEK U1 çağrısı — kaç farklı sözleşme olursa olsun (N+1'in aksine).
+    // TEK U1 çağrısı — kaç farklı sözleşme olursa olsun (N+1'in aksine, ki
+    // eski implementasyon burada 2 çağrı yapardı: sc-1 + sc-2).
     const contractListCalls = vi
       .mocked(backendClient.GET)
       .mock.calls.filter((call) => call[0] === "/subcontractor-contracts");
     expect(contractListCalls).toHaveLength(1);
     expect(contractListCalls[0][1]).toEqual({ params: { query: { site_id: "site-1" } } });
-    // U2 ve U1 PARALEL: her ikisi de tam olarak bir kez çağrılır (biri
-    // diğerini bekleyip zincirlenmez).
-    const paymentsCalls = vi
-      .mocked(backendClient.GET)
-      .mock.calls.filter((call) => call[0] === "/subcontractor-progress-payments");
-    expect(paymentsCalls).toHaveLength(1);
+  });
+
+  // Coordinator review (Minor 3) — yalnız çağrı SAYISI (1+1) sıralı bir
+  // zincirle de üretilebilir, bu yüzden gerçek paralelliği (U1'in U2'nin
+  // sonucunu BEKLEMEDEN ateşlenmesi) ayrı kanıtlıyoruz: U2 (hakediş listesi)
+  // isteği kasıtlı olarak HİÇ ÇÖZÜLMEZ (asılı `Promise`); eğer U1 sıralı
+  // olarak U2'ye BAĞIMLI olsaydı (ör. `enabled: paymentsQuery.isSuccess`),
+  // U2 asılı kaldığı sürece U1'in `queryFn`i HİÇ ÇAĞRILMAZDI. U1'in yine de
+  // çağrılması, iki sorgunun birbirinden BAĞIMSIZ (paralel) ateşlendiğini
+  // kanıtlar.
+  it("U1 (workCategory join'i), U2 hiç çözülmeden de ateşlenir — PARALEL, sıralı zincir DEĞİL", async () => {
+    vi.mocked(backendClient.GET).mockImplementation(async (path: string) => {
+      if (path === "/subcontractor-progress-payments") {
+        // Kasıtlı olarak HİÇ ÇÖZÜLMEYEN promise — U2 sonsuza dek "pending".
+        return new Promise(() => {});
+      }
+      if (path === "/subcontractor-contracts") {
+        return {
+          data: { items: [contractListItem({ id: "sc-1" })] },
+          error: undefined,
+          response: new Response(),
+        } as never;
+      }
+      throw new Error(`beklenmeyen uç: ${path}`);
+    });
+
+    renderHook(() => useSiteSubcontractorPayments("proj-1", "site-1"), { wrapper });
+
+    // U2 hiç çözülmediği hâlde U1'in çağrıldığını bekle — sıralı bir zincirde
+    // (U1, U2'nin başarısını beklerdi) bu ASLA gerçekleşmezdi.
+    await waitFor(() =>
+      expect(
+        vi.mocked(backendClient.GET).mock.calls.some((call) => call[0] === "/subcontractor-contracts"),
+      ).toBe(true),
+    );
   });
 
   it("workCategory join'i EŞLEŞİRSE gerçek değeri taşır", async () => {

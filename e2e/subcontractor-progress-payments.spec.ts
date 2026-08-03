@@ -43,6 +43,24 @@ test("taşeron: sekme gezinmesi (gerçek URL değişimi, geri tuşu)", async ({ 
   await expect(page.getByRole("heading", { name: "Hakedişler" })).toBeVisible();
 });
 
+// Coordinator review (Important) — kilit testi: `sc-3` (TB2 U1 kanıt kaydı,
+// `site_id: null`, sıfır hakedişli) `active_subcontractor_count`i (KPI
+// şeridindeki "Aktif Taşeron") ARTIRMAMALI. `buildSubcontractorPaymentSummary`
+// bu sayıyı `state.subcontractorContracts` üzerinden projeye/hakedişe göre
+// SÜZMEDEN, distinct `subcontractor_id`ye göre hesaplıyor — `sc-3` sc-1 ile
+// AYNI `subcontractor_id`yi (`sub-1`) taşıdığından sayı sc-1/sc-2'nin ikisiyle
+// (2) sınırlı kalmalı. Bu test o tuzağın yeniden AÇILMASINI engeller.
+test("taşeron: Aktif Taşeron KPI'ı 2'de kalır (sc-3 kanıt kaydı distinct subcontractor_id'yi ARTIRMAZ)", async ({
+  page,
+}) => {
+  await login(page);
+
+  await page.goto("/hakedisler/taseron");
+  await expect(page.getByTestId("thk-kpi-strip")).toBeVisible();
+  const activeCard = page.getByText("Aktif Taşeron").locator("..");
+  await expect(activeCard.getByTestId("thk-kpi-value")).toHaveText("2");
+});
+
 test("taşeron: filtreler URL state (yazma, kalıcılık, paylaşılan URL)", async ({ page }) => {
   await login(page);
 
