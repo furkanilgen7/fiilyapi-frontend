@@ -1611,6 +1611,165 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sites/{site_id}/plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Site Plan Endpoint
+         * @description P (Planlama) ızgarasının bir haftası: gruplar + hücreler + hedefler + sprint.
+         *
+         *     `week_start` ZORUNLUDUR (puantajın `year`/`month`u gibi): haftasız bir
+         *     ızgaranın sütun iskeleti bile yoktur. Pazartesi değilse 422 — sessiz kaydırma
+         *     ekranın başka bir haftayı gösterdiğini fark etmesini engellerdi.
+         */
+        get: operations["get_site_plan_endpoint_sites__site_id__plan_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/plan/day-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Site Plan Day Summary Endpoint
+         * @description F-SD'nin GK gömülü "Önümüzdeki 5 Gün" bloğu (mockup 321-348) — SALT OKUNUR.
+         *
+         *     Izgaradan TÜRETİLİR (spec §4): gün başına hücre metinlerinin birleşimi +
+         *     `crew` satırlarının işçi toplamı + bölüm etiketleri. Planı olmayan gün
+         *     pencereden DÜŞMEZ, `has_plan: false` ile işaretlenir — blok beş kutu çizer.
+         *
+         *     ⚠️ Bu ucun YAZMA karşılığı YOKTUR ve açılmayacaktır (spec §4 ONAYLI SAPMA):
+         *     mockup'taki textarea/number/select girişleri basılmaz, ızgara TEK kaynaktır.
+         *
+         *     `start` HERHANGİ bir gün olabilir — Pazartesi şartı YOKTUR (`GET …/plan`ten
+         *     bilinçli fark): bu haftalık ızgara değil, kayan bir penceredir.
+         *
+         *     `days` varsayılanı 5'tir (GK bloğunun kutu sayısı) ve `MAX_SUMMARY_DAYS` ile
+         *     tavanlanır — gerekçe `service.MAX_SUMMARY_DAYS` yanındadır.
+         */
+        get: operations["get_site_plan_day_summary_endpoint_sites__site_id__plan_day_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/plan/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save Site Plan Rows Endpoint
+         * @description Izgaranın satır listesi — **DEĞİŞTİRME** semantiği.
+         *
+         *     ⚠️ Gövde şantiyenin satır kümesinin TAM kümesidir: gövdede geçmeyen satır
+         *     SİLİNİR ve o satırın TÜM haftalardaki hücreleri FK CASCADE ile gider. Başka
+         *     şantiyenin satırlarına DOKUNULMAZ (kesin karar `write.save_rows`).
+         *
+         *     `week_start` YOKTUR: satır ızgaranın kaynağıdır, hücre haftaya aittir.
+         */
+        put: operations["save_site_plan_rows_endpoint_sites__site_id__plan_rows_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/plan/cells": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save Site Plan Cells Endpoint
+         * @description Izgaranın hücreleri — **YALNIZ `week_start` haftası**, DEĞİŞTİRME semantiği.
+         *
+         *     ⚠️ Gövde hafta + şantiye kapsamının TAM kümesidir: gövdede geçmeyen hücre
+         *     SİLİNİR. Başka HAFTANIN ve başka ŞANTİYENİN hücrelerine DOKUNULMAZ (kesin
+         *     karar `write.save_cells`; kapsamın iki parçası ayrı ayrı test edilir).
+         *
+         *     Metni boş hücre plana YAZILMAZ — "hücre yokluğu = plan yok" (spec §2).
+         *
+         *     Yanıt GÜNCEL ızgaradır: ekran kaydettiğinin tamamını geri görmelidir.
+         */
+        put: operations["save_site_plan_cells_endpoint_sites__site_id__plan_cells_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/plan/goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save Site Plan Goals Endpoint
+         * @description P203-227 haftalık hedefler — DEĞİŞTİRME semantiği.
+         *
+         *     ⚠️ Gövde o HAFTANIN hedef kümesidir: geçmeyen hedef SİLİNİR, başka haftanın
+         *     hedeflerine DOKUNULMAZ. Başka haftanın hedef kimliği 422'dir — kabul
+         *     edilseydi hedef sessizce hafta değiştirirdi (kesin karar `write.save_goals`).
+         */
+        put: operations["save_site_plan_goals_endpoint_sites__site_id__plan_goals_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/plan/sprint": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save Site Plan Sprint Endpoint
+         * @description P107 "Aktif Sprint" şeridi. Boş/`null` ad aktif sprinti KAPATIR (`null` döner).
+         *
+         *     Şantiye başına TEK aktif sprint vardır (kısmi UQ); uç mevcut aktif satırı
+         *     yeniden kullanır, ikinci bir aktif satır AÇMAZ. Tarih alanı ve görünüm kipi
+         *     (Hafta/Ay/Sprint) backend'e AÇILMAZ — mockup göstermiyor (spec §2, §6 S4).
+         */
+        put: operations["save_site_plan_sprint_endpoint_sites__site_id__plan_sprint_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/projects/{project_id}/sites": {
         parameters: {
             query?: never;
@@ -3840,6 +3999,36 @@ export interface components {
             /** Is Active */
             is_active?: boolean | null;
         };
+        /**
+         * PlanCellTag
+         * @description Hucrenin renk kodu (planlama spec §2, P127-179).
+         *
+         *     Mockup'un rengi YORUMLANMADAN tasinir: kategori/durum ayrimi mockup'ta
+         *     karisik, anlam frontend'de renkle birebir eslesir. `NULL` = renksiz hucre.
+         * @enum {string}
+         */
+        PlanCellTag: "blue" | "green" | "yellow" | "purple" | "gray" | "red";
+        /**
+         * PlanGoalStatus
+         * @description Haftalik hedefin rozeti (planlama spec §2, P209-224).
+         *
+         *     `is_done` checkbox'i (P207) ile bu rozet mockup'ta AYRI gorunur — ikisi de
+         *     saklanir, birbirine BAGLANMAZ (biri digerini turetmez).
+         * @enum {string}
+         */
+        PlanGoalStatus: "completed" | "in_progress" | "waiting" | "service_pending";
+        /**
+         * PlanResourceKind
+         * @description Izgara satirinin kaynak turu (planlama spec §2).
+         *
+         *     `crew` = ekip satiri (P126 "Kalipci" — bolum grubu altinda) ·
+         *     `equipment` = P158 "Makine & Ekipman" grubu (P162 "Tower Crane").
+         *
+         *     Makine modulu yokken ekipman satiri SERBEST METINDIR (spec §6 S3 onayi):
+         *     ekipman FK'si BU dilimde ACILMAZ, modul gelince kopru ayri istir.
+         * @enum {string}
+         */
+        PlanResourceKind: "crew" | "equipment";
         /** PreferencesRead */
         PreferencesRead: {
             locale: components["schemas"]["UILocale"];
@@ -5721,6 +5910,374 @@ export interface components {
             subcontractor_count: components["schemas"]["CountPlaceholder"];
             active_worker_count: components["schemas"]["CountPlaceholder"];
             average_margin: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+        };
+        /**
+         * SitePlanCellInput
+         * @description `PUT …/plan/cells` gövdesinin tek hücresi.
+         *
+         *     Hücrenin kendi `id`si YOKTUR: kimliği `(row_id, plan_date)` ikilisidir (UQ) —
+         *     ızgarada bir satırın bir gününde tek hücre vardır.
+         *
+         *     **Boş `text` hücreyi YOK SAYAR** (spec §2 "hücre yokluğu = plan yok"): ekranın
+         *     boşalttığı hücre için boş metinli bir kayıt yazmak, "planlanmamış gün" ile
+         *     "planı silinmiş gün"ü ayırt edilemez hâle getirirdi. Boşluklar kırpılır.
+         */
+        SitePlanCellInput: {
+            /**
+             * Row Id
+             * Format: uuid
+             */
+            row_id: string;
+            /**
+             * Plan Date
+             * Format: date
+             */
+            plan_date: string;
+            /** Text */
+            text: string;
+            tag?: components["schemas"]["PlanCellTag"] | null;
+        };
+        /**
+         * SitePlanCellRead
+         * @description Izgara hücresi (P129-179). `row_id` TEKRARLANMAZ — hücre satırın içindedir.
+         */
+        SitePlanCellRead: {
+            /**
+             * Plan Date
+             * Format: date
+             */
+            plan_date: string;
+            /** Text */
+            text: string;
+            tag: components["schemas"]["PlanCellTag"] | null;
+        };
+        /**
+         * SitePlanCellsSave
+         * @description ⚠️ Gövde YALNIZ `week_start` haftasının + o şantiyenin hücre kümesidir;
+         *     geçmeyen hücre SİLİNİR. Başka haftaya/şantiyeye DOKUNULMAZ.
+         */
+        SitePlanCellsSave: {
+            /** Cells */
+            cells?: components["schemas"]["SitePlanCellInput"][];
+        };
+        /**
+         * SitePlanDay
+         * @description Haftanın bir gün sütunu — TÜREV iskelet (P110-119).
+         *
+         *     Gün listesi hücrelerden DEĞİL takvimden üretilir: planı olmayan gün de bir
+         *     sütundur, aksi hâlde ızgara haftanın ortasında delik gösterirdi.
+         */
+        SitePlanDay: {
+            /**
+             * Plan Date
+             * Format: date
+             */
+            plan_date: string;
+            /** Is Weekend */
+            is_weekend: boolean;
+        };
+        /**
+         * SitePlanDaySummary
+         * @description Bir günün özeti — planı OLMAYAN gün de bir kutudur.
+         *
+         *     `has_plan` boş `text`ten TÜRETİLEBİLİRDİ ama açık alan tutulur: mockup planı
+         *     olmayan günü ayrı bir biçimle çizer (satır 341-346 kesikli çerçeve) ve o
+         *     kararın ekranda `text == ""` karşılaştırmasına bırakılması, ileride metni
+         *     olmayan ama işçisi olan bir gün doğduğunda sessizce yanlış biçim seçerdi.
+         */
+        SitePlanDaySummary: {
+            /**
+             * Plan Date
+             * Format: date
+             */
+            plan_date: string;
+            /** Is Weekend */
+            is_weekend: boolean;
+            /** Has Plan */
+            has_plan: boolean;
+            /** Text */
+            text: string;
+            /** Planned Worker Total */
+            planned_worker_total: number;
+            /** Section Names */
+            section_names: string[];
+        };
+        /**
+         * SitePlanDaySummaryRange
+         * @description GK bloğunun kayan penceresi: `[start, end]` DAHİL, `days` gün.
+         *
+         *     `week_start` YOKTUR ve Pazartesi şartı ARANMAZ (T2'den bilinçli fark): bu
+         *     haftalık ızgara değil "önümüzdeki N gün"dür, pencere hafta sınırını aşabilir.
+         *
+         *     Şantiye/proje adları başlık içindir; ekran ikinci istek atmasın.
+         */
+        SitePlanDaySummaryRange: {
+            /**
+             * Site Id
+             * Format: uuid
+             */
+            site_id: string;
+            /** Site Name */
+            site_name: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Project Name */
+            project_name: string;
+            /**
+             * Start
+             * Format: date
+             */
+            start: string;
+            /**
+             * End
+             * Format: date
+             */
+            end: string;
+            /** Days */
+            days: components["schemas"]["SitePlanDaySummary"][];
+        };
+        /**
+         * SitePlanGoalInput
+         * @description `PUT …/plan/goals` gövdesinin tek hedefi (P205-227).
+         *
+         *     `week_start` gövdede YOKTUR — sorgu parametresinden gelir; iki kaynak olsaydı
+         *     bir haftanın kaydetmesi gövdedeki tarihle başka bir haftaya taşabilirdi.
+         *
+         *     `is_done` ile `status` AYRI alanlardır ve biri diğerinden TÜRETİLMEZ (spec §2).
+         */
+        SitePlanGoalInput: {
+            /** Id */
+            id?: string | null;
+            /** Title */
+            title: string;
+            /** Note */
+            note?: string | null;
+            /**
+             * Is Done
+             * @default false
+             */
+            is_done: boolean;
+            status: components["schemas"]["PlanGoalStatus"];
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /**
+         * SitePlanGoalRead
+         * @description Haftalık hedef (P205-227).
+         *
+         *     `is_done` (checkbox, P207) ile `status` (rozet, P209) AYRI alanlardır ve
+         *     biri diğerinden TÜRETİLMEZ — mockup ikisini bağımsız gösterir.
+         */
+        SitePlanGoalRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Note */
+            note: string | null;
+            /** Is Done */
+            is_done: boolean;
+            status: components["schemas"]["PlanGoalStatus"];
+            /** Sort Order */
+            sort_order: number;
+        };
+        /**
+         * SitePlanGoalsSave
+         * @description ⚠️ Gövde YALNIZ o haftanın hedef kümesidir; geçmeyen hedef SİLİNİR.
+         */
+        SitePlanGoalsSave: {
+            /** Goals */
+            goals?: components["schemas"]["SitePlanGoalInput"][];
+        };
+        /**
+         * SitePlanGroup
+         * @description Izgaranın grup başlığı + satırları (P125-126 / P158).
+         *
+         *     Gruplama anahtarı `(kind, section_id)` İKİLİSİDİR, tek başına `section_id`
+         *     değil: ekipman satırlarının bölümü zaten NULL'dur (spec §2) ve mockup onları
+         *     AYRI bir başlık altında gösterir — bölümsüz bir ekip satırıyla aynı gruba
+         *     düşerlerse "Makine & Ekipman" başlığı kaybolur.
+         *
+         *     `section_name`/`section_manager_name` bölümün ANLIK GÖRÜNTÜSÜ değil canlı
+         *     değeridir (join): bölüm adı değişince ızgara başlığı da değişmelidir.
+         */
+        SitePlanGroup: {
+            kind: components["schemas"]["PlanResourceKind"];
+            /** Section Id */
+            section_id: string | null;
+            /** Section Name */
+            section_name: string | null;
+            /** Section Manager Name */
+            section_manager_name: string | null;
+            /** Rows */
+            rows: components["schemas"]["SitePlanRowRead"][];
+        };
+        /**
+         * SitePlanRowInput
+         * @description `PUT …/plan/rows` gövdesinin tek satırı.
+         *
+         *     `id` VARSA mevcut satır güncellenir, YOKSA yeni satır açılır. Kimlik gövdede
+         *     taşınır çünkü etiketi değişen bir satırın hücreleri KORUNMALIDIR: doğal
+         *     anahtarla eşleşseydi her yeniden adlandırma sil+ekle olur ve hücreler
+         *     CASCADE ile giderdi (sessiz veri kaybı).
+         */
+        SitePlanRowInput: {
+            /** Id */
+            id?: string | null;
+            kind: components["schemas"]["PlanResourceKind"];
+            /** Section Id */
+            section_id?: string | null;
+            /** Label */
+            label: string;
+            /** Planned Worker Count */
+            planned_worker_count?: number | null;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /**
+         * SitePlanRowRead
+         * @description Izgara satırı + YALNIZ istenen haftanın hücreleri.
+         *
+         *     `cells` SEYREKTİR: planı olmayan gün hücre ÜRETMEZ (spec §2 "hücre yokluğu =
+         *     plan yok"). Gün iskeleti `days`ten gelir, boş hücre uydurulmaz.
+         */
+        SitePlanRowRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["PlanResourceKind"];
+            /** Section Id */
+            section_id: string | null;
+            /** Label */
+            label: string;
+            /** Planned Worker Count */
+            planned_worker_count: number | null;
+            /** Sort Order */
+            sort_order: number;
+            /** Cells */
+            cells: components["schemas"]["SitePlanCellRead"][];
+        };
+        /**
+         * SitePlanRowSaved
+         * @description Kaydedilmiş satır. `cells` alanı YOKTUR (`SitePlanRowRead`ten farkı budur):
+         *     bu uç haftadan bağımsızdır, boş bir `cells` listesi "hücre yok" YALANINI
+         *     söylerdi.
+         */
+        SitePlanRowSaved: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["PlanResourceKind"];
+            /** Section Id */
+            section_id: string | null;
+            /** Label */
+            label: string;
+            /** Planned Worker Count */
+            planned_worker_count: number | null;
+            /** Sort Order */
+            sort_order: number;
+        };
+        /**
+         * SitePlanRowsResult
+         * @description `PUT …/plan/rows` yanıtı — kaydedilen satırlar, okuma ucuyla AYNI sırada.
+         *
+         *     Haftalık ızgara (`SitePlanWeek`) DÖNÜLMEZ: satır listesi haftadan bağımsızdır
+         *     (uçta `week_start` yoktur) ve bir hafta uydurmak ekranın hangi haftayı
+         *     gösterdiğine backend'in karar vermesi demek olurdu. Ekran yeni satır
+         *     kimliklerini buradan alır, ızgarayı `GET …/plan` ile tazeler.
+         */
+        SitePlanRowsResult: {
+            /** Rows */
+            rows: components["schemas"]["SitePlanRowSaved"][];
+        };
+        /**
+         * SitePlanRowsSave
+         * @description ⚠️ Gövde ŞANTİYENİN satır kümesinin TAMAMIDIR; geçmeyen satır SİLİNİR ve
+         *     hücreleri CASCADE ile gider.
+         */
+        SitePlanRowsSave: {
+            /** Rows */
+            rows?: components["schemas"]["SitePlanRowInput"][];
+        };
+        /**
+         * SitePlanSprintRead
+         * @description Aktif sprint (P108). Tarih alanı YOKTUR — mockup göstermiyor (spec §2).
+         */
+        SitePlanSprintRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /**
+         * SitePlanSprintSave
+         * @description `PUT …/plan/sprint` — aktif sprintin ADI (P107).
+         *
+         *     `null`/boş ad = şantiyenin aktif sprinti YOK; kayıt SİLİNMEZ, `is_active`
+         *     false'a çekilir (geçmiş sprint yan yana durabilir, kısmi UQ yalnız aktifleri
+         *     kısıtlar). Tarih alanı YOKTUR — mockup göstermiyor (spec §2).
+         */
+        SitePlanSprintSave: {
+            /** Name */
+            name?: string | null;
+        };
+        /**
+         * SitePlanWeek
+         * @description Planlama ekranının bir haftalık tamamı.
+         *
+         *     Şantiye/proje adları başlık şeridi içindir; ekran ikinci bir istek atmasın.
+         */
+        SitePlanWeek: {
+            /**
+             * Site Id
+             * Format: uuid
+             */
+            site_id: string;
+            /** Site Name */
+            site_name: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Project Name */
+            project_name: string;
+            /**
+             * Week Start
+             * Format: date
+             */
+            week_start: string;
+            /**
+             * Week End
+             * Format: date
+             */
+            week_end: string;
+            /** Days */
+            days: components["schemas"]["SitePlanDay"][];
+            /** Groups */
+            groups: components["schemas"]["SitePlanGroup"][];
+            /** Goals */
+            goals: components["schemas"]["SitePlanGoalRead"][];
+            active_sprint: components["schemas"]["SitePlanSprintRead"] | null;
         };
         /**
          * SiteProjectSummary
@@ -12464,6 +13021,301 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SubcontractorDiarySuggestion"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_site_plan_endpoint_sites__site_id__plan_get: {
+        parameters: {
+            query: {
+                week_start: string;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitePlanWeek"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_site_plan_day_summary_endpoint_sites__site_id__plan_day_summary_get: {
+        parameters: {
+            query: {
+                start: string;
+                days?: number;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitePlanDaySummaryRange"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_site_plan_rows_endpoint_sites__site_id__plan_rows_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SitePlanRowsSave"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitePlanRowsResult"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_site_plan_cells_endpoint_sites__site_id__plan_cells_put: {
+        parameters: {
+            query: {
+                week_start: string;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SitePlanCellsSave"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitePlanWeek"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_site_plan_goals_endpoint_sites__site_id__plan_goals_put: {
+        parameters: {
+            query: {
+                week_start: string;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SitePlanGoalsSave"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitePlanWeek"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_site_plan_sprint_endpoint_sites__site_id__plan_sprint_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SitePlanSprintSave"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SitePlanSprintRead"] | null;
                 };
             };
             /** @description Yetkisiz işlem */

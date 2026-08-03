@@ -6259,6 +6259,436 @@
         }
       }
     },
+    "/sites/{site_id}/plan": {
+      "get": {
+        "tags": [
+          "site-planning"
+        ],
+        "summary": "Get Site Plan Endpoint",
+        "description": "P (Planlama) ızgarasının bir haftası: gruplar + hücreler + hedefler + sprint.\n\n`week_start` ZORUNLUDUR (puantajın `year`/`month`u gibi): haftasız bir\nızgaranın sütun iskeleti bile yoktur. Pazartesi değilse 422 — sessiz kaydırma\nekranın başka bir haftayı gösterdiğini fark etmesini engellerdi.",
+        "operationId": "get_site_plan_endpoint_sites__site_id__plan_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "week_start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Week Start"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitePlanWeek"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sites/{site_id}/plan/day-summary": {
+      "get": {
+        "tags": [
+          "site-planning"
+        ],
+        "summary": "Get Site Plan Day Summary Endpoint",
+        "description": "F-SD'nin GK gömülü \"Önümüzdeki 5 Gün\" bloğu (mockup 321-348) — SALT OKUNUR.\n\nIzgaradan TÜRETİLİR (spec §4): gün başına hücre metinlerinin birleşimi +\n`crew` satırlarının işçi toplamı + bölüm etiketleri. Planı olmayan gün\npencereden DÜŞMEZ, `has_plan: false` ile işaretlenir — blok beş kutu çizer.\n\n⚠️ Bu ucun YAZMA karşılığı YOKTUR ve açılmayacaktır (spec §4 ONAYLI SAPMA):\nmockup'taki textarea/number/select girişleri basılmaz, ızgara TEK kaynaktır.\n\n`start` HERHANGİ bir gün olabilir — Pazartesi şartı YOKTUR (`GET …/plan`ten\nbilinçli fark): bu haftalık ızgara değil, kayan bir penceredir.\n\n`days` varsayılanı 5'tir (GK bloğunun kutu sayısı) ve `MAX_SUMMARY_DAYS` ile\ntavanlanır — gerekçe `service.MAX_SUMMARY_DAYS` yanındadır.",
+        "operationId": "get_site_plan_day_summary_endpoint_sites__site_id__plan_day_summary_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Start"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 31,
+              "minimum": 1,
+              "default": 5,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitePlanDaySummaryRange"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sites/{site_id}/plan/rows": {
+      "put": {
+        "tags": [
+          "site-planning"
+        ],
+        "summary": "Save Site Plan Rows Endpoint",
+        "description": "Izgaranın satır listesi — **DEĞİŞTİRME** semantiği.\n\n⚠️ Gövde şantiyenin satır kümesinin TAM kümesidir: gövdede geçmeyen satır\nSİLİNİR ve o satırın TÜM haftalardaki hücreleri FK CASCADE ile gider. Başka\nşantiyenin satırlarına DOKUNULMAZ (kesin karar `write.save_rows`).\n\n`week_start` YOKTUR: satır ızgaranın kaynağıdır, hücre haftaya aittir.",
+        "operationId": "save_site_plan_rows_endpoint_sites__site_id__plan_rows_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SitePlanRowsSave"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitePlanRowsResult"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sites/{site_id}/plan/cells": {
+      "put": {
+        "tags": [
+          "site-planning"
+        ],
+        "summary": "Save Site Plan Cells Endpoint",
+        "description": "Izgaranın hücreleri — **YALNIZ `week_start` haftası**, DEĞİŞTİRME semantiği.\n\n⚠️ Gövde hafta + şantiye kapsamının TAM kümesidir: gövdede geçmeyen hücre\nSİLİNİR. Başka HAFTANIN ve başka ŞANTİYENİN hücrelerine DOKUNULMAZ (kesin\nkarar `write.save_cells`; kapsamın iki parçası ayrı ayrı test edilir).\n\nMetni boş hücre plana YAZILMAZ — \"hücre yokluğu = plan yok\" (spec §2).\n\nYanıt GÜNCEL ızgaradır: ekran kaydettiğinin tamamını geri görmelidir.",
+        "operationId": "save_site_plan_cells_endpoint_sites__site_id__plan_cells_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "week_start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Week Start"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SitePlanCellsSave"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitePlanWeek"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sites/{site_id}/plan/goals": {
+      "put": {
+        "tags": [
+          "site-planning"
+        ],
+        "summary": "Save Site Plan Goals Endpoint",
+        "description": "P203-227 haftalık hedefler — DEĞİŞTİRME semantiği.\n\n⚠️ Gövde o HAFTANIN hedef kümesidir: geçmeyen hedef SİLİNİR, başka haftanın\nhedeflerine DOKUNULMAZ. Başka haftanın hedef kimliği 422'dir — kabul\nedilseydi hedef sessizce hafta değiştirirdi (kesin karar `write.save_goals`).",
+        "operationId": "save_site_plan_goals_endpoint_sites__site_id__plan_goals_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "week_start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Week Start"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SitePlanGoalsSave"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitePlanWeek"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sites/{site_id}/plan/sprint": {
+      "put": {
+        "tags": [
+          "site-planning"
+        ],
+        "summary": "Save Site Plan Sprint Endpoint",
+        "description": "P107 \"Aktif Sprint\" şeridi. Boş/`null` ad aktif sprinti KAPATIR (`null` döner).\n\nŞantiye başına TEK aktif sprint vardır (kısmi UQ); uç mevcut aktif satırı\nyeniden kullanır, ikinci bir aktif satır AÇMAZ. Tarih alanı ve görünüm kipi\n(Hafta/Ay/Sprint) backend'e AÇILMAZ — mockup göstermiyor (spec §2, §6 S4).",
+        "operationId": "save_site_plan_sprint_endpoint_sites__site_id__plan_sprint_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SitePlanSprintSave"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/SitePlanSprintRead"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Save Site Plan Sprint Endpoint Sites  Site Id  Plan Sprint Put"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/projects/{project_id}/sites": {
       "get": {
         "tags": [
@@ -13649,6 +14079,39 @@
         "type": "object",
         "title": "PersonnelUpdate"
       },
+      "PlanCellTag": {
+        "type": "string",
+        "enum": [
+          "blue",
+          "green",
+          "yellow",
+          "purple",
+          "gray",
+          "red"
+        ],
+        "title": "PlanCellTag",
+        "description": "Hucrenin renk kodu (planlama spec §2, P127-179).\n\nMockup'un rengi YORUMLANMADAN tasinir: kategori/durum ayrimi mockup'ta\nkarisik, anlam frontend'de renkle birebir eslesir. `NULL` = renksiz hucre."
+      },
+      "PlanGoalStatus": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "in_progress",
+          "waiting",
+          "service_pending"
+        ],
+        "title": "PlanGoalStatus",
+        "description": "Haftalik hedefin rozeti (planlama spec §2, P209-224).\n\n`is_done` checkbox'i (P207) ile bu rozet mockup'ta AYRI gorunur — ikisi de\nsaklanir, birbirine BAGLANMAZ (biri digerini turetmez)."
+      },
+      "PlanResourceKind": {
+        "type": "string",
+        "enum": [
+          "crew",
+          "equipment"
+        ],
+        "title": "PlanResourceKind",
+        "description": "Izgara satirinin kaynak turu (planlama spec §2).\n\n`crew` = ekip satiri (P126 \"Kalipci\" — bolum grubu altinda) ·\n`equipment` = P158 \"Makine & Ekipman\" grubu (P162 \"Tower Crane\").\n\nMakine modulu yokken ekipman satiri SERBEST METINDIR (spec §6 S3 onayi):\nekipman FK'si BU dilimde ACILMAZ, modul gelince kopru ayri istir."
+      },
       "PreferencesRead": {
         "properties": {
           "locale": {
@@ -19280,6 +19743,704 @@
         ],
         "title": "SiteListTotals",
         "description": "Alt KPI seridi — bu dilimde TAMAMI yer tutucu (spec §4.1)."
+      },
+      "SitePlanCellInput": {
+        "properties": {
+          "row_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Row Id"
+          },
+          "plan_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Plan Date"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Text"
+          },
+          "tag": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlanCellTag"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "row_id",
+          "plan_date",
+          "text"
+        ],
+        "title": "SitePlanCellInput",
+        "description": "`PUT …/plan/cells` gövdesinin tek hücresi.\n\nHücrenin kendi `id`si YOKTUR: kimliği `(row_id, plan_date)` ikilisidir (UQ) —\nızgarada bir satırın bir gününde tek hücre vardır.\n\n**Boş `text` hücreyi YOK SAYAR** (spec §2 \"hücre yokluğu = plan yok\"): ekranın\nboşalttığı hücre için boş metinli bir kayıt yazmak, \"planlanmamış gün\" ile\n\"planı silinmiş gün\"ü ayırt edilemez hâle getirirdi. Boşluklar kırpılır."
+      },
+      "SitePlanCellRead": {
+        "properties": {
+          "plan_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Plan Date"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "tag": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlanCellTag"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan_date",
+          "text",
+          "tag"
+        ],
+        "title": "SitePlanCellRead",
+        "description": "Izgara hücresi (P129-179). `row_id` TEKRARLANMAZ — hücre satırın içindedir."
+      },
+      "SitePlanCellsSave": {
+        "properties": {
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/SitePlanCellInput"
+            },
+            "type": "array",
+            "title": "Cells"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SitePlanCellsSave",
+        "description": "⚠️ Gövde YALNIZ `week_start` haftasının + o şantiyenin hücre kümesidir;\ngeçmeyen hücre SİLİNİR. Başka haftaya/şantiyeye DOKUNULMAZ."
+      },
+      "SitePlanDay": {
+        "properties": {
+          "plan_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Plan Date"
+          },
+          "is_weekend": {
+            "type": "boolean",
+            "title": "Is Weekend"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan_date",
+          "is_weekend"
+        ],
+        "title": "SitePlanDay",
+        "description": "Haftanın bir gün sütunu — TÜREV iskelet (P110-119).\n\nGün listesi hücrelerden DEĞİL takvimden üretilir: planı olmayan gün de bir\nsütundur, aksi hâlde ızgara haftanın ortasında delik gösterirdi."
+      },
+      "SitePlanDaySummary": {
+        "properties": {
+          "plan_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Plan Date"
+          },
+          "is_weekend": {
+            "type": "boolean",
+            "title": "Is Weekend"
+          },
+          "has_plan": {
+            "type": "boolean",
+            "title": "Has Plan"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "planned_worker_total": {
+            "type": "integer",
+            "title": "Planned Worker Total"
+          },
+          "section_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Section Names"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan_date",
+          "is_weekend",
+          "has_plan",
+          "text",
+          "planned_worker_total",
+          "section_names"
+        ],
+        "title": "SitePlanDaySummary",
+        "description": "Bir günün özeti — planı OLMAYAN gün de bir kutudur.\n\n`has_plan` boş `text`ten TÜRETİLEBİLİRDİ ama açık alan tutulur: mockup planı\nolmayan günü ayrı bir biçimle çizer (satır 341-346 kesikli çerçeve) ve o\nkararın ekranda `text == \"\"` karşılaştırmasına bırakılması, ileride metni\nolmayan ama işçisi olan bir gün doğduğunda sessizce yanlış biçim seçerdi."
+      },
+      "SitePlanDaySummaryRange": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Site Id"
+          },
+          "site_name": {
+            "type": "string",
+            "title": "Site Name"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "project_name": {
+            "type": "string",
+            "title": "Project Name"
+          },
+          "start": {
+            "type": "string",
+            "format": "date",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date",
+            "title": "End"
+          },
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/SitePlanDaySummary"
+            },
+            "type": "array",
+            "title": "Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "site_id",
+          "site_name",
+          "project_id",
+          "project_name",
+          "start",
+          "end",
+          "days"
+        ],
+        "title": "SitePlanDaySummaryRange",
+        "description": "GK bloğunun kayan penceresi: `[start, end]` DAHİL, `days` gün.\n\n`week_start` YOKTUR ve Pazartesi şartı ARANMAZ (T2'den bilinçli fark): bu\nhaftalık ızgara değil \"önümüzdeki N gün\"dür, pencere hafta sınırını aşabilir.\n\nŞantiye/proje adları başlık içindir; ekran ikinci istek atmasın."
+      },
+      "SitePlanGoalInput": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Title"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "is_done": {
+            "type": "boolean",
+            "title": "Is Done",
+            "default": false
+          },
+          "status": {
+            "$ref": "#/components/schemas/PlanGoalStatus"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title",
+          "status"
+        ],
+        "title": "SitePlanGoalInput",
+        "description": "`PUT …/plan/goals` gövdesinin tek hedefi (P205-227).\n\n`week_start` gövdede YOKTUR — sorgu parametresinden gelir; iki kaynak olsaydı\nbir haftanın kaydetmesi gövdedeki tarihle başka bir haftaya taşabilirdi.\n\n`is_done` ile `status` AYRI alanlardır ve biri diğerinden TÜRETİLMEZ (spec §2)."
+      },
+      "SitePlanGoalRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "is_done": {
+            "type": "boolean",
+            "title": "Is Done"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PlanGoalStatus"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "note",
+          "is_done",
+          "status",
+          "sort_order"
+        ],
+        "title": "SitePlanGoalRead",
+        "description": "Haftalık hedef (P205-227).\n\n`is_done` (checkbox, P207) ile `status` (rozet, P209) AYRI alanlardır ve\nbiri diğerinden TÜRETİLMEZ — mockup ikisini bağımsız gösterir."
+      },
+      "SitePlanGoalsSave": {
+        "properties": {
+          "goals": {
+            "items": {
+              "$ref": "#/components/schemas/SitePlanGoalInput"
+            },
+            "type": "array",
+            "title": "Goals"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SitePlanGoalsSave",
+        "description": "⚠️ Gövde YALNIZ o haftanın hedef kümesidir; geçmeyen hedef SİLİNİR."
+      },
+      "SitePlanGroup": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/PlanResourceKind"
+          },
+          "section_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Id"
+          },
+          "section_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Name"
+          },
+          "section_manager_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Manager Name"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SitePlanRowRead"
+            },
+            "type": "array",
+            "title": "Rows"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "section_id",
+          "section_name",
+          "section_manager_name",
+          "rows"
+        ],
+        "title": "SitePlanGroup",
+        "description": "Izgaranın grup başlığı + satırları (P125-126 / P158).\n\nGruplama anahtarı `(kind, section_id)` İKİLİSİDİR, tek başına `section_id`\ndeğil: ekipman satırlarının bölümü zaten NULL'dur (spec §2) ve mockup onları\nAYRI bir başlık altında gösterir — bölümsüz bir ekip satırıyla aynı gruba\ndüşerlerse \"Makine & Ekipman\" başlığı kaybolur.\n\n`section_name`/`section_manager_name` bölümün ANLIK GÖRÜNTÜSÜ değil canlı\ndeğeridir (join): bölüm adı değişince ızgara başlığı da değişmelidir."
+      },
+      "SitePlanRowInput": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PlanResourceKind"
+          },
+          "section_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Id"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Label"
+          },
+          "planned_worker_count": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Worker Count"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "label"
+        ],
+        "title": "SitePlanRowInput",
+        "description": "`PUT …/plan/rows` gövdesinin tek satırı.\n\n`id` VARSA mevcut satır güncellenir, YOKSA yeni satır açılır. Kimlik gövdede\ntaşınır çünkü etiketi değişen bir satırın hücreleri KORUNMALIDIR: doğal\nanahtarla eşleşseydi her yeniden adlandırma sil+ekle olur ve hücreler\nCASCADE ile giderdi (sessiz veri kaybı)."
+      },
+      "SitePlanRowRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PlanResourceKind"
+          },
+          "section_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "planned_worker_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Worker Count"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order"
+          },
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/SitePlanCellRead"
+            },
+            "type": "array",
+            "title": "Cells"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "section_id",
+          "label",
+          "planned_worker_count",
+          "sort_order",
+          "cells"
+        ],
+        "title": "SitePlanRowRead",
+        "description": "Izgara satırı + YALNIZ istenen haftanın hücreleri.\n\n`cells` SEYREKTİR: planı olmayan gün hücre ÜRETMEZ (spec §2 \"hücre yokluğu =\nplan yok\"). Gün iskeleti `days`ten gelir, boş hücre uydurulmaz."
+      },
+      "SitePlanRowSaved": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PlanResourceKind"
+          },
+          "section_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "planned_worker_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Worker Count"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "section_id",
+          "label",
+          "planned_worker_count",
+          "sort_order"
+        ],
+        "title": "SitePlanRowSaved",
+        "description": "Kaydedilmiş satır. `cells` alanı YOKTUR (`SitePlanRowRead`ten farkı budur):\nbu uç haftadan bağımsızdır, boş bir `cells` listesi \"hücre yok\" YALANINI\nsöylerdi."
+      },
+      "SitePlanRowsResult": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SitePlanRowSaved"
+            },
+            "type": "array",
+            "title": "Rows"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rows"
+        ],
+        "title": "SitePlanRowsResult",
+        "description": "`PUT …/plan/rows` yanıtı — kaydedilen satırlar, okuma ucuyla AYNI sırada.\n\nHaftalık ızgara (`SitePlanWeek`) DÖNÜLMEZ: satır listesi haftadan bağımsızdır\n(uçta `week_start` yoktur) ve bir hafta uydurmak ekranın hangi haftayı\ngösterdiğine backend'in karar vermesi demek olurdu. Ekran yeni satır\nkimliklerini buradan alır, ızgarayı `GET …/plan` ile tazeler."
+      },
+      "SitePlanRowsSave": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SitePlanRowInput"
+            },
+            "type": "array",
+            "title": "Rows"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SitePlanRowsSave",
+        "description": "⚠️ Gövde ŞANTİYENİN satır kümesinin TAMAMIDIR; geçmeyen satır SİLİNİR ve\nhücreleri CASCADE ile gider."
+      },
+      "SitePlanSprintRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "SitePlanSprintRead",
+        "description": "Aktif sprint (P108). Tarih alanı YOKTUR — mockup göstermiyor (spec §2)."
+      },
+      "SitePlanSprintSave": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 150
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SitePlanSprintSave",
+        "description": "`PUT …/plan/sprint` — aktif sprintin ADI (P107).\n\n`null`/boş ad = şantiyenin aktif sprinti YOK; kayıt SİLİNMEZ, `is_active`\nfalse'a çekilir (geçmiş sprint yan yana durabilir, kısmi UQ yalnız aktifleri\nkısıtlar). Tarih alanı YOKTUR — mockup göstermiyor (spec §2)."
+      },
+      "SitePlanWeek": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Site Id"
+          },
+          "site_name": {
+            "type": "string",
+            "title": "Site Name"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "project_name": {
+            "type": "string",
+            "title": "Project Name"
+          },
+          "week_start": {
+            "type": "string",
+            "format": "date",
+            "title": "Week Start"
+          },
+          "week_end": {
+            "type": "string",
+            "format": "date",
+            "title": "Week End"
+          },
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/SitePlanDay"
+            },
+            "type": "array",
+            "title": "Days"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/SitePlanGroup"
+            },
+            "type": "array",
+            "title": "Groups"
+          },
+          "goals": {
+            "items": {
+              "$ref": "#/components/schemas/SitePlanGoalRead"
+            },
+            "type": "array",
+            "title": "Goals"
+          },
+          "active_sprint": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SitePlanSprintRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "site_id",
+          "site_name",
+          "project_id",
+          "project_name",
+          "week_start",
+          "week_end",
+          "days",
+          "groups",
+          "goals",
+          "active_sprint"
+        ],
+        "title": "SitePlanWeek",
+        "description": "Planlama ekranının bir haftalık tamamı.\n\nŞantiye/proje adları başlık şeridi içindir; ekran ikinci bir istek atmasın."
       },
       "SiteProjectSummary": {
         "properties": {
