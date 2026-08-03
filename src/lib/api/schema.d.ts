@@ -477,6 +477,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/subcontractor-contracts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Subcontractor Contracts Endpoint
+         * @description TB2 U1 (spec §1): hakediş açma akışının seçim adımı bu uçtan beslenir —
+         *
+         *     hakedişlerden türetme, hiç hakedişi olmayan sözleşmeyi göremiyordu.
+         *     Sayfalama YOK (`/contracts` liste ucu deseni), sıralama `contract_no`+`id`.
+         */
+        get: operations["list_subcontractor_contracts_endpoint_subcontractor_contracts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/subcontractor-contracts/{contract_id}": {
         parameters: {
             query?: never;
@@ -642,6 +665,51 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/personnel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Personnel Endpoint
+         * @description `q` YALNIZ ada kısmi bakar (spec §3); süzgeçler AND'lidir.
+         *
+         *     `is_active` GÖNDERİLMEZSE süzgeç uygulanmaz — pasif personel sessizce
+         *     gizlenmez; ekran hangi kümeyi istediğini açıkça söyler.
+         */
+        get: operations["list_personnel_endpoint_personnel_get"];
+        put?: never;
+        /** Create Personnel Endpoint */
+        post: operations["create_personnel_endpoint_personnel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/personnel/{personnel_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Personnel Endpoint */
+        get: operations["get_personnel_endpoint_personnel__personnel_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Personnel Endpoint
+         * @description Pasifleştirme de BURADAN geçer (`{"is_active": false}`) — DELETE ucu yoktur.
+         */
+        patch: operations["update_personnel_endpoint_personnel__personnel_id__patch"];
         trace?: never;
     };
     "/progress-payments": {
@@ -1655,6 +1723,9 @@ export interface paths {
         /**
          * List Subcontractor Progress Payments Endpoint
          * @description L83-101 filtreleri + `audit`/`users` sayfalama deseni (`total`/`limit`/`offset`).
+         *
+         *     `site_id` (TB2/U2) SÖZLEŞME üzerinden süzer — hakedişin şantiye kolonu yoktur.
+         *     Kapsamı GENİŞLETMEZ: `visible_projects` süzgeci her hâlükârda üstte kalır.
          */
         get: operations["list_subcontractor_progress_payments_endpoint_subcontractor_progress_payments_get"];
         put?: never;
@@ -1901,6 +1972,67 @@ export interface paths {
          *     damgalar NULL'lanmadan ÖNCE yakalar, router yeniden sorgulayamaz.
          */
         post: operations["unapprove_subcontractor_progress_payment_endpoint_subcontractor_progress_payments__payment_id__unapprove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/timesheet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Site Timesheet Endpoint
+         * @description ŞP/E5 puantaj matrisi: kişi satırları + gün hücreleri + türev toplamlar.
+         *
+         *     `section_id` ŞP 99'un "Tüm Bölümler / Kat 6–10" seçicisidir. Başka şantiyenin
+         *     bölümü boş matris DEĞİL 404 alır (kesin karar `service.visible_section`).
+         */
+        get: operations["get_site_timesheet_endpoint_sites__site_id__timesheet_get"];
+        /**
+         * Save Site Timesheet Endpoint
+         * @description ŞP 101 "Kaydet" — **DEĞİŞTİRME** semantiği (spec §7 S4).
+         *
+         *     ⚠️ Gövde dönem+şantiye kapsamının TAM kümesidir: gövdede geçmeyen hücre
+         *     SİLİNİR. Başka ayın ya da başka şantiyenin hücrelerine DOKUNULMAZ (kesin
+         *     karar `service.save`).
+         *
+         *     Denetim TEK dönem-özeti olayıdır; hücre başına olay yazmak 31×48'lik bir
+         *     kaydetmede denetim günlüğünü kullanılamaz hâle getirirdi (spec §3).
+         *
+         *     Yanıt GÜNCEL matristir (bölüm süzgeci UYGULANMAZ — kaydedilen kapsam
+         *     şantiyenin tamamıdır, ekran kaydettiğinin tamamını geri görmelidir).
+         */
+        put: operations["save_site_timesheet_endpoint_sites__site_id__timesheet_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites/{site_id}/timesheet/export.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Site Timesheet Endpoint
+         * @description ŞP matrisinin Excel çıktısı (spec §3).
+         *
+         *     Matris `matrix.build` ile AYNI çağrıdan gelir — kapsam süzgeci, bölüm 404'ü
+         *     ve TÜM toplamlar okuma ucuyla birebir aynıdır. Okuma ucudur: `record_audit`
+         *     ÇAĞIRMAZ.
+         */
+        get: operations["export_site_timesheet_endpoint_sites__site_id__timesheet_export_xlsx_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3643,6 +3775,70 @@ export interface components {
         PermissionUpdate: {
             access_level: components["schemas"]["AccessLevel"];
             scope: components["schemas"]["Scope"];
+        };
+        /** PersonnelCreate */
+        PersonnelCreate: {
+            /** Full Name */
+            full_name: string;
+            /** Trade */
+            trade?: string | null;
+            source: components["schemas"]["WorkerSource"];
+            /** Subcontractor Id */
+            subcontractor_id?: string | null;
+            /** User Id */
+            user_id?: string | null;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+        };
+        /**
+         * PersonnelListResponse
+         * @description `audit`/`users` liste deseninin aynısı: `total` + `limit`/`offset`.
+         */
+        PersonnelListResponse: {
+            /** Items */
+            items: components["schemas"]["PersonnelResponse"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /** PersonnelResponse */
+        PersonnelResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Full Name */
+            full_name: string;
+            /** Trade */
+            trade: string | null;
+            source: components["schemas"]["WorkerSource"];
+            /** Subcontractor Id */
+            subcontractor_id: string | null;
+            /** User Id */
+            user_id: string | null;
+            /** Is Active */
+            is_active: boolean;
+        };
+        /** PersonnelUpdate */
+        PersonnelUpdate: {
+            /** Full Name */
+            full_name?: string | null;
+            /** Trade */
+            trade?: string | null;
+            source?: components["schemas"]["WorkerSource"] | null;
+            /** Subcontractor Id */
+            subcontractor_id?: string | null;
+            /** User Id */
+            user_id?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
         };
         /** PreferencesRead */
         PreferencesRead: {
@@ -5887,6 +6083,50 @@ export interface components {
             skipped_count: number;
         };
         /**
+         * SubcontractorContractListItem
+         * @description `GET /subcontractor-contracts` satırı — hakediş açma akışının seçim adımı.
+         *
+         *     Bilinçli olarak DAR: bedel/hakediş türevleri TAŞIMAZ (onlar birleşik
+         *     `/contracts?type=subcontractor` ucunun işidir). Proje/şantiye adları
+         *     JOIN'den gelir (`repository.list_subcontractor_contract_rows`), satır başına
+         *     ek sorgu YOKTUR.
+         */
+        SubcontractorContractListItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Contract No */
+            contract_no: string | null;
+            /** Subcontractor Name */
+            subcontractor_name: string | null;
+            /** Work Category */
+            work_category: string | null;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Project Name */
+            project_name: string;
+            /** Site Id */
+            site_id: string | null;
+            /** Site Name */
+            site_name: string | null;
+            status: components["schemas"]["ContractStatus"];
+            /** Is Draft */
+            is_draft: boolean;
+        };
+        /**
+         * SubcontractorContractListResponse
+         * @description `SubcontractorListResponse` deseninin aynısı: sayfalama/KPI YOK.
+         */
+        SubcontractorContractListResponse: {
+            /** Items */
+            items: components["schemas"]["SubcontractorContractListItem"][];
+        };
+        /**
          * SubcontractorContractUpdate
          * @description `project_id` YOK — sözleşme başka projeye taşınamaz. `items` YOK — kalemler
          *     ayrı uçlarla yönetilir (spec §6.5). Tüm alanlar isteğe bağlı (kısmi PATCH).
@@ -6381,6 +6621,153 @@ export interface components {
             category?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+        };
+        /**
+         * TimesheetCell
+         * @description Tek gün hücresi. Girilmemiş gün hücre ÜRETMEZ — matris SEYREKTİR.
+         *
+         *     Ayın her günü için boş hücre üretmek 31×48 = 1488 nesnelik bir gövdeyi
+         *     çoğunlukla `null` ile doldururdu; ekran gün iskeletini `day_totals`ten alır.
+         */
+        TimesheetCell: {
+            /**
+             * Work Date
+             * Format: date
+             */
+            work_date: string;
+            code: components["schemas"]["TimesheetCode"];
+            /** Overtime Hours */
+            overtime_hours: string | null;
+            /** Section Id */
+            section_id: string | null;
+        };
+        /**
+         * TimesheetCellInput
+         * @description `PUT` gövdesinin tek hücresi.
+         *
+         *     `project_id` gövdede YOKTUR: kapsam alanı şantiyeden KOPYALANIR, istemciden
+         *     alınsaydı görünür bir şantiyeye görünmez bir projenin hücresi yazılabilirdi.
+         */
+        TimesheetCellInput: {
+            /**
+             * Personnel Id
+             * Format: uuid
+             */
+            personnel_id: string;
+            /**
+             * Work Date
+             * Format: date
+             */
+            work_date: string;
+            code: components["schemas"]["TimesheetCode"];
+            /** Overtime Hours */
+            overtime_hours?: number | string | null;
+            /** Section Id */
+            section_id?: string | null;
+        };
+        /**
+         * TimesheetCode
+         * @description Gun hucresinin kodu (puantaj spec §2).
+         *
+         *     E5'in dortlusu (calisti / izinli / tatil / fazla mesai) + SP'nin `G`'si
+         *     (gecici gorev) TEK sette birlestirildi — iki ekran ayni enum'u kullanir.
+         *
+         *     Yarim gun / rapor kodu YOKTUR (mockup'ta yok, spec §5) — ileride enum
+         *     genisletmesiyle eklenir.
+         * @enum {string}
+         */
+        TimesheetCode: "worked" | "leave" | "holiday" | "overtime" | "temporary_duty";
+        /**
+         * TimesheetDayTotal
+         * @description Bir gün sütununun ayak satırı (ŞP 230-247).
+         *
+         *     `worked_count` FM'li günü SAYAR (E5 203: FM'li 6. sütun "4"tür), geçici
+         *     görevi SAYMAZ (ŞP 245: dört kişinin kayıtlı olduğu sütun "3G"dir). `G` bu
+         *     yüzden ayrı bir sayaçtır, `+` ise yalnız bir işarettir — sayıyı değiştirmez.
+         */
+        TimesheetDayTotal: {
+            /**
+             * Work Date
+             * Format: date
+             */
+            work_date: string;
+            /** Worked Count */
+            worked_count: number;
+            /** Has Overtime */
+            has_overtime: boolean;
+            /** Temporary Duty Count */
+            temporary_duty_count: number;
+        };
+        /**
+         * TimesheetMatrix
+         * @description ŞP/E5 puantaj ekranının tamamı: başlık şeridi + satırlar + ayak satırı.
+         */
+        TimesheetMatrix: {
+            /**
+             * Site Id
+             * Format: uuid
+             */
+            site_id: string;
+            /** Site Name */
+            site_name: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Project Name */
+            project_name: string;
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            /** Section Id */
+            section_id: string | null;
+            /** Section Name */
+            section_name: string | null;
+            /** Worker Count */
+            worker_count: number;
+            /** Total Man Days */
+            total_man_days: number;
+            /** Total Overtime Hours */
+            total_overtime_hours: string;
+            /** Rows */
+            rows: components["schemas"]["TimesheetMatrixRow"][];
+            /** Day Totals */
+            day_totals: components["schemas"]["TimesheetDayTotal"][];
+        };
+        /**
+         * TimesheetMatrixRow
+         * @description Bir personelin ay satırı (ŞP 148-167).
+         */
+        TimesheetMatrixRow: {
+            /**
+             * Personnel Id
+             * Format: uuid
+             */
+            personnel_id: string;
+            /** Full Name */
+            full_name: string;
+            /** Trade */
+            trade: string | null;
+            source: components["schemas"]["WorkerSource"];
+            /** Subcontractor Name */
+            subcontractor_name: string | null;
+            /** Man Days */
+            man_days: number;
+            /** Cells */
+            cells: components["schemas"]["TimesheetCell"][];
+        };
+        /**
+         * TimesheetSave
+         * @description ⚠️ **DEĞİŞTİRME semantiği** (spec §7 S4): gövde dönem+şantiye kapsamının
+         *
+         *     TAM kümesidir; gönderilmeyen hücre SİLİNİR. Mockup'ta tek "Kaydet" düğmesi
+         *     vardır (ŞP 101) — ekran matrisi bütün olarak kaydeder.
+         */
+        TimesheetSave: {
+            /** Cells */
+            cells?: components["schemas"]["TimesheetCellInput"][];
         };
         /** TokenPair */
         TokenPair: {
@@ -8855,6 +9242,54 @@ export interface operations {
             };
         };
     };
+    list_subcontractor_contracts_endpoint_subcontractor_contracts_get: {
+        parameters: {
+            query?: {
+                project_id?: string | null;
+                site_id?: string | null;
+                status?: components["schemas"]["ContractStatus"] | null;
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubcontractorContractListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_subcontractor_contract_endpoint_subcontractor_contracts__contract_id__get: {
         parameters: {
             query?: never;
@@ -9464,6 +9899,197 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EmployerResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_personnel_endpoint_personnel_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                source?: components["schemas"]["WorkerSource"] | null;
+                subcontractor_id?: string | null;
+                is_active?: boolean | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonnelListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_personnel_endpoint_personnel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonnelCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonnelResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_personnel_endpoint_personnel__personnel_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personnel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonnelResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_personnel_endpoint_personnel__personnel_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personnel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonnelUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonnelResponse"];
                 };
             };
             /** @description Yetkisiz işlem */
@@ -12331,6 +12957,8 @@ export interface operations {
         parameters: {
             query?: {
                 project_id?: string | null;
+                /** @description Sözleşmesi bu şantiyeye bağlı hakedişler (proje geneli olanlar hariç) */
+                site_id?: string | null;
                 period_year?: number | null;
                 period_month?: number | null;
                 status?: components["schemas"]["SubcontractorPaymentStatus"] | null;
@@ -12383,6 +13011,8 @@ export interface operations {
         parameters: {
             query?: {
                 project_id?: string | null;
+                /** @description Sözleşmesi bu şantiyeye bağlı hakedişler (proje geneli olanlar hariç) */
+                site_id?: string | null;
                 period_year?: number | null;
                 period_month?: number | null;
                 status?: components["schemas"]["SubcontractorPaymentStatus"] | null;
@@ -12911,6 +13541,156 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SubcontractorProgressPaymentDetail"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_site_timesheet_endpoint_sites__site_id__timesheet_get: {
+        parameters: {
+            query: {
+                year: number;
+                month: number;
+                section_id?: string | null;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimesheetMatrix"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_site_timesheet_endpoint_sites__site_id__timesheet_put: {
+        parameters: {
+            query: {
+                year: number;
+                month: number;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TimesheetSave"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimesheetMatrix"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_site_timesheet_endpoint_sites__site_id__timesheet_export_xlsx_get: {
+        parameters: {
+            query: {
+                year: number;
+                month: number;
+                section_id?: string | null;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Excel dosyasi */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": unknown;
                 };
             };
             /** @description Yetkisiz işlem */

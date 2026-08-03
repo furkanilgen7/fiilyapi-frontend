@@ -1980,6 +1980,117 @@
         }
       }
     },
+    "/subcontractor-contracts": {
+      "get": {
+        "tags": [
+          "contracts"
+        ],
+        "summary": "List Subcontractor Contracts Endpoint",
+        "description": "TB2 U1 (spec §1): hakediş açma akışının seçim adımı bu uçtan beslenir —\n\nhakedişlerden türetme, hiç hakedişi olmayan sözleşmeyi göremiyordu.\nSayfalama YOK (`/contracts` liste ucu deseni), sıralama `contract_no`+`id`.",
+        "operationId": "list_subcontractor_contracts_endpoint_subcontractor_contracts_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "site_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ContractStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubcontractorContractListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/subcontractor-contracts/{contract_id}": {
       "get": {
         "tags": [
@@ -2726,6 +2837,306 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EmployerResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/personnel": {
+      "get": {
+        "tags": [
+          "personnel"
+        ],
+        "summary": "List Personnel Endpoint",
+        "description": "`q` YALNIZ ada kısmi bakar (spec §3); süzgeçler AND'lidir.\n\n`is_active` GÖNDERİLMEZSE süzgeç uygulanmaz — pasif personel sessizce\ngizlenmez; ekran hangi kümeyi istediğini açıkça söyler.",
+        "operationId": "list_personnel_endpoint_personnel_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/WorkerSource"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source"
+            }
+          },
+          {
+            "name": "subcontractor_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Subcontractor Id"
+            }
+          },
+          {
+            "name": "is_active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Is Active"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonnelListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "personnel"
+        ],
+        "summary": "Create Personnel Endpoint",
+        "operationId": "create_personnel_endpoint_personnel_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonnelCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonnelResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/personnel/{personnel_id}": {
+      "get": {
+        "tags": [
+          "personnel"
+        ],
+        "summary": "Get Personnel Endpoint",
+        "operationId": "get_personnel_endpoint_personnel__personnel_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "personnel_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Personnel Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonnelResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "personnel"
+        ],
+        "summary": "Update Personnel Endpoint",
+        "description": "Pasifleştirme de BURADAN geçer (`{\"is_active\": false}`) — DELETE ucu yoktur.",
+        "operationId": "update_personnel_endpoint_personnel__personnel_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "personnel_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Personnel Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonnelUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonnelResponse"
                 }
               }
             }
@@ -6411,7 +6822,7 @@
           "subcontractor-progress-payments"
         ],
         "summary": "List Subcontractor Progress Payments Endpoint",
-        "description": "L83-101 filtreleri + `audit`/`users` sayfalama deseni (`total`/`limit`/`offset`).",
+        "description": "L83-101 filtreleri + `audit`/`users` sayfalama deseni (`total`/`limit`/`offset`).\n\n`site_id` (TB2/U2) SÖZLEŞME üzerinden süzer — hakedişin şantiye kolonu yoktur.\nKapsamı GENİŞLETMEZ: `visible_projects` süzgeci her hâlükârda üstte kalır.",
         "operationId": "list_subcontractor_progress_payments_endpoint_subcontractor_progress_payments_get",
         "security": [
           {
@@ -6435,6 +6846,25 @@
               ],
               "title": "Project Id"
             }
+          },
+          {
+            "name": "site_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sözleşmesi bu şantiyeye bağlı hakedişler (proje geneli olanlar hariç)",
+              "title": "Site Id"
+            },
+            "description": "Sözleşmesi bu şantiyeye bağlı hakedişler (proje geneli olanlar hariç)"
           },
           {
             "name": "period_year",
@@ -6588,6 +7018,25 @@
               ],
               "title": "Project Id"
             }
+          },
+          {
+            "name": "site_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sözleşmesi bu şantiyeye bağlı hakedişler (proje geneli olanlar hariç)",
+              "title": "Site Id"
+            },
+            "description": "Sözleşmesi bu şantiyeye bağlı hakedişler (proje geneli olanlar hariç)"
           },
           {
             "name": "period_year",
@@ -7305,6 +7754,275 @@
                   "$ref": "#/components/schemas/SubcontractorProgressPaymentDetail"
                 }
               }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sites/{site_id}/timesheet": {
+      "get": {
+        "tags": [
+          "timesheet"
+        ],
+        "summary": "Get Site Timesheet Endpoint",
+        "description": "ŞP/E5 puantaj matrisi: kişi satırları + gün hücreleri + türev toplamlar.\n\n`section_id` ŞP 99'un \"Tüm Bölümler / Kat 6–10\" seçicisidir. Başka şantiyenin\nbölümü boş matris DEĞİL 404 alır (kesin karar `service.visible_section`).",
+        "operationId": "get_site_timesheet_endpoint_sites__site_id__timesheet_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2100,
+              "minimum": 2000,
+              "title": "Year"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 12,
+              "minimum": 1,
+              "title": "Month"
+            }
+          },
+          {
+            "name": "section_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Section Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimesheetMatrix"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "timesheet"
+        ],
+        "summary": "Save Site Timesheet Endpoint",
+        "description": "ŞP 101 \"Kaydet\" — **DEĞİŞTİRME** semantiği (spec §7 S4).\n\n⚠️ Gövde dönem+şantiye kapsamının TAM kümesidir: gövdede geçmeyen hücre\nSİLİNİR. Başka ayın ya da başka şantiyenin hücrelerine DOKUNULMAZ (kesin\nkarar `service.save`).\n\nDenetim TEK dönem-özeti olayıdır; hücre başına olay yazmak 31×48'lik bir\nkaydetmede denetim günlüğünü kullanılamaz hâle getirirdi (spec §3).\n\nYanıt GÜNCEL matristir (bölüm süzgeci UYGULANMAZ — kaydedilen kapsam\nşantiyenin tamamıdır, ekran kaydettiğinin tamamını geri görmelidir).",
+        "operationId": "save_site_timesheet_endpoint_sites__site_id__timesheet_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2100,
+              "minimum": 2000,
+              "title": "Year"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 12,
+              "minimum": 1,
+              "title": "Month"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimesheetSave"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimesheetMatrix"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sites/{site_id}/timesheet/export.xlsx": {
+      "get": {
+        "tags": [
+          "timesheet"
+        ],
+        "summary": "Export Site Timesheet Endpoint",
+        "description": "ŞP matrisinin Excel çıktısı (spec §3).\n\nMatris `matrix.build` ile AYNI çağrıdan gelir — kapsam süzgeci, bölüm 404'ü\nve TÜM toplamlar okuma ucuyla birebir aynıdır. Okuma ucudur: `record_audit`\nÇAĞIRMAZ.",
+        "operationId": "export_site_timesheet_endpoint_sites__site_id__timesheet_export_xlsx_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2100,
+              "minimum": 2000,
+              "title": "Year"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 12,
+              "minimum": 1,
+              "title": "Month"
+            }
+          },
+          {
+            "name": "section_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Section Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Excel dosyasi",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {}
             }
           },
           "403": {
@@ -12696,6 +13414,240 @@
           "scope"
         ],
         "title": "PermissionUpdate"
+      },
+      "PersonnelCreate": {
+        "properties": {
+          "full_name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Full Name"
+          },
+          "trade": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trade"
+          },
+          "source": {
+            "$ref": "#/components/schemas/WorkerSource"
+          },
+          "subcontractor_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontractor Id"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "full_name",
+          "source"
+        ],
+        "title": "PersonnelCreate"
+      },
+      "PersonnelListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PersonnelResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "PersonnelListResponse",
+        "description": "`audit`/`users` liste deseninin aynısı: `total` + `limit`/`offset`."
+      },
+      "PersonnelResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "trade": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trade"
+          },
+          "source": {
+            "$ref": "#/components/schemas/WorkerSource"
+          },
+          "subcontractor_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontractor Id"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "full_name",
+          "trade",
+          "source",
+          "subcontractor_id",
+          "user_id",
+          "is_active"
+        ],
+        "title": "PersonnelResponse"
+      },
+      "PersonnelUpdate": {
+        "properties": {
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "trade": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trade"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkerSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "subcontractor_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontractor Id"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "title": "PersonnelUpdate"
       },
       "PreferencesRead": {
         "properties": {
@@ -19498,6 +20450,119 @@
         "title": "SubcontractorContractItemsLoadResponse",
         "description": "`POST .../items/load-from-employer` yanıtı (spec §6.5) — idempotent\n\nkopyalamanın kaç kalem yazdığını/atladığını bildirir."
       },
+      "SubcontractorContractListItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "contract_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract No"
+          },
+          "subcontractor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontractor Name"
+          },
+          "work_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Category"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "project_name": {
+            "type": "string",
+            "title": "Project Name"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "site_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Name"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ContractStatus"
+          },
+          "is_draft": {
+            "type": "boolean",
+            "title": "Is Draft"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "contract_no",
+          "subcontractor_name",
+          "work_category",
+          "project_id",
+          "project_name",
+          "site_id",
+          "site_name",
+          "status",
+          "is_draft"
+        ],
+        "title": "SubcontractorContractListItem",
+        "description": "`GET /subcontractor-contracts` satırı — hakediş açma akışının seçim adımı.\n\nBilinçli olarak DAR: bedel/hakediş türevleri TAŞIMAZ (onlar birleşik\n`/contracts?type=subcontractor` ucunun işidir). Proje/şantiye adları\nJOIN'den gelir (`repository.list_subcontractor_contract_rows`), satır başına\nek sorgu YOKTUR."
+      },
+      "SubcontractorContractListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SubcontractorContractListItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "SubcontractorContractListResponse",
+        "description": "`SubcontractorListResponse` deseninin aynısı: sayfalama/KPI YOK."
+      },
       "SubcontractorContractUpdate": {
         "properties": {
           "site_id": {
@@ -20985,6 +22050,322 @@
         },
         "type": "object",
         "title": "SubcontractorUpdate"
+      },
+      "TimesheetCell": {
+        "properties": {
+          "work_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Work Date"
+          },
+          "code": {
+            "$ref": "#/components/schemas/TimesheetCode"
+          },
+          "overtime_hours": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overtime Hours"
+          },
+          "section_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "work_date",
+          "code",
+          "overtime_hours",
+          "section_id"
+        ],
+        "title": "TimesheetCell",
+        "description": "Tek gün hücresi. Girilmemiş gün hücre ÜRETMEZ — matris SEYREKTİR.\n\nAyın her günü için boş hücre üretmek 31×48 = 1488 nesnelik bir gövdeyi\nçoğunlukla `null` ile doldururdu; ekran gün iskeletini `day_totals`ten alır."
+      },
+      "TimesheetCellInput": {
+        "properties": {
+          "personnel_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Personnel Id"
+          },
+          "work_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Work Date"
+          },
+          "code": {
+            "$ref": "#/components/schemas/TimesheetCode"
+          },
+          "overtime_hours": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 24.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d{0,1}0*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overtime Hours"
+          },
+          "section_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "personnel_id",
+          "work_date",
+          "code"
+        ],
+        "title": "TimesheetCellInput",
+        "description": "`PUT` gövdesinin tek hücresi.\n\n`project_id` gövdede YOKTUR: kapsam alanı şantiyeden KOPYALANIR, istemciden\nalınsaydı görünür bir şantiyeye görünmez bir projenin hücresi yazılabilirdi."
+      },
+      "TimesheetCode": {
+        "type": "string",
+        "enum": [
+          "worked",
+          "leave",
+          "holiday",
+          "overtime",
+          "temporary_duty"
+        ],
+        "title": "TimesheetCode",
+        "description": "Gun hucresinin kodu (puantaj spec §2).\n\nE5'in dortlusu (calisti / izinli / tatil / fazla mesai) + SP'nin `G`'si\n(gecici gorev) TEK sette birlestirildi — iki ekran ayni enum'u kullanir.\n\nYarim gun / rapor kodu YOKTUR (mockup'ta yok, spec §5) — ileride enum\ngenisletmesiyle eklenir."
+      },
+      "TimesheetDayTotal": {
+        "properties": {
+          "work_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Work Date"
+          },
+          "worked_count": {
+            "type": "integer",
+            "title": "Worked Count"
+          },
+          "has_overtime": {
+            "type": "boolean",
+            "title": "Has Overtime"
+          },
+          "temporary_duty_count": {
+            "type": "integer",
+            "title": "Temporary Duty Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "work_date",
+          "worked_count",
+          "has_overtime",
+          "temporary_duty_count"
+        ],
+        "title": "TimesheetDayTotal",
+        "description": "Bir gün sütununun ayak satırı (ŞP 230-247).\n\n`worked_count` FM'li günü SAYAR (E5 203: FM'li 6. sütun \"4\"tür), geçici\ngörevi SAYMAZ (ŞP 245: dört kişinin kayıtlı olduğu sütun \"3G\"dir). `G` bu\nyüzden ayrı bir sayaçtır, `+` ise yalnız bir işarettir — sayıyı değiştirmez."
+      },
+      "TimesheetMatrix": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Site Id"
+          },
+          "site_name": {
+            "type": "string",
+            "title": "Site Name"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "project_name": {
+            "type": "string",
+            "title": "Project Name"
+          },
+          "year": {
+            "type": "integer",
+            "title": "Year"
+          },
+          "month": {
+            "type": "integer",
+            "title": "Month"
+          },
+          "section_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Id"
+          },
+          "section_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Name"
+          },
+          "worker_count": {
+            "type": "integer",
+            "title": "Worker Count"
+          },
+          "total_man_days": {
+            "type": "integer",
+            "title": "Total Man Days"
+          },
+          "total_overtime_hours": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Overtime Hours"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/TimesheetMatrixRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "day_totals": {
+            "items": {
+              "$ref": "#/components/schemas/TimesheetDayTotal"
+            },
+            "type": "array",
+            "title": "Day Totals"
+          }
+        },
+        "type": "object",
+        "required": [
+          "site_id",
+          "site_name",
+          "project_id",
+          "project_name",
+          "year",
+          "month",
+          "section_id",
+          "section_name",
+          "worker_count",
+          "total_man_days",
+          "total_overtime_hours",
+          "rows",
+          "day_totals"
+        ],
+        "title": "TimesheetMatrix",
+        "description": "ŞP/E5 puantaj ekranının tamamı: başlık şeridi + satırlar + ayak satırı."
+      },
+      "TimesheetMatrixRow": {
+        "properties": {
+          "personnel_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Personnel Id"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "trade": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trade"
+          },
+          "source": {
+            "$ref": "#/components/schemas/WorkerSource"
+          },
+          "subcontractor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontractor Name"
+          },
+          "man_days": {
+            "type": "integer",
+            "title": "Man Days"
+          },
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/TimesheetCell"
+            },
+            "type": "array",
+            "title": "Cells"
+          }
+        },
+        "type": "object",
+        "required": [
+          "personnel_id",
+          "full_name",
+          "trade",
+          "source",
+          "subcontractor_name",
+          "man_days",
+          "cells"
+        ],
+        "title": "TimesheetMatrixRow",
+        "description": "Bir personelin ay satırı (ŞP 148-167)."
+      },
+      "TimesheetSave": {
+        "properties": {
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/TimesheetCellInput"
+            },
+            "type": "array",
+            "title": "Cells"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "TimesheetSave",
+        "description": "⚠️ **DEĞİŞTİRME semantiği** (spec §7 S4): gövde dönem+şantiye kapsamının\n\nTAM kümesidir; gönderilmeyen hücre SİLİNİR. Mockup'ta tek \"Kaydet\" düğmesi\nvardır (ŞP 101) — ekran matrisi bütün olarak kaydeder."
       },
       "TokenPair": {
         "properties": {
