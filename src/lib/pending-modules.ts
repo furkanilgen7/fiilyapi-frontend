@@ -18,6 +18,12 @@ const MODULE_LABELS: Record<string, string> = {
   // F-P6 T3 (Bölüm formu) — devre dışı kartlar
   equipment: "Ekipman/makine modülüyle birlikte gelir",
   gantt: "Proje takvimi (Gantt) modülüyle birlikte gelir",
+  // F-TH T2 (Ekran 2 · Taşeron Hakedişi listesi) — `SubcontractorProgress
+  // PaymentListItem` şemasında taşımayan ÜÇ alan (brief §Zarif düşüş): kolon
+  // silinmez, mockup'taki yerinde bu etiketlerle pending gösterilir.
+  work_category: "İş kategorisi alanıyla birlikte gelir",
+  vat: "KDV hesaplamasıyla birlikte gelir",
+  progress: "İlerleme takibiyle birlikte gelir",
 };
 
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";

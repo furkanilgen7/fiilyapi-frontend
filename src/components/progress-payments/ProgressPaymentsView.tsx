@@ -9,6 +9,7 @@ import { useModulePermission } from "@/lib/auth/useModulePermission";
 
 import { ProgressPaymentsListBody } from "./ProgressPaymentsList";
 import { ProgressPaymentsTotalsStrip } from "./ProgressPaymentsTotalsStrip";
+import { ProgressPaymentsTabs } from "./shared/ProgressPaymentsTabs";
 import "./progress-payments.css";
 
 // Ekran 14 · Hakedişler (P7 T2) — proje-genel İŞVEREN hakediş listesi.
@@ -24,6 +25,10 @@ import "./progress-payments.css";
 // TEK bir proje YOK (liste proje-genel), o yüzden özet sorgusu BURADA HİÇ
 // ÇAĞRILMAZ; `summary` prop'u verilmez, şerit yalnız `items.length` sayısını
 // basar, yüzdeyi hiç basmaz (bkz. `ProgressPaymentsTotalsStrip.tsx`).
+//
+// F-TH T2 (§S3 kullanıcı kararı): bu sayfa artık "İşveren | Taşeron" sekmeli
+// kardeşin İşveren yarısı — `ProgressPaymentsTabs` (paylaşılan, kopyasız)
+// başlığın ÜSTÜNE eklendi, aşağıdaki içerik DEĞİŞMEDİ.
 export function ProgressPaymentsView() {
   const paymentsQuery = useProgressPayments();
   // Yazma yüzeyi kapısı (spec §2.5): "Yeni Hakediş" yalnız `draft` ve üstü
@@ -34,6 +39,7 @@ export function ProgressPaymentsView() {
 
   return (
     <div className="pp">
+      <ProgressPaymentsTabs active="employer" />
       <div className="pp__title-row">
         <h1 className="pp__title">Hakedişler</h1>
         {canWrite && (
