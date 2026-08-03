@@ -1123,6 +1123,34 @@ const SUBCONTRACTOR_CONTRACTS: MockSubcontractorContract[] = [
     materials_by_contractor: true, subcontractor_files_own_sgk: false, vat_withholding: true,
     status: "active", is_draft: false, items: SUBCONTRACTOR_CONTRACT_ITEMS_SC2,
   },
+  // TB2 takip · U1 kanıt kaydı: HİÇ hakedişi olmayan sözleşme. Eski sınır
+  // (hakedişten türetme) bu sözleşmeyi seçim adımında HİÇ göstermezdi — U1'e
+  // geçişin kanıtı budur (bkz. `subcontractor-progress-payments.spec.ts`
+  // "hiç hakedişi olmayan sözleşme de listelenir").
+  //
+  // ⚠️ Coordinator review (Important) — `subcontractor_id` BİLİNÇLİ olarak
+  // sc-1 ile AYNI (`sub-1`) tutuldu: `buildSubcontractorPaymentSummary`teki
+  // `active_subcontractor_count` (satır ~1497) `state.subcontractorContracts`
+  // üzerinden projeye/hakedişe göre SÜZÜLMEDEN, TÜM aktif sözleşmelerin
+  // distinct `subcontractor_id`sini sayar. Yeni bir subcontractor_id
+  // eklemek bu sayıyı 2→3 yapar ve `subcontractor-progress-payments-
+  // visual.spec.ts`teki "Aktif Taşeron" KPI'ını (dolayısıyla
+  // `taseron-hakedisleri-listesi.png` baseline'ını) SESSİZCE bozardı. U1
+  // kanıtı `subcontractor_id`nin tekil olmasına bağlı DEĞİL — yalnız
+  // `subcontractor_name`in seçim kutusunda göründüğü test ediliyor, o farklı
+  // (`Yılmaz Boya A.Ş.`) kalabilir. `active_subcontractor_count`ın 2'de
+  // kaldığı `subcontractor-progress-payments.spec.ts`teki "Aktif Taşeron"
+  // KPI testiyle kilitlenmiştir.
+  {
+    id: "sc-3", project_id: "p-1", site_id: null, subcontractor_id: "sub-1",
+    subcontractor_name: "Yılmaz Boya A.Ş.", work_category: "Boya",
+    contract_no: "TSD-2026-03", signature_date: "2026-03-01", is_notarized: false,
+    start_date: "2026-04-01", end_date: "2026-10-01", late_penalty_daily: null,
+    advance_pct: "10.00", retainage_pct: "5.00", vat_pct: "20.00",
+    payment_period: "monthly", payment_term_days: 15,
+    materials_by_contractor: false, subcontractor_files_own_sgk: true, vat_withholding: false,
+    status: "active", is_draft: false, items: [],
+  },
 ];
 
 function findSubcontractorContractItem(
@@ -1378,6 +1406,27 @@ function buildSubcontractorPaymentListItem(state: MockState, payment: MockSubcon
     gross_total: payment.calculation.gross,
     net_total: payment.calculation.net,
     is_revision_required: payment.is_revision_required,
+  };
+}
+
+// TB2 U1 (`GET /subcontractor-contracts`) satırı — hakediş açma seçim adımı
+// + `useSiteSubcontractorPayments`in workCategory join'i. Bilinçli olarak
+// DAR: bedel/hakediş türevleri TAŞIMAZ (bkz. `SubcontractorContractListItem`
+// docstring'i, openapi.json).
+function buildSubcontractorContractListItem(state: MockState, contract: MockSubcontractorContract) {
+  const project = state.projects.find((p) => p.id === contract.project_id);
+  const site = contract.site_id ? state.sites.find((s) => s.id === contract.site_id) : undefined;
+  return {
+    id: contract.id,
+    contract_no: contract.contract_no,
+    subcontractor_name: contract.subcontractor_name,
+    work_category: contract.work_category,
+    project_id: contract.project_id,
+    project_name: project?.name ?? "",
+    site_id: contract.site_id,
+    site_name: site?.name ?? null,
+    status: contract.status,
+    is_draft: contract.is_draft,
   };
 }
 
@@ -2446,10 +2495,12 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       return send(200, buildSubcontractorPaymentSummary(state, parsed.searchParams));
     }
 
-    // GET /subcontractor-progress-payments — liste (proje/dönem/durum/arama +
-    // sayfalama).
+    // GET /subcontractor-progress-payments — liste (proje/şantiye/dönem/durum/
+    // arama + sayfalama). `site_id` (TB2/U2) SÖZLEŞME üzerinden süzer —
+    // hakedişin kendi şantiye kolonu yoktur.
     if (method === "GET" && path === "/subcontractor-progress-payments") {
       const projectId = parsed.searchParams.get("project_id");
+      const siteId = parsed.searchParams.get("site_id");
       const periodYear = parsed.searchParams.get("period_year");
       const periodMonth = parsed.searchParams.get("period_month");
       const status = parsed.searchParams.get("status");
@@ -2461,6 +2512,9 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       // görünmez — bkz. `MockSubcontractorProgressPayment.hiddenFromLists`.
       let items = state.subcontractorProgressPayments.filter((p) => !p.hiddenFromLists);
       if (projectId) items = items.filter((p) => p.project_id === projectId);
+      if (siteId) {
+        items = items.filter((p) => findSubcontractorContract(state, p.contract_id)?.site_id === siteId);
+      }
       if (periodYear) items = items.filter((p) => p.period_year === Number(periodYear));
       if (periodMonth) items = items.filter((p) => p.period_month === Number(periodMonth));
       if (status) items = items.filter((p) => p.status === status);
@@ -2480,6 +2534,34 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         limit,
         offset,
       });
+    }
+
+    // GET /subcontractor-contracts — TB2 U1 liste ucu (hakediş açma seçim
+    // adımı + `useSiteSubcontractorPayments`in workCategory join'i).
+    // Sayfalama YOK, sıralama `contract_no`+`id` (deterministik).
+    if (method === "GET" && path === "/subcontractor-contracts") {
+      const projectId = parsed.searchParams.get("project_id");
+      const siteId = parsed.searchParams.get("site_id");
+      const status = parsed.searchParams.get("status");
+      const q = (parsed.searchParams.get("q") ?? "").trim().toLocaleLowerCase("tr");
+
+      let items = state.subcontractorContracts;
+      if (projectId) items = items.filter((c) => c.project_id === projectId);
+      if (siteId) items = items.filter((c) => c.site_id === siteId);
+      if (status) items = items.filter((c) => c.status === status);
+      if (q) {
+        items = items.filter((c) => {
+          const name = (c.subcontractor_name ?? "").toLocaleLowerCase("tr");
+          const no = (c.contract_no ?? "").toLocaleLowerCase("tr");
+          return name.includes(q) || no.includes(q);
+        });
+      }
+      const sorted = [...items].sort((a, b) => {
+        const byNo = (a.contract_no ?? "").localeCompare(b.contract_no ?? "", "tr");
+        if (byNo !== 0) return byNo;
+        return a.id.localeCompare(b.id);
+      });
+      return send(200, { items: sorted.map((c) => buildSubcontractorContractListItem(state, c)) });
     }
 
     // POST /subcontractor-contracts/{contract_id}/progress-payments —

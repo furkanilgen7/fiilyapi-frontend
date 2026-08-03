@@ -18,11 +18,17 @@ export type SubcontractorProgressPaymentSummary =
   components["schemas"]["SubcontractorProgressPaymentSummary"];
 export type SubcontractorPaymentStatus = components["schemas"]["SubcontractorPaymentStatus"];
 export type SubcontractorContractDetail = components["schemas"]["SubcontractorContractDetail"];
+export type SubcontractorContractListItem = components["schemas"]["SubcontractorContractListItem"];
+export type SubcontractorContractListResponse =
+  components["schemas"]["SubcontractorContractListResponse"];
 
 // Liste ve özet uçlarının ORTAK filtre alanları (openapi.json GET
 // /subcontractor-progress-payments + .../summary query parametreleri).
+// `site_id` TB2/U2 ile eklendi — sözleşme üzerinden süzer, hakedişin kendi
+// şantiye kolonu yoktur.
 export interface SubcontractorProgressPaymentFilter {
   project_id?: string;
+  site_id?: string;
   period_year?: number;
   period_month?: number;
   status?: SubcontractorPaymentStatus;
@@ -35,18 +41,44 @@ export interface SubcontractorProgressPaymentListFilter extends SubcontractorPro
   offset?: number;
 }
 
+// TB2 U1 (`GET /subcontractor-contracts`) filtreleri — sayfalama YOK
+// (`limit`/`offset`/`total` taşımaz), sıralama sunucuda deterministiktir.
+export interface SubcontractorContractListFilter {
+  project_id?: string;
+  site_id?: string;
+  status?: components["schemas"]["ContractStatus"];
+  q?: string;
+}
+
 export const SUBCONTRACTOR_PROGRESS_PAYMENTS_QUERY_KEY = "subcontractor-progress-payments";
 export const SUBCONTRACTOR_PROGRESS_PAYMENT_QUERY_KEY = "subcontractor-progress-payment";
 export const SUBCONTRACTOR_PROGRESS_PAYMENT_SUMMARY_QUERY_KEY = "subcontractor-progress-payment-summary";
 export const SUBCONTRACTOR_CONTRACT_QUERY_KEY = "subcontractor-contract";
+// Coordinator review (Minor 2) — modül-özel (export EDİLMEZ): bu dilimde
+// sözleşme oluşturma/güncelleme ucu YOK (brief §Yasaklar), dolayısıyla bu
+// listeyi invalidate edecek bir mutasyon da YOK. Dışarıdan tüketen olmadığı
+// için kullanılmayan bir kamu yüzeyi bırakmamak adına export edilmiyor.
+const SUBCONTRACTOR_CONTRACTS_LIST_QUERY_KEY = "subcontractor-contracts-list";
 
 function filterQuery(
   filter: SubcontractorProgressPaymentFilter,
 ): Record<string, string | number> {
   return {
     ...(filter.project_id ? { project_id: filter.project_id } : {}),
+    ...(filter.site_id ? { site_id: filter.site_id } : {}),
     ...(filter.period_year !== undefined ? { period_year: filter.period_year } : {}),
     ...(filter.period_month !== undefined ? { period_month: filter.period_month } : {}),
+    ...(filter.status ? { status: filter.status } : {}),
+    ...(filter.q ? { q: filter.q } : {}),
+  };
+}
+
+function contractListFilterQuery(
+  filter: SubcontractorContractListFilter,
+): Record<string, string> {
+  return {
+    ...(filter.project_id ? { project_id: filter.project_id } : {}),
+    ...(filter.site_id ? { site_id: filter.site_id } : {}),
     ...(filter.status ? { status: filter.status } : {}),
     ...(filter.q ? { q: filter.q } : {}),
   };
@@ -63,6 +95,7 @@ export function useSubcontractorProgressPayments(
     queryKey: [
       SUBCONTRACTOR_PROGRESS_PAYMENTS_QUERY_KEY,
       filter.project_id ?? null,
+      filter.site_id ?? null,
       filter.period_year ?? null,
       filter.period_month ?? null,
       filter.status ?? null,
@@ -116,6 +149,7 @@ export function useSubcontractorProgressPaymentSummary(
     queryKey: [
       SUBCONTRACTOR_PROGRESS_PAYMENT_SUMMARY_QUERY_KEY,
       filter.project_id ?? null,
+      filter.site_id ?? null,
       filter.period_year ?? null,
       filter.period_month ?? null,
       filter.status ?? null,
@@ -144,6 +178,33 @@ export function useSubcontractorContract(
       unwrap(
         await backendClient.GET("/subcontractor-contracts/{contract_id}", {
           params: { path: { contract_id: contractId } },
+        }),
+      ),
+  });
+}
+
+/**
+ * TB2 U1 (`GET /subcontractor-contracts`) — sözleşme LİSTE ucu. Sayfalama
+ * YOK (`/contracts` liste ucu deseni), sıralama sunucuda deterministiktir.
+ * `useSubcontractorContractOptions` (hakediş açma seçim adımı) VE
+ * `useSiteSubcontractorPayments` (workCategory join'i) bu tek hook'u paylaşır
+ * — aynı filtreyle çağrılan istekler TanStack Query önbelleğinden gelir.
+ */
+export function useSubcontractorContractsList(
+  filter: SubcontractorContractListFilter = {},
+): UseQueryResult<SubcontractorContractListResponse, Error> {
+  return useQuery({
+    queryKey: [
+      SUBCONTRACTOR_CONTRACTS_LIST_QUERY_KEY,
+      filter.project_id ?? null,
+      filter.site_id ?? null,
+      filter.status ?? null,
+      filter.q ?? null,
+    ],
+    queryFn: async () =>
+      unwrap(
+        await backendClient.GET("/subcontractor-contracts", {
+          params: { query: contractListFilterQuery(filter) },
         }),
       ),
   });

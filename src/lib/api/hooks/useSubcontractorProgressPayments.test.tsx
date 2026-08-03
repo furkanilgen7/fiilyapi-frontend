@@ -8,6 +8,7 @@ import {
   useSubcontractorProgressPayment,
   useSubcontractorProgressPaymentSummary,
   useSubcontractorContract,
+  useSubcontractorContractsList,
   SUBCONTRACTOR_PROGRESS_PAYMENTS_QUERY_KEY,
   SUBCONTRACTOR_PROGRESS_PAYMENT_QUERY_KEY,
   SUBCONTRACTOR_PROGRESS_PAYMENT_SUMMARY_QUERY_KEY,
@@ -84,7 +85,7 @@ describe("useSubcontractorProgressPayments", () => {
     expect(result.current.data?.items).toHaveLength(1);
   });
 
-  it("tum filtreleri (project_id/period_year/period_month/status/q/limit/offset) query parametresine cevirir", async () => {
+  it("tum filtreleri (project_id/site_id/period_year/period_month/status/q/limit/offset) query parametresine cevirir", async () => {
     vi.mocked(backendClient.GET).mockResolvedValue({
       data: LIST_RESPONSE,
       error: undefined,
@@ -95,6 +96,7 @@ describe("useSubcontractorProgressPayments", () => {
       () =>
         useSubcontractorProgressPayments({
           project_id: PROJECT_ID,
+          site_id: "site-1",
           period_year: 2026,
           period_month: 7,
           status: "draft",
@@ -110,6 +112,7 @@ describe("useSubcontractorProgressPayments", () => {
       params: {
         query: {
           project_id: PROJECT_ID,
+          site_id: "site-1",
           period_year: 2026,
           period_month: 7,
           status: "draft",
@@ -250,6 +253,90 @@ describe("useSubcontractorContract", () => {
     } as never);
 
     const { result } = renderHook(() => useSubcontractorContract(CONTRACT_ID), { wrapper });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+describe("useSubcontractorContractsList", () => {
+  const CONTRACT_LIST_RESPONSE = {
+    items: [
+      {
+        id: CONTRACT_ID,
+        contract_no: "TSD-2026-01",
+        subcontractor_name: "Aydın Elektrik Taah.",
+        work_category: "Elektrik",
+        project_id: PROJECT_ID,
+        project_name: "Kule A",
+        site_id: "site-1",
+        site_name: "A-Blok",
+        status: "active",
+        is_draft: false,
+      },
+    ],
+  };
+
+  it("filtresiz istekte query boş gider (TB2 U1)", async () => {
+    vi.mocked(backendClient.GET).mockResolvedValue({
+      data: CONTRACT_LIST_RESPONSE,
+      error: undefined,
+      response: new Response(),
+    } as never);
+
+    const { result } = renderHook(() => useSubcontractorContractsList(), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(backendClient.GET).toHaveBeenCalledWith("/subcontractor-contracts", {
+      params: { query: {} },
+    });
+    expect(result.current.data?.items).toHaveLength(1);
+  });
+
+  it("project_id/site_id/status/q filtrelerini query parametresine çevirir", async () => {
+    vi.mocked(backendClient.GET).mockResolvedValue({
+      data: CONTRACT_LIST_RESPONSE,
+      error: undefined,
+      response: new Response(),
+    } as never);
+
+    const { result } = renderHook(
+      () =>
+        useSubcontractorContractsList({
+          project_id: PROJECT_ID,
+          site_id: "site-1",
+          status: "active",
+          q: "aydın",
+        }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(backendClient.GET).toHaveBeenCalledWith("/subcontractor-contracts", {
+      params: {
+        query: { project_id: PROJECT_ID, site_id: "site-1", status: "active", q: "aydın" },
+      },
+    });
+  });
+
+  it("limit/offset/total TAŞIMAZ — yanıt yalnız items içerir", async () => {
+    vi.mocked(backendClient.GET).mockResolvedValue({
+      data: CONTRACT_LIST_RESPONSE,
+      error: undefined,
+      response: new Response(),
+    } as never);
+
+    const { result } = renderHook(() => useSubcontractorContractsList(), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(Object.keys(result.current.data ?? {})).toEqual(["items"]);
+  });
+
+  it("backend hatasında sorgu hataya düşer", async () => {
+    vi.mocked(backendClient.GET).mockResolvedValue({
+      data: undefined,
+      error: { detail: "yetkiniz yok" },
+      response: new Response(null, { status: 403 }),
+    } as never);
+
+    const { result } = renderHook(() => useSubcontractorContractsList(), { wrapper });
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });

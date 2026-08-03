@@ -43,6 +43,24 @@ test("taşeron: sekme gezinmesi (gerçek URL değişimi, geri tuşu)", async ({ 
   await expect(page.getByRole("heading", { name: "Hakedişler" })).toBeVisible();
 });
 
+// Coordinator review (Important) — kilit testi: `sc-3` (TB2 U1 kanıt kaydı,
+// `site_id: null`, sıfır hakedişli) `active_subcontractor_count`i (KPI
+// şeridindeki "Aktif Taşeron") ARTIRMAMALI. `buildSubcontractorPaymentSummary`
+// bu sayıyı `state.subcontractorContracts` üzerinden projeye/hakedişe göre
+// SÜZMEDEN, distinct `subcontractor_id`ye göre hesaplıyor — `sc-3` sc-1 ile
+// AYNI `subcontractor_id`yi (`sub-1`) taşıdığından sayı sc-1/sc-2'nin ikisiyle
+// (2) sınırlı kalmalı. Bu test o tuzağın yeniden AÇILMASINI engeller.
+test("taşeron: Aktif Taşeron KPI'ı 2'de kalır (sc-3 kanıt kaydı distinct subcontractor_id'yi ARTIRMAZ)", async ({
+  page,
+}) => {
+  await login(page);
+
+  await page.goto("/hakedisler/taseron");
+  await expect(page.getByTestId("thk-kpi-strip")).toBeVisible();
+  const activeCard = page.getByText("Aktif Taşeron").locator("..");
+  await expect(activeCard.getByTestId("thk-kpi-value")).toHaveText("2");
+});
+
 test("taşeron: filtreler URL state (yazma, kalıcılık, paylaşılan URL)", async ({ page }) => {
   await login(page);
 
@@ -76,13 +94,22 @@ test("taşeron: liste → detay geçişi", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Taşeron Hakedişi #2" })).toBeVisible();
 });
 
-test("taşeron: sözleşme seçim adımı (bilgi notu, seçim → form)", async ({ page }) => {
+test("taşeron: sözleşme seçim adımı (hiç hakedişi olmayan sözleşme de listelenir, seçim → form)", async ({
+  page,
+}) => {
   await login(page);
 
   await page.goto("/hakedisler/taseron/yeni");
   await expect(page.getByRole("heading", { name: "Taşeron Hakediş Oluştur" })).toBeVisible();
-  // Kalıcı bilgi notu her zaman basılır.
-  await expect(page.getByTestId("th-contract-picker-note")).toBeVisible();
+  // TB2 takip: sözleşme LİSTE ucu (U1) geldi — seçim kutusu artık DOĞRUDAN
+  // `GET /subcontractor-contracts`ten beslenir, hakedişten türetme YOK. Eski
+  // sınır ("yalnız en az bir hakedişi olan sözleşmeler görünür") bitti; bunu
+  // kanıtlamak için hiç hakedişi olmayan `sc-3` (Yılmaz Boya A.Ş.) da seçim
+  // kutusunda görünür olmalı.
+  await expect(page.getByLabel("Taşeron Sözleşmesi")).toBeVisible();
+  await expect(
+    page.getByRole("option", { name: /Yılmaz Boya A\.Ş\./ }),
+  ).toHaveCount(1);
 
   await page.getByLabel("Taşeron Sözleşmesi").selectOption("sc-1");
   await page.getByRole("button", { name: "Devam Et" }).click();
@@ -95,17 +122,18 @@ test("taşeron: sözleşme seçim adımı (bilgi notu, seçim → form)", async 
   await expect(page.getByTestId("thf-sequence-pending")).toBeVisible();
 });
 
-test("taşeron: sözleşme seçim adımı — boş durum metni", async ({ page }) => {
+test("taşeron: sözleşme seçim adımı — hiç kayıtlı sözleşme yoksa boş durum metni", async ({ page }) => {
   await login(page);
 
   // Boş durum, mock state'i MUTASYONA UĞRATMADAN, yalnız BU sayfa yüküne
   // özel bir ağ yanıtı override'ı ile üretilir (brief §Yasaklar: mock-backend
   // state'i başka testleri etkilemez, deterministik — zamanlayıcı YOK).
-  await page.route("**/subcontractor-progress-payments?*", async (route) => {
+  // TB2 takip: türetme kaldırıldığından override artık U1 ucunadır (U2 değil).
+  await page.route("**/subcontractor-contracts*", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ items: [], total: 0, limit: 200, offset: 0 }),
+      body: JSON.stringify({ items: [] }),
     });
   });
 
@@ -212,4 +240,28 @@ test("taşeron: şantiye sekmesi (satır → detay, Tümü → listeye)", async 
   await expect(page).toHaveURL(/\/hakedisler\/p-1\/santiyeler\/s-1\/hakedisler$|\/santiyeler\/s-1\/hakedisler$/);
   await page.getByRole("link", { name: "Tümü →" }).last().click();
   await expect(page).toHaveURL(/\/hakedisler\/taseron$/);
+});
+
+test("taşeron: şantiye sekmesi — U2 `site_id` sunucuda süzer (başka şantiyenin sözleşmesi HARİÇ TUTULUR)", async ({
+  page,
+}) => {
+  await login(page);
+
+  // TB2 takip: `site_id` süzmesi artık sunucudadır (mock-backend, gerçek
+  // backend'in aynısı) — istemci TEKRAR süzmez. Sc-2'nin (site s-2) taşeron
+  // adı "Çelik İnşaat Taah." s-1 sekmesinde HİÇ görünmemeli; sc-3'ün
+  // (proje-geneli, `site_id: null`) hiç hakedişi olmadığından bu ekranı
+  // etkilemez ama `site_id` filtresi verilince bu tür sözleşmelerin ASLA
+  // eşleşmediği `useSiteSubcontractorPayments`in doğrudan sunucuya `site_id`
+  // ilettiği unit testle (hook seviyesinde) ayrıca kanıtlanır.
+  const paymentsRequest = page.waitForRequest(
+    (req) =>
+      req.url().includes("/subcontractor-progress-payments?") && req.url().includes("site_id=s-1"),
+  );
+  await page.goto("/projeler/p-1/santiyeler/s-1/hakedisler");
+  await expect(page.getByRole("heading", { name: "A-Blok Şantiyesi — Hakedişler" })).toBeVisible();
+  await paymentsRequest;
+
+  await expect(page.getByText("Aydın Elektrik Taah. #1")).toBeVisible();
+  await expect(page.getByText("Çelik İnşaat Taah.")).toHaveCount(0);
 });
