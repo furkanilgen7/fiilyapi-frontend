@@ -1,4 +1,4 @@
-import type { Weather } from "@/lib/api/hooks/useSiteDiary";
+import type { Weather, WorkerSource } from "@/lib/api/hooks/useSiteDiary";
 
 /**
  * Hava enum'unun Türkçe etiketleri — TEK KAYNAK (F-P6'nin `section-labels.ts`
@@ -26,9 +26,21 @@ export const DIARY_STATUS_LABELS: Record<"draft" | "submitted", string> = {
   submitted: "Gönderildi",
 };
 
+/**
+ * İşçi kırılımı kaynak rozetleri (GK418/422/426/430). Renk eşlemesi
+ * bileşendedir; burada YALNIZ metin tek kaynaktır.
+ */
+export const WORKER_SOURCE_LABELS: Record<WorkerSource, string> = {
+  company: "Şirket",
+  subcontractor: "Taşeron",
+  general: "Genel",
+};
+
 /** Serbest metin alanlarının üst sınırları (`maxLength` zorunlu — WORKFLOW §4). */
 export const DIARY_WORK_DONE_MAX = 4000;
 export const DIARY_CHIEF_NOTE_MAX = 2000;
 export const DIARY_INCIDENT_NOTE_MAX = 2000;
 /** "Bugün Yapılan" hücresi: numeric(14,3) — işaret/ondalık dahil geniş tavan. */
 export const DIARY_QUANTITY_MAX = 20;
+/** İşçi sayısı hücresi (GK420): tamsayı — dört hane fazlasıyla yeter. */
+export const DIARY_WORKER_COUNT_MAX = 4;

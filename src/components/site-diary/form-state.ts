@@ -5,6 +5,14 @@ import type {
   SiteDiaryLinesSave,
 } from "@/lib/api/hooks/useSiteDiaryMutations";
 
+import {
+  areWorkerCountsDirty,
+  buildWorkerCountsBody,
+  buildWorkerRows,
+  invalidWorkerCountKeys,
+  workerCountsFromEntry,
+} from "./worker-counts";
+
 /**
  * "Kayıt Gir" ekranının yerel form durumu (F-SD T2).
  *
@@ -14,9 +22,12 @@ import type {
  * GK321-348'in planlama bloğu ekranda BASILIR ama bu tipe GİRMEZ — dolayısıyla
  * kaydedilen gövdeye de giremezler.
  *
- * `worker_counts` de BİLEREK YOK: sağ paneldeki "Bugünkü İşçi Dağılımı" T3'ün
- * işidir; PATCH gövdesinde alan HİÇ geçmediği için (undefined) backend mevcut
- * kırılımı korur — T2 kaydı işçi satırlarını silmez.
+ * T3 EKLEMESİ — `workerCounts`: sağ paneldeki "Bugünkü İşçi Dağılımı"
+ * (GK414-439) MOCKUP'TA GİRİLEBİLİR bir alandır ve backend `PATCH
+ * /diary/{entry_id}` gövdesinde `worker_counts[]`i KABUL EDER
+ * (`SiteDiaryEntryUpdate`, DEĞİŞTİRME semantiği) — bu yüzden sızıntı değil,
+ * mockup'ın istediği gerçek alandır. Fotoğraf ve planlama alanları HÂLÂ
+ * YOKTUR: onların backend karşılığı yok, gövdeye giremezler.
  */
 export interface DiaryFormState {
   /** ISO `YYYY-MM-DD` (GK184). */
@@ -39,6 +50,9 @@ export interface DiaryFormState {
   incidentNote: string;
   /** `boq_item_id` → "Bugün Yapılan" hücresinin HAM metni (GK228). */
   quantities: Record<string, string>;
+  /** `workerCountKey(trade, source)` → işçi sayısı hücresinin HAM metni
+   * (GK420/424/428/432). */
+  workerCounts: Record<string, string>;
 }
 
 /** Boş form — yeni gün için (tarih varsayılanı ÇAĞIRANDAN gelir). */
@@ -55,6 +69,7 @@ export function emptyDiaryForm(entryDate: string): DiaryFormState {
     hasIncident: false,
     incidentNote: "",
     quantities: {},
+    workerCounts: {},
   };
 }
 
@@ -82,6 +97,7 @@ export function diaryFormFromEntry(entry: SiteDiaryEntryDetail): DiaryFormState 
     hasIncident: entry.has_incident,
     incidentNote: entry.incident_note ?? "",
     quantities,
+    workerCounts: workerCountsFromEntry(entry.worker_counts),
   };
 }
 
@@ -134,11 +150,22 @@ export function buildDiaryCreateBody(form: DiaryFormState): SiteDiaryEntryCreate
 }
 
 /**
- * `PATCH /diary/{entry_id}` gövdesi — YALNIZ başlık alanları. `worker_counts`
- * bilerek geçirilmez (yukarıdaki kapsam notu).
+ * `PATCH /diary/{entry_id}` gövdesi — başlık alanları + işçi kırılımı (T3).
+ *
+ * `worker_counts` DEĞİŞTİRME semantiğindedir (openapi açıklaması): gövdeye
+ * kaydın TÜM satırları (ön tanımlılar + kayıttan gelen fazlalıklar) girer,
+ * sıfır olanlar SİLİNSİN diye dışarıda bırakılır. Hücrelerden biri geçersizse
+ * alan HİÇ gönderilmez (`undefined`) — backend mevcut kırılımı korur, yanlış
+ * bir sayı yazılmaz. Çağıran zaten `invalidWorkerCountKeys` ile önce durur.
  */
-export function buildDiaryUpdateBody(form: DiaryFormState): SiteDiaryEntryUpdate {
+export function buildDiaryUpdateBody(
+  form: DiaryFormState,
+  entry: SiteDiaryEntryDetail,
+): SiteDiaryEntryUpdate {
+  const workerCounts =
+    buildWorkerCountsBody(buildWorkerRows(entry.worker_counts), form.workerCounts) ?? undefined;
   return {
+    worker_counts: workerCounts,
     entry_date: form.entryDate,
     section_id: form.sectionId === "" ? null : form.sectionId,
     weather: form.weather === "" ? null : form.weather,
@@ -182,6 +209,11 @@ export function invalidQuantityIds(form: DiaryFormState): string[] {
     .map(([id]) => id);
 }
 
+/** Geçersiz işçi sayısı girilmiş hücrelerin anahtarları (görünür hata için). */
+export function invalidWorkerCountIds(form: DiaryFormState): string[] {
+  return invalidWorkerCountKeys(form.workerCounts);
+}
+
 /**
  * Yerel form sunucudaki kayıttan ayrıştı mı? Türev sütunları (Kümülatif,
  * Hakediş ₺, tfoot) YANITTAN geldiği için, kaydedilmemiş değişiklik varken
@@ -203,6 +235,9 @@ export function isDiaryFormDirty(entry: SiteDiaryEntryDetail, form: DiaryFormSta
     return true;
   }
   if (parseTemperature(saved.temperatureC) !== parseTemperature(form.temperatureC)) return true;
+  if (areWorkerCountsDirty(entry.worker_counts, buildWorkerRows(entry.worker_counts), form.workerCounts)) {
+    return true;
+  }
   const ids = new Set([...Object.keys(saved.quantities), ...Object.keys(form.quantities)]);
   for (const id of ids) {
     if (parseDiaryQuantity(saved.quantities[id] ?? "") !== parseDiaryQuantity(form.quantities[id] ?? "")) {

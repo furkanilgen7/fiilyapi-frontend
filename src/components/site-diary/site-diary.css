@@ -497,6 +497,289 @@
   white-space: nowrap;
 }
 
+/* ── Son Kayıtlar (GK356-386) ──────────────────────────────────────────── */
+/* GK356 — kart iç boşluksuzdur; satırlar kenardan kenara akar. */
+.diary-card--flush {
+  padding: 0;
+  overflow: hidden;
+}
+/* GK357 */
+.diary-recent__head {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+/* GK358 */
+.diary-recent__list {
+  display: flex;
+  flex-direction: column;
+}
+/* GK359 — satır tıklanabilir; erişilebilirlik için `button` */
+.diary-recent__row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 11px 14px;
+  border: none;
+  border-bottom: 1px solid var(--color-divider);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.diary-recent__row:last-child {
+  border-bottom: none;
+}
+.diary-recent__row:hover {
+  background: var(--color-surface-2);
+}
+.diary-recent__row:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.diary-recent__row--active {
+  background: var(--color-nav-active-bg);
+}
+/* GK360 */
+.diary-recent__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: 2px;
+}
+.diary-recent__date {
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.diary-recent__badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+/* GK362/372 */
+.diary-recent__badge {
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  padding: 2px 7px;
+  border-radius: var(--radius-8);
+  white-space: nowrap;
+}
+.diary-recent__badge--submitted {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+.diary-recent__badge--draft {
+  background: var(--color-neutral-soft);
+  color: var(--color-text-muted);
+}
+/* GK372 — kırmızı "Yağışlı" */
+.diary-recent__badge--rain {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
+}
+/* GK363 */
+.diary-recent__meta {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.diary-recent__pending {
+  color: var(--color-text-subtle);
+}
+/* GK364 */
+.diary-recent__amount {
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+  margin-top: 2px;
+}
+.diary-recent__message {
+  padding: 11px 14px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.diary-recent__warning {
+  padding: 8px 14px;
+  border-top: 1px solid var(--color-divider);
+  font-size: var(--text-small);
+  color: var(--color-warning-strong);
+  line-height: var(--leading-normal);
+}
+
+/* ── Hakediş Birikimi (GK387-413) ──────────────────────────────────────── */
+/* GK389 */
+.diary-accrual__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* GK390 */
+.diary-accrual__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 8px 10px;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-8);
+}
+/* GK404 — brüt kâr satırı yeşil zeminli */
+.diary-accrual__row--profit {
+  padding: 10px;
+  background: var(--color-success-tint);
+  margin-top: 2px;
+}
+.diary-accrual__label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.diary-accrual__label--profit {
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.diary-accrual__value {
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+/* GK392 */
+.diary-accrual__value--employer {
+  color: var(--color-primary);
+}
+/* GK396/400 */
+.diary-accrual__value--subcontractor {
+  color: var(--color-danger);
+}
+/* GK405 */
+.diary-accrual__value--profit {
+  font-size: 14px;
+  color: var(--color-success);
+}
+.diary-accrual__value--pending {
+  color: var(--color-text-subtle);
+}
+.diary-accrual__empty,
+.diary-accrual__note {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  line-height: var(--leading-normal);
+  margin-top: 8px;
+}
+/* GK408 */
+.diary-accrual__actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+/* GK409 */
+.diary-accrual__action {
+  flex: 1;
+  padding: 8px;
+  border-radius: var(--radius-8);
+  background: var(--color-nav-active-bg);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  text-align: center;
+  text-decoration: none;
+}
+/* GK410 */
+.diary-accrual__action--primary {
+  background: var(--color-primary);
+  color: var(--color-surface);
+}
+.diary-accrual__action:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ── İşçi Dağılımı (GK414-439) ─────────────────────────────────────────── */
+/* GK416 */
+.diary-workers__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* GK417 */
+.diary-workers__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+/* GK418 */
+.diary-workers__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--color-text);
+}
+.diary-workers__badge {
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  padding: 1px 6px;
+  border-radius: var(--radius-6);
+  white-space: nowrap;
+}
+.diary-workers__badge--company {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+.diary-workers__badge--subcontractor {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+}
+.diary-workers__badge--general {
+  background: var(--color-neutral-soft);
+  color: var(--color-text-muted);
+}
+/* GK420 — 52px genişlik, ortalanmış sayı. `Input` primitive'i kontrolü
+   `.input-wrap` sarmalayıcısıyla basar ve o sarmalayıcı `width:100%`tür;
+   satırdaki meslek adını ezmemesi için sarmalayıcı da 52px'e sabitlenir. */
+.diary-workers__row .input-wrap {
+  flex: 0 0 auto;
+  width: 52px;
+}
+.diary-workers__count {
+  width: 52px;
+  text-align: center;
+}
+/* GK434 */
+.diary-workers__total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  border-top: 1px solid var(--color-divider);
+  padding-top: 8px;
+}
+.diary-workers__total-label {
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+/* GK436 */
+.diary-workers__total-value {
+  font-size: 18px;
+  font-weight: var(--weight-bold);
+  color: var(--color-primary);
+  font-family: var(--font-mono);
+}
+.diary-workers__note {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  line-height: var(--leading-normal);
+  margin-top: 8px;
+}
+
 /* ── İş Güvenliği (GK441-449) ──────────────────────────────────────────── */
 .diary-safety__list {
   display: flex;

@@ -8,7 +8,9 @@ import { SiteDetailTabs } from "@/components/site-detail/SiteDetailTabs";
 import { Badge } from "@/components/ui/badge/Badge";
 import { Button } from "@/components/ui/button/Button";
 import { useBoq } from "@/lib/api/hooks/useBoq";
+import { useProgressPayments } from "@/lib/api/hooks/useProgressPayments";
 import { useSite } from "@/lib/api/hooks/useSites";
+import { useSiteSubcontractorPayments } from "@/lib/api/hooks/useSiteSubcontractorPayments";
 import { useSiteDiaryEntries, useSiteDiaryEntry } from "@/lib/api/hooks/useSiteDiary";
 import {
   useCreateSiteDiaryEntry,
@@ -26,15 +28,23 @@ import { BackendError, isForbidden } from "@/lib/api/unwrap";
 import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 
+import { formatMonthName } from "@/lib/format";
+
 import { DiaryBasicInfoCard } from "./DiaryBasicInfoCard";
 import { DiaryLinesCard } from "./DiaryLinesCard";
 import { DiaryModeNotice, DiaryModeSwitch } from "./DiaryModeSwitch";
 import { DiaryChiefNoteCard, DiaryWorkDoneCard } from "./DiaryNotesCards";
+import { DiaryPaymentAccrualCard } from "./DiaryPaymentAccrualCard";
 import { DiaryPhotosCard } from "./DiaryPhotosCard";
 import { DiaryPlanPreviewCard } from "./DiaryPlanPreviewCard";
+import { DiaryRecentEntriesCard } from "./DiaryRecentEntriesCard";
 import { DiarySafetyCard } from "./DiarySafetyCard";
+import { DiaryWorkerCountsCard } from "./DiaryWorkerCountsCard";
 import { DIARY_STATUS_LABELS } from "./diary-labels";
 import { boqQuantityById, isoDate, isoPeriod } from "./derive";
+import { computeDiaryAccrual } from "./payment-accrual";
+import { buildRecentEntryRows } from "./recent-entries";
+import { buildWorkerRows } from "./worker-counts";
 import {
   buildDiaryCreateBody,
   buildDiaryLinesBody,
@@ -42,6 +52,7 @@ import {
   diaryFormFromEntry,
   emptyDiaryForm,
   invalidQuantityIds,
+  invalidWorkerCountIds,
   isDiaryFormDirty,
   type DiaryFormState,
 } from "./form-state";
@@ -91,6 +102,14 @@ export function SiteDiaryEntryView() {
     SITE_PLAN_DAY_SUMMARY_DEFAULT_DAYS,
   );
 
+  // T3 sağ paneli — "Aylık Hakediş Birikimi" (GK387-413) iki hakediş
+  // listesinden türetilir. İşveren hakedişi PROJE düzeyi kayıttır (F-TH
+  // kararı S4) → `site_id` süzmesi kullanılmaz; taşeron tarafı U2'de sunucuda
+  // süzülür. Ay süzmesi istemcide (`computeDiaryAccrual`).
+  const employerPaymentsQuery = useProgressPayments({ project_id: projectId });
+  const subcontractorPayments = useSiteSubcontractorPayments(projectId, siteId);
+  const paymentsPermission = useModulePermission("progress_payments");
+
   const createEntry = useCreateSiteDiaryEntry(siteId);
   const updateEntry = useUpdateSiteDiaryEntry(matchedId);
   const saveLines = useSaveSiteDiaryLines(matchedId);
@@ -120,7 +139,7 @@ export function SiteDiaryEntryView() {
       setForm(emptyDiaryForm(activeDate));
       return;
     }
-    setForm((prev) => ({ ...prev, entryDate: activeDate, quantities: {} }));
+    setForm((prev) => ({ ...prev, entryDate: activeDate, quantities: {}, workerCounts: {} }));
   }, [seedKey, entry, activeDate, isEntryLoading]);
 
   if (!permission.canView) return <AccessDenied />;
@@ -135,6 +154,22 @@ export function SiteDiaryEntryView() {
 
   const base = `/projeler/${projectId}/santiyeler/${siteId}`;
 
+  // Sağ panel türevleri — hepsi SAF fonksiyonlarda (ayrı `.ts` dosyaları),
+  // bileşenin içinde hesap YOK.
+  const recentRows = buildRecentEntryRows(entriesQuery.data?.items ?? [], site?.sections ?? []);
+  const workerRows = buildWorkerRows(entry?.worker_counts ?? []);
+  const accrual = computeDiaryAccrual({
+    employerItems: employerPaymentsQuery.data?.items ?? [],
+    isEmployerLoading: employerPaymentsQuery.isLoading,
+    isEmployerError: employerPaymentsQuery.isError,
+    subcontractorItems: subcontractorPayments.items,
+    isSubcontractorLoading: subcontractorPayments.isLoading,
+    isSubcontractorError: subcontractorPayments.isError,
+    subcontractorTruncation: subcontractorPayments.truncation,
+    year: period.year,
+    month: period.month,
+  });
+
   function handleFormChange(patch: Partial<DiaryFormState>) {
     setForm((prev) => ({ ...prev, ...patch }));
     // Kayıt YOKKEN tarih değiştirilirse aranan gün de değişir; kayıt VARKEN
@@ -145,6 +180,18 @@ export function SiteDiaryEntryView() {
 
   function handleQuantityChange(boqItemId: string, value: string) {
     setForm((prev) => ({ ...prev, quantities: { ...prev.quantities, [boqItemId]: value } }));
+  }
+
+  function handleWorkerCountChange(key: string, value: string) {
+    setForm((prev) => ({ ...prev, workerCounts: { ...prev.workerCounts, [key]: value } }));
+  }
+
+  /** Satır tıklanınca o günün kaydına geçilir (GK359). */
+  function handleSelectDate(entryDate: string) {
+    setErrorMessage(null);
+    setHasDateConflict(false);
+    setActiveDate(entryDate);
+    setForm((prev) => ({ ...prev, entryDate }));
   }
 
   function reportError(error: unknown, fallback: string) {
@@ -164,6 +211,10 @@ export function SiteDiaryEntryView() {
       setErrorMessage("Miktar hücrelerinde geçersiz değer var; düzeltip tekrar deneyin.");
       return;
     }
+    if (invalidWorkerCountIds(form).length > 0) {
+      setErrorMessage("İşçi sayısı hücrelerinde geçersiz değer var; düzeltip tekrar deneyin.");
+      return;
+    }
     setIsSaving(true);
     try {
       if (!entry) {
@@ -171,7 +222,7 @@ export function SiteDiaryEntryView() {
         setActiveDate(created.entry_date);
         return;
       }
-      const updated = await updateEntry.mutateAsync(buildDiaryUpdateBody(form));
+      const updated = await updateEntry.mutateAsync(buildDiaryUpdateBody(form, entry));
       await saveLines.mutateAsync(buildDiaryLinesBody(updated, form));
       setActiveDate(updated.entry_date);
     } catch (error: unknown) {
@@ -190,9 +241,13 @@ export function SiteDiaryEntryView() {
       setErrorMessage("Miktar hücrelerinde geçersiz değer var; düzeltip tekrar deneyin.");
       return;
     }
+    if (invalidWorkerCountIds(form).length > 0) {
+      setErrorMessage("İşçi sayısı hücrelerinde geçersiz değer var; düzeltip tekrar deneyin.");
+      return;
+    }
     setIsSaving(true);
     try {
-      const updated = await updateEntry.mutateAsync(buildDiaryUpdateBody(form));
+      const updated = await updateEntry.mutateAsync(buildDiaryUpdateBody(form, entry));
       await saveLines.mutateAsync(buildDiaryLinesBody(updated, form));
       setActiveDate(updated.entry_date);
       await submitEntry.mutateAsync();
@@ -344,11 +399,33 @@ export function SiteDiaryEntryView() {
           />
         </div>
 
-        {/* GK352-451 — sağ özet sütunu. "Son Kayıtlar" (356), "Hakediş
-            Birikimi" (387) ve "İşçi Dağılımı" (414) kartları T3'te bu
-            sütunun ÜSTÜNE eklenecek; İş Güvenliği (440) mockup'taki gibi
-            en altta kalır. */}
+        {/* GK352-451 — sağ özet sütunu; sıra mockup'la birebir:
+            Son Kayıtlar (356) · Hakediş Birikimi (387) · İşçi Dağılımı (414) ·
+            İş Güvenliği (440). */}
         <div className="diary__col diary__col--side">
+          <DiaryRecentEntriesCard
+            rows={recentRows}
+            isLoading={entriesQuery.isLoading}
+            isError={entriesQuery.isError}
+            activeDate={activeDate}
+            onSelectDate={handleSelectDate}
+            hasUnsavedChanges={isDirty}
+          />
+          <DiaryPaymentAccrualCard
+            accrual={accrual}
+            monthLabel={formatMonthName(period.month)}
+            paymentsHref={`${base}/hakedisler`}
+            createHref={
+              paymentsPermission.canWrite ? `/hakedisler/yeni?project=${projectId}` : null
+            }
+          />
+          <DiaryWorkerCountsCard
+            rows={workerRows}
+            form={form}
+            onChange={handleWorkerCountChange}
+            disabled={isReadOnly}
+            isEntryMissing={!entry}
+          />
           <DiarySafetyCard form={form} onChange={handleFormChange} disabled={isReadOnly} />
         </div>
       </div>
