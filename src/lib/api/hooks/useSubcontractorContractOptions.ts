@@ -1,21 +1,20 @@
 import { useMemo } from "react";
 
-import { buildListTruncation, type ListTruncation } from "@/lib/list-truncation";
-
-import { SUBCONTRACTOR_PAYMENT_LIST_MAX_LIMIT } from "./useSiteSubcontractorPayments";
 import {
-  useSubcontractorProgressPayments,
-  type SubcontractorProgressPaymentListItem,
+  useSubcontractorContractsList,
+  type SubcontractorContractListItem,
 } from "./useSubcontractorProgressPayments";
 
-// F-TH T1 · KULLANICI KARARI (bağlayıcı) — backend'de taşeron sözleşmesi
-// için bir LİSTE ucu YOK (yalnız `GET /subcontractor-contracts/{id}` tekil
-// detay vardır). Sözleşme seçim listesi bu dilimde `GET
-// /subcontractor-progress-payments` yanıtından DISTINCT türetilir. Bu
-// türetme GEÇİCİDİR: `GET /subcontractor-contracts` liste ucu (TB2) geldiğinde
-// YALNIZ BU HOOK'UN İÇİ değişecek — dönüş tipi (`SubcontractorContractOption`)
-// ve `isDerivedFromPayments` bayrağı SABİT kalır, çağıranlar hakediş listesi
-// şemasına ait hiçbir alanı GÖRMEZ.
+// F-TH TB2 takip — bu hook önce (T1) `GET /subcontractor-progress-payments`
+// yanıtından DISTINCT `contract_id` türetiyordu, çünkü backend'de bir
+// sözleşme LİSTE ucu yoktu. TB2 ile `GET /subcontractor-contracts` (U1)
+// geldi: türetme TAMAMEN kaldırıldı, artık DOĞRUDAN bu uçtan beslenir.
+// Sonuç: hiç hakedişi olmayan sözleşmeler de artık seçilebilir — eski sınır
+// (yalnız en az bir hakedişi olan sözleşmeler görünürdü) bitti.
+//
+// Dönüş şekli (`SubcontractorContractOption`) SABİT kaldı — çağıranlar U1'in
+// fazladan alanlarını (`site_id`, `status`, `is_draft`, `work_category`)
+// GÖRMEZ.
 
 /** Hook'un çağıranlara sızdırdığı TEK şekil — ham liste öğesi asla dışarı sızmaz. */
 export interface SubcontractorContractOption {
@@ -31,17 +30,11 @@ export interface UseSubcontractorContractOptionsResult {
   isLoading: boolean;
   isError: boolean;
   error: Error | null;
-  /** T3'ün kalıcı bilgi notu + boş-durum metni için: liste ucu gelene kadar
-   * her zaman `true` — türetmenin GEÇİCİ olduğunu ekrana taşımak içindir. */
-  isDerivedFromPayments: true;
-  /** Final inceleme F-3 — hakediş listesi sunucu tavanında kırpıldıysa
-   * seçenek listesi de EKSİKTİR; seçim adımı bunu GÖRÜNÜR basar. */
-  truncation: ListTruncation;
 }
 
-function toOption(item: SubcontractorProgressPaymentListItem): SubcontractorContractOption {
+function toOption(item: SubcontractorContractListItem): SubcontractorContractOption {
   return {
-    contractId: item.contract_id,
+    contractId: item.id,
     contractNo: item.contract_no,
     subcontractorName: item.subcontractor_name ?? "",
     projectId: item.project_id,
@@ -50,29 +43,18 @@ function toOption(item: SubcontractorProgressPaymentListItem): SubcontractorCont
 }
 
 /**
- * Sözleşme seçenekleri — hakediş listesinden `contract_id`ye göre
- * tekilleştirilmiş, taşeron adına göre (`tr` yerel sıralama) alfabetik
- * sıralanmış.
- *
- * ⚠️ Final inceleme F-3 — eski yorum "limit 200 ile TAM LİSTE çekilir"
- * diyordu, bu YANLIŞTI: 200 şema TAVANIDIR, garanti değil. 200'den fazla
- * hakedişi olan bir kurulumda seçenek listesi SESSİZCE eksik kalırdı.
- * Kırpılma artık yutulmuyor: `truncation` dışa verilir, seçim adımı görünür
- * uyarı basar.
+ * Sözleşme seçenekleri — U1'den doğrudan gelir, taşeron adına göre (`tr`
+ * yerel sıralama) alfabetik sıralanmış. Sayfalama YOK (U1'in kendisinde
+ * `limit`/`offset`/`total` yok) — kırpılma kavramı bu uçta anlamsız.
  */
 export function useSubcontractorContractOptions(): UseSubcontractorContractOptionsResult {
-  const query = useSubcontractorProgressPayments({ limit: SUBCONTRACTOR_PAYMENT_LIST_MAX_LIMIT });
+  const query = useSubcontractorContractsList();
 
   const options = useMemo<SubcontractorContractOption[]>(() => {
     const items = query.data?.items ?? [];
-    const byContract = new Map<string, SubcontractorContractOption>();
-    for (const item of items) {
-      if (byContract.has(item.contract_id)) continue;
-      byContract.set(item.contract_id, toOption(item));
-    }
-    return Array.from(byContract.values()).sort((a, b) =>
-      a.subcontractorName.localeCompare(b.subcontractorName, "tr"),
-    );
+    return items
+      .map(toOption)
+      .sort((a, b) => a.subcontractorName.localeCompare(b.subcontractorName, "tr"));
   }, [query.data]);
 
   return {
@@ -80,7 +62,5 @@ export function useSubcontractorContractOptions(): UseSubcontractorContractOptio
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,
-    isDerivedFromPayments: true,
-    truncation: buildListTruncation(query.data?.items.length ?? 0, query.data?.total),
   };
 }

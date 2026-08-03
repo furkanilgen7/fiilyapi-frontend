@@ -103,7 +103,6 @@ function mockSubcontractor(value: Partial<UseSiteSubcontractorPaymentsResult>) {
     isLoading: false,
     isError: false,
     isPartial: false,
-    failedContractCount: 0,
     truncation: { isTruncated: false, shownCount: 0, totalCount: 0 },
     ...value,
   });
@@ -258,29 +257,17 @@ describe("SiteHakedislerPage rotasi", () => {
       expect(links.some((el) => el.getAttribute("href") === "/hakedisler/taseron")).toBe(true);
     });
 
-    it("kısmi hatada (isPartial) görünür hata bandı basar, toplam/marj basılmaz", () => {
-      mockPayments({ data: { items: [PAYMENT_ITEM] } });
-      mockSubcontractor({ items: [], isPartial: true, failedContractCount: 2 });
-      render(<SiteHakedislerPage />);
-      expect(
-        screen.getByText("2 taşeron sözleşmesi yüklenemedi — toplamlar ve kâr marjı eksik olabilir."),
-      ).toBeInTheDocument();
-      const taseronValue = screen.getByText("Toplam Taşeron Ödemesi").nextSibling as HTMLElement;
-      const margeValue = screen.getByText("Brüt Kar Marjı").nextSibling as HTMLElement;
-      expect(taseronValue.textContent).not.toMatch(/\d/);
-      expect(margeValue.textContent).not.toMatch(/\d/);
-    });
-
     // Final inceleme F-3 — 210 hakedişli projede tavan (200) aşılır: eksik
     // listeden hesaplanan "Brüt Kar Marjı"/"Toplam Taşeron Ödemesi" YANLIŞ
     // olurdu (ör. %48 basılıp gerçeğin %31 olması). Sayı BASILMAZ, sınır
-    // göstergesi GÖRÜNÜR olur.
+    // göstergesi GÖRÜNÜR olur. TB2 takip: N+1 sözleşme-detay fan-out'u
+    // kaldırıldı — `isPartial` artık YALNIZ sunucu tavanından (`truncation`)
+    // gelir, ayrı bir "kısmi sözleşme hatası" kanalı YOK (dead branch temizlendi).
     it("liste sunucu tavanında kırpıldıysa (total > limit) para değerleri basılmaz, sınır göstergesi görünür", () => {
       mockPayments({ data: { items: [PAYMENT_ITEM] } });
       mockSubcontractor({
         items: [SUBCONTRACTOR_ITEM],
         isPartial: true,
-        failedContractCount: 0,
         truncation: { isTruncated: true, shownCount: 200, totalCount: 210 },
       });
       render(<SiteHakedislerPage />);

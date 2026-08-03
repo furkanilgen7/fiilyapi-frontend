@@ -36,39 +36,46 @@ function paymentItem(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
-function contract(overrides: Partial<Record<string, unknown>> = {}) {
+function contractListItem(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     id: "sc-1",
-    project_id: "proj-1",
-    site_id: "site-1",
-    subcontractor_id: "sub-1",
+    contract_no: "TSD-2026-01",
     subcontractor_name: "Akın İnşaat",
     work_category: "Betonarme İşleri",
-    contract_no: "TSD-2026-01",
+    project_id: "proj-1",
+    project_name: "Güneşkent A-Blok",
+    site_id: "site-1",
+    site_name: "A-Blok",
+    status: "active",
+    is_draft: false,
     ...overrides,
   };
 }
 
 function mockGet(handlers: {
   payments: Record<string, unknown>[];
-  contracts: Record<string, Record<string, unknown>>;
+  contracts: Record<string, unknown>[];
+  paymentsTotal?: number;
 }) {
-  vi.mocked(backendClient.GET).mockImplementation(async (path: string, options?: unknown) => {
+  vi.mocked(backendClient.GET).mockImplementation(async (path: string) => {
     if (path === "/subcontractor-progress-payments") {
       return {
-        data: { items: handlers.payments, total: handlers.payments.length, limit: 200, offset: 0 },
+        data: {
+          items: handlers.payments,
+          total: handlers.paymentsTotal ?? handlers.payments.length,
+          limit: 200,
+          offset: 0,
+        },
         error: undefined,
         response: new Response(),
       } as never;
     }
-    if (path === "/subcontractor-contracts/{contract_id}") {
-      const contractId = (options as { params: { path: { contract_id: string } } }).params.path
-        .contract_id;
-      const found = handlers.contracts[contractId];
-      if (!found) {
-        return { data: undefined, error: "not found", response: new Response(null, { status: 404 }) } as never;
-      }
-      return { data: found, error: undefined, response: new Response() } as never;
+    if (path === "/subcontractor-contracts") {
+      return {
+        data: { items: handlers.contracts },
+        error: undefined,
+        response: new Response(),
+      } as never;
     }
     throw new Error(`beklenmeyen uç: ${path}`);
   });
@@ -80,10 +87,10 @@ beforeEach(() => {
 });
 
 describe("useSiteSubcontractorPayments", () => {
-  it("proje ucuna `project_id` ile çıkar, site_id EŞLEŞEN sözleşmenin hakedişini dahil eder", async () => {
+  it("U2'ye `project_id` + `site_id` ile çıkar (süzme sunucuda, N+1 YOK)", async () => {
     mockGet({
       payments: [paymentItem({ id: "scpp-1", contract_id: "sc-1" })],
-      contracts: { "sc-1": contract({ site_id: "site-1" }) },
+      contracts: [contractListItem({ site_id: "site-1" })],
     });
 
     const { result } = renderHook(() => useSiteSubcontractorPayments("proj-1", "site-1"), {
@@ -99,64 +106,83 @@ describe("useSiteSubcontractorPayments", () => {
       sectionId: null,
     });
     expect(backendClient.GET).toHaveBeenCalledWith("/subcontractor-progress-payments", {
-      params: { query: { project_id: "proj-1", limit: 200 } },
+      params: { query: { project_id: "proj-1", site_id: "site-1", limit: 200 } },
     });
   });
 
-  it("site_id EŞLEŞMEYEN (başka şantiye) sözleşmenin hakedişini HARİÇ TUTAR", async () => {
-    mockGet({
-      payments: [paymentItem({ id: "scpp-2", contract_id: "sc-2" })],
-      contracts: { "sc-2": contract({ id: "sc-2", site_id: "site-OTHER" }) },
-    });
-
-    const { result } = renderHook(() => useSiteSubcontractorPayments("proj-1", "site-1"), {
-      wrapper,
-    });
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect(result.current.items).toHaveLength(0);
-  });
-
-  it("site_id NULL (proje-geneli sözleşme) hakedişini şantiye sekmesine DAHİL ETMEZ", async () => {
-    mockGet({
-      payments: [paymentItem({ id: "scpp-3", contract_id: "sc-3" })],
-      contracts: { "sc-3": contract({ id: "sc-3", site_id: null }) },
-    });
-
-    const { result } = renderHook(() => useSiteSubcontractorPayments("proj-1", "site-1"), {
-      wrapper,
-    });
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect(result.current.items).toHaveLength(0);
-  });
-
-  it("bazı sözleşme detayları hata verirse isPartial=true, o hakedişler HARİÇ TUTULUR", async () => {
+  it("workCategory join'i: U2 ile PARALEL TEK U1 isteği gider — sözleşme sayısından BAĞIMSIZ (N+1 YOK)", async () => {
     mockGet({
       payments: [
         paymentItem({ id: "scpp-1", contract_id: "sc-1" }),
-        paymentItem({ id: "scpp-4", contract_id: "sc-4", subcontractor_name: "Yılmaz Elektrik" }),
+        paymentItem({ id: "scpp-2", contract_id: "sc-2", subcontractor_name: "Çelik İnşaat" }),
       ],
-      contracts: { "sc-1": contract({ site_id: "site-1" }) }, // sc-4 KASITLI eksik → 404
+      contracts: [
+        contractListItem({ id: "sc-1", site_id: "site-1" }),
+        contractListItem({ id: "sc-2", site_id: "site-1", work_category: "Duvar/Sıva" }),
+      ],
     });
 
     const { result } = renderHook(() => useSiteSubcontractorPayments("proj-1", "site-1"), {
       wrapper,
     });
 
-    await waitFor(() => expect(result.current.isPartial).toBe(true));
-    expect(result.current.failedContractCount).toBe(1);
-    // sc-1 çözüldü ve site eşleşti → yine de listede kalır (kısmi hata TÜM
-    // listeyi silmez, yalnız çözülemeyeni dışarıda bırakır + bayrak kaldırır).
-    expect(result.current.items.map((i) => i.id)).toEqual(["scpp-1"]);
+    await waitFor(() => expect(result.current.items).toHaveLength(2));
+    // TEK U1 çağrısı — kaç farklı sözleşme olursa olsun (N+1'in aksine).
+    const contractListCalls = vi
+      .mocked(backendClient.GET)
+      .mock.calls.filter((call) => call[0] === "/subcontractor-contracts");
+    expect(contractListCalls).toHaveLength(1);
+    expect(contractListCalls[0][1]).toEqual({ params: { query: { site_id: "site-1" } } });
+    // U2 ve U1 PARALEL: her ikisi de tam olarak bir kez çağrılır (biri
+    // diğerini bekleyip zincirlenmez).
+    const paymentsCalls = vi
+      .mocked(backendClient.GET)
+      .mock.calls.filter((call) => call[0] === "/subcontractor-progress-payments");
+    expect(paymentsCalls).toHaveLength(1);
+  });
+
+  it("workCategory join'i EŞLEŞİRSE gerçek değeri taşır", async () => {
+    mockGet({
+      payments: [paymentItem({ id: "scpp-1", contract_id: "sc-1" })],
+      contracts: [contractListItem({ id: "sc-1", work_category: "Betonarme İşleri" })],
+    });
+
+    const { result } = renderHook(() => useSiteSubcontractorPayments("proj-1", "site-1"), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+    expect(result.current.items[0].workCategory).toBe("Betonarme İşleri");
+  });
+
+  it("workCategory join'i EŞLEŞMEZSE (yarış durumu) `null`a zarif düşer — hata FIRLATILMAZ", async () => {
+    mockGet({
+      payments: [paymentItem({ id: "scpp-1", contract_id: "sc-1" })],
+      // U1 yanıtında sc-1 YOK — hakediş listesi geldi, sözleşme o anda
+      // değişti/silindi senaryosu.
+      contracts: [],
+    });
+
+    const { result } = renderHook(() => useSiteSubcontractorPayments("proj-1", "site-1"), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+    expect(result.current.items[0].workCategory).toBeNull();
+    expect(result.current.isError).toBe(false);
   });
 
   it("hakediş liste ucu hata verirse isError=true", async () => {
-    vi.mocked(backendClient.GET).mockResolvedValue({
-      data: undefined,
-      error: "boom",
-      response: new Response(null, { status: 500 }),
-    } as never);
+    vi.mocked(backendClient.GET).mockImplementation(async (path: string) => {
+      if (path === "/subcontractor-progress-payments") {
+        return {
+          data: undefined,
+          error: "boom",
+          response: new Response(null, { status: 500 }),
+        } as never;
+      }
+      return { data: { items: [] }, error: undefined, response: new Response() } as never;
+    });
 
     const { result } = renderHook(() => useSiteSubcontractorPayments("proj-1", "site-1"), {
       wrapper,
@@ -172,7 +198,7 @@ describe("useSiteSubcontractorPayments", () => {
   it("hakedişin section_id'sini (dolu ya da null) ham şekilde çağırana taşır", async () => {
     mockGet({
       payments: [paymentItem({ id: "scpp-1", contract_id: "sc-1", section_id: "sec-9" })],
-      contracts: { "sc-1": contract({ site_id: "site-1" }) },
+      contracts: [contractListItem({ id: "sc-1" })],
     });
 
     const { result } = renderHook(() => useSiteSubcontractorPayments("proj-1", "site-1"), {
@@ -183,23 +209,36 @@ describe("useSiteSubcontractorPayments", () => {
     expect(result.current.items[0].sectionId).toBe("sec-9");
   });
 
-  it("aynı sözleşmeye ait BİRDEN ÇOK hakediş varsa sözleşme detayı YALNIZ BİR KEZ istenir (distinct + önbellek)", async () => {
+  it("liste sunucu tavanında kırpıldıysa isPartial=true, sınır görünür kılınır", async () => {
     mockGet({
-      payments: [
-        paymentItem({ id: "scpp-1", contract_id: "sc-1" }),
-        paymentItem({ id: "scpp-1b", contract_id: "sc-1" }),
-      ],
-      contracts: { "sc-1": contract({ site_id: "site-1" }) },
+      payments: [paymentItem({ id: "scpp-1", contract_id: "sc-1" })],
+      contracts: [contractListItem({ id: "sc-1" })],
+      paymentsTotal: 210,
     });
 
     const { result } = renderHook(() => useSiteSubcontractorPayments("proj-1", "site-1"), {
       wrapper,
     });
 
-    await waitFor(() => expect(result.current.items).toHaveLength(2));
-    const contractCalls = vi
-      .mocked(backendClient.GET)
-      .mock.calls.filter((call) => call[0] === "/subcontractor-contracts/{contract_id}");
-    expect(contractCalls).toHaveLength(1);
+    await waitFor(() => expect(result.current.isPartial).toBe(true));
+    expect(result.current.truncation).toEqual({
+      isTruncated: true,
+      shownCount: 1,
+      totalCount: 210,
+    });
+  });
+
+  it("liste kırpılmamışsa isPartial=false", async () => {
+    mockGet({
+      payments: [paymentItem({ id: "scpp-1", contract_id: "sc-1" })],
+      contracts: [contractListItem({ id: "sc-1" })],
+    });
+
+    const { result } = renderHook(() => useSiteSubcontractorPayments("proj-1", "site-1"), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+    expect(result.current.isPartial).toBe(false);
   });
 });

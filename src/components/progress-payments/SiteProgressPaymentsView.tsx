@@ -34,15 +34,15 @@ import "./site-progress-payments.css";
 // PAYLAŞILIR): "4 hakediş · %75" alt metni proje bağlamı bu ekranda
 // BİLİNDİĞİNDEN `useProgressPaymentSummary(projectId)` ile TAM basılır.
 //
-// F-TH T5 (bu dilim) — taşeron tarafı GERÇEK veriyle dolduruldu:
-//   - `useSiteSubcontractorPayments` (§site_id süzmesi GEÇİCİDİR, hook'un
-//     kendi başlığına bakınız) proje-düzeyi taşeron hakedişlerini şantiyeye
-//     süzer. `site_id === null` (proje-geneli) sözleşmeler BİLİNÇLİ olarak
-//     HARİÇ TUTULUR (tek-anlamlılık kararı).
+// F-TH T5/TB2 — taşeron tarafı GERÇEK veriyle dolduruldu:
+//   - `useSiteSubcontractorPayments` U2'ye (`GET /subcontractor-progress-
+//     payments`) `site_id` filtresiyle çıkar — süzme SUNUCUDA yapılır.
+//     `site_id === null` (proje-geneli) sözleşmeler BİLİNÇLİ olarak
+//     HARİÇ TUTULUR (tek-anlamlılık kararı, sunucu filtresinin kendisiyle).
 //   - "Toplam Taşeron Ödemesi" + "Brüt Kar Marjı" KPI'ları artık GERÇEK
 //     (`computeSiteSubcontractorTotals` + `computeGrossMargin`, S2 kararı:
 //     marj = (işveren−taşeron)/işveren). "Onay Bekleyen" iki tarafı toplar.
-//   - Sözleşme detaylarının bir kısmı hata verirse (`isPartial`) toplam/marj
+//   - Hakediş listesi sunucu tavanında kırpılırsa (`isPartial`) toplam/marj
 //     sessizce basılmaz — görünür hata bandı + pending gösterilir.
 //   - Sağ sütun (`SiteSubcontractorPaymentsPanel`) satır tıklanabilir,
 //     `/hakedisler/taseron/[paymentId]`e gider; "Tümü →" `/hakedisler/taseron`e.
@@ -59,10 +59,7 @@ function subcontractorBandMessage(state: UseSiteSubcontractorPaymentsResult): st
   if (state.isError) {
     return "Taşeron hakedişleri yüklenemedi — taşeron toplamı ve kâr marjı gösterilemiyor.";
   }
-  if (state.truncation.isTruncated) {
-    return `${listTruncationMessage(state.truncation)} Taşeron toplamı ve kâr marjı bu yüzden gösterilmiyor.`;
-  }
-  return `${state.failedContractCount} taşeron sözleşmesi yüklenemedi — toplamlar ve kâr marjı eksik olabilir.`;
+  return `${listTruncationMessage(state.truncation)} Taşeron toplamı ve kâr marjı bu yüzden gösterilmiyor.`;
 }
 
 export function SiteProgressPaymentsView() {

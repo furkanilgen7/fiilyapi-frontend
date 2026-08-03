@@ -29,9 +29,9 @@ test("taseron sozlesme secim adimi ekrani gorsel", async ({ page }) => {
 
   await page.goto("/hakedisler/taseron/yeni");
   await expect(page.getByRole("heading", { name: "Taşeron Hakediş Oluştur" })).toBeVisible();
-  // İçerik yüklendi: kalıcı bilgi notu + sözleşme seçici basılı olmadan
-  // ekran görüntüsü alınırsa baseline yükleme durumunu dondurur.
-  await expect(page.getByTestId("th-contract-picker-note")).toBeVisible();
+  // İçerik yüklendi: sözleşme seçici basılı olmadan ekran görüntüsü alınırsa
+  // baseline yükleme durumunu dondurur. TB2 takip: geçiş dönemi kalıcı bilgi
+  // notu (Alert) kaldırıldı — U1 liste ucu geldiğinden sınır artık YOK.
   await expect(page.getByLabel("Taşeron Sözleşmesi")).toBeVisible();
   await expect(page).toHaveScreenshot("taseron-sozlesme-secim-adimi.png", { fullPage: true });
 });
