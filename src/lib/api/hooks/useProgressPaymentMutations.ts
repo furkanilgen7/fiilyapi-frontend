@@ -18,9 +18,11 @@ export type ProgressPaymentLinesSave = components["schemas"]["ProgressPaymentLin
 // (`ProgressPaymentCreate.lines[]` / `ProgressPaymentLinesSave.lines[]`
 // içinde kullanılıyordu) ama takma ad olarak DIŞA AKTARILMAMIŞTI — hakediş
 // formunun pivot modülü (`pivot.ts`) `PUT …/lines` gövdesini üretirken bu
-// tipi tek satır şekli olarak kullanır. `schema.d.ts`/`openapi.json`
-// DEĞİŞMEDİ, yalnız var olan şemaya yeni bir takma ad eklendi.
-export type ProgressPaymentLineInput = components["schemas"]["ProgressPaymentLineInput"];
+// tipi tek satır şekli olarak kullanır.
+// 2026-08-03 openapi devri: backend artık bu şemayı Input/Output olarak İKİYE
+// ayırıp üretiyor (`ProgressPaymentLineInput-Input` / `-Output`); düz ad kalktı.
+// Burada İSTEK gövdesi üretildiği için `-Input` varyantı kullanılır.
+export type ProgressPaymentLineInput = components["schemas"]["ProgressPaymentLineInput-Input"];
 export type RejectBody = components["schemas"]["RejectBody"];
 export type RefreshPricesResponse = components["schemas"]["RefreshPricesResponse"];
 
