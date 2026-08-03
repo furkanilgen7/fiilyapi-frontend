@@ -328,6 +328,16 @@ interface MockSubcontractorProgressPayment {
   lines: MockSubcontractorPaymentLine[];
   calculation: MockSubcontractorPaymentCalculation;
   dropped_orphan_count: number;
+  // F-TH T6 TEST İZOLASYONU (`MockProgressPayment.hiddenFromLists` ile AYNI
+  // desen): `true` ise bu kayıt liste (`GET /subcontractor-progress-
+  // payments`) ve özet uçlarından DIŞLANIR — yalnız kimliğe göre okunur/
+  // mutasyona uğratılır. `e2e/subcontractor-progress-payments.spec.ts`
+  // (fonksiyonel spec) `scpp-6`/`scpp-7`yi bu bayrakla işaretler; böylece
+  // görsel spec'ler (`subcontractor-progress-payments-visual.spec.ts` vb.)
+  // fonksiyonel spec'in aynı paylaşılan mock sunucuda ne zaman/hangi sırada
+  // koştuğundan TAMAMEN bağımsız kalır (`fullyParallel` altında sıra garanti
+  // değildir).
+  hiddenFromLists?: boolean;
 }
 
 // `ProgressPaymentDetail` ile birebir (liste satırı `gross_total`/`net_total`
@@ -1273,7 +1283,43 @@ function buildSubcontractorProgressPaymentFixtures(): MockSubcontractorProgressP
     dropped_orphan_count: 0,
   });
 
-  return [scpp1, scpp2, scpp3, scpp4, scpp5];
+  // #6 — sc-2, taze TASLAK, `hiddenFromLists: true` (F-TH T6 test izolasyonu,
+  // yukarıdaki not). `e2e/subcontractor-progress-payments.spec.ts` bu kaydı
+  // "Taslak Kaydet" + veri-kaybı korkuluğu (`PUT .../lines` gövdesinde TÜM
+  // satırlar) senaryosunda GERÇEKTEN mutasyona uğratır.
+  const scpp6 = withTotals({
+    id: "scpp-6", contract_id: "sc-2", project_id: "p-1", sequence_no: 2,
+    period_year: null, period_month: null, description: null,
+    status: "draft", vat_pct: "20.00", advance_pct: "15.00", retainage_pct: "5.00",
+    default_coefficient: "1.00", section_id: null,
+    submitted_at: null, approved_at: null, approved_by: null,
+    paid_at: null, rejected_at: null, rejection_reason: null,
+    is_revision_required: false, created_by: patronId,
+    created_at: "2026-08-02T09:00:00Z", updated_at: "2026-08-02T09:00:00Z",
+    lines: [],
+    dropped_orphan_count: 0,
+    hiddenFromLists: true,
+  });
+
+  // #7 — sc-1, TASLAK + satırlı, `hiddenFromLists: true` (F-TH T6 test
+  // izolasyonu). `e2e/subcontractor-progress-payments.spec.ts` bu kaydı
+  // durum-makinesi senaryosunda (draft→onaya gönder→reddet→onaya gönder→
+  // onayla→onayı geri al→onayla→ödendi işaretle) uçtan uca mutasyona uğratır.
+  const scpp7 = withTotals({
+    id: "scpp-7", contract_id: "sc-1", project_id: "p-1", sequence_no: 5,
+    period_year: 2026, period_month: 9, description: "Eylül hakedişi",
+    status: "draft", vat_pct: "20.00", advance_pct: "20.00", retainage_pct: "5.00",
+    default_coefficient: "1.00", section_id: null,
+    submitted_at: null, approved_at: null, approved_by: null,
+    paid_at: null, rejected_at: null, rejection_reason: null,
+    is_revision_required: false, created_by: patronId,
+    created_at: "2026-08-20T09:00:00Z", updated_at: "2026-08-20T09:00:00Z",
+    lines: linesFor("sc-1", [["sci-1", 150], ["sci-2", 12]]),
+    dropped_orphan_count: 0,
+    hiddenFromLists: true,
+  });
+
+  return [scpp1, scpp2, scpp3, scpp4, scpp5, scpp6, scpp7];
 }
 
 function buildSubcontractorPaymentDetail(state: MockState, payment: MockSubcontractorProgressPayment) {
@@ -1389,7 +1435,9 @@ function buildSubcontractorPaymentSummary(state: MockState, query: URLSearchPara
   const statusParam = query.get("status");
   const q = (query.get("q") ?? "").trim().toLocaleLowerCase("tr");
 
-  let items = state.subcontractorProgressPayments;
+  // `hiddenFromLists` işaretli kayıtlar özetten de dışlanır (liste ucuyla
+  // AYNI izolasyon kuralı).
+  let items = state.subcontractorProgressPayments.filter((p) => !p.hiddenFromLists);
   if (projectId) items = items.filter((p) => p.project_id === projectId);
   if (periodYearParam) items = items.filter((p) => p.period_year === Number(periodYearParam));
   if (periodMonthParam) items = items.filter((p) => p.period_month === Number(periodMonthParam));
@@ -2409,7 +2457,9 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const limit = Number(parsed.searchParams.get("limit") ?? "50");
       const offset = Number(parsed.searchParams.get("offset") ?? "0");
 
-      let items = state.subcontractorProgressPayments;
+      // `hiddenFromLists` işaretli kayıtlar (scpp-6/scpp-7) burada HİÇ
+      // görünmez — bkz. `MockSubcontractorProgressPayment.hiddenFromLists`.
+      let items = state.subcontractorProgressPayments.filter((p) => !p.hiddenFromLists);
       if (projectId) items = items.filter((p) => p.project_id === projectId);
       if (periodYear) items = items.filter((p) => p.period_year === Number(periodYear));
       if (periodMonth) items = items.filter((p) => p.period_month === Number(periodMonth));
@@ -2539,6 +2589,12 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       payment.status = "pending_approval";
       payment.submitted_at = new Date().toISOString();
       payment.updated_at = payment.submitted_at;
+      // `is_revision_required` TÜREV bir alandır (`draft AND rejected_at IS
+      // NOT NULL`, bkz. yukarıdaki #4 fikstür notu) — durum artık `draft`
+      // OLMADIĞINDAN yeniden hesaplanır (F-TH T6 fix: mock önceden bu bayrağı
+      // statik tutuyordu, resubmit sonrası "Revize Gerekli" rozeti yanlışlıkla
+      // asılı kalıyordu).
+      payment.is_revision_required = false;
       return send(200, buildSubcontractorPaymentDetail(state, payment));
     }
     const subcontractorApproveMatch = path.match(/^\/subcontractor-progress-payments\/([^/]+)\/approve$/);

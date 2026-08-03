@@ -31,6 +31,14 @@
 /* Kalem tablosu grup başlığı satırı — `PaymentGroupTable`in "Ara Toplam"
    tfoot tonuyla AYNI aile (info-tint zemin), ama bir bölüm ayıracı olduğundan
    üst çizgi taşımaz. */
+/* Dar viewport düzeltmesi (F-TH T6, brief §Dar viewport kontrolü): taşeron
+   kalem tablosu İşveren'den bir sütun FAZLA taşır (6 vs 5) — 320/375px'te
+   sayfa gövdesi yerine bu kart kendi içinde yatay kaysın diye tablo ayrı bir
+   scroll kabına alındı. Yalnız taşma düzeltmesi, yeniden tasarım DEĞİL. */
+.thd-line-table__scroll {
+  overflow-x: auto;
+}
+
 .thd-line-table__group-row {
   background: var(--color-surface-2);
 }

@@ -34,6 +34,12 @@ export function SubcontractorPaymentLineTable({ lines }: SubcontractorPaymentLin
   return (
     <section className="pp-table-card">
       <div className="pp-table-card__head">Hakediş Kalemleri</div>
+      {/* F-TH T6 dar-viewport düzeltmesi (brief §Dar viewport kontrolü):
+          taşeron tablosu İşveren'den bir sütun FAZLA taşır (6 vs 5) — dar
+          viewport'ta (320/375px) sayfa gövdesi yerine bu kart kendi içinde
+          yatay kaysın diye tablo ayrı bir `overflow-x: auto` sarmalayıcıya
+          alındı (yeniden tasarım DEĞİL, yalnız taşma düzeltmesi). */}
+      <div className="thd-line-table__scroll">
       <table className="pp-table">
         <thead>
           <tr>
@@ -96,6 +102,7 @@ export function SubcontractorPaymentLineTable({ lines }: SubcontractorPaymentLin
           </tfoot>
         )}
       </table>
+      </div>
     </section>
   );
 }
