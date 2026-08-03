@@ -3,7 +3,6 @@ import {
   buildSubcontractorLineRows,
   buildSubcontractorLinesSaveBody,
   normalizeSubcontractorQuantityForSave,
-  sanitizeSubcontractorQuantityInput,
   type SubcontractorContractItem,
 } from "./th-lines";
 import type { SubcontractorProgressPaymentLineRead } from "@/lib/api/hooks/useSubcontractorProgressPayments";
@@ -135,16 +134,6 @@ describe("buildSubcontractorLinesSaveBody — PUT lines DEĞİŞTİRME semantiğ
     const rows = buildSubcontractorLineRows([item()]).map((r) => ({ ...r, quantity: "" }));
     const body = buildSubcontractorLinesSaveBody(rows);
     expect(body[0].quantity).toBe("0");
-  });
-});
-
-describe("sanitizeSubcontractorQuantityInput", () => {
-  it("rakam/nokta dışı karakterleri süzer", () => {
-    expect(sanitizeSubcontractorQuantityInput("12a.5b")).toBe("12.5");
-  });
-
-  it("ikinci noktayı atar", () => {
-    expect(sanitizeSubcontractorQuantityInput("1.2.3")).toBe("1.23");
   });
 });
 

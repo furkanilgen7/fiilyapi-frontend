@@ -1,4 +1,3 @@
-import { sanitizeQuantityInput } from "./pivot";
 import type {
   SubcontractorContractDetail,
   SubcontractorProgressPaymentLineRead,
@@ -8,9 +7,11 @@ import type { SubcontractorProgressPaymentLineInput } from "@/lib/api/hooks/useS
 // F-TH T3 · hakediş kalem tablosunun SAF (component'sız) mantığı — İşveren
 // tarafının `pivot.ts`si ile AYNI amaç, ama satır kaynağı FARKLI: burada
 // satır = sözleşme kalemi (`SubcontractorContractDetail.items`), şantiye
-// kırılımı YOK (brief §Veri kaynakları). `sanitizeQuantityInput` pivot.ts'ten
-// AYNEN yeniden kullanılır (kopya kod yasak) — miktar filtresi iki formda da
-// birebir aynı kural (rakam/nokta dışı karakter süzülür, ikinci nokta atılır).
+// kırılımı YOK (brief §Veri kaynakları).
+//
+// Final inceleme F-5: miktar sanitizasyonu için BURADA takma ad TUTULMAZ —
+// form `sanitizeQuantityInput`ü doğrudan `./pivot`tan alır. Aynı işin iki yolu
+// bırakılmaz (ölü export kaldırıldı).
 
 export type SubcontractorContractItem = SubcontractorContractDetail["items"][number];
 
@@ -76,9 +77,6 @@ export function buildSubcontractorLineRows(
       };
     });
 }
-
-/** Yazarken uygulanan sanitizasyon — `pivot.ts` ile AYNI kural, iki kez yazılmaz. */
-export const sanitizeSubcontractorQuantityInput = sanitizeQuantityInput;
 
 /**
  * Kaydetmeden HEMEN önce boş/geçersiz ara halleri (""/".") güvenli `"0"`a

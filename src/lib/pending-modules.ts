@@ -37,6 +37,12 @@ const MODULE_LABELS: Record<string, string> = {
   // etiketi KULLANMAZ — yalnız `section_id` DOLU olup adı çözülemeyen
   // durumda gösterilir.
   section_name: "Bölüm adı çözümlemesiyle birlikte gelir",
+  // F-TH final inceleme F-1 (kalıcı kural: backend'i/rotası olmayan mockup
+  // öğesi SİLİNMEZ, devre dışı + görünür gerekçeyle basılır) — Taşeron
+  // Hakediş Oluştur mockup'ındaki "Sözleşmeyi Gör →" ve breadcrumb'daki
+  // taşeron adı + sözleşme no bağlantısının hedefi olan Taşeron Sözleşme
+  // Detay ekranı bu repo'da HENÜZ YOK.
+  subcontractor_contract_detail: "Taşeron sözleşme detay ekranı henüz eklenmedi",
 };
 
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";

@@ -56,14 +56,24 @@ görsel spec (3 yeni + `site-progress-payments-visual.spec.ts` güncellendi) —
 8. **Dönem filtresine mockup'ta olmayan "Tüm Dönemler" seçeneği eklendi** — URL-state sıfırlama gereği
    (filtre temizlenince URL'de dönem parametresi tutarlı bir "hiçbiri" değerine dönmeli).
 
-## BASILMAYAN mockup öğeleri ve NEDENİ (ölü link yasağı)
+## DEVRE-DIŞI basılan mockup öğeleri (güncellendi — final inceleme F-1/F-7)
 
-- **"Sözleşmeyi Gör →" linki** (detay hiyerarşi şeridi) — hedef rota (Taşeron Sözleşme Detay, P5-frontend
-  dilimi) bu repoda henüz yok.
-- **Form breadcrumb'ındaki taşeron adı linki** — aynı gerekçe, hedef rota yok; taşeron adı yalnız düz metin
-  olarak basılıyor.
+> **KALICI KURAL (kullanıcı kararı, 2026-08-03):** backend'i / rotası olmayan mockup öğesi **SİLİNMEZ**;
+> devre-dışı + görünür Türkçe gerekçeyle **BASILIR**. "Basılmaz" yalnız kullanıcının açıkça verdiği
+> kapsam-dışı kararlarında geçerlidir. Bu bölümün önceki hâli ("BASILMAYAN mockup öğeleri") bu kuralla
+> geçersizleşti.
 
-İkisi de test ile kapsandı (`SubcontractorProgressPaymentForm.test.tsx` "ölü link koruması").
+- **"Sözleşmeyi Gör →"** (form hiyerarşi şeridi, mockup O41) — hedef rota (Taşeron Sözleşme Detay,
+  P5-frontend dilimi) bu repoda hâlâ yok → mockup'taki yerinde basılır, `aria-disabled="true"` +
+  `title="Taşeron sözleşme detay ekranı henüz eklenmedi"`, gerçek `href` YOK (tıklanınca hiçbir yere
+  gitmez).
+- **Form breadcrumb'ındaki taşeron adı + sözleşme no** (mockup O19) — aynı gerekçe, aynı desen.
+- **Create kipinde sıra numarası** (mockup O21 "Hakediş #48 Oluştur") — şemada create öncesi `sequence_no`
+  yok → sayı yerine pending gösterge (`#—` + `title="Sıra numarası ilk kayıtta backend tarafından
+  verilir."`); öğe izsiz kaybolmaz.
+
+Üçü de test ile kapsandı (`SubcontractorProgressPaymentForm.test.tsx` — "hiyerarşi şeridi ve devre-dışı
+sözleşme bağlantısı").
 
 ## KALICI PENDING alanlar (backend gerekçeleriyle)
 
@@ -73,7 +83,8 @@ görsel spec (3 yeni + `site-progress-payments-visual.spec.ts` güncellendi) —
   `SubcontractorContractDetail.progress_payment_summary` şemada her zaman `null`.
 - **Şantiye satırı:** bölüm ADI — yalnız `section_id` dönüyor, adı çözecek bir uç yok (yalnız bileşen tipi
   gösterilebiliyor, bkz. T5 fix `d771b59`).
-- **Detay:** PDF/dışa aktarma — böyle bir uç yok, buton basılmıyor/devre dışı.
+- **Detay:** PDF/dışa aktarma — böyle bir uç yok; buton BASILIYOR ama devre dışı + gerekçeli
+  (yukarıdaki kalıcı kuralın zaten uygulanmış hâli).
 
 Ek olarak iki mimari-düzey pending (ROADMAP-FRONTEND.md §3'e işlendi):
 - Sözleşme seçim adımı hakedişlerden türetiliyor (`useSubcontractorContractOptions`); `GET

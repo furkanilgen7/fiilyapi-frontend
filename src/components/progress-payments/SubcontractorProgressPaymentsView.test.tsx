@@ -91,8 +91,25 @@ describe("SubcontractorProgressPaymentsView", () => {
     mockListQuery({ data: { items: [], total: 0, limit: 50, offset: 0 } });
     renderView();
     expect(screen.getByRole("heading", { name: "Taşeron Hakedişi" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Taşeron" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("tab", { name: "İşveren" })).toHaveAttribute("aria-selected", "false");
+    // Final inceleme F-4: tab/tablist rolleri kaldırıldı — gezinme + aria-current.
+    expect(screen.getByRole("link", { name: "Taşeron" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "İşveren" })).not.toHaveAttribute("aria-current");
+  });
+
+  // Final inceleme F-3 — uç varsayılan limiti 50; 50'den fazla hakediş olan
+  // projede tablo sessizce eksik kalırdı.
+  it("total > gösterilen kayıt sayısı iken görünür sınır göstergesi basar", () => {
+    mockListQuery({ data: { items: [], total: 137, limit: 50, offset: 0 } });
+    renderView();
+    expect(screen.getByTestId("thk-limit-note")).toHaveTextContent(
+      "İlk 0 kayıt gösteriliyor (toplam 137) — liste eksik.",
+    );
+  });
+
+  it("total = gösterilen kayıt sayısı iken sınır göstergesi BASILMAZ", () => {
+    mockListQuery({ data: { items: [], total: 0, limit: 50, offset: 0 } });
+    renderView();
+    expect(screen.queryByTestId("thk-limit-note")).not.toBeInTheDocument();
   });
 
   it("403'te erisim reddi basar", () => {

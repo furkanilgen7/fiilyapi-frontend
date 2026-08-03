@@ -218,9 +218,10 @@ describe("SubcontractorProgressPaymentForm — izin", () => {
 });
 
 describe("SubcontractorProgressPaymentForm — create/edit aynı bileşen", () => {
-  it("create kipinde 'Hakediş Oluştur' başlığını basar", async () => {
+  it("create kipinde 'Hakediş … Oluştur' başlığını basar", async () => {
     renderForm({ mode: "create", contractId: CONTRACT_ID });
-    expect(await screen.findByText(/Hakediş Oluştur/)).toBeInTheDocument();
+    await screen.findByTestId("thf-sequence-pending");
+    expect(screen.getByRole("heading", { name: /Hakediş .* Oluştur/ })).toBeInTheDocument();
   });
 
   it("edit kipinde '#N Düzenle' başlığını basar", async () => {
@@ -312,7 +313,7 @@ describe("SubcontractorProgressPaymentForm — eksik sözleşme birim fiyatı (f
 
   it("items_missing_price 0 iken uyarı bandı BASILMAZ", async () => {
     renderForm({ mode: "create", contractId: CONTRACT_ID });
-    await screen.findByText(/Hakediş Oluştur/);
+    await screen.findByTestId("thf-sequence-pending");
     expect(screen.queryByTestId("thf-missing-price-alert")).not.toBeInTheDocument();
     expect(screen.queryByTestId("thf-missing-price-cell")).not.toBeInTheDocument();
   });
@@ -326,7 +327,7 @@ describe("SubcontractorProgressPaymentForm — eksik sözleşme birim fiyatı (f
       }),
     );
     renderForm({ mode: "create", contractId: CONTRACT_ID });
-    await screen.findByText(/Hakediş Oluştur/);
+    await screen.findByTestId("thf-sequence-pending");
     expect(screen.queryByTestId("thf-missing-price-cell")).not.toBeInTheDocument();
     expect(screen.getByText("0")).toBeInTheDocument();
   });
@@ -359,7 +360,7 @@ describe("SubcontractorProgressPaymentForm — PUT lines TÜM satırları gönde
     vi.mocked(useReplaceSubcontractorProgressPaymentLines).mockReturnValue(mutationResult({ mutate: replaceMutate }));
 
     renderForm({ mode: "create", contractId: CONTRACT_ID });
-    await screen.findByText(/Hakediş Oluştur/);
+    await screen.findByTestId("thf-sequence-pending");
     await userEvent.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
 
     expect(createMutate).toHaveBeenCalledTimes(1);
@@ -397,7 +398,7 @@ describe("SubcontractorProgressPaymentForm — 409/422 Türkçe hata mesajları"
     );
     vi.mocked(useCreateSubcontractorProgressPayment).mockReturnValue(mutationResult({ mutate: createMutate }));
     renderForm({ mode: "create", contractId: CONTRACT_ID });
-    await screen.findByText(/Hakediş Oluştur/);
+    await screen.findByTestId("thf-sequence-pending");
     await userEvent.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
     expect(await screen.findByTestId("thf-form-error")).toHaveTextContent(
       "Bu sözleşmede açık bir taslak hakediş var.",
@@ -412,7 +413,7 @@ describe("SubcontractorProgressPaymentForm — 409/422 Türkçe hata mesajları"
     vi.mocked(useCreateSubcontractorProgressPayment).mockReturnValue(mutationResult({ mutate: createMutate }));
     vi.mocked(useReplaceSubcontractorProgressPaymentLines).mockReturnValue(mutationResult({ mutate: replaceMutate }));
     renderForm({ mode: "create", contractId: CONTRACT_ID });
-    await screen.findByText(/Hakediş Oluştur/);
+    await screen.findByTestId("thf-sequence-pending");
     await userEvent.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
     expect(await screen.findByTestId("thf-form-error")).toHaveTextContent("Miktar negatif olamaz.");
   });
@@ -433,7 +434,7 @@ describe("SubcontractorProgressPaymentForm — form doğrulama", () => {
     const createMutate = vi.fn();
     vi.mocked(useCreateSubcontractorProgressPayment).mockReturnValue(mutationResult({ mutate: createMutate }));
     renderForm({ mode: "create", contractId: CONTRACT_ID });
-    await screen.findByText(/Hakediş Oluştur/);
+    await screen.findByTestId("thf-sequence-pending");
     await userEvent.clear(screen.getByLabelText("Hakediş yılı"));
     await userEvent.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
     expect(await screen.findByTestId("thf-form-error")).toHaveTextContent("Dönem seçimi zorunludur.");
@@ -451,11 +452,57 @@ describe("SubcontractorProgressPaymentForm — dropped_orphan_count uyarısı", 
   });
 });
 
-describe("SubcontractorProgressPaymentForm — hiyerarşi şeridi ve ölü link koruması", () => {
-  it("'Sözleşmeyi Gör' linki BASILMAZ (hedef rota yok)", async () => {
+// Final inceleme F-1 (KALICI KURAL) — backend'i/rotası olmayan mockup öğesi
+// SİLİNMEZ: devre-dışı + görünür Türkçe gerekçeyle basılır. Eski davranış
+// (öğeyi hiç basmamak) artık İHLALDİR.
+describe("SubcontractorProgressPaymentForm — hiyerarşi şeridi ve devre-dışı sözleşme bağlantısı", () => {
+  const CONTRACT_DETAIL_HINT = "Taşeron sözleşme detay ekranı henüz eklenmedi";
+
+  it("'Sözleşmeyi Gör →' BASILIR ama devre dışıdır ve href TAŞIMAZ", async () => {
     renderForm({ mode: "create", contractId: CONTRACT_ID });
-    await screen.findByText(/Hakediş Oluştur/);
-    expect(screen.queryByText("Sözleşmeyi Gör →")).not.toBeInTheDocument();
+    await screen.findByTestId("thf-sequence-pending");
+    const seeContract = screen.getByTestId("thf-see-contract-link");
+    expect(seeContract).toHaveTextContent("Sözleşmeyi Gör →");
+    expect(seeContract).toHaveAttribute("aria-disabled", "true");
+    expect(seeContract).toHaveAttribute("title", CONTRACT_DETAIL_HINT);
+    expect(seeContract).not.toHaveAttribute("href");
+    // Hiyerarşi şeridinin İÇİNDE durur (mockup O41'deki yeri).
+    expect(screen.getByTestId("thf-hierarchy")).toContainElement(seeContract);
+  });
+
+  it("breadcrumb'daki taşeron adı + sözleşme no da devre-dışı + gerekçeli basılır", async () => {
+    renderForm({ mode: "create", contractId: CONTRACT_ID });
+    const crumb = await screen.findByTestId("thf-contract-crumb-link");
+    expect(crumb).toHaveTextContent("Akın İnşaat");
+    expect(crumb).toHaveAttribute("aria-disabled", "true");
+    expect(crumb).toHaveAttribute("title", CONTRACT_DETAIL_HINT);
+    expect(crumb).not.toHaveAttribute("href");
+  });
+
+  it("hiçbiri gerçek link DEĞİLDİR — ölü link üretilmez", async () => {
+    renderForm({ mode: "create", contractId: CONTRACT_ID });
+    await screen.findByTestId("thf-sequence-pending");
+    const links = screen.queryAllByRole("link", { name: /Sözleşmeyi Gör|Akın İnşaat/ });
+    for (const link of links) expect(link).not.toHaveAttribute("href");
+  });
+
+  // Final inceleme F-7 — mockup O21 "Hakediş #48 Oluştur"; create kipinde sıra
+  // numarası henüz üretilmemiştir, öğe izsiz kaybolmaz.
+  it("create kipinde sıra numarası yerine gerekçeli pending gösterge basar", async () => {
+    renderForm({ mode: "create", contractId: CONTRACT_ID });
+    const pending = await screen.findByTestId("thf-sequence-pending");
+    expect(pending).toHaveTextContent("#—");
+    expect(pending).toHaveAttribute(
+      "title",
+      "Sıra numarası ilk kayıtta backend tarafından verilir.",
+    );
+  });
+
+  it("edit kipinde GERÇEK sıra numarası basılır, pending gösterge YOKTUR", async () => {
+    vi.mocked(useSubcontractorProgressPayment).mockReturnValue(queryResult({ data: detailFixture() }));
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+    expect(await screen.findByText(/Hakediş #48 Düzenle/)).toBeInTheDocument();
+    expect(screen.queryByTestId("thf-sequence-pending")).not.toBeInTheDocument();
   });
 
   it("işveren sözleşme no halkası zarif düşüşle basılır (pending, silinmez)", async () => {

@@ -8,6 +8,29 @@
   margin-bottom: 0;
 }
 
+/* Final inceleme F-1/F-7 — mockup O19'daki sözleşme bağlantısı ve O21'deki
+   sıra numarası: hedefi/verisi olmadığı için devre-dışı ama GÖRÜNÜR basılır.
+   Bağlantı rengi korunur (mockup'taki yeri okunur kalsın) ama tıklanamaz
+   olduğu imleç + soluk tonla belli olur. */
+.thf-crumb__disabled-link {
+  color: var(--color-primary);
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+.thf-crumb__pending {
+  color: var(--color-text-subtle);
+  font-weight: var(--weight-regular);
+  cursor: help;
+}
+.thf-hierarchy__see-contract {
+  margin-left: auto;
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 /* Üst form mockup 54-62'de 4 kolon (Taşeron/Dönem/Şantiye/Bölüm) — İşveren
    `.pp-form__header-grid`'in 3 kolonlu varsayılanını burada 2'ye ezer. */
 .thf-header-grid {

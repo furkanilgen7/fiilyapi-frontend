@@ -56,7 +56,8 @@ function SubcontractorPaymentRow({ item }: { item: SiteSubcontractorPaymentItem 
   const badge = PAYMENT_STATUS_BADGE[item.status];
   const href = `/hakedisler/taseron/${item.id}`;
   // Fix round 1 (coordinator review) — bileşik alt metin ("iş kategorisi ·
-  // bölüm", mockup satır 141): iki parçanın "bilinmiyor" hâli AYRI anlamlar
+  // bölüm", mockup `Şantiye - Hakedişler.dc.html` satır 124; final inceleme
+  // F-6: eski atıf "Ekran 2 satır 141" yanlıştı): iki parçanın "bilinmiyor" hâli AYRI anlamlar
   // taşıdığından `buildSubcontractorRowSubtitle` bunları ayırt eder (bkz.
   // dosyanın başlığı) — bölüm bileşeni artık HİÇ kaybolmaz.
   const subtitle = buildSubcontractorRowSubtitle(item.workCategory, item.sectionId);

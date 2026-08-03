@@ -6,7 +6,11 @@ import { useParams } from "next/navigation";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { useProgressPayments, useProgressPaymentSummary } from "@/lib/api/hooks/useProgressPayments";
 import { useSite } from "@/lib/api/hooks/useSites";
-import { useSiteSubcontractorPayments } from "@/lib/api/hooks/useSiteSubcontractorPayments";
+import {
+  useSiteSubcontractorPayments,
+  type UseSiteSubcontractorPaymentsResult,
+} from "@/lib/api/hooks/useSiteSubcontractorPayments";
+import { listTruncationMessage } from "@/lib/list-truncation";
 import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 
@@ -46,6 +50,21 @@ import "./site-progress-payments.css";
 // BASILMAYAN (mockup'ta var, bu dilimde veri yok — brief §pending-modules):
 //   - Satır içi "%62 ilerleme" (satır 98, işveren) — liste şemasında yok.
 //   - PDF / dışa aktarma — backend'de uç yok.
+/**
+ * Görünür bant metni — üç ayrı neden (uç hatası / kısmi sözleşme hatası /
+ * sunucu tavanı) AYRI cümlelerle basılır; kullanıcı hangi sayının neden
+ * eksik olduğunu görür (final inceleme F-3).
+ */
+function subcontractorBandMessage(state: UseSiteSubcontractorPaymentsResult): string {
+  if (state.isError) {
+    return "Taşeron hakedişleri yüklenemedi — taşeron toplamı ve kâr marjı gösterilemiyor.";
+  }
+  if (state.truncation.isTruncated) {
+    return `${listTruncationMessage(state.truncation)} Taşeron toplamı ve kâr marjı bu yüzden gösterilmiyor.`;
+  }
+  return `${state.failedContractCount} taşeron sözleşmesi yüklenemedi — toplamlar ve kâr marjı eksik olabilir.`;
+}
+
 export function SiteProgressPaymentsView() {
   const { projectId, siteId } = useParams<{ projectId: string; siteId: string }>();
   // Breadcrumb için — drill kabuğu aynı anahtarı zaten çektiğinden ikinci
@@ -115,14 +134,14 @@ export function SiteProgressPaymentsView() {
         }}
       />
 
-      {/* Kısmi hata görünürlüğü (brief §Yükleme/hata görünürlüğü): taşeron
-          sözleşme detaylarının bir kısmı yüklenemediyse toplam/marj sessizce
-          eksik basılmaz — bant görünür kalır. */}
+      {/* Kısmi veri görünürlüğü (brief §Yükleme/hata görünürlüğü + final
+          inceleme F-3): taşeron sözleşme detaylarının bir kısmı yüklenemediyse
+          YA DA hakediş listesi sunucu tavanında kırpıldıysa toplam/marj
+          sessizce eksik basılmaz — bant görünür kalır, KPI'lar pending'e
+          düşer (`isPartial` tek karar kanalı). */}
       {hasSubcontractorError && (
-        <p className="spp__error-band">
-          {subcontractorPayments.isError
-            ? "Taşeron hakedişleri yüklenemedi — taşeron toplamı ve kâr marjı gösterilemiyor."
-            : `${subcontractorPayments.failedContractCount} taşeron sözleşmesi yüklenemedi — toplamlar ve kâr marjı eksik olabilir.`}
+        <p className="spp__error-band" data-testid="spp-subcontractor-band">
+          {subcontractorBandMessage(subcontractorPayments)}
         </p>
       )}
 

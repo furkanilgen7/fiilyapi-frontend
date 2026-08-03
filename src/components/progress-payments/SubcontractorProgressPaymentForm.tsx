@@ -48,6 +48,13 @@ export type SubcontractorProgressPaymentFormProps =
  * eksikliği, backend yeteneği eksikliği değil). */
 const MISSING_UNIT_PRICE_HINT = "Bu kalem için sözleşmede birim fiyat girilmemiş.";
 
+/** Final inceleme F-7 (kalıcı kural: mockup öğesi izsiz kaybolamaz) — mockup
+ * O21 "Hakediş #48 Oluştur" der; `create` kipinde sıra numarası HENÜZ YOKTUR
+ * (şema `sequence_no`yu ilk POST'ta üretir). `MISSING_UNIT_PRICE_HINT` ile
+ * AYNI gerekçeyle `pendingModuleLabel`dan ayrı tutuldu: bu bir "modül henüz
+ * yok" durumu DEĞİL, henüz üretilmemiş bir değerdir. */
+const PENDING_SEQUENCE_HINT = "Sıra numarası ilk kayıtta backend tarafından verilir.";
+
 /**
  * F-TH T3 · Taşeron hakediş oluştur/düzenle formu. Mockup:
  * `Taşeron Hakediş Oluştur.dc.html`. `create`/`edit` AYNI bileşendir
@@ -276,9 +283,42 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
             diğer ekranlardaki `.pp-form__title` deseninin küçük-metin
             varyantı (a11y: her sayfada bir h1). */}
         <h1 className="pp-form__crumb thf-crumb">
-          {contract.subcontractor_name ?? "—"} {contract.contract_no ?? ""}
+          {/* Final inceleme F-1 · mockup O19'da bu parça "Taşeron Sözleşme
+              Detay" ekranına giden bir BAĞLANTIDIR. Hedef rota bu repo'da yok
+              → öğe SİLİNMEZ (kalıcı kural), devre-dışı bağlantı olarak
+              basılır: gerçek `href` YOK (tıklanınca hiçbir yere gitmez),
+              gerekçe `title` + `sr-only` ile GÖRÜNÜR. */}
+          <span
+            className="thf-crumb__disabled-link"
+            role="link"
+            aria-disabled="true"
+            title={pendingModuleLabel("subcontractor_contract_detail")}
+            data-testid="thf-contract-crumb-link"
+          >
+            {contract.subcontractor_name ?? "—"} {contract.contract_no ?? ""}
+            <span className="sr-only">
+              {pendingModuleLabel("subcontractor_contract_detail")}
+            </span>
+          </span>
           {" · "}
-          {isEdit && detail ? `Hakediş #${detail.sequence_no} Düzenle` : "Hakediş Oluştur"}
+          {isEdit && detail ? (
+            `Hakediş #${detail.sequence_no} Düzenle`
+          ) : (
+            /* Final inceleme F-7 · mockup O21 "Hakediş #48 Oluştur" — sıra
+               numarası create kipinde henüz üretilmemiştir; öğe atlanmaz,
+               repo'nun pending deseniyle ("—" + title/sr-only) basılır. */
+            <>
+              Hakediş{" "}
+              <span
+                className="thf-crumb__pending"
+                title={PENDING_SEQUENCE_HINT}
+                data-testid="thf-sequence-pending"
+              >
+                #—<span className="sr-only">{PENDING_SEQUENCE_HINT}</span>
+              </span>{" "}
+              Oluştur
+            </>
+          )}
         </h1>
         <div className="pp-form__title-actions">
           <Button variant="secondary" onClick={handleSaveDraft} disabled={isSaving}>
@@ -315,9 +355,11 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
       )}
 
       {/* Hiyerarşi şeridi (mockup 33-42). İlk halka (işveren sözleşme no'su)
-          şemada YOK → zarif düşüş (T2'deki pending desenini kullanır);
-          "Sözleşmeyi Gör →" linki BASILMAZ — hedef rota (Taşeron Sözleşme
-          Detay) bu repo'da yok, ölü link yasak (brief §Yasaklar). */}
+          şemada YOK → zarif düşüş (T2'deki pending desenini kullanır).
+          Final inceleme F-1 (kalıcı kural): "Sözleşmeyi Gör →" (mockup O41)
+          ARTIK BASILIR — hedef rota (Taşeron Sözleşme Detay) bu repo'da hâlâ
+          yok, bu yüzden `href` VERİLMEZ; devre-dışı (`aria-disabled`) +
+          Türkçe gerekçe (`title`/`sr-only`) ile mockup'taki yerinde durur. */}
       <div className="thf-hierarchy" data-testid="thf-hierarchy">
         <span
           className="thf-hierarchy__chip thf-hierarchy__chip--pending"
@@ -332,6 +374,16 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
         <span className="thf-hierarchy__sep">→</span>
         <span className="thf-hierarchy__chip thf-hierarchy__chip--accent">
           {contract.contract_no ?? ""} {contract.subcontractor_name ?? "—"}
+        </span>
+        <span
+          className="thf-hierarchy__see-contract"
+          role="link"
+          aria-disabled="true"
+          title={pendingModuleLabel("subcontractor_contract_detail")}
+          data-testid="thf-see-contract-link"
+        >
+          Sözleşmeyi Gör →
+          <span className="sr-only">{pendingModuleLabel("subcontractor_contract_detail")}</span>
         </span>
       </div>
 

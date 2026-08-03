@@ -32,7 +32,9 @@ test("taşeron: sekme gezinmesi (gerçek URL değişimi, geri tuşu)", async ({ 
 
   await page.goto("/hakedisler");
   await expect(page.getByRole("heading", { name: "Hakedişler" })).toBeVisible();
-  await page.getByRole("tab", { name: "Taşeron" }).click();
+  // Final inceleme F-4: sekme şeridi gerçek `tabpanel` taşımadığı için
+  // tab/tablist rolleri kaldırıldı — gezinme linki olarak sorgulanır.
+  await page.getByRole("navigation", { name: "Hakediş türü" }).getByRole("link", { name: "Taşeron" }).click();
   await expect(page).toHaveURL(/\/hakedisler\/taseron$/);
   await expect(page.getByRole("heading", { name: "Taşeron Hakedişi" })).toBeVisible();
 

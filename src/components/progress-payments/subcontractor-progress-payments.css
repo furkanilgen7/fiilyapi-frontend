@@ -186,3 +186,11 @@
    backend alanı eklenirse (T-sonrası) çubuk eklemeyi kolaylaştırmak için
    burada tutulur, şu an kullanılmaz.
    */
+
+/* Final inceleme F-3 — sunucu tavanı yüzünden kırpılmış liste görünür
+   kılınır; sessiz eksik liste YASAK. */
+.thk-limit-note {
+  margin-top: var(--space-3);
+  font-size: 13px;
+  color: var(--color-warning-strong);
+}

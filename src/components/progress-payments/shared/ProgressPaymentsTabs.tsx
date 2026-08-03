@@ -13,6 +13,13 @@ import "./progress-payments-tabs.css";
  * artırır hem de her iki sayfanın "use client" olma zorunluluğunu bu
  * bileşene bağlamaz. Gerçek `<Link>` ile gezinir (client-state sekmesi
  * DEĞİL) — URL paylaşılabilir, geri/ileri çalışır.
+ *
+ * Final inceleme F-4 (a11y): `role="tablist"`/`role="tab"`/`aria-selected`
+ * KALDIRILDI. Bu roller ekran okuyucuya "burada ok tuşlarıyla dolaşılan,
+ * aynı sayfada panel değiştiren bir sekme grubu var" der; oysa burada gerçek
+ * `tabpanel` YOKTUR ve her sekme SAYFA DEĞİŞTİREN bir `<Link>`tir — vaat
+ * edilen klavye davranışı çalışmaz. Doğru semantik: gezinme bölgesi
+ * (`<nav>`) + aktif linkte `aria-current="page"`. Görsel sunum DEĞİŞMEZ.
  */
 export type ProgressPaymentsTab = "employer" | "subcontractor";
 
@@ -33,18 +40,17 @@ export interface ProgressPaymentsTabsProps {
 
 export function ProgressPaymentsTabs({ active }: ProgressPaymentsTabsProps) {
   return (
-    <div className="pp-tabs" role="tablist" aria-label="Hakediş sekmeleri">
+    <nav className="pp-tabs" aria-label="Hakediş türü">
       {TABS.map((tab) => (
         <Link
           key={tab.key}
           href={tab.href}
-          role="tab"
-          aria-selected={tab.key === active}
+          aria-current={tab.key === active ? "page" : undefined}
           className={cx("pp-tabs__tab", tab.key === active && "pp-tabs__tab--active")}
         >
           {tab.label}
         </Link>
       ))}
-    </div>
+    </nav>
   );
 }

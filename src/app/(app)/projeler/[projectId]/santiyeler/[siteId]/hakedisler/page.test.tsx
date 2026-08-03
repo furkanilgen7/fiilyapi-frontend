@@ -104,6 +104,7 @@ function mockSubcontractor(value: Partial<UseSiteSubcontractorPaymentsResult>) {
     isError: false,
     isPartial: false,
     failedContractCount: 0,
+    truncation: { isTruncated: false, shownCount: 0, totalCount: 0 },
     ...value,
   });
 }
@@ -264,6 +265,28 @@ describe("SiteHakedislerPage rotasi", () => {
       expect(
         screen.getByText("2 taşeron sözleşmesi yüklenemedi — toplamlar ve kâr marjı eksik olabilir."),
       ).toBeInTheDocument();
+      const taseronValue = screen.getByText("Toplam Taşeron Ödemesi").nextSibling as HTMLElement;
+      const margeValue = screen.getByText("Brüt Kar Marjı").nextSibling as HTMLElement;
+      expect(taseronValue.textContent).not.toMatch(/\d/);
+      expect(margeValue.textContent).not.toMatch(/\d/);
+    });
+
+    // Final inceleme F-3 — 210 hakedişli projede tavan (200) aşılır: eksik
+    // listeden hesaplanan "Brüt Kar Marjı"/"Toplam Taşeron Ödemesi" YANLIŞ
+    // olurdu (ör. %48 basılıp gerçeğin %31 olması). Sayı BASILMAZ, sınır
+    // göstergesi GÖRÜNÜR olur.
+    it("liste sunucu tavanında kırpıldıysa (total > limit) para değerleri basılmaz, sınır göstergesi görünür", () => {
+      mockPayments({ data: { items: [PAYMENT_ITEM] } });
+      mockSubcontractor({
+        items: [SUBCONTRACTOR_ITEM],
+        isPartial: true,
+        failedContractCount: 0,
+        truncation: { isTruncated: true, shownCount: 200, totalCount: 210 },
+      });
+      render(<SiteHakedislerPage />);
+      const band = screen.getByTestId("spp-subcontractor-band");
+      expect(band).toHaveTextContent("İlk 200 kayıt gösteriliyor (toplam 210)");
+      expect(band).toHaveTextContent("Taşeron toplamı ve kâr marjı bu yüzden gösterilmiyor.");
       const taseronValue = screen.getByText("Toplam Taşeron Ödemesi").nextSibling as HTMLElement;
       const margeValue = screen.getByText("Brüt Kar Marjı").nextSibling as HTMLElement;
       expect(taseronValue.textContent).not.toMatch(/\d/);

@@ -10,6 +10,7 @@ import {
 } from "@/lib/api/hooks/useSubcontractorProgressPayments";
 import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
+import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncation";
 
 import { ProgressPaymentsTabs } from "./shared/ProgressPaymentsTabs";
 import { SubcontractorProgressPaymentsFilters } from "./SubcontractorProgressPaymentsFilters";
@@ -45,6 +46,15 @@ export function SubcontractorProgressPaymentsView() {
 
   if (isForbidden(paymentsQuery.error)) return <AccessDenied />;
 
+  // Final inceleme F-3: uç varsayılan `limit` 50'dir — 50'den fazla hakediş
+  // olan projede tablo sessizce eksik kalırdı. KPI şeridi ayrı `summary`
+  // ucundan (sunucu hesabı) geldiği için ETKİLENMEZ; eksik olan YALNIZ
+  // tablodur ve bu görünür kılınır.
+  const truncation = buildListTruncation(
+    paymentsQuery.data?.items.length ?? 0,
+    paymentsQuery.data?.total,
+  );
+
   return (
     <div className="thk">
       <ProgressPaymentsTabs active="subcontractor" />
@@ -66,6 +76,12 @@ export function SubcontractorProgressPaymentsView() {
         isLoading={paymentsQuery.isLoading}
         data={paymentsQuery.data}
       />
+
+      {truncation.isTruncated && (
+        <p className="thk-limit-note" data-testid="thk-limit-note">
+          {listTruncationMessage(truncation)}
+        </p>
+      )}
     </div>
   );
 }

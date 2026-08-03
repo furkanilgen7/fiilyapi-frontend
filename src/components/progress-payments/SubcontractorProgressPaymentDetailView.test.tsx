@@ -217,9 +217,11 @@ describe("SubcontractorProgressPaymentDetailView — Ödeme Hesabı (etiketler �
     mockDetailQuery({ data: baseDetail });
     renderDetail();
     expect(screen.getByText("Ödeme Hesabı")).toBeInTheDocument();
-    // "Toplam Hakediş" hem KPI etiketi hem Ödeme Hesabı'nın Brüt satırı
-    // olarak İKİ kez basılır (KPI kartı + calc kartı, brief §Ödeme Hesabı).
-    expect(screen.getAllByText("Toplam Hakediş")).toHaveLength(2);
+    // Final inceleme F-2: Ödeme Hesabı'nın brüt satırı "Brüt Hakediş"tir (BU
+    // hakedişin brütü); "Toplam Hakediş" YALNIZ KPI'da (sözleşme kümülatifi)
+    // kalır — aynı etiket iki farklı tutarda KULLANILMAZ.
+    expect(screen.getByText("Brüt Hakediş")).toBeInTheDocument();
+    expect(screen.getAllByText("Toplam Hakediş")).toHaveLength(1);
     expect(screen.getByText("KDV (%20)")).toBeInTheDocument();
     expect(screen.getByText("Avans Kesintisi (%20)")).toBeInTheDocument();
     expect(screen.getByText("Teminat Kesintisi (%5)")).toBeInTheDocument();

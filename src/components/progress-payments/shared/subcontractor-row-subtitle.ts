@@ -1,8 +1,10 @@
 import { pendingModuleLabel } from "@/lib/pending-modules";
 
 // F-TH T5 fix round 1 (coordinator review) — taşeron satırının alt metni
-// BİLEŞİKTİR: "iş kategorisi · bölüm" (mockup `Ekran 2 - Taşeron
-// Hakedişi.dc.html` satır 141: "Betonarme İşleri · Kat 6–8"). Önceki sürüm
+// BİLEŞİKTİR: "iş kategorisi · bölüm". Bu bileşik metnin mockup kanonu
+// `Şantiye - Hakedişler.dc.html` satır 124'tür ("Betonarme İşleri · Kat 6–8");
+// `Ekran 2 - Taşeron Hakedişi.dc.html` satır 141 YALNIZ kategoriyi taşır
+// (final inceleme F-6: önceki atıf yanlıştı, davranış doğruydu). Önceki sürüm
 // yalnız kategoriyi basıyor, bölüm bileşenini HİÇ render etmiyordu (iz
 // bırakmadan kayboluyordu) — üst kuralın ("sessiz atlama = ihlal") ihlaliydi.
 //

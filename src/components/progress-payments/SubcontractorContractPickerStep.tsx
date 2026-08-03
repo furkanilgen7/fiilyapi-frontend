@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Alert, Button, Field, Select } from "@/components/ui";
 import { useSubcontractorContractOptions } from "@/lib/api/hooks/useSubcontractorContractOptions";
+import { listTruncationMessage } from "@/lib/list-truncation";
 import "./progress-payment-form.css";
 
 /**
@@ -18,7 +19,7 @@ import "./progress-payment-form.css";
  */
 export function SubcontractorContractPickerStep() {
   const router = useRouter();
-  const { options, isLoading, isError } = useSubcontractorContractOptions();
+  const { options, isLoading, isError, truncation } = useSubcontractorContractOptions();
   const [selected, setSelected] = useState("");
 
   function handleContinue() {
@@ -36,6 +37,15 @@ export function SubcontractorContractPickerStep() {
         Bu liste, sözleşme LİSTE ucu henüz eklenmediği için mevcut hakedişlerden türetiliyor —
         yalnızca en az bir hakedişi olan sözleşmeler görünür.
       </Alert>
+
+      {/* Final inceleme F-3: türetmenin kaynağı olan hakediş listesi sunucu
+          tavanında kırpıldıysa seçenek listesi de EKSİKTİR — bu sessizce
+          yutulmaz, aranan sözleşme listede yoksa kullanıcı NEDENİNİ görür. */}
+      {truncation.isTruncated && (
+        <Alert variant="warning" data-testid="th-contract-picker-truncated">
+          {listTruncationMessage(truncation)} Aradığınız sözleşme listede olmayabilir.
+        </Alert>
+      )}
 
       {isLoading && <p className="pp-form__message">Yükleniyor…</p>}
       {isError && <p className="pp-form__message">Sözleşme listesi yüklenemedi.</p>}

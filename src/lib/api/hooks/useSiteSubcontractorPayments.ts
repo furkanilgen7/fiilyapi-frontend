@@ -3,6 +3,7 @@ import { useQueries } from "@tanstack/react-query";
 
 import { backendClient } from "@/lib/api/client";
 import { unwrap } from "@/lib/api/unwrap";
+import { buildListTruncation, type ListTruncation } from "@/lib/list-truncation";
 
 import {
   useSubcontractorProgressPayments,
@@ -62,20 +63,37 @@ export interface UseSiteSubcontractorPaymentsResult {
   isLoading: boolean;
   /** Hakediş liste ucunun kendisi hata verdi — `items` GÜVENİLMEZ, tümüyle atlanır. */
   isError: boolean;
-  /** Sözleşme detaylarının BİR KISMI hata verdi — `items` KISMİ olabilir.
-   * Çağıran taraf toplamı/marjı sessizce basmaz, görünür hata bandı gösterir
-   * (brief §Yükleme/hata görünürlüğü). */
+  /** `items` KISMİ — ya sözleşme detaylarının BİR KISMI hata verdi ya da
+   * hakediş listesi sunucu tavanında KIRPILDI (final inceleme F-3). Çağıran
+   * taraf toplamı/marjı sessizce basmaz, görünür bant gösterir
+   * (brief §Yükleme/hata görünürlüğü). İki neden için AYRI bir kanal
+   * AÇILMAZ — mevcut `isPartial` kanalı tek karar noktasıdır. */
   isPartial: boolean;
   /** Kaç sözleşme detayı hata verdi (hata bandı metni için). */
   failedContractCount: number;
+  /** Hakediş liste ucunun tavanı aşıldı mı (F-3) — bant metnini ayırt etmek
+   * için; `isTruncated` zaten `isPartial`ın içindedir. */
+  truncation: ListTruncation;
 }
+
+// F-3 · liste ucunun ŞEMA TAVANI. Daha büyük bir değer gönderilirse backend
+// 422 döner — bu yüzden "hepsini çek" mümkün DEĞİLDİR, kırpılma görünür
+// kılınır.
+export const SUBCONTRACTOR_PAYMENT_LIST_MAX_LIMIT = 200;
 
 export function useSiteSubcontractorPayments(
   projectId: string,
   siteId: string,
 ): UseSiteSubcontractorPaymentsResult {
-  const paymentsQuery = useSubcontractorProgressPayments({ project_id: projectId, limit: 200 });
+  const paymentsQuery = useSubcontractorProgressPayments({
+    project_id: projectId,
+    limit: SUBCONTRACTOR_PAYMENT_LIST_MAX_LIMIT,
+  });
   const payments = useMemo(() => paymentsQuery.data?.items ?? [], [paymentsQuery.data]);
+  // F-3: tavan aşıldıysa elde EKSİK liste var — bu şantiyenin taşeron toplamı
+  // ve ondan türeyen brüt kâr marjı YANLIŞ olurdu, o yüzden `isPartial`e
+  // beslenir (para değerleri pending'e düşer, bant görünür).
+  const truncation = buildListTruncation(payments.length, paymentsQuery.data?.total);
 
   const distinctContractIds = useMemo(() => {
     const ids = new Set<string>();
@@ -135,7 +153,8 @@ export function useSiteSubcontractorPayments(
     items,
     isLoading: paymentsQuery.isLoading || (distinctContractIds.length > 0 && anyContractLoading),
     isError: paymentsQuery.isError,
-    isPartial: failedContractCount > 0,
+    isPartial: failedContractCount > 0 || truncation.isTruncated,
     failedContractCount,
+    truncation,
   };
 }

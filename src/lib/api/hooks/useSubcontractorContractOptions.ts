@@ -1,5 +1,8 @@
 import { useMemo } from "react";
 
+import { buildListTruncation, type ListTruncation } from "@/lib/list-truncation";
+
+import { SUBCONTRACTOR_PAYMENT_LIST_MAX_LIMIT } from "./useSiteSubcontractorPayments";
 import {
   useSubcontractorProgressPayments,
   type SubcontractorProgressPaymentListItem,
@@ -31,6 +34,9 @@ export interface UseSubcontractorContractOptionsResult {
   /** T3'ün kalıcı bilgi notu + boş-durum metni için: liste ucu gelene kadar
    * her zaman `true` — türetmenin GEÇİCİ olduğunu ekrana taşımak içindir. */
   isDerivedFromPayments: true;
+  /** Final inceleme F-3 — hakediş listesi sunucu tavanında kırpıldıysa
+   * seçenek listesi de EKSİKTİR; seçim adımı bunu GÖRÜNÜR basar. */
+  truncation: ListTruncation;
 }
 
 function toOption(item: SubcontractorProgressPaymentListItem): SubcontractorContractOption {
@@ -46,11 +52,16 @@ function toOption(item: SubcontractorProgressPaymentListItem): SubcontractorCont
 /**
  * Sözleşme seçenekleri — hakediş listesinden `contract_id`ye göre
  * tekilleştirilmiş, taşeron adına göre (`tr` yerel sıralama) alfabetik
- * sıralanmış. `limit: 200` (şema tavanı) ile tam liste çekilir; sayfalanmış
- * kısmi sonuç seçim kutusunu eksik doldururdu.
+ * sıralanmış.
+ *
+ * ⚠️ Final inceleme F-3 — eski yorum "limit 200 ile TAM LİSTE çekilir"
+ * diyordu, bu YANLIŞTI: 200 şema TAVANIDIR, garanti değil. 200'den fazla
+ * hakedişi olan bir kurulumda seçenek listesi SESSİZCE eksik kalırdı.
+ * Kırpılma artık yutulmuyor: `truncation` dışa verilir, seçim adımı görünür
+ * uyarı basar.
  */
 export function useSubcontractorContractOptions(): UseSubcontractorContractOptionsResult {
-  const query = useSubcontractorProgressPayments({ limit: 200 });
+  const query = useSubcontractorProgressPayments({ limit: SUBCONTRACTOR_PAYMENT_LIST_MAX_LIMIT });
 
   const options = useMemo<SubcontractorContractOption[]>(() => {
     const items = query.data?.items ?? [];
@@ -70,5 +81,6 @@ export function useSubcontractorContractOptions(): UseSubcontractorContractOptio
     isError: query.isError,
     error: query.error,
     isDerivedFromPayments: true,
+    truncation: buildListTruncation(query.data?.items.length ?? 0, query.data?.total),
   };
 }

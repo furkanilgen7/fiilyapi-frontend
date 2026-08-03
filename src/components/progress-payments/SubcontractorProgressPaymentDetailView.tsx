@@ -140,9 +140,14 @@ export function SubcontractorProgressPaymentDetailView({
           <SubcontractorPaymentLineTable lines={detail.lines} />
         </div>
         <div className="pp-detail__side">
+          {/* Final inceleme F-2: bu satır BU hakedişin brütüdür, üstteki
+              "Toplam Hakediş" KPI'ı ise sözleşme KÜMÜLATİFİDİR. Aynı etiket
+              iki farklı tutarda kullanılamaz (kullanıcı 2.100.000'i sözleşme
+              kümülatifi sanardı) — mockup `Ekran 15 - İşveren
+              Hakedişi.dc.html` satır 154 zaten "Brüt Hakediş" der. */}
           <PaymentCalculationCard
             detail={detail}
-            labels={{ grossLabel: "Toplam Hakediş", netLabel: "Net Ödenecek" }}
+            labels={{ grossLabel: "Brüt Hakediş", netLabel: "Net Ödenecek" }}
           />
           <SubcontractorContractProgressCard />
         </div>
