@@ -1139,7 +1139,8 @@ const SUBCONTRACTOR_CONTRACTS: MockSubcontractorContract[] = [
   // kanıtı `subcontractor_id`nin tekil olmasına bağlı DEĞİL — yalnız
   // `subcontractor_name`in seçim kutusunda göründüğü test ediliyor, o farklı
   // (`Yılmaz Boya A.Ş.`) kalabilir. `active_subcontractor_count`ın 2'de
-  // kaldığı `mock-backend.test.ts`te kilitlenmiştir.
+  // kaldığı `subcontractor-progress-payments.spec.ts`teki "Aktif Taşeron"
+  // KPI testiyle kilitlenmiştir.
   {
     id: "sc-3", project_id: "p-1", site_id: null, subcontractor_id: "sub-1",
     subcontractor_name: "Yılmaz Boya A.Ş.", work_category: "Boya",
