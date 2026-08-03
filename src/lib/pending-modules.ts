@@ -24,6 +24,13 @@ const MODULE_LABELS: Record<string, string> = {
   work_category: "İş kategorisi alanıyla birlikte gelir",
   vat: "KDV hesaplamasıyla birlikte gelir",
   progress: "İlerleme takibiyle birlikte gelir",
+  // F-TH T4 (Ekran 15 taşeron uyarlaması) — PDF/dışa aktarma ucu openapi'de
+  // yok (yalnız CRUD + durum aksiyonları var); "Sözleşme İlerlemesi" kartının
+  // üç çubuğu ve "Toplam Hakediş"/"Kalan" KPI'ları
+  // `SubcontractorContractDetail.progress_payment_summary` alanına bağlı —
+  // şema bu alanı BUGÜN her zaman `null` döndürüyor (bkz. openapi açıklaması).
+  pdf_export: "Dışa aktarma modülüyle birlikte gelir",
+  contract_progress: "Sözleşme ilerleme özetiyle birlikte gelir",
 };
 
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";

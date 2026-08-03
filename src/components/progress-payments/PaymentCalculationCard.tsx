@@ -1,9 +1,18 @@
 import { cx } from "@/lib/cx";
 import type { ProgressPaymentDetail } from "@/lib/api/hooks/useProgressPayments";
-import { buildPaymentCalculationRows } from "./shared/payment-calculation-rows";
+import { buildPaymentCalculationRows, type PaymentCalculationLabels } from "./shared/payment-calculation-rows";
 
 export interface PaymentCalculationCardProps {
   detail: Pick<ProgressPaymentDetail, "calculation" | "vat_pct" | "advance_pct" | "retainage_pct">;
+  /**
+   * F-TH T4 · Taşeron detayı bu kartı AYNEN paylaşır (brief §Emsal: "ONU
+   * KOPYALAMA, PAYLAŞ") — yalnız Brüt/Net satır etiketleri ekrana göre
+   * değişir ("Brüt Hakediş"/"Net Tahsil" İşveren, "TOPLAM HAKEDİŞ"/
+   * "NET ÖDENECEK" Taşeron, mockup'ların kendi kelimeleri). Varsayılan
+   * İşveren etiketleridir — mevcut çağrı yerleri (`<PaymentCalculationCard
+   * detail={detail} />`) DEĞİŞMEDEN çalışır.
+   */
+  labels?: PaymentCalculationLabels;
 }
 
 // E15 149-174 "Ödeme Hesabı" kartı (spec §6.2-§6.4). Satır etiketleri
@@ -13,12 +22,10 @@ export interface PaymentCalculationCardProps {
 // F-TH T3'te satır üretimi `shared/payment-calculation-rows.ts`e ÇIKARILDI
 // (Taşeron tfoot'unun aynı hesap kaynağını PAYLAŞMASI için) — bu bileşenin
 // GÖRÜNEN davranışı/metinleri DEĞİŞMEDİ, yalnız iç yapı ortaklaştı.
-export function PaymentCalculationCard({ detail }: PaymentCalculationCardProps) {
-  const rows = buildPaymentCalculationRows(
-    detail.calculation,
-    detail,
-    { grossLabel: "Brüt Hakediş", netLabel: "Net Tahsil" },
-  );
+const DEFAULT_LABELS: PaymentCalculationLabels = { grossLabel: "Brüt Hakediş", netLabel: "Net Tahsil" };
+
+export function PaymentCalculationCard({ detail, labels = DEFAULT_LABELS }: PaymentCalculationCardProps) {
+  const rows = buildPaymentCalculationRows(detail.calculation, detail, labels);
   return (
     <section className="pp-calc-card">
       <h2 className="pp-calc-card__title">Ödeme Hesabı</h2>
