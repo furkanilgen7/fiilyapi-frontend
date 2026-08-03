@@ -4,6 +4,10 @@ import { render, screen } from "@testing-library/react";
 import SiteHakedislerPage from "./page";
 import { useProgressPayments, useProgressPaymentSummary } from "@/lib/api/hooks/useProgressPayments";
 import { useSite } from "@/lib/api/hooks/useSites";
+import {
+  useSiteSubcontractorPayments,
+  type UseSiteSubcontractorPaymentsResult,
+} from "@/lib/api/hooks/useSiteSubcontractorPayments";
 import { useSession } from "@/components/shell/SessionProvider";
 import { BackendError } from "@/lib/api/unwrap";
 import type { MeResponse } from "@/lib/auth/types";
@@ -17,6 +21,9 @@ vi.mock("@/lib/api/hooks/useProgressPayments", async (importOriginal) => ({
 vi.mock("@/lib/api/hooks/useSites", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useSites")>()),
   useSite: vi.fn(),
+}));
+vi.mock("@/lib/api/hooks/useSiteSubcontractorPayments", () => ({
+  useSiteSubcontractorPayments: vi.fn(),
 }));
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
 
@@ -87,6 +94,21 @@ function mockSummary(value: Partial<ReturnType<typeof useProgressPaymentSummary>
   } as never);
 }
 
+// F-TH T5: taşeron tarafı gerçek veriyle dolduruldu — varsayılan mock BOŞ
+// liste döner (`isPartial`/`isError` olmayan "hazır" durum), aksi belirtilen
+// testler kendi senaryosunu açıkça override eder.
+function mockSubcontractor(value: Partial<UseSiteSubcontractorPaymentsResult>) {
+  vi.mocked(useSiteSubcontractorPayments).mockReturnValue({
+    items: [],
+    isLoading: false,
+    isError: false,
+    isPartial: false,
+    failedContractCount: 0,
+    truncation: { isTruncated: false, shownCount: 0, totalCount: 0 },
+    ...value,
+  });
+}
+
 // P7 T6: [...slug] catch-all bu segment için devre dışı kalır; sayfa
 // ComingSoon YERİNE gerçek şantiye hakediş görünümünü basar.
 describe("SiteHakedislerPage rotasi", () => {
@@ -95,6 +117,7 @@ describe("SiteHakedislerPage rotasi", () => {
     mockPermission("draft");
     mockSite({ data: SITE });
     mockSummary({ isSuccess: false });
+    mockSubcontractor({});
   });
 
   it("ComingSoon DEGIL gercek gorunumu basar", () => {
@@ -182,29 +205,100 @@ describe("SiteHakedislerPage rotasi", () => {
 
   // Brief §pending-modules ile BOŞ kalanlar — bu dilimde veri kaynağı YOK,
   // ara çözüm/sahte veri yasak; negatif testler sessizce eklenmediklerini korur.
-  // KPI şeridi (coordinator review T6 fix) İSTİSNADIR: dört etiket de basılır,
-  // yalnız taşeron/kâr kartları GERÇEK DEĞER taşımaz (pending-modül ipucu).
-  it("taşeron sütunu, satır içi '%62 ilerleme' ve PDF butonu BASILMAZ", () => {
+  // F-TH T5: taşeron sütunu artık GERÇEK veriyle basılır (aşağıdaki ayrı
+  // testler) — bu test yalnız işveren tarafında YOK olan alanları kapsar
+  // ("%62 ilerleme", PDF) + taşeron paneli varsayılan (boş) durumdayken bir
+  // satır adının basılmadığını doğrular.
+  it("işveren satırında '%62 ilerleme' ve PDF butonu BASILMAZ; taşeron paneli boşken satır basılmaz", () => {
     mockPayments({ data: { items: [PAYMENT_ITEM] } });
     render(<SiteHakedislerPage />);
-    // Taşeron SÜTUNU (satır içi ikinci liste) basılmaz — yalnız KPI kartı
-    // etiketi olarak "Taşeron" geçer, o yüzden satır bazlı proje adı arar.
     expect(screen.queryByText("Akın İnşaat #47")).not.toBeInTheDocument();
-    expect(screen.queryByText(/^%\d/)).not.toBeInTheDocument();
+    // "%62 ilerleme" satır-içi metni YOK — "Brüt Kar Marjı" KPI kartının
+    // GERÇEK yüzdesiyle (ör. "%100") KARIŞTIRILMAZ, o yüzden satır tanımı
+    // (`pp-row__desc`) içinde aranır, sayfa genelinde DEĞİL.
+    expect(screen.queryByText("Kat 6–8 döşeme · %62 ilerleme")).not.toBeInTheDocument();
     expect(screen.queryByText(/ilerleme/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /PDF/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/PDF/)).not.toBeInTheDocument();
   });
 
-  it("KPI şeridi basılır: gerçek kartlar değer taşır, taşeron/kâr kartları pending-modül ipucu taşır", () => {
+  it("KPI şeridi basılır: taşeron toplamı boş listede ₺0, kâr marjı %100 (taşeron ödemesi yok)", () => {
     mockPayments({ data: { items: [PAYMENT_ITEM] } });
     render(<SiteHakedislerPage />);
     const strip = screen.getByTestId("pp-totals-strip");
     expect(strip).toBeInTheDocument();
     expect(screen.getByText("Onay Bekleyen").nextSibling).toHaveTextContent("1");
-    const taseronValue = screen.getByText("Toplam Taşeron Ödemesi").nextSibling as HTMLElement;
-    expect(taseronValue.textContent).not.toMatch(/\d/);
-    expect(taseronValue).toHaveAttribute("title", "Taşeron sözleşmeleriyle birlikte gelir");
+    expect(screen.getByText("Toplam Taşeron Ödemesi").nextSibling).toHaveTextContent("₺ 0");
+    expect(screen.getByText("Brüt Kar Marjı").nextSibling).toHaveTextContent("%100");
+  });
+
+  // F-TH T5 — sağ sütun: gerçek taşeron hakedişi satırları.
+  describe("Taşeron Hakedişleri paneli (F-TH T5)", () => {
+    const SUBCONTRACTOR_ITEM = {
+      id: "scpp-1",
+      contractId: "sc-1",
+      subcontractorName: "Akın İnşaat",
+      sequenceNo: 47,
+      workCategory: "Betonarme İşleri",
+      sectionId: null,
+      grossTotal: "1240000.00",
+      netTotal: "1016800.00",
+      status: "pending_approval" as const,
+      isRevisionRequired: false,
+    };
+
+    it("satırı basar, /hakedisler/taseron/[id]'ye gider ve 'Tümü →' /hakedisler/taseron'a gider", () => {
+      mockPayments({ data: { items: [PAYMENT_ITEM] } });
+      mockSubcontractor({ items: [SUBCONTRACTOR_ITEM] });
+      render(<SiteHakedislerPage />);
+      expect(screen.getByText("Akın İnşaat #47")).toBeInTheDocument();
+      const link = screen.getByRole("link", { name: /Akın İnşaat — Hakediş #47/ });
+      expect(link).toHaveAttribute("href", "/hakedisler/taseron/scpp-1");
+      const links = screen.getAllByRole("link", { name: "Tümü →" });
+      expect(links.some((el) => el.getAttribute("href") === "/hakedisler/taseron")).toBe(true);
+    });
+
+    it("kısmi hatada (isPartial) görünür hata bandı basar, toplam/marj basılmaz", () => {
+      mockPayments({ data: { items: [PAYMENT_ITEM] } });
+      mockSubcontractor({ items: [], isPartial: true, failedContractCount: 2 });
+      render(<SiteHakedislerPage />);
+      expect(
+        screen.getByText("2 taşeron sözleşmesi yüklenemedi — toplamlar ve kâr marjı eksik olabilir."),
+      ).toBeInTheDocument();
+      const taseronValue = screen.getByText("Toplam Taşeron Ödemesi").nextSibling as HTMLElement;
+      const margeValue = screen.getByText("Brüt Kar Marjı").nextSibling as HTMLElement;
+      expect(taseronValue.textContent).not.toMatch(/\d/);
+      expect(margeValue.textContent).not.toMatch(/\d/);
+    });
+
+    // Final inceleme F-3 — 210 hakedişli projede tavan (200) aşılır: eksik
+    // listeden hesaplanan "Brüt Kar Marjı"/"Toplam Taşeron Ödemesi" YANLIŞ
+    // olurdu (ör. %48 basılıp gerçeğin %31 olması). Sayı BASILMAZ, sınır
+    // göstergesi GÖRÜNÜR olur.
+    it("liste sunucu tavanında kırpıldıysa (total > limit) para değerleri basılmaz, sınır göstergesi görünür", () => {
+      mockPayments({ data: { items: [PAYMENT_ITEM] } });
+      mockSubcontractor({
+        items: [SUBCONTRACTOR_ITEM],
+        isPartial: true,
+        failedContractCount: 0,
+        truncation: { isTruncated: true, shownCount: 200, totalCount: 210 },
+      });
+      render(<SiteHakedislerPage />);
+      const band = screen.getByTestId("spp-subcontractor-band");
+      expect(band).toHaveTextContent("İlk 200 kayıt gösteriliyor (toplam 210)");
+      expect(band).toHaveTextContent("Taşeron toplamı ve kâr marjı bu yüzden gösterilmiyor.");
+      const taseronValue = screen.getByText("Toplam Taşeron Ödemesi").nextSibling as HTMLElement;
+      const margeValue = screen.getByText("Brüt Kar Marjı").nextSibling as HTMLElement;
+      expect(taseronValue.textContent).not.toMatch(/\d/);
+      expect(margeValue.textContent).not.toMatch(/\d/);
+    });
+
+    it("boş durumda Türkçe boş-durum metni basar", () => {
+      mockPayments({ data: { items: [] } });
+      mockSubcontractor({ items: [] });
+      render(<SiteHakedislerPage />);
+      expect(screen.getByText("Bu şantiyede taşeron hakedişi yok")).toBeInTheDocument();
+    });
   });
 
   it("hakediş listesi henüz yüklenmemişken (yükleniyor/hata) KPI şeridi basılmaz", () => {

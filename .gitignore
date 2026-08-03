@@ -11,3 +11,7 @@ next-env.d.ts
 coverage/
 playwright-report/
 test-results/
+# Görsel baseline'lar YALNIZ Linux'ta üretilir (CLAUDE.md §Kapılar). macOS'ta
+# `playwright test` eksik snapshot gördüğünde `*-chromium-darwin.png` yazar;
+# bunlar ASLA commit edilmez — yanlışlıkla eklenmesin diye burada engellenir.
+*-darwin.png

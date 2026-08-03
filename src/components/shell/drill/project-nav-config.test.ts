@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { existsSync, readdirSync, statSync } from "node:fs";
+import path from "node:path";
 import { buildProjectNav } from "./project-nav-config";
 
 describe("buildProjectNav — geri hedefi (spec §3.1)", () => {
@@ -122,6 +124,140 @@ describe("buildProjectNav — Saha & İK / Stok & Satınalma / Mali grupları (s
       for (const item of group.items) {
         expect(item.emoji.length).toBeGreaterThan(0);
       }
+    }
+  });
+});
+
+// Kırık link koruması: `src/app/(app)/` dosya sistemindeki GERÇEK rotalarla
+// (elle yazılmış bir liste DEĞİL) drill nav'ın ürettiği her href'i karşılaştırır.
+//
+// Vaka: "İşveren Hakediş" → "/hakedisler/isveren" hardcode edilmişti. Böyle bir
+// statik rota yok; `/hakedisler/[paymentId]/page.tsx` dinamik rotası "isveren"i
+// bir hakediş ID'si sanıp yutuyordu → kullanıcı bulunamadı ekranı görüyordu.
+//
+// Kural: statik (sabit metin) href'ler yalnızca gerçek bir literal rotaya ya da
+// (dinamik kardeş klasör YOKSA) [...slug] catch-all'a düşebilir. Bir href'in
+// TEK eşleşme yolu dinamik bir segment klasörüyse (ör. [paymentId]) bu GEÇERSİZ
+// sayılır — dinamik segmentler statik href parçalarını yutamaz. `buildProjectNav`
+// ctx.projectId / ctx.siteId gibi GERÇEK değerlerle ürettiği href'ler için
+// (ör. "/projeler/1/santiyeler/9") dinamik eşleşme beklenen davranıştır; bu
+// href'ler ayrıca ve açıkça izinli olarak kontrol edilir.
+describe("buildProjectNav — href geçerliliği (kırık link koruması)", () => {
+  interface RouteNode {
+    literalChildren: Map<string, RouteNode>;
+    dynamicChild?: { name: string; node: RouteNode };
+    hasPage: boolean;
+  }
+
+  const APP_DIR = path.join(__dirname, "../../../app/(app)");
+
+  function buildRouteTree(dir: string): RouteNode {
+    const node: RouteNode = { literalChildren: new Map(), hasPage: false };
+    if (!existsSync(dir)) return node;
+    for (const entry of readdirSync(dir)) {
+      const full = path.join(dir, entry);
+      if (!statSync(full).isDirectory()) {
+        if (entry === "page.tsx") node.hasPage = true;
+        continue;
+      }
+      // [...slug] catch-all ayrı ele alınır; ağaca dahil edilmez.
+      if (entry === "[...slug]") continue;
+      const child = buildRouteTree(full);
+      if (entry.startsWith("[") && entry.endsWith("]")) {
+        node.dynamicChild = { name: entry, node: child };
+      } else {
+        node.literalChildren.set(entry, child);
+      }
+    }
+    return node;
+  }
+
+  const ROUTE_TREE = buildRouteTree(APP_DIR);
+
+  type ResolveResult =
+    | { kind: "static" }
+    | { kind: "catch-all" }
+    | { kind: "dynamic-fallback"; dynamicSegmentName: string; matchedPrefix: string }
+    | { kind: "not-found" };
+
+  function resolveHref(href: string, allowDynamicFallback: boolean): ResolveResult {
+    const segments = href.split("/").filter(Boolean);
+    let node = ROUTE_TREE;
+    let matchedPrefix = "";
+    for (const segment of segments) {
+      const literal = node.literalChildren.get(segment);
+      if (literal) {
+        node = literal;
+        matchedPrefix += `/${segment}`;
+        continue;
+      }
+      if (node.dynamicChild) {
+        if (!allowDynamicFallback) {
+          return { kind: "dynamic-fallback", dynamicSegmentName: node.dynamicChild.name, matchedPrefix };
+        }
+        node = node.dynamicChild.node;
+        matchedPrefix += `/${segment}`;
+        continue;
+      }
+      // Ne literal ne dinamik kardeş var: [...slug] catch-all'a düşer.
+      return { kind: "catch-all" };
+    }
+    return node.hasPage ? { kind: "static" } : { kind: "not-found" };
+  }
+
+  function expectValidHref(label: string, href: string, allowDynamicFallback: boolean): void {
+    const result = resolveHref(href, allowDynamicFallback);
+    if (result.kind === "dynamic-fallback") {
+      throw new Error(
+        `Nav öğesi "${label}" (href="${href}") geçersiz: yalnız ${result.matchedPrefix}${result.dynamicSegmentName} ` +
+          `dinamik rotasına eşleşiyor (sabit href parçası dinamik segment tarafından yutuluyor). ` +
+          `Gerçek bir statik rota veya catch-all hedefi olmalı.`,
+      );
+    }
+    if (result.kind === "not-found") {
+      throw new Error(`Nav öğesi "${label}" (href="${href}") geçersiz: eşleşen bir sayfa (page.tsx) yok.`);
+    }
+    expect(result.kind === "static" || result.kind === "catch-all").toBe(true);
+  }
+
+  // Ön koşul: route ağacı gerçekten okunabiliyor mu? (testin kendisinin
+  // sessizce no-op'a düşmediğini garantiler)
+  it("route ağacı src/app/(app) altından okunur (sağlık kontrolü)", () => {
+    expect(ROUTE_TREE.literalChildren.has("hakedisler")).toBe(true);
+    expect(ROUTE_TREE.literalChildren.get("hakedisler")?.dynamicChild?.name).toBe("[paymentId]");
+  });
+
+  it("dinamik segment statik href parçasını yutuyorsa GEÇERSİZ sayılır (regresyon: /hakedisler/isveren)", () => {
+    const result = resolveHref("/hakedisler/isveren", false);
+    expect(result).toEqual({ kind: "dynamic-fallback", dynamicSegmentName: "[paymentId]", matchedPrefix: "/hakedisler" });
+  });
+
+  it("PROJELER, SAHA & İK, STOK & SATINALMA, MALİ gruplarındaki tüm statik href'ler geçerli bir rotaya düşer", () => {
+    const nav = buildProjectNav({ projectId: "1", projectName: "Güneşkent Konut" });
+    const staticGroupHeadings = ["PROJELER", "SAHA & İK", "STOK & SATINALMA", "MALİ"];
+    for (const group of nav.groups.filter((g) => staticGroupHeadings.includes(g.heading))) {
+      for (const item of group.items) {
+        // "PROJELER" grubundaki aktif proje öğesi ctx.projectId ile üretilir
+        // (gerçek ID → dinamik eşleşme beklenir); diğerleri sabit metin href'lerdir.
+        const allowDynamicFallback = group.heading === "PROJELER";
+        expectValidHref(item.label, item.href, allowDynamicFallback);
+      }
+    }
+  });
+
+  it("aktif şantiyenin 7 sekmesi (gerçek projectId/siteId ile üretilmiş) geçerli bir rotaya düşer", () => {
+    const nav = buildProjectNav({
+      projectId: "42",
+      projectName: "Güneşkent Konut",
+      siteId: "99",
+      siteName: "A-Blok Şantiyesi",
+    });
+    const siteGroup = nav.groups.find((g) => g.heading === "A-Blok Şantiyesi");
+    expect(siteGroup).toBeDefined();
+    for (const item of siteGroup!.items) {
+      // Bu href'ler ctx.projectId/ctx.siteId gibi gerçek değerlerle
+      // üretildiği için dinamik segmentlere düşmesi beklenen davranıştır.
+      expectValidHref(item.label, item.href, true);
     }
   });
 });

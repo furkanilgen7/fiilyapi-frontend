@@ -107,3 +107,17 @@ export function formatPeriod(year: number, month: number): string {
   const name = TR_MONTHS[month - 1];
   return name ? `${name} ${year}` : `${month}/${year}`;
 }
+
+/** `TR_MONTHS`in standart 3 harfli kısaltmaları — `formatPeriodShort` bundan türer. */
+const TR_MONTHS_SHORT = TR_MONTHS.map((name) => name.slice(0, 3));
+
+/**
+ * Hakediş listesi dönem hücresi (F-TH T2, Ekran 2 satır 143: "Tem 2026",
+ * "Haz 2026", "May 2026"). `formatPeriod`in kısaltılmış hâli — `Intl.
+ * DateTimeFormat`/`toLocaleString` KULLANMAZ (aynı ortam-bağımsızlık
+ * gerekçesi: `formatPeriod`'un üstündeki not).
+ */
+export function formatPeriodShort(year: number, month: number): string {
+  const name = TR_MONTHS_SHORT[month - 1];
+  return name ? `${name} ${year}` : `${month}/${year}`;
+}

@@ -39,6 +39,23 @@ const ALLOWED_ROOTS = new Set([
   // kokunden gecer, ama detay/guncelleme kendi kokunu kullanir). Eksikse
   // bolum detay ekrani canlida 404 alir; jsdom testleri bunu gormez.
   "sections",
+  // F-TH T1 — Taşeron Hakedişi ekranlarının liste/özet/detay/durum uçları
+  // (/subcontractor-progress-payments, .../{id}, .../{id}/lines,
+  // .../{id}/submit|approve|reject|mark-paid|unapprove|refresh-prices) bu
+  // kökten geçer (oluşturma /subcontractor-contracts/{contract_id}/progress-payments
+  // üzerinden gelir, o da "subcontractor-contracts" kökünden geçer). Eksikse
+  // taşeron hakediş ekranı canlıda tümüyle 404 alır; jsdom testleri bunu görmez.
+  "subcontractor-progress-payments",
+  // F-TH T1 — Taşeron sözleşmesi detay ucu (/subcontractor-contracts/{id})
+  // ve hakediş oluşturma ucu (/subcontractor-contracts/{id}/progress-payments)
+  // bu kökten geçer. Eksikse sözleşme detay okuması ve yeni hakediş oluşturma
+  // canlıda 404 alır.
+  "subcontractor-contracts",
+  // F-TH T1 — Taşeron kartı okuma/yazma uçları (/subcontractors,
+  // /subcontractors/{id}) bu kökten geçer. Bu dilimde doğrudan UI'dan
+  // çağrılmasa da (sözleşme yanıtları taşeron adını gömülü taşır) izin
+  // listesi eksikse ileride eklenecek taşeron kartı ekranı sessizce 404 alır.
+  "subcontractors",
 ]);
 
 // JSON/metin sayilan icerik tipleri: govde metne cozulup JSON olarak islenir.

@@ -456,6 +456,24 @@ describe("BFF /api/backend/[...path]", () => {
       },
     );
 
+    // F-TH · T1 — Taşeron Hakedişi ekranlarının üç yeni kökü ADLI olarak da
+    // kapiya baglanir: dinamik tarama zaten yakalar, ama bu test kokler
+    // sessizce dusurulurse gerekcesini de birlikte kirar.
+    it.each(["subcontractor-progress-payments", "subcontractor-contracts", "subcontractors"])(
+      "%s koku tasaron hakedisi ekranlari icin allow-list'te tanimlidir",
+      (root) => {
+        const source = readFileSync(
+          resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+          "utf8",
+        );
+        const allowList = source.slice(
+          source.indexOf("const ALLOWED_ROOTS"),
+          source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+        );
+        expect(allowList).toContain(`"${root}"`);
+      },
+    );
+
     it.each(calledRoots)("%s koku forward edilir", async (root) => {
       const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
       vi.stubGlobal("fetch", fetchMock);

@@ -9,6 +9,7 @@ import {
   formatMonthYear,
   formatPercent,
   formatPeriod,
+  formatPeriodShort,
   formatQuantity,
 } from "./format";
 
@@ -114,6 +115,21 @@ describe("formatPeriod", () => {
   });
   it("ocak ayini basar (1)", () => {
     expect(formatPeriod(2026, 1)).toBe("Ocak 2026");
+  });
+});
+
+// F-TH T2 · Ekran 2 tablo dönem hücresi ("Tem 2026", "Haz 2026", "May 2026").
+describe("formatPeriodShort", () => {
+  it("kisa ay adi + yil basar (mockup ornekleri)", () => {
+    expect(formatPeriodShort(2026, 7)).toBe("Tem 2026");
+    expect(formatPeriodShort(2026, 6)).toBe("Haz 2026");
+    expect(formatPeriodShort(2026, 5)).toBe("May 2026");
+  });
+  it("aralik ayini basar (12)", () => {
+    expect(formatPeriodShort(2026, 12)).toBe("Ara 2026");
+  });
+  it("ocak ayini basar (1)", () => {
+    expect(formatPeriodShort(2026, 1)).toBe("Oca 2026");
   });
 });
 

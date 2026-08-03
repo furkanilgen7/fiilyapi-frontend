@@ -1,0 +1,76 @@
+/* F-TH T4 · Taşeron Hakediş detayı — Ekran 15'in `progress-payment-detail.css`
+   ile PAYLAŞTIĞI genel yerleşimin (pp-* sınıfları) ÜSTÜNE, yalnız taşeron
+   ekranına özgü parçalar (pending göstergeler, PDF butonu, kalem tablosu grup
+   başlığı). Token dışı çıplak hex/px yasak — CLAUDE.md. */
+
+/* Üst şerit meta satırı — proje/şantiye/dönem/sözleşme no segmentlerinden
+   biri şemada eksikse (brief §Üst şerit) sessizce atlanmaz, pending işareti
+   taşır (`ppt__value--pending` deseniyle aynı dürüstlük kuralı: --color-text-subtle
+   + cursor help). */
+.thd-meta__pending {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+
+/* KPI şeridi — "Toplam Hakediş"/"Kalan" kartları `progress_payment_summary`
+   şemada her zaman `null` döndüğünden (brief §Sol sütun) gerçek veriyle
+   doldurulamaz; kart SİLİNMEZ, değer hücresi pending gösterilir. */
+.pp-kpi__value--pending {
+  color: var(--color-text-subtle);
+  font-size: var(--text-body);
+  cursor: help;
+}
+
+/* PDF butonu — openapi'de taşeron için dışa aktarma ucu YOK (brief §Durum-
+   bazlı buton seti). Buton SİLİNMEZ (ölü yüzey yasağı) ama devre dışı basılır;
+   `disabled` zaten tıklamayı engeller, `title` nedenini görünür kılar. */
+.thd-pdf-button {
+  cursor: help;
+}
+
+/* Kalem tablosu grup başlığı satırı — `PaymentGroupTable`in "Ara Toplam"
+   tfoot tonuyla AYNI aile (info-tint zemin), ama bir bölüm ayıracı olduğundan
+   üst çizgi taşımaz. */
+/* Dar viewport düzeltmesi (F-TH T6, brief §Dar viewport kontrolü): taşeron
+   kalem tablosu İşveren'den bir sütun FAZLA taşır (6 vs 5) — 320/375px'te
+   sayfa gövdesi yerine bu kart kendi içinde yatay kaysın diye tablo ayrı bir
+   scroll kabına alındı. Yalnız taşma düzeltmesi, yeniden tasarım DEĞİL. */
+.thd-line-table__scroll {
+  overflow-x: auto;
+}
+
+.thd-line-table__group-row {
+  background: var(--color-surface-2);
+}
+.thd-line-table__group-cell {
+  padding: 8px 20px;
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+.thd-line-table__code {
+  font-family: var(--font-mono);
+  color: var(--color-text-subtle);
+}
+
+/* Sözleşme İlerlemesi kartı — üç çubuk HER ZAMAN pending (brief §Sağ sütun,
+   `SubcontractorContractProgressCard`). `pp-progress-track__fill--*` (renkli
+   gradient) yerine boş/nötr bir dolgu: gerçek bir yüzde asla uydurulmaz. */
+.thd-progress__pct--pending {
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+.thd-progress__track-fill--pending {
+  height: 100%;
+  width: 100%;
+  background: var(--color-divider);
+}
+
+/* Reddedilme bandı (brief §Diğer: rejection_reason + rejected_at). */
+.thd-rejection-alert {
+  margin-bottom: var(--space-4);
+}

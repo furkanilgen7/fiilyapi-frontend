@@ -9,20 +9,28 @@ import { test, expect } from "@playwright/test";
 // `GET /projects/{project_id}/progress-payments/summary`den `payment_count`
 // + `progress_pct` okur — bu uç `e2e/mock-backend.ts`te sunulmazsa alt
 // başlık eksik kalır ve baseline yanlış donar (brief'in eklediği belirsizlik
-// çözümü). Taşeron kartı `pendingModuleLabel("subcontracts")` metnini basar
-// (gerçek veri değil, kadrajda olduğu aşağıda doğrulanır).
+// çözümü).
+//
+// F-TH T6 GÜNCELLEMESİ (baseline değişikliği — commit e1b6359 "fill
+// subcontractor column and margin" bu spec'i BOZAN bir T5 değişikliğiydi):
+// bu dosya önceden "Toplam Taşeron Ödemesi"/"Brüt Kar Marjı" kartlarının
+// PENDING (henüz veri yok) durumunu doğruluyordu. T5 ile bu kartlar artık
+// GERÇEK değer basıyor (sc-1 → s-1 sözleşmesi üzerinden scpp-1..4) —
+// `pendingCards`/pending title assert'i KALDIRILDI, yerine gerçek KPI
+// değerleri + taşeron panel satırları doğrulanır. Ekran görüntüsü İÇERİĞİ
+// bu yüzden DEĞİŞTİ → baseline Linux'ta YENİDEN üretilmeli (rapora bkz.).
+//
+// Test determinizmi (bkz. `e2e/mock-backend.ts` ·
+// `MockSubcontractorProgressPayment.hiddenFromLists`): `scpp-6`/`scpp-7` —
+// `e2e/subcontractor-progress-payments.spec.ts`in mutasyona uğrattığı taze
+// taslaklar — liste/özet uçlarından TAMAMEN dışlanır; bu ekran artık o
+// fonksiyonel spec'in ne zaman/hangi sırada koştuğundan (fullyParallel)
+// yapısal olarak bağımsızdır. İşveren tarafı için AYNI izolasyon `pp-6`
+// (`e2e/progress-payments.spec.ts`) ile zaten sağlanıyordu.
 //
 // Mock oturumda (`ME`) `permissions` alanı YOKTUR → bilinmezlik kuralı
 // gereği tüm yazma yüzeyleri ("+ Hakediş Oluştur") GÖRÜNÜR hâlde baseline'a
 // girer.
-//
-// Test determinizmi (bkz. `e2e/mock-backend.ts` · `MockProgressPayment.
-// hiddenFromLists`): `pp-6` — `e2e/progress-payments.spec.ts`in mutasyona
-// uğrattığı taslak — liste/özet uçlarından TAMAMEN dışlanır; bu satır artık
-// mutasyon testinin ne zaman/hangi sırada koştuğundan bağımsızdır. `draft`
-// rozetinin görsel kapsamı ise DOKUNULMAYAN, sabit bir kayıt olan `pp-7`
-// ile korunur (bkz. `buildProgressPaymentFixtures`'taki not) — KPI sayısı
-// bu yüzden pp-2..pp-5 + pp-7 = 5 kayıt üzerinden "5 hakediş" basar.
 //
 // Baseline `.png` YALNIZ Linux CI'da üretilir (visual-baselines.yml →
 // workflow_dispatch); macOS'ta koşturulup commit edilmez.
@@ -41,8 +49,13 @@ test("santiye hakedisler sekmesi ekrani gorsel", async ({ page }) => {
   // durumunu dondurur.
   await expect(page.getByText("Kat 6–8 döşeme")).toBeVisible();
   await expect(page.getByTestId("pp-kpi-subtitle")).toHaveText("5 hakediş · %75");
-  // Taşeron kartı — pendingModuleLabel("subcontracts") metni kadrajda.
-  const pendingCards = page.getByTestId("pp-kpi-pending");
-  await expect(pendingCards.first()).toHaveAttribute("title", "Taşeron sözleşmeleriyle birlikte gelir");
+  // Taşeron KPI'ları artık GERÇEK (F-TH T5) — pending DEĞİL: "Toplam Taşeron
+  // Ödemesi" (sc-1'in s-1'e bağlı scpp-1..4 toplamı) + "Brüt Kar Marjı".
+  await expect(page.getByTestId("pp-kpi-subcontractor-subtitle")).toHaveText("1 taşeron");
+  await expect(page.getByText("₺ 141,4B")).toBeVisible();
+  // Taşeron kartı — dört durumun hepsi kadrajda (Ödendi/Onaylandı/Onay
+  // Bekliyor/Revize Gerekli), sc-1'in gerçek `work_category`si ("Elektrik").
+  await expect(page.getByText("Aydın Elektrik Taah. #4")).toBeVisible();
+  await expect(page.getByText("Revize Gerekli")).toBeVisible();
   await expect(page).toHaveScreenshot("santiye-hakedisler.png", { fullPage: true });
 });

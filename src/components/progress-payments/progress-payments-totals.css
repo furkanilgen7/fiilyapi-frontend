@@ -42,3 +42,19 @@
   color: var(--color-text-subtle);
   cursor: help;
 }
+/* F-TH T5 — N+1 istekler (hakediş listesi + sözleşme detayları) sürerken
+   ("yükleniyor/hata" görünürlük kuralı, brief §Yükleme/hata görünürlüğü). */
+.ppt__value--loading {
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-subtle);
+  font-family: inherit;
+}
+/* F-TH T5 — mockup satır 83/86: "Toplam Taşeron Ödemesi" kırmızı (gider),
+   "Brüt Kar Marjı" yeşil (kâr) basılır. */
+.ppt__value--danger {
+  color: var(--color-danger);
+}
+.ppt__value--success {
+  color: var(--color-success);
+}

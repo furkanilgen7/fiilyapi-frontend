@@ -1,0 +1,33 @@
+/* Sekme şeridi (F-TH T2 §S3) — `.prj-tabs` (Projeler sekmeleri) ile aynı
+   pill görünümü, sayfa üstünde başlıktan ÖNCE oturur (mockup'ta yok, yeni
+   navigasyon elemanı — kullanıcı kararı). */
+.pp-tabs {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-10);
+  padding: 3px;
+  margin-bottom: var(--space-4);
+}
+.pp-tabs__tab {
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-8);
+  text-decoration: none;
+}
+.pp-tabs__tab:hover {
+  color: var(--color-text);
+}
+.pp-tabs__tab--active {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-card);
+}
+.pp-tabs__tab:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

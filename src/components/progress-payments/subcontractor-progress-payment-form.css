@@ -1,0 +1,237 @@
+/* F-TH T3 · Taşeron hakediş oluştur/düzenle formu.
+   Mockup kanonu: `Taşeron Hakediş Oluştur.dc.html`. Ortak iskelet sınıfları
+   (`.pp-form*`) `progress-payment-form.css`den PAYLAŞILIR (kopya yasak) —
+   burada yalnız Taşeron'a ÖZGÜ parçalar (hiyerarşi şeridi, kalem tablosu +
+   iç tfoot, kaynak notu/rozet) tanımlanır. */
+
+.thf-crumb {
+  margin-bottom: 0;
+}
+
+/* Final inceleme F-1/F-7 — mockup O19'daki sözleşme bağlantısı ve O21'deki
+   sıra numarası: hedefi/verisi olmadığı için devre-dışı ama GÖRÜNÜR basılır.
+   Bağlantı rengi korunur (mockup'taki yeri okunur kalsın) ama tıklanamaz
+   olduğu imleç + soluk tonla belli olur. */
+.thf-crumb__disabled-link {
+  color: var(--color-primary);
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+.thf-crumb__pending {
+  color: var(--color-text-subtle);
+  font-weight: var(--weight-regular);
+  cursor: help;
+}
+.thf-hierarchy__see-contract {
+  margin-left: auto;
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Üst form mockup 54-62'de 4 kolon (Taşeron/Dönem/Şantiye/Bölüm) — İşveren
+   `.pp-form__header-grid`'in 3 kolonlu varsayılanını burada 2'ye ezer. */
+.thf-header-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* Hiyerarşi şeridi (mockup 33-42). */
+.thf-hierarchy {
+  background: var(--color-info-tint, var(--color-primary-soft));
+  border: 1px solid var(--color-primary-ring);
+  border-radius: var(--radius-10);
+  padding: 12px 18px;
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-xs);
+  flex-wrap: wrap;
+}
+.thf-hierarchy__chip {
+  background: var(--color-text);
+  color: var(--color-on-brand);
+  padding: 2px 8px;
+  border-radius: var(--radius-6);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+.thf-hierarchy__chip--accent {
+  background: var(--color-warning);
+}
+.thf-hierarchy__chip--pending {
+  background: var(--color-surface-2);
+  color: var(--color-text-subtle);
+  font-weight: var(--weight-regular);
+  cursor: help;
+}
+.thf-hierarchy__sep {
+  color: var(--color-text-subtle);
+}
+.thf-hierarchy__crumb {
+  color: var(--color-text-muted);
+}
+
+/* Kalem tablosu — bağımsız (İşveren'in şantiye-pivot tablosundan FARKLI
+   sütun kümesi: brief §Kalem tablosu, 6 sabit sütun, şantiye kırılımı yok). */
+.thf-table-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-14);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  margin-bottom: var(--space-4);
+}
+.thf-table-card__head {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.thf-table-card__head-note {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+}
+.thf-table-scroll {
+  overflow-x: auto;
+}
+.thf-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.thf-table__th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.thf-table__th--right {
+  text-align: right;
+}
+.thf-table__th--center {
+  text-align: center;
+}
+.thf-table__group-row td {
+  padding: 8px 14px;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  background: var(--color-info-tint);
+  border-bottom: 1px solid var(--color-primary-ring);
+}
+.thf-table__row {
+  border-bottom: 1px solid var(--color-border);
+}
+.thf-table__td {
+  padding: 12px 14px;
+  font-size: var(--text-body);
+  color: var(--color-text);
+  vertical-align: top;
+}
+.thf-table__td--mono {
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+}
+.thf-table__td--center {
+  text-align: center;
+}
+.thf-table__td--right {
+  text-align: right;
+}
+.thf-table__td--strong {
+  font-weight: var(--weight-bold);
+}
+/* Fix round 1 (kontrolcü bulgusu, Important) — eksik sözleşme birim fiyatı:
+   T2'nin `thk-table__td--pending` deseniyle AYNI dürüstlük kuralı (görünür
+   "—" + `title`/`.sr-only`, kolon SİLİNMEZ, sessizce "₺ 0"a düşürülmez). */
+.thf-table__td--pending {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+.thf-table__item-name {
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+/* Kaynak notu (mockup Poz Adı altı) — `manual` sönük gri, `diary` yeşil. */
+.thf-table__source {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+.thf-table__source--diary {
+  color: var(--color-success-deep);
+}
+.thf-table__qty-wrap {
+  position: relative;
+  display: inline-block;
+}
+.thf-table__qty-tag {
+  position: absolute;
+  top: -16px;
+  right: 0;
+  font-size: 9px;
+  color: var(--color-success-deep);
+  white-space: nowrap;
+  font-weight: var(--weight-semibold);
+}
+/* Günlük kayıttan gelen miktar girdisinin sarı vurgusu (brief §Kalem
+   tablosu) — çıplak hex YOK, tokens.css'teki amber tonu kullanılır. */
+.thf-table__qty-input--diary {
+  border-color: var(--color-primary-ring) !important;
+  background: var(--color-amber-tint, var(--color-warning-soft)) !important;
+}
+
+/* tfoot — brief §tfoot: 5 satır, DOĞRUDAN `calculation` bloğundan. */
+.thf-table tfoot .thf-tfoot-row td {
+  padding: 10px 14px;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+}
+.thf-table tfoot .thf-tfoot-row--gross td {
+  padding: 13px 14px;
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  border-top: 2px solid var(--color-success);
+  background: var(--color-success-tint);
+}
+.thf-table tfoot .thf-tfoot-row--net td {
+  padding: 12px 14px;
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  border-top: 2px solid var(--color-primary);
+  background: var(--color-primary-soft);
+}
+.thf-tfoot-value {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+}
+.thf-tfoot-value--positive {
+  color: var(--color-text);
+}
+.thf-tfoot-value--negative {
+  color: var(--color-danger-strong, var(--color-danger));
+}
+.thf-tfoot-value--gross {
+  font-size: var(--text-lg);
+  color: var(--color-success);
+}
+.thf-tfoot-value--net {
+  font-size: var(--text-lg);
+  color: var(--color-primary);
+}

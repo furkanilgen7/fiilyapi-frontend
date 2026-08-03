@@ -16,13 +16,14 @@ import {
 } from "@/lib/api/hooks/useProgressPaymentMutations";
 import { PROGRESS_PAYMENT_QUERY_KEY, type ProgressPaymentDetail } from "@/lib/api/hooks/useProgressPayments";
 import { BackendError } from "@/lib/api/unwrap";
-import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 // Ayarlar modal/form kanonu birebir izlenir (SectionFormModal/BoqItemFormModal
 // deseniyle ayni): settings-form sinifi settings.css'ten, ConfirmDialog yikici
 // aksiyonlar icin paylasilan onay diyalogu.
 import "@/components/settings/settings.css";
 import "./progress-payment-detail.css";
+import { PaymentActionButtons } from "./shared/PaymentActionButtons";
+import { permittedPaymentActions } from "./shared/status-actions";
 
 export interface ProgressPaymentStatusActionsProps {
   detail: ProgressPaymentDetail;
@@ -118,42 +119,26 @@ export function ProgressPaymentStatusActions({ detail }: ProgressPaymentStatusAc
     });
   }
 
+  // Görünürlük kapısı `shared/status-actions.ts`ten (F-TH T1 paylaşım kararı —
+  // taşeron tarafı AYNI durum→aksiyon eşlemesini kullanır). Güvenlik sınırı
+  // HER ZAMAN backend'dedir; bu yalnız çalışmayacak butonu göstermemek içindir.
+  const actions = permittedPaymentActions(detail.status, level);
+
   return (
     <div className="pp-detail__actions" data-testid="pp-detail-actions">
-      {detail.status === "draft" && hasAtLeast(level, "draft") && (
-        <Button variant="primary" onClick={handleSubmit} disabled={anyPending}>
-          {submit.isPending ? "Gönderiliyor…" : "Onaya Gönder"}
-        </Button>
-      )}
-
-      {detail.status === "pending_approval" && hasAtLeast(level, "approve") && (
-        <>
-          <Button variant="danger" onClick={openReject} disabled={anyPending}>
-            Reddet
-          </Button>
-          <Button variant="success" onClick={handleApprove} disabled={anyPending}>
-            {approve.isPending ? "Onaylanıyor…" : "Onayla"}
-          </Button>
-        </>
-      )}
-
-      {detail.status === "approved" && (
-        <>
-          {hasAtLeast(level, "admin") && (
-            <Button variant="ghost" onClick={() => setUnapproveOpen(true)} disabled={anyPending}>
-              Onayı Geri Al
-            </Button>
-          )}
-          {hasAtLeast(level, "approve") && (
-            <Button variant="success" onClick={handleMarkPaid} disabled={anyPending}>
-              {markPaid.isPending ? "İşaretleniyor…" : "Ödendi İşaretle"}
-            </Button>
-          )}
-        </>
-      )}
-
-      {/* `paid` durumunda hiçbir aksiyon yoktur — yukarıdaki dallardan hiçbiri
-          eşleşmez, alan boş kalır (brief §Belirsizlik çözümü 3). */}
+      <PaymentActionButtons
+        status={detail.status}
+        actions={actions}
+        anyPending={anyPending}
+        isSubmitPending={submit.isPending}
+        isApprovePending={approve.isPending}
+        isMarkPaidPending={markPaid.isPending}
+        onSubmit={handleSubmit}
+        onOpenReject={openReject}
+        onApprove={handleApprove}
+        onOpenUnapprove={() => setUnapproveOpen(true)}
+        onMarkPaid={handleMarkPaid}
+      />
 
       {error && (
         <Alert variant="danger" className="pp-detail__action-error" data-testid="pp-detail-action-error">

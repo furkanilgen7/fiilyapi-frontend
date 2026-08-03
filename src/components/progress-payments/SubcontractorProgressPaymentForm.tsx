@@ -1,0 +1,635 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+import { AccessDenied } from "@/components/settings/AccessDenied";
+import { Alert, Button, Field, Input, Select } from "@/components/ui";
+import { backendErrorMessage } from "@/lib/api/error-message";
+import {
+  useSubcontractorContract,
+  useSubcontractorProgressPayment,
+} from "@/lib/api/hooks/useSubcontractorProgressPayments";
+import {
+  useCreateSubcontractorProgressPayment,
+  useReplaceSubcontractorProgressPaymentLines,
+  useSubmitSubcontractorProgressPayment,
+  useUpdateSubcontractorProgressPayment,
+} from "@/lib/api/hooks/useSubcontractorProgressPaymentMutations";
+import { useProject } from "@/lib/api/hooks/useProjects";
+import { useSite } from "@/lib/api/hooks/useSites";
+import { isForbidden } from "@/lib/api/unwrap";
+import { useModulePermission } from "@/lib/auth/useModulePermission";
+import { pendingModuleLabel } from "@/lib/pending-modules";
+import { PERIOD_MONTHS, formatAmount, formatPercent, formatQuantity } from "@/lib/format";
+
+import { sanitizeQuantityInput } from "./pivot";
+import {
+  buildPaymentCalculationRows,
+  type PaymentCalculationRow,
+} from "./shared/payment-calculation-rows";
+import {
+  buildSubcontractorLineRows,
+  buildSubcontractorLinesSaveBody,
+  type SubcontractorLineRow,
+} from "./th-lines";
+import "./progress-payment-form.css";
+import "./subcontractor-progress-payment-form.css";
+
+export type SubcontractorProgressPaymentFormProps =
+  | { mode: "create"; contractId: string }
+  | { mode: "edit"; paymentId: string };
+
+/** Fix round 1 (kontrolcü bulgusu, Important) — eksik sözleşme birim fiyatı
+ * hücresinin `title`/`sr-only` metni; T2'nin `pendingModuleLabel` deseninden
+ * BİLEREK ayrı tutuldu, çünkü bu bir "modül henüz yok" durumu DEĞİL, bu
+ * spesifik sözleşme kaleminde fiyatın hiç girilmemiş olmasıdır (veri
+ * eksikliği, backend yeteneği eksikliği değil). */
+const MISSING_UNIT_PRICE_HINT = "Bu kalem için sözleşmede birim fiyat girilmemiş.";
+
+/** Final inceleme F-7 (kalıcı kural: mockup öğesi izsiz kaybolamaz) — mockup
+ * O21 "Hakediş #48 Oluştur" der; `create` kipinde sıra numarası HENÜZ YOKTUR
+ * (şema `sequence_no`yu ilk POST'ta üretir). `MISSING_UNIT_PRICE_HINT` ile
+ * AYNI gerekçeyle `pendingModuleLabel`dan ayrı tutuldu: bu bir "modül henüz
+ * yok" durumu DEĞİL, henüz üretilmemiş bir değerdir. */
+const PENDING_SEQUENCE_HINT = "Sıra numarası ilk kayıtta backend tarafından verilir.";
+
+/**
+ * F-TH T3 · Taşeron hakediş oluştur/düzenle formu. Mockup:
+ * `Taşeron Hakediş Oluştur.dc.html`. `create`/`edit` AYNI bileşendir
+ * (`ProgressPaymentForm` deseni) — iki kopya form YAZILMAZ.
+ *
+ * Kaydetme yolu İşveren'den FARKLI (brief §3): `SubcontractorProgressPayment
+ * Create` `lines[]` TAŞIMAZ (şema), bu yüzden atomik tek-POST YAPILAMAZ —
+ * `create` kipinde de sırayla POST (başlık) → PUT …/lines (miktarlar)
+ * çağrılır. Bu, backend'in `calculation` bloğunun `create` akışında İLK
+ * KAYDETMEYE KADAR mevcut olmadığı anlamına gelir: tfoot bu süre boyunca
+ * YAPISINI korur (5 satır, doğru yüzde etiketleri — sözleşmenin `*_pct`
+ * alanlarından) ama tutar sütunu "—" basar. Bu, İşveren formunun ZATEN
+ * uyguladığı kararla AYNIDIR (`PaymentFormPivotTable`: kaydedilmemiş hücrede
+ * "—", ikinci bir çarpma/toplama motoru İCAT EDİLMEZ) — burada yalnız aynı
+ * karar tfoot seviyesine taşınmıştır.
+ */
+export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPaymentFormProps) {
+  const router = useRouter();
+  const { canWrite } = useModulePermission("progress_payments");
+
+  const isEdit = props.mode === "edit";
+  const detailQuery = useSubcontractorProgressPayment(isEdit ? props.paymentId : "");
+  const detail = isEdit ? detailQuery.data : undefined;
+
+  const resolvedContractId = isEdit ? (detail?.contract_id ?? "") : props.contractId;
+  const contractQuery = useSubcontractorContract(resolvedContractId);
+  const contract = contractQuery.data;
+
+  const projectQuery = useProject(contract?.project_id ?? "");
+  const siteQuery = useSite(contract?.site_id ?? "");
+
+  const createPayment = useCreateSubcontractorProgressPayment();
+  const updatePayment = useUpdateSubcontractorProgressPayment();
+  const replaceLines = useReplaceSubcontractorProgressPaymentLines();
+  const submitPayment = useSubmitSubcontractorProgressPayment();
+
+  const [rows, setRows] = useState<SubcontractorLineRow[] | null>(null);
+  const [periodYear, setPeriodYear] = useState<number | null>(null);
+  const [periodMonth, setPeriodMonth] = useState<number | null>(null);
+  const [sectionId, setSectionId] = useState<string | null>(null);
+  const [defaultCoefficient, setDefaultCoefficient] = useState("1");
+  const [formError, setFormError] = useState<string | null>(null);
+
+  // Tohumlama YALNIZ BİR KEZ çalışır (`ProgressPaymentForm` deseni) —
+  // sonraki `detailQuery`/`contractQuery` yenilemeleri (ör. kaydetme
+  // sonrası invalidation) kullanıcının o anki düzenlemesini SİLMEZ.
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (seededRef.current) return;
+    if (!contract) return;
+    if (isEdit && !detail) return;
+    seededRef.current = true;
+    setRows(buildSubcontractorLineRows(contract.items, detail?.lines ?? []));
+    setPeriodYear(detail?.period_year ?? new Date().getFullYear());
+    setPeriodMonth(detail?.period_month ?? new Date().getMonth() + 1);
+    setSectionId(detail?.section_id ?? null);
+    setDefaultCoefficient(detail?.default_coefficient ?? "1");
+  }, [contract, detail, isEdit]);
+
+  if (!canWrite) return <AccessDenied />;
+  if (isForbidden(detailQuery.error) || isForbidden(contractQuery.error)) {
+    return <AccessDenied />;
+  }
+
+  if (isEdit && (detailQuery.isLoading || !detail)) {
+    return <p className="pp-form__message">Yükleniyor…</p>;
+  }
+
+  // Düzenleme yalnız `draft` durumunda anlamlıdır (brief §Rotalar) — sessizce
+  // boş form gösterilmez, Türkçe uyarı + listeye dönüş linki basılır (T4
+  // detay ekranı bu dilimin kapsamı DIŞI).
+  if (isEdit && detail && detail.status !== "draft") {
+    return (
+      <div className="pp-form">
+        <Alert variant="warning" className="pp-form__alert">
+          Bu hakediş artık taslak durumunda değil, düzenlenemez.
+        </Alert>
+        <Link href="/hakedisler/taseron" className="pp-form__crumb-link">
+          ← Taşeron Hakedişi listesine dön
+        </Link>
+      </div>
+    );
+  }
+
+  if (contractQuery.isError) {
+    return (
+      <Alert variant="danger" className="pp-form__alert">
+        {backendErrorMessage(contractQuery.error, "Sözleşme bilgisi yüklenemedi.")}
+      </Alert>
+    );
+  }
+  if (contractQuery.isLoading || !contract || rows === null) {
+    return <p className="pp-form__message">Yükleniyor…</p>;
+  }
+
+  const isSaving =
+    createPayment.isPending ||
+    updatePayment.isPending ||
+    replaceLines.isPending ||
+    submitPayment.isPending;
+
+  function updateQuantity(itemId: string, value: string) {
+    setRows((prev) =>
+      (prev ?? []).map((row) => (row.itemId !== itemId ? row : { ...row, quantity: value })),
+    );
+  }
+
+  function headerBody() {
+    return {
+      period_year: periodYear,
+      period_month: periodMonth,
+      default_coefficient: defaultCoefficient.trim() ? defaultCoefficient : "1",
+      section_id: sectionId,
+    };
+  }
+
+  function validateHeader(): string | null {
+    if (periodYear === null || periodMonth === null) return "Dönem seçimi zorunludur.";
+    return null;
+  }
+
+  function handleSaveDraft() {
+    doSave(false);
+  }
+
+  function handleSubmitForApproval() {
+    doSave(true);
+  }
+
+  function doSave(alsoSubmit: boolean) {
+    setFormError(null);
+    const validationError = validateHeader();
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
+    const linesBody = buildSubcontractorLinesSaveBody(rows ?? []);
+
+    function afterLinesSaved(paymentId: string) {
+      if (!alsoSubmit) {
+        router.push("/hakedisler/taseron");
+        return;
+      }
+      submitPayment.mutate(paymentId, {
+        onSuccess: () => router.push("/hakedisler/taseron"),
+        onError: (err) => setFormError(backendErrorMessage(err, "Hakediş onaya gönderilemedi.")),
+      });
+    }
+
+    if (props.mode === "create") {
+      createPayment.mutate(
+        { contractId: resolvedContractId, body: headerBody() },
+        {
+          onSuccess: (created) => {
+            replaceLines.mutate(
+              { paymentId: created.id, body: { lines: linesBody } },
+              {
+                onSuccess: () => afterLinesSaved(created.id),
+                onError: (err) =>
+                  setFormError(backendErrorMessage(err, "Hakediş satırları kaydedilemedi.")),
+              },
+            );
+          },
+          onError: (err) => setFormError(backendErrorMessage(err, "Hakediş oluşturulamadı.")),
+        },
+      );
+      return;
+    }
+
+    const paymentId = props.paymentId;
+    updatePayment.mutate(
+      { paymentId, body: headerBody() },
+      {
+        onSuccess: () => {
+          replaceLines.mutate(
+            { paymentId, body: { lines: linesBody } },
+            {
+              onSuccess: () => afterLinesSaved(paymentId),
+              onError: (err) =>
+                setFormError(backendErrorMessage(err, "Hakediş satırları kaydedilemedi.")),
+            },
+          );
+        },
+        onError: (err) => setFormError(backendErrorMessage(err, "Hakediş güncellenemedi.")),
+      },
+    );
+  }
+
+  const site = siteQuery.data;
+  const sections = site?.sections ?? [];
+  const groupedRows = groupBySequence(rows);
+
+  const percents = {
+    vat_pct: contract.vat_pct,
+    advance_pct: contract.advance_pct,
+    retainage_pct: contract.retainage_pct,
+  };
+  const calcRows = detail?.calculation
+    ? buildPaymentCalculationRows(detail.calculation, percents, {
+        grossLabel: "TOPLAM HAKEDİŞ",
+        netLabel: "NET ÖDENECEK",
+      })
+    : ([
+        { key: "gross", label: "TOPLAM HAKEDİŞ", value: "—" },
+        { key: "vat", label: `KDV (${formatPercent(percents.vat_pct)})`, value: "—" },
+        {
+          key: "advance",
+          label: `Avans Kesintisi (${formatPercent(percents.advance_pct)})`,
+          value: "—",
+        },
+        {
+          key: "retention",
+          label: `Teminat Kesintisi (${formatPercent(percents.retainage_pct)})`,
+          value: "—",
+        },
+        { key: "net", label: "NET ÖDENECEK", value: "—", emphasis: true },
+      ] satisfies PaymentCalculationRow[]);
+
+  return (
+    <div className="pp-form">
+      <div className="pp-form__title-row">
+        {/* Mockup'ta bu metin sabit üst navbar'ın içindedir (satır 18-22);
+            F3 kabuğu bu uygulamada TEK global üst çubuğu sağladığından
+            (brief: mockup mimariyle çelişirse mockup kazanır ama kabuk
+            değiştirilmez), aynı içerik sayfanın TEK h1'i olarak basılır —
+            diğer ekranlardaki `.pp-form__title` deseninin küçük-metin
+            varyantı (a11y: her sayfada bir h1). */}
+        <h1 className="pp-form__crumb thf-crumb">
+          {/* Final inceleme F-1 · mockup O19'da bu parça "Taşeron Sözleşme
+              Detay" ekranına giden bir BAĞLANTIDIR. Hedef rota bu repo'da yok
+              → öğe SİLİNMEZ (kalıcı kural), devre-dışı bağlantı olarak
+              basılır: gerçek `href` YOK (tıklanınca hiçbir yere gitmez),
+              gerekçe `title` + `sr-only` ile GÖRÜNÜR. */}
+          <span
+            className="thf-crumb__disabled-link"
+            role="link"
+            aria-disabled="true"
+            title={pendingModuleLabel("subcontractor_contract_detail")}
+            data-testid="thf-contract-crumb-link"
+          >
+            {contract.subcontractor_name ?? "—"} {contract.contract_no ?? ""}
+            <span className="sr-only">
+              {pendingModuleLabel("subcontractor_contract_detail")}
+            </span>
+          </span>
+          {" · "}
+          {isEdit && detail ? (
+            `Hakediş #${detail.sequence_no} Düzenle`
+          ) : (
+            /* Final inceleme F-7 · mockup O21 "Hakediş #48 Oluştur" — sıra
+               numarası create kipinde henüz üretilmemiştir; öğe atlanmaz,
+               repo'nun pending deseniyle ("—" + title/sr-only) basılır. */
+            <>
+              Hakediş{" "}
+              <span
+                className="thf-crumb__pending"
+                title={PENDING_SEQUENCE_HINT}
+                data-testid="thf-sequence-pending"
+              >
+                #—<span className="sr-only">{PENDING_SEQUENCE_HINT}</span>
+              </span>{" "}
+              Oluştur
+            </>
+          )}
+        </h1>
+        <div className="pp-form__title-actions">
+          <Button variant="secondary" onClick={handleSaveDraft} disabled={isSaving}>
+            {isSaving ? "Kaydediliyor…" : "Taslak Kaydet"}
+          </Button>
+          <Button variant="primary" onClick={handleSubmitForApproval} disabled={isSaving}>
+            {isSaving ? "Kaydediliyor…" : "Onaya Gönder"}
+          </Button>
+        </div>
+      </div>
+
+      {formError && (
+        <Alert variant="danger" className="pp-form__alert" data-testid="thf-form-error">
+          {formError}
+        </Alert>
+      )}
+
+      {(detail?.dropped_orphan_count ?? 0) > 0 && (
+        <Alert variant="warning" className="pp-form__alert" data-testid="thf-dropped-orphan-alert">
+          {detail?.dropped_orphan_count} satır artık sözleşmede bulunmayan poz(lar)a bağlı olduğu
+          için otomatik olarak kaldırıldı.
+        </Alert>
+      )}
+
+      {/* Fix round 1 (kontrolcü bulgusu, Important): eksik sözleşme birim
+          fiyatı sessizce "₺ 0"a düşürülmez — `contract.items_missing_price`
+          (backend'in KENDİ saydığı, ikinci bir sayım İCAT EDİLMEDİ) > 0 iken
+          görünür uyarı basılır. */}
+      {contract.items_missing_price > 0 && (
+        <Alert variant="warning" className="pp-form__alert" data-testid="thf-missing-price-alert">
+          {contract.items_missing_price} poz için sözleşmede birim fiyat girilmemiş; bu pozlarda
+          birim fiyat ve tutar gösterilemiyor.
+        </Alert>
+      )}
+
+      {/* Hiyerarşi şeridi (mockup 33-42). İlk halka (işveren sözleşme no'su)
+          şemada YOK → zarif düşüş (T2'deki pending desenini kullanır).
+          Final inceleme F-1 (kalıcı kural): "Sözleşmeyi Gör →" (mockup O41)
+          ARTIK BASILIR — hedef rota (Taşeron Sözleşme Detay) bu repo'da hâlâ
+          yok, bu yüzden `href` VERİLMEZ; devre-dışı (`aria-disabled`) +
+          Türkçe gerekçe (`title`/`sr-only`) ile mockup'taki yerinde durur. */}
+      <div className="thf-hierarchy" data-testid="thf-hierarchy">
+        <span
+          className="thf-hierarchy__chip thf-hierarchy__chip--pending"
+          title={pendingModuleLabel("contracts")}
+        >
+          —<span className="sr-only">{pendingModuleLabel("contracts")}</span>
+        </span>
+        <span className="thf-hierarchy__sep">→</span>
+        <span className="thf-hierarchy__crumb">{projectQuery.data?.name ?? "—"}</span>
+        <span className="thf-hierarchy__sep">→</span>
+        <span className="thf-hierarchy__crumb">{site?.name ?? "—"}</span>
+        <span className="thf-hierarchy__sep">→</span>
+        <span className="thf-hierarchy__chip thf-hierarchy__chip--accent">
+          {contract.contract_no ?? ""} {contract.subcontractor_name ?? "—"}
+        </span>
+        <span
+          className="thf-hierarchy__see-contract"
+          role="link"
+          aria-disabled="true"
+          title={pendingModuleLabel("subcontractor_contract_detail")}
+          data-testid="thf-see-contract-link"
+        >
+          Sözleşmeyi Gör →
+          <span className="sr-only">{pendingModuleLabel("subcontractor_contract_detail")}</span>
+        </span>
+      </div>
+
+      {/* Fiyat farkı katsayısı — ONAYLI SAPMA (mockup'ta yok, brief §Üst
+          şerit). Taşeron sözleşmesinde işverendeki `has_price_escalation`
+          kilidi YOK (şema açıklaması) — bu yüzden İşveren'in kilit/toggle
+          deseni DEĞİL, sade her zaman-düzenlenebilir katsayı alanı. */}
+      <div className="pp-form__ff-band" data-testid="thf-coefficient-band">
+        <span>Fiyat Farkı Katsayısı</span>
+        <div className="pp-form__ff-coefficient">
+          <Field label="Katsayı (Dn/D0)" size="md">
+            {(control) => (
+              <Input
+                {...control}
+                size="row"
+                numeric
+                inputMode="decimal"
+                maxLength={10}
+                value={defaultCoefficient}
+                onChange={(event) =>
+                  setDefaultCoefficient(sanitizeQuantityInput(event.target.value))
+                }
+              />
+            )}
+          </Field>
+        </div>
+      </div>
+
+      {/* Bilgi kutusu (mockup 44-50) — metin BİREBİR. */}
+      <div className="pp-form__info">
+        <span aria-hidden="true">✅</span>
+        <div>
+          <strong>Birim fiyatlar taşeron sözleşmesinden otomatik yüklendi.</strong> Sadece bu
+          döneme ait miktarları girin — toplam otomatik hesaplanır. Günlük kayıtlardan hesaplanan
+          miktarlar sarı ile gösteriliyor, isterseniz düzeltebilirsiniz.
+        </div>
+      </div>
+
+      {/* Üst form — 2×2 (mockup 54-62). */}
+      <div className="pp-form__header-card">
+        <div className="pp-form__header-grid thf-header-grid">
+          <Field label="Taşeron">
+            {(control) => (
+              <div className="pp-form__readonly" {...pickAriaProps(control)}>
+                {contract.subcontractor_name ?? "—"}
+              </div>
+            )}
+          </Field>
+          <Field label="Dönem" required>
+            {(control) => (
+              <div className="pp-form__period-row">
+                <Select
+                  {...control}
+                  value={periodMonth ?? ""}
+                  onChange={(event) => setPeriodMonth(Number(event.target.value))}
+                >
+                  {PERIOD_MONTHS.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </Select>
+                <Input
+                  type="number"
+                  numeric
+                  aria-label="Hakediş yılı"
+                  value={periodYear ?? ""}
+                  onChange={(event) => setPeriodYear(parsePeriodYear(event.target.value))}
+                />
+              </div>
+            )}
+          </Field>
+          <Field label="Şantiye">
+            {(control) => (
+              <div className="pp-form__readonly" {...pickAriaProps(control)}>
+                {site?.name ?? "—"}
+              </div>
+            )}
+          </Field>
+          <Field label="Bölüm" hint="Kalemleri filtrelemez — yalnız bilgi alanıdır.">
+            {(control) => (
+              <Select
+                {...control}
+                value={sectionId ?? ""}
+                onChange={(event) => setSectionId(event.target.value || null)}
+              >
+                <option value="">Tüm Bölümler</option>
+                {sections.map((section) => (
+                  <option key={section.id} value={section.id}>
+                    {section.name}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
+        </div>
+      </div>
+
+      {/* Kalem tablosu (mockup 65-165) — 6 sabit sütun + tfoot AYNI tablo
+          içinde (mockup'ın gerçek yapısı, İşveren'in AYRI kart tfoot'undan
+          FARKLI). */}
+      <section className="thf-table-card">
+        <div className="thf-table-card__head">
+          <span>Hakediş Kalemleri</span>
+          <span className="thf-table-card__head-note">
+            Birim fiyatlar {contract.contract_no ?? "sözleşme"}&apos;den · Sadece miktarları girin
+          </span>
+        </div>
+        <div className="thf-table-scroll">
+          <table className="thf-table">
+            <thead>
+              <tr>
+                <th className="thf-table__th">Poz No</th>
+                <th className="thf-table__th">Poz Adı</th>
+                <th className="thf-table__th thf-table__th--center">Birim</th>
+                <th className="thf-table__th thf-table__th--right">Sözleşme B.F.</th>
+                <th className="thf-table__th thf-table__th--right">Bu Ay Miktar</th>
+                <th className="thf-table__th thf-table__th--right">Tutar</th>
+              </tr>
+            </thead>
+            <tbody>
+              {groupedRows.map(({ row, showGroupHeader }) => (
+                <RowGroup key={row.itemId}>
+                  {showGroupHeader && row.groupName && (
+                    <tr className="thf-table__group-row">
+                      <td colSpan={6}>{row.groupName}</td>
+                    </tr>
+                  )}
+                  <tr className="thf-table__row">
+                    <td className="thf-table__td thf-table__td--mono">{row.code}</td>
+                    <td className="thf-table__td">
+                      <div className="thf-table__item-name">{row.description}</div>
+                      {row.quantitySource === "diary" ? (
+                        <div className="thf-table__source thf-table__source--diary">
+                          📅 Günlük kayıttan: {formatQuantity(row.quantity)} {row.unit} hesaplandı
+                        </div>
+                      ) : (
+                        <div className="thf-table__source">Elle giriş</div>
+                      )}
+                    </td>
+                    <td className="thf-table__td thf-table__td--center">{row.unit}</td>
+                    <td className="thf-table__td thf-table__td--right thf-table__td--mono">
+                      {/* Fix round 1 (kontrolcü bulgusu, Important): eksik
+                          (`null`) birim fiyat GERÇEK sıfırdan ayrıştırılır —
+                          sessizce "₺ 0" basılmaz, T2'nin zarif düşüş
+                          (pending) deseni kullanılır (görünür "—" + title/
+                          sr-only, kolon SİLİNMEZ). */}
+                      {row.contractUnitPrice !== null ? (
+                        formatAmount(row.contractUnitPrice)
+                      ) : (
+                        <span
+                          className="thf-table__td--pending"
+                          title={MISSING_UNIT_PRICE_HINT}
+                          data-testid="thf-missing-price-cell"
+                        >
+                          —<span className="sr-only">{MISSING_UNIT_PRICE_HINT}</span>
+                        </span>
+                      )}
+                    </td>
+                    <td className="thf-table__td thf-table__td--right">
+                      <span className="thf-table__qty-wrap">
+                        <Input
+                          size="row"
+                          numeric
+                          inputMode="decimal"
+                          maxLength={16}
+                          aria-label={`${row.description} — miktar`}
+                          disabled={isSaving}
+                          className={
+                            row.quantitySource === "diary" ? "thf-table__qty-input--diary" : undefined
+                          }
+                          value={row.quantity}
+                          onChange={(event) =>
+                            updateQuantity(row.itemId, sanitizeQuantityInput(event.target.value))
+                          }
+                        />
+                        {row.quantitySource === "diary" && (
+                          <span className="thf-table__qty-tag">Günlük kayıttan ↑</span>
+                        )}
+                      </span>
+                    </td>
+                    <td className="thf-table__td thf-table__td--right thf-table__td--mono thf-table__td--strong">
+                      {row.lineTotal !== null ? formatAmount(row.lineTotal) : "—"}
+                    </td>
+                  </tr>
+                </RowGroup>
+              ))}
+            </tbody>
+            <tfoot>
+              {calcRows.map((calcRow) => (
+                <tr
+                  key={calcRow.key}
+                  className={`thf-tfoot-row${
+                    calcRow.key === "gross"
+                      ? " thf-tfoot-row--gross"
+                      : calcRow.key === "net"
+                        ? " thf-tfoot-row--net"
+                        : ""
+                  }`}
+                >
+                  <td colSpan={5}>{calcRow.label}</td>
+                  <td
+                    className={`thf-tfoot-value${calcRow.tone ? ` thf-tfoot-value--${calcRow.tone}` : ""}${
+                      calcRow.key === "gross"
+                        ? " thf-tfoot-value--gross"
+                        : calcRow.key === "net"
+                          ? " thf-tfoot-value--net"
+                          : ""
+                    }`}
+                  >
+                    {calcRow.value}
+                  </td>
+                </tr>
+              ))}
+            </tfoot>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function RowGroup({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+}
+
+function groupBySequence(
+  rows: readonly SubcontractorLineRow[],
+): { row: SubcontractorLineRow; showGroupHeader: boolean }[] {
+  return rows.map((row, index) => ({
+    row,
+    showGroupHeader: index === 0 || rows[index - 1].groupName !== row.groupName,
+  }));
+}
+
+function pickAriaProps(control: { id: string; "aria-describedby"?: string }) {
+  return { id: control.id, "aria-describedby": control["aria-describedby"] };
+}
+
+/**
+ * "Hakediş yılı" alanı için Türkçe koruma (`ProgressPaymentForm`taki
+ * `parsePeriodYear` ile AYNI karar): boş/sayısal olmayan girişte `null`
+ * döner — uydurma bir `0` gövdeye asla sızmaz.
+ */
+function parsePeriodYear(raw: string): number | null {
+  if (raw === "") return null;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : null;
+}
