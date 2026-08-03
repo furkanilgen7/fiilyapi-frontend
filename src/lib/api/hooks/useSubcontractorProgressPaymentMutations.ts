@@ -18,8 +18,12 @@ export type SubcontractorProgressPaymentUpdate =
   components["schemas"]["SubcontractorProgressPaymentUpdate"];
 export type SubcontractorProgressPaymentLinesSave =
   components["schemas"]["SubcontractorProgressPaymentLinesSave"];
+// 2026-08-03 openapi devri: backend bu şemayı Input/Output olarak İKİYE ayırıp
+// üretiyor (`-Input` / `-Output`); düz ad kalktı. Burada `PUT …/lines` İSTEK
+// gövdesi üretildiği için `-Input` varyantı kullanılır (işveren tarafındaki
+// `ProgressPaymentLineInput` ile aynı taşıma).
 export type SubcontractorProgressPaymentLineInput =
-  components["schemas"]["SubcontractorProgressPaymentLineInput"];
+  components["schemas"]["SubcontractorProgressPaymentLineInput-Input"];
 export type SubcontractorRejectBody = components["schemas"]["SubcontractorRejectBody"];
 export type SubcontractorRefreshPricesResponse =
   components["schemas"]["SubcontractorRefreshPricesResponse"];
