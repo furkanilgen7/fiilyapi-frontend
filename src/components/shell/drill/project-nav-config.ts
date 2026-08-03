@@ -38,7 +38,7 @@ const OPERATIONS_GROUPS: DrillNavGroup[] = [
     items: [
       { label: "Sözleşmeler", href: "/sozlesmeler", emoji: "📋" },
       { label: "Taşeron Hakediş", href: "/hakedisler/taseron", emoji: "🏗" },
-      { label: "İşveren Hakediş", href: "/hakedisler/isveren", emoji: "💼" },
+      { label: "İşveren Hakediş", href: "/hakedisler", emoji: "💼" },
       { label: "Muhasebe", href: "/muhasebe", emoji: "📒" },
       { label: "Hazine", href: "/hazine", emoji: "🏦" },
       { label: "Mali Tablolar", href: "/mali-tablolar", emoji: "📊" },
