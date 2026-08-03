@@ -5064,6 +5064,790 @@
         ]
       }
     },
+    "/sites/{site_id}/diary": {
+      "get": {
+        "tags": [
+          "site-diary"
+        ],
+        "summary": "List Site Diary Entries Endpoint",
+        "description": "GK \"Son Kayıtlar\" — durum, işçi toplamı ve satır ₺ toplamı TÜREVDİR.\n\n`month` YALNIZ `year` ile anlamlıdır (\"her yılın temmuzu\" bir dönem\ndeğildir); tek başına gönderilirse 422 — sessizce yok saymak, kullanıcının\nfiltrelediğini sandığı bir listeyi filtresiz göstermek olurdu.",
+        "operationId": "list_site_diary_entries_endpoint_sites__site_id__diary_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 12,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Month"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteDiaryEntryListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "site-diary"
+        ],
+        "summary": "Create Site Diary Entry Endpoint",
+        "description": "Satır iskeleti şantiyenin BOQ pozlarından OTOMATİK üretilir; gövdede satır YOK.\n\nAynı şantiye + aynı gün için ikinci kayıt 409'dur (UQ ön kontrolü, net mesaj).\nYanıt `read.build_detail`den gelir — `get_detail` çağrılsaydı kapsam sorgusu\nistek başına İKİ KEZ koşardı.",
+        "operationId": "create_site_diary_entry_endpoint_sites__site_id__diary_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteDiaryEntryCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteDiaryEntryDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sites/{site_id}/diary/summary": {
+      "get": {
+        "tags": [
+          "site-diary"
+        ],
+        "summary": "Get Site Diary Summary Endpoint",
+        "description": "Hakediş Özeti ekranının veri kaynağı — YALNIZ `submitted` günler (spec §3).\n\nDönem kuralı liste ucuyla BİREBİR AYNIDIR (`month` tek başına 422): iki uç\nfarklı süzgeç kabul etseydi aynı ekranın iki bölümü farklı dönemi gösterirdi.\nKesin kararlar `summary.get_summary`dedir.",
+        "operationId": "get_site_diary_summary_endpoint_sites__site_id__diary_summary_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 12,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteDiarySummary"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/diary/{entry_id}": {
+      "get": {
+        "tags": [
+          "site-diary"
+        ],
+        "summary": "Get Site Diary Entry Endpoint",
+        "operationId": "get_site_diary_entry_endpoint_diary__entry_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Entry Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteDiaryEntryDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "site-diary"
+        ],
+        "summary": "Update Site Diary Entry Endpoint",
+        "description": "Yalnız `status=draft`; gönderilmiş kayda YAZMA YASAK (409). Kesin karar\n`service.update`tedir — kural burada TEKRARLANMAZ.",
+        "operationId": "update_site_diary_entry_endpoint_diary__entry_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Entry Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteDiaryEntryUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteDiaryEntryDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "site-diary"
+        ],
+        "summary": "Delete Site Diary Entry Endpoint",
+        "description": "Kapı `_FULL`dur, `_ADMIN` DEĞİL (taşeron silme ucunun aynı gerekçesi):\nadmin kapısı olsaydı taslağı üreten şef/saha rollerinin KENDİ taslağını\nsilme istisnası (`can_delete`) ölü kural olurdu. Kesin karar\n`service.delete_entry`tedir.",
+        "operationId": "delete_site_diary_entry_endpoint_diary__entry_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Entry Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/diary/{entry_id}/lines": {
+      "put": {
+        "tags": [
+          "site-diary"
+        ],
+        "summary": "Save Site Diary Lines Endpoint",
+        "description": "GK'nin miktar girişi — **DEĞİŞTİRME** semantiği.\n\n⚠️ Gövdede geçmeyen satır SİLİNİR. Yalnız `status=draft` (409); poz sahipliği\n(poz günlüğün ŞANTİYESİNİN BOQ'suna ait olmalı) her yazımda koşar. Snapshot\ndörtlüsü gövdede YOKTUR — fiyat BOQ'dan gelir, istemciden değil.\n\nPozu silinmiş satırlar gövdeden adreslenemediği için düşer; sayıları yanıtın\n`dropped_orphan_count` alanında BİLDİRİLİR (sessiz atlama yok). Kesin\nkararlar `service.save_lines` + `lines.apply_lines`tadır.",
+        "operationId": "save_site_diary_lines_endpoint_diary__entry_id__lines_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Entry Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteDiaryLinesSave"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteDiaryEntryDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/diary/{entry_id}/submit": {
+      "post": {
+        "tags": [
+          "site-diary",
+          "site-diary"
+        ],
+        "summary": "Submit Site Diary Entry Endpoint",
+        "description": "`draft → submitted` + `submitted_at` damgası (E7'nin \"Gönder\" butonu).\n\nGönderim kaydı `summary`nin saydığı kümeye SOKAR (spec §3) ve yazma kapısını\nkapatır; geri almanın tek yolu `reopen`dır. İkinci `submit` 409'dur —\nsessiz/idempotent geçiş, ilk damgayı üzerine yazmak olurdu.",
+        "operationId": "submit_site_diary_entry_endpoint_diary__entry_id__submit_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Entry Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteDiaryEntryDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/diary/{entry_id}/reopen": {
+      "post": {
+        "tags": [
+          "site-diary",
+          "site-diary"
+        ],
+        "summary": "Reopen Site Diary Entry Endpoint",
+        "description": "`submitted → draft` (yanlış gönderim düzeltmesi) — YALNIZ `admin`.\n\nKapı `_FULL` DEĞİLDİR: kaydı giren rol kendi gönderimini geri açabilseydi,\n`summary`nin saydığı hakediş rakamı denetimsiz değiştirilebilirdi. `draft`\nkaynak DEĞİLDİR (409): geri alınacak bir gönderim yoktur.",
+        "operationId": "reopen_site_diary_entry_endpoint_diary__entry_id__reopen_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Entry Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteDiaryEntryDetail"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{project_id}/progress-payments/diary-suggestion": {
+      "get": {
+        "tags": [
+          "site-diary",
+          "site-diary"
+        ],
+        "summary": "Employer Diary Suggestion Endpoint",
+        "description": "İşveren hakedişi için \"günlükten doldur\" ÖNERİSİ — **hiçbir şey yazmaz**.\n\nYanıtın `lines` alanı `PUT /progress-payments/{id}/lines` gövdesine BİREBİR\nuyar; uygulamak kullanıcının o ayrı çağrısıdır. Kesin kararlar\n`suggestion.employer_suggestion`tedir.",
+        "operationId": "employer_diary_suggestion_endpoint_projects__project_id__progress_payments_diary_suggestion_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 12,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployerDiarySuggestion"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subcontractor-contracts/{contract_id}/progress-payments/diary-suggestion": {
+      "get": {
+        "tags": [
+          "site-diary",
+          "site-diary"
+        ],
+        "summary": "Subcontractor Diary Suggestion Endpoint",
+        "description": "Taşeron hakedişi için \"günlükten doldur\" ÖNERİSİ — **hiçbir şey yazmaz**.\n\nYalnız sözleşmenin ŞANTİYESİNİN günlüğü sayılır (spec §7 S5); şantiyesiz\n(proje geneli) sözleşmede liste boş döner ve `reason` nedenini söyler.",
+        "operationId": "subcontractor_diary_suggestion_endpoint_subcontractor_contracts__contract_id__progress_payments_diary_suggestion_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contract_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Contract Id"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 12,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubcontractorDiarySuggestion"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/projects/{project_id}/sites": {
       "get": {
         "tags": [
@@ -10488,6 +11272,15 @@
         "title": "DeedCondition",
         "description": "F156 \"Tapu Devir Kosulu\": Tum odeme tamamlaninca · Pesinat sonrasi · Sozlesme imzasinda."
       },
+      "DiaryStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "submitted"
+        ],
+        "title": "DiaryStatus",
+        "description": "Günlük kaydın durumu (spec §2). İKİ durum: hakediş evrakının dört durumlu\nonay makinesi burada YOKTUR — günlük ya taslaktır ya gönderilmiştir.\n\nE7'nin iki butonu (Taslak Kaydet / Gönder) bu ikiliyi birebir karşılar;\nGK'nin tek \"Kaydet & Gönder\" butonu ikisinin bileşimidir."
+      },
       "EmployerContractDetail": {
         "properties": {
           "project_id": {
@@ -11075,6 +11868,70 @@
           "name"
         ],
         "title": "EmployerCreate"
+      },
+      "EmployerDiarySuggestion": {
+        "properties": {
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "month": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Month"
+          },
+          "skipped_unbridged_count": {
+            "type": "integer",
+            "title": "Skipped Unbridged Count"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/ProgressPaymentLineInput-Output"
+            },
+            "type": "array",
+            "title": "Lines"
+          }
+        },
+        "type": "object",
+        "required": [
+          "year",
+          "month",
+          "skipped_unbridged_count",
+          "reason",
+          "project_id",
+          "lines"
+        ],
+        "title": "EmployerDiarySuggestion",
+        "description": "`GET /projects/{project_id}/progress-payments/diary-suggestion`.\n\nSatırların kırılımı (kalem, şantiye) çiftidir — işveren hakediş hücresinin\nkimliği budur. `coefficient` BİLEREK `None` gelir: katsayı bir GÜNLÜK verisi\ndeğildir, hakedişin `default_coefficient`'ı uygulanır (spec §4.1)."
       },
       "EmployerListResponse": {
         "properties": {
@@ -12061,7 +12918,7 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/ProgressPaymentLineInput"
+                  "$ref": "#/components/schemas/ProgressPaymentLineInput-Input"
                 },
                 "type": "array"
               },
@@ -12450,7 +13307,7 @@
         "title": "ProgressPaymentLineDetail",
         "description": "E15 96-141 satırı + OLU'nun düzenlenebilir alanları. Türev alanlar\n(`adjusted_unit_price`/`line_total`/`previous_*`/`cumulative_*`) saklanmaz,\nher okuyuşta H2 `calculations` fonksiyonlarıyla hesaplanır (spec §4.2, §6.6).\n\n`is_price_stale`: `contract_unit_price != kalem.unit_price` iken `True`;\nbağ (`contract_item_id`) koptuysa `None` (spec §5.1 — kalem silinmiş,\nkıyaslanacak canlı fiyat yok)."
       },
-      "ProgressPaymentLineInput": {
+      "ProgressPaymentLineInput-Input": {
         "properties": {
           "contract_item_id": {
             "type": "string",
@@ -12501,11 +13358,50 @@
         "title": "ProgressPaymentLineInput",
         "description": "`PUT …/lines` gövdesindeki tek satır (spec §9.2) — hem POST'un iç içe\n`lines[]`'ında hem `PUT …/lines`'ta kullanılır.\n\n`quantity >= 0`: OLU 172 `value=\"0\"` kanıtıyla 0 meşru — P5 dağılımının\n\"boş hücre `null`, `0` 422\" kuralı hakedişe TAŞINMAZ (spec §10/3).\n`coefficient` gönderilmezse `None` kalır: servis katmanı yeni satıra\nhakedişin `default_coefficient`'ını uygular (§4.1), var olan satırın\nkatsayısını DEĞİŞTİRMEZ."
       },
+      "ProgressPaymentLineInput-Output": {
+        "properties": {
+          "contract_item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Contract Item Id"
+          },
+          "site_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Site Id"
+          },
+          "quantity": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Quantity"
+          },
+          "coefficient": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coefficient"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contract_item_id",
+          "site_id",
+          "quantity"
+        ],
+        "title": "ProgressPaymentLineInput",
+        "description": "`PUT …/lines` gövdesindeki tek satır (spec §9.2) — hem POST'un iç içe\n`lines[]`'ında hem `PUT …/lines`'ta kullanılır.\n\n`quantity >= 0`: OLU 172 `value=\"0\"` kanıtıyla 0 meşru — P5 dağılımının\n\"boş hücre `null`, `0` 422\" kuralı hakedişe TAŞINMAZ (spec §10/3).\n`coefficient` gönderilmezse `None` kalır: servis katmanı yeni satıra\nhakedişin `default_coefficient`'ını uygular (§4.1), var olan satırın\nkatsayısını DEĞİŞTİRMEZ."
+      },
       "ProgressPaymentLinesSave": {
         "properties": {
           "lines": {
             "items": {
-              "$ref": "#/components/schemas/ProgressPaymentLineInput"
+              "$ref": "#/components/schemas/ProgressPaymentLineInput-Input"
             },
             "type": "array",
             "title": "Lines"
@@ -16393,6 +17289,903 @@
         ],
         "title": "SiteDetailResponse"
       },
+      "SiteDiaryEntryCreate": {
+        "properties": {
+          "entry_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Entry Date"
+          },
+          "section_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Id"
+          },
+          "weather": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Weather"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "temperature_c": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 60.0,
+                "minimum": -60.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature C"
+          },
+          "work_done": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Done"
+          },
+          "chief_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chief Note"
+          },
+          "safety_meeting_held": {
+            "type": "boolean",
+            "title": "Safety Meeting Held",
+            "default": false
+          },
+          "ppe_checked": {
+            "type": "boolean",
+            "title": "Ppe Checked",
+            "default": false
+          },
+          "has_incident": {
+            "type": "boolean",
+            "title": "Has Incident",
+            "default": false
+          },
+          "incident_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incident Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entry_date"
+        ],
+        "title": "SiteDiaryEntryCreate",
+        "description": "`POST /sites/{site_id}/diary` gövdesi.\n\n`lines[]` YOKTUR (bilinçli): satır iskeleti şantiyenin BOQ pozlarından\nOTOMATİK üretilir — GK'de satır ekle/sil yoktur, liste BOQ'dan gelir.\nMiktar girişi `PUT …/lines` ile yapılır (T3).\n\n`worker_counts[]` de YOKTUR: işçi kırılımının yazma semantiği T3'ündür.\n\n`status` YOKTUR: kayıt her zaman `draft` doğar, `submit` ucu (T4) gönderir.\n\n`entry_date` DIŞINDA her alan isteğe bağlıdır — taslak yarım doldurulabilir,\nzorunluluk kuralları `submit` katmanındadır (model docstring'i)."
+      },
+      "SiteDiaryEntryDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "site_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Site Id"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "entry_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Entry Date"
+          },
+          "section_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Id"
+          },
+          "weather": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Weather"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "temperature_c": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature C"
+          },
+          "work_done": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Done"
+          },
+          "chief_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chief Note"
+          },
+          "safety_meeting_held": {
+            "type": "boolean",
+            "title": "Safety Meeting Held"
+          },
+          "ppe_checked": {
+            "type": "boolean",
+            "title": "Ppe Checked"
+          },
+          "has_incident": {
+            "type": "boolean",
+            "title": "Has Incident"
+          },
+          "incident_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incident Note"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DiaryStatus"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Created By"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/SiteDiaryLineRead"
+            },
+            "type": "array",
+            "title": "Lines"
+          },
+          "worker_counts": {
+            "items": {
+              "$ref": "#/components/schemas/SiteDiaryWorkerCountRead"
+            },
+            "type": "array",
+            "title": "Worker Counts"
+          },
+          "lines_total": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Lines Total"
+          },
+          "worker_total": {
+            "type": "integer",
+            "title": "Worker Total"
+          },
+          "dropped_orphan_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dropped Orphan Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "site_id",
+          "project_id",
+          "entry_date",
+          "section_id",
+          "weather",
+          "temperature_c",
+          "work_done",
+          "chief_note",
+          "safety_meeting_held",
+          "ppe_checked",
+          "has_incident",
+          "incident_note",
+          "status",
+          "submitted_at",
+          "created_by",
+          "created_at",
+          "updated_at",
+          "lines",
+          "worker_counts",
+          "lines_total",
+          "worker_total"
+        ],
+        "title": "SiteDiaryEntryDetail",
+        "description": "`GET /diary/{entry_id}` — GK'nin tek gün görünümü."
+      },
+      "SiteDiaryEntryListItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "site_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Site Id"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "entry_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Entry Date"
+          },
+          "section_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Id"
+          },
+          "weather": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Weather"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "has_incident": {
+            "type": "boolean",
+            "title": "Has Incident"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DiaryStatus"
+          },
+          "worker_total": {
+            "type": "integer",
+            "title": "Worker Total"
+          },
+          "lines_total": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Lines Total"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Created By"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "site_id",
+          "project_id",
+          "entry_date",
+          "section_id",
+          "weather",
+          "has_incident",
+          "status",
+          "worker_total",
+          "lines_total",
+          "created_by",
+          "created_at"
+        ],
+        "title": "SiteDiaryEntryListItem",
+        "description": "GK \"Son Kayıtlar\" satırı — durum + işçi toplamı + satır ₺ toplamı.\n\nÜç alanın da kolonu YOKTUR (spec §2); listede taşınmalarının nedeni ekranın\nkayıt başına ayrı bir detay isteği atmak zorunda kalmamasıdır."
+      },
+      "SiteDiaryEntryListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SiteDiaryEntryListItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "SiteDiaryEntryListResponse",
+        "description": "`audit`/`users` liste deseninin aynısı: `total` + `limit`/`offset`."
+      },
+      "SiteDiaryEntryUpdate": {
+        "properties": {
+          "entry_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entry Date"
+          },
+          "section_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Id"
+          },
+          "weather": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Weather"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "temperature_c": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 60.0,
+                "minimum": -60.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature C"
+          },
+          "work_done": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Done"
+          },
+          "chief_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chief Note"
+          },
+          "safety_meeting_held": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Safety Meeting Held"
+          },
+          "ppe_checked": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ppe Checked"
+          },
+          "has_incident": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Incident"
+          },
+          "incident_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incident Note"
+          },
+          "worker_counts": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SiteDiaryWorkerCountInput"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Worker Counts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SiteDiaryEntryUpdate",
+        "description": "`PATCH /diary/{entry_id}` — yalnız BAŞLIK alanları, yalnız `draft` kayıtta.\n\n`status` alanı YOKTUR: durum yalnız geçiş uçlarıyla (T4) değişir; gövdeden\nkabul edilseydi `submit`in damgası ve doğrulamaları atlanabilirdi. Gövdeye\nyazılan bilinmeyen alan `extra=\"forbid\"` ile 422'dir — sessizce yutulup\n\"güncelledim\" demek, kullanıcıya yalan söylemektir.\n\n`entry_date` DEĞİŞTİRİLEBİLİR (yanlış güne açılmış kayıt düzeltilebilsin);\nhedef gün doluysa servis 409 döner.\n\n`worker_counts` (T3) İÇ İÇE ve **DEĞİŞTİRME** semantiğindedir: gönderilmeyen\n(meslek, kaynak) çifti SİLİNİR, boş liste hepsini temizler. Alanın kendisi\ngönderilmezse kırılım KORUNUR (`exclude_unset`) — başlık alanı güncelleyen\nbir istek işçi kırılımını sessizce silmez. Poz satırları burada YOKTUR: onlar\nyalnız `PUT …/lines` ile değişir (iki yazma kapısı tek kaynaklıdır)."
+      },
+      "SiteDiaryLineInput": {
+        "properties": {
+          "boq_item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Boq Item Id"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,11}|(?=[\\d.]{1,15}0*$)\\d{0,11}\\.\\d{0,3}0*$)"
+              }
+            ],
+            "title": "Quantity"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "boq_item_id",
+          "quantity"
+        ],
+        "title": "SiteDiaryLineInput",
+        "description": "`PUT /diary/{entry_id}/lines` gövdesindeki tek satır (T3).\n\nSatır kimliği `boq_item_id`dir (kısmi UQ `uq_site_diary_lines_boq_item`);\nsatırın `id`si gövdede TAŞINMAZ — ekran BOQ pozunu bilir, satır kimliğini değil.\n\n**Snapshot dörtlüsü (`code/description/unit/unit_price`) BİLEREK YOKTUR** ve\n`extra=\"forbid\"` onları 422 yapar: fiyat istemciden alınsaydı kullanıcı\ngünlüğün ₺ katkısını (GK230) BOQ'dan bağımsız uydurabilirdi. Kaynak her zaman\nBOQ kalemidir (yeni satır) ya da mevcut satırın donmuş snapshot'ıdır."
+      },
+      "SiteDiaryLineRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "boq_item_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Boq Item Id"
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Code"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Unit"
+          },
+          "unit_price": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Unit Price"
+          },
+          "quantity": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Quantity"
+          },
+          "cumulative_quantity": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Cumulative Quantity"
+          },
+          "line_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Line Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "boq_item_id",
+          "code",
+          "description",
+          "unit",
+          "unit_price",
+          "quantity",
+          "cumulative_quantity",
+          "line_amount"
+        ],
+        "title": "SiteDiaryLineRead",
+        "description": "GK212-230 satırı — poz snapshot'ı + o günkü miktar + İKİ TÜREV."
+      },
+      "SiteDiaryLinesSave": {
+        "properties": {
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/SiteDiaryLineInput"
+            },
+            "type": "array",
+            "title": "Lines"
+          }
+        },
+        "type": "object",
+        "title": "SiteDiaryLinesSave",
+        "description": "`PUT …/lines` gövdesi — **DEĞİŞTİRME** semantiği: gövdede geçmeyen satır\nSİLİNİR (taşeron `lines.py` deseninin aynısı). Boş liste = tüm satırları temizle."
+      },
+      "SiteDiarySummary": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Site Id"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "month": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Month"
+          },
+          "entry_count": {
+            "type": "integer",
+            "title": "Entry Count"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SiteDiarySummaryItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "site_id",
+          "year",
+          "month",
+          "entry_count",
+          "items",
+          "total_amount"
+        ],
+        "title": "SiteDiarySummary",
+        "description": "`GET /sites/{site_id}/diary/summary` — YALNIZ `submitted` günler (spec §3).\n\n`total_amount` mockup'ın tfoot'udur (HÖ L165-168 \"Bu Ay Toplam ₺269.200\").\nSözleşme sütununun TOPLAMI YOKTUR: mockup'ta o tfoot hücresi BOŞTUR (L166) —\nicat edilmez.\n\nEkranın diğer KPI kartları (HÖ L101 \"İşveren Hakediş\", L106 \"Taşeron\nÖdemeleri\", L111 \"Brüt Kar\", L116 \"Kümülatif Hakediş\") günlükten DEĞİL\nhakediş modüllerinden beslenir; bu uç onları ÜRETMEZ."
+      },
+      "SiteDiarySummaryItem": {
+        "properties": {
+          "boq_item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Boq Item Id"
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Code"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Unit"
+          },
+          "unit_price": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Unit Price"
+          },
+          "quantity": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Quantity"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount"
+          },
+          "boq_quantity": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Boq Quantity"
+          },
+          "boq_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Boq Amount"
+          },
+          "completion_ratio": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Ratio"
+          },
+          "contract_item_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract Item Id"
+          },
+          "contract_item_quantity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract Item Quantity"
+          },
+          "contract_item_unit_price": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract Item Unit Price"
+          }
+        },
+        "type": "object",
+        "required": [
+          "boq_item_id",
+          "code",
+          "description",
+          "unit",
+          "unit_price",
+          "quantity",
+          "amount",
+          "boq_quantity",
+          "boq_amount",
+          "completion_ratio",
+          "contract_item_id",
+          "contract_item_quantity",
+          "contract_item_unit_price"
+        ],
+        "title": "SiteDiarySummaryItem",
+        "description": "Hakediş Özeti tablosunun bir SATIRI (mockup `Şantiye - Hakediş Özeti` L127).\n\nSütun eşlemesi mockup'tan okunur, tahmin EDİLMEZ:\nL131 \"İş Kalemi\" → `code`/`description` · L132 \"Sözleşme\" → `boq_quantity` ×\n`unit_price` = `boq_amount` (GK L226 \"Sözleşme: 1.200 m³ · Birim fiyat:\n₺1.850\") · L133 \"Bu Ay\" → `quantity`/`amount` · L134 \"%\" → `completion_ratio`."
+      },
+      "SiteDiaryWorkerCountInput": {
+        "properties": {
+          "trade": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Trade"
+          },
+          "source": {
+            "$ref": "#/components/schemas/WorkerSource"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "trade",
+          "source",
+          "count"
+        ],
+        "title": "SiteDiaryWorkerCountInput",
+        "description": "`PATCH /diary/{entry_id}` gövdesindeki iç içe işçi kırılımı satırı (T3).\n\nSatır kimliği (`trade`, `source`) İKİLİSİDİR (UQ ile birebir); aynı meslek\nFARKLI kaynakla meşrudur (GK418-430). Taşeron ADI bağlanmaz — mockup'ta\nseçici yoktur (spec §2)."
+      },
+      "SiteDiaryWorkerCountRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "trade": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Trade"
+          },
+          "source": {
+            "$ref": "#/components/schemas/WorkerSource"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "trade",
+          "source",
+          "count"
+        ],
+        "title": "SiteDiaryWorkerCountRead",
+        "description": "GK418-430 işçi kırılımı satırı. Yazma semantiği T3'tedir."
+      },
       "SiteFacilities": {
         "properties": {
           "closed_warehouse": {
@@ -18029,6 +19822,83 @@
         ],
         "title": "SubcontractorCreate"
       },
+      "SubcontractorDiarySuggestion": {
+        "properties": {
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          },
+          "month": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Month"
+          },
+          "skipped_unbridged_count": {
+            "type": "integer",
+            "title": "Skipped Unbridged Count"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "contract_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Contract Id"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/SubcontractorProgressPaymentLineInput-Output"
+            },
+            "type": "array",
+            "title": "Lines"
+          }
+        },
+        "type": "object",
+        "required": [
+          "year",
+          "month",
+          "skipped_unbridged_count",
+          "reason",
+          "contract_id",
+          "site_id",
+          "lines"
+        ],
+        "title": "SubcontractorDiarySuggestion",
+        "description": "`GET /subcontractor-contracts/{contract_id}/progress-payments/diary-suggestion`.\n\n`site_id` sözleşmenin şantiyesidir; `None` ise (proje geneli sözleşme) öneri\nkapsam DIŞIDIR (spec §7 S5) ve `reason` bunu AÇIKÇA söyler."
+      },
       "SubcontractorListResponse": {
         "properties": {
           "items": {
@@ -18420,7 +20290,7 @@
         "title": "SubcontractorProgressPaymentDetail",
         "description": "`GET /subcontractor-progress-payments/{id}` — O ekranının başlığı + satırları."
       },
-      "SubcontractorProgressPaymentLineInput": {
+      "SubcontractorProgressPaymentLineInput-Input": {
         "properties": {
           "contract_item_id": {
             "type": "string",
@@ -18446,6 +20316,51 @@
                 "type": "number",
                 "exclusiveMinimum": 0.0
               },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coefficient"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contract_item_id",
+          "quantity"
+        ],
+        "title": "SubcontractorProgressPaymentLineInput",
+        "description": "`PUT …/lines` gövdesindeki tek satır (T3).\n\nİşveren `ProgressPaymentLineInput`tan İKİ FARK:\n* `site_id` YOK — taşeron satırında şantiye kırılımı yoktur (spec §2);\n* `coefficient` KİLİTSİZ (yalnız `> 0`): taşeron sözleşmesinde\n  `has_price_escalation` kolonu yoktur, işverendeki FF kilidi uygulanmaz\n  (şef kararı 2026-08-02).\n\n`quantity_source` BİLEREK YOKTUR: bu dilimde her satır `manual`dır (spec §2),\nistekten alınması `diary` rozetini sahte doldurmanın yolu olurdu.\n`coefficient` gönderilmezse yeni satır hakedişin `default_coefficient`'ını\nalır, MEVCUT satırın katsayısı KORUNUR."
+      },
+      "SubcontractorProgressPaymentLineInput-Output": {
+        "properties": {
+          "contract_item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Contract Item Id"
+          },
+          "quantity": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Quantity"
+          },
+          "coefficient": {
+            "anyOf": [
               {
                 "type": "string",
                 "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
@@ -18577,7 +20492,7 @@
         "properties": {
           "lines": {
             "items": {
-              "$ref": "#/components/schemas/SubcontractorProgressPaymentLineInput"
+              "$ref": "#/components/schemas/SubcontractorProgressPaymentLineInput-Input"
             },
             "type": "array",
             "title": "Lines"
@@ -22013,6 +23928,28 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "Weather": {
+        "type": "string",
+        "enum": [
+          "sunny",
+          "partly_cloudy",
+          "cloudy",
+          "rainy",
+          "snowy"
+        ],
+        "title": "Weather",
+        "description": "Hava durumu (spec §2). E7'nin BEŞLİSİ kanoniktir; GK'nin dörtlüsü alt kümedir\n(GK'de `snowy` yok) — süperset seçildi, ekran kendi listesini süzer.\n\n\"Yağışlı\" rozeti (GK370) KOLON DEĞİLDİR — frontend `weather == rainy` türevidir."
+      },
+      "WorkerSource": {
+        "type": "string",
+        "enum": [
+          "company",
+          "subcontractor",
+          "general"
+        ],
+        "title": "WorkerSource",
+        "description": "İşçi kırılımının kaynağı — GK418-430 rozetleri (spec §2).\n\nTaşeron ADI bağlanmaz (mockup'ta seçici yok); `subcontractor` yalnız kaynağı\nişaretler, puantaj modülü gelince taşeron kaydına köprülenir."
       },
       "app__modules__dashboard__schemas__MetricPlaceholder": {
         "properties": {

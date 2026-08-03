@@ -259,7 +259,9 @@ describe("Hakediş (progress-payments) tip üretimi (P7 T1 kapısı)", () => {
     type Create = components["schemas"]["ProgressPaymentCreate"];
     type Update = components["schemas"]["ProgressPaymentUpdate"];
     type LinesSave = components["schemas"]["ProgressPaymentLinesSave"];
-    type LineInput = components["schemas"]["ProgressPaymentLineInput"];
+    // 2026-08-03 openapi devri: şema Input/Output olarak ikiye ayrıldı; istek
+    // gövdesi doğrulandığı için `-Input` varyantı kullanılır.
+    type LineInput = components["schemas"]["ProgressPaymentLineInput-Input"];
 
     const createBody = { period_year: 2026, period_month: 7, lines: [] } satisfies Create;
     const updateBody = { description: "Ağustos hakedişi" } satisfies Update;
