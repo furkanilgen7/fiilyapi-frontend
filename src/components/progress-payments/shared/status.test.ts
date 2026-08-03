@@ -14,8 +14,14 @@ describe("PAYMENT_STATUS_BADGE", () => {
     expect(PAYMENT_STATUS_BADGE.approved.label).toBe("Onaylandı");
     expect(PAYMENT_STATUS_BADGE.paid.label).toBe("Ödendi");
   });
-  it("mockup renkleriyle eslesenler: bekleyen amber, odenen yesil", () => {
+  it("bekleyen amber kalir (degismedi)", () => {
     expect(PAYMENT_STATUS_BADGE.pending_approval.variant).toBe("warning");
-    expect(PAYMENT_STATUS_BADGE.paid.variant).toBe("success");
+  });
+  // F-TH T2 fix round 1 (2026-08-03, kullanici karari, baglayici): renk
+  // eslemesi teklestirildi — onaylandi=yesil, odendi=mavi (Taseron mockup
+  // kaniti; eski surum bunun tersini varsayiyordu).
+  it("onaylandi=yesil, odendi=mavi (teklestirilmis renk karari)", () => {
+    expect(PAYMENT_STATUS_BADGE.approved.variant).toBe("success");
+    expect(PAYMENT_STATUS_BADGE.paid.variant).toBe("primary");
   });
 });

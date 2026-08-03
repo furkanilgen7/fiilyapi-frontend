@@ -3,36 +3,16 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { Badge, type BadgeVariant } from "@/components/ui/badge/Badge";
+import { Badge } from "@/components/ui/badge/Badge";
 import { formatCurrencyPrecise, formatPeriodShort } from "@/lib/format";
 import { pendingModuleLabel } from "@/lib/pending-modules";
-import { PAYMENT_STATUS_BADGE, type PaymentLifecycleStatus } from "./shared/status";
+import { PAYMENT_STATUS_BADGE } from "./shared/status";
 import type {
   SubcontractorProgressPaymentListItem,
   SubcontractorProgressPaymentListResponse,
 } from "@/lib/api/hooks/useSubcontractorProgressPayments";
 
 import "./subcontractor-progress-payments.css";
-
-/**
- * Rozet RENK override'ı — YALNIZ bu ekrana özeldir, `PAYMENT_STATUS_BADGE`in
- * (`shared/status.ts`) METNİNİ değiştirmez, ikinci bir DURUM→METİN eşlemesi
- * DEĞİLDİR. Gerekçe (rapora da düşüldü): Ekran 2 mockup'ı (satır 147/157/167)
- * `approved`=YEŞİL, `paid`=MAVİ kanıtlıyor — bu, `shared/status.ts`'in
- * BUGÜNKÜ `approved`=primary(mavi)/`paid`=success(yeşil) varsayımının TAM
- * TERSİ. O dosyanın kendi yorumu bu varsayımı zaten "kaynak yoklukta yapılan
- * bir tercih" olarak işaretlemişti — şimdi elimizde taşeron tarafı için somut
- * ters kanıt var. İşveren ekranının halihazırda test edilmiş rengini
- * DEĞİŞTİRMEMEK için `shared/status.ts` burada güncellenmedi (T2 kapsamı bunu
- * kapsamıyor) — bu çelişki raporun "Şüpheler" bölümünde kullanıcıya
- * bırakıldı.
- */
-const SUBCONTRACTOR_BADGE_VARIANT: Record<PaymentLifecycleStatus, BadgeVariant> = {
-  draft: "neutral",
-  pending_approval: "warning",
-  approved: "success",
-  paid: "primary",
-};
 
 export interface SubcontractorProgressPaymentsTableProps {
   isError: boolean;
@@ -129,7 +109,7 @@ function SubcontractorPaymentRow({ item }: { item: SubcontractorProgressPaymentL
         {item.is_revision_required ? (
           <Badge variant="danger">Revize Gerekli</Badge>
         ) : (
-          <Badge variant={SUBCONTRACTOR_BADGE_VARIANT[item.status]}>{badge.label}</Badge>
+          <Badge variant={badge.variant}>{badge.label}</Badge>
         )}
       </td>
       {/* Zarif düşüş 3/3: ilerleme yüzdesi — şemada YOK. Çubuk/yüzde

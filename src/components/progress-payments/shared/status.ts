@@ -13,18 +13,22 @@ import type { BadgeVariant } from "@/components/ui/badge/Badge";
 export type PaymentLifecycleStatus = "draft" | "pending_approval" | "approved" | "paid";
 
 /**
- * Durum → rozet metni + renk (P7 T2 brief). Metinler BİREBİR şu tabloya göre:
+ * Durum → rozet metni + renk. Metinler BİREBİR şu tabloya göre:
  * draft→Taslak, pending_approval→Onay Bekliyor, approved→Onaylandı, paid→Ödendi.
  *
- * Renkler: mockup'ın İŞVEREN HAKEDİŞLERİ yarısı yalnız iki durumu gösteriyor
- * (`Şantiye - Hakedişler.dc.html` 99: Onay Bekliyor = amber `#fef3c7/#d97706`;
- * 103/107/111: Ödendi = yeşil `#dcfce7/#16a34a`) — bunlar `badge--warning` ve
- * `badge--success` ile birebir eşleşiyor. `draft` ve `approved` o yarıda hiç
- * görünmüyor (taşeron yarısındaki "Onaylandı" yeşili bu ekranın kapsamı DIŞI —
- * brief §BASILMAYACAKLAR). Karar: `draft`→nötr (henüz akışa girmemiş),
- * `approved`→`primary` (mavi, `paid`in yeşilinden ayrışsın — onay ile ödeme
- * ayrı, birbirine karıştırılmamalı). Kaynak yoklukta yapılan bir tercih —
- * rapora not düşüldü. F-TH T1: taşeron tarafı da AYNI eşlemeyi kullanır.
+ * RENK TARİHÇESİ (F-TH T2 fix round 1, 2026-08-03 — kullanıcı kararı,
+ * BAĞLAYICI, sapma diye geri alınmaz): `approved`=YEŞİL (`success`),
+ * `paid`=MAVİ (`primary`). Önceki sürüm (P7 T2) bunun TERSİNİ varsayıyordu
+ * (`approved`=primary, `paid`=success) — İşveren mockup'ının o zamanki
+ * kanıtı yalnız iki durumu (Onay Bekliyor=amber, Ödendi=yeşil) gösterdiğinden
+ * `approved`/`draft` rengi kaynaksız bir tercihti (bkz. eski yorum, git
+ * geçmişinde). F-TH T2'nin Taşeron mockup'ı (`Ekran 2 - Taşeron
+ * Hakedişi.dc.html` satır 157/167) `approved`=yeşil/`paid`=mavi kanıtladı —
+ * iki mockup seti TUTARSIZDI. Kullanıcı bunu tek eşlemede TEKLEŞTİRDİ: bu
+ * dosya artık İşveren VE Taşeron için TEK renk kaynağıdır — ekrana özel bir
+ * renk override'ı YAZILMAZ (F-TH T2 fix round 1 önceki denemesi buydu, geri
+ * alındı). `pending_approval`=amber ve "Revize Gerekli"=kırmızı (rozet ayrı
+ * bir bileşimde, bu tablonun dışında) DEĞİŞMEDİ.
  */
 export const PAYMENT_STATUS_BADGE: Record<
   PaymentLifecycleStatus,
@@ -32,6 +36,6 @@ export const PAYMENT_STATUS_BADGE: Record<
 > = {
   draft: { label: "Taslak", variant: "neutral" },
   pending_approval: { label: "Onay Bekliyor", variant: "warning" },
-  approved: { label: "Onaylandı", variant: "primary" },
-  paid: { label: "Ödendi", variant: "success" },
+  approved: { label: "Onaylandı", variant: "success" },
+  paid: { label: "Ödendi", variant: "primary" },
 };

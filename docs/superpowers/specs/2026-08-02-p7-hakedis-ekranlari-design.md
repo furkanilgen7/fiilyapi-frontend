@@ -8,6 +8,7 @@ S6 liste tutarı brüt (`gross_total`).
 **ONAYLI SAPMA (2026-08-02, kapanışta):** proje-genel `/hakedisler` liste satırında `project_name`
 etiketi basılır (mockup'ta yok — mockup şantiye-bağlamlı çizilmiş; proje adı olmadan "#5" belirsiz).
 Şantiye sekmesinde basılmaz. Sapma diye geri alınmaz.
+Rozet renk eşlemesi 2026-08-03'te tekleştirildi: Onaylandı=yeşil, Ödendi=mavi — mockup seti tutarsızdı, kullanıcı kararı; sapma diye geri alınmaz.
 Mockup'lar: `Ekran 15 - İşveren Hakedişi` · `İşveren Hakediş Oluştur` · `Şantiye - Hakedişler` · `Şantiye - Hakediş Özeti`
 Backend sözleşmesi: `progress_payments` şemaları (13 uç, canlıda) + backend spec 2026-07-31 §10/4.
 
