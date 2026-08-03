@@ -122,4 +122,99 @@ describe("ProgressPaymentsTotalsStrip", () => {
       expect(screen.getAllByTestId("pp-kpi-pending")).toHaveLength(2);
     });
   });
+
+  // F-TH T5 — `subcontractor` prop verildiğinde (Şantiye "Hakedişler" sekmesi)
+  // iki kart GERÇEK değer basar, "Onay Bekleyen" iki tarafı toplar.
+  describe("subcontractor prop (F-TH T5, Şantiye Hakedişler sekmesi)", () => {
+    it("subcontractor verilmezse davranış DEĞİŞMEZ (T2 /hakedisler geriye dönük uyumlu)", () => {
+      render(<ProgressPaymentsTotalsStrip items={[item({ status: "pending_approval" })]} />);
+      expect(screen.getAllByTestId("pp-kpi-pending")).toHaveLength(2);
+      expect(screen.getByText("Onay Bekleyen").nextSibling).toHaveTextContent("1");
+    });
+
+    it("hazır (ready) durumda: taşeron toplamı, distinct sayısı ve marj GERÇEK basılır", () => {
+      render(
+        <ProgressPaymentsTotalsStrip
+          items={[item({ gross_total: "8400000", status: "pending_approval" })]}
+          subcontractor={{
+            isLoading: false,
+            isPartial: false,
+            grossTotal: "4820000",
+            distinctSubcontractorCount: 12,
+            pendingApprovalCount: 2,
+            marginPct: "42.62",
+          }}
+        />,
+      );
+      expect(screen.getByText("Toplam Taşeron Ödemesi").nextSibling).toHaveTextContent("₺ 4,8M");
+      expect(screen.getByText("12 taşeron")).toBeInTheDocument();
+      expect(screen.getByText("Brüt Kar Marjı").nextSibling).toHaveTextContent("%42,6");
+      // Onay Bekleyen = 1 işveren (pending_approval) + 2 taşeron = 3 (mockup kanıtı).
+      expect(screen.getByText("Onay Bekleyen").nextSibling).toHaveTextContent("3");
+    });
+
+    it("yükleniyor durumunda iki kart da 'Yükleniyor…' gösterir, Onay Bekleyen yalnız işveren sayısını basar", () => {
+      render(
+        <ProgressPaymentsTotalsStrip
+          items={[item({ status: "pending_approval" })]}
+          subcontractor={{
+            isLoading: true,
+            isPartial: false,
+            grossTotal: "0",
+            distinctSubcontractorCount: 0,
+            pendingApprovalCount: 5,
+            marginPct: null,
+          }}
+        />,
+      );
+      expect(screen.getAllByTestId("pp-kpi-loading")).toHaveLength(2);
+      expect(screen.getByText("Onay Bekleyen").nextSibling).toHaveTextContent("1");
+    });
+
+    it("kısmi hatada (isPartial) taşeron toplamı VE marj basılmaz, görünür bir ipucuyla pending gösterilir", () => {
+      render(
+        <ProgressPaymentsTotalsStrip
+          items={[item({})]}
+          subcontractor={{
+            isLoading: false,
+            isPartial: true,
+            grossTotal: "1000000",
+            distinctSubcontractorCount: 3,
+            pendingApprovalCount: 1,
+            marginPct: "10.00",
+          }}
+        />,
+      );
+      const taseronValue = screen.getByText("Toplam Taşeron Ödemesi").nextSibling as HTMLElement;
+      const margeValue = screen.getByText("Brüt Kar Marjı").nextSibling as HTMLElement;
+      expect(taseronValue.textContent).not.toMatch(/\d/);
+      expect(margeValue.textContent).not.toMatch(/\d/);
+      expect(taseronValue).toHaveAttribute(
+        "title",
+        "Bazı taşeron sözleşmeleri yüklenemedi — toplam eksik olabilir",
+      );
+      expect(margeValue).toHaveAttribute(
+        "title",
+        "Bazı taşeron sözleşmeleri yüklenemedi — kâr marjı eksik olabilir",
+      );
+    });
+
+    it("marginPct null ise (işveren toplamı 0) marj basılmaz — kısmi hata OLMASA bile", () => {
+      render(
+        <ProgressPaymentsTotalsStrip
+          items={[item({ gross_total: "0" })]}
+          subcontractor={{
+            isLoading: false,
+            isPartial: false,
+            grossTotal: "0",
+            distinctSubcontractorCount: 0,
+            pendingApprovalCount: 0,
+            marginPct: null,
+          }}
+        />,
+      );
+      const margeValue = screen.getByText("Brüt Kar Marjı").nextSibling as HTMLElement;
+      expect(margeValue.textContent).not.toMatch(/\d/);
+    });
+  });
 });

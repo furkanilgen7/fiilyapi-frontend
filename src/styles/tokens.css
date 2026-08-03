@@ -186,6 +186,14 @@
   --color-amber-tint: #fef9f0;
   --color-purple-tint: #fdf4ff;
 
+  /* F-TH T5 — Şantiye Hakedişler "Taşeron Hakedişleri" panel başlığı zemin/
+     metin tonu (mockup `Şantiye - Hakedişler.dc.html` satır 137-138).
+     İşveren paneli mevcut `--color-info-tint`/`--color-primary-hover`
+     token'larıyla eşleşiyor, taşeron tonu için karşılığı YOK — yeni token
+     eklendi (çıplak hex yasak). */
+  --color-orange-tint: #fff7ed;
+  --color-orange-tint-text: #c2410c;
+
   /* Sistem rolü gradyan/çerçeve + koyu grup başlığı */
   --color-slate-700: #334155;
 

@@ -1,9 +1,9 @@
-/* Şantiye "Hakedişler" sekmesi (P7 T6). Mockup `Şantiye - Hakedişler.dc.html`
-   satır 75-77 — başlık şeridi. KPI şeridi (81-86) `progress-payments-totals.css`
-   ile ayrı dosyada (T2 ile PAYLAŞILIR, coordinator review T6 fix). Panel
-   başlığı (92-95) ve taşeron sütunu (116-140) bu dilimde BASILMAZ (brief
-   §pending-modules) — liste gövdesi `ProgressPaymentsList.tsx` ile
-   PAYLAŞILIR, burada yalnız sayfa iskeleti (breadcrumb + başlık) var. */
+/* Şantiye "Hakedişler" sekmesi (P7 T6 iskeleti + F-TH T5 iki sütunlu panel).
+   Mockup `Şantiye - Hakedişler.dc.html` satır 75-77 — başlık şeridi. KPI
+   şeridi (81-86) `progress-payments-totals.css` ile ayrı dosyada (T2 ile
+   PAYLAŞILIR). Panel başlığı (92-95, 137-138) ve iki sütunlu grid (88-140)
+   F-TH T5 ile EKLENDİ — liste gövdesi (sol) `ProgressPaymentsList.tsx` ile
+   PAYLAŞILIR, sağ sütun `SiteSubcontractorPaymentsPanel.tsx`. */
 .spp__crumb {
   font-size: var(--text-xs);
   color: var(--color-text-subtle);
@@ -30,4 +30,98 @@
   font-weight: var(--weight-bold);
   color: var(--color-text);
   letter-spacing: var(--tracking-tight);
+}
+/* Mockup satır 76: başlık altı "İşveren & Taşeron hakedişleri". */
+.spp__subtitle {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+
+/* F-TH T5 — kısmi hata bandı (brief §Yükleme/hata görünürlüğü): bazı taşeron
+   sözleşme detayları yüklenemediğinde toplam/marj sessizce eksik basılmaz,
+   bu bant görünür kalır. `role="alert"` KULLANILMAZ (e2e'de bilinen tuzak —
+   bkz. F-P6 T6 dersleri) — sade bir paragraf, `pp-message` ailesiyle aynı dil. */
+.spp__error-band {
+  font-size: var(--text-small);
+  color: var(--color-danger-strong);
+  background: var(--color-danger-tint);
+  border: 1px solid var(--color-danger-tint-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+/* İki sütun: işveren / taşeron (mockup satır 88-140). */
+.spp__columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5);
+}
+@media (max-width: 900px) {
+  .spp__columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Panel kabuğu — iki sütun da AYNI kart çerçevesini paylaşır (mockup satır
+   90/133: beyaz zemin, ince kenarlık, 14px radius, hafif gölge). İç gövde
+   (`pp-card`/`pp-empty`) kendi kenarlığını NEUTRALİZE eder (çift çerçeve
+   olmasın diye) — sınıf isimleri PAYLAŞILIR, burada yalnız override edilir. */
+.spp__panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.spp__panel .pp-card,
+.spp__panel .pp-empty {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+.spp__panel .pp-message {
+  padding: var(--space-4);
+  margin: 0;
+}
+.spp__panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+.spp__panel-title {
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+}
+.spp__panel-link {
+  font-size: var(--text-xs);
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: var(--weight-medium);
+}
+.spp__panel-link:hover {
+  text-decoration: underline;
+}
+.spp__panel-link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+/* Mockup satır 90: İşveren paneli başlığı mavi tonda (#f0f9ff zemin,
+   #1d4ed8 metin) — ikisi de MEVCUT token'larla birebir eşleşiyor. */
+.spp__panel--employer .spp__panel-head {
+  background: var(--color-info-tint);
+}
+.spp__panel--employer .spp__panel-title {
+  color: var(--color-primary-hover);
+}
+/* Mockup satır 133: Taşeron paneli başlığı turuncu tonda (#fff7ed/#c2410c) —
+   karşılığı olmayan YENİ token'lar (`tokens.css`). */
+.spp__panel--subcontractor .spp__panel-head {
+  background: var(--color-orange-tint);
+}
+.spp__panel--subcontractor .spp__panel-title {
+  color: var(--color-orange-tint-text);
 }

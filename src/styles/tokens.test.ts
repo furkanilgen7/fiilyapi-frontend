@@ -21,8 +21,12 @@ const tokensCss = readFileSync(
  * açık ucu (#4ade80, mockup 185) mevcut tonlarla karşılanmadığı için tek yeni
  * hex eklendi (`--color-success-light`); diğer iki gradyan mevcut token
  * çiftleriyle kuruldu, yeni hex taşımıyor.
+ *
+ * F-TH T5 (Şantiye Hakedişler "Taşeron Hakedişleri" panel başlığı): 70 → 72.
+ * Mockup zemin/metin tonunun (#fff7ed/#c2410c) karşılığı YOKTU — iki yeni
+ * token eklendi (`--color-orange-tint`/`--color-orange-tint-text`).
  */
-const EXPECTED_HEX_COUNT = 70;
+const EXPECTED_HEX_COUNT = 72;
 
 describe("tokens.css", () => {
   it("çekirdek renk token'larını tanımlar (açık tema Slate + Blue)", () => {
