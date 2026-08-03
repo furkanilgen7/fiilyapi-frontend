@@ -87,7 +87,12 @@ test("taşeron: sözleşme seçim adımı (bilgi notu, seçim → form)", async 
   await page.getByLabel("Taşeron Sözleşmesi").selectOption("sc-1");
   await page.getByRole("button", { name: "Devam Et" }).click();
   await expect(page).toHaveURL(/\/hakedisler\/taseron\/yeni\?contract=sc-1$/);
-  await expect(page.getByText("Hakediş Oluştur")).toBeVisible();
+  // Final inceleme F-7 sonrası başlık parçalıdır ("Hakediş" + pending `#—` +
+  // "Oluştur") — erişilebilir adla sorgulanır. `thf-sequence-pending` YALNIZ
+  // create kipinde basılır, yani seçim adımından create formuna gerçekten
+  // geçildiğini kanıtlar.
+  await expect(page.getByRole("heading", { name: /Hakediş .* Oluştur/ })).toBeVisible();
+  await expect(page.getByTestId("thf-sequence-pending")).toBeVisible();
 });
 
 test("taşeron: sözleşme seçim adımı — boş durum metni", async ({ page }) => {

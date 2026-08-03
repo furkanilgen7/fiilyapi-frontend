@@ -41,7 +41,13 @@ test("taseron hakedis olustur formu ekrani gorsel", async ({ page }) => {
   await login(page);
 
   await page.goto("/hakedisler/taseron/yeni?contract=sc-1");
-  await expect(page.getByText("Hakediş Oluştur")).toBeVisible();
+  // Final inceleme F-7 sonrası başlık TEK metin düğümü DEĞİLDİR
+  // ("Hakediş" + pending `#—` + "Oluştur") — `getByText("Hakediş Oluştur")`
+  // kırılgandı. Başlık erişilebilir adıyla sorgulanır; ayrıca YALNIZ create
+  // kipinde basılan sıra-no pending göstergesi create formunun gerçekten
+  // yüklendiğini kanıtlar (assert ZAYIFLATILMADI, güçlendirildi).
+  await expect(page.getByRole("heading", { name: /Hakediş .* Oluştur/ })).toBeVisible();
+  await expect(page.getByTestId("thf-sequence-pending")).toBeVisible();
   // İçerik yüklendi: kalem tablosunun son satırı (Pano Montajı) + tfoot'un
   // NET ÖDENECEK satırı basılı olmadan ekran görüntüsü alınırsa baseline
   // yükleme durumunu dondurur (create kipinde tfoot henüz "—" basar —
