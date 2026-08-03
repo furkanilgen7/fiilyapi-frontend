@@ -129,6 +129,13 @@
 .thf-table__td--strong {
   font-weight: var(--weight-bold);
 }
+/* Fix round 1 (kontrolcü bulgusu, Important) — eksik sözleşme birim fiyatı:
+   T2'nin `thk-table__td--pending` deseniyle AYNI dürüstlük kuralı (görünür
+   "—" + `title`/`.sr-only`, kolon SİLİNMEZ, sessizce "₺ 0"a düşürülmez). */
+.thf-table__td--pending {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
 .thf-table__item-name {
   font-weight: var(--weight-medium);
   color: var(--color-text);

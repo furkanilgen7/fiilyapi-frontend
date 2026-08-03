@@ -22,8 +22,18 @@ export interface SubcontractorLineRow {
   /** `null` = grupsuz kalem — mockup'ta grup başlığı basılmaz. */
   groupName: string | null;
   sortOrder: number;
-  /** Sözleşme B.F. (salt-okunur) — kayıtlı satır varsa onun `contract_unit_price`'ı, yoksa sözleşme kaleminin `unit_price`'ı (henüz hiç kaydedilmemiş satır). */
-  contractUnitPrice: string;
+  /**
+   * Sözleşme B.F. (salt-okunur) — kayıtlı satır varsa onun `contract_unit_price`'ı
+   * (LineRead şemasında ZORUNLU string), yoksa sözleşme kaleminin `unit_price`'ı.
+   * `SubcontractorContractItemResponse.unit_price` NULLABLE'dır (`anyOf:
+   * [string, null]`) — fix round 1 (kontrolcü bulgusu, Important): eksik fiyat
+   * ASLA sessizce `"0"`a düşürülmez, `null` OLARAK taşınır. Sessiz `"0"`
+   * gerçek sıfır fiyatla eksik fiyatı ayırt edilemez hale getirirdi
+   * (kullanıcı "₺ 0" görüp bunun GERÇEK bir sıfır olduğunu sanırdı).
+   * `null` ⇒ ekranda zarif düşüş (pending) gösterilir, `formatAmount` HİÇ
+   * çağrılmaz.
+   */
+  contractUnitPrice: string | null;
   /** TEK düzenlenebilir alan (brief §Kalem tablosu). */
   quantity: string;
   quantitySource: "manual" | "diary";
@@ -59,7 +69,7 @@ export function buildSubcontractorLineRows(
         unit: item.unit,
         groupName: item.group?.name ?? null,
         sortOrder: item.sort_order,
-        contractUnitPrice: existing ? existing.contract_unit_price : (item.unit_price ?? "0"),
+        contractUnitPrice: existing ? existing.contract_unit_price : item.unit_price,
         quantity: existing ? existing.quantity : "0",
         quantitySource: existing ? existing.quantity_source : "manual",
         lineTotal: existing ? existing.line_total : null,

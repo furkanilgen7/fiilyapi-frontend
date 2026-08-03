@@ -41,6 +41,13 @@ export type SubcontractorProgressPaymentFormProps =
   | { mode: "create"; contractId: string }
   | { mode: "edit"; paymentId: string };
 
+/** Fix round 1 (kontrolcü bulgusu, Important) — eksik sözleşme birim fiyatı
+ * hücresinin `title`/`sr-only` metni; T2'nin `pendingModuleLabel` deseninden
+ * BİLEREK ayrı tutuldu, çünkü bu bir "modül henüz yok" durumu DEĞİL, bu
+ * spesifik sözleşme kaleminde fiyatın hiç girilmemiş olmasıdır (veri
+ * eksikliği, backend yeteneği eksikliği değil). */
+const MISSING_UNIT_PRICE_HINT = "Bu kalem için sözleşmede birim fiyat girilmemiş.";
+
 /**
  * F-TH T3 · Taşeron hakediş oluştur/düzenle formu. Mockup:
  * `Taşeron Hakediş Oluştur.dc.html`. `create`/`edit` AYNI bileşendir
@@ -296,6 +303,17 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
         </Alert>
       )}
 
+      {/* Fix round 1 (kontrolcü bulgusu, Important): eksik sözleşme birim
+          fiyatı sessizce "₺ 0"a düşürülmez — `contract.items_missing_price`
+          (backend'in KENDİ saydığı, ikinci bir sayım İCAT EDİLMEDİ) > 0 iken
+          görünür uyarı basılır. */}
+      {contract.items_missing_price > 0 && (
+        <Alert variant="warning" className="pp-form__alert" data-testid="thf-missing-price-alert">
+          {contract.items_missing_price} poz için sözleşmede birim fiyat girilmemiş; bu pozlarda
+          birim fiyat ve tutar gösterilemiyor.
+        </Alert>
+      )}
+
       {/* Hiyerarşi şeridi (mockup 33-42). İlk halka (işveren sözleşme no'su)
           şemada YOK → zarif düşüş (T2'deki pending desenini kullanır);
           "Sözleşmeyi Gör →" linki BASILMAZ — hedef rota (Taşeron Sözleşme
@@ -456,7 +474,22 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
                     </td>
                     <td className="thf-table__td thf-table__td--center">{row.unit}</td>
                     <td className="thf-table__td thf-table__td--right thf-table__td--mono">
-                      {formatAmount(row.contractUnitPrice)}
+                      {/* Fix round 1 (kontrolcü bulgusu, Important): eksik
+                          (`null`) birim fiyat GERÇEK sıfırdan ayrıştırılır —
+                          sessizce "₺ 0" basılmaz, T2'nin zarif düşüş
+                          (pending) deseni kullanılır (görünür "—" + title/
+                          sr-only, kolon SİLİNMEZ). */}
+                      {row.contractUnitPrice !== null ? (
+                        formatAmount(row.contractUnitPrice)
+                      ) : (
+                        <span
+                          className="thf-table__td--pending"
+                          title={MISSING_UNIT_PRICE_HINT}
+                          data-testid="thf-missing-price-cell"
+                        >
+                          —<span className="sr-only">{MISSING_UNIT_PRICE_HINT}</span>
+                        </span>
+                      )}
                     </td>
                     <td className="thf-table__td thf-table__td--right">
                       <span className="thf-table__qty-wrap">

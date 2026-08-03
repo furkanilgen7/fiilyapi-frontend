@@ -74,6 +74,25 @@ describe("buildSubcontractorLineRows", () => {
     expect(rows[0].quantitySource).toBe("diary");
   });
 
+  it("fix round 1 (Important) — sözleşme kaleminin unit_price'ı null ise contractUnitPrice null'dır (SESSİZCE '0'a düşürülmez)", () => {
+    const rows = buildSubcontractorLineRows([item({ unit_price: null })]);
+    expect(rows[0].contractUnitPrice).toBeNull();
+    expect(rows[0].lineTotal).toBeNull();
+  });
+
+  it("gerçek sıfır birim fiyat ('0.00') null'dan AYRIŞIR — pending DEĞİL, gerçek '0' olarak taşınır", () => {
+    const rows = buildSubcontractorLineRows([item({ unit_price: "0.00" })]);
+    expect(rows[0].contractUnitPrice).toBe("0.00");
+  });
+
+  it("unit_price null olsa bile kayıtlı satır varsa (LineRead.contract_unit_price ZORUNLU) contractUnitPrice yine dolu gelir", () => {
+    const rows = buildSubcontractorLineRows(
+      [item({ unit_price: null })],
+      [line({ contract_unit_price: "1200.00" })],
+    );
+    expect(rows[0].contractUnitPrice).toBe("1200.00");
+  });
+
   it("grupsuz kalemde groupName null'dır", () => {
     const rows = buildSubcontractorLineRows([item({ group: null })]);
     expect(rows[0].groupName).toBeNull();

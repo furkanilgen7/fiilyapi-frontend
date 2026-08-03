@@ -277,6 +277,61 @@ describe("SubcontractorProgressPaymentForm — quantity_source iki dalı", () =>
   });
 });
 
+describe("SubcontractorProgressPaymentForm — eksik sözleşme birim fiyatı (fix round 1, Important)", () => {
+  it("unit_price null olan kalemde 'Sözleşme B.F.' hücresi pending gösterir, GERÇEK '₺ 0' basılmaz", async () => {
+    vi.mocked(useSubcontractorContract).mockReturnValue(
+      queryResult({
+        data: contractFixture({
+          items: [{ ...ITEM_MANUAL, unit_price: null }, ITEM_DIARY],
+          items_missing_price: 1,
+        }),
+      }),
+    );
+    renderForm({ mode: "create", contractId: CONTRACT_ID });
+    const pendingCell = await screen.findByTestId("thf-missing-price-cell");
+    expect(pendingCell).toHaveTextContent("—");
+    expect(pendingCell).toHaveAttribute("title", "Bu kalem için sözleşmede birim fiyat girilmemiş.");
+    // Gerçek fiyatlı ITEM_DIARY (1200.00) İÇİN pending basılmamalı.
+    expect(screen.getByText("1.200")).toBeInTheDocument();
+  });
+
+  it("items_missing_price > 0 iken görünür Türkçe uyarı bandı basar", async () => {
+    vi.mocked(useSubcontractorContract).mockReturnValue(
+      queryResult({
+        data: contractFixture({
+          items: [{ ...ITEM_MANUAL, unit_price: null }, ITEM_DIARY],
+          items_missing_price: 1,
+        }),
+      }),
+    );
+    renderForm({ mode: "create", contractId: CONTRACT_ID });
+    expect(await screen.findByTestId("thf-missing-price-alert")).toHaveTextContent(
+      "1 poz için sözleşmede birim fiyat girilmemiş",
+    );
+  });
+
+  it("items_missing_price 0 iken uyarı bandı BASILMAZ", async () => {
+    renderForm({ mode: "create", contractId: CONTRACT_ID });
+    await screen.findByText(/Hakediş Oluştur/);
+    expect(screen.queryByTestId("thf-missing-price-alert")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("thf-missing-price-cell")).not.toBeInTheDocument();
+  });
+
+  it("GERÇEK sıfır birim fiyat ('0.00') pending DEĞİL, normal '₺ 0' olarak basılır", async () => {
+    vi.mocked(useSubcontractorContract).mockReturnValue(
+      queryResult({
+        data: contractFixture({
+          items: [{ ...ITEM_MANUAL, unit_price: "0.00" }, ITEM_DIARY],
+        }),
+      }),
+    );
+    renderForm({ mode: "create", contractId: CONTRACT_ID });
+    await screen.findByText(/Hakediş Oluştur/);
+    expect(screen.queryByTestId("thf-missing-price-cell")).not.toBeInTheDocument();
+    expect(screen.getByText("0")).toBeInTheDocument();
+  });
+});
+
 describe("SubcontractorProgressPaymentForm — tfoot", () => {
   it("edit kipinde 5 satırı ve yüzde etiketlerini şemadan (sözleşmeden) basar", async () => {
     vi.mocked(useSubcontractorProgressPayment).mockReturnValue(queryResult({ data: detailFixture() }));
