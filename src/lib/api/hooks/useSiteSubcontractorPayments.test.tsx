@@ -96,6 +96,7 @@ describe("useSiteSubcontractorPayments", () => {
       contractId: "sc-1",
       subcontractorName: "Akın İnşaat",
       workCategory: "Betonarme İşleri",
+      sectionId: null,
     });
     expect(backendClient.GET).toHaveBeenCalledWith("/subcontractor-progress-payments", {
       params: { query: { project_id: "proj-1", limit: 200 } },
@@ -163,6 +164,23 @@ describe("useSiteSubcontractorPayments", () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.items).toHaveLength(0);
+  });
+
+  // Fix round 1 (coordinator review) — `section_id` liste öğesinden SIZDIRILMALI
+  // (isim DEĞİL, yalnız kimlik): `SiteSubcontractorPaymentsPanel` bölüm
+  // görünümünü (pending / "Tüm Bölümler") bu alandan türetir.
+  it("hakedişin section_id'sini (dolu ya da null) ham şekilde çağırana taşır", async () => {
+    mockGet({
+      payments: [paymentItem({ id: "scpp-1", contract_id: "sc-1", section_id: "sec-9" })],
+      contracts: { "sc-1": contract({ site_id: "site-1" }) },
+    });
+
+    const { result } = renderHook(() => useSiteSubcontractorPayments("proj-1", "site-1"), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.items).toHaveLength(1));
+    expect(result.current.items[0].sectionId).toBe("sec-9");
   });
 
   it("aynı sözleşmeye ait BİRDEN ÇOK hakediş varsa sözleşme detayı YALNIZ BİR KEZ istenir (distinct + önbellek)", async () => {

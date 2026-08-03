@@ -42,6 +42,12 @@ export interface SiteSubcontractorPaymentItem {
    * zaten sözleşme detayını çektiğinden GERÇEK değer taşınabilir. `null`
    * olabilir (sözleşmede de boşsa) — çağıran taraf zarif düşüş uygular. */
   workCategory: string | null;
+  /** Hakedişin bağlı olduğu bölüm — yalnız KİMLİK (`section_id`), İSİM
+   * DEĞİL (bölüm adını çözecek bir uç/hook bu dilimde YOK — fix round 1:
+   * çağıran taraf `null` ile "gerçekten bölümsüz" (Tüm Bölümler), dolu
+   * değerle "adı çözülemeyen bölüm" durumunu AYIRT ETMELİDİR; ikisi de
+   * pending DEĞİLDİR — yalnız ikincisi pending gösterilir). */
+  sectionId: string | null;
   grossTotal: string;
   netTotal: string;
   status: SubcontractorPaymentStatus;
@@ -115,6 +121,7 @@ export function useSiteSubcontractorPayments(
         subcontractorName: payment.subcontractor_name ?? "—",
         sequenceNo: payment.sequence_no,
         workCategory: contract.workCategory,
+        sectionId: payment.section_id,
         grossTotal: payment.gross_total,
         netTotal: payment.net_total,
         status: payment.status,

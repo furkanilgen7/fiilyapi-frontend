@@ -239,6 +239,7 @@ describe("SiteHakedislerPage rotasi", () => {
       subcontractorName: "Akın İnşaat",
       sequenceNo: 47,
       workCategory: "Betonarme İşleri",
+      sectionId: null,
       grossTotal: "1240000.00",
       netTotal: "1016800.00",
       status: "pending_approval" as const,

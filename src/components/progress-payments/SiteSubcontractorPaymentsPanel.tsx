@@ -4,9 +4,9 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge/Badge";
 import { formatCurrencyPrecise } from "@/lib/format";
-import { pendingModuleLabel } from "@/lib/pending-modules";
 import type { SiteSubcontractorPaymentItem } from "@/lib/api/hooks/useSiteSubcontractorPayments";
 
+import { buildSubcontractorRowSubtitle } from "./shared/subcontractor-row-subtitle";
 import { PAYMENT_STATUS_BADGE } from "./shared/status";
 
 // Şantiye "Hakedişler" sekmesi sağ sütunu (F-TH T5, mockup satır 135-166:
@@ -55,6 +55,11 @@ export function SiteSubcontractorPaymentsPanel({
 function SubcontractorPaymentRow({ item }: { item: SiteSubcontractorPaymentItem }) {
   const badge = PAYMENT_STATUS_BADGE[item.status];
   const href = `/hakedisler/taseron/${item.id}`;
+  // Fix round 1 (coordinator review) — bileşik alt metin ("iş kategorisi ·
+  // bölüm", mockup satır 141): iki parçanın "bilinmiyor" hâli AYRI anlamlar
+  // taşıdığından `buildSubcontractorRowSubtitle` bunları ayırt eder (bkz.
+  // dosyanın başlığı) — bölüm bileşeni artık HİÇ kaybolmaz.
+  const subtitle = buildSubcontractorRowSubtitle(item.workCategory, item.sectionId);
 
   return (
     <li className="pp-row">
@@ -67,17 +72,24 @@ function SubcontractorPaymentRow({ item }: { item: SiteSubcontractorPaymentItem 
           <p className="pp-row__title">
             {item.subcontractorName} #{item.sequenceNo}
           </p>
-          {/* Zarif düşüş: "bölüm" (section) adı hiçbir uçtan gelmiyor
-              (yalnız `section_id` var, isim çözümü bu dilimin kapsamında
-              değil) — mockup'ın kategori-yalnız satırlarıyla (ör. "Elektrik
-              Tesisatı") tutarlı biçimde yalnızca iş kategorisi basılır. İş
-              kategorisi sözleşme detayından GERÇEK değerdir (bu hook zaten
-              site_id süzmesi için sözleşme detayını çekiyor). */}
-          {item.workCategory ? (
-            <p className="pp-row__desc">{item.workCategory}</p>
+          {subtitle.isCombinedPending ? (
+            <p className="pp-row__desc" title={subtitle.combinedPendingTitle}>
+              —<span className="sr-only">{subtitle.combinedPendingTitle}</span>
+            </p>
           ) : (
-            <p className="pp-row__desc" title={pendingModuleLabel("work_category")}>
-              —<span className="sr-only">{pendingModuleLabel("work_category")}</span>
+            <p className="pp-row__desc">
+              {subtitle.segments.map((segment, index) => (
+                <span key={index}>
+                  {index > 0 && " · "}
+                  {segment.kind === "text" ? (
+                    <span>{segment.value}</span>
+                  ) : (
+                    <span title={segment.title}>
+                      —<span className="sr-only">{segment.title}</span>
+                    </span>
+                  )}
+                </span>
+              ))}
             </p>
           )}
         </div>

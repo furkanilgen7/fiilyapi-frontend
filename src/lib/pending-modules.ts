@@ -31,6 +31,12 @@ const MODULE_LABELS: Record<string, string> = {
   // şema bu alanı BUGÜN her zaman `null` döndürüyor (bkz. openapi açıklaması).
   pdf_export: "Dışa aktarma modülüyle birlikte gelir",
   contract_progress: "Sözleşme ilerleme özetiyle birlikte gelir",
+  // F-TH T5 fix round 1 (coordinator review) — taşeron hakedişi satırında
+  // bölüm KİMLİĞİ (`section_id`) var ama ADINI çözecek bir uç/hook bu
+  // dilimde YOK. `section_id === null` (gerçekten "Tüm Bölümler") bu
+  // etiketi KULLANMAZ — yalnız `section_id` DOLU olup adı çözülemeyen
+  // durumda gösterilir.
+  section_name: "Bölüm adı çözümlemesiyle birlikte gelir",
 };
 
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";

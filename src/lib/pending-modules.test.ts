@@ -31,6 +31,10 @@ describe("pendingModuleLabel", () => {
     expect(pendingModuleLabel("progress")).toBe("İlerleme takibiyle birlikte gelir");
   });
 
+  it("F-TH T5 fix round 1 anahtarini esler (bolum adi cozumlemesi)", () => {
+    expect(pendingModuleLabel("section_name")).toBe("Bölüm adı çözümlemesiyle birlikte gelir");
+  });
+
   it("bilinmeyen anahtarda genel metin doner", () => {
     expect(pendingModuleLabel("bilinmeyen")).toBe("İlgili modülle birlikte gelir");
   });

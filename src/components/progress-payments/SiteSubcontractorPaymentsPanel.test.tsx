@@ -11,6 +11,7 @@ function item(overrides: Partial<SiteSubcontractorPaymentItem>): SiteSubcontract
     subcontractorName: "Akın İnşaat",
     sequenceNo: 47,
     workCategory: "Betonarme İşleri",
+    sectionId: null,
     grossTotal: "1240000.00",
     netTotal: "1016800.00",
     status: "pending_approval",
@@ -71,6 +72,52 @@ describe("SiteSubcontractorPaymentsPanel", () => {
     expect(screen.getByText("Akın İnşaat #47")).toBeInTheDocument();
     const pending = screen.getByTitle("İş kategorisi alanıyla birlikte gelir");
     expect(pending).toHaveTextContent("—");
+  });
+
+  // Fix round 1 (coordinator review) — alt metin BİLEŞİK ("iş kategorisi ·
+  // bölüm"); bölüm bileşeni artık HİÇ kaybolmuyor.
+  describe("alt metin: iş kategorisi · bölüm (fix round 1)", () => {
+    it("(a) section_id DOLU ama adı çözülemiyorsa bölüm parçası pending gösterilir, kategori GERÇEK kalır", () => {
+      render(
+        <SiteSubcontractorPaymentsPanel
+          items={[item({ workCategory: "Elektrik Tesisatı", sectionId: "sec-9" })]}
+          isLoading={false}
+          isError={false}
+        />,
+      );
+      expect(screen.getByText("Elektrik Tesisatı")).toBeInTheDocument();
+      const pending = screen.getByTitle("Bölüm adı çözümlemesiyle birlikte gelir");
+      expect(pending).toHaveTextContent("—");
+    });
+
+    it("(b) section_id NULL ise 'Tüm Bölümler' GERÇEK metnini basar (pending DEĞİL)", () => {
+      render(
+        <SiteSubcontractorPaymentsPanel
+          items={[item({ workCategory: "Elektrik Tesisatı", sectionId: null })]}
+          isLoading={false}
+          isError={false}
+        />,
+      );
+      expect(screen.getByText("Tüm Bölümler")).toBeInTheDocument();
+      expect(screen.queryByTitle("Bölüm adı çözümlemesiyle birlikte gelir")).not.toBeInTheDocument();
+    });
+
+    it("(c) kategori VE bölüm birlikte pending ise TEK birleşik gösterge basılır ('— · —' üretmez)", () => {
+      render(
+        <SiteSubcontractorPaymentsPanel
+          items={[item({ workCategory: null, sectionId: "sec-9" })]}
+          isLoading={false}
+          isError={false}
+        />,
+      );
+      // Tek bir "—" — iki ayrı pending tire yan yana DEĞİL.
+      const dashes = screen.getAllByText("—");
+      expect(dashes).toHaveLength(1);
+      expect(dashes[0]).toHaveAttribute(
+        "title",
+        "İş kategorisi alanıyla birlikte gelir; Bölüm adı çözümlemesiyle birlikte gelir",
+      );
+    });
   });
 
   it("is_revision_required true ise durum yerine kırmızı 'Revize Gerekli' rozeti basar", () => {

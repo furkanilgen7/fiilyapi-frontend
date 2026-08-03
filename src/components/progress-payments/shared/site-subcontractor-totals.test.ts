@@ -10,6 +10,7 @@ function item(overrides: Partial<SiteSubcontractorPaymentItem>): SiteSubcontract
     subcontractorName: "Akın İnşaat",
     sequenceNo: 47,
     workCategory: "Betonarme İşleri",
+    sectionId: null,
     grossTotal: "0.00",
     netTotal: "0.00",
     status: "paid",
