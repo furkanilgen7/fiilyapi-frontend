@@ -1,0 +1,515 @@
+/* Şantiye Günlüğü — "Kayıt Gir" ekranı (F-SD T2).
+   Kanon: projedesign/"Şantiye - Günlük Kayıt.dc.html" (GK) +
+   "Ekran 7 - Şantiye Günlüğü Girişi.dc.html" (E7). Parantez içi sayılar o
+   dosyaların SATIR numaralarıdır; göz kararı ölçü yoktur. Çıplak hex yasak —
+   tüm renkler tokens.css'ten. */
+
+/* İçerik alanı ofseti burada DEĞİL — drill-sidebar.css `.drill-content`
+   kuralında (site-detail.css / section-detail.css ile aynı gerekçe). */
+
+/* ── Başlık şeridi (GK158-171) ─────────────────────────────────────────── */
+.diary__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin: 20px 0;
+}
+/* GK160 */
+.diary__title {
+  font-size: 22px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  letter-spacing: -0.3px;
+}
+/* GK161 */
+.diary__subtitle {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+/* GK163 */
+.diary__head-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* ── Mod anahtarı (GK164-168) ──────────────────────────────────────────── */
+.diary-mode {
+  display: flex;
+  gap: 2px;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-9);
+  padding: 3px;
+}
+.diary-mode__item {
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-7);
+  text-decoration: none;
+}
+/* GK165 — aktif görünüm */
+.diary-mode__item--active {
+  background: var(--color-surface);
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-card);
+}
+/* GK166 — Planlama: rota F-PL diliminde, devre dışı + gerekçe (title) */
+.diary-mode__item--disabled {
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+}
+.diary-mode__item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ── Durum / uyarı satırları ───────────────────────────────────────────── */
+.diary__status-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 22px;
+  margin-bottom: var(--space-2);
+  flex-wrap: wrap;
+}
+.diary__status-note {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.diary__notice {
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: var(--space-2) var(--space-3);
+  margin-top: var(--space-2);
+  line-height: var(--leading-normal);
+}
+.diary__message {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  padding: var(--space-3) 0;
+}
+.diary__error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 12px;
+  color: var(--color-danger-strong);
+  background: var(--color-danger-tint);
+  border: 1px solid var(--color-danger-tint-border);
+  border-radius: var(--radius-8);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.diary__error-action {
+  margin-left: auto;
+}
+
+/* ── Izgara (GK173): sol form / sağ özet ───────────────────────────────── */
+.diary__grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+  align-items: start;
+}
+/* GK176 */
+.diary__col--main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+/* GK353 */
+.diary__col--side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Ortak kart kabuğu (GK179, 206, 269, 275, 322) ─────────────────────── */
+.diary-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14);
+  box-shadow: var(--shadow-card);
+  padding: 18px;
+}
+/* GK387/414/441 — sağ sütun kartları 16px iç boşlukludur */
+.diary-card--side {
+  padding: 16px;
+}
+.diary-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: 14px;
+}
+/* GK180/209/270/277/323 — 13/600 */
+.diary-card__title {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin-bottom: 14px;
+}
+.diary-card__head .diary-card__title {
+  margin-bottom: 0;
+}
+/* GK210 */
+.diary-card__subtitle {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+/* GK278 */
+.diary-card__meta {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}
+.diary-card__link {
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.diary-card__link--disabled {
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+}
+
+/* ── Temel Bilgiler (GK181): dört sütun ────────────────────────────────── */
+.diary-basic__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+/* ── Serbest metin alanları (GK271, E7 143, GK447) ─────────────────────── */
+.diary-textarea {
+  width: 100%;
+  resize: none;
+}
+/* GK271: 90px */
+.diary-textarea--lg {
+  height: 90px;
+}
+/* GK447: 52px */
+.diary-textarea--sm {
+  height: 52px;
+  margin-top: 2px;
+}
+
+/* ── İş Kalemi Girişi tablosu (GK214-260) ──────────────────────────────── */
+.diary-lines__badge {
+  white-space: nowrap;
+}
+.diary-lines__empty {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px dashed var(--color-dashed-border);
+  border-radius: var(--radius-8);
+  padding: var(--space-4);
+  text-align: center;
+  line-height: var(--leading-normal);
+}
+.diary-lines {
+  width: 100%;
+  border-collapse: collapse;
+}
+/* GK216-221 — başlık satırı */
+.diary-lines thead tr {
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.diary-lines th {
+  padding: 8px 10px;
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-section-head);
+}
+.diary-lines__col-item {
+  text-align: left;
+  padding-left: 12px;
+}
+.diary-lines__col-unit {
+  text-align: center;
+  width: 55px;
+}
+.diary-lines__col-today,
+.diary-lines__col-cumulative {
+  text-align: right;
+  width: 100px;
+}
+/* GK221 — "Hakediş (₺)" başlığı MAVİ */
+.diary-lines__col-amount {
+  text-align: right;
+  width: 110px;
+  color: var(--color-primary);
+}
+.diary-lines tbody tr {
+  border-bottom: 1px solid var(--color-divider);
+}
+.diary-lines tbody tr:last-child {
+  border-bottom: none;
+}
+.diary-lines td {
+  padding: 10px;
+}
+/* GK226 */
+.diary-lines__item {
+  padding-left: 12px;
+}
+.diary-lines__item-name {
+  display: block;
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.diary-lines__item-meta {
+  display: block;
+  font-size: 10px;
+  color: var(--color-text-subtle);
+}
+/* GK227 */
+.diary-lines__unit {
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+/* GK228 — girilebilir tek sütun */
+.diary-lines__today {
+  text-align: right;
+}
+.diary-lines__qty {
+  width: 80px;
+  text-align: right;
+  background: var(--color-nav-active-bg);
+  border-color: var(--color-primary-ring);
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+}
+.diary-lines__orphan {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+/* GK229 */
+.diary-lines__cumulative {
+  text-align: right;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+}
+/* GK230 */
+.diary-lines__amount {
+  text-align: right;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-success);
+  font-family: var(--font-mono);
+}
+/* GK255-258 — tfoot */
+.diary-lines__total-row {
+  background: var(--color-success-tint);
+  border-top: var(--border-width-total) solid var(--color-success);
+}
+.diary-lines__total-row td {
+  padding: 10px 12px;
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.diary-lines__total-amount {
+  text-align: right;
+  font-size: 15px;
+  color: var(--color-success);
+  font-family: var(--font-mono);
+}
+/* GK261-265 — bilgi kutusu */
+.diary-lines__info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: var(--color-nav-active-bg);
+  border-radius: var(--radius-8);
+}
+.diary-lines__info-icon {
+  display: inline-flex;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+.diary-lines__info-text {
+  font-size: 12px;
+  color: var(--color-primary-hover);
+}
+.diary-lines__info-link {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.diary-lines__info-link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ── Fotoğraflar (GK274-318) — PENDING, kontroller devre dışı ──────────── */
+.diary-photos__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 12px 0;
+}
+.diary-photos__tile {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-8);
+  border: 1px dashed var(--color-dashed-border);
+  background: var(--color-surface-2);
+}
+.diary-photos__tile--disabled {
+  opacity: 0.6;
+}
+.diary-photos__plus {
+  font-size: 28px;
+  color: var(--color-border-strong);
+}
+.diary-photos__tile-label {
+  font-size: 10px;
+  color: var(--color-text-subtle);
+  margin-top: 4px;
+}
+/* GK313-318 */
+.diary-photos__drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 80px;
+  border: 2px dashed var(--color-dashed-border);
+  border-radius: var(--radius-10);
+  background: var(--color-surface-2);
+  padding: 20px;
+  color: var(--color-text-subtle);
+}
+.diary-photos__drop--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.diary-photos__drop-title {
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+  font-weight: var(--weight-medium);
+}
+.diary-photos__drop-hint {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* ── Planlama bloğu (GK321-348) — SALT-OKUNUR ──────────────────────────── */
+.diary-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  list-style: none;
+  margin-top: var(--space-3);
+}
+/* GK326 */
+.diary-plan__row {
+  display: grid;
+  grid-template-columns: 90px 1fr 80px 120px;
+  gap: 10px;
+  align-items: center;
+}
+/* GK340 — planlanmamış gün soluk */
+.diary-plan__row--empty {
+  opacity: 0.6;
+}
+/* GK327 */
+.diary-plan__date {
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  text-align: center;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-8);
+  padding: 8px;
+}
+.diary-plan__weekday {
+  display: block;
+  font-size: 10px;
+  font-weight: var(--weight-regular);
+  color: var(--color-text-subtle);
+}
+/* GK328 — mockup'ta textarea; salt-okunur türev olduğu için metin */
+.diary-plan__text {
+  font-size: 12px;
+  color: var(--color-text);
+  line-height: 1.4;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: 7px 10px;
+  min-height: 54px;
+}
+/* GK329-330 */
+.diary-plan__metric {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.diary-plan__metric-label {
+  font-size: 10px;
+  color: var(--color-text-subtle);
+}
+.diary-plan__metric-value {
+  font-size: 12px;
+  color: var(--color-text);
+  text-align: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-6);
+  padding: 5px 8px;
+  background: var(--color-surface-2);
+}
+.diary-plan__metric-value--text {
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── İş Güvenliği (GK441-449) ──────────────────────────────────────────── */
+.diary-safety__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-checkbox-list-gap);
+}
+
+/* Dar ekranda tek sütuna düşer — yatay taşma bırakılmaz. */
+@media (max-width: 1200px) {
+  .diary__grid {
+    grid-template-columns: 1fr;
+  }
+  .diary-basic__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
