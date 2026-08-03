@@ -394,6 +394,8 @@ interface MockState {
   // bağlı, bkz. SUBCONTRACTOR_CONTRACTS yorumu).
   subcontractorContracts: MockSubcontractorContract[];
   subcontractorProgressPayments: MockSubcontractorProgressPayment[];
+  // F-SD T1 — Şantiye Günlüğü kayıtları (bkz. buildDiaryEntryFixtures).
+  diaryEntries: MockDiaryEntry[];
   permissions: Record<string, Record<string, { access_level: string; scope: string }>>;
   projectAccess: Record<string, { all_projects: boolean; project_ids: string[] }>;
   company: {
@@ -1694,6 +1696,7 @@ function seedState(): MockState {
     progressPayments: buildProgressPaymentFixtures(),
     subcontractorContracts: SUBCONTRACTOR_CONTRACTS,
     subcontractorProgressPayments: buildSubcontractorProgressPaymentFixtures(),
+    diaryEntries: buildDiaryEntryFixtures(),
     permissions,
     projectAccess: {
       "u-1": { all_projects: true, project_ids: [] },
@@ -1864,6 +1867,332 @@ function validateSectionInput(input: {
   }
   if (input.budget_amount === null) return "Bölüm bedeli zorunludur.";
   return null;
+}
+
+// --- F-SD T1 · Şantiye Günlüğü fikstürleri --------------------------------
+// Satır iskeleti BOQ pozlarından üretilir (gerçek backend de öyle yapar:
+// `POST /sites/{id}/diary` gövdesinde `lines[]` YOKTUR). Kayıtlar mevcut
+// evrene bağlanır: proje p-1, şantiyeler s-1 / s-2.
+
+/**
+ * Mock'un günlük→sözleşme köprüsü. Gerçekte köprü BOQ kaleminin sözleşme
+ * kalemine bağlanmasıyla kurulur (backend işi); burada açık bir eşleme
+ * tablosu tutulur ki "Günlükten Doldur" akışı e2e'de gerçek veriyle
+ * çalışsın. Eşlemesi OLMAYAN poz önerilere GİRMEZ ve
+ * `skipped_unbridged_count`a sayılır — üst kural: sessizce yutma yok.
+ */
+const DIARY_BOQ_BRIDGE: Record<string, { employerItemId?: string; subcontractorItemId?: string }> = {
+  "bi-3": { employerItemId: "ci-1" }, // C25/30 Beton → Kat Döşemesi C25/30
+  "bi-4": { employerItemId: "ci-3" }, // Demir Donatı → Nervürlü Demir
+  "bi-5": { subcontractorItemId: "sci-4" }, // Tuğla Duvar → Duvar Örgü İşleri (sc-2)
+  "bi-6": { subcontractorItemId: "sci-5" }, // İç Sıva → Sıva İşleri (sc-2)
+};
+
+interface MockDiaryLine {
+  id: string;
+  boq_item_id: string;
+  code: string;
+  description: string;
+  unit: string;
+  unit_price: string;
+  quantity: string;
+}
+interface MockDiaryWorkerCount {
+  id: string;
+  trade: string;
+  source: "company" | "subcontractor" | "general";
+  count: number;
+}
+interface MockDiaryEntry {
+  id: string;
+  site_id: string;
+  project_id: string;
+  entry_date: string;
+  section_id: string | null;
+  weather: string | null;
+  temperature_c: string | null;
+  work_done: string | null;
+  chief_note: string | null;
+  safety_meeting_held: boolean;
+  ppe_checked: boolean;
+  has_incident: boolean;
+  incident_note: string | null;
+  status: "draft" | "submitted";
+  submitted_at: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  lines: MockDiaryLine[];
+  worker_counts: MockDiaryWorkerCount[];
+}
+
+const ALL_BOQ_ITEMS = BOQ_FIXTURE.flatMap((g) => g.items);
+
+/** Yeni kaydın satır iskeleti: TÜM BOQ pozları, miktar sıfır. */
+function buildDiaryLineSkeleton(entryId: string, quantities: Record<string, number> = {}): MockDiaryLine[] {
+  return ALL_BOQ_ITEMS.map((item) => ({
+    id: `${entryId}-l-${item.id}`,
+    boq_item_id: item.id,
+    code: item.code,
+    description: item.description,
+    unit: item.unit,
+    unit_price: item.unit_price,
+    quantity: qty3(quantities[item.id] ?? 0),
+  }));
+}
+
+/**
+ * Kümülatif miktar: AYNI şantiyede, AYNI poz için, bu güne KADAR (dahil)
+ * girilmiş miktarların toplamı. Ekran bu türevi hesaplamaz, yanıttan okur.
+ */
+function diaryCumulativeQuantity(state: MockState, entry: MockDiaryEntry, boqItemId: string): number {
+  return state.diaryEntries
+    .filter((e) => e.site_id === entry.site_id && e.entry_date <= entry.entry_date)
+    .flatMap((e) => e.lines.filter((l) => l.boq_item_id === boqItemId))
+    .reduce((sum, l) => sum + Number(l.quantity), 0);
+}
+
+function buildDiaryLineRead(state: MockState, entry: MockDiaryEntry, line: MockDiaryLine) {
+  return {
+    id: line.id,
+    boq_item_id: line.boq_item_id,
+    code: line.code,
+    description: line.description,
+    unit: line.unit,
+    unit_price: line.unit_price,
+    quantity: line.quantity,
+    cumulative_quantity: qty3(diaryCumulativeQuantity(state, entry, line.boq_item_id)),
+    line_amount: money2(Number(line.quantity) * Number(line.unit_price)),
+  };
+}
+
+function diaryLinesTotal(entry: MockDiaryEntry): number {
+  return entry.lines.reduce((sum, l) => sum + Number(l.quantity) * Number(l.unit_price), 0);
+}
+
+function diaryWorkerTotal(entry: MockDiaryEntry): number {
+  return entry.worker_counts.reduce((sum, w) => sum + w.count, 0);
+}
+
+function buildDiaryEntryDetail(state: MockState, entry: MockDiaryEntry) {
+  return {
+    id: entry.id,
+    site_id: entry.site_id,
+    project_id: entry.project_id,
+    entry_date: entry.entry_date,
+    section_id: entry.section_id,
+    weather: entry.weather,
+    temperature_c: entry.temperature_c,
+    work_done: entry.work_done,
+    chief_note: entry.chief_note,
+    safety_meeting_held: entry.safety_meeting_held,
+    ppe_checked: entry.ppe_checked,
+    has_incident: entry.has_incident,
+    incident_note: entry.incident_note,
+    status: entry.status,
+    submitted_at: entry.submitted_at,
+    created_by: entry.created_by,
+    created_at: entry.created_at,
+    updated_at: entry.updated_at,
+    lines: entry.lines.map((l) => buildDiaryLineRead(state, entry, l)),
+    worker_counts: entry.worker_counts,
+    lines_total: money2(diaryLinesTotal(entry)),
+    worker_total: diaryWorkerTotal(entry),
+    dropped_orphan_count: 0,
+  };
+}
+
+function buildDiaryEntryListItem(entry: MockDiaryEntry) {
+  return {
+    id: entry.id,
+    site_id: entry.site_id,
+    project_id: entry.project_id,
+    entry_date: entry.entry_date,
+    section_id: entry.section_id,
+    weather: entry.weather,
+    has_incident: entry.has_incident,
+    status: entry.status,
+    worker_total: diaryWorkerTotal(entry),
+    lines_total: money2(diaryLinesTotal(entry)),
+    created_by: entry.created_by,
+    created_at: entry.created_at,
+  };
+}
+
+/** `YYYY-MM-DD` → yıl/ay; string karşılaştırması yeterli, Date kurulmaz. */
+function diaryEntryInPeriod(entry: MockDiaryEntry, year: number | null, month: number | null): boolean {
+  if (year !== null && Number(entry.entry_date.slice(0, 4)) !== year) return false;
+  if (month !== null && Number(entry.entry_date.slice(5, 7)) !== month) return false;
+  return true;
+}
+
+/**
+ * Fikstür kayıtları BİLEREK GEÇMİŞ günlerdedir (2026-07-15/16): bugünün
+ * tarihi boş kalsın ki "bugüne kayıt aç" akışı e2e'de 409'a takılmasın.
+ * İki kayıt + bir taslak — sağ paneldeki "Son Kayıtlar" listesi kadrajı
+ * bozacak kadar uzamasın (P7 dersi).
+ */
+function buildDiaryEntryFixtures(): MockDiaryEntry[] {
+  return [
+    {
+      id: "d-1", site_id: "s-1", project_id: "p-1", entry_date: "2026-07-15",
+      section_id: "sec-1", weather: "sunny", temperature_c: "28.0",
+      work_done: "6. kat döşeme betonu döküldü.", chief_note: "Beton pompası 08:00'de sahada.",
+      safety_meeting_held: true, ppe_checked: true, has_incident: false, incident_note: null,
+      status: "submitted", submitted_at: "2026-07-15T17:30:00Z",
+      created_by: "u-2", created_at: "2026-07-15T08:00:00Z", updated_at: "2026-07-15T17:30:00Z",
+      lines: buildDiaryLineSkeleton("d-1", { "bi-3": 120, "bi-4": 8.5, "bi-5": 240 }),
+      worker_counts: [
+        { id: "d-1-w-1", trade: "Betoncu", source: "company", count: 12 },
+        { id: "d-1-w-2", trade: "Kalıpçı", source: "subcontractor", count: 8 },
+        { id: "d-1-w-3", trade: "Düz İşçi", source: "general", count: 6 },
+      ],
+    },
+    {
+      id: "d-2", site_id: "s-1", project_id: "p-1", entry_date: "2026-07-16",
+      section_id: "sec-1", weather: "rainy", temperature_c: "19.0",
+      work_done: "Yağış nedeniyle beton dökümü ertelendi.", chief_note: null,
+      safety_meeting_held: true, ppe_checked: false, has_incident: false, incident_note: null,
+      status: "draft", submitted_at: null,
+      created_by: "u-2", created_at: "2026-07-16T08:00:00Z", updated_at: "2026-07-16T09:15:00Z",
+      lines: buildDiaryLineSkeleton("d-2", { "bi-6": 180 }),
+      worker_counts: [{ id: "d-2-w-1", trade: "Sıvacı", source: "subcontractor", count: 5 }],
+    },
+    {
+      id: "d-3", site_id: "s-2", project_id: "p-1", entry_date: "2026-07-15",
+      section_id: null, weather: "partly_cloudy", temperature_c: "26.0",
+      work_done: "Duvar örgü ve sıva imalatı sürdü.", chief_note: null,
+      safety_meeting_held: true, ppe_checked: true, has_incident: false, incident_note: null,
+      status: "submitted", submitted_at: "2026-07-15T18:00:00Z",
+      created_by: "u-2", created_at: "2026-07-15T08:00:00Z", updated_at: "2026-07-15T18:00:00Z",
+      lines: buildDiaryLineSkeleton("d-3", { "bi-5": 320, "bi-6": 260 }),
+      worker_counts: [{ id: "d-3-w-1", trade: "Duvarcı", source: "subcontractor", count: 10 }],
+    },
+  ];
+}
+
+/**
+ * Poz bazlı aylık birikim — YALNIZ `submitted` günler (gerçek backend de
+ * öyle: taslak gün hakedişe girmez).
+ */
+function buildDiarySummary(
+  state: MockState,
+  siteId: string,
+  year: number | null,
+  month: number | null,
+) {
+  const entries = state.diaryEntries.filter(
+    (e) => e.site_id === siteId && e.status === "submitted" && diaryEntryInPeriod(e, year, month),
+  );
+  const items = ALL_BOQ_ITEMS.map((item) => {
+    const quantity = entries
+      .flatMap((e) => e.lines.filter((l) => l.boq_item_id === item.id))
+      .reduce((sum, l) => sum + Number(l.quantity), 0);
+    const unitPrice = Number(item.unit_price);
+    const boqQuantity = Number(item.quantity);
+    return {
+      boq_item_id: item.id,
+      code: item.code,
+      description: item.description,
+      unit: item.unit,
+      unit_price: item.unit_price,
+      quantity: qty3(quantity),
+      amount: money2(quantity * unitPrice),
+      boq_quantity: item.quantity,
+      boq_amount: money2(boqQuantity * unitPrice),
+      completion_ratio: boqQuantity > 0 ? ((quantity / boqQuantity) * 100).toFixed(2) : null,
+      contract_item_id: DIARY_BOQ_BRIDGE[item.id]?.employerItemId ?? null,
+      contract_item_quantity: null,
+      contract_item_unit_price: null,
+    };
+  }).filter((row) => Number(row.quantity) > 0);
+  return {
+    site_id: siteId,
+    year,
+    month,
+    entry_count: entries.length,
+    items,
+    total_amount: money2(items.reduce((sum, row) => sum + Number(row.amount), 0)),
+  };
+}
+
+/** `YYYY-MM-DD` + gün sayısı → tarih dizisi (UTC, saat dilimi kayması yok). */
+function addDaysIso(startIso: string, offset: number): string {
+  const base = new Date(`${startIso}T00:00:00Z`);
+  base.setUTCDate(base.getUTCDate() + offset);
+  return base.toISOString().slice(0, 10);
+}
+
+/**
+ * `GET /sites/{id}/plan/day-summary` — GK'nin gömülü planlama bloğu.
+ * Planı OLMAYAN gün de bir kutudur (`has_plan: false`); hafta sonu ayrı
+ * biçim alır, bu yüzden `is_weekend` türevi de döner.
+ */
+function buildPlanDaySummaryRange(state: MockState, siteId: string, start: string, days: number) {
+  const site = state.sites.find((s) => s.id === siteId);
+  const project = state.projects.find((p) => p.id === site?.project_id);
+  const planTexts = [
+    "6. kat döşeme betonu",
+    "Kalıp sökümü + temizlik",
+    "",
+    "Duvar örgü (A aksı)",
+    "İç sıva başlangıcı",
+  ];
+  const dayList = Array.from({ length: days }, (_, index) => {
+    const planDate = addDaysIso(start, index);
+    const weekday = new Date(`${planDate}T00:00:00Z`).getUTCDay();
+    const isWeekend = weekday === 0 || weekday === 6;
+    const text = isWeekend ? "" : (planTexts[index % planTexts.length] ?? "");
+    return {
+      plan_date: planDate,
+      is_weekend: isWeekend,
+      has_plan: text !== "",
+      text,
+      planned_worker_total: text !== "" ? 18 + index : 0,
+      section_names: text !== "" ? ["Kat 6–10 Kaba İnşaat"] : [],
+    };
+  });
+  return {
+    site_id: siteId,
+    site_name: site?.name ?? "",
+    project_id: site?.project_id ?? "",
+    project_name: project?.name ?? "",
+    start,
+    end: addDaysIso(start, days - 1),
+    days: dayList,
+  };
+}
+
+/**
+ * Günlükten türetilen hakediş önerisi. İKİ uç da AYNI kuralı izler: yalnız
+ * `submitted` günler, yalnız köprüsü olan pozlar; köprüsüz pozlar
+ * `skipped_unbridged_count`a sayılır ve `reason` bunu açıkça söyler.
+ */
+function buildDiarySuggestionRows(
+  entries: MockDiaryEntry[],
+  bridgeKey: "employerItemId" | "subcontractorItemId",
+  allowedItemIds: string[] | null,
+): { rows: Map<string, { siteId: string; quantity: number }>; skipped: number } {
+  const rows = new Map<string, { siteId: string; quantity: number }>();
+  let skipped = 0;
+  for (const entry of entries) {
+    for (const line of entry.lines) {
+      const quantity = Number(line.quantity);
+      if (quantity <= 0) continue;
+      const targetId = DIARY_BOQ_BRIDGE[line.boq_item_id]?.[bridgeKey];
+      if (!targetId || (allowedItemIds !== null && !allowedItemIds.includes(targetId))) {
+        skipped += 1;
+        continue;
+      }
+      const key = `${targetId}|${entry.site_id}`;
+      const existing = rows.get(key);
+      rows.set(key, {
+        siteId: entry.site_id,
+        quantity: (existing?.quantity ?? 0) + quantity,
+      });
+    }
+  }
+  return { rows, skipped };
 }
 
 // Gercek FastAPI yerine gecen minik mock — hermetik E2E icin.
@@ -2773,6 +3102,287 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const contract = state.subcontractorContracts.find((c) => c.id === subcontractorContractIdMatch[1]);
       if (!contract) return send(404, { detail: "sozlesme yok" });
       return send(200, buildSubcontractorContractDetailResponse(contract));
+    }
+
+    // --- F-SD T1 · Şantiye Günlüğü uçları ---------------------------------
+    // Taslak-DIŞI kurallar burada da geçerlidir (gerçek backend gibi):
+    // `submitted` kayda PATCH/PUT lines 409 döner, aynı güne ikinci POST 409
+    // döner. Aksi halde e2e "yeşil" olur ama canlıda akış kırılır.
+
+    const diaryPeriod = (): { year: number | null; month: number | null } => ({
+      year: parsed.searchParams.get("year") !== null ? Number(parsed.searchParams.get("year")) : null,
+      month: parsed.searchParams.get("month") !== null ? Number(parsed.searchParams.get("month")) : null,
+    });
+
+    // GET /sites/{site_id}/diary/summary — poz bazlı aylık birikim
+    // (tekil `/sites/{id}/diary` rotasından ÖNCE kontrol edilir).
+    const diarySummaryMatch = path.match(/^\/sites\/([^/]+)\/diary\/summary$/);
+    if (method === "GET" && diarySummaryMatch) {
+      const site = state.sites.find((s) => s.id === diarySummaryMatch[1]);
+      if (!site) return send(404, { detail: "santiye yok" });
+      const { year, month } = diaryPeriod();
+      return send(200, buildDiarySummary(state, site.id, year, month));
+    }
+
+    // GET /sites/{site_id}/plan/day-summary — GK'nin gömülü planlama bloğu
+    // (SALT-OKUNUR). `start` ZORUNLU; eksikse gerçek backend 422 döner.
+    const planDaySummaryMatch = path.match(/^\/sites\/([^/]+)\/plan\/day-summary$/);
+    if (method === "GET" && planDaySummaryMatch) {
+      const site = state.sites.find((s) => s.id === planDaySummaryMatch[1]);
+      if (!site) return send(404, { detail: "santiye yok" });
+      const start = parsed.searchParams.get("start");
+      if (!start) return send(422, { detail: "start zorunlu" });
+      const daysParam = parsed.searchParams.get("days");
+      const days = daysParam !== null ? Number(daysParam) : 5;
+      return send(200, buildPlanDaySummaryRange(state, site.id, start, days));
+    }
+
+    // GET/POST /sites/{site_id}/diary — liste + kayıt açma.
+    const siteDiaryMatch = path.match(/^\/sites\/([^/]+)\/diary$/);
+    if (method === "GET" && siteDiaryMatch) {
+      const site = state.sites.find((s) => s.id === siteDiaryMatch[1]);
+      if (!site) return send(404, { detail: "santiye yok" });
+      const { year, month } = diaryPeriod();
+      const limit = Number(parsed.searchParams.get("limit") ?? "50");
+      const offset = Number(parsed.searchParams.get("offset") ?? "0");
+      const filtered = state.diaryEntries
+        .filter((e) => e.site_id === site.id && diaryEntryInPeriod(e, year, month))
+        .sort((a, b) => b.entry_date.localeCompare(a.entry_date) || a.id.localeCompare(b.id));
+      return send(200, {
+        items: filtered.slice(offset, offset + limit).map(buildDiaryEntryListItem),
+        total: filtered.length,
+        limit,
+        offset,
+      });
+    }
+    if (method === "POST" && siteDiaryMatch) {
+      const site = state.sites.find((s) => s.id === siteDiaryMatch[1]);
+      if (!site) return send(404, { detail: "santiye yok" });
+      return withBody((body) => {
+        const entryDate = String(body.entry_date ?? "");
+        if (!entryDate) return send(422, { detail: "entry_date zorunlu" });
+        // Günde TEK kayıt: aynı güne ikinci POST 409 (spec §2).
+        const clash = state.diaryEntries.find(
+          (e) => e.site_id === site.id && e.entry_date === entryDate,
+        );
+        if (clash) {
+          return send(409, { detail: "Bu güne ait günlük kayıt zaten var." });
+        }
+        const id = `d-${state.diaryEntries.length + 1}`;
+        const now = new Date().toISOString();
+        const entry: MockDiaryEntry = {
+          id,
+          site_id: site.id,
+          project_id: site.project_id,
+          entry_date: entryDate,
+          section_id: (body.section_id as string | null | undefined) ?? null,
+          weather: (body.weather as string | null | undefined) ?? null,
+          temperature_c: body.temperature_c !== undefined && body.temperature_c !== null
+            ? String(body.temperature_c)
+            : null,
+          work_done: body.work_done !== undefined && body.work_done !== null ? String(body.work_done) : null,
+          chief_note: body.chief_note !== undefined && body.chief_note !== null ? String(body.chief_note) : null,
+          safety_meeting_held: Boolean(body.safety_meeting_held),
+          ppe_checked: Boolean(body.ppe_checked),
+          has_incident: Boolean(body.has_incident),
+          incident_note:
+            body.incident_note !== undefined && body.incident_note !== null
+              ? String(body.incident_note)
+              : null,
+          // Kayıt HER ZAMAN taslak doğar; satır iskeleti BOQ'dan otomatik gelir.
+          status: "draft",
+          submitted_at: null,
+          created_by: "u-1",
+          created_at: now,
+          updated_at: now,
+          lines: buildDiaryLineSkeleton(id),
+          worker_counts: [],
+        };
+        state.diaryEntries.push(entry);
+        return send(201, buildDiaryEntryDetail(state, entry));
+      });
+    }
+
+    // POST /diary/{entry_id}/submit — taslağı gönderir (özete SOKAR).
+    const diarySubmitMatch = path.match(/^\/diary\/([^/]+)\/submit$/);
+    if (method === "POST" && diarySubmitMatch) {
+      const entry = state.diaryEntries.find((e) => e.id === diarySubmitMatch[1]);
+      if (!entry) return send(404, { detail: "gunluk kayit yok" });
+      if (entry.status !== "draft") return send(409, { detail: "Yalnızca taslak kayıt gönderilebilir." });
+      entry.status = "submitted";
+      entry.submitted_at = new Date().toISOString();
+      entry.updated_at = entry.submitted_at;
+      return send(200, buildDiaryEntryDetail(state, entry));
+    }
+
+    // POST /diary/{entry_id}/reopen — gönderilmiş kaydı yeniden taslağa alır.
+    const diaryReopenMatch = path.match(/^\/diary\/([^/]+)\/reopen$/);
+    if (method === "POST" && diaryReopenMatch) {
+      const entry = state.diaryEntries.find((e) => e.id === diaryReopenMatch[1]);
+      if (!entry) return send(404, { detail: "gunluk kayit yok" });
+      if (entry.status !== "submitted") {
+        return send(409, { detail: "Yalnızca gönderilmiş kayıt yeniden açılabilir." });
+      }
+      entry.status = "draft";
+      entry.submitted_at = null;
+      entry.updated_at = new Date().toISOString();
+      return send(200, buildDiaryEntryDetail(state, entry));
+    }
+
+    // PUT /diary/{entry_id}/lines — DEĞİŞTİRME semantiği: gövdede geçmeyen
+    // poz sıfırlanır. Yalnız TASLAK kayıtta.
+    const diaryLinesMatch = path.match(/^\/diary\/([^/]+)\/lines$/);
+    if (method === "PUT" && diaryLinesMatch) {
+      const entry = state.diaryEntries.find((e) => e.id === diaryLinesMatch[1]);
+      if (!entry) return send(404, { detail: "gunluk kayit yok" });
+      if (entry.status !== "draft") {
+        return send(409, { detail: "Gönderilmiş kayıtta satır düzenlenemez." });
+      }
+      return withBody((body) => {
+        const rawLines = Array.isArray(body.lines) ? (body.lines as Array<Record<string, unknown>>) : [];
+        const quantities: Record<string, number> = {};
+        for (const line of rawLines) {
+          const itemId = String(line.boq_item_id ?? "");
+          if (!ALL_BOQ_ITEMS.some((item) => item.id === itemId)) {
+            return send(422, { detail: "bilinmeyen boq kalemi" });
+          }
+          quantities[itemId] = Number(line.quantity ?? 0);
+        }
+        entry.lines = buildDiaryLineSkeleton(entry.id, quantities);
+        entry.updated_at = new Date().toISOString();
+        return send(200, buildDiaryEntryDetail(state, entry));
+      });
+    }
+
+    // GET/PATCH /diary/{entry_id} — tekil rota (alt-yol regex'lerinden SONRA).
+    const diaryEntryIdMatch = path.match(/^\/diary\/([^/]+)$/);
+    if (method === "GET" && diaryEntryIdMatch) {
+      const entry = state.diaryEntries.find((e) => e.id === diaryEntryIdMatch[1]);
+      if (!entry) return send(404, { detail: "gunluk kayit yok" });
+      return send(200, buildDiaryEntryDetail(state, entry));
+    }
+    if (method === "PATCH" && diaryEntryIdMatch) {
+      const entry = state.diaryEntries.find((e) => e.id === diaryEntryIdMatch[1]);
+      if (!entry) return send(404, { detail: "gunluk kayit yok" });
+      if (entry.status !== "draft") {
+        return send(409, { detail: "Gönderilmiş kayıt düzenlenemez." });
+      }
+      return withBody((body) => {
+        if (body.entry_date !== undefined && body.entry_date !== null) {
+          const nextDate = String(body.entry_date);
+          const clash = state.diaryEntries.find(
+            (e) => e.id !== entry.id && e.site_id === entry.site_id && e.entry_date === nextDate,
+          );
+          if (clash) return send(409, { detail: "Bu güne ait günlük kayıt zaten var." });
+          entry.entry_date = nextDate;
+        }
+        if (body.section_id !== undefined) entry.section_id = (body.section_id as string | null) ?? null;
+        if (body.weather !== undefined) entry.weather = (body.weather as string | null) ?? null;
+        if (body.temperature_c !== undefined) {
+          entry.temperature_c = body.temperature_c === null ? null : String(body.temperature_c);
+        }
+        if (body.work_done !== undefined) entry.work_done = (body.work_done as string | null) ?? null;
+        if (body.chief_note !== undefined) entry.chief_note = (body.chief_note as string | null) ?? null;
+        if (body.safety_meeting_held !== undefined) {
+          entry.safety_meeting_held = Boolean(body.safety_meeting_held);
+        }
+        if (body.ppe_checked !== undefined) entry.ppe_checked = Boolean(body.ppe_checked);
+        if (body.has_incident !== undefined) entry.has_incident = Boolean(body.has_incident);
+        if (body.incident_note !== undefined) {
+          entry.incident_note = (body.incident_note as string | null) ?? null;
+        }
+        // `worker_counts` DEĞİŞTİRME semantiği: gönderilmeyen (meslek, kaynak)
+        // çifti SİLİNİR.
+        if (body.worker_counts !== undefined && body.worker_counts !== null) {
+          const raw = Array.isArray(body.worker_counts)
+            ? (body.worker_counts as Array<Record<string, unknown>>)
+            : [];
+          entry.worker_counts = raw.map((w, index) => ({
+            id: `${entry.id}-w-${index + 1}`,
+            trade: String(w.trade ?? ""),
+            source: (w.source as MockDiaryWorkerCount["source"]) ?? "company",
+            count: Number(w.count ?? 0),
+          }));
+        }
+        entry.updated_at = new Date().toISOString();
+        return send(200, buildDiaryEntryDetail(state, entry));
+      });
+    }
+
+    // GET /projects/{project_id}/progress-payments/diary-suggestion —
+    // işveren hakediş formunun "Günlükten Doldur" önerisi.
+    const employerSuggestionMatch = path.match(
+      /^\/projects\/([^/]+)\/progress-payments\/diary-suggestion$/,
+    );
+    if (method === "GET" && employerSuggestionMatch) {
+      const project = state.projects.find((p) => p.id === employerSuggestionMatch[1]);
+      if (!project) return send(404, { detail: "proje yok" });
+      const { year, month } = diaryPeriod();
+      const entries = state.diaryEntries.filter(
+        (e) => e.project_id === project.id && e.status === "submitted" && diaryEntryInPeriod(e, year, month),
+      );
+      const { rows, skipped } = buildDiarySuggestionRows(entries, "employerItemId", null);
+      const lines = [...rows.entries()].map(([key, value]) => ({
+        contract_item_id: key.split("|")[0],
+        site_id: value.siteId,
+        quantity: qty3(value.quantity),
+        // Katsayı bir GÜNLÜK verisi değildir — hakedişin default'u uygulanır.
+        coefficient: null,
+      }));
+      return send(200, {
+        year,
+        month,
+        skipped_unbridged_count: skipped,
+        reason: lines.length === 0 ? "Seçilen dönemde köprülenmiş günlük kaydı bulunamadı." : null,
+        project_id: project.id,
+        lines,
+      });
+    }
+
+    // GET /subcontractor-contracts/{contract_id}/progress-payments/diary-suggestion —
+    // taşeron hakediş formunun önerisi. Sözleşme proje geneliyse (site_id
+    // null) öneri kapsam DIŞIDIR ve `reason` bunu açıkça söyler.
+    const subcontractorSuggestionMatch = path.match(
+      /^\/subcontractor-contracts\/([^/]+)\/progress-payments\/diary-suggestion$/,
+    );
+    if (method === "GET" && subcontractorSuggestionMatch) {
+      const contract = state.subcontractorContracts.find((c) => c.id === subcontractorSuggestionMatch[1]);
+      if (!contract) return send(404, { detail: "sozlesme yok" });
+      const { year, month } = diaryPeriod();
+      if (contract.site_id === null) {
+        return send(200, {
+          year,
+          month,
+          skipped_unbridged_count: 0,
+          reason: "Proje geneli sözleşmede günlükten doldurma desteklenmiyor.",
+          contract_id: contract.id,
+          site_id: null,
+          lines: [],
+        });
+      }
+      const entries = state.diaryEntries.filter(
+        (e) => e.site_id === contract.site_id && e.status === "submitted" && diaryEntryInPeriod(e, year, month),
+      );
+      const { rows, skipped } = buildDiarySuggestionRows(
+        entries,
+        "subcontractorItemId",
+        contract.items.map((i) => i.id),
+      );
+      const lines = [...rows.entries()].map(([key, value], index) => ({
+        contract_item_id: key.split("|")[0],
+        quantity: qty3(value.quantity),
+        coefficient: null,
+        sort_order: index,
+      }));
+      return send(200, {
+        year,
+        month,
+        skipped_unbridged_count: skipped,
+        reason: lines.length === 0 ? "Seçilen dönemde köprülenmiş günlük kaydı bulunamadı." : null,
+        contract_id: contract.id,
+        site_id: contract.site_id,
+        lines,
+      });
     }
 
     // /employers — Yeni Proje formu İşveren seçicisi (P1.1a F14, spec §3.1/§3.2).

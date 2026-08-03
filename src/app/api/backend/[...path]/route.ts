@@ -56,6 +56,12 @@ const ALLOWED_ROOTS = new Set([
   // çağrılmasa da (sözleşme yanıtları taşeron adını gömülü taşır) izin
   // listesi eksikse ileride eklenecek taşeron kartı ekranı sessizce 404 alır.
   "subcontractors",
+  // F-SD T1 — Şantiye Günlüğü kaydının detay/güncelleme/satır/durum uçları
+  // (/diary/{entry_id}, .../lines, .../submit, .../reopen) bu kökten geçer:
+  // ilk path segmenti "sites" DEĞİL "diary"dir (liste/oluşturma/özet
+  // /sites/{site_id}/diary* üzerinden gelir, o da "sites" kökünden geçer).
+  // Eksikse bu dört uç YALNIZ CANLIDA 404 alır; jsdom testleri bunu görmez.
+  "diary",
 ]);
 
 // JSON/metin sayilan icerik tipleri: govde metne cozulup JSON olarak islenir.
