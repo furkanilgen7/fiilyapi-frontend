@@ -232,6 +232,104 @@ interface MockPaymentProgress {
   duration_pct: string | null;
 }
 
+// --- F-TH T1 · Taşeron Hakedişi mock tipleri ------------------------------
+// İşveren `MockPaymentLine`den FARKLI: `site_id` yok (taşeron satırında
+// şantiye kırılımı yoktur, spec §2) ve `quantity_source` taşır (bu dilimde
+// her zaman `"manual"`, spec §2 — `site_diary` modülü henüz yok).
+interface MockSubcontractorPaymentLine {
+  id: string;
+  contract_item_id: string | null;
+  code: string;
+  description: string;
+  unit: string;
+  contract_unit_price: string;
+  coefficient: string;
+  quantity: string;
+  group_name: string | null;
+  sort_order: number;
+  quantity_source: "manual" | "diary";
+  adjusted_unit_price: string;
+  line_total: string;
+}
+
+// `SubcontractorPaymentCalculation` ile birebir.
+interface MockSubcontractorPaymentCalculation {
+  gross: string;
+  vat: string;
+  advance_deduction: string;
+  retention: string;
+  net: string;
+}
+
+// Sözleşme kalemi — `SubcontractorContractItemResponse`in mock tohumu
+// (birim fiyat + sabit miktar; gerçek backend'de miktar da ayrı saklanır).
+interface MockSubcontractorContractItem {
+  id: string;
+  code: string;
+  description: string;
+  unit: string;
+  contractUnitPrice: string;
+  contractQuantity: string;
+  groupName: string | null;
+}
+
+// `SubcontractorContractDetail` başlığının mock tohumu.
+interface MockSubcontractorContract {
+  id: string;
+  project_id: string;
+  site_id: string | null;
+  subcontractor_id: string | null;
+  subcontractor_name: string | null;
+  work_category: string | null;
+  contract_no: string | null;
+  signature_date: string | null;
+  is_notarized: boolean;
+  start_date: string | null;
+  end_date: string | null;
+  late_penalty_daily: string | null;
+  advance_pct: string;
+  retainage_pct: string;
+  vat_pct: string;
+  payment_period: "monthly" | "biweekly" | "on_completion";
+  payment_term_days: number;
+  materials_by_contractor: boolean;
+  subcontractor_files_own_sgk: boolean;
+  vat_withholding: boolean;
+  status: "active" | "completed" | "on_hold";
+  is_draft: boolean;
+  items: MockSubcontractorContractItem[];
+}
+
+// `SubcontractorProgressPaymentDetail` ile birebir.
+interface MockSubcontractorProgressPayment {
+  id: string;
+  contract_id: string;
+  project_id: string;
+  sequence_no: number;
+  period_year: number | null;
+  period_month: number | null;
+  description: string | null;
+  status: "draft" | "pending_approval" | "approved" | "paid";
+  vat_pct: string;
+  advance_pct: string;
+  retainage_pct: string;
+  default_coefficient: string;
+  section_id: string | null;
+  submitted_at: string | null;
+  approved_at: string | null;
+  approved_by: string | null;
+  paid_at: string | null;
+  rejected_at: string | null;
+  rejection_reason: string | null;
+  is_revision_required: boolean;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  lines: MockSubcontractorPaymentLine[];
+  calculation: MockSubcontractorPaymentCalculation;
+  dropped_orphan_count: number;
+}
+
 // `ProgressPaymentDetail` ile birebir (liste satırı `gross_total`/`net_total`
 // `calculation`den türetilir, ayrıca saklanmaz — bkz. `buildPaymentListItem`).
 interface MockProgressPayment {
@@ -282,6 +380,10 @@ interface MockState {
   // P7 T7 — İşveren hakedişleri (mevcut proje evrenine bağlı, bkz.
   // CONTRACT_ITEMS_P1/EMPLOYER_CONTRACT_P1 yorumları).
   progressPayments: MockProgressPayment[];
+  // F-TH T1 — Taşeron sözleşmeleri + hakedişleri (mevcut proje evrenine
+  // bağlı, bkz. SUBCONTRACTOR_CONTRACTS yorumu).
+  subcontractorContracts: MockSubcontractorContract[];
+  subcontractorProgressPayments: MockSubcontractorProgressPayment[];
   permissions: Record<string, Record<string, { access_level: string; scope: string }>>;
   projectAccess: Record<string, { all_projects: boolean; project_ids: string[] }>;
   company: {
@@ -975,6 +1077,349 @@ function buildPaymentListItem(state: MockState, payment: MockProgressPayment) {
   };
 }
 
+// --- F-TH T1 · Taşeron Hakedişi fikstürleri -------------------------------
+// Kimlikler MEVCUT evrene bağlanır (P7 T7 deseniyle ayni): proje p-1
+// ("Kule A"), şantiyeler s-1/s-2. İKİ ayrı sözleşme (sc-1/sc-2) —
+// `useSubcontractorContractOptions` distinct türetmesinin >1 sonuç
+// döndüğünü doğrulamak için gerekli (T1 §2.1 kullanıcı kararı).
+const SUBCONTRACTOR_CONTRACT_ITEMS_SC1: MockSubcontractorContractItem[] = [
+  { id: "sci-1", code: "E.01", description: "Kaba Elektrik Tesisatı", unit: "m", contractUnitPrice: "45.00", contractQuantity: "5200.000", groupName: "Elektrik İşleri" },
+  { id: "sci-2", code: "E.02", description: "Priz/Anahtar Montajı", unit: "Adet", contractUnitPrice: "120.00", contractQuantity: "620.000", groupName: "Elektrik İşleri" },
+  { id: "sci-3", code: "E.03", description: "Pano Montajı", unit: "Adet", contractUnitPrice: "3500.00", contractQuantity: "18.000", groupName: "Elektrik İşleri" },
+];
+const SUBCONTRACTOR_CONTRACT_ITEMS_SC2: MockSubcontractorContractItem[] = [
+  { id: "sci-4", code: "M.01", description: "Duvar Örgü İşleri", unit: "m²", contractUnitPrice: "280.00", contractQuantity: "4800.000", groupName: "Duvar İşleri" },
+  { id: "sci-5", code: "M.02", description: "Sıva İşleri", unit: "m²", contractUnitPrice: "145.00", contractQuantity: "9200.000", groupName: "Duvar İşleri" },
+];
+
+const SUBCONTRACTOR_CONTRACTS: MockSubcontractorContract[] = [
+  {
+    id: "sc-1", project_id: "p-1", site_id: "s-1", subcontractor_id: "sub-1",
+    subcontractor_name: "Aydın Elektrik Taah.", work_category: "Elektrik",
+    contract_no: "TSD-2026-01", signature_date: "2026-01-15", is_notarized: true,
+    start_date: "2026-02-01", end_date: "2026-12-01", late_penalty_daily: "500.00",
+    advance_pct: "20.00", retainage_pct: "5.00", vat_pct: "20.00",
+    payment_period: "monthly", payment_term_days: 30,
+    materials_by_contractor: false, subcontractor_files_own_sgk: true, vat_withholding: false,
+    status: "active", is_draft: false, items: SUBCONTRACTOR_CONTRACT_ITEMS_SC1,
+  },
+  {
+    id: "sc-2", project_id: "p-1", site_id: "s-2", subcontractor_id: "sub-2",
+    subcontractor_name: "Çelik İnşaat Taah.", work_category: "Duvar/Sıva",
+    contract_no: "TSD-2026-02", signature_date: "2026-02-01", is_notarized: false,
+    start_date: "2026-03-01", end_date: "2026-11-01", late_penalty_daily: null,
+    advance_pct: "15.00", retainage_pct: "5.00", vat_pct: "20.00",
+    payment_period: "monthly", payment_term_days: 15,
+    materials_by_contractor: true, subcontractor_files_own_sgk: false, vat_withholding: true,
+    status: "active", is_draft: false, items: SUBCONTRACTOR_CONTRACT_ITEMS_SC2,
+  },
+];
+
+function findSubcontractorContractItem(
+  contractId: string,
+  itemId: string,
+): MockSubcontractorContractItem | undefined {
+  return SUBCONTRACTOR_CONTRACTS.find((c) => c.id === contractId)?.items.find((i) => i.id === itemId);
+}
+
+function findSubcontractorContract(
+  state: MockState,
+  contractId: string,
+): MockSubcontractorContract | undefined {
+  return state.subcontractorContracts.find((c) => c.id === contractId);
+}
+
+function computeSubcontractorLine(
+  contractId: string,
+  itemId: string,
+  quantityRaw: number | string,
+  coefficientRaw: number | string | null | undefined,
+  existing: MockSubcontractorPaymentLine | undefined,
+  sortOrder: number,
+): MockSubcontractorPaymentLine {
+  const item = findSubcontractorContractItem(contractId, itemId);
+  const quantity = Number(quantityRaw) || 0;
+  const coefficient =
+    coefficientRaw !== undefined && coefficientRaw !== null && coefficientRaw !== ""
+      ? Number(coefficientRaw)
+      : existing
+        ? Number(existing.coefficient)
+        : 1;
+  const unitPrice = item ? Number(item.contractUnitPrice) : 0;
+  const adjustedUnitPrice = unitPrice * coefficient;
+  const lineTotal = adjustedUnitPrice * quantity;
+  return {
+    id: existing?.id ?? `scppl-${contractId}-${itemId}`,
+    contract_item_id: itemId,
+    code: item?.code ?? "",
+    description: item?.description ?? "",
+    unit: item?.unit ?? "",
+    contract_unit_price: item ? item.contractUnitPrice : "0.00",
+    coefficient: money2(coefficient),
+    quantity: qty3(quantity),
+    group_name: item?.groupName ?? null,
+    sort_order: sortOrder,
+    // Bu dilimde `site_diary` modülü yok — her satır her zaman `manual`
+    // (spec §2, `QuantitySource`).
+    quantity_source: "manual",
+    adjusted_unit_price: money2(adjustedUnitPrice),
+    line_total: money2(lineTotal),
+  };
+}
+
+function recomputeSubcontractorPaymentTotals(payment: MockSubcontractorProgressPayment): void {
+  const gross = payment.lines.reduce((sum, l) => sum + Number(l.line_total), 0);
+  const vat = gross * (Number(payment.vat_pct) / 100);
+  const advance = gross * (Number(payment.advance_pct) / 100);
+  const retention = gross * (Number(payment.retainage_pct) / 100);
+  payment.calculation = {
+    gross: money2(gross),
+    vat: money2(vat),
+    advance_deduction: money2(advance),
+    retention: money2(retention),
+    net: money2(gross + vat - advance - retention),
+  };
+}
+
+// Beş kayıt: `sequence_no` SÖZLEŞME KAPSAMLI numaralandırılır (sc-1 altında
+// 1-4, sc-2 altında 1) — dört durumun hepsi + `is_revision_required` hem
+// `true` hem `false` örneği (brief §3 zorunlu kapsam).
+function buildSubcontractorProgressPaymentFixtures(): MockSubcontractorProgressPayment[] {
+  const patronId = "11111111-1111-1111-1111-111111111111";
+
+  function linesFor(contractId: string, qtys: [string, number][]): MockSubcontractorPaymentLine[] {
+    return qtys.map(([itemId, qty], index) => computeSubcontractorLine(contractId, itemId, qty, "1", undefined, index));
+  }
+
+  function withTotals(
+    payment: Omit<MockSubcontractorProgressPayment, "calculation">,
+  ): MockSubcontractorProgressPayment {
+    const full: MockSubcontractorProgressPayment = {
+      ...payment,
+      calculation: { gross: "0.00", vat: "0.00", advance_deduction: "0.00", retention: "0.00", net: "0.00" },
+    };
+    recomputeSubcontractorPaymentTotals(full);
+    return full;
+  }
+
+  // #1 — sc-1, Mayıs, ÖDENDİ.
+  const scpp1 = withTotals({
+    id: "scpp-1", contract_id: "sc-1", project_id: "p-1", sequence_no: 1,
+    period_year: 2026, period_month: 5, description: "Mayıs hakedişi",
+    status: "paid", vat_pct: "20.00", advance_pct: "20.00", retainage_pct: "5.00",
+    default_coefficient: "1.00", section_id: null,
+    submitted_at: "2026-06-01T09:00:00Z", approved_at: "2026-06-03T09:00:00Z", approved_by: patronId,
+    paid_at: "2026-06-10T09:00:00Z", rejected_at: null, rejection_reason: null,
+    is_revision_required: false, created_by: patronId,
+    created_at: "2026-05-25T09:00:00Z", updated_at: "2026-06-10T09:00:00Z",
+    lines: linesFor("sc-1", [["sci-1", 800], ["sci-2", 60], ["sci-3", 2]]),
+    dropped_orphan_count: 0,
+  });
+
+  // #2 — sc-1, Haziran, ONAYLANDI (henüz ödenmedi).
+  const scpp2 = withTotals({
+    id: "scpp-2", contract_id: "sc-1", project_id: "p-1", sequence_no: 2,
+    period_year: 2026, period_month: 6, description: "Haziran hakedişi",
+    status: "approved", vat_pct: "20.00", advance_pct: "20.00", retainage_pct: "5.00",
+    default_coefficient: "1.00", section_id: null,
+    submitted_at: "2026-07-01T09:00:00Z", approved_at: "2026-07-03T09:00:00Z", approved_by: patronId,
+    paid_at: null, rejected_at: null, rejection_reason: null,
+    is_revision_required: false, created_by: patronId,
+    created_at: "2026-06-25T09:00:00Z", updated_at: "2026-07-03T09:00:00Z",
+    lines: linesFor("sc-1", [["sci-1", 900], ["sci-2", 80], ["sci-3", 3]]),
+    dropped_orphan_count: 0,
+  });
+
+  // #3 — sc-1, Temmuz, ONAY BEKLİYOR.
+  const scpp3 = withTotals({
+    id: "scpp-3", contract_id: "sc-1", project_id: "p-1", sequence_no: 3,
+    period_year: 2026, period_month: 7, description: "Temmuz hakedişi",
+    status: "pending_approval", vat_pct: "20.00", advance_pct: "20.00", retainage_pct: "5.00",
+    default_coefficient: "1.00", section_id: null,
+    submitted_at: "2026-08-01T09:00:00Z", approved_at: null, approved_by: null,
+    paid_at: null, rejected_at: null, rejection_reason: null,
+    is_revision_required: false, created_by: patronId,
+    created_at: "2026-07-25T09:00:00Z", updated_at: "2026-08-01T09:00:00Z",
+    lines: linesFor("sc-1", [["sci-1", 400], ["sci-2", 30]]),
+    dropped_orphan_count: 0,
+  });
+
+  // #4 — sc-1, Ağustos, TASLAK + "Revize Gerekli" (spec §5: BEŞİNCİ durum
+  // DEĞİL — `draft AND rejected_at IS NOT NULL` türevi, `is_revision_required: true`).
+  const scpp4 = withTotals({
+    id: "scpp-4", contract_id: "sc-1", project_id: "p-1", sequence_no: 4,
+    period_year: 2026, period_month: 8, description: "Ağustos hakedişi",
+    status: "draft", vat_pct: "20.00", advance_pct: "20.00", retainage_pct: "5.00",
+    default_coefficient: "1.00", section_id: null,
+    submitted_at: null, approved_at: null, approved_by: null,
+    paid_at: null, rejected_at: "2026-08-15T09:00:00Z", rejection_reason: "eksik metraj — pano sayısı kontrol edilsin",
+    is_revision_required: true, created_by: patronId,
+    created_at: "2026-08-10T09:00:00Z", updated_at: "2026-08-15T09:00:00Z",
+    lines: linesFor("sc-1", [["sci-1", 200]]),
+    dropped_orphan_count: 0,
+  });
+
+  // #5 — sc-2, dönemsiz taze TASLAK (satırsız, `is_revision_required: false`).
+  const scpp5 = withTotals({
+    id: "scpp-5", contract_id: "sc-2", project_id: "p-1", sequence_no: 1,
+    period_year: null, period_month: null, description: null,
+    status: "draft", vat_pct: "20.00", advance_pct: "15.00", retainage_pct: "5.00",
+    default_coefficient: "1.00", section_id: null,
+    submitted_at: null, approved_at: null, approved_by: null,
+    paid_at: null, rejected_at: null, rejection_reason: null,
+    is_revision_required: false, created_by: patronId,
+    created_at: "2026-08-01T09:00:00Z", updated_at: "2026-08-01T09:00:00Z",
+    lines: [],
+    dropped_orphan_count: 0,
+  });
+
+  return [scpp1, scpp2, scpp3, scpp4, scpp5];
+}
+
+function buildSubcontractorPaymentDetail(state: MockState, payment: MockSubcontractorProgressPayment) {
+  const contract = findSubcontractorContract(state, payment.contract_id);
+  const project = state.projects.find((p) => p.id === payment.project_id);
+  return {
+    id: payment.id,
+    contract_id: payment.contract_id,
+    project_id: payment.project_id,
+    project_name: project?.name ?? "",
+    subcontractor_name: contract?.subcontractor_name ?? null,
+    contract_no: contract?.contract_no ?? null,
+    sequence_no: payment.sequence_no,
+    period_year: payment.period_year,
+    period_month: payment.period_month,
+    description: payment.description,
+    status: payment.status,
+    vat_pct: payment.vat_pct,
+    advance_pct: payment.advance_pct,
+    retainage_pct: payment.retainage_pct,
+    default_coefficient: payment.default_coefficient,
+    section_id: payment.section_id,
+    submitted_at: payment.submitted_at,
+    approved_at: payment.approved_at,
+    approved_by: payment.approved_by,
+    paid_at: payment.paid_at,
+    rejected_at: payment.rejected_at,
+    rejection_reason: payment.rejection_reason,
+    is_revision_required: payment.is_revision_required,
+    created_by: payment.created_by,
+    created_at: payment.created_at,
+    updated_at: payment.updated_at,
+    lines: payment.lines,
+    calculation: payment.calculation,
+    dropped_orphan_count: payment.dropped_orphan_count,
+  };
+}
+
+function buildSubcontractorPaymentListItem(state: MockState, payment: MockSubcontractorProgressPayment) {
+  const contract = findSubcontractorContract(state, payment.contract_id);
+  const project = state.projects.find((p) => p.id === payment.project_id);
+  return {
+    id: payment.id,
+    contract_id: payment.contract_id,
+    project_id: payment.project_id,
+    project_name: project?.name ?? "",
+    subcontractor_name: contract?.subcontractor_name ?? null,
+    contract_no: contract?.contract_no ?? null,
+    sequence_no: payment.sequence_no,
+    period_year: payment.period_year,
+    period_month: payment.period_month,
+    description: payment.description,
+    status: payment.status,
+    section_id: payment.section_id,
+    created_at: payment.created_at,
+    gross_total: payment.calculation.gross,
+    net_total: payment.calculation.net,
+    is_revision_required: payment.is_revision_required,
+  };
+}
+
+function buildSubcontractorContractDetailResponse(contract: MockSubcontractorContract) {
+  const items = contract.items.map((item, index) => ({
+    id: item.id,
+    contract_id: contract.id,
+    source_contract_item_id: null,
+    code: item.code,
+    description: item.description,
+    unit: item.unit,
+    quantity: item.contractQuantity,
+    unit_price: item.contractUnitPrice,
+    sort_order: index,
+    group: item.groupName ? { id: `scg-${contract.id}-${item.groupName}`, name: item.groupName } : null,
+    line_total: money2(Number(item.contractQuantity) * Number(item.contractUnitPrice)),
+  }));
+  const contractTotal = items.reduce((sum, i) => sum + Number(i.line_total), 0);
+  return {
+    id: contract.id,
+    project_id: contract.project_id,
+    site_id: contract.site_id,
+    subcontractor_id: contract.subcontractor_id,
+    subcontractor_name: contract.subcontractor_name,
+    work_category: contract.work_category,
+    contract_no: contract.contract_no,
+    signature_date: contract.signature_date,
+    is_notarized: contract.is_notarized,
+    start_date: contract.start_date,
+    end_date: contract.end_date,
+    late_penalty_daily: contract.late_penalty_daily,
+    advance_pct: contract.advance_pct,
+    retainage_pct: contract.retainage_pct,
+    vat_pct: contract.vat_pct,
+    payment_period: contract.payment_period,
+    payment_term_days: contract.payment_term_days,
+    materials_by_contractor: contract.materials_by_contractor,
+    subcontractor_files_own_sgk: contract.subcontractor_files_own_sgk,
+    vat_withholding: contract.vat_withholding,
+    status: contract.status,
+    is_draft: contract.is_draft,
+    items,
+    contract_total: money2(contractTotal),
+    items_missing_price: 0,
+    progress_payment_summary: null,
+    documents: null,
+    pending_modules: [] as string[],
+  };
+}
+
+function buildSubcontractorPaymentSummary(state: MockState, query: URLSearchParams) {
+  const projectId = query.get("project_id");
+  const periodYearParam = query.get("period_year");
+  const periodMonthParam = query.get("period_month");
+  const statusParam = query.get("status");
+  const q = (query.get("q") ?? "").trim().toLocaleLowerCase("tr");
+
+  let items = state.subcontractorProgressPayments;
+  if (projectId) items = items.filter((p) => p.project_id === projectId);
+  if (periodYearParam) items = items.filter((p) => p.period_year === Number(periodYearParam));
+  if (periodMonthParam) items = items.filter((p) => p.period_month === Number(periodMonthParam));
+  if (statusParam) items = items.filter((p) => p.status === statusParam);
+  if (q) {
+    items = items.filter((p) => {
+      const contract = findSubcontractorContract(state, p.contract_id);
+      const name = (contract?.subcontractor_name ?? "").toLocaleLowerCase("tr");
+      const no = (contract?.contract_no ?? "").toLocaleLowerCase("tr");
+      return name.includes(q) || no.includes(q);
+    });
+  }
+
+  const sumBy = (predicate: (p: MockSubcontractorProgressPayment) => boolean) =>
+    items.filter(predicate).reduce((sum, p) => sum + Number(p.calculation.gross), 0);
+
+  return {
+    total_gross: money2(sumBy(() => true)),
+    pending_gross: money2(sumBy((p) => p.status === "pending_approval")),
+    paid_period_gross: money2(sumBy((p) => p.status === "paid")),
+    active_subcontractor_count: new Set(
+      state.subcontractorContracts.filter((c) => c.status === "active").map((c) => c.subcontractor_id),
+    ).size,
+    // Şema alanı ZORUNLUDUR (nullable değil) — filtre dönemi vermezse
+    // fikstürlerin ağırlık merkezi olan 2026 Temmuz'a düşer.
+    period_year: periodYearParam ? Number(periodYearParam) : 2026,
+    period_month: periodMonthParam ? Number(periodMonthParam) : 7,
+  };
+}
+
 function seedState(): MockState {
   // Gerçek backend seed'iyle hizalı (bkz. backend/app/modules/roles/seed_data.py):
   // aynı rol/modül anahtarları, isimleri, gruplar ve sıralama.
@@ -1150,6 +1595,8 @@ function seedState(): MockState {
       { id: "emp-3", name: "Bursa Belediyesi", tax_number: null, contact_person: "Kurumsal İletişim", is_active: true },
     ],
     progressPayments: buildProgressPaymentFixtures(),
+    subcontractorContracts: SUBCONTRACTOR_CONTRACTS,
+    subcontractorProgressPayments: buildSubcontractorProgressPaymentFixtures(),
     permissions,
     projectAccess: {
       "u-1": { all_projects: true, project_ids: [] },
@@ -1940,6 +2387,254 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         payment.updated_at = new Date().toISOString();
         return send(200, buildPaymentDetail(state, payment));
       });
+    }
+
+    // --- F-TH T1 · Taşeron Hakedişi uçları ---------------------------------
+
+    // GET /subcontractor-progress-payments/summary — ÖNCE kontrol edilir:
+    // aşağıdaki tekil `{payment_id}` regex'i "summary"yi de id sayardı
+    // (audit-log/export.xlsx sıralama uyarısıyla ayni tuzak).
+    if (method === "GET" && path === "/subcontractor-progress-payments/summary") {
+      return send(200, buildSubcontractorPaymentSummary(state, parsed.searchParams));
+    }
+
+    // GET /subcontractor-progress-payments — liste (proje/dönem/durum/arama +
+    // sayfalama).
+    if (method === "GET" && path === "/subcontractor-progress-payments") {
+      const projectId = parsed.searchParams.get("project_id");
+      const periodYear = parsed.searchParams.get("period_year");
+      const periodMonth = parsed.searchParams.get("period_month");
+      const status = parsed.searchParams.get("status");
+      const q = (parsed.searchParams.get("q") ?? "").trim().toLocaleLowerCase("tr");
+      const limit = Number(parsed.searchParams.get("limit") ?? "50");
+      const offset = Number(parsed.searchParams.get("offset") ?? "0");
+
+      let items = state.subcontractorProgressPayments;
+      if (projectId) items = items.filter((p) => p.project_id === projectId);
+      if (periodYear) items = items.filter((p) => p.period_year === Number(periodYear));
+      if (periodMonth) items = items.filter((p) => p.period_month === Number(periodMonth));
+      if (status) items = items.filter((p) => p.status === status);
+      if (q) {
+        items = items.filter((p) => {
+          const contract = findSubcontractorContract(state, p.contract_id);
+          const name = (contract?.subcontractor_name ?? "").toLocaleLowerCase("tr");
+          const no = (contract?.contract_no ?? "").toLocaleLowerCase("tr");
+          return name.includes(q) || no.includes(q);
+        });
+      }
+      const total = items.length;
+      const page = items.slice(offset, offset + limit);
+      return send(200, {
+        items: page.map((p) => buildSubcontractorPaymentListItem(state, p)),
+        total,
+        limit,
+        offset,
+      });
+    }
+
+    // POST /subcontractor-contracts/{contract_id}/progress-payments —
+    // oluşturma. İşveren şemasından FARKLI: gövde `lines[]` TAŞIMAZ, satırlar
+    // ayrı `PUT …/lines` ile girilir (T3), bu yüzden taze taslak satırsız açılır.
+    const createSubcontractorPaymentMatch = path.match(
+      /^\/subcontractor-contracts\/([^/]+)\/progress-payments$/,
+    );
+    if (method === "POST" && createSubcontractorPaymentMatch) {
+      const contractId = createSubcontractorPaymentMatch[1];
+      const contract = state.subcontractorContracts.find((c) => c.id === contractId);
+      if (!contract) return send(404, { detail: "sozlesme yok" });
+      return withBody((body) => {
+        const existingForContract = state.subcontractorProgressPayments.filter(
+          (p) => p.contract_id === contractId,
+        );
+        const nextSeq =
+          existingForContract.length > 0
+            ? Math.max(...existingForContract.map((p) => p.sequence_no)) + 1
+            : 1;
+        const payment: MockSubcontractorProgressPayment = {
+          id: `scpp-${state.subcontractorProgressPayments.length + 1}`,
+          contract_id: contractId,
+          project_id: contract.project_id,
+          sequence_no: nextSeq,
+          period_year: (body.period_year as number | null | undefined) ?? null,
+          period_month: (body.period_month as number | null | undefined) ?? null,
+          description: body.description ? String(body.description) : null,
+          status: "draft",
+          vat_pct: contract.vat_pct,
+          advance_pct: contract.advance_pct,
+          retainage_pct: contract.retainage_pct,
+          default_coefficient: body.default_coefficient ? String(body.default_coefficient) : "1",
+          section_id: (body.section_id as string | null | undefined) ?? null,
+          submitted_at: null, approved_at: null, approved_by: null, paid_at: null,
+          rejected_at: null, rejection_reason: null, is_revision_required: false,
+          created_by: "11111111-1111-1111-1111-111111111111",
+          created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+          lines: [],
+          calculation: { gross: "0.00", vat: "0.00", advance_deduction: "0.00", retention: "0.00", net: "0.00" },
+          dropped_orphan_count: 0,
+        };
+        state.subcontractorProgressPayments.push(payment);
+        return send(201, buildSubcontractorPaymentDetail(state, payment));
+      });
+    }
+
+    // /subcontractor-progress-payments/{payment_id}/lines — DEĞİŞTİRME
+    // semantiği: gövdede olmayan satır SİLİNİR.
+    const subcontractorLinesMatch = path.match(/^\/subcontractor-progress-payments\/([^/]+)\/lines$/);
+    if (method === "PUT" && subcontractorLinesMatch) {
+      const payment = state.subcontractorProgressPayments.find((p) => p.id === subcontractorLinesMatch[1]);
+      if (!payment) return send(404, { detail: "hakedis yok" });
+      return withBody((body) => {
+        const rawLines = Array.isArray(body.lines) ? (body.lines as Array<Record<string, unknown>>) : [];
+        payment.lines = rawLines.map((l, index) => {
+          const itemId = String(l.contract_item_id ?? "");
+          const existing = payment.lines.find((pl) => pl.contract_item_id === itemId);
+          return computeSubcontractorLine(
+            payment.contract_id,
+            itemId,
+            (l.quantity as number | string) ?? 0,
+            l.coefficient as number | string | null | undefined,
+            existing,
+            index,
+          );
+        });
+        recomputeSubcontractorPaymentTotals(payment);
+        payment.updated_at = new Date().toISOString();
+        return send(200, buildSubcontractorPaymentDetail(state, payment));
+      });
+    }
+
+    // /subcontractor-progress-payments/{payment_id}/refresh-prices — yalniz
+    // taslakta fiyat/katsayı tazeleme.
+    const subcontractorRefreshMatch = path.match(
+      /^\/subcontractor-progress-payments\/([^/]+)\/refresh-prices$/,
+    );
+    if (method === "POST" && subcontractorRefreshMatch) {
+      const payment = state.subcontractorProgressPayments.find((p) => p.id === subcontractorRefreshMatch[1]);
+      if (!payment) return send(404, { detail: "hakedis yok" });
+      if (payment.status !== "draft") return send(409, { detail: "yalniz taslak tazelenebilir" });
+      let refreshedCount = 0;
+      payment.lines = payment.lines.map((line, index) => {
+        if (!line.contract_item_id) return line;
+        refreshedCount += 1;
+        return computeSubcontractorLine(
+          payment.contract_id,
+          line.contract_item_id,
+          line.quantity,
+          payment.default_coefficient,
+          line,
+          index,
+        );
+      });
+      recomputeSubcontractorPaymentTotals(payment);
+      payment.updated_at = new Date().toISOString();
+      return send(200, { refreshed_count: refreshedCount });
+    }
+
+    // Durum geçişleri — govde almazlar (reject harici), yalniz payment_id.
+    const subcontractorSubmitMatch = path.match(/^\/subcontractor-progress-payments\/([^/]+)\/submit$/);
+    if (method === "POST" && subcontractorSubmitMatch) {
+      const payment = state.subcontractorProgressPayments.find((p) => p.id === subcontractorSubmitMatch[1]);
+      if (!payment) return send(404, { detail: "hakedis yok" });
+      if (payment.status !== "draft") return send(409, { detail: "yalniz taslak onaya gonderilebilir" });
+      payment.status = "pending_approval";
+      payment.submitted_at = new Date().toISOString();
+      payment.updated_at = payment.submitted_at;
+      return send(200, buildSubcontractorPaymentDetail(state, payment));
+    }
+    const subcontractorApproveMatch = path.match(/^\/subcontractor-progress-payments\/([^/]+)\/approve$/);
+    if (method === "POST" && subcontractorApproveMatch) {
+      const payment = state.subcontractorProgressPayments.find((p) => p.id === subcontractorApproveMatch[1]);
+      if (!payment) return send(404, { detail: "hakedis yok" });
+      if (payment.status !== "pending_approval") return send(409, { detail: "yalniz onay bekleyen onaylanabilir" });
+      payment.status = "approved";
+      payment.approved_at = new Date().toISOString();
+      payment.approved_by = "11111111-1111-1111-1111-111111111111";
+      payment.updated_at = payment.approved_at;
+      return send(200, buildSubcontractorPaymentDetail(state, payment));
+    }
+    const subcontractorRejectMatch = path.match(/^\/subcontractor-progress-payments\/([^/]+)\/reject$/);
+    if (method === "POST" && subcontractorRejectMatch) {
+      const payment = state.subcontractorProgressPayments.find((p) => p.id === subcontractorRejectMatch[1]);
+      if (!payment) return send(404, { detail: "hakedis yok" });
+      if (payment.status !== "pending_approval") return send(409, { detail: "yalniz onay bekleyen reddedilebilir" });
+      return withBody((body) => {
+        const reason = typeof body.reason === "string" ? body.reason.trim() : "";
+        if (!reason) return send(422, { detail: "gerekce zorunludur" });
+        payment.status = "draft";
+        payment.submitted_at = null;
+        payment.rejected_at = new Date().toISOString();
+        payment.rejection_reason = reason;
+        payment.is_revision_required = true;
+        payment.updated_at = payment.rejected_at;
+        return send(200, buildSubcontractorPaymentDetail(state, payment));
+      });
+    }
+    const subcontractorMarkPaidMatch = path.match(/^\/subcontractor-progress-payments\/([^/]+)\/mark-paid$/);
+    if (method === "POST" && subcontractorMarkPaidMatch) {
+      const payment = state.subcontractorProgressPayments.find((p) => p.id === subcontractorMarkPaidMatch[1]);
+      if (!payment) return send(404, { detail: "hakedis yok" });
+      if (payment.status !== "approved") return send(409, { detail: "yalniz onaylanmis odendi isaretlenebilir" });
+      payment.status = "paid";
+      payment.paid_at = new Date().toISOString();
+      payment.updated_at = payment.paid_at;
+      return send(200, buildSubcontractorPaymentDetail(state, payment));
+    }
+    const subcontractorUnapproveMatch = path.match(
+      /^\/subcontractor-progress-payments\/([^/]+)\/unapprove$/,
+    );
+    if (method === "POST" && subcontractorUnapproveMatch) {
+      const payment = state.subcontractorProgressPayments.find((p) => p.id === subcontractorUnapproveMatch[1]);
+      if (!payment) return send(404, { detail: "hakedis yok" });
+      if (payment.status !== "approved") return send(409, { detail: "yalniz onaylanmis onayi geri alinabilir" });
+      payment.status = "pending_approval";
+      payment.approved_at = null;
+      payment.approved_by = null;
+      payment.updated_at = new Date().toISOString();
+      return send(200, buildSubcontractorPaymentDetail(state, payment));
+    }
+
+    // GET/PATCH/DELETE /subcontractor-progress-payments/{payment_id} —
+    // tekil rota (yukarıdaki alt-yol regex'lerinden SONRA, `summary`
+    // literal path'inden de SONRA kontrol edilir).
+    const subcontractorPaymentIdMatch = path.match(/^\/subcontractor-progress-payments\/([^/]+)$/);
+    if (method === "GET" && subcontractorPaymentIdMatch) {
+      const payment = state.subcontractorProgressPayments.find((p) => p.id === subcontractorPaymentIdMatch[1]);
+      if (!payment) return send(404, { detail: "hakedis yok" });
+      return send(200, buildSubcontractorPaymentDetail(state, payment));
+    }
+    if (method === "PATCH" && subcontractorPaymentIdMatch) {
+      const payment = state.subcontractorProgressPayments.find((p) => p.id === subcontractorPaymentIdMatch[1]);
+      if (!payment) return send(404, { detail: "hakedis yok" });
+      if (payment.status !== "draft") return send(409, { detail: "yalniz taslak guncellenebilir" });
+      return withBody((body) => {
+        if (body.period_year !== undefined) payment.period_year = body.period_year as number | null;
+        if (body.period_month !== undefined) payment.period_month = body.period_month as number | null;
+        if (body.description !== undefined) payment.description = body.description ? String(body.description) : null;
+        if (body.default_coefficient !== undefined && body.default_coefficient !== null) {
+          payment.default_coefficient = String(body.default_coefficient);
+        }
+        if (body.section_id !== undefined) payment.section_id = body.section_id as string | null;
+        payment.updated_at = new Date().toISOString();
+        return send(200, buildSubcontractorPaymentDetail(state, payment));
+      });
+    }
+    if (method === "DELETE" && subcontractorPaymentIdMatch) {
+      const index = state.subcontractorProgressPayments.findIndex(
+        (p) => p.id === subcontractorPaymentIdMatch[1],
+      );
+      if (index === -1) return send(404, { detail: "hakedis yok" });
+      state.subcontractorProgressPayments.splice(index, 1);
+      return send(204);
+    }
+
+    // GET /subcontractor-contracts/{contract_id} — sözleşme detayı (T2-T5'in
+    // başlık/kalem okuması). Not: sözleşme OLUŞTURMA/GÜNCELLEME uçları bu
+    // dilimin kapsamı DIŞI (yalnız okuma + hakediş oluşturma/liste bağı).
+    const subcontractorContractIdMatch = path.match(/^\/subcontractor-contracts\/([^/]+)$/);
+    if (method === "GET" && subcontractorContractIdMatch) {
+      const contract = state.subcontractorContracts.find((c) => c.id === subcontractorContractIdMatch[1]);
+      if (!contract) return send(404, { detail: "sozlesme yok" });
+      return send(200, buildSubcontractorContractDetailResponse(contract));
     }
 
     // /employers — Yeni Proje formu İşveren seçicisi (P1.1a F14, spec §3.1/§3.2).
