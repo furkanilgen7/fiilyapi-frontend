@@ -193,6 +193,10 @@
      eklendi (çıplak hex yasak). */
   --color-orange-tint: #fff7ed;
   --color-orange-tint-text: #c2410c;
+  /* F-SD T4 — Hakediş Özeti "Taşeron Hakediş →" bağlantısının kenarlığı
+     (mockup `Şantiye - Hakediş Özeti.dc.html` satır 226). Zemin/metin tonu
+     yukarıdaki iki token'la karşılanıyor, kenarlığın karşılığı YOKTU. */
+  --color-orange-tint-border: #fed7aa;
 
   /* Sistem rolü gradyan/çerçeve + koyu grup başlığı */
   --color-slate-700: #334155;

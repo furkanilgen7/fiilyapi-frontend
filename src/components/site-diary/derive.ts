@@ -18,6 +18,19 @@ export function isoPeriod(iso: string): { year: number; month: number } {
 }
 
 /**
+ * Ay gezinmesi (F-SD T4, HÖ90/92 "‹ Temmuz 2026 ›"): dönem `delta` ay kaydırılır.
+ * `Date` aritmetiği KULLANILMAZ — yerel saat/DST'ye bağımlı olurdu; `isoDate`in
+ * aynı gerekçesi. Aralık→Ocak taşması elle yürütülür.
+ */
+export function shiftPeriod(
+  period: { year: number; month: number },
+  delta: number,
+): { year: number; month: number } {
+  const zeroBased = period.year * 12 + (period.month - 1) + delta;
+  return { year: Math.floor(zeroBased / 12), month: (zeroBased % 12) + 1 };
+}
+
+/**
  * `boq_item_id` → sözleşme miktarı. GK220/229 "Kümülatif" sütunu
  * `900 / 1.200` biçimindedir: solu günlük kaydın `cumulative_quantity`si,
  * SAĞI sözleşme (BOQ) miktarıdır. `SiteDiaryLineRead` sözleşme miktarını

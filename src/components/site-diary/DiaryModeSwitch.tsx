@@ -54,12 +54,23 @@ export function DiaryModeSwitch({ active, entryHref, summaryHref }: DiaryModeSwi
   );
 }
 
+export interface DiaryModeNoticeProps {
+  className?: string;
+  /**
+   * "Kayıt Gir" ekranında sayfanın altında salt-okunur planlama bloğu vardır ve
+   * gerekçe onu da anlatır. "Hakediş Özeti" modunda böyle bir blok YOKTUR —
+   * cümle oraya kopyalanmaz (`false`).
+   */
+  hasPlanPreview?: boolean;
+}
+
 /** Devre dışı mod öğesinin gerekçesi — ekranın altında da görünür basılır. */
-export function DiaryModeNotice({ className }: { className?: string }) {
+export function DiaryModeNotice({ className, hasPlanPreview = true }: DiaryModeNoticeProps) {
   return (
     <p className={cx("diary__notice", className)}>
       “Planlama” görünümü henüz açılmadı — planlama ekranı ayrı bir dilimde
-      (F-PL) geliyor. Aşağıdaki planlama bloğu salt-okunur özettir.
+      (F-PL) geliyor.
+      {hasPlanPreview ? " Aşağıdaki planlama bloğu salt-okunur özettir." : ""}
     </p>
   );
 }
