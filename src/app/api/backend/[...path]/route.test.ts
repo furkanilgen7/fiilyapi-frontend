@@ -494,6 +494,32 @@ describe("BFF /api/backend/[...path]", () => {
       },
     );
 
+    // F-PL · T1 — Planlama ekraninin TUM uclari ("/sites/{id}/plan",
+    // ".../plan/rows|cells|goals|sprint") ilk segmenti "sites" oldugu icin
+    // MEVCUT kokten gecer; YENI kok gerekmez. Bu test o gerekceyi kapiya
+    // baglar: "sites" koku sessizce dusurulurse (ya da plan uclari kendi
+    // kokune tasinirsa) planlama ekrani canlida tamamen 404 olur, jsdom
+    // testleri bunu GORMEZ.
+    it.each([
+      "/sites/{site_id}/plan",
+      "/sites/{site_id}/plan/rows",
+      "/sites/{site_id}/plan/cells",
+      "/sites/{site_id}/plan/goals",
+      "/sites/{site_id}/plan/sprint",
+    ])("%s ucu allow-list'teki 'sites' kokunden gecer", (endpoint) => {
+      const root = endpoint.split("/")[1];
+      expect(root).toBe("sites");
+      const source = readFileSync(
+        resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+        "utf8",
+      );
+      const allowList = source.slice(
+        source.indexOf("const ALLOWED_ROOTS"),
+        source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+      );
+      expect(allowList).toContain(`"${root}"`);
+    });
+
     it.each(calledRoots)("%s koku forward edilir", async (root) => {
       const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
       vi.stubGlobal("fetch", fetchMock);
