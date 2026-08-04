@@ -379,7 +379,12 @@ export function SiteDiaryEntryView() {
             contractQuantities={boqQuantityById(boqQuery.data)}
             contractQuantitiesUnavailable={boqQuery.isError}
             isDirty={isDirty}
-            paymentsHref="/hakedisler"
+            // GK264 "Hakediş Durumu →" mockup'ta `Şantiye - Hakedişler.dc.html`e,
+            // yani ŞANTİYENİN Hakedişler sekmesine gider. Spec §2 sehven
+            // proje-genel `/hakedisler` yazmıştı; kullanıcı kararı (2026-08-04):
+            // mockup kazanır. Aynı ekrandaki GK408 "Hakedişler →" de buraya
+            // gidiyor — ekran içi tutarsızlık böylece kapandı.
+            paymentsHref={`${base}/hakedisler`}
           />
           <DiaryWorkDoneCard
             value={form.workDone}

@@ -255,6 +255,19 @@ describe("SiteDiaryEntryView · izin dalları", () => {
     expect(screen.getByLabelText("Tarih")).not.toBeDisabled();
     expect(screen.getByRole("button", { name: "Taslak Kaydet" })).toBeInTheDocument();
   });
+
+  // Kullanıcı kararı (2026-08-04, spec §2 düzeltmesi): GK264 "Hakediş Durumu →"
+  // mockup'ta `Şantiye - Hakedişler.dc.html`e gider — ŞANTİYE sekmesi, proje-genel
+  // `/hakedisler` DEĞİL. Aynı ekrandaki GK408 "Hakedişler →" ile aynı hedef.
+  it("GK264 'Hakediş Durumu →' şantiyenin Hakedişler sekmesine gider (proje-genele DEĞİL)", () => {
+    mockScreen({ entry: entryDetail() });
+    render(<SiteDiaryEntryView />);
+
+    expect(screen.getByRole("link", { name: "Hakediş Durumu →" })).toHaveAttribute(
+      "href",
+      "/projeler/p-1/santiyeler/s-1/hakedisler",
+    );
+  });
 });
 
 describe("SiteDiaryEntryView · gönderilmiş kayıt", () => {

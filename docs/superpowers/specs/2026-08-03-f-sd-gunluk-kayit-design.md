@@ -4,6 +4,18 @@ Tarih: 2026-08-03 · Durum: **ONAYLANDI (2026-08-03)** — §6'nın BEŞ sorusu 
 S1 Hakediş Özeti modu BU dilimde · S2 Planlama ekranı AYRI dilim (F-PL; mod anahtarında devre-dışı+gerekçe) ·
 S3 iki buton (Taslak Kaydet + Kaydet & Gönder) + admin Yeniden Aç · S4 trend grafiği pending kart
 (zaman-serisi ucu backend borç adayı) · S5 "Günlükten Doldur" butonları BU dilimde.
+
+**EK KARARLAR (2026-08-04, T7 final review sonrası — yeniden tartışılmaz):**
+- **S6 — GK264 "Hakediş Durumu →" hedefi DÜZELTİLDİ (spec düzeltmesi).** Aşağıdaki §2 sehven
+  proje-genel `/hakedisler` yazmıştı; mockup GK264 `Şantiye - Hakedişler.dc.html`e, yani
+  **ŞANTİYENİN Hakedişler sekmesine** gider ve aynı ekrandaki GK408 "Hakedişler →" de oraya gider.
+  **Mockup kazanır** (WORKFLOW §3). Hedef: `.../santiyeler/[siteId]/hakedisler`. Ekran içi
+  tutarsızlık kapandı; koruma testi `SiteDiaryEntryView.test.tsx`'te.
+- **S7 — İKİ ADIMLI KAYDETME = ONAYLI SAPMA.** Backend satır iskeletini `POST /sites/{id}/diary`
+  YANITINDA üretir (`SiteDiaryEntryCreate` gövdesinde `lines[]` YOKTUR), bu yüzden gün için kayıt
+  yokken İş Kalemi tablosu BOŞ açılır ve "Kaydet & Gönder" gerekçeli devre dışıdır: önce
+  "Taslak Kaydet" → satırlar gelir → miktar girilir → gönderilir. Mockup tek adımlı bir kaydetme
+  varsayıyor; **backend sözleşmesi tek adımı imkânsız kılıyor.** Sapma diye geri alınmaz.
 Mockup'lar: `Şantiye - Günlük Kayıt.dc.html` (GK — kanonik) · `Ekran 7 - Şantiye Günlüğü Girişi.dc.html`
 (E7 — eski sürüm; Taslak Kaydet + Şantiye Şefi Notu buradan) · `Şantiye - Hakediş Özeti.dc.html` (HÖ — §6 S1).
 Backend: SD CANLIDA (11 uç) · PL merge yolunda (day-summary ucu dahil) · işveren+taşeron hakediş canlı.
@@ -24,7 +36,8 @@ birebir KOPYALANMAZ; bugün/gerçek takvim kullanılır (PL şefinin uyarısı; 
 - **İş Kalemi Girişi (GK205-266):** BOQ pozlarından satır iskeleti (POST otomatik getiriyor) · yalnız
   "Bugün Yapılan" girilebilir · Kümülatif `yapılan/sözleşme` + Hakediş ₺ türevleri yanıttan · tfoot
   "Bugünkü Hakediş Katkısı" · "Sözleşme BOQ'a bağlı" rozeti · bilgi kutusu (GK261-265, "Hakediş
-  Durumu →" linki `/hakedisler`'e).
+  Durumu →" linki — **S6 ile düzeltildi:** proje-genel `/hakedisler` DEĞİL, şantiyenin
+  `.../santiyeler/[siteId]/hakedisler` sekmesi).
 - Yapılan İşler textarea (GK271) + **Şantiye Şefi Notu** (E7 143 — `chief_note` backend'de var, basılır).
 - **Fotoğraflar kartı (GK274-318):** pending — belge çekirdeği kararı; kart görünür, yükleme devre-dışı
   + gerekçe (üst kural: silinmez).
