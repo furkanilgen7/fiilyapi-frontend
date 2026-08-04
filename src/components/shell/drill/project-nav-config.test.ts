@@ -38,7 +38,10 @@ describe("buildProjectNav — bağlam bloğu", () => {
     expect(nav.groups[0].items.map((i) => i.exact)).toEqual([true, true]);
   });
 
-  it("şantiye sekmeleri exact DEĞİLDİR (alt rotalar ön ekle aktif kalır)", () => {
+  // F-SD T7: kural KÖK OLMAYAN 6 sekme içindir. "Bölümler" şantiye kök
+  // rotasıdır ve diğerlerinin atasıdır; o `exact` taşır (aşağıdaki teste bkz.),
+  // yoksa her alt sekmede iki öğe birden aktif görünür.
+  it("kök olmayan şantiye sekmeleri exact DEĞİLDİR (alt rotalar ön ekle aktif kalır)", () => {
     const nav = buildProjectNav({
       projectId: "1",
       projectName: "Güneşkent Konut",
@@ -46,7 +49,9 @@ describe("buildProjectNav — bağlam bloğu", () => {
       siteName: "A-Blok Şantiyesi",
     });
     const siteGroup = nav.groups.find((g) => g.heading === "A-Blok Şantiyesi");
-    expect(siteGroup?.items.every((i) => i.exact !== true)).toBe(true);
+    const leafTabs = siteGroup!.items.filter((i) => i.label !== "Bölümler");
+    expect(leafTabs).toHaveLength(6);
+    expect(leafTabs.every((i) => i.exact !== true)).toBe(true);
   });
 
   it("aktif şantiye yokken şantiyenin 6 sekmesi görünmez", () => {
@@ -259,5 +264,26 @@ describe("buildProjectNav — href geçerliliği (kırık link koruması)", () =
       // üretildiği için dinamik segmentlere düşmesi beklenen davranıştır.
       expectValidHref(item.label, item.href, true);
     }
+  });
+
+  // F-SD T7 final review bulgusu: "Bölümler" şantiye kök rotasıdır ve diğer 6
+  // sekmenin atasıdır; `exact` olmadan ön ek eşleşmesi her alt sekmede İKİ
+  // öğeyi birden aktif işaretliyordu (ekran görüntüsüyle yakalandı).
+  it("şantiye kök sekmesi 'Bölümler' exact'tir — alt sekmelerde çift aktiflik olmaz", () => {
+    const nav = buildProjectNav({
+      projectId: "42",
+      projectName: "Güneşkent Konut",
+      siteId: "99",
+      siteName: "A-Blok Şantiyesi",
+    });
+    const siteGroup = nav.groups.find((g) => g.heading === "A-Blok Şantiyesi");
+    const sections = siteGroup!.items.find((i) => i.label === "Bölümler");
+    expect(sections?.exact).toBe(true);
+
+    // Alt sekmelerin hiçbiri exact DEĞİLDİR: "Günlük Kayıt" ön ek eşleşmesiyle
+    // `.../gunluk-kayit/ozet` alt görünümünde de aktif kalmalıdır.
+    const diary = siteGroup!.items.find((i) => i.label === "Günlük Kayıt");
+    expect(diary?.exact).toBeUndefined();
+    expect(diary?.href).toBe("/projeler/42/santiyeler/99/gunluk-kayit");
   });
 });

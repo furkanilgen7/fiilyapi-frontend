@@ -82,7 +82,12 @@ function activeSiteGroup(ctx: Required<Pick<ProjectNavContext, "siteId" | "siteN
   return {
     heading: ctx.siteName,
     items: [
-      { label: "Bölümler", href: base, emoji: "📍" },
+      // "Bölümler" şantiye KÖK rotasıdır ve diğer 6 sekmenin ATASIDIR
+      // (`.../s-1` ⊂ `.../s-1/gunluk-kayit`); ön ek eşleşmesiyle her alt
+      // sekmede İKİ öğe birden aktif görünüyordu (F-SD T7 final review'da
+      // ekran görüntüsüyle yakalandı). Bağlam grubundaki (satır 61-63) aynı
+      // gerekçe buraya uygulanmamıştı — `exact` bunu kapatır.
+      { label: "Bölümler", href: base, emoji: "📍", exact: true },
       { label: "İş Kalemleri", href: `${base}/is-kalemleri`, emoji: "📐" },
       { label: "Puantaj", href: `${base}/puantaj`, emoji: "👷" },
       { label: "Stok", href: `${base}/stok`, emoji: "📦" },
