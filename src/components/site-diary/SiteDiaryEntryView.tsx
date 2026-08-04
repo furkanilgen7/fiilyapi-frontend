@@ -32,7 +32,7 @@ import { formatMonthName } from "@/lib/format";
 
 import { DiaryBasicInfoCard } from "./DiaryBasicInfoCard";
 import { DiaryLinesCard } from "./DiaryLinesCard";
-import { DiaryModeNotice, DiaryModeSwitch } from "./DiaryModeSwitch";
+import { DiaryModeSwitch } from "./DiaryModeSwitch";
 import { DiaryChiefNoteCard, DiaryWorkDoneCard } from "./DiaryNotesCards";
 import { DiaryPaymentAccrualCard } from "./DiaryPaymentAccrualCard";
 import { DiaryPhotosCard } from "./DiaryPhotosCard";
@@ -289,6 +289,7 @@ export function SiteDiaryEntryView() {
           <DiaryModeSwitch
             active="entry"
             entryHref={`${base}/gunluk-kayit`}
+            planningHref={`${base}/gunluk-kayit/planlama`}
             summaryHref={`${base}/gunluk-kayit/ozet`}
           />
           {permission.canWrite && !isSubmitted && (
@@ -335,8 +336,6 @@ export function SiteDiaryEntryView() {
           </span>
         )}
       </div>
-
-      <DiaryModeNotice />
 
       {errorMessage && (
         <p className="diary__error">
@@ -401,6 +400,7 @@ export function SiteDiaryEntryView() {
             days={planQuery.data?.days}
             isLoading={planQuery.isLoading}
             isError={planQuery.isError}
+            planningHref={`${base}/gunluk-kayit/planlama`}
           />
         </div>
 

@@ -143,3 +143,36 @@ export function formatDayMonth(iso: string): string {
   if (year === undefined || day === undefined || name === undefined) return iso;
   return `${Number(day)} ${name}`;
 }
+
+/**
+ * Gün + KISA ay (F-PL T2, Planlama ızgarasının gün başlıkları — P111-117:
+ * "21 Tem"). `formatDayMonth`in kısaltılmış hâli; ay adları `TR_MONTHS_SHORT`
+ * tek kaynağından gelir (`formatPeriodShort` ile AYNI dizi).
+ *
+ * `new Date(iso)` KULLANILMAZ — UTC yorumlanır, TR saatinde bir gün geri
+ * kayardı (`derive.ts/isoDate`in aynı gerekçesi).
+ */
+export function formatDayMonthShort(iso: string): string {
+  const [year, month, day] = iso.split("-");
+  const name = TR_MONTHS_SHORT[Number(month) - 1];
+  if (year === undefined || day === undefined || name === undefined) return iso;
+  return `${Number(day)} ${name}`;
+}
+
+/** Haftanın günleri — dizinin sırası `Date.getUTCDay()` ile aynıdır (0 = Pazar). */
+const TR_WEEKDAYS_SHORT = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
+
+/**
+ * `YYYY-MM-DD` → "Pzt" (F-SD GK327 · F-PL P111-117). TEK KAYNAK: hem günlük
+ * kaydın gömülü planlama bloğu hem Planlama ızgarası bunu kullanır.
+ *
+ * `Date` YALNIZ haftanın gününü vermek üzere UTC olarak kurulur — yerel saat
+ * kullanılsaydı DST/gece yarısı kayması gün adını bir gün kaydırabilirdi.
+ * `Intl.DateTimeFormat` kullanılmaz (jsdom/CI'da ICU verisi eksik olabilir).
+ */
+export function formatWeekdayShort(iso: string): string {
+  const [year, month, day] = iso.split("-").map(Number);
+  if (year === undefined || month === undefined || day === undefined) return "";
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return TR_WEEKDAYS_SHORT[date.getUTCDay()] ?? "";
+}

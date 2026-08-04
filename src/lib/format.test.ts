@@ -5,12 +5,14 @@ import {
   formatCompactCurrency,
   formatCurrency,
   formatCurrencyPrecise,
+  formatDayMonthShort,
   formatDecimal,
   formatMonthYear,
   formatPercent,
   formatPeriod,
   formatPeriodShort,
   formatQuantity,
+  formatWeekdayShort,
 } from "./format";
 
 describe("formatCompactCurrency", () => {
@@ -140,5 +142,28 @@ describe("formatDecimal", () => {
   });
   it("verilen ondalık sınırına yuvarlar", () => {
     expect(formatDecimal("1.239", 2)).toBe("1,24");
+  });
+});
+
+// F-PL T2 · Planlama ızgarasının gün başlıkları (P111-117) bu ikisinden kurulur.
+describe("formatDayMonthShort", () => {
+  it("gun + kisa ay basar (P111 bicimi)", () => {
+    expect(formatDayMonthShort("2026-07-21")).toBe("21 Tem");
+    expect(formatDayMonthShort("2026-08-03")).toBe("3 Ağu");
+  });
+  it("bozuk girdide ISO dizeyi oldugu gibi dondurur", () => {
+    expect(formatDayMonthShort("2026-13-01")).toBe("2026-13-01");
+  });
+});
+
+describe("formatWeekdayShort", () => {
+  it("haftanin yedi gununu dogru kisaltir", () => {
+    const week = ["2026-08-03", "2026-08-04", "2026-08-05", "2026-08-06", "2026-08-07", "2026-08-08", "2026-08-09"];
+    expect(week.map(formatWeekdayShort)).toEqual(["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"]);
+  });
+  it("gun adi YEREL saatten etkilenmez (UTC kurulur)", () => {
+    // 2026-01-01 Perşembe; yerel Date kurulsaydı TR'de gece yarısı kayması
+    // riski olurdu.
+    expect(formatWeekdayShort("2026-01-01")).toBe("Per");
   });
 });
