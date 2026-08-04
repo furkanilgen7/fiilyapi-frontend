@@ -18,6 +18,7 @@ import {
 } from "@/lib/api/hooks/useSubcontractorProgressPaymentMutations";
 import { useProject } from "@/lib/api/hooks/useProjects";
 import { useSite } from "@/lib/api/hooks/useSites";
+import { useSubcontractorDiarySuggestion } from "@/lib/api/hooks/useDiarySuggestion";
 import { BackendError } from "@/lib/api/unwrap";
 
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
@@ -39,6 +40,11 @@ vi.mock("@/lib/api/hooks/useSubcontractorProgressPaymentMutations", async (impor
   useUpdateSubcontractorProgressPayment: vi.fn(),
   useReplaceSubcontractorProgressPaymentLines: vi.fn(),
   useSubmitSubcontractorProgressPayment: vi.fn(),
+}));
+
+vi.mock("@/lib/api/hooks/useDiarySuggestion", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useDiarySuggestion")>()),
+  useSubcontractorDiarySuggestion: vi.fn(),
 }));
 
 vi.mock("@/lib/api/hooks/useProjects", async (importOriginal) => ({
@@ -193,6 +199,9 @@ function setupCommonMocks() {
   vi.mocked(useUpdateSubcontractorProgressPayment).mockReturnValue(mutationResult());
   vi.mocked(useReplaceSubcontractorProgressPaymentLines).mockReturnValue(mutationResult());
   vi.mocked(useSubmitSubcontractorProgressPayment).mockReturnValue(mutationResult());
+  vi.mocked(useSubcontractorDiarySuggestion).mockReturnValue({
+    refetch: vi.fn().mockResolvedValue({ data: undefined, error: null }),
+  } as never);
 }
 
 function renderForm(props: Parameters<typeof SubcontractorProgressPaymentForm>[0]) {
@@ -509,5 +518,169 @@ describe("SubcontractorProgressPaymentForm — hiyerarşi şeridi ve devre-dış
     renderForm({ mode: "create", contractId: CONTRACT_ID });
     const hierarchy = await screen.findByTestId("thf-hierarchy");
     expect(hierarchy).toBeInTheDocument();
+  });
+});
+
+// F-SD T5 · "Günlükten Doldur" (spec §4) — sözleşme bazlı öneri ucu.
+describe("SubcontractorProgressPaymentForm — Günlükten Doldur", () => {
+  function mockSuggestion(result: Partial<{ data: unknown; error: unknown }>) {
+    const refetch = vi.fn().mockResolvedValue({ error: null, ...result });
+    vi.mocked(useSubcontractorDiarySuggestion).mockReturnValue({ refetch } as never);
+    return refetch;
+  }
+
+  function suggestionData(overrides: Record<string, unknown> = {}) {
+    return {
+      year: 2026,
+      month: 7,
+      skipped_unbridged_count: 0,
+      reason: null,
+      contract_id: CONTRACT_ID,
+      site_id: SITE_ID,
+      lines: [
+        { contract_item_id: ITEM_DIARY.id, quantity: "60.000", coefficient: null, sort_order: 0 },
+      ],
+      ...overrides,
+    };
+  }
+
+  it("önerilen miktarı satıra yazar ve '📅 Günlük kayıttan' rozetini basar", async () => {
+    mockSuggestion({ data: suggestionData() });
+    renderForm({ mode: "create", contractId: CONTRACT_ID });
+    await screen.findByTestId("thf-hierarchy");
+
+    await userEvent.click(screen.getByTestId("thf-diary-fill"));
+
+    expect(await screen.findByTestId("thf-diary-fill-notice")).toHaveTextContent(
+      "1 satır günlük kayıtlardan dolduruldu.",
+    );
+    expect(screen.getByLabelText(`${ITEM_DIARY.description} — miktar`)).toHaveValue("60.000");
+    const badge = screen.getByTestId("thf-diary-source");
+    expect(badge).toHaveTextContent("📅 Günlük kayıttan");
+    expect(screen.getByText("Günlük kayıttan ↑")).toBeInTheDocument();
+  });
+
+  it("rozet yalnız öneri uygulanan satırda görünür; diğer satır 'Elle giriş' kalır", async () => {
+    mockSuggestion({ data: suggestionData() });
+    renderForm({ mode: "create", contractId: CONTRACT_ID });
+    await screen.findByTestId("thf-hierarchy");
+
+    await userEvent.click(screen.getByTestId("thf-diary-fill"));
+
+    expect(await screen.findByTestId("thf-diary-fill-notice")).toBeInTheDocument();
+    expect(screen.getAllByTestId("thf-diary-source")).toHaveLength(1);
+    expect(screen.getByText("Elle giriş")).toBeInTheDocument();
+  });
+
+  it("kullanıcı düzeltince rozet düşer (yanlış bilgi vermez)", async () => {
+    mockSuggestion({ data: suggestionData() });
+    renderForm({ mode: "create", contractId: CONTRACT_ID });
+    await screen.findByTestId("thf-hierarchy");
+    await userEvent.click(screen.getByTestId("thf-diary-fill"));
+    const input = await screen.findByLabelText(`${ITEM_DIARY.description} — miktar`);
+
+    await userEvent.clear(input);
+    await userEvent.type(input, "7");
+
+    expect(screen.queryByTestId("thf-diary-source")).not.toBeInTheDocument();
+  });
+
+  it("proje geneli sözleşmede backend gerekçesini görünür basar", async () => {
+    mockSuggestion({
+      data: suggestionData({
+        lines: [],
+        site_id: null,
+        reason: "Proje geneli sözleşmede günlükten doldurma desteklenmiyor.",
+      }),
+    });
+    renderForm({ mode: "create", contractId: CONTRACT_ID });
+    await screen.findByTestId("thf-hierarchy");
+
+    await userEvent.click(screen.getByTestId("thf-diary-fill"));
+
+    expect(await screen.findByTestId("thf-diary-fill-notice")).toHaveTextContent(
+      "Proje geneli sözleşmede günlükten doldurma desteklenmiyor.",
+    );
+  });
+
+  it("atlanan poz + eşleşmeyen satırı görünür bildirir", async () => {
+    mockSuggestion({
+      data: suggestionData({
+        skipped_unbridged_count: 2,
+        lines: [
+          { contract_item_id: "yok-1", quantity: "9", coefficient: null, sort_order: 0 },
+        ],
+      }),
+    });
+    renderForm({ mode: "create", contractId: CONTRACT_ID });
+    await screen.findByTestId("thf-hierarchy");
+
+    await userEvent.click(screen.getByTestId("thf-diary-fill"));
+
+    const notice = await screen.findByTestId("thf-diary-fill-notice");
+    expect(notice).toHaveTextContent("2 günlük pozu sözleşme kalemine bağlı olmadığı için atlandı");
+    expect(notice).toHaveTextContent("Öneriden 1 satır bu formda karşılık bulamadı");
+  });
+
+  it("elle girilen miktarın üzerine yazmadan önce onay ister", async () => {
+    mockSuggestion({ data: suggestionData() });
+    renderForm({ mode: "create", contractId: CONTRACT_ID });
+    await screen.findByTestId("thf-hierarchy");
+    const input = screen.getByLabelText(`${ITEM_DIARY.description} — miktar`);
+    await userEvent.clear(input);
+    await userEvent.type(input, "15");
+
+    await userEvent.click(screen.getByTestId("thf-diary-fill"));
+
+    expect(
+      await screen.findByText(/1 satırda elle girdiğiniz sıfırdan farklı miktar var/),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Üzerine yaz" }));
+    expect(screen.getByLabelText(`${ITEM_DIARY.description} — miktar`)).toHaveValue("60.000");
+  });
+
+  it("dolan miktarlar MEVCUT kaydetme yolundan (PUT lines) gönderilir", async () => {
+    const replaceMutate = vi.fn();
+    vi.mocked(useCreateSubcontractorProgressPayment).mockReturnValue(
+      mutationResult({
+        mutate: vi.fn((_vars, opts?: { onSuccess?: (created: { id: string }) => void }) =>
+          opts?.onSuccess?.({ id: PAYMENT_ID }),
+        ),
+      }),
+    );
+    vi.mocked(useReplaceSubcontractorProgressPaymentLines).mockReturnValue(
+      mutationResult({ mutate: replaceMutate }),
+    );
+    mockSuggestion({ data: suggestionData() });
+    renderForm({ mode: "create", contractId: CONTRACT_ID });
+    await screen.findByTestId("thf-hierarchy");
+    await userEvent.click(screen.getByTestId("thf-diary-fill"));
+    await screen.findByTestId("thf-diary-fill-notice");
+
+    await userEvent.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
+
+    const body = replaceMutate.mock.calls[0][0] as {
+      body: { lines: { contract_item_id: string; quantity: string }[] };
+    };
+    expect(body.body.lines).toContainEqual({
+      contract_item_id: ITEM_DIARY.id,
+      quantity: "60.000",
+      sort_order: 1,
+    });
+  });
+
+  it("uç hata verirse Türkçe gerekçe basar", async () => {
+    mockSuggestion({
+      data: undefined,
+      error: new BackendError(403, { detail: "Bu sözleşmeye yetkiniz yok." }),
+    });
+    renderForm({ mode: "create", contractId: CONTRACT_ID });
+    await screen.findByTestId("thf-hierarchy");
+
+    await userEvent.click(screen.getByTestId("thf-diary-fill"));
+
+    expect(await screen.findByTestId("thf-diary-fill-notice")).toHaveTextContent(
+      "Bu sözleşmeye yetkiniz yok.",
+    );
   });
 });
