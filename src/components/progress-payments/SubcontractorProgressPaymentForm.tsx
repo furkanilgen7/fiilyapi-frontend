@@ -6,7 +6,9 @@ import { useRouter } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Alert, Button, Field, Input, Select } from "@/components/ui";
+import { CalendarCheckIcon } from "@/components/ui/icons";
 import { backendErrorMessage } from "@/lib/api/error-message";
+import { useSubcontractorDiarySuggestion } from "@/lib/api/hooks/useDiarySuggestion";
 import {
   useSubcontractorContract,
   useSubcontractorProgressPayment,
@@ -24,6 +26,9 @@ import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { pendingModuleLabel } from "@/lib/pending-modules";
 import { PERIOD_MONTHS, formatAmount, formatPercent, formatQuantity } from "@/lib/format";
 
+import { DiaryFillFeedback } from "./DiaryFillFeedback";
+import { DIARY_FILL_SOURCE_NOTE, applySubcontractorDiarySuggestion } from "./diary-fill";
+import { useDiaryFill } from "./useDiaryFill";
 import { sanitizeQuantityInput } from "./pivot";
 import {
   buildPaymentCalculationRows,
@@ -97,6 +102,15 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
   const [sectionId, setSectionId] = useState<string | null>(null);
   const [defaultCoefficient, setDefaultCoefficient] = useState("1");
   const [formError, setFormError] = useState<string | null>(null);
+  // Bu oturumda günlükten dolan kalem kimlikleri. Backend'in KALICI
+  // `quantity_source` alanı (yalnız `SubcontractorProgressPaymentLineRead`te
+  // vardır) ile KARIŞTIRILMAZ: `PUT …/lines` gövdesinde `quantity_source`
+  // yoktur (openapi: "BİLEREK YOKTUR … rozeti sahte doldurmanın yolu
+  // olurdu"), yani kaydedince satır "elle giriş" olur — bu, uyarıdaki
+  // `DIARY_FILL_SOURCE_NOTE` ile kullanıcıya söylenir.
+  const [diaryFilledItemIds, setDiaryFilledItemIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
 
   // Tohumlama YALNIZ BİR KEZ çalışır (`ProgressPaymentForm` deseni) —
   // sonraki `detailQuery`/`contractQuery` yenilemeleri (ör. kaydetme
@@ -113,6 +127,22 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
     setSectionId(detail?.section_id ?? null);
     setDefaultCoefficient(detail?.default_coefficient ?? "1");
   }, [contract, detail, isEdit]);
+
+  // "Günlükten Doldur" (spec §4) — sözleşme bazlı uç. Açılışta ÇEKİLMEZ
+  // (`enabled: false`); butona basılınca formun dönemiyle çağrılır.
+  const diarySuggestionQuery = useSubcontractorDiarySuggestion(resolvedContractId, {
+    year: periodYear ?? undefined,
+    month: periodMonth ?? undefined,
+    enabled: false,
+  });
+  const diaryFill = useDiaryFill({
+    fetchSuggestion: () => diarySuggestionQuery.refetch(),
+    apply: (lines) => applySubcontractorDiarySuggestion(rows ?? [], lines),
+    commit: (application) => {
+      setRows(application.rows);
+      setDiaryFilledItemIds((prev) => new Set([...prev, ...application.markedKeys]));
+    },
+  });
 
   if (!canWrite) return <AccessDenied />;
   if (isForbidden(detailQuery.error) || isForbidden(contractQuery.error)) {
@@ -157,6 +187,14 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
     submitPayment.isPending;
 
   function updateQuantity(itemId: string, value: string) {
+    // Elle düzeltilen satırda oturum-içi günlük rozeti düşer (rozet yanlış
+    // bilgi vermez); backend'den GELEN `quantity_source` rozeti ayrı yaşar.
+    setDiaryFilledItemIds((prev) => {
+      if (!prev.has(itemId)) return prev;
+      const next = new Set(prev);
+      next.delete(itemId);
+      return next;
+    });
     setRows((prev) =>
       (prev ?? []).map((row) => (row.itemId !== itemId ? row : { ...row, quantity: value })),
     );
@@ -321,6 +359,17 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
           )}
         </h1>
         <div className="pp-form__title-actions">
+          {/* Spec §4 (kullanıcı kararı S5) — mockup'ta olmayan ONAYLI ek
+              aksiyon; stil formun mevcut ikincil buton deseniyle AYNI. */}
+          <Button
+            variant="secondary"
+            onClick={diaryFill.run}
+            disabled={isSaving || diaryFill.isPending}
+            data-testid="thf-diary-fill"
+          >
+            <CalendarCheckIcon />
+            {diaryFill.isPending ? "Günlük okunuyor…" : "Günlükten Doldur"}
+          </Button>
           <Button variant="secondary" onClick={handleSaveDraft} disabled={isSaving}>
             {isSaving ? "Kaydediliyor…" : "Taslak Kaydet"}
           </Button>
@@ -335,6 +384,14 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
           {formError}
         </Alert>
       )}
+
+      <DiaryFillFeedback
+        notice={diaryFill.notice}
+        confirmOverwriteCount={diaryFill.confirmOverwriteCount}
+        onConfirmOverwrite={diaryFill.confirmOverwrite}
+        onCancelOverwrite={diaryFill.cancelOverwrite}
+        testIdPrefix="thf"
+      />
 
       {(detail?.dropped_orphan_count ?? 0) > 0 && (
         <Alert variant="warning" className="pp-form__alert" data-testid="thf-dropped-orphan-alert">
@@ -505,72 +562,88 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
               </tr>
             </thead>
             <tbody>
-              {groupedRows.map(({ row, showGroupHeader }) => (
-                <RowGroup key={row.itemId}>
-                  {showGroupHeader && row.groupName && (
-                    <tr className="thf-table__group-row">
-                      <td colSpan={6}>{row.groupName}</td>
-                    </tr>
-                  )}
-                  <tr className="thf-table__row">
-                    <td className="thf-table__td thf-table__td--mono">{row.code}</td>
-                    <td className="thf-table__td">
-                      <div className="thf-table__item-name">{row.description}</div>
-                      {row.quantitySource === "diary" ? (
-                        <div className="thf-table__source thf-table__source--diary">
-                          📅 Günlük kayıttan: {formatQuantity(row.quantity)} {row.unit} hesaplandı
-                        </div>
-                      ) : (
-                        <div className="thf-table__source">Elle giriş</div>
-                      )}
-                    </td>
-                    <td className="thf-table__td thf-table__td--center">{row.unit}</td>
-                    <td className="thf-table__td thf-table__td--right thf-table__td--mono">
-                      {/* Fix round 1 (kontrolcü bulgusu, Important): eksik
-                          (`null`) birim fiyat GERÇEK sıfırdan ayrıştırılır —
-                          sessizce "₺ 0" basılmaz, T2'nin zarif düşüş
-                          (pending) deseni kullanılır (görünür "—" + title/
-                          sr-only, kolon SİLİNMEZ). */}
-                      {row.contractUnitPrice !== null ? (
-                        formatAmount(row.contractUnitPrice)
-                      ) : (
-                        <span
-                          className="thf-table__td--pending"
-                          title={MISSING_UNIT_PRICE_HINT}
-                          data-testid="thf-missing-price-cell"
-                        >
-                          —<span className="sr-only">{MISSING_UNIT_PRICE_HINT}</span>
-                        </span>
-                      )}
-                    </td>
-                    <td className="thf-table__td thf-table__td--right">
-                      <span className="thf-table__qty-wrap">
-                        <Input
-                          size="row"
-                          numeric
-                          inputMode="decimal"
-                          maxLength={16}
-                          aria-label={`${row.description} — miktar`}
-                          disabled={isSaving}
-                          className={
-                            row.quantitySource === "diary" ? "thf-table__qty-input--diary" : undefined
-                          }
-                          value={row.quantity}
-                          onChange={(event) =>
-                            updateQuantity(row.itemId, sanitizeQuantityInput(event.target.value))
-                          }
-                        />
-                        {row.quantitySource === "diary" && (
-                          <span className="thf-table__qty-tag">Günlük kayıttan ↑</span>
+              {groupedRows.map(({ row, showGroupHeader }) => {
+                // Rozet iki kaynaktan gelir: (a) backend'in KALICI
+                // `quantity_source === "diary"` alanı (mockup 87), (b) bu
+                // oturumda "Günlükten Doldur" ile dolan satır. (b)
+                // kaydedilince kalıcı OLMAZ — uyarıdaki kalıcılık notu bunu
+                // söyler, rozetin `title`ı da aynı metni taşır.
+                const isDiarySourced =
+                  row.quantitySource === "diary" || diaryFilledItemIds.has(row.itemId);
+                const isSessionDiary =
+                  row.quantitySource !== "diary" && diaryFilledItemIds.has(row.itemId);
+                return (
+                  <RowGroup key={row.itemId}>
+                    {showGroupHeader && row.groupName && (
+                      <tr className="thf-table__group-row">
+                        <td colSpan={6}>{row.groupName}</td>
+                      </tr>
+                    )}
+                    <tr className="thf-table__row">
+                      <td className="thf-table__td thf-table__td--mono">{row.code}</td>
+                      <td className="thf-table__td">
+                        <div className="thf-table__item-name">{row.description}</div>
+                        {isDiarySourced ? (
+                          <div
+                            className="thf-table__source thf-table__source--diary"
+                            title={isSessionDiary ? DIARY_FILL_SOURCE_NOTE : undefined}
+                            data-testid="thf-diary-source"
+                          >
+                            📅 Günlük kayıttan: {formatQuantity(row.quantity)} {row.unit} hesaplandı
+                            {isSessionDiary && (
+                              <span className="sr-only">{DIARY_FILL_SOURCE_NOTE}</span>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="thf-table__source">Elle giriş</div>
                         )}
-                      </span>
-                    </td>
-                    <td className="thf-table__td thf-table__td--right thf-table__td--mono thf-table__td--strong">
-                      {row.lineTotal !== null ? formatAmount(row.lineTotal) : "—"}
-                    </td>
-                  </tr>
-                </RowGroup>
-              ))}
+                      </td>
+                      <td className="thf-table__td thf-table__td--center">{row.unit}</td>
+                      <td className="thf-table__td thf-table__td--right thf-table__td--mono">
+                        {/* Fix round 1 (kontrolcü bulgusu, Important): eksik
+                            (`null`) birim fiyat GERÇEK sıfırdan ayrıştırılır —
+                            sessizce "₺ 0" basılmaz, T2'nin zarif düşüş
+                            (pending) deseni kullanılır (görünür "—" + title/
+                            sr-only, kolon SİLİNMEZ). */}
+                        {row.contractUnitPrice !== null ? (
+                          formatAmount(row.contractUnitPrice)
+                        ) : (
+                          <span
+                            className="thf-table__td--pending"
+                            title={MISSING_UNIT_PRICE_HINT}
+                            data-testid="thf-missing-price-cell"
+                          >
+                            —<span className="sr-only">{MISSING_UNIT_PRICE_HINT}</span>
+                          </span>
+                        )}
+                      </td>
+                      <td className="thf-table__td thf-table__td--right">
+                        <span className="thf-table__qty-wrap">
+                          <Input
+                            size="row"
+                            numeric
+                            inputMode="decimal"
+                            maxLength={16}
+                            aria-label={`${row.description} — miktar`}
+                            disabled={isSaving}
+                            className={isDiarySourced ? "thf-table__qty-input--diary" : undefined}
+                            value={row.quantity}
+                            onChange={(event) =>
+                              updateQuantity(row.itemId, sanitizeQuantityInput(event.target.value))
+                            }
+                          />
+                          {isDiarySourced && (
+                            <span className="thf-table__qty-tag">Günlük kayıttan ↑</span>
+                          )}
+                        </span>
+                      </td>
+                      <td className="thf-table__td thf-table__td--right thf-table__td--mono thf-table__td--strong">
+                        {row.lineTotal !== null ? formatAmount(row.lineTotal) : "—"}
+                      </td>
+                    </tr>
+                  </RowGroup>
+                );
+              })}
             </tbody>
             <tfoot>
               {calcRows.map((calcRow) => (

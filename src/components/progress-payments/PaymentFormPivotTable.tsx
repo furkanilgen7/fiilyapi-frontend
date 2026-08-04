@@ -2,14 +2,25 @@ import { Input } from "@/components/ui";
 import { formatAmount, formatQuantity } from "@/lib/format";
 import type { ContractDistributionSite } from "@/lib/api/hooks/useContract";
 
+import { DIARY_FILL_SOURCE_NOTE, diaryCellKey } from "./diary-fill";
 import { rowAmountTotal, rowQuantityTotal, sanitizeQuantityInput, type PivotRow } from "./pivot";
 
 export interface PaymentFormPivotTableProps {
   sites: ContractDistributionSite[];
   rows: PivotRow[];
   disabled: boolean;
+  /**
+   * Bu oturumda "Günlükten Doldur" ile dolan hücrelerin `kalem::şantiye`
+   * anahtarları (F-SD T5). İşveren satırında backend `quantity_source`
+   * ALANI YOK (openapi: yalnız taşeron `LineRead`inde) — bu yüzden mockup 117
+   * "📅 Günlük kayıtlardan hesaplandı" notu KALICI değildir; not metninde
+   * bu durum açıkça söylenir, sessizce kalıcıymış gibi gösterilmez.
+   */
+  diaryFilledKeys?: ReadonlySet<string>;
   onQuantityChange: (itemId: string, siteId: string, value: string) => void;
 }
+
+const EMPTY_DIARY_KEYS: ReadonlySet<string> = new Set<string>();
 
 // E "İşveren Hakediş Oluştur" mockup 88-200 — şantiye bazlı miktar tablosu.
 // Sözleşme kalemi = satır, şantiye = sütun (brief §Veri kaynakları). Mockup'ın
@@ -26,6 +37,7 @@ export function PaymentFormPivotTable({
   sites,
   rows,
   disabled,
+  diaryFilledKeys = EMPTY_DIARY_KEYS,
   onQuantityChange,
 }: PaymentFormPivotTableProps) {
   return (
@@ -60,6 +72,12 @@ export function PaymentFormPivotTable({
               // Tek çağrı: `rowAmountTotal` iki kez çağrılıp `!` ile
               // daraltmak yerine (final inceleme #6) sonuç bir kez hesaplanır.
               const amountTotal = rowAmountTotal(row);
+              // Mockup 117: poz adının altındaki "📅 Günlük kayıtlardan
+              // hesaplandı" notu — satırın EN AZ BİR hücresi bu oturumda
+              // günlükten dolduysa basılır.
+              const isDiaryFilled = row.cells.some((cell) =>
+                diaryFilledKeys.has(diaryCellKey(row.item.id, cell.siteId)),
+              );
               return (
                 <PivotRowGroup key={row.item.id}>
                   {showGroupHeader && (
@@ -71,6 +89,16 @@ export function PaymentFormPivotTable({
                     <td className="pp-table__cell pp-table__col--item">{row.item.code}</td>
                     <td className="pp-table__cell pp-table__col--item">
                       {row.item.description}
+                      {isDiaryFilled && (
+                        <span
+                          className="pp-form-table__diary-note"
+                          title={DIARY_FILL_SOURCE_NOTE}
+                          data-testid="pp-form-diary-note"
+                        >
+                          📅 Günlük kayıtlardan hesaplandı
+                          <span className="sr-only">{DIARY_FILL_SOURCE_NOTE}</span>
+                        </span>
+                      )}
                     </td>
                     <td className="pp-table__cell">{row.item.unit}</td>
                     <td className="pp-table__cell">{formatAmount(row.item.unit_price)}</td>

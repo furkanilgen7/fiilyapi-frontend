@@ -71,18 +71,23 @@ function contextGroup(ctx: ProjectNavContext): DrillNavGroup {
   };
 }
 
-// Aktif şantiyenin 7 sekmesi (spec §3.3): Bölümler, İş Kalemleri ve
-// Hakedişler kendi rotaları, kalan 4'ü henüz yazılmamış — catch-all'a düşer.
+// Aktif şantiyenin 7 sekmesi (spec §3.3): Bölümler, İş Kalemleri, Hakedişler
+// ve Günlük Kayıt kendi rotaları, kalan 3'ü henüz yazılmamış — catch-all'a düşer.
 //
 // "İş Kalemleri" Ekran 13 spec §2.2 ile eklendi (onaylı sapma B, §13);
-// "Hakedişler" P7 T6 ile yazıldı. Sıra SiteDetailTabs.tsx ile birebir
-// aynıdır — ikisi ayrışmamalıdır.
+// "Hakedişler" P7 T6 ile, "Günlük Kayıt" F-SD T2 ile yazıldı. Sıra
+// SiteDetailTabs.tsx ile birebir aynıdır — ikisi ayrışmamalıdır.
 function activeSiteGroup(ctx: Required<Pick<ProjectNavContext, "siteId" | "siteName">> & ProjectNavContext): DrillNavGroup {
   const base = `/projeler/${ctx.projectId}/santiyeler/${ctx.siteId}`;
   return {
     heading: ctx.siteName,
     items: [
-      { label: "Bölümler", href: base, emoji: "📍" },
+      // "Bölümler" şantiye KÖK rotasıdır ve diğer 6 sekmenin ATASIDIR
+      // (`.../s-1` ⊂ `.../s-1/gunluk-kayit`); ön ek eşleşmesiyle her alt
+      // sekmede İKİ öğe birden aktif görünüyordu (F-SD T7 final review'da
+      // ekran görüntüsüyle yakalandı). Bağlam grubundaki (satır 61-63) aynı
+      // gerekçe buraya uygulanmamıştı — `exact` bunu kapatır.
+      { label: "Bölümler", href: base, emoji: "📍", exact: true },
       { label: "İş Kalemleri", href: `${base}/is-kalemleri`, emoji: "📐" },
       { label: "Puantaj", href: `${base}/puantaj`, emoji: "👷" },
       { label: "Stok", href: `${base}/stok`, emoji: "📦" },

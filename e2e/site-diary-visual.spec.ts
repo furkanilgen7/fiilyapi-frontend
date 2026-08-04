@@ -1,0 +1,67 @@
+import { test, expect, type Page } from "@playwright/test";
+
+// F-SD T6 · "Kayıt Gir" ekranı görsel testi (mockup `Şantiye - Günlük
+// Kayıt.dc.html`, GK). `section-detail-visual.spec.ts` deseninin aynısı.
+//
+// SALT-OKUR: bu dosya hiçbir POST/PATCH/PUT tetiklemez — yalnız fikstürleri
+// render eder. Mutasyon yapan tek günlük spec'i (`site-diary.spec.ts`)
+// bilerek EYLÜL 2026'da çalışır; burada bakılan TEMMUZ 2026 fikstürleri
+// (d-1 gönderilmiş, d-2 taslak) hiçbir spec tarafından değiştirilmez, bu
+// yüzden `fullyParallel` altında yarış yoktur (P7 dersi).
+//
+// ⏱️ SAAT SABİTLEME (zorunlu): ekranın varsayılan günü BUGÜNdür
+// (`derive.ts · isoDate(new Date())`) ve sağ paneldeki "Son Kayıtlar" +
+// gömülü planlama bloğu o güne göre çekilir. Sabitlenmezse baseline üretildiği
+// güne donar ve ertesi gün kırılır. `page.clock.setFixedTime` NAVİGASYONDAN
+// ÖNCE kurulur.
+//
+// Baseline `.png` YALNIZ Linux CI'da üretilir (visual-baselines.yml →
+// workflow_dispatch); macOS'ta koşturulup commit edilmez.
+
+/** Temmuz fikstürlerinin ayı; kayıt OLMAYAN gün → "boş form" durumu. */
+const JULY_FREE_DAY = "2026-07-20T09:00:00Z";
+/** d-2 taslak kaydının günü → "dolu / taslak" durumu. */
+const JULY_DRAFT_DAY = "2026-07-16T09:00:00Z";
+
+const SITE_DIARY_URL = "/projeler/p-1/santiyeler/s-1/gunluk-kayit";
+
+async function login(page: Page) {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/login");
+  await page.getByLabel(/e-posta/i).fill("patron@fiil.com");
+  await page.getByLabel(/^şifre$/i).fill("dogruparola");
+  await page.getByRole("button", { name: /giriş yap/i }).click();
+  await expect(page.getByRole("heading", { name: "Gösterge Paneli" })).toBeVisible();
+}
+
+test("gunluk kayit gir ekrani (bos gun) gorsel", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(JULY_FREE_DAY));
+  await login(page);
+
+  await page.goto(SITE_DIARY_URL);
+  await expect(page.getByRole("heading", { level: 1, name: "Günlük Kayıt & Planlama" })).toBeVisible();
+  // Kayıt açılmamış gün: satır iskeleti yok, dürüst boş durum basılır.
+  await expect(
+    page.getByText("İş kalemi satırları, gün için kayıt açıldığında", { exact: false }),
+  ).toBeVisible();
+  // Sağ panel GERÇEK veriyle doldu (yükleme durumu dondurulmasın).
+  await expect(page.locator(".diary-recent__list")).toContainText("16 Temmuz");
+  // Gömülü planlama bloğu (day-summary) geldi.
+  await expect(page.locator(".diary-plan")).toBeVisible();
+
+  await expect(page).toHaveScreenshot("gunluk-kayit-bos.png", { fullPage: true });
+});
+
+test("gunluk kayit gir ekrani (dolu taslak) gorsel", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(JULY_DRAFT_DAY));
+  await login(page);
+
+  await page.goto(SITE_DIARY_URL);
+  await expect(page.getByRole("heading", { level: 1, name: "Günlük Kayıt & Planlama" })).toBeVisible();
+  // d-2 (16 Temmuz, taslak): başlık alanları + satır miktarı dolu.
+  await expect(page.locator(".diary__status-row")).toContainText("Taslak");
+  await expect(page.getByLabel("03.002 bugün yapılan miktar")).toHaveValue("180.000");
+  await expect(page.locator(".diary-lines__total-amount")).toContainText("₺ 26.100");
+
+  await expect(page).toHaveScreenshot("gunluk-kayit-dolu.png", { fullPage: true });
+});

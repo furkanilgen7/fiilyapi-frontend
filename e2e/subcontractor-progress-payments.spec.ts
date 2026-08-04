@@ -265,3 +265,25 @@ test("taşeron: şantiye sekmesi — U2 `site_id` sunucuda süzer (başka şanti
   await expect(page.getByText("Aydın Elektrik Taah. #1")).toBeVisible();
   await expect(page.getByText("Çelik İnşaat Taah.")).toHaveCount(0);
 });
+
+// F-SD T5 · "Günlükten Doldur" — sözleşme bazlı uç (`sc-2`, şantiye `s-2`).
+// Köprü: `bi-5 → sci-4`, `bi-6 → sci-5`. Create formu + kaydetme YOK →
+// hiçbir fikstür mutasyona uğramaz.
+test("taşeron: Günlükten Doldur miktarları yazar ve günlük rozetini basar", async ({ page }) => {
+  await login(page);
+
+  await page.goto("/hakedisler/taseron/yeni?contract=sc-2");
+  await expect(page.getByTestId("thf-hierarchy")).toBeVisible();
+
+  await page.getByLabel("Dönem").selectOption("7");
+  await page.getByLabel("Hakediş yılı").fill("2026");
+
+  await page.getByTestId("thf-diary-fill").click();
+
+  await expect(page.getByTestId("thf-diary-fill-notice")).toContainText(
+    "2 satır günlük kayıtlardan dolduruldu.",
+  );
+  await expect(page.getByLabel("Duvar Örgü İşleri — miktar")).toHaveValue("320.000");
+  await expect(page.getByLabel("Sıva İşleri — miktar")).toHaveValue("260.000");
+  await expect(page.getByTestId("thf-diary-source").first()).toContainText("📅 Günlük kayıttan");
+});

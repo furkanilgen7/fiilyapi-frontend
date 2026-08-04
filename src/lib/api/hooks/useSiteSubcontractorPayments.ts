@@ -36,6 +36,12 @@ export interface SiteSubcontractorPaymentItem {
   contractId: string;
   subcontractorName: string;
   sequenceNo: number;
+  /** Hakediş dönemi (F-SD T3): liste şemasında `period_year`/`period_month`
+   * ZATEN vardır — uçta dönem filtresi olduğu hâlde bu hook filtresiz çağrılır
+   * (aynı önbellek anahtarı birden çok ekranca paylaşılır), ay süzmesi
+   * çağıranda yapılır. */
+  periodYear: number | null;
+  periodMonth: number | null;
   /** Sözleşme LİSTE ucundan (`work_category`) join ile — liste şemasında
    * YOK. `null` olabilir (sözleşmede de boşsa ya da join'de eşleşme
    * bulunamazsa) — çağıran taraf zarif düşüş uygular. */
@@ -106,6 +112,8 @@ export function useSiteSubcontractorPayments(
       contractId: payment.contract_id,
       subcontractorName: payment.subcontractor_name ?? "—",
       sequenceNo: payment.sequence_no,
+      periodYear: payment.period_year,
+      periodMonth: payment.period_month,
       // Eşleşme bulunamazsa (yarış durumu) `null` — hata fırlatılmaz.
       workCategory: workCategoryByContractId.get(payment.contract_id) ?? null,
       sectionId: payment.section_id,

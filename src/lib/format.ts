@@ -121,3 +121,25 @@ export function formatPeriodShort(year: number, month: number): string {
   const name = TR_MONTHS_SHORT[month - 1];
   return name ? `${name} ${year}` : `${month}/${year}`;
 }
+
+/**
+ * Ay adı tek başına (F-SD T3, GK388: "💰 Temmuz Hakediş Birikimi"). `month`
+ * 1-12; aralık dışında sayı basılır. `formatPeriod` ile AYNI diziden türer —
+ * ay adları kopyalanmaz.
+ */
+export function formatMonthName(month: number): string {
+  return TR_MONTHS[month - 1] ?? String(month);
+}
+
+/**
+ * Gün + ay (F-SD T3, GK360: "16 Temmuz"). Girdi `YYYY-MM-DD` ISO tarihidir ve
+ * STRING olarak ayrıştırılır — `new Date(iso)` UTC yorumlar, TR saatinde bir
+ * gün geri kayardı (`derive.ts/isoDate`in aynı gerekçesi). ICU'ya da bağlı
+ * değildir (`formatPeriod` notu).
+ */
+export function formatDayMonth(iso: string): string {
+  const [year, month, day] = iso.split("-");
+  const name = TR_MONTHS[Number(month) - 1];
+  if (year === undefined || day === undefined || name === undefined) return iso;
+  return `${Number(day)} ${name}`;
+}

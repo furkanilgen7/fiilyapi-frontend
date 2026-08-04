@@ -24,13 +24,16 @@ interface TabDef {
 //
 // "Hakedişler" P7 T6 ile yazildi (`Şantiye - Hakedişler.dc.html`) —
 // project-nav-config.ts'teki sira ile ayrismamali.
+//
+// "Günlük Kayıt" F-SD T2 ile yazildi (`Şantiye - Günlük Kayıt.dc.html`);
+// artik catch-all ComingSoon'a DUSMEZ, gercek rotaya gider.
 const TABS: TabDef[] = [
   { label: "Bölümler", slug: null, written: true },
   { label: "İş Kalemleri", slug: "is-kalemleri", written: true },
   { label: "Puantaj", slug: "puantaj" },
   { label: "Stok", slug: "stok" },
   { label: "Hakedişler", slug: "hakedisler", written: true },
-  { label: "Günlük Kayıt", slug: "gunluk-kayit" },
+  { label: "Günlük Kayıt", slug: "gunluk-kayit", written: true },
   { label: "Belgeler", slug: "belgeler" },
 ];
 

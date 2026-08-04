@@ -66,3 +66,38 @@ test("hakediş: listeden detaya geçiş, form kaydetme, durum geçişi", async (
   await page.getByRole("button", { name: "Onaya Gönder" }).click();
   await expect(page.getByText("Onay Bekliyor", { exact: true })).toBeVisible();
 });
+
+// F-SD T5 · "Günlükten Doldur" (spec §4). Yalnız OKUR + form state'ini
+// değiştirir — HİÇBİR kayıt mutasyona uğramaz (create formu, kaydetme yok),
+// bu yüzden görsel spec'lerin fikstürlerinden yapısal olarak bağımsızdır.
+// Köprü tablosu: `bi-3 → ci-1`, `bi-4 → ci-3` (bkz. `mock-backend.ts`
+// DIARY_BOQ_BRIDGE); `bi-5`/`bi-6` işveren tarafında köprüsüzdür ve
+// "atlandı" olarak GÖRÜNÜR bildirilir.
+test("hakediş: Günlükten Doldur önerilen miktarları forma yazar, atlananları bildirir", async ({
+  page,
+}) => {
+  await login(page);
+
+  await page.goto("/hakedisler/yeni?project=p-1");
+  await expect(page.getByRole("heading", { name: "İşveren Hakediş Oluştur" })).toBeVisible();
+
+  // Günlük fikstürleri Temmuz 2026'dadır — öneri formun DÖNEMİYLE çağrılır.
+  await page.getByLabel("Hakediş Dönemi").selectOption("7");
+  await page.getByLabel("Hakediş yılı").fill("2026");
+
+  await page.getByTestId("pp-form-diary-fill").click();
+
+  const notice = page.getByTestId("pp-form-diary-fill-notice");
+  await expect(notice).toContainText("2 satır günlük kayıtlardan dolduruldu.");
+  await expect(notice).toContainText("günlük pozu sözleşme kalemine bağlı olmadığı için atlandı");
+  await expect(page.getByLabel("Kat Döşemesi C25/30 — A-Blok Şantiyesi miktar")).toHaveValue(
+    "120.000",
+  );
+  await expect(page.getByLabel("Nervürlü Demir Ø12–Ø20 — A-Blok Şantiyesi miktar")).toHaveValue(
+    "8.500",
+  );
+
+  // Kullanıcı düzeltebilir (spec §4: "kullanıcı düzeltebilir").
+  await page.getByLabel("Kat Döşemesi C25/30 — A-Blok Şantiyesi miktar").fill("100");
+  await expect(page.getByLabel("Kat Döşemesi C25/30 — A-Blok Şantiyesi miktar")).toHaveValue("100");
+});

@@ -7,8 +7,10 @@ import { useRouter } from "next/navigation";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { ConfirmDialog } from "@/components/settings/ConfirmDialog";
 import { Alert, Button, Field, Input, Select, Textarea } from "@/components/ui";
+import { CalendarCheckIcon } from "@/components/ui/icons";
 import { backendErrorMessage } from "@/lib/api/error-message";
 import { useContractDistribution, useEmployerContract } from "@/lib/api/hooks/useContract";
+import { useEmployerDiarySuggestion } from "@/lib/api/hooks/useDiarySuggestion";
 import {
   useCreateProgressPayment,
   useRefreshProgressPaymentPrices,
@@ -21,9 +23,12 @@ import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { PERIOD_MONTHS, formatPercent, formatQuantity } from "@/lib/format";
 
+import { DiaryFillFeedback } from "./DiaryFillFeedback";
 import { PaymentCalculationCard } from "./PaymentCalculationCard";
 import { PaymentFormPivotTable } from "./PaymentFormPivotTable";
 import { ProgressPaymentStatusActions } from "./ProgressPaymentStatusActions";
+import { applyEmployerDiarySuggestion, diaryCellKey } from "./diary-fill";
+import { useDiaryFill } from "./useDiaryFill";
 import {
   buildLinesSaveBody,
   buildPivotRows,
@@ -80,6 +85,12 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [refreshConfirmOpen, setRefreshConfirmOpen] = useState(false);
+  // Günlükten dolan hücrelerin anahtarları (`kalem::şantiye`) — rozetin
+  // OTURUM-İÇİ kaynağı. Backend işveren satırında `quantity_source` alanı
+  // TAŞIMAZ (openapi: yalnız taşeron `LineRead`inde var), bu yüzden rozet
+  // kalıcı değildir ve bu durum kullanıcıya `DIARY_FILL_SOURCE_NOTE` ile
+  // açıkça söylenir.
+  const [diaryFilledKeys, setDiaryFilledKeys] = useState<ReadonlySet<string>>(() => new Set());
 
   // Tohumlama (seed) YALNIZ BİR KEZ çalışır — sonraki `detailQuery`/`distributionQuery`
   // yenilemeleri (ör. kaydetme sonrası invalidation) kullanıcının o anki
@@ -97,6 +108,25 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
     setDescription(detail?.description ?? "");
     setDefaultCoefficient(detail?.default_coefficient ?? "1");
   }, [distributionQuery.data, detail, isEdit]);
+
+  // "Günlükten Doldur" (spec §4). Öneri ekran açılışında ÇEKİLMEZ
+  // (`enabled: false`) — kullanıcı butona bastığında `refetch` ile alınır;
+  // dönem alanları öneriye query paramı olarak geçer, yani form hangi ayı
+  // gösteriyorsa önerinin ayı da odur.
+  const diarySuggestionQuery = useEmployerDiarySuggestion(resolvedProjectId, {
+    year: periodYear ?? undefined,
+    month: periodMonth ?? undefined,
+    enabled: false,
+  });
+  const diaryFill = useDiaryFill({
+    fetchSuggestion: () => diarySuggestionQuery.refetch(),
+    apply: (lines) => applyEmployerDiarySuggestion(rows ?? [], lines),
+    commit: (application) => {
+      setRows(application.rows);
+      setDirty(true);
+      setDiaryFilledKeys((prev) => new Set([...prev, ...application.markedKeys]));
+    },
+  });
 
   if (!canWrite) return <AccessDenied />;
   if (isForbidden(detailQuery.error) || isForbidden(distributionQuery.error) || isForbidden(contractQuery.error)) {
@@ -153,6 +183,15 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
 
   function updateCellQuantity(itemId: string, siteId: string, value: string) {
     setDirty(true);
+    // Kullanıcı hücreyi ELLE değiştirdiği anda "günlükten geldi" rozeti
+    // düşer — rozet yanlış bilgi vermez.
+    setDiaryFilledKeys((prev) => {
+      const key = diaryCellKey(itemId, siteId);
+      if (!prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
     setRows((prev) =>
       (prev ?? []).map((row) =>
         row.item.id !== itemId
@@ -224,6 +263,8 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
         if (fresh.data) {
           setRows(buildPivotRows(distribution, fresh.data.lines));
           setDirty(false);
+          // Satırlar sunucudaki hâline döndü — oturum-içi günlük rozetleri de düşer.
+          setDiaryFilledKeys(new Set());
         }
       },
       onError: (err) => setFormError(backendErrorMessage(err, "Fiyatlar tazelenemedi.")),
@@ -262,6 +303,18 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
         </h1>
         <div className="pp-form__title-actions">
           {isEdit && detail && <ProgressPaymentStatusActions detail={detail} />}
+          {/* Spec §4 (kullanıcı kararı S5) — mockup'ta olmayan ONAYLI ek
+              aksiyon; görsel dil formun mevcut ikincil butonlarıyla
+              ("Fiyatları Tazele") AYNI, icat edilmiş stil yok. */}
+          <Button
+            variant="secondary"
+            onClick={diaryFill.run}
+            disabled={isSaving || diaryFill.isPending}
+            data-testid="pp-form-diary-fill"
+          >
+            <CalendarCheckIcon />
+            {diaryFill.isPending ? "Günlük okunuyor…" : "Günlükten Doldur"}
+          </Button>
           <Button variant="secondary" onClick={handleSave} disabled={isSaving}>
             {isSaving ? "Kaydediliyor…" : "Taslak Kaydet"}
           </Button>
@@ -311,6 +364,14 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
           {formError}
         </Alert>
       )}
+
+      <DiaryFillFeedback
+        notice={diaryFill.notice}
+        confirmOverwriteCount={diaryFill.confirmOverwriteCount}
+        onConfirmOverwrite={diaryFill.confirmOverwrite}
+        onCancelOverwrite={diaryFill.cancelOverwrite}
+        testIdPrefix="pp-form"
+      />
 
       {/* Fiyat Farkı bandı — SALT OKUNUR (brief §Form üst bölümü, kullanıcı
           kararı S3): açma/kapama YOK, `has_price_escalation` sözleşmeden
@@ -406,6 +467,7 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
         sites={distribution.sites}
         rows={rows}
         disabled={isSaving}
+        diaryFilledKeys={diaryFilledKeys}
         onQuantityChange={updateCellQuantity}
       />
 

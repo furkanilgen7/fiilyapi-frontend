@@ -474,6 +474,26 @@ describe("BFF /api/backend/[...path]", () => {
       },
     );
 
+    // F-SD · T1 — Şantiye Günlüğü kaydinin detay/lines/submit/reopen uclari
+    // ("sites" DEGIL, kendi koku "diary" uzerinden gecer) ADLI olarak da
+    // kapiya baglanir. Liste/olusturma/ozet ("/sites/{site_id}/diary*") ve
+    // gomulu planlama blogu ("/sites/{site_id}/plan/day-summary") "sites"
+    // kokunden gectigi icin o da birlikte dogrulanir.
+    it.each(["diary", "sites"])(
+      "%s koku santiye gunlugu ekrani icin allow-list'te tanimlidir",
+      (root) => {
+        const source = readFileSync(
+          resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+          "utf8",
+        );
+        const allowList = source.slice(
+          source.indexOf("const ALLOWED_ROOTS"),
+          source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+        );
+        expect(allowList).toContain(`"${root}"`);
+      },
+    );
+
     it.each(calledRoots)("%s koku forward edilir", async (root) => {
       const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
       vi.stubGlobal("fetch", fetchMock);

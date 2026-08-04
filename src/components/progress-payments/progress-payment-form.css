@@ -166,3 +166,21 @@
   gap: 10px;
   margin-top: var(--space-4);
 }
+
+/* F-SD T5 · "Günlükten Doldur" — mockup "İşveren Hakediş Oluştur" 117'deki
+   poz altı notu ile uyarıdaki kalıcılık açıklaması. Renk/ölçüler taşeron
+   formundaki `.thf-table__source--diary` ile AYNI token'lardan gelir
+   (çıplak hex yok, ikinci bir görsel dil icat edilmez). */
+.pp-form-table__diary-note {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-xs);
+  color: var(--color-success-deep);
+}
+
+.pp-form__diary-source-note {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}

@@ -25,8 +25,12 @@ const tokensCss = readFileSync(
  * F-TH T5 (Şantiye Hakedişler "Taşeron Hakedişleri" panel başlığı): 70 → 72.
  * Mockup zemin/metin tonunun (#fff7ed/#c2410c) karşılığı YOKTU — iki yeni
  * token eklendi (`--color-orange-tint`/`--color-orange-tint-text`).
+ *
+ * F-SD T4 (Hakediş Özeti "Taşeron Hakediş →" bağlantısı, mockup satır 226):
+ * 72 → 73. Zemin/metin tonu mevcut turuncu token çiftiyle karşılandı, yalnız
+ * kenarlık tonunun (#fed7aa) karşılığı yoktu (`--color-orange-tint-border`).
  */
-const EXPECTED_HEX_COUNT = 72;
+const EXPECTED_HEX_COUNT = 73;
 
 describe("tokens.css", () => {
   it("çekirdek renk token'larını tanımlar (açık tema Slate + Blue)", () => {

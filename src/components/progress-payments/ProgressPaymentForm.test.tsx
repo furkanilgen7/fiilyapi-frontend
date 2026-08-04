@@ -15,6 +15,7 @@ import {
   useReplaceProgressPaymentLines,
   useUpdateProgressPayment,
 } from "@/lib/api/hooks/useProgressPaymentMutations";
+import { useEmployerDiarySuggestion } from "@/lib/api/hooks/useDiarySuggestion";
 import { BackendError } from "@/lib/api/unwrap";
 
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
@@ -39,6 +40,11 @@ vi.mock("@/lib/api/hooks/useProgressPayments", async (importOriginal) => ({
 vi.mock("@/lib/api/hooks/useProjects", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useProjects")>()),
   useProject: vi.fn(),
+}));
+
+vi.mock("@/lib/api/hooks/useDiarySuggestion", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useDiarySuggestion")>()),
+  useEmployerDiarySuggestion: vi.fn(),
 }));
 
 vi.mock("@/lib/api/hooks/useProgressPaymentMutations", async (importOriginal) => ({
@@ -165,6 +171,9 @@ function setupCommonMocks() {
   vi.mocked(useUpdateProgressPayment).mockReturnValue(mutationResult());
   vi.mocked(useReplaceProgressPaymentLines).mockReturnValue(mutationResult());
   vi.mocked(useRefreshProgressPaymentPrices).mockReturnValue(mutationResult());
+  vi.mocked(useEmployerDiarySuggestion).mockReturnValue({
+    refetch: vi.fn().mockResolvedValue({ data: undefined, error: null }),
+  } as never);
 }
 
 function renderForm(props: Parameters<typeof ProgressPaymentForm>[0]) {
@@ -550,5 +559,167 @@ describe("ProgressPaymentForm — hata gösterimi (Türkçe, hiçbiri sessiz de�
     );
     renderForm({ mode: "create", projectId: PROJECT_ID });
     expect(await screen.findByText("Bu alana yetkiniz yok")).toBeInTheDocument();
+  });
+});
+
+// F-SD T5 · "Günlükten Doldur" (spec §4). Öneri ucu ekran açılışında ÇAĞRILMAZ;
+// buton `refetch` ile çağırır ve satırları doldurur — kaydetme yolu DEĞİŞMEZ.
+describe("ProgressPaymentForm — Günlükten Doldur", () => {
+  function mockSuggestion(
+    result: Partial<{ data: unknown; error: unknown }>,
+  ): ReturnType<typeof vi.fn> {
+    const refetch = vi.fn().mockResolvedValue({ error: null, ...result });
+    vi.mocked(useEmployerDiarySuggestion).mockReturnValue({ refetch } as never);
+    return refetch;
+  }
+
+  function suggestionData(overrides: Record<string, unknown> = {}) {
+    return {
+      year: 2026,
+      month: 7,
+      skipped_unbridged_count: 0,
+      reason: null,
+      project_id: PROJECT_ID,
+      lines: [
+        { contract_item_id: "item-1", site_id: SITE_A.id, quantity: "320.000", coefficient: null },
+      ],
+      ...overrides,
+    };
+  }
+
+  it("önerilen miktarı hücreye yazar ve poz altına günlük notunu basar", async () => {
+    mockSuggestion({ data: suggestionData() });
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    await screen.findByText("İşveren Hakediş Oluştur");
+
+    await userEvent.click(screen.getByTestId("pp-form-diary-fill"));
+
+    expect(await screen.findByTestId("pp-form-diary-fill-notice")).toHaveTextContent(
+      "1 satır günlük kayıtlardan dolduruldu.",
+    );
+    expect(screen.getByLabelText(`${ITEM_1.description} — ${SITE_A.name} miktar`)).toHaveValue(
+      "320.000",
+    );
+    expect(screen.getAllByTestId("pp-form-diary-note").length).toBe(1);
+  });
+
+  it("dolan miktar KULLANICI TARAFINDAN düzeltilebilir (rozet düşer)", async () => {
+    mockSuggestion({ data: suggestionData() });
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    await screen.findByText("İşveren Hakediş Oluştur");
+    await userEvent.click(screen.getByTestId("pp-form-diary-fill"));
+    const input = await screen.findByLabelText(`${ITEM_1.description} — ${SITE_A.name} miktar`);
+
+    await userEvent.clear(input);
+    await userEvent.type(input, "5");
+
+    expect(input).toHaveValue("5");
+    expect(screen.queryByTestId("pp-form-diary-note")).not.toBeInTheDocument();
+  });
+
+  it("atlanan (köprülenmemiş) poz sayısını görünür şekilde bildirir", async () => {
+    mockSuggestion({ data: suggestionData({ skipped_unbridged_count: 2 }) });
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    await screen.findByText("İşveren Hakediş Oluştur");
+
+    await userEvent.click(screen.getByTestId("pp-form-diary-fill"));
+
+    expect(await screen.findByTestId("pp-form-diary-fill-notice")).toHaveTextContent(
+      "2 günlük pozu sözleşme kalemine bağlı olmadığı için atlandı",
+    );
+  });
+
+  it("boş öneride görünür gerekçe basar, satırlara dokunmaz", async () => {
+    mockSuggestion({
+      data: suggestionData({ lines: [], reason: "Seçilen dönemde köprülenmiş günlük kaydı yok." }),
+    });
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    await screen.findByText("İşveren Hakediş Oluştur");
+
+    await userEvent.click(screen.getByTestId("pp-form-diary-fill"));
+
+    const notice = await screen.findByTestId("pp-form-diary-fill-notice");
+    expect(notice).toHaveTextContent("Günlük kayıtlardan doldurulacak miktar bulunamadı.");
+    expect(notice).toHaveTextContent("Seçilen dönemde köprülenmiş günlük kaydı yok.");
+  });
+
+  it("uç hata verirse Türkçe gerekçe basar", async () => {
+    mockSuggestion({
+      data: undefined,
+      error: new BackendError(403, { detail: "Bu projeye yetkiniz yok." }),
+    });
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    await screen.findByText("İşveren Hakediş Oluştur");
+
+    await userEvent.click(screen.getByTestId("pp-form-diary-fill"));
+
+    expect(await screen.findByTestId("pp-form-diary-fill-notice")).toHaveTextContent(
+      "Bu projeye yetkiniz yok.",
+    );
+  });
+
+  it("elle girilmiş miktarın üzerine yazmadan ÖNCE onay ister; vazgeçilirse değer korunur", async () => {
+    mockSuggestion({ data: suggestionData() });
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    await screen.findByText("İşveren Hakediş Oluştur");
+    const input = screen.getByLabelText(`${ITEM_1.description} — ${SITE_A.name} miktar`);
+    await userEvent.clear(input);
+    await userEvent.type(input, "12");
+
+    await userEvent.click(screen.getByTestId("pp-form-diary-fill"));
+
+    expect(await screen.findByText(/1 satırda elle girdiğiniz sıfırdan farklı miktar var/)).
+      toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Vazgeç" }));
+    expect(screen.getByLabelText(`${ITEM_1.description} — ${SITE_A.name} miktar`)).toHaveValue("12");
+  });
+
+  it("onay verilirse üzerine yazar ve kaç satırın üzerine yazıldığını söyler", async () => {
+    mockSuggestion({ data: suggestionData() });
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    await screen.findByText("İşveren Hakediş Oluştur");
+    const input = screen.getByLabelText(`${ITEM_1.description} — ${SITE_A.name} miktar`);
+    await userEvent.clear(input);
+    await userEvent.type(input, "12");
+    await userEvent.click(screen.getByTestId("pp-form-diary-fill"));
+    await screen.findByText(/1 satırda elle girdiğiniz sıfırdan farklı miktar var/);
+
+    await userEvent.click(screen.getByRole("button", { name: "Üzerine yaz" }));
+
+    expect(screen.getByLabelText(`${ITEM_1.description} — ${SITE_A.name} miktar`)).toHaveValue(
+      "320.000",
+    );
+    expect(await screen.findByTestId("pp-form-diary-fill-notice")).toHaveTextContent(
+      "1 satırda elle girdiğiniz miktarın üzerine yazıldı.",
+    );
+  });
+
+  it("dolan miktarlar MEVCUT kaydetme yolundan (PUT lines) gönderilir", async () => {
+    const replaceMutate = vi.fn();
+    vi.mocked(useProgressPayment).mockReturnValue(queryResult({ data: detailFixture() }));
+    vi.mocked(useUpdateProgressPayment).mockReturnValue(
+      mutationResult({
+        mutate: vi.fn((_vars, opts?: { onSuccess?: () => void }) => opts?.onSuccess?.()),
+      }),
+    );
+    vi.mocked(useReplaceProgressPaymentLines).mockReturnValue(
+      mutationResult({ mutate: replaceMutate }),
+    );
+    mockSuggestion({ data: suggestionData() });
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+    await screen.findByText("İşveren Hakediş #5");
+    await userEvent.click(screen.getByTestId("pp-form-diary-fill"));
+    await screen.findByTestId("pp-form-diary-fill-notice");
+
+    await userEvent.click(screen.getAllByRole("button", { name: "Taslak Kaydet" })[0]);
+
+    const body = replaceMutate.mock.calls[0][0] as {
+      body: { lines: { contract_item_id: string; site_id: string; quantity: string }[] };
+    };
+    expect(body.body.lines).toContainEqual({
+      contract_item_id: "item-1",
+      site_id: SITE_A.id,
+      quantity: "320.000",
+    });
   });
 });
