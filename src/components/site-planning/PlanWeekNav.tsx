@@ -1,13 +1,16 @@
 import { Button } from "@/components/ui/button/Button";
 
+import { PlanSprintEditor } from "./PlanSprintEditor";
 import { formatWeekRange } from "./week";
 
 export interface PlanWeekNavProps {
   weekStart: string;
   weekEnd: string;
-  /** Aktif sprint adı; sprint yoksa `null`. */
-  sprintName: string | null;
+  /** Taslaktaki aktif sprint adı; boş dize = sprint yok. */
+  sprintName: string;
+  canWrite: boolean;
   onShiftWeek: (deltaDays: number) => void;
+  onChangeSprintName: (name: string) => void;
 }
 
 const DAYS_IN_WEEK = 7;
@@ -18,11 +21,18 @@ const DAYS_IN_WEEK = 7;
  * Mockup'ın "21 – 27 Temmuz 2026" sabiti KOPYALANMAZ (tarih artefaktı
  * istisnası) — aralık gerçek takvimden `formatWeekRange` ile üretilir.
  *
- * TÜREV (P107): `active_sprint` `null` olduğunda "Aktif Sprint:" etiketi HİÇ
- * BASILMAZ. Boş bir etiket ("Aktif Sprint: —") mockup'ta olmayan bir bilgi
- * satırı uydururdu; sprint yönetimi T3'ün işidir.
+ * TÜREV (P107): sprint adı boşken "Aktif Sprint:" etiketi HİÇ BASILMAZ; boş
+ * bir etiket ("Aktif Sprint: —") mockup'ta olmayan bir bilgi satırı uydururdu.
+ * Sprint düzenlemesi `PlanSprintEditor`dedir (F-PL T3).
  */
-export function PlanWeekNav({ weekStart, weekEnd, sprintName, onShiftWeek }: PlanWeekNavProps) {
+export function PlanWeekNav({
+  weekStart,
+  weekEnd,
+  sprintName,
+  canWrite,
+  onShiftWeek,
+  onChangeSprintName,
+}: PlanWeekNavProps) {
   return (
     <div className="plan-week-nav">
       {/* P104 */}
@@ -50,9 +60,7 @@ export function PlanWeekNav({ weekStart, weekEnd, sprintName, onShiftWeek }: Pla
         ›
       </Button>
       {/* P107 */}
-      {sprintName !== null && (
-        <span className="plan-week-nav__sprint">Aktif Sprint: {sprintName}</span>
-      )}
+      <PlanSprintEditor name={sprintName} canWrite={canWrite} onChange={onChangeSprintName} />
     </div>
   );
 }

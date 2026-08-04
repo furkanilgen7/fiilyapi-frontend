@@ -335,6 +335,15 @@
   --space-plan-goal-y: 9px; /* hedef satırı dikey iç boşluğu (P206) */
   --space-plan-goal-x: 12px; /* hedef satırı yatay iç boşluğu (P206) */
   --size-checkbox-plan: 14px; /* hedef kutucuğu (P207) */
+
+  /* F-PL T3 — düzenleme yüzeyleri. Mockup ızgarayı SALT-OKUNUR çizdiği için
+     bu iki ölçünün P'de karşılığı YOKTUR; ikisi de ızgaranın kendi
+     ölçülerinden türetildi. */
+  --width-plan-popover: 208px; /* hücre popover'ı: altı renk çipi 3'lü ızgarada
+     yan yana sığsın (çip 5px yarıçap + 6px yatay iç boşluk, P127); ızgaranın
+     140px etiket sütunundan (P109) geniş, karttan dar. */
+  --size-plan-empty-cell: 22px; /* boş hücrenin tıklanabilir yüksekliği = dolu
+     hücrenin çip yüksekliği (10px yazı + 2×5px iç boşluk, P127). */
 }
 
 @keyframes fadeUp {

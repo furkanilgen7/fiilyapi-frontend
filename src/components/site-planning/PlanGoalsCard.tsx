@@ -1,24 +1,26 @@
-import { Checkbox } from "@/components/ui/checkbox/Checkbox";
-import type { SitePlanGoalRead } from "@/lib/api/hooks/useSitePlan";
+"use client";
 
-import { PLAN_GOAL_STATUS_LABELS } from "./plan-labels";
+import type { Dispatch } from "react";
+
+import { Button } from "@/components/ui/button/Button";
+
+import type { PlanDraftGoal } from "./plan-draft";
+import type { PlanDraftAction } from "./plan-draft-reducer";
+import { PlanGoalRow } from "./PlanGoalRow";
 
 export interface PlanGoalsCardProps {
-  goals: readonly SitePlanGoalRead[];
+  goals: readonly PlanDraftGoal[];
+  canWrite: boolean;
+  dispatch: Dispatch<PlanDraftAction>;
 }
 
 /**
- * P203-227 · "🎯 Haftalık Hedefler" kartı — bu task'ta SALT-OKUNUR.
+ * P203-227 · "🎯 Haftalık Hedefler" kartı.
  *
- * Kutucuk (P207) `disabled` basılır: hedefin tamamlanma durumu ancak
- * `PUT …/plan/goals` ile yazılır ve o etkileşim T3'ün işidir; şimdilik
- * tıklanabilir görünüp hiçbir şey yapmayan bir kutucuk yalan söylerdi.
- * Ham `<input type="checkbox">` YASAK — `ui/checkbox` primitive'i kullanılır.
- *
- * `is_done` (kutucuk) ile `status` (rozet) AYRI alanlardır ve biri diğerinden
- * TÜRETİLMEZ — şema notu ve mockup ikisini bağımsız gösterir.
+ * Yeni hedef "Beklemede" durumuyla açılır: kullanıcı henüz hiçbir şey
+ * söylemeden "Devam Ediyor" demek yanlış bilgi olurdu.
  */
-export function PlanGoalsCard({ goals }: PlanGoalsCardProps) {
+export function PlanGoalsCard({ goals, canWrite, dispatch }: PlanGoalsCardProps) {
   return (
     <section className="plan-card" aria-labelledby="plan-goals-title">
       {/* P204 */}
@@ -31,30 +33,20 @@ export function PlanGoalsCard({ goals }: PlanGoalsCardProps) {
       ) : (
         <ul className="plan-goals">
           {goals.map((goal) => (
-            <li className="plan-goals__row" key={goal.id}>
-              {/* P207 */}
-              <Checkbox
-                className="plan-goals__check"
-                checked={goal.is_done}
-                disabled
-                aria-label={`${goal.title} — tamamlandı işareti`}
-                readOnly
-              />
-              {/* P208 */}
-              <div className="plan-goals__body">
-                <span className="plan-goals__title">{goal.title}</span>
-                {goal.note !== null && goal.note.length > 0 && (
-                  <span className="plan-goals__note">{goal.note}</span>
-                )}
-              </div>
-              {/* P209 */}
-              <span className={`plan-goals__status plan-goals__status--${goal.status}`}>
-                {PLAN_GOAL_STATUS_LABELS[goal.status]}
-              </span>
-            </li>
+            <PlanGoalRow key={goal.key} goal={goal} canWrite={canWrite} dispatch={dispatch} />
           ))}
         </ul>
       )}
+
+      <Button
+        variant="ghost"
+        size="sm"
+        className="plan-goals__add"
+        disabled={!canWrite}
+        onClick={() => dispatch({ type: "addGoal", status: "waiting" })}
+      >
+        + Hedef
+      </Button>
     </section>
   );
 }

@@ -48,6 +48,21 @@ describe("site-planning.css — mockup'a bağlı kurallar (regresyon koruması)"
     expect(css).toMatch(/\.btn\.plan-week-nav__arrow:focus-visible[^{]*{[^}]*--focus-ring/);
   });
 
+  it("popover ızgaranın KENDİ kart dilinden türer (kenarlık + gölge token'ları)", () => {
+    // F-PL T3: yabancı duran bir yüzey final review bulgusudur — popover
+    // kartın (P101) kenarlığını ve gölge ailesini kullanır, kendi rengini icat
+    // etmez.
+    expect(css).toMatch(/\.plan-pop\s*{[^}]*border:\s*1px solid var\(--color-border\)/);
+    expect(css).toMatch(/\.plan-pop\s*{[^}]*box-shadow:\s*var\(--shadow-/);
+  });
+
+  it("renk seçici ızgaranın çip sınıflarını YENİDEN TANIMLAMAZ", () => {
+    // Seçenekler `.plan-cell__chip--*` ile boyanır; seçici yalnız etkileşim
+    // ekler (kenarlık currentcolor, imleç, odak halkası).
+    expect(css).toMatch(/\.plan-cell__chip\.plan-pop__tag\s*{/);
+    expect(css).toMatch(/\.plan-cell__chip\.plan-pop__tag--active\s*{[^}]*currentcolor/);
+  });
+
   it("çıplak hex renk KULLANMAZ (tüm renkler tokens.css'ten)", () => {
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });

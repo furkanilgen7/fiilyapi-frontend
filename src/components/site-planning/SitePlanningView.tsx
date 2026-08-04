@@ -13,8 +13,11 @@ import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { PlanGoalsCard } from "./PlanGoalsCard";
 import { PlanGrid } from "./PlanGrid";
 import { PlanMaterialsCard } from "./PlanMaterialsCard";
+import { PlanSaveStatus } from "./PlanSaveStatus";
 import { PlanViewModeNotice, PlanViewModeSwitch } from "./PlanViewModeSwitch";
 import { PlanWeekNav } from "./PlanWeekNav";
+import { usePlanDraft } from "./usePlanDraft";
+import { usePlanSave } from "./usePlanSave";
 import { addDaysIso, resolveWeekStart, weekEndOf } from "./week";
 import "@/components/site-detail/site-detail.css";
 import "@/components/site-diary/site-diary.css";
@@ -28,8 +31,9 @@ import "./site-planning.css";
  * LAYOUT'UNU KURMAZ — drill sidebar `[projectId]/layout.tsx`ten gelir
  * (`gunluk-kayit/ozet` ile birebir aynı desen).
  *
- * BU TASK YALNIZ OKUR (F-PL T2): hücre popover'ı, "+ Satır", "+ Hedef" ve
- * sprint düzenlemesi T3'ün işidir; burada hiçbir düzenleme kontrolü yoktur.
+ * DÜZENLEME (F-PL T3): ızgara/hedefler/sprint YEREL TASLAKTA (`usePlanDraft`)
+ * yaşar, "Kaydet" dört PUT'u SIRALI yazar (`usePlanSave`). Yazma izni olmayan
+ * kullanıcıda tüm giriş yüzeyleri GİZLENMEZ, devre-dışı basılır.
  *
  * ONAYLI SAPMA (kabuk): P'nin kendi sol menüsü "Planlama"yı ayrı bir sidebar
  * öğesi yapar; bu repoda şantiyenin 7 sekmesi tek kaynaktır (F3/F-SD kanonu)
@@ -50,12 +54,17 @@ export function SitePlanningView() {
   const permission = useModulePermission("site_diary");
   const weekStart = resolveWeekStart(searchParams.get("week"));
   const planQuery = useSitePlan(siteId, weekStart);
+  // Taslak/kaydetme hook'ları erken dönüşlerin ÜSTÜNDE: kanca sırası her
+  // render'da aynı kalmalı (izin dalı hook atlatamaz).
+  const { draft, dispatch, isDirty } = usePlanDraft(planQuery.data, weekStart);
+  const saveHandle = usePlanSave(siteId, weekStart, dispatch);
 
   if (!permission.canView) return <AccessDenied />;
   if (isForbidden(planQuery.error)) return <AccessDenied />;
 
   const plan = planQuery.data;
   const base = `/projeler/${projectId}/santiyeler/${siteId}`;
+  const canSave = permission.canWrite && isDirty && !saveHandle.isSaving;
 
   /** `‹`/`›` — hafta URL'de taşınır; `replace` geçmişi hafta hafta şişirmez. */
   function handleShiftWeek(deltaDays: number) {
@@ -89,21 +98,34 @@ export function SitePlanningView() {
         </div>
         <div className="plan__head-actions">
           <PlanViewModeSwitch />
-          {/* P97 — kaydetme akışı T3'te bağlanacak (4 PUT). Buton devre dışı
-              BIRAKILMAZ: T3 `onClick`i buraya takacak. */}
-          {permission.canWrite && <Button>Kaydet</Button>}
+          {/* P97 — dört PUT'u SIRALI yazar. Salt-okur kullanıcıda buton
+              GİZLENMEZ, devre-dışı basılır (üst kural); değişiklik yokken de
+              devre-dışıdır: kirli olmayan bölüme istek atmak gereksiz replace
+              riskidir. */}
+          <Button disabled={!canSave} onClick={() => void saveHandle.save(draft)}>
+            Kaydet
+          </Button>
         </div>
       </div>
 
       <PlanViewModeNotice />
+      <PlanSaveStatus
+        steps={saveHandle.steps}
+        isSaving={saveHandle.isSaving}
+        hasFailure={saveHandle.hasFailure}
+        onRetry={() => void saveHandle.save(draft)}
+      />
 
       {/* P102-181 — ızgara kartı */}
       <section className="plan-card plan-card--grid" aria-label="Haftalık plan ızgarası">
         <PlanWeekNav
           weekStart={weekStart}
           weekEnd={plan?.week_end ?? weekEndOf(weekStart)}
-          sprintName={plan?.active_sprint?.name ?? null}
+          // Sprint adı TASLAKTAN okunur: düzenleme "Kaydet"ten önce görünür.
+          sprintName={draft.sprintName}
+          canWrite={permission.canWrite}
           onShiftWeek={handleShiftWeek}
+          onChangeSprintName={(name) => dispatch({ type: "setSprintName", name })}
         />
 
         {planQuery.isError && (
@@ -112,18 +134,23 @@ export function SitePlanningView() {
         {!planQuery.isError && planQuery.isLoading && (
           <p className="plan__message">Yükleniyor…</p>
         )}
-        {!planQuery.isError && !planQuery.isLoading && plan && plan.groups.length === 0 && (
+        {!planQuery.isError && !planQuery.isLoading && plan && draft.groups.length === 0 && (
           <p className="plan__message">Bu hafta için plan satırı eklenmemiş.</p>
         )}
-        {!planQuery.isError && !planQuery.isLoading && plan && plan.groups.length > 0 && (
-          <PlanGrid days={plan.days} groups={plan.groups} />
+        {!planQuery.isError && !planQuery.isLoading && plan && draft.groups.length > 0 && (
+          <PlanGrid
+            days={plan.days}
+            draft={draft}
+            canWrite={permission.canWrite}
+            dispatch={dispatch}
+          />
         )}
       </section>
 
       {/* P184-228 — alt iki kart */}
       <div className="plan__bottom">
         <PlanMaterialsCard />
-        <PlanGoalsCard goals={plan?.goals ?? []} />
+        <PlanGoalsCard goals={draft.goals} canWrite={permission.canWrite} dispatch={dispatch} />
       </div>
     </div>
   );

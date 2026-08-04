@@ -78,6 +78,14 @@ export function weekEndOf(weekStart: string): string {
   return addDaysIso(weekStart, DAYS_IN_WEEK - 1);
 }
 
+/**
+ * Haftanın yedi günü (Pzt→Paz). Hücre gövdesinin KAPSAM SÜZGECİ budur: hafta
+ * dışına düşen bir tarih gövdeye girerse backend 422 verir.
+ */
+export function weekDates(weekStart: string): string[] {
+  return Array.from({ length: DAYS_IN_WEEK }, (_, index) => addDaysIso(weekStart, index));
+}
+
 export interface WeekDayLabel {
   /** "Pzt" (P111) */
   weekday: string;
