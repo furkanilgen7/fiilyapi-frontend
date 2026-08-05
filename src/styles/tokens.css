@@ -314,6 +314,36 @@
      eşdeğeri (--text-total-amount) 15px'tir, mockup değeri farklı olduğundan
      tekrar kullanılmadı. */
   --text-table-total-this: 14px;
+
+  /* ── Şantiye - Planlama (F-PL T2) ──────────────────────────────────────────
+     Kanon: projedesign "Şantiye - Planlama.dc.html" (P). Parantez içi sayılar o
+     dosyanın SATIR numaralarıdır. Mockup'ın renklerinin neredeyse tamamı mevcut
+     palette karşılanıyor (çip altılısı: --color-primary-soft/--color-primary-
+     hover, --color-success-soft/--color-success, --color-warning-soft/
+     --color-warning-strong, --color-accent-purple-soft/--color-accent-purple,
+     --color-neutral-soft/--color-text-subtle, --color-danger-soft/
+     --color-danger-strong). YALNIZ hafta sonu HÜCRE zemini yeniydi: başlık
+     satırının tonuyla (--color-amber-tint, P116) aynı DEĞİL, bir ton daha açık
+     (P132-133). */
+  --color-amber-tint-cell: #fffbeb; /* hafta sonu hücre zemini (P132-133) */
+  --radius-5: 5px; /* hücre renk çipi (P127) */
+  --width-plan-lead-col: 140px; /* "Bölüm / Ekip" sütunu (P109) */
+  --space-plan-cell: 6px; /* hücre iç boşluğu (P127) */
+  --space-plan-chip-y: 5px; /* çip dikey iç boşluğu (P127) */
+  --space-plan-chip-x: 6px; /* çip yatay iç boşluğu (P127) */
+  --text-plan-chip: 10px; /* çip yazı boyu (P127) */
+  --space-plan-goal-y: 9px; /* hedef satırı dikey iç boşluğu (P206) */
+  --space-plan-goal-x: 12px; /* hedef satırı yatay iç boşluğu (P206) */
+  --size-checkbox-plan: 14px; /* hedef kutucuğu (P207) */
+
+  /* F-PL T3 — düzenleme yüzeyleri. Mockup ızgarayı SALT-OKUNUR çizdiği için
+     bu iki ölçünün P'de karşılığı YOKTUR; ikisi de ızgaranın kendi
+     ölçülerinden türetildi. */
+  --width-plan-popover: 208px; /* hücre popover'ı: altı renk çipi 3'lü ızgarada
+     yan yana sığsın (çip 5px yarıçap + 6px yatay iç boşluk, P127); ızgaranın
+     140px etiket sütunundan (P109) geniş, karttan dar. */
+  --size-plan-empty-cell: 22px; /* boş hücrenin tıklanabilir yüksekliği = dolu
+     hücrenin çip yüksekliği (10px yazı + 2×5px iç boşluk, P127). */
 }
 
 @keyframes fadeUp {

@@ -14,7 +14,7 @@ import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { formatPeriod } from "@/lib/format";
 
-import { DiaryModeNotice, DiaryModeSwitch } from "./DiaryModeSwitch";
+import { DiaryModeSwitch } from "./DiaryModeSwitch";
 import { DiaryMonthNav } from "./DiaryMonthNav";
 import { DiarySummaryAccrualTable } from "./DiarySummaryAccrualTable";
 import { DiarySummaryKpiStrip } from "./DiarySummaryKpiStrip";
@@ -101,7 +101,12 @@ export function SiteDiarySummaryView() {
       <SiteDetailTabs projectId={projectId} siteId={siteId} activePath={entryHref} />
 
       {/* HÖ77-81 */}
-      <DiaryModeSwitch active="summary" entryHref={entryHref} summaryHref={`${entryHref}/ozet`} />
+      <DiaryModeSwitch
+        active="summary"
+        entryHref={entryHref}
+        planningHref={`${entryHref}/planlama`}
+        summaryHref={`${entryHref}/ozet`}
+      />
 
       {/* HÖ83-96 */}
       <div className="diary__head">
@@ -131,8 +136,6 @@ export function SiteDiarySummaryView() {
           )}
         </div>
       </div>
-
-      <DiaryModeNotice hasPlanPreview={false} />
 
       {/* Zarif düşüş bildirimi (CLAUDE.md + T3 ile aynı cümle gerekçesi):
           işveren hakedişi PROJE düzeyinde tutulur, şantiye başına ayrı bir

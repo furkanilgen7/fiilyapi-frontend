@@ -2740,6 +2740,589 @@
         ]
       }
     },
+    "/projects/{project_id}/document-folders": {
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "List Document Folders Endpoint",
+        "description": "Bir KÖKÜN klasörleri — düz liste, hiyerarşiyi `parent_id` taşır.\n\n`site_id` bir SÜZGEÇTİR: verilmezse yalnız PROJE DÜZEYİ klasörler döner,\nverilirse yalnız o şantiyeninkiler. Gerekçe `service.list_folders`tadır\n(E12 kökü her an tek bir proje/şantiye ikilisidir).\n\nGörünmeyen proje 404 döner ve gövdesi var olmayan kimliğinkiyle AYNIDIR.\n\nBelge SAYACI YOKTUR — gerekçe `schemas` başlığındadır.",
+        "operationId": "list_document_folders_endpoint_projects__project_id__document_folders_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "site_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentFolderListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Create Document Folder Endpoint",
+        "description": "Yeni klasör. Kategori seti SERBESTTİR (spec §7 S3) — otomatik seed YOKTUR.\n\n* ad çakışması → 409 (kontrol UYGULAMA katmanındadır; T1 bulgusu: NULL'lı\n  kapsamda DB kısıtı işlemez)\n* `site_id` başka projenin şantiyesi → 422\n* `parent_id` başka kapsamın klasörü → 422",
+        "operationId": "create_document_folder_endpoint_projects__project_id__document_folders_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentFolderCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentFolderRead"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "409": {
+            "description": "Bu kapsamda aynı adlı klasör var"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/document-folders/{folder_id}": {
+      "patch": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Rename Document Folder Endpoint",
+        "description": "YALNIZ ad değişir. Klasör TAŞIMA ucu yoktur (gerekçe `schemas`ta).",
+        "operationId": "rename_document_folder_endpoint_document_folders__folder_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "folder_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Folder Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentFolderUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentFolderRead"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "409": {
+            "description": "Bu kapsamda aynı adlı klasör var"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Delete Document Folder Endpoint",
+        "description": "YALNIZ BOŞ klasör silinir; belge ya da alt klasör varsa 409.\n\nYetki kapısı korkuluktan ÖNCE koşar: yetkisiz aktör 403 alır ve klasörün\ndolu olup olmadığını ÖĞRENEMEZ. Görünmeyen klasör 404 döner.\n\nYanıt `204 No Content`, gövdesizdir.",
+        "operationId": "delete_document_folder_endpoint_document_folders__folder_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "folder_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Folder Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "409": {
+            "description": "Klasör boş değil"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents": {
+      "post": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Upload Document Endpoint",
+        "description": "Multipart yükleme (spec §3/§4).\n\nKAPI SIRASI SABİTTİR ve ucuzdan pahalıya gider:\n1. dosya adı normalize edilir (yol/başlık enjeksiyonu temizlenir) → 422\n2. uzantı beyaz listeden geçer → 422 — **baytlar OKUNMADAN ÖNCE**\n3. gövde parçalı okunur, tavan aşılırsa → 413\n4. kapsam korkulukları (şantiye/klasör) → 422, görünmeyen proje → 404\n\nUzantı kontrolünün okumadan önce olması bilinçlidir: yasak uzantılı 50 MB'lık\nbir gövdeyi sonuna kadar okumanın hiçbir karşılığı yoktur.\n\nKünye + baytlar TEK transaction'da yazılır; `put` patlarsa künye de yazılmaz.",
+        "operationId": "upload_document_endpoint_documents_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_document_endpoint_documents_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentRead"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "413": {
+            "description": "Dosya boyutu tavanı aşıyor"
+          },
+          "422": {
+            "description": "Desteklenmeyen dosya türü ya da kapsam dışı klasör/şantiye"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "List Documents Endpoint",
+        "description": "Künye listesi — BAYTLARA DOKUNMADAN (spec §2; SQL düzeyinde test edilir).\n\n`project_id` ZORUNLUDUR; `site_id` T2'nin klasör listesiyle aynı semantiktedir\n(verilmezse proje düzeyi); `folder_id` verilmezse kapsamın tamamı döner\n(SB kökü \"Tüm Belgeler\"). Gerekçeler `service.list_documents`tadır.\n\nSIRALAMA SEÇİLEBİLİR DEĞİLDİR (`created_at` azalan) ve SAYFALAMA YOKTUR —\nmockup'ta ikisi de yoktur, icat edilmez. `limit` yalnız \"Son Eklenenler\"\npanelini kısaltmak içindir (spec §3).",
+        "operationId": "list_documents_endpoint_documents_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "site_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "folder_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Folder Id"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 150
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/{document_id}/download": {
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Download Document Endpoint",
+        "description": "İçeriği PARÇALI akıtır — 48 MB'lık bir ZIP tam-bellek OKUNMAZ (spec §3).\n\nBaşlıklar:\n  * `Content-Type` künyedeki tiptir (uzantıdan türetilmiştir; istemcinin\n    yükleme sırasındaki beyanı DEĞİL).\n  * `Content-Length` künyedeki `size_bytes`tır — akış hâlinde tarayıcı\n    yüzdelik ilerleme gösterebilsin diye açıkça verilir.\n  * `Content-Disposition` Türkçe karakterli adı RFC 5987 ile taşır ve\n    `attachment`tır; `nosniff` ile birlikte arşivdeki bir dosyanın\n    tarayıcıda ÇALIŞTIRILMASINI engeller.\n\nİlk parça yanıt başlamadan önce alınır: içeriği olmayan künye yarım bir 200\ndeğil düzgün bir 404 döner (`service.start_document_stream`).",
+        "operationId": "download_document_endpoint_documents__document_id__download_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/octet-stream": {}
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/{document_id}": {
+      "patch": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Update Document Endpoint",
+        "description": "Ad / açıklama / klasör taşıma (spec §3). Kapsam (proje/şantiye) DEĞİŞMEZ.\n\nTaşımada hedef klasörün kapsamı belgeninkiyle aynı olmalıdır (422);\n`folder_id: null` belgeyi kapsamın köküne taşır ve İZİNLİDİR.",
+        "operationId": "update_document_endpoint_documents__document_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentRead"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Desteklenmeyen dosya türü ya da kapsam dışı klasör"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Delete Document Endpoint",
+        "description": "Künye + baytlar silinir (`admin`; `full` silmeyi KAPSAMAZ).\n\n⚠️ BU UÇ EKRANDA BASILMAZ (modül docstring'i): mockup'ta belge silme\naksiyonu yoktur; uç yalnız yanlış yüklenen dosyayı temizlemek içindir.\n\nYanıt `204 No Content`, gövdesizdir.",
+        "operationId": "delete_document_endpoint_documents__document_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/employers": {
       "get": {
         "tags": [
@@ -10713,6 +11296,62 @@
         ],
         "title": "Body_import_units_endpoint_projects__project_id__units_import_post"
       },
+      "Body_upload_document_endpoint_documents_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "folder_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Id"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "project_id"
+        ],
+        "title": "Body_upload_document_endpoint_documents_post"
+      },
       "Body_upload_logo_endpoint_company_logo_post": {
         "properties": {
           "file": {
@@ -12428,6 +13067,289 @@
         ],
         "title": "DiaryStatus",
         "description": "Günlük kaydın durumu (spec §2). İKİ durum: hakediş evrakının dört durumlu\nonay makinesi burada YOKTUR — günlük ya taslaktır ya gönderilmiştir.\n\nE7'nin iki butonu (Taslak Kaydet / Gönder) bu ikiliyi birebir karşılar;\nGK'nin tek \"Kaydet & Gönder\" butonu ikisinin bileşimidir."
+      },
+      "DocumentFolderCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 150,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "DocumentFolderCreate",
+        "description": "`POST /projects/{id}/document-folders` gövdesi.\n\n`project_id` GÖVDEDE YOKTUR — yol parametresidir; iki yerden gelseydi\nhangisinin kazandığı belirsiz olur ve kapsam süzgeci atlatılabilirdi."
+      },
+      "DocumentFolderListResponse": {
+        "properties": {
+          "folders": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentFolderRead"
+            },
+            "type": "array",
+            "title": "Folders"
+          }
+        },
+        "type": "object",
+        "required": [
+          "folders"
+        ],
+        "title": "DocumentFolderListResponse",
+        "description": "Düz liste; ağacı ekran `parent_id`den kurar (UI iki seviye çizer)."
+      },
+      "DocumentFolderRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "project_id",
+          "site_id",
+          "parent_id",
+          "name",
+          "created_at"
+        ],
+        "title": "DocumentFolderRead"
+      },
+      "DocumentFolderUpdate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 150,
+            "minLength": 1,
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "DocumentFolderUpdate",
+        "description": "`PATCH /document-folders/{id}` gövdesi — YALNIZ ad (spec §3).\n\nKapsam alanları (`site_id`/`parent_id`) BİLİNÇLİ olarak yoktur: klasör TAŞIMA\nucu açılmamıştır. Açılsaydı taşınan klasörün altındaki belgelerin `project_id`/\n`site_id` künyeleriyle klasörün kapsamı ayrışırdı (künye kapsamı spec §2\ngereği klasörden türetilmez, KOPYALANIR)."
+      },
+      "DocumentListResponse": {
+        "properties": {
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentRead"
+            },
+            "type": "array",
+            "title": "Documents"
+          }
+        },
+        "type": "object",
+        "required": [
+          "documents"
+        ],
+        "title": "DocumentListResponse",
+        "description": "Düz liste. TOPLAM SAYI ALANI YOKTUR: sayfalama olmadığı için (spec §3)\n`total` ile `len(documents)` her zaman aynı olurdu — ekranı yanıltan\nölü bir alan."
+      },
+      "DocumentRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "folder_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Id"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "uploaded_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uploaded By Name"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "folder_id",
+          "project_id",
+          "site_id",
+          "filename",
+          "mime_type",
+          "size_bytes",
+          "description",
+          "uploaded_by_name",
+          "created_at"
+        ],
+        "title": "DocumentRead",
+        "description": "Künye — baytlar YOK (spec §2). Liste ve tekil yanıtların ortak gövdesi.\n\n`uploaded_by_user_id` DIŞARI VERİLMEZ: ekranın gösterdiği şey SNAPSHOT\naddır (SB:144 \"Şantiye Şefi: S. Öztürk\"); kimliği yayınlamak, arşivi gören\nherkese kullanıcı kimlik havuzunu açardı."
+      },
+      "DocumentUpdate": {
+        "properties": {
+          "filename": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filename"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "folder_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Id"
+          }
+        },
+        "type": "object",
+        "title": "DocumentUpdate",
+        "description": "`PATCH /documents/{id}` — üç alan, ÜÇÜ DE İSTEĞE BAĞLI (spec §3).\n\nAlanın GÖNDERİLMEMESİ ile `null` GÖNDERİLMESİ farklıdır ve fark\n`model_fields_set` ile korunur: `description: null` açıklamayı SİLER,\n`folder_id: null` belgeyi kapsamın KÖKÜNE taşır; hiç göndermemek ikisine de\nDOKUNMAZ. `exclude_unset` olmadan bir ad değişikliği, açıklamayı sessizce\nsilerdi.\n\n`project_id`/`site_id` YOKTUR: belge KAPSAM DEĞİŞTİREMEZ. Değiştirebilseydi\n`visible_projects` süzgecini geçen bir kullanıcı, kendi göremediği bir\nprojeye belge taşıyabilir ya da tersine görünmeyen bir belgeyi kendi\nkapsamına çekebilirdi."
       },
       "EmployerContractDetail": {
         "properties": {

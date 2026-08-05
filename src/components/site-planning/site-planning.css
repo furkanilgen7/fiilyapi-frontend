@@ -1,0 +1,607 @@
+/* Şantiye Planlama ekranı (F-PL T2).
+   Kanon: projedesign/"Şantiye - Planlama.dc.html" (P). Parantez içi sayılar o
+   dosyanın SATIR numaralarıdır; göz kararı ölçü yoktur. Çıplak hex yasak —
+   tüm renkler tokens.css'ten. */
+
+/* İçerik alanı ofseti burada DEĞİL — drill-sidebar.css `.drill-content`
+   kuralında (site-diary.css ile aynı gerekçe). */
+
+/* ── Başlık şeridi (P86-99) ────────────────────────────────────────────── */
+.plan__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin: 20px 0;
+}
+/* P88 */
+.plan__title {
+  font-size: 22px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  letter-spacing: -0.3px;
+}
+/* P89 */
+.plan__subtitle {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+/* P91 */
+.plan__head-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* ── Görünüm kipi segmenti (P92-96) ────────────────────────────────────── */
+.plan-view-mode {
+  display: flex;
+  gap: 2px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: 3px;
+}
+.btn.plan-view-mode__item {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: var(--radius-6);
+  color: var(--color-text-muted);
+}
+/* P93 — açık kip */
+.btn.plan-view-mode__item--active {
+  background: var(--color-nav-active-bg);
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+}
+
+/* Devre dışı kip / pending gerekçe metni (site-diary'deki `.diary__notice`
+   ile aynı görev; sınıf ayrı tutulur ki iki ekran birbirini kaydırmasın). */
+.plan__notice {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+  margin-bottom: var(--space-3);
+}
+/* Yükleniyor / hata / boş durum satırı. `role="alert"` KULLANILMAZ (e2e kuralı). */
+.plan__message {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  padding: var(--space-4) var(--space-4);
+}
+/* Boş ızgaranın satır açma girişi (T5): mesaj + "+ Satır" aynı satırda durur.
+   YENİ görsel dil YOK — düğme grup başlığındaki `.plan-grid__add-row`
+   ölçülerini aynen taşır, bu kural yalnız hizalamayı verir. */
+.plan__empty {
+  display: flex;
+  align-items: center;
+}
+.plan__empty .plan__message {
+  padding-right: var(--space-2);
+}
+/* `.plan-grid__add-row` rengi `inherit`tir (grup başlığının tonunu alsın diye);
+   grup dışında kalınca ton kaynağı yok, bu yüzden diğer "+ …" girişiyle
+   (`.plan-goals__add`) aynı vurgu rengine bağlanır. */
+.plan__empty .btn.plan-grid__add-row {
+  color: var(--color-primary);
+}
+
+/* ── Kart kabuğu (P102, P185, P203) ────────────────────────────────────── */
+.plan-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14);
+  box-shadow: var(--shadow-card);
+  padding: 18px;
+  margin-bottom: 20px;
+}
+/* P102 — ızgara kartı kenardan kenara çizer; iç boşluk satırlarındadır. */
+.plan-card--grid {
+  padding: 0;
+  overflow: hidden;
+}
+/* P186 / P204 */
+.plan-card__title {
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin-bottom: 14px;
+}
+
+/* ── Hafta gezinme şeridi (P103-108) ───────────────────────────────────── */
+.plan-week-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+}
+/* P104 / P106 — ‹ › okları */
+.btn.plan-week-nav__arrow {
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 var(--space-1);
+  color: var(--color-text-muted);
+}
+/* P105 */
+.plan-week-nav__label {
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+/* P107 — solundan fazladan boşlukla ayrılır */
+.plan-week-nav__sprint {
+  margin-left: var(--space-2);
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+
+/* ── Izgara (P109-181) ─────────────────────────────────────────────────── */
+/* P109 — sütun iskeleti: sabit etiket sütunu + 7 eşit gün. */
+.plan-grid__row {
+  display: grid;
+  grid-template-columns: var(--width-plan-lead-col) repeat(7, 1fr);
+  border-bottom: 1px solid var(--color-divider);
+}
+/* P110 — başlık satırı */
+.plan-grid__row--head {
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+/* P111 */
+.plan-grid__lead {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  border-right: 1px solid var(--color-divider);
+  /* T3: etiket + satır menüsü aynı hücrede; menü sağa yaslanır ve etiketin
+     yerini DARALTMAZ (mockup'ın 140px sütunu korunur, P109). */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+}
+.plan-grid__lead-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* P110 — ilk hücre başlıkta versal */
+.plan-grid__lead--head {
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-right: none;
+}
+/* P111-115 — gün başlığı */
+.plan-grid__day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  border-left: 1px solid var(--color-border);
+}
+.plan-grid__day-name {
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+.plan-grid__day-date {
+  font-size: 10px;
+  color: var(--color-text-subtle);
+}
+/* P116-117 — Cmt/Paz vurgusu (kaynak: days[].is_weekend, takvim değil) */
+.plan-grid__day--weekend {
+  background: var(--color-amber-tint);
+}
+.plan-grid__day--weekend .plan-grid__day-name {
+  color: var(--color-warning-strong);
+}
+
+/* P121-124 — bölüm grup başlığı (mavi) */
+.plan-grid__group {
+  border-bottom: 2px solid var(--color-border);
+}
+.plan-grid__group--crew {
+  background: var(--color-nav-active-bg);
+}
+.plan-grid__group-title {
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  color: var(--color-primary-hover);
+}
+/* P123 — kalan 7 sütunu kaplar */
+.plan-grid__group-meta {
+  grid-column: 2 / -1;
+  padding: 8px 12px;
+  font-size: 10px;
+  color: var(--color-primary);
+  border-left: 1px solid var(--color-primary-soft);
+  /* T3: sorumlu metni solda, "+ Satır" sağda — mockup'ın tek satırlık başlık
+     yüksekliği (8px/12px iç boşluk) korunur. */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+/* "+ Satır" — grup başlığının KENDİ rengini devralır, yeni bir vurgu rengi
+   getirmez (mavi grupta mavi, yeşil grupta yeşil). */
+.btn.plan-grid__add-row {
+  padding: 0 var(--space-1);
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  color: inherit;
+}
+/* P157-160 — ekipman grup başlığı (yeşil) */
+.plan-grid__group--equipment {
+  background: var(--color-success-tint);
+}
+.plan-grid__group--equipment .plan-grid__group-title {
+  color: var(--color-success-deep);
+}
+.plan-grid__group--equipment .plan-grid__group-meta {
+  color: var(--color-success);
+  border-left-color: var(--color-success-tint-border);
+}
+
+/* P127 — hücre kutusu */
+.plan-grid__cell {
+  padding: var(--space-plan-cell);
+  border-left: 1px solid var(--color-divider);
+}
+/* P132-133 — hafta sonu hücresi (planı olsa da olmasa da) */
+.plan-grid__cell--weekend {
+  background: var(--color-amber-tint-cell);
+}
+/* P127 — renk çipi */
+.plan-cell__chip {
+  display: block;
+  border-radius: var(--radius-5);
+  padding: var(--space-plan-chip-y) var(--space-plan-chip-x);
+  font-size: var(--text-plan-chip);
+  font-weight: var(--weight-medium);
+  text-align: center;
+}
+/* Altı renk etiketi — P127 / P129 / P137 / P147 / P131 / P173 */
+.plan-cell__chip--blue {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}
+.plan-cell__chip--green {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+.plan-cell__chip--yellow {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+}
+.plan-cell__chip--purple {
+  background: var(--color-accent-purple-soft);
+  color: var(--color-accent-purple);
+}
+.plan-cell__chip--gray {
+  background: var(--color-neutral-soft);
+  color: var(--color-text-subtle);
+}
+.plan-cell__chip--red {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
+}
+/* Renk etiketi OLMAYAN hücre: mockup'ta karşılığı yok — zeminsiz düz metin
+   (bkz. PlanCellChip'teki gerekçe: `gray` seçilmiş bir renktir). */
+.plan-cell__chip--plain {
+  background: none;
+  color: var(--color-text-secondary);
+}
+
+/* Son satırın alt çizgisi kartın kenarlığıyla çakışmasın (P181). */
+.plan-grid__group-block:last-child .plan-grid__row:last-child {
+  border-bottom: none;
+}
+
+/* ── Alt iki kart (P184) ───────────────────────────────────────────────── */
+.plan__bottom {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+/* P188-200 — Malzeme Planı PENDING yer tutucusu (sahte satır YOK) */
+.plan-materials__placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.plan-materials__placeholder-row {
+  height: 40px;
+  border-radius: var(--radius-8);
+  background: var(--color-surface-muted);
+  opacity: 0.5;
+}
+
+/* ── Haftalık Hedefler (P205-227) ──────────────────────────────────────── */
+.plan-goals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+}
+/* P206 */
+.plan-goals__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--space-plan-goal-y) var(--space-plan-goal-x);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-8);
+}
+/* P207 — mockup 14×14; primitive varsayılanı 16px'tir. */
+.checkbox.plan-goals__check {
+  width: var(--size-checkbox-plan);
+  height: var(--size-checkbox-plan);
+}
+/* P208 */
+.plan-goals__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.plan-goals__title {
+  font-size: 12px;
+  color: var(--color-text);
+}
+.plan-goals__note {
+  font-size: 10px;
+  color: var(--color-text-subtle);
+}
+/* P209 — durum rozeti. `ui/badge` primitive'i KULLANILMAZ: onun ölçüleri
+   (--text-small, 2px 8px) mockup'ın 10px / 2px 7px değerinden, `warning`/
+   `danger` tonları (--color-warning / --color-danger) da mockup'ın koyu
+   tonlarından (--color-warning-strong / --color-danger-strong) farklıdır. */
+.plan-goals__status {
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  padding: 2px 7px;
+  border-radius: var(--radius-8);
+  white-space: nowrap;
+}
+/* P209 */
+.plan-goals__status--completed {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+/* P214 */
+.plan-goals__status--in_progress {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+/* P219 */
+.plan-goals__status--waiting {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
+}
+/* P224 */
+.plan-goals__status--service_pending {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+}
+
+/* ── Düzenleme yüzeyleri (F-PL T3) ─────────────────────────────────────────
+   Mockup ızgarayı SALT-OKUNUR çizdiği için bu kontrollerin karşılığı P'de
+   YOKTUR; ölçü/renklerin tamamı ızgaranın KENDİ dilinden türetilmiştir:
+   kart kenarlığı + gölgesi (P101), çip ailesinin yarıçapı (P127), 10-12px
+   tipografi (P111/P126/P127). Yeni bir görsel dil getirilmez. */
+
+/* Hücrenin tıklanabilir yüzeyi. Çipin kendisi zaten hücreyi dolduruyor;
+   buton zeminsizdir ve BOŞ hücrede de tıklanacak yükseklik bırakır (mockup'ın
+   boş hücresi 6px iç boşluk + boş çip yüksekliğidir, P132-133). */
+.plan-cell__button {
+  display: block;
+  width: 100%;
+  min-height: var(--size-plan-empty-cell);
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--radius-5);
+  cursor: pointer;
+  text-align: left;
+}
+.plan-cell__button:hover {
+  background: var(--color-surface-2);
+}
+.plan-cell__button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Satır menüsü tetikleyicisi — çip yazı boyunda (P127), ayrı ikon dili yok. */
+.btn.plan-row-menu__trigger {
+  padding: 0 var(--space-1);
+  font-size: var(--text-plan-chip);
+  line-height: 1;
+  color: var(--color-text-subtle);
+}
+.btn.plan-row-menu__trigger:hover:not(:disabled) {
+  color: var(--color-text-secondary);
+}
+
+/* Popover çapası — konumlandırma bağlamı. */
+.plan-pop-anchor {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+/**
+ * HÜCRE çapası hücrenin TAMAMINI kaplar (F-PL T4 bulgusu).
+ *
+ * Tıklanabilir hücre butonu `width: 100%` ile çizilir; `inline-flex` bir çapa
+ * ise SIĞDIR (shrink-to-fit) ve içeriği olmayan bir hücrede genişliği SIFIR
+ * olur. Sonuç: planı olmayan güne tıklanamaz, yani boş güne plan GİRİLEMEZDİ.
+ * jsdom düzen hesaplamadığı için bunu yalnız gerçek tarayıcı yakalar.
+ */
+.plan-pop-anchor--cell {
+  display: block;
+}
+
+/* Popover kabuğu: kartın (P101) küçük ölçekli hali — aynı kenarlık, aynı
+   gölge; yarıçap çip (5px) ile kart (14px) arasındaki mevcut basamak. */
+.plan-pop {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  z-index: 30;
+  width: var(--width-plan-popover);
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-10);
+  box-shadow: var(--shadow-md);
+  text-align: left;
+}
+/* Sağ kenara yakın açılan yüzeyler taşmasın (satır menüsü, sprint kalemi). */
+.plan-pop--menu,
+.plan-pop--sprint {
+  left: auto;
+  right: 0;
+}
+.plan-pop--menu {
+  width: auto;
+  padding: var(--space-1);
+}
+.plan-pop__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.plan-pop__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+.btn.plan-pop__clear,
+.btn.plan-pop__danger {
+  color: var(--color-danger-strong);
+}
+
+/* Renk seçici: seçenekler ızgaradaki ÇİPİN ta kendisidir (aynı
+   `.plan-cell__chip--*` zemin/metin token'ları), yalnız tıklanabilir. */
+.plan-pop__tags {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-1);
+}
+.plan-cell__chip.plan-pop__tag {
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+/* Seçili çipin çerçevesi kendi metin renginden gelir — palete renk eklenmez. */
+.plan-cell__chip.plan-pop__tag--active {
+  border-color: currentcolor;
+}
+.plan-cell__chip.plan-pop__tag:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ── Hedef satırı kontrolleri (P206-209) ───────────────────────────────────
+   Kontroller mockup'ın STATİK görünümünü korur: zeminsiz/kenarlıksız dururlar,
+   yalnız üzerine gelince ve odakta kenarlık kazanırlar. Böylece salt-okur
+   kullanıcı mockup'ın düz metin listesini görür. */
+.plan-goals__body .input {
+  background: none;
+  border-color: transparent;
+  padding: 0;
+}
+.plan-goals__body .input:hover:not(:disabled),
+.plan-goals__body .input:focus {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  padding: 0 var(--space-1);
+}
+.plan-goals__body .input:disabled {
+  /* Devre dışı kontrol SÖNÜK görünmez: mockup'ın metin tonları korunur. */
+  opacity: 1;
+  color: var(--color-text);
+}
+/* P208 — başlık 12px, not 10px (satırın kendi ölçüleri). */
+.input.plan-goals__title-input {
+  font-size: 12px;
+  color: var(--color-text);
+}
+.input.plan-goals__note-input {
+  font-size: 10px;
+  color: var(--color-text-subtle);
+}
+.plan-goals__body .input.plan-goals__note-input:disabled {
+  color: var(--color-text-subtle);
+}
+/* P209 — durum kontrolü ROZETİN ölçüleriyle çizilir; renkleri
+   `.plan-goals__status--*` kurallarından gelir (aynı token çiftleri). */
+.select.plan-goals__status-select {
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  padding: 2px var(--space-5) 2px 7px;
+  border: none;
+  border-radius: var(--radius-8);
+  width: auto;
+}
+.select.plan-goals__status-select:disabled {
+  opacity: 1;
+}
+/* "+ Hedef" — kartın kendi vurgu rengi (P204 başlık ailesi). */
+.btn.plan-goals__add {
+  margin-top: var(--space-2);
+  padding: 0;
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+
+/* Sprint kalemi — etiketin (P107) yanında, onun tonunda. */
+.plan-week-nav__sprint-slot {
+  margin-left: var(--space-2);
+  gap: var(--space-1);
+}
+.btn.plan-week-nav__sprint-edit {
+  padding: 0 var(--space-1);
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+
+/* ── Kaydetme durumu ───────────────────────────────────────────────────────
+   `.plan__message` ile aynı tipografi ailesi; renk yalnız sonucu ayırır. */
+.plan-save-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+}
+.plan-save-status__line {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.plan-save-status__line--done {
+  color: var(--color-success);
+}
+.plan-save-status__line--failed {
+  color: var(--color-danger-strong);
+}
+
+/* Odak halkaları — segment ve ok butonları klavyeyle gezilebilir kalmalı. */
+.btn.plan-view-mode__item:focus-visible,
+.btn.plan-week-nav__arrow:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+@media (max-width: 1100px) {
+  .plan__bottom {
+    grid-template-columns: 1fr;
+  }
+}

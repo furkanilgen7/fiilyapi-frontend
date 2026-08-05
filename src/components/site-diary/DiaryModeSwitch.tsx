@@ -1,76 +1,63 @@
 import Link from "next/link";
-import { cx } from "@/lib/cx";
 
-export type DiaryMode = "entry" | "summary";
+export type DiaryMode = "entry" | "planning" | "summary";
 
 export interface DiaryModeSwitchProps {
-  /** Aktif görünüm — "Kayıt Gir" ya da "Hakediş Özeti". */
+  /** Aktif görünüm — "Kayıt Gir", "Planlama" ya da "Hakediş Özeti". */
   active: DiaryMode;
   /** `.../gunluk-kayit` */
   entryHref: string;
+  /** `.../gunluk-kayit/planlama` */
+  planningHref: string;
   /** `.../gunluk-kayit/ozet` */
   summaryHref: string;
 }
 
+interface ModeItem {
+  mode: DiaryMode;
+  label: string;
+  href: string;
+}
+
 /**
- * GK164-168 · üç görünümlü mod anahtarı.
+ * GK164-168 · P80-84 — üç görünümlü mod anahtarı.
  *
- * "Planlama" (GK166) DEVRE DIŞI basılır: Planlama EKRANI ayrı dilimdir
- * (F-PL — spec §6 S2, kullanıcı onayı). Üst kural gereği öğe SİLİNMEZ,
- * görünür gerekçeyle (title + yardımcı metin) devre dışı gösterilir.
+ * F-PL T2: "Planlama" (GK166 / P82) artık DEVRE DIŞI DEĞİLDİR — rotası
+ * (`.../gunluk-kayit/planlama`) bu dilimde açıldı; devre dışı gerekçesi ve
+ * onu anlatan `DiaryModeNotice` cümlesi kaldırıldı.
+ *
+ * Üç ekran da AYNI şeridi kullanır — şerit KOPYALANMAZ.
  */
-export function DiaryModeSwitch({ active, entryHref, summaryHref }: DiaryModeSwitchProps) {
+export function DiaryModeSwitch({
+  active,
+  entryHref,
+  planningHref,
+  summaryHref,
+}: DiaryModeSwitchProps) {
+  const items: readonly ModeItem[] = [
+    { mode: "entry", label: "Kayıt Gir", href: entryHref },
+    { mode: "planning", label: "Planlama", href: planningHref },
+    { mode: "summary", label: "Hakediş Özeti", href: summaryHref },
+  ];
+
   return (
     <div className="diary-mode" role="group" aria-label="Görünüm seçimi">
-      {active === "entry" ? (
-        <span className="diary-mode__item diary-mode__item--active" aria-current="page">
-          Kayıt Gir
-        </span>
-      ) : (
-        <Link href={entryHref} className="diary-mode__item">
-          Kayıt Gir
-        </Link>
-      )}
-
-      {/* GK166 — rota YOK (F-PL dilimi). Ölü link basmak yerine devre dışı. */}
-      <span
-        className="diary-mode__item diary-mode__item--disabled"
-        aria-disabled="true"
-        title="Planlama ekranı ayrı dilimde (F-PL) geliyor"
-      >
-        Planlama
-      </span>
-
-      {active === "summary" ? (
-        <span className="diary-mode__item diary-mode__item--active" aria-current="page">
-          Hakediş Özeti
-        </span>
-      ) : (
-        <Link href={summaryHref} className="diary-mode__item">
-          Hakediş Özeti
-        </Link>
+      {items.map((item) =>
+        item.mode === active ? (
+          // GK165 / P82 — aktif öğe bağlantı DEĞİLDİR (kendine link basılmaz).
+          <span
+            key={item.mode}
+            className="diary-mode__item diary-mode__item--active"
+            aria-current="page"
+          >
+            {item.label}
+          </span>
+        ) : (
+          <Link key={item.mode} href={item.href} className="diary-mode__item">
+            {item.label}
+          </Link>
+        ),
       )}
     </div>
-  );
-}
-
-export interface DiaryModeNoticeProps {
-  className?: string;
-  /**
-   * "Kayıt Gir" ekranında sayfanın altında salt-okunur planlama bloğu vardır ve
-   * gerekçe onu da anlatır. "Hakediş Özeti" modunda böyle bir blok YOKTUR —
-   * cümle oraya kopyalanmaz (`false`).
-   */
-  hasPlanPreview?: boolean;
-}
-
-/** Devre dışı mod öğesinin gerekçesi — ekranın altında da görünür basılır. */
-export function DiaryModeNotice({ className, hasPlanPreview = true }: DiaryModeNoticeProps) {
-  return (
-    <p className={cx("diary__notice", className)}>
-      “Planlama” görünümü henüz açılmadı — planlama ekranı ayrı bir dilimde
-      (F-PL) geliyor.
-      {hasPlanPreview ? " Aşağıdaki planlama bloğu salt-okunur özettir." : ""}
-    </p>
   );
 }

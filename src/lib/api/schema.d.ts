@@ -649,6 +649,179 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/projects/{project_id}/document-folders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Document Folders Endpoint
+         * @description Bir KÖKÜN klasörleri — düz liste, hiyerarşiyi `parent_id` taşır.
+         *
+         *     `site_id` bir SÜZGEÇTİR: verilmezse yalnız PROJE DÜZEYİ klasörler döner,
+         *     verilirse yalnız o şantiyeninkiler. Gerekçe `service.list_folders`tadır
+         *     (E12 kökü her an tek bir proje/şantiye ikilisidir).
+         *
+         *     Görünmeyen proje 404 döner ve gövdesi var olmayan kimliğinkiyle AYNIDIR.
+         *
+         *     Belge SAYACI YOKTUR — gerekçe `schemas` başlığındadır.
+         */
+        get: operations["list_document_folders_endpoint_projects__project_id__document_folders_get"];
+        put?: never;
+        /**
+         * Create Document Folder Endpoint
+         * @description Yeni klasör. Kategori seti SERBESTTİR (spec §7 S3) — otomatik seed YOKTUR.
+         *
+         *     * ad çakışması → 409 (kontrol UYGULAMA katmanındadır; T1 bulgusu: NULL'lı
+         *       kapsamda DB kısıtı işlemez)
+         *     * `site_id` başka projenin şantiyesi → 422
+         *     * `parent_id` başka kapsamın klasörü → 422
+         */
+        post: operations["create_document_folder_endpoint_projects__project_id__document_folders_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/document-folders/{folder_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Document Folder Endpoint
+         * @description YALNIZ BOŞ klasör silinir; belge ya da alt klasör varsa 409.
+         *
+         *     Yetki kapısı korkuluktan ÖNCE koşar: yetkisiz aktör 403 alır ve klasörün
+         *     dolu olup olmadığını ÖĞRENEMEZ. Görünmeyen klasör 404 döner.
+         *
+         *     Yanıt `204 No Content`, gövdesizdir.
+         */
+        delete: operations["delete_document_folder_endpoint_document_folders__folder_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Rename Document Folder Endpoint
+         * @description YALNIZ ad değişir. Klasör TAŞIMA ucu yoktur (gerekçe `schemas`ta).
+         */
+        patch: operations["rename_document_folder_endpoint_document_folders__folder_id__patch"];
+        trace?: never;
+    };
+    "/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Documents Endpoint
+         * @description Künye listesi — BAYTLARA DOKUNMADAN (spec §2; SQL düzeyinde test edilir).
+         *
+         *     `project_id` ZORUNLUDUR; `site_id` T2'nin klasör listesiyle aynı semantiktedir
+         *     (verilmezse proje düzeyi); `folder_id` verilmezse kapsamın tamamı döner
+         *     (SB kökü "Tüm Belgeler"). Gerekçeler `service.list_documents`tadır.
+         *
+         *     SIRALAMA SEÇİLEBİLİR DEĞİLDİR (`created_at` azalan) ve SAYFALAMA YOKTUR —
+         *     mockup'ta ikisi de yoktur, icat edilmez. `limit` yalnız "Son Eklenenler"
+         *     panelini kısaltmak içindir (spec §3).
+         */
+        get: operations["list_documents_endpoint_documents_get"];
+        put?: never;
+        /**
+         * Upload Document Endpoint
+         * @description Multipart yükleme (spec §3/§4).
+         *
+         *     KAPI SIRASI SABİTTİR ve ucuzdan pahalıya gider:
+         *     1. dosya adı normalize edilir (yol/başlık enjeksiyonu temizlenir) → 422
+         *     2. uzantı beyaz listeden geçer → 422 — **baytlar OKUNMADAN ÖNCE**
+         *     3. gövde parçalı okunur, tavan aşılırsa → 413
+         *     4. kapsam korkulukları (şantiye/klasör) → 422, görünmeyen proje → 404
+         *
+         *     Uzantı kontrolünün okumadan önce olması bilinçlidir: yasak uzantılı 50 MB'lık
+         *     bir gövdeyi sonuna kadar okumanın hiçbir karşılığı yoktur.
+         *
+         *     Künye + baytlar TEK transaction'da yazılır; `put` patlarsa künye de yazılmaz.
+         */
+        post: operations["upload_document_endpoint_documents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/{document_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download Document Endpoint
+         * @description İçeriği PARÇALI akıtır — 48 MB'lık bir ZIP tam-bellek OKUNMAZ (spec §3).
+         *
+         *     Başlıklar:
+         *       * `Content-Type` künyedeki tiptir (uzantıdan türetilmiştir; istemcinin
+         *         yükleme sırasındaki beyanı DEĞİL).
+         *       * `Content-Length` künyedeki `size_bytes`tır — akış hâlinde tarayıcı
+         *         yüzdelik ilerleme gösterebilsin diye açıkça verilir.
+         *       * `Content-Disposition` Türkçe karakterli adı RFC 5987 ile taşır ve
+         *         `attachment`tır; `nosniff` ile birlikte arşivdeki bir dosyanın
+         *         tarayıcıda ÇALIŞTIRILMASINI engeller.
+         *
+         *     İlk parça yanıt başlamadan önce alınır: içeriği olmayan künye yarım bir 200
+         *     değil düzgün bir 404 döner (`service.start_document_stream`).
+         */
+        get: operations["download_document_endpoint_documents__document_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/{document_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Document Endpoint
+         * @description Künye + baytlar silinir (`admin`; `full` silmeyi KAPSAMAZ).
+         *
+         *     ⚠️ BU UÇ EKRANDA BASILMAZ (modül docstring'i): mockup'ta belge silme
+         *     aksiyonu yoktur; uç yalnız yanlış yüklenen dosyayı temizlemek içindir.
+         *
+         *     Yanıt `204 No Content`, gövdesizdir.
+         */
+        delete: operations["delete_document_endpoint_documents__document_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Document Endpoint
+         * @description Ad / açıklama / klasör taşıma (spec §3). Kapsam (proje/şantiye) DEĞİŞMEZ.
+         *
+         *     Taşımada hedef klasörün kapsamı belgeninkiyle aynı olmalıdır (422);
+         *     `folder_id: null` belgeyi kapsamın köküne taşır ve İZİNLİDİR.
+         */
+        patch: operations["update_document_endpoint_documents__document_id__patch"];
+        trace?: never;
+    };
     "/employers": {
         parameters: {
             query?: never;
@@ -2833,6 +3006,22 @@ export interface components {
              */
             include_warnings: boolean;
         };
+        /** Body_upload_document_endpoint_documents_post */
+        Body_upload_document_endpoint_documents_post: {
+            /** File */
+            file: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Site Id */
+            site_id?: string | null;
+            /** Folder Id */
+            folder_id?: string | null;
+            /** Description */
+            description?: string | null;
+        };
         /** Body_upload_logo_endpoint_company_logo_post */
         Body_upload_logo_endpoint_company_logo_post: {
             /** File */
@@ -3416,6 +3605,138 @@ export interface components {
          * @enum {string}
          */
         DiaryStatus: "draft" | "submitted";
+        /**
+         * DocumentFolderCreate
+         * @description `POST /projects/{id}/document-folders` gövdesi.
+         *
+         *     `project_id` GÖVDEDE YOKTUR — yol parametresidir; iki yerden gelseydi
+         *     hangisinin kazandığı belirsiz olur ve kapsam süzgeci atlatılabilirdi.
+         */
+        DocumentFolderCreate: {
+            /** Name */
+            name: string;
+            /** Site Id */
+            site_id?: string | null;
+            /** Parent Id */
+            parent_id?: string | null;
+        };
+        /**
+         * DocumentFolderListResponse
+         * @description Düz liste; ağacı ekran `parent_id`den kurar (UI iki seviye çizer).
+         */
+        DocumentFolderListResponse: {
+            /** Folders */
+            folders: components["schemas"]["DocumentFolderRead"][];
+        };
+        /** DocumentFolderRead */
+        DocumentFolderRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Site Id */
+            site_id: string | null;
+            /** Parent Id */
+            parent_id: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * DocumentFolderUpdate
+         * @description `PATCH /document-folders/{id}` gövdesi — YALNIZ ad (spec §3).
+         *
+         *     Kapsam alanları (`site_id`/`parent_id`) BİLİNÇLİ olarak yoktur: klasör TAŞIMA
+         *     ucu açılmamıştır. Açılsaydı taşınan klasörün altındaki belgelerin `project_id`/
+         *     `site_id` künyeleriyle klasörün kapsamı ayrışırdı (künye kapsamı spec §2
+         *     gereği klasörden türetilmez, KOPYALANIR).
+         */
+        DocumentFolderUpdate: {
+            /** Name */
+            name: string;
+        };
+        /**
+         * DocumentListResponse
+         * @description Düz liste. TOPLAM SAYI ALANI YOKTUR: sayfalama olmadığı için (spec §3)
+         *     `total` ile `len(documents)` her zaman aynı olurdu — ekranı yanıltan
+         *     ölü bir alan.
+         */
+        DocumentListResponse: {
+            /** Documents */
+            documents: components["schemas"]["DocumentRead"][];
+        };
+        /**
+         * DocumentRead
+         * @description Künye — baytlar YOK (spec §2). Liste ve tekil yanıtların ortak gövdesi.
+         *
+         *     `uploaded_by_user_id` DIŞARI VERİLMEZ: ekranın gösterdiği şey SNAPSHOT
+         *     addır (SB:144 "Şantiye Şefi: S. Öztürk"); kimliği yayınlamak, arşivi gören
+         *     herkese kullanıcı kimlik havuzunu açardı.
+         */
+        DocumentRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Folder Id */
+            folder_id: string | null;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Site Id */
+            site_id: string | null;
+            /** Filename */
+            filename: string;
+            /** Mime Type */
+            mime_type: string;
+            /** Size Bytes */
+            size_bytes: number;
+            /** Description */
+            description: string | null;
+            /** Uploaded By Name */
+            uploaded_by_name: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * DocumentUpdate
+         * @description `PATCH /documents/{id}` — üç alan, ÜÇÜ DE İSTEĞE BAĞLI (spec §3).
+         *
+         *     Alanın GÖNDERİLMEMESİ ile `null` GÖNDERİLMESİ farklıdır ve fark
+         *     `model_fields_set` ile korunur: `description: null` açıklamayı SİLER,
+         *     `folder_id: null` belgeyi kapsamın KÖKÜNE taşır; hiç göndermemek ikisine de
+         *     DOKUNMAZ. `exclude_unset` olmadan bir ad değişikliği, açıklamayı sessizce
+         *     silerdi.
+         *
+         *     `project_id`/`site_id` YOKTUR: belge KAPSAM DEĞİŞTİREMEZ. Değiştirebilseydi
+         *     `visible_projects` süzgecini geçen bir kullanıcı, kendi göremediği bir
+         *     projeye belge taşıyabilir ya da tersine görünmeyen bir belgeyi kendi
+         *     kapsamına çekebilirdi.
+         */
+        DocumentUpdate: {
+            /** Filename */
+            filename?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Folder Id */
+            folder_id?: string | null;
+        };
         /**
          * EmployerContractDetail
          * @description `E14` başlığı. Sözleşmenin kendi alanları için YENİ yazma ucu AÇILMAZ
@@ -10383,6 +10704,452 @@ export interface operations {
             };
             /** @description Kayıt bulunamadı */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    list_document_folders_endpoint_projects__project_id__document_folders_get: {
+        parameters: {
+            query?: {
+                site_id?: string | null;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentFolderListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_document_folder_endpoint_projects__project_id__document_folders_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentFolderCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentFolderRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bu kapsamda aynı adlı klasör var */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_document_folder_endpoint_document_folders__folder_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                folder_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Klasör boş değil */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_document_folder_endpoint_document_folders__folder_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                folder_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentFolderUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentFolderRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bu kapsamda aynı adlı klasör var */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_documents_endpoint_documents_get: {
+        parameters: {
+            query: {
+                project_id: string;
+                site_id?: string | null;
+                folder_id?: string | null;
+                q?: string | null;
+                limit?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_document_endpoint_documents_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_document_endpoint_documents_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dosya boyutu tavanı aşıyor */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Desteklenmeyen dosya türü ya da kapsam dışı klasör/şantiye */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    download_document_endpoint_documents__document_id__download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "application/octet-stream": unknown;
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_document_endpoint_documents__document_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_document_endpoint_documents__document_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Desteklenmeyen dosya türü ya da kapsam dışı klasör */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

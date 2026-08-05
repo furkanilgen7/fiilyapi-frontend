@@ -43,12 +43,14 @@ test("günlük kayıt: mod anahtarı, son kayıtlar ve gün seçimi (SALT-OKUR)"
   await page.goto(SITE_DIARY_URL);
   await expect(page.getByRole("heading", { level: 1, name: "Günlük Kayıt & Planlama" })).toBeVisible();
 
-  // Mod anahtarı (GK164-168): "Kayıt Gir" aktif, "Planlama" DEVRE DIŞI (rota
-  // yok — F-PL dilimi), "Hakediş Özeti" gerçek link.
+  // Mod anahtarı (GK164-168): "Kayıt Gir" aktif; "Planlama" ve "Hakediş Özeti"
+  // GERÇEK bağlantıdır (F-PL T2 ile Planlama rotası açıldı, devre dışı değil).
   const modeSwitch = page.getByRole("group", { name: "Görünüm seçimi" });
   await expect(modeSwitch.getByText("Kayıt Gir")).toHaveAttribute("aria-current", "page");
-  await expect(modeSwitch.getByText("Planlama")).toHaveAttribute("aria-disabled", "true");
-  await expect(page.getByText("“Planlama” görünümü henüz açılmadı", { exact: false })).toBeVisible();
+  await expect(modeSwitch.getByRole("link", { name: "Planlama" })).toHaveAttribute(
+    "href",
+    /\/gunluk-kayit\/planlama$/,
+  );
 
   // Son Kayıtlar (GK356-386) — Temmuz fikstürleri, türetilmiş rozetlerle.
   const recent = page.locator(".diary-recent__list");
@@ -184,9 +186,9 @@ test("hakediş özeti: mod geçişi, ay gezinmesi ve poz bazlı birikim tablosu"
   await expect(monthLabel).toHaveText("Temmuz 2026");
   await expect(table.getByText("C25/30 Beton (Döşeme)")).toBeVisible();
 
-  // Mod anahtarı geri "Kayıt Gir"e döner (Planlama burada da devre dışı).
+  // Mod anahtarı geri "Kayıt Gir"e döner (Planlama burada da gerçek link).
   const modeSwitch = page.getByRole("group", { name: "Görünüm seçimi" });
-  await expect(modeSwitch.getByText("Planlama")).toHaveAttribute("aria-disabled", "true");
+  await expect(modeSwitch.getByRole("link", { name: "Planlama" })).toBeVisible();
   await modeSwitch.getByRole("link", { name: "Kayıt Gir" }).click();
   await expect(page).toHaveURL(/\/gunluk-kayit$/);
   await expect(page.getByRole("heading", { level: 1, name: "Günlük Kayıt & Planlama" })).toBeVisible();

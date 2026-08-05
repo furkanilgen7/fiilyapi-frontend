@@ -396,6 +396,14 @@ interface MockState {
   subcontractorProgressPayments: MockSubcontractorProgressPayment[];
   // F-SD T1 — Şantiye Günlüğü kayıtları (bkz. buildDiaryEntryFixtures).
   diaryEntries: MockDiaryEntry[];
+  // F-PL T1 — Şantiye Planlama (haftalık ızgara). Dört PUT ucu bu dizileri
+  // DEĞİŞTİRME semantiğiyle yeniden yazar; `planSeq` yeni kayıt kimliklerini
+  // deterministik üretir (`Date.now()` YOK).
+  planRows: MockPlanRow[];
+  planCells: MockPlanCell[];
+  planGoals: MockPlanGoal[];
+  planSprints: MockPlanSprint[];
+  planSeq: number;
   permissions: Record<string, Record<string, { access_level: string; scope: string }>>;
   projectAccess: Record<string, { all_projects: boolean; project_ids: string[] }>;
   company: {
@@ -1697,6 +1705,11 @@ function seedState(): MockState {
     subcontractorContracts: SUBCONTRACTOR_CONTRACTS,
     subcontractorProgressPayments: buildSubcontractorProgressPaymentFixtures(),
     diaryEntries: buildDiaryEntryFixtures(),
+    planRows: PLAN_ROW_FIXTURES.map((r) => ({ ...r })),
+    planCells: PLAN_CELL_FIXTURES.map((c) => ({ ...c })),
+    planGoals: PLAN_GOAL_FIXTURES.map((g) => ({ ...g })),
+    planSprints: PLAN_SPRINT_FIXTURES.map((s) => ({ ...s })),
+    planSeq: 0,
     permissions,
     projectAccess: {
       "u-1": { all_projects: true, project_ids: [] },
@@ -1765,10 +1778,14 @@ function userNameById(state: MockState, userId: unknown): string | null {
  * `SiteDetailResponse` gövdesi (schema.d.ts) — `GET /sites/{id}` ve
  * `POST /projects/{id}/sites` AYNI şekli döndürür, tek yerde kurulur.
  */
-function buildSiteDetail(state: MockState, site: MockSite) {
-  const project = state.projects.find((p) => p.id === site.project_id);
-  const sectionItems = state.sections
-    .filter((sec) => sec.site_id === site.id)
+/**
+ * `SectionResponse[]` (dar gövde) — HEM `GET /sites/{id}` hero'sunun gömülü
+ * listesi HEM `GET /sites/{id}/sections` liste ucu aynı şekli döndürür, bu
+ * yüzden tek yerde kurulur.
+ */
+function buildSectionListItems(state: MockState, siteId: string) {
+  return state.sections
+    .filter((sec) => sec.site_id === siteId)
     .sort((a, b) => a.sort_order - b.sort_order)
     .map((sec) => ({
       id: sec.id, code: sec.code, name: sec.name, status: sec.status, manager_name: sec.manager_name,
@@ -1778,6 +1795,11 @@ function buildSiteDetail(state: MockState, site: MockSite) {
       budget: METRIC_PENDING("boq"),
       worker_count: COUNT_PENDING("timesheet"),
     }));
+}
+
+function buildSiteDetail(state: MockState, site: MockSite) {
+  const project = state.projects.find((p) => p.id === site.project_id);
+  const sectionItems = buildSectionListItems(state, site.id);
   return {
     id: site.id, code: site.code, name: site.name, status: site.status, address: site.address,
     city: site.city, city_inherited: site.city_inherited, site_manager_name: site.site_manager_name,
@@ -2163,6 +2185,185 @@ function buildPlanDaySummaryRange(state: MockState, siteId: string, start: strin
   };
 }
 
+// --- F-PL T1 · Şantiye Planlama (haftalık ızgara) ------------------------
+// Kayıtlar BELLEKTE tutulur ve PUT uçları gerçek backend gibi DEĞİŞTİRME
+// (replace) semantiği uygular. Fikstürler DETERMİNİSTİK'tir (rastgelelik yok,
+// `Date.now()` yok) — T4 görsel spec'i bu değerlere bakacak.
+
+interface MockPlanRow {
+  id: string;
+  site_id: string;
+  kind: "crew" | "equipment";
+  section_id: string | null;
+  label: string;
+  planned_worker_count: number | null;
+  sort_order: number;
+}
+interface MockPlanCell {
+  site_id: string;
+  row_id: string;
+  plan_date: string;
+  text: string;
+  tag: string | null;
+}
+interface MockPlanGoal {
+  id: string;
+  site_id: string;
+  week_start: string;
+  title: string;
+  note: string | null;
+  is_done: boolean;
+  status: "completed" | "in_progress" | "waiting" | "service_pending";
+  sort_order: number;
+}
+interface MockPlanSprint {
+  id: string;
+  site_id: string;
+  name: string;
+  is_active: boolean;
+}
+
+/** Fikstür haftası (Pazartesi). Hücreler + hedefler bu haftaya bağlıdır. */
+const PLAN_FIXTURE_WEEK_START = "2026-08-03";
+
+/**
+ * İki grup: bölümlü ekip grubu (`sec-1`) + bölümsüz ekipman grubu. Gruplama
+ * anahtarı `(kind, section_id)` ikilisi olduğu için ekipman satırları AYRI
+ * başlık altına düşer.
+ */
+const PLAN_ROW_FIXTURES: MockPlanRow[] = [
+  { id: "pr-1", site_id: "s-1", kind: "crew", section_id: "sec-1", label: "Kalıpçı Ekibi", planned_worker_count: 14, sort_order: 0 },
+  { id: "pr-2", site_id: "s-1", kind: "crew", section_id: "sec-1", label: "Demirci Ekibi", planned_worker_count: 18, sort_order: 1 },
+  { id: "pr-3", site_id: "s-1", kind: "crew", section_id: "sec-1", label: "Elektrikçi Ekibi", planned_worker_count: 8, sort_order: 2 },
+  { id: "pr-4", site_id: "s-1", kind: "equipment", section_id: null, label: "Tower Crane", planned_worker_count: null, sort_order: 3 },
+  { id: "pr-5", site_id: "s-1", kind: "equipment", section_id: null, label: "Beton Pompası", planned_worker_count: null, sort_order: 4 },
+  // 🔒 FİKSTÜR İZOLASYONU (F-PL T4): `site-planning.spec.ts` planı MUTASYONA
+  // uğratır (satır ekle/sil, hücre, hedef, sprint) ve bu uçların üçü ŞANTİYE
+  // kapsamlıdır — hafta ayırmak yetmez, ŞANTİYE ayırmak gerekir. Bu yüzden
+  // fonksiyonel akış s-2'de yürür; `site-planning-visual.spec.ts` yalnız
+  // s-1'e bakar ve s-1'i hiçbir spec değiştirmez (P7 dersi).
+  //
+  // s-2'nin BÖLÜMÜ YOKTUR → ekip grubu "Bölümsüz Ekipler" başlığına düşer
+  // (`UNASSIGNED_CREW_GROUP_TITLE`), böylece s-1'in kapsamadığı grup dalı da
+  // uçtan uca koşulur.
+  { id: "pr-6", site_id: "s-2", kind: "crew", section_id: null, label: "Duvarcı Ekibi", planned_worker_count: 10, sort_order: 0 },
+  { id: "pr-7", site_id: "s-2", kind: "equipment", section_id: null, label: "Mini Ekskavatör", planned_worker_count: null, sort_order: 1 },
+];
+
+/** Altı renk etiketinin HEPSİ kullanılır; hafta sonu sütunları boş bırakılır. */
+const PLAN_CELL_FIXTURES: MockPlanCell[] = [
+  { site_id: "s-1", row_id: "pr-1", plan_date: "2026-08-03", text: "6. kat kalıp kurulumu", tag: "blue" },
+  { site_id: "s-1", row_id: "pr-1", plan_date: "2026-08-05", text: "Kalıp sökümü (A aksı)", tag: "green" },
+  { site_id: "s-1", row_id: "pr-2", plan_date: "2026-08-04", text: "Döşeme donatı serimi", tag: "yellow" },
+  { site_id: "s-1", row_id: "pr-2", plan_date: "2026-08-06", text: "Kolon filiz montajı", tag: "purple" },
+  { site_id: "s-1", row_id: "pr-3", plan_date: "2026-08-07", text: "Tesisat borusu çekimi", tag: "gray" },
+  { site_id: "s-1", row_id: "pr-4", plan_date: "2026-08-03", text: "Vinç periyodik bakım", tag: "red" },
+  { site_id: "s-1", row_id: "pr-5", plan_date: "2026-08-04", text: "Beton dökümü — 180 m³", tag: "blue" },
+  // s-2 (fonksiyonel spec'in izole şantiyesi) — tek dolu hücre yeter: spec'in
+  // kendisi yazıp okuyacak.
+  { site_id: "s-2", row_id: "pr-6", plan_date: "2026-08-03", text: "Bodrum duvar örgüsü", tag: "blue" },
+];
+
+/** Dört `PlanGoalStatus` değerinin her biri BİRER kez. */
+const PLAN_GOAL_FIXTURES: MockPlanGoal[] = [
+  { id: "pg-1", site_id: "s-1", week_start: PLAN_FIXTURE_WEEK_START, title: "6. kat kalıp tamamlansın", note: "A ve B aksı öncelikli.", is_done: true, status: "completed", sort_order: 0 },
+  { id: "pg-2", site_id: "s-1", week_start: PLAN_FIXTURE_WEEK_START, title: "Döşeme betonu dökülsün", note: null, is_done: false, status: "in_progress", sort_order: 1 },
+  { id: "pg-3", site_id: "s-1", week_start: PLAN_FIXTURE_WEEK_START, title: "İskele revizyonu", note: "Malzeme bekleniyor.", is_done: false, status: "waiting", sort_order: 2 },
+  { id: "pg-4", site_id: "s-1", week_start: PLAN_FIXTURE_WEEK_START, title: "Vinç yıllık muayenesi", note: null, is_done: false, status: "service_pending", sort_order: 3 },
+  { id: "pg-5", site_id: "s-2", week_start: PLAN_FIXTURE_WEEK_START, title: "Bodrum duvarları bitsin", note: null, is_done: false, status: "waiting", sort_order: 0 },
+];
+
+const PLAN_SPRINT_FIXTURES: MockPlanSprint[] = [
+  { id: "ps-1", site_id: "s-1", name: "Sprint 12 · 6. Kat Kaba İnşaat", is_active: true },
+  { id: "ps-2", site_id: "s-2", name: "Sprint 4 · Bodrum Kabası", is_active: true },
+];
+
+/**
+ * `GET /sites/{id}/plan` — haftalık ızgara.
+ *
+ * Gün iskeleti GERÇEK TAKVİMDEN BAĞIMSIZ: `week_start` neyse 7 gün ondan
+ * üretilir (`is_weekend` Cmt/Paz). Hücreler SEYREKTİR — planı olmayan gün
+ * hücre üretmez, ızgara deliklerini `days` doldurur.
+ */
+function buildSitePlanWeek(state: MockState, siteId: string, weekStart: string) {
+  const site = state.sites.find((s) => s.id === siteId);
+  const project = state.projects.find((p) => p.id === site?.project_id);
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const planDate = addDaysIso(weekStart, index);
+    const weekday = new Date(`${planDate}T00:00:00Z`).getUTCDay();
+    return { plan_date: planDate, is_weekend: weekday === 0 || weekday === 6 };
+  });
+  const weekDates = new Set(days.map((d) => d.plan_date));
+
+  const rows = state.planRows
+    .filter((r) => r.site_id === siteId)
+    .slice()
+    .sort((a, b) => a.sort_order - b.sort_order || a.id.localeCompare(b.id));
+
+  // Gruplama anahtarı `(kind, section_id)` İKİLİSİ — ekipman satırları
+  // bölümsüz oldukları için AYRI başlığa düşer.
+  const groups: Array<{
+    kind: MockPlanRow["kind"];
+    section_id: string | null;
+    section_name: string | null;
+    section_manager_name: string | null;
+    rows: unknown[];
+  }> = [];
+  for (const row of rows) {
+    const section = state.sections.find((s) => s.id === row.section_id);
+    const key = `${row.kind}::${row.section_id ?? ""}`;
+    let group = groups.find((g) => `${g.kind}::${g.section_id ?? ""}` === key);
+    if (!group) {
+      group = {
+        kind: row.kind,
+        section_id: row.section_id,
+        section_name: section?.name ?? null,
+        section_manager_name: section?.manager_name ?? null,
+        rows: [],
+      };
+      groups.push(group);
+    }
+    group.rows.push({
+      id: row.id,
+      kind: row.kind,
+      section_id: row.section_id,
+      label: row.label,
+      planned_worker_count: row.planned_worker_count,
+      sort_order: row.sort_order,
+      cells: state.planCells
+        .filter((c) => c.row_id === row.id && weekDates.has(c.plan_date))
+        .slice()
+        .sort((a, b) => a.plan_date.localeCompare(b.plan_date))
+        .map((c) => ({ plan_date: c.plan_date, text: c.text, tag: c.tag })),
+    });
+  }
+
+  const sprint = state.planSprints.find((s) => s.site_id === siteId && s.is_active);
+  return {
+    site_id: siteId,
+    site_name: site?.name ?? "",
+    project_id: site?.project_id ?? "",
+    project_name: project?.name ?? "",
+    week_start: weekStart,
+    week_end: addDaysIso(weekStart, 6),
+    days,
+    groups,
+    goals: state.planGoals
+      .filter((g) => g.site_id === siteId && g.week_start === weekStart)
+      .slice()
+      .sort((a, b) => a.sort_order - b.sort_order || a.id.localeCompare(b.id))
+      .map((g) => ({
+        id: g.id,
+        title: g.title,
+        note: g.note,
+        is_done: g.is_done,
+        status: g.status,
+        sort_order: g.sort_order,
+      })),
+    active_sprint: sprint ? { id: sprint.id, name: sprint.name } : null,
+  };
+}
+
 /**
  * Günlükten türetilen hakediş önerisi. İKİ uç da AYNI kuralı izler: yalnız
  * `submitted` günler, yalnız köprüsü olan pozlar; köprüsüz pozlar
@@ -2435,6 +2636,23 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     // orada P6 doğrulaması uygulanmaz, burada uygulanır (`useCreateSection`
     // hook'unun çağırdığı uç budur).
     const siteSectionsMatch = path.match(/^\/sites\/([^/]+)\/sections$/);
+    // GET /sites/{site_id}/sections — `SectionListResponse`. F-PL T5: planlama
+    // ızgarasında satır açarken bölüm SEÇİLİR; ızgaranın grupları yalnız mevcut
+    // satırlardan türediği için seçenekler bu uçtan gelir.
+    if (method === "GET" && siteSectionsMatch) {
+      const siteId = siteSectionsMatch[1];
+      const site = state.sites.find((s) => s.id === siteId);
+      if (!site) return send(404, { detail: "santiye yok" });
+      const items = buildSectionListItems(state, siteId);
+      return send(200, {
+        counts: {
+          planned: items.filter((s) => s.status === "planned").length,
+          active: items.filter((s) => s.status === "active").length,
+          completed: items.filter((s) => s.status === "completed").length,
+        },
+        items,
+      });
+    }
     if (method === "POST" && siteSectionsMatch) {
       const siteId = siteSectionsMatch[1];
       const site = state.sites.find((s) => s.id === siteId);
@@ -3135,6 +3353,179 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const daysParam = parsed.searchParams.get("days");
       const days = daysParam !== null ? Number(daysParam) : 5;
       return send(200, buildPlanDaySummaryRange(state, site.id, start, days));
+    }
+
+    // --- F-PL T1 · Planlama ekranının beş ucu -----------------------------
+    // DEĞİŞTİRME semantiği gerçekten uygulanır (gerçek backend gibi): aksi
+    // hâlde e2e "yeşil" olur ama canlıda silinmesi gereken satır kalır.
+    const planWeekStart = (): string | null => parsed.searchParams.get("week_start");
+    const planSiteOf = (id: string): MockSite | undefined => state.sites.find((s) => s.id === id);
+    const nextPlanId = (prefix: string): string => {
+      state.planSeq += 1;
+      return `${prefix}-new-${state.planSeq}`;
+    };
+
+    // GET /sites/{site_id}/plan — haftalık ızgara. `week_start` ZORUNLU.
+    const planWeekMatch = path.match(/^\/sites\/([^/]+)\/plan$/);
+    if (method === "GET" && planWeekMatch) {
+      const site = planSiteOf(planWeekMatch[1]);
+      if (!site) return send(404, { detail: "santiye yok" });
+      const weekStart = planWeekStart();
+      if (!weekStart) return send(422, { detail: "week_start zorunlu" });
+      return send(200, buildSitePlanWeek(state, site.id, weekStart));
+    }
+
+    // PUT /sites/{site_id}/plan/rows — ŞANTİYE kapsamlı tam değiştirme.
+    // `week_start` YOKTUR. Gövdede geçmeyen satır silinir, hücreleri CASCADE
+    // ile gider; `id` taşıyan satır kimliğini (ve hücrelerini) KORUR.
+    const planRowsMatch = path.match(/^\/sites\/([^/]+)\/plan\/rows$/);
+    if (method === "PUT" && planRowsMatch) {
+      const site = planSiteOf(planRowsMatch[1]);
+      if (!site) return send(404, { detail: "santiye yok" });
+      return withBody((body) => {
+        const input = Array.isArray(body.rows) ? (body.rows as Record<string, unknown>[]) : [];
+        const kept: MockPlanRow[] = input.map((raw, index) => {
+          const existingId = typeof raw.id === "string" ? raw.id : null;
+          const existing = existingId
+            ? state.planRows.find((r) => r.id === existingId && r.site_id === site.id)
+            : undefined;
+          return {
+            id: existing?.id ?? nextPlanId("pr"),
+            site_id: site.id,
+            kind: raw.kind === "equipment" ? "equipment" : "crew",
+            section_id: typeof raw.section_id === "string" ? raw.section_id : null,
+            label: String(raw.label ?? ""),
+            planned_worker_count:
+              typeof raw.planned_worker_count === "number" ? raw.planned_worker_count : null,
+            sort_order: typeof raw.sort_order === "number" ? raw.sort_order : index,
+          };
+        });
+        const keptIds = new Set(kept.map((r) => r.id));
+        state.planRows = [
+          ...state.planRows.filter((r) => r.site_id !== site.id),
+          ...kept,
+        ];
+        // CASCADE: silinen satırın hücreleri de gider.
+        state.planCells = state.planCells.filter(
+          (c) => c.site_id !== site.id || keptIds.has(c.row_id),
+        );
+        return send(200, {
+          rows: kept.map((r) => ({
+            id: r.id,
+            kind: r.kind,
+            section_id: r.section_id,
+            label: r.label,
+            planned_worker_count: r.planned_worker_count,
+            sort_order: r.sort_order,
+          })),
+        });
+      });
+    }
+
+    // PUT /sites/{site_id}/plan/cells — HAFTA + şantiye kapsamlı değiştirme.
+    // Boş metinli hücre YAZILMAZ (hücre yokluğu = plan yok) → silme yolu budur.
+    const planCellsMatch = path.match(/^\/sites\/([^/]+)\/plan\/cells$/);
+    if (method === "PUT" && planCellsMatch) {
+      const site = planSiteOf(planCellsMatch[1]);
+      if (!site) return send(404, { detail: "santiye yok" });
+      const weekStart = planWeekStart();
+      if (!weekStart) return send(422, { detail: "week_start zorunlu" });
+      return withBody((body) => {
+        const weekDates = new Set(
+          Array.from({ length: 7 }, (_, index) => addDaysIso(weekStart, index)),
+        );
+        const input = Array.isArray(body.cells) ? (body.cells as Record<string, unknown>[]) : [];
+        const next: MockPlanCell[] = [];
+        for (const raw of input) {
+          const planDate = String(raw.plan_date ?? "");
+          if (!weekDates.has(planDate)) {
+            return send(422, { detail: "hucre istenen haftanin disinda" });
+          }
+          const text = String(raw.text ?? "").trim();
+          if (text === "") continue;
+          next.push({
+            site_id: site.id,
+            row_id: String(raw.row_id ?? ""),
+            plan_date: planDate,
+            text,
+            tag: typeof raw.tag === "string" ? raw.tag : null,
+          });
+        }
+        state.planCells = [
+          ...state.planCells.filter((c) => c.site_id !== site.id || !weekDates.has(c.plan_date)),
+          ...next,
+        ];
+        return send(200, buildSitePlanWeek(state, site.id, weekStart));
+      });
+    }
+
+    // PUT /sites/{site_id}/plan/goals — HAFTA + şantiye kapsamlı değiştirme.
+    const planGoalsMatch = path.match(/^\/sites\/([^/]+)\/plan\/goals$/);
+    if (method === "PUT" && planGoalsMatch) {
+      const site = planSiteOf(planGoalsMatch[1]);
+      if (!site) return send(404, { detail: "santiye yok" });
+      const weekStart = planWeekStart();
+      if (!weekStart) return send(422, { detail: "week_start zorunlu" });
+      return withBody((body) => {
+        const input = Array.isArray(body.goals) ? (body.goals as Record<string, unknown>[]) : [];
+        const kept: MockPlanGoal[] = input.map((raw, index) => {
+          const existingId = typeof raw.id === "string" ? raw.id : null;
+          const existing = existingId
+            ? state.planGoals.find(
+                (g) => g.id === existingId && g.site_id === site.id && g.week_start === weekStart,
+              )
+            : undefined;
+          return {
+            id: existing?.id ?? nextPlanId("pg"),
+            site_id: site.id,
+            week_start: weekStart,
+            title: String(raw.title ?? ""),
+            note: typeof raw.note === "string" ? raw.note : null,
+            is_done: raw.is_done === true,
+            // `is_done` ile `status` AYRI alanlardır; biri diğerinden TÜRETİLMEZ.
+            status: (typeof raw.status === "string"
+              ? raw.status
+              : "waiting") as MockPlanGoal["status"],
+            sort_order: typeof raw.sort_order === "number" ? raw.sort_order : index,
+          };
+        });
+        state.planGoals = [
+          ...state.planGoals.filter((g) => g.site_id !== site.id || g.week_start !== weekStart),
+          ...kept,
+        ];
+        return send(200, buildSitePlanWeek(state, site.id, weekStart));
+      });
+    }
+
+    // PUT /sites/{site_id}/plan/sprint — ŞANTİYE kapsamlı, `week_start` YOK.
+    // Boş/null ad aktif sprinti KAPATIR (kayıt silinmez, `is_active` düşer) ve
+    // yanıt `null` olur.
+    const planSprintMatch = path.match(/^\/sites\/([^/]+)\/plan\/sprint$/);
+    if (method === "PUT" && planSprintMatch) {
+      const site = planSiteOf(planSprintMatch[1]);
+      if (!site) return send(404, { detail: "santiye yok" });
+      return withBody((body) => {
+        const name = typeof body.name === "string" ? body.name.trim() : "";
+        state.planSprints = state.planSprints.map((s) =>
+          s.site_id === site.id ? { ...s, is_active: false } : s,
+        );
+        if (name === "") return send(200, null);
+        const reusable = state.planSprints.find((s) => s.site_id === site.id && s.name === name);
+        if (reusable) {
+          state.planSprints = state.planSprints.map((s) =>
+            s.id === reusable.id ? { ...s, is_active: true } : s,
+          );
+          return send(200, { id: reusable.id, name: reusable.name });
+        }
+        const created: MockPlanSprint = {
+          id: nextPlanId("ps"),
+          site_id: site.id,
+          name,
+          is_active: true,
+        };
+        state.planSprints = [...state.planSprints, created];
+        return send(200, { id: created.id, name: created.name });
+      });
     }
 
     // GET/POST /sites/{site_id}/diary — liste + kayıt açma.

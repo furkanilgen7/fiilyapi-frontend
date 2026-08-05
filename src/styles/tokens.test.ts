@@ -29,8 +29,13 @@ const tokensCss = readFileSync(
  * F-SD T4 (Hakediş Özeti "Taşeron Hakediş →" bağlantısı, mockup satır 226):
  * 72 → 73. Zemin/metin tonu mevcut turuncu token çiftiyle karşılandı, yalnız
  * kenarlık tonunun (#fed7aa) karşılığı yoktu (`--color-orange-tint-border`).
+ *
+ * F-PL T2 (Planlama ızgarası): 73 → 74. Altı hücre renk etiketinin HEPSİ ve
+ * grup başlığı renkleri mevcut token çiftleriyle karşılandı; yalnız hafta sonu
+ * HÜCRE zemini (`--color-amber-tint-cell`, P132-133) yeniydi — başlık
+ * satırının tonuyla (`--color-amber-tint`, P116) aynı DEĞİLDİR.
  */
-const EXPECTED_HEX_COUNT = 73;
+const EXPECTED_HEX_COUNT = 74;
 
 describe("tokens.css", () => {
   it("çekirdek renk token'larını tanımlar (açık tema Slate + Blue)", () => {

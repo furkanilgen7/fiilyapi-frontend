@@ -1,40 +1,25 @@
-import type { SitePlanDaySummary } from "@/lib/api/hooks/useSitePlanDaySummary";
+import Link from "next/link";
 
-const TR_WEEKDAYS = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
-const TR_MONTHS_SHORT = [
-  "Oca",
-  "Şub",
-  "Mar",
-  "Nis",
-  "May",
-  "Haz",
-  "Tem",
-  "Ağu",
-  "Eyl",
-  "Eki",
-  "Kas",
-  "Ara",
-];
+import type { SitePlanDaySummary } from "@/lib/api/hooks/useSitePlanDaySummary";
+import { formatDayMonthShort, formatWeekdayShort } from "@/lib/format";
 
 /**
- * `YYYY-MM-DD` → { "Pzt", "20 Tem" } (GK327). `Intl.DateTimeFormat`
- * KULLANILMAZ — jsdom/CI'da ICU verisi eksik olabilir (`format.ts`'teki
- * `formatPeriod` ile aynı gerekçe). Gün adı için `Date` yalnız haftanın
- * gününü vermek üzere UTC olarak kurulur.
+ * `YYYY-MM-DD` → { "Pzt", "20 Tem" } (GK327).
+ *
+ * F-PL T2: gün adı / kısa ay dizileri BURADA DEĞİL `lib/format.ts`tedir —
+ * Planlama ızgarası (P111-117) aynı biçimi kullanır ve iki kopya zamanla
+ * ayrışırdı.
  */
 export function planDayLabel(iso: string): { weekday: string; day: string } {
-  const [year, month, day] = iso.split("-").map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  return {
-    weekday: TR_WEEKDAYS[date.getUTCDay()] ?? "",
-    day: `${day} ${TR_MONTHS_SHORT[month - 1] ?? ""}`,
-  };
+  return { weekday: formatWeekdayShort(iso), day: formatDayMonthShort(iso) };
 }
 
 export interface DiaryPlanPreviewCardProps {
   days: readonly SitePlanDaySummary[] | undefined;
   isLoading: boolean;
   isError: boolean;
+  /** `.../gunluk-kayit/planlama` — F-PL T2'de açılan gerçek rota. */
+  planningHref: string;
 }
 
 /**
@@ -48,22 +33,24 @@ export interface DiaryPlanPreviewCardProps {
  *
  * SIZINTI YOK: bu bileşen yalnız okur; form durumuna alan eklemez.
  */
-export function DiaryPlanPreviewCard({ days, isLoading, isError }: DiaryPlanPreviewCardProps) {
+export function DiaryPlanPreviewCard({
+  days,
+  isLoading,
+  isError,
+  planningHref,
+}: DiaryPlanPreviewCardProps) {
   return (
     <section className="diary-card" aria-labelledby="diary-plan-title">
       <div className="diary-card__head">
         <h2 className="diary-card__title" id="diary-plan-title">
           📅 Planlama — Önümüzdeki 5 Gün
         </h2>
-        {/* Mockup'ta bu blok düzenlenebilir; burada salt-okunur olduğu için
-            "Planlama'ya git" bağlantısı devre dışı (rota F-PL diliminde). */}
-        <span
-          className="diary-card__link diary-card__link--disabled"
-          aria-disabled="true"
-          title="Planlama ekranı ayrı dilimde (F-PL) geliyor"
-        >
+        {/* Mockup'ta bu blok düzenlenebilir; burası salt-okunur olduğu için
+            plan girişi Planlama ekranından yapılır. F-PL T2 ile rota AÇILDI —
+            bağlantı artık devre dışı değil, gerçek. */}
+        <Link href={planningHref} className="diary-card__link">
           Planlama&apos;ya git →
-        </span>
+        </Link>
       </div>
 
       <p className="diary__notice">
