@@ -155,8 +155,42 @@ var olan dosya kopyalanmamalıdır.
 - [x] Beş kapı yeşil (şef tarafından tekrar koşuldu)
 - [x] `ARCHITECTURE-FRONTEND.md` + `ROADMAP-FRONTEND.md` güncellendi
 - [x] Onaylı sapma spec'e + bu rapora işlendi
-- [ ] Görsel baseline turu — `site-planning-visual.spec.ts` **4 kadraj İLK KEZ** üretilecek;
-      diğer 39 baseline'ın DEĞİŞMEDİĞİ artifact'ta **bayt bazında** doğrulanacak
-      (F-SD'nin "Planlama" linkleri aktifleştiği için `gunluk-kayit-*` baseline'ları etkilenmiş
-      olabilir — **varsayma, karşılaştır**)
-- [ ] PR → CI yeşil → merge kararı kullanıcıda
+- [x] Görsel baseline turu — run `30997951606`, commit `d2964af`. **YENİ 4** planlama kadrajı ·
+      **YENİLENEN 3** (`gunluk-kayit-dolu/bos/ozet` — Planlama öğesi devre-dışılıktan çıkıp gerçek link
+      oldu, `DiaryModeNotice` kalktı; yükseklikler 34-42px azaldı, fark **görselleştirilerek** teyit
+      edildi) · **DEĞİŞMEYEN 36** bayt bazında doğrulandı, varsayılmadı. Kayıp/darwin PNG yok.
+      ⚠️ İlk tur (`30997344422`) akış-SSR çift-kopya tuzağıyla kırıldı (§7).
+- [x] PR #15 → CI tamamen yeşil (`build` 5m57s + `visual` 4m3s) → **merge `b7bd325`** (`--merge`,
+      squash yok) → Railway **auto-deploy SUCCESS** (elle `railway up` koşulmadı)
+- [x] **Canlı smoke 6/6 TEMİZ** (§8)
+
+---
+
+## 7. Akış-SSR ÇİFT KOPYA tuzağı (yeni kalıcı kural)
+
+`getByRole("alert")` tuzağının kardeşi. Next.js akış-SSR'ında sunucudan gelen düğüm ile hidrasyonla
+eklenen **kopya** kısa bir an yan yana durur; kapsamlanmamış bir sınıf locator'ı
+(`page.locator(".plan-week-nav__label")`) İKİ elemana çözülür ve **strict-mode ihlali** verir.
+Sayım iddiaları (`toHaveCount`) etkilenmez; `toHaveText` / `click` patlar.
+
+**Yalnız Linux CI'da görüldü** — macOS'ta fonksiyonel e2e 41/41 geçiyordu, yani **5. kapı bunu
+yakalamaz**; ilk baseline turunda (`30997344422`) ortaya çıktı.
+
+**Kural:** ekran-içi locator'lar HER ZAMAN bir kaba kapsamlanır (`.plan-card--grid …`) ve/veya
+`.first()` alır. Düzeltme: commit `4f981ec`.
+
+---
+
+## 8. Canlı smoke (2026-08-05, "a" test şantiyesi `3c3395b5…`) — 6/6 TEMİZ, 0 konsol hatası
+
+| # | Kontrol | Sonuç |
+|---|---|---|
+| a | **T5 bulgu 1'in canlı kanıtı** — plan satırı OLMAYAN şantiyede "+ Satır" görünür; form bölüm seçicili ve bölümsüz şantiyede zarif düşüyor ("Bu şantiyede tanımlı bölüm yok"). Satır eklenince "Bölümsüz Ekipler" grubu açıldı; **boş hücreler tıklanabilir buton** (bulgu 3'ün kanıtı) | ✅ |
+| b | Hücre popover'ı → metin + **Mor** etiket → Kaydet → `Plan satırları: kaydedildi` + `Hücreler: kaydedildi` (yalnız KİRLİ iki bölüme istek; goals/sprint'e atılmadı) → **reload sonrası duruyor** | ✅ |
+| c | **T5 bulgu 2'nin canlı kanıtı** — başlığı boş hedefle Kaydet → `Haftalık hedefler: kaydedilemedi — Başlığı boş bir hedef var.` + "Yeniden dene"; **"kaydedildi" yalanı yok**, istek hiç atılmadı | ✅ |
+| d | **Ay** + **Sprint** devre-dışı + gerekçe; **Malzeme Planı** kartı yerinde, "…Stok modülüyle birlikte gelir." | ✅ |
+| e | GK'deki İKİ "Planlama" girişi aktif ve doğru rotada (mod anahtarı + gömülü bloğun "Planlama'ya git →") | ✅ |
+| f | BFF: `sites/x/plan` → **401** · dört PUT ucu GET'te **405** · `sites/x/sections` → 401 · uydurma kök → **404** · **`documents/x` → 404** (bilerek açılmadı) | ✅ |
+
+**Temizlik:** satır silme onay diyalogundan geçirildi → Kaydet → API doğrulaması
+`groups: [] · goals: [] · active_sprint: null` — **sıfır kalıntı** (hücre FK CASCADE ile düştü).
