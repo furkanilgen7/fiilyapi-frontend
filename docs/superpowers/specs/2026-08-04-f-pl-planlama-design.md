@@ -5,6 +5,10 @@ bir şekilde sen türet ama uygın olsun" → §3'teki etkileşim tasarımı ONA
 ızgaranın KENDİ görsel dilinden türetilir (mockup'ın renkleri, hücre stili, token'lar — yabancı duran
 hiçbir kontrol yok; final review'de "mockup'ın yanına konsa sırıtır mı?" testi) · S2: Ay/Sprint kipleri
 devre-dışı + gerekçe (kendi mockup'ları gelince açılır).
+**ONAYLI SAPMA (2026-08-05, kullanıcı kararı — sapma diye geri alınmaz):** P64-65 kendi sol menüsünde
+"Planlama"yı ayrı bir sidebar öğesi olarak gösterir; **basılmadı**. Kabuk canon'u şantiyenin 7 sekmesidir
+(F3/F-SD); Planlama, "Hakediş Özeti" gibi **"Günlük Kayıt" sekmesinin alt görünümüdür** ve giriş noktası
+mod anahtarıdır. (HÖ62'deki "Hakediş Özeti" sidebar öğesinin F-SD'de eklenmemesiyle aynı gerekçe.)
 Mockup: `Şantiye - Planlama.dc.html` (P). Backend: PL CANLIDA (6 yol: plan GET + rows/cells/goals/sprint
 PUT + day-summary). Üst kural geçerli. ⚠️ Tarih artefaktı: P105 "21-27 Temmuz 2026" gerçek takvimle
 uyuşmuyor — tarihler kopyalanmaz, gerçek hafta kullanılır.
