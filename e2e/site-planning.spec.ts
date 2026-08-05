@@ -42,9 +42,19 @@ function gridCard(page: Page) {
   return page.locator(".plan-card--grid");
 }
 
-/** Hafta etiketi — hidrasyon sırasında metin arayışı anlık ÇİFT eşleşebilir. */
+/**
+ * Hafta etiketi — akış-SSR sırasında sunucu kopyası + hidrate kopya yan yana
+ * durabilir ve locator İKİ elemana çözülür (strict-mode ihlali). Bu YALNIZ
+ * Linux CI'da patladı (visual-baselines run 30997344422), macOS'ta hiç
+ * görülmedi; bu yüzden karta kapsamlanır VE `.first()` alır.
+ */
 function weekLabel(page: Page) {
-  return page.locator(".plan-week-nav__label");
+  return gridCard(page).locator(".plan-week-nav__label").first();
+}
+
+/** Sprint şeridi — `weekLabel` ile aynı çift-eşleşme riski. */
+function sprintLabel(page: Page) {
+  return gridCard(page).locator(".plan-week-nav__sprint");
 }
 
 /** Satır etiketi sütunu artık menü de içerir; metin karşılaştırması bu düğümledir. */
@@ -70,7 +80,7 @@ test.describe("planlama ızgarası (SALT-OKUR, s-1)", () => {
     ).toBeVisible();
     // Hafta AÇIK parametreden gelir — "bugün" hangi hafta olursa olsun aynıdır.
     await expect(weekLabel(page)).toHaveText("3 – 9 Ağustos 2026");
-    await expect(page.locator(".plan-week-nav__sprint")).toHaveText(
+    await expect(sprintLabel(page)).toHaveText(
       "Aktif Sprint: Sprint 12 · 6. Kat Kaba İnşaat",
     );
 
@@ -254,7 +264,7 @@ test.describe("planlama düzenleme (MUTASYON, s-2)", () => {
   }) => {
     await login(page);
     await page.goto(MUTATION_URL);
-    await expect(page.locator(".plan-week-nav__sprint")).toHaveText(
+    await expect(sprintLabel(page)).toHaveText(
       "Aktif Sprint: Sprint 4 · Bodrum Kabası",
     );
 
@@ -266,7 +276,7 @@ test.describe("planlama düzenleme (MUTASYON, s-2)", () => {
     await saveAndExpect(page, "Aktif sprint: kaydedildi");
 
     await page.reload();
-    await expect(page.locator(".plan-week-nav__sprint")).toHaveText(
+    await expect(sprintLabel(page)).toHaveText(
       "Aktif Sprint: Sprint 5 · Zemin Kat",
     );
 
@@ -284,7 +294,7 @@ test.describe("planlama düzenleme (MUTASYON, s-2)", () => {
 
     await page.reload();
     // Ad boşken "Aktif Sprint:" etiketi HİÇ basılmaz (boş bilgi uydurulmaz).
-    await expect(page.locator(".plan-week-nav__sprint")).toHaveCount(0);
+    await expect(sprintLabel(page)).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Aktif sprinti düzenle" })).toBeVisible();
   });
 

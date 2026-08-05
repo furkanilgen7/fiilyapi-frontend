@@ -28,9 +28,20 @@ async function login(page: Page) {
   await expect(page.getByRole("heading", { name: "Gösterge Paneli" })).toBeVisible();
 }
 
-/** Izgara gerçekten doldu mu — yükleme durumu dondurulmasın. */
+/**
+ * Izgara gerçekten doldu mu — yükleme durumu dondurulmasın.
+ *
+ * ⚠️ `.first()` ZORUNLU: akış-SSR (streamed SSR) sırasında sunucudan gelen ve
+ * hidrasyonla eklenen KOPYA kısa bir an yan yana durur, `.plan-week-nav__label`
+ * iki elemana çözülür ve strict-mode ihlali verir. Yalnız Linux CI'da patladı
+ * (run 30997344422), macOS'ta hiç görülmedi — F-SD'nin `getByRole("alert")`
+ * tuzağıyla aynı sınıf. Planlama ekranındaki locator'lar HER ZAMAN karta
+ * kapsamlanır ve/veya `.first()` alır.
+ */
 async function expectGridLoaded(page: Page) {
-  await expect(page.locator(".plan-week-nav__label")).toHaveText("3 – 9 Ağustos 2026");
+  await expect(
+    page.locator(".plan-card--grid .plan-week-nav__label").first(),
+  ).toHaveText("3 – 9 Ağustos 2026");
   await expect(page.locator(".plan-grid__row")).not.toHaveCount(0);
 }
 
