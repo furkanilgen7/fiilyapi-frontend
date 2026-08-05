@@ -66,7 +66,7 @@ export function PlanGridRow({ row, days, canWrite, dispatch, onRequestDelete }: 
             key={day.plan_date}
             className={cx("plan-grid__cell", day.is_weekend && "plan-grid__cell--weekend")}
           >
-            <span className="plan-pop-anchor">
+            <span className="plan-pop-anchor plan-pop-anchor--cell">
               {canWrite ? (
                 <button
                   type="button"

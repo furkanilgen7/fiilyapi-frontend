@@ -2228,6 +2228,17 @@ const PLAN_ROW_FIXTURES: MockPlanRow[] = [
   { id: "pr-3", site_id: "s-1", kind: "crew", section_id: "sec-1", label: "Elektrikçi Ekibi", planned_worker_count: 8, sort_order: 2 },
   { id: "pr-4", site_id: "s-1", kind: "equipment", section_id: null, label: "Tower Crane", planned_worker_count: null, sort_order: 3 },
   { id: "pr-5", site_id: "s-1", kind: "equipment", section_id: null, label: "Beton Pompası", planned_worker_count: null, sort_order: 4 },
+  // 🔒 FİKSTÜR İZOLASYONU (F-PL T4): `site-planning.spec.ts` planı MUTASYONA
+  // uğratır (satır ekle/sil, hücre, hedef, sprint) ve bu uçların üçü ŞANTİYE
+  // kapsamlıdır — hafta ayırmak yetmez, ŞANTİYE ayırmak gerekir. Bu yüzden
+  // fonksiyonel akış s-2'de yürür; `site-planning-visual.spec.ts` yalnız
+  // s-1'e bakar ve s-1'i hiçbir spec değiştirmez (P7 dersi).
+  //
+  // s-2'nin BÖLÜMÜ YOKTUR → ekip grubu "Bölümsüz Ekipler" başlığına düşer
+  // (`UNASSIGNED_CREW_GROUP_TITLE`), böylece s-1'in kapsamadığı grup dalı da
+  // uçtan uca koşulur.
+  { id: "pr-6", site_id: "s-2", kind: "crew", section_id: null, label: "Duvarcı Ekibi", planned_worker_count: 10, sort_order: 0 },
+  { id: "pr-7", site_id: "s-2", kind: "equipment", section_id: null, label: "Mini Ekskavatör", planned_worker_count: null, sort_order: 1 },
 ];
 
 /** Altı renk etiketinin HEPSİ kullanılır; hafta sonu sütunları boş bırakılır. */
@@ -2239,6 +2250,9 @@ const PLAN_CELL_FIXTURES: MockPlanCell[] = [
   { site_id: "s-1", row_id: "pr-3", plan_date: "2026-08-07", text: "Tesisat borusu çekimi", tag: "gray" },
   { site_id: "s-1", row_id: "pr-4", plan_date: "2026-08-03", text: "Vinç periyodik bakım", tag: "red" },
   { site_id: "s-1", row_id: "pr-5", plan_date: "2026-08-04", text: "Beton dökümü — 180 m³", tag: "blue" },
+  // s-2 (fonksiyonel spec'in izole şantiyesi) — tek dolu hücre yeter: spec'in
+  // kendisi yazıp okuyacak.
+  { site_id: "s-2", row_id: "pr-6", plan_date: "2026-08-03", text: "Bodrum duvar örgüsü", tag: "blue" },
 ];
 
 /** Dört `PlanGoalStatus` değerinin her biri BİRER kez. */
@@ -2247,10 +2261,12 @@ const PLAN_GOAL_FIXTURES: MockPlanGoal[] = [
   { id: "pg-2", site_id: "s-1", week_start: PLAN_FIXTURE_WEEK_START, title: "Döşeme betonu dökülsün", note: null, is_done: false, status: "in_progress", sort_order: 1 },
   { id: "pg-3", site_id: "s-1", week_start: PLAN_FIXTURE_WEEK_START, title: "İskele revizyonu", note: "Malzeme bekleniyor.", is_done: false, status: "waiting", sort_order: 2 },
   { id: "pg-4", site_id: "s-1", week_start: PLAN_FIXTURE_WEEK_START, title: "Vinç yıllık muayenesi", note: null, is_done: false, status: "service_pending", sort_order: 3 },
+  { id: "pg-5", site_id: "s-2", week_start: PLAN_FIXTURE_WEEK_START, title: "Bodrum duvarları bitsin", note: null, is_done: false, status: "waiting", sort_order: 0 },
 ];
 
 const PLAN_SPRINT_FIXTURES: MockPlanSprint[] = [
   { id: "ps-1", site_id: "s-1", name: "Sprint 12 · 6. Kat Kaba İnşaat", is_active: true },
+  { id: "ps-2", site_id: "s-2", name: "Sprint 4 · Bodrum Kabası", is_active: true },
 ];
 
 /**

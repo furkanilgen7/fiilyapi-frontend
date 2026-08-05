@@ -7,6 +7,7 @@ import {
   isIsoDate,
   mondayOf,
   resolveWeekStart,
+  weekDates,
   weekDayLabel,
   weekEndOf,
 } from "./week";
@@ -90,6 +91,54 @@ describe("weekEndOf", () => {
   it("Pazartesi + 6 = Pazar", () => {
     expect(weekEndOf("2026-08-03")).toBe("2026-08-09");
     expect(weekEndOf("2026-12-28")).toBe("2027-01-03");
+  });
+});
+
+// F-PL T4 · `weekDates` hücre gövdesinin KAPSAM SÜZGECİdir: buradan çıkan
+// kümede olmayan tarih gövdeye girerse backend 422 verir. Bu yüzden ay/yıl
+// sınırında da tam yedi ARDIŞIK gün üretmesi sözleşmenin parçasıdır.
+describe("weekDates", () => {
+  it("Pazartesi'den Pazar'a yedi ardisik gun uretir", () => {
+    expect(weekDates("2026-08-03")).toEqual([
+      "2026-08-03",
+      "2026-08-04",
+      "2026-08-05",
+      "2026-08-06",
+      "2026-08-07",
+      "2026-08-08",
+      "2026-08-09",
+    ]);
+  });
+
+  it("ay sinirinda da yedi gun uretir (kapsam daralmaz)", () => {
+    expect(weekDates("2026-08-31")).toEqual([
+      "2026-08-31",
+      "2026-09-01",
+      "2026-09-02",
+      "2026-09-03",
+      "2026-09-04",
+      "2026-09-05",
+      "2026-09-06",
+    ]);
+  });
+
+  it("yil sinirinda da yedi gun uretir", () => {
+    expect(weekDates("2025-12-29")).toEqual([
+      "2025-12-29",
+      "2025-12-30",
+      "2025-12-31",
+      "2026-01-01",
+      "2026-01-02",
+      "2026-01-03",
+      "2026-01-04",
+    ]);
+  });
+
+  it("son gunu weekEndOf ile AYNIdir (iki turev ayrismaz)", () => {
+    for (const week of ["2026-08-03", "2026-08-31", "2025-12-29", "2024-02-26"]) {
+      const days = weekDates(week);
+      expect(days[6], week).toBe(weekEndOf(week));
+    }
   });
 });
 

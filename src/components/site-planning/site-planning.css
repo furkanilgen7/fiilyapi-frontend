@@ -420,6 +420,17 @@
   display: inline-flex;
   align-items: center;
 }
+/**
+ * HÜCRE çapası hücrenin TAMAMINI kaplar (F-PL T4 bulgusu).
+ *
+ * Tıklanabilir hücre butonu `width: 100%` ile çizilir; `inline-flex` bir çapa
+ * ise SIĞDIR (shrink-to-fit) ve içeriği olmayan bir hücrede genişliği SIFIR
+ * olur. Sonuç: planı olmayan güne tıklanamaz, yani boş güne plan GİRİLEMEZDİ.
+ * jsdom düzen hesaplamadığı için bunu yalnız gerçek tarayıcı yakalar.
+ */
+.plan-pop-anchor--cell {
+  display: block;
+}
 
 /* Popover kabuğu: kartın (P101) küçük ölçekli hali — aynı kenarlık, aynı
    gölge; yarıçap çip (5px) ile kart (14px) arasındaki mevcut basamak. */

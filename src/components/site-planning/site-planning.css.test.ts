@@ -63,6 +63,13 @@ describe("site-planning.css — mockup'a bağlı kurallar (regresyon koruması)"
     expect(css).toMatch(/\.plan-cell__chip\.plan-pop__tag--active\s*{[^}]*currentcolor/);
   });
 
+  it("BOŞ hücrenin tıklanabilir alanı hücreyi kaplar (T4 tarayıcı bulgusu)", () => {
+    // `.plan-pop-anchor` sığdır (inline-flex); hücrede öyle kalırsa içeriği
+    // olmayan hücrenin butonu SIFIR genişlikte olur ve boş güne plan
+    // girilemez. Hücre çapası bu yüzden blok olmalıdır.
+    expect(css).toMatch(/\.plan-pop-anchor--cell\s*{[^}]*display:\s*block/);
+  });
+
   it("çıplak hex renk KULLANMAZ (tüm renkler tokens.css'ten)", () => {
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });

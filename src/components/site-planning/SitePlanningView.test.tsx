@@ -147,13 +147,23 @@ let saveCalls: Array<{ endpoint: string; body: unknown }> = [];
 interface MutationStub {
   resolve?: unknown;
   reject?: Error;
+  /**
+   * YALNIZ ilk çağrıda patlar. "Yeniden dene" tıklaması yeni bir render'ı
+   * BEKLEMEZ — düğme, kurulduğu render'ın kanca nesnelerini taşır; bu yüzden
+   * geçici hatayı `mockMutations()` çağrısıyla değil stub'ın kendisiyle
+   * kurtarmak gerekir.
+   */
+  rejectOnce?: Error;
 }
 
 function stubMutation(endpoint: string, behaviour: MutationStub = {}) {
+  let calls = 0;
   return {
     mutateAsync: vi.fn(async (body: unknown) => {
+      calls += 1;
       saveCalls.push({ endpoint, body });
       if (behaviour.reject) throw behaviour.reject;
+      if (behaviour.rejectOnce && calls === 1) throw behaviour.rejectOnce;
       return behaviour.resolve ?? {};
     }),
   } as unknown as ReturnType<typeof useSaveSitePlanCells>;
@@ -543,6 +553,102 @@ describe("SitePlanningView — kaydetme akışı", () => {
 
     expect(saveCalls).toEqual([{ endpoint: "sprint", body: { name: null } }]);
     expect(screen.queryByText(/Aktif Sprint:/)).not.toBeInTheDocument();
+  });
+
+  // F-PL T4 · HATA DALLARI. Kaydetme dört SIRALI PUT'tur ve 1→2 bağımlıdır;
+  // bir adım patladığında akış DURMALI, sonraki adımlar HİÇ DENENMEMELİ ve
+  // ekranda "kaydedildi" yalanı basılmamalıdır.
+  it("rows patlarsa cells/goals/sprint HIC denenmez", async () => {
+    mockPlan();
+    mockMutations({ rows: { reject: new Error("boom") } });
+    render(<SitePlanningView />);
+    const user = userEvent.setup();
+
+    // Dört bölümün üçü birden kirletilir: satır + hücre + sprint.
+    const [addRowButton] = screen.getAllByRole("button", { name: "+ Satır" });
+    await user.click(addRowButton!);
+    await user.type(screen.getByLabelText("Etiket"), "Demirci");
+    await user.click(screen.getByRole("button", { name: "Ekle" }));
+
+    await user.click(screen.getByRole("button", { name: "Kalıpçı (14) · Sal 4 Ağu planı" }));
+    await user.type(screen.getByLabelText("Plan metni"), "Kalıp");
+    await user.click(screen.getByRole("button", { name: "Uygula" }));
+
+    await user.click(screen.getByRole("button", { name: "Aktif sprinti düzenle" }));
+    await user.clear(screen.getByLabelText("Sprint adı"));
+    await user.type(screen.getByLabelText("Sprint adı"), "Yeni sprint");
+    await user.click(screen.getByRole("button", { name: "Uygula" }));
+
+    await user.click(screen.getByRole("button", { name: "Kaydet" }));
+
+    expect(saveCalls.map((call) => call.endpoint)).toEqual(["rows"]);
+    expect(
+      screen.getByText("Plan satırları: kaydedilemedi — Plan satırları kaydedilemedi."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/kaydedildi$/)).not.toBeInTheDocument();
+    // Hiçbir şey yazılmadığı için taslak KİRLİ kalır — "Kaydet" hâlâ açıktır.
+    expect(screen.getByRole("button", { name: "Kaydet" })).toBeEnabled();
+  });
+
+  it("cells patlarsa goals ve sprint denenmez; 'Yeniden dene' kalan UCUNU gonderir", async () => {
+    mockPlan();
+    mockMutations({ cells: { rejectOnce: new Error("boom") } });
+    render(<SitePlanningView />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Kalıpçı (14) · Sal 4 Ağu planı" }));
+    await user.type(screen.getByLabelText("Plan metni"), "Kalıp");
+    await user.click(screen.getByRole("button", { name: "Uygula" }));
+    await user.click(screen.getAllByRole("checkbox")[1]!);
+
+    await user.click(screen.getByRole("button", { name: "Kaydet" }));
+    expect(saveCalls.map((call) => call.endpoint)).toEqual(["cells"]);
+    expect(
+      screen.getByText("Hücreler: kaydedilemedi — Hücreler kaydedilemedi."),
+    ).toBeInTheDocument();
+
+    // Kaydedilemeyen adım hâlâ kirli: yeniden deneme İKİSİNİ de gönderir.
+    saveCalls = [];
+    await user.click(screen.getByRole("button", { name: "Yeniden dene" }));
+    expect(saveCalls.map((call) => call.endpoint)).toEqual(["cells", "goals"]);
+  });
+
+  it("sprint patlamasi da gorunur gerekce basar (son adim sessizce yutulmaz)", async () => {
+    mockPlan();
+    mockMutations({ sprint: { reject: new Error("boom") } });
+    render(<SitePlanningView />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Aktif sprinti düzenle" }));
+    await user.clear(screen.getByLabelText("Sprint adı"));
+    await user.type(screen.getByLabelText("Sprint adı"), "Kat 10");
+    await user.click(screen.getByRole("button", { name: "Uygula" }));
+    await user.click(screen.getByRole("button", { name: "Kaydet" }));
+
+    expect(saveCalls.map((call) => call.endpoint)).toEqual(["sprint"]);
+    expect(
+      screen.getByText("Aktif sprint: kaydedilemedi — Aktif sprint kaydedilemedi."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Yeniden dene" })).toBeInTheDocument();
+  });
+
+  it("yinelenen satir etiketinde HIC istek atilmaz (dogrulama kapisi)", async () => {
+    mockPlan();
+    render(<SitePlanningView />);
+    const user = userEvent.setup();
+
+    // Aynı grupta ikinci "Kalıpçı": backend 422 verirdi ve yanıt eşlemesi
+    // belirsizleşirdi (yeni satır yanlış kimliği alırdı).
+    const [addRowButton] = screen.getAllByRole("button", { name: "+ Satır" });
+    await user.click(addRowButton!);
+    await user.type(screen.getByLabelText("Etiket"), "Kalıpçı");
+    await user.click(screen.getByRole("button", { name: "Ekle" }));
+    await user.click(screen.getByRole("button", { name: "Kaydet" }));
+
+    expect(saveCalls).toEqual([]);
+    expect(
+      screen.getByText('Plan satırları: kaydedilemedi — Aynı grupta iki kez "Kalıpçı" satırı var.'),
+    ).toBeInTheDocument();
   });
 
   it("satir silme ONAY diyalogundan gecer", async () => {

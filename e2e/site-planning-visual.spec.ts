@@ -1,0 +1,132 @@
+import { test, expect, type Page } from "@playwright/test";
+
+// F-PL T4 · Şantiye Planlama görsel testi (mockup `Şantiye - Planlama.dc.html`,
+// P). `site-diary-visual.spec.ts` / `site-detail-visual.spec.ts` deseninin aynısı.
+//
+// SALT-OKUR: bu dosya hiçbir PUT tetiklemez — yalnız fikstürleri render eder.
+// Planlamayı MUTASYONA uğratan tek spec (`site-planning.spec.ts`) bilerek
+// s-2'de çalışır; buradaki kadrajlar s-1'e bakar ve s-1'in planını hiçbir spec
+// değiştirmez, bu yüzden `fullyParallel` altında yarış yoktur (P7 dersi).
+//
+// 📅 TARİH BAĞIMSIZLIĞI: ekranın varsayılan haftası İÇİNDE BULUNULAN haftadır;
+// kadrajlar bu yüzden AÇIK `?week=` ile kurulur. `page.clock` gerekmez —
+// parametre verildiğinde ekranda tarihe bağlı başka bir türev kalmaz.
+//
+// Baseline `.png` YALNIZ Linux CI'da üretilir (visual-baselines.yml →
+// workflow_dispatch → artifact → `e2e/`); macOS'ta koşturulup commit edilmez.
+
+/** Mock fikstürlerinin haftası — `mock-backend.ts` ile aynı sabit. */
+const FIXTURE_WEEK = "2026-08-03";
+const PLANNING_URL = `/projeler/p-1/santiyeler/s-1/gunluk-kayit/planlama?week=${FIXTURE_WEEK}`;
+
+async function login(page: Page) {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/login");
+  await page.getByLabel(/e-posta/i).fill("patron@fiil.com");
+  await page.getByLabel(/^şifre$/i).fill("dogruparola");
+  await page.getByRole("button", { name: /giriş yap/i }).click();
+  await expect(page.getByRole("heading", { name: "Gösterge Paneli" })).toBeVisible();
+}
+
+/** Izgara gerçekten doldu mu — yükleme durumu dondurulmasın. */
+async function expectGridLoaded(page: Page) {
+  await expect(page.locator(".plan-week-nav__label")).toHaveText("3 – 9 Ağustos 2026");
+  await expect(page.locator(".plan-grid__row")).not.toHaveCount(0);
+}
+
+test("planlama izgarasi (dolu) gorsel", async ({ page }) => {
+  await login(page);
+  await page.goto(PLANNING_URL);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Planlama — A-Blok Şantiyesi" }),
+  ).toBeVisible();
+  await expectGridLoaded(page);
+
+  // Fikstür altı renk etiketinin HEPSİNİ kullanır — kadraj çip paletinin
+  // tamamını taşır (blue/green/yellow/purple/gray/red).
+  for (const tag of ["blue", "green", "yellow", "purple", "gray", "red"]) {
+    await expect(page.locator(`.plan-cell__chip--${tag}`).first(), tag).toBeVisible();
+  }
+  // Alt sıra: pending Malzeme Planı kartı + dört hedef.
+  await expect(page.getByText("Haftalık malzeme ihtiyacı henüz açılmadı", { exact: false })).toBeVisible();
+  await expect(page.locator(".plan-goals__row")).toHaveCount(4);
+
+  await expect(page).toHaveScreenshot("planlama-izgara.png", { fullPage: true });
+});
+
+test("planlama izgarasi (bos) gorsel", async ({ page }) => {
+  // BOŞ DURUM KAYNAĞI: plan satırları ŞANTİYE kapsamlıdır, dolayısıyla "satırsız
+  // hafta" ancak satırsız bir şantiyeyle üretilebilir. Mock'a üçüncü bir şantiye
+  // EKLENMEZ — proje/şantiye listesi baseline'ları ona metinle bağlı. Bunun
+  // yerine tek bir GET yanıtı kadraja özel olarak boşaltılır: paylaşılan mock
+  // durumu HİÇ değişmez, dolayısıyla başka spec'lerle yarış da yoktur.
+  await page.route(
+    (url) => url.pathname === "/api/backend/sites/s-1/plan",
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          site_id: "s-1",
+          site_name: "A-Blok Şantiyesi",
+          project_id: "p-1",
+          project_name: "Kule A",
+          week_start: FIXTURE_WEEK,
+          week_end: "2026-08-09",
+          days: [
+            { plan_date: "2026-08-03", is_weekend: false },
+            { plan_date: "2026-08-04", is_weekend: false },
+            { plan_date: "2026-08-05", is_weekend: false },
+            { plan_date: "2026-08-06", is_weekend: false },
+            { plan_date: "2026-08-07", is_weekend: false },
+            { plan_date: "2026-08-08", is_weekend: true },
+            { plan_date: "2026-08-09", is_weekend: true },
+          ],
+          groups: [],
+          goals: [],
+          active_sprint: null,
+        }),
+      });
+    },
+  );
+
+  await login(page);
+  await page.goto(PLANNING_URL);
+  await expect(page.getByText("Bu hafta için plan satırı eklenmemiş.")).toBeVisible();
+  await expect(page.getByText("Bu hafta için hedef girilmemiş.")).toBeVisible();
+  // Sprint yokken "Aktif Sprint:" etiketi HİÇ basılmaz.
+  await expect(page.locator(".plan-week-nav__sprint")).toHaveCount(0);
+
+  await expect(page).toHaveScreenshot("planlama-bos.png", { fullPage: true });
+});
+
+test("planlama hucre popover'i gorsel", async ({ page }) => {
+  await login(page);
+  await page.goto(PLANNING_URL);
+  await expectGridLoaded(page);
+
+  // DOLU hücre seçilir: kadraj hem metin girişini hem de SEÇİLİ rengin
+  // (mavi) basılı durumunu taşır.
+  await page.getByRole("button", { name: "Kalıpçı Ekibi (14) · Pzt 3 Ağu planı" }).click();
+  const popover = page.getByRole("dialog", { name: /hücre düzenleme$/ });
+  await expect(popover.getByLabel("Plan metni")).toHaveValue("6. kat kalıp kurulumu");
+  await expect(popover.locator(".plan-pop__tag")).toHaveCount(6);
+  await expect(popover.getByRole("button", { name: "Temizle" })).toBeVisible();
+
+  await expect(page).toHaveScreenshot("planlama-hucre-popover.png", { fullPage: true });
+});
+
+test("planlama haftalik hedefler karti gorsel", async ({ page }) => {
+  await login(page);
+  await page.goto(PLANNING_URL);
+  await expectGridLoaded(page);
+
+  // Kart kadrajı: dört `PlanGoalStatus` rozetinin HEPSİ tek ekrandadır.
+  const goalsCard = page.locator("section[aria-labelledby='plan-goals-title']");
+  await expect(goalsCard.locator(".plan-goals__row")).toHaveCount(4);
+  for (const status of ["completed", "in_progress", "waiting", "service_pending"]) {
+    await expect(goalsCard.locator(`.plan-goals__status--${status}`), status).toBeVisible();
+  }
+
+  await expect(goalsCard).toHaveScreenshot("planlama-hedefler.png");
+});

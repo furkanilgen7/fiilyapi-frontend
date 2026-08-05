@@ -180,3 +180,88 @@ describe("buildGoalsBody / buildSprintBody", () => {
     expect(buildSprintBody(draft({ sprintName: " Kat 8–9 " }))).toEqual({ name: "Kat 8–9" });
   });
 });
+
+// F-PL T4 · KAPSAM DİSİPLİNİ. Dört uç da DEĞİŞTİRME semantiğindedir: gövdede
+// GEÇMEYEN kayıt SİLİNİR. Dolayısıyla eksik gönderilen her satır/hedef, sessiz
+// veri kaybıdır — aşağıdaki iddialar o kaybı yakalamak içindir.
+describe("kapsam disiplini (replace semantiği)", () => {
+  /** İki grup + kullanıcının dokunmadığı satırlar: gövde yine TAMAMINI taşır. */
+  const multiGroupDraft = draft({
+    rows: [
+      row({ key: "row-pr-1", serverId: "pr-1", label: "Kalıpçı" }),
+      row({ key: "row-pr-2", serverId: "pr-2", label: "Demirci", plannedWorkerCount: 18 }),
+      row({ key: "row-pr-3", serverId: "pr-3", sectionId: "sec-2", label: "Sıvacı" }),
+      row({
+        key: "row-pr-4",
+        serverId: "pr-4",
+        kind: "equipment",
+        sectionId: null,
+        label: "Tower Crane",
+        plannedWorkerCount: null,
+      }),
+      // Yalnız BU satır düzenlendi (yeni satır) — gövde diğer dördünü de basmalı.
+      row({ key: "new-row-1", serverId: null, label: "Marangoz", plannedWorkerCount: 4 }),
+    ],
+  });
+
+  it("rows govdesi SANTIYENIN tum satirlarini tasir (tek grup DEGIL)", () => {
+    const body = buildRowsBody(multiGroupDraft);
+    expect(body.rows?.map((r) => r.label)).toEqual([
+      "Kalıpçı",
+      "Demirci",
+      "Sıvacı",
+      "Tower Crane",
+      "Marangoz",
+    ]);
+    // `sort_order` ekrandaki sıradır; hiçbir satır sıradan düşmez.
+    expect(body.rows?.map((r) => r.sort_order)).toEqual([0, 1, 2, 3, 4]);
+  });
+
+  it("cells govdesi haftanin TUM satirlarindaki dolu hucreleri tasir", () => {
+    const body = buildCellsBody(
+      draft({
+        rows: [
+          row({ key: "row-pr-1", serverId: "pr-1", cells: { "2026-08-03": { text: "A", tag: "blue" } } }),
+          row({ key: "row-pr-2", serverId: "pr-2", cells: { "2026-08-09": { text: "B", tag: null } } }),
+          // Dokunulmamış satırın hücresi de gövdeye GİRER; girmezse silinirdi.
+          row({ key: "row-pr-3", serverId: "pr-3", cells: { "2026-08-06": { text: "C", tag: "red" } } }),
+        ],
+      }),
+      new Map(),
+    );
+    expect(body.cells?.map((cell) => cell.text).sort()).toEqual(["A", "B", "C"]);
+  });
+
+  it("cells govdesi hafta SINIRLARINI (Pzt ve Paz) dahil eder", () => {
+    const body = buildCellsBody(
+      draft({
+        rows: [
+          row({
+            cells: {
+              "2026-08-02": { text: "Önceki Pazar", tag: null }, // kapsam dışı
+              "2026-08-03": { text: "Pazartesi", tag: null }, // sınır — girer
+              "2026-08-09": { text: "Pazar", tag: null }, // sınır — girer
+              "2026-08-10": { text: "Sonraki Pazartesi", tag: null }, // kapsam dışı
+            },
+          }),
+        ],
+      }),
+      new Map(),
+    );
+    expect(body.cells?.map((cell) => cell.plan_date)).toEqual(["2026-08-03", "2026-08-09"]);
+  });
+
+  it("goals govdesi haftanin TUM hedeflerini tasir (dokunulmayanlar dahil)", () => {
+    const body = buildGoalsBody(
+      draft({
+        goals: [
+          { key: "g1", serverId: "pg-1", title: "Bir", note: "", isDone: false, status: "waiting" },
+          { key: "g2", serverId: "pg-2", title: "İki", note: "", isDone: true, status: "completed" },
+          { key: "g3", serverId: null, title: "Üç", note: "", isDone: false, status: "in_progress" },
+        ],
+      }),
+    );
+    expect(body.goals?.map((goal) => goal.title)).toEqual(["Bir", "İki", "Üç"]);
+    expect(body.goals?.map((goal) => goal.id)).toEqual(["pg-1", "pg-2", null]);
+  });
+});
