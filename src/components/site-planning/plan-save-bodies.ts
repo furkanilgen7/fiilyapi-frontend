@@ -127,7 +127,16 @@ export function buildCellsBody(
   return { cells };
 }
 
-/** Haftanın TÜM hedefleri. Başlığı boş hedef gövdeye girmez (backend zorunlu tutar). */
+/**
+ * Haftanın TÜM hedefleri.
+ *
+ * `filter` yalnız SAVUNMA amaçlı kaldı: başlığı boş hedef artık kaydetmeyi
+ * görünür bir mesajla ENGELLER (`usePlanSave::validateDraft`), dolayısıyla
+ * normal akışta buraya hiç ulaşmaz. Bırakılma gerekçesi, bu saf üreticinin
+ * doğrulama kapısı olmayan bir çağrı yeri edinmesi ihtimalinde şemaya aykırı
+ * (boş `title`) gövde ÜRETMEMESİDİR — sessiz atlama artık tek yol değil,
+ * ulaşılamaz bir yedektir.
+ */
 export function buildGoalsBody(draft: PlanDraft): SitePlanGoalsSave {
   return {
     goals: draft.goals

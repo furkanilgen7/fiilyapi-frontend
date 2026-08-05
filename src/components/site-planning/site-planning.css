@@ -70,6 +70,22 @@
   color: var(--color-text-muted);
   padding: var(--space-4) var(--space-4);
 }
+/* Boş ızgaranın satır açma girişi (T5): mesaj + "+ Satır" aynı satırda durur.
+   YENİ görsel dil YOK — düğme grup başlığındaki `.plan-grid__add-row`
+   ölçülerini aynen taşır, bu kural yalnız hizalamayı verir. */
+.plan__empty {
+  display: flex;
+  align-items: center;
+}
+.plan__empty .plan__message {
+  padding-right: var(--space-2);
+}
+/* `.plan-grid__add-row` rengi `inherit`tir (grup başlığının tonunu alsın diye);
+   grup dışında kalınca ton kaynağı yok, bu yüzden diğer "+ …" girişiyle
+   (`.plan-goals__add`) aynı vurgu rengine bağlanır. */
+.plan__empty .btn.plan-grid__add-row {
+  color: var(--color-primary);
+}
 
 /* ── Kart kabuğu (P102, P185, P203) ────────────────────────────────────── */
 .plan-card {

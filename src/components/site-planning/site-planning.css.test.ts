@@ -70,6 +70,12 @@ describe("site-planning.css — mockup'a bağlı kurallar (regresyon koruması)"
     expect(css).toMatch(/\.plan-pop-anchor--cell\s*{[^}]*display:\s*block/);
   });
 
+  it("BOŞ ızgaranın satır açma girişi mesajla AYNI satırdadır (T5)", () => {
+    // Boş planda "+ Satır" tek giriş noktasıdır; kuralı silmek düğmeyi
+    // mesajın altına düşürür ama daha önemlisi bu satırın varlığını hatırlatır.
+    expect(css).toMatch(/\.plan__empty\s*{[^}]*display:\s*flex/);
+  });
+
   it("çıplak hex renk KULLANMAZ (tüm renkler tokens.css'ten)", () => {
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });

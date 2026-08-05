@@ -1778,10 +1778,14 @@ function userNameById(state: MockState, userId: unknown): string | null {
  * `SiteDetailResponse` gövdesi (schema.d.ts) — `GET /sites/{id}` ve
  * `POST /projects/{id}/sites` AYNI şekli döndürür, tek yerde kurulur.
  */
-function buildSiteDetail(state: MockState, site: MockSite) {
-  const project = state.projects.find((p) => p.id === site.project_id);
-  const sectionItems = state.sections
-    .filter((sec) => sec.site_id === site.id)
+/**
+ * `SectionResponse[]` (dar gövde) — HEM `GET /sites/{id}` hero'sunun gömülü
+ * listesi HEM `GET /sites/{id}/sections` liste ucu aynı şekli döndürür, bu
+ * yüzden tek yerde kurulur.
+ */
+function buildSectionListItems(state: MockState, siteId: string) {
+  return state.sections
+    .filter((sec) => sec.site_id === siteId)
     .sort((a, b) => a.sort_order - b.sort_order)
     .map((sec) => ({
       id: sec.id, code: sec.code, name: sec.name, status: sec.status, manager_name: sec.manager_name,
@@ -1791,6 +1795,11 @@ function buildSiteDetail(state: MockState, site: MockSite) {
       budget: METRIC_PENDING("boq"),
       worker_count: COUNT_PENDING("timesheet"),
     }));
+}
+
+function buildSiteDetail(state: MockState, site: MockSite) {
+  const project = state.projects.find((p) => p.id === site.project_id);
+  const sectionItems = buildSectionListItems(state, site.id);
   return {
     id: site.id, code: site.code, name: site.name, status: site.status, address: site.address,
     city: site.city, city_inherited: site.city_inherited, site_manager_name: site.site_manager_name,
@@ -2627,6 +2636,23 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     // orada P6 doğrulaması uygulanmaz, burada uygulanır (`useCreateSection`
     // hook'unun çağırdığı uç budur).
     const siteSectionsMatch = path.match(/^\/sites\/([^/]+)\/sections$/);
+    // GET /sites/{site_id}/sections — `SectionListResponse`. F-PL T5: planlama
+    // ızgarasında satır açarken bölüm SEÇİLİR; ızgaranın grupları yalnız mevcut
+    // satırlardan türediği için seçenekler bu uçtan gelir.
+    if (method === "GET" && siteSectionsMatch) {
+      const siteId = siteSectionsMatch[1];
+      const site = state.sites.find((s) => s.id === siteId);
+      if (!site) return send(404, { detail: "santiye yok" });
+      const items = buildSectionListItems(state, siteId);
+      return send(200, {
+        counts: {
+          planned: items.filter((s) => s.status === "planned").length,
+          active: items.filter((s) => s.status === "active").length,
+          completed: items.filter((s) => s.status === "completed").length,
+        },
+        items,
+      });
+    }
     if (method === "POST" && siteSectionsMatch) {
       const siteId = siteSectionsMatch[1];
       const site = state.sites.find((s) => s.id === siteId);

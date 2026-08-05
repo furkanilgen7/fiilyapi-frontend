@@ -93,15 +93,33 @@ async function runStep<T>(
   }
 }
 
+interface PlanSaveGuard {
+  readonly section: PlanDraftSection;
+  readonly message: string;
+}
+
 /**
- * Kaydetmeden ÖNCEKİ satır kontrolü. Backend her ikisinde de 422 verirdi;
- * yinelenen etiket ayrıca yanıt eşlemesini belirsizleştirir (yeni satır yanlış
- * kimliği alırdı), bu yüzden istek HİÇ gönderilmez.
+ * Kaydetmeden ÖNCEKİ kontroller. Hiçbiri geçmezse istek HİÇ gönderilmez ve
+ * gerekçe ekranda kalır — gövdeden sessizce düşürülen kayıt YOKTUR.
+ *
+ * Satırlar: backend her iki durumda da 422 verirdi; yinelenen etiket ayrıca
+ * yanıt eşlemesini belirsizleştirir (yeni satır yanlış kimliği alırdı).
+ *
+ * Hedefler (T5 bulgusu): başlığı boş hedef eskiden gövdeden ELENİYORDU, ekranda
+ * "kaydedildi" yazıyor ama hedef yazılmıyordu ve taslak tazelenince kayboluyordu.
+ * Artık satırlardaki disiplinin aynısı uygulanır.
  */
-function validateRows(draft: PlanDraft): string | null {
-  if (hasBlankRowLabel(draft.rows)) return "Etiketi boş bir plan satırı var.";
+function validateDraft(draft: PlanDraft): PlanSaveGuard | null {
+  if (hasBlankRowLabel(draft.rows)) {
+    return { section: "rows", message: "Etiketi boş bir plan satırı var." };
+  }
   const duplicate = findDuplicateRowLabel(draft.rows);
-  if (duplicate !== null) return `Aynı grupta iki kez "${duplicate}" satırı var.`;
+  if (duplicate !== null) {
+    return { section: "rows", message: `Aynı grupta iki kez "${duplicate}" satırı var.` };
+  }
+  if (draft.goals.some((goal) => goal.title.trim().length === 0)) {
+    return { section: "goals", message: "Başlığı boş bir hedef var." };
+  }
   return null;
 }
 
@@ -120,9 +138,9 @@ export function usePlanSave(
 
   const save = useCallback(
     async (draft: PlanDraft) => {
-      const guardMessage = validateRows(draft);
-      if (guardMessage !== null) {
-        setSteps([{ section: "rows", outcome: "failed", errorText: guardMessage }]);
+      const guard = validateDraft(draft);
+      if (guard !== null) {
+        setSteps([{ section: guard.section, outcome: "failed", errorText: guard.message }]);
         return;
       }
       const record = createRecorder(setSteps);

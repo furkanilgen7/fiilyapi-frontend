@@ -287,4 +287,44 @@ test.describe("planlama düzenleme (MUTASYON, s-2)", () => {
     await expect(page.locator(".plan-week-nav__sprint")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Aktif sprinti düzenle" })).toBeVisible();
   });
+
+  // T5 · satır ekleme popover'ı BÖLÜM seçtirir; grubun bölümünü devralmaz.
+  // NOT: s-2'nin bölüm listesi başka spec'lerin oluşturduğu bölümlerle
+  // değişebilir (mock backend TEK paylaşılan sunucudur), bu yüzden burada
+  // sayıya değil YAPIYA bakılır: "Bölümsüz" her zaman ilk seçenektir.
+  test("satır ekleme formunda bölüm seçicisi bulunur", async ({ page }) => {
+    await login(page);
+    await page.goto(MUTATION_URL);
+    await page.locator(".plan-grid__group--crew").getByRole("button", { name: "+ Satır" }).click();
+
+    const addPopover = page.getByRole("dialog", { name: "Yeni plan satırı" });
+    await expect(addPopover.getByLabel("Bölüm")).toBeEnabled();
+    await expect(addPopover.getByLabel("Bölüm").locator("option").first()).toHaveText("Bölümsüz");
+    await expect(addPopover.getByLabel("Bölüm")).toHaveValue("");
+
+    // Tür "Makine / Ekipman" → bölüm alanı kapanır (backend: ekipmanın bölümü olamaz).
+    await addPopover.getByLabel("Tür").selectOption("equipment");
+    await expect(addPopover.getByLabel("Bölüm")).toBeDisabled();
+    await addPopover.getByRole("button", { name: "Vazgeç" }).click();
+    await expect(addPopover).toHaveCount(0);
+  });
+
+  // T5 · başlığı boş hedef ESKİDEN gövdeden sessizce eleniyordu ("kaydedildi"
+  // yazıp hedef kaybolurdu). Artık kaydetme HİÇ başlamaz.
+  test("başlığı boş hedefte kaydetme başlamaz, görünür gerekçe basılır", async ({ page }) => {
+    await login(page);
+    await page.goto(MUTATION_URL);
+    const goalCountBefore = await page.locator(".plan-goals__row").count();
+
+    await page.getByRole("button", { name: "+ Hedef" }).click();
+    await page.getByRole("button", { name: "Kaydet" }).click();
+
+    const status = page.locator(".plan-save-status");
+    await expect(status).toContainText("Başlığı boş bir hedef var.");
+    await expect(status).not.toContainText("kaydedildi");
+
+    // Sunucuya hiçbir şey gitmedi: yeniden yükleme eski hâli getirir.
+    await page.reload();
+    await expect(page.locator(".plan-goals__row")).toHaveCount(goalCountBefore);
+  });
 });

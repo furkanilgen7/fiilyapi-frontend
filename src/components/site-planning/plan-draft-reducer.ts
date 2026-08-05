@@ -4,6 +4,7 @@ import type { SitePlanRowSaved } from "@/lib/api/hooks/useSitePlanMutations";
 import {
   buildPlanDraft,
   planDraftRowKey,
+  planGroupKey,
   type PlanDraft,
   type PlanDraftCell,
   type PlanDraftDirty,
@@ -21,6 +22,9 @@ import { buildRowIdMap } from "./plan-save-bodies";
 export interface PlanDraftNewRow {
   readonly kind: PlanResourceKind;
   readonly sectionId: string | null;
+  /** Seçilen bölümün adı — grubu ızgarada YOKSA başlığı buradan kurulur (T5). */
+  readonly sectionName: string | null;
+  readonly sectionManagerName: string | null;
   readonly label: string;
   readonly plannedWorkerCount: number | null;
 }
@@ -80,19 +84,43 @@ function withCell(
   );
 }
 
+/**
+ * Yeni satır + gerekiyorsa YENİ GRUP (T5 bulgusu).
+ *
+ * Gruplar sunucudan gelirken YALNIZ mevcut satırlardan türer; boş bir planda
+ * hiç grup yoktur ve satırı olmayan bir bölümün de grubu yoktur. Grup burada
+ * da açılmasaydı eklenen satır ızgarada HİÇ görünmezdi. Gruplama ölçütü
+ * değişmedi: `(kind, section_id)`.
+ */
 function withNewRow(draft: PlanDraft, input: PlanDraftNewRow): PlanDraft {
+  // Backend kuralı: ekipman satırının `section_id`si OLAMAZ (422).
+  const sectionId = input.kind === "equipment" ? null : input.sectionId;
   const row: PlanDraftRow = {
     key: `new-row-${draft.nextLocalId}`,
     serverId: null,
     kind: input.kind,
-    // Backend kuralı: ekipman satırının `section_id`si OLAMAZ (422).
-    sectionId: input.kind === "equipment" ? null : input.sectionId,
+    sectionId,
     label: input.label,
     plannedWorkerCount: input.kind === "equipment" ? null : input.plannedWorkerCount,
     cells: {},
   };
+  const groupKey = planGroupKey(row.kind, sectionId);
+  const hasGroup = draft.groups.some((group) => group.key === groupKey);
+  const groups = hasGroup
+    ? draft.groups
+    : [
+        ...draft.groups,
+        {
+          key: groupKey,
+          kind: row.kind,
+          sectionId,
+          sectionName: sectionId === null ? null : input.sectionName,
+          sectionManagerName: sectionId === null ? null : input.sectionManagerName,
+        },
+      ];
   return {
     ...draft,
+    groups,
     rows: [...draft.rows, row],
     nextLocalId: draft.nextLocalId + 1,
     dirty: markDirty(draft.dirty, "rows"),

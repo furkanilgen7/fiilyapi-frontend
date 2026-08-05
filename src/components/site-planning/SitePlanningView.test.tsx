@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 
 import { SitePlanningView } from "./SitePlanningView";
 import { useSitePlan } from "@/lib/api/hooks/useSitePlan";
+import { useSiteSections } from "@/lib/api/hooks/useSiteSections";
 import {
   useSaveSitePlanCells,
   useSaveSitePlanGoals,
@@ -29,6 +30,7 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
 vi.mock("@/lib/api/hooks/useSitePlan", () => ({ useSitePlan: vi.fn() }));
+vi.mock("@/lib/api/hooks/useSiteSections", () => ({ useSiteSections: vi.fn() }));
 vi.mock("@/lib/api/hooks/useSites", () => ({ useSite: vi.fn(() => ({ data: undefined })) }));
 vi.mock("@/lib/api/hooks/useSitePlanMutations", () => ({
   useSaveSitePlanRows: vi.fn(),
@@ -141,6 +143,22 @@ function mockPlan(overrides: Record<string, unknown> = {}) {
   } as unknown as ReturnType<typeof useSitePlan>);
 }
 
+/** Şantiyenin bölüm listesi — satır ekleme popover'ının "Bölüm" seçenekleri. */
+function mockSections(overrides: Record<string, unknown> = {}) {
+  vi.mocked(useSiteSections).mockReturnValue({
+    data: {
+      counts: { planned: 0, active: 2, completed: 0 },
+      items: [
+        { id: "sec-1", code: "A-01", name: "Kat 6–10 Kaba", status: "active", sort_order: 0 },
+        { id: "sec-2", code: "A-02", name: "Zemin Kat Kaba", status: "active", sort_order: 1 },
+      ],
+    },
+    isLoading: false,
+    isError: false,
+    ...overrides,
+  } as unknown as ReturnType<typeof useSiteSections>);
+}
+
 /** Dört PUT'un çağrı SIRASI burada birikir — sıra sözleşmenin parçasıdır. */
 let saveCalls: Array<{ endpoint: string; body: unknown }> = [];
 
@@ -187,6 +205,7 @@ beforeEach(() => {
   searchParams = new URLSearchParams(`week=${WEEK_START}`);
   mockSession();
   mockMutations();
+  mockSections();
 });
 
 describe("SitePlanningView — başlık ve mod anahtarı", () => {
@@ -651,6 +670,28 @@ describe("SitePlanningView — kaydetme akışı", () => {
     ).toBeInTheDocument();
   });
 
+  it("basligi BOS hedefte HIC istek atilmaz + gorunur gerekce basar (T5)", async () => {
+    mockPlan();
+    render(<SitePlanningView />);
+    const user = userEvent.setup();
+
+    // Hedef açılır ama başlığı yazılmaz; ayrıca başka bir bölüm de kirletilir —
+    // hiçbiri gönderilmemeli (sessiz atlama yok, yarım kayıt da yok).
+    await user.click(screen.getByRole("button", { name: "+ Hedef" }));
+    await user.click(screen.getByRole("button", { name: "Aktif sprinti düzenle" }));
+    await user.clear(screen.getByLabelText("Sprint adı"));
+    await user.type(screen.getByLabelText("Sprint adı"), "Kat 10");
+    await user.click(screen.getByRole("button", { name: "Uygula" }));
+
+    await user.click(screen.getByRole("button", { name: "Kaydet" }));
+
+    expect(saveCalls).toEqual([]);
+    expect(
+      screen.getByText("Haftalık hedefler: kaydedilemedi — Başlığı boş bir hedef var."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/kaydedildi$/)).not.toBeInTheDocument();
+  });
+
   it("satir silme ONAY diyalogundan gecer", async () => {
     mockPlan();
     render(<SitePlanningView />);
@@ -663,5 +704,104 @@ describe("SitePlanningView — kaydetme akışı", () => {
     await user.click(screen.getByRole("button", { name: "Sil", hidden: false }));
     const grid = screen.getByLabelText("Haftalık plan ızgarası");
     expect(within(grid).queryByText("Kalıpçı (14)")).not.toBeInTheDocument();
+  });
+});
+
+// F-PL T5 · BOŞ IZGARA + BÖLÜM SEÇİCİSİ. Gruplar sunucuda yalnız mevcut
+// satırlardan türer; giriş noktası yalnız grup başlığında dursaydı boş bir
+// planda "+ Satır" hiçbir yerde olmaz ve plan SIFIRDAN kurulamazdı.
+describe("SitePlanningView — boş ızgarada satır açma", () => {
+  it("bos izgarada bos-durum metni KALIR ve yaninda '+ Satir' basilir", () => {
+    mockPlan({ data: planWeek({ groups: [] }) });
+    render(<SitePlanningView />);
+    expect(screen.getByText("Bu hafta için plan satırı eklenmemiş.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "+ Satır" })).toBeEnabled();
+  });
+
+  it("salt-okur kullanicida bos izgaranin '+ Satir' dugmesi DEVRE DISIdir (gizlenmez)", () => {
+    mockSession({ site_diary: "view" });
+    mockPlan({ data: planWeek({ groups: [] }) });
+    render(<SitePlanningView />);
+    expect(screen.getByRole("button", { name: "+ Satır" })).toBeDisabled();
+  });
+
+  it("bos izgaraya satir eklenir, izgara cizilir ve rows govdesine girer", async () => {
+    mockPlan({ data: planWeek({ groups: [] }) });
+    render(<SitePlanningView />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "+ Satır" }));
+    await user.type(screen.getByLabelText("Etiket"), "Demirci");
+    await user.type(screen.getByLabelText("İşçi sayısı"), "18");
+    await user.click(screen.getByRole("button", { name: "Ekle" }));
+
+    // Boş-durum metni kalkar, ızgara gerçekten çizilir (grup + satır).
+    expect(screen.queryByText("Bu hafta için plan satırı eklenmemiş.")).not.toBeInTheDocument();
+    const grid = screen.getByLabelText("Haftalık plan ızgarası");
+    expect(within(grid).getByText("Demirci (18)")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Kaydet" }));
+    expect(saveCalls.map((call) => call.endpoint)).toEqual(["rows"]);
+    expect((saveCalls[0]?.body as { rows: unknown[] }).rows).toEqual([
+      {
+        id: null,
+        kind: "crew",
+        section_id: null,
+        label: "Demirci",
+        planned_worker_count: 18,
+        sort_order: 0,
+      },
+    ]);
+  });
+
+  it("secilen BOLUM govdeye tasinir ve grup basligi o bolumun adiyla acilir", async () => {
+    mockPlan({ data: planWeek({ groups: [] }) });
+    render(<SitePlanningView />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "+ Satır" }));
+    await user.selectOptions(screen.getByLabelText("Bölüm"), "sec-2");
+    await user.type(screen.getByLabelText("Etiket"), "Sıvacı");
+    await user.click(screen.getByRole("button", { name: "Ekle" }));
+
+    const grid = screen.getByLabelText("Haftalık plan ızgarası");
+    expect(within(grid).getByText("Zemin Kat Kaba")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Kaydet" }));
+    expect((saveCalls[0]?.body as { rows: Array<{ section_id: string | null }> }).rows[0]?.section_id)
+      .toBe("sec-2");
+  });
+
+  it("EKIPMAN turunde bolum secicisi kapanir ve govdeye section_id: null gider", async () => {
+    mockPlan({ data: planWeek({ groups: [] }) });
+    render(<SitePlanningView />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "+ Satır" }));
+    await user.selectOptions(screen.getByLabelText("Bölüm"), "sec-1");
+    await user.selectOptions(screen.getByLabelText("Tür"), "equipment");
+    expect(screen.getByLabelText("Bölüm")).toBeDisabled();
+    await user.type(screen.getByLabelText("Etiket"), "Tower Crane");
+    await user.click(screen.getByRole("button", { name: "Ekle" }));
+
+    await user.click(screen.getByRole("button", { name: "Kaydet" }));
+    expect((saveCalls[0]?.body as { rows: Array<{ section_id: string | null }> }).rows[0]).toMatchObject({
+      kind: "equipment",
+      section_id: null,
+      planned_worker_count: null,
+    });
+  });
+
+  it("bolum listesi yuklenemezse secici KALIR, gorunur gerekce basar", async () => {
+    mockSections({ data: undefined, isLoading: false, isError: true });
+    mockPlan({ data: planWeek({ groups: [] }) });
+    render(<SitePlanningView />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "+ Satır" }));
+    expect(screen.getByLabelText("Bölüm")).toBeEnabled();
+    expect(
+      screen.getByText("Bölüm listesi yüklenemedi; satır yalnız bölümsüz açılabilir."),
+    ).toBeInTheDocument();
   });
 });

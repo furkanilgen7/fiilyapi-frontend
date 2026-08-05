@@ -7,9 +7,12 @@ import { DiaryModeSwitch } from "@/components/site-diary/DiaryModeSwitch";
 import { SiteDetailTabs } from "@/components/site-detail/SiteDetailTabs";
 import { Button } from "@/components/ui/button/Button";
 import { useSitePlan } from "@/lib/api/hooks/useSitePlan";
+import { useSiteSections } from "@/lib/api/hooks/useSiteSections";
 import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 
+import { planSectionsState } from "./plan-sections";
+import { PlanAddRowButton } from "./PlanAddRowButton";
 import { PlanGoalsCard } from "./PlanGoalsCard";
 import { PlanGrid } from "./PlanGrid";
 import { PlanMaterialsCard } from "./PlanMaterialsCard";
@@ -54,6 +57,9 @@ export function SitePlanningView() {
   const permission = useModulePermission("site_diary");
   const weekStart = resolveWeekStart(searchParams.get("week"));
   const planQuery = useSitePlan(siteId, weekStart);
+  // Bölüm listesi ızgaradan DEĞİL şantiyeden gelir: ızgaranın grupları yalnız
+  // mevcut satırlardan türer, henüz satırı olmayan bölüm orada görünmez (T5).
+  const sectionsQuery = useSiteSections(siteId);
   // Taslak/kaydetme hook'ları erken dönüşlerin ÜSTÜNDE: kanca sırası her
   // render'da aynı kalmalı (izin dalı hook atlatamaz).
   const { draft, dispatch, isDirty } = usePlanDraft(planQuery.data, weekStart);
@@ -65,6 +71,11 @@ export function SitePlanningView() {
   const plan = planQuery.data;
   const base = `/projeler/${projectId}/santiyeler/${siteId}`;
   const canSave = permission.canWrite && isDirty && !saveHandle.isSaving;
+  const sections = planSectionsState(
+    sectionsQuery.data,
+    sectionsQuery.isLoading,
+    sectionsQuery.isError,
+  );
 
   /** `‹`/`›` — hafta URL'de taşınır; `replace` geçmişi hafta hafta şişirmez. */
   function handleShiftWeek(deltaDays: number) {
@@ -134,13 +145,28 @@ export function SitePlanningView() {
         {!planQuery.isError && planQuery.isLoading && (
           <p className="plan__message">Yükleniyor…</p>
         )}
+        {/* BOŞ IZGARA (T5 bulgusu): grup yokken "+ Satır" yalnız grup
+            başlığında dursaydı hiçbir yerde olmazdı — yani plan SIFIRDAN hiç
+            kurulamazdı. Boş-durum metni KALIR, girişi yanına konur. Sentetik
+            başlangıç: tür "Ekip", bölüm "Bölümsüz"; ikisi de popover'da
+            değiştirilebilir. */}
         {!planQuery.isError && !planQuery.isLoading && plan && draft.groups.length === 0 && (
-          <p className="plan__message">Bu hafta için plan satırı eklenmemiş.</p>
+          <div className="plan__empty">
+            <p className="plan__message">Bu hafta için plan satırı eklenmemiş.</p>
+            <PlanAddRowButton
+              defaultKind="crew"
+              defaultSectionId={null}
+              sections={sections}
+              canWrite={permission.canWrite}
+              onAdd={(row) => dispatch({ type: "addRow", row })}
+            />
+          </div>
         )}
         {!planQuery.isError && !planQuery.isLoading && plan && draft.groups.length > 0 && (
           <PlanGrid
             days={plan.days}
             draft={draft}
+            sections={sections}
             canWrite={permission.canWrite}
             dispatch={dispatch}
           />

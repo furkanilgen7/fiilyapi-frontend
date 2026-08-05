@@ -125,7 +125,14 @@ describe("planDraftReducer — satır", () => {
   it("ekip satiri grubun bolumunu alir", () => {
     const next = planDraftReducer(baseDraft(), {
       type: "addRow",
-      row: { kind: "crew", sectionId: "sec-1", label: "Demirci", plannedWorkerCount: 18 },
+      row: {
+        kind: "crew",
+        sectionId: "sec-1",
+        sectionName: "Kat 6–10 Kaba",
+        sectionManagerName: "Sercan Öztürk",
+        label: "Demirci",
+        plannedWorkerCount: 18,
+      },
     });
     const added = next.rows.at(-1);
     expect(added).toMatchObject({ kind: "crew", sectionId: "sec-1", plannedWorkerCount: 18 });
@@ -136,9 +143,54 @@ describe("planDraftReducer — satır", () => {
   it("EKIPMAN satirinin section_id'si ve isci sayisi ZORLA null olur", () => {
     const next = planDraftReducer(baseDraft(), {
       type: "addRow",
-      row: { kind: "equipment", sectionId: "sec-1", label: "Vinç", plannedWorkerCount: 5 },
+      row: {
+        kind: "equipment",
+        sectionId: "sec-1",
+        sectionName: "Kat 6–10 Kaba",
+        sectionManagerName: "Sercan Öztürk",
+        label: "Vinç",
+        plannedWorkerCount: 5,
+      },
     });
     expect(next.rows.at(-1)).toMatchObject({ sectionId: null, plannedWorkerCount: null });
+  });
+
+  // T5 · gruplar sunucuda YALNIZ mevcut satırlardan türer; satırı olmayan
+  // bölümün grubu yoktur. Grup burada açılmasaydı yeni satır ızgarada HİÇ
+  // görünmezdi.
+  it("grubu OLMAYAN bolume satir eklenince grup da acilir", () => {
+    const next = planDraftReducer(baseDraft(), {
+      type: "addRow",
+      row: {
+        kind: "crew",
+        sectionId: "sec-9",
+        sectionName: "Çatı İmalatı",
+        sectionManagerName: "Kadir Arslan",
+        label: "Ustabaşı",
+        plannedWorkerCount: 4,
+      },
+    });
+    expect(next.groups.map((group) => group.key)).toContain("crew::sec-9");
+    expect(next.groups.at(-1)).toMatchObject({
+      sectionName: "Çatı İmalatı",
+      sectionManagerName: "Kadir Arslan",
+    });
+  });
+
+  it("ayni gruba ikinci satir eklenince grup COGALMAZ", () => {
+    const draft = baseDraft();
+    const next = planDraftReducer(draft, {
+      type: "addRow",
+      row: {
+        kind: "crew",
+        sectionId: "sec-1",
+        sectionName: "Kat 6–10 Kaba",
+        sectionManagerName: "Sercan Öztürk",
+        label: "Demirci",
+        plannedWorkerCount: 18,
+      },
+    });
+    expect(next.groups).toHaveLength(draft.groups.length);
   });
 
   it("satir silme yalniz rows bolumunu kirletir (hucreler CASCADE gider)", () => {
@@ -153,7 +205,14 @@ describe("planDraftReducer — rowsSaved", () => {
   it("yeni satiri DOGAL ANAHTARDAN gercek kimlige baglar ve rows'u temizler", () => {
     const withNew = planDraftReducer(baseDraft(), {
       type: "addRow",
-      row: { kind: "crew", sectionId: "sec-1", label: "Demirci", plannedWorkerCount: 18 },
+      row: {
+        kind: "crew",
+        sectionId: "sec-1",
+        sectionName: "Kat 6–10 Kaba",
+        sectionManagerName: "Sercan Öztürk",
+        label: "Demirci",
+        plannedWorkerCount: 18,
+      },
     });
     const saved = planDraftReducer(withNew, {
       type: "rowsSaved",

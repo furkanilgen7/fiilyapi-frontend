@@ -3,7 +3,6 @@
 import { useState, type Dispatch } from "react";
 
 import { ConfirmDialog } from "@/components/settings/ConfirmDialog";
-import { Button } from "@/components/ui/button/Button";
 import type { SitePlanDay } from "@/lib/api/hooks/useSitePlan";
 import { cx } from "@/lib/cx";
 
@@ -15,27 +14,29 @@ import {
   type PlanDraftRow,
 } from "./plan-draft";
 import type { PlanDraftAction } from "./plan-draft-reducer";
+import type { PlanSectionsState } from "./plan-sections";
+import { PlanAddRowButton } from "./PlanAddRowButton";
 import { PlanGridRow } from "./PlanGridRow";
-import { PlanRowAddPopover } from "./PlanRowAddPopover";
 import { weekDayLabel } from "./week";
 import "@/components/settings/settings.css";
 
 export interface PlanGridProps {
   days: readonly SitePlanDay[];
   draft: PlanDraft;
+  sections: PlanSectionsState;
   canWrite: boolean;
   dispatch: Dispatch<PlanDraftAction>;
 }
 
 interface GroupHeadProps {
   group: PlanDraftGroup;
+  sections: PlanSectionsState;
   canWrite: boolean;
   dispatch: Dispatch<PlanDraftAction>;
 }
 
 /** P121-124 / P157-160 · grup başlığı satırı (mavi = bölüm, yeşil = ekipman). */
-function PlanGridGroupHead({ group, canWrite, dispatch }: GroupHeadProps) {
-  const [isAdding, setIsAdding] = useState(false);
+function PlanGridGroupHead({ group, sections, canWrite, dispatch }: GroupHeadProps) {
   const title = planGroupTitle(group.kind, group.sectionName);
 
   return (
@@ -45,27 +46,13 @@ function PlanGridGroupHead({ group, canWrite, dispatch }: GroupHeadProps) {
       {/* P123 / P159 — kalan 7 sütunu kaplar; sorumlu yoksa boş kalır. */}
       <div className="plan-grid__group-meta">
         <span>{planGroupManagerText(group.sectionManagerName)}</span>
-        <span className="plan-pop-anchor">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="plan-grid__add-row"
-            disabled={!canWrite}
-            onClick={() => setIsAdding(true)}
-          >
-            + Satır
-          </Button>
-          {isAdding && (
-            <PlanRowAddPopover
-              group={group}
-              onClose={() => setIsAdding(false)}
-              onSubmit={(row) => {
-                dispatch({ type: "addRow", row });
-                setIsAdding(false);
-              }}
-            />
-          )}
-        </span>
+        <PlanAddRowButton
+          defaultKind={group.kind}
+          defaultSectionId={group.sectionId}
+          sections={sections}
+          canWrite={canWrite}
+          onAdd={(row) => dispatch({ type: "addRow", row })}
+        />
       </div>
     </div>
   );
@@ -82,7 +69,7 @@ function PlanGridGroupHead({ group, canWrite, dispatch }: GroupHeadProps) {
  * Satır silme ONAY diyalogundan geçer — satırla birlikte hücreleri de gider
  * (backend CASCADE), yani geri alınamaz bir kayıp söz konusudur.
  */
-export function PlanGrid({ days, draft, canWrite, dispatch }: PlanGridProps) {
+export function PlanGrid({ days, draft, sections, canWrite, dispatch }: PlanGridProps) {
   const [pendingDelete, setPendingDelete] = useState<PlanDraftRow | null>(null);
 
   return (
@@ -106,7 +93,12 @@ export function PlanGrid({ days, draft, canWrite, dispatch }: PlanGridProps) {
 
       {draft.groups.map((group) => (
         <div className="plan-grid__group-block" key={group.key}>
-          <PlanGridGroupHead group={group} canWrite={canWrite} dispatch={dispatch} />
+          <PlanGridGroupHead
+            group={group}
+            sections={sections}
+            canWrite={canWrite}
+            dispatch={dispatch}
+          />
           {planDraftRowsOfGroup(draft, group).map((row) => (
             <PlanGridRow
               key={row.key}
