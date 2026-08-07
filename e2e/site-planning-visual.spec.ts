@@ -45,6 +45,28 @@ async function expectGridLoaded(page: Page) {
   await expect(page.locator(".plan-grid__row")).not.toHaveCount(0);
 }
 
+/**
+ * `fullPage` kadrajdan ÖNCE kaydırmayı sıfırlar ve OTURDUĞUNU doğrular.
+ *
+ * ⚠️ KÖK NEDEN (F-PT baseline turunda yakalandı, run 31220519552): Playwright'ın
+ * `.click()`i hedefi gerekirse görünür alana KAYDIRIR. `fullPage` kadraj ise
+ * YAPIŞKAN kabuğu (topbar + sidebar) o kaydırma ofsetinde basar — kare, kabuğu
+ * ~200px aşağı kaymış ve içeriğin üstüne binmiş hâlde yakalar; sayfa başlığı
+ * kareye hiç girmez. Kaydırmanın gerekip gerekmediği yerleşim/zamanlamaya bağlı
+ * olduğu için baseline SIRAYA BAĞLI olarak kâh bozuk kâh doğru üretiliyordu
+ * (aynı taahhütte iki ayrı tur iki farklı görüntü verdi).
+ *
+ * Bu yüzden YALNIZ "tıklama + `fullPage`" taşıyan kadrajlar açıktır; tıklamayan
+ * (`planlama-izgara`, `planlama-bos`) ve eleman kadrajı olan (`planlama-hedefler`)
+ * testler bu korumaya İHTİYAÇ DUYMAZ ve onlara DOKUNULMADI.
+ *
+ * Bekleme DURUM tabanlıdır (`expect.poll`) — sabit `waitForTimeout` DEĞİL.
+ */
+async function settleScrollTop(page: Page) {
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(0);
+}
+
 test("planlama izgarasi (dolu) gorsel", async ({ page }) => {
   await login(page);
   await page.goto(PLANNING_URL);
@@ -123,6 +145,10 @@ test("planlama hucre popover'i gorsel", async ({ page }) => {
   await expect(popover.getByLabel("Plan metni")).toHaveValue("6. kat kalıp kurulumu");
   await expect(popover.locator(".plan-pop__tag")).toHaveCount(6);
   await expect(popover.getByRole("button", { name: "Temizle" })).toBeVisible();
+
+  // Tıklama kaydırmış olabilir — kabuk ofsetli basılmasın (bkz. settleScrollTop).
+  await settleScrollTop(page);
+  await expect(popover).toBeVisible();
 
   await expect(page).toHaveScreenshot("planlama-hucre-popover.png", { fullPage: true });
 });

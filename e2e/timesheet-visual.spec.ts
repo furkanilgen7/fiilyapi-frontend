@@ -84,6 +84,23 @@ async function expectMatrixLoaded(page: Page) {
   await expect(page.locator(".ts-table .ts-cell").first()).toBeVisible();
 }
 
+/**
+ * `fullPage` kadrajdan ÖNCE kaydırmayı sıfırlar ve OTURDUĞUNU doğrular.
+ *
+ * ⚠️ F-PL'den DEVRALINAN kök neden (run 31220519552): `.click()` hedefi gerekirse
+ * görünür alana KAYDIRIR, `fullPage` kadraj da yapışkan kabuğu o ofsette basar —
+ * kare kabuğu kaymış hâlde yakalar. Popover kadrajı bu depoda tıklama + `fullPage`
+ * taşıyan İKİ testten biridir (diğeri `site-planning-visual.spec.ts`), o yüzden
+ * aynı koruma buraya da konur — bizim matrisimiz kısa olduğu için kaydırma bugün
+ * gerekmese de, satır sayısı artınca sessizce bozulurdu.
+ *
+ * Bekleme DURUM tabanlıdır (`expect.poll`) — sabit `waitForTimeout` DEĞİL.
+ */
+async function settleScrollTop(page: Page) {
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(0);
+}
+
 test("genel puantaj (E5) matrisi gorsel", async ({ page }) => {
   await login(page);
   await pinRoster(page);
@@ -150,6 +167,11 @@ test("puantaj hucre popover'i gorsel", async ({ page }) => {
   await expect(popover.locator(".ts-pop__code")).toHaveCount(5);
   await expect(popover.getByLabel("Fazla mesai saati")).toHaveValue("3");
   await expect(popover.getByRole("button", { name: "Temizle" })).toBeVisible();
+
+  // Tıklama kaydırmış olabilir — kabuk ofsetli basılmasın (bkz. settleScrollTop).
+  // Geometri denetiminden ÖNCE yapılır ki iddia, kadraja GİREN durumu ölçsün.
+  await settleScrollTop(page);
+  await expect(popover).toBeVisible();
 
   // ⚠️ KIRPILMA DENETİMİ (T3'ün açık bıraktığı soru, T5'te GERÇEK KUSUR
   // çıktı): `.ts-table-scroll { overflow-x: auto }` dikey ekseni de `auto`ya
