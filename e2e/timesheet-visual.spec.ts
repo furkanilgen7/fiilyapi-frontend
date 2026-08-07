@@ -9,6 +9,14 @@ import { test, expect, type Page } from "@playwright/test";
 // altında `timesheet.spec.ts` ile yarışmaz — o dosyanın mutasyonları AYRI ayda
 // (2026-09) yürür, buradaki kadrajlar 2026-08'e bakar.
 //
+// ⚠️ AMA KENDİ SALT-OKURLUĞUMUZ YETMEZ (ilk baseline turunda fiilen yakalandı,
+// run 31219400575): matris satırları `GET /personnel`ten gelir ve o kartoteks
+// GLOBALDİR — `personnel-form.spec.ts`in POST ettiği "Zeki Karaca" kadraja
+// SIZDI. Ay ayırmak burada KORUMAZ, çünkü kartoteks döneme bağlı değildir ve
+// `fullyParallel` altında dosya sırası garanti değildir; baseline sıraya bağlı
+// olarak kâh Zeki'li kâh Zeki'siz üretilirdi (kaçınılmaz görsel CI kırmızısı).
+// Çözüm `pinRoster`: kadrajlar kartoteksi SABİTLER (bkz. aşağısı).
+//
 // 📅 AY SABİTLEME (F-PL/F-SD dersi): ekranların varsayılan dönemi İÇİNDE
 // BULUNULAN aydır. Kadrajlar bu yüzden AÇIK `?year=&month=` ile kurulur —
 // aksi hâlde her ay başında gün sütunları/başlık değişir ve baseline
@@ -37,6 +45,34 @@ async function login(page: Page) {
 }
 
 /**
+ * Kartoteksi kadraj için SABİTLER: başka spec'lerin POST ettiği personel
+ * (`per-new-*`) listeden düşürülür, TOHUM fikstürler (`per-1…`) aynen kalır.
+ *
+ * TEK UÇ değiştirilir ve paylaşılan mock durumuna DOKUNULMAZ
+ * (`timesheet.spec.ts`in `/api/auth/me` deseninin aynısı) — yani bu kadrajlar
+ * `personnel-form.spec.ts`in ne zaman/hangi sırada koştuğundan YAPISAL olarak
+ * bağımsızdır. Süzgeç KİMLİK tabanlıdır, ad tabanlı değil: ileride başka bir
+ * spec farklı bir ad POST etse de kadraj değişmez.
+ */
+async function pinRoster(page: Page) {
+  await page.route("**/api/backend/personnel*", async (route) => {
+    const response = await route.fetch();
+    const body = (await response.json()) as {
+      items: { id: string }[];
+      total: number;
+      limit: number;
+      offset: number;
+    };
+    const items = body.items.filter((item) => !item.id.startsWith("per-new-"));
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ...body, items, total: items.length }),
+    });
+  });
+}
+
+/**
  * Matris gerçekten doldu mu — yükleme durumu dondurulmasın.
  *
  * ⚠️ `.first()` ZORUNLU: akış-SSR sırasında sunucudan gelen ve hidrasyonla
@@ -50,6 +86,7 @@ async function expectMatrixLoaded(page: Page) {
 
 test("genel puantaj (E5) matrisi gorsel", async ({ page }) => {
   await login(page);
+  await pinRoster(page);
   await page.goto(GENERAL_URL);
   await expect(page.getByRole("heading", { level: 1, name: "Puantaj" }).first()).toBeVisible();
   await expectMatrixLoaded(page);
@@ -67,6 +104,7 @@ test("genel puantaj (E5) matrisi gorsel", async ({ page }) => {
 
 test("santiye puantaji (SP) matrisi gorsel", async ({ page }) => {
   await login(page);
+  await pinRoster(page);
   await page.goto(SITE_URL);
   await expect(
     page.getByRole("heading", { level: 1, name: "A-Blok Şantiyesi — Puantaj" }).first(),
@@ -95,6 +133,7 @@ test("santiye puantaji (SP) matrisi gorsel", async ({ page }) => {
 
 test("puantaj hucre popover'i gorsel", async ({ page }) => {
   await login(page);
+  await pinRoster(page);
   await page.goto(SITE_URL);
   await expectMatrixLoaded(page);
 
