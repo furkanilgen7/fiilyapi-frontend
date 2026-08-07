@@ -14,16 +14,25 @@ export type SiteDetail = components["schemas"]["SiteDetailResponse"];
 export const SITES_QUERY_KEY = "sites";
 export const SITE_QUERY_KEY = "site";
 
-export function useSites(projectId: string): UseQueryResult<SiteListResponse, Error> {
-  return useQuery({
+/**
+ * Sorgu seçenekleri AYRI dışa verilir: E5 puantajının şantiye seçicisi aynı
+ * anahtarları `useQueries` ile paralel çeker (`useRolePermissions` deseni) —
+ * önbellek `useSites` ile PAYLAŞILIR, ikinci bir istek doğmaz.
+ */
+export function sitesQueryOptions(projectId: string) {
+  return {
     queryKey: [SITES_QUERY_KEY, projectId],
-    queryFn: async () =>
+    queryFn: async (): Promise<SiteListResponse> =>
       unwrap(
         await backendClient.GET("/projects/{project_id}/sites", {
           params: { path: { project_id: projectId } },
         }),
       ),
-  });
+  };
+}
+
+export function useSites(projectId: string): UseQueryResult<SiteListResponse, Error> {
+  return useQuery(sitesQueryOptions(projectId));
 }
 
 // Şantiye Detay hero + sekmeler + bölüm listesi için tekil şantiye (spec §5).
