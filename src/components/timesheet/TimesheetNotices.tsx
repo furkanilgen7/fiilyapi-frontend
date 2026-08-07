@@ -22,14 +22,10 @@ export function TimesheetNotices({
   const messages: string[] = [];
 
   if (!canWrite) {
-    // Saha mühendisi (`timesheet: view`) — matris salt-okunur.
+    // Saha mühendisi (`timesheet: view`) — matris salt-okunur, hücreler
+    // tıklanamaz, "Kaydet" devre dışı. Excel indirme OKUMA ucudur, açıktır.
     messages.push(
-      "Puantaj kaydetme yetkiniz yok — matris salt-okunur gösteriliyor, “Kaydet” devre dışı.",
-    );
-  } else {
-    // T2 kapsamı: hücre düzenleme + kaydetme T3'ün işi.
-    messages.push(
-      "Hücre düzenleme, kaydetme ve Excel dışa aktarımı bir sonraki adımda bağlanacak — düğmeler şimdilik devre dışı.",
+      "Puantaj kaydetme yetkiniz yok — matris salt-okunur gösteriliyor, hücreler düzenlenemez ve “Kaydet” devre dışı.",
     );
   }
 

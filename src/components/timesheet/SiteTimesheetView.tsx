@@ -16,9 +16,11 @@ import { timesheetEmptyMessage } from "./GeneralTimesheetView";
 import { parsePeriod, shiftPeriod } from "./month";
 import { TimesheetLegend } from "./TimesheetLegend";
 import { TimesheetNotices } from "./TimesheetNotices";
+import { TimesheetSaveStatus } from "./TimesheetSaveStatus";
 import { TimesheetSummaryStrip } from "./TimesheetSummaryStrip";
 import { TimesheetTable } from "./TimesheetTable";
 import { useTimesheetData } from "./useTimesheetData";
+import { useTimesheetEditor } from "./useTimesheetEditor";
 import "@/components/site-detail/site-detail.css";
 import "@/components/site-diary/site-diary-summary.css";
 import "./timesheet.css";
@@ -39,10 +41,11 @@ const ALL_SECTIONS = "";
  * başındadır: `PUT` dönem+şantiye kapsamında DEĞİŞTİRMEDİR ve gövde her zaman
  * ŞANTİYENİN TAM hücre kümesi olmalıdır; süzgeçli küme gönderilirse diğer
  * bölümlerin kayıtları SİLİNİR. Excel dışa aktarımı bunun İSTİSNASIDIR
- * (sunucu üretir, `section_id` oraya geçer — T3).
+ * (sunucu üretir, `section_id` oraya geçer — `useTimesheetEditor`).
  *
- * T2 KAPSAMI: matris SALT-OKUNUR. "Excel" (ŞP 100) ve "Kaydet" (ŞP 101)
- * mockup'taki yerinde ve görünümünde DURUR, davranışları T3'e kalır.
+ * T3: hücreler yazma izninde tıklanabilir; "Kaydet" (ŞP 101) gövdeyi
+ * `data.view.allCells` (şantiyenin TAM kümesi + taslak) üzerinden kurar,
+ * "Excel" (ŞP 100) sunucu üretimli dosyayı indirir.
  */
 export function SiteTimesheetView() {
   const pathname = usePathname();
@@ -59,7 +62,8 @@ export function SiteTimesheetView() {
   // isteği oluşmaz (React Query önbelleği; `is-kalemleri` deseni).
   const siteQuery = useSite(siteId);
   const sectionsQuery = useSiteSections(siteId);
-  const data = useTimesheetData({ siteId, period, sectionId });
+  const editor = useTimesheetEditor({ siteId, period, sectionId });
+  const data = useTimesheetData({ siteId, period, sectionId, draft: editor.draft });
 
   if (!permission.canView) return <AccessDenied />;
   if (data.isForbidden) return <AccessDenied />;
@@ -118,12 +122,23 @@ export function SiteTimesheetView() {
               </option>
             ))}
           </Select>
-          {/* ŞP 100 — sunucu üretimli Excel; T3 bağlar */}
-          <Button variant="secondary" disabled>
+          {/* ŞP 100 — dosyayı SUNUCU üretir, bölüm süzgeci ORAYA geçer (K2 istisnası) */}
+          <Button
+            variant="secondary"
+            disabled={editor.isExporting}
+            onClick={() => void editor.exportExcel()}
+          >
             Excel
           </Button>
-          {/* ŞP 101 */}
-          <Button variant="primary" disabled>
+          {/* ŞP 101 — gövde ŞANTİYENİN TAM kümesidir (`allCells`), süzülmüş
+              `rows` DEĞİL. Yazma izni yoksa devre dışı kalır (gerekçe
+              `TimesheetNotices`te), değişiklik yokken de: gereksiz replace =
+              gereksiz risk. */}
+          <Button
+            variant="primary"
+            disabled={!permission.canWrite || !editor.isDirty || editor.saveState.kind === "saving"}
+            onClick={() => void editor.save(data.view.allCells)}
+          >
             Kaydet
           </Button>
         </div>
@@ -136,6 +151,11 @@ export function SiteTimesheetView() {
         canWrite={permission.canWrite}
         isPersonnelUnavailable={data.isPersonnelUnavailable}
         personnelTruncation={data.personnelTruncation}
+      />
+      <TimesheetSaveStatus
+        dirtyCount={editor.dirtyKeys.size}
+        saveState={editor.saveState}
+        exportError={editor.exportError}
       />
       {sectionsQuery.isError && (
         <p className="ts__message">
@@ -158,6 +178,11 @@ export function SiteTimesheetView() {
           rows={data.view.rows}
           totalManDays={data.view.totalManDays}
           emptyMessage={timesheetEmptyMessage(data.isLoading, data.isError, siteId)}
+          canWrite={permission.canWrite}
+          dirtyKeys={editor.dirtyKeys}
+          onCommit={(personnelId, workDate, edit) =>
+            editor.commitCell(data.view.allCells, personnelId, workDate, edit)
+          }
         />
       </div>
     </div>

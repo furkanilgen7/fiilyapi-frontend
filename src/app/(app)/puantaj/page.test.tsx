@@ -28,6 +28,10 @@ vi.mock("@/lib/api/hooks/usePersonnel", async (importOriginal) => ({
   usePersonnel: vi.fn(),
 }));
 vi.mock("@/lib/api/hooks/useTimesheet", () => ({ useTimesheet: vi.fn() }));
+vi.mock("@/lib/api/hooks/useTimesheetMutations", () => ({
+  useSaveTimesheet: () => ({ mutateAsync: vi.fn(async () => ({})) }),
+}));
+vi.mock("@/lib/api/timesheet-client", () => ({ downloadTimesheetExport: vi.fn() }));
 
 const MATRIX = {
   site_id: "s-1",
@@ -123,11 +127,19 @@ describe("PuantajPage rotasi", () => {
     expect(screen.getByRole("heading", { name: "Puantaj" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Kaydet" })).toBeDisabled();
     expect(screen.getByText(/Puantaj kaydetme yetkiniz yok/)).toBeInTheDocument();
+    // Salt-okunur: hucre butonu HIC basilmaz.
+    expect(screen.queryByRole("button", { name: /puantajı$/ })).not.toBeInTheDocument();
   });
 
-  it("'Disa Aktar' mockup'taki yerinde durur (T3'e kadar devre disi)", () => {
+  it("'Disa Aktar' santiye seciliyken ACIKTIR (T3'te baglandi)", () => {
     render(<PuantajPage />);
-    expect(screen.getByRole("button", { name: "Dışa Aktar" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Dışa Aktar" })).toBeEnabled();
+  });
+
+  it("yazma izinlide hucreler tiklanabilir, Kaydet degisiklik yokken devre disi", () => {
+    render(<PuantajPage />);
+    expect(screen.getAllByRole("button", { name: /puantajı$/ }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Kaydet" })).toBeDisabled();
   });
 });
 

@@ -480,3 +480,114 @@
 .ts-table--site .ts-table__foot-total {
   padding: 9px var(--space-3);
 }
+
+/* ── Hücre düzenleme + kaydetme (F-PT T3) ──────────────────────────────────
+   Mockup matrisi SALT-OKUNUR çizer (E5 117 · ŞP 151), yani bu bölümün doğrudan
+   çizimi YOKTUR. Her ölçü/renk matrisin KENDİ değerlerinden türetildi (rozet
+   ölçüleri, kart kenarlığı/gölgesi, `tokens.css`); çıplak hex/px yok. */
+
+/* Popover çapası hücrenin TAMAMINI kaplar — boş güne de tıklanabilsin
+   (F-PL T5'te gerçek kusur: sığ çapa boş hücrede sıfır genişlikteydi). */
+.ts-pop-anchor {
+  position: relative;
+  display: block;
+}
+/* Tıklanabilir hücre: mockup'ın hizasını BOZMAZ (zeminsiz, kenarlıksız);
+   yalnız üzerine gelince ve odakta kenarlık kazanır. */
+.ts-cell-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.ts-table--general .ts-cell-button {
+  min-height: var(--size-timesheet-cell-h);
+}
+.ts-table--site .ts-cell-button {
+  min-height: var(--size-timesheet-cell-h-sm);
+}
+.ts-cell-button:hover {
+  border-color: var(--color-border);
+}
+.ts-cell-button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+/* Kaydedilmemiş hücre: uyarı rengi zaten FM rozetinin rengidir (ŞP 237),
+   palete YENİ renk eklenmez. */
+.ts-cell-button--dirty {
+  border-color: var(--color-warning-strong);
+}
+
+/* Popover kabuğu — kartın (E5 88 · ŞP 115) küçük ölçekli hali: aynı kenarlık,
+   aynı zemin, `--shadow-md`. Hücrenin ortasına hizalanır. */
+.ts-pop {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  width: var(--width-timesheet-popover);
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-10);
+  box-shadow: var(--shadow-md);
+  text-align: left;
+}
+.ts-pop__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+/* Beş kod yan yana — seçenekler matristeki ROZETİN ta kendisidir. */
+.ts-pop__codes {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-1);
+}
+.ts-cell.ts-pop__code {
+  width: 100%;
+  height: var(--size-timesheet-cell-h);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-timesheet-cell);
+  cursor: pointer;
+}
+/* Seçili kodun çerçevesi KENDİ metin renginden gelir — palete renk eklenmez. */
+.ts-cell.ts-pop__code--active {
+  border-color: currentcolor;
+}
+.ts-cell.ts-pop__code:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.ts-pop__error {
+  font-size: var(--text-small);
+  color: var(--color-danger-strong);
+}
+.ts-pop__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+.btn.ts-pop__clear {
+  color: var(--color-danger-strong);
+}
+
+/* Kaydetme durum şeridi — `ts-notices` ile aynı sessiz tipografi. */
+.ts-save-status {
+  margin-bottom: var(--space-3);
+}
+.ts-save-status__line {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+.ts-save-status__line--failed {
+  color: var(--color-danger-strong);
+}

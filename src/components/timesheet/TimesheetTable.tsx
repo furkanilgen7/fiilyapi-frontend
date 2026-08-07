@@ -1,6 +1,8 @@
+import { useState } from "react";
+
 import { Badge } from "@/components/ui/badge/Badge";
 import { cx } from "@/lib/cx";
-import { formatDecimal } from "@/lib/format";
+import { formatDayMonthShort, formatDecimal } from "@/lib/format";
 
 import {
   dayTotalModifier,
@@ -13,6 +15,9 @@ import {
   WORKER_SOURCE_LABELS,
   type TimesheetVariant,
 } from "./timesheet-codes";
+import { TimesheetCellPopover } from "./TimesheetCellPopover";
+import { timesheetDraftKey } from "./timesheet-draft";
+import type { TimesheetCellEdit } from "./useTimesheetEditor";
 
 /**
  * Puantaj matrisi tablosu — E5 (88-217) ve ŞP (115-253) ORTAK çekirdeği.
@@ -36,7 +41,9 @@ import {
  * (15 günden sonrası çizilmemiş) — gerçek ekran ayın TÜM günlerini basar,
  * bu yüzden kırpma sütunu yoktur.
  *
- * T2'de hücreler SALT-OKUNURDUR; tıklama/düzenleme T3'ün işidir.
+ * T3: hücreler YAZMA İZNİ olanda tıklanabilir (popover). `onCommit`
+ * verilmezse (ya da `canWrite` yanlışsa) T2'nin salt-okunur görünümü aynen
+ * korunur — saha mühendisi matrisi görür ama düzenleyemez.
  */
 export interface TimesheetTableProps {
   variant: TimesheetVariant;
@@ -45,6 +52,12 @@ export interface TimesheetTableProps {
   totalManDays: number;
   /** Boş matris mesajı — yükleme/hata durumlarında görünüm dışarıdan verilir. */
   emptyMessage?: string;
+  /** Hücre düzenleme yalnız yazma izninde açılır. */
+  canWrite?: boolean;
+  /** Kaydedilmemiş hücrelerin `timesheetDraftKey` anahtarları. */
+  dirtyKeys?: ReadonlySet<string>;
+  /** `null` = "Temizle". Verilmezse matris salt-okunurdur. */
+  onCommit?: (personnelId: string, workDate: string, edit: TimesheetCellEdit | null) => void;
 }
 
 export function TimesheetTable({
@@ -53,6 +66,9 @@ export function TimesheetTable({
   rows,
   totalManDays,
   emptyMessage,
+  canWrite = false,
+  dirtyKeys,
+  onCommit,
 }: TimesheetTableProps) {
   const isSite = variant === "site";
   // E5 197 `colspan=2` (Personel+Meslek) · ŞP 231 `colspan=2` (Personel+Tür).
@@ -92,7 +108,15 @@ export function TimesheetTable({
             </tr>
           )}
           {rows.map((row) => (
-            <TimesheetTableRow key={row.personnelId} variant={variant} row={row} days={days} />
+            <TimesheetTableRow
+              key={row.personnelId}
+              variant={variant}
+              row={row}
+              days={days}
+              canWrite={canWrite}
+              dirtyKeys={dirtyKeys}
+              onCommit={onCommit}
+            />
           ))}
         </tbody>
         <tfoot>
@@ -129,12 +153,23 @@ function TimesheetTableRow({
   variant,
   row,
   days,
+  canWrite,
+  dirtyKeys,
+  onCommit,
 }: {
   variant: TimesheetVariant;
   row: TimesheetViewRow;
   days: readonly TimesheetDayColumn[];
+  canWrite: boolean;
+  dirtyKeys: ReadonlySet<string> | undefined;
+  onCommit:
+    | ((personnelId: string, workDate: string, edit: TimesheetCellEdit | null) => void)
+    | undefined;
 }) {
   const isSite = variant === "site";
+  // Aynı anda TEK popover açıktır; hangi günün açık olduğu satırda durur.
+  const [openDate, setOpenDate] = useState<string | null>(null);
+  const isEditable = canWrite && onCommit !== undefined;
   return (
     <tr>
       {/* E5 115 · ŞP 149 */}
@@ -158,11 +193,45 @@ function TimesheetTableRow({
         // E5 116 — Meslek AYRI kolon
         <td className="ts-table__lead-cell ts-table__trade">{row.trade ?? "—"}</td>
       )}
-      {days.map((day) => (
-        <td key={day.workDate} className="ts-table__cell">
-          <TimesheetCellBadge cell={row.cells[day.workDate]} />
-        </td>
-      ))}
+      {days.map((day) => {
+        const cell = row.cells[day.workDate];
+        const isDirty = dirtyKeys?.has(timesheetDraftKey(row.personnelId, day.workDate)) ?? false;
+        // "Ahmet Yılmaz · 3 Ağu" — hem popover başlığı hem hücre butonunun adı.
+        const cellLabel = `${row.fullName} · ${formatDayMonthShort(day.workDate)}`;
+        return (
+          <td key={day.workDate} className="ts-table__cell">
+            {isEditable ? (
+              // Çapa hücrenin TAMAMINI kaplar: `inline-flex` bir çapa boş
+              // hücrede sıfır genişlikte kalır ve BOŞ güne kod girilemezdi
+              // (F-PL T5'te gerçek kusur olarak çıktı, jsdom görmez).
+              <span className="ts-pop-anchor">
+                <button
+                  type="button"
+                  className={cx("ts-cell-button", isDirty && "ts-cell-button--dirty")}
+                  aria-label={`${cellLabel} puantajı`}
+                  onClick={() => setOpenDate(day.workDate)}
+                >
+                  <TimesheetCellBadge cell={cell} />
+                </button>
+                {openDate === day.workDate && (
+                  <TimesheetCellPopover
+                    cell={cell ?? null}
+                    label={cellLabel}
+                    variant={variant}
+                    onClose={() => setOpenDate(null)}
+                    onSubmit={(edit) => {
+                      onCommit(row.personnelId, day.workDate, edit);
+                      setOpenDate(null);
+                    }}
+                  />
+                )}
+              </span>
+            ) : (
+              <TimesheetCellBadge cell={cell} />
+            )}
+          </td>
+        );
+      })}
       {/* E5 132 · ŞP 166 */}
       <td className="ts-table__row-total">{row.manDays}</td>
     </tr>

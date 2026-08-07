@@ -4,6 +4,7 @@ import { sumDecimalStrings } from "@/lib/decimal";
 
 import { monthDayIsoList } from "./month";
 import type { TimesheetVariant } from "./timesheet-codes";
+import { EMPTY_TIMESHEET_DRAFT, mergeDraftCells, type TimesheetDraft } from "./timesheet-draft";
 
 /**
  * Puantaj matrisinin TÜREV KATMANI (F-PT T2) — saf, bileşensiz, test edilebilir.
@@ -73,9 +74,10 @@ export interface TimesheetDerived {
   /** "128 saat fazla mesai" (ŞP 119) — ondalık STRING, float aritmetiği yok. */
   totalOvertimeHours: string;
   /**
-   * Şantiyenin TAM (SÜZÜLMEMİŞ) hücre kümesi — K2'nin dayanağı. T3'ün
-   * kaydetme gövdesi BUNDAN kurulur; `rows` bölüm filtresine göre süzülmüştür
-   * ve kaydetme gövdesi olarak KULLANILAMAZ.
+   * Şantiyenin TAM (SÜZÜLMEMİŞ) hücre kümesi — K2'nin dayanağı: sunucunun
+   * süzgeçsiz kümesi + YEREL TASLAK düzenlemeleri. Kaydetme gövdesi (T3)
+   * BUNDAN kurulur; `rows` bölüm filtresine göre süzülmüştür ve kaydetme
+   * gövdesi olarak KULLANILAMAZ.
    */
   allCells: readonly TimesheetSourcedCell[];
 }
@@ -94,6 +96,12 @@ export interface BuildTimesheetViewInput {
   matrix: TimesheetMatrix | undefined;
   /** Görünüm süzgeci; `null` = Tüm Bölümler (ŞP 99). */
   sectionId: string | null;
+  /**
+   * Kaydedilmemiş yerel düzenlemeler (T3). Sunucu kümesinin ÜZERİNE binerler,
+   * dolayısıyla satırlar, ayak satırı ve özet şeridi taslağı ANINDA yansıtır —
+   * kullanıcı "Kaydet"e basmadan da ne yazacağını görür.
+   */
+  draft?: TimesheetDraft;
 }
 
 /**
@@ -116,8 +124,11 @@ export function buildTimesheetView({
   personnel,
   matrix,
   sectionId,
+  draft = EMPTY_TIMESHEET_DRAFT,
 }: BuildTimesheetViewInput): TimesheetDerived {
-  const allCells = collectSourcedCells(matrix);
+  // Taslak SÜZGEÇSİZ küme üzerine biner — `allCells` böylece her an gövdeye
+  // hazır TAM kümedir (kapsam kuralı, bkz. `timesheet-draft.ts`).
+  const allCells = mergeDraftCells(collectSourcedCells(matrix), draft);
   const rows = buildRows(personnel, matrix, allCells, sectionId);
   const days = buildDayColumns(year, month, allCells, sectionId);
 

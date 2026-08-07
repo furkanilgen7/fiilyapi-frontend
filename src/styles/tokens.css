@@ -372,6 +372,10 @@
   --width-timesheet-day-col-sm: 28px; /* gün sütunu (ŞP 127) */
   --width-timesheet-total-col: 48px; /* Toplam sütunu (E5 110) */
   --width-timesheet-total-col-sm: 55px; /* Toplam sütunu (ŞP 143) */
+  /* F-PT T3 — hücre düzenleme yüzeyi. Mockup matrisi SALT-OKUNUR çizdiği için
+     bu ölçünün E5/ŞP'de karşılığı YOKTUR; matrisin kendi ölçüsünden türetildi:
+     beş kod rozeti (E5 117 · 28px) yan yana + aralar + popover iç boşluğu. */
+  --width-timesheet-popover: 200px;
   --min-width-timesheet-table: 900px; /* E5 89 */
   --min-width-timesheet-table-sm: 1000px; /* ŞP 122 */
 }

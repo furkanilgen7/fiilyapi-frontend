@@ -12,8 +12,10 @@ import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { parsePeriod, shiftPeriod } from "./month";
 import { TimesheetLegend } from "./TimesheetLegend";
 import { TimesheetNotices } from "./TimesheetNotices";
+import { TimesheetSaveStatus } from "./TimesheetSaveStatus";
 import { TimesheetTable } from "./TimesheetTable";
 import { useTimesheetData } from "./useTimesheetData";
+import { useTimesheetEditor } from "./useTimesheetEditor";
 import "@/components/site-diary/site-diary-summary.css";
 import "./timesheet.css";
 
@@ -28,9 +30,10 @@ import "./timesheet.css";
  * olsun (F-PL `?week=` deseni). Mockup'ın "Temmuz 2026" sabiti KOPYALANMAZ
  * (tarih artefaktı istisnası): varsayılan içinde bulunulan gerçek aydır.
  *
- * T2 KAPSAMI: matris SALT-OKUNUR basılır. "Dışa Aktar" (E5 66) ve "Kaydet"
- * (E5 67) mockup'taki yerinde ve görünümünde DURUR, davranışları T3'e kalır —
- * devre dışı + görünür Türkçe gerekçe (`TimesheetNotices`).
+ * T3: hücreler yazma izninde tıklanabilir. "Dışa Aktar" (E5 66) sunucu
+ * üretimli Excel'i indirir, "Kaydet" (E5 67) gövdeyi `data.view.allCells`
+ * (şantiyenin TAM kümesi + taslak) üzerinden kurar. Bu ekranda bölüm filtresi
+ * YOKTUR (`sectionId: null`), yani yeni hücre bölümsüz açılır.
  */
 export function GeneralTimesheetView() {
   const pathname = usePathname();
@@ -46,7 +49,13 @@ export function GeneralTimesheetView() {
   const selectedSiteId =
     siteParam ?? siteOptions.options[0]?.siteId ?? "";
 
-  const data = useTimesheetData({ siteId: selectedSiteId, period, sectionId: null });
+  const editor = useTimesheetEditor({ siteId: selectedSiteId, period, sectionId: null });
+  const data = useTimesheetData({
+    siteId: selectedSiteId,
+    period,
+    sectionId: null,
+    draft: editor.draft,
+  });
 
   if (!permission.canView) return <AccessDenied />;
   if (data.isForbidden) return <AccessDenied />;
@@ -68,12 +77,20 @@ export function GeneralTimesheetView() {
       <div className="ts__head">
         <h1 className="ts__title">Puantaj</h1>
         <div className="ts__head-actions">
-          {/* E5 66 — sunucu üretimli Excel; T3 bağlar */}
-          <Button variant="secondary" disabled>
+          {/* E5 66 — dosyayı SUNUCU üretir (K2 istisnası) */}
+          <Button
+            variant="secondary"
+            disabled={selectedSiteId.length === 0 || editor.isExporting}
+            onClick={() => void editor.exportExcel()}
+          >
             Dışa Aktar
           </Button>
-          {/* E5 67 */}
-          <Button variant="primary" disabled>
+          {/* E5 67 — gövde ŞANTİYENİN TAM hücre kümesidir (`allCells`) */}
+          <Button
+            variant="primary"
+            disabled={!permission.canWrite || !editor.isDirty || editor.saveState.kind === "saving"}
+            onClick={() => void editor.save(data.view.allCells)}
+          >
             Kaydet
           </Button>
         </div>
@@ -114,6 +131,11 @@ export function GeneralTimesheetView() {
         isPersonnelUnavailable={data.isPersonnelUnavailable}
         personnelTruncation={data.personnelTruncation}
       />
+      <TimesheetSaveStatus
+        dirtyCount={editor.dirtyKeys.size}
+        saveState={editor.saveState}
+        exportError={editor.exportError}
+      />
       {siteOptions.isError && (
         <p className="ts__message">Şantiye listesi yüklenemedi — matris gösterilemiyor.</p>
       )}
@@ -126,6 +148,11 @@ export function GeneralTimesheetView() {
           rows={data.view.rows}
           totalManDays={data.view.totalManDays}
           emptyMessage={timesheetEmptyMessage(data.isLoading, data.isError, selectedSiteId)}
+          canWrite={permission.canWrite}
+          dirtyKeys={editor.dirtyKeys}
+          onCommit={(personnelId, workDate, edit) =>
+            editor.commitCell(data.view.allCells, personnelId, workDate, edit)
+          }
         />
       </div>
     </div>

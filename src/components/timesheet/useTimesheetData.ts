@@ -12,12 +12,15 @@ import { isForbidden } from "@/lib/api/unwrap";
 import { buildListTruncation, type ListTruncation } from "@/lib/list-truncation";
 
 import { buildTimesheetView, type TimesheetDerived } from "./derive";
+import { EMPTY_TIMESHEET_DRAFT, type TimesheetDraft } from "./timesheet-draft";
 
 export interface UseTimesheetDataInput {
   siteId: string;
   period: TimesheetPeriod;
   /** Görünüm süzgeci — `null` = Tüm Bölümler. AĞA GİTMEZ (K2). */
   sectionId: string | null;
+  /** Kaydedilmemiş yerel düzenlemeler (T3) — türevlere anında yansır. */
+  draft?: TimesheetDraft;
 }
 
 export interface TimesheetDataState {
@@ -54,6 +57,7 @@ export function useTimesheetData({
   siteId,
   period,
   sectionId,
+  draft = EMPTY_TIMESHEET_DRAFT,
 }: UseTimesheetDataInput): TimesheetDataState {
   const personnelQuery = usePersonnel({ isActive: true, limit: PERSONNEL_MAX_LIMIT });
   const matrixQuery = useTimesheet(siteId, period);
@@ -69,8 +73,9 @@ export function useTimesheetData({
         personnel,
         matrix,
         sectionId,
+        draft,
       }),
-    [period.year, period.month, personnel, matrix, sectionId],
+    [period.year, period.month, personnel, matrix, sectionId, draft],
   );
 
   return {
