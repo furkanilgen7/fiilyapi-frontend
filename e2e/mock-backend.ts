@@ -404,6 +404,12 @@ interface MockState {
   planGoals: MockPlanGoal[];
   planSprints: MockPlanSprint[];
   planSeq: number;
+  // F-PT T1 — Puantaj (personel kartlari + ay matrisinin SEYREK hucreleri).
+  // `PUT .../timesheet` bu diziyi DEĞİŞTİRME semantiğiyle yeniden yazar;
+  // `personnelSeq` yeni personel kimliklerini deterministik üretir.
+  personnel: MockPersonnel[];
+  timesheetCells: MockTimesheetCell[];
+  personnelSeq: number;
   permissions: Record<string, Record<string, { access_level: string; scope: string }>>;
   projectAccess: Record<string, { all_projects: boolean; project_ids: string[] }>;
   company: {
@@ -1710,6 +1716,9 @@ function seedState(): MockState {
     planGoals: PLAN_GOAL_FIXTURES.map((g) => ({ ...g })),
     planSprints: PLAN_SPRINT_FIXTURES.map((s) => ({ ...s })),
     planSeq: 0,
+    personnel: PERSONNEL_FIXTURES.map((p) => ({ ...p })),
+    timesheetCells: TIMESHEET_CELL_FIXTURES.map((c) => ({ ...c })),
+    personnelSeq: 0,
     permissions,
     projectAccess: {
       "u-1": { all_projects: true, project_ids: [] },
@@ -2361,6 +2370,195 @@ function buildSitePlanWeek(state: MockState, siteId: string, weekStart: string) 
         sort_order: g.sort_order,
       })),
     active_sprint: sprint ? { id: sprint.id, name: sprint.name } : null,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// F-PT T1 · Puantaj — personel kartları + ay matrisi.
+// ─────────────────────────────────────────────────────────────────────────────
+
+type MockWorkerSource = "company" | "subcontractor" | "general";
+type MockTimesheetCode = "worked" | "leave" | "holiday" | "overtime" | "temporary_duty";
+
+interface MockPersonnel {
+  id: string;
+  full_name: string;
+  trade: string | null;
+  source: MockWorkerSource;
+  subcontractor_id: string | null;
+  user_id: string | null;
+  is_active: boolean;
+}
+
+/** Hücreler SEYREKTİR: girilmemiş gün kayıt ÜRETMEZ (gerçek backend gibi). */
+interface MockTimesheetCell {
+  site_id: string;
+  personnel_id: string;
+  work_date: string;
+  code: MockTimesheetCode;
+  overtime_hours: string | null;
+  section_id: string | null;
+}
+
+/**
+ * `subcontractor_id` → görünen ad. Taşeron sözleşmesi fikstürlerinden
+ * TÜRETİLMEZ: `active_subcontractor_count` KPI'ı sözleşme listesinden sayılır
+ * ve oraya dokunmak taşeron hakediş baseline'ını sessizce bozardı.
+ */
+const SUBCONTRACTOR_NAMES: Record<string, string> = {
+  "sub-1": "Aydın Elektrik Taah.",
+  "sub-2": "Çelik İnşaat Taah.",
+};
+
+/** Üç `WorkerSource` değerinin hepsi + bir pasif kayıt (`is_active` süzgeci). */
+const PERSONNEL_FIXTURES: MockPersonnel[] = [
+  { id: "per-1", full_name: "Mehmet Kılıç", trade: "Kalıpçı", source: "company", subcontractor_id: null, user_id: null, is_active: true },
+  { id: "per-2", full_name: "Hasan Demirci", trade: "Demirci", source: "company", subcontractor_id: null, user_id: null, is_active: true },
+  { id: "per-3", full_name: "Ramazan Yıldız", trade: "Elektrikçi", source: "subcontractor", subcontractor_id: "sub-1", user_id: null, is_active: true },
+  { id: "per-4", full_name: "İsmail Aksoy", trade: "Duvarcı", source: "subcontractor", subcontractor_id: "sub-2", user_id: null, is_active: true },
+  { id: "per-5", full_name: "Osman Şahin", trade: "Düz İşçi", source: "general", subcontractor_id: null, user_id: null, is_active: true },
+  { id: "per-6", full_name: "Kemal Toprak", trade: "Sıvacı", source: "company", subcontractor_id: null, user_id: null, is_active: false },
+];
+
+/**
+ * 🔒 FİKSTÜR İZOLASYONU (F-PL dersi, PT'ye uyarlanmış): `PUT .../timesheet`
+ * kapsamı DÖNEM + ŞANTİYE'dir, bu yüzden ŞANTİYE ayırmak GEREKMEZ — AY
+ * ayırmak yeterlidir:
+ *   • 2026-08 · s-1 → GÖRSEL kadraj (zengin fikstür). Hiçbir spec bu ayı
+ *     DEĞİŞTİRMEZ.
+ *   • 2026-09 · s-1 → fonksiyonel oyun alanı (kaydetme akışı burada koşar).
+ *     İKİ FARKLI bölüme (sec-1 + sec-2) ait hücre taşır — T3/T5'in kapsam
+ *     kuralı kanıtı ("bölüm filtresi açıkken kaydet → diğer bölüm silinmedi")
+ *     bu kümenin üzerinden yürür.
+ *   • 2026-08 · s-2 → "başka şantiyeye dokunulmadı" kanıtı.
+ *
+ * 2026-08 · s-1 kümesi mockup'ın ayak satırını üretir:
+ *   03 Ağu → 4 çalışan + FM  ⇒ `4+`
+ *   04 Ağu → 3 çalışan + 1 geçici görev ⇒ `3G`
+ * Beş kodun HEPSİ ve saatli en az bir FM hücresi bu kümede vardır.
+ */
+const TIMESHEET_CELL_FIXTURES: MockTimesheetCell[] = [
+  // 03 Ağu — dört kişi çalıştı, biri fazla mesai yaptı ⇒ ayak satırı "4+".
+  { site_id: "s-1", personnel_id: "per-1", work_date: "2026-08-03", code: "worked", overtime_hours: null, section_id: "sec-1" },
+  { site_id: "s-1", personnel_id: "per-2", work_date: "2026-08-03", code: "worked", overtime_hours: null, section_id: "sec-1" },
+  { site_id: "s-1", personnel_id: "per-3", work_date: "2026-08-03", code: "overtime", overtime_hours: "3.00", section_id: "sec-1" },
+  { site_id: "s-1", personnel_id: "per-4", work_date: "2026-08-03", code: "worked", overtime_hours: null, section_id: "sec-2" },
+  // 04 Ağu — üç kişi çalıştı, biri geçici görevde ⇒ ayak satırı "3G".
+  { site_id: "s-1", personnel_id: "per-1", work_date: "2026-08-04", code: "worked", overtime_hours: null, section_id: "sec-1" },
+  { site_id: "s-1", personnel_id: "per-2", work_date: "2026-08-04", code: "worked", overtime_hours: null, section_id: "sec-1" },
+  { site_id: "s-1", personnel_id: "per-5", work_date: "2026-08-04", code: "worked", overtime_hours: null, section_id: "sec-2" },
+  { site_id: "s-1", personnel_id: "per-3", work_date: "2026-08-04", code: "temporary_duty", overtime_hours: null, section_id: "sec-1" },
+  // 05 Ağu — izin + tatil kodları (beş kodun tamamı kadraja girsin).
+  { site_id: "s-1", personnel_id: "per-1", work_date: "2026-08-05", code: "leave", overtime_hours: null, section_id: "sec-1" },
+  { site_id: "s-1", personnel_id: "per-2", work_date: "2026-08-05", code: "worked", overtime_hours: null, section_id: "sec-1" },
+  { site_id: "s-1", personnel_id: "per-4", work_date: "2026-08-05", code: "holiday", overtime_hours: null, section_id: "sec-2" },
+  // 06 Ağu — ikinci saatli FM (toplam FM saati 5,50 olur).
+  { site_id: "s-1", personnel_id: "per-1", work_date: "2026-08-06", code: "worked", overtime_hours: null, section_id: "sec-1" },
+  { site_id: "s-1", personnel_id: "per-3", work_date: "2026-08-06", code: "overtime", overtime_hours: "2.50", section_id: "sec-1" },
+
+  // 2026-09 · s-1 — fonksiyonel oyun alanı; İKİ bölüm (kapsam kuralı kanıtı).
+  { site_id: "s-1", personnel_id: "per-1", work_date: "2026-09-01", code: "worked", overtime_hours: null, section_id: "sec-1" },
+  { site_id: "s-1", personnel_id: "per-2", work_date: "2026-09-02", code: "worked", overtime_hours: null, section_id: "sec-1" },
+  { site_id: "s-1", personnel_id: "per-4", work_date: "2026-09-01", code: "worked", overtime_hours: null, section_id: "sec-2" },
+
+  // 2026-08 · s-2 — "başka şantiyeye DOKUNULMADI" kanıt kaydı (bölümsüz).
+  { site_id: "s-2", personnel_id: "per-5", work_date: "2026-08-03", code: "worked", overtime_hours: null, section_id: null },
+];
+
+function timesheetMonthDays(year: number, month: number): string[] {
+  const dayCount = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return Array.from(
+    { length: dayCount },
+    (_, index) => `${year}-${String(month).padStart(2, "0")}-${String(index + 1).padStart(2, "0")}`,
+  );
+}
+
+function cellInPeriod(cell: MockTimesheetCell, year: number, month: number): boolean {
+  return cell.work_date.startsWith(`${year}-${String(month).padStart(2, "0")}-`);
+}
+
+/** `worked` + `overtime` adam-gün sayılır; `leave`/`holiday`/`G` SAYILMAZ. */
+function countsAsManDay(code: MockTimesheetCode): boolean {
+  return code === "worked" || code === "overtime";
+}
+
+/**
+ * `GET|PUT /sites/{id}/timesheet` yanıtı.
+ *
+ * `sectionId` YALNIZ görünümü süzer (satır hücreleri süzülür, hücresi kalmayan
+ * satır düşer). Ayak satırı ve toplamlar da süzülmüş kümeden türetilir — ekran
+ * gördüğünün toplamını görür.
+ */
+function buildTimesheetMatrix(
+  state: MockState,
+  site: MockSite,
+  year: number,
+  month: number,
+  sectionId: string | null,
+) {
+  const project = state.projects.find((p) => p.id === site.project_id);
+  const section = sectionId ? state.sections.find((s) => s.id === sectionId) : undefined;
+
+  const cells = state.timesheetCells.filter(
+    (c) =>
+      c.site_id === site.id &&
+      cellInPeriod(c, year, month) &&
+      (sectionId === null || c.section_id === sectionId),
+  );
+
+  const rows = state.personnel
+    .filter((p) => cells.some((c) => c.personnel_id === p.id))
+    .map((person) => {
+      const personCells = cells
+        .filter((c) => c.personnel_id === person.id)
+        .slice()
+        .sort((a, b) => a.work_date.localeCompare(b.work_date));
+      return {
+        personnel_id: person.id,
+        full_name: person.full_name,
+        trade: person.trade,
+        source: person.source,
+        subcontractor_name: person.subcontractor_id
+          ? (SUBCONTRACTOR_NAMES[person.subcontractor_id] ?? null)
+          : null,
+        man_days: personCells.filter((c) => countsAsManDay(c.code)).length,
+        cells: personCells.map((c) => ({
+          work_date: c.work_date,
+          code: c.code,
+          overtime_hours: c.overtime_hours,
+          section_id: c.section_id,
+        })),
+      };
+    });
+
+  // Gün iskeleti AYIN TAMAMIDIR (hücreler seyrek, sütunlar değil).
+  const dayTotals = timesheetMonthDays(year, month).map((workDate) => {
+    const dayCells = cells.filter((c) => c.work_date === workDate);
+    return {
+      work_date: workDate,
+      // FM'li gün ÇALIŞILMIŞ sayılır; geçici görev SAYILMAZ.
+      worked_count: dayCells.filter((c) => countsAsManDay(c.code)).length,
+      has_overtime: dayCells.some((c) => c.code === "overtime"),
+      temporary_duty_count: dayCells.filter((c) => c.code === "temporary_duty").length,
+    };
+  });
+
+  const totalOvertime = cells.reduce((sum, c) => sum + Number(c.overtime_hours ?? 0), 0);
+
+  return {
+    site_id: site.id,
+    site_name: site.name,
+    project_id: site.project_id,
+    project_name: project?.name ?? "",
+    year,
+    month,
+    section_id: sectionId,
+    section_name: section?.name ?? null,
+    worker_count: rows.length,
+    total_man_days: rows.reduce((sum, r) => sum + r.man_days, 0),
+    total_overtime_hours: totalOvertime.toFixed(2),
+    rows,
+    day_totals: dayTotals,
   };
 }
 
@@ -3525,6 +3723,141 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         };
         state.planSprints = [...state.planSprints, created];
         return send(200, { id: created.id, name: created.name });
+      });
+    }
+
+    // --- F-PT T1 · Puantaj uçları ------------------------------------------
+    // GET/POST /personnel — matris satırlarını besleyen personel kartları.
+    if (method === "GET" && path === "/personnel") {
+      const search = (parsed.searchParams.get("q") ?? "").trim().toLocaleLowerCase("tr");
+      const source = parsed.searchParams.get("source");
+      const subcontractorId = parsed.searchParams.get("subcontractor_id");
+      const isActiveParam = parsed.searchParams.get("is_active");
+      const limit = Number(parsed.searchParams.get("limit") ?? "50");
+      const offset = Number(parsed.searchParams.get("offset") ?? "0");
+
+      let rows = state.personnel;
+      if (search) {
+        rows = rows.filter(
+          (p) =>
+            p.full_name.toLocaleLowerCase("tr").includes(search) ||
+            (p.trade ?? "").toLocaleLowerCase("tr").includes(search),
+        );
+      }
+      if (source) rows = rows.filter((p) => p.source === source);
+      if (subcontractorId) rows = rows.filter((p) => p.subcontractor_id === subcontractorId);
+      if (isActiveParam !== null) rows = rows.filter((p) => p.is_active === (isActiveParam === "true"));
+
+      // `total` SAYFALAMA TAVANIDIR — süzülmüş kümenin tamamı, `items.length` DEĞİL.
+      return send(200, {
+        items: rows.slice(offset, offset + limit),
+        total: rows.length,
+        limit,
+        offset,
+      });
+    }
+    if (method === "POST" && path === "/personnel") {
+      return withBody((body) => {
+        const fullName = String(body.full_name ?? "").trim();
+        if (!fullName) return send(422, { detail: "ad soyad zorunlu" });
+        const source = body.source;
+        if (source !== "company" && source !== "subcontractor" && source !== "general") {
+          return send(422, { detail: "kaynak zorunlu" });
+        }
+        state.personnelSeq += 1;
+        const created: MockPersonnel = {
+          id: `per-new-${state.personnelSeq}`,
+          full_name: fullName,
+          trade: typeof body.trade === "string" && body.trade ? body.trade : null,
+          source,
+          subcontractor_id:
+            typeof body.subcontractor_id === "string" ? body.subcontractor_id : null,
+          user_id: typeof body.user_id === "string" ? body.user_id : null,
+          is_active: body.is_active !== false,
+        };
+        state.personnel = [...state.personnel, created];
+        return send(201, created);
+      });
+    }
+
+    // GET/PUT /sites/{site_id}/timesheet — ay matrisi.
+    // `year`/`month` ZORUNLU; eksikse gerçek backend 422 döner.
+    const timesheetMatch = path.match(/^\/sites\/([^/]+)\/timesheet$/);
+    const timesheetExportMatch = path.match(/^\/sites\/([^/]+)\/timesheet\/export\.xlsx$/);
+    const timesheetPeriod = (): { year: number; month: number } | null => {
+      const year = parsed.searchParams.get("year");
+      const month = parsed.searchParams.get("month");
+      if (!year || !month) return null;
+      return { year: Number(year), month: Number(month) };
+    };
+    /** Başka şantiyenin bölümü boş matris DEĞİL 404 alır (gerçek backend kuralı). */
+    const visibleSection = (siteId: string): { ok: true; id: string | null } | { ok: false } => {
+      const sectionId = parsed.searchParams.get("section_id");
+      if (!sectionId) return { ok: true, id: null };
+      const section = state.sections.find((s) => s.id === sectionId && s.site_id === siteId);
+      return section ? { ok: true, id: section.id } : { ok: false };
+    };
+
+    if (method === "GET" && (timesheetMatch || timesheetExportMatch)) {
+      const siteId = (timesheetMatch ?? timesheetExportMatch)![1];
+      const site = state.sites.find((s) => s.id === siteId);
+      if (!site) return send(404, { detail: "santiye yok" });
+      const period = timesheetPeriod();
+      if (!period) return send(422, { detail: "year/month zorunlu" });
+      const section = visibleSection(site.id);
+      if (!section.ok) return send(404, { detail: "bolum yok" });
+
+      // Excel çıktısı OKUMA ucudur ve AYNI kapsam kurallarını izler; yalnız
+      // gövde ikilidir (BFF içerik tipinden ikili/JSON kararı verir).
+      if (timesheetExportMatch) {
+        res.writeHead(200, {
+          "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "content-disposition": `attachment; filename="puantaj-${site.code}-${period.year}-${String(period.month).padStart(2, "0")}.xlsx"`,
+        });
+        res.end(Buffer.from([0x50, 0x4b, 0x03, 0x04]));
+        return;
+      }
+      return send(200, buildTimesheetMatrix(state, site, period.year, period.month, section.id));
+    }
+
+    // PUT /sites/{site_id}/timesheet — DÖNEM + ŞANTİYE kapsamlı DEĞİŞTİRME.
+    // ⚠️ Kapsam kuralı MOCK'ta da uygulanır: gelen `cells` o dönem+şantiyenin
+    // TAM kümesi sayılır, gövdede geçmeyen hücre SİLİNİR. Başka ayın ya da
+    // başka şantiyenin hücrelerine DOKUNULMAZ. Aksi hâlde e2e "yeşil" olur
+    // ama canlıda bölüm filtresiyle kaydeden kullanıcı diğer bölümlerin ayını
+    // siler — bu dilimin en kritik tuzağı tam olarak budur.
+    // Yanıt GÜNCEL TAM matristir (bölüm süzgeci UYGULANMAZ).
+    if (method === "PUT" && timesheetMatch) {
+      const site = state.sites.find((s) => s.id === timesheetMatch[1]);
+      if (!site) return send(404, { detail: "santiye yok" });
+      const period = timesheetPeriod();
+      if (!period) return send(422, { detail: "year/month zorunlu" });
+      return withBody((body) => {
+        const input = Array.isArray(body.cells) ? (body.cells as Record<string, unknown>[]) : [];
+        const next: MockTimesheetCell[] = [];
+        for (const raw of input) {
+          const workDate = String(raw.work_date ?? "");
+          if (!cellInPeriod({ work_date: workDate } as MockTimesheetCell, period.year, period.month)) {
+            return send(422, { detail: "hucre istenen donemin disinda" });
+          }
+          const overtime = raw.overtime_hours;
+          next.push({
+            site_id: site.id,
+            personnel_id: String(raw.personnel_id ?? ""),
+            work_date: workDate,
+            code: raw.code as MockTimesheetCode,
+            overtime_hours:
+              overtime === undefined || overtime === null ? null : Number(overtime).toFixed(2),
+            section_id: typeof raw.section_id === "string" ? raw.section_id : null,
+          });
+        }
+        state.timesheetCells = [
+          ...state.timesheetCells.filter(
+            (c) => c.site_id !== site.id || !cellInPeriod(c, period.year, period.month),
+          ),
+          ...next,
+        ];
+        return send(200, buildTimesheetMatrix(state, site, period.year, period.month, null));
       });
     }
 

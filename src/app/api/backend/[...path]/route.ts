@@ -62,6 +62,14 @@ const ALLOWED_ROOTS = new Set([
   // /sites/{site_id}/diary* üzerinden gelir, o da "sites" kökünden geçer).
   // Eksikse bu dört uç YALNIZ CANLIDA 404 alır; jsdom testleri bunu görmez.
   "diary",
+  // F-PT T1 — Puantaj ekranlarının personel uçları (`/personnel`,
+  // `/personnel/{personnel_id}`) bu kökten geçer: matris satırlarını besleyen
+  // liste ve "Personel Ekle" formunun POST'u. Eksikse personel uçları YALNIZ
+  // CANLIDA 404 alır (matris sonsuza dek boş kalır); jsdom testleri bunu
+  // GÖRMEZ. Puantaj matrisinin kendi uçları (`/sites/{site_id}/timesheet`,
+  // `.../timesheet/export.xlsx`) ilk segmenti "sites" olduğu için MEVCUT
+  // "sites" kökünden geçer — ayrı bir "timesheet" kökü EKLENMEZ.
+  "personnel",
 ]);
 
 // JSON/metin sayilan icerik tipleri: govde metne cozulup JSON olarak islenir.
