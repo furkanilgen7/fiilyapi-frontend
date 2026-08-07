@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 
 import PuantajPage from "./page";
 import { useSession } from "@/components/shell/SessionProvider";
@@ -52,6 +52,14 @@ const MATRIX = {
       man_days: 0,
       cells: [
         { work_date: "2026-08-03", code: "worked", overtime_hours: null, section_id: "sec-1" },
+        // D1 kaniti: E5'te FM ve G kodlu hucreler de VARDIR.
+        { work_date: "2026-08-04", code: "overtime", overtime_hours: "3.00", section_id: "sec-1" },
+        {
+          work_date: "2026-08-05",
+          code: "temporary_duty",
+          overtime_hours: null,
+          section_id: "sec-1",
+        },
       ],
     },
   ],
@@ -120,5 +128,39 @@ describe("PuantajPage rotasi", () => {
   it("'Disa Aktar' mockup'taki yerinde durur (T3'e kadar devre disi)", () => {
     render(<PuantajPage />);
     expect(screen.getByRole("button", { name: "Dışa Aktar" })).toBeDisabled();
+  });
+});
+
+// D1 — E5 mockup'i SP'den AYRIDIR (kullanici karari 2026-08-07).
+describe("PuantajPage · E5 mockup ayrimi", () => {
+  it("legend DORT ogedir (E5 79-84) — 'Geçici Görev (G)' aciklanmaz", () => {
+    render(<PuantajPage />);
+    for (const label of ["Çalıştı (Ç)", "İzin (İ)", "Tatil (T)", "Fazla Mesai (FM)"]) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
+    expect(screen.queryByText("Geçici Görev (G)")).not.toBeInTheDocument();
+    expect(screen.queryByText("Geçici Görev")).not.toBeInTheDocument();
+  });
+
+  it("legend'de olmasa da G kodlu HUCRE rozeti BASILIR (kayit gizlenmez)", () => {
+    render(<PuantajPage />);
+    const body = screen.getByRole("rowheader", { name: /Ahmet Yılmaz/ }).closest("tr");
+    expect(body).not.toBeNull();
+    expect(within(body as HTMLElement).getByText("G")).toBeInTheDocument();
+    expect(within(body as HTMLElement).getByText("FM")).toBeInTheDocument();
+  });
+
+  it("ayak satirinda '+' ve 'G' isareti BASILMAZ — E5 203 duz sayi gosterir", () => {
+    render(<PuantajPage />);
+    const footer = screen.getByRole("rowheader", { name: "Günlük Toplam" }).closest("tr");
+    expect(footer).not.toBeNull();
+    const texts = within(footer as HTMLElement)
+      .getAllByRole("cell")
+      .map((cell) => cell.textContent ?? "");
+    expect(texts).not.toContain("1+");
+    expect(texts).not.toContain("0G");
+    expect(texts.some((text) => text.includes("+") || text.includes("G"))).toBe(false);
+    // FM'li gun (04 Agu) duz "1" basar — sayi degismez, yalniz isaret yoktur.
+    expect(texts[3]).toBe("1");
   });
 });

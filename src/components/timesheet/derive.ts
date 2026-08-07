@@ -3,6 +3,7 @@ import type { TimesheetCell, TimesheetCode, TimesheetMatrix } from "@/lib/api/ho
 import { sumDecimalStrings } from "@/lib/decimal";
 
 import { monthDayIsoList } from "./month";
+import type { TimesheetVariant } from "./timesheet-codes";
 
 /**
  * Puantaj matrisinin TÜREV KATMANI (F-PT T2) — saf, bileşensiz, test edilebilir.
@@ -222,25 +223,42 @@ function buildDayColumns(
 }
 
 /**
- * Ayak satırı hücresinin METNİ (E5 198-211 · ŞP 232-246).
+ * Ayak satırı hücresinin METNİ (E5 198-213 · ŞP 232-248).
  *
- * SAYI HER ZAMAN `workedCount`tur; `+` (ŞP 237) ve `G` (ŞP 245) yalnız
- * İŞARETTİR, sayıyı DEĞİŞTİRMEZ. ŞP 245'in "3G"si bunun kanıtıdır: o sütunda
- * DÖRT kişinin kaydı vardır (üçü çalıştı, biri geçici görevde) ve sayı 3'tür —
- * geçici görev adam-güne de günlük toplama da girmez.
+ * ⚠️ İKİ AYRI KURAL — işaretler VARYANTA GÖRE basılır (kullanıcı kararı,
+ * 2026-08-07: "mockup birebir, ekran başına ayrı"):
+ *   • `site` (ŞP 232-246): `+` (ŞP 237) ve `G` (ŞP 245) BASILIR.
+ *   • `general` (E5 198-211): İŞARET YOK — YALNIZ SAYI. E5 120'de Mehmet'in
+ *     6. günü FM'dir ve E5 203'te o sütunun ayak değeri düz `4`tür; yani E5
+ *     FM verisi VARKEN BİLE `+` basmaz. Bu mockup'ın bilinçli tercihidir,
+ *     eksiklik değil.
  *
- * İki işaretin AYNI günde düşmesi mockup'ta yoktur; ikisi de basılır
+ * SAYI HER İKİ VARYANTTA DA `workedCount`tur; `+`/`G` sayıyı DEĞİŞTİRMEZ.
+ * ŞP 245'in "3G"si bunun kanıtıdır: o sütunda DÖRT kişinin kaydı vardır
+ * (üçü çalıştı, biri geçici görevde) ve sayı 3'tür — geçici görev adam-güne
+ * de günlük toplama da girmez.
+ *
+ * İki işaretin AYNI günde düşmesi mockup'ta yoktur; `site`de ikisi de basılır
  * ("4+G") — biri sessizce yutulursa ekran veriyi gizlemiş olur.
  */
-export function dayTotalText(day: TimesheetDayColumn): string {
+export function dayTotalText(day: TimesheetDayColumn, variant: TimesheetVariant): string {
+  if (variant === "general") return String(day.workedCount);
   const overtimeMark = day.hasOvertime ? "+" : "";
   const dutyMark = day.temporaryDutyCount > 0 ? "G" : "";
   return `${day.workedCount}${overtimeMark}${dutyMark}`;
 }
 
-/** Ayak satırı hücresinin renk sınıfı eki (ŞP 235/237/245 üç ayrı ton). */
-export function dayTotalModifier(day: TimesheetDayColumn): string {
-  if (day.temporaryDutyCount > 0) return "duty";
-  if (day.hasOvertime) return "overtime";
+/**
+ * Ayak satırı hücresinin renk sınıfı eki.
+ *
+ * `site`: ŞP 232/235/237/245 DÖRT ayrı ton (mavi · soluk · amber · yeşil).
+ * `general`: E5 198/201 İKİ ton (mavi · soluk) — işaret basılmadığı gibi
+ * işaret rengi de basılmaz.
+ */
+export function dayTotalModifier(day: TimesheetDayColumn, variant: TimesheetVariant): string {
+  if (variant === "site") {
+    if (day.temporaryDutyCount > 0) return "duty";
+    if (day.hasOvertime) return "overtime";
+  }
   return day.workedCount > 0 ? "worked" : "zero";
 }

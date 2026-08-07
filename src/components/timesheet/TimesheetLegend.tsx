@@ -1,27 +1,29 @@
 import { cx } from "@/lib/cx";
 
-import { TIMESHEET_CODES } from "./timesheet-codes";
+import { legendCodesFor, type TimesheetVariant } from "./timesheet-codes";
 
 export interface TimesheetLegendProps {
   /**
-   * `general` → E5 79-84: harfsiz renk karesi + "Çalıştı (Ç)" etiketi.
-   * `site`    → ŞP 106-112: kare HARFİ TAŞIR + "Çalıştı" etiketi.
+   * `general` → E5 79-84: DÖRT öğe, harfsiz renk karesi + "Çalıştı (Ç)".
+   * `site`    → ŞP 106-112: BEŞ öğe, kare HARFİ TAŞIR + "Çalıştı".
    */
-  variant: "general" | "site";
+  variant: TimesheetVariant;
 }
 
 /**
- * Kod açıklaması şeridi (E5 79-84 · ŞP 106-112).
+ * Kod açıklaması şeridi — İKİ EKRAN İÇİN AYRI (kullanıcı kararı, 2026-08-07).
  *
- * BEŞ kod da her iki ekranda basılır: hücre seti tek settir (ŞP 111'in `G`si
- * dahil) ve E5 aynı şantiyenin aynı verisini gösterir — dörtlü bir legend
- * `G` rozetini AÇIKLAMASIZ bırakırdı. E5'in dörtlüsü (E5 80-83) bu setin alt
- * kümesidir; biçim her ekranın kendi mockup'ından alınır.
+ * E5 79-84 DÖRT öğe gösterir (Ç · İ · T · FM); `G` YOKTUR. ŞP 106-111 BEŞ öğe
+ * gösterir. Öğe kümesi `legendCodesFor` tek kaynağından gelir.
+ *
+ * E5 mockup'ı (79-84) 4'lü legend gösterir; `G` kodlu hücre veride varsa
+ * rozeti BASILIR ama E5 legend'inde yer almaz — mockup kararı, sessiz atlama
+ * değil.
  */
 export function TimesheetLegend({ variant }: TimesheetLegendProps) {
   return (
     <div className={cx("ts-legend", `ts-legend--${variant}`)}>
-      {TIMESHEET_CODES.map((meta) => (
+      {legendCodesFor(variant).map((meta) => (
         <span key={meta.code} className="ts-legend__item">
           <span
             className={cx("ts-legend__swatch", `ts-legend__swatch--${meta.modifier}`)}

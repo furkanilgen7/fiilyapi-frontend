@@ -3,10 +3,15 @@ import type { TimesheetCode } from "@/lib/api/hooks/useTimesheet";
 /**
  * Hücre kodlarının TEK kaynağı (F-PT T2).
  *
- * ŞP legend'i BEŞLİDİR (ŞP 107-111: Ç · İ · T · FM · G); E5'in dörtlüsü
- * (E5 80-83) bunun ALT KÜMESİDİR — iki ekran aynı seti kullanır, ikinci bir
- * kod tablosu yazılmaz. Harfler ve renkler mockup'tan; "yarım gün"/"rapor"
- * gibi mockup'ta olmayan kod UYDURULMAZ (backend enum'u da beşlidir).
+ * HÜCRE seti beşlidir ve İKİ EKRANDA DA aynıdır — backend enum'u beşlidir,
+ * "yarım gün"/"rapor" gibi mockup'ta olmayan kod UYDURULMAZ.
+ *
+ * LEGEND ise ekran başına AYRIDIR (kullanıcı kararı, 2026-08-07):
+ *   • E5 79-84 → DÖRT öğe (Ç · İ · T · FM); `G` YOK.
+ *   • ŞP 106-111 → BEŞ öğe (+ G).
+ * E5 mockup'ı (79-84) 4'lü legend gösterir; `G` kodlu hücre veride varsa
+ * rozeti YİNE BASILIR ama E5 legend'inde yer almaz — mockup kararı, sessiz
+ * atlama değil (kayıt gizlenmez, veri kaybı olmaz).
  */
 export interface TimesheetCodeMeta {
   code: TimesheetCode;
@@ -35,7 +40,7 @@ export const TIMESHEET_CODES: readonly TimesheetCodeMeta[] = [
     labelWithLetter: "Fazla Mesai (FM)",
     modifier: "overtime",
   },
-  // ŞP 111 — E5 legend'inde YOK (dörtlü alt küme), hücre seti ortaktır.
+  // ŞP 111 — E5 legend'inde YOK; hücre rozeti iki ekranda da basılır.
   {
     code: "temporary_duty",
     letter: "G",
@@ -45,6 +50,19 @@ export const TIMESHEET_CODES: readonly TimesheetCodeMeta[] = [
   },
 ];
 
+/** Puantaj ekranının mockup varyantı: E5 (genel) / ŞP (şantiye sekmesi). */
+export type TimesheetVariant = "general" | "site";
+
+/**
+ * Legend'de AÇIKLANAN kodlar — varyanta göre AYRI (D1 kararı):
+ * E5 79-84 dört öğe · ŞP 106-111 beş öğe. Bu, `TIMESHEET_CODES`ten (hücre
+ * seti) BİLEREK ayrıdır: E5'te `G` kodlu hücre basılır, legend'de anlatılmaz.
+ */
+export function legendCodesFor(variant: TimesheetVariant): readonly TimesheetCodeMeta[] {
+  if (variant === "site") return TIMESHEET_CODES;
+  return TIMESHEET_CODES.filter((meta) => meta.code !== "temporary_duty");
+}
+
 const BY_CODE = new Map<TimesheetCode, TimesheetCodeMeta>(
   TIMESHEET_CODES.map((meta) => [meta.code, meta]),
 );
@@ -53,11 +71,12 @@ export function timesheetCodeMeta(code: TimesheetCode): TimesheetCodeMeta | unde
   return BY_CODE.get(code);
 }
 
-/** "Şirket" / "Taşeron" Tür rozeti (ŞP 150, 170, 190, 210). */
-export const WORKER_SOURCE_LABELS: Record<string, string> = {
-  company: "Şirket",
-  subcontractor: "Taşeron",
-  // `general` (düz/yevmiyeli işçi) mockup'ta YOK; rozet uydurulmaz, kaynak
-  // adı Türkçeleştirilip aynı nötr biçimde basılır.
-  general: "Yevmiyeli",
-};
+/**
+ * "Şirket" / "Taşeron" Tür rozeti (ŞP 150, 170, 190, 210).
+ *
+ * Etiketler UYDURULMAZ, repodaki TEK KAYNAKTAN gelir:
+ * `src/components/site-diary/diary-labels.ts:33-37` (`WORKER_SOURCE_LABELS`,
+ * GK418/422/426/430). `general` orada "Genel"dir — ŞP mockup'ında bu kaynağın
+ * rozeti çizilmemiştir, ama veri gelirse aynı sözcükle basılır.
+ */
+export { WORKER_SOURCE_LABELS } from "@/components/site-diary/diary-labels";

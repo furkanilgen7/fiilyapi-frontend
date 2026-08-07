@@ -2,8 +2,17 @@ import { Badge } from "@/components/ui/badge/Badge";
 import { cx } from "@/lib/cx";
 import { formatDecimal } from "@/lib/format";
 
-import { dayTotalModifier, dayTotalText, type TimesheetDayColumn, type TimesheetViewRow } from "./derive";
-import { timesheetCodeMeta, WORKER_SOURCE_LABELS } from "./timesheet-codes";
+import {
+  dayTotalModifier,
+  dayTotalText,
+  type TimesheetDayColumn,
+  type TimesheetViewRow,
+} from "./derive";
+import {
+  timesheetCodeMeta,
+  WORKER_SOURCE_LABELS,
+  type TimesheetVariant,
+} from "./timesheet-codes";
 
 /**
  * Puantaj matrisi tablosu — E5 (88-217) ve ŞP (115-253) ORTAK çekirdeği.
@@ -15,6 +24,14 @@ import { timesheetCodeMeta, WORKER_SOURCE_LABELS } from "./timesheet-codes";
  *     (ŞP 149, 169) taşır, yanında **Tür** kolonu (Şirket/Taşeron rozeti,
  *     ŞP 150/170); hücre rozeti 24×18 / 8px (ŞP 151).
  *
+ *   • Ayak satırı İŞARETLERİ de AYRIDIR — bkz. `derive.ts/dayTotalText`:
+ *     `site` `4+`/`3G` basar (ŞP 237/245), `general` YALNIZ SAYI basar
+ *     (E5 203, FM hücresi varken bile).
+ *
+ * HÜCRE rozetleri her iki ekranda da veriye göre basılır: E5 mockup'ı (79-84)
+ * 4'lü legend gösterir, ama `G` kodlu hücre veride varsa rozeti YİNE BASILIR
+ * (kayıt gizlenmez) — yalnızca E5 legend'inde açıklanmaz.
+ *
  * Mockup'ların "…" sütunu (E5 109/131 · ŞP 142/165) bir MOCKUP KIRPMASIDIR
  * (15 günden sonrası çizilmemiş) — gerçek ekran ayın TÜM günlerini basar,
  * bu yüzden kırpma sütunu yoktur.
@@ -22,7 +39,7 @@ import { timesheetCodeMeta, WORKER_SOURCE_LABELS } from "./timesheet-codes";
  * T2'de hücreler SALT-OKUNURDUR; tıklama/düzenleme T3'ün işidir.
  */
 export interface TimesheetTableProps {
-  variant: "general" | "site";
+  variant: TimesheetVariant;
   days: readonly TimesheetDayColumn[];
   rows: readonly TimesheetViewRow[];
   totalManDays: number;
@@ -84,12 +101,19 @@ export function TimesheetTable({
             <th scope="row" className="ts-table__foot-label" colSpan={leadColSpan}>
               Günlük Toplam
             </th>
+            {/* İŞARETLER VARYANTA GÖRE (D1): `site` ŞP 237/245'in `4+`/`3G`
+                işaretlerini basar; `general` E5 203 gereği YALNIZ SAYI basar —
+                E5 120'de FM hücresi VARKEN BİLE. İki ayrı kural
+                `dayTotalText`/`dayTotalModifier` içinde tek yerde durur. */}
             {days.map((day) => (
               <td
                 key={day.workDate}
-                className={cx("ts-table__foot-cell", `ts-table__foot-cell--${dayTotalModifier(day)}`)}
+                className={cx(
+                  "ts-table__foot-cell",
+                  `ts-table__foot-cell--${dayTotalModifier(day, variant)}`,
+                )}
               >
-                {dayTotalText(day)}
+                {dayTotalText(day, variant)}
               </td>
             ))}
             {/* E5 213 · ŞP 248 — genel adam-gün */}
@@ -106,7 +130,7 @@ function TimesheetTableRow({
   row,
   days,
 }: {
-  variant: "general" | "site";
+  variant: TimesheetVariant;
   row: TimesheetViewRow;
   days: readonly TimesheetDayColumn[];
 }) {

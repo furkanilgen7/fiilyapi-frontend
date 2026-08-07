@@ -159,31 +159,57 @@ describe("buildTimesheetView · adam-gun", () => {
   });
 });
 
-describe("buildTimesheetView · ayak satiri isaretleri", () => {
+// D1 — E5 ve SP ayak satiri isaretleri AYRIDIR (kullanici karari 2026-08-07):
+// SP 237/245 `4+`/`3G` basar; E5 203 FM verisi varken bile duz sayi basar.
+describe("buildTimesheetView · ayak satiri isaretleri (SP varyanti)", () => {
   it("FM'li gun '4+' basar — '+' sayiyi DEGISTIRMEZ", () => {
     const day = dayOf(build(null), "2026-08-03");
     expect(day.workedCount).toBe(4);
     expect(day.hasOvertime).toBe(true);
-    expect(dayTotalText(day)).toBe("4+");
-    expect(dayTotalModifier(day)).toBe("overtime");
+    expect(dayTotalText(day, "site")).toBe("4+");
+    expect(dayTotalModifier(day, "site")).toBe("overtime");
   });
 
   it("gecici gorevli gun '3G' basar — G adam-gune GIRMEZ", () => {
     const day = dayOf(build(null), "2026-08-04");
     expect(day.workedCount).toBe(3);
     expect(day.temporaryDutyCount).toBe(1);
-    expect(dayTotalText(day)).toBe("3G");
-    expect(dayTotalModifier(day)).toBe("duty");
+    expect(dayTotalText(day, "site")).toBe("3G");
+    expect(dayTotalModifier(day, "site")).toBe("duty");
   });
 
   it("yalniz izin/tatil olan gun 0 basar", () => {
     const day = dayOf(build(null), "2026-08-05");
-    expect(dayTotalText(day)).toBe("0");
-    expect(dayTotalModifier(day)).toBe("zero");
+    expect(dayTotalText(day, "site")).toBe("0");
+    expect(dayTotalModifier(day, "site")).toBe("zero");
   });
 
   it("kayitsiz gun 0 basar", () => {
-    expect(dayTotalText(dayOf(build(null), "2026-08-20"))).toBe("0");
+    expect(dayTotalText(dayOf(build(null), "2026-08-20"), "site")).toBe("0");
+  });
+});
+
+describe("buildTimesheetView · ayak satiri isaretleri (E5 varyanti)", () => {
+  it("FM'li gunde '+' BASMAZ — E5 203 duz '4' gosterir", () => {
+    const day = dayOf(build(null), "2026-08-03");
+    expect(day.hasOvertime).toBe(true);
+    expect(dayTotalText(day, "general")).toBe("4");
+    expect(dayTotalText(day, "general")).not.toContain("+");
+    expect(dayTotalModifier(day, "general")).toBe("worked");
+  });
+
+  it("gecici gorevli gunde 'G' BASMAZ — E5 legend'i dortludur", () => {
+    const day = dayOf(build(null), "2026-08-04");
+    expect(day.temporaryDutyCount).toBe(1);
+    expect(dayTotalText(day, "general")).toBe("3");
+    expect(dayTotalModifier(day, "general")).toBe("worked");
+  });
+
+  it("sayi iki varyantta da AYNIDIR — yalniz isaretler farklidir", () => {
+    for (const iso of ["2026-08-03", "2026-08-04", "2026-08-05", "2026-08-20"]) {
+      const day = dayOf(build(null), iso);
+      expect(dayTotalText(day, "site")).toContain(dayTotalText(day, "general"));
+    }
   });
 });
 
@@ -211,15 +237,15 @@ describe("buildTimesheetView · K2 bolum suzgeci", () => {
     expect(filtered.workerCount).toBe(1);
     expect(filtered.totalManDays).toBe(3);
     expect(Number(filtered.totalOvertimeHours)).toBe(2.5);
-    expect(dayTotalText(dayOf(filtered, "2026-08-03"))).toBe("1");
-    expect(dayTotalText(dayOf(filtered, "2026-08-04"))).toBe("1");
+    expect(dayTotalText(dayOf(filtered, "2026-08-03"), "site")).toBe("1");
+    expect(dayTotalText(dayOf(filtered, "2026-08-04"), "site")).toBe("1");
   });
 
   it("sec-1 suzgeci diger bolumun hucrelerini gorunumden cikarir", () => {
     const filtered = build("sec-1");
     const denizCells = filtered.rows.find((row) => row.personnelId === "per-4")?.cells;
     expect(Object.keys(denizCells ?? {})).toHaveLength(0);
-    expect(dayTotalText(dayOf(filtered, "2026-08-03"))).toBe("3+");
+    expect(dayTotalText(dayOf(filtered, "2026-08-03"), "site")).toBe("3+");
   });
 });
 

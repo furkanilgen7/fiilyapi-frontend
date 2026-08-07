@@ -137,7 +137,7 @@ describe("SiteTimesheetView · mockup iskeleti", () => {
     expect(screen.queryByRole("columnheader", { name: "…" })).not.toBeInTheDocument();
   });
 
-  it("bes kodun tamami legend'de aciklanir (SP 107-111)", () => {
+  it("bes kodun tamami legend'de aciklanir (SP 107-111) — E5'ten AYRI", () => {
     render(<SiteTimesheetView />);
     for (const label of ["Çalıştı", "İzin", "Tatil", "Fazla Mesai", "Geçici Görev"]) {
       expect(screen.getByText(label)).toBeInTheDocument();
