@@ -10,8 +10,10 @@ import { Select } from "@/components/ui/select/Select";
 import { useSiteSections } from "@/lib/api/hooks/useSiteSections";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { formatPeriod } from "@/lib/format";
+import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 
+import { AddPersonnelLink } from "./AddPersonnelLink";
 import { timesheetEmptyMessage } from "./GeneralTimesheetView";
 import { parsePeriod, shiftPeriod } from "./month";
 import { TimesheetLegend } from "./TimesheetLegend";
@@ -54,6 +56,10 @@ export function SiteTimesheetView() {
   const { projectId, siteId } = useParams<{ projectId: string; siteId: string }>();
 
   const permission = useModulePermission("timesheet");
+  // F-PT T4 — "Personel Ekle" girişi AYRI modülün (personnel) yetkisine bağlı:
+  // puantaj yazabilen herkes personel kartı açamaz. İzinsizde HİÇ basılmaz.
+  const personnelPermission = useModulePermission("personnel");
+  const canAddPersonnel = hasAtLeast(personnelPermission.level, "full");
   const period = parsePeriod(searchParams.get("year"), searchParams.get("month"));
   const sectionParam = searchParams.get("section") ?? ALL_SECTIONS;
   const sectionId = sectionParam === ALL_SECTIONS ? null : sectionParam;
@@ -71,6 +77,10 @@ export function SiteTimesheetView() {
   const site = siteQuery.data;
   const sections = sectionsQuery.data?.items ?? [];
   const activeSectionName = sections.find((section) => section.id === sectionId)?.name;
+
+  // Personel formundan bu sekmeye (aynı dönem + bölüm süzgeci) dönülür.
+  const currentQuery = searchParams.toString();
+  const returnTo = currentQuery.length > 0 ? `${pathname}?${currentQuery}` : pathname;
 
   function pushParams(next: { section?: string; year?: number; month?: number }) {
     const params = new URLSearchParams(searchParams.toString());
@@ -103,6 +113,8 @@ export function SiteTimesheetView() {
           </p>
         </div>
         <div className="ts__head-actions">
+          {/* F-PT T4 — mockup'ta YOK; spec §4 S2(a) onaylı türetimi. */}
+          {canAddPersonnel && <AddPersonnelLink returnTo={returnTo} />}
           {/* ŞP 94-98 */}
           <DiaryMonthNav
             year={period.year}
@@ -178,6 +190,10 @@ export function SiteTimesheetView() {
           rows={data.view.rows}
           totalManDays={data.view.totalManDays}
           emptyMessage={timesheetEmptyMessage(data.isLoading, data.isError, siteId)}
+          // Hiç personel yoksa matris boş kalır — izinliye ekleme yönlendirmesi.
+          emptyAction={
+            canAddPersonnel ? <AddPersonnelLink returnTo={returnTo} variant="primary" /> : undefined
+          }
           canWrite={permission.canWrite}
           dirtyKeys={editor.dirtyKeys}
           onCommit={(personnelId, workDate, edit) =>

@@ -40,8 +40,14 @@ const tokensCss = readFileSync(
  * tonunun karşılığı yoktu (`--color-primary-border-soft` E5 80/ŞP 107 ·
  * `--color-warning-border-soft` E5 83/ŞP 110 · `--color-success-border-soft`
  * ŞP 111). Dördüncü kenarlık (#fca5a5) zaten `--color-danger-border-soft`tur.
+ *
+ * F-PT T4 (Personel Ekle formu): 77 → 78. Mockup'ın renklerinin tamamı mevcut
+ * palette karşılandı; yalnız belge uyarı kutusunun koyu kehribar metin tonu
+ * (FP 196) yeniydi — mevcut `--color-warning-strong` ve
+ * `--color-orange-tint-text` ondan AÇIK olduğu için kontrastı düşürürdü
+ * (`--color-warning-deep-text`).
  */
-const EXPECTED_HEX_COUNT = 77;
+const EXPECTED_HEX_COUNT = 78;
 
 describe("tokens.css", () => {
   it("çekirdek renk token'larını tanımlar (açık tema Slate + Blue)", () => {

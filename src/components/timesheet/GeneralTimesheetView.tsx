@@ -7,8 +7,10 @@ import { DiaryMonthNav } from "@/components/site-diary/DiaryMonthNav";
 import { Button } from "@/components/ui/button/Button";
 import { Select } from "@/components/ui/select/Select";
 import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
+import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 
+import { AddPersonnelLink } from "./AddPersonnelLink";
 import { parsePeriod, shiftPeriod } from "./month";
 import { TimesheetLegend } from "./TimesheetLegend";
 import { TimesheetNotices } from "./TimesheetNotices";
@@ -41,6 +43,10 @@ export function GeneralTimesheetView() {
   const searchParams = useSearchParams();
 
   const permission = useModulePermission("timesheet");
+  // F-PT T4 — "Personel Ekle" girişi AYRI modülün (personnel) yetkisine bağlı:
+  // puantaj yazabilen herkes personel kartı açamaz. İzinsizde HİÇ basılmaz.
+  const personnelPermission = useModulePermission("personnel");
+  const canAddPersonnel = hasAtLeast(personnelPermission.level, "full");
   const period = parsePeriod(searchParams.get("year"), searchParams.get("month"));
   const siteOptions = useSiteOptions();
   // Seçili şantiye URL'den; yoksa ilk seçenek (mockup seçiciyi HER ZAMAN dolu
@@ -60,6 +66,10 @@ export function GeneralTimesheetView() {
   if (!permission.canView) return <AccessDenied />;
   if (data.isForbidden) return <AccessDenied />;
 
+  // Personel formundan bu ekrana (aynı dönem + şantiye) dönülür.
+  const query = searchParams.toString();
+  const returnTo = query.length > 0 ? `${pathname}?${query}` : pathname;
+
   function pushParams(next: { site?: string; year?: number; month?: number }) {
     const params = new URLSearchParams(searchParams.toString());
     if (next.site !== undefined) params.set("site", next.site);
@@ -77,6 +87,8 @@ export function GeneralTimesheetView() {
       <div className="ts__head">
         <h1 className="ts__title">Puantaj</h1>
         <div className="ts__head-actions">
+          {/* F-PT T4 — mockup'ta YOK; spec §4 S2(a) onaylı türetimi. */}
+          {canAddPersonnel && <AddPersonnelLink returnTo={returnTo} />}
           {/* E5 66 — dosyayı SUNUCU üretir (K2 istisnası) */}
           <Button
             variant="secondary"
@@ -148,6 +160,10 @@ export function GeneralTimesheetView() {
           rows={data.view.rows}
           totalManDays={data.view.totalManDays}
           emptyMessage={timesheetEmptyMessage(data.isLoading, data.isError, selectedSiteId)}
+          // Hiç personel yoksa matris boş kalır — izinliye ekleme yönlendirmesi.
+          emptyAction={
+            canAddPersonnel ? <AddPersonnelLink returnTo={returnTo} variant="primary" /> : undefined
+          }
           canWrite={permission.canWrite}
           dirtyKeys={editor.dirtyKeys}
           onCommit={(personnelId, workDate, edit) =>

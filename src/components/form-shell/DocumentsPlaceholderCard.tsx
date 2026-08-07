@@ -26,6 +26,12 @@ interface DocumentsPlaceholderCardProps {
   soonTitle: string;
   /** Izgara sütun sayısı: proje formu 2, şantiye formu 3 (mockup satır 179). */
   columns?: 2 | 3;
+  /**
+   * Kartın EN ALTINA basılan ek içerik. Personel formunun uyarı kutusu
+   * (mockup 195–200) kartın İÇİNDEDİR; verilmediğinde hiç render edilmez,
+   * yani proje/şantiye formlarının DOM'u DEĞİŞMEZ (görsel regresyon).
+   */
+  footer?: React.ReactNode;
 }
 
 export function DocumentsPlaceholderCard({
@@ -36,6 +42,7 @@ export function DocumentsPlaceholderCard({
   dropSubtitle,
   soonTitle,
   columns = 2,
+  footer,
 }: DocumentsPlaceholderCardProps) {
   const gridClassName =
     columns === 3 ? "pf-docs__grid pf-docs__grid--3" : "pf-docs__grid";
@@ -78,6 +85,8 @@ export function DocumentsPlaceholderCard({
         </span>
         <span className="pf-doc__badge">Yakında</span>
       </div>
+
+      {footer}
     </section>
   );
 }

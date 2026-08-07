@@ -3726,6 +3726,24 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       });
     }
 
+    // --- F-PT T4 · Personel formunun "Bağlı Taşeron" seçicisi ---------------
+    // GET /subcontractors — mockup'ın sabit taşeron adları YERİNE gerçek uç.
+    // Yanıtta sayfalama YOKTUR (`SubcontractorListResponse` yalnız `items`).
+    if (method === "GET" && path === "/subcontractors") {
+      const activeOnly = parsed.searchParams.get("active_only") !== "false";
+      const items = Object.entries(SUBCONTRACTOR_NAMES).map(([id, name]) => ({
+        id,
+        name,
+        tax_number: null,
+        contact_person: null,
+        phone: null,
+        email: null,
+        category: null,
+        is_active: true,
+      }));
+      return send(200, { items: activeOnly ? items.filter((i) => i.is_active) : items });
+    }
+
     // --- F-PT T1 · Puantaj uçları ------------------------------------------
     // GET/POST /personnel — matris satırlarını besleyen personel kartları.
     if (method === "GET" && path === "/personnel") {

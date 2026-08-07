@@ -52,6 +52,11 @@ export interface TimesheetTableProps {
   totalManDays: number;
   /** Boş matris mesajı — yükleme/hata durumlarında görünüm dışarıdan verilir. */
   emptyMessage?: string;
+  /**
+   * Boş matriste mesajın ALTINA basılan yönlendirme (F-PT T4: izinliye
+   * "Personel Ekle"). Verilmezse eski DOM aynen korunur.
+   */
+  emptyAction?: React.ReactNode;
   /** Hücre düzenleme yalnız yazma izninde açılır. */
   canWrite?: boolean;
   /** Kaydedilmemiş hücrelerin `timesheetDraftKey` anahtarları. */
@@ -66,6 +71,7 @@ export function TimesheetTable({
   rows,
   totalManDays,
   emptyMessage,
+  emptyAction,
   canWrite = false,
   dirtyKeys,
   onCommit,
@@ -103,7 +109,8 @@ export function TimesheetTable({
           {rows.length === 0 && (
             <tr>
               <td className="ts-table__empty" colSpan={leadColSpan + days.length + 1}>
-                {emptyMessage ?? "Bu ay için puantaj satırı yok."}
+                <span>{emptyMessage ?? "Bu ay için puantaj satırı yok."}</span>
+                {emptyAction && <span className="ts-table__empty-action">{emptyAction}</span>}
               </td>
             </tr>
           )}

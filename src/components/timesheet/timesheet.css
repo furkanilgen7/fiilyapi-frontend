@@ -373,6 +373,11 @@
   color: var(--color-text-muted);
   text-align: left;
 }
+/* F-PT T4 — boş matriste (izinliye) "Personel Ekle" yönlendirmesi. */
+.ts-table__empty-action {
+  display: inline-block;
+  margin-left: var(--space-3);
+}
 
 /* ── Hücre kod rozeti (E5 117 · ŞP 151) ────────────────────────────────── */
 .ts-cell {

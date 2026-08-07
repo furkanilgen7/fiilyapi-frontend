@@ -69,9 +69,14 @@ const MATRIX = {
   ],
 };
 
-function mockSession(level: string) {
+function mockSession(level: string, personnelLevel?: string) {
   vi.mocked(useSession).mockReturnValue({
-    me: { permissions: { timesheet: level } } as unknown as MeResponse,
+    me: {
+      permissions: {
+        timesheet: level,
+        ...(personnelLevel !== undefined ? { personnel: personnelLevel } : {}),
+      },
+    } as unknown as MeResponse,
     isLoading: false,
   });
 }
@@ -174,5 +179,63 @@ describe("PuantajPage · E5 mockup ayrimi", () => {
     expect(texts.some((text) => text.includes("+") || text.includes("G"))).toBe(false);
     // FM'li gun (04 Agu) duz "1" basar — sayi degismez, yalniz isaret yoktur.
     expect(texts[3]).toBe("1");
+  });
+});
+
+// F-PT T4 — "Personel Ekle" girisi (mockup'ta YOK; spec §4 S2(a) onayli turetimi).
+describe("PuantajPage · Personel Ekle girisi", () => {
+  it("personnel:full olanda gorunur ve donus rotasini tasir", () => {
+    mockSession("full", "full");
+    render(<PuantajPage />);
+    const link = screen.getByRole("link", { name: "Personel Ekle" });
+    expect(link).toHaveAttribute(
+      "href",
+      `/personel/yeni?donus=${encodeURIComponent("/puantaj?year=2026&month=8")}`,
+    );
+  });
+
+  it("personnel:none olanda HIC basilmaz", () => {
+    mockSession("full", "none");
+    render(<PuantajPage />);
+    expect(screen.queryByRole("link", { name: "Personel Ekle" })).not.toBeInTheDocument();
+  });
+
+  it("personnel:view de yetmez (form yalniz full+)", () => {
+    mockSession("full", "view");
+    render(<PuantajPage />);
+    expect(screen.queryByRole("link", { name: "Personel Ekle" })).not.toBeInTheDocument();
+  });
+
+  it("izin bilinmiyorsa gorunur kalir (bilinmezlik kurali)", () => {
+    mockSession("full");
+    render(<PuantajPage />);
+    expect(screen.getByRole("link", { name: "Personel Ekle" })).toBeInTheDocument();
+  });
+
+  it("hic personel yoksa matriste bos-durum + ekleme yonlendirmesi basilir", () => {
+    mockSession("full", "full");
+    vi.mocked(useTimesheet).mockReturnValue({
+      data: { ...MATRIX, rows: [], worker_count: 0 },
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as never);
+    render(<PuantajPage />);
+    const empty = document.querySelector(".ts-table__empty") as HTMLElement;
+    expect(empty).toHaveTextContent("Bu ay için puantaj kaydı ve aktif personel bulunmuyor.");
+    expect(within(empty).getByRole("link", { name: "Personel Ekle" })).toBeInTheDocument();
+  });
+
+  it("bos matriste izinsiz kullaniciya yonlendirme BASILMAZ", () => {
+    mockSession("full", "none");
+    vi.mocked(useTimesheet).mockReturnValue({
+      data: { ...MATRIX, rows: [], worker_count: 0 },
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as never);
+    render(<PuantajPage />);
+    const empty = document.querySelector(".ts-table__empty") as HTMLElement;
+    expect(within(empty).queryByRole("link", { name: "Personel Ekle" })).not.toBeInTheDocument();
   });
 });

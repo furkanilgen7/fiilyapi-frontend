@@ -378,6 +378,16 @@
   --width-timesheet-popover: 200px;
   --min-width-timesheet-table: 900px; /* E5 89 */
   --min-width-timesheet-table-sm: 1000px; /* ŞP 122 */
+
+  /* ── Personel Ekle formu (F-PT T4) ─────────────────────────────────────────
+     Kanon: projedesign "Form - Personel Ekle.dc.html". Parantez içi sayılar o
+     dosyanın SATIR numaralarıdır.
+     Mockup'ın renklerinin TAMAMI mevcut palette karşılanıyor; tek istisna
+     belge uyarı kutusunun koyu kehribar metin tonu (196) — mevcut
+     --color-warning-strong ve --color-orange-tint-text ondan AÇIK olduğu için
+     kontrastı düşürürdü. */
+  --color-warning-deep-text: #92400e;
+  --leading-relaxed: 1.6; /* uyarı kutusu metni (196) */
 }
 
 @keyframes fadeUp {
