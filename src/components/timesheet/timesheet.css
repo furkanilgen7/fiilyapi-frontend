@@ -530,12 +530,13 @@
 }
 
 /* Popover kabuğu — kartın (E5 88 · ŞP 115) küçük ölçekli hali: aynı kenarlık,
-   aynı zemin, `--shadow-md`. Hücrenin ortasına hizalanır. */
+   aynı zemin, `--shadow-md`. Hücrenin ortasına hizalanır.
+
+   ⚠️ KONUM BURADA DEĞİL (F-PT T5): `.ts-table-scroll` yatay kaydırıcısı dikey
+   ekseni de kırptığı için yüzey `AnchoredPopover`ın `escapeOverflow` kipinde
+   çalışır — `position: fixed` + ölçülmüş `top`/`left`
+   (`ui/popover/anchored-popover.css`). Burada YALNIZ görsel dil durur. */
 .ts-pop {
-  position: absolute;
-  top: calc(100% + var(--space-1));
-  left: 50%;
-  transform: translateX(-50%);
   z-index: 30;
   width: var(--width-timesheet-popover);
   padding: var(--space-3);

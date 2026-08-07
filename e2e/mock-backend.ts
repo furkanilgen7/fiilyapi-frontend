@@ -2463,6 +2463,12 @@ const TIMESHEET_CELL_FIXTURES: MockTimesheetCell[] = [
 
   // 2026-08 · s-2 — "başka şantiyeye DOKUNULMADI" kanıt kaydı (bölümsüz).
   { site_id: "s-2", personnel_id: "per-5", work_date: "2026-08-03", code: "worked", overtime_hours: null, section_id: null },
+
+  // 🔴 409 TETİKLEYİCİSİ (F-PT T5) — Ramazan Yıldız 10 Eylül'de s-2'de kayıtlı.
+  // Aynı kişi-günü s-1'e yazmaya kalkan PUT çakışma alır. Bileşim BİLEREK
+  // ayrılmıştır: hiçbir başka spec per-3'ün 2026-09-10'una dokunmaz, bu yüzden
+  // ne kadraj fikstürleri ne de kapsam-kuralı akışı etkilenir.
+  { site_id: "s-2", personnel_id: "per-3", work_date: "2026-09-10", code: "worked", overtime_hours: null, section_id: null },
 ];
 
 function timesheetMonthDays(year: number, month: number): string[] {
@@ -3858,10 +3864,26 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           if (!cellInPeriod({ work_date: workDate } as MockTimesheetCell, period.year, period.month)) {
             return send(422, { detail: "hucre istenen donemin disinda" });
           }
+          // KİŞİ-GÜN ÇAKIŞMASI (409): gerçek backend bir personeli aynı güne
+          // İKİ şantiyede puantajlamaya izin vermez. Kural DAR tutulur —
+          // yalnız BAŞKA şantiyedeki kayda bakılır, aynı şantiyenin kendi
+          // hücresi (değiştirme) çakışma değildir.
+          const personnelId = String(raw.personnel_id ?? "");
+          const conflict = state.timesheetCells.find(
+            (c) =>
+              c.site_id !== site.id && c.personnel_id === personnelId && c.work_date === workDate,
+          );
+          if (conflict) {
+            const person = state.personnel.find((p) => p.id === personnelId);
+            const other = state.sites.find((s) => s.id === conflict.site_id);
+            return send(409, {
+              detail: `${person?.full_name ?? personnelId} ${workDate} gunu ${other?.name ?? conflict.site_id} santiyesinde kayitli.`,
+            });
+          }
           const overtime = raw.overtime_hours;
           next.push({
             site_id: site.id,
-            personnel_id: String(raw.personnel_id ?? ""),
+            personnel_id: personnelId,
             work_date: workDate,
             code: raw.code as MockTimesheetCode,
             overtime_hours:

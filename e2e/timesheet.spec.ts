@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+
 import { test, expect, type Page } from "@playwright/test";
 
 // F-PT T3 · Puantaj fonksiyonel e2e (görsel DEĞİL).
@@ -77,11 +79,85 @@ test.describe("puantaj matrisi (SALT-OKUR, Ağustos)", () => {
     // E5'te Meslek AYRI kolondur (ŞP'de alt satıra iner).
     await expect(page.getByRole("columnheader", { name: "Meslek" })).toBeVisible();
 
-    const download = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Dışa Aktar" }).click();
-    expect((await download).suggestedFilename()).toContain(".xlsx");
+    await expectXlsxDownload(page, "Dışa Aktar");
+  });
+
+  test("şantiye sekmesi de Excel indirir (ikili gövde BFF'ten sağlam geçer)", async ({ page }) => {
+    await login(page);
+    await page.goto(`${SITE_URL}?${AUGUST}`);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "A-Blok Şantiyesi — Puantaj" }),
+    ).toBeVisible();
+
+    await expectXlsxDownload(page, "Excel");
   });
 });
+
+/**
+ * İZİN DALLARI — oturum yükü kadraja özel olarak değiştirilir.
+ *
+ * Mock backend TEK kullanıcı döndürür (`patron`), bu yüzden rol değiştirmek
+ * yerine YALNIZ `/api/auth/me` yanıtına izin haritası eklenir: paylaşılan mock
+ * durumu HİÇ değişmez, dolayısıyla başka spec'lerle yarış yoktur
+ * (`site-planning-visual.spec.ts`in tek-uç değiştirme deseni).
+ */
+async function withTimesheetLevel(page: Page, level: string) {
+  await page.route("**/api/auth/me", async (route) => {
+    const response = await route.fetch();
+    const me = (await response.json()) as Record<string, unknown>;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      // `personnel` bilerek verilmez: "Personel Ekle" girişi ayrı modülün
+      // yetkisindedir ve bilinmezlik kuralıyla görünür kalır.
+      body: JSON.stringify({ ...me, permissions: { timesheet: level } }),
+    });
+  });
+}
+
+test.describe("puantaj izin dalları", () => {
+  test("saha mühendisi (view) matrisi görür, düzenleyemez — iki rotada da", async ({ page }) => {
+    await login(page);
+    await withTimesheetLevel(page, "view");
+
+    for (const url of [`${SITE_URL}?${AUGUST}`, `/puantaj?site=s-1&${AUGUST}`]) {
+      await page.goto(url);
+      await expect(page.getByRole("button", { name: "Kaydet" })).toBeDisabled();
+      await expect(
+        page.getByText("Puantaj kaydetme yetkiniz yok", { exact: false }).first(),
+      ).toBeVisible();
+      // Salt-okunur matris: rozetler durur, hücre butonu HİÇ basılmaz.
+      await expect(page.locator(".ts-table .ts-cell").first()).toBeVisible();
+      await expect(page.locator(".ts-table").getByRole("button")).toHaveCount(0);
+    }
+  });
+
+  test("PM (none) her iki rotada da AccessDenied görür", async ({ page }) => {
+    await login(page);
+    await withTimesheetLevel(page, "none");
+
+    for (const url of [`${SITE_URL}?${AUGUST}`, `/puantaj?site=s-1&${AUGUST}`]) {
+      await page.goto(url);
+      await expect(page.getByText("Bu alana yetkiniz yok").first()).toBeVisible();
+      await expect(page.locator(".ts-table")).toHaveCount(0);
+    }
+  });
+});
+
+/**
+ * İndirilen dosya GERÇEKTEN ikili mi — ad yetmez: BFF ikili gövdeyi JSON
+ * sanıp bozarsa dosya iner ama içeriği çöp olur. `PK\x03\x04` xlsx (zip)
+ * imzasıdır ve mock'un ürettiği baytlarla birebir aynıdır.
+ */
+async function expectXlsxDownload(page: Page, buttonName: string) {
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: buttonName }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toContain(".xlsx");
+  const path = await download.path();
+  const bytes = await readFile(path);
+  expect([...bytes.subarray(0, 4)]).toEqual([0x50, 0x4b, 0x03, 0x04]);
+}
 
 /**
  * Mutasyon akışları TEK dosyada SIRAYLA koşar: hepsi 2026-09 · s-1 kapsamını
@@ -141,6 +217,25 @@ test.describe("puantaj düzenleme (MUTASYON, Eylül · s-1)", () => {
 
     await page.reload();
     await expect(cell(page, "Hasan Demirci", "2 Eyl")).toHaveText("");
+  });
+
+  test("409 kişi-gün çakışması Türkçe basılır ve taslak KORUNUR", async ({ page }) => {
+    await login(page);
+    await page.goto(`${SITE_URL}?${SEPTEMBER}`);
+
+    // Ramazan Yıldız 10 Eylül'de BAŞKA şantiyede (s-2) kayıtlı — mock bu
+    // kişi-günü s-1'e yazmayı 409'la reddeder (gerçek backend kuralı).
+    await setCode(page, "Ramazan Yıldız", "10 Eyl", "Çalıştı (Ç)");
+    await page.getByRole("button", { name: "Kaydet" }).click();
+
+    const status = page.locator(".ts-save-status");
+    await expect(status).toContainText("Kişi-gün çakışması");
+    await expect(status).toContainText("B-Blok Şantiyesi");
+    // Taslak KAYBOLMAZ: kullanıcı yazdığını görmeye devam eder ve tekrar
+    // deneyebilir.
+    await expect(status).toContainText("Kaydedilmemiş 1 hücre");
+    await expect(cell(page, "Ramazan Yıldız", "10 Eyl")).toHaveText("Ç");
+    await expect(page.getByRole("button", { name: "Kaydet" })).toBeEnabled();
   });
 
   test("Escape İPTALDİR — taslağa hiçbir şey yazılmaz", async ({ page }) => {

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+import { NAME_PART_MAX_LENGTH } from "./constants";
 import { PersonnelCreateView, safeReturnTo } from "./PersonnelCreateView";
 import { useCreatePersonnel } from "@/lib/api/hooks/usePersonnelMutations";
 import { useSubcontractors } from "@/lib/api/hooks/useSubcontractors";
@@ -144,6 +145,18 @@ describe("PersonnelCreateView · mockup sadakati", () => {
   it("TC Kimlik No mockup'in maxlength=11 degerini korur (65)", () => {
     render(<PersonnelCreateView />);
     expect(screen.getByLabelText("TC Kimlik No")).toHaveAttribute("maxlength", "11");
+  });
+
+  it("Ad/Soyad sunucu sinirini DOM'da uygular — uzun giris KIRPILIR (422 olmaz)", async () => {
+    render(<PersonnelCreateView />);
+    const name = screen.getByLabelText("Ad", { exact: true });
+    const surname = screen.getByLabelText("Soyad");
+    // Sinir `full_name` sozlesmesinden turer (bkz. field-limits.test.ts).
+    expect(name).toHaveAttribute("maxlength", String(NAME_PART_MAX_LENGTH));
+    expect(surname).toHaveAttribute("maxlength", String(NAME_PART_MAX_LENGTH));
+
+    await userEvent.type(name, "a".repeat(NAME_PART_MAX_LENGTH + 10));
+    expect((name as HTMLInputElement).value).toHaveLength(NAME_PART_MAX_LENGTH);
   });
 });
 

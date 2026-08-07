@@ -218,6 +218,29 @@ describe("buildTimesheetView · FM saat toplami", () => {
     // 3.00 (03 Agu) + 2.50 (07 Agu); 06 Agu'nun saatsiz FM'i 0.
     expect(Number(build(null).totalOvertimeHours)).toBe(5.5);
   });
+
+  it("ondalik toplam STRING aritmetigidir — float 0.1+0.2 hatasi SIZMAZ", () => {
+    const view = buildTimesheetView({
+      year: 2026,
+      month: 8,
+      personnel: [],
+      matrix: {
+        ...MATRIX,
+        rows: [
+          {
+            ...MATRIX.rows[0],
+            cells: [
+              { work_date: "2026-08-03", code: "overtime", overtime_hours: "0.10", section_id: null },
+              { work_date: "2026-08-04", code: "overtime", overtime_hours: "0.20", section_id: null },
+            ],
+          },
+        ],
+      },
+      sectionId: null,
+    });
+    // Float toplami "0.30000000000000004" verirdi; `lib/decimal.ts` vermez.
+    expect(view.totalOvertimeHours).toBe("0.30");
+  });
 });
 
 describe("buildTimesheetView · K2 bolum suzgeci", () => {

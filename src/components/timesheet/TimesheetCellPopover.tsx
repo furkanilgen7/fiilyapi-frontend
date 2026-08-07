@@ -85,6 +85,12 @@ export function TimesheetCellPopover({
       label={`${label} — puantaj hücresi`}
       onClose={onClose}
       className={cx("ts-pop", `ts-pop--${variant}`)}
+      // ⚠️ T5'te ÖLÇÜLEN GERÇEK KUSUR: `.ts-table-scroll { overflow-x: auto }`
+      // dikey ekseni de `auto`ya çevirir (CSS kuralı), bu yüzden SON SATIRIN
+      // popover'ı kabın altında KESİLİYOR ve tabloya sahte dikey kaydırma
+      // ekliyordu (ölçüm: 428px içerik / 364px kap). `escapeOverflow` yüzeyi
+      // kabın dışına çıkarır; görsel dil aynen kalır.
+      escapeOverflow
     >
       <form
         className="ts-pop__form"
