@@ -31,14 +31,16 @@ async function login(page: Page) {
 test("yeni personel formu gorsel", async ({ page }) => {
   await login(page);
   await page.goto(`/personel/yeni?donus=${RETURN_TO}`);
-  await expect(page.getByRole("heading", { level: 1, name: "Yeni Personel Kaydı" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Yeni Personel Kaydı" }).first(),
+  ).toBeVisible();
 
   // Taşeron sorgusu (GET /subcontractors) çözüldü — seçici "Yükleniyor…"
   // durumunda dondurulmasın (yükleme durumu baseline'a girmesin).
-  await expect(page.getByLabel("Çalışan Tipi")).toBeEnabled();
+  await expect(page.getByLabel("Çalışan Tipi").first()).toBeEnabled();
   // Son kart (belge kutuları) render oldu — sayfanın tamamı kadrajda.
-  await expect(page.getByTestId("personnel-form-notices")).toBeVisible();
-  await expect(page.locator(".pf-actions")).toBeVisible();
+  await expect(page.getByTestId("personnel-form-notices").first()).toBeVisible();
+  await expect(page.locator(".pf-actions").first()).toBeVisible();
 
   await expect(page).toHaveScreenshot("personel-formu-yeni.png", { fullPage: true });
 });

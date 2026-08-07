@@ -12,6 +12,10 @@ import { test, expect, type Page } from "@playwright/test";
 // bu yüzden matris okuması EYLÜL (2026-09) oyun alanında yapılır.
 //
 // ⚠️ `getByRole("alert")` bu depoda YASAKTIR — görünür metinle iddia edilir.
+//
+// ⚠️ AKIŞ-SSR ÇİFT KOPYA: sunucu kopyası + hidrasyon kopyası kısa bir an yan
+// yana durur ve strict-mode ihlali verir (Linux CI run 31218793998, macOS'ta
+// görülmez). TEKİL eleman bekleyen her locator `.first()` alır.
 
 const SEPTEMBER = "year=2026&month=9";
 const SITE_URL = "/projeler/p-1/santiyeler/s-1/puantaj";
@@ -26,7 +30,10 @@ async function login(page: Page) {
 
 /** Alt eylem şeridindeki gönderim butonu (mockup 212; üst şeritte de var). */
 function submitButton(page: Page) {
-  return page.locator(".pf-actions").getByRole("button", { name: "Personeli Kaydet" });
+  return page
+    .locator(".pf-actions")
+    .first()
+    .getByRole("button", { name: "Personeli Kaydet" });
 }
 
 test("puantajdan girilir, personel kaydedilir ve matriste satır olur", async ({ page }) => {
@@ -35,24 +42,26 @@ test("puantajdan girilir, personel kaydedilir ve matriste satır olur", async ({
 
   // Giriş noktası (mockup'ta YOK — spec §4 S2(a) onaylı türetimi).
   await page.getByRole("link", { name: "Personel Ekle" }).first().click();
-  await expect(page.getByRole("heading", { level: 1, name: "Yeni Personel Kaydı" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Yeni Personel Kaydı" }).first(),
+  ).toBeVisible();
 
   // Doldurulabilir DÖRT alan (mockup 63, 64, 91, 99).
-  await page.getByLabel("Ad", { exact: true }).fill("Zeki");
-  await page.getByLabel("Soyad").fill("Karaca");
-  await page.getByLabel("Çalışan Tipi").selectOption("subcontractor");
+  await page.getByLabel("Ad", { exact: true }).first().fill("Zeki");
+  await page.getByLabel("Soyad").first().fill("Karaca");
+  await page.getByLabel("Çalışan Tipi").first().selectOption("subcontractor");
   // "Bağlı Taşeron" yalnız taşeron işçisinde açılır ve GERÇEK veriyi listeler.
-  const subcontractor = page.getByLabel("Bağlı Taşeron");
+  const subcontractor = page.getByLabel("Bağlı Taşeron").first();
   await expect(subcontractor).toBeEnabled();
   await subcontractor.selectOption({ label: "Aydın Elektrik Taah." });
-  await page.getByLabel("Meslek / Görev").selectOption("Elektrikçi");
+  await page.getByLabel("Meslek / Görev").first().selectOption("Elektrikçi");
 
   await submitButton(page).click();
 
   // Geldiği puantaj ekranına DÖNER (dönem korunur) ve yeni kişi satır alır.
   await expect(page).toHaveURL(new RegExp(`${SITE_URL}\\?.*month=9`));
   await expect(
-    page.locator(".ts-table").getByRole("rowheader", { name: /Zeki Karaca/ }),
+    page.locator(".ts-table").first().getByRole("rowheader", { name: /Zeki Karaca/ }),
   ).toBeVisible();
 });
 
@@ -61,13 +70,13 @@ test("mockup'ın devre-dışı alanları basılır ama doldurulamaz", async ({ p
   await page.goto("/personel/yeni");
 
   for (const label of ["TC Kimlik No", "Cep Telefonu", "Adres", "IBAN", "Atandığı Proje"]) {
-    await expect(page.getByLabel(label)).toBeDisabled();
+    await expect(page.getByLabel(label).first()).toBeDisabled();
   }
   // Taslak yok (mockup 39, 211) — ikisi de devre dışı.
-  await expect(page.getByRole("button", { name: "Taslak", exact: true })).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Taslak Kaydet" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Taslak", exact: true }).first()).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Taslak Kaydet" }).first()).toBeDisabled();
   // Gerekçeler GÖRÜNÜR yazar.
-  await expect(page.getByTestId("personnel-form-notices")).toContainText("Serbest Meslek");
+  await expect(page.getByTestId("personnel-form-notices").first()).toContainText("Serbest Meslek");
 });
 
 test("boş formda yalnız etkin alanlar doğrulanır — devre-dışı yıldızlar engellemez", async ({
@@ -82,5 +91,7 @@ test("boş formda yalnız etkin alanlar doğrulanır — devre-dışı yıldızl
   // Devre-dışı zorunlu alanlar için hata ÜRETİLMEZ.
   await expect(page.getByText(/TC Kimlik No zorunlu/)).toHaveCount(0);
   // Sayfada kalır (kayıt gitmedi).
-  await expect(page.getByRole("heading", { level: 1, name: "Yeni Personel Kaydı" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Yeni Personel Kaydı" }).first(),
+  ).toBeVisible();
 });

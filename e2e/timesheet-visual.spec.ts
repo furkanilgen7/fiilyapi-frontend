@@ -44,21 +44,23 @@ async function login(page: Page) {
  * `getByText` strict-mode ihlali verir (F-PL T5'te YALNIZ Linux CI'da patladı).
  */
 async function expectMatrixLoaded(page: Page) {
-  await expect(page.locator(".ts-table tbody tr")).not.toHaveCount(0);
+  await expect(page.locator(".ts-table").first().locator("tbody tr")).not.toHaveCount(0);
   await expect(page.locator(".ts-table .ts-cell").first()).toBeVisible();
 }
 
 test("genel puantaj (E5) matrisi gorsel", async ({ page }) => {
   await login(page);
   await page.goto(GENERAL_URL);
-  await expect(page.getByRole("heading", { level: 1, name: "Puantaj" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Puantaj" }).first()).toBeVisible();
   await expectMatrixLoaded(page);
 
   // E5'in AYRI "Meslek" kolonu + DÖRTLÜ legend (G yok) kadrajdadır.
-  await expect(page.getByRole("columnheader", { name: "Meslek" })).toBeVisible();
-  await expect(page.locator(".ts-legend--general .ts-legend__item")).toHaveCount(4);
+  await expect(page.getByRole("columnheader", { name: "Meslek" }).first()).toBeVisible();
+  await expect(
+    page.locator(".ts-legend--general").first().locator(".ts-legend__item"),
+  ).toHaveCount(4);
   // Şantiye seçici çözüldü — "Yükleniyor…" durumu baseline'a girmesin.
-  await expect(page.getByLabel("Şantiye")).toBeEnabled();
+  await expect(page.getByLabel("Şantiye").first()).toBeEnabled();
 
   await expect(page).toHaveScreenshot("puantaj-genel.png", { fullPage: true });
 });
@@ -67,16 +69,22 @@ test("santiye puantaji (SP) matrisi gorsel", async ({ page }) => {
   await login(page);
   await page.goto(SITE_URL);
   await expect(
-    page.getByRole("heading", { level: 1, name: "A-Blok Şantiyesi — Puantaj" }),
+    page.getByRole("heading", { level: 1, name: "A-Blok Şantiyesi — Puantaj" }).first(),
   ).toBeVisible();
   await expectMatrixLoaded(page);
 
   // ŞP farkları kadrajda: BEŞLİ legend, Tür rozeti, bölüm özet şeridi ve
   // ayak satırının `4+` / `3G` işaretleri.
-  await expect(page.locator(".ts-legend--site .ts-legend__item")).toHaveCount(5);
-  await expect(page.locator(".ts-summary__title")).toHaveText("Tüm Bölümler");
-  await expect(page.locator(".ts-table__foot-row").getByText("4+", { exact: true })).toBeVisible();
-  await expect(page.locator(".ts-table__foot-row").getByText("3G", { exact: true })).toBeVisible();
+  await expect(
+    page.locator(".ts-legend--site").first().locator(".ts-legend__item"),
+  ).toHaveCount(5);
+  await expect(page.locator(".ts-summary__title").first()).toHaveText("Tüm Bölümler");
+  await expect(
+    page.locator(".ts-table__foot-row").first().getByText("4+", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.locator(".ts-table__foot-row").first().getByText("3G", { exact: true }),
+  ).toBeVisible();
   // Beş kod rozetinin hepsi kadrajda — palet baseline'a tam giriyor.
   for (const modifier of ["worked", "leave", "holiday", "overtime", "temporary-duty"]) {
     await expect(page.locator(`.ts-table .ts-cell--${modifier}`).first(), modifier).toBeVisible();
@@ -92,8 +100,14 @@ test("puantaj hucre popover'i gorsel", async ({ page }) => {
 
   // DOLU bir FM hücresi seçilir: kadraj hem SEÇİLİ rozetin basılı durumunu
   // hem de yalnız FM'de açılan saat alanını taşır.
-  await page.locator(".ts-table").getByRole("button", { name: "Ramazan Yıldız · 3 Ağu puantajı" }).click();
-  const popover = page.getByRole("dialog", { name: "Ramazan Yıldız · 3 Ağu — puantaj hücresi" });
+  await page
+    .locator(".ts-table")
+    .first()
+    .getByRole("button", { name: "Ramazan Yıldız · 3 Ağu puantajı" })
+    .click();
+  const popover = page
+    .getByRole("dialog", { name: "Ramazan Yıldız · 3 Ağu — puantaj hücresi" })
+    .first();
   await expect(popover.locator(".ts-pop__code")).toHaveCount(5);
   await expect(popover.getByLabel("Fazla mesai saati")).toHaveValue("3");
   await expect(popover.getByRole("button", { name: "Temizle" })).toBeVisible();

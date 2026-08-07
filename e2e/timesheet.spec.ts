@@ -16,6 +16,14 @@ import { test, expect, type Page } from "@playwright/test";
 // yürür — orada iki farklı bölümün (sec-1 + sec-2) hücresi bilerek durur.
 //
 // ⚠️ `getByRole("alert")` bu depoda YASAKTIR — görünür metinle iddia edilir.
+//
+// ⚠️ AKIŞ-SSR ÇİFT KOPYA TUZAĞI (Linux CI'da fiilen patladı, run 31218793998):
+// streamed SSR sırasında sunucudan gelen kopya ile hidrasyonla eklenen kopya
+// kısa bir an YAN YANA durur; `.ts-legend` iki elemana çözülüp strict-mode
+// ihlali verdi. macOS'ta HİÇ görülmez — F-PL'nin `.plan-week-nav__label`
+// tuzağıyla aynı sınıf (`site-planning-visual.spec.ts`). Bu yüzden TEKİL eleman
+// bekleyen her locator `.first()` alır. `toHaveCount(0)` iddiaları İSTİSNADIR:
+// orada `.first()` anlamı bozar (yokluk zaten çift kopyadan etkilenmez).
 
 /** Görsel kadraj ayı — SALT-OKUR. */
 const AUGUST = "year=2026&month=8";
@@ -34,13 +42,18 @@ async function login(page: Page) {
 
 /** Hücre butonu — akış-SSR'da çift kopya riskine karşı matrise kapsamlanır. */
 function cell(page: Page, person: string, dayMonth: string) {
-  return page.locator(".ts-table").getByRole("button", { name: `${person} · ${dayMonth} puantajı` });
+  return page
+    .locator(".ts-table")
+    .first()
+    .getByRole("button", { name: `${person} · ${dayMonth} puantajı` });
 }
 
 /** Hücreye kod yazar: tıkla → rozet seç → (saat) → Uygula. */
 async function setCode(page: Page, person: string, dayMonth: string, code: string, hours?: string) {
   await cell(page, person, dayMonth).click();
-  const popover = page.getByRole("dialog", { name: `${person} · ${dayMonth} — puantaj hücresi` });
+  const popover = page
+    .getByRole("dialog", { name: `${person} · ${dayMonth} — puantaj hücresi` })
+    .first();
   await popover.getByRole("button", { name: code }).click();
   if (hours !== undefined) await popover.getByLabel("Fazla mesai saati").fill(hours);
   await popover.getByRole("button", { name: "Uygula" }).click();
@@ -48,8 +61,8 @@ async function setCode(page: Page, person: string, dayMonth: string, code: strin
 }
 
 async function saveAndExpectSuccess(page: Page) {
-  await page.getByRole("button", { name: "Kaydet" }).click();
-  const status = page.locator(".ts-save-status");
+  await page.getByRole("button", { name: "Kaydet" }).first().click();
+  const status = page.locator(".ts-save-status").first();
   await expect(status).toContainText("Puantaj kaydedildi.");
   await expect(status).not.toContainText("çakışma");
 }
@@ -60,14 +73,16 @@ test.describe("puantaj matrisi (SALT-OKUR, Ağustos)", () => {
     await page.goto(`${SITE_URL}?${AUGUST}`);
 
     await expect(
-      page.getByRole("heading", { level: 1, name: "A-Blok Şantiyesi — Puantaj" }),
+      page.getByRole("heading", { level: 1, name: "A-Blok Şantiyesi — Puantaj" }).first(),
     ).toBeVisible();
     // ŞP legend'i BEŞ ögedir (E5'in dördünden AYRI — kullanıcı kararı).
     for (const label of ["Çalıştı", "İzin", "Tatil", "Fazla Mesai", "Geçici Görev"]) {
-      await expect(page.locator(".ts-legend").getByText(label, { exact: true })).toBeVisible();
+      await expect(
+        page.locator(".ts-legend").first().getByText(label, { exact: true }),
+      ).toBeVisible();
     }
     // 03 Ağu: dört kişi çalıştı, biri FM ⇒ "4+" · 04 Ağu: üç çalışan + G ⇒ "3G".
-    const footer = page.locator(".ts-table__foot-row");
+    const footer = page.locator(".ts-table__foot-row").first();
     await expect(footer.getByText("4+", { exact: true })).toBeVisible();
     await expect(footer.getByText("3G", { exact: true })).toBeVisible();
   });
@@ -75,9 +90,9 @@ test.describe("puantaj matrisi (SALT-OKUR, Ağustos)", () => {
   test("genel puantaj ekranı (E5) matrisi basar ve Excel indirir", async ({ page }) => {
     await login(page);
     await page.goto(`/puantaj?site=s-1&${AUGUST}`);
-    await expect(page.getByRole("heading", { level: 1, name: "Puantaj" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Puantaj" }).first()).toBeVisible();
     // E5'te Meslek AYRI kolondur (ŞP'de alt satıra iner).
-    await expect(page.getByRole("columnheader", { name: "Meslek" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Meslek" }).first()).toBeVisible();
 
     await expectXlsxDownload(page, "Dışa Aktar");
   });
@@ -86,7 +101,7 @@ test.describe("puantaj matrisi (SALT-OKUR, Ağustos)", () => {
     await login(page);
     await page.goto(`${SITE_URL}?${AUGUST}`);
     await expect(
-      page.getByRole("heading", { level: 1, name: "A-Blok Şantiyesi — Puantaj" }),
+      page.getByRole("heading", { level: 1, name: "A-Blok Şantiyesi — Puantaj" }).first(),
     ).toBeVisible();
 
     await expectXlsxDownload(page, "Excel");
@@ -122,12 +137,12 @@ test.describe("puantaj izin dalları", () => {
 
     for (const url of [`${SITE_URL}?${AUGUST}`, `/puantaj?site=s-1&${AUGUST}`]) {
       await page.goto(url);
-      await expect(page.getByRole("button", { name: "Kaydet" })).toBeDisabled();
+      await expect(page.getByRole("button", { name: "Kaydet" }).first()).toBeDisabled();
       await expect(
         page.getByText("Puantaj kaydetme yetkiniz yok", { exact: false }).first(),
       ).toBeVisible();
       // Salt-okunur matris: rozetler durur, hücre butonu HİÇ basılmaz.
-      await expect(page.locator(".ts-table .ts-cell").first()).toBeVisible();
+      await expect(page.locator(".ts-table").first().locator(".ts-cell").first()).toBeVisible();
       await expect(page.locator(".ts-table").getByRole("button")).toHaveCount(0);
     }
   });
@@ -151,7 +166,7 @@ test.describe("puantaj izin dalları", () => {
  */
 async function expectXlsxDownload(page: Page, buttonName: string) {
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: buttonName }).click();
+  await page.getByRole("button", { name: buttonName }).first().click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toContain(".xlsx");
   const path = await download.path();
@@ -173,7 +188,7 @@ test.describe("puantaj düzenleme (MUTASYON, Eylül · s-1)", () => {
     await login(page);
     // sec-1 süzgeci açık: İsmail Aksoy'un 1 Eyl kaydı (sec-2) EKRANDA YOK.
     await page.goto(`${SITE_URL}?${SEPTEMBER}&section=sec-1`);
-    await expect(page.locator(".ts-summary__title")).toHaveText("Kat 6–10 Kaba İnşaat");
+    await expect(page.locator(".ts-summary__title").first()).toHaveText("Kat 6–10 Kaba İnşaat");
     await expect(cell(page, "İsmail Aksoy", "1 Eyl")).toHaveText("");
 
     // Süzülmüş görünümde bir düzenleme yapıp kaydet.
@@ -196,13 +211,13 @@ test.describe("puantaj düzenleme (MUTASYON, Eylül · s-1)", () => {
     // Osman Şahin'in Eylül'de HİÇ kaydı yok — satırı kartoteksten gelir (K1).
     await expect(cell(page, "Osman Şahin", "4 Eyl")).toHaveText("");
     await setCode(page, "Osman Şahin", "4 Eyl", "Fazla Mesai (FM)", "3,5");
-    await expect(page.locator(".ts-save-status")).toContainText("Kaydedilmemiş 1 hücre");
+    await expect(page.locator(".ts-save-status").first()).toContainText("Kaydedilmemiş 1 hücre");
     await saveAndExpectSuccess(page);
 
     await page.reload();
     await expect(cell(page, "Osman Şahin", "4 Eyl")).toHaveText("FM");
     // ŞP 119 — FM saat toplamı girilen saatten gelir.
-    await expect(page.locator(".ts-summary")).toContainText("3,5 saat fazla mesai");
+    await expect(page.locator(".ts-summary").first()).toContainText("3,5 saat fazla mesai");
   });
 
   test("Temizle kaydı SİLER (gövdede geçmeyen hücre silinir)", async ({ page }) => {
@@ -211,7 +226,9 @@ test.describe("puantaj düzenleme (MUTASYON, Eylül · s-1)", () => {
     await expect(cell(page, "Hasan Demirci", "2 Eyl")).toHaveText("Ç");
 
     await cell(page, "Hasan Demirci", "2 Eyl").click();
-    const popover = page.getByRole("dialog", { name: "Hasan Demirci · 2 Eyl — puantaj hücresi" });
+    const popover = page
+      .getByRole("dialog", { name: "Hasan Demirci · 2 Eyl — puantaj hücresi" })
+      .first();
     await popover.getByRole("button", { name: "Temizle" }).click();
     await saveAndExpectSuccess(page);
 
@@ -226,27 +243,29 @@ test.describe("puantaj düzenleme (MUTASYON, Eylül · s-1)", () => {
     // Ramazan Yıldız 10 Eylül'de BAŞKA şantiyede (s-2) kayıtlı — mock bu
     // kişi-günü s-1'e yazmayı 409'la reddeder (gerçek backend kuralı).
     await setCode(page, "Ramazan Yıldız", "10 Eyl", "Çalıştı (Ç)");
-    await page.getByRole("button", { name: "Kaydet" }).click();
+    await page.getByRole("button", { name: "Kaydet" }).first().click();
 
-    const status = page.locator(".ts-save-status");
+    const status = page.locator(".ts-save-status").first();
     await expect(status).toContainText("Kişi-gün çakışması");
     await expect(status).toContainText("B-Blok Şantiyesi");
     // Taslak KAYBOLMAZ: kullanıcı yazdığını görmeye devam eder ve tekrar
     // deneyebilir.
     await expect(status).toContainText("Kaydedilmemiş 1 hücre");
     await expect(cell(page, "Ramazan Yıldız", "10 Eyl")).toHaveText("Ç");
-    await expect(page.getByRole("button", { name: "Kaydet" })).toBeEnabled();
+    await expect(page.getByRole("button", { name: "Kaydet" }).first()).toBeEnabled();
   });
 
   test("Escape İPTALDİR — taslağa hiçbir şey yazılmaz", async ({ page }) => {
     await login(page);
     await page.goto(`${SITE_URL}?${SEPTEMBER}`);
     await cell(page, "Mehmet Kılıç", "5 Eyl").click();
-    const popover = page.getByRole("dialog", { name: "Mehmet Kılıç · 5 Eyl — puantaj hücresi" });
+    const popover = page
+      .getByRole("dialog", { name: "Mehmet Kılıç · 5 Eyl — puantaj hücresi" })
+      .first();
     await popover.getByRole("button", { name: "İzin (İ)" }).click();
     await page.keyboard.press("Escape");
     await expect(popover).toBeHidden();
-    await expect(page.locator(".ts-save-status")).toBeHidden();
-    await expect(page.getByRole("button", { name: "Kaydet" })).toBeDisabled();
+    await expect(page.locator(".ts-save-status").first()).toBeHidden();
+    await expect(page.getByRole("button", { name: "Kaydet" }).first()).toBeDisabled();
   });
 });
