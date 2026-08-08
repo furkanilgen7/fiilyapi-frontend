@@ -6,6 +6,16 @@ import { PAYMENT_PERIOD_OPTIONS, type PaymentPeriod } from "@/lib/contract-label
 import { FSO_TEXT, MAX_LENGTH, PCT_MAX, PCT_MIN } from "./constants";
 import type { ContractTermsValues } from "./form-state";
 
+// ⚠️ Bu kart PAYLAŞILIR (FSO formu + TSD detayı). Stillerini kendisi
+// getirmezse YALNIZ FSO'da doğru görünür — orada
+// `SubcontractorContractCreateView` bu iki dosyayı zaten yüklüyor. F-P5
+// baseline turunda TSD'de fiilen kartsız, tek kolonlu ve kutucukları tek
+// satıra sıkışmış hâlde yakalandı (dört kapı da 5. kapı da GÖRMEZ — stil
+// eksikliği DOM'u değiştirmez). Sınıfların kaynağı: `pf-card`/`pf-grid` →
+// form-shell, `fso-*` → bu klasörün CSS'i.
+import "@/styles/form-shell.css";
+import "./subcontractor-contract-form.css";
+
 /**
  * FSO 87-109 · "📝 Sözleşme Şartları" kartı.
  *
