@@ -37,12 +37,10 @@ const MODULE_LABELS: Record<string, string> = {
   // etiketi KULLANMAZ — yalnız `section_id` DOLU olup adı çözülemeyen
   // durumda gösterilir.
   section_name: "Bölüm adı çözümlemesiyle birlikte gelir",
-  // F-TH final inceleme F-1 (kalıcı kural: backend'i/rotası olmayan mockup
-  // öğesi SİLİNMEZ, devre dışı + görünür gerekçeyle basılır) — Taşeron
-  // Hakediş Oluştur mockup'ındaki "Sözleşmeyi Gör →" ve breadcrumb'daki
-  // taşeron adı + sözleşme no bağlantısının hedefi olan Taşeron Sözleşme
-  // Detay ekranı bu repo'da HENÜZ YOK.
-  subcontractor_contract_detail: "Taşeron sözleşme detay ekranı henüz eklenmedi",
+  // ⚠️ F-P5 T7'de KALDIRILDI: `subcontractor_contract_detail` etiketi F-TH'nin
+  // devre-dışı "Sözleşmeyi Gör →" + breadcrumb bağlantılarının gerekçesiydi.
+  // TSD rotası (`/sozlesmeler/taseron/[contractId]`) yazıldı, iki bağlantı da
+  // gerçek `Link`e döndü — etiketin tüketicisi kalmadı, yeniden eklenmemeli.
   // F-P5 T2 (SZL · Sözleşmeler listesi) — TAŞERON sekmesinde backend'in
   // BİLEREK `None` döndürdüğü iki alan (spec §2, openapi açıklaması):
   // hakediş toplamı KPI'ı (`ContractSummary.progress_payment_total`) ve satır

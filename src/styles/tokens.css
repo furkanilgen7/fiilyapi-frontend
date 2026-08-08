@@ -421,6 +421,21 @@
      yeni. */
   --cdist-max-width: 1100px; /* içerik kolonu genişliği (29) */
   --cdist-cell-width: 80px; /* kota girdisi genişliği (12, .dist-input) */
+
+  /* ── Taşeron Sözleşme Detayı · TSD (F-P5 T7) ──────────────────────────────
+     Kanon: projedesign "Taşeron Sözleşme Detay.dc.html". Parantez içi sayılar
+     o dosyanın SATIR numaralarıdır. Renklerin neredeyse tamamı mevcut palette
+     karşılanıyor: zincir rozetleri 49/55/60/65 = --color-text /
+     --color-primary / --color-accent-teal-start / --color-warning; zincir
+     bandı 47 = --color-info-tint + --color-primary-ring; kehribar bant 79 =
+     --color-amber-tint-cell + --color-warning-border-soft; tfoot 175 =
+     --color-amber-tint-cell + --color-warning. YALNIZ bandın gövde metni (83)
+     yeniydi — mevcut --color-warning-strong ondan AÇIK,
+     --color-warning-deep-text ondan KOYUdur (ikisi de kontrastı bozardı). */
+  --color-warning-body-text: #b45309; /* bilgi bandı gövde metni (83) */
+  --tsd-max-width: 1080px; /* içerik kolonu genişliği (30) */
+  --width-tsd-price-col: 130px; /* ⭐ Taşeron B.F. sütunu (101) */
+  --width-tsd-progress-col: 80px; /* Hakediş % sütunu (103) */
 }
 
 @keyframes fadeUp {

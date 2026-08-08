@@ -108,8 +108,16 @@ function contractListFilterQuery(
  */
 export function useSubcontractorProgressPayments(
   filter: SubcontractorProgressPaymentListFilter = {},
+  // F-P5 T7 · TSD'nin "Hakediş Geçmişi" bölümü sözleşmenin PROJESİNİ filtre
+  // olarak kullanır (uçta `contract_id` filtresi YOK, aşağıdaki nota bak) —
+  // proje kimliği sözleşme detayı gelene kadar BİLİNMEZ. Boş `project_id`
+  // ile çağırmak TÜM projelerin hakedişlerini çeker ve `total` tabanlı
+  // kırpılma korkuluğunu anlamsız kılardı; bu yüzden çağıran taraf sorguyu
+  // kapatabilir. Varsayılan `true` — mevcut çağıranlar etkilenmez.
+  options: { enabled?: boolean } = {},
 ): UseQueryResult<SubcontractorProgressPaymentListResponse, Error> {
   return useQuery({
+    enabled: options.enabled ?? true,
     queryKey: [
       SUBCONTRACTOR_PROGRESS_PAYMENTS_QUERY_KEY,
       filter.project_id ?? null,
@@ -143,16 +151,29 @@ export function useSubcontractorProgressPayments(
 export function useSubcontractorProgressPayment(
   paymentId: string,
 ): UseQueryResult<SubcontractorProgressPaymentDetail, Error> {
-  return useQuery({
+  return useQuery(subcontractorPaymentQueryOptions(paymentId));
+}
+
+/**
+ * Aynı detay sorgusunun `useQueries` ile PARALEL kullanılabilen hâli
+ * (`sitesQueryOptions`/`rolePermissionsQueryOptions` deseni). F-P5 T7'de
+ * TSD'nin "Hakediş %" kolonu sözleşmenin hakedişlerinin SATIRLARINA ihtiyaç
+ * duyar; satırlar yalnız DETAY şemasında vardır (liste öğesi taşımaz) ve
+ * toplulaştıran bir uç yoktur (openapi teyidi). Önbellek anahtarı
+ * `useSubcontractorProgressPayment` ile AYNIdır — aynı hakediş iki kez
+ * çekilmez.
+ */
+export function subcontractorPaymentQueryOptions(paymentId: string) {
+  return {
     enabled: paymentId.length > 0,
     queryKey: [SUBCONTRACTOR_PROGRESS_PAYMENT_QUERY_KEY, paymentId],
-    queryFn: async () =>
+    queryFn: async (): Promise<SubcontractorProgressPaymentDetail> =>
       unwrap(
         await backendClient.GET("/subcontractor-progress-payments/{payment_id}", {
           params: { path: { payment_id: paymentId } },
         }),
       ),
-  });
+  };
 }
 
 /**

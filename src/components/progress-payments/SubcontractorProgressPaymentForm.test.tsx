@@ -462,37 +462,42 @@ describe("SubcontractorProgressPaymentForm — dropped_orphan_count uyarısı", 
 });
 
 // Final inceleme F-1 (KALICI KURAL) — backend'i/rotası olmayan mockup öğesi
-// SİLİNMEZ: devre-dışı + görünür Türkçe gerekçeyle basılır. Eski davranış
-// (öğeyi hiç basmamak) artık İHLALDİR.
-describe("SubcontractorProgressPaymentForm — hiyerarşi şeridi ve devre-dışı sözleşme bağlantısı", () => {
-  const CONTRACT_DETAIL_HINT = "Taşeron sözleşme detay ekranı henüz eklenmedi";
+// SİLİNMEZ: devre-dışı + görünür Türkçe gerekçeyle basılır.
+//
+// ⚠️ F-P5 T7 GÜNCELLEMESİ: bu iki öğenin hedefi olan TSD rotası
+// (`/sozlesmeler/taseron/[contractId]`) YAZILDI → devre-dışı hâlleri ve
+// pending gerekçeleri KALDIRILDI, ikisi de GERÇEK bağlantı oldu. Aşağıdaki
+// testler eski "href TAŞIMAZ" iddialarının TERSİNİ kilitler; kalıcı kural
+// ihlal edilmedi (öğe hiç kaybolmadı, yalnız aktifleşti).
+describe("SubcontractorProgressPaymentForm — hiyerarşi şeridi ve sözleşme bağlantısı", () => {
+  const CONTRACT_HREF = `/sozlesmeler/taseron/${CONTRACT_ID}`;
 
-  it("'Sözleşmeyi Gör →' BASILIR ama devre dışıdır ve href TAŞIMAZ", async () => {
+  it("'Sözleşmeyi Gör →' ARTIK AKTİF: TSD rotasına gerçek href basar", async () => {
     renderForm({ mode: "create", contractId: CONTRACT_ID });
     await screen.findByTestId("thf-sequence-pending");
     const seeContract = screen.getByTestId("thf-see-contract-link");
     expect(seeContract).toHaveTextContent("Sözleşmeyi Gör →");
-    expect(seeContract).toHaveAttribute("aria-disabled", "true");
-    expect(seeContract).toHaveAttribute("title", CONTRACT_DETAIL_HINT);
-    expect(seeContract).not.toHaveAttribute("href");
+    expect(seeContract).toHaveAttribute("href", CONTRACT_HREF);
+    expect(seeContract).not.toHaveAttribute("aria-disabled");
+    expect(seeContract).not.toHaveAttribute("title");
     // Hiyerarşi şeridinin İÇİNDE durur (mockup O41'deki yeri).
     expect(screen.getByTestId("thf-hierarchy")).toContainElement(seeContract);
   });
 
-  it("breadcrumb'daki taşeron adı + sözleşme no da devre-dışı + gerekçeli basılır", async () => {
+  it("breadcrumb'daki taşeron adı + sözleşme no da TSD rotasına bağlanır", async () => {
     renderForm({ mode: "create", contractId: CONTRACT_ID });
     const crumb = await screen.findByTestId("thf-contract-crumb-link");
     expect(crumb).toHaveTextContent("Akın İnşaat");
-    expect(crumb).toHaveAttribute("aria-disabled", "true");
-    expect(crumb).toHaveAttribute("title", CONTRACT_DETAIL_HINT);
-    expect(crumb).not.toHaveAttribute("href");
+    expect(crumb).toHaveAttribute("href", CONTRACT_HREF);
+    expect(crumb).not.toHaveAttribute("aria-disabled");
   });
 
-  it("hiçbiri gerçek link DEĞİLDİR — ölü link üretilmez", async () => {
+  it("ikisi de gerçek link ROLÜNDEDİR — ölü/devre-dışı link kalmadı", async () => {
     renderForm({ mode: "create", contractId: CONTRACT_ID });
     await screen.findByTestId("thf-sequence-pending");
-    const links = screen.queryAllByRole("link", { name: /Sözleşmeyi Gör|Akın İnşaat/ });
-    for (const link of links) expect(link).not.toHaveAttribute("href");
+    const links = screen.getAllByRole("link", { name: /Sözleşmeyi Gör|Akın İnşaat/ });
+    expect(links.length).toBeGreaterThanOrEqual(2);
+    for (const link of links) expect(link).toHaveAttribute("href", CONTRACT_HREF);
   });
 
   // Final inceleme F-7 — mockup O21 "Hakediş #48 Oluştur"; create kipinde sıra
