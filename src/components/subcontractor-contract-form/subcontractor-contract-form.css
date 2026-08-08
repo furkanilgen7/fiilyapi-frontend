@@ -1,0 +1,277 @@
+/* FSO · Yeni Taşeron Sözleşmesi formu (F-P5 T6). Kanon: projedesign
+   "Form - Sözleşme Oluştur.dc.html"; parantez içi sayılar o dosyanın SATIR
+   numaralarıdır. Prefix `fso`. Kart/ızgara/alt eylem kabuğu paylaşılan
+   `styles/form-shell.css`ten (`pf-*`) gelir, burada YENİDEN ÇİZİLMEZ. */
+
+/* Salt-okunur kutu (64 · 78-81): `.f-in` ölçüsü, ama pasif zemin/kenarlık. */
+.fso-readonly {
+  border: 1px solid var(--color-divider);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-8);
+  padding: var(--space-form-y) var(--space-form-x);
+  font-size: var(--text-body);
+  color: var(--color-text-secondary);
+  min-height: 36px;
+}
+.fso-readonly--mono {
+  font-family: var(--font-mono);
+}
+
+/* 90 · Sözleşme No mono yazılır. */
+.fso-mono-input {
+  font-family: var(--font-mono);
+}
+
+/* 97 · şart kartının iki ızgarasını ayıran ince çizgi. */
+.fso-divider {
+  height: 1px;
+  background: var(--color-divider);
+  margin: var(--space-4) 0;
+}
+
+/* 104-108 · üç kutucuk alt alta. */
+.fso-checks {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* ── Poz Listesi kartı (112-187) ─────────────────────────────────────────── */
+/* 112: `padding:0; overflow:hidden` — kart kendi iç boşluğunu tabloya bırakır. */
+.fso-items {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* 113-117 · başlık şeridi */
+.fso-items__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+.fso-items__title {
+  font-size: var(--text-form-card-title); /* 114 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+/* 115 · "SZL-2025-001'den yüklendi" rozeti */
+.fso-items__badge {
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-8);
+}
+.fso-items__actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+/* 116 · metin-buton görünümü */
+.fso-items__add {
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+
+/* 118-120 · sarı bilgi bandı */
+.fso-items__banner {
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-amber-tint-cell);
+  border-bottom: 1px solid var(--color-warning-border-soft);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-warning-deep-text);
+}
+
+/* load-from-employer bildirimi + items_missing_price uyarısı: mockup'ta
+   çizili değildir (sunucu yanıtıdır) — bandın hemen altında, aynı şeritte
+   durur ki "sessiz yutma" olmasın. */
+.fso-items__notice {
+  padding: var(--space-2) var(--space-5);
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.fso-items__notice--warning {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-deep-text);
+}
+.fso-items__notice--error {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.fso-items__scroll {
+  overflow-x: auto;
+}
+.fso-items__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* 122-129 · başlık satırı */
+.fso-items__th {
+  padding: 10px 10px;
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+.fso-items__th--lead {
+  padding: 10px 14px; /* 123-124 */
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-section-head);
+}
+.fso-items__th--center {
+  text-align: center;
+}
+.fso-items__th--right {
+  text-align: right;
+}
+/* 127 · ⭐ Taşeron B.F. başlığı kehribar + 700 */
+.fso-items__th--star {
+  color: var(--color-warning-strong);
+  font-weight: var(--weight-bold);
+}
+/* 128 · Toplam Bedel başlığı yeşil */
+.fso-items__th--total {
+  color: var(--color-success);
+}
+.fso-items__th--action {
+  width: 36px; /* 129 */
+}
+
+/* 132 · grup başlığı (mavi) — 160'ta ikinci grup yeşile döner. */
+.fso-items__group-row {
+  background: var(--color-nav-active-bg);
+  border-bottom: 1px solid var(--color-primary-ring);
+}
+.fso-items__group-row--alt {
+  background: var(--color-success-tint);
+  border-bottom-color: var(--color-success-tint-border);
+}
+.fso-items__group-cell {
+  padding: var(--space-2) 14px;
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-bold);
+  color: var(--color-primary-hover);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-group);
+}
+.fso-items__group-row--alt .fso-items__group-cell {
+  color: var(--color-success-deep);
+}
+
+.fso-items__row {
+  border-bottom: 1px solid var(--color-divider); /* 133 */
+}
+.fso-items__td {
+  padding: 11px 10px; /* 136-140 */
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.fso-items__td--code {
+  padding: 11px 14px; /* 134 */
+  font-family: var(--font-mono);
+}
+.fso-items__td--name {
+  padding: 11px 12px; /* 135 */
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+.fso-items__td--center {
+  text-align: center;
+}
+.fso-items__td--input {
+  text-align: right;
+  width: 120px;
+}
+/* 139 · Toplam Bedel hücresi yeşil + mono + 700 */
+.fso-items__td--line-total {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--color-success);
+}
+/* `unit_price` boş: satır "girilmedi" der — 0 BASILMAZ. */
+.fso-items__td--missing {
+  font-family: inherit;
+  font-weight: var(--weight-regular);
+  color: var(--color-text-subtle);
+}
+
+/* 138 · Taşeron B.F. hücresi SARI vurgulu */
+.fso-items__price-input {
+  border-color: var(--color-warning-border-soft);
+  background: var(--color-amber-tint-cell);
+  color: var(--color-warning-strong);
+  font-weight: var(--weight-bold);
+}
+
+/* 140 · satır silme düğmesi */
+.fso-items__delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-subtle);
+  font-size: 14px;
+  line-height: 1;
+}
+.fso-items__delete:hover:not(:disabled) {
+  color: var(--color-danger);
+}
+.fso-items__delete:disabled {
+  cursor: not-allowed;
+}
+
+.fso-items__empty {
+  padding: var(--space-8);
+  text-align: center;
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+}
+
+/* 170-177 · alt satır aksiyonu (kesik kenarlıklı buton) */
+.fso-items__add-row {
+  background: var(--color-surface-2);
+}
+.fso-items__add-row-btn {
+  border-style: dashed;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* 180-184 · TOPLAM SÖZLEŞME BEDELİ */
+.fso-items__foot-row {
+  background: var(--color-amber-tint-cell);
+  border-top: var(--border-width-total) solid var(--color-warning);
+}
+.fso-items__foot-cell {
+  padding: 13px 14px;
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.fso-items__foot-cell--value {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--text-kpi-value);
+  color: var(--color-warning);
+}
+
+@media (max-width: 1024px) {
+  .fso-items__scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+}
