@@ -1,0 +1,254 @@
+/* TL · Taşeron Listesi (F-P5 T5). Kanon: projedesign "Taşeron Listesi.dc.html";
+   parantez içi sayılar o dosyanın SATIR numaralarıdır. Prefix `tl`.
+   Kabuk (14-20) uygulamanın Topbar/Sidebar'ıdır, burada çizilmez. */
+.tl {
+  animation: var(--anim-fade-up); /* 22 */
+}
+
+/* Başlık şeridi (23-32). */
+.tl__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px; /* 23 */
+}
+.tl__title {
+  font-size: 24px; /* 24 */
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.4px;
+  color: var(--color-text);
+}
+.tl__subtitle {
+  font-size: 12px; /* 24 */
+  color: var(--color-text-subtle);
+  margin-top: 3px;
+}
+.tl__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* 25 */
+}
+/* 28 · arama kutusunun genişliği mockup'ta 160px'lik iç alandır. */
+.tl__search {
+  width: 200px;
+}
+/* Kırpılma + eşleşmeyen sözleşme bantları — sessiz yanlış sayı yerine görünür not. */
+.tl__notice {
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--color-warning-deep-text);
+  background: var(--color-orange-tint);
+  border: 1px solid var(--color-orange-tint-border);
+  border-radius: var(--radius-8);
+  padding: 8px 12px;
+}
+
+/* KPI şeridi (34-38): 4 eşit kart, karta özel değer rengi. */
+.tl-kpi {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3); /* 34 */
+  margin-bottom: 20px;
+}
+.tl-kpi__card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg); /* 35 */
+  padding: var(--space-kpi-card);
+  border: 1px solid var(--color-border);
+}
+.tl-kpi__label {
+  font-size: var(--text-kpi-label); /* 35 */
+  color: var(--color-text-subtle);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+.tl-kpi__value {
+  font-size: var(--text-kpi-value); /* 35 */
+  font-weight: var(--weight-bold);
+}
+/* Mono YALNIZ para kartında (37) — sayaç kartlarında (35, 36, 38) yok. */
+.tl-kpi__value--mono {
+  font-family: var(--font-mono);
+  font-size: 20px; /* 37 — para kartı bir punto küçüktür */
+}
+.tl-kpi__value--neutral {
+  color: var(--color-text); /* 35 */
+}
+.tl-kpi__value--success {
+  color: var(--color-success); /* 36 */
+}
+.tl-kpi__value--danger {
+  color: var(--color-danger); /* 37 */
+}
+.tl-kpi__value--warning {
+  color: var(--color-warning); /* 38 */
+}
+/* Zarif düşüş: hakediş listesi kırpıldığında para KPI'ları basılmaz. */
+.tl-kpi__value--pending {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+
+/* Tablo kabuğu (42-107). */
+.tl-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* 42 */
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.tl-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.tl-table__th {
+  padding: 11px 12px; /* 46-52 */
+  background: var(--color-surface-2); /* 44 */
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  white-space: nowrap;
+}
+.tl-table__th:first-child {
+  padding-left: 16px; /* 45 — ilk kolon 11px 16px */
+}
+.tl-table__th--left {
+  text-align: left;
+}
+.tl-table__th--right {
+  text-align: right;
+}
+.tl-table__th--center {
+  text-align: center;
+}
+.tl-row {
+  border-bottom: 1px solid var(--color-divider); /* 55 */
+}
+.tl-row:last-child {
+  border-bottom: none; /* 95 — son satırda kenarlık yok */
+}
+.tl-row--clickable {
+  cursor: pointer; /* 55 */
+}
+.tl-row--clickable:hover {
+  background: var(--color-neutral-soft);
+}
+.tl-table__td {
+  padding: 13px 12px; /* 57-63 */
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  vertical-align: middle;
+}
+.tl-table__td:first-child {
+  padding-left: 16px; /* 56 — ilk kolon 13px 16px */
+}
+.tl-table__td--right {
+  text-align: right;
+}
+.tl-table__td--center {
+  text-align: center;
+}
+.tl-table__td--count {
+  font-weight: var(--weight-semibold); /* 58 */
+  color: var(--color-text);
+}
+.tl-table__td--mono {
+  font-family: var(--font-mono); /* 59, 60 */
+}
+.tl-table__td--strong {
+  font-weight: var(--weight-bold); /* 59 */
+  color: var(--color-text);
+}
+.tl-table__name {
+  font-size: 13px; /* 56 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.tl-table__contact {
+  font-size: var(--text-small); /* 56 — "VKN: … · İletişim: …" */
+  color: var(--color-text-subtle);
+}
+.tl-table__muted {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+.tl-table__detail {
+  font-size: 12px; /* 63 */
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.tl-row--clickable:hover .tl-table__detail {
+  text-decoration: underline;
+}
+.tl-table__detail:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+/* Sözleşmesi olmayan firma: link SİLİNMEZ, devre dışı basılır. */
+.tl-table__detail--disabled {
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+/* Kategori rozeti (57/67/77/87/97) + "Bekleyen Hak." rozeti (61).
+   Ölçüler mockup'tan; renkler `subcontractor-category.ts` haritasından. */
+.tl-badge {
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  padding: 2px 8px;
+  border-radius: var(--radius-8);
+}
+/* 87 · "Doğrama" zemini success-soft'tan bir ton AÇIKTIR. */
+.tl-badge--success {
+  background: var(--color-success-tint);
+}
+/* 67 · kehribar rozetin metni primitive'den KOYU tondadır. */
+.tl-badge--warning {
+  color: var(--color-warning-strong);
+}
+/* 77, 97 · mor `Badge` varyantı yoktur; nötr taban token'la boyanır. */
+.tl-badge--purple {
+  background: var(--color-accent-purple-soft);
+  color: var(--color-accent-purple);
+}
+/* 61 · dolu "Bekleyen Hak." tutarı kehribar; ₺0 yeşil (81) — Badge varyantı. */
+.tl-badge--pending-due {
+  color: var(--color-warning-strong);
+}
+
+/* 62 · "Puan" hücresi — ONAYLI KARAR S4: yıldız İCAT EDİLMEZ. */
+.tl-rating--pending {
+  font-size: 13px;
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+
+.tl-message {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+.tl-empty {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-8);
+  text-align: center;
+}
+.tl-empty__title {
+  font-size: 14px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.tl-empty__hint {
+  margin-top: var(--space-1);
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}

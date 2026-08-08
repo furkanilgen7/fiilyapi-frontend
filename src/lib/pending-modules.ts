@@ -62,6 +62,12 @@ const MODULE_LABELS: Record<string, string> = {
   // kipindedir (`/projeler/yeni`; düzenleme rotası repoda yok).
   employer_contract_edit:
     "İşveren sözleşmesi proje formunda kurulur; ayrı düzenleme ekranı henüz yok",
+  // F-P5 T5 (TL · Taşeron Listesi 51/62 "PUAN" kolonu) — ONAYLI KARAR S4:
+  // taşeron uçlarının HİÇBİRİNDE değerlendirme/puan alanı yoktur
+  // (`SubcontractorResponse`: id/name/tax_number/contact_person/phone/email/
+  // category/is_active). Kolon SİLİNMEZ, yıldız İCAT EDİLMEZ — "—" + bu
+  // gerekçe basılır (backend adayı olarak ROADMAP'e yazılır).
+  subcontractor_rating: "Taşeron değerlendirme özelliği henüz yok",
 };
 
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";
