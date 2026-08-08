@@ -1060,11 +1060,15 @@ function buildContractDistributionResponse(state: MockState, projectId: string) 
       total_amount: money2(items.reduce((sum, i) => sum + Number(i.amount), 0)),
     };
   });
+  // F-P5 T4: dağıtılmamış kalemler SABİT DEĞİL, allocation'lardan türetilir —
+  // aksi hâlde POZ ekranının uyarı bandı (mockup 63-66) e2e'de hiç görünmez ve
+  // kaydetmenin bağ koparma yolu kanıtlanamaz.
+  const undistributed = contractItems.filter((i) => i.allocations.length === 0);
   return {
     sites,
     groups,
-    undistributed_item_count: 0,
-    undistributed_item_names: [] as string[],
+    undistributed_item_count: undistributed.length,
+    undistributed_item_names: undistributed.map((i) => i.description),
     site_summaries: siteSummaries,
     distributed_item_count: contractItems.filter((i) => i.allocations.length > 0).length,
     total_item_count: contractItems.length,

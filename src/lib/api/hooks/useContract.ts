@@ -15,6 +15,11 @@ export type ContractDistributionItem = components["schemas"]["ContractDistributi
 export type ContractDistributionSite = components["schemas"]["ContractDistributionSite"];
 export type ContractDistributionAllocation =
   components["schemas"]["ContractDistributionAllocation"];
+// F-P5 T4 · POZ 168-187 şantiye kota özeti kartlarının satır tipi.
+export type ContractDistributionSiteSummary =
+  components["schemas"]["ContractDistributionSiteSummary"];
+export type ContractDistributionSiteItem =
+  components["schemas"]["ContractDistributionSiteItem"];
 export type EmployerContractDetail = components["schemas"]["EmployerContractDetail"];
 
 // F-P5 T1 · E14 "İş Kalemleri" sekmesi — gruplar + kalemler

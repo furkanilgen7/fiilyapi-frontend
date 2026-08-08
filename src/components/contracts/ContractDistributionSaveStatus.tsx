@@ -1,0 +1,62 @@
+import "./contract-distribution.css";
+
+/**
+ * Kaydetme akışının GÖRÜNÜR sonucu (`TimesheetSaveStatus`/`PlanSaveStatus`
+ * deseni). Mockup'ta karşılığı yoktur — repo kuralı: kaydedilmemiş değişiklik
+ * sessiz kalmaz, hata gerekçesiyle yazılır, "kaydedildi" ancak sunucu yazdıktan
+ * sonra çıkar.
+ *
+ * `role="alert"` KULLANILMAZ (F-P6 dersi; e2e'de yasak) — görünür metin yeter.
+ */
+export interface ContractDistributionSaveStatusProps {
+  dirtyCount: number;
+  isSaving: boolean;
+  isSaved: boolean;
+  /** Gövdeye ALINMAYAN hücrelerin Türkçe gerekçeleri (T1 üreticisinden). */
+  rejectionMessages: readonly string[];
+  /** Sunucu hatası (422 dahil) — backend `detail`i olduğu gibi basılır. */
+  saveError: string | null;
+}
+
+export function ContractDistributionSaveStatus({
+  dirtyCount,
+  isSaving,
+  isSaved,
+  rejectionMessages,
+  saveError,
+}: ContractDistributionSaveStatusProps) {
+  const lines: { text: string; isFailure: boolean }[] = [];
+
+  if (isSaving) {
+    lines.push({ text: "Kaydediliyor…", isFailure: false });
+  } else if (dirtyCount > 0) {
+    lines.push({
+      text: `Kaydedilmemiş ${dirtyCount} hücre değişikliği var — “Dağılımı Kaydet” ile yazın. Dokunulmayan kotalar olduğu gibi korunur.`,
+      isFailure: false,
+    });
+  } else if (isSaved) {
+    lines.push({ text: "Poz dağılımı kaydedildi.", isFailure: false });
+  }
+
+  for (const message of rejectionMessages) lines.push({ text: message, isFailure: true });
+  if (saveError !== null) lines.push({ text: saveError, isFailure: true });
+
+  if (lines.length === 0) return null;
+
+  return (
+    <div className="cdist-status" data-testid="cdist-status">
+      {lines.map((line) => (
+        <p
+          key={line.text}
+          className={
+            line.isFailure
+              ? "cdist-status__line cdist-status__line--failed"
+              : "cdist-status__line"
+          }
+        >
+          {line.text}
+        </p>
+      ))}
+    </div>
+  );
+}

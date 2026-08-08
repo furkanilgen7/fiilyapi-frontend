@@ -410,6 +410,17 @@
   --text-contract-title: 22px; /* sözleşme başlığı h1 (72) */
   --text-contract-metric: 15px; /* Sözleşme Bedeli metriği, mono (81) */
   --size-payment-bar: 8px; /* Hakediş Özeti ilerleme çubuğu yüksekliği (131) */
+
+  /* ── Poz Dağılımı · POZ (F-P5 T4) ─────────────────────────────────────────
+     Kanon: projedesign "İşveren Sözleşme - Poz Dağılımı.dc.html". Parantez içi
+     sayılar o dosyanın SATIR numaralarıdır. Mockup'ın renklerinin TAMAMI
+     mevcut palette karşılanıyor — YENİ HEX YOK (kırmızı Kalan rozeti 161 =
+     --color-danger-soft/--color-danger-strong; dağıtılmamış satır zemini 153 =
+     --color-audit-danger-row-bg; uyarı bandı 63-65 = --color-orange-tint/
+     --color-orange-tint-border/--color-warning-deep-text). Yalnız iki ölçü
+     yeni. */
+  --cdist-max-width: 1100px; /* içerik kolonu genişliği (29) */
+  --cdist-cell-width: 80px; /* kota girdisi genişliği (12, .dist-input) */
 }
 
 @keyframes fadeUp {

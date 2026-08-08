@@ -1,0 +1,308 @@
+/* POZ · İşveren Sözleşmesi Poz Dağılımı (F-P5 T4). Kanon: projedesign
+   "İşveren Sözleşme - Poz Dağılımı.dc.html"; parantez içi sayılar o dosyanın
+   SATIR numaralarıdır. Prefix `cdist`.
+
+   ⚠️ Poz TABLOSUNUN ölçüleri BURADA YENİDEN TÜRETİLMEZ: `.ecd-items__*`
+   sınıfları (T3, `employer-contract-detail.css`) zaten bu mockup'ın 69-135
+   satırlarından çıkarılmıştır ve PAYLAŞILIR. Burada yalnız bu ekrana ÖZGÜ
+   olanlar var: açıklama bandı (32-39), başlık kartı (42-60), dağıtılmamış
+   uyarısı (63-66), şantiye renkli kolon/hücre (82-83, 98-99), dağıtılmamış
+   satır (153-155), kırmızı Kalan rozeti (161) ve özet kartları (168-187).
+
+   Mockup'ın üst şeridi (14-26) uygulamanın Topbar'ıdır — YENİDEN ÇİZİLMEZ
+   (SZL/E14 ile aynı karar). Şeridin "Dağılımı Kaydet" butonu (24) ve
+   "SZL-… / Poz Dağılımı" kırıntısı (19-21) sayfanın kendi eylem satırına
+   iner; kabukta eylem yuvası yoktur. */
+.cdist {
+  animation: var(--anim-fade-up); /* 29 */
+  max-width: var(--cdist-max-width); /* 29 */
+}
+
+/* 18-25: kırıntı + "Dağılımı Kaydet" tek satırda (şeridin kendisi çizilmez). */
+.cdist__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+.cdist__crumb {
+  display: flex;
+  align-items: center;
+  gap: 5px; /* 18 */
+  font-size: 12px; /* 18 */
+}
+/* 19: sözleşme no bağlantısı — E14'e döner. */
+.cdist__back {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.cdist__back:hover {
+  text-decoration: underline;
+}
+/* 20 */
+.cdist__crumb-sep {
+  color: var(--color-border);
+}
+/* 21 */
+.cdist__crumb-current {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+/* 23-24: buton şeridin sağ ucundadır. */
+.cdist__bar-actions {
+  margin-left: auto;
+}
+
+.cdist__message {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+/* ── Açıklama bandı (32-39) ───────────────────────────────────────────────── */
+.cdist-intro {
+  background: var(--color-nav-active-bg); /* 32 */
+  border: 1px solid var(--color-primary-ring);
+  border-radius: var(--radius-lg); /* 12px — 32 */
+  padding: 14px 18px;
+  margin-bottom: var(--space-5); /* 20px — 32 */
+}
+.cdist-intro__title {
+  font-size: var(--text-body); /* 13px — 33 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary-hover);
+  margin-bottom: 4px;
+}
+.cdist-intro__text {
+  font-size: 12px; /* 34 */
+  color: var(--color-primary-light);
+  line-height: var(--leading-loose); /* 1.7 — 34 */
+}
+
+/* ── Sözleşme başlık kartı (42-60) ────────────────────────────────────────── */
+.cdist-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* 43 */
+  gap: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* 42 */
+  box-shadow: var(--shadow-card);
+  padding: 18px var(--space-6); /* 42 */
+  margin-bottom: var(--space-4); /* 16px — 42 */
+}
+.cdist-head__no {
+  font-size: var(--text-small); /* 11px — 45 */
+  color: var(--color-text-subtle);
+  margin-bottom: 4px;
+}
+.cdist-head__title {
+  font-size: var(--text-lg); /* 18px — 46 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.cdist-head__parties {
+  font-size: 12px; /* 47 */
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+.cdist-head__stats {
+  display: flex;
+  gap: var(--space-2); /* 49 */
+  align-items: center;
+}
+/* 50-57: iki küçük sayaç kutusu — Şantiyeler (mavi) · Dağıtılan Poz (yeşil). */
+.cdist-stat {
+  text-align: center;
+  padding: var(--space-2) 14px; /* 50 */
+  border-radius: var(--radius-8);
+}
+.cdist-stat--sites {
+  background: var(--color-nav-active-bg); /* 50 */
+}
+.cdist-stat--items {
+  background: var(--color-success-tint); /* 54 */
+}
+.cdist-stat__label {
+  font-size: var(--text-small); /* 11px — 51 */
+  margin-bottom: 2px;
+}
+.cdist-stat__value {
+  font-size: var(--text-lg); /* 18px — 52 */
+  font-weight: var(--weight-bold);
+}
+.cdist-stat--sites .cdist-stat__label,
+.cdist-stat--sites .cdist-stat__value {
+  color: var(--color-primary); /* 51-52 */
+}
+.cdist-stat--items .cdist-stat__label,
+.cdist-stat--items .cdist-stat__value {
+  color: var(--color-success); /* 55-56 */
+}
+
+/* ── Dağıtılmamış uyarı bandı (63-66) ─────────────────────────────────────── */
+.cdist-warning {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2); /* 63 */
+  background: var(--color-orange-tint); /* 63 */
+  border: 1px solid var(--color-orange-tint-border);
+  border-radius: var(--radius-10); /* 63 */
+  padding: 11px var(--space-4);
+  margin-bottom: var(--space-4);
+  font-size: 12px; /* 65 */
+  color: var(--color-warning-deep-text); /* 65 */
+}
+
+/* ── Tablo: yalnız bu ekrana özgü parçalar (gerisi `.ecd-items__*`) ───────── */
+/* 72: başlık şeridinin sağındaki yumuşak kural metni. */
+.cdist-grid__rule {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+/* 153: hiç dağıtılmamış kalemin satır zemini. */
+.cdist-grid__row--undistributed {
+  background: var(--color-audit-danger-row-bg);
+}
+/* 155: ad hücresinin altındaki kırmızı uyarı. */
+.cdist-grid__row-warning {
+  display: block;
+  font-weight: var(--weight-regular);
+  font-size: 10px;
+  color: var(--color-danger);
+  margin-top: 2px;
+}
+/* 161: kalan varsa rozet KIRMIZIdır (POZ kanonu). `.ecd-items__remaining`
+   kabuğu paylaşılır, yalnız ton bu ekranda mockup'a çekilir. */
+.cdist-grid__remaining--open {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
+}
+/* 98-99: hücre girdisi — 80px genişlik, sağa dayalı, mono. */
+.cdist-cell {
+  text-align: right;
+}
+.cdist-cell .input {
+  width: var(--cdist-cell-width); /* 80px — 12 (.dist-input) */
+  text-align: right;
+  font-family: var(--font-mono);
+}
+
+/* ── Şantiye kolon/hücre/kart renk sırası ─────────────────────────────────── */
+/* İlk iki ton mockup'tan BİREBİR (82/98/169-175 mavi · 83/99/178-184 yeşil);
+   3-4 yalnız ikiden fazla şantiyede devreye giren genişletmedir. */
+.cdist-accent-0 {
+  --cdist-accent-tint: var(--color-nav-active-bg);
+  --cdist-accent-line: var(--color-primary-ring);
+  --cdist-accent-text: var(--color-primary);
+  --cdist-accent-deep: var(--color-primary-hover);
+}
+.cdist-accent-1 {
+  --cdist-accent-tint: var(--color-success-tint);
+  --cdist-accent-line: var(--color-success-tint-border);
+  --cdist-accent-text: var(--color-success);
+  --cdist-accent-deep: var(--color-success-deep);
+}
+.cdist-accent-2 {
+  --cdist-accent-tint: var(--color-orange-tint);
+  --cdist-accent-line: var(--color-orange-tint-border);
+  --cdist-accent-text: var(--color-orange-tint-text);
+  --cdist-accent-deep: var(--color-orange-tint-text);
+}
+.cdist-accent-3 {
+  --cdist-accent-tint: var(--color-accent-purple-tint);
+  --cdist-accent-line: var(--color-accent-purple-line);
+  --cdist-accent-text: var(--color-accent-purple);
+  --cdist-accent-deep: var(--color-accent-purple-deep);
+}
+/* 82-83: kota kolon başlıkları şantiyenin tonunda ve KALINdır. */
+.cdist-grid__th-site {
+  color: var(--cdist-accent-text);
+  font-weight: var(--weight-bold);
+}
+/* 98-99: girdi kenarı + zemini de aynı tondadır. */
+.cdist-cell .input {
+  border-color: var(--cdist-accent-line);
+  background: var(--cdist-accent-tint);
+}
+/* Boş (dağıtılmamış) hücre mockup'ta RENKSİZ açılır (159-160). */
+.cdist-cell--empty .input {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+
+/* ── Şantiye özet kartları (168-187) ──────────────────────────────────────── */
+.cdist-summaries {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 168 */
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+.cdist-summary {
+  background: var(--cdist-accent-tint); /* 169, 178 */
+  border: 1px solid var(--cdist-accent-line);
+  border-radius: var(--radius-14);
+  padding: 18px;
+}
+.cdist-summary__title {
+  font-size: var(--text-body); /* 13px — 170 */
+  font-weight: var(--weight-bold);
+  color: var(--cdist-accent-deep);
+  margin-bottom: var(--space-3); /* 12px — 170 */
+}
+.cdist-summary__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px; /* 171 */
+}
+.cdist-summary__row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px; /* 172 */
+  padding: 6px 0;
+  border-bottom: 1px solid var(--cdist-accent-line);
+}
+.cdist-summary__row-label {
+  color: var(--color-text-secondary); /* 172 */
+}
+.cdist-summary__row-value {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  font-family: var(--font-mono); /* 172 */
+}
+.cdist-summary__total {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-body); /* 13px — 175 */
+  font-weight: var(--weight-bold);
+  padding: var(--space-2) 0;
+  color: var(--cdist-accent-deep);
+}
+.cdist-summary__total-value {
+  font-family: var(--font-mono); /* 175 */
+}
+.cdist-summary__empty {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* ── Kaydetme durumu (mockup'ta yok — repo deseni: sessiz hata yasak) ─────── */
+.cdist-status {
+  margin-bottom: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cdist-status__line {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.cdist-status__line--failed {
+  color: var(--color-danger-strong);
+}
+
+@media (max-width: 1024px) {
+  .cdist-summaries {
+    grid-template-columns: 1fr;
+  }
+}
