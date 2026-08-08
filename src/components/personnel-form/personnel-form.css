@@ -1,0 +1,143 @@
+/* Personel Ekle formuna özgü bloklar (`.pnf-*`).
+   Mockup: projedesign "Form - Personel Ekle.dc.html" (1440px).
+   Paylaşılan `.pf-*` kabuğu `src/styles/form-shell.css`'tedir; bu dosya ONDAN
+   SONRA import edilir (özgü olan kazansın). Çıplak hex/px yok — tokens.css. */
+
+/* ── Kimlik kartı düzeni (mockup satır 53) ──────────────────────────────── */
+/* 53: display flex; gap 20px — solda fotoğraf, sağda iki sütunlu ızgara */
+.pnf-identity {
+  display: flex;
+  gap: var(--space-5);
+}
+.pnf-identity > .pf-grid {
+  flex: 1;
+}
+
+/* 54: flex-shrink 0 */
+.pnf-photo-col {
+  flex-shrink: 0;
+}
+
+/* 55: 110×130; 2px dashed #cbd5e1; radius 10px; bg #f8fafc
+   Yükleme KAPALI: `<input type="file">` render edilmez, imleç "default". */
+.pnf-photo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 110px;
+  height: 130px;
+  border: 2px dashed var(--color-dashed-border);
+  border-radius: var(--radius-10);
+  background: var(--color-surface-2);
+  cursor: default;
+}
+
+/* 57: çizgi rengi #94a3b8 */
+.pnf-photo__icon {
+  color: var(--color-text-subtle);
+}
+
+/* 58: 11px #94a3b8; ortalı, iki satır */
+.pnf-photo__label {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  text-align: center;
+  max-width: 70%;
+}
+
+/* 60: .hint + text-align center; genişlik fotoğraf kutusuyla aynı */
+.pnf-photo__hint {
+  width: 110px;
+  margin-top: var(--space-form-hint-gap);
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  text-align: center;
+}
+
+/* ── İş bilgileri kartı ─────────────────────────────────────────────────── */
+/* 111: 1px yükseklikte #f1f5f9 ayraç, dikey 16px boşluk */
+.pnf-divider {
+  height: 1px;
+  background: var(--color-surface-muted);
+  margin: var(--space-4) 0;
+}
+
+/* Taşeron seçicisinin görünür notu (mockup'ta yok; sessiz boş liste yasağı) */
+.pnf-picker-note {
+  margin-top: var(--space-2);
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* Ücret bloğunun görünür pending gerekçesi (mockup'ta yok) */
+.pnf-block-note {
+  margin-bottom: var(--space-3);
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* 114: sayısal alan sağa yaslı */
+.pnf-amount {
+  text-align: right;
+}
+
+/* ── Belge kartı uyarı kutusu (mockup satır 195-200) ────────────────────── */
+/* 195: mt 12px; padding 11px 14px; bg #fff7ed; radius 9px; sol kenar 3px #f59e0b */
+.pnf-warning {
+  margin-top: var(--space-3);
+  padding: 11px 14px;
+  background: var(--color-orange-tint);
+  border-radius: var(--radius-9);
+  border-left: 3px solid var(--color-warning);
+}
+
+/* 196: 12px #92400e; line-height 1.6 */
+.pnf-warning__text {
+  font-size: var(--text-xs);
+  color: var(--color-warning-deep-text);
+  line-height: var(--leading-relaxed);
+}
+
+/* 198: 600 ağırlık; edilgen (hedef ekran yok) — imleç "default" */
+.pnf-warning__link {
+  font-weight: var(--weight-semibold);
+  cursor: default;
+}
+
+/* ── Sayfa başlığı / kırıntı yolu ───────────────────────────────────────── */
+/* 48: alt başlıktaki zorunluluk yıldızı .req (#ef4444) */
+.pnf-req {
+  color: var(--color-danger);
+}
+
+/* 35: hedefi olmayan kırıntı öğesi — bağlantı gibi görünmez, edilgen durur */
+.pnf-breadcrumb-passive {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+/* ── Devre-dışı yüzeylerin görünür gerekçe listesi (mockup'ta yok) ───────── */
+.pnf-notices {
+  list-style: none;
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-orange-tint);
+  border-radius: var(--radius-9);
+  border-left: 3px solid var(--color-warning);
+}
+.pnf-notices__item {
+  font-size: var(--text-xs);
+  color: var(--color-warning-deep-text);
+  line-height: var(--leading-relaxed);
+}
+.pnf-notices__item + .pnf-notices__item {
+  margin-top: var(--space-1);
+}
+
+/* Alt eylem şeridindeki SGK kutucuğu edilgendir (mockup 205) */
+.pf-actions--split > .checkbox-label {
+  color: var(--color-text-secondary);
+  cursor: default;
+}

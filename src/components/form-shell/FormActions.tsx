@@ -9,6 +9,12 @@ interface FormActionsProps {
    * (bkz. SectionForm: yalnız ekleme kipinde geçirilir).
    */
   onSaveDraft?: () => void;
+  /**
+   * `onSaveDraft` YOKken "Taslak Kaydet" butonunu **devre-dışı** bastırır ve
+   * bu metni gerekçe olarak taşır (personel formu: sunucuda taslak yok).
+   * Verilmezse eski davranış aynen sürer — buton hiç basılmaz.
+   */
+  draftPlaceholderTitle?: string;
   /** Birincil eylem → is_draft:false. */
   onSubmit: () => void;
   /** Birincil buton metni: "Projeyi Oluştur" / "Şantiyeyi Oluştur". */
@@ -38,6 +44,7 @@ interface FormActionsProps {
 export function FormActions({
   onCancel,
   onSaveDraft,
+  draftPlaceholderTitle,
   onSubmit,
   submitLabel,
   pendingLabel,
@@ -55,7 +62,7 @@ export function FormActions({
       >
         İptal
       </Button>
-      {onSaveDraft && (
+      {onSaveDraft ? (
         <Button
           variant="secondary"
           className="pf-action pf-action--draft"
@@ -64,6 +71,17 @@ export function FormActions({
         >
           Taslak Kaydet
         </Button>
+      ) : (
+        draftPlaceholderTitle && (
+          <Button
+            variant="secondary"
+            className="pf-action pf-action--draft"
+            disabled
+            title={draftPlaceholderTitle}
+          >
+            Taslak Kaydet
+          </Button>
+        )
       )}
       <Button
         variant="primary"

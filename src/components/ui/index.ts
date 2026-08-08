@@ -8,3 +8,4 @@ export * from "./toggle";
 export * from "./badge";
 export * from "./alert";
 export * from "./card";
+export * from "./popover";

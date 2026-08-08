@@ -1,0 +1,12 @@
+/* `AnchoredPopover` — DAVRANIŞ katmanının tek CSS kuralı.
+   Görsel dil (ölçü, zemin, gölge) çağıranın sınıfından gelir (`plan-pop`,
+   `ts-pop`); burada YALNIZ `escapeOverflow` konumlandırması durur.
+
+   `position: fixed` çapası KIRPAN kabın (ör. `overflow-x: auto` tablo
+   kaydırıcısı) dışına taşmayı sağlar; `top`/`left` çalışma anında ölçülüp
+   satır içi stil olarak yazılır, bu yüzden burada yer almaz. `transform`
+   sıfırlanır: yatay ortalama artık ölçümle yapılır. */
+.anchored-popover--floating {
+  position: fixed;
+  transform: none;
+}

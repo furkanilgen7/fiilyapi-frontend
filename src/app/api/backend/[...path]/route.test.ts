@@ -520,6 +520,76 @@ describe("BFF /api/backend/[...path]", () => {
       expect(allowList).toContain(`"${root}"`);
     });
 
+    // F-PT · T1 — Puantaj dilimi TEK yeni kok ekler: `personnel`. Matrisin
+    // kendi uclari ("/sites/{id}/timesheet", ".../timesheet/export.xlsx")
+    // ilk segmenti "sites" oldugu icin MEVCUT kokten gecer; "timesheet" diye
+    // AYRI bir kok EKLENMEZ (yanlis kok eklemek allow-list yuzeyini bosuna
+    // genisletir). Eksik `personnel` koku YALNIZ CANLIDA 404 verir — jsdom
+    // testleri bunu GORMEZ.
+    it.each(["personnel", "sites"])(
+      "%s koku puantaj ekranlari icin allow-list'te tanimlidir",
+      (root) => {
+        const source = readFileSync(
+          resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+          "utf8",
+        );
+        const allowList = source.slice(
+          source.indexOf("const ALLOWED_ROOTS"),
+          source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+        );
+        expect(allowList).toContain(`"${root}"`);
+      },
+    );
+
+    it.each([
+      "/sites/{site_id}/timesheet",
+      "/sites/{site_id}/timesheet/export.xlsx",
+    ])("%s ucu allow-list'teki 'sites' kokunden gecer", (endpoint) => {
+      const root = endpoint.split("/")[1];
+      expect(root).toBe("sites");
+      const source = readFileSync(
+        resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+        "utf8",
+      );
+      const allowList = source.slice(
+        source.indexOf("const ALLOWED_ROOTS"),
+        source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+      );
+      expect(allowList).toContain(`"${root}"`);
+      // "timesheet" AYRI bir kok DEGILDIR — yanlis kok eklemek ihlaldir.
+      // Yorum metni degil, GERCEK girdiler okunur (satir basindaki tirnakli ad).
+      const entries = [...allowList.matchAll(/^\s*"([a-z0-9-]+)",/gm)].map((m) => m[1]);
+      expect(entries).toContain(root);
+      expect(entries).not.toContain("timesheet");
+    });
+
+    it("personnel koku forward edilir; uydurma 'timesheet' koku 404 alir", async () => {
+      // Arrange
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ items: [], total: 0, limit: 50, offset: 0 }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+
+      // Act
+      const forwarded = await GET(
+        req("/api/backend/personnel?limit=200", "GET", { [ACCESS_COOKIE]: "acc" }),
+        ctx(["personnel"]),
+      );
+      const rejected = await GET(
+        req("/api/backend/timesheet", "GET", { [ACCESS_COOKIE]: "acc" }),
+        ctx(["timesheet"]),
+      );
+
+      // Assert
+      expect(forwarded.status).toBe(200);
+      expect(String(fetchMock.mock.calls[0][0])).toContain("/personnel?limit=200");
+      expect(rejected.status).toBe(404);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
     it.each(calledRoots)("%s koku forward edilir", async (root) => {
       const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
       vi.stubGlobal("fetch", fetchMock);

@@ -344,6 +344,50 @@
      140px etiket sütunundan (P109) geniş, karttan dar. */
   --size-plan-empty-cell: 22px; /* boş hücrenin tıklanabilir yüksekliği = dolu
      hücrenin çip yüksekliği (10px yazı + 2×5px iç boşluk, P127). */
+
+  /* ── F-PT · Puantaj (T2) ─────────────────────────────────────────────────
+     Kanon iki mockup: `Ekran 5 - Puantaj.dc.html` (E5) ve
+     `Şantiye - Puantaj.dc.html` (ŞP). Parantez içi sayılar o dosyaların SATIR
+     numaralarıdır. Mockup'ın hücre/legend renklerinin çoğu mevcut token'larla
+     karşılanır (primary-soft · danger-soft · neutral-soft · warning-soft ·
+     success-tint zeminleri; primary · danger-strong · text-subtle ·
+     warning-strong · success metin tonları) ve BURADA YENİDEN TANIMLANMAZ. */
+  /* Legend çipi kenarlıkları — üçünün de karşılığı yoktu; dördüncüsü
+     (izin çipi) zaten `--color-danger-border-soft` olarak tanımlı. */
+  --color-primary-border-soft: #93c5fd; /* "Çalıştı (Ç)" çipi (E5 80 · ŞP 107) */
+  --color-warning-border-soft: #fcd34d; /* "Fazla Mesai (FM)" çipi (E5 83 · ŞP 110) */
+  --color-success-border-soft: #86efac; /* "Geçici Görev (G)" çipi (ŞP 111) */
+  /* Hücre rozeti ölçüleri — E5 (geniş) ve ŞP (dar) iki varyant. */
+  --size-timesheet-cell-w: 28px; /* E5 117 */
+  --size-timesheet-cell-h: 22px; /* E5 117 */
+  --text-timesheet-cell: 10px; /* E5 117 */
+  --size-timesheet-cell-w-sm: 24px; /* ŞP 151 */
+  --size-timesheet-cell-h-sm: 18px; /* ŞP 151 */
+  --text-timesheet-cell-sm: 8px; /* ŞP 151 */
+  --text-timesheet-source: 9px; /* "Şirket"/"Taşeron" rozeti (ŞP 150, 170) */
+  --radius-timesheet-source: var(--radius-5); /* 5px — aynı rozet (ŞP 150) */
+  --width-timesheet-name-col: 160px; /* Personel sütunu (E5 92) */
+  --width-timesheet-name-col-sm: 155px; /* Personel sütunu (ŞP 125) */
+  --width-timesheet-day-col: 32px; /* gün sütunu (E5 94) */
+  --width-timesheet-day-col-sm: 28px; /* gün sütunu (ŞP 127) */
+  --width-timesheet-total-col: 48px; /* Toplam sütunu (E5 110) */
+  --width-timesheet-total-col-sm: 55px; /* Toplam sütunu (ŞP 143) */
+  /* F-PT T3 — hücre düzenleme yüzeyi. Mockup matrisi SALT-OKUNUR çizdiği için
+     bu ölçünün E5/ŞP'de karşılığı YOKTUR; matrisin kendi ölçüsünden türetildi:
+     beş kod rozeti (E5 117 · 28px) yan yana + aralar + popover iç boşluğu. */
+  --width-timesheet-popover: 200px;
+  --min-width-timesheet-table: 900px; /* E5 89 */
+  --min-width-timesheet-table-sm: 1000px; /* ŞP 122 */
+
+  /* ── Personel Ekle formu (F-PT T4) ─────────────────────────────────────────
+     Kanon: projedesign "Form - Personel Ekle.dc.html". Parantez içi sayılar o
+     dosyanın SATIR numaralarıdır.
+     Mockup'ın renklerinin TAMAMI mevcut palette karşılanıyor; tek istisna
+     belge uyarı kutusunun koyu kehribar metin tonu (196) — mevcut
+     --color-warning-strong ve --color-orange-tint-text ondan AÇIK olduğu için
+     kontrastı düşürürdü. */
+  --color-warning-deep-text: #92400e;
+  --leading-relaxed: 1.6; /* uyarı kutusu metni (196) */
 }
 
 @keyframes fadeUp {

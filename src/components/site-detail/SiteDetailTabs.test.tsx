@@ -33,10 +33,15 @@ describe("SiteDetailTabs (spec §5.3)", () => {
 
   it("yazilmamis sekmeler gorunur kalir, gezinilebilir, title 'Bu bolum yakinda' tasir, aria-disabled verilmez", () => {
     render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={BASE} />);
+    const stok = screen.getByRole("tab", { name: "Stok" });
+    expect(stok).toHaveAttribute("href", `${BASE}/stok`);
+    expect(stok).toHaveAttribute("title", "Bu bölüm yakında");
+    expect(stok).not.toHaveAttribute("aria-disabled");
+
+    // F-PT T2: "Puantaj" artik yazildi — title TASIMAZ, gercek rotaya gider.
     const puantaj = screen.getByRole("tab", { name: "Puantaj" });
     expect(puantaj).toHaveAttribute("href", `${BASE}/puantaj`);
-    expect(puantaj).toHaveAttribute("title", "Bu bölüm yakında");
-    expect(puantaj).not.toHaveAttribute("aria-disabled");
+    expect(puantaj).not.toHaveAttribute("title");
 
     const gunlukKayit = screen.getByRole("tab", { name: "Günlük Kayıt" });
     expect(gunlukKayit).toHaveAttribute("href", `${BASE}/gunluk-kayit`);
