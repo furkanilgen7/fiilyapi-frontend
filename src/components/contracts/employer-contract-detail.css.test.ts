@@ -48,9 +48,13 @@ describe("employer-contract-detail.css — E14 mockup'ına bağlı kurallar", ()
     expect(css).toMatch(/\.ecd-head\s*{[^}]*var\(--radius-16\)/s);
   });
 
-  it("'Kalan' rozetinin iki tonu da tanımlıdır (POZ 100)", () => {
+  it("'Kalan' rozetinin iki tonu da POZ mockup'ından gelir (100 yeşil / 161 KIRMIZI)", () => {
     expect(css).toMatch(/\.ecd-items__remaining--zero\s*{[^}]*var\(--color-success-soft\)/s);
-    expect(css).toMatch(/\.ecd-items__remaining--open\s*{[^}]*var\(--color-warning-soft\)/s);
+    // Final review (F-P5 T8): açık kalan KIRMIZI — kehribar DEĞİL. Bu tablonun
+    // kolonları POZ mockup'ından türetildiği için tonu da oradan gelir; POZ
+    // ızgarasıyla (`.cdist-grid__remaining--open`) tek tondadır.
+    expect(css).toMatch(/\.ecd-items__remaining--open\s*{[^}]*var\(--color-danger-soft\)/s);
+    expect(css).not.toMatch(/\.ecd-items__remaining--open\s*{[^}]*var\(--color-warning-soft\)/s);
   });
 
   it("kalem tablosu kendi kaydırma kabındadır (F-TH dersi: sessiz veri kırpması yok)", () => {

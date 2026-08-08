@@ -439,9 +439,14 @@
   background: var(--color-success-soft);
   color: var(--color-success);
 }
+/* Final review (F-P5 T8) bulgusu — KAPATILDI. Bu tablonun kolonlarının TAMAMI
+   POZ mockup'ından türetildi (E14 kendi "İş Kalemleri" sekmesini ÇİZMEMİŞ),
+   dolayısıyla "Kalan" rozetinin tonu da POZ 161'den gelir: açık kalan KIRMIZI.
+   T3 kehribar seçmişti → iki ekran AYNI veriyi iki farklı tonla basıyordu;
+   mockup kazandı, POZ'un `.cdist-grid__remaining--open`'ıyla tek tona indirildi. */
 .ecd-items__remaining--open {
-  background: var(--color-warning-soft);
-  color: var(--color-warning-strong);
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
 }
 /* Sözleşme kalem toplamı — BOQ'un GENEL TOPLAM satırı emsali (Ekran 13, 174-176).
    `items_total`/`items_total_diff` şemada VAR; mockup'ta yeri olmadığı için
