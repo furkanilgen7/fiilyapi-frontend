@@ -50,6 +50,18 @@ const MODULE_LABELS: Record<string, string> = {
   // kart/kolon yerinde durur, "—" + bu gerekçe gösterilir.
   subcontractor_progress_payment_total: "Taşeron hakediş toplamı henüz hesaplanmıyor",
   subcontractor_progress_pct: "Taşeron sözleşmesinde ilerleme henüz hesaplanmıyor",
+  // F-P5 T3 (E14 · İşveren sözleşme detayı) — mockup'ta ÇİZİLİ olup backend
+  // karşılığı OLMAYAN üç yüzey. Üst kural: bölüm/buton SİLİNMEZ, yerinde
+  // devre dışı + görünür gerekçeyle basılır.
+  // 99-123 "Milestone Takvimi": `EmployerContractDetail.milestones` şemada
+  // AÇIKÇA `null` tipindedir (proje takvimi = P11).
+  contract_milestones: "Proje takvimi (P11) ile birlikte gelir",
+  // 77 "Düzenle": işveren sözleşmesinin kendi alanları için backend'de YAZMA
+  // UCU YOKTUR (şema açıklaması: "Sözleşmenin kendi alanları için YENİ yazma
+  // ucu AÇILMAZ … bu yalnız okuma şemasıdır") ve proje formu yalnız OLUŞTURMA
+  // kipindedir (`/projeler/yeni`; düzenleme rotası repoda yok).
+  employer_contract_edit:
+    "İşveren sözleşmesi proje formunda kurulur; ayrı düzenleme ekranı henüz yok",
 };
 
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";

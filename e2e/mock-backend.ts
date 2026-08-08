@@ -642,6 +642,9 @@ const EMPLOYER_CONTRACT_P1 = {
   vat_pct: "20.00",
   late_penalty_daily: null as string | null,
   has_price_escalation: true,
+  // F-P5 T3: E14'ün salt-okunur "Sözleşme Koşulları" bloğu (§7 S3) bu alanı
+  // gösterir; şemada zorunlu (nullable) olduğu hâlde fikstürde eksikti.
+  index_type: "tufe" as "ufe" | "tufe" | "construction_cost" | "fixed_coefficient" | null,
   status: "active" as const,
   start_date: "2025-03-01",
   end_date: "2026-12-01",

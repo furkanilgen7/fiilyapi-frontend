@@ -400,6 +400,16 @@
   --space-kpi-card: 14px; /* KPI kartı iç boşluğu (35-38) */
   --size-progress-bar: 4px; /* ilerleme çubuğu yüksekliği (60) */
   --radius-progress-bar: 2px; /* ilerleme çubuğu köşesi (60) */
+
+  /* ── İşveren Sözleşme Detayı · E14 (F-P5 T3) ───────────────────────────────
+     Kanon: projedesign "Ekran 14 - Sözleşme Detay.dc.html". Parantez içi
+     sayılar o dosyanın SATIR numaralarıdır. Mockup'ın renklerinin TAMAMI
+     mevcut palette karşılanıyor — YENİ HEX YOK (131'in gradyanı zaten
+     --gradient-progress-financial ile birebir aynıdır). Yalnız dört ölçü yeni. */
+  --radius-16: 16px; /* başlık kartı köşesi (65) */
+  --text-contract-title: 22px; /* sözleşme başlığı h1 (72) */
+  --text-contract-metric: 15px; /* Sözleşme Bedeli metriği, mono (81) */
+  --size-payment-bar: 8px; /* Hakediş Özeti ilerleme çubuğu yüksekliği (131) */
 }
 
 @keyframes fadeUp {

@@ -1,11 +1,8 @@
 import { Checkbox, Field, Input, Select } from "@/components/ui";
+import { PRICE_INDEX_OPTIONS, type PriceIndexType } from "@/lib/contract-labels";
 import { durationDays } from "./derive";
 
-export type PriceIndexType =
-  | "ufe"
-  | "tufe"
-  | "construction_cost"
-  | "fixed_coefficient";
+export type { PriceIndexType };
 
 export interface ContractValues {
   contractNo: string;
@@ -40,13 +37,12 @@ export function emptyContractValues(): ContractValues {
   };
 }
 
-/** Endeks tipi seçenekleri — değer:etiket (mockup satır 128 sırası). */
-const INDEX_OPTIONS: readonly { value: PriceIndexType; label: string }[] = [
-  { value: "ufe", label: "ÜFE (Üretici Fiyatları)" },
-  { value: "tufe", label: "TÜFE" },
-  { value: "construction_cost", label: "İnşaat Maliyet Endeksi" },
-  { value: "fixed_coefficient", label: "Sabit Katsayı" },
-];
+/**
+ * Endeks tipi seçenekleri — değer:etiket (mockup satır 128 sırası).
+ * F-P5 T3: etiketler `lib/contract-labels.ts`e TAŞINDI (E14'ün salt-okunur
+ * "Sözleşme Koşulları" bloğu aynı etiketleri basıyor); burada kopya YOK.
+ */
+const INDEX_OPTIONS = PRICE_INDEX_OPTIONS;
 
 const VAT_OPTIONS = ["20", "10", "1"] as const;
 
