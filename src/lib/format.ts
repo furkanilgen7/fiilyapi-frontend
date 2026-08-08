@@ -159,6 +159,19 @@ export function formatDayMonthShort(iso: string): string {
   return `${Number(day)} ${name}`;
 }
 
+/**
+ * `YYYY-MM-DD` → "01.04.2025" (F-P5 T2 · SZL 58-59 Başlangıç/Bitiş hücreleri).
+ *
+ * `new Date(iso)` KULLANILMAZ — UTC yorumlanır, TR saatinde bir gün geri
+ * kayardı (`formatDayMonth`in aynı gerekçesi). Ayrıştırılamayan girdi olduğu
+ * gibi geri döner.
+ */
+export function formatDateDots(iso: string): string {
+  const [year, month, day] = iso.split("-");
+  if (year === undefined || month === undefined || day === undefined) return iso;
+  return `${day}.${month}.${year}`;
+}
+
 /** Haftanın günleri — dizinin sırası `Date.getUTCDay()` ile aynıdır (0 = Pazar). */
 const TR_WEEKDAYS_SHORT = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
 

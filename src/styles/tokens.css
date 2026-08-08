@@ -388,6 +388,18 @@
      kontrastı düşürürdü. */
   --color-warning-deep-text: #92400e;
   --leading-relaxed: 1.6; /* uyarı kutusu metni (196) */
+
+  /* ── Sözleşmeler listesi · SZL (F-P5 T2) ───────────────────────────────────
+     Kanon: projedesign "Sözleşmeler.dc.html". Parantez içi sayılar o dosyanın
+     SATIR numaralarıdır. Mockup'ın renklerinin TAMAMI mevcut palette
+     karşılanıyor — YENİ HEX YOK (ilerleme çubuğunun moru zaten
+     --color-accent-purple-grad-start, 100'de). Yalnız üç ölçü + bir gölge
+     yeni. */
+  --shadow-tab-active: 0 1px 3px rgba(0, 0, 0, 0.08); /* seçili sekme (27) */
+  --text-kpi-label: 10px; /* KPI kartı etiketi, uppercase (35-38) */
+  --space-kpi-card: 14px; /* KPI kartı iç boşluğu (35-38) */
+  --size-progress-bar: 4px; /* ilerleme çubuğu yüksekliği (60) */
+  --radius-progress-bar: 2px; /* ilerleme çubuğu köşesi (60) */
 }
 
 @keyframes fadeUp {

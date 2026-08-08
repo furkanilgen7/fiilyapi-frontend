@@ -43,6 +43,13 @@ const MODULE_LABELS: Record<string, string> = {
   // taşeron adı + sözleşme no bağlantısının hedefi olan Taşeron Sözleşme
   // Detay ekranı bu repo'da HENÜZ YOK.
   subcontractor_contract_detail: "Taşeron sözleşme detay ekranı henüz eklenmedi",
+  // F-P5 T2 (SZL · Sözleşmeler listesi) — TAŞERON sekmesinde backend'in
+  // BİLEREK `None` döndürdüğü iki alan (spec §2, openapi açıklaması):
+  // hakediş toplamı KPI'ı (`ContractSummary.progress_payment_total`) ve satır
+  // ilerlemesi (`ContractListItem.progress_pct`). Sahte `0` basmak yerine
+  // kart/kolon yerinde durur, "—" + bu gerekçe gösterilir.
+  subcontractor_progress_payment_total: "Taşeron hakediş toplamı henüz hesaplanmıyor",
+  subcontractor_progress_pct: "Taşeron sözleşmesinde ilerleme henüz hesaplanmıyor",
 };
 
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";

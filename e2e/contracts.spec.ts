@@ -1,0 +1,107 @@
+import { test, expect, type Page } from "@playwright/test";
+
+// F-P5 T2 · SZL (`/sozlesmeler`) fonksiyonel e2e. Kapsam: rotanın ComingSoon'dan
+// çıkması, sekme URL state'i (+ geri tuşu), taşeron sekmesinde ilerleme/hakediş
+// alanlarının "—" düşmesi, S2 devre-dışı butonu, "Taşeron Firmaları →" girişi,
+// satır → detay hedefleri.
+//
+// ⚠️ `getByRole("alert")` KULLANILMAZ (Next route-announcer tuzağı). Bu dosya
+// HİÇBİR mock kaydını mutasyona uğratmaz — yalnız okur.
+//
+// Zamanlayıcıya dayalı bekleme YOK.
+
+async function login(page: Page) {
+  await page.goto("/login");
+  await page.getByLabel(/e-posta/i).fill("patron@fiil.com");
+  await page.getByLabel(/^şifre$/i).fill("dogruparola");
+  await page.getByRole("button", { name: /giriş yap/i }).click();
+  await expect(page.getByRole("heading", { name: "Gösterge Paneli" })).toBeVisible();
+}
+
+test("sözleşmeler: rota ComingSoon değil gerçek listedir", async ({ page }) => {
+  await login(page);
+  await page.goto("/sozlesmeler");
+
+  await expect(page.getByRole("heading", { name: "Sözleşmeler" })).toBeVisible();
+  await expect(page.getByText("Bu modül yakında eklenecek.")).toHaveCount(0);
+  await expect(page.getByTestId("szl-kpi-strip")).toBeVisible();
+});
+
+test("sözleşmeler: sekme durumu URL'dedir, geri tuşu çalışır", async ({ page }) => {
+  await login(page);
+  await page.goto("/sozlesmeler");
+
+  const tabs = page.getByRole("navigation", { name: "Sözleşme türü" });
+  await expect(tabs.getByRole("link", { name: "İşveren" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+
+  await tabs.getByRole("link", { name: "Taşeron" }).click();
+  await expect(page).toHaveURL(/\/sozlesmeler\?type=subcontractor$/);
+  await expect(tabs.getByRole("link", { name: "Taşeron" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/sozlesmeler$/);
+  await expect(tabs.getByRole("link", { name: "İşveren" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+});
+
+test("sözleşmeler: işveren sekmesi — çubuklu ilerleme + devre-dışı 'Yeni Sözleşme'", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/sozlesmeler");
+
+  // Backend işveren satırında `progress_pct` DOLU döner → çubuk çizilir.
+  await expect(page.getByTestId("szl-progress").first()).toBeVisible();
+  await expect(page.getByTestId("szl-progress-pending")).toHaveCount(0);
+
+  // ONAYLI KARAR S2: buton silinmez, devre dışı + görünür gerekçe.
+  const disabled = page.getByTestId("szl-new-contract-disabled");
+  await expect(disabled).toBeDisabled();
+  await expect(page.getByText("İşveren sözleşmesi proje formunda kurulur.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Taşeron Firmaları →" })).toHaveCount(0);
+
+  // Satır → işveren detayı PROJE kimliğine gider (T3'te yazılacak rota).
+  await expect(page.getByRole("link", { name: "Detay →" }).first()).toHaveAttribute(
+    "href",
+    /\/sozlesmeler\/isveren\/[^/]+$/,
+  );
+});
+
+test("sözleşmeler: taşeron sekmesi — ilerleme/hakediş '—' düşer, girişler açılır", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/sozlesmeler?type=subcontractor");
+
+  // Zarif düşüş: backend taşeron tarafında ikisini de `None` döndürür.
+  await expect(page.getByTestId("szl-kpi-payment-total")).toHaveText(/—/);
+  await expect(page.getByTestId("szl-progress-pending").first()).toBeVisible();
+  await expect(page.getByTestId("szl-progress")).toHaveCount(0);
+  // Kolon ve kart SİLİNMEZ.
+  await expect(page.getByRole("columnheader", { name: "İlerleme" })).toBeVisible();
+  await expect(page.getByText("Toplam Hakediş")).toBeVisible();
+
+  // İkinci kolon başlığı bu sekmede "Taşeron"dur.
+  await expect(page.getByRole("columnheader", { name: "Taşeron", exact: true })).toBeVisible();
+
+  await expect(page.getByRole("link", { name: "Taşeron Firmaları →" })).toHaveAttribute(
+    "href",
+    "/sozlesmeler/taseronlar",
+  );
+  await expect(page.getByRole("link", { name: "+ Yeni Sözleşme" })).toHaveAttribute(
+    "href",
+    "/sozlesmeler/taseron/yeni",
+  );
+  await expect(page.getByRole("link", { name: "Detay →" }).first()).toHaveAttribute(
+    "href",
+    /\/sozlesmeler\/taseron\/[^/]+$/,
+  );
+});

@@ -1,0 +1,329 @@
+/* SZL · Sözleşmeler listesi (F-P5 T2). Kanon: projedesign
+   "Sözleşmeler.dc.html"; parantez içi sayılar o dosyanın SATIR numaralarıdır.
+   Prefix `szl`. Kabuk (14-20) uygulamanın Topbar/Sidebar'ıdır, burada
+   çizilmez. */
+.szl {
+  animation: var(--anim-fade-up); /* 22 */
+}
+
+/* Başlık şeridi (23-32). */
+.szl__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.szl__title {
+  font-size: 26px; /* 24 */
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.5px;
+  color: var(--color-text);
+}
+.szl__subtitle {
+  font-size: 12px; /* 24 */
+  color: var(--color-text-subtle);
+  margin-top: 3px;
+}
+.szl__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* 25 */
+}
+.szl__notice {
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+/* Yalnız taşeron sekmesindeki "Taşeron Firmaları →" girişi (spec §1). Mockup
+   19'daki metin-link tonuyla aynı (12px / primary). */
+.szl__link-action {
+  font-size: 12px;
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.szl__link-action:hover {
+  text-decoration: underline;
+}
+
+/* Sekme çifti (26-29). */
+.szl-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--color-neutral-soft);
+  border-radius: var(--radius-9);
+  padding: 3px;
+}
+.szl-tabs__tab {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted); /* 28 — seçili olmayan sekme */
+  border-radius: var(--radius-7);
+  text-decoration: none;
+}
+.szl-tabs__tab--active {
+  color: var(--color-primary); /* 27 */
+  background: var(--color-surface);
+  box-shadow: var(--shadow-tab-active);
+}
+.szl-tabs__tab:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* "+ Yeni Sözleşme" (30). Taşeron sekmesinde <Link>, işveren sekmesinde
+   devre-dışı <Button> — ikisi de aynı ölçüleri taşır. */
+.szl__new-btn {
+  display: inline-flex;
+  align-items: center;
+  background: var(--color-primary);
+  color: var(--color-on-brand);
+  border: none;
+  padding: 9px 18px;
+  border-radius: var(--radius-8);
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+.szl__new-btn:hover {
+  background: var(--color-primary-hover);
+}
+.szl__new-btn--disabled,
+.szl__new-btn--disabled:hover {
+  background: var(--color-primary);
+  cursor: not-allowed;
+}
+
+/* KPI şeridi (34-38): 4 eşit kart, karta özel değer rengi. */
+.szl-kpi {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  margin-bottom: 20px;
+}
+.szl-kpi__card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-kpi-card);
+  border: 1px solid var(--color-border);
+}
+.szl-kpi__label {
+  font-size: var(--text-kpi-label);
+  color: var(--color-text-subtle);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+.szl-kpi__value {
+  font-size: var(--text-kpi-value);
+  font-weight: var(--weight-bold);
+}
+/* Mono YALNIZ para kartlarında (35, 37) — sayaç kartlarında (36, 38) yok. */
+.szl-kpi__value--mono {
+  font-family: var(--font-mono);
+}
+.szl-kpi__value--neutral {
+  color: var(--color-text);
+}
+.szl-kpi__value--success {
+  color: var(--color-success);
+}
+.szl-kpi__value--primary {
+  color: var(--color-primary);
+}
+.szl-kpi__value--warning {
+  color: var(--color-warning);
+}
+/* Zarif düşüş: taşeron sekmesinde hakediş toplamı backend'de `None`. */
+.szl-kpi__value--pending {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+
+/* Tablo kabuğu (41-106). */
+.szl-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.szl-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.szl-table__th {
+  padding: 11px 12px; /* 45-51 */
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  white-space: nowrap;
+}
+.szl-table__th:first-child {
+  padding-left: 16px; /* 44 — ilk kolon 11px 16px */
+}
+.szl-table__th--left {
+  text-align: left;
+}
+.szl-table__th--right {
+  text-align: right;
+}
+.szl-table__th--center {
+  text-align: center;
+}
+.szl-row {
+  border-bottom: 1px solid var(--color-neutral-soft); /* 54 */
+  cursor: pointer;
+}
+.szl-row:last-child {
+  border-bottom: none; /* 94 — son satırda kenarlık yok */
+}
+.szl-row:hover {
+  background: var(--color-neutral-soft);
+}
+.szl-table__td {
+  padding: 13px 12px; /* 56-62 */
+  font-size: 12px;
+  color: var(--color-text-muted);
+  vertical-align: middle;
+}
+.szl-table__td:first-child {
+  padding-left: 16px; /* 55 — ilk kolon 13px 16px */
+}
+.szl-table__td--secondary {
+  font-size: 13px; /* 56 */
+  color: var(--color-text-secondary);
+}
+.szl-table__td--right {
+  text-align: right;
+}
+.szl-table__td--center {
+  text-align: center;
+}
+.szl-table__td--mono {
+  font-family: var(--font-mono);
+  font-size: 13px; /* 57 */
+}
+.szl-table__td--strong {
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.szl-table__name {
+  font-size: 13px; /* 55 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.szl-table__no {
+  font-size: var(--text-small); /* 55 — mono sözleşme no */
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+}
+.szl-table__detail {
+  font-size: 12px; /* 62 */
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.szl-row:hover .szl-table__detail {
+  text-decoration: underline;
+}
+.szl-table__detail:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Durum rozeti (61, 71, 91): primitive Badge + mockup ölçüleri. */
+.szl-badge {
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  padding: 3px 9px;
+}
+/* 91: "Beklemede" metni primitive'in --color-warning'inden KOYU tondadır
+   (mockup 91 = --color-warning-strong). */
+.szl-badge--on-hold {
+  color: var(--color-warning-strong);
+}
+
+/* İlerleme hücresi (60): ray + dolgu, altında yüzde metni.
+   Tonlar `contract-progress.ts`teki eşik kuralından gelir. */
+.szl-progress {
+  min-width: 80px;
+}
+.szl-progress--pending {
+  text-align: center;
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+.szl-progress__track {
+  height: var(--size-progress-bar);
+  background: var(--color-neutral-soft);
+  border-radius: var(--radius-progress-bar);
+  overflow: hidden;
+}
+/* 70: %100 satırında ray zemini de yeşile döner. */
+.szl-progress__track--complete {
+  background: var(--color-success-soft);
+}
+.szl-progress__fill {
+  height: 100%;
+  border-radius: var(--radius-progress-bar);
+}
+.szl-progress__fill--complete {
+  background: var(--color-success); /* 70 */
+}
+.szl-progress__fill--high {
+  background: var(--color-accent-purple-grad-start); /* 100 */
+}
+.szl-progress__fill--mid {
+  background: var(--color-primary); /* 60, 80 */
+}
+.szl-progress__fill--low {
+  background: var(--color-warning); /* 90 */
+}
+.szl-progress__label {
+  font-size: var(--text-plan-chip); /* 10px — 60 */
+  text-align: center;
+  margin-top: 3px;
+}
+/* Mavi çubukta yüzde metni SÖNÜK (60, 80); diğer üç tonda çubukla aynı renk. */
+.szl-progress__label--mid {
+  color: var(--color-text-subtle);
+}
+.szl-progress__label--complete {
+  color: var(--color-success);
+}
+.szl-progress__label--high {
+  color: var(--color-accent-purple-grad-start);
+}
+.szl-progress__label--low {
+  color: var(--color-warning);
+}
+
+.szl-message {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+.szl-empty {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-8);
+  text-align: center;
+}
+.szl-empty__title {
+  font-size: 14px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.szl-empty__hint {
+  margin-top: var(--space-1);
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
