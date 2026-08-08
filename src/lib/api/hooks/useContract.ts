@@ -17,8 +17,18 @@ export type ContractDistributionAllocation =
   components["schemas"]["ContractDistributionAllocation"];
 export type EmployerContractDetail = components["schemas"]["EmployerContractDetail"];
 
+// F-P5 T1 · E14 "İş Kalemleri" sekmesi — gruplar + kalemler
+// (`distributed_quantity`/`remaining_quantity` kolonlarıyla). Bu ekleme
+// `useContract.ts`e YAPILDI çünkü uç aynı aileden (`/projects/{id}/contract*`,
+// `projectId` anahtarlı, aynı boş-id kapısı).
+export type EmployerContractItemsResponse =
+  components["schemas"]["EmployerContractItemsResponse"];
+export type EmployerContractGroupItems = components["schemas"]["EmployerContractGroupItems"];
+export type EmployerContractItemResponse = components["schemas"]["EmployerContractItemResponse"];
+
 export const CONTRACT_DISTRIBUTION_QUERY_KEY = "contract-distribution";
 export const EMPLOYER_CONTRACT_QUERY_KEY = "employer-contract";
+export const EMPLOYER_CONTRACT_ITEMS_QUERY_KEY = "employer-contract-items";
 
 /**
  * Poz dağılımı (satır kaynağı — spec `POZ` ekranı). `useBoq` deseni: `siteId`
@@ -54,6 +64,26 @@ export function useEmployerContract(
     queryFn: async () =>
       unwrap(
         await backendClient.GET("/projects/{project_id}/contract", {
+          params: { path: { project_id: projectId } },
+        }),
+      ),
+  });
+}
+
+/**
+ * İşveren sözleşmesinin iş kalemleri (E14 "İş Kalemleri" sekmesi). Dağılım
+ * ucundan FARKLIDIR: burada şantiye kolonları yok, kalem başına toplam
+ * `distributed_quantity`/`remaining_quantity` var. Aynı boş-id kapısı.
+ */
+export function useEmployerContractItems(
+  projectId: string,
+): UseQueryResult<EmployerContractItemsResponse, Error> {
+  return useQuery({
+    enabled: projectId.length > 0,
+    queryKey: [EMPLOYER_CONTRACT_ITEMS_QUERY_KEY, projectId],
+    queryFn: async () =>
+      unwrap(
+        await backendClient.GET("/projects/{project_id}/contract/items", {
           params: { path: { project_id: projectId } },
         }),
       ),

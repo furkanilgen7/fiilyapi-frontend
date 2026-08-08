@@ -22,6 +22,8 @@ function mockOptions(overrides: Partial<ReturnType<typeof useSubcontractorContra
     isLoading: false,
     isError: false,
     error: null,
+    isPartial: false,
+    truncation: { isTruncated: false, shownCount: 0, totalCount: 0 },
     ...overrides,
   });
 }
@@ -81,5 +83,24 @@ describe("SubcontractorContractPickerStep", () => {
     render(<SubcontractorContractPickerStep />);
     expect(screen.queryByTestId("th-contract-picker-note")).not.toBeInTheDocument();
     expect(screen.queryByTestId("th-contract-picker-truncated")).not.toBeInTheDocument();
+  });
+
+  // F-P5 T1 — TB3 ile U1 sayfalandı: kırpılma SESSİZ kalamaz.
+  it("liste sunucu tavanında kırpıldıysa görünür uyarı basar", () => {
+    mockOptions({
+      options: [CONTRACT_OPTION],
+      isPartial: true,
+      truncation: { isTruncated: true, shownCount: 200, totalCount: 315 },
+    });
+    render(<SubcontractorContractPickerStep />);
+    const note = screen.getByTestId("th-contract-picker-limit-note");
+    expect(note).toHaveTextContent("İlk 200 kayıt gösteriliyor (toplam 315)");
+    expect(note).toHaveTextContent("Aradığınız sözleşme listede olmayabilir.");
+  });
+
+  it("kırpılma yokken uyarı BASILMAZ", () => {
+    mockOptions({ options: [CONTRACT_OPTION] });
+    render(<SubcontractorContractPickerStep />);
+    expect(screen.queryByTestId("th-contract-picker-limit-note")).not.toBeInTheDocument();
   });
 });
