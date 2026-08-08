@@ -206,7 +206,15 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Boq Group Endpoint
+         * @description TB3-C: YALNIZ BOS grup silinir; kalemi olan grup 409 doner.
+         *
+         *     Kapi `_ADMIN`'dir — `delete_boq_item_endpoint` ile BIREBIR ayni gerekce
+         *     (`full` silmeyi KAPSAMAZ). F-SD smoke'unda canlida bos test grubu 405
+         *     aldigi icin acildi.
+         */
+        delete: operations["delete_boq_group_endpoint_boq_groups__group_id__delete"];
         options?: never;
         head?: never;
         /** Update Boq Group Endpoint */
@@ -489,7 +497,10 @@ export interface paths {
          * @description TB2 U1 (spec §1): hakediş açma akışının seçim adımı bu uçtan beslenir —
          *
          *     hakedişlerden türetme, hiç hakedişi olmayan sözleşmeyi göremiyordu.
-         *     Sayfalama YOK (`/contracts` liste ucu deseni), sıralama `contract_no`+`id`.
+         *     Sıralama `contract_no`+`id`. TB3 T2: `subcontractor_progress_payments`
+         *     liste ucunun sayfalama deseni (`total`/`limit`/`offset`) — parametresiz
+         *     çağrı varsayılan limiti uygular ama `total`ı döndürür, böylece istemci
+         *     kırpılmayı GÖREBİLİR.
          */
         get: operations["list_subcontractor_contracts_endpoint_subcontractor_contracts_get"];
         put?: never;
@@ -6998,11 +7009,20 @@ export interface components {
         };
         /**
          * SubcontractorContractListResponse
-         * @description `SubcontractorListResponse` deseninin aynısı: sayfalama/KPI YOK.
+         * @description TB3 T2: `subcontractor_progress_payments` liste deseninin aynısı —
+         *
+         *     `items` + `total`/`limit`/`offset`. Alanlar ADDITIVE: öğe gövdesi TB2'deki
+         *     hâliyle birebir aynıdır, mevcut tüketici (F-TH seçim adımı) kırılmaz.
          */
         SubcontractorContractListResponse: {
             /** Items */
             items: components["schemas"]["SubcontractorContractListItem"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
         };
         /**
          * SubcontractorContractUpdate
@@ -7174,6 +7194,8 @@ export interface components {
             subcontractor_name: string | null;
             /** Contract No */
             contract_no: string | null;
+            /** Work Category */
+            work_category: string | null;
             /** Sequence No */
             sequence_no: number;
             /** Period Year */
@@ -7357,6 +7379,8 @@ export interface components {
             subcontractor_name: string | null;
             /** Contract No */
             contract_no: string | null;
+            /** Work Category */
+            work_category: string | null;
             /** Sequence No */
             sequence_no: number;
             /** Period Year */
@@ -9032,6 +9056,49 @@ export interface operations {
             };
         };
     };
+    delete_boq_group_endpoint_boq_groups__group_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     update_boq_group_endpoint_boq_groups__group_id__patch: {
         parameters: {
             query?: never;
@@ -10127,6 +10194,8 @@ export interface operations {
                 site_id?: string | null;
                 status?: components["schemas"]["ContractStatus"] | null;
                 q?: string | null;
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;
