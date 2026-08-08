@@ -1545,6 +1545,14 @@ function buildSubcontractorPaymentDetail(state: MockState, payment: MockSubcontr
     project_name: project?.name ?? "",
     subcontractor_name: contract?.subcontractor_name ?? null,
     contract_no: contract?.contract_no ?? null,
+    // TB3 ile hem LİSTE hem DETAY şemasına eklendi. F-P5 T1'de
+    // `useSiteSubcontractorPayments`in U1 join'i söküldü ve değer artık
+    // DOĞRUDAN buradan okunuyor — mock bu alanı basmazsa şantiye hakediş
+    // sekmesinde iş kategorisi SESSİZCE kaybolur (baseline turunda fiilen
+    // yakalandı: "Elektrik · Tüm Bölümler" → "· Tüm Bölümler").
+    // ⚠️ Elle yazılmış mock TİPSİZ olduğu için `pnpm typecheck` bunu GÖRMEZ;
+    // şemaya alan eklendiğinde bu iki üreticiyi elle güncellemek ŞARTTIR.
+    work_category: contract?.work_category ?? null,
     sequence_no: payment.sequence_no,
     period_year: payment.period_year,
     period_month: payment.period_month,
@@ -1581,6 +1589,14 @@ function buildSubcontractorPaymentListItem(state: MockState, payment: MockSubcon
     project_name: project?.name ?? "",
     subcontractor_name: contract?.subcontractor_name ?? null,
     contract_no: contract?.contract_no ?? null,
+    // TB3 ile hem LİSTE hem DETAY şemasına eklendi. F-P5 T1'de
+    // `useSiteSubcontractorPayments`in U1 join'i söküldü ve değer artık
+    // DOĞRUDAN buradan okunuyor — mock bu alanı basmazsa şantiye hakediş
+    // sekmesinde iş kategorisi SESSİZCE kaybolur (baseline turunda fiilen
+    // yakalandı: "Elektrik · Tüm Bölümler" → "· Tüm Bölümler").
+    // ⚠️ Elle yazılmış mock TİPSİZ olduğu için `pnpm typecheck` bunu GÖRMEZ;
+    // şemaya alan eklendiğinde bu iki üreticiyi elle güncellemek ŞARTTIR.
+    work_category: contract?.work_category ?? null,
     sequence_no: payment.sequence_no,
     period_year: payment.period_year,
     period_month: payment.period_month,

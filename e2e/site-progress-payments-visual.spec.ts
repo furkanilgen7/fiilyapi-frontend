@@ -57,5 +57,12 @@ test("santiye hakedisler sekmesi ekrani gorsel", async ({ page }) => {
   // Bekliyor/Revize Gerekli), sc-1'in gerçek `work_category`si ("Elektrik").
   await expect(page.getByText("Aydın Elektrik Taah. #4")).toBeVisible();
   await expect(page.getByText("Revize Gerekli")).toBeVisible();
+  // F-P5 baseline turu bulgusu — NÜKSÜ ENGELLEYEN İDDİA: yukarıdaki yorum
+  // "Elektrik"ten söz ediyordu ama HİÇBİR iddia onu kilitlemiyordu. TB3 ile
+  // `work_category` hakediş LİSTE şemasına eklendi ve T1'de U1 join'i
+  // söküldü; `e2e/mock-backend.ts` alanı basmayı unutunca kategori SESSİZCE
+  // kayboldu ("Elektrik · Tüm Bölümler" → "· Tüm Bölümler") ve bunu yalnız
+  // baseline turu yakaladı — dört kapı da 5. kapı da GÖRMEDİ.
+  await expect(page.getByText("Elektrik · Tüm Bölümler").first()).toBeVisible();
   await expect(page).toHaveScreenshot("santiye-hakedisler.png", { fullPage: true });
 });
