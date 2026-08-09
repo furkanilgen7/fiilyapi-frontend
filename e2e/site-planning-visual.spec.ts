@@ -83,7 +83,11 @@ test("planlama izgarasi (dolu) gorsel", async ({ page }) => {
     await expect(page.locator(`.plan-cell__chip--${tag}`).first(), tag).toBeVisible();
   }
   // Alt sıra: pending Malzeme Planı kartı + dört hedef.
-  await expect(page.getByText("Haftalık malzeme ihtiyacı henüz açılmadı", { exact: false })).toBeVisible();
+  // ⚠️ Metin locator'ı da akış-SSR çift kopyasına AÇIKTIR (sınıf locator'ları
+  // gibi) — `.first()` olmadan strict-mode ihlali verir. Yalnız Linux CI'da.
+  await expect(
+    page.getByText("Haftalık malzeme ihtiyacı henüz açılmadı", { exact: false }).first(),
+  ).toBeVisible();
   // Kapsamsız `.plan-goals__row` sayımı akış-SSR çift kopyasında İKİYE KATLANIR
   // (bkz. expectGridLoaded notu) — kart kapsamı + `.first()` zorunludur.
   await expect(page.locator(".plan-goals").first().locator(".plan-goals__row")).toHaveCount(4);
@@ -129,8 +133,10 @@ test("planlama izgarasi (bos) gorsel", async ({ page }) => {
 
   await login(page);
   await page.goto(PLANNING_URL);
-  await expect(page.getByText("Bu hafta için plan satırı eklenmemiş.")).toBeVisible();
-  await expect(page.getByText("Bu hafta için hedef girilmemiş.")).toBeVisible();
+  // Boş-durum metinleri de akış-SSR'da İKİ kopyaya çözülür → `.first()` şart
+  // (baseline turu 31312395932'de fiilen patladı, macOS'ta hiç görülmedi).
+  await expect(page.getByText("Bu hafta için plan satırı eklenmemiş.").first()).toBeVisible();
+  await expect(page.getByText("Bu hafta için hedef girilmemiş.").first()).toBeVisible();
   // Sprint yokken "Aktif Sprint:" etiketi HİÇ basılmaz.
   await expect(page.locator(".plan-week-nav__sprint")).toHaveCount(0);
 

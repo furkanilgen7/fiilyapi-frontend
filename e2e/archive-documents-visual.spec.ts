@@ -83,7 +83,8 @@ test("belge arsivi (dolu) gorsel", async ({ page }) => {
   await expectArchiveLoaded(page);
 
   // E12 118 — breadcrumb; kadraj başlık şeridini de taşısın.
-  await expect(page.getByText("Kule A / Hakedişler")).toBeVisible();
+  // `.first()` — akış-SSR çift kopyası metin locator'larını da ikiye çözer.
+  await expect(page.getByText("Kule A / Hakedişler").first()).toBeVisible();
 
   await expect(page).toHaveScreenshot("belgeler-genel.png", { fullPage: true });
 });
