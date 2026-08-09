@@ -16,6 +16,19 @@ function wrapper({ children }: { children: ReactNode }) {
 describe("useSites", () => {
   beforeEach(() => vi.clearAllMocks());
 
+  // F-P5 CANLI SMOKE bulgusu: `projectId` boşken bu hook `/projects//sites`
+  // kuruyordu, fetch onu `/projects/sites`e normalize ediyordu ve backend 422
+  // dönüyordu. FSO formu (proje seçilmeden açılır) boş id geçen İLK çağırandı;
+  // o güne dek tüm çağıranlar proje kapsamlı rotalardaydı, bu yüzden eksik
+  // kapı gizli kaldı. `useSite`/`useContractDistribution` kanonu.
+  it("projectId BOŞKEN ağa hiç çıkmaz (boş-id kapısı)", async () => {
+    const { result } = renderHook(() => useSites(""), { wrapper });
+
+    await waitFor(() => expect(result.current.fetchStatus).toBe("idle"));
+    expect(backendClient.GET).not.toHaveBeenCalled();
+    expect(result.current.data).toBeUndefined();
+  });
+
   it("proje id ile santiye listesini ceker", async () => {
     const response = {
       counts: { all: 2, active: 1, on_hold: 0, completed: 1 },

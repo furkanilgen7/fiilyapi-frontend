@@ -21,6 +21,15 @@ export const SITE_QUERY_KEY = "site";
  */
 export function sitesQueryOptions(projectId: string) {
   return {
+    // `projectId` boşsa ağa ÇIKILMAZ — `useSite`/`useContractDistribution` ile
+    // aynı boş-id kapısı. Bu kapı uzun süre EKSİKTİ ve gizli kaldı: o güne dek
+    // her çağıran proje kapsamlı bir rotadaydı, yani id HEP doluydu. F-P5'in
+    // FSO formu (`/sozlesmeler/taseron/yeni`) proje SEÇİLMEDEN açılan ilk
+    // çağıran olunca boş id ile `/projects//sites` kuruldu, fetch onu
+    // `/projects/sites`e normalize etti ve backend 422 döndü — CANLI SMOKE'ta
+    // konsol hatası olarak yakalandı (jsdom testleri hook'u mock'ladığı için
+    // GÖRMEZ; e2e mock'u da bu bozuk yolu tanımaz).
+    enabled: projectId.length > 0,
     queryKey: [SITES_QUERY_KEY, projectId],
     queryFn: async (): Promise<SiteListResponse> =>
       unwrap(
