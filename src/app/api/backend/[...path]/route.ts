@@ -163,6 +163,14 @@ async function handleGet(
     headers.set("content-type", result.contentType ?? "application/octet-stream");
     if (result.contentDisposition) headers.set("content-disposition", result.contentDisposition);
     headers.set("cache-control", "no-store");
+    // F-BC canlı smoke bulgusu: bu dal yanıt başlıklarını SIFIRDAN kurduğu için
+    // backend'in gönderdiği `X-Content-Type-Options: nosniff` DÜŞÜYORDU.
+    // Başlık, belge arşivinin depolanmış-XSS savunmasının İKİNCİ katmanıdır
+    // (birincisi: künyedeki `mime_type` istemcinin `Content-Type`ından değil
+    // UZANTIDAN türetilir — BC backend kararı) ve tarayıcının gövdeyi koklayıp
+    // `text/html` sanmasını engeller. Excel dışa aktarımında görünmezdi çünkü
+    // orada içerik KULLANICIDAN gelmiyor; belge arşivinde geliyor.
+    headers.set("x-content-type-options", "nosniff");
 
     const res = new NextResponse(result.data, { status: result.status, headers });
     if (result.refreshedAccessToken) applyAuthCookies(res, [buildAccessCookie(result.refreshedAccessToken)]);
