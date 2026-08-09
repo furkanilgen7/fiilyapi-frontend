@@ -436,6 +436,34 @@
   --tsd-max-width: 1080px; /* içerik kolonu genişliği (30) */
   --width-tsd-price-col: 130px; /* ⭐ Taşeron B.F. sütunu (101) */
   --width-tsd-progress-col: 80px; /* Hakediş % sütunu (103) */
+
+  /* ── Şantiye - Belgeler · ŞB (F-BC T2) ────────────────────────────────────
+     Kanon: projedesign "Şantiye - Belgeler.dc.html". Parantez içi sayılar o
+     dosyanın SATIR numaralarıdır. Mockup'ın renklerinin TAMAMI mevcut palette
+     karşılanıyor — YENİ HEX YOK (bu blokta hex YAZILMAZ: tokens.test.ts çıplak
+     renk sayacı yorumları da sayar): seçili kart kenarlığı (95) =
+     --color-primary-ring · diğer kartlar (100) = --color-border · kesikli kart
+     (130) = --color-dashed-border · kök klasör zemini (42) =
+     --color-nav-active-bg · seçili klasör zemini (48) = --color-surface-muted ·
+     liste başlığı zemini (138) = --color-surface-2 · satır ayırıcı (142) =
+     --color-divider. Yalnız ölçüler yenidir. */
+  --width-document-folder-panel: 240px; /* klasör paneli (37) */
+  --grid-document-columns: 4; /* kart ızgarası sütun sayısı (94) */
+  --text-document-title: 20px; /* "<Şantiye> — Belgeler" başlığı (85) */
+  --text-document-sm: 12px; /* kart adı (97) · klasör satırı (46) · liste başlığı (139) */
+  --text-document-meta: 10px; /* kart "boyut · tarih" (98) */
+  --text-document-icon: 36px; /* kart tip ikonu (96) */
+  --text-document-list-icon: 20px; /* liste satırı tip ikonu (143) */
+  --text-document-folder-icon: 15px; /* kök klasör ikonu (43) */
+  --text-document-folder-icon-sm: 13px; /* klasör ikonu (46) */
+  --text-document-add: 18px; /* panel "+" düğmesi (40) */
+  --text-document-upload-plus: 28px; /* kesikli kart "+" (131) */
+  --space-document-grid-gap: 14px; /* kart ızgarası boşluğu (94) */
+  --space-document-folder-y: 7px; /* klasör satırı dikey iç boşluk (45) */
+  --space-document-folder-x: 10px; /* klasör satırı yatay iç boşluk (42, 45) */
+  --space-document-folder-indent: 20px; /* klasör girintisi (45) */
+  --space-document-row-y: 10px; /* "Son Eklenenler" satırı dikey iç boşluk (142) */
+  --min-height-document-upload: 110px; /* kesikli yükleme kartı (130) */
 }
 
 @keyframes fadeUp {

@@ -1,0 +1,341 @@
+/* Şantiye › Belgeler ekranı (F-BC T2).
+   Kanon: `projedesign/Şantiye - Belgeler.dc.html` (ŞB). Parantez içi sayılar o
+   dosyanın SATIR numaralarıdır; göz kararı ölçü yoktur. Çıplak hex/px yasak —
+   tüm değerler tokens.css'ten.
+
+   İçerik alanı ofseti burada DEĞİL — ŞB drill kabuğunun `.drill-content`
+   kuralını kullanır (site-diary.css / timesheet.css ile aynı gerekçe).
+   ŞB 35-69'da klasör paneli sayfa yüksekliğince, kabuk sidebar'ına bitişik
+   çizilir; kabuk canon kazandığı için panel burada içerik alanının SOL
+   SÜTUNU olarak, mockup'ın 240px genişliği ve yüzey/kenarlık tonlarıyla
+   basılır. */
+
+.sdoc {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-6);
+}
+
+.sdoc__main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Klasör paneli (ŞB 37-69) ─────────────────────────────────────────────── */
+.sdoc-folders {
+  width: var(--width-document-folder-panel);
+  flex-shrink: 0;
+  padding: var(--space-4) 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+/* ŞB 38-41 */
+.sdoc-folders__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-4) var(--space-document-folder-x);
+}
+
+/* ŞB 39 */
+.sdoc-folders__heading {
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+/* ŞB 40 */
+.sdoc-folders__add.btn {
+  padding: 0;
+  font-size: var(--text-document-add);
+  line-height: 1;
+  color: var(--color-primary);
+}
+
+/* ŞB 42-44 (kök) ve 45-68 (klasörler) ortak gövdesi */
+.sdoc-folders__item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 2px var(--space-2);
+  padding: var(--space-document-folder-y) var(--space-document-folder-x);
+  border-radius: var(--radius-6);
+  font-size: var(--text-document-sm);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+}
+
+/* ŞB 42 — kök satır bir tık daha yüksek ve yuvarlak */
+.sdoc-folders__item--root {
+  padding: var(--space-2) var(--space-document-folder-x);
+  border-radius: var(--radius-8);
+}
+
+/* ŞB 45 — klasörler kökün altında girintilidir */
+.sdoc-folders__item--child {
+  margin-left: var(--space-document-folder-indent);
+}
+
+.sdoc-folders__item:hover {
+  background: var(--color-surface-muted);
+}
+
+/* ŞB 42-43 (aktif kök: mavi) · 48-49 (aktif klasör: nötr) */
+.sdoc-folders__item--root.sdoc-folders__item--active {
+  background: var(--color-nav-active-bg);
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+}
+.sdoc-folders__item--child.sdoc-folders__item--active {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-weight: var(--weight-semibold);
+}
+
+.sdoc-folders__item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ŞB 43 · 46 */
+.sdoc-folders__icon {
+  font-size: var(--text-document-folder-icon);
+}
+.sdoc-folders__icon--sm {
+  font-size: var(--text-document-folder-icon-sm);
+}
+
+.sdoc-folders__message {
+  margin: var(--space-2) var(--space-4);
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* ── Başlık şeridi (ŞB 82-91) ─────────────────────────────────────────────── */
+.sdoc__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-5);
+}
+
+/* ŞB 84 */
+.sdoc__crumb {
+  font-size: var(--text-document-sm);
+  color: var(--color-text-subtle);
+  margin-bottom: 3px;
+}
+
+/* ŞB 85 */
+.sdoc__title {
+  font-size: var(--text-document-title);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+/* ŞB 87 */
+.sdoc__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ŞB 27-30 — üst bardan başlık şeridine inen arama kutusu */
+.sdoc__search {
+  width: 180px;
+}
+
+.sdoc__error {
+  margin-bottom: var(--space-4);
+  font-size: var(--text-body);
+  color: var(--color-danger-strong);
+}
+
+/* ── Kart ızgarası (ŞB 94-133) ────────────────────────────────────────────── */
+.sdoc-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-document-columns), 1fr);
+  gap: var(--space-document-grid-gap);
+  margin-bottom: var(--space-5);
+}
+
+/* ŞB 95-99 */
+.sdoc-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  text-align: center;
+  font: inherit;
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+/* ŞB 95 — mockup'ta "seçili" kartın kenarlığı 2px --color-primary-ring
+   tonundadır (diğerleri 1px --color-border). Ekranda kart
+   seçimi diye bir kavram YOKTUR (tek eylem indirmedir), bu yüzden aynı vurgu
+   etkileşim durumuna bağlanır. Kenarlık kalınlığı DEĞİŞMEZ, ikinci piksel
+   box-shadow ile çizilir: 1px→2px geçişi ızgarayı kaydırırdı. */
+.sdoc-card:hover,
+.sdoc-card:focus-visible {
+  outline: none;
+  border-color: var(--color-primary-ring);
+  box-shadow: 0 0 0 1px var(--color-primary-ring);
+}
+
+/* ŞB 96 */
+.sdoc-card__icon {
+  font-size: var(--text-document-icon);
+  margin-bottom: var(--space-2);
+}
+
+/* ŞB 97 */
+.sdoc-card__name {
+  font-size: var(--text-document-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+}
+
+/* ŞB 98 */
+.sdoc-card__meta {
+  font-size: var(--text-document-meta);
+  color: var(--color-text-subtle);
+}
+
+/* ŞB 130-133 — kesikli yükleme kartı */
+.sdoc-card--upload {
+  justify-content: center;
+  min-height: var(--min-height-document-upload);
+  border: 2px dashed var(--color-dashed-border);
+}
+.sdoc-card--upload:hover,
+.sdoc-card--upload:focus-visible {
+  border-color: var(--color-primary);
+  box-shadow: none;
+}
+
+/* ŞB 131 */
+.sdoc-card__plus {
+  font-size: var(--text-document-upload-plus);
+  color: var(--color-dashed-border);
+}
+
+/* ŞB 132 */
+.sdoc-card__upload-label {
+  margin-top: var(--space-1);
+  font-size: var(--text-document-sm);
+  color: var(--color-text-subtle);
+}
+
+.sdoc-grid__message {
+  grid-column: 1 / -1;
+  padding: var(--space-6) 0;
+  font-size: var(--text-body);
+  color: var(--color-text-subtle);
+}
+
+/* ── "Son Eklenenler" (ŞB 137-164) ────────────────────────────────────────── */
+.sdoc-recent {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+/* ŞB 138-139 */
+.sdoc-recent__title {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-document-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-group);
+}
+
+.sdoc-recent__list {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* ŞB 142 */
+.sdoc-recent__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-document-row-y) var(--space-4);
+  border-bottom: 1px solid var(--color-divider);
+}
+.sdoc-recent__row:last-child {
+  border-bottom: none;
+}
+
+/* ŞB 143 */
+.sdoc-recent__icon {
+  font-size: var(--text-document-list-icon);
+}
+
+.sdoc-recent__main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ŞB 144 — ad + meta alt satırı */
+.sdoc-recent__name {
+  display: block;
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+.sdoc-recent__meta {
+  display: block;
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* ŞB 145-146 */
+.sdoc-recent__size,
+.sdoc-recent__date {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}
+
+/* ŞB 147 */
+.sdoc-recent__download.btn {
+  padding: 0;
+  font-size: var(--text-document-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+  background: transparent;
+}
+.sdoc-recent__download.btn:hover:not(:disabled) {
+  color: var(--color-primary-hover);
+  background: transparent;
+}
+.sdoc-recent__download.btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+@media (max-width: 1200px) {
+  .sdoc-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

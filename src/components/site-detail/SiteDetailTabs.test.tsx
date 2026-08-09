@@ -46,8 +46,16 @@ describe("SiteDetailTabs (spec §5.3)", () => {
     const gunlukKayit = screen.getByRole("tab", { name: "Günlük Kayıt" });
     expect(gunlukKayit).toHaveAttribute("href", `${BASE}/gunluk-kayit`);
 
+    // F-BC T2: "Belgeler" artik yazildi — title TASIMAZ, gercek rotaya gider.
     const belgeler = screen.getByRole("tab", { name: "Belgeler" });
     expect(belgeler).toHaveAttribute("href", `${BASE}/belgeler`);
+    expect(belgeler).not.toHaveAttribute("title");
+  });
+
+  it("Belgeler rotasindayken yalniz o sekme aria-selected tasir", () => {
+    render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={`${BASE}/belgeler`} />);
+    expect(screen.getByRole("tab", { name: "Belgeler" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Bölümler" })).toHaveAttribute("aria-selected", "false");
   });
 
   it("Bolumler sekmesi title tasimaz (yazilmis rota)", () => {

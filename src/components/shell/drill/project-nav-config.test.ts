@@ -280,6 +280,36 @@ describe("buildProjectNav — href geçerliliği (kırık link koruması)", () =
     }
   });
 
+  // F-BC T2: "Belgeler" artık GERÇEK bir rotadır — catch-all ComingSoon'a
+  // düşmemelidir. Yukarıdaki döngü catch-all'ı da geçerli saydığından (henüz
+  // yazılmamış sekmeler için doğru davranış) yazılmış sekme AYRICA sınanır:
+  // rota klasörü silinir/yeniden adlandırılırsa bu test kırılır, kullanıcı
+  // sessizce "yakında" ekranı görmez.
+  it("'Belgeler' sekmesi gerçek bir statik rotaya düşer (catch-all DEĞİL)", () => {
+    const nav = buildProjectNav({
+      projectId: "42",
+      projectName: "Güneşkent Konut",
+      siteId: "99",
+      siteName: "A-Blok Şantiyesi",
+    });
+    const siteGroup = nav.groups.find((g) => g.heading === "A-Blok Şantiyesi");
+    const documents = siteGroup!.items.find((i) => i.label === "Belgeler");
+    expect(documents?.href).toBe("/projeler/42/santiyeler/99/belgeler");
+    expect(resolveHref(documents!.href, true)).toEqual({ kind: "static" });
+  });
+
+  it("henüz yazılmamış 'Stok' sekmesi catch-all'a düşer (kontrol grubu)", () => {
+    const nav = buildProjectNav({
+      projectId: "42",
+      projectName: "Güneşkent Konut",
+      siteId: "99",
+      siteName: "A-Blok Şantiyesi",
+    });
+    const siteGroup = nav.groups.find((g) => g.heading === "A-Blok Şantiyesi");
+    const stock = siteGroup!.items.find((i) => i.label === "Stok");
+    expect(resolveHref(stock!.href, true)).toEqual({ kind: "catch-all" });
+  });
+
   // F-SD T7 final review bulgusu: "Bölümler" şantiye kök rotasıdır ve diğer 6
   // sekmenin atasıdır; `exact` olmadan ön ek eşleşmesi her alt sekmede İKİ
   // öğeyi birden aktif işaretliyordu (ekran görüntüsüyle yakalandı).
