@@ -2681,6 +2681,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/projects/{project_id}/units/export.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Units Export Endpoint
+         * @description P9 T4 (KKP 24 "Excel"): paylasim tablosunun Excel ciktisi (spec §5).
+         *
+         *     Zarf `service.list_units` ile — LISTE UCUYLA AYNI cagridan — gelir: gorunurluk
+         *     kapisi (gorunmeyen proje 404), satir sirasi ve tum degerler ekranla birebir
+         *     ayni kaynaktan cikar. Ikinci bir hesap/sorgu yolu ACILMAZ (timesheet export
+         *     emsali: bir kere kur, iki kere bas).
+         *
+         *     SUZGEC ALMAZ (liste ucundaki `block_id`/`kind`/... parametreleri): KKP'nin
+         *     Excel dugmesi paylasim tablosunun TAMAMINI indirir; kismi dosya, tfoot
+         *     toplamlariyla (proje geneli) celisen bir belge uretirdi.
+         *
+         *     Okuma ucudur — `_audit` CAGIRMAZ ve `Request` parametresi bile ALMAZ
+         *     (P4 T7 kurali; sablon ucuyle ayni gerekce).
+         */
+        get: operations["units_export_endpoint_projects__project_id__units_export_xlsx_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users": {
         parameters: {
             query?: never;
@@ -5513,8 +5545,18 @@ export interface components {
             /** Is Draft */
             is_draft?: boolean | null;
         };
-        /** ShareholderInput */
+        /**
+         * ShareholderInput
+         * @description P9 spec §4.1: `id` OPSIYONELDIR ve satirin KIMLIGINI korur.
+         *
+         *     id verilirse mevcut satir yerinde guncellenir (`units.shareholder_id` bagi
+         *     ayakta kalir); verilmezse yeni satirdir. id'siz eski govdeler geriye uyumlu
+         *     calisir. Bilinmeyen ya da baska projeye ait id sessizce yeni satira DONMEZ,
+         *     422 verir (bkz. `service._merge_shareholders`).
+         */
         ShareholderInput: {
+            /** Id */
+            id?: string | null;
             /** Name */
             name: string;
             /** Share Pct */
@@ -7706,6 +7748,13 @@ export interface components {
         /**
          * UnitAllocationItem
          * @description KKP 25 "Paylasimi Kaydet". `owner_side=None` atamayi kaldirir (spec §5.3).
+         *
+         *     P9 spec §4.2/§5: `shareholder_id` YALNIZ `owner_side=landowner` iken
+         *     anlamlidir (PG 221: select yalniz ARSA satirinda; PG 190: BIZ satiri
+         *     "Yuklenici payi" basar) — aksi hâlde 422. Alan GONDERILMEZSE `None`
+         *     sayilir: uc atomik DEGISTIRME sozlesmesini korur, kismi guncellemeye
+         *     yumusamaz. Bu yuzden ARSA'dan cikan unitenin hissedari AYNI istekte
+         *     temizlenir; ayri bir istek beklenmez.
          */
         UnitAllocationItem: {
             /**
@@ -7714,6 +7763,8 @@ export interface components {
              */
             unit_id: string;
             owner_side: components["schemas"]["UnitOwnerSide"] | null;
+            /** Shareholder Id */
+            shareholder_id?: string | null;
         };
         /** UnitAllocationRequest */
         UnitAllocationRequest: {
@@ -8073,8 +8124,11 @@ export interface components {
         UnitParkingRight: "none" | "one_closed" | "two";
         /**
          * UnitResponse
-         * @description KY 271-274 ve KKP 86-90 sutunlari. Satis alanlari (KY 275-277, KKP 91-92)
-         *     P8'in isidir ve yer tutucu doner — `units`'te saklanmaz (spec §4.6).
+         * @description KY 271-274 ve KKP 86-92 sutunlari.
+         *
+         *     Satis alanlari (KY 275-277, KKP 92) P8 T5'te, hissedar (KKP 91) P9 T3'te
+         *     GERCEK degere baglandi; ikisi de artik yer tutucu DEGILDIR. Geriye kalan iki
+         *     yer tutucu (`unit_cost`, `expected_profit`) kalici karar 3 geregidir.
          */
         UnitResponse: {
             /**
@@ -8122,7 +8176,10 @@ export interface components {
             sale_price: string | null;
             /** Buyer Name */
             buyer_name: string | null;
-            shareholder: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            /** Shareholder Id */
+            shareholder_id: string | null;
+            /** Shareholder Name */
+            shareholder_name: string | null;
             unit_cost: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
             expected_profit: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
             /** Label */
@@ -16042,6 +16099,51 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Excel sablonu */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": unknown;
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    units_export_endpoint_projects__project_id__units_export_xlsx_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Excel dosyasi */
             200: {
                 headers: {
                     [name: string]: unknown;
