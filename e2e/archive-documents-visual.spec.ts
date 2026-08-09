@@ -86,6 +86,11 @@ test("belge arsivi (dolu) gorsel", async ({ page }) => {
   // `.first()` — akış-SSR çift kopyası metin locator'larını da ikiye çözer.
   await expect(page.getByText("Kule A / Hakedişler").first()).toBeVisible();
 
+  // ⚠️ FARE KONUMU BASELINE'A SIZAR: girişteki tıklamadan kalan imleç,
+  // gezinmeden sonra ızgaradaki bir kartın üstüne denk gelip onu `:hover`
+  // hâlinde donduruyordu (baseline turu 31312763276'de fiilen görüldü).
+  // İmleç boş bir köşeye çekilir — kadraj hover'sız ve deterministik olur.
+  await page.mouse.move(1439, 899);
   await expect(page).toHaveScreenshot("belgeler-genel.png", { fullPage: true });
 });
 
@@ -111,6 +116,11 @@ test("belge arsivi (bos durum) gorsel", async ({ page }) => {
   // Proje seçilmeden "Son Eklenenler" bloğu HİÇ basılmaz.
   await expect(page.getByRole("list", { name: "Son eklenen belgeler" })).toHaveCount(0);
 
+  // ⚠️ FARE KONUMU BASELINE'A SIZAR: girişteki tıklamadan kalan imleç,
+  // gezinmeden sonra ızgaradaki bir kartın üstüne denk gelip onu `:hover`
+  // hâlinde donduruyordu (baseline turu 31312763276'de fiilen görüldü).
+  // İmleç boş bir köşeye çekilir — kadraj hover'sız ve deterministik olur.
+  await page.mouse.move(1439, 899);
   await expect(page).toHaveScreenshot("belgeler-genel-bos.png", { fullPage: true });
 });
 
@@ -136,5 +146,10 @@ test("belge yukleme diyalogu gorsel", async ({ page }) => {
   await settleScrollTop(page);
   await expect(dialog).toBeVisible();
 
+  // ⚠️ FARE KONUMU BASELINE'A SIZAR: girişteki tıklamadan kalan imleç,
+  // gezinmeden sonra ızgaradaki bir kartın üstüne denk gelip onu `:hover`
+  // hâlinde donduruyordu (baseline turu 31312763276'de fiilen görüldü).
+  // İmleç boş bir köşeye çekilir — kadraj hover'sız ve deterministik olur.
+  await page.mouse.move(1439, 899);
   await expect(page).toHaveScreenshot("belge-yukle-diyalog.png", { fullPage: true });
 });
