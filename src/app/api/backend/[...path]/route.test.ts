@@ -257,6 +257,30 @@ describe("BFF /api/backend/[...path]", () => {
       expect(res.headers.get("cache-control")).toBe("no-store");
     });
 
+    // 2b) F-BC CANLI SMOKE BULGUSU: ikili dal basliklari SIFIRDAN kurdugu icin
+    // backend'in `X-Content-Type-Options: nosniff`i DUSUYORDU. Belge arsivinde
+    // icerik KULLANICIDAN geldigi icin bu, depolanmis-XSS savunmasinin ikinci
+    // katmanidir (birincisi: `mime_type` uzantidan turetilir).
+    it("ikili indirmede nosniff basligi HER ZAMAN basilir", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue(
+          binaryBackendResponse({
+            "content-type": "application/pdf",
+            "content-disposition": 'attachment; filename="SMOKE_Belge.pdf"',
+          }),
+        ),
+      );
+      const res = await GET(
+        req("/api/backend/documents/d1/download", "GET", { [ACCESS_COOKIE]: "acc" }),
+        ctx(["documents", "d1", "download"]),
+      );
+      expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+      expect(res.headers.get("content-disposition")).toBe(
+        'attachment; filename="SMOKE_Belge.pdf"',
+      );
+    });
+
     // 3) Mevcut davranis korunur — denetim gunlugu indirmesi kirilmaz.
     it("uzantili export hala ikili: audit-log/export.xlsx", async () => {
       vi.stubGlobal(
