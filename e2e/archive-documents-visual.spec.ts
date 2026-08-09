@@ -1,0 +1,155 @@
+import { test, expect, type Page } from "@playwright/test";
+
+// F-BC T5 · Ekran 12 · Belge Arşivi (`/belgeler`) görsel testleri — mockup
+// `Ekran 12 - Belge Arşivi.dc.html`. `site-planning-visual.spec.ts` /
+// `subcontractor-progress-payments-visual.spec.ts` deseninin aynısı.
+//
+// SALT-OKUR: bu dosya hiçbir POST/PUT/DELETE tetiklemez — yalnız p-1'in PROJE
+// DÜZEYİ fikstürlerini render eder. Belge yazan spec'ler (`document-dialogs`,
+// `archive-documents`in son testi) bilerek s-2 / p-2'de yürür, bu yüzden
+// `fullyParallel` altında baseline yarışı YOKTUR (T3/T4 izolasyon notları).
+//
+// ⏱️ TARİH SABİTLEME (zorunlu): kart ve "Son Eklenenler" satırları "Bugün" /
+// "Dün" etiketi basar; fikstürler TEMMUZ 2026'dadır. `page.clock.setFixedTime`
+// NAVİGASYONDAN ÖNCE kurulur (site-documents / site-diary spec'leriyle aynı
+// yöntem). Sabitlenmezse baseline her gün kayar.
+//
+// Baseline `.png` YALNIZ Linux CI'da üretilir (visual-baselines.yml →
+// workflow_dispatch → artifact → `e2e/`); macOS'ta koşturulup commit edilmez.
+
+const ARCHIVE_URL = "/belgeler";
+/** Fikstürlerin "bugünü" (E12 "Bugün" satırı fikstürlerle eşleşir). */
+const FIXED_NOW = "2026-07-17T13:00:00Z";
+/** Dolu kadrajın kaynağı: Kule A › Hakedişler (proje düzeyi klasör). */
+const FILLED_URL = `${ARCHIVE_URL}?proje=p-1&folder=df-p1-2`;
+
+async function login(page: Page) {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/login");
+  await page.getByLabel(/e-posta/i).fill("patron@fiil.com");
+  await page.getByLabel(/^şifre$/i).fill("dogruparola");
+  await page.getByRole("button", { name: /giriş yap/i }).click();
+  await expect(page.getByRole("heading", { name: "Gösterge Paneli" })).toBeVisible();
+}
+
+/**
+ * Ekran GERÇEKTEN doldu mu — yükleme/iskelet hâli baseline'a girmesin
+ * (WORKFLOW §4 görsel spec kuralı, 1. parça).
+ *
+ * ⚠️ `.first()` ZORUNLU: akış-SSR sırasında sunucudan gelen ve hidrasyonla
+ * eklenen KOPYA kısa bir an yan yana durur (yalnız Linux CI'da patlar); ayrıca
+ * aynı belge hem kart ızgarasında hem "Son Eklenenler" satırında AYNI
+ * erişilebilir adı taşır — kapsamsız locator iki elemana çözülür.
+ */
+async function expectArchiveLoaded(page: Page) {
+  await expect(page.getByRole("heading", { level: 1, name: "Hakedişler" })).toBeVisible();
+  // Klasör paneli: proje kökü + seçili projenin klasörleri geldi.
+  const panel = page.getByRole("navigation", { name: "Belge klasörleri" });
+  await expect(panel.getByRole("link", { name: /Sözleşmeler/ }).first()).toBeVisible();
+  // Izgara: ilk kart meta satırıyla birlikte basılı (yükleme metni değil).
+  await expect(page.getByRole("button", { name: /Hakediş_47_Güneşkent\.pdf/ }).first()).toContainText(
+    "1,2 MB · Bugün",
+  );
+  await expect(page.locator(".sdoc-grid").first().locator(".sdoc-card")).not.toHaveCount(0);
+  // "Son Eklenenler" listesi de dolu (E12 166-184).
+  await expect(
+    page.getByRole("list", { name: "Son eklenen belgeler" }).getByRole("listitem"),
+  ).not.toHaveCount(0);
+}
+
+/**
+ * `fullPage` kadrajdan ÖNCE kaydırmayı sıfırlar ve OTURDUĞUNU doğrular
+ * (WORKFLOW §4, 2. parça — F-PT/F-PL dersi).
+ *
+ * ⚠️ KÖK NEDEN: Playwright'ın `.click()`i hedefi gerekirse görünür alana
+ * KAYDIRIR; `fullPage` kadraj ise YAPIŞKAN kabuğu (topbar + sidebar) o ofsette
+ * basar — kare, kabuğu aşağı kaymış ve içeriğe binmiş yakalar. Kaydırmanın
+ * gerekip gerekmediği zamanlamaya bağlı olduğundan baseline DETERMİNİSTİK
+ * OLMAZ. Bekleme DURUM tabanlıdır (`expect.poll`) — sabit `waitForTimeout`
+ * DEĞİL.
+ *
+ * Bu dosyada YALNIZ diyalog kadrajı tıklar; tıklamayan iki kadraj bu korumaya
+ * ihtiyaç duymaz ve onlara EKLENMEZ.
+ */
+async function settleScrollTop(page: Page) {
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(0);
+}
+
+test("belge arsivi (dolu) gorsel", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(FIXED_NOW));
+  await login(page);
+  await page.goto(FILLED_URL);
+  await expectArchiveLoaded(page);
+
+  // E12 118 — breadcrumb; kadraj başlık şeridini de taşısın.
+  // `.first()` — akış-SSR çift kopyası metin locator'larını da ikiye çözer.
+  await expect(page.getByText("Kule A / Hakedişler").first()).toBeVisible();
+
+  // ⚠️ FARE KONUMU BASELINE'A SIZAR: girişteki tıklamadan kalan imleç,
+  // gezinmeden sonra ızgaradaki bir kartın üstüne denk gelip onu `:hover`
+  // hâlinde donduruyordu (baseline turu 31312763276'de fiilen görüldü).
+  // İmleç boş bir köşeye çekilir — kadraj hover'sız ve deterministik olur.
+  await page.mouse.move(1439, 899);
+  await expect(page).toHaveScreenshot("belgeler-genel.png", { fullPage: true });
+});
+
+test("belge arsivi (bos durum) gorsel", async ({ page }) => {
+  // BOŞ DURUM SEÇİMİ: iki aday vardı — (a) proje seçilmemiş kök, (b) belgesiz
+  // klasör. (a) SEÇİLDİ çünkü E12'nin KENDİ tasarladığı boş durumudur (ızgara
+  // yönlendirme metnini basar, "Son Eklenenler" HİÇ basılmaz, yazma düğmeleri
+  // proje yokken çizilmez) ve hiçbir fikstür/route hilesi gerektirmez: sade
+  // `/belgeler` navigasyonu. (b) ancak mock'a boş bir klasör EKLEYEREK ya da
+  // GET yanıtını kadraja özel boşaltarak kurulabilirdi — ikisi de paylaşılan
+  // fikstürlere dokunur ya da gereksiz kurulum taşır.
+  await page.clock.setFixedTime(new Date(FIXED_NOW));
+  await login(page);
+  await page.goto(ARCHIVE_URL);
+
+  // Yüklendi iddiası: proje kökleri geldi (panel "Projeler yükleniyor…" DEĞİL).
+  const panel = page.getByRole("navigation", { name: "Belge klasörleri" });
+  await expect(panel.getByRole("link", { name: /Kule A/ }).first()).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Belge Arşivi" })).toBeVisible();
+  await expect(
+    page.getByText("Belgeleri görmek için soldaki panelden bir proje seçin."),
+  ).toBeVisible();
+  // Proje seçilmeden "Son Eklenenler" bloğu HİÇ basılmaz.
+  await expect(page.getByRole("list", { name: "Son eklenen belgeler" })).toHaveCount(0);
+
+  // ⚠️ FARE KONUMU BASELINE'A SIZAR: girişteki tıklamadan kalan imleç,
+  // gezinmeden sonra ızgaradaki bir kartın üstüne denk gelip onu `:hover`
+  // hâlinde donduruyordu (baseline turu 31312763276'de fiilen görüldü).
+  // İmleç boş bir köşeye çekilir — kadraj hover'sız ve deterministik olur.
+  await page.mouse.move(1439, 899);
+  await expect(page).toHaveScreenshot("belgeler-genel-bos.png", { fullPage: true });
+});
+
+test("belge yukleme diyalogu gorsel", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(FIXED_NOW));
+  await login(page);
+  await page.goto(FILLED_URL);
+  await expectArchiveLoaded(page);
+
+  // Diyalog dolu ızgaranın ÜSTÜNDE açılır — kadraj örtü (overlay) katmanını da
+  // taşısın diye `fullPage` seçildi (eleman kadrajı örtüyü göstermezdi).
+  await page.getByRole("button", { name: "↑ Yükle" }).click();
+  const dialog = page.getByRole("dialog", { name: "Belge Yükle" });
+  await expect(dialog).toBeVisible();
+  // Form OTURDU: üç alan da basılı ve hedef klasör AKTİF klasöre önayarlı
+  // (spec §6 S1) — dosya seçilmediği için hata satırı yoktur.
+  await expect(dialog.getByLabel("Dosya")).toBeVisible();
+  await expect(dialog.getByLabel("Klasör")).toHaveValue("df-p1-2");
+  await expect(dialog.getByLabel("Açıklama")).toHaveValue("");
+  await expect(dialog.locator(".pf-form-error")).toHaveCount(0);
+
+  // Tıklama kaydırmış olabilir — kabuk ofsetli basılmasın (bkz. settleScrollTop).
+  await settleScrollTop(page);
+  await expect(dialog).toBeVisible();
+
+  // ⚠️ FARE KONUMU BASELINE'A SIZAR: girişteki tıklamadan kalan imleç,
+  // gezinmeden sonra ızgaradaki bir kartın üstüne denk gelip onu `:hover`
+  // hâlinde donduruyordu (baseline turu 31312763276'de fiilen görüldü).
+  // İmleç boş bir köşeye çekilir — kadraj hover'sız ve deterministik olur.
+  await page.mouse.move(1439, 899);
+  await expect(page).toHaveScreenshot("belge-yukle-diyalog.png", { fullPage: true });
+});

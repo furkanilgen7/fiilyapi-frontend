@@ -61,7 +61,10 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Mali Tablolar", href: "/mali-tablolar", Icon: TrendingUpIcon },
       { label: "Bordro", href: "/bordro", Icon: ListIcon },
       { label: "Şirket Varlıkları", href: "/sirket-varliklari", Icon: BuildingIcon },
-      { label: "Belge Arşivi", href: "/belge-arsivi", Icon: FolderIcon },
+      // F-BC T4: Ekran 12 gerçek rotasıdır (`/belgeler`) — ComingSoon'dan çıktı.
+      // Eski `/belge-arsivi` href'i hiç yazılmamış bir rotaydı; nav href guard
+      // testi bu öğenin gerçek bir sayfaya düştüğünü ayrıca doğrular.
+      { label: "Belge Arşivi", href: "/belgeler", Icon: FolderIcon },
     ],
   },
 ];

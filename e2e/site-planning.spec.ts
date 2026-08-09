@@ -39,7 +39,7 @@ async function login(page: Page) {
  * metinler drill sidebar'da da geçiyor ve sayfa genelinde çoklu eşleşir.
  */
 function gridCard(page: Page) {
-  return page.locator(".plan-card--grid");
+  return page.locator(".plan-card--grid").first();
 }
 
 /**
@@ -54,7 +54,26 @@ function weekLabel(page: Page) {
 
 /** Sprint şeridi — `weekLabel` ile aynı çift-eşleşme riski. */
 function sprintLabel(page: Page) {
-  return gridCard(page).locator(".plan-week-nav__sprint");
+  return gridCard(page).locator(".plan-week-nav__sprint").first();
+}
+
+/**
+ * Hedefler kartı — `weekLabel` ile AYNI akış-SSR çift-kopya sınıfı. Kapsamsız
+ * `.plan-goals` locator'ı hidrasyon anında iki elemana çözülebilir; `.first()`
+ * hem `toHaveCount` sayımlarını hem de içine kapsamlanan tıklamaları korur.
+ */
+function goalsCard(page: Page) {
+  return page.locator(".plan-goals").first();
+}
+
+/** Kaydetme durum şeridi — aynı çift-kopya riski. */
+function saveStatus(page: Page) {
+  return page.locator(".plan-save-status").first();
+}
+
+/** Ekip grubu — ızgara kartına kapsamlanır (sayfada tek kopya garantisi yok). */
+function crewGroup(page: Page) {
+  return gridCard(page).locator(".plan-grid__group--crew").first();
 }
 
 /** Satır etiketi sütunu artık menü de içerir; metin karşılaştırması bu düğümledir. */
@@ -65,7 +84,7 @@ function rowLead(page: Page, label: string) {
 /** "Kaydet" → adım sonucunu bekle (zaman aşımına dayalı bekleme YOK). */
 async function saveAndExpect(page: Page, doneLine: string) {
   await page.getByRole("button", { name: "Kaydet" }).click();
-  const status = page.locator(".plan-save-status");
+  const status = saveStatus(page);
   await expect(status).toContainText(doneLine);
   await expect(status).not.toContainText("kaydedilemedi");
 }
@@ -100,7 +119,7 @@ test.describe("planlama ızgarası (SALT-OKUR, s-1)", () => {
     await expect(grid.getByText("Vinç periyodik bakım")).toBeVisible();
 
     // Dört hedef, dört farklı durumla.
-    const goals = page.locator(".plan-goals");
+    const goals = goalsCard(page);
     await expect(goals.locator(".plan-goals__row")).toHaveCount(4);
     await expect(
       goals.getByRole("combobox", { name: "6. kat kalıp tamamlansın — hedef durumu" }),
@@ -194,10 +213,7 @@ test.describe("planlama düzenleme (MUTASYON, s-2)", () => {
     await expect(weekLabel(page)).toHaveText("3 – 9 Ağustos 2026");
 
     // --- Ekleme
-    await page
-      .locator(".plan-grid__group--crew")
-      .getByRole("button", { name: "+ Satır" })
-      .click();
+    await crewGroup(page).getByRole("button", { name: "+ Satır" }).click();
     const addPopover = page.getByRole("dialog", { name: "Yeni plan satırı" });
     await addPopover.getByLabel("Etiket").fill("Sıvacı Ekibi");
     await addPopover.getByLabel("İşçi sayısı").fill("6");
@@ -230,7 +246,7 @@ test.describe("planlama düzenleme (MUTASYON, s-2)", () => {
   test("hedef ekleme ve düzenleme kalıcıdır (kutucuk + durum ayrı alanlar)", async ({ page }) => {
     await login(page);
     await page.goto(MUTATION_URL);
-    const goals = page.locator(".plan-goals");
+    const goals = goalsCard(page);
     await expect(goals.locator(".plan-goals__row")).toHaveCount(1);
 
     // Mevcut hedef: kutucuk işaretlenir ama durum "Beklemede" KALIR —
@@ -305,7 +321,7 @@ test.describe("planlama düzenleme (MUTASYON, s-2)", () => {
   test("satır ekleme formunda bölüm seçicisi bulunur", async ({ page }) => {
     await login(page);
     await page.goto(MUTATION_URL);
-    await page.locator(".plan-grid__group--crew").getByRole("button", { name: "+ Satır" }).click();
+    await crewGroup(page).getByRole("button", { name: "+ Satır" }).click();
 
     const addPopover = page.getByRole("dialog", { name: "Yeni plan satırı" });
     await expect(addPopover.getByLabel("Bölüm")).toBeEnabled();
@@ -324,17 +340,17 @@ test.describe("planlama düzenleme (MUTASYON, s-2)", () => {
   test("başlığı boş hedefte kaydetme başlamaz, görünür gerekçe basılır", async ({ page }) => {
     await login(page);
     await page.goto(MUTATION_URL);
-    const goalCountBefore = await page.locator(".plan-goals__row").count();
+    const goalCountBefore = await goalsCard(page).locator(".plan-goals__row").count();
 
     await page.getByRole("button", { name: "+ Hedef" }).click();
     await page.getByRole("button", { name: "Kaydet" }).click();
 
-    const status = page.locator(".plan-save-status");
+    const status = saveStatus(page);
     await expect(status).toContainText("Başlığı boş bir hedef var.");
     await expect(status).not.toContainText("kaydedildi");
 
     // Sunucuya hiçbir şey gitmedi: yeniden yükleme eski hâli getirir.
     await page.reload();
-    await expect(page.locator(".plan-goals__row")).toHaveCount(goalCountBefore);
+    await expect(goalsCard(page).locator(".plan-goals__row")).toHaveCount(goalCountBefore);
   });
 });

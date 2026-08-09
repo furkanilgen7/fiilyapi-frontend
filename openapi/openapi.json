@@ -10059,6 +10059,57 @@
         }
       }
     },
+    "/projects/{project_id}/units/export.xlsx": {
+      "get": {
+        "tags": [
+          "units"
+        ],
+        "summary": "Units Export Endpoint",
+        "description": "P9 T4 (KKP 24 \"Excel\"): paylasim tablosunun Excel ciktisi (spec §5).\n\nZarf `service.list_units` ile — LISTE UCUYLA AYNI cagridan — gelir: gorunurluk\nkapisi (gorunmeyen proje 404), satir sirasi ve tum degerler ekranla birebir\nayni kaynaktan cikar. Ikinci bir hesap/sorgu yolu ACILMAZ (timesheet export\nemsali: bir kere kur, iki kere bas).\n\nSUZGEC ALMAZ (liste ucundaki `block_id`/`kind`/... parametreleri): KKP'nin\nExcel dugmesi paylasim tablosunun TAMAMINI indirir; kismi dosya, tfoot\ntoplamlariyla (proje geneli) celisen bir belge uretirdi.\n\nOkuma ucudur — `_audit` CAGIRMAZ ve `Request` parametresi bile ALMAZ\n(P4 T7 kurali; sablon ucuyle ayni gerekce).",
+        "operationId": "units_export_endpoint_projects__project_id__units_export_xlsx_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Excel dosyasi",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {}
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/users": {
       "get": {
         "tags": [
@@ -18687,6 +18738,18 @@
       },
       "ShareholderInput": {
         "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
           "name": {
             "type": "string",
             "maxLength": 200,
@@ -18713,7 +18776,8 @@
           "name",
           "share_pct"
         ],
-        "title": "ShareholderInput"
+        "title": "ShareholderInput",
+        "description": "P9 spec §4.1: `id` OPSIYONELDIR ve satirin KIMLIGINI korur.\n\nid verilirse mevcut satir yerinde guncellenir (`units.shareholder_id` bagi\nayakta kalir); verilmezse yeni satirdir. id'siz eski govdeler geriye uyumlu\ncalisir. Bilinmeyen ya da baska projeye ait id sessizce yeni satira DONMEZ,\n422 verir (bkz. `service._merge_shareholders`)."
       },
       "ShareholderResponse": {
         "properties": {
@@ -24632,6 +24696,18 @@
                 "type": "null"
               }
             ]
+          },
+          "shareholder_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shareholder Id"
           }
         },
         "type": "object",
@@ -24640,7 +24716,7 @@
           "owner_side"
         ],
         "title": "UnitAllocationItem",
-        "description": "KKP 25 \"Paylasimi Kaydet\". `owner_side=None` atamayi kaldirir (spec §5.3)."
+        "description": "KKP 25 \"Paylasimi Kaydet\". `owner_side=None` atamayi kaldirir (spec §5.3).\n\nP9 spec §4.2/§5: `shareholder_id` YALNIZ `owner_side=landowner` iken\nanlamlidir (PG 221: select yalniz ARSA satirinda; PG 190: BIZ satiri\n\"Yuklenici payi\" basar) — aksi hâlde 422. Alan GONDERILMEZSE `None`\nsayilir: uc atomik DEGISTIRME sozlesmesini korur, kismi guncellemeye\nyumusamaz. Bu yuzden ARSA'dan cikan unitenin hissedari AYNI istekte\ntemizlenir; ayri bir istek beklenmez."
       },
       "UnitAllocationRequest": {
         "properties": {
@@ -25816,8 +25892,28 @@
             ],
             "title": "Buyer Name"
           },
-          "shareholder": {
-            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          "shareholder_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shareholder Id"
+          },
+          "shareholder_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shareholder Name"
           },
           "unit_cost": {
             "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
@@ -25874,7 +25970,8 @@
           "sales_status",
           "sale_price",
           "buyer_name",
-          "shareholder",
+          "shareholder_id",
+          "shareholder_name",
           "unit_cost",
           "expected_profit",
           "label",
@@ -25882,7 +25979,7 @@
           "is_landowner_share"
         ],
         "title": "UnitResponse",
-        "description": "KY 271-274 ve KKP 86-90 sutunlari. Satis alanlari (KY 275-277, KKP 91-92)\nP8'in isidir ve yer tutucu doner — `units`'te saklanmaz (spec §4.6)."
+        "description": "KY 271-274 ve KKP 86-92 sutunlari.\n\nSatis alanlari (KY 275-277, KKP 92) P8 T5'te, hissedar (KKP 91) P9 T3'te\nGERCEK degere baglandi; ikisi de artik yer tutucu DEGILDIR. Geriye kalan iki\nyer tutucu (`unit_cost`, `expected_profit`) kalici karar 3 geregidir."
       },
       "UnitSaleCreate": {
         "properties": {

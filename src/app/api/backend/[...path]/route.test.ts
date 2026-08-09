@@ -21,6 +21,26 @@ function ctx(path: string[]): { params: Promise<{ path: string[] }> } {
   return { params: Promise.resolve({ path }) };
 }
 
+/**
+ * Ham gövdeli istek (multipart) — `req()` gövdeyi JSON'a çevirdiği için
+ * belge yükleme akışı onunla temsil EDILEMEZ.
+ */
+function rawReq(
+  url: string,
+  method: string,
+  contentType: string,
+  body: string,
+  cookies: Record<string, string>,
+): NextRequest {
+  const r = new NextRequest("http://localhost:3000" + url, {
+    method,
+    body,
+    headers: { "content-type": contentType },
+  });
+  for (const [k, v] of Object.entries(cookies)) r.cookies.set(k, v);
+  return r;
+}
+
 describe("BFF /api/backend/[...path]", () => {
   beforeEach(() => {
     process.env.BACKEND_URL = "http://backend:8000";
@@ -373,6 +393,205 @@ describe("BFF /api/backend/[...path]", () => {
     });
   });
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // F-BC · T1 — Belge Arşivi: multipart yükleme + ikili indirme.
+  // Iki uc de bu depoda ILK KEZ acilir: `POST /documents` GET DISI ilk ham
+  // (JSON olmayan) govdedir, `GET /documents/{id}/download` ise uzantisiz VE
+  // icerik tipi ONCEDEN BILINMEYEN ilk indirmedir.
+  // ─────────────────────────────────────────────────────────────────────────
+  describe("belge yükleme/indirme (F-BC spec §3)", () => {
+    const BOUNDARY = "----fiilBelgeSinir123";
+    const MULTIPART_TYPE = `multipart/form-data; boundary=${BOUNDARY}`;
+    const MULTIPART_BODY = [
+      `--${BOUNDARY}`,
+      'Content-Disposition: form-data; name="project_id"',
+      "",
+      "p-1",
+      `--${BOUNDARY}`,
+      'Content-Disposition: form-data; name="file"; filename="sozlesme.pdf"',
+      "Content-Type: application/pdf",
+      "",
+      "%PDF-1.4 sahte icerik",
+      `--${BOUNDARY}--`,
+      "",
+    ].join("\r\n");
+
+    function lastFetchInit(fetchMock: ReturnType<typeof vi.fn>): RequestInit {
+      return fetchMock.mock.calls[fetchMock.mock.calls.length - 1][1] as RequestInit;
+    }
+
+    /**
+     * ASIL KAPI: multipart gövde backend'e OLDUĞU GİBİ gitmeli. Eski yol
+     * `request.json()` okuyup gövdeyi `JSON.stringify` ile yeniden kodluyordu;
+     * o yolda gövde `undefined`a düşer, boundary kaybolur ve backend her
+     * yüklemeye 422 döner. jsdom testleri bunu GÖRMEZ, yalnız canlıda çıkar.
+     */
+    it("POST /documents — multipart gövde bayt bayt aynen geçer, boundary korunur", async () => {
+      // Arrange
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ id: "doc-1", filename: "sozlesme.pdf" }), {
+          status: 201,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+
+      // Act
+      const res = await POST(
+        rawReq("/api/backend/documents", "POST", MULTIPART_TYPE, MULTIPART_BODY, {
+          [ACCESS_COOKIE]: "acc",
+        }),
+        ctx(["documents"]),
+      );
+
+      // Assert
+      expect(res.status).toBe(201);
+      expect((await res.json()).id).toBe("doc-1");
+      const init = lastFetchInit(fetchMock);
+      const headers = init.headers as Record<string, string>;
+      expect(headers["content-type"]).toBe(MULTIPART_TYPE);
+      expect(new TextDecoder().decode(init.body as ArrayBuffer)).toBe(MULTIPART_BODY);
+    });
+
+    it("POST /documents — 413 Türkçe gövdesi görünür kalır", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ detail: "Dosya boyutu sınırı aşıldı." }), {
+          status: 413,
+          headers: { "content-type": "application/json" },
+        }),
+      ));
+      const res = await POST(
+        rawReq("/api/backend/documents", "POST", MULTIPART_TYPE, MULTIPART_BODY, {
+          [ACCESS_COOKIE]: "acc",
+        }),
+        ctx(["documents"]),
+      );
+      expect(res.status).toBe(413);
+      expect((await res.json()).detail).toBe("Dosya boyutu sınırı aşıldı.");
+    });
+
+    it("POST /projects/{id}/document-folders — JSON gövde yolu bozulmadı", async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ id: "df-9", name: "Sözleşmeler" }), { status: 201 }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+      const res = await POST(
+        req("/api/backend/projects/p-1/document-folders", "POST", { [ACCESS_COOKIE]: "acc" }, {
+          name: "Sözleşmeler",
+        }),
+        ctx(["projects", "p-1", "document-folders"]),
+      );
+      expect(res.status).toBe(201);
+      const init = lastFetchInit(fetchMock);
+      expect((init.headers as Record<string, string>)["content-type"]).toBe("application/json");
+      expect(init.body).toBe(JSON.stringify({ name: "Sözleşmeler" }));
+    });
+
+    it("indirme — PDF baytları ve Content-Disposition aynen geçer", async () => {
+      const bytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d]);
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+        new Response(bytes, {
+          status: 200,
+          headers: {
+            "content-type": "application/pdf",
+            "content-disposition": 'attachment; filename="sozlesme.pdf"',
+          },
+        }),
+      ));
+      const res = await GET(
+        req("/api/backend/documents/doc-1/download", "GET", { [ACCESS_COOKIE]: "acc" }),
+        ctx(["documents", "doc-1", "download"]),
+      );
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toBe("application/pdf");
+      expect(res.headers.get("content-disposition")).toBe('attachment; filename="sozlesme.pdf"');
+      expect(new Uint8Array(await res.arrayBuffer())).toEqual(bytes);
+    });
+
+    /**
+     * TUZAK: indirilen belgenin içerik tipi KULLANICI dosyasından gelir; bir
+     * `.txt`/`.csv`/`.json` belgesi `text/*` veya `application/json` taşır.
+     * Genel `Content-Type` kuralı bunları METİN sayıp JSON dalına düşürür ve
+     * `decodeJson` çözemediği gövde için `null` basar — dosya hiç inmez.
+     * İndirme ucunda karar SEGMENTten verilir.
+     */
+    it.each([
+      ["text/plain; charset=utf-8", "ölçüm notları\r\nsatır 2"],
+      ["application/json", '{"a": 1}'],
+    ])("indirme — metin içerik tipli belge (%s) de ikili dal ile geçer", async (type, content) => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+        new Response(content, {
+          status: 200,
+          headers: {
+            "content-type": type,
+            "content-disposition": 'attachment; filename="notlar.txt"',
+          },
+        }),
+      ));
+      const res = await GET(
+        req("/api/backend/documents/doc-2/download", "GET", { [ACCESS_COOKIE]: "acc" }),
+        ctx(["documents", "doc-2", "download"]),
+      );
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toBe(type);
+      expect(res.headers.get("content-disposition")).toBe('attachment; filename="notlar.txt"');
+      expect(await res.text()).toBe(content);
+    });
+
+    // F-TH tuzağı: `status >= 400` HER ZAMAN JSON dalı — indirme ucu istisna değil.
+    it("indirme — 403 Türkçe gövdesi ikili sayılmaz", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ detail: "Bu belgeye erişim yetkiniz yok." }), {
+          status: 403,
+          headers: { "content-type": "application/pdf" },
+        }),
+      ));
+      const res = await GET(
+        req("/api/backend/documents/doc-3/download", "GET", { [ACCESS_COOKIE]: "acc" }),
+        ctx(["documents", "doc-3", "download"]),
+      );
+      expect(res.status).toBe(403);
+      expect(res.headers.get("content-type")).toContain("application/json");
+      expect((await res.json()).detail).toBe("Bu belgeye erişim yetkiniz yok.");
+    });
+
+    it("indirme — 404 gövdesi JSON dalından geçer", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ detail: "Belge bulunamadı." }), {
+          status: 404,
+          headers: { "content-type": "application/json" },
+        }),
+      ));
+      const res = await GET(
+        req("/api/backend/documents/yok/download", "GET", { [ACCESS_COOKIE]: "acc" }),
+        ctx(["documents", "yok", "download"]),
+      );
+      expect(res.status).toBe(404);
+      expect((await res.json()).detail).toBe("Belge bulunamadı.");
+    });
+
+    it("GET /documents — kapsam süzgeçleri query olarak iletilir", async () => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ documents: [] }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+      const res = await GET(
+        req("/api/backend/documents?project_id=p-1&site_id=s-1&q=ruhsat", "GET", {
+          [ACCESS_COOKIE]: "acc",
+        }),
+        ctx(["documents"]),
+      );
+      expect(res.status).toBe(200);
+      const url = String(fetchMock.mock.calls[0][0]);
+      expect(url).toContain("project_id=p-1");
+      expect(url).toContain("site_id=s-1");
+      expect(url).toContain("q=ruhsat");
+    });
+  });
+
   // Regresyon korkulugu: uygulama katmani yeni bir backend koku cagirdiginda
   // (or. Santiye Detay'in "/sites/{site_id}" ucu) BFF allow-list'i guncellenmezse
   // ekran sessizce 404 alir ve yalniz gorsel/e2e testte patlar. Bu test istemci
@@ -588,6 +807,43 @@ describe("BFF /api/backend/[...path]", () => {
       expect(String(fetchMock.mock.calls[0][0])).toContain("/personnel?limit=200");
       expect(rejected.status).toBe(404);
       expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    // F-BC · T1 — Belge Arşivi IKI yeni kok ekler ve ikisi de ADLI kapiya
+    // baglanir:
+    //   · `documents`        → POST/GET /documents, /documents/{id}[/download]
+    //   · `document-folders` → PATCH/DELETE /document-folders/{id}
+    // Klasor LISTELEME/OLUSTURMA (`/projects/{id}/document-folders`) MEVCUT
+    // "projects" kokunden gecer. `document-folders` koku bu dilimde UI'dan
+    // cagrilmadigi icin (rename/sil BASILMAZ, spec §4) dinamik tarama onu
+    // GORMEZ — kok yalnizca bu adli test sayesinde kapiya bagli kalir.
+    it.each(["documents", "document-folders", "projects"])(
+      "%s koku belge arsivi ekranlari icin allow-list'te tanimlidir",
+      (root) => {
+        const source = readFileSync(
+          resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+          "utf8",
+        );
+        const allowList = source.slice(
+          source.indexOf("const ALLOWED_ROOTS"),
+          source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+        );
+        const entries = [...allowList.matchAll(/^\s*"([a-z0-9-]+)",/gm)].map((m) => m[1]);
+        expect(entries).toContain(root);
+      },
+    );
+
+    it.each(["documents", "document-folders"])("%s koku forward edilir", async (root) => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response("{}", { status: 200, headers: { "content-type": "application/json" } }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+      const res = await GET(
+        req(`/api/backend/${root}/x`, "GET", { [ACCESS_COOKIE]: "acc" }),
+        ctx([root, "x"]),
+      );
+      expect(res.status).toBe(200);
+      expect(String(fetchMock.mock.calls[0][0])).toContain(`/${root}/x`);
     });
 
     it.each(calledRoots)("%s koku forward edilir", async (root) => {

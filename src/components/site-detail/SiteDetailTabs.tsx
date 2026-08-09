@@ -30,6 +30,10 @@ interface TabDef {
 //
 // "Puantaj" F-PT T2 ile yazildi (`Şantiye - Puantaj.dc.html`) — ayni sekilde
 // artik gercek rotasi var; project-nav-config.ts'teki sira ile ayrismamali.
+//
+// "Belgeler" F-BC T2 ile yazildi (`Şantiye - Belgeler.dc.html`); artik
+// catch-all ComingSoon'a DUSMEZ. SIRA DEGISMEDI — yalniz `written` bayragi
+// eklendi (project-nav-config.ts ile ayrismamali).
 const TABS: TabDef[] = [
   { label: "Bölümler", slug: null, written: true },
   { label: "İş Kalemleri", slug: "is-kalemleri", written: true },
@@ -37,7 +41,7 @@ const TABS: TabDef[] = [
   { label: "Stok", slug: "stok" },
   { label: "Hakedişler", slug: "hakedisler", written: true },
   { label: "Günlük Kayıt", slug: "gunluk-kayit", written: true },
-  { label: "Belgeler", slug: "belgeler" },
+  { label: "Belgeler", slug: "belgeler", written: true },
 ];
 
 export function SiteDetailTabs({ projectId, siteId, activePath }: SiteDetailTabsProps) {
