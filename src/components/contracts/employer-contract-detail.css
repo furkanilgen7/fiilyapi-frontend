@@ -1,0 +1,491 @@
+/* E14 · İşveren Sözleşme Detayı (F-P5 T3). Kanon: projedesign
+   "Ekran 14 - Sözleşme Detay.dc.html"; parantez içi sayılar o dosyanın SATIR
+   numaralarıdır. Prefix `ecd`. Mockup'ın üst şeridi + sol menüsü (20-59)
+   uygulamanın Topbar/Sidebar'ıdır — burada ÇİZİLMEZ (SZL ile aynı karar).
+
+   İŞ KALEMLERİ sekmesinin tablo ölçüleri E14'te ÇİZİLİ DEĞİLDİR; kanonu
+   `İşveren Sözleşme - Poz Dağılımı.dc.html`tir (POZ) — o dosyanın satır
+   numaraları `POZ` önekiyle yazılır. */
+.ecd {
+  animation: var(--anim-fade-up); /* 61 */
+}
+
+/* 62: "← Sözleşmeler" dönüş linki. */
+.ecd__back {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--color-primary);
+  text-decoration: none;
+  margin-bottom: 6px;
+}
+.ecd__back:hover {
+  text-decoration: underline;
+}
+
+/* Devre-dışı/pending gerekçelerinin görünür bandı (mockup'ta yoktur —
+   üst kural: gerekçe yalnız `title`da saklı kalmaz). */
+.ecd__notice {
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+.ecd__notice-link {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.ecd__notice-link:hover {
+  text-decoration: underline;
+}
+
+.ecd__message {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+/* ── Başlık kartı (65-87) ─────────────────────────────────────────────────── */
+.ecd-head {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-16); /* 65 */
+  box-shadow: var(--shadow-card);
+  padding: var(--space-6); /* 24px — 65 */
+  margin-bottom: 20px;
+}
+.ecd-head__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px; /* 66 */
+}
+.ecd-head__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* 68 */
+  margin-bottom: 6px;
+}
+.ecd-head__no {
+  font-size: var(--text-body); /* 13px — 69 */
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+}
+.ecd-head__title {
+  font-size: var(--text-contract-title); /* 72 */
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.3px; /* 72 */
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+.ecd-head__parties {
+  font-size: var(--text-body); /* 13px — 73 */
+  color: var(--color-text-muted);
+}
+.ecd-head__actions {
+  display: flex;
+  gap: var(--space-2); /* 8px — 75 */
+}
+/* 76-77: iki buton da DEVRE DIŞI basılır (PDF ucu yok · sözleşme yazma ucu
+   yok). Ölçüler mockup'tan; devre-dışı görünüm imleçle belli edilir. */
+.ecd-head__btn {
+  padding: var(--space-2) 14px; /* 76-77 */
+  font-size: var(--text-body);
+  border-radius: var(--radius-8);
+}
+.ecd-head__btn:disabled {
+  cursor: not-allowed;
+}
+
+/* 5 metrik (80-86). */
+.ecd-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-4); /* 16px — 80 */
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-divider); /* 80 */
+}
+.ecd-metrics__label {
+  font-size: var(--text-small); /* 11px — 81 */
+  color: var(--color-text-subtle);
+  margin-bottom: 4px;
+}
+.ecd-metrics__value {
+  font-size: 14px; /* 82-85 */
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+/* 81: Sözleşme Bedeli tek başına 15px/700 + mono. */
+.ecd-metrics__value--money {
+  font-size: var(--text-contract-metric);
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+}
+/* 84: Bitiş Tarihi kırmızıdır. */
+.ecd-metrics__value--danger {
+  color: var(--color-danger);
+}
+
+/* ── Sekme şeridi (90-95) ─────────────────────────────────────────────────── */
+.ecd-tabs {
+  display: flex;
+  gap: 4px; /* 90 */
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-10); /* 90 */
+  padding: 4px;
+  width: fit-content;
+  margin-bottom: 20px;
+}
+.ecd-tabs__tab {
+  padding: 7px var(--space-4); /* 92 */
+  font-size: var(--text-body);
+  color: var(--color-text-muted); /* 92 — seçili olmayan */
+  border-radius: var(--radius-7);
+  text-decoration: none;
+}
+.ecd-tabs__tab--active {
+  font-weight: var(--weight-semibold); /* 91 */
+  color: var(--color-primary);
+  background: var(--color-nav-active-bg); /* 91 */
+}
+.ecd-tabs__tab:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ── Genel sekmesi: iki sütunlu ızgara (97) ───────────────────────────────── */
+.ecd-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px; /* 97 */
+}
+/* S3 bloğu mockup'ın kendi gövdesine SIZMAZ: ızgaranın ALTINDA, ayrı ve
+   açıkça adlandırılmış bir bölümdür. */
+.ecd-terms-section {
+  margin-top: 20px;
+}
+
+/* Kart kabuğu (99, 126). */
+.ecd-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* 99 */
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5); /* 20px — 99 */
+}
+.ecd-card__title {
+  font-size: var(--text-body); /* 13px — 100, 127 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--space-4); /* 16px */
+}
+.ecd-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: var(--space-4);
+}
+.ecd-card__head .ecd-card__title {
+  margin-bottom: 0;
+}
+
+/* ── Hakediş Özeti (126-148) ──────────────────────────────────────────────── */
+.ecd-pps__top {
+  margin-bottom: 14px; /* 128 */
+}
+.ecd-pps__row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px; /* 129-130 */
+}
+.ecd-pps__row-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.ecd-pps__row-value {
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+}
+/* 130: "Toplam Hakediş" değeri mavidir. */
+.ecd-pps__row-value--accent {
+  color: var(--color-primary);
+}
+.ecd-pps__bar {
+  height: var(--size-payment-bar); /* 131 */
+  background: var(--color-neutral-soft);
+  border-radius: var(--radius-sm); /* 4px — 131 */
+  overflow: hidden;
+  margin: var(--space-2) 0;
+}
+.ecd-pps__bar-fill {
+  height: 100%;
+  background: var(--gradient-progress-financial); /* 131 */
+  border-radius: var(--radius-sm);
+}
+.ecd-pps__caption {
+  font-size: var(--text-small); /* 11px — 132 */
+  color: var(--color-text-subtle);
+  text-align: right;
+}
+.ecd-pps__boxes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2); /* 134 */
+}
+.ecd-pps__box {
+  display: flex;
+  justify-content: space-between;
+  padding: 9px 12px; /* 135, 139, 143 */
+  background: var(--color-surface-2);
+  border-radius: var(--radius-8);
+}
+.ecd-pps__box-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.ecd-pps__box-value {
+  font-size: 12px;
+  font-weight: var(--weight-medium);
+  color: var(--color-danger); /* 137, 141 — kesintiler kırmızı */
+  font-family: var(--font-mono);
+}
+/* 143-146: Net Ödeme satırı yeşil zeminli ve koyu etiketlidir. */
+.ecd-pps__box--net {
+  background: var(--color-success-soft);
+}
+.ecd-pps__box--net .ecd-pps__box-label {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.ecd-pps__box--net .ecd-pps__box-value {
+  font-size: var(--text-body); /* 13px — 145 */
+  font-weight: var(--weight-bold);
+  color: var(--color-success);
+}
+
+/* ── PENDING yüzeyleri (Milestone Takvimi 99-123 · Belgeler 94) ───────────── */
+.ecd-pending__notice {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+  line-height: var(--leading-relaxed);
+}
+/* Mockup'ın 5 milestone satırının yerini tutan, VERİSİZ iskelet (uydurma
+   milestone metni BASILMAZ — sahada yanlış karar verdirirdi). */
+.ecd-pending__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: var(--space-4);
+}
+.ecd-pending__skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 14px; /* 102 */
+}
+.ecd-pending__skeleton-dot {
+  width: 12px; /* 119 */
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-border);
+  border: 2px solid var(--color-border-strong); /* 119 */
+  flex: none;
+}
+.ecd-pending__skeleton-line {
+  height: var(--size-payment-bar);
+  border-radius: var(--radius-sm);
+  background: var(--color-neutral-soft);
+  flex: 1;
+}
+
+/* ── Sözleşme Koşulları (§7 S3 — mockup'ta ÇİZİLİ DEĞİL, şemadan) ─────────── */
+.ecd-terms {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+.ecd-terms__label {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-bottom: 4px;
+}
+.ecd-terms__value {
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+
+/* ── İş Kalemleri sekmesi (kanon POZ 69-135) ──────────────────────────────── */
+.ecd-items {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* POZ 69 */
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.ecd-items__head {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* POZ 70 */
+  padding: 13px 16px;
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.ecd-items__head-title {
+  font-size: var(--text-body); /* POZ 71 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.ecd-items__head-link {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ecd-items__head-link:hover {
+  text-decoration: underline;
+}
+.ecd-items__scroll {
+  overflow-x: auto;
+}
+.ecd-items__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ecd-items__th {
+  padding: 10px 10px; /* POZ 79-84 */
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+.ecd-items__th--lead {
+  padding: 10px 14px; /* POZ 77-78 */
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-section-head); /* 0.7px — POZ 77 */
+}
+.ecd-items__th--center {
+  text-align: center;
+}
+.ecd-items__th--right {
+  text-align: right;
+}
+/* POZ 89-90: grup başlık satırı — mavi zemin + koyu mavi metin. */
+.ecd-items__group-row {
+  background: var(--color-nav-active-bg);
+  border-bottom: 1px solid var(--color-primary-ring);
+}
+.ecd-items__group-cell {
+  padding: var(--space-2) 14px;
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-bold);
+  color: var(--color-primary-hover);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-group); /* 0.5px — POZ 90 */
+}
+.ecd-items__row {
+  border-bottom: 1px solid var(--color-divider); /* POZ 92 */
+}
+.ecd-items__td {
+  padding: 11px 10px; /* POZ 95-100 */
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.ecd-items__td--code {
+  padding: 11px 14px; /* POZ 93 */
+  font-family: var(--font-mono);
+}
+.ecd-items__td--name {
+  padding: 11px 14px; /* POZ 94 */
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+.ecd-items__td--center {
+  text-align: center;
+}
+.ecd-items__td--price {
+  text-align: right;
+  color: var(--color-text-secondary); /* POZ 96 */
+  font-family: var(--font-mono);
+}
+.ecd-items__td--qty {
+  text-align: right;
+  font-size: var(--text-body); /* POZ 97 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+}
+/* POZ 98-99: şantiye kota kolonlarının E14'teki toplulaştırılmış karşılığı. */
+.ecd-items__td--distributed {
+  text-align: right;
+  font-family: var(--font-mono);
+  color: var(--color-primary);
+}
+/* POZ 100: "Kalan" rozeti — 0 ise yeşil ✓, kalan varsa kehribar. */
+.ecd-items__remaining {
+  display: inline-block;
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  padding: 2px var(--space-2);
+  border-radius: 10px;
+}
+.ecd-items__remaining--zero {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+/* Final review (F-P5 T8) bulgusu — KAPATILDI. Bu tablonun kolonlarının TAMAMI
+   POZ mockup'ından türetildi (E14 kendi "İş Kalemleri" sekmesini ÇİZMEMİŞ),
+   dolayısıyla "Kalan" rozetinin tonu da POZ 161'den gelir: açık kalan KIRMIZI.
+   T3 kehribar seçmişti → iki ekran AYNI veriyi iki farklı tonla basıyordu;
+   mockup kazandı, POZ'un `.cdist-grid__remaining--open`'ıyla tek tona indirildi. */
+.ecd-items__remaining--open {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
+}
+/* Sözleşme kalem toplamı — BOQ'un GENEL TOPLAM satırı emsali (Ekran 13, 174-176).
+   `items_total`/`items_total_diff` şemada VAR; mockup'ta yeri olmadığı için
+   tablonun tfoot'unda gösterilir (veri kaybı önlenir). */
+.ecd-items__foot-row {
+  background: var(--color-info-tint);
+  border-top: var(--border-width-total) solid var(--color-border);
+}
+.ecd-items__foot-cell {
+  padding: 13px 14px;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.ecd-items__foot-cell--value {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--text-total-amount);
+  font-weight: var(--weight-bold);
+}
+.ecd-items__foot-diff {
+  font-size: var(--text-small);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-subtle);
+}
+
+.ecd-empty {
+  padding: var(--space-8);
+  text-align: center;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 1024px) {
+  .ecd-grid {
+    grid-template-columns: 1fr;
+  }
+  .ecd-metrics,
+  .ecd-terms {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

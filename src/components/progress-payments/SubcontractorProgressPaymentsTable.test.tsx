@@ -16,6 +16,7 @@ const BASE_ITEM: SubcontractorProgressPaymentListItem = {
   project_name: "Güneşkent A-Blok",
   subcontractor_name: "Akın İnşaat",
   contract_no: "TSD-2026-01",
+  work_category: "Kaba İnşaat",
   sequence_no: 47,
   period_year: 2026,
   period_month: 7,

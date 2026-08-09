@@ -41,24 +41,40 @@ export interface SubcontractorProgressPaymentListFilter extends SubcontractorPro
   offset?: number;
 }
 
-// TB2 U1 (`GET /subcontractor-contracts`) filtreleri — sayfalama YOK
-// (`limit`/`offset`/`total` taşımaz), sıralama sunucuda deterministiktir.
+// TB2 U1 (`GET /subcontractor-contracts`) filtreleri.
+//
+// ⚠️ TB3 GÜNCELLEMESİ (2026-08-08): bu uç ARTIK SAYFALANIYOR — `limit`/`offset`
+// parametreleri ve yanıtta `total` vardır (openapi.json, `list_subcontractor_
+// contracts_endpoint_subcontractor_contracts_get`). Eski "sayfalama YOK" notu
+// GEÇERSİZDİR. Sunucu varsayılanı `limit=50`; açık `limit` göndermeyen çağıran
+// SESSİZCE ilk 50 kaydı alır. Bu yüzden liste tüketen her hook açık `limit`
+// gönderir ve `total` ile kırpılmayı GÖRÜNÜR kılar (bkz.
+// `useSubcontractorContractOptions`).
 export interface SubcontractorContractListFilter {
   project_id?: string;
   site_id?: string;
   status?: components["schemas"]["ContractStatus"];
   q?: string;
+  limit?: number;
+  offset?: number;
 }
+
+/**
+ * TB3 · `GET /subcontractor-contracts` ŞEMA TAVANI (openapi.json `limit`
+ * parametresi: `maximum: 200`). Daha büyük değer 422 döner — "hepsini çek"
+ * mümkün DEĞİLDİR, kırpılma görünür kılınır (`buildListTruncation`).
+ */
+export const SUBCONTRACTOR_CONTRACT_LIST_MAX_LIMIT = 200;
 
 export const SUBCONTRACTOR_PROGRESS_PAYMENTS_QUERY_KEY = "subcontractor-progress-payments";
 export const SUBCONTRACTOR_PROGRESS_PAYMENT_QUERY_KEY = "subcontractor-progress-payment";
 export const SUBCONTRACTOR_PROGRESS_PAYMENT_SUMMARY_QUERY_KEY = "subcontractor-progress-payment-summary";
 export const SUBCONTRACTOR_CONTRACT_QUERY_KEY = "subcontractor-contract";
-// Coordinator review (Minor 2) — modül-özel (export EDİLMEZ): bu dilimde
-// sözleşme oluşturma/güncelleme ucu YOK (brief §Yasaklar), dolayısıyla bu
-// listeyi invalidate edecek bir mutasyon da YOK. Dışarıdan tüketen olmadığı
-// için kullanılmayan bir kamu yüzeyi bırakmamak adına export edilmiyor.
-const SUBCONTRACTOR_CONTRACTS_LIST_QUERY_KEY = "subcontractor-contracts-list";
+// F-P5 T1 — ARTIK EXPORT EDİLİYOR: bu dilimde taşeron sözleşmesi
+// oluşturma/güncelleme uçları geldi (`useSubcontractorContractMutations`), o
+// yüzden listeyi geçersiz kılacak bir mutasyon VAR. (Eski gerekçe — "tüketen
+// yok" — F-TH dilimine aitti.)
+export const SUBCONTRACTOR_CONTRACTS_LIST_QUERY_KEY = "subcontractor-contracts-list";
 
 function filterQuery(
   filter: SubcontractorProgressPaymentFilter,
@@ -75,12 +91,14 @@ function filterQuery(
 
 function contractListFilterQuery(
   filter: SubcontractorContractListFilter,
-): Record<string, string> {
+): Record<string, string | number> {
   return {
     ...(filter.project_id ? { project_id: filter.project_id } : {}),
     ...(filter.site_id ? { site_id: filter.site_id } : {}),
     ...(filter.status ? { status: filter.status } : {}),
     ...(filter.q ? { q: filter.q } : {}),
+    ...(filter.limit !== undefined ? { limit: filter.limit } : {}),
+    ...(filter.offset !== undefined ? { offset: filter.offset } : {}),
   };
 }
 
@@ -90,8 +108,16 @@ function contractListFilterQuery(
  */
 export function useSubcontractorProgressPayments(
   filter: SubcontractorProgressPaymentListFilter = {},
+  // F-P5 T7 · TSD'nin "Hakediş Geçmişi" bölümü sözleşmenin PROJESİNİ filtre
+  // olarak kullanır (uçta `contract_id` filtresi YOK, aşağıdaki nota bak) —
+  // proje kimliği sözleşme detayı gelene kadar BİLİNMEZ. Boş `project_id`
+  // ile çağırmak TÜM projelerin hakedişlerini çeker ve `total` tabanlı
+  // kırpılma korkuluğunu anlamsız kılardı; bu yüzden çağıran taraf sorguyu
+  // kapatabilir. Varsayılan `true` — mevcut çağıranlar etkilenmez.
+  options: { enabled?: boolean } = {},
 ): UseQueryResult<SubcontractorProgressPaymentListResponse, Error> {
   return useQuery({
+    enabled: options.enabled ?? true,
     queryKey: [
       SUBCONTRACTOR_PROGRESS_PAYMENTS_QUERY_KEY,
       filter.project_id ?? null,
@@ -125,16 +151,29 @@ export function useSubcontractorProgressPayments(
 export function useSubcontractorProgressPayment(
   paymentId: string,
 ): UseQueryResult<SubcontractorProgressPaymentDetail, Error> {
-  return useQuery({
+  return useQuery(subcontractorPaymentQueryOptions(paymentId));
+}
+
+/**
+ * Aynı detay sorgusunun `useQueries` ile PARALEL kullanılabilen hâli
+ * (`sitesQueryOptions`/`rolePermissionsQueryOptions` deseni). F-P5 T7'de
+ * TSD'nin "Hakediş %" kolonu sözleşmenin hakedişlerinin SATIRLARINA ihtiyaç
+ * duyar; satırlar yalnız DETAY şemasında vardır (liste öğesi taşımaz) ve
+ * toplulaştıran bir uç yoktur (openapi teyidi). Önbellek anahtarı
+ * `useSubcontractorProgressPayment` ile AYNIdır — aynı hakediş iki kez
+ * çekilmez.
+ */
+export function subcontractorPaymentQueryOptions(paymentId: string) {
+  return {
     enabled: paymentId.length > 0,
     queryKey: [SUBCONTRACTOR_PROGRESS_PAYMENT_QUERY_KEY, paymentId],
-    queryFn: async () =>
+    queryFn: async (): Promise<SubcontractorProgressPaymentDetail> =>
       unwrap(
         await backendClient.GET("/subcontractor-progress-payments/{payment_id}", {
           params: { path: { payment_id: paymentId } },
         }),
       ),
-  });
+  };
 }
 
 /**
@@ -184,11 +223,10 @@ export function useSubcontractorContract(
 }
 
 /**
- * TB2 U1 (`GET /subcontractor-contracts`) — sözleşme LİSTE ucu. Sayfalama
- * YOK (`/contracts` liste ucu deseni), sıralama sunucuda deterministiktir.
- * `useSubcontractorContractOptions` (hakediş açma seçim adımı) VE
- * `useSiteSubcontractorPayments` (workCategory join'i) bu tek hook'u paylaşır
- * — aynı filtreyle çağrılan istekler TanStack Query önbelleğinden gelir.
+ * TB2 U1 (`GET /subcontractor-contracts`) — sözleşme LİSTE ucu. TB3'ten beri
+ * SAYFALIDIR (`limit`/`offset` + yanıtta `total`); sıralama sunucuda
+ * deterministiktir. Açık `limit` göndermeyen çağıran sunucu varsayılanı olan
+ * ilk 50 kaydı alır — kırpılma `total` ile GÖRÜNÜR kılınmalıdır.
  */
 export function useSubcontractorContractsList(
   filter: SubcontractorContractListFilter = {},
@@ -200,6 +238,8 @@ export function useSubcontractorContractsList(
       filter.site_id ?? null,
       filter.status ?? null,
       filter.q ?? null,
+      filter.limit ?? null,
+      filter.offset ?? null,
     ],
     queryFn: async () =>
       unwrap(

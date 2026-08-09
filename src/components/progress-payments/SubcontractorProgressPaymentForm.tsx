@@ -322,22 +322,16 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
             varyantı (a11y: her sayfada bir h1). */}
         <h1 className="pp-form__crumb thf-crumb">
           {/* Final inceleme F-1 · mockup O19'da bu parça "Taşeron Sözleşme
-              Detay" ekranına giden bir BAĞLANTIDIR. Hedef rota bu repo'da yok
-              → öğe SİLİNMEZ (kalıcı kural), devre-dışı bağlantı olarak
-              basılır: gerçek `href` YOK (tıklanınca hiçbir yere gitmez),
-              gerekçe `title` + `sr-only` ile GÖRÜNÜR. */}
-          <span
-            className="thf-crumb__disabled-link"
-            role="link"
-            aria-disabled="true"
-            title={pendingModuleLabel("subcontractor_contract_detail")}
+              Detay" ekranına giden bir BAĞLANTIDIR. **F-P5 T7'de AKTİFLEŞTİ:**
+              hedef rota (`/sozlesmeler/taseron/{contractId}`) artık VAR →
+              devre-dışı hâli + pending gerekçesi KALDIRILDI. */}
+          <Link
+            className="thf-crumb__contract-link"
+            href={`/sozlesmeler/taseron/${contract.id}`}
             data-testid="thf-contract-crumb-link"
           >
             {contract.subcontractor_name ?? "—"} {contract.contract_no ?? ""}
-            <span className="sr-only">
-              {pendingModuleLabel("subcontractor_contract_detail")}
-            </span>
-          </span>
+          </Link>
           {" · "}
           {isEdit && detail ? (
             `Hakediş #${detail.sequence_no} Düzenle`
@@ -414,9 +408,10 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
       {/* Hiyerarşi şeridi (mockup 33-42). İlk halka (işveren sözleşme no'su)
           şemada YOK → zarif düşüş (T2'deki pending desenini kullanır).
           Final inceleme F-1 (kalıcı kural): "Sözleşmeyi Gör →" (mockup O41)
-          ARTIK BASILIR — hedef rota (Taşeron Sözleşme Detay) bu repo'da hâlâ
-          yok, bu yüzden `href` VERİLMEZ; devre-dışı (`aria-disabled`) +
-          Türkçe gerekçe (`title`/`sr-only`) ile mockup'taki yerinde durur. */}
+          BASILIR. **F-P5 T7'de AKTİFLEŞTİ:** hedef rota
+          (`/sozlesmeler/taseron/{contractId}` · TSD) artık VAR, bu yüzden
+          devre-dışı hâli (`role="link"` + `aria-disabled` + pending gerekçesi)
+          KALDIRILDI ve gerçek `Link`e dönüştürüldü. */}
       <div className="thf-hierarchy" data-testid="thf-hierarchy">
         <span
           className="thf-hierarchy__chip thf-hierarchy__chip--pending"
@@ -432,16 +427,13 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
         <span className="thf-hierarchy__chip thf-hierarchy__chip--accent">
           {contract.contract_no ?? ""} {contract.subcontractor_name ?? "—"}
         </span>
-        <span
+        <Link
           className="thf-hierarchy__see-contract"
-          role="link"
-          aria-disabled="true"
-          title={pendingModuleLabel("subcontractor_contract_detail")}
+          href={`/sozlesmeler/taseron/${contract.id}`}
           data-testid="thf-see-contract-link"
         >
           Sözleşmeyi Gör →
-          <span className="sr-only">{pendingModuleLabel("subcontractor_contract_detail")}</span>
-        </span>
+        </Link>
       </div>
 
       {/* Fiyat farkı katsayısı — ONAYLI SAPMA (mockup'ta yok, brief §Üst

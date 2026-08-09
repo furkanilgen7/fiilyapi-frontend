@@ -1,0 +1,416 @@
+/* TSD · Taşeron Sözleşme Detayı (F-P5 T7). Kanon: projedesign
+   "Taşeron Sözleşme Detay.dc.html"; parantez içi sayılar o dosyanın SATIR
+   numaralarıdır. Prefix `tsd`. Mockup'ın üst şeridi (14-27) uygulamanın
+   Topbar'ıdır — burada ÇİZİLMEZ (SZL/E14 ile aynı karar).
+
+   POZ TABLOSUNUN KABUĞU BURADA YENİDEN TÜRETİLMEZ: `.ecd-items__*`
+   (employer-contract-detail.css) ortak kanondur ve PAYLAŞILIR. Bu dosya
+   yalnız TSD'ye özgü farkları taşır. */
+.tsd {
+  animation: var(--anim-fade-up); /* 30 */
+  max-width: var(--tsd-max-width); /* 30 */
+}
+
+/* Devre-dışı gerekçelerinin görünür bandı (E14 emsali — gerekçe yalnız
+   `title`da saklı kalmaz). 24'teki PDF butonu burada durur. */
+.tsd__notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: var(--space-4) 0;
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+.tsd__pdf {
+  padding: var(--space-2) 14px; /* 24 */
+  font-size: var(--text-body);
+  border-radius: var(--radius-8);
+}
+.tsd__pdf:disabled {
+  cursor: not-allowed;
+}
+
+/* ── Başlık kartı (33-76) ─────────────────────────────────────────────────── */
+.tsd-head {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* 33 */
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5) var(--space-6); /* 20px 24px — 33 */
+  margin-bottom: var(--space-4); /* 16px — 33 */
+}
+.tsd-head__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--space-4); /* 34 */
+}
+.tsd-head__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2); /* 36 */
+  margin-bottom: 5px;
+}
+/* 37: kehribar zeminli mono sözleşme no rozeti. */
+.tsd-head__no {
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  font-family: var(--font-mono);
+  color: var(--color-warning-strong);
+  background: var(--color-warning-soft);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-8);
+}
+.tsd-head__title {
+  font-size: var(--text-contract-title); /* 22px — 40 */
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.3px; /* 40 */
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+.tsd-head__parties {
+  font-size: var(--text-body); /* 13px — 41 */
+  color: var(--color-text-muted);
+}
+.tsd-head__pending {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+/* 43: kehribar birincil eylem (mockup'ta `<a>`). */
+.tsd-head__new-payment {
+  background: var(--color-warning);
+  color: var(--color-on-brand);
+  padding: 9px var(--space-4); /* 43 */
+  border-radius: var(--radius-8);
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.tsd-head__new-payment:hover {
+  background: var(--color-warning-strong);
+}
+.tsd-head__new-payment:focus-visible {
+  outline: 2px solid var(--color-warning-strong);
+  outline-offset: 2px;
+}
+
+/* ── Bağlantı zinciri (47-68) ─────────────────────────────────────────────── */
+.tsd-chain {
+  background: var(--color-info-tint); /* 47 */
+  border: 1px solid var(--color-primary-ring); /* 47 */
+  border-radius: var(--radius-10); /* 47 */
+  padding: var(--space-3) var(--space-4); /* 12px 16px — 47 */
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.tsd-chain__group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2); /* 48 */
+  font-size: 12px;
+}
+.tsd-chain__sep {
+  color: var(--color-text-subtle); /* 53 */
+  margin-right: 4px;
+}
+.tsd-chain__chip {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-6); /* 49 */
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-on-brand);
+  white-space: nowrap;
+}
+.tsd-chain__chip--employer {
+  background: var(--color-text); /* 49 */
+}
+.tsd-chain__chip--project {
+  background: var(--color-primary); /* 55 */
+}
+.tsd-chain__chip--site {
+  background: var(--color-accent-teal-start); /* 60 */
+}
+.tsd-chain__chip--current {
+  background: var(--color-warning); /* 65 */
+}
+.tsd-chain__primary {
+  font-weight: var(--weight-semibold); /* 50, 56, 61 */
+  color: var(--color-text);
+}
+.tsd-chain__primary--link {
+  text-decoration: none;
+}
+.tsd-chain__primary--link:hover {
+  text-decoration: underline;
+}
+.tsd-chain__primary--pending {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+/* 66: "Bu Sözleşme" halkasının metni kehribardır. */
+.tsd-chain__group:last-child .tsd-chain__primary {
+  color: var(--color-warning-strong);
+}
+.tsd-chain__secondary {
+  color: var(--color-text-subtle); /* 51 */
+}
+
+/* ── Dört metrik (70-75) ──────────────────────────────────────────────────── */
+.tsd-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px; /* 70 */
+}
+.tsd-metrics__label {
+  font-size: var(--text-small); /* 11px — 71 */
+  color: var(--color-text-subtle);
+  margin-bottom: 3px;
+}
+.tsd-metrics__value {
+  font-size: 14px; /* 71-72 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+/* 73: Toplam Sözleşme Bedeli — 16px/700 mono, kehribar. */
+.tsd-metrics__value--contract {
+  font-size: var(--text-section);
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+  color: var(--color-warning);
+}
+/* 74: Ödenen Hakediş — 16px/700 mono, yeşil. */
+.tsd-metrics__value--paid {
+  font-size: var(--text-section);
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+  color: var(--color-success);
+}
+.tsd-metrics__value--pending {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+
+/* ── Kehribar bilgi bandı (79-85) ─────────────────────────────────────────── */
+.tsd-banner {
+  background: var(--color-amber-tint-cell); /* 79 */
+  border: 1px solid var(--color-warning-border-soft); /* 79 */
+  border-radius: var(--radius-10); /* 79 */
+  padding: var(--space-3) var(--space-4); /* 79 */
+  margin-bottom: var(--space-4);
+  display: flex;
+  gap: 10px; /* 79 */
+}
+.tsd-banner__icon {
+  font-size: var(--text-lg); /* 80 */
+}
+.tsd-banner__title {
+  font-size: var(--text-body); /* 13px — 82 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-warning-deep-text); /* 82 */
+  margin-bottom: 2px;
+}
+.tsd-banner__text {
+  font-size: 12px; /* 83 */
+  color: var(--color-warning-body-text); /* 83 */
+  line-height: var(--leading-relaxed);
+}
+
+/* ── Poz tablosu farkları (88-182) ────────────────────────────────────────── */
+.tsd-items {
+  margin-bottom: var(--space-4); /* 88 */
+}
+/* 91: "SZL-2025-001'den yüklendi" rozeti. */
+.tsd-items__badge {
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  padding: 2px var(--space-2);
+  border-radius: 10px;
+  white-space: nowrap;
+}
+/* 92: "+ Poz Ekle" — devre dışı (mockup satır formu çizmemiş). */
+.tsd-items__add {
+  margin-left: auto;
+  font-size: 12px;
+}
+.tsd-items__add:disabled {
+  cursor: not-allowed;
+}
+.tsd-items__notice {
+  padding: var(--space-2) var(--space-4);
+  font-size: 12px;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-divider);
+}
+.tsd-items__notice--error {
+  color: var(--color-danger-strong);
+}
+/* 101: yıldızlı B.F. başlığı kehribar + 700. */
+.tsd-items__th--star {
+  color: var(--color-warning);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-section-head);
+  width: var(--width-tsd-price-col);
+}
+/* 102: "Toplam Bedel" başlığı yeşildir. */
+.tsd-items__th--total {
+  color: var(--color-success);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-section-head);
+  width: var(--width-tsd-price-col);
+}
+.tsd-items__td--input {
+  text-align: right;
+}
+/* 115: `.bf-input` — sarı çerçeve/zemin, kehribar kalın metin. */
+.tsd-items__price-input {
+  border-color: var(--color-warning-border-soft);
+  background: var(--color-amber-tint-cell);
+  color: var(--color-warning-strong);
+  font-weight: var(--weight-semibold);
+}
+/* 116: satır toplamı kehribar/700 mono. */
+.tsd-items__td--line-total {
+  text-align: right;
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+  color: var(--color-warning);
+}
+.tsd-items__td--missing {
+  font-family: var(--font-sans);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-subtle);
+}
+/* 146-147: ikinci grup başlığı YEŞİL tondadır (107 mavidir). */
+.tsd-items__group-row--alt {
+  background: var(--color-success-tint);
+  border-bottom-color: var(--color-success-tint-border);
+}
+.tsd-items__group-cell--alt {
+  color: var(--color-success-deep);
+}
+/* 175-179: kehribar tfoot — E14'ün mavi `--color-info-tint` tonundan FARKLI. */
+.tsd-items__foot-row {
+  background: var(--color-amber-tint-cell);
+  border-top: var(--border-width-total) solid var(--color-warning);
+}
+.tsd-items__foot-cell {
+  padding: 13px 14px; /* 176-177 */
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.tsd-items__foot-cell--value {
+  text-align: right;
+  font-size: var(--text-section); /* 16px — 177 */
+  font-family: var(--font-mono);
+  color: var(--color-warning);
+}
+
+/* ── Hakediş % kolonu (117-120) ───────────────────────────────────────────── */
+.tsd-progress__track {
+  height: var(--size-progress-bar); /* 4px — 118 */
+  background: var(--color-neutral-soft);
+  border-radius: var(--radius-progress-bar); /* 2px — 118 */
+  overflow: hidden;
+}
+.tsd-progress__fill {
+  height: 100%;
+  border-radius: var(--radius-progress-bar);
+}
+/* 118/130/157/169 mavi · 142 kehribar (eşik 50 — bkz. subcontractor-item-progress.ts) */
+.tsd-progress__fill--normal {
+  background: var(--color-primary);
+}
+.tsd-progress__fill--low {
+  background: var(--color-warning);
+}
+.tsd-progress__pct {
+  font-size: 10px; /* 119 */
+  text-align: center;
+  margin-top: 2px;
+}
+.tsd-progress__pct--normal {
+  color: var(--color-text-subtle); /* 119 */
+}
+.tsd-progress__pct--low {
+  color: var(--color-warning); /* 143 */
+}
+.tsd-progress__pending {
+  display: block;
+  text-align: center;
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+
+/* ── Hakediş Geçmişi (185-204) ────────────────────────────────────────────── */
+.tsd-payments {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* 185 */
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.tsd-payments__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px var(--space-4); /* 186 */
+  border-bottom: 1px solid var(--color-border);
+}
+.tsd-payments__title {
+  font-size: var(--text-body); /* 187 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.tsd-payments__new {
+  font-size: 12px; /* 188 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.tsd-payments__new:hover {
+  text-decoration: underline;
+}
+/* 199: "#47" hücresi 13px/600 koyu. */
+.tsd-payments__seq {
+  padding: 11px 14px;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.tsd-payments__detail {
+  font-size: 12px; /* 199 */
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.tsd-payments__detail:hover {
+  text-decoration: underline;
+}
+
+/* ── Sözleşme Şartları (§7 S3 — mockup gövdesinin DIŞINDA) ────────────────── */
+.tsd-terms-section {
+  margin-top: 20px;
+}
+.tsd-terms__save {
+  font-size: var(--text-body); /* 25 */
+}
+.tsd-terms__readonly {
+  margin-top: var(--space-2);
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+
+@media (max-width: 1024px) {
+  .tsd-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

@@ -86,6 +86,7 @@ const baseDetail: SubcontractorProgressPaymentDetail = {
   project_name: "Güneşkent Konut",
   subcontractor_name: "Aydın Elektrik Taah.",
   contract_no: "SZL-2025-001",
+  work_category: "Kaba İnşaat",
   sequence_no: 5,
   period_year: 2026,
   period_month: 7,

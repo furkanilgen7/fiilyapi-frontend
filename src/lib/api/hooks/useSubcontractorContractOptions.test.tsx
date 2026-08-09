@@ -30,34 +30,37 @@ function contractListItem(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
+function mockList(items: Record<string, unknown>[], total?: number) {
+  vi.mocked(backendClient.GET).mockResolvedValue({
+    data: { items, total: total ?? items.length, limit: 200, offset: 0 },
+    error: undefined,
+    response: new Response(),
+  } as never);
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 });
 
 describe("useSubcontractorContractOptions", () => {
-  it("U1'e (`GET /subcontractor-contracts`) filtresiz çıkar", async () => {
-    vi.mocked(backendClient.GET).mockResolvedValue({
-      data: { items: [] },
-      error: undefined,
-      response: new Response(),
-    } as never);
+  // F-P5 T1 — TB3 sayfalaması: AÇIK `limit` gönderilmezse sunucu varsayılanı
+  // (50) yüzünden seçim kutusu sessizce kırpılırdı. Şema tavanı 200'dür
+  // (openapi.json `limit.maximum`), daha büyüğü 422 verir.
+  it("U1'e ŞEMA TAVANI kadar açık `limit` ile çıkar (sessiz 50 kırpması yok)", async () => {
+    mockList([]);
 
     renderHook(() => useSubcontractorContractOptions(), { wrapper });
 
     await waitFor(() =>
       expect(backendClient.GET).toHaveBeenCalledWith("/subcontractor-contracts", {
-        params: { query: {} },
+        params: { query: { limit: 200 } },
       }),
     );
   });
 
   it("hiç hakedişi olmayan sözleşme de listede yer alır — eski sınır bitti", async () => {
-    vi.mocked(backendClient.GET).mockResolvedValue({
-      data: { items: [contractListItem({ id: "sc-3", subcontractor_name: "Yılmaz Boya A.Ş." })] },
-      error: undefined,
-      response: new Response(),
-    } as never);
+    mockList([contractListItem({ id: "sc-3", subcontractor_name: "Yılmaz Boya A.Ş." })]);
 
     const { result } = renderHook(() => useSubcontractorContractOptions(), { wrapper });
     await waitFor(() => expect(result.current.options).toHaveLength(1));
@@ -65,16 +68,10 @@ describe("useSubcontractorContractOptions", () => {
   });
 
   it("taşeron adına göre alfabetik sıralar", async () => {
-    vi.mocked(backendClient.GET).mockResolvedValue({
-      data: {
-        items: [
-          contractListItem({ id: "sc-2", subcontractor_name: "Çelik İnşaat" }),
-          contractListItem({ id: "sc-1", subcontractor_name: "Aydın Elektrik Taah." }),
-        ],
-      },
-      error: undefined,
-      response: new Response(),
-    } as never);
+    mockList([
+      contractListItem({ id: "sc-2", subcontractor_name: "Çelik İnşaat" }),
+      contractListItem({ id: "sc-1", subcontractor_name: "Aydın Elektrik Taah." }),
+    ]);
 
     const { result } = renderHook(() => useSubcontractorContractOptions(), { wrapper });
 
@@ -90,11 +87,7 @@ describe("useSubcontractorContractOptions", () => {
   });
 
   it("subcontractor_name null ise boş string düşer, sızma olmaz", async () => {
-    vi.mocked(backendClient.GET).mockResolvedValue({
-      data: { items: [contractListItem({ subcontractor_name: null })] },
-      error: undefined,
-      response: new Response(),
-    } as never);
+    mockList([contractListItem({ subcontractor_name: null })]);
 
     const { result } = renderHook(() => useSubcontractorContractOptions(), { wrapper });
 
@@ -103,17 +96,35 @@ describe("useSubcontractorContractOptions", () => {
   });
 
   it("dönüş tipinde ham liste öğesi alanları (ör. work_category, site_id) sızmaz", async () => {
-    vi.mocked(backendClient.GET).mockResolvedValue({
-      data: { items: [contractListItem()] },
-      error: undefined,
-      response: new Response(),
-    } as never);
+    mockList([contractListItem()]);
 
     const { result } = renderHook(() => useSubcontractorContractOptions(), { wrapper });
     await waitFor(() => expect(result.current.options).toHaveLength(1));
     expect(Object.keys(result.current.options[0]).sort()).toEqual(
       ["contractId", "contractNo", "projectId", "projectName", "subcontractorName"].sort(),
     );
+  });
+
+  it("liste sunucu tavanında kırpıldıysa isPartial=true, truncation sızdırılır", async () => {
+    mockList([contractListItem()], 315);
+
+    const { result } = renderHook(() => useSubcontractorContractOptions(), { wrapper });
+
+    await waitFor(() => expect(result.current.isPartial).toBe(true));
+    expect(result.current.truncation).toEqual({
+      isTruncated: true,
+      shownCount: 1,
+      totalCount: 315,
+    });
+  });
+
+  it("kırpılma yoksa isPartial=false", async () => {
+    mockList([contractListItem()]);
+
+    const { result } = renderHook(() => useSubcontractorContractOptions(), { wrapper });
+
+    await waitFor(() => expect(result.current.options).toHaveLength(1));
+    expect(result.current.isPartial).toBe(false);
   });
 
   it("backend hatasında isError true olur", async () => {

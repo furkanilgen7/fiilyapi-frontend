@@ -388,6 +388,54 @@
      kontrastı düşürürdü. */
   --color-warning-deep-text: #92400e;
   --leading-relaxed: 1.6; /* uyarı kutusu metni (196) */
+
+  /* ── Sözleşmeler listesi · SZL (F-P5 T2) ───────────────────────────────────
+     Kanon: projedesign "Sözleşmeler.dc.html". Parantez içi sayılar o dosyanın
+     SATIR numaralarıdır. Mockup'ın renklerinin TAMAMI mevcut palette
+     karşılanıyor — YENİ HEX YOK (ilerleme çubuğunun moru zaten
+     --color-accent-purple-grad-start, 100'de). Yalnız üç ölçü + bir gölge
+     yeni. */
+  --shadow-tab-active: 0 1px 3px rgba(0, 0, 0, 0.08); /* seçili sekme (27) */
+  --text-kpi-label: 10px; /* KPI kartı etiketi, uppercase (35-38) */
+  --space-kpi-card: 14px; /* KPI kartı iç boşluğu (35-38) */
+  --size-progress-bar: 4px; /* ilerleme çubuğu yüksekliği (60) */
+  --radius-progress-bar: 2px; /* ilerleme çubuğu köşesi (60) */
+
+  /* ── İşveren Sözleşme Detayı · E14 (F-P5 T3) ───────────────────────────────
+     Kanon: projedesign "Ekran 14 - Sözleşme Detay.dc.html". Parantez içi
+     sayılar o dosyanın SATIR numaralarıdır. Mockup'ın renklerinin TAMAMI
+     mevcut palette karşılanıyor — YENİ HEX YOK (131'in gradyanı zaten
+     --gradient-progress-financial ile birebir aynıdır). Yalnız dört ölçü yeni. */
+  --radius-16: 16px; /* başlık kartı köşesi (65) */
+  --text-contract-title: 22px; /* sözleşme başlığı h1 (72) */
+  --text-contract-metric: 15px; /* Sözleşme Bedeli metriği, mono (81) */
+  --size-payment-bar: 8px; /* Hakediş Özeti ilerleme çubuğu yüksekliği (131) */
+
+  /* ── Poz Dağılımı · POZ (F-P5 T4) ─────────────────────────────────────────
+     Kanon: projedesign "İşveren Sözleşme - Poz Dağılımı.dc.html". Parantez içi
+     sayılar o dosyanın SATIR numaralarıdır. Mockup'ın renklerinin TAMAMI
+     mevcut palette karşılanıyor — YENİ HEX YOK (kırmızı Kalan rozeti 161 =
+     --color-danger-soft/--color-danger-strong; dağıtılmamış satır zemini 153 =
+     --color-audit-danger-row-bg; uyarı bandı 63-65 = --color-orange-tint/
+     --color-orange-tint-border/--color-warning-deep-text). Yalnız iki ölçü
+     yeni. */
+  --cdist-max-width: 1100px; /* içerik kolonu genişliği (29) */
+  --cdist-cell-width: 80px; /* kota girdisi genişliği (12, .dist-input) */
+
+  /* ── Taşeron Sözleşme Detayı · TSD (F-P5 T7) ──────────────────────────────
+     Kanon: projedesign "Taşeron Sözleşme Detay.dc.html". Parantez içi sayılar
+     o dosyanın SATIR numaralarıdır. Renklerin neredeyse tamamı mevcut palette
+     karşılanıyor: zincir rozetleri 49/55/60/65 = --color-text /
+     --color-primary / --color-accent-teal-start / --color-warning; zincir
+     bandı 47 = --color-info-tint + --color-primary-ring; kehribar bant 79 =
+     --color-amber-tint-cell + --color-warning-border-soft; tfoot 175 =
+     --color-amber-tint-cell + --color-warning. YALNIZ bandın gövde metni (83)
+     yeniydi — mevcut --color-warning-strong ondan AÇIK,
+     --color-warning-deep-text ondan KOYUdur (ikisi de kontrastı bozardı). */
+  --color-warning-body-text: #b45309; /* bilgi bandı gövde metni (83) */
+  --tsd-max-width: 1080px; /* içerik kolonu genişliği (30) */
+  --width-tsd-price-col: 130px; /* ⭐ Taşeron B.F. sütunu (101) */
+  --width-tsd-progress-col: 80px; /* Hakediş % sütunu (103) */
 }
 
 @keyframes fadeUp {

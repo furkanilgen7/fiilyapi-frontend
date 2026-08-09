@@ -42,6 +42,13 @@
   color: var(--color-text-muted);
 }
 
+/* F-P5 T1 — TB3 sayfalama korkuluğu: sözleşme seçim kutusu sunucu tavanında
+   kırpıldıysa görünür uyarı (`.thk-limit-note` emsali). */
+.pp-form__limit-note {
+  font-size: var(--text-body);
+  color: var(--color-warning-strong);
+}
+
 /* Bilgi kutusu (mockup 43-50). */
 .pp-form__info {
   background: var(--color-success-tint);

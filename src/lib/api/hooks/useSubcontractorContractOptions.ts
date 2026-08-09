@@ -1,7 +1,10 @@
 import { useMemo } from "react";
 
+import { buildListTruncation, type ListTruncation } from "@/lib/list-truncation";
+
 import {
   useSubcontractorContractsList,
+  SUBCONTRACTOR_CONTRACT_LIST_MAX_LIMIT,
   type SubcontractorContractListItem,
 } from "./useSubcontractorProgressPayments";
 
@@ -11,6 +14,16 @@ import {
 // geldi: türetme TAMAMEN kaldırıldı, artık DOĞRUDAN bu uçtan beslenir.
 // Sonuç: hiç hakedişi olmayan sözleşmeler de artık seçilebilir — eski sınır
 // (yalnız en az bir hakedişi olan sözleşmeler görünürdü) bitti.
+//
+// ⚠️ F-P5 T1 DÜZELTMESİ — eskiden burada "Sayfalama YOK (U1'in kendisinde
+// `limit`/`offset`/`total` yok) — kırpılma kavramı bu uçta anlamsız" yazıyordu.
+// TB3 ile bu İDDİA GEÇERSİZ oldu: uç `limit` (varsayılan 50, tavan 200) ve
+// `offset` alır, yanıtta `total` döner. Açık `limit` gönderilmezse seçim kutusu
+// SESSİZCE ilk 50 sözleşmeyle sınırlanır ve kullanıcının aradığı sözleşme
+// listede hiç görünmez. Bu yüzden F-TH'nin korkuluk emsali (`buildListTruncation`
+// + görünür bant) buraya da uygulandı: şema tavanı kadar istenir, `total` ile
+// kırpılma hesaplanır ve `truncation`/`isPartial` çağırana SIZDIRILIR — çağıran
+// taraf görünür uyarı basmak ZORUNDADIR (sessiz kırpma yasak).
 //
 // Dönüş şekli (`SubcontractorContractOption`) SABİT kaldı — çağıranlar U1'in
 // fazladan alanlarını (`site_id`, `status`, `is_draft`, `work_category`)
@@ -30,6 +43,11 @@ export interface UseSubcontractorContractOptionsResult {
   isLoading: boolean;
   isError: boolean;
   error: Error | null;
+  /** `options` KISMİ — sunucu tavanı aşıldı, seçim kutusunda OLMAYAN sözleşme
+   * var. Çağıran taraf görünür bant basar. */
+  isPartial: boolean;
+  /** Bant metnini (`listTruncationMessage`) üretmek için ham sayılar. */
+  truncation: ListTruncation;
 }
 
 function toOption(item: SubcontractorContractListItem): SubcontractorContractOption {
@@ -44,23 +62,32 @@ function toOption(item: SubcontractorContractListItem): SubcontractorContractOpt
 
 /**
  * Sözleşme seçenekleri — U1'den doğrudan gelir, taşeron adına göre (`tr`
- * yerel sıralama) alfabetik sıralanmış. Sayfalama YOK (U1'in kendisinde
- * `limit`/`offset`/`total` yok) — kırpılma kavramı bu uçta anlamsız.
+ * yerel sıralama) alfabetik sıralanmış. Şema tavanı (`limit=200`) AÇIKÇA
+ * gönderilir; sunucu daha fazlasını bildirirse (`total > items.length`)
+ * kırpılma `isPartial`/`truncation` ile görünür kılınır.
  */
 export function useSubcontractorContractOptions(): UseSubcontractorContractOptionsResult {
-  const query = useSubcontractorContractsList();
+  const query = useSubcontractorContractsList({
+    limit: SUBCONTRACTOR_CONTRACT_LIST_MAX_LIMIT,
+  });
 
-  const options = useMemo<SubcontractorContractOption[]>(() => {
-    const items = query.data?.items ?? [];
-    return items
-      .map(toOption)
-      .sort((a, b) => a.subcontractorName.localeCompare(b.subcontractorName, "tr"));
-  }, [query.data]);
+  const items = useMemo(() => query.data?.items ?? [], [query.data]);
+  const truncation = buildListTruncation(items.length, query.data?.total);
+
+  const options = useMemo<SubcontractorContractOption[]>(
+    () =>
+      items
+        .map(toOption)
+        .sort((a, b) => a.subcontractorName.localeCompare(b.subcontractorName, "tr")),
+    [items],
+  );
 
   return {
     options,
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,
+    isPartial: truncation.isTruncated,
+    truncation,
   };
 }

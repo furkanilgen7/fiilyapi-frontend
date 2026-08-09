@@ -37,12 +37,35 @@ const MODULE_LABELS: Record<string, string> = {
   // etiketi KULLANMAZ — yalnız `section_id` DOLU olup adı çözülemeyen
   // durumda gösterilir.
   section_name: "Bölüm adı çözümlemesiyle birlikte gelir",
-  // F-TH final inceleme F-1 (kalıcı kural: backend'i/rotası olmayan mockup
-  // öğesi SİLİNMEZ, devre dışı + görünür gerekçeyle basılır) — Taşeron
-  // Hakediş Oluştur mockup'ındaki "Sözleşmeyi Gör →" ve breadcrumb'daki
-  // taşeron adı + sözleşme no bağlantısının hedefi olan Taşeron Sözleşme
-  // Detay ekranı bu repo'da HENÜZ YOK.
-  subcontractor_contract_detail: "Taşeron sözleşme detay ekranı henüz eklenmedi",
+  // ⚠️ F-P5 T7'de KALDIRILDI: `subcontractor_contract_detail` etiketi F-TH'nin
+  // devre-dışı "Sözleşmeyi Gör →" + breadcrumb bağlantılarının gerekçesiydi.
+  // TSD rotası (`/sozlesmeler/taseron/[contractId]`) yazıldı, iki bağlantı da
+  // gerçek `Link`e döndü — etiketin tüketicisi kalmadı, yeniden eklenmemeli.
+  // F-P5 T2 (SZL · Sözleşmeler listesi) — TAŞERON sekmesinde backend'in
+  // BİLEREK `None` döndürdüğü iki alan (spec §2, openapi açıklaması):
+  // hakediş toplamı KPI'ı (`ContractSummary.progress_payment_total`) ve satır
+  // ilerlemesi (`ContractListItem.progress_pct`). Sahte `0` basmak yerine
+  // kart/kolon yerinde durur, "—" + bu gerekçe gösterilir.
+  subcontractor_progress_payment_total: "Taşeron hakediş toplamı henüz hesaplanmıyor",
+  subcontractor_progress_pct: "Taşeron sözleşmesinde ilerleme henüz hesaplanmıyor",
+  // F-P5 T3 (E14 · İşveren sözleşme detayı) — mockup'ta ÇİZİLİ olup backend
+  // karşılığı OLMAYAN üç yüzey. Üst kural: bölüm/buton SİLİNMEZ, yerinde
+  // devre dışı + görünür gerekçeyle basılır.
+  // 99-123 "Milestone Takvimi": `EmployerContractDetail.milestones` şemada
+  // AÇIKÇA `null` tipindedir (proje takvimi = P11).
+  contract_milestones: "Proje takvimi (P11) ile birlikte gelir",
+  // 77 "Düzenle": işveren sözleşmesinin kendi alanları için backend'de YAZMA
+  // UCU YOKTUR (şema açıklaması: "Sözleşmenin kendi alanları için YENİ yazma
+  // ucu AÇILMAZ … bu yalnız okuma şemasıdır") ve proje formu yalnız OLUŞTURMA
+  // kipindedir (`/projeler/yeni`; düzenleme rotası repoda yok).
+  employer_contract_edit:
+    "İşveren sözleşmesi proje formunda kurulur; ayrı düzenleme ekranı henüz yok",
+  // F-P5 T5 (TL · Taşeron Listesi 51/62 "PUAN" kolonu) — ONAYLI KARAR S4:
+  // taşeron uçlarının HİÇBİRİNDE değerlendirme/puan alanı yoktur
+  // (`SubcontractorResponse`: id/name/tax_number/contact_person/phone/email/
+  // category/is_active). Kolon SİLİNMEZ, yıldız İCAT EDİLMEZ — "—" + bu
+  // gerekçe basılır (backend adayı olarak ROADMAP'e yazılır).
+  subcontractor_rating: "Taşeron değerlendirme özelliği henüz yok",
 };
 
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";

@@ -716,6 +716,52 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "boq"
+        ],
+        "summary": "Delete Boq Group Endpoint",
+        "description": "TB3-C: YALNIZ BOS grup silinir; kalemi olan grup 409 doner.\n\nKapi `_ADMIN`'dir — `delete_boq_item_endpoint` ile BIREBIR ayni gerekce\n(`full` silmeyi KAPSAMAZ). F-SD smoke'unda canlida bos test grubu 405\naldigi icin acildi.",
+        "operationId": "delete_boq_group_endpoint_boq_groups__group_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Group Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/boq/items/{item_id}": {
@@ -1986,7 +2032,7 @@
           "contracts"
         ],
         "summary": "List Subcontractor Contracts Endpoint",
-        "description": "TB2 U1 (spec §1): hakediş açma akışının seçim adımı bu uçtan beslenir —\n\nhakedişlerden türetme, hiç hakedişi olmayan sözleşmeyi göremiyordu.\nSayfalama YOK (`/contracts` liste ucu deseni), sıralama `contract_no`+`id`.",
+        "description": "TB2 U1 (spec §1): hakediş açma akışının seçim adımı bu uçtan beslenir —\n\nhakedişlerden türetme, hiç hakedişi olmayan sözleşmeyi göremiyordu.\nSıralama `contract_no`+`id`. TB3 T2: `subcontractor_progress_payments`\nliste ucunun sayfalama deseni (`total`/`limit`/`offset`) — parametresiz\nçağrı varsayılan limiti uygular ama `total`ı döndürür, böylece istemci\nkırpılmayı GÖREBİLİR.",
         "operationId": "list_subcontractor_contracts_endpoint_subcontractor_contracts_get",
         "security": [
           {
@@ -2058,6 +2104,29 @@
                 }
               ],
               "title": "Q"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
             }
           }
         ],
@@ -22637,14 +22706,29 @@
             },
             "type": "array",
             "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
           }
         },
         "type": "object",
         "required": [
-          "items"
+          "items",
+          "total",
+          "limit",
+          "offset"
         ],
         "title": "SubcontractorContractListResponse",
-        "description": "`SubcontractorListResponse` deseninin aynısı: sayfalama/KPI YOK."
+        "description": "TB3 T2: `subcontractor_progress_payments` liste deseninin aynısı —\n\n`items` + `total`/`limit`/`offset`. Alanlar ADDITIVE: öğe gövdesi TB2'deki\nhâliyle birebir aynıdır, mevcut tüketici (F-TH seçim adımı) kırılmaz."
       },
       "SubcontractorContractUpdate": {
         "properties": {
@@ -23226,6 +23310,17 @@
             ],
             "title": "Contract No"
           },
+          "work_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Category"
+          },
           "sequence_no": {
             "type": "integer",
             "title": "Sequence No"
@@ -23412,6 +23507,7 @@
           "project_name",
           "subcontractor_name",
           "contract_no",
+          "work_category",
           "sequence_no",
           "period_year",
           "period_month",
@@ -23693,6 +23789,17 @@
             ],
             "title": "Contract No"
           },
+          "work_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Category"
+          },
           "sequence_no": {
             "type": "integer",
             "title": "Sequence No"
@@ -23773,6 +23880,7 @@
           "project_name",
           "subcontractor_name",
           "contract_no",
+          "work_category",
           "sequence_no",
           "period_year",
           "period_month",

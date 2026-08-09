@@ -4,7 +4,6 @@ import { buildListTruncation, type ListTruncation } from "@/lib/list-truncation"
 
 import {
   useSubcontractorProgressPayments,
-  useSubcontractorContractsList,
   type SubcontractorPaymentStatus,
 } from "./useSubcontractorProgressPayments";
 
@@ -20,14 +19,14 @@ import {
 // kendisi tarafından sağlanır (`site_id` verilince proje-geneli sözleşmeler
 // zaten dönmez).
 //
-// `workCategory` (kullanıcı kararı — KORUNUR): liste şemasında YOK, bu yüzden
-// U2'nin YANINA site'ye ait sözleşmeleri listeleyen TEK bir U1 isteği eklenir
-// (`useSubcontractorContractsList({ site_id })`) ve `contract_id` üzerinden
-// join edilir. Bu istek U2 ile PARALEL gider (ikisi de bağımsız `useQuery`),
-// N+1 YOKTUR — sözleşme sayısından BAĞIMSIZ tek istek. Join'de eşleşme
-// bulunamazsa (yarış durumu: hakediş listesi geldi, sözleşme o anda
-// değişti/silindi) `workCategory = null` ile zarif düşüş uygulanır, hata
-// FIRLATILMAZ.
+// `workCategory` (kullanıcı kararı — KORUNUR): **TB3 ile
+// `SubcontractorProgressPaymentListItem` şemasına DOĞRUDAN eklendi**
+// (`work_category: string | null`), bu yüzden F-P5 T1'de yanına atılan ikinci
+// istek — `useSubcontractorContractsList({ site_id })` join'i — TAMAMEN
+// SÖKÜLDÜ. Değer artık `payment.work_category`'den okunur: tek istek, join
+// yok, yarış durumu yok. (Eski gerekçe — "liste şemasında YOK, bu yüzden U1
+// ile join edilir" — TB3'ten sonra GEÇERSİZDİR.) Alan sözleşmede boşsa
+// backend zaten `null` döner; çağıran taraf zarif düşüş uygular.
 
 /** Hook'un çağıranlara sızdırdığı TEK şekil — ham liste öğesi VE sözleşme
  * detayı tipi asla dışarı sızmaz. */
@@ -42,9 +41,9 @@ export interface SiteSubcontractorPaymentItem {
    * çağıranda yapılır. */
   periodYear: number | null;
   periodMonth: number | null;
-  /** Sözleşme LİSTE ucundan (`work_category`) join ile — liste şemasında
-   * YOK. `null` olabilir (sözleşmede de boşsa ya da join'de eşleşme
-   * bulunamazsa) — çağıran taraf zarif düşüş uygular. */
+  /** Hakediş liste şemasından DOĞRUDAN (`work_category`, TB3) — join YOK.
+   * `null` olabilir (sözleşmede iş kategorisi boşsa) — çağıran taraf zarif
+   * düşüş uygular. */
   workCategory: string | null;
   /** Hakedişin bağlı olduğu bölüm — yalnız KİMLİK (`section_id`), İSİM
    * DEĞİL (bölüm adını çözecek bir uç/hook bu dilimde YOK — fix round 1:
@@ -94,18 +93,6 @@ export function useSiteSubcontractorPayments(
   // beslenir (para değerleri pending'e düşer, bant görünür).
   const truncation = buildListTruncation(payments.length, paymentsQuery.data?.total);
 
-  // U2 ile PARALEL — biri diğerini beklemez, N+1 yok (tek istek, sözleşme
-  // sayısından bağımsız).
-  const contractsQuery = useSubcontractorContractsList({ site_id: siteId });
-
-  const workCategoryByContractId = useMemo(() => {
-    const map = new Map<string, string | null>();
-    for (const contract of contractsQuery.data?.items ?? []) {
-      map.set(contract.id, contract.work_category);
-    }
-    return map;
-  }, [contractsQuery.data]);
-
   const items = useMemo<SiteSubcontractorPaymentItem[]>(() => {
     return payments.map((payment) => ({
       id: payment.id,
@@ -114,19 +101,19 @@ export function useSiteSubcontractorPayments(
       sequenceNo: payment.sequence_no,
       periodYear: payment.period_year,
       periodMonth: payment.period_month,
-      // Eşleşme bulunamazsa (yarış durumu) `null` — hata fırlatılmaz.
-      workCategory: workCategoryByContractId.get(payment.contract_id) ?? null,
+      // TB3: liste öğesinin KENDİ alanı — join yok.
+      workCategory: payment.work_category,
       sectionId: payment.section_id,
       grossTotal: payment.gross_total,
       netTotal: payment.net_total,
       status: payment.status,
       isRevisionRequired: payment.is_revision_required,
     }));
-  }, [payments, workCategoryByContractId]);
+  }, [payments]);
 
   return {
     items,
-    isLoading: paymentsQuery.isLoading || contractsQuery.isLoading,
+    isLoading: paymentsQuery.isLoading,
     isError: paymentsQuery.isError,
     isPartial: truncation.isTruncated,
     truncation,

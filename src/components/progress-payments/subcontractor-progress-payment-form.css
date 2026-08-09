@@ -8,27 +8,34 @@
   margin-bottom: 0;
 }
 
-/* Final inceleme F-1/F-7 — mockup O19'daki sözleşme bağlantısı ve O21'deki
-   sıra numarası: hedefi/verisi olmadığı için devre-dışı ama GÖRÜNÜR basılır.
-   Bağlantı rengi korunur (mockup'taki yeri okunur kalsın) ama tıklanamaz
-   olduğu imleç + soluk tonla belli olur. */
-.thf-crumb__disabled-link {
+/* Final inceleme F-7 — mockup O21'deki sıra numarası create kipinde henüz
+   üretilmemiştir: devre-dışı ama GÖRÜNÜR basılır.
+   ⚠️ F-P5 T7: O19'daki sözleşme bağlantısının devre-dışı kuralı
+   (`.thf-crumb__disabled-link`) KALDIRILDI — TSD rotası yazıldı, öğe artık
+   gerçek bir `Link`tir. */
+.thf-crumb__contract-link {
   color: var(--color-primary);
-  opacity: 0.65;
-  cursor: not-allowed;
+  text-decoration: none;
+}
+.thf-crumb__contract-link:hover {
+  text-decoration: underline;
 }
 .thf-crumb__pending {
   color: var(--color-text-subtle);
   font-weight: var(--weight-regular);
   cursor: help;
 }
+/* mockup O41 "Sözleşmeyi Gör →" — F-P5 T7'de aktifleşti (soluk/`not-allowed`
+   görünümü kaldırıldı). */
 .thf-hierarchy__see-contract {
   margin-left: auto;
   color: var(--color-primary);
   font-weight: var(--weight-semibold);
   white-space: nowrap;
-  opacity: 0.65;
-  cursor: not-allowed;
+  text-decoration: none;
+}
+.thf-hierarchy__see-contract:hover {
+  text-decoration: underline;
 }
 
 /* Üst form mockup 54-62'de 4 kolon (Taşeron/Dönem/Şantiye/Bölüm) — İşveren

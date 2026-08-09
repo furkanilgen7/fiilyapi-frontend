@@ -46,8 +46,14 @@ const tokensCss = readFileSync(
  * (FP 196) yeniydi — mevcut `--color-warning-strong` ve
  * `--color-orange-tint-text` ondan AÇIK olduğu için kontrastı düşürürdü
  * (`--color-warning-deep-text`).
+ *
+ * F-P5 T7 (TSD · Taşeron Sözleşme Detayı): 78 → 79. Mockup'ın renklerinin
+ * tamamı mevcut palette karşılandı (zincir rozetleri, kehribar bant, tfoot,
+ * ilerleme çubuğu); YALNIZ bilgi bandının gövde metin tonu (TSD 83) yeniydi —
+ * `--color-warning-strong` ondan AÇIK, `--color-warning-deep-text` ondan
+ * KOYUdur (`--color-warning-body-text`).
  */
-const EXPECTED_HEX_COUNT = 78;
+const EXPECTED_HEX_COUNT = 79;
 
 describe("tokens.css", () => {
   it("çekirdek renk token'larını tanımlar (açık tema Slate + Blue)", () => {

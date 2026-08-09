@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Button, Field, Select } from "@/components/ui";
 import { useSubcontractorContractOptions } from "@/lib/api/hooks/useSubcontractorContractOptions";
+import { listTruncationMessage } from "@/lib/list-truncation";
 import "./progress-payment-form.css";
 
 /**
@@ -14,7 +15,8 @@ import "./progress-payment-form.css";
  */
 export function SubcontractorContractPickerStep() {
   const router = useRouter();
-  const { options, isLoading, isError } = useSubcontractorContractOptions();
+  const { options, isLoading, isError, isPartial, truncation } =
+    useSubcontractorContractOptions();
   const [selected, setSelected] = useState("");
 
   function handleContinue() {
@@ -33,6 +35,14 @@ export function SubcontractorContractPickerStep() {
       {!isLoading && !isError && options.length === 0 && (
         <p className="pp-form__message" data-testid="th-contract-picker-empty">
           Henüz kayıtlı taşeron sözleşmesi yok.
+        </p>
+      )}
+
+      {/* F-P5 T1 — TB3 sayfalaması: sunucu tavanı aşıldıysa aranan sözleşme bu
+          kutuda HİÇ OLMAYABİLİR; sessiz kırpma yasak. */}
+      {!isLoading && !isError && isPartial && (
+        <p className="pp-form__limit-note" data-testid="th-contract-picker-limit-note">
+          {listTruncationMessage(truncation)} Aradığınız sözleşme listede olmayabilir.
         </p>
       )}
 
