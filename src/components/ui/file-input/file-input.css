@@ -1,0 +1,32 @@
+/* Dosya secimi kontrolu — olculer `.f-in` ailesinden (bkz. input.css). */
+.file-input {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 20px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: var(--border-width-form) solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: var(--space-form-y) var(--space-form-x);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.file-input:focus { outline: none; border-color: var(--color-primary); box-shadow: var(--focus-ring); }
+.file-input:disabled { background: var(--color-surface-2); color: var(--color-text-muted); cursor: not-allowed; }
+.file-input--error { border-color: var(--color-danger); }
+.file-input--error:focus { box-shadow: var(--focus-ring-danger); }
+
+/* Tarayicinin kendi "Dosya Sec" dugmesi tema disinda kalmasin. */
+.file-input::file-selector-button {
+  margin-right: var(--space-3);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2);
+  border: var(--border-width-row-control) solid var(--color-border);
+  border-radius: var(--radius-6);
+  padding: var(--space-row-control-y) var(--space-row-control-x);
+  cursor: pointer;
+}
+.file-input::file-selector-button:hover { background: var(--color-surface-muted); }

@@ -48,6 +48,7 @@ describe("form kontrolu olcu token'lari", () => {
       "input.css": inputCss,
       "select.css": selectCss,
       "textarea.css": textareaCss,
+      "file-input.css": read("./file-input/file-input.css"),
       "company-screen.css": read("../settings/company/company-screen.css"),
       "audit-screen.css": read("../settings/audit/audit-screen.css"),
       "users-screen.css": read("../settings/users/users-screen.css"),

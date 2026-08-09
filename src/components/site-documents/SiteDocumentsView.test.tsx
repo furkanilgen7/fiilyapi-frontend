@@ -28,6 +28,12 @@ vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
 vi.mock("@/lib/api/hooks/useDocumentFolders", () => ({ useDocumentFolders: vi.fn() }));
 vi.mock("@/lib/api/hooks/useDocuments", () => ({ useDocuments: vi.fn() }));
 vi.mock("@/lib/api/documents-client", () => ({ downloadDocument: vi.fn() }));
+// T3 diyalogları gerçek mutasyon hook'larını çağırır; burada ağ katmanı değil
+// yalnız KANCA bağlantısı sınanır (diyalogların kendi testleri ayrı dosyada).
+vi.mock("@/lib/api/hooks/useDocumentMutations", () => ({
+  useUploadDocument: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+  useCreateDocumentFolder: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+}));
 vi.mock("@/lib/api/hooks/useSites", () => ({
   useSite: vi.fn(() => ({
     data: { id: "s-1", name: "A-Blok Şantiyesi", project: { id: "p-1", name: "Güneşkent Konut" } },
@@ -313,6 +319,60 @@ describe("SiteDocumentsView — izin kapıları (documents modülü)", () => {
     expect(screen.queryByRole("button", { name: "Yeni klasör" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Dosya Yükle" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Hakediş_5_Jul2026\.pdf/ })).toBeInTheDocument();
+  });
+});
+
+describe("SiteDocumentsView — T3 diyalog kancaları", () => {
+  it("'↑ Yükle' düğmesi yükleme diyaloğunu açar", async () => {
+    const user = userEvent.setup();
+    render(<SiteDocumentsView />);
+    await user.click(screen.getByRole("button", { name: "↑ Yükle" }));
+    expect(screen.getByRole("dialog", { name: "Belge Yükle" })).toBeInTheDocument();
+  });
+
+  it("kesikli 'Dosya Yükle' kartı da AYNI diyaloğu açar (ŞB 130-133)", async () => {
+    const user = userEvent.setup();
+    render(<SiteDocumentsView />);
+    await user.click(screen.getByRole("button", { name: "Dosya Yükle" }));
+    expect(screen.getByRole("dialog", { name: "Belge Yükle" })).toBeInTheDocument();
+  });
+
+  it("yükleme diyaloğu aktif klasörü hedef olarak ön seçer", async () => {
+    const user = userEvent.setup();
+    searchParams = new URLSearchParams("folder=df-2");
+    render(<SiteDocumentsView />);
+    await user.click(screen.getByRole("button", { name: "↑ Yükle" }));
+    expect(screen.getByLabelText("Klasör")).toHaveValue("df-2");
+  });
+
+  it("'+ Klasör' ve panel '+' düğmesi yeni klasör diyaloğunu açar", async () => {
+    const user = userEvent.setup();
+    render(<SiteDocumentsView />);
+
+    await user.click(screen.getByRole("button", { name: "+ Klasör" }));
+    expect(screen.getByRole("dialog", { name: "Yeni Klasör" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Vazgeç" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Yeni klasör" }));
+    expect(screen.getByRole("dialog", { name: "Yeni Klasör" })).toBeInTheDocument();
+  });
+
+  it("diyaloglar şantiye kapsamını taşır (site_id ŞB'de HER zaman geçer)", async () => {
+    const user = userEvent.setup();
+    render(<SiteDocumentsView />);
+    await user.click(screen.getByRole("button", { name: "↑ Yükle" }));
+    // Kapsam kanıtı gönderim yolundadır; burada diyaloğun ŞANTİYE klasörlerini
+    // (proje düzeyini değil) seçenek olarak sunduğu doğrulanır.
+    const select = screen.getByLabelText("Klasör");
+    expect(within(select).getByRole("option", { name: "Hakedişler" })).toBeInTheDocument();
+  });
+
+  it("okuma izninde diyalog açacak hiçbir tetikleyici yoktur", () => {
+    mockSession("view");
+    render(<SiteDocumentsView />);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "↑ Yükle" })).not.toBeInTheDocument();
   });
 });
 

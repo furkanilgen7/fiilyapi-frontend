@@ -18,7 +18,9 @@ import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 
 import { DocumentCardGrid } from "./DocumentCardGrid";
+import { DocumentFolderModal } from "./DocumentFolderModal";
 import { DocumentFolderPanel } from "./DocumentFolderPanel";
+import { DocumentUploadModal } from "./DocumentUploadModal";
 import { RecentDocumentsList } from "./RecentDocumentsList";
 import { recentDocuments } from "./recent-documents";
 import "@/components/site-detail/site-detail.css";
@@ -75,6 +77,8 @@ export function SiteDocumentsView() {
   });
 
   const [downloadError, setDownloadError] = useState<string | undefined>(undefined);
+  // T3 diyalogları (spec §6 S1). Aynı anda yalnız biri açık olabilir.
+  const [openDialog, setOpenDialog] = useState<"upload" | "folder" | null>(null);
 
   const isForbidden =
     (documentsQuery.error instanceof BackendError && documentsQuery.error.status === 403) ||
@@ -131,6 +135,7 @@ export function SiteDocumentsView() {
         isLoading={foldersQuery.isLoading}
         isError={foldersQuery.isError}
         canWrite={canWrite}
+        onCreateFolderClick={() => setOpenDialog("folder")}
       />
 
       <div className="sdoc__main">
@@ -156,10 +161,17 @@ export function SiteDocumentsView() {
               value={query}
               onChange={(event) => pushQuery(event.target.value)}
             />
-            {/* ŞB 88-89 — yazma tetikleyicileri; izinsizde BASILMAZ.
-                T3 KANCASI: `onClick` T3'te diyaloglara bağlanır. */}
-            {canWrite && <Button variant="secondary">↑ Yükle</Button>}
-            {canWrite && <Button variant="primary">+ Klasör</Button>}
+            {/* ŞB 88-89 — yazma tetikleyicileri; izinsizde BASILMAZ. */}
+            {canWrite && (
+              <Button variant="secondary" onClick={() => setOpenDialog("upload")}>
+                ↑ Yükle
+              </Button>
+            )}
+            {canWrite && (
+              <Button variant="primary" onClick={() => setOpenDialog("folder")}>
+                + Klasör
+              </Button>
+            )}
           </div>
         </div>
 
@@ -177,6 +189,7 @@ export function SiteDocumentsView() {
           )}
           canWrite={canWrite}
           onDocumentClick={(document) => void handleDownload(document)}
+          onUploadClick={() => setOpenDialog("upload")}
         />
 
         {/* ŞB 137-164 — belge yokken hiç basılmaz (ızgaranın boş durumu yeterli) */}
@@ -189,6 +202,25 @@ export function SiteDocumentsView() {
           />
         )}
       </div>
+
+      {/* T3 diyalogları — ŞANTİYE kapsamı, yani `siteId` HER İKİSİNE de
+          geçilir. Başarıda hook'un invalidation'ı listeyi tazeler. */}
+      {openDialog === "upload" && (
+        <DocumentUploadModal
+          projectId={projectId}
+          siteId={siteId}
+          folders={folders}
+          activeFolderId={activeFolderId}
+          onClose={() => setOpenDialog(null)}
+        />
+      )}
+      {openDialog === "folder" && (
+        <DocumentFolderModal
+          projectId={projectId}
+          siteId={siteId}
+          onClose={() => setOpenDialog(null)}
+        />
+      )}
     </div>
   );
 }
