@@ -42,7 +42,9 @@ async function expectGridLoaded(page: Page) {
   await expect(
     page.locator(".plan-card--grid .plan-week-nav__label").first(),
   ).toHaveText("3 – 9 Ağustos 2026");
-  await expect(page.locator(".plan-grid__row")).not.toHaveCount(0);
+  await expect(page.locator(".plan-card--grid").first().locator(".plan-grid__row")).not.toHaveCount(
+    0,
+  );
 }
 
 /**
@@ -82,7 +84,9 @@ test("planlama izgarasi (dolu) gorsel", async ({ page }) => {
   }
   // Alt sıra: pending Malzeme Planı kartı + dört hedef.
   await expect(page.getByText("Haftalık malzeme ihtiyacı henüz açılmadı", { exact: false })).toBeVisible();
-  await expect(page.locator(".plan-goals__row")).toHaveCount(4);
+  // Kapsamsız `.plan-goals__row` sayımı akış-SSR çift kopyasında İKİYE KATLANIR
+  // (bkz. expectGridLoaded notu) — kart kapsamı + `.first()` zorunludur.
+  await expect(page.locator(".plan-goals").first().locator(".plan-goals__row")).toHaveCount(4);
 
   await expect(page).toHaveScreenshot("planlama-izgara.png", { fullPage: true });
 });
@@ -159,7 +163,7 @@ test("planlama haftalik hedefler karti gorsel", async ({ page }) => {
   await expectGridLoaded(page);
 
   // Kart kadrajı: dört `PlanGoalStatus` rozetinin HEPSİ tek ekrandadır.
-  const goalsCard = page.locator("section[aria-labelledby='plan-goals-title']");
+  const goalsCard = page.locator("section[aria-labelledby='plan-goals-title']").first();
   await expect(goalsCard.locator(".plan-goals__row")).toHaveCount(4);
   for (const status of ["completed", "in_progress", "waiting", "service_pending"]) {
     await expect(goalsCard.locator(`.plan-goals__status--${status}`), status).toBeVisible();

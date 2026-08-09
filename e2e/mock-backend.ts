@@ -419,6 +419,11 @@ interface MockState {
   personnel: MockPersonnel[];
   timesheetCells: MockTimesheetCell[];
   personnelSeq: number;
+  // F-BC T1 — Belge Arşivi. `documentSeq` yeni kimlikleri deterministik üretir
+  // (`Date.now()` YOK — baseline'lar sabit kalsın).
+  documentFolders: MockDocumentFolder[];
+  documents: MockDocument[];
+  documentSeq: number;
   permissions: Record<string, Record<string, { access_level: string; scope: string }>>;
   projectAccess: Record<string, { all_projects: boolean; project_ids: string[] }>;
   company: {
@@ -1917,6 +1922,9 @@ function seedState(): MockState {
     personnel: PERSONNEL_FIXTURES.map((p) => ({ ...p })),
     timesheetCells: TIMESHEET_CELL_FIXTURES.map((c) => ({ ...c })),
     personnelSeq: 0,
+    documentFolders: PROJECT_FOLDER_FIXTURES.map((f) => ({ ...f })),
+    documents: DOCUMENT_FIXTURES.map((d) => ({ ...d })),
+    documentSeq: 0,
     permissions,
     projectAccess: {
       "u-1": { all_projects: true, project_ids: [] },
@@ -2836,6 +2844,155 @@ function buildDiarySuggestionRows(
 }
 
 // Gercek FastAPI yerine gecen minik mock — hermetik E2E icin.
+// ─────────────────────────────────────────────────────────────────────────────
+// F-BC T1 · Belge Arşivi — klasörler + belgeler.
+//
+// ⚠️ ALANLAR ŞEMAYLA BİREBİRDİR (`schema.d.ts`: `DocumentFolderRead`,
+// `DocumentRead`). Uydurma alan eklemek yalnızca testi değil, bu fikstürlerden
+// üretilecek GÖRSEL BASELINE'ları da yanlışlar (F-P5 dersi).
+//
+// `content` alanı şemada YOKTUR — yalnız indirme ucunun gövdesini üretmek için
+// mock durumunda tutulur ve künye yanıtlarına ASLA konmaz (bkz.
+// `buildDocumentRead`). Gerçek backend de baytları künyede dışarı vermez.
+// ─────────────────────────────────────────────────────────────────────────────
+interface MockDocumentFolder {
+  id: string;
+  project_id: string;
+  site_id: string | null;
+  parent_id: string | null;
+  name: string;
+  created_at: string;
+}
+
+interface MockDocument {
+  id: string;
+  folder_id: string | null;
+  project_id: string;
+  site_id: string | null;
+  filename: string;
+  mime_type: string;
+  size_bytes: number;
+  description: string | null;
+  uploaded_by_name: string | null;
+  created_at: string;
+  /** ŞEMA DIŞI — indirme gövdesi. Künyeye konmaz. */
+  content: string;
+}
+
+/**
+ * Mock yükleme sınırı 2 MB'tır (gerçek backend'in sınırı daha büyüktür).
+ * Bilinçli: 413 dalını e2e'de tetiklemek için onlarca MB göndermek gerekmesin.
+ */
+const DOCUMENT_MAX_BYTES = 2 * 1024 * 1024;
+
+/** Kabul edilen uzantılar — dışındakiler 422 alır (gerçek backend kuralı). */
+const DOCUMENT_ALLOWED_EXTENSIONS = [
+  "pdf", "xlsx", "xls", "docx", "doc", "jpg", "jpeg", "png", "dwg", "zip", "txt", "csv",
+];
+
+const PROJECT_FOLDER_FIXTURES: MockDocumentFolder[] = [
+  // E12 mockup'ındaki proje kökü klasörleri (satır 79–98).
+  { id: "df-p1-1", project_id: "p-1", site_id: null, parent_id: null, name: "Sözleşmeler", created_at: "2025-03-02T08:00:00Z" },
+  { id: "df-p1-2", project_id: "p-1", site_id: null, parent_id: null, name: "Hakedişler", created_at: "2025-03-02T08:01:00Z" },
+  { id: "df-p1-3", project_id: "p-1", site_id: null, parent_id: null, name: "Teknik Çizimler", created_at: "2025-03-02T08:02:00Z" },
+  { id: "df-p1-4", project_id: "p-1", site_id: null, parent_id: null, name: "Onay & İzinler", created_at: "2025-03-02T08:03:00Z" },
+  { id: "df-p1-5", project_id: "p-1", site_id: null, parent_id: null, name: "Faturalar", created_at: "2025-03-02T08:04:00Z" },
+  // ŞB mockup'ındaki şantiye klasörleri (satır 44–68) — `site_id` DOLU.
+  { id: "df-s1-1", project_id: "p-1", site_id: "s-1", parent_id: null, name: "Sözleşmeler", created_at: "2025-03-03T08:00:00Z" },
+  { id: "df-s1-2", project_id: "p-1", site_id: "s-1", parent_id: null, name: "Hakedişler", created_at: "2025-03-03T08:01:00Z" },
+  { id: "df-s1-3", project_id: "p-1", site_id: "s-1", parent_id: null, name: "Teknik Çizimler", created_at: "2025-03-03T08:02:00Z" },
+  { id: "df-s1-4", project_id: "p-1", site_id: "s-1", parent_id: null, name: "İzin & Ruhsat", created_at: "2025-03-03T08:03:00Z" },
+  { id: "df-s1-5", project_id: "p-1", site_id: "s-1", parent_id: null, name: "Günlük Raporlar", created_at: "2025-03-03T08:04:00Z" },
+  { id: "df-s1-6", project_id: "p-1", site_id: "s-1", parent_id: null, name: "Fotoğraflar", created_at: "2025-03-03T08:05:00Z" },
+  { id: "df-s1-7", project_id: "p-1", site_id: "s-1", parent_id: null, name: "İş Güvenliği", created_at: "2025-03-03T08:06:00Z" },
+  { id: "df-s1-8", project_id: "p-1", site_id: "s-1", parent_id: null, name: "Faturalar", created_at: "2025-03-03T08:07:00Z" },
+];
+
+/** Kısa sahte gövde — indirme ucunun bayt bayt geçtiğini doğrulamaya yeter. */
+const DOC_CONTENT = "%PDF-1.4 sahte belge icerigi";
+
+const DOCUMENT_FIXTURES: MockDocument[] = [
+  // Proje düzeyi (E12 kart ızgarası, mockup satır 128–158) — `site_id` NULL.
+  { id: "doc-p1-1", folder_id: "df-p1-2", project_id: "p-1", site_id: null, filename: "Hakediş_47_Güneşkent.pdf", mime_type: "application/pdf", size_bytes: 1258291, description: null, uploaded_by_name: "Ahmet Yılmaz", created_at: "2026-07-17T06:20:00Z", content: DOC_CONTENT },
+  { id: "doc-p1-2", folder_id: "df-p1-2", project_id: "p-1", site_id: null, filename: "Hakediş_46_Hesap.xlsx", mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", size_bytes: 865280, description: null, uploaded_by_name: "Ayşe Demir", created_at: "2026-07-01T06:20:00Z", content: DOC_CONTENT },
+  { id: "doc-p1-3", folder_id: "df-p1-2", project_id: "p-1", site_id: null, filename: "Hakediş_45_Onaylı.pdf", mime_type: "application/pdf", size_bytes: 2202009, description: null, uploaded_by_name: "Ayşe Demir", created_at: "2026-06-01T06:20:00Z", content: DOC_CONTENT },
+  { id: "doc-p1-4", folder_id: "df-p1-2", project_id: "p-1", site_id: null, filename: "Fotoğraf_Kat8.jpg", mime_type: "image/jpeg", size_bytes: 3565158, description: null, uploaded_by_name: "Sercan Öztürk", created_at: "2026-07-17T05:00:00Z", content: DOC_CONTENT },
+  { id: "doc-p1-5", folder_id: "df-p1-2", project_id: "p-1", site_id: null, filename: "Hakediş_44.pdf", mime_type: "application/pdf", size_bytes: 1003520, description: null, uploaded_by_name: "Ayşe Demir", created_at: "2026-05-01T06:20:00Z", content: DOC_CONTENT },
+  { id: "doc-p1-6", folder_id: "df-p1-2", project_id: "p-1", site_id: null, filename: "Metraj_Tablosu.xlsx", mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", size_bytes: 1887436, description: null, uploaded_by_name: "Kadir Arslan", created_at: "2026-04-15T06:20:00Z", content: DOC_CONTENT },
+  { id: "doc-p1-7", folder_id: "df-p1-1", project_id: "p-1", site_id: null, filename: "Ana_Sözleşme_2025.pdf", mime_type: "application/pdf", size_bytes: 512000, description: "İmzalı nüsha", uploaded_by_name: "Ahmet Yılmaz", created_at: "2025-03-05T06:20:00Z", content: DOC_CONTENT },
+  // Şantiye düzeyi (ŞB kart ızgarası, mockup satır 94–134) — `site_id` DOLU.
+  { id: "doc-s1-1", folder_id: "df-s1-2", project_id: "p-1", site_id: "s-1", filename: "Hakediş_5_Jul2026.pdf", mime_type: "application/pdf", size_bytes: 1258291, description: null, uploaded_by_name: "Sercan Öztürk", created_at: "2026-07-17T06:00:00Z", content: DOC_CONTENT },
+  { id: "doc-s1-2", folder_id: "df-s1-2", project_id: "p-1", site_id: "s-1", filename: "Puantaj_Tem2026.xlsx", mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", size_bytes: 860160, description: null, uploaded_by_name: "Sercan Öztürk", created_at: "2026-07-16T06:00:00Z", content: DOC_CONTENT },
+  { id: "doc-s1-3", folder_id: "df-s1-6", project_id: "p-1", site_id: "s-1", filename: "Kat8_Beton_Foto.jpg", mime_type: "image/jpeg", size_bytes: 3565158, description: null, uploaded_by_name: "Sercan Öztürk", created_at: "2026-07-17T07:00:00Z", content: DOC_CONTENT },
+  { id: "doc-s1-4", folder_id: "df-s1-4", project_id: "p-1", site_id: "s-1", filename: "Yapı_Ruhsatı_2025.pdf", mime_type: "application/pdf", size_bytes: 2202009, description: null, uploaded_by_name: "Ahmet Yılmaz", created_at: "2025-03-10T06:00:00Z", content: DOC_CONTENT },
+  { id: "doc-s1-5", folder_id: "df-s1-3", project_id: "p-1", site_id: "s-1", filename: "Mimari_Proje_Rev3.dwg", mime_type: "image/vnd.dwg", size_bytes: 18874368, description: null, uploaded_by_name: "Kadir Arslan", created_at: "2026-01-12T06:00:00Z", content: DOC_CONTENT },
+  { id: "doc-s1-6", folder_id: "df-s1-4", project_id: "p-1", site_id: "s-1", filename: "Zemin_Etüdü_Raporu.pdf", mime_type: "application/pdf", size_bytes: 4404019, description: null, uploaded_by_name: "Kadir Arslan", created_at: "2025-03-20T06:00:00Z", content: DOC_CONTENT },
+  { id: "doc-s1-7", folder_id: "df-s1-2", project_id: "p-1", site_id: "s-1", filename: "BOQ_ABlok_v4.xlsx", mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", size_bytes: 1887436, description: null, uploaded_by_name: "Kadir Arslan", created_at: "2026-07-10T06:00:00Z", content: DOC_CONTENT },
+  // ŞB "SON EKLENENLER" listesi (satır 137–164) — meta alt satırı `description`ten gelir.
+  { id: "doc-s1-8", folder_id: "df-s1-5", project_id: "p-1", site_id: "s-1", filename: "Günlük_Rapor_17.07.2026.pdf", mime_type: "application/pdf", size_bytes: 250880, description: "Şantiye Şefi: S. Öztürk", uploaded_by_name: "Sercan Öztürk", created_at: "2026-07-17T12:30:00Z", content: DOC_CONTENT },
+  { id: "doc-s1-9", folder_id: "df-s1-6", project_id: "p-1", site_id: "s-1", filename: "Santiye_Foto_Tem2026.zip", mime_type: "application/zip", size_bytes: 50331648, description: "48 fotoğraf", uploaded_by_name: "Sercan Öztürk", created_at: "2026-07-16T12:00:00Z", content: DOC_CONTENT },
+  { id: "doc-s1-10", folder_id: "df-s1-7", project_id: "p-1", site_id: "s-1", filename: "ISG_Kontrol_Listesi_Tem.pdf", mime_type: "application/pdf", size_bytes: 327680, description: "Aylık denetim", uploaded_by_name: "Yusuf Kaya", created_at: "2026-07-14T09:00:00Z", content: DOC_CONTENT },
+];
+
+/** Künye — `content` DIŞARI VERİLMEZ (şemada yok). */
+function buildDocumentRead(doc: MockDocument) {
+  const { content: _content, ...rest } = doc;
+  return rest;
+}
+
+function documentExtension(filename: string): string {
+  const dot = filename.lastIndexOf(".");
+  return dot < 0 ? "" : filename.slice(dot + 1).toLocaleLowerCase("tr");
+}
+
+interface MultipartPart {
+  fields: Record<string, string>;
+  file: { filename: string; mimeType: string; size: number } | null;
+}
+
+/**
+ * Minimal multipart/form-data ayrıştırıcı.
+ *
+ * Var olma sebebi bir KAPI: BFF gövdeyi JSON'a çevirirse (ya da boundary'yi
+ * yeniden üretirse) burada ayrıştırma BAŞARISIZ olur ve yükleme e2e'de 422
+ * alır. Yani bu ayrıştırıcı, BFF'in ham geçirme davranışının canlı testidir.
+ */
+function parseMultipart(raw: Buffer, contentType: string): MultipartPart | null {
+  const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+  if (!boundaryMatch) return null;
+  const boundary = `--${(boundaryMatch[1] ?? boundaryMatch[2]).trim()}`;
+  const segments = raw.toString("binary").split(boundary).slice(1, -1);
+  if (segments.length === 0) return null;
+
+  const fields: Record<string, string> = {};
+  let file: MultipartPart["file"] = null;
+
+  for (const segment of segments) {
+    const withoutLeadingBreak = segment.startsWith("\r\n") ? segment.slice(2) : segment;
+    const separator = withoutLeadingBreak.indexOf("\r\n\r\n");
+    if (separator < 0) continue;
+    const headerBlock = withoutLeadingBreak.slice(0, separator);
+    let payload = withoutLeadingBreak.slice(separator + 4);
+    if (payload.endsWith("\r\n")) payload = payload.slice(0, -2);
+
+    const nameMatch = headerBlock.match(/name="([^"]*)"/i);
+    if (!nameMatch) continue;
+    const filenameMatch = headerBlock.match(/filename="([^"]*)"/i);
+    if (filenameMatch) {
+      const typeMatch = headerBlock.match(/content-type:\s*([^\r\n]+)/i);
+      file = {
+        // Başlıklar latin1 okundu; Türkçe dosya adı için UTF-8'e çevrilir.
+        filename: Buffer.from(filenameMatch[1], "binary").toString("utf8"),
+        mimeType: typeMatch ? typeMatch[1].trim() : "application/octet-stream",
+        size: Buffer.byteLength(payload, "binary"),
+      };
+    } else {
+      fields[nameMatch[1]] = Buffer.from(payload, "binary").toString("utf8");
+    }
+  }
+  return { fields, file };
+}
+
 export function startMockBackend(port: number): { server: Server; close: () => Promise<void> } {
   const state = seedState();
 
@@ -4671,6 +4828,186 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         state.roles.push(role);
         state.permissions[role.id] = Object.fromEntries(state.modules.map((m) => [m.key, { access_level: "none", scope: "all" }]));
         return send(201, role);
+      });
+    }
+
+    // --- F-BC T1 · Belge Arşivi uçları -------------------------------------
+    // KAPSAM KURALI (gerçek backend semantiği): `site_id` bir SÜZGEÇTİR ve
+    // GEÇMEMEK "hepsi" DEĞİL "yalnız proje düzeyi (IS NULL)" demektir.
+    const documentFoldersMatch = path.match(/^\/projects\/([^/]+)\/document-folders$/);
+    if (method === "GET" && documentFoldersMatch) {
+      const projectId = documentFoldersMatch[1];
+      if (!state.projects.some((p) => p.id === projectId)) {
+        return send(404, { detail: "proje yok" });
+      }
+      const siteId = parsed.searchParams.get("site_id");
+      const folders = state.documentFolders.filter(
+        (f) => f.project_id === projectId && f.site_id === (siteId ?? null),
+      );
+      return send(200, { folders });
+    }
+    if (method === "POST" && documentFoldersMatch) {
+      const projectId = documentFoldersMatch[1];
+      if (!state.projects.some((p) => p.id === projectId)) {
+        return send(404, { detail: "proje yok" });
+      }
+      return withBody((body) => {
+        const name = String(body.name ?? "").trim();
+        if (!name) return send(422, { detail: "Klasör adı zorunlu." });
+        // `project_id` GÖVDEDE değil YOLDA taşınır (backend sözleşmesi).
+        const siteId = typeof body.site_id === "string" ? body.site_id : null;
+        const parentId = typeof body.parent_id === "string" ? body.parent_id : null;
+        const clash = state.documentFolders.find(
+          (f) =>
+            f.project_id === projectId &&
+            f.site_id === siteId &&
+            f.parent_id === parentId &&
+            f.name.toLocaleLowerCase("tr") === name.toLocaleLowerCase("tr"),
+        );
+        if (clash) return send(409, { detail: "Bu adda bir klasör zaten var." });
+
+        state.documentSeq += 1;
+        const folder: MockDocumentFolder = {
+          id: `df-new-${state.documentSeq}`,
+          project_id: projectId,
+          site_id: siteId,
+          parent_id: parentId,
+          name,
+          created_at: "2026-08-09T09:00:00Z",
+        };
+        state.documentFolders = [...state.documentFolders, folder];
+        return send(201, folder);
+      });
+    }
+
+    // PATCH/DELETE /document-folders/{id} — bu dilimde EKRANA BAĞLANMAZ
+    // (spec §4), ama BFF kökü tanımlı olduğu için uç burada da yaşar.
+    const documentFolderIdMatch = path.match(/^\/document-folders\/([^/]+)$/);
+    if (documentFolderIdMatch && (method === "PATCH" || method === "DELETE")) {
+      const folderId = documentFolderIdMatch[1];
+      const folder = state.documentFolders.find((f) => f.id === folderId);
+      if (!folder) return send(404, { detail: "klasör yok" });
+      if (method === "DELETE") {
+        if (state.documents.some((d) => d.folder_id === folderId)) {
+          return send(409, { detail: "Dolu klasör silinemez." });
+        }
+        state.documentFolders = state.documentFolders.filter((f) => f.id !== folderId);
+        return send(204);
+      }
+      return withBody((body) => {
+        const name = String(body.name ?? "").trim();
+        if (!name) return send(422, { detail: "Klasör adı zorunlu." });
+        folder.name = name;
+        return send(200, folder);
+      });
+    }
+
+    // GET /documents — `project_id` ZORUNLU; `site_id`/`folder_id`/`q` süzgeç.
+    if (method === "GET" && path === "/documents") {
+      const projectId = parsed.searchParams.get("project_id");
+      if (!projectId) return send(422, { detail: "project_id zorunlu" });
+      const siteId = parsed.searchParams.get("site_id");
+      const folderId = parsed.searchParams.get("folder_id");
+      const search = (parsed.searchParams.get("q") ?? "").trim().toLocaleLowerCase("tr");
+      const limitParam = parsed.searchParams.get("limit");
+
+      let rows = state.documents.filter(
+        (d) => d.project_id === projectId && d.site_id === (siteId ?? null),
+      );
+      if (folderId) rows = rows.filter((d) => d.folder_id === folderId);
+      if (search) {
+        rows = rows.filter(
+          (d) =>
+            d.filename.toLocaleLowerCase("tr").includes(search) ||
+            (d.description ?? "").toLocaleLowerCase("tr").includes(search),
+        );
+      }
+      if (limitParam) rows = rows.slice(0, Number(limitParam));
+      // TOPLAM SAYI ALANI YOK — sayfalama yok (şema gereği).
+      return send(200, { documents: rows.map(buildDocumentRead) });
+    }
+
+    // POST /documents — MULTIPART. Gövde JSON'a çevrilmişse ayrıştırma
+    // başarısız olur ve bu uç 422 döner; yani BFF'in ham geçirme davranışının
+    // uçtan uca kapısıdır.
+    if (method === "POST" && path === "/documents") {
+      const chunks: Buffer[] = [];
+      req.on("data", (c: Buffer) => chunks.push(c));
+      req.on("end", () => {
+        const parsedBody = parseMultipart(
+          Buffer.concat(chunks),
+          req.headers["content-type"] ?? "",
+        );
+        if (!parsedBody?.file) {
+          return send(422, { detail: "Dosya alanı okunamadı." });
+        }
+        const projectId = parsedBody.fields.project_id;
+        if (!projectId || !state.projects.some((p) => p.id === projectId)) {
+          return send(404, { detail: "proje yok" });
+        }
+        if (parsedBody.file.size > DOCUMENT_MAX_BYTES) {
+          return send(413, { detail: "Dosya boyutu sınırı aşıldı." });
+        }
+        const extension = documentExtension(parsedBody.file.filename);
+        if (!DOCUMENT_ALLOWED_EXTENSIONS.includes(extension)) {
+          return send(422, { detail: "Bu dosya türü kabul edilmiyor." });
+        }
+
+        state.documentSeq += 1;
+        const created: MockDocument = {
+          id: `doc-new-${state.documentSeq}`,
+          folder_id: parsedBody.fields.folder_id ?? null,
+          project_id: projectId,
+          site_id: parsedBody.fields.site_id ?? null,
+          filename: parsedBody.file.filename,
+          mime_type: parsedBody.file.mimeType,
+          size_bytes: parsedBody.file.size,
+          description: parsedBody.fields.description ?? null,
+          uploaded_by_name: ME.full_name,
+          created_at: "2026-08-09T09:05:00Z",
+          content: DOC_CONTENT,
+        };
+        state.documents = [...state.documents, created];
+        return send(201, buildDocumentRead(created));
+      });
+      return;
+    }
+
+    // GET /documents/{id}/download — İKİLİ gövde + Content-Disposition.
+    const documentDownloadMatch = path.match(/^\/documents\/([^/]+)\/download$/);
+    if (method === "GET" && documentDownloadMatch) {
+      const doc = state.documents.find((d) => d.id === documentDownloadMatch[1]);
+      if (!doc) return send(404, { detail: "Belge bulunamadı." });
+      res.writeHead(200, {
+        "content-type": doc.mime_type,
+        // Türkçe karakterli ad: gerçek backend gibi ASCII `filename` verilir.
+        "content-disposition": `attachment; filename="${doc.filename.replace(/[^\w.\-() ]/g, "_")}"`,
+      });
+      res.end(Buffer.from(doc.content));
+      return;
+    }
+
+    // PATCH/DELETE /documents/{id} — ekrana BAĞLANMAZ (spec §4); e2e temizliği
+    // ve ileride açılacak yüzey için uçlar burada da yaşar.
+    const documentIdMatch = path.match(/^\/documents\/([^/]+)$/);
+    if (documentIdMatch && (method === "PATCH" || method === "DELETE")) {
+      const documentId = documentIdMatch[1];
+      const doc = state.documents.find((d) => d.id === documentId);
+      if (!doc) return send(404, { detail: "Belge bulunamadı." });
+      if (method === "DELETE") {
+        state.documents = state.documents.filter((d) => d.id !== documentId);
+        return send(204);
+      }
+      return withBody((body) => {
+        // `exclude_unset` semantiği: GÖNDERİLMEYEN alana DOKUNULMAZ.
+        if (body.filename !== undefined) doc.filename = String(body.filename);
+        if (body.description !== undefined) {
+          doc.description = body.description === null ? null : String(body.description);
+        }
+        if (body.folder_id !== undefined) {
+          doc.folder_id = body.folder_id === null ? null : String(body.folder_id);
+        }
+        return send(200, buildDocumentRead(doc));
       });
     }
 

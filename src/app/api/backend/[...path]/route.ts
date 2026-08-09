@@ -70,6 +70,18 @@ const ALLOWED_ROOTS = new Set([
   // `.../timesheet/export.xlsx`) ilk segmenti "sites" olduğu için MEVCUT
   // "sites" kökünden geçer — ayrı bir "timesheet" kökü EKLENMEZ.
   "personnel",
+  // F-BC T1 — Belge Arşivi İKİ kök birden ekler:
+  //   · `documents`        → `POST /documents` (multipart yükleme),
+  //     `GET /documents`, `GET /documents/{id}/download`,
+  //     `PATCH/DELETE /documents/{id}`.
+  //   · `document-folders` → `PATCH/DELETE /document-folders/{id}` (klasör
+  //     yeniden adlandırma/silme). Bu iki uç bu dilimde EKRANA BAĞLANMAZ
+  //     (spec §4: mockup'ta düğme yok) — ama uçlar API'den kullanılabilir
+  //     kalır ve kök sessizce düşerse ileride açılacak yüzey canlıda 404 alır.
+  // Klasör LİSTELEME/OLUŞTURMA (`/projects/{id}/document-folders`) ilk segmenti
+  // "projects" olduğu için MEVCUT kökten geçer; ayrı bir kök gerekmez.
+  "documents",
+  "document-folders",
 ]);
 
 // JSON/metin sayilan icerik tipleri: govde metne cozulup JSON olarak islenir.
@@ -80,6 +92,19 @@ const TEXTUAL_CONTENT_TYPES = [/^application\/json/i, /^application\/problem\+js
 const BINARY_DOWNLOAD_SUFFIXES = [".xlsx"];
 
 /**
+ * F-BC — son segmenti bunlardan biri olan uclar KOSULSUZ ikili sayilir
+ * (`status < 400` iken).
+ *
+ * Gerekce: indirilen BELGENIN icerik tipi KULLANICININ yukledigi dosyadan
+ * gelir. Bir `.txt`/`.csv`/`.json` belgesi `text/plain` ya da
+ * `application/json` tasir; `Content-Type`a bakan genel kural bunlari METIN
+ * sayip JSON dalina dusurur, `decodeJson` cozemedigi govde icin `null` basar
+ * ve dosya HIC INMEZ. Excel/PDF disa aktarimlarinda bu gorulmez cunku onlarin
+ * tipi sabittir — belge arsivinde degildir.
+ */
+const BINARY_DOWNLOAD_SEGMENTS = new Set(["download"]);
+
+/**
  * Ikili/JSON karari — ASIL OLCUT backend'in dondurdugu `Content-Type`.
  *
  * Uzantiya bakan eski kural BOQ'un uzantisiz `…/boq/export` ucunu kaciriyordu:
@@ -88,6 +113,7 @@ const BINARY_DOWNLOAD_SUFFIXES = [".xlsx"];
  * ortaya cikardi.
  */
 function isBinaryResponse(contentType: string | null, path: string[]): boolean {
+  if (BINARY_DOWNLOAD_SEGMENTS.has(path[path.length - 1])) return true;
   if (contentType && TEXTUAL_CONTENT_TYPES.some((re) => re.test(contentType))) return false;
   if (contentType) return true;
   return BINARY_DOWNLOAD_SUFFIXES.some((suffix) => path[path.length - 1].endsWith(suffix));
@@ -184,8 +210,18 @@ async function handle(request: NextRequest, method: string, routeCtx: RouteCtx):
     return handleGet(path, backendPath, query, access, refresh);
   }
 
+  // F-BC — multipart gövde (belge yükleme) JSON'a ÇEVRİLMEZ: `request.json()`
+  // bu gövdeyi çözemez, `body` `undefined`a düşer ve backend'e boundary'si
+  // kaybolmuş boş bir istek gider (her yükleme 422). Gövde ham bayt olarak
+  // okunup `Content-Type` başlığı BOUNDARY'SİYLE BİRLİKTE aynen iletilir.
+  const requestContentType = request.headers.get("content-type");
+  const isMultipart = /^multipart\/form-data/i.test(requestContentType ?? "");
+
   let body: unknown;
-  if (method !== "DELETE") {
+  let rawBody: { data: ArrayBuffer; contentType: string } | undefined;
+  if (isMultipart) {
+    rawBody = { data: await request.arrayBuffer(), contentType: requestContentType as string };
+  } else if (method !== "DELETE") {
     try {
       body = await request.json();
     } catch {
@@ -195,7 +231,12 @@ async function handle(request: NextRequest, method: string, routeCtx: RouteCtx):
 
   let result;
   try {
-    result = await proxyAuthenticated(access, refresh, backendPath, { method, body, query });
+    result = await proxyAuthenticated(access, refresh, backendPath, {
+      method,
+      body,
+      rawBody,
+      query,
+    });
   } catch {
     return NextResponse.json({ ok: false, code: "unavailable" }, { status: 502 });
   }

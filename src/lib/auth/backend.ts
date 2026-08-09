@@ -10,6 +10,14 @@ export interface ProxyResult {
 export interface ProxyOptions {
   method?: string;
   body?: unknown;
+  /**
+   * F-BC — JSON'a ÇEVRİLMEDEN geçirilecek ham gövde (multipart belge yükleme).
+   *
+   * `body` ile birlikte verilmez; verilirse `rawBody` kazanır. `ArrayBuffer`
+   * bilinçli tercihtir: 401 → refresh → tek retry yolunda gövde İKİNCİ KEZ
+   * okunabilir olmalıdır (akış gövdesi ikinci istekte tükenmiş olurdu).
+   */
+  rawBody?: { data: ArrayBuffer; contentType: string };
   query?: Record<string, string>;
 }
 
@@ -35,11 +43,15 @@ function buildUrl(path: string, query: Record<string, string> | undefined): stri
 
 // Backend'e Bearer ile tek istek — method/body/query destekli.
 function request(path: string, accessToken: string | undefined, options: ProxyOptions): Promise<Response> {
-  const { method = "GET", body, query } = options;
+  const { method = "GET", body, rawBody, query } = options;
   const headers: Record<string, string> = {};
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
   const init: RequestInit = { method, headers };
-  if (body !== undefined) {
+  if (rawBody !== undefined) {
+    // Boundary iceren `Content-Type` AYNEN gecer — yeniden uretilmez.
+    headers["content-type"] = rawBody.contentType;
+    init.body = rawBody.data;
+  } else if (body !== undefined) {
     headers["content-type"] = "application/json";
     init.body = JSON.stringify(body);
   }
