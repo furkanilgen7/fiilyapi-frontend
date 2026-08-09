@@ -6,9 +6,9 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 
-const css = readFileSync(fileURLToPath(new URL("./site-documents.css", import.meta.url)), "utf8");
+const css = readFileSync(fileURLToPath(new URL("./documents.css", import.meta.url)), "utf8");
 
-describe("site-documents.css — odak halkaları (regresyon koruması)", () => {
+describe("documents.css — odak halkaları (regresyon koruması)", () => {
   it("belge kartı :focus-visible ile mockup'ın vurgulu kenarlığını (ŞB 95) kullanır", () => {
     expect(css).toMatch(/\.sdoc-card:focus-visible\s*{[^}]*var\(--color-primary-ring\)/);
   });
@@ -20,9 +20,14 @@ describe("site-documents.css — odak halkaları (regresyon koruması)", () => {
   it("'İndir' düğmesi :focus-visible odak halkası tanımlar", () => {
     expect(css).toMatch(/\.sdoc-recent__download\.btn:focus-visible\s*{[^}]*--focus-ring/);
   });
+
+  // F-BC T4 — E12'de düğme yoktur, satırın KENDİSİ butondur (E12 170).
+  it("tıklanabilir liste satırı :focus-visible odak halkası tanımlar", () => {
+    expect(css).toMatch(/\.sdoc-recent__trigger:focus-visible\s*{[^}]*--focus-ring/);
+  });
 });
 
-describe("site-documents.css — çıplak değer yasağı", () => {
+describe("documents.css — çıplak değer yasağı", () => {
   // Yorumlar hariç: mockup'ın hex değerini gerekçe olarak yazmak (tokens.css
   // ev üslubu) serbesttir; KURAL GÖVDESİNDE çıplak hex yasaktır.
   it("kural gövdelerinde ham hex rengi içermez (tüm renkler tokens.css'ten)", () => {

@@ -8,6 +8,13 @@ export interface RecentDocumentsListProps {
   folderNames: ReadonlyMap<string, string>;
   now: Date;
   onDownload: (document: DocumentRead) => void;
+  /**
+   * "İndir" düğmesi (ŞB 147/154/161) — İKİ MOCKUP BURADA AYRIŞIR: E12'nin
+   * listesinde (166-184) düğme YOKTUR, satırın kendisi tıklanabilir çizilir
+   * (E12 170 `cursor:pointer`). Düğme basılmadığında satır gövdesi butona
+   * dönüşür; aksi halde ŞB'nin DOM'u birebir korunur.
+   */
+  showDownloadButton: boolean;
 }
 
 /**
@@ -21,39 +28,64 @@ function metaLine(document: DocumentRead, folderNames: ReadonlyMap<string, strin
 }
 
 /**
- * "SON EKLENENLER" paneli — mockup `Şantiye - Belgeler.dc.html` (ŞB) 137-164.
- * Sıralama İSTEMCİDEDİR (bkz. `recent-documents.ts`).
+ * "SON EKLENENLER" paneli — mockup `Şantiye - Belgeler.dc.html` (ŞB) 137-164
+ * ve `Ekran 12 - Belge Arşivi.dc.html` (E12) 166-184. Sıralama İSTEMCİDEDİR
+ * (bkz. `recent-documents.ts`).
  */
 export function RecentDocumentsList({
   documents,
   folderNames,
   now,
   onDownload,
+  showDownloadButton,
 }: RecentDocumentsListProps) {
   return (
     <section className="sdoc-recent">
-      {/* ŞB 138-140 */}
+      {/* ŞB 138-140 · E12 167-169 */}
       <h2 className="sdoc-recent__title">Son Eklenenler</h2>
-      {/* ŞB 141-163 */}
+      {/* ŞB 141-163 · E12 170-183 */}
       <ul className="sdoc-recent__list" aria-label="Son eklenen belgeler">
         {documents.map((document) => {
           const meta = metaLine(document, folderNames);
-          return (
-            <li key={document.id} className="sdoc-recent__row">
-              {/* ŞB 143 — 20px tip ikonu */}
+          // Satır gövdesi iki mockup'ta da AYNI: ikon / ad + meta / boyut / tarih.
+          const body = (
+            <>
+              {/* ŞB 143 · E12 171 — 20px tip ikonu */}
               <span className="sdoc-recent__icon" aria-hidden="true">
                 {documentTypeIcon(document.filename)}
               </span>
-              <div className="sdoc-recent__main">
+              <span className="sdoc-recent__main">
                 <span className="sdoc-recent__name">{document.filename}</span>
                 {meta && <span className="sdoc-recent__meta">{meta}</span>}
-              </div>
-              {/* ŞB 145 */}
+              </span>
+              {/* ŞB 145 · E12 173 */}
               <span className="sdoc-recent__size">{formatDocumentSize(document.size_bytes)}</span>
-              {/* ŞB 146 — bugünse saat de basılır */}
+              {/* ŞB 146 · E12 174 — bugünse saat de basılır */}
               <span className="sdoc-recent__date">
                 {formatDocumentDate(document.created_at, now, { withTime: true })}
               </span>
+            </>
+          );
+
+          if (!showDownloadButton) {
+            // E12 170 — satırın kendisi tıklanabilir; `div`+onClick klavyeyle
+            // erişilemezdi, bu yüzden gövde butondur (kart ızgarasıyla aynı gerekçe).
+            return (
+              <li key={document.id} className="sdoc-recent__row sdoc-recent__row--button">
+                <button
+                  type="button"
+                  className="sdoc-recent__trigger"
+                  onClick={() => onDownload(document)}
+                >
+                  {body}
+                </button>
+              </li>
+            );
+          }
+
+          return (
+            <li key={document.id} className="sdoc-recent__row">
+              {body}
               {/* ŞB 147 — indirme, izinden BAĞIMSIZ: okuma izni olan indirir */}
               <Button
                 variant="ghost"

@@ -1,4 +1,4 @@
-import { SiteDocumentsView } from "@/components/site-documents/SiteDocumentsView";
+import { SiteDocumentsView } from "@/components/documents/SiteDocumentsView";
 
 // F-BC T2 · gerçek rota — [...slug] catch-all'ı bu segment için devre dışı
 // bırakır (Next.js App Router: özel segment her zaman catch-all'dan önce

@@ -464,6 +464,18 @@
   --space-document-folder-indent: 20px; /* klasör girintisi (45) */
   --space-document-row-y: 10px; /* "Son Eklenenler" satırı dikey iç boşluk (142) */
   --min-height-document-upload: 110px; /* kesikli yükleme kartı (130) */
+
+  /* ── Ekran 12 · Belge Arşivi · E12 (F-BC T4) ──────────────────────────────
+     Kanon: projedesign "Ekran 12 - Belge Arşivi.dc.html"; parantez içi sayılar
+     o dosyanın SATIR numaralarıdır. İki mockup AYNI paneli/kartı çizer, birkaç
+     ÖLÇÜ ayrışır; ayrışanlar burada, kural gövdeleri `.sdoc--archive`
+     kapsamında yeniden bağlanır (kopyalanan kural YOK). Yeni renk YOK. */
+  --text-document-title-archive: 18px; /* klasör adı başlığı (119) */
+  --text-document-icon-archive: 40px; /* kart tip ikonu (130) */
+  --text-document-meta-archive: 11px; /* kart "boyut · tarih" (132) */
+  --min-height-document-upload-archive: 120px; /* kesikli yükleme kartı (159) */
+  --space-document-folder-indent-archive: 24px; /* klasör girintisi (79) */
+  --space-document-divider-y: 10px; /* proje kökleri arası ayırıcı (99) */
 }
 
 @keyframes fadeUp {

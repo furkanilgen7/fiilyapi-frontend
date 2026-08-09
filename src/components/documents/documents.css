@@ -339,3 +339,50 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ── E12 (Belge Arşivi) ────────────────────────────────────────────────────
+   Kanon: projedesign "Ekran 12 - Belge Arşivi.dc.html"; parantez içi sayılar o
+   dosyanın SATIR numaralarıdır. E12 ile ŞB aynı paneli/kartı/listeyi çizer;
+   yalnız birkaç ÖLÇÜ ayrışır → token yeniden bağlanır, kural KOPYALANMAZ. */
+.sdoc--archive {
+  --text-document-title: var(--text-document-title-archive); /* 119 */
+  --text-document-icon: var(--text-document-icon-archive); /* 130 */
+  --text-document-meta: var(--text-document-meta-archive); /* 132 */
+  --min-height-document-upload: var(--min-height-document-upload-archive); /* 159 */
+  --space-document-folder-indent: var(--space-document-folder-indent-archive); /* 79 */
+}
+
+/* E12 99 — proje kökleri arasındaki ayırıcı (tek köklü ŞB'de basılmaz) */
+.sdoc-folders__divider {
+  height: 1px;
+  margin: var(--space-document-divider-y) var(--space-4);
+  background: var(--color-divider);
+}
+
+/* E12 170 — "Son Eklenenler" satırının kendisi tıklanabilir: iç boşluk
+   satırdan butona geçer, aksi halde tıklama alanı satırdan küçük kalırdı. */
+.sdoc-recent__row--button {
+  padding: 0;
+}
+
+.sdoc-recent__trigger {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-document-row-y) var(--space-4);
+  background: transparent;
+  border: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sdoc-recent__trigger:hover {
+  background: var(--color-surface-muted);
+}
+
+.sdoc-recent__trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}

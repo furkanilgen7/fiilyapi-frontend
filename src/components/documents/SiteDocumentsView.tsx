@@ -18,24 +18,24 @@ import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 
 import { DocumentCardGrid } from "./DocumentCardGrid";
+import { documentGridMessage } from "./grid-message";
 import { DocumentFolderModal } from "./DocumentFolderModal";
 import { DocumentFolderPanel } from "./DocumentFolderPanel";
 import { DocumentUploadModal } from "./DocumentUploadModal";
 import { RecentDocumentsList } from "./RecentDocumentsList";
 import { recentDocuments } from "./recent-documents";
 import "@/components/site-detail/site-detail.css";
-import "./site-documents.css";
+import "./documents.css";
 
 /** URL durumu anahtarları (F-PT/F-PL deseni: süzgeç paylaşılabilir olmalı). */
 const FOLDER_PARAM = "folder";
 const QUERY_PARAM = "q";
 
-/** Belge listesi/klasör listesi boş-durum ve hata metinleri (tek kaynak). */
-function gridMessage(isLoading: boolean, isError: boolean, hasQuery: boolean, isEmpty: boolean) {
-  if (isLoading) return "Belgeler yükleniyor…";
-  if (isError) return "Belgeler yüklenemedi.";
-  if (!isEmpty) return undefined;
-  return hasQuery ? "Aramanızla eşleşen belge bulunamadı." : "Bu klasörde henüz belge yok.";
+/** Klasör panelinin durum metni; ızgaranınki `documentGridMessage`tedir. */
+function folderPanelMessage(isLoading: boolean, isError: boolean, isEmpty: boolean) {
+  if (isLoading) return "Klasörler yükleniyor…";
+  if (isError) return "Klasörler yüklenemedi.";
+  return isEmpty ? "Bu şantiyede henüz klasör yok." : undefined;
 }
 
 /**
@@ -125,15 +125,29 @@ export function SiteDocumentsView() {
 
   return (
     <div className="sdoc">
-      {/* ŞB 37-69 */}
+      {/* ŞB 37-69 — TEK kök: "Tüm Belgeler" (E12'de kökler projelerdir) */}
       <DocumentFolderPanel
         // Şantiye adı yüklenene kadar uydurulmaz (ŞP deseni).
         title={site ? `${site.name} Klasörleri` : "Klasörler"}
-        folders={folders}
-        activeFolderId={activeFolderId}
-        folderHref={folderHref}
-        isLoading={foldersQuery.isLoading}
-        isError={foldersQuery.isError}
+        roots={[
+          {
+            key: "all",
+            label: "Tüm Belgeler",
+            href: folderHref(),
+            isActive: !activeFolderId,
+            children: folders.map((folder) => ({
+              key: folder.id,
+              label: folder.name,
+              href: folderHref(folder.id),
+              isActive: folder.id === activeFolderId,
+            })),
+          },
+        ]}
+        message={folderPanelMessage(
+          foldersQuery.isLoading,
+          foldersQuery.isError,
+          folders.length === 0,
+        )}
         canWrite={canWrite}
         onCreateFolderClick={() => setOpenDialog("folder")}
       />
@@ -181,12 +195,12 @@ export function SiteDocumentsView() {
         <DocumentCardGrid
           documents={documents}
           now={now}
-          emptyMessage={gridMessage(
-            documentsQuery.isLoading,
-            documentsQuery.isError,
-            query.length > 0,
-            documents.length === 0,
-          )}
+          emptyMessage={documentGridMessage({
+            isLoading: documentsQuery.isLoading,
+            isError: documentsQuery.isError,
+            hasQuery: query.length > 0,
+            isEmpty: documents.length === 0,
+          })}
           canWrite={canWrite}
           onDocumentClick={(document) => void handleDownload(document)}
           onUploadClick={() => setOpenDialog("upload")}
@@ -199,6 +213,8 @@ export function SiteDocumentsView() {
             folderNames={folderNames}
             now={now}
             onDownload={(document) => void handleDownload(document)}
+            // ŞB 147 — İndir düğmesi ŞB'ye özgüdür (E12'de yoktur).
+            showDownloadButton
           />
         )}
       </div>
