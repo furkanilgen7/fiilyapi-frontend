@@ -549,7 +549,7 @@ describe("SubcontractorProgressPaymentForm — Günlükten Doldur", () => {
     };
   }
 
-  it("önerilen miktarı satıra yazar ve '📅 Günlük kayıttan' rozetini basar", async () => {
+  it("önerilen miktarı satıra yazar", async () => {
     mockSuggestion({ data: suggestionData() });
     renderForm({ mode: "create", contractId: CONTRACT_ID });
     await screen.findByTestId("thf-hierarchy");
@@ -560,12 +560,12 @@ describe("SubcontractorProgressPaymentForm — Günlükten Doldur", () => {
       "1 satır günlük kayıtlardan dolduruldu.",
     );
     expect(screen.getByLabelText(`${ITEM_DIARY.description} — miktar`)).toHaveValue("60.000");
-    const badge = screen.getByTestId("thf-diary-source");
-    expect(badge).toHaveTextContent("📅 Günlük kayıttan");
-    expect(screen.getByText("Günlük kayıttan ↑")).toBeInTheDocument();
   });
 
-  it("rozet yalnız öneri uygulanan satırda görünür; diğer satır 'Elle giriş' kalır", async () => {
+  // F-P10 T2 · rozet göçü (KARAR S1): rozetin TEK kaynağı sunucunun kalıcı
+  // `quantity_source` damgasıdır — kaydedilmemiş doldurma rozet BASMAZ,
+  // satırlar "Elle giriş" kalır (işveren tarafıyla aynı desen).
+  it("kaydedilmemiş doldurma rozet BASMAZ (damga sunucudan gelir)", async () => {
     mockSuggestion({ data: suggestionData() });
     renderForm({ mode: "create", contractId: CONTRACT_ID });
     await screen.findByTestId("thf-hierarchy");
@@ -573,21 +573,8 @@ describe("SubcontractorProgressPaymentForm — Günlükten Doldur", () => {
     await userEvent.click(screen.getByTestId("thf-diary-fill"));
 
     expect(await screen.findByTestId("thf-diary-fill-notice")).toBeInTheDocument();
-    expect(screen.getAllByTestId("thf-diary-source")).toHaveLength(1);
-    expect(screen.getByText("Elle giriş")).toBeInTheDocument();
-  });
-
-  it("kullanıcı düzeltince rozet düşer (yanlış bilgi vermez)", async () => {
-    mockSuggestion({ data: suggestionData() });
-    renderForm({ mode: "create", contractId: CONTRACT_ID });
-    await screen.findByTestId("thf-hierarchy");
-    await userEvent.click(screen.getByTestId("thf-diary-fill"));
-    const input = await screen.findByLabelText(`${ITEM_DIARY.description} — miktar`);
-
-    await userEvent.clear(input);
-    await userEvent.type(input, "7");
-
     expect(screen.queryByTestId("thf-diary-source")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Elle giriş")).toHaveLength(2);
   });
 
   it("proje geneli sözleşmede backend gerekçesini görünür basar", async () => {

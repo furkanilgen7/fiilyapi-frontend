@@ -3,11 +3,7 @@
 import { ConfirmDialog } from "@/components/settings/ConfirmDialog";
 import { Alert } from "@/components/ui";
 
-import {
-  DIARY_FILL_SOURCE_NOTE,
-  diaryOverwriteConfirmMessage,
-  type DiaryFillNotice,
-} from "./diary-fill";
+import { diaryOverwriteConfirmMessage, type DiaryFillNotice } from "./diary-fill";
 
 export interface DiaryFillFeedbackProps {
   notice: DiaryFillNotice | null;
@@ -41,9 +37,6 @@ export function DiaryFillFeedback({
           data-testid={`${testIdPrefix}-diary-fill-notice`}
         >
           {notice.text}
-          {notice.sourceNoteVisible && (
-            <span className="pp-form__diary-source-note">{DIARY_FILL_SOURCE_NOTE}</span>
-          )}
         </Alert>
       )}
 

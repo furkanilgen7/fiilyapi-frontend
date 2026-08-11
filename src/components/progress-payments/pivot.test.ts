@@ -115,6 +115,18 @@ describe("buildPivotRows", () => {
     expect(cellA.quantity).toBe("0");
   });
 
+  // F-P10 T2 · rozet göçü: satır kaynağı SUNUCU damgasıdır (taşeron
+  // `th-lines.ts` deseniyle aynı) — oturum-içi türetme yoktur.
+  it("hücre kaynağı sunucunun quantity_source damgasını tasir", () => {
+    const lines = [line({ site_id: SITE_A.id, quantity_source: "diary" })];
+    const rows = buildPivotRows(DISTRIBUTION, lines);
+    const cellA = rows[0].cells.find((c) => c.siteId === SITE_A.id)!;
+    const cellB = rows[0].cells.find((c) => c.siteId === SITE_B.id)!;
+    expect(cellA.quantitySource).toBe("diary");
+    // Hiç kaydedilmemiş hücre "elle giriş"tir (taşeron varsayılanıyla aynı).
+    expect(cellB.quantitySource).toBe("manual");
+  });
+
   it("contract_item_id null olan (kopmuş) satır pivot'a yerleştirilmez", () => {
     const lines = [line({ contract_item_id: null, site_id: SITE_A.id })];
     const rows = buildPivotRows(DISTRIBUTION, lines);

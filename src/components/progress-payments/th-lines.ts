@@ -4,6 +4,8 @@ import type {
 } from "@/lib/api/hooks/useSubcontractorProgressPayments";
 import type { SubcontractorProgressPaymentLineInput } from "@/lib/api/hooks/useSubcontractorProgressPaymentMutations";
 
+import { DEFAULT_QUANTITY_SOURCE, type QuantitySource } from "./quantity-source";
+
 // F-TH T3 · hakediş kalem tablosunun SAF (component'sız) mantığı — İşveren
 // tarafının `pivot.ts`si ile AYNI amaç, ama satır kaynağı FARKLI: burada
 // satır = sözleşme kalemi (`SubcontractorContractDetail.items`), şantiye
@@ -37,7 +39,7 @@ export interface SubcontractorLineRow {
   contractUnitPrice: string | null;
   /** TEK düzenlenebilir alan (brief §Kalem tablosu). */
   quantity: string;
-  quantitySource: "manual" | "diary";
+  quantitySource: QuantitySource;
   /** Kayıtlı satırın türev tutarı — hiç kaydedilmemişse `null` ("—" basılır, İKİNCİ bir çarpma icat edilmez). */
   lineTotal: string | null;
 }
@@ -72,7 +74,7 @@ export function buildSubcontractorLineRows(
         sortOrder: item.sort_order,
         contractUnitPrice: existing ? existing.contract_unit_price : item.unit_price,
         quantity: existing ? existing.quantity : "0",
-        quantitySource: existing ? existing.quantity_source : "manual",
+        quantitySource: existing ? existing.quantity_source : DEFAULT_QUANTITY_SOURCE,
         lineTotal: existing ? existing.line_total : null,
       };
     });

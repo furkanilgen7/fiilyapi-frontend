@@ -27,7 +27,7 @@ import { DiaryFillFeedback } from "./DiaryFillFeedback";
 import { PaymentCalculationCard } from "./PaymentCalculationCard";
 import { PaymentFormPivotTable } from "./PaymentFormPivotTable";
 import { ProgressPaymentStatusActions } from "./ProgressPaymentStatusActions";
-import { applyEmployerDiarySuggestion, diaryCellKey } from "./diary-fill";
+import { applyEmployerDiarySuggestion } from "./diary-fill";
 import { useDiaryFill } from "./useDiaryFill";
 import {
   buildLinesSaveBody,
@@ -85,12 +85,6 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [refreshConfirmOpen, setRefreshConfirmOpen] = useState(false);
-  // Günlükten dolan hücrelerin anahtarları (`kalem::şantiye`) — rozetin
-  // OTURUM-İÇİ kaynağı. Backend işveren satırında `quantity_source` alanı
-  // TAŞIMAZ (openapi: yalnız taşeron `LineRead`inde var), bu yüzden rozet
-  // kalıcı değildir ve bu durum kullanıcıya `DIARY_FILL_SOURCE_NOTE` ile
-  // açıkça söylenir.
-  const [diaryFilledKeys, setDiaryFilledKeys] = useState<ReadonlySet<string>>(() => new Set());
 
   // Tohumlama (seed) YALNIZ BİR KEZ çalışır — sonraki `detailQuery`/`distributionQuery`
   // yenilemeleri (ör. kaydetme sonrası invalidation) kullanıcının o anki
@@ -124,7 +118,6 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
     commit: (application) => {
       setRows(application.rows);
       setDirty(true);
-      setDiaryFilledKeys((prev) => new Set([...prev, ...application.markedKeys]));
     },
   });
 
@@ -183,15 +176,6 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
 
   function updateCellQuantity(itemId: string, siteId: string, value: string) {
     setDirty(true);
-    // Kullanıcı hücreyi ELLE değiştirdiği anda "günlükten geldi" rozeti
-    // düşer — rozet yanlış bilgi vermez.
-    setDiaryFilledKeys((prev) => {
-      const key = diaryCellKey(itemId, siteId);
-      if (!prev.has(key)) return prev;
-      const next = new Set(prev);
-      next.delete(key);
-      return next;
-    });
     setRows((prev) =>
       (prev ?? []).map((row) =>
         row.item.id !== itemId
@@ -263,8 +247,6 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
         if (fresh.data) {
           setRows(buildPivotRows(distribution, fresh.data.lines));
           setDirty(false);
-          // Satırlar sunucudaki hâline döndü — oturum-içi günlük rozetleri de düşer.
-          setDiaryFilledKeys(new Set());
         }
       },
       onError: (err) => setFormError(backendErrorMessage(err, "Fiyatlar tazelenemedi.")),
@@ -467,7 +449,6 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
         sites={distribution.sites}
         rows={rows}
         disabled={isSaving}
-        diaryFilledKeys={diaryFilledKeys}
         onQuantityChange={updateCellQuantity}
       />
 
