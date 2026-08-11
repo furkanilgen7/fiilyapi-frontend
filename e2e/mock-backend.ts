@@ -1,5 +1,8 @@
 import { createServer, type Server } from "node:http";
 
+// YALNIZ tip: derleme sonrasi silinir, Playwright calisma zamanina sizmaz.
+import type { components } from "@/lib/api/schema";
+
 // exp'i uzak gelecekte olan sahte JWT (base64url payload).
 function fakeJwt(): string {
   const payload = Buffer.from(JSON.stringify({ exp: 9999999999, sub: "u1" })).toString("base64url");
@@ -20,16 +23,14 @@ const ME = {
 // alanlar olarak degil, ContractingCard/InvestmentCard/LandShareCard icine gomulu
 // MetricPlaceholder/CountPlaceholder olarak doner — plan Task 7'nin varsaydigi duz
 // spent/headcount/subcontractor_count/sales/profit alanlari yerine bu yapi kullanildi.
-interface MockMetric {
-  available: boolean;
-  value: string | null;
-  pending_module: string;
-}
-interface MockCount {
-  available: boolean;
-  count: number | null;
-  pending_module: string;
-}
+// F-P10 T1: zarf tipleri artik ELLE yazilmaz, `schema.d.ts`ten TURETILIR —
+// fikstur ile sema arasindaki kayma typecheck'te patlar (F-P5 dersi).
+// ⚠️ Iki tam nitelikli `MetricPlaceholder` yasar: proje kartlari
+// `app__modules__projects__…` (P10'da `pending_module` NULLABLE oldu, dolu
+// zarf modul adi TASIMAZ), gosterge paneli `app__modules__dashboard__…`
+// (degismedi). Karistirma.
+type MockMetric = components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+type MockCount = components["schemas"]["CountPlaceholder"];
 interface MockContracting {
   spent: MockMetric;
   physical_progress: MockMetric;
@@ -198,6 +199,9 @@ interface MockPaymentLine {
   quantity: string;
   group_name: string | null;
   sort_order: number;
+  // F-P10 T1 devri: işveren satırı da SUNUCU damgası taşır (SD-2) — taşeron
+  // satırındaki (`MockSubcontractorPaymentLine`) alanla aynı sözleşme.
+  quantity_source: "manual" | "diary";
   adjusted_unit_price: string;
   line_total: string;
   previous_quantity: string;
@@ -467,29 +471,60 @@ interface MockState {
 const METRIC_PENDING = (m: string): MockMetric => ({ available: false, value: null, pending_module: m });
 const COUNT_PENDING = (m: string): MockCount => ({ available: false, count: null, pending_module: m });
 
-const CONTRACTING_PLACEHOLDERS = (): MockContracting => ({
-  spent: METRIC_PENDING("project_costs"),
+// F-P10: DOLU zarf. Sunucu sozlesmesi geregi dolu zarf `pending_module`
+// TASIMAZ (`app__modules__projects__schemas__MetricPlaceholder` aciklamasi) —
+// fikstur bunu birebir taklit eder, aksi halde ekran "hem deger hem bekliyor"
+// gibi imkansiz bir durumu test ederdi.
+const METRIC_VALUE = (value: string): MockMetric => ({ available: true, value, pending_module: null });
+
+// P10 sonrasi maliyet/kar zarflari ARTIK DOLABILIR. Fikstur evreni her iki
+// dali da tasir: deger veren proje (`spent`/`total_cost`/… gercek) ve hic
+// maliyeti olmayan proje (yer tutucu gorunumu KORUNUR) — ekran ikisini de
+// dogru basmak zorunda.
+const CONTRACTING_PLACEHOLDERS = (spent?: string): MockContracting => ({
+  spent: spent === undefined ? METRIC_PENDING("project_costs") : METRIC_VALUE(spent),
   physical_progress: METRIC_PENDING("progress_payments"),
   final_progress_payment: METRIC_PENDING("progress_payments"),
   worker_count: COUNT_PENDING("timesheet"),
   subcontractor_count: COUNT_PENDING("subcontracts"),
 });
 
-const INVESTMENT_PLACEHOLDERS = (salesTarget: string, landCost: string): MockInvestment => ({
+// `costs` verilmezse KY karti eski (tumuyle yer tutucu) gorunumunu korur.
+// `total_cost` = HARCANAN (P10 karari), `estimated_profit`/`margin` butce
+// tabanli — iki taban BILEREK ayridir.
+interface MockInvestmentCosts {
+  total_cost: string;
+  estimated_profit: string;
+  margin: string;
+}
+
+const INVESTMENT_PLACEHOLDERS = (
+  salesTarget: string,
+  landCost: string,
+  costs?: MockInvestmentCosts,
+): MockInvestment => ({
   sales_target: salesTarget,
   land_cost: landCost,
   sold_amount: METRIC_PENDING("units"),
   sales_ratio: METRIC_PENDING("units"),
   unit_summary: COUNT_PENDING("units"),
-  total_cost: METRIC_PENDING("project_costs"),
-  estimated_profit: METRIC_PENDING("progress_payments"),
-  margin: METRIC_PENDING("progress_payments"),
+  total_cost: costs ? METRIC_VALUE(costs.total_cost) : METRIC_PENDING("project_costs"),
+  estimated_profit: costs ? METRIC_VALUE(costs.estimated_profit) : METRIC_PENDING("progress_payments"),
+  margin: costs ? METRIC_VALUE(costs.margin) : METRIC_PENDING("progress_payments"),
 });
+
+interface MockLandShareCosts {
+  our_share_value: string;
+  construction_cost: string;
+  estimated_profit: string;
+  margin: string;
+}
 
 const LAND_SHARE_PLACEHOLDERS = (
   landownerName: string,
   ourSharePct: string,
   ownerSharePct: string,
+  costs?: MockLandShareCosts,
 ): MockLandShare => ({
   landowner_name: landownerName,
   our_share_pct: ourSharePct,
@@ -506,10 +541,10 @@ const LAND_SHARE_PLACEHOLDERS = (
   shareholders: [],
   our_unit_count: COUNT_PENDING("units"),
   owner_unit_count: COUNT_PENDING("units"),
-  our_share_value: METRIC_PENDING("units"),
-  construction_cost: METRIC_PENDING("project_costs"),
-  estimated_profit: METRIC_PENDING("progress_payments"),
-  margin: METRIC_PENDING("progress_payments"),
+  our_share_value: costs ? METRIC_VALUE(costs.our_share_value) : METRIC_PENDING("units"),
+  construction_cost: costs ? METRIC_VALUE(costs.construction_cost) : METRIC_PENDING("project_costs"),
+  estimated_profit: costs ? METRIC_VALUE(costs.estimated_profit) : METRIC_PENDING("progress_payments"),
+  margin: costs ? METRIC_VALUE(costs.margin) : METRIC_PENDING("progress_payments"),
   construction_progress: METRIC_PENDING("progress_payments"),
 });
 
@@ -520,7 +555,7 @@ const PROJECT_FIXTURES: MockProject[] = [
     id: "p-1", code: "PRJ-1", name: "Kule A", project_type: "taahhut", status: "active",
     category: "Konut", city: "Ankara", employer_name: "Güneşkent A.Ş.", contract_no: "SZL-2025-01",
     contract_amount: "11200000", start_date: "2025-03-01", end_date: "2026-12-01",
-    budget: "1000000", progress_pct: "20", contracting: CONTRACTING_PLACEHOLDERS(),
+    budget: "1000000", progress_pct: "20", contracting: CONTRACTING_PLACEHOLDERS("6480000"),
     investment: null, land_share: null,
   },
   {
@@ -528,14 +563,24 @@ const PROJECT_FIXTURES: MockProject[] = [
     category: "Konut Geliştirme", city: "Ankara", employer_name: null, contract_no: null,
     contract_amount: null, start_date: "2025-01-01", end_date: "2026-06-01",
     budget: "500000", progress_pct: "40", contracting: null,
-    investment: INVESTMENT_PLACEHOLDERS("48200000", "5000000"), land_share: null,
+    investment: INVESTMENT_PLACEHOLDERS("48200000", "5000000", {
+      total_cost: "31400000",
+      estimated_profit: "16800000",
+      margin: "34.85",
+    }),
+    land_share: null,
   },
   {
     id: "p-3", code: "PRJ-3", name: "Bahçelievler Konut", project_type: "kat_karsiligi",
     status: "active", category: "Konut", city: "Ankara", employer_name: null, contract_no: null,
     contract_amount: null, start_date: "2025-06-01", end_date: "2027-03-01",
     budget: "700000", progress_pct: "42", contracting: null, investment: null,
-    land_share: LAND_SHARE_PLACEHOLDERS("Yılmaz Ailesi", "55", "45"),
+    land_share: LAND_SHARE_PLACEHOLDERS("Yılmaz Ailesi", "55", "45", {
+      our_share_value: "26400000",
+      construction_cost: "18900000",
+      estimated_profit: "7500000",
+      margin: "28.41",
+    }),
   },
   {
     id: "p-4", code: "PRJ-4", name: "Güneşkent B-Blok", project_type: "taahhut",
@@ -746,6 +791,9 @@ function computeLine(
     quantity: qty3(quantity),
     group_name: item?.groupName ?? null,
     sort_order: sortOrder,
+    // Mock'ta günlük kaydından doldurma yolu YOK → sunucu damgası hep `manual`;
+    // var olan satır kendi damgasını korur (sunucu davranışı).
+    quantity_source: existing?.quantity_source ?? "manual",
     adjusted_unit_price: money2(adjustedUnitPrice),
     line_total: money2(lineTotal),
     previous_quantity: qty3(previousQuantity),
@@ -863,6 +911,7 @@ function buildProgressPaymentFixtures(): MockProgressPayment[] {
           quantity: "1.000",
           group_name: "Kaba İnşaat",
           sort_order: 0,
+          quantity_source: "manual",
           adjusted_unit_price: money2(params.gross),
           line_total: money2(params.gross),
           previous_quantity: "0.000",
@@ -929,10 +978,10 @@ function buildProgressPaymentFixtures(): MockProgressPayment[] {
     // `groups[]` okur) — grup başına tek özet satır şema geçerliliği için
     // yeterli; mockup'ta kalem kırılımı YOK, yalnız grup toplamları var.
     lines: [
-      { id: "ppl-pp-5-1", contract_item_id: null, site_id: "s-1", code: "02.100", description: "Betonarme İşleri (kümülatif)", unit: "kalem", contract_unit_price: "5920000.00", coefficient: "1.000", quantity: "1.000", group_name: "Betonarme İşleri", sort_order: 0, adjusted_unit_price: "5920000.00", line_total: "640000.00", previous_quantity: "0.000", previous_amount: "3800000.00", cumulative_quantity: "1.000", cumulative_amount: "4440000.00", is_price_stale: null },
-      { id: "ppl-pp-5-2", contract_item_id: null, site_id: "s-1", code: "02.200", description: "Elektrik Tesisatı (kümülatif)", unit: "kalem", contract_unit_price: "1240000.00", coefficient: "1.000", quantity: "1.000", group_name: "Elektrik Tesisatı", sort_order: 1, adjusted_unit_price: "1240000.00", line_total: "380000.00", previous_quantity: "0.000", previous_amount: "620000.00", cumulative_quantity: "1.000", cumulative_amount: "1000000.00", is_price_stale: null },
-      { id: "ppl-pp-5-3", contract_item_id: null, site_id: "s-1", code: "02.300", description: "Mekanik Tesisat (kümülatif)", unit: "kalem", contract_unit_price: "980000.00", coefficient: "1.000", quantity: "1.000", group_name: "Mekanik Tesisat", sort_order: 2, adjusted_unit_price: "980000.00", line_total: "280000.00", previous_quantity: "0.000", previous_amount: "480000.00", cumulative_quantity: "1.000", cumulative_amount: "760000.00", is_price_stale: null },
-      { id: "ppl-pp-5-4", contract_item_id: null, site_id: "s-1", code: "02.400", description: "Duvar & Kaplama (kümülatif)", unit: "kalem", contract_unit_price: "2678000.00", coefficient: "1.000", quantity: "1.000", group_name: "Duvar & Kaplama", sort_order: 3, adjusted_unit_price: "2678000.00", line_total: "810000.00", previous_quantity: "0.000", previous_amount: "1390000.00", cumulative_quantity: "1.000", cumulative_amount: "2200000.00", is_price_stale: null },
+      { id: "ppl-pp-5-1", contract_item_id: null, site_id: "s-1", code: "02.100", description: "Betonarme İşleri (kümülatif)", unit: "kalem", contract_unit_price: "5920000.00", coefficient: "1.000", quantity: "1.000", group_name: "Betonarme İşleri", sort_order: 0, quantity_source: "manual", adjusted_unit_price: "5920000.00", line_total: "640000.00", previous_quantity: "0.000", previous_amount: "3800000.00", cumulative_quantity: "1.000", cumulative_amount: "4440000.00", is_price_stale: null },
+      { id: "ppl-pp-5-2", contract_item_id: null, site_id: "s-1", code: "02.200", description: "Elektrik Tesisatı (kümülatif)", unit: "kalem", contract_unit_price: "1240000.00", coefficient: "1.000", quantity: "1.000", group_name: "Elektrik Tesisatı", sort_order: 1, quantity_source: "manual", adjusted_unit_price: "1240000.00", line_total: "380000.00", previous_quantity: "0.000", previous_amount: "620000.00", cumulative_quantity: "1.000", cumulative_amount: "1000000.00", is_price_stale: null },
+      { id: "ppl-pp-5-3", contract_item_id: null, site_id: "s-1", code: "02.300", description: "Mekanik Tesisat (kümülatif)", unit: "kalem", contract_unit_price: "980000.00", coefficient: "1.000", quantity: "1.000", group_name: "Mekanik Tesisat", sort_order: 2, quantity_source: "manual", adjusted_unit_price: "980000.00", line_total: "280000.00", previous_quantity: "0.000", previous_amount: "480000.00", cumulative_quantity: "1.000", cumulative_amount: "760000.00", is_price_stale: null },
+      { id: "ppl-pp-5-4", contract_item_id: null, site_id: "s-1", code: "02.400", description: "Duvar & Kaplama (kümülatif)", unit: "kalem", contract_unit_price: "2678000.00", coefficient: "1.000", quantity: "1.000", group_name: "Duvar & Kaplama", sort_order: 3, quantity_source: "manual", adjusted_unit_price: "2678000.00", line_total: "810000.00", previous_quantity: "0.000", previous_amount: "1390000.00", cumulative_quantity: "1.000", cumulative_amount: "2200000.00", is_price_stale: null },
     ],
     groups: [
       { group_name: "Betonarme İşleri", previous_amount: "3800000.00", this_amount: "640000.00", cumulative_amount: "4440000.00", contract_amount: "5920000.00" },

@@ -62,6 +62,10 @@ function line(overrides: Partial<ProgressPaymentLineDetail>): ProgressPaymentLin
     quantity: "900.000",
     group_name: "A — Betonarme İşleri",
     sort_order: 0,
+    // F-P10 T1 devri: `quantity_source` artık İŞVEREN satırında da SUNUCU
+    // damgasıdır (SD-2, `ProgressPaymentLineDetail` zorunlu alanı) — taşeron
+    // satırıyla aynı desen. Fikstür varsayılanı `manual`.
+    quantity_source: "manual",
     adjusted_unit_price: ITEM_1.unit_price,
     line_total: "1665000.00",
     previous_quantity: "0.000",

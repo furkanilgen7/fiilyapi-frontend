@@ -4843,6 +4843,60 @@
         }
       }
     },
+    "/projects/{project_id}/costs": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Get Project Costs Endpoint",
+        "operationId": "get_project_costs_endpoint_projects__project_id__costs_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectCostsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/roles": {
       "get": {
         "tags": [
@@ -11521,6 +11575,7 @@
         "properties": {
           "name": {
             "type": "string",
+            "maxLength": 2000,
             "minLength": 1,
             "title": "Name"
           },
@@ -11583,6 +11638,7 @@
             "anyOf": [
               {
                 "type": "string",
+                "maxLength": 2000,
                 "minLength": 1
               },
               {
@@ -11623,6 +11679,7 @@
           },
           "description": {
             "type": "string",
+            "maxLength": 2000,
             "minLength": 1,
             "title": "Description"
           },
@@ -11765,6 +11822,7 @@
             "anyOf": [
               {
                 "type": "string",
+                "maxLength": 2000,
                 "minLength": 1
               },
               {
@@ -12807,7 +12865,7 @@
           "pending_module"
         ],
         "title": "CountPlaceholder",
-        "description": "Veri kaynagi henuz yazilmamis sayac alani (\"48 isci\", \"3 hissedar\" gibi)."
+        "description": "Veri kaynagi henuz yazilmamis sayac alani (\"48 isci\", \"3 hissedar\" gibi).\n\n`MetricPlaceholder`in P10 T3'te kazandigi \"dolu zarf `pending_module`\nTASIMAZ\" kurali BURAYA UYGULANMAZ: puantaj sayaci (`_worker_count`)\n`available=True` + `pending_module=\"timesheet\"` doner ve bu BILINCLI bir\nemsaldir — ayni serit uzerindeki diger sayaclar hâlâ yer tutucudur, ekran\nseridin kaynagini oradan okur. Kirmak, canli taahhut kartini bozardi."
       },
       "CustomerCreate": {
         "properties": {
@@ -13666,6 +13724,7 @@
         "properties": {
           "name": {
             "type": "string",
+            "maxLength": 2000,
             "minLength": 1,
             "title": "Name"
           },
@@ -13744,6 +13803,7 @@
             "anyOf": [
               {
                 "type": "string",
+                "maxLength": 2000,
                 "minLength": 1
               },
               {
@@ -13784,6 +13844,7 @@
           },
           "description": {
             "type": "string",
+            "maxLength": 2000,
             "minLength": 1,
             "title": "Description"
           },
@@ -13933,6 +13994,7 @@
             "anyOf": [
               {
                 "type": "string",
+                "maxLength": 2000,
                 "minLength": 1
               },
               {
@@ -14339,7 +14401,8 @@
           "estimated_profit",
           "margin"
         ],
-        "title": "InvestmentCard"
+        "title": "InvestmentCard",
+        "description": "Kendi yatirim karti.\n\n`total_cost` (E4 122) KULLANICI KARARI 2026-08-09 ile **HARCANAN**dir\n(`costs.total_spent` = arsa + taşeron `approved`+`paid` BRÜT), butce DEGIL;\n`estimated_profit`/`margin` ise BUTCE tabanlidir. Ayrinti: `_investment_card`."
       },
       "LandShareCard": {
         "properties": {
@@ -15698,6 +15761,9 @@
             "type": "integer",
             "title": "Sort Order"
           },
+          "quantity_source": {
+            "$ref": "#/components/schemas/QuantitySource"
+          },
           "adjusted_unit_price": {
             "type": "string",
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
@@ -15753,6 +15819,7 @@
           "quantity",
           "group_name",
           "sort_order",
+          "quantity_source",
           "adjusted_unit_price",
           "line_total",
           "previous_quantity",
@@ -16500,6 +16567,97 @@
         ],
         "title": "ProjectContractResponse",
         "description": "Detay/liste yanıtında sözleşme (spec §2.4). Yalnız okuma; giriş `ProjectContractInput`."
+      },
+      "ProjectCostBreakdown": {
+        "properties": {
+          "land_cost": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Land Cost"
+          },
+          "construction_spent": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Construction Spent"
+          },
+          "construction_budget": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Construction Budget"
+          },
+          "permits": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "financing": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "marketing": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "total_spent": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Spent"
+          }
+        },
+        "type": "object",
+        "required": [
+          "land_cost",
+          "construction_spent",
+          "construction_budget",
+          "permits",
+          "financing",
+          "marketing",
+          "total_spent"
+        ],
+        "title": "ProjectCostBreakdown",
+        "description": "KY 113-161 \"Maliyet Kırılımı\" kartının satırları.\n\n`land_cost` üç ayrı şey söyler ve bu yüzden `Decimal | None`dır (P10 spec §2,\n`costs.land_cost`): kendi yatırımda girilen bedel, kat karşılığında tanım\ngereği `0`, taahhütte `None` = kavram yok. Zarf KULLANILMAZ çünkü değer\nyer tutucu değildir, kaynağı VARDIR.\n\nÜç kalem (`permits` KY 134-140 · `financing` 141-147 · `marketing` 148-154)\nise zarflıdır: kaynak modül henüz veri YAZMIYOR ve mockup'ta rakam\ngöründüğü için 0 basmak sahte bilgi üretmek olurdu (spec §2)."
+      },
+      "ProjectCostsResponse": {
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          },
+          "project_type": {
+            "$ref": "#/components/schemas/ProjectType"
+          },
+          "breakdown": {
+            "$ref": "#/components/schemas/ProjectCostBreakdown"
+          },
+          "profit": {
+            "$ref": "#/components/schemas/ProjectProfitProjection"
+          },
+          "subcontractors": {
+            "items": {
+              "$ref": "#/components/schemas/SubcontractorCostRow"
+            },
+            "type": "array",
+            "title": "Subcontractors"
+          },
+          "subcontractor_total": {
+            "$ref": "#/components/schemas/SubcontractorCostSummary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "project_id",
+          "project_type",
+          "breakdown",
+          "profit",
+          "subcontractors",
+          "subcontractor_total"
+        ],
+        "title": "ProjectCostsResponse",
+        "description": "`GET /projects/{id}/costs` (P10 spec §3) — SALT OKUMA türev yanıtı.\n\nHiçbir maliyet saklanmaz, hepsi mevcut veriden türer; bu yüzden uç audit\nde YAZMAZ (okuma ucu)."
       },
       "ProjectCounts": {
         "properties": {
@@ -17308,6 +17466,93 @@
           "items"
         ],
         "title": "ProjectListResponse"
+      },
+      "ProjectProfitProjection": {
+        "properties": {
+          "revenue": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revenue"
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost"
+          },
+          "profit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profit"
+          },
+          "margin_pct": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Margin Pct"
+          },
+          "realized_sales": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Realized Sales"
+          },
+          "remaining_stock_value": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remaining Stock Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "revenue",
+          "cost",
+          "profit",
+          "margin_pct",
+          "realized_sales",
+          "remaining_stock_value"
+        ],
+        "title": "ProjectProfitProjection",
+        "description": "KY 168-194 / KK 121-141 kâr projeksiyonu bloğu (`costs.profit_projection`).\n\nAlanlar proje tipine göre BAŞKA şeyleri ölçer (spec §2): kendi yatırımda\ngelir = ünite liste fiyatları toplamı, kat karşılığında bizim pay değeri,\ntaahhütte sözleşme bedeli. Tipi `project_type` alanından okunur.\n\nTaahhütte `profit` KARTTA BASILMAZ (E4 180-181 yalnız bedel/harcanan\ngösterir) ama iç türev olarak döner — ekran neyi basacağına kendi karar\nverir, backend bilgi saklamaz.\n\n**`realized_sales` / `remaining_stock_value` (KULLANICI KARARI 2026-08-09):**\nKY 173-180'in iki satırı uca EKLENDİ. Tanımları mevcut tek-kaynaklardan gelir:\n`realized_sales` = satış BEDELLERİ toplamı, ölçüt `sales.summary._SOLD_STATUSES`\n(`active`+`deed_transferred`; iptal edilmiş satış hiç okunmaz) ·\n`remaining_stock_value` = satılmamış ünitelerin LİSTE fiyatları toplamı, ölçüt\n`units.summary` `available_units` (`sales_status is listed`).\n\nİkisinin toplamı `revenue`a (ünite liste fiyatları toplamı) eşit OLMAK ZORUNDA\nDEĞİLDİR: biri satış bedelinden, diğeri liste fiyatından gelir ve iskontolu\nsatış aralarında fark doğurur. Zarf KULLANILMAZ — bu blok `Decimal | None`\nalanlar taşır (`revenue`/`cost`/`profit` deseninin aynısı); taahhütte iki alan\n`None`dır, çünkü ünite/satış kavramı yoktur."
       },
       "ProjectSiteInput": {
         "properties": {
@@ -22377,6 +22622,7 @@
           },
           "description": {
             "type": "string",
+            "maxLength": 2000,
             "minLength": 1,
             "title": "Description"
           },
@@ -22578,6 +22824,7 @@
             "anyOf": [
               {
                 "type": "string",
+                "maxLength": 2000,
                 "minLength": 1
               },
               {
@@ -23037,6 +23284,115 @@
         "type": "object",
         "title": "SubcontractorContractUpdate",
         "description": "`project_id` YOK — sözleşme başka projeye taşınamaz. `items` YOK — kalemler\nayrı uçlarla yönetilir (spec §6.5). Tüm alanlar isteğe bağlı (kısmi PATCH)."
+      },
+      "SubcontractorCostRow": {
+        "properties": {
+          "contract_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Contract Id"
+          },
+          "contract_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract No"
+          },
+          "subcontractor_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontractor Id"
+          },
+          "subcontractor_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontractor Name"
+          },
+          "work_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Category"
+          },
+          "contract_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Contract Amount"
+          },
+          "paid": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Paid"
+          },
+          "pending": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Pending"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contract_id",
+          "contract_no",
+          "subcontractor_id",
+          "subcontractor_name",
+          "work_category",
+          "contract_amount",
+          "paid",
+          "pending"
+        ],
+        "title": "SubcontractorCostRow",
+        "description": "KY 205-249 taşeron maliyet tablosunun bir satırı — SÖZLEŞME başına.\n\nSatır birimi mockup'ta iş kapsamıdır: her satırda taşeron adı + kategori\nrozeti + ayrı bir \"İş Kalemi\" metni vardır (\"Kaba İnşaat + Kalıp\" · \"Elektrik\nTesisatı (52 ünite)\" · \"PVC Pencere + Cephe\", KY 219/227/235) ve bu SÖZLEŞME\ndüzeyi bir kavramdır. Taşeron başına gruplarsak aynı taşeronun iki iş kapsamı\ntek satıra ezilir ve sözleşme kimliği geri getirilemez şekilde kaybolur.\n\n**\"İş Kalemi\" sütunu `work_category` ile beslenir (KULLANICI KARARI\n2026-08-09):** bu sütun için YENİ KOLON AÇILMAZ — `subcontractor_contracts.\nwork_category` zaten vardır ve satır birimi sözleşme olduğu için kategori\ndoğrudan sözleşmeden okunur. Değer NULL olabilir ve bu MEŞRUDUR (taslak\nsözleşmede kategori girilmemiş olabilir): satır yine açılır, sütun ekranda BOŞ\nbasılır — uydurma metin ÜRETİLMEZ. Satır ayrıca `contract_id`/`contract_no`\ntaşır ki ekran sözleşmeye gidebilsin.\n\n`subcontractor_id` boş olabilir (sözleşmede kartoteks bağı zorunlu değildir);\nad anlık görüntüsü `subcontractor_name`de kalır. `work_category` doğrudan\nsözleşmedendir (KY 219'un ad altındaki alt satırı) — satır artık tek bir\nsözleşme olduğu için \"kategoriler ayrışırsa None\" kuralı GEREKMEZ."
+      },
+      "SubcontractorCostSummary": {
+        "properties": {
+          "contract_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Contract Amount"
+          },
+          "paid": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Paid"
+          },
+          "pending": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Pending"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contract_amount",
+          "paid",
+          "pending"
+        ],
+        "title": "SubcontractorCostSummary",
+        "description": "KY 244-248 tfoot \"TOPLAM TAŞERON MALİYETİ\" üçlüsü.\n\nSatırların toplamıdır ve AYNI kaynaktan hesaplanır: iki ayrı toplama yolu\naçılsaydı tablo ile alt toplam zamanla ayrışırdı (`_list_stmt` dersi)."
       },
       "SubcontractorCreate": {
         "properties": {
@@ -27671,16 +28027,20 @@
             "title": "Value"
           },
           "pending_module": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Pending Module"
           }
         },
         "type": "object",
-        "required": [
-          "pending_module"
-        ],
         "title": "MetricPlaceholder",
-        "description": "Veri kaynagi henuz yazilmamis tek degerli alan. Sahte rakam yerine durust bos durum."
+        "description": "Tek degerli alanin zarfi: ya GERCEK deger ya durust bos durum tasir.\n\nP10 T3: zarf sozlesmesi artik pydantic duzeyinde BAGLIDIR ve iki yonlu\ncalisir (ROADMAP §3 \"celiskili sozlesme\" borcu):\n\n* `available=True` ⇒ `pending_module is None` — dolu bir alanin \"hangi modul\n  gelince dolacak\" bilgisi TASIMASI anlamsizdir; eski hâlinde `pending_module`\n  zorunlu oldugu icin dolu zarf bile bir modul adi tasimak zorundaydi ve\n  ekran o alani \"hâlâ eksik\" sanabiliyordu.\n* `available=False` ⇒ `pending_module` ZORUNLU — bos zarf kaynagini bildirmek\n  zorundadir, aksi hâlde ekran \"—\" basip nedenini soyleyemez.\n\nAlan TIPI DEGISMEDI (`MetricPlaceholder` kalir): bu zarflari tuketen UI\nCANLIDA (E4 proje kartlari) ve kirici bir sema degisikligi yapilmaz.\n\n`CountPlaceholder`a bu kural UYGULANMAZ — orada dolu zarfin `pending_module`\ntasimasi BILINCLI bir emsaldir (bkz. o sinifin notu)."
       }
     },
     "securitySchemes": {

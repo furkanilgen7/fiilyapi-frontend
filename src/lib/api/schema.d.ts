@@ -1217,6 +1217,23 @@ export interface paths {
         patch: operations["update_project_endpoint_projects__project_id__patch"];
         trace?: never;
     };
+    "/projects/{project_id}/costs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Project Costs Endpoint */
+        get: operations["get_project_costs_endpoint_projects__project_id__costs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/roles": {
         parameters: {
             query?: never;
@@ -3525,6 +3542,12 @@ export interface components {
         /**
          * CountPlaceholder
          * @description Veri kaynagi henuz yazilmamis sayac alani ("48 isci", "3 hissedar" gibi).
+         *
+         *     `MetricPlaceholder`in P10 T3'te kazandigi "dolu zarf `pending_module`
+         *     TASIMAZ" kurali BURAYA UYGULANMAZ: puantaj sayaci (`_worker_count`)
+         *     `available=True` + `pending_module="timesheet"` doner ve bu BILINCLI bir
+         *     emsaldir — ayni serit uzerindeki diger sayaclar hâlâ yer tutucudur, ekran
+         *     seridin kaynagini oradan okur. Kirmak, canli taahhut kartini bozardi.
          */
         CountPlaceholder: {
             /**
@@ -4070,7 +4093,14 @@ export interface components {
          * @enum {string}
          */
         InstallmentPaymentMethod: "transfer" | "cash" | "cheque" | "auto_payment";
-        /** InvestmentCard */
+        /**
+         * InvestmentCard
+         * @description Kendi yatirim karti.
+         *
+         *     `total_cost` (E4 122) KULLANICI KARARI 2026-08-09 ile **HARCANAN**dir
+         *     (`costs.total_spent` = arsa + taşeron `approved`+`paid` BRÜT), butce DEGIL;
+         *     `estimated_profit`/`margin` ise BUTCE tabanlidir. Ayrinti: `_investment_card`.
+         */
         InvestmentCard: {
             /** Sales Target */
             sales_target: string | null;
@@ -4577,6 +4607,7 @@ export interface components {
             group_name: string | null;
             /** Sort Order */
             sort_order: number;
+            quantity_source: components["schemas"]["QuantitySource"];
             /** Adjusted Unit Price */
             adjusted_unit_price: string;
             /** Line Total */
@@ -4865,6 +4896,52 @@ export interface components {
             /** Base Index Value */
             base_index_value: string | null;
         };
+        /**
+         * ProjectCostBreakdown
+         * @description KY 113-161 "Maliyet Kırılımı" kartının satırları.
+         *
+         *     `land_cost` üç ayrı şey söyler ve bu yüzden `Decimal | None`dır (P10 spec §2,
+         *     `costs.land_cost`): kendi yatırımda girilen bedel, kat karşılığında tanım
+         *     gereği `0`, taahhütte `None` = kavram yok. Zarf KULLANILMAZ çünkü değer
+         *     yer tutucu değildir, kaynağı VARDIR.
+         *
+         *     Üç kalem (`permits` KY 134-140 · `financing` 141-147 · `marketing` 148-154)
+         *     ise zarflıdır: kaynak modül henüz veri YAZMIYOR ve mockup'ta rakam
+         *     göründüğü için 0 basmak sahte bilgi üretmek olurdu (spec §2).
+         */
+        ProjectCostBreakdown: {
+            /** Land Cost */
+            land_cost: string | null;
+            /** Construction Spent */
+            construction_spent: string;
+            /** Construction Budget */
+            construction_budget: string;
+            permits: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            financing: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            marketing: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            /** Total Spent */
+            total_spent: string;
+        };
+        /**
+         * ProjectCostsResponse
+         * @description `GET /projects/{id}/costs` (P10 spec §3) — SALT OKUMA türev yanıtı.
+         *
+         *     Hiçbir maliyet saklanmaz, hepsi mevcut veriden türer; bu yüzden uç audit
+         *     de YAZMAZ (okuma ucu).
+         */
+        ProjectCostsResponse: {
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            project_type: components["schemas"]["ProjectType"];
+            breakdown: components["schemas"]["ProjectCostBreakdown"];
+            profit: components["schemas"]["ProjectProfitProjection"];
+            /** Subcontractors */
+            subcontractors: components["schemas"]["SubcontractorCostRow"][];
+            subcontractor_total: components["schemas"]["SubcontractorCostSummary"];
+        };
         /** ProjectCounts */
         ProjectCounts: {
             /** All */
@@ -5034,6 +5111,45 @@ export interface components {
             counts: components["schemas"]["ProjectCounts"];
             /** Items */
             items: components["schemas"]["ProjectListItem"][];
+        };
+        /**
+         * ProjectProfitProjection
+         * @description KY 168-194 / KK 121-141 kâr projeksiyonu bloğu (`costs.profit_projection`).
+         *
+         *     Alanlar proje tipine göre BAŞKA şeyleri ölçer (spec §2): kendi yatırımda
+         *     gelir = ünite liste fiyatları toplamı, kat karşılığında bizim pay değeri,
+         *     taahhütte sözleşme bedeli. Tipi `project_type` alanından okunur.
+         *
+         *     Taahhütte `profit` KARTTA BASILMAZ (E4 180-181 yalnız bedel/harcanan
+         *     gösterir) ama iç türev olarak döner — ekran neyi basacağına kendi karar
+         *     verir, backend bilgi saklamaz.
+         *
+         *     **`realized_sales` / `remaining_stock_value` (KULLANICI KARARI 2026-08-09):**
+         *     KY 173-180'in iki satırı uca EKLENDİ. Tanımları mevcut tek-kaynaklardan gelir:
+         *     `realized_sales` = satış BEDELLERİ toplamı, ölçüt `sales.summary._SOLD_STATUSES`
+         *     (`active`+`deed_transferred`; iptal edilmiş satış hiç okunmaz) ·
+         *     `remaining_stock_value` = satılmamış ünitelerin LİSTE fiyatları toplamı, ölçüt
+         *     `units.summary` `available_units` (`sales_status is listed`).
+         *
+         *     İkisinin toplamı `revenue`a (ünite liste fiyatları toplamı) eşit OLMAK ZORUNDA
+         *     DEĞİLDİR: biri satış bedelinden, diğeri liste fiyatından gelir ve iskontolu
+         *     satış aralarında fark doğurur. Zarf KULLANILMAZ — bu blok `Decimal | None`
+         *     alanlar taşır (`revenue`/`cost`/`profit` deseninin aynısı); taahhütte iki alan
+         *     `None`dır, çünkü ünite/satış kavramı yoktur.
+         */
+        ProjectProfitProjection: {
+            /** Revenue */
+            revenue: string | null;
+            /** Cost */
+            cost: string | null;
+            /** Profit */
+            profit: string | null;
+            /** Margin Pct */
+            margin_pct: string | null;
+            /** Realized Sales */
+            realized_sales: string | null;
+            /** Remaining Stock Value */
+            remaining_stock_value: string | null;
         };
         /**
          * ProjectSiteInput
@@ -7109,6 +7225,65 @@ export interface components {
             /** Is Draft */
             is_draft?: boolean | null;
         };
+        /**
+         * SubcontractorCostRow
+         * @description KY 205-249 taşeron maliyet tablosunun bir satırı — SÖZLEŞME başına.
+         *
+         *     Satır birimi mockup'ta iş kapsamıdır: her satırda taşeron adı + kategori
+         *     rozeti + ayrı bir "İş Kalemi" metni vardır ("Kaba İnşaat + Kalıp" · "Elektrik
+         *     Tesisatı (52 ünite)" · "PVC Pencere + Cephe", KY 219/227/235) ve bu SÖZLEŞME
+         *     düzeyi bir kavramdır. Taşeron başına gruplarsak aynı taşeronun iki iş kapsamı
+         *     tek satıra ezilir ve sözleşme kimliği geri getirilemez şekilde kaybolur.
+         *
+         *     **"İş Kalemi" sütunu `work_category` ile beslenir (KULLANICI KARARI
+         *     2026-08-09):** bu sütun için YENİ KOLON AÇILMAZ — `subcontractor_contracts.
+         *     work_category` zaten vardır ve satır birimi sözleşme olduğu için kategori
+         *     doğrudan sözleşmeden okunur. Değer NULL olabilir ve bu MEŞRUDUR (taslak
+         *     sözleşmede kategori girilmemiş olabilir): satır yine açılır, sütun ekranda BOŞ
+         *     basılır — uydurma metin ÜRETİLMEZ. Satır ayrıca `contract_id`/`contract_no`
+         *     taşır ki ekran sözleşmeye gidebilsin.
+         *
+         *     `subcontractor_id` boş olabilir (sözleşmede kartoteks bağı zorunlu değildir);
+         *     ad anlık görüntüsü `subcontractor_name`de kalır. `work_category` doğrudan
+         *     sözleşmedendir (KY 219'un ad altındaki alt satırı) — satır artık tek bir
+         *     sözleşme olduğu için "kategoriler ayrışırsa None" kuralı GEREKMEZ.
+         */
+        SubcontractorCostRow: {
+            /**
+             * Contract Id
+             * Format: uuid
+             */
+            contract_id: string;
+            /** Contract No */
+            contract_no: string | null;
+            /** Subcontractor Id */
+            subcontractor_id: string | null;
+            /** Subcontractor Name */
+            subcontractor_name: string | null;
+            /** Work Category */
+            work_category: string | null;
+            /** Contract Amount */
+            contract_amount: string;
+            /** Paid */
+            paid: string;
+            /** Pending */
+            pending: string;
+        };
+        /**
+         * SubcontractorCostSummary
+         * @description KY 244-248 tfoot "TOPLAM TAŞERON MALİYETİ" üçlüsü.
+         *
+         *     Satırların toplamıdır ve AYNI kaynaktan hesaplanır: iki ayrı toplama yolu
+         *     açılsaydı tablo ile alt toplam zamanla ayrışırdı (`_list_stmt` dersi).
+         */
+        SubcontractorCostSummary: {
+            /** Contract Amount */
+            contract_amount: string;
+            /** Paid */
+            paid: string;
+            /** Pending */
+            pending: string;
+        };
         /** SubcontractorCreate */
         SubcontractorCreate: {
             /** Name */
@@ -8693,7 +8868,23 @@ export interface components {
         };
         /**
          * MetricPlaceholder
-         * @description Veri kaynagi henuz yazilmamis tek degerli alan. Sahte rakam yerine durust bos durum.
+         * @description Tek degerli alanin zarfi: ya GERCEK deger ya durust bos durum tasir.
+         *
+         *     P10 T3: zarf sozlesmesi artik pydantic duzeyinde BAGLIDIR ve iki yonlu
+         *     calisir (ROADMAP §3 "celiskili sozlesme" borcu):
+         *
+         *     * `available=True` ⇒ `pending_module is None` — dolu bir alanin "hangi modul
+         *       gelince dolacak" bilgisi TASIMASI anlamsizdir; eski hâlinde `pending_module`
+         *       zorunlu oldugu icin dolu zarf bile bir modul adi tasimak zorundaydi ve
+         *       ekran o alani "hâlâ eksik" sanabiliyordu.
+         *     * `available=False` ⇒ `pending_module` ZORUNLU — bos zarf kaynagini bildirmek
+         *       zorundadir, aksi hâlde ekran "—" basip nedenini soyleyemez.
+         *
+         *     Alan TIPI DEGISMEDI (`MetricPlaceholder` kalir): bu zarflari tuketen UI
+         *     CANLIDA (E4 proje kartlari) ve kirici bir sema degisikligi yapilmaz.
+         *
+         *     `CountPlaceholder`a bu kural UYGULANMAZ — orada dolu zarfin `pending_module`
+         *     tasimasi BILINCLI bir emsaldir (bkz. o sinifin notu).
          */
         app__modules__projects__schemas__MetricPlaceholder: {
             /**
@@ -8704,7 +8895,7 @@ export interface components {
             /** Value */
             value?: string | null;
             /** Pending Module */
-            pending_module: string;
+            pending_module?: string | null;
         };
     };
     responses: never;
@@ -12328,6 +12519,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_costs_endpoint_projects__project_id__costs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectCostsResponse"];
                 };
             };
             /** @description Yetkisiz işlem */
