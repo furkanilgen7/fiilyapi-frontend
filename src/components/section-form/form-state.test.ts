@@ -19,6 +19,8 @@ const DETAIL: SectionDetailResponse = {
   start_date: "2026-10-01",
   end_date: "2027-03-31",
   sort_order: 6,
+  depends_on_section_id: null,
+  milestones: [],
   section_type: "structural",
   description: "Kat 11–14 arası betonarme, kalıp ve demir imalatı.",
   planned_worker_count: 42,

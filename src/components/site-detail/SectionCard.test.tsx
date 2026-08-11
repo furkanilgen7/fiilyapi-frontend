@@ -17,6 +17,8 @@ const BASE_SECTION: SectionResponse = {
   start_date: "2026-01-01",
   end_date: "2026-09-30",
   sort_order: 0,
+  depends_on_section_id: null,
+  milestones: [],
   progress_pct: { available: false, value: null, pending_module: "boq" },
   boq_item_count: { available: false, count: null, pending_module: "boq" },
   budget: { available: false, value: null, pending_module: "boq" },

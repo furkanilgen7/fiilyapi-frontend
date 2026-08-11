@@ -3512,6 +3512,849 @@
         }
       }
     },
+    "/stock/items": {
+      "get": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "List Stock Items Endpoint",
+        "description": "E3 tablosunun veri kaynağı — süzgeçler AND'lidir.\n\n`q` KOD ve AD üzerinde kısmi arar (E3 satırları ikisini üst üste basar, tek\nalanda aramak kullanıcıyı \"SNK-0421 yok\" sanısına düşürürdü).\n\n**Durum süzgeci (Kritik/Normal/Fazla) BURADA YOKTUR:** durum bakiyeden\nTÜREVDİR (spec §3) ve hareket toplamı gerektirir — T3'ün özet ucunun işidir.\n\n`limit` varsayılan 50, tavan 200 (TB3 standardı): tavan aşımı sessizce\nkırpılmaz, 422 döner.",
+        "operationId": "list_stock_items_endpoint_stock_items_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/StockCategory"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "is_active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Is Active"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockItemListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "Create Stock Item Endpoint",
+        "description": "Yeni malzeme kartı. `code` GLOBAL tekildir; çakışma → 409.",
+        "operationId": "create_stock_item_endpoint_stock_items_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StockItemCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockItemResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "409": {
+            "description": "Bu malzeme kodu zaten kayıtlı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stock/items/{item_id}": {
+      "patch": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "Update Stock Item Endpoint",
+        "description": "Kısmi güncelleme. **Kullanımdan kaldırma da buradan geçer**\n(`{\"is_active\": false}`) — DELETE ucu yoktur (modül docstring'i).",
+        "operationId": "update_stock_item_endpoint_stock_items__item_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StockItemUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockItemResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "409": {
+            "description": "Bu malzeme kodu zaten kayıtlı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/warehouses": {
+      "get": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "List Warehouses Endpoint",
+        "description": "Görünen depolar: merkez depoların HEPSİ + görünen projelerin şantiye\ndepoları (spec §7 S2b; gerekçe `repository._warehouse_scope`).\n\n**`site_id` SÜZGECİ AÇILMADI:** hiçbir mockup depo listesini şantiyeye göre\ndaraltmaz (E3 depo kırılımını kartın satırında gösterir, ŞS zaten tek\nşantiyenin ekranıdır ve verisi T3'ün `GET /sites/{id}/stock` ucundan gelir).\nGerçek bir ihtiyaç doğarsa T3/F-ST tek satırla ekler.",
+        "operationId": "list_warehouses_endpoint_warehouses_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WarehouseListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "Create Warehouse Endpoint",
+        "description": "Yeni depo. `site_id` verilmezse MERKEZ depodur (SG 84).\n\n* kapsam dışı `site_id` → 422 (var olmayan kimlikle AYNI cümle)\n* ad çakışması → 409 (kontrol UYGULAMA katmanındadır; merkez dalında DB\n  kısıtı `NULLS DISTINCT` yüzünden İŞLEMEZ)",
+        "operationId": "create_warehouse_endpoint_warehouses_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WarehouseCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WarehouseResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "409": {
+            "description": "Bu kapsamda aynı adlı depo var"
+          },
+          "422": {
+            "description": "Seçilen şantiye görünmüyor ya da yok"
+          }
+        }
+      }
+    },
+    "/warehouses/{warehouse_id}": {
+      "patch": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "Rename Warehouse Endpoint",
+        "description": "YALNIZ ad değişir. Depo TAŞIMA ucu yoktur (gerekçe `schemas`ta).",
+        "operationId": "rename_warehouse_endpoint_warehouses__warehouse_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "warehouse_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Warehouse Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WarehouseUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WarehouseResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "409": {
+            "description": "Bu kapsamda aynı adlı depo var"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "Delete Warehouse Endpoint",
+        "description": "YALNIZ HAREKETSİZ depo silinir; hareketi varsa 409.\n\nYetki kapısı korkuluktan ÖNCE koşar: yetkisiz aktör 403 alır ve deponun\nhareketli olup olmadığını ÖĞRENEMEZ. Görünmeyen depo 404 döner.\n\nYanıt `204 No Content`, gövdesizdir.",
+        "operationId": "delete_warehouse_endpoint_warehouses__warehouse_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "warehouse_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Warehouse Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "409": {
+            "description": "Depoda stok hareketi var"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stock/entries": {
+      "post": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "Create Stock Entry Endpoint",
+        "description": "SG formunun kaydı: başlık + satırlar TEK gövde, ATOMİK.\n\n* `purchase` → miktar pozitif, kaynak depo YASAK\n* `transfer` → kaynak depo ZORUNLU (kendine transfer 422); miktar hedef\n  depoya artı, KAYNAK depodan eksi yansır (ÇİFT BACAK, §7 S4)\n* `adjustment` → miktar NEGATİF olabilir (sayım farkı/iade/SARF tek kapısı)\n\n**Eksi bakiye ENGELLENMEZ** (§7 S4): katı engel sayım düzeltmesini\nkilitlerdi; eksi bakiye özet uçlarında raporlanır.\n\nBozuk bir satır varsa HİÇBİR ŞEY yazılmaz — ne başlık ne satır.\nDenetime GİRİŞ BAŞINA TEK satır düşer (spec §4).",
+        "operationId": "create_stock_entry_endpoint_stock_entries_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StockEntryCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockEntryResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Hedef ya da kaynak depo bulunamadı"
+          },
+          "422": {
+            "description": "Tip kuralı ihlali ya da geçersiz kart/kullanıcı"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "List Stock Entries Endpoint",
+        "description": "\"Stok Hareketi\" ekranının verisi. Süzgeçler AND'lidir.\n\n`warehouse_id` İKİ BACAĞI da kapsar (hedef VEYA kaynak): kullanıcı \"bu\ndeponun hareketleri\" derken oraya gireni de oradan çıkanı da kasteder.\n\n**DÜZELTME/SİLME UCU YOKTUR:** hareket geçmişi değiştirilmez, yanlış kayıt\nters işaretli bir `adjustment` ile düzeltilir — geçmişi yeniden yazmak\nbakiye tarihini de yeniden yazardı.",
+        "operationId": "list_stock_entries_endpoint_stock_entries_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entry_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/StockEntryType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Entry Type"
+            }
+          },
+          {
+            "name": "warehouse_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Warehouse Id"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockEntryListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stock/summary": {
+      "get": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "Stock Summary Endpoint",
+        "description": "E3 tablosu + KPI şeridi. Kapsam: GÖRÜNEN tüm depolar, merkez DAHİL.\n\nBakiye ve durum TÜREVDİR (spec §3) — bakiye kolonu yoktur. Durum formülü\n§7 S1'dir ve sabitleri `inventory/balance.py`de TEK yerde durur;\n`min_stock` yoksa durum `None` döner.\n\nKPI şeridi SAYFAYI değil SÜZÜLEN KÜMEYİ özetler.",
+        "operationId": "stock_summary_endpoint_stock_summary_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/StockStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/StockCategory"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockSummaryResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sites/{site_id}/stock": {
+      "get": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "Site Stock Endpoint",
+        "description": "ŞS tablosu + KPI şeridi (86-91).\n\n**Merkez depo hiçbir şantiyenin bakiyesine GİRMEZ** (spec §3): şantiye\nbakiyesi \"o şantiyenin depoları\"dır. Görünmeyen şantiye 404 döner ve gövde\nvar olmayan kimliğinkiyle aynıdır.\n\n\"Aylık İhtiyaç\" ve \"Bölüm\" sütunları YER TUTUCUDUR: giriş yüzeyi yoktur,\ndeğer uydurulmaz (spec §3, §5).",
+        "operationId": "site_stock_endpoint_sites__site_id__stock_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteStockResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/personnel": {
       "get": {
         "tags": [
@@ -4725,6 +5568,39 @@
             }
           }
         }
+      }
+    },
+    "/projects/timeline": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Get Projects Timeline Endpoint",
+        "description": "Portfoy Gantt'i (P11). HAM veri — ay/zoom parametresi YOKTUR (spec §6 S4).",
+        "operationId": "get_projects_timeline_endpoint_projects_timeline_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectTimelineResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/projects/{project_id}": {
@@ -17620,6 +18496,29 @@
         ],
         "title": "ProjectStatus"
       },
+      "ProjectTimelineResponse": {
+        "properties": {
+          "today": {
+            "type": "string",
+            "format": "date",
+            "title": "Today"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineProject"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "today",
+          "items"
+        ],
+        "title": "ProjectTimelineResponse",
+        "description": "HAM veri (spec §6 S4): ay izgarasi, zoom kipi ve bar genisligi ISTEMCI\nisidir; uc hicbir sorgu parametresi almaz.\n\n`today` SUNUCU damgasidir (`core.timezone`): istemcinin saatine birakilirsa\nTR gecesi 00:00-03:00 arasinda \"bugun\" cizgisi bir gun kayar.\n\nPT 300-303 portfoy ozeti (toplam sozlesme/hakedis) buraya KONMAZ — o\ndashboard isidir (spec §4)."
+      },
       "ProjectType": {
         "type": "string",
         "enum": [
@@ -18406,6 +19305,25 @@
             "type": "boolean",
             "title": "Is Draft",
             "default": false
+          },
+          "depends_on_section_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depends On Section Id"
+          },
+          "milestones": {
+            "items": {
+              "$ref": "#/components/schemas/SectionMilestoneInput"
+            },
+            "type": "array",
+            "title": "Milestones"
           }
         },
         "type": "object",
@@ -18502,6 +19420,25 @@
           },
           "worker_count": {
             "$ref": "#/components/schemas/CountPlaceholder"
+          },
+          "depends_on_section_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depends On Section Id"
+          },
+          "milestones": {
+            "items": {
+              "$ref": "#/components/schemas/SectionMilestoneResponse"
+            },
+            "type": "array",
+            "title": "Milestones"
           },
           "site_id": {
             "type": "string",
@@ -18604,6 +19541,8 @@
           "boq_item_count",
           "budget",
           "worker_count",
+          "depends_on_section_id",
+          "milestones",
           "site_id",
           "section_type",
           "description",
@@ -18637,6 +19576,71 @@
           "items"
         ],
         "title": "SectionListResponse"
+      },
+      "SectionMilestoneInput": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "milestone_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Milestone Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "milestone_date"
+        ],
+        "title": "SectionMilestoneInput",
+        "description": "P11 — kilometre tasi giris satiri. `id` OPSIYONELDIR ve satirin KIMLIGINI\nkorur (P9 `ShareholderInput` emsali, spec §3):\n\n* id verilirse mevcut satir YERINDE guncellenir (birincil anahtar yasar);\n* verilmezse YENI satirdir;\n* bilinmeyen ya da BASKA bolume ait id sessizce yeni satira DONMEZ, 422 verir\n  (bkz. `service._merge_milestones`).\n\n`sort_order` GOVDEDEN GELMEZ: sira dizideki sirasindan atanir (0,1,2...) —\n`SiteSectionInput` deseninin birebiri. Iki kaynak (dizi sirasi + acik alan)\nbirbiriyle celisebilirdi ve mockup'ta sira girisi CIZILMEMISTIR."
+      },
+      "SectionMilestoneResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "milestone_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Milestone Date"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "milestone_date",
+          "sort_order"
+        ],
+        "title": "SectionMilestoneResponse",
+        "description": "P11 — kilometre tasi cikis satiri (`Form - Bolum Ekle` 120-125).\n\nDURUM ALANI YOKTUR (spec §6 S2): \"Tamamlandı\" rozeti `milestone_date` ile\nbugunun TUREVIDIR ve istemcide hesaplanir. `sort_order` yanitta BASILIR\ncunku Gantt satirlarinin sirasi istemcide yeniden kurulabilmelidir."
       },
       "SectionResponse": {
         "properties": {
@@ -18725,6 +19729,25 @@
           },
           "worker_count": {
             "$ref": "#/components/schemas/CountPlaceholder"
+          },
+          "depends_on_section_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depends On Section Id"
+          },
+          "milestones": {
+            "items": {
+              "$ref": "#/components/schemas/SectionMilestoneResponse"
+            },
+            "type": "array",
+            "title": "Milestones"
           }
         },
         "type": "object",
@@ -18740,7 +19763,9 @@
           "progress_pct",
           "boq_item_count",
           "budget",
-          "worker_count"
+          "worker_count",
+          "depends_on_section_id",
+          "milestones"
         ],
         "title": "SectionResponse",
         "description": "Spec §4.1. \"gecikme riski\" alani KASITLI olarak yok (spec §3.3): hesabin\ngirdisi henuz uretilmedigi icin yer tutucu bile dondurulmez."
@@ -18975,6 +20000,32 @@
               }
             ],
             "title": "Is Draft"
+          },
+          "depends_on_section_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depends On Section Id"
+          },
+          "milestones": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SectionMilestoneInput"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Milestones"
           }
         },
         "type": "object",
@@ -21862,6 +22913,148 @@
         "title": "SiteStatus",
         "description": "project_status ile ayni ucludur ama AYRI enum'dur (spec §2.3): sirf bugun\nayni olduklari icin paylasilan bir enum'a baglamak, santiyeye ileride\n`suspended` gibi bir durum eklemeyi imkansiz kilar.\n\nSira mockup satir 71'den gelir: Hazirlik · Aktif (secili) · Beklemede.\n`completed` UI'da gorunmez ama KALIR — `SiteCounts.completed`, `_remaining_days`\nve P2 liste sekmesi ona baglidir (spec §3.1)."
       },
+      "SiteStockKpis": {
+        "properties": {
+          "total_value": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Value"
+          },
+          "critical_count": {
+            "type": "integer",
+            "title": "Critical Count"
+          },
+          "low_count": {
+            "type": "integer",
+            "title": "Low Count"
+          },
+          "total_items": {
+            "type": "integer",
+            "title": "Total Items"
+          },
+          "items_without_price": {
+            "type": "integer",
+            "title": "Items Without Price"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_value",
+          "critical_count",
+          "low_count",
+          "total_items",
+          "items_without_price"
+        ],
+        "title": "SiteStockKpis",
+        "description": "ŞS KPI şeridi (86-91): Toplam Malzeme · Kritik · Düşük · Stok Değeri.\n\nE3'ün aksine **\"Bekleyen Sipariş\" YOKTUR** — ŞS mockup'ında o kart çizilmemiş\nve olmayan bir kart için zarf bile üretilmez."
+      },
+      "SiteStockResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SiteStockRow"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "kpis": {
+            "$ref": "#/components/schemas/SiteStockKpis"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset",
+          "kpis"
+        ],
+        "title": "SiteStockResponse"
+      },
+      "SiteStockRow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "category": {
+            "$ref": "#/components/schemas/StockCategory"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "min_stock": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Stock"
+          },
+          "balance": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Balance"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StockStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "monthly_need": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          },
+          "section": {
+            "$ref": "#/components/schemas/ListPlaceholder"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "category",
+          "unit",
+          "min_stock",
+          "balance",
+          "status",
+          "monthly_need",
+          "section"
+        ],
+        "title": "SiteStockRow",
+        "description": "ŞS tablosunun bir satırı (Şantiye - Stok, 96-104).\n\n`balance` YALNIZ o şantiyenin depolarını kapsar; merkez depo (`site_id IS\nNULL`) hiçbir şantiyenin bakiyesine girmez (spec §3).\n\n`monthly_need` (\"Aylık İhtiyaç\") ve `section` (\"Bölüm\") sütunlarının GİRİŞ\nYÜZEYİ YOKTUR: ikisi de ileride planlama/BOQ türevi olacaktır. Değer\nüretilmez, mevcut yer tutucu zarfları taşınır — `section` metin listesi\nolduğu için `ListPlaceholder`, `monthly_need` tek sayı olduğu için\n`MetricPlaceholder`."
+      },
       "SiteUpdate": {
         "properties": {
           "name": {
@@ -22189,6 +23382,799 @@
         ],
         "title": "SoldKpi",
         "description": "S55 \"Satılan (Tapulu)\" · 34 · ₺31,4M.\n\nBaşlık iki şeyi birden söylüyor (\"satılan\" ve \"tapulu\"), bu yüzden sayaç\nİKİYE ayrılır: `count` gerçekleşmiş satışların tamamıdır (`active` +\n`deed_transferred`), `deed_transferred_count` ise tapusu devredilmiş\nolanlardır. Tek sayaç dönseydi ekran hangisini gösterdiğini bilemezdi."
+      },
+      "StockCategory": {
+        "type": "string",
+        "enum": [
+          "structural",
+          "steel",
+          "electrical",
+          "mechanical",
+          "interior"
+        ],
+        "title": "StockCategory",
+        "description": "Malzeme kartinin kategorisi (E3 99 select + tablo rozetleri).\n\nYapi Malzemesi · Demir-Celik · Elektrik · Mekanik · Ic Yapi — mockup'un\nKAPALI kumesidir, bu yuzden enum'dur. Birim (`unit`) ise aksine ACIK\nucludur ve SERBEST METIN kalir."
+      },
+      "StockEntryCreate": {
+        "properties": {
+          "entry_type": {
+            "$ref": "#/components/schemas/StockEntryType"
+          },
+          "entry_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Entry Date"
+          },
+          "warehouse_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Warehouse Id"
+          },
+          "source_warehouse_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Warehouse Id"
+          },
+          "supplier_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplier Name"
+          },
+          "delivery_note_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Note No"
+          },
+          "received_by_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Received By User Id"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/StockEntryLineCreate"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Lines"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entry_type",
+          "entry_date",
+          "warehouse_id",
+          "lines"
+        ],
+        "title": "StockEntryCreate",
+        "description": "`POST /stock/entries` — başlık + satırlar TEK gövde, atomik yazılır.\n\n## SG'den GELEN alanlar\n`entry_type` (53-76) · `entry_date` (84) · `warehouse_id` (84) ·\n`source_warehouse_id` (transfer) · `supplier_name` (86, SERBEST METİN —\n§7 S3) · `delivery_note_no` (87) · `received_by_user_id` (88) · `note` (169).\n\n## SG'de OLUP BURAYA ALINMAYANLAR (icat yasağı, spec §5)\n\"İlgili Sipariş\" (85) · \"Sipariş\" sütunu (95/113) · \"eksik teslimat\"\nrozeti (107) · otomatik tedarikçi bildirimi (176) → **SA dilimi**.\nBelge slotları (149-166) → **BC form-slot**. Gövdede gönderilseler bile\nPydantic onları yok sayar; şema ASLA genişletilmez.\n\n`note` tavanı `app.core.text.FREE_TEXT_MAX_LENGTH`tir: kolonu `Text`\n(DB'de sınırsız) olan TEK alan budur ve TB4 standardı gereği tavanı\nşemadadır (T1/T2'nin devrettiği borç)."
+      },
+      "StockEntryLineCreate": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Item Id"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,11}|(?=[\\d.]{1,15}0*$)\\d{0,11}\\.\\d{0,3}0*$)"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "unit_price": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Price"
+          },
+          "quality": {
+            "$ref": "#/components/schemas/StockQuality",
+            "default": "ok"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_id",
+          "quantity"
+        ],
+        "title": "StockEntryLineCreate",
+        "description": "SG kalem tablosunun BİR satırı (SG 96-124).\n\n**\"Sipariş\" sütunu (SG 95/113) YOKTUR** ve \"Tutar\" sütunu (SG 101) TÜREVDİR\n(`quantity × unit_price`) — kolon da alan da açılmaz (spec §2, §5).\n\n`quantity` işaret kısıtı TAŞIMAZ: `adjustment` satırları NEGATİF olabilir\n(§7 S4 — sayım farkı/iade/SARF tek kapısı). Tipe bağlı kural başlıktadır\n(`StockEntryCreate._tip_kurallari`) çünkü satır kendi başına hangi tipte\nolduğunu bilmez.\n\n`unit_price` NULL olabilir: transfer ve düzeltme satırlarında fiyat yoktur\nve fiyatsız kalem toplam stok değerine GİRMEZ (§7 S6)."
+      },
+      "StockEntryLineResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Item Id"
+          },
+          "quantity": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Quantity"
+          },
+          "unit_price": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Price"
+          },
+          "quality": {
+            "$ref": "#/components/schemas/StockQuality"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "item_id",
+          "quantity",
+          "unit_price",
+          "quality"
+        ],
+        "title": "StockEntryLineResponse",
+        "description": "Satır künyesi. **Tutar alanı YOKTUR** — `quantity × unit_price` türevdir."
+      },
+      "StockEntryListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StockEntryResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "StockEntryListResponse"
+      },
+      "StockEntryResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "entry_type": {
+            "$ref": "#/components/schemas/StockEntryType"
+          },
+          "entry_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Entry Date"
+          },
+          "warehouse_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Warehouse Id"
+          },
+          "source_warehouse_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Warehouse Id"
+          },
+          "supplier_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplier Name"
+          },
+          "delivery_note_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Note No"
+          },
+          "received_by_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Received By User Id"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/StockEntryLineResponse"
+            },
+            "type": "array",
+            "title": "Lines"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "entry_type",
+          "entry_date",
+          "warehouse_id",
+          "source_warehouse_id",
+          "supplier_name",
+          "delivery_note_no",
+          "received_by_user_id",
+          "note",
+          "created_at",
+          "lines"
+        ],
+        "title": "StockEntryResponse",
+        "description": "Hareket künyesi + satırları.\n\n**Sipariş alanı YOKTUR** (spec §5). Bakiye de yoktur: hareket bakiyeyi\nTAŞIMAZ, bakiye hareketlerden TÜREVDİR (spec §3)."
+      },
+      "StockEntryType": {
+        "type": "string",
+        "enum": [
+          "purchase",
+          "transfer",
+          "adjustment"
+        ],
+        "title": "StockEntryType",
+        "description": "Hareket tipi (SG 53-76).\n\n`purchase`   — satin alma girisi (miktar > 0)\n`transfer`   — depolar arasi tasima; `source_warehouse_id` ZORUNLU ve kaynak\n               depodan ayni miktarda otomatik dusus yapilir (CIFT BACAK,\n               §7 S4). Tek bacak olsaydi transfer stok YARATIRDI.\n`adjustment` — sayim farki / iade / sarf; satirlari NEGATIF olabilir.\n\nKurallar tipe BAGLI oldugu icin DB'de degil, hareket ucunda (T3) uygulanir."
+      },
+      "StockItemCreate": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 30,
+            "minLength": 1,
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "category": {
+            "$ref": "#/components/schemas/StockCategory"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Unit"
+          },
+          "min_stock": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,11}|(?=[\\d.]{1,15}0*$)\\d{0,11}\\.\\d{0,3}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Stock"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "category",
+          "unit"
+        ],
+        "title": "StockItemCreate",
+        "description": "`POST /stock/items` gövdesi.\n\n`unit` SERBEST METİNDİR (spec §2): Ton/Torba/Metre/Adet/m³ kümesi açık\nuçludur ve yeni bir birim migration gerektirmemelidir. `category` ise\nKAPALI kümedir (E3 99 select'i), bu yüzden enum'dur."
+      },
+      "StockItemListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StockItemResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "StockItemListResponse",
+        "description": "`personnel`/`audit`/`users` liste deseni: `total` + `limit`/`offset`."
+      },
+      "StockItemResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "category": {
+            "$ref": "#/components/schemas/StockCategory"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "min_stock": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Stock"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "category",
+          "unit",
+          "min_stock",
+          "is_active",
+          "created_at"
+        ],
+        "title": "StockItemResponse",
+        "description": "Kart künyesi. **Bakiye / durum ALANI YOKTUR** (spec §3): ikisi de\nhareketlerden TÜREVDİR ve T3'ün özet uçlarından gelir. Buraya konsaydı\nkatalog listesi her çizilişte hareket tablosunu tarardı."
+      },
+      "StockItemUpdate": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 30,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StockCategory"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "min_stock": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,11}|(?=[\\d.]{1,15}0*$)\\d{0,11}\\.\\d{0,3}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Stock"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "title": "StockItemUpdate",
+        "description": "`PATCH /stock/items/{id}` — TÜM alanlar isteğe bağlı.\n\nAlanın GÖNDERİLMEMESİ ile `null` GÖNDERİLMESİ farklıdır ve fark\n`model_fields_set` ile korunur: `min_stock: null` eşiği SİLER (durum\n`None` olur, spec §3), hiç göndermemek ona DOKUNMAZ.\n\nKullanımdan kaldırma YOLU budur (`is_active: false`) — DELETE ucu yoktur."
+      },
+      "StockQuality": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "defective",
+          "rejected"
+        ],
+        "title": "StockQuality",
+        "description": "Teslim alinan kalemin kalite damgasi (SG 117 ✓/⚠/✗)."
+      },
+      "StockStatus": {
+        "type": "string",
+        "enum": [
+          "critical",
+          "low",
+          "normal",
+          "excess"
+        ],
+        "title": "StockStatus",
+        "description": "Kalemin eşiğe göre durumu — **DB kolonu DEĞİL**, türevdir (spec §3).\n\nE3 rozetleri Kritik/Düşük/Normal/Fazla; ŞS'de \"Normal\" karşılığı\n**\"Yeterli\"** diye yazılır (aynı değer, farklı etiket) — iki ekran için ayrı\ndeğer üretilmez, etiket frontend'in işidir."
+      },
+      "StockSummaryKpis": {
+        "properties": {
+          "total_value": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Value"
+          },
+          "critical_count": {
+            "type": "integer",
+            "title": "Critical Count"
+          },
+          "low_count": {
+            "type": "integer",
+            "title": "Low Count"
+          },
+          "total_items": {
+            "type": "integer",
+            "title": "Total Items"
+          },
+          "items_without_price": {
+            "type": "integer",
+            "title": "Items Without Price"
+          },
+          "pending_orders": {
+            "$ref": "#/components/schemas/app__modules__projects__schemas__MetricPlaceholder"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_value",
+          "critical_count",
+          "low_count",
+          "total_items",
+          "items_without_price",
+          "pending_orders"
+        ],
+        "title": "StockSummaryKpis",
+        "description": "E3 KPI şeridi (72-89) — SÜZÜLEN KÜMENİN özeti, sayfanın değil.\n\n`total_value` = Σ (kalemin SON giriş fiyatı × bakiyesi) (§7 S6).\nAğırlıklı ortalama maliyet İCAT EDİLMEZ.\n\n`items_without_price`: bakiyesi olup fiyatı olmayan kalem sayısı. Bu kalemler\ndeğere GİRMEZ ve sessizce 0 SAYILMAZ — sayaç olmasaydı \"değer neden düşük\"\nsorusu cevapsız kalırdı.\n\n`pending_orders` (\"Bekleyen Sipariş\", E3 81): sipariş tablosu YOKTUR, değer\nUYDURULMAZ — `MetricPlaceholder` zarfı SA dilimini bildirir."
+      },
+      "StockSummaryResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StockSummaryRow"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "kpis": {
+            "$ref": "#/components/schemas/StockSummaryKpis"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset",
+          "kpis"
+        ],
+        "title": "StockSummaryResponse"
+      },
+      "StockSummaryRow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "category": {
+            "$ref": "#/components/schemas/StockCategory"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "min_stock": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Stock"
+          },
+          "balance": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Balance"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StockStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_unit_price": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Unit Price"
+          },
+          "warehouses": {
+            "items": {
+              "$ref": "#/components/schemas/StockWarehouseBalance"
+            },
+            "type": "array",
+            "title": "Warehouses"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "category",
+          "unit",
+          "min_stock",
+          "balance",
+          "status",
+          "last_unit_price",
+          "warehouses"
+        ],
+        "title": "StockSummaryRow",
+        "description": "E3 tablosunun bir satırı: kart künyesi + TÜREVLER.\n\n`balance` ve `status` KOLON DEĞİLDİR (spec §3): ikisi de hareketlerden\ntüretilir ve bu yüzden `StockItemResponse`da yoktur, YALNIZ burada durur.\n\n`status` `min_stock` yoksa `None`dur — eşik olmadan durum uydurulmaz.\n\n`last_unit_price` toplam değerin kaynağıdır (§7 S6: SON giriş fiyatı);\nekran \"hangi fiyattan değerlendi\" sorusunu bu alandan cevaplar."
+      },
+      "StockWarehouseBalance": {
+        "properties": {
+          "warehouse_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Warehouse Id"
+          },
+          "warehouse_name": {
+            "type": "string",
+            "title": "Warehouse Name"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "balance": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Balance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "warehouse_id",
+          "warehouse_name",
+          "site_id",
+          "balance"
+        ],
+        "title": "StockWarehouseBalance",
+        "description": "E3 \"Depo\" sütunu: kalemin TEK bir depodaki bakiyesi.\n\n`site_id` NULL ise MERKEZ depodur — ekran şantiye adı basamadığında bunu\nkimliğin yokluğundan değil bu alandan anlar."
       },
       "SubcontractorContractCreate": {
         "properties": {
@@ -24661,6 +26647,184 @@
         },
         "type": "object",
         "title": "SubcontractorUpdate"
+      },
+      "TimelineMilestone": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "milestone_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Milestone Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "milestone_date"
+        ],
+        "title": "TimelineMilestone",
+        "description": "Kilometre tasi satiri (P11 spec §3): YALNIZ ad + tarih.\n\nDurum alani YOKTUR (§6 S2): \"Tamamlandi\" gorunumu `milestone_date < today`\nTUREVIDIR ve istemci `today` damgasiyla hesaplar."
+      },
+      "TimelineProject": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectStatus"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "contract_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contract Amount"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineSection"
+            },
+            "type": "array",
+            "title": "Sections"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "status",
+          "start_date",
+          "end_date",
+          "contract_amount",
+          "sections"
+        ],
+        "title": "TimelineProject",
+        "description": "Gantt'in ust seviyesi: proje satiri. Santiye seviyesi YOKTUR (spec §1) —\nbolumler santiyeler uzerinden toplanip dogrudan projenin altina dizilir."
+      },
+      "TimelineSection": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SectionStatus"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order"
+          },
+          "depends_on_section_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depends On Section Id"
+          },
+          "milestones": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineMilestone"
+            },
+            "type": "array",
+            "title": "Milestones"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "status",
+          "start_date",
+          "end_date",
+          "sort_order",
+          "depends_on_section_id",
+          "milestones"
+        ],
+        "title": "TimelineSection",
+        "description": "Gantt'in ikinci seviyesi: bolum/faz satiri (PT mockup 165-215).\n\nILERLEME YUZDESI YOKTUR (§6 S1, kullanici karari): `progress_pct` alani ne\n`None` ne de pending zarfiyla acilir — bar rengi YALNIZ `status`tan turer\n(PT legend 49-51: completed/active/planned). Kaynagi olmayan bir sayiyi\nbos zarfla dondurmek, ekranda doldurulmayi bekleyen sahte bir sozlesme\nbirakir."
       },
       "TimesheetCell": {
         "properties": {
@@ -27953,6 +30117,120 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "WarehouseCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "WarehouseCreate",
+        "description": "`POST /warehouses` gövdesi.\n\n`site_id` NULL = **MERKEZ DEPO** (SG 84 \"Merkez Depo (Sincan)\"): hiçbir\nşantiyeye bağlı değildir ve görünürlüğü proje kapsamına DEĞİL yalnız stok\niznine bağlıdır (spec §7 S2b)."
+      },
+      "WarehouseListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WarehouseResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "WarehouseListResponse"
+      },
+      "WarehouseResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "site_id",
+          "created_at"
+        ],
+        "title": "WarehouseResponse",
+        "description": "Depo künyesi. **Bakiye alanı YOKTUR** — kart gövdesiyle aynı gerekçe."
+      },
+      "WarehouseUpdate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "WarehouseUpdate",
+        "description": "`PATCH /warehouses/{id}` — YALNIZ ad.\n\n`site_id` BİLİNÇLİ olarak YOKTUR (`DocumentFolderUpdate` deseni): kapsam\ndeğiştirmek bir IDOR yüzeyidir — merkez depo şantiyeye çekilerek gizlenebilir\nya da tersi yapılabilirdi — ve hiçbir mockup depo taşımayı istemez. Alan\ngövdede gönderilse bile Pydantic onu yok sayar, kapsam DEĞİŞMEZ."
       },
       "Weather": {
         "type": "string",

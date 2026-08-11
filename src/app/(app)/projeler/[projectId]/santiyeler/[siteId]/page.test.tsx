@@ -129,6 +129,8 @@ describe("SiteDetailPage", () => {
           start_date: "2025-04-01",
           end_date: "2025-07-01",
           sort_order: 0,
+          depends_on_section_id: null,
+          milestones: [],
           progress_pct: { available: false, value: null, pending_module: "boq" },
           boq_item_count: { available: false, count: null, pending_module: "boq" },
           budget: { available: false, value: null, pending_module: "boq" },
