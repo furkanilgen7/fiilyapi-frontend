@@ -127,7 +127,7 @@ describe("ProjectCard — kendi yatirim", () => {
     expect(screen.getByText("İnşaat İlerlemesi")).toBeInTheDocument();
   });
 
-  // P10: E4 122-123 + 128. Alan seti mockup 121-124'e birebir
+  // P10 · alan seti mockup 120-123'e birebir
   // (Satış Hedefi / Satılan / Toplam Maliyet / Tahmini Kâr) + 128 marj cipi.
   it("dolu zarflarda gercek deger ve marj cipi basar", () => {
     render(
@@ -151,11 +151,11 @@ describe("ProjectCard — kendi yatirim", () => {
         }}
       />,
     );
-    expect(screen.getByText("₺ 48,2M")).toBeInTheDocument(); // mockup 121
-    expect(screen.getByText("₺ 31,4M")).toBeInTheDocument(); // mockup 122 "Satılan"
+    expect(screen.getByText("₺ 48,2M")).toBeInTheDocument(); // mockup 120
+    expect(screen.getByText("₺ 31,4M")).toBeInTheDocument(); // mockup 121 "Satılan"
     expect(screen.getByText("Toplam Maliyet")).toBeInTheDocument();
-    expect(screen.getByText("₺ 20,3M")).toBeInTheDocument(); // mockup 123
-    expect(screen.getByText("₺ 18,4M")).toBeInTheDocument(); // mockup 124 "Tahmini Kâr"
+    expect(screen.getByText("₺ 20,3M")).toBeInTheDocument(); // mockup 122
+    expect(screen.getByText("₺ 18,4M")).toBeInTheDocument(); // mockup 123 "Tahmini Kâr"
     expect(screen.getByText("%38,2 marj")).toBeInTheDocument(); // mockup 128
   });
 });
@@ -203,11 +203,11 @@ describe("ProjectCard — kat karsiligi", () => {
     expect(screen.getByText("₺ 0")).toBeInTheDocument();
     expect(screen.getByText("Kendi Pay Değeri")).toBeInTheDocument();
     expect(screen.getByTitle("Ünite satış modülüyle birlikte gelir")).toHaveTextContent("—");
-    // Zarf bos oldugunda marj cipi SILINMEZ: "—" + gerekce basar (mockup 156).
+    // Zarf bos oldugunda marj cipi SILINMEZ: "—" + gerekce basar (mockup 160).
     expect(screen.getByText("— marj")).toBeInTheDocument();
   });
 
-  // P10: E4 149-152 alan seti + 156 marj cipi.
+  // P10 · alan seti mockup 152-155 + 160 marj cipi.
   it("dolu zarflarda kendi pay / insaat maliyeti / kâr ve marj gercek basar", () => {
     render(
       <ProjectCard
@@ -242,12 +242,12 @@ describe("ProjectCard — kat karsiligi", () => {
         }}
       />,
     );
-    expect(screen.getByText("₺ 30,4M")).toBeInTheDocument(); // mockup 149
-    expect(screen.getByText("₺ 0")).toBeInTheDocument(); // mockup 150 — arsa tanim geregi 0
+    expect(screen.getByText("₺ 30,4M")).toBeInTheDocument(); // mockup 152
+    expect(screen.getByText("₺ 0")).toBeInTheDocument(); // mockup 153 — arsa tanim geregi 0
     expect(screen.getByText("İnşaat Maliyeti")).toBeInTheDocument();
-    expect(screen.getByText("₺ 17,6M")).toBeInTheDocument(); // mockup 151
-    expect(screen.getByText("₺ 12,8M")).toBeInTheDocument(); // mockup 152
-    expect(screen.getByText("%42,1 marj")).toBeInTheDocument(); // mockup 156
+    expect(screen.getByText("₺ 17,6M")).toBeInTheDocument(); // mockup 154
+    expect(screen.getByText("₺ 12,8M")).toBeInTheDocument(); // mockup 155
+    expect(screen.getByText("%42,1 marj")).toBeInTheDocument(); // mockup 160
   });
 });
 

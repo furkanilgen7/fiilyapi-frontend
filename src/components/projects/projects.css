@@ -389,9 +389,9 @@
   margin-top: 2px;
 }
 
-/* Kart alt seridi — marj cipi (mockup 126-130 kendi yatirim / 154-158 kat
-   karsiligi). P10 dilimi seridin YALNIZ marj ogesini baglar; ayni satirdaki
-   unite/hissedar sayaclari `units` moduluyle gelecek. */
+/* Kart alt seridi — marj cipi (mockup 128 kendi yatirim / 160 kat karsiligi).
+   P10 dilimi seridin YALNIZ marj ogesini baglar; ayni satirdaki unite/hissedar
+   sayaclari (mockup 127 / 159) `units` moduluyle gelecek. */
 .prj-card__footer {
   display: flex;
   align-items: center;

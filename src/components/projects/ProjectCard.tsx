@@ -84,17 +84,17 @@ function MetricValue({
   return (
     <span
       className="prj-kpi__value prj-kpi__value--pending"
-      title={pendingModuleLabel(metric?.pending_module ?? "")}
+      title={pendingModuleLabel(metric?.pending_module)}
     >
       —
     </span>
   );
 }
 
-// Kart alt seridi — mockup 126-130 (kendi yatirim) / 154-158 (kat karsiligi).
-// Bu dilimde yalniz MARJ cipi baglanir (P10 zarfi); seridin diger ogeleri
-// ("48 daire + 4 dükkan" 127, "3 hissedar" 155) `units` sayaclarina baglidir ve
-// bu dilimin kapsami disindadir — o gun ayni seride eklenir.
+// Kart alt seridi — mockup 126-129 (kendi yatirim) / 158-161 (kat karsiligi).
+// Bu dilimde yalniz MARJ cipi baglanir (mockup 128 / 160, P10 zarfi); seridin
+// diger ogeleri ("48 daire + 4 dükkan" 127, "3 hissedar" 159) `units`
+// sayaclarina baglidir ve bu dilimin kapsami disindadir.
 // `MetricValue` ile ayni dallanma: `available` BAYRAGI + deger; bos zarfta cip
 // SILINMEZ, "—" + gerekce basar.
 function MarginChip({ metric }: { metric: Metric | undefined }) {
