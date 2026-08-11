@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { cx } from "@/lib/cx";
 import { formatMonthYear, formatPercent } from "@/lib/format";
-import { pendingModuleLabel } from "@/lib/pending-modules";
+import { pendingModuleLabel, type PendingModuleKey } from "@/lib/pending-modules";
 import type { SiteListItem } from "@/lib/api/hooks/useSites";
 
 import "./project-detail.css";
@@ -47,7 +47,7 @@ function PlaceholderValue({
   pendingModule,
 }: {
   valueClassName: string;
-  pendingModule: string;
+  pendingModule: PendingModuleKey;
 }) {
   return (
     <div

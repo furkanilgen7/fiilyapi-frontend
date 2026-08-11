@@ -70,6 +70,13 @@ const MODULE_LABELS: Record<string, string> = {
 
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";
 
-export function pendingModuleLabel(key: string): string {
+// P10 devri (2026-08-11): `app__modules__projects__schemas__MetricPlaceholder`
+// artik `pending_module?: string | null` tasiyor (dashboard ikizi degismedi).
+// Anahtar tasiyan TUM prop/tip kopyalari bu tek takma adi kullanir — dort ayri
+// `pendingModule: string` bildirimi yeniden uretilmez.
+export type PendingModuleKey = string | null | undefined;
+
+export function pendingModuleLabel(key: PendingModuleKey): string {
+  if (!key) return FALLBACK_LABEL;
   return MODULE_LABELS[key] ?? FALLBACK_LABEL;
 }

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { cx } from "@/lib/cx";
 import { formatCompactCurrency, formatMonthYear, formatPercent } from "@/lib/format";
-import { pendingModuleLabel } from "@/lib/pending-modules";
+import { pendingModuleLabel, type PendingModuleKey } from "@/lib/pending-modules";
 import { SECTION_STATUS_CLASS_SUFFIX, SECTION_STATUS_LABELS } from "@/lib/section-labels";
 import type { components } from "@/lib/api/schema";
 
@@ -25,7 +25,7 @@ type AnyPlaceholder = {
   available: boolean;
   count?: number | null;
   value?: string | null;
-  pending_module: string;
+  pending_module?: PendingModuleKey;
 };
 
 export interface SectionCardProps {
@@ -77,7 +77,7 @@ const STATUS_WORKER_LABEL: Record<SectionStatus, string> = {
 
 // Yer tutucu metrik hucresi — duzeni korur, "—" basar, title'da aciklama verir
 // (spec §7.1, SiteHeroBar/SiteCard'daki PlaceholderValue deseniyle ayni).
-function PlaceholderValue({ valueClassName, pendingModule }: { valueClassName: string; pendingModule: string }) {
+function PlaceholderValue({ valueClassName, pendingModule }: { valueClassName: string; pendingModule: PendingModuleKey }) {
   return (
     <div className={cx(valueClassName, "section-card__metric-value--pending")} title={pendingModuleLabel(pendingModule)}>
       —

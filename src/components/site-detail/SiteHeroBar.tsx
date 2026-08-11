@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { cx } from "@/lib/cx";
 import { formatCompactCurrency, formatMonthYear, formatPercent } from "@/lib/format";
-import { pendingModuleLabel } from "@/lib/pending-modules";
+import { pendingModuleLabel, type PendingModuleKey } from "@/lib/pending-modules";
 import type { SiteDetail } from "@/lib/api/hooks/useSites";
 
 const NO_END_DATE_TITLE = "Bitiş tarihi girilmemiş";
@@ -31,7 +31,7 @@ function metaParts(site: SiteDetail): string[] {
 }
 
 // Yer tutucu KPI değeri — düzeni korur, "—" basar, title'da açıklama verir (spec §7.1).
-function PlaceholderValue({ pendingModule }: { pendingModule: string }) {
+function PlaceholderValue({ pendingModule }: { pendingModule: PendingModuleKey }) {
   return (
     <div className="site-hero__kpi-value site-hero__kpi-value--pending" title={pendingModuleLabel(pendingModule)}>
       —

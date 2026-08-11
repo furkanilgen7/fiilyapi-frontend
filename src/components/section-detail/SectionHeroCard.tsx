@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { cx } from "@/lib/cx";
 import { formatCompactCurrency, formatMonthYear, formatPercent } from "@/lib/format";
-import { pendingModuleLabel } from "@/lib/pending-modules";
+import { pendingModuleLabel, type PendingModuleKey } from "@/lib/pending-modules";
 import { SECTION_STATUS_CLASS_SUFFIX, SECTION_STATUS_LABELS } from "@/lib/section-labels";
 import type { SectionDetailResponse } from "@/lib/api/hooks/useSection";
 import { remainingDays } from "./remainingDays";
@@ -39,7 +39,7 @@ function metaParts(section: SectionDetailResponse, siteName: string): string[] {
 
 // Yer tutucu KPI değeri — SiteHeroBar/SectionCard ile aynı desen: düzeni
 // korur, "—" basar, title'da açıklama verir (spec §7.1).
-function PlaceholderValue({ pendingModule }: { pendingModule: string }) {
+function PlaceholderValue({ pendingModule }: { pendingModule: PendingModuleKey }) {
   return (
     <div className="section-hero__kpi-value section-hero__kpi-value--pending" title={pendingModuleLabel(pendingModule)}>
       —

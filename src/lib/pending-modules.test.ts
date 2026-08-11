@@ -38,4 +38,11 @@ describe("pendingModuleLabel", () => {
   it("bilinmeyen anahtarda genel metin doner", () => {
     expect(pendingModuleLabel("bilinmeyen")).toBe("İlgili modülle birlikte gelir");
   });
+
+  // P10 devri: `app__modules__projects__schemas__MetricPlaceholder.pending_module`
+  // artik `string | null` (ve zorunlu degil). Anahtar yoksa da genel metne dusulur.
+  it("null/undefined anahtarda genel metne duser", () => {
+    expect(pendingModuleLabel(null)).toBe("İlgili modülle birlikte gelir");
+    expect(pendingModuleLabel(undefined)).toBe("İlgili modülle birlikte gelir");
+  });
 });
