@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 // F-BC T5 · Şantiye › Belgeler (ŞB) görsel testi — mockup `Şantiye -
 // Belgeler.dc.html`. `site-diary-visual.spec.ts` / `archive-documents-
 // visual.spec.ts` deseninin aynısı.
@@ -57,10 +59,7 @@ test("santiye belgeleri ekrani gorsel", async ({ page }) => {
   await expect(recent.getByRole("listitem")).toHaveCount(3);
   await expect(recent.getByRole("button", { name: "İndir" }).first()).toBeVisible();
 
-  // ⚠️ FARE KONUMU BASELINE'A SIZAR: girişteki tıklamadan kalan imleç,
-  // gezinmeden sonra ızgaradaki bir kartın üstüne denk gelip onu `:hover`
-  // hâlinde donduruyordu (baseline turu 31312763276'de fiilen görüldü).
-  // İmleç boş bir köşeye çekilir — kadraj hover'sız ve deterministik olur.
-  await page.mouse.move(1439, 899);
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("santiye-belgeler.png", { fullPage: true });
 });

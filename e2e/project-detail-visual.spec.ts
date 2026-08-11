@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 // Proje Detay ekranı görsel testi (Task 12). mock-backend.ts'teki p-1 (Kule A)
 // projesine bağlı iki şantiyeyi (A-Blok aktif, B-Blok tamamlandı) kullanır —
 // SiteCard'ın hem aktif hem tamamlanmış varyantını tek ekranda gösterir.
@@ -14,5 +16,8 @@ test("proje detay ekrani gorsel", async ({ page }) => {
   await page.goto("/projeler/p-1");
   await expect(page.getByRole("heading", { level: 1, name: "Kule A" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "A-Blok Şantiyesi", level: 3 })).toBeVisible();
+
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("proje-detay.png", { fullPage: true });
 });

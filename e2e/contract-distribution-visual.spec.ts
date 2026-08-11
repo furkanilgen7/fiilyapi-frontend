@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-import { login, pinContractDistribution, settleScrollTop } from "./contracts-visual-helpers";
+import { login, pinContractDistribution, prepareFrame } from "./contracts-visual-helpers";
 
 // F-P5 T8 · POZ (`/sozlesmeler/isveren/p-1/poz-dagilimi`) görsel testi. Kanon:
 // projedesign `İşveren Sözleşme - Poz Dağılımı.dc.html`.
@@ -33,6 +33,6 @@ test("poz dagilimi izgarasi gorsel", async ({ page }) => {
   // Şantiye özet kartları (mockup alt bloğu) da kadrajdadır.
   await expect(page.getByTestId("cdist-summary-card")).toHaveCount(2);
 
-  await settleScrollTop(page);
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("poz-dagilimi.png", { fullPage: true });
 });

@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-import { login, settleScrollTop } from "./contracts-visual-helpers";
+import { login, prepareFrame } from "./contracts-visual-helpers";
 
 // F-P5 T8 · TL (`/sozlesmeler/taseronlar`) görsel testi. Kanon: projedesign
 // `Taşeron Listesi.dc.html`.
@@ -48,6 +48,6 @@ test("taseron listesi gorsel", async ({ page }) => {
   // Yetim sözleşme uyarısı fikstürde vardır ve kadraja GİRER.
   await expect(page.getByTestId("tl-orphan-notice")).toBeVisible();
 
-  await settleScrollTop(page);
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("taseron-listesi.png", { fullPage: true });
 });

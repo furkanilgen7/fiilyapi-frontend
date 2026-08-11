@@ -1,5 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 // F-SD T6 · "Kayıt Gir" ekranı görsel testi (mockup `Şantiye - Günlük
 // Kayıt.dc.html`, GK). `section-detail-visual.spec.ts` deseninin aynısı.
 //
@@ -49,6 +51,8 @@ test("gunluk kayit gir ekrani (bos gun) gorsel", async ({ page }) => {
   // Gömülü planlama bloğu (day-summary) geldi.
   await expect(page.locator(".diary-plan")).toBeVisible();
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("gunluk-kayit-bos.png", { fullPage: true });
 });
 
@@ -63,5 +67,7 @@ test("gunluk kayit gir ekrani (dolu taslak) gorsel", async ({ page }) => {
   await expect(page.getByLabel("03.002 bugün yapılan miktar")).toHaveValue("180.000");
   await expect(page.locator(".diary-lines__total-amount")).toContainText("₺ 26.100");
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("gunluk-kayit-dolu.png", { fullPage: true });
 });

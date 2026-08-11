@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
-import { settleScrollTop } from "./visual-scroll";
+import { prepareFrame } from "./visual-scroll";
 
 // F-PT T5 · Puantaj görsel testleri — mockup'lar `Ekran 5 - Puantaj.dc.html`
 // (E5, genel) ve `Şantiye - Puantaj.dc.html` (ŞP, şantiye sekmesi).
@@ -101,6 +101,8 @@ test("genel puantaj (E5) matrisi gorsel", async ({ page }) => {
   // Şantiye seçici çözüldü — "Yükleniyor…" durumu baseline'a girmesin.
   await expect(page.getByLabel("Şantiye").first()).toBeEnabled();
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("puantaj-genel.png", { fullPage: true });
 });
 
@@ -130,6 +132,8 @@ test("santiye puantaji (SP) matrisi gorsel", async ({ page }) => {
     await expect(page.locator(`.ts-table .ts-cell--${modifier}`).first(), modifier).toBeVisible();
   }
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("puantaj-santiye.png", { fullPage: true });
 });
 
@@ -158,7 +162,7 @@ test("puantaj hucre popover'i gorsel", async ({ page }) => {
   // İÇİNDE olduğu için tıklama pencereyi değil O KABI, üstelik YATAY eksende
   // kaydırıyordu — korkuluğun eleman kaplarını da kapsaması bu yüzden ŞART.
   // Geometri denetiminden ÖNCE yapılır ki iddia, kadraja GİREN durumu ölçsün.
-  await settleScrollTop(page);
+  await prepareFrame(page);
   await expect(popover).toBeVisible();
 
   // ⚠️ KIRPILMA DENETİMİ (T3'ün açık bıraktığı soru, T5'te GERÇEK KUSUR

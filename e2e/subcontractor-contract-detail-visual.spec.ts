@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-import { login, settleScrollTop } from "./contracts-visual-helpers";
+import { login, prepareFrame } from "./contracts-visual-helpers";
 
 // F-P5 T8 · TSD (`/sozlesmeler/taseron/sc-1`) görsel testi. Kanon: projedesign
 // `Taşeron Sözleşme Detay.dc.html`.
@@ -38,6 +38,6 @@ test("taseron sozlesme detayi gorsel", async ({ page }) => {
   await expect(page.getByTestId("tsd-progress-E.02")).toContainText("%");
   await expect(page.getByTestId("tsd-progress-E.03")).toContainText("%");
 
-  await settleScrollTop(page);
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("taseron-sozlesme-detay.png", { fullPage: true });
 });

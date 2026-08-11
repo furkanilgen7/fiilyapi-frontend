@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 // F-TH T6 · Taşeron Hakediş detayı görsel testi. `e2e/progress-payment-
 // detail-visual.spec.ts` deseninin BİREBİR aynısı. `scpp-3` (sc-1, Temmuz
 // 2026) `pending_approval` durumundadır — aksiyon butonları (Reddet/Onayla)
@@ -35,5 +37,8 @@ test("taseron hakedisi detayi (onay bekliyor) ekrani gorsel", async ({ page }) =
   await expect(page.getByText("₺ 20.520")).toBeVisible();
   await expect(page.getByRole("button", { name: "Onayla" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Reddet" })).toBeVisible();
+
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("taseron-hakedis-detay-onay-bekliyor.png", { fullPage: true });
 });

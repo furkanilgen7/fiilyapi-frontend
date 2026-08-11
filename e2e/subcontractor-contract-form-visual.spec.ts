@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-import { login, settleScrollTop } from "./contracts-visual-helpers";
+import { login, prepareFrame } from "./contracts-visual-helpers";
 
 // F-P5 T8 · FSO (`/sozlesmeler/taseron/yeni`) görsel testi. Kanon: projedesign
 // `Taşeron Sözleşme Oluştur.dc.html`.
@@ -37,6 +37,6 @@ test("taseron sozlesme formu gorsel", async ({ page }) => {
   // Altı belge kutusu + ortak "sürükle" satırı devre-dışı basılır.
   await expect(page.locator(".pf-doc[aria-disabled='true']")).toHaveCount(7);
 
-  await settleScrollTop(page);
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("taseron-sozlesme-formu.png", { fullPage: true });
 });

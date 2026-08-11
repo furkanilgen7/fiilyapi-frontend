@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 // F-TH T6 · Taşeron Hakediş Oluştur formu + sözleşme seçim adımı görsel
 // testleri. `e2e/progress-payment-form-visual.spec.ts` deseninin BİREBİR
 // aynısı. Sözleşme kalemleri (`SUBCONTRACTOR_CONTRACT_ITEMS_SC1`,
@@ -33,6 +35,9 @@ test("taseron sozlesme secim adimi ekrani gorsel", async ({ page }) => {
   // baseline yükleme durumunu dondurur. TB2 takip: geçiş dönemi kalıcı bilgi
   // notu (Alert) kaldırıldı — U1 liste ucu geldiğinden sınır artık YOK.
   await expect(page.getByLabel("Taşeron Sözleşmesi")).toBeVisible();
+
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("taseron-sozlesme-secim-adimi.png", { fullPage: true });
 });
 
@@ -55,5 +60,8 @@ test("taseron hakedis olustur formu ekrani gorsel", async ({ page }) => {
   await expect(page.getByText("Pano Montajı")).toBeVisible();
   await expect(page.getByTestId("thf-coefficient-band")).toBeVisible();
   await expect(page.getByText("NET ÖDENECEK")).toBeVisible();
+
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("taseron-hakedis-olustur-formu.png", { fullPage: true });
 });

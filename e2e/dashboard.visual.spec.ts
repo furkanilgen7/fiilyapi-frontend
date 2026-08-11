@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 test("gosterge paneli gorsel", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/login");
@@ -7,5 +9,8 @@ test("gosterge paneli gorsel", async ({ page }) => {
   await page.getByLabel(/^şifre$/i).fill("dogruparola");
   await page.getByRole("button", { name: /giriş yap/i }).click();
   await expect(page.getByRole("heading", { name: "Gösterge Paneli" })).toBeVisible();
+
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("dashboard.png", { fullPage: true });
 });

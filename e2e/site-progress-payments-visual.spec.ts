@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 // P7 T7 · Şantiye "Hakedişler" sekmesi görsel testi. `e2e/boq-visual.spec.ts`
 // deseninin BİREBİR aynısı (`is-kalemleri` sekmesiyle aynı drill-kabuk
 // deseni). Değerler `Şantiye - Hakedişler.dc.html` satır 90-113'ten:
@@ -64,5 +66,8 @@ test("santiye hakedisler sekmesi ekrani gorsel", async ({ page }) => {
   // kayboldu ("Elektrik · Tüm Bölümler" → "· Tüm Bölümler") ve bunu yalnız
   // baseline turu yakaladı — dört kapı da 5. kapı da GÖRMEDİ.
   await expect(page.getByText("Elektrik · Tüm Bölümler").first()).toBeVisible();
+
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("santiye-hakedisler.png", { fullPage: true });
 });

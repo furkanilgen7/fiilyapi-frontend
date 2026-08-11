@@ -43,3 +43,50 @@ export async function settleScrollTop(page: Page) {
     )
     .toBe(0);
 }
+
+/**
+ * Görsel kadrajların ORTAK penceresi (1440×900) — imleç bu pencerenin sağ-alt
+ * köşesine (1439, 899) park edilir; depodaki yerleşik kanon budur ve hiçbir
+ * ekranda orada etkileşimli öğe yoktur.
+ *
+ * ⚠️ Sabit DEĞİL, TAVANDIR: görsel spec'lerin çoğu `setViewportSize`la 1440'a
+ * çıkar, ama dördü (`login-visual`, `shell-visual`, `settings-visual`,
+ * `visual`) `playwright.config.ts`teki 1280×900'de kalır. Park noktası fiilî
+ * pencereden türetilir — 1440'ta tam kanona (1439, 899) düşer, 1280'de ise
+ * pencere DIŞINA taşmaz (taşan koordinat hover'ı temizler ama sessizce
+ * "kadrajın dışına park" demektir; köşeyi ölçmek niyeti açık tutar).
+ */
+const VISUAL_VIEWPORT = { width: 1440, height: 900 } as const;
+
+/** Fiilî pencerenin sağ-alt köşesi (yoksa ORTAK pencereninki). */
+function cursorPark(page: Page): { x: number; y: number } {
+  const viewport = page.viewportSize() ?? VISUAL_VIEWPORT;
+  return { x: viewport.width - 1, y: viewport.height - 1 };
+}
+
+/**
+ * Kadraj hazırlığının TEK giriş noktası: `toHaveScreenshot` çağrısından hemen
+ * önce çağrılır (WORKFLOW §4 "GÖRSEL SPEC KURALI" 2. + 3. parça).
+ *
+ * 2. parça — KAYDIRMA: `settleScrollTop` (yukarıdaki gerekçe) pencereyi ve
+ * sayfadaki kaydırılabilir HER kabı iki eksende sıfırlar.
+ *
+ * 3. parça — İMLEÇ PARKI (F-BC dersi, 2026-08-09): Playwright imleci son
+ * tıkladığı koordinatta BIRAKIR ve altındaki öğeyi `:hover` hâlinde dondurur.
+ * Girişteki "Giriş Yap" tıklaması bile sonraki sayfada o noktaya denk gelen
+ * kartı hover'lı bastırabilir — F-BC baseline turunda fiilen oldu
+ * (`.sdoc-card:hover` kareye sızdı). F-P10 turunda aynı sınıf oynaklık
+ * `puantaj-hucre-popover` karesinde 52 piksellik kâh geçen kâh kalan farkla
+ * görüldü. Kural KOŞULSUZDUR: eleman kadrajları da (`expect(locator)`) hover
+ * halkası taşıyabildiği için parkı atlamaz.
+ *
+ * SIRA ÖNEMLİ: önce kaydırma sıfırlanır, SONRA imleç park edilir — kaydırma
+ * imleci göreli olarak başka bir öğenin üstüne düşürebilir.
+ *
+ * Görsel spec'ler yerel `page.mouse.move(...)` YAZMAZ; bu yardımcıyı çağırır.
+ */
+export async function prepareFrame(page: Page) {
+  await settleScrollTop(page);
+  const park = cursorPark(page);
+  await page.mouse.move(park.x, park.y);
+}

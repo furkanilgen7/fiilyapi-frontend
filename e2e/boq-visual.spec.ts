@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 // Ekran 13 · İş Kalemleri (BOQ) görsel testi (F11, spec §11.2). mock-backend.ts'in
 // BOQ_FIXTURE'ı mockup satır 106–178'i birebir yansıtır: 3 grup / 6 kalem /
 // GENEL TOPLAM 12.399.900.
@@ -25,5 +27,8 @@ test("is kalemleri (BOQ) ekrani gorsel", async ({ page }) => {
   // ekran görüntüsü alınırsa baseline yükleme durumunu dondurur.
   await expect(page.getByText("İç Sıva (Çimento+Alçı)")).toBeVisible();
   await expect(page.getByText("12.399.900")).toBeVisible();
+
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("is-kalemleri.png", { fullPage: true });
 });

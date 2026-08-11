@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
-import { settleScrollTop } from "./visual-scroll";
+import { prepareFrame } from "./visual-scroll";
 
 // F-PL T4 · Şantiye Planlama görsel testi (mockup `Şantiye - Planlama.dc.html`,
 // P). `site-diary-visual.spec.ts` / `site-detail-visual.spec.ts` deseninin aynısı.
@@ -72,6 +72,8 @@ test("planlama izgarasi (dolu) gorsel", async ({ page }) => {
   // (bkz. expectGridLoaded notu) — kart kapsamı + `.first()` zorunludur.
   await expect(page.locator(".plan-goals").first().locator(".plan-goals__row")).toHaveCount(4);
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("planlama-izgara.png", { fullPage: true });
 });
 
@@ -120,6 +122,8 @@ test("planlama izgarasi (bos) gorsel", async ({ page }) => {
   // Sprint yokken "Aktif Sprint:" etiketi HİÇ basılmaz.
   await expect(page.locator(".plan-week-nav__sprint")).toHaveCount(0);
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("planlama-bos.png", { fullPage: true });
 });
 
@@ -136,11 +140,11 @@ test("planlama hucre popover'i gorsel", async ({ page }) => {
   await expect(popover.locator(".plan-pop__tag")).toHaveCount(6);
   await expect(popover.getByRole("button", { name: "Temizle" })).toBeVisible();
 
-  // Tıklama kaydırmış olabilir — kabuk ofsetli basılmasın (bkz. `visual-scroll.ts`).
-  // Bu dosyada korkuluk YALNIZ "tıklama + `fullPage`" taşıyan bu kadrajda
-  // açıktır; tıklamayan (`planlama-izgara`, `planlama-bos`) ve eleman kadrajı
-  // olan (`planlama-hedefler`) testler ona İHTİYAÇ DUYMAZ.
-  await settleScrollTop(page);
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  // Kaydırma sıfırlamasına asıl İHTİYAÇ duyan kadraj budur — dosyadaki tek
+  // tıklayan test. Hazırlık, popover'ın hâlâ ayakta olduğu iddiasından ÖNCE
+  // yapılır ki iddia kadraja GİREN durumu ölçsün.
+  await prepareFrame(page);
   await expect(popover).toBeVisible();
 
   await expect(page).toHaveScreenshot("planlama-hucre-popover.png", { fullPage: true });
@@ -158,5 +162,7 @@ test("planlama haftalik hedefler karti gorsel", async ({ page }) => {
     await expect(goalsCard.locator(`.plan-goals__status--${status}`), status).toBeVisible();
   }
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(goalsCard).toHaveScreenshot("planlama-hedefler.png");
 });

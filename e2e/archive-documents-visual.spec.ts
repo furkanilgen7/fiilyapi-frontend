@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
-import { settleScrollTop } from "./visual-scroll";
+import { prepareFrame } from "./visual-scroll";
 
 // F-BC T5 · Ekran 12 · Belge Arşivi (`/belgeler`) görsel testleri — mockup
 // `Ekran 12 - Belge Arşivi.dc.html`. `site-planning-visual.spec.ts` /
@@ -69,11 +69,8 @@ test("belge arsivi (dolu) gorsel", async ({ page }) => {
   // `.first()` — akış-SSR çift kopyası metin locator'larını da ikiye çözer.
   await expect(page.getByText("Kule A / Hakedişler").first()).toBeVisible();
 
-  // ⚠️ FARE KONUMU BASELINE'A SIZAR: girişteki tıklamadan kalan imleç,
-  // gezinmeden sonra ızgaradaki bir kartın üstüne denk gelip onu `:hover`
-  // hâlinde donduruyordu (baseline turu 31312763276'de fiilen görüldü).
-  // İmleç boş bir köşeye çekilir — kadraj hover'sız ve deterministik olur.
-  await page.mouse.move(1439, 899);
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("belgeler-genel.png", { fullPage: true });
 });
 
@@ -99,11 +96,8 @@ test("belge arsivi (bos durum) gorsel", async ({ page }) => {
   // Proje seçilmeden "Son Eklenenler" bloğu HİÇ basılmaz.
   await expect(page.getByRole("list", { name: "Son eklenen belgeler" })).toHaveCount(0);
 
-  // ⚠️ FARE KONUMU BASELINE'A SIZAR: girişteki tıklamadan kalan imleç,
-  // gezinmeden sonra ızgaradaki bir kartın üstüne denk gelip onu `:hover`
-  // hâlinde donduruyordu (baseline turu 31312763276'de fiilen görüldü).
-  // İmleç boş bir köşeye çekilir — kadraj hover'sız ve deterministik olur.
-  await page.mouse.move(1439, 899);
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("belgeler-genel-bos.png", { fullPage: true });
 });
 
@@ -125,16 +119,13 @@ test("belge yukleme diyalogu gorsel", async ({ page }) => {
   await expect(dialog.getByLabel("Açıklama")).toHaveValue("");
   await expect(dialog.locator(".pf-form-error")).toHaveCount(0);
 
-  // Tıklama kaydırmış olabilir — kabuk ofsetli basılmasın (bkz. `visual-scroll.ts`).
-  // Bu dosyada YALNIZ diyalog kadrajı tıklar; tıklamayan iki kadraj bu korumaya
-  // ihtiyaç duymaz ve onlara EKLENMEZ.
-  await settleScrollTop(page);
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  // Bu dosyada YALNIZ diyalog kadrajı TIKLAR — kaydırma sıfırlaması asıl burada
+  // gerekir; imleç parkı ise üç kadrajda da koşulsuzdur. Hazırlık, diyaloğun
+  // hâlâ ayakta olduğu iddiasından ÖNCE yapılır ki iddia kadraja GİREN durumu
+  // ölçsün.
+  await prepareFrame(page);
   await expect(dialog).toBeVisible();
 
-  // ⚠️ FARE KONUMU BASELINE'A SIZAR: girişteki tıklamadan kalan imleç,
-  // gezinmeden sonra ızgaradaki bir kartın üstüne denk gelip onu `:hover`
-  // hâlinde donduruyordu (baseline turu 31312763276'de fiilen görüldü).
-  // İmleç boş bir köşeye çekilir — kadraj hover'sız ve deterministik olur.
-  await page.mouse.move(1439, 899);
   await expect(page).toHaveScreenshot("belge-yukle-diyalog.png", { fullPage: true });
 });

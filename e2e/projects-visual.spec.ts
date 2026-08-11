@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
-import { settleScrollTop } from "./visual-scroll";
+import { prepareFrame } from "./visual-scroll";
 
 // P1 · Ekran 4 · Projeler (`/projeler`) görsel testi — mockup
 // `Ekran 4 - Projeler.dc.html`.
@@ -72,14 +72,7 @@ test("projeler ekrani gorsel", async ({ page }) => {
   // GEZİNİLİR (gezinme kaydırmayı zaten sıfırlar) — yani "tıklama + `fullPage`"
   // birleşimi burada dar anlamda YOKTUR. Korkuluk yine de uygulanır: ucuzdur ve
   // ileride kadraja bir etkileşim eklendiğinde sessizce bozulmayı önler.
-  await settleScrollTop(page);
+  await prepareFrame(page);
 
-  // ⚠️ FARE KONUMU BASELINE'A SIZAR (WORKFLOW §4, 3. parça — F-BC dersi):
-  // girişteki tıklamadan kalan imleç, gezinmeden sonra altındaki öğeyi `:hover`
-  // hâlinde dondurur (F-BC baseline turunda `.sdoc-card:hover` ile fiilen oldu).
-  // Bu ekranda şu an yalnız `.prj__new-btn` hover stili taşır — ama kural HER
-  // kadraj için KOŞULSUZDUR: karta hover stili eklendiği gün kare sessizce
-  // değişirdi. İmleç etkileşimli öğe olmayan uzak bir köşeye çekilir.
-  await page.mouse.move(1439, 899);
   await expect(page).toHaveScreenshot("projects.png", { fullPage: true });
 });

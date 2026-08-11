@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 // P1.1a F14 — /projeler/yeni gorsel spec (1440px, taahhut varyanti — varsayilan
 // secim, bkz. src/components/project-form/form-state.ts emptyProjectFormValues).
 // Baseline SADECE Linux CI'da uretilir (visual-baselines.yml, workflow_dispatch);
@@ -16,5 +18,8 @@ test("yeni proje formu gorsel (taahhut varyanti)", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Yeni Proje Oluştur" })).toBeVisible();
   // Taahhüt varyantına özgü İşveren kartının yüklenmesini bekle (GET /employers).
   await expect(page.getByLabel("İşveren Firma")).toBeVisible();
+
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("project-form-new.png", { fullPage: true });
 });

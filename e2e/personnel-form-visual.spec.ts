@@ -1,5 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 // F-PT T5 · "Yeni Personel Kaydı" formu görsel testi (mockup
 // `Form - Personel Ekle.dc.html`). `section-form-visual.spec.ts` /
 // `site-form-visual.spec.ts` deseninin aynısı.
@@ -42,5 +44,7 @@ test("yeni personel formu gorsel", async ({ page }) => {
   await expect(page.getByTestId("personnel-form-notices").first()).toBeVisible();
   await expect(page.locator(".pf-actions").first()).toBeVisible();
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("personel-formu-yeni.png", { fullPage: true });
 });

@@ -31,9 +31,10 @@ export async function login(page: Page) {
  * `?tab=`/`?type=` ile kurulur), yani açık olan "tıklama + `fullPage`"
  * birleşimi burada YOKTUR. Korkuluk yine de uygulanır: ucuzdur ve sayfa
  * büyüdükçe/ileride bir kadraja etkileşim eklendiğinde sessizce bozulmayı
- * önler.
+ * önler. İmleç parkı (3. parça) ise zaten KOŞULSUZDUR — giriş tıklaması
+ * imleci sonraki sayfanın üstünde bırakır.
  */
-export { settleScrollTop } from "./visual-scroll";
+export { prepareFrame, settleScrollTop } from "./visual-scroll";
 
 // ---------------------------------------------------------------------------
 // 🔒 FİKSTÜR SABİTLEME — `state.contractItems`
