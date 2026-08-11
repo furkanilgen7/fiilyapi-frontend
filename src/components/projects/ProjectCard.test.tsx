@@ -11,6 +11,9 @@ import type { ProjectListItem } from "@/lib/api/hooks/useProjects";
 // yerine bu iceriklerle raporda not edildi).
 const METRIC_PENDING = (m: string) => ({ available: false, value: null, pending_module: m });
 const COUNT_PENDING = (m: string) => ({ available: false, count: null, pending_module: m });
+// P10 (2026-08-11): dolu zarf. Sema sozlesmesi geregi `available=true` ⇒
+// `pending_module is None` — testler de zarfi bu sekilde kurar.
+const METRIC_REAL = (value: string) => ({ available: true, value, pending_module: null });
 
 const CONTRACTING_PLACEHOLDERS = {
   spent: METRIC_PENDING("project_costs"),
@@ -123,6 +126,38 @@ describe("ProjectCard — kendi yatirim", () => {
     // Mockup "Satış Oranı" der; units modulu gelene kadar durust etiket (spec §7.5)
     expect(screen.getByText("İnşaat İlerlemesi")).toBeInTheDocument();
   });
+
+  // P10: E4 122-123 + 128. Alan seti mockup 121-124'e birebir
+  // (Satış Hedefi / Satılan / Toplam Maliyet / Tahmini Kâr) + 128 marj cipi.
+  it("dolu zarflarda gercek deger ve marj cipi basar", () => {
+    render(
+      <ProjectCard
+        project={{
+          ...base,
+          project_type: "kendi_yatirim",
+          name: "Yeşilvadi Rezidans",
+          employer_name: null,
+          contracting: null,
+          investment: {
+            sales_target: "48200000.00",
+            land_cost: "5000000.00",
+            sold_amount: METRIC_REAL("31400000.00"),
+            sales_ratio: METRIC_PENDING("units"),
+            unit_summary: COUNT_PENDING("units"),
+            total_cost: METRIC_REAL("20300000.00"),
+            estimated_profit: METRIC_REAL("18400000.00"),
+            margin: METRIC_REAL("38.20"),
+          },
+        }}
+      />,
+    );
+    expect(screen.getByText("₺ 48,2M")).toBeInTheDocument(); // mockup 121
+    expect(screen.getByText("₺ 31,4M")).toBeInTheDocument(); // mockup 122 "Satılan"
+    expect(screen.getByText("Toplam Maliyet")).toBeInTheDocument();
+    expect(screen.getByText("₺ 20,3M")).toBeInTheDocument(); // mockup 123
+    expect(screen.getByText("₺ 18,4M")).toBeInTheDocument(); // mockup 124 "Tahmini Kâr"
+    expect(screen.getByText("%38,2 marj")).toBeInTheDocument(); // mockup 128
+  });
 });
 
 describe("ProjectCard — kat karsiligi", () => {
@@ -168,5 +203,89 @@ describe("ProjectCard — kat karsiligi", () => {
     expect(screen.getByText("₺ 0")).toBeInTheDocument();
     expect(screen.getByText("Kendi Pay Değeri")).toBeInTheDocument();
     expect(screen.getByTitle("Ünite satış modülüyle birlikte gelir")).toHaveTextContent("—");
+    // Zarf bos oldugunda marj cipi SILINMEZ: "—" + gerekce basar (mockup 156).
+    expect(screen.getByText("— marj")).toBeInTheDocument();
+  });
+
+  // P10: E4 149-152 alan seti + 156 marj cipi.
+  it("dolu zarflarda kendi pay / insaat maliyeti / kâr ve marj gercek basar", () => {
+    render(
+      <ProjectCard
+        project={{
+          ...base,
+          project_type: "kat_karsiligi",
+          name: "Bahçelievler Konut",
+          employer_name: null,
+          contracting: null,
+          land_share: {
+            landowner_name: "Yılmaz Ailesi",
+            our_share_pct: "55.00",
+            owner_share_pct: "45.00",
+            land_cost: "0.00",
+            contract_no: null,
+            notary_date: null,
+            land_area_m2: null,
+            construction_area_m2: null,
+            delivery_date: null,
+            daily_penalty: null,
+            guarantee_amount: null,
+            shareholder_count: 3,
+            shareholders: [],
+            our_unit_count: COUNT_PENDING("units"),
+            owner_unit_count: COUNT_PENDING("units"),
+            our_share_value: METRIC_REAL("30400000.00"),
+            construction_cost: METRIC_REAL("17600000.00"),
+            estimated_profit: METRIC_REAL("12800000.00"),
+            margin: METRIC_REAL("42.10"),
+            construction_progress: METRIC_PENDING("progress_payments"),
+          },
+        }}
+      />,
+    );
+    expect(screen.getByText("₺ 30,4M")).toBeInTheDocument(); // mockup 149
+    expect(screen.getByText("₺ 0")).toBeInTheDocument(); // mockup 150 — arsa tanim geregi 0
+    expect(screen.getByText("İnşaat Maliyeti")).toBeInTheDocument();
+    expect(screen.getByText("₺ 17,6M")).toBeInTheDocument(); // mockup 151
+    expect(screen.getByText("₺ 12,8M")).toBeInTheDocument(); // mockup 152
+    expect(screen.getByText("%42,1 marj")).toBeInTheDocument(); // mockup 156
+  });
+});
+
+describe("ProjectCard — dolu zarf `available` bayragina bakar", () => {
+  // PT kurali: dallanma alan TIPINE degil BAYRAGA bakar. Ayni alan
+  // (`contracting.spent`, mockup 181 "Harcanan") iki zarfla iki farkli sonuc verir.
+  it("taahhutte harcanan dolu zarfla gercek deger basar", () => {
+    render(
+      <ProjectCard
+        project={{
+          ...base,
+          contracting: { ...CONTRACTING_PLACEHOLDERS, spent: METRIC_REAL("8400000.00") },
+        }}
+      />,
+    );
+    expect(screen.getByText("Harcanan")).toBeInTheDocument();
+    expect(screen.getByText("₺ 8,4M")).toBeInTheDocument();
+    expect(screen.queryByTitle("Maliyet takibiyle birlikte gelir")).not.toBeInTheDocument();
+  });
+
+  // Zarf dolu ama deger null gelirse (sozlesme disi yuk) pending gorunumu KALIR.
+  it("available=true fakat deger null ise pending gorunumune duser", () => {
+    render(
+      <ProjectCard
+        project={{
+          ...base,
+          contracting: {
+            ...CONTRACTING_PLACEHOLDERS,
+            spent: { available: true, value: null, pending_module: null },
+          },
+        }}
+      />,
+    );
+    expect(screen.getByTitle("İlgili modülle birlikte gelir")).toHaveTextContent("—");
+  });
+
+  it("taahhutte marj cipi YOKTUR (mockup 186-189 iscilik/taseron satiri)", () => {
+    render(<ProjectCard project={base} />);
+    expect(screen.queryByText(/marj$/)).not.toBeInTheDocument();
   });
 });

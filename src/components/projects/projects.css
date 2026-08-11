@@ -388,3 +388,26 @@
   color: var(--color-text-subtle);
   margin-top: 2px;
 }
+
+/* Kart alt seridi — marj cipi (mockup 126-130 kendi yatirim / 154-158 kat
+   karsiligi). P10 dilimi seridin YALNIZ marj ogesini baglar; ayni satirdaki
+   unite/hissedar sayaclari `units` moduluyle gelecek. */
+.prj-card__footer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 14px;
+}
+.prj-card__footer-icon {
+  font-size: 11px;
+  line-height: 1;
+}
+.prj-card__margin {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-success);
+}
+.prj-card__margin--pending {
+  font-weight: 400;
+  color: var(--color-text-subtle);
+}
