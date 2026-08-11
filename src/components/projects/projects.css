@@ -399,11 +399,11 @@
   margin-top: 14px;
 }
 .prj-card__footer-icon {
-  font-size: 11px;
+  font-size: var(--text-small);
   line-height: 1;
 }
 .prj-card__margin {
-  font-size: 11px;
+  font-size: var(--text-small);
   font-weight: 600;
   color: var(--color-success);
 }
