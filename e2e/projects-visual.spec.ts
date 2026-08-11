@@ -1,5 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { settleScrollTop } from "./visual-scroll";
+
 // P1 · Ekran 4 · Projeler (`/projeler`) görsel testi — mockup
 // `Ekran 4 - Projeler.dc.html`.
 //
@@ -61,27 +63,15 @@ async function expectProjectCardsLoaded(page: Page) {
   await expect(landShare).toContainText(CARD_VALUES.landShareMargin);
 }
 
-/**
- * `fullPage` kadrajdan ÖNCE kaydırmayı sıfırlar ve OTURDUĞUNU doğrular
- * (WORKFLOW §4, 2. parça — F-PT/F-PL dersi).
- *
- * Bu dosyada tek tıklama girişteki "Giriş Yap"tır ve ardından `/projeler`e
- * GEZİNİLİR (gezinme kaydırmayı zaten sıfırlar) — yani açık olan "tıklama +
- * `fullPage`" birleşimi burada dar anlamda YOKTUR. Korkuluk yine de uygulanır:
- * ucuzdur, ileride kadraja bir etkileşim eklendiğinde sessizce bozulmayı
- * önler ve bekleme DURUM tabanlıdır (`expect.poll`) — sabit `waitForTimeout`
- * DEĞİL.
- */
-async function settleScrollTop(page: Page) {
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(0);
-}
-
 test("projeler ekrani gorsel", async ({ page }) => {
   await login(page);
 
   await page.goto("/projeler");
   await expectProjectCardsLoaded(page);
+  // Bu dosyada tek tıklama girişteki "Giriş Yap"tır ve ardından `/projeler`e
+  // GEZİNİLİR (gezinme kaydırmayı zaten sıfırlar) — yani "tıklama + `fullPage`"
+  // birleşimi burada dar anlamda YOKTUR. Korkuluk yine de uygulanır: ucuzdur ve
+  // ileride kadraja bir etkileşim eklendiğinde sessizce bozulmayı önler.
   await settleScrollTop(page);
 
   // ⚠️ FARE KONUMU BASELINE'A SIZAR (WORKFLOW §4, 3. parça — F-BC dersi):

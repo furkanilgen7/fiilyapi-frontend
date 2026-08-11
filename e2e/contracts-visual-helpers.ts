@@ -24,20 +24,16 @@ export async function login(page: Page) {
 }
 
 /**
- * `fullPage` kadrajdan ÖNCE kaydırmayı sıfırlar ve OTURDUĞUNU doğrular
- * (WORKFLOW §4 "GÖRSEL SPEC KURALI" 2. parça).
+ * Kaydırma korkuluğu ORTAK modüldedir (`visual-scroll.ts`); buradan
+ * re-export edilir ki bu dilimin altı görsel spec'i tek yerden import etsin.
  *
- * Bu dilimin kadrajlarının HİÇBİRİ tıklamaz (sekme geçişleri bile URL
+ * Bu dilime özgü not: kadrajların HİÇBİRİ tıklamaz (sekme geçişleri bile URL
  * `?tab=`/`?type=` ile kurulur), yani açık olan "tıklama + `fullPage`"
- * birleşimi burada YOKTUR. Korkuluk yine de uygulanır: ucuzdur, sayfa
+ * birleşimi burada YOKTUR. Korkuluk yine de uygulanır: ucuzdur ve sayfa
  * büyüdükçe/ileride bir kadraja etkileşim eklendiğinde sessizce bozulmayı
- * önler ve bekleme DURUM tabanlıdır (`expect.poll`) — sabit
- * `waitForTimeout` DEĞİL.
+ * önler.
  */
-export async function settleScrollTop(page: Page) {
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(0);
-}
+export { settleScrollTop } from "./visual-scroll";
 
 // ---------------------------------------------------------------------------
 // 🔒 FİKSTÜR SABİTLEME — `state.contractItems`

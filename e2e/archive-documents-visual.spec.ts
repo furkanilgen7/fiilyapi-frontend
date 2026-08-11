@@ -1,5 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { settleScrollTop } from "./visual-scroll";
+
 // F-BC T5 · Ekran 12 · Belge Arşivi (`/belgeler`) görsel testleri — mockup
 // `Ekran 12 - Belge Arşivi.dc.html`. `site-planning-visual.spec.ts` /
 // `subcontractor-progress-payments-visual.spec.ts` deseninin aynısı.
@@ -55,25 +57,6 @@ async function expectArchiveLoaded(page: Page) {
   await expect(
     page.getByRole("list", { name: "Son eklenen belgeler" }).getByRole("listitem"),
   ).not.toHaveCount(0);
-}
-
-/**
- * `fullPage` kadrajdan ÖNCE kaydırmayı sıfırlar ve OTURDUĞUNU doğrular
- * (WORKFLOW §4, 2. parça — F-PT/F-PL dersi).
- *
- * ⚠️ KÖK NEDEN: Playwright'ın `.click()`i hedefi gerekirse görünür alana
- * KAYDIRIR; `fullPage` kadraj ise YAPIŞKAN kabuğu (topbar + sidebar) o ofsette
- * basar — kare, kabuğu aşağı kaymış ve içeriğe binmiş yakalar. Kaydırmanın
- * gerekip gerekmediği zamanlamaya bağlı olduğundan baseline DETERMİNİSTİK
- * OLMAZ. Bekleme DURUM tabanlıdır (`expect.poll`) — sabit `waitForTimeout`
- * DEĞİL.
- *
- * Bu dosyada YALNIZ diyalog kadrajı tıklar; tıklamayan iki kadraj bu korumaya
- * ihtiyaç duymaz ve onlara EKLENMEZ.
- */
-async function settleScrollTop(page: Page) {
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(0);
 }
 
 test("belge arsivi (dolu) gorsel", async ({ page }) => {
@@ -142,7 +125,9 @@ test("belge yukleme diyalogu gorsel", async ({ page }) => {
   await expect(dialog.getByLabel("Açıklama")).toHaveValue("");
   await expect(dialog.locator(".pf-form-error")).toHaveCount(0);
 
-  // Tıklama kaydırmış olabilir — kabuk ofsetli basılmasın (bkz. settleScrollTop).
+  // Tıklama kaydırmış olabilir — kabuk ofsetli basılmasın (bkz. `visual-scroll.ts`).
+  // Bu dosyada YALNIZ diyalog kadrajı tıklar; tıklamayan iki kadraj bu korumaya
+  // ihtiyaç duymaz ve onlara EKLENMEZ.
   await settleScrollTop(page);
   await expect(dialog).toBeVisible();
 
