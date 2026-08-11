@@ -67,9 +67,22 @@ describe("formatDocumentSize — mockup boyut metinleri (ŞB 98-128, 145-159)", 
     expect(formatDocumentSize(50331648)).toBe("48 MB");
   });
 
-  it("sıfır ve küçük dosyalar KB'a düşer (bilinmezlik değil, gerçek değer)", () => {
+  // F-P10 T2 rötuşu: 1 KB altı boyut "0 KB" diye YALAN basıyordu (240 baytlık
+  // dosya boş görünüyordu). Artık eşiğin altı olduğu SÖYLENİR.
+  it("1 KB altı dosyayı '1 KB'den küçük' diye basar (yuvarlayıp yalan söylemez)", () => {
+    expect(formatDocumentSize(1)).toBe("1 KB'den küçük");
+    expect(formatDocumentSize(240)).toBe("1 KB'den küçük");
+    expect(formatDocumentSize(512)).toBe("1 KB'den küçük");
+    expect(formatDocumentSize(1023)).toBe("1 KB'den küçük");
+  });
+
+  it("tam 1 KB ve üstü KB olarak basılır", () => {
+    expect(formatDocumentSize(1024)).toBe("1 KB");
+  });
+
+  // 0 bayt GERÇEK bir değerdir (boş dosya) — eşik metnine düşürülmez.
+  it("sıfır bayt '0 KB' kalır (boş dosya gerçeği)", () => {
     expect(formatDocumentSize(0)).toBe("0 KB");
-    expect(formatDocumentSize(512)).toBe("1 KB");
   });
 });
 

@@ -318,6 +318,45 @@ describe("ProgressPaymentForm — refresh-prices görünürlüğü ve bayat fiya
     renderForm({ mode: "edit", paymentId: PAYMENT_ID });
     expect(await screen.findByTestId("pp-form-stale-price-alert")).toBeInTheDocument();
   });
+
+  // F-P10 T2 · rozet göçü: SUNUCUDAN `quantity_source: "diary"` gelen satır
+  // düzenleme kipinde rozetle açılır (mockup 117).
+  it("sunucu damgası diary olan satır rozetle basar", async () => {
+    vi.mocked(useProgressPayment).mockReturnValue(
+      queryResult({
+        data: detailFixture({
+          status: "draft",
+          lines: [
+            {
+              id: "line-1",
+              contract_item_id: ITEM_1.id,
+              site_id: SITE_A.id,
+              code: ITEM_1.code,
+              description: ITEM_1.description,
+              unit: ITEM_1.unit,
+              contract_unit_price: ITEM_1.unit_price,
+              coefficient: "1.000",
+              quantity: "900.000",
+              group_name: "A — Betonarme İşleri",
+              sort_order: 0,
+              quantity_source: "diary",
+              adjusted_unit_price: ITEM_1.unit_price,
+              line_total: "1665000.00",
+              previous_quantity: "0.000",
+              previous_amount: "0.00",
+              cumulative_quantity: "900.000",
+              cumulative_amount: "1665000.00",
+              is_price_stale: false,
+            },
+          ] as never,
+        }),
+      }),
+    );
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+    expect(await screen.findByTestId("pp-form-diary-note")).toHaveTextContent(
+      "📅 Günlük kayıtlardan hesaplandı",
+    );
+  });
 });
 
 describe("ProgressPaymentForm — kaydetme gövdesi (EN KRİTİK)", () => {
@@ -587,7 +626,7 @@ describe("ProgressPaymentForm — Günlükten Doldur", () => {
     };
   }
 
-  it("önerilen miktarı hücreye yazar ve poz altına günlük notunu basar", async () => {
+  it("önerilen miktarı hücreye yazar", async () => {
     mockSuggestion({ data: suggestionData() });
     renderForm({ mode: "create", projectId: PROJECT_ID });
     await screen.findByText("İşveren Hakediş Oluştur");
@@ -600,20 +639,19 @@ describe("ProgressPaymentForm — Günlükten Doldur", () => {
     expect(screen.getByLabelText(`${ITEM_1.description} — ${SITE_A.name} miktar`)).toHaveValue(
       "320.000",
     );
-    expect(screen.getAllByTestId("pp-form-diary-note").length).toBe(1);
   });
 
-  it("dolan miktar KULLANICI TARAFINDAN düzeltilebilir (rozet düşer)", async () => {
+  // F-P10 T2 · rozet göçü (KARAR S1): rozet artık OTURUM-İÇİ türetmeden değil
+  // SUNUCU damgasından (`quantity_source`) okunur — kaydedilmemiş doldurma
+  // rozet BASMAZ, sunucu kaydederken damgayı kendisi koyar.
+  it("kaydedilmemiş doldurma rozet BASMAZ (damga sunucudan gelir)", async () => {
     mockSuggestion({ data: suggestionData() });
     renderForm({ mode: "create", projectId: PROJECT_ID });
     await screen.findByText("İşveren Hakediş Oluştur");
+
     await userEvent.click(screen.getByTestId("pp-form-diary-fill"));
-    const input = await screen.findByLabelText(`${ITEM_1.description} — ${SITE_A.name} miktar`);
 
-    await userEvent.clear(input);
-    await userEvent.type(input, "5");
-
-    expect(input).toHaveValue("5");
+    expect(await screen.findByTestId("pp-form-diary-fill-notice")).toBeInTheDocument();
     expect(screen.queryByTestId("pp-form-diary-note")).not.toBeInTheDocument();
   });
 

@@ -1,5 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 // F-PL T4 · Şantiye Planlama görsel testi (mockup `Şantiye - Planlama.dc.html`,
 // P). `site-diary-visual.spec.ts` / `site-detail-visual.spec.ts` deseninin aynısı.
 //
@@ -47,28 +49,6 @@ async function expectGridLoaded(page: Page) {
   );
 }
 
-/**
- * `fullPage` kadrajdan ÖNCE kaydırmayı sıfırlar ve OTURDUĞUNU doğrular.
- *
- * ⚠️ KÖK NEDEN (F-PT baseline turunda yakalandı, run 31220519552): Playwright'ın
- * `.click()`i hedefi gerekirse görünür alana KAYDIRIR. `fullPage` kadraj ise
- * YAPIŞKAN kabuğu (topbar + sidebar) o kaydırma ofsetinde basar — kare, kabuğu
- * ~200px aşağı kaymış ve içeriğin üstüne binmiş hâlde yakalar; sayfa başlığı
- * kareye hiç girmez. Kaydırmanın gerekip gerekmediği yerleşim/zamanlamaya bağlı
- * olduğu için baseline SIRAYA BAĞLI olarak kâh bozuk kâh doğru üretiliyordu
- * (aynı taahhütte iki ayrı tur iki farklı görüntü verdi).
- *
- * Bu yüzden YALNIZ "tıklama + `fullPage`" taşıyan kadrajlar açıktır; tıklamayan
- * (`planlama-izgara`, `planlama-bos`) ve eleman kadrajı olan (`planlama-hedefler`)
- * testler bu korumaya İHTİYAÇ DUYMAZ ve onlara DOKUNULMADI.
- *
- * Bekleme DURUM tabanlıdır (`expect.poll`) — sabit `waitForTimeout` DEĞİL.
- */
-async function settleScrollTop(page: Page) {
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(0);
-}
-
 test("planlama izgarasi (dolu) gorsel", async ({ page }) => {
   await login(page);
   await page.goto(PLANNING_URL);
@@ -92,6 +72,8 @@ test("planlama izgarasi (dolu) gorsel", async ({ page }) => {
   // (bkz. expectGridLoaded notu) — kart kapsamı + `.first()` zorunludur.
   await expect(page.locator(".plan-goals").first().locator(".plan-goals__row")).toHaveCount(4);
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("planlama-izgara.png", { fullPage: true });
 });
 
@@ -140,6 +122,8 @@ test("planlama izgarasi (bos) gorsel", async ({ page }) => {
   // Sprint yokken "Aktif Sprint:" etiketi HİÇ basılmaz.
   await expect(page.locator(".plan-week-nav__sprint")).toHaveCount(0);
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("planlama-bos.png", { fullPage: true });
 });
 
@@ -156,8 +140,11 @@ test("planlama hucre popover'i gorsel", async ({ page }) => {
   await expect(popover.locator(".plan-pop__tag")).toHaveCount(6);
   await expect(popover.getByRole("button", { name: "Temizle" })).toBeVisible();
 
-  // Tıklama kaydırmış olabilir — kabuk ofsetli basılmasın (bkz. settleScrollTop).
-  await settleScrollTop(page);
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  // Kaydırma sıfırlamasına asıl İHTİYAÇ duyan kadraj budur — dosyadaki tek
+  // tıklayan test. Hazırlık, popover'ın hâlâ ayakta olduğu iddiasından ÖNCE
+  // yapılır ki iddia kadraja GİREN durumu ölçsün.
+  await prepareFrame(page);
   await expect(popover).toBeVisible();
 
   await expect(page).toHaveScreenshot("planlama-hucre-popover.png", { fullPage: true });
@@ -175,5 +162,7 @@ test("planlama haftalik hedefler karti gorsel", async ({ page }) => {
     await expect(goalsCard.locator(`.plan-goals__status--${status}`), status).toBeVisible();
   }
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(goalsCard).toHaveScreenshot("planlama-hedefler.png");
 });

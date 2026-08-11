@@ -5,7 +5,6 @@ import {
   applyEmployerDiarySuggestion,
   applySubcontractorDiarySuggestion,
   buildDiaryFillNotice,
-  diaryCellKey,
   diaryOverwriteConfirmMessage,
   isNonZeroQuantity,
   type EmployerSuggestionLine,
@@ -30,7 +29,12 @@ function pivotRow(itemId: string, cells: { siteId: string; editable: boolean; qu
       remaining_quantity: "0.000",
     } as unknown as PivotRow["item"],
     groupName: "A — Betonarme",
-    cells: cells.map((cell) => ({ ...cell, lineTotal: null, isPriceStale: null })),
+    cells: cells.map((cell) => ({
+      ...cell,
+      lineTotal: null,
+      isPriceStale: null,
+      quantitySource: "manual" as const,
+    })),
   };
 }
 
@@ -71,13 +75,12 @@ describe("isNonZeroQuantity", () => {
 });
 
 describe("applyEmployerDiarySuggestion", () => {
-  it("düzenlenebilir hücreyi önerilen miktarla doldurur ve anahtarını işaretler", () => {
+  it("düzenlenebilir hücreyi önerilen miktarla doldurur", () => {
     const rows = [pivotRow("item-1", [{ siteId: SITE_A, editable: true, quantity: "0" }])];
 
     const result = applyEmployerDiarySuggestion(rows, [employerLine("item-1", SITE_A, "320.000")]);
 
     expect(result.rows[0].cells[0].quantity).toBe("320.000");
-    expect(result.markedKeys).toEqual([diaryCellKey("item-1", SITE_A)]);
     expect(result.plan).toEqual({ fillCount: 1, overwriteCount: 0, unmatchedCount: 0 });
   });
 
@@ -114,16 +117,14 @@ describe("applyEmployerDiarySuggestion", () => {
     const result = applyEmployerDiarySuggestion(rows, [employerLine("item-9", SITE_A, "40")]);
 
     expect(result.plan.unmatchedCount).toBe(1);
-    expect(result.markedKeys).toEqual([]);
   });
 
-  it("değer zaten öneriyle aynıysa rozeti basar ama değişiklik saymaz", () => {
+  it("değer zaten öneriyle aynıysa değişiklik saymaz", () => {
     const rows = [pivotRow("item-1", [{ siteId: SITE_A, editable: true, quantity: "320" }])];
 
     const result = applyEmployerDiarySuggestion(rows, [employerLine("item-1", SITE_A, "320")]);
 
     expect(result.plan).toEqual({ fillCount: 0, overwriteCount: 0, unmatchedCount: 0 });
-    expect(result.markedKeys).toEqual([diaryCellKey("item-1", SITE_A)]);
   });
 });
 
@@ -135,7 +136,6 @@ describe("applySubcontractorDiarySuggestion", () => {
 
     expect(result.rows[0].quantity).toBe("60.000");
     expect(result.rows[1].quantity).toBe("0");
-    expect(result.markedKeys).toEqual(["sci-4"]);
     expect(result.plan).toEqual({ fillCount: 1, overwriteCount: 0, unmatchedCount: 0 });
   });
 
@@ -171,7 +171,6 @@ describe("buildDiaryFillNotice — dürüstlük korkulukları", () => {
     expect(notice.variant).toBe("warning");
     expect(notice.text).toContain(DIARY_FILL_EMPTY_TEXT);
     expect(notice.text).toContain("Proje geneli sözleşmede günlükten doldurma desteklenmiyor.");
-    expect(notice.sourceNoteVisible).toBe(false);
   });
 
   it("atlanan (köprülenmemiş) poz sayısını SESSİZCE YUTMAZ", () => {
@@ -193,7 +192,6 @@ describe("buildDiaryFillNotice — dürüstlük korkulukları", () => {
     expect(notice.text).toContain("2 satır günlük kayıtlardan dolduruldu.");
     expect(notice.text).toContain("1 satırda elle girdiğiniz miktarın üzerine yazıldı.");
     expect(notice.variant).toBe("success");
-    expect(notice.sourceNoteVisible).toBe(true);
   });
 
   it("formda karşılık bulmayan satırları bildirir", () => {

@@ -1,5 +1,5 @@
 import { cx } from "@/lib/cx";
-import { pendingModuleLabel } from "@/lib/pending-modules";
+import { pendingModuleLabel, type PendingModuleKey } from "@/lib/pending-modules";
 import type { BoqTotals } from "@/lib/api/hooks/useBoq";
 
 import "./boq.css";
@@ -12,7 +12,7 @@ export interface BoqTotalsStripProps {
 interface KpiCardDef {
   label: string;
   /** Yük yokken bilinmez; o zaman ipucu metni UYDURULMAZ. */
-  pendingModule?: string;
+  pendingModule?: PendingModuleKey;
   /** Veri geldiği gün mockup rengine dönmek için (79, 83, 87). */
   valueClass?: string;
 }

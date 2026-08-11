@@ -57,6 +57,14 @@ function KpiCell({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+// Zarfin TEK okuma noktasi: dallanma alan TIPINE degil `available` BAYRAGINA
+// bakar (P10 sozlesmesi). Bayrak dolu ama deger yoksa yine bos durum sayilir —
+// "—" basmak, bos hucre birakmaktan durusttur.
+function realValue(metric: Metric | undefined): string | null {
+  if (!metric?.available) return null;
+  return metric.value ?? null;
+}
+
 // available:false → etiket kalir, deger "—", ipucu title'da (spec §7.2).
 function MetricValue({
   metric,
@@ -65,20 +73,48 @@ function MetricValue({
   metric: Metric | undefined;
   tone?: "success" | "danger" | "profit";
 }) {
-  if (metric?.available && metric.value !== null && metric.value !== undefined) {
+  const value = realValue(metric);
+  if (value !== null) {
     return (
       <span className={cx("prj-kpi__value", tone && `prj-kpi__value--${tone}`)}>
-        {formatCompactCurrency(metric.value)}
+        {formatCompactCurrency(value)}
       </span>
     );
   }
   return (
     <span
       className="prj-kpi__value prj-kpi__value--pending"
-      title={pendingModuleLabel(metric?.pending_module ?? "")}
+      title={pendingModuleLabel(metric?.pending_module)}
     >
       —
     </span>
+  );
+}
+
+// Kart alt seridi — mockup 126-129 (kendi yatirim) / 158-161 (kat karsiligi).
+// Bu dilimde yalniz MARJ cipi baglanir (mockup 128 / 160, P10 zarfi); seridin
+// diger ogeleri ("48 daire + 4 dükkan" 127, "3 hissedar" 159) `units`
+// sayaclarina baglidir ve bu dilimin kapsami disindadir.
+// `MetricValue` ile ayni dallanma: `available` BAYRAGI + deger; bos zarfta cip
+// SILINMEZ, "—" + gerekce basar.
+function MarginChip({ metric }: { metric: Metric | undefined }) {
+  const value = realValue(metric);
+  return (
+    <div className="prj-card__footer">
+      <span className="prj-card__footer-icon" aria-hidden="true">
+        📈
+      </span>
+      {value !== null ? (
+        <span className="prj-card__margin">{`${formatPercent(value)} marj`}</span>
+      ) : (
+        <span
+          className="prj-card__margin prj-card__margin--pending"
+          title={pendingModuleLabel(metric?.pending_module)}
+        >
+          — marj
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -222,6 +258,12 @@ export function ProjectCard({ project }: { project: Project }) {
               />
             </div>
           </div>
+          {project.project_type === "kendi_yatirim" && (
+            <MarginChip metric={project.investment?.margin} />
+          )}
+          {project.project_type === "kat_karsiligi" && (
+            <MarginChip metric={project.land_share?.margin} />
+          )}
         </div>
       </Link>
     </article>

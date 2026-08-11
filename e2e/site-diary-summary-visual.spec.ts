@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 // F-SD T6 · "Hakediş Özeti" modu görsel testi (mockup `Şantiye - Hakediş
 // Özeti.dc.html`, HÖ). `site-diary-visual.spec.ts` ile aynı kurallar:
 // SALT-OKUR (hiçbir mutasyon yok) + saat sabitleme NAVİGASYONDAN ÖNCE.
@@ -31,5 +33,7 @@ test("gunluk kayit hakedis ozeti ekrani gorsel", async ({ page }) => {
   // KPI şeridi ve karlılık paneli de basıldı.
   await expect(page.locator(".diary-kpis")).toBeVisible();
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("gunluk-kayit-ozet.png", { fullPage: true });
 });

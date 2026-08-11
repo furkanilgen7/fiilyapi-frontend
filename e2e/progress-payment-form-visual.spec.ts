@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 // P7 T7 · İşveren Hakediş Oluştur formu görsel testi. `e2e/boq-visual.spec.ts`
 // deseninin BİREBİR aynısı. `create` kipi — `?project=p-1` sorgu parametresi
 // ile `ProjectPickerStep` ara adımı atlanır. Poz dağılımı (pivot tablo
@@ -30,5 +32,8 @@ test("isveren hakedis olustur formu ekrani gorsel", async ({ page }) => {
   // yükleme durumunu dondurur.
   await expect(page.getByText("Döşeme Kalıbı")).toBeVisible();
   await expect(page.getByTestId("pp-form-ff-band")).toBeVisible();
+
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("hakedis-olustur-formu.png", { fullPage: true });
 });

@@ -27,7 +27,8 @@ import { pendingModuleLabel } from "@/lib/pending-modules";
 import { PERIOD_MONTHS, formatAmount, formatPercent, formatQuantity } from "@/lib/format";
 
 import { DiaryFillFeedback } from "./DiaryFillFeedback";
-import { DIARY_FILL_SOURCE_NOTE, applySubcontractorDiarySuggestion } from "./diary-fill";
+import { applySubcontractorDiarySuggestion } from "./diary-fill";
+import { isDiarySourced } from "./quantity-source";
 import { useDiaryFill } from "./useDiaryFill";
 import { sanitizeQuantityInput } from "./pivot";
 import {
@@ -102,15 +103,6 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
   const [sectionId, setSectionId] = useState<string | null>(null);
   const [defaultCoefficient, setDefaultCoefficient] = useState("1");
   const [formError, setFormError] = useState<string | null>(null);
-  // Bu oturumda günlükten dolan kalem kimlikleri. Backend'in KALICI
-  // `quantity_source` alanı (yalnız `SubcontractorProgressPaymentLineRead`te
-  // vardır) ile KARIŞTIRILMAZ: `PUT …/lines` gövdesinde `quantity_source`
-  // yoktur (openapi: "BİLEREK YOKTUR … rozeti sahte doldurmanın yolu
-  // olurdu"), yani kaydedince satır "elle giriş" olur — bu, uyarıdaki
-  // `DIARY_FILL_SOURCE_NOTE` ile kullanıcıya söylenir.
-  const [diaryFilledItemIds, setDiaryFilledItemIds] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  );
 
   // Tohumlama YALNIZ BİR KEZ çalışır (`ProgressPaymentForm` deseni) —
   // sonraki `detailQuery`/`contractQuery` yenilemeleri (ör. kaydetme
@@ -140,7 +132,6 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
     apply: (lines) => applySubcontractorDiarySuggestion(rows ?? [], lines),
     commit: (application) => {
       setRows(application.rows);
-      setDiaryFilledItemIds((prev) => new Set([...prev, ...application.markedKeys]));
     },
   });
 
@@ -187,14 +178,6 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
     submitPayment.isPending;
 
   function updateQuantity(itemId: string, value: string) {
-    // Elle düzeltilen satırda oturum-içi günlük rozeti düşer (rozet yanlış
-    // bilgi vermez); backend'den GELEN `quantity_source` rozeti ayrı yaşar.
-    setDiaryFilledItemIds((prev) => {
-      if (!prev.has(itemId)) return prev;
-      const next = new Set(prev);
-      next.delete(itemId);
-      return next;
-    });
     setRows((prev) =>
       (prev ?? []).map((row) => (row.itemId !== itemId ? row : { ...row, quantity: value })),
     );
@@ -555,15 +538,10 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
             </thead>
             <tbody>
               {groupedRows.map(({ row, showGroupHeader }) => {
-                // Rozet iki kaynaktan gelir: (a) backend'in KALICI
-                // `quantity_source === "diary"` alanı (mockup 87), (b) bu
-                // oturumda "Günlükten Doldur" ile dolan satır. (b)
-                // kaydedilince kalıcı OLMAZ — uyarıdaki kalıcılık notu bunu
-                // söyler, rozetin `title`ı da aynı metni taşır.
-                const isDiarySourced =
-                  row.quantitySource === "diary" || diaryFilledItemIds.has(row.itemId);
-                const isSessionDiary =
-                  row.quantitySource !== "diary" && diaryFilledItemIds.has(row.itemId);
+                // F-P10 T2: rozetin TEK kaynağı backend'in KALICI
+                // `quantity_source` damgasıdır (mockup 87) — oturum-içi
+                // türetme KALKTI, işveren tarafıyla aynı desen.
+                const isDiaryRow = isDiarySourced(row.quantitySource);
                 return (
                   <RowGroup key={row.itemId}>
                     {showGroupHeader && row.groupName && (
@@ -575,16 +553,12 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
                       <td className="thf-table__td thf-table__td--mono">{row.code}</td>
                       <td className="thf-table__td">
                         <div className="thf-table__item-name">{row.description}</div>
-                        {isDiarySourced ? (
+                        {isDiaryRow ? (
                           <div
                             className="thf-table__source thf-table__source--diary"
-                            title={isSessionDiary ? DIARY_FILL_SOURCE_NOTE : undefined}
                             data-testid="thf-diary-source"
                           >
                             📅 Günlük kayıttan: {formatQuantity(row.quantity)} {row.unit} hesaplandı
-                            {isSessionDiary && (
-                              <span className="sr-only">{DIARY_FILL_SOURCE_NOTE}</span>
-                            )}
                           </div>
                         ) : (
                           <div className="thf-table__source">Elle giriş</div>
@@ -618,13 +592,13 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
                             maxLength={16}
                             aria-label={`${row.description} — miktar`}
                             disabled={isSaving}
-                            className={isDiarySourced ? "thf-table__qty-input--diary" : undefined}
+                            className={isDiaryRow ? "thf-table__qty-input--diary" : undefined}
                             value={row.quantity}
                             onChange={(event) =>
                               updateQuantity(row.itemId, sanitizeQuantityInput(event.target.value))
                             }
                           />
-                          {isDiarySourced && (
+                          {isDiaryRow && (
                             <span className="thf-table__qty-tag">Günlük kayıttan ↑</span>
                           )}
                         </span>

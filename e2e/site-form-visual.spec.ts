@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 // Şantiye Ekle formu görsel testi (plan T13, spec §14).
 // Rota: /projeler/{projectId}/santiyeler/yeni — mock fikstüründeki p-1 "Kule A"
 // (taahhüt) projesi altında; bilgi kutusundaki "Bağlı Proje" satırı bu projeyi
@@ -46,5 +48,7 @@ test("santiye ekle formu gorsel", async ({ page }) => {
   // Son kart (Belgeler) basıldı — sayfanın tamamı kadrajda.
   await expect(page.getByRole("heading", { name: /Belgeler/ })).toBeVisible();
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("santiye-formu.png", { fullPage: true });
 });

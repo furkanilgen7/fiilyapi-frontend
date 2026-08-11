@@ -1,5 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 // F-BC T5 · Ekran 12 · Belge Arşivi (`/belgeler`) görsel testleri — mockup
 // `Ekran 12 - Belge Arşivi.dc.html`. `site-planning-visual.spec.ts` /
 // `subcontractor-progress-payments-visual.spec.ts` deseninin aynısı.
@@ -57,25 +59,6 @@ async function expectArchiveLoaded(page: Page) {
   ).not.toHaveCount(0);
 }
 
-/**
- * `fullPage` kadrajdan ÖNCE kaydırmayı sıfırlar ve OTURDUĞUNU doğrular
- * (WORKFLOW §4, 2. parça — F-PT/F-PL dersi).
- *
- * ⚠️ KÖK NEDEN: Playwright'ın `.click()`i hedefi gerekirse görünür alana
- * KAYDIRIR; `fullPage` kadraj ise YAPIŞKAN kabuğu (topbar + sidebar) o ofsette
- * basar — kare, kabuğu aşağı kaymış ve içeriğe binmiş yakalar. Kaydırmanın
- * gerekip gerekmediği zamanlamaya bağlı olduğundan baseline DETERMİNİSTİK
- * OLMAZ. Bekleme DURUM tabanlıdır (`expect.poll`) — sabit `waitForTimeout`
- * DEĞİL.
- *
- * Bu dosyada YALNIZ diyalog kadrajı tıklar; tıklamayan iki kadraj bu korumaya
- * ihtiyaç duymaz ve onlara EKLENMEZ.
- */
-async function settleScrollTop(page: Page) {
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(0);
-}
-
 test("belge arsivi (dolu) gorsel", async ({ page }) => {
   await page.clock.setFixedTime(new Date(FIXED_NOW));
   await login(page);
@@ -86,11 +69,8 @@ test("belge arsivi (dolu) gorsel", async ({ page }) => {
   // `.first()` — akış-SSR çift kopyası metin locator'larını da ikiye çözer.
   await expect(page.getByText("Kule A / Hakedişler").first()).toBeVisible();
 
-  // ⚠️ FARE KONUMU BASELINE'A SIZAR: girişteki tıklamadan kalan imleç,
-  // gezinmeden sonra ızgaradaki bir kartın üstüne denk gelip onu `:hover`
-  // hâlinde donduruyordu (baseline turu 31312763276'de fiilen görüldü).
-  // İmleç boş bir köşeye çekilir — kadraj hover'sız ve deterministik olur.
-  await page.mouse.move(1439, 899);
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("belgeler-genel.png", { fullPage: true });
 });
 
@@ -116,11 +96,8 @@ test("belge arsivi (bos durum) gorsel", async ({ page }) => {
   // Proje seçilmeden "Son Eklenenler" bloğu HİÇ basılmaz.
   await expect(page.getByRole("list", { name: "Son eklenen belgeler" })).toHaveCount(0);
 
-  // ⚠️ FARE KONUMU BASELINE'A SIZAR: girişteki tıklamadan kalan imleç,
-  // gezinmeden sonra ızgaradaki bir kartın üstüne denk gelip onu `:hover`
-  // hâlinde donduruyordu (baseline turu 31312763276'de fiilen görüldü).
-  // İmleç boş bir köşeye çekilir — kadraj hover'sız ve deterministik olur.
-  await page.mouse.move(1439, 899);
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("belgeler-genel-bos.png", { fullPage: true });
 });
 
@@ -142,14 +119,13 @@ test("belge yukleme diyalogu gorsel", async ({ page }) => {
   await expect(dialog.getByLabel("Açıklama")).toHaveValue("");
   await expect(dialog.locator(".pf-form-error")).toHaveCount(0);
 
-  // Tıklama kaydırmış olabilir — kabuk ofsetli basılmasın (bkz. settleScrollTop).
-  await settleScrollTop(page);
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  // Bu dosyada YALNIZ diyalog kadrajı TIKLAR — kaydırma sıfırlaması asıl burada
+  // gerekir; imleç parkı ise üç kadrajda da koşulsuzdur. Hazırlık, diyaloğun
+  // hâlâ ayakta olduğu iddiasından ÖNCE yapılır ki iddia kadraja GİREN durumu
+  // ölçsün.
+  await prepareFrame(page);
   await expect(dialog).toBeVisible();
 
-  // ⚠️ FARE KONUMU BASELINE'A SIZAR: girişteki tıklamadan kalan imleç,
-  // gezinmeden sonra ızgaradaki bir kartın üstüne denk gelip onu `:hover`
-  // hâlinde donduruyordu (baseline turu 31312763276'de fiilen görüldü).
-  // İmleç boş bir köşeye çekilir — kadraj hover'sız ve deterministik olur.
-  await page.mouse.move(1439, 899);
   await expect(page).toHaveScreenshot("belge-yukle-diyalog.png", { fullPage: true });
 });

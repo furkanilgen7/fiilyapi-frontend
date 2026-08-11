@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 // F-TH T6 · Taşeron Hakedişi (Ekran 2) görsel testi. `e2e/progress-payments-
 // visual.spec.ts` deseninin BİREBİR aynısı. Fikstür kaynağı `e2e/mock-
 // backend.ts` · `buildSubcontractorProgressPaymentFixtures()` — `scpp-1..5`
@@ -34,5 +36,8 @@ test("taseron hakedisleri listesi ekrani gorsel", async ({ page }) => {
   // dondurur — durum rozeti yerine bu daha kararlı bir çapa.
   await expect(page.getByTestId("thk-kpi-strip")).toBeVisible();
   await expect(page.getByText("Çelik İnşaat Taah.")).toBeVisible();
+
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("taseron-hakedisleri-listesi.png", { fullPage: true });
 });

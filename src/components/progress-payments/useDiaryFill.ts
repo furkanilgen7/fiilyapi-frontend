@@ -63,7 +63,6 @@ export function useDiaryFill<TLine, TRow>({
           setNotice({
             variant: "warning",
             text: backendErrorMessage(result.error, DIARY_FILL_ERROR_FALLBACK),
-            sourceNoteVisible: false,
           });
           return;
         }
@@ -87,7 +86,6 @@ export function useDiaryFill<TLine, TRow>({
         setNotice({
           variant: "warning",
           text: backendErrorMessage(error, DIARY_FILL_ERROR_FALLBACK),
-          sourceNoteVisible: false,
         });
       })
       .finally(() => setIsPending(false));
@@ -105,7 +103,6 @@ export function useDiaryFill<TLine, TRow>({
     setNotice({
       variant: "warning",
       text: "Günlükten doldurma iptal edildi; girdiğiniz miktarlar korundu.",
-      sourceNoteVisible: false,
     });
   }
 

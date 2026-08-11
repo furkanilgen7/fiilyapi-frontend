@@ -1,4 +1,4 @@
-import { pendingModuleLabel } from "@/lib/pending-modules";
+import { pendingModuleLabel, type PendingModuleKey } from "@/lib/pending-modules";
 import type { SiteListResponse } from "@/lib/api/hooks/useSites";
 
 import "./project-detail.css";
@@ -9,7 +9,7 @@ export interface SiteTotalsStripProps {
 
 interface KpiCardDef {
   label: string;
-  pendingModule: string;
+  pendingModule: PendingModuleKey;
 }
 
 // Alt KPI seridi (spec §4.4). Backend spec §4.1'e gore SiteListTotals'in

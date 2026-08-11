@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 // F-P6 T4 · Bölüm Detay ekranı görsel testi (mockup Bölüm Detay.dc.html).
 // sec-1 (A-Blok Şantiyesi altında, TÜM P6 alanları dolu) kullanılıyor — READ-ONLY
 // (yalnız GET), hiçbir spec bu kaydı mutasyona uğratmıyor (section-form.spec.ts
@@ -45,5 +47,7 @@ test("bolum detay ekrani gorsel", async ({ page }) => {
   // Saat sabitlemesi işledi: Kalan Gün deterministik (2026-09-01 → 2026-09-30 = 29 gün).
   await expect(page.getByTestId("section-hero-kpi-days")).toContainText("29");
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("bolum-detay.png", { fullPage: true });
 });

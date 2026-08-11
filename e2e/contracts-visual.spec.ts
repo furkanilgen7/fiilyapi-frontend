@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-import { login, settleScrollTop } from "./contracts-visual-helpers";
+import { login, prepareFrame } from "./contracts-visual-helpers";
 
 // F-P5 T8 · SZL (`/sozlesmeler`) görsel testleri. Kanon: projedesign
 // `Sözleşmeler.dc.html`. `progress-payments-visual.spec.ts` deseninin aynısı.
@@ -34,7 +34,7 @@ test("sozlesmeler isveren sekmesi gorsel", async ({ page }) => {
   await expect(page.getByTestId("szl-new-contract-disabled")).toBeDisabled();
   await expect(page.getByText("İşveren sözleşmesi proje formunda kurulur.")).toBeVisible();
 
-  await settleScrollTop(page);
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("sozlesmeler-isveren.png", { fullPage: true });
 });
 
@@ -50,6 +50,6 @@ test("sozlesmeler taseron sekmesi gorsel", async ({ page }) => {
   await expect(page.getByTestId("szl-kpi-payment-total")).toHaveText(/—/);
   await expect(page.getByRole("link", { name: "Taşeron Firmaları →" })).toBeVisible();
 
-  await settleScrollTop(page);
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("sozlesmeler-taseron.png", { fullPage: true });
 });

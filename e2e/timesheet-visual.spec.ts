@@ -1,5 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 // F-PT T5 · Puantaj görsel testleri — mockup'lar `Ekran 5 - Puantaj.dc.html`
 // (E5, genel) ve `Şantiye - Puantaj.dc.html` (ŞP, şantiye sekmesi).
 // `site-planning-visual.spec.ts` / `site-diary-visual.spec.ts` deseninin aynısı.
@@ -84,23 +86,6 @@ async function expectMatrixLoaded(page: Page) {
   await expect(page.locator(".ts-table .ts-cell").first()).toBeVisible();
 }
 
-/**
- * `fullPage` kadrajdan ÖNCE kaydırmayı sıfırlar ve OTURDUĞUNU doğrular.
- *
- * ⚠️ F-PL'den DEVRALINAN kök neden (run 31220519552): `.click()` hedefi gerekirse
- * görünür alana KAYDIRIR, `fullPage` kadraj da yapışkan kabuğu o ofsette basar —
- * kare kabuğu kaymış hâlde yakalar. Popover kadrajı bu depoda tıklama + `fullPage`
- * taşıyan İKİ testten biridir (diğeri `site-planning-visual.spec.ts`), o yüzden
- * aynı koruma buraya da konur — bizim matrisimiz kısa olduğu için kaydırma bugün
- * gerekmese de, satır sayısı artınca sessizce bozulurdu.
- *
- * Bekleme DURUM tabanlıdır (`expect.poll`) — sabit `waitForTimeout` DEĞİL.
- */
-async function settleScrollTop(page: Page) {
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await expect.poll(() => page.evaluate(() => Math.round(window.scrollY))).toBe(0);
-}
-
 test("genel puantaj (E5) matrisi gorsel", async ({ page }) => {
   await login(page);
   await pinRoster(page);
@@ -116,6 +101,8 @@ test("genel puantaj (E5) matrisi gorsel", async ({ page }) => {
   // Şantiye seçici çözüldü — "Yükleniyor…" durumu baseline'a girmesin.
   await expect(page.getByLabel("Şantiye").first()).toBeEnabled();
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("puantaj-genel.png", { fullPage: true });
 });
 
@@ -145,6 +132,8 @@ test("santiye puantaji (SP) matrisi gorsel", async ({ page }) => {
     await expect(page.locator(`.ts-table .ts-cell--${modifier}`).first(), modifier).toBeVisible();
   }
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("puantaj-santiye.png", { fullPage: true });
 });
 
@@ -168,9 +157,12 @@ test("puantaj hucre popover'i gorsel", async ({ page }) => {
   await expect(popover.getByLabel("Fazla mesai saati")).toHaveValue("3");
   await expect(popover.getByRole("button", { name: "Temizle" })).toBeVisible();
 
-  // Tıklama kaydırmış olabilir — kabuk ofsetli basılmasın (bkz. settleScrollTop).
+  // Tıklama kaydırmış olabilir — kabuk ofsetli basılmasın (bkz. `visual-scroll.ts`).
+  // ⚠️ F-P10'un GERÇEK kusuru tam burada çıktı: hücre `.ts-table-scroll`ün
+  // İÇİNDE olduğu için tıklama pencereyi değil O KABI, üstelik YATAY eksende
+  // kaydırıyordu — korkuluğun eleman kaplarını da kapsaması bu yüzden ŞART.
   // Geometri denetiminden ÖNCE yapılır ki iddia, kadraja GİREN durumu ölçsün.
-  await settleScrollTop(page);
+  await prepareFrame(page);
   await expect(popover).toBeVisible();
 
   // ⚠️ KIRPILMA DENETİMİ (T3'ün açık bıraktığı soru, T5'te GERÇEK KUSUR

@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 // P7 T7 · İşveren Hakedişi detayı (Ekran 15) görsel testi. `e2e/boq-visual.spec.ts`
 // deseninin BİREBİR aynısı. `pp-5` (mock-backend.ts) `pending_approval`
 // durumundadır — brief §b: "en az pending_approval durumu, aksiyon
@@ -34,5 +36,8 @@ test("isveren hakedisi detayi (onay bekliyor) ekrani gorsel", async ({ page }) =
   await expect(page.getByText("Duvar & Kaplama")).toBeVisible();
   await expect(page.getByText("₺ 2.004.500")).toBeVisible();
   await expect(page.getByRole("button", { name: "Onayla" })).toBeVisible();
+
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("hakedis-detay-onay-bekliyor.png", { fullPage: true });
 });

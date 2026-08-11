@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 // P7 T7 · Hakedişler listesi (Ekran 14) görsel testi. `e2e/boq-visual.spec.ts`
 // deseninin BİREBİR aynısı. Fikstür kaynağı `e2e/mock-backend.ts` ·
 // `buildProgressPaymentFixtures()` — değerler `Şantiye - Hakedişler.dc.html`
@@ -29,5 +31,8 @@ test("hakedişler listesi ekrani gorsel", async ({ page }) => {
   // (rozet veri gelmeden de "Taslak" ile basılabilir).
   await expect(page.getByTestId("pp-kpi-subtitle")).toBeVisible();
   await expect(page.getByText("Kat 6–8 döşeme")).toBeVisible();
+
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("hakedisler-listesi.png", { fullPage: true });
 });

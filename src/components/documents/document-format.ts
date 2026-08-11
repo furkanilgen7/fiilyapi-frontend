@@ -51,8 +51,16 @@ export function documentTypeIcon(filename: string): string {
  * Dosya boyutu (ŞB 98 "1,2 MB" · 103 "840 KB" · 118 "18 MB").
  * 1 MB altı tam sayı KB, üstü en fazla bir ondalıklı MB — ondalık ayırıcı
  * Türkçe virgüldür (`Intl`, ortam-bağımsız `toLocaleString` DEĞİL).
+ *
+ * F-P10 rötuşu: 1 KB ALTI boyut tam sayıya yuvarlandığında "0 KB" diye YALAN
+ * söylüyordu (240 baytlık gerçek bir dosya boş görünüyordu). Eşiğin altında
+ * artık sayı değil DURUM basılır. `0` bayt istisnadır: boş dosya gerçek bir
+ * değerdir ve "0 KB" onu doğru anlatır.
  */
+export const SIZE_BELOW_KB_LABEL = "1 KB'den küçük";
+
 export function formatDocumentSize(bytes: number): string {
+  if (bytes > 0 && bytes < BYTES_PER_KB) return SIZE_BELOW_KB_LABEL;
   if (bytes >= BYTES_PER_MB) {
     const megabytes = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 1 }).format(
       bytes / BYTES_PER_MB,

@@ -7,6 +7,8 @@ import type {
 import type { ProgressPaymentLineDetail } from "@/lib/api/hooks/useProgressPayments";
 import type { ProgressPaymentLineInput } from "@/lib/api/hooks/useProgressPaymentMutations";
 
+import { DEFAULT_QUANTITY_SOURCE, type QuantitySource } from "./quantity-source";
+
 // P7 T5 · Hakediş formu pivot dönüşümü — EN RİSKLİ modül (brief §Uyarı).
 // Satırlar sözleşme kalemleridir (`ContractDistributionItem`), sütunlar
 // şantiyelerdir (`sites[]`). Bir hücre yalnız kalemin o şantiyeye
@@ -21,6 +23,11 @@ export interface PivotCell {
   lineTotal: string | null;
   /** Var olan kaydedilmiş satırın `is_price_stale`'i — yoksa null (satır hiç yok). */
   isPriceStale: boolean | null;
+  /**
+   * Sunucunun kalıcı kaynak damgası (F-P10 T2 göçü) — rozetin TEK kaynağı.
+   * Hiç kaydedilmemiş hücre `manual`dır (taşeron `th-lines` varsayılanıyla aynı).
+   */
+  quantitySource: QuantitySource;
 }
 
 export interface PivotRow {
@@ -69,6 +76,7 @@ export function buildPivotRows(
           quantity: existing ? existing.quantity : editable ? "0" : "",
           lineTotal: existing ? existing.line_total : null,
           isPriceStale: existing ? (existing.is_price_stale ?? null) : null,
+          quantitySource: existing ? existing.quantity_source : DEFAULT_QUANTITY_SOURCE,
         };
       });
       rows.push({ item, groupName: group.name, cells });

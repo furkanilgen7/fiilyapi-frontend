@@ -33,13 +33,11 @@ export interface DiaryFillPlan {
 
 export interface DiaryFillApplication<TRow> {
   rows: TRow[];
-  /** Günlükten dolan hücre/satır anahtarları — rozetin oturum-içi kaynağı. */
-  markedKeys: string[];
   plan: DiaryFillPlan;
 }
 
-/** İşveren pivot hücresinin kimliği: (kalem, şantiye) çifti. */
-export function diaryCellKey(contractItemId: string, siteId: string): string {
+/** İşveren pivot hücresinin kimliği: (kalem, şantiye) çifti — modül içi eşleme anahtarı. */
+function diaryCellKey(contractItemId: string, siteId: string): string {
   return `${contractItemId}::${siteId}`;
 }
 
@@ -70,7 +68,6 @@ export function applyEmployerDiarySuggestion(
     suggestionByKey.set(diaryCellKey(line.contract_item_id, line.site_id), line.quantity);
   }
 
-  const markedKeys: string[] = [];
   const matchedKeys = new Set<string>();
   let plan: DiaryFillPlan = { fillCount: 0, overwriteCount: 0, unmatchedCount: 0 };
 
@@ -82,17 +79,12 @@ export function applyEmployerDiarySuggestion(
       if (suggested === undefined) return cell;
       if (!cell.editable) return cell;
       matchedKeys.add(key);
-      if (cell.quantity === suggested) {
-        // Değer zaten öneriyle aynı — yine de günlük kaynaklı sayılır
-        // (rozet basılır) ama "değiştirildi" diye sayılmaz.
-        markedKeys.push(key);
-        return cell;
-      }
+      // Değer zaten öneriyle aynı — "değiştirildi" diye sayılmaz.
+      if (cell.quantity === suggested) return cell;
       if (isNonZeroQuantity(cell.quantity)) {
         plan = nextPlan(plan, { overwriteCount: plan.overwriteCount + 1 });
       }
       plan = nextPlan(plan, { fillCount: plan.fillCount + 1 });
-      markedKeys.push(key);
       return { ...cell, quantity: suggested };
     }),
   }));
@@ -101,7 +93,7 @@ export function applyEmployerDiarySuggestion(
     unmatchedCount: [...suggestionByKey.keys()].filter((key) => !matchedKeys.has(key)).length,
   });
 
-  return { rows: nextRows, markedKeys, plan };
+  return { rows: nextRows, plan };
 }
 
 /**
@@ -118,7 +110,6 @@ export function applySubcontractorDiarySuggestion(
     suggestionByItemId.set(line.contract_item_id, line.quantity);
   }
 
-  const markedKeys: string[] = [];
   const matchedIds = new Set<string>();
   let plan: DiaryFillPlan = { fillCount: 0, overwriteCount: 0, unmatchedCount: 0 };
 
@@ -126,7 +117,6 @@ export function applySubcontractorDiarySuggestion(
     const suggested = suggestionByItemId.get(row.itemId);
     if (suggested === undefined) return row;
     matchedIds.add(row.itemId);
-    markedKeys.push(row.itemId);
     if (row.quantity === suggested) return row;
     if (isNonZeroQuantity(row.quantity)) {
       plan = nextPlan(plan, { overwriteCount: plan.overwriteCount + 1 });
@@ -139,25 +129,18 @@ export function applySubcontractorDiarySuggestion(
     unmatchedCount: [...suggestionByItemId.keys()].filter((id) => !matchedIds.has(id)).length,
   });
 
-  return { rows: nextRows, markedKeys, plan };
+  return { rows: nextRows, plan };
 }
 
 export interface DiaryFillNotice {
   variant: "success" | "warning";
   text: string;
-  /** Kalıcılık notu (bkz. `DIARY_FILL_SOURCE_NOTE`) yalnız GERÇEKTEN satır dolduysa anlamlıdır. */
-  sourceNoteVisible: boolean;
 }
 
-/**
- * KALICILIK DÜRÜSTLÜĞÜ: `PUT …/lines` gövdesinde `quantity_source` ALANI YOK
- * (openapi: "`quantity_source` BİLEREK YOKTUR … `diary` rozetini sahte
- * doldurmanın yolu olurdu"). Yani günlükten dolan miktar kaydedildiğinde
- * satır backend'de "elle giriş" olarak saklanır. Rozet bu yüzden yalnız bu
- * oturumda görünür — kullanıcıya AÇIKÇA söylenir, sessizce kaybolmaz.
- */
-export const DIARY_FILL_SOURCE_NOTE =
-  "Not: miktarlar kaydedilirken satır kaynağı “elle giriş” olarak saklanır; günlük rozeti yalnız bu oturumda görünür.";
+// F-P10 T2 · KARAR S1: eski "kalıcılık notu" (`DIARY_FILL_SOURCE_NOTE`)
+// KALDIRILDI. Metin "satır kaynağı elle giriş olarak saklanır; rozet yalnız bu
+// oturumda görünür" diyordu — SD-2 sunucu damgasından sonra bu YALAN oldu:
+// kaydedilen satırın kaynağını sunucu türetip KALICI olarak damgalıyor.
 
 /** Öneri hiç satır döndürmediğinde basılan Türkçe gerekçe (sessiz boşluk yok). */
 export const DIARY_FILL_EMPTY_TEXT = "Günlük kayıtlardan doldurulacak miktar bulunamadı.";
@@ -210,7 +193,6 @@ export function buildDiaryFillNotice(
   return {
     variant: isWarning ? "warning" : "success",
     text: parts.join(" "),
-    sourceNoteVisible: plan.fillCount > 0,
   };
 }
 

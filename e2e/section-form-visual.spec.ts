@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { prepareFrame } from "./visual-scroll";
+
 // F-P6 T4 · Bölüm formu (ekleme + düzenleme) görsel testi (mockup
 // "Form - Bolum Ekle.dc.html"). İKİ test de READ-ONLY'dir — hiçbiri submit
 // ETMEZ, yalnız formu render eder (`site-form-visual.spec.ts` /
@@ -36,6 +38,8 @@ test("yeni bolum formu gorsel", async ({ page }) => {
   // Son kart (Bölüm Belgeleri) render oldu — sayfanın tamamı kadrajda.
   await expect(page.getByRole("heading", { name: /Bölüm Belgeleri/ })).toBeVisible();
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("bolum-formu-yeni.png", { fullPage: true });
 });
 
@@ -51,5 +55,7 @@ test("bolum duzenle formu gorsel", async ({ page }) => {
   await expect(page.getByLabel("Bölüm Sorumlusu")).toBeEnabled();
   await expect(page.getByRole("heading", { name: /Bölüm Belgeleri/ })).toBeVisible();
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("bolum-formu-duzenle.png", { fullPage: true });
 });

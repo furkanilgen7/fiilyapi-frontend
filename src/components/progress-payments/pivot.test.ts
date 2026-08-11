@@ -62,6 +62,10 @@ function line(overrides: Partial<ProgressPaymentLineDetail>): ProgressPaymentLin
     quantity: "900.000",
     group_name: "A — Betonarme İşleri",
     sort_order: 0,
+    // F-P10 T1 devri: `quantity_source` artık İŞVEREN satırında da SUNUCU
+    // damgasıdır (SD-2, `ProgressPaymentLineDetail` zorunlu alanı) — taşeron
+    // satırıyla aynı desen. Fikstür varsayılanı `manual`.
+    quantity_source: "manual",
     adjusted_unit_price: ITEM_1.unit_price,
     line_total: "1665000.00",
     previous_quantity: "0.000",
@@ -109,6 +113,18 @@ describe("buildPivotRows", () => {
     const rows = buildPivotRows(DISTRIBUTION, lines);
     const cellA = rows[0].cells.find((c) => c.siteId === SITE_A.id)!;
     expect(cellA.quantity).toBe("0");
+  });
+
+  // F-P10 T2 · rozet göçü: satır kaynağı SUNUCU damgasıdır (taşeron
+  // `th-lines.ts` deseniyle aynı) — oturum-içi türetme yoktur.
+  it("hücre kaynağı sunucunun quantity_source damgasını tasir", () => {
+    const lines = [line({ site_id: SITE_A.id, quantity_source: "diary" })];
+    const rows = buildPivotRows(DISTRIBUTION, lines);
+    const cellA = rows[0].cells.find((c) => c.siteId === SITE_A.id)!;
+    const cellB = rows[0].cells.find((c) => c.siteId === SITE_B.id)!;
+    expect(cellA.quantitySource).toBe("diary");
+    // Hiç kaydedilmemiş hücre "elle giriş"tir (taşeron varsayılanıyla aynı).
+    expect(cellB.quantitySource).toBe("manual");
   });
 
   it("contract_item_id null olan (kopmuş) satır pivot'a yerleştirilmez", () => {

@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-import { login, pinEmployerContractItems, settleScrollTop } from "./contracts-visual-helpers";
+import { login, pinEmployerContractItems, prepareFrame } from "./contracts-visual-helpers";
 
 // F-P5 T8 · E14 (`/sozlesmeler/isveren/p-1`) görsel testleri. Kanon:
 // projedesign `Ekran 14 - Sözleşme Detay.dc.html`.
@@ -38,7 +38,7 @@ test("isveren sozlesme detayi genel sekmesi gorsel", async ({ page }) => {
   await expect(page.getByTestId("ecd-term-index")).toHaveText("TÜFE");
   await expect(page.getByTestId("ecd-milestones-pending")).toBeVisible();
 
-  await settleScrollTop(page);
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("isveren-sozlesme-genel.png", { fullPage: true });
 });
 
@@ -55,7 +55,7 @@ test("isveren sozlesme detayi is kalemleri sekmesi gorsel", async ({ page }) => 
   await expect(page.getByTestId("ecd-items-total")).toBeVisible();
   await expect(page.getByTestId("ecd-distribution-link")).toBeVisible();
 
-  await settleScrollTop(page);
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("isveren-sozlesme-kalemler.png", { fullPage: true });
 });
 
@@ -70,6 +70,6 @@ test("isveren sozlesme detayi belgeler sekmesi gorsel", async ({ page }) => {
     "Belge modülüyle birlikte gelir",
   );
 
-  await settleScrollTop(page);
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("isveren-sozlesme-belgeler.png", { fullPage: true });
 });

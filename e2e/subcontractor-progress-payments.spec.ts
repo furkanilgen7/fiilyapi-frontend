@@ -269,7 +269,7 @@ test("taşeron: şantiye sekmesi — U2 `site_id` sunucuda süzer (başka şanti
 // F-SD T5 · "Günlükten Doldur" — sözleşme bazlı uç (`sc-2`, şantiye `s-2`).
 // Köprü: `bi-5 → sci-4`, `bi-6 → sci-5`. Create formu + kaydetme YOK →
 // hiçbir fikstür mutasyona uğramaz.
-test("taşeron: Günlükten Doldur miktarları yazar ve günlük rozetini basar", async ({ page }) => {
+test("taşeron: Günlükten Doldur miktarları yazar", async ({ page }) => {
   await login(page);
 
   await page.goto("/hakedisler/taseron/yeni?contract=sc-2");
@@ -285,5 +285,7 @@ test("taşeron: Günlükten Doldur miktarları yazar ve günlük rozetini basar"
   );
   await expect(page.getByLabel("Duvar Örgü İşleri — miktar")).toHaveValue("320.000");
   await expect(page.getByLabel("Sıva İşleri — miktar")).toHaveValue("260.000");
-  await expect(page.getByTestId("thf-diary-source").first()).toContainText("📅 Günlük kayıttan");
+  // F-P10 T2 · rozet göçü: rozet artık YALNIZ sunucunun `quantity_source`
+  // damgasından basılır — kaydedilmemiş doldurma rozet üretmez.
+  await expect(page.getByTestId("thf-diary-source")).toHaveCount(0);
 });
