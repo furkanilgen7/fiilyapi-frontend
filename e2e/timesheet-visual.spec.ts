@@ -161,16 +161,24 @@ test("puantaj hucre popover'i gorsel", async ({ page }) => {
   // ⚠️ F-P10'un GERÇEK kusuru tam burada çıktı: hücre `.ts-table-scroll`ün
   // İÇİNDE olduğu için tıklama pencereyi değil O KABI, üstelik YATAY eksende
   // kaydırıyordu — korkuluğun eleman kaplarını da kapsaması bu yüzden ŞART.
-  // Geometri denetiminden ÖNCE yapılır ki iddia, kadraja GİREN durumu ölçsün.
-  await prepareFrame(page);
   await expect(popover).toBeVisible();
 
   // ⚠️ KIRPILMA DENETİMİ (T3'ün açık bıraktığı soru, T5'te GERÇEK KUSUR
   // çıktı): `.ts-table-scroll { overflow-x: auto }` dikey ekseni de `auto`ya
   // çevirdiği için popover kabın İÇİNDE kesiliyordu. `escapeOverflow` ile
   // yüzey artık `position: fixed`tir; aşağıdaki iddia kırpılmanın geri
-  // gelmesini yakalar.
-  // Ramazan Yıldız matrisin SON satırıdır — kırpılma tam orada ölçülmüştü.
+  // gelmesini yakalar. Ramazan Yıldız matrisin SON satırıdır — kırpılma tam
+  // orada ölçülmüştü.
+  //
+  // ⚠️ F-PT2 T1 KÖK-NEDEN DÜZELTMESİ (iki baseline turu, 31608574847 ↔
+  // 31609771927, arasında `puantaj-hucre-popover.png` 317px/şiddet ~218
+  // farkla ÇİFT-MODLU çıktı — "FM rozet kenarlığı" var/yok): bu geometri
+  // denetimi ÖNCEDEN `prepareFrame`den SONRA, `toHaveScreenshot`tan önce
+  // koşuyordu — WORKFLOW §4 GÖRSEL SPEC KURALI'nın "`prepareFrame` HER
+  // kadrajdan HEMEN ÖNCE, ARADA hiçbir evaluate/expect OLMADAN çağrılır"
+  // kuralını ihlal ediyordu. Kural gereği tüm iddia/`evaluate` çağrıları
+  // BURAYA, `prepareFrame`den ÖNCEYE taşındı — kırpılma kanıtı kaybolmadı,
+  // yalnız yeri değişti.
   const geometry = await popover.evaluate((node) => {
     const scroll = node.closest(".ts-table-scroll");
     const box = node.getBoundingClientRect();
@@ -184,5 +192,8 @@ test("puantaj hucre popover'i gorsel", async ({ page }) => {
   });
   expect(geometry).toEqual({ position: "fixed", isWithinViewport: true, hiddenHeight: 0 });
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `toHaveScreenshot`tan
+  // hemen önceki SON çağrı — `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("puantaj-hucre-popover.png", { fullPage: true });
 });

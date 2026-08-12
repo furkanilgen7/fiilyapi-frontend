@@ -119,13 +119,13 @@ test("belge yukleme diyalogu gorsel", async ({ page }) => {
   await expect(dialog.getByLabel("Açıklama")).toHaveValue("");
   await expect(dialog.locator(".pf-form-error")).toHaveCount(0);
 
-  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
-  // Bu dosyada YALNIZ diyalog kadrajı TIKLAR — kaydırma sıfırlaması asıl burada
-  // gerekir; imleç parkı ise üç kadrajda da koşulsuzdur. Hazırlık, diyaloğun
-  // hâlâ ayakta olduğu iddiasından ÖNCE yapılır ki iddia kadraja GİREN durumu
-  // ölçsün.
-  await prepareFrame(page);
   await expect(dialog).toBeVisible();
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `toHaveScreenshot`tan
+  // hemen önceki SON çağrı — WORKFLOW §4 GÖRSEL SPEC KURALI (F-PT2 T1
+  // düzeltmesi: `prepareFrame` ile `toHaveScreenshot` arasına iddia/`evaluate`
+  // GİRMEZ). Bu dosyada YALNIZ diyalog kadrajı TIKLAR — kaydırma sıfırlaması
+  // asıl burada gerekir; imleç parkı ise üç kadrajda da koşulsuzdur.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("belge-yukle-diyalog.png", { fullPage: true });
 });
