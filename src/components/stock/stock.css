@@ -230,6 +230,48 @@
   color: var(--color-warning-strong); /* 146 */
 }
 
+/* ---------------------------------------------------------------------------
+   ŞS · Şantiye "Stok" sekmesi (F-ST T3). Kanon: projedesign
+   "Şantiye - Stok.dc.html"; parantez içi sayılar O dosyanın satırlarıdır.
+   E3 ile ortak olan her kural yukarıdan gelir — yalnız FARKLAR burada.
+   -------------------------------------------------------------------------- */
+.stok--santiye .stok__head {
+  margin-top: 20px; /* 75 — sekme şeridinin altı */
+}
+/* 76 — şantiye başlığı E3'ün 26px'inden küçüktür. */
+.stok__title--santiye {
+  font-size: 22px;
+  letter-spacing: -0.3px;
+}
+.stok__subtitle {
+  margin-top: 2px; /* 76 */
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+/* 88/89 — kritik ve düşük kartların sol kenarlığı renklidir. */
+.stok-kpi__card--critical {
+  border-left: 4px solid var(--color-danger);
+}
+.stok-kpi__card--low {
+  border-left: 4px solid var(--color-warning);
+}
+/* 100/101 — kaynağı olmayan sütunların hücresi: uydurma değer YOK. */
+.stok-pending-cell {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+/* 103 — aksiyon sütununun başlığı mockup'ta boştur; ad yalnız ekran
+   okuyucuya verilir (görünürde boş kalır). */
+.stok-table__th-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* Boş/yükleniyor/hata durumları — mockup'ın örnek satırları SABİT BASILMAZ. */
 .stok-empty {
   padding: var(--space-8);

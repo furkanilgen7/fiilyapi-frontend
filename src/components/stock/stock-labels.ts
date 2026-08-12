@@ -1,5 +1,6 @@
 import type { BadgeVariant } from "@/components/ui/badge/Badge";
 import type { StockCategory, StockStatus } from "@/lib/api/hooks/useStockItems";
+import { pendingModuleLabel } from "@/lib/pending-modules";
 
 /**
  * F-ST T2 · E3 (`Ekran 3 - Stok & Depo.dc.html`) etiket/renk sözlüğü.
@@ -126,3 +127,84 @@ export const STOCK_STATUS_UNKNOWN_REASON =
  */
 export const STOCK_MOVEMENTS_PENDING_REASON =
   "Stok hareketi listesi ekranı henüz tasarlanmadı — mockup çizilince açılacak";
+
+/* ---------------------------------------------------------------------------
+ * F-ST T3 · ŞS (`Şantiye - Stok.dc.html`) — şantiye "Stok" sekmesine ÖZGÜ
+ * sözlük. Aşağıdaki sayılar O DOSYANIN satır numaralarıdır. E3 ile ORTAK olan
+ * her şey (kategori/rozet varyantı/bakiye tonu/satır vurgusu) yukarıdan AYNEN
+ * kullanılır — kopyalanmaz.
+ * ------------------------------------------------------------------------ */
+
+/**
+ * ŞS'nin durum rozeti metinleri (118 · 128 · 138 · 148 · 158 · 168).
+ *
+ * ⚠️ İKİ MOCKUP AYNI SUNUCU DEĞERİNE FARKLI AD VERİYOR: `normal` E3'te
+ * "Normal" (137), ŞS'de "Yeterli" (138) basılır. Mockup kazanır (WORKFLOW §3),
+ * bu yüzden ŞS için tek alan üzerinden türetilmiş bir örtü tutulur; `excess`
+ * ŞS'de hiç çizilmediğinden E3 metnini korur. Bu bir HESAP DEĞİL, yalnızca
+ * sunucunun `status` dizesinin ekrana göre çevirisidir.
+ */
+export const SITE_STOCK_STATUS_LABELS: Record<StockStatus, string> = {
+  ...STOCK_STATUS_LABELS,
+  normal: "Yeterli", // 138, 148, 168
+};
+
+/**
+ * Sunucunun ŞS satırlarında kullandığı pending anahtarları (backend
+ * `PENDING_PURCHASING` / `PENDING_SITE_PLANNING`). Gerekçe METNİ tek kaynaktan
+ * (`pendingModuleLabel`) gelir — ekranlara elle cümle yazılmaz.
+ */
+export const STOCK_PURCHASING_PENDING_MODULE = "purchasing";
+export const STOCK_SITE_PLANNING_PENDING_MODULE = "site_planning";
+
+/**
+ * ŞS 78 "Satınalma Talebi →" ve satır sonundaki "Acil Sipariş"/"Sipariş Ver"
+ * düğmeleri — spec §5 **S5 (ONAYLI)**: hepsi SATINALMA dilimine pending'dir.
+ * Düğmeler SİLİNMEZ; devre dışı + görünür gerekçeyle dururlar.
+ */
+export const SITE_STOCK_ORDER_PENDING_REASON = pendingModuleLabel(
+  STOCK_PURCHASING_PENDING_MODULE,
+);
+
+/**
+ * ŞS 100/101 "Aylık İhtiyaç" + "Bölüm" sütunlarının ORTAK gerekçesi. Satır
+ * hücreleri kendi gerekçesini SUNUCUNUN zarfından okur (`pending_module`);
+ * bu sabit yalnızca tablo üstündeki görünür açıklama bandı içindir.
+ */
+export const SITE_STOCK_COLUMN_PENDING_REASON = pendingModuleLabel(
+  STOCK_SITE_PLANNING_PENDING_MODULE,
+);
+
+/**
+ * ŞS 158/168 "Detay" düğmesi — malzeme detay ekranının mockup'ı ÇİZİLMEMİŞTİR
+ * ve bir ekran İCAT EDİLMEZ (S2 ile aynı gerekçe kalıbı). Düğme yerinde durur.
+ */
+export const SITE_STOCK_DETAIL_PENDING_REASON =
+  "Malzeme detay ekranı henüz tasarlanmadı — mockup çizilince açılacak";
+
+export interface SiteStockRowAction {
+  label: string;
+  reason: string;
+  variant: "danger" | "warning" | "secondary";
+}
+
+/**
+ * Satır sonundaki düğme (118-168) — etiketi SUNUCUNUN `status` damgası seçer:
+ * kritik ⇒ "Acil Sipariş" (118), düşük ⇒ "Sipariş Ver" (128), geri kalan ⇒
+ * "Detay" (138). Eşiksiz kalem (`status: null`) sipariş aciliyeti İMA ETMEZ,
+ * "Detay"a düşer. Burada eşik hesabı YOKTUR.
+ */
+export function siteStockRowAction(status: StockStatus | null): SiteStockRowAction {
+  if (status === "critical") {
+    return { label: "Acil Sipariş", reason: SITE_STOCK_ORDER_PENDING_REASON, variant: "danger" };
+  }
+  if (status === "low") {
+    return { label: "Sipariş Ver", reason: SITE_STOCK_ORDER_PENDING_REASON, variant: "warning" };
+  }
+  return { label: "Detay", reason: SITE_STOCK_DETAIL_PENDING_REASON, variant: "secondary" };
+}
+
+/** T4'ün (`.../stok/giris`) rota sözleşmesi — link hedefi TEK yerden kurulur. */
+export function siteStockEntryHref(projectId: string, siteId: string): string {
+  return `/projeler/${projectId}/santiyeler/${siteId}/stok/giris`;
+}

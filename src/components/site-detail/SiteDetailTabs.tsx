@@ -38,7 +38,9 @@ const TABS: TabDef[] = [
   { label: "Bölümler", slug: null, written: true },
   { label: "İş Kalemleri", slug: "is-kalemleri", written: true },
   { label: "Puantaj", slug: "puantaj", written: true },
-  { label: "Stok", slug: "stok" },
+  // "Stok" F-ST T3 ile yazildi (`Şantiye - Stok.dc.html`); artik catch-all
+  // ComingSoon'a DUSMEZ. SIRA DEGISMEDI — yalniz `written` bayragi eklendi.
+  { label: "Stok", slug: "stok", written: true },
   { label: "Hakedişler", slug: "hakedisler", written: true },
   { label: "Günlük Kayıt", slug: "gunluk-kayit", written: true },
   { label: "Belgeler", slug: "belgeler", written: true },

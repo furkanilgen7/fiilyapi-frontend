@@ -71,6 +71,15 @@ const MODULE_LABELS: Record<string, string> = {
   // modülüdür; backend bugün `available: false` döndürür, ekran uydurma sayı
   // basmak yerine "—" + bu gerekçeyi gösterir.
   procurement: "Satınalma modülüyle birlikte gelir",
+  // F-ST T3 — CANLI SUNUCUNUN gerçek anahtarları. Backend
+  // `app/modules/inventory/service.py`: `PENDING_PURCHASING = "purchasing"`
+  // (E3 "Bekleyen Sipariş" KPI'ı) ve `PENDING_SITE_PLANNING = "site_planning"`
+  // (ŞS "Aylık İhtiyaç" + "Bölüm" sütunları). T2'de yalnız `procurement`
+  // eşlenmişti; canlıda o anahtar HİÇ gelmediği için KPI gerekçesi genel
+  // metne düşerdi — iki anahtar da burada eşlenir (`procurement` izin
+  // matrisinin modül anahtarı olarak ayrıca yaşamaya devam eder).
+  purchasing: "Satınalma modülüyle birlikte gelir",
+  site_planning: "Şantiye planlama türeviyle birlikte gelir",
 };
 
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";

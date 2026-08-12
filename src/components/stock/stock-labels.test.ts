@@ -4,7 +4,15 @@ import {
   isStockRowHighlighted,
   parseStockCategory,
   parseStockStatus,
+  siteStockEntryHref,
+  siteStockRowAction,
   stockBalanceTone,
+  SITE_STOCK_COLUMN_PENDING_REASON,
+  SITE_STOCK_DETAIL_PENDING_REASON,
+  SITE_STOCK_ORDER_PENDING_REASON,
+  SITE_STOCK_STATUS_LABELS,
+  STOCK_PURCHASING_PENDING_MODULE,
+  STOCK_SITE_PLANNING_PENDING_MODULE,
   STOCK_CATEGORY_LABELS,
   STOCK_CATEGORY_OPTIONS,
   STOCK_STATUS_BADGE_VARIANTS,
@@ -101,5 +109,48 @@ describe("isStockRowHighlighted (121 · 139 · 166)", () => {
     expect(isStockRowHighlighted("normal")).toBe(false);
     expect(isStockRowHighlighted("excess")).toBe(false);
     expect(isStockRowHighlighted(null)).toBe(false);
+  });
+});
+
+// --- F-ST T3 · ŞS'ye özgü sözlük ---------------------------------------------
+
+describe("SITE_STOCK_STATUS_LABELS — ŞS 'Yeterli' der, E3 'Normal'", () => {
+  it("yalnız `normal` metni ayrışır; diğer üçü E3 ile aynıdır", () => {
+    expect(SITE_STOCK_STATUS_LABELS.normal).toBe("Yeterli");
+    expect(STOCK_STATUS_LABELS.normal).toBe("Normal");
+    expect(SITE_STOCK_STATUS_LABELS.critical).toBe(STOCK_STATUS_LABELS.critical);
+    expect(SITE_STOCK_STATUS_LABELS.low).toBe(STOCK_STATUS_LABELS.low);
+    expect(SITE_STOCK_STATUS_LABELS.excess).toBe(STOCK_STATUS_LABELS.excess);
+  });
+});
+
+describe("siteStockRowAction — satır düğmesi (S5 pending)", () => {
+  it("etiket SUNUCUNUN durumundan seçilir", () => {
+    expect(siteStockRowAction("critical").label).toBe("Acil Sipariş");
+    expect(siteStockRowAction("low").label).toBe("Sipariş Ver");
+    expect(siteStockRowAction("normal").label).toBe("Detay");
+    expect(siteStockRowAction("excess").label).toBe("Detay");
+  });
+
+  it("eşiksiz kalem sipariş aciliyeti İMA ETMEZ", () => {
+    expect(siteStockRowAction(null).label).toBe("Detay");
+  });
+
+  it("sipariş gerekçesi SA modülünün TEK kaynaktan gelen metnidir", () => {
+    expect(siteStockRowAction("critical").reason).toBe("Satınalma modülüyle birlikte gelir");
+    expect(siteStockRowAction("low").reason).toBe(SITE_STOCK_ORDER_PENDING_REASON);
+    expect(siteStockRowAction("normal").reason).toBe(SITE_STOCK_DETAIL_PENDING_REASON);
+  });
+});
+
+describe("pending sütun gerekçesi + T4 rota sözleşmesi", () => {
+  it("'Aylık İhtiyaç'/'Bölüm' gerekçesi sunucunun `site_planning` anahtarındandır", () => {
+    expect(SITE_STOCK_COLUMN_PENDING_REASON).toBe("Şantiye planlama türeviyle birlikte gelir");
+    expect(STOCK_SITE_PLANNING_PENDING_MODULE).toBe("site_planning");
+    expect(STOCK_PURCHASING_PENDING_MODULE).toBe("purchasing");
+  });
+
+  it("'+ Stok Girişi' şantiye kapsamlı rotaya gider (T4 bunu okuyacak)", () => {
+    expect(siteStockEntryHref("p-1", "s-9")).toBe("/projeler/p-1/santiyeler/s-9/stok/giris");
   });
 });

@@ -3177,9 +3177,20 @@ function buildStockSummaryRow(state: MockState, item: MockStockItem) {
   };
 }
 
-/** `MetricPlaceholder`/`ListPlaceholder` zarfları — elle kurulmaz, tek yerden. */
-const STOCK_PENDING_ORDERS = METRIC_PENDING("procurement");
-const STOCK_PENDING_LIST = { available: false, items: [], pending_module: "procurement" };
+/** `MetricPlaceholder`/`ListPlaceholder` zarfları — elle kurulmaz, tek yerden.
+ *
+ * ⚠️ F-ST T3 düzeltmesi: anahtarlar CANLI SUNUCUDAN alınır
+ * (`app/modules/inventory/service.py`): "Bekleyen Sipariş" → `purchasing`,
+ * ŞS "Aylık İhtiyaç"/"Bölüm" → `site_planning`. T2'de ikisi de `procurement`
+ * yazılmıştı; mock ile şema ayrışırsa canlıda gerekçe metni sessizce genel
+ * metne düşer (F-P5 dersi: mock ŞEMAYLA senkron olmalı). */
+const STOCK_PENDING_ORDERS = METRIC_PENDING("purchasing");
+const SITE_STOCK_PENDING_NEED = METRIC_PENDING("site_planning");
+const SITE_STOCK_PENDING_SECTION = {
+  available: false,
+  items: [],
+  pending_module: "site_planning",
+};
 
 function buildStockKpis(rows: ReturnType<typeof buildStockSummaryRow>[]) {
   let totalValue = 0;
@@ -5575,8 +5586,8 @@ export function startMockBackend(port: number): { server: Server; close: () => P
             status: stockStatusOf(balance, item.min_stock),
             // "Aylık İhtiyaç" ve "Bölüm" sütunlarının GİRİŞ YÜZEYİ YOKTUR —
             // değer uydurulmaz, yer tutucu zarfları taşınır (spec §1).
-            monthly_need: METRIC_PENDING("site_planning"),
-            section: STOCK_PENDING_LIST,
+            monthly_need: SITE_STOCK_PENDING_NEED,
+            section: SITE_STOCK_PENDING_SECTION,
           };
         })
         .filter((row) => Number(row.balance) !== 0);

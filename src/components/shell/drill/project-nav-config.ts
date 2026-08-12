@@ -71,12 +71,12 @@ function contextGroup(ctx: ProjectNavContext): DrillNavGroup {
   };
 }
 
-// Aktif şantiyenin 7 sekmesi (spec §3.3): "Stok" DIŞINDA hepsinin gerçek
-// rotası vardır; o tek sekme henüz yazılmamıştır — catch-all'a düşer.
+// Aktif şantiyenin 7 sekmesi (spec §3.3): F-ST T3'ten sonra HEPSİNİN gerçek
+// rotası vardır — hiçbiri catch-all ComingSoon'a düşmez.
 //
 // "İş Kalemleri" Ekran 13 spec §2.2 ile eklendi (onaylı sapma B, §13);
 // "Hakedişler" P7 T6 ile, "Günlük Kayıt" F-SD T2 ile, "Puantaj" F-PT T2 ile,
-// "Belgeler" F-BC T2 ile yazıldı. Sıra SiteDetailTabs.tsx ile birebir aynıdır
+// "Belgeler" F-BC T2 ile, "Stok" F-ST T3 ile yazıldı. Sıra SiteDetailTabs.tsx ile birebir aynıdır
 // — ikisi ayrışmamalıdır (`written` bayrağı orada tutulur).
 function activeSiteGroup(ctx: Required<Pick<ProjectNavContext, "siteId" | "siteName">> & ProjectNavContext): DrillNavGroup {
   const base = `/projeler/${ctx.projectId}/santiyeler/${ctx.siteId}`;
