@@ -1108,6 +1108,413 @@ export interface paths {
         patch: operations["update_personnel_endpoint_personnel__personnel_id__patch"];
         trace?: never;
     };
+    "/suppliers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Suppliers Endpoint
+         * @description TED kart ızgarasının veri kaynağı — süzgeçler AND'lidir.
+         *
+         *     `q` AD ve KATEGORİ üzerinde kısmi arar (kart ikisini üst üste basar).
+         *     `is_active` gönderilmezse PASİF tedarikçiler de listelenir: sessiz gizleme
+         *     yok, ekran hangi kümeyi istediğini açıkça söyler.
+         *
+         *     "Bu Yıl Toplam Sipariş" (TED 52) TÜREVDİR ve yalnız GÖRÜNEN projelerin
+         *     siparişlerini kapsar (`service` gerekçesi).
+         */
+        get: operations["list_suppliers_endpoint_suppliers_get"];
+        put?: never;
+        /**
+         * Create Supplier Endpoint
+         * @description Yeni tedarikçi kartı. Ad ve VKN tekilliği ZORLANMAZ (`service` gerekçesi).
+         *
+         *     Yanıt "Bu Yıl Toplam Sipariş" TAŞIMAZ: yeni kartta değer zorunlu olarak
+         *     sıfırdır ve onun için ayrıca bir toplama sorgusu koşturmak gereksizdir.
+         */
+        post: operations["create_supplier_endpoint_suppliers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/suppliers/{supplier_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Supplier Endpoint
+         * @description Tekil kart — liste ile AYNI türetmeyi kullanır (iki ekran aynı tutarı
+         *     göstersin diye ikinci bir formül yazılmaz).
+         */
+        get: operations["get_supplier_endpoint_suppliers__supplier_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Supplier Endpoint
+         * @description Kısmi güncelleme. **Kullanımdan kaldırma da buradan geçer**
+         *     (`{"is_active": false}`) — DELETE ucu yoktur (modül docstring'i).
+         */
+        patch: operations["update_supplier_endpoint_suppliers__supplier_id__patch"];
+        trace?: never;
+    };
+    "/purchase-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Purchase Requests Endpoint
+         * @description SAT tablosunun veri kaynağı — süzgeçler AND'lidir.
+         *
+         *     Kapsam süzgeci HER ZAMAN uygulanır: görünmeyen projenin talebi listede
+         *     YOKTUR ve `total`a da girmez.
+         *
+         *     Tahmini toplam ve kalem sayısı TÜREVDİR; satır KALEMLERİ TAŞIMAZ (şema
+         *     gerekçesi). `limit` varsayılan 50, tavan 200 — aşım 422.
+         */
+        get: operations["list_purchase_requests_endpoint_purchase_requests_get"];
+        put?: never;
+        /**
+         * Create Purchase Request Endpoint
+         * @description FST formunun kaydı: başlık + kalemler TEK gövde, ATOMİK.
+         *
+         *     **TASLAK-FARKINDALIKLI (P6 emsali):** zorunlu tek alan `project_id`dir;
+         *     "Taslak Kaydet" yarım formu saklar. Sıkı doğrulama (`validation.
+         *     submit_blockers`) `submit` ucundadır ve **T3'ündür**.
+         *
+         *     * kalem XOR ihlali / miktar ≤ 0 / uzunluk tavanı → **422**
+         *     * görünmeyen ya da olmayan proje/şantiye/bölüm/malzeme kartı → **404**
+         *
+         *     Bozuk bir kalem varsa HİÇBİR ŞEY yazılmaz — ne başlık ne satır. Denetime
+         *     TALEP BAŞINA TEK satır düşer. `request_no` sunucu üretir; gövdedeki numara
+         *     ve durum YOK SAYILIR.
+         */
+        post: operations["create_purchase_request_endpoint_purchase_requests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/purchase-requests/{request_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Purchase Request Endpoint
+         * @description FST detayı: başlık + kalemler + TÜREVLER (satır tutarı · tahmini toplam ·
+         *     "Mevcut Stok"). Görünmeyen talep var olmayanla AYNI 404'ü alır.
+         */
+        get: operations["get_purchase_request_endpoint_purchase_requests__request_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Purchase Request Endpoint
+         * @description **YALNIZ taslak** silinir (409 aksi hâlde) ve kararı `can_delete` verir
+         *     (403 aksi hâlde) — kapı gerekçesi modül docstring'indedir.
+         *
+         *     Yanıtın `can_delete` bayrağı ile bu uç AYNI fonksiyondan beslenir: ekran
+         *     düğmeyi gösterip sonra 403 yemez. Kalemler CASCADE ile gider.
+         *
+         *     Yanıt `204 No Content`, gövdesizdir.
+         */
+        delete: operations["delete_purchase_request_endpoint_purchase_requests__request_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Purchase Request Endpoint
+         * @description **YALNIZ taslakta** (spec §4); değilse **409** — yetki değil DURUM engeli.
+         *
+         *     `lines` gönderilirse kalemler REPLACE edilir (tek atomik işlem); hiç
+         *     göndermemek onlara DOKUNMAZ, boş liste hepsini SİLER.
+         */
+        patch: operations["update_purchase_request_endpoint_purchase_requests__request_id__patch"];
+        trace?: never;
+    };
+    "/purchase-requests/{request_id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Purchase Request Endpoint
+         * @description `draft → pending_approval`. **SIKI doğrulama buradadır.**
+         *
+         *     Taslak gevşektir (T2); onaya gönderirken `validation.submit_blockers`
+         *     koşar ve engellerin HEPSİ tek 422'de döner — uzun bir formda eksikleri
+         *     birer birer keşfettirmek kabul edilemez. Engel varsa durum DEĞİŞMEZ.
+         */
+        post: operations["submit_purchase_request_endpoint_purchase_requests__request_id__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/purchase-requests/{request_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve Purchase Request Endpoint
+         * @description `pending_approval → quote_wait` (§3: onay ARA durum üretmez).
+         *
+         *     **₺500K eşiği BURADA ve ONAY ANINDA koşar** (`transitions`): tutar o anki
+         *     kalemlerden yeniden hesaplanır, kayıtta donmuş bir toplam okunmaz.
+         *     `approved_by_user_id`/`approved_at` damgalanır.
+         */
+        post: operations["approve_purchase_request_endpoint_purchase_requests__request_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/purchase-requests/{request_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject Purchase Request Endpoint
+         * @description `pending_approval → rejected`. **Gerekçe ZORUNLUDUR** (boş → 422).
+         *
+         *     Gerekçe `rejection_reason` KOLONUNA yazılır (SAT ekranı onu kaydın üstünde
+         *     gösterir) — `sale_cancelled`ın denetim-günlüğü kararının aksine burada
+         *     kalıcı bir yer vardır. `rejected` TERMİNALDİR: diriltme geçişi yoktur,
+         *     ihtiyaç sürüyorsa YENİ talep açılır.
+         */
+        post: operations["reject_purchase_request_endpoint_purchase_requests__request_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/purchase-requests/{request_id}/quotes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Quotes Endpoint
+         * @description TEK karşılaştırma ekranı. **Okuma her durumda açıktır** — siparişe dönmüş
+         *     bir talebin karşılaştırma geçmişi silinmez.
+         *
+         *     Sayfalama YOKTUR (şema gerekçesi): teklifler bir talebin altındadır ve
+         *     "EN İYİ FİYAT" rozeti eksik bir küme üzerinden hesaplanamaz.
+         */
+        get: operations["list_quotes_endpoint_purchase_requests__request_id__quotes_get"];
+        put?: never;
+        /**
+         * Create Quote Endpoint
+         * @description Yalnız `quote_wait` (aksi **409**). `delivery_time` SERBEST metindir.
+         */
+        post: operations["create_quote_endpoint_purchase_requests__request_id__quotes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/purchase-requests/{request_id}/quotes/export.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Quote Comparison Endpoint
+         * @description TEK 38 "Excel" düğmesi — karşılaştırmanın dışa aktarımı (§7 S5).
+         *
+         *     Veri kaynağı EKRANLA AYNIDIR (`service.list_quotes`): "Toplam" sütunu
+         *     tekrar hesaplanmaz, kartın taşıdığı değer yazılır. Sayfalama yoktur —
+         *     teklifler bir talebin altındadır ve eksik bir küme karşılaştırma değildir.
+         *
+         *     Yol `/export.xlsx`tir (`audit-log/export.xlsx` emsali): uzantı yolda
+         *     durduğu için tarayıcı indirmesi ayrıca bir tahmine muhtaç kalmaz.
+         */
+        get: operations["export_quote_comparison_endpoint_purchase_requests__request_id__quotes_export_xlsx_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/purchase-requests/{request_id}/quotes/{quote_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Quote Endpoint
+         * @description Yanlış girilmiş bir teklif SİLİNİR (talep hâlâ `quote_wait` iken).
+         *
+         *     `can_delete` taslak istisnası BURADA GEÇERSİZDİR: teklifin "sahibi" onu
+         *     giren kullanıcı değil TEDARİKÇİDİR ve kayıtta `created_by` kolonu yoktur.
+         *     Kapı bu yüzden düz `full`dur.
+         */
+        delete: operations["delete_quote_endpoint_purchase_requests__request_id__quotes__quote_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Quote Endpoint
+         * @description Kısmi güncelleme. Nakliye kuralı BİRLEŞİK değerlerde koşar (**422**):
+         *     gövde yalnız `shipping_cost` taşısa bile DB'deki `shipping_included`
+         *     hesaba katılır.
+         */
+        patch: operations["update_quote_endpoint_purchase_requests__request_id__quotes__quote_id__patch"];
+        trace?: never;
+    };
+    "/purchase-requests/{request_id}/quotes/{quote_id}/select-and-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Select And Order Endpoint
+         * @description TEK'in "Sipariş Ver" düğmesi — **ATOMİK** üçlü (spec §3).
+         *
+         *     Teklif işaretlenir (aynı talepteki diğerleri sıfırlanır) · sipariş üretilir
+         *     (`SP-YYYY-NNNN`, tutar = teklif × talebin toplam miktarı + nakliye) · talep
+         *     `ordered` olur. Ara adımda hata çıkarsa HİÇBİRİ kalmaz (servisteki açık
+         *     SAVEPOINT). Denetime TEK satır düşer: kullanıcının yaptığı tek bir eylemdir.
+         */
+        post: operations["select_and_order_endpoint_purchase_requests__request_id__quotes__quote_id__select_and_order_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/purchase-orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Orders Endpoint
+         * @description SIP tablosu — süzgeçler AND'lidir, kapsam HER ZAMAN uygulanır.
+         *
+         *     `q` sipariş NUMARASI ve NOT üzerinde arar; tedarikçi için AYRI ve kesin bir
+         *     süzgeç (`supplier_id`) vardır. `limit` varsayılan 50, tavan 200 — aşım 422.
+         */
+        get: operations["list_orders_endpoint_purchase_orders_get"];
+        put?: never;
+        /**
+         * Create Order Endpoint
+         * @description DOĞRUDAN (talepsiz) sipariş — §7 S3, SIP 35 "+ Sipariş Oluştur".
+         *
+         *     Gövde `request_id` KABUL ETMEZ (şema gerekçesi): talebe bağlı siparişin tek
+         *     yolu `select-and-order`dır. Numara sunucu üretir, durum `approved` başlar.
+         */
+        post: operations["create_order_endpoint_purchase_orders_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/purchase-orders/{order_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Order Endpoint
+         * @description Görünmeyen projenin siparişi var olmayanla AYNI 404'ü alır.
+         */
+        get: operations["get_order_endpoint_purchase_orders__order_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Order Endpoint
+         * @description Tek meşru geçiş `approved → in_transit`tir.
+         *
+         *     **`delivered`e ELLE geçilmez (409)** — o damgayı `purchase_order_id` taşıyan
+         *     bir STOK GİRİŞİ atar (§7 S4, T4'ün zinciri). Elle açık olsaydı hiç mal
+         *     girmemiş bir sipariş teslim görünür, stok bakiyesiyle satınalma kaydı
+         *     sessizce ayrışırdı. `total_amount` da düzeltilemez (şema gerekçesi).
+         */
+        patch: operations["update_order_endpoint_purchase_orders__order_id__patch"];
+        trace?: never;
+    };
+    "/purchasing/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Purchasing Summary Endpoint
+         * @description SAT 69-86 + SIP 38-43 KPI'ları — alan gerekçeleri `summary.py`dedir.
+         *
+         *     İki ekranın para kartı ("Bu Ay Sipariş" / "Bu Ay Toplam") TEK alandır ve
+         *     "Aktif Siparişler" ST'nin "Bekleyen Sipariş" zarfıyla aynı kümeden gelir.
+         *
+         *     `project_id` süzgeci kapsamı GENİŞLETMEZ, daraltır: görünmeyen bir proje
+         *     kimliği verildiğinde sayaçlar sıfır kalır. Üç sorgu koşar (N+1 yok).
+         */
+        get: operations["purchasing_summary_endpoint_purchasing_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/progress-payments": {
         parameters: {
             query?: never;
@@ -4530,6 +4937,15 @@ export interface components {
          */
         PaymentPlanType: "cash" | "down_payment_installments" | "bank_loan" | "barter";
         /**
+         * PaymentTerms
+         * @description Odeme vadesi — TED 50/71/91/112 + FST 134'un KAPALI kumesi.
+         *
+         *     Hem tedarikcinin varsayilan vadesi hem de teklifin vadesi bu tiptir; teklif
+         *     tedarikcinin varsayilanindan SAPABILIR (pazarlik), bu yuzden iki ayri kolon.
+         * @enum {string}
+         */
+        PaymentTerms: "cash" | "days_15" | "days_30" | "days_60";
+        /**
          * PendingApprovalsPlaceholder
          * @description Onay bekleyenler karti — rozet sayaci tasir.
          */
@@ -5452,6 +5868,648 @@ export interface components {
             employer_name?: string | null;
             investment?: components["schemas"]["ProjectInvestmentInput"] | null;
             land_share?: components["schemas"]["ProjectLandShareInput"] | null;
+        };
+        /**
+         * PurchaseOrderCreate
+         * @description `POST /purchase-orders` — DOGRUDAN (talepsiz) siparis (§7 S3, SIP 35).
+         *
+         *     **`request_id` GOVDEDE YOKTUR** ve bu bir eksiklik degil karardir: talebe
+         *     bagli siparisin TEK yolu `select-and-order`dir. Burada kabul edilseydi
+         *     talebin durum makinesi (talep → `ordered`) atlanir ve talebi hala
+         *     `quote_wait` gorunen bir siparis dogardi.
+         *
+         *     KALEM DE YOKTUR: spec §2'de siparis kalemi TABLOSU acilmadi — dogrudan
+         *     siparis tek bir `total_amount` tasir (SIP tablosu da tutari tek sutunda
+         *     gosterir).
+         */
+        PurchaseOrderCreate: {
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /**
+             * Supplier Id
+             * Format: uuid
+             */
+            supplier_id: string;
+            /** Total Amount */
+            total_amount: number | string;
+            /** Expected Delivery */
+            expected_delivery?: string | null;
+            /** Note */
+            note?: string | null;
+        };
+        /**
+         * PurchaseOrderListResponse
+         * @description TB3 sayfalama zarfi (`inventory`/`personnel` deseni).
+         */
+        PurchaseOrderListResponse: {
+            /** Items */
+            items: components["schemas"]["PurchaseOrderResponse"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * PurchaseOrderResponse
+         * @description SIP satiri/detayi. `request_no` TUREVDIR (JOIN) — talepsiz sipariste `null`.
+         */
+        PurchaseOrderResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Order No */
+            order_no: string;
+            /** Request Id */
+            request_id: string | null;
+            /** Request No */
+            request_no: string | null;
+            /** Quote Id */
+            quote_id: string | null;
+            /**
+             * Supplier Id
+             * Format: uuid
+             */
+            supplier_id: string;
+            /** Supplier Name */
+            supplier_name: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Total Amount */
+            total_amount: string;
+            /** Expected Delivery */
+            expected_delivery: string | null;
+            status: components["schemas"]["PurchaseOrderStatus"];
+            /** Note */
+            note: string | null;
+            /**
+             * Created By User Id
+             * Format: uuid
+             */
+            created_by_user_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * PurchaseOrderStatus
+         * @description Siparis durumu — SIP 34 filtresi birebir.
+         *
+         *     `delivered` damgasini stok girisi ATAR (§7 S4): `purchase_order_id` tasiyan
+         *     bir giris kaydedilince siparis (ve varsa talebi) otomatik teslim sayilir.
+         *     Kismi teslim ayrimi YOKTUR — bilinen sinir.
+         * @enum {string}
+         */
+        PurchaseOrderStatus: "approved" | "in_transit" | "delivered";
+        /**
+         * PurchaseOrderUpdate
+         * @description `PATCH /purchase-orders/{id}` — durum gecisi + duzeltilebilir alanlar.
+         *
+         *     `status` GONDERILMEZSE durum degismez: not/tarih duzeltmesi bir gecis
+         *     DEGILDIR ve onu bir gecis saymak, kargo notunu duzelten kullaniciyi durum
+         *     makinesine carpar.
+         *
+         *     `total_amount` DEGISTIRILEMEZ ve alan burada YOKTUR: siparis, teklifin o
+         *     andaki fiyatinin DONMUS halidir (T1 karari) — tutari elle duzeltilebilseydi
+         *     "sipariste ne uzerinde anlasildi" sorusunun cevabi kaybolurdu.
+         */
+        PurchaseOrderUpdate: {
+            status?: components["schemas"]["PurchaseOrderStatus"] | null;
+            /** Expected Delivery */
+            expected_delivery?: string | null;
+            /** Note */
+            note?: string | null;
+        };
+        /**
+         * PurchasePriority
+         * @description Talep onceligi (FST 55).
+         * @enum {string}
+         */
+        PurchasePriority: "normal" | "urgent" | "critical";
+        /**
+         * PurchaseQuoteCard
+         * @description TEK karsilastirma karti: kunye + TOPLAM MALIYET + "EN IYI FIYAT" rozeti.
+         *
+         *     ⚠️ `total_cost` BIRIM FIYAT DEGILDIR: `unit_price × talebin toplam miktari`
+         *     ve nakliye HARICSE `shipping_cost` eklenir. Rozet birim fiyata bakilarak
+         *     verilseydi, nakliyesi haric ucuz gorunen bir teklif "EN IYI FIYAT" damgasi
+         *     alir ve kullanici daha pahali olani secerdi (TEK 90'in tam senaryosu).
+         *
+         *     **"EN HIZLI" rozeti YOKTUR** ve uydurulmaz: `delivery_time` serbest
+         *     metindir ("Yarin sabah" ile "3 is gunu" karsilastirilamaz). Rozet mockup'ta
+         *     vardir ama sunucunun sirali bir veri kaynagi yoktur — uydurma bir siralama
+         *     yanlis tedarikciyi one cikarirdi. Istemci isterse metni kendi yorumlar.
+         *
+         *     Beraberlikte HEPSI rozetlenir: iki teklif ayni toplamdaysa birini keyfi
+         *     secmek yaniltici olurdu.
+         */
+        PurchaseQuoteCard: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Request Id
+             * Format: uuid
+             */
+            request_id: string;
+            /**
+             * Supplier Id
+             * Format: uuid
+             */
+            supplier_id: string;
+            /** Supplier Name */
+            supplier_name: string;
+            /** Unit Price */
+            unit_price: string;
+            /** Delivery Time */
+            delivery_time: string;
+            /** Warranty Note */
+            warranty_note: string | null;
+            payment_terms: components["schemas"]["PaymentTerms"];
+            /** Shipping Included */
+            shipping_included: boolean;
+            /** Shipping Cost */
+            shipping_cost: string | null;
+            /** Is Selected */
+            is_selected: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Total Cost */
+            total_cost: string;
+            /** Is Best Price */
+            is_best_price: boolean;
+        };
+        /**
+         * PurchaseQuoteCreate
+         * @description `POST /purchase-requests/{id}/quotes` govdesi.
+         *
+         *     `delivery_time` SERBEST METINDIR (TEK 67: "3 is gunu" / "Yarin sabah") ve
+         *     gun SAYISINA ZORLANMAZ. Siralanabilir bir `delivery_days` alani ACILSAYDI
+         *     mockup'un yazdigi ifadeler kaybolurdu; "EN HIZLI" rozeti bu yuzden sunucu
+         *     turevi DEGILDIR (bkz. `PurchaseQuoteCard`).
+         *
+         *     NAKLIYE IKI HALLIDIR (TEK 90): "Dahil" ya da "Hariç (+₺8.000)". Ikisi
+         *     birden gonderilirse hangisinin gecerli oldugu belirsizdir — 422.
+         */
+        PurchaseQuoteCreate: {
+            /**
+             * Supplier Id
+             * Format: uuid
+             */
+            supplier_id: string;
+            /** Unit Price */
+            unit_price: number | string;
+            /** Delivery Time */
+            delivery_time: string;
+            /** Warranty Note */
+            warranty_note?: string | null;
+            payment_terms: components["schemas"]["PaymentTerms"];
+            /**
+             * Shipping Included
+             * @default false
+             */
+            shipping_included: boolean;
+            /** Shipping Cost */
+            shipping_cost?: number | string | null;
+        };
+        /**
+         * PurchaseQuoteListResponse
+         * @description TEK karsilastirma yanitinin zarfi.
+         *
+         *     `limit`/`offset` YOKTUR ve bu bilinclidir: teklifler bir TALEBIN altindadir
+         *     ve sayilari doga geregi tek hanelidir (TEK ekrani hepsini yan yana dizer).
+         *     Sayfalama eklenseydi ekran "en iyi fiyat" rozetini eksik bir kume uzerinden
+         *     hesaplamak zorunda kalirdi.
+         *
+         *     `request_quantity_total` yanitta durur cunku `total_cost`un carpanidir:
+         *     ekran tutari kendi yeniden hesaplamak isterse tabani gormeli.
+         */
+        PurchaseQuoteListResponse: {
+            /** Items */
+            items: components["schemas"]["PurchaseQuoteCard"][];
+            /** Total */
+            total: number;
+            /** Request Quantity Total */
+            request_quantity_total: string;
+        };
+        /**
+         * PurchaseQuoteResponse
+         * @description Teklifin kunyesi (POST/PATCH yaniti).
+         */
+        PurchaseQuoteResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Request Id
+             * Format: uuid
+             */
+            request_id: string;
+            /**
+             * Supplier Id
+             * Format: uuid
+             */
+            supplier_id: string;
+            /** Supplier Name */
+            supplier_name: string;
+            /** Unit Price */
+            unit_price: string;
+            /** Delivery Time */
+            delivery_time: string;
+            /** Warranty Note */
+            warranty_note: string | null;
+            payment_terms: components["schemas"]["PaymentTerms"];
+            /** Shipping Included */
+            shipping_included: boolean;
+            /** Shipping Cost */
+            shipping_cost: string | null;
+            /** Is Selected */
+            is_selected: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * PurchaseQuoteUpdate
+         * @description `PATCH …/quotes/{quote_id}` — TUM alanlar istege bagli.
+         *
+         *     Nakliye kurali BURADA DEGIL SERVISTE kosar: kismi govde yalniz
+         *     `shipping_cost` tasiyabilir ve kural ancak DB'deki kayitla BIRLESTIRILMIS
+         *     degerler uzerinde anlamlidir (`CustomerValidationError` dersi).
+         *
+         *     `supplier_id` DEGISTIRILEMEZ ve alan burada YOKTUR: teklif bir tedarikcinin
+         *     verdigi fiyattir, tedarikcisi degisen sey artik BASKA bir tekliftir.
+         */
+        PurchaseQuoteUpdate: {
+            /** Unit Price */
+            unit_price?: number | string | null;
+            /** Delivery Time */
+            delivery_time?: string | null;
+            /** Warranty Note */
+            warranty_note?: string | null;
+            payment_terms?: components["schemas"]["PaymentTerms"] | null;
+            /** Shipping Included */
+            shipping_included?: boolean | null;
+            /** Shipping Cost */
+            shipping_cost?: number | string | null;
+        };
+        /**
+         * PurchaseRequestCreate
+         * @description `POST /purchase-requests` — baslik + kalemler TEK govde, ATOMIK yazilir.
+         *
+         *     **TASLAK-FARKINDALIKLI (P6 emsali):** zorunlu TEK alan `project_id`dir.
+         *     FST'de `Oncelik`/`Ihtiyac Tarihi` yildizlidir ama o yildizlar "Onaya
+         *     Gonder" icindir; "Taslak Kaydet" yarim formu saklayabilmelidir. Siki taraf
+         *     `validation.submit_blockers`tadir ve **T3'un** `submit` ucunda kosar.
+         *
+         *     `lines` VARSAYILAN OLARAK BOSTUR — ST'nin `min_length=1` kurali burada
+         *     GECERLI DEGILDIR: kalemsiz bir HAREKET anlamsizdir ama kalemsiz bir TASLAK
+         *     gayet anlamlidir.
+         *
+         *     **GOVDEDE OLMAYANLAR (icat yasagi):** `request_no` sunucu uretir (§7 S6) ·
+         *     `status` her zaman `draft`tir (gecisler T3'un) · onay meta'si (`approved_*`/
+         *     `rejected_*`) yalnizca T3'un uclariyla dolar. Ucu de govdede gonderilse
+         *     Pydantic onlari yok sayar.
+         *
+         *     FST'nin "Teklif Istenecek Tedarikciler" listesi ve "Odeme Vadesi Tercihi"
+         *     burada YOKTUR: sema (spec §2) o kolonlari ACMAZ, teklif toplama T3'un
+         *     `purchase_quotes` alt-kaynagidir.
+         */
+        PurchaseRequestCreate: {
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Request Date */
+            request_date?: string | null;
+            /** @default normal */
+            priority: components["schemas"]["PurchasePriority"];
+            /** Site Id */
+            site_id?: string | null;
+            /** Section Id */
+            section_id?: string | null;
+            /** Needed By */
+            needed_by?: string | null;
+            /** Justification */
+            justification?: string | null;
+            /** Quote Deadline */
+            quote_deadline?: string | null;
+            /** Lines */
+            lines?: components["schemas"]["PurchaseRequestLineCreate"][];
+        };
+        /**
+         * PurchaseRequestLineCreate
+         * @description FST kalem tablosunun BIR satiri.
+         *
+         *     **IKI KAPILI (XOR):** kalem ya bir stok KARTINA baglanir (`stock_item_id`,
+         *     FST 104 "stok kartindan sec") ya da KATALOGSUZDUR (`free_text_name` +
+         *     `free_text_unit`, FST "yeni malzeme tanimla"). Kural SEMADADIR cunku
+         *     tamamen govdenin kendi icinde cozulur ve boylece ihlal DB'ye hic
+         *     DOKUNMADAN reddedilir (atomikligin ilk katmani) — kod **422**dir, cunku bu
+         *     bir BICIM/KURAL ihlalidir, varlik referansi degil.
+         *
+         *     DB'de CHECK ile zorlanmadi (T1 karari): taslak talep GEVSEKTIR ve XOR
+         *     CHECK'i ileride kalemi yarim birakan bir akisi kilitlerdi. Bugun sema her
+         *     yazmada uygular, `validation.submit_blockers` ikinci katman olarak kalir.
+         *
+         *     "Mevcut Stok" (FST 75) ve "Tahmini Tutar" (FST 100) BURADA YOKTUR: ikisi de
+         *     TUREVDIR ve yanit semasinda hesaplanir.
+         */
+        PurchaseRequestLineCreate: {
+            /** Stock Item Id */
+            stock_item_id?: string | null;
+            /** Free Text Name */
+            free_text_name?: string | null;
+            /** Free Text Unit */
+            free_text_unit?: string | null;
+            /** Quantity */
+            quantity: number | string;
+            /** Estimated Unit Price */
+            estimated_unit_price?: number | string | null;
+        };
+        /**
+         * PurchaseRequestLineResponse
+         * @description Kalem kunyesi + TUREVLER.
+         *
+         *     `unit`: stok kartli kalemde KARTIN birimi, katalogsuz kalemde girilen
+         *     birim — ekran iki dal icin ayri sutun okumak zorunda kalmasin.
+         *
+         *     `line_total` fiyat yoksa `null`dur ve toplama GIRMEZ; sessizce 0 sayilsaydi
+         *     "tahmini toplam neden dusuk" sorusu cevapsiz kalirdi (ST'nin
+         *     `items_without_price` dersi).
+         *
+         *     `current_stock` (FST 75) katalogsuz kalemde `null`dur: stok karti yoksa
+         *     bakiye de yoktur ve 0 yazmak "stokta yok" ile "stok karti bile yok"u ayni
+         *     gosterirdi.
+         *
+         *     `sort_order` YANITTA VARDIR ama GOVDEDE (Create) YOKTUR: sunucu onu dizinin
+         *     indeksinden uretir. Ekran, satirlari yeniden sirasa dizmek zorunda kalmadan
+         *     listeyi oldugu gibi basar; alan yine de dondurulur ki istemci kendi yerel
+         *     durumunu (surukle-birak) sunucununkiyle karsilastirabilsin.
+         */
+        PurchaseRequestLineResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Stock Item Id */
+            stock_item_id: string | null;
+            /** Stock Item Code */
+            stock_item_code: string | null;
+            /** Free Text Name */
+            free_text_name: string | null;
+            /** Free Text Unit */
+            free_text_unit: string | null;
+            /** Name */
+            name: string;
+            /** Unit */
+            unit: string | null;
+            /** Quantity */
+            quantity: string;
+            /** Estimated Unit Price */
+            estimated_unit_price: string | null;
+            /** Line Total */
+            line_total: string | null;
+            /** Current Stock */
+            current_stock: string | null;
+        };
+        /** PurchaseRequestListResponse */
+        PurchaseRequestListResponse: {
+            /** Items */
+            items: components["schemas"]["PurchaseRequestListRow"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * PurchaseRequestListRow
+         * @description SAT tablosunun bir satiri — **KALEMLERI TASIMAZ.**
+         *
+         *     Tablo kalemleri gostermez; tasimak sayfadaki her satir icin ikinci bir
+         *     sorgu (ve her kalem icin bir bakiye turevi) demek olurdu. Kalem SAYISI
+         *     yeterlidir ve tek toplu sorgudan gelir.
+         */
+        PurchaseRequestListRow: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Request No */
+            request_no: string;
+            /**
+             * Request Date
+             * Format: date
+             */
+            request_date: string;
+            priority: components["schemas"]["PurchasePriority"];
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Site Id */
+            site_id: string | null;
+            /** Section Id */
+            section_id: string | null;
+            /** Needed By */
+            needed_by: string | null;
+            /** Justification */
+            justification: string | null;
+            status: components["schemas"]["PurchaseRequestStatus"];
+            /** Quote Deadline */
+            quote_deadline: string | null;
+            /** Approved By User Id */
+            approved_by_user_id: string | null;
+            /** Approved At */
+            approved_at: string | null;
+            /** Rejected At */
+            rejected_at: string | null;
+            /** Rejection Reason */
+            rejection_reason: string | null;
+            /**
+             * Created By User Id
+             * Format: uuid
+             */
+            created_by_user_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Estimated Total */
+            estimated_total: string;
+            /** Can Delete */
+            can_delete: boolean;
+            /** Line Count */
+            line_count: number;
+        };
+        /**
+         * PurchaseRequestRejection
+         * @description `POST /purchase-requests/{id}/reject` govdesi.
+         *
+         *     Gerekce ZORUNLUDUR (TH emsali): "reddedildi" tek basina eyleme donuk
+         *     degildir — talebi acan sef neyi duzeltip yeniden acacagini bilmelidir.
+         *     `min_length=1` bosu, `strip_whitespace` ise yalniz bosluktan olusan bir
+         *     gerekceyi reddeder (Pydantic kirpmayi ONCE yapar).
+         */
+        PurchaseRequestRejection: {
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * PurchaseRequestResponse
+         * @description FST'nin detay govdesi: baslik + kalemler.
+         */
+        PurchaseRequestResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Request No */
+            request_no: string;
+            /**
+             * Request Date
+             * Format: date
+             */
+            request_date: string;
+            priority: components["schemas"]["PurchasePriority"];
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Site Id */
+            site_id: string | null;
+            /** Section Id */
+            section_id: string | null;
+            /** Needed By */
+            needed_by: string | null;
+            /** Justification */
+            justification: string | null;
+            status: components["schemas"]["PurchaseRequestStatus"];
+            /** Quote Deadline */
+            quote_deadline: string | null;
+            /** Approved By User Id */
+            approved_by_user_id: string | null;
+            /** Approved At */
+            approved_at: string | null;
+            /** Rejected At */
+            rejected_at: string | null;
+            /** Rejection Reason */
+            rejection_reason: string | null;
+            /**
+             * Created By User Id
+             * Format: uuid
+             */
+            created_by_user_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Estimated Total */
+            estimated_total: string;
+            /** Can Delete */
+            can_delete: boolean;
+            /** Lines */
+            lines: components["schemas"]["PurchaseRequestLineResponse"][];
+        };
+        /**
+         * PurchaseRequestStatus
+         * @description Talep durumu — §7 S1 ALTILI kume (SAT rozetleri + FST "Taslak") BIREBIR.
+         *
+         *     `draft → pending_approval → quote_wait → ordered → delivered` + `rejected`.
+         *     "Revize" gibi bir ara durum UYDURULMAZ — mockup'ta yoktur. Gecis matrisi
+         *     T3'un isidir; DB burada yalniz kumeyi sabitler.
+         * @enum {string}
+         */
+        PurchaseRequestStatus: "draft" | "pending_approval" | "quote_wait" | "ordered" | "delivered" | "rejected";
+        /**
+         * PurchaseRequestUpdate
+         * @description `PATCH /purchase-requests/{id}` — YALNIZ taslakta (spec §4), tum alanlar
+         *     istege bagli.
+         *
+         *     **`lines` gondermek REPLACE'tir:** gelen liste eskisinin YERINE gecer (tek
+         *     atomik islem). Hic GONDERMEMEK kalemlere DOKUNMAZ, BOS liste gondermek
+         *     hepsini SILER — iki durum `model_fields_set` ile ayrilir. Satir bazli
+         *     ekle/cikar ucu ACILMAZ: FST kalem tablosu tek "Kaydet" ile gonderilir ve
+         *     parcali uclar yarim kaydedilmis bir tablo birakabilirdi.
+         */
+        PurchaseRequestUpdate: {
+            /** Project Id */
+            project_id?: string | null;
+            /** Request Date */
+            request_date?: string | null;
+            priority?: components["schemas"]["PurchasePriority"] | null;
+            /** Site Id */
+            site_id?: string | null;
+            /** Section Id */
+            section_id?: string | null;
+            /** Needed By */
+            needed_by?: string | null;
+            /** Justification */
+            justification?: string | null;
+            /** Quote Deadline */
+            quote_deadline?: string | null;
+            /** Lines */
+            lines?: components["schemas"]["PurchaseRequestLineCreate"][] | null;
+        };
+        /**
+         * PurchasingSummaryResponse
+         * @description SAT 69-86 + SIP 38-43 KPI seridi — alan gerekceleri `summary.py`de.
+         *
+         *     ZARF YOKTUR (`MetricPlaceholder`): bu ucun TUM alanlarinin veri kaynagi
+         *     VARDIR. Yer tutucu zarf "kaynagi henuz yazilmamis alan" icindir; sifir
+         *     degeri ise gercek bir cevaptir ("hic acik talep yok") ve ikisi ayni sey
+         *     DEGILDIR.
+         *
+         *     Kart ETIKETLERI burada YOKTUR — Turkce basliklar ekranin isidir; sunucu
+         *     yalniz sayilari verir (`StockSummaryKpis` deseni).
+         */
+        PurchasingSummaryResponse: {
+            /** Open Requests */
+            open_requests: number;
+            /** Quote Wait Requests */
+            quote_wait_requests: number;
+            /** Pending Approval Requests */
+            pending_approval_requests: number;
+            /** Orders This Month Total */
+            orders_this_month_total: string;
+            /** Active Orders */
+            active_orders: number;
+            /** In Transit Orders */
+            in_transit_orders: number;
+            /** Delivered Orders */
+            delivered_orders: number;
         };
         /**
          * QuantitySource
@@ -7295,11 +8353,16 @@ export interface components {
          *     `source_warehouse_id` (transfer) · `supplier_name` (86, SERBEST METİN —
          *     §7 S3) · `delivery_note_no` (87) · `received_by_user_id` (88) · `note` (169).
          *
+         *     ## SG 85 "İlgili Sipariş" — SA T4'te AÇILDI
+         *     `purchase_order_id` isteğe bağlıdır ve YALNIZ `purchase` hareketinde
+         *     verilir. Taşındığında sipariş (ve varsa bağlı talep) otomatik `delivered`
+         *     olur (§7 S4): ayrı bir "mal kabul" ucu YOKTUR.
+         *
          *     ## SG'de OLUP BURAYA ALINMAYANLAR (icat yasağı, spec §5)
-         *     "İlgili Sipariş" (85) · "Sipariş" sütunu (95/113) · "eksik teslimat"
-         *     rozeti (107) · otomatik tedarikçi bildirimi (176) → **SA dilimi**.
-         *     Belge slotları (149-166) → **BC form-slot**. Gövdede gönderilseler bile
-         *     Pydantic onları yok sayar; şema ASLA genişletilmez.
+         *     "Sipariş" SÜTUNU (95/113 — satır düzeyi sipariş bağı) · "eksik teslimat"
+         *     rozeti (107) · otomatik tedarikçi bildirimi (176) → **hiçbir dilimde
+         *     açılmaz** (kısmi teslim ayrımı bilinen sınırdır). Belge slotları (149-166)
+         *     → **BC form-slot**. Gövdede gönderilseler bile Pydantic onları yok sayar.
          *
          *     `note` tavanı `app.core.text.FREE_TEXT_MAX_LENGTH`tir: kolonu `Text`
          *     (DB'de sınırsız) olan TEK alan budur ve TB4 standardı gereği tavanı
@@ -7321,6 +8384,8 @@ export interface components {
             source_warehouse_id?: string | null;
             /** Supplier Name */
             supplier_name?: string | null;
+            /** Purchase Order Id */
+            purchase_order_id?: string | null;
             /** Delivery Note No */
             delivery_note_no?: string | null;
             /** Received By User Id */
@@ -7394,8 +8459,13 @@ export interface components {
          * StockEntryResponse
          * @description Hareket künyesi + satırları.
          *
-         *     **Sipariş alanı YOKTUR** (spec §5). Bakiye de yoktur: hareket bakiyeyi
-         *     TAŞIMAZ, bakiye hareketlerden TÜREVDİR (spec §3).
+         *     SG 85 "İlgili Sipariş" (`purchase_order_id`) SA T4'te gerçeğe döndü.
+         *     Siparişin NUMARASI burada YOKTUR: künye kimliği taşır, ekran sipariş
+         *     detayını kendi ucundan çeker — ikinci bir JOIN her hareket listesine
+         *     satınalma tablosunu bağlardı.
+         *
+         *     Bakiye de yoktur: hareket bakiyeyi TAŞIMAZ, bakiye hareketlerden TÜREVDİR
+         *     (spec §3).
          */
         StockEntryResponse: {
             /**
@@ -7418,6 +8488,8 @@ export interface components {
             source_warehouse_id: string | null;
             /** Supplier Name */
             supplier_name: string | null;
+            /** Purchase Order Id */
+            purchase_order_id: string | null;
             /** Delivery Note No */
             delivery_note_no: string | null;
             /** Received By User Id */
@@ -8490,6 +9562,145 @@ export interface components {
             email?: string | null;
             /** Category */
             category?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
+        /**
+         * SupplierCard
+         * @description TED kartinin TAMAMI: kunye + "Bu Yil Toplam Siparis" TUREVI (TED 52).
+         *
+         *     Turev iki parcalidir cunku kart tutari basar ama kullanici "kac siparis"
+         *     sorusunu da sorar; sayac olmadan buyuk bir tutarin tek dev siparisten mi
+         *     yoksa yuzlerce kucuk alimdan mi geldigi anlasilmazdi.
+         *
+         *     Siparissiz tedarikcide deger `null` DEGIL SIFIRDIR: ekran "veri yok" ile
+         *     "hic siparis verilmedi"yi ayirt etmek zorunda kalmasin.
+         *
+         *     **KAPSAM:** turev yalnizca AKTORUN GORDUGU projelerin siparislerini sayar
+         *     (`repository` gerekcesi) — katalog global olsa da PARA degildir.
+         */
+        SupplierCard: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Category */
+            category: string | null;
+            /** Tax No */
+            tax_no: string | null;
+            /** Phone */
+            phone: string | null;
+            payment_terms: components["schemas"]["PaymentTerms"];
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Orders Total This Year */
+            orders_total_this_year: string;
+            /** Orders Count This Year */
+            orders_count_this_year: number;
+        };
+        /**
+         * SupplierCreate
+         * @description `POST /suppliers` govdesi — TED kartinin alanlari.
+         *
+         *     `category` SERBEST METINDIR (spec §2): TED alt-etiketi ("Hazir Beton",
+         *     "Nakliye", …) acik uclu bir kumedir, enum ICAT EDILSEYDI her yeni tedarikci
+         *     turu migration gerektirirdi. `payment_terms` ise KAPALI kumedir (TED
+         *     50/71/91/112 + FST 134), bu yuzden enum'dur.
+         *
+         *     `tax_no` icin BICIM kurali (10 hane / yalniz rakam) UYDURULMAZ: mockup'ta
+         *     alan zorunlu bile degildir ve dis ulke tedarikcisi ya da sahis firmasi
+         *     kaliba oturmayabilir. Tek sinir kolonun kendi genisligidir.
+         */
+        SupplierCreate: {
+            /** Name */
+            name: string;
+            /** Category */
+            category?: string | null;
+            /** Tax No */
+            tax_no?: string | null;
+            /** Phone */
+            phone?: string | null;
+            payment_terms: components["schemas"]["PaymentTerms"];
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+        };
+        /**
+         * SupplierListResponse
+         * @description `personnel`/`audit`/`inventory` liste deseni: `total` + `limit`/`offset`.
+         */
+        SupplierListResponse: {
+            /** Items */
+            items: components["schemas"]["SupplierCard"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * SupplierResponse
+         * @description Tedarikci kunyesi (POST/PATCH yaniti).
+         *
+         *     **PUAN ALANI YOKTUR** (spec §5): TED 55-58'deki yildizlarin giris yuzeyi
+         *     hicbir ekranda yoktur ve uydurma bir puan gostermektense hic gostermemek
+         *     dogrudur.
+         */
+        SupplierResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Category */
+            category: string | null;
+            /** Tax No */
+            tax_no: string | null;
+            /** Phone */
+            phone: string | null;
+            payment_terms: components["schemas"]["PaymentTerms"];
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * SupplierUpdate
+         * @description `PATCH /suppliers/{id}` — TUM alanlar istege bagli.
+         *
+         *     Alanin GONDERILMEMESI ile `null` GONDERILMESI farklidir ve fark
+         *     `model_fields_set` ile korunur: `category: null` etiketi SILER, hic
+         *     gondermemek ona DOKUNMAZ (`StockItemUpdate` dersi).
+         *
+         *     **KULLANIMDAN KALDIRMA YOLU BUDUR** (`is_active: false`) — DELETE ucu
+         *     yoktur (spec §4).
+         */
+        SupplierUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Category */
+            category?: string | null;
+            /** Tax No */
+            tax_no?: string | null;
+            /** Phone */
+            phone?: string | null;
+            payment_terms?: components["schemas"]["PaymentTerms"] | null;
             /** Is Active */
             is_active?: boolean | null;
         };
@@ -13172,6 +14383,1152 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PersonnelResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_suppliers_endpoint_suppliers_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                category?: string | null;
+                is_active?: boolean | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_supplier_endpoint_suppliers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_supplier_endpoint_suppliers__supplier_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                supplier_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierCard"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_supplier_endpoint_suppliers__supplier_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                supplier_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplierResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_purchase_requests_endpoint_purchase_requests_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["PurchaseRequestStatus"] | null;
+                project_id?: string | null;
+                priority?: components["schemas"]["PurchasePriority"] | null;
+                q?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseRequestListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_purchase_request_endpoint_purchase_requests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseRequestCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseRequestResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Seçilen proje/şantiye/bölüm/malzeme bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_purchase_request_endpoint_purchase_requests__request_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseRequestResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_purchase_request_endpoint_purchase_requests__request_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yalnızca talebi açan kendi taslağını silebilir */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yalnızca taslak talep silinebilir */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_purchase_request_endpoint_purchase_requests__request_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseRequestUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseRequestResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Talep ya da seçilen proje/şantiye/bölüm/malzeme bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yalnızca taslak talep düzenlenebilir */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_purchase_request_endpoint_purchase_requests__request_id__submit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseRequestResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Talep bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Talep bu işleme uygun durumda değil */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Onaya göndermeyi engelleyen eksikler var */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    approve_purchase_request_endpoint_purchase_requests__request_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseRequestResponse"];
+                };
+            };
+            /** @description ₺500K ve üstü talep üst seviye yetki ister */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Talep bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Talep bu işleme uygun durumda değil */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_purchase_request_endpoint_purchase_requests__request_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseRequestRejection"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseRequestResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Talep bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Talep bu işleme uygun durumda değil */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_quotes_endpoint_purchase_requests__request_id__quotes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseQuoteListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_quote_endpoint_purchase_requests__request_id__quotes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseQuoteCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseQuoteResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Talep ya da seçilen tedarikçi bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Teklifler yalnızca teklif bekleyen talebe eklenebilir */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_quote_comparison_endpoint_purchase_requests__request_id__quotes_export_xlsx_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Excel dosyası */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": unknown;
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Talep bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_quote_endpoint_purchase_requests__request_id__quotes__quote_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+                quote_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Talep ya da teklif bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Teklifler yalnızca teklif bekleyen talepte silinebilir */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_quote_endpoint_purchase_requests__request_id__quotes__quote_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+                quote_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseQuoteUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseQuoteResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Talep ya da teklif bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Teklifler yalnızca teklif bekleyen talepte düzenlenebilir */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    select_and_order_endpoint_purchase_requests__request_id__quotes__quote_id__select_and_order_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+                quote_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseOrderResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Talep ya da teklif bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Talep bu işleme uygun durumda değil */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_orders_endpoint_purchase_orders_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["PurchaseOrderStatus"] | null;
+                project_id?: string | null;
+                supplier_id?: string | null;
+                q?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseOrderListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_order_endpoint_purchase_orders_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseOrderCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseOrderResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Seçilen proje ya da tedarikçi bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_order_endpoint_purchase_orders__order_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseOrderResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_order_endpoint_purchase_orders__order_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseOrderUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseOrderResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sipariş bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Siparişin durumu bu işleme uygun değil */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    purchasing_summary_endpoint_purchasing_summary_get: {
+        parameters: {
+            query?: {
+                project_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchasingSummaryResponse"];
                 };
             };
             /** @description Yetkisiz işlem */
