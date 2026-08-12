@@ -3,6 +3,10 @@ import { test, expect } from "@playwright/test";
 import { prepareFrame } from "./visual-scroll";
 
 async function login(page: import("@playwright/test").Page) {
+  // F-ST T1 (onaylı görsel borç) — kadraj penceresi AÇIKÇA kurulur; bkz.
+  // `login-visual.spec.ts` notu (config varsayılanı 1280×900, kanon 1440×900).
+  // Dokuz Ayarlar baseline'ının hepsi bu yardımcıdan geçer.
+  await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/login");
   await page.getByLabel(/e-posta/i).fill("patron@fiil.com");
   await page.getByLabel(/^şifre$/i).fill("dogruparola");
