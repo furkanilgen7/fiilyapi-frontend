@@ -96,6 +96,20 @@ const ALLOWED_ROOTS = new Set([
   // sonsuza dek boş, her giriş denemesi başarısız); jsdom testleri bunu GÖRMEZ.
   "stock",
   "warehouses",
+  // F-P8 T1 — Satış ekranları İKİ kök birden ekler (P8 backend kaydından beri
+  // bilinen şart; eksikse modül YALNIZ CANLIDA 404 alır, jsdom testleri görmez):
+  //   · `sales`     → `GET/PUT /sales/{sale_id}/installments`,
+  //     `POST /sales/{sale_id}/generate-plan`, `GET/PATCH/DELETE /sales/{id}`,
+  //     `POST /sales/{id}/activate|transfer-deed|cancel` (bu üçü bu dilimde
+  //     EKRANA BAĞLANMAZ — satış DETAY ekranı mockup'ı yok, spec §2/K3 — ama
+  //     uçlar API'den kullanılabilir kalır) ve `POST
+  //     /sales/installments/{installment_id}/pay` (ilk segmenti yine "sales").
+  //   · `customers` → `GET/POST /customers`, `GET/PATCH /customers/{id}`.
+  //     DELETE ucu YOKTUR (P8 kararı).
+  // Satış LİSTESİ/OLUŞTURMA/ÖZET (`/projects/{project_id}/sales[/summary]`) ilk
+  // segmenti "projects" olduğu için MEVCUT kökten geçer; ayrı kök EKLENMEZ.
+  "sales",
+  "customers",
 ]);
 
 // JSON/metin sayilan icerik tipleri: govde metne cozulup JSON olarak islenir.

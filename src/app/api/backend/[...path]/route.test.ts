@@ -939,6 +939,89 @@ describe("BFF /api/backend/[...path]", () => {
       },
     );
 
+    // F-P8 · T1 — Satis ekranlari IKI yeni kok ekler ve ikisi de AYRI ADLI
+    // kapiya baglanir (P8 backend kaydindan beri bilinen sart):
+    //   · `sales`     → /sales/{id}[/installments|/generate-plan|/activate|
+    //                   /transfer-deed|/cancel] + /sales/installments/{id}/pay
+    //   · `customers` → GET/POST /customers, GET/PATCH /customers/{id}
+    // Satis LISTESI/OLUSTURMA/OZET (`/projects/{id}/sales[/summary]`) ilk
+    // segmenti "projects" oldugu icin MEVCUT kokten gecer.
+    // `activate`/`transfer-deed`/`cancel` bu dilimde UI'dan CAGRILMAZ (spec
+    // §2/K3: satis detay ekrani yok) — dinamik `calledRoots` taramasi bu
+    // kokleri GORMEZ, yalniz bu ADLI testler kapiya bagli tutar.
+    it.each(["sales", "customers", "projects"])(
+      "%s koku satis ekranlari icin allow-list'te tanimlidir",
+      (root) => {
+        const source = readFileSync(
+          resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+          "utf8",
+        );
+        const allowList = source.slice(
+          source.indexOf("const ALLOWED_ROOTS"),
+          source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+        );
+        // Yorum metni DEGIL, gercek girdiler okunur (satir basindaki tirnakli ad).
+        const entries = [...allowList.matchAll(/^\s*"([a-z0-9-]+)",/gm)].map((m) => m[1]);
+        expect(entries).toContain(root);
+      },
+    );
+
+    it.each([
+      "customers",
+      "customers/c-1",
+      "projects/p-1/sales",
+      "projects/p-1/sales/summary",
+      "sales/sale-1",
+      "sales/sale-1/generate-plan",
+      "sales/sale-1/installments",
+      "sales/installments/inst-1/pay",
+    ])("%s ucu forward edilir", async (endpoint) => {
+      // Arrange
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ items: [], total: 0, limit: 50, offset: 0 }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+
+      // Act
+      const res = await GET(
+        req(`/api/backend/${endpoint}`, "GET", { [ACCESS_COOKIE]: "acc" }),
+        ctx(endpoint.split("/")),
+      );
+
+      // Assert
+      expect(res.status).toBe(200);
+      expect(String(fetchMock.mock.calls[0][0])).toContain(`/${endpoint}`);
+    });
+
+    it("uydurma 'installments' koku 404 alir — tahsilat ucunun ilk segmenti 'sales'tir", async () => {
+      // Arrange
+      const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+      vi.stubGlobal("fetch", fetchMock);
+
+      // Act
+      const rejected = await GET(
+        req("/api/backend/installments/inst-1/pay", "GET", { [ACCESS_COOKIE]: "acc" }),
+        ctx(["installments", "inst-1", "pay"]),
+      );
+
+      // Assert
+      expect(rejected.status).toBe(404);
+      expect(fetchMock).not.toHaveBeenCalled();
+      const source = readFileSync(
+        resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+        "utf8",
+      );
+      const allowList = source.slice(
+        source.indexOf("const ALLOWED_ROOTS"),
+        source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+      );
+      const entries = [...allowList.matchAll(/^\s*"([a-z0-9-]+)",/gm)].map((m) => m[1]);
+      expect(entries).not.toContain("installments");
+    });
+
     it.each(calledRoots)("%s koku forward edilir", async (root) => {
       const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
       vi.stubGlobal("fetch", fetchMock);
