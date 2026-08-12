@@ -428,6 +428,13 @@ interface MockState {
   documentFolders: MockDocumentFolder[];
   documents: MockDocument[];
   documentSeq: number;
+  // F-ST T1 — Stok & Depo. Bakiye/durum SAKLANMAZ, hareketlerden TÜREVDİR
+  // (bkz. `buildStockSummaryRow`). `stockSeq` yeni kimlikleri deterministik
+  // üretir (`Date.now()` YOK — baseline'lar sabit kalsın).
+  warehouses: MockWarehouse[];
+  stockItems: MockStockItem[];
+  stockEntries: MockStockEntry[];
+  stockSeq: number;
   permissions: Record<string, Record<string, { access_level: string; scope: string }>>;
   projectAccess: Record<string, { all_projects: boolean; project_ids: string[] }>;
   company: {
@@ -1974,6 +1981,13 @@ function seedState(): MockState {
     documentFolders: PROJECT_FOLDER_FIXTURES.map((f) => ({ ...f })),
     documents: DOCUMENT_FIXTURES.map((d) => ({ ...d })),
     documentSeq: 0,
+    warehouses: WAREHOUSE_FIXTURES.map((w) => ({ ...w })),
+    stockItems: STOCK_ITEM_FIXTURES.map((i) => ({ ...i })),
+    stockEntries: STOCK_ENTRY_FIXTURES.map((e) => ({
+      ...e,
+      lines: e.lines.map((l) => ({ ...l })),
+    })),
+    stockSeq: 0,
     permissions,
     projectAccess: {
       "u-1": { all_projects: true, project_ids: [] },
@@ -2982,6 +2996,243 @@ const DOCUMENT_FIXTURES: MockDocument[] = [
   { id: "doc-s1-9", folder_id: "df-s1-6", project_id: "p-1", site_id: "s-1", filename: "Santiye_Foto_Tem2026.zip", mime_type: "application/zip", size_bytes: 50331648, description: "48 fotoğraf", uploaded_by_name: "Sercan Öztürk", created_at: "2026-07-16T12:00:00Z", content: DOC_CONTENT },
   { id: "doc-s1-10", folder_id: "df-s1-7", project_id: "p-1", site_id: "s-1", filename: "ISG_Kontrol_Listesi_Tem.pdf", mime_type: "application/pdf", size_bytes: 327680, description: "Aylık denetim", uploaded_by_name: "Yusuf Kaya", created_at: "2026-07-14T09:00:00Z", content: DOC_CONTENT },
 ];
+
+// --- F-ST T1 · Stok & Depo fikstürleri ------------------------------------
+//
+// ŞEMA SENKRONU (F-P5 dersi): aşağıdaki gövdeler `openapi/openapi.json`
+// şemalarıyla BİREBİRDİR (`StockItemResponse` · `StockSummaryRow` ·
+// `SiteStockRow` · `WarehouseResponse` · `StockEntryResponse`). Uydurma alan
+// EKLENMEZ — mock'ta olup şemada olmayan alan canlıda kırılma demektir.
+//
+// TÜREV KURALI (backend spec §3): `balance` ve `status` KOLON DEĞİLDİR.
+// Bakiye hareketlerden toplanır, durum `min_stock`tan hesaplanır ve bu hesap
+// **YALNIZ BURADA (sunucu tarafında)** yapılır. İstemci hiçbir yerde durumu
+// yeniden üretmez — bu mock o sözleşmenin e2e kapısıdır.
+
+interface MockWarehouse {
+  id: string;
+  name: string;
+  site_id: string | null;
+  created_at: string;
+}
+
+interface MockStockItem {
+  id: string;
+  code: string;
+  name: string;
+  category: "structural" | "steel" | "electrical" | "mechanical" | "interior";
+  unit: string;
+  min_stock: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+interface MockStockEntryLine {
+  id: string;
+  item_id: string;
+  quantity: string;
+  unit_price: string | null;
+  quality: "ok" | "defective" | "rejected";
+}
+
+interface MockStockEntry {
+  id: string;
+  entry_type: "purchase" | "transfer" | "adjustment";
+  entry_date: string;
+  warehouse_id: string;
+  source_warehouse_id: string | null;
+  supplier_name: string | null;
+  delivery_note_no: string | null;
+  received_by_user_id: string | null;
+  note: string | null;
+  created_at: string;
+  lines: MockStockEntryLine[];
+}
+
+/**
+ * Depolar — E3 "Depo" sütununun (satır 130/148/…) dört adı + SG 84'teki
+ * merkez depo. `site_id: null` MERKEZ DEPO demektir ve hiçbir şantiyenin
+ * bakiyesine girmez.
+ */
+const WAREHOUSE_FIXTURES: MockWarehouse[] = [
+  { id: "wh-0", name: "Merkez Depo (Sincan)", site_id: null, created_at: "2025-03-01T08:00:00Z" },
+  { id: "wh-1", name: "D-1 Ambar", site_id: "s-1", created_at: "2025-03-01T08:01:00Z" },
+  { id: "wh-2", name: "D-2 Açık Alan", site_id: "s-1", created_at: "2025-03-01T08:02:00Z" },
+  { id: "wh-3", name: "D-3 Kapalı", site_id: "s-2", created_at: "2025-03-01T08:03:00Z" },
+  { id: "wh-4", name: "Şantiye", site_id: "s-1", created_at: "2025-03-01T08:04:00Z" },
+];
+
+/**
+ * Malzeme kartları — E3 tablosunun YEDİ satırı BİREBİR (kod/ad/kategori/
+ * birim/min stok: mockup 108-185) + eşiksiz bir sekizinci kart.
+ *
+ * `it-8` bilerek `min_stock: null` taşır: durum hücresinin "—" bastığı ve
+ * fiyatsız kalemin `items_without_price` sayacına düştüğü tek satırdır.
+ */
+const STOCK_ITEM_FIXTURES: MockStockItem[] = [
+  { id: "it-1", code: "SNK-0421", name: "Nervürlü Demir Ø12", category: "steel", unit: "Ton", min_stock: "10.000", is_active: true, created_at: "2025-03-05T08:00:00Z" },
+  { id: "it-2", code: "SNK-0108", name: "CTP32,5 Çimento", category: "structural", unit: "Torba", min_stock: "200.000", is_active: true, created_at: "2025-03-05T08:01:00Z" },
+  { id: "it-3", code: "ELK-0334", name: "NYY 4x16 Kablo", category: "electrical", unit: "Metre", min_stock: "150.000", is_active: true, created_at: "2025-03-05T08:02:00Z" },
+  { id: "it-4", code: "SNK-0055", name: "Tuğla 19x9x13", category: "structural", unit: "Adet", min_stock: "5000.000", is_active: true, created_at: "2025-03-05T08:03:00Z" },
+  { id: "it-5", code: "SNK-0201", name: "C25/30 Hazır Beton", category: "structural", unit: "m³", min_stock: "20.000", is_active: true, created_at: "2025-03-05T08:04:00Z" },
+  { id: "it-6", code: "MKN-0192", name: "Su Borusu PP-R 32mm", category: "mechanical", unit: "Metre", min_stock: "80.000", is_active: true, created_at: "2025-03-05T08:05:00Z" },
+  { id: "it-7", code: "SNK-0447", name: "Alçı Levha 12.5mm", category: "interior", unit: "Adet", min_stock: "500.000", is_active: true, created_at: "2025-03-05T08:06:00Z" },
+  { id: "it-8", code: "ICY-0090", name: "İzolasyon Bandı", category: "interior", unit: "Adet", min_stock: null, is_active: true, created_at: "2025-03-05T08:07:00Z" },
+];
+
+/**
+ * Hareketler — bakiyeler E3'ün "Stok" sütunuyla BİREBİR çıksın diye kurulmuş
+ * tek giriş dizisi (kritik/düşük/normal/fazla durumlarının HEPSİ kapsanır):
+ * demir 2,4 (kritik) · çimento 840 (normal) · kablo 120 (düşük) · tuğla 12.400
+ * (normal) · beton 85 (normal) · PP-R 30 (kritik) · alçı 2.800 (fazla).
+ *
+ * `se-8` FİYATSIZ bir `adjustment`tır: eşiksiz karta bakiye yazar ama toplam
+ * stok değerine GİRMEZ (`items_without_price` sayacı bu yüzden 1'dir).
+ */
+const STOCK_ENTRY_FIXTURES: MockStockEntry[] = [
+  { id: "se-1", entry_type: "purchase", entry_date: "2026-07-02", warehouse_id: "wh-1", source_warehouse_id: null, supplier_name: "Çelik San. A.Ş.", delivery_note_no: "İRS-10421", received_by_user_id: "u-2", note: null, created_at: "2026-07-02T08:00:00Z", lines: [{ id: "sel-1", item_id: "it-1", quantity: "2.400", unit_price: "32000.00", quality: "ok" }] },
+  { id: "se-2", entry_type: "purchase", entry_date: "2026-07-03", warehouse_id: "wh-2", source_warehouse_id: null, supplier_name: "Çimsa Bayi", delivery_note_no: "İRS-10422", received_by_user_id: "u-2", note: null, created_at: "2026-07-03T08:00:00Z", lines: [{ id: "sel-2", item_id: "it-2", quantity: "840.000", unit_price: "180.00", quality: "ok" }] },
+  { id: "se-3", entry_type: "purchase", entry_date: "2026-07-04", warehouse_id: "wh-1", source_warehouse_id: null, supplier_name: "Elektrik Ticaret", delivery_note_no: "İRS-10423", received_by_user_id: "u-2", note: null, created_at: "2026-07-04T08:00:00Z", lines: [{ id: "sel-3", item_id: "it-3", quantity: "120.000", unit_price: "95.00", quality: "ok" }] },
+  { id: "se-4", entry_type: "purchase", entry_date: "2026-07-05", warehouse_id: "wh-2", source_warehouse_id: null, supplier_name: "Tuğla Sanayi", delivery_note_no: "İRS-10424", received_by_user_id: "u-2", note: null, created_at: "2026-07-05T08:00:00Z", lines: [{ id: "sel-4", item_id: "it-4", quantity: "12400.000", unit_price: "12.00", quality: "ok" }] },
+  { id: "se-5", entry_type: "purchase", entry_date: "2026-07-06", warehouse_id: "wh-4", source_warehouse_id: null, supplier_name: "Beton A.Ş.", delivery_note_no: "İRS-10425", received_by_user_id: "u-2", note: null, created_at: "2026-07-06T08:00:00Z", lines: [{ id: "sel-5", item_id: "it-5", quantity: "85.000", unit_price: "2400.00", quality: "ok" }] },
+  { id: "se-6", entry_type: "purchase", entry_date: "2026-07-07", warehouse_id: "wh-1", source_warehouse_id: null, supplier_name: "Mekanik Ltd.", delivery_note_no: "İRS-10426", received_by_user_id: "u-2", note: null, created_at: "2026-07-07T08:00:00Z", lines: [{ id: "sel-6", item_id: "it-6", quantity: "30.000", unit_price: "45.00", quality: "ok" }] },
+  { id: "se-7", entry_type: "purchase", entry_date: "2026-07-08", warehouse_id: "wh-3", source_warehouse_id: null, supplier_name: "İç Yapı Market", delivery_note_no: "İRS-10427", received_by_user_id: "u-2", note: null, created_at: "2026-07-08T08:00:00Z", lines: [{ id: "sel-7", item_id: "it-7", quantity: "2800.000", unit_price: "210.00", quality: "ok" }] },
+  { id: "se-8", entry_type: "adjustment", entry_date: "2026-07-09", warehouse_id: "wh-1", source_warehouse_id: null, supplier_name: null, delivery_note_no: null, received_by_user_id: null, note: "Sayım farkı", created_at: "2026-07-09T08:00:00Z", lines: [{ id: "sel-8", item_id: "it-8", quantity: "40.000", unit_price: null, quality: "ok" }] },
+];
+
+/**
+ * Durum formülü — backend spec §7 S1 (E3'ün yedi örnek satırından türetilmiş,
+ * kullanıcı onaylı). Eşik YOKSA durum da YOKTUR (`null` ⇒ ekran "—" basar).
+ */
+const STOCK_CRITICAL_RATIO = 0.5;
+const STOCK_EXCESS_RATIO = 5;
+
+function stockStatusOf(balance: number, minStock: string | null): string | null {
+  if (minStock === null) return null;
+  const min = Number(minStock);
+  if (balance < min * STOCK_CRITICAL_RATIO) return "critical";
+  if (balance < min) return "low";
+  if (balance > min * STOCK_EXCESS_RATIO) return "excess";
+  return "normal";
+}
+
+/**
+ * Bir kalemin depo bazlı bakiyeleri. Transfer ÇİFT BACAKLIDIR: hedef depoya
+ * `+miktar`, kaynak depoya `-miktar` yazılır — tek bacak stok YARATIRDI.
+ */
+function stockBalancesByWarehouse(state: MockState, itemId: string): Map<string, number> {
+  const balances = new Map<string, number>();
+  const add = (warehouseId: string, amount: number) => {
+    balances.set(warehouseId, (balances.get(warehouseId) ?? 0) + amount);
+  };
+  for (const entry of state.stockEntries) {
+    for (const line of entry.lines) {
+      if (line.item_id !== itemId) continue;
+      const quantity = Number(line.quantity);
+      add(entry.warehouse_id, quantity);
+      if (entry.entry_type === "transfer" && entry.source_warehouse_id) {
+        add(entry.source_warehouse_id, -quantity);
+      }
+    }
+  }
+  return balances;
+}
+
+/** Toplam stok değerinin kaynağı: kalemin SON giriş fiyatı (spec §7 S6). */
+function stockLastUnitPrice(state: MockState, itemId: string): string | null {
+  let last: string | null = null;
+  for (const entry of state.stockEntries) {
+    for (const line of entry.lines) {
+      if (line.item_id === itemId && line.unit_price !== null) last = line.unit_price;
+    }
+  }
+  return last;
+}
+
+function buildStockSummaryRow(state: MockState, item: MockStockItem) {
+  const balances = stockBalancesByWarehouse(state, item.id);
+  const total = [...balances.values()].reduce((sum, value) => sum + value, 0);
+  const warehouses = [...balances.entries()]
+    .filter(([, value]) => value !== 0)
+    .map(([warehouseId, value]) => {
+      const warehouse = state.warehouses.find((w) => w.id === warehouseId);
+      return {
+        warehouse_id: warehouseId,
+        warehouse_name: warehouse?.name ?? "",
+        site_id: warehouse?.site_id ?? null,
+        balance: qty3(value),
+      };
+    });
+  return {
+    id: item.id,
+    code: item.code,
+    name: item.name,
+    category: item.category,
+    unit: item.unit,
+    min_stock: item.min_stock,
+    balance: qty3(total),
+    status: stockStatusOf(total, item.min_stock),
+    last_unit_price: stockLastUnitPrice(state, item.id),
+    warehouses,
+  };
+}
+
+/** `MetricPlaceholder`/`ListPlaceholder` zarfları — elle kurulmaz, tek yerden.
+ *
+ * ⚠️ F-ST T3 düzeltmesi: anahtarlar CANLI SUNUCUDAN alınır
+ * (`app/modules/inventory/service.py`): "Bekleyen Sipariş" → `purchasing`,
+ * ŞS "Aylık İhtiyaç"/"Bölüm" → `site_planning`. T2'de ikisi de `procurement`
+ * yazılmıştı; mock ile şema ayrışırsa canlıda gerekçe metni sessizce genel
+ * metne düşer (F-P5 dersi: mock ŞEMAYLA senkron olmalı). */
+const STOCK_PENDING_ORDERS = METRIC_PENDING("purchasing");
+const SITE_STOCK_PENDING_NEED = METRIC_PENDING("site_planning");
+const SITE_STOCK_PENDING_SECTION = {
+  available: false,
+  items: [],
+  pending_module: "site_planning",
+};
+
+function buildStockKpis(rows: ReturnType<typeof buildStockSummaryRow>[]) {
+  let totalValue = 0;
+  let withoutPrice = 0;
+  for (const row of rows) {
+    const balance = Number(row.balance);
+    if (row.last_unit_price === null) {
+      if (balance !== 0) withoutPrice += 1;
+      continue;
+    }
+    totalValue += balance * Number(row.last_unit_price);
+  }
+  return {
+    total_value: money2(totalValue),
+    critical_count: rows.filter((r) => r.status === "critical").length,
+    low_count: rows.filter((r) => r.status === "low").length,
+    total_items: rows.length,
+    items_without_price: withoutPrice,
+  };
+}
+
+/**
+ * BOŞ KATALOG kadrajı (`stok-genel-bos`) için hazır gövde.
+ *
+ * Paylaşılan mock durumu BOŞALTILMAZ (F-PL emsali): boş durum, görsel spec'in
+ * `page.route` ile TEK bir GET yanıtını bu sabitle karşılamasıyla üretilir —
+ * böylece başka spec'lerle yarış oluşmaz.
+ */
+export const EMPTY_STOCK_SUMMARY_RESPONSE = {
+  items: [],
+  total: 0,
+  limit: 50,
+  offset: 0,
+  kpis: {
+    total_value: "0.00",
+    critical_count: 0,
+    low_count: 0,
+    total_items: 0,
+    items_without_price: 0,
+    pending_orders: STOCK_PENDING_ORDERS,
+  },
+};
 
 /** Künye — `content` DIŞARI VERİLMEZ (şemada yok). */
 function buildDocumentRead(doc: MockDocument) {
@@ -5057,6 +5308,307 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           doc.folder_id = body.folder_id === null ? null : String(body.folder_id);
         }
         return send(200, buildDocumentRead(doc));
+      });
+    }
+
+    // --- F-ST T1 · Stok & Depo uçları --------------------------------------
+    // DURUM KODU KANONU (backend spec §4b): gövde içi VARLIK referansı = 404,
+    // biçim/kural ihlali = 422. Aşağıdaki dallar bu ayrımı BİREBİR uygular —
+    // ekranın Türkçe hata basımının e2e kapısıdır.
+
+    // GET /warehouses — yalnız sayfalama; `site_id` SÜZGECİ YOKTUR.
+    if (method === "GET" && path === "/warehouses") {
+      const limit = Number(parsed.searchParams.get("limit") ?? 50);
+      if (limit > 200) return send(422, { detail: "limit en fazla 200 olabilir." });
+      const offset = Number(parsed.searchParams.get("offset") ?? 0);
+      const rows = state.warehouses.slice(offset, offset + limit);
+      return send(200, { items: rows, total: state.warehouses.length, limit, offset });
+    }
+    if (method === "POST" && path === "/warehouses") {
+      return withBody((body) => {
+        const name = String(body.name ?? "").trim();
+        if (!name) return send(422, { detail: "Depo adı zorunlu." });
+        // §4b: gövde içi VARLIK referansı 404'tür (eskiden 422'ydi).
+        const siteId = typeof body.site_id === "string" ? body.site_id : null;
+        if (siteId !== null && !state.sites.some((s) => s.id === siteId)) {
+          return send(404, { detail: "Şantiye bulunamadı." });
+        }
+        state.stockSeq += 1;
+        const warehouse: MockWarehouse = {
+          id: `wh-new-${state.stockSeq}`,
+          name,
+          site_id: siteId,
+          created_at: "2026-08-12T09:00:00Z",
+        };
+        state.warehouses = [...state.warehouses, warehouse];
+        return send(201, warehouse);
+      });
+    }
+    // PATCH/DELETE /warehouses/{id} — EKRANA BAĞLANMAZ (spec §1: mockup'ta
+    // düğme yok); uç yine de yaşar, BFF kökü tanımlı.
+    const warehouseIdMatch = path.match(/^\/warehouses\/([^/]+)$/);
+    if (warehouseIdMatch && (method === "PATCH" || method === "DELETE")) {
+      const warehouse = state.warehouses.find((w) => w.id === warehouseIdMatch[1]);
+      if (!warehouse) return send(404, { detail: "Depo bulunamadı." });
+      if (method === "DELETE") {
+        const used = state.stockEntries.some(
+          (e) => e.warehouse_id === warehouse.id || e.source_warehouse_id === warehouse.id,
+        );
+        if (used) return send(409, { detail: "Hareketi olan depo silinemez." });
+        state.warehouses = state.warehouses.filter((w) => w.id !== warehouse.id);
+        return send(204);
+      }
+      return withBody((body) => {
+        const name = String(body.name ?? "").trim();
+        if (!name) return send(422, { detail: "Depo adı zorunlu." });
+        // `site_id` GÖVDEDE gelse bile YOK SAYILIR (IDOR yüzeyi, spec §7).
+        warehouse.name = name;
+        return send(200, warehouse);
+      });
+    }
+
+    // GET /stock/items — künye listesi (BAKİYE/DURUM TAŞIMAZ).
+    if (method === "GET" && path === "/stock/items") {
+      const limit = Number(parsed.searchParams.get("limit") ?? 50);
+      if (limit > 200) return send(422, { detail: "limit en fazla 200 olabilir." });
+      const offset = Number(parsed.searchParams.get("offset") ?? 0);
+      const category = parsed.searchParams.get("category");
+      const search = (parsed.searchParams.get("q") ?? "").trim().toLocaleLowerCase("tr");
+      const isActive = parsed.searchParams.get("is_active");
+
+      let rows = state.stockItems;
+      if (category) rows = rows.filter((i) => i.category === category);
+      if (isActive !== null) rows = rows.filter((i) => i.is_active === (isActive === "true"));
+      if (search) {
+        rows = rows.filter(
+          (i) =>
+            i.name.toLocaleLowerCase("tr").includes(search) ||
+            i.code.toLocaleLowerCase("tr").includes(search),
+        );
+      }
+      return send(200, { items: rows.slice(offset, offset + limit), total: rows.length, limit, offset });
+    }
+    if (method === "POST" && path === "/stock/items") {
+      return withBody((body) => {
+        const code = String(body.code ?? "").trim();
+        const name = String(body.name ?? "").trim();
+        const unit = String(body.unit ?? "").trim();
+        if (!code || !name || !unit) return send(422, { detail: "Kod, ad ve birim zorunlu." });
+        if (state.stockItems.some((i) => i.code.toLocaleLowerCase("tr") === code.toLocaleLowerCase("tr"))) {
+          return send(409, { detail: "Bu kodda bir malzeme zaten var." });
+        }
+        state.stockSeq += 1;
+        const item: MockStockItem = {
+          id: `it-new-${state.stockSeq}`,
+          code,
+          name,
+          category: String(body.category ?? "structural") as MockStockItem["category"],
+          unit,
+          min_stock: body.min_stock === undefined || body.min_stock === null ? null : qty3(Number(body.min_stock)),
+          is_active: body.is_active === undefined ? true : Boolean(body.is_active),
+          created_at: "2026-08-12T09:05:00Z",
+        };
+        state.stockItems = [...state.stockItems, item];
+        return send(201, item);
+      });
+    }
+    // PATCH /stock/items/{id} — EKRANA BAĞLANMAZ (spec §1); `exclude_unset`
+    // semantiği: `min_stock: null` eşiği SİLER, hiç göndermemek DOKUNMAZ.
+    const stockItemIdMatch = path.match(/^\/stock\/items\/([^/]+)$/);
+    if (method === "PATCH" && stockItemIdMatch) {
+      const item = state.stockItems.find((i) => i.id === stockItemIdMatch[1]);
+      if (!item) return send(404, { detail: "Malzeme bulunamadı." });
+      return withBody((body) => {
+        if (body.code !== undefined) item.code = String(body.code);
+        if (body.name !== undefined) item.name = String(body.name);
+        if (body.category !== undefined) item.category = String(body.category) as MockStockItem["category"];
+        if (body.unit !== undefined) item.unit = String(body.unit);
+        if (body.min_stock !== undefined) {
+          item.min_stock = body.min_stock === null ? null : qty3(Number(body.min_stock));
+        }
+        if (body.is_active !== undefined) item.is_active = Boolean(body.is_active);
+        return send(200, item);
+      });
+    }
+
+    // GET /stock/summary — E3 katalog tablosu + KPI şeridi. Bakiye ve durum
+    // BURADA türetilir; istemci onları yeniden HESAPLAMAZ.
+    if (method === "GET" && path === "/stock/summary") {
+      const limit = Number(parsed.searchParams.get("limit") ?? 50);
+      if (limit > 200) return send(422, { detail: "limit en fazla 200 olabilir." });
+      const offset = Number(parsed.searchParams.get("offset") ?? 0);
+      const status = parsed.searchParams.get("status");
+      const category = parsed.searchParams.get("category");
+      const search = (parsed.searchParams.get("q") ?? "").trim().toLocaleLowerCase("tr");
+
+      let rows = state.stockItems.map((item) => buildStockSummaryRow(state, item));
+      if (category) rows = rows.filter((r) => r.category === category);
+      if (search) {
+        rows = rows.filter(
+          (r) =>
+            r.name.toLocaleLowerCase("tr").includes(search) ||
+            r.code.toLocaleLowerCase("tr").includes(search),
+        );
+      }
+      if (status) rows = rows.filter((r) => r.status === status);
+      // KPI'lar SÜZÜLEN kümenin özetidir, sayfanın değil (backend kararı).
+      return send(200, {
+        items: rows.slice(offset, offset + limit),
+        total: rows.length,
+        limit,
+        offset,
+        kpis: { ...buildStockKpis(rows), pending_orders: STOCK_PENDING_ORDERS },
+      });
+    }
+
+    // GET/POST /stock/entries
+    if (method === "GET" && path === "/stock/entries") {
+      const limit = Number(parsed.searchParams.get("limit") ?? 50);
+      if (limit > 200) return send(422, { detail: "limit en fazla 200 olabilir." });
+      const offset = Number(parsed.searchParams.get("offset") ?? 0);
+      const entryType = parsed.searchParams.get("entry_type");
+      const warehouseId = parsed.searchParams.get("warehouse_id");
+      const dateFrom = parsed.searchParams.get("date_from");
+      const dateTo = parsed.searchParams.get("date_to");
+
+      let rows = state.stockEntries;
+      if (entryType) rows = rows.filter((e) => e.entry_type === entryType);
+      if (warehouseId) {
+        rows = rows.filter(
+          (e) => e.warehouse_id === warehouseId || e.source_warehouse_id === warehouseId,
+        );
+      }
+      if (dateFrom) rows = rows.filter((e) => e.entry_date >= dateFrom);
+      if (dateTo) rows = rows.filter((e) => e.entry_date <= dateTo);
+      return send(200, { items: rows.slice(offset, offset + limit), total: rows.length, limit, offset });
+    }
+    if (method === "POST" && path === "/stock/entries") {
+      return withBody((body) => {
+        const entryType = String(body.entry_type ?? "");
+        const lines = Array.isArray(body.lines) ? (body.lines as Array<Record<string, unknown>>) : [];
+        if (lines.length === 0) return send(422, { detail: "En az bir kalem satırı gerekli." });
+
+        // §4b — VARLIK referansları 404.
+        const warehouseId = String(body.warehouse_id ?? "");
+        if (!state.warehouses.some((w) => w.id === warehouseId)) {
+          return send(404, { detail: "Depo bulunamadı." });
+        }
+        const sourceWarehouseId =
+          typeof body.source_warehouse_id === "string" ? body.source_warehouse_id : null;
+        if (sourceWarehouseId !== null && !state.warehouses.some((w) => w.id === sourceWarehouseId)) {
+          return send(404, { detail: "Kaynak depo bulunamadı." });
+        }
+        const receivedBy = typeof body.received_by_user_id === "string" ? body.received_by_user_id : null;
+        if (receivedBy !== null && !state.users.some((u) => u.id === receivedBy)) {
+          return send(404, { detail: "Teslim alan kullanıcı bulunamadı." });
+        }
+        for (const line of lines) {
+          if (!state.stockItems.some((i) => i.id === String(line.item_id ?? ""))) {
+            return send(404, { detail: "Malzeme bulunamadı." });
+          }
+        }
+
+        // §4b — biçim/kural ihlalleri 422.
+        if (entryType === "transfer") {
+          if (!sourceWarehouseId) return send(422, { detail: "Transferde kaynak depo zorunludur." });
+          if (sourceWarehouseId === warehouseId) {
+            return send(422, { detail: "Kaynak ve hedef depo aynı olamaz." });
+          }
+        } else if (sourceWarehouseId) {
+          return send(422, { detail: "Bu hareket tipinde kaynak depo verilemez." });
+        }
+        for (const line of lines) {
+          const quantity = Number(line.quantity);
+          if (!Number.isFinite(quantity) || quantity === 0) {
+            return send(422, { detail: "Miktar sıfır olamaz." });
+          }
+          if (entryType !== "adjustment" && quantity < 0) {
+            return send(422, { detail: "Miktar negatif olamaz." });
+          }
+        }
+
+        state.stockSeq += 1;
+        const entry: MockStockEntry = {
+          id: `se-new-${state.stockSeq}`,
+          entry_type: entryType as MockStockEntry["entry_type"],
+          entry_date: String(body.entry_date ?? "2026-08-12"),
+          warehouse_id: warehouseId,
+          source_warehouse_id: sourceWarehouseId,
+          supplier_name: typeof body.supplier_name === "string" ? body.supplier_name : null,
+          delivery_note_no: typeof body.delivery_note_no === "string" ? body.delivery_note_no : null,
+          received_by_user_id: receivedBy,
+          note: typeof body.note === "string" ? body.note : null,
+          created_at: "2026-08-12T09:10:00Z",
+          lines: lines.map((line, index) => ({
+            id: `sel-new-${state.stockSeq}-${index}`,
+            item_id: String(line.item_id),
+            quantity: qty3(Number(line.quantity)),
+            unit_price:
+              line.unit_price === undefined || line.unit_price === null
+                ? null
+                : money2(Number(line.unit_price)),
+            quality: (line.quality ?? "ok") as MockStockEntryLine["quality"],
+          })),
+        };
+        state.stockEntries = [...state.stockEntries, entry];
+        return send(201, entry);
+      });
+    }
+
+    // GET /sites/{site_id}/stock — ŞS tablosu. Bakiye YALNIZ o şantiyenin
+    // depolarını kapsar; merkez depo (site_id NULL) hiçbir şantiyeye girmez.
+    const siteStockMatch = path.match(/^\/sites\/([^/]+)\/stock$/);
+    if (method === "GET" && siteStockMatch) {
+      const siteId = siteStockMatch[1];
+      if (!state.sites.some((s) => s.id === siteId)) return send(404, { detail: "Şantiye bulunamadı." });
+      const limit = Number(parsed.searchParams.get("limit") ?? 50);
+      if (limit > 200) return send(422, { detail: "limit en fazla 200 olabilir." });
+      const offset = Number(parsed.searchParams.get("offset") ?? 0);
+      const siteWarehouseIds = new Set(
+        state.warehouses.filter((w) => w.site_id === siteId).map((w) => w.id),
+      );
+
+      const rows = state.stockItems
+        .map((item) => {
+          const balances = stockBalancesByWarehouse(state, item.id);
+          let balance = 0;
+          for (const [warehouseId, value] of balances) {
+            if (siteWarehouseIds.has(warehouseId)) balance += value;
+          }
+          return {
+            id: item.id,
+            code: item.code,
+            name: item.name,
+            category: item.category,
+            unit: item.unit,
+            min_stock: item.min_stock,
+            balance: qty3(balance),
+            status: stockStatusOf(balance, item.min_stock),
+            // "Aylık İhtiyaç" ve "Bölüm" sütunlarının GİRİŞ YÜZEYİ YOKTUR —
+            // değer uydurulmaz, yer tutucu zarfları taşınır (spec §1).
+            monthly_need: SITE_STOCK_PENDING_NEED,
+            section: SITE_STOCK_PENDING_SECTION,
+          };
+        })
+        .filter((row) => Number(row.balance) !== 0);
+
+      const priced = rows.filter((row) => stockLastUnitPrice(state, row.id) !== null);
+      const totalValue = priced.reduce(
+        (sum, row) => sum + Number(row.balance) * Number(stockLastUnitPrice(state, row.id)),
+        0,
+      );
+      return send(200, {
+        items: rows.slice(offset, offset + limit),
+        total: rows.length,
+        limit,
+        offset,
+        kpis: {
+          total_value: money2(totalValue),
+          critical_count: rows.filter((r) => r.status === "critical").length,
+          low_count: rows.filter((r) => r.status === "low").length,
+          total_items: rows.length,
+          items_without_price: rows.length - priced.length,
+        },
       });
     }
 

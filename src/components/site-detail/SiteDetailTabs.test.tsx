@@ -31,12 +31,16 @@ describe("SiteDetailTabs (spec §5.3)", () => {
     expect(screen.getByRole("tab", { name: "Puantaj" })).toHaveAttribute("aria-selected", "false");
   });
 
-  it("yazilmamis sekmeler gorunur kalir, gezinilebilir, title 'Bu bolum yakinda' tasir, aria-disabled verilmez", () => {
+  it("YEDI sekmenin de gercek rotasi vardir — hicbiri 'Bu bolum yakinda' tasimaz", () => {
     render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={BASE} />);
+    // F-ST T3: "Stok" yazildi; yazilmamis sekme KALMADI.
+    for (const tab of screen.getAllByRole("tab")) {
+      expect(tab).not.toHaveAttribute("title");
+      expect(tab).not.toHaveAttribute("aria-disabled");
+    }
+
     const stok = screen.getByRole("tab", { name: "Stok" });
     expect(stok).toHaveAttribute("href", `${BASE}/stok`);
-    expect(stok).toHaveAttribute("title", "Bu bölüm yakında");
-    expect(stok).not.toHaveAttribute("aria-disabled");
 
     // F-PT T2: "Puantaj" artik yazildi — title TASIMAZ, gercek rotaya gider.
     const puantaj = screen.getByRole("tab", { name: "Puantaj" });
@@ -96,6 +100,17 @@ describe("SiteDetailTabs (spec §5.3)", () => {
     render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={`${BASE}/hakedisler`} />);
     expect(screen.getByRole("tab", { name: "Hakedişler" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: "Bölümler" })).toHaveAttribute("aria-selected", "false");
+  });
+
+  // F-ST T3 + F-SD T7 dersi: kok sekme ("Bölümler") diger 6 sekmenin ATASIDIR;
+  // eslesme `exact` olmazsa alt rotalarda IKI sekme birden aktif gorunur.
+  it("Stok rotasindayken YALNIZ Stok aria-selected tasir (cift aktiflik YOK)", () => {
+    render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={`${BASE}/stok`} />);
+    const selected = screen
+      .getAllByRole("tab")
+      .filter((tab) => tab.getAttribute("aria-selected") === "true");
+    expect(selected).toHaveLength(1);
+    expect(selected[0]).toHaveTextContent("Stok");
   });
 });
 

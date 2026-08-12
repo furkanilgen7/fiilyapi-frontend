@@ -35,6 +35,12 @@ describe("pendingModuleLabel", () => {
     expect(pendingModuleLabel("section_name")).toBe("Bölüm adı çözümlemesiyle birlikte gelir");
   });
 
+  // F-ST T3: canli sunucunun stok anahtarlari (`inventory/service.py`).
+  it("F-ST anahtarlarini esler (purchasing + site_planning)", () => {
+    expect(pendingModuleLabel("purchasing")).toBe("Satınalma modülüyle birlikte gelir");
+    expect(pendingModuleLabel("site_planning")).toBe("Şantiye planlama türeviyle birlikte gelir");
+  });
+
   it("bilinmeyen anahtarda genel metin doner", () => {
     expect(pendingModuleLabel("bilinmeyen")).toBe("İlgili modülle birlikte gelir");
   });

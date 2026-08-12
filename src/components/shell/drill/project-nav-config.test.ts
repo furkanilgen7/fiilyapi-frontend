@@ -232,7 +232,10 @@ describe("buildProjectNav — href geçerliliği (kırık link koruması)", () =
     expect(resolveHref(documents!.href, true)).toEqual({ kind: "static" });
   });
 
-  it("henüz yazılmamış 'Stok' sekmesi catch-all'a düşer (kontrol grubu)", () => {
+  // F-ST T3: bu sekme ARTIK yazıldı — daha önce catch-all ComingSoon'a düşen
+  // tek şantiye sekmesiydi. Guard tersine çevrildi: gerçek rotaya çözülmezse
+  // (rota silinir/yeniden adlandırılırsa) test kırmızıya döner.
+  it("'Stok' sekmesi gerçek rotaya çözülür (ComingSoon DEĞİL)", () => {
     const nav = buildProjectNav({
       projectId: "42",
       projectName: "Güneşkent Konut",
@@ -241,7 +244,8 @@ describe("buildProjectNav — href geçerliliği (kırık link koruması)", () =
     });
     const siteGroup = nav.groups.find((g) => g.heading === "A-Blok Şantiyesi");
     const stock = siteGroup!.items.find((i) => i.label === "Stok");
-    expect(resolveHref(stock!.href, true)).toEqual({ kind: "catch-all" });
+    expect(stock?.href).toBe("/projeler/42/santiyeler/99/stok");
+    expect(resolveHref(stock!.href, true)).toEqual({ kind: "static" });
   });
 
   // F-SD T7 final review bulgusu: "Bölümler" şantiye kök rotasıdır ve diğer 6

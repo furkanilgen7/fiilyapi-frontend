@@ -82,6 +82,20 @@ const ALLOWED_ROOTS = new Set([
   // "projects" olduğu için MEVCUT kökten geçer; ayrı bir kök gerekmez.
   "documents",
   "document-folders",
+  // F-ST T1 — Stok & Depo İKİ kök birden ekler:
+  //   · `stock`      → `GET/POST /stock/items` (katalog listesi + malzeme
+  //     ekleme), `PATCH /stock/items/{id}` (eşik/kullanımdan kaldırma),
+  //     `POST/GET /stock/entries` (giriş/transfer/düzeltme hareketleri),
+  //     `GET /stock/summary` (E3 katalog tablosu + KPI şeridi — bakiye ve
+  //     durum SUNUCU TÜREVİDİR, bu uçtan gelir).
+  //   · `warehouses` → `GET/POST /warehouses`, `PATCH/DELETE /warehouses/{id}`.
+  //     Depo listesi olmadan stok giriş formu KULLANILAMAZ (depo alanı zorunlu).
+  // ŞANTİYE stok tablosu (`GET /sites/{site_id}/stock`) ilk segmenti "sites"
+  // olduğu için MEVCUT kökten geçer; "site-stock" diye AYRI bir kök EKLENMEZ.
+  // Bu iki kök düşerse stok modülü YALNIZ CANLIDA tümüyle 404 alır (katalog
+  // sonsuza dek boş, her giriş denemesi başarısız); jsdom testleri bunu GÖRMEZ.
+  "stock",
+  "warehouses",
 ]);
 
 // JSON/metin sayilan icerik tipleri: govde metne cozulup JSON olarak islenir.

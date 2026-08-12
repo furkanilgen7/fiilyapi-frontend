@@ -870,6 +870,75 @@ describe("BFF /api/backend/[...path]", () => {
       expect(String(fetchMock.mock.calls[0][0])).toContain(`/${root}/x`);
     });
 
+    // F-ST · T1 — Stok & Depo dilimi IKI yeni kok ekler ve ikisi de AYRI ADLI
+    // kapiya baglanir (dilimin en buyuk tuzagi — grep'siz "zaten var" varsayimi
+    // canlida 404 uretir):
+    //   · `stock`      → GET/POST /stock/items, PATCH /stock/items/{id},
+    //                    POST/GET /stock/entries, GET /stock/summary
+    //   · `warehouses` → GET/POST /warehouses, PATCH/DELETE /warehouses/{id}
+    // SANTIYE stok ucu (`/sites/{site_id}/stock`) ilk segmenti "sites" oldugu
+    // icin MEVCUT kokten gecer; ayri bir kok EKLENMEZ (asagidaki test).
+    it("stock koku stok ekranlari icin allow-list'te tanimlidir", () => {
+      const source = readFileSync(
+        resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+        "utf8",
+      );
+      const allowList = source.slice(
+        source.indexOf("const ALLOWED_ROOTS"),
+        source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+      );
+      // Yorum metni DEGIL, gercek girdiler okunur (satir basindaki tirnakli ad).
+      const entries = [...allowList.matchAll(/^\s*"([a-z0-9-]+)",/gm)].map((m) => m[1]);
+      expect(entries).toContain("stock");
+    });
+
+    it("warehouses koku depo uclari icin allow-list'te tanimlidir", () => {
+      const source = readFileSync(
+        resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+        "utf8",
+      );
+      const allowList = source.slice(
+        source.indexOf("const ALLOWED_ROOTS"),
+        source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+      );
+      const entries = [...allowList.matchAll(/^\s*"([a-z0-9-]+)",/gm)].map((m) => m[1]);
+      expect(entries).toContain("warehouses");
+    });
+
+    it("/sites/{site_id}/stock ucu allow-list'teki 'sites' kokunden gecer", () => {
+      const root = "/sites/{site_id}/stock".split("/")[1];
+      expect(root).toBe("sites");
+      const source = readFileSync(
+        resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+        "utf8",
+      );
+      const allowList = source.slice(
+        source.indexOf("const ALLOWED_ROOTS"),
+        source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+      );
+      const entries = [...allowList.matchAll(/^\s*"([a-z0-9-]+)",/gm)].map((m) => m[1]);
+      expect(entries).toContain(root);
+    });
+
+    it.each(["stock/items", "stock/summary", "stock/entries", "warehouses"])(
+      "%s ucu forward edilir",
+      async (endpoint) => {
+        const fetchMock = vi.fn().mockResolvedValue(
+          new Response(JSON.stringify({ items: [], total: 0, limit: 50, offset: 0 }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+        vi.stubGlobal("fetch", fetchMock);
+        const res = await GET(
+          req(`/api/backend/${endpoint}`, "GET", { [ACCESS_COOKIE]: "acc" }),
+          ctx(endpoint.split("/")),
+        );
+        expect(res.status).toBe(200);
+        expect(String(fetchMock.mock.calls[0][0])).toContain(`/${endpoint}`);
+      },
+    );
+
     it.each(calledRoots)("%s koku forward edilir", async (root) => {
       const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
       vi.stubGlobal("fetch", fetchMock);
