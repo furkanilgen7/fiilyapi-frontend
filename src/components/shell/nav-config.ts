@@ -55,6 +55,12 @@ export const NAV_GROUPS: NavGroup[] = [
     heading: "Sözleşme & Mali",
     items: [
       { label: "Sözleşmeler", href: "/sozlesmeler", Icon: FileTextIcon },
+      // F-P8 T2: SY (`Satış Yönetimi.dc.html` 40) mockup'ın PROJE bloğunda
+      // çizilir; kabuk canon'unda karşılığı YOKTU — ünite satışı/tahsilatı
+      // mali bir yüzey olduğu için "Sözleşme & Mali" grubuna, sözleşmelerin
+      // hemen ardına eklendi. Rota GERÇEKTİR (`/satis`), ComingSoon DEĞİL;
+      // nav href guard testi bunu ayrıca doğrular.
+      { label: "Satış Yönetimi", href: "/satis", Icon: BuildingIcon },
       { label: "Muhasebe", href: "/muhasebe", Icon: BankIcon },
       { label: "Hazine", href: "/hazine", Icon: WalletIcon },
       { label: "Hakedişler", href: "/hakedisler", Icon: ClockIcon },

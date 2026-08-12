@@ -1,0 +1,474 @@
+/* SY · Satış Yönetimi (F-P8 T2). Kanon: projedesign "Satış Yönetimi.dc.html";
+   parantez içi sayılar o dosyanın SATIR numaralarıdır. Prefix `satis`.
+   Mockup'ın üst barı (14-27) ve sol menüsü (30-49) UYGULAMA KABUĞUdur
+   (F3 Topbar + Sidebar) — bu sayfa onları YENİDEN ÇİZMEZ.
+   Çıplak hex YOKTUR: her renk `src/styles/tokens.css` token'ıdır. */
+.satis {
+  animation: var(--anim-fade-up); /* 51 */
+}
+
+/* Başlık şeridi — mockup'ta breadcrumb (19-21) + sağdaki iki düğme (23-26). */
+.satis__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: 16px;
+}
+.satis__title {
+  font-size: var(--text-page-title);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+}
+.satis__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2); /* 23 */
+}
+
+/* Devre dışı düğmenin görünür gerekçesi — sessiz düşüş YOK. */
+.satis__notice {
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: 8px 12px;
+}
+
+/* KPI şeridi (54-60): BEŞ eşit kart. */
+.satis-kpi {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr); /* 54 */
+  gap: var(--space-3);
+  margin-bottom: 20px;
+}
+.satis-kpi__card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); /* 55 */
+  padding: 14px;
+}
+/* 55/56/59 · üç kartın sol kenarlığı renklidir. */
+.satis-kpi__card--sold {
+  border-left: 4px solid var(--color-success);
+}
+.satis-kpi__card--reserved {
+  border-left: 4px solid var(--color-warning);
+}
+.satis-kpi__card--overdue {
+  border-left: 4px solid var(--color-danger);
+}
+.satis-kpi__label {
+  font-size: 10px; /* 55 */
+  color: var(--color-text-subtle);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+.satis-kpi__value {
+  font-size: var(--text-numeric); /* 55 — 22px */
+  font-weight: var(--weight-bold);
+}
+/* 58/59 · para kartlarında değer mono ve bir punto küçüktür. */
+.satis-kpi__value--money {
+  font-size: 20px;
+  font-family: var(--font-mono);
+}
+.satis-kpi__value--success {
+  color: var(--color-success); /* 55 */
+}
+.satis-kpi__value--warning {
+  color: var(--color-warning); /* 56 */
+}
+.satis-kpi__value--muted {
+  color: var(--color-text-muted); /* 57 */
+}
+.satis-kpi__value--primary {
+  color: var(--color-primary); /* 58 */
+}
+.satis-kpi__value--danger {
+  color: var(--color-danger); /* 59 */
+}
+.satis-kpi__hint {
+  margin-top: 2px; /* 55 */
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+/* 58 · yüzde sunucudan gelmiyorsa uydurma oran basılmaz. */
+.satis-kpi__hint--pending {
+  cursor: help;
+}
+
+/* Blok doluluk haritası (62-140). */
+.satis-map {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* 63 */
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.satis-map__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px; /* 64 */
+}
+.satis-map__title {
+  font-size: 14px; /* 65 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.satis-map__legend {
+  display: flex;
+  gap: var(--space-3); /* 66 */
+}
+.satis-map__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px; /* 67 */
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+.satis-map__swatch {
+  width: 12px; /* 67 */
+  height: 12px;
+  border-radius: 3px;
+}
+.satis-map__swatch--sold {
+  background: var(--color-success); /* 67 */
+}
+.satis-map__swatch--reserved {
+  background: var(--color-warning); /* 68 */
+}
+.satis-map__swatch--available {
+  background: var(--color-border); /* 69 */
+}
+.satis-map__notice {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.satis-map__blocks {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 72 */
+  gap: 20px;
+}
+.satis-map__block-title {
+  font-size: 12px; /* 74 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
+  margin-bottom: 10px;
+}
+.satis-map__grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr); /* 75 */
+  gap: 5px;
+}
+.satis-map__cell {
+  aspect-ratio: 1; /* 76 */
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+}
+.satis-map__cell--sold {
+  background: var(--color-success); /* 76 */
+  color: var(--color-on-brand);
+}
+.satis-map__cell--reserved {
+  background: var(--color-warning); /* 89 */
+  color: var(--color-on-brand);
+}
+.satis-map__cell--available {
+  background: var(--color-border); /* 92 */
+  color: var(--color-text-muted);
+}
+.satis-map__cell--closed {
+  background: var(--color-border-strong);
+  color: var(--color-text-secondary);
+}
+.satis-map__block-summary {
+  margin-top: 8px; /* 101 */
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* Satış tablosu kartı (142-215). */
+.satis-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* 143 */
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.satis-card__head {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* 144 */
+  padding: 13px 16px;
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.satis-card__title {
+  font-size: 13px; /* 145 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+/* Süzgeç açıkken TOPLAM satırının kaynağı değişir — gerekçe görünür yazılır. */
+.satis-card__note {
+  padding: 10px 16px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-divider);
+}
+.satis-table {
+  width: 100%;
+  border-collapse: collapse; /* 148 */
+}
+.satis-table__th {
+  padding: 10px 12px; /* 150-156 */
+  background: var(--color-surface-2); /* 149 */
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  white-space: nowrap;
+}
+.satis-table__th--left {
+  text-align: left;
+}
+.satis-table__th--right {
+  text-align: right;
+}
+.satis-table__th--center {
+  text-align: center;
+}
+/* 153/154 · iki başlık renklidir (tahsil yeşil, kalan kehribar). */
+.satis-table__th--paid {
+  color: var(--color-success);
+}
+.satis-table__th--remaining {
+  color: var(--color-warning);
+}
+.satis-row {
+  border-bottom: 1px solid var(--color-divider); /* 159 */
+}
+.satis-row:last-child {
+  border-bottom: none; /* 195 */
+}
+/* 177 · gecikmiş satırın zemini kırmızı tonudur. */
+.satis-row--overdue {
+  background: var(--color-audit-danger-row-bg);
+}
+/* 186 · rezerve satırın zemini kehribar tonudur. */
+.satis-row--reservation {
+  background: var(--color-amber-tint-cell);
+}
+.satis-table__td {
+  padding: 12px; /* 160-166 */
+  font-size: 13px;
+  color: var(--color-text-muted);
+  vertical-align: middle;
+}
+.satis-table__td--right {
+  text-align: right;
+}
+.satis-table__td--center {
+  text-align: center;
+}
+.satis-table__td--mono {
+  font-family: var(--font-mono); /* 162-164 */
+}
+.satis-table__unit {
+  font-weight: var(--weight-semibold); /* 160 */
+  color: var(--color-text);
+  padding-left: 14px;
+}
+.satis-table__customer {
+  font-size: 13px; /* 161 */
+  color: var(--color-text);
+}
+.satis-table__note {
+  font-size: var(--text-small); /* 161 */
+}
+.satis-table__note--muted {
+  color: var(--color-text-subtle); /* 161, 197 */
+}
+.satis-table__note--danger {
+  color: var(--color-danger); /* 179 */
+}
+.satis-table__note--warning {
+  color: var(--color-warning-strong); /* 188 */
+}
+.satis-table__price {
+  font-weight: var(--weight-bold); /* 162 */
+  color: var(--color-text);
+}
+.satis-table__paid {
+  font-weight: var(--weight-semibold); /* 163 */
+  color: var(--color-success);
+}
+.satis-table__remaining {
+  font-weight: var(--weight-semibold); /* 173 */
+  color: var(--color-warning);
+}
+/* 182 · gecikmiş satırda kalan tutar kırmızı ve kalındır. */
+.satis-table__remaining--overdue {
+  font-weight: var(--weight-bold);
+  color: var(--color-danger);
+}
+/* 164 · kalan sıfırsa soluk tonda basılır. */
+.satis-table__remaining--zero {
+  color: var(--color-text-subtle);
+}
+.satis-plan {
+  font-size: 12px; /* 165 */
+  color: var(--color-text-muted);
+}
+/* 183 · gecikmiş satırda plan hücresi kırmızı ve kalındır. */
+.satis-plan--overdue {
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-danger);
+}
+/* 192 · planı olmayan satırda hücre soluktur. */
+.satis-plan--muted {
+  color: var(--color-text-subtle);
+}
+
+/* Durum rozeti (166 · 175 · 184 · 193 · 202) — ölçü mockup'tan, renkler
+   `Badge` varyantından; iki tonda primitive'den KOYU istenir. */
+.badge.satis-badge {
+  font-weight: var(--weight-semibold);
+  padding: 3px 9px; /* 166 */
+}
+.badge.satis-badge--overdue {
+  color: var(--color-danger-strong); /* 184 */
+}
+.badge.satis-badge--reservation {
+  color: var(--color-warning-strong); /* 193 */
+}
+
+/* TOPLAM satırı (206-212) — mor şerit. */
+.satis-total {
+  background: var(--color-accent-purple-tint); /* 206 */
+  border-top: 2px solid var(--color-accent-purple-grad-start);
+}
+.satis-total__label {
+  padding: 12px 14px; /* 207 */
+  font-size: 13px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.satis-total__value {
+  padding: 12px; /* 208-210 */
+  text-align: right;
+  font-size: 14px;
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+}
+.satis-total__value--price {
+  color: var(--color-text); /* 208 */
+}
+.satis-total__value--paid {
+  color: var(--color-success); /* 209 */
+}
+.satis-total__value--remaining {
+  color: var(--color-warning); /* 210 */
+}
+
+/* Boş/yükleniyor/hata durumu — mockup'ın örnek satırları SABİT BASILMAZ. */
+.satis-empty {
+  padding: var(--space-8);
+  text-align: center;
+}
+.satis-empty__title {
+  font-size: 14px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.satis-empty__hint {
+  margin-top: var(--space-1);
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+
+/* Yaklaşan tahsilatlar (217-234). */
+.satis-upcoming {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* 218 */
+  box-shadow: var(--shadow-card);
+  padding: 18px;
+}
+.satis-upcoming__title {
+  font-size: 13px; /* 219 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin-bottom: 14px;
+}
+.satis-upcoming__empty {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+.satis-upcoming__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2); /* 220 */
+  list-style: none;
+}
+.satis-upcoming__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px; /* 221 */
+  border-radius: var(--radius-8);
+}
+/* 221 · vadesi geçmiş satır kırmızı zemin + sol şerit. */
+.satis-upcoming__row--overdue {
+  background: var(--color-audit-danger-row-bg);
+  border-left: 3px solid var(--color-danger);
+}
+/* 225 · yaklaşan taksit kehribar zemin + sol şerit. */
+.satis-upcoming__row--due {
+  background: var(--color-amber-tint-cell);
+  border-left: 3px solid var(--color-warning);
+}
+.satis-upcoming__name {
+  font-size: 13px; /* 222 */
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+.satis-upcoming__meta {
+  font-size: var(--text-small); /* 222 */
+  color: var(--color-text-subtle);
+}
+.satis-upcoming__meta--overdue {
+  color: var(--color-danger); /* 222 */
+}
+.satis-upcoming__amount-box {
+  text-align: right; /* 223 */
+}
+.satis-upcoming__amount {
+  font-size: 14px; /* 223 */
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+}
+.satis-upcoming__amount--overdue {
+  color: var(--color-danger); /* 223 */
+}
+.satis-upcoming__amount--due {
+  color: var(--color-warning-strong); /* 227 */
+}
+.satis-upcoming__fee {
+  font-size: var(--text-small); /* 223 */
+  color: var(--color-text-subtle);
+}

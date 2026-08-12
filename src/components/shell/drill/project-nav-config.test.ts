@@ -111,10 +111,12 @@ describe("buildProjectNav — Saha & İK / Stok & Satınalma / Mali grupları (s
     expect(group?.items.map((i) => i.label)).toEqual(["Stok & Depo", "Satınalma"]);
   });
 
-  it("Mali grubunda 6 öğe içerir", () => {
+  // F-P8 T2: "Satış Yönetimi" eklendi (SY 40 — mockup proje menüsünde çizer).
+  it("Mali grubunda 7 öğe içerir", () => {
     const group = nav.groups.find((g) => g.heading === "MALİ");
     expect(group?.items.map((i) => i.label)).toEqual([
       "Sözleşmeler",
+      "Satış Yönetimi",
       "Taşeron Hakediş",
       "İşveren Hakediş",
       "Muhasebe",
@@ -246,6 +248,18 @@ describe("buildProjectNav — href geçerliliği (kırık link koruması)", () =
     const stock = siteGroup!.items.find((i) => i.label === "Stok");
     expect(stock?.href).toBe("/projeler/42/santiyeler/99/stok");
     expect(resolveHref(stock!.href, true)).toEqual({ kind: "static" });
+  });
+
+  // F-P8 T2: "Satış Yönetimi" GERÇEK bir rotadır (`/satis`). Yukarıdaki döngü
+  // catch-all'ı da geçerli saydığından yazılmış öğe AYRICA sınanır: rota
+  // klasörü silinirse test kırılır, kullanıcı sessizce "yakında" görmez.
+  it("'Satış Yönetimi' /satis statik rotasına düşer (catch-all DEĞİL)", () => {
+    const nav = buildProjectNav({ projectId: "1", projectName: "Güneşkent Konut" });
+    const item = nav.groups
+      .flatMap((g) => g.items)
+      .find((i) => i.label === "Satış Yönetimi");
+    expect(item?.href).toBe("/satis");
+    expect(resolveHref(item!.href, false)).toEqual({ kind: "static" });
   });
 
   // F-SD T7 final review bulgusu: "Bölümler" şantiye kök rotasıdır ve diğer 6
