@@ -1,4 +1,5 @@
 import type { BadgeVariant } from "@/components/ui/badge/Badge";
+import type { InstallmentPaymentMethod } from "@/lib/api/hooks/useSaleInstallments";
 import type { UnitSaleResponse, UnitSaleStatus } from "@/lib/api/hooks/useSales";
 import { formatDateDots } from "@/lib/format";
 
@@ -243,6 +244,32 @@ export const PRICE_LIST_PENDING_REASON =
  */
 export const COLLECTION_PCT_UNKNOWN_REASON =
   "Sözleşmeye bağlanmış satış tutarı yok — tahsilat oranı hesaplanmaz";
+
+/**
+ * Taksit satırının "Ödeme Şekli" seçicisi (DS 114 · 122 · 129 · 136). Enum
+ * ŞEMADA GERÇEKTİR (`InstallmentPaymentMethod`) — pending hücre DEĞİL. Etiket
+ * haritası TEK KAYNAK olarak burada durur; DS formu (`sales-form/`) kendi
+ * eşlemesini yazmaz.
+ *
+ * Mockup satır seçenekleri "Havale/EFT · Nakit · Çek · Otomatik Ödeme" —
+ * sunucu enum'uyla birebir eşlenir (`transfer` = Havale/EFT).
+ */
+export const INSTALLMENT_PAYMENT_METHOD_LABELS: Record<InstallmentPaymentMethod, string> = {
+  transfer: "Havale/EFT", // 122
+  cash: "Nakit", // 122
+  cheque: "Çek", // 122
+  auto_payment: "Otomatik Ödeme", // 129
+};
+
+export interface InstallmentPaymentMethodOption {
+  value: InstallmentPaymentMethod;
+  label: string;
+}
+
+/** Seçici seçenekleri — enum sırasını korur (Havale varsayılan görünür). */
+export const INSTALLMENT_PAYMENT_METHOD_OPTIONS: InstallmentPaymentMethodOption[] = (
+  Object.keys(INSTALLMENT_PAYMENT_METHOD_LABELS) as InstallmentPaymentMethod[]
+).map((value) => ({ value, label: INSTALLMENT_PAYMENT_METHOD_LABELS[value] }));
 
 /** Ünite doluluk haritasının (63-140) hücre tonları — kaynak `sales_status`. */
 export type UnitOccupancyTone = "sold" | "reserved" | "available" | "closed";

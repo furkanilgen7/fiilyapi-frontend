@@ -219,6 +219,8 @@
   --color-accent-purple-deep: #6d28d9; /* kendi yatirim gradyan koyu ucu + sayi metni */
   --color-accent-purple-tint: #f5f3ff; /* aciklama karti zemini */
   --color-accent-purple-line: #ddd6fe; /* aciklama + proje karti kenarligi */
+  --color-accent-purple-border: #c4b5fd; /* F-P8 DS satış bedeli girişi kenarligi (86) */
+  --color-plan-params-bg: #faf9ff; /* F-P8 DS ödeme planı parametre şeridi zemini (102) */
   --color-accent-teal-tint: #f0fdfa; /* aciklama karti zemini */
   --color-accent-teal-line: #99f6e4; /* aciklama + proje karti kenarligi */
   --color-accent-teal-light: #5eead4; /* teal gradyan acik ucu */

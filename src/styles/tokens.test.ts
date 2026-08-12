@@ -52,8 +52,13 @@ const tokensCss = readFileSync(
  * ilerleme çubuğu); YALNIZ bilgi bandının gövde metin tonu (TSD 83) yeniydi —
  * `--color-warning-strong` ondan AÇIK, `--color-warning-deep-text` ondan
  * KOYUdur (`--color-warning-body-text`).
+ *
+ * F-P8 T3 (DS · Yeni Satış formu): 79 → 81. Mockup'ın renklerinin çoğu mevcut
+ * mor/yeşil/mono palette karşılandı; YALNIZ iki değer yeniydi — satış bedeli
+ * girişinin mor kenarlığı (`--color-accent-purple-border`, DS 86) ve ödeme
+ * planı parametre şeridinin açık mor zemini (`--color-plan-params-bg`, DS 102).
  */
-const EXPECTED_HEX_COUNT = 79;
+const EXPECTED_HEX_COUNT = 81;
 
 describe("tokens.css", () => {
   it("çekirdek renk token'larını tanımlar (açık tema Slate + Blue)", () => {

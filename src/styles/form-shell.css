@@ -196,6 +196,9 @@
 .pf-col-span-2 {
   grid-column: span 2;
 }
+.pf-col-span-3 {
+  grid-column: span 3;
+}
 
 /* ── Belge yer tutucu kartı (mockup .drop, proje satır 25/162–209,
       şantiye 177–217) ────────────────────────────────────────────────────── */
