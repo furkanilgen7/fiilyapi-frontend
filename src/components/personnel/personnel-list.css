@@ -1,0 +1,280 @@
+/* F-PT2 T2 · P — `/personel` liste (kanonik `Personel.dc.html`; parantez içi
+   sayılar o dosyanın SATIR numaralarıdır). Mockup'ın üst barı (20-31) ve sol
+   menüsü (34-57) UYGULAMA KABUĞUdur (F3 Topbar + Sidebar) — bu sayfa onları
+   YENİDEN ÇİZMEZ. Prefix `personel`. */
+.personel {
+  animation: var(--anim-fade-up); /* 59 */
+}
+
+/* Başlık şeridi (60-67). */
+.personel__eyebrow {
+  font-size: 12px; /* 60 */
+  color: var(--color-text-subtle);
+  margin-bottom: 6px;
+}
+.personel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px; /* 61 */
+}
+.personel__title {
+  font-size: 26px; /* 62 */
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.5px;
+  color: var(--color-text);
+}
+.personel__actions {
+  display: flex;
+  gap: 10px; /* 63 */
+}
+
+/* Sekme şeridi (70-77). */
+.personel-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 4px;
+  width: fit-content;
+  margin-bottom: 20px;
+}
+.personel-tabs__tab {
+  padding: 7px 16px; /* 71-76 */
+  font-size: 13px;
+  color: var(--color-text-muted);
+  border-radius: 7px;
+}
+.personel-tabs__tab--active {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary); /* 71 */
+  background: var(--color-nav-active-bg);
+}
+/* Rotasız sekmeler — kalıcı kural: silinmez, devre-dışı basılır. */
+.personel-tabs__tab--disabled {
+  cursor: not-allowed;
+  color: var(--color-text-subtle);
+}
+
+/* Uyarı bandı (80-86) — İK-Belge takibine pending. */
+.personel-alert {
+  background: var(--color-danger-tint);
+  border: 1px solid var(--color-danger-tint-border);
+  border-radius: var(--radius-lg);
+  padding: 13px 18px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.personel-alert__icon {
+  font-size: 18px; /* 81 */
+}
+.personel-alert__text {
+  flex: 1;
+  font-size: 12px;
+  color: var(--color-danger-strong);
+  line-height: 1.6;
+}
+.btn.personel-alert__action {
+  background: var(--color-danger);
+  color: var(--color-on-brand);
+  white-space: nowrap;
+}
+
+/* KPI şeridi (89-114): ALTI kart. */
+.personel-kpi {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-3); /* 89 */
+  margin-bottom: 20px;
+}
+.personel-kpi__card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); /* 90 */
+  padding: 14px; /* 90 */
+}
+.personel-kpi__card--company {
+  border-left: 4px solid var(--color-primary); /* 94 */
+}
+.personel-kpi__card--subcontractor {
+  border-left: 4px solid var(--color-warning); /* 98 */
+}
+.personel-kpi__label {
+  font-size: 10px; /* 91 */
+  color: var(--color-text-subtle);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+.personel-kpi__value {
+  font-size: 24px; /* 92 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.personel-kpi__value--company {
+  color: var(--color-primary); /* 96 */
+}
+.personel-kpi__value--subcontractor {
+  color: var(--color-warning); /* 100 */
+}
+.personel-kpi__value--mono {
+  font-size: 19px; /* 112 */
+  font-family: var(--font-mono);
+}
+.personel-kpi__value--pending {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+.personel-kpi__pending-hint {
+  margin-top: 4px;
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* Görünür gerekçe bantları (proje süzgeci, kırpılma) — sessiz düşüş YOK. */
+.personel__notice {
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--color-warning-deep-text);
+  background: var(--color-orange-tint);
+  border: 1px solid var(--color-orange-tint-border);
+  border-radius: var(--radius-8);
+  padding: 8px 12px;
+}
+
+/* Süzgeç şeridi (117-125). */
+.personel-filters {
+  display: flex;
+  gap: 10px; /* 117 */
+  margin-bottom: 16px;
+}
+.personel-filters__search {
+  flex: 1;
+  max-width: 300px; /* 118 */
+}
+
+/* Tablo kabuğu (128-244). */
+.personel-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* 128 */
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.personel-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.personel-table__th {
+  padding: 11px 16px; /* 131-139 */
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  white-space: nowrap;
+}
+.personel-table__th--left {
+  text-align: left;
+}
+.personel-table__th--center {
+  text-align: center;
+}
+.personel-table__th--right {
+  text-align: right;
+}
+.personel-row {
+  border-bottom: 1px solid var(--color-divider); /* 143 */
+}
+.personel-row:last-child {
+  border-bottom: none;
+}
+.personel-table__td {
+  padding: 12px 16px; /* 144-157 */
+  font-size: 13px;
+  color: var(--color-text-muted);
+  vertical-align: middle;
+}
+.personel-table__td--center {
+  text-align: center;
+}
+.personel-table__td--right {
+  text-align: right;
+}
+.personel-table__td--mono {
+  font-family: var(--font-mono);
+}
+/* K1 · SGK/Ücret-Gün/Proje hücreleri — sözleşmede alan yok. */
+.personel-pending-cell {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+
+/* Ad Soyad hücresi (144-149). */
+.personel-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.personel-avatar {
+  width: 34px; /* 146 */
+  height: 34px;
+  border-radius: var(--radius-8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: var(--weight-bold);
+  color: var(--color-on-brand);
+  flex-shrink: 0;
+}
+.personel-name {
+  font-size: 13px; /* 147 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+/* Aksiyon bağlantısı (156). */
+.personel-detail-link {
+  font-size: 12px;
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+}
+
+/* Sayfalama (235-243). */
+.personel-pagination {
+  padding: 12px 16px;
+  border-top: 1px solid var(--color-divider);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.personel-pagination__summary {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+.personel-pagination__pages {
+  display: flex;
+  gap: 6px;
+}
+
+/* Boş/yükleniyor/hata durumları — mockup'ın örnek satırları SABİT BASILMAZ. */
+.personel-empty {
+  padding: var(--space-8);
+  text-align: center;
+}
+.personel-empty__title {
+  font-size: 14px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.personel-empty__hint {
+  margin-top: var(--space-1);
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}

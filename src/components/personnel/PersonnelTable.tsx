@@ -1,0 +1,182 @@
+import Link from "next/link";
+
+import { Badge } from "@/components/ui";
+import { initials } from "@/lib/shell/initials";
+import type { PersonnelDeriveItem } from "./personnel-derive";
+import {
+  COLUMN_PENDING_REASON,
+  PENDING_VALUE,
+  SOURCE_AVATAR_GRADIENT,
+  SOURCE_BADGE_VARIANT,
+  STATUS_BADGE_VARIANT,
+  STATUS_LABEL,
+  WORKER_SOURCE_LABELS,
+} from "./personnel-list-labels";
+import "./personnel-list.css";
+
+export interface PersonnelTableProps {
+  /** `undefined` ⇒ yükleniyor/hata; satır BASILMAZ. */
+  rows: PersonnelDeriveItem[] | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  errorMessage?: string;
+  /** Süzgeç uygulanmış mı — boş listenin metnini ayırır. */
+  hasFilter: boolean;
+  /** 235-243 · sayfalama şeridi — mockup'ta AYNI kart kabuğunun içindedir. */
+  pagination?: React.ReactNode;
+}
+
+function emptyMessage(options: {
+  isLoading: boolean;
+  isError: boolean;
+  errorMessage?: string;
+  hasFilter: boolean;
+}): { title: string; hint?: string } {
+  if (options.isLoading) return { title: "Personel listesi yükleniyor…" };
+  if (options.isError) return { title: options.errorMessage ?? "Personel listesi yüklenemedi." };
+  if (options.hasFilter) {
+    return {
+      title: "Bu arama/filtreyle eşleşen personel yok.",
+      hint: "Arama metnini ya da süzgeç seçimlerini genişletin.",
+    };
+  }
+  return {
+    title: "Henüz personel kaydı yok.",
+    hint: "“+ Personel Ekle” ile ilk kaydı oluşturun.",
+  };
+}
+
+/**
+ * P 132-232 · personel tablosu: Ad Soyad (132/144-149) · Tür (133/150) ·
+ * Meslek (134/151) · Proje (135/152, K1 pending) · SGK (136/153, K1 pending) ·
+ * Ücret/Gün (137/154, K1 pending) · Durum (138/155) · aksiyon (139/156).
+ *
+ * ⚠️ K6: mockup'ın "İşe giriş: …" alt satırı (147) BASILMAZ — backend'de
+ * tarih alanı yok, uydurma tarih yasak.
+ * ⚠️ K1: Proje/SGK/Ücret-Gün sütunları SİLİNMEZ, hücreler "—" + gerekçe basar.
+ */
+export function PersonnelTable({
+  rows,
+  isLoading,
+  isError,
+  errorMessage,
+  hasFilter,
+  pagination,
+}: PersonnelTableProps) {
+  const visibleRows = rows ?? [];
+  const message =
+    visibleRows.length === 0
+      ? emptyMessage({ isLoading, isError, errorMessage, hasFilter })
+      : undefined;
+
+  return (
+    <div className="personel-card">
+      <table className="personel-table">
+        <thead>
+          {/* 131-139 */}
+          <tr>
+            <th scope="col" className="personel-table__th personel-table__th--left">
+              Ad Soyad
+            </th>
+            <th scope="col" className="personel-table__th personel-table__th--center">
+              Tür
+            </th>
+            <th scope="col" className="personel-table__th personel-table__th--left">
+              Meslek
+            </th>
+            <th scope="col" className="personel-table__th personel-table__th--left">
+              Proje
+            </th>
+            <th scope="col" className="personel-table__th personel-table__th--left">
+              SGK
+            </th>
+            <th scope="col" className="personel-table__th personel-table__th--right">
+              Ücret/Gün
+            </th>
+            <th scope="col" className="personel-table__th personel-table__th--center">
+              Durum
+            </th>
+            <th scope="col" className="personel-table__th personel-table__th--center">
+              Detay
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {visibleRows.map((row) => {
+            const statusKey = row.is_active ? "active" : "inactive";
+            return (
+              <tr className="personel-row" key={row.id} data-testid={`personel-row-${row.id}`}>
+                {/* 144-149 — "İşe giriş" alt satırı YOK (K6) */}
+                <td className="personel-table__td">
+                  <div className="personel-name-cell">
+                    <span
+                      className="personel-avatar"
+                      aria-hidden="true"
+                      style={{ backgroundImage: SOURCE_AVATAR_GRADIENT[row.source] }}
+                    >
+                      {initials(row.full_name)}
+                    </span>
+                    <span className="personel-name">{row.full_name}</span>
+                  </div>
+                </td>
+                {/* 150 */}
+                <td className="personel-table__td personel-table__td--center">
+                  <Badge variant={SOURCE_BADGE_VARIANT[row.source]}>
+                    {WORKER_SOURCE_LABELS[row.source]}
+                  </Badge>
+                </td>
+                {/* 151 */}
+                <td className="personel-table__td">{row.trade ?? "—"}</td>
+                {/* 152 — K1 pending */}
+                <td
+                  className="personel-table__td personel-pending-cell"
+                  title={COLUMN_PENDING_REASON}
+                  data-testid={`personel-project-pending-${row.id}`}
+                >
+                  {PENDING_VALUE}
+                </td>
+                {/* 153 — K1 pending */}
+                <td
+                  className="personel-table__td personel-pending-cell"
+                  title={COLUMN_PENDING_REASON}
+                  data-testid={`personel-sgk-pending-${row.id}`}
+                >
+                  {PENDING_VALUE}
+                </td>
+                {/* 154 — K1 pending */}
+                <td
+                  className="personel-table__td personel-table__td--right personel-table__td--mono personel-pending-cell"
+                  title={COLUMN_PENDING_REASON}
+                  data-testid={`personel-wage-pending-${row.id}`}
+                >
+                  {PENDING_VALUE}
+                </td>
+                {/* 155 */}
+                <td className="personel-table__td personel-table__td--center">
+                  <Badge variant={STATUS_BADGE_VARIANT[statusKey]}>
+                    {STATUS_LABEL[statusKey]}
+                  </Badge>
+                </td>
+                {/* 156 */}
+                <td className="personel-table__td personel-table__td--center">
+                  <Link className="personel-detail-link" href={`/personel/${row.id}`}>
+                    Detay
+                  </Link>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      {message && (
+        <div className="personel-empty">
+          <p className="personel-empty__title">{message.title}</p>
+          {message.hint && <p className="personel-empty__hint">{message.hint}</p>}
+        </div>
+      )}
+
+      {pagination}
+    </div>
+  );
+}
