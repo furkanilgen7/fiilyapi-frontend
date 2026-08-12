@@ -18,7 +18,9 @@ ST hafıza kaydı + backend spec §4b ZORUNLU okuma. Devir borcu SIFIR (şema 12
 - **ŞS — `.../santiyeler/[siteId]/stok`**: drill "Stok" sekmesi aktifleşir; KPI (86-91) + tablo
   (95-163: mevcut stok şantiye bakiyesi; **"Aylık İhtiyaç" + "Bölüm" sütunları PENDING** — backend
   kaynak yok; satır aksiyonları "Acil Sipariş/Sipariş Ver/Satınalma Talebi →" SA'ya devre-dışı+gerekçe).
-- **SG — stok giriş formu** (tam sayfa, `.../stok/giris` §5 S4): SG birebir — giriş tipi radio
+- **SG — stok giriş formu** (tam sayfa, `.../stok/giris` §5 S4; giriş noktası YALNIZ ŞS'nin
+  "+ Stok Girişi" düğmesidir — *(2026-08-12 spec düzeltmesi: E3 mockup'ında giriş noktası yok —
+  mockup kazandı, giriş yalnız ŞS'den; şantiyesiz global rota açılmadı.)*): SG birebir — giriş tipi radio
   kartları (53-76) · giriş bilgileri (83-88; "İlgili Sipariş" SA'ya PENDING devre-dışı) · kalem
   satırları (100-145: stok kartından seç · gelen/birim fiyat input · tutar türev · kalite select;
   "Sipariş" sütunu pending) · belgeler kartı (149-172) BC form-slot'a PENDING devre-dışı · not ·
@@ -59,8 +61,9 @@ gerekçeli, cmp'li) · kapanış smoke: gerçek giriş→bakiye→transfer çift
 - **S3 — Depo oluşturma:** hiçbir mockup'ta yok ama depo olmadan SG formu KULLANILAMAZ (boş
   kurulum kilidi). Öneri: türetilmiş minimal "Depo Ekle" diyalogu (ad + şantiye/merkez). Alternatif:
   depo yönetimini pending bırak (modül fiilen çalışmaz — önerilmez).
-- **S4 — SG rotası + transfer alanı:** öneri: tam sayfa form `.../stok/giris` (E3'ten ve ŞS'den
-  girilir; ŞS'den girilince şantiye deposu öndolu) + transfer tipinde koşullu "Kaynak Depo" alanı
+- **S4 — SG rotası + transfer alanı:** öneri: tam sayfa form `.../stok/giris` (YALNIZ ŞS'den girilir;
+  şantiye deposu rotadan öndolu — *(2026-08-12 spec düzeltmesi: E3 mockup'ında giriş noktası yok —
+  mockup kazandı, giriş yalnız ŞS'den; şantiyesiz global rota açılmadı.)*) + transfer tipinde koşullu "Kaynak Depo" alanı
   (backend sözleşmesi zorunlu kılıyor — mockup çizmemiş, zorunlu türetim). Onay.
 - **S5 — SA'ya pending yüzeylerin görünümü:** sipariş alanları/butonları DEVRE-DIŞI + görünür
   gerekçe ("Satınalma modülüyle gelir") — F-PT pending deseni. Onay (bilgi niteliğinde).
