@@ -22,12 +22,21 @@ function row(overrides: Partial<StockSummaryRow> = {}): StockSummaryRow {
   };
 }
 
-function renderTable(rows: StockSummaryRow[] | undefined, extra?: Partial<{ isLoading: boolean; isError: boolean; hasFilter: boolean }>) {
+function renderTable(
+  rows: StockSummaryRow[] | undefined,
+  extra?: Partial<{
+    isLoading: boolean;
+    isError: boolean;
+    errorMessage: string;
+    hasFilter: boolean;
+  }>,
+) {
   return render(
     <StockCatalogTable
       rows={rows}
       isLoading={extra?.isLoading ?? false}
       isError={extra?.isError ?? false}
+      errorMessage={extra?.errorMessage}
       hasFilter={extra?.hasFilter ?? false}
     />,
   );
@@ -134,6 +143,16 @@ describe("StockCatalogTable — E3 108-185", () => {
     const failed = renderTable(undefined, { isError: true });
     expect(screen.getByText("Stok listesi yüklenemedi.")).toBeInTheDocument();
     failed.unmount();
+
+    // ST §4b: sunucunun Türkçe cümlesi geldiğinde SABİT metin DEĞİL o basılır
+    // (SiteStockView ile aynı kanon — F-ST final review bulgusu).
+    const server = renderTable(undefined, {
+      isError: true,
+      errorMessage: "Bu kaydı görüntüleme yetkiniz yok.",
+    });
+    expect(screen.getByText("Bu kaydı görüntüleme yetkiniz yok.")).toBeInTheDocument();
+    expect(screen.queryByText("Stok listesi yüklenemedi.")).not.toBeInTheDocument();
+    server.unmount();
 
     renderTable([], { hasFilter: true });
     expect(screen.getByText("Bu süzgeçle eşleşen malzeme yok.")).toBeInTheDocument();

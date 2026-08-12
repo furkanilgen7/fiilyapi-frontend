@@ -7,6 +7,7 @@ import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Button } from "@/components/ui";
 import { STOCK_LIST_MAX_LIMIT } from "@/lib/api/hooks/useStockItems";
 import { useStockSummary } from "@/lib/api/hooks/useStockSummary";
+import { stockErrorMessage } from "@/lib/api/stock-error";
 import { isForbidden } from "@/lib/api/unwrap";
 import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
@@ -148,6 +149,9 @@ export function StockView() {
         rows={rows}
         isLoading={summaryQuery.isLoading}
         isError={summaryQuery.isError}
+        errorMessage={
+          summaryQuery.isError ? stockErrorMessage(summaryQuery.error) : undefined
+        }
         hasFilter={hasFilter}
       />
 

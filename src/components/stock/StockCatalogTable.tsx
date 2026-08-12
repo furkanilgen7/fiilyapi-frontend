@@ -18,6 +18,12 @@ export interface StockCatalogTableProps {
   rows: StockSummaryRow[] | undefined;
   isLoading: boolean;
   isError: boolean;
+  /**
+   * Sunucunun Türkçe hata cümlesi (`stockErrorMessage`). ST §4b kanonu görünür
+   * mesajı SUNUCUNUN `detail`inden ister — sabit bir cümle 404/422/403 ayrımını
+   * yutar. `SiteStockView` ile aynı kanonun uygulanması (F-ST final review).
+   */
+  errorMessage?: string;
   /** Süzgeç uygulanmış mı — boş listenin metnini ayırır. */
   hasFilter: boolean;
 }
@@ -31,10 +37,13 @@ function warehouseLabel(row: StockSummaryRow): string {
 function emptyMessage(options: {
   isLoading: boolean;
   isError: boolean;
+  errorMessage?: string;
   hasFilter: boolean;
 }): { title: string; hint?: string } {
   if (options.isLoading) return { title: "Stok listesi yükleniyor…" };
-  if (options.isError) return { title: "Stok listesi yüklenemedi." };
+  // ST §4b: görünür cümle SUNUCUNUN `detail`inden gelir; `stockErrorMessage`
+  // düşemezse sabit cümle yalnız SON çare olarak kalır.
+  if (options.isError) return { title: options.errorMessage ?? "Stok listesi yüklenemedi." };
   if (options.hasFilter) {
     return {
       title: "Bu süzgeçle eşleşen malzeme yok.",
@@ -62,11 +71,14 @@ export function StockCatalogTable({
   rows,
   isLoading,
   isError,
+  errorMessage,
   hasFilter,
 }: StockCatalogTableProps) {
   const visibleRows = rows ?? [];
   const message =
-    visibleRows.length === 0 ? emptyMessage({ isLoading, isError, hasFilter }) : undefined;
+    visibleRows.length === 0
+      ? emptyMessage({ isLoading, isError, errorMessage, hasFilter })
+      : undefined;
 
   return (
     <div className="stok-card">
