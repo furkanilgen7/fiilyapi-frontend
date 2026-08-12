@@ -1,31 +1,43 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
-import { Button } from "@/components/ui";
-import { useCreatePersonnel } from "@/lib/api/hooks/usePersonnelMutations";
+import { Button, Checkbox } from "@/components/ui";
+import { useCreatePersonnel, useUpdatePersonnel } from "@/lib/api/hooks/usePersonnelMutations";
+import { usePersonnelDetail } from "@/lib/api/hooks/usePersonnelDetail";
 import { useSubcontractors } from "@/lib/api/hooks/useSubcontractors";
 import { backendErrorMessage } from "@/lib/api/error-message";
+import { isForbidden } from "@/lib/api/unwrap";
 import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 
-import { buildPersonnelCreateBody, submittableValues } from "./build-body";
+import { buildPersonnelCreateBody, buildPersonnelUpdateBody, submittableValues } from "./build-body";
 import {
+  ACTIVE_TOGGLE_LABEL,
   BREADCRUMB_CURRENT,
+  BREADCRUMB_CURRENT_EDIT,
   BREADCRUMB_HR,
+  PAGE_SUBTITLE_EDIT_SUFFIX,
   PAGE_SUBTITLE_PREFIX,
   PAGE_SUBTITLE_SUFFIX,
   PAGE_TITLE,
+  PAGE_TITLE_EDIT,
   PENDING_DRAFT,
-  PENDING_HR_SCREEN,
   PENDING_NOTICES,
+  PERSONNEL_LIST_HREF,
   SUBMIT_LABEL,
+  SUBMIT_LABEL_EDIT,
   TOPBAR_DRAFT_LABEL,
 } from "./constants";
 import { ContactCard } from "./ContactCard";
-import { emptyPersonnelFormValues, type PersonnelFormValues } from "./form-state";
+import {
+  emptyPersonnelFormValues,
+  personnelFormValuesFromDetail,
+  type PersonnelFormValues,
+} from "./form-state";
 import { IdentityCard } from "./IdentityCard";
 import { JobCard } from "./JobCard";
 import { PersonnelDocumentsCard } from "./PersonnelDocumentsCard";
@@ -40,12 +52,12 @@ import "@/styles/form-shell.css";
 import "./personnel-form.css";
 
 /**
- * "İptal"/kaydetme sonrası dönülecek rotayı taşıyan sorgu parametresi.
+ * "İptal"/kaydetme sonrası dönülecek rotayı taşıyan sorgu parametresi
+ * (yalnız `create` kipinde okunur).
  *
- * Mockup'ın "İptal" bağlantıları `Personel.dc.html`e gider (35, 38, 210) ama
- * personel LİSTE ekranı bu dilimde YOK (İK dilimine kaldı). Bu yüzden form
- * GELDİĞİ YERE döner: puantaj ekranlarındaki giriş noktaları bu parametreyi
- * doldurur, doğrudan URL ile gelen kullanıcı genel puantaja düşer.
+ * Mockup'ın "İptal" bağlantıları `Personel.dc.html`e gider (35, 38, 210).
+ * Form GELDİĞİ YERE döner: puantaj ekranlarındaki giriş noktaları bu
+ * parametreyi doldurur, doğrudan URL ile gelen kullanıcı genel puantaja düşer.
  */
 export const RETURN_PARAM = "donus";
 
@@ -59,27 +71,51 @@ export function safeReturnTo(raw: string | null): string {
   return raw;
 }
 
+export type PersonnelFormProps = { mode: "create" } | { mode: "edit"; personnelId: string };
+
 /**
- * Yeni Personel Kaydı — tam sayfa form (mockup `Form - Personel Ekle.dc.html`).
- * Yorumlardaki sayılar o dosyanın SATIR numaralarıdır.
+ * Personel Kaydı formu — `create`/`edit` AYNI bileşendir (F-P6 `SectionForm`
+ * iki-kip emsali BİREBİR, iki kopya form YOK). Mockup `Form - Personel
+ * Ekle.dc.html` (yorumlardaki sayılar o dosyanın SATIR numaralarıdır);
+ * düzenleme kipinin kendi mockup'ı yoktur, metinleri `SectionForm`ın
+ * kip desenini izler.
  *
  * ⭐ ÜST KURAL: mockup'taki her alan basılır. Sunucu sözleşmesinde
- * (`PersonnelCreate`) karşılığı OLMAYAN alanlar devre-dışıdır, gerekçeleri
- * ekranın üstünde GÖRÜNÜR listelenir ve gövdeye ASLA sızmazlar — bu alanların
- * form durumunda karşılığı bile yoktur (`form-state.ts`).
+ * (`PersonnelCreate`/`PersonnelUpdate`) karşılığı OLMAYAN alanlar
+ * devre-dışıdır, gerekçeleri ekranın üstünde GÖRÜNÜR listelenir ve gövdeye
+ * ASLA sızmazlar — bu alanların form durumunda karşılığı bile yoktur
+ * (`form-state.ts`). Düzenleme kipinde bu pending alanlar AYNEN pending
+ * kalır (K2) — yalnız `is_active` ek olarak düzenlenebilir.
  */
-export function PersonnelCreateView() {
+export function PersonnelForm(props: PersonnelFormProps) {
+  const isEdit = props.mode === "edit";
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = safeReturnTo(searchParams.get(RETURN_PARAM));
 
   const permission = useModulePermission("personnel");
   const createPersonnel = useCreatePersonnel();
+  const updatePersonnel = useUpdatePersonnel(isEdit ? props.personnelId : "");
   const subcontractorsQuery = useSubcontractors();
+  const detailQuery = usePersonnelDetail(isEdit ? props.personnelId : "");
+  const detail = isEdit ? detailQuery.data : undefined;
+  const isSaving = createPersonnel.isPending || updatePersonnel.isPending;
 
   const [values, setValues] = useState<PersonnelFormValues>(emptyPersonnelFormValues);
   const [errors, setErrors] = useState<PersonnelFormErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Düzenleme kipinde tohumlama YALNIZ BİR KEZ çalışır (`SectionForm` deseni)
+  // — sonraki `detailQuery` yenilemeleri kullanıcının o anki düzenlemesini
+  // SİLMEZ.
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (seededRef.current) return;
+    if (!isEdit) return;
+    if (!detail) return;
+    seededRef.current = true;
+    setValues(personnelFormValuesFromDetail(detail));
+  }, [isEdit, detail]);
 
   // Doğrulama sonrası ilk hatalı alana odak — hangi alanın "ilk" olduğunu DOM
   // sırası söyler; odak isteği bayrakla taşınır (şantiye formu deseni).
@@ -101,7 +137,7 @@ export function PersonnelCreateView() {
   }
 
   function handleCancel() {
-    router.push(returnTo);
+    router.push(isEdit ? `/personel/${props.personnelId}` : returnTo);
   }
 
   function submit() {
@@ -119,32 +155,51 @@ export function PersonnelCreateView() {
     if (!submittable) return; // doğrulama geçtiyse ulaşılamaz; tip kapısı
 
     setFormError(null);
-    createPersonnel.mutate(buildPersonnelCreateBody(submittable), {
-      // `usePersonnelMutations` başarıda personel önbelleğini geçersizleştirir
-      // → matris yeni kişiyi HEMEN satır olarak çizer (T2 kararı K1).
-      onSuccess: () => router.push(returnTo),
-      onError: (err) => setFormError(backendErrorMessage(err)),
+    const onError = (err: unknown) => setFormError(backendErrorMessage(err));
+
+    if (!isEdit) {
+      createPersonnel.mutate(buildPersonnelCreateBody(submittable), {
+        // `usePersonnelMutations` başarıda personel önbelleğini geçersizleştirir
+        // → matris/liste yeni kişiyi HEMEN çizer.
+        onSuccess: () => router.push(returnTo),
+        onError,
+      });
+      return;
+    }
+
+    updatePersonnel.mutate(buildPersonnelUpdateBody(submittable), {
+      onSuccess: () => router.push(`/personel/${props.personnelId}`),
+      onError,
     });
   }
 
   // Yazma yetkisi olmayan kullanıcı bu rotayı hiç görmemeli (giriş noktaları
   // zaten gizli); doğrudan URL ile gelen için kapı burada.
   if (!hasAtLeast(permission.level, "full")) return <AccessDenied />;
+  if (isEdit && isForbidden(detailQuery.error)) return <AccessDenied />;
+  if (isEdit && detailQuery.isError) {
+    return <p className="pf-message">Personel yüklenemedi</p>;
+  }
+  if (isEdit && (detailQuery.isLoading || !detail)) {
+    return <p className="pf-message">Yükleniyor…</p>;
+  }
+
+  const pageTitle = isEdit ? PAGE_TITLE_EDIT : PAGE_TITLE;
+  const submitLabel = isEdit ? SUBMIT_LABEL_EDIT : SUBMIT_LABEL;
+  const breadcrumbCurrent = isEdit ? BREADCRUMB_CURRENT_EDIT : BREADCRUMB_CURRENT;
 
   return (
     <div className="pf-shell">
       {/* 30-42 — yapışkan üst şerit */}
       <div className="pf-topbar">
         <nav className="pf-breadcrumb" aria-label="Kırıntı yolu">
-          {/* 35 — hedef ekran (Personel listesi) henüz yok: EDİLGEN basılır */}
-          <span className="pnf-breadcrumb-passive" title={PENDING_HR_SCREEN}>
-            {BREADCRUMB_HR}
-          </span>
+          {/* F-PT2 T3 kapsam C: `/personel` GERÇEK rota — kırıntı artık edilgen DEĞİL. */}
+          <Link href={PERSONNEL_LIST_HREF}>{BREADCRUMB_HR}</Link>
           <span className="pf-breadcrumb__sep" aria-hidden="true">
             /
           </span>
           <span className="pf-breadcrumb__current" aria-current="page">
-            {BREADCRUMB_CURRENT}
+            {breadcrumbCurrent}
           </span>
         </nav>
         <div className="pf-topbar__actions">
@@ -153,7 +208,7 @@ export function PersonnelCreateView() {
             variant="secondary"
             className="pf-topbar-cancel"
             onClick={handleCancel}
-            disabled={createPersonnel.isPending}
+            disabled={isSaving}
           >
             İptal
           </Button>
@@ -166,9 +221,9 @@ export function PersonnelCreateView() {
             variant="primary"
             className="pf-topbar-submit"
             onClick={submit}
-            disabled={createPersonnel.isPending}
+            disabled={isSaving}
           >
-            {createPersonnel.isPending ? "Kaydediliyor…" : SUBMIT_LABEL}
+            {isSaving ? "Kaydediliyor…" : submitLabel}
           </Button>
         </div>
       </div>
@@ -176,13 +231,22 @@ export function PersonnelCreateView() {
       <div className="pf">
         <header className="pf-head">
           {/* 47 */}
-          <h1 className="pf-title">{PAGE_TITLE}</h1>
+          <h1 className="pf-title">{pageTitle}</h1>
           {/* 48 */}
           <p className="pf-subtitle">
             {PAGE_SUBTITLE_PREFIX}
             <span className="pnf-req">*</span>
-            {PAGE_SUBTITLE_SUFFIX}
+            {isEdit ? PAGE_SUBTITLE_EDIT_SUFFIX : PAGE_SUBTITLE_SUFFIX}
           </p>
+          {/* K2 — mockup'ta karşılığı yok, yalnız düzenleme kipinde basılır. */}
+          {isEdit && (
+            <Checkbox
+              className="pnf-active-toggle"
+              checked={values.isActive}
+              onChange={(event) => handleChange("isActive", event.target.checked)}
+              label={ACTIVE_TOGGLE_LABEL}
+            />
+          )}
         </header>
 
         {/* Devre-dışı yüzeylerin GÖRÜNÜR gerekçeleri — sessiz atlama yok. */}
@@ -219,7 +283,8 @@ export function PersonnelCreateView() {
         <PersonnelFormActions
           onCancel={handleCancel}
           onSubmit={submit}
-          isPending={createPersonnel.isPending}
+          isPending={isSaving}
+          submitLabel={submitLabel}
         />
       </div>
     </div>

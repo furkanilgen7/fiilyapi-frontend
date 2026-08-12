@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { RETURN_PARAM } from "@/components/personnel-form/PersonnelCreateView";
+import { RETURN_PARAM } from "@/components/personnel-form/PersonnelForm";
 import { cx } from "@/lib/cx";
 
 export interface AddPersonnelLinkProps {

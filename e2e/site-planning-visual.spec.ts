@@ -140,13 +140,14 @@ test("planlama hucre popover'i gorsel", async ({ page }) => {
   await expect(popover.locator(".plan-pop__tag")).toHaveCount(6);
   await expect(popover.getByRole("button", { name: "Temizle" })).toBeVisible();
 
-  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
-  // Kaydırma sıfırlamasına asıl İHTİYAÇ duyan kadraj budur — dosyadaki tek
-  // tıklayan test. Hazırlık, popover'ın hâlâ ayakta olduğu iddiasından ÖNCE
-  // yapılır ki iddia kadraja GİREN durumu ölçsün.
-  await prepareFrame(page);
   await expect(popover).toBeVisible();
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `toHaveScreenshot`tan
+  // hemen önceki SON çağrı — WORKFLOW §4 GÖRSEL SPEC KURALI (F-PT2 T1
+  // düzeltmesi: `prepareFrame` ile `toHaveScreenshot` arasına iddia/`evaluate`
+  // GİRMEZ). Kaydırma sıfırlamasına asıl İHTİYAÇ duyan kadraj budur —
+  // dosyadaki tek tıklayan test.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("planlama-hucre-popover.png", { fullPage: true });
 });
 

@@ -88,12 +88,9 @@ export function resolveHrefIn(
  * ALT ROTASI OLAN ama KENDİSİ HENÜZ AÇILMAMIŞ segmentler (iki nav testi de
  * bunu kullanır).
  *
- * `/personel` (F-PT T4): `app/(app)/personel/` klasörü YALNIZ `yeni/page.tsx`
- * taşır — personel LİSTE ekranı İK dilimine kaldı. Next.js'te `/personel` için
- * eşleşen bir `page.tsx` olmadığından istek kök `[...slug]` catch-all'ına düşer
- * ve ComingSoon basılır (nav girdisi bilinçli olarak orada durur). Ağaç
- * yürüyüşü bunu "not-found" görür; gerçek davranış catch-all'dır.
+ * F-PT2 T2'de `/personel` BURADAN SİLİNDİ: `app/(app)/personel/page.tsx`
+ * yazıldı (liste ekranı), artık [...slug] catch-all'a düşmez.
  *
- * Bu küme DAR tutulur: liste ekranı yazıldığında buradan SİLİNİR.
+ * Bu küme DAR tutulur; yeni bir segment yazılana kadar boş kalır.
  */
-export const COMING_SOON_PARENT_HREFS = new Set(["/personel"]);
+export const COMING_SOON_PARENT_HREFS = new Set<string>([]);

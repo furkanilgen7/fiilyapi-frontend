@@ -3,8 +3,9 @@ import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
-import { useCreatePersonnel } from "./usePersonnelMutations";
+import { useCreatePersonnel, useUpdatePersonnel } from "./usePersonnelMutations";
 import { PERSONNEL_QUERY_KEY } from "./usePersonnel";
+import { PERSONNEL_DETAIL_QUERY_KEY } from "./usePersonnelDetail";
 import { backendClient } from "@/lib/api/client";
 import { BackendError } from "@/lib/api/unwrap";
 
@@ -107,5 +108,63 @@ describe("useCreatePersonnel", () => {
     // Assert
     expect(error).toBeInstanceOf(BackendError);
     expect((error as BackendError).status).toBe(422);
+  });
+});
+
+// F-PT2 T1 · Personel Detay düzenleme kipinin PATCH ucu (`useUpdateSection`
+// deseni: hem liste HEM detay sorgusu gecersiz kilinir).
+describe("useUpdatePersonnel", () => {
+  it("PATCH /personnel/{personnel_id} cagirir; govde AYNEN gecirilir", async () => {
+    // Arrange
+    vi.mocked(backendClient.PATCH).mockResolvedValue(okResponse({ ...CREATED, id: "per-1" }));
+    const body = { trade: "Sıvacı" };
+
+    // Act
+    const { result } = renderHook(() => useUpdatePersonnel("per-1"), { wrapper });
+    const updated = await act(async () => result.current.mutateAsync(body));
+
+    // Assert
+    expect(backendClient.PATCH).toHaveBeenCalledWith("/personnel/{personnel_id}", {
+      params: { path: { personnel_id: "per-1" } },
+      body,
+    });
+    expect(updated).toEqual({ ...CREATED, id: "per-1" });
+  });
+
+  it("basarida HEM personel listesini HEM detayini gecersiz kilar", async () => {
+    // Arrange
+    vi.mocked(backendClient.PATCH).mockResolvedValue(okResponse({ ...CREATED, id: "per-1" }));
+
+    // Act
+    const { result } = renderHook(() => useUpdatePersonnel("per-1"), { wrapper });
+    await act(async () => {
+      await result.current.mutateAsync({ trade: "Sıvacı" });
+    });
+
+    // Assert
+    await waitFor(() =>
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [PERSONNEL_QUERY_KEY] }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: [PERSONNEL_DETAIL_QUERY_KEY, "per-1"],
+    });
+  });
+
+  it("422 YUTULMAZ — BackendError cagirana ulasir; hicbir sorgu gecersiz kilinmaz", async () => {
+    // Arrange
+    vi.mocked(backendClient.PATCH).mockResolvedValue(
+      errorResponse(422, "taşeron kaynağı için taşeron seçilmeli"),
+    );
+
+    // Act
+    const { result } = renderHook(() => useUpdatePersonnel("per-1"), { wrapper });
+    const error = await act(async () =>
+      result.current.mutateAsync({ source: "subcontractor" }).catch((err: unknown) => err),
+    );
+
+    // Assert
+    expect(error).toBeInstanceOf(BackendError);
+    expect((error as BackendError).status).toBe(422);
+    expect(invalidateSpy).not.toHaveBeenCalled();
   });
 });

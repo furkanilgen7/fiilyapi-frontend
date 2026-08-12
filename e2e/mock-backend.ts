@@ -2724,6 +2724,16 @@ const PERSONNEL_FIXTURES: MockPersonnel[] = [
   { id: "per-4", full_name: "İsmail Aksoy", trade: "Duvarcı", source: "subcontractor", subcontractor_id: "sub-2", user_id: null, is_active: true },
   { id: "per-5", full_name: "Osman Şahin", trade: "Düz İşçi", source: "general", subcontractor_id: null, user_id: null, is_active: true },
   { id: "per-6", full_name: "Kemal Toprak", trade: "Sıvacı", source: "company", subcontractor_id: null, user_id: null, is_active: false },
+  // 🔒 F-PT2 T1 — FİKSTÜR İZOLASYONU (F-ST dersi): `per-1…per-6` puantaj
+  // görsel baseline'larının (`timesheet-visual.spec.ts` → `pinRoster`) VE
+  // ileride personel liste/detay baseline'larının kaynağıdır — personel
+  // YAZMA (PATCH) testleri bu ALTI kaydı MUTASYONA UĞRATAMAZ. Aşağıdaki kayıt
+  // yalnız personel detay/düzenleme akışının PATCH testleri İÇİNDİR; kimlik
+  // ("per-new-" öneki) `pinRoster`ın MEVCUT süzgecine ("!id.startsWith
+  // ('per-new-')") zaten uyar — timesheet kadrajlarına dokunmadan otomatik
+  // dışlanır. Hiçbir timesheet hücresi TAŞIMAZ, bu yüzden puantaj matrisi
+  // satırlarına da (hücre yoksa satır üretilmez) hiç GİRMEZ.
+  { id: "per-new-pt2-fixture-1", full_name: "Derya Aydın", trade: "Kaynakçı", source: "company", subcontractor_id: null, user_id: null, is_active: true },
 ];
 
 /**
@@ -4740,6 +4750,28 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         };
         state.personnel = [...state.personnel, created];
         return send(201, created);
+      });
+    }
+
+    // GET/PATCH /personnel/{personnel_id} — F-PT2 T1 · Personel Detay ekranı
+    // + "Düzenle" kipinin tekil kaynağı/güncelleme ucu. `SubcontractorResponse`
+    // PATCH deseninin (yukarısı) AYNISI: gövdede GELEN alanlar `Object.assign`
+    // ile birleştirilir, gelmeyenler mevcut kayıttan aynen kalır (kısmi PATCH).
+    const personnelIdMatch = path.match(/^\/personnel\/([^/]+)$/);
+    if (method === "GET" && personnelIdMatch) {
+      const person = state.personnel.find((p) => p.id === personnelIdMatch[1]);
+      if (!person) return send(404, { detail: "personel yok" });
+      return send(200, person);
+    }
+    if (method === "PATCH" && personnelIdMatch) {
+      const person = state.personnel.find((p) => p.id === personnelIdMatch[1]);
+      if (!person) return send(404, { detail: "personel yok" });
+      return withBody((body) => {
+        for (const [key, value] of Object.entries(body)) {
+          if (value === undefined) continue;
+          Object.assign(person, { [key]: value });
+        }
+        return send(200, person);
       });
     }
 

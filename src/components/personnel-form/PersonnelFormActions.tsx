@@ -7,6 +7,8 @@ interface PersonnelFormActionsProps {
   onCancel: () => void;
   onSubmit: () => void;
   isPending?: boolean;
+  /** F-PT2 T3 — düzenleme kipinde "Kaydet" (`SectionForm` kip deseni). */
+  submitLabel?: string;
 }
 
 /**
@@ -24,6 +26,7 @@ export function PersonnelFormActions({
   onCancel,
   onSubmit,
   isPending,
+  submitLabel = SUBMIT_LABEL,
 }: PersonnelFormActionsProps) {
   return (
     <FormActions
@@ -41,7 +44,7 @@ export function PersonnelFormActions({
       onCancel={onCancel}
       onSaveDraft={undefined}
       onSubmit={onSubmit}
-      submitLabel={SUBMIT_LABEL}
+      submitLabel={submitLabel}
       pendingLabel="Kaydediliyor…"
       isPending={isPending}
       draftPlaceholderTitle={PENDING_DRAFT}

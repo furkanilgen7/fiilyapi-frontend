@@ -1,7 +1,21 @@
-/* Personel Ekle formuna özgü bloklar (`.pnf-*`).
-   Mockup: projedesign "Form - Personel Ekle.dc.html" (1440px).
+/* Personel Ekle/Düzenle formuna özgü bloklar (`.pnf-*`).
+   Mockup: projedesign "Form - Personel Ekle.dc.html" (1440px). Düzenleme
+   kipinin kendi mockup'ı yok (F-PT2 T3, F-P6 `SectionForm` deseni).
    Paylaşılan `.pf-*` kabuğu `src/styles/form-shell.css`'tedir; bu dosya ONDAN
    SONRA import edilir (özgü olan kazansın). Çıplak hex/px yok — tokens.css. */
+
+/* Personel bulunamadı / yüklenemedi durumu (`site-form__message` deseni). */
+.pf-message {
+  padding: var(--space-8);
+  text-align: center;
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+}
+
+/* K2 · "Aktif personel" — yalnız düzenleme kipinde, mockup'ta karşılığı yok. */
+.pnf-active-toggle {
+  margin-top: var(--space-3);
+}
 
 /* ── Kimlik kartı düzeni (mockup satır 53) ──────────────────────────────── */
 /* 53: display flex; gap 20px — solda fotoğraf, sağda iki sütunlu ızgara */
@@ -110,12 +124,6 @@
 /* 48: alt başlıktaki zorunluluk yıldızı .req (#ef4444) */
 .pnf-req {
   color: var(--color-danger);
-}
-
-/* 35: hedefi olmayan kırıntı öğesi — bağlantı gibi görünmez, edilgen durur */
-.pnf-breadcrumb-passive {
-  color: var(--color-text-muted);
-  cursor: default;
 }
 
 /* ── Devre-dışı yüzeylerin görünür gerekçe listesi (mockup'ta yok) ───────── */

@@ -3,6 +3,7 @@ import type { WorkerSource } from "./constants";
 import type { PersonnelFormValues } from "./form-state";
 
 export type PersonnelCreateBody = components["schemas"]["PersonnelCreate"];
+export type PersonnelUpdateBody = components["schemas"]["PersonnelUpdate"];
 
 /**
  * Gönderilebilir form değerleri: `source` ARTIK boş olamaz.
@@ -54,7 +55,7 @@ export function buildPersonnelCreateBody(
 
   // Taşeron kimliği YALNIZ taşeron işçisinde taşınır. Kullanıcı önce "Taşeron
   // İşçisi" + firma seçip sonra "Şirket Kadrosu"na dönerse seçim durumda
-  // temizlenir (`PersonnelCreateView`), burada İKİNCİ kez de süzülür: tek
+  // temizlenir (`PersonnelForm`), burada İKİNCİ kez de süzülür: tek
   // korumaya güvenmek bu alanın sessizce sızması demekti.
   const subcontractorId = source === "subcontractor" ? values.subcontractorId.trim() : "";
 
@@ -64,5 +65,38 @@ export function buildPersonnelCreateBody(
     source,
     is_active: true,
     ...(subcontractorId ? { subcontractor_id: subcontractorId } : {}),
+  };
+}
+
+/**
+ * `PATCH /personnel/{personnel_id}` gövdesi — F-PT2 T3, F-P6 iki-kip emsali.
+ *
+ * `buildPersonnelCreateBody`ten TEK farkı: `is_active` sabit `true` DEĞİL,
+ * formun (yalnız düzenleme kipinde gösterilen) `isActive` alanından gelir —
+ * spec K2 "is_active düzenlenebilir".
+ *
+ * ⚠️ `subcontractor_id` PATCH'te KISMİ GÜNCELLEMEDİR: gönderilmeyen alan
+ * sunucuda OLDUĞU GİBİ kalır. Kullanıcı taşeron işçisinden şirket kadrosuna
+ * dönerse anahtar HİÇ göndermemek eski taşeron kimliğini backend'de SESSİZCE
+ * bırakırdı — bu yüzden burada (create'in aksine) `subcontractor_id` HER
+ * ZAMAN gönderilir: dolu değer ya da açıkça `null`.
+ *
+ * ÜRETİLEN ANAHTARLAR (başkası YOK, create ile AYNI liste + her zaman
+ * `subcontractor_id`): `full_name` · `trade` · `source` · `subcontractor_id`
+ * · `is_active`. Pending alanların (kimlik/iletişim/ücret/…) HİÇBİRİ
+ * gövdeye sızmaz — form durumunda karşılıkları yok (`form-state.ts`).
+ */
+export function buildPersonnelUpdateBody(
+  values: SubmittablePersonnelFormValues,
+): PersonnelUpdateBody {
+  const { source } = values;
+  const subcontractorId = source === "subcontractor" ? values.subcontractorId.trim() : "";
+
+  return {
+    full_name: `${values.firstName.trim()} ${values.lastName.trim()}`.trim(),
+    trade: values.trade.trim() || null,
+    source,
+    subcontractor_id: subcontractorId || null,
+    is_active: values.isActive,
   };
 }

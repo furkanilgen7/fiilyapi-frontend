@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { pinRoster } from "./personnel-roster";
 import { prepareFrame } from "./visual-scroll";
 
 // F-PT T5 · Puantaj görsel testleri — mockup'lar `Ekran 5 - Puantaj.dc.html`
@@ -44,34 +45,6 @@ async function login(page: Page) {
   await page.getByLabel(/^şifre$/i).fill("dogruparola");
   await page.getByRole("button", { name: /giriş yap/i }).click();
   await expect(page.getByRole("heading", { name: "Gösterge Paneli" })).toBeVisible();
-}
-
-/**
- * Kartoteksi kadraj için SABİTLER: başka spec'lerin POST ettiği personel
- * (`per-new-*`) listeden düşürülür, TOHUM fikstürler (`per-1…`) aynen kalır.
- *
- * TEK UÇ değiştirilir ve paylaşılan mock durumuna DOKUNULMAZ
- * (`timesheet.spec.ts`in `/api/auth/me` deseninin aynısı) — yani bu kadrajlar
- * `personnel-form.spec.ts`in ne zaman/hangi sırada koştuğundan YAPISAL olarak
- * bağımsızdır. Süzgeç KİMLİK tabanlıdır, ad tabanlı değil: ileride başka bir
- * spec farklı bir ad POST etse de kadraj değişmez.
- */
-async function pinRoster(page: Page) {
-  await page.route("**/api/backend/personnel*", async (route) => {
-    const response = await route.fetch();
-    const body = (await response.json()) as {
-      items: { id: string }[];
-      total: number;
-      limit: number;
-      offset: number;
-    };
-    const items = body.items.filter((item) => !item.id.startsWith("per-new-"));
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ ...body, items, total: items.length }),
-    });
-  });
 }
 
 /**
@@ -161,16 +134,24 @@ test("puantaj hucre popover'i gorsel", async ({ page }) => {
   // ⚠️ F-P10'un GERÇEK kusuru tam burada çıktı: hücre `.ts-table-scroll`ün
   // İÇİNDE olduğu için tıklama pencereyi değil O KABI, üstelik YATAY eksende
   // kaydırıyordu — korkuluğun eleman kaplarını da kapsaması bu yüzden ŞART.
-  // Geometri denetiminden ÖNCE yapılır ki iddia, kadraja GİREN durumu ölçsün.
-  await prepareFrame(page);
   await expect(popover).toBeVisible();
 
   // ⚠️ KIRPILMA DENETİMİ (T3'ün açık bıraktığı soru, T5'te GERÇEK KUSUR
   // çıktı): `.ts-table-scroll { overflow-x: auto }` dikey ekseni de `auto`ya
   // çevirdiği için popover kabın İÇİNDE kesiliyordu. `escapeOverflow` ile
   // yüzey artık `position: fixed`tir; aşağıdaki iddia kırpılmanın geri
-  // gelmesini yakalar.
-  // Ramazan Yıldız matrisin SON satırıdır — kırpılma tam orada ölçülmüştü.
+  // gelmesini yakalar. Ramazan Yıldız matrisin SON satırıdır — kırpılma tam
+  // orada ölçülmüştü.
+  //
+  // ⚠️ F-PT2 T1 KÖK-NEDEN DÜZELTMESİ (iki baseline turu, 31608574847 ↔
+  // 31609771927, arasında `puantaj-hucre-popover.png` 317px/şiddet ~218
+  // farkla ÇİFT-MODLU çıktı — "FM rozet kenarlığı" var/yok): bu geometri
+  // denetimi ÖNCEDEN `prepareFrame`den SONRA, `toHaveScreenshot`tan önce
+  // koşuyordu — WORKFLOW §4 GÖRSEL SPEC KURALI'nın "`prepareFrame` HER
+  // kadrajdan HEMEN ÖNCE, ARADA hiçbir evaluate/expect OLMADAN çağrılır"
+  // kuralını ihlal ediyordu. Kural gereği tüm iddia/`evaluate` çağrıları
+  // BURAYA, `prepareFrame`den ÖNCEYE taşındı — kırpılma kanıtı kaybolmadı,
+  // yalnız yeri değişti.
   const geometry = await popover.evaluate((node) => {
     const scroll = node.closest(".ts-table-scroll");
     const box = node.getBoundingClientRect();
@@ -184,5 +165,8 @@ test("puantaj hucre popover'i gorsel", async ({ page }) => {
   });
   expect(geometry).toEqual({ position: "fixed", isWithinViewport: true, hiddenHeight: 0 });
 
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `toHaveScreenshot`tan
+  // hemen önceki SON çağrı — `visual-scroll.ts`.
+  await prepareFrame(page);
   await expect(page).toHaveScreenshot("puantaj-hucre-popover.png", { fullPage: true });
 });
