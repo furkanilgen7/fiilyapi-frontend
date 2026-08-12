@@ -66,6 +66,11 @@ const MODULE_LABELS: Record<string, string> = {
   // category/is_active). Kolon SİLİNMEZ, yıldız İCAT EDİLMEZ — "—" + bu
   // gerekçe basılır (backend adayı olarak ROADMAP'e yazılır).
   subcontractor_rating: "Taşeron değerlendirme özelliği henüz yok",
+  // F-ST T2 (E3 · Stok & Depo) — `StockSummaryKpis.pending_orders` zarfının
+  // taşıdığı anahtar. "Bekleyen Sipariş" kartının (E3 81-84) kaynağı SATINALMA
+  // modülüdür; backend bugün `available: false` döndürür, ekran uydurma sayı
+  // basmak yerine "—" + bu gerekçeyi gösterir.
+  procurement: "Satınalma modülüyle birlikte gelir",
 };
 
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";

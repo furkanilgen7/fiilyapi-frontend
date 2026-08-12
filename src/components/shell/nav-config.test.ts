@@ -81,6 +81,16 @@ describe("NAV_GROUPS — href geçerliliği (kırık link koruması)", () => {
     expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "static" });
   });
 
+  // F-ST T2: "Stok & Depo" artık GERÇEK bir rotadır (`/stok`). Yukarıdaki
+  // döngü catch-all'ı da geçerli saydığı için YAZILMIŞ öğe AYRICA sınanır:
+  // rota klasörü silinir/yeniden adlandırılırsa bu test kırılır, kullanıcı
+  // sessizce "yakında" görmez.
+  it("'Stok & Depo' /stok statik rotasına düşer (catch-all DEĞİL)", () => {
+    const item = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.label === "Stok & Depo");
+    expect(item?.href).toBe("/stok");
+    expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "static" });
+  });
+
   it("henüz yazılmamış 'Muhasebe' catch-all'a düşer (kontrol grubu)", () => {
     const item = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.label === "Muhasebe");
     expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "catch-all" });

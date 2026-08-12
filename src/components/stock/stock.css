@@ -1,0 +1,247 @@
+/* E3 · Stok & Depo (F-ST T2). Kanon: projedesign "Ekran 3 - Stok & Depo.dc.html";
+   parantez içi sayılar o dosyanın SATIR numaralarıdır. Prefix `stok`.
+   Mockup'ın üst barı (20-33) ve sol menüsü (36-59) UYGULAMA KABUĞUdur
+   (F3 Topbar + Sidebar) — bu sayfa onları YENİDEN ÇİZMEZ. */
+.stok {
+  animation: var(--anim-fade-up); /* 61 */
+}
+
+/* Başlık şeridi (62-69). */
+.stok__eyebrow {
+  font-size: 12px; /* 62 */
+  color: var(--color-text-subtle);
+  margin-bottom: 6px;
+}
+.stok__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px; /* 63 */
+}
+.stok__title {
+  font-size: 26px; /* 64 */
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.5px;
+  color: var(--color-text);
+}
+.stok__actions {
+  display: flex;
+  gap: 10px; /* 65 */
+}
+
+/* Görünür gerekçe/uyarı bantları — sessiz düşüş YOK (spec §3/§5). */
+.stok__notice {
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--color-warning-deep-text);
+  background: var(--color-orange-tint);
+  border: 1px solid var(--color-orange-tint-border);
+  border-radius: var(--radius-8);
+  padding: 8px 12px;
+}
+.stok__notice--muted {
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+
+/* KPI şeridi (72-89): 4 eşit kart, karta özel değer rengi, mono değer. */
+.stok-kpi {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3); /* 72 */
+  margin-bottom: 20px;
+}
+.stok-kpi__card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); /* 73 */
+  padding: var(--space-4); /* 73 — 16px */
+}
+.stok-kpi__label {
+  font-size: var(--text-small); /* 74 */
+  color: var(--color-text-subtle);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+.stok-kpi__value {
+  font-size: 22px; /* 75 */
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+}
+.stok-kpi__value--neutral {
+  color: var(--color-text); /* 75, 87 */
+}
+.stok-kpi__value--danger {
+  color: var(--color-danger); /* 79 */
+}
+.stok-kpi__value--warning {
+  color: var(--color-warning); /* 83 */
+}
+/* 83 · "Bekleyen Sipariş" SATINALMA modülüne pending — sahte sayı basılmaz. */
+.stok-kpi__value--pending {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+.stok-kpi__pending-hint {
+  margin-top: 4px;
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* Süzgeç şeridi (92-104). */
+.stok-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* 92 */
+  margin-bottom: 16px;
+}
+/* 93-97 · tek kutu içinde bitişik dört düğme. */
+.stok-segment {
+  display: flex;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  overflow: hidden;
+}
+.btn.stok-segment__item {
+  padding: 7px 14px; /* 94-97 */
+  font-size: 13px;
+  font-weight: var(--weight-regular);
+  border-radius: 0;
+  color: var(--color-text-muted);
+}
+.btn.stok-segment__item--active {
+  background: var(--color-nav-active-bg); /* 94 */
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+}
+.btn.stok-segment__item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+/* 100-103 · arama kutusu sağa yaslanır. */
+.stok-filters__search {
+  margin-left: auto;
+  width: 220px;
+}
+
+/* Tablo kabuğu (107-186). */
+.stok-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* 107 */
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.stok-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.stok-table__th {
+  padding: 12px 16px; /* 111-117 */
+  background: var(--color-surface-2); /* 110 */
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  white-space: nowrap;
+}
+.stok-table__th--left {
+  text-align: left;
+}
+.stok-table__th--right {
+  text-align: right;
+}
+.stok-table__th--center {
+  text-align: center;
+}
+.stok-row {
+  border-bottom: 1px solid var(--color-divider); /* 121 */
+}
+.stok-row:last-child {
+  border-bottom: none; /* 175 — son satırda kenarlık yok */
+}
+/* 121, 139, 166 · KRİTİK ve DÜŞÜK satırların zemini vurgulanır. */
+.stok-row--flagged {
+  background: var(--color-orange-tint);
+}
+.stok-table__td {
+  padding: 13px 16px; /* 122-128 */
+  font-size: 13px;
+  color: var(--color-text-muted);
+  vertical-align: middle;
+}
+.stok-table__td--right {
+  text-align: right;
+}
+.stok-table__td--center {
+  text-align: center;
+}
+.stok-table__td--mono {
+  font-family: var(--font-mono); /* 125-126 */
+}
+.stok-table__name {
+  font-size: 13px; /* 122 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.stok-table__code {
+  font-size: var(--text-small); /* 122 */
+  color: var(--color-text-subtle);
+}
+/* 126 · "Min Stok" kolonu her satırda soluk tondadır. */
+.stok-table__min {
+  color: var(--color-text-subtle);
+}
+/* 125 · bakiye kalın; rengi SUNUCU durumundan (ya da eksi işaretten) gelir. */
+.stok-balance {
+  font-weight: var(--weight-semibold);
+}
+.stok-balance--neutral {
+  color: var(--color-text); /* 134, 152, 161, 179 */
+}
+.stok-balance--danger {
+  color: var(--color-danger); /* 125, 170 */
+}
+.stok-balance--warning {
+  color: var(--color-warning); /* 143 */
+}
+/* Eşiksiz kalem: rozet İCAT EDİLMEZ, "—" + gerekçe basılır. */
+.stok-status--unknown {
+  font-size: 13px;
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+
+/* Durum rozeti (128 · 137 · 146 · 155 · 173 · 182) — ölçü mockup'tan,
+   renkler `Badge` varyantından; iki tonda primitive'den KOYU istenir. */
+.badge.stok-badge {
+  font-weight: var(--weight-semibold);
+  padding: 3px 10px;
+}
+.badge.stok-badge--critical {
+  color: var(--color-danger-strong); /* 128, 173 */
+}
+.badge.stok-badge--low {
+  color: var(--color-warning-strong); /* 146 */
+}
+
+/* Boş/yükleniyor/hata durumları — mockup'ın örnek satırları SABİT BASILMAZ. */
+.stok-empty {
+  padding: var(--space-8);
+  text-align: center;
+}
+.stok-empty__title {
+  font-size: 14px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.stok-empty__hint {
+  margin-top: var(--space-1);
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
