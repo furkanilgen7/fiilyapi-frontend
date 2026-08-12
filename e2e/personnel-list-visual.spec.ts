@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { pinRoster } from "./personnel-roster";
 import { prepareFrame } from "./visual-scroll";
 
 // F-PT2 T4 · P (`/personel`) görsel testleri — mockup `Personel.dc.html`.
@@ -35,31 +36,6 @@ async function login(page: Page) {
   await page.getByLabel(/^şifre$/i).fill("dogruparola");
   await page.getByRole("button", { name: /giriş yap/i }).click();
   await expect(page.getByRole("heading", { name: "Gösterge Paneli" })).toBeVisible();
-}
-
-/**
- * Kartoteksi kadraj için SABİTLER — `timesheet-visual.spec.ts` → `pinRoster`
- * deseninin AYNISI (kimlik-tabanlı süzgeç: `per-new-` önekli her kayıt
- * düşürülür, tohum `per-1…per-6` aynen kalır). TEK uç değiştirilir, paylaşılan
- * mock durumuna DOKUNULMAZ — bu yüzden bu kadraj başka spec'lerin ne zaman/
- * hangi sırada koştuğundan YAPISAL olarak bağımsızdır.
- */
-async function pinRoster(page: Page) {
-  await page.route("**/api/backend/personnel*", async (route) => {
-    const response = await route.fetch();
-    const body = (await response.json()) as {
-      items: { id: string }[];
-      total: number;
-      limit: number;
-      offset: number;
-    };
-    const items = body.items.filter((item) => !item.id.startsWith("per-new-"));
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ ...body, items, total: items.length }),
-    });
-  });
 }
 
 test("personel liste (dolu) gorsel", async ({ page }) => {

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { pinRoster } from "./personnel-roster";
 import { prepareFrame } from "./visual-scroll";
 
 // F-PT T5 · Puantaj görsel testleri — mockup'lar `Ekran 5 - Puantaj.dc.html`
@@ -44,34 +45,6 @@ async function login(page: Page) {
   await page.getByLabel(/^şifre$/i).fill("dogruparola");
   await page.getByRole("button", { name: /giriş yap/i }).click();
   await expect(page.getByRole("heading", { name: "Gösterge Paneli" })).toBeVisible();
-}
-
-/**
- * Kartoteksi kadraj için SABİTLER: başka spec'lerin POST ettiği personel
- * (`per-new-*`) listeden düşürülür, TOHUM fikstürler (`per-1…`) aynen kalır.
- *
- * TEK UÇ değiştirilir ve paylaşılan mock durumuna DOKUNULMAZ
- * (`timesheet.spec.ts`in `/api/auth/me` deseninin aynısı) — yani bu kadrajlar
- * `personnel-form.spec.ts`in ne zaman/hangi sırada koştuğundan YAPISAL olarak
- * bağımsızdır. Süzgeç KİMLİK tabanlıdır, ad tabanlı değil: ileride başka bir
- * spec farklı bir ad POST etse de kadraj değişmez.
- */
-async function pinRoster(page: Page) {
-  await page.route("**/api/backend/personnel*", async (route) => {
-    const response = await route.fetch();
-    const body = (await response.json()) as {
-      items: { id: string }[];
-      total: number;
-      limit: number;
-      offset: number;
-    };
-    const items = body.items.filter((item) => !item.id.startsWith("per-new-"));
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ ...body, items, total: items.length }),
-    });
-  });
 }
 
 /**
