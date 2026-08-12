@@ -1,0 +1,238 @@
+/* F-ST T4 · Stok Girişi formuna ÖZGÜ bloklar — kanon: projedesign
+   "Form - Stok Girisi.dc.html" (SG). Parantez içi sayılar O DOSYANIN satır
+   numaralarıdır. Çıplak hex/px-token karışımı yok.
+
+   Ortak form kabuğu (`.pf`, `.pf-topbar`, `.pf-card`, `.pf-grid*`,
+   `.pf-actions*`, `.pf-doc*`) `src/styles/form-shell.css`'ten gelir ve
+   `StockEntryForm.tsx` onu bu dosyadan ÖNCE import eder. */
+
+/* ── Giriş Tipi kartları (50-78) ──────────────────────────────────────────
+   Proje formunun `pf-type-card`ı MAVİ seçili durum çizer; SG YEŞİL çizer
+   (55: border #16a34a, zemin #f0fdf4, başlık #15803d, açıklama #16a34a).
+   Ortak kabuğa iki temalı bir kart taşımak proje formunun görsel
+   baseline'larını riske atardı — yerel önek (`sgf-`) bilinçli tercihtir. */
+.sgf-type__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr; /* 52 */
+  gap: var(--space-3); /* 52 — 12px */
+}
+.sgf-type-card {
+  display: flex;
+  flex-direction: column;
+  border: 2px solid var(--color-border); /* 63 */
+  border-radius: var(--radius-type-card); /* 12px (55) */
+  background: var(--color-surface);
+  padding: 14px; /* 55 */
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+/* Radyo görsel olarak gizli — native grup ok-tuşu gezinmesi korunur. */
+.sgf-type-card__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+/* Odak halkası karta (mockup'ta yok — a11y eklemesi, proje formu emsali). */
+.sgf-type-card:has(.sgf-type-card__input:focus-visible) {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.sgf-type-card__emoji {
+  font-size: 22px; /* 56 */
+  margin-bottom: 6px; /* 56 */
+}
+.sgf-type-card__title {
+  font-size: 13px; /* 57 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text-secondary); /* 65 — seçili değilken #475569 */
+  margin-bottom: 2px; /* 58 */
+}
+.sgf-type-card__desc {
+  font-size: 11px; /* 58 */
+  line-height: var(--leading-normal);
+  color: var(--color-text-subtle); /* 66 — #94a3b8 */
+}
+.sgf-type-card--selected {
+  border-color: var(--color-success); /* #16a34a (55) */
+  background: var(--color-success-tint); /* #f0fdf4 (55) */
+}
+.sgf-type-card--selected .sgf-type-card__title {
+  color: var(--color-success-deep); /* #15803d (57) */
+}
+.sgf-type-card--selected .sgf-type-card__desc {
+  color: var(--color-success); /* #16a34a (58) */
+}
+
+/* ── Görünür uyarı bandı (depo yok / liste yüklenemedi) ─────────────────── */
+.sgf-notice {
+  margin-bottom: var(--space-3);
+  font-size: 12px;
+  color: var(--color-warning-deep-text);
+  background: var(--color-orange-tint);
+  border: 1px solid var(--color-orange-tint-border);
+  border-radius: var(--radius-8);
+  padding: 8px 12px;
+}
+
+/* ── Malzeme Kalemleri kartı (92-147) ───────────────────────────────────── */
+.sgf-lines {
+  padding: 0; /* 92 — kart iç boşluğu tabloya devredilir */
+  overflow: hidden;
+}
+.sgf-lines__head {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* 93 */
+  padding: var(--space-4) var(--space-5); /* 93 — 16px 20px */
+  border-bottom: 1px solid var(--color-border);
+}
+.sgf-lines__title {
+  font-size: 14px; /* 94 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+/* 95'teki "SP-2026-042'den yüklendi" rozetinin YERİ — sipariş bağı SA'ya
+   pending olduğu için rozet yerine GÖRÜNÜR gerekçe basılır. */
+.sgf-lines__pending {
+  font-size: 11px; /* 95 */
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  padding: 2px 8px;
+  border-radius: var(--radius-8);
+}
+.sgf-lines__add {
+  margin-left: auto; /* 96 */
+}
+.sgf-lines__note {
+  margin: var(--space-3) var(--space-5) 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.sgf-lines__note--error {
+  color: var(--color-danger);
+}
+
+.sgf-table {
+  width: 100%;
+  border-collapse: collapse; /* 98 */
+}
+.sgf-table thead tr {
+  background: var(--color-surface-2); /* 99 */
+  border-bottom: 1px solid var(--color-border);
+}
+.sgf-table th {
+  padding: 10px 8px; /* 100-107 */
+  text-align: left;
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+.sgf-table th:first-child,
+.sgf-table td:first-child {
+  padding-left: 14px; /* 100 */
+}
+.sgf-table td {
+  padding: 11px 8px; /* 111-118 */
+  vertical-align: top;
+  font-size: 12px;
+  color: var(--color-text);
+}
+.sgf-table tbody tr {
+  border-bottom: 1px solid var(--color-divider); /* 110 — #f1f5f9 */
+}
+.sgf-table__center {
+  text-align: center;
+}
+.sgf-table__right {
+  text-align: right;
+}
+/* "Gelen" başlığı vurgulu yeşildir (103). */
+.sgf-table__accent {
+  color: var(--color-success);
+  font-weight: var(--weight-bold);
+}
+.sgf-table__muted {
+  color: var(--color-text-subtle); /* 112, 113 */
+}
+.sgf-table__amount {
+  font-family: var(--font-mono); /* 116 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.sgf-table__input {
+  font-family: var(--font-mono); /* 114, 115 */
+  text-align: right;
+}
+/* "Gelen" hücresinin yeşil vurgusu (114). */
+.sgf-table__input--accent {
+  border-color: var(--color-success-tint-border);
+  background: var(--color-success-tint);
+  color: var(--color-success);
+  font-weight: var(--weight-bold);
+}
+.sgf-table__error {
+  display: block;
+  margin-top: var(--space-form-hint-gap);
+  font-size: 11px;
+  color: var(--color-danger);
+  text-align: left;
+}
+.sgf-table__remove {
+  color: var(--color-text-subtle); /* 118 */
+}
+.sgf-table__adder td {
+  background: var(--color-surface-2); /* 130 */
+  padding: 10px 14px; /* 131 */
+}
+.sgf-table__pick {
+  border-style: dashed; /* 132 */
+}
+.sgf-table tfoot tr {
+  background: var(--color-success-tint); /* 140 */
+  border-top: 2px solid var(--color-success);
+}
+.sgf-table tfoot td {
+  padding: 13px 14px; /* 141 */
+  font-size: 13px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.sgf-table tfoot td.sgf-table__right {
+  font-family: var(--font-mono); /* 142 */
+  font-size: 16px;
+  color: var(--color-success);
+}
+
+/* ── Not alanı (168-171) — Belgeler kartının içindedir ───────────────────── */
+.sgf-note {
+  margin-top: 14px; /* 168 */
+}
+
+/* ── Oto-bildirim satırı (175-178) ───────────────────────────────────────── */
+.sgf-notify {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: 13px; /* 175 */
+  color: var(--color-text-secondary);
+}
+.sgf-notify__reason {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+
+/* İrsaliye No mono (87). */
+.sgf-mono {
+  font-family: var(--font-mono);
+}

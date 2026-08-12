@@ -1,0 +1,294 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+
+import { StockEntryForm } from "./StockEntryForm";
+import { useSite } from "@/lib/api/hooks/useSites";
+import { useStockItems } from "@/lib/api/hooks/useStockItems";
+import { useCreateStockEntry } from "@/lib/api/hooks/useStockMutations";
+import { useUserOptions } from "@/lib/api/hooks/useUserOptions";
+import { useWarehouses } from "@/lib/api/hooks/useWarehouses";
+import { useModulePermission } from "@/lib/auth/useModulePermission";
+import { BackendError } from "@/lib/api/unwrap";
+
+const PROJECT_ID = "p-1";
+const SITE_ID = "s-1";
+const push = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  useParams: () => ({ projectId: PROJECT_ID, siteId: SITE_ID }),
+  useRouter: () => ({ push }),
+}));
+vi.mock("@/lib/api/hooks/useSites", () => ({ useSite: vi.fn() }));
+vi.mock("@/lib/api/hooks/useWarehouses", () => ({ useWarehouses: vi.fn() }));
+vi.mock("@/lib/api/hooks/useStockItems", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useStockItems")>()),
+  useStockItems: vi.fn(),
+}));
+vi.mock("@/lib/api/hooks/useStockMutations", () => ({ useCreateStockEntry: vi.fn() }));
+vi.mock("@/lib/api/hooks/useUserOptions", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useUserOptions")>()),
+  useUserOptions: vi.fn(),
+}));
+vi.mock("@/lib/auth/useModulePermission", () => ({ useModulePermission: vi.fn() }));
+
+const WAREHOUSES = [
+  { id: "wh-0", name: "Merkez Depo (Sincan)", site_id: null, created_at: "2025-03-01T08:00:00Z" },
+  { id: "wh-1", name: "D-1 Ambar", site_id: SITE_ID, created_at: "2025-03-01T08:01:00Z" },
+  { id: "wh-3", name: "D-3 Kapalı", site_id: "s-2", created_at: "2025-03-01T08:03:00Z" },
+];
+
+const ITEMS = [
+  {
+    id: "it-1",
+    code: "SNK-0421",
+    name: "Nervürlü Demir Ø12",
+    category: "steel" as const,
+    unit: "Ton",
+    min_stock: "10.000",
+    is_active: true,
+    created_at: "2025-03-05T08:00:00Z",
+  },
+];
+
+const mutate = vi.fn();
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- test yardımcıları hook dönüşlerinin YALNIZ kullanılan alanlarını taklit eder
+function stub(value: unknown): any {
+  return value;
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(useModulePermission).mockReturnValue(stub({ canView: true, canWrite: true }));
+  vi.mocked(useSite).mockReturnValue(
+    stub({ data: { id: SITE_ID, name: "A-Blok Şantiyesi" }, isLoading: false, isError: false }),
+  );
+  vi.mocked(useWarehouses).mockReturnValue(
+    stub({
+      data: { items: WAREHOUSES, total: WAREHOUSES.length, limit: 200, offset: 0 },
+      isLoading: false,
+      isError: false,
+    }),
+  );
+  vi.mocked(useStockItems).mockReturnValue(
+    stub({
+      data: { items: ITEMS, total: ITEMS.length, limit: 200, offset: 0 },
+      isLoading: false,
+      isError: false,
+    }),
+  );
+  vi.mocked(useUserOptions).mockReturnValue(
+    stub({
+      options: [{ id: "u-2", full_name: "Sercan Öztürk", title: "Şantiye Şefi" }],
+      isLoading: false,
+      isError: false,
+      isForbidden: false,
+    }),
+  );
+  vi.mocked(useCreateStockEntry).mockReturnValue(stub({ mutate, isPending: false }));
+});
+
+/**
+ * "Girişi Kaydet" İKİ yerde vardır (mockup 40 üst şerit + 181 alt şerit) ve
+ * ikisi de AYNI `handleSubmit`i çağırır — üsttekini kullanmak yeterlidir.
+ */
+function submitButton(): HTMLElement {
+  return screen.getAllByRole("button", { name: "Girişi Kaydet" })[0];
+}
+
+function fillValidLine() {
+  fireEvent.change(screen.getByTestId("stok-giris-malzeme-0"), { target: { value: "it-1" } });
+  fireEvent.change(screen.getByTestId("stok-giris-miktar-0"), { target: { value: "15" } });
+  fireEvent.change(screen.getByTestId("stok-giris-fiyat-0"), { target: { value: "21500" } });
+}
+
+describe("StockEntryForm — depo ÖN DOLDURMA (rotadan, query parametresi YOK)", () => {
+  it("rotadaki şantiyenin deposu seçili gelir", () => {
+    render(<StockEntryForm />);
+
+    expect(screen.getByTestId("stok-giris-depo")).toHaveValue("wh-1");
+  });
+
+  it("şantiyenin deposu yoksa GÖRÜNÜR uyarı basılır (sessiz boş seçim yok)", () => {
+    vi.mocked(useWarehouses).mockReturnValue(
+      stub({
+        data: { items: [WAREHOUSES[0]], total: 1, limit: 200, offset: 0 },
+        isLoading: false,
+        isError: false,
+      }),
+    );
+    render(<StockEntryForm />);
+
+    expect(screen.getByTestId("stok-giris-depo")).toHaveValue("");
+    expect(screen.getByTestId("stok-giris-depo-uyari")).toHaveTextContent("tanımlı depo yok");
+  });
+});
+
+describe("StockEntryForm — koşullu 'Kaynak Depo' (spec §5 S4)", () => {
+  it("yalnız transfer tipinde görünür", () => {
+    render(<StockEntryForm />);
+
+    expect(screen.queryByTestId("stok-giris-kaynak-depo")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("stok-giris-tip-transfer").querySelector("input")!);
+    expect(screen.getByTestId("stok-giris-kaynak-depo")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("stok-giris-tip-adjustment").querySelector("input")!);
+    expect(screen.queryByTestId("stok-giris-kaynak-depo")).toBeNull();
+  });
+
+  it("hedef depo kaynak listesinden ÇIKARILIR (kendine transfer 422'dir)", () => {
+    render(<StockEntryForm />);
+    fireEvent.click(screen.getByTestId("stok-giris-tip-transfer").querySelector("input")!);
+
+    const options = [...screen.getByTestId("stok-giris-kaynak-depo").querySelectorAll("option")];
+    expect(options.map((option) => option.value)).not.toContain("wh-1");
+    expect(options.map((option) => option.value)).toContain("wh-0");
+  });
+
+  it("kaynak depo seçilmeden gönderilirse istek AÇILMAZ ve Türkçe hata basılır", () => {
+    render(<StockEntryForm />);
+    fillValidLine();
+    fireEvent.click(screen.getByTestId("stok-giris-tip-transfer").querySelector("input")!);
+    fireEvent.click(submitButton());
+
+    expect(mutate).not.toHaveBeenCalled();
+    expect(screen.getByTestId("stok-giris-hata")).toHaveTextContent("kaynak depo zorunludur");
+  });
+});
+
+describe("StockEntryForm — GÖVDE ANAHTAR TESTİ (telden gidecek gövde)", () => {
+  it("gönderilen gövde YALNIZ şema anahtarlarını taşır; pending yüzeyler SIZMAZ", () => {
+    render(<StockEntryForm />);
+    fillValidLine();
+    fireEvent.change(screen.getByTestId("stok-giris-teslim-alan"), { target: { value: "u-2" } });
+    fireEvent.click(submitButton());
+
+    expect(mutate).toHaveBeenCalledTimes(1);
+    const body = mutate.mock.calls[0][0];
+    expect(Object.keys(body).sort()).toEqual([
+      "entry_date",
+      "entry_type",
+      "lines",
+      "received_by_user_id",
+      "warehouse_id",
+    ]);
+    expect(body).not.toHaveProperty("source_warehouse_id");
+    expect(Object.keys(body.lines[0]).sort()).toEqual([
+      "item_id",
+      "quality",
+      "quantity",
+      "unit_price",
+    ]);
+  });
+
+  it("transfer gövdesinde kaynak depo GİRER", () => {
+    render(<StockEntryForm />);
+    fillValidLine();
+    fireEvent.click(screen.getByTestId("stok-giris-tip-transfer").querySelector("input")!);
+    fireEvent.change(screen.getByTestId("stok-giris-kaynak-depo"), { target: { value: "wh-0" } });
+    fireEvent.click(submitButton());
+
+    expect(mutate.mock.calls[0][0].source_warehouse_id).toBe("wh-0");
+  });
+});
+
+describe("StockEntryForm — pending yüzeyler (spec §5 S5)", () => {
+  it("'İlgili Sipariş' devre dışıdır ve gerekçesi GÖRÜNÜR", () => {
+    render(<StockEntryForm />);
+
+    const order = screen.getByTestId("stok-giris-siparis");
+    expect(order).toBeDisabled();
+    expect(order).toHaveAttribute("title", "Satınalma modülüyle birlikte gelir");
+  });
+
+  it("'Sipariş' sütunu gerekçeli '—' basar (mockup'ın 15/500 örnekleri BASILMAZ)", () => {
+    render(<StockEntryForm />);
+
+    const cell = screen.getByTestId("stok-giris-siparis-0");
+    expect(cell).toHaveTextContent("—");
+    expect(cell).toHaveAttribute("title", "Satınalma modülüyle birlikte gelir");
+    expect(screen.queryByText("SP-2026-042'den yüklendi")).toBeNull();
+  });
+
+  it("oto-bildirim kutucuğu devre dışı ve SEÇİLMEMİŞTİR (bildirim gönderilmeyecek)", () => {
+    render(<StockEntryForm />);
+
+    const notify = screen.getByTestId("stok-giris-bildirim");
+    expect(notify).toBeDisabled();
+    expect(notify).not.toBeChecked();
+    expect(notify).toHaveAttribute("title", "Satınalma modülüyle birlikte gelir");
+  });
+
+  it("belge kutuları yükleme yapmaz; gerekçe görünür (BC form-slot)", () => {
+    render(<StockEntryForm />);
+
+    expect(screen.getByText("İrsaliye")).toBeInTheDocument();
+    expect(screen.getAllByText("Yakında").length).toBe(3);
+    expect(document.querySelectorAll('input[type="file"]')).toHaveLength(0);
+  });
+});
+
+describe("StockEntryForm — tutar türevi ve satır işlemleri", () => {
+  it("tutar ve toplam istemcide TÜRETİLİR", () => {
+    render(<StockEntryForm />);
+    fillValidLine();
+
+    expect(screen.getByTestId("stok-giris-tutar-0")).toHaveTextContent("322.500");
+    expect(screen.getByTestId("stok-giris-toplam")).toHaveTextContent("322.500");
+  });
+
+  it("'+ Kalem Ekle' ve 'Stok kartından malzeme seç' satır açar, × siler", () => {
+    render(<StockEntryForm />);
+
+    fireEvent.click(screen.getByTestId("stok-giris-kalem-ekle"));
+    expect(screen.getByTestId("stok-giris-satir-1")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("stok-giris-kart-sec"));
+    expect(screen.getByTestId("stok-giris-satir-2")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("stok-giris-satir-sil-2"));
+    expect(screen.queryByTestId("stok-giris-satir-2")).toBeNull();
+  });
+
+  it("malzeme seçilince birim SUNUCU kartından basılır", () => {
+    render(<StockEntryForm />);
+    fireEvent.change(screen.getByTestId("stok-giris-malzeme-0"), { target: { value: "it-1" } });
+
+    expect(screen.getByTestId("stok-giris-satir-0")).toHaveTextContent("Ton");
+  });
+});
+
+describe("StockEntryForm — hata basımı (ST §4b kanonu)", () => {
+  it.each([
+    [404, "Depo bulunamadı."],
+    [422, "Kaynak ve hedef depo aynı olamaz."],
+  ])("sunucunun %s gövdesi Türkçe ve GÖRÜNÜR basılır", (status, detail) => {
+    mutate.mockImplementation((_body, options) => {
+      options.onError(new BackendError(status, { detail }));
+    });
+    render(<StockEntryForm />);
+    fillValidLine();
+    fireEvent.click(submitButton());
+
+    expect(screen.getByTestId("stok-giris-hata")).toHaveTextContent(detail);
+  });
+
+  it("başarıda şantiye stok sekmesine dönülür", () => {
+    mutate.mockImplementation((_body, options) => options.onSuccess({ id: "se-new-1" }));
+    render(<StockEntryForm />);
+    fillValidLine();
+    fireEvent.click(submitButton());
+
+    expect(push).toHaveBeenCalledWith(`/projeler/${PROJECT_ID}/santiyeler/${SITE_ID}/stok`);
+  });
+});
+
+describe("StockEntryForm — yetki", () => {
+  it("yazma izni olmayan kullanıcı formu görmez", () => {
+    vi.mocked(useModulePermission).mockReturnValue(stub({ canView: true, canWrite: false }));
+    render(<StockEntryForm />);
+
+    expect(screen.queryByTestId("stok-giris-body")).toBeNull();
+  });
+});

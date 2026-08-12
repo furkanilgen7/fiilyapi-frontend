@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { sumDecimalStrings } from "./decimal";
+import { multiplyDecimalStrings, sumDecimalStrings } from "./decimal";
 
 describe("sumDecimalStrings", () => {
   it("boş dizide '0' döner", () => {
@@ -51,5 +51,25 @@ describe("sumDecimalStrings", () => {
     expect(
       sumDecimalStrings(["999999999999.99", "0.01", "0.01"]),
     ).toBe("1000000000000.01");
+  });
+});
+
+describe("multiplyDecimalStrings", () => {
+  it("float kalintisi uretmez (0.1 x 3)", () => {
+    // Number(0.1) * 3 === 0.30000000000000004 — satir tutari boyle basilirdi.
+    expect(multiplyDecimalStrings("0.1", "3")).toBe("0.3");
+  });
+
+  it("olcekler toplanir (miktar x birim fiyat)", () => {
+    expect(multiplyDecimalStrings("15", "21500")).toBe("322500");
+    expect(multiplyDecimalStrings("2.5", "1.25")).toBe("3.125");
+  });
+
+  it("negatif miktar (adjustment) isareti korur", () => {
+    expect(multiplyDecimalStrings("-5", "100")).toBe("-500");
+  });
+
+  it("sifir carpani negatif isaret basmaz", () => {
+    expect(multiplyDecimalStrings("-5", "0")).toBe("0");
   });
 });

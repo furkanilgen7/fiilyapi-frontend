@@ -20,8 +20,14 @@ interface DocumentsPlaceholderCardProps {
   /** Başlık yanındaki "yakında" notu. */
   note: string;
   items: readonly DocumentPlaceholderItem[];
-  dropTitle: string;
-  dropSubtitle: string;
+  /**
+   * Kutuların ALTINDAKİ tam genişlikte sürükle-bırak satırı. İKİSİ DE
+   * verilmezse satır HİÇ basılmaz — F-ST T4'ün Belgeler kartında (SG 149-172)
+   * mockup böyle bir satır çizmez. Mevcut çağıranların ikisi de değeri
+   * geçtiği için onların DOM'u DEĞİŞMEZ (görsel regresyon yok).
+   */
+  dropTitle?: string;
+  dropSubtitle?: string;
   /** Kutuların `title` özniteliği — neden kullanılamadığını söyler. */
   soonTitle: string;
   /** Izgara sütun sayısı: proje formu 2, şantiye formu 3 (mockup satır 179). */
@@ -78,13 +84,15 @@ export function DocumentsPlaceholderCard({
         ))}
       </div>
 
-      <div className="pf-doc pf-doc--drop" aria-disabled="true" title={soonTitle}>
-        <span className="pf-doc__text pf-doc__text--center">
-          <span className="pf-doc__title">{dropTitle}</span>
-          <span className="pf-doc__sub">{dropSubtitle}</span>
-        </span>
-        <span className="pf-doc__badge">Yakında</span>
-      </div>
+      {dropTitle && dropSubtitle && (
+        <div className="pf-doc pf-doc--drop" aria-disabled="true" title={soonTitle}>
+          <span className="pf-doc__text pf-doc__text--center">
+            <span className="pf-doc__title">{dropTitle}</span>
+            <span className="pf-doc__sub">{dropSubtitle}</span>
+          </span>
+          <span className="pf-doc__badge">Yakında</span>
+        </div>
+      )}
 
       {footer}
     </section>

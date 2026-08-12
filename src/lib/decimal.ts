@@ -16,6 +16,23 @@ export function sumDecimalStrings(values: string[]): string {
   return fromScaledBigInt(total, scale);
 }
 
+/**
+ * İki ondalık string'i KAYIPSIZ çarpar (F-ST T4 · SG 116 "Tutar" sütunu).
+ *
+ * `Number(q) * Number(p)` YASAK: 0.1 × 3 gibi terimlerde IEEE-754 kalıntısı
+ * ekrana kaçar (`322500.00000000006`) ve satır tutarı ile alt toplam
+ * TUTMAZ. Ölçekler toplanır, tamsayı çarpımı `BigInt` ile yapılır.
+ *
+ * ⚠️ Sonuç TÜREVDİR — sunucuya GÖNDERİLMEZ (backend spec §2: satır tutarı
+ * kolonu AÇILMAZ). Yalnız gösterim içindir.
+ */
+export function multiplyDecimalStrings(a: string, b: string): string {
+  const scaleA = fractionLength(a);
+  const scaleB = fractionLength(b);
+  const product = toScaledBigInt(a, scaleA) * toScaledBigInt(b, scaleB);
+  return fromScaledBigInt(product, scaleA + scaleB);
+}
+
 function fractionLength(value: string): number {
   const [, fraction = ""] = value.trim().split(".");
   return fraction.length;
