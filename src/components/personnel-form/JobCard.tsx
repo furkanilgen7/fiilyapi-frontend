@@ -10,6 +10,7 @@ import {
   NO_SUBCONTRACTOR_LABEL,
   PAYMENT_METHOD_OPTIONS,
   PENDING_EMPLOYEE_TYPE,
+  PENDING_GENERAL_SOURCE,
   PENDING_NO_CONTRACT_FIELD,
   SELECT_PLACEHOLDER,
   TRADE_OPTIONS,
@@ -102,6 +103,14 @@ export function JobCard({ values, onChange, subcontractors, errors }: JobCardPro
                   {option.label}
                 </option>
               ))}
+              {/* Düzenleme kipinde SEED edilmiş eski "genel işçi" kaydı —
+                  mockup'ta karşılığı yok, formdan yeniden SEÇİLEMEZ ama
+                  dokunulmadan bırakılabilir (K2, "general" backend'de GERÇEK). */}
+              {values.source === "general" && (
+                <option value="general" disabled title={PENDING_GENERAL_SOURCE}>
+                  Genel İşçi (mevcut kayıt)
+                </option>
+              )}
             </Select>
           )}
         </Field>
@@ -138,6 +147,11 @@ export function JobCard({ values, onChange, subcontractors, errors }: JobCardPro
               onChange={(event) => onChange("trade", event.target.value)}
             >
               <option value="">{SELECT_PLACEHOLDER}</option>
+              {/* Düzenleme kipinde sunucudaki meslek sekiz seçenek DIŞINDA
+                  olabilir — sessizce KIRPILMASIN diye kendi değeri eklenir. */}
+              {values.trade && !TRADE_OPTIONS.includes(values.trade) && (
+                <option value={values.trade}>{values.trade}</option>
+              )}
               {TRADE_OPTIONS.map((option) => (
                 <option key={option} value={option}>
                   {option}

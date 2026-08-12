@@ -122,8 +122,19 @@ export const PENDING_DRAFT = "Personel kaydında taslak desteği yok";
 /** SGK bildirge kutucuğu (205-208). */
 export const PENDING_SGK = "SGK bildirim modülü henüz eklenmedi";
 
-/** Breadcrumb "İnsan Kaynakları" (35) + "Belge Takibi" (198) bağlantıları. */
-export const PENDING_HR_SCREEN = "Personel listesi ve İK ekranları henüz eklenmedi";
+/**
+ * Belge kartındaki "Belge Takibi" bağlantısı (198) — BC-2 form-slot bekliyor.
+ * ⚠️ Üst şeritteki "İnsan Kaynakları" kırıntısı ARTIK PENDING DEĞİL: F-PT2 T2
+ * `/personel` listesini açtı, kırıntı GERÇEK linke döndü (`PERSONNEL_LIST_HREF`).
+ */
+export const PENDING_HR_SCREEN = "Belge takibi ekranı henüz eklenmedi";
+
+/** F-PT2 T2 · `/personel` gerçek liste rotası — kırıntı yolu bunu kullanır. */
+export const PERSONNEL_LIST_HREF = "/personel";
+
+/** Düzenleme kipinde formdan seçilemeyen ama SEED edilebilen kaynak (K2). */
+export const PENDING_GENERAL_SOURCE =
+  "Bu çalışan tipi formdan seçilemez — mevcut kayıt değiştirilmeden bırakılabilir.";
 
 /**
  * Ekranın üstünde tek blok hâlinde basılan gerekçe listesi. Her alanın yanında
@@ -137,7 +148,7 @@ export const PENDING_NOTICES: readonly string[] = [
   "“Serbest Meslek” ve “Stajyer” çalışan tipleri seçilemez — sunucu bugün yalnız şirket kadrosu, taşeron işçisi ve genel işçi kaynaklarını tanıyor; bu ikisi sessizce başka bir kaynağa YAZILMAZ.",
   "“Taslak Kaydet” devre dışı — personel kaydında taslak desteği yok.",
   "“Kayıt sonrası SGK işe giriş bildirgesi” kutucuğu devre dışı — SGK bildirim modülü henüz eklenmedi.",
-  "Üst şeritteki “İnsan Kaynakları” ve belge kartındaki “Belge Takibi” bağlantıları edilgen — personel listesi ve İK ekranları henüz eklenmedi.",
+  "Belge kartındaki “Belge Takibi” bağlantısı edilgen — belge takibi ekranı henüz eklenmedi.",
 ];
 
 /* ── Metin envanteri (mockup birebir) ───────────────────────────────────── */
@@ -151,3 +162,10 @@ export const SUBMIT_LABEL = "Personeli Kaydet"; // 40, 212
 export const TOPBAR_DRAFT_LABEL = "Taslak"; // 39
 export const PHOTO_LABEL = "Fotoğraf Yükle"; // 58
 export const PHOTO_HINT = "Vesikalık · JPG"; // 60
+
+/* ── F-PT2 T3 · Düzenleme kipi (mockup'ta karşılığı yok — SectionForm deseni) ── */
+export const PAGE_TITLE_EDIT = "Personeli Düzenle";
+export const PAGE_SUBTITLE_EDIT_SUFFIX = " ile işaretlidir";
+export const BREADCRUMB_CURRENT_EDIT = "Personeli Düzenle";
+export const SUBMIT_LABEL_EDIT = "Kaydet";
+export const ACTIVE_TOGGLE_LABEL = "Aktif personel";

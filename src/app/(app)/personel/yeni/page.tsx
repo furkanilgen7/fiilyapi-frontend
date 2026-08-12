@@ -1,20 +1,17 @@
 import { Suspense } from "react";
 
-import { PersonnelCreateView } from "@/components/personnel-form/PersonnelCreateView";
+import { PersonnelForm } from "@/components/personnel-form/PersonnelForm";
 
-// F-PT T4 · "Yeni Personel Kaydı" tam sayfa formu.
-//
-// ⚠️ `/personel` (LİSTE) rotası BU DİLİMDE AÇILMAZ: personel listesi ve detayı
-// İK dilimine kalır, nav'daki "Personel" girdisi [...slug] catch-all üzerinden
-// ComingSoon basmaya DEVAM EDER (bu klasörde `page.tsx` yoktur, yalnız
-// `yeni/page.tsx` vardır).
+// F-PT T4 · "Yeni Personel Kaydı" tam sayfa formu — `PersonnelForm`ın
+// `create` kipi (F-PT2 T3'te düzenleme kipiyle aynı bileşene taşındı, bkz.
+// `PersonnelForm.tsx`).
 //
 // Dönüş rotası (`?donus=`) URL'de taşındığı için görünüm `useSearchParams`
 // kullanır ve Suspense sınırında sarılır (Next 15 kanonu).
 export default function PersonnelCreatePage() {
   return (
     <Suspense>
-      <PersonnelCreateView />
+      <PersonnelForm mode="create" />
     </Suspense>
   );
 }
