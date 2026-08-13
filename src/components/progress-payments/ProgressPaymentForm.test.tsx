@@ -403,6 +403,89 @@ describe("ProgressPaymentForm — kaydetme gövdesi (EN KRİTİK)", () => {
   });
 });
 
+/**
+ * 🔒 SESSİZ VERİ DEĞİŞİKLİĞİ KAPISI — dönem seçicisi (PARA YÜZEYİ).
+ *
+ * "Hakediş Dönemi" ay seçicisinin mockup'ta boş seçeneği YOKTUR
+ * (`İşveren Hakediş Oluştur.dc.html:82`): sunucuda `period_year`/`period_month`
+ * `null` olsa bile ekranda hep dolu bir dönem görünür. Kullanıcı dönemi hiç
+ * SEÇMEDEN kaydederse anahtarın gitmesi, kullanıcının VERMEDİĞİ bir dönem
+ * kararını PARA kaydına yazmak olurdu (maliyet/gelir yanlış aya düşer).
+ * Yalnız DÜZENLEME kipini ilgilendirir (oluşturmada ezilecek sunucu değeri yok).
+ */
+describe("ProgressPaymentForm (edit) · dokunulmamış dönem seçicisi", () => {
+  function mockDraftDetail(overrides: Partial<ProgressPaymentDetail>) {
+    vi.mocked(useProgressPayment).mockReturnValue(
+      queryResult({ data: detailFixture(overrides) }),
+    );
+    const updateMutate = vi.fn((_vars, opts) => opts?.onSuccess?.());
+    vi.mocked(useUpdateProgressPayment).mockReturnValue(mutationResult({ mutate: updateMutate }));
+    vi.mocked(useReplaceProgressPaymentLines).mockReturnValue(mutationResult({ mutate: vi.fn() }));
+    return updateMutate;
+  }
+
+  async function save() {
+    const [saveButton] = await screen.findAllByRole("button", { name: "Taslak Kaydet" });
+    await userEvent.click(saveButton);
+  }
+
+  it("sunucuda null olan period_year DOKUNULMADAN kaydedilirse anahtar GİTMEZ", async () => {
+    const updateMutate = mockDraftDetail({ period_year: null });
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+    await save();
+
+    const [{ body }] = updateMutate.mock.calls[0];
+    expect("period_year" in body).toBe(false);
+  });
+
+  it("sunucuda null olan period_month DOKUNULMADAN kaydedilirse anahtar GİTMEZ", async () => {
+    const updateMutate = mockDraftDetail({ period_month: null });
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+    // Ekranda mockup'ın ilk dolu seçeneği GÖRÜNÜR — ama bu kullanıcının kararı değil.
+    expect(await screen.findByLabelText("Hakediş Dönemi")).not.toHaveValue("");
+    await save();
+
+    const [{ body }] = updateMutate.mock.calls[0];
+    expect("period_month" in body).toBe(false);
+  });
+
+  it("kullanıcı dönemi SEÇERSE değer gövdede gider", async () => {
+    const updateMutate = mockDraftDetail({ period_year: null, period_month: null });
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+
+    await userEvent.selectOptions(await screen.findByLabelText("Hakediş Dönemi"), "3");
+    const yearInput = screen.getByLabelText("Hakediş yılı");
+    await userEvent.clear(yearInput);
+    await userEvent.type(yearInput, "2025");
+    await save();
+
+    const [{ body }] = updateMutate.mock.calls[0];
+    expect(body).toMatchObject({ period_year: 2025, period_month: 3 });
+  });
+
+  it("sunucudan DOLU gelen dönem dokunulmasa da AYNI değerle gider (gerileme koruması)", async () => {
+    const updateMutate = mockDraftDetail({ period_year: 2026, period_month: 7 });
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+    await save();
+
+    const [{ body }] = updateMutate.mock.calls[0];
+    expect(body).toMatchObject({ period_year: 2026, period_month: 7 });
+  });
+
+  it("OLUŞTURMA kipi etkilenmez — iki anahtar da HER ZAMAN gider", async () => {
+    const mutate = vi.fn();
+    vi.mocked(useCreateProgressPayment).mockReturnValue(mutationResult({ mutate }));
+    renderForm({ mode: "create", projectId: PROJECT_ID });
+    await save();
+
+    const [{ body }] = mutate.mock.calls[0];
+    expect("period_year" in body).toBe(true);
+    expect("period_month" in body).toBe(true);
+    expect(body.period_year).toBe(new Date().getFullYear());
+    expect(body.period_month).toBe(new Date().getMonth() + 1);
+  });
+});
+
 describe("ProgressPaymentForm — geçersiz-değer koruması (kontrolcü bulgusu §2)", () => {
   it("miktar hücresine harf/işaret yazılırsa süzülür, state'e girmez", async () => {
     renderForm({ mode: "create", projectId: PROJECT_ID });

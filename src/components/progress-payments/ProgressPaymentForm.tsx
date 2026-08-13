@@ -45,6 +45,12 @@ export type ProgressPaymentFormProps =
 const DEFAULT_COEFFICIENT_WHEN_LOCKED = "1";
 
 /**
+ * PATCH gövdesinden ATLANABİLİR dönem alanları. Serbest `string[]` DEĞİL: yanlış
+ * yazılmış bir alan adı derlemede yakalanmalı, sessizce yutulmamalı.
+ */
+export type OmittablePeriodField = "period_year" | "period_month";
+
+/**
  * Hakediş oluştur/düzenle formu (P7 T5). `create` ve `edit` kipleri AYNI
  * bileşendir (brief §Rotalar) — iki kopya form YOK.
  *
@@ -85,6 +91,12 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [refreshConfirmOpen, setRefreshConfirmOpen] = useState(false);
+  // Kullanıcının GERÇEKTEN dokunduğu dönem alanları. Mockup'ta ay seçicisinin
+  // boş seçeneği yoktur, ekranda hep dolu görünür ve "görünen değer"
+  // kullanıcının KARARI DEĞİLDİR (bkz. `omittedPeriodFields`).
+  const [touchedPeriodFields, setTouchedPeriodFields] = useState<
+    ReadonlySet<OmittablePeriodField>
+  >(() => new Set());
 
   // Tohumlama (seed) YALNIZ BİR KEZ çalışır — sonraki `detailQuery`/`distributionQuery`
   // yenilemeleri (ör. kaydetme sonrası invalidation) kullanıcının o anki
@@ -190,6 +202,37 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
     );
   }
 
+  function markPeriodTouched(field: OmittablePeriodField) {
+    setTouchedPeriodFields((prev) => (prev.has(field) ? prev : new Set(prev).add(field)));
+  }
+
+  /**
+   * PATCH gövdesinden ATLANACAK dönem alanları.
+   *
+   * "Hakediş Dönemi" ay seçicisi mockup'ta boş seçenek TAŞIMAZ
+   * (`İşveren Hakediş Oluştur.dc.html:82`): sunucuda `null` olsa bile ekranda
+   * dolu bir dönem görünür ve tohumlama `??` ile BUGÜNÜN ay/yılını basar.
+   * Kullanıcı dönemi hiç SEÇMEDEN kaydederse anahtarı göndermek, kullanıcının
+   * VERMEDİĞİ bir dönem kararını PARA kaydına yazmak olurdu — sunucudaki `null`
+   * sessizce EZİLİRDİ (yanlış dönem = maliyet/gelir yanlış aya düşer). Bu yüzden
+   * "sunucuda null + dokunulmamış" durumunda anahtar hiç basılmaz.
+   *
+   * Dolu gelen dönem zaten tohumlanmıştır ve normal gider; kullanıcı dokunduysa
+   * seçimi normal gider. OLUŞTURMA kipi etkilenmez: orada ezilecek sunucu
+   * değeri YOKTUR.
+   */
+  const omittedPeriodFields: readonly OmittablePeriodField[] =
+    !isEdit || !detail
+      ? []
+      : [
+          ...(detail.period_year === null && !touchedPeriodFields.has("period_year")
+            ? (["period_year"] as const)
+            : []),
+          ...(detail.period_month === null && !touchedPeriodFields.has("period_month")
+            ? (["period_month"] as const)
+            : []),
+        ];
+
   function coefficientToSend(): string {
     return hasPriceEscalation ? defaultCoefficient || "1" : DEFAULT_COEFFICIENT_WHEN_LOCKED;
   }
@@ -201,8 +244,7 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
     // KENDİSİ değiştirilmedi, kritik testleri korunur (bkz. `pivot.ts`).
     const linesBody = buildLinesSaveBody(normalizePivotRowsForSave(rows ?? []));
     const headerBody = {
-      period_year: periodYear,
-      period_month: periodMonth,
+      ...periodFields(periodYear, periodMonth, omittedPeriodFields),
       description: description.trim() ? description.trim() : null,
       default_coefficient: coefficientToSend(),
     };
@@ -400,7 +442,10 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
                 <Select
                   {...control}
                   value={periodMonth ?? ""}
-                  onChange={(event) => setPeriodMonth(Number(event.target.value))}
+                  onChange={(event) => {
+                    setPeriodMonth(Number(event.target.value));
+                    markPeriodTouched("period_month");
+                  }}
                 >
                   {PERIOD_MONTHS.map((m) => (
                     <option key={m.value} value={m.value}>
@@ -413,7 +458,10 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
                   numeric
                   aria-label="Hakediş yılı"
                   value={periodYear ?? ""}
-                  onChange={(event) => setPeriodYear(parsePeriodYear(event.target.value))}
+                  onChange={(event) => {
+                    setPeriodYear(parsePeriodYear(event.target.value));
+                    markPeriodTouched("period_year");
+                  }}
                 />
               </div>
             )}
@@ -515,6 +563,24 @@ function pickAriaProps(control: { id: string; "aria-describedby"?: string }) {
  * `null` döner — `period_year` şemada nullable olduğundan bu alan gövdede
  * "gönderilmemiş" (boş) olarak kalır, uydurma bir `0` asla gitmez.
  */
+/**
+ * Gövdenin dönem parçası. `omitFields` TİP-KİLİTLİDİR (`OmittablePeriodField`):
+ * serbest bir `string[]` yanlış yazılmış alan adını sessizce yutar, bu imza
+ * yutmaz. Atlanan anahtar gövdeye HİÇ basılmaz — `null` gönderilmez, çünkü
+ * `null` da sunucudaki değeri EZERDİ; sözleşme (`ProgressPaymentUpdate`) iki
+ * alanı da `required` saymaz, anahtar yoksa sunucu mevcut değeri korur.
+ */
+function periodFields(
+  periodYear: number | null,
+  periodMonth: number | null,
+  omitFields: readonly OmittablePeriodField[],
+): { period_year?: number | null; period_month?: number | null } {
+  return {
+    ...(omitFields.includes("period_year") ? {} : { period_year: periodYear }),
+    ...(omitFields.includes("period_month") ? {} : { period_month: periodMonth }),
+  };
+}
+
 function parsePeriodYear(raw: string): number | null {
   if (raw === "") return null;
   const value = Number(raw);
