@@ -14,7 +14,12 @@ import { isForbidden } from "@/lib/api/unwrap";
 import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 
-import { buildPersonnelCreateBody, buildPersonnelUpdateBody, submittableValues } from "./build-body";
+import {
+  buildPersonnelCreateBody,
+  buildPersonnelUpdateBody,
+  submittableValues,
+  type OmittablePersonnelField,
+} from "./build-body";
 import {
   ACTIVE_TOGGLE_LABEL,
   BREADCRUMB_CURRENT,
@@ -117,8 +122,16 @@ export function PersonnelForm(props: PersonnelFormProps) {
   /** Düzenlenen kayıt bugün TASLAK mı — "Yayına Al" yolunu bu belirler. */
   const isDraftRecord = isEdit ? (detail?.is_draft ?? false) : false;
 
+
   const [values, setValues] = useState<PersonnelFormValues>(emptyPersonnelFormValues);
   const [errors, setErrors] = useState<PersonnelFormErrors>({});
+  // Kullanıcının GERÇEKTEN dokunduğu alanlar. Yalnız `wage_type` /
+  // `payment_method` için okunur: bu iki seçicinin mockup'ta boş seçeneği
+  // yoktur, ekranda hep dolu görünürler ve "görünen değer" kullanıcının
+  // KARARI DEĞİLDİR (bkz. `omittedSelectFields`).
+  const [touched, setTouched] = useState<ReadonlySet<keyof PersonnelFormValues>>(
+    () => new Set(),
+  );
   const [formError, setFormError] = useState<string | null>(null);
 
   // Düzenleme kipinde tohumlama YALNIZ BİR KEZ çalışır (`SectionForm` deseni)
@@ -150,11 +163,38 @@ export function PersonnelForm(props: PersonnelFormProps) {
     value: PersonnelFormValues[K],
   ) {
     setValues((prev) => ({ ...prev, [field]: value }));
+    setTouched((prev) => (prev.has(field) ? prev : new Set(prev).add(field)));
   }
 
   function handleCancel() {
     router.push(isEdit ? `/personel/${props.personnelId}` : returnTo);
   }
+
+  /**
+   * PATCH gövdesinden ATLANACAK seçiciler.
+   *
+   * "Ücret Tipi" ve "Ödeme Şekli" mockup'ta boş seçenek TAŞIMAZ: sunucuda
+   * `null` olsalar bile ekranda ilk seçenek ("Günlük" / "Banka Havalesi")
+   * görünür. Kullanıcı o seçiciyi hiç AÇMADAN kaydederse anahtarı göndermek,
+   * kullanıcının VERMEDİĞİ bir kararı veriye yazmak olurdu — sunucudaki
+   * `null` sessizce EZİLİRDİ. Bu yüzden "sunucuda null + dokunulmamış"
+   * durumunda anahtar hiç basılmaz (`is_draft` ile AYNI desen).
+   *
+   * Dolu gelen alan zaten tohumlanmıştır ve normal gider; kullanıcı dokunduysa
+   * seçimi normal gider. OLUŞTURMA kipi etkilenmez: orada ezilecek sunucu
+   * değeri YOKTUR.
+   */
+  const omittedSelectFields: readonly OmittablePersonnelField[] =
+    !isEdit || !detail
+      ? []
+      : [
+          ...(detail.wage_type === null && !touched.has("wageType")
+            ? (["wage_type"] as const)
+            : []),
+          ...(detail.payment_method === null && !touched.has("paymentMethod")
+            ? (["payment_method"] as const)
+            : []),
+        ];
 
   /**
    * Gönderim — spec K4 taslak/yayın ayrımı.
@@ -215,10 +255,16 @@ export function PersonnelForm(props: PersonnelFormProps) {
     // (yayındaki kayıt) `null` = anahtar hiç gönderilmez.
     const updateDraftFlag = intent === "draft" ? true : isDraftRecord ? false : null;
 
-    updatePersonnel.mutate(buildPersonnelUpdateBody(submittable, { isDraft: updateDraftFlag }), {
-      onSuccess: () => router.push(`/personel/${props.personnelId}`),
-      onError,
-    });
+    updatePersonnel.mutate(
+      buildPersonnelUpdateBody(submittable, {
+        isDraft: updateDraftFlag,
+        omitFields: omittedSelectFields,
+      }),
+      {
+        onSuccess: () => router.push(`/personel/${props.personnelId}`),
+        onError,
+      },
+    );
   }
 
   // Yazma yetkisi olmayan kullanıcı bu rotayı hiç görmemeli (giriş noktaları

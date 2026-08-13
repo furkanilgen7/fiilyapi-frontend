@@ -697,6 +697,85 @@ describe("PersonnelForm (edit) · yayın durumu (K4)", () => {
   });
 });
 
+/**
+ * 🔒 SESSİZ VERİ DEĞİŞİKLİĞİ KAPISI — varsayılanı olan seçiciler.
+ *
+ * "Ücret Tipi" ve "Ödeme Şekli" mockup'ta boş seçenek TAŞIMAZ: sunucuda `null`
+ * olsa bile ekranda ilk seçenek görünür. Kullanıcı o seçiciyi hiç AÇMADAN
+ * kaydederse anahtarın gitmesi, kullanıcının VERMEDİĞİ kararı veriye yazmak
+ * olurdu. Yalnız DÜZENLEME kipini ilgilendirir (oluşturmada ezilecek değer yok).
+ */
+describe("PersonnelForm (edit) · dokunulmamış varsayılan seçiciler", () => {
+  it("sunucuda null olan payment_method DOKUNULMADAN kaydedilirse anahtar GİTMEZ", async () => {
+    mockDetail({ payment_method: null });
+    const user = userEvent.setup();
+    render(<PersonnelForm mode="edit" personnelId="per-9" />);
+    // Ekranda mockup'ın ilk seçeneği GÖRÜNÜR — ama bu kullanıcının kararı değil.
+    expect(screen.getByLabelText("Ödeme Şekli")).toHaveValue("bank");
+
+    await user.selectOptions(screen.getByLabelText("Meslek / Görev"), "Sıhhi Tesisatçı");
+    await user.click(submitButton("Kaydet"));
+
+    expect("payment_method" in updateMutate.mock.calls[0][0]).toBe(false);
+  });
+
+  it("kullanıcı Ödeme Şekli'ni SEÇERSE değer gövdede gider", async () => {
+    mockDetail({ payment_method: null });
+    const user = userEvent.setup();
+    render(<PersonnelForm mode="edit" personnelId="per-9" />);
+    await user.selectOptions(screen.getByLabelText("Ödeme Şekli"), "cash");
+    await user.click(submitButton("Kaydet"));
+
+    expect(updateMutate.mock.calls[0][0]).toMatchObject({ payment_method: "cash" });
+  });
+
+  it("sunucuda null olan wage_type DOKUNULMADAN kaydedilirse anahtar GİTMEZ", async () => {
+    mockDetail({ wage_type: null });
+    const user = userEvent.setup();
+    render(<PersonnelForm mode="edit" personnelId="per-9" />);
+    expect(screen.getByLabelText("Ücret Tipi")).toHaveValue("daily");
+
+    await user.click(submitButton("Kaydet"));
+
+    expect("wage_type" in updateMutate.mock.calls[0][0]).toBe(false);
+  });
+
+  it("kullanıcı Ücret Tipi'ni SEÇERSE değer gövdede gider", async () => {
+    mockDetail({ wage_type: null });
+    const user = userEvent.setup();
+    render(<PersonnelForm mode="edit" personnelId="per-9" />);
+    await user.selectOptions(screen.getByLabelText("Ücret Tipi"), "monthly");
+    await user.click(submitButton("Kaydet"));
+
+    expect(updateMutate.mock.calls[0][0]).toMatchObject({ wage_type: "monthly" });
+  });
+
+  it("sunucudan DOLU gelen wage_type dokunulmasa da AYNI değerle gider (gerileme koruması)", async () => {
+    mockDetail({ wage_type: "hourly", payment_method: "mixed" });
+    const user = userEvent.setup();
+    render(<PersonnelForm mode="edit" personnelId="per-9" />);
+    await user.click(submitButton("Kaydet"));
+
+    expect(updateMutate.mock.calls[0][0]).toMatchObject({
+      wage_type: "hourly",
+      payment_method: "mixed",
+    });
+  });
+
+  it("OLUŞTURMA kipi etkilenmez — iki anahtar da HER ZAMAN gider", async () => {
+    const user = userEvent.setup();
+    render(<PersonnelForm mode="create" />);
+    await user.type(screen.getByLabelText("Ad"), "Zeki");
+    await user.selectOptions(screen.getByLabelText("Çalışan Tipi"), "company");
+    await user.click(actionButton("Taslak Kaydet"));
+
+    expect(createMutate.mock.calls[0][0]).toMatchObject({
+      wage_type: "daily",
+      payment_method: "bank",
+    });
+  });
+});
+
 describe("PersonnelForm (edit) · gönderim", () => {
   it("kaydet PATCH gövdesini üretir ve detay sayfasına döner", async () => {
     updateMutate.mockImplementation((_body, options) => options.onSuccess?.({}));

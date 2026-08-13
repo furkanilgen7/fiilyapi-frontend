@@ -245,6 +245,23 @@ describe("buildPersonnelUpdateBody — gövde sızıntısı", () => {
     expect(buildPersonnelUpdateBody(fullyFilled(), { isDraft: true }).is_draft).toBe(true);
   });
 
+  it("omitFields verilen anahtarları gövdeden DÜŞÜRÜR (sunucudaki null EZİLMEZ)", () => {
+    const body = buildPersonnelUpdateBody(fullyFilled(), {
+      isDraft: null,
+      omitFields: ["wage_type", "payment_method"],
+    });
+    expect("wage_type" in body).toBe(false);
+    expect("payment_method" in body).toBe(false);
+    // Geri kalan her şey normal gider.
+    expect(body.wage_amount).toBe("1200");
+  });
+
+  it("omitFields verilmezse iki seçici de normal basılır", () => {
+    const body = buildPersonnelUpdateBody(fullyFilled(), { isDraft: null });
+    expect(body.wage_type).toBe("daily");
+    expect(body.payment_method).toBe("bank");
+  });
+
   it("Bölüm PATCH'te de gönderilmez — sunucudaki mevcut bölüm SİLİNMEZ", () => {
     const body = buildPersonnelUpdateBody(fullyFilled(), { isDraft: null });
     expect("assigned_section_id" in body).toBe(false);
