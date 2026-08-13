@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { cx } from "@/lib/cx";
 
-import { STATUS_PARAM } from "./purchasing-labels";
+import { PURCHASING_ROOT_HREF, STATUS_PARAM } from "./purchasing-labels";
 import "./purchasing.css";
 
 /**
@@ -36,9 +36,13 @@ interface TabDef {
 }
 
 const TABS: readonly TabDef[] = [
-  { key: "requests", label: "Satın Alma Talepleri", href: "/satinalma" }, // 90
+  { key: "requests", label: "Satın Alma Talepleri", href: PURCHASING_ROOT_HREF }, // 90
   // 91 — süzgeç değeri sunucunun `PurchaseRequestStatus` enum'undan gelir.
-  { key: "quotes", label: "Teklifler", href: `/satinalma?${STATUS_PARAM}=quote_wait` },
+  {
+    key: "quotes",
+    label: "Teklifler",
+    href: `${PURCHASING_ROOT_HREF}?${STATUS_PARAM}=quote_wait`,
+  },
   { key: "orders", label: "Siparişler", href: "/satinalma/siparisler" }, // 92
   { key: "suppliers", label: "Tedarikçiler", href: "/satinalma/tedarikciler" }, // 93
 ];

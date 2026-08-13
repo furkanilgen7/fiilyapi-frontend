@@ -45,6 +45,30 @@ describe("purchasing.css — SAT/TED mockup'ına bağlı kurallar", () => {
     expect(css).toMatch(/\.ted-add\s*{[^}]*2px dashed var\(--color-border-strong\)/);
   });
 
+  it("teslimat tarihi ÜÇ tonu da tanımlıdır (SIP 65 kırmızı · 76 kehribar · 87 nötr)", () => {
+    expect(css).toMatch(/\.sip-delivery--overdue\s*{[^}]*var\(--color-danger\)/);
+    expect(css).toMatch(/\.sip-delivery--soon\s*{[^}]*var\(--color-warning\)/);
+    expect(css).toMatch(/\.sip-delivery--neutral\s*{[^}]*var\(--color-text-muted\)/);
+  });
+
+  it("'Yolda' rozet metni primitive'den KOYU tondadır (SIP 66)", () => {
+    expect(css).toMatch(/\.sip-badge--in_transit\s*{[^}]*var\(--color-warning-strong\)/);
+  });
+
+  it("'EN İYİ FİYAT' kartı kalın mavi kenarlıklıdır (TEK 56)", () => {
+    expect(css).toMatch(/\.tek-card--best\s*{[^}]*2px solid var\(--color-primary\)/);
+    expect(css).toMatch(/\.tek-card--best \.tek-card__head\s*{[^}]*var\(--color-primary\)/);
+  });
+
+  it("'EN HIZLI' rozeti SÖNÜKTÜR — veri kaynağı yok (TEK 100)", () => {
+    expect(css).toMatch(/\.tek-card__badge--pending\s*{[^}]*var\(--color-text-subtle\)/);
+  });
+
+  it("nakliye iki hâli mockup renklerini taşır (TEK 70 yeşil · 90 kehribar)", () => {
+    expect(css).toMatch(/\.tek-card__shipping--included\s*{[^}]*var\(--color-success\)/);
+    expect(css).toMatch(/\.tek-card__shipping--excluded\s*{[^}]*var\(--color-warning\)/);
+  });
+
   it("çıplak hex renk YOKTUR — palet yalnız token'dan gelir", () => {
     expect(css.match(/#[0-9a-fA-F]{3,8}\b/g)).toBeNull();
   });

@@ -406,3 +406,282 @@
   font-size: 13px;
   color: var(--color-text-subtle);
 }
+
+/* ---------------------------------------------------------------------------
+   SIP · Siparişler (mockup "Satınalma - Siparişler.dc.html").
+   Aşağıdaki sayılar O DOSYANIN satırlarıdır. Başlık şeridi, sekme şeridi, KPI
+   kartları ve tablo kabuğu SAT'tan AYNEN gelir — kopyalanmaz.
+   -------------------------------------------------------------------------- */
+/* 42 · dördüncü KPI kartının yeşil değeri (SAT'ta bu ton yok). */
+.sat-kpi__value--success {
+  color: var(--color-success);
+}
+/* 32 · başlığın altındaki ay + aktif sipariş sayısı. */
+.sip__subtitle {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+/* 58 · satır TIKLANABİLİR DEĞİLDİR (detay ekranı çizilmedi) — SAT'ın
+   `.sat-row` imleç/hover davranışı burada BİLEREK yoktur. */
+.sip-row {
+  border-bottom: 1px solid var(--color-divider); /* 58 */
+}
+.sip-row:last-child {
+  border-bottom: none; /* 113 — son satırda kenarlık yok */
+}
+.sip-order-no {
+  font-weight: var(--weight-semibold); /* 59 */
+  color: var(--color-primary);
+}
+/* 65 · teslimat tarihi rengi TEK istemci türevidir. */
+.sip-delivery {
+  font-size: 12px;
+}
+.sip-delivery--overdue {
+  font-weight: var(--weight-semibold);
+  color: var(--color-danger); /* 65 */
+}
+.sip-delivery--soon {
+  font-weight: var(--weight-semibold);
+  color: var(--color-warning); /* 76, 98, 120 */
+}
+.sip-delivery--neutral {
+  color: var(--color-text-muted); /* 87, 109 */
+}
+/* 66 · "Yolda" metni primitive'den KOYUdur. */
+.badge.sip-badge--in_transit {
+  color: var(--color-warning-strong);
+}
+
+/* ---------------------------------------------------------------------------
+   TEK · Teklif Karşılaştırması (mockup "Satınalma - Teklifler.dc.html").
+   Aşağıdaki sayılar O DOSYANIN satırlarıdır.
+   -------------------------------------------------------------------------- */
+.tek {
+  animation: var(--anim-fade-up); /* 33 */
+}
+.tek__back {
+  color: var(--color-primary); /* 34 */
+  text-decoration: none;
+}
+.tek__back:hover {
+  text-decoration: underline;
+}
+
+/* 44-50 · talep özeti şeridi: tek kart, esnek sütunlar. */
+.tek-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6); /* 44 — 24px */
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-12);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: 20px;
+}
+.tek-strip__label {
+  font-size: var(--text-xs); /* 45 */
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  margin-bottom: 3px;
+}
+.tek-strip__value {
+  font-size: 14px; /* 45 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+/* 53 · üç sütunlu kart ızgarası. */
+.tek-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.tek-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border); /* 77 */
+  border-radius: var(--radius-14);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+/* 56 · "EN İYİ FİYAT" kartı: kalın mavi kenarlık + mavi başlık. */
+.tek-card--best {
+  border: 2px solid var(--color-primary);
+  box-shadow: var(--shadow-card-primary);
+}
+.tek-card--selected {
+  border-color: var(--color-success);
+}
+.tek-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 10px 16px; /* 78 */
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.tek-card--best .tek-card__head {
+  background: var(--color-primary); /* 57 */
+  border-bottom-color: var(--color-primary);
+}
+.tek-card__supplier {
+  font-size: 12px; /* 58 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.tek-card--best .tek-card__supplier {
+  color: var(--color-on-brand);
+  font-weight: var(--weight-bold);
+}
+.tek-card__badges {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.tek-card__badge {
+  font-size: var(--text-xs); /* 59, 100 */
+  font-weight: var(--weight-semibold);
+  padding: 2px 8px;
+  border-radius: var(--radius-10);
+  white-space: nowrap;
+}
+/* 59 · SUNUCUNUN `is_best_price` damgası. */
+.tek-card__badge--best {
+  background: var(--color-on-brand-30);
+  color: var(--color-on-brand);
+}
+/* 100 · "EN HIZLI" — veri kaynağı yok; rozet YERİNDE ama SÖNÜK. */
+.tek-card__badge--pending {
+  background: var(--color-surface-muted);
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+.tek-card__body {
+  padding: var(--space-4); /* 61 */
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+/* 62-65 · iki kutulu sayı ızgarası. */
+.tek-card__figures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.tek-card__figure {
+  background: var(--color-surface-2);
+  border-radius: var(--radius-8);
+  padding: 10px;
+}
+.tek-card__figure-label {
+  font-size: var(--text-xs); /* 63 */
+  color: var(--color-text-subtle);
+}
+.tek-card__figure-value {
+  font-size: 16px; /* 63-64 */
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+  color: var(--color-text);
+}
+/* 63 · vurgulu kartta birim fiyat MAVİDİR. */
+.tek-card__figure-value--best {
+  color: var(--color-primary);
+}
+.tek-card__figure-unit {
+  font-size: var(--text-xs); /* 63 */
+  color: var(--color-text-subtle);
+}
+/* 66-71 · dört künye satırı. */
+.tek-card__facts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.tek-card__fact {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.tek-card__fact dt {
+  color: var(--color-text-muted);
+}
+.tek-card__fact dd {
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+/* 70 "Dahil" yeşil · 90 "Hariç (+₺8.000)" kehribar. */
+.tek-card__shipping--included {
+  color: var(--color-success);
+  font-weight: var(--weight-semibold);
+}
+.tek-card__shipping--excluded {
+  color: var(--color-warning);
+}
+/* 72/92 · kart düğmesi tam genişlik. */
+.btn.tek-card__action {
+  width: 100%;
+  margin-top: auto;
+}
+.tek-card__selected {
+  margin-top: auto;
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-success);
+}
+.tek-empty {
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: var(--color-text-subtle);
+}
+
+/* 119-127 · karşılaştırma özeti. */
+.tek-summary {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-12); /* 119 */
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4) var(--space-5);
+}
+.tek-summary__title {
+  font-size: 13px; /* 120 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--space-3);
+}
+.tek-summary__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 121 */
+  gap: 16px;
+}
+.tek-summary__label {
+  font-size: var(--text-small); /* 122 */
+  color: var(--color-text-subtle);
+  margin-bottom: 4px;
+}
+.tek-summary__value {
+  font-size: 16px; /* 122-125 */
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+  color: var(--color-text);
+}
+.tek-summary__value--success {
+  color: var(--color-success); /* 122, 125 */
+}
+.tek-summary__value--danger {
+  color: var(--color-danger); /* 123 */
+}
+.tek-summary__note {
+  font-size: var(--text-small); /* 122 */
+  color: var(--color-text-subtle);
+}
+.tek-summary__note--success {
+  color: var(--color-success); /* 125 */
+}

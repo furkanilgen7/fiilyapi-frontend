@@ -1,4 +1,5 @@
 import type { BadgeVariant } from "@/components/ui/badge/Badge";
+import type { PurchaseOrderStatus } from "@/lib/api/hooks/usePurchaseOrders";
 import type {
   PurchasePriority,
   PurchaseRequestStatus,
@@ -69,6 +70,47 @@ export const PURCHASE_REQUEST_STATUS_BADGE_VARIANTS: Record<
   rejected: "danger",
 };
 
+/**
+ * Sipariş durumu (SIP 66 "Yolda" · 77 "Onaylandı" · 88 "Teslim Edildi").
+ * `PurchaseOrderStatus` ÜÇ değerlidir ve üçü de mockup'ta çizilidir; SIP 34'ün
+ * süzgeç seçicisi de bu üçünü sayar.
+ */
+export const PURCHASE_ORDER_STATUS_LABELS: Record<PurchaseOrderStatus, string> = {
+  approved: "Onaylandı", // 77
+  in_transit: "Yolda", // 66, 99, 121
+  delivered: "Teslim Edildi", // 88, 110
+};
+
+/**
+ * Rozet renkleri — mockup zemin/metin çiftleri `Badge` varyantlarına oturur:
+ * Yolda `#fef3c7/#d97706` = warning (66) · Onaylandı `#dbeafe/#2563eb` =
+ * primary (77) · Teslim Edildi `#dcfce7/#16a34a` = success (88).
+ *
+ * "Yolda" metni primitive'den KOYUdur (`#d97706`); fark `purchasing.css`teki
+ * `.sip-badge--in_transit` kuralıyla kapatılır (SAT rozetlerinin emsali).
+ */
+export const PURCHASE_ORDER_STATUS_BADGE_VARIANTS: Record<PurchaseOrderStatus, BadgeVariant> = {
+  approved: "primary",
+  in_transit: "warning",
+  delivered: "success",
+};
+
+/**
+ * SIP 34 süzgeç seçicisinin SIRASI mockup'tan gelir: "Tüm Durumlar" · Yolda ·
+ * Onaylandı · Teslim Edildi. Alfabetik/enum sırası KULLANILMAZ.
+ */
+export const PURCHASE_ORDER_STATUS_OPTIONS: readonly PurchaseOrderStatus[] = [
+  "in_transit",
+  "approved",
+  "delivered",
+];
+
+/** URL'den okunan serbest metni güvenli bir `PurchaseOrderStatus`a daraltır. */
+export function parsePurchaseOrderStatus(raw: string | null): PurchaseOrderStatus | undefined {
+  if (raw === null) return undefined;
+  return raw in PURCHASE_ORDER_STATUS_LABELS ? (raw as PurchaseOrderStatus) : undefined;
+}
+
 /** Öncelik etiketi — SAT 113'ün "Acil" satır altı notunun kaynağı. */
 export const PURCHASE_PRIORITY_LABELS: Record<PurchasePriority, string> = {
   normal: "Normal",
@@ -128,6 +170,12 @@ export const PURCHASING_EYEBROW = "Stok & Satınalma";
  */
 export const PROJECT_NAME_UNRESOLVED_REASON =
   "Proje adı çözümlenemedi — proje listesi yüklenmedi ya da proje görünür değil";
+
+/**
+ * SAT kökü — sekme şeridinin ilk sekmesi (SAT 90) ve TEK 34'ün
+ * "← Satınalma & Teklif" dönüş bağlantısı AYNI rotadır; iki yere elle yazılmaz.
+ */
+export const PURCHASING_ROOT_HREF = "/satinalma";
 
 /**
  * T3'ün açacağı talep formu (spec K1) — SAT 65 "+ Satın Alma Talebi".
