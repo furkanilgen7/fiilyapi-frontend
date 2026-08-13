@@ -1063,6 +1063,382 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/payroll/periods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Payroll Periods Endpoint
+         * @description BG tablosu: dönem · çalışan · brüt · SGK işveren · net · toplam maliyet.
+         *
+         *     En YENİ dönem başta (BG tbody: Temmuz · Haziran · Mayıs). Toplamlar
+         *     TÜREVDİR — dönem tablosunda toplam kolonu yoktur (models.py: iki gerçek
+         *     kaynak doğar ve `compute` sonrası sessizce çelişirdi).
+         *
+         *     "Çalışan" sütunu dönemin TÜM satırlarını sayar (taşeron dahil, BY tfoot
+         *     48 = 12+29+5+2); BY 71'in kart sayısı ise yalnız ÖDENEBİLİR satırlardır.
+         */
+        get: operations["list_payroll_periods_endpoint_payroll_periods_get"];
+        put?: never;
+        /**
+         * Create Payroll Period Endpoint
+         * @description Ay AÇAR, doldurmaz — satırlar `compute` ucundan gelir.
+         *
+         *     Var olan ay **409**dur (UQ `(year, month)`, spec §4). Yeni dönem HER ZAMAN
+         *     `draft`tır; gövdeden durum alınmaz (`extra="forbid"`).
+         */
+        post: operations["create_payroll_period_endpoint_payroll_periods_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payroll/periods/{period_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Payroll Period Endpoint
+         * @description BY ekranı: dört özet kartı (69-93) + tip bazında gruplanmış satırlar.
+         *
+         *     🔴 İlk üç kart ÖDEME tabanını gösterir (`excluded` taşeron ve `uncomputed`
+         *     satırlar HARİÇ, K2/S4); dördüncü kart MALİYET tabanını (`excluded` DAHİL) ve
+         *     hesabı **`brüt + SGK işveren + işsizlik işveren + kısa çalışma`**dır
+         *     (spec §7) — BY 92'nin "SGK işveren payı dahil" ETİKETİ mockup'tan, HESAP
+         *     spec'ten gelir.
+         *
+         *     Görünmeyen dönem var olmayanla AYNI 404'ü alır.
+         */
+        get: operations["get_payroll_period_endpoint_payroll_periods__period_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Payroll Period Endpoint
+         * @description Ödeme takvimi (BY 63 "Son ödeme") düzeltmesi — T4b.
+         *
+         *     * Yetki diğer yazma uçlarıyla AYNI: `payroll:full`.
+         *     * **`draft` ve `pending_approval`** yazılabilir; **`approved`/`paid` 409** —
+         *       ödeme gerçekleştikten sonra takvimi değiştirmek gerçekleşmiş bir olayın
+         *       kaydını düzeltmek olurdu, `approved`ta da bordronun takvimi tek taraflı
+         *       kaymamalıdır. Değişmesi gerekiyorsa dönem `pending_approval`a geri alınır.
+         *     * `payment_due_date` **OPSİYONELDİR** (açma ucunda da): sunucu tarih
+         *       ÜRETMEZ, varsayılan KOYMAZ, dönemin yıl/ayıyla tutarlılığını DENETLEMEZ
+         *       (ödeme sonraki aya sarkabilir). Açıkça `null` göndermek tarihi TEMİZLER;
+         *       boş gövde ise **422**'dir (bir işlem değildir).
+         *     * Görünmeyen/var olmayan dönem **404** (ayırt edilemez).
+         */
+        patch: operations["update_payroll_period_endpoint_payroll_periods__period_id__patch"];
+        trace?: never;
+    };
+    "/payroll/periods/{period_id}/compute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compute Payroll Period Endpoint
+         * @description Puantaj + ücret + oranlardan satırları üretir/günceller (T2 akışı).
+         *
+         *     Elle düzeltilmiş (`is_overridden`, S6) ve onaylı/ödenmiş (S5) satırlar
+         *     KORUNUR ve **sayıyla raporlanır** — sessiz atlama yoktur (WORKFLOW §3).
+         *     Dönem `approved`/`paid` ise **409**.
+         */
+        post: operations["compute_payroll_period_endpoint_payroll_periods__period_id__compute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payroll/lines/{line_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Payroll Line Endpoint
+         * @description Brüt override (K3) + banka/elden bölüşümü (S3) — BY 142-147.
+         *
+         *     * **S3 (spec §6/1):** `banka + elden ≠ net` → **422**, KURUŞ kaymasında da
+         *       (`Decimal`; `float` karşılaştırması yapılmaz). İki alan BİRLİKTE gönderilir.
+         *     * **S5 (spec §6/4):** `approved`/`paid` satır — ve onaylanmış DÖNEMİN her
+         *       satırı — **409**. Ödeme izi geriye dönük düzeltilmez.
+         *     * **K2 (spec §2):** taşeron (`excluded`) satırı **409** — bordrodan ödenmez,
+         *       bölüşümü de düzenlenmez; çift ödeme yapısal olarak imkânsız kalmalıdır.
+         *     * **K3:** brüt elle değişince iz yazılır (kim/ne zaman/önceki değer) ve
+         *       kesinti/net/bölüşüm `compute.py`nin oran mantığıyla YENİDEN TÜRETİLİR —
+         *       kesinti gövdeden alınmaz.
+         */
+        patch: operations["update_payroll_line_endpoint_payroll_lines__line_id__patch"];
+        trace?: never;
+    };
+    "/payroll/lines/{line_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve Payroll Line Endpoint
+         * @description Satır onayı — `pending → approved`.
+         *
+         *     * **🔴 K2 (spec §2, §6/2):** taşeron (`excluded`) satırı **409**. Taşeronun
+         *       ödemesi hakediş (TH) üzerinden yapılır; buradan da onaylanabilseydi aynı
+         *       emek İKİ KEZ ödenirdi. Çift ödeme yapısal olarak imkânsız kalmalıdır.
+         *     * **S4 (spec §6/3):** brütü `null` olan (`uncomputed`) satır **409** —
+         *       "ödenecek bir şey yok" yalanı damgalanmaz; önce brüt girilir.
+         *     * **S8:** `approved`/`paid` satır **409** (atlama ve tekrar yok).
+         */
+        post: operations["approve_payroll_line_endpoint_payroll_lines__line_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payroll/lines/{line_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject Payroll Line Endpoint
+         * @description Satır reddi = ONAYIN GERİ ALINMASI — `approved → pending` (S5 düzeltme yolu).
+         *
+         *     Ayrı bir `rejected` durumu YOKTUR: satır durumu kümesi T1'de kapanmıştır.
+         *     Geri alınan satır yeniden düzenlenebilir olur. `pending`/`uncomputed`/
+         *     `paid`/`excluded` satırda **409**.
+         */
+        post: operations["reject_payroll_line_endpoint_payroll_lines__line_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payroll/periods/{period_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve Payroll Period Endpoint
+         * @description BY 303 "Tümünü Onayla" — dönemi TEK ADIM ilerletir, `pending` satırları onaylar.
+         *
+         *     `draft → pending_approval → approved`; **atlama YOKTUR** (S8), üçüncü çağrı
+         *     **409**. Ödeme damgası bu uçtan basılmaz (`/pay` ayrıdır).
+         *
+         *     🔴 "Tümünü" onaylamaz: `uncomputed` (S4) ve taşeron (K2) satırlar ATLANIR ve
+         *     yanıtta **sebebe göre ayrı sayılarla** raporlanır — sessiz atlama yoktur
+         *     (WORKFLOW §3).
+         */
+        post: operations["approve_payroll_period_endpoint_payroll_periods__period_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payroll/periods/{period_id}/pay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pay Payroll Period Endpoint
+         * @description Ödendi damgası (`paid_at`) — dönem ve ONAYLI satırlar `paid`.
+         *
+         *     * **S8:** dönem `approved` değilse **409** — `draft → paid` para çıkışının
+         *       onay zincirini atlardı. İkinci `pay` de **409**: ikinci ödeme demektir.
+         *     * **🔴 K2:** taşeron satırı `paid` OLMAZ ve `paid_net_total`a GİRMEZ.
+         *     * Onaylanmamış ve hesaplanamamış satırlar ödenmez, sayıyla raporlanır.
+         *
+         *     Dış entegrasyon YOKTUR (spec §1): EFT talimatı gönderilmez.
+         */
+        post: operations["pay_payroll_period_endpoint_payroll_periods__period_id__pay_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payroll/periods/{period_id}/sgk-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Payroll Sgk Summary Endpoint
+         * @description SGK bildirim ekranının prim hesabı — SGK **55-95**.
+         *
+         *     * **🔴 Mockup TUTARLARI beklenti DEĞİLDİR** (spec S1): SGK mockup'ı kendi
+         *       aritmetiğine uymuyor (SGK 82 → 148.800 yazar, kendi oranlarından 174.652
+         *       çıkar). Açık ORAN kazanır; buradaki işveren sayıları mockup'takinden
+         *       BÜYÜKTÜR ve bu kararın kendisidir.
+         *     * **Taban:** taşeron (`excluded`) satır MATRAHA GİRER — SGK bildirimi bir
+         *       ödeme değil BİLDİRİMDİR (SGK 112-113 taşeron satırlarını listeler,
+         *       SGK 55'in "48"i BY tfoot 298'in 48'idir). Gerekçe `sgk.py`de.
+         *     * **Fail-closed:** brütü `null` satır (S4) ve oran seti olmayan tip matraha
+         *       GİRMEZ, ikisi de AYRI SAYILIR (sessiz atlama yok).
+         *
+         *     Görünmeyen dönem var olmayanla AYNI 404'ü alır.
+         */
+        get: operations["payroll_sgk_summary_endpoint_payroll_periods__period_id__sgk_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payroll/periods/{period_id}/sgk-submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Payroll Sgk Submit Endpoint
+         * @description SGK 44 "SGK'ya Gönder" — YALNIZ `sgk_submitted_at` damgası (spec §1).
+         *
+         *     * **Dış sistem entegrasyonu YOKTUR.** Bu uç hiçbir yere istek atmaz.
+         *     * **İkinci damga 409:** damga bir OLAYIN zamanıdır (SGK 46'daki son bildirim
+         *       tarihiyle karşılaştırılır); sessizce yeniden yazılsaydı geç bir bildirim
+         *       ikinci tıklamayla zamanında yapılmış görünürdü.
+         *     * **Dönem durumu ön koşul DEĞİLDİR:** SGK 44-47 bildirimin beklediğini
+         *       söylerken BY 61 aynı dönemin bordrosunun hâlâ onay beklediğini yazar —
+         *       mockup bildirimin ödeme onayından ÖNCE yapılabildiğini gösteriyor.
+         */
+        post: operations["payroll_sgk_submit_endpoint_payroll_periods__period_id__sgk_submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payroll/rates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Payroll Rates Endpoint
+         * @description Oran setleri (K1) — `(yıl, personel tipi)` anahtarlı, yedi oran + `is_active`.
+         *
+         *     Pasif setler de döner: geçmiş bir bordronun hangi oranla hesaplandığı
+         *     okunabilir kalmalıdır. Sayfalama YOKTUR (tablo yılda dört satır büyür,
+         *     gerekçe `schemas.PayrollRateListResponse`).
+         */
+        get: operations["list_payroll_rates_endpoint_payroll_rates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payroll/rates/{year}/{source}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Upsert Payroll Rate Endpoint
+         * @description Oran seti açar ya da DEĞİŞTİRİR (K1: oranlar VERİDİR, koda gömülmez).
+         *
+         *     🔴 **GEÇMİŞ DÖNEM DEĞİŞMEZ (para korkuluğu):** o yılda `approved`/`paid` bir
+         *     dönem varsa **409**. Oran satıra kopyalanmaz (K1) ve dönem toplamları canlı
+         *     setten türer; yazmaya izin verilseydi onaylanmış bir dönemin raporlanmış
+         *     maliyeti ve SGK bildirimi geriye dönük değişirdi. Kapı YILA kapanır — yeni
+         *     tip açmak da aynı sonucu doğururdu. Başka yıl ve taslak dönemli yıl
+         *     SERBESTTİR; kural bordroyu tıkamaz.
+         *
+         *     Gövde TAM SETTİR: yedi oranın hepsi zorunludur, kısmi yama yoktur.
+         */
+        put: operations["upsert_payroll_rate_endpoint_payroll_rates__year___source__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payroll/periods/{period_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Payroll Period Endpoint
+         * @description BY 55 "Excel" — dönem tablosunun çıktısı (puantaj export emsali).
+         *
+         *     Dönem detayı EKRAN UCUYLA AYNI çağrıdan gelir (`get_period_detail`): satır
+         *     tutarları, bölüm gruplaması ve toplamlar birebir aynıdır — ikinci bir sorgu
+         *     yazılsaydı dosya ile ekran zamanla ayrışırdı.
+         *
+         *     İndirme bir OKUMADIR: kapı `payroll:view`tir ve `record_audit` ÇAĞIRMAZ.
+         *     Görünmeyen dönem var olmayanla AYNI 404'ü alır.
+         */
+        get: operations["export_payroll_period_endpoint_payroll_periods__period_id__export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/personnel": {
         parameters: {
             query?: never;
@@ -5646,6 +6022,544 @@ export interface components {
          * @enum {string}
          */
         PaymentTerms: "cash" | "days_15" | "days_30" | "days_60";
+        /**
+         * PayrollComputeResult
+         * @description `POST /payroll/periods/{id}/compute` özeti — **sessiz atlama YOKTUR**.
+         *
+         *     Atlanan satırlar sayıyla raporlanır (WORKFLOW §3): kullanıcı "hesapladım"
+         *     yanıtını alıp elle düzelttiği satırın niçin değişmediğini merak etmemelidir.
+         *     İki atlama sebebi AYRI sayılır çünkü anlamları farklıdır — biri kullanıcının
+         *     kendi düzeltmesidir (K3/S6), diğeri ödeme izidir (S5).
+         */
+        PayrollComputeResult: {
+            /**
+             * Created
+             * @description Yeni açılan satır sayısı
+             */
+            created: number;
+            /**
+             * Updated
+             * @description Yeniden hesaplanıp güncellenen satır sayısı
+             */
+            updated: number;
+            /**
+             * Skipped Overridden
+             * @description Elle düzeltildiği için KORUNAN satır sayısı (S6)
+             */
+            skipped_overridden: number;
+            /**
+             * Skipped Approved
+             * @description Onaylı/ödenmiş olduğu için KORUNAN satır sayısı (S5)
+             */
+            skipped_approved: number;
+        };
+        /**
+         * PayrollLineResponse
+         * @description BY tablosunun bir satırı (110-118 başlıkları + 133-148 gövdesi).
+         *
+         *     `personnel_name` satıra GÖMÜLÜR (BY 137): ekran her satır için ikinci bir
+         *     personel isteği atmak zorunda kalmamalıdır. `personnel_source` satırın
+         *     SNAPSHOT'ıdır (models.py) — canlı personel tipi değil.
+         *
+         *     Beş para alanı da `null` OLABİLİR (S4): "0 ödenecek" ile "hesaplanamadı"
+         *     ayırt edilebilir kalmalıdır.
+         */
+        PayrollLineResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Personnel Id
+             * Format: uuid
+             */
+            personnel_id: string;
+            /** Personnel Name */
+            personnel_name: string;
+            personnel_source: components["schemas"]["WorkerSource"];
+            /** Days */
+            days: number | null;
+            /** Gross Amount */
+            gross_amount: string | null;
+            /** Deduction Amount */
+            deduction_amount: string | null;
+            /** Net Amount */
+            net_amount: string | null;
+            /** Bank Amount */
+            bank_amount: string | null;
+            /** Cash Amount */
+            cash_amount: string | null;
+            status: components["schemas"]["PayrollLineStatus"];
+            /** Excluded Reason */
+            excluded_reason: string | null;
+            /** Is Overridden */
+            is_overridden: boolean;
+            /** Overridden At */
+            overridden_at: string | null;
+            /** Previous Gross Amount */
+            previous_gross_amount: string | null;
+        };
+        /**
+         * PayrollLineStatus
+         * @description Satır durumu (spec §4).
+         *
+         *     `uncomputed` S4'ün taşıyıcısıdır: ücreti olmayan personelin satırı AÇILIR
+         *     ama brüt/net `null` durur ve ödeme onayına GİRMEZ. `excluded` K2'nin
+         *     taşıyıcısıdır: taşeron satırı görünür ve maliyete girer, ÖDENMEZ (ödemesi
+         *     hakediş üzerinden taşerona yapılır) — çift ödeme yapısal olarak imkânsızdır.
+         * @enum {string}
+         */
+        PayrollLineStatus: "uncomputed" | "pending" | "approved" | "paid" | "excluded";
+        /**
+         * PayrollLineUpdate
+         * @description `PATCH /payroll/lines/{id}` gövdesi — kullanıcının GİRDİĞİ üç alan.
+         *
+         *     * `gross_amount` → K3 brüt override'ı; kesinti ve net bundan YENİDEN türer
+         *       (`compute.deduction_and_net`), gövdeden alınmaz.
+         *     * `bank_amount` + `cash_amount` → BY 142-147'deki iki ayrı `input`.
+         *       **İkisi birlikte gönderilir**: yalnız biri gönderilip öteki sunucuya
+         *       tamamlatılsaydı S3 bir DOĞRULAMA değil bir HESAP olurdu ve "gerisi elden
+         *       mi, yoksa yanlış mı yazdım?" ayrımı kaybolurdu.
+         *
+         *     Boş gövde reddedilir: hiçbir alan göndermemek bir işlem değildir ve 200
+         *     dönmek kullanıcıya "kaydettim" demek olurdu.
+         */
+        PayrollLineUpdate: {
+            /** Gross Amount */
+            gross_amount?: number | string | null;
+            /** Bank Amount */
+            bank_amount?: number | string | null;
+            /** Cash Amount */
+            cash_amount?: number | string | null;
+        };
+        /**
+         * PayrollPeriodApproveResult
+         * @description `POST /payroll/periods/{id}/approve` — BY 303 "Tümünü Onayla".
+         *
+         *     🔴 **Atlananlar SEBEBE GÖRE ayrı sayılır** (WORKFLOW §3): "3 satır onaylandı"
+         *     tek başına, iki satırın niçin dışarıda kaldığını gizlerdi ve kullanıcı eksik
+         *     ödemeyi banka ekstresinden öğrenirdi. Sebepler farklı İŞ gerektirir:
+         *
+         *     * `skipped_excluded` → **K2**: taşeron satırı; ödemesi hakediş modülünün
+         *       (TH) işidir, burada yapılacak bir şey YOKTUR;
+         *     * `skipped_uncomputed` → **S4**: ücret verisi eksik; kullanıcı ya personelin
+         *       ücretini tanımlar ya da brütü elle girer;
+         *     * `skipped_already_approved` → satır zaten onaylı/ödenmiş; bilgi amaçlıdır.
+         *
+         *     `period_status` DÖNÜŞTE VERİLİR çünkü uç dönemi TEK ADIM ilerletir
+         *     (`draft → pending_approval → approved`) ve ekran hangi adımda olduğunu
+         *     yanıttan öğrenmelidir — ikinci bir `GET` ile tahmin etmemelidir.
+         */
+        PayrollPeriodApproveResult: {
+            period_status: components["schemas"]["PayrollPeriodStatus"];
+            /**
+             * Approved
+             * @description Onaylanan satır sayısı
+             */
+            approved: number;
+            /**
+             * Skipped Uncomputed
+             * @description Brütü hesaplanamadığı için atlanan satır (S4)
+             */
+            skipped_uncomputed: number;
+            /**
+             * Skipped Excluded
+             * @description Taşeron olduğu için atlanan satır (K2)
+             */
+            skipped_excluded: number;
+            /**
+             * Skipped Already Approved
+             * @description Zaten onaylı/ödenmiş satır
+             */
+            skipped_already_approved: number;
+        };
+        /**
+         * PayrollPeriodCreate
+         * @description `POST /payroll/periods` gövdesi — ay AÇAR, doldurmaz.
+         *
+         *     `status` gövdeden ALINMAZ: yeni dönem HER ZAMAN `draft`tır ve ileri
+         *     durumlara yalnız geçiş tablosundan (`transitions.py`, S8) gidilir. Alan
+         *     açılsaydı istemci bir ayı doğrudan `paid` açıp onay zincirini atlardı.
+         */
+        PayrollPeriodCreate: {
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            /** Payment Due Date */
+            payment_due_date?: string | null;
+        };
+        /**
+         * PayrollPeriodDetailResponse
+         * @description BY ekranının tamamı: dönem künyesi + dört kart + tip bazında satırlar.
+         */
+        PayrollPeriodDetailResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            status: components["schemas"]["PayrollPeriodStatus"];
+            /** Payment Due Date */
+            payment_due_date: string | null;
+            /** Approved At */
+            approved_at: string | null;
+            /** Paid At */
+            paid_at: string | null;
+            /** Sgk Submitted At */
+            sgk_submitted_at: string | null;
+            summary: components["schemas"]["PayrollSummaryResponse"];
+            /** Sections */
+            sections: components["schemas"]["PayrollSectionResponse"][];
+        };
+        /** PayrollPeriodListResponse */
+        PayrollPeriodListResponse: {
+            /** Items */
+            items: components["schemas"]["PayrollPeriodListRow"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * PayrollPeriodListRow
+         * @description BG tablosunun bir satırı (44-47 başlıkları).
+         *
+         *     `personnel_count` dönemin TÜM satırlarını sayar (BY tfoot 48 = 12+29+5+2);
+         *     BY 71'in kart sayısı ise ÖDENEBİLİR satırlardır. İkisi aynı değildir
+         *     (`summary.py` gerekçesi) ve tek alana indirgenirse biri yalan söyler.
+         */
+        PayrollPeriodListRow: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            status: components["schemas"]["PayrollPeriodStatus"];
+            /** Payment Due Date */
+            payment_due_date: string | null;
+            /** Paid At */
+            paid_at: string | null;
+            /** Personnel Count */
+            personnel_count: number;
+            /** Gross Total */
+            gross_total: string;
+            /** Sgk Employer Total */
+            sgk_employer_total: string;
+            /** Net Total */
+            net_total: string;
+            /** Total Cost */
+            total_cost: string;
+        };
+        /**
+         * PayrollPeriodPayResult
+         * @description `POST /payroll/periods/{id}/pay` — ödendi damgası (spec §5).
+         *
+         *     🔴 `paid_net_total` ÖDENEN satırların netidir; **taşeron satırı bu toplama
+         *     GİRMEZ** (K2). Girseydi banka talimatı taşeron işçisinin netini de taşır ve
+         *     aynı emek hem hakedişten hem bordrodan ödenirdi.
+         *
+         *     `skipped_unapproved` sessiz atlamayı kapatır: onayı geri alınmış bir satır
+         *     ödenmez ve bu ekranda GÖRÜNÜR.
+         */
+        PayrollPeriodPayResult: {
+            period_status: components["schemas"]["PayrollPeriodStatus"];
+            /**
+             * Paid At
+             * Format: date-time
+             */
+            paid_at: string;
+            /**
+             * Paid
+             * @description Ödendi damgası basılan satır sayısı
+             */
+            paid: number;
+            /**
+             * Paid Net Total
+             * @description Ödenen satırların net toplamı
+             */
+            paid_net_total: string;
+            /**
+             * Skipped Unapproved
+             * @description Onaylanmadığı için ödenmeyen satır
+             */
+            skipped_unapproved: number;
+            /**
+             * Skipped Uncomputed
+             * @description Brütü hesaplanamadığı için ödenmeyen satır (S4)
+             */
+            skipped_uncomputed: number;
+            /**
+             * Skipped Excluded
+             * @description Taşeron olduğu için ödenmeyen satır (K2)
+             */
+            skipped_excluded: number;
+        };
+        /**
+         * PayrollPeriodStatus
+         * @description Dönem durumu (spec §4, S8: BY 56/303 + BG durum sütunu).
+         *
+         *     Zincir `draft → pending_approval → approved → paid`; ATLAMA YOKTUR ve geri
+         *     geçiş yalnız `paid` DEĞİLKEN mümkündür — geçiş kapısı T3'te servistedir.
+         * @enum {string}
+         */
+        PayrollPeriodStatus: "draft" | "pending_approval" | "approved" | "paid";
+        /**
+         * PayrollPeriodUpdate
+         * @description `PATCH /payroll/periods/{id}` gövdesi — YALNIZ ödeme tarihi (T4b).
+         *
+         *     Dönemin başka hiçbir alanı buradan değişmez: `year`/`month` kimliktir (UQ),
+         *     `status` geçiş tablosunun (S8) işidir, damgalar (`approved_at`/`paid_at`/
+         *     `sgk_submitted_at`) kendi uçlarında basılır. Alan eklemek bu uçtan onay
+         *     zincirini atlamayı mümkün kılardı.
+         *
+         *     🔴 **Boş gövde 422'dir ve bu `null` göndermekten AYRIDIR.** Tek alanlı ve
+         *     nullable bir şemada `{}` ile `{"payment_due_date": null}` varsayılan
+         *     değerle ayırt edilemez; ayrım `model_fields_set` ile korunur. İkisi tek
+         *     davranışa indirgenseydi ya boş bir istek tarihi sessizce SİLERDİ ya da
+         *     yanlış girilmiş bir tarihi temizlemek imkânsız olurdu.
+         */
+        PayrollPeriodUpdate: {
+            /** Payment Due Date */
+            payment_due_date?: string | null;
+        };
+        /**
+         * PayrollRateListResponse
+         * @description Oran setleri — **sayfalama YOKTUR ve bu bilinçlidir.**
+         *
+         *     Tablo yılda en çok DÖRT satır büyür (spec §4'ün dört bordro tipi); TB3
+         *     sayfalama korkuluğu sınırsız büyüyen listeler içindir. `limit` eklenseydi
+         *     ekran oran matrisini sayfalamak zorunda kalır ve kullanıcı bir yılın
+         *     setini parça parça görürdü.
+         */
+        PayrollRateListResponse: {
+            /** Items */
+            items: components["schemas"]["PayrollRateResponse"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * PayrollRateResponse
+         * @description Bir oran seti — `(yıl, personel tipi)` anahtarlı (S2).
+         */
+        PayrollRateResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Year */
+            year: number;
+            personnel_source: components["schemas"]["WorkerSource"];
+            /** Sgk Employee Pct */
+            sgk_employee_pct: string;
+            /** Unemployment Employee Pct */
+            unemployment_employee_pct: string;
+            /** Income Tax Pct */
+            income_tax_pct: string;
+            /** Stamp Tax Pct */
+            stamp_tax_pct: string;
+            /** Sgk Employer Pct */
+            sgk_employer_pct: string;
+            /** Unemployment Employer Pct */
+            unemployment_employer_pct: string;
+            /** Short Work Pct */
+            short_work_pct: string;
+            /** Is Active */
+            is_active: boolean;
+        };
+        /**
+         * PayrollRateUpdate
+         * @description `PUT /payroll/rates/{year}/{source}` gövdesi — **TAM SET** (K1).
+         *
+         *     Yedi oranın hepsi ZORUNLUDUR: kısmi gönderim kabul edilseydi eksik alan
+         *     sessizce 0 olur ve "kesinti yok" yalanı üretilirdi. PUT bir DEĞİŞTİRMEDİR,
+         *     yama değildir; anahtar (`year`, `source`) yoldadır, gövdede TEKRARLANMAZ —
+         *     ikisi çelişirse hangisinin kazandığı sorusu doğardı.
+         */
+        PayrollRateUpdate: {
+            /** Sgk Employee Pct */
+            sgk_employee_pct: number | string;
+            /** Unemployment Employee Pct */
+            unemployment_employee_pct: number | string;
+            /** Income Tax Pct */
+            income_tax_pct: number | string;
+            /** Stamp Tax Pct */
+            stamp_tax_pct: number | string;
+            /** Sgk Employer Pct */
+            sgk_employer_pct: number | string;
+            /** Unemployment Employer Pct */
+            unemployment_employer_pct: number | string;
+            /** Short Work Pct */
+            short_work_pct: number | string;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+        };
+        /**
+         * PayrollSectionResponse
+         * @description BY 124/172/240/268 bölüm başlıkları — tip bazında gruplama.
+         *
+         *     Bölüm ETİKETİ ("ŞİRKET KADROSU — SGK 4a") sunucudan DÖNMEZ: o bir ekran
+         *     metnidir ve mockup'ta rejim adıyla birlikte yazılır. Sunucu tipi ve sayıyı
+         *     verir; sayı BURADAN gelir çünkü başlık "· 12 çalışan" basar ve ekranın
+         *     kendi `lines.length`ini sayması sayfalanmış bir listede yanlış olurdu.
+         */
+        PayrollSectionResponse: {
+            personnel_source: components["schemas"]["WorkerSource"];
+            /** Line Count */
+            line_count: number;
+            /** Lines */
+            lines: components["schemas"]["PayrollLineResponse"][];
+        };
+        /**
+         * PayrollSgkSubmitResult
+         * @description `POST /payroll/periods/{id}/sgk-submit` — YALNIZ damga (spec §1).
+         *
+         *     Dış sistem entegrasyonu YOKTUR: ne HTTP isteği, ne kuyruk, ne dosya
+         *     gönderimi. Yanıt bu yüzden bir "gönderim sonucu" değil, damganın ZAMANIDIR.
+         */
+        PayrollSgkSubmitResult: {
+            /**
+             * Period Id
+             * Format: uuid
+             */
+            period_id: string;
+            /**
+             * Sgk Submitted At
+             * Format: date-time
+             */
+            sgk_submitted_at: string;
+        };
+        /**
+         * PayrollSgkSummaryResponse
+         * @description SGK 55-95 — KPI dörtlüsü + işçi payları + işveren payları + ödenecek prim.
+         *
+         *     🔴 **Mockup TUTARLARI beklenti değildir** (spec S1): SGK mockup'ı kendi
+         *     aritmetiğine uymuyor (SGK 82 işveren toplamını 148.800 yazar, kendi
+         *     oranlarından 174.652 çıkar). Açık ORAN kazanır ve buradaki sayılar
+         *     mockup'takinden BÜYÜKTÜR — gerekçe `sgk.py` docstring'inde.
+         *
+         *     🔴 **SGK 96-118 (çalışan listesi + "SGK No") YOKTUR:** spec §5 bu ucu 55-95
+         *     ile sınırlar ve `sgk_no` diye bir kolon İK-1'de yoktur (uydurulmaz).
+         *
+         *     İki sayaç `null` sayı ÜRETMEDEN eksiği görünür kılar (WORKFLOW §3):
+         *     `uncomputed_count` ücreti tanımsız satırları, `unknown_rate_count` oran seti
+         *     olmayan tipleri sayar; ikisi de matraha GİRMEZ (fail-closed).
+         */
+        PayrollSgkSummaryResponse: {
+            /**
+             * Period Id
+             * Format: uuid
+             */
+            period_id: string;
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            /** Sgk Submitted At */
+            sgk_submitted_at: string | null;
+            /**
+             * Declared Personnel Count
+             * @description SGK 55 — bildirilen çalışan (4a + 4b)
+             */
+            declared_personnel_count: number;
+            /**
+             * Sgk Base Total
+             * @description SGK 56 — SGK matrahı
+             */
+            sgk_base_total: string;
+            /**
+             * Sgk Premium Total
+             * @description SGK 57 — SGK primi (işçi + işveren)
+             */
+            sgk_premium_total: string;
+            /**
+             * Unemployment Total
+             * @description SGK 58 — işsizlik sigortası (işçi + işveren)
+             */
+            unemployment_total: string;
+            /** Sgk Employee Total */
+            sgk_employee_total: string;
+            /** Unemployment Employee Total */
+            unemployment_employee_total: string;
+            /** Income Tax Total */
+            income_tax_total: string;
+            /** Stamp Tax Total */
+            stamp_tax_total: string;
+            /**
+             * Employee Deduction Total
+             * @description SGK 73 — toplam işçi kesintisi
+             */
+            employee_deduction_total: string;
+            /** Sgk Employer Total */
+            sgk_employer_total: string;
+            /** Unemployment Employer Total */
+            unemployment_employer_total: string;
+            /** Short Work Total */
+            short_work_total: string;
+            /** Employer Burden Total */
+            employer_burden_total: string;
+            /** Sgk Payable Total */
+            sgk_payable_total: string;
+            /** Uncomputed Count */
+            uncomputed_count: number;
+            /** Unknown Rate Count */
+            unknown_rate_count: number;
+        };
+        /**
+         * PayrollSummaryResponse
+         * @description BY 69-93'ün dört kartı + görünür sayaçlar (`summary.PeriodSummary` aynası).
+         *
+         *     🔴 İki taban ayrıdır: ilk üç kart ÖDEME tabanını (`excluded`/`uncomputed`
+         *     hariç), dördüncü kart MALİYET tabanını (`excluded` DAHİL) gösterir.
+         *     Ayrıntı `summary.py` docstring'inde.
+         */
+        PayrollSummaryResponse: {
+            /** Line Count */
+            line_count: number;
+            /** Net Total */
+            net_total: string;
+            /** Net Personnel Count */
+            net_personnel_count: number;
+            /** Bank Total */
+            bank_total: string;
+            /** Bank Personnel Count */
+            bank_personnel_count: number;
+            /** Bank Pct */
+            bank_pct: string | null;
+            /** Cash Total */
+            cash_total: string;
+            /** Cash Personnel Count */
+            cash_personnel_count: number;
+            /** Cash Pct */
+            cash_pct: string | null;
+            /** Gross Total */
+            gross_total: string;
+            /** Sgk Employer Total */
+            sgk_employer_total: string;
+            /** Total Employer Cost */
+            total_employer_cost: string;
+            /** Uncomputed Count */
+            uncomputed_count: number;
+            /** Excluded Count */
+            excluded_count: number;
+            /** Unknown Cost Count */
+            unknown_cost_count: number;
+        };
         /**
          * PendingApprovalsPlaceholder
          * @description Onay bekleyenler karti — rozet sayaci tasir.
@@ -11847,9 +12761,18 @@ export interface components {
          *
          *     Taşeron ADI bağlanmaz (mockup'ta seçici yok); `subcontractor` yalnız kaynağı
          *     işaretler, puantaj modülü gelince taşeron kaydına köprülenir.
+         *
+         *     İK-3 (bordro) `freelance` ve `intern` değerlerini EKLEDİ: BY 243 "SERBEST
+         *     MESLEK" ve BY 271 "STAJYER" bölümleri oran tablosunun DÖRT tip gerektirdiğini
+         *     gösteriyor (spec §4, S2) ve İK-1 bu takası açıkça İK-3'e ertelemişti
+         *     (`personnel/models.py` üstündeki not). Yeni bir `personnel_source` TİPİ
+         *     AÇILMADI — aynı anlam kümesinin iki DB tipi doğardı (puantaj spec §2).
+         *
+         *     `general` ("genel işçi", GK418-430) bordro tipi DEĞİLDİR: BY dört bölüm
+         *     çiziyor, bu değerin oran satırı yoktur.
          * @enum {string}
          */
-        WorkerSource: "company" | "subcontractor" | "general";
+        WorkerSource: "company" | "subcontractor" | "general" | "freelance" | "intern";
         /**
          * MetricPlaceholder
          * @description Tek degerli KPI karti. v1'de veri kaynagi olmayan kartlar icin.
@@ -15097,6 +16020,765 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SiteStockResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_payroll_periods_endpoint_payroll_periods_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollPeriodListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_payroll_period_endpoint_payroll_periods_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayrollPeriodCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollPeriodDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bu ay için bordro dönemi zaten açılmış */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_payroll_period_endpoint_payroll_periods__period_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                period_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollPeriodDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_payroll_period_endpoint_payroll_periods__period_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                period_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayrollPeriodUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollPeriodDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Onaylanmış veya ödenmiş dönemin ödeme tarihi değiştirilemez */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    compute_payroll_period_endpoint_payroll_periods__period_id__compute_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                period_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollComputeResult"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Onaylanmış veya ödenmiş dönem yeniden hesaplanamaz */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_payroll_line_endpoint_payroll_lines__line_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                line_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayrollLineUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollLineResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Onaylanmış/ödenmiş satır ya da taşeron satırı değiştirilemez */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Banka + elden toplamı nete eşit değil ya da oran seti yok */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    approve_payroll_line_endpoint_payroll_lines__line_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                line_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollLineResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Taşeron satırı, hesaplanamamış satır, zaten onaylı/ödenmiş satır ya da onaylanmış/ödenmiş dönem */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_payroll_line_endpoint_payroll_lines__line_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                line_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollLineResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yalnız onaylanmış satırın onayı geri alınabilir */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_payroll_period_endpoint_payroll_periods__period_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                period_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollPeriodApproveResult"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dönem onay adımına geçirilemez */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pay_payroll_period_endpoint_payroll_periods__period_id__pay_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                period_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollPeriodPayResult"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yalnız onaylanmış dönem ödenebilir */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    payroll_sgk_summary_endpoint_payroll_periods__period_id__sgk_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                period_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollSgkSummaryResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    payroll_sgk_submit_endpoint_payroll_periods__period_id__sgk_submit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                period_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollSgkSubmitResult"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bu dönemin SGK bildirimi zaten işaretlenmiş */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_payroll_rates_endpoint_payroll_rates_get: {
+        parameters: {
+            query?: {
+                year?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollRateListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upsert_payroll_rate_endpoint_payroll_rates__year___source__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                year: number;
+                source: components["schemas"]["WorkerSource"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayrollRateUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollRateResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bu yılda onaylanmış/ödenmiş dönem var: oranlar değiştirilemez */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_payroll_period_endpoint_payroll_periods__period_id__export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                period_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Excel dosyasi */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": unknown;
                 };
             };
             /** @description Yetkisiz işlem */

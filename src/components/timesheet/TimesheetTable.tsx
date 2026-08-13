@@ -11,8 +11,9 @@ import {
   type TimesheetViewRow,
 } from "./derive";
 import {
+  resolveSourceBadgeVariant,
+  resolveWorkerSourceLabel,
   timesheetCodeMeta,
-  WORKER_SOURCE_LABELS,
   type TimesheetVariant,
 } from "./timesheet-codes";
 import { TimesheetCellPopover } from "./TimesheetCellPopover";
@@ -187,13 +188,15 @@ function TimesheetTableRow({
         {isSite && <span className="ts-table__meta">{personMeta(row)}</span>}
       </th>
       {isSite ? (
-        // ŞP 150/170 — Şirket (mavi) / Taşeron (sarı) Tür rozeti
+        // ŞP 150/170 — Şirket (mavi) / Taşeron (sarı) Tür rozeti. Diğer
+        // kaynaklar (general/freelance/intern) NÖTR rozete düşer — mockup'ta
+        // yok ama `/personel` listesiyle AYNI eşlemeyle basılır (F-TB1 T5).
         <td className="ts-table__lead-cell">
           <Badge
-            variant={row.source === "subcontractor" ? "warning" : "primary"}
+            variant={resolveSourceBadgeVariant(row.source)}
             className={cx("ts-source", row.source === "subcontractor" && "ts-source--subcontractor")}
           >
-            {WORKER_SOURCE_LABELS[row.source] ?? row.source}
+            {resolveWorkerSourceLabel(row.source)}
           </Badge>
         </td>
       ) : (

@@ -1155,6 +1155,40 @@ describe("BFF /api/backend/[...path]", () => {
       expect(String(fetchMock.mock.calls[0][0])).toContain(`/${endpoint}`);
     });
 
+    // F-TB1 · T1 — IK-3 bordro cekirdeginin TEK yeni koku: `payroll`. ADLI
+    // kapi testi (F-IK/F-SA emsali): kok dusurulurse hangisi oldugu test
+    // ADINDAN okunsun. Bu dilimde EKRANA BAGLANMAZ (bordro ekrani mockup'i
+    // yok) — dinamik `calledRoots` taramasi bu yuzden yakalamaz.
+    it("payroll koku bordro cekirdegi uclari icin allow-list'te tanimlidir", () => {
+      expect(allowListEntries()).toContain("payroll");
+    });
+
+    it.each([
+      "payroll/periods",
+      "payroll/periods/per-1",
+      "payroll/lines/line-1",
+      "payroll/rates",
+    ])("%s ucu forward edilir", async (endpoint) => {
+      // Arrange
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response("{}", {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+
+      // Act
+      const res = await GET(
+        req(`/api/backend/${endpoint}`, "GET", { [ACCESS_COOKIE]: "acc" }),
+        ctx(endpoint.split("/")),
+      );
+
+      // Assert
+      expect(res.status).toBe(200);
+      expect(String(fetchMock.mock.calls[0][0])).toContain(`/${endpoint}`);
+    });
+
     it.each(calledRoots)("%s koku forward edilir", async (root) => {
       const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
       vi.stubGlobal("fetch", fetchMock);

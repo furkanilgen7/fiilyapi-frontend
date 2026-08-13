@@ -149,6 +149,14 @@ const ALLOWED_ROOTS = new Set([
   // (`GET /hr/leaves/summary` de bu kökten geçer; İzin Yönetimi mockup'ı
   // olmadığı için bu dilimde EKRANA BAĞLANMAZ — kök hazır kalır.)
   "hr",
+  // F-TB1 T1 — İK-3 bordro çekirdeğinin TÜM uçları (`/payroll/periods`,
+  // `.../{period_id}`, `.../{period_id}/compute|approve|pay|export|
+  // sgk-submit|sgk-summary`, `/payroll/lines/{line_id}[/approve|reject]`,
+  // `/payroll/rates[/{year}/{source}]`) bu kökten geçer; ilk path segmenti
+  // "personnel" DEĞİL "payroll"dur. Bu dilimde EKRANA BAĞLANMAZ (bordro
+  // ekranı mockup'ı yok) ama kök hazır kalır — düşerse ileride açılacak
+  // bordro yüzeyi YALNIZ CANLIDA 404 alır; jsdom testleri bunu GÖRMEZ.
+  "payroll",
 ]);
 
 // JSON/metin sayilan icerik tipleri: govde metne cozulup JSON olarak islenir.
