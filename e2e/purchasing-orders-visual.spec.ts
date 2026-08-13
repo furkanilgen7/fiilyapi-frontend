@@ -52,7 +52,15 @@ test("satinalma siparisler listesi gorsel", async ({ page }) => {
   await expect(page.getByTestId("sip-kpi-delivered")).toHaveText("1");
   // (c) üç satır da geldi; talepsiz sipariş "Talep No" alt satırını "—" basar.
   await expect(page.getByTestId("sip-row-SP-2026-0001")).toContainText("SAT-2026-0004");
-  await expect(page.getByTestId("sip-request-SP-2026-0003")).toHaveText("—");
+  // ⚠️ `toHaveText` KULLANILMAZ: pending hücresi görünür "—"in yanında bir de
+  // `sr-only` gerekçe taşır (ekran okuyucu "—" duymasın diye). Sıkı eşitlik
+  // ikisini birleştirip kırılırdı; iki iddia AYRI AYRI yapılır ki hem görünen
+  // yer tutucu hem erişilebilir gerekçe kilitli kalsın.
+  await expect(page.getByTestId("sip-request-SP-2026-0003")).toContainText("—");
+  await expect(page.getByTestId("sip-request-SP-2026-0003")).toHaveAttribute(
+    "title",
+    "Talebe bağlı değil — doğrudan sipariş",
+  );
   // (d) TESLİMAT RENGİNİN ÜÇ TONU DA kadrajda — sabit an bunun için seçildi.
   await expect(page.getByTestId("sip-delivery-SP-2026-0001")).toHaveClass(/sip-delivery--soon/);
   await expect(page.getByTestId("sip-delivery-SP-2026-0003")).toHaveClass(/sip-delivery--overdue/);
