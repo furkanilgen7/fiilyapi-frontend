@@ -262,6 +262,16 @@ describe("buildProjectNav — href geçerliliği (kırık link koruması)", () =
     expect(resolveHref(item!.href, false)).toEqual({ kind: "static" });
   });
 
+  // F-SA T2: drill sidebar'daki "Satınalma" GERÇEK bir rotadır (`/satinalma`).
+  // Öğe drill nav'a F3'ten beri kayıtlıydı — YENİ ÖĞE EKLENMEDİ, yalnız hedefi
+  // ComingSoon'dan gerçek sayfaya döndü. Rota klasörü silinirse bu test kırılır.
+  it("'Satınalma' /satinalma statik rotasına düşer (catch-all DEĞİL)", () => {
+    const nav = buildProjectNav({ projectId: "1", projectName: "Güneşkent Konut" });
+    const item = nav.groups.flatMap((g) => g.items).find((i) => i.label === "Satınalma");
+    expect(item?.href).toBe("/satinalma");
+    expect(resolveHref(item!.href, false)).toEqual({ kind: "static" });
+  });
+
   // F-SD T7 final review bulgusu: "Bölümler" şantiye kök rotasıdır ve diğer 6
   // sekmenin atasıdır; `exact` olmadan ön ek eşleşmesi her alt sekmede İKİ
   // öğeyi birden aktif işaretliyordu (ekran görüntüsüyle yakalandı).

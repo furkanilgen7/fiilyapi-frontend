@@ -80,6 +80,32 @@ const MODULE_LABELS: Record<string, string> = {
   // matrisinin modül anahtarı olarak ayrıca yaşamaya devam eder).
   purchasing: "Satınalma modülüyle birlikte gelir",
   site_planning: "Şantiye planlama türeviyle birlikte gelir",
+  // F-SA T2 (SAT · Satınalma & Teklif tablosu) — `PurchaseRequestListRow`
+  // şemasının BİLEREK taşımadığı iki sütun. Şema açıklaması gerekçeyi
+  // kendi yazıyor: "SAT tablosunun bir satiri — KALEMLERI TASIMAZ … tasimak
+  // sayfadaki her satir icin ikinci bir sorgu (ve her kalem icin bir bakiye
+  // turevi) demek olurdu" (N+1). Satır yalnız `line_count` taşır.
+  //
+  // Üst kural (F-TH T2 `work_category`/`vat`/`progress`, F-P5 T5
+  // `subcontractor_rating` emsali): KOLON SİLİNMEZ, VERİ İCAT EDİLMEZ —
+  // hücre yerinde durur, "—" + bu gerekçe basılır.
+  //
+  // SAT 104/115 "Miktar": talebin kalemleri toplanmadan yazılamaz; toplam
+  // miktar zaten BİRİMSİZ olurdu ("15 Ton" + "500 m" toplanamaz). Değer
+  // talep detayında (`GET /purchase-requests/{id}`) kalem kalem görünür.
+  purchase_request_quantity: "Talep miktarı liste ucundan gelmiyor",
+  // SAT 106/117 "Teklif": teklifler talebin ALT KAYNAĞIDIR
+  // (`GET /purchase-requests/{id}/quotes`); sayacı listeye koymak satır
+  // başına ikinci bir sorgu demektir (aynı N+1 gerekçesi). Sayı teklif
+  // karşılaştırma ekranında gerçek kartlarla görünür.
+  purchase_request_quote_count: "Teklif sayısı liste ucundan gelmiyor",
+  // F-SA T2 (TED 55-58 · tedarikçi kartının yıldız satırı) —
+  // `subcontractor_rating` emsalinin İKİZİ: `SupplierCard`/`SupplierResponse`
+  // şemalarında puan alanı YOKTUR ve şema açıklaması bunu açıkça gerekçelendirir
+  // ("PUAN ALANI YOKTUR … yildizlarin giris yuzeyi hicbir ekranda yoktur ve
+  // uydurma bir puan gostermektense hic gostermemek dogrudur"). Yıldızlar
+  // İCAT EDİLMEZ; satır yerinde durur, "—" + bu gerekçe basılır.
+  supplier_rating: "Tedarikçi değerlendirme özelliği henüz yok",
 };
 
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";
