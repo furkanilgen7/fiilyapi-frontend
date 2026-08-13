@@ -12,6 +12,8 @@ import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncation";
 import { PERSONNEL_MAX_LIMIT, usePersonnel } from "@/lib/api/hooks/usePersonnel";
+import { useHrDocumentsSummary } from "@/lib/api/hooks/useHrDocuments";
+import { useProjects } from "@/lib/api/hooks/useProjects";
 
 import {
   deriveKpis,
@@ -21,7 +23,11 @@ import {
 } from "./personnel-derive";
 import { EXPORT_PENDING_REASON } from "./personnel-list-labels";
 import { PersonnelDocumentAlertBanner } from "./PersonnelDocumentAlertBanner";
-import { PersonnelFilterBar, type PersonnelStatusFilter } from "./PersonnelFilterBar";
+import {
+  PersonnelFilterBar,
+  type PersonnelProjectOption,
+  type PersonnelStatusFilter,
+} from "./PersonnelFilterBar";
 import { PersonnelKpiStrip } from "./PersonnelKpiStrip";
 import { PersonnelPagination } from "./PersonnelPagination";
 import { PersonnelTable } from "./PersonnelTable";
@@ -29,6 +35,7 @@ import { PersonnelTabsStrip } from "./PersonnelTabsStrip";
 import "./personnel-list.css";
 
 const QUERY_PARAM = "q";
+const PROJECT_PARAM = "proje";
 const TRADE_PARAM = "meslek";
 const STATUS_PARAM = "durum";
 const PAGE_SIZE = 6; // P 236 — mockup "1–6 gösteriliyor" ile birebir.
@@ -39,8 +46,9 @@ const PAGE_SIZE = 6; // P 236 — mockup "1–6 gösteriliyor" ile birebir.
  * bileşenlerdedir.
  *
  * ⚠️ TABLONUN KAYNAĞI `GET /personnel`dir; `trade` (meslek) süzgeci backend'de
- * YOKTUR (spec K-B) — `q`/`is_active` sunucuya gider, meslek İSTEMCİDE
- * süzülür (`personnel-derive.ts`, T1).
+ * YOKTUR (spec K-B) — `q`/`is_active`/`project_id` sunucuya gider, meslek
+ * İSTEMCİDE süzülür (`personnel-derive.ts`, T1). Proje süzgeci F-İK T2'den
+ * beri GERÇEKTİR (İK-1 backend'i `project_id` parametresini açtı).
  *
  * ⚠️ Sayfalama İSTEMCİDE yapılır (spec K-E): tüm kadro `limit=200` ile TEK
  * istekte çekilir, `page` yalnız bu bileşenin yerel durumudur (URL'e YAZILMAZ
@@ -55,6 +63,7 @@ export function PersonnelListView() {
   const canWrite = hasAtLeast(permission.level, "full");
 
   const query = searchParams.get(QUERY_PARAM) ?? "";
+  const projectId = searchParams.get(PROJECT_PARAM) ?? undefined;
   const trade = searchParams.get(TRADE_PARAM) ?? undefined;
   const rawStatus = searchParams.get(STATUS_PARAM);
   const status: PersonnelStatusFilter = rawStatus === "active" || rawStatus === "inactive" ? rawStatus : undefined;
@@ -62,15 +71,24 @@ export function PersonnelListView() {
   const [page, setPage] = useState(1);
   useEffect(() => {
     setPage(1);
-  }, [query, trade, status]);
+  }, [query, projectId, trade, status]);
 
   // Kırpılma korkuluğu (TB3/F-TH dersi): tavan AÇIKÇA gönderilir.
   const personnelQuery = usePersonnel({
     limit: PERSONNEL_MAX_LIMIT,
     offset: 0,
     ...(query ? { q: query } : {}),
+    ...(projectId ? { projectId } : {}),
     ...(status !== undefined ? { isActive: status === "active" } : {}),
   });
+
+  // Proje ADI sunucudan personel kaydıyla GELMEZ (yalnız `assigned_project_id`)
+  // — ad eşlemesi ve süzgeç seçenekleri proje listesinden kurulur. Liste
+  // yüklenemezse proje HÜCRESİ pending'e düşer; ekranın geri kalanı etkilenmez.
+  const projectsQuery = useProjects();
+
+  // Uyarı bandının tek kaynağı. Bant KRİTİK DEĞİL: hata verirse sessizce düşer.
+  const documentSummaryQuery = useHrDocumentsSummary();
 
   if (!permission.canView || isForbidden(personnelQuery.error)) return <AccessDenied />;
 
@@ -79,7 +97,24 @@ export function PersonnelListView() {
   const kpis = serverItems && serverTotal !== undefined ? deriveKpis(serverItems, serverTotal) : undefined;
   const tradeOptions = serverItems ? deriveTradeOptions(serverItems) : [];
   const truncation = buildListTruncation(serverItems?.length ?? 0, serverTotal);
-  const hasFilter = query.length > 0 || trade !== undefined || status !== undefined;
+  const hasFilter =
+    query.length > 0 || projectId !== undefined || trade !== undefined || status !== undefined;
+
+  const projectItems = projectsQuery.data?.items;
+  const projectOptions: PersonnelProjectOption[] = (projectItems ?? []).map((project) => ({
+    id: project.id,
+    name: project.name,
+  }));
+  const projectNames = projectItems
+    ? Object.fromEntries(projectItems.map((project) => [project.id, project.name]))
+    : undefined;
+
+  const documentCounts = documentSummaryQuery.data
+    ? {
+        expired: documentSummaryQuery.data.expired,
+        expiring: documentSummaryQuery.data.expiring,
+      }
+    : undefined;
 
   const filteredItems = serverItems ? filterByTrade(serverItems, trade) : undefined;
   const paged = filteredItems ? paginateClientSide(filteredItems, page, PAGE_SIZE) : undefined;
@@ -117,8 +152,8 @@ export function PersonnelListView() {
       {/* 70-77 */}
       <PersonnelTabsStrip />
 
-      {/* 80-86 — pending */}
-      <PersonnelDocumentAlertBanner />
+      {/* 80-86 — GERÇEK (sayaçlar `GET /hr/documents/summary`ten) */}
+      <PersonnelDocumentAlertBanner counts={documentCounts} />
 
       {truncation.isTruncated && (
         <p className="personel__notice" data-testid="personel-truncation-notice">
@@ -133,10 +168,13 @@ export function PersonnelListView() {
       {/* 117-125 */}
       <PersonnelFilterBar
         query={query}
+        projectId={projectId}
+        projectOptions={projectOptions}
         trade={trade}
         tradeOptions={tradeOptions}
         status={status}
         onQueryChange={(next) => pushParam(QUERY_PARAM, next)}
+        onProjectChange={(next) => pushParam(PROJECT_PARAM, next)}
         onTradeChange={(next) => pushParam(TRADE_PARAM, next)}
         onStatusChange={(next) => pushParam(STATUS_PARAM, next)}
       />
@@ -150,6 +188,7 @@ export function PersonnelListView() {
           personnelQuery.isError ? backendErrorMessage(personnelQuery.error) : undefined
         }
         hasFilter={hasFilter}
+        projectNames={projectNames}
         pagination={
           filteredItems &&
           paged && (

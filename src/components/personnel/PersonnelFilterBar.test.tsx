@@ -5,21 +5,28 @@ import { PersonnelFilterBar } from "./PersonnelFilterBar";
 
 function setup(overrides: Partial<React.ComponentProps<typeof PersonnelFilterBar>> = {}) {
   const onQueryChange = vi.fn();
+  const onProjectChange = vi.fn();
   const onTradeChange = vi.fn();
   const onStatusChange = vi.fn();
   render(
     <PersonnelFilterBar
       query=""
+      projectId={undefined}
+      projectOptions={[
+        { id: "p-1", name: "Kule A" },
+        { id: "p-2", name: "Villa B" },
+      ]}
       trade={undefined}
       tradeOptions={["Elektrikçi", "Kalıpçı"]}
       status={undefined}
       onQueryChange={onQueryChange}
+      onProjectChange={onProjectChange}
       onTradeChange={onTradeChange}
       onStatusChange={onStatusChange}
       {...overrides}
     />,
   );
-  return { onQueryChange, onTradeChange, onStatusChange };
+  return { onQueryChange, onProjectChange, onTradeChange, onStatusChange };
 }
 
 describe("PersonnelFilterBar", () => {
@@ -29,11 +36,19 @@ describe("PersonnelFilterBar", () => {
     expect(onQueryChange).toHaveBeenCalledWith("mehmet");
   });
 
-  it("proje süzgeci DEVRE-DIŞIdır ve gerekçesi görünür (backend süzgeci yok)", () => {
-    setup();
+  it("proje süzgeci GERÇEKtir: seçenekler proje listesinden gelir, seçim dışarı taşınır", () => {
+    const { onProjectChange } = setup();
     const projectFilter = screen.getByTestId("personel-filter-project");
-    expect(projectFilter).toBeDisabled();
-    expect(projectFilter).toHaveAttribute("title", expect.stringContaining("Proje süzgeci"));
+    expect(projectFilter).not.toBeDisabled();
+    expect(screen.getByRole("option", { name: "Kule A" })).toBeInTheDocument();
+    fireEvent.change(projectFilter, { target: { value: "p-2" } });
+    expect(onProjectChange).toHaveBeenCalledWith("p-2");
+  });
+
+  it("proje süzgeci 'Tüm Projeler'e dönünce undefined taşır (URL'den düşer)", () => {
+    const { onProjectChange } = setup({ projectId: "p-1" });
+    fireEvent.change(screen.getByTestId("personel-filter-project"), { target: { value: "" } });
+    expect(onProjectChange).toHaveBeenCalledWith(undefined);
   });
 
   it("meslek seçenekleri yüklenen kadrodan gelir ve seçim dışarı taşınır", () => {

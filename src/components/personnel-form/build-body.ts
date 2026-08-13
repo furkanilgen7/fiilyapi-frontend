@@ -64,6 +64,11 @@ export function buildPersonnelCreateBody(
     trade: values.trade.trim() || null,
     source,
     is_active: true,
+    // F-İK T2: İK-1 sözleşmesi `is_draft`i ZORUNLU tipliyor (`is_active` ile
+    // AYNI gerekçe: varsayılanı olan alan üretilen tipte zorunlu görünür). Bu
+    // form YAYINLANMIŞ kayıt üretir — taslak semantiği (kısmi kayıt) formun
+    // KENDİ dilimindedir, burada sabit `false` gider.
+    is_draft: false,
     ...(subcontractorId ? { subcontractor_id: subcontractorId } : {}),
   };
 }

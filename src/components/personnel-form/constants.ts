@@ -90,6 +90,17 @@ export const ASSIGNED_SECTION_OPTIONS: readonly string[] = [
 export const PERSONNEL_FIELD_MAX_LENGTH = {
   full_name: 200,
   trade: 100,
+  // F-İK T2 · İK-1 sözleşmesiyle gelen sınırlar. Harita SÖZLEŞMENİN AYNASIDIR
+  // (`field-limits.test.ts` iki yönlü kapı): alanlar forma bağlandığında
+  // (ayrı task) `maxLength` korkuluğu HAZIR olsun — sınırsız bir input'un
+  // sessiz 422'si bu haritanın eksik kalmasıyla doğar.
+  tc_no: 11,
+  phone: 30,
+  email: 255,
+  emergency_contact_name: 200,
+  emergency_contact_phone: 30,
+  iban: 34,
+  sgk_no: 20,
 } as const satisfies Record<string, number>;
 
 /**

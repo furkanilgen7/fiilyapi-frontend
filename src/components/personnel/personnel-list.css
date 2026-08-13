@@ -57,7 +57,7 @@
   color: var(--color-text-subtle);
 }
 
-/* Uyarı bandı (80-86) — İK-Belge takibine pending. */
+/* Uyarı bandı (80-86) — `GET /hr/documents/summary` sayaçlarından kurulur. */
 .personel-alert {
   background: var(--color-danger-tint);
   border: 1px solid var(--color-danger-tint-border);

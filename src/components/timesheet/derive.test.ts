@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 
+import { EMPTY_PERSONNEL_HR_FIELDS } from "@/lib/api/hooks/personnel-fixtures";
 import type { PersonnelListItem } from "@/lib/api/hooks/usePersonnel";
 import type { TimesheetMatrix } from "@/lib/api/hooks/useTimesheet";
 
@@ -9,12 +10,12 @@ import { buildTimesheetView, dayTotalModifier, dayTotalText } from "./derive";
 // AYNI hikayeyi anlatir: 03 Agu -> "4+", 04 Agu -> "3G".
 
 const PERSONNEL: PersonnelListItem[] = [
-  { id: "per-1", full_name: "Ahmet Yılmaz", trade: "Kalıpçı", source: "company", subcontractor_id: null, user_id: null, is_active: true },
-  { id: "per-2", full_name: "Barış Demir", trade: "Demirci", source: "company", subcontractor_id: null, user_id: null, is_active: true },
-  { id: "per-3", full_name: "Cem Aksoy", trade: "Elektrikçi", source: "subcontractor", subcontractor_id: "sub-1", user_id: null, is_active: true },
-  { id: "per-4", full_name: "Deniz Kaya", trade: "Duvarcı", source: "subcontractor", subcontractor_id: "sub-2", user_id: null, is_active: true },
+  { ...EMPTY_PERSONNEL_HR_FIELDS, id: "per-1", full_name: "Ahmet Yılmaz", trade: "Kalıpçı", source: "company", subcontractor_id: null, user_id: null, is_active: true },
+  { ...EMPTY_PERSONNEL_HR_FIELDS, id: "per-2", full_name: "Barış Demir", trade: "Demirci", source: "company", subcontractor_id: null, user_id: null, is_active: true },
+  { ...EMPTY_PERSONNEL_HR_FIELDS, id: "per-3", full_name: "Cem Aksoy", trade: "Elektrikçi", source: "subcontractor", subcontractor_id: "sub-1", user_id: null, is_active: true },
+  { ...EMPTY_PERSONNEL_HR_FIELDS, id: "per-4", full_name: "Deniz Kaya", trade: "Duvarcı", source: "subcontractor", subcontractor_id: "sub-2", user_id: null, is_active: true },
   // Hic hucresi olmayan AKTIF personel — K1: matriste satiri OLMASA DA gorunur.
-  { id: "per-9", full_name: "Zeki Yeni", trade: "Sıvacı", source: "company", subcontractor_id: null, user_id: null, is_active: true },
+  { ...EMPTY_PERSONNEL_HR_FIELDS, id: "per-9", full_name: "Zeki Yeni", trade: "Sıvacı", source: "company", subcontractor_id: null, user_id: null, is_active: true },
 ];
 
 const MATRIX: TimesheetMatrix = {

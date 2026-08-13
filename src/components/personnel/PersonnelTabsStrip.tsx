@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { TAB_PENDING_REASON } from "./personnel-list-labels";
+import { HR_DOCUMENTS_ROUTE, TAB_PENDING_REASON } from "./personnel-list-labels";
 import "./personnel-list.css";
 
 interface TabDef {
@@ -11,12 +11,13 @@ interface TabDef {
 }
 
 // P 70-77 · İK sekme şeridi. Kalıcı kural: rotası olmayan mockup öğesi
-// SİLİNMEZ, devre-dışı + görünür gerekçeyle basılır. Yalnız "Puantaj" GERÇEK
-// bir rotaya gider (spec K3); diğer dördü henüz yazılmadı.
+// SİLİNMEZ, devre-dışı + görünür gerekçeyle basılır. "Puantaj" (spec K3) ve
+// F-İK T2'den beri "Belge & Sertifika" GERÇEK rotaya gider; İzin Yönetimi /
+// Bordro / SGK ekranları henüz yazılmadı.
 const TABS: TabDef[] = [
   { label: "Personel Listesi", active: true },
   { label: "İzin Yönetimi" },
-  { label: "Belge & Sertifika" },
+  { label: "Belge & Sertifika", href: HR_DOCUMENTS_ROUTE },
   { label: "Puantaj", href: "/puantaj" },
   { label: "Bordro" },
   { label: "SGK" },

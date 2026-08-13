@@ -29,6 +29,8 @@ export interface PersonnelListFilter {
   source?: WorkerSource;
   subcontractorId?: string;
   isActive?: boolean;
+  /** İK-1 ile geldi: `GET /personnel?project_id=` — atanan proje süzgeci (P 122). */
+  projectId?: string;
   limit?: number;
   offset?: number;
 }
@@ -43,6 +45,7 @@ export function usePersonnel(
       filter.source ?? null,
       filter.subcontractorId ?? null,
       filter.isActive ?? null,
+      filter.projectId ?? null,
       filter.limit ?? null,
       filter.offset ?? null,
     ],
@@ -57,6 +60,7 @@ export function usePersonnel(
                 ? { subcontractor_id: filter.subcontractorId }
                 : {}),
               ...(filter.isActive !== undefined ? { is_active: filter.isActive } : {}),
+              ...(filter.projectId !== undefined ? { project_id: filter.projectId } : {}),
               ...(filter.limit !== undefined ? { limit: filter.limit } : {}),
               ...(filter.offset !== undefined ? { offset: filter.offset } : {}),
             },

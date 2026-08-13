@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 
+import { EMPTY_PERSONNEL_HR_FIELDS } from "@/lib/api/hooks/personnel-fixtures";
+
 import {
   deriveKpis,
   deriveTradeOptions,
@@ -15,6 +17,7 @@ import {
 
 function item(overrides: Partial<PersonnelDeriveItem> = {}): PersonnelDeriveItem {
   return {
+    ...EMPTY_PERSONNEL_HR_FIELDS,
     id: "per-1",
     full_name: "Mehmet Kılıç",
     trade: "Kalıpçı",

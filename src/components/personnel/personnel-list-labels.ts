@@ -1,6 +1,10 @@
-import { WORKER_SOURCE_LABELS } from "@/components/site-diary/diary-labels";
+import {
+  resolveWorkerSourceLabel,
+  WORKER_SOURCE_LABELS,
+} from "@/components/site-diary/diary-labels";
 import type { BadgeVariant } from "@/components/ui/badge/Badge";
-import type { WorkerSource } from "@/lib/api/hooks/usePersonnel";
+import { formatCurrencyPrecise } from "@/lib/format";
+import type { PersonnelListItem, WorkerSource } from "@/lib/api/hooks/usePersonnel";
 
 /**
  * F-PT2 T2 · P — `/personel` liste ekranının etiket/rozet/pending gerekçe
@@ -9,7 +13,7 @@ import type { WorkerSource } from "@/lib/api/hooks/usePersonnel";
  * Etiket tek kaynağı `WORKER_SOURCE_LABELS` — burada YENİDEN üretilmez, ithal
  * edilir (görev emri kuralı).
  */
-export { WORKER_SOURCE_LABELS };
+export { WORKER_SOURCE_LABELS, resolveWorkerSourceLabel };
 
 /** 150/165/180/195/210/225 · "Tür" rozeti — Şirket mavi, Taşeron amber. */
 export const SOURCE_BADGE_VARIANT: Record<WorkerSource, BadgeVariant> = {
@@ -18,6 +22,20 @@ export const SOURCE_BADGE_VARIANT: Record<WorkerSource, BadgeVariant> = {
   general: "neutral",
 };
 
+/** Tanınmayan `source` — rozet NÖTR basılır (etiket `resolveWorkerSourceLabel`ten). */
+export const UNKNOWN_SOURCE_BADGE_VARIANT: BadgeVariant = "neutral";
+
+/**
+ * spec K2 · dayanıklılık: İK-3 dalı enum'a `freelance`/`intern` ekliyor ve o
+ * değerler şemada HENÜZ YOK. Doğrudan `SOURCE_BADGE_VARIANT[row.source]`
+ * araması bilinmeyen değerde `undefined` variant döndürürdü — arama tek
+ * fonksiyondan geçer, `as any` ile susturulmaz.
+ */
+export function resolveSourceBadgeVariant(source: string): BadgeVariant {
+  const map: Record<string, BadgeVariant> = SOURCE_BADGE_VARIANT;
+  return map[source] ?? UNKNOWN_SOURCE_BADGE_VARIANT;
+}
+
 /** Avatar zemini `source`e göre TÜREVdir — mockup'ın satır başına rastgele
  * gradyanı veri taşımaz; burada anlamlı (kaynağa göre) bir gradyan seçilir. */
 export const SOURCE_AVATAR_GRADIENT: Record<WorkerSource, string> = {
@@ -25,6 +43,12 @@ export const SOURCE_AVATAR_GRADIENT: Record<WorkerSource, string> = {
   subcontractor: "linear-gradient(135deg, var(--color-warning), var(--color-avatar-amber-end))",
   general: "linear-gradient(135deg, var(--color-text-muted), var(--color-avatar-slate-end))",
 };
+
+/** spec K2 · tanınmayan `source` — avatar zemini nötr (`general`) gradyana düşer. */
+export function resolveSourceAvatarGradient(source: string): string {
+  const map: Record<string, string> = SOURCE_AVATAR_GRADIENT;
+  return map[source] ?? SOURCE_AVATAR_GRADIENT.general;
+}
 
 /** 155/170/185/200/230 · "Durum" rozeti — yalnız `is_active` GERÇEĞİ. */
 export const STATUS_BADGE_VARIANT: Record<"active" | "inactive", BadgeVariant> = {
@@ -39,9 +63,16 @@ export const STATUS_LABEL: Record<"active" | "inactive", string> = {
 /** Değer basılamayan hücre/kart için ortak yer tutucu. */
 export const PENDING_VALUE = "—";
 
-/** K1 · SGK/Ücret-Gün/Proje sütunları — sözleşmede alan yok (zarif düşüş). */
-export const COLUMN_PENDING_REASON =
-  "Bu bilgi personel kaydında henüz yok — sözleşme bu alanı taşımıyor.";
+/**
+ * F-İK T2 · P 135 — Proje hücresi. Sunucu `assigned_project_id` (UUID) verir,
+ * AD vermez; ad proje listesinden eşlenir. Liste yüklenemezse kimliği ham
+ * basmak veri değil gürültü olurdu — hücre bu gerekçeyle pending'e düşer.
+ *
+ * ⚠️ "Atanmamış" (id `null`) bundan AYRIDIR: o GERÇEK bir boşluktur, sade "—"
+ * basar ve gerekçe TAŞIMAZ.
+ */
+export const PROJECT_NAME_PENDING_REASON =
+  "Proje adları yüklenemedi — kayıttaki proje kimliği ad olarak gösterilemiyor.";
 
 /** KPI şeridi 4-6: Sahada Aktif/İzinde/Aylık Maliyet — backend hiç vermiyor. */
 export const KPI_ON_SITE_PENDING_REASON =
@@ -49,10 +80,7 @@ export const KPI_ON_SITE_PENDING_REASON =
 export const KPI_ON_LEAVE_PENDING_REASON =
   "İzin takibi bu sürümde yok; personel kaydı bu bilgiyi taşımıyor.";
 export const KPI_MONTHLY_COST_PENDING_REASON =
-  "Aylık maliyet hesap bu sürümde yok; ücret/gün bilgisi personel kaydında yok.";
-
-/** Proje süzgeci — backend `GET /personnel` bu parametreyi almıyor (spec K-B). */
-export const PROJECT_FILTER_PENDING_REASON = "Proje süzgeci backend'de henüz yok.";
+  "Aylık maliyet hesabı bu sürümde yok; sunucu personel maliyeti toplamı vermiyor.";
 
 /** "İzinde" durum seçeneği — `is_active`e sessizce eşlenmez (veri yalanı olur). */
 export const STATUS_ON_LEAVE_PENDING_REASON =
@@ -61,9 +89,55 @@ export const STATUS_ON_LEAVE_PENDING_REASON =
 /** "Dışa Aktar" — dışa aktarma ucu yok (spec K5). */
 export const EXPORT_PENDING_REASON = "Dışa aktarma ucu backend'de henüz yok.";
 
-/** Uyarı bandı (80-86) — İK-Belge takibi. Sahte sayı BASILMAZ. */
-export const DOCUMENT_ALERT_PENDING_REASON =
-  "Sağlık raporu ve İSG eğitimi süre takibi bu sürümde yok — Belge & Sertifika modülüyle birlikte gelecek.";
+/**
+ * P 74/85 · Belge & Sertifika ekranının rotası. Sekme şeridi VE uyarı bandının
+ * "Belgeleri Gör →" düğmesi AYNI sabiti kullanır — ekran T5'te yazılır, link
+ * şimdiden gerçektir (rota tek yerde tanımlı olsun).
+ */
+export const HR_DOCUMENTS_ROUTE = "/personel/belgeler";
+
+/**
+ * P 80-86 · uyarı bandı metni. ŞEF KARARI: sunucu (`GET /hr/documents/summary`)
+ * BELGE sayısı verir; mockup'ın "N personelin…" ifadesinin sunucuda karşılığı
+ * YOKTUR — personel sayısı UYDURULMAZ, cümle belge sayısı üzerinden kurulur.
+ *
+ * İki sayaç da 0 ise `null` döner: bant HİÇ basılmaz (uyarılacak bir şey yok).
+ */
+export function buildDocumentAlertText(counts: {
+  expired: number;
+  expiring: number;
+}): string | null {
+  const parts: string[] = [];
+  if (counts.expired > 0) parts.push(`${counts.expired} belgenin süresi doldu`);
+  if (counts.expiring > 0) parts.push(`${counts.expiring} belgenin süresi yaklaşıyor`);
+  if (parts.length === 0) return null;
+  return `${parts.join(" · ")} — İSG mevzuatı gereği bu belgeler yenilenmeden sahada çalışılamaz.`;
+}
+
+/** 154 · Ücret/Gün sütununun birim ekleri — `daily` sade tutar basar. */
+export const WAGE_TYPE_SUFFIX: Record<NonNullable<PersonnelListItem["wage_type"]>, string> = {
+  daily: "",
+  monthly: " / Ay",
+  hourly: " / Saat",
+};
+
+/**
+ * 137/154 · "Ücret/Gün" hücresi. ŞEF KARARI: sütun başlığı mockup'tan
+ * DEĞİŞMEZ ama sunucudaki tutar her zaman GÜNLÜK değildir (`wage_type`
+ * ayrı alandır) — aylık/saatlik ücreti başlıksız basmak YANILTIRDI, bu yüzden
+ * tutarın yanına birim eki konur. Tutar yoksa "—" (uydurma sıfır YOK).
+ *
+ * Bilinmeyen bir `wage_type` (şema büyürse) ek BASMAZ; tutar yine de görünür.
+ */
+export function formatWageCell(item: {
+  wage_amount: string | null;
+  wage_type: PersonnelListItem["wage_type"];
+}): string {
+  if (item.wage_amount === null) return PENDING_VALUE;
+  const suffixes: Record<string, string> = WAGE_TYPE_SUFFIX;
+  const suffix = item.wage_type === null ? "" : (suffixes[item.wage_type] ?? "");
+  return `${formatCurrencyPrecise(item.wage_amount)}${suffix}`;
+}
 
 /** 72-77 · rotasız İK sekmeleri (kalıcı kural: silinmez, devre-dışı basılır). */
 export const TAB_PENDING_REASON = "Bu ekran henüz yazılmadı.";

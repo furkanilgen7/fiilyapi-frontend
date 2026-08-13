@@ -1,5 +1,4 @@
 import {
-  COLUMN_PENDING_REASON,
   SOURCE_BADGE_VARIANT,
   STATUS_BADGE_VARIANT,
   STATUS_LABEL,
@@ -19,8 +18,16 @@ export { SOURCE_BADGE_VARIANT, STATUS_BADGE_VARIANT, STATUS_LABEL, WORKER_SOURCE
 
 export const PENDING_VALUE = "—";
 
-/** 40-62 başlık kartındaki alanlardan sunucu sözleşmesinde karşılığı OLMAYANLAR. */
-export const HEADER_FIELD_PENDING_REASON = COLUMN_PENDING_REASON;
+/**
+ * 40-62 başlık kartındaki alanlardan detay ekranının HENÜZ BASMADIKLARI.
+ *
+ * ⚠️ F-İK T2: bu sabit eskiden liste ekranının `COLUMN_PENDING_REASON`ından
+ * ithal ediliyordu; İK-1 ile o sütunlar GERÇEĞE döndü ve sabit silindi. Detay
+ * ekranının kendi geçişi AYRI bir task'tır — gerekçe metni burada, ekranın
+ * kendi tek kaynağında yaşar.
+ */
+export const HEADER_FIELD_PENDING_REASON =
+  "Bu bilgi bu ekranda henüz gösterilmiyor — İnsan Kaynakları dilimiyle gelecek.";
 
 /** 66-86 · "Puantaj Özeti" — kişi-bazlı puantaj özeti ucu YOK (spec K4). */
 export const TIMESHEET_SUMMARY_PENDING_REASON =

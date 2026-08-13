@@ -297,6 +297,7 @@ describe("PersonnelForm (create) · doğrulama ve gönderim", () => {
       trade: "Elektrikçi",
       source: "company",
       is_active: true,
+      is_draft: false,
     });
   });
 

@@ -36,6 +36,34 @@ export const WORKER_SOURCE_LABELS: Record<WorkerSource, string> = {
   general: "Genel",
 };
 
+/**
+ * F-İK T2 · spec K2 — SUNUCUDA HENÜZ OLMAYAN ama İK-3 dalıyla `WorkerSource`
+ * enum'una eklenecek değerlerin hazır etiketleri. `WORKER_SOURCE_LABELS`e
+ * KARIŞTIRILMAZ: o harita şemadaki enum'un TAM eşlemesidir (`Record<
+ * WorkerSource, …>`) ve şema büyüdüğünde derleyici eksik anahtarı bağırmalıdır.
+ * Burası ise şemanın ÖNÜNDEN gider — tipi bilerek `Record<string, string>`tür.
+ */
+export const FUTURE_WORKER_SOURCE_LABELS: Record<string, string> = {
+  freelance: "Serbest",
+  intern: "Stajyer",
+};
+
+/** Bilinmeyen `source` değerinin bastığı yer tutucu (uydurma etiket YOK). */
+export const UNKNOWN_WORKER_SOURCE_LABEL = "—";
+
+/**
+ * `source` çözümleyicisi — tel üzerinden BİLİNMEYEN bir enum değeri gelse bile
+ * ekran ÇÖKMEZ ve hücre boş kalmaz (emsal: `TimesheetTable.tsx:196`).
+ *
+ * bilinen ⇒ Türkçe etiket · gelecek değer ⇒ hazır etiket · tanınmayan ⇒ "—".
+ * Girdi bilerek `string`tir: `WorkerSource` derleme zamanı bilgisidir, telden
+ * gelen gövde ise yalnız JSON'dur.
+ */
+export function resolveWorkerSourceLabel(source: string): string {
+  const known: Record<string, string> = WORKER_SOURCE_LABELS;
+  return known[source] ?? FUTURE_WORKER_SOURCE_LABELS[source] ?? UNKNOWN_WORKER_SOURCE_LABEL;
+}
+
 /** Serbest metin alanlarının üst sınırları (`maxLength` zorunlu — WORKFLOW §4). */
 export const DIARY_WORK_DONE_MAX = 4000;
 export const DIARY_CHIEF_NOTE_MAX = 2000;

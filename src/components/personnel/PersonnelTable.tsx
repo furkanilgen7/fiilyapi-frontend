@@ -4,13 +4,14 @@ import { Badge } from "@/components/ui";
 import { initials } from "@/lib/shell/initials";
 import type { PersonnelDeriveItem } from "./personnel-derive";
 import {
-  COLUMN_PENDING_REASON,
+  formatWageCell,
   PENDING_VALUE,
-  SOURCE_AVATAR_GRADIENT,
-  SOURCE_BADGE_VARIANT,
+  PROJECT_NAME_PENDING_REASON,
+  resolveSourceAvatarGradient,
+  resolveSourceBadgeVariant,
+  resolveWorkerSourceLabel,
   STATUS_BADGE_VARIANT,
   STATUS_LABEL,
-  WORKER_SOURCE_LABELS,
 } from "./personnel-list-labels";
 import "./personnel-list.css";
 
@@ -22,6 +23,11 @@ export interface PersonnelTableProps {
   errorMessage?: string;
   /** Süzgeç uygulanmış mı — boş listenin metnini ayırır. */
   hasFilter: boolean;
+  /**
+   * `assigned_project_id` → proje ADI. `undefined` ⇒ proje listesi yüklenemedi
+   * (hücre pending gerekçesine düşer); boş harita ⇒ liste geldi ama eşleşme yok.
+   */
+  projectNames?: Record<string, string>;
   /** 235-243 · sayfalama şeridi — mockup'ta AYNI kart kabuğunun içindedir. */
   pagination?: React.ReactNode;
 }
@@ -48,12 +54,18 @@ function emptyMessage(options: {
 
 /**
  * P 132-232 · personel tablosu: Ad Soyad (132/144-149) · Tür (133/150) ·
- * Meslek (134/151) · Proje (135/152, K1 pending) · SGK (136/153, K1 pending) ·
- * Ücret/Gün (137/154, K1 pending) · Durum (138/155) · aksiyon (139/156).
+ * Meslek (134/151) · Proje (135/152) · SGK (136/153) · Ücret/Gün (137/154) ·
+ * Durum (138/155) · aksiyon (139/156).
  *
- * ⚠️ K6: mockup'ın "İşe giriş: …" alt satırı (147) BASILMAZ — backend'de
- * tarih alanı yok, uydurma tarih yasak.
- * ⚠️ K1: Proje/SGK/Ücret-Gün sütunları SİLİNMEZ, hücreler "—" + gerekçe basar.
+ * F-İK T2: Proje/SGK/Ücret-Gün sütunları ARTIK GERÇEKTİR — İK-1 backend'i
+ * `assigned_project_id`/`sgk_no`/`wage_amount`+`wage_type` alanlarını taşıyor.
+ * Değer yoksa sade "—" basılır (gerekçe DEĞİL: "atanmamış"/"girilmemiş" gerçek
+ * bir boşluktur). Tek pending kalıntısı: proje ADI listesi yüklenemediğinde
+ * proje hücresi (`PROJECT_NAME_PENDING_REASON`).
+ *
+ * ⚠️ K6: mockup'ın "İşe giriş: …" alt satırı (147) BASILMAZ — sunucuda
+ * `hire_date` artık var ama liste satırı mockup'ın iki-satırlı ad hücresine
+ * dönmez; bu karar T2 kapsamı dışıdır (kapsam: üç sütun + süzgeç + bant).
  */
 export function PersonnelTable({
   rows,
@@ -61,6 +73,7 @@ export function PersonnelTable({
   isError,
   errorMessage,
   hasFilter,
+  projectNames,
   pagination,
 }: PersonnelTableProps) {
   const visibleRows = rows ?? [];
@@ -104,6 +117,13 @@ export function PersonnelTable({
         <tbody>
           {visibleRows.map((row) => {
             const statusKey = row.is_active ? "active" : "inactive";
+            // Proje hücresi ÜÇ hâllidir: atanmamış (gerçek boşluk) · ad
+            // (eşleşti) · pending (proje listesi yok ⇒ kimlik ad değildir).
+            const projectId = row.assigned_project_id;
+            // (Listede olmayan bir kimlik de pending sayılır: erişim dışı/
+            // arşiv proje olabilir — ham UUID basmak veri değil gürültüdür.)
+            const projectName = projectId === null ? null : projectNames?.[projectId];
+            const isProjectPending = projectId !== null && projectName === undefined;
             return (
               <tr className="personel-row" key={row.id} data-testid={`personel-row-${row.id}`}>
                 {/* 144-149 — "İşe giriş" alt satırı YOK (K6) */}
@@ -112,7 +132,7 @@ export function PersonnelTable({
                     <span
                       className="personel-avatar"
                       aria-hidden="true"
-                      style={{ backgroundImage: SOURCE_AVATAR_GRADIENT[row.source] }}
+                      style={{ backgroundImage: resolveSourceAvatarGradient(row.source) }}
                     >
                       {initials(row.full_name)}
                     </span>
@@ -121,35 +141,33 @@ export function PersonnelTable({
                 </td>
                 {/* 150 */}
                 <td className="personel-table__td personel-table__td--center">
-                  <Badge variant={SOURCE_BADGE_VARIANT[row.source]}>
-                    {WORKER_SOURCE_LABELS[row.source]}
+                  {/* spec K2 · bilinmeyen enum değeri ekranı ÇÖKERTMEZ */}
+                  <Badge variant={resolveSourceBadgeVariant(row.source)}>
+                    {resolveWorkerSourceLabel(row.source)}
                   </Badge>
                 </td>
                 {/* 151 */}
                 <td className="personel-table__td">{row.trade ?? "—"}</td>
-                {/* 152 — K1 pending */}
+                {/* 152 — GERÇEK: `assigned_project_id` → proje adı */}
                 <td
-                  className="personel-table__td personel-pending-cell"
-                  title={COLUMN_PENDING_REASON}
-                  data-testid={`personel-project-pending-${row.id}`}
+                  className={
+                    "personel-table__td" + (isProjectPending ? " personel-pending-cell" : "")
+                  }
+                  title={isProjectPending ? PROJECT_NAME_PENDING_REASON : undefined}
+                  data-testid={`personel-project-${row.id}`}
                 >
-                  {PENDING_VALUE}
+                  {projectName ?? PENDING_VALUE}
                 </td>
-                {/* 153 — K1 pending */}
-                <td
-                  className="personel-table__td personel-pending-cell"
-                  title={COLUMN_PENDING_REASON}
-                  data-testid={`personel-sgk-pending-${row.id}`}
-                >
-                  {PENDING_VALUE}
+                {/* 153 — GERÇEK: `sgk_no` */}
+                <td className="personel-table__td" data-testid={`personel-sgk-${row.id}`}>
+                  {row.sgk_no ?? PENDING_VALUE}
                 </td>
-                {/* 154 — K1 pending */}
+                {/* 154 — GERÇEK: `wage_amount` (+ `wage_type` birim eki) */}
                 <td
-                  className="personel-table__td personel-table__td--right personel-table__td--mono personel-pending-cell"
-                  title={COLUMN_PENDING_REASON}
-                  data-testid={`personel-wage-pending-${row.id}`}
+                  className="personel-table__td personel-table__td--right personel-table__td--mono"
+                  data-testid={`personel-wage-${row.id}`}
                 >
-                  {PENDING_VALUE}
+                  {formatWageCell(row)}
                 </td>
                 {/* 155 */}
                 <td className="personel-table__td personel-table__td--center">

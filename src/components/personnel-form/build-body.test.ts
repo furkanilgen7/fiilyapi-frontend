@@ -30,6 +30,8 @@ describe("buildPersonnelCreateBody — gövde sızıntısı", () => {
     expect(Object.keys(body).sort()).toEqual([
       "full_name",
       "is_active",
+      // `is_draft` sözleşmede ZORUNLU (İK-1); bu form YAYINLANMIŞ kayıt üretir.
+      "is_draft",
       "source",
       "subcontractor_id",
       "trade",
@@ -40,12 +42,19 @@ describe("buildPersonnelCreateBody — gövde sızıntısı", () => {
       source: "subcontractor",
       subcontractor_id: "sub-1",
       is_active: true,
+      is_draft: false,
     });
   });
 
   it("şirket kadrosunda subcontractor_id anahtarı HİÇ basılmaz", () => {
     const body = buildPersonnelCreateBody({ ...fullyFilled(), source: "company" });
-    expect(Object.keys(body).sort()).toEqual(["full_name", "is_active", "source", "trade"]);
+    expect(Object.keys(body).sort()).toEqual([
+      "full_name",
+      "is_active",
+      "is_draft",
+      "source",
+      "trade",
+    ]);
     expect("subcontractor_id" in body).toBe(false);
   });
 
@@ -107,6 +116,8 @@ describe("buildPersonnelUpdateBody — gövde sızıntısı", () => {
   it("form TÜMÜYLE doldurulduğunda gövde YALNIZ sözleşmedeki anahtarları taşır", () => {
     const body = buildPersonnelUpdateBody({ ...fullyFilled(), isActive: false });
 
+    // ⚠️ `PersonnelUpdate` KISMİDİR: create'in aksine `is_draft` anahtarı YOK —
+    // düzenleme bir kaydın yayın durumunu sessizce değiştirmez.
     expect(Object.keys(body).sort()).toEqual([
       "full_name",
       "is_active",
