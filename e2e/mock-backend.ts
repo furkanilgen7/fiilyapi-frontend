@@ -450,6 +450,18 @@ interface MockState {
   unitSales: MockUnitSale[];
   saleInstallments: MockSaleInstallment[];
   saleSeq: number;
+  // F-SA T1 — Satınalma (tedarikçi · talep · teklif · sipariş). Tutar/rozet
+  // türevleri SAKLANMAZ, gövde kurulurken hesaplanır (`buildQuoteCards`,
+  // `buildSupplierCard`, `buildPurchasingSummary`). `purchasingSeq` yeni
+  // kimlikleri deterministik üretir (`Date.now()` YOK — baseline'lar sabit).
+  //
+  // 🔒 İZOLASYON: bu dört dizi başka HİÇBİR yüzey tarafından okunmaz; stok/
+  // satış/proje fikstürlerine yalnız SALT-OKUR atıf yapılır.
+  suppliers: MockSupplier[];
+  purchaseRequests: MockPurchaseRequest[];
+  purchaseQuotes: MockPurchaseQuote[];
+  purchaseOrders: MockPurchaseOrder[];
+  purchasingSeq: number;
   permissions: Record<string, Record<string, { access_level: string; scope: string }>>;
   projectAccess: Record<string, { all_projects: boolean; project_ids: string[] }>;
   company: {
@@ -2009,6 +2021,14 @@ function seedState(): MockState {
     unitSales: UNIT_SALE_FIXTURES.map((s) => ({ ...s })),
     saleInstallments: SALE_INSTALLMENT_FIXTURES.map((i) => ({ ...i })),
     saleSeq: 0,
+    suppliers: SUPPLIER_FIXTURES.map((s) => ({ ...s })),
+    purchaseRequests: PURCHASE_REQUEST_FIXTURES.map((r) => ({
+      ...r,
+      lines: r.lines.map((l) => ({ ...l })),
+    })),
+    purchaseQuotes: PURCHASE_QUOTE_FIXTURES.map((q) => ({ ...q })),
+    purchaseOrders: PURCHASE_ORDER_FIXTURES.map((o) => ({ ...o })),
+    purchasingSeq: 0,
     permissions,
     projectAccess: {
       "u-1": { all_projects: true, project_ids: [] },
@@ -3987,6 +4007,420 @@ function parseMultipart(raw: Buffer, contentType: string): MultipartPart | null 
     }
   }
   return { fields, file };
+}
+
+// --- F-SA T1 · Satınalma fikstürleri --------------------------------------
+//
+// 🔒 FİKSTÜR İZOLASYONU (F-ST/F-BC/F-P8 dersi): buradaki HİÇBİR kayıt mevcut
+// bir ekranın verisini DEĞİŞTİRMEZ. Satınalma varlıkları (tedarikçi · talep ·
+// teklif · sipariş) YENİ dizilerdir ve YALNIZCA `/suppliers`,
+// `/purchase-requests*`, `/purchase-orders*`, `/purchasing/summary`
+// rotalarından servis edilir. Proje/şantiye/stok kartlarına yapılan atıflar
+// SALT-OKURDUR (`p-1`, `s-1`, `it-*`): stok BAKİYESİ okunur ama hiçbir stok
+// hareketi YAZILMAZ → stok katalog/şantiye stok baseline'ları oynamaz.
+
+/** Satınalma mock'unun "bugün"ü — gecikme türevleri buna göre kurulmuştur. */
+const PURCHASING_TODAY = "2026-08-12";
+
+type MockPaymentTerms = "cash" | "days_15" | "days_30" | "days_60";
+
+interface MockSupplier {
+  id: string;
+  name: string;
+  category: string | null;
+  tax_no: string | null;
+  phone: string | null;
+  payment_terms: MockPaymentTerms;
+  is_active: boolean;
+  created_at: string;
+}
+
+interface MockPurchaseRequestLine {
+  id: string;
+  sort_order: number;
+  stock_item_id: string | null;
+  free_text_name: string | null;
+  free_text_unit: string | null;
+  quantity: string;
+  /** `null` = FİYAT BİLİNMİYOR. "0 TL" DEĞİLDİR (NULL-eşik kanonu). */
+  estimated_unit_price: string | null;
+}
+
+interface MockPurchaseRequest {
+  id: string;
+  request_no: string;
+  request_date: string;
+  priority: "normal" | "urgent" | "critical";
+  project_id: string;
+  site_id: string | null;
+  section_id: string | null;
+  needed_by: string | null;
+  justification: string | null;
+  status: "draft" | "pending_approval" | "quote_wait" | "ordered" | "delivered" | "rejected";
+  quote_deadline: string | null;
+  approved_by_user_id: string | null;
+  approved_at: string | null;
+  rejected_at: string | null;
+  rejection_reason: string | null;
+  created_by_user_id: string;
+  created_at: string;
+  lines: MockPurchaseRequestLine[];
+}
+
+interface MockPurchaseQuote {
+  id: string;
+  request_id: string;
+  supplier_id: string;
+  unit_price: string;
+  /** SERBEST METİN — sıralanamaz, "EN HIZLI" rozeti bu yüzden sunucuda YOK. */
+  delivery_time: string;
+  warranty_note: string | null;
+  payment_terms: MockPaymentTerms;
+  shipping_included: boolean;
+  shipping_cost: string | null;
+  is_selected: boolean;
+  created_at: string;
+}
+
+interface MockPurchaseOrder {
+  id: string;
+  order_no: string;
+  request_id: string | null;
+  quote_id: string | null;
+  supplier_id: string;
+  project_id: string;
+  total_amount: string;
+  expected_delivery: string | null;
+  status: "approved" | "in_transit" | "delivered";
+  note: string | null;
+  created_by_user_id: string;
+  created_at: string;
+}
+
+const SUPPLIER_FIXTURES: MockSupplier[] = [
+  { id: "sup-1", name: "Yıldız Hazır Beton A.Ş.", category: "Hazır Beton", tax_no: "1234567890", phone: "0312 111 22 33", payment_terms: "days_30", is_active: true, created_at: "2025-01-10T08:00:00Z" },
+  { id: "sup-2", name: "Demir Çelik Ticaret Ltd.", category: "İnşaat Demiri", tax_no: "2345678901", phone: "0312 222 33 44", payment_terms: "days_60", is_active: true, created_at: "2025-01-11T08:00:00Z" },
+  { id: "sup-3", name: "Anadolu Elektrik Malzeme", category: "Elektrik", tax_no: "3456789012", phone: "0312 333 44 55", payment_terms: "cash", is_active: true, created_at: "2025-01-12T08:00:00Z" },
+  // 🔎 Siparişsiz + PASİF tedarikçi: kart türevinin `null` DEĞİL SIFIR
+  // döndüğünü ve `is_active=false` süzgecinin gerçekten süzdüğünü kanıtlar.
+  { id: "sup-4", name: "Eski Nakliyat Ltd.", category: null, tax_no: null, phone: null, payment_terms: "days_15", is_active: false, created_at: "2025-01-13T08:00:00Z" },
+];
+
+/**
+ * Talepler — ALTI durumun HEPSİ temsil edilir (SAT sekme şeridi + rozetler).
+ *
+ * 🔴 NULL-EŞİK KANONU FİKSTÜRÜ (SA dersi, T4'te kullanılacak): `pr-2`nin
+ * ikinci kalemi FİYATSIZDIR (`estimated_unit_price: null`). Talebin
+ * `estimated_total`ı yalnız fiyatı BİLİNEN kalemleri toplar; ekran bu tutarı
+ * "kesin toplam" gibi basamaz ve fiyatsız kalemi "0 TL" gösteremez.
+ * `pr-2` ayrıca katalogsuz (serbest) kalem taşır → `current_stock` `null`
+ * gelir ("stokta yok" ile "stok kartı bile yok" ayrımı).
+ */
+const PURCHASE_REQUEST_FIXTURES: MockPurchaseRequest[] = [
+  {
+    id: "pr-1", request_no: "SAT-2026-0001", request_date: "2026-08-10", priority: "urgent",
+    project_id: "p-1", site_id: "s-1", section_id: null, needed_by: "2026-08-20",
+    justification: "Kalıp imalatı için acil demir ihtiyacı.", status: "quote_wait",
+    quote_deadline: "2026-08-15", approved_by_user_id: "u-1", approved_at: "2026-08-10T12:00:00Z",
+    rejected_at: null, rejection_reason: null, created_by_user_id: "u-1",
+    created_at: "2026-08-10T08:00:00Z",
+    lines: [
+      { id: "prl-1", sort_order: 0, stock_item_id: "it-1", free_text_name: null, free_text_unit: null, quantity: "12.000", estimated_unit_price: "28500.00" },
+    ],
+  },
+  {
+    id: "pr-2", request_no: "SAT-2026-0002", request_date: "2026-08-11", priority: "normal",
+    project_id: "p-1", site_id: "s-1", section_id: null, needed_by: "2026-09-01",
+    justification: "İnce işler hazırlığı.", status: "pending_approval",
+    quote_deadline: null, approved_by_user_id: null, approved_at: null,
+    rejected_at: null, rejection_reason: null, created_by_user_id: "u-1",
+    created_at: "2026-08-11T09:00:00Z",
+    lines: [
+      { id: "prl-2", sort_order: 0, stock_item_id: "it-2", free_text_name: null, free_text_unit: null, quantity: "400.000", estimated_unit_price: "185.00" },
+      // 🔴 FİYATSIZ + KATALOGSUZ kalem — iki `null` türevin kaynağı.
+      { id: "prl-3", sort_order: 1, stock_item_id: null, free_text_name: "Özel kalıp yağı", free_text_unit: "Litre", quantity: "60.000", estimated_unit_price: null },
+    ],
+  },
+  {
+    id: "pr-3", request_no: "SAT-2026-0003", request_date: "2026-08-12", priority: "critical",
+    project_id: "p-1", site_id: "s-1", section_id: null, needed_by: "2026-08-18",
+    justification: null, status: "draft",
+    quote_deadline: null, approved_by_user_id: null, approved_at: null,
+    rejected_at: null, rejection_reason: null, created_by_user_id: "u-1",
+    created_at: "2026-08-12T07:30:00Z",
+    lines: [
+      { id: "prl-4", sort_order: 0, stock_item_id: "it-3", free_text_name: null, free_text_unit: null, quantity: "300.000", estimated_unit_price: "142.50" },
+    ],
+  },
+  {
+    id: "pr-4", request_no: "SAT-2026-0004", request_date: "2026-08-05", priority: "normal",
+    project_id: "p-1", site_id: "s-1", section_id: null, needed_by: "2026-08-14",
+    justification: "Beton dökümü.", status: "ordered",
+    quote_deadline: "2026-08-08", approved_by_user_id: "u-1", approved_at: "2026-08-05T14:00:00Z",
+    rejected_at: null, rejection_reason: null, created_by_user_id: "u-1",
+    created_at: "2026-08-05T08:00:00Z",
+    lines: [
+      { id: "prl-5", sort_order: 0, stock_item_id: "it-5", free_text_name: null, free_text_unit: null, quantity: "90.000", estimated_unit_price: "2450.00" },
+    ],
+  },
+  {
+    id: "pr-5", request_no: "SAT-2026-0005", request_date: "2026-07-28", priority: "normal",
+    project_id: "p-1", site_id: "s-1", section_id: null, needed_by: "2026-08-05",
+    justification: "Duvar imalatı.", status: "delivered",
+    quote_deadline: null, approved_by_user_id: "u-1", approved_at: "2026-07-28T10:00:00Z",
+    rejected_at: null, rejection_reason: null, created_by_user_id: "u-1",
+    created_at: "2026-07-28T08:00:00Z",
+    lines: [
+      { id: "prl-6", sort_order: 0, stock_item_id: "it-4", free_text_name: null, free_text_unit: null, quantity: "8000.000", estimated_unit_price: "9.75" },
+    ],
+  },
+  {
+    id: "pr-6", request_no: "SAT-2026-0006", request_date: "2026-07-20", priority: "urgent",
+    project_id: "p-1", site_id: "s-1", section_id: null, needed_by: "2026-07-30",
+    justification: "Bütçe dışı talep.", status: "rejected",
+    quote_deadline: null, approved_by_user_id: null, approved_at: null,
+    rejected_at: "2026-07-21T09:00:00Z", rejection_reason: "Bütçe kalemi bu ay kapalı.",
+    created_by_user_id: "u-1", created_at: "2026-07-20T08:00:00Z",
+    lines: [
+      { id: "prl-7", sort_order: 0, stock_item_id: "it-7", free_text_name: null, free_text_unit: null, quantity: "600.000", estimated_unit_price: "310.00" },
+    ],
+  },
+];
+
+/**
+ * `pr-1`in üç teklifi — TEK ekranının karşılaştırma kartları.
+ *
+ * 🔎 "EN İYİ FİYAT" TUZAĞININ FİKSTÜRÜ: `q-2`nin BİRİM FİYATI en düşüktür
+ * (27.900) ama nakliyesi HARİÇTİR (+42.000) → toplam maliyette `q-1` kazanır.
+ * Rozet birim fiyata bakılarak verilseydi yanlış tedarikçi öne çıkardı.
+ */
+const PURCHASE_QUOTE_FIXTURES: MockPurchaseQuote[] = [
+  { id: "q-1", request_id: "pr-1", supplier_id: "sup-2", unit_price: "28200.00", delivery_time: "3 iş günü", warranty_note: "TSE belgeli", payment_terms: "days_30", shipping_included: true, shipping_cost: null, is_selected: false, created_at: "2026-08-11T10:00:00Z" },
+  { id: "q-2", request_id: "pr-1", supplier_id: "sup-1", unit_price: "27900.00", delivery_time: "Yarın sabah", warranty_note: null, payment_terms: "cash", shipping_included: false, shipping_cost: "42000.00", is_selected: false, created_at: "2026-08-11T11:00:00Z" },
+  { id: "q-3", request_id: "pr-1", supplier_id: "sup-3", unit_price: "29100.00", delivery_time: "1 hafta", warranty_note: "2 yıl garanti", payment_terms: "days_60", shipping_included: true, shipping_cost: null, is_selected: false, created_at: "2026-08-11T12:00:00Z" },
+];
+
+/**
+ * Siparişler — üç durumun hepsi + TALEPSİZ (doğrudan) sipariş.
+ * `po-3` gecikmiş teslimat tarihi taşır (SIP'in renk TÜREVİ istemcidedir).
+ */
+const PURCHASE_ORDER_FIXTURES: MockPurchaseOrder[] = [
+  { id: "po-1", order_no: "SP-2026-0001", request_id: "pr-4", quote_id: null, supplier_id: "sup-1", project_id: "p-1", total_amount: "220500.00", expected_delivery: "2026-08-14", status: "in_transit", note: null, created_by_user_id: "u-1", created_at: "2026-08-06T08:00:00Z" },
+  { id: "po-2", order_no: "SP-2026-0002", request_id: "pr-5", quote_id: null, supplier_id: "sup-2", project_id: "p-1", total_amount: "78000.00", expected_delivery: "2026-08-04", status: "delivered", note: null, created_by_user_id: "u-1", created_at: "2026-07-29T08:00:00Z" },
+  // TALEPSİZ (doğrudan) sipariş — `request_id` nullable (SA §7 S3 kararı).
+  { id: "po-3", order_no: "SP-2026-0003", request_id: null, quote_id: null, supplier_id: "sup-3", project_id: "p-1", total_amount: "45600.00", expected_delivery: "2026-08-08", status: "approved", note: "Doğrudan alım.", created_by_user_id: "u-1", created_at: "2026-08-01T08:00:00Z" },
+];
+
+function supplierName(state: MockState, supplierId: string): string {
+  return state.suppliers.find((s) => s.id === supplierId)?.name ?? "Bilinmeyen tedarikçi";
+}
+
+/** Kalemin toplam stok bakiyesi — SALT-OKUR (hiçbir hareket yazılmaz). */
+function purchaseLineCurrentStock(state: MockState, stockItemId: string | null): string | null {
+  if (!stockItemId) return null;
+  const balances = stockBalancesByWarehouse(state, stockItemId);
+  let total = 0;
+  for (const amount of balances.values()) total += amount;
+  return qty3(total);
+}
+
+function buildPurchaseRequestLine(state: MockState, line: MockPurchaseRequestLine) {
+  const item = line.stock_item_id
+    ? state.stockItems.find((i) => i.id === line.stock_item_id)
+    : undefined;
+  const lineTotal =
+    line.estimated_unit_price === null
+      ? null
+      : money2(Number(line.quantity) * Number(line.estimated_unit_price));
+  return {
+    id: line.id,
+    sort_order: line.sort_order,
+    stock_item_id: line.stock_item_id,
+    stock_item_code: item?.code ?? null,
+    free_text_name: line.free_text_name,
+    free_text_unit: line.free_text_unit,
+    name: item?.name ?? line.free_text_name ?? "",
+    unit: item?.unit ?? line.free_text_unit ?? null,
+    quantity: line.quantity,
+    estimated_unit_price: line.estimated_unit_price,
+    line_total: lineTotal,
+    current_stock: purchaseLineCurrentStock(state, line.stock_item_id),
+  };
+}
+
+/**
+ * ⚠️ FİYATSIZ KALEM TOPLAMA GİRMEZ (NULL-eşik kanonu): sessizce 0 sayılsaydı
+ * "tahmini toplam neden düşük" sorusu cevapsız kalırdı.
+ */
+function purchaseRequestEstimatedTotal(request: MockPurchaseRequest): string {
+  let total = 0;
+  for (const line of request.lines) {
+    if (line.estimated_unit_price === null) continue;
+    total += Number(line.quantity) * Number(line.estimated_unit_price);
+  }
+  return money2(total);
+}
+
+function buildPurchaseRequestRow(request: MockPurchaseRequest) {
+  return {
+    id: request.id,
+    request_no: request.request_no,
+    request_date: request.request_date,
+    priority: request.priority,
+    project_id: request.project_id,
+    site_id: request.site_id,
+    section_id: request.section_id,
+    needed_by: request.needed_by,
+    justification: request.justification,
+    status: request.status,
+    quote_deadline: request.quote_deadline,
+    approved_by_user_id: request.approved_by_user_id,
+    approved_at: request.approved_at,
+    rejected_at: request.rejected_at,
+    rejection_reason: request.rejection_reason,
+    created_by_user_id: request.created_by_user_id,
+    created_at: request.created_at,
+    estimated_total: purchaseRequestEstimatedTotal(request),
+    can_delete: request.status === "draft",
+    // ⚠️ SATIR KALEM TAŞIMAZ (şema kararı) — yalnız SAYISI.
+    line_count: request.lines.length,
+  };
+}
+
+function buildPurchaseRequestDetail(state: MockState, request: MockPurchaseRequest) {
+  // Detay gövdesi (`PurchaseRequestResponse`) liste satırının alanlarını
+  // taşır AMA `line_count` TAŞIMAZ: kalemlerin kendisi zaten gövdededir
+  // (şemada alan yoktur; fazladan basmak mock-şema senkronunu bozar).
+  const { line_count: _lineCount, ...header } = buildPurchaseRequestRow(request);
+  void _lineCount;
+  return {
+    ...header,
+    lines: request.lines.map((line) => buildPurchaseRequestLine(state, line)),
+  };
+}
+
+/** Talebin toplam miktarı — `total_cost`un çarpanı (yanıtta da döner). */
+function requestQuantityTotal(request: MockPurchaseRequest): number {
+  return request.lines.reduce((sum, line) => sum + Number(line.quantity), 0);
+}
+
+function quoteTotalCost(quote: MockPurchaseQuote, quantityTotal: number): number {
+  const base = Number(quote.unit_price) * quantityTotal;
+  if (quote.shipping_included) return base;
+  return base + Number(quote.shipping_cost ?? "0");
+}
+
+/**
+ * `total_cost` SUNUCU türevidir ve rozet ONUN üzerinden verilir — birim fiyat
+ * üzerinden DEĞİL. Beraberlikte HEPSİ rozetlenir.
+ */
+function buildQuoteCards(state: MockState, request: MockPurchaseRequest) {
+  const quantityTotal = requestQuantityTotal(request);
+  const quotes = state.purchaseQuotes.filter((q) => q.request_id === request.id);
+  const totals = quotes.map((q) => quoteTotalCost(q, quantityTotal));
+  const best = totals.length > 0 ? Math.min(...totals) : null;
+  return {
+    items: quotes.map((quote, index) => ({
+      id: quote.id,
+      request_id: quote.request_id,
+      supplier_id: quote.supplier_id,
+      supplier_name: supplierName(state, quote.supplier_id),
+      unit_price: quote.unit_price,
+      delivery_time: quote.delivery_time,
+      warranty_note: quote.warranty_note,
+      payment_terms: quote.payment_terms,
+      shipping_included: quote.shipping_included,
+      shipping_cost: quote.shipping_cost,
+      is_selected: quote.is_selected,
+      created_at: quote.created_at,
+      total_cost: money2(totals[index]),
+      is_best_price: best !== null && totals[index] === best,
+    })),
+    total: quotes.length,
+    request_quantity_total: qty3(quantityTotal),
+  };
+}
+
+function buildQuoteResponse(state: MockState, quote: MockPurchaseQuote) {
+  return {
+    id: quote.id,
+    request_id: quote.request_id,
+    supplier_id: quote.supplier_id,
+    supplier_name: supplierName(state, quote.supplier_id),
+    unit_price: quote.unit_price,
+    delivery_time: quote.delivery_time,
+    warranty_note: quote.warranty_note,
+    payment_terms: quote.payment_terms,
+    shipping_included: quote.shipping_included,
+    shipping_cost: quote.shipping_cost,
+    is_selected: quote.is_selected,
+    created_at: quote.created_at,
+  };
+}
+
+function buildPurchaseOrderResponse(state: MockState, order: MockPurchaseOrder) {
+  const request = order.request_id
+    ? state.purchaseRequests.find((r) => r.id === order.request_id)
+    : undefined;
+  return {
+    id: order.id,
+    order_no: order.order_no,
+    request_id: order.request_id,
+    request_no: request?.request_no ?? null,
+    quote_id: order.quote_id,
+    supplier_id: order.supplier_id,
+    supplier_name: supplierName(state, order.supplier_id),
+    project_id: order.project_id,
+    total_amount: order.total_amount,
+    expected_delivery: order.expected_delivery,
+    status: order.status,
+    note: order.note,
+    created_by_user_id: order.created_by_user_id,
+    created_at: order.created_at,
+  };
+}
+
+function buildSupplierCard(state: MockState, supplier: MockSupplier) {
+  const orders = state.purchaseOrders.filter((o) => o.supplier_id === supplier.id);
+  return {
+    id: supplier.id,
+    name: supplier.name,
+    category: supplier.category,
+    tax_no: supplier.tax_no,
+    phone: supplier.phone,
+    payment_terms: supplier.payment_terms,
+    is_active: supplier.is_active,
+    created_at: supplier.created_at,
+    // Siparişsiz tedarikçide `null` DEĞİL SIFIR (şema kararı).
+    orders_total_this_year: money2(orders.reduce((sum, o) => sum + Number(o.total_amount), 0)),
+    orders_count_this_year: orders.length,
+  };
+}
+
+/** `MetricPlaceholder` ZARFI YOKTUR — `0` gerçek bir cevaptır. */
+function buildPurchasingSummary(state: MockState, projectId: string | null) {
+  const requests = projectId
+    ? state.purchaseRequests.filter((r) => r.project_id === projectId)
+    : state.purchaseRequests;
+  const orders = projectId
+    ? state.purchaseOrders.filter((o) => o.project_id === projectId)
+    : state.purchaseOrders;
+  const month = PURCHASING_TODAY.slice(0, 7);
+  return {
+    open_requests: requests.filter(
+      (r) => r.status === "pending_approval" || r.status === "quote_wait",
+    ).length,
+    quote_wait_requests: requests.filter((r) => r.status === "quote_wait").length,
+    pending_approval_requests: requests.filter((r) => r.status === "pending_approval").length,
+    orders_this_month_total: money2(
+      orders
+        .filter((o) => o.created_at.slice(0, 7) === month)
+        .reduce((sum, o) => sum + Number(o.total_amount), 0),
+    ),
+    active_orders: orders.filter((o) => o.status !== "delivered").length,
+    in_transit_orders: orders.filter((o) => o.status === "in_transit").length,
+    delivered_orders: orders.filter((o) => o.status === "delivered").length,
+  };
 }
 
 export function startMockBackend(port: number): { server: Server; close: () => Promise<void> } {
@@ -6725,6 +7159,419 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         }
         return send(200, state.notifications);
       });
+    }
+
+    // --- F-SA T1 · Satınalma uçları ----------------------------------------
+    //
+    // ⚠️ `approve` / `reject` uçlarının mock karşılığı BİLEREK YOKTUR: onay
+    // ekranı bu dilimde basılmaz (spec K6 — "Onay Kutusu" ayrı dilim) ve
+    // hiçbir e2e onları çağırmaz. Karşılık eklemek olmayan bir ekranı ima
+    // eder (F-P8'in `activate`/`cancel` emsali).
+
+    if (method === "GET" && path === "/suppliers") {
+      const q = (parsed.searchParams.get("q") ?? "").trim().toLocaleLowerCase("tr");
+      const category = parsed.searchParams.get("category");
+      const isActive = parsed.searchParams.get("is_active");
+      const limit = Number(parsed.searchParams.get("limit") ?? "50");
+      const offset = Number(parsed.searchParams.get("offset") ?? "0");
+      let rows = state.suppliers;
+      if (q) rows = rows.filter((s) => s.name.toLocaleLowerCase("tr").includes(q));
+      if (category) rows = rows.filter((s) => s.category === category);
+      if (isActive !== null) rows = rows.filter((s) => s.is_active === (isActive === "true"));
+      return send(200, {
+        items: rows.slice(offset, offset + limit).map((s) => buildSupplierCard(state, s)),
+        total: rows.length,
+        limit,
+        offset,
+      });
+    }
+
+    if (method === "POST" && path === "/suppliers") {
+      return withBody((body) => {
+        const name = String(body.name ?? "").trim();
+        if (!name) return send(422, { detail: "Tedarikçi adı zorunludur." });
+        state.purchasingSeq += 1;
+        const supplier: MockSupplier = {
+          id: `sup-new-${state.purchasingSeq}`,
+          name,
+          category: typeof body.category === "string" ? body.category : null,
+          tax_no: typeof body.tax_no === "string" ? body.tax_no : null,
+          phone: typeof body.phone === "string" ? body.phone : null,
+          payment_terms: (body.payment_terms ?? "days_30") as MockPaymentTerms,
+          is_active: body.is_active === undefined ? true : Boolean(body.is_active),
+          created_at: `${PURCHASING_TODAY}T09:00:00Z`,
+        };
+        state.suppliers = [...state.suppliers, supplier];
+        return send(201, supplier);
+      });
+    }
+
+    const supplierIdMatch = path.match(/^\/suppliers\/([^/]+)$/);
+    if (method === "GET" && supplierIdMatch) {
+      const supplier = state.suppliers.find((s) => s.id === supplierIdMatch[1]);
+      if (!supplier) return send(404, { detail: "Tedarikçi bulunamadı." });
+      return send(200, buildSupplierCard(state, supplier));
+    }
+    if (method === "PATCH" && supplierIdMatch) {
+      const supplier = state.suppliers.find((s) => s.id === supplierIdMatch[1]);
+      if (!supplier) return send(404, { detail: "Tedarikçi bulunamadı." });
+      return withBody((body) => {
+        if (body.name !== undefined) supplier.name = String(body.name);
+        if (body.category !== undefined) {
+          supplier.category = body.category === null ? null : String(body.category);
+        }
+        if (body.tax_no !== undefined) {
+          supplier.tax_no = body.tax_no === null ? null : String(body.tax_no);
+        }
+        if (body.phone !== undefined) {
+          supplier.phone = body.phone === null ? null : String(body.phone);
+        }
+        if (body.payment_terms !== undefined) {
+          supplier.payment_terms = body.payment_terms as MockPaymentTerms;
+        }
+        if (body.is_active !== undefined) supplier.is_active = Boolean(body.is_active);
+        return send(200, supplier);
+      });
+    }
+
+    if (method === "GET" && path === "/purchase-requests") {
+      const status = parsed.searchParams.get("status");
+      const projectId = parsed.searchParams.get("project_id");
+      const priority = parsed.searchParams.get("priority");
+      const q = (parsed.searchParams.get("q") ?? "").trim().toLocaleLowerCase("tr");
+      const limit = Number(parsed.searchParams.get("limit") ?? "50");
+      const offset = Number(parsed.searchParams.get("offset") ?? "0");
+      let rows = state.purchaseRequests;
+      if (status) rows = rows.filter((r) => r.status === status);
+      if (projectId) rows = rows.filter((r) => r.project_id === projectId);
+      if (priority) rows = rows.filter((r) => r.priority === priority);
+      if (q) {
+        rows = rows.filter(
+          (r) =>
+            r.request_no.toLocaleLowerCase("tr").includes(q) ||
+            (r.justification ?? "").toLocaleLowerCase("tr").includes(q),
+        );
+      }
+      return send(200, {
+        items: rows.slice(offset, offset + limit).map(buildPurchaseRequestRow),
+        total: rows.length,
+        limit,
+        offset,
+      });
+    }
+
+    if (method === "POST" && path === "/purchase-requests") {
+      return withBody((body) => {
+        const projectId = String(body.project_id ?? "");
+        if (!state.projects.some((p) => p.id === projectId)) {
+          return send(404, { detail: "Proje bulunamadı." });
+        }
+        state.purchasingSeq += 1;
+        const seq = state.purchasingSeq;
+        const rawLines = Array.isArray(body.lines)
+          ? (body.lines as Array<Record<string, unknown>>)
+          : [];
+        const request: MockPurchaseRequest = {
+          id: `pr-new-${seq}`,
+          // Numarayı SUNUCU üretir — istemci gövdede göndermez.
+          request_no: `SAT-2026-${String(100 + seq).padStart(4, "0")}`,
+          request_date: typeof body.request_date === "string" ? body.request_date : PURCHASING_TODAY,
+          priority: (body.priority ?? "normal") as MockPurchaseRequest["priority"],
+          project_id: projectId,
+          site_id: typeof body.site_id === "string" ? body.site_id : null,
+          section_id: typeof body.section_id === "string" ? body.section_id : null,
+          needed_by: typeof body.needed_by === "string" ? body.needed_by : null,
+          justification: typeof body.justification === "string" ? body.justification : null,
+          status: "draft",
+          quote_deadline: typeof body.quote_deadline === "string" ? body.quote_deadline : null,
+          approved_by_user_id: null,
+          approved_at: null,
+          rejected_at: null,
+          rejection_reason: null,
+          created_by_user_id: "u-1",
+          created_at: `${PURCHASING_TODAY}T09:00:00Z`,
+          lines: rawLines.map((line, index) => ({
+            id: `prl-new-${seq}-${index}`,
+            // `sort_order`u SUNUCU dizinin indeksinden üretir.
+            sort_order: index,
+            stock_item_id: typeof line.stock_item_id === "string" ? line.stock_item_id : null,
+            free_text_name: typeof line.free_text_name === "string" ? line.free_text_name : null,
+            free_text_unit: typeof line.free_text_unit === "string" ? line.free_text_unit : null,
+            quantity: String(line.quantity ?? "0"),
+            estimated_unit_price:
+              line.estimated_unit_price === undefined || line.estimated_unit_price === null
+                ? null
+                : String(line.estimated_unit_price),
+          })),
+        };
+        state.purchaseRequests = [...state.purchaseRequests, request];
+        return send(201, buildPurchaseRequestDetail(state, request));
+      });
+    }
+
+    const requestIdMatch = path.match(/^\/purchase-requests\/([^/]+)$/);
+    if (requestIdMatch) {
+      const request = state.purchaseRequests.find((r) => r.id === requestIdMatch[1]);
+      if (!request) return send(404, { detail: "Talep bulunamadı." });
+      if (method === "GET") return send(200, buildPurchaseRequestDetail(state, request));
+      if (method === "PATCH") {
+        return withBody((body) => {
+          if (request.status !== "draft") {
+            return send(409, { detail: "Yalnızca taslak talepler düzenlenebilir." });
+          }
+          if (body.priority !== undefined) {
+            request.priority = body.priority as MockPurchaseRequest["priority"];
+          }
+          if (body.needed_by !== undefined) {
+            request.needed_by = body.needed_by === null ? null : String(body.needed_by);
+          }
+          if (body.justification !== undefined) {
+            request.justification = body.justification === null ? null : String(body.justification);
+          }
+          if (body.quote_deadline !== undefined) {
+            request.quote_deadline =
+              body.quote_deadline === null ? null : String(body.quote_deadline);
+          }
+          // `lines` KISMİ DEĞİL TAM DEĞİŞTİRMEDİR (sunucu sözleşmesi).
+          if (Array.isArray(body.lines)) {
+            const rawLines = body.lines as Array<Record<string, unknown>>;
+            request.lines = rawLines.map((line, index) => ({
+              id: `prl-${request.id}-${index}`,
+              sort_order: index,
+              stock_item_id: typeof line.stock_item_id === "string" ? line.stock_item_id : null,
+              free_text_name: typeof line.free_text_name === "string" ? line.free_text_name : null,
+              free_text_unit: typeof line.free_text_unit === "string" ? line.free_text_unit : null,
+              quantity: String(line.quantity ?? "0"),
+              estimated_unit_price:
+                line.estimated_unit_price === undefined || line.estimated_unit_price === null
+                  ? null
+                  : String(line.estimated_unit_price),
+            }));
+          }
+          return send(200, buildPurchaseRequestDetail(state, request));
+        });
+      }
+      if (method === "DELETE") {
+        if (request.status !== "draft") {
+          return send(409, { detail: "Yalnızca taslak talep silinebilir." });
+        }
+        state.purchaseRequests = state.purchaseRequests.filter((r) => r.id !== request.id);
+        return send(204);
+      }
+    }
+
+    const requestSubmitMatch = path.match(/^\/purchase-requests\/([^/]+)\/submit$/);
+    if (method === "POST" && requestSubmitMatch) {
+      const request = state.purchaseRequests.find((r) => r.id === requestSubmitMatch[1]);
+      if (!request) return send(404, { detail: "Talep bulunamadı." });
+      if (request.status !== "draft") {
+        return send(409, { detail: "Yalnızca taslak talep onaya gönderilebilir." });
+      }
+      request.status = "pending_approval";
+      return send(200, buildPurchaseRequestDetail(state, request));
+    }
+
+    // ⚠️ SIRA ÖNEMLİ: `export.xlsx` teklif kimliği desenine de uyar, ondan
+    // ÖNCE eşleşmeli. Uç ikili döner (JSON değil).
+    const quotesExportMatch = path.match(/^\/purchase-requests\/([^/]+)\/quotes\/export\.xlsx$/);
+    if (method === "GET" && quotesExportMatch) {
+      if (!state.purchaseRequests.some((r) => r.id === quotesExportMatch[1])) {
+        return send(404, { detail: "Talep bulunamadı." });
+      }
+      res.writeHead(200, {
+        "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "content-disposition": 'attachment; filename="teklif-karsilastirma.xlsx"',
+      });
+      res.end(Buffer.from([0x50, 0x4b, 0x03, 0x04]));
+      return;
+    }
+
+    const requestQuotesMatch = path.match(/^\/purchase-requests\/([^/]+)\/quotes$/);
+    if (requestQuotesMatch) {
+      const request = state.purchaseRequests.find((r) => r.id === requestQuotesMatch[1]);
+      if (!request) return send(404, { detail: "Talep bulunamadı." });
+      if (method === "GET") return send(200, buildQuoteCards(state, request));
+      if (method === "POST") {
+        return withBody((body) => {
+          const supplierId = String(body.supplier_id ?? "");
+          if (!state.suppliers.some((s) => s.id === supplierId)) {
+            return send(404, { detail: "Tedarikçi bulunamadı." });
+          }
+          const deliveryTime = String(body.delivery_time ?? "").trim();
+          if (!deliveryTime) return send(422, { detail: "Teslim süresi zorunludur." });
+          state.purchasingSeq += 1;
+          const quote: MockPurchaseQuote = {
+            id: `q-new-${state.purchasingSeq}`,
+            request_id: request.id,
+            supplier_id: supplierId,
+            unit_price: String(body.unit_price ?? "0"),
+            delivery_time: deliveryTime,
+            warranty_note: typeof body.warranty_note === "string" ? body.warranty_note : null,
+            payment_terms: (body.payment_terms ?? "days_30") as MockPaymentTerms,
+            shipping_included: Boolean(body.shipping_included),
+            shipping_cost:
+              body.shipping_cost === undefined || body.shipping_cost === null
+                ? null
+                : String(body.shipping_cost),
+            is_selected: false,
+            created_at: `${PURCHASING_TODAY}T09:00:00Z`,
+          };
+          state.purchaseQuotes = [...state.purchaseQuotes, quote];
+          return send(201, buildQuoteResponse(state, quote));
+        });
+      }
+    }
+
+    const selectAndOrderMatch = path.match(
+      /^\/purchase-requests\/([^/]+)\/quotes\/([^/]+)\/select-and-order$/,
+    );
+    if (method === "POST" && selectAndOrderMatch) {
+      const request = state.purchaseRequests.find((r) => r.id === selectAndOrderMatch[1]);
+      const quote = state.purchaseQuotes.find(
+        (q) => q.id === selectAndOrderMatch[2] && q.request_id === selectAndOrderMatch[1],
+      );
+      if (!request || !quote) return send(404, { detail: "Teklif bulunamadı." });
+      if (request.status === "ordered" || request.status === "delivered") {
+        return send(409, { detail: "Bu talep için sipariş zaten oluşturulmuş." });
+      }
+      // TEK çağrı İKİ iş yapar: teklif seçilir + sipariş doğar, talep `ordered`.
+      quote.is_selected = true;
+      request.status = "ordered";
+      state.purchasingSeq += 1;
+      const order: MockPurchaseOrder = {
+        id: `po-new-${state.purchasingSeq}`,
+        order_no: `SP-2026-${String(100 + state.purchasingSeq).padStart(4, "0")}`,
+        request_id: request.id,
+        quote_id: quote.id,
+        supplier_id: quote.supplier_id,
+        project_id: request.project_id,
+        total_amount: money2(quoteTotalCost(quote, requestQuantityTotal(request))),
+        expected_delivery: request.needed_by,
+        status: "approved",
+        note: null,
+        created_by_user_id: "u-1",
+        created_at: `${PURCHASING_TODAY}T09:00:00Z`,
+      };
+      state.purchaseOrders = [...state.purchaseOrders, order];
+      return send(201, buildPurchaseOrderResponse(state, order));
+    }
+
+    const quoteIdMatch = path.match(/^\/purchase-requests\/([^/]+)\/quotes\/([^/]+)$/);
+    if (quoteIdMatch && (method === "PATCH" || method === "DELETE")) {
+      const quote = state.purchaseQuotes.find(
+        (q) => q.id === quoteIdMatch[2] && q.request_id === quoteIdMatch[1],
+      );
+      if (!quote) return send(404, { detail: "Teklif bulunamadı." });
+      if (method === "DELETE") {
+        if (quote.is_selected) {
+          return send(409, { detail: "Siparişe bağlanmış teklif silinemez." });
+        }
+        state.purchaseQuotes = state.purchaseQuotes.filter((q) => q.id !== quote.id);
+        return send(204);
+      }
+      return withBody((body) => {
+        if (body.unit_price !== undefined) quote.unit_price = String(body.unit_price);
+        if (body.delivery_time !== undefined) quote.delivery_time = String(body.delivery_time);
+        if (body.warranty_note !== undefined) {
+          quote.warranty_note = body.warranty_note === null ? null : String(body.warranty_note);
+        }
+        if (body.payment_terms !== undefined) {
+          quote.payment_terms = body.payment_terms as MockPaymentTerms;
+        }
+        if (body.shipping_included !== undefined) {
+          quote.shipping_included = Boolean(body.shipping_included);
+        }
+        if (body.shipping_cost !== undefined) {
+          quote.shipping_cost = body.shipping_cost === null ? null : String(body.shipping_cost);
+        }
+        return send(200, buildQuoteResponse(state, quote));
+      });
+    }
+
+    if (method === "GET" && path === "/purchase-orders") {
+      const status = parsed.searchParams.get("status");
+      const projectId = parsed.searchParams.get("project_id");
+      const supplierId = parsed.searchParams.get("supplier_id");
+      const q = (parsed.searchParams.get("q") ?? "").trim().toLocaleLowerCase("tr");
+      const limit = Number(parsed.searchParams.get("limit") ?? "50");
+      const offset = Number(parsed.searchParams.get("offset") ?? "0");
+      let rows = state.purchaseOrders;
+      if (status) rows = rows.filter((o) => o.status === status);
+      if (projectId) rows = rows.filter((o) => o.project_id === projectId);
+      if (supplierId) rows = rows.filter((o) => o.supplier_id === supplierId);
+      if (q) {
+        rows = rows.filter(
+          (o) =>
+            o.order_no.toLocaleLowerCase("tr").includes(q) ||
+            supplierName(state, o.supplier_id).toLocaleLowerCase("tr").includes(q),
+        );
+      }
+      return send(200, {
+        items: rows
+          .slice(offset, offset + limit)
+          .map((o) => buildPurchaseOrderResponse(state, o)),
+        total: rows.length,
+        limit,
+        offset,
+      });
+    }
+
+    if (method === "POST" && path === "/purchase-orders") {
+      return withBody((body) => {
+        const projectId = String(body.project_id ?? "");
+        const supplierId = String(body.supplier_id ?? "");
+        if (!state.projects.some((p) => p.id === projectId)) {
+          return send(404, { detail: "Proje bulunamadı." });
+        }
+        if (!state.suppliers.some((s) => s.id === supplierId)) {
+          return send(404, { detail: "Tedarikçi bulunamadı." });
+        }
+        state.purchasingSeq += 1;
+        const order: MockPurchaseOrder = {
+          id: `po-new-${state.purchasingSeq}`,
+          order_no: `SP-2026-${String(200 + state.purchasingSeq).padStart(4, "0")}`,
+          // Doğrudan sipariş TALEPSİZDİR — gövde `request_id` KABUL ETMEZ.
+          request_id: null,
+          quote_id: null,
+          supplier_id: supplierId,
+          project_id: projectId,
+          total_amount: String(body.total_amount ?? "0"),
+          expected_delivery:
+            typeof body.expected_delivery === "string" ? body.expected_delivery : null,
+          status: "approved",
+          note: typeof body.note === "string" ? body.note : null,
+          created_by_user_id: "u-1",
+          created_at: `${PURCHASING_TODAY}T09:00:00Z`,
+        };
+        state.purchaseOrders = [...state.purchaseOrders, order];
+        return send(201, buildPurchaseOrderResponse(state, order));
+      });
+    }
+
+    const orderIdMatch = path.match(/^\/purchase-orders\/([^/]+)$/);
+    if (orderIdMatch) {
+      const order = state.purchaseOrders.find((o) => o.id === orderIdMatch[1]);
+      if (!order) return send(404, { detail: "Sipariş bulunamadı." });
+      if (method === "GET") return send(200, buildPurchaseOrderResponse(state, order));
+      if (method === "PATCH") {
+        return withBody((body) => {
+          if (body.status !== undefined) {
+            order.status = body.status as MockPurchaseOrder["status"];
+          }
+          if (body.expected_delivery !== undefined) {
+            order.expected_delivery =
+              body.expected_delivery === null ? null : String(body.expected_delivery);
+          }
+          if (body.note !== undefined) {
+            order.note = body.note === null ? null : String(body.note);
+          }
+          return send(200, buildPurchaseOrderResponse(state, order));
+        });
+      }
+    }
+
+    if (method === "GET" && path === "/purchasing/summary") {
+      return send(200, buildPurchasingSummary(state, parsed.searchParams.get("project_id")));
     }
 
     return send(404, { detail: "not found" });

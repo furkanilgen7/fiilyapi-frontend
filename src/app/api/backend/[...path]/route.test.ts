@@ -1022,6 +1022,96 @@ describe("BFF /api/backend/[...path]", () => {
       expect(entries).not.toContain("installments");
     });
 
+    // F-SA · T1 — Satinalma ekranlari DORT yeni kok ekler. Spec K2 "HEPSI ADLI
+    // kapi testiyle acilir" der: asagida her kok icin AYRI adli test vardir
+    // (it.each ile tek testte toplanmaz — bir kok dusurulurse hangisi oldugu
+    // test ADINDAN okunsun).
+    function allowListEntries(): string[] {
+      const source = readFileSync(
+        resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+        "utf8",
+      );
+      const allowList = source.slice(
+        source.indexOf("const ALLOWED_ROOTS"),
+        source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+      );
+      // Yorum metni DEGIL, gercek girdiler okunur (satir basindaki tirnakli ad).
+      return [...allowList.matchAll(/^\s*"([a-z0-9-]+)",/gm)].map((m) => m[1]);
+    }
+
+    it("suppliers koku tedarikci ekrani icin allow-list'te tanimlidir", () => {
+      expect(allowListEntries()).toContain("suppliers");
+    });
+
+    it("purchase-requests koku talep + teklif uclari icin allow-list'te tanimlidir", () => {
+      expect(allowListEntries()).toContain("purchase-requests");
+    });
+
+    it("purchase-orders koku siparis ekrani icin allow-list'te tanimlidir", () => {
+      expect(allowListEntries()).toContain("purchase-orders");
+    });
+
+    /**
+     * `purchasing` KPI seridinin TEK ucudur (`GET /purchasing/summary`) ve
+     * ilk segmenti "purchase-requests" DEGILDIR. Bu kok tek basina duserse
+     * ekranlar acilir ama dort kart sonsuza dek bos kalir — en sinsi dusus.
+     */
+    it("purchasing koku KPI seridi icin allow-list'te tanimlidir", () => {
+      expect(allowListEntries()).toContain("purchasing");
+    });
+
+    it.each([
+      "suppliers",
+      "suppliers/sup-1",
+      "purchase-requests",
+      "purchase-requests/pr-1",
+      "purchase-requests/pr-1/quotes",
+      "purchase-requests/pr-1/quotes/export.xlsx",
+      "purchase-orders",
+      "purchase-orders/po-1",
+      "purchasing/summary",
+    ])("%s ucu forward edilir", async (endpoint) => {
+      // Arrange
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ items: [], total: 0, limit: 50, offset: 0 }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+
+      // Act
+      const res = await GET(
+        req(`/api/backend/${endpoint}`, "GET", { [ACCESS_COOKIE]: "acc" }),
+        ctx(endpoint.split("/")),
+      );
+
+      // Assert
+      expect(res.status).toBe(200);
+      expect(String(fetchMock.mock.calls[0][0])).toContain(`/${endpoint}`);
+    });
+
+    /**
+     * Teklif uclarinin ilk segmenti TALEBIN kokudur; "quotes" AYRI bir kok
+     * DEGILDIR. Yanlis kok eklemek allow-list yuzeyini bosuna genisletir.
+     */
+    it("uydurma 'quotes' koku 404 alir — teklif ucunun ilk segmenti 'purchase-requests'tir", async () => {
+      // Arrange
+      const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+      vi.stubGlobal("fetch", fetchMock);
+
+      // Act
+      const rejected = await GET(
+        req("/api/backend/quotes/q-1", "GET", { [ACCESS_COOKIE]: "acc" }),
+        ctx(["quotes", "q-1"]),
+      );
+
+      // Assert
+      expect(rejected.status).toBe(404);
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(allowListEntries()).not.toContain("quotes");
+    });
+
     it.each(calledRoots)("%s koku forward edilir", async (root) => {
       const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
       vi.stubGlobal("fetch", fetchMock);
