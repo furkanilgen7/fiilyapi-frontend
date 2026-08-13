@@ -16,6 +16,9 @@ import type { components } from "@/lib/api/schema";
  */
 export type HrDocumentsSummaryResponse = components["schemas"]["HrDocumentsSummaryResponse"];
 export type HrDocumentTypeBreakdown = components["schemas"]["HrDocumentTypeBreakdown"];
+/** F-İK T5 · BT'nin iki listesinin satır tipleri (79-133 · 137-153). */
+export type HrExpiredDocument = components["schemas"]["HrExpiredDocument"];
+export type HrExpiringDocument = components["schemas"]["HrExpiringDocument"];
 
 export const HR_DOCUMENTS_SUMMARY_QUERY_KEY = "hr-documents-summary";
 
@@ -23,5 +26,39 @@ export function useHrDocumentsSummary(): UseQueryResult<HrDocumentsSummaryRespon
   return useQuery({
     queryKey: [HR_DOCUMENTS_SUMMARY_QUERY_KEY],
     queryFn: async () => unwrap(await backendClient.GET("/hr/documents/summary", {})),
+  });
+}
+
+/**
+ * F-İK T5 · `GET /personnel/{personnel_id}/documents` — Personel Detay'daki
+ * "Belgeler" kartının (PD 130-141) GERÇEK kaynağı.
+ *
+ * ⚠️ BFF: özet ucunun aksine bu ucun kökü "personnel"dir (izin listesinde
+ * zaten AÇIK) — "hr" kökü düşse bile bu kart çalışır.
+ *
+ * ⚠️ Uç SAYFALAMASIZDIR: `PersonnelDocumentResponse[]` düz dizi döner (zarf
+ * yok) — kırpılma korkuluğu (`buildListTruncation`) UYGULANMAZ, `total` yok.
+ *
+ * ⚠️ Bu dilimde belge yüzeyleri SALT-OKUNURdur: `POST/PATCH/DELETE` uçları
+ * backend'de VARDIR ama belge ekleme FORMUNUN mockup'ı yoktur (WORKFLOW §3)
+ * — mutasyon hook'u bilerek YAZILMAMIŞTIR.
+ */
+export type PersonnelDocumentResponse = components["schemas"]["PersonnelDocumentResponse"];
+
+export const PERSONNEL_DOCUMENTS_QUERY_KEY = "personnel-documents";
+
+export function usePersonnelDocuments(
+  personnelId: string,
+): UseQueryResult<PersonnelDocumentResponse[], Error> {
+  return useQuery({
+    // `usePersonnelDetail` deseni: id çözülmeden ağa çıkılmaz.
+    enabled: personnelId.length > 0,
+    queryKey: [PERSONNEL_DOCUMENTS_QUERY_KEY, personnelId],
+    queryFn: async () =>
+      unwrap(
+        await backendClient.GET("/personnel/{personnel_id}/documents", {
+          params: { path: { personnel_id: personnelId } },
+        }),
+      ),
   });
 }

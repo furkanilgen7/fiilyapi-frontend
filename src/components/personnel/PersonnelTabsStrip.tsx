@@ -7,15 +7,22 @@ interface TabDef {
   label: string;
   /** Gerçek rotası olan sekmenin href'i; yoksa `undefined` (devre-dışı basılır). */
   href?: string;
-  active?: boolean;
 }
+
+/** Şeridi basan ekranların kullandığı sekme adları — serbest string değil. */
+export type PersonnelTabLabel = "Personel Listesi" | "Belge & Sertifika";
 
 // P 70-77 · İK sekme şeridi. Kalıcı kural: rotası olmayan mockup öğesi
 // SİLİNMEZ, devre-dışı + görünür gerekçeyle basılır. "Puantaj" (spec K3) ve
 // F-İK T2'den beri "Belge & Sertifika" GERÇEK rotaya gider; İzin Yönetimi /
 // Bordro / SGK ekranları henüz yazılmadı.
+//
+// F-İK T5: şerit artık İKİ ekran tarafından paylaşılır (`/personel` ve
+// `/personel/belgeler`) — aktif sekme SABİT DEĞİL, parametreyle gelir. İkinci
+// bir şerit YAZILMAZ (görev emri kuralı): aktif olan sekme düz metne düşer,
+// diğerleri gerçek rotalarına bağlanır.
 const TABS: TabDef[] = [
-  { label: "Personel Listesi", active: true },
+  { label: "Personel Listesi", href: "/personel" },
   { label: "İzin Yönetimi" },
   { label: "Belge & Sertifika", href: HR_DOCUMENTS_ROUTE },
   { label: "Puantaj", href: "/puantaj" },
@@ -23,33 +30,43 @@ const TABS: TabDef[] = [
   { label: "SGK" },
 ];
 
-export function PersonnelTabsStrip() {
+export interface PersonnelTabsStripProps {
+  /** Bu ekranda AKTİF olan sekme; varsayılan `/personel` liste ekranıdır. */
+  activeTab?: PersonnelTabLabel;
+}
+
+export function PersonnelTabsStrip({ activeTab = "Personel Listesi" }: PersonnelTabsStripProps) {
   return (
     <div className="personel-tabs" role="tablist" aria-label="İnsan Kaynakları sekmeleri">
-      {TABS.map((tab) =>
-        tab.href ? (
-          <Link key={tab.label} href={tab.href} role="tab" className="personel-tabs__tab">
-            {tab.label}
-          </Link>
-        ) : (
+      {TABS.map((tab) => {
+        const isActive = tab.label === activeTab;
+
+        // Aktif sekme kendi sayfasına bağlanmaz (gezinme değil, konum bildirir).
+        if (tab.href && !isActive) {
+          return (
+            <Link key={tab.label} href={tab.href} role="tab" className="personel-tabs__tab">
+              {tab.label}
+            </Link>
+          );
+        }
+
+        return (
           <span
             key={tab.label}
             role="tab"
-            aria-selected={tab.active ?? false}
-            aria-disabled={!tab.active}
+            aria-selected={isActive}
+            aria-disabled={!isActive}
             tabIndex={-1}
-            title={tab.active ? undefined : TAB_PENDING_REASON}
+            title={isActive ? undefined : TAB_PENDING_REASON}
             className={
               "personel-tabs__tab" +
-              (tab.active
-                ? " personel-tabs__tab--active"
-                : " personel-tabs__tab--disabled")
+              (isActive ? " personel-tabs__tab--active" : " personel-tabs__tab--disabled")
             }
           >
             {tab.label}
           </span>
-        ),
-      )}
+        );
+      })}
     </div>
   );
 }

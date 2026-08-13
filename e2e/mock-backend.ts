@@ -2856,10 +2856,19 @@ const PERSONNEL_FIXTURES: MockPersonnel[] = [
 ];
 
 /**
- * F-İK T2 · `GET /hr/documents/summary` — SABİT özet (belge kayıtları mock'ta
- * SAKLANMAZ: bu dilimde yalnız uyarı bandının iki sayacı tüketilir, Belge &
- * Sertifika ekranı T5'te yazılacak). Sayılar sabittir ⇒ bant metni ve
- * baseline'lar deterministiktir.
+ * F-İK T2/T5 · `GET /hr/documents/summary` — SABİT özet. Sayılar sabittir ⇒
+ * hem `/personel` uyarı bandının metni hem BT ekranının 5 KPI'ı, iki listesi
+ * ve tip dağılımı DETERMİNİSTİKtir (baseline'lar buna dayanır).
+ *
+ * T5'te ZENGİNLEŞTİRİLDİ: BT ekranının HER bölümünün dolu olması gerekir —
+ * iki satırlı "süresi dolan" listesi (biri `project_name: null` ile GERÇEK
+ * boşluğu kanıtlar), iki satırlı "yaklaşan" listesi ve DÖRT tipli dağılım
+ * (biri `missing > 0` ile gri dilimi, biri hepsi sıfır olan tip ile "çubuk
+ * çökmesin" halini kanıtlar).
+ *
+ * ⚠️ KPI'lar listelerin UZUNLUĞU DEĞİLDİR (sunucu listeleri kırpabilir) —
+ * ekranın istemcide sayı türetmediğini kanıtlamak için sayaçlar bilerek
+ * liste uzunluklarından BÜYÜK tutulur.
  */
 const HR_DOCUMENTS_SUMMARY_FIXTURE: components["schemas"]["HrDocumentsSummaryResponse"] = {
   total_documents: 12,
@@ -2890,6 +2899,30 @@ const HR_DOCUMENTS_SUMMARY_FIXTURE: components["schemas"]["HrDocumentsSummaryRes
       expired: 1,
       missing: 2,
     },
+    {
+      // Yalnız EKSİK kaydı olan tip — oran çubuğunun gri dilimini kanıtlar.
+      type_id: "dt-3",
+      type_name: "Mesleki Yeterlilik",
+      is_mandatory: true,
+      validity_months: null,
+      total_documents: 0,
+      valid: 0,
+      expiring: 0,
+      expired: 0,
+      missing: 5,
+    },
+    {
+      // HİÇ kaydı olmayan opsiyonel tip — çubuk ÇÖKMEMELİ (bölme hatası yok).
+      type_id: "dt-4",
+      type_name: "Operatör Belgesi",
+      is_mandatory: false,
+      validity_months: 60,
+      total_documents: 0,
+      valid: 0,
+      expiring: 0,
+      expired: 0,
+      missing: 0,
+    },
   ],
   expired_documents: [
     {
@@ -2901,6 +2934,16 @@ const HR_DOCUMENTS_SUMMARY_FIXTURE: components["schemas"]["HrDocumentsSummaryRes
       valid_until: "2026-06-30",
       days_overdue: 44,
     },
+    {
+      // `project_name: null` — GERÇEK boşluk ("—"), pending gerekçesi DEĞİL.
+      id: "pd-3",
+      personnel_id: "per-2",
+      personnel_name: "Hasan Demirci",
+      document_label: "İSG Eğitim Belgesi",
+      project_name: null,
+      valid_until: "2026-07-20",
+      days_overdue: 24,
+    },
   ],
   expiring_documents: [
     {
@@ -2911,6 +2954,87 @@ const HR_DOCUMENTS_SUMMARY_FIXTURE: components["schemas"]["HrDocumentsSummaryRes
       project_name: "Villa B",
       valid_until: "2026-08-25",
       days_left: 12,
+    },
+    {
+      id: "pd-4",
+      personnel_id: "per-4",
+      personnel_name: "Sercan Öztürk",
+      document_label: "Sağlık Raporu",
+      project_name: "Kule A",
+      valid_until: "2026-09-02",
+      days_left: 20,
+    },
+  ],
+};
+
+/**
+ * F-İK T5 · `GET /personnel/{personnel_id}/documents` — Personel Detay'daki
+ * "Belgeler" kartının kaynağı. Kayıtlar SALT-OKUNURdur (bu dilimde POST/PATCH/
+ * DELETE bağlanmadı) ⇒ mutasyon yok, fikstür deterministik kalır.
+ *
+ * `per-1` üç farklı hali taşır: katalog tipli + arşiv dosyalı geçerli belge ·
+ * serbest etiketli (`type_name: null`) belge · geçerlilik tarihi OLMAYAN
+ * (süresiz) belge. `per-3` süresi dolmuş tek kayıt taşır; diğer personel
+ * BOŞ liste döndürür (boş-durum yolu kanıtlanır).
+ */
+const PERSONNEL_DOCUMENT_FIXTURES: Record<
+  string,
+  components["schemas"]["PersonnelDocumentResponse"][]
+> = {
+  "per-1": [
+    {
+      id: "pdoc-1",
+      personnel_id: "per-1",
+      type_id: "dt-1",
+      type_name: "Sağlık Raporu",
+      is_mandatory: true,
+      validity_months: 12,
+      free_label: null,
+      document_id: "doc-1",
+      issued_at: "2026-01-15",
+      valid_until: "2027-01-15",
+      note: null,
+      status: "valid",
+      days_left: 156,
+      created_at: "2026-01-15T08:00:00Z",
+      updated_at: "2026-01-15T08:00:00Z",
+    },
+    {
+      // Serbest etiketli kayıt — ad `free_label`den gelir, dosyası YOK.
+      id: "pdoc-2",
+      personnel_id: "per-1",
+      type_id: null,
+      type_name: null,
+      is_mandatory: null,
+      validity_months: null,
+      free_label: "İşe Giriş Taahhütnamesi",
+      document_id: null,
+      issued_at: "2025-11-02",
+      valid_until: null,
+      note: null,
+      status: "valid",
+      days_left: null,
+      created_at: "2025-11-02T08:00:00Z",
+      updated_at: "2025-11-02T08:00:00Z",
+    },
+  ],
+  "per-3": [
+    {
+      id: "pdoc-3",
+      personnel_id: "per-3",
+      type_id: "dt-2",
+      type_name: "İSG Eğitim Belgesi",
+      is_mandatory: true,
+      validity_months: 24,
+      free_label: null,
+      document_id: "doc-2",
+      issued_at: "2024-06-01",
+      valid_until: "2026-06-01",
+      note: null,
+      status: "expired",
+      days_left: -73,
+      created_at: "2024-06-01T08:00:00Z",
+      updated_at: "2024-06-01T08:00:00Z",
     },
   ],
 };
@@ -6064,6 +6188,15 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     // kök). Sayaçlar BELGE sayısıdır; ekran bunlardan "N personel" TÜRETMEZ.
     if (method === "GET" && path === "/hr/documents/summary") {
       return send(200, HR_DOCUMENTS_SUMMARY_FIXTURE);
+    }
+
+    // F-İK T5 · GET /personnel/{id}/documents — Personel Detay "Belgeler"
+    // kartı. Bu kökün adı "personnel"dır (özet ucunun aksine "hr" DEĞİL).
+    // Uç SAYFALAMASIZDIR: düz dizi döner, zarf YOKTUR. Kaydı olmayan personel
+    // BOŞ dizi alır (404 DEĞİL) — boş-durum yolu bu yüzden kanıtlanabilir.
+    const personnelDocumentsMatch = path.match(/^\/personnel\/([^/]+)\/documents$/);
+    if (method === "GET" && personnelDocumentsMatch) {
+      return send(200, PERSONNEL_DOCUMENT_FIXTURES[personnelDocumentsMatch[1]] ?? []);
     }
 
     // GET/PATCH /personnel/{personnel_id} — F-PT2 T1 · Personel Detay ekranı

@@ -206,6 +206,10 @@
   --color-warning-strong: #d97706;
   --color-danger-strong: #dc2626;
   --color-audit-danger-row-bg: #fff7f7;
+  /* F-İK T5 (BT · kritik bant başlığı 51 + "Süresi Dolan Belgeler" kart başlığı
+     81): mevcut --color-danger-strong bu iki metin için fazla AÇIK — mockup
+     koyu kırmızıyı başlık/gövde hiyerarşisi için kullanıyor. */
+  --color-danger-deep: #991b1b;
 
   /* Kabuk sidebar (mockup Ekran 1) — kullanıcı avatarı gradyanı + Çıkış butonu tonu */
   --gradient-avatar-blue: linear-gradient(135deg, var(--color-primary), var(--color-avatar-blue-end));

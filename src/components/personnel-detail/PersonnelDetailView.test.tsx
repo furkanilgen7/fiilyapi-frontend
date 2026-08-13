@@ -4,6 +4,7 @@ import { render, screen } from "@testing-library/react";
 import { PersonnelDetailView } from "./PersonnelDetailView";
 import { usePersonnelDetail } from "@/lib/api/hooks/usePersonnelDetail";
 import { useProjects } from "@/lib/api/hooks/useProjects";
+import { usePersonnelDocuments } from "@/lib/api/hooks/useHrDocuments";
 import { useSession } from "@/components/shell/SessionProvider";
 import { BackendError } from "@/lib/api/unwrap";
 import type { MeResponse } from "@/lib/auth/types";
@@ -17,6 +18,12 @@ vi.mock("@/lib/api/hooks/usePersonnelDetail", () => ({ usePersonnelDetail: vi.fn
 vi.mock("@/lib/api/hooks/useProjects", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useProjects")>()),
   useProjects: vi.fn(),
+}));
+// F-İK T5 · "Belgeler" kartı artık GERÇEK listedir (`GET /personnel/{id}/documents`)
+// — kendi hook'unu çağırır; bu ekranın testinde ağ yerine stub verilir.
+vi.mock("@/lib/api/hooks/useHrDocuments", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useHrDocuments")>()),
+  usePersonnelDocuments: vi.fn(),
 }));
 
 // F-İK T3 · GERÇEK HR alanları (İK-1 sözleşmesi) — PD 40-61'in geçen
@@ -73,6 +80,12 @@ beforeEach(() => {
     error: null,
   } as never);
   vi.mocked(useProjects).mockReturnValue(projectsQueryStub(PROJECTS));
+  vi.mocked(usePersonnelDocuments).mockReturnValue({
+    data: [],
+    isLoading: false,
+    isError: false,
+    error: null,
+  } as never);
 });
 
 describe("PersonnelDetailView · başlık kartı (PD 29-63) — F-İK T3 GERÇEK alanlar", () => {
@@ -253,11 +266,16 @@ describe("PersonnelDetailView · 4 pending kart", () => {
     expect(screen.getByTestId("personnel-project-history-card").querySelector("a")).toBeNull();
   });
 
-  it("Belgeler kartındaki '+ Ekle' ve 'İndir' basılır ama devre-dışıdır", () => {
+  // F-İK T5: kart artık GERÇEK listedir (kart-içi davranışın tam kapsamı
+  // `PersonnelDocumentsSummaryCard.test.tsx`tedir). Burada yalnız kartın
+  // detay ekranına DOĞRU personel kimliğiyle bağlandığı ve "+ Ekle"nin
+  // devre-dışı kaldığı (form mockup'ı yok — şef kararı) sınanır.
+  it("Belgeler kartı personelin KENDİ kimliğiyle sorgular; '+ Ekle' devre-dışıdır", () => {
     render(<PersonnelDetailView />);
     const card = screen.getByTestId("personnel-documents-card");
+
     expect(card.querySelector(".pd-card__add-btn")).toBeDisabled();
-    expect(card.querySelector(".pd-card__download-btn")).toBeDisabled();
+    expect(vi.mocked(usePersonnelDocuments)).toHaveBeenCalledWith("per-9");
   });
 
   it("Puantaj Özeti kartı EK SORGU ATMAZ — usePersonnelDetail YALNIZ BİR KEZ çağrılır", () => {

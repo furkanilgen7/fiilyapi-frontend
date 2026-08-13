@@ -73,7 +73,13 @@ export const LEAVE_PENDING_REASON = "İzin ve hak takibi İnsan Kaynakları dili
 export const PROJECT_HISTORY_PENDING_REASON =
   "Proje geçmişi takibi İnsan Kaynakları dilimiyle birlikte gelir.";
 
-/** 130-141 · "Belgeler" — BC-2 form-slot bekliyor (personnel-form ile AYNI gerekçe). */
+/**
+ * 130-141 · "Belgeler" — F-İK T5'te kart GERÇEK listeye döndü
+ * (`GET /personnel/{id}/documents`); kartın kendi gerekçe sabitleri artık
+ * `@/components/hr-documents/hr-documents-labels`tedir (ekleme formu mockup'ı
+ * yok · indirme ayrı sözleşme). Bu sabit yalnız BC-2 form-slot'unun ortak
+ * modül etiketi olarak KALIR.
+ */
 export const DOCUMENTS_PENDING_REASON = pendingModuleLabel("documents");
 
 /** 23 · "Bordroyu Gör" — bordro/maaş ucu yok. */

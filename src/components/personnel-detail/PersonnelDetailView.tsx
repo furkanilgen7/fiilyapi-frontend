@@ -80,8 +80,9 @@ export function PersonnelDetailView() {
           testId="personnel-project-history-card"
         />
 
-        {/* 130-141 — BC-2 form-slot. */}
-        <PersonnelDocumentsSummaryCard />
+        {/* 130-141 — F-İK T5'ten beri GERÇEK liste (SALT-OKUNUR: ekleme formu
+            mockup'ı yok, indirme ayrı sözleşme). */}
+        <PersonnelDocumentsSummaryCard personnelId={id} />
       </div>
     </div>
   );

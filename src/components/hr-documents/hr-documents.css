@@ -1,0 +1,417 @@
+/* F-İK T5 · BT — `/personel/belgeler` (Belge & Sertifika). Kanon
+   `İK - Belge Takibi.dc.html`; parantez içi sayılar o dosyanın SATIR
+   numaralarıdır.
+
+   Mockup'ın KENDİ üst barı (14-25) ve KENDİ sol menüsü (28-43) UYGULAMA
+   KABUĞUdur (F3 Topbar + Sidebar) — bu sayfa onları YENİDEN ÇİZMEZ (PD
+   emsali). Sekme şeridi `/personel` ile ORTAKTIR (`.personel-tabs`), burada
+   yeniden tanımlanmaz. Prefix `bt`. */
+.bt {
+  animation: var(--anim-fade-up); /* 45 */
+}
+
+/* Başlık şeridi — mockup'ta üst bardadır (22-23); kabuk canon'u gereği
+   sayfa başlığına taşındı (`.personel__head` deseni). */
+.bt__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.bt__eyebrow {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+  margin-bottom: 6px;
+}
+.bt__title {
+  font-size: var(--text-page-title);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+}
+.bt__actions {
+  display: flex;
+  gap: 10px; /* 21 */
+}
+
+/* Kritik uyarı bandı (48-55). */
+.bt-alert {
+  background: var(--color-audit-danger-row-bg); /* 48 */
+  border: 1px solid var(--color-danger-border-soft); /* 48 */
+  border-radius: var(--radius-lg); /* 48 */
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.bt-alert__icon {
+  font-size: 20px; /* 49 */
+}
+.bt-alert__body {
+  flex: 1;
+}
+.bt-alert__title {
+  font-size: 13px; /* 51 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-danger-deep);
+}
+.bt-alert__detail {
+  font-size: 12px; /* 52 */
+  color: var(--color-danger-strong);
+  margin-top: 2px;
+}
+/* 54 · "Toplu Randevu Al" — uç YOK, devre-dışı basılır (kalıcı kural). */
+.btn.bt-alert__action {
+  background: var(--color-danger);
+  color: var(--color-on-brand);
+  white-space: nowrap;
+}
+
+/* KPI şeridi (58-64): BEŞ kart, hepsi SUNUCUDAN gerçek. */
+.bt-kpi {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr); /* 58 */
+  gap: var(--space-3);
+  margin-bottom: 20px;
+}
+.bt-kpi__card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); /* 59 */
+  padding: 14px;
+}
+.bt-kpi__card--valid {
+  border-left: 4px solid var(--color-success); /* 60 */
+}
+.bt-kpi__card--expiring {
+  border-left: 4px solid var(--color-warning); /* 61 */
+}
+.bt-kpi__card--expired {
+  border-left: 4px solid var(--color-danger); /* 62 */
+}
+.bt-kpi__label {
+  font-size: 10px; /* 59 */
+  color: var(--color-text-subtle);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+.bt-kpi__value {
+  font-size: var(--text-numeric); /* 59 · 22px */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.bt-kpi__value--valid {
+  color: var(--color-success); /* 60 */
+}
+.bt-kpi__value--expiring {
+  color: var(--color-warning); /* 61 */
+}
+.bt-kpi__value--expired {
+  color: var(--color-danger); /* 62 */
+}
+.bt-kpi__value--missing {
+  color: var(--color-text-muted); /* 63 */
+}
+/* 63 · "Eksik Belge" — tanım SUNUCUNUNDUR, ekran onu yeniden yorumlamaz. */
+.bt-kpi__hint {
+  margin-top: 4px;
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  line-height: var(--leading-normal);
+}
+
+/* Süzgeç şeridi (67-76) — çipler GERÇEK sayaç basar, SÜZME devre-dışıdır. */
+.bt-filters {
+  display: flex;
+  gap: 10px; /* 67 */
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.bt-chips {
+  display: flex;
+  gap: 4px; /* 68 */
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-10);
+  padding: 4px;
+}
+.bt-chip {
+  padding: 7px 14px; /* 69-72 */
+  font-size: 13px;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-7);
+  cursor: not-allowed;
+}
+.bt-chip--expired {
+  font-weight: var(--weight-semibold);
+  color: var(--color-danger-strong); /* 69 */
+  background: var(--color-audit-danger-row-bg);
+}
+/* 74-75 — iki select mockup'ta çiplerin YANINDA durur. `Select` primitive'inin
+   sarmalayıcısı varsayılan olarak `width: 100%`tir (form ızgaraları için) —
+   şerit içinde kendi genişliğine çekilir, yoksa alt alta düşer. */
+.bt-filters .select-wrap {
+  width: auto;
+}
+.bt-filters__select {
+  min-width: 170px;
+}
+/* Süzgeçlerin görünür gerekçesi — sessiz düşüş YOK. */
+.bt-filters__note {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: var(--color-warning-deep-text);
+  background: var(--color-orange-tint);
+  border: 1px solid var(--color-orange-tint-border);
+  border-radius: var(--radius-8);
+  padding: 8px 12px;
+}
+
+/* Tablo/kart kabukları (79-133, 137-153). */
+.bt-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* 79 */
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.bt-card__head {
+  padding: 13px 16px; /* 80 */
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.bt-card__head--danger {
+  background: var(--color-audit-danger-row-bg); /* 80 */
+}
+.bt-card__head--warning {
+  background: var(--color-amber-tint-cell); /* 138 */
+}
+.bt-card__title {
+  font-size: 13px; /* 81 */
+  font-weight: var(--weight-bold);
+  color: var(--color-danger-deep);
+}
+.bt-card__title--warning {
+  color: var(--color-warning-deep-text); /* 138 */
+}
+.bt-card__subtitle {
+  font-size: var(--text-small); /* 82 */
+  color: var(--color-danger-strong);
+}
+
+.bt-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.bt-table__th {
+  padding: 10px 16px; /* 86-92 */
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  text-align: left;
+  white-space: nowrap;
+}
+.bt-table__th--center {
+  text-align: center;
+}
+.bt-table__th--overdue {
+  color: var(--color-danger); /* 90 */
+  text-align: center;
+}
+.bt-table__row {
+  border-bottom: 1px solid var(--color-divider); /* 95 */
+}
+.bt-table__row:last-child {
+  border-bottom: none;
+}
+.bt-table__row--danger {
+  background: var(--color-audit-danger-row-bg); /* 95 */
+}
+.bt-table__td {
+  padding: 12px 16px; /* 96-102 */
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  vertical-align: middle;
+}
+.bt-table__td--center {
+  text-align: center;
+}
+/* 96 · Personel adı — `personnel_id` GERÇEK olduğu için detaya bağlanır. */
+.bt-person-link {
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  text-decoration: none; /* mockup adı düz metin gibi gösterir (96) */
+}
+.bt-person-link:hover {
+  color: var(--color-primary);
+}
+.bt-table__td--valid-until {
+  font-weight: var(--weight-semibold);
+  color: var(--color-danger-strong); /* 99 */
+  text-align: center;
+}
+.bt-table__td--overdue {
+  font-size: 13px; /* 100 */
+  font-weight: var(--weight-bold);
+  color: var(--color-danger);
+  text-align: center;
+}
+.bt-table__td--days-left {
+  font-weight: var(--weight-semibold);
+  color: var(--color-warning); /* 147 */
+  text-align: center;
+}
+/* 101 · "Durum" sütunu — sunucuda alan YOK; sütun silinmez, hücre pending. */
+.bt-pending-cell {
+  color: var(--color-text-subtle);
+  cursor: help;
+  text-align: center;
+}
+
+/* Boş/yükleniyor/hata durumları — mockup'ın örnek satırları SABİT BASILMAZ. */
+.bt-empty {
+  padding: var(--space-8);
+  text-align: center;
+}
+.bt-empty__title {
+  font-size: 14px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.bt-empty__hint {
+  margin-top: var(--space-1);
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+
+/* Alt ızgara (136): yaklaşan tablosu + tip dağılımı kartı. */
+.bt-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr; /* 136 */
+  gap: 20px;
+  align-items: start;
+}
+.bt-grid .bt-card {
+  margin-bottom: 0;
+}
+
+/* "Belge Tipi Dağılımı" kartı (155-186). */
+.bt-breakdown {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* 155 */
+  box-shadow: var(--shadow-card);
+  padding: 18px;
+}
+.bt-breakdown__title {
+  font-size: 13px; /* 156 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin-bottom: 14px;
+}
+.bt-breakdown__list {
+  display: flex;
+  flex-direction: column;
+  gap: 11px; /* 157 */
+}
+.bt-breakdown__row-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px; /* 159 */
+}
+.bt-breakdown__name {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.bt-breakdown__ratio {
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+/* 160 · oran çubuğu — YÜZDELER yalnız GENİŞLİKTİR (yeni KPI değil). Toplam
+   sıfırsa hiç dilim üretilmez ve boş kanal görünür (bölme hatası yok). */
+.bt-bar {
+  height: 6px;
+  background: var(--color-divider);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  display: flex;
+}
+.bt-bar__seg {
+  height: 100%;
+}
+.bt-bar__seg--valid {
+  background: var(--color-success);
+}
+.bt-bar__seg--expiring {
+  background: var(--color-warning);
+}
+.bt-bar__seg--expired {
+  background: var(--color-danger);
+}
+.bt-bar__seg--missing {
+  background: var(--color-border); /* 170/175 */
+}
+.bt-breakdown__detail {
+  font-size: 10px; /* 161 */
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+/* 178-183 · otomatik hatırlatma bilgi kutusu. */
+.bt-reminder {
+  margin-top: 6px;
+  padding: 10px 12px;
+  background: var(--color-nav-active-bg); /* 178 */
+  border-radius: var(--radius-8);
+  font-size: var(--text-small); /* 179 */
+  color: var(--color-primary-hover); /* 179 */
+  line-height: var(--leading-loose);
+}
+/* 181 · "Ayarla →" — `/ayarlar/bildirimler` rotası VAR, bağlantı GERÇEK. */
+.bt-reminder__link {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary-hover);
+  text-decoration: none; /* 181 · mockup `a` altı çizgisiz */
+}
+
+/* ── Personel Detay "Belgeler" kartı (PD 130-141) · GERÇEK liste ──────────── */
+.pd-doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* PD 132 */
+}
+.pd-doc-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px; /* PD 133 */
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+}
+.pd-doc-row__body {
+  flex: 1;
+  min-width: 0;
+}
+.pd-doc-row__name {
+  font-size: 12px; /* PD 136 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.pd-doc-row__meta {
+  font-size: 10px; /* PD 137 */
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
