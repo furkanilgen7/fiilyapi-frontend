@@ -94,12 +94,15 @@ test("Düzenle → meslek değiştir → kaydet (PATCH TELDEN kanıt) → detayd
   await expect(page.getByTestId("personnel-header-card")).toContainText(ORIGINAL_TRADE);
 });
 
-test("İptal detay sayfasına döner; devre-dışı pending alanlar AYNEN korunur", async ({ page }) => {
+test("İptal detay sayfasına döner; İK alanları düzenleme kipinde de ETKİN", async ({ page }) => {
   await login(page);
   await page.goto(`${DETAIL_URL}/duzenle`);
 
-  await expect(page.getByLabel("TC Kimlik No")).toBeDisabled();
-  await expect(page.getByLabel("IBAN")).toBeDisabled();
+  // F-İK T4: TC/IBAN artık GERÇEK alanlar (İK-1 sözleşmesi). PENDING kalan
+  // tek alan "Bölüm"dür — proje düzeyinde bölüm listeleme ucu yok.
+  await expect(page.getByLabel("TC Kimlik No")).toBeEnabled();
+  await expect(page.getByLabel("IBAN")).toBeEnabled();
+  await expect(page.getByLabel("Bölüm")).toBeDisabled();
 
   await page.getByRole("button", { name: "İptal" }).first().click();
   await expect(page).toHaveURL(new RegExp(`/personel/${FIXTURE_ID}$`));

@@ -2720,6 +2720,56 @@ const EMPTY_HR_FIELDS = {
   is_draft: false,
 } satisfies Omit<MockPersonnel, "id" | "full_name" | "trade" | "source" | "subcontractor_id" | "user_id" | "is_active">;
 
+/**
+ * Gövdedeki İK alanlarını `PersonnelResponse` biçimine çevirir (F-İK T4).
+ * Gelmeyen alan `null` kalır; tip `MockPersonnel`e bağlıdır ⇒ sözleşme
+ * büyüdüğünde burası derlemede GÖRÜNÜR.
+ */
+type MockHrFields = Pick<
+  MockPersonnel,
+  | "tc_no"
+  | "birth_date"
+  | "gender"
+  | "marital_status"
+  | "phone"
+  | "email"
+  | "address"
+  | "emergency_contact_name"
+  | "emergency_contact_phone"
+  | "hire_date"
+  | "wage_type"
+  | "wage_amount"
+  | "payment_method"
+  | "iban"
+  | "sgk_no"
+  | "assigned_project_id"
+  | "assigned_section_id"
+>;
+
+function hrFieldsFromBody(body: Record<string, unknown>): MockHrFields {
+  const pick = <K extends keyof MockHrFields>(key: K): MockHrFields[K] =>
+    (body[key] ?? null) as MockHrFields[K];
+  return {
+    tc_no: pick("tc_no"),
+    birth_date: pick("birth_date"),
+    gender: pick("gender"),
+    marital_status: pick("marital_status"),
+    phone: pick("phone"),
+    email: pick("email"),
+    address: pick("address"),
+    emergency_contact_name: pick("emergency_contact_name"),
+    emergency_contact_phone: pick("emergency_contact_phone"),
+    hire_date: pick("hire_date"),
+    wage_type: pick("wage_type"),
+    wage_amount: pick("wage_amount"),
+    payment_method: pick("payment_method"),
+    iban: pick("iban"),
+    sgk_no: pick("sgk_no"),
+    assigned_project_id: pick("assigned_project_id"),
+    assigned_section_id: pick("assigned_section_id"),
+  };
+}
+
 /** Hücreler SEYREKTİR: girilmemiş gün kayıt ÜRETMEZ (gerçek backend gibi). */
 interface MockTimesheetCell {
   site_id: string;
@@ -5973,6 +6023,21 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         if (source !== "company" && source !== "subcontractor" && source !== "general") {
           return send(422, { detail: "kaynak zorunlu" });
         }
+
+        // F-İK T4 · TCKN iki AYRI ret yolu (spec K3) — istemci bu ikisini
+        // KARIŞTIRMAMALI, bu yüzden mock ikisini de üretebilmeli:
+        //   • biçimsel geçersizlik → 422
+        //   • aynı TC'li personel zaten var → 409
+        // İkisi de FİKSTÜRLERE dokunmadan kurulabilir: testler kendi
+        // oluşturdukları kayıtla çakışma üretir (fikstürlerde `tc_no` boştur).
+        const tcNo = typeof body.tc_no === "string" && body.tc_no ? body.tc_no : null;
+        if (tcNo !== null && !/^\d{11}$/.test(tcNo)) {
+          return send(422, { detail: "TC kimlik numarası 11 haneli olmalıdır" });
+        }
+        if (tcNo !== null && state.personnel.some((p) => p.tc_no === tcNo)) {
+          return send(409, { detail: "Bu TC kimlik numarasıyla kayıtlı personel var" });
+        }
+
         state.personnelSeq += 1;
         const created: MockPersonnel = {
           ...EMPTY_HR_FIELDS,
@@ -5984,6 +6049,10 @@ export function startMockBackend(port: number): { server: Server; close: () => P
             typeof body.subcontractor_id === "string" ? body.subcontractor_id : null,
           user_id: typeof body.user_id === "string" ? body.user_id : null,
           is_active: body.is_active !== false,
+          // İK-1 alanları gövdeden AYNEN alınır (gelmeyen alan null kalır);
+          // `is_draft` sunucudaki gibi gövdenin belirlediği durumdur.
+          ...hrFieldsFromBody(body),
+          is_draft: body.is_draft === true,
         };
         state.personnel = [...state.personnel, created];
         return send(201, created);
@@ -6011,6 +6080,14 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const person = state.personnel.find((p) => p.id === personnelIdMatch[1]);
       if (!person) return send(404, { detail: "personel yok" });
       return withBody((body) => {
+        // POST ile AYNI iki ret yolu (spec K3): biçim 422, çakışma 409.
+        const tcNo = typeof body.tc_no === "string" && body.tc_no ? body.tc_no : null;
+        if (tcNo !== null && !/^\d{11}$/.test(tcNo)) {
+          return send(422, { detail: "TC kimlik numarası 11 haneli olmalıdır" });
+        }
+        if (tcNo !== null && state.personnel.some((p) => p.id !== person.id && p.tc_no === tcNo)) {
+          return send(409, { detail: "Bu TC kimlik numarasıyla kayıtlı personel var" });
+        }
         for (const [key, value] of Object.entries(body)) {
           if (value === undefined) continue;
           Object.assign(person, { [key]: value });

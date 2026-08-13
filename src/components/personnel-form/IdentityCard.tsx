@@ -6,7 +6,6 @@ import {
   NAME_PART_MAX_LENGTH,
   NATIONAL_ID_MAX_LENGTH,
   PENDING_DOCUMENTS,
-  PENDING_NO_CONTRACT_FIELD,
   PHOTO_HINT,
   PHOTO_LABEL,
   SELECT_PLACEHOLDER,
@@ -53,9 +52,11 @@ function PhotoPlaceholder() {
 /**
  * 👤 Kimlik Bilgileri (mockup satır 51–71).
  *
- * ETKİN: Ad (63) · Soyad (64) — ikisi tek `full_name` alanına birleşir.
- * PENDING: fotoğraf (55–59) · TC Kimlik No (65) · Doğum Tarihi (66) ·
+ * ETKİN: Ad (63) · Soyad (64) — ikisi tek `full_name` alanına birleşir —
+ * ve F-İK T4'te açılan dörtlü: TC Kimlik No (65) · Doğum Tarihi (66) ·
  * Cinsiyet (67) · Medeni Durum (68).
+ *
+ * PENDING (tek kalan): fotoğraf (55–59) — BC form-slot mekanizması bekliyor.
  */
 export function IdentityCard({ values, onChange, errors }: IdentityCardProps) {
   return (
@@ -96,62 +97,77 @@ export function IdentityCard({ values, onChange, errors }: IdentityCardProps) {
             )}
           </Field>
 
-          {/* 65 — mockup `maxlength="11"` + monospace + ipucu KORUNUR */}
+          {/* PE 65 — mockup `maxlength="11"` + monospace + ipucu KORUNUR.
+              Checksum İSTEMCİDE hesaplanmaz: geçerlilik sunucudadır. */}
           <Field
             label="TC Kimlik No"
             required
             hint="11 haneli · Kimlik doğrulama yapılır"
+            error={errors?.tcNo}
           >
             {(control) => (
               <Input
                 {...control}
                 numeric
-                disabled
-                value=""
-                readOnly
                 maxLength={NATIONAL_ID_MAX_LENGTH}
+                value={values.tcNo}
                 placeholder="12345678901"
-                title={PENDING_NO_CONTRACT_FIELD}
+                status={errors?.tcNo ? "error" : "default"}
+                onChange={(event) => onChange("tcNo", event.target.value)}
               />
             )}
           </Field>
 
-          {/* 66 */}
-          <Field label="Doğum Tarihi" required>
+          {/* PE 66 */}
+          <Field label="Doğum Tarihi" required error={errors?.birthDate}>
             {(control) => (
               <Input
                 {...control}
                 type="date"
-                disabled
-                value=""
-                readOnly
-                title={PENDING_NO_CONTRACT_FIELD}
+                value={values.birthDate}
+                status={errors?.birthDate ? "error" : "default"}
+                onChange={(event) => onChange("birthDate", event.target.value)}
               />
             )}
           </Field>
 
-          {/* 67 */}
+          {/* PE 67 */}
           <Field label="Cinsiyet">
             {(control) => (
-              <Select {...control} disabled value="" title={PENDING_NO_CONTRACT_FIELD}>
+              <Select
+                {...control}
+                value={values.gender}
+                onChange={(event) =>
+                  onChange("gender", event.target.value as PersonnelFormValues["gender"])
+                }
+              >
                 <option value="">{SELECT_PLACEHOLDER}</option>
                 {GENDER_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
+                  <option key={option.value} value={option.value}>
+                    {option.label}
                   </option>
                 ))}
               </Select>
             )}
           </Field>
 
-          {/* 68 */}
+          {/* PE 68 */}
           <Field label="Medeni Durum">
             {(control) => (
-              <Select {...control} disabled value="" title={PENDING_NO_CONTRACT_FIELD}>
+              <Select
+                {...control}
+                value={values.maritalStatus}
+                onChange={(event) =>
+                  onChange(
+                    "maritalStatus",
+                    event.target.value as PersonnelFormValues["maritalStatus"],
+                  )
+                }
+              >
                 <option value="">{SELECT_PLACEHOLDER}</option>
                 {MARITAL_STATUS_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
+                  <option key={option.value} value={option.value}>
+                    {option.label}
                   </option>
                 ))}
               </Select>

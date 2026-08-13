@@ -9,7 +9,7 @@ import { Button, Checkbox } from "@/components/ui";
 import { useCreatePersonnel, useUpdatePersonnel } from "@/lib/api/hooks/usePersonnelMutations";
 import { usePersonnelDetail } from "@/lib/api/hooks/usePersonnelDetail";
 import { useSubcontractors } from "@/lib/api/hooks/useSubcontractors";
-import { backendErrorMessage } from "@/lib/api/error-message";
+import { useProjects } from "@/lib/api/hooks/useProjects";
 import { isForbidden } from "@/lib/api/unwrap";
 import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
@@ -25,11 +25,15 @@ import {
   PAGE_SUBTITLE_SUFFIX,
   PAGE_TITLE,
   PAGE_TITLE_EDIT,
-  PENDING_DRAFT,
+  PENDING_DRAFT_PUBLISHED,
   PENDING_NOTICES,
   PERSONNEL_LIST_HREF,
+  DRAFT_HINT,
+  DRAFT_STATE_NOTICE,
+  PUBLISHED_STATE_NOTICE,
   SUBMIT_LABEL,
   SUBMIT_LABEL_EDIT,
+  SUBMIT_LABEL_PUBLISH,
   TOPBAR_DRAFT_LABEL,
 } from "./constants";
 import { ContactCard } from "./ContactCard";
@@ -46,7 +50,13 @@ import {
   hasPersonnelFormErrors,
   validatePersonnelForm,
   type PersonnelFormErrors,
+  type PersonnelSubmitIntent,
 } from "./validate";
+import {
+  DUPLICATE_TC_FIELD_MESSAGE,
+  isPersonnelDuplicateError,
+  personnelSubmitErrorMessage,
+} from "./submit-errors";
 // Sıra önemli: önce paylaşılan kabuk, sonra forma özgü bloklar (özgü kazansın).
 import "@/styles/form-shell.css";
 import "./personnel-form.css";
@@ -97,9 +107,15 @@ export function PersonnelForm(props: PersonnelFormProps) {
   const createPersonnel = useCreatePersonnel();
   const updatePersonnel = useUpdatePersonnel(isEdit ? props.personnelId : "");
   const subcontractorsQuery = useSubcontractors();
+  const projectsQuery = useProjects();
   const detailQuery = usePersonnelDetail(isEdit ? props.personnelId : "");
   const detail = isEdit ? detailQuery.data : undefined;
   const isSaving = createPersonnel.isPending || updatePersonnel.isPending;
+
+  // "Atandığı Proje" seçeneklerinin TEK kaynağı (mockup'ın sabit adları DEĞİL).
+  const projectOptions = projectsQuery.data?.items ?? [];
+  /** Düzenlenen kayıt bugün TASLAK mı — "Yayına Al" yolunu bu belirler. */
+  const isDraftRecord = isEdit ? (detail?.is_draft ?? false) : false;
 
   const [values, setValues] = useState<PersonnelFormValues>(emptyPersonnelFormValues);
   const [errors, setErrors] = useState<PersonnelFormErrors>({});
@@ -140,8 +156,26 @@ export function PersonnelForm(props: PersonnelFormProps) {
     router.push(isEdit ? `/personel/${props.personnelId}` : returnTo);
   }
 
-  function submit() {
-    const nextErrors = validatePersonnelForm(values);
+  /**
+   * Gönderim — spec K4 taslak/yayın ayrımı.
+   *
+   * `intent` HANGİ DÜĞMEYE basıldığıdır: doğrulama ölçüsünü ve gövdedeki
+   * `is_draft` anahtarını o belirler. Düzenleme kipinde düz "Kaydet"
+   * (`intent === "publish"` ama kayıt zaten yayında) `is_draft` anahtarını
+   * HİÇ göndermez — yayın durumu düzenlemenin yan etkisi DEĞİLDİR.
+   */
+  function submit(intent: PersonnelSubmitIntent) {
+    // ⚠️ Yıldızlı alan denetimi YALNIZ YAYIN GEÇİŞİNDE uygulanır: yeni kayıt
+    // yayınlarken ya da taslağı "Yayına Al" ile yayına alırken. ZATEN yayında
+    // olan bir kaydı düzenlerken uygulanmaz — bu alanlar sunucuya İK-1 ile
+    // sonradan eklendi; eski kayıtların çoğu boş. Denetimi orada da zorlamak,
+    // kullanıcının yalnız telefonunu düzeltmek istediği bir kaydı ekranda
+    // KİLİTLERDİ (zorunlulukları sunucu uygular, istemci icat etmez).
+    const isPublishTransition = intent === "publish" && (!isEdit || isDraftRecord);
+    const nextErrors = validatePersonnelForm(values, {
+      intent: isPublishTransition ? "publish" : "draft",
+      hasProjectOptions: projectOptions.length > 0,
+    });
     setErrors(nextErrors);
 
     if (hasPersonnelFormErrors(nextErrors)) {
@@ -155,19 +189,33 @@ export function PersonnelForm(props: PersonnelFormProps) {
     if (!submittable) return; // doğrulama geçtiyse ulaşılamaz; tip kapısı
 
     setFormError(null);
-    const onError = (err: unknown) => setFormError(backendErrorMessage(err));
+    const onError = (err: unknown) => {
+      setFormError(personnelSubmitErrorMessage(err));
+      // 409 (çift kayıt) hangi alanın çakıştığını da SÖYLER — 422 ile aynı
+      // yere düşmesin diye TC alanının altına ayrı kısa mesaj basılır.
+      if (isPersonnelDuplicateError(err)) {
+        setErrors((prev) => ({ ...prev, tcNo: DUPLICATE_TC_FIELD_MESSAGE }));
+      }
+    };
 
     if (!isEdit) {
-      createPersonnel.mutate(buildPersonnelCreateBody(submittable), {
-        // `usePersonnelMutations` başarıda personel önbelleğini geçersizleştirir
-        // → matris/liste yeni kişiyi HEMEN çizer.
-        onSuccess: () => router.push(returnTo),
-        onError,
-      });
+      createPersonnel.mutate(
+        buildPersonnelCreateBody(submittable, { isDraft: intent === "draft" }),
+        {
+          // `usePersonnelMutations` başarıda personel önbelleğini geçersizleştirir
+          // → matris/liste yeni kişiyi HEMEN çizer.
+          onSuccess: () => router.push(returnTo),
+          onError,
+        },
+      );
       return;
     }
 
-    updatePersonnel.mutate(buildPersonnelUpdateBody(submittable), {
+    // Düzenleme: taslak düğmesi `true`, "Yayına Al" `false`, düz "Kaydet"
+    // (yayındaki kayıt) `null` = anahtar hiç gönderilmez.
+    const updateDraftFlag = intent === "draft" ? true : isDraftRecord ? false : null;
+
+    updatePersonnel.mutate(buildPersonnelUpdateBody(submittable, { isDraft: updateDraftFlag }), {
       onSuccess: () => router.push(`/personel/${props.personnelId}`),
       onError,
     });
@@ -185,8 +233,18 @@ export function PersonnelForm(props: PersonnelFormProps) {
   }
 
   const pageTitle = isEdit ? PAGE_TITLE_EDIT : PAGE_TITLE;
-  const submitLabel = isEdit ? SUBMIT_LABEL_EDIT : SUBMIT_LABEL;
+  // Taslak bir kaydın birincil eylemi AÇIKÇA "Yayına Al"dır: düz "Kaydet"
+  // yayınlamayı düzenlemenin sessiz yan etkisine çevirirdi (spec K4).
+  const submitLabel = !isEdit
+    ? SUBMIT_LABEL
+    : isDraftRecord
+      ? SUBMIT_LABEL_PUBLISH
+      : SUBMIT_LABEL_EDIT;
   const breadcrumbCurrent = isEdit ? BREADCRUMB_CURRENT_EDIT : BREADCRUMB_CURRENT;
+  // Taslak yolu YAYINLANMIŞ kayıtta kapalıdır (geri düşürme yok); oluşturma
+  // ve taslak düzenleme kiplerinde AÇIK.
+  const canSaveDraft = !isEdit || isDraftRecord;
+  const saveDraft = canSaveDraft ? () => submit("draft") : undefined;
 
   return (
     <div className="pf-shell">
@@ -212,15 +270,22 @@ export function PersonnelForm(props: PersonnelFormProps) {
           >
             İptal
           </Button>
-          {/* 39 — sunucuda taslak yok: devre-dışı, gerekçesi görünür listede */}
-          <Button variant="secondary" className="pf-topbar-cancel" disabled title={PENDING_DRAFT}>
+          {/* 39 — taslak yolu (spec K4). Yayınlanmış kayıtta devre-dışıdır:
+              yayındaki kayıt formdan sessizce taslağa DÜŞMEZ. */}
+          <Button
+            variant="secondary"
+            className="pf-topbar-cancel"
+            onClick={saveDraft}
+            disabled={isSaving || !canSaveDraft}
+            title={canSaveDraft ? undefined : PENDING_DRAFT_PUBLISHED}
+          >
             {TOPBAR_DRAFT_LABEL}
           </Button>
           {/* 40 */}
           <Button
             variant="primary"
             className="pf-topbar-submit"
-            onClick={submit}
+            onClick={() => submit("publish")}
             disabled={isSaving}
           >
             {isSaving ? "Kaydediliyor…" : submitLabel}
@@ -249,8 +314,15 @@ export function PersonnelForm(props: PersonnelFormProps) {
           )}
         </header>
 
-        {/* Devre-dışı yüzeylerin GÖRÜNÜR gerekçeleri — sessiz atlama yok. */}
+        {/* Devre-dışı yüzeylerin + taslak/yayın yolunun GÖRÜNÜR açıklamaları —
+            sessiz atlama yok. */}
         <ul className="pnf-notices" data-testid="personnel-form-notices">
+          {isEdit && (
+            <li className="pnf-notices__item">
+              {isDraftRecord ? DRAFT_STATE_NOTICE : PUBLISHED_STATE_NOTICE}
+            </li>
+          )}
+          {canSaveDraft && <li className="pnf-notices__item">{DRAFT_HINT}</li>}
           {PENDING_NOTICES.map((notice) => (
             <li key={notice} className="pnf-notices__item">
               {notice}
@@ -260,7 +332,7 @@ export function PersonnelForm(props: PersonnelFormProps) {
 
         <div className="pf-body" data-testid="personnel-form-body" ref={formRef}>
           <IdentityCard values={values} onChange={handleChange} errors={errors} />
-          <ContactCard />
+          <ContactCard values={values} onChange={handleChange} errors={errors} />
           <JobCard
             values={values}
             onChange={handleChange}
@@ -269,6 +341,11 @@ export function PersonnelForm(props: PersonnelFormProps) {
               items: subcontractorsQuery.data?.items ?? [],
               isLoading: subcontractorsQuery.isLoading,
               isError: subcontractorsQuery.isError,
+            }}
+            projects={{
+              items: projectOptions,
+              isLoading: projectsQuery.isLoading,
+              isError: projectsQuery.isError,
             }}
           />
           <PersonnelDocumentsCard />
@@ -282,7 +359,8 @@ export function PersonnelForm(props: PersonnelFormProps) {
 
         <PersonnelFormActions
           onCancel={handleCancel}
-          onSubmit={submit}
+          onSubmit={() => submit("publish")}
+          onSaveDraft={saveDraft}
           isPending={isSaving}
           submitLabel={submitLabel}
         />

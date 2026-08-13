@@ -1,38 +1,45 @@
 import { Field, Input, Textarea } from "@/components/ui";
 
-import { PENDING_NO_CONTRACT_FIELD } from "./constants";
+import { PERSONNEL_FIELD_MAX_LENGTH } from "./constants";
+import type { PersonnelFormValues } from "./form-state";
+import type { PersonnelFormErrors } from "./validate";
+
+interface ContactCardProps {
+  values: PersonnelFormValues;
+  onChange: <K extends keyof PersonnelFormValues>(
+    field: K,
+    value: PersonnelFormValues[K],
+  ) => void;
+  errors?: PersonnelFormErrors;
+}
 
 /**
- * 📞 İletişim Bilgileri (mockup satır 74–83) — kartın TAMAMI PENDING.
+ * 📞 İletişim Bilgileri (mockup satır 74–83) — F-İK T4'te kartın TAMAMI ETKİN.
  *
- * `PersonnelCreate` hiçbir iletişim alanı taşımaz; kart SİLİNMEZ (üst kural),
- * mockup'taki beş alan ve `*` işaretleriyle basılır ama doldurulamaz. Gerekçe
- * kart başlığının yanında GÖRÜNÜR yazar (`title` içinde saklı kalmaz).
+ * Beş alanın beşi de İK-1 sözleşmesinde karşılık buldu: `phone` · `email` ·
+ * `address` · `emergency_contact_name` · `emergency_contact_phone`. Uzunluk
+ * tavanları sözleşmenin AYNASIDIR (`field-limits.test.ts` iki yönlü kapı);
+ * `address` sözleşmede sınırsızdır, bu yüzden `maxLength` TAŞIMAZ.
  */
-export function ContactCard() {
+export function ContactCard({ values, onChange, errors }: ContactCardProps) {
   return (
     <section className="pf-card">
       {/* 75 */}
-      <h2 className="pf-card__title">
-        <span>📞 İletişim Bilgileri</span>
-        <span className="pf-card__note">
-          Bu kartın alanları devre dışı — {PENDING_NO_CONTRACT_FIELD.toLocaleLowerCase("tr")}.
-        </span>
-      </h2>
+      <h2 className="pf-card__title">📞 İletişim Bilgileri</h2>
 
       {/* 76 */}
       <div className="pf-grid pf-grid--2">
         {/* 77 */}
-        <Field label="Cep Telefonu" required>
+        <Field label="Cep Telefonu" required error={errors?.phone}>
           {(control) => (
             <Input
               {...control}
               type="tel"
-              disabled
-              readOnly
-              value=""
+              maxLength={PERSONNEL_FIELD_MAX_LENGTH.phone}
+              value={values.phone}
               placeholder="0532 123 45 67"
-              title={PENDING_NO_CONTRACT_FIELD}
+              status={errors?.phone ? "error" : "default"}
+              onChange={(event) => onChange("phone", event.target.value)}
             />
           )}
         </Field>
@@ -43,55 +50,53 @@ export function ContactCard() {
             <Input
               {...control}
               type="email"
-              disabled
-              readOnly
-              value=""
+              maxLength={PERSONNEL_FIELD_MAX_LENGTH.email}
+              value={values.email}
               placeholder="mehmet@example.com"
-              title={PENDING_NO_CONTRACT_FIELD}
+              onChange={(event) => onChange("email", event.target.value)}
             />
           )}
         </Field>
 
         {/* 79 — iki sütun genişliğinde textarea (rows=2) */}
-        <Field label="Adres" required className="pf-col-span-2">
+        <Field label="Adres" required className="pf-col-span-2" error={errors?.address}>
           {(control) => (
             <Textarea
               {...control}
               rows={2}
-              disabled
-              readOnly
-              value=""
+              value={values.address}
               placeholder="Mahalle, Sokak, No, İlçe / İl"
-              title={PENDING_NO_CONTRACT_FIELD}
+              status={errors?.address ? "error" : "default"}
+              onChange={(event) => onChange("address", event.target.value)}
             />
           )}
         </Field>
 
         {/* 80 */}
-        <Field label="Acil Durum Kişisi" required>
+        <Field label="Acil Durum Kişisi" required error={errors?.emergencyContactName}>
           {(control) => (
             <Input
               {...control}
-              disabled
-              readOnly
-              value=""
+              maxLength={PERSONNEL_FIELD_MAX_LENGTH.emergency_contact_name}
+              value={values.emergencyContactName}
               placeholder="Ayşe Yılmaz (Eş)"
-              title={PENDING_NO_CONTRACT_FIELD}
+              status={errors?.emergencyContactName ? "error" : "default"}
+              onChange={(event) => onChange("emergencyContactName", event.target.value)}
             />
           )}
         </Field>
 
         {/* 81 */}
-        <Field label="Acil Durum Telefonu" required>
+        <Field label="Acil Durum Telefonu" required error={errors?.emergencyContactPhone}>
           {(control) => (
             <Input
               {...control}
               type="tel"
-              disabled
-              readOnly
-              value=""
+              maxLength={PERSONNEL_FIELD_MAX_LENGTH.emergency_contact_phone}
+              value={values.emergencyContactPhone}
               placeholder="0533 987 65 43"
-              title={PENDING_NO_CONTRACT_FIELD}
+              status={errors?.emergencyContactPhone ? "error" : "default"}
+              onChange={(event) => onChange("emergencyContactPhone", event.target.value)}
             />
           )}
         </Field>

@@ -50,32 +50,62 @@ export const TRADE_OPTIONS: readonly string[] = [
   "Amele / Yardımcı",
 ];
 
-/** Cinsiyet (67) — devre-dışı, yalnız mockup sadakati için basılır. */
-export const GENDER_OPTIONS: readonly string[] = ["Erkek", "Kadın"];
+/**
+ * Değer taşıyan seçenek — etiket MOCKUP'tan, değer SUNUCU enum'undan gelir.
+ * İkisini tek yerde tutmak, etiketin gövdeye sızmasını (ya da tersini)
+ * yapısal olarak imkânsız kılar.
+ */
+export interface ValueOption<T extends string> {
+  value: T;
+  label: string;
+}
 
-/** Medeni Durum (68) — devre-dışı. */
-export const MARITAL_STATUS_OPTIONS: readonly string[] = ["Bekar", "Evli"];
+export type Gender = components["schemas"]["Gender"];
+export type MaritalStatus = components["schemas"]["MaritalStatus"];
+export type WageType = components["schemas"]["WageType"];
+export type PaymentMethod = components["schemas"]["PaymentMethod"];
 
-/** Ücret Tipi (113) — devre-dışı; mockup'ta "Seçiniz..." YOKTUR. */
-export const WAGE_TYPE_OPTIONS: readonly string[] = ["Günlük", "Aylık", "Saatlik"];
-
-/** Ödeme Şekli (115) — devre-dışı; mockup'ta "Seçiniz..." YOKTUR. */
-export const PAYMENT_METHOD_OPTIONS: readonly string[] = [
-  "Banka Havalesi",
-  "Elden (Nakit)",
-  "Karma",
+/** Cinsiyet (PE 67) → `gender`. */
+export const GENDER_OPTIONS: readonly ValueOption<Gender>[] = [
+  { value: "male", label: "Erkek" },
+  { value: "female", label: "Kadın" },
 ];
 
-/** Atandığı Proje (104) — devre-dışı; mockup'ın örnek adları AYNEN. */
-export const ASSIGNED_PROJECT_OPTIONS: readonly string[] = [
-  "Güneşkent A-Blok",
-  "Çelik OSB Fabrika",
-  "Liman Altyapı",
-  "Yeşilvadi Rezidans",
-  "Merkez Ofis",
+/** Medeni Durum (PE 68) → `marital_status`. */
+export const MARITAL_STATUS_OPTIONS: readonly ValueOption<MaritalStatus>[] = [
+  { value: "single", label: "Bekar" },
+  { value: "married", label: "Evli" },
 ];
 
-/** Bölüm (108) — devre-dışı; mockup'ın örnek adları AYNEN. */
+/**
+ * Ücret Tipi (PE 113) → `wage_type`. Mockup'ta "Seçiniz..." YOKTUR: ilk
+ * seçenek "Günlük" seçilidir ve alan `*` taşır. Bu yüzden form durumunda da
+ * varsayılan `daily`dir — mockup'ın gösterdiği değer neyse kaydedilen odur.
+ */
+export const WAGE_TYPE_OPTIONS: readonly ValueOption<WageType>[] = [
+  { value: "daily", label: "Günlük" },
+  { value: "monthly", label: "Aylık" },
+  { value: "hourly", label: "Saatlik" },
+];
+
+/**
+ * Ödeme Şekli (PE 115) → `payment_method`. Mockup'ta "Seçiniz..." YOKTUR;
+ * `WAGE_TYPE_OPTIONS` ile AYNI gerekçe — varsayılan `bank`.
+ */
+export const PAYMENT_METHOD_OPTIONS: readonly ValueOption<PaymentMethod>[] = [
+  { value: "bank", label: "Banka Havalesi" },
+  { value: "cash", label: "Elden (Nakit)" },
+  { value: "mixed", label: "Karma" },
+];
+
+/**
+ * Bölüm (PE 108) — DEVRE-DIŞI kalır, seçenekler mockup'ın örnek adlarıdır.
+ *
+ * Gerekçe (T4 doğrulaması): sunucuda bölüm listeleme YALNIZ şantiye altındadır
+ * (`GET /sites/{site_id}/sections`); proje düzeyinde bölüm listeleyen bir yol
+ * YOKTUR. `assigned_section_id` için doldurulacak güvenilir bir kaynak
+ * olmadığından alan basılır ama seçilemez — mockup'tan SİLİNMEZ.
+ */
 export const ASSIGNED_SECTION_OPTIONS: readonly string[] = [
   "Kat 6–10 Kaba İnşaat",
   "İnce İşler",
@@ -111,24 +141,38 @@ export const PERSONNEL_FIELD_MAX_LENGTH = {
  */
 export const NAME_PART_MAX_LENGTH = PERSONNEL_FIELD_MAX_LENGTH.full_name / 2;
 
-/** TC Kimlik No (65) — mockup `maxlength="11"`; alan devre-dışı olsa da korunur. */
-export const NATIONAL_ID_MAX_LENGTH = 11;
+/**
+ * TC Kimlik No (PE 65) — mockup `maxlength="11"`, sözleşme de 11.
+ *
+ * ⚠️ İstemci TCKN **checksum HESAPLAMAZ** (spec K3): geçerlilik denetimi
+ * SUNUCUDADIR. Buradaki tek korkuluk uzunluk tavanıdır; sunucunun 422'si
+ * `submit-errors.ts` üzerinden ayrı ve anlaşılır biçimde gösterilir.
+ */
+export const NATIONAL_ID_MAX_LENGTH = PERSONNEL_FIELD_MAX_LENGTH.tc_no;
 
 /* ── Devre-dışı yüzeylerin GÖRÜNÜR Türkçe gerekçeleri ───────────────────── */
 
 /** Foto (55-59) + belge alanları (126-193) — BC form-slot mekanizması bekliyor. */
 export const PENDING_DOCUMENTS = pendingModuleLabel("documents");
 
-/** Sunucu sözleşmesinde karşılığı olmayan alanlar (kimlik/iletişim/ücret/görev). */
-export const PENDING_NO_CONTRACT_FIELD =
-  "Personel kaydının bugünkü sunucu sözleşmesinde bu alanın karşılığı yok";
+/**
+ * Bölüm (PE 107-108) — T4'te DOĞRULANDI: sunucuda proje düzeyinde bölüm
+ * listeleyen bir yol yok (bölümler ŞANTİYEye bağlı: `/sites/{site_id}/sections`).
+ */
+export const PENDING_SECTION_SOURCE =
+  "Bölümler şantiyeye bağlıdır — proje seçimine göre bölüm listeleyen bir sunucu ucu yok";
 
 /** Karşılıksız iki çalışan tipi (Serbest Meslek · Stajyer). */
 export const PENDING_EMPLOYEE_TYPE =
   "Sunucu bu çalışan tipini henüz tanımıyor — seçilemez";
 
-/** "Taslak Kaydet" (39, 211). */
-export const PENDING_DRAFT = "Personel kaydında taslak desteği yok";
+/**
+ * Düzenleme kipinde YAYINLANMIŞ kayıt için "Taslak Kaydet" (PE 39, 211).
+ * Buton SİLİNMEZ, devre-dışı basılır: yayındaki bir kaydı formdan sessizce
+ * taslağa düşürmek veri kaybı gibi davranırdı (`FormActions` deseni).
+ */
+export const PENDING_DRAFT_PUBLISHED =
+  "Yayınlanmış personel kaydı formdan taslağa geri döndürülmez";
 
 /** SGK bildirge kutucuğu (205-208). */
 export const PENDING_SGK = "SGK bildirim modülü henüz eklenmedi";
@@ -154,10 +198,8 @@ export const PENDING_GENERAL_SOURCE =
  */
 export const PENDING_NOTICES: readonly string[] = [
   "Fotoğraf ve belge yükleme alanları devre dışı — belge modülünün form eklentisi sonraki dilimde gelir.",
-  "Kimlik, iletişim, görev atama ve ücret alanları devre dışı — personel kaydının bugünkü sunucu sözleşmesi yalnız ad-soyad, meslek/görev, çalışan tipi ve bağlı taşeron bilgisini saklıyor.",
-  "Devre dışı alanlardaki zorunluluk (*) işaretleri mockup'tan olduğu gibi korunmuştur ama kaydı ENGELLEMEZ — doğrulama yalnız doldurulabilen alanlara uygulanır.",
+  "“Bölüm” seçimi devre dışı — bölümler şantiyeye bağlıdır; proje seçimine göre bölüm listeleyen bir sunucu ucu henüz yok.",
   "“Serbest Meslek” ve “Stajyer” çalışan tipleri seçilemez — sunucu bugün yalnız şirket kadrosu, taşeron işçisi ve genel işçi kaynaklarını tanıyor; bu ikisi sessizce başka bir kaynağa YAZILMAZ.",
-  "“Taslak Kaydet” devre dışı — personel kaydında taslak desteği yok.",
   "“Kayıt sonrası SGK işe giriş bildirgesi” kutucuğu devre dışı — SGK bildirim modülü henüz eklenmedi.",
   "Belge kartındaki “Belge Takibi” bağlantısı edilgen — belge takibi ekranı henüz eklenmedi.",
 ];
@@ -180,3 +222,20 @@ export const PAGE_SUBTITLE_EDIT_SUFFIX = " ile işaretlidir";
 export const BREADCRUMB_CURRENT_EDIT = "Personeli Düzenle";
 export const SUBMIT_LABEL_EDIT = "Kaydet";
 export const ACTIVE_TOGGLE_LABEL = "Aktif personel";
+
+/* ── F-İK T4 · Taslak / yayın ayrımı (spec K4) ──────────────────────────── */
+
+/**
+ * TASLAK bir kaydın düzenleme kipindeki birincil eylemi. Düz "Kaydet" bu
+ * durumda kullanılmaz: kaydı yayına almak AÇIK bir karardır, düzenlemenin
+ * yan etkisi DEĞİLDİR.
+ */
+export const SUBMIT_LABEL_PUBLISH = "Yayına Al";
+
+/** Düzenlenen kaydın bugünkü durumu — kullanıcı hangi yolda olduğunu görür. */
+export const DRAFT_STATE_NOTICE = "Bu kayıt TASLAK — yayına alınana kadar eksik bırakılabilir.";
+export const PUBLISHED_STATE_NOTICE = "Bu kayıt YAYINDA — “Kaydet” yayın durumunu değiştirmez.";
+
+/** Taslak yolunun ne yaptığını söyleyen görünür açıklama (create + edit). */
+export const DRAFT_HINT =
+  "“Taslak Kaydet” eksik bilgiyle kaydeder — zorunlu alan denetimi yalnız yayın yolunda uygulanır.";
