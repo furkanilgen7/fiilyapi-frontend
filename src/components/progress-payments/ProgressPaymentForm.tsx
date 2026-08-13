@@ -28,6 +28,7 @@ import { PaymentCalculationCard } from "./PaymentCalculationCard";
 import { PaymentFormPivotTable } from "./PaymentFormPivotTable";
 import { ProgressPaymentStatusActions } from "./ProgressPaymentStatusActions";
 import { applyEmployerDiarySuggestion } from "./diary-fill";
+import { periodFields, type OmittablePeriodField } from "./period-fields";
 import { useDiaryFill } from "./useDiaryFill";
 import {
   buildLinesSaveBody,
@@ -43,12 +44,6 @@ export type ProgressPaymentFormProps =
   | { mode: "edit"; paymentId: string };
 
 const DEFAULT_COEFFICIENT_WHEN_LOCKED = "1";
-
-/**
- * PATCH gövdesinden ATLANABİLİR dönem alanları. Serbest `string[]` DEĞİL: yanlış
- * yazılmış bir alan adı derlemede yakalanmalı, sessizce yutulmamalı.
- */
-export type OmittablePeriodField = "period_year" | "period_month";
 
 /**
  * Hakediş oluştur/düzenle formu (P7 T5). `create` ve `edit` kipleri AYNI
@@ -563,24 +558,6 @@ function pickAriaProps(control: { id: string; "aria-describedby"?: string }) {
  * `null` döner — `period_year` şemada nullable olduğundan bu alan gövdede
  * "gönderilmemiş" (boş) olarak kalır, uydurma bir `0` asla gitmez.
  */
-/**
- * Gövdenin dönem parçası. `omitFields` TİP-KİLİTLİDİR (`OmittablePeriodField`):
- * serbest bir `string[]` yanlış yazılmış alan adını sessizce yutar, bu imza
- * yutmaz. Atlanan anahtar gövdeye HİÇ basılmaz — `null` gönderilmez, çünkü
- * `null` da sunucudaki değeri EZERDİ; sözleşme (`ProgressPaymentUpdate`) iki
- * alanı da `required` saymaz, anahtar yoksa sunucu mevcut değeri korur.
- */
-function periodFields(
-  periodYear: number | null,
-  periodMonth: number | null,
-  omitFields: readonly OmittablePeriodField[],
-): { period_year?: number | null; period_month?: number | null } {
-  return {
-    ...(omitFields.includes("period_year") ? {} : { period_year: periodYear }),
-    ...(omitFields.includes("period_month") ? {} : { period_month: periodMonth }),
-  };
-}
-
 function parsePeriodYear(raw: string): number | null {
   if (raw === "") return null;
   const value = Number(raw);

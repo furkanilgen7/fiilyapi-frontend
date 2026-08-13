@@ -28,6 +28,7 @@ import { PERIOD_MONTHS, formatAmount, formatPercent, formatQuantity } from "@/li
 
 import { DiaryFillFeedback } from "./DiaryFillFeedback";
 import { applySubcontractorDiarySuggestion } from "./diary-fill";
+import { periodFields, type OmittablePeriodField } from "./period-fields";
 import { isDiarySourced } from "./quantity-source";
 import { useDiaryFill } from "./useDiaryFill";
 import { sanitizeQuantityInput } from "./pivot";
@@ -103,6 +104,12 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
   const [sectionId, setSectionId] = useState<string | null>(null);
   const [defaultCoefficient, setDefaultCoefficient] = useState("1");
   const [formError, setFormError] = useState<string | null>(null);
+  // Kullanıcının GERÇEKTEN dokunduğu dönem alanları. Mockup'ta ay seçicisinin
+  // boş seçeneği yoktur, ekranda hep dolu görünür ve "görünen değer"
+  // kullanıcının KARARI DEĞİLDİR (bkz. `omittedPeriodFields`).
+  const [touchedPeriodFields, setTouchedPeriodFields] = useState<
+    ReadonlySet<OmittablePeriodField>
+  >(() => new Set());
 
   // Tohumlama YALNIZ BİR KEZ çalışır (`ProgressPaymentForm` deseni) —
   // sonraki `detailQuery`/`contractQuery` yenilemeleri (ör. kaydetme
@@ -183,10 +190,42 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
     );
   }
 
+  function markPeriodTouched(field: OmittablePeriodField) {
+    setTouchedPeriodFields((prev) => (prev.has(field) ? prev : new Set(prev).add(field)));
+  }
+
+  /**
+   * PATCH gövdesinden ATLANACAK dönem alanları (işveren formuyla AYNI karar).
+   *
+   * "Dönem" ay seçicisi mockup'ta boş seçenek TAŞIMAZ
+   * (`Taşeron Hakediş Oluştur.dc.html:56`): sunucuda `null` olsa bile ekranda
+   * dolu bir dönem görünür ve tohumlama `??` ile BUGÜNÜN ay/yılını basar.
+   * Kullanıcı dönemi hiç SEÇMEDEN kaydederse anahtarı göndermek, kullanıcının
+   * VERMEDİĞİ bir dönem kararını PARA kaydına yazmak olurdu — sunucudaki `null`
+   * sessizce EZİLİRDİ (yanlış dönem = maliyet/gelir yanlış aya düşer). Bu yüzden
+   * "sunucuda null + dokunulmamış" durumunda anahtar hiç basılmaz.
+   *
+   * Dolu gelen dönem zaten tohumlanmıştır ve normal gider; kullanıcı dokunduysa
+   * seçimi normal gider. OLUŞTURMA kipi etkilenmez: orada ezilecek sunucu
+   * değeri YOKTUR. `section_id` bu mekanizmanın DIŞINDADIR — onun seçicisinde
+   * "Tüm Bölümler" BOŞ seçeneği vardır, yani `null` ekranda dürüstçe görünür ve
+   * açıkça gönderilmesi bölümü TEMİZLEYEBİLMEK için gereklidir.
+   */
+  const omittedPeriodFields: readonly OmittablePeriodField[] =
+    !isEdit || !detail
+      ? []
+      : [
+          ...(detail.period_year === null && !touchedPeriodFields.has("period_year")
+            ? (["period_year"] as const)
+            : []),
+          ...(detail.period_month === null && !touchedPeriodFields.has("period_month")
+            ? (["period_month"] as const)
+            : []),
+        ];
+
   function headerBody() {
     return {
-      period_year: periodYear,
-      period_month: periodMonth,
+      ...periodFields(periodYear, periodMonth, omittedPeriodFields),
       default_coefficient: defaultCoefficient.trim() ? defaultCoefficient : "1",
       section_id: sectionId,
     };
@@ -470,7 +509,10 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
                 <Select
                   {...control}
                   value={periodMonth ?? ""}
-                  onChange={(event) => setPeriodMonth(Number(event.target.value))}
+                  onChange={(event) => {
+                    setPeriodMonth(Number(event.target.value));
+                    markPeriodTouched("period_month");
+                  }}
                 >
                   {PERIOD_MONTHS.map((m) => (
                     <option key={m.value} value={m.value}>
@@ -483,7 +525,10 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
                   numeric
                   aria-label="Hakediş yılı"
                   value={periodYear ?? ""}
-                  onChange={(event) => setPeriodYear(parsePeriodYear(event.target.value))}
+                  onChange={(event) => {
+                    setPeriodYear(parsePeriodYear(event.target.value));
+                    markPeriodTouched("period_year");
+                  }}
                 />
               </div>
             )}

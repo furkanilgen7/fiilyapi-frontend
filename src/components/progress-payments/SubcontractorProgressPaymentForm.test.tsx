@@ -451,6 +451,108 @@ describe("SubcontractorProgressPaymentForm — form doğrulama", () => {
   });
 });
 
+/**
+ * 🔒 SESSİZ VERİ DEĞİŞİKLİĞİ KAPISI — dönem seçicisi (PARA YÜZEYİ).
+ *
+ * "Dönem" ay seçicisinin mockup'ta boş seçeneği YOKTUR
+ * (`Taşeron Hakediş Oluştur.dc.html:56`): sunucuda `period_year`/`period_month`
+ * `null` olsa bile ekranda hep dolu bir dönem görünür. Kullanıcı dönemi hiç
+ * SEÇMEDEN kaydederse anahtarın gitmesi, kullanıcının VERMEDİĞİ bir dönem
+ * kararını PARA kaydına yazmak olurdu (maliyet/gelir yanlış aya düşer).
+ * Yalnız DÜZENLEME kipini ilgilendirir (oluşturmada ezilecek sunucu değeri yok).
+ * İşveren formundaki (`ProgressPaymentForm`) aynı kapının ikizi.
+ */
+describe("SubcontractorProgressPaymentForm (edit) · dokunulmamış dönem seçicisi", () => {
+  function mockDraftDetail(overrides: Record<string, unknown>) {
+    vi.mocked(useSubcontractorProgressPayment).mockReturnValue(
+      queryResult({ data: detailFixture(overrides) }),
+    );
+    const updateMutate = vi.fn((_vars, opts) => opts?.onSuccess?.());
+    vi.mocked(useUpdateSubcontractorProgressPayment).mockReturnValue(
+      mutationResult({ mutate: updateMutate }),
+    );
+    vi.mocked(useReplaceSubcontractorProgressPaymentLines).mockReturnValue(
+      mutationResult({ mutate: vi.fn() }),
+    );
+    return updateMutate;
+  }
+
+  async function save() {
+    await screen.findByTestId("thf-hierarchy");
+    await userEvent.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
+  }
+
+  it("sunucuda null olan period_year DOKUNULMADAN kaydedilirse anahtar GİTMEZ", async () => {
+    const updateMutate = mockDraftDetail({ period_year: null });
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+    await save();
+
+    const [{ body }] = updateMutate.mock.calls[0];
+    expect("period_year" in body).toBe(false);
+  });
+
+  it("sunucuda null olan period_month DOKUNULMADAN kaydedilirse anahtar GİTMEZ", async () => {
+    const updateMutate = mockDraftDetail({ period_month: null });
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+    // Ekranda mockup'ın ilk dolu seçeneği GÖRÜNÜR — ama bu kullanıcının kararı değil.
+    expect(await screen.findByLabelText("Dönem")).not.toHaveValue("");
+    await save();
+
+    const [{ body }] = updateMutate.mock.calls[0];
+    expect("period_month" in body).toBe(false);
+  });
+
+  it("kullanıcı dönemi SEÇERSE değer gövdede gider", async () => {
+    const updateMutate = mockDraftDetail({ period_year: null, period_month: null });
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+
+    await userEvent.selectOptions(await screen.findByLabelText("Dönem"), "3");
+    const yearInput = screen.getByLabelText("Hakediş yılı");
+    await userEvent.clear(yearInput);
+    await userEvent.type(yearInput, "2025");
+    await save();
+
+    const [{ body }] = updateMutate.mock.calls[0];
+    expect(body).toMatchObject({ period_year: 2025, period_month: 3 });
+  });
+
+  it("sunucudan DOLU gelen dönem dokunulmasa da AYNI değerle gider (gerileme koruması)", async () => {
+    const updateMutate = mockDraftDetail({ period_year: 2026, period_month: 7 });
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+    await save();
+
+    const [{ body }] = updateMutate.mock.calls[0];
+    expect(body).toMatchObject({ period_year: 2026, period_month: 7 });
+  });
+
+  it("OLUŞTURMA kipi etkilenmez — iki anahtar da HER ZAMAN gider", async () => {
+    const mutate = vi.fn();
+    vi.mocked(useCreateSubcontractorProgressPayment).mockReturnValue(mutationResult({ mutate }));
+    renderForm({ mode: "create", contractId: CONTRACT_ID });
+    await save();
+
+    const [{ body }] = mutate.mock.calls[0];
+    expect("period_year" in body).toBe(true);
+    expect("period_month" in body).toBe(true);
+    expect(body.period_year).toBe(new Date().getFullYear());
+    expect(body.period_month).toBe(new Date().getMonth() + 1);
+  });
+
+  // K5 gerileme koruması: `section_id` bu mekanizmanın DIŞINDADIR. Orada
+  // sunucudaki `null` ekranda "Tüm Bölümler" BOŞ seçeneğiyle DÜRÜSTÇE görünür
+  // (mockup boş seçeneği çizer), yani uydurma bir değer yoktur — `null` `null`
+  // olarak gitmelidir. Anahtarın düşürülmesi bölüm TEMİZLEMEYİ imkânsız kılardı.
+  it("section_id sunucuda null iken gövdede AÇIKÇA null gider (omit mekanizmasına dâhil DEĞİL)", async () => {
+    const updateMutate = mockDraftDetail({ section_id: null });
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+    await save();
+
+    const [{ body }] = updateMutate.mock.calls[0];
+    expect("section_id" in body).toBe(true);
+    expect(body.section_id).toBeNull();
+  });
+});
+
 describe("SubcontractorProgressPaymentForm — dropped_orphan_count uyarısı", () => {
   it("dropped_orphan_count > 0 iken Türkçe uyarı basar", async () => {
     vi.mocked(useSubcontractorProgressPayment).mockReturnValue(
