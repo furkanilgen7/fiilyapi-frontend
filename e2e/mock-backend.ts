@@ -4022,7 +4022,7 @@ function parseMultipart(raw: Buffer, contentType: string): MultipartPart | null 
 /** Satınalma mock'unun "bugün"ü — gecikme türevleri buna göre kurulmuştur. */
 const PURCHASING_TODAY = "2026-08-12";
 
-type MockPaymentTerms = "cash" | "days_15" | "days_30" | "days_60";
+type MockPaymentTerms = components["schemas"]["PaymentTerms"];
 
 interface MockSupplier {
   id: string;
@@ -4050,13 +4050,13 @@ interface MockPurchaseRequest {
   id: string;
   request_no: string;
   request_date: string;
-  priority: "normal" | "urgent" | "critical";
+  priority: components["schemas"]["PurchasePriority"];
   project_id: string;
   site_id: string | null;
   section_id: string | null;
   needed_by: string | null;
   justification: string | null;
-  status: "draft" | "pending_approval" | "quote_wait" | "ordered" | "delivered" | "rejected";
+  status: components["schemas"]["PurchaseRequestStatus"];
   quote_deadline: string | null;
   approved_by_user_id: string | null;
   approved_at: string | null;
@@ -4091,7 +4091,7 @@ interface MockPurchaseOrder {
   project_id: string;
   total_amount: string;
   expected_delivery: string | null;
-  status: "approved" | "in_transit" | "delivered";
+  status: components["schemas"]["PurchaseOrderStatus"];
   note: string | null;
   created_by_user_id: string;
   created_at: string;
@@ -4224,7 +4224,10 @@ function purchaseLineCurrentStock(state: MockState, stockItemId: string | null):
   return qty3(total);
 }
 
-function buildPurchaseRequestLine(state: MockState, line: MockPurchaseRequestLine) {
+function buildPurchaseRequestLine(
+  state: MockState,
+  line: MockPurchaseRequestLine,
+): components["schemas"]["PurchaseRequestLineResponse"] {
   const item = line.stock_item_id
     ? state.stockItems.find((i) => i.id === line.stock_item_id)
     : undefined;
@@ -4261,7 +4264,9 @@ function purchaseRequestEstimatedTotal(request: MockPurchaseRequest): string {
   return money2(total);
 }
 
-function buildPurchaseRequestRow(request: MockPurchaseRequest) {
+function buildPurchaseRequestRow(
+  request: MockPurchaseRequest,
+): components["schemas"]["PurchaseRequestListRow"] {
   return {
     id: request.id,
     request_no: request.request_no,
@@ -4287,7 +4292,10 @@ function buildPurchaseRequestRow(request: MockPurchaseRequest) {
   };
 }
 
-function buildPurchaseRequestDetail(state: MockState, request: MockPurchaseRequest) {
+function buildPurchaseRequestDetail(
+  state: MockState,
+  request: MockPurchaseRequest,
+): components["schemas"]["PurchaseRequestResponse"] {
   // Detay gövdesi (`PurchaseRequestResponse`) liste satırının alanlarını
   // taşır AMA `line_count` TAŞIMAZ: kalemlerin kendisi zaten gövdededir
   // (şemada alan yoktur; fazladan basmak mock-şema senkronunu bozar).
@@ -4314,7 +4322,10 @@ function quoteTotalCost(quote: MockPurchaseQuote, quantityTotal: number): number
  * `total_cost` SUNUCU türevidir ve rozet ONUN üzerinden verilir — birim fiyat
  * üzerinden DEĞİL. Beraberlikte HEPSİ rozetlenir.
  */
-function buildQuoteCards(state: MockState, request: MockPurchaseRequest) {
+function buildQuoteCards(
+  state: MockState,
+  request: MockPurchaseRequest,
+): components["schemas"]["PurchaseQuoteListResponse"] {
   const quantityTotal = requestQuantityTotal(request);
   const quotes = state.purchaseQuotes.filter((q) => q.request_id === request.id);
   const totals = quotes.map((q) => quoteTotalCost(q, quantityTotal));
@@ -4341,7 +4352,10 @@ function buildQuoteCards(state: MockState, request: MockPurchaseRequest) {
   };
 }
 
-function buildQuoteResponse(state: MockState, quote: MockPurchaseQuote) {
+function buildQuoteResponse(
+  state: MockState,
+  quote: MockPurchaseQuote,
+): components["schemas"]["PurchaseQuoteResponse"] {
   return {
     id: quote.id,
     request_id: quote.request_id,
@@ -4358,7 +4372,10 @@ function buildQuoteResponse(state: MockState, quote: MockPurchaseQuote) {
   };
 }
 
-function buildPurchaseOrderResponse(state: MockState, order: MockPurchaseOrder) {
+function buildPurchaseOrderResponse(
+  state: MockState,
+  order: MockPurchaseOrder,
+): components["schemas"]["PurchaseOrderResponse"] {
   const request = order.request_id
     ? state.purchaseRequests.find((r) => r.id === order.request_id)
     : undefined;
@@ -4380,7 +4397,10 @@ function buildPurchaseOrderResponse(state: MockState, order: MockPurchaseOrder) 
   };
 }
 
-function buildSupplierCard(state: MockState, supplier: MockSupplier) {
+function buildSupplierCard(
+  state: MockState,
+  supplier: MockSupplier,
+): components["schemas"]["SupplierCard"] {
   const orders = state.purchaseOrders.filter((o) => o.supplier_id === supplier.id);
   return {
     id: supplier.id,
@@ -4398,7 +4418,10 @@ function buildSupplierCard(state: MockState, supplier: MockSupplier) {
 }
 
 /** `MetricPlaceholder` ZARFI YOKTUR — `0` gerçek bir cevaptır. */
-function buildPurchasingSummary(state: MockState, projectId: string | null) {
+function buildPurchasingSummary(
+  state: MockState,
+  projectId: string | null,
+): components["schemas"]["PurchasingSummaryResponse"] {
   const requests = projectId
     ? state.purchaseRequests.filter((r) => r.project_id === projectId)
     : state.purchaseRequests;
@@ -7178,12 +7201,13 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       if (q) rows = rows.filter((s) => s.name.toLocaleLowerCase("tr").includes(q));
       if (category) rows = rows.filter((s) => s.category === category);
       if (isActive !== null) rows = rows.filter((s) => s.is_active === (isActive === "true"));
-      return send(200, {
+      const supplierList: components["schemas"]["SupplierListResponse"] = {
         items: rows.slice(offset, offset + limit).map((s) => buildSupplierCard(state, s)),
         total: rows.length,
         limit,
         offset,
-      });
+      };
+      return send(200, supplierList);
     }
 
     if (method === "POST" && path === "/suppliers") {
@@ -7252,12 +7276,13 @@ export function startMockBackend(port: number): { server: Server; close: () => P
             (r.justification ?? "").toLocaleLowerCase("tr").includes(q),
         );
       }
-      return send(200, {
+      const requestList: components["schemas"]["PurchaseRequestListResponse"] = {
         items: rows.slice(offset, offset + limit).map(buildPurchaseRequestRow),
         total: rows.length,
         limit,
         offset,
-      });
+      };
+      return send(200, requestList);
     }
 
     if (method === "POST" && path === "/purchase-requests") {
@@ -7506,14 +7531,13 @@ export function startMockBackend(port: number): { server: Server; close: () => P
             supplierName(state, o.supplier_id).toLocaleLowerCase("tr").includes(q),
         );
       }
-      return send(200, {
-        items: rows
-          .slice(offset, offset + limit)
-          .map((o) => buildPurchaseOrderResponse(state, o)),
+      const orderList: components["schemas"]["PurchaseOrderListResponse"] = {
+        items: rows.slice(offset, offset + limit).map((o) => buildPurchaseOrderResponse(state, o)),
         total: rows.length,
         limit,
         offset,
-      });
+      };
+      return send(200, orderList);
     }
 
     if (method === "POST" && path === "/purchase-orders") {

@@ -16,6 +16,7 @@ import {
   useUpdatePurchaseRequest,
 } from "@/lib/api/hooks/usePurchaseRequestMutations";
 import type { MeResponse } from "@/lib/auth/types";
+import type { components } from "@/lib/api/schema";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
@@ -37,17 +38,45 @@ vi.mock("@/lib/api/hooks/usePurchaseRequestMutations", () => ({
   useSubmitPurchaseRequest: vi.fn(),
 }));
 
-/* eslint-disable @typescript-eslint/no-explicit-any -- test stub'ları */
-function queryStub(data: unknown, extra: Record<string, unknown> = {}): any {
-  return { data, isLoading: false, isError: false, error: null, ...extra };
+/**
+ * React Query sonucunun 20+ alanını fikstürde yeniden üretmemek için (E12 deseni).
+ * Çağıran hangi hook'un dönüşünü taklit ettiğini TİP PARAMETRESİYLE söyler.
+ */
+function queryStub<T>(
+  data: unknown,
+  extra: Partial<{ isLoading: boolean; isError: boolean; error: unknown }> = {},
+): T {
+  return {
+    data,
+    isLoading: extra.isLoading ?? false,
+    isError: extra.isError ?? false,
+    error: extra.error ?? null,
+  } as unknown as T;
 }
 
-const createdRequest = {
+/** Sunucunun döndürdüğü taslak talep — şemanın ZORUNLU alanları eksiksiz. */
+const createdRequest: components["schemas"]["PurchaseRequestResponse"] = {
   id: "pr-1",
   request_no: "SAT-2026-0101",
+  request_date: "2026-08-12",
+  priority: "normal",
+  project_id: "p-1",
+  site_id: null,
+  section_id: null,
+  needed_by: null,
+  justification: null,
   status: "draft",
+  quote_deadline: null,
+  approved_by_user_id: null,
+  approved_at: null,
+  rejected_at: null,
+  rejection_reason: null,
+  created_by_user_id: "u-1",
+  created_at: "2026-08-12T09:00:00Z",
+  estimated_total: "0.00",
+  can_delete: true,
   lines: [],
-} as any;
+};
 
 let createMutateAsync: ReturnType<typeof vi.fn>;
 let updateMutateAsync: ReturnType<typeof vi.fn>;
@@ -64,12 +93,19 @@ beforeEach(() => {
     isLoading: false,
   } as ReturnType<typeof useSession>);
   vi.mocked(useProjects).mockReturnValue(
-    queryStub({ items: [{ id: "p-1", name: "Güneşkent A-Blok" }], total: 1 }),
+    queryStub<ReturnType<typeof useProjects>>({
+      items: [{ id: "p-1", name: "Güneşkent A-Blok" }],
+      total: 1,
+    }),
   );
-  vi.mocked(useSites).mockReturnValue(queryStub({ items: [{ id: "st-1", name: "Kuzey Şantiye" }] }));
-  vi.mocked(useSiteSections).mockReturnValue(queryStub({ items: [] }));
+  vi.mocked(useSites).mockReturnValue(
+    queryStub<ReturnType<typeof useSites>>({ items: [{ id: "st-1", name: "Kuzey Şantiye" }] }),
+  );
+  vi.mocked(useSiteSections).mockReturnValue(
+    queryStub<ReturnType<typeof useSiteSections>>({ items: [] }),
+  );
   vi.mocked(useStockSummary).mockReturnValue(
-    queryStub({
+    queryStub<ReturnType<typeof useStockSummary>>({
       items: [
         {
           id: "s-1",
@@ -91,22 +127,24 @@ beforeEach(() => {
     }),
   );
   vi.mocked(useSuppliers).mockReturnValue(
-    queryStub({ items: [{ id: "sup-1", name: "Demirsan A.Ş." }], total: 1 }),
+    queryStub<ReturnType<typeof useSuppliers>>({
+      items: [{ id: "sup-1", name: "Demirsan A.Ş." }],
+      total: 1,
+    }),
   );
   vi.mocked(useCreatePurchaseRequest).mockReturnValue({
     mutateAsync: createMutateAsync,
     isPending: false,
-  } as any);
+  } as unknown as ReturnType<typeof useCreatePurchaseRequest>);
   vi.mocked(useUpdatePurchaseRequest).mockReturnValue({
     mutateAsync: updateMutateAsync,
     isPending: false,
-  } as any);
+  } as unknown as ReturnType<typeof useUpdatePurchaseRequest>);
   vi.mocked(useSubmitPurchaseRequest).mockReturnValue({
     mutateAsync: submitMutateAsync,
     isPending: false,
-  } as any);
+  } as unknown as ReturnType<typeof useSubmitPurchaseRequest>);
 });
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 /**
  * Alt eylem şeridindeki "Onaya Gönder" (FST 173). Mockup düğmeyi İKİ yerde
@@ -162,7 +200,10 @@ describe("FST · başlık ve talep numarası", () => {
 
   it("proje listesi 403 dönerse erişim reddedilir", () => {
     vi.mocked(useProjects).mockReturnValue(
-      queryStub(undefined, { isError: true, error: new BackendError(403, {}) }),
+      queryStub<ReturnType<typeof useProjects>>(undefined, {
+        isError: true,
+        error: new BackendError(403, {}),
+      }),
     );
 
     render(<PurchaseRequestForm />);
