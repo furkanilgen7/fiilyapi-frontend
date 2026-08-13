@@ -139,6 +139,16 @@ const ALLOWED_ROOTS = new Set([
   "purchase-requests",
   "purchase-orders",
   "purchasing",
+  // F-İK T1 — İK Belge & Sertifika sekmesinin ÖZET ucu (`GET /hr/documents/summary`)
+  // bu kökten geçer; ilk path segmenti "personnel" DEĞİL "hr"dir. Personelin
+  // KENDİ belge alt-kaynağı (`GET/POST /personnel/{id}/documents`,
+  // `PATCH/DELETE /personnel/documents/{id}`) MEVCUT "personnel" kökünden geçer —
+  // yani "hr" kökü tek başına düşerse belge sekmesi AÇILIR ama 5 KPI + tip
+  // dağılımı + süresi dolan/yaklaşan listeleri sonsuza dek boş kalır; en sinsi
+  // düşüş biçimi. Bu kök YALNIZ CANLIDA ısırır; jsdom testleri GÖRMEZ.
+  // (`GET /hr/leaves/summary` de bu kökten geçer; İzin Yönetimi mockup'ı
+  // olmadığı için bu dilimde EKRANA BAĞLANMAZ — kök hazır kalır.)
+  "hr",
 ]);
 
 // JSON/metin sayilan icerik tipleri: govde metne cozulup JSON olarak islenir.
