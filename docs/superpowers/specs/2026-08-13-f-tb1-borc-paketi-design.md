@@ -90,10 +90,14 @@ birleşimini (`"period_year" | "period_month"`) kabul eder — `8ac9369`teki
 `OmittablePersonnelField` emsali.
 
 **K4 — Kapsam yalnız `period_year` + `period_month`.** Aynı dosyalardaki `default_coefficient`
-(`?? "1"`) ve `description` (`?? ""`) bu dilimde **DEĞİŞTİRİLMEZ**: `default_coefficient`
-sunucu sözleşmesinde `null` değildir (`"1"` sunucunun kendi varsayılanıdır, uydurma değil),
-`description` ise `null`a normalize edilerek gönderilir (`.trim() ? … : null`) — ezme yoktur.
-**T4 sınıf araması bu kararı DOĞRULAYACAK; karşıt bulgu çıkarsa rapor edilir ve yönetime sorulur.**
+(`?? "1"`) ve `description` (`?? ""`) bu dilimde **DEĞİŞTİRİLMEZ**.
+⚠️ **Düzeltme (T4 bulgusu, yönetim doğruladı 2026-08-13):** `default_coefficient` *`Update`
+şemasında* **nullable'dır** — ilk gerekçe yanlış şemaya atıf veriyordu. Kararı ayakta tutan
+gerçek şudur: **`ProgressPaymentDetail` / `SubcontractorProgressPaymentDetail` YANIT şemasında
+`default_coefficient` non-nullable `string`tir**, yani tohumlamadaki `?? "1"` bir sunucu
+`null`ından **hiç tetiklenemez** → ezme yolu YOKTUR. `description` ise `null`a normalize
+edilerek gönderilir (`.trim() ? … : null`) — orada da ezme yoktur.
+**T4 sınıf araması bu kararı DOĞRULADI; başka kusur bulunmadı.**
 
 **K5 — `section_id` (taşeron) zaten doğrudur** (`detail?.section_id ?? null`) — `null` `null`
 kalır. Değiştirilmez; nüksü engelleyen bir gerileme testi eklenir.
