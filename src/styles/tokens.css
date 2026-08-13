@@ -122,6 +122,7 @@
   --radius-7: 7px;
   --radius-8: 8px;
   --radius-10: 10px;
+  --radius-12: 12px; /* F-SA T3: FST onay akışı kutusu (156) */
   --radius-14: 14px;
 
   /* F1: golgeler (§6.1 — sabitlenmis .06) */
@@ -478,6 +479,34 @@
   --min-height-document-upload-archive: 120px; /* kesikli yükleme kartı (159) */
   --space-document-folder-indent-archive: 24px; /* klasör girintisi (79) */
   --space-document-divider-y: 10px; /* proje kökleri arası ayırıcı (99) */
+
+  /* ── Satınalma · Tedarikçiler · TED (F-SA T2) ─────────────────────────────
+     Kanon: projedesign "Satınalma - Tedarikçiler.dc.html"; parantez içi
+     sayılar o dosyanın SATIR numaralarıdır. Kart künye kutusunun gradyanı
+     ızgarada DÖRTLÜ döner (tedarikçinin bir ÖZELLİĞİ değildir).
+     YENİ HEX YOKTUR: dört gradyanın sekiz ucu da mevcut token'larla birebir
+     karşılanıyor (primary/avatar-blue-end · success/success-light ·
+     warning/avatar-amber-end · accent-purple-grad-start/-end). */
+  --gradient-supplier-avatar-1: linear-gradient(
+    135deg,
+    var(--color-primary),
+    var(--color-avatar-blue-end)
+  ); /* 43 */
+  --gradient-supplier-avatar-2: linear-gradient(
+    135deg,
+    var(--color-success),
+    var(--color-success-light)
+  ); /* 64 */
+  --gradient-supplier-avatar-3: linear-gradient(
+    135deg,
+    var(--color-warning),
+    var(--color-avatar-amber-end)
+  ); /* 84 */
+  --gradient-supplier-avatar-4: linear-gradient(
+    135deg,
+    var(--color-accent-purple-grad-start),
+    var(--color-accent-purple-grad-end)
+  ); /* 105 */
 }
 
 @keyframes fadeUp {

@@ -11,7 +11,11 @@
  * gövdeye GİRMEZ (bkz. `build-body.ts` gövde anahtar testi).
  */
 
-import { multiplyDecimalStrings, sumDecimalStrings } from "@/lib/decimal";
+import {
+  multiplyDecimalStrings,
+  normalizeDecimalInput,
+  sumDecimalStrings,
+} from "@/lib/decimal";
 import type { StockEntryType, StockQuality } from "@/lib/api/hooks/useStockMutations";
 
 export interface StockEntryLineValues {
@@ -97,17 +101,11 @@ export function updateStockEntryLine(
 }
 
 /**
- * Kullanıcının yazdığı sayıyı ondalık string'e indirger: TR virgülü noktaya
- * çevrilir, boşluk atılır. Boş/anlamsız girdi `null` döner — çağıran
- * "hesaplama yok" dalını seçer, `NaN` ekrana KAÇMAZ.
+ * Ondalık girdi normalleştirici — KANON `@/lib/decimal`tedir (F-SA T3'te üç
+ * kopya tek kaynağa indirildi). Buradan yeniden dışa verilir ki bu klasörün
+ * çağıranları ve testleri ithalatlarını değiştirmesin.
  */
-export function normalizeDecimalInput(raw: string): string | null {
-  const trimmed = raw.trim().replace(",", ".");
-  if (!trimmed) return null;
-  if (!/^[-+]?\d*\.?\d*$/.test(trimmed)) return null;
-  if (!Number.isFinite(Number(trimmed))) return null;
-  return trimmed;
-}
+export { normalizeDecimalInput };
 
 /**
  * Satır tutarı (116) — **TÜREVDİR**: kolon da alan da yoktur, sunucuya

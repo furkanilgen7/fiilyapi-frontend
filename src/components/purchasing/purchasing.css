@@ -1,0 +1,687 @@
+/* SAT · Satınalma & Teklif + TED · Tedarikçiler (F-SA T2).
+   Kanon: projedesign "Satınalma & Teklif.dc.html" (prefix `sat`) ve
+   "Satınalma - Tedarikçiler.dc.html" (prefix `ted`); parantez içi sayılar
+   İLGİLİ dosyanın SATIR numaralarıdır. İki mockup'ın üst barı ve sol menüsü
+   UYGULAMA KABUĞUdur (F3 Topbar + Sidebar) — bu sayfalar onları YENİDEN
+   ÇİZMEZ. */
+.sat,
+.ted {
+  animation: var(--anim-fade-up); /* SAT 61 · TED 32 */
+}
+
+/* Başlık şeridi (SAT 62-66 · TED 33-37). */
+.sat__eyebrow {
+  font-size: 12px; /* SAT 62 */
+  color: var(--color-text-subtle);
+  margin-bottom: 6px;
+}
+.sat__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px; /* SAT 63 */
+}
+.sat__title {
+  font-size: 26px; /* SAT 64 */
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+}
+.sat__actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Görünür gerekçe/uyarı bantları — sessiz düşüş YOK (WORKFLOW §3). */
+.sat__notice {
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--color-warning-deep-text);
+  background: var(--color-orange-tint);
+  border: 1px solid var(--color-orange-tint-border);
+  border-radius: var(--radius-8);
+  padding: 8px 12px;
+}
+.sat__notice--muted {
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+.sat__filter-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* KPI şeridi (SAT 68-86): 4 eşit kart, karta özel değer rengi. */
+.sat-kpi {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3); /* 69 */
+  margin-bottom: 20px;
+}
+.sat-kpi__card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); /* 70 */
+  padding: var(--space-4); /* 70 — 16px */
+}
+.sat-kpi__label {
+  font-size: var(--text-small); /* 71 */
+  color: var(--color-text-subtle);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+.sat-kpi__value {
+  font-size: 24px; /* 72, 76, 84 */
+  font-weight: var(--weight-bold);
+}
+/* 80 · tek PARA kartı mono basar ve 22px'tir. */
+.sat-kpi__value--neutral {
+  font-size: 22px;
+  font-family: var(--font-mono);
+  color: var(--color-text);
+}
+.sat-kpi__value--warning {
+  color: var(--color-warning); /* 72 */
+}
+.sat-kpi__value--primary {
+  color: var(--color-primary); /* 76 */
+}
+.sat-kpi__value--danger {
+  color: var(--color-danger); /* 84 */
+}
+
+/* Sekme şeridi (SAT 89-94 · TED 27-30): tek kutu içinde dört bağlantı. */
+.sat-tabs {
+  display: inline-flex;
+  gap: var(--space-1); /* 89 */
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-10);
+  padding: var(--space-1);
+  margin-bottom: 16px;
+}
+.sat-tabs__tab {
+  padding: 7px 16px; /* 90-93 */
+  font-size: 13px;
+  font-weight: var(--weight-regular);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-7);
+  text-decoration: none;
+}
+.sat-tabs__tab:hover {
+  color: var(--color-text);
+}
+.sat-tabs__tab--active {
+  background: var(--color-nav-active-bg); /* 90 */
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+}
+.sat-tabs__tab:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Tablo kabuğu (SAT 97-158). */
+.sat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* 97 */
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.sat-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.sat-table__th {
+  padding: 11px 16px; /* 101-107 */
+  background: var(--color-surface-2); /* 100 */
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  white-space: nowrap;
+}
+.sat-table__th--left {
+  text-align: left;
+}
+.sat-table__th--right {
+  text-align: right;
+}
+.sat-table__th--center {
+  text-align: center;
+}
+.sat-row {
+  border-bottom: 1px solid var(--color-divider); /* 111 */
+  cursor: pointer;
+}
+.sat-row:last-child {
+  border-bottom: none; /* 147 — son satırda kenarlık yok */
+}
+.sat-row:hover {
+  background: var(--color-surface-2);
+}
+.sat-table__td {
+  padding: 13px 16px; /* 112-118 */
+  font-size: 13px;
+  color: var(--color-text-muted);
+  vertical-align: middle;
+}
+.sat-table__td--right {
+  text-align: right;
+}
+.sat-table__td--center {
+  text-align: center;
+}
+.sat-table__td--mono {
+  font-family: var(--font-mono); /* 112, 115, 116 */
+  font-size: 12px;
+}
+/* 112 · talep no bağlantısı satırın rengini korur (mockup düz metin çizer). */
+.sat-table__no-link {
+  color: inherit;
+  text-decoration: none;
+}
+.sat-table__no-link:hover {
+  color: var(--color-primary);
+}
+.sat-table__no-link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+.sat-table__name {
+  font-size: 13px; /* 113 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.sat-table__note {
+  font-size: var(--text-small); /* 113 */
+  color: var(--color-text-subtle);
+}
+/* 116 · "Tahmini Tutar" kalın ve koyudur. */
+.sat-table__amount {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+/* 115/117 · kaynağı olmayan sütunların hücresi: uydurma değer YOK. */
+.sat-pending-cell {
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+
+/* Durum rozeti (118 · 127 · 136 · 145 · 154) — ölçü mockup'tan, renkler
+   `Badge` varyantından; iki tonda primitive'den KOYU istenir. */
+.badge.sat-badge {
+  font-weight: var(--weight-semibold);
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+.badge.sat-badge--pending_approval {
+  color: var(--color-danger-strong); /* 118 */
+}
+.badge.sat-badge--quote_wait {
+  color: var(--color-warning-strong); /* 127, 145 */
+}
+
+/* Boş/yükleniyor/hata durumları — mockup'ın örnek satırları SABİT BASILMAZ. */
+.sat-empty {
+  padding: var(--space-8);
+  text-align: center;
+}
+.sat-empty__title {
+  font-size: 14px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.sat-empty__hint {
+  margin-top: var(--space-1);
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+
+/* ---------------------------------------------------------------------------
+   TED · Tedarikçiler (mockup "Satınalma - Tedarikçiler.dc.html").
+   Aşağıdaki sayılar O DOSYANIN satırlarıdır. Başlık şeridi/uyarı bantları
+   SAT'tan AYNEN gelir — kopyalanmaz.
+   -------------------------------------------------------------------------- */
+.ted-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 39 */
+  gap: 16px;
+}
+.ted-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* 41 */
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5); /* 41 — 20px */
+}
+.ted-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3); /* 42 */
+  margin-bottom: 14px;
+}
+/* 43 · 40×40 künye kutusu; gradyan ızgara ritmidir (tedarikçi özelliği DEĞİL). */
+.ted-card__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: var(--weight-bold);
+  color: var(--color-on-brand);
+  flex-shrink: 0;
+}
+.ted-card__avatar--1 {
+  background: var(--gradient-supplier-avatar-1); /* 43 */
+}
+.ted-card__avatar--2 {
+  background: var(--gradient-supplier-avatar-2); /* 64 */
+}
+.ted-card__avatar--3 {
+  background: var(--gradient-supplier-avatar-3); /* 84 */
+}
+.ted-card__avatar--4 {
+  background: var(--gradient-supplier-avatar-4); /* 105 */
+}
+.ted-card__identity {
+  min-width: 0;
+}
+.ted-card__name {
+  font-size: 15px; /* 44 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.ted-card__category {
+  font-size: var(--text-small); /* 44 */
+  color: var(--color-text-subtle);
+}
+.badge.ted-card__status {
+  margin-left: auto; /* 45 */
+  font-weight: var(--weight-semibold);
+  padding: 3px 9px;
+}
+/* 47-51 · üç künye satırı: etiket solda, değer sağda. */
+.ted-card__facts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.ted-card__fact {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.ted-card__fact-value {
+  color: var(--color-text);
+}
+.ted-card__fact-value--mono {
+  font-family: var(--font-mono); /* 48 */
+}
+/* 52-59 · alt istatistik kutusu. */
+.ted-card__stats {
+  background: var(--color-surface-2);
+  border-radius: var(--radius-8);
+  padding: 10px;
+}
+.ted-card__stat-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-1); /* 53 */
+}
+.ted-card__stat-label {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+.ted-card__stat-value {
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+}
+.ted-card__stat-empty {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+/* 55-58 · yıldızların yerinde pending: uydurma puan YOK. */
+.ted-card__rating {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  cursor: help;
+}
+.ted-card__rating-value {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+.ted-card__rating-hint {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+/* 125-128 · kesikli ekleme kartı. */
+.ted-add {
+  background: var(--color-surface);
+  border: 2px dashed var(--color-border-strong);
+  border-radius: var(--radius-14);
+  padding: var(--space-5);
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  font-family: inherit;
+}
+.ted-add:hover {
+  border-color: var(--color-primary);
+}
+.ted-add:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+.ted-add__plus {
+  font-size: 32px; /* 126 */
+  color: var(--color-border-strong);
+  line-height: 1;
+}
+.ted-add__label {
+  font-size: 13px; /* 127 */
+  font-weight: var(--weight-medium);
+  color: var(--color-text-subtle);
+}
+.ted-empty {
+  margin-top: var(--space-4);
+  font-size: 13px;
+  color: var(--color-text-subtle);
+}
+
+/* ---------------------------------------------------------------------------
+   SIP · Siparişler (mockup "Satınalma - Siparişler.dc.html").
+   Aşağıdaki sayılar O DOSYANIN satırlarıdır. Başlık şeridi, sekme şeridi, KPI
+   kartları ve tablo kabuğu SAT'tan AYNEN gelir — kopyalanmaz.
+   -------------------------------------------------------------------------- */
+/* 42 · dördüncü KPI kartının yeşil değeri (SAT'ta bu ton yok). */
+.sat-kpi__value--success {
+  color: var(--color-success);
+}
+/* 32 · başlığın altındaki ay + aktif sipariş sayısı. */
+.sip__subtitle {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+/* 58 · satır TIKLANABİLİR DEĞİLDİR (detay ekranı çizilmedi) — SAT'ın
+   `.sat-row` imleç/hover davranışı burada BİLEREK yoktur. */
+.sip-row {
+  border-bottom: 1px solid var(--color-divider); /* 58 */
+}
+.sip-row:last-child {
+  border-bottom: none; /* 113 — son satırda kenarlık yok */
+}
+.sip-order-no {
+  font-weight: var(--weight-semibold); /* 59 */
+  color: var(--color-primary);
+}
+/* 65 · teslimat tarihi rengi TEK istemci türevidir. */
+.sip-delivery {
+  font-size: 12px;
+}
+.sip-delivery--overdue {
+  font-weight: var(--weight-semibold);
+  color: var(--color-danger); /* 65 */
+}
+.sip-delivery--soon {
+  font-weight: var(--weight-semibold);
+  color: var(--color-warning); /* 76, 98, 120 */
+}
+.sip-delivery--neutral {
+  color: var(--color-text-muted); /* 87, 109 */
+}
+/* 66 · "Yolda" metni primitive'den KOYUdur. */
+.badge.sip-badge--in_transit {
+  color: var(--color-warning-strong);
+}
+
+/* ---------------------------------------------------------------------------
+   TEK · Teklif Karşılaştırması (mockup "Satınalma - Teklifler.dc.html").
+   Aşağıdaki sayılar O DOSYANIN satırlarıdır.
+   -------------------------------------------------------------------------- */
+.tek {
+  animation: var(--anim-fade-up); /* 33 */
+}
+.tek__back {
+  color: var(--color-primary); /* 34 */
+  text-decoration: none;
+}
+.tek__back:hover {
+  text-decoration: underline;
+}
+
+/* 44-50 · talep özeti şeridi: tek kart, esnek sütunlar. */
+.tek-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6); /* 44 — 24px */
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-12);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: 20px;
+}
+.tek-strip__label {
+  font-size: var(--text-xs); /* 45 */
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  margin-bottom: 3px;
+}
+.tek-strip__value {
+  font-size: 14px; /* 45 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+/* 53 · üç sütunlu kart ızgarası. */
+.tek-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.tek-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border); /* 77 */
+  border-radius: var(--radius-14);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+/* 56 · "EN İYİ FİYAT" kartı: kalın mavi kenarlık + mavi başlık. */
+.tek-card--best {
+  border: 2px solid var(--color-primary);
+  box-shadow: var(--shadow-card-primary);
+}
+.tek-card--selected {
+  border-color: var(--color-success);
+}
+.tek-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 10px 16px; /* 78 */
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.tek-card--best .tek-card__head {
+  background: var(--color-primary); /* 57 */
+  border-bottom-color: var(--color-primary);
+}
+.tek-card__supplier {
+  font-size: 12px; /* 58 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.tek-card--best .tek-card__supplier {
+  color: var(--color-on-brand);
+  font-weight: var(--weight-bold);
+}
+.tek-card__badges {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.tek-card__badge {
+  font-size: var(--text-xs); /* 59, 100 */
+  font-weight: var(--weight-semibold);
+  padding: 2px 8px;
+  border-radius: var(--radius-10);
+  white-space: nowrap;
+}
+/* 59 · SUNUCUNUN `is_best_price` damgası. */
+.tek-card__badge--best {
+  background: var(--color-on-brand-30);
+  color: var(--color-on-brand);
+}
+/* 100 · "EN HIZLI" — veri kaynağı yok; rozet YERİNDE ama SÖNÜK. */
+.tek-card__badge--pending {
+  background: var(--color-surface-muted);
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+.tek-card__body {
+  padding: var(--space-4); /* 61 */
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+/* 62-65 · iki kutulu sayı ızgarası. */
+.tek-card__figures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.tek-card__figure {
+  background: var(--color-surface-2);
+  border-radius: var(--radius-8);
+  padding: 10px;
+}
+.tek-card__figure-label {
+  font-size: var(--text-xs); /* 63 */
+  color: var(--color-text-subtle);
+}
+.tek-card__figure-value {
+  font-size: 16px; /* 63-64 */
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+  color: var(--color-text);
+}
+/* 63 · vurgulu kartta birim fiyat MAVİDİR. */
+.tek-card__figure-value--best {
+  color: var(--color-primary);
+}
+.tek-card__figure-unit {
+  font-size: var(--text-xs); /* 63 */
+  color: var(--color-text-subtle);
+}
+/* 66-71 · dört künye satırı. */
+.tek-card__facts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.tek-card__fact {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.tek-card__fact dt {
+  color: var(--color-text-muted);
+}
+.tek-card__fact dd {
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+/* 70 "Dahil" yeşil · 90 "Hariç (+₺8.000)" kehribar. */
+.tek-card__shipping--included {
+  color: var(--color-success);
+  font-weight: var(--weight-semibold);
+}
+.tek-card__shipping--excluded {
+  color: var(--color-warning);
+}
+/* 72/92 · kart düğmesi tam genişlik. */
+.btn.tek-card__action {
+  width: 100%;
+  margin-top: auto;
+}
+.tek-card__selected {
+  margin-top: auto;
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-success);
+}
+.tek-empty {
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: var(--color-text-subtle);
+}
+
+/* 119-127 · karşılaştırma özeti. */
+.tek-summary {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-12); /* 119 */
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4) var(--space-5);
+}
+.tek-summary__title {
+  font-size: 13px; /* 120 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--space-3);
+}
+.tek-summary__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 121 */
+  gap: 16px;
+}
+.tek-summary__label {
+  font-size: var(--text-small); /* 122 */
+  color: var(--color-text-subtle);
+  margin-bottom: 4px;
+}
+.tek-summary__value {
+  font-size: 16px; /* 122-125 */
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+  color: var(--color-text);
+}
+.tek-summary__value--success {
+  color: var(--color-success); /* 122, 125 */
+}
+.tek-summary__value--danger {
+  color: var(--color-danger); /* 123 */
+}
+.tek-summary__note {
+  font-size: var(--text-small); /* 122 */
+  color: var(--color-text-subtle);
+}
+.tek-summary__note--success {
+  color: var(--color-success); /* 125 */
+}

@@ -15,6 +15,7 @@ import type { DeedCondition, PaymentPlanType, SaleType } from "@/lib/api/hooks/u
 import type { InstallmentPaymentMethod } from "@/lib/api/hooks/useSaleInstallments";
 import type { CustomerType } from "@/lib/api/hooks/useCustomers";
 import type { SaleInstallmentResponse } from "@/lib/api/hooks/useSaleInstallments";
+import { normalizeDecimalInput } from "@/lib/decimal";
 
 /**
  * Alıcı seçimi (spec §1/DS "müşteri seçimi + yeni müşteri"). Mockup yalnız yeni
@@ -111,17 +112,11 @@ export function emptySaleFormValues(): SaleFormValues {
 }
 
 /**
- * Kullanıcının yazdığı sayıyı ondalık string'e indirger (TR virgülü noktaya).
- * Boş/anlamsız girdi `null` (stok-girişi `normalizeDecimalInput` deseni) —
- * `NaN` ekrana/gövdeye KAÇMAZ.
+ * Ondalık girdi normalleştirici — KANON `@/lib/decimal`tedir (F-SA T3'te üç
+ * kopya tek kaynağa indirildi). Buradan yeniden dışa verilir ki bu klasörün
+ * çağıranları ve testleri ithalatlarını değiştirmesin.
  */
-export function normalizeDecimalInput(raw: string): string | null {
-  const trimmed = raw.trim().replace(",", ".");
-  if (!trimmed) return null;
-  if (!/^[-+]?\d*\.?\d*$/.test(trimmed)) return null;
-  if (!Number.isFinite(Number(trimmed))) return null;
-  return trimmed;
-}
+export { normalizeDecimalInput };
 
 /**
  * "Bu Satıştan Kâr" ve maliyet gösterimi ünitenin `list_price` − indirim

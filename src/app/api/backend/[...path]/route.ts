@@ -110,6 +110,35 @@ const ALLOWED_ROOTS = new Set([
   // segmenti "projects" olduğu için MEVCUT kökten geçer; ayrı kök EKLENMEZ.
   "sales",
   "customers",
+  // F-SA T1 — Satınalma ekranları DÖRT kök birden ekler. Hiçbiri mevcut
+  // köklerin altında DEĞİLDİR (grep'le doğrulandı: dördü de listede YOKTU):
+  //   · `suppliers`         → `GET/POST /suppliers`,
+  //     `GET/PATCH /suppliers/{id}` — TED kart ızgarası + "Tedarikçi Ekle"
+  //     diyaloğu. DELETE ucu YOKTUR (SA kararı).
+  //   · `purchase-requests` → `GET/POST /purchase-requests`,
+  //     `GET/PATCH/DELETE /purchase-requests/{id}`,
+  //     `POST .../{id}/submit|approve|reject`,
+  //     `GET/POST .../{id}/quotes`, `GET .../{id}/quotes/export.xlsx`,
+  //     `PATCH/DELETE .../{id}/quotes/{quote_id}`,
+  //     `POST .../{id}/quotes/{quote_id}/select-and-order`.
+  //     Teklif uçlarının ilk segmenti "quotes" DEĞİL, talebin kökü olan
+  //     "purchase-requests"tir — ayrı bir "quotes" kökü EKLENMEZ.
+  //     `approve`/`reject` bu dilimde EKRANA BAĞLANMAZ (spec K6: Onay Kutusu
+  //     ayrı dilim) ama uçlar API'den kullanılabilir kalır.
+  //   · `purchase-orders`   → `GET/POST /purchase-orders`,
+  //     `GET/PATCH /purchase-orders/{id}` — SIP tablosu. Talebe bağlı sipariş
+  //     `select-and-order` üzerinden doğar, bu kökten DEĞİL.
+  //   · `purchasing`        → `GET /purchasing/summary`. KPI şeridini besleyen
+  //     tek uçtur ve ilk segmenti "purchasing"tir; "purchase-requests"in
+  //     ALTINDA DEĞİLDİR (`/purchasing/summary` ≠ `/purchase-requests/...`).
+  //     Yalnız bu kök düşerse SAT+SIP ekranları AÇILIR ama dört KPI kartı
+  //     sonsuza dek boş kalır — en sinsi düşüş biçimi.
+  // Bu dört kök eksikse satınalma modülü YALNIZ CANLIDA 404 alır; jsdom
+  // testleri bunu GÖRMEZ.
+  "suppliers",
+  "purchase-requests",
+  "purchase-orders",
+  "purchasing",
 ]);
 
 // JSON/metin sayilan icerik tipleri: govde metne cozulup JSON olarak islenir.

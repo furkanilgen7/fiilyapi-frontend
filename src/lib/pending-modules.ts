@@ -80,6 +80,64 @@ const MODULE_LABELS: Record<string, string> = {
   // matrisinin modül anahtarı olarak ayrıca yaşamaya devam eder).
   purchasing: "Satınalma modülüyle birlikte gelir",
   site_planning: "Şantiye planlama türeviyle birlikte gelir",
+  // F-SA T2 (SAT · Satınalma & Teklif tablosu) — `PurchaseRequestListRow`
+  // şemasının BİLEREK taşımadığı iki sütun. Şema açıklaması gerekçeyi
+  // kendi yazıyor: "SAT tablosunun bir satiri — KALEMLERI TASIMAZ … tasimak
+  // sayfadaki her satir icin ikinci bir sorgu (ve her kalem icin bir bakiye
+  // turevi) demek olurdu" (N+1). Satır yalnız `line_count` taşır.
+  //
+  // Üst kural (F-TH T2 `work_category`/`vat`/`progress`, F-P5 T5
+  // `subcontractor_rating` emsali): KOLON SİLİNMEZ, VERİ İCAT EDİLMEZ —
+  // hücre yerinde durur, "—" + bu gerekçe basılır.
+  //
+  // SAT 104/115 "Miktar": talebin kalemleri toplanmadan yazılamaz; toplam
+  // miktar zaten BİRİMSİZ olurdu ("15 Ton" + "500 m" toplanamaz). Değer
+  // talep detayında (`GET /purchase-requests/{id}`) kalem kalem görünür.
+  purchase_request_quantity: "Talep miktarı liste ucundan gelmiyor",
+  // SAT 106/117 "Teklif": teklifler talebin ALT KAYNAĞIDIR
+  // (`GET /purchase-requests/{id}/quotes`); sayacı listeye koymak satır
+  // başına ikinci bir sorgu demektir (aynı N+1 gerekçesi). Sayı teklif
+  // karşılaştırma ekranında gerçek kartlarla görünür.
+  purchase_request_quote_count: "Teklif sayısı liste ucundan gelmiyor",
+  // F-SA T2 (TED 55-58 · tedarikçi kartının yıldız satırı) —
+  // `subcontractor_rating` emsalinin İKİZİ: `SupplierCard`/`SupplierResponse`
+  // şemalarında puan alanı YOKTUR ve şema açıklaması bunu açıkça gerekçelendirir
+  // ("PUAN ALANI YOKTUR … yildizlarin giris yuzeyi hicbir ekranda yoktur ve
+  // uydurma bir puan gostermektense hic gostermemek dogrudur"). Yıldızlar
+  // İCAT EDİLMEZ; satır yerinde durur, "—" + bu gerekçe basılır.
+  supplier_rating: "Tedarikçi değerlendirme özelliği henüz yok",
+  // F-SA T3 (FST · Satın Alma Talebi formu) — mockup'ta ÇİZİLİ olup şemada
+  // KARŞILIĞI OLMAYAN üç yüzey. `PurchaseRequestCreate` açıklaması ikisini
+  // adıyla sayar: "FST'nin 'Teklif Istenecek Tedarikciler' listesi ve 'Odeme
+  // Vadesi Tercihi' burada YOKTUR". Üçü de yerinde devre dışı + görünür
+  // gerekçeyle basılır, gövdeye HİÇBİR anahtar eklemez.
+  purchase_quote_suppliers: "Teklif istenecek tedarikçi seçimi henüz saklanmıyor",
+  purchase_payment_terms: "Ödeme vadesi tercihi henüz saklanmıyor",
+  purchase_supplier_email: "E-posta bildirimleri henüz yok",
+  // F-SA T4 (TEK 100 · "EN HIZLI" rozeti) — `PurchaseQuoteCard` şemasının
+  // açıklaması gerekçeyi kendi yazıyor: "`delivery_time` serbest metindir
+  // ('Yarin sabah' ile '3 is gunu' karsilastirilamaz)" → sunucuda SIRALI bir
+  // veri kaynağı YOKTUR. Rozet mockup'ta ÇİZİLİ olduğu için SİLİNMEZ; her
+  // kartın rozet yuvasında devre dışı + gerekçeli durur (F-P5 T5
+  // `subcontractor_rating` emsali). "EN İYİ FİYAT" rozetinin İKİZİ DEĞİLDİR:
+  // o rozet sunucunun `is_best_price` damgasıdır ve gerçekten basılır.
+  quote_fastest_badge: "Teslim süresi sıralaması henüz yok (serbest metin)",
+  // F-SA T4 (SIP 67 "Detay" · 35 "+ Sipariş Oluştur") — spec §3 K4. İkisi de
+  // MOCKUP'TA VARDIR ama arkasındaki EKRAN çizilmemiştir; düğme silinmez,
+  // devre dışı + görünür gerekçeyle basılır (F-P5 `employer_contract_edit`
+  // emsali).
+  purchase_order_detail: "Sipariş detay ekranı henüz çizilmedi",
+  // `PurchaseOrderCreate` şeması bu kararı ayrıca destekler: gövdede
+  // `request_id` YOKTUR (talebe bağlı siparişin tek yolu `select-and-order`)
+  // ve KALEM TABLOSU da yoktur — çizilmemiş bir formu icat etmek, mockup'ın
+  // hiç göstermediği alanları uydurmak olurdu.
+  purchase_order_create: "Doğrudan sipariş formu henüz çizilmedi",
+  // F-SA T4 (SIP 48 "Malzeme" · 51 "Miktar") — `PurchaseOrderResponse` KALEM
+  // TAŞIMAZ: `PurchaseOrderCreate` açıklaması "KALEM DE YOKTUR … dogrudan
+  // siparis tek bir `total_amount` tasir" der. Kolonlar SİLİNMEZ, değer İCAT
+  // EDİLMEZ (F-TH `work_category` emsali) — "—" + bu gerekçe basılır.
+  purchase_order_material: "Sipariş kalemleri henüz saklanmıyor (sipariş tek tutar taşır)",
+  purchase_order_quantity: "Sipariş miktarı henüz saklanmıyor (sipariş tek tutar taşır)",
 };
 
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";

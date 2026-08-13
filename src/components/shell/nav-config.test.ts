@@ -100,6 +100,18 @@ describe("NAV_GROUPS — href geçerliliği (kırık link koruması)", () => {
     expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "static" });
   });
 
+  // F-SA T2: "Satınalma & Teklif" GERÇEK bir rotadır (`/satinalma`). Nav'a
+  // YENİ ÖĞE EKLENMEDİ — öğe (ve href'i) F3 kabuk canon'undan beri duruyordu,
+  // yalnız hedefi ComingSoon'dan gerçek sayfaya döndü. Bu test o dönüşü
+  // kilitler: rota klasörü silinirse kullanıcı sessizce "yakında" görmez.
+  it("'Satınalma & Teklif' /satinalma statik rotasına düşer (catch-all DEĞİL)", () => {
+    const item = NAV_GROUPS.flatMap((g) => g.items).find(
+      (i) => i.label === "Satınalma & Teklif",
+    );
+    expect(item?.href).toBe("/satinalma");
+    expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "static" });
+  });
+
   it("henüz yazılmamış 'Muhasebe' catch-all'a düşer (kontrol grubu)", () => {
     const item = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.label === "Muhasebe");
     expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "catch-all" });
