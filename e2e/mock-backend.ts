@@ -435,6 +435,21 @@ interface MockState {
   stockItems: MockStockItem[];
   stockEntries: MockStockEntry[];
   stockSeq: number;
+  // F-P8 T1 — Satış (müşteriler · ünite satışları · taksitler) + satışın
+  // dayandığı ünite/blok evreni. `saleSeq` yeni kimlikleri deterministik üretir
+  // (`Date.now()` YOK — baseline'lar sabit kalsın).
+  //
+  // 🔒 FİKSTÜR İZOLASYONU (F-ST/F-BC dersi): `p-1`in satışları BASELINE
+  // KAYNAĞIDIR (`satis-listesi` kadrajı) ve yazma akışları onlara DOKUNMAZ.
+  // Yazma spec'leri `p-2` (Villa B) üzerinde çalışır: `p-2` sıfır satışla
+  // başlar, kendi blok/üniteleri vardır ve `p-1`in liste/`totals`/KPI
+  // türevlerini hiçbir şekilde etkilemez.
+  customers: MockCustomer[];
+  unitBlocks: MockUnitBlock[];
+  units: MockUnit[];
+  unitSales: MockUnitSale[];
+  saleInstallments: MockSaleInstallment[];
+  saleSeq: number;
   permissions: Record<string, Record<string, { access_level: string; scope: string }>>;
   projectAccess: Record<string, { all_projects: boolean; project_ids: string[] }>;
   company: {
@@ -1988,6 +2003,12 @@ function seedState(): MockState {
       lines: e.lines.map((l) => ({ ...l })),
     })),
     stockSeq: 0,
+    customers: CUSTOMER_FIXTURES.map((c) => ({ ...c })),
+    unitBlocks: UNIT_BLOCK_FIXTURES.map((b) => ({ ...b })),
+    units: UNIT_FIXTURES.map((u) => ({ ...u })),
+    unitSales: UNIT_SALE_FIXTURES.map((s) => ({ ...s })),
+    saleInstallments: SALE_INSTALLMENT_FIXTURES.map((i) => ({ ...i })),
+    saleSeq: 0,
     permissions,
     projectAccess: {
       "u-1": { all_projects: true, project_ids: [] },
@@ -3242,6 +3263,671 @@ export const EMPTY_STOCK_SUMMARY_RESPONSE = {
     items_without_price: 0,
     pending_orders: STOCK_PENDING_ORDERS,
   },
+};
+
+// --- F-P8 T1 · Satış fikstürleri -------------------------------------------
+//
+// ŞEMA SENKRONU (F-P5 dersi): aşağıdaki gövdeler `openapi/openapi.json`
+// şemalarıyla BİREBİRDİR (`CustomerResponse` · `UnitSaleResponse` ·
+// `UnitSaleTotals` · `SalesSummaryResponse` · `SalePlanResponse` ·
+// `SaleInstallmentResponse` · `UnitListResponse`). Uydurma alan EKLENMEZ.
+//
+// TÜREV KURALI (P8 backend kararları): `paid_amount` · `remaining_amount` ·
+// `installment_*` sayaçları · gecikme faizi · "rezervasyon süresi doldu" ·
+// KPI'ların tamamı KOLON DEĞİLDİR, **yalnız burada (sunucu tarafında)**
+// hesaplanır. İstemci hiçbirini yeniden üretmez — bu mock o sözleşmenin
+// e2e kapısıdır.
+//
+// 🔒 FİKSTÜR İZOLASYONU (F-ST/F-BC dersi):
+//   · `p-1` (Kule A) → BASELINE KAYNAĞI. Üç satış (`sl-1` aktif · `sl-2` tapu
+//     devredilmiş · `sl-3` süresi dolmuş rezervasyon) + altı ünite. Yazma
+//     spec'leri buraya DOKUNMAZ; dokunursa `satis-listesi` kadrajı sessizce
+//     kırılır.
+//   · `p-2` (Villa B) → YAZMA ALANI. Sıfır satışla başlar, kendi bloğu ve üç
+//     boş ünitesi vardır. Buraya yazılan satış `p-1`in liste/`totals`/KPI
+//     türevlerinin HİÇBİRİNİ etkilemez.
+// Boş liste kadrajı (`satis-listesi-bos`) paylaşılan durumu BOŞALTMAZ —
+// F-PL/F-ST emsali: görsel spec `page.route` ile `EMPTY_SALES_*` sabitlerini
+// döndürür.
+
+/** Mock'un "bugün"ü — tüm gecikme/vade türevleri buna göre hesaplanır. */
+const SALES_TODAY = "2026-08-12";
+
+interface MockCustomer {
+  id: string;
+  customer_type: "person" | "company";
+  name: string;
+  national_id: string | null;
+  tax_number: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+}
+
+/**
+ * Blok — `BlockResponse` şemasının satış ekranlarının ihtiyaç duyduğu alt
+ * kümesi. `site_id`/`site_name` şemada ZORUNLUDUR; `p-2`nin bloğu kendi
+ * şantiye künyesini taşır (`state.sites` bu yüzey tarafından okunmaz).
+ */
+interface MockUnitBlock {
+  id: string;
+  project_id: string;
+  name: string;
+  site_id: string;
+  site_name: string;
+  sort_order: number;
+}
+
+interface MockUnit {
+  id: string;
+  project_id: string;
+  block_id: string;
+  unit_no: string;
+  unit_kind: "apartment" | "shop" | "office" | "warehouse" | "parking";
+  layout: string | null;
+  gross_area_m2: string | null;
+  net_area_m2: string | null;
+  list_price: string | null;
+  owner_side: "contractor" | "landowner" | null;
+  floor: string | null;
+  min_sale_price: string | null;
+  vat_rate: string | null;
+  /** SATIŞTAN TÜREVDİR — `POST /projects/{id}/sales` bunu sunucuda günceller. */
+  sales_status: "listed" | "reserved" | "sold" | "closed";
+  sort_order: number;
+}
+
+interface MockUnitSale {
+  id: string;
+  project_id: string;
+  unit_id: string;
+  customer_id: string;
+  sale_type: "sale" | "reservation" | "pre_contract";
+  status: "reservation" | "active" | "deed_transferred" | "cancelled";
+  list_price_snapshot: string | null;
+  discount_amount: string | null;
+  sale_price: string;
+  vat_pct: string | null;
+  advisor_user_id: string | null;
+  reservation_deposit: string | null;
+  reservation_due_date: string | null;
+  deed_condition: "full_payment" | "after_down_payment" | "at_contract" | null;
+  planned_deed_date: string | null;
+  delivery_date: string | null;
+  has_condominium_easement: boolean;
+  has_mortgage: boolean;
+  late_fee_monthly_pct: string | null;
+  payment_plan_type: "cash" | "down_payment_installments" | "bank_loan" | "barter" | null;
+  down_payment: string | null;
+  installment_count: number | null;
+  first_installment_date: string | null;
+  term_interest_pct: string | null;
+}
+
+interface MockSaleInstallment {
+  id: string;
+  sale_id: string;
+  sequence_no: number;
+  label: string;
+  due_date: string;
+  amount: string;
+  payment_method: "transfer" | "cash" | "cheque" | "auto_payment" | null;
+  paid_amount: string;
+  paid_at: string | null;
+}
+
+const CUSTOMER_FIXTURES: MockCustomer[] = [
+  { id: "cus-1", customer_type: "person", name: "Ayşe Yılmaz", national_id: "12345678901", tax_number: null, phone: "0532 111 22 33", email: "ayse@ornek.com", address: "Çankaya / Ankara" },
+  { id: "cus-2", customer_type: "company", name: "Demir İnşaat Ltd. Şti.", national_id: null, tax_number: "1234567890", phone: "0312 444 55 66", email: "info@demirinsaat.com", address: "Ostim / Ankara" },
+  { id: "cus-3", customer_type: "person", name: "Murat Kaya", national_id: "98765432109", tax_number: null, phone: "0533 777 88 99", email: null, address: null },
+];
+
+const UNIT_BLOCK_FIXTURES: MockUnitBlock[] = [
+  { id: "blk-1", project_id: "p-1", name: "A Blok", site_id: "s-1", site_name: "A-Blok Şantiyesi", sort_order: 0 },
+  // 🔒 YAZMA ALANI — `p-2`nin bloğu (kendi şantiye künyesiyle).
+  { id: "blk-2", project_id: "p-2", name: "Villa Blok", site_id: "s-p2-1", site_name: "Villa B Şantiyesi", sort_order: 0 },
+];
+
+/**
+ * `u-6` bilerek `owner_side: "landowner"` taşır: satış denemesinin 422 aldığı
+ * (P8 arsa sahibi kapısı) e2e kanıtının fikstürüdür.
+ */
+const UNIT_FIXTURES: MockUnit[] = [
+  { id: "u-1", project_id: "p-1", block_id: "blk-1", unit_no: "1", unit_kind: "apartment", layout: "3+1", gross_area_m2: "145.00", net_area_m2: "120.00", list_price: "2500000.00", owner_side: "contractor", floor: "1", min_sale_price: "2300000.00", vat_rate: "1.00", sales_status: "sold", sort_order: 0 },
+  { id: "u-2", project_id: "p-1", block_id: "blk-1", unit_no: "2", unit_kind: "apartment", layout: "4+1", gross_area_m2: "180.00", net_area_m2: "150.00", list_price: "3200000.00", owner_side: "contractor", floor: "2", min_sale_price: "3000000.00", vat_rate: "1.00", sales_status: "sold", sort_order: 1 },
+  { id: "u-3", project_id: "p-1", block_id: "blk-1", unit_no: "3", unit_kind: "apartment", layout: "2+1", gross_area_m2: "110.00", net_area_m2: "92.00", list_price: "1900000.00", owner_side: "contractor", floor: "3", min_sale_price: null, vat_rate: "1.00", sales_status: "reserved", sort_order: 2 },
+  { id: "u-4", project_id: "p-1", block_id: "blk-1", unit_no: "4", unit_kind: "apartment", layout: "3+1", gross_area_m2: "145.00", net_area_m2: "120.00", list_price: "2550000.00", owner_side: "contractor", floor: "4", min_sale_price: "2350000.00", vat_rate: "1.00", sales_status: "listed", sort_order: 3 },
+  { id: "u-5", project_id: "p-1", block_id: "blk-1", unit_no: "5", unit_kind: "shop", layout: null, gross_area_m2: "85.00", net_area_m2: "78.00", list_price: "4100000.00", owner_side: "contractor", floor: "Zemin", min_sale_price: null, vat_rate: "20.00", sales_status: "listed", sort_order: 4 },
+  { id: "u-6", project_id: "p-1", block_id: "blk-1", unit_no: "6", unit_kind: "apartment", layout: "2+1", gross_area_m2: "110.00", net_area_m2: "92.00", list_price: "1950000.00", owner_side: "landowner", floor: "5", min_sale_price: null, vat_rate: "1.00", sales_status: "listed", sort_order: 5 },
+  // 🔒 YAZMA ALANI — üçü de boş, hiçbiri baseline kadrajına girmez.
+  { id: "u-p2-1", project_id: "p-2", block_id: "blk-2", unit_no: "V1", unit_kind: "apartment", layout: "5+2", gross_area_m2: "320.00", net_area_m2: "270.00", list_price: "8400000.00", owner_side: "contractor", floor: "Müstakil", min_sale_price: null, vat_rate: "1.00", sales_status: "listed", sort_order: 0 },
+  { id: "u-p2-2", project_id: "p-2", block_id: "blk-2", unit_no: "V2", unit_kind: "apartment", layout: "5+2", gross_area_m2: "320.00", net_area_m2: "270.00", list_price: "8400000.00", owner_side: "contractor", floor: "Müstakil", min_sale_price: null, vat_rate: "1.00", sales_status: "listed", sort_order: 1 },
+  { id: "u-p2-3", project_id: "p-2", block_id: "blk-2", unit_no: "V3", unit_kind: "apartment", layout: "6+2", gross_area_m2: "380.00", net_area_m2: "320.00", list_price: "9800000.00", owner_side: "contractor", floor: "Müstakil", min_sale_price: null, vat_rate: "1.00", sales_status: "listed", sort_order: 2 },
+];
+
+const UNIT_SALE_FIXTURES: MockUnitSale[] = [
+  {
+    id: "sl-1", project_id: "p-1", unit_id: "u-1", customer_id: "cus-1", sale_type: "sale",
+    status: "active", list_price_snapshot: "2500000.00", discount_amount: "100000.00",
+    sale_price: "2400000.00", vat_pct: "1.00", advisor_user_id: "u-1", reservation_deposit: null,
+    reservation_due_date: null, deed_condition: "full_payment", planned_deed_date: "2026-12-01",
+    delivery_date: "2026-11-01", has_condominium_easement: true, has_mortgage: false,
+    late_fee_monthly_pct: "1.50", payment_plan_type: "down_payment_installments",
+    down_payment: "600000.00", installment_count: 3, first_installment_date: "2026-07-05",
+    term_interest_pct: "0.80",
+  },
+  {
+    id: "sl-2", project_id: "p-1", unit_id: "u-2", customer_id: "cus-2", sale_type: "sale",
+    status: "deed_transferred", list_price_snapshot: "3200000.00", discount_amount: "100000.00",
+    sale_price: "3100000.00", vat_pct: "1.00", advisor_user_id: null, reservation_deposit: null,
+    reservation_due_date: null, deed_condition: "full_payment", planned_deed_date: "2026-04-01",
+    delivery_date: "2026-04-01", has_condominium_easement: true, has_mortgage: false,
+    late_fee_monthly_pct: null, payment_plan_type: "cash", down_payment: null,
+    installment_count: null, first_installment_date: null, term_interest_pct: null,
+  },
+  {
+    // Vadesi GEÇMİŞ rezervasyon: `expired_reservations` türevinin kanıtı.
+    // P8 kararı — otomatik iptal YOKTUR, yalnız gösterimdir.
+    id: "sl-3", project_id: "p-1", unit_id: "u-3", customer_id: "cus-3", sale_type: "reservation",
+    status: "reservation", list_price_snapshot: "1900000.00", discount_amount: null,
+    sale_price: "1850000.00", vat_pct: "1.00", advisor_user_id: null,
+    reservation_deposit: "50000.00", reservation_due_date: "2026-07-31", deed_condition: null,
+    planned_deed_date: null, delivery_date: null, has_condominium_easement: false,
+    has_mortgage: false, late_fee_monthly_pct: null, payment_plan_type: null, down_payment: null,
+    installment_count: null, first_installment_date: null, term_interest_pct: null,
+  },
+];
+
+/**
+ * `sl-1`in planı: Σ = 2.400.000 = `sale_price` (P8 kuralı; `term_interest_pct`
+ * planı ŞİŞİRMEZ). Peşinat ödenmiş, 1. taksit VADESİ GEÇMİŞ (gecikme faizi
+ * türevinin kanıtı), 2-3. taksitler bekliyor.
+ * `sl-2` peşin ödenmiştir; `sl-3` (rezervasyon) planSIZDIR.
+ */
+const SALE_INSTALLMENT_FIXTURES: MockSaleInstallment[] = [
+  { id: "si-1", sale_id: "sl-1", sequence_no: 1, label: "Peşinat", due_date: "2026-06-05", amount: "600000.00", payment_method: "transfer", paid_amount: "600000.00", paid_at: "2026-06-05T10:00:00Z" },
+  { id: "si-2", sale_id: "sl-1", sequence_no: 2, label: "1. Taksit", due_date: "2026-07-05", amount: "600000.00", payment_method: "transfer", paid_amount: "0.00", paid_at: null },
+  { id: "si-3", sale_id: "sl-1", sequence_no: 3, label: "2. Taksit", due_date: "2026-09-05", amount: "600000.00", payment_method: "transfer", paid_amount: "0.00", paid_at: null },
+  { id: "si-4", sale_id: "sl-1", sequence_no: 4, label: "3. Taksit", due_date: "2026-10-05", amount: "600000.00", payment_method: "cheque", paid_amount: "0.00", paid_at: null },
+  { id: "si-5", sale_id: "sl-2", sequence_no: 1, label: "Peşin Ödeme", due_date: "2026-03-15", amount: "3100000.00", payment_method: "transfer", paid_amount: "3100000.00", paid_at: "2026-03-15T12:00:00Z" },
+];
+
+/** Gün farkı (UTC, saat dilimi kaymasız) — gecikme türevlerinin tek kaynağı. */
+function daysBetween(fromIso: string, toIso: string): number {
+  const MS_PER_DAY = 86_400_000;
+  return Math.round((Date.parse(toIso) - Date.parse(fromIso)) / MS_PER_DAY);
+}
+
+function saleInstallmentsOf(state: MockState, saleId: string): MockSaleInstallment[] {
+  return state.saleInstallments
+    .filter((i) => i.sale_id === saleId)
+    .sort((a, b) => a.sequence_no - b.sequence_no);
+}
+
+/**
+ * Gecikme faizi — P8 kararı gereği **yalnız GÖSTERİM TÜREVİ**: tahakkuk
+ * edilmez, hiçbir yere yazılmaz. Aylık oran × gecikme ayı × kalan tutar.
+ */
+function installmentLateFee(sale: MockUnitSale, installment: MockSaleInstallment): number {
+  const remaining = Number(installment.amount) - Number(installment.paid_amount);
+  if (remaining <= 0) return 0;
+  const daysOverdue = daysBetween(installment.due_date, SALES_TODAY);
+  if (daysOverdue <= 0) return 0;
+  const monthlyPct = Number(sale.late_fee_monthly_pct ?? 0);
+  return (remaining * monthlyPct * daysOverdue) / (100 * 30);
+}
+
+function buildSaleInstallmentRead(sale: MockUnitSale, installment: MockSaleInstallment) {
+  const remaining = Number(installment.amount) - Number(installment.paid_amount);
+  return {
+    id: installment.id,
+    sale_id: installment.sale_id,
+    sequence_no: installment.sequence_no,
+    label: installment.label,
+    due_date: installment.due_date,
+    amount: installment.amount,
+    payment_method: installment.payment_method,
+    paid_amount: installment.paid_amount,
+    paid_at: installment.paid_at,
+    remaining_amount: money2(remaining),
+    is_overdue: remaining > 0 && daysBetween(installment.due_date, SALES_TODAY) > 0,
+  };
+}
+
+/** `SalePlanResponse` — toplamlar SUNUCUDAN; istemci `items`ten toplamaz. */
+function buildSalePlanResponse(state: MockState, sale: MockUnitSale) {
+  const items = saleInstallmentsOf(state, sale.id);
+  const total = items.reduce((sum, i) => sum + Number(i.amount), 0);
+  const paid = items.reduce((sum, i) => sum + Number(i.paid_amount), 0);
+  // Vade farkı BİLGİ alanıdır — planı ŞİŞİRMEZ (Σ = sale_price korunur).
+  const termInterest = (Number(sale.sale_price) * Number(sale.term_interest_pct ?? 0)) / 100;
+  return {
+    sale_id: sale.id,
+    sale_price: sale.sale_price,
+    total_amount: money2(total),
+    paid_amount: money2(paid),
+    term_interest_amount: money2(termInterest),
+    items: items.map((i) => buildSaleInstallmentRead(sale, i)),
+  };
+}
+
+function buildUnitSaleResponse(state: MockState, sale: MockUnitSale) {
+  const unit = state.units.find((u) => u.id === sale.unit_id);
+  const block = state.unitBlocks.find((b) => b.id === unit?.block_id);
+  const customer = state.customers.find((c) => c.id === sale.customer_id);
+  const advisor = state.users.find((u) => u.id === sale.advisor_user_id);
+  const items = saleInstallmentsOf(state, sale.id);
+  const paid = items.reduce((sum, i) => sum + Number(i.paid_amount), 0);
+  const overdue = items.filter(
+    (i) =>
+      Number(i.amount) - Number(i.paid_amount) > 0 && daysBetween(i.due_date, SALES_TODAY) > 0,
+  );
+  const blockName = block?.name ?? "";
+  const unitNo = unit?.unit_no ?? "";
+  return {
+    id: sale.id,
+    project_id: sale.project_id,
+    unit_id: sale.unit_id,
+    customer_id: sale.customer_id,
+    sale_type: sale.sale_type,
+    status: sale.status,
+    block_name: blockName,
+    unit_no: unitNo,
+    unit_label: `${blockName} · ${unitNo}`,
+    customer_name: customer?.name ?? "",
+    customer_type: customer?.customer_type ?? "person",
+    customer_national_id: customer?.national_id ?? null,
+    customer_tax_number: customer?.tax_number ?? null,
+    list_price_snapshot: sale.list_price_snapshot,
+    discount_amount: sale.discount_amount,
+    sale_price: sale.sale_price,
+    vat_pct: sale.vat_pct,
+    advisor_user_id: sale.advisor_user_id,
+    advisor_name: advisor?.full_name ?? null,
+    reservation_deposit: sale.reservation_deposit,
+    reservation_due_date: sale.reservation_due_date,
+    deed_condition: sale.deed_condition,
+    planned_deed_date: sale.planned_deed_date,
+    delivery_date: sale.delivery_date,
+    has_condominium_easement: sale.has_condominium_easement,
+    has_mortgage: sale.has_mortgage,
+    late_fee_monthly_pct: sale.late_fee_monthly_pct,
+    payment_plan_type: sale.payment_plan_type,
+    down_payment: sale.down_payment,
+    installment_count: sale.installment_count,
+    first_installment_date: sale.first_installment_date,
+    term_interest_pct: sale.term_interest_pct,
+    paid_amount: money2(paid),
+    remaining_amount: money2(Number(sale.sale_price) - paid),
+    installment_total: items.length,
+    installment_paid_count: items.filter((i) => Number(i.paid_amount) >= Number(i.amount)).length,
+    overdue_installment_count: overdue.length,
+    // P10 "Bu Satıştan Kâr" — maliyet/kâr GERÇEKTİR (zarf `available: true`).
+    unit_cost: METRIC_VALUE(money2(Number(sale.sale_price) * 0.62)),
+    sale_profit: METRIC_VALUE(money2(Number(sale.sale_price) * 0.38)),
+    pending_modules: [],
+  };
+}
+
+/** Satışları listeler — `cancelled` kayıtlar da döner (durum süzgeci İSTEMCİDE). */
+function buildUnitSaleListResponse(state: MockState, projectId: string) {
+  const sales = state.unitSales.filter((s) => s.project_id === projectId);
+  const items = sales.map((s) => buildUnitSaleResponse(state, s));
+  const active = items.filter((i) => i.status !== "cancelled");
+  const salePriceTotal = active.reduce((sum, i) => sum + Number(i.sale_price), 0);
+  const paidTotal = active.reduce((sum, i) => sum + Number(i.paid_amount), 0);
+  return {
+    totals: {
+      count: active.length,
+      sale_price_total: money2(salePriceTotal),
+      paid_total: money2(paidTotal),
+      remaining_total: money2(salePriceTotal - paidTotal),
+    },
+    items,
+  };
+}
+
+/** `SalesSummaryResponse` — SY'nin beş KPI kutusunun TEK kaynağı. */
+function buildSalesSummaryResponse(state: MockState, projectId: string) {
+  const sales = state.unitSales.filter(
+    (s) => s.project_id === projectId && s.status !== "cancelled",
+  );
+  const sold = sales.filter((s) => s.status === "active" || s.status === "deed_transferred");
+  const reserved = sales.filter((s) => s.status === "reservation");
+  const expired = reserved.filter(
+    (s) => s.reservation_due_date !== null && s.reservation_due_date < SALES_TODAY,
+  );
+  const availableUnits = state.units.filter(
+    (u) => u.project_id === projectId && u.sales_status === "listed",
+  );
+
+  const contracted = sales.reduce((sum, s) => sum + Number(s.sale_price), 0);
+  const collected = sales.reduce(
+    (sum, s) =>
+      sum + saleInstallmentsOf(state, s.id).reduce((v, i) => v + Number(i.paid_amount), 0),
+    0,
+  );
+
+  const overdueRows = sales.flatMap((sale) =>
+    saleInstallmentsOf(state, sale.id)
+      .filter(
+        (i) =>
+          Number(i.amount) - Number(i.paid_amount) > 0 &&
+          daysBetween(i.due_date, SALES_TODAY) > 0,
+      )
+      .map((i) => ({ sale, installment: i })),
+  );
+
+  const upcoming = sales
+    .flatMap((sale) =>
+      saleInstallmentsOf(state, sale.id)
+        .filter((i) => Number(i.amount) - Number(i.paid_amount) > 0)
+        .map((i) => ({ sale, installment: i })),
+    )
+    .sort((a, b) => a.installment.due_date.localeCompare(b.installment.due_date))
+    .slice(0, 5);
+
+  return {
+    project_id: projectId,
+    as_of: SALES_TODAY,
+    sold: {
+      count: sold.length,
+      deed_transferred_count: sold.filter((s) => s.status === "deed_transferred").length,
+      amount: money2(sold.reduce((sum, s) => sum + Number(s.sale_price), 0)),
+    },
+    reserved: {
+      count: reserved.length,
+      expired_count: expired.length,
+      amount: money2(reserved.reduce((sum, s) => sum + Number(s.sale_price), 0)),
+    },
+    available_units: {
+      count: availableUnits.length,
+      list_price_total: money2(
+        availableUnits.reduce((sum, u) => sum + Number(u.list_price ?? 0), 0),
+      ),
+    },
+    collection: {
+      collected_amount: money2(collected),
+      contracted_amount: money2(contracted),
+      // Yüzde SUNUCUDAN; sözleşme tutarı 0 iken `null` (istemci bölme yapmaz).
+      collection_pct: contracted > 0 ? money2((collected / contracted) * 100) : null,
+    },
+    overdue: {
+      installment_count: overdueRows.length,
+      amount: money2(
+        overdueRows.reduce(
+          (sum, r) => sum + Number(r.installment.amount) - Number(r.installment.paid_amount),
+          0,
+        ),
+      ),
+      late_fee_amount: money2(
+        overdueRows.reduce((sum, r) => sum + installmentLateFee(r.sale, r.installment), 0),
+      ),
+    },
+    upcoming_collections: upcoming.map(({ sale, installment }) => {
+      const read = buildUnitSaleResponse(state, sale);
+      const daysOverdue = Math.max(0, daysBetween(installment.due_date, SALES_TODAY));
+      return {
+        installment_id: installment.id,
+        sale_id: sale.id,
+        unit_label: read.unit_label,
+        customer_name: read.customer_name,
+        sequence_no: installment.sequence_no,
+        label: installment.label,
+        due_date: installment.due_date,
+        amount: installment.amount,
+        paid_amount: installment.paid_amount,
+        remaining_amount: money2(Number(installment.amount) - Number(installment.paid_amount)),
+        is_overdue: daysOverdue > 0,
+        days_overdue: daysOverdue,
+        late_fee_amount: money2(installmentLateFee(sale, installment)),
+      };
+    }),
+    expired_reservations: expired.map((sale) => {
+      const read = buildUnitSaleResponse(state, sale);
+      return {
+        sale_id: sale.id,
+        unit_label: read.unit_label,
+        customer_name: read.customer_name,
+        reservation_due_date: sale.reservation_due_date as string,
+        days_expired: daysBetween(sale.reservation_due_date as string, SALES_TODAY),
+        reservation_deposit: sale.reservation_deposit,
+      };
+    }),
+    pending_modules: [],
+  };
+}
+
+function unitKindBreakdown(units: MockUnit[]) {
+  const counts = { apartment: 0, shop: 0, office: 0, warehouse: 0, parking: 0 };
+  for (const unit of units) counts[unit.unit_kind] += 1;
+  return { ...counts, total: units.length };
+}
+
+function buildUnitResponse(state: MockState, unit: MockUnit) {
+  const block = state.unitBlocks.find((b) => b.id === unit.block_id);
+  const sale = state.unitSales.find(
+    (s) => s.unit_id === unit.id && s.status !== "cancelled",
+  );
+  const customer = state.customers.find((c) => c.id === sale?.customer_id);
+  const gross = Number(unit.gross_area_m2 ?? 0);
+  const listPrice = Number(unit.list_price ?? 0);
+  return {
+    id: unit.id,
+    block_id: unit.block_id,
+    block_name: block?.name ?? "",
+    unit_no: unit.unit_no,
+    unit_kind: unit.unit_kind,
+    layout: unit.layout,
+    gross_area_m2: unit.gross_area_m2,
+    net_area_m2: unit.net_area_m2,
+    list_price: unit.list_price,
+    appraisal_value: null,
+    owner_side: unit.owner_side,
+    sort_order: unit.sort_order,
+    floor: unit.floor,
+    facing: null,
+    balcony_area_m2: null,
+    bathroom_count: null,
+    parking_right: null,
+    min_sale_price: unit.min_sale_price,
+    vat_rate: unit.vat_rate,
+    sales_status: unit.sales_status,
+    sale_price: sale?.sale_price ?? null,
+    buyer_name: customer?.name ?? null,
+    shareholder_id: null,
+    shareholder_name: null,
+    unit_cost: METRIC_VALUE(money2(listPrice * 0.62)),
+    expected_profit: METRIC_VALUE(money2(listPrice * 0.38)),
+    label: `${block?.name ?? ""} · ${unit.unit_no}`,
+    unit_price_per_m2: gross > 0 ? money2(listPrice / gross) : null,
+    is_landowner_share: unit.owner_side === "landowner",
+  };
+}
+
+/** `UnitListResponse` — DS'nin ünite seçicisinin kaynağı (bloklara gruplu). */
+function buildUnitListResponse(state: MockState, projectId: string) {
+  const units = state.units
+    .filter((u) => u.project_id === projectId)
+    .sort((a, b) => a.sort_order - b.sort_order);
+  const blocks = state.unitBlocks
+    .filter((b) => b.project_id === projectId)
+    .sort((a, b) => a.sort_order - b.sort_order);
+
+  const totalListPrice = units.reduce((sum, u) => sum + Number(u.list_price ?? 0), 0);
+  const totalGross = units.reduce((sum, u) => sum + Number(u.gross_area_m2 ?? 0), 0);
+  const byStatus = { listed: 0, reserved: 0, sold: 0, closed: 0 };
+  for (const unit of units) byStatus[unit.sales_status] += 1;
+  const salesRevenue = state.unitSales
+    .filter((s) => s.project_id === projectId && s.status !== "cancelled")
+    .reduce((sum, s) => sum + Number(s.sale_price), 0);
+  const soldCount = byStatus.sold + byStatus.closed;
+
+  return {
+    totals: {
+      counts: unitKindBreakdown(units),
+      value_basis: "list_price",
+      total_value: money2(totalListPrice),
+      average_value: units.length > 0 ? money2(totalListPrice / units.length) : null,
+      total_list_price: money2(totalListPrice),
+      total_appraisal_value: "0.00",
+      total_gross_area_m2: money2(totalGross),
+      sides: (["contractor", "landowner"] as const).map((side) => {
+        const sideUnits = units.filter((u) => u.owner_side === side);
+        const sideValue = sideUnits.reduce((sum, u) => sum + Number(u.list_price ?? 0), 0);
+        return {
+          side,
+          counts: unitKindBreakdown(sideUnits),
+          total_value: money2(sideValue),
+          average_value: sideUnits.length > 0 ? money2(sideValue / sideUnits.length) : null,
+          share_pct: totalListPrice > 0 ? money2((sideValue / totalListPrice) * 100) : null,
+          sold: sideUnits.filter((u) => u.sales_status === "sold").length,
+          reserved: sideUnits.filter((u) => u.sales_status === "reserved").length,
+          listed: sideUnits.filter((u) => u.sales_status === "listed").length,
+        };
+      }),
+      by_sales_status: byStatus,
+      sold_units: soldCount,
+      reserved_units: byStatus.reserved,
+      available_units: byStatus.listed,
+      sales_revenue: money2(salesRevenue),
+      average_sale_price: soldCount > 0 ? money2(salesRevenue / soldCount) : null,
+    },
+    blocks: blocks.map((block) => {
+      const blockUnits = units.filter((u) => u.block_id === block.id);
+      return {
+        block: {
+          id: block.id,
+          name: block.name,
+          site_id: block.site_id,
+          site_name: block.site_name,
+          sort_order: block.sort_order,
+          counts: unitKindBreakdown(blockUnits),
+          code: null,
+          basement_floor_count: null,
+          floor_count: null,
+          roof_type: null,
+          units_per_floor: null,
+          ground_floor_usage: null,
+          shop_count: null,
+          construction_area_m2: null,
+          elevator_count: null,
+          parking_type: null,
+          estimated_delivery_date: null,
+          status: null,
+          notes: null,
+          estimated_unit_count: null,
+        },
+        units: blockUnits.map((u) => buildUnitResponse(state, u)),
+      };
+    }),
+  };
+}
+
+/**
+ * Ünitenin `sales_status`u SATIŞTAN TÜREVDİR — satış açılınca/iptal edilince
+ * sunucu günceller, istemci `PATCH /units` ile elle DEĞİŞTİREMEZ (P8 kararı:
+ * elle giriş uçtan ÇIKARILDI).
+ */
+function syncUnitSalesStatus(state: MockState, unitId: string): void {
+  const unit = state.units.find((u) => u.id === unitId);
+  if (!unit) return;
+  const open = state.unitSales.find((s) => s.unit_id === unitId && s.status !== "cancelled");
+  if (!open) {
+    unit.sales_status = "listed";
+    return;
+  }
+  unit.sales_status = open.status === "reservation" ? "reserved" : "sold";
+}
+
+/**
+ * `generate-plan` — kuruş dengelemesi SON TAKSİTTE, **Σ = `sale_price`**.
+ * Vade farkı oranı planı ŞİŞİRMEZ (P8 onaylı sapması).
+ */
+function generateSalePlan(state: MockState, sale: MockUnitSale): MockSaleInstallment[] {
+  const salePrice = Number(sale.sale_price);
+  const downPayment = Number(sale.down_payment ?? 0);
+  const count = sale.installment_count ?? 0;
+  const rows: MockSaleInstallment[] = [];
+  let sequence = 0;
+
+  if (downPayment > 0) {
+    sequence += 1;
+    state.saleSeq += 1;
+    rows.push({
+      id: `si-new-${state.saleSeq}`,
+      sale_id: sale.id,
+      sequence_no: sequence,
+      label: "Peşinat",
+      due_date: sale.first_installment_date ?? SALES_TODAY,
+      amount: money2(downPayment),
+      payment_method: null,
+      paid_amount: "0.00",
+      paid_at: null,
+    });
+  }
+
+  const remaining = salePrice - downPayment;
+  if (count > 0 && remaining > 0) {
+    // Kuruş dengelemesi: ilk n-1 taksit AŞAĞI yuvarlanır, artık SON taksite.
+    const per = Math.floor((remaining * 100) / count) / 100;
+    const base = sale.first_installment_date ?? SALES_TODAY;
+    for (let index = 0; index < count; index += 1) {
+      sequence += 1;
+      state.saleSeq += 1;
+      const due = new Date(`${base}T00:00:00Z`);
+      due.setUTCMonth(due.getUTCMonth() + index + (downPayment > 0 ? 1 : 0));
+      const amount = index === count - 1 ? remaining - per * (count - 1) : per;
+      rows.push({
+        id: `si-new-${state.saleSeq}`,
+        sale_id: sale.id,
+        sequence_no: sequence,
+        label: `${index + 1}. Taksit`,
+        due_date: due.toISOString().slice(0, 10),
+        amount: money2(amount),
+        payment_method: null,
+        paid_amount: "0.00",
+        paid_at: null,
+      });
+    }
+  }
+  return rows;
+}
+
+/**
+ * BOŞ satış listesi + BOŞ KPI şeridi (`satis-listesi-bos` kadrajı) için hazır
+ * gövdeler.
+ *
+ * Paylaşılan mock durumu BOŞALTILMAZ (F-PL/F-ST emsali): boş durum, görsel
+ * spec'in `page.route` ile İKİ GET yanıtını bu sabitlerle karşılamasıyla
+ * üretilir — böylece başka spec'lerle yarış oluşmaz.
+ */
+export const EMPTY_SALES_LIST_RESPONSE = {
+  totals: {
+    count: 0,
+    sale_price_total: "0.00",
+    paid_total: "0.00",
+    remaining_total: "0.00",
+  },
+  items: [],
+};
+
+export const EMPTY_SALES_SUMMARY_RESPONSE = {
+  project_id: "p-1",
+  as_of: SALES_TODAY,
+  sold: { count: 0, deed_transferred_count: 0, amount: "0.00" },
+  reserved: { count: 0, expired_count: 0, amount: "0.00" },
+  available_units: { count: 0, list_price_total: "0.00" },
+  collection: {
+    collected_amount: "0.00",
+    contracted_amount: "0.00",
+    // Sözleşme tutarı 0 iken yüzde `null`dur — istemci 0/0 bölmesi YAPMAZ.
+    collection_pct: null,
+  },
+  overdue: { installment_count: 0, amount: "0.00", late_fee_amount: "0.00" },
+  upcoming_collections: [],
+  expired_reservations: [],
+  pending_modules: [],
 };
 
 /** Künye — `content` DIŞARI VERİLMEZ (şemada yok). */
@@ -5340,6 +6026,236 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           doc.folder_id = body.folder_id === null ? null : String(body.folder_id);
         }
         return send(200, buildDocumentRead(doc));
+      });
+    }
+
+    // --- F-P8 T1 · Satış uçları --------------------------------------------
+    //
+    // ⚠️ `activate` / `transfer-deed` / `cancel` / `pay` uçlarının mock
+    // karşılığı BİLEREK YOKTUR: satış detay ekranı basılmadığı için (spec §2 /
+    // K3) hiçbir e2e onları çağırmaz. Buraya karşılık eklemek, olmayan bir
+    // ekranı ima eder.
+
+    // GET /customers — `q` AD/TCKN/VKN üzerinde kısmi arar. SAYFASIZ.
+    if (method === "GET" && path === "/customers") {
+      const q = (parsed.searchParams.get("q") ?? "").trim().toLocaleLowerCase("tr");
+      const items = q
+        ? state.customers.filter(
+            (c) =>
+              c.name.toLocaleLowerCase("tr").includes(q) ||
+              (c.national_id ?? "").includes(q) ||
+              (c.tax_number ?? "").includes(q),
+          )
+        : state.customers;
+      return send(200, { items });
+    }
+
+    if (method === "POST" && path === "/customers") {
+      return withBody((body) => {
+        const name = String(body.name ?? "").trim();
+        const customerType = String(body.customer_type ?? "");
+        if (!name) return send(422, { detail: "Müşteri adı zorunludur." });
+        if (customerType !== "person" && customerType !== "company") {
+          return send(422, { detail: "Müşteri tipi geçersiz." });
+        }
+        state.saleSeq += 1;
+        const customer: MockCustomer = {
+          id: `cus-new-${state.saleSeq}`,
+          customer_type: customerType,
+          name,
+          national_id: typeof body.national_id === "string" ? body.national_id : null,
+          tax_number: typeof body.tax_number === "string" ? body.tax_number : null,
+          phone: typeof body.phone === "string" ? body.phone : null,
+          email: typeof body.email === "string" ? body.email : null,
+          address: typeof body.address === "string" ? body.address : null,
+        };
+        state.customers = [...state.customers, customer];
+        return send(201, customer);
+      });
+    }
+
+    const customerIdMatch = path.match(/^\/customers\/([^/]+)$/);
+    if (method === "GET" && customerIdMatch) {
+      const customer = state.customers.find((c) => c.id === customerIdMatch[1]);
+      if (!customer) return send(404, { detail: "Müşteri bulunamadı." });
+      return send(200, customer);
+    }
+
+    // GET /projects/{project_id}/units — DS ünite seçicisinin kaynağı.
+    const projectUnitsMatch = path.match(/^\/projects\/([^/]+)\/units$/);
+    if (method === "GET" && projectUnitsMatch) {
+      const projectId = projectUnitsMatch[1];
+      if (!state.projects.some((p) => p.id === projectId)) {
+        return send(404, { detail: "Proje bulunamadı." });
+      }
+      return send(200, buildUnitListResponse(state, projectId));
+    }
+
+    // GET /projects/{project_id}/sales — SÜZGEÇSİZ + SAYFASIZ (openapi).
+    const projectSalesMatch = path.match(/^\/projects\/([^/]+)\/sales$/);
+    if (method === "GET" && projectSalesMatch) {
+      const projectId = projectSalesMatch[1];
+      if (!state.projects.some((p) => p.id === projectId)) {
+        return send(404, { detail: "Proje bulunamadı." });
+      }
+      return send(200, buildUnitSaleListResponse(state, projectId));
+    }
+
+    if (method === "POST" && projectSalesMatch) {
+      const projectId = projectSalesMatch[1];
+      return withBody((body) => {
+        if (!state.projects.some((p) => p.id === projectId)) {
+          return send(404, { detail: "Proje bulunamadı." });
+        }
+        const unit = state.units.find(
+          (u) => u.id === String(body.unit_id ?? "") && u.project_id === projectId,
+        );
+        if (!unit) return send(404, { detail: "Ünite bulunamadı." });
+        // P8 kapısı: arsa sahibi ünitesi satılamaz.
+        if (unit.owner_side === "landowner") {
+          return send(422, { detail: "Arsa sahibi payındaki ünite satılamaz." });
+        }
+        // P8 kapısı: bir ünitenin AYNI ANDA tek açık satışı olabilir.
+        if (state.unitSales.some((s) => s.unit_id === unit.id && s.status !== "cancelled")) {
+          return send(409, { detail: "Bu ünitenin açık bir satış kaydı zaten var." });
+        }
+        if (!state.customers.some((c) => c.id === String(body.customer_id ?? ""))) {
+          return send(404, { detail: "Müşteri bulunamadı." });
+        }
+        const saleType = String(body.sale_type ?? "");
+        if (!["sale", "reservation", "pre_contract"].includes(saleType)) {
+          return send(422, { detail: "Satış tipi geçersiz." });
+        }
+        if (body.sale_price === undefined || body.sale_price === null) {
+          return send(422, { detail: "Satış bedeli zorunludur." });
+        }
+
+        state.saleSeq += 1;
+        const optionalMoney = (key: string): string | null =>
+          body[key] === undefined || body[key] === null ? null : money2(Number(body[key]));
+        const optionalText = (key: string): string | null =>
+          typeof body[key] === "string" ? (body[key] as string) : null;
+
+        const sale: MockUnitSale = {
+          id: `sl-new-${state.saleSeq}`,
+          project_id: projectId,
+          unit_id: unit.id,
+          customer_id: String(body.customer_id),
+          sale_type: saleType as MockUnitSale["sale_type"],
+          // Rezervasyon tipi `reservation` durumunda başlar; diğerleri `active`.
+          status: saleType === "reservation" ? "reservation" : "active",
+          list_price_snapshot: unit.list_price,
+          discount_amount: optionalMoney("discount_amount"),
+          sale_price: money2(Number(body.sale_price)),
+          vat_pct: optionalMoney("vat_pct"),
+          advisor_user_id: optionalText("advisor_user_id"),
+          reservation_deposit: optionalMoney("reservation_deposit"),
+          reservation_due_date: optionalText("reservation_due_date"),
+          deed_condition: (optionalText("deed_condition") ??
+            null) as MockUnitSale["deed_condition"],
+          planned_deed_date: optionalText("planned_deed_date"),
+          delivery_date: optionalText("delivery_date"),
+          has_condominium_easement: Boolean(body.has_condominium_easement),
+          has_mortgage: Boolean(body.has_mortgage),
+          late_fee_monthly_pct: optionalMoney("late_fee_monthly_pct"),
+          payment_plan_type: (optionalText("payment_plan_type") ??
+            null) as MockUnitSale["payment_plan_type"],
+          down_payment: optionalMoney("down_payment"),
+          installment_count:
+            body.installment_count === undefined || body.installment_count === null
+              ? null
+              : Number(body.installment_count),
+          first_installment_date: optionalText("first_installment_date"),
+          term_interest_pct: optionalMoney("term_interest_pct"),
+        };
+        state.unitSales = [...state.unitSales, sale];
+        syncUnitSalesStatus(state, unit.id);
+        return send(201, buildUnitSaleResponse(state, sale));
+      });
+    }
+
+    const projectSalesSummaryMatch = path.match(/^\/projects\/([^/]+)\/sales\/summary$/);
+    if (method === "GET" && projectSalesSummaryMatch) {
+      const projectId = projectSalesSummaryMatch[1];
+      if (!state.projects.some((p) => p.id === projectId)) {
+        return send(404, { detail: "Proje bulunamadı." });
+      }
+      return send(200, buildSalesSummaryResponse(state, projectId));
+    }
+
+    const saleIdMatch = path.match(/^\/sales\/([^/]+)$/);
+    if (method === "GET" && saleIdMatch) {
+      const sale = state.unitSales.find((s) => s.id === saleIdMatch[1]);
+      if (!sale) return send(404, { detail: "Satış bulunamadı." });
+      return send(200, buildUnitSaleResponse(state, sale));
+    }
+
+    // POST /sales/{sale_id}/generate-plan — GÖVDESİZ. Plan satışın kendi
+    // alanlarından üretilir; kuruş dengelemesi SON taksitte, Σ = sale_price.
+    const generatePlanMatch = path.match(/^\/sales\/([^/]+)\/generate-plan$/);
+    if (method === "POST" && generatePlanMatch) {
+      const sale = state.unitSales.find((s) => s.id === generatePlanMatch[1]);
+      if (!sale) return send(404, { detail: "Satış bulunamadı." });
+      if (sale.payment_plan_type === null) {
+        return send(422, { detail: "Ödeme planı tipi seçilmeden plan üretilemez." });
+      }
+      const rows = generateSalePlan(state, sale);
+      state.saleInstallments = [
+        ...state.saleInstallments.filter((i) => i.sale_id !== sale.id),
+        ...rows,
+      ];
+      return send(200, buildSalePlanResponse(state, sale));
+    }
+
+    const saleInstallmentsMatch = path.match(/^\/sales\/([^/]+)\/installments$/);
+    if (method === "GET" && saleInstallmentsMatch) {
+      const sale = state.unitSales.find((s) => s.id === saleInstallmentsMatch[1]);
+      if (!sale) return send(404, { detail: "Satış bulunamadı." });
+      return send(200, buildSalePlanResponse(state, sale));
+    }
+
+    // 🛑 PUT = DEĞİŞTİRME (spec K5): gövde TAM planı taşır, gövdede geçmeyen
+    // taksit SİLİNİR. Σ = `sale_price` kuralı SUNUCUDA zorlanır.
+    if (method === "PUT" && saleInstallmentsMatch) {
+      const saleId = saleInstallmentsMatch[1];
+      return withBody((body) => {
+        const sale = state.unitSales.find((s) => s.id === saleId);
+        if (!sale) return send(404, { detail: "Satış bulunamadı." });
+        const items = Array.isArray(body.items)
+          ? (body.items as Array<Record<string, unknown>>)
+          : [];
+        if (items.length === 0) {
+          return send(422, { detail: "Ödeme planı en az bir taksit içermelidir." });
+        }
+        const total = items.reduce((sum, item) => sum + Number(item.amount ?? 0), 0);
+        if (money2(total) !== money2(Number(sale.sale_price))) {
+          return send(422, {
+            detail: "Ödeme planı toplamı satış bedeline eşit olmalıdır.",
+          });
+        }
+        const previous = saleInstallmentsOf(state, saleId);
+        const replaced: MockSaleInstallment[] = items.map((item, index) => {
+          // Ödenmiş tutar KORUNUR (sıra numarasıyla eşleşen eski satırdan).
+          const old = previous.find((p) => p.sequence_no === Number(item.sequence_no));
+          state.saleSeq += 1;
+          return {
+            id: old?.id ?? `si-new-${state.saleSeq}`,
+            sale_id: saleId,
+            sequence_no: Number(item.sequence_no ?? index + 1),
+            label: String(item.label ?? ""),
+            due_date: String(item.due_date ?? SALES_TODAY),
+            amount: money2(Number(item.amount ?? 0)),
+            payment_method: (item.payment_method ??
+              null) as MockSaleInstallment["payment_method"],
+            paid_amount: old?.paid_amount ?? "0.00",
+            paid_at: old?.paid_at ?? null,
+          };
+        });
+        state.saleInstallments = [
+          ...state.saleInstallments.filter((i) => i.sale_id !== saleId),
+          ...replaced,
+        ];
+        return send(200, buildSalePlanResponse(state, sale));
       });
     }
 

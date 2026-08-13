@@ -37,6 +37,12 @@ const OPERATIONS_GROUPS: DrillNavGroup[] = [
     heading: "MALİ",
     items: [
       { label: "Sözleşmeler", href: "/sozlesmeler", emoji: "📋" },
+      // F-P8 T2 · SY 40: mockup bu öğeyi PROJE bağlamındaki menüde çizer
+      // (🏠 Satış Yönetimi). Drill sidebar proje bağlamının menüsüdür — öğe
+      // buraya, kabuk nav'ıyla AYNI konuma (Sözleşmeler'in ardına) eklenir.
+      // Rota proje-geneldir (`/satis`, spec K1); proje seçimi ekranın kendi
+      // seçicisindedir.
+      { label: "Satış Yönetimi", href: "/satis", emoji: "🏠" },
       { label: "Taşeron Hakediş", href: "/hakedisler/taseron", emoji: "🏗" },
       { label: "İşveren Hakediş", href: "/hakedisler", emoji: "💼" },
       { label: "Muhasebe", href: "/muhasebe", emoji: "📒" },

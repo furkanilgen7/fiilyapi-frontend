@@ -91,6 +91,15 @@ describe("NAV_GROUPS — href geçerliliği (kırık link koruması)", () => {
     expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "static" });
   });
 
+  // F-P8 T2: "Satış Yönetimi" GERÇEK bir rotadır (`/satis`) — SY 40'taki
+  // mockup öğesinin kabuk karşılığı. Catch-all'a düşerse kullanıcı sessizce
+  // "yakında" ekranı görür; bu test onu kırmızıya çevirir.
+  it("'Satış Yönetimi' /satis statik rotasına düşer (catch-all DEĞİL)", () => {
+    const item = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.label === "Satış Yönetimi");
+    expect(item?.href).toBe("/satis");
+    expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "static" });
+  });
+
   it("henüz yazılmamış 'Muhasebe' catch-all'a düşer (kontrol grubu)", () => {
     const item = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.label === "Muhasebe");
     expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "catch-all" });

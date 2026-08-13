@@ -91,7 +91,17 @@ export function AnchoredPopover({
           : anchorRect.top - ANCHOR_GAP - height;
       const centered = anchorRect.left + anchorRect.width / 2 - width / 2;
       const maxLeft = Math.max(ANCHOR_GAP, window.innerWidth - width - ANCHOR_GAP);
-      setPosition({ top, left: Math.min(Math.max(centered, ANCHOR_GAP), maxLeft) });
+      // TAM PİKSELE oturtulur (F-P8 baseline turu, iki bağımsız tur 31636666077
+      // ↔ 31638764877): çapanın ölçüsü KESİRLİDİR (`anchorRect.bottom` = ör.
+      // 692,4) ve olduğu gibi yazılınca yüzey yarım piksele oturur. O zaman
+      // `.ts-pop__codes` ızgarasının `repeat(5, 1fr)` sütun kenarları turdan
+      // tura farklı yuvarlanır ve `puantaj-hucre-popover` karesi 1px oynar —
+      // eşiği olmayan görsel CI için bu, kırmızının ZAR ATMASI demekti.
+      // Yuvarlama hem kareyi deterministik kılar hem metni/kenarlığı keskinleştirir.
+      setPosition({
+        top: Math.round(top),
+        left: Math.round(Math.min(Math.max(centered, ANCHOR_GAP), maxLeft)),
+      });
     }
 
     place();

@@ -1,0 +1,250 @@
+/* F-P8 T3 · Yeni Satış formuna ÖZGÜ bloklar — kanon: projedesign
+   "Form - Daire Satisi.dc.html" (DS). Parantez içi sayılar O DOSYANIN satır
+   numaralarıdır. Çıplak hex yok — tüm renk/ölçüler token.
+
+   Ortak form kabuğu (`.pf`, `.pf-topbar`, `.pf-card`, `.pf-grid*`,
+   `.pf-actions*`, `.pf-doc*`) `src/styles/form-shell.css`'ten gelir ve
+   `SaleCreateView.tsx` onu bu dosyadan ÖNCE import eder. */
+
+/* ── Ünite bilgi kutuları (58-63) — mor tint şerit ────────────────────────── */
+.sf-unit-info {
+  margin-top: var(--space-3); /* 58 — 14px */
+  padding: var(--space-3);
+  background: var(--color-accent-purple-tint); /* #f5f3ff (58) */
+  border-radius: var(--radius-10);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 58 */
+  gap: var(--space-3);
+}
+.sf-unit-info__label {
+  font-size: 11px; /* 59 */
+  color: var(--color-accent-purple); /* #7c3aed (59) */
+  margin-bottom: 3px;
+}
+.sf-unit-info__value {
+  font-size: 14px; /* 59 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text); /* #1e293b (59) */
+  font-family: var(--font-mono); /* 59 — JetBrains Mono */
+}
+/* "Maliyet" değeri gri tondadır (62 — #64748b). */
+.sf-unit-info__value--muted {
+  color: var(--color-text-muted);
+}
+.sf-unit-info__pending {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  font-family: var(--font-sans);
+  font-weight: var(--weight-regular);
+}
+
+/* ── "Bu Satıştan Kâr" kutusu (89-92) — yeşil şerit ───────────────────────── */
+.sf-profit {
+  margin-top: var(--space-3); /* 89 — 14px */
+  padding: 12px 14px; /* 89 */
+  background: var(--color-success-tint); /* #f0fdf4 (89) */
+  border-radius: var(--radius-9);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.sf-profit__label {
+  font-size: 13px; /* 90 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.sf-profit__formula {
+  font-size: 11px; /* 90 */
+  color: var(--color-success-deep); /* #15803d (90) */
+  margin-top: 1px;
+}
+.sf-profit__amount {
+  font-size: 18px; /* 91 */
+  font-weight: var(--weight-bold);
+  color: var(--color-success); /* #16a34a (91) */
+  font-family: var(--font-mono);
+  text-align: right;
+}
+.sf-profit__margin {
+  font-size: 11px; /* 91 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-success);
+  text-align: right;
+}
+/* Kâr negatifse (bedel maliyetin altında) tutar kırmızıya döner — mockup'ta
+   yok ama sessiz zarar göstermemek için (bilgi, engel değil). */
+.sf-profit--loss .sf-profit__amount,
+.sf-profit--loss .sf-profit__margin {
+  color: var(--color-danger);
+}
+
+/* ── Satış Bedeli girişleri (83-87) ───────────────────────────────────────── */
+/* "Liste Fiyatı" readonly gri (84). */
+.sf-price-readonly {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+}
+/* "Satış Bedeli" mor vurgulu giriş (86). */
+.sf-price-emphasis {
+  border-color: var(--color-accent-purple-border); /* #c4b5fd (86) */
+  background: var(--color-accent-purple-tint); /* #f5f3ff (86) */
+  color: var(--color-accent-purple-deep); /* mor metin (86 — #7c3aed tonu) */
+  font-weight: var(--weight-bold);
+}
+.sf-amount-input {
+  font-family: var(--font-mono); /* 84-86 */
+  text-align: right;
+}
+
+/* ── Ödeme Planı kartı (95-150) ───────────────────────────────────────────── */
+.sf-plan {
+  padding: 0; /* 96 — kart iç boşluğu başlığa/tabloya devredilir */
+  overflow: hidden;
+}
+.sf-plan__head {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* 97 */
+  padding: var(--space-4) var(--space-5); /* 97 — 16px 20px */
+  border-bottom: 1px solid var(--color-border);
+}
+.sf-plan__title {
+  font-size: 14px; /* 98 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.sf-plan__generate {
+  margin-left: auto; /* 100 */
+  color: var(--color-accent-purple); /* #8b5cf6 (100) */
+  font-weight: var(--weight-semibold);
+}
+/* Plan parametreleri şeridi (102-107) — açık mor zemin. */
+.sf-plan__params {
+  padding: var(--space-4) var(--space-5); /* 102 */
+  background: var(--color-plan-params-bg); /* #faf9ff (102) */
+  border-bottom: 1px solid var(--color-border);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 102 */
+  gap: var(--space-3);
+}
+.sf-plan__notice {
+  padding: var(--space-4) var(--space-5);
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.sf-plan__warning {
+  padding: 0 var(--space-5) var(--space-4);
+  font-size: 11px;
+  color: var(--color-warning-deep-text);
+}
+
+/* Plan tablosu (108-149). */
+.sf-plan-table {
+  width: 100%;
+  border-collapse: collapse; /* 108 */
+}
+.sf-plan-table thead tr {
+  background: var(--color-surface-2); /* 109 */
+  border-bottom: 1px solid var(--color-border);
+}
+.sf-plan-table th {
+  padding: 10px 12px; /* 110-114 */
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  text-align: left;
+}
+.sf-plan-table th:first-child,
+.sf-plan-table td:first-child {
+  padding-left: var(--space-4); /* 110 — 16px */
+}
+.sf-plan-table__center {
+  text-align: center;
+}
+.sf-plan-table__right {
+  text-align: right;
+}
+.sf-plan-table td {
+  padding: 11px 12px; /* 117-136 */
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  vertical-align: middle;
+}
+.sf-plan-table tbody tr {
+  border-bottom: 1px solid var(--color-divider); /* 117 — #f1f5f9 */
+}
+/* Peşinat satırı yeşil (117-122). */
+.sf-plan-table tr.sf-plan-row--down {
+  background: var(--color-success-tint); /* #f0fdf4 (117) */
+}
+.sf-plan-row--down .sf-plan-table__seq,
+.sf-plan-row--down .sf-plan-table__amount {
+  color: var(--color-success); /* #16a34a (118/121) */
+  font-weight: var(--weight-bold);
+}
+.sf-plan-table__seq {
+  font-weight: var(--weight-semibold); /* 125 */
+  color: var(--color-text);
+}
+.sf-plan-table__amount {
+  font-family: var(--font-mono); /* 121/128 */
+  font-weight: var(--weight-semibold);
+}
+.sf-plan-table__muted {
+  color: var(--color-text-muted); /* 126/133 "Aylık taksit" */
+}
+.sf-plan-table__note td {
+  text-align: center;
+  color: var(--color-text-subtle); /* 139 — "… 10 taksit daha" */
+  font-size: 12px;
+}
+/* TOPLAM şeridi (143-147) — mor zemin + üstten 2px mor çizgi. */
+.sf-plan-table tfoot tr {
+  background: var(--color-accent-purple-tint); /* #f5f3ff (143) */
+  border-top: 2px solid var(--color-accent-purple-grad-start); /* #8b5cf6 (143) */
+}
+.sf-plan-table tfoot td {
+  padding: 13px 12px; /* 144 */
+  font-size: 13px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.sf-plan-table tfoot td.sf-plan-table__right {
+  font-family: var(--font-mono); /* 145 */
+  font-size: 16px;
+  color: var(--color-accent-purple-grad-start); /* #8b5cf6 (145) */
+}
+
+/* ── Tapu & Teslim onay kutuları (160-164) ────────────────────────────────── */
+.sf-checks {
+  margin-top: var(--space-3); /* 160 */
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* 160 */
+}
+
+/* ── Alt eylem şeridinin sol ucundaki devre-dışı fatura kutusu (205-208) ───── */
+.sf-auto-invoice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: 13px; /* 205 */
+  color: var(--color-text-secondary);
+}
+.sf-auto-invoice__reason {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+
+/* ── Görünür uyarı/gerekçe bantları ───────────────────────────────────────── */
+.sf-notice {
+  margin-bottom: var(--space-3);
+  font-size: 12px;
+  color: var(--color-warning-deep-text);
+  background: var(--color-orange-tint);
+  border: 1px solid var(--color-orange-tint-border);
+  border-radius: var(--radius-8);
+  padding: 8px 12px;
+}

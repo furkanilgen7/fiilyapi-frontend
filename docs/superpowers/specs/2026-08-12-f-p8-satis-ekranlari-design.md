@@ -46,3 +46,19 @@ Görsel spec'ler: `satis-listesi` · `satis-listesi-bos` · `daire-satisi-formu`
 Smoke: müşteri aç → satış aç (`generate-plan` → plan toplamı=bedel telden) → listede + KPI değişimi →
 cancel ucuyla İPTAL/temizlik (sıfır kalıntı; ünite `sales_status` eski hâline döner — doğrulanır).
 İlk gerçek satışta P10 kartlarının KY alanlarına da gözle bakılır (kayıtlı sınır).
+
+## 5. Kapanış — onaylı türetimler (yönetim ONAYLI, 2026-08-12; sapma diye geri alınmaz)
+
+- **Proje seçici (SY):** `/satis` proje-genel ama tüm satış uçları proje-kapsamlı → `/puantaj` (E5)
+  şantiye-seçici emsaliyle proje seçici, durum URL'de (`?proje=&durum=`). Mockup tek proje breadcrumb'ı.
+- **Blok doluluk haritası tıklanamaz** — mockup `cursor:pointer` çizer ama hedef ekran yok (rotasız öğe
+  kuralı: F-TH emsali, öğe silinmez/devre-dışı-eşdeğeri basılır, tık yok).
+- **"Kayıtlı Müşteri" seçici (DS)** — mockup çizmiyor ama `POST /sales` `customer_id` zorunlu kılar
+  (varsayılan "Yeni müşteri" → baseline mockup'la birebir).
+- **İki-adımlı kaydetme + kilitleme (DS)** — F-SD emsali; "Plan Oluştur" satışı GERÇEKTEN oluşturur.
+- **"Bu Satıştan Kâr"** = satış bedeli − SUNUCU `unit_cost.value` (istemci maliyet hesaplamaz).
+
+**GÜVENLİK DURAĞI:** dilim kod+CI+PR'a kadar götürüldü; **merge/deploy production politika teyidi
+bekliyor**. **Canlı YAZMA smoke KOŞULMAZ** — §4'ün smoke akışı (müşteri→satış→generate-plan→cancel
+temizliği) + P10 kart gözlemi **KULLANICI ELLE** yapacak; uçtan uca yazma yerelde e2e mock backend'de
+kanıtlandı (`sales-form.spec.ts`, `page.route` ile paylaşılan durum kirletilmeden).
