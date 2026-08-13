@@ -39,31 +39,36 @@ export const WORKER_SOURCE_LABELS: Record<WorkerSource, string> = {
 };
 
 /**
- * F-İK T2 · spec K2 — SUNUCUDA HENÜZ OLMAYAN ama İK-3 dalıyla `WorkerSource`
- * enum'una eklenecek değerlerin hazır etiketleri. `WORKER_SOURCE_LABELS`e
- * KARIŞTIRILMAZ: o harita şemadaki enum'un TAM eşlemesidir (`Record<
- * WorkerSource, …>`) ve şema büyüdüğünde derleyici eksik anahtarı bağırmalıdır.
- * Burası ise şemanın ÖNÜNDEN gider — tipi bilerek `Record<string, string>`tür.
+ * F-TB1 T5 — `WorkerSource` enum'unun TÜM (beş) değerinin sırayla listesi.
+ * `WORKER_SOURCE_LABELS`in anahtarlarından türetilir; harita `Record<
+ * WorkerSource, …>` olarak TAM tipliyken bu dizi de otomatik tamdır — enum
+ * büyürse haritaya eklenmeyen anahtar derleyiciyi bağırtır, dizi de bunu
+ * yansıtır (bkz. `diary-labels.test.ts`).
  */
-export const FUTURE_WORKER_SOURCE_LABELS: Record<string, string> = {
-  freelance: "Serbest",
-  intern: "Stajyer",
-};
+export const WORKER_SOURCE_VALUES: readonly WorkerSource[] = Object.keys(
+  WORKER_SOURCE_LABELS,
+) as WorkerSource[];
 
 /** Bilinmeyen `source` değerinin bastığı yer tutucu (uydurma etiket YOK). */
 export const UNKNOWN_WORKER_SOURCE_LABEL = "—";
 
 /**
  * `source` çözümleyicisi — tel üzerinden BİLİNMEYEN bir enum değeri gelse bile
- * ekran ÇÖKMEZ ve hücre boş kalmaz (emsal: `TimesheetTable.tsx:196`).
+ * ekran ÇÖKMEZ ve hücre boş kalmaz (emsal: `TimesheetTable.tsx`).
  *
- * bilinen ⇒ Türkçe etiket · gelecek değer ⇒ hazır etiket · tanınmayan ⇒ "—".
- * Girdi bilerek `string`tir: `WorkerSource` derleme zamanı bilgisidir, telden
- * gelen gövde ise yalnız JSON'dur.
+ * bilinen ⇒ Türkçe etiket · tanınmayan ⇒ "—". Girdi bilerek `string`tir:
+ * `WorkerSource` derleme zamanı bilgisidir, telden gelen gövde ise yalnız
+ * JSON'dur.
+ *
+ * F-TB1 T5: eskiden burada ayrı bir `FUTURE_WORKER_SOURCE_LABELS` haritası
+ * vardı (İK-3 dalı enum'a `freelance`/`intern` eklemeden ÖNCE hazırlanmıştı).
+ * Enum artık BEŞ değeri de taşıyor ve `WORKER_SOURCE_LABELS` (üstteki `Record<
+ * WorkerSource, …>`) hepsini karşılıyor — o ikinci harita hiçbir zaman
+ * ERİŞİLEMEZ ölü koddu, kaldırıldı.
  */
 export function resolveWorkerSourceLabel(source: string): string {
   const known: Record<string, string> = WORKER_SOURCE_LABELS;
-  return known[source] ?? FUTURE_WORKER_SOURCE_LABELS[source] ?? UNKNOWN_WORKER_SOURCE_LABEL;
+  return known[source] ?? UNKNOWN_WORKER_SOURCE_LABEL;
 }
 
 /** Serbest metin alanlarının üst sınırları (`maxLength` zorunlu — WORKFLOW §4). */

@@ -78,5 +78,17 @@ export function timesheetCodeMeta(code: TimesheetCode): TimesheetCodeMeta | unde
  * `src/components/site-diary/diary-labels.ts:33-37` (`WORKER_SOURCE_LABELS`,
  * GK418/422/426/430). `general` orada "Genel"dir — ŞP mockup'ında bu kaynağın
  * rozeti çizilmemiştir, ama veri gelirse aynı sözcükle basılır.
+ *
+ * F-TB1 T5: `resolveWorkerSourceLabel` de aynı kaynaktan — `TimesheetTable`
+ * artık ham `Record` erişimi (`WORKER_SOURCE_LABELS[row.source]`) YAPMAZ,
+ * bilinmeyen bir değerde çökmek/ham enum basmak yerine bu çözümleyiciden
+ * geçer. Rozet RENGİ de tek kaynaktan: `resolveSourceBadgeVariant`
+ * (`src/components/personnel/personnel-list-labels.ts`) — `/personel`
+ * listesiyle AYNI eşleme (Şirket mavi, Taşeron amber, geri kalanı nötr).
  */
-export { WORKER_SOURCE_LABELS } from "@/components/site-diary/diary-labels";
+export {
+  WORKER_SOURCE_LABELS,
+  resolveWorkerSourceLabel,
+  WORKER_SOURCE_VALUES,
+} from "@/components/site-diary/diary-labels";
+export { resolveSourceBadgeVariant } from "@/components/personnel/personnel-list-labels";
