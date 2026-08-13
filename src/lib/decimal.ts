@@ -1,4 +1,22 @@
 /**
+ * Kullanıcının yazdığı sayıyı ondalık string'e indirger: TR virgülü noktaya
+ * çevrilir, boşluk atılır. Boş/anlamsız girdi `null` döner — çağıran
+ * "hesaplama yok" dalını seçer, `NaN` ekrana ya da gövdeye KAÇMAZ.
+ *
+ * ⚠️ TEK KAYNAK (F-SA T3): aynı gövde daha önce `stock-entry-form/form-state`
+ * ve `sales-form/form-state` içinde İKİ KEZ kopyalanmıştı. Üçüncü kopya
+ * yazmak yerine kanon buraya taşındı; iki eski yer artık BURADAN yeniden
+ * dışa verir (davranış birebir aynı, çağıranların ithalatı değişmedi).
+ */
+export function normalizeDecimalInput(raw: string): string | null {
+  const trimmed = raw.trim().replace(",", ".");
+  if (!trimmed) return null;
+  if (!/^[-+]?\d*\.?\d*$/.test(trimmed)) return null;
+  if (!Number.isFinite(Number(trimmed))) return null;
+  return trimmed;
+}
+
+/**
  * Ondalık string'leri KAYIPSIZ toplar (kuruş hassasiyeti korunur). `Number()`
  * ile toplama YASAK — büyük tutarlarda / çok terimli toplamlarda float
  * yuvarlama hatası üretir (IEEE-754). Bunun yerine her terim ortak bir

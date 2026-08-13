@@ -1,0 +1,290 @@
+/* F-SA T3 · Satın Alma Talebi formuna ÖZGÜ bloklar — kanon: projedesign
+   "Form - Satinalma Talebi.dc.html" (FST). Parantez içi sayılar O DOSYANIN
+   satır numaralarıdır. Çıplak hex YOK — palet yalnız `tokens.css`ten.
+
+   Ortak form kabuğu (`.pf`, `.pf-topbar`, `.pf-card`, `.pf-grid*`,
+   `.pf-actions*`, `.pf-doc*`) `src/styles/form-shell.css`'ten gelir ve
+   `PurchaseRequestForm.tsx` onu bu dosyadan ÖNCE import eder. */
+
+/* Talep No kutusu (53) monospace'tir. */
+.saf-mono {
+  font-family: var(--font-mono);
+}
+
+/* "Şantiye / Bölüm" (57) — mockup'ın TEK hücresine şemanın İKİ alanı
+   (site_id + section_id) yan yana oturur; hücrenin ızgara geometrisi değişmez. */
+.saf-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+/* Talep Gerekçesi bloğu (60-63) kartın ızgarasının ALTINDA, tam genişlikte. */
+.saf-justification {
+  margin-top: 14px; /* 60 */
+}
+
+/* Field kullanmayan (kontrolü olmayan) etiketler — `.lbl` ile aynı ölçü (20). */
+.saf-label {
+  display: block;
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-label);
+  margin-bottom: 5px;
+}
+.saf-hint {
+  margin-top: 4px; /* 22 */
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+/* Görünür pending gerekçesi — sessiz düşüş YOK (WORKFLOW §3). */
+.saf-pending {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--color-warning-deep-text);
+}
+
+/* ── Talep Edilen Malzemeler (66-117) ───────────────────────────────────── */
+.saf-lines {
+  padding: 0; /* 66 — kart iç boşluğu tabloya devredilir */
+  overflow: hidden;
+}
+.saf-lines__head {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* 67 */
+  padding: var(--space-4) var(--space-5); /* 67 — 16px 20px */
+  border-bottom: 1px solid var(--color-border);
+}
+.saf-lines__title {
+  font-size: 14px; /* 68 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.saf-lines__add {
+  margin-left: auto; /* 69 */
+}
+.saf-lines__note {
+  margin: var(--space-3) var(--space-5) 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.saf-lines__note--error {
+  color: var(--color-danger);
+}
+
+.saf-table {
+  width: 100%;
+  border-collapse: collapse; /* 71 */
+}
+.saf-table thead tr {
+  background: var(--color-surface-2); /* 72 */
+  border-bottom: 1px solid var(--color-border);
+}
+.saf-table th {
+  padding: 10px 8px; /* 73-79 */
+  text-align: left;
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+.saf-table th:first-child,
+.saf-table td:first-child {
+  padding-left: 14px; /* 73 */
+}
+.saf-table td {
+  padding: 11px 8px; /* 83-89 */
+  vertical-align: top;
+  font-size: 12px;
+  color: var(--color-text);
+}
+.saf-table tbody tr {
+  border-bottom: 1px solid var(--color-divider); /* 82 — #f1f5f9 */
+}
+/* Kritik stoklu kalemin satır zemini (82). */
+.saf-table__row--critical {
+  background: var(--color-audit-danger-row-bg); /* #fff7f7 */
+}
+.saf-table__center {
+  text-align: center;
+}
+.saf-table__right {
+  text-align: right;
+}
+/* "Talep Miktarı" başlığı vurgulu mavidir (76). */
+.saf-table__accent {
+  color: var(--color-primary);
+  font-weight: var(--weight-bold);
+}
+.saf-table__muted {
+  color: var(--color-text-muted); /* 84, 93 */
+}
+/* Kalem kaynağı seçici (104 ikiliğinin satır içi karşılığı). */
+.saf-source {
+  display: block;
+  margin-bottom: 4px;
+}
+/* Malzeme adının ALTINDAKİ küçük not: 83 "⚠ Kritik stok" · 92 kart kodu. */
+.saf-table__sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--color-text-subtle); /* 92 */
+}
+.saf-table__sub--critical {
+  color: var(--color-danger-strong); /* 83 — #dc2626 */
+}
+/* "Mevcut Stok" (85/94) — renk SUNUCUNUN `status` damgasından türer. */
+.saf-table__stock {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+.saf-stock--critical {
+  color: var(--color-danger-strong); /* 85 — #dc2626 */
+}
+.saf-stock--low {
+  color: var(--color-warning-strong); /* 94 — #d97706 */
+}
+.saf-table__amount {
+  font-family: var(--font-mono); /* 88 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.saf-table__input {
+  font-family: var(--font-mono); /* 86, 87 */
+  text-align: right;
+}
+/* "Talep Miktarı" hücresinin mavi vurgusu (86). */
+.saf-table__input--accent {
+  border-color: var(--color-primary-ring); /* #bfdbfe */
+  background: var(--color-nav-active-bg); /* #eff6ff */
+  color: var(--color-primary);
+  font-weight: var(--weight-bold);
+}
+.saf-table__error {
+  display: block;
+  margin-top: var(--space-form-hint-gap);
+  font-size: 11px;
+  color: var(--color-danger);
+  text-align: left;
+}
+.saf-table__remove {
+  color: var(--color-text-subtle); /* 89 */
+}
+.saf-table__adder td {
+  background: var(--color-surface-2); /* 100 */
+  padding: 10px 14px; /* 101 */
+}
+.saf-table__pick {
+  border-style: dashed; /* 102 */
+}
+/* TAHMİNİ TOPLAM satırı (110-114). */
+.saf-table tfoot tr:first-child {
+  background: var(--color-nav-active-bg); /* 110 — #eff6ff */
+  border-top: 2px solid var(--color-primary);
+}
+.saf-table tfoot td {
+  padding: 13px 8px; /* 111 */
+  font-size: 13px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.saf-table tfoot td:first-child {
+  padding-left: 14px; /* 111 */
+}
+.saf-table__total {
+  font-size: 16px; /* 112 */
+  font-family: var(--font-mono);
+  color: var(--color-primary);
+}
+/* Toplamın EKSİK olduğu durumun görünür açıklaması — mockup'ta yoktur çünkü
+   mockup'ın örnek verisinde fiyatsız kalem yoktur; sessizce 0 saymak yasak. */
+.saf-table__incomplete {
+  background: var(--color-orange-tint);
+  border-top: 1px solid var(--color-orange-tint-border);
+  font-size: 11px;
+  font-weight: var(--weight-regular);
+  color: var(--color-warning-deep-text);
+  text-align: left;
+}
+
+/* ── Tedarikçi Tercihi (119-138) ────────────────────────────────────────── */
+.saf-supplier-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px; /* 124 */
+  padding: var(--space-3); /* 124 — 12px */
+  background: var(--color-surface-2); /* 124 — #f8fafc */
+  border-radius: var(--radius-9);
+}
+.saf-supplier-list__note {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.saf-supplier-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px; /* 132 */
+}
+.saf-notify {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ── Onay Akışı kutusu (156-168) ────────────────────────────────────────── */
+.saf-approval {
+  background: var(--color-nav-active-bg); /* 156 — #eff6ff */
+  border: 1px solid var(--color-primary-ring); /* #bfdbfe */
+  border-radius: var(--radius-12);
+  padding: 14px 18px; /* 156 */
+  margin-bottom: var(--space-4); /* 156 */
+}
+.saf-approval__title {
+  font-size: 13px; /* 157 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary-hover); /* #1d4ed8 */
+  margin-bottom: 8px;
+}
+.saf-approval__chain {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* 158 */
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+.saf-step {
+  background: var(--color-neutral-soft); /* 163 — #f1f5f9 */
+  color: var(--color-text-muted);
+  padding: 4px 10px;
+  border-radius: var(--radius-8);
+  font-weight: var(--weight-semibold);
+}
+/* 159 — tamamlanmış adım yeşil. */
+.saf-step--done {
+  background: var(--color-success-soft); /* #dcfce7 */
+  color: var(--color-success);
+}
+/* 161 — sıradaki adım mavi. */
+.saf-step--next {
+  background: var(--color-primary-soft); /* #dbeafe */
+  color: var(--color-primary);
+}
+.saf-step__arrow {
+  color: var(--color-text-subtle); /* 160 */
+}
+.saf-approval__result {
+  margin-left: auto; /* 166 */
+  font-size: 11px;
+  color: var(--color-primary-light); /* 166 — #3b82f6 */
+}
+/* Eşik aşıldığında ve BİLİNMEDİĞİNDE hüküm vurgulanır: ikisi de "patron
+   devrede olabilir" der, mavi bilgi tonu bunu yeterince söylemez. */
+.saf-approval__result--required,
+.saf-approval__result--unknown {
+  color: var(--color-warning-deep-text);
+  font-weight: var(--weight-semibold);
+}

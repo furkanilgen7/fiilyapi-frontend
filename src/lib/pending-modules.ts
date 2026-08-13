@@ -106,6 +106,14 @@ const MODULE_LABELS: Record<string, string> = {
   // uydurma bir puan gostermektense hic gostermemek dogrudur"). Yıldızlar
   // İCAT EDİLMEZ; satır yerinde durur, "—" + bu gerekçe basılır.
   supplier_rating: "Tedarikçi değerlendirme özelliği henüz yok",
+  // F-SA T3 (FST · Satın Alma Talebi formu) — mockup'ta ÇİZİLİ olup şemada
+  // KARŞILIĞI OLMAYAN üç yüzey. `PurchaseRequestCreate` açıklaması ikisini
+  // adıyla sayar: "FST'nin 'Teklif Istenecek Tedarikciler' listesi ve 'Odeme
+  // Vadesi Tercihi' burada YOKTUR". Üçü de yerinde devre dışı + görünür
+  // gerekçeyle basılır, gövdeye HİÇBİR anahtar eklemez.
+  purchase_quote_suppliers: "Teklif istenecek tedarikçi seçimi henüz saklanmıyor",
+  purchase_payment_terms: "Ödeme vadesi tercihi henüz saklanmıyor",
+  purchase_supplier_email: "E-posta bildirimleri henüz yok",
 };
 
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";
