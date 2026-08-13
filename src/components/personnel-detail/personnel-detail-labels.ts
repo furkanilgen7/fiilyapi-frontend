@@ -1,33 +1,66 @@
 import {
-  SOURCE_BADGE_VARIANT,
+  formatWageCell,
+  PROJECT_NAME_PENDING_REASON,
+  resolveSourceAvatarGradient,
+  resolveSourceBadgeVariant,
+  resolveWorkerSourceLabel,
   STATUS_BADGE_VARIANT,
   STATUS_LABEL,
-  WORKER_SOURCE_LABELS,
 } from "@/components/personnel/personnel-list-labels";
+import { formatDateDots } from "@/lib/format";
 import { pendingModuleLabel } from "@/lib/pending-modules";
 
 /**
- * F-PT2 T3 · PD — `/personel/[id]` detay ekranının etiket/rozet/pending
- * gerekçe sabitleri. Yorumlardaki sayılar `Personel Detay.dc.html`in SATIR
- * numaralarıdır.
+ * F-PT2 T3 / F-İK T3 · PD — `/personel/[id]` detay ekranının etiket/rozet/
+ * pending gerekçe sabitleri. Yorumlardaki sayılar `Personel Detay.dc.html`in
+ * SATIR numaralarıdır.
  *
- * Rozet/etiket haritaları T2'nin `personnel-list-labels.ts`ten AYNEN ithal
- * edilir — ikinci bir kaynak YOK (görev emri kuralı).
+ * Rozet/etiket/biçimlendirici yardımcıları T2'nin `personnel-list-labels.ts`
+ * ve ortak `lib/format.ts`ten AYNEN ithal edilir — ikinci bir kaynak YOK
+ * (görev emri kuralı). `resolveSourceBadgeVariant`/`resolveWorkerSourceLabel`
+ * KULLANILIR (spec K2 dayanıklılığı) — ham `Record[source]` erişimi YOK,
+ * İK-3'ün `freelance`/`intern` gibi henüz şemada olmayan değerleri ekranı
+ * çökertmesin diye.
  */
-export { SOURCE_BADGE_VARIANT, STATUS_BADGE_VARIANT, STATUS_LABEL, WORKER_SOURCE_LABELS };
+export {
+  formatWageCell,
+  PROJECT_NAME_PENDING_REASON,
+  resolveSourceAvatarGradient,
+  resolveSourceBadgeVariant,
+  resolveWorkerSourceLabel,
+  STATUS_BADGE_VARIANT,
+  STATUS_LABEL,
+};
 
 export const PENDING_VALUE = "—";
 
 /**
- * 40-62 başlık kartındaki alanlardan detay ekranının HENÜZ BASMADIKLARI.
- *
- * ⚠️ F-İK T2: bu sabit eskiden liste ekranının `COLUMN_PENDING_REASON`ından
- * ithal ediliyordu; İK-1 ile o sütunlar GERÇEĞE döndü ve sabit silindi. Detay
- * ekranının kendi geçişi AYRI bir task'tır — gerekçe metni burada, ekranın
- * kendi tek kaynağında yaşar.
+ * F-İK T3 · `İşe Giriş` şerit hücresi (PD 58). `null` ⇒ gerçek boşluk "—".
+ * Mevcut `formatDateDots` (`YYYY-MM-DD` → "01.03.2025") AYNEN kullanılır —
+ * yeni bir tarih biçimlendirici YAZILMAZ (görev emri kuralı).
  */
-export const HEADER_FIELD_PENDING_REASON =
-  "Bu bilgi bu ekranda henüz gösterilmiyor — İnsan Kaynakları dilimiyle gelecek.";
+export function formatHireDate(hireDate: string | null): string {
+  return hireDate === null ? PENDING_VALUE : formatDateDots(hireDate);
+}
+
+/**
+ * F-İK T3 · IBAN maskeleme (PD 61, spec K5): mockup `TR12 0001 0093...`
+ * gösterir — TAM değer bu ekranda BASILMAZ, yalnız düzenleme formunda
+ * görünür. Boşluklar önce temizlenir (sunucu boşluksuz saklar), ilk 3 blok
+ * (4'erli) boşlukla gruplanır; girdi 12 karakterden uzunsa "..." eklenir.
+ * `null` ⇒ gerçek boşluk "—".
+ */
+export function maskIban(iban: string | null): string {
+  if (iban === null) return PENDING_VALUE;
+  const clean = iban.replace(/\s+/g, "");
+  const groups = clean.match(/.{1,4}/g)?.slice(0, 3) ?? [];
+  const prefix = groups.join(" ");
+  return clean.length > 12 ? `${prefix}...` : prefix;
+}
+
+/** PD 60 · "Vergi No" — sunucuda alan YOK (İK-1 sözleşmesinde `tax_no` yok). */
+export const TAX_NO_PENDING_REASON =
+  "Vergi No alanı sunucuda henüz yok — bu sürümün İK sözleşmesi bu alanı taşımıyor.";
 
 /** 66-86 · "Puantaj Özeti" — kişi-bazlı puantaj özeti ucu YOK (spec K4). */
 export const TIMESHEET_SUMMARY_PENDING_REASON =

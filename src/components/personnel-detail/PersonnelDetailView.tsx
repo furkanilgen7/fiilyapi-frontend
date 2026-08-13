@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { usePersonnelDetail } from "@/lib/api/hooks/usePersonnelDetail";
+import { useProjects } from "@/lib/api/hooks/useProjects";
 import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 
@@ -29,6 +30,9 @@ export function PersonnelDetailView() {
   const { id } = useParams<{ id: string }>();
   const { canView } = useModulePermission("personnel");
   const detailQuery = usePersonnelDetail(id);
+  // Proje ADI sunucudan personel kaydıyla GELMEZ (yalnız `assigned_project_id`)
+  // — başlık kartının alt başlığı için `PersonnelListView` ile AYNI desen.
+  const projectsQuery = useProjects();
 
   if (!canView || isForbidden(detailQuery.error)) return <AccessDenied />;
   if (detailQuery.isError) {
@@ -39,10 +43,18 @@ export function PersonnelDetailView() {
   }
 
   const personnel = detailQuery.data;
+  const projectItems = projectsQuery.data?.items;
+  const projectNames = projectItems
+    ? Object.fromEntries(projectItems.map((project) => [project.id, project.name]))
+    : undefined;
 
   return (
     <div className="pd">
-      <PersonnelHeaderCard personnel={personnel} editHref={`/personel/${id}/duzenle`} />
+      <PersonnelHeaderCard
+        personnel={personnel}
+        editHref={`/personel/${id}/duzenle`}
+        projectNames={projectNames}
+      />
 
       <div className="pd-grid">
         {/* 66-86 — kişi-bazlı puantaj özeti ucu YOK (K4); kart HİÇBİR ek
