@@ -57,8 +57,16 @@ const tokensCss = readFileSync(
  * mor/yeşil/mono palette karşılandı; YALNIZ iki değer yeniydi — satış bedeli
  * girişinin mor kenarlığı (`--color-accent-purple-border`, DS 86) ve ödeme
  * planı parametre şeridinin açık mor zemini (`--color-plan-params-bg`, DS 102).
+ *
+ * F-İK T5 (BT · Belge & Sertifika): 81 → 82. Mockup'ın renklerinin tamamı
+ * mevcut palette karşılandı (satır tinti = --color-audit-danger-row-bg, kehribar
+ * başlık = --color-amber-tint-cell/--color-warning-deep-text, bilgi kutusu =
+ * --color-nav-active-bg/--color-primary-hover, çubuk dilimleri = success/
+ * warning/danger/border); YALNIZ koyu kırmızı başlık tonu (BT 51, 81) yeniydi —
+ * `--color-danger-strong` ondan AÇIKtır ve başlık/gövde hiyerarşisini düşürürdü
+ * (`--color-danger-deep`).
  */
-const EXPECTED_HEX_COUNT = 81;
+const EXPECTED_HEX_COUNT = 82;
 
 describe("tokens.css", () => {
   it("çekirdek renk token'larını tanımlar (açık tema Slate + Blue)", () => {

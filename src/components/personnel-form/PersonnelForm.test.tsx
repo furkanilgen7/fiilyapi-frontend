@@ -7,6 +7,8 @@ import { PersonnelForm, safeReturnTo } from "./PersonnelForm";
 import { useCreatePersonnel, useUpdatePersonnel } from "@/lib/api/hooks/usePersonnelMutations";
 import { usePersonnelDetail } from "@/lib/api/hooks/usePersonnelDetail";
 import { useSubcontractors } from "@/lib/api/hooks/useSubcontractors";
+import { useProjects } from "@/lib/api/hooks/useProjects";
+import { EMPTY_PERSONNEL_HR_FIELDS } from "@/lib/api/hooks/personnel-fixtures";
 import { useSession } from "@/components/shell/SessionProvider";
 import { BackendError } from "@/lib/api/unwrap";
 import type { MeResponse } from "@/lib/auth/types";
@@ -25,6 +27,7 @@ vi.mock("@/lib/api/hooks/usePersonnelMutations", () => ({
 }));
 vi.mock("@/lib/api/hooks/usePersonnelDetail", () => ({ usePersonnelDetail: vi.fn() }));
 vi.mock("@/lib/api/hooks/useSubcontractors", () => ({ useSubcontractors: vi.fn() }));
+vi.mock("@/lib/api/hooks/useProjects", () => ({ useProjects: vi.fn() }));
 
 const createMutate = vi.fn();
 const updateMutate = vi.fn();
@@ -36,7 +39,9 @@ function mockSession(level: string) {
   });
 }
 
+/** YAYINLANMIŞ (is_draft:false) mevcut kayıt — düzenleme kipinin varsayılanı. */
 const DETAIL_FIXTURE = {
+  ...EMPTY_PERSONNEL_HR_FIELDS,
   id: "per-9",
   full_name: "Mehmet Yılmaz",
   trade: "Elektrikçi",
@@ -44,7 +49,23 @@ const DETAIL_FIXTURE = {
   subcontractor_id: "sub-1",
   user_id: null,
   is_active: true,
+  tc_no: "12345678901",
+  phone: "0532 111 22 33",
+  hire_date: "2026-01-15",
+  assigned_project_id: "p-1",
+  // "Bölüm" formdan seçilemez; kaydın mevcut değeri PATCH'te KORUNUR.
+  assigned_section_id: "sec-1",
+  is_draft: false,
 };
+
+function mockDetail(overrides: Partial<typeof DETAIL_FIXTURE> = {}) {
+  vi.mocked(usePersonnelDetail).mockReturnValue({
+    data: { ...DETAIL_FIXTURE, ...overrides },
+    isLoading: false,
+    isError: false,
+    error: null,
+  } as never);
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -52,17 +73,22 @@ beforeEach(() => {
   mockSession("full");
   vi.mocked(useCreatePersonnel).mockReturnValue({ mutate: createMutate, isPending: false } as never);
   vi.mocked(useUpdatePersonnel).mockReturnValue({ mutate: updateMutate, isPending: false } as never);
-  vi.mocked(usePersonnelDetail).mockReturnValue({
-    data: DETAIL_FIXTURE,
-    isLoading: false,
-    isError: false,
-    error: null,
-  } as never);
+  mockDetail();
   vi.mocked(useSubcontractors).mockReturnValue({
     data: {
       items: [
         { id: "sub-1", name: "Aydın Elektrik Taah." },
         { id: "sub-2", name: "Çelik İnşaat Taah." },
+      ],
+    },
+    isLoading: false,
+    isError: false,
+  } as never);
+  vi.mocked(useProjects).mockReturnValue({
+    data: {
+      items: [
+        { id: "p-1", name: "Güneşkent A-Blok" },
+        { id: "p-2", name: "Çelik OSB Fabrika" },
       ],
     },
     isLoading: false,
@@ -74,18 +100,36 @@ beforeEach(() => {
  * Mockup'ta "Personeli Kaydet" İKİ kez vardır (üst şerit 40 + alt şerit 212);
  * ikisi de aynı gönderimi tetikler. Testler alt şeridi kullanır.
  */
-function submitButton(name = "Personeli Kaydet") {
+function actionButton(name: string) {
   return within(document.querySelector(".pf-actions") as HTMLElement).getByRole("button", {
     name,
   });
 }
 
-/** Mockup satır 63/64/91/95/99 — formun DOLDURULABİLİR dört alanı. */
-async function fillRequired(user: ReturnType<typeof userEvent.setup>) {
+function submitButton(name = "Personeli Kaydet") {
+  return actionButton(name);
+}
+
+/** Mockup 63/64/91/99 — taslak yolunun yettiği çekirdek. */
+async function fillCore(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("Ad"), "Mehmet");
   await user.type(screen.getByLabelText("Soyad"), "Yılmaz");
   await user.selectOptions(screen.getByLabelText("Çalışan Tipi"), "company");
   await user.selectOptions(screen.getByLabelText("Meslek / Görev"), "Elektrikçi");
+}
+
+/** Mockup'ta `*` taşıyan TÜM alanlar — yayın yolunun gerektirdiği küme. */
+async function fillPublishable(user: ReturnType<typeof userEvent.setup>) {
+  await fillCore(user);
+  await user.type(screen.getByLabelText("TC Kimlik No"), "12345678901");
+  await user.type(screen.getByLabelText("Doğum Tarihi"), "1985-04-12");
+  await user.type(screen.getByLabelText("Cep Telefonu"), "0532 123 45 67");
+  await user.type(screen.getByLabelText("Adres"), "Cumhuriyet Mah. 12/3");
+  await user.type(screen.getByLabelText("Acil Durum Kişisi"), "Ayşe Yılmaz");
+  await user.type(screen.getByLabelText("Acil Durum Telefonu"), "0533 987 65 43");
+  await user.type(screen.getByLabelText("İşe Giriş Tarihi"), "2026-08-01");
+  await user.selectOptions(screen.getByLabelText("Atandığı Proje"), "p-1");
+  await user.type(screen.getByLabelText("Ücret Tutarı (₺)"), "1200");
 }
 
 describe("PersonnelForm (create) · mockup sadakati", () => {
@@ -155,9 +199,53 @@ describe("PersonnelForm (create) · mockup sadakati", () => {
     ]);
   });
 
+  it("ücret tipi ve ödeme şekli mockup'taki ETİKETLERİ basar (Seçiniz YOK)", () => {
+    render(<PersonnelForm mode="create" />);
+    expect(
+      within(screen.getByLabelText("Ücret Tipi"))
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ).toEqual(["Günlük", "Aylık", "Saatlik"]);
+    expect(
+      within(screen.getByLabelText("Ödeme Şekli"))
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ).toEqual(["Banka Havalesi", "Elden (Nakit)", "Karma"]);
+  });
+
+  it("cinsiyet/medeni durum ETİKETİ mockup'tan, DEĞERİ sözleşmedendir", () => {
+    render(<PersonnelForm mode="create" />);
+    const gender = within(screen.getByLabelText("Cinsiyet")).getAllByRole("option");
+    expect(gender.map((option) => option.textContent)).toEqual(["Seçiniz...", "Erkek", "Kadın"]);
+    expect(gender.map((option) => (option as HTMLOptionElement).value)).toEqual([
+      "",
+      "male",
+      "female",
+    ]);
+  });
+
+  it("Atandığı Proje mockup'ın SABİT adlarını değil GERÇEK projeleri listeler (104)", () => {
+    render(<PersonnelForm mode="create" />);
+    expect(
+      within(screen.getByLabelText("Atandığı Proje"))
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ).toEqual(["Seçiniz...", "Güneşkent A-Blok", "Çelik OSB Fabrika"]);
+  });
+
   it("TC Kimlik No mockup'in maxlength=11 degerini korur (65)", () => {
     render(<PersonnelForm mode="create" />);
     expect(screen.getByLabelText("TC Kimlik No")).toHaveAttribute("maxlength", "11");
+  });
+
+  it("sözleşmedeki uzunluk tavanları DOM'da uygulanır (sessiz 422 kapısı)", () => {
+    render(<PersonnelForm mode="create" />);
+    expect(screen.getByLabelText("Cep Telefonu")).toHaveAttribute("maxlength", "30");
+    expect(screen.getByLabelText("E-posta")).toHaveAttribute("maxlength", "255");
+    expect(screen.getByLabelText("IBAN")).toHaveAttribute("maxlength", "34");
+    expect(screen.getByLabelText("SGK Sicil No")).toHaveAttribute("maxlength", "20");
+    // Adres sözleşmede SINIRSIZDIR — uydurma tavan konmaz.
+    expect(screen.getByLabelText("Adres")).not.toHaveAttribute("maxlength");
   });
 
   it("Ad/Soyad sunucu sinirini DOM'da uygular — uzun giris KIRPILIR (422 olmaz)", async () => {
@@ -178,9 +266,11 @@ describe("PersonnelForm (create) · mockup sadakati", () => {
 });
 
 describe("PersonnelForm (create) · pending yüzeyler", () => {
-  it("sunucu karsiligi olmayan alanlarin HEPSI devre disidir", () => {
+  it("İK alanlarının HEPSİ artık ETKİN", () => {
     render(<PersonnelForm mode="create" />);
     for (const label of [
+      "Ad",
+      "Soyad",
       "TC Kimlik No",
       "Doğum Tarihi",
       "Cinsiyet",
@@ -190,24 +280,24 @@ describe("PersonnelForm (create) · pending yüzeyler", () => {
       "Adres",
       "Acil Durum Kişisi",
       "Acil Durum Telefonu",
+      "Çalışan Tipi",
+      "Meslek / Görev",
       "İşe Giriş Tarihi",
       "Atandığı Proje",
-      "Bölüm",
       "Ücret Tipi",
       "Ücret Tutarı (₺)",
       "Ödeme Şekli",
       "IBAN",
       "SGK Sicil No",
     ]) {
-      expect(screen.getByLabelText(label), `${label} devre dışı değil`).toBeDisabled();
+      expect(screen.getByLabelText(label), `${label} devre dışı`).toBeEnabled();
     }
   });
 
-  it("dort ETKIN alan devre disi DEGILDIR", () => {
+  it("PENDING kalan TEK alan Bölüm'dür ve gerekçesi GÖRÜNÜR yazar", () => {
     render(<PersonnelForm mode="create" />);
-    for (const label of ["Ad", "Soyad", "Çalışan Tipi", "Meslek / Görev"]) {
-      expect(screen.getByLabelText(label)).toBeEnabled();
-    }
+    expect(screen.getByLabelText("Bölüm")).toBeDisabled();
+    expect(screen.getByText(/Bölümler şantiyeye bağlıdır/)).toBeVisible();
   });
 
   it("gerekceler GORUNUR listede yazar — title'da saklanmaz", () => {
@@ -216,8 +306,8 @@ describe("PersonnelForm (create) · pending yüzeyler", () => {
     expect(notices).toHaveTextContent(/belge modülünün form eklentisi sonraki dilimde gelir/);
     expect(notices).toHaveTextContent(/Serbest Meslek/);
     expect(notices).toHaveTextContent(/Stajyer/);
-    expect(notices).toHaveTextContent(/Taslak Kaydet.*devre dışı/);
-    expect(notices).toHaveTextContent(/zorunluluk \(\*\) işaretleri/);
+    expect(notices).toHaveTextContent(/Bölüm/);
+    expect(notices).toHaveTextContent(/Taslak Kaydet/);
   });
 
   it("karsiliksiz iki calisan tipi BASILIR ama secilemez (91)", () => {
@@ -235,12 +325,6 @@ describe("PersonnelForm (create) · pending yüzeyler", () => {
     expect(byLabel.get("Taşeron İşçisi")).toBeEnabled();
     expect(byLabel.get("Serbest Meslek")).toBeDisabled();
     expect(byLabel.get("Stajyer")).toBeDisabled();
-  });
-
-  it("iki 'Taslak' butonu da devre disidir (39, 211)", () => {
-    render(<PersonnelForm mode="create" />);
-    expect(screen.getByRole("button", { name: "Taslak" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Taslak Kaydet" })).toBeDisabled();
   });
 
   it("SGK kutucugu devre disi VE isaretsizdir (206)", () => {
@@ -272,23 +356,53 @@ describe("PersonnelForm (create) · Bağlı Taşeron", () => {
   });
 });
 
-describe("PersonnelForm (create) · doğrulama ve gönderim", () => {
-  it("bos formda YALNIZ etkin alanlar dogrulanir; devre disi alanlar engellemez", async () => {
+describe("PersonnelForm (create) · taslak / yayın ayrımı (K4)", () => {
+  it("YAYIN yolunda mockup'ın YILDIZLI alanları denetlenir", async () => {
     const user = userEvent.setup();
     render(<PersonnelForm mode="create" />);
     await user.click(submitButton());
 
     expect(createMutate).not.toHaveBeenCalled();
     expect(screen.getAllByText("Ad zorunludur.").length).toBeGreaterThan(0);
-    expect(screen.getByText("Soyad zorunludur.")).toBeVisible();
-    expect(screen.getByText("Çalışan tipi seçiniz.")).toBeVisible();
-    expect(screen.getByText("Meslek / görev seçiniz.")).toBeVisible();
+    expect(screen.getByText("TC kimlik no zorunludur.")).toBeVisible();
+    expect(screen.getByText("Doğum tarihi zorunludur.")).toBeVisible();
+    expect(screen.getByText("Adres zorunludur.")).toBeVisible();
+    expect(screen.getByText("İşe giriş tarihi zorunludur.")).toBeVisible();
+    expect(screen.getByText("Ücret tutarı zorunludur.")).toBeVisible();
   });
 
-  it("dort alan dolunca govde YALNIZ sozlesme anahtarlariyla gonderilir", async () => {
+  it("TASLAK yolunda sunucunun gerçekten istediği İKİ alan yeter", async () => {
     const user = userEvent.setup();
     render(<PersonnelForm mode="create" />);
-    await fillRequired(user);
+    await user.type(screen.getByLabelText("Ad"), "Zeki");
+    await user.selectOptions(screen.getByLabelText("Çalışan Tipi"), "company");
+    await user.click(actionButton("Taslak Kaydet"));
+
+    expect(createMutate).toHaveBeenCalledTimes(1);
+    expect(createMutate.mock.calls[0][0]).toMatchObject({
+      full_name: "Zeki",
+      source: "company",
+      is_draft: true,
+      tc_no: null,
+    });
+  });
+
+  it("TASLAK yolu da boş formu geçirmez (sunucu full_name+source ister)", async () => {
+    const user = userEvent.setup();
+    render(<PersonnelForm mode="create" />);
+    await user.click(actionButton("Taslak Kaydet"));
+
+    expect(createMutate).not.toHaveBeenCalled();
+    expect(screen.getAllByText("Ad zorunludur.").length).toBeGreaterThan(0);
+    expect(screen.getByText("Çalışan tipi seçiniz.")).toBeVisible();
+    // Taslakta yıldızlı alanlar için hata ÜRETİLMEZ.
+    expect(screen.queryByText("TC kimlik no zorunludur.")).not.toBeInTheDocument();
+  });
+
+  it("yayın yolunda gövde is_draft:false ve TÜM İK alanlarıyla gider", async () => {
+    const user = userEvent.setup();
+    render(<PersonnelForm mode="create" />);
+    await fillPublishable(user);
     await user.click(submitButton());
 
     expect(createMutate).toHaveBeenCalledTimes(1);
@@ -297,19 +411,60 @@ describe("PersonnelForm (create) · doğrulama ve gönderim", () => {
       trade: "Elektrikçi",
       source: "company",
       is_active: true,
+      is_draft: false,
+      tc_no: "12345678901",
+      birth_date: "1985-04-12",
+      gender: null,
+      marital_status: null,
+      phone: "0532 123 45 67",
+      email: null,
+      address: "Cumhuriyet Mah. 12/3",
+      emergency_contact_name: "Ayşe Yılmaz",
+      emergency_contact_phone: "0533 987 65 43",
+      hire_date: "2026-08-01",
+      wage_type: "daily",
+      wage_amount: "1200",
+      payment_method: "bank",
+      iban: null,
+      sgk_no: null,
+      assigned_project_id: "p-1",
     });
   });
 
+  it("proje listesi boşsa 'Atandığı Proje' yayın yolunu KİLİTLEMEZ", async () => {
+    vi.mocked(useProjects).mockReturnValue({
+      data: { items: [] },
+      isLoading: false,
+      isError: true,
+    } as never);
+    const user = userEvent.setup();
+    render(<PersonnelForm mode="create" />);
+    await fillCore(user);
+    await user.type(screen.getByLabelText("TC Kimlik No"), "12345678901");
+    await user.type(screen.getByLabelText("Doğum Tarihi"), "1985-04-12");
+    await user.type(screen.getByLabelText("Cep Telefonu"), "0532 123 45 67");
+    await user.type(screen.getByLabelText("Adres"), "Cumhuriyet Mah. 12/3");
+    await user.type(screen.getByLabelText("Acil Durum Kişisi"), "Ayşe Yılmaz");
+    await user.type(screen.getByLabelText("Acil Durum Telefonu"), "0533 987 65 43");
+    await user.type(screen.getByLabelText("İşe Giriş Tarihi"), "2026-08-01");
+    await user.type(screen.getByLabelText("Ücret Tutarı (₺)"), "1200");
+    await user.click(submitButton());
+
+    expect(screen.getByText(/Proje listesi yüklenemedi/)).toBeVisible();
+    expect(createMutate).toHaveBeenCalledTimes(1);
+    expect(createMutate.mock.calls[0][0]).toMatchObject({ assigned_project_id: null });
+  });
+});
+
+describe("PersonnelForm (create) · gönderim", () => {
   it("taserondan sirket kadrosuna donulunce secim TEMIZLENIR (govdeye sizmaz)", async () => {
     const user = userEvent.setup();
     render(<PersonnelForm mode="create" />);
     await user.type(screen.getByLabelText("Ad"), "Ali");
-    await user.type(screen.getByLabelText("Soyad"), "Veli");
-    await user.selectOptions(screen.getByLabelText("Meslek / Görev"), "Elektrikçi");
     await user.selectOptions(screen.getByLabelText("Çalışan Tipi"), "subcontractor");
     await user.selectOptions(screen.getByLabelText("Bağlı Taşeron"), "sub-1");
     await user.selectOptions(screen.getByLabelText("Çalışan Tipi"), "company");
-    await user.click(submitButton());
+    await user.click(actionButton("Taslak Kaydet"));
 
     expect(createMutate.mock.calls[0][0]).not.toHaveProperty("subcontractor_id");
   });
@@ -319,7 +474,7 @@ describe("PersonnelForm (create) · doğrulama ve gönderim", () => {
     createMutate.mockImplementation((_body, options) => options.onSuccess?.({}));
     const user = userEvent.setup();
     render(<PersonnelForm mode="create" />);
-    await fillRequired(user);
+    await fillPublishable(user);
     await user.click(submitButton());
 
     expect(push).toHaveBeenCalledWith("/projeler/p-1/santiyeler/s-1/puantaj?year=2026");
@@ -330,17 +485,6 @@ describe("PersonnelForm (create) · doğrulama ve gönderim", () => {
     render(<PersonnelForm mode="create" />);
     await user.click(screen.getAllByRole("button", { name: "İptal" })[0]);
     expect(push).toHaveBeenCalledWith("/puantaj");
-  });
-
-  it("sunucu hatasi Turkce gosterilir, yutulmaz", async () => {
-    createMutate.mockImplementation((_body, options) =>
-      options.onError?.(new BackendError(422, { detail: "taşeron bulunamadı" })),
-    );
-    const user = userEvent.setup();
-    render(<PersonnelForm mode="create" />);
-    await fillRequired(user);
-    await user.click(submitButton());
-    expect(screen.getByTestId("personnel-form-error")).toHaveTextContent(/taşeron bulunamadı/);
   });
 
   it("personnel yetkisi olmayan AccessDenied gorur", () => {
@@ -356,6 +500,46 @@ describe("PersonnelForm (create) · doğrulama ve gönderim", () => {
   });
 });
 
+/**
+ * 🔒 spec K3 — sunucu reddi AYRIŞTIRILIR: 422 "geçersiz", 409 "çift kayıt".
+ * İstemci TCKN checksum HESAPLAMAZ; ayrım yalnız yanıt kodundan gelir.
+ */
+describe("PersonnelForm · TCKN hata ayrımı (422 ↔ 409)", () => {
+  async function submitWithError(error: BackendError) {
+    createMutate.mockImplementation((_body, options) => options.onError?.(error));
+    const user = userEvent.setup();
+    render(<PersonnelForm mode="create" />);
+    await fillPublishable(user);
+    await user.click(submitButton());
+    return screen.getByTestId("personnel-form-error").textContent ?? "";
+  }
+
+  it("422 GEÇERSİZLİK mesajı gösterir (sunucu detayı yutulmaz)", async () => {
+    const message = await submitWithError(
+      new BackendError(422, { detail: "TC kimlik numarası geçersiz" }),
+    );
+    expect(message).toContain("Geçersiz bilgi");
+    expect(message).toContain("TC kimlik numarası geçersiz");
+    expect(message).not.toContain("Çift kayıt");
+  });
+
+  it("409 ÇİFT KAYIT mesajı gösterir ve TC alanının altını da işaretler", async () => {
+    const message = await submitWithError(
+      new BackendError(409, { detail: "Bu TC ile personel mevcut" }),
+    );
+    expect(message).toContain("Çift kayıt");
+    expect(message).not.toContain("Geçersiz bilgi");
+    expect(screen.getByText("Bu TC kimlik no ile kayıtlı personel zaten var.")).toBeVisible();
+  });
+
+  it("422 TC alanına çift kayıt hatası BASMAZ (iki durum karışmaz)", async () => {
+    await submitWithError(new BackendError(422, { detail: "tc_no geçersiz" }));
+    expect(
+      screen.queryByText("Bu TC kimlik no ile kayıtlı personel zaten var."),
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe("safeReturnTo", () => {
   it("uygulama ici mutlak yolu gecirir", () => {
     expect(safeReturnTo("/puantaj?site=s-1")).toBe("/puantaj?site=s-1");
@@ -368,7 +552,7 @@ describe("safeReturnTo", () => {
   });
 });
 
-/* ── F-PT2 T3 · Düzenleme kipi ─────────────────────────────────────────── */
+/* ── F-PT2 T3 + F-İK T4 · Düzenleme kipi ───────────────────────────────── */
 
 describe("PersonnelForm (edit) · önyükleme + mockup sadakati", () => {
   it("başlık/gönder etiketi düzenleme kipine göre değişir", () => {
@@ -377,13 +561,17 @@ describe("PersonnelForm (edit) · önyükleme + mockup sadakati", () => {
     expect(submitButton("Kaydet")).toBeInTheDocument();
   });
 
-  it("mevcut değerler forma ÖNYÜKLENİR (full_name ikiye bölünür)", () => {
+  it("mevcut değerler forma ÖNYÜKLENİR (İK alanları dâhil)", () => {
     render(<PersonnelForm mode="edit" personnelId="per-9" />);
     expect(screen.getByLabelText("Ad")).toHaveValue("Mehmet");
     expect(screen.getByLabelText("Soyad")).toHaveValue("Yılmaz");
     expect(screen.getByLabelText("Çalışan Tipi")).toHaveValue("subcontractor");
     expect(screen.getByLabelText("Bağlı Taşeron")).toHaveValue("sub-1");
     expect(screen.getByLabelText("Meslek / Görev")).toHaveValue("Elektrikçi");
+    expect(screen.getByLabelText("TC Kimlik No")).toHaveValue("12345678901");
+    expect(screen.getByLabelText("Cep Telefonu")).toHaveValue("0532 111 22 33");
+    expect(screen.getByLabelText("İşe Giriş Tarihi")).toHaveValue("2026-01-15");
+    expect(screen.getByLabelText("Atandığı Proje")).toHaveValue("p-1");
   });
 
   it("'Aktif personel' kutucuğu basılır, mevcut değeri taşır ve DÜZENLENEBİLİR", async () => {
@@ -396,11 +584,9 @@ describe("PersonnelForm (edit) · önyükleme + mockup sadakati", () => {
     expect(toggle).not.toBeChecked();
   });
 
-  it("create'teki pending alanlar düzenleme kipinde de AYNI pending kalır", () => {
+  it("Bölüm düzenleme kipinde de PENDING kalır", () => {
     render(<PersonnelForm mode="edit" personnelId="per-9" />);
-    for (const label of ["TC Kimlik No", "Cep Telefonu", "Ücret Tutarı (₺)", "IBAN"]) {
-      expect(screen.getByLabelText(label)).toBeDisabled();
-    }
+    expect(screen.getByLabelText("Bölüm")).toBeDisabled();
     const options = within(screen.getByLabelText("Çalışan Tipi")).getAllByRole("option");
     const byLabel = new Map(options.map((option) => [option.textContent, option]));
     expect(byLabel.get("Serbest Meslek")).toBeDisabled();
@@ -442,6 +628,154 @@ describe("PersonnelForm (edit) · önyükleme + mockup sadakati", () => {
   });
 });
 
+describe("PersonnelForm (edit) · yayın durumu (K4)", () => {
+  it("YAYINDAKİ eksik kayıt DÜZENLENEBİLİR — yıldız denetimi yayın geçişine özgüdür", async () => {
+    // İK alanları sunucuya sonradan eklendi: eski yayınlanmış kayıtların
+    // çoğunda boşlar. Düzenlemede yıldız denetimi uygulansaydı kullanıcı
+    // yalnız mesleği düzeltmek isterken ekranda KİLİTLENİRDİ.
+    const user = userEvent.setup();
+    render(<PersonnelForm mode="edit" personnelId="per-9" />);
+    expect(screen.getByLabelText("Adres")).toHaveValue("");
+    await user.selectOptions(screen.getByLabelText("Meslek / Görev"), "Sıhhi Tesisatçı");
+    await user.click(submitButton("Kaydet"));
+
+    expect(updateMutate).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Adres zorunludur.")).not.toBeInTheDocument();
+  });
+
+  it("YAYINDAKİ kaydı düzenlemek onu taslağa DÜŞÜRMEZ — is_draft anahtarı gitmez", async () => {
+    const user = userEvent.setup();
+    render(<PersonnelForm mode="edit" personnelId="per-9" />);
+    await user.selectOptions(screen.getByLabelText("Meslek / Görev"), "Sıhhi Tesisatçı");
+    await user.click(submitButton("Kaydet"));
+
+    expect(updateMutate).toHaveBeenCalledTimes(1);
+    expect("is_draft" in updateMutate.mock.calls[0][0]).toBe(false);
+  });
+
+  it("YAYINDAKİ kayıtta 'Taslak Kaydet' devre dışıdır ve gerekçesini taşır", () => {
+    render(<PersonnelForm mode="edit" personnelId="per-9" />);
+    const draft = actionButton("Taslak Kaydet");
+    expect(draft).toBeDisabled();
+    expect(draft).toHaveAttribute(
+      "title",
+      "Yayınlanmış personel kaydı formdan taslağa geri döndürülmez",
+    );
+    expect(screen.getByTestId("personnel-form-notices")).toHaveTextContent(/Bu kayıt YAYINDA/);
+  });
+
+  it("TASLAK kaydın birincil eylemi 'Yayına Al'dır ve is_draft:false gönderir", async () => {
+    mockDetail({ is_draft: true });
+    const user = userEvent.setup();
+    render(<PersonnelForm mode="edit" personnelId="per-9" />);
+    expect(screen.getByTestId("personnel-form-notices")).toHaveTextContent(/Bu kayıt TASLAK/);
+
+    // Yayın yolu yıldızlı alanları ister — taslak kayıt eksiktir, önce reddedilir.
+    await user.click(submitButton("Yayına Al"));
+    expect(updateMutate).not.toHaveBeenCalled();
+    expect(screen.getByText("Adres zorunludur.")).toBeVisible();
+
+    await user.type(screen.getByLabelText("Doğum Tarihi"), "1985-04-12");
+    await user.type(screen.getByLabelText("Adres"), "Cumhuriyet Mah. 12/3");
+    await user.type(screen.getByLabelText("Acil Durum Kişisi"), "Ayşe Yılmaz");
+    await user.type(screen.getByLabelText("Acil Durum Telefonu"), "0533 987 65 43");
+    await user.type(screen.getByLabelText("Ücret Tutarı (₺)"), "1200");
+    await user.click(submitButton("Yayına Al"));
+
+    expect(updateMutate).toHaveBeenCalledTimes(1);
+    expect(updateMutate.mock.calls[0][0]).toMatchObject({ is_draft: false });
+  });
+
+  it("TASLAK kayıt taslak kalarak da kaydedilebilir (is_draft:true)", async () => {
+    mockDetail({ is_draft: true });
+    const user = userEvent.setup();
+    render(<PersonnelForm mode="edit" personnelId="per-9" />);
+    await user.click(actionButton("Taslak Kaydet"));
+
+    expect(updateMutate).toHaveBeenCalledTimes(1);
+    expect(updateMutate.mock.calls[0][0]).toMatchObject({ is_draft: true });
+  });
+});
+
+/**
+ * 🔒 SESSİZ VERİ DEĞİŞİKLİĞİ KAPISI — varsayılanı olan seçiciler.
+ *
+ * "Ücret Tipi" ve "Ödeme Şekli" mockup'ta boş seçenek TAŞIMAZ: sunucuda `null`
+ * olsa bile ekranda ilk seçenek görünür. Kullanıcı o seçiciyi hiç AÇMADAN
+ * kaydederse anahtarın gitmesi, kullanıcının VERMEDİĞİ kararı veriye yazmak
+ * olurdu. Yalnız DÜZENLEME kipini ilgilendirir (oluşturmada ezilecek değer yok).
+ */
+describe("PersonnelForm (edit) · dokunulmamış varsayılan seçiciler", () => {
+  it("sunucuda null olan payment_method DOKUNULMADAN kaydedilirse anahtar GİTMEZ", async () => {
+    mockDetail({ payment_method: null });
+    const user = userEvent.setup();
+    render(<PersonnelForm mode="edit" personnelId="per-9" />);
+    // Ekranda mockup'ın ilk seçeneği GÖRÜNÜR — ama bu kullanıcının kararı değil.
+    expect(screen.getByLabelText("Ödeme Şekli")).toHaveValue("bank");
+
+    await user.selectOptions(screen.getByLabelText("Meslek / Görev"), "Sıhhi Tesisatçı");
+    await user.click(submitButton("Kaydet"));
+
+    expect("payment_method" in updateMutate.mock.calls[0][0]).toBe(false);
+  });
+
+  it("kullanıcı Ödeme Şekli'ni SEÇERSE değer gövdede gider", async () => {
+    mockDetail({ payment_method: null });
+    const user = userEvent.setup();
+    render(<PersonnelForm mode="edit" personnelId="per-9" />);
+    await user.selectOptions(screen.getByLabelText("Ödeme Şekli"), "cash");
+    await user.click(submitButton("Kaydet"));
+
+    expect(updateMutate.mock.calls[0][0]).toMatchObject({ payment_method: "cash" });
+  });
+
+  it("sunucuda null olan wage_type DOKUNULMADAN kaydedilirse anahtar GİTMEZ", async () => {
+    mockDetail({ wage_type: null });
+    const user = userEvent.setup();
+    render(<PersonnelForm mode="edit" personnelId="per-9" />);
+    expect(screen.getByLabelText("Ücret Tipi")).toHaveValue("daily");
+
+    await user.click(submitButton("Kaydet"));
+
+    expect("wage_type" in updateMutate.mock.calls[0][0]).toBe(false);
+  });
+
+  it("kullanıcı Ücret Tipi'ni SEÇERSE değer gövdede gider", async () => {
+    mockDetail({ wage_type: null });
+    const user = userEvent.setup();
+    render(<PersonnelForm mode="edit" personnelId="per-9" />);
+    await user.selectOptions(screen.getByLabelText("Ücret Tipi"), "monthly");
+    await user.click(submitButton("Kaydet"));
+
+    expect(updateMutate.mock.calls[0][0]).toMatchObject({ wage_type: "monthly" });
+  });
+
+  it("sunucudan DOLU gelen wage_type dokunulmasa da AYNI değerle gider (gerileme koruması)", async () => {
+    mockDetail({ wage_type: "hourly", payment_method: "mixed" });
+    const user = userEvent.setup();
+    render(<PersonnelForm mode="edit" personnelId="per-9" />);
+    await user.click(submitButton("Kaydet"));
+
+    expect(updateMutate.mock.calls[0][0]).toMatchObject({
+      wage_type: "hourly",
+      payment_method: "mixed",
+    });
+  });
+
+  it("OLUŞTURMA kipi etkilenmez — iki anahtar da HER ZAMAN gider", async () => {
+    const user = userEvent.setup();
+    render(<PersonnelForm mode="create" />);
+    await user.type(screen.getByLabelText("Ad"), "Zeki");
+    await user.selectOptions(screen.getByLabelText("Çalışan Tipi"), "company");
+    await user.click(actionButton("Taslak Kaydet"));
+
+    expect(createMutate.mock.calls[0][0]).toMatchObject({
+      wage_type: "daily",
+      payment_method: "bank",
+    });
+  });
+});
+
 describe("PersonnelForm (edit) · gönderim", () => {
   it("kaydet PATCH gövdesini üretir ve detay sayfasına döner", async () => {
     updateMutate.mockImplementation((_body, options) => options.onSuccess?.({}));
@@ -451,14 +785,17 @@ describe("PersonnelForm (edit) · gönderim", () => {
     await user.selectOptions(screen.getByLabelText("Meslek / Görev"), "Sıhhi Tesisatçı");
     await user.click(submitButton("Kaydet"));
 
-    expect(updateMutate).toHaveBeenCalledTimes(1);
-    expect(updateMutate.mock.calls[0][0]).toEqual({
+    expect(updateMutate.mock.calls[0][0]).toMatchObject({
       full_name: "Mehmet Yılmaz",
       trade: "Sıhhi Tesisatçı",
       source: "subcontractor",
       subcontractor_id: "sub-1",
       is_active: true,
+      tc_no: "12345678901",
+      assigned_project_id: "p-1",
     });
+    // Formdan seçilemeyen bölüm gövdeye GİRMEZ → sunucudaki değer korunur.
+    expect("assigned_section_id" in updateMutate.mock.calls[0][0]).toBe(false);
     expect(push).toHaveBeenCalledWith("/personel/per-9");
   });
 

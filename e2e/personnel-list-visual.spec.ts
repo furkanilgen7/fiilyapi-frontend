@@ -58,6 +58,11 @@ test("personel liste (dolu) gorsel", async ({ page }) => {
   // Durum rozetlerinin ikisi de kadrajda (per-6 tek pasif tohum kaydı).
   await expect(page.getByTestId("personel-row-per-1").getByText("Aktif")).toBeVisible();
   await expect(page.getByTestId("personel-row-per-6").getByText("Pasif")).toBeVisible();
+  // F-İK T6a · Proje sütunu AYRI bir sorgudan gelir (`GET /projects`) — kendi
+  // yükleme durumu SGK/rozet sorgusundan bağımsız çözülür; hücre "Kule A"ya
+  // dönüşmemiş "—" pending durumunda kalıp kadraja girebilir, o yüzden burada
+  // GERÇEK proje adı ayrıca doğrulanır.
+  await expect(page.getByTestId("personel-row-per-1").getByText("Kule A")).toBeVisible();
 
   // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
   await prepareFrame(page);

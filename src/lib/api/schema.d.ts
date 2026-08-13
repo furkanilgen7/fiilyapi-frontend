@@ -1075,12 +1075,38 @@ export interface paths {
          * @description `q` YALNIZ ada kısmi bakar (spec §3); süzgeçler AND'lidir.
          *
          *     `is_active` GÖNDERİLMEZSE süzgeç uygulanmaz — pasif personel sessizce
-         *     gizlenmez; ekran hangi kümeyi istediğini açıkça söyler.
+         *     gizlenmez; ekran hangi kümeyi istediğini açıkça söyler. `project_id`
+         *     (İK-1 §5 K4) `assigned_project_id`e göre DARALTIR — yetki genişletmez;
+         *     `is_draft` taslakları ayıklamak için opsiyoneldir.
          */
         get: operations["list_personnel_endpoint_personnel_get"];
         put?: never;
         /** Create Personnel Endpoint */
         post: operations["create_personnel_endpoint_personnel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/documents/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Hr Documents Summary Endpoint
+         * @description BT özet ucu: 5 KPI + belge tipi dağılımı + süresi-dolan/yaklaşan listeleri.
+         *
+         *     Okuma (`view`) yeter — `personnel` şirket-geneli İK varlığıdır (liste ucu
+         *     deseni). Sayılar yalnız AKTİF + YAYINDA personeli kapsar; durum türevi
+         *     `status.py` tek kaynağından, sorgu sayısı veri büyüklüğünden bağımsızdır.
+         */
+        get: operations["hr_documents_summary_endpoint_hr_documents_summary_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1106,6 +1132,256 @@ export interface paths {
          * @description Pasifleştirme de BURADAN geçer (`{"is_active": false}`) — DELETE ucu yoktur.
          */
         patch: operations["update_personnel_endpoint_personnel__personnel_id__patch"];
+        trace?: never;
+    };
+    "/personnel/{personnel_id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Personnel Documents Endpoint
+         * @description O personelin belgeleri (tip künyeli, N+1 yok). Personel yok → 404.
+         *
+         *     `status`/`days_left` TÜREVdir (`status.py` tek kaynağı); GET denetlenmez.
+         */
+        get: operations["list_personnel_documents_endpoint_personnel__personnel_id__documents_get"];
+        put?: never;
+        /**
+         * Create Personnel Document Endpoint
+         * @description Belge kaydı. `type_id` XOR `free_label`; pasif tip → 422, yok → 404;
+         *
+         *     görünmez/var olmayan BC belgesi (`document_id`) → 404 (IDOR korkuluğu).
+         */
+        post: operations["create_personnel_document_endpoint_personnel__personnel_id__documents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/personnel/documents/{document_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Personnel Document Endpoint
+         * @description İK takip kaydını siler (`admin`; `full` silmeyi KAPSAMAZ). SET NULL: bağlı
+         *     BC arşiv künyesi DURUR (dosya arşivde kalır). Yanıt 204, gövdesiz.
+         */
+        delete: operations["delete_personnel_document_endpoint_personnel_documents__document_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Personnel Document Endpoint
+         * @description Kısmi güncelleme. Belge yok → 404; `document_id` değişimi aynı BC görünürlük
+         *     denetiminden geçer.
+         */
+        patch: operations["update_personnel_document_endpoint_personnel_documents__document_id__patch"];
+        trace?: never;
+    };
+    "/leave-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Leave Types Endpoint
+         * @description Aktif izin tipleri (`sort_order`). Yazma ucu YOKTUR — katalog ayarlar dilimidir.
+         */
+        get: operations["list_leave_types_endpoint_leave_types_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/leave-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Leave Requests Endpoint
+         * @description İZ talep tablosu. Süzgeçler AND'lidir; `project_id` PERSONELİN projesi
+         *     üzerinden DARALTIR (talebin kendi proje kolonu yoktur).
+         *
+         *     `limit` tavanı 200'dür (TB3 korkuluğu): tavanı aşan istek SESSİZCE KIRPILMAZ,
+         *     422 olur — ekran eksik listeyi tam sanmasın.
+         */
+        get: operations["list_leave_requests_endpoint_leave_requests_get"];
+        put?: never;
+        /**
+         * Create Leave Request Endpoint
+         * @description `days` SUNUCU hesabıdır ve `status` `pending` başlar (spec §5 K2); ikisi de
+         *     gövdeden alınmaz — gönderilirse 422 (şema `extra="forbid"`).
+         *
+         *     Personel yok → 404 · izin tipi yok → 404, pasif → 422 · ters tarih → 422 ·
+         *     görünmez BC belgesi (`document_id`) → 404 (IDOR korkuluğu).
+         */
+        post: operations["create_leave_request_endpoint_leave_requests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/leave-requests/{request_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Leave Request Endpoint */
+        get: operations["get_leave_request_endpoint_leave_requests__request_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Leave Request Endpoint
+         * @description Bekleyen talebi siler. Kapı BİLİNÇLİ olarak `_VIEW`dir: gerçek kural İKİ
+         *     yoldan açılır (`admin` seviyesi YA DA talebin SAHİBİ olmak, spec §3) ve tek
+         *     seviyeli bir router kapısı bunu ifade edemez — karar serviste verilir, yetkisiz
+         *     aktör 403 alır. `procurement` (`personnel=none`) zaten bu kapıda durur.
+         */
+        delete: operations["delete_leave_request_endpoint_leave_requests__request_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Leave Request Endpoint
+         * @description YALNIZ `pending` kayıt düzenlenebilir (karara bağlanmış → 409). Tarih
+         *     değişirse `days` YENİDEN sunucu hesabıdır.
+         */
+        patch: operations["update_leave_request_endpoint_leave_requests__request_id__patch"];
+        trace?: never;
+    };
+    "/leave-requests/{request_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve Leave Request Endpoint
+         * @description Talebi onaylar (TEK adım). Karar alanları SUNUCU damgasıdır — gövde ALAN
+         *     KABUL ETMEZ (gönderilirse 422).
+         *
+         *     Talep yok → 404 · `pending` değil → 409 · çakışan ONAYLI izin → 409 (K3) ·
+         *     hak aşımı → 409 (K5) · **kalan hak hesaplanamıyor → 409** (🔴 fail-closed:
+         *     kıdem 1 yılı doldurmadı ya da `hire_date` boş). RED bu kapılardan etkilenmez.
+         */
+        post: operations["approve_leave_request_endpoint_leave_requests__request_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/leave-requests/{request_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject Leave Request Endpoint
+         * @description Talebi reddeder — `reason` ZORUNLU (boş/boşluk → 422).
+         *
+         *     **Red HER ZAMAN serbesttir:** hak aşımı ya da çakışma yüzünden onaylanamayan
+         *     talep REDDEDİLEBİLİR (İZ 98-99: ✓ pasif, ✗ aktif). Talep yok → 404 ·
+         *     `pending` değil → 409.
+         */
+        post: operations["reject_leave_request_endpoint_leave_requests__request_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/leave-balances/{personnel_id}/{year}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Leave Balance Endpoint
+         * @description İZ bakiye satırı: hak / devreden / kullanılan / kalan / kullanım yüzdesi.
+         *
+         *     Hepsi TÜREVdir (`annual_entitlement` KOLON DEĞİL, spec §5 K1). Bakiye SATIRI
+         *     olmayan personel için de 200 döner (devreden 0) — satır yalnız MANUEL devreden
+         *     içindir, yokluğu veri eksikliği değildir. Personel yok → 404.
+         *
+         *     Hak/kalan/yüzde **null** olabilir: kıdem 1 yılı doldurmadıysa ya da `hire_date`
+         *     boşsa hak hesaplanamaz (İZ 163 "1 yıl dolunca hak kazanır") — ekran 0 değil
+         *     "Hak yok" basar.
+         */
+        get: operations["get_leave_balance_endpoint_leave_balances__personnel_id___year__get"];
+        /**
+         * Upsert Leave Balance Endpoint
+         * @description Devreden günü yazar (UPSERT) — YALNIZ `carried_over` (İZ 137).
+         *
+         *     Türev alan (`annual_entitlement`/`used`/`remaining`) gönderilirse 422: hiçbiri
+         *     kolon değildir ve sessizce yutulsalardı istemci hakkı değiştirdiğini sanırdı.
+         *     Personel yok → 404. Aynı isteği iki kez göndermek ikinci satır AÇMAZ.
+         */
+        put: operations["upsert_leave_balance_endpoint_leave_balances__personnel_id___year__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/leaves/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Hr Leaves Summary Endpoint
+         * @description İZ özet ucu: 5 KPI + personel bazlı izin bakiyesi tablosu.
+         *
+         *     Okuma (`view`) yeter — `personnel` şirket-geneli İK varlığıdır (liste ucu ve
+         *     `/hr/documents/summary` deseni); proje görünürlüğü süzgeci UYGULANMAZ.
+         *
+         *     `year` verilmezse içinde bulunulan yıl. Yıl YALNIZ bakiye eksenini kaydırır:
+         *     "Bekleyen Talep"/"Bugün İzinli"/"Bu Ay Kullanılan" BUGÜNE bağlıdır.
+         *
+         *     Hak/kalan/yüzde **null** olabilir (kıdem<1 ya da `hire_date` yok, İZ 163) ve
+         *     bu satırlar borç toplamına 0 olarak karışmaz — `unknown_entitlement_personnel`
+         *     ile AÇIKÇA sayılır (🔴 fail-closed). Sorgu sayısı veri büyüklüğünden bağımsızdır.
+         */
+        get: operations["hr_leaves_summary_endpoint_hr_leaves_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/suppliers": {
@@ -4710,10 +4986,173 @@ export interface components {
             /** Reservation Deposit */
             reservation_deposit: string | null;
         };
+        /**
+         * Gender
+         * @description PE 51-118 (İK-1 spec §1). İkili kume — mockup'ta ucuncu secenek yok.
+         * @enum {string}
+         */
+        Gender: "male" | "female";
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * HrDocumentTypeBreakdown
+         * @description Bir katalog tipinin BT "Belge Tipi Dağılımı" satırı.
+         *
+         *     `valid`/`expiring`/`expired` BELGE sayısıdır (aktif+yayın personelin bu tipteki
+         *     kayıtları); `missing` PERSONEL sayısıdır — aktif+yayın personel toplamından bu
+         *     tipte kaydı OLAN aktif+yayın personel sayısı çıkarılır. İki farklı taban (belge
+         *     vs personel) bilinçlidir: `missing` "kayıt YOKLUĞU" olduğundan yalnız kişi
+         *     düzeyinde anlamlıdır. `total_documents` = valid+expiring+expired.
+         *
+         *     Opsiyonel tip de (is_mandatory=False) dağılımda GÖSTERİLİR ama KPI `missing`
+         *     toplamına GİRMEZ (o toplam yalnız zorunlu tipler üzerinden — spec §2/§3).
+         */
+        HrDocumentTypeBreakdown: {
+            /**
+             * Type Id
+             * Format: uuid
+             */
+            type_id: string;
+            /** Type Name */
+            type_name: string;
+            /** Is Mandatory */
+            is_mandatory: boolean;
+            /** Validity Months */
+            validity_months: number | null;
+            /** Total Documents */
+            total_documents: number;
+            /** Valid */
+            valid: number;
+            /** Expiring */
+            expiring: number;
+            /** Expired */
+            expired: number;
+            /** Missing */
+            missing: number;
+        };
+        /**
+         * HrDocumentsSummaryResponse
+         * @description BT özet ucu: 5 KPI + tip dağılımı + iki liste (spec §2/§3).
+         *
+         *     Tüm sayılar AKTİF (`is_active=true`) + YAYINDA (`is_draft=false`) personelin
+         *     dünyasını anlatır — ekran çalışan iş gücünün belge uyumunu gösterir; taslak
+         *     (henüz yayınlanmamış) ve pasif (ayrılmış) personelin belgeleri hiçbir sayaca
+         *     girmez (`missing` tanımıyla tutarlı). Durum türevi `status.py` tek kaynağından.
+         */
+        HrDocumentsSummaryResponse: {
+            /** Total Documents */
+            total_documents: number;
+            /** Valid */
+            valid: number;
+            /** Expiring */
+            expiring: number;
+            /** Expired */
+            expired: number;
+            /** Missing */
+            missing: number;
+            /** By Type */
+            by_type: components["schemas"]["HrDocumentTypeBreakdown"][];
+            /** Expired Documents */
+            expired_documents: components["schemas"]["HrExpiredDocument"][];
+            /** Expiring Documents */
+            expiring_documents: components["schemas"]["HrExpiringDocument"][];
+        };
+        /**
+         * HrExpiredDocument
+         * @description "Süresi Dolan Belgeler" listesi satırı — en çok geciken önce.
+         */
+        HrExpiredDocument: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Personnel Id
+             * Format: uuid
+             */
+            personnel_id: string;
+            /** Personnel Name */
+            personnel_name: string;
+            /** Document Label */
+            document_label: string;
+            /** Project Name */
+            project_name: string | null;
+            /**
+             * Valid Until
+             * Format: date
+             */
+            valid_until: string;
+            /** Days Overdue */
+            days_overdue: number;
+        };
+        /**
+         * HrExpiringDocument
+         * @description "30 Gün İçinde Bitecek" listesi satırı — en yakın önce.
+         */
+        HrExpiringDocument: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Personnel Id
+             * Format: uuid
+             */
+            personnel_id: string;
+            /** Personnel Name */
+            personnel_name: string;
+            /** Document Label */
+            document_label: string;
+            /** Project Name */
+            project_name: string | null;
+            /**
+             * Valid Until
+             * Format: date
+             */
+            valid_until: string;
+            /** Days Left */
+            days_left: number;
+        };
+        /**
+         * HrLeavesSummaryResponse
+         * @description İZ özet ucu: 5 KPI (46-50) + bakiye tablosu (122-170).
+         *
+         *     KPI'ların İKİ AYRI zaman ekseni vardır ve bu bilinçlidir:
+         *
+         *     * `pending_requests` / `on_leave_today` / `days_used_this_month` **BUGÜNE**
+         *       bağlıdır — geçmiş bir yıl seçmek "bugün izinli"yi anlamsız kılardı,
+         *     * `total_leave_debt` / `carryover_risk_personnel` / `balances` ise SEÇİLEN
+         *       **yıla** bağlıdır (İZ 120 yıl seçici).
+         *
+         *     🔴 `unknown_entitlement_personnel` fail-closed kanonun GÖRÜNÜR yüzüdür: hakkı
+         *     hesaplanamayan personel (kıdem<1 ya da `hire_date` NULL, İZ 163-167) borç
+         *     toplamına 0 olarak KARIŞMAZ; ayrı sayılır ki ekran "418 gün" derken kaç kişinin
+         *     hesap dışı kaldığı SÖYLENSİN. Sessiz 0, veri eksiğini bilançoda saklardı.
+         *
+         *     Tüm sayılar AKTİF + YAYINDA personelin dünyasını anlatır (İK-1 özet kanonu).
+         */
+        HrLeavesSummaryResponse: {
+            /** Year */
+            year: number;
+            /** Pending Requests */
+            pending_requests: number;
+            /** On Leave Today */
+            on_leave_today: number;
+            /** Days Used This Month */
+            days_used_this_month: number;
+            /** Total Leave Debt */
+            total_leave_debt: string;
+            /** Carryover Risk Personnel */
+            carryover_risk_personnel: number;
+            /** Unknown Entitlement Personnel */
+            unknown_entitlement_personnel: number;
+            /** Balances */
+            balances: components["schemas"]["LeaveBalanceResponse"][];
         };
         /**
          * InstallmentPayInput
@@ -4789,6 +5228,256 @@ export interface components {
             construction_progress: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
         };
         /**
+         * LeaveApproveRequest
+         * @description Onay gövdesi — **ALAN YOKTUR** (spec §5 K4: onay TEK adım, veri taşımaz).
+         *
+         *     Gövde tümüyle İSTEĞE BAĞLIDIR (uç gövdesiz de çağrılabilir); ama BOŞ OLMAYAN
+         *     bir gövde gönderilirse `extra="forbid"` onu reddeder. Şemayı büsbütün
+         *     kaldırmak bu reddi de kaldırır ve `{"decided_by": ...}` sessizce yutulurdu.
+         */
+        LeaveApproveRequest: Record<string, never>;
+        /**
+         * LeaveBalanceResponse
+         * @description İZ bakiye tablosu satırı — TEK gerçek kolon + türevler (spec §2).
+         *
+         *     `annual_entitlement`/`remaining`/`usage_pct` **None olabilir** ve bu bir veri
+         *     eksikliği DEĞİL, kanonun kendisidir (🔴 fail-closed): kıdem 1 yılı doldurmadıysa
+         *     ya da `hire_date` yoksa hak HESAPLANAMAZ. Ekran bunu İZ 163'teki gibi
+         *     "Hak yok · 1 yıl dolunca hak kazanır" olarak basar — 0 basmaz.
+         *
+         *     `seniority_years`/`seniority_months` İZ 134'ün "2 yıl 1 ay" kıdem sütunudur
+         *     (kolon değil, `hire_date` türevi); `hire_date` NULL ise ikisi de None'dur.
+         */
+        LeaveBalanceResponse: {
+            /**
+             * Personnel Id
+             * Format: uuid
+             */
+            personnel_id: string;
+            /** Personnel Name */
+            personnel_name: string;
+            /** Year */
+            year: number;
+            /** Hire Date */
+            hire_date: string | null;
+            /** Seniority Years */
+            seniority_years: number | null;
+            /** Seniority Months */
+            seniority_months: number | null;
+            /** Annual Entitlement */
+            annual_entitlement: number | null;
+            /** Carried Over */
+            carried_over: string;
+            /** Used */
+            used: number;
+            /** Remaining */
+            remaining: string | null;
+            /** Usage Pct */
+            usage_pct: number | null;
+        };
+        /**
+         * LeaveBalanceUpdate
+         * @description Bakiye yazma gövdesi — **YALNIZ `carried_over`** (spec §1, §5 K1).
+         *
+         *     Devreden gün İZ 137'nin "Devreden" sütunudur ve ELLE girilir (otomatik devir
+         *     job'u İK-3). Tablodaki tek gerçek kolon budur; ötekiler türevdir ve gövdede
+         *     kabul EDİLMEZ.
+         */
+        LeaveBalanceUpdate: {
+            /** Carried Over */
+            carried_over: number | string;
+        };
+        /**
+         * LeaveRejectRequest
+         * @description Red gövdesi — `reason` ZORUNLU (TH emsali, spec §3).
+         *
+         *     Red HER ZAMAN serbesttir (hak aşımı/çakışma onayı engeller ama reddi ASLA):
+         *     İZ 98-99'da hak aşan satırın ✓ butonu pasif, ✗ butonu AKTİFtir. Bu yüzden
+         *     burada hiçbir eşik denetimi YOKTUR; tek zorunluluk gerekçedir.
+         */
+        LeaveRejectRequest: {
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * LeaveRequestCreate
+         * @description Yeni izin talebi. `days` ve `status` GÖNDERİLEMEZ (üstteki gerekçe).
+         *
+         *     `status` her zaman `pending` başlar — talep açan kişi kendi talebini onaylı
+         *     doğuramaz (K4 tek adımlı onay bunu T3'te ayrı uçla verir).
+         *
+         *     `document_id` BC arşiv künyesine bağdır (İZ 88 "rapor ekli"); görünürlük
+         *     denetimi SERVİSTEDİR (IDOR) — pydantic yalnız biçime bakar.
+         */
+        LeaveRequestCreate: {
+            /**
+             * Personnel Id
+             * Format: uuid
+             */
+            personnel_id: string;
+            /**
+             * Leave Type Id
+             * Format: uuid
+             */
+            leave_type_id: string;
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+            /** Note */
+            note?: string | null;
+            /** Document Id */
+            document_id?: string | null;
+        };
+        /**
+         * LeaveRequestListResponse
+         * @description `PersonnelListResponse` kardeşi (TB3 sayfalama zarfı): `total` + `limit`/`offset`.
+         */
+        LeaveRequestListResponse: {
+            /** Items */
+            items: components["schemas"]["LeaveRequestResponse"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * LeaveRequestResponse
+         * @description İZ talep tablosu satırı: kayıt + personel ve tip KÜNYESİ (JOIN'li, N+1 yok).
+         *
+         *     `personnel_name`/`personnel_trade` ve `leave_type_*` kolon DEĞİLDİR; liste
+         *     sorgusunun JOIN'inden gelir — ekran satır başına ikinci istek atmasın.
+         *     `deducts_from_annual` künyeye dahildir çünkü hak aşımı uyarısı (İZ 98-99)
+         *     YALNIZ o tiplerde anlamlıdır ve istemci tipi ayrıca sorgulamak zorunda kalmaz.
+         *
+         *     `days` TÜREV DEĞİL KOLONdur ama sunucu yazar (spec §5 K2). Karar alanları
+         *     (`decided_*`, `reject_reason`) T2'de hep boştur; T3 doldurur.
+         */
+        LeaveRequestResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Personnel Id
+             * Format: uuid
+             */
+            personnel_id: string;
+            /** Personnel Name */
+            personnel_name: string;
+            /** Personnel Trade */
+            personnel_trade: string | null;
+            /**
+             * Leave Type Id
+             * Format: uuid
+             */
+            leave_type_id: string;
+            /** Leave Type Name */
+            leave_type_name: string;
+            /** Leave Type Color */
+            leave_type_color: string | null;
+            /** Deducts From Annual */
+            deducts_from_annual: boolean;
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+            /** Days */
+            days: number;
+            /** Note */
+            note: string | null;
+            /** Document Id */
+            document_id: string | null;
+            status: components["schemas"]["LeaveStatus"];
+            /** Decided By */
+            decided_by: string | null;
+            /** Decided At */
+            decided_at: string | null;
+            /** Reject Reason */
+            reject_reason: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * LeaveRequestUpdate
+         * @description Kısmi güncelleme — YALNIZ `pending` kayıtta (kural serviste, 409).
+         *
+         *     Tarih sırası BURADA doğrulanamaz: PATCH tek uç gönderebilir (`end_date`),
+         *     kural ancak DB'deki kayıtla BİRLEŞTİRİLMİŞ değerler üzerinde anlamlıdır —
+         *     bu yüzden servis korkuluğundadır (`PersonnelValidationError` -> 422).
+         *     `personnel_id` DEĞİŞTİRİLEMEZ: talebin KİMİN olduğu kimliğidir, yanlış
+         *     personele açılan talep silinip yeniden açılır (`PersonnelDocumentUpdate`
+         *     tip/etiket dondurma emsali).
+         */
+        LeaveRequestUpdate: {
+            /** Leave Type Id */
+            leave_type_id?: string | null;
+            /** Start Date */
+            start_date?: string | null;
+            /** End Date */
+            end_date?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Document Id */
+            document_id?: string | null;
+        };
+        /**
+         * LeaveStatus
+         * @description İZ talep tablosu durumu (İK-2 spec §1). Onay TEK adimdir (spec §5 K4) —
+         *
+         *     cok-asamali onay MOTORU ACILMAZ, bu yuzden ara durum (`in_review` vb.) YOK.
+         * @enum {string}
+         */
+        LeaveStatus: "pending" | "approved" | "rejected";
+        /**
+         * LeaveTypeResponse
+         * @description Katalog satırı — SALT OKUMA (spec §1: CRUD ucu AÇILMAZ, ayarlar dilimi).
+         *
+         *     Talep formunun tip listesine ihtiyacı vardır; yazma ucu yoktur.
+         */
+        LeaveTypeResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Deducts From Annual */
+            deducts_from_annual: boolean;
+            /** Is Paid */
+            is_paid: boolean;
+            /** Requires Document */
+            requires_document: boolean;
+            /** Color */
+            color: string | null;
+            /** Sort Order */
+            sort_order: number;
+        };
+        /**
          * ListPlaceholder
          * @description Liste tipli kart (risk uyarilari).
          */
@@ -4813,6 +5502,12 @@ export interface components {
             /** Password */
             password: string;
         };
+        /**
+         * MaritalStatus
+         * @description PE 51-118 (İK-1 spec §1).
+         * @enum {string}
+         */
+        MaritalStatus: "single" | "married";
         /** MeResponse */
         MeResponse: {
             /**
@@ -4925,6 +5620,12 @@ export interface components {
             net: string;
         };
         /**
+         * PaymentMethod
+         * @description PE 115 (İK-1 spec §1).
+         * @enum {string}
+         */
+        PaymentMethod: "bank" | "cash" | "mixed";
+        /**
          * PaymentPeriod
          * @description Hakediş periyodu — FORM 101 açılır sırası (spec §3.5).
          * @enum {string}
@@ -4993,6 +5694,140 @@ export interface components {
              * @default true
              */
             is_active: boolean;
+            /** Tc No */
+            tc_no?: string | null;
+            /** Birth Date */
+            birth_date?: string | null;
+            gender?: components["schemas"]["Gender"] | null;
+            marital_status?: components["schemas"]["MaritalStatus"] | null;
+            /** Phone */
+            phone?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Emergency Contact Name */
+            emergency_contact_name?: string | null;
+            /** Emergency Contact Phone */
+            emergency_contact_phone?: string | null;
+            /** Hire Date */
+            hire_date?: string | null;
+            wage_type?: components["schemas"]["WageType"] | null;
+            /** Wage Amount */
+            wage_amount?: number | string | null;
+            payment_method?: components["schemas"]["PaymentMethod"] | null;
+            /** Iban */
+            iban?: string | null;
+            /** Sgk No */
+            sgk_no?: string | null;
+            /** Assigned Project Id */
+            assigned_project_id?: string | null;
+            /** Assigned Section Id */
+            assigned_section_id?: string | null;
+            /**
+             * Is Draft
+             * @default true
+             */
+            is_draft: boolean;
+        };
+        /**
+         * PersonnelDocumentCreate
+         * @description Belge takip kaydı — `type_id` XOR `free_label` (tam biri, spec §2).
+         *
+         *     XOR pydantic'te BURADA da doğrulanır (giriş katmanı 422): `model_validator`
+         *     "tam biri" kuralını uygular. Servis (`guards.TYPE_XOR_LABEL`) ile DB CHECK
+         *     ikinci ve üçüncü katlardır — biri düşse öteki tutar (WORKFLOW savunma
+         *     derinliği).
+         *
+         *     `document_id` BC arşiv künyesine bağdır (opsiyonel; dosyasız takip meşru,
+         *     spec §2). Görünürlük denetimi SERVİSTEDİR (IDOR) — pydantic yalnız biçime bakar.
+         */
+        PersonnelDocumentCreate: {
+            /** Type Id */
+            type_id?: string | null;
+            /** Free Label */
+            free_label?: string | null;
+            /** Valid Until */
+            valid_until?: string | null;
+            /** Issued At */
+            issued_at?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Document Id */
+            document_id?: string | null;
+        };
+        /**
+         * PersonnelDocumentResponse
+         * @description Belge kaydı + tip künyesi (JOIN'li, N+1 yok) + TÜREV durum (spec §2, §3).
+         *
+         *     `status` ve `days_left` kolon DEĞİL, `status.derive_document_status` ile
+         *     hesaplanır (tek kaynak). `type_name`/`is_mandatory`/`validity_months` katalog
+         *     tipinden gelir ve serbest etiketli kayıtta None'dur.
+         */
+        PersonnelDocumentResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Personnel Id
+             * Format: uuid
+             */
+            personnel_id: string;
+            /** Type Id */
+            type_id: string | null;
+            /** Type Name */
+            type_name: string | null;
+            /** Is Mandatory */
+            is_mandatory: boolean | null;
+            /** Validity Months */
+            validity_months: number | null;
+            /** Free Label */
+            free_label: string | null;
+            /** Document Id */
+            document_id: string | null;
+            /** Issued At */
+            issued_at: string | null;
+            /** Valid Until */
+            valid_until: string | null;
+            /** Note */
+            note: string | null;
+            /** Status */
+            status: string;
+            /** Days Left */
+            days_left: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * PersonnelDocumentUpdate
+         * @description Kısmi güncelleme (spec §3). `type_id`/`free_label` DEĞİŞMEZ — belgenin
+         *
+         *     KİMLİĞİ (hangi tip/etiket) sabittir; yanlış tiple açılan kayıt silinip yeniden
+         *     açılır. Yalnız künye alanları ve BC bağı güncellenir. `document_id`
+         *     gönderildiğinde görünürlük denetimi serviste yapılır (create ile aynı IDOR
+         *     korkuluğu); `null` göndermek bağı çözer (dosyasız takibe döner) ve meşrudur.
+         *
+         *     `exclude_unset` ile "gönderilmedi" ≠ "null gönderildi" ayrımı korunur.
+         */
+        PersonnelDocumentUpdate: {
+            /** Valid Until */
+            valid_until?: string | null;
+            /** Issued At */
+            issued_at?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Document Id */
+            document_id?: string | null;
         };
         /**
          * PersonnelListResponse
@@ -5026,6 +5861,38 @@ export interface components {
             user_id: string | null;
             /** Is Active */
             is_active: boolean;
+            /** Tc No */
+            tc_no: string | null;
+            /** Birth Date */
+            birth_date: string | null;
+            gender: components["schemas"]["Gender"] | null;
+            marital_status: components["schemas"]["MaritalStatus"] | null;
+            /** Phone */
+            phone: string | null;
+            /** Email */
+            email: string | null;
+            /** Address */
+            address: string | null;
+            /** Emergency Contact Name */
+            emergency_contact_name: string | null;
+            /** Emergency Contact Phone */
+            emergency_contact_phone: string | null;
+            /** Hire Date */
+            hire_date: string | null;
+            wage_type: components["schemas"]["WageType"] | null;
+            /** Wage Amount */
+            wage_amount: string | null;
+            payment_method: components["schemas"]["PaymentMethod"] | null;
+            /** Iban */
+            iban: string | null;
+            /** Sgk No */
+            sgk_no: string | null;
+            /** Assigned Project Id */
+            assigned_project_id: string | null;
+            /** Assigned Section Id */
+            assigned_section_id: string | null;
+            /** Is Draft */
+            is_draft: boolean;
         };
         /** PersonnelUpdate */
         PersonnelUpdate: {
@@ -5040,6 +5907,38 @@ export interface components {
             user_id?: string | null;
             /** Is Active */
             is_active?: boolean | null;
+            /** Tc No */
+            tc_no?: string | null;
+            /** Birth Date */
+            birth_date?: string | null;
+            gender?: components["schemas"]["Gender"] | null;
+            marital_status?: components["schemas"]["MaritalStatus"] | null;
+            /** Phone */
+            phone?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Emergency Contact Name */
+            emergency_contact_name?: string | null;
+            /** Emergency Contact Phone */
+            emergency_contact_phone?: string | null;
+            /** Hire Date */
+            hire_date?: string | null;
+            wage_type?: components["schemas"]["WageType"] | null;
+            /** Wage Amount */
+            wage_amount?: number | string | null;
+            payment_method?: components["schemas"]["PaymentMethod"] | null;
+            /** Iban */
+            iban?: string | null;
+            /** Sgk No */
+            sgk_no?: string | null;
+            /** Assigned Project Id */
+            assigned_project_id?: string | null;
+            /** Assigned Section Id */
+            assigned_section_id?: string | null;
+            /** Is Draft */
+            is_draft?: boolean | null;
         };
         /**
          * PlanCellTag
@@ -10870,6 +11769,12 @@ export interface components {
             ctx?: Record<string, never>;
         };
         /**
+         * WageType
+         * @description PE 113 (İK-1 spec §1).
+         * @enum {string}
+         */
+        WageType: "daily" | "monthly" | "hourly";
+        /**
          * WarehouseCreate
          * @description `POST /warehouses` gövdesi.
          *
@@ -14226,6 +15131,8 @@ export interface operations {
                 source?: components["schemas"]["WorkerSource"] | null;
                 subcontractor_id?: string | null;
                 is_active?: boolean | null;
+                project_id?: string | null;
+                is_draft?: boolean | null;
                 limit?: number;
                 offset?: number;
             };
@@ -14316,6 +15223,40 @@ export interface operations {
             };
         };
     };
+    hr_documents_summary_endpoint_hr_documents_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrDocumentsSummaryResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     get_personnel_endpoint_personnel__personnel_id__get: {
         parameters: {
             query?: never;
@@ -14383,6 +15324,698 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PersonnelResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_personnel_documents_endpoint_personnel__personnel_id__documents_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personnel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonnelDocumentResponse"][];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_personnel_document_endpoint_personnel__personnel_id__documents_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personnel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonnelDocumentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonnelDocumentResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_personnel_document_endpoint_personnel_documents__document_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_personnel_document_endpoint_personnel_documents__document_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonnelDocumentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonnelDocumentResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_leave_types_endpoint_leave_types_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveTypeResponse"][];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    list_leave_requests_endpoint_leave_requests_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["LeaveStatus"] | null;
+                personnel_id?: string | null;
+                project_id?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequestListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_leave_request_endpoint_leave_requests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeaveRequestCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequestResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_leave_request_endpoint_leave_requests__request_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequestResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_leave_request_endpoint_leave_requests__request_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_leave_request_endpoint_leave_requests__request_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeaveRequestUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequestResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_leave_request_endpoint_leave_requests__request_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["LeaveApproveRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequestResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_leave_request_endpoint_leave_requests__request_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeaveRejectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequestResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_leave_balance_endpoint_leave_balances__personnel_id___year__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personnel_id: string;
+                year: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveBalanceResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upsert_leave_balance_endpoint_leave_balances__personnel_id___year__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personnel_id: string;
+                year: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeaveBalanceUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveBalanceResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_leaves_summary_endpoint_hr_leaves_summary_get: {
+        parameters: {
+            query?: {
+                year?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrLeavesSummaryResponse"];
                 };
             };
             /** @description Yetkisiz işlem */

@@ -15,9 +15,17 @@ describe("PersonnelTabsStrip", () => {
     expect(screen.getByRole("tab", { name: "Puantaj" })).toHaveAttribute("href", "/puantaj");
   });
 
-  it("rotasız dört sekme DEVRE-DIŞIdır ve gerekçesi title'da görünür (kalıcı kural)", () => {
+  it("'Belge & Sertifika' GERÇEK bir bağlantıdır (F-İK T2)", () => {
     render(<PersonnelTabsStrip />);
-    for (const label of ["İzin Yönetimi", "Belge & Sertifika", "Bordro", "SGK"]) {
+    expect(screen.getByRole("tab", { name: "Belge & Sertifika" })).toHaveAttribute(
+      "href",
+      "/personel/belgeler",
+    );
+  });
+
+  it("rotasız ÜÇ sekme DEVRE-DIŞIdır ve gerekçesi title'da görünür (kalıcı kural)", () => {
+    render(<PersonnelTabsStrip />);
+    for (const label of ["İzin Yönetimi", "Bordro", "SGK"]) {
       const tab = screen.getByRole("tab", { name: label });
       expect(tab).toHaveAttribute("aria-disabled", "true");
       expect(tab).toHaveAttribute("title", "Bu ekran henüz yazılmadı.");

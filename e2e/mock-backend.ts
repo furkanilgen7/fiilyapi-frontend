@@ -2690,14 +2690,84 @@ function buildSitePlanWeek(state: MockState, siteId: string, weekStart: string) 
 type MockWorkerSource = "company" | "subcontractor" | "general";
 type MockTimesheetCode = "worked" | "leave" | "holiday" | "overtime" | "temporary_duty";
 
-interface MockPersonnel {
-  id: string;
-  full_name: string;
-  trade: string | null;
-  source: MockWorkerSource;
-  subcontractor_id: string | null;
-  user_id: string | null;
-  is_active: boolean;
+/**
+ * F-İK T2 — personel kaydı ARTIK şemaya BAĞLIDIR (F-SA dersi: elle yazılmış
+ * anotasyonsuz fikstür, sunucu sözleşmesi büyüdüğünde sessizce eskir).
+ * `PersonnelResponse` alan kazandığında bu tip derlemeyi kırar ve mock↔şema
+ * kayması typecheck'te GÖRÜNÜR.
+ */
+type MockPersonnel = components["schemas"]["PersonnelResponse"];
+
+/** Yeni İK alanlarının hepsi boş — fikstürler yalnız ilgilendikleri alanı yazar. */
+const EMPTY_HR_FIELDS = {
+  tc_no: null,
+  birth_date: null,
+  gender: null,
+  marital_status: null,
+  phone: null,
+  email: null,
+  address: null,
+  emergency_contact_name: null,
+  emergency_contact_phone: null,
+  hire_date: null,
+  wage_type: null,
+  wage_amount: null,
+  payment_method: null,
+  iban: null,
+  sgk_no: null,
+  assigned_project_id: null,
+  assigned_section_id: null,
+  is_draft: false,
+} satisfies Omit<MockPersonnel, "id" | "full_name" | "trade" | "source" | "subcontractor_id" | "user_id" | "is_active">;
+
+/**
+ * Gövdedeki İK alanlarını `PersonnelResponse` biçimine çevirir (F-İK T4).
+ * Gelmeyen alan `null` kalır; tip `MockPersonnel`e bağlıdır ⇒ sözleşme
+ * büyüdüğünde burası derlemede GÖRÜNÜR.
+ */
+type MockHrFields = Pick<
+  MockPersonnel,
+  | "tc_no"
+  | "birth_date"
+  | "gender"
+  | "marital_status"
+  | "phone"
+  | "email"
+  | "address"
+  | "emergency_contact_name"
+  | "emergency_contact_phone"
+  | "hire_date"
+  | "wage_type"
+  | "wage_amount"
+  | "payment_method"
+  | "iban"
+  | "sgk_no"
+  | "assigned_project_id"
+  | "assigned_section_id"
+>;
+
+function hrFieldsFromBody(body: Record<string, unknown>): MockHrFields {
+  const pick = <K extends keyof MockHrFields>(key: K): MockHrFields[K] =>
+    (body[key] ?? null) as MockHrFields[K];
+  return {
+    tc_no: pick("tc_no"),
+    birth_date: pick("birth_date"),
+    gender: pick("gender"),
+    marital_status: pick("marital_status"),
+    phone: pick("phone"),
+    email: pick("email"),
+    address: pick("address"),
+    emergency_contact_name: pick("emergency_contact_name"),
+    emergency_contact_phone: pick("emergency_contact_phone"),
+    hire_date: pick("hire_date"),
+    wage_type: pick("wage_type"),
+    wage_amount: pick("wage_amount"),
+    payment_method: pick("payment_method"),
+    iban: pick("iban"),
+    sgk_no: pick("sgk_no"),
+    assigned_project_id: pick("assigned_project_id"),
+    assigned_section_id: pick("assigned_section_id"),
+  };
 }
 
 /** Hücreler SEYREKTİR: girilmemiş gün kayıt ÜRETMEZ (gerçek backend gibi). */
@@ -2757,14 +2827,22 @@ const SUBCONTRACTOR_FIXTURES: MockSubcontractor[] = [
   },
 ];
 
-/** Üç `WorkerSource` değerinin hepsi + bir pasif kayıt (`is_active` süzgeci). */
+/**
+ * Üç `WorkerSource` değerinin hepsi + bir pasif kayıt (`is_active` süzgeci).
+ *
+ * F-İK T2: İK alanları (SGK sicil · ücret · atanan proje) liste ekranının ÜÇ
+ * gerçek sütununu besler. Üç `wage_type` değerinin hepsi temsil edilir (günlük
+ * sade tutar, aylık/saatlik birim ekli) ve en az bir kayıt her alanı BOŞ
+ * bırakır — "—" düşüşü de kadrajda görünsün.
+ */
 const PERSONNEL_FIXTURES: MockPersonnel[] = [
-  { id: "per-1", full_name: "Mehmet Kılıç", trade: "Kalıpçı", source: "company", subcontractor_id: null, user_id: null, is_active: true },
-  { id: "per-2", full_name: "Hasan Demirci", trade: "Demirci", source: "company", subcontractor_id: null, user_id: null, is_active: true },
-  { id: "per-3", full_name: "Ramazan Yıldız", trade: "Elektrikçi", source: "subcontractor", subcontractor_id: "sub-1", user_id: null, is_active: true },
-  { id: "per-4", full_name: "İsmail Aksoy", trade: "Duvarcı", source: "subcontractor", subcontractor_id: "sub-2", user_id: null, is_active: true },
-  { id: "per-5", full_name: "Osman Şahin", trade: "Düz İşçi", source: "general", subcontractor_id: null, user_id: null, is_active: true },
-  { id: "per-6", full_name: "Kemal Toprak", trade: "Sıvacı", source: "company", subcontractor_id: null, user_id: null, is_active: false },
+  { ...EMPTY_HR_FIELDS, id: "per-1", full_name: "Mehmet Kılıç", trade: "Kalıpçı", source: "company", subcontractor_id: null, user_id: null, is_active: true, sgk_no: "1234567890", wage_type: "daily", wage_amount: "1450.00", assigned_project_id: "p-1" },
+  { ...EMPTY_HR_FIELDS, id: "per-2", full_name: "Hasan Demirci", trade: "Demirci", source: "company", subcontractor_id: null, user_id: null, is_active: true, sgk_no: "2345678901", wage_type: "monthly", wage_amount: "42000.00", assigned_project_id: "p-1" },
+  { ...EMPTY_HR_FIELDS, id: "per-3", full_name: "Ramazan Yıldız", trade: "Elektrikçi", source: "subcontractor", subcontractor_id: "sub-1", user_id: null, is_active: true, sgk_no: "3456789012", wage_type: "hourly", wage_amount: "185.50", assigned_project_id: "p-2" },
+  { ...EMPTY_HR_FIELDS, id: "per-4", full_name: "İsmail Aksoy", trade: "Duvarcı", source: "subcontractor", subcontractor_id: "sub-2", user_id: null, is_active: true, sgk_no: "4567890123", wage_type: "daily", wage_amount: "1320.00", assigned_project_id: "p-2" },
+  // Üç alanı da BOŞ: proje "atanmamış", SGK/ücret girilmemiş ⇒ üç hücre de "—".
+  { ...EMPTY_HR_FIELDS, id: "per-5", full_name: "Osman Şahin", trade: "Düz İşçi", source: "general", subcontractor_id: null, user_id: null, is_active: true },
+  { ...EMPTY_HR_FIELDS, id: "per-6", full_name: "Kemal Toprak", trade: "Sıvacı", source: "company", subcontractor_id: null, user_id: null, is_active: false, sgk_no: "5678901234", wage_type: "daily", wage_amount: "1180.00", assigned_project_id: "p-1" },
   // 🔒 F-PT2 T1 — FİKSTÜR İZOLASYONU (F-ST dersi): `per-1…per-6` puantaj
   // görsel baseline'larının (`timesheet-visual.spec.ts` → `pinRoster`) VE
   // ileride personel liste/detay baseline'larının kaynağıdır — personel
@@ -2774,8 +2852,192 @@ const PERSONNEL_FIXTURES: MockPersonnel[] = [
   // ('per-new-')") zaten uyar — timesheet kadrajlarına dokunmadan otomatik
   // dışlanır. Hiçbir timesheet hücresi TAŞIMAZ, bu yüzden puantaj matrisi
   // satırlarına da (hücre yoksa satır üretilmez) hiç GİRMEZ.
-  { id: "per-new-pt2-fixture-1", full_name: "Derya Aydın", trade: "Kaynakçı", source: "company", subcontractor_id: null, user_id: null, is_active: true },
+  { ...EMPTY_HR_FIELDS, id: "per-new-pt2-fixture-1", full_name: "Derya Aydın", trade: "Kaynakçı", source: "company", subcontractor_id: null, user_id: null, is_active: true },
 ];
+
+/**
+ * F-İK T2/T5 · `GET /hr/documents/summary` — SABİT özet. Sayılar sabittir ⇒
+ * hem `/personel` uyarı bandının metni hem BT ekranının 5 KPI'ı, iki listesi
+ * ve tip dağılımı DETERMİNİSTİKtir (baseline'lar buna dayanır).
+ *
+ * T5'te ZENGİNLEŞTİRİLDİ: BT ekranının HER bölümünün dolu olması gerekir —
+ * iki satırlı "süresi dolan" listesi (biri `project_name: null` ile GERÇEK
+ * boşluğu kanıtlar), iki satırlı "yaklaşan" listesi ve DÖRT tipli dağılım
+ * (biri `missing > 0` ile gri dilimi, biri hepsi sıfır olan tip ile "çubuk
+ * çökmesin" halini kanıtlar).
+ *
+ * ⚠️ KPI'lar listelerin UZUNLUĞU DEĞİLDİR (sunucu listeleri kırpabilir) —
+ * ekranın istemcide sayı türetmediğini kanıtlamak için sayaçlar bilerek
+ * liste uzunluklarından BÜYÜK tutulur.
+ */
+const HR_DOCUMENTS_SUMMARY_FIXTURE: components["schemas"]["HrDocumentsSummaryResponse"] = {
+  total_documents: 12,
+  valid: 7,
+  expiring: 2,
+  expired: 3,
+  missing: 4,
+  by_type: [
+    {
+      type_id: "dt-1",
+      type_name: "Sağlık Raporu",
+      is_mandatory: true,
+      validity_months: 12,
+      total_documents: 6,
+      valid: 3,
+      expiring: 1,
+      expired: 2,
+      missing: 2,
+    },
+    {
+      type_id: "dt-2",
+      type_name: "İSG Eğitim Belgesi",
+      is_mandatory: true,
+      validity_months: 24,
+      total_documents: 6,
+      valid: 4,
+      expiring: 1,
+      expired: 1,
+      missing: 2,
+    },
+    {
+      // Yalnız EKSİK kaydı olan tip — oran çubuğunun gri dilimini kanıtlar.
+      type_id: "dt-3",
+      type_name: "Mesleki Yeterlilik",
+      is_mandatory: true,
+      validity_months: null,
+      total_documents: 0,
+      valid: 0,
+      expiring: 0,
+      expired: 0,
+      missing: 5,
+    },
+    {
+      // HİÇ kaydı olmayan opsiyonel tip — çubuk ÇÖKMEMELİ (bölme hatası yok).
+      type_id: "dt-4",
+      type_name: "Operatör Belgesi",
+      is_mandatory: false,
+      validity_months: 60,
+      total_documents: 0,
+      valid: 0,
+      expiring: 0,
+      expired: 0,
+      missing: 0,
+    },
+  ],
+  expired_documents: [
+    {
+      id: "pd-1",
+      personnel_id: "per-1",
+      personnel_name: "Mehmet Kılıç",
+      document_label: "Sağlık Raporu",
+      project_name: "Kule A",
+      valid_until: "2026-06-30",
+      days_overdue: 44,
+    },
+    {
+      // `project_name: null` — GERÇEK boşluk ("—"), pending gerekçesi DEĞİL.
+      id: "pd-3",
+      personnel_id: "per-2",
+      personnel_name: "Hasan Demirci",
+      document_label: "İSG Eğitim Belgesi",
+      project_name: null,
+      valid_until: "2026-07-20",
+      days_overdue: 24,
+    },
+  ],
+  expiring_documents: [
+    {
+      id: "pd-2",
+      personnel_id: "per-3",
+      personnel_name: "Ramazan Yıldız",
+      document_label: "İSG Eğitim Belgesi",
+      project_name: "Villa B",
+      valid_until: "2026-08-25",
+      days_left: 12,
+    },
+    {
+      id: "pd-4",
+      personnel_id: "per-4",
+      personnel_name: "Sercan Öztürk",
+      document_label: "Sağlık Raporu",
+      project_name: "Kule A",
+      valid_until: "2026-09-02",
+      days_left: 20,
+    },
+  ],
+};
+
+/**
+ * F-İK T5 · `GET /personnel/{personnel_id}/documents` — Personel Detay'daki
+ * "Belgeler" kartının kaynağı. Kayıtlar SALT-OKUNURdur (bu dilimde POST/PATCH/
+ * DELETE bağlanmadı) ⇒ mutasyon yok, fikstür deterministik kalır.
+ *
+ * `per-1` üç farklı hali taşır: katalog tipli + arşiv dosyalı geçerli belge ·
+ * serbest etiketli (`type_name: null`) belge · geçerlilik tarihi OLMAYAN
+ * (süresiz) belge. `per-3` süresi dolmuş tek kayıt taşır; diğer personel
+ * BOŞ liste döndürür (boş-durum yolu kanıtlanır).
+ */
+const PERSONNEL_DOCUMENT_FIXTURES: Record<
+  string,
+  components["schemas"]["PersonnelDocumentResponse"][]
+> = {
+  "per-1": [
+    {
+      id: "pdoc-1",
+      personnel_id: "per-1",
+      type_id: "dt-1",
+      type_name: "Sağlık Raporu",
+      is_mandatory: true,
+      validity_months: 12,
+      free_label: null,
+      document_id: "doc-1",
+      issued_at: "2026-01-15",
+      valid_until: "2027-01-15",
+      note: null,
+      status: "valid",
+      days_left: 156,
+      created_at: "2026-01-15T08:00:00Z",
+      updated_at: "2026-01-15T08:00:00Z",
+    },
+    {
+      // Serbest etiketli kayıt — ad `free_label`den gelir, dosyası YOK.
+      id: "pdoc-2",
+      personnel_id: "per-1",
+      type_id: null,
+      type_name: null,
+      is_mandatory: null,
+      validity_months: null,
+      free_label: "İşe Giriş Taahhütnamesi",
+      document_id: null,
+      issued_at: "2025-11-02",
+      valid_until: null,
+      note: null,
+      status: "valid",
+      days_left: null,
+      created_at: "2025-11-02T08:00:00Z",
+      updated_at: "2025-11-02T08:00:00Z",
+    },
+  ],
+  "per-3": [
+    {
+      id: "pdoc-3",
+      personnel_id: "per-3",
+      type_id: "dt-2",
+      type_name: "İSG Eğitim Belgesi",
+      is_mandatory: true,
+      validity_months: 24,
+      free_label: null,
+      document_id: "doc-2",
+      issued_at: "2024-06-01",
+      valid_until: "2026-06-01",
+      note: null,
+      status: "expired",
+      days_left: -73,
+      created_at: "2024-06-01T08:00:00Z",
+      updated_at: "2024-06-01T08:00:00Z",
+    },
+  ],
+};
 
 /**
  * 🔒 FİKSTÜR İZOLASYONU (F-PL dersi, PT'ye uyarlanmış): `PUT .../timesheet`
@@ -5849,6 +6111,9 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const source = parsed.searchParams.get("source");
       const subcontractorId = parsed.searchParams.get("subcontractor_id");
       const isActiveParam = parsed.searchParams.get("is_active");
+      // F-İK T2 — atanan proje süzgeci SUNUCUDA uygulanır (İK-1 `project_id`).
+      const projectId = parsed.searchParams.get("project_id");
+      const isDraftParam = parsed.searchParams.get("is_draft");
       const limit = Number(parsed.searchParams.get("limit") ?? "50");
       const offset = Number(parsed.searchParams.get("offset") ?? "0");
 
@@ -5863,6 +6128,8 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       if (source) rows = rows.filter((p) => p.source === source);
       if (subcontractorId) rows = rows.filter((p) => p.subcontractor_id === subcontractorId);
       if (isActiveParam !== null) rows = rows.filter((p) => p.is_active === (isActiveParam === "true"));
+      if (projectId) rows = rows.filter((p) => p.assigned_project_id === projectId);
+      if (isDraftParam !== null) rows = rows.filter((p) => p.is_draft === (isDraftParam === "true"));
 
       // `total` SAYFALAMA TAVANIDIR — süzülmüş kümenin tamamı, `items.length` DEĞİL.
       return send(200, {
@@ -5880,8 +6147,24 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         if (source !== "company" && source !== "subcontractor" && source !== "general") {
           return send(422, { detail: "kaynak zorunlu" });
         }
+
+        // F-İK T4 · TCKN iki AYRI ret yolu (spec K3) — istemci bu ikisini
+        // KARIŞTIRMAMALI, bu yüzden mock ikisini de üretebilmeli:
+        //   • biçimsel geçersizlik → 422
+        //   • aynı TC'li personel zaten var → 409
+        // İkisi de FİKSTÜRLERE dokunmadan kurulabilir: testler kendi
+        // oluşturdukları kayıtla çakışma üretir (fikstürlerde `tc_no` boştur).
+        const tcNo = typeof body.tc_no === "string" && body.tc_no ? body.tc_no : null;
+        if (tcNo !== null && !/^\d{11}$/.test(tcNo)) {
+          return send(422, { detail: "TC kimlik numarası 11 haneli olmalıdır" });
+        }
+        if (tcNo !== null && state.personnel.some((p) => p.tc_no === tcNo)) {
+          return send(409, { detail: "Bu TC kimlik numarasıyla kayıtlı personel var" });
+        }
+
         state.personnelSeq += 1;
         const created: MockPersonnel = {
+          ...EMPTY_HR_FIELDS,
           id: `per-new-${state.personnelSeq}`,
           full_name: fullName,
           trade: typeof body.trade === "string" && body.trade ? body.trade : null,
@@ -5890,10 +6173,30 @@ export function startMockBackend(port: number): { server: Server; close: () => P
             typeof body.subcontractor_id === "string" ? body.subcontractor_id : null,
           user_id: typeof body.user_id === "string" ? body.user_id : null,
           is_active: body.is_active !== false,
+          // İK-1 alanları gövdeden AYNEN alınır (gelmeyen alan null kalır);
+          // `is_draft` sunucudaki gibi gövdenin belirlediği durumdur.
+          ...hrFieldsFromBody(body),
+          is_draft: body.is_draft === true,
         };
         state.personnel = [...state.personnel, created];
         return send(201, created);
       });
+    }
+
+    // F-İK T2 · GET /hr/documents/summary — uyarı bandının TEK kaynağı.
+    // ⚠️ İlk path segmenti "personnel" DEĞİL "hr"dir (BFF izin listesinde ayrı
+    // kök). Sayaçlar BELGE sayısıdır; ekran bunlardan "N personel" TÜRETMEZ.
+    if (method === "GET" && path === "/hr/documents/summary") {
+      return send(200, HR_DOCUMENTS_SUMMARY_FIXTURE);
+    }
+
+    // F-İK T5 · GET /personnel/{id}/documents — Personel Detay "Belgeler"
+    // kartı. Bu kökün adı "personnel"dır (özet ucunun aksine "hr" DEĞİL).
+    // Uç SAYFALAMASIZDIR: düz dizi döner, zarf YOKTUR. Kaydı olmayan personel
+    // BOŞ dizi alır (404 DEĞİL) — boş-durum yolu bu yüzden kanıtlanabilir.
+    const personnelDocumentsMatch = path.match(/^\/personnel\/([^/]+)\/documents$/);
+    if (method === "GET" && personnelDocumentsMatch) {
+      return send(200, PERSONNEL_DOCUMENT_FIXTURES[personnelDocumentsMatch[1]] ?? []);
     }
 
     // GET/PATCH /personnel/{personnel_id} — F-PT2 T1 · Personel Detay ekranı
@@ -5910,6 +6213,14 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const person = state.personnel.find((p) => p.id === personnelIdMatch[1]);
       if (!person) return send(404, { detail: "personel yok" });
       return withBody((body) => {
+        // POST ile AYNI iki ret yolu (spec K3): biçim 422, çakışma 409.
+        const tcNo = typeof body.tc_no === "string" && body.tc_no ? body.tc_no : null;
+        if (tcNo !== null && !/^\d{11}$/.test(tcNo)) {
+          return send(422, { detail: "TC kimlik numarası 11 haneli olmalıdır" });
+        }
+        if (tcNo !== null && state.personnel.some((p) => p.id !== person.id && p.tc_no === tcNo)) {
+          return send(409, { detail: "Bu TC kimlik numarasıyla kayıtlı personel var" });
+        }
         for (const [key, value] of Object.entries(body)) {
           if (value === undefined) continue;
           Object.assign(person, { [key]: value });

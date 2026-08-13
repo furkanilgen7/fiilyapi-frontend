@@ -60,6 +60,7 @@ describe("useCreatePersonnel", () => {
       trade: "Demirci",
       source: "company" as const,
       is_active: true,
+      is_draft: false,
     };
 
     // Act
@@ -82,6 +83,7 @@ describe("useCreatePersonnel", () => {
         full_name: "Hasan Demirci",
         source: "company",
         is_active: true,
+        is_draft: false,
       });
     });
 
@@ -101,7 +103,7 @@ describe("useCreatePersonnel", () => {
     const { result } = renderHook(() => useCreatePersonnel(), { wrapper });
     const error = await act(async () =>
       result.current
-        .mutateAsync({ full_name: "X", source: "subcontractor", is_active: true })
+        .mutateAsync({ full_name: "X", source: "subcontractor", is_active: true, is_draft: false })
         .catch((err: unknown) => err),
     );
 

@@ -61,14 +61,15 @@
   color: var(--color-text-muted);
   margin-bottom: 8px;
 }
+/* proje adı yüklenemediğinde (T3) alt başlığın proje yarısı pending düşer */
+.pd-hero__subtitle-project--pending {
+  cursor: help;
+}
 .pd-hero__contact {
   display: flex;
   gap: 16px; /* 39 */
   font-size: 12px;
   color: var(--color-text-subtle);
-}
-.pd-hero__contact-item--pending {
-  cursor: help;
 }
 
 .pd-hero__stats {

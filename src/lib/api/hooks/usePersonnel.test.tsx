@@ -60,7 +60,7 @@ describe("usePersonnel", () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(backendClient.GET).toHaveBeenCalledWith("/personnel", { params: { query: {} } });
     expect(
-      client.getQueryData([PERSONNEL_QUERY_KEY, null, null, null, null, null, null]),
+      client.getQueryData([PERSONNEL_QUERY_KEY, null, null, null, null, null, null, null]),
     ).toEqual(LIST);
   });
 
@@ -76,6 +76,7 @@ describe("usePersonnel", () => {
           source: "subcontractor",
           subcontractorId: "sub-1",
           isActive: true,
+          projectId: "p-1",
           limit: PERSONNEL_MAX_LIMIT,
           offset: 0,
         }),
@@ -91,6 +92,7 @@ describe("usePersonnel", () => {
           source: "subcontractor",
           subcontractor_id: "sub-1",
           is_active: true,
+          project_id: "p-1",
           limit: 200,
           offset: 0,
         },

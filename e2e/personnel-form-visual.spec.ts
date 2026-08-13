@@ -40,6 +40,11 @@ test("yeni personel formu gorsel", async ({ page }) => {
   // Taşeron sorgusu (GET /subcontractors) çözüldü — seçici "Yükleniyor…"
   // durumunda dondurulmasın (yükleme durumu baseline'a girmesin).
   await expect(page.getByLabel("Çalışan Tipi").first()).toBeEnabled();
+  // F-İK T3 · "Atandığı Proje" (GET /projects) AYRI bir sorgu — kendi
+  // "Yükleniyor…" notu çözülmeden kadraja girilmez (JobCard.projectNote).
+  // Sayfada başka hiçbir yerde bu metin basılmaz (bu ekran "yeni" kipinde,
+  // `isEdit` yükleme dalı devre dışı) — genel yokluk kontrolü yeterli.
+  await expect(page.getByText("Yükleniyor…")).toHaveCount(0);
   // Son kart (belge kutuları) render oldu — sayfanın tamamı kadrajda.
   await expect(page.getByTestId("personnel-form-notices").first()).toBeVisible();
   await expect(page.locator(".pf-actions").first()).toBeVisible();

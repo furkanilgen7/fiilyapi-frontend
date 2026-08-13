@@ -62,8 +62,53 @@ test("KPI şeridi + sekmeler + tablo sunucu fikstüründen gelir", async ({ page
   await expect(page.getByTestId("personel-row-per-1")).toContainText("Şirket");
   await expect(page.getByTestId("personel-row-per-3")).toContainText("Taşeron");
 
-  // K1 · Proje/SGK/Ücret-Gün hücreleri pending "—" — sütun SİLİNMEZ.
-  await expect(page.getByTestId("personel-project-pending-per-1")).toHaveText("—");
+  // F-İK T2 · Proje/SGK/Ücret-Gün hücreleri GERÇEK veri basar (İK-1 alanları).
+  // Proje hücresi KİMLİK değil AD gösterir (proje listesinden eşlenir).
+  await expect(page.getByTestId("personel-project-per-1")).toHaveText("Kule A");
+  await expect(page.getByTestId("personel-sgk-per-1")).toHaveText("1234567890");
+  await expect(page.getByTestId("personel-wage-per-1")).toHaveText("₺ 1.450");
+  // `monthly` ücret birim ekiyle basılır (yanıltmama kuralı).
+  await expect(page.getByTestId("personel-wage-per-2")).toHaveText("₺ 42.000 / Ay");
+  // Alanları boş olan kayıtta sade "—" (atanmamış/girilmemiş).
+  await expect(page.getByTestId("personel-project-per-5")).toHaveText("—");
+  await expect(page.getByTestId("personel-sgk-per-5")).toHaveText("—");
+});
+
+test("proje süzgeci SUNUCUDA süzer (TELDEN kanıt)", async ({ page }) => {
+  await login(page);
+  await page.goto(PERSONNEL_URL);
+  await expect(page.getByTestId("personel-row-per-1")).toBeVisible();
+
+  const projectRequest = page.waitForRequest(
+    (request) => request.url().includes("/personnel") && request.url().includes("project_id=p-2"),
+  );
+  await page.getByLabel("Proje filtresi").selectOption("p-2");
+  await projectRequest;
+
+  await expect(page).toHaveURL(/proje=p-2/);
+  await expect(page.getByTestId("personel-row-per-3")).toContainText("Ramazan Yıldız");
+  await expect(page.getByTestId("personel-row-per-1")).toHaveCount(0);
+});
+
+test("uyarı bandı GERÇEK sayaçları basar ve Belge & Sertifika ekranına bağlanır", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto(PERSONNEL_URL);
+
+  const alert = page.getByTestId("personel-document-alert");
+  await expect(alert).toContainText("3 belgenin süresi doldu");
+  await expect(alert).toContainText("2 belgenin süresi yaklaşıyor");
+  // Sunucu BELGE sayısı verir — mockup'ın "N personelin…" ifadesi UYDURULMAZ.
+  await expect(alert).not.toContainText("personelin");
+  await expect(alert.getByRole("link", { name: "Belgeleri Gör →" })).toHaveAttribute(
+    "href",
+    "/personel/belgeler",
+  );
+  await expect(page.getByRole("tab", { name: "Belge & Sertifika" }).first()).toHaveAttribute(
+    "href",
+    "/personel/belgeler",
+  );
 });
 
 test("arama SUNUCUYA ?q= olarak gider (TELDEN kanıt)", async ({ page }) => {

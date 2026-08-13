@@ -1,13 +1,20 @@
 import { FormActions } from "@/components/form-shell";
 import { Checkbox } from "@/components/ui";
 
-import { PENDING_DRAFT, PENDING_SGK, SUBMIT_LABEL } from "./constants";
+import { PENDING_DRAFT_PUBLISHED, PENDING_SGK, SUBMIT_LABEL } from "./constants";
 
 interface PersonnelFormActionsProps {
   onCancel: () => void;
   onSubmit: () => void;
+  /**
+   * "Taslak Kaydet" → `is_draft: true` (spec K4). YAYINLANMIŞ bir kaydın
+   * düzenlenmesinde verilmez: buton devre-dışı basılır ve gerekçesini taşır
+   * (`FormActions.draftPlaceholderTitle`) — yayındaki kayıt formdan sessizce
+   * taslağa DÜŞMEZ.
+   */
+  onSaveDraft?: () => void;
   isPending?: boolean;
-  /** F-PT2 T3 — düzenleme kipinde "Kaydet" (`SectionForm` kip deseni). */
+  /** F-PT2 T3 — düzenleme kipinde "Kaydet" / taslakta "Yayına Al". */
   submitLabel?: string;
 }
 
@@ -18,13 +25,11 @@ interface PersonnelFormActionsProps {
  * • Kutucuk mockup'ta İŞARETLİ görünür (206); burada **devre-dışı ve
  *   işaretsizdir** — SGK bildirim modülü yok, işaretli göstermek olmayan bir
  *   otomasyonu vaat etmek olurdu.
- * • "Taslak Kaydet" (211) devre-dışıdır: `POST /personnel` taslak taşımaz.
- *   `FormActions` `onSaveDraft` verilmediğinde butonu HİÇ basmaz, bu yüzden
- *   buton burada elle basılır (mockup'tan öğe SİLİNMEZ kuralı).
  */
 export function PersonnelFormActions({
   onCancel,
   onSubmit,
+  onSaveDraft,
   isPending,
   submitLabel = SUBMIT_LABEL,
 }: PersonnelFormActionsProps) {
@@ -42,12 +47,12 @@ export function PersonnelFormActions({
         />
       }
       onCancel={onCancel}
-      onSaveDraft={undefined}
+      onSaveDraft={onSaveDraft}
       onSubmit={onSubmit}
       submitLabel={submitLabel}
       pendingLabel="Kaydediliyor…"
       isPending={isPending}
-      draftPlaceholderTitle={PENDING_DRAFT}
+      draftPlaceholderTitle={PENDING_DRAFT_PUBLISHED}
     />
   );
 }

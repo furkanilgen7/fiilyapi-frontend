@@ -4,14 +4,14 @@ import { Field, Input, Select } from "@/components/ui";
 import type { SubcontractorListItem } from "@/lib/api/hooks/useSubcontractors";
 
 import {
-  ASSIGNED_PROJECT_OPTIONS,
   ASSIGNED_SECTION_OPTIONS,
   EMPLOYEE_TYPE_OPTIONS,
   NO_SUBCONTRACTOR_LABEL,
   PAYMENT_METHOD_OPTIONS,
   PENDING_EMPLOYEE_TYPE,
   PENDING_GENERAL_SOURCE,
-  PENDING_NO_CONTRACT_FIELD,
+  PENDING_SECTION_SOURCE,
+  PERSONNEL_FIELD_MAX_LENGTH,
   SELECT_PLACEHOLDER,
   TRADE_OPTIONS,
   WAGE_TYPE_OPTIONS,
@@ -25,6 +25,13 @@ export interface SubcontractorPickerState {
   isError: boolean;
 }
 
+/** "Atandığı Proje" seçicisinin veri durumu — `SubcontractorPickerState` ikizi. */
+export interface ProjectPickerState {
+  items: readonly { id: string; name: string }[];
+  isLoading: boolean;
+  isError: boolean;
+}
+
 interface JobCardProps {
   values: PersonnelFormValues;
   onChange: <K extends keyof PersonnelFormValues>(
@@ -32,6 +39,7 @@ interface JobCardProps {
     value: PersonnelFormValues[K],
   ) => void;
   subcontractors: SubcontractorPickerState;
+  projects: ProjectPickerState;
   errors?: PersonnelFormErrors;
 }
 
@@ -54,17 +62,44 @@ export function subcontractorNote(
 }
 
 /**
+ * "Atandığı Proje" seçicisinin altındaki GÖRÜNÜR not.
+ *
+ * Alan mockup'ta `*` taşır ama liste boşsa/yüklenemediyse zorunluluk
+ * UYGULANMAZ (`validate.ts`): doldurulamayan bir alanı zorunlu saymak formu
+ * kilitlerdi. Kullanıcı bunun nedenini ekranda okur.
+ */
+export function projectNote(state: ProjectPickerState): string {
+  if (state.isLoading) return "Yükleniyor…";
+  if (state.isError) {
+    return "Proje listesi yüklenemedi — personeli projeye atamadan da kaydedebilirsiniz.";
+  }
+  if (state.items.length === 0) {
+    return "Kayıtlı proje yok — personeli projeye atamadan kaydedebilirsiniz.";
+  }
+  return "Personelin çalışacağı proje; sonradan personel kartından değiştirilebilir.";
+}
+
+/**
  * 💼 İş Bilgileri (mockup satır 86–119).
  *
- * ETKİN ÜÇLÜ: Çalışan Tipi (91) → `source` · Bağlı Taşeron (95) →
- * `subcontractor_id` · Meslek / Görev (99) → `trade`.
+ * F-İK T4'te ücret bloğu dâhil KART neredeyse tümüyle ETKİNDİR: Çalışan Tipi
+ * (91) · Bağlı Taşeron (95) · Meslek / Görev (99) · İşe Giriş Tarihi (101) ·
+ * Atandığı Proje (103-104) · Ücret Tipi (113) · Ücret Tutarı (114) · Ödeme
+ * Şekli (115) · IBAN (116) · SGK Sicil No (117).
  *
- * PENDING: İşe Giriş Tarihi (101) · Atandığı Proje (104) · Bölüm (108) ·
- * Ücret Tipi (113) · Ücret Tutarı (114) · Ödeme Şekli (115) · IBAN (116) ·
- * SGK Sicil No (117).
+ * PENDING (tek kalan): **Bölüm** (107-108) — sunucuda proje düzeyinde bölüm
+ * listeleyen bir yol yok (bölümler şantiyeye bağlı). Alan SİLİNMEZ,
+ * devre-dışı basılır ve gerekçesi ipucu satırında GÖRÜNÜR yazar.
  */
-export function JobCard({ values, onChange, subcontractors, errors }: JobCardProps) {
+export function JobCard({
+  values,
+  onChange,
+  subcontractors,
+  projects,
+  errors,
+}: JobCardProps) {
   const noteId = useId();
+  const projectNoteId = useId();
   const isSubcontractorEnabled = values.source === "subcontractor";
 
   return (
@@ -162,37 +197,52 @@ export function JobCard({ values, onChange, subcontractors, errors }: JobCardPro
         </Field>
 
         {/* 101 */}
-        <Field label="İşe Giriş Tarihi" required>
+        <Field label="İşe Giriş Tarihi" required error={errors?.hireDate}>
           {(control) => (
             <Input
               {...control}
               type="date"
-              disabled
-              readOnly
-              value=""
-              title={PENDING_NO_CONTRACT_FIELD}
+              value={values.hireDate}
+              status={errors?.hireDate ? "error" : "default"}
+              onChange={(event) => onChange("hireDate", event.target.value)}
             />
           )}
         </Field>
 
-        {/* 103-104 */}
-        <Field label="Atandığı Proje" required>
+        {/* 103-104 — mockup'ın SABİT proje adları yerine GERÇEK veri */}
+        <Field label="Atandığı Proje" required error={errors?.assignedProjectId}>
           {(control) => (
-            <Select {...control} disabled value="" title={PENDING_NO_CONTRACT_FIELD}>
+            <Select
+              {...control}
+              aria-describedby={
+                [control["aria-describedby"], projectNoteId].filter(Boolean).join(" ") ||
+                undefined
+              }
+              value={values.assignedProjectId}
+              status={errors?.assignedProjectId ? "error" : "default"}
+              onChange={(event) => onChange("assignedProjectId", event.target.value)}
+            >
               <option value="">{SELECT_PLACEHOLDER}</option>
-              {ASSIGNED_PROJECT_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
+              {/* Düzenleme kipinde kaydın projesi listede olmayabilir (arşiv,
+                  yetki süzgeci) — seçim sessizce KIRPILMASIN diye korunur. */}
+              {values.assignedProjectId &&
+                !projects.items.some((item) => item.id === values.assignedProjectId) && (
+                  <option value={values.assignedProjectId}>Atanmış proje (listede yok)</option>
+                )}
+              {projects.items.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
                 </option>
               ))}
             </Select>
           )}
         </Field>
 
-        {/* 107-108 */}
-        <Field label="Bölüm">
+        {/* 107-108 — PENDING: proje düzeyinde bölüm listeleme ucu YOK.
+            Alan SİLİNMEZ; gerekçe ipucu satırında GÖRÜNÜR (title'da saklı değil). */}
+        <Field label="Bölüm" hint={PENDING_SECTION_SOURCE}>
           {(control) => (
-            <Select {...control} disabled value="" title={PENDING_NO_CONTRACT_FIELD}>
+            <Select {...control} disabled value="" title={PENDING_SECTION_SOURCE}>
               <option value="">{SELECT_PLACEHOLDER}</option>
               {ASSIGNED_SECTION_OPTIONS.map((option) => (
                 <option key={option} value={option}>
@@ -204,32 +254,34 @@ export function JobCard({ values, onChange, subcontractors, errors }: JobCardPro
         </Field>
       </div>
 
-      {/* Sessiz boş açılır liste YASAK: seçici hangi durumda olursa olsun
+      {/* Sessiz boş açılır liste YASAK: seçiciler hangi durumda olursa olsun
           görünür açıklama basılır ve `aria-describedby` ile bağlanır. */}
       <p className="pnf-picker-note" id={noteId}>
         {subcontractorNote(subcontractors, isSubcontractorEnabled)}
+      </p>
+      <p className="pnf-picker-note" id={projectNoteId}>
+        {projectNote(projects)}
       </p>
 
       {/* 111 — ince ayraç */}
       <div className="pnf-divider" />
 
-      {/* 112 — ücret bloğu; TAMAMI PENDING */}
-      <p className="pnf-block-note">
-        Ücret ve ödeme alanları devre dışı — {PENDING_NO_CONTRACT_FIELD.toLocaleLowerCase("tr")}.
-      </p>
+      {/* 112 — ücret bloğu */}
       <div className="pf-grid pf-grid--3">
         {/* 113 — mockup'ta "Seçiniz..." YOKTUR, ilk seçenek "Günlük" */}
-        <Field label="Ücret Tipi" required>
+        <Field label="Ücret Tipi" required error={errors?.wageType}>
           {(control) => (
             <Select
               {...control}
-              disabled
-              value={WAGE_TYPE_OPTIONS[0]}
-              title={PENDING_NO_CONTRACT_FIELD}
+              value={values.wageType}
+              status={errors?.wageType ? "error" : "default"}
+              onChange={(event) =>
+                onChange("wageType", event.target.value as PersonnelFormValues["wageType"])
+              }
             >
               {WAGE_TYPE_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </Select>
@@ -237,18 +289,19 @@ export function JobCard({ values, onChange, subcontractors, errors }: JobCardPro
         </Field>
 
         {/* 114 */}
-        <Field label="Ücret Tutarı (₺)" required>
+        <Field label="Ücret Tutarı (₺)" required error={errors?.wageAmount}>
           {(control) => (
             <Input
               {...control}
               type="number"
               numeric
-              disabled
-              readOnly
-              value=""
+              min={0}
+              step="0.01"
+              value={values.wageAmount}
               placeholder="1200"
               className="pnf-amount"
-              title={PENDING_NO_CONTRACT_FIELD}
+              status={errors?.wageAmount ? "error" : "default"}
+              onChange={(event) => onChange("wageAmount", event.target.value)}
             />
           )}
         </Field>
@@ -258,13 +311,17 @@ export function JobCard({ values, onChange, subcontractors, errors }: JobCardPro
           {(control) => (
             <Select
               {...control}
-              disabled
-              value={PAYMENT_METHOD_OPTIONS[0]}
-              title={PENDING_NO_CONTRACT_FIELD}
+              value={values.paymentMethod}
+              onChange={(event) =>
+                onChange(
+                  "paymentMethod",
+                  event.target.value as PersonnelFormValues["paymentMethod"],
+                )
+              }
             >
               {PAYMENT_METHOD_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </Select>
@@ -277,26 +334,24 @@ export function JobCard({ values, onChange, subcontractors, errors }: JobCardPro
             <Input
               {...control}
               numeric
-              disabled
-              readOnly
-              value=""
+              maxLength={PERSONNEL_FIELD_MAX_LENGTH.iban}
+              value={values.iban}
               placeholder="TR12 0001 0093 0012 3456 7890"
-              title={PENDING_NO_CONTRACT_FIELD}
+              onChange={(event) => onChange("iban", event.target.value)}
             />
           )}
         </Field>
 
-        {/* 117 */}
+        {/* 117 — ipucu metni mockup'tan AYNEN */}
         <Field label="SGK Sicil No" hint="Boş bırakılırsa otomatik sorgulanır">
           {(control) => (
             <Input
               {...control}
               numeric
-              disabled
-              readOnly
-              value=""
+              maxLength={PERSONNEL_FIELD_MAX_LENGTH.sgk_no}
+              value={values.sgkNo}
               placeholder="123 456 789 00"
-              title={PENDING_NO_CONTRACT_FIELD}
+              onChange={(event) => onChange("sgkNo", event.target.value)}
             />
           )}
         </Field>

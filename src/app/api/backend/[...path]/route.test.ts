@@ -1112,6 +1112,49 @@ describe("BFF /api/backend/[...path]", () => {
       expect(allowListEntries()).not.toContain("quotes");
     });
 
+    // F-IK · T1 — IK Belge & Sertifika sekmesi TEK yeni kok ekler: `hr`.
+    // ADLI kapi testi (F-SA emsali): kok dusurulurse hangisi oldugu test
+    // ADINDAN okunsun.
+    it("hr koku IK belge/izin ozet uclari icin allow-list'te tanimlidir", () => {
+      expect(allowListEntries()).toContain("hr");
+    });
+
+    /**
+     * Personelin KENDI belge alt-kaynaginin ilk segmenti "personnel"dir;
+     * "hr" DEGILDIR. Iki uc ayri koklerden gecer — birini otekinin altinda
+     * sanmak sessiz 404 uretir.
+     */
+    it("personel belge alt-kaynagi MEVCUT 'personnel' kokunden gecer", () => {
+      expect("/personnel/{personnel_id}/documents".split("/")[1]).toBe("personnel");
+      expect("/personnel/documents/{document_id}".split("/")[1]).toBe("personnel");
+      expect(allowListEntries()).toContain("personnel");
+    });
+
+    it.each([
+      "hr/documents/summary",
+      "personnel/p-1/documents",
+      "personnel/documents/d-1",
+    ])("%s ucu forward edilir", async (endpoint) => {
+      // Arrange
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ total_documents: 0 }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+
+      // Act
+      const res = await GET(
+        req(`/api/backend/${endpoint}`, "GET", { [ACCESS_COOKIE]: "acc" }),
+        ctx(endpoint.split("/")),
+      );
+
+      // Assert
+      expect(res.status).toBe(200);
+      expect(String(fetchMock.mock.calls[0][0])).toContain(`/${endpoint}`);
+    });
+
     it.each(calledRoots)("%s koku forward edilir", async (root) => {
       const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
       vi.stubGlobal("fetch", fetchMock);
