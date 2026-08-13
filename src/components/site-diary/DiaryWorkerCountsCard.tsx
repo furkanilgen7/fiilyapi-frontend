@@ -25,6 +25,10 @@ const SOURCE_BADGE_CLASS: Record<DiaryWorkerRow["source"], string> = {
   company: "diary-workers__badge--company",
   subcontractor: "diary-workers__badge--subcontractor",
   general: "diary-workers__badge--general",
+  /* freelance/intern mockup'ın (GK418-430) dört satırında yok; genel (nötr)
+     rozet stiline düşer — İK-3 dalıyla `WorkerSource`e eklendi (T1 kapsamı). */
+  freelance: "diary-workers__badge--general",
+  intern: "diary-workers__badge--general",
 };
 
 /**

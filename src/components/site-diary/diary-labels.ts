@@ -34,6 +34,8 @@ export const WORKER_SOURCE_LABELS: Record<WorkerSource, string> = {
   company: "Şirket",
   subcontractor: "Taşeron",
   general: "Genel",
+  freelance: "Serbest",
+  intern: "Stajyer",
 };
 
 /**

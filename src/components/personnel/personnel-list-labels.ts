@@ -20,6 +20,8 @@ export const SOURCE_BADGE_VARIANT: Record<WorkerSource, BadgeVariant> = {
   company: "primary",
   subcontractor: "warning",
   general: "neutral",
+  freelance: "neutral",
+  intern: "neutral",
 };
 
 /** Tanınmayan `source` — rozet NÖTR basılır (etiket `resolveWorkerSourceLabel`ten). */
@@ -42,6 +44,8 @@ export const SOURCE_AVATAR_GRADIENT: Record<WorkerSource, string> = {
   company: "var(--gradient-avatar-blue)",
   subcontractor: "linear-gradient(135deg, var(--color-warning), var(--color-avatar-amber-end))",
   general: "linear-gradient(135deg, var(--color-text-muted), var(--color-avatar-slate-end))",
+  freelance: "linear-gradient(135deg, var(--color-text-muted), var(--color-avatar-slate-end))",
+  intern: "linear-gradient(135deg, var(--color-text-muted), var(--color-avatar-slate-end))",
 };
 
 /** spec K2 · tanınmayan `source` — avatar zemini nötr (`general`) gradyana düşer. */
