@@ -46,6 +46,11 @@ test("personel detay gorsel", async ({ page }) => {
   await expect(header.getByText("Aktif")).toBeVisible();
   await expect(header.getByText("Şirket")).toBeVisible();
   await expect(header.getByText("Kalıpçı").first()).toBeVisible();
+  // F-İK T6a · alt başlığın proje adı AYRI bir sorgudan gelir (`GET
+  // /projects`) — kendisi başlık kartındaki personel GET'inden bağımsız
+  // çözülür; hücre "Kule A"ya dönüşmemiş pending durumunda kalıp kadraja
+  // girebilir, o yüzden GERÇEK proje adı ayrıca doğrulanır.
+  await expect(header.getByText("Kule A")).toBeVisible();
   // Dört pending kart (kural: SİLİNMEZ, gerekçeli basılır) + Belgeler kartı
   // ikisi de yerleşti — kadraj tam yükseklikte donmuş "Yükleniyor…" YAKALAMAZ.
   await expect(page.getByTestId("personnel-timesheet-summary-card")).toBeVisible();

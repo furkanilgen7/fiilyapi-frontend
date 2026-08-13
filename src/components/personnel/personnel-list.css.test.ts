@@ -19,4 +19,8 @@ describe("personnel-list.css — P mockup'ına bağlı kurallar", () => {
   it("aktif sekme mavi vurgu zeminini kullanır (71)", () => {
     expect(css).toMatch(/\.personel-tabs__tab--active\s*{[^}]*var\(--color-nav-active-bg\)/);
   });
+
+  it("sekme linkleri altı çizgisizdir — mockup (70-77) tarayıcı varsayılan alt çizgisini basmaz", () => {
+    expect(css).toMatch(/\.personel-tabs__tab\s*{[^}]*text-decoration:\s*none/);
+  });
 });

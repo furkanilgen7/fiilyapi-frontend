@@ -45,6 +45,12 @@
   font-size: 13px;
   color: var(--color-text-muted);
   border-radius: 7px;
+  text-decoration: none; /* mockup sekmeleri altı çizgisiz basar (70-77) */
+}
+.personel-tabs__tab:hover,
+.personel-tabs__tab:focus,
+.personel-tabs__tab:active {
+  text-decoration: none;
 }
 .personel-tabs__tab--active {
   font-weight: var(--weight-semibold);
