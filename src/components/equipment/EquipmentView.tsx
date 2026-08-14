@@ -114,6 +114,15 @@ export function EquipmentView() {
           ))}
         </div>
       )}
+
+      {/* Görsel spec (T5b) "yüklendi" iddiasını KAYNAK BAŞINA kurar — F-İK
+          dersi: tek bayrak, ikinci kaynağın hâlâ pending olduğunu GİZLER ve
+          kadraj "Yükleniyor…" hâlini donmuş yakalayabilir. Bu ekranın DÖRT
+          bağımsız kaynağı vardır (ekipman · özet · şantiye · personel). */}
+      {equipmentQuery.data !== undefined && <span hidden data-testid="makine-loaded-equipment" />}
+      {summaryQuery.data !== undefined && <span hidden data-testid="makine-loaded-summary" />}
+      {!siteOptions.isLoading && <span hidden data-testid="makine-loaded-sites" />}
+      {personnelQuery.data !== undefined && <span hidden data-testid="makine-loaded-personnel" />}
     </div>
   );
 }

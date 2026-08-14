@@ -462,6 +462,13 @@ interface MockState {
   purchaseQuotes: MockPurchaseQuote[];
   purchaseOrders: MockPurchaseOrder[];
   purchasingSeq: number;
+  // F-MK T5b — Makine & Ekipman (MK-1). Özet/sapma/rozet SAKLANMAZ, SABİT
+  // fikstürlerden döner (sunucu damgası kanonu: istemci eşik hesaplamaz).
+  // `equipmentSeq` yeni kimlikleri deterministik üretir (`Date.now()` YOK).
+  equipment: MockEquipment[];
+  workLogs: MockWorkLog[];
+  fuelLogs: MockFuelLog[];
+  equipmentSeq: number;
   permissions: Record<string, Record<string, { access_level: string; scope: string }>>;
   projectAccess: Record<string, { all_projects: boolean; project_ids: string[] }>;
   company: {
@@ -2029,6 +2036,10 @@ function seedState(): MockState {
     purchaseQuotes: PURCHASE_QUOTE_FIXTURES.map((q) => ({ ...q })),
     purchaseOrders: PURCHASE_ORDER_FIXTURES.map((o) => ({ ...o })),
     purchasingSeq: 0,
+    equipment: EQUIPMENT_FIXTURES.map((item) => ({ ...item })),
+    workLogs: WORK_LOG_FIXTURES.map((log) => ({ ...log })),
+    fuelLogs: FUEL_LOG_FIXTURES.map((log) => ({ ...log })),
+    equipmentSeq: 0,
     permissions,
     projectAccess: {
       "u-1": { all_projects: true, project_ids: [] },
@@ -4706,6 +4717,249 @@ function buildPurchasingSummary(
     in_transit_orders: orders.filter((o) => o.status === "in_transit").length,
     delivered_orders: orders.filter((o) => o.status === "delivered").length,
   };
+}
+
+// ---------------------------------------------------------------------------
+// F-MK T5b · Makine & Ekipman (MK-1 backend, 9 `equipment` yolu)
+// ---------------------------------------------------------------------------
+// Tipler `schema.d.ts`ten TÜRETİLİR, elle yazılmaz (F-P5 dersi: elle yazılan
+// fikstür şemadan kayınca typecheck susar).
+//
+// 🔒 FİKSTÜR İZOLASYONU (F-ST/F-SA dersi): ekipman kayıtlarının PROJE KAPSAMI
+// YOKTUR — başarılı bir POST/PATCH `/makine` kart ızgarasını ve `/makine/
+// calisma` · `/makine/yakit` ad çözümlemelerini değiştirip görsel baseline'ları
+// sessizce kırardı. Bu yüzden F-MK'nın fonksiyonel spec'leri yazma uçlarını
+// TETİKLEMEZ: gönderim testleri `page.route` ile BFF katmanında karşılanır
+// (istek gövdesi ölçülür, sunucu durumu HİÇ değişmez). Uçlar yine de burada
+// gerçekçi biçimde yaşar — canlıdaki sözleşmenin karşılığıdır.
+type MockEquipment = components["schemas"]["EquipmentResponse"];
+type MockWorkLog = components["schemas"]["WorkLogResponse"];
+type MockFuelLog = components["schemas"]["FuelLogResponse"];
+
+/** Ekipman fikstürlerinin dönemi — çalışma/yakıt kayıtları bu ayda yaşar. */
+const EQUIPMENT_PERIOD = { year: 2026, month: 8 } as const;
+
+/**
+ * Beş ekipman = M1'in DÖRT durumunun tamamı + K12'nin iki kart biçimi.
+ *
+ * • `eq-1` çalışıyor, tam künye (kira + operatör ikilisi basılır)
+ * • `eq-2` BAKIMDA → K12 tek geniş uyarı kutusu
+ * • `eq-3` çalışıyor ama norm birimi **`lt_km`** → K3'ün EN KRİTİK yolu
+ *   (yakıt sapması `no_distance_data` ile `null` gelir, ekran "—" basar)
+ * • `eq-4` ARIZALI + `rate_amount: null` + `operator_id: null` → K12 uyarı
+ *   kutusu ve `monthly_cost_unknown_count`ın kaynağı
+ * • `eq-5` BOŞTA (K21: mockup sayaç çizmiyor, kart rozeti çiziyor)
+ */
+const EQUIPMENT_FIXTURES: MockEquipment[] = [
+  {
+    id: "eq-1", name: "Tower Crane TC-48", category: "crane", brand: "Liebherr",
+    model: "154 EC-H", serial_no: "LBH-2022-8842", plate_no: null, model_year: 2022,
+    ownership: "owned", purchase_amount: "3800000.00", purchase_date: "2022-04-18",
+    depreciation_years: 10, supplier_id: "sup-1", financing: "bank_loan",
+    market_value: "3200000.00", rate_amount: "8500.00", rate_period: "daily",
+    site_id: "s-1", operator_id: "per-1", status: "working", status_note: null,
+    status_expected_date: null, fuel_type: "diesel", norm_consumption: "4.20",
+    norm_unit: "lt_hour", maintenance_period: "hours_500", monthly_capacity_hours: 200,
+    is_company_asset: true, is_active: true, created_at: "2026-01-05T08:00:00Z",
+  },
+  {
+    id: "eq-2", name: "Ekskavatör CAT 320", category: "machinery", brand: "Caterpillar",
+    model: "320 GC", serial_no: "CAT-320-1174", plate_no: null, model_year: 2021,
+    ownership: "owned", purchase_amount: "2450000.00", purchase_date: "2021-09-02",
+    depreciation_years: 10, supplier_id: null, financing: "cash",
+    market_value: "1950000.00", rate_amount: "6200.00", rate_period: "daily",
+    site_id: "s-1", operator_id: "per-2", status: "maintenance",
+    status_note: "Periyodik bakım — 500 saat servisi", status_expected_date: "2026-08-22",
+    fuel_type: "diesel", norm_consumption: "5.50", norm_unit: "lt_hour",
+    maintenance_period: "hours_500", monthly_capacity_hours: 200,
+    is_company_asset: true, is_active: true, created_at: "2026-01-06T08:00:00Z",
+  },
+  {
+    id: "eq-3", name: "Damperli Kamyon FMX", category: "truck", brand: "Volvo",
+    model: "FMX 460", serial_no: null, plate_no: "06 DK 4412", model_year: 2020,
+    ownership: "rented", purchase_amount: null, purchase_date: null,
+    depreciation_years: null, supplier_id: "sup-1", financing: null,
+    market_value: null, rate_amount: "4400.00", rate_period: "daily",
+    site_id: "s-2", operator_id: "per-3", status: "working", status_note: null,
+    status_expected_date: null, fuel_type: "diesel", norm_consumption: "0.45",
+    // 🔴 K3 — `lt_km`: kilometre verisi hiçbir ekranda girilmiyor, sapma `null`.
+    norm_unit: "lt_km", maintenance_period: null, monthly_capacity_hours: 0,
+    is_company_asset: false, is_active: true, created_at: "2026-01-07T08:00:00Z",
+  },
+  {
+    id: "eq-4", name: "Beton Pompası BP-36", category: "concrete", brand: "Putzmeister",
+    model: null, serial_no: null, plate_no: null, model_year: null,
+    ownership: "owned", purchase_amount: "1750000.00", purchase_date: "2023-03-11",
+    depreciation_years: null, supplier_id: null, financing: null,
+    market_value: null, rate_amount: null, rate_period: null,
+    site_id: null, operator_id: null, status: "broken",
+    status_note: "Hidrolik hortum patladı — parça bekleniyor",
+    status_expected_date: "2026-08-19", fuel_type: null, norm_consumption: null,
+    norm_unit: null, maintenance_period: null, monthly_capacity_hours: 200,
+    is_company_asset: true, is_active: true, created_at: "2026-01-08T08:00:00Z",
+  },
+  {
+    id: "eq-5", name: "Seyyar Kompresör SC-200", category: "compressor", brand: "Atlas Copco",
+    model: "XAS 88", serial_no: "AC-88-5521", plate_no: null, model_year: 2019,
+    ownership: "owned", purchase_amount: "320000.00", purchase_date: "2019-06-20",
+    depreciation_years: 5, supplier_id: null, financing: "cash",
+    market_value: "180000.00", rate_amount: "900.00", rate_period: "daily",
+    site_id: null, operator_id: null, status: "idle", status_note: null,
+    status_expected_date: null, fuel_type: "diesel", norm_consumption: "2.10",
+    norm_unit: "lt_hour", maintenance_period: "monthly", monthly_capacity_hours: 200,
+    is_company_asset: true, is_active: true, created_at: "2026-01-09T08:00:00Z",
+  },
+];
+
+const WORK_LOG_FIXTURES: MockWorkLog[] = [
+  {
+    id: "wl-1", equipment_id: "eq-1", work_date: "2026-08-12", site_id: "s-1",
+    operator_id: "per-1", record_type: "worked", start_time: "08:00:00",
+    end_time: "17:00:00", hours: "9.00", note: null, created_by_id: "u-1",
+    created_at: "2026-08-12T18:00:00Z",
+  },
+  {
+    id: "wl-2", equipment_id: "eq-2", work_date: "2026-08-11", site_id: "s-1",
+    operator_id: "per-2", record_type: "worked", start_time: "08:00:00",
+    end_time: "16:30:00", hours: "8.50", note: null, created_by_id: "u-1",
+    created_at: "2026-08-11T18:00:00Z",
+  },
+  // Arıza kaydı: operatör YOK, saat aralığı YOK — not basılır (M3 259-262).
+  {
+    id: "wl-3", equipment_id: "eq-4", work_date: "2026-08-10", site_id: null,
+    operator_id: null, record_type: "breakdown", start_time: null, end_time: null,
+    hours: "8.00", note: "Hidrolik arıza", created_by_id: "u-1",
+    created_at: "2026-08-10T18:00:00Z",
+  },
+  {
+    id: "wl-4", equipment_id: "eq-3", work_date: "2026-08-09", site_id: "s-2",
+    operator_id: "per-3", record_type: "worked", start_time: "07:30:00",
+    end_time: "18:00:00", hours: "10.50", note: null, created_by_id: "u-1",
+    created_at: "2026-08-09T18:00:00Z",
+  },
+];
+
+const FUEL_LOG_FIXTURES: MockFuelLog[] = [
+  {
+    id: "fl-1", equipment_id: "eq-1", fuel_date: "2026-08-12", site_id: "s-1",
+    liters: "320.00", unit_price: "39.5000", amount: "12640.00",
+    entered_by_id: "u-1", note: null, created_at: "2026-08-12T18:10:00Z",
+  },
+  {
+    id: "fl-2", equipment_id: "eq-3", fuel_date: "2026-08-11", site_id: "s-2",
+    liters: "450.00", unit_price: "39.7500", amount: "17887.50",
+    entered_by_id: "u-2", note: null, created_at: "2026-08-11T18:10:00Z",
+  },
+  // `entered_by_id: null` ⇒ "Giren" hücresi "—" basar (uydurma ad YOK).
+  {
+    id: "fl-3", equipment_id: "eq-2", fuel_date: "2026-08-10", site_id: null,
+    liters: "210.00", unit_price: "39.9000", amount: "8379.00",
+    entered_by_id: null, note: null, created_at: "2026-08-10T18:10:00Z",
+  },
+];
+
+/**
+ * `GET /equipment/summary` — SABİT özet (MK-1 K15/K21: sunucu sayar, istemci
+ * saymaz). `monthly_cost_unknown_count: 1` `eq-4`ün bilinmeyen kira bedelidir.
+ */
+const EQUIPMENT_SUMMARY_FIXTURE: components["schemas"]["EquipmentSummaryResponse"] = {
+  working: 2,
+  broken: 1,
+  maintenance: 1,
+  idle: 1,
+  monthly_cost: "144200.00",
+  monthly_cost_unknown_count: 1,
+};
+
+/**
+ * `GET /equipment/work-summary` — 🔴 §0'ın KANITI: `totals` satırların
+ * toplamıyla **KASITLI OLARAK TUTARSIZDIR** (satırlar 424,50 saat · 32 arıza
+ * saati · ₺144.200 eder; `totals` mockup'ın kendi sabitlerini taşır). Ekran
+ * SUNUCUNUNKİNİ basar, satırları TOPLAMAZ — spec §0/MK-1 K15.
+ */
+const WORK_SUMMARY_FIXTURE: components["schemas"]["WorkSummaryResponse"] = {
+  year: EQUIPMENT_PERIOD.year,
+  month: EQUIPMENT_PERIOD.month,
+  rows: [
+    {
+      equipment_id: "eq-1", equipment_name: "Tower Crane TC-48", site_id: "s-1",
+      hours: "186.00", usage_pct: "93.00", usage_reason: null,
+      breakdown_hours: "0.00", cost: "62000.00",
+    },
+    {
+      equipment_id: "eq-2", equipment_name: "Ekskavatör CAT 320", site_id: "s-1",
+      hours: "142.50", usage_pct: "71.25", usage_reason: null,
+      breakdown_hours: "8.00", cost: "48200.00",
+    },
+    // 🔴 K3 — `monthly_capacity_hours: 0` ⇒ kullanım oranı HESAPLANAMAZ.
+    {
+      equipment_id: "eq-3", equipment_name: "Damperli Kamyon FMX", site_id: "s-2",
+      hours: "96.00", usage_pct: null, usage_reason: "no_capacity_hours",
+      breakdown_hours: "0.00", cost: "34000.00",
+    },
+    // Kira bedeli bilinmeyen ARIZALI makine: saat 0, maliyet `null` (0 DEĞİL).
+    {
+      equipment_id: "eq-4", equipment_name: "Beton Pompası BP-36", site_id: null,
+      hours: "0.00", usage_pct: "0.00", usage_reason: null,
+      breakdown_hours: "24.00", cost: null,
+    },
+  ],
+  totals: {
+    hours: "428.00",
+    breakdown_hours: "12.00",
+    cost: "124800.00",
+    usage_pct_avg: "69.00",
+  },
+  weeks: [
+    { index: 1, start_date: "2026-08-01", end_date: "2026-08-02", hours: "42.00", dominant_record_type: "worked" },
+    { index: 2, start_date: "2026-08-03", end_date: "2026-08-09", hours: "128.50", dominant_record_type: "worked" },
+    { index: 3, start_date: "2026-08-10", end_date: "2026-08-16", hours: "96.00", dominant_record_type: "breakdown" },
+    { index: 4, start_date: "2026-08-17", end_date: "2026-08-23", hours: "112.00", dominant_record_type: "worked" },
+    // Kayıtsız hafta: `null` damga ⇒ nötr basılır, uydurma "çalışıyor" YOK.
+    { index: 5, start_date: "2026-08-24", end_date: "2026-08-31", hours: "0.00", dominant_record_type: null },
+  ],
+};
+
+/**
+ * `GET /equipment/fuel-summary` — 🔴 K3'ün en kritik satırı `eq-3`tür:
+ * `norm_unit: lt_km` ⇒ `deviation_pct: null` + `deviation_reason:
+ * "no_distance_data"` + `consumption_status: null`. Mockup orada "%16 yüksek"
+ * çiziyor; SUNUCU KAZANIR (spec §0), ekran "—" + gerekçe ipucu basar.
+ */
+const FUEL_SUMMARY_FIXTURE: components["schemas"]["FuelSummaryResponse"] = {
+  year: EQUIPMENT_PERIOD.year,
+  month: EQUIPMENT_PERIOD.month,
+  total_liters: "2840.00",
+  total_amount: "112800.00",
+  lt_per_hour_avg: "6.60",
+  avg_unit_price: "39.7183",
+  abnormal_count: 1,
+  rows: [
+    {
+      equipment_id: "eq-1", equipment_name: "Tower Crane TC-48", site_id: "s-1",
+      liters: "980.00", amount: "38900.00", actual: "5.30", norm: "4.20",
+      deviation_pct: "26.19", deviation_reason: null, consumption_status: "critical",
+    },
+    {
+      equipment_id: "eq-2", equipment_name: "Ekskavatör CAT 320", site_id: "s-1",
+      liters: "760.00", amount: "30200.00", actual: "5.33", norm: "5.50",
+      deviation_pct: "-3.09", deviation_reason: null, consumption_status: "normal",
+    },
+    {
+      equipment_id: "eq-3", equipment_name: "Damperli Kamyon FMX", site_id: "s-2",
+      liters: "1100.00", amount: "43700.00", actual: null, norm: "0.45",
+      deviation_pct: null, deviation_reason: "no_distance_data",
+      consumption_status: null,
+    },
+  ],
+};
+
+/** Dönem SÜZGECİ — özet uçları istenen ay fikstür ayı DEĞİLSE boş özet döner. */
+function isEquipmentFixturePeriod(searchParams: URLSearchParams): boolean {
+  return (
+    Number(searchParams.get("year")) === EQUIPMENT_PERIOD.year &&
+    Number(searchParams.get("month")) === EQUIPMENT_PERIOD.month
+  );
 }
 
 export function startMockBackend(port: number): { server: Server; close: () => Promise<void> } {
@@ -7907,6 +8161,163 @@ export function startMockBackend(port: number): { server: Server; close: () => P
 
     if (method === "GET" && path === "/purchasing/summary") {
       return send(200, buildPurchasingSummary(state, parsed.searchParams.get("project_id")));
+    }
+
+    // --- F-MK T5b · Makine & Ekipman uçları (MK-1, 9 yol) ------------------
+    // ⚠️ SIRA ÖNEMLİ: sabit alt yollar (`/summary`, `/work-*`, `/fuel-*`)
+    // `/equipment/{equipment_id}` desenine de uyar — önce onlar eşleşmeli.
+
+    if (method === "GET" && path === "/equipment/summary") {
+      return send(200, EQUIPMENT_SUMMARY_FIXTURE);
+    }
+
+    // Özet SABİTTİR (rozet/oran SUNUCU damgasıdır) ama YALNIZ fikstür ayında
+    // doludur — başka bir aya gezinmek boş dönemi kanıtlar, veri "taşınmaz".
+    if (method === "GET" && path === "/equipment/work-summary") {
+      const year = Number(parsed.searchParams.get("year"));
+      const month = Number(parsed.searchParams.get("month"));
+      if (!isEquipmentFixturePeriod(parsed.searchParams)) {
+        return send(200, {
+          year, month, rows: [], weeks: [],
+          totals: { hours: "0.00", breakdown_hours: "0.00", cost: "0.00", usage_pct_avg: null },
+        });
+      }
+      const siteId = parsed.searchParams.get("site_id");
+      if (!siteId) return send(200, WORK_SUMMARY_FIXTURE);
+      // Şantiye süzgeci SUNUCUDA uygulanır; `totals` yine SUNUCUNUNDUR
+      // (süzülmüş satırlardan yeniden toplanır — §0 tutarsızlığı yalnız
+      // süzgeçsiz görünümün mockup sabitidir).
+      const rows = WORK_SUMMARY_FIXTURE.rows.filter((row) => row.site_id === siteId);
+      const sum = (pick: (row: (typeof rows)[number]) => string | null) =>
+        rows.reduce((total, row) => total + Number(pick(row) ?? 0), 0).toFixed(2);
+      return send(200, {
+        ...WORK_SUMMARY_FIXTURE,
+        rows,
+        totals: {
+          hours: sum((row) => row.hours),
+          breakdown_hours: sum((row) => row.breakdown_hours),
+          cost: sum((row) => row.cost),
+          usage_pct_avg: null,
+        },
+      });
+    }
+
+    if (method === "GET" && path === "/equipment/fuel-summary") {
+      const year = Number(parsed.searchParams.get("year"));
+      const month = Number(parsed.searchParams.get("month"));
+      if (!isEquipmentFixturePeriod(parsed.searchParams)) {
+        return send(200, {
+          year, month, total_liters: "0.00", total_amount: "0.00",
+          lt_per_hour_avg: null, avg_unit_price: null, abnormal_count: 0, rows: [],
+        });
+      }
+      return send(200, FUEL_SUMMARY_FIXTURE);
+    }
+
+    if (method === "GET" && path === "/equipment/work-logs") {
+      const limit = Number(parsed.searchParams.get("limit") ?? "50");
+      if (limit > 200) return send(422, { detail: "limit en fazla 200 olabilir." });
+      const offset = Number(parsed.searchParams.get("offset") ?? "0");
+      const equipmentId = parsed.searchParams.get("equipment_id");
+      const siteId = parsed.searchParams.get("site_id");
+      const dateFrom = parsed.searchParams.get("date_from");
+      const dateTo = parsed.searchParams.get("date_to");
+      const recordType = parsed.searchParams.get("record_type");
+
+      // Sunucu `work_date DESC` sıralar — "Son Kayıtlar" bu sıraya güvenir.
+      let rows = [...state.workLogs].sort((a, b) => b.work_date.localeCompare(a.work_date));
+      if (equipmentId) rows = rows.filter((log) => log.equipment_id === equipmentId);
+      if (siteId) rows = rows.filter((log) => log.site_id === siteId);
+      if (dateFrom) rows = rows.filter((log) => log.work_date >= dateFrom);
+      if (dateTo) rows = rows.filter((log) => log.work_date <= dateTo);
+      if (recordType) rows = rows.filter((log) => log.record_type === recordType);
+      return send(200, { items: rows.slice(offset, offset + limit), total: rows.length, limit, offset });
+    }
+
+    if (method === "GET" && path === "/equipment/fuel-logs") {
+      const limit = Number(parsed.searchParams.get("limit") ?? "50");
+      if (limit > 200) return send(422, { detail: "limit en fazla 200 olabilir." });
+      const offset = Number(parsed.searchParams.get("offset") ?? "0");
+      const equipmentId = parsed.searchParams.get("equipment_id");
+      const siteId = parsed.searchParams.get("site_id");
+      const dateFrom = parsed.searchParams.get("date_from");
+      const dateTo = parsed.searchParams.get("date_to");
+
+      let rows = [...state.fuelLogs].sort((a, b) => b.fuel_date.localeCompare(a.fuel_date));
+      if (equipmentId) rows = rows.filter((log) => log.equipment_id === equipmentId);
+      if (siteId) rows = rows.filter((log) => log.site_id === siteId);
+      if (dateFrom) rows = rows.filter((log) => log.fuel_date >= dateFrom);
+      if (dateTo) rows = rows.filter((log) => log.fuel_date <= dateTo);
+      return send(200, { items: rows.slice(offset, offset + limit), total: rows.length, limit, offset });
+    }
+
+    if (method === "GET" && path === "/equipment") {
+      const limit = Number(parsed.searchParams.get("limit") ?? "50");
+      if (limit > 200) return send(422, { detail: "limit en fazla 200 olabilir." });
+      const offset = Number(parsed.searchParams.get("offset") ?? "0");
+      const status = parsed.searchParams.get("status");
+      const category = parsed.searchParams.get("category");
+      const siteId = parsed.searchParams.get("site_id");
+      const ownership = parsed.searchParams.get("ownership");
+      const isActive = parsed.searchParams.get("is_active");
+      const q = (parsed.searchParams.get("q") ?? "").trim().toLocaleLowerCase("tr");
+
+      let rows = state.equipment;
+      if (status) rows = rows.filter((item) => item.status === status);
+      if (category) rows = rows.filter((item) => item.category === category);
+      if (siteId) rows = rows.filter((item) => item.site_id === siteId);
+      if (ownership) rows = rows.filter((item) => item.ownership === ownership);
+      if (isActive !== null) rows = rows.filter((item) => item.is_active === (isActive === "true"));
+      if (q) {
+        rows = rows.filter(
+          (item) =>
+            item.name.toLocaleLowerCase("tr").includes(q) ||
+            (item.brand ?? "").toLocaleLowerCase("tr").includes(q),
+        );
+      }
+      // `total` SÜZÜLMÜŞ kümenin tamamıdır, sayfanın DEĞİL (TB3 kanonu).
+      return send(200, { items: rows.slice(offset, offset + limit), total: rows.length, limit, offset });
+    }
+
+    if (method === "POST" && path === "/equipment") {
+      return withBody((body) => {
+        const name = String(body.name ?? "").trim();
+        if (!name) return send(422, { detail: "Ekipman adı zorunludur." });
+        const ownership = String(body.ownership ?? "owned");
+        // MK-1 K2 — koşullu zorunluluk SUNUCUDADIR (form ayrıca istemcide de
+        // doğrular; iki savunma da kendi yerinde durur).
+        if (ownership === "owned" && (body.purchase_amount ?? null) === null) {
+          return send(422, { detail: "Kendi malımız ekipmanda alış bedeli zorunludur." });
+        }
+        state.equipmentSeq += 1;
+        const created: MockEquipment = {
+          ...EQUIPMENT_FIXTURES[0],
+          ...(body as Partial<MockEquipment>),
+          id: `eq-new-${state.equipmentSeq}`,
+          name,
+          created_at: "2026-08-14T09:00:00Z",
+        };
+        state.equipment = [...state.equipment, created];
+        return send(201, created);
+      });
+    }
+
+    const equipmentIdMatch = path.match(/^\/equipment\/([^/]+)$/);
+    if (equipmentIdMatch) {
+      const equipment = state.equipment.find((item) => item.id === equipmentIdMatch[1]);
+      if (!equipment) return send(404, { detail: "Ekipman bulunamadı." });
+      if (method === "GET") return send(200, equipment);
+      if (method === "PATCH") {
+        return withBody((body) => {
+          // 🔴 K5'in sunucu yanı: GÖNDERİLMEYEN anahtar mevcut değeri KORUR
+          // (`model_fields_set`). Bu yüzden `undefined` atlanır, `null` yazılır.
+          for (const [key, value] of Object.entries(body)) {
+            if (value === undefined) continue;
+            Object.assign(equipment, { [key]: value });
+          }
+          return send(200, equipment);
+        });
+      }
     }
 
     return send(404, { detail: "not found" });

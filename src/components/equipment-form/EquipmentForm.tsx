@@ -302,6 +302,18 @@ export function EquipmentForm(props: EquipmentFormProps) {
           submitLabel={submitLabel}
           pendingLabel={SUBMIT_PENDING_LABEL}
         />
+
+        {/* Görsel spec (T5b) "yüklendi" iddiasını KAYNAK BAŞINA kurar — F-İK
+            dersi. Formun ÜÇ seçicisi ayrı sorgulardan beslenir ve her biri
+            yüklenirken altındaki not "Yükleniyor…" basar; tek bayrakla
+            beklemek o notu kadraja dondurabilirdi. */}
+        {!siteOptionsState.isLoading && <span hidden data-testid="makine-form-loaded-sites" />}
+        {personnelQuery.data !== undefined && (
+          <span hidden data-testid="makine-form-loaded-personnel" />
+        )}
+        {suppliersQuery.data !== undefined && (
+          <span hidden data-testid="makine-form-loaded-suppliers" />
+        )}
       </div>
     </div>
   );
