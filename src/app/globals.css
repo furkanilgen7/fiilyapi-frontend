@@ -1,5 +1,9 @@
 /* Token katmanı — @import CSS gereği dosyanın başında olmalıdır */
 @import "../styles/tokens.css";
+/* Yazı tipleri — repoda barındırılır (F-TB2). `next/font/google` derleme
+   anında fonts.gstatic.com'a gittiği için CI'da build patlıyordu; bkz.
+   ../styles/fonts.css başlığı ve public/fonts/README.md. */
+@import "../styles/fonts.css";
 
 /* Global reset */
 *,
