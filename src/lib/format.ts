@@ -145,6 +145,18 @@ export function formatDayMonth(iso: string): string {
 }
 
 /**
+ * Gün + ay + yıl (F-MK T2, M1 112/149: "19 Temmuz 2026"). `formatDayMonth`in
+ * yıl eklenmiş hâli — aynı gerekçeyle `new Date(iso)` KULLANILMAZ (UTC
+ * yorumlanır, TR saatinde bir gün geri kayardı).
+ */
+export function formatDateLong(iso: string): string {
+  const [year, month, day] = iso.split("-");
+  const name = TR_MONTHS[Number(month) - 1];
+  if (year === undefined || day === undefined || name === undefined) return iso;
+  return `${Number(day)} ${name} ${year}`;
+}
+
+/**
  * Gün + KISA ay (F-PL T2, Planlama ızgarasının gün başlıkları — P111-117:
  * "21 Tem"). `formatDayMonth`in kısaltılmış hâli; ay adları `TR_MONTHS_SHORT`
  * tek kaynağından gelir (`formatPeriodShort` ile AYNI dizi).

@@ -1,0 +1,235 @@
+/* M1 · Makine & Ekipman (F-MK T2). Kanon: projedesign "Makine & Ekipman.dc.html";
+   parantez içi sayılar o dosyanın SATIR numaralarıdır. Prefix `makine`.
+   Mockup'ın üst barı (20-33) ve sol menüsü (33-56) UYGULAMA KABUĞUdur
+   (F3 Topbar + Sidebar) — bu sayfa onları YENİDEN ÇİZMEZ. */
+.makine {
+  animation: var(--anim-fade-up); /* 58 */
+}
+
+/* Başlık şeridi (59-63). */
+.makine__eyebrow {
+  font-size: 12px; /* 59 */
+  color: var(--color-text-subtle);
+  margin-bottom: 6px;
+}
+.makine__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px; /* 60 */
+}
+.makine__title {
+  font-size: 26px; /* 61 */
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.5px;
+  color: var(--color-text);
+}
+
+/* Görünür gerekçe/uyarı bantları — sessiz düşüş YOK. */
+.makine__notice {
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: 8px 12px;
+}
+.makine__notice--danger {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger);
+}
+
+/* Sekme şeridi — EquipmentTabsStrip (PersonnelTabsStrip emsali). */
+.makine-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 4px;
+  width: fit-content;
+  margin-bottom: 20px;
+}
+.makine-tabs__tab {
+  padding: 7px 16px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  border-radius: 7px;
+  text-decoration: none;
+}
+.makine-tabs__tab:hover,
+.makine-tabs__tab:focus,
+.makine-tabs__tab:active {
+  text-decoration: none;
+}
+.makine-tabs__tab--active {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  background: var(--color-nav-active-bg);
+}
+.makine-tabs__tab--disabled {
+  cursor: not-allowed;
+  color: var(--color-text-subtle);
+}
+
+/* KPI şeridi (66-83): 4 eşit kart, ortalı, karta özel değer rengi. */
+.makine-kpi {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3); /* 66 */
+  margin-bottom: 20px;
+}
+.makine-kpi__card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); /* 67 */
+  padding: var(--space-4); /* 67 — 16px */
+  text-align: center; /* 67 */
+}
+.makine-kpi__value {
+  font-size: 22px; /* 68 */
+  font-weight: var(--weight-bold);
+}
+.makine-kpi__value--success {
+  color: var(--color-success); /* 68 */
+}
+.makine-kpi__value--danger {
+  color: var(--color-danger); /* 72 */
+}
+.makine-kpi__value--warning {
+  color: var(--color-warning); /* 76 */
+}
+.makine-kpi__value--mono {
+  font-size: 20px; /* 80 */
+  font-family: var(--font-mono);
+  color: var(--color-text); /* 80 */
+}
+.makine-kpi__label {
+  font-size: var(--text-small); /* 69 */
+  color: var(--color-text-subtle);
+  margin-top: 3px;
+}
+.makine-kpi__hint {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--color-text-subtle);
+}
+
+/* Kart ızgarası (86-166): 3 eşit sütun. */
+.makine-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px; /* 86 */
+}
+
+.makine-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border); /* 88 */
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+}
+/* 114, 140 · arızalı/bakımda kartlar renkli kenarlık + gölge alır. */
+.makine-card--danger {
+  border-color: var(--color-danger-border-soft);
+  box-shadow: 0 1px 4px rgba(239, 68, 68, 0.08);
+}
+.makine-card--warning {
+  border-color: var(--color-warning-border-soft);
+  box-shadow: 0 1px 4px rgba(245, 158, 11, 0.08);
+}
+
+.makine-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px; /* 89 */
+}
+.makine-card__icon {
+  font-size: 28px; /* 90 */
+  line-height: 1;
+}
+.makine-card__name {
+  font-size: 15px; /* 93 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin-bottom: 3px;
+}
+.makine-card__meta {
+  font-size: 12px; /* 94 */
+  color: var(--color-text-subtle);
+  margin-bottom: 12px;
+}
+
+.makine-card__facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px; /* 95 */
+  margin-top: auto;
+}
+.makine-card__fact {
+  background: var(--color-surface-2);
+  border-radius: 6px;
+  padding: 8px; /* 96 */
+}
+.makine-card__fact-label {
+  font-size: 10px;
+  color: var(--color-text-subtle);
+}
+.makine-card__fact-value {
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin-top: 2px;
+}
+.makine-card__fact-value--mono {
+  font-family: var(--font-mono);
+}
+
+.makine-card__warning {
+  background: var(--color-surface-2);
+  border-radius: 6px;
+  padding: 8px; /* 121, 147 */
+  margin-top: auto;
+}
+.makine-card--danger .makine-card__warning {
+  background: var(--color-audit-danger-row-bg);
+  border: 1px solid var(--color-danger-soft);
+}
+.makine-card--warning .makine-card__warning {
+  background: var(--color-amber-tint-cell);
+  border: 1px solid var(--color-warning-border-soft);
+}
+.makine-card__warning-note {
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+}
+.makine-card--danger .makine-card__warning-note {
+  color: var(--color-danger); /* 122 */
+}
+.makine-card--warning .makine-card__warning-note {
+  color: var(--color-warning); /* 148 */
+}
+.makine-card__warning-date {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+
+/* K4 — mockup'ta yok, onaylı sapma: kartın tek eylemi düzenleme formuna gider. */
+.makine-card__edit {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 12px;
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.makine-card__edit:hover,
+.makine-card__edit:focus {
+  text-decoration: underline;
+}

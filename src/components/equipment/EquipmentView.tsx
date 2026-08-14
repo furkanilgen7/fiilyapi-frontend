@@ -1,0 +1,119 @@
+"use client";
+
+import Link from "next/link";
+
+import { AccessDenied } from "@/components/settings/AccessDenied";
+import { backendErrorMessage } from "@/lib/api/error-message";
+import { EQUIPMENT_LIST_MAX_LIMIT, useEquipment } from "@/lib/api/hooks/useEquipment";
+import { useEquipmentSummary } from "@/lib/api/hooks/useEquipmentSummary";
+import { usePersonnel, PERSONNEL_MAX_LIMIT } from "@/lib/api/hooks/usePersonnel";
+import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
+import { isForbidden } from "@/lib/api/unwrap";
+import { useModulePermission } from "@/lib/auth/useModulePermission";
+import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncation";
+
+import { EquipmentCard } from "./EquipmentCard";
+import { EquipmentKpiStrip } from "./EquipmentKpiStrip";
+import { EquipmentTabsStrip } from "./EquipmentTabsStrip";
+import "./equipment.css";
+
+/** İzin matrisi anahtarı — MK-1 backend spec: 21. izin modülü `equipment`. */
+const EQUIPMENT_PERMISSION_MODULE = "equipment";
+
+/**
+ * M1 · `/makine` — mockup `Makine & Ekipman.dc.html` (kanonik). Yorumlardaki
+ * sayılar o dosyanın SATIR numaralarıdır.
+ *
+ * Mockup'ın KENDİ üst barı ve sol menüsü BASILMAZ: kabuk canon kazanır (F3
+ * Topbar + Sidebar). Sidebar'daki "Makine & Ekipman" artık ComingSoon'a değil
+ * bu rotaya düşer.
+ *
+ * ⚠️ ÜÇ BAĞIMSIZ VERİ KAYNAĞI (spec — devir notu): ekipman listesi
+ * (`useEquipment`), şantiye seçenekleri (`useSiteOptions`) ve personel listesi
+ * (`usePersonnel`) ayrı sorgulardır. `EquipmentResponse` yalnız `site_id`/
+ * `operator_id` UUID'si taşır, AD taşımaz — kartlar bu üç kaynağı birleştirir.
+ * Her biri kendi pending durumunu (`undefined` ⇒ "Yükleniyor…") taşır.
+ */
+export function EquipmentView() {
+  const permission = useModulePermission(EQUIPMENT_PERMISSION_MODULE);
+
+  // Kırpılma korkuluğu (TB3/F-TH dersi): sunucu varsayılanı 50'dir, tavan
+  // AÇIKÇA gönderilir.
+  const equipmentQuery = useEquipment({ limit: EQUIPMENT_LIST_MAX_LIMIT });
+  const summaryQuery = useEquipmentSummary();
+  const siteOptions = useSiteOptions();
+  const personnelQuery = usePersonnel({ limit: PERSONNEL_MAX_LIMIT });
+
+  if (!permission.canView || isForbidden(equipmentQuery.error)) return <AccessDenied />;
+
+  const items = equipmentQuery.data?.items;
+  const truncation = buildListTruncation(items?.length ?? 0, equipmentQuery.data?.total);
+
+  const siteLabelById = new Map(siteOptions.options.map((option) => [option.siteId, option.label]));
+  const personnelNameById = new Map(
+    (personnelQuery.data?.items ?? []).map((person) => [person.id, person.full_name]),
+  );
+
+  function resolveSiteLabel(siteId: string | null): string | null | undefined {
+    if (siteId === null) return null; // K6 — depoda, atama yok
+    if (siteOptions.isLoading) return undefined;
+    return siteLabelById.get(siteId) ?? null;
+  }
+
+  function resolveOperatorName(operatorId: string | null): string | null | undefined {
+    if (operatorId === null) return null; // K3 — operatör/şoför atanmadı
+    if (personnelQuery.isLoading) return undefined;
+    return personnelNameById.get(operatorId) ?? null;
+  }
+
+  return (
+    <div className="makine">
+      {/* 59 */}
+      <p className="makine__eyebrow">Saha &amp; İK</p>
+      {/* 60-63 */}
+      <div className="makine__head">
+        <h1 className="makine__title">Makine &amp; Ekipman</h1>
+        {/* 62 — hedef form (M2) bu dilimin kapsamı dışında; rota şimdiden bağlanır
+            (K4 "Düzenle" ile aynı karar), catch-all ComingSoon karşılar. */}
+        <Link href="/makine/yeni" className="btn btn--primary btn--md">
+          + Ekipman Ekle
+        </Link>
+      </div>
+
+      <EquipmentTabsStrip activeTab="Ekipman Listesi" />
+
+      {truncation.isTruncated && (
+        <p className="makine__notice" data-testid="makine-truncation-notice">
+          {listTruncationMessage(truncation)}
+        </p>
+      )}
+
+      {/* 66-83 */}
+      <EquipmentKpiStrip summary={summaryQuery.data} />
+
+      {equipmentQuery.isLoading && <p className="makine__notice">Yükleniyor…</p>}
+      {equipmentQuery.isError && (
+        <p className="makine__notice makine__notice--danger" role="alert">
+          {backendErrorMessage(equipmentQuery.error)}
+        </p>
+      )}
+      {!equipmentQuery.isLoading && !equipmentQuery.isError && items?.length === 0 && (
+        <p className="makine__notice">Kayıtlı ekipman yok.</p>
+      )}
+
+      {/* 86-166 */}
+      {items !== undefined && items.length > 0 && (
+        <div className="makine-grid" data-testid="makine-grid">
+          {items.map((equipment) => (
+            <EquipmentCard
+              key={equipment.id}
+              equipment={equipment}
+              siteLabel={resolveSiteLabel(equipment.site_id)}
+              operatorName={resolveOperatorName(equipment.operator_id)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
