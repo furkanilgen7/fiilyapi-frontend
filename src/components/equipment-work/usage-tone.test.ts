@@ -44,3 +44,16 @@ describe("usageReasonText", () => {
     expect(usageReasonText(null).length).toBeGreaterThan(0);
   });
 });
+
+describe("usageBarWidth — F-P8 tam-piksel kanonu", () => {
+  it("kesirli yüzde TAM SAYIYA yuvarlanır (yarım piksel kenar YOK)", () => {
+    expect(usageBarWidth("43.661971")).toBe(44);
+    expect(usageBarWidth("76.4")).toBe(76);
+  });
+
+  it("kırpma korunur ve `null` çubuk üretmez", () => {
+    expect(usageBarWidth("140")).toBe(100);
+    expect(usageBarWidth("-5")).toBe(0);
+    expect(usageBarWidth(null)).toBeNull();
+  });
+});

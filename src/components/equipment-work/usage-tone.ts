@@ -45,10 +45,18 @@ export function usageTone(usagePct: string | null): UsageTone {
   return "primary"; // 144/170 — %76 · %84 mavi
 }
 
-/** Yüzde çubuğunun genişliği (0-100 arası kırpılır); `null` ⇒ çubuk yok. */
+/**
+ * Yüzde çubuğunun genişliği (0-100 arası kırpılır, TAM SAYI); `null` ⇒ çubuk yok.
+ *
+ * 🔴 `Math.round` — F-P8 kanonu (WORKFLOW §4, görsel spec 4. parça). Sunucu
+ * `usage_pct`i ondalıklı verebilir (`Numeric`); kesirli genişlik çubuğun sağ
+ * kenarını yarım piksele oturtur ve kare turdan tura oynar. `/makine/yakit`ta
+ * bu fiilen yaşandı (CI run 31788449253, 244 piksel) — aynı sınıf burada da
+ * vardır, fikstürün tam sayı olması yalnız ŞANSTIR.
+ */
 export function usageBarWidth(usagePct: string | null): number | null {
   if (usagePct === null) return null;
   const value = Number(usagePct);
   if (!Number.isFinite(value)) return null;
-  return Math.min(100, Math.max(0, value));
+  return Math.round(Math.min(100, Math.max(0, value)));
 }

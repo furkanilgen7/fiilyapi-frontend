@@ -14,14 +14,27 @@ export interface EquipmentFuelConsumptionListProps {
   isLoading: boolean;
 }
 
-/** Satır çubuğunun genişliği (0-100); toplam bilinmiyorsa/sıfırsa çubuk yok. */
+/**
+ * Satır çubuğunun genişliği (0-100 TAM SAYI); toplam bilinmiyorsa/sıfırsa
+ * çubuk yok.
+ *
+ * 🔴 `Math.round` ZORUNLU (WORKFLOW §4 · GÖRSEL SPEC KURALI 4. parça, F-P8
+ * kanonu): `liters / total_liters` uzun kesirli bir oran üretir (ör.
+ * 1.240 / 2.840 = %43,661971…). Bu değer doğrudan `width`e yazılırsa çubuğun
+ * sağ kenarı YARIM piksele oturur ve tarayıcı onu turdan tura FARKLI
+ * yuvarlayabilir. Fiilen: `makine-yakit` karesi CI'da bir turda 244 piksel
+ * oynadı (run 31788449253 KIRMIZI), sonraki turda aynı baseline'la YEŞİL
+ * geçti — eşik ayarı olmadığı için hangi varyant baseline'a girerse öbürü
+ * kırmızıdır, yani yeşil geçmek KANIT DEĞİLDİR. Dört yeni kare içinde
+ * kesirli geometrisi olan TEK ekran budur.
+ */
 function barWidth(liters: string, total: string | undefined): number | null {
   if (total === undefined) return null;
   const totalValue = Number(total);
   if (!Number.isFinite(totalValue) || totalValue <= 0) return null;
   const value = Number(liters);
   if (!Number.isFinite(value)) return null;
-  return Math.min(100, Math.max(0, (value / totalValue) * 100));
+  return Math.round(Math.min(100, Math.max(0, (value / totalValue) * 100)));
 }
 
 /**
