@@ -26,6 +26,26 @@ const READ_ONLY_URL = `/projeler/p-1/santiyeler/s-1/gunluk-kayit/planlama?week=$
 /** Mutasyon akışlarının izole şantiyesi: s-2 (B-Blok), bölümsüz iki satır. */
 const MUTATION_URL = `/projeler/p-1/santiyeler/s-2/gunluk-kayit/planlama?week=${FIXTURE_WEEK}`;
 
+/**
+ * 🔒 HEDEF İZOLASYONU (F-TB3 T4 — iki kez rapor edilen flake'in kökü).
+ *
+ * Hedefler `(şantiye, hafta)` çiftine kapsamlıdır (`PUT …/plan/goals?week_start=`
+ * yalnız o haftayı değiştirir). s-2'nin FİKSTÜR haftasındaki hedef sayısı ise
+ * SABİT DEĞİLDİR: aynı seri bloğun "hedef ekleme ve düzenleme kalıcıdır" testi
+ * o haftayı 1 hedeften 2 hedefe çıkarır. Bu yüzden "sunucuya bir şey gitmedi"
+ * iddiası o hafta üzerinden kurulamaz — iddiaya giren kayıt, başka bir testin
+ * mutasyona uğrattığı kayıtla AYNI kümedir (`pinRoster` / `pinPurchasingFixtures`
+ * emsalinin çözdüğü sınıf).
+ *
+ * Çözüm: iddia kendi haftasına taşınır. Bu hafta (17–23 Ağustos 2026) hiçbir
+ * fikstür taşımaz ve başka HİÇBİR spec/test okumaz ya da yazmaz — dolayısıyla
+ * başlangıç sayısı YAPISAL olarak 0'dır ve testin kurduğu tek hedef yalnız
+ * kendisine aittir. Paylaşılan mock DURUMUNA ek kayıt konmaz; görsel kadrajlar
+ * (`site-planning-visual.spec.ts`) yalnız s-1/fikstür haftasına bakar.
+ */
+const ISOLATED_GOAL_WEEK = "2026-08-17";
+const ISOLATED_GOAL_URL = `/projeler/p-1/santiyeler/s-2/gunluk-kayit/planlama?week=${ISOLATED_GOAL_WEEK}`;
+
 async function login(page: Page) {
   await page.goto("/login");
   await page.getByLabel(/e-posta/i).fill("patron@fiil.com");
@@ -337,11 +357,30 @@ test.describe("planlama düzenleme (MUTASYON, s-2)", () => {
 
   // T5 · başlığı boş hedef ESKİDEN gövdeden sessizce eleniyordu ("kaydedildi"
   // yazıp hedef kaybolurdu). Artık kaydetme HİÇ başlamaz.
+  //
+  // 🔒 F-TB3 T4: kadraja giren hedefler `ISOLATED_GOAL_WEEK`e taşındı (yukarıdaki
+  // gerekçe). Ayrıca "önceki sayı" artık `count()` ile ÖLÇÜLMEZ — `count()`
+  // yeniden denemeyen ANLIK bir sorgudur ve ızgara istemci tarafında (react-query)
+  // dolduğu için `goto`nun hemen ardından 0 döndürebiliyordu; sayı beklenen
+  // SABİTLE (`toHaveCount`) iddia edilir.
   test("başlığı boş hedefte kaydetme başlamaz, görünür gerekçe basılır", async ({ page }) => {
     await login(page);
-    await page.goto(MUTATION_URL);
-    const goalCountBefore = await goalsCard(page).locator(".plan-goals__row").count();
+    await page.goto(ISOLATED_GOAL_URL);
+    await expect(weekLabel(page)).toHaveText("17 – 23 Ağustos 2026");
+    const goals = goalsCard(page);
+    // İzole hafta fikstür taşımaz ve başka hiçbir test yazmaz → sayı SABİT 0.
+    await expect(goals.locator(".plan-goals__row")).toHaveCount(0);
 
+    // Bu testin SAHİBİ olduğu tek hedef: "sunucuya gitmedi" iddiası boş küme
+    // üzerinde değil, GERÇEK bir kayıt üzerinde doğrulanır (eskiden bu rolü
+    // başka testlerin bıraktığı kayıtlar üstleniyordu — yarışın kaynağı).
+    await page.getByRole("button", { name: "+ Hedef" }).click();
+    await goals.getByRole("textbox", { name: "Yeni hedef — hedef başlığı" }).fill("İzole hedef");
+    await saveAndExpect(page, "Haftalık hedefler: kaydedildi");
+    await page.reload();
+    await expect(goals.locator(".plan-goals__row")).toHaveCount(1);
+
+    // --- Asıl iddia: başlığı boş hedefle kaydetme HİÇ başlamaz.
     await page.getByRole("button", { name: "+ Hedef" }).click();
     await page.getByRole("button", { name: "Kaydet" }).click();
 
@@ -349,8 +388,12 @@ test.describe("planlama düzenleme (MUTASYON, s-2)", () => {
     await expect(status).toContainText("Başlığı boş bir hedef var.");
     await expect(status).not.toContainText("kaydedildi");
 
-    // Sunucuya hiçbir şey gitmedi: yeniden yükleme eski hâli getirir.
+    // Sunucuya hiçbir şey gitmedi: yeniden yükleme eski hâli getirir — boş
+    // hedef YAZILMADI ve mevcut hedef de gövdeden ELENMEDİ.
     await page.reload();
-    await expect(goalsCard(page).locator(".plan-goals__row")).toHaveCount(goalCountBefore);
+    await expect(goals.locator(".plan-goals__row")).toHaveCount(1);
+    await expect(
+      goals.getByRole("combobox", { name: "İzole hedef — hedef durumu" }),
+    ).toHaveValue("waiting");
   });
 });
