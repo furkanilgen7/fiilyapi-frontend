@@ -42,6 +42,10 @@
 }
 
 /* Sekme şeridi — EquipmentTabsStrip (PersonnelTabsStrip emsali). */
+/* Şerit + gerekçe satırı tek blok; dış boşluk bloğun kendisindedir. */
+.makine-tabs-block {
+  margin-bottom: 20px;
+}
 .makine-tabs {
   display: flex;
   gap: 4px;
@@ -50,7 +54,12 @@
   border-radius: var(--radius-lg);
   padding: 4px;
   width: fit-content;
-  margin-bottom: 20px;
+}
+/* K1 — devre-dışı sekmelerin GÖRÜNÜR gerekçesi (title tek başına yetmez). */
+.makine-tabs__reason {
+  margin-top: 6px;
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
 }
 .makine-tabs__tab {
   padding: 7px 16px;

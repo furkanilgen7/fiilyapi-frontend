@@ -51,7 +51,8 @@ export interface EquipmentTabsStripProps {
 /** Paylaşılan sekme şeridi — T3/T4 (Çalışma Kaydı/Yakıt Takibi) AYNISINI kullanır. */
 export function EquipmentTabsStrip({ activeTab = "Ekipman Listesi" }: EquipmentTabsStripProps) {
   return (
-    <div className="makine-tabs" role="tablist" aria-label="Makine & Ekipman sekmeleri">
+    <div className="makine-tabs-block">
+      <div className="makine-tabs" role="tablist" aria-label="Makine & Ekipman sekmeleri">
       {TABS.map((tab) => {
         const isActive = tab.label === activeTab;
 
@@ -83,6 +84,17 @@ export function EquipmentTabsStrip({ activeTab = "Ekipman Listesi" }: EquipmentT
           </span>
         );
       })}
+      </div>
+
+      {/*
+        🔴 spec K1 — devre-dışı sekmeler GÖRÜNÜR Türkçe gerekçe taşır. `title`
+        yalnız imleç üstündeyken çıkar; kullanıcı sekmenin neden tıklanamadığını
+        fareyi bekletmeden görebilmelidir (F-TH kalıcı kuralı: rotası olmayan
+        mockup öğesi silinmez, devre-dışı + GÖRÜNÜR gerekçeyle basılır).
+      */}
+      <p className="makine-tabs__reason" data-testid="makine-tabs-reasons">
+        {EQUIPMENT_TAB_LEASE_SETTLEMENT_REASON} {EQUIPMENT_TAB_MAINTENANCE_CALENDAR_REASON}
+      </p>
     </div>
   );
 }

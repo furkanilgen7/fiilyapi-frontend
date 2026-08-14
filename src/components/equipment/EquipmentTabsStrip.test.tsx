@@ -40,6 +40,16 @@ describe("EquipmentTabsStrip", () => {
     expect(maintenance.tagName).not.toBe("A");
   });
 
+  it("K1 — iki gerekçe de EKRANDA GÖRÜNÜR metindir (yalnız `title` YETMEZ)", () => {
+    render(<EquipmentTabsStrip />);
+    // `title` imleç bekletmeden okunamaz; spec K1 "görünür Türkçe gerekçe" der.
+    // Bu iddia bir metin düğümü arar, öznitelik DEĞİL.
+    expect(screen.getByText(EQUIPMENT_TAB_LEASE_SETTLEMENT_REASON, { exact: false })).toBeVisible();
+    expect(
+      screen.getByText(EQUIPMENT_TAB_MAINTENANCE_CALENDAR_REASON, { exact: false }),
+    ).toBeVisible();
+  });
+
   it("iki devre-dışı sekmenin gerekçesi FARKLIDIR (Kira Hakedişi ≠ Bakım Takvimi)", () => {
     expect(EQUIPMENT_TAB_LEASE_SETTLEMENT_REASON).not.toBe(
       EQUIPMENT_TAB_MAINTENANCE_CALENDAR_REASON,
