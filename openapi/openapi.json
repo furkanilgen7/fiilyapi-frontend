@@ -3512,6 +3512,958 @@
         }
       }
     },
+    "/equipment/rental-invoices": {
+      "get": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "List Rental Invoices Endpoint",
+        "description": "Hakediş listesi — süzgeçler AND'lidir, kapsam (K9) HER ZAMAN üsttedir.\n\nSatır toplamları burada YOKTUR (şema gerekçesi): `our_total` satırlardan\ntürer ve liste satırı başına tüm satırları taramak gerekirdi.",
+        "operationId": "list_rental_invoices_endpoint_equipment_rental_invoices_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "supplier_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Supplier Id"
+            }
+          },
+          {
+            "name": "site_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/RentalInvoiceStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "period_year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2200,
+                  "minimum": 2000
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Period Year"
+            }
+          },
+          {
+            "name": "period_month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 12,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Period Month"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentalInvoiceListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Create Rental Invoice Endpoint",
+        "description": "M5 üst formu. 🔴 Satırlar GÖVDEDE YOKTUR: sunucu onları çalışma kaydından\nKURAR (K2 snapshot'ı, M5:83 \"Çalışma kaydından otomatik yüklendi\").",
+        "operationId": "create_rental_invoice_endpoint_equipment_rental_invoices_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RentalInvoiceCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentalInvoiceDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kiralama firması ya da şantiye bulunamadı (görünmeyen dahil)"
+          },
+          "409": {
+            "description": "Bu firma için aynı fatura numarası zaten kayıtlı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/equipment/rental-invoices/{invoice_id}": {
+      "get": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Get Rental Invoice Endpoint",
+        "description": "M5'in TAMAMI: tablo + tfoot + proje dağılımı (spec §4).\n\n🔴 K2: hiçbir sayı çalışma kaydından CANLI okunmaz — satırların KENDİ\nkolonlarından türer.",
+        "operationId": "get_rental_invoice_endpoint_equipment_rental_invoices__invoice_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentalInvoiceDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Update Rental Invoice Endpoint",
+        "description": "Kısmi güncelleme — `draft` + `pending_verification`; ötesi 409.\n\nDönem/şantiye değişikliği satırları KENDİLİĞİNDEN tazelemez (K2): tazeleme\n`POST …/reload` ile AÇIKÇA yapılır.",
+        "operationId": "update_rental_invoice_endpoint_equipment_rental_invoices__invoice_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RentalInvoiceUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentalInvoiceDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "409": {
+            "description": "Onaylanmış/ödenmiş hakediş düzenlenemez (K5)"
+          },
+          "422": {
+            "description": "Kiralık satırlar seçilen firmaya ait değil (K8)"
+          }
+        }
+      }
+    },
+    "/equipment/rental-invoices/{invoice_id}/reload": {
+      "post": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Reload Rental Invoice Endpoint",
+        "description": "🔴 K2'nin AÇIK tazeleme eylemi — YALNIZ `draft` (ötesi 409).",
+        "operationId": "reload_rental_invoice_endpoint_equipment_rental_invoices__invoice_id__reload_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentalInvoiceDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kira hakedişi bulunamadı (görünmeyen dahil)"
+          },
+          "409": {
+            "description": "Durum makinesi bu geçişe izin vermiyor (K5)"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/equipment/rental-invoices/{invoice_id}/approve": {
+      "post": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Approve Rental Invoice Endpoint",
+        "description": "**\"Onayla ve Ödemeye Gönder\"** (ONAYLI SAPMA — M5:27 \"Kiracıya Gönder\"\ndiyor ama akış yönüyle çelişiyor: gelen faturayı BİZ ödüyoruz).\n\nZinciri TEK ADIM ilerletir; ödeme damgası bu uçtan BASILMAZ.",
+        "operationId": "approve_rental_invoice_endpoint_equipment_rental_invoices__invoice_id__approve_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentalInvoiceResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kira hakedişi bulunamadı (görünmeyen dahil)"
+          },
+          "409": {
+            "description": "Durum makinesi bu geçişe izin vermiyor (K5)"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/equipment/rental-invoices/{invoice_id}/pay": {
+      "post": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Pay Rental Invoice Endpoint",
+        "description": "🔴 ÖDENDİ damgası. `paid` bir UÇ DURUMDUR: ikinci çağrı 409.\n\nEŞİK = KİLİT: fatura DENETİMDEN ÖNCE kilitlenir (çift ödeme yarışı).",
+        "operationId": "pay_rental_invoice_endpoint_equipment_rental_invoices__invoice_id__pay_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentalInvoiceResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kira hakedişi bulunamadı (görünmeyen dahil)"
+          },
+          "409": {
+            "description": "Durum makinesi bu geçişe izin vermiyor (K5)"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/equipment/rental-invoices/{invoice_id}/reject": {
+      "post": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Reject Rental Invoice Endpoint",
+        "description": "Onayın GERİ ALINMASI (`approved → pending_verification`).\n\nAyrı bir `rejected` durumu YOKTUR (K5): fatura \"doğrulama bekleyen\"\nlistesine geri döner ve yeniden düzenlenebilir hâle gelir.",
+        "operationId": "reject_rental_invoice_endpoint_equipment_rental_invoices__invoice_id__reject_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentalInvoiceResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kira hakedişi bulunamadı (görünmeyen dahil)"
+          },
+          "409": {
+            "description": "Durum makinesi bu geçişe izin vermiyor (K5)"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/equipment/rental-invoice-lines/{line_id}": {
+      "patch": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Update Rental Invoice Line Endpoint",
+        "description": "M5'in İKİ input'u: `rate_amount` (Kira B.F.) + `invoiced_hours` (Fatura\nSaati). Başka alan taşıyan gövde 422'dir — `worked_hours` gövdeden\nyazılabilseydi K2 snapshot'ı bir PATCH ile delinirdi.",
+        "operationId": "update_rental_invoice_line_endpoint_equipment_rental_invoice_lines__line_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "line_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Line Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RentalInvoiceLineUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RentalInvoiceLineResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Satır bulunamadı (faturası görünmeyen dahil)"
+          },
+          "409": {
+            "description": "Onaylanmış/ödenmiş hakedişin satırı düzenlenemez (K5)"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Delete Rental Invoice Line Endpoint",
+        "description": "YALNIZ `draft` (spec §4): doğrulama aşamasında bir satırın yok olması,\nfirmanın faturasıyla karşılaştırılan kümeyi sessizce küçültürdü.",
+        "operationId": "delete_rental_invoice_line_endpoint_equipment_rental_invoice_lines__line_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "line_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Line Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "409": {
+            "description": "Satır yalnız taslak hakedişte silinebilir"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/equipment/document-types": {
+      "get": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "List Equipment Document Types Endpoint",
+        "description": "Altı sabit slot (M2:134-159). CRUD ucu YOK — yönetimi ayarlar dilimine\nertelenmiştir (İK-1 emsali).",
+        "operationId": "list_equipment_document_types_endpoint_equipment_document_types_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentDocumentTypeListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/equipment/documents/summary": {
+      "get": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Equipment Documents Summary Endpoint",
+        "description": "K7 özeti: `expiring_soon` (30 gün) + `expired` + `missing` (zorunlu tip\neksikleri, yalnız AKTİF ekipman).",
+        "operationId": "equipment_documents_summary_endpoint_equipment_documents_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentDocumentsSummaryResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/equipment/{equipment_id}/documents": {
+      "get": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "List Equipment Documents Endpoint",
+        "description": "Görünmeyen ekipman → 404 (K9/K20, IDOR deseni).",
+        "operationId": "list_equipment_documents_endpoint_equipment__equipment_id__documents_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Equipment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentDocumentListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Create Equipment Document Endpoint",
+        "description": "Multipart yükleme (M2:134-159). Kapı sırası modül docstring'inde.",
+        "operationId": "create_equipment_document_endpoint_equipment__equipment_id__documents_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Equipment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_create_equipment_document_endpoint_equipment__equipment_id__documents_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentDocumentResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Ekipman bulunamadı (görünmeyen dahil)"
+          },
+          "413": {
+            "description": "Dosya boyutu tavanı aşıyor"
+          },
+          "422": {
+            "description": "Desteklenmeyen dosya türü ya da geçersiz belge tipi"
+          }
+        }
+      }
+    },
+    "/equipment/documents/{document_id}/download": {
+      "get": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Download Equipment Document Endpoint",
+        "description": "`documents/router.download_document_endpoint`in AYNI başlık deseni:\n`Content-Type` künyeden, `Content-Length` `size_bytes`ten, `Content-Disposition`\nRFC 5987 ile ve `X-Content-Type-Options: nosniff` — arşivdeki bir dosyanın\ntarayıcıda ÇALIŞTIRILMASI engellenir.",
+        "operationId": "download_equipment_document_endpoint_equipment_documents__document_id__download_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/octet-stream": {}
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Belge bulunamadı (görünmeyen ekipmanın belgesi dahil)"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/equipment/documents/{document_id}": {
+      "delete": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Delete Equipment Document Endpoint",
+        "operationId": "delete_equipment_document_endpoint_equipment_documents__document_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Belge bulunamadı (görünmeyen ekipmanın belgesi dahil)"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/equipment": {
       "get": {
         "tags": [
@@ -17005,6 +17957,38 @@
         "type": "object",
         "title": "BlockUpdate"
       },
+      "Body_create_equipment_document_endpoint_equipment__equipment_id__documents_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "type_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Type Id"
+          },
+          "valid_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Until"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "type_id"
+        ],
+        "title": "Body_create_equipment_document_endpoint_equipment__equipment_id__documents_post"
+      },
       "Body_import_units_endpoint_projects__project_id__units_import_post": {
         "properties": {
           "file": {
@@ -20141,6 +21125,268 @@
         ],
         "title": "EquipmentCreate",
         "description": "`POST /equipment` — M2 formunun gövdesi.\n\n`purchase_amount` BURADA isteğe bağlıdır ve bu bir eksiklik DEĞİLDİR (K2):\nkural `ownership == owned` iken zorunluluk şeklindedir ve SERVİStedir (422).\nŞemaya konsaydı kiralık makine hiç kaydedilemezdi."
+      },
+      "EquipmentDocumentListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentDocumentResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "EquipmentDocumentListResponse"
+      },
+      "EquipmentDocumentResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "equipment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Equipment Id"
+          },
+          "type_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Type Id"
+          },
+          "type_code": {
+            "type": "string",
+            "title": "Type Code"
+          },
+          "type_name": {
+            "type": "string",
+            "title": "Type Name"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          },
+          "valid_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Until"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "equipment_id",
+          "type_id",
+          "type_code",
+          "type_name",
+          "filename",
+          "mime_type",
+          "size_bytes",
+          "valid_until",
+          "created_at"
+        ],
+        "title": "EquipmentDocumentResponse",
+        "description": "`GET /equipment/{id}/documents` satırı — bayt YOK, yalnız künye."
+      },
+      "EquipmentDocumentTypeListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentDocumentTypeResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "EquipmentDocumentTypeListResponse"
+      },
+      "EquipmentDocumentTypeResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "is_required": {
+            "type": "boolean",
+            "title": "Is Required"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "is_required",
+          "sort_order"
+        ],
+        "title": "EquipmentDocumentTypeResponse",
+        "description": "`GET /equipment/document-types` — altı sabit slot (CRUD ucu YOK)."
+      },
+      "EquipmentDocumentsSummaryResponse": {
+        "properties": {
+          "expiring_soon": {
+            "type": "integer",
+            "title": "Expiring Soon"
+          },
+          "expired": {
+            "type": "integer",
+            "title": "Expired"
+          },
+          "missing": {
+            "type": "integer",
+            "title": "Missing"
+          },
+          "expiring_documents": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentExpiringDocument"
+            },
+            "type": "array",
+            "title": "Expiring Documents"
+          },
+          "expired_documents": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentExpiredDocument"
+            },
+            "type": "array",
+            "title": "Expired Documents"
+          }
+        },
+        "type": "object",
+        "required": [
+          "expiring_soon",
+          "expired",
+          "missing",
+          "expiring_documents",
+          "expired_documents"
+        ],
+        "title": "EquipmentDocumentsSummaryResponse",
+        "description": "`GET /equipment/documents/summary` — K7 üç sayaç + iki liste.\n\n`missing` YALNIZ zorunlu (`is_required=true`) tipler üzerinden sayılır\n(İK-1'in `missing` semantiğinin birebiri) ve YALNIZ AKTİF (`is_active=true`)\nekipmanı kapsar — kullanımdan kaldırılmış (pasif) bir ekipmanın eksik\nbelgesi hiçbir sayaca girmez."
+      },
+      "EquipmentExpiredDocument": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "equipment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Equipment Id"
+          },
+          "equipment_name": {
+            "type": "string",
+            "title": "Equipment Name"
+          },
+          "type_name": {
+            "type": "string",
+            "title": "Type Name"
+          },
+          "valid_until": {
+            "type": "string",
+            "format": "date",
+            "title": "Valid Until"
+          },
+          "days_overdue": {
+            "type": "integer",
+            "title": "Days Overdue"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "equipment_id",
+          "equipment_name",
+          "type_name",
+          "valid_until",
+          "days_overdue"
+        ],
+        "title": "EquipmentExpiredDocument",
+        "description": "K7 — süresi çoktan dolmuş belge (özet listesi)."
+      },
+      "EquipmentExpiringDocument": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "equipment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Equipment Id"
+          },
+          "equipment_name": {
+            "type": "string",
+            "title": "Equipment Name"
+          },
+          "type_name": {
+            "type": "string",
+            "title": "Type Name"
+          },
+          "valid_until": {
+            "type": "string",
+            "format": "date",
+            "title": "Valid Until"
+          },
+          "days_left": {
+            "type": "integer",
+            "title": "Days Left"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "equipment_id",
+          "equipment_name",
+          "type_name",
+          "valid_until",
+          "days_left"
+        ],
+        "title": "EquipmentExpiringDocument",
+        "description": "K7 — 30 gün içinde süresi dolacak belge (özet listesi)."
       },
       "EquipmentFinancing": {
         "type": "string",
@@ -29435,6 +30681,1014 @@
         "type": "object",
         "title": "RejectBody",
         "description": "`POST …/reject` gövdesi (spec §7, K12: ek form YOK) — yalnız isteğe\nbağlı gerekçe, denetim günlüğüne taşınır (ayrı kolon AÇILMAZ).\n\n`max_length=500` (H10 denetimi Y3, spec §10/6): DB kolonu yok, TEK kalıcı\niz denetim metnidir (`audit/messages.py.progress_payment_rejected`) —\nsınırsız gövde keyfi uzunlukta metni günlüğe yazardı. Modülde bu deseni\n(kalıcı kolonu olmayan, yalnız günlüğe taşınan serbest metin) paylaşan\nbaşka bir alan yok; en yakın emsaller (`roles.RoleCreate.description`\nmax_length=2000, uzun biçim rol açıklaması) amaç bakımından farklı — 500,\ntek satırlık kısa bir ret gerekçesi için yeterli ve günlük okunabilirliğini\n(çok satırlı/şişirilmiş metin) koruyan bir üst sınırdır."
+      },
+      "RentalInvoiceCreate": {
+        "properties": {
+          "supplier_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Supplier Id"
+          },
+          "invoice_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice No"
+          },
+          "invoice_amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Amount"
+          },
+          "period_year": {
+            "type": "integer",
+            "maximum": 2200.0,
+            "minimum": 2000.0,
+            "title": "Period Year"
+          },
+          "period_month": {
+            "type": "integer",
+            "maximum": 12.0,
+            "minimum": 1.0,
+            "title": "Period Month"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "rate_period": {
+            "$ref": "#/components/schemas/EquipmentRatePeriod"
+          },
+          "vat_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+              }
+            ],
+            "title": "Vat Rate",
+            "default": "20.00"
+          }
+        },
+        "type": "object",
+        "required": [
+          "supplier_id",
+          "period_year",
+          "period_month",
+          "rate_period"
+        ],
+        "title": "RentalInvoiceCreate",
+        "description": "`POST /equipment/rental-invoices` — M5'in üst formu.\n\nSatırlar GÖVDEDE YOKTUR: \"Çalışma kaydından otomatik yüklendi\" (M5:83) —\nsunucu onları çalışma kaydından KURAR (K2 snapshot'ı). İstemci saat\ngönderebilseydi doğrulamanın iki bağımsız tarafı (bizim kaydımız ↔ firmanın\nfaturası) tek kaynağa çöker ve M5'in tüm amacı kaybolurdu.\n\n`invoice_amount` isteğe bağlıdır: taslak açan kullanıcı henüz faturayı\nalmamış olabilir (o hâlde KDV ve ödenecek toplam `null`dur — K1)."
+      },
+      "RentalInvoiceDetailResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "supplier_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Supplier Id"
+          },
+          "supplier_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplier Name"
+          },
+          "invoice_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice No"
+          },
+          "invoice_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Amount"
+          },
+          "period_year": {
+            "type": "integer",
+            "title": "Period Year"
+          },
+          "period_month": {
+            "type": "integer",
+            "title": "Period Month"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "site_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Name"
+          },
+          "rate_period": {
+            "$ref": "#/components/schemas/EquipmentRatePeriod"
+          },
+          "vat_rate": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Vat Rate"
+          },
+          "vat_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vat Amount"
+          },
+          "payable_total": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payable Total"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RentalInvoiceStatus"
+          },
+          "approved_by_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By Id"
+          },
+          "approved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "paid_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/RentalInvoiceLineResponse"
+            },
+            "type": "array",
+            "title": "Lines"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/RentalInvoiceTotals"
+          },
+          "site_distribution": {
+            "items": {
+              "$ref": "#/components/schemas/RentalSiteDistributionEntry"
+            },
+            "type": "array",
+            "title": "Site Distribution"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "supplier_id",
+          "supplier_name",
+          "invoice_no",
+          "invoice_amount",
+          "period_year",
+          "period_month",
+          "site_id",
+          "site_name",
+          "rate_period",
+          "vat_rate",
+          "vat_amount",
+          "payable_total",
+          "status",
+          "approved_by_id",
+          "approved_at",
+          "paid_at",
+          "created_at",
+          "lines",
+          "totals",
+          "site_distribution"
+        ],
+        "title": "RentalInvoiceDetailResponse",
+        "description": "`GET /equipment/rental-invoices/{id}` — M5'in TAMAMI (spec §4).\n\nTablo + tfoot + proje dağılımı tek istekte gelir: üç ayrı uca bölünseydi\nekran üç farklı anın fotoğrafını yan yana basabilirdi."
+      },
+      "RentalInvoiceLineResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "equipment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Equipment Id"
+          },
+          "equipment_name": {
+            "type": "string",
+            "title": "Equipment Name"
+          },
+          "equipment_brand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Equipment Brand"
+          },
+          "equipment_plate_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Equipment Plate No"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "site_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Name"
+          },
+          "line_kind": {
+            "$ref": "#/components/schemas/RentalLineKind"
+          },
+          "worked_hours": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Worked Hours"
+          },
+          "breakdown_hours": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Breakdown Hours"
+          },
+          "rate_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Amount"
+          },
+          "effective_rate_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Rate Amount"
+          },
+          "our_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Our Amount"
+          },
+          "breakdown_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Breakdown Amount"
+          },
+          "invoiced_hours": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoiced Hours"
+          },
+          "hours_variance": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hours Variance"
+          },
+          "variance_status": {
+            "$ref": "#/components/schemas/VarianceStatus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "equipment_id",
+          "equipment_name",
+          "equipment_brand",
+          "equipment_plate_no",
+          "site_id",
+          "site_name",
+          "line_kind",
+          "worked_hours",
+          "breakdown_hours",
+          "rate_amount",
+          "effective_rate_amount",
+          "our_amount",
+          "breakdown_amount",
+          "invoiced_hours",
+          "hours_variance",
+          "variance_status"
+        ],
+        "title": "RentalInvoiceLineResponse",
+        "description": "M5 tablosunun BİR satırı — kolonlar + TÜREVLER birlikte.\n\n`our_amount`/`breakdown_amount`/`effective_rate_amount` AYRI AYRI `null`\nolabilir (MK-1 K16 fail-closed): saati bilinen bir makinenin bedeli\nbilinmiyor olabilir ve uydurma bir `0` \"bedava çalıştı\" derdi."
+      },
+      "RentalInvoiceLineUpdate": {
+        "properties": {
+          "rate_amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Amount"
+          },
+          "invoiced_hours": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,6}|(?=[\\d.]{1,9}0*$)\\d{0,6}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoiced Hours"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RentalInvoiceLineUpdate",
+        "description": "`PATCH /equipment/rental-invoice-lines/{id}` — M5'in İKİ input'u.\n\n`rate_amount` (M5:93 \"Kira B.F. ₺\") ve `invoiced_hours` (M5:95 \"Fatura\nSaati\") DIŞINDA hiçbir alan kabul edilmez (`extra=\"forbid\"`, modül\ndocstring'i): `worked_hours` gövdeden yazılabilseydi K2 snapshot'ı bir\nPATCH ile delinirdi."
+      },
+      "RentalInvoiceListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RentalInvoiceResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "RentalInvoiceListResponse",
+        "description": "TB3 sayfalama kanonu: `limit ≤ 200`, `total` SÜZÜLMÜŞ kümeyi sayar."
+      },
+      "RentalInvoiceResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "supplier_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Supplier Id"
+          },
+          "supplier_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplier Name"
+          },
+          "invoice_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice No"
+          },
+          "invoice_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Amount"
+          },
+          "period_year": {
+            "type": "integer",
+            "title": "Period Year"
+          },
+          "period_month": {
+            "type": "integer",
+            "title": "Period Month"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "site_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Name"
+          },
+          "rate_period": {
+            "$ref": "#/components/schemas/EquipmentRatePeriod"
+          },
+          "vat_rate": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Vat Rate"
+          },
+          "vat_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vat Amount"
+          },
+          "payable_total": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payable Total"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RentalInvoiceStatus"
+          },
+          "approved_by_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By Id"
+          },
+          "approved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "paid_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "supplier_id",
+          "supplier_name",
+          "invoice_no",
+          "invoice_amount",
+          "period_year",
+          "period_month",
+          "site_id",
+          "site_name",
+          "rate_period",
+          "vat_rate",
+          "vat_amount",
+          "payable_total",
+          "status",
+          "approved_by_id",
+          "approved_at",
+          "paid_at",
+          "created_at"
+        ],
+        "title": "RentalInvoiceResponse",
+        "description": "Fatura BAŞLIĞI — liste satırı ve durum uçlarının yanıtı.\n\n`vat_amount`/`payable_total` burada da vardır çünkü ikisi de yalnız başlığın\nkendi kolonlarından türer (modül docstring'i); satır toplamları YOKTUR."
+      },
+      "RentalInvoiceStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "pending_verification",
+          "approved",
+          "paid"
+        ],
+        "title": "RentalInvoiceStatus",
+        "description": "MK-2 K5 — kira hakedişi durum makinesi (M5:65).\n\nZincir: `draft → pending_verification → approved → paid`.\nAyrı bir `rejected` durumu YOKTUR: reddetme `approved → pending_verification`\ngeri geçişidir (İK-3'ün red deseni). Ayrı durum açılsaydı reddedilmiş bir\nfatura \"onaya bekleyen\" listesinden düşer ve sessizce kaybolurdu."
+      },
+      "RentalInvoiceTotals": {
+        "properties": {
+          "our_total": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Our Total"
+          },
+          "our_total_unknown_count": {
+            "type": "integer",
+            "title": "Our Total Unknown Count"
+          },
+          "owned_total": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Owned Total"
+          },
+          "owned_total_unknown_count": {
+            "type": "integer",
+            "title": "Owned Total Unknown Count"
+          },
+          "excluded_breakdown_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Excluded Breakdown Amount"
+          },
+          "excluded_breakdown_unknown_count": {
+            "type": "integer",
+            "title": "Excluded Breakdown Unknown Count"
+          },
+          "invoice_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Amount"
+          },
+          "vat_rate": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Vat Rate"
+          },
+          "vat_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vat Amount"
+          },
+          "payable_total": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payable Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "our_total",
+          "our_total_unknown_count",
+          "owned_total",
+          "owned_total_unknown_count",
+          "excluded_breakdown_amount",
+          "excluded_breakdown_unknown_count",
+          "invoice_amount",
+          "vat_rate",
+          "vat_amount",
+          "payable_total"
+        ],
+        "title": "RentalInvoiceTotals",
+        "description": "M5 tfoot'u — 🔴 K3'ün ÜÇ AYRI toplamı + K1'in KDV zinciri.\n\nÜç toplam tek alana indirgenselerdi çift ödeme güvencesi hesapta kaybolurdu:\n`our_total` YALNIZ `rented` satırlardan gelir, `owned_total` ve\n`excluded_breakdown_amount` hiçbir ödenecek toplamın kaynağı DEĞİLDİR.\n\n`*_unknown_count` bedeli bilinmediği için toplama GİRMEYEN satırların\nadedidir (MK-1 `summarize` kanonu): sessizce atlanan satır kullanıcıya eksik\nbir parayı TAM gösterirdi."
+      },
+      "RentalInvoiceUpdate": {
+        "properties": {
+          "supplier_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplier Id"
+          },
+          "invoice_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice No"
+          },
+          "invoice_amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Amount"
+          },
+          "period_year": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2200.0,
+                "minimum": 2000.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Year"
+          },
+          "period_month": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 12.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Month"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "rate_period": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentRatePeriod"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "vat_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vat Rate"
+          }
+        },
+        "type": "object",
+        "title": "RentalInvoiceUpdate",
+        "description": "`PATCH /equipment/rental-invoices/{id}` — `draft` + `pending_verification`.\n\n`approved`/`paid` faturada 409 (K5). Alanın GÖNDERİLMEMESİ ile `null`\nGÖNDERİLMESİ farklıdır (F-İK \"touched\" dersi) ve fark `model_fields_set` ile\nkorunur.\n\n🔴 Dönem/şantiye değişikliği satırları KENDİLİĞİNDEN tazelemez: tazeleme\nAÇIK bir eylemdir (`POST …/reload`, K2). Sessizce yeniden kurulsalardı\nkullanıcının girdiği fatura saatleri bir alan değişikliğiyle silinirdi."
+      },
+      "RentalLineKind": {
+        "type": "string",
+        "enum": [
+          "rented",
+          "owned",
+          "breakdown"
+        ],
+        "title": "RentalLineKind",
+        "description": "MK-2 K3 — satırın ÖDENECEĞE KATILIMI buradan okunur.\n\n* `rented` → ödenecek toplama **GİRER**\n* `owned` → görünür, maliyeti raporlanır, toplama **GİRMEZ** (M5:140-151)\n* `breakdown` → tutarı \"hariç tutulan\" olarak raporlanır, toplama **GİRMEZ**\n  (M5:128-139 üstü çizili)\n\n🔴 Çift ödeme YAPISAL olarak imkânsızdır: `owned`/`breakdown` hiçbir toplamın\nkaynağı değildir (İK-3 K2'nin `excluded` deseni birebir). Tek bir \"hariç\"\nbayrağına indirgenseydi `owned` ile `breakdown` ayrımı kaybolur, M5'in iki\nayrı sunumu (kendi malı vs. arıza indirimi) üretilemezdi."
+      },
+      "RentalSiteDistributionEntry": {
+        "properties": {
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "site_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Name"
+          },
+          "hours": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Hours"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount"
+          },
+          "unknown_count": {
+            "type": "integer",
+            "title": "Unknown Count"
+          },
+          "equipments": {
+            "items": {
+              "$ref": "#/components/schemas/RentalSiteDistributionEquipment"
+            },
+            "type": "array",
+            "title": "Equipments"
+          }
+        },
+        "type": "object",
+        "required": [
+          "site_id",
+          "site_name",
+          "hours",
+          "amount",
+          "unknown_count",
+          "equipments"
+        ],
+        "title": "RentalSiteDistributionEntry",
+        "description": "M5:177-193 proje bazlı maliyet dağılımının BİR kovası.\n\n`site_id`/`site_name` `null` ise kova \"Atanmamış\"tır — uydurma bir proje adı\nBASILMAZ. Kovaya YALNIZ `rented` satırlar girer (`rental._site_distribution`\ngerekçesi): M5'in kartı da yalnız ödenecek toplama giren satırları basar."
+      },
+      "RentalSiteDistributionEquipment": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "RentalSiteDistributionEquipment",
+        "description": "Dağılım kovasına katkı veren ekipman (M5:181 \"Tower Crane TC-48 · …\")."
       },
       "ReservedKpi": {
         "properties": {
@@ -41180,6 +43434,17 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VarianceStatus": {
+        "type": "string",
+        "enum": [
+          "match",
+          "over",
+          "under",
+          "unknown"
+        ],
+        "title": "VarianceStatus",
+        "description": "K6 rozeti — M5:110/122'nin `✓ Eşleşiyor` / `⚠ 6 saat fark` damgası.\n\nDB'de KOLON DEĞİLDİR: her okumada farktan türer. Saklansaydı satır\ndüzenlendiğinde rozet eski farkta donup kalırdı.\n\n`over` firmanın BİZDEN ÇOK saat faturaladığı (bizim aleyhimize), `under`\nise AZ faturaladığı durumdur. Tek bir \"fark var\" değeri bu iki yönü\nbirleştirir ve ekranda hangi tarafın lehine olduğunu kaybederdi."
       },
       "WageType": {
         "type": "string",

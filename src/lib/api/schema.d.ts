@@ -851,6 +851,285 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/equipment/rental-invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Rental Invoices Endpoint
+         * @description Hakediş listesi — süzgeçler AND'lidir, kapsam (K9) HER ZAMAN üsttedir.
+         *
+         *     Satır toplamları burada YOKTUR (şema gerekçesi): `our_total` satırlardan
+         *     türer ve liste satırı başına tüm satırları taramak gerekirdi.
+         */
+        get: operations["list_rental_invoices_endpoint_equipment_rental_invoices_get"];
+        put?: never;
+        /**
+         * Create Rental Invoice Endpoint
+         * @description M5 üst formu. 🔴 Satırlar GÖVDEDE YOKTUR: sunucu onları çalışma kaydından
+         *     KURAR (K2 snapshot'ı, M5:83 "Çalışma kaydından otomatik yüklendi").
+         */
+        post: operations["create_rental_invoice_endpoint_equipment_rental_invoices_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/equipment/rental-invoices/{invoice_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Rental Invoice Endpoint
+         * @description M5'in TAMAMI: tablo + tfoot + proje dağılımı (spec §4).
+         *
+         *     🔴 K2: hiçbir sayı çalışma kaydından CANLI okunmaz — satırların KENDİ
+         *     kolonlarından türer.
+         */
+        get: operations["get_rental_invoice_endpoint_equipment_rental_invoices__invoice_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Rental Invoice Endpoint
+         * @description Kısmi güncelleme — `draft` + `pending_verification`; ötesi 409.
+         *
+         *     Dönem/şantiye değişikliği satırları KENDİLİĞİNDEN tazelemez (K2): tazeleme
+         *     `POST …/reload` ile AÇIKÇA yapılır.
+         */
+        patch: operations["update_rental_invoice_endpoint_equipment_rental_invoices__invoice_id__patch"];
+        trace?: never;
+    };
+    "/equipment/rental-invoices/{invoice_id}/reload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reload Rental Invoice Endpoint
+         * @description 🔴 K2'nin AÇIK tazeleme eylemi — YALNIZ `draft` (ötesi 409).
+         */
+        post: operations["reload_rental_invoice_endpoint_equipment_rental_invoices__invoice_id__reload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/equipment/rental-invoices/{invoice_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve Rental Invoice Endpoint
+         * @description **"Onayla ve Ödemeye Gönder"** (ONAYLI SAPMA — M5:27 "Kiracıya Gönder"
+         *     diyor ama akış yönüyle çelişiyor: gelen faturayı BİZ ödüyoruz).
+         *
+         *     Zinciri TEK ADIM ilerletir; ödeme damgası bu uçtan BASILMAZ.
+         */
+        post: operations["approve_rental_invoice_endpoint_equipment_rental_invoices__invoice_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/equipment/rental-invoices/{invoice_id}/pay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pay Rental Invoice Endpoint
+         * @description 🔴 ÖDENDİ damgası. `paid` bir UÇ DURUMDUR: ikinci çağrı 409.
+         *
+         *     EŞİK = KİLİT: fatura DENETİMDEN ÖNCE kilitlenir (çift ödeme yarışı).
+         */
+        post: operations["pay_rental_invoice_endpoint_equipment_rental_invoices__invoice_id__pay_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/equipment/rental-invoices/{invoice_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject Rental Invoice Endpoint
+         * @description Onayın GERİ ALINMASI (`approved → pending_verification`).
+         *
+         *     Ayrı bir `rejected` durumu YOKTUR (K5): fatura "doğrulama bekleyen"
+         *     listesine geri döner ve yeniden düzenlenebilir hâle gelir.
+         */
+        post: operations["reject_rental_invoice_endpoint_equipment_rental_invoices__invoice_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/equipment/rental-invoice-lines/{line_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Rental Invoice Line Endpoint
+         * @description YALNIZ `draft` (spec §4): doğrulama aşamasında bir satırın yok olması,
+         *     firmanın faturasıyla karşılaştırılan kümeyi sessizce küçültürdü.
+         */
+        delete: operations["delete_rental_invoice_line_endpoint_equipment_rental_invoice_lines__line_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Rental Invoice Line Endpoint
+         * @description M5'in İKİ input'u: `rate_amount` (Kira B.F.) + `invoiced_hours` (Fatura
+         *     Saati). Başka alan taşıyan gövde 422'dir — `worked_hours` gövdeden
+         *     yazılabilseydi K2 snapshot'ı bir PATCH ile delinirdi.
+         */
+        patch: operations["update_rental_invoice_line_endpoint_equipment_rental_invoice_lines__line_id__patch"];
+        trace?: never;
+    };
+    "/equipment/document-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Equipment Document Types Endpoint
+         * @description Altı sabit slot (M2:134-159). CRUD ucu YOK — yönetimi ayarlar dilimine
+         *     ertelenmiştir (İK-1 emsali).
+         */
+        get: operations["list_equipment_document_types_endpoint_equipment_document_types_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/equipment/documents/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Equipment Documents Summary Endpoint
+         * @description K7 özeti: `expiring_soon` (30 gün) + `expired` + `missing` (zorunlu tip
+         *     eksikleri, yalnız AKTİF ekipman).
+         */
+        get: operations["equipment_documents_summary_endpoint_equipment_documents_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/equipment/{equipment_id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Equipment Documents Endpoint
+         * @description Görünmeyen ekipman → 404 (K9/K20, IDOR deseni).
+         */
+        get: operations["list_equipment_documents_endpoint_equipment__equipment_id__documents_get"];
+        put?: never;
+        /**
+         * Create Equipment Document Endpoint
+         * @description Multipart yükleme (M2:134-159). Kapı sırası modül docstring'inde.
+         */
+        post: operations["create_equipment_document_endpoint_equipment__equipment_id__documents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/equipment/documents/{document_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download Equipment Document Endpoint
+         * @description `documents/router.download_document_endpoint`in AYNI başlık deseni:
+         *     `Content-Type` künyeden, `Content-Length` `size_bytes`ten, `Content-Disposition`
+         *     RFC 5987 ile ve `X-Content-Type-Options: nosniff` — arşivdeki bir dosyanın
+         *     tarayıcıda ÇALIŞTIRILMASI engellenir.
+         */
+        get: operations["download_equipment_document_endpoint_equipment_documents__document_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/equipment/documents/{document_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Equipment Document Endpoint */
+        delete: operations["delete_equipment_document_endpoint_equipment_documents__document_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/equipment": {
         parameters: {
             query?: never;
@@ -4582,6 +4861,18 @@ export interface components {
             /** Sort Order */
             sort_order?: number | null;
         };
+        /** Body_create_equipment_document_endpoint_equipment__equipment_id__documents_post */
+        Body_create_equipment_document_endpoint_equipment__equipment_id__documents_post: {
+            /** File */
+            file: string;
+            /**
+             * Type Id
+             * Format: uuid
+             */
+            type_id: string;
+            /** Valid Until */
+            valid_until?: string | null;
+        };
         /** Body_import_units_endpoint_projects__project_id__units_import_post */
         Body_import_units_endpoint_projects__project_id__units_import_post: {
             /** File */
@@ -5658,6 +5949,148 @@ export interface components {
              * @default true
              */
             is_active: boolean;
+        };
+        /** EquipmentDocumentListResponse */
+        EquipmentDocumentListResponse: {
+            /** Items */
+            items: components["schemas"]["EquipmentDocumentResponse"][];
+        };
+        /**
+         * EquipmentDocumentResponse
+         * @description `GET /equipment/{id}/documents` satırı — bayt YOK, yalnız künye.
+         */
+        EquipmentDocumentResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Equipment Id
+             * Format: uuid
+             */
+            equipment_id: string;
+            /**
+             * Type Id
+             * Format: uuid
+             */
+            type_id: string;
+            /** Type Code */
+            type_code: string;
+            /** Type Name */
+            type_name: string;
+            /** Filename */
+            filename: string;
+            /** Mime Type */
+            mime_type: string;
+            /** Size Bytes */
+            size_bytes: number;
+            /** Valid Until */
+            valid_until: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** EquipmentDocumentTypeListResponse */
+        EquipmentDocumentTypeListResponse: {
+            /** Items */
+            items: components["schemas"]["EquipmentDocumentTypeResponse"][];
+        };
+        /**
+         * EquipmentDocumentTypeResponse
+         * @description `GET /equipment/document-types` — altı sabit slot (CRUD ucu YOK).
+         */
+        EquipmentDocumentTypeResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Is Required */
+            is_required: boolean;
+            /** Sort Order */
+            sort_order: number;
+        };
+        /**
+         * EquipmentDocumentsSummaryResponse
+         * @description `GET /equipment/documents/summary` — K7 üç sayaç + iki liste.
+         *
+         *     `missing` YALNIZ zorunlu (`is_required=true`) tipler üzerinden sayılır
+         *     (İK-1'in `missing` semantiğinin birebiri) ve YALNIZ AKTİF (`is_active=true`)
+         *     ekipmanı kapsar — kullanımdan kaldırılmış (pasif) bir ekipmanın eksik
+         *     belgesi hiçbir sayaca girmez.
+         */
+        EquipmentDocumentsSummaryResponse: {
+            /** Expiring Soon */
+            expiring_soon: number;
+            /** Expired */
+            expired: number;
+            /** Missing */
+            missing: number;
+            /** Expiring Documents */
+            expiring_documents: components["schemas"]["EquipmentExpiringDocument"][];
+            /** Expired Documents */
+            expired_documents: components["schemas"]["EquipmentExpiredDocument"][];
+        };
+        /**
+         * EquipmentExpiredDocument
+         * @description K7 — süresi çoktan dolmuş belge (özet listesi).
+         */
+        EquipmentExpiredDocument: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Equipment Id
+             * Format: uuid
+             */
+            equipment_id: string;
+            /** Equipment Name */
+            equipment_name: string;
+            /** Type Name */
+            type_name: string;
+            /**
+             * Valid Until
+             * Format: date
+             */
+            valid_until: string;
+            /** Days Overdue */
+            days_overdue: number;
+        };
+        /**
+         * EquipmentExpiringDocument
+         * @description K7 — 30 gün içinde süresi dolacak belge (özet listesi).
+         */
+        EquipmentExpiringDocument: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Equipment Id
+             * Format: uuid
+             */
+            equipment_id: string;
+            /** Equipment Name */
+            equipment_name: string;
+            /** Type Name */
+            type_name: string;
+            /**
+             * Valid Until
+             * Format: date
+             */
+            valid_until: string;
+            /** Days Left */
+            days_left: number;
         };
         /**
          * EquipmentFinancing
@@ -9072,6 +9505,352 @@ export interface components {
         RejectBody: {
             /** Reason */
             reason?: string | null;
+        };
+        /**
+         * RentalInvoiceCreate
+         * @description `POST /equipment/rental-invoices` — M5'in üst formu.
+         *
+         *     Satırlar GÖVDEDE YOKTUR: "Çalışma kaydından otomatik yüklendi" (M5:83) —
+         *     sunucu onları çalışma kaydından KURAR (K2 snapshot'ı). İstemci saat
+         *     gönderebilseydi doğrulamanın iki bağımsız tarafı (bizim kaydımız ↔ firmanın
+         *     faturası) tek kaynağa çöker ve M5'in tüm amacı kaybolurdu.
+         *
+         *     `invoice_amount` isteğe bağlıdır: taslak açan kullanıcı henüz faturayı
+         *     almamış olabilir (o hâlde KDV ve ödenecek toplam `null`dur — K1).
+         */
+        RentalInvoiceCreate: {
+            /**
+             * Supplier Id
+             * Format: uuid
+             */
+            supplier_id: string;
+            /** Invoice No */
+            invoice_no?: string | null;
+            /** Invoice Amount */
+            invoice_amount?: number | string | null;
+            /** Period Year */
+            period_year: number;
+            /** Period Month */
+            period_month: number;
+            /** Site Id */
+            site_id?: string | null;
+            rate_period: components["schemas"]["EquipmentRatePeriod"];
+            /**
+             * Vat Rate
+             * @default 20.00
+             */
+            vat_rate: number | string;
+        };
+        /**
+         * RentalInvoiceDetailResponse
+         * @description `GET /equipment/rental-invoices/{id}` — M5'in TAMAMI (spec §4).
+         *
+         *     Tablo + tfoot + proje dağılımı tek istekte gelir: üç ayrı uca bölünseydi
+         *     ekran üç farklı anın fotoğrafını yan yana basabilirdi.
+         */
+        RentalInvoiceDetailResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Supplier Id
+             * Format: uuid
+             */
+            supplier_id: string;
+            /** Supplier Name */
+            supplier_name: string | null;
+            /** Invoice No */
+            invoice_no: string | null;
+            /** Invoice Amount */
+            invoice_amount: string | null;
+            /** Period Year */
+            period_year: number;
+            /** Period Month */
+            period_month: number;
+            /** Site Id */
+            site_id: string | null;
+            /** Site Name */
+            site_name: string | null;
+            rate_period: components["schemas"]["EquipmentRatePeriod"];
+            /** Vat Rate */
+            vat_rate: string;
+            /** Vat Amount */
+            vat_amount: string | null;
+            /** Payable Total */
+            payable_total: string | null;
+            status: components["schemas"]["RentalInvoiceStatus"];
+            /** Approved By Id */
+            approved_by_id: string | null;
+            /** Approved At */
+            approved_at: string | null;
+            /** Paid At */
+            paid_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Lines */
+            lines: components["schemas"]["RentalInvoiceLineResponse"][];
+            totals: components["schemas"]["RentalInvoiceTotals"];
+            /** Site Distribution */
+            site_distribution: components["schemas"]["RentalSiteDistributionEntry"][];
+        };
+        /**
+         * RentalInvoiceLineResponse
+         * @description M5 tablosunun BİR satırı — kolonlar + TÜREVLER birlikte.
+         *
+         *     `our_amount`/`breakdown_amount`/`effective_rate_amount` AYRI AYRI `null`
+         *     olabilir (MK-1 K16 fail-closed): saati bilinen bir makinenin bedeli
+         *     bilinmiyor olabilir ve uydurma bir `0` "bedava çalıştı" derdi.
+         */
+        RentalInvoiceLineResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Equipment Id
+             * Format: uuid
+             */
+            equipment_id: string;
+            /** Equipment Name */
+            equipment_name: string;
+            /** Equipment Brand */
+            equipment_brand: string | null;
+            /** Equipment Plate No */
+            equipment_plate_no: string | null;
+            /** Site Id */
+            site_id: string | null;
+            /** Site Name */
+            site_name: string | null;
+            line_kind: components["schemas"]["RentalLineKind"];
+            /** Worked Hours */
+            worked_hours: string;
+            /** Breakdown Hours */
+            breakdown_hours: string;
+            /** Rate Amount */
+            rate_amount: string | null;
+            /** Effective Rate Amount */
+            effective_rate_amount: string | null;
+            /** Our Amount */
+            our_amount: string | null;
+            /** Breakdown Amount */
+            breakdown_amount: string | null;
+            /** Invoiced Hours */
+            invoiced_hours: string | null;
+            /** Hours Variance */
+            hours_variance: string | null;
+            variance_status: components["schemas"]["VarianceStatus"];
+        };
+        /**
+         * RentalInvoiceLineUpdate
+         * @description `PATCH /equipment/rental-invoice-lines/{id}` — M5'in İKİ input'u.
+         *
+         *     `rate_amount` (M5:93 "Kira B.F. ₺") ve `invoiced_hours` (M5:95 "Fatura
+         *     Saati") DIŞINDA hiçbir alan kabul edilmez (`extra="forbid"`, modül
+         *     docstring'i): `worked_hours` gövdeden yazılabilseydi K2 snapshot'ı bir
+         *     PATCH ile delinirdi.
+         */
+        RentalInvoiceLineUpdate: {
+            /** Rate Amount */
+            rate_amount?: number | string | null;
+            /** Invoiced Hours */
+            invoiced_hours?: number | string | null;
+        };
+        /**
+         * RentalInvoiceListResponse
+         * @description TB3 sayfalama kanonu: `limit ≤ 200`, `total` SÜZÜLMÜŞ kümeyi sayar.
+         */
+        RentalInvoiceListResponse: {
+            /** Items */
+            items: components["schemas"]["RentalInvoiceResponse"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * RentalInvoiceResponse
+         * @description Fatura BAŞLIĞI — liste satırı ve durum uçlarının yanıtı.
+         *
+         *     `vat_amount`/`payable_total` burada da vardır çünkü ikisi de yalnız başlığın
+         *     kendi kolonlarından türer (modül docstring'i); satır toplamları YOKTUR.
+         */
+        RentalInvoiceResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Supplier Id
+             * Format: uuid
+             */
+            supplier_id: string;
+            /** Supplier Name */
+            supplier_name: string | null;
+            /** Invoice No */
+            invoice_no: string | null;
+            /** Invoice Amount */
+            invoice_amount: string | null;
+            /** Period Year */
+            period_year: number;
+            /** Period Month */
+            period_month: number;
+            /** Site Id */
+            site_id: string | null;
+            /** Site Name */
+            site_name: string | null;
+            rate_period: components["schemas"]["EquipmentRatePeriod"];
+            /** Vat Rate */
+            vat_rate: string;
+            /** Vat Amount */
+            vat_amount: string | null;
+            /** Payable Total */
+            payable_total: string | null;
+            status: components["schemas"]["RentalInvoiceStatus"];
+            /** Approved By Id */
+            approved_by_id: string | null;
+            /** Approved At */
+            approved_at: string | null;
+            /** Paid At */
+            paid_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * RentalInvoiceStatus
+         * @description MK-2 K5 — kira hakedişi durum makinesi (M5:65).
+         *
+         *     Zincir: `draft → pending_verification → approved → paid`.
+         *     Ayrı bir `rejected` durumu YOKTUR: reddetme `approved → pending_verification`
+         *     geri geçişidir (İK-3'ün red deseni). Ayrı durum açılsaydı reddedilmiş bir
+         *     fatura "onaya bekleyen" listesinden düşer ve sessizce kaybolurdu.
+         * @enum {string}
+         */
+        RentalInvoiceStatus: "draft" | "pending_verification" | "approved" | "paid";
+        /**
+         * RentalInvoiceTotals
+         * @description M5 tfoot'u — 🔴 K3'ün ÜÇ AYRI toplamı + K1'in KDV zinciri.
+         *
+         *     Üç toplam tek alana indirgenselerdi çift ödeme güvencesi hesapta kaybolurdu:
+         *     `our_total` YALNIZ `rented` satırlardan gelir, `owned_total` ve
+         *     `excluded_breakdown_amount` hiçbir ödenecek toplamın kaynağı DEĞİLDİR.
+         *
+         *     `*_unknown_count` bedeli bilinmediği için toplama GİRMEYEN satırların
+         *     adedidir (MK-1 `summarize` kanonu): sessizce atlanan satır kullanıcıya eksik
+         *     bir parayı TAM gösterirdi.
+         */
+        RentalInvoiceTotals: {
+            /** Our Total */
+            our_total: string;
+            /** Our Total Unknown Count */
+            our_total_unknown_count: number;
+            /** Owned Total */
+            owned_total: string;
+            /** Owned Total Unknown Count */
+            owned_total_unknown_count: number;
+            /** Excluded Breakdown Amount */
+            excluded_breakdown_amount: string;
+            /** Excluded Breakdown Unknown Count */
+            excluded_breakdown_unknown_count: number;
+            /** Invoice Amount */
+            invoice_amount: string | null;
+            /** Vat Rate */
+            vat_rate: string;
+            /** Vat Amount */
+            vat_amount: string | null;
+            /** Payable Total */
+            payable_total: string | null;
+        };
+        /**
+         * RentalInvoiceUpdate
+         * @description `PATCH /equipment/rental-invoices/{id}` — `draft` + `pending_verification`.
+         *
+         *     `approved`/`paid` faturada 409 (K5). Alanın GÖNDERİLMEMESİ ile `null`
+         *     GÖNDERİLMESİ farklıdır (F-İK "touched" dersi) ve fark `model_fields_set` ile
+         *     korunur.
+         *
+         *     🔴 Dönem/şantiye değişikliği satırları KENDİLİĞİNDEN tazelemez: tazeleme
+         *     AÇIK bir eylemdir (`POST …/reload`, K2). Sessizce yeniden kurulsalardı
+         *     kullanıcının girdiği fatura saatleri bir alan değişikliğiyle silinirdi.
+         */
+        RentalInvoiceUpdate: {
+            /** Supplier Id */
+            supplier_id?: string | null;
+            /** Invoice No */
+            invoice_no?: string | null;
+            /** Invoice Amount */
+            invoice_amount?: number | string | null;
+            /** Period Year */
+            period_year?: number | null;
+            /** Period Month */
+            period_month?: number | null;
+            /** Site Id */
+            site_id?: string | null;
+            rate_period?: components["schemas"]["EquipmentRatePeriod"] | null;
+            /** Vat Rate */
+            vat_rate?: number | string | null;
+        };
+        /**
+         * RentalLineKind
+         * @description MK-2 K3 — satırın ÖDENECEĞE KATILIMI buradan okunur.
+         *
+         *     * `rented` → ödenecek toplama **GİRER**
+         *     * `owned` → görünür, maliyeti raporlanır, toplama **GİRMEZ** (M5:140-151)
+         *     * `breakdown` → tutarı "hariç tutulan" olarak raporlanır, toplama **GİRMEZ**
+         *       (M5:128-139 üstü çizili)
+         *
+         *     🔴 Çift ödeme YAPISAL olarak imkânsızdır: `owned`/`breakdown` hiçbir toplamın
+         *     kaynağı değildir (İK-3 K2'nin `excluded` deseni birebir). Tek bir "hariç"
+         *     bayrağına indirgenseydi `owned` ile `breakdown` ayrımı kaybolur, M5'in iki
+         *     ayrı sunumu (kendi malı vs. arıza indirimi) üretilemezdi.
+         * @enum {string}
+         */
+        RentalLineKind: "rented" | "owned" | "breakdown";
+        /**
+         * RentalSiteDistributionEntry
+         * @description M5:177-193 proje bazlı maliyet dağılımının BİR kovası.
+         *
+         *     `site_id`/`site_name` `null` ise kova "Atanmamış"tır — uydurma bir proje adı
+         *     BASILMAZ. Kovaya YALNIZ `rented` satırlar girer (`rental._site_distribution`
+         *     gerekçesi): M5'in kartı da yalnız ödenecek toplama giren satırları basar.
+         */
+        RentalSiteDistributionEntry: {
+            /** Site Id */
+            site_id: string | null;
+            /** Site Name */
+            site_name: string | null;
+            /** Hours */
+            hours: string;
+            /** Amount */
+            amount: string;
+            /** Unknown Count */
+            unknown_count: number;
+            /** Equipments */
+            equipments: components["schemas"]["RentalSiteDistributionEquipment"][];
+        };
+        /**
+         * RentalSiteDistributionEquipment
+         * @description Dağılım kovasına katkı veren ekipman (M5:181 "Tower Crane TC-48 · …").
+         */
+        RentalSiteDistributionEquipment: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
         };
         /**
          * ReservedKpi
@@ -13395,6 +14174,19 @@ export interface components {
             ctx?: Record<string, never>;
         };
         /**
+         * VarianceStatus
+         * @description K6 rozeti — M5:110/122'nin `✓ Eşleşiyor` / `⚠ 6 saat fark` damgası.
+         *
+         *     DB'de KOLON DEĞİLDİR: her okumada farktan türer. Saklansaydı satır
+         *     düzenlendiğinde rozet eski farkta donup kalırdı.
+         *
+         *     `over` firmanın BİZDEN ÇOK saat faturaladığı (bizim aleyhimize), `under`
+         *     ise AZ faturaladığı durumdur. Tek bir "fark var" değeri bu iki yönü
+         *     birleştirir ve ekranda hangi tarafın lehine olduğunu kaybederdi.
+         * @enum {string}
+         */
+        VarianceStatus: "match" | "over" | "under" | "unknown";
+        /**
          * WageType
          * @description PE 113 (İK-1 spec §1).
          * @enum {string}
@@ -16409,6 +17201,780 @@ export interface operations {
                 content?: never;
             };
             /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_rental_invoices_endpoint_equipment_rental_invoices_get: {
+        parameters: {
+            query?: {
+                supplier_id?: string | null;
+                site_id?: string | null;
+                status?: components["schemas"]["RentalInvoiceStatus"] | null;
+                period_year?: number | null;
+                period_month?: number | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RentalInvoiceListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_rental_invoice_endpoint_equipment_rental_invoices_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RentalInvoiceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RentalInvoiceDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kiralama firması ya da şantiye bulunamadı (görünmeyen dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bu firma için aynı fatura numarası zaten kayıtlı */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_rental_invoice_endpoint_equipment_rental_invoices__invoice_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RentalInvoiceDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_rental_invoice_endpoint_equipment_rental_invoices__invoice_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RentalInvoiceUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RentalInvoiceDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Onaylanmış/ödenmiş hakediş düzenlenemez (K5) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kiralık satırlar seçilen firmaya ait değil (K8) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    reload_rental_invoice_endpoint_equipment_rental_invoices__invoice_id__reload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RentalInvoiceDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kira hakedişi bulunamadı (görünmeyen dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Durum makinesi bu geçişe izin vermiyor (K5) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_rental_invoice_endpoint_equipment_rental_invoices__invoice_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RentalInvoiceResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kira hakedişi bulunamadı (görünmeyen dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Durum makinesi bu geçişe izin vermiyor (K5) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pay_rental_invoice_endpoint_equipment_rental_invoices__invoice_id__pay_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RentalInvoiceResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kira hakedişi bulunamadı (görünmeyen dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Durum makinesi bu geçişe izin vermiyor (K5) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_rental_invoice_endpoint_equipment_rental_invoices__invoice_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RentalInvoiceResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kira hakedişi bulunamadı (görünmeyen dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Durum makinesi bu geçişe izin vermiyor (K5) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_rental_invoice_line_endpoint_equipment_rental_invoice_lines__line_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                line_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Satır yalnız taslak hakedişte silinebilir */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_rental_invoice_line_endpoint_equipment_rental_invoice_lines__line_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                line_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RentalInvoiceLineUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RentalInvoiceLineResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Satır bulunamadı (faturası görünmeyen dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Onaylanmış/ödenmiş hakedişin satırı düzenlenemez (K5) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_equipment_document_types_endpoint_equipment_document_types_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentDocumentTypeListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    equipment_documents_summary_endpoint_equipment_documents_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentDocumentsSummaryResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    list_equipment_documents_endpoint_equipment__equipment_id__documents_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                equipment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentDocumentListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_equipment_document_endpoint_equipment__equipment_id__documents_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                equipment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_create_equipment_document_endpoint_equipment__equipment_id__documents_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentDocumentResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Ekipman bulunamadı (görünmeyen dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dosya boyutu tavanı aşıyor */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Desteklenmeyen dosya türü ya da geçersiz belge tipi */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    download_equipment_document_endpoint_equipment_documents__document_id__download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "application/octet-stream": unknown;
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Belge bulunamadı (görünmeyen ekipmanın belgesi dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_equipment_document_endpoint_equipment_documents__document_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Belge bulunamadı (görünmeyen ekipmanın belgesi dahil) */
             404: {
                 headers: {
                     [name: string]: unknown;
