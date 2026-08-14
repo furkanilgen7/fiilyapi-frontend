@@ -3,14 +3,15 @@
 // `new URL(relative, import.meta.url)` file:// tabanını yanlış çözer
 // (http://localhost:3000/... üretir). Bu saf metin testi dosya sistemi
 // okuduğu için node ortamında çalıştırılır.
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { describe, it, expect } from "vitest";
 
 /**
  * NÜKS KORUYUCUSU (F-TB2).
  *
- * `fonts.css` elle YAZILMADI — `next/font/google`ın ürettiği CSS'in birebir
+ * `fonts.css` elle YAZILMADI — Google Fonts'tan `next/font` ile yüklemenin ürettiği CSS'in birebir
  * kopyasıdır (bkz. o dosyanın başlığı ve `public/fonts/README.md`). Elle
  * bakılan kopyalanmış CSS ÇÜRÜR: biri "27 kural fazla, sadeleştireyim" ya da
  * "bu `unicode-range` uzunmuş" derse hiçbir derleyici, linter ya da tip kapısı
@@ -157,5 +158,55 @@ describe("fonts.css — self-host edilmiş yazı tipi tanımları", () => {
     expect(cssWithoutComments).toContain(
       '--font-jetbrains-mono: "JetBrains Mono", "JetBrains Mono Fallback";',
     );
+  });
+});
+
+const srcDir = fileURLToPath(new URL("../", import.meta.url));
+
+/** İncelenecek uzantılar: import/require/`@import` bu üçünde görünebilir. */
+const SCANNED_EXTENSIONS = [".ts", ".tsx", ".css"];
+
+/** `from "next/font...`, `require("next/font...`, `@import ... next/font` — hepsi bir Google Fonts eklentisi importudur. */
+const NEXT_FONT_IMPORT_PATTERN =
+  /(from\s+["']next\/font|require\(\s*["']next\/font|@import\s+[^;]*next\/font)/;
+
+/** Bu dosyanın kendisi: bekçi deseni kendi kaynağını içerdiği için taramadan hariç tutulur. */
+const selfPath = fileURLToPath(new URL("./fonts.test.ts", import.meta.url));
+
+function listSourceFiles(dir: string): string[] {
+  const entries = readdirSync(dir, { withFileTypes: true });
+  return entries.flatMap((entry) => {
+    const fullPath = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      return listSourceFiles(fullPath);
+    }
+    if (
+      SCANNED_EXTENSIONS.some((ext) => entry.name.endsWith(ext)) &&
+      fullPath !== selfPath
+    ) {
+      return [fullPath];
+    }
+    return [];
+  });
+}
+
+describe("next/font nüks bekçisi (F-TB2 T3)", () => {
+  // ASIL KORUMA burasıdır — grep tabanlı kabul kriteri yalnız yorum metnini
+  // temizler, gerçek geri dönüşü BU test yakalar. `next/font/google` yazı
+  // tipini DERLEME ANINDA `fonts.gstatic.com`tan indirir; CI runner'ı oraya
+  // ulaşamazsa `pnpm build` patlar, Playwright sunucuyu hiç başlatamaz ve
+  // `visual` işi "kare bozuldu" gibi görünen bir kırmızıyla düşer (F-MK'de
+  // bir saat kaybettirdi, CI run 31791721117). Bu import geri gelirse o
+  // kumar geri gelir — bu test onu commit anında yakalamak içindir.
+  it("src/ altında hiçbir dosya next/font'tan import/require/@import etmez", () => {
+    const files = listSourceFiles(srcDir);
+    const offenders = files
+      .map((filePath) => ({
+        filePath,
+        content: readFileSync(filePath, "utf8"),
+      }))
+      .filter(({ content }) => NEXT_FONT_IMPORT_PATTERN.test(content));
+
+    expect(offenders.map((o) => o.filePath)).toEqual([]);
   });
 });

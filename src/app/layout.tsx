@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 /**
  * İlk boyamada kullanılan üç alt küme dosyası (Inter latin + latin-ext,
- * JetBrains Mono latin). `next/font/google` bunları kendisi preload ediyordu;
+ * JetBrains Mono latin). Google Fonts'tan `next/font` ile yüklerken bunları kendisi preload ediyordu;
  * yazı tipleri repoya alınınca (F-TB2) o otomatik davranış kalktı, bu yüzden
  * aynı üç bağlantı ELLE korunur — ilk boyama zamanlaması değişmesin diye.
  */

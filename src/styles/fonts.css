@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------------------------
- * Yazı tipi tanımları — `next/font/google` çıktısının BİREBİR kopyası
+ * Yazı tipi tanımları — Google Fonts'tan `next/font` ile yüklemenin çıktısının BİREBİR kopyası
  * ---------------------------------------------------------------------------
- * NEDEN VAR: `src/app/layout.tsx` eskiden `next/font/google` kullanıyordu.
+ * NEDEN VAR: `src/app/layout.tsx` eskiden Google Fonts'tan `next/font` ile yüklüyordu.
  * O eklenti yazı tiplerini DERLEME ANINDA `fonts.gstatic.com`tan indirir; ağı
  * kısıtlı CI koşucusunda `pnpm build` bu yüzden patlıyordu. Yazı tipleri artık
  * `public/fonts/` altında repoda duruyor ve derleme hiçbir ağ çağrısı yapmıyor.
