@@ -621,29 +621,92 @@ describe("BFF /api/backend/[...path]", () => {
   // ekran sessizce 404 alir ve yalniz gorsel/e2e testte patlar. Bu test istemci
   // kaynagindan cagrilan tum kokleri cikarip her birinin forward edildigini dogrular.
   describe("allow-list, istemcinin cagirdigi tum kokleri kapsar", () => {
-    const apiSourceDir = resolve(process.cwd(), "src/lib/api");
+    const productSourceDir = resolve(process.cwd(), "src");
+    const routeSourcePath = resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts");
 
+    /** `src/` altindaki TUM urun kaynagi (test dosyalari haric). */
     function collectSourceFiles(dir: string): string[] {
       return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
         const full = join(dir, entry.name);
         if (entry.isDirectory()) return collectSourceFiles(full);
-        if (!entry.name.endsWith(".ts") || entry.name.endsWith(".test.ts")) return [];
+        if (!/\.(ts|tsx)$/.test(entry.name)) return [];
+        if (/\.test\.(ts|tsx)$/.test(entry.name)) return [];
         return [full];
       });
     }
 
-    const calledRoots = [
-      ...new Set(
-        collectSourceFiles(apiSourceDir)
-          .flatMap((file) => [
-            ...readFileSync(file, "utf8").matchAll(/backendClient\.[A-Z]+\(\s*"\/([a-z0-9-]+)/g),
-          ])
-          .map((match) => match[1]),
-      ),
-    ].sort();
+    /**
+     * F-TB3 · T3 — kok cikarma desenleri. Envanter GREP'LE cikarildi, tahminle
+     * DEGIL; iki cagri bicimi vardir ve ikisi de yakalanmalidir:
+     *
+     *   1. `backendClient.<METOD>("/<kok>/…")` — openapi tipli istemci
+     *      (`baseUrl: "/api/backend"`). Cagri COK SATIRA bolunmus olabilir
+     *      (`backendClient.POST(\n  "/subcontractor-contracts/…"`), bu yuzden
+     *      parantezden sonra `\s*` (satir sonu dahil) beklenir.
+     *   2. Ham `"/api/backend/<kok>/…"` dizeleri — ikili indirme/yukleme
+     *      istemcileri (`documents-client`, `boq-client`, `timesheet-client`,
+     *      `audit-client`, `purchase-quote-client`) `backendClient`i DEGIL
+     *      dogrudan `globalThis.fetch`i kullanir; birinci desen bunlari GORMEZ.
+     *
+     * `/api/backend/[...path]` gibi rota-dosyasina yapilan yorum atiflari
+     * `[a-z0-9-]` sinifina takilmadigi icin dogal olarak elenir.
+     */
+    const ROOT_PATTERNS = [
+      /backendClient\s*\.\s*[A-Z]+\s*\(\s*"\/([a-z0-9-]+)/g,
+      /["'`]\/api\/backend\/([a-z0-9-]+)/g,
+    ];
+
+    /** Kok → onu cagiran dosyalar (bekci mesajinin eyleme donuk olmasi icin). */
+    const callSites = new Map<string, Set<string>>();
+    for (const file of collectSourceFiles(productSourceDir)) {
+      const source = readFileSync(file, "utf8");
+      for (const pattern of ROOT_PATTERNS) {
+        for (const match of source.matchAll(pattern)) {
+          const relative = file.slice(process.cwd().length + 1);
+          const sites = callSites.get(match[1]) ?? new Set<string>();
+          sites.add(relative);
+          callSites.set(match[1], sites);
+        }
+      }
+    }
+    const calledRoots = [...callSites.keys()].sort();
+
+    /** `route.ts`teki gercek Set girdileri — yorum metni DEGIL. */
+    function readAllowedRoots(): string[] {
+      const source = readFileSync(routeSourcePath, "utf8");
+      const allowList = source.slice(
+        source.indexOf("const ALLOWED_ROOTS"),
+        source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+      );
+      return [...allowList.matchAll(/^\s*"([a-z0-9-]+)",/gm)].map((m) => m[1]);
+    }
 
     it("istemci kaynagindan en az bir kok cikarilabilir", () => {
       expect(calledRoots.length).toBeGreaterThan(0);
+    });
+
+    // 🔴 ASIL BEKCI (F-TB3 · T3): `ALLOWED_ROOTS`a eklenmeyen bir kok YALNIZ
+    // CANLIDA 404 verir — dort kapinin hicbiri, jsdom testleri de gormez.
+    // Bugune kadar her dilimde ELLE hatirlandi; bu iddia tuzagi YAPISAL kapatir.
+    it("cagrilan her kok ALLOWED_ROOTS'ta tanimlidir", () => {
+      const allowed = new Set(readAllowedRoots());
+      const missing = calledRoots.filter((root) => !allowed.has(root));
+      const report = missing
+        .map((root) => `  · "${root}" → ${[...(callSites.get(root) ?? [])].sort().join(", ")}`)
+        .join("\n");
+
+      expect(
+        missing,
+        missing.length === 0
+          ? ""
+          : [
+              "BFF allow-list eksik — bu kokler YALNIZ CANLIDA 404 alir:",
+              report,
+              "Yapilacak: src/app/api/backend/[...path]/route.ts icindeki ALLOWED_ROOTS",
+              "kumesine bu kok(ler)i GEREKCE YORUMUYLA ekle (hangi dilim, hangi uclar,",
+              "eksikse ne bozulur). Kok gercekten cagrilmiyorsa cagri yerini kaldir.",
+            ].join("\n"),
+      ).toEqual([]);
     });
 
     // Santiye formunun (T5–T12) uc bagimliligi: proje bilgi kutusu, gonderim
