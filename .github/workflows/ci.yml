@@ -35,9 +35,17 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:visual
+      # F-MK bulgusu: `reporter` CI'da "github" olduğu için `playwright-report/`
+      # HİÇ üretilmiyordu → başarısızlıkta BOŞ artifact yükleniyor, görsel kırığın
+      # `-actual`/`-diff` kareleri hiç elde edilemiyordu. O kareler `test-results/`
+      # altında yaşar; ikisi birden yüklenir (`playwright-report/` html reporter'a
+      # geçilirse diye korunur, `if-no-files-found: ignore` ile).
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-report
-          path: playwright-report/
+          name: playwright-failure
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
           retention-days: 7
