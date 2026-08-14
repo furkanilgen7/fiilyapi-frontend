@@ -851,6 +851,243 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/equipment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Equipment Endpoint
+         * @description M1 kart listesi — süzgeçler AND'lidir, kapsam (K20) HER ZAMAN üsttedir.
+         *
+         *     `q` ad + marka + model + plaka + seri üzerinde kısmi arar: M1 kartı bu
+         *     alanları üst üste basar ve tek alanda aramak kullanıcıyı "yok" sanısına
+         *     düşürürdü.
+         *
+         *     `is_active` spec §4'ün SAYDIĞI süzgeçlerden değildir ama listenin varsayılanı
+         *     "hepsi"dir; pasifleri ayıklamak isteyen ekran onu açıkça verir. Varsayılan
+         *     `false` yapılsaydı hurdaya ayrılan makine hiçbir listede bulunamazdı.
+         */
+        get: operations["list_equipment_endpoint_equipment_get"];
+        put?: never;
+        /**
+         * Create Equipment Endpoint
+         * @description M2 formunun kaydı. `site_id` verilmezse makine DEPODADIR (K4).
+         */
+        post: operations["create_equipment_endpoint_equipment_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/equipment/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Equipment Summary Endpoint
+         * @description M1 KPI'ları: DÖRT durum sayacı (K21) + cari ay çalışma maliyeti.
+         *
+         *     Sayaçlar ve maliyet AYNI kapsam süzgecinden geçer — sayaç sızıntısı da bir
+         *     sızıntıdır (görünmeyen projenin filo büyüklüğünü ele verir).
+         */
+        get: operations["equipment_summary_endpoint_equipment_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/equipment/work-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Work Logs Endpoint
+         * @description M3 "Son Kayıtlar" listesi — EN YENİ önce.
+         *
+         *     `site_id` süzgeci KAYDIN kendi şantiyesine bakar (K9), makinenin bugünkü
+         *     atamasına değil.
+         */
+        get: operations["list_work_logs_endpoint_equipment_work_logs_get"];
+        put?: never;
+        /**
+         * Create Work Log Endpoint
+         * @description M3 kaydı. `hours` SUNUCU hesabıdır (K11); günlük tavan KİLİTLİDİR (K12).
+         */
+        post: operations["create_work_log_endpoint_equipment_work_logs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/equipment/work-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Work Summary Endpoint
+         * @description M3 ana tablosu + tfoot + haftalık mini grafik.
+         *
+         *     🔴 Toplamlar HER ZAMAN satırlardan türer (K15); mockup'ın tfoot'u kendi
+         *     satırlarıyla tutarsızdır ve kopyalanmaz.
+         */
+        get: operations["work_summary_endpoint_equipment_work_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/equipment/work-logs/{log_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Work Log Endpoint
+         * @description Görünmeyen kayıt var olmayanla AYNI 404'ü döner.
+         */
+        get: operations["get_work_log_endpoint_equipment_work_logs__log_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Work Log Endpoint
+         * @description 🔴 Çalışma kaydı MALİ İZ DEĞİLDİR (maliyet ondan türev) — silinebilir.
+         *
+         *     Ekipmanın KENDİSİ silinemez: orada iz `RESTRICT`lidir ve DELETE ucu yoktur.
+         */
+        delete: operations["delete_work_log_endpoint_equipment_work_logs__log_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Work Log Endpoint
+         * @description Kayıt hatası düzeltilebilir; K11/K12 BİRLEŞİK değerler üzerinde koşar.
+         */
+        patch: operations["update_work_log_endpoint_equipment_work_logs__log_id__patch"];
+        trace?: never;
+    };
+    "/equipment/fuel-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Fuel Logs Endpoint
+         * @description M4 kayıt listesi — `site_id` süzgeci KAYDIN kendi şantiyesine bakar (K4).
+         */
+        get: operations["list_fuel_logs_endpoint_equipment_fuel_logs_get"];
+        put?: never;
+        /**
+         * Create Fuel Log Endpoint
+         * @description M4 kaydı. `entered_by_id` oturum kullanıcısından DAMGALANIR (K14).
+         */
+        post: operations["create_fuel_log_endpoint_equipment_fuel_logs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/equipment/fuel-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fuel Summary Endpoint
+         * @description M4 üst blok + tablo.
+         *
+         *     🔴 `lt_per_hour_avg` paydası dönemin ÇALIŞMA KAYDI saat toplamıdır
+         *     (modüller arası bağ, M4:39); rozet (`consumption_status`) SUNUCUDAN gelir.
+         */
+        get: operations["fuel_summary_endpoint_equipment_fuel_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/equipment/fuel-logs/{log_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Fuel Log Endpoint
+         * @description Görünmeyen kayıt var olmayanla AYNI 404'ü döner.
+         */
+        get: operations["get_fuel_log_endpoint_equipment_fuel_logs__log_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Fuel Log Endpoint
+         * @description 🔴 Yakıt kaydı MALİ İZ DEĞİLDİR (maliyet ondan türev) — silinebilir.
+         */
+        delete: operations["delete_fuel_log_endpoint_equipment_fuel_logs__log_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Fuel Log Endpoint
+         * @description Kayıt hatası düzeltilebilir.
+         */
+        patch: operations["update_fuel_log_endpoint_equipment_fuel_logs__log_id__patch"];
+        trace?: never;
+    };
+    "/equipment/{equipment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Equipment Endpoint
+         * @description Görünmeyen kayıt var olmayanla AYNI 404'ü döner (spec §4).
+         */
+        get: operations["get_equipment_endpoint_equipment__equipment_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Equipment Endpoint
+         * @description Kısmi güncelleme. **Kullanımdan kaldırma da buradan geçer**
+         *     (`{"is_active": false}`) — DELETE ucu yoktur (modül docstring'i).
+         *
+         *     K2 burada da koşar ve MEVCUT SATIR + GÖVDE birleşimine bakar.
+         */
+        patch: operations["update_equipment_endpoint_equipment__equipment_id__patch"];
+        trace?: never;
+    };
     "/stock/items": {
         parameters: {
             query?: never;
@@ -4616,6 +4853,15 @@ export interface components {
             auto_einvoice?: boolean | null;
         };
         /**
+         * ConsumptionStatus
+         * @description Tüketim rozeti — M4'ün `✓ Normal` / `⚠ %7 yüksek` / kırmızı üçlüsü.
+         *
+         *     DB'de kolon DEĞİLDİR: her okumada sapmadan türer. Saklansaydı norm
+         *     güncellendiğinde geçmiş rozetler eski norma göre donup kalırdı.
+         * @enum {string}
+         */
+        ConsumptionStatus: "normal" | "warning" | "critical";
+        /**
          * ContractAllocationInput
          * @description `quantity=None` gönderilmesi kaldırma anlamına gelir (spec §6.3 adım 1).
          */
@@ -5336,6 +5582,309 @@ export interface components {
             is_active: boolean;
         };
         /**
+         * EquipmentCategory
+         * @description M2:85 — altı kategori.
+         *
+         *     Kategori İKONU (M1 emojileri) DB'de tutulmaz: kategoriden türer, frontend
+         *     haritasıdır (spec §5).
+         * @enum {string}
+         */
+        EquipmentCategory: "crane" | "machinery" | "truck" | "concrete" | "compressor" | "hand_tool";
+        /**
+         * EquipmentCreate
+         * @description `POST /equipment` — M2 formunun gövdesi.
+         *
+         *     `purchase_amount` BURADA isteğe bağlıdır ve bu bir eksiklik DEĞİLDİR (K2):
+         *     kural `ownership == owned` iken zorunluluk şeklindedir ve SERVİStedir (422).
+         *     Şemaya konsaydı kiralık makine hiç kaydedilemezdi.
+         */
+        EquipmentCreate: {
+            /** Name */
+            name: string;
+            category: components["schemas"]["EquipmentCategory"];
+            /** Brand */
+            brand?: string | null;
+            /** Model */
+            model?: string | null;
+            /** Serial No */
+            serial_no?: string | null;
+            /** Plate No */
+            plate_no?: string | null;
+            /** Model Year */
+            model_year?: number | null;
+            /** @default owned */
+            ownership: components["schemas"]["EquipmentOwnership"];
+            /** Purchase Amount */
+            purchase_amount?: number | string | null;
+            /** Purchase Date */
+            purchase_date?: string | null;
+            /** Depreciation Years */
+            depreciation_years?: number | null;
+            /** Supplier Id */
+            supplier_id?: string | null;
+            financing?: components["schemas"]["EquipmentFinancing"] | null;
+            /** Market Value */
+            market_value?: number | string | null;
+            /** Rate Amount */
+            rate_amount?: number | string | null;
+            rate_period?: components["schemas"]["EquipmentRatePeriod"] | null;
+            /** Site Id */
+            site_id?: string | null;
+            /** Operator Id */
+            operator_id?: string | null;
+            /** @default working */
+            status: components["schemas"]["EquipmentStatus"];
+            /** Status Note */
+            status_note?: string | null;
+            /** Status Expected Date */
+            status_expected_date?: string | null;
+            fuel_type?: components["schemas"]["EquipmentFuelType"] | null;
+            /** Norm Consumption */
+            norm_consumption?: number | string | null;
+            norm_unit?: components["schemas"]["EquipmentNormUnit"] | null;
+            maintenance_period?: components["schemas"]["EquipmentMaintenancePeriod"] | null;
+            /**
+             * Monthly Capacity Hours
+             * @default 200
+             */
+            monthly_capacity_hours: number;
+            /**
+             * Is Company Asset
+             * @default true
+             */
+            is_company_asset: boolean;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+        };
+        /**
+         * EquipmentFinancing
+         * @description M2:102 — finansman biçimi.
+         * @enum {string}
+         */
+        EquipmentFinancing: "cash" | "bank_loan" | "leasing";
+        /**
+         * EquipmentFuelType
+         * @description M2:121 — yakıt tipi. `none` = yakıt tüketmeyen ekipman (el aleti).
+         * @enum {string}
+         */
+        EquipmentFuelType: "diesel" | "gasoline" | "electric" | "none";
+        /**
+         * EquipmentListResponse
+         * @description `personnel`/`inventory` liste deseni: `total` + `limit`/`offset`
+         *     (TB3 sayfalama kanonu, `limit ≤ 200`).
+         */
+        EquipmentListResponse: {
+            /** Items */
+            items: components["schemas"]["EquipmentResponse"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * EquipmentMaintenancePeriod
+         * @description K6 — M2:123'ün DÖRT seçeneği olduğu gibi.
+         *
+         *     "Aylık"ı saat kolonuna sıkıştırmak (NULL + ayrı bayrak) aynı bilgiyi iki
+         *     kolona bölerdi.
+         * @enum {string}
+         */
+        EquipmentMaintenancePeriod: "hours_250" | "hours_500" | "hours_1000" | "monthly";
+        /**
+         * EquipmentNormUnit
+         * @description K5 — norm tüketimin birimi. M4:62 `Lt/km` örneğini basıyor.
+         *
+         *     `lt_km` bir FAIL-CLOSED kapısıdır (K16): kilometre verisi hiçbir ekranda
+         *     girilmediği için bu birimdeki ekipmanda sapma HESAPLANMAZ, `null` durur.
+         * @enum {string}
+         */
+        EquipmentNormUnit: "lt_hour" | "lt_km";
+        /**
+         * EquipmentOwnership
+         * @description M2:54-66 — mülkiyet. K2 koşullu zorunluluğunun anahtarı.
+         * @enum {string}
+         */
+        EquipmentOwnership: "owned" | "rented";
+        /**
+         * EquipmentRatePeriod
+         * @description M2:109 — birim bedelin dönemi. K18 maliyet formülünün girdisi.
+         * @enum {string}
+         */
+        EquipmentRatePeriod: "hourly" | "daily" | "monthly";
+        /**
+         * EquipmentResponse
+         * @description Kart künyesi — M1 kartının veri tabanı.
+         *
+         *     **Kullanım % / maliyet / son bakım ALANI YOKTUR:** hepsi çalışma ve yakıt
+         *     kayıtlarından TÜREVDİR (K15/K18) ve özet uçlarından gelir. Buraya konsaydı
+         *     liste her çizilişte hareket tablosunu tarardı.
+         */
+        EquipmentResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            category: components["schemas"]["EquipmentCategory"];
+            /** Brand */
+            brand: string | null;
+            /** Model */
+            model: string | null;
+            /** Serial No */
+            serial_no: string | null;
+            /** Plate No */
+            plate_no: string | null;
+            /** Model Year */
+            model_year: number | null;
+            ownership: components["schemas"]["EquipmentOwnership"];
+            /** Purchase Amount */
+            purchase_amount: string | null;
+            /** Purchase Date */
+            purchase_date: string | null;
+            /** Depreciation Years */
+            depreciation_years: number | null;
+            /** Supplier Id */
+            supplier_id: string | null;
+            financing: components["schemas"]["EquipmentFinancing"] | null;
+            /** Market Value */
+            market_value: string | null;
+            /** Rate Amount */
+            rate_amount: string | null;
+            rate_period: components["schemas"]["EquipmentRatePeriod"] | null;
+            /** Site Id */
+            site_id: string | null;
+            /** Operator Id */
+            operator_id: string | null;
+            status: components["schemas"]["EquipmentStatus"];
+            /** Status Note */
+            status_note: string | null;
+            /** Status Expected Date */
+            status_expected_date: string | null;
+            fuel_type: components["schemas"]["EquipmentFuelType"] | null;
+            /** Norm Consumption */
+            norm_consumption: string | null;
+            norm_unit: components["schemas"]["EquipmentNormUnit"] | null;
+            maintenance_period: components["schemas"]["EquipmentMaintenancePeriod"] | null;
+            /** Monthly Capacity Hours */
+            monthly_capacity_hours: number;
+            /** Is Company Asset */
+            is_company_asset: boolean;
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * EquipmentStatus
+         * @description M2:120 — dört durum.
+         *
+         *     `idle` (boşta) M1 kartlarında sayaç olarak basılmıyor ama K21 gereği açılır:
+         *     sunucu mockup'tan FAZLA veri verebilir, EKSİK veremez.
+         * @enum {string}
+         */
+        EquipmentStatus: "working" | "maintenance" | "broken" | "idle";
+        /**
+         * EquipmentSummaryResponse
+         * @description `GET /equipment/summary` — M1'in dört KPI kartı.
+         *
+         *     🔴 **K21:** mockup ÜÇ durum rozeti çiziyor (Çalışıyor/Arızalı/Bakımda) ama
+         *     sunucu DÖRDÜNÜ verir; `idle` basılmazsa sayaçların toplamı filoyu vermez ve
+         *     "sunucu mockup'tan fazla veri verebilir, eksik veremez" kuralı çiğnenirdi.
+         *     Hangisinin ekrana basılacağı frontend dilimin kararıdır.
+         *
+         *     `monthly_cost` **cari ayın çalışma maliyeti toplamıdır** ve SATIRLARDAN
+         *     türer (K15) — M1'in ₺124K'sı mockup'ın kendi aritmetik hatasıdır,
+         *     kopyalanmaz. Bedeli bilinmeyen makine toplama uydurma bir `0` ile GİRMEZ
+         *     (K16, gerekçe `service.summarize`) — bunun yerine ADETÇE
+         *     `monthly_cost_unknown_count` ile bildirilir, çünkü sessizce atlanan makine
+         *     kullanıcıya eksik bir parayı TAM gösterirdi (K21: sunucu fazla veri
+         *     verebilir, eksik veremez).
+         */
+        EquipmentSummaryResponse: {
+            /** Working */
+            working: number;
+            /** Broken */
+            broken: number;
+            /** Maintenance */
+            maintenance: number;
+            /** Idle */
+            idle: number;
+            /** Monthly Cost */
+            monthly_cost: string;
+            /** Monthly Cost Unknown Count */
+            monthly_cost_unknown_count: number;
+        };
+        /**
+         * EquipmentUpdate
+         * @description `PATCH /equipment/{id}` — TÜM alanlar isteğe bağlı.
+         *
+         *     Alanın GÖNDERİLMEMESİ ile `null` GÖNDERİLMESİ farklıdır ve fark
+         *     `model_fields_set` ile korunur (F-İK dersi: dokunulmamış bir seçici
+         *     sunucudaki değeri EZMEMELİDİR).
+         *
+         *     Kullanımdan kaldırma YOLU budur (`is_active: false`) — DELETE ucu yoktur.
+         */
+        EquipmentUpdate: {
+            /** Name */
+            name?: string | null;
+            category?: components["schemas"]["EquipmentCategory"] | null;
+            /** Brand */
+            brand?: string | null;
+            /** Model */
+            model?: string | null;
+            /** Serial No */
+            serial_no?: string | null;
+            /** Plate No */
+            plate_no?: string | null;
+            /** Model Year */
+            model_year?: number | null;
+            ownership?: components["schemas"]["EquipmentOwnership"] | null;
+            /** Purchase Amount */
+            purchase_amount?: number | string | null;
+            /** Purchase Date */
+            purchase_date?: string | null;
+            /** Depreciation Years */
+            depreciation_years?: number | null;
+            /** Supplier Id */
+            supplier_id?: string | null;
+            financing?: components["schemas"]["EquipmentFinancing"] | null;
+            /** Market Value */
+            market_value?: number | string | null;
+            /** Rate Amount */
+            rate_amount?: number | string | null;
+            rate_period?: components["schemas"]["EquipmentRatePeriod"] | null;
+            /** Site Id */
+            site_id?: string | null;
+            /** Operator Id */
+            operator_id?: string | null;
+            status?: components["schemas"]["EquipmentStatus"] | null;
+            /** Status Note */
+            status_note?: string | null;
+            /** Status Expected Date */
+            status_expected_date?: string | null;
+            fuel_type?: components["schemas"]["EquipmentFuelType"] | null;
+            /** Norm Consumption */
+            norm_consumption?: number | string | null;
+            norm_unit?: components["schemas"]["EquipmentNormUnit"] | null;
+            maintenance_period?: components["schemas"]["EquipmentMaintenancePeriod"] | null;
+            /** Monthly Capacity Hours */
+            monthly_capacity_hours?: number | null;
+            /** Is Company Asset */
+            is_company_asset?: boolean | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
+        /**
          * ExpiredReservation
          * @description S188 "Kapora alındı · 15 gün süre" süresi DOLMUŞ hâli (§8 S4).
          *
@@ -5361,6 +5910,169 @@ export interface components {
             days_expired: number;
             /** Reservation Deposit */
             reservation_deposit: string | null;
+        };
+        /**
+         * FuelLogCreate
+         * @description `POST /equipment/fuel-logs` — M4 kaydı.
+         *
+         *     `liters`/`unit_price` DB `CHECK`i ile aynı sınırı (`> 0`) burada da taşır:
+         *     422'nin anlaşılır olması için (İK-3/K2 emsali) — DB'ye düşseydi kullanıcı
+         *     bütünlük hatası görürdü. `entered_by_id` GÖVDEDE YOKTUR (K14): oturum
+         *     kullanıcısından serviste damgalanır, istemci başka birini giren gösteremez.
+         */
+        FuelLogCreate: {
+            /**
+             * Equipment Id
+             * Format: uuid
+             */
+            equipment_id: string;
+            /**
+             * Fuel Date
+             * Format: date
+             */
+            fuel_date: string;
+            /** Site Id */
+            site_id?: string | null;
+            /** Liters */
+            liters: number | string;
+            /** Unit Price */
+            unit_price: number | string;
+            /** Note */
+            note?: string | null;
+        };
+        /**
+         * FuelLogListResponse
+         * @description TB3 sayfalama kanonu: `limit ≤ 200`, `total` SÜZÜLMÜŞ kümeyi sayar.
+         */
+        FuelLogListResponse: {
+            /** Items */
+            items: components["schemas"]["FuelLogResponse"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * FuelLogResponse
+         * @description Kayıt künyesi. `amount` **KOLON DEĞİLDİR** — `Equipment FuelLog.amount`
+         *     özelliğinden (`cost.fuel_amount`) TÜRETİLİR ve `from_attributes` bunu bir
+         *     kolon gibi okur; ikinci bir çarpım burada YAZILMAZ.
+         */
+        FuelLogResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Equipment Id
+             * Format: uuid
+             */
+            equipment_id: string;
+            /**
+             * Fuel Date
+             * Format: date
+             */
+            fuel_date: string;
+            /** Site Id */
+            site_id: string | null;
+            /** Liters */
+            liters: string;
+            /** Unit Price */
+            unit_price: string;
+            /** Amount */
+            amount: string;
+            /** Entered By Id */
+            entered_by_id: string | null;
+            /** Note */
+            note: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * FuelLogUpdate
+         * @description `PATCH /equipment/fuel-logs/{id}` — kayıt hatası düzeltilebilir.
+         *
+         *     Alanın GÖNDERİLMEMESİ ile `null` GÖNDERİLMESİ farklıdır (F-İK "touched"
+         *     dersi); fark `model_fields_set` ile korunur.
+         */
+        FuelLogUpdate: {
+            /** Equipment Id */
+            equipment_id?: string | null;
+            /** Fuel Date */
+            fuel_date?: string | null;
+            /** Site Id */
+            site_id?: string | null;
+            /** Liters */
+            liters?: number | string | null;
+            /** Unit Price */
+            unit_price?: number | string | null;
+            /** Note */
+            note?: string | null;
+        };
+        /**
+         * FuelSummaryResponse
+         * @description `GET /equipment/fuel-summary` — M4'ün üst bloğu + tablosu.
+         *
+         *     🔴 **K15:** `total_liters`/`total_amount` HER ZAMAN satırlardan türer,
+         *     mockup'ın üst blok sayıları kopyalanmaz. 🔴 **K16:** `lt_per_hour_avg`
+         *     paydası (dönemin ÇALIŞMA KAYDI saat toplamı) 0 ise `null`dur — uydurma 0
+         *     basılmaz. `avg_unit_price` de aynı sebeple litre toplamı 0 ise `null`dur.
+         */
+        FuelSummaryResponse: {
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            /** Total Liters */
+            total_liters: string;
+            /** Total Amount */
+            total_amount: string;
+            /** Lt Per Hour Avg */
+            lt_per_hour_avg: string | null;
+            /** Avg Unit Price */
+            avg_unit_price: string | null;
+            /** Abnormal Count */
+            abnormal_count: number;
+            /** Rows */
+            rows: components["schemas"]["FuelSummaryRow"][];
+        };
+        /**
+         * FuelSummaryRow
+         * @description M4 tablosunun BİR satırı — ekipman başına.
+         *
+         *     `actual` ve `deviation_pct` AYRI AYRI `null` olabilir (K16): fiili tüketim
+         *     biliniyorken sapma bilinmiyor olabilir (`lt_km` ya da norm yok). Rozet
+         *     (`consumption_status`) SUNUCUDAN gelir (K17, F-P10 kanonu).
+         */
+        FuelSummaryRow: {
+            /**
+             * Equipment Id
+             * Format: uuid
+             */
+            equipment_id: string;
+            /** Equipment Name */
+            equipment_name: string;
+            /** Site Id */
+            site_id: string | null;
+            /** Liters */
+            liters: string;
+            /** Amount */
+            amount: string;
+            /** Actual */
+            actual: string | null;
+            /** Norm */
+            norm: string | null;
+            /** Deviation Pct */
+            deviation_pct: string | null;
+            /** Deviation Reason */
+            deviation_reason: ("no_distance_data" | "no_norm_consumption" | "no_work_hours") | null;
+            consumption_status: components["schemas"]["ConsumptionStatus"] | null;
         };
         /**
          * Gender
@@ -12756,6 +13468,228 @@ export interface components {
          */
         Weather: "sunny" | "partly_cloudy" | "cloudy" | "rainy" | "snowy";
         /**
+         * WorkLogCreate
+         * @description `POST /equipment/work-logs` — M3 kaydı.
+         *
+         *     🔴 **K11:** `hours` gövdede VARDIR ama YALNIZ aralıksız kayıt içindir
+         *     (M3:283 arıza satırı saat basar, aralık basmaz). `start_time`+`end_time`
+         *     verilmişken `hours` göndermek **422**'dir — sunucu hesabının üzerine
+         *     yazılamaz. Kural `service._resolve_hours`ta tek yerdedir (modül docstring'i).
+         *
+         *     `site_id` KAYDIN KENDİ şantiyesidir (K9), ekipmanın bugünkü ataması değil:
+         *     makine taşındığında geçmiş aylar geriye dönük başka projeye yazılmasın.
+         */
+        WorkLogCreate: {
+            /**
+             * Equipment Id
+             * Format: uuid
+             */
+            equipment_id: string;
+            /**
+             * Work Date
+             * Format: date
+             */
+            work_date: string;
+            /** Site Id */
+            site_id?: string | null;
+            /** Operator Id */
+            operator_id?: string | null;
+            /** @default worked */
+            record_type: components["schemas"]["WorkLogType"];
+            /** Start Time */
+            start_time?: string | null;
+            /** End Time */
+            end_time?: string | null;
+            /** Hours */
+            hours?: number | string | null;
+            /** Note */
+            note?: string | null;
+        };
+        /**
+         * WorkLogListResponse
+         * @description TB3 sayfalama kanonu: `limit ≤ 200`, `total` SÜZÜLMÜŞ kümeyi sayar.
+         */
+        WorkLogListResponse: {
+            /** Items */
+            items: components["schemas"]["WorkLogResponse"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * WorkLogResponse
+         * @description Kayıt künyesi. `hours` HER ZAMAN doludur ve HER ZAMAN sunucunundur.
+         */
+        WorkLogResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Equipment Id
+             * Format: uuid
+             */
+            equipment_id: string;
+            /**
+             * Work Date
+             * Format: date
+             */
+            work_date: string;
+            /** Site Id */
+            site_id: string | null;
+            /** Operator Id */
+            operator_id: string | null;
+            record_type: components["schemas"]["WorkLogType"];
+            /** Start Time */
+            start_time: string | null;
+            /** End Time */
+            end_time: string | null;
+            /** Hours */
+            hours: string;
+            /** Note */
+            note: string | null;
+            /** Created By Id */
+            created_by_id: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * WorkLogType
+         * @description K10 — çalışma mı arıza mı. İki kolonlu tek kayıt M3+M5'in iki sunumunu
+         *     da üretemezdi.
+         * @enum {string}
+         */
+        WorkLogType: "worked" | "breakdown";
+        /**
+         * WorkLogUpdate
+         * @description `PATCH /equipment/work-logs/{id}` — kayıt hatası düzeltilebilir.
+         *
+         *     Çalışma kaydı MALİ İZ DEĞİLDİR (maliyet ondan TÜREV): hakediş satırının
+         *     aksine düzeltilir ve silinir.
+         *
+         *     Alanın GÖNDERİLMEMESİ ile `null` GÖNDERİLMESİ farklıdır (F-İK "touched"
+         *     dersi) ve fark `model_fields_set` ile korunur — aralığı BOŞALTMANIN yolu
+         *     `{"start_time": null, "end_time": null, "hours": …}`tır.
+         */
+        WorkLogUpdate: {
+            /** Equipment Id */
+            equipment_id?: string | null;
+            /** Work Date */
+            work_date?: string | null;
+            /** Site Id */
+            site_id?: string | null;
+            /** Operator Id */
+            operator_id?: string | null;
+            record_type?: components["schemas"]["WorkLogType"] | null;
+            /** Start Time */
+            start_time?: string | null;
+            /** End Time */
+            end_time?: string | null;
+            /** Hours */
+            hours?: number | string | null;
+            /** Note */
+            note?: string | null;
+        };
+        /**
+         * WorkSummaryResponse
+         * @description `GET /equipment/work-summary` — M3'ün TAMAMI (tablo + tfoot + mini grafik).
+         */
+        WorkSummaryResponse: {
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            /** Rows */
+            rows: components["schemas"]["WorkSummaryRow"][];
+            totals: components["schemas"]["WorkSummaryTotals"];
+            /** Weeks */
+            weeks: components["schemas"]["WorkSummaryWeek"][];
+        };
+        /**
+         * WorkSummaryRow
+         * @description M3 tablosunun BİR satırı.
+         *
+         *     `cost` ve `usage_pct` AYRI AYRI `null` olabilir (K16): saati bilinen bir
+         *     makinenin bedeli bilinmiyor olabilir. Tek alana sıkıştırılsalardı bilinen
+         *     bir olgu, eksik bir ölçüt yüzünden kaybolurdu.
+         */
+        WorkSummaryRow: {
+            /**
+             * Equipment Id
+             * Format: uuid
+             */
+            equipment_id: string;
+            /** Equipment Name */
+            equipment_name: string;
+            /** Site Id */
+            site_id: string | null;
+            /** Hours */
+            hours: string;
+            /** Usage Pct */
+            usage_pct: string | null;
+            /** Usage Reason */
+            usage_reason: "no_capacity_hours" | null;
+            /** Breakdown Hours */
+            breakdown_hours: string;
+            /** Cost */
+            cost: string | null;
+        };
+        /**
+         * WorkSummaryTotals
+         * @description 🔴 K15 — tfoot. **HER ZAMAN satırlardan** toplanır.
+         *
+         *     M3'ün kendi tfoot'u (428 saat · ₺124.800 · %69) satırlarıyla TUTARSIZDIR
+         *     (692 · ₺144.200 · %57,7) — mockup'ın aritmetik hatasıdır ve kopyalanmaz
+         *     (TSD `contract_total` TEK KAYNAK emsali, F-P5 K5).
+         *
+         *     `cost` bilinmeyen satırı UYDURMA bir 0 ile İÇERMEZ (K16): satır `null`
+         *     kalır, toplam bilinenlerden oluşur. Toplamın kendisi `null` yapılmadı çünkü
+         *     tek bilinmeyen makine yüzünden bütün tabloyu gizlemek kullanıcıyı ekranın
+         *     tamamından ederdi.
+         */
+        WorkSummaryTotals: {
+            /** Hours */
+            hours: string;
+            /** Breakdown Hours */
+            breakdown_hours: string;
+            /** Cost */
+            cost: string;
+            /** Usage Pct Avg */
+            usage_pct_avg: string | null;
+        };
+        /**
+         * WorkSummaryWeek
+         * @description M3:219-243 haftalık kovası.
+         *
+         *     `dominant_record_type` SUNUCU DAMGASIDIR (F-P10 kanonu): barın rengini
+         *     istemci kendi eşiğiyle seçseydi iki ekran aynı haftayı farklı boyardı.
+         *     Kayıtsız haftada `null`dur — uydurma bir "çalışıyor" damgası basılmaz.
+         */
+        WorkSummaryWeek: {
+            /** Index */
+            index: number;
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+            /** Hours */
+            hours: string;
+            dominant_record_type: components["schemas"]["WorkLogType"] | null;
+        };
+        /**
          * WorkerSource
          * @description İşçi kırılımının kaynağı — GK418-430 rozetleri (spec §2).
          *
@@ -15489,6 +16423,788 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    list_equipment_endpoint_equipment_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["EquipmentStatus"] | null;
+                category?: components["schemas"]["EquipmentCategory"] | null;
+                site_id?: string | null;
+                ownership?: components["schemas"]["EquipmentOwnership"] | null;
+                q?: string | null;
+                is_active?: boolean | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_equipment_endpoint_equipment_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquipmentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Seçilen şantiye, operatör ya da tedarikçi bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sahip olunan ekipmanda alış bedeli zorunludur (K2) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    equipment_summary_endpoint_equipment_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentSummaryResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    list_work_logs_endpoint_equipment_work_logs_get: {
+        parameters: {
+            query?: {
+                equipment_id?: string | null;
+                site_id?: string | null;
+                date_from?: string | null;
+                date_to?: string | null;
+                record_type?: components["schemas"]["WorkLogType"] | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkLogListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_work_log_endpoint_equipment_work_logs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkLogCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkLogResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Ekipman, şantiye ya da operatör bulunamadı (görünmeyen dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description K11 saat kuralları ya da K12 günlük 24 saat tavanı */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    work_summary_endpoint_equipment_work_summary_get: {
+        parameters: {
+            query: {
+                year: number;
+                month: number;
+                site_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkSummaryResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_work_log_endpoint_equipment_work_logs__log_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                log_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkLogResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_work_log_endpoint_equipment_work_logs__log_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                log_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_work_log_endpoint_equipment_work_logs__log_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                log_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkLogUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkLogResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description K11 saat kuralları ya da K12 günlük 24 saat tavanı */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    list_fuel_logs_endpoint_equipment_fuel_logs_get: {
+        parameters: {
+            query?: {
+                equipment_id?: string | null;
+                site_id?: string | null;
+                date_from?: string | null;
+                date_to?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FuelLogListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_fuel_log_endpoint_equipment_fuel_logs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FuelLogCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FuelLogResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Ekipman ya da şantiye bulunamadı (görünmeyen dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fuel_summary_endpoint_equipment_fuel_summary_get: {
+        parameters: {
+            query: {
+                year: number;
+                month: number;
+                equipment_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FuelSummaryResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_fuel_log_endpoint_equipment_fuel_logs__log_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                log_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FuelLogResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_fuel_log_endpoint_equipment_fuel_logs__log_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                log_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_fuel_log_endpoint_equipment_fuel_logs__log_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                log_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FuelLogUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FuelLogResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_equipment_endpoint_equipment__equipment_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                equipment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_equipment_endpoint_equipment__equipment_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                equipment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquipmentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sahip olunan ekipmanda alış bedeli zorunludur (K2) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

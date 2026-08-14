@@ -1199,5 +1199,43 @@ describe("BFF /api/backend/[...path]", () => {
       expect(res.status).toBe(200);
       expect(String(fetchMock.mock.calls[0][0])).toContain(`/${root}`);
     });
+
+    // F-MK · T1 — Makine Ekipman ekranlarinin TEK yeni koku: `equipment`. ADLI
+    // kapi testi (F-IK/F-SA/F-TB1 emsali): kok dusurulurse hangisi oldugu test
+    // ADINDAN okunsun.
+    it("equipment koku makine ekipman uclari icin allow-list'te tanimlidir", () => {
+      expect(allowListEntries()).toContain("equipment");
+    });
+
+    it.each([
+      "equipment",
+      "equipment/eq-1",
+      "equipment/summary",
+      "equipment/work-logs",
+      "equipment/work-logs/log-1",
+      "equipment/work-summary",
+      "equipment/fuel-logs",
+      "equipment/fuel-logs/log-1",
+      "equipment/fuel-summary",
+    ])("%s ucu forward edilir", async (endpoint) => {
+      // Arrange
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response("{}", {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+
+      // Act
+      const res = await GET(
+        req(`/api/backend/${endpoint}`, "GET", { [ACCESS_COOKIE]: "acc" }),
+        ctx(endpoint.split("/")),
+      );
+
+      // Assert
+      expect(res.status).toBe(200);
+      expect(String(fetchMock.mock.calls[0][0])).toContain(`/${endpoint}`);
+    });
   });
 });
