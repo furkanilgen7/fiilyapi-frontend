@@ -11,6 +11,8 @@ export type EquipmentResponse = components["schemas"]["EquipmentResponse"];
 export type EquipmentCategory = components["schemas"]["EquipmentCategory"];
 export type EquipmentStatus = components["schemas"]["EquipmentStatus"];
 export type EquipmentOwnership = components["schemas"]["EquipmentOwnership"];
+// F-MK T5 · M4'ün norm birimi (Lt/saat · Lt/km) — `EquipmentResponse.norm_unit`.
+export type EquipmentNormUnit = components["schemas"]["EquipmentNormUnit"];
 
 export const EQUIPMENT_QUERY_KEY = "equipment";
 
