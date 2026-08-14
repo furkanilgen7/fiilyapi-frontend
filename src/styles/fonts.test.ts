@@ -192,8 +192,8 @@ function listSourceFiles(dir: string): string[] {
 
 describe("next/font nüks bekçisi (F-TB2 T3)", () => {
   // ASIL KORUMA burasıdır — grep tabanlı kabul kriteri yalnız yorum metnini
-  // temizler, gerçek geri dönüşü BU test yakalar. `next/font/google` yazı
-  // tipini DERLEME ANINDA `fonts.gstatic.com`tan indirir; CI runner'ı oraya
+  // temizler, gerçek geri dönüşü BU test yakalar. `next/font`ın Google Fonts
+  // eklentisi yazı tipini DERLEME ANINDA `fonts.gstatic.com`tan indirir; runner oraya
   // ulaşamazsa `pnpm build` patlar, Playwright sunucuyu hiç başlatamaz ve
   // `visual` işi "kare bozuldu" gibi görünen bir kırmızıyla düşer (F-MK'de
   // bir saat kaybettirdi, CI run 31791721117). Bu import geri gelirse o
