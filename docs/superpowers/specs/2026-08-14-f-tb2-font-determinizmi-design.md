@@ -28,8 +28,37 @@ saat baseline kovalandı.
 
 ## 2. Kapsam
 
-1. **Yazı tiplerini repoya al** (`next/font/local`) → derleme anında ağ erişimi KALMAZ.
+1. **Yazı tiplerini repoya al** → derleme anında ağ erişimi KALMAZ.
 2. **openapi devri:** frontend 171 → **183 yol** (MK-2'nin 12 kira hakedişi ucu) + `gen:api`.
+
+### 🔴 Mekanizma DEĞİŞTİ: `next/font/local` DEĞİL, üretilen çıktının birebir kopyası
+
+İlk yazımda mekanizma `next/font/local` diye bağlanmıştı. **Şef ölçtü, yönetim onayladı
+(2026-08-14): o araç bu göçü SADAKATLE YAPAMAZ.**
+
+Ölçüm: bugün fiilen üretilen şey **27 `@font-face` kuralı / 13 `.woff2` dosyası**; kuralları ayıran
+tek şey **`unicode-range`**. `next/font/local`ın `src` girdisi yalnız `{path, weight, style}` kabul
+ediyor — **`unicode-range` YOK**; `declarations` ise her yüze aynı satırı basıyor, dosya-başına
+aralık veremiyor. Sonuç: aynı family+weight+style için `unicode-range`siz iki kural doğar, CSS
+eşleştirmesinde **sonuncusu öncekini ölü bırakır** ve `latin-ext` dosyası SADECE ek harfleri
+taşıdığı için **`ğ ş İ` yedek yazı tipine düşer** — dilimin tek yasağı olan görünür tipografi
+değişikliğinin ta kendisi.
+
+**Uygulanan yol:** `next/font` tümüyle bırakılır; 13 `.woff2` **`.next/static/media/`den bayt-aynı
+kopyalanır** (Google'dan yeniden indirilmez), 27 kural harfiyen bir `fonts.css`e yazılır (aynı
+`unicode-range`, aynı `display:swap`, iki yedek kuralı ölçüleriyle), `--font-*` değişkenleri
+`:root`ta bugünkü değerleriyle tanımlanır (`tokens.css` DEĞİŞMEZ), Next'in bastığı üç
+`rel="preload"` elle korunur.
+
+**Neden bu daha güçlü:** K2'nin karşılığı artık ölçüleri `adjustFontFallback`a *yeniden
+hesaplatmak* değil, **bugünküleri aynen taşımak** — bayt-aynı kare beklentisini daha iyi karşılar.
+
+**Ek şartlar (yönetim):** 13 dosyanın **HEPSİ** alınır (kullanılmayan cyrillic/greek/vietnamese
+dahil — her birinin kendi `unicode-range`i var, indirilmiyorlar; silmek göçü "sadık kopya"
+olmaktan çıkarır) · hash'li dosya adları **korunur** (önbellek doğruluğu) · 🔴 **nüks koruyucusu
+ZORUNLU**: elle yazılan CSS çürür, bir `unicode-range`in ya da kuralın sessizce düşmesini hiçbir
+kapı yakalamaz → `@font-face` sayısını (27), `unicode-range` taşıyan kural sayısını ve iki yedek
+kuralının dört ölçüsünü kilitleyen bir test yazılır.
 
 **Kapsam dışı:** yeni ekran, yeni rota, tasarım değişikliği, yeni yazı tipi/ağırlık/alt küme.
 
@@ -43,9 +72,13 @@ Bugün: `Inter` → `subsets: ["latin","latin-ext"]`, değişken ağırlık, `di
 **Hiçbiri genişletilmez, daraltılmaz.** Amaç ağ bağımlılığını kaldırmaktır, tipografiyi
 değiştirmek DEĞİL.
 
-⚠️ **Gözlem (bu dilimde DÜZELTİLMEZ):** JetBrains Mono yalnız `latin` alıyor → Türkçe harfler
-(`ğ ş İ ı ç ö ü`) mono metinde **yedek yazı tipine düşüyor**. Bugünkü davranış budur; düzeltmek
-tipografiyi değiştirir ve kareleri oynatır. **ROADMAP §3'e ayrı borç olarak yazılır.**
+~~⚠️ **Gözlem:** JetBrains Mono yalnız `latin` alıyor → Türkçe harfler mono metinde yedeğe
+düşüyor. ROADMAP §3'e borç yazılır.~~
+✅ **BU GÖZLEM YANLIŞTI — şef ölçtü, yönetim doğruladı (2026-08-14).** Google, `subsets: ["latin"]`
+istenmiş olsa da mono için de **`latin-ext` dosyasını gönderiyor** (`u+0100-02ba`), yani `ğ ş İ`
+mono'da da **gerçek fontla** basılıyor. **"Mono latin-ext borcu" diye bir borç YOKTUR** ve
+ROADMAP'e YAZILMAZ. Ders: `subsets:` istenen değil, **teslim edilen** dosya kümesini belirlemiyor —
+iddia üretilen CSS'ten doğrulanır.
 
 **K2 — 🔴 BEKLENEN SONUÇ: BASELINE'LAR BAYT AYNI KALIR.**
 `next/font/google` zaten indirdiği dosyaları **self-host eder**; aynı dosyaları repodan vermek
