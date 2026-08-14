@@ -1,0 +1,421 @@
+/* M3 · Makine — Çalışma Kaydı (F-MK T4). Kanon: projedesign
+   "Makine - Çalışma Kaydı.dc.html"; parantez içi sayılar o dosyanın SATIR
+   numaralarıdır. Prefix `makine-cal`. Mockup'ın üst barı (19-29) ve sol menüsü
+   (32-41) UYGULAMA KABUĞUdur — bu sayfa onları YENİDEN ÇİZMEZ.
+   Çıplak hex YOK: her renk `src/styles/tokens.css` token'ıdır. */
+.makine-cal {
+  animation: var(--anim-fade-up); /* 43 */
+}
+
+/* Başlık şeridi (44-51). */
+.makine-cal__crumb {
+  font-size: 12px; /* 44 */
+  color: var(--color-text-subtle);
+  margin-bottom: 6px;
+}
+.makine-cal__crumb a {
+  color: var(--color-primary);
+}
+.makine-cal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px; /* 45 */
+}
+.makine-cal__title {
+  font-size: 26px; /* 46 */
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.5px;
+  color: var(--color-text);
+}
+.makine-cal__actions {
+  display: flex;
+  gap: 10px; /* 47 */
+}
+
+/* Devre-dışı öğelerin GÖRÜNÜR gerekçeleri (F-TH kuralı) — sessiz düşüş yok. */
+.makine-cal__reason {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-bottom: 12px;
+}
+.makine-cal__notice {
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-8);
+  padding: 8px 12px;
+}
+
+/* Dönem + görünüm + süzgeç şeridi (54-76). */
+.makine-cal__controls {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* 54 */
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.makine-cal__viewmode {
+  display: flex;
+  gap: 2px; /* 60 */
+  background: var(--color-surface-muted);
+  border-radius: 9px;
+  padding: 3px;
+}
+.makine-cal__viewmode-item {
+  padding: 6px 14px; /* 61 */
+  font-size: 12px;
+  border-radius: var(--radius-7);
+  color: var(--color-text-muted);
+}
+.makine-cal__viewmode-item--active {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary); /* 61 */
+  background: var(--color-surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.makine-cal__viewmode-item--disabled {
+  cursor: not-allowed;
+  color: var(--color-text-subtle);
+}
+
+/* KPI şeridi (79-105): BEŞ eşit kart. */
+.makine-cal-kpi {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px; /* 79 */
+  margin-bottom: 20px;
+}
+.makine-cal-kpi__card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); /* 80 */
+  padding: 14px;
+}
+.makine-cal-kpi__label {
+  font-size: 10px; /* 81 */
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 4px;
+}
+.makine-cal-kpi__value {
+  font-size: 22px; /* 82 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.makine-cal-kpi__value--mono {
+  font-size: 20px; /* 87 */
+  font-family: var(--font-mono);
+}
+.makine-cal-kpi__value--primary {
+  color: var(--color-primary); /* 92 */
+}
+.makine-cal-kpi__value--danger {
+  color: var(--color-danger); /* 97 */
+}
+.makine-cal-kpi__hint {
+  font-size: var(--text-small); /* 83 */
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+.makine-cal-kpi__hint--danger {
+  color: var(--color-danger); /* 98 */
+}
+
+/* İki sütunlu gövde (108): sol tablo esner, sağ panel sabit 360px. */
+.makine-cal__grid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 20px; /* 108 */
+  align-items: start;
+}
+.makine-cal__side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px; /* 216 */
+}
+
+/* Ortak panel kabuğu (111, 219, 247). */
+.makine-cal-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+.makine-cal-panel--pad {
+  padding: 18px; /* 219 */
+}
+.makine-cal-panel__title {
+  padding: 13px 16px; /* 112 */
+  border-bottom: 1px solid var(--color-border);
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.makine-cal-panel--pad .makine-cal-panel__title {
+  padding: 0;
+  border-bottom: none;
+  margin-bottom: 14px; /* 220 */
+}
+.makine-cal-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px; /* 248 */
+  border-bottom: 1px solid var(--color-border);
+}
+.makine-cal-panel__head .makine-cal-panel__title {
+  padding: 0;
+  border-bottom: none;
+}
+.makine-cal-panel__title--plain {
+  padding: 0;
+  border-bottom: none;
+}
+.makine-cal-panel__note {
+  padding: 12px 16px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.makine-cal-panel__reason {
+  padding: 6px 16px 0;
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* Ekipman bazlı özet tablosu (113-212). */
+.makine-cal-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.makine-cal-table th {
+  background: var(--color-surface-2); /* 115 */
+  border-bottom: 1px solid var(--color-border);
+  padding: 10px 10px; /* 117 */
+  text-align: left;
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.makine-cal-table th:first-child,
+.makine-cal-table td:first-child {
+  padding-left: 16px; /* 116 */
+  padding-right: 16px;
+}
+.makine-cal-table td {
+  padding: 12px 10px; /* 124-135 */
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 13px;
+  color: var(--color-text);
+  vertical-align: middle;
+}
+.makine-cal-table__center {
+  text-align: center;
+}
+.makine-cal-table__right {
+  text-align: right;
+}
+.makine-cal-table__strong {
+  font-weight: var(--weight-semibold);
+}
+.makine-cal-table__mono {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+}
+.makine-cal-table__name {
+  font-size: 13px; /* 126 */
+  font-weight: var(--weight-semibold);
+}
+.makine-cal-table__meta {
+  font-size: var(--text-small); /* 127 */
+  color: var(--color-text-subtle);
+}
+.makine-cal-table__muted {
+  color: var(--color-text-subtle); /* 186-187 — "—" */
+}
+.makine-cal-table__pct {
+  font-size: 12px; /* 131 */
+  font-weight: var(--weight-semibold);
+  margin-bottom: 3px;
+}
+.makine-cal-table__row--danger {
+  background: var(--color-audit-danger-row-bg); /* 150 */
+}
+.makine-cal-table__row--warning {
+  background: var(--color-amber-tint-cell); /* 176 */
+}
+.makine-cal-table tfoot td {
+  background: var(--color-info-tint); /* 204 */
+  border-top: 2px solid var(--color-border);
+  border-bottom: none;
+  padding: 11px 10px;
+  font-weight: var(--weight-bold);
+}
+
+/* Ton sınıfları — SUNUCUNUN yüzdesini boyar, HESAPLAMAZ (spec K2). */
+.makine-cal-table__tone--success {
+  color: var(--color-success);
+}
+.makine-cal-table__tone--primary {
+  color: var(--color-primary);
+}
+.makine-cal-table__tone--danger {
+  color: var(--color-danger);
+}
+.makine-cal-table__tone--warning {
+  color: var(--color-warning);
+}
+.makine-cal-table__tone--neutral {
+  color: var(--color-text-subtle);
+}
+
+/* Yüzde çubuğu (132) — KPI kartı da aynısını kullanır (93). */
+.makine-cal-bar {
+  height: 4px;
+  background: var(--color-surface-muted);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+.makine-cal-table .makine-cal-bar {
+  margin-top: 0;
+}
+.makine-cal-bar__fill {
+  height: 100%;
+  border-radius: 2px;
+}
+.makine-cal-bar__fill--success {
+  background: var(--color-success);
+}
+.makine-cal-bar__fill--primary {
+  background: var(--color-primary);
+}
+.makine-cal-bar__fill--danger {
+  background: var(--color-danger);
+}
+.makine-cal-bar__fill--warning {
+  background: var(--color-warning);
+}
+.makine-cal-bar__fill--neutral {
+  background: var(--color-border-strong);
+}
+
+/* Haftalık mini grafik (221-243). */
+.makine-cal-chart {
+  width: 100%;
+  height: 90px; /* 221 */
+}
+.makine-cal-chart__bar--worked {
+  fill: var(--color-primary); /* 224 */
+}
+.makine-cal-chart__bar--breakdown {
+  fill: var(--color-warning-soft); /* 227 */
+  stroke: var(--color-warning);
+}
+.makine-cal-chart__bar--empty {
+  fill: var(--color-primary-soft); /* 223 */
+}
+.makine-cal-chart__label,
+.makine-cal-chart__value {
+  font-size: 9px; /* 228-238 */
+  fill: var(--color-text-subtle);
+}
+.makine-cal-chart__value {
+  font-weight: var(--weight-semibold);
+  fill: var(--color-text-secondary);
+}
+.makine-cal-chart__label--worked,
+.makine-cal-chart__value--worked {
+  fill: var(--color-primary); /* 235 */
+}
+.makine-cal-chart__label--breakdown,
+.makine-cal-chart__value--breakdown {
+  fill: var(--color-warning); /* 232 */
+}
+.makine-cal-legend {
+  display: flex;
+  gap: 10px; /* 240 */
+  margin-top: 6px;
+}
+.makine-cal-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+.makine-cal-legend__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.makine-cal-legend__swatch--worked {
+  background: var(--color-primary); /* 241 */
+}
+.makine-cal-legend__swatch--breakdown {
+  background: var(--color-warning-soft); /* 242 */
+  border: 1px solid var(--color-warning);
+}
+
+/* Son kayıtlar (252-297). */
+.makine-cal-recent {
+  list-style: none;
+  padding: 8px 0; /* 252 */
+  margin: 0;
+}
+.makine-cal-recent__item {
+  padding: 10px 16px; /* 253 */
+  border-bottom: 1px solid var(--color-divider);
+}
+.makine-cal-recent__item:last-child {
+  border-bottom: none; /* 286 */
+}
+.makine-cal-recent__item--danger {
+  background: var(--color-audit-danger-row-bg); /* 275 */
+}
+.makine-cal-recent__head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 3px; /* 254 */
+}
+.makine-cal-recent__name {
+  font-size: 12px; /* 255 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.makine-cal-recent__date {
+  font-size: var(--text-small); /* 256 */
+  color: var(--color-text-subtle);
+}
+.makine-cal-recent__meta {
+  font-size: 12px; /* 258 */
+  color: var(--color-text-muted);
+}
+.makine-cal-recent__foot {
+  display: flex;
+  gap: 10px; /* 259 */
+  align-items: center;
+  margin-top: 5px;
+}
+.makine-cal-recent__badge {
+  font-size: var(--text-small); /* 260 */
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  padding: 2px 8px;
+  border-radius: var(--radius-10);
+  font-weight: var(--weight-semibold);
+}
+.makine-cal-recent__badge--danger {
+  background: var(--color-danger-soft); /* 282 */
+  color: var(--color-danger-strong);
+}
+.makine-cal-recent__time {
+  font-size: var(--text-small); /* 261 */
+  color: var(--color-text-subtle);
+}

@@ -157,6 +157,16 @@ const ALLOWED_ROOTS = new Set([
   // ekranı mockup'ı yok) ama kök hazır kalır — düşerse ileride açılacak
   // bordro yüzeyi YALNIZ CANLIDA 404 alır; jsdom testleri bunu GÖRMEZ.
   "payroll",
+  // F-MK T1 — Makine Ekipman ekranlarının DOKUZ ucu bu kökten geçer:
+  // `GET/POST /equipment`, `GET/PATCH /equipment/{equipment_id}`,
+  // `GET /equipment/summary`, `GET/POST /equipment/work-logs` +
+  // `GET/PATCH/DELETE .../{log_id}`, `GET /equipment/work-summary`,
+  // `GET/POST /equipment/fuel-logs` + `GET/PATCH/DELETE .../{log_id}`,
+  // `GET /equipment/fuel-summary`. Hepsinin ilk path segmenti "equipment"tir —
+  // ayrı bir "work-logs"/"fuel-logs" kökü EKLENMEZ. Yönetim canlıda doğruladı:
+  // bu kök şu an 404 dönüyor; eklenmezse F-MK ekranlarının HİÇBİRİ canlıda
+  // çalışmaz, jsdom testleri bunu GÖRMEZ.
+  "equipment",
 ]);
 
 // JSON/metin sayilan icerik tipleri: govde metne cozulup JSON olarak islenir.

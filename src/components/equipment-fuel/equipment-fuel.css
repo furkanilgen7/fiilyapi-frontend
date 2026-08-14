@@ -1,0 +1,283 @@
+/* M4 · Makine — Yakıt Takibi (F-MK T5). Kanon: projedesign
+   "Makine - Yakıt Takibi.dc.html"; parantez içi sayılar o dosyanın SATIR
+   numaralarıdır. Prefix `makine-yakit`. Mockup'ın üst barı (14-24) ve sol
+   menüsü UYGULAMA KABUĞUdur — bu sayfa onları YENİDEN ÇİZMEZ; gövde başlık
+   şeridi M3 (`makine-cal`) deseninden ÖDÜNÇ alınır (K10 gerekçesi
+   `EquipmentFuelView.tsx` üstünde).
+   Çıplak hex YOK: her renk `src/styles/tokens.css` token'ıdır. */
+.makine-yakit {
+  animation: var(--anim-fade-up);
+}
+
+.makine-yakit__crumb {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+  margin-bottom: 6px;
+}
+.makine-yakit__crumb a {
+  color: var(--color-primary);
+}
+.makine-yakit__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.makine-yakit__title {
+  font-size: 26px;
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.5px;
+  color: var(--color-text);
+}
+.makine-yakit__actions {
+  display: flex;
+  gap: 10px;
+}
+.makine-yakit__reason {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-bottom: 12px;
+}
+.makine-yakit__notice {
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-8);
+  padding: 8px 12px;
+}
+
+/* KPI şeridi (36-42): BEŞ eşit kart. */
+.makine-yakit-kpi {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px; /* 36 */
+  margin-bottom: 20px;
+}
+.makine-yakit-kpi__card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); /* 37 */
+  padding: 14px;
+}
+.makine-yakit-kpi__card--danger {
+  border-left: 4px solid var(--color-danger); /* 38 */
+}
+.makine-yakit-kpi__card--warning {
+  border-left: 4px solid var(--color-warning); /* 41 */
+}
+.makine-yakit-kpi__label {
+  font-size: 10px;
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 4px;
+}
+.makine-yakit-kpi__value {
+  font-size: 20px; /* 37 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.makine-yakit-kpi__value--mono {
+  font-family: var(--font-mono);
+}
+.makine-yakit-kpi__value--danger {
+  color: var(--color-danger); /* 38 */
+}
+.makine-yakit-kpi__value--warning {
+  color: var(--color-warning); /* 41 */
+}
+
+/* İki sütunlu blok (45): tüketim listesi + trend paneli eşit genişlikte. */
+.makine-yakit__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px; /* 45 */
+  margin-bottom: 20px;
+}
+
+.makine-yakit-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  padding: 18px; /* 46, 73 */
+}
+.makine-yakit-panel__title {
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin-bottom: 14px; /* 47, 74 */
+}
+.makine-yakit-panel__title--plain {
+  margin-bottom: 0;
+}
+.makine-yakit-panel__head {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* 96 */
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.makine-yakit-panel__nav {
+  margin-left: auto; /* 99 */
+}
+.makine-yakit-panel__note {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  padding: 8px 0;
+}
+.makine-yakit-panel__reason {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-top: 8px;
+}
+
+/* Ekipman bazlı tüketim listesi (48-69). */
+.makine-yakit-consumption {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* 48 */
+}
+.makine-yakit-consumption__row {
+  padding: 0;
+}
+.makine-yakit-consumption__head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px; /* 50 */
+}
+.makine-yakit-consumption__name {
+  font-size: 12px;
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+.makine-yakit-consumption__amount {
+  font-size: 12px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+}
+.makine-yakit-bar {
+  height: 6px; /* 51 */
+  background: var(--color-surface-muted);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.makine-yakit-bar__fill {
+  height: 100%;
+  border-radius: 3px;
+}
+.makine-yakit-bar__fill--success {
+  background: var(--color-success);
+}
+.makine-yakit-bar__fill--warning {
+  background: var(--color-warning);
+}
+.makine-yakit-bar__fill--danger {
+  background: var(--color-danger);
+}
+.makine-yakit-bar__fill--neutral {
+  background: var(--color-border-strong);
+}
+.makine-yakit-consumption__meta {
+  font-size: 10px; /* 52 */
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+.makine-yakit-consumption__deviation {
+  font-weight: var(--weight-semibold);
+}
+.makine-yakit-consumption__deviation--success {
+  color: var(--color-success); /* 57 */
+}
+.makine-yakit-consumption__deviation--warning {
+  color: var(--color-warning); /* 52 */
+}
+.makine-yakit-consumption__deviation--danger {
+  color: var(--color-danger); /* 62 */
+}
+.makine-yakit-consumption__deviation--neutral {
+  color: var(--color-text-subtle);
+}
+
+/* Aylık trend paneli (72-91) — devre-dışı: uç yok. */
+.makine-yakit-trend__placeholder {
+  height: 110px; /* 75 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-subtle);
+  font-size: 20px;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-8);
+}
+.makine-yakit-trend__summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px; /* 87 */
+  margin-top: 8px;
+}
+.makine-yakit-trend__summary-box {
+  background: var(--color-surface-2);
+  border-radius: var(--radius-8);
+  padding: 10px;
+  text-align: center;
+}
+.makine-yakit-trend__summary-box--danger {
+  background: var(--color-danger-tint); /* 89 */
+}
+.makine-yakit-trend__summary-label {
+  font-size: 10px;
+  color: var(--color-text-subtle);
+}
+.makine-yakit-trend__summary-value {
+  font-size: 16px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+}
+
+/* Günlük yakıt kayıtları tablosu (94-158). */
+.makine-yakit-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.makine-yakit-table th {
+  background: var(--color-surface-2); /* 106 */
+  border-bottom: 1px solid var(--color-border);
+  padding: 10px 12px; /* 107 */
+  text-align: left;
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.makine-yakit-table td {
+  padding: 11px 12px; /* 118-125 */
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 13px;
+  color: var(--color-text);
+  vertical-align: middle;
+}
+.makine-yakit-table__right {
+  text-align: right;
+}
+.makine-yakit-table__center {
+  text-align: center;
+}
+.makine-yakit-table__strong {
+  font-weight: var(--weight-semibold);
+}
+.makine-yakit-table__mono {
+  font-family: var(--font-mono);
+}
+.makine-yakit-table__name {
+  font-weight: var(--weight-medium);
+}
+.makine-yakit-table__muted {
+  color: var(--color-text-subtle);
+}

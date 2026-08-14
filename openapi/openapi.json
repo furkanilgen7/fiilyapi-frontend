@@ -3512,6 +3512,1231 @@
         }
       }
     },
+    "/equipment": {
+      "get": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "List Equipment Endpoint",
+        "description": "M1 kart listesi — süzgeçler AND'lidir, kapsam (K20) HER ZAMAN üsttedir.\n\n`q` ad + marka + model + plaka + seri üzerinde kısmi arar: M1 kartı bu\nalanları üst üste basar ve tek alanda aramak kullanıcıyı \"yok\" sanısına\ndüşürürdü.\n\n`is_active` spec §4'ün SAYDIĞI süzgeçlerden değildir ama listenin varsayılanı\n\"hepsi\"dir; pasifleri ayıklamak isteyen ekran onu açıkça verir. Varsayılan\n`false` yapılsaydı hurdaya ayrılan makine hiçbir listede bulunamazdı.",
+        "operationId": "list_equipment_endpoint_equipment_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/EquipmentStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/EquipmentCategory"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "name": "site_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "ownership",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/EquipmentOwnership"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ownership"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "is_active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Is Active"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Create Equipment Endpoint",
+        "description": "M2 formunun kaydı. `site_id` verilmezse makine DEPODADIR (K4).",
+        "operationId": "create_equipment_endpoint_equipment_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EquipmentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Seçilen şantiye, operatör ya da tedarikçi bulunamadı"
+          },
+          "422": {
+            "description": "Sahip olunan ekipmanda alış bedeli zorunludur (K2)"
+          }
+        }
+      }
+    },
+    "/equipment/summary": {
+      "get": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Equipment Summary Endpoint",
+        "description": "M1 KPI'ları: DÖRT durum sayacı (K21) + cari ay çalışma maliyeti.\n\nSayaçlar ve maliyet AYNI kapsam süzgecinden geçer — sayaç sızıntısı da bir\nsızıntıdır (görünmeyen projenin filo büyüklüğünü ele verir).",
+        "operationId": "equipment_summary_endpoint_equipment_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentSummaryResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/equipment/work-logs": {
+      "get": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "List Work Logs Endpoint",
+        "description": "M3 \"Son Kayıtlar\" listesi — EN YENİ önce.\n\n`site_id` süzgeci KAYDIN kendi şantiyesine bakar (K9), makinenin bugünkü\natamasına değil.",
+        "operationId": "list_work_logs_endpoint_equipment_work_logs_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipment_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Equipment Id"
+            }
+          },
+          {
+            "name": "site_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          },
+          {
+            "name": "record_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/WorkLogType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Record Type"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkLogListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Create Work Log Endpoint",
+        "description": "M3 kaydı. `hours` SUNUCU hesabıdır (K11); günlük tavan KİLİTLİDİR (K12).",
+        "operationId": "create_work_log_endpoint_equipment_work_logs_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkLogCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkLogResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Ekipman, şantiye ya da operatör bulunamadı (görünmeyen dahil)"
+          },
+          "422": {
+            "description": "K11 saat kuralları ya da K12 günlük 24 saat tavanı"
+          }
+        }
+      }
+    },
+    "/equipment/work-summary": {
+      "get": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Work Summary Endpoint",
+        "description": "M3 ana tablosu + tfoot + haftalık mini grafik.\n\n🔴 Toplamlar HER ZAMAN satırlardan türer (K15); mockup'ın tfoot'u kendi\nsatırlarıyla tutarsızdır ve kopyalanmaz.",
+        "operationId": "work_summary_endpoint_equipment_work_summary_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2200,
+              "minimum": 2000,
+              "title": "Year"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 12,
+              "minimum": 1,
+              "title": "Month"
+            }
+          },
+          {
+            "name": "site_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkSummaryResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/equipment/work-logs/{log_id}": {
+      "get": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Get Work Log Endpoint",
+        "description": "Görünmeyen kayıt var olmayanla AYNI 404'ü döner.",
+        "operationId": "get_work_log_endpoint_equipment_work_logs__log_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "log_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Log Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkLogResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Update Work Log Endpoint",
+        "description": "Kayıt hatası düzeltilebilir; K11/K12 BİRLEŞİK değerler üzerinde koşar.",
+        "operationId": "update_work_log_endpoint_equipment_work_logs__log_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "log_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Log Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkLogUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkLogResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "K11 saat kuralları ya da K12 günlük 24 saat tavanı"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Delete Work Log Endpoint",
+        "description": "🔴 Çalışma kaydı MALİ İZ DEĞİLDİR (maliyet ondan türev) — silinebilir.\n\nEkipmanın KENDİSİ silinemez: orada iz `RESTRICT`lidir ve DELETE ucu yoktur.",
+        "operationId": "delete_work_log_endpoint_equipment_work_logs__log_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "log_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Log Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/equipment/fuel-logs": {
+      "get": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "List Fuel Logs Endpoint",
+        "description": "M4 kayıt listesi — `site_id` süzgeci KAYDIN kendi şantiyesine bakar (K4).",
+        "operationId": "list_fuel_logs_endpoint_equipment_fuel_logs_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipment_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Equipment Id"
+            }
+          },
+          {
+            "name": "site_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FuelLogListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Create Fuel Log Endpoint",
+        "description": "M4 kaydı. `entered_by_id` oturum kullanıcısından DAMGALANIR (K14).",
+        "operationId": "create_fuel_log_endpoint_equipment_fuel_logs_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FuelLogCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FuelLogResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Ekipman ya da şantiye bulunamadı (görünmeyen dahil)"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/equipment/fuel-summary": {
+      "get": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Fuel Summary Endpoint",
+        "description": "M4 üst blok + tablo.\n\n🔴 `lt_per_hour_avg` paydası dönemin ÇALIŞMA KAYDI saat toplamıdır\n(modüller arası bağ, M4:39); rozet (`consumption_status`) SUNUCUDAN gelir.",
+        "operationId": "fuel_summary_endpoint_equipment_fuel_summary_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2200,
+              "minimum": 2000,
+              "title": "Year"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 12,
+              "minimum": 1,
+              "title": "Month"
+            }
+          },
+          {
+            "name": "equipment_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Equipment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FuelSummaryResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/equipment/fuel-logs/{log_id}": {
+      "get": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Get Fuel Log Endpoint",
+        "description": "Görünmeyen kayıt var olmayanla AYNI 404'ü döner.",
+        "operationId": "get_fuel_log_endpoint_equipment_fuel_logs__log_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "log_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Log Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FuelLogResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Update Fuel Log Endpoint",
+        "description": "Kayıt hatası düzeltilebilir.",
+        "operationId": "update_fuel_log_endpoint_equipment_fuel_logs__log_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "log_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Log Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FuelLogUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FuelLogResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Delete Fuel Log Endpoint",
+        "description": "🔴 Yakıt kaydı MALİ İZ DEĞİLDİR (maliyet ondan türev) — silinebilir.",
+        "operationId": "delete_fuel_log_endpoint_equipment_fuel_logs__log_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "log_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Log Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/equipment/{equipment_id}": {
+      "get": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Get Equipment Endpoint",
+        "description": "Görünmeyen kayıt var olmayanla AYNI 404'ü döner (spec §4).",
+        "operationId": "get_equipment_endpoint_equipment__equipment_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Equipment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Update Equipment Endpoint",
+        "description": "Kısmi güncelleme. **Kullanımdan kaldırma da buradan geçer**\n(`{\"is_active\": false}`) — DELETE ucu yoktur (modül docstring'i).\n\nK2 burada da koşar ve MEVCUT SATIR + GÖVDE birleşimine bakar.",
+        "operationId": "update_equipment_endpoint_equipment__equipment_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Equipment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EquipmentUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Sahip olunan ekipmanda alış bedeli zorunludur (K2)"
+          }
+        }
+      }
+    },
     "/stock/items": {
       "get": {
         "tags": [
@@ -16675,6 +17900,16 @@
         "title": "CompanyUpdate",
         "description": "Kismi guncelleme — tum alanlar opsiyonel. Gonderilmeyen alan degismez."
       },
+      "ConsumptionStatus": {
+        "type": "string",
+        "enum": [
+          "normal",
+          "warning",
+          "critical"
+        ],
+        "title": "ConsumptionStatus",
+        "description": "Tüketim rozeti — M4'ün `✓ Normal` / `⚠ %7 yüksek` / kırmızı üçlüsü.\n\nDB'de kolon DEĞİLDİR: her okumada sapmadan türer. Saklansaydı norm\ngüncellendiğinde geçmiş rozetler eski norma göre donup kalırdı."
+      },
       "ContractAllocationInput": {
         "properties": {
           "contract_item_id": {
@@ -18590,6 +19825,1119 @@
         ],
         "title": "EmployerResponse"
       },
+      "EquipmentCategory": {
+        "type": "string",
+        "enum": [
+          "crane",
+          "machinery",
+          "truck",
+          "concrete",
+          "compressor",
+          "hand_tool"
+        ],
+        "title": "EquipmentCategory",
+        "description": "M2:85 — altı kategori.\n\nKategori İKONU (M1 emojileri) DB'de tutulmaz: kategoriden türer, frontend\nharitasıdır (spec §5)."
+      },
+      "EquipmentCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "category": {
+            "$ref": "#/components/schemas/EquipmentCategory"
+          },
+          "brand": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "serial_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serial No"
+          },
+          "plate_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 30
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plate No"
+          },
+          "model_year": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2200.0,
+                "minimum": 1900.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Year"
+          },
+          "ownership": {
+            "$ref": "#/components/schemas/EquipmentOwnership",
+            "default": "owned"
+          },
+          "purchase_amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchase Amount"
+          },
+          "purchase_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchase Date"
+          },
+          "depreciation_years": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depreciation Years"
+          },
+          "supplier_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplier Id"
+          },
+          "financing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentFinancing"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "market_value": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Market Value"
+          },
+          "rate_amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Amount"
+          },
+          "rate_period": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentRatePeriod"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "operator_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operator Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EquipmentStatus",
+            "default": "working"
+          },
+          "status_note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Note"
+          },
+          "status_expected_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Expected Date"
+          },
+          "fuel_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentFuelType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "norm_consumption": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Norm Consumption"
+          },
+          "norm_unit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentNormUnit"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "maintenance_period": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentMaintenancePeriod"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "monthly_capacity_hours": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Monthly Capacity Hours",
+            "default": 200
+          },
+          "is_company_asset": {
+            "type": "boolean",
+            "title": "Is Company Asset",
+            "default": true
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "category"
+        ],
+        "title": "EquipmentCreate",
+        "description": "`POST /equipment` — M2 formunun gövdesi.\n\n`purchase_amount` BURADA isteğe bağlıdır ve bu bir eksiklik DEĞİLDİR (K2):\nkural `ownership == owned` iken zorunluluk şeklindedir ve SERVİStedir (422).\nŞemaya konsaydı kiralık makine hiç kaydedilemezdi."
+      },
+      "EquipmentFinancing": {
+        "type": "string",
+        "enum": [
+          "cash",
+          "bank_loan",
+          "leasing"
+        ],
+        "title": "EquipmentFinancing",
+        "description": "M2:102 — finansman biçimi."
+      },
+      "EquipmentFuelType": {
+        "type": "string",
+        "enum": [
+          "diesel",
+          "gasoline",
+          "electric",
+          "none"
+        ],
+        "title": "EquipmentFuelType",
+        "description": "M2:121 — yakıt tipi. `none` = yakıt tüketmeyen ekipman (el aleti)."
+      },
+      "EquipmentListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "EquipmentListResponse",
+        "description": "`personnel`/`inventory` liste deseni: `total` + `limit`/`offset`\n(TB3 sayfalama kanonu, `limit ≤ 200`)."
+      },
+      "EquipmentMaintenancePeriod": {
+        "type": "string",
+        "enum": [
+          "hours_250",
+          "hours_500",
+          "hours_1000",
+          "monthly"
+        ],
+        "title": "EquipmentMaintenancePeriod",
+        "description": "K6 — M2:123'ün DÖRT seçeneği olduğu gibi.\n\n\"Aylık\"ı saat kolonuna sıkıştırmak (NULL + ayrı bayrak) aynı bilgiyi iki\nkolona bölerdi."
+      },
+      "EquipmentNormUnit": {
+        "type": "string",
+        "enum": [
+          "lt_hour",
+          "lt_km"
+        ],
+        "title": "EquipmentNormUnit",
+        "description": "K5 — norm tüketimin birimi. M4:62 `Lt/km` örneğini basıyor.\n\n`lt_km` bir FAIL-CLOSED kapısıdır (K16): kilometre verisi hiçbir ekranda\ngirilmediği için bu birimdeki ekipmanda sapma HESAPLANMAZ, `null` durur."
+      },
+      "EquipmentOwnership": {
+        "type": "string",
+        "enum": [
+          "owned",
+          "rented"
+        ],
+        "title": "EquipmentOwnership",
+        "description": "M2:54-66 — mülkiyet. K2 koşullu zorunluluğunun anahtarı."
+      },
+      "EquipmentRatePeriod": {
+        "type": "string",
+        "enum": [
+          "hourly",
+          "daily",
+          "monthly"
+        ],
+        "title": "EquipmentRatePeriod",
+        "description": "M2:109 — birim bedelin dönemi. K18 maliyet formülünün girdisi."
+      },
+      "EquipmentResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "category": {
+            "$ref": "#/components/schemas/EquipmentCategory"
+          },
+          "brand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "serial_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serial No"
+          },
+          "plate_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plate No"
+          },
+          "model_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Year"
+          },
+          "ownership": {
+            "$ref": "#/components/schemas/EquipmentOwnership"
+          },
+          "purchase_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchase Amount"
+          },
+          "purchase_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchase Date"
+          },
+          "depreciation_years": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depreciation Years"
+          },
+          "supplier_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplier Id"
+          },
+          "financing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentFinancing"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "market_value": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Market Value"
+          },
+          "rate_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Amount"
+          },
+          "rate_period": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentRatePeriod"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "operator_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operator Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EquipmentStatus"
+          },
+          "status_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Note"
+          },
+          "status_expected_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Expected Date"
+          },
+          "fuel_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentFuelType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "norm_consumption": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Norm Consumption"
+          },
+          "norm_unit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentNormUnit"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "maintenance_period": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentMaintenancePeriod"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "monthly_capacity_hours": {
+            "type": "integer",
+            "title": "Monthly Capacity Hours"
+          },
+          "is_company_asset": {
+            "type": "boolean",
+            "title": "Is Company Asset"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "category",
+          "brand",
+          "model",
+          "serial_no",
+          "plate_no",
+          "model_year",
+          "ownership",
+          "purchase_amount",
+          "purchase_date",
+          "depreciation_years",
+          "supplier_id",
+          "financing",
+          "market_value",
+          "rate_amount",
+          "rate_period",
+          "site_id",
+          "operator_id",
+          "status",
+          "status_note",
+          "status_expected_date",
+          "fuel_type",
+          "norm_consumption",
+          "norm_unit",
+          "maintenance_period",
+          "monthly_capacity_hours",
+          "is_company_asset",
+          "is_active",
+          "created_at"
+        ],
+        "title": "EquipmentResponse",
+        "description": "Kart künyesi — M1 kartının veri tabanı.\n\n**Kullanım % / maliyet / son bakım ALANI YOKTUR:** hepsi çalışma ve yakıt\nkayıtlarından TÜREVDİR (K15/K18) ve özet uçlarından gelir. Buraya konsaydı\nliste her çizilişte hareket tablosunu tarardı."
+      },
+      "EquipmentStatus": {
+        "type": "string",
+        "enum": [
+          "working",
+          "maintenance",
+          "broken",
+          "idle"
+        ],
+        "title": "EquipmentStatus",
+        "description": "M2:120 — dört durum.\n\n`idle` (boşta) M1 kartlarında sayaç olarak basılmıyor ama K21 gereği açılır:\nsunucu mockup'tan FAZLA veri verebilir, EKSİK veremez."
+      },
+      "EquipmentSummaryResponse": {
+        "properties": {
+          "working": {
+            "type": "integer",
+            "title": "Working"
+          },
+          "broken": {
+            "type": "integer",
+            "title": "Broken"
+          },
+          "maintenance": {
+            "type": "integer",
+            "title": "Maintenance"
+          },
+          "idle": {
+            "type": "integer",
+            "title": "Idle"
+          },
+          "monthly_cost": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Monthly Cost"
+          },
+          "monthly_cost_unknown_count": {
+            "type": "integer",
+            "title": "Monthly Cost Unknown Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "working",
+          "broken",
+          "maintenance",
+          "idle",
+          "monthly_cost",
+          "monthly_cost_unknown_count"
+        ],
+        "title": "EquipmentSummaryResponse",
+        "description": "`GET /equipment/summary` — M1'in dört KPI kartı.\n\n🔴 **K21:** mockup ÜÇ durum rozeti çiziyor (Çalışıyor/Arızalı/Bakımda) ama\nsunucu DÖRDÜNÜ verir; `idle` basılmazsa sayaçların toplamı filoyu vermez ve\n\"sunucu mockup'tan fazla veri verebilir, eksik veremez\" kuralı çiğnenirdi.\nHangisinin ekrana basılacağı frontend dilimin kararıdır.\n\n`monthly_cost` **cari ayın çalışma maliyeti toplamıdır** ve SATIRLARDAN\ntürer (K15) — M1'in ₺124K'sı mockup'ın kendi aritmetik hatasıdır,\nkopyalanmaz. Bedeli bilinmeyen makine toplama uydurma bir `0` ile GİRMEZ\n(K16, gerekçe `service.summarize`) — bunun yerine ADETÇE\n`monthly_cost_unknown_count` ile bildirilir, çünkü sessizce atlanan makine\nkullanıcıya eksik bir parayı TAM gösterirdi (K21: sunucu fazla veri\nverebilir, eksik veremez)."
+      },
+      "EquipmentUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentCategory"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "brand": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "serial_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serial No"
+          },
+          "plate_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 30
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plate No"
+          },
+          "model_year": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2200.0,
+                "minimum": 1900.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Year"
+          },
+          "ownership": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentOwnership"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "purchase_amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchase Amount"
+          },
+          "purchase_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchase Date"
+          },
+          "depreciation_years": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Depreciation Years"
+          },
+          "supplier_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplier Id"
+          },
+          "financing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentFinancing"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "market_value": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Market Value"
+          },
+          "rate_amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate Amount"
+          },
+          "rate_period": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentRatePeriod"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "operator_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operator Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status_note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Note"
+          },
+          "status_expected_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Expected Date"
+          },
+          "fuel_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentFuelType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "norm_consumption": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Norm Consumption"
+          },
+          "norm_unit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentNormUnit"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "maintenance_period": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentMaintenancePeriod"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "monthly_capacity_hours": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monthly Capacity Hours"
+          },
+          "is_company_asset": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Company Asset"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "title": "EquipmentUpdate",
+        "description": "`PATCH /equipment/{id}` — TÜM alanlar isteğe bağlı.\n\nAlanın GÖNDERİLMEMESİ ile `null` GÖNDERİLMESİ farklıdır ve fark\n`model_fields_set` ile korunur (F-İK dersi: dokunulmamış bir seçici\nsunucudaki değeri EZMEMELİDİR).\n\nKullanımdan kaldırma YOLU budur (`is_active: false`) — DELETE ucu yoktur."
+      },
       "ExpiredReservation": {
         "properties": {
           "sale_id": {
@@ -18638,6 +20986,469 @@
         ],
         "title": "ExpiredReservation",
         "description": "S188 \"Kapora alındı · 15 gün süre\" süresi DOLMUŞ hâli (§8 S4).\n\nZamanlanmış iş YOKTUR: kayıt `reservation` KALIR, bu liste yalnızca\nkullanıcıyı elle iptale (ya da aktifleştirmeye) yönlendirir."
+      },
+      "FuelLogCreate": {
+        "properties": {
+          "equipment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Equipment Id"
+          },
+          "fuel_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Fuel Date"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "liters": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"
+              }
+            ],
+            "title": "Liters"
+          },
+          "unit_price": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,6}|(?=[\\d.]{1,11}0*$)\\d{0,6}\\.\\d{0,4}0*$)"
+              }
+            ],
+            "title": "Unit Price"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "equipment_id",
+          "fuel_date",
+          "liters",
+          "unit_price"
+        ],
+        "title": "FuelLogCreate",
+        "description": "`POST /equipment/fuel-logs` — M4 kaydı.\n\n`liters`/`unit_price` DB `CHECK`i ile aynı sınırı (`> 0`) burada da taşır:\n422'nin anlaşılır olması için (İK-3/K2 emsali) — DB'ye düşseydi kullanıcı\nbütünlük hatası görürdü. `entered_by_id` GÖVDEDE YOKTUR (K14): oturum\nkullanıcısından serviste damgalanır, istemci başka birini giren gösteremez."
+      },
+      "FuelLogListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FuelLogResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "FuelLogListResponse",
+        "description": "TB3 sayfalama kanonu: `limit ≤ 200`, `total` SÜZÜLMÜŞ kümeyi sayar."
+      },
+      "FuelLogResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "equipment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Equipment Id"
+          },
+          "fuel_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Fuel Date"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "liters": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Liters"
+          },
+          "unit_price": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Unit Price"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount"
+          },
+          "entered_by_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entered By Id"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "equipment_id",
+          "fuel_date",
+          "site_id",
+          "liters",
+          "unit_price",
+          "amount",
+          "entered_by_id",
+          "note",
+          "created_at"
+        ],
+        "title": "FuelLogResponse",
+        "description": "Kayıt künyesi. `amount` **KOLON DEĞİLDİR** — `Equipment FuelLog.amount`\nözelliğinden (`cost.fuel_amount`) TÜRETİLİR ve `from_attributes` bunu bir\nkolon gibi okur; ikinci bir çarpım burada YAZILMAZ."
+      },
+      "FuelLogUpdate": {
+        "properties": {
+          "equipment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Equipment Id"
+          },
+          "fuel_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fuel Date"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "liters": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Liters"
+          },
+          "unit_price": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,6}|(?=[\\d.]{1,11}0*$)\\d{0,6}\\.\\d{0,4}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Price"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "title": "FuelLogUpdate",
+        "description": "`PATCH /equipment/fuel-logs/{id}` — kayıt hatası düzeltilebilir.\n\nAlanın GÖNDERİLMEMESİ ile `null` GÖNDERİLMESİ farklıdır (F-İK \"touched\"\ndersi); fark `model_fields_set` ile korunur."
+      },
+      "FuelSummaryResponse": {
+        "properties": {
+          "year": {
+            "type": "integer",
+            "title": "Year"
+          },
+          "month": {
+            "type": "integer",
+            "title": "Month"
+          },
+          "total_liters": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Liters"
+          },
+          "total_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Amount"
+          },
+          "lt_per_hour_avg": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lt Per Hour Avg"
+          },
+          "avg_unit_price": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Unit Price"
+          },
+          "abnormal_count": {
+            "type": "integer",
+            "title": "Abnormal Count"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/FuelSummaryRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          }
+        },
+        "type": "object",
+        "required": [
+          "year",
+          "month",
+          "total_liters",
+          "total_amount",
+          "lt_per_hour_avg",
+          "avg_unit_price",
+          "abnormal_count",
+          "rows"
+        ],
+        "title": "FuelSummaryResponse",
+        "description": "`GET /equipment/fuel-summary` — M4'ün üst bloğu + tablosu.\n\n🔴 **K15:** `total_liters`/`total_amount` HER ZAMAN satırlardan türer,\nmockup'ın üst blok sayıları kopyalanmaz. 🔴 **K16:** `lt_per_hour_avg`\npaydası (dönemin ÇALIŞMA KAYDI saat toplamı) 0 ise `null`dur — uydurma 0\nbasılmaz. `avg_unit_price` de aynı sebeple litre toplamı 0 ise `null`dur."
+      },
+      "FuelSummaryRow": {
+        "properties": {
+          "equipment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Equipment Id"
+          },
+          "equipment_name": {
+            "type": "string",
+            "title": "Equipment Name"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "liters": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Liters"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount"
+          },
+          "actual": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual"
+          },
+          "norm": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Norm"
+          },
+          "deviation_pct": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deviation Pct"
+          },
+          "deviation_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "no_distance_data",
+                  "no_norm_consumption",
+                  "no_work_hours"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deviation Reason"
+          },
+          "consumption_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConsumptionStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "equipment_id",
+          "equipment_name",
+          "site_id",
+          "liters",
+          "amount",
+          "actual",
+          "norm",
+          "deviation_pct",
+          "deviation_reason",
+          "consumption_status"
+        ],
+        "title": "FuelSummaryRow",
+        "description": "M4 tablosunun BİR satırı — ekipman başına.\n\n`actual` ve `deviation_pct` AYRI AYRI `null` olabilir (K16): fiili tüketim\nbiliniyorken sapma bilinmiyor olabilir (`lt_km` ya da norm yok). Rozet\n(`consumption_status`) SUNUCUDAN gelir (K17, F-P10 kanonu)."
       },
       "Gender": {
         "type": "string",
@@ -38505,6 +41316,593 @@
         ],
         "title": "Weather",
         "description": "Hava durumu (spec §2). E7'nin BEŞLİSİ kanoniktir; GK'nin dörtlüsü alt kümedir\n(GK'de `snowy` yok) — süperset seçildi, ekran kendi listesini süzer.\n\n\"Yağışlı\" rozeti (GK370) KOLON DEĞİLDİR — frontend `weather == rainy` türevidir."
+      },
+      "WorkLogCreate": {
+        "properties": {
+          "equipment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Equipment Id"
+          },
+          "work_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Work Date"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "operator_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operator Id"
+          },
+          "record_type": {
+            "$ref": "#/components/schemas/WorkLogType",
+            "default": "worked"
+          },
+          "start_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Time"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
+          },
+          "hours": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 24.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,4}|(?=[\\d.]{1,7}0*$)\\d{0,4}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hours"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "equipment_id",
+          "work_date"
+        ],
+        "title": "WorkLogCreate",
+        "description": "`POST /equipment/work-logs` — M3 kaydı.\n\n🔴 **K11:** `hours` gövdede VARDIR ama YALNIZ aralıksız kayıt içindir\n(M3:283 arıza satırı saat basar, aralık basmaz). `start_time`+`end_time`\nverilmişken `hours` göndermek **422**'dir — sunucu hesabının üzerine\nyazılamaz. Kural `service._resolve_hours`ta tek yerdedir (modül docstring'i).\n\n`site_id` KAYDIN KENDİ şantiyesidir (K9), ekipmanın bugünkü ataması değil:\nmakine taşındığında geçmiş aylar geriye dönük başka projeye yazılmasın."
+      },
+      "WorkLogListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WorkLogResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "WorkLogListResponse",
+        "description": "TB3 sayfalama kanonu: `limit ≤ 200`, `total` SÜZÜLMÜŞ kümeyi sayar."
+      },
+      "WorkLogResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "equipment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Equipment Id"
+          },
+          "work_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Work Date"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "operator_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operator Id"
+          },
+          "record_type": {
+            "$ref": "#/components/schemas/WorkLogType"
+          },
+          "start_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Time"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
+          },
+          "hours": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Hours"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "created_by_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "equipment_id",
+          "work_date",
+          "site_id",
+          "operator_id",
+          "record_type",
+          "start_time",
+          "end_time",
+          "hours",
+          "note",
+          "created_by_id",
+          "created_at"
+        ],
+        "title": "WorkLogResponse",
+        "description": "Kayıt künyesi. `hours` HER ZAMAN doludur ve HER ZAMAN sunucunundur."
+      },
+      "WorkLogType": {
+        "type": "string",
+        "enum": [
+          "worked",
+          "breakdown"
+        ],
+        "title": "WorkLogType",
+        "description": "K10 — çalışma mı arıza mı. İki kolonlu tek kayıt M3+M5'in iki sunumunu\nda üretemezdi."
+      },
+      "WorkLogUpdate": {
+        "properties": {
+          "equipment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Equipment Id"
+          },
+          "work_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Date"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "operator_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operator Id"
+          },
+          "record_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkLogType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "start_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Time"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
+          },
+          "hours": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 24.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,4}|(?=[\\d.]{1,7}0*$)\\d{0,4}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hours"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "title": "WorkLogUpdate",
+        "description": "`PATCH /equipment/work-logs/{id}` — kayıt hatası düzeltilebilir.\n\nÇalışma kaydı MALİ İZ DEĞİLDİR (maliyet ondan TÜREV): hakediş satırının\naksine düzeltilir ve silinir.\n\nAlanın GÖNDERİLMEMESİ ile `null` GÖNDERİLMESİ farklıdır (F-İK \"touched\"\ndersi) ve fark `model_fields_set` ile korunur — aralığı BOŞALTMANIN yolu\n`{\"start_time\": null, \"end_time\": null, \"hours\": …}`tır."
+      },
+      "WorkSummaryResponse": {
+        "properties": {
+          "year": {
+            "type": "integer",
+            "title": "Year"
+          },
+          "month": {
+            "type": "integer",
+            "title": "Month"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/WorkSummaryRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/WorkSummaryTotals"
+          },
+          "weeks": {
+            "items": {
+              "$ref": "#/components/schemas/WorkSummaryWeek"
+            },
+            "type": "array",
+            "title": "Weeks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "year",
+          "month",
+          "rows",
+          "totals",
+          "weeks"
+        ],
+        "title": "WorkSummaryResponse",
+        "description": "`GET /equipment/work-summary` — M3'ün TAMAMI (tablo + tfoot + mini grafik)."
+      },
+      "WorkSummaryRow": {
+        "properties": {
+          "equipment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Equipment Id"
+          },
+          "equipment_name": {
+            "type": "string",
+            "title": "Equipment Name"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "hours": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Hours"
+          },
+          "usage_pct": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usage Pct"
+          },
+          "usage_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "no_capacity_hours"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usage Reason"
+          },
+          "breakdown_hours": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Breakdown Hours"
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost"
+          }
+        },
+        "type": "object",
+        "required": [
+          "equipment_id",
+          "equipment_name",
+          "site_id",
+          "hours",
+          "usage_pct",
+          "usage_reason",
+          "breakdown_hours",
+          "cost"
+        ],
+        "title": "WorkSummaryRow",
+        "description": "M3 tablosunun BİR satırı.\n\n`cost` ve `usage_pct` AYRI AYRI `null` olabilir (K16): saati bilinen bir\nmakinenin bedeli bilinmiyor olabilir. Tek alana sıkıştırılsalardı bilinen\nbir olgu, eksik bir ölçüt yüzünden kaybolurdu."
+      },
+      "WorkSummaryTotals": {
+        "properties": {
+          "hours": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Hours"
+          },
+          "breakdown_hours": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Breakdown Hours"
+          },
+          "cost": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Cost"
+          },
+          "usage_pct_avg": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usage Pct Avg"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hours",
+          "breakdown_hours",
+          "cost",
+          "usage_pct_avg"
+        ],
+        "title": "WorkSummaryTotals",
+        "description": "🔴 K15 — tfoot. **HER ZAMAN satırlardan** toplanır.\n\nM3'ün kendi tfoot'u (428 saat · ₺124.800 · %69) satırlarıyla TUTARSIZDIR\n(692 · ₺144.200 · %57,7) — mockup'ın aritmetik hatasıdır ve kopyalanmaz\n(TSD `contract_total` TEK KAYNAK emsali, F-P5 K5).\n\n`cost` bilinmeyen satırı UYDURMA bir 0 ile İÇERMEZ (K16): satır `null`\nkalır, toplam bilinenlerden oluşur. Toplamın kendisi `null` yapılmadı çünkü\ntek bilinmeyen makine yüzünden bütün tabloyu gizlemek kullanıcıyı ekranın\ntamamından ederdi."
+      },
+      "WorkSummaryWeek": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "title": "End Date"
+          },
+          "hours": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Hours"
+          },
+          "dominant_record_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkLogType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "start_date",
+          "end_date",
+          "hours",
+          "dominant_record_type"
+        ],
+        "title": "WorkSummaryWeek",
+        "description": "M3:219-243 haftalık kovası.\n\n`dominant_record_type` SUNUCU DAMGASIDIR (F-P10 kanonu): barın rengini\nistemci kendi eşiğiyle seçseydi iki ekran aynı haftayı farklı boyardı.\nKayıtsız haftada `null`dur — uydurma bir \"çalışıyor\" damgası basılmaz."
       },
       "WorkerSource": {
         "type": "string",

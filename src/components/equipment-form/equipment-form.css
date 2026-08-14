@@ -1,0 +1,161 @@
+/* F-MK T3 · Makine / Ekipman formuna ÖZGÜ bloklar (`.eqf-*`).
+   Kanon: projedesign "Form - Makine Ekle.dc.html" (M2, 1440px). Parantez içi
+   sayılar O DOSYANIN satır numaralarıdır. Düzenleme kipinin kendi mockup'ı
+   yoktur (spec K4).
+
+   Ortak form kabuğu (`.pf`, `.pf-topbar`, `.pf-card`, `.pf-grid*`,
+   `.pf-actions*`, `.pf-doc*`) `src/styles/form-shell.css`'ten gelir ve
+   `EquipmentForm.tsx` onu bu dosyadan ÖNCE import eder (özgü olan kazansın).
+   Çıplak hex YOK — hepsi `src/styles/tokens.css`. */
+
+/* Ekipman bulunamadı / yüklenemedi durumu (`PersonnelForm` deseni). */
+.pf-message {
+  padding: var(--space-8);
+  text-align: center;
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+}
+
+/* ── Kart 1 · Sahiplik Tipi (50-70) ───────────────────────────────────────
+   `StockEntryTypeCards` (SG) ile AYNI mekanik, kendi ölçüleriyle: M2 İKİ
+   sütun (52) ve 16px iç boşluk (55) çizer; SG üç sütun + 14px çizer. Ortak
+   kabuğa taşımak SG'nin görsel baseline'ını riske atardı. */
+.eqf-own__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 52 */
+  gap: var(--space-3); /* 52 — 12px */
+}
+.eqf-own-card {
+  display: flex;
+  flex-direction: column;
+  border: 2px solid var(--color-border); /* 63 — seçili değilken #e2e8f0 */
+  border-radius: var(--radius-type-card); /* 12px (55, 63) */
+  background: var(--color-surface); /* 63 */
+  padding: var(--space-4); /* 16px (55) */
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+/* Radyo görsel olarak gizli — native grup ok-tuşu gezinmesi KORUNUR. */
+.eqf-own-card__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+/* Odak halkası karta (mockup'ta yok — a11y eklemesi, SG/proje formu emsali). */
+.eqf-own-card:has(.eqf-own-card__input:focus-visible) {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.eqf-own-card__emoji {
+  font-size: 24px; /* 56 */
+  margin-bottom: var(--space-2); /* 8px (56) */
+}
+.eqf-own-card__title {
+  font-size: var(--text-form-card-title); /* 14px (57) */
+  font-weight: var(--weight-bold); /* 700 (57) */
+  color: var(--color-text-secondary); /* 65 — seçili değilken #475569 */
+  margin-bottom: 3px; /* 57 */
+}
+.eqf-own-card__desc {
+  font-size: var(--text-small); /* 11px (58) */
+  line-height: var(--leading-normal); /* 1.5 (58) */
+  color: var(--color-text-subtle); /* 66 — seçili değilken #94a3b8 */
+}
+/* 55 — seçili kart YEŞİL: kenarlık #16a34a, zemin #f0fdf4, başlık #15803d,
+   açıklama #16a34a. */
+.eqf-own-card--selected {
+  border-color: var(--color-success);
+  background: var(--color-success-tint);
+}
+.eqf-own-card--selected .eqf-own-card__title {
+  color: var(--color-success-deep);
+}
+.eqf-own-card--selected .eqf-own-card__desc {
+  color: var(--color-success);
+}
+
+/* ── Kart 2 · Ekipman Bilgileri (75-91) ───────────────────────────────────
+   75: display flex; gap 20px — solda fotoğraf, sağda iki sütunlu ızgara. */
+.eqf-info {
+  display: flex;
+  gap: var(--space-5); /* 20px (75) */
+}
+.eqf-info > .pf-grid {
+  flex: 1; /* 83 */
+}
+/* 76: flex-shrink 0 */
+.eqf-photo-col {
+  flex-shrink: 0;
+}
+/* 77: 120×120; 2px dashed #cbd5e1; radius 10px; bg #f8fafc.
+   Yükleme KAPALI: `<input type="file">` render edilmez, imleç "default". */
+.eqf-photo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2); /* 6px≈8px (77) */
+  width: 120px;
+  height: 120px;
+  border: 2px dashed var(--color-dashed-border);
+  border-radius: var(--radius-10); /* 10px (77) */
+  background: var(--color-surface-2); /* #f8fafc (77) */
+  cursor: default;
+}
+.eqf-photo__emoji {
+  font-size: 26px; /* 79 */
+}
+/* 80: 11px #94a3b8; ortalı, iki satır */
+.eqf-photo__label {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  text-align: center;
+  max-width: 80%;
+}
+
+/* ── Kart 3 · Mali Bilgiler (95-112) ──────────────────────────────────── */
+/* 105: 1px yükseklikte #f1f5f9 ayraç, dikey 16px boşluk */
+.eqf-divider {
+  height: 1px;
+  background: var(--color-surface-muted);
+  margin: var(--space-4) 0;
+}
+/* 106: 12px/600 #d97706 blok başlığı */
+.eqf-block-title {
+  margin-bottom: var(--space-3); /* 12px */
+  font-size: var(--text-xs); /* 12px */
+  font-weight: var(--weight-semibold); /* 600 */
+  color: var(--color-warning-strong); /* #d97706 */
+}
+
+/* 98, 103, 110: para/sayı alanları sağa yaslı + monospace (mockup style) */
+.eqf-amount {
+  text-align: right;
+  font-family: var(--font-mono);
+}
+/* 87, 88, 89: monospace alanlar */
+.eqf-mono {
+  font-family: var(--font-mono);
+}
+
+/* Seçicilerin GÖRÜNÜR notları (mockup'ta yok; sessiz boş liste yasağı ve
+   onaylı sapmaların gerekçesi). */
+.eqf-picker-note {
+  margin-top: var(--space-2);
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* 165-168: alt şeridin sol ucundaki kutucuk — ETKİNDİR (MK-1 K8: yalnız bir
+   işaret, hiçbir yan etkisi yok ama gerçekten saklanır). */
+.eqf-company-asset {
+  color: var(--color-text-secondary); /* 165 — #475569 */
+}
