@@ -22,11 +22,14 @@ export interface EquipmentFuelConsumptionListProps {
  * kanonu): `liters / total_liters` uzun kesirli bir oran üretir (ör.
  * 1.240 / 2.840 = %43,661971…). Bu değer doğrudan `width`e yazılırsa çubuğun
  * sağ kenarı YARIM piksele oturur ve tarayıcı onu turdan tura FARKLI
- * yuvarlayabilir. Fiilen: `makine-yakit` karesi CI'da bir turda 244 piksel
- * oynadı (run 31788449253 KIRMIZI), sonraki turda aynı baseline'la YEŞİL
- * geçti — eşik ayarı olmadığı için hangi varyant baseline'a girerse öbürü
- * kırmızıdır, yani yeşil geçmek KANIT DEĞİLDİR. Dört yeni kare içinde
- * kesirli geometrisi olan TEK ekran budur.
+ * yuvarlayabilir. Dört yeni kare içinde kesirli geometrisi olan TEK ekran budur.
+ *
+ * ⚠️ DÜRÜST KAYIT: bu yuvarlama, `makine-yakit` karesinin CI'da 244 piksel
+ * oynadığı olay (run 31788449253) sırasında eklendi ve o olayın nedeni
+ * OLDUĞU KANITLANMADI — sonraki bir turda (aynı run, ikinci deneme) `next
+ * build` Google Fonts'tan `JetBrains Mono`yu ÇEKEMEDİ; yazı tipi yedeğe
+ * düşerse bu sayı-yoğun ekranda birkaç yüz piksel farkı tek başına açıklar.
+ * Yuvarlama yine de KALIR: kanona uygundur ve gerçek bir gizli riski kapatır.
  */
 function barWidth(liters: string, total: string | undefined): number | null {
   if (total === undefined) return null;
