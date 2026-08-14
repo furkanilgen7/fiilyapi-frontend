@@ -15,6 +15,16 @@ export function middleware(request: NextRequest): NextResponse {
 }
 
 // /api/*, /login, /design-system, statikler ve favicon haric her sayfa korunur.
+//
+// 🔴 `fonts` MUAFİYETİ ZORUNLUDUR (F-TB2 A/B ölçümünün bulgusu). Yazı tipleri
+// repoya alınmadan önce `next/font` onları `_next/static/media/` altından
+// veriyordu — yani ZATEN muaf listedeki `_next/static` kalıbına giriyorlardı.
+// `public/fonts/`e taşınınca bu muafiyet sessizce KAYBOLDU: `/fonts/*.woff2`
+// istekleri oturumsuz bağlamda `/login`e 307 ile yönlendi, hiçbir yazı tipi
+// yüklenemedi ve tüm arayüz yedek fonta (Arial) düştü. Ölçüm bunu 80 karenin
+// 60'ında yakaladı; muafiyet eklenince 80/80 bayt-aynıya döndü.
 export const config = {
-  matcher: ["/((?!api|login|design-system|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!api|login|design-system|fonts|_next/static|_next/image|favicon.ico).*)",
+  ],
 };
