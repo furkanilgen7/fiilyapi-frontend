@@ -189,6 +189,11 @@
 }
 .makine-yakit-consumption__deviation {
   font-weight: var(--weight-semibold);
+  /* Sol boşluk CSS'ten gelir, `{" "}` metin düğümünden DEĞİL: self-host
+     edilen yazı tipi Latin alt-kümesinde `⚠ ✓ —` yok, yedek yazı tipine
+     düşünce metin-boşluğu genişliği yedeğin metriğine göre değişip
+     görsel kapıda kayıyordu (makine-yakit, CI run 31788449253, 244px). */
+  margin-left: var(--space-1); /* 52 */
 }
 .makine-yakit-consumption__deviation--success {
   color: var(--color-success); /* 57 */

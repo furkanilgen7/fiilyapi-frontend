@@ -109,7 +109,6 @@ export function EquipmentFuelConsumptionList({
                   ) : (
                     `${formatDecimal(row.norm, 1)} ${unitLabel}`
                   )}
-                  {" "}
                   {row.deviation_pct === null ? (
                     <span
                       className="makine-yakit-consumption__deviation makine-yakit-consumption__deviation--neutral"
