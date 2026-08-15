@@ -32,10 +32,13 @@ describe("CashFlowPanel — E9:90-106", () => {
     expect(screen.getByText("Şubat Nakit Akışı")).toBeInTheDocument();
   });
 
-  it("E9:102-105 açıklama şeridini iki toplamdan kompakt basar", () => {
+  it("E9:102-105 açıklama şeridini iki toplamdan BİREBİR kompakt basar", () => {
     renderPanel(RESPONSE);
-    expect(screen.getByText("Giriş ₺ 4,1M")).toBeInTheDocument();
-    expect(screen.getByText("Çıkış ₺ 3,8M")).toBeInTheDocument();
+    // T3.0 · mockup sadakati: BOŞLUKSUZ + İKİ ondalık (E9:103-104).
+    expect(screen.getByText("Giriş ₺4,12M")).toBeInTheDocument();
+    expect(screen.getByText("Çıkış ₺3,84M")).toBeInTheDocument();
+    // Kart bakiyesinin boşluklu biçimi (E9:72) buraya SIZMAZ.
+    expect(screen.queryByText("Giriş ₺ 4,1M")).not.toBeInTheDocument();
   });
 
   it("E9:92 SVG'yi mockup ölçüleriyle basar", () => {
@@ -79,7 +82,7 @@ describe("CashFlowPanel — E9:90-106", () => {
     expect(screen.getByTestId("hazine-cashflow-empty")).toBeInTheDocument();
     expect(screen.queryByTestId("hazine-cashflow-chart")).not.toBeInTheDocument();
     // Toplamlar 0'dır (NULL değil) — açıklama şeridi yine basılır.
-    expect(screen.getByText("Giriş ₺ 0")).toBeInTheDocument();
+    expect(screen.getByText("Giriş ₺0")).toBeInTheDocument();
   });
 
   it("yüklenirken 'Yükleniyor…' basar, sahte grafik çizmez", () => {

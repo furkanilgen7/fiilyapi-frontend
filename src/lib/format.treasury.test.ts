@@ -1,6 +1,12 @@
 import { describe, it, expect, afterEach } from "vitest";
 
-import { formatCurrency, formatCurrencyTight, formatDayMonth } from "./format";
+import {
+  formatCompactCurrency,
+  formatCompactCurrencyTight,
+  formatCurrency,
+  formatCurrencyTight,
+  formatDayMonth,
+} from "./format";
 
 /**
  * F-HZ T2 — E9'un İKİ farklı para biçimi + TB5 sınıfı tarih tuzağı bekçileri.
@@ -22,6 +28,54 @@ describe("formatCurrencyTight — E9:114", () => {
 
   it("ondalık BASMAZ (E9:72/114 kuruş göstermiyor)", () => {
     expect(formatCurrencyTight("1016800.49")).toBe("₺1.016.800");
+  });
+});
+
+describe("formatCompactCurrencyTight — E9:103-104", () => {
+  it("mockup'ın açıklama şeridini BİREBİR basar", () => {
+    // E9:103 "Giriş ₺4,12M" · E9:104 "Çıkış ₺3,84M"
+    expect(formatCompactCurrencyTight("4120000.00")).toBe("₺4,12M");
+    expect(formatCompactCurrencyTight("3840000.00")).toBe("₺3,84M");
+  });
+
+  it("₺ ile sayı arasına BOŞLUK KOYMAZ", () => {
+    expect(formatCompactCurrencyTight("4120000")).not.toContain("₺ ");
+    expect(formatCompactCurrencyTight("4120")).not.toContain("₺ ");
+    expect(formatCompactCurrencyTight("412")).not.toContain("₺ ");
+  });
+
+  it("İKİ ondalık basar — tek ondalığa YUVARLAMAZ", () => {
+    // Bekçi: tavan 1'e düşerse "₺4,1M" gelir ve mockup'ın kuruşu kaybolur.
+    expect(formatCompactCurrencyTight("4120000")).not.toBe("₺4,1M");
+    expect(formatCompactCurrencyTight("1234000")).toBe("₺1,23M");
+  });
+
+  it("milyon / bin / altı eşiklerini AYIRIR", () => {
+    // ≥ 1.000.000 → M
+    expect(formatCompactCurrencyTight(1_000_000)).toBe("₺1M");
+    // Eşiğin bir altı hâlâ B
+    expect(formatCompactCurrencyTight(999_999)).toBe("₺1.000B");
+    // ≥ 1.000 → B
+    expect(formatCompactCurrencyTight(1_000)).toBe("₺1B");
+    expect(formatCompactCurrencyTight(999)).toBe("₺999");
+    expect(formatCompactCurrencyTight(0)).toBe("₺0");
+  });
+
+  it("TAM SAYI durumunda sondaki sıfırları ATAR", () => {
+    expect(formatCompactCurrencyTight(4_000_000)).toBe("₺4M");
+    expect(formatCompactCurrencyTight(4_100_000)).toBe("₺4,1M");
+    expect(formatCompactCurrencyTight(8_000)).toBe("₺8B");
+  });
+
+  it("NEGATİF değerde de eşik ve biçim korunur", () => {
+    expect(formatCompactCurrencyTight(-3_840_000)).toBe("₺-3,84M");
+  });
+
+  it("kompakt BOŞLUKLU biçimi (/makine KPI'ı) DEĞİŞTİRMEZ", () => {
+    // 🔴 Regresyon bekçisi: `formatCompactCurrency` 20+ çağıranın ve
+    // `makine-listesi.png` baseline'ının bağlı olduğu biçimdir.
+    expect(formatCompactCurrency("144200.00")).toBe("₺ 144,2B");
+    expect(formatCompactCurrency("4120000.00")).toBe("₺ 4,1M");
   });
 });
 

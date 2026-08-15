@@ -1,5 +1,5 @@
 import type { CashFlowResponse } from "@/lib/api/hooks/useCashFlow";
-import { formatCompactCurrency, formatMonthName } from "@/lib/format";
+import { formatCompactCurrencyTight, formatMonthName } from "@/lib/format";
 
 import {
   buildCashFlowGeometry,
@@ -100,23 +100,24 @@ export function CashFlowPanel({ cashFlow, isLoading, errorMessage }: CashFlowPan
         </svg>
       )}
 
-      {/* 102-105 — açıklama şeridi. Kompakt para biçimi REPO'nun mevcut
-          `formatCompactCurrency`ıdır ("₺ 4,1M"): mockup "₺4,12M" yazar (iki
-          ondalık, boşluksuz) ama aynı kısaltma /makine KPI'ında ("₺ 144,2B")
-          zaten kullanılıyor — ekranlar arası tutarlılık için mevcut
-          biçimlendirici korundu, ikinci bir kompakt biçim AÇILMADI. */}
+      {/* 102-105 — açıklama şeridi. Biçim `formatCompactCurrencyTight`tir:
+          E9:103 `₺4,12M` · E9:104 `₺3,84M` — BOŞLUKSUZ ve İKİ ondalıklı.
+          E9 kendi içinde tutarlıdır: boşluklu biçim YALNIZ kart bakiyesinindir
+          (E9:72/77/82), diğer her para boşluksuzdur (E9:103/104/114/118/122).
+          `/makine` KPI'ının bağlı olduğu `formatCompactCurrency`ye
+          DOKUNULMADI — o ayrı bir varyanttır. */}
       {cashFlow !== undefined && (
         <div className="hazine-legend">
           <div className="hazine-legend__item">
             <span className="hazine-legend__line hazine-legend__line--in" aria-hidden="true" />
             <span className="hazine-legend__text">
-              Giriş {formatCompactCurrency(cashFlow.inflow_total)}
+              Giriş {formatCompactCurrencyTight(cashFlow.inflow_total)}
             </span>
           </div>
           <div className="hazine-legend__item">
             <span className="hazine-legend__line hazine-legend__line--out" aria-hidden="true" />
             <span className="hazine-legend__text">
-              Çıkış {formatCompactCurrency(cashFlow.outflow_total)}
+              Çıkış {formatCompactCurrencyTight(cashFlow.outflow_total)}
             </span>
           </div>
         </div>
