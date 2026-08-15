@@ -8866,6 +8866,41 @@ const INVOICE_FIXTURES: MockInvoice[] = [
     lines: [mockLine("li-6", 0, "Nervürlü Demir Ø12", "Ton", "15.000", "21500.00")],
   },
   {
+    // 🔒 MUTASYON ALANI (F-FAT2 T3 · `hiddenFromLists`/`p-2` emsaliyle AYNI
+    // sınıf): "gelen fatura listeden ONAYLANIR" testi durum oynatır
+    // (`pending → approved`). O test `inv-in-2`yi oynatırken İKİ ayrı yarış
+    // doğuyordu ve ikisi de ÖLÇÜLDÜ:
+    //   1. Fonksiyonel: "kaynak çipi" testi `inv-in-2`yi giden sekmesinin
+    //      `status=pending` süzgeçli tablosunda arar. `fullyParallel: true`
+    //      altında AYNI DOSYANIN testleri de paralel koşar (dosya içi sıra
+    //      garanti DEĞİLDİR) — onay önce koşarsa satır kaybolur ve iddia
+    //      düşer.
+    //   2. Görsel: gelen tablosunu içeren İKİ kadraj (`faturalar-liste-giden`
+    //      · `faturalar-liste-gelen`) kâh "Onay Bekliyor" kâh "Onaylandı"
+    //      basardı; `playwright.config.ts`te eşik ayarı olmadığı için hangi
+    //      varyant baseline'a girerse öbürü CI'da KIRMIZI olurdu.
+    // Çözüm ZAMANLAMAYA DAYANMAZ: mutasyon KENDİ kaydına taşındı. Tohum
+    // faturalar (inv-in-1/inv-in-2) artık HİÇBİR test tarafından oynatılmaz.
+    // Kayıt liste uçlarından gizlenemez (onay LİSTE SATIRINDAN tıklanır), bu
+    // yüzden görsel spec onu kimlik ön ekiyle kadraj dışında bırakır
+    // (`dropCreatedSuppliers` deseni).
+    ...INVOICE_BASE,
+    id: "inv-in-mut",
+    direction: "incoming",
+    invoice_no: "MUT2026000001",
+    document_type: "einvoice",
+    status: "pending",
+    issue_date: "2026-07-17",
+    due_date: null,
+    party_name: "Mutasyon Ölçüm A.Ş.",
+    party_tax_number: "1010101010",
+    subtotal: "10000.00",
+    tax_base: "10000.00",
+    vat_amount: "2000.00",
+    total: "12000.00",
+    lines: [mockLine("li-8", 0, "Onay akışı ölçüm kalemi", "Adet", "1.000", "10000.00")],
+  },
+  {
     ...INVOICE_BASE,
     id: "inv-out-old",
     direction: "outgoing",

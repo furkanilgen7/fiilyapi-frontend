@@ -12,9 +12,15 @@ import { test, expect, type Page } from "@playwright/test";
 const FIXED_TIME = new Date("2026-07-25T09:00:00");
 
 // 🔒 YARIŞ KONTROLÜ: sahte backend'in fatura durumu YAZILABİLİRDİR. Durum
-// oynatan testler AYRI faturalar kullanır (`inv-in-2` onaylanır, `inv-out-1`e
-// tahsilat yazılır) ve KAYIT SAYISI iddiaları yalnız oynatılmayan satırlar
-// üzerinde kurulur.
+// oynatan testler AYRI faturalar kullanır ve KAYIT SAYISI iddiaları yalnız
+// oynatılmayan satırlar üzerinde kurulur.
+//
+// 🔴 T3 DÜZELTMESİ: onay testi ÖNCE `inv-in-2`yi oynatıyordu; o kayıt hem
+// aşağıdaki "kaynak çipi" testinin hem de iki görsel kadrajın gördüğü bir
+// TOHUM satırdır. `fullyParallel: true` dosya İÇİNDEKİ sıraya da garanti
+// vermediği için bu, ölçülebilir bir yarıştı. Mutasyon artık yalnız o test
+// tarafından kullanılan `inv-in-mut` kaydındadır (bkz. `e2e/mock-backend.ts`).
+// `inv-out-1`e yazılan tahsilat sunucuda REDDEDİLİR (K6) — durum değişmez.
 
 async function login(page: Page) {
   await page.clock.setFixedTime(FIXED_TIME);
@@ -173,12 +179,12 @@ test("gelen fatura listeden ONAYLANIR (gerçek uç) ve onay bekleyenlerden düş
 }) => {
   await openInvoices(page);
 
-  // 🔒 Yalnız BU test `inv-in-2`yi oynatır.
-  const row = page.locator('[data-invoice-id="inv-in-2"]');
+  // 🔒 Yalnız BU test `inv-in-mut`u oynatır (tohum satırlara DOKUNULMAZ).
+  const row = page.locator('[data-invoice-id="inv-in-mut"]');
   await expect(row).toContainText("Onay Bekliyor");
   await row.getByTestId("fat-incoming-approve").click();
 
-  await expect(page.locator('[data-invoice-id="inv-in-2"]')).toHaveCount(0);
+  await expect(page.locator('[data-invoice-id="inv-in-mut"]')).toHaveCount(0);
   await expect(page.getByTestId("fat-approve-error")).toHaveCount(0);
 });
 
