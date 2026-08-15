@@ -104,11 +104,26 @@ test("TSD: SZL taşeron satırı ve F-TH 'Sözleşmeyi Gör' bu rotaya götürü
   await expect(page).toHaveURL(new RegExp(`/sozlesmeler/taseron/${CONTRACT_ID}$`));
 });
 
-test("TSD: devre-dışı PDF + '+ Poz Ekle' yerinde durur ve gerekçesi görünür", async ({ page }) => {
+test("TSD: devre-dışı PDF yerinde durur; '+ Poz Ekle' ARTIK diyalog açar", async ({ page }) => {
   await login(page);
   await page.goto(`/sozlesmeler/taseron/${CONTRACT_ID}`);
 
   await expect(page.getByTestId("tsd-pdf-disabled")).toBeDisabled();
   await expect(page.getByText(/Dışa aktarma modülüyle birlikte gelir/)).toBeVisible();
-  await expect(page.getByTestId("tsd-add-item-disabled")).toBeDisabled();
+
+  // F-BLG T2a: form mockup'ı geldi, buton devre-dışı gerekçesinden kurtuldu.
+  // Testid `tsd-add-item-disabled` → `tsd-add-item`. "Aktif" iddiası TEK
+  // BAŞINA yetmez (kapalı bir `onClick` de aktif görünür): diyalogun gerçekten
+  // AÇILDIĞI iddia edilir. Diyalog kaydetmez — bu spec `sc-1`i kirletmez.
+  const addItem = page.getByTestId("tsd-add-item");
+  await expect(addItem).toBeEnabled();
+  await addItem.click();
+
+  const dialog = page.getByRole("dialog", { name: "Taşeron Sözleşmesine Poz Ekle" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByTestId("tsi-line-total")).toBeVisible();
+
+  // Escape ile kapanır → fikstür dokunulmadan bırakılır.
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
 });
