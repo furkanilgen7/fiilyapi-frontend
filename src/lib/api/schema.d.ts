@@ -179,6 +179,9 @@ export interface paths {
          *
          *     `full` seviyesi (muhasebe) 403 alır — gerekçe modül docstring'indedir.
          *     Bacaklar açıkça silinir (DB'de CASCADE de vardır). Yanıt gövdesizdir.
+         *
+         *     🔴 Kapalı dönemde **409** (MU-2 T3): `admin` bile silemez, çünkü engel YETKİ
+         *     değil DÖNEMDİR. Silinebilseydi kapalı dönemin mizanı geçmişe dönük değişirdi.
          */
         delete: operations["delete_journal_entry_endpoint_journal_entries__entry_id__delete"];
         options?: never;
@@ -189,6 +192,12 @@ export interface paths {
          *
          *     Kayıt DENETİMLERDEN ÖNCE kilitlenir (TOCTOU). `entry_date` değişirse dönem
          *     kolonları onunla BİRLİKTE taşınır (K9); satır kümesi buradan DEĞİŞMEZ.
+         *
+         *     🔴 **DÖNEM ÇİFT KONTROLÜ** (MU-2 T3): `entry_date` değişiyorsa HEM ESKİ HEM
+         *     YENİ dönem kilitlenir ve ikisinden biri kapalıysa **409**. Yalnız birine
+         *     bakmak deliği YARIM kapatır: yalnız yeniye bakılsaydı kapalı aydaki fiş açık
+         *     aya TAŞINABİLİR (mali iz boşalır), yalnız eskiye bakılsaydı açık aydaki fiş
+         *     kapalı aya SOKULABİLİRDİ (kapanmış mizan geçmişe dönük değişir).
          */
         patch: operations["update_journal_entry_endpoint_journal_entries__entry_id__patch"];
         trace?: never;
@@ -211,6 +220,9 @@ export interface paths {
          *     K1 kapısı burada da koşar: boş küme "en az iki satır" engeline takılır ve
          *     **422** döner. Başlık toplamları aynı kümeden yeniden yazılır — satırlar ile
          *     başlık ASLA ayrışmaz.
+         *
+         *     🔴 Kapalı dönemde **409** (MU-2 T3): satır kümesi fişin TUTARLARINI
+         *     değiştirir ve kapalı bir dönemin toplamı değişemez.
          */
         put: operations["replace_journal_lines_endpoint_journal_entries__entry_id__lines_put"];
         post?: never;
@@ -240,6 +252,9 @@ export interface paths {
          *     🔴 K1 kapısı burada **YENİDEN** koşar (**422**): fiş taslakken yaprak olan
          *     bir hesabın altına sonradan çocuk açılmış olabilir ve o fiş artık deftere
          *     girmemelidir — yoksa MU-2 mizanı üst hesabı ÇİFT SAYARDI.
+         *
+         *     🔴 Kapalı dönemde **409** (MU-2 T3): kayıtlaştırma fişi MALİ İZE sokar ve
+         *     kapalı bir dönemin mali izi tanım gereği DONMUŞTUR.
          *
          *     Denetim satırı `AuditAction.approve` ile yazılır (yeni üye AÇILMADI); ayrım
          *     metindedir.
@@ -276,6 +291,10 @@ export interface paths {
          *     🔴 K3: orijinal `reversed` olur ama defterden ÇIKMAZ (`POSTING_STATUSES`e
          *     dahildir) — ikisi birlikte hesabın bakiyesini TAM SIFIRA götürür. Yalnız
          *     `posted` sayılsaydı net `−orijinal` çıkardı (çift ters kayıt).
+         *
+         *     🔴 **İKİ DÖNEM denetlenir** (MU-2 T3): orijinalin dönemi VE stornonun kendi
+         *     dönemi (`timezone.today()`). İkisinden biri kapalıysa **409, istisna YOK** —
+         *     yalnız orijinale bakılsaydı KAPALI bir aya taptaze bir `posted` fiş düşerdi.
          */
         post: operations["reverse_journal_entry_endpoint_journal_entries__entry_id__reverse_post"];
         delete?: never;
@@ -308,6 +327,169 @@ export interface paths {
          *       ÇEVRİLMEZ, çünkü karışık hesaplarda tür-bazlı işaret tanımsızdır
          */
         get: operations["journal_ledger_endpoint_journal_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting-periods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Accounting Periods Endpoint
+         * @description Dönem kayıtları — 🔴 sıralama **`year DESC, month DESC`** (en yeni başta).
+         *
+         *     Yön fiş listesinin `entry_date DESC` kanonuyla aynıdır: kullanıcının ilgisi
+         *     daima en son döneme yakındır; artan sıra, on yıl sonra ilk sayfayı 2026'da
+         *     bırakırdı. Sıralama BELİRLEYİCİDİR — `(year, month)` UNIQUE'tir, ikinci bir
+         *     ölçüte ihtiyaç yoktur.
+         *
+         *     🔴 **Liste EKSİK GÖRÜNEBİLİR ve bu doğrudur:** dönem kaydı proaktif açılmaz
+         *     (YAGNI), yalnız bir kapanış ya da bir YAZMA işlemi ona dokunduğunda doğar.
+         *     Listede olmayan dönem **AÇIKTIR**; "kapalı" bilgisi her zaman bir SATIRDIR.
+         *
+         *     `limit` varsayılan 50, tavan 200 — aşım **422** (kırpma DEĞİL).
+         */
+        get: operations["list_accounting_periods_endpoint_accounting_periods_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting-periods/{year}/{month}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close Accounting Period Endpoint
+         * @description Dönemi kapatır — kapandıktan sonra o aya HİÇBİR fiş yazılamaz.
+         *
+         *     🔴 **EŞİK = KİLİT:** dönem satırı UPSERT edilip `FOR UPDATE` ile kilitlenir
+         *     ve bu TÜM denetimlerden ÖNCE olur (ayrıntı `periods_service.py` modül
+         *     docstring'i). İki eşzamanlı istekten yalnız biri geçer, öteki **409** alır ve
+         *     ortada TEK satır kalır.
+         *
+         *     **409 iki sebepten:** dönem zaten kapalı · dönemde `draft` fiş var.
+         *     `posted`/`reversed` fiş ENGEL DEĞİLDİR — kapanışın amacı onları DONDURMAKTIR.
+         *
+         *     Denetim satırı `AuditAction.approve` ile yazılır (yeni üye AÇILMADI).
+         */
+        post: operations["close_accounting_period_endpoint_accounting_periods__year___month__close_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounting-periods/{year}/{month}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reopen Accounting Period Endpoint
+         * @description Dönemi yeniden açar — **YALNIZ `admin`** (gerekçe modül docstring'inde).
+         *
+         *     Kilit sırası `close` ile BİREBİR AYNIDIR. Kapanış damgası SÖKÜLÜR:
+         *     `ck_accounting_periods_closed_stamp` `open` bir dönemde damganın NULL
+         *     olmasını şart koşar — bırakılsaydı mali iz yalan söylerdi.
+         *
+         *     **409:** dönem zaten açık. Kaydı hiç olmayan dönem de AÇIKTIR (kayıt yoksa
+         *     dönem açık sayılır) ve aynı 409'a düşer; satır yine de UPSERT ile doğar,
+         *     çünkü kilitlenecek bir satır olmadan iki eşzamanlı istek serileşemezdi.
+         *
+         *     Denetim satırı `AuditAction.update` ile yazılır.
+         */
+        post: operations["reopen_accounting_period_endpoint_accounting_periods__year___month__reopen_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/trial-balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Trial Balance Endpoint
+         * @description Mizan — açılış (NET) · dönem hareketi (**BRÜT**) · kapanış (NET).
+         *
+         *     Dönem BİRİKİMLİ bir ARALIKTIR (mockup satır 45 `Ocak–Temmuz 2026`): yılın
+         *     Ocak ayından `month`un SON GÜNÜNE kadar. Ayrıntı ve aritmetik
+         *     `trial_balance.py` modül docstring'indedir.
+         *
+         *     🔴 **Sayfalama YOKTUR** (K7 zarfı kullanılmaz): `totals` GENEL TOPLAMDIR ve
+         *     `is_balanced` onun üzerinden kurulur — sayfalanmış bir mizanda ikisi de
+         *     anlamsızlaşırdı. Küme sınırlıdır (tekdüzen hesap planı ~200 satır).
+         *
+         *     `include_empty=false` (varsayılan): üç pencerenin HİÇBİRİNDE hareketi
+         *     olmayan hesap listelenmez — mockup'ın 8 satırının hepsi hareketlidir (satır
+         *     80-159) ve kullanılmayan yüzlerce hesap tabloyu okunamaz hâle getirirdi.
+         *     `true` ile hareketsizler de gelir, altı kolonu da `0` basar.
+         *
+         *     Sıralama `code` ARTAN — mizan hesap planının sırasını izler.
+         */
+        get: operations["trial_balance_endpoint_trial_balance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vat-return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Vat Return Endpoint
+         * @description KDV Beyannamesi — hesaplanan · indirilecek · ödenecek/devreden.
+         *
+         *     🔴 **Pencere TEK AYDIR** (mockup satır 45 `Haziran 2026`), mizanın birikimli
+         *     aralığından FARKLI. Faturanın `issue_date`i esas alınır; sınırlar kapalıdır.
+         *     Sayılan faturalar, oran gruplaması, istisna tanımı ve vade aritmetiği
+         *     `vat_return.py` modül docstring'indedir.
+         *
+         *     🔴 Beyanname faturanın parasını YENİDEN YAZMAZ: her fatura için
+         *     `invoicing/amounts.py` yeniden çalıştırılır, matrah avans/teminat düşülmüş
+         *     `tax_base`tir. Aynı formülün ikinci bir kopyası bu uçta yapısal olarak
+         *     yasaktır (kaynak metni testle denetlenir).
+         *
+         *     Mockup'ın `XML İndir` / `GİB'e Gönder` düğmeleri (satır 48-49) KAPSAM
+         *     DIŞIDIR: e-Fatura/GİB tümüyle ertelenmiştir, uç AÇILMAMIŞTIR.
+         *
+         *     🔴 **Sayfalama YOKTUR**: küme oran sayısıyla (bir avuç) sınırlıdır ve
+         *     `calculated_vat` satırların GENEL toplamıdır — sayfalanmış bir beyanda
+         *     anlamsızlaşırdı.
+         */
+        get: operations["vat_return_endpoint_vat_return_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5392,6 +5574,77 @@ export interface components {
          * @enum {string}
          */
         AccessLevel: "none" | "view" | "draft" | "request" | "approve" | "full" | "admin";
+        /**
+         * AccountingPeriodListResponse
+         * @description K7 liste zarfı: `items` + `total` + `limit`/`offset` (repo kanonu).
+         */
+        AccountingPeriodListResponse: {
+            /** Items */
+            items: components["schemas"]["AccountingPeriodResponse"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * AccountingPeriodResponse
+         * @description Dönem satırı — üç ucun ORTAK yanıtı (liste · kapat · aç).
+         *
+         *     Ayrı ayrı kurulsalardı `close` ile `reopen` farklı alan kümeleri basar ve
+         *     frontend hangi ucun ne döndüğünü kodun iki köşesinden okurdu
+         *     (`build_detail` deseninin dönem karşılığı).
+         *
+         *     `closed_at`/`closed_by_id` NULLABLE'dır ve bu bir eksiklik DEĞİLDİR: `open`
+         *     dönemde ikisi de NULL olmak ZORUNDADIR (`ck_accounting_periods_closed_stamp`).
+         *
+         *     TÜREV ALAN YOKTUR: dönemin toplamları/mizanı bu yanıtta TAŞINMAZ — mizan
+         *     yevmiyeden türetilir (T4) ve burada bir kopyası dursaydı bayatlardı.
+         */
+        AccountingPeriodResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            status: components["schemas"]["AccountingPeriodStatus"];
+            /** Closed At */
+            closed_at: string | null;
+            /** Closed By Id */
+            closed_by_id: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * AccountingPeriodStatus
+         * @description Donem durumu — IKI degerli, ucuncu uye ICAT EDILMEZ.
+         *
+         *         open ──kapat──▶ closed ──(ac)──▶ open
+         *
+         *     `locked`/`archived`/`reopened` gibi bir ucuncu uye ACILMAZ. Iki gerekcesi
+         *     var: (1) hicbir ekran ucuncu bir rozet cizmiyor, (2) `CLOSED_STAMP_CHECK`
+         *     IKILI bir mantiktir — ucuncu bir degerde damganin ne olmasi gerektigi
+         *     TANIMSIZ kalir ve kisit sessizce her seyi kabul eden bir sey haline gelirdi.
+         *
+         *     "Yeniden acildi" AYRI BIR DURUM DEGILDIR: donem `open`a doner ve damga
+         *     SOKULUR (CHECK bunu zorlar). `reopened_at` kolonu da yoktur — kim ne zaman
+         *     acti sorusunun yeri denetim gunlugudur (B5), bu tablo DEGIL.
+         * @enum {string}
+         */
+        AccountingPeriodStatus: "open" | "closed";
         /**
          * AuditAction
          * @description Denetim gunlugunde kaydedilen islem turleri.
@@ -15217,6 +15470,98 @@ export interface components {
             token_type: string;
         };
         /**
+         * TrialBalanceResponse
+         * @description Mizanın tamamı — 🔴 **K7 SAYFALAMA ZARFI YOKTUR** (bilinçli sapma).
+         *
+         *     Gerekçe: `totals` GENEL TOPLAMDIR ve `is_balanced` onun üzerinden kurulur;
+         *     sayfalanmış bir mizanda ikisi de anlamsızlaşır (2. sayfanın "toplam borç =
+         *     toplam alacak" iddiası hiçbir şey ifade etmez). Küme SINIRLIDIR: tekdüzen
+         *     hesap planı ~200 satırdır ve `include_empty=false` hareketsizleri zaten
+         *     eler. `items`/`total`/`limit`/`offset` yerine `rows`/`totals` adları tam da
+         *     bu farkı görünür kılmak için seçilmiştir.
+         *
+         *     `year`/`month` yanıtta TEKRARLANIR: mockup satır 45 (`Ocak–Temmuz 2026`)
+         *     başlığı buradan kurulur ve istemci hangi dönemi gördüğünü kendi isteğinden
+         *     değil SUNUCUNUN cevabından okur.
+         *
+         *     `is_balanced` = `totals.closing_debit == totals.closing_credit` (mockup
+         *     satır 54-57 kontrol banner'ı).
+         */
+        TrialBalanceResponse: {
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            /** Is Balanced */
+            is_balanced: boolean;
+            /** Rows */
+            rows: components["schemas"]["TrialBalanceRow"][];
+            totals: components["schemas"]["TrialBalanceTotals"];
+        };
+        /**
+         * TrialBalanceRow
+         * @description Mizanın bir hesap satırı — mockup'ın 8 kolonu birebir (satır 63-77).
+         *
+         *     Üç grup AYNI ŞEY DEĞİLDİR ve bu ayrım şemada da görünür:
+         *
+         *     | Grup | Nicelik | Kaç taraf dolu |
+         *     |---|---|---|
+         *     | `opening_*` | **NET** | en fazla BİRİ |
+         *     | `period_*`  | **BRÜT** (`Σdebit` ve `Σcredit` ayrı ayrı) | **İKİSİ BİRDEN** |
+         *     | `closing_*` | **NET** | en fazla BİRİ |
+         *
+         *     Mockup satır 85-86 (Kasa dönem `2.640.000` **ve** `2.535.200`) brütlüğün
+         *     kanıtıdır; satır 87-88 (kapanış `284.800` / `—`) netliğin.
+         */
+        TrialBalanceRow: {
+            /**
+             * Account Id
+             * Format: uuid
+             */
+            account_id: string;
+            /** Account Code */
+            account_code: string;
+            /** Account Name */
+            account_name: string;
+            /** Opening Debit */
+            opening_debit: string;
+            /** Opening Credit */
+            opening_credit: string;
+            /** Period Debit */
+            period_debit: string;
+            /** Period Credit */
+            period_credit: string;
+            /** Closing Debit */
+            closing_debit: string;
+            /** Closing Credit */
+            closing_credit: string;
+        };
+        /**
+         * TrialBalanceTotals
+         * @description tfoot `GENEL TOPLAM` (mockup satır 161-171) — altı kolonun AYRI toplamı.
+         *
+         *     🔴 K15: mockup'ın tfoot RAKAMLARI kendi satırlarıyla çelişir (göstermelik);
+         *     SATIRLAR kazanır, tfoot'tan yalnız YAPI alınır — yani "altı ayrı toplam +
+         *     iki kapanış toplamının eşit basıldığı denge iddiası".
+         *
+         *     Toplam TÜM kümeyi kapsar; sayfalama olsaydı bu sayı bir SAYFANIN toplamı
+         *     olurdu ve `GENEL TOPLAM` adı yalan söylerdi (bkz. `TrialBalanceResponse`).
+         */
+        TrialBalanceTotals: {
+            /** Opening Debit */
+            opening_debit: string;
+            /** Opening Credit */
+            opening_credit: string;
+            /** Period Debit */
+            period_debit: string;
+            /** Period Credit */
+            period_credit: string;
+            /** Closing Debit */
+            closing_debit: string;
+            /** Closing Credit */
+            closing_credit: string;
+        };
+        /**
          * UICurrency
          * @enum {string}
          */
@@ -16240,6 +16585,84 @@ export interface components {
          * @enum {string}
          */
         VarianceStatus: "match" | "over" | "under" | "unknown";
+        /**
+         * VatDeductionRow
+         * @description `İndirimler` tablosunun bir satırı (mockup satır 116-125).
+         *
+         *     🔴 Mockup İKİ satır çizer (`Mal Alışları` / `Hizmet Alımları`) ama bu ayrımın
+         *     veri modelinde karşılığı YOKTUR (ölçüldü: `item_type`/`is_service`/
+         *     `product_type` sıfır eşleşme, kalemin stok bağı yok). Sınıflandırıcı
+         *     UYDURULMADI; tek satır `Alışlar` döner ve boşluk açık borçtur. Liste tipi
+         *     olması, sınıflandırma bir gün gerçekten modellendiğinde şemanın KIRILMADAN
+         *     büyümesi içindir.
+         */
+        VatDeductionRow: {
+            /** Source */
+            source: string;
+            /** Base */
+            base: string;
+            /** Vat */
+            vat: string;
+        };
+        /**
+         * VatReturnResponse
+         * @description KDV Beyannamesinin tamamı — 🔴 sayfalama YOKTUR (mizanla aynı gerekçe).
+         *
+         *     `year`/`month` yanıtta TEKRARLANIR: istemci hangi dönemi gördüğünü kendi
+         *     isteğinden değil SUNUCUNUN cevabından okur (mockup satır 45 başlığı).
+         *
+         *     🔴 **`payable` ve `carried_forward` AYNI ANDA sıfırdan büyük OLAMAZ.**
+         *     `fark = calculated_vat − deductible_vat`; `payable = max(fark, 0)` ve
+         *     `carried_forward = max(−fark, 0)`. Negatif fark "ödenecek" DEĞİL DEVREDEN
+         *     KDV'dir — tek alan açılıp negatif basılsaydı ekran devlete borç yerine
+         *     alacak yazardı. Mockup yalnız `Ödenecek` çizer (satır 65-69, 134-143); alan
+         *     yine de açılır, sunum kararı frontend'indir.
+         *
+         *     Para alanlarının hiçbiri `None` OLMAZ; boş dönem her yeri `0` basar ve
+         *     `due_date` YİNE doludur (vade fatura verisine değil TAKVİME bağlıdır).
+         */
+        VatReturnResponse: {
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            /**
+             * Due Date
+             * Format: date
+             */
+            due_date: string;
+            /** Calculated Vat */
+            calculated_vat: string;
+            /** Deductible Vat */
+            deductible_vat: string;
+            /** Payable */
+            payable: string;
+            /** Carried Forward */
+            carried_forward: string;
+            /** Taxable Rows */
+            taxable_rows: components["schemas"]["VatTaxableRow"][];
+            /** Exempt Base */
+            exempt_base: string;
+            /** Deductions */
+            deductions: components["schemas"]["VatDeductionRow"][];
+        };
+        /**
+         * VatTaxableRow
+         * @description `Tablo 1 — Matrah ve Vergi`nin bir ORAN satırı (mockup satır 84-89).
+         *
+         *     🔴 `rate = 0` satırları BURAYA GİRMEZ: mockup istisnayı ayrı, italik/gri bir
+         *     satır olarak çizer (satır 90-95) ve vergisi tanımı gereği `0`dır. Listeye
+         *     konsaydı `Vergi` kolonu hep `0` olan sahte bir "oran" satırı doğardı.
+         *     `VatReturnResponse.exempt_base` onun yeridir.
+         */
+        VatTaxableRow: {
+            /** Rate */
+            rate: string;
+            /** Base */
+            base: string;
+            /** Vat */
+            vat: string;
+        };
         /**
          * WageType
          * @description PE 113 (İK-1 spec §1).
@@ -17329,6 +17752,252 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LedgerResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_accounting_periods_endpoint_accounting_periods_get: {
+        parameters: {
+            query?: {
+                year?: number | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingPeriodListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    close_accounting_period_endpoint_accounting_periods__year___month__close_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                year: number;
+                month: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingPeriodResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dönem bu işlem için uygun durumda değil (zaten kapalı/açık · taslak fiş) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reopen_accounting_period_endpoint_accounting_periods__year___month__reopen_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                year: number;
+                month: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountingPeriodResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dönem bu işlem için uygun durumda değil (zaten kapalı/açık · taslak fiş) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trial_balance_endpoint_trial_balance_get: {
+        parameters: {
+            query: {
+                year: number;
+                month: number;
+                include_empty?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrialBalanceResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    vat_return_endpoint_vat_return_get: {
+        parameters: {
+            query: {
+                year: number;
+                month: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VatReturnResponse"];
                 };
             };
             /** @description Yetkisiz işlem */
