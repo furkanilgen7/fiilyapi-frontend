@@ -149,6 +149,16 @@ export function WarehouseModal({ onClose }: WarehouseModalProps) {
         )}
       </Field>
 
+      {/*
+        Fan-out BİTTİ işareti (`makine-loaded-sites` deseni). Şantiye
+        seçenekleri TEK sorgudan değil, proje listesi + her projenin şantiye
+        sorgusundan (kayar pencere) toplanır; bu kaynağın "yüklendi" hâli
+        ekranda GÖRÜNMEZ (seçici her hâlde çizilir). Görsel kadraj yarım
+        pencerede kare almasın diye durum DOM'a düşürülür — `hidden` olduğu
+        için kareye HİÇ girmez.
+      */}
+      {!siteOptions.isLoading && <span hidden data-testid="whf-sites-loaded" />}
+
       {/* Fan-out'un eksikleri SESSİZ kalmaz. */}
       {siteOptions.failedProjectNames.length > 0 && (
         <p className="whf__notice" data-testid="whf-site-fanout-error">
