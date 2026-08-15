@@ -4962,6 +4962,158 @@ function isEquipmentFixturePeriod(searchParams: URLSearchParams): boolean {
   );
 }
 
+// --- F-HZ T3.1 · Hazine (E9) fikstürleri --------------------------------
+//
+// 🔴 SALT-OKUR: bu üç uç yalnız GET'tir; hiçbir e2e testi hazine durumunu
+// değiştirmez → `fullyParallel` altında yarış YOKTUR (ekipman fikstürlerinin
+// aynı gerekçesi).
+//
+// 🔴 TARİH DETERMİNİZMİ: `/hazine` ekranının tarihe dokunan HİÇBİR yeri
+// yoktur — dönem başlığı `CashFlowResponse.year/month` echo'sundan,
+// "N gün kaldı" `UpcomingPaymentItem.days_remaining`ten, "7 Gün" başlığı
+// `UpcomingPaymentsResponse.days` echo'sundan gelir; `due_date` STRING olarak
+// ayrıştırılır (`formatDayMonth`) ve grafik ekseni `daysInMonth(year, month)`
+// ile `Date.UTC` üzerinden ölçeklenir. Bu alanların hepsi burada SABİTtir →
+// kare makinenin takvimine bağlı DEĞİLDİR ve `page.clock` gerekmez.
+
+const TREASURY_BANK_ACCOUNTS: components["schemas"]["BankAccountResponse"][] = [
+  // E9:70-74 — IBAN'lı vadesiz hesap.
+  {
+    id: "ba-1",
+    bank_name: "Ziraat Bank",
+    account_type: "checking",
+    iban: "TR12 0001 0093 0012 3456 7890",
+    display_name: null,
+    opening_balance: "2500000.00",
+    is_active: true,
+    created_at: "2026-01-05T09:00:00Z",
+    updated_at: "2026-08-14T09:00:00Z",
+    // 🔴 TÜRETİLMİŞ (K2): `opening_balance` DEĞİL, hareketleri içeren bakiye.
+    balance: "2840500.00",
+  },
+  // E9:75-79 — ikinci IBAN'lı vadesiz (degrade TİPE değil SIRAYA bağlıdır).
+  {
+    id: "ba-2",
+    bank_name: "İş Bank",
+    account_type: "checking",
+    iban: "TR98 0006 4000 0011 2345 6789",
+    display_name: null,
+    opening_balance: "900000.00",
+    is_active: true,
+    created_at: "2026-01-05T09:05:00Z",
+    updated_at: "2026-08-14T09:00:00Z",
+    balance: "1124200.00",
+  },
+  // E9:80-84 — 🔴 IBAN'SIZ kasa: `bankAccountIdentityLine`ın `display_name`
+  // dalını canlandırır ("Merkez Kasa", E9:83). IBAN verilseydi o dal hiçbir
+  // e2e turunda çalışmazdı.
+  {
+    id: "ba-3",
+    bank_name: "Yapı Kredi",
+    account_type: "cash",
+    iban: null,
+    display_name: "Merkez Kasa",
+    opening_balance: "300000.00",
+    is_active: true,
+    created_at: "2026-01-05T09:10:00Z",
+    updated_at: "2026-08-14T09:00:00Z",
+    balance: "284800.00",
+  },
+  // PASİF hesap: ekran `is_active=true` süzer → kart şeridinde GÖRÜNMEZ.
+  // Süzgecin fiilen uygulandığının kanıtı (süzülmeseydi dört kart olurdu).
+  {
+    id: "ba-4",
+    bank_name: "Kapatılmış Hesap",
+    account_type: "checking",
+    iban: "TR33 0009 9000 0099 9999 9999",
+    display_name: null,
+    opening_balance: "0.00",
+    is_active: false,
+    created_at: "2026-01-05T09:15:00Z",
+    updated_at: "2026-03-01T09:00:00Z",
+    balance: "0.00",
+  },
+];
+
+/**
+ * `GET /treasury/cash-flow` — 🔴 seri SEYREKTİR: ayın 31 gününün YALNIZ
+ * beşinde hareket vardır. Her günü doldurmak şemanın kendi notuyla çelişirdi
+ * ve `scaleX`in "ayın günü" ölçeklemesi (dizinin indeksi DEĞİL) hiç sınanmazdı.
+ *
+ * `inflow_total` / `outflow_total` mockup'ın E9:103-104 rakamlarıdır
+ * (`₺4,12M` / `₺3,84M`) ve seri toplamıyla ÖZDEŞ DEĞİLDİR — sunucu toplamı
+ * ayın tamamından üretir, ekran onu basar, satırları TOPLAMAZ.
+ */
+const TREASURY_CASH_FLOW: components["schemas"]["CashFlowResponse"] = {
+  year: 2026,
+  month: 7,
+  series: [
+    { day: "2026-07-01", inflow: "180000.00", outflow: "240000.00" },
+    { day: "2026-07-08", inflow: "960000.00", outflow: "410000.00" },
+    { day: "2026-07-16", inflow: "420000.00", outflow: "1180000.00" },
+    { day: "2026-07-24", inflow: "1340000.00", outflow: "760000.00" },
+    { day: "2026-07-31", inflow: "1220000.00", outflow: "1250000.00" },
+  ],
+  inflow_total: "4120000.00",
+  outflow_total: "3840000.00",
+};
+
+/**
+ * `GET /treasury/upcoming-payments` — `days` ve `as_of` SABİT echo'dur.
+ *
+ * Satırlar ÜÇ TONU da kapsar (`upcomingPaymentTone` eşikleri):
+ *   · `days_remaining ≤ 2` → danger · `3-4` → warning · `≥ 5` → success
+ * ve `UpcomingSourceType`ın İKİ üyesini de taşır. Son satırın
+ * `counterparty`si NULL'dır → zarif düşüş yüzeyi (satır metni + görünür
+ * bildirim) kadraja girer; hepsi dolu olsaydı o dal hiç basılmazdı.
+ */
+const TREASURY_UPCOMING: components["schemas"]["UpcomingPaymentsResponse"] = {
+  days: 7,
+  as_of: "2026-07-17",
+  items: [
+    // ≤2 gün → danger (E9:112-115'in satırı, ton MONOTONlaştı).
+    {
+      source_type: "subcontractor_progress_payment",
+      source_id: "sp-1",
+      counterparty: "Akın İnşaat",
+      document_no: "47",
+      due_date: "2026-07-19",
+      days_remaining: 2,
+      amount: "1016800.00",
+    },
+    // 3-4 gün → warning.
+    {
+      source_type: "invoice",
+      source_id: "inv-1",
+      counterparty: "Yılmaz Elektrik",
+      document_no: "FT-2026-0311",
+      due_date: "2026-07-20",
+      days_remaining: 3,
+      amount: "892000.00",
+    },
+    // ≥5 gün → success.
+    {
+      source_type: "invoice",
+      source_id: "inv-2",
+      counterparty: "Demir Nakliyat",
+      document_no: "FT-2026-0327",
+      due_date: "2026-07-24",
+      days_remaining: 7,
+      amount: "475600.00",
+    },
+    // 🔴 `counterparty: null` — taslak taşeron sözleşmesinde ad boş olabilir.
+    {
+      source_type: "subcontractor_progress_payment",
+      source_id: "sp-2",
+      counterparty: null,
+      document_no: "48",
+      due_date: "2026-07-23",
+      days_remaining: 6,
+      amount: "318400.00",
+    },
+  ],
+};
+
 export function startMockBackend(port: number): { server: Server; close: () => Promise<void> } {
   const state = seedState();
 
@@ -8318,6 +8470,58 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           return send(200, equipment);
         });
       }
+    }
+
+    // --- F-HZ T3.1 · Hazine uçları (HZ-1, 3 yol) -------------------------
+    // SALT-OKUR: üçü de GET'tir, `state`e DOKUNMAZLAR.
+
+    if (method === "GET" && path === "/bank-accounts") {
+      // Kırpma korkuluğu: tavan aşımı 422'dir (kırpma DEĞİL) — gerçek
+      // sunucunun `maximum: 200` doğrulaması.
+      const limit = Number(parsed.searchParams.get("limit") ?? "50");
+      if (limit > 200) return send(422, { detail: "limit en fazla 200 olabilir." });
+      const offset = Number(parsed.searchParams.get("offset") ?? "0");
+      const isActive = parsed.searchParams.get("is_active");
+
+      let rows = TREASURY_BANK_ACCOUNTS;
+      if (isActive !== null) rows = rows.filter((row) => row.is_active === (isActive === "true"));
+      // `total` SÜZÜLMÜŞ kümenin tamamıdır, sayfanın DEĞİL (TB3 kanonu).
+      return send(200, {
+        items: rows.slice(offset, offset + limit),
+        total: rows.length,
+        limit,
+        offset,
+      });
+    }
+
+    if (method === "GET" && path === "/treasury/cash-flow") {
+      // `year`/`month` GÖNDERİLMEZSE sunucu KENDİ dönemini seçer ve echo eder;
+      // fikstür o echo'yu SABİT verir (tarih determinizmi). Açıkça istenen
+      // BAŞKA bir dönem boş döner — veri "taşınmaz".
+      const year = parsed.searchParams.get("year");
+      const month = parsed.searchParams.get("month");
+      const isFixturePeriod =
+        (year === null && month === null) ||
+        (Number(year) === TREASURY_CASH_FLOW.year && Number(month) === TREASURY_CASH_FLOW.month);
+      if (!isFixturePeriod) {
+        return send(200, {
+          year: Number(year),
+          month: Number(month),
+          series: [],
+          // Toplamlar `0`dır, NULL DEĞİL (şema notu).
+          inflow_total: "0.00",
+          outflow_total: "0.00",
+        });
+      }
+      return send(200, TREASURY_CASH_FLOW);
+    }
+
+    if (method === "GET" && path === "/treasury/upcoming-payments") {
+      // `days` echo'su SABİTtir: ekran başlığı ("Yaklaşan Ödemeler (7 Gün)")
+      // bunu basar, sayıyı kendi yazmaz.
+      const days = Number(parsed.searchParams.get("days") ?? String(TREASURY_UPCOMING.days));
+      if (days > 90) return send(422, { detail: "days en fazla 90 olabilir." });
+      return send(200, TREASURY_UPCOMING);
     }
 
     return send(404, { detail: "not found" });
