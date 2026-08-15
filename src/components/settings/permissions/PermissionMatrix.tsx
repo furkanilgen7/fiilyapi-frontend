@@ -3,6 +3,7 @@
 import { Fragment } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Select } from "@/components/ui";
+import { CheckIcon, inlineSymbolProps } from "@/components/ui/icons";
 import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
 import { roleVisual } from "@/components/settings/primitives/role-visuals";
 import { useModules } from "@/lib/api/hooks/useModules";
@@ -150,7 +151,15 @@ export function PermissionMatrix() {
                               key={role.id}
                               className={cx("matrix-cell--readonly", isFull && "matrix-cell--full")}
                             >
-                              {isFull ? `✓ ${label}` : label}
+                              {/* `✓` glif değil ikondur (F-SEM); "tam
+                                  erişim" anlamı ikonun YANINDAKİ etikette
+                                  zaten yazılıdır, bilgi kaybı yok. */}
+                              {isFull && (
+                                <>
+                                  <CheckIcon {...inlineSymbolProps} />{" "}
+                                </>
+                              )}
+                              {label}
                             </td>
                           );
                         }

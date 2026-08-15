@@ -67,8 +67,15 @@ export const PERSONNEL_DOCUMENTS_DROP_TITLE = "Diğer belgeleri buraya sürükle
 export const PERSONNEL_DOCUMENTS_DROP_SUBTITLE =
   "Diploma, referans mektubu, adli sicil kaydı vb. · Çoklu seçim yapılabilir";
 
-/** Uyarı kutusu (195–200) — "Belge Takibi" bağlantısı EDİLGEN basılır. */
-export const PERSONNEL_DOCUMENTS_WARNING_STRONG = "⚠ Zorunlu belgeler eksikse";
+/**
+ * Uyarı kutusu (195–200) — "Belge Takibi" bağlantısı EDİLGEN basılır.
+ *
+ * Mockup'taki `⚠` bu SABİTİN İÇİNDE DEĞİLDİR (F-SEM): sembol bir GLİF değil
+ * bir İKONdur ve `PersonnelDocumentsCard` tarafında `WarningTriangleIcon`
+ * olarak basılır. Sabit yalnız METNİ taşır — çeviri/metin denetimi bu dosyada
+ * kalır, render kararı render tarafında.
+ */
+export const PERSONNEL_DOCUMENTS_WARNING_STRONG = "Zorunlu belgeler eksikse";
 export const PERSONNEL_DOCUMENTS_WARNING_BEFORE_LINK =
   " personel sahaya çıkamaz. Belge geçerlilik süreleri ";
 export const PERSONNEL_DOCUMENTS_WARNING_LINK = "Belge Takibi";

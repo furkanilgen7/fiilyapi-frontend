@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Button } from "@/components/ui";
+import { WarningTriangleIcon, inlineSymbolProps } from "@/components/ui/icons";
 import { buildDocumentAlertText, HR_DOCUMENTS_ROUTE } from "./personnel-list-labels";
 import "./personnel-list.css";
 
@@ -26,8 +27,8 @@ export function PersonnelDocumentAlertBanner({ counts }: PersonnelDocumentAlertB
 
   return (
     <div className="personel-alert" data-testid="personel-document-alert">
-      <span className="personel-alert__icon" aria-hidden="true">
-        ⚠️
+      <span className="personel-alert__icon">
+        <WarningTriangleIcon {...inlineSymbolProps} />
       </span>
       <p className="personel-alert__text">{text}</p>
       {/* 85 — GERÇEK link (ekran T5'te yazılır, rota tek sabitten gelir) */}

@@ -1,4 +1,5 @@
 import { DocumentsPlaceholderCard } from "@/components/form-shell";
+import { WarningTriangleIcon, inlineSymbolProps } from "@/components/ui/icons";
 
 import { PENDING_DOCUMENTS, PENDING_HR_SCREEN } from "./constants";
 import {
@@ -34,7 +35,10 @@ export function PersonnelDocumentsCard() {
       footer={
         <div className="pnf-warning">
           <p className="pnf-warning__text">
-            <strong>{PERSONNEL_DOCUMENTS_WARNING_STRONG}</strong>
+            {/* 195 `⚠` — glif değil ikon (F-SEM); kalın metnin İÇİNDE durur. */}
+            <strong>
+              <WarningTriangleIcon {...inlineSymbolProps} /> {PERSONNEL_DOCUMENTS_WARNING_STRONG}
+            </strong>
             {PERSONNEL_DOCUMENTS_WARNING_BEFORE_LINK}
             {/* Edilgen: "Belge Takibi" ekranının rotası henüz yok. */}
             <span className="pnf-warning__link" title={PENDING_HR_SCREEN}>

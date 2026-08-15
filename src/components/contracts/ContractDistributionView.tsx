@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Button } from "@/components/ui/button/Button";
+import { WarningTriangleIcon, inlineSymbolProps } from "@/components/ui/icons";
 import { backendErrorMessage } from "@/lib/api/error-message";
 import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
@@ -173,7 +174,7 @@ export function ContractDistributionView({ projectId }: ContractDistributionView
           {/* 63-66 — yalnız dağıtılmamış kalem VARSA. */}
           {data.undistributed_item_count > 0 && (
             <p className="cdist-warning" data-testid="cdist-undistributed-warning">
-              <span aria-hidden="true">⚠️</span>
+              <WarningTriangleIcon {...inlineSymbolProps} />
               <span>
                 <strong>{data.undistributed_item_count} poz henüz dağıtılmadı:</strong>{" "}
                 {data.undistributed_item_names.join(", ")} — şantiye ataması yapılmadan günlük

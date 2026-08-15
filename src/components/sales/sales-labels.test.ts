@@ -172,9 +172,13 @@ describe("customerLine — SY 161/179/188/197", () => {
   });
 
   it("gecikme uyarısı kimliğin YERİNE geçer (179)", () => {
+    // `⚠` metne GÖMÜLMEZ (F-SEM), `icon` alanıyla taşınır. `toEqual` TAM
+    // eşleşmedir: uyarı işaretinin düşmesi hâlâ bu testi kırar, çünkü
+    // `icon: "warning"` beklenen nesnenin parçasıdır.
     expect(customerLine(row({ overdue_installment_count: 2 }))).toEqual({
-      text: "⚠ 2 taksit gecikmiş",
+      text: "2 taksit gecikmiş",
       tone: "danger",
+      icon: "warning",
     });
   });
 

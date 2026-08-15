@@ -1,3 +1,5 @@
+import "./icons.css";
+
 type IconProps = React.SVGProps<SVGSVGElement>;
 
 // Ortak SVG nitelikleri (mockup inline SVG kalibi)
@@ -62,6 +64,21 @@ export const AlertIcon = (p: IconProps) => (
 export const CheckIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+/**
+ * Uyarı üçgeni — metin akışındaki `⚠` (U+26A0) yerine geçer (F-SEM).
+ *
+ * `AlertIcon` (daire + ünlem) BU DEĞİLDİR: mockup'ların uyarı işareti ÜÇGENdir
+ * ve `⚠`nin biçimi odur; daireli varyant başka yüzeylerde kullanımda olduğu
+ * için ayrı bir ikon açıldı, mevcut olan DEĞİŞTİRİLMEDİ.
+ */
+export const WarningTriangleIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+    <line x1="12" y1="9" x2="12" y2="13" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
   </svg>
 );
 
@@ -194,6 +211,28 @@ export const LockIcon = (p: IconProps) => (
     <path d="M5 5a2 2 0 014 0v1H5V5zM3 8h8v4H3z" />
   </svg>
 );
+
+/**
+ * Metin akışındaki sembolleri basmak için ORTAK nitelikler (F-SEM):
+ * `<WarningTriangleIcon {...inlineSymbolProps} /> Kritik stok`.
+ *
+ * NEDEN VAR — ÖLÇÜM: `⚠` (U+26A0), `✓` (U+2713) ve `✗` (U+2717) glifleri
+ * `public/fonts/` altındaki 13 woff2 dosyasının HİÇBİRİNİN cmap'inde YOKTUR
+ * (fonttools ile tarandı). Alt-küme `unicode-range`ini genişletmek bu yüzden
+ * İMKÂNSIZ bir çözümdür: kapsanacak glif dosyada yok. Tarayıcı `Inter
+ * Fallback`e (`local("Arial")`) düşer, `ubuntu-latest`te Arial YOKTUR ve
+ * fontconfig ikamesi turdan tura değişebilir — `makine-yakit` karesi bu yüzden
+ * oynaktı. Inline SVG tek deterministik yoldur.
+ *
+ * Boyut `1em`: ikon çevresindeki metnin `font-size`ına oturur, sabit px'e
+ * DEĞİL. Dikey hiza `.icon-inline` sınıfından (`icons.css`). Renk `base()`in
+ * `stroke: currentColor`undan, yani çağıran sınıfın tonundan gelir.
+ */
+export const inlineSymbolProps = {
+  width: "1em",
+  height: "1em",
+  className: "icon-inline",
+} as const satisfies IconProps;
 
 export const SettingsIcon = (p: IconProps) => (
   <svg {...base(p)}>

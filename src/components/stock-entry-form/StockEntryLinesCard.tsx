@@ -205,8 +205,11 @@ export function StockEntryLinesCard({
                       onChangeLine(line.key, { quality: event.target.value as StockQuality })
                     }
                   >
+                    {/* `<option>` inline SVG TAŞIYAMAZ (HTML kısıtı) — mockup'ın
+                        ✓/⚠/✗ işaretleri bu yüzden basılmaz; anlam
+                        `option.tone`da korunur (bkz. `constants.ts`). */}
                     {STOCK_QUALITY_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
+                      <option key={option.value} value={option.value} data-tone={option.tone}>
                         {option.label}
                       </option>
                     ))}

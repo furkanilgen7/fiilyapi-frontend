@@ -1,4 +1,5 @@
 import { Button, Input, Select } from "@/components/ui";
+import { WarningTriangleIcon, inlineSymbolProps } from "@/components/ui/icons";
 import type { StockSummaryRow } from "@/lib/api/hooks/useStockSummary";
 import { formatAmount, formatQuantity } from "@/lib/format";
 
@@ -198,8 +199,11 @@ export function PurchaseRequestFormLinesCard({
                       )}
                       {/* 83 alt not (kritik) · 92 alt not (kart kodu) */}
                       {isCritical ? (
-                        <span className="saf-table__sub saf-table__sub--critical">
-                          ⚠ Kritik stok
+                        <span
+                          className="saf-table__sub saf-table__sub--critical"
+                          data-testid={`talep-kritik-stok-${index}`}
+                        >
+                          <WarningTriangleIcon {...inlineSymbolProps} /> Kritik stok
                         </span>
                       ) : (
                         stockRow && <span className="saf-table__sub">{stockRow.code}</span>

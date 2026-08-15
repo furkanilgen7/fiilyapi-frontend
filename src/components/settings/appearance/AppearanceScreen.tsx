@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button, Field } from "@/components/ui";
 import { Select } from "@/components/ui/select";
+import { CheckIcon, inlineSymbolProps } from "@/components/ui/icons";
 import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { isForbidden } from "@/lib/api/unwrap";
@@ -101,7 +102,15 @@ export function AppearanceScreen() {
                   </div>
                   <div className={cx("theme-card__label", active ? "theme-card__label--active" : "theme-card__label--muted")}>
                     {t.label}
-                    {active ? " ✓" : ""}
+                    {/* Seçili temanın `✓`si (F-SEM: glif değil ikon). Tek
+                        başına anlam taşır — görünmez metin onu korur. */}
+                    {active && (
+                      <>
+                        {" "}
+                        <CheckIcon {...inlineSymbolProps} />
+                        <span className="sr-only">(seçili)</span>
+                      </>
+                    )}
                   </div>
                 </button>
               );

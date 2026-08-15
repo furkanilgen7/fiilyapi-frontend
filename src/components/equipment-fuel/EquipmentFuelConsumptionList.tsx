@@ -1,3 +1,4 @@
+import { CheckIcon, WarningTriangleIcon, inlineSymbolProps } from "@/components/ui/icons";
 import { formatCurrencyPrecise, formatDecimal, formatPercent } from "@/lib/format";
 import type { EquipmentNormUnit } from "@/lib/api/hooks/useEquipment";
 import type { FuelSummaryRow } from "@/lib/api/hooks/useEquipmentFuelSummary";
@@ -123,14 +124,15 @@ export function EquipmentFuelConsumptionList({
                       className="makine-yakit-consumption__deviation makine-yakit-consumption__deviation--success"
                       data-testid="makine-yakit-deviation-normal"
                     >
-                      ✓ Normal
+                      <CheckIcon {...inlineSymbolProps} /> Normal
                     </span>
                   ) : (
                     <span
                       className={`makine-yakit-consumption__deviation makine-yakit-consumption__deviation--${tone}`}
                       data-testid="makine-yakit-deviation-abnormal"
                     >
-                      ⚠ {formatPercent(row.deviation_pct)}
+                      <WarningTriangleIcon {...inlineSymbolProps} />{" "}
+                      {formatPercent(row.deviation_pct)}
                     </span>
                   )}
                 </div>

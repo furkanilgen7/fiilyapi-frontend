@@ -50,16 +50,35 @@ export const STOCK_ENTRY_TYPE_OPTIONS: readonly StockEntryTypeOption[] = [
   },
 ];
 
-/** Kalite seçeneği (117) — ✓/⚠/✗ işaretleri mockup'tan, değerler enum'dan. */
+/**
+ * Kalite seçeneği (117) — etiketler mockup'tan, değerler enum'dan.
+ *
+ * 🔴 MOCKUP'TAKİ `✓`/`⚠`/`✗` BURADA BASILMAZ — ve bu üç yüzey, F-SEM'in
+ * ikona çevrilemeyen TEK istisnasıdır. Gerekçe YAPISALDIR: bu seçenekler
+ * `StockEntryLinesCard`ta NATIVE `<option>` olarak basılır ve `<option>`
+ * yalnız METİN taşıyabilir — içine inline SVG konulamaz (HTML kısıtı, tercih
+ * değil). Semboller glif olarak bırakılsaydı `stok-giris-formu` karesi
+ * `makine-yakit` ile aynı sebepten oynak kalırdı: `✓` (U+2713), `⚠` (U+26A0)
+ * ve `✗` (U+2717) `public/fonts/` altındaki 13 woff2'nin HİÇBİRİNİN
+ * cmap'inde YOK; tarayıcı `Inter Fallback`(local Arial) → `ubuntu-latest`te
+ * fontconfig ikamesine düşer.
+ *
+ * `tone` bilgi kaybını önler: sembolün TAŞIDIĞI anlam (iyi/uyarı/ret) veride
+ * KORUNUR, yalnız GLİFİ düşer. Bu alan, seçici bir gün özel bir liste
+ * bileşenine (`<option>` olmayan) dönerse ikonu geri getirecek olan kancadır.
+ */
+export type StockQualityTone = "success" | "warning" | "danger";
+
 export interface StockQualityOption {
   value: StockQuality;
   label: string;
+  tone: StockQualityTone;
 }
 
 export const STOCK_QUALITY_OPTIONS: readonly StockQualityOption[] = [
-  { value: "ok", label: "✓ Uygun" },
-  { value: "defective", label: "⚠ Kusurlu" },
-  { value: "rejected", label: "✗ Red" },
+  { value: "ok", label: "Uygun", tone: "success" },
+  { value: "defective", label: "Kusurlu", tone: "warning" },
+  { value: "rejected", label: "Red", tone: "danger" },
 ];
 
 /** openapi `StockEntryCreate` / `StockEntryLineCreate` uzunluk tavanları. */

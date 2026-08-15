@@ -194,25 +194,31 @@
      (`unicode-range: u+00??`, src/styles/fonts.css); tarayıcıda ölçüldü,
      10px'te 2,53px. Mockup da literal boşluk kullanır
      (projedesign/Makine - Yakıt Takibi.dc.html:52). Buraya margin EKLEME.
-     `⚠` (U+26A0) / `✓` (U+2713) ise hiçbir alt-kümede YOK, `Inter Fallback`
-     (local Arial) basar; `ubuntu-latest`te Arial YOK → fontconfig ikame eder.
-     `makine-yakit` karesi bu yüzden oynak. ÖLÇÜLEN üç olgu:
-       (1) Commit'li baseline yazı tipi göçünden ÖNCE alındı:
-           `5d7b321` 13:18 < `beb5b7b` 14:25, `--is-ancestor` HAYIR.
-       (2) Tazeleme ÇÖZMEDİ: `--update-snapshots` çıktısı bile karşılaştırma
-           yolunda 244px verdi (run 31882761178). Hangi varyant commit'lenirse
-           öbürü kırmızı — roller takas oluyor.
-       (3) 🔴 KARE DETERMİNİSTİK DEĞİL. Kanıt: `d815ebe` 244px KIRMIZI
-           (run 31883403295) → `119861b` YEŞİL (run 31883754172, 292 kare);
-           iki taahhüt arasındaki TEK fark BU YORUMDUR. Yorum render'ı
-           etkilemez ⇒ aynı kod iki farklı kare basıyor, 244px arayla.
-     ⚠️ Ara bir turda "çift-modlu değil" denmişti (245px ⟺ margin VAR,
-     244px ⟺ YOK). O gözlem doğruydu ama YETERSİZ ÖRNEKLEMDİ: margin'in
-     konum etkisi GERÇEK, üstüne tur-tur rastgelelik BİNİYOR. İddia (3)'teki
-     yeşil turla geri çekildi — "iki örnek = determinizm" sanma.
-     Çözüm bu iki glifi sistem yedeğine düşmeyecek şekilde basmaktır
-     (alt-kümeye kapsatma ya da inline SVG) — F-SEM dilimi, 11 yüzey.
-     Buraya margin EKLEME. */
+     ✅ ÇÖZÜLDÜ (F-SEM): bu satırdaki `⚠`/`✓` artık GLİF DEĞİL, inline SVG
+     (`WarningTriangleIcon`/`CheckIcon` + `inlineSymbolProps`). Kare artık
+     hiçbir yazı tipine bağlı değil; sistem yedeği devreye giremez.
+     Kararı dayandıran İKİ ÖLÇÜM:
+       (1) `public/fonts/` altındaki 13 woff2 dosyasının cmap'i fonttools ile
+           tarandı: U+26A0 `⚠`, U+2713 `✓` ve U+2717 `✗` HİÇBİRİNDE YOK.
+           ⇒ `unicode-range` genişletmek İMKÂNSIZ bir çözümdür (kapsanacak
+           glif dosyada yok). Geriye tek yol inline SVG kalıyordu.
+       (2) "Alt-küme dışı ⇒ oynak" DEĞİLDİR: son 100 CI koşusunun 42'si tam
+           yeşildi ve her yeşil tur 292 karenin hepsini geçirdi — o karelerin
+           tamamı `Sidebar.tsx`in `⚙️ 🚪` emojilerini taşıyor; `←` taşıyan
+           `makine-calisma` karesi de HİÇ oynamadı. Kırmızı turlarda da 292
+           karenin 291'i geçti, tek düşen `makine-yakit`ti. ⇒ dokunulan küme
+           BİLEREK bu üç sembolle sınırlı tutuldu; emoji ve oklar YERİNDE
+           kaldı (ayrıca onları SVG'ye çevirmek görünümü değiştirirdi =
+           mockup sadakati kanonuna aykırı, ayrı bir tasarım dilimi).
+     Tarihsel kayıt — kareyi bu hâle getiren gözlemler: commit'li baseline
+     yazı tipi göçünden ÖNCE alınmıştı (`5d7b321` < `beb5b7b`); tazeleme
+     ÇÖZMEDİ (`--update-snapshots` çıktısı bile 244px verdi, run
+     31882761178); ve aynı kod iki farklı kare bastı (`d815ebe` 244px KIRMIZI
+     run 31883403295 → `119861b` YEŞİL run 31883754172, aradaki tek fark bir
+     YORUMDU). "İki örnek = determinizm" sanma; oradaki 245px⟺margin-VAR /
+     244px⟺margin-YOK ayrımı doğruydu ama YETERSİZ ÖRNEKLEMDİ.
+     Buraya margin EKLEME: yukarıdaki `{" "}` gerekçesi AYNEN GEÇERLİ —
+     sembol ikona döndü ama aradaki boşluk hâlâ U+0020 metin düğümüdür. */
 }
 .makine-yakit-consumption__deviation--success {
   color: var(--color-success); /* 57 */

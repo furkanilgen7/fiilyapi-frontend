@@ -11,7 +11,7 @@ import { useUsers } from "@/lib/api/hooks/useUsers";
 import { RoleFormModal } from "@/components/settings/RoleFormModal";
 import { ConfirmDialog } from "@/components/settings/ConfirmDialog";
 import { AccessDenied } from "@/components/settings/AccessDenied";
-import { CheckCircleIcon } from "@/components/ui/icons";
+import { CheckCircleIcon, CheckIcon, inlineSymbolProps } from "@/components/ui/icons";
 import { matchPreset } from "@/lib/api/permission-presets";
 import { roleModuleSummary } from "./role-summary";
 import { isForbidden } from "@/lib/api/unwrap";
@@ -218,7 +218,14 @@ export function RolesScreen() {
                   </span>
                   <span className="role-module-row__badge">
                     {label}
-                    {emph && isFullAccess && " ✓"}
+                    {/* `✓` glif değil ikondur (F-SEM); anlamı YANINDAKİ
+                        `label` ("Tam Erişim") taşır, bilgi kaybı yok. */}
+                    {emph && isFullAccess && (
+                      <>
+                        {" "}
+                        <CheckIcon {...inlineSymbolProps} />
+                      </>
+                    )}
                   </span>
                 </div>
               );

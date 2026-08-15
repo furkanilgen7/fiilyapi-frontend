@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/input/Input";
+import { CheckIcon, WarningTriangleIcon, inlineSymbolProps } from "@/components/ui/icons";
 import { cx } from "@/lib/cx";
 import { formatAmount, formatQuantity } from "@/lib/format";
 import type {
@@ -172,8 +173,10 @@ function ItemRow({ item, sites, edits, canWrite, onCellChange }: ItemRowProps) {
       <td className="ecd-items__td ecd-items__td--name">
         {item.description}
         {isUndistributed && (
-          // 155
-          <span className="cdist-grid__row-warning">⚠ Henüz şantiyeye atanmadı</span>
+          // 155 — `⚠` inline SVG'dir (F-SEM); metin AYNEN kalır.
+          <span className="cdist-grid__row-warning" data-testid="cdist-undistributed-note">
+            <WarningTriangleIcon {...inlineSymbolProps} /> Henüz şantiyeye atanmadı
+          </span>
         )}
       </td>
       <td className="ecd-items__td ecd-items__td--center">{item.unit}</td>
@@ -218,8 +221,17 @@ function ItemRow({ item, sites, edits, canWrite, onCellChange }: ItemRowProps) {
             isSettled ? "ecd-items__remaining--zero" : "cdist-grid__remaining--open",
           )}
           data-testid="cdist-remaining"
+          // `✓` artık inline SVG (F-SEM) ⇒ metinden ayırt edilemez; kapanmış
+          // rozet YAPISAL olarak da damgalanır, testler bunu okur.
+          data-settled={isSettled ? "true" : "false"}
         >
-          {isSettled ? "✓ 0" : formatQuantity(item.remaining_quantity)}
+          {isSettled ? (
+            <>
+              <CheckIcon {...inlineSymbolProps} /> 0
+            </>
+          ) : (
+            formatQuantity(item.remaining_quantity)
+          )}
         </span>
       </td>
     </tr>

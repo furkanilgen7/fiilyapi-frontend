@@ -1,0 +1,19 @@
+/* Metin akışına oturan sembol ikonları — `inlineSymbolProps` ile kullanılır.
+   (F-SEM dilimi: `⚠` U+26A0 · `✓` U+2713 · `✗` U+2717 yerine inline SVG.)
+
+   Boyut BURADA verilmez: `1em` niteliğinden gelir, yani ikon çevresindeki
+   metnin `font-size`ına oturur (10px'lik alt notta 10px, 13px'lik rozette
+   13px). Buradaki tek iş DİKEY HİZA: SVG satır içinde taban çizgisine oturur,
+   metnin optik ortasına değil; `-0.125em` 1em'lik kutuyu metnin x-yüksekliği
+   hattına çeker. Flex bağlamlarında `vertical-align` yok sayılır, orada hizayı
+   kapsayıcının `align-items`ı verir — bu yüzden ikisi çakışmaz.
+
+   Renk BURADA verilmez: `stroke: currentColor` (bkz. `base()`), tonu çağıran
+   sınıf belirler (`--success` / `--warning` / `--danger`). */
+.icon-inline {
+  vertical-align: -0.125em;
+  /* Flex bağlamında (ör. `.cdist-warning`, `.personel-alert`) ikon bir flex
+     öğesidir; varsayılan `flex-shrink: 1` onu ezebilir. Metin düğümü olan
+     sembolde bu risk yoktu — SVG'ye geçerken korunur. */
+  flex: none;
+}

@@ -476,11 +476,16 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
         .map((cell) => cell.textContent);
       expect(distributed).toEqual(["3.200", "400"]);
 
-      const remaining = screen
-        .getAllByTestId("ecd-item-remaining")
-        .map((cell) => cell.textContent);
-      // Kalan 0 → POZ 100'deki yeşil "✓ 0" rozeti.
-      expect(remaining).toEqual(["✓ 0", "220"]);
+      const remaining = screen.getAllByTestId("ecd-item-remaining");
+      // Baştaki boşluk KASITLIDIR: ikonla sayı arasındaki literal U+0020
+      // metin düğümü (mockup da literal boşluk kullanır; margin'e ÇEVRİLMEZ).
+      expect(remaining.map((cell) => cell.textContent)).toEqual([" 0", "220"]);
+      // Kalan 0 → POZ 100'deki yeşil "✓ 0" rozeti. `✓` artık inline SVG
+      // (F-SEM), metinden okunamaz; iddia `data-settled` damgasıyla YAPISAL
+      // olarak kurulur — "0" basan ama kapanmamış rozet buradan geçemez.
+      expect(remaining.map((cell) => cell.dataset.settled)).toEqual(["true", "false"]);
+      expect(remaining[0].querySelector("svg")).not.toBeNull();
+      expect(remaining[1].querySelector("svg")).toBeNull();
     });
 
     it("grup başlığını ayrı satırda basar", () => {
