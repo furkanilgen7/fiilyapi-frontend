@@ -195,7 +195,12 @@
      10px'te 2,53px. Mockup da literal boşluk kullanır
      (projedesign/Makine - Yakıt Takibi.dc.html:52). Buraya margin EKLEME.
      `⚠` (U+26A0) / `✓` (U+2713) ise hiçbir alt-kümede YOK, `Inter Fallback`
-     (local Arial) basar — bu karenin baseline'ı o yüzden tazelendi. */
+     (local Arial) basar. `ubuntu-latest`te Arial YOK → fontconfig ikamesi
+     koşudan koşuya değişiyor ve `makine-yakit` karesi İKİ KARARLI (bistable):
+     aynı taahhütte tur tur 244px'lik iki varyant üretiyor. Bu bir baseline
+     sorunu DEĞİLDİR — hiçbir baseline seçimi kapıyı yeşil yapmaz (denendi,
+     roller takas oldu). Çözüm bu iki glifi sistem yedeğine düşmeyecek
+     şekilde basmaktır (alt-kümeye kapsatma ya da inline SVG). */
 }
 .makine-yakit-consumption__deviation--success {
   color: var(--color-success); /* 57 */
