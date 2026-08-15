@@ -1300,5 +1300,64 @@ describe("BFF /api/backend/[...path]", () => {
       expect(res.status).toBe(200);
       expect(String(fetchMock.mock.calls[0][0])).toContain(`/${endpoint}`);
     });
+
+    // F-FAT · T2 — Fatura Çekirdeği + Hazine Çekirdeği ekranlarının DÖRT yeni
+    // kökü. ADLI kapı testi (F-İK/F-SA/F-TB1/F-MK emsali): bu dilimde çağıran
+    // kod YOK, yani "cagrilan her kok ALLOWED_ROOTS'ta tanimlidir" bekçisi bu
+    // dördü için HİÇBİR ŞEY iddia etmez — bekçinin yeşil olması burada kanıt
+    // DEĞİLDİR. Kök düşürülürse hangisi olduğu test ADINDAN okunsun.
+    it.each(["invoices", "bank-accounts", "payments", "treasury"])(
+      "%s koku fatura/hazine uclari icin allow-list'te tanimlidir",
+      (root) => {
+        expect(allowListEntries()).toContain(root);
+      },
+    );
+
+    it.each([
+      "invoices",
+      "invoices/summary",
+      "invoices/inv-1",
+      "invoices/inv-1/approve",
+      "invoices/inv-1/dispute",
+      "invoices/inv-1/lines",
+      "invoices/inv-1/mark-collected",
+      "invoices/inv-1/payments",
+      "invoices/inv-1/send",
+      "bank-accounts",
+      "bank-accounts/acc-1",
+      "payments/pay-1",
+      "treasury/cash-flow",
+      "treasury/upcoming-payments",
+    ])("%s ucu forward edilir", async (endpoint) => {
+      // Arrange
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response("{}", {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+
+      // Act
+      const res = await GET(
+        req(`/api/backend/${endpoint}`, "GET", { [ACCESS_COOKIE]: "acc" }),
+        ctx(endpoint.split("/")),
+      );
+
+      // Assert
+      expect(res.status).toBe(200);
+      expect(String(fetchMock.mock.calls[0][0])).toContain(`/${endpoint}`);
+    });
+
+    it("uydurma kok (invoicing) — 404 doner, backend cagrilmaz", async () => {
+      const fetchMock = vi.fn();
+      vi.stubGlobal("fetch", fetchMock);
+      const res = await GET(
+        req("/api/backend/invoicing", "GET", { [ACCESS_COOKIE]: "acc" }),
+        ctx(["invoicing"]),
+      );
+      expect(res.status).toBe(404);
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
   });
 });

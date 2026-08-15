@@ -167,6 +167,29 @@ const ALLOWED_ROOTS = new Set([
   // bu kök şu an 404 dönüyor; eklenmezse F-MK ekranlarının HİÇBİRİ canlıda
   // çalışmaz, jsdom testleri bunu GÖRMEZ.
   "equipment",
+  // F-FAT · T2 — Fatura Çekirdeği (FAT-1) + Hazine Çekirdeği (HZ-1) ekranları
+  // DÖRT kök birden ekler. openapi'nin 183→197 devrinde inen 14 yolun
+  // ilk-segmentine göre sayıldı (grep'le doğrulandı, tahminle DEĞİL):
+  //   · `invoices`      → `GET/POST /invoices`, `GET /invoices/summary`,
+  //     `GET/PATCH/DELETE /invoices/{id}`, `POST .../{id}/approve|dispute|
+  //     mark-collected|send`, `GET/POST .../{id}/lines`,
+  //     `GET/POST .../{id}/payments` — fatura ödemesi OLUŞTURMA bu yoldan
+  //     gelir, ilk segmenti "payments" DEĞİL "invoices"tir.
+  //   · `bank-accounts` → `GET/POST /bank-accounts`,
+  //     `GET/PATCH/DELETE /bank-accounts/{id}`.
+  //   · `payments`      → YALNIZ `GET/DELETE /payments/{payment_id}` (ödeme
+  //     detay/silme ucu). Oluşturma "invoices" kökünden gelir — ayrı bir
+  //     "payments" oluşturma ucu YOKTUR, kök yalnız bu tek uç içindir.
+  //   · `treasury`      → `GET /treasury/cash-flow`,
+  //     `GET /treasury/upcoming-payments` (türev okuma uçları; hiçbiri
+  //     başka kökün ALTINDA DEĞİLDİR).
+  // Bu dilimde bu kökleri ÇAĞIRAN KOD HENÜZ YOKTUR (ekranlar ayrı dilimlerin
+  // işi) — kökler hazır kalır. Eksikse ileride açılacak fatura/hazine
+  // yüzeyi YALNIZ CANLIDA 404 alır; jsdom testleri bunu GÖRMEZ.
+  "invoices",
+  "bank-accounts",
+  "payments",
+  "treasury",
 ]);
 
 // JSON/metin sayilan icerik tipleri: govde metne cozulup JSON olarak islenir.
