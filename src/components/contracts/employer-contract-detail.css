@@ -84,8 +84,17 @@
   gap: var(--space-2); /* 8px — 75 */
 }
 /* 76-77: iki buton da DEVRE DIŞI basılır (PDF ucu yok · sözleşme yazma ucu
-   yok). Ölçüler mockup'tan; devre-dışı görünüm imleçle belli edilir. */
-.ecd-head__btn {
+   yok). Ölçüler mockup'tan; devre-dışı görünüm imleçle belli edilir.
+   🔴 ÇİFT SINIF = SIRA BAĞIMLILIĞI (F-BLG T5'te ÖLÇÜLDÜ): bu öğe hem `Button`
+   primitive'inin `.btn--md`ini (`padding: … var(--space-4)` = 16px) hem de bu
+   sınıfı taşır. İKİSİ DE tek-sınıf seçici → özgüllük EŞİT → kazanan yalnız CSS
+   demetindeki SIRAYA bağlıydı. Bu dilim sayfaya yeni bir CSS import'u ekleyince
+   sıra değişti ve buton 14px↔16px arası oynadı (`isveren-sozlesme-genel` +
+   `-belgeler` kareleri 1061px kaydı; main'de taze tur commit'li baseline'ı
+   birebir üretiyordu, yani kayma bu dala aitti). Kapsayıcıyla özgüllük
+   yükseltildi → mockup değeri sıradan BAĞIMSIZ kazanır, sonraki dilimlerin
+   import'ları bu kareyi bir daha oynatamaz. */
+.ecd-head__actions .ecd-head__btn {
   padding: var(--space-2) 14px; /* 76-77 */
   font-size: var(--text-body);
   border-radius: var(--radius-8);
