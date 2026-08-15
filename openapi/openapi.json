@@ -6532,6 +6532,901 @@
         }
       }
     },
+    "/invoices": {
+      "get": {
+        "tags": [
+          "invoicing"
+        ],
+        "summary": "List Invoices Endpoint",
+        "description": "FY tablosunun veri kaynağı — süzgeçler AND'lidir.\n\nKapsam süzgeci HER ZAMAN uygulanır: görünmeyen projenin faturası listede\nYOKTUR ve `total`a da girmez. `project_id` NULL fatura (şirket geneli)\nmodül izniyle görünür (§6).\n\n`q` FATURA NUMARASI ve TARAF ADI üzerinde kısmi arar (FY:94). `status`\nsüzgeci ÜÇ giden değerini de alır; ekranın \"Vadeli\" seçeneği `sent`e eşlenir\n(K1 — \"Vadeli\" ayrı bir durum DEĞİLDİR).\n\n`limit` varsayılan 50, tavan 200 — aşım **422**.",
+        "operationId": "list_invoices_endpoint_invoices_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/InvoiceDirection"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Direction"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/InvoiceStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "site_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "invoicing"
+        ],
+        "summary": "Create Invoice Endpoint",
+        "description": "FK formunun kaydı: başlık + kalemler TEK gövde, ATOMİK.\n\n* giden → `draft`, gelen → `pending` (K2); gövde `status` GÖNDEREMEZ\n* giden numarayı SUNUCU üretir (`FIL…`), gelen numarayı İSTEMCİ verir (S5)\n* `line_total`/`sort_order` ve hesaplanmış para alanları gövdeden GELEMEZ\n  (**422**) — oranlar (`*_rate`) GELİR\n* görünmeyen ya da olmayan proje/şantiye/cari/kaynak → **404**\n\nBozuk bir kalem varsa HİÇBİR ŞEY yazılmaz — ne başlık ne satır. Denetime\nFATURA BAŞINA TEK satır düşer.",
+        "operationId": "create_invoice_endpoint_invoices_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Seçilen proje/şantiye/cari/kaynak kayıt bulunamadı"
+          },
+          "409": {
+            "description": "Bu fatura numarası bu yönde zaten kayıtlı"
+          },
+          "422": {
+            "description": "Gövde kuralı ihlali (numara sahibi · tek taraf · oran toplamı)"
+          }
+        }
+      }
+    },
+    "/invoices/summary": {
+      "get": {
+        "tags": [
+          "invoicing"
+        ],
+        "summary": "Invoices Summary Endpoint",
+        "description": "FY:69-75 KPI şeridi — beş kart.\n\nKapsam süzgeci liste ucundakiyle AYNIDIR: görünmeyen projenin faturası\nhiçbir toplama girmez (IDOR'un sayısal hâli). `pending_approval` ADETTİR,\ntutar değil. Ay penceresi `DISPLAY_TIMEZONE`dedir — ayrıntı `summary.py`\nmodül docstring'indedir.",
+        "operationId": "invoices_summary_endpoint_invoices_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceSummaryResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/invoices/{invoice_id}": {
+      "get": {
+        "tags": [
+          "invoicing"
+        ],
+        "summary": "Get Invoice Endpoint",
+        "description": "FGI/FGE detayı: başlık + kalemler + SAKLANAN toplamlar.\n\nGörünmeyen fatura var olmayanla AYNI 404'ü alır. Toplamlar okuma anında\nyeniden HESAPLANMAZ (K7): fatura donmuş bir belgedir.",
+        "operationId": "get_invoice_endpoint_invoices__invoice_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Fatura bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "invoicing"
+        ],
+        "summary": "Update Invoice Endpoint",
+        "description": "**Giden faturada yalnız `draft`, gelen faturada yalnız `pending`** —\naksi **409** (yetki değil DURUM engeli).\n\nGelen faturada yalnız `note`/`due_date`/`payment_method` düzeltilebilir\n(**422** aksi hâlde): gelen fatura SATICININ belgesidir.\n\nKayıt kilitlenerek okunur ve durum kapısı KİLİTLİ satır üzerinde koşar\n(spec §8, TOCTOU). Oran değişirse başlık toplamları `amounts`tan YENİDEN\nhesaplanır; kalemler değişmez (onların yolu `PUT lines`).",
+        "operationId": "update_invoice_endpoint_invoices__invoice_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Fatura ya da seçilen proje/şantiye/cari/kaynak bulunamadı"
+          },
+          "409": {
+            "description": "Fatura bu durumda düzenlenemez"
+          },
+          "422": {
+            "description": "Gövde kuralı ihlali ya da gelen faturada kapsam dışı alan"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "invoicing"
+        ],
+        "summary": "Delete Invoice Endpoint",
+        "description": "**YALNIZ `admin` + yalnız `draft`** → 204; başka durum **409**.\n\n`full` seviyesi (muhasebe) 403 alır — gerekçe modül docstring'indedir.\nKalemler birlikte gider. Yanıt gövdesizdir.",
+        "operationId": "delete_invoice_endpoint_invoices__invoice_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Fatura bulunamadı"
+          },
+          "409": {
+            "description": "Yalnızca taslak fatura silinebilir"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invoices/{invoice_id}/lines": {
+      "put": {
+        "tags": [
+          "invoicing"
+        ],
+        "summary": "Replace Invoice Lines Endpoint",
+        "description": "Kalem kümesini TOPTAN yazar (hakediş/puantaj emsali) — yalnız `draft`.\n\n`sort_order` gövdedeki dizinin İNDEKSİDİR, `line_total` sunucunun hesabıdır;\nikisi de gövdeden GELEMEZ (**422**). Başlık toplamları aynı hesapla\ngüncellenir. Boş liste hepsini SİLER (kalemsiz taslak meşrudur; K6 kapısı\n`send`/`approve` anındadır, T4).\n\nKilit sırası SABİT: fatura → kalemler.",
+        "operationId": "replace_invoice_lines_endpoint_invoices__invoice_id__lines_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceLinesReplace"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Fatura bulunamadı"
+          },
+          "409": {
+            "description": "Kalemler yalnızca taslak faturada değiştirilebilir"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invoices/{invoice_id}/send": {
+      "post": {
+        "tags": [
+          "invoicing"
+        ],
+        "summary": "Send Invoice Endpoint",
+        "description": "`draft → sent` (FK:25 `GİB'e Gönder`) — YALNIZ giden fatura.\n\n**GİB'e gerçek bir gönderim YAPILMAZ** (spec §1: entegratör bağı FAT-3'ün\nişidir); bu uç yalnızca DURUM damgalar — `progress_payments.mark-paid`\nemsali. Gelen faturaya çağrılırsa **409** (yön dışı).\n\n🔴 **K6:** kalemsiz fatura **422**. Kalemsiz fatura 0,00₺ olarak kusursuz\nhesaplanır — hesap doğrudur, FATURA yanlıştır.",
+        "operationId": "send_invoice_endpoint_invoices__invoice_id__send_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Fatura bulunamadı"
+          },
+          "409": {
+            "description": "İşlem faturanın yönüne ya da durumuna uygulanamaz"
+          },
+          "422": {
+            "description": "Kalemsiz fatura gönderilemez / onaylanamaz (K6)"
+          }
+        }
+      }
+    },
+    "/invoices/{invoice_id}/mark-collected": {
+      "post": {
+        "tags": [
+          "invoicing"
+        ],
+        "summary": "Mark Collected Invoice Endpoint",
+        "description": "`sent → collected` (FY:130 `Tahsil Edildi`) — YALNIZ giden fatura.\n\n**Tahsilat KAYDI değildir** (FGI:220-247 formu Hazine diliminindir:\n`bank_accounts` tablosu henüz YOK). Burada yalnız damga vardır; tutar,\nhesap ve tarih alanları AÇILMAZ — yazma yolu olmayan kolon her zaman NULL\ndöner ve uydurma alan olur.\n\nK6 kapısı UYGULANMAZ: `sent` bir fatura zaten kapıdan geçmiştir.",
+        "operationId": "mark_collected_invoice_endpoint_invoices__invoice_id__mark_collected_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Fatura bulunamadı"
+          },
+          "409": {
+            "description": "İşlem faturanın yönüne ya da durumuna uygulanamaz"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invoices/{invoice_id}/approve": {
+      "post": {
+        "tags": [
+          "invoicing"
+        ],
+        "summary": "Approve Invoice Endpoint",
+        "description": "`pending → approved` (FGE:25 `Onayla & Muhasebeleştir`) — YALNIZ gelen.\n\n**Muhasebe fişi ÜRETİLMEZ** (FGE:197-241 önizlemesi Muhasebe diliminindir:\nhesap planı tablosu YOK). `Kısmi Onayla` (FGE:140) da AÇILMADI — etkisi\nhiçbir mockup'ta çizilmemiş, FAT-2'nin işi.\n\n🔴 **K6:** kalemsiz fatura **422**. Giden faturaya çağrılırsa **409**.",
+        "operationId": "approve_invoice_endpoint_invoices__invoice_id__approve_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Fatura bulunamadı"
+          },
+          "409": {
+            "description": "İşlem faturanın yönüne ya da durumuna uygulanamaz"
+          },
+          "422": {
+            "description": "Kalemsiz fatura gönderilemez / onaylanamaz (K6)"
+          }
+        }
+      }
+    },
+    "/invoices/{invoice_id}/dispute": {
+      "post": {
+        "tags": [
+          "invoicing"
+        ],
+        "summary": "Dispute Invoice Endpoint",
+        "description": "`pending → disputed` (FGE:24 `İtiraz Et`) — YALNIZ gelen fatura.\n\nİtiraz GEREKÇESİ alanı AÇILMADI: FGE:24 tek bir düğmedir, gerekçe formu\nhiçbir mockup'ta çizilmemiştir (icat yasağı). `İtiraz/İade` sekmesinin\n(FY:65) içeriği de çizilmemiştir — bu uç yalnız durumu damgalar.\n\nK6 kapısı UYGULANMAZ: itiraz bir REDDETMEDİR ve eksik kalem, itirazı\nengellemek için sebep değildir.",
+        "operationId": "dispute_invoice_endpoint_invoices__invoice_id__dispute_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Fatura bulunamadı"
+          },
+          "409": {
+            "description": "İşlem faturanın yönüne ya da durumuna uygulanamaz"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invoices/{invoice_id}/payments": {
+      "get": {
+        "tags": [
+          "invoicing"
+        ],
+        "summary": "List Invoice Payments Endpoint",
+        "description": "Faturanın tahsilat/ödeme satırları + **`paid_total`** + **`remaining`**.\n\n🔴 K5: `invoices` üzerinde `paid_amount` kolonu YOKTUR; iki toplam da\n`Σ payments`ten TÜRETİLİR ve **TÜM satırlardan** gelir — sayfadan DEĞİL.\n\n`limit` varsayılan 50, tavan 200 — aşım **422** (kırpma DEĞİL). Görünmeyen\nfatura var olmayanla AYNI 404'ü alır.",
+        "operationId": "list_invoice_payments_endpoint_invoices__invoice_id__payments_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Fatura bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "invoicing"
+        ],
+        "summary": "Create Invoice Payment Endpoint",
+        "description": "FGI:220-247 formunun kaydı — tahsilat DA ödeme DE aynı uçtur (K4).\n\n* 🔴 **K7:** fatura satırı DENETİMLERDEN ÖNCE kilitlenir (`FOR UPDATE`);\n  kilit sırası SABİT: fatura → ödemeler → hesap.\n* 🔴 **K6:** `Σ payments + yeni > total` → **422**, kuruş bazında TAM\n  karşılaştırma, tolerans YOK. `= total` GEÇER.\n* 🔴 **K5:** başarıda fatura durumu `Σ`dan TÜRETİLEREK damgalanır ve damga\n  yalnız matrisin TANIDIĞI geçişle konur; gelen faturada durum DEĞİŞMEZ.\n* `bank_account_id` yoksa **404**; pasif hesap **422**.\n* Yön gövdeden GELMEZ, bağlı faturanın `direction`'ından okunur (K4).",
+        "operationId": "create_invoice_payment_endpoint_invoices__invoice_id__payments_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Fatura ya da seçilen banka hesabı bulunamadı"
+          },
+          "422": {
+            "description": "Toplam tahsilat fatura tutarını aşamaz (K6)"
+          }
+        }
+      }
+    },
+    "/payments/{payment_id}": {
+      "delete": {
+        "tags": [
+          "invoicing"
+        ],
+        "summary": "Delete Payment Endpoint",
+        "description": "**YALNIZ `admin`** → 204: yanlış tahsilat geri alınabilmelidir.\n\n`full` seviyesi (muhasebe) 403 alır — `full` silmeyi KAPSAMAZ (repo kanonu)\nve ödeme, bakiyeyi doğrudan oynatan mali bir kayıttır.\n\n🔴 Silme AYNI kilidi alır (K7) ve fatura durumunu **YENİDEN TÜRETİR**:\n`collected` → `sent`e düşebilir. Görünmeyen faturanın ödemesi de \"yok\"tur\n(404). Yanıt gövdesizdir.",
+        "operationId": "delete_payment_endpoint_payments__payment_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Payment Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Ödeme kaydı bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/payroll/periods": {
       "get": {
         "tags": [
@@ -15698,6 +16593,438 @@
         }
       }
     },
+    "/bank-accounts": {
+      "get": {
+        "tags": [
+          "treasury"
+        ],
+        "summary": "List Bank Accounts Endpoint",
+        "description": "E9:70-84 kart şeridi — her satır **TÜRETİLMİŞ `balance`** taşır (K2).\n\nSüzgeç `is_active`tir ve `total`a da uygulanır. `limit` varsayılan 50, tavan\n200 — aşım **422** (kırpma DEĞİL).\n\n🔴 **Proje/şantiye kapsam süzgeci YOKTUR (K3):** hesap şirket genelidir\n(`suppliers`/`customers` emsali), erişimi `treasury` izni denetler.",
+        "operationId": "list_bank_accounts_endpoint_bank_accounts_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "is_active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Is Active"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankAccountListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "treasury"
+        ],
+        "summary": "Create Bank Account Endpoint",
+        "description": "Yeni banka ya da kasa hesabı.\n\n* `account_type` KAPALI kümedir: `checking` | `cash` (K1)\n* Kasa'da `display_name` ZORUNLUDUR → aksi **422** (DB CHECK'i son savunma)\n* IBAN normalize edilir; aynı IBAN **409**, NULL IBAN'lar çoklanabilir\n* `balance` gövdeden GELEMEZ (**422**): türevdir, `opening_balance`tan doğar",
+        "operationId": "create_bank_account_endpoint_bank_accounts_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankAccountCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankAccountResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "409": {
+            "description": "Bu IBAN başka bir hesapta kayıtlı"
+          },
+          "422": {
+            "description": "Gövde kuralı ihlali (Kasa hesabında görünen ad zorunludur)"
+          }
+        }
+      }
+    },
+    "/bank-accounts/{account_id}": {
+      "get": {
+        "tags": [
+          "treasury"
+        ],
+        "summary": "Get Bank Account Endpoint",
+        "description": "Tek hesap + türetilmiş bakiye. Bakiye liste ucuyla AYNI kaynaktan gelir.",
+        "operationId": "get_bank_account_endpoint_bank_accounts__account_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Account Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankAccountResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Banka hesabı bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "treasury"
+        ],
+        "summary": "Update Bank Account Endpoint",
+        "description": "Kısmi güncelleme; kayıt DENETİMLERDEN ÖNCE kilitlenir (TOCTOU).\n\n`opening_balance` DEĞİŞEBİLİR (elle düzeltme meşrudur) ve bakiye\nkendiliğinden yeniden türetilir. Tipi `cash`e çevirip adı boş bırakmak da\n**422**dir: kural DB'deki kayıtla BİRLEŞTİRİLMİŞ değerler üzerinde koşar.",
+        "operationId": "update_bank_account_endpoint_bank_accounts__account_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Account Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankAccountUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankAccountResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Banka hesabı bulunamadı"
+          },
+          "409": {
+            "description": "Bu IBAN başka bir hesapta kayıtlı"
+          },
+          "422": {
+            "description": "Gövde kuralı ihlali (Kasa hesabında görünen ad zorunludur)"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "treasury"
+        ],
+        "summary": "Delete Bank Account Endpoint",
+        "description": "**YALNIZ `admin`** → 204; ödemesi olan hesap **409**.\n\n`full` seviyesi (muhasebe) 403 alır — gerekçe modül docstring'indedir.\n409 SERVİSTEN gelir: ham FK ihlalinin 500'ü ya da ayrımsız \"Veri bütünlüğü\nhatası\" kullanıcıya SIZMAZ. Yanıt gövdesizdir.",
+        "operationId": "delete_bank_account_endpoint_bank_accounts__account_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Account Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Banka hesabı bulunamadı"
+          },
+          "409": {
+            "description": "Bu hesaba bağlı ödeme kayıtları var"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/treasury/upcoming-payments": {
+      "get": {
+        "tags": [
+          "treasury"
+        ],
+        "summary": "List Upcoming Payments Endpoint",
+        "description": "E9:109-125 — önümüzdeki `days` gün içinde ödenecekler.\n\n`days` varsayılanı **7**dir (E9:110 `(7 Gün)`) ve tavanı 90'dır; aşım\n**422**dir, sessiz kırpma DEĞİL (TB3 kanonu).\n\n🔴 **K10:** yanıt `days_remaining` (sayı) + `source_type` taşır; `urgency`/\n`color` gibi bir alan YOKTUR — renk kararı istemcinindir.\n\n🔴 **K9:** kaynaklar bugün fatura ve taşeron hakedişidir; **bordro hiç satır\nüretmez** (vade kolonu yok, uydurulmaz) — ayrıntı `upcoming.py`de.\n\n🔴 **Kapsam:** hesap şirket geneli olsa da (K3) KAYNAKLAR proje kapsamlıdır\nve her satır karşı taraf + tutar sızdırır → süzgeç UYGULANIR.",
+        "operationId": "list_upcoming_payments_endpoint_treasury_upcoming_payments_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 90,
+              "minimum": 1,
+              "default": 7,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpcomingPaymentsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/treasury/cash-flow": {
+      "get": {
+        "tags": [
+          "treasury"
+        ],
+        "summary": "Get Cash Flow Endpoint",
+        "description": "E9:90-106 — ayın günlük giriş/çıkış serisi + iki toplam.\n\n`year`/`month` verilmezse **içinde bulunulan ay** (`DISPLAY_TIMEZONE`);\naralık dışı değer **422**dir. İkisi BAĞIMSIZ varsayılır: yalnız `month`\ngönderen istemci içinde bulunulan yılın o ayını okur.\n\n🔴 Boş ayda seri BOŞTUR ve toplamlar **`0`**dır (NULL değil).\n\n🔴 Bu uç proje süzgeci UYGULAMAZ — bilinçli karar, gerekçesi\n`cash_flow.py` modül docstring'indedir (`upcoming-payments`in tersi).",
+        "operationId": "get_cash_flow_endpoint_treasury_cash_flow_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2200,
+                  "minimum": 2000
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 12,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashFlowResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/projects/{project_id}/blocks": {
       "get": {
         "tags": [
@@ -17314,6 +18641,272 @@
         "title": "AvailableUnitsKpi",
         "description": "S57 \"Boş Ünite\" · 13 · ₺12,6M stok.\n\nKaynak `unit_sales` DEĞİL `units.sales_status`tur: boş ünitenin satış kaydı\nyoktur, dolayısıyla satış tablosundan sayılamaz. Değer LİSTE FİYATIDIR\n(stok değeri), satış bedeli değil — henüz bir bedel üzerinde anlaşılmamıştır."
       },
+      "BankAccountCreate": {
+        "properties": {
+          "bank_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Bank Name"
+          },
+          "account_type": {
+            "$ref": "#/components/schemas/BankAccountType"
+          },
+          "iban": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 34,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Iban"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "opening_balance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              }
+            ],
+            "title": "Opening Balance",
+            "default": "0.00"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bank_name",
+          "account_type"
+        ],
+        "title": "BankAccountCreate",
+        "description": "`POST /bank-accounts` (E9:70-84 kartının yazma yolu).\n\n`account_type` KAPALI kümedir ve yalnız iki değer taşır (K1). `display_name`\nşemada opsiyoneldir ama kural TİPE bağlıdır (`cash` → zorunlu) ve tek kaynağı\nservistedir: şemaya tipe bağlı bir validator yazılsaydı aynı kural PATCH\nyolunda İKİNCİ kez (ve birleşik değerler üzerinde farklı biçimde) yazılırdı.\n\n`is_active` gövdeden gelebilir çünkü kullanımdan kaldırma yolu odur (repo\nkanonu: DELETE değil `is_active=false`)."
+      },
+      "BankAccountListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BankAccountResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "BankAccountListResponse",
+        "description": "TB3 liste zarfı: `items` + `total` + `limit`/`offset` (repo kanonu)."
+      },
+      "BankAccountResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "bank_name": {
+            "type": "string",
+            "title": "Bank Name"
+          },
+          "account_type": {
+            "$ref": "#/components/schemas/BankAccountType"
+          },
+          "iban": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Iban"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "opening_balance": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Opening Balance"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "balance": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Balance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "bank_name",
+          "account_type",
+          "iban",
+          "display_name",
+          "opening_balance",
+          "is_active",
+          "created_at",
+          "updated_at",
+          "balance"
+        ],
+        "title": "BankAccountResponse",
+        "description": "Kart künyesi + 🔴 TÜRETİLMİŞ `balance` (K2).\n\n`balance` saklanan bir kolon DEĞİLDİR ve buraya `balance.py`nin TEK\nkaynağından gelir; ikinci bir formül yazılsaydı liste ile detay aynı hesap\niçin farklı sayı basar ve hiçbir kolon farkı ele vermezdi.\n\n`opening_balance` de yanıtta DURUR: kullanıcı düzelteceği değeri görmeden\ndüzeltemez ve bakiyenin nereden başladığı ekranda okunabilir olmalıdır."
+      },
+      "BankAccountType": {
+        "type": "string",
+        "enum": [
+          "checking",
+          "cash"
+        ],
+        "title": "BankAccountType",
+        "description": "Hesap tipi — E9:71,81 `Vadesiz` ve `Kasa`.\n\n🔴 K1: mockup YALNIZ bu ikisini ciziyor. `Vadeli` / `Kredi` / `POS` /\n`Doviz` ICAT EDILMEZ — acilsaydi hicbir ekranda karsiligi olmayan bir kume\nkalici olarak DB'ye yazilir, sonra da enum TAKASIYLA geri alinirdi."
+      },
+      "BankAccountUpdate": {
+        "properties": {
+          "bank_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bank Name"
+          },
+          "account_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BankAccountType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "iban": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 34,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Iban"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "opening_balance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opening Balance"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "BankAccountUpdate",
+        "description": "`PATCH /bank-accounts/{id}` — KISMİ gövde.\n\nHer alan `| None`dır ama anlamları AYRIDIR ve servis ikisini ayırır\n(`exclude_unset`): gönderilmeyen alan DEĞİŞMEZ, açıkça `null` gönderilen\nalan TEMİZLENİR. `display_name: null` bir kasada 422'dir (aşağıdaki kural\nbirleşik değerler üzerinde koşar).\n\n`opening_balance` DEĞİŞEBİLİR (spec §4 md.4): elle düzeltme meşrudur ve\nbakiye kendiliğinden yeniden türetilir — saklanan bir bakiye olsaydı bu\ndüzeltme iki sayıyı ayrıştırırdı."
+      },
       "BlockCreate": {
         "properties": {
           "code": {
@@ -18497,6 +20090,72 @@
         ],
         "title": "BoqTotals",
         "description": "Spec §5.1 ust KPI seridi. `grand_total` GERCEK deger, geri kalani yer\ntutucu (sozlesme/hakediş bu dilimde yazilmiyor)."
+      },
+      "CashFlowBucket": {
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date",
+            "title": "Day"
+          },
+          "inflow": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Inflow"
+          },
+          "outflow": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Outflow"
+          }
+        },
+        "type": "object",
+        "required": [
+          "day",
+          "inflow",
+          "outflow"
+        ],
+        "title": "CashFlowBucket",
+        "description": "E9:92-101 serisinin TEK GÜNÜ. İki yön AYRI alandır, net DEĞİL.\n\nNet tek sayı basılsaydı grafiğin iki eğrisi (giriş/çıkış) çizilemezdi ve\nE9:104-105'in iki toplamı da tek bir farka çökerdi."
+      },
+      "CashFlowResponse": {
+        "properties": {
+          "year": {
+            "type": "integer",
+            "title": "Year"
+          },
+          "month": {
+            "type": "integer",
+            "title": "Month"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/CashFlowBucket"
+            },
+            "type": "array",
+            "title": "Series"
+          },
+          "inflow_total": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Inflow Total"
+          },
+          "outflow_total": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Outflow Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "year",
+          "month",
+          "series",
+          "inflow_total",
+          "outflow_total"
+        ],
+        "title": "CashFlowResponse",
+        "description": "E9:90-106 — günlük seri + iki toplam (`Giriş` / `Çıkış`).\n\n🔴 **Seri SEYREKTİR:** yalnız hareket GÖRMÜŞ günler satır üretir. Ayın 31\ngününü sıfırla doldurmak, veri olmayan bir günü \"0 TL hareket oldu\"\ndiye gösterirdi ve boş ayın 31 satırlık yanıtı \"boş\" görünmezdi.\n\n🔴 **Toplamlar `0`dır, NULL DEĞİL** (`coalesce`, `paid_sum` dersi): ödemesiz\nbir ayda `SUM()` NULL döner ve kart \"₺\" yanında boşluk basardı."
       },
       "CollectionKpi": {
         "properties": {
@@ -23092,6 +24751,1586 @@
         "title": "InvestmentCard",
         "description": "Kendi yatirim karti.\n\n`total_cost` (E4 122) KULLANICI KARARI 2026-08-09 ile **HARCANAN**dir\n(`costs.total_spent` = arsa + taşeron `approved`+`paid` BRÜT), butce DEGIL;\n`estimated_profit`/`margin` ise BUTCE tabanlidir. Ayrinti: `_investment_card`."
       },
+      "InvoiceCreate": {
+        "properties": {
+          "direction": {
+            "$ref": "#/components/schemas/InvoiceDirection"
+          },
+          "invoice_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 30,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice No"
+          },
+          "document_type": {
+            "$ref": "#/components/schemas/InvoiceDocumentType"
+          },
+          "issue_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Issue Date"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
+          },
+          "payment_method": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InvoicePaymentMethod"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "party_name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Party Name"
+          },
+          "party_tax_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 11,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Party Tax Number"
+          },
+          "party_tax_office": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Party Tax Office"
+          },
+          "party_address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Party Address"
+          },
+          "employer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employer Id"
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id"
+          },
+          "supplier_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplier Id"
+          },
+          "subcontractor_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontractor Id"
+          },
+          "progress_payment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress Payment Id"
+          },
+          "subcontractor_progress_payment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontractor Progress Payment Id"
+          },
+          "equipment_rental_invoice_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Equipment Rental Invoice Id"
+          },
+          "purchase_order_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchase Order Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "advance_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Advance Rate"
+          },
+          "retention_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retention Rate"
+          },
+          "withholding_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withholding Rate"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceLineCreate"
+            },
+            "type": "array",
+            "title": "Lines"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "direction",
+          "document_type",
+          "issue_date",
+          "party_name"
+        ],
+        "title": "InvoiceCreate",
+        "description": "`POST /invoices` — başlık + kalemler TEK gövde, ATOMİK yazılır.\n\nZorunlu çekirdek: `direction` · `document_type` · `issue_date` ·\n`party_name`. Taraf ADI zorunludur çünkü SNAPSHOT'tır (S4/K7): cari kartı\nsilinse ya da düzeltilse bile faturanın üzerindeki ünvan DEĞİŞMEZ. Dört\ntaraf FK'sı yalnızca İZDİR ve en fazla BİRİ dolar (servis 422).\n\n`invoice_no` şemada opsiyoneldir ama kural YÖNE bağlıdır (§4/S5) ve tek\nkaynağı `validation.invoice_no_blockers`tır: giden'de gönderilemez,\ngelen'de zorunludur. Şemaya `direction`a bağlı bir validator yazılsaydı\naynı kural iki yerde dururdu.\n\n`status` YOKTUR: başlangıç `transitions.INITIAL_STATUS[direction]`tan gelir\n(giden → `draft`, gelen → `pending`, K2)."
+      },
+      "InvoiceDetailResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/InvoiceDirection"
+          },
+          "invoice_no": {
+            "type": "string",
+            "title": "Invoice No"
+          },
+          "document_type": {
+            "$ref": "#/components/schemas/InvoiceDocumentType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/InvoiceStatus"
+          },
+          "issue_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Issue Date"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
+          },
+          "payment_method": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InvoicePaymentMethod"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "party_name": {
+            "type": "string",
+            "title": "Party Name"
+          },
+          "party_tax_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Party Tax Number"
+          },
+          "party_tax_office": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Party Tax Office"
+          },
+          "party_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Party Address"
+          },
+          "employer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employer Id"
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id"
+          },
+          "supplier_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplier Id"
+          },
+          "subcontractor_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontractor Id"
+          },
+          "progress_payment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress Payment Id"
+          },
+          "subcontractor_progress_payment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontractor Progress Payment Id"
+          },
+          "equipment_rental_invoice_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Equipment Rental Invoice Id"
+          },
+          "purchase_order_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchase Order Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "subtotal": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Subtotal"
+          },
+          "advance_rate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Advance Rate"
+          },
+          "advance_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Advance Amount"
+          },
+          "retention_rate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retention Rate"
+          },
+          "retention_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Retention Amount"
+          },
+          "tax_base": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Tax Base"
+          },
+          "vat_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Vat Amount"
+          },
+          "withholding_rate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withholding Rate"
+          },
+          "withholding_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Withholding Amount"
+          },
+          "total": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total"
+          },
+          "created_by_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Created By Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceLineResponse"
+            },
+            "type": "array",
+            "title": "Lines"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "direction",
+          "invoice_no",
+          "document_type",
+          "status",
+          "issue_date",
+          "due_date",
+          "payment_method",
+          "note",
+          "party_name",
+          "party_tax_number",
+          "party_tax_office",
+          "party_address",
+          "employer_id",
+          "customer_id",
+          "supplier_id",
+          "subcontractor_id",
+          "progress_payment_id",
+          "subcontractor_progress_payment_id",
+          "equipment_rental_invoice_id",
+          "purchase_order_id",
+          "project_id",
+          "site_id",
+          "subtotal",
+          "advance_rate",
+          "advance_amount",
+          "retention_rate",
+          "retention_amount",
+          "tax_base",
+          "vat_amount",
+          "withholding_rate",
+          "withholding_amount",
+          "total",
+          "created_by_id",
+          "created_at",
+          "updated_at",
+          "lines"
+        ],
+        "title": "InvoiceDetailResponse",
+        "description": "Detay = künye + KALEMLER (FGI/FGE kalem tablosu), `sort_order` sırasında.\n\nListe bu şemayı KULLANMAZ: 50 faturanın kalemlerini çekmek N+1 üretir ve FY\ntablosu zaten kalem göstermez."
+      },
+      "InvoiceDirection": {
+        "type": "string",
+        "enum": [
+          "outgoing",
+          "incoming"
+        ],
+        "title": "InvoiceDirection",
+        "description": "Fatura yonu — FGI:58 `GIDEN FATURA` · FGE:68 `GELEN FATURA`.\n\nYon yalnizca bir etiket DEGILDIR: numarayi kimin urettigini (§4), hangi\ndurum matrisinin gecerli oldugunu (§3) ve numara tekilliginin kapsamini\n(`uq_invoices_no_direction`) belirler."
+      },
+      "InvoiceDocumentType": {
+        "type": "string",
+        "enum": [
+          "einvoice",
+          "earchive",
+          "refund",
+          "withholding"
+        ],
+        "title": "InvoiceDocumentType",
+        "description": "Belge tipi — FK:136-139 KAPALI kumesi birebir."
+      },
+      "InvoiceLineCreate": {
+        "properties": {
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Description"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,11}|(?=[\\d.]{1,15}0*$)\\d{0,11}\\.\\d{0,3}0*$)"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "unit_price": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              }
+            ],
+            "title": "Unit Price"
+          },
+          "vat_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+              }
+            ],
+            "title": "Vat Rate"
+          },
+          "detail_note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "description",
+          "quantity",
+          "unit_price",
+          "vat_rate"
+        ],
+        "title": "InvoiceLineCreate",
+        "description": "Fatura kaleminin BİR satırı (FGI:116-130 · FGE:150-160 · FK:168-183).\n\n**`line_total` ve `sort_order` YOKTUR** (gönderilirse 422): ilki\n`amounts.line_total`ın, ikincisi gövdedeki dizinin İNDEKSİDİR. `sort_order`\nistemciden gelseydi çakışan ya da boşluklu sıralar doğar, sunucunun yeniden\nnumaralandırması gerekirdi (SA/T3 dersi).\n\n`unit` SERBEST METİNDİR (S3): FK:169 bir input'tur — kapalı küme İCAT\nEDİLMEZ. `description` poz numarasını İÇİNDE taşır (S2, FK:178); ayrı bir\n`boq_item_id` açılsaydı olmayan bir katalog bağı vaat edilirdi."
+      },
+      "InvoiceLineResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "quantity": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Quantity"
+          },
+          "unit_price": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Unit Price"
+          },
+          "vat_rate": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Vat Rate"
+          },
+          "line_total": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Line Total"
+          },
+          "detail_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sort_order",
+          "description",
+          "unit",
+          "quantity",
+          "unit_price",
+          "vat_rate",
+          "line_total",
+          "detail_note"
+        ],
+        "title": "InvoiceLineResponse",
+        "description": "Kalem künyesi — YALNIZCA saklanan kolonlar.\n\nSatır bazında KDV/matrah payı (`amounts.line_tax_bases` /\n`line_vat_amounts`) BURADA YOKTUR ve bu bilinçlidir: onlar kolon değildir\n(K7) ve okuma anında yeniden hesaplanmaları, donmuş bir faturanın ekranda\ncanlı türetilmiş sayı göstermesi demek olurdu. Başlık toplamları saklanır ve\notoritedir."
+      },
+      "InvoiceLinesReplace": {
+        "properties": {
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceLineCreate"
+            },
+            "type": "array",
+            "title": "Lines"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "lines"
+        ],
+        "title": "InvoiceLinesReplace",
+        "description": "`PUT /invoices/{id}/lines` — kalem kümesini TOPTAN yazar.\n\nZarf (`{\"lines\": [...]}`) çıplak listeye tercih edildi (hakediş/puantaj\nemsali): ileride kalem yazımına eşlik eden bir alan gerekirse gövde şekli\nKIRILMADAN büyür.\n\nBoş liste MEŞRUDUR ve hepsini siler: kalemsiz TASLAK anlamlıdır (K6 kapısı\n`send`/`approve` anındadır, T4)."
+      },
+      "InvoiceListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "InvoiceListResponse",
+        "description": "`personnel`/`audit`/`inventory` liste deseni: `total` + `limit`/`offset`."
+      },
+      "InvoicePaymentMethod": {
+        "type": "string",
+        "enum": [
+          "transfer",
+          "cheque",
+          "cash",
+          "credit_card"
+        ],
+        "title": "InvoicePaymentMethod",
+        "description": "Odeme sekli — FK:145-148 KAPALI kumesi birebir."
+      },
+      "InvoiceResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/InvoiceDirection"
+          },
+          "invoice_no": {
+            "type": "string",
+            "title": "Invoice No"
+          },
+          "document_type": {
+            "$ref": "#/components/schemas/InvoiceDocumentType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/InvoiceStatus"
+          },
+          "issue_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Issue Date"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
+          },
+          "payment_method": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InvoicePaymentMethod"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "party_name": {
+            "type": "string",
+            "title": "Party Name"
+          },
+          "party_tax_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Party Tax Number"
+          },
+          "party_tax_office": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Party Tax Office"
+          },
+          "party_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Party Address"
+          },
+          "employer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employer Id"
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id"
+          },
+          "supplier_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplier Id"
+          },
+          "subcontractor_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontractor Id"
+          },
+          "progress_payment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress Payment Id"
+          },
+          "subcontractor_progress_payment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontractor Progress Payment Id"
+          },
+          "equipment_rental_invoice_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Equipment Rental Invoice Id"
+          },
+          "purchase_order_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchase Order Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "subtotal": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Subtotal"
+          },
+          "advance_rate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Advance Rate"
+          },
+          "advance_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Advance Amount"
+          },
+          "retention_rate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retention Rate"
+          },
+          "retention_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Retention Amount"
+          },
+          "tax_base": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Tax Base"
+          },
+          "vat_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Vat Amount"
+          },
+          "withholding_rate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withholding Rate"
+          },
+          "withholding_amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Withholding Amount"
+          },
+          "total": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total"
+          },
+          "created_by_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Created By Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "direction",
+          "invoice_no",
+          "document_type",
+          "status",
+          "issue_date",
+          "due_date",
+          "payment_method",
+          "note",
+          "party_name",
+          "party_tax_number",
+          "party_tax_office",
+          "party_address",
+          "employer_id",
+          "customer_id",
+          "supplier_id",
+          "subcontractor_id",
+          "progress_payment_id",
+          "subcontractor_progress_payment_id",
+          "equipment_rental_invoice_id",
+          "purchase_order_id",
+          "project_id",
+          "site_id",
+          "subtotal",
+          "advance_rate",
+          "advance_amount",
+          "retention_rate",
+          "retention_amount",
+          "tax_base",
+          "vat_amount",
+          "withholding_rate",
+          "withholding_amount",
+          "total",
+          "created_by_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "InvoiceResponse",
+        "description": "Fatura künyesi — FY listesinin satırı ve detayın başlığı AYNI şemadır.\n\nİki ayrı şema açılsaydı liste \"Matrah/KDV/Toplam\" sütunlarını (FY:116-118)\nayrı bir hesapla doldurur ve detaydan sapabilirdi. Para alanlarının hepsi\nSAKLANAN kolonlardır (K7): okumada yeniden hesaplanmazlar.\n\nTürev alan YOKTUR: \"kalan gün\" (FGI:68) `due_date`ten, \"Vadeli\" rozeti\n(K1) `status` + `due_date`ten ekranda türer."
+      },
+      "InvoiceStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "sent",
+          "collected",
+          "pending",
+          "approved",
+          "disputed"
+        ],
+        "title": "InvoiceStatus",
+        "description": "Durum — IKI YONUN kumesi TEK enum tipinde (spec §3).\n\nGiden:  `draft → sent → collected`\nGelen:  `pending → approved` | `pending → disputed`\n\nTek tip olmasinin sebebi `status` kolonunun tek olmasidir; YON DISI gecisi\n(giden faturaya `approve`) DB degil `transitions.py` (T2) reddeder — matris\ndisi her gecis 409'dur.\n\n🔴 K1: \"Vadeli\" AYRI BIR DURUM DEGILDIR. FY:91 filtresi onu `Gonderildi`nin\nyaninda sunar ama FY'de `Gonderildi` rozetli TEK SATIR YOKTUR; ekran etiketi\n`due_date` doluysa \"Vadeli\", bossa \"Gonderildi\"dir. Turetilebilen SAKLANMAZ.\n\n🔴 K2: `draft` yalniz GIDEN tarafta anlamlidir — gelen fatura sisteme zaten\nkesilmis olarak girer (FGE:69 `GIB'den Geldi ✓`).\n\nIptal/iade gecisi ve `approved` sonrasi ODEME durumu YOKTUR: ilki hicbir\nmockup'ta cizilmemistir, ikincisi Hazine diliminindir."
+      },
+      "InvoiceSummaryMetric": {
+        "properties": {
+          "amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "amount",
+          "count"
+        ],
+        "title": "InvoiceSummaryMetric",
+        "description": "FY:71-73 kartlarının İKİ satırı: büyük rakam (tutar) + alt satır (adet).\n\nİkisi TEK nesnede durur çünkü aynı kümeden gelirler; `*_amount` ve\n`*_count` diye düz alanlara açılsalardı bir kart yanlış eşleştirilebilir ve\n\"18 fatura · ₺0,00\" gibi imkânsız bir çift ekrana çıkabilirdi."
+      },
+      "InvoiceSummaryResponse": {
+        "properties": {
+          "issued_this_month": {
+            "$ref": "#/components/schemas/InvoiceSummaryMetric"
+          },
+          "received_this_month": {
+            "$ref": "#/components/schemas/InvoiceSummaryMetric"
+          },
+          "receivable": {
+            "$ref": "#/components/schemas/InvoiceSummaryMetric"
+          },
+          "vat_difference": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Vat Difference"
+          },
+          "pending_approval": {
+            "type": "integer",
+            "title": "Pending Approval"
+          }
+        },
+        "type": "object",
+        "required": [
+          "issued_this_month",
+          "received_this_month",
+          "receivable",
+          "vat_difference",
+          "pending_approval"
+        ],
+        "title": "InvoiceSummaryResponse",
+        "description": "`GET /invoices/summary` — FY:69-75 KPI şeridi, BEŞ kart.\n\n🔴 **`pending_approval` ADETTİR, tutar DEĞİL** (FY:75 tek sayı basar, `₺`\nyoktur); ilk üç kart hem tutar hem adet taşır. `vat_difference` tek bir para\ndeğeridir (\"Ödenecek KDV\", FY:74) ve NEGATİF olabilir — gelen KDV giden\nKDV'yi aştığında devreden KDV doğar ve bu meşrudur, sıfıra KIRPILMAZ.\n\nAy penceresi ve kapsam kuralları `summary.py` modül docstring'indedir."
+      },
+      "InvoiceUpdate": {
+        "properties": {
+          "document_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InvoiceDocumentType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "issue_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issue Date"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
+          },
+          "payment_method": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InvoicePaymentMethod"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "party_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Party Name"
+          },
+          "party_tax_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 11,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Party Tax Number"
+          },
+          "party_tax_office": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Party Tax Office"
+          },
+          "party_address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Party Address"
+          },
+          "employer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employer Id"
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id"
+          },
+          "supplier_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supplier Id"
+          },
+          "subcontractor_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontractor Id"
+          },
+          "progress_payment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress Payment Id"
+          },
+          "subcontractor_progress_payment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontractor Progress Payment Id"
+          },
+          "equipment_rental_invoice_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Equipment Rental Invoice Id"
+          },
+          "purchase_order_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchase Order Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "advance_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Advance Rate"
+          },
+          "retention_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retention Rate"
+          },
+          "withholding_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,6}0*$)\\d{0,3}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Withholding Rate"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "InvoiceUpdate",
+        "description": "`PATCH /invoices/{id}` — tüm alanlar isteğe bağlı (spec §7 md.5).\n\nAlanın GÖNDERİLMEMESİ ile `null` GÖNDERİLMESİ farklıdır ve fark\n`model_fields_set` ile korunur: `site_id: null` bağı KOPARIR, hiç\ngöndermemek ona DOKUNMAZ (`StockItemUpdate` dersi).\n\n**`invoice_no`/`direction` BURADA YOKTUR:** yön faturanın kimliğidir,\nnumara ise ya sunucunundur ya satıcınındır — ikisi de sonradan\ndüzeltilemez. **`lines` de yoktur:** kalem kümesinin TEK yolu `PUT lines`tır\n(§7 md.7), iki yazma yolu olsaydı `sort_order` üretimi ikiye bölünürdü.\n\nGelen faturada bu şemanın yalnız ÜÇ alanı kabul edilir\n(`guards.INCOMING_PATCHABLE_FIELDS`, 422 aksi hâlde) — ayrı bir şema\naçılmadı çünkü kural DURUMA bağlıdır ve tip sistemi onu taşıyamaz."
+      },
       "LandShareCard": {
         "properties": {
           "landowner_name": {
@@ -24098,6 +27337,102 @@
         "title": "PaymentCalculationBlock",
         "description": "E15 151-172 / OLU 179-196 ödeme hesabı (spec §6.2-§6.4) — H2\n`calculations` fonksiyonlarının çıktısı, saklanmaz."
       },
+      "PaymentCreate": {
+        "properties": {
+          "bank_account_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Bank Account Id"
+          },
+          "method": {
+            "$ref": "#/components/schemas/PaymentMethodKind"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,16}|(?=[\\d.]{1,19}0*$)\\d{0,16}\\.\\d{0,2}0*$)"
+              }
+            ],
+            "title": "Amount"
+          },
+          "paid_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Paid On"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bank_account_id",
+          "method",
+          "amount",
+          "paid_on"
+        ],
+        "title": "PaymentCreate",
+        "description": "`POST /invoices/{id}/payments` — FGI:220-247'nin BEŞ alanı BİREBİR.\n\nFatura gövdede DEĞİL YOLDADIR (`invoice_id` alanı yoktur): iki yerden\ngelseydi yoldaki kimlik ile gövdedeki ayrışabilir ve ödeme kilitlenen\nfaturadan BAŞKA bir faturaya yazılabilirdi.\n\n`created_by_id` de gövdeden GELMEZ — oturumdan damgalanır."
+      },
+      "PaymentListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PaymentResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "paid_total": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Paid Total"
+          },
+          "remaining": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Remaining"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset",
+          "paid_total",
+          "remaining"
+        ],
+        "title": "PaymentListResponse",
+        "description": "TB3 liste zarfı + 🔴 K5'in iki TÜREV toplamı.\n\n`paid_total` ve `remaining` **TÜM satırlardan** gelir, SAYFADAN DEĞİL:\nsayfadan hesaplansaydı `limit`li bir okumada \"kalan\" birdenbire büyür ve\nekran ile K6 kapısı ayrışırdı (kullanıcı ekrana bakıp girdiği tutarda 422\nalırdı).\n\n`remaining` NEGATİF olabilir: K6 yeni tahsilatı keser ama elle düzeltilmiş\nya da politika öncesi satırlar toplamı aşabilir — `max(0, …)` ile\nkırpılsaydı aşım ekranda GÖRÜNMEZ olurdu."
+      },
       "PaymentMethod": {
         "type": "string",
         "enum": [
@@ -24107,6 +27442,17 @@
         ],
         "title": "PaymentMethod",
         "description": "PE 115 (İK-1 spec §1)."
+      },
+      "PaymentMethodKind": {
+        "type": "string",
+        "enum": [
+          "transfer",
+          "cheque",
+          "promissory_note",
+          "cash"
+        ],
+        "title": "PaymentMethodKind",
+        "description": "Odeme sekli — FGI:225-228 KAPALI kumesi BIREBIR.\n\n⚠️ `cheque` / `promissory_note` yalnizca ODEME SEKLININ ETIKETIDIR: cek ya\nda senet KAYDI ACMAZ (cek varligi HZ-2'nin isi, `cheque_id` kolonu bu\nyuzden yoktur).\n\n`invoicing.InvoicePaymentMethod` ile AYRI bir tiptir ve oyle kalir: fatura\ntarafi `credit_card` tasir ama `promissory_note` tasimaz — kumeler\nbirebir ayni degildir ve tek tipte birlestirmek ikisinden birine olmayan\nbir deger vaat ederdi."
       },
       "PaymentPeriod": {
         "type": "string",
@@ -24128,6 +27474,79 @@
         ],
         "title": "PaymentPlanType",
         "description": "F99 \"Odeme Plani\": Pesin · Pesinat + Taksit · Banka Kredisi · Takas/Trampa."
+      },
+      "PaymentResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "invoice_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Invoice Id"
+          },
+          "bank_account_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Bank Account Id"
+          },
+          "method": {
+            "$ref": "#/components/schemas/PaymentMethodKind"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount"
+          },
+          "paid_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Paid On"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "created_by_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Created By Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "invoice_id",
+          "bank_account_id",
+          "method",
+          "amount",
+          "paid_on",
+          "note",
+          "created_by_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "PaymentResponse",
+        "description": "Ödeme satırı — yalnız SAKLANAN kolonlar.\n\n`direction` YOKTUR ve türetilip eklenmez: ekran faturanın yönünü zaten\nfaturadan okur, burada ikinci bir kopya taşımak K4'ün tek kaynağını bozardı."
       },
       "PaymentTerms": {
         "type": "string",
@@ -43205,6 +46624,96 @@
         ],
         "title": "UpcomingCollection",
         "description": "S220-234'ün tek satırı: \"A · Daire 19 — Hasan Demir · Taksit 6 & 7 …\"."
+      },
+      "UpcomingPaymentItem": {
+        "properties": {
+          "source_type": {
+            "$ref": "#/components/schemas/UpcomingSourceType"
+          },
+          "source_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Source Id"
+          },
+          "counterparty": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Counterparty"
+          },
+          "document_no": {
+            "type": "string",
+            "title": "Document No"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Due Date"
+          },
+          "days_remaining": {
+            "type": "integer",
+            "title": "Days Remaining"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_type",
+          "source_id",
+          "counterparty",
+          "document_no",
+          "due_date",
+          "days_remaining",
+          "amount"
+        ],
+        "title": "UpcomingPaymentItem",
+        "description": "E9:109-125 satırı — mockup'ın BEŞ alanı + kaynak damgası.\n\n🔴 **K10: aciliyet/renk alanı YOKTUR ve açılmaz.** E9'un kodlaması kendi\niçinde tutarsızdır (2 gün→turuncu, 3 gün→**kırmızı**, 7 gün→yeşil); sunucu\nbir eşik uydurursa mockup'ın hangi yarısının doğru olduğuna KARAR VERMİŞ\nolur. Yanıt yalnız `days_remaining` sayısını ve `source_type`ı verir; renk\nistemcinindir (SA'nın \"EN HIZLI rozeti sunucuda üretilmez\" kanonu).\n\n`counterparty` NULLABLE'dır ve olmalıdır: taşeron sözleşmesinde\n`subcontractor_name` taslak aşamasında boş bırakılabilir. Boş metinle\nya da \"Bilinmeyen\" gibi bir dolgu ile doldurmak, kullanıcıya var olmayan\nbir kayıt adı gösterirdi.\n\n`document_no` yalnız TANIMLAYICIDIR, cümle DEĞİL: faturada `invoice_no`,\nhakedişte `sequence_no`nun metni. Sunucu \"Hakediş #47\" cümlesini KURMAZ —\no birleştirme (E9:113) `source_type` ile birlikte istemcide yapılır ve\nçeviri/biçim kararı sunucuya sızmaz."
+      },
+      "UpcomingPaymentsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/UpcomingPaymentItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "days",
+          "as_of"
+        ],
+        "title": "UpcomingPaymentsResponse",
+        "description": "`days` ve `as_of` ECHO edilir.\n\nSayfalama YOKTUR: pencere `days` ile zaten SINIRLIDIR (tavan 90 gün) ve\nkart bir kesittir, tablo değil — `limit` eklemek pencerenin üstüne ikinci\nve sessiz bir kırpma koyardı.\n\n`as_of` olmadan `days_remaining` DOĞRULANAMAZ: istemci kendi saatiyle\nhesaplarsa TR gecesi 00:00-03:00 arasında sunucudan bir gün sapar."
+      },
+      "UpcomingSourceType": {
+        "type": "string",
+        "enum": [
+          "invoice",
+          "subcontractor_progress_payment"
+        ],
+        "title": "UpcomingSourceType",
+        "description": "Yaklaşan ödemenin KAYNAK EVRAK tipi (K9).\n\nE9:113/117/121 ÜÇ kaynak çizer — hakediş · **bordro** · fatura — ama bugün\nyalnız İKİSİ üretilebilir:\n\n* ✅ `invoice` — `invoices.due_date` gerçek bir vade kolonudur;\n* ✅ `subcontractor_progress_payment` — vade `approved_at` +\n  `subcontractor_contracts.payment_term_days`ten TÜRER;\n* ⛔ **bordro — ÜYE OLARAK AÇILMAZ.** `payroll_periods`ta ödeme vadesi\n  kavramı YOKTUR (İK-3'te vade kolonu açılmadı) ve uydurulmaz. Üretilemeyen\n  bir enum üyesi istemciye tutulamayacak bir söz verirdi: ekran o rozeti\n  çizer, hiçbir satır onu taşımazdı. Vade kolonu açıldığında üye de eklenir\n  (ROADMAP borcu)."
       },
       "UserCreate": {
         "properties": {

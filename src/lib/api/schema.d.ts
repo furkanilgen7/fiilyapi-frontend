@@ -1579,6 +1579,316 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Invoices Endpoint
+         * @description FY tablosunun veri kaynağı — süzgeçler AND'lidir.
+         *
+         *     Kapsam süzgeci HER ZAMAN uygulanır: görünmeyen projenin faturası listede
+         *     YOKTUR ve `total`a da girmez. `project_id` NULL fatura (şirket geneli)
+         *     modül izniyle görünür (§6).
+         *
+         *     `q` FATURA NUMARASI ve TARAF ADI üzerinde kısmi arar (FY:94). `status`
+         *     süzgeci ÜÇ giden değerini de alır; ekranın "Vadeli" seçeneği `sent`e eşlenir
+         *     (K1 — "Vadeli" ayrı bir durum DEĞİLDİR).
+         *
+         *     `limit` varsayılan 50, tavan 200 — aşım **422**.
+         */
+        get: operations["list_invoices_endpoint_invoices_get"];
+        put?: never;
+        /**
+         * Create Invoice Endpoint
+         * @description FK formunun kaydı: başlık + kalemler TEK gövde, ATOMİK.
+         *
+         *     * giden → `draft`, gelen → `pending` (K2); gövde `status` GÖNDEREMEZ
+         *     * giden numarayı SUNUCU üretir (`FIL…`), gelen numarayı İSTEMCİ verir (S5)
+         *     * `line_total`/`sort_order` ve hesaplanmış para alanları gövdeden GELEMEZ
+         *       (**422**) — oranlar (`*_rate`) GELİR
+         *     * görünmeyen ya da olmayan proje/şantiye/cari/kaynak → **404**
+         *
+         *     Bozuk bir kalem varsa HİÇBİR ŞEY yazılmaz — ne başlık ne satır. Denetime
+         *     FATURA BAŞINA TEK satır düşer.
+         */
+        post: operations["create_invoice_endpoint_invoices_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/invoices/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Invoices Summary Endpoint
+         * @description FY:69-75 KPI şeridi — beş kart.
+         *
+         *     Kapsam süzgeci liste ucundakiyle AYNIDIR: görünmeyen projenin faturası
+         *     hiçbir toplama girmez (IDOR'un sayısal hâli). `pending_approval` ADETTİR,
+         *     tutar değil. Ay penceresi `DISPLAY_TIMEZONE`dedir — ayrıntı `summary.py`
+         *     modül docstring'indedir.
+         */
+        get: operations["invoices_summary_endpoint_invoices_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/invoices/{invoice_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Invoice Endpoint
+         * @description FGI/FGE detayı: başlık + kalemler + SAKLANAN toplamlar.
+         *
+         *     Görünmeyen fatura var olmayanla AYNI 404'ü alır. Toplamlar okuma anında
+         *     yeniden HESAPLANMAZ (K7): fatura donmuş bir belgedir.
+         */
+        get: operations["get_invoice_endpoint_invoices__invoice_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Invoice Endpoint
+         * @description **YALNIZ `admin` + yalnız `draft`** → 204; başka durum **409**.
+         *
+         *     `full` seviyesi (muhasebe) 403 alır — gerekçe modül docstring'indedir.
+         *     Kalemler birlikte gider. Yanıt gövdesizdir.
+         */
+        delete: operations["delete_invoice_endpoint_invoices__invoice_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Invoice Endpoint
+         * @description **Giden faturada yalnız `draft`, gelen faturada yalnız `pending`** —
+         *     aksi **409** (yetki değil DURUM engeli).
+         *
+         *     Gelen faturada yalnız `note`/`due_date`/`payment_method` düzeltilebilir
+         *     (**422** aksi hâlde): gelen fatura SATICININ belgesidir.
+         *
+         *     Kayıt kilitlenerek okunur ve durum kapısı KİLİTLİ satır üzerinde koşar
+         *     (spec §8, TOCTOU). Oran değişirse başlık toplamları `amounts`tan YENİDEN
+         *     hesaplanır; kalemler değişmez (onların yolu `PUT lines`).
+         */
+        patch: operations["update_invoice_endpoint_invoices__invoice_id__patch"];
+        trace?: never;
+    };
+    "/invoices/{invoice_id}/lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Replace Invoice Lines Endpoint
+         * @description Kalem kümesini TOPTAN yazar (hakediş/puantaj emsali) — yalnız `draft`.
+         *
+         *     `sort_order` gövdedeki dizinin İNDEKSİDİR, `line_total` sunucunun hesabıdır;
+         *     ikisi de gövdeden GELEMEZ (**422**). Başlık toplamları aynı hesapla
+         *     güncellenir. Boş liste hepsini SİLER (kalemsiz taslak meşrudur; K6 kapısı
+         *     `send`/`approve` anındadır, T4).
+         *
+         *     Kilit sırası SABİT: fatura → kalemler.
+         */
+        put: operations["replace_invoice_lines_endpoint_invoices__invoice_id__lines_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/invoices/{invoice_id}/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send Invoice Endpoint
+         * @description `draft → sent` (FK:25 `GİB'e Gönder`) — YALNIZ giden fatura.
+         *
+         *     **GİB'e gerçek bir gönderim YAPILMAZ** (spec §1: entegratör bağı FAT-3'ün
+         *     işidir); bu uç yalnızca DURUM damgalar — `progress_payments.mark-paid`
+         *     emsali. Gelen faturaya çağrılırsa **409** (yön dışı).
+         *
+         *     🔴 **K6:** kalemsiz fatura **422**. Kalemsiz fatura 0,00₺ olarak kusursuz
+         *     hesaplanır — hesap doğrudur, FATURA yanlıştır.
+         */
+        post: operations["send_invoice_endpoint_invoices__invoice_id__send_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/invoices/{invoice_id}/mark-collected": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark Collected Invoice Endpoint
+         * @description `sent → collected` (FY:130 `Tahsil Edildi`) — YALNIZ giden fatura.
+         *
+         *     **Tahsilat KAYDI değildir** (FGI:220-247 formu Hazine diliminindir:
+         *     `bank_accounts` tablosu henüz YOK). Burada yalnız damga vardır; tutar,
+         *     hesap ve tarih alanları AÇILMAZ — yazma yolu olmayan kolon her zaman NULL
+         *     döner ve uydurma alan olur.
+         *
+         *     K6 kapısı UYGULANMAZ: `sent` bir fatura zaten kapıdan geçmiştir.
+         */
+        post: operations["mark_collected_invoice_endpoint_invoices__invoice_id__mark_collected_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/invoices/{invoice_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve Invoice Endpoint
+         * @description `pending → approved` (FGE:25 `Onayla & Muhasebeleştir`) — YALNIZ gelen.
+         *
+         *     **Muhasebe fişi ÜRETİLMEZ** (FGE:197-241 önizlemesi Muhasebe diliminindir:
+         *     hesap planı tablosu YOK). `Kısmi Onayla` (FGE:140) da AÇILMADI — etkisi
+         *     hiçbir mockup'ta çizilmemiş, FAT-2'nin işi.
+         *
+         *     🔴 **K6:** kalemsiz fatura **422**. Giden faturaya çağrılırsa **409**.
+         */
+        post: operations["approve_invoice_endpoint_invoices__invoice_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/invoices/{invoice_id}/dispute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dispute Invoice Endpoint
+         * @description `pending → disputed` (FGE:24 `İtiraz Et`) — YALNIZ gelen fatura.
+         *
+         *     İtiraz GEREKÇESİ alanı AÇILMADI: FGE:24 tek bir düğmedir, gerekçe formu
+         *     hiçbir mockup'ta çizilmemiştir (icat yasağı). `İtiraz/İade` sekmesinin
+         *     (FY:65) içeriği de çizilmemiştir — bu uç yalnız durumu damgalar.
+         *
+         *     K6 kapısı UYGULANMAZ: itiraz bir REDDETMEDİR ve eksik kalem, itirazı
+         *     engellemek için sebep değildir.
+         */
+        post: operations["dispute_invoice_endpoint_invoices__invoice_id__dispute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/invoices/{invoice_id}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Invoice Payments Endpoint
+         * @description Faturanın tahsilat/ödeme satırları + **`paid_total`** + **`remaining`**.
+         *
+         *     🔴 K5: `invoices` üzerinde `paid_amount` kolonu YOKTUR; iki toplam da
+         *     `Σ payments`ten TÜRETİLİR ve **TÜM satırlardan** gelir — sayfadan DEĞİL.
+         *
+         *     `limit` varsayılan 50, tavan 200 — aşım **422** (kırpma DEĞİL). Görünmeyen
+         *     fatura var olmayanla AYNI 404'ü alır.
+         */
+        get: operations["list_invoice_payments_endpoint_invoices__invoice_id__payments_get"];
+        put?: never;
+        /**
+         * Create Invoice Payment Endpoint
+         * @description FGI:220-247 formunun kaydı — tahsilat DA ödeme DE aynı uçtur (K4).
+         *
+         *     * 🔴 **K7:** fatura satırı DENETİMLERDEN ÖNCE kilitlenir (`FOR UPDATE`);
+         *       kilit sırası SABİT: fatura → ödemeler → hesap.
+         *     * 🔴 **K6:** `Σ payments + yeni > total` → **422**, kuruş bazında TAM
+         *       karşılaştırma, tolerans YOK. `= total` GEÇER.
+         *     * 🔴 **K5:** başarıda fatura durumu `Σ`dan TÜRETİLEREK damgalanır ve damga
+         *       yalnız matrisin TANIDIĞI geçişle konur; gelen faturada durum DEĞİŞMEZ.
+         *     * `bank_account_id` yoksa **404**; pasif hesap **422**.
+         *     * Yön gövdeden GELMEZ, bağlı faturanın `direction`'ından okunur (K4).
+         */
+        post: operations["create_invoice_payment_endpoint_invoices__invoice_id__payments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payments/{payment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Payment Endpoint
+         * @description **YALNIZ `admin`** → 204: yanlış tahsilat geri alınabilmelidir.
+         *
+         *     `full` seviyesi (muhasebe) 403 alır — `full` silmeyi KAPSAMAZ (repo kanonu)
+         *     ve ödeme, bakiyeyi doğrudan oynatan mali bir kayıttır.
+         *
+         *     🔴 Silme AYNI kilidi alır (K7) ve fatura durumunu **YENİDEN TÜRETİR**:
+         *     `collected` → `sent`e düşebilir. Görünmeyen faturanın ödemesi de "yok"tur
+         *     (404). Yanıt gövdesizdir.
+         */
+        delete: operations["delete_payment_endpoint_payments__payment_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/payroll/periods": {
         parameters: {
             query?: never;
@@ -4206,6 +4516,138 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bank-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Bank Accounts Endpoint
+         * @description E9:70-84 kart şeridi — her satır **TÜRETİLMİŞ `balance`** taşır (K2).
+         *
+         *     Süzgeç `is_active`tir ve `total`a da uygulanır. `limit` varsayılan 50, tavan
+         *     200 — aşım **422** (kırpma DEĞİL).
+         *
+         *     🔴 **Proje/şantiye kapsam süzgeci YOKTUR (K3):** hesap şirket genelidir
+         *     (`suppliers`/`customers` emsali), erişimi `treasury` izni denetler.
+         */
+        get: operations["list_bank_accounts_endpoint_bank_accounts_get"];
+        put?: never;
+        /**
+         * Create Bank Account Endpoint
+         * @description Yeni banka ya da kasa hesabı.
+         *
+         *     * `account_type` KAPALI kümedir: `checking` | `cash` (K1)
+         *     * Kasa'da `display_name` ZORUNLUDUR → aksi **422** (DB CHECK'i son savunma)
+         *     * IBAN normalize edilir; aynı IBAN **409**, NULL IBAN'lar çoklanabilir
+         *     * `balance` gövdeden GELEMEZ (**422**): türevdir, `opening_balance`tan doğar
+         */
+        post: operations["create_bank_account_endpoint_bank_accounts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bank-accounts/{account_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Bank Account Endpoint
+         * @description Tek hesap + türetilmiş bakiye. Bakiye liste ucuyla AYNI kaynaktan gelir.
+         */
+        get: operations["get_bank_account_endpoint_bank_accounts__account_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Bank Account Endpoint
+         * @description **YALNIZ `admin`** → 204; ödemesi olan hesap **409**.
+         *
+         *     `full` seviyesi (muhasebe) 403 alır — gerekçe modül docstring'indedir.
+         *     409 SERVİSTEN gelir: ham FK ihlalinin 500'ü ya da ayrımsız "Veri bütünlüğü
+         *     hatası" kullanıcıya SIZMAZ. Yanıt gövdesizdir.
+         */
+        delete: operations["delete_bank_account_endpoint_bank_accounts__account_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Bank Account Endpoint
+         * @description Kısmi güncelleme; kayıt DENETİMLERDEN ÖNCE kilitlenir (TOCTOU).
+         *
+         *     `opening_balance` DEĞİŞEBİLİR (elle düzeltme meşrudur) ve bakiye
+         *     kendiliğinden yeniden türetilir. Tipi `cash`e çevirip adı boş bırakmak da
+         *     **422**dir: kural DB'deki kayıtla BİRLEŞTİRİLMİŞ değerler üzerinde koşar.
+         */
+        patch: operations["update_bank_account_endpoint_bank_accounts__account_id__patch"];
+        trace?: never;
+    };
+    "/treasury/upcoming-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Upcoming Payments Endpoint
+         * @description E9:109-125 — önümüzdeki `days` gün içinde ödenecekler.
+         *
+         *     `days` varsayılanı **7**dir (E9:110 `(7 Gün)`) ve tavanı 90'dır; aşım
+         *     **422**dir, sessiz kırpma DEĞİL (TB3 kanonu).
+         *
+         *     🔴 **K10:** yanıt `days_remaining` (sayı) + `source_type` taşır; `urgency`/
+         *     `color` gibi bir alan YOKTUR — renk kararı istemcinindir.
+         *
+         *     🔴 **K9:** kaynaklar bugün fatura ve taşeron hakedişidir; **bordro hiç satır
+         *     üretmez** (vade kolonu yok, uydurulmaz) — ayrıntı `upcoming.py`de.
+         *
+         *     🔴 **Kapsam:** hesap şirket geneli olsa da (K3) KAYNAKLAR proje kapsamlıdır
+         *     ve her satır karşı taraf + tutar sızdırır → süzgeç UYGULANIR.
+         */
+        get: operations["list_upcoming_payments_endpoint_treasury_upcoming_payments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/treasury/cash-flow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Cash Flow Endpoint
+         * @description E9:90-106 — ayın günlük giriş/çıkış serisi + iki toplam.
+         *
+         *     `year`/`month` verilmezse **içinde bulunulan ay** (`DISPLAY_TIMEZONE`);
+         *     aralık dışı değer **422**dir. İkisi BAĞIMSIZ varsayılır: yalnız `month`
+         *     gönderen istemci içinde bulunulan yılın o ayını okur.
+         *
+         *     🔴 Boş ayda seri BOŞTUR ve toplamlar **`0`**dır (NULL değil).
+         *
+         *     🔴 Bu uç proje süzgeci UYGULAMAZ — bilinçli karar, gerekçesi
+         *     `cash_flow.py` modül docstring'indedir (`upcoming-payments`in tersi).
+         */
+        get: operations["get_cash_flow_endpoint_treasury_cash_flow_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/projects/{project_id}/blocks": {
         parameters: {
             query?: never;
@@ -4711,6 +5153,128 @@ export interface components {
             /** List Price Total */
             list_price_total: string;
         };
+        /**
+         * BankAccountCreate
+         * @description `POST /bank-accounts` (E9:70-84 kartının yazma yolu).
+         *
+         *     `account_type` KAPALI kümedir ve yalnız iki değer taşır (K1). `display_name`
+         *     şemada opsiyoneldir ama kural TİPE bağlıdır (`cash` → zorunlu) ve tek kaynağı
+         *     servistedir: şemaya tipe bağlı bir validator yazılsaydı aynı kural PATCH
+         *     yolunda İKİNCİ kez (ve birleşik değerler üzerinde farklı biçimde) yazılırdı.
+         *
+         *     `is_active` gövdeden gelebilir çünkü kullanımdan kaldırma yolu odur (repo
+         *     kanonu: DELETE değil `is_active=false`).
+         */
+        BankAccountCreate: {
+            /** Bank Name */
+            bank_name: string;
+            account_type: components["schemas"]["BankAccountType"];
+            /** Iban */
+            iban?: string | null;
+            /** Display Name */
+            display_name?: string | null;
+            /**
+             * Opening Balance
+             * @default 0.00
+             */
+            opening_balance: number | string;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+        };
+        /**
+         * BankAccountListResponse
+         * @description TB3 liste zarfı: `items` + `total` + `limit`/`offset` (repo kanonu).
+         */
+        BankAccountListResponse: {
+            /** Items */
+            items: components["schemas"]["BankAccountResponse"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * BankAccountResponse
+         * @description Kart künyesi + 🔴 TÜRETİLMİŞ `balance` (K2).
+         *
+         *     `balance` saklanan bir kolon DEĞİLDİR ve buraya `balance.py`nin TEK
+         *     kaynağından gelir; ikinci bir formül yazılsaydı liste ile detay aynı hesap
+         *     için farklı sayı basar ve hiçbir kolon farkı ele vermezdi.
+         *
+         *     `opening_balance` de yanıtta DURUR: kullanıcı düzelteceği değeri görmeden
+         *     düzeltemez ve bakiyenin nereden başladığı ekranda okunabilir olmalıdır.
+         */
+        BankAccountResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Bank Name */
+            bank_name: string;
+            account_type: components["schemas"]["BankAccountType"];
+            /** Iban */
+            iban: string | null;
+            /** Display Name */
+            display_name: string | null;
+            /** Opening Balance */
+            opening_balance: string;
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Balance */
+            balance: string;
+        };
+        /**
+         * BankAccountType
+         * @description Hesap tipi — E9:71,81 `Vadesiz` ve `Kasa`.
+         *
+         *     🔴 K1: mockup YALNIZ bu ikisini ciziyor. `Vadeli` / `Kredi` / `POS` /
+         *     `Doviz` ICAT EDILMEZ — acilsaydi hicbir ekranda karsiligi olmayan bir kume
+         *     kalici olarak DB'ye yazilir, sonra da enum TAKASIYLA geri alinirdi.
+         * @enum {string}
+         */
+        BankAccountType: "checking" | "cash";
+        /**
+         * BankAccountUpdate
+         * @description `PATCH /bank-accounts/{id}` — KISMİ gövde.
+         *
+         *     Her alan `| None`dır ama anlamları AYRIDIR ve servis ikisini ayırır
+         *     (`exclude_unset`): gönderilmeyen alan DEĞİŞMEZ, açıkça `null` gönderilen
+         *     alan TEMİZLENİR. `display_name: null` bir kasada 422'dir (aşağıdaki kural
+         *     birleşik değerler üzerinde koşar).
+         *
+         *     `opening_balance` DEĞİŞEBİLİR (spec §4 md.4): elle düzeltme meşrudur ve
+         *     bakiye kendiliğinden yeniden türetilir — saklanan bir bakiye olsaydı bu
+         *     düzeltme iki sayıyı ayrıştırırdı.
+         */
+        BankAccountUpdate: {
+            /** Bank Name */
+            bank_name?: string | null;
+            account_type?: components["schemas"]["BankAccountType"] | null;
+            /** Iban */
+            iban?: string | null;
+            /** Display Name */
+            display_name?: string | null;
+            /** Opening Balance */
+            opening_balance?: number | string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
         /** BlockCreate */
         BlockCreate: {
             /** Code */
@@ -5048,6 +5612,47 @@ export interface components {
             /** Grand Total */
             grand_total: string;
             grand_progress_pct: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+        };
+        /**
+         * CashFlowBucket
+         * @description E9:92-101 serisinin TEK GÜNÜ. İki yön AYRI alandır, net DEĞİL.
+         *
+         *     Net tek sayı basılsaydı grafiğin iki eğrisi (giriş/çıkış) çizilemezdi ve
+         *     E9:104-105'in iki toplamı da tek bir farka çökerdi.
+         */
+        CashFlowBucket: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Inflow */
+            inflow: string;
+            /** Outflow */
+            outflow: string;
+        };
+        /**
+         * CashFlowResponse
+         * @description E9:90-106 — günlük seri + iki toplam (`Giriş` / `Çıkış`).
+         *
+         *     🔴 **Seri SEYREKTİR:** yalnız hareket GÖRMÜŞ günler satır üretir. Ayın 31
+         *     gününü sıfırla doldurmak, veri olmayan bir günü "0 TL hareket oldu"
+         *     diye gösterirdi ve boş ayın 31 satırlık yanıtı "boş" görünmezdi.
+         *
+         *     🔴 **Toplamlar `0`dır, NULL DEĞİL** (`coalesce`, `paid_sum` dersi): ödemesiz
+         *     bir ayda `SUM()` NULL döner ve kart "₺" yanında boşluk basardı.
+         */
+        CashFlowResponse: {
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            /** Series */
+            series: components["schemas"]["CashFlowBucket"][];
+            /** Inflow Total */
+            inflow_total: string;
+            /** Outflow Total */
+            outflow_total: string;
         };
         /**
          * CollectionKpi
@@ -6712,6 +7317,494 @@ export interface components {
             estimated_profit: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
             margin: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
         };
+        /**
+         * InvoiceCreate
+         * @description `POST /invoices` — başlık + kalemler TEK gövde, ATOMİK yazılır.
+         *
+         *     Zorunlu çekirdek: `direction` · `document_type` · `issue_date` ·
+         *     `party_name`. Taraf ADI zorunludur çünkü SNAPSHOT'tır (S4/K7): cari kartı
+         *     silinse ya da düzeltilse bile faturanın üzerindeki ünvan DEĞİŞMEZ. Dört
+         *     taraf FK'sı yalnızca İZDİR ve en fazla BİRİ dolar (servis 422).
+         *
+         *     `invoice_no` şemada opsiyoneldir ama kural YÖNE bağlıdır (§4/S5) ve tek
+         *     kaynağı `validation.invoice_no_blockers`tır: giden'de gönderilemez,
+         *     gelen'de zorunludur. Şemaya `direction`a bağlı bir validator yazılsaydı
+         *     aynı kural iki yerde dururdu.
+         *
+         *     `status` YOKTUR: başlangıç `transitions.INITIAL_STATUS[direction]`tan gelir
+         *     (giden → `draft`, gelen → `pending`, K2).
+         */
+        InvoiceCreate: {
+            direction: components["schemas"]["InvoiceDirection"];
+            /** Invoice No */
+            invoice_no?: string | null;
+            document_type: components["schemas"]["InvoiceDocumentType"];
+            /**
+             * Issue Date
+             * Format: date
+             */
+            issue_date: string;
+            /** Due Date */
+            due_date?: string | null;
+            payment_method?: components["schemas"]["InvoicePaymentMethod"] | null;
+            /** Note */
+            note?: string | null;
+            /** Party Name */
+            party_name: string;
+            /** Party Tax Number */
+            party_tax_number?: string | null;
+            /** Party Tax Office */
+            party_tax_office?: string | null;
+            /** Party Address */
+            party_address?: string | null;
+            /** Employer Id */
+            employer_id?: string | null;
+            /** Customer Id */
+            customer_id?: string | null;
+            /** Supplier Id */
+            supplier_id?: string | null;
+            /** Subcontractor Id */
+            subcontractor_id?: string | null;
+            /** Progress Payment Id */
+            progress_payment_id?: string | null;
+            /** Subcontractor Progress Payment Id */
+            subcontractor_progress_payment_id?: string | null;
+            /** Equipment Rental Invoice Id */
+            equipment_rental_invoice_id?: string | null;
+            /** Purchase Order Id */
+            purchase_order_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Site Id */
+            site_id?: string | null;
+            /** Advance Rate */
+            advance_rate?: number | string | null;
+            /** Retention Rate */
+            retention_rate?: number | string | null;
+            /** Withholding Rate */
+            withholding_rate?: number | string | null;
+            /** Lines */
+            lines?: components["schemas"]["InvoiceLineCreate"][];
+        };
+        /**
+         * InvoiceDetailResponse
+         * @description Detay = künye + KALEMLER (FGI/FGE kalem tablosu), `sort_order` sırasında.
+         *
+         *     Liste bu şemayı KULLANMAZ: 50 faturanın kalemlerini çekmek N+1 üretir ve FY
+         *     tablosu zaten kalem göstermez.
+         */
+        InvoiceDetailResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            direction: components["schemas"]["InvoiceDirection"];
+            /** Invoice No */
+            invoice_no: string;
+            document_type: components["schemas"]["InvoiceDocumentType"];
+            status: components["schemas"]["InvoiceStatus"];
+            /**
+             * Issue Date
+             * Format: date
+             */
+            issue_date: string;
+            /** Due Date */
+            due_date: string | null;
+            payment_method: components["schemas"]["InvoicePaymentMethod"] | null;
+            /** Note */
+            note: string | null;
+            /** Party Name */
+            party_name: string;
+            /** Party Tax Number */
+            party_tax_number: string | null;
+            /** Party Tax Office */
+            party_tax_office: string | null;
+            /** Party Address */
+            party_address: string | null;
+            /** Employer Id */
+            employer_id: string | null;
+            /** Customer Id */
+            customer_id: string | null;
+            /** Supplier Id */
+            supplier_id: string | null;
+            /** Subcontractor Id */
+            subcontractor_id: string | null;
+            /** Progress Payment Id */
+            progress_payment_id: string | null;
+            /** Subcontractor Progress Payment Id */
+            subcontractor_progress_payment_id: string | null;
+            /** Equipment Rental Invoice Id */
+            equipment_rental_invoice_id: string | null;
+            /** Purchase Order Id */
+            purchase_order_id: string | null;
+            /** Project Id */
+            project_id: string | null;
+            /** Site Id */
+            site_id: string | null;
+            /** Subtotal */
+            subtotal: string;
+            /** Advance Rate */
+            advance_rate: string | null;
+            /** Advance Amount */
+            advance_amount: string;
+            /** Retention Rate */
+            retention_rate: string | null;
+            /** Retention Amount */
+            retention_amount: string;
+            /** Tax Base */
+            tax_base: string;
+            /** Vat Amount */
+            vat_amount: string;
+            /** Withholding Rate */
+            withholding_rate: string | null;
+            /** Withholding Amount */
+            withholding_amount: string;
+            /** Total */
+            total: string;
+            /**
+             * Created By Id
+             * Format: uuid
+             */
+            created_by_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Lines */
+            lines: components["schemas"]["InvoiceLineResponse"][];
+        };
+        /**
+         * InvoiceDirection
+         * @description Fatura yonu — FGI:58 `GIDEN FATURA` · FGE:68 `GELEN FATURA`.
+         *
+         *     Yon yalnizca bir etiket DEGILDIR: numarayi kimin urettigini (§4), hangi
+         *     durum matrisinin gecerli oldugunu (§3) ve numara tekilliginin kapsamini
+         *     (`uq_invoices_no_direction`) belirler.
+         * @enum {string}
+         */
+        InvoiceDirection: "outgoing" | "incoming";
+        /**
+         * InvoiceDocumentType
+         * @description Belge tipi — FK:136-139 KAPALI kumesi birebir.
+         * @enum {string}
+         */
+        InvoiceDocumentType: "einvoice" | "earchive" | "refund" | "withholding";
+        /**
+         * InvoiceLineCreate
+         * @description Fatura kaleminin BİR satırı (FGI:116-130 · FGE:150-160 · FK:168-183).
+         *
+         *     **`line_total` ve `sort_order` YOKTUR** (gönderilirse 422): ilki
+         *     `amounts.line_total`ın, ikincisi gövdedeki dizinin İNDEKSİDİR. `sort_order`
+         *     istemciden gelseydi çakışan ya da boşluklu sıralar doğar, sunucunun yeniden
+         *     numaralandırması gerekirdi (SA/T3 dersi).
+         *
+         *     `unit` SERBEST METİNDİR (S3): FK:169 bir input'tur — kapalı küme İCAT
+         *     EDİLMEZ. `description` poz numarasını İÇİNDE taşır (S2, FK:178); ayrı bir
+         *     `boq_item_id` açılsaydı olmayan bir katalog bağı vaat edilirdi.
+         */
+        InvoiceLineCreate: {
+            /** Description */
+            description: string;
+            /** Unit */
+            unit?: string | null;
+            /** Quantity */
+            quantity: number | string;
+            /** Unit Price */
+            unit_price: number | string;
+            /** Vat Rate */
+            vat_rate: number | string;
+            /** Detail Note */
+            detail_note?: string | null;
+        };
+        /**
+         * InvoiceLineResponse
+         * @description Kalem künyesi — YALNIZCA saklanan kolonlar.
+         *
+         *     Satır bazında KDV/matrah payı (`amounts.line_tax_bases` /
+         *     `line_vat_amounts`) BURADA YOKTUR ve bu bilinçlidir: onlar kolon değildir
+         *     (K7) ve okuma anında yeniden hesaplanmaları, donmuş bir faturanın ekranda
+         *     canlı türetilmiş sayı göstermesi demek olurdu. Başlık toplamları saklanır ve
+         *     otoritedir.
+         */
+        InvoiceLineResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Description */
+            description: string;
+            /** Unit */
+            unit: string | null;
+            /** Quantity */
+            quantity: string;
+            /** Unit Price */
+            unit_price: string;
+            /** Vat Rate */
+            vat_rate: string;
+            /** Line Total */
+            line_total: string;
+            /** Detail Note */
+            detail_note: string | null;
+        };
+        /**
+         * InvoiceLinesReplace
+         * @description `PUT /invoices/{id}/lines` — kalem kümesini TOPTAN yazar.
+         *
+         *     Zarf (`{"lines": [...]}`) çıplak listeye tercih edildi (hakediş/puantaj
+         *     emsali): ileride kalem yazımına eşlik eden bir alan gerekirse gövde şekli
+         *     KIRILMADAN büyür.
+         *
+         *     Boş liste MEŞRUDUR ve hepsini siler: kalemsiz TASLAK anlamlıdır (K6 kapısı
+         *     `send`/`approve` anındadır, T4).
+         */
+        InvoiceLinesReplace: {
+            /** Lines */
+            lines: components["schemas"]["InvoiceLineCreate"][];
+        };
+        /**
+         * InvoiceListResponse
+         * @description `personnel`/`audit`/`inventory` liste deseni: `total` + `limit`/`offset`.
+         */
+        InvoiceListResponse: {
+            /** Items */
+            items: components["schemas"]["InvoiceResponse"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * InvoicePaymentMethod
+         * @description Odeme sekli — FK:145-148 KAPALI kumesi birebir.
+         * @enum {string}
+         */
+        InvoicePaymentMethod: "transfer" | "cheque" | "cash" | "credit_card";
+        /**
+         * InvoiceResponse
+         * @description Fatura künyesi — FY listesinin satırı ve detayın başlığı AYNI şemadır.
+         *
+         *     İki ayrı şema açılsaydı liste "Matrah/KDV/Toplam" sütunlarını (FY:116-118)
+         *     ayrı bir hesapla doldurur ve detaydan sapabilirdi. Para alanlarının hepsi
+         *     SAKLANAN kolonlardır (K7): okumada yeniden hesaplanmazlar.
+         *
+         *     Türev alan YOKTUR: "kalan gün" (FGI:68) `due_date`ten, "Vadeli" rozeti
+         *     (K1) `status` + `due_date`ten ekranda türer.
+         */
+        InvoiceResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            direction: components["schemas"]["InvoiceDirection"];
+            /** Invoice No */
+            invoice_no: string;
+            document_type: components["schemas"]["InvoiceDocumentType"];
+            status: components["schemas"]["InvoiceStatus"];
+            /**
+             * Issue Date
+             * Format: date
+             */
+            issue_date: string;
+            /** Due Date */
+            due_date: string | null;
+            payment_method: components["schemas"]["InvoicePaymentMethod"] | null;
+            /** Note */
+            note: string | null;
+            /** Party Name */
+            party_name: string;
+            /** Party Tax Number */
+            party_tax_number: string | null;
+            /** Party Tax Office */
+            party_tax_office: string | null;
+            /** Party Address */
+            party_address: string | null;
+            /** Employer Id */
+            employer_id: string | null;
+            /** Customer Id */
+            customer_id: string | null;
+            /** Supplier Id */
+            supplier_id: string | null;
+            /** Subcontractor Id */
+            subcontractor_id: string | null;
+            /** Progress Payment Id */
+            progress_payment_id: string | null;
+            /** Subcontractor Progress Payment Id */
+            subcontractor_progress_payment_id: string | null;
+            /** Equipment Rental Invoice Id */
+            equipment_rental_invoice_id: string | null;
+            /** Purchase Order Id */
+            purchase_order_id: string | null;
+            /** Project Id */
+            project_id: string | null;
+            /** Site Id */
+            site_id: string | null;
+            /** Subtotal */
+            subtotal: string;
+            /** Advance Rate */
+            advance_rate: string | null;
+            /** Advance Amount */
+            advance_amount: string;
+            /** Retention Rate */
+            retention_rate: string | null;
+            /** Retention Amount */
+            retention_amount: string;
+            /** Tax Base */
+            tax_base: string;
+            /** Vat Amount */
+            vat_amount: string;
+            /** Withholding Rate */
+            withholding_rate: string | null;
+            /** Withholding Amount */
+            withholding_amount: string;
+            /** Total */
+            total: string;
+            /**
+             * Created By Id
+             * Format: uuid
+             */
+            created_by_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * InvoiceStatus
+         * @description Durum — IKI YONUN kumesi TEK enum tipinde (spec §3).
+         *
+         *     Giden:  `draft → sent → collected`
+         *     Gelen:  `pending → approved` | `pending → disputed`
+         *
+         *     Tek tip olmasinin sebebi `status` kolonunun tek olmasidir; YON DISI gecisi
+         *     (giden faturaya `approve`) DB degil `transitions.py` (T2) reddeder — matris
+         *     disi her gecis 409'dur.
+         *
+         *     🔴 K1: "Vadeli" AYRI BIR DURUM DEGILDIR. FY:91 filtresi onu `Gonderildi`nin
+         *     yaninda sunar ama FY'de `Gonderildi` rozetli TEK SATIR YOKTUR; ekran etiketi
+         *     `due_date` doluysa "Vadeli", bossa "Gonderildi"dir. Turetilebilen SAKLANMAZ.
+         *
+         *     🔴 K2: `draft` yalniz GIDEN tarafta anlamlidir — gelen fatura sisteme zaten
+         *     kesilmis olarak girer (FGE:69 `GIB'den Geldi ✓`).
+         *
+         *     Iptal/iade gecisi ve `approved` sonrasi ODEME durumu YOKTUR: ilki hicbir
+         *     mockup'ta cizilmemistir, ikincisi Hazine diliminindir.
+         * @enum {string}
+         */
+        InvoiceStatus: "draft" | "sent" | "collected" | "pending" | "approved" | "disputed";
+        /**
+         * InvoiceSummaryMetric
+         * @description FY:71-73 kartlarının İKİ satırı: büyük rakam (tutar) + alt satır (adet).
+         *
+         *     İkisi TEK nesnede durur çünkü aynı kümeden gelirler; `*_amount` ve
+         *     `*_count` diye düz alanlara açılsalardı bir kart yanlış eşleştirilebilir ve
+         *     "18 fatura · ₺0,00" gibi imkânsız bir çift ekrana çıkabilirdi.
+         */
+        InvoiceSummaryMetric: {
+            /** Amount */
+            amount: string;
+            /** Count */
+            count: number;
+        };
+        /**
+         * InvoiceSummaryResponse
+         * @description `GET /invoices/summary` — FY:69-75 KPI şeridi, BEŞ kart.
+         *
+         *     🔴 **`pending_approval` ADETTİR, tutar DEĞİL** (FY:75 tek sayı basar, `₺`
+         *     yoktur); ilk üç kart hem tutar hem adet taşır. `vat_difference` tek bir para
+         *     değeridir ("Ödenecek KDV", FY:74) ve NEGATİF olabilir — gelen KDV giden
+         *     KDV'yi aştığında devreden KDV doğar ve bu meşrudur, sıfıra KIRPILMAZ.
+         *
+         *     Ay penceresi ve kapsam kuralları `summary.py` modül docstring'indedir.
+         */
+        InvoiceSummaryResponse: {
+            issued_this_month: components["schemas"]["InvoiceSummaryMetric"];
+            received_this_month: components["schemas"]["InvoiceSummaryMetric"];
+            receivable: components["schemas"]["InvoiceSummaryMetric"];
+            /** Vat Difference */
+            vat_difference: string;
+            /** Pending Approval */
+            pending_approval: number;
+        };
+        /**
+         * InvoiceUpdate
+         * @description `PATCH /invoices/{id}` — tüm alanlar isteğe bağlı (spec §7 md.5).
+         *
+         *     Alanın GÖNDERİLMEMESİ ile `null` GÖNDERİLMESİ farklıdır ve fark
+         *     `model_fields_set` ile korunur: `site_id: null` bağı KOPARIR, hiç
+         *     göndermemek ona DOKUNMAZ (`StockItemUpdate` dersi).
+         *
+         *     **`invoice_no`/`direction` BURADA YOKTUR:** yön faturanın kimliğidir,
+         *     numara ise ya sunucunundur ya satıcınındır — ikisi de sonradan
+         *     düzeltilemez. **`lines` de yoktur:** kalem kümesinin TEK yolu `PUT lines`tır
+         *     (§7 md.7), iki yazma yolu olsaydı `sort_order` üretimi ikiye bölünürdü.
+         *
+         *     Gelen faturada bu şemanın yalnız ÜÇ alanı kabul edilir
+         *     (`guards.INCOMING_PATCHABLE_FIELDS`, 422 aksi hâlde) — ayrı bir şema
+         *     açılmadı çünkü kural DURUMA bağlıdır ve tip sistemi onu taşıyamaz.
+         */
+        InvoiceUpdate: {
+            document_type?: components["schemas"]["InvoiceDocumentType"] | null;
+            /** Issue Date */
+            issue_date?: string | null;
+            /** Due Date */
+            due_date?: string | null;
+            payment_method?: components["schemas"]["InvoicePaymentMethod"] | null;
+            /** Note */
+            note?: string | null;
+            /** Party Name */
+            party_name?: string | null;
+            /** Party Tax Number */
+            party_tax_number?: string | null;
+            /** Party Tax Office */
+            party_tax_office?: string | null;
+            /** Party Address */
+            party_address?: string | null;
+            /** Employer Id */
+            employer_id?: string | null;
+            /** Customer Id */
+            customer_id?: string | null;
+            /** Supplier Id */
+            supplier_id?: string | null;
+            /** Subcontractor Id */
+            subcontractor_id?: string | null;
+            /** Progress Payment Id */
+            progress_payment_id?: string | null;
+            /** Subcontractor Progress Payment Id */
+            subcontractor_progress_payment_id?: string | null;
+            /** Equipment Rental Invoice Id */
+            equipment_rental_invoice_id?: string | null;
+            /** Purchase Order Id */
+            purchase_order_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Site Id */
+            site_id?: string | null;
+            /** Advance Rate */
+            advance_rate?: number | string | null;
+            /** Retention Rate */
+            retention_rate?: number | string | null;
+            /** Withholding Rate */
+            withholding_rate?: number | string | null;
+        };
         /** LandShareCard */
         LandShareCard: {
             /** Landowner Name */
@@ -7141,11 +8234,80 @@ export interface components {
             net: string;
         };
         /**
+         * PaymentCreate
+         * @description `POST /invoices/{id}/payments` — FGI:220-247'nin BEŞ alanı BİREBİR.
+         *
+         *     Fatura gövdede DEĞİL YOLDADIR (`invoice_id` alanı yoktur): iki yerden
+         *     gelseydi yoldaki kimlik ile gövdedeki ayrışabilir ve ödeme kilitlenen
+         *     faturadan BAŞKA bir faturaya yazılabilirdi.
+         *
+         *     `created_by_id` de gövdeden GELMEZ — oturumdan damgalanır.
+         */
+        PaymentCreate: {
+            /**
+             * Bank Account Id
+             * Format: uuid
+             */
+            bank_account_id: string;
+            method: components["schemas"]["PaymentMethodKind"];
+            /** Amount */
+            amount: number | string;
+            /**
+             * Paid On
+             * Format: date
+             */
+            paid_on: string;
+            /** Note */
+            note?: string | null;
+        };
+        /**
+         * PaymentListResponse
+         * @description TB3 liste zarfı + 🔴 K5'in iki TÜREV toplamı.
+         *
+         *     `paid_total` ve `remaining` **TÜM satırlardan** gelir, SAYFADAN DEĞİL:
+         *     sayfadan hesaplansaydı `limit`li bir okumada "kalan" birdenbire büyür ve
+         *     ekran ile K6 kapısı ayrışırdı (kullanıcı ekrana bakıp girdiği tutarda 422
+         *     alırdı).
+         *
+         *     `remaining` NEGATİF olabilir: K6 yeni tahsilatı keser ama elle düzeltilmiş
+         *     ya da politika öncesi satırlar toplamı aşabilir — `max(0, …)` ile
+         *     kırpılsaydı aşım ekranda GÖRÜNMEZ olurdu.
+         */
+        PaymentListResponse: {
+            /** Items */
+            items: components["schemas"]["PaymentResponse"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Paid Total */
+            paid_total: string;
+            /** Remaining */
+            remaining: string;
+        };
+        /**
          * PaymentMethod
          * @description PE 115 (İK-1 spec §1).
          * @enum {string}
          */
         PaymentMethod: "bank" | "cash" | "mixed";
+        /**
+         * PaymentMethodKind
+         * @description Odeme sekli — FGI:225-228 KAPALI kumesi BIREBIR.
+         *
+         *     ⚠️ `cheque` / `promissory_note` yalnizca ODEME SEKLININ ETIKETIDIR: cek ya
+         *     da senet KAYDI ACMAZ (cek varligi HZ-2'nin isi, `cheque_id` kolonu bu
+         *     yuzden yoktur).
+         *
+         *     `invoicing.InvoicePaymentMethod` ile AYRI bir tiptir ve oyle kalir: fatura
+         *     tarafi `credit_card` tasir ama `promissory_note` tasimaz — kumeler
+         *     birebir ayni degildir ve tek tipte birlestirmek ikisinden birine olmayan
+         *     bir deger vaat ederdi.
+         * @enum {string}
+         */
+        PaymentMethodKind: "transfer" | "cheque" | "promissory_note" | "cash";
         /**
          * PaymentPeriod
          * @description Hakediş periyodu — FORM 101 açılır sırası (spec §3.5).
@@ -7158,6 +8320,55 @@ export interface components {
          * @enum {string}
          */
         PaymentPlanType: "cash" | "down_payment_installments" | "bank_loan" | "barter";
+        /**
+         * PaymentResponse
+         * @description Ödeme satırı — yalnız SAKLANAN kolonlar.
+         *
+         *     `direction` YOKTUR ve türetilip eklenmez: ekran faturanın yönünü zaten
+         *     faturadan okur, burada ikinci bir kopya taşımak K4'ün tek kaynağını bozardı.
+         */
+        PaymentResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Invoice Id
+             * Format: uuid
+             */
+            invoice_id: string;
+            /**
+             * Bank Account Id
+             * Format: uuid
+             */
+            bank_account_id: string;
+            method: components["schemas"]["PaymentMethodKind"];
+            /** Amount */
+            amount: string;
+            /**
+             * Paid On
+             * Format: date
+             */
+            paid_on: string;
+            /** Note */
+            note: string | null;
+            /**
+             * Created By Id
+             * Format: uuid
+             */
+            created_by_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
         /**
          * PaymentTerms
          * @description Odeme vadesi — TED 50/71/91/112 + FST 134'un KAPALI kumesi.
@@ -14085,6 +15296,87 @@ export interface components {
             /** Late Fee Amount */
             late_fee_amount: string;
         };
+        /**
+         * UpcomingPaymentItem
+         * @description E9:109-125 satırı — mockup'ın BEŞ alanı + kaynak damgası.
+         *
+         *     🔴 **K10: aciliyet/renk alanı YOKTUR ve açılmaz.** E9'un kodlaması kendi
+         *     içinde tutarsızdır (2 gün→turuncu, 3 gün→**kırmızı**, 7 gün→yeşil); sunucu
+         *     bir eşik uydurursa mockup'ın hangi yarısının doğru olduğuna KARAR VERMİŞ
+         *     olur. Yanıt yalnız `days_remaining` sayısını ve `source_type`ı verir; renk
+         *     istemcinindir (SA'nın "EN HIZLI rozeti sunucuda üretilmez" kanonu).
+         *
+         *     `counterparty` NULLABLE'dır ve olmalıdır: taşeron sözleşmesinde
+         *     `subcontractor_name` taslak aşamasında boş bırakılabilir. Boş metinle
+         *     ya da "Bilinmeyen" gibi bir dolgu ile doldurmak, kullanıcıya var olmayan
+         *     bir kayıt adı gösterirdi.
+         *
+         *     `document_no` yalnız TANIMLAYICIDIR, cümle DEĞİL: faturada `invoice_no`,
+         *     hakedişte `sequence_no`nun metni. Sunucu "Hakediş #47" cümlesini KURMAZ —
+         *     o birleştirme (E9:113) `source_type` ile birlikte istemcide yapılır ve
+         *     çeviri/biçim kararı sunucuya sızmaz.
+         */
+        UpcomingPaymentItem: {
+            source_type: components["schemas"]["UpcomingSourceType"];
+            /**
+             * Source Id
+             * Format: uuid
+             */
+            source_id: string;
+            /** Counterparty */
+            counterparty: string | null;
+            /** Document No */
+            document_no: string;
+            /**
+             * Due Date
+             * Format: date
+             */
+            due_date: string;
+            /** Days Remaining */
+            days_remaining: number;
+            /** Amount */
+            amount: string;
+        };
+        /**
+         * UpcomingPaymentsResponse
+         * @description `days` ve `as_of` ECHO edilir.
+         *
+         *     Sayfalama YOKTUR: pencere `days` ile zaten SINIRLIDIR (tavan 90 gün) ve
+         *     kart bir kesittir, tablo değil — `limit` eklemek pencerenin üstüne ikinci
+         *     ve sessiz bir kırpma koyardı.
+         *
+         *     `as_of` olmadan `days_remaining` DOĞRULANAMAZ: istemci kendi saatiyle
+         *     hesaplarsa TR gecesi 00:00-03:00 arasında sunucudan bir gün sapar.
+         */
+        UpcomingPaymentsResponse: {
+            /** Items */
+            items: components["schemas"]["UpcomingPaymentItem"][];
+            /** Days */
+            days: number;
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+        };
+        /**
+         * UpcomingSourceType
+         * @description Yaklaşan ödemenin KAYNAK EVRAK tipi (K9).
+         *
+         *     E9:113/117/121 ÜÇ kaynak çizer — hakediş · **bordro** · fatura — ama bugün
+         *     yalnız İKİSİ üretilebilir:
+         *
+         *     * ✅ `invoice` — `invoices.due_date` gerçek bir vade kolonudur;
+         *     * ✅ `subcontractor_progress_payment` — vade `approved_at` +
+         *       `subcontractor_contracts.payment_term_days`ten TÜRER;
+         *     * ⛔ **bordro — ÜYE OLARAK AÇILMAZ.** `payroll_periods`ta ödeme vadesi
+         *       kavramı YOKTUR (İK-3'te vade kolonu açılmadı) ve uydurulmaz. Üretilemeyen
+         *       bir enum üyesi istemciye tutulamayacak bir söz verirdi: ekran o rozeti
+         *       çizer, hiçbir satır onu taşımazdı. Vade kolonu açıldığında üye de eklenir
+         *       (ROADMAP borcu).
+         * @enum {string}
+         */
+        UpcomingSourceType: "invoice" | "subcontractor_progress_payment";
         /** UserCreate */
         UserCreate: {
             /**
@@ -19312,6 +20604,692 @@ export interface operations {
                 content?: never;
             };
             /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_invoices_endpoint_invoices_get: {
+        parameters: {
+            query?: {
+                direction?: components["schemas"]["InvoiceDirection"] | null;
+                status?: components["schemas"]["InvoiceStatus"] | null;
+                project_id?: string | null;
+                site_id?: string | null;
+                q?: string | null;
+                date_from?: string | null;
+                date_to?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_invoice_endpoint_invoices_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvoiceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Seçilen proje/şantiye/cari/kaynak kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bu fatura numarası bu yönde zaten kayıtlı */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Gövde kuralı ihlali (numara sahibi · tek taraf · oran toplamı) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    invoices_summary_endpoint_invoices_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceSummaryResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_invoice_endpoint_invoices__invoice_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fatura bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_invoice_endpoint_invoices__invoice_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fatura bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yalnızca taslak fatura silinebilir */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_invoice_endpoint_invoices__invoice_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvoiceUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fatura ya da seçilen proje/şantiye/cari/kaynak bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fatura bu durumda düzenlenemez */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Gövde kuralı ihlali ya da gelen faturada kapsam dışı alan */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    replace_invoice_lines_endpoint_invoices__invoice_id__lines_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvoiceLinesReplace"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fatura bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kalemler yalnızca taslak faturada değiştirilebilir */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_invoice_endpoint_invoices__invoice_id__send_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fatura bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description İşlem faturanın yönüne ya da durumuna uygulanamaz */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kalemsiz fatura gönderilemez / onaylanamaz (K6) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mark_collected_invoice_endpoint_invoices__invoice_id__mark_collected_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fatura bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description İşlem faturanın yönüne ya da durumuna uygulanamaz */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_invoice_endpoint_invoices__invoice_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fatura bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description İşlem faturanın yönüne ya da durumuna uygulanamaz */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kalemsiz fatura gönderilemez / onaylanamaz (K6) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    dispute_invoice_endpoint_invoices__invoice_id__dispute_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fatura bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description İşlem faturanın yönüne ya da durumuna uygulanamaz */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_invoice_payments_endpoint_invoices__invoice_id__payments_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fatura bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_invoice_payment_endpoint_invoices__invoice_id__payments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fatura ya da seçilen banka hesabı bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Toplam tahsilat fatura tutarını aşamaz (K6) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    delete_payment_endpoint_payments__payment_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Ödeme kaydı bulunamadı */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -26101,6 +28079,345 @@ export interface operations {
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": unknown;
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_bank_accounts_endpoint_bank_accounts_get: {
+        parameters: {
+            query?: {
+                is_active?: boolean | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankAccountListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_bank_account_endpoint_bank_accounts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BankAccountCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankAccountResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bu IBAN başka bir hesapta kayıtlı */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Gövde kuralı ihlali (Kasa hesabında görünen ad zorunludur) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_bank_account_endpoint_bank_accounts__account_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankAccountResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Banka hesabı bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_bank_account_endpoint_bank_accounts__account_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Banka hesabı bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bu hesaba bağlı ödeme kayıtları var */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_bank_account_endpoint_bank_accounts__account_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BankAccountUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankAccountResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Banka hesabı bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bu IBAN başka bir hesapta kayıtlı */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Gövde kuralı ihlali (Kasa hesabında görünen ad zorunludur) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    list_upcoming_payments_endpoint_treasury_upcoming_payments_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpcomingPaymentsResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_cash_flow_endpoint_treasury_cash_flow_get: {
+        parameters: {
+            query?: {
+                year?: number | null;
+                month?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashFlowResponse"];
                 };
             };
             /** @description Yetkisiz işlem */
