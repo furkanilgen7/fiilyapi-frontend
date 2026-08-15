@@ -1,0 +1,108 @@
+/* F-MU1 T3 · Muhasebe drill-in sidebar'ı. Kanon: `Muhasebe - Hesap
+   Planı.dc.html` (HP), parantez içi sayılar O dosyanın SATIR numaralarıdır.
+   Yapı `settings-shell.css`/`drill-sidebar.css` emsalidir; palet YALNIZ
+   token'dan gelir (çıplak hex yok). */
+
+/* HP:28 — genişlik 220px, yani tam olarak `--sidebar-width`. Ayarlar (240px)
+   ve proje drill'i (260px) kendi genişlikleri için `.app-content` ofsetini
+   negatif margin ile iptal etmek ZORUNDAYDI; burada genişlik global sidebar
+   ile AYNI olduğu için içerik kutusuna hiçbir düzeltme gerekmez ve T2'nin
+   `/muhasebe` ekranı bir piksel bile kaymaz. */
+.mu-shell-sidebar {
+  position: fixed;
+  top: 52px;
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-width);
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  overflow-y: auto;
+  padding: var(--space-4) 0; /* HP:28 — 16px 0 */
+  z-index: 90; /* global sidebar üstünde, topbar (100) altında */
+}
+
+/* HP:29 — grup başlığı. */
+.mu-shell-group__label {
+  padding: 0 var(--space-4) 6px;
+  font-size: var(--text-settings-nav-label); /* HP:29 — 10px */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+  letter-spacing: 1px; /* HP:29 */
+  text-transform: uppercase;
+}
+
+/* HP:30 — üst öğe: tıklanamaz, ama modül içinde olunduğunu göstermek için
+   HP'nin çizdiği vurgulu zemini taşır. */
+.mu-shell-parent {
+  margin: 2px var(--space-2); /* HP:30 */
+  padding: var(--space-2) var(--space-3); /* HP:30 — 8px 12px */
+  background: var(--color-nav-active-bg); /* HP:30 */
+  border-radius: var(--radius-8); /* HP:30 */
+  font-size: var(--text-body); /* HP:30 — 13/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+
+.mu-shell-nav {
+  display: flex;
+  flex-direction: column;
+}
+
+/* HP:31-36 — alt sekmeler SOLDAN GİRİNTİLİdir (margin-left 20px). */
+.mu-shell-nav--sub .mu-shell-item {
+  margin-left: 20px; /* HP:31 */
+}
+
+.mu-shell-item {
+  display: block;
+  margin: 2px var(--space-2); /* HP:31 */
+  padding: 7px var(--space-3); /* HP:31 */
+  border-radius: var(--radius-7); /* HP:31 */
+  text-decoration: none;
+  color: var(--color-text-secondary); /* HP:31 */
+}
+.mu-shell-item__label {
+  font-size: 12px; /* HP:31 — alt sekme 12px; `--text-form-label` YALNIZ
+                      field.css'indir (field-adoption bekçisi) */
+}
+.mu-shell-nav:not(.mu-shell-nav--sub) .mu-shell-item__label {
+  font-size: var(--text-body); /* HP:37-38 — kardeş modüller 13px */
+}
+a.mu-shell-item:hover {
+  background: var(--color-surface-2);
+}
+a.mu-shell-item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* HP:32 — bulunulan sekme: koyu mavi metin + `--color-primary-soft` zemin. */
+.mu-shell-item--active {
+  background: var(--color-primary-soft); /* HP:32 */
+  color: var(--color-primary-hover); /* HP:32 */
+}
+.mu-shell-item--active .mu-shell-item__label {
+  font-weight: var(--weight-semibold); /* HP:32 */
+}
+
+/* HP:33-36 — devre dışı sekmeler: SİLİNMEZ, solgun basılır ve gerekçeleri
+   ekranda GÖRÜNÜR (`title`da saklanmaz). */
+.mu-shell-item--disabled {
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+}
+.mu-shell-item__reason {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-small); /* 11px */
+  line-height: var(--leading-normal);
+  color: var(--color-text-subtle);
+}
+
+/* İçerik sarmalayıcı — global `.app-content` zaten 220px ofset + 28/32px iç
+   boşluk veriyor ve sidebar genişliği ona EŞİT, dolayısıyla burada hiçbir
+   ofset düzeltmesi YOKTUR (yukarıdaki `.mu-shell-sidebar` notu). Sınıf yine de
+   vardır: sayfa alt ağacının tek bir tutamağı olsun. */
+.muhasebe-content {
+  min-width: 0;
+}

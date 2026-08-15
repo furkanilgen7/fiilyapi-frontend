@@ -1,0 +1,305 @@
+import type { JournalLineInput } from "@/lib/api/hooks/useJournalEntryFormMutations";
+import type { ChartAccountResponse } from "@/lib/api/hooks/useChartOfAccounts";
+import type {
+  JournalEntryDetailResponse,
+  JournalEntryResponse,
+} from "@/lib/api/hooks/useJournalEntries";
+import type { JournalEntryUpdate } from "@/lib/api/hooks/useJournalEntryFormMutations";
+import { normalizeDecimalInput, isZeroDecimalString, subtractDecimalStrings, sumDecimalStrings } from "@/lib/decimal";
+
+/**
+ * F-MU1 T4 · Yevmiye fişi diyaloğunun SAF katmanı: satır taslakları, tek-taraf
+ * kısıtı, denge aritmetiği ve kaydet kapısının engelleri.
+ *
+ * 🔴 Form mockup'ı YOKTUR (S-FRM kanonu): alanlar `backend/app/modules/
+ * accounting/schemas.py`ten BİREBİR türetilmiştir — `entry_date` ·
+ * `description` · `detail_note` · `lines[]{account_id, debit, credit}`.
+ * Sunucunun türev/damga alanları (`status`, `total_debit`/`total_credit`,
+ * `period_year`/`period_month`, `reversal_of_id`, satırın `sort_order`ı) gövdeye
+ * GİREMEZ: şemalar `extra="forbid"`dir, gönderilirse **422**dir.
+ *
+ * Bu modülde AĞ ve DOM yoktur; testi `journal-entry-form.test.ts`te yaşar.
+ */
+
+export interface JournalLineDraft {
+  /** React `key`i — hesap kimliği DEĞİL: boş satırın da kimliği olmalı. */
+  readonly key: string;
+  readonly accountId: string;
+  readonly debit: string;
+  readonly credit: string;
+}
+
+export interface JournalEntryFormState {
+  readonly entryDate: string;
+  readonly description: string;
+  readonly detailNote: string;
+  readonly lines: readonly JournalLineDraft[];
+}
+
+/** Bir bacağın DOLU tarafı; ikisi de boşsa (ya da geçersizse) `null`. */
+export type LineSide = "debit" | "credit";
+
+/** Çift taraflı kaydın tanımı — sunucunun `MINIMUM_LINE_COUNT`u ile birebir. */
+export const MINIMUM_LINE_COUNT = 2;
+
+// --- Engel cümleleri -----------------------------------------------------
+
+/**
+ * 🔴 Denge ve satır sayısı cümleleri SUNUCUNUN metniyle birebirdir
+ * (`validation.UNBALANCED` / `MIN_LINES_REQUIRED`). Aynı kural iki farklı
+ * cümleyle anlatılsaydı, istemci kapısı ile sunucu 422'si aynı ekranda
+ * çelişiyormuş gibi görünürdü.
+ */
+export const JOURNAL_FORM_BLOCKERS = {
+  date: "Tarih zorunludur.",
+  description: "Açıklama zorunludur.",
+  minLines: "Fişte en az iki satır olmalıdır",
+  account: "Her satırda hesap seçilmelidir.",
+  amount: "Tutar geçerli bir sayı olmalıdır (negatif olamaz).",
+  singleSide: "Fiş satırı ya borç ya alacak taşır; ikisi birden ya da ikisi de boş olamaz",
+  unbalanced: "Fiş dengede değil: borç ve alacak toplamları eşit olmalıdır",
+} as const;
+
+// --- Tarih ---------------------------------------------------------------
+
+function pad2(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+/**
+ * Bugünün ISO tarihi — 🔴 **YEREL TAKVİMDEN**.
+ *
+ * `toISOString().slice(0,10)` YASAK: UTC'ye çevirir ve TR saatinde gün 03:00'ten
+ * önce bir ÖNCEKİ güne düşerdi. Ayın ilk/son gününde bu, fişin DÖNEMİNİ
+ * (`period_year`/`period_month`, sunucuda `entry_date`ten türer) bir ay
+ * kaydırırdı — üretimde bulunmuş hata sınıfı (TB5), `accounting-labels`
+ * `currentPeriod` ile aynı yaklaşım.
+ */
+export function todayIsoDate(today: Date): string {
+  return `${today.getFullYear()}-${pad2(today.getMonth() + 1)}-${pad2(today.getDate())}`;
+}
+
+// --- Satır taslakları ----------------------------------------------------
+
+export function emptyJournalLine(key: string): JournalLineDraft {
+  return { key, accountId: "", debit: "", credit: "" };
+}
+
+/**
+ * Yeni fiş İKİ boş satırla açılır: tek satır sunucunun `MIN_LINES_REQUIRED`
+ * engeline takılır ve kullanıcı formu ancak "+ Satır Ekle"yi bulduktan sonra
+ * kaydedebilirdi.
+ */
+export function initialJournalLines(): readonly JournalLineDraft[] {
+  return [emptyJournalLine("line-0"), emptyJournalLine("line-1")];
+}
+
+/** Sunucudan gelen bacakları taslağa çevirir (düzenleme kipi). */
+export function draftsFromEntry(
+  entry: Pick<JournalEntryDetailResponse, "lines">,
+): readonly JournalLineDraft[] {
+  return entry.lines.map((line) => ({
+    key: line.id,
+    accountId: line.account_id,
+    // Sunucu iki tarafı da basar; SIFIR olan taraf formda BOŞ görünür ki
+    // tek-taraf kısıtı ekranda kendini anlatsın.
+    debit: isZeroDecimalString(String(line.debit)) ? "" : String(line.debit),
+    credit: isZeroDecimalString(String(line.credit)) ? "" : String(line.credit),
+  }));
+}
+
+/**
+ * Bir tarafa yazılan değer öteki tarafı TEMİZLER.
+ *
+ * 🔴 `ck_journal_lines_single_side` (DB) + `JournalLineInput._tek_taraf` (şema):
+ * bir bacak TEK TARAFLIDIR. İstemci engellemeseydi kullanıcı iki tarafı da
+ * doldurup 422 yer, hangi satırın suçlu olduğunu ekranda göremezdi.
+ */
+export function applyLineAmount(
+  line: JournalLineDraft,
+  side: LineSide,
+  raw: string,
+): JournalLineDraft {
+  const isEmpty = raw.trim().length === 0;
+  if (side === "debit") return { ...line, debit: raw, credit: isEmpty ? line.credit : "" };
+  return { ...line, credit: raw, debit: isEmpty ? line.debit : "" };
+}
+
+/** Ondalık metni tutara indirger; geçersiz/negatif ise `null`. */
+function positiveAmount(raw: string): string | null {
+  const normalized = normalizeDecimalInput(raw);
+  if (normalized === null) return null;
+  if (normalized.startsWith("-")) return null;
+  return isZeroDecimalString(normalized) ? null : normalized;
+}
+
+/**
+ * Satırın dolu tarafı. "Dolu" = SIFIRDAN BÜYÜK: sunucu `(0,0)` satırını da
+ * reddeder (`debit > 0` == `credit > 0` ise 422) — sıfır yazmak satırı doldurmaz.
+ */
+export function lineFilledSide(line: JournalLineDraft): LineSide | null {
+  const debit = positiveAmount(line.debit);
+  const credit = positiveAmount(line.credit);
+  if (debit !== null && credit === null) return "debit";
+  if (credit !== null && debit === null) return "credit";
+  return null;
+}
+
+/** Öteki taraf kilitli mi? (bir tarafa değer girilince kutu kapanır) */
+export function isSideLocked(line: JournalLineDraft, side: LineSide): boolean {
+  const filled = lineFilledSide(line);
+  return filled !== null && filled !== side;
+}
+
+// --- Denge ---------------------------------------------------------------
+
+export interface JournalTotals {
+  readonly totalDebit: string;
+  readonly totalCredit: string;
+  /** `Σ borç − Σ alacak`. */
+  readonly difference: string;
+  readonly isBalanced: boolean;
+}
+
+/**
+ * 🔴 DENGE GÖSTERGESİ — para karşılaştırması KAYAN NOKTAYLA YAPILMAZ.
+ *
+ * `Number(a) === Number(b)` bir eşiği sessizce yanlış tarafa düşürür:
+ * `0.1 + 0.2 !== 0.3`. Toplama `sumDecimalStrings`, fark
+ * `subtractDecimalStrings`, sıfır denetimi `isZeroDecimalString` ile yapılır —
+ * üçü de `lib/decimal.ts`in tek kaynağıdır, burada YENİ formül yazılmaz.
+ *
+ * Geçersiz/boş taraf `0` sayılır: o satır zaten kendi engelini üretir
+ * (`amount`/`singleSide`), toplamın sayı olmayan bir terimle `NaN`a düşmesi ise
+ * göstergeyi tamamen okunmaz yapardı.
+ */
+export function journalTotals(lines: readonly JournalLineDraft[]): JournalTotals {
+  const totalDebit = sumDecimalStrings(lines.map((line) => normalizeDecimalInput(line.debit) ?? "0"));
+  const totalCredit = sumDecimalStrings(
+    lines.map((line) => normalizeDecimalInput(line.credit) ?? "0"),
+  );
+  const difference = subtractDecimalStrings(totalDebit, totalCredit);
+  return { totalDebit, totalCredit, difference, isBalanced: isZeroDecimalString(difference) };
+}
+
+// --- Kaydet kapısı -------------------------------------------------------
+
+/**
+ * Kaydet düğmesinin kapısı: liste BOŞ değilse düğme KAPALIdır.
+ *
+ * Engeller LİSTE olarak döner (sunucunun `balance_blockers` deseni): kullanıcıya
+ * eksikleri birer birer keşfettirmek çok satırlı bir fişte kabul edilemez.
+ * Sıra sabittir — aynı formda cümlelerin yer değiştirmesi "başka bir hata"
+ * izlenimi verirdi.
+ */
+export function journalFormBlockers(state: JournalEntryFormState): readonly string[] {
+  const blockers: string[] = [];
+  if (state.entryDate.trim().length === 0) blockers.push(JOURNAL_FORM_BLOCKERS.date);
+  if (state.description.trim().length === 0) blockers.push(JOURNAL_FORM_BLOCKERS.description);
+  if (state.lines.length < MINIMUM_LINE_COUNT) blockers.push(JOURNAL_FORM_BLOCKERS.minLines);
+  if (state.lines.some((line) => line.accountId.length === 0))
+    blockers.push(JOURNAL_FORM_BLOCKERS.account);
+  if (state.lines.some((line) => hasInvalidAmount(line))) blockers.push(JOURNAL_FORM_BLOCKERS.amount);
+  if (state.lines.some((line) => lineFilledSide(line) === null))
+    blockers.push(JOURNAL_FORM_BLOCKERS.singleSide);
+  if (!journalTotals(state.lines).isBalanced) blockers.push(JOURNAL_FORM_BLOCKERS.unbalanced);
+  return blockers;
+}
+
+/** Yazılmış ama sayı OLMAYAN (ya da negatif) taraf. Boş taraf geçersiz değildir. */
+function hasInvalidAmount(line: JournalLineDraft): boolean {
+  return [line.debit, line.credit].some((raw) => {
+    if (raw.trim().length === 0) return false;
+    const normalized = normalizeDecimalInput(raw);
+    return normalized === null || normalized.startsWith("-");
+  });
+}
+
+// --- Gövdeye çevirme -----------------------------------------------------
+
+/**
+ * 🔴 `debit` ve `credit` İKİSİ DE ZORUNLUDUR: boş bırakılan taraf `"0"` olarak
+ * gider, `undefined` DEĞİL. Şema `| None` kabul etmez (NULL fail-closed) —
+ * eksik alan **422**dir.
+ */
+export function toJournalLineInputs(
+  lines: readonly JournalLineDraft[],
+): readonly JournalLineInput[] {
+  return lines.map((line) => ({
+    account_id: line.accountId,
+    debit: normalizeDecimalInput(line.debit) ?? "0",
+    credit: normalizeDecimalInput(line.credit) ?? "0",
+  }));
+}
+
+/** Satır kümesi gerçekten DEĞİŞTİ mi? Değişmediyse `PUT …/lines` hiç atılmaz. */
+export function linesChanged(
+  next: readonly JournalLineInput[],
+  previous: readonly JournalLineInput[],
+): boolean {
+  if (next.length !== previous.length) return true;
+  return next.some((line, index) => {
+    const before = previous[index];
+    return (
+      line.account_id !== before.account_id ||
+      !sameAmount(line.debit, before.debit) ||
+      !sameAmount(line.credit, before.credit)
+    );
+  });
+}
+
+/** `"0"` ile `"0.00"` AYNI tutardır — metin eşitliği yanıltır. */
+function sameAmount(a: number | string, b: number | string): boolean {
+  return isZeroDecimalString(subtractDecimalStrings(String(a), String(b)));
+}
+
+/**
+ * `PATCH` gövdesi yalnız DEĞİŞEN alanları taşır (`BoqItemFormModal` emsali).
+ *
+ * `detail_note` istisnadır: kolonu NULLABLE'dır, dolayısıyla boşaltmak GERÇEK
+ * bir temizlemedir ve `null` olarak gönderilir.
+ */
+export function changedEntryFields(
+  state: JournalEntryFormState,
+  original: Pick<JournalEntryResponse, "entry_date" | "description" | "detail_note">,
+): JournalEntryUpdate {
+  const body: JournalEntryUpdate = {};
+  if (state.entryDate !== original.entry_date) body.entry_date = state.entryDate;
+  if (state.description.trim() !== original.description) body.description = state.description.trim();
+  const nextNote = state.detailNote.trim();
+  const previousNote = original.detail_note ?? "";
+  if (nextNote !== previousNote) body.detail_note = nextNote.length === 0 ? null : nextNote;
+  return body;
+}
+
+// --- Hesap seçici --------------------------------------------------------
+
+/**
+ * 🔴 **YAPRAK KURALI (backend §4c, `validation.leaf_blockers`)**: fiş satırı
+ * yalnızca ÇOCUĞU OLMAYAN hesaba kesilebilir — üst hesabın bakiyesi
+ * çocuklarınınkinin toplamıdır, ikisine birden kayıt atılırsa mizan ÇİFT SAYAR.
+ *
+ * Yaprak tanımı sunucudaki `repository.has_child_accounts` ile aynıdır: kodun
+ * KENDİSİYLE BAŞLAYAN başka bir kod var mı (torunlar dahil, kendisi hariç).
+ * `parent_id` FK yoktur, hiyerarşi kodun içindedir (K4).
+ *
+ * ⚠️ Katalog sayfalanmış (tavan 200) ya da süzülmüş gelirse bir çocuk listede
+ * OLMAYABİLİR ve üst hesap yaprak SANILIR. Bu yüzden sunucunun 422'si son söz
+ * olarak ekrana basılır — istemci süzgeci bir KOLAYLIK, kapı değildir.
+ */
+export function isLeafChartAccount(
+  account: ChartAccountResponse,
+  accounts: readonly ChartAccountResponse[],
+): boolean {
+  return !accounts.some(
+    (other) => other.code !== account.code && other.code.startsWith(account.code),
+  );
+}
+
+/** Satır seçicisinin seçenekleri — yalnız yaprak hesaplar. */
+export function selectableLineAccounts(
+  accounts: readonly ChartAccountResponse[] | undefined,
+): readonly ChartAccountResponse[] {
+  if (accounts === undefined) return [];
+  return accounts.filter((account) => isLeafChartAccount(account, accounts));
+}

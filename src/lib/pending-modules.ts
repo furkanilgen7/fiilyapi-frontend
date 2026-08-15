@@ -138,6 +138,17 @@ const MODULE_LABELS: Record<string, string> = {
   // EDİLMEZ (F-TH `work_category` emsali) — "—" + bu gerekçe basılır.
   purchase_order_material: "Sipariş kalemleri henüz saklanmıyor (sipariş tek tutar taşır)",
   purchase_order_quantity: "Sipariş miktarı henüz saklanmıyor (sipariş tek tutar taşır)",
+  // F-MU1 T2 (E8:66 "Dışa Aktar") — muhasebe kökünde HİÇBİR dışa aktarma ucu
+  // yoktur (`/audit-log/export.xlsx` denetim günlüğünündür, yevmiyenin değil).
+  // Düğme SİLİNMEZ (F-TH kanonu), devre dışı + GÖRÜNÜR gerekçeyle basılır —
+  // gerekçeyi `title`da saklamak yasaktır.
+  accounting_export: "Yevmiye defteri dışa aktarma ucu henüz açılmadı",
+  // F-MU1 T3 (HP:49 "Excel") — AYRI bir anahtar açıldı, `accounting_export`
+  // paylaşılmadı: o metin adıyla "yevmiye defteri" der ve Hesap Planı
+  // ekranında yanlış yüzeyi işaret ederdi. İkisi de aynı gerçeği anlatır
+  // (muhasebe kökünde HİÇBİR dışa aktarma ucu yoktur) ama her ekran kendi
+  // düğmesinin gerekçesini okur.
+  chart_of_accounts_export: "Hesap planı dışa aktarma ucu henüz açılmadı",
 };
 
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";

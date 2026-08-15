@@ -112,8 +112,27 @@ describe("NAV_GROUPS — href geçerliliği (kırık link koruması)", () => {
     expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "static" });
   });
 
-  it("henüz yazılmamış 'Muhasebe' catch-all'a düşer (kontrol grubu)", () => {
+  // F-MU1 T2: `/muhasebe` GERÇEK sayfa oldu (E8 · Yevmiye Defteri) — bu satır
+  // artık "henüz yazılmamış" kontrol grubu DEĞİL, `/satinalma` ile aynı
+  // dönüşün kilididir: rota klasörü silinirse kullanıcı sessizce "yakında"
+  // görmez.
+  it("'Muhasebe' /muhasebe statik rotasına düşer (catch-all DEĞİL)", () => {
     const item = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.label === "Muhasebe");
+    expect(item?.href).toBe("/muhasebe");
+    expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "static" });
+  });
+
+  // 🔴 KONTROL GRUBU (F-MU1 T3'te YENİDEN kuruldu). Yukarıdaki beş iddia
+  // "yazılmış öğe gerçekten statik rotaya düşüyor mu" diye sorar; hepsi
+  // `resolveHrefIn`in POZİTİF yolunu sınar. T2'de `/muhasebe` gerçek sayfaya
+  // dönünce dosyada hiç NEGATİF örnek kalmamıştı — `resolveHrefIn` her şeye
+  // `{kind:"static"}` döndürecek şekilde bozulsaydı testlerin TAMAMI yeşil
+  // kalırdı. "Mali Tablolar" bugün yazılmamış tek nav öğesidir ve gerçekten
+  // catch-all'a düşer; yazıldığı gün bu test kırmızıya döner ve ONU da
+  // yukarıdaki listeye taşımak gerekir (kasıtlı bakım noktası).
+  it("kontrol grubu: 'Mali Tablolar' HENÜZ yazılmamıştır → catch-all'a düşer", () => {
+    const item = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.label === "Mali Tablolar");
+    expect(item?.href).toBe("/mali-tablolar");
     expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "catch-all" });
   });
 });

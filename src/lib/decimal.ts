@@ -51,6 +51,35 @@ export function multiplyDecimalStrings(a: string, b: string): string {
   return fromScaledBigInt(product, scaleA + scaleB);
 }
 
+/**
+ * İki ondalık string'i KAYIPSIZ çıkarır (F-MU1 T4 · yevmiye fişinin DENGE
+ * göstergesi: `Σ borç − Σ alacak`).
+ *
+ * 🔴 `Number(a) - Number(b)` YASAK. Denge kapısı bir EŞİKTİR: `0.1 + 0.2` float
+ * toplamı `0.30000000000000004` verir ve `0.3`e eşit ÇIKMAZ — kullanıcı ekranda
+ * dengeli bir fiş görürken "Kaydet" sessizce kapalı kalırdı (ya da ters yönde,
+ * bir kuruşluk kaçak dengeli sayılırdı). Sunucu karşılaştırmayı `Decimal`
+ * üzerinde TOLERANSSIZ yapar (`validation.py` K1/HZ-1 K6); istemci aynı
+ * aritmetiği kullanmazsa iki taraf farklı cevap verir.
+ */
+export function subtractDecimalStrings(a: string, b: string): string {
+  const scale = Math.max(fractionLength(a), fractionLength(b));
+  return fromScaledBigInt(toScaledBigInt(a, scale) - toScaledBigInt(b, scale), scale);
+}
+
+/**
+ * Ondalık string SIFIR mı? `"0"` · `"0.00"` · `"-0.000"` hepsi sıfırdır.
+ *
+ * Metin karşılaştırması (`value === "0"`) YETMEZ: `sumDecimalStrings` ölçeği
+ * girdilerin en uzun kesrinden alır, yani aynı sıfır bir fişte `"0"`, ötekinde
+ * `"0.00"` yazılır. Sayıya çevirmek de aynı float tuzağını geri getirirdi.
+ */
+export function isZeroDecimalString(value: string): boolean {
+  const trimmed = value.trim();
+  if (!/\d/.test(trimmed) || !/^[-+]?\d*\.?\d*$/.test(trimmed)) return false;
+  return toScaledBigInt(trimmed, fractionLength(trimmed)) === 0n;
+}
+
 function fractionLength(value: string): number {
   const [, fraction = ""] = value.trim().split(".");
   return fraction.length;

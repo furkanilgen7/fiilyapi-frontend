@@ -896,6 +896,37 @@ describe("BFF /api/backend/[...path]", () => {
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 
+    // F-MU1 ek gorev — MU-2 (donem kapanisi + mizan + KDV) UC kokU.
+    // 🔴 BU BEKCININ VARLIK SEBEBI: yukaridaki "cagrilan her kok
+    // ALLOWED_ROOTS'ta tanimlidir" bekcisi `cagrilan ⊆ izinli` yonunu
+    // olcer. Bu uc kokU CAGIRAN KOD HENUZ YOK (Mizan/KDV/Donem ekranlari
+    // sonraki dilimin isi), dolayisiyla o bekci onlari HIC GORMEZ — biri
+    // silse tek bir test bile kirmiziya donmezdi. Yonetim canlida OLCTU:
+    // uc kok de BFF uzerinden 404 doneriyordu ve govde
+    // `{"ok":false,"code":"not_found"}` idi (backend'in 404'u DEGIL, bu
+    // listenin kendi reddi). Kok duserse o ekranlar YALNIZ CANLIDA 404
+    // alir; jsdom testleri bunu GORMEZ.
+    it.each(["accounting-periods", "trial-balance", "vat-return"])(
+      "%s koku (MU-2) allow-list'te GERCEK girdi olarak tanimlidir",
+      (root) => {
+        const source = readFileSync(
+          resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+          "utf8",
+        );
+        const allowList = source.slice(
+          source.indexOf("const ALLOWED_ROOTS"),
+          source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+        );
+        // 🔴 Yorum metni DEGIL, tirnakli GERCEK girdiler okunur — aksi halde
+        // koku yalnizca aciklama satirinda gecen bir liste testi GECIRIRDI
+        // (sahte bekci). Ayrica "accounting" diye AYRI bir kok EKLENMEZ:
+        // donem uclarinin ilk segmenti "accounting-periods"tir.
+        const entries = [...allowList.matchAll(/^\s*"([a-z0-9-]+)",/gm)].map((m) => m[1]);
+        expect(entries).toContain(root);
+        expect(entries).not.toContain("accounting");
+      },
+    );
+
     // F-BC · T1 — Belge Arşivi IKI yeni kok ekler ve ikisi de ADLI kapiya
     // baglanir:
     //   · `documents`        → POST/GET /documents, /documents/{id}[/download]

@@ -204,6 +204,24 @@ const ALLOWED_ROOTS = new Set([
   "chart-of-accounts",
   "journal-entries",
   "journal",
+  // MU-2 (dönem kapanışı + mizan + KDV beyanı, canlıda 2026-08-15) — üç kök.
+  // Yönetim canlıda ÖLÇTÜ: üçü de BFF üzerinden 404 dönüyordu ve gövde
+  // `{"ok":false,"code":"not_found"}` idi — yani backend'in 404'ü DEĞİL, bu
+  // izin listesinin kendi reddi. Kökler:
+  //   · `accounting-periods` → `GET /accounting-periods`,
+  //     `POST /accounting-periods/{year}/{month}/close`,
+  //     `POST /accounting-periods/{year}/{month}/reopen`
+  //   · `trial-balance`      → `GET /trial-balance` (mizan)
+  //   · `vat-return`         → `GET /vat-return` (KDV beyanı)
+  // Üçü de KENDİ kökünden gelir; dönem uçlarının ilk segmenti "accounting"
+  // DEĞİL "accounting-periods"tir, ayrıca bir "accounting" kökü EKLENMEZ.
+  // Bu dilimde (F-MU1) bu kökleri ÇAĞIRAN KOD YOKTUR — Mizan/KDV/Dönem
+  // ekranları sonraki dilimin işi; kökler önden hazır kalır (fatura/hazine
+  // köklerinin ekranlarından önce açılması emsali). Eksikse o ekranlar
+  // YALNIZ CANLIDA 404 alır; jsdom testleri bunu GÖRMEZ.
+  "accounting-periods",
+  "trial-balance",
+  "vat-return",
 ]);
 
 // JSON/metin sayilan icerik tipleri: govde metne cozulup JSON olarak islenir.

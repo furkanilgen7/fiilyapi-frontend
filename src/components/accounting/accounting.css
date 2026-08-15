@@ -1,0 +1,468 @@
+/* F-MU1 · Muhasebe ekranları. Kanon: projedesign
+   "Ekran 8 - Muhasebe.dc.html" (E8). Parantez içi sayılar O dosyanın SATIR
+   numaralarıdır. Prefix `mu`.
+   Mockup'ın üst barı (20-33) ve sol menüsü (36-59) UYGULAMA KABUĞUdur
+   (F3 Topbar + Sidebar) — bu sayfa onları YENİDEN ÇİZMEZ.
+   Palet YALNIZ token'dan gelir (çıplak hex yok); tokens.css bu dilimde
+   DEĞİŞTİRİLEMEZ olduğu için mockup'ta token karşılığı olmayan birkaç ölçü
+   px olarak, E8 satır numarasıyla gerekçelendirilerek yazılır
+   (`invoices.css` emsali). */
+
+.mu {
+  animation: var(--anim-fade-up); /* E8:61 */
+}
+
+.mu__eyebrow {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+  margin-bottom: 6px; /* E8:62 */
+}
+
+.mu__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6); /* E8:63 — 24px */
+}
+
+.mu__title {
+  font-size: var(--text-page-title); /* E8:64 — 26/700 */
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+}
+
+.mu__actions {
+  display: flex;
+  gap: 10px; /* E8:65 */
+  align-items: center;
+}
+
+/* Görünür gerekçe / uyarı bantları — sessiz düşüş YOK. */
+.mu-notice {
+  margin-bottom: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: var(--space-2) var(--space-3);
+  line-height: var(--leading-normal);
+}
+.mu-notice--danger {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger);
+}
+
+/* Dönem seçici + KPI şeridi TEK ızgaradır (E8:72 `auto 1fr 1fr 1fr`). */
+.mu-strip {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr 1fr; /* E8:72 */
+  gap: 14px; /* E8:72 */
+  margin-bottom: var(--space-5); /* E8:72 — 20px */
+  align-items: start;
+}
+
+/* Dönem kartı (E8:73-77). */
+.mu-period {
+  background: var(--color-surface);
+  border-radius: var(--radius-12); /* E8:73 */
+  border: 1px solid var(--color-border);
+  padding: 14px var(--space-5); /* E8:73 */
+  display: flex;
+  align-items: center;
+  gap: 10px; /* E8:73 */
+}
+.mu-period__nav {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted); /* E8:74 */
+  font-size: var(--text-lg); /* E8:74 — 18px */
+  font-family: inherit;
+  line-height: 1;
+  padding: 0;
+}
+.mu-period__nav:hover {
+  color: var(--color-primary);
+}
+.mu-period__label {
+  font-size: var(--text-body); /* E8:75 — 13/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+/* KPI kartları (E8:78-89). */
+.mu-kpi {
+  background: var(--color-surface);
+  border-radius: var(--radius-12); /* E8:78 */
+  border: 1px solid var(--color-border);
+  padding: var(--space-4); /* E8:78 — 16px */
+}
+.mu-kpi__label {
+  font-size: var(--text-small); /* E8:79 — 11px */
+  color: var(--color-text-subtle);
+  margin-bottom: 5px; /* E8:79 */
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+.mu-kpi__value {
+  font-size: var(--text-kpi-value); /* E8:80 — 20/700 */
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+  color: var(--color-text);
+}
+.mu-kpi__value--danger {
+  color: var(--color-danger); /* E8:80 */
+}
+.mu-kpi__value--success {
+  color: var(--color-success); /* E8:84, E8:88 */
+}
+
+/* Tablo kartı (E8:93-97 · taslak paneli aynı kabı kullanır). */
+.mu-panel {
+  background: var(--color-surface);
+  border-radius: var(--radius-14); /* E8:93 */
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  box-shadow: var(--shadow-card); /* E8:93 */
+  margin-bottom: var(--space-5);
+}
+.mu-panel__head {
+  padding: 14px var(--space-4); /* E8:94 */
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3); /* E8:94 — 12px */
+  flex-wrap: wrap;
+}
+.mu-panel__title {
+  font-size: var(--text-body); /* E8:95 — 13/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.mu-panel__body {
+  padding: var(--space-4);
+}
+
+/* Devir bakiyesi bandı — mockup'ta YOKTUR ama `carried_balance` sıfır
+   değilken ilk satırın bakiyesi açıklanamaz görünürdü (T2 kararı). */
+.mu-carried {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.mu-carried__value {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+/* Tablo (E8:98-159). Dar pencerede YATAY kaydırma KENDİ kabındadır. */
+.mu-table-scroll {
+  overflow-x: auto;
+}
+.mu-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.mu-table th {
+  padding: 11px var(--space-4); /* E8:101 */
+  text-align: left;
+  font-size: var(--text-table-head); /* E8:101 — 11/600 uppercase */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  background: var(--color-surface-2); /* E8:100 */
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+.mu-table td {
+  padding: var(--space-3) var(--space-4); /* E8:111 — 12px 16px */
+  font-size: var(--text-body);
+  border-bottom: 1px solid var(--color-divider); /* E8:110 */
+  vertical-align: top;
+}
+.mu-table tbody tr:last-child td {
+  border-bottom: none; /* E8:150 — son satırda çizgi YOK */
+}
+.mu-table .is-right {
+  text-align: right; /* E8:104-106 */
+}
+.mu-table .is-mono {
+  font-family: var(--font-mono); /* E8:111-116 */
+}
+/* E8:111-112 Tarih ve Hesap Kodu 12px ve SOLGUNdur. */
+.mu-table__meta {
+  font-size: 12px; /* E8:111 — `--text-form-label` YALNIZ field.css'indir (field-adoption bekçisi) */
+  color: var(--color-text-muted);
+}
+.mu-table__desc {
+  font-size: var(--text-body); /* E8:113 */
+  color: var(--color-text);
+}
+.mu-table__note {
+  font-size: var(--text-small); /* E8:113 — 11px, ikinci satır */
+  color: var(--color-text-subtle);
+}
+/* E8:114/123 boş taraf: `—` SOLGUN, kalın DEĞİL. */
+.mu-table__empty-cell {
+  color: var(--color-text-subtle);
+}
+.mu-amount--debit {
+  font-weight: var(--weight-semibold);
+  color: var(--color-danger); /* E8:122 */
+}
+.mu-amount--credit {
+  font-weight: var(--weight-semibold);
+  color: var(--color-success); /* E8:115 */
+}
+.mu-amount--balance {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text); /* E8:116 — nötr koyu */
+}
+
+/* Yükleniyor / boş / hata satırları — sessiz boş tablo YASAK. */
+.mu-table__state {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: var(--space-6) var(--space-4);
+}
+.mu-table__state--danger {
+  color: var(--color-danger);
+}
+
+/* Taslak Fişler paneli — ONAYLI SAPMA ADAYI (mockup'ta YOK). */
+.mu-actions-cell {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Dar pencere: şerit tek sütuna iner, yatay taşma OLMAZ. */
+@media (max-width: 1100px) {
+  .mu-strip {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Hesap Planı (T3). Kanon: `Muhasebe - Hesap Planı.dc.html` (HP); parantez içi
+   sayılar O dosyanın SATIR numaralarıdır. Tablo kabı/başlıkları E8'inkiyle
+   AYNIdır (`.mu-table`), yalnız HP'ye özgü kurallar burada.
+--------------------------------------------------------------------------- */
+
+/* HP:41 — geri bağlantısı mavi ve altı çizgisizdir. */
+.mu__back {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.mu__back:hover {
+  text-decoration: underline;
+}
+
+/* HP:60/62 — Tür ve Durum sütunları ORTALIdır. */
+.mu-table .is-center {
+  text-align: center;
+}
+
+/* HP:68-69 · 134-135 · 160-161 · 186-187 — SINIF bantları.
+   🔴 Renkler `tokens.css`e YENİ TOKEN olarak eklenmedi (dosya bu dilimde
+   dokunulmaz); mockup'ın on iki renk değerinin ONU zaten mevcut token'larda
+   BİREBİR vardır. Kalan ikisi HP:186-187'nin mor kenarlığı ve mor metnidir;
+   onlar için tokens.css'in "Muhasebe (mor) ailesi" komşuları kullanıldı
+   (`--color-accent-purple-line` / `--color-accent-purple-deep`). Aynı mor
+   ailesidir, ikinci bir palet doğurmaz — ve ÇIPLAK HEX yazılmaz (bu dosyanın
+   kendi bekçisi hex'i kırmızıya düşürür). */
+.mu-chart__class td {
+  padding: 10px var(--space-4); /* HP:69 */
+  font-size: 12px; /* HP:69 — 12/700 */
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-group); /* HP:69 — 0.5px */
+  background: var(--mu-class-bg);
+  color: var(--mu-class-text);
+  border-bottom: 1px solid var(--mu-class-border);
+}
+.mu-chart__class--1 {
+  --mu-class-bg: var(--color-nav-active-bg); /* HP:68 */
+  --mu-class-border: var(--color-primary-ring); /* HP:68 */
+  --mu-class-text: var(--color-primary-hover); /* HP:69 */
+}
+.mu-chart__class--2 {
+  --mu-class-bg: var(--color-success-tint); /* HP:134 */
+  --mu-class-border: var(--color-success-tint-border); /* HP:134 */
+  --mu-class-text: var(--color-success-deep); /* HP:135 */
+}
+.mu-chart__class--3 {
+  --mu-class-bg: var(--color-orange-tint); /* HP:160 */
+  --mu-class-border: var(--color-orange-tint-border); /* HP:160 */
+  --mu-class-text: var(--color-orange-tint-text); /* HP:161 */
+}
+.mu-chart__class--5 {
+  --mu-class-bg: var(--color-purple-tint); /* HP:186 */
+  --mu-class-border: var(--color-accent-purple-line);
+  --mu-class-text: var(--color-accent-purple-deep);
+}
+/* Mockup'ta ÇİZİLMEMİŞ sınıf (4/6/7/8/9): başlık İCAT EDİLMEZ, tema de
+   ödünç alınmaz — nötr (slate) basılır. */
+.mu-chart__class--neutral {
+  --mu-class-bg: var(--color-surface-2);
+  --mu-class-border: var(--color-border);
+  --mu-class-text: var(--color-text-muted);
+}
+
+/* HP:71-73 · 96-98 · 114-116 — `level === 1` grup satırı. */
+.mu-chart__group td {
+  padding: var(--space-2) var(--space-4); /* HP:72 — 8px 16px */
+  font-size: var(--text-small); /* HP:72 — 11/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2); /* HP:71 */
+  border-bottom: 1px solid var(--color-border); /* HP:71 */
+  text-transform: uppercase; /* HP:73 */
+  letter-spacing: var(--tracking-group); /* HP:73 */
+}
+
+/* Kod girintisi — adım 16px. HP:76 ana hesabı (`level 2`) 32px = 2 adım
+   yazar; alt hesap (`level 3`, HP'de çizilmemiş) aynı adımla 48px olur.
+   `mu-table td` yatay iç boşluğu zaten 16px olduğu için EK sol boşluk
+   (adım − 1) × 16px'tir. */
+.mu-chart__code--0 {
+  padding-left: var(--space-4);
+}
+.mu-chart__code--2 {
+  padding-left: calc(2 * var(--space-4)); /* HP:76 — 32px */
+}
+.mu-chart__code--3 {
+  padding-left: calc(3 * var(--space-4)); /* 48px */
+}
+
+/* HP:79/155 — bakiye kalın MONO; ton `balanceTone`dan gelir. */
+.mu-chart__balance {
+  font-weight: var(--weight-semibold);
+}
+.mu-chart__balance--success {
+  color: var(--color-success); /* HP:79 */
+}
+.mu-chart__balance--danger {
+  color: var(--color-danger); /* HP:155 · HP:167 */
+}
+
+/* HP:80 — Durum noktası 8px. Pasif hâli mockup'ta ÖRNEKLENMEMİŞTİR (eksik
+   ÖRNEK, eksik alan değil) → gri (şef kararı). */
+.mu-chart__dot {
+  display: inline-block;
+  width: 8px; /* HP:80 */
+  height: 8px; /* HP:80 */
+  border-radius: 50%; /* HP:80 */
+}
+.mu-chart__dot--on {
+  background: var(--color-success); /* HP:80 */
+}
+.mu-chart__dot--off {
+  background: var(--color-border-strong);
+}
+
+/* ---------------------------------------------------------------------------
+   T4 · Yevmiye Kaydı / Hesap diyalogları. Form mockup'ı YOKTUR (S-FRM):
+   kap `settings/modal.css` + `settings-form` ızgarasıdır, buradaki kurallar
+   yalnız fişe özgü iki yüzeyi (satır tablosu + DENGE göstergesi) kurar.
+--------------------------------------------------------------------------- */
+
+/* Varsayılan 480px kabuk üç sütunlu satır tablosuna dardır. */
+.mu-modal {
+  width: min(760px, 92vw);
+}
+
+.mu-lines {
+  margin-top: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-12);
+  overflow: hidden;
+}
+.mu-lines__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 10px var(--space-4);
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* 🔴 DENGE GÖSTERGESİ — toplamlar ve fark CANLI görünür; kaydet kapısı
+   dengesizken KAPALIdır ve gerekçe ekrandadır (sunucunun 422'si son çaredir). */
+.mu-balance {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  align-items: end;
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-12);
+}
+.mu-balance__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mu-balance__label {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+.mu-balance__value {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-body);
+}
+.mu-balance__value--ok {
+  color: var(--color-success);
+}
+.mu-balance__value--off {
+  color: var(--color-danger);
+}
+.mu-balance__state {
+  grid-column: 1 / -1;
+  font-size: var(--text-xs);
+}
+.mu-balance__state--ok {
+  color: var(--color-success);
+}
+.mu-balance__state--off {
+  color: var(--color-danger);
+}
+
+/* Kaydet kapısının GEREKÇELERİ — kapalı düğme sessiz kalmaz. */
+.mu-blockers {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-6);
+  list-style: disc;
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-8);
+}
+
+/* Dar pencerede denge şeridi tek sütuna iner. */
+@media (max-width: 640px) {
+  .mu-balance {
+    grid-template-columns: 1fr;
+  }
+}
