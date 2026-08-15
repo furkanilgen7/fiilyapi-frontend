@@ -326,10 +326,13 @@ describe("dönem seçici (E8:74-77)", () => {
     expect(vi.mocked(useJournalSummary)).toHaveBeenLastCalledWith(2026, 6);
     expect(vi.mocked(useLedger).mock.lastCall?.[0]).toMatchObject({ year: 2026, month: 6 });
     expect(vi.mocked(useJournalEntries).mock.lastCall?.[0]).toMatchObject({
-      status: "draft",
       year: 2026,
       month: 6,
     });
+    // 🔴 T5 BULGUSU BEKÇİSİ: `status` süzgeci GÖNDERİLMEZ. Gönderilseydi
+    // `posted` fiş panelde hiç görünmez ve "Storno" düğmesi kullanıcı için
+    // ULAŞILAMAZ olurdu (defterde eylem yoktur). Bu iddia geri dönüşü yakalar.
+    expect(vi.mocked(useJournalEntries).mock.lastCall?.[0]).not.toHaveProperty("status");
   });
 });
 

@@ -8978,6 +8978,323 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       return send(200, RENTAL_MATCH_FIXTURE);
     }
 
+    // --- F-MU1 T5 · Muhasebe uçları (MU-1, 15 yol) ----------------------
+    // Fikstürler ve yardımcılar dosyanın SONUNDADIR (bkz. `ACCOUNTING_CHART_SEEDS`).
+
+    /** Ortak `limit` korkuluğu: tavan 200, aşım **422** (kırpma DEĞİL). */
+    const accountingLimit = (): number | null => {
+      const limit = Number(parsed.searchParams.get("limit") ?? "50");
+      return limit > 200 ? null : limit;
+    };
+    const accountingOffset = () => Number(parsed.searchParams.get("offset") ?? "0");
+
+    if (path === "/chart-of-accounts") {
+      if (method === "GET") {
+        const limit = accountingLimit();
+        if (limit === null) return send(422, { detail: "limit en fazla 200 olabilir." });
+        const offset = accountingOffset();
+        const q = (parsed.searchParams.get("q") ?? "").trim().toLocaleLowerCase("tr");
+        const accountType = parsed.searchParams.get("account_type");
+        const isActive = parsed.searchParams.get("is_active");
+
+        // 🔒 Yaratılan hesaplar SÜZGEÇSİZ listede GÖRÜNMEZ (bkz.
+        // `hiddenAccountIds` notu); `q` ile ARANDIĞINDA bulunurlar.
+        let rows = accountingState.accounts.filter(
+          (row) => q.length > 0 || !accountingState.hiddenAccountIds.has(row.id),
+        );
+        if (q.length > 0) {
+          // HP:47 — arama KOD ve AD üzerinde çalışır.
+          rows = rows.filter(
+            (row) =>
+              row.code.toLocaleLowerCase("tr").includes(q) ||
+              row.name.toLocaleLowerCase("tr").includes(q),
+          );
+        }
+        if (accountType) rows = rows.filter((row) => row.account_type === accountType);
+        if (isActive !== null) rows = rows.filter((row) => row.is_active === (isActive === "true"));
+
+        const body: components["schemas"]["ChartAccountListResponse"] = {
+          // `code ASC` — sunucunun sırası (istemci yeniden sıralamaz).
+          items: [...rows].sort((a, b) => a.code.localeCompare(b.code, "en")).slice(offset, offset + limit),
+          // `total` SÜZÜLMÜŞ kümenin tamamıdır, sayfanın DEĞİL (TB3 kanonu).
+          total: rows.length,
+          limit,
+          offset,
+        };
+        return send(200, body);
+      }
+      if (method === "POST") {
+        return withBody((rawBody) => {
+          // 🔴 Türev alan gövdeden GELEMEZ (`extra="forbid"` → 422).
+          for (const derived of ["balance", "class_code", "level"]) {
+            if (derived in rawBody) return send(422, { detail: `\`${derived}\` gövdeden gönderilemez.` });
+          }
+          const code = String(rawBody.code ?? "").trim();
+          if (!ACCOUNTING_CODE_PATTERN.test(code)) {
+            return send(422, { detail: "Hesap kodu 10 · 100 ya da 100.01 biçiminde olmalıdır." });
+          }
+          const name = String(rawBody.name ?? "").trim();
+          if (name.length === 0) return send(422, { detail: "Hesap adı zorunludur." });
+          if (accountingState.accounts.some((row) => row.code === code)) {
+            return send(409, { detail: "Bu hesap kodu zaten kullanılıyor." });
+          }
+          accountingState.seq += 1;
+          const created: components["schemas"]["ChartAccountResponse"] = {
+            id: `coa-new-${accountingState.seq}`,
+            code,
+            name,
+            account_type: (rawBody.account_type as MockChartAccountType | undefined) ?? "asset",
+            is_active: rawBody.is_active === undefined ? true : rawBody.is_active === true,
+            created_at: ACCOUNTING_STAMP,
+            updated_at: ACCOUNTING_STAMP,
+            // 🔴 Üçü de SUNUCU türevidir; gövdeden değil KODDAN gelir.
+            balance: "0.00",
+            class_code: code[0],
+            level: chartAccountLevel(code),
+          };
+          accountingState.accounts = [...accountingState.accounts, created];
+          accountingState.hiddenAccountIds.add(created.id);
+          return send(201, created);
+        });
+      }
+    }
+
+    const chartAccountMatch = path.match(/^\/chart-of-accounts\/([^/]+)$/);
+    if (chartAccountMatch) {
+      const account = accountingState.accounts.find((row) => row.id === chartAccountMatch[1]);
+      if (account === undefined) return send(404, { detail: "Hesap bulunamadı." });
+      if (method === "GET") return send(200, account);
+      if (method === "PATCH") {
+        return withBody((rawBody) => {
+          for (const derived of ["balance", "class_code", "level"]) {
+            if (derived in rawBody) return send(422, { detail: `\`${derived}\` gövdeden gönderilemez.` });
+          }
+          if (typeof rawBody.code === "string") {
+            const code = rawBody.code.trim();
+            if (!ACCOUNTING_CODE_PATTERN.test(code)) {
+              return send(422, { detail: "Hesap kodu biçimi geçersiz." });
+            }
+            // 🔴 `guards.ACCOUNT_CODE_LOCKED`: satırı olan hesabın kodu kilitlidir.
+            if (code !== account.code && accountingHasLines(account.id)) {
+              return send(409, { detail: "Bu hesaba bağlı yevmiye kayıtları var; kod değiştirilemez." });
+            }
+            account.code = code;
+            account.class_code = code[0];
+            account.level = chartAccountLevel(code);
+          }
+          if (typeof rawBody.name === "string") account.name = rawBody.name.trim();
+          if (typeof rawBody.account_type === "string") {
+            account.account_type = rawBody.account_type as MockChartAccountType;
+          }
+          if (typeof rawBody.is_active === "boolean") account.is_active = rawBody.is_active;
+          return send(200, account);
+        });
+      }
+      if (method === "DELETE") {
+        if (accountingHasLines(account.id)) {
+          return send(409, { detail: "Bu hesaba bağlı yevmiye kayıtları var; hesap silinemez." });
+        }
+        accountingState.accounts = accountingState.accounts.filter((row) => row.id !== account.id);
+        return send(204);
+      }
+    }
+
+    if (method === "GET" && path === "/journal-entries/summary") {
+      const year = Number(parsed.searchParams.get("year"));
+      const month = Number(parsed.searchParams.get("month"));
+      if (year === ACCOUNTING_PERIOD.year && month === ACCOUNTING_PERIOD.month) {
+        return send(200, ACCOUNTING_SUMMARY);
+      }
+      // 🔴 Boş ay `0` döner, BOŞ değil (`COALESCE` kanonu, R12).
+      const empty: components["schemas"]["JournalSummaryResponse"] = {
+        year, month, total_debit: "0.00", total_credit: "0.00", net_balance: "0.00",
+      };
+      return send(200, empty);
+    }
+
+    if (path === "/journal-entries") {
+      if (method === "GET") {
+        const limit = accountingLimit();
+        if (limit === null) return send(422, { detail: "limit en fazla 200 olabilir." });
+        const offset = accountingOffset();
+        const status = parsed.searchParams.get("status");
+        const year = parsed.searchParams.get("year");
+        const month = parsed.searchParams.get("month");
+
+        let rows = accountingState.entries;
+        if (status) rows = rows.filter((row) => row.status === status);
+        if (year) rows = rows.filter((row) => row.period_year === Number(year));
+        if (month) rows = rows.filter((row) => row.period_month === Number(month));
+        // Sunucu sırası: tarih DESC (en yeni fiş üstte).
+        const sorted = [...rows].sort((a, b) => b.entry_date.localeCompare(a.entry_date));
+
+        const body: components["schemas"]["JournalEntryListResponse"] = {
+          items: sorted.slice(offset, offset + limit).map(journalEntryHeader),
+          total: rows.length,
+          limit,
+          offset,
+        };
+        return send(200, body);
+      }
+      if (method === "POST") {
+        return withBody((rawBody) => {
+          // 🔴 Damga/türev alanlar gövdeden GELEMEZ (`extra="forbid"` → 422).
+          for (const derived of ["status", "total_debit", "total_credit", "period_year", "period_month", "reversal_of_id"]) {
+            if (derived in rawBody) return send(422, { detail: `\`${derived}\` gövdeden gönderilemez.` });
+          }
+          const entryDate = String(rawBody.entry_date ?? "");
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(entryDate)) {
+            return send(422, { detail: "Tarih zorunludur." });
+          }
+          const description = String(rawBody.description ?? "").trim();
+          if (description.length === 0) return send(422, { detail: "Açıklama zorunludur." });
+
+          accountingState.seq += 1;
+          const [year, month] = entryDate.split("-");
+          const created: components["schemas"]["JournalEntryDetailResponse"] = {
+            id: `je-new-${accountingState.seq}`,
+            entry_date: entryDate,
+            period_year: Number(year),
+            period_month: Number(month),
+            description,
+            detail_note: (rawBody.detail_note as string | null | undefined) ?? null,
+            // 🔴 Fiş `draft` DOĞAR (K2); `status` gövdeden GELMEZ.
+            status: "draft",
+            total_debit: "0.00",
+            total_credit: "0.00",
+            reversal_of_id: null,
+            created_by_id: ME.id,
+            created_at: ACCOUNTING_STAMP,
+            updated_at: ACCOUNTING_STAMP,
+            lines: [],
+          };
+          const rawLines = Array.isArray(rawBody.lines) ? (rawBody.lines as Record<string, unknown>[]) : [];
+          const failure = applyJournalLines(created, rawLines);
+          if (failure.detail !== undefined) return send(422, { detail: failure.detail });
+          accountingState.entries = [created, ...accountingState.entries];
+          return send(201, created);
+        });
+      }
+    }
+
+    const journalLinesMatch = path.match(/^\/journal-entries\/([^/]+)\/lines$/);
+    if (method === "PUT" && journalLinesMatch) {
+      const entry = accountingState.entries.find((row) => row.id === journalLinesMatch[1]);
+      if (entry === undefined) return send(404, { detail: "Fiş bulunamadı." });
+      // 🔴 K2: satır yazımı YALNIZ `draft`ta serbesttir.
+      if (entry.status !== "draft") {
+        return send(409, { detail: "Yalnızca taslak fişin satırları değiştirilebilir." });
+      }
+      return withBody((rawBody) => {
+        const rawLines = Array.isArray(rawBody.lines) ? (rawBody.lines as Record<string, unknown>[]) : [];
+        const failure = applyJournalLines(entry, rawLines);
+        if (failure.detail !== undefined) return send(422, { detail: failure.detail });
+        return send(200, entry);
+      });
+    }
+
+    const journalActionMatch = path.match(/^\/journal-entries\/([^/]+)\/(post|reverse)$/);
+    if (method === "POST" && journalActionMatch) {
+      const entry = accountingState.entries.find((row) => row.id === journalActionMatch[1]);
+      if (entry === undefined) return send(404, { detail: "Fiş bulunamadı." });
+      if (journalActionMatch[2] === "post") {
+        if (entry.status !== "draft") {
+          return send(409, { detail: "Yalnızca taslak fiş kayıtlaştırılabilir." });
+        }
+        if (entry.lines.length < 2) return send(422, { detail: "Fişte en az iki satır olmalıdır." });
+        entry.status = "posted";
+        return send(200, entry);
+      }
+      // 🔴 Storno YENİ BİR FİŞtir: orijinal `reversed` damgalanır, ters
+      // bacaklı kopya `posted` doğar ve `reversal_of_id` ile geri gösterir.
+      if (entry.status !== "posted") {
+        return send(409, { detail: "Yalnızca kayıtlaştırılmış fiş terslenebilir." });
+      }
+      entry.status = "reversed";
+      accountingState.seq += 1;
+      const storno: components["schemas"]["JournalEntryDetailResponse"] = {
+        ...entry,
+        id: `je-storno-${accountingState.seq}`,
+        status: "posted",
+        description: `Storno: ${entry.description}`,
+        reversal_of_id: entry.id,
+        total_debit: entry.total_credit,
+        total_credit: entry.total_debit,
+        lines: entry.lines.map((line, index) => ({
+          ...line,
+          id: `je-storno-${accountingState.seq}-l${index}`,
+          debit: line.credit,
+          credit: line.debit,
+        })),
+      };
+      accountingState.entries = [storno, ...accountingState.entries];
+      return send(200, storno);
+    }
+
+    const journalEntryMatch = path.match(/^\/journal-entries\/([^/]+)$/);
+    if (journalEntryMatch) {
+      const entry = accountingState.entries.find((row) => row.id === journalEntryMatch[1]);
+      if (entry === undefined) return send(404, { detail: "Fiş bulunamadı." });
+      if (method === "GET") return send(200, entry);
+      if (method === "PATCH") {
+        if (entry.status !== "draft") {
+          return send(409, { detail: "Yalnızca taslak fiş düzenlenebilir." });
+        }
+        return withBody((rawBody) => {
+          for (const derived of ["status", "total_debit", "total_credit", "lines"]) {
+            if (derived in rawBody) return send(422, { detail: `\`${derived}\` gövdeden gönderilemez.` });
+          }
+          if (typeof rawBody.entry_date === "string") {
+            entry.entry_date = rawBody.entry_date;
+            const [year, month] = rawBody.entry_date.split("-");
+            entry.period_year = Number(year);
+            entry.period_month = Number(month);
+          }
+          if (typeof rawBody.description === "string") entry.description = rawBody.description.trim();
+          // 🔴 `detail_note` İSTİSNA: açıkça `null` göndermek GERÇEK temizlemedir.
+          if ("detail_note" in rawBody) {
+            entry.detail_note = (rawBody.detail_note as string | null) ?? null;
+          }
+          return send(200, entry);
+        });
+      }
+      if (method === "DELETE") {
+        if (entry.status !== "draft") {
+          return send(409, { detail: "Yalnızca taslak fiş silinebilir." });
+        }
+        accountingState.entries = accountingState.entries.filter((row) => row.id !== entry.id);
+        return send(204);
+      }
+    }
+
+    if (method === "GET" && path === "/journal") {
+      const limit = accountingLimit();
+      if (limit === null) return send(422, { detail: "limit en fazla 200 olabilir." });
+      const offset = accountingOffset();
+      const year = Number(parsed.searchParams.get("year"));
+      const month = Number(parsed.searchParams.get("month"));
+      const accountId = parsed.searchParams.get("account_id");
+      const status = parsed.searchParams.get("status");
+
+      // 🔴 Defter fikstürü YALNIZ Temmuz 2026'dadır; başka ay BOŞ döner —
+      // yazma akışlarının koştuğu ay (Haziran) böylece T6'nın kadrajına
+      // YAPISAL olarak giremez.
+      const inPeriod = year === ACCOUNTING_PERIOD.year && month === ACCOUNTING_PERIOD.month;
+      let rows = inPeriod ? [...ACCOUNTING_LEDGER_ROWS] : [];
+      if (accountId) rows = rows.filter((row) => row.account_id === accountId);
+      if (status) rows = rows.filter((row) => row.entry_status === status);
+
+      const body: components["schemas"]["LedgerResponse"] = {
+        items: rows.slice(offset, offset + limit),
+        total: rows.length,
+        limit,
+        offset,
+        // Süzgeç daraltılınca devir de anlamsızlaşırdı; boş pencerede `0.00`.
+        carried_balance: rows.length > 0 ? ACCOUNTING_CARRIED_BALANCE : "0.00",
+      };
+      return send(200, body);
+    }
+
     return send(404, { detail: "not found" });
   });
 
@@ -9361,4 +9678,497 @@ function buildMockInvoice(
     total: (taxBase + vat).toFixed(2),
     lines,
   };
+}
+
+// --- F-MU1 T5 · Muhasebe (MU-1) fikstürleri ------------------------------
+//
+// Bu blok da dosyanın SONUNA eklendi (F-FAT2 emsali): modül değerlendirmesi
+// `startMockBackend` çağrısından ÖNCE biter, dolayısıyla yukarıdaki istek
+// işleyicisi bunlara güvenle erişir.
+//
+// 🔴 TİP ANOTASYONU ZORUNLU (F-SA kanonu): her yanıt gövdesi `schema.d.ts`ten
+// TÜREYEN tiple işaretlidir. Elle `interface` yazılmaz, `as any`/`@ts-ignore`
+// kullanılmaz — backend şeması değişirse bu dosya DERLENMEZ ve kayma
+// `pnpm typecheck`te patlar (sessizce yanlış bir ekranı beslemez).
+//
+// 🔴 DÖNEM SÜZGECİ GERÇEKTİR (ekipman fikstürlerinin emsali): defter ve özet
+// uçları istenen ay fikstür ayı DEĞİLSE boş/sıfır döner. Bu, testlerin
+// `page.clock.setFixedTime` ile hangi aya baktığını AÇIKÇA söylemesini
+// zorunlu kılar — "bugün hangi aysa o" belirsizliği kalmaz.
+
+type MockChartAccount = components["schemas"]["ChartAccountResponse"];
+type MockChartAccountType = components["schemas"]["ChartAccountType"];
+type MockJournalEntry = components["schemas"]["JournalEntryDetailResponse"];
+type MockJournalLine = components["schemas"]["JournalLineResponse"];
+type MockLedgerRow = components["schemas"]["LedgerRow"];
+
+/**
+ * 📅 OKUMA (T6 görsel turunun) DÖNEMİ — E8:74 `Temmuz 2026`. Defter/özet
+ * fikstürleri YALNIZ bu aydadır.
+ */
+export const ACCOUNTING_PERIOD = { year: 2026, month: 7 } as const;
+
+/**
+ * 🔒 YAZMA DÖNEMİ — mutasyon adası. Fiş yazan HER e2e akışı burada koşar.
+ *
+ * İzolasyon ZAMANLAMAYA DAYANMAZ, YAPISALDIR (F-SD `SEPTEMBER_FREE_DAY`
+ * emsali): defter/özet/fiş uçlarının hepsi DÖNEM süzgeçlidir, dolayısıyla
+ * Haziran'da yaratılan/kayıtlaştırılan/silinen hiçbir kayıt Temmuz'un
+ * kadrajına giremez — `fullyParallel` altında sıra garanti olmasa bile.
+ */
+export const ACCOUNTING_MUTATION_PERIOD = { year: 2026, month: 6 } as const;
+
+const ACCOUNTING_STAMP = "2026-07-01T09:00:00Z";
+
+/** `codes.py::level` BİREBİR: `NN`→1, `NNN`→2, `NNN.NN`→3. */
+function chartAccountLevel(code: string): number {
+  if (code.length === 2) return 1;
+  return code.includes(".") ? 3 : 2;
+}
+
+/**
+ * Hesap tohumu. `balance` YALNIZ YAPRAK hesapta verilir: üst hesabın bakiyesi
+ * TORUNLARININ TOPLAMIDIR (`journal-entry-form.ts · isLeafChartAccount`
+ * notunun kendi gerekçesi) ve elle yazılsaydı fikstür kendi içinde çelişirdi.
+ */
+interface ChartAccountSeed {
+  readonly code: string;
+  readonly name: string;
+  readonly type: MockChartAccountType;
+  /** Yaprak bakiyesi; üst hesapta YOKTUR (hesaplanır). */
+  readonly leafBalance?: string;
+  readonly isActive?: boolean;
+}
+
+/**
+ * HP:64-213'ün ÇİZDİĞİ küme + E8'in defterinde GEÇEN beş alt hesap.
+ *
+ * 🔴 Kod sırası SUNUCUNUN sırasıdır (`code ASC`, METİN sıralaması) — istemci
+ * yeniden sıralamaz (`buildChartRows` notu), bu yüzden fikstür de o sırada
+ * yazılır. `"100"` < `"12"` metin sıralamasında DOĞRUDUR.
+ *
+ * 🔴 Alt hesaplar (`120.01` · `153.01` · `320.04` · `391.01` · `730.01`)
+ * UYDURMA DEĞİLDİR: E8:110-157 defterinin `Hesap Kodu` sütunu tam olarak bu
+ * kodları basar. HP onları çizmez çünkü HP grup/ana hesap düzeyini gösterir;
+ * iki mockup birlikte `level` 1/2/3 karışımını verir.
+ *
+ * 🔴 `108` PASİFtir (`is_active: false`) — HP hiçbir pasif hesap ÇİZMEZ ama
+ * `is_active` şemada vardır ve kaldırma yolu odur (repo kanonu); gri noktanın
+ * hiç ölçülmediği bir fikstür, o dalın kırık olduğunu gizlerdi.
+ */
+const ACCOUNTING_CHART_SEEDS: readonly ChartAccountSeed[] = [
+  // SINIF 1 — HP:69
+  { code: "10", name: "Hazır Değerler", type: "asset" }, // HP:72-73 (grup)
+  { code: "100", name: "Kasa", type: "asset", leafBalance: "284800.00" }, // HP:76-80
+  { code: "101", name: "Alınan Çekler", type: "asset", leafBalance: "3610000.00" },
+  { code: "102", name: "Bankalar", type: "asset", leafBalance: "3964700.00" },
+  // 🔴 Tek PASİF hesap; bakiyesi sıfırdır (kullanımdan kaldırılmıştır).
+  { code: "108", name: "Diğer Hazır Değerler", type: "asset", leafBalance: "0.00", isActive: false },
+  { code: "12", name: "Ticari Alacaklar", type: "asset" }, // HP:97-98 (grup)
+  { code: "120", name: "Alıcılar", type: "asset" }, // HP:101 — çocuğu var, YAPRAK DEĞİL
+  { code: "120.01", name: "Yurtiçi Alıcılar", type: "asset", leafBalance: "8400000.00" }, // E8:112
+  { code: "127", name: "Diğer Ticari Alacaklar", type: "asset", leafBalance: "124200.00" },
+  { code: "15", name: "Stoklar", type: "asset" }, // HP:115-116 (grup)
+  { code: "150", name: "İlk Madde ve Malzeme", type: "asset", leafBalance: "3240000.00" },
+  { code: "153.01", name: "Demir & Çelik", type: "asset", leafBalance: "328500.00" }, // E8:130
+  { code: "191", name: "İndirilecek KDV", type: "asset", leafBalance: "768520.00" },
+  // SINIF 2 — HP:135
+  { code: "252", name: "Binalar", type: "asset", leafBalance: "2400000.00" },
+  { code: "254", name: "Taşıt Araçları", type: "asset", leafBalance: "1840000.00" },
+  // 🔴 TEK NEGATİF bakiye (HP:155 `(620.000)`), türü `Pasif` ama noktası YEŞİL.
+  { code: "257", name: "Birikmiş Amortismanlar (-)", type: "liability", leafBalance: "-620000.00" },
+  // SINIF 3 — HP:161
+  { code: "320", name: "Satıcılar", type: "liability" }, // HP:167 — çocuğu var
+  { code: "320.04", name: "Taşeron Satıcılar", type: "liability", leafBalance: "2184000.00" }, // E8:121
+  { code: "360", name: "Ödenecek Vergi ve Fonlar", type: "liability", leafBalance: "284000.00" },
+  { code: "391", name: "Hesaplanan KDV", type: "liability" }, // HP:181 — çocuğu var
+  { code: "391.01", name: "Hesaplanan KDV %20", type: "liability", leafBalance: "412000.00" }, // E8:157
+  // HP:187 bandı `SINIF 5` yazar ama ALTINA `600`/`730`/`760` dizer.
+  // 🔴 K15: SATIRLAR KAZANIR — `class_code` KODUN ilk hanesidir, bant etiketi
+  // bir sunucu alanı DEĞİLDİR. Bu yüzden ekranda `SINIF 6` ve `SINIF 7`
+  // bantları basılır (çizilmemiş sınıf → `classBandLabel` yedeği, nötr tema).
+  { code: "600", name: "Yurt İçi Satışlar", type: "revenue", leafBalance: "24870500.00" },
+  { code: "730", name: "Genel Üretim Giderleri", type: "expense" }, // HP:199 — çocuğu var
+  { code: "730.01", name: "İşçilik Giderleri", type: "expense", leafBalance: "5840000.00" }, // E8:139
+  { code: "760", name: "Pazarlama Giderleri", type: "expense", leafBalance: "42000.00" },
+];
+
+/**
+ * Üst hesabın bakiyesi = TORUNLARININ toplamı; yaprakta tohumun kendi değeri.
+ *
+ * "Torun" tanımı sunucunun `has_child_accounts`ı ile aynıdır: kodun KENDİSİYLE
+ * BAŞLAYAN başka kodlar (`parent_id` FK yoktur, hiyerarşi kodun içindedir).
+ */
+function chartSeedBalance(seed: ChartAccountSeed): string {
+  const descendants = ACCOUNTING_CHART_SEEDS.filter(
+    (other) => other.code !== seed.code && other.code.startsWith(seed.code),
+  );
+  if (descendants.length === 0) {
+    if (seed.leafBalance === undefined) {
+      throw new Error(`Yaprak hesabın bakiyesi eksik: ${seed.code}`);
+    }
+    return seed.leafBalance;
+  }
+  if (seed.leafBalance !== undefined) {
+    throw new Error(`Üst hesaba elle bakiye yazılamaz (türevdir): ${seed.code}`);
+  }
+  const total = descendants
+    .filter((other) => other.leafBalance !== undefined)
+    .reduce((sum, other) => sum + Number(other.leafBalance), 0);
+  return total.toFixed(2);
+}
+
+function buildChartAccount(seed: ChartAccountSeed): MockChartAccount {
+  return {
+    id: `coa-${seed.code}`,
+    code: seed.code,
+    name: seed.name,
+    account_type: seed.type,
+    is_active: seed.isActive ?? true,
+    created_at: ACCOUNTING_STAMP,
+    updated_at: ACCOUNTING_STAMP,
+    balance: chartSeedBalance(seed),
+    // 🔴 İKİSİ DE KODDAN TÜRETİLİR (`codes.py::class_code` / `::level`) —
+    // elle yazılsaydı fikstür sunucunun kuralıyla sessizce ayrışırdı.
+    class_code: seed.code[0],
+    level: chartAccountLevel(seed.code),
+  };
+}
+
+const ACCOUNTING_CHART_FIXTURES: readonly MockChartAccount[] =
+  ACCOUNTING_CHART_SEEDS.map(buildChartAccount);
+
+function chartAccountByCode(code: string): MockChartAccount {
+  const account = ACCOUNTING_CHART_FIXTURES.find((row) => row.code === code);
+  if (account === undefined) throw new Error(`Fikstürde olmayan hesap kodu: ${code}`);
+  return account;
+}
+
+// --- Defter (E8:110-157) -------------------------------------------------
+
+/**
+ * 🔴 DEVİR SIFIRDAN FARKLIDIR. Sıfır olsaydı ilk satırın bakiyesi ilk
+ * hareketin kendisine eşit çıkar ve `carried_balance` şeridinin (T2
+ * `mu-carried-balance`) hiç basılmadığı bir ekran dondurulurdu.
+ */
+const ACCOUNTING_CARRIED_BALANCE = "1250000.00";
+
+/** Defter tohumu — 🔴 KRONOLOJİK (ASC) yazılır; yanıt DESC döner. */
+interface LedgerSeed {
+  readonly entryId: string;
+  readonly status: components["schemas"]["JournalEntryStatus"];
+  readonly date: string;
+  readonly code: string;
+  readonly description: string;
+  readonly detailNote: string | null;
+  readonly debit: string;
+  readonly credit: string;
+}
+
+/**
+ * E8:110-157'nin ALTI satırı, tarihe göre ESKİDEN YENİYE.
+ *
+ * 🔴 `running_balance` mockup'tan KOPYALANMAZ: E8'in `Bakiye` sütunu
+ * göstermeliktir (tarih DESC iken artıp düşer, hiçbir aritmetiği tutmaz) ve
+ * backend `ledger.py` bunu kendi docstring'inde yazar. Kural YAPIDAN okunur:
+ *
+ *     running = carried + Σ(debit − credit)   [ASC kümülatif]
+ *
+ * 🔴 Bir satır `reversed` fişindir (E8:120 · `320.04`): `reversed` DEFTERDE
+ * KALIR (`POSTING_STATUSES`), yalnız `draft` girmez. Fikstürde hiç `reversed`
+ * satır olmasaydı istemcinin "yeniden SÜZMÜYOR" iddiası hiç ölçülmezdi.
+ */
+const ACCOUNTING_LEDGER_SEEDS: readonly LedgerSeed[] = [
+  {
+    entryId: "je-2607-post-4", status: "posted", date: "2026-07-10", code: "391.01",
+    description: "KDV Ödemesi – Q2 2026", detailNote: "Vergi Dairesi",
+    debit: "605300.00", credit: "0.00",
+  },
+  {
+    entryId: "je-2607-post-3", status: "posted", date: "2026-07-12", code: "120.01",
+    description: "Avans Tahsilatı – Çelik OSB", detailNote: "İş Bank · TRF-20260712",
+    debit: "0.00", credit: "580000.00",
+  },
+  {
+    entryId: "je-2607-post-2", status: "posted", date: "2026-07-14", code: "730.01",
+    description: "Bordro – Temmuz İşçilik", detailNote: "48 personel · SGK dahil",
+    debit: "892000.00", credit: "0.00",
+  },
+  {
+    entryId: "je-2607-post-5", status: "posted", date: "2026-07-15", code: "153.01",
+    description: "Malzeme Satın Alma – Demir", detailNote: "Demirsan A.Ş · F-2026-1122",
+    debit: "328500.00", credit: "0.00",
+  },
+  {
+    entryId: "je-2607-rev-1", status: "reversed", date: "2026-07-16", code: "320.04",
+    description: "Taşeron Ödemesi – Akın İnşaat", detailNote: "Fatura No: AKN-2026-047",
+    debit: "1016800.00", credit: "0.00",
+  },
+  {
+    entryId: "je-2607-post-1", status: "posted", date: "2026-07-17", code: "120.01",
+    description: "Hakediş Tahsilatı – Güneşkent", detailNote: "Ziraat Bank · TRF-20260717",
+    debit: "0.00", credit: "1240000.00",
+  },
+];
+
+/** Kümülatif bakiyeyi KURARAK satırları üretir; yanıt DESC'tir (ledger.py R2). */
+function buildAccountingLedgerRows(): MockLedgerRow[] {
+  let running = Number(ACCOUNTING_CARRIED_BALANCE);
+  const ascending = ACCOUNTING_LEDGER_SEEDS.map((seed) => {
+    running += Number(seed.debit) - Number(seed.credit);
+    const account = chartAccountByCode(seed.code);
+    const row: MockLedgerRow = {
+      entry_id: seed.entryId,
+      entry_date: seed.date,
+      entry_status: seed.status,
+      account_id: account.id,
+      account_code: account.code,
+      account_name: account.name,
+      description: seed.description,
+      detail_note: seed.detailNote,
+      debit: seed.debit,
+      credit: seed.credit,
+      running_balance: running.toFixed(2),
+    };
+    return row;
+  });
+  return ascending.reverse();
+}
+
+const ACCOUNTING_LEDGER_ROWS: readonly MockLedgerRow[] = buildAccountingLedgerRows();
+
+/**
+ * 🔴 ÖZET DEFTERDEN TÜRETİLİR, mockup'tan KOPYALANMAZ.
+ *
+ * Gerekçe backend'dedir: `summary.py` ile `ledger.py` AYNI kümeyi sayar
+ * (`POSTING_STATUSES` + aynı dönem). E8:80/84'ün rakamları (`3.842.600` /
+ * `4.120.000`) çizilmemiş, daha büyük bir satır kümesine aittir ve altı
+ * çizili satırla TUTMAZ — elle kopyalansaydı ekranın KPI'ları kendi
+ * tablosuyla çelişirdi ve T6 o çelişkiyi baseline'a donduracaktı.
+ *
+ * Türetilen net NEGATİFtir (altı satır borç ağırlıklıdır) — bu, `netBalanceTone`'un
+ * "negatif kırmızı" dalını (şef kararı) gerçekten ölçen tek hâldir.
+ */
+function buildAccountingSummary(): components["schemas"]["JournalSummaryResponse"] {
+  const totalDebit = ACCOUNTING_LEDGER_SEEDS.reduce((sum, seed) => sum + Number(seed.debit), 0);
+  const totalCredit = ACCOUNTING_LEDGER_SEEDS.reduce((sum, seed) => sum + Number(seed.credit), 0);
+  return {
+    year: ACCOUNTING_PERIOD.year,
+    month: ACCOUNTING_PERIOD.month,
+    total_debit: totalDebit.toFixed(2),
+    total_credit: totalCredit.toFixed(2),
+    // 🔴 `net_balance = ALACAK − BORÇ` (şema notu; E8:88 aritmetiğinin yönü).
+    net_balance: (totalCredit - totalDebit).toFixed(2),
+  };
+}
+
+const ACCOUNTING_SUMMARY = buildAccountingSummary();
+
+// --- Fişler --------------------------------------------------------------
+
+/** Fiş tohumu; toplamlar SUNUCU gibi bacaklardan TÜRETİLİR (elle yazılmaz). */
+interface JournalEntrySeed {
+  readonly id: string;
+  readonly date: string;
+  readonly status: components["schemas"]["JournalEntryStatus"];
+  readonly description: string;
+  readonly detailNote?: string | null;
+  readonly reversalOfId?: string | null;
+  /** `[hesap kodu, borç, alacak]` üçlüleri. */
+  readonly legs: readonly (readonly [string, string, string])[];
+}
+
+function buildJournalEntry(seed: JournalEntrySeed): MockJournalEntry {
+  const lines: MockJournalLine[] = seed.legs.map(([code, debit, credit], index) => {
+    const account = chartAccountByCode(code);
+    return {
+      id: `${seed.id}-l${index}`,
+      sort_order: index,
+      account_id: account.id,
+      account_code: account.code,
+      account_name: account.name,
+      debit,
+      credit,
+    };
+  });
+  const totalDebit = lines.reduce((sum, line) => sum + Number(line.debit), 0);
+  const totalCredit = lines.reduce((sum, line) => sum + Number(line.credit), 0);
+  // 🔴 K1: dengesiz bir fiş SUNUCUDA var olamaz — fikstür de olamaz.
+  if (Math.abs(totalDebit - totalCredit) > 1e-9) {
+    throw new Error(`Fikstür fişi dengesiz: ${seed.id}`);
+  }
+  const [year, month] = seed.date.split("-");
+  return {
+    id: seed.id,
+    entry_date: seed.date,
+    // 🔴 Dönem `entry_date`ten TÜRER (`ck_journal_entries_period_matches_date`).
+    period_year: Number(year),
+    period_month: Number(month),
+    description: seed.description,
+    detail_note: seed.detailNote ?? null,
+    status: seed.status,
+    total_debit: totalDebit.toFixed(2),
+    total_credit: totalCredit.toFixed(2),
+    reversal_of_id: seed.reversalOfId ?? null,
+    created_by_id: ME.id,
+    created_at: ACCOUNTING_STAMP,
+    updated_at: ACCOUNTING_STAMP,
+    lines,
+  };
+}
+
+/**
+ * TEMMUZ (okuma) fişleri — 🔴 HİÇBİR test bunları oynatmaz.
+ *
+ * Üç durumun HEPSİ temsil edilir: iki `draft` (panel dolsun), üç `posted`
+ * (biri STORNO: `reversal_of_id` dolu) ve bir `reversed`. Yalnız `draft`
+ * bulunsaydı `entryActions`ın posted/reversed dalları ekranda hiç ölçülmezdi.
+ */
+const ACCOUNTING_READ_ENTRY_SEEDS: readonly JournalEntrySeed[] = [
+  {
+    id: "je-2607-draft-2", date: "2026-07-19", status: "draft",
+    description: "Ofis Kira Gideri – Temmuz",
+    legs: [["760", "48000.00", "0.00"], ["102", "0.00", "48000.00"]],
+  },
+  {
+    id: "je-2607-draft-1", date: "2026-07-18", status: "draft",
+    description: "Kasa Sayım Farkı", detailNote: "Temmuz sayım tutanağı",
+    legs: [["100", "12500.00", "0.00"], ["600", "0.00", "12500.00"]],
+  },
+  {
+    id: "je-2607-post-1", date: "2026-07-17", status: "posted",
+    description: "Hakediş Tahsilatı – Güneşkent", detailNote: "Ziraat Bank · TRF-20260717",
+    legs: [["102", "1240000.00", "0.00"], ["120.01", "0.00", "1240000.00"]],
+  },
+  {
+    // Stornonun KENDİSİ: `posted` doğar ve orijinali gösterir (K2).
+    id: "je-2607-storno-1", date: "2026-07-16", status: "posted",
+    description: "Storno: Taşeron Ödemesi – Akın İnşaat", reversalOfId: "je-2607-rev-1",
+    legs: [["102", "1016800.00", "0.00"], ["320.04", "0.00", "1016800.00"]],
+  },
+  {
+    // Terslenen ORİJİNAL — `reversed` TERMİNALDİR, hiçbir eylem sunulmaz.
+    id: "je-2607-rev-1", date: "2026-07-16", status: "reversed",
+    description: "Taşeron Ödemesi – Akın İnşaat", detailNote: "Fatura No: AKN-2026-047",
+    legs: [["320.04", "1016800.00", "0.00"], ["102", "0.00", "1016800.00"]],
+  },
+];
+
+/**
+ * 🔒 HAZİRAN (yazma) fişleri — her mutasyon AKIŞI KENDİ kaydına sahiptir.
+ *
+ * Tek bir "mutasyon fişi" paylaşılsaydı `fullyParallel` altında iki test aynı
+ * kaydın durumunu yarıştırırdı (F-FAT2'nin ÖLÇÜLMÜŞ `inv-in-2` yarışı).
+ */
+const ACCOUNTING_MUTATION_ENTRY_SEEDS: readonly JournalEntrySeed[] = [
+  {
+    id: "je-2606-mut-post", date: "2026-06-10", status: "draft",
+    description: "MUT · kayıtlaştırma ölçümü",
+    legs: [["100", "1000.00", "0.00"], ["600", "0.00", "1000.00"]],
+  },
+  {
+    id: "je-2606-mut-delete", date: "2026-06-11", status: "draft",
+    description: "MUT · silme ölçümü",
+    legs: [["100", "2000.00", "0.00"], ["600", "0.00", "2000.00"]],
+  },
+  {
+    id: "je-2606-mut-edit", date: "2026-06-12", status: "draft",
+    description: "MUT · düzenleme ölçümü", detailNote: "İlk dayanak",
+    legs: [["100", "3000.00", "0.00"], ["600", "0.00", "3000.00"]],
+  },
+  {
+    id: "je-2606-mut-reverse", date: "2026-06-13", status: "posted",
+    description: "MUT · storno ölçümü",
+    legs: [["100", "4000.00", "0.00"], ["600", "0.00", "4000.00"]],
+  },
+];
+
+/**
+ * 🔴 MUHASEBE DURUMU YAZILABİLİRDİR → fikstürler KOPYALANARAK modül düzeyinde
+ * tutulur (fatura emsali).
+ *
+ * `hiddenAccountIds`: e2e'de OLUŞTURULAN hesaplar katalog listesinden
+ * DÜŞÜRÜLÜR (`dropCreatedSuppliers`/`hiddenFromLists` emsali). Gerekçe:
+ * hesap planının dönem süzgeci YOKTUR, dolayısıyla fişlerdeki "ayrı ay"
+ * kaçışı burada mümkün değildir — yeni satır T6'nın HP kadrajına ve E8'in
+ * hesap açılırına sızardı. Kayıt yine de VARDIR: kimliğinden okunur ve
+ * `q` araması onu BULUR (yaratma akışı böylece uçtan uca kanıtlanır).
+ */
+const accountingState: {
+  accounts: MockChartAccount[];
+  entries: MockJournalEntry[];
+  hiddenAccountIds: Set<string>;
+  seq: number;
+} = {
+  accounts: ACCOUNTING_CHART_FIXTURES.map((account) => ({ ...account })),
+  entries: [...ACCOUNTING_READ_ENTRY_SEEDS, ...ACCOUNTING_MUTATION_ENTRY_SEEDS].map(
+    buildJournalEntry,
+  ),
+  hiddenAccountIds: new Set<string>(),
+  seq: 0,
+};
+
+/** `codes.py::ACCOUNT_CODE_PATTERN` BİREBİR. */
+const ACCOUNTING_CODE_PATTERN = /^(?:[1-9][0-9]|[1-9][0-9]{2}(?:\.[0-9]{2})?)$/;
+
+/**
+ * Hesaba bağlı fiş satırı VAR MI? — kod kilidinin (409) ve silme engelinin
+ * (409) TEK ölçütü. `draft` fişin satırı da sayılır: sunucu FK'ya bakar,
+ * duruma değil.
+ */
+function accountingHasLines(accountId: string): boolean {
+  return accountingState.entries.some((entry) =>
+    entry.lines.some((line) => line.account_id === accountId),
+  );
+}
+
+/** Fiş künyesi = detay eksi `lines` (liste ucu `JournalEntryResponse` döner). */
+function journalEntryHeader(
+  entry: MockJournalEntry,
+): components["schemas"]["JournalEntryResponse"] {
+  const { lines: _lines, ...header } = entry;
+  return header;
+}
+
+/** Bacak gövdelerini yanıt satırlarına çevirir; toplamlar SUNUCUDA türer (K1). */
+function applyJournalLines(
+  entry: MockJournalEntry,
+  rawLines: Record<string, unknown>[],
+): { detail?: string } {
+  if (rawLines.length < 2) return { detail: "Fişte en az iki satır olmalıdır." };
+  const lines: MockJournalLine[] = [];
+  for (const [index, raw] of rawLines.entries()) {
+    if ("sort_order" in raw || "id" in raw) {
+      return { detail: "`sort_order` gövdeden gönderilemez." };
+    }
+    const account = accountingState.accounts.find((row) => row.id === raw.account_id);
+    if (account === undefined) return { detail: "Hesap bulunamadı." };
+    const debit = Number(raw.debit);
+    const credit = Number(raw.credit);
+    if (!Number.isFinite(debit) || !Number.isFinite(credit) || debit < 0 || credit < 0) {
+      return { detail: "Tutar geçerli bir sayı olmalıdır (negatif olamaz)." };
+    }
+    // 🔴 `ck_journal_lines_single_side`: bir bacak TEK TARAFLIDIR.
+    if (debit > 0 === credit > 0) {
+      return { detail: "Fiş satırı ya borç ya alacak taşır; ikisi birden ya da ikisi de boş olamaz." };
+    }
+    lines.push({
+      id: `${entry.id}-l${index}`,
+      sort_order: index,
+      account_id: account.id,
+      account_code: account.code,
+      account_name: account.name,
+      debit: debit.toFixed(2),
+      credit: credit.toFixed(2),
+    });
+  }
+  const totalDebit = lines.reduce((sum, line) => sum + Number(line.debit), 0);
+  const totalCredit = lines.reduce((sum, line) => sum + Number(line.credit), 0);
+  if (Math.abs(totalDebit - totalCredit) > 1e-9) {
+    return { detail: "Fiş dengede değil: borç ve alacak toplamları eşit olmalıdır." };
+  }
+  entry.lines = lines;
+  entry.total_debit = totalDebit.toFixed(2);
+  entry.total_credit = totalCredit.toFixed(2);
+  return {};
 }

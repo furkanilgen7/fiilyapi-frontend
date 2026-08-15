@@ -1,0 +1,326 @@
+import { test, expect, type Page } from "@playwright/test";
+
+import {
+  ACCOUNTING_URL,
+  ACCOUNTING_WRITE_TIME,
+  loginAt,
+  openAccounting,
+  openChartOfAccounts,
+} from "./accounting-helpers";
+
+// F-MU1 T5 · Muhasebe DİYALOGLARININ fonksiyonel e2e'si (T4 yüzeyleri).
+//
+// 🔒 FİKSTÜR İZOLASYONU — iki ayrı mekanizma, ikisi de YAPISAL:
+//
+//   1. **Fiş yazma → AYRI AY.** Defter/özet/fiş uçlarının hepsi DÖNEM
+//      süzgeçlidir. Bu dosyanın mutasyon akışları HAZİRAN 2026'da koşar;
+//      T6'nın kadrajı TEMMUZ 2026'dadır. `fullyParallel` altında sıra garanti
+//      olmasa bile Haziran'daki hiçbir kayıt Temmuz'a sızamaz.
+//      Ayrıca her akış KENDİ kaydını oynatır (`je-2606-mut-*`) — tek bir
+//      "mutasyon fişi" paylaşılsaydı iki test aynı durumu yarıştırırdı
+//      (F-FAT2'nin ÖLÇÜLMÜŞ `inv-in-2` yarışı).
+//
+//   2. **Hesap yazma → LİSTEDEN DÜŞÜRME.** Hesap planının dönem süzgeci
+//      YOKTUR, dolayısıyla "ayrı ay" kaçışı burada mümkün değildir. Mock
+//      backend e2e'de OLUŞTURULAN hesabı süzgeçsiz listeden düşürür
+//      (`dropCreatedSuppliers`/`hiddenFromLists` emsali) ama kayıt VARDIR ve
+//      `q` araması onu BULUR — yaratma yine uçtan uca kanıtlanır.
+//
+// ⚠️ `getByRole("alert")` KULLANILMAZ (F-P6 dersi).
+
+/** Haziran'a (mutasyon adası) çakılmış `/muhasebe`. */
+async function openMutationMonth(page: Page) {
+  await loginAt(page, ACCOUNTING_WRITE_TIME);
+  await page.goto(ACCOUNTING_URL);
+  await expect(page.getByTestId("mu-loaded-drafts")).toBeAttached();
+  await expect(page.getByTestId("mu-period-label")).toHaveText("Haziran 2026");
+}
+
+test.describe("yevmiye fişi diyaloğu — denge kapısı", () => {
+  /**
+   * 🔴 DENGE KAPISI UÇTAN UCA: dengesiz fişte Kaydet KAPALI, engel cümlesi
+   * EKRANDA; dengelenince Kaydet AÇILIR. Sunucunun 422'si SON ÇAREdir —
+   * kullanıcı hangi tarafın eksik olduğunu yazarken görmelidir.
+   */
+  test("dengesiz satırlarda Kaydet kapalı, dengeleyince açılır", async ({ page }) => {
+    await openAccounting(page);
+    await page.getByTestId("mu-create-entry").click();
+
+    const save = page.getByTestId("mu-entry-dialog-save");
+    // Boş formda zaten kapalıdır (tarih hariç her şey eksik).
+    await expect(save).toBeDisabled();
+
+    await page.getByTestId("mu-entry-description").fill("Denge kapısı ölçümü");
+    await page.getByTestId("mu-line-account-0").selectOption("coa-100");
+    await page.getByTestId("mu-line-account-1").selectOption("coa-600");
+    await page.getByTestId("mu-line-debit-0").fill("1000");
+    await page.getByTestId("mu-line-credit-1").fill("400");
+
+    // Dengesiz: şerit "dengede değil" der, engel listesi görünür, Kaydet KAPALI.
+    await expect(page.getByTestId("mu-balance-strip")).toBeVisible();
+    await expect(page.getByTestId("mu-balance-state")).toHaveText("Fiş dengede değil; kaydedilemez.");
+    await expect(page.getByTestId("mu-balance-difference")).toHaveText("600");
+    await expect(page.getByTestId("mu-entry-dialog-blockers")).toContainText(
+      "Fiş dengede değil: borç ve alacak toplamları eşit olmalıdır",
+    );
+    await expect(save).toBeDisabled();
+
+    // Dengele → kapı AÇILIR ve engel listesi kaybolur.
+    await page.getByTestId("mu-line-credit-1").fill("1000");
+    await expect(page.getByTestId("mu-balance-state")).toHaveText("Fiş dengede.");
+    await expect(page.getByTestId("mu-balance-difference")).toHaveText("0");
+    await expect(page.getByTestId("mu-entry-dialog-blockers")).toHaveCount(0);
+    await expect(save).toBeEnabled();
+  });
+
+  /**
+   * 🔴 TEK TARAF (`ck_journal_lines_single_side`): bir bacakta hem borç hem
+   * alacak dolamaz — bir tarafa değer girilince ÖTEKİ KİLİTLENİR.
+   */
+  test("aynı satırda borç girilince alacak kutusu kilitlenir (ve tersi)", async ({ page }) => {
+    await openAccounting(page);
+    await page.getByTestId("mu-create-entry").click();
+
+    const debit = page.getByTestId("mu-line-debit-0");
+    const credit = page.getByTestId("mu-line-credit-0");
+    await expect(debit).toBeEnabled();
+    await expect(credit).toBeEnabled();
+
+    await debit.fill("500");
+    await expect(credit).toBeDisabled();
+
+    // Borç boşalınca kilit AÇILIR; alacak yazılınca bu kez borç kilitlenir.
+    await debit.fill("");
+    await expect(credit).toBeEnabled();
+    await credit.fill("750");
+    await expect(debit).toBeDisabled();
+  });
+
+  /** Satır sayısı engeli: iki bacaktan azı SUNUCUDA 422'dir, kapı ÖNCE kapanır. */
+  test("tek satırlı fişte 'en az iki satır' engeli basılır", async ({ page }) => {
+    await openAccounting(page);
+    await page.getByTestId("mu-create-entry").click();
+
+    await page.getByTestId("mu-line-remove-1").click();
+    await expect(page.getByTestId("mu-entry-dialog-blockers")).toContainText(
+      "Fişte en az iki satır olmalıdır",
+    );
+    await expect(page.getByTestId("mu-entry-dialog-save")).toBeDisabled();
+  });
+});
+
+test.describe("yevmiye fişi diyaloğu — yazma akışları (HAZİRAN adası)", () => {
+  test("dengeli fiş KAYDEDİLİR ve dönem panelinde taslak olarak görünür", async ({ page }) => {
+    await openMutationMonth(page);
+    await page.getByTestId("mu-create-entry").click();
+
+    await page.getByTestId("mu-entry-date").fill("2026-06-18");
+    await page.getByTestId("mu-entry-description").fill("MUT · yeni fiş uçtan uca");
+    await page.getByTestId("mu-entry-detail-note").fill("T5 ölçüm dayanağı");
+    await page.getByTestId("mu-line-account-0").selectOption("coa-100");
+    await page.getByTestId("mu-line-debit-0").fill("7500");
+    await page.getByTestId("mu-line-account-1").selectOption("coa-600");
+    await page.getByTestId("mu-line-credit-1").fill("7500");
+
+    await page.getByTestId("mu-entry-dialog-save").click();
+
+    // Diyalog KAPANIR (hata kalsaydı açık kalırdı) ve satır listeye düşer.
+    await expect(page.getByTestId("mu-entry-dialog-save")).toHaveCount(0);
+    const panel = page.getByRole("region", { name: "Dönem Fişleri" });
+    await expect(panel.getByText("MUT · yeni fiş uçtan uca")).toBeVisible();
+    await expect(panel.getByText("T5 ölçüm dayanağı")).toBeVisible();
+  });
+
+  test("taslak KAYITLAŞTIRILIR: rozet 'Kayıtlı' olur, eylemler Storno'ya döner", async ({
+    page,
+  }) => {
+    await openMutationMonth(page);
+
+    const row = page.getByTestId("mu-draft-row-je-2606-mut-post");
+    await expect(row).toContainText("Taslak");
+
+    await page.getByTestId("mu-draft-post-je-2606-mut-post").click();
+
+    await expect(row).toContainText("Kayıtlı");
+    // Yönetim kararı 2 — geçişten SONRA da geçerlidir.
+    await expect(page.getByTestId("mu-draft-edit-je-2606-mut-post")).toHaveCount(0);
+    await expect(page.getByTestId("mu-draft-delete-je-2606-mut-post")).toHaveCount(0);
+    await expect(page.getByTestId("mu-draft-reverse-je-2606-mut-post")).toBeVisible();
+  });
+
+  test("taslak SİLİNİR ve satır listeden düşer", async ({ page }) => {
+    await openMutationMonth(page);
+
+    await expect(page.getByTestId("mu-draft-row-je-2606-mut-delete")).toBeVisible();
+    await page.getByTestId("mu-draft-delete-je-2606-mut-delete").click();
+    await expect(page.getByTestId("mu-draft-row-je-2606-mut-delete")).toHaveCount(0);
+  });
+
+  /**
+   * 🔴 STORNO YENİ BİR FİŞTİR (alan ya da bayrak değil): orijinal `reversed`
+   * damgalanır, ters bacaklı kopya `posted` doğar. `reversed` TERMİNALDİR.
+   */
+  test("posted fiş STORNOLANIR: orijinal 'Ters Kayıtlı' olur, storno fişi doğar", async ({
+    page,
+  }) => {
+    await openMutationMonth(page);
+
+    const original = page.getByTestId("mu-draft-row-je-2606-mut-reverse");
+    await expect(original).toContainText("Kayıtlı");
+    // Storno ÖNCESİ: düzenle/sil sunulmaz, Storno sunulur.
+    await expect(page.getByTestId("mu-draft-edit-je-2606-mut-reverse")).toHaveCount(0);
+    await expect(page.getByTestId("mu-draft-delete-je-2606-mut-reverse")).toHaveCount(0);
+
+    await page.getByTestId("mu-draft-reverse-je-2606-mut-reverse").click();
+
+    await expect(original).toContainText("Ters Kayıtlı");
+    // `reversed` uçtur: hiçbir eylem kalmaz.
+    await expect(page.getByTestId("mu-draft-reverse-je-2606-mut-reverse")).toHaveCount(0);
+    // Storno fişinin KENDİSİ listeye düşer.
+    const panel = page.getByRole("region", { name: "Dönem Fişleri" });
+    await expect(panel.getByText("Storno: MUT · storno ölçümü")).toBeVisible();
+  });
+
+  test("taslak DÜZENLENİR: diyalog sunucudaki bacakları yükler, değişiklik yazılır", async ({
+    page,
+  }) => {
+    await openMutationMonth(page);
+
+    await page.getByTestId("mu-draft-edit-je-2606-mut-edit").click();
+
+    // Bacaklar LİSTE ucundan gelemez (o yalnız başlık döner) → detay çekilir.
+    await expect(page.getByTestId("mu-entry-description")).toHaveValue("MUT · düzenleme ölçümü");
+    await expect(page.getByTestId("mu-line-debit-0")).toHaveValue("3000.00");
+    await expect(page.getByTestId("mu-entry-detail-note")).toHaveValue("İlk dayanak");
+
+    await page.getByTestId("mu-entry-description").fill("MUT · düzenleme ölçümü (güncel)");
+    await page.getByTestId("mu-line-debit-0").fill("3300");
+    await page.getByTestId("mu-line-credit-1").fill("3300");
+    await expect(page.getByTestId("mu-entry-dialog-save")).toBeEnabled();
+    await page.getByTestId("mu-entry-dialog-save").click();
+
+    await expect(page.getByTestId("mu-entry-dialog-save")).toHaveCount(0);
+    const row = page.getByTestId("mu-draft-row-je-2606-mut-edit");
+    await expect(row).toContainText("MUT · düzenleme ölçümü (güncel)");
+    // 🔴 Toplamlar SUNUCUDA türer (K1) — istemci yazmaz.
+    await expect(row).toContainText("3.300");
+  });
+});
+
+test.describe("hesap ekle diyaloğu", () => {
+  /**
+   * 🔴 İstemci kodu doğrulaması bir KOLAYLIKTIR (sunucu son sözü söyler) ama
+   * kapı gerçekten kapanmalıdır: `1` (tek hane), `0A` (harf + sıfır hane),
+   * `1234` (dört hane) — üçü de `ACCOUNT_CODE_PATTERN` dışıdır.
+   */
+  for (const invalid of ["1", "0A", "1234"]) {
+    test(`geçersiz kod "${invalid}" istemcide engellenir`, async ({ page }) => {
+      await openChartOfAccounts(page);
+      await page.getByTestId("hp-create").click();
+
+      await page.getByTestId("hp-dialog-code").fill(invalid);
+      await page.getByTestId("hp-dialog-name").fill("Ölçüm Hesabı");
+
+      await expect(page.getByTestId("hp-dialog-blockers")).toContainText(
+        "Hesap kodu 10 · 100 ya da 100.01 biçiminde olmalıdır",
+      );
+      await expect(page.getByTestId("hp-dialog-save")).toBeDisabled();
+    });
+  }
+
+  test("geçerli kod KAYDEDİLİR; kayıt aramayla bulunur", async ({ page }) => {
+    await openChartOfAccounts(page);
+    await page.getByTestId("hp-create").click();
+
+    await page.getByTestId("hp-dialog-code").fill("189.07");
+    await page.getByTestId("hp-dialog-name").fill("T5 Ölçüm Hesabı");
+    await page.getByTestId("hp-dialog-type").selectOption("asset");
+    await expect(page.getByTestId("hp-dialog-save")).toBeEnabled();
+
+    await page.getByTestId("hp-dialog-save").click();
+    // Diyalog KAPANIR — sunucu hatası olsaydı açık kalır ve `hp-dialog-error` basardı.
+    await expect(page.getByTestId("hp-dialog-save")).toHaveCount(0);
+    await expect(page.getByTestId("hp-dialog-error")).toHaveCount(0);
+
+    // 🔒 Kayıt süzgeçsiz listede GÖRÜNMEZ (T6 izolasyonu) ama VARDIR:
+    // arama onu bulur — yaratma böylece uçtan uca kanıtlanır.
+    await page.getByTestId("hp-search").fill("T5 Ölçüm Hesabı");
+    await expect(page.getByTestId("hp-row-189.07")).toBeVisible();
+    // Türev alanlar SUNUCUDAN gelir: `189.07` → sınıf `1`, düzey `3`.
+    await expect(page.getByTestId("hp-type-189.07")).toHaveText("Aktif");
+  });
+
+  test("aynı kod ikinci kez açılamaz: sunucunun 409'u EKRANA basılır", async ({ page }) => {
+    await openChartOfAccounts(page);
+    await page.getByTestId("hp-create").click();
+
+    // `100 Kasa` fikstürde VARDIR — çakışma sunucudadır, istemci engeli değil.
+    await page.getByTestId("hp-dialog-code").fill("100");
+    await page.getByTestId("hp-dialog-name").fill("Çakışan Kasa");
+    await page.getByTestId("hp-dialog-save").click();
+
+    // 🔴 Diyalog AÇIK kalır ve sunucunun Türkçe `detail` metni basılır.
+    await expect(page.getByTestId("hp-dialog-error")).toContainText(
+      "Bu hesap kodu zaten kullanılıyor.",
+    );
+    await expect(page.getByTestId("hp-dialog-save")).toBeVisible();
+  });
+});
+
+test.describe("hesap planı yazma sözleşmesi (durum DEĞİŞTİRMEYEN gövdeler)", () => {
+  /**
+   * 🔒 Bu blok EKRANDAN değil TELDEN koşar: `Pasifleştir`/`Sil` düğmeleri
+   * GÖRÜNÜR fikstür satırlarındadır ve tıklanmaları T6'nın HP kadrajını
+   * bozardı. Aşağıdaki gövdelerin hiçbiri kaydı DEĞİŞTİRMEZ.
+   */
+  test("kayıtlı hesabın kodu kilitlidir (409) ve hesap silinemez (409)", async ({ page }) => {
+    await loginAt(page, ACCOUNTING_WRITE_TIME);
+
+    // `coa-120.01` fişlerde geçer → hem kod değişimi hem silme 409'dur.
+    const patch = await page.request.patch("/api/backend/chart-of-accounts/coa-120.01", {
+      data: { code: "121.01" },
+    });
+    expect(patch.status()).toBe(409);
+
+    const remove = await page.request.delete("/api/backend/chart-of-accounts/coa-120.01");
+    expect(remove.status()).toBe(409);
+  });
+
+  test("türev alan gövdeden gönderilemez (422) ve olmayan hesap 404'tür", async ({ page }) => {
+    await loginAt(page, ACCOUNTING_WRITE_TIME);
+
+    const derived = await page.request.post("/api/backend/chart-of-accounts", {
+      data: { code: "199.99", name: "Türev sızması", account_type: "asset", level: 3 },
+    });
+    expect(derived.status()).toBe(422);
+
+    expect((await page.request.get("/api/backend/chart-of-accounts/coa-yok")).status()).toBe(404);
+  });
+
+  test("posted fiş PATCH/DELETE ile de değiştirilemez (409) — kapı SUNUCUDADIR", async ({
+    page,
+  }) => {
+    await loginAt(page, ACCOUNTING_WRITE_TIME);
+
+    // `je-2607-post-1` TEMMUZ okuma fikstürüdür; iki istek de REDDEDİLİR,
+    // dolayısıyla T6'nın kadrajı bu testten etkilenmez.
+    const patch = await page.request.patch("/api/backend/journal-entries/je-2607-post-1", {
+      data: { description: "olmaz" },
+    });
+    expect(patch.status()).toBe(409);
+
+    const remove = await page.request.delete("/api/backend/journal-entries/je-2607-post-1");
+    expect(remove.status()).toBe(409);
+
+    // Dengesiz satır kümesi de 422'dir (sunucu son sözü söyler).
+    const lines = await page.request.put("/api/backend/journal-entries/je-2607-draft-1/lines", {
+      data: {
+        lines: [
+          { account_id: "coa-100", debit: "10", credit: "0" },
+          { account_id: "coa-600", debit: "0", credit: "5" },
+        ],
+      },
+    });
+    expect(lines.status()).toBe(422);
+  });
+});

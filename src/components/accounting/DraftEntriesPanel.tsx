@@ -32,6 +32,11 @@ const COLUMN_COUNT = 6;
  * kayıtlaştıramazdı. `GET /journal-entries` ucunun şema açıklaması aynı
  * boşluğu kendi diliyle anlatır (K-Ş4).
  *
+ * 🔴 T5 BULGUSU: panel bir zamanlar YALNIZ `status=draft` çekiyordu ve bu,
+ * `posted` fişi ekranın hiçbir yerinde göstermiyordu — defter satır bazlıdır
+ * ve EYLEM sunmaz, dolayısıyla "Storno" ULAŞILAMAZ bir düğmeydi. Panel artık
+ * dönemin TÜM fişlerini listeler (bkz. `AccountingView` sorgusu).
+ *
  * Eylem görünürlüğü `entryActions`tan gelir (yönetim kararı 2): `posted`
  * fişte düzenle/sil HİÇ SUNULMAZ — sunucu 409 verir ve her zaman patlayan bir
  * düğme kullanıcıya var olmayan bir yetenek vaat ederdi.
@@ -49,9 +54,9 @@ export function DraftEntriesPanel({
   onReverse,
 }: DraftEntriesPanelProps) {
   return (
-    <section className="mu-panel" aria-label="Taslak Fişler">
+    <section className="mu-panel" aria-label="Dönem Fişleri">
       <div className="mu-panel__head">
-        <span className="mu-panel__title">Taslak Fişler</span>
+        <span className="mu-panel__title">Dönem Fişleri</span>
         <span className="mu-table__note">
           Taslak fişler deftere girmez; kayıtlaştırılınca yevmiye defterinde görünür.
         </span>
@@ -99,7 +104,7 @@ export function DraftEntriesPanel({
                     className="mu-table__state"
                     data-testid="mu-drafts-loading"
                   >
-                    Taslak fişler yükleniyor…
+                    Fişler yükleniyor…
                   </td>
                 </tr>
               )}
@@ -113,7 +118,7 @@ export function DraftEntriesPanel({
                       className="mu-table__state"
                       data-testid="mu-drafts-empty"
                     >
-                      Bu dönemde taslak fiş yok.
+                      Bu dönemde fiş yok.
                     </td>
                   </tr>
                 )}

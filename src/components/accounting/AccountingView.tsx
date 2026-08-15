@@ -83,8 +83,18 @@ export function AccountingView() {
     limit: LEDGER_MAX_LIMIT,
     ...(accountId.length > 0 ? { accountId } : {}),
   });
+  // 🔴 T5 BULGUSU — `status: "draft"` SÜZGECİ KALDIRILDI (gerçek kusur).
+  //
+  // Panel yalnız taslakları çekerken `posted` bir fiş ekranın HİÇBİR YERİNDE
+  // görünmüyordu: defter (`/journal`) satır bazlıdır ve hiç EYLEM sunmaz. Yani
+  // "Storno" düğmesi (yönetim kararı 2'nin `posted → reversed` yolu) kullanıcı
+  // için ULAŞILAMAZDI — kayıtlaştırılan bir fiş bir daha asla terslenemezdi.
+  // Birim testi bunu göremezdi çünkü `posted` fişi doğrudan sorgu sonucuna
+  // enjekte ediyordu; kusur ancak uçtan uca akışta ortaya çıktı.
+  //
+  // Panel artık DÖNEMİN TÜM fişlerini listeler; hangi eylemin sunulacağını
+  // zaten satır başına `entryActions(status)` söylüyordu.
   const draftsQuery = useJournalEntries({
-    status: "draft",
     year: period.year,
     month: period.month,
     limit: JOURNAL_ENTRIES_MAX_LIMIT,
@@ -258,7 +268,7 @@ export function AccountingView() {
         isLoading={draftsQuery.isLoading}
         errorMessage={
           draftsQuery.isError
-            ? backendErrorMessage(draftsQuery.error, "Taslak fişler yüklenemedi.")
+            ? backendErrorMessage(draftsQuery.error, "Dönem fişleri yüklenemedi.")
             : undefined
         }
         canWrite={permission.canWrite}
