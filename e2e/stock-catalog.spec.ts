@@ -140,16 +140,29 @@ test("'+ Malzeme Ekle': reddedilen gövde Türkçe hata basar, katalog DEĞİŞM
   await expect(dialog).toBeVisible();
 });
 
-test("'+ Depo Ekle': ad boşken ağa çıkılmaz, gerekçe basılır (S3)", async ({ page }) => {
+// F-BLG T2c · diyalog artık `Form - Depo Ekle.dc.html`in kendisidir (eski S3
+// sapması geçersiz): başlık "Yeni Depo Ekle" (72), gönder düğmesi "Depoyu
+// Oluştur" (126), şantiye TEK seçici (86-96), canlı önizleme (98-109) ve
+// "stok girişine dön" onay kutusu (119-127) eklendi.
+test("'+ Depo Ekle': ad boşken ağa çıkılmaz, gerekçe basılır", async ({ page }) => {
   await login(page);
   await page.goto(STOCK_URL);
 
   await page.getByRole("button", { name: "+ Depo Ekle" }).click();
-  const dialog = page.getByRole("dialog", { name: "Yeni Depo" });
+  const dialog = page.getByRole("dialog", { name: "Yeni Depo Ekle" });
   await expect(dialog).toBeVisible();
   // Merkez depo semantiği kullanıcıya açıkça yazılır (site_id gönderilmez).
-  await expect(dialog).toContainText("Merkez Depo (şantiyesiz)");
+  await expect(dialog).toContainText("— Merkez Depo (şantiyeye bağlı değil)");
+  // Canlı önizleme boş adı ve MERKEZ rozetini basar (104-107).
+  await expect(dialog.getByTestId("whf-preview")).toContainText("Depo adı girilmedi");
+  await expect(dialog.getByTestId("whf-central-badge")).toHaveText("MERKEZ");
+  // Merkez depo kipinde "stok girişine dön" kutusu kapalıdır ve gerekçesi
+  // ekranda GÖRÜNÜR durur (kapsamsız stok giriş rotası yok).
+  await expect(dialog.getByTestId("whf-keep-flow")).toBeDisabled();
+  await expect(dialog.getByTestId("whf-keep-flow-reason")).toContainText(
+    "şantiye kapsamındadır",
+  );
 
-  await dialog.getByRole("button", { name: "Kaydet" }).click();
+  await dialog.getByRole("button", { name: "Depoyu Oluştur" }).click();
   await expect(dialog).toContainText("Depo adı zorunludur.");
 });

@@ -13,11 +13,12 @@ import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncation";
 
+import { WarehouseModal } from "@/components/warehouse-form/WarehouseModal";
+
 import { StockCatalogTable } from "./StockCatalogTable";
 import { StockFilterBar } from "./StockFilterBar";
 import { StockItemModal } from "./StockItemModal";
 import { StockKpiStrip } from "./StockKpiStrip";
-import { WarehouseModal } from "./WarehouseModal";
 import {
   parseStockCategory,
   parseStockStatus,
@@ -96,7 +97,8 @@ export function StockView() {
           <Button variant="secondary" disabled title={STOCK_MOVEMENTS_PENDING_REASON}>
             Stok Hareketi
           </Button>
-          {/* S3 türetilmiş yüzey — mockup'ta yok, boş kurulum kilidini çözer */}
+          {/* F-BLG T2c · `Form - Depo Ekle.dc.html` geldi; eski S3 sapması
+              (türetilmiş yüzey) GEÇERSİZ — diyalog artık mockup'ın kendisi */}
           {canWrite && (
             <Button variant="secondary" onClick={() => setOpenDialog("warehouse")}>
               + Depo Ekle

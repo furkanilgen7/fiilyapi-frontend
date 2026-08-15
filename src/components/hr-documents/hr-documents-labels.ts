@@ -268,15 +268,15 @@ export function buildDocumentMetaLine(document: {
   return parts.join(" · ");
 }
 
-/**
- * PD 131 · "+ Ekle" düğmesi. ŞEF KARARI + YÖNETİME AÇIK MADDE:
- * `POST /personnel/{id}/documents` ucu VARDIR ama belge ekleme FORMUNUN /
- * DİYALOĞUNUN mockup'ı YOKTUR (`projedesign/` tarandı: PD yalnız düğmeyi
- * çizer, BT'de de yükleme formu yok). WORKFLOW §3 gereği o parça form
- * mockup'ı gelene kadar BEKLER — bu dilimde belge yüzeyleri SALT-OKUNURdur.
+/*
+ * PD 131 · "+ Ekle" düğmesi ARTIK GERÇEK (F-BLG T2c). Buradaki
+ * `DOCUMENT_ADD_PENDING_REASON` gerekçesi "form mockup'ı yok" diyordu;
+ * `Form - Personel Belgesi.dc.html` geldi ve düğme
+ * `PersonnelDocumentFormModal`ı açıyor — gerekçe geçersiz kaldığı için sabit
+ * KALDIRILDI (ölü metin bırakılmaz). BT ekranının kendi "+ Belge Yükle"
+ * düğmesi (`UPLOAD_PENDING_REASON`) AYRI kalır: o ekran personel bağlamı
+ * TAŞIMAZ, bu form ise bir personele bağlıdır.
  */
-export const DOCUMENT_ADD_PENDING_REASON =
-  "Belge ekleme ucu hazır ama formun mockup'ı yok; form tasarımı gelmeden ekleme açılmıyor.";
 
 /**
  * PD 141 · "İndir" düğmesi. ŞEF KARARI: `document_id` bir Belge Arşivi

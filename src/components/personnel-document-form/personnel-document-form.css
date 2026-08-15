@@ -1,0 +1,194 @@
+/* Personel belge formu (F-BLG T2c). Kanon: projedesign
+   "Form - Personel Belgesi.dc.html" (PB); parantez içindeki sayılar O
+   DOSYANIN satır numaralarıdır. Prefix `pdf` (personnel document form).
+
+   ⚠️ ONAYLI SAPMA S-FRM: mockup'ın üst şeridi/breadcrumb'ı (41-54) ve sol
+   menüsü (57-71) tasarım kütüphanesi HARNESS'ıdır — form Personel Detay
+   ekranının üzerinde diyalog olarak açılır (`document-form` emsali). Gövde
+   BİREBİR kalır. */
+
+/* Diyalog kabuğu 480px'tir; mockup gövdesi 820px'e kadar açılır (73
+   `max-width:820px`) ve iki kolonlu ızgara (123) 480px'e sığmaz. */
+.pdf-modal {
+  max-width: 820px;
+}
+
+.pdf__subtitle {
+  font-size: var(--text-body); /* 76 */
+  color: var(--color-text-subtle);
+  margin: 0 0 var(--space-5); /* 20px */
+}
+
+/* ── Personel bağlam bandı (79-86) ────────────────────────────────────────── */
+.pdf-context {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  margin-bottom: var(--space-4); /* 16px */
+  border-radius: var(--radius-12);
+  background: var(--color-nav-active-bg); /* #eff6ff */
+  border: 1px solid var(--color-primary-ring); /* #bfdbfe */
+}
+.pdf-context__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-10);
+  /* 80 · degrade — repo'nun kanonik marka degradesi (`--gradient-logo-tile`),
+     PD hero avatarıyla aynı aile. */
+  background: var(--gradient-logo-tile);
+  color: var(--color-on-brand);
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+}
+.pdf-context__body {
+  flex: 1;
+}
+.pdf-context__name {
+  display: block;
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--color-text); /* 82 */
+}
+.pdf-context__meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-primary-light); /* 83 */
+}
+.pdf-context__count {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: var(--radius-8);
+  background: var(--color-surface);
+  border: 1px solid var(--color-primary-ring);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary); /* 85 */
+}
+
+/* ── Kart (`.card` 23) ────────────────────────────────────────────────────── */
+.pdf-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-form-card); /* 14px */
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5); /* 20px */
+  margin-bottom: var(--space-4); /* 16px */
+}
+.pdf-card--flush {
+  margin-bottom: 0;
+}
+.pdf-card__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-form-card-title); /* 14px/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--space-4);
+}
+
+/* ── İki adımlı akış açıklaması (91-96) ───────────────────────────────────── */
+.pdf-two-step {
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border-radius: var(--radius-10);
+  background: var(--color-surface-2); /* #f8fafc */
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--color-text-muted); /* 92 */
+}
+
+/* ── Dosya kutusu (97-102 `.drop`) ────────────────────────────────────────── */
+.pdf-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2); /* 8px — 97 */
+  padding: 22px; /* 97 */
+  border: 2px dashed var(--color-border-strong); /* #cbd5e1 — 25 */
+  border-radius: var(--radius-10);
+  background: var(--color-surface-2);
+}
+.pdf-drop__title {
+  font-size: var(--text-form-card-title); /* 14px — 100 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
+}
+.pdf-drop__hint {
+  font-size: 11px;
+  color: var(--color-text-subtle); /* 101 */
+}
+.pdf-drop__control {
+  width: 100%;
+}
+
+/* ── "veya" ayracı (103-107) ──────────────────────────────────────────────── */
+.pdf-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0;
+}
+.pdf-or::before,
+.pdf-or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+.pdf-or__text {
+  font-size: 12px;
+  color: var(--color-text-subtle); /* 105 */
+}
+
+/* ── Alan ızgarası (123) ──────────────────────────────────────────────────── */
+.pdf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+/* Dar ekranda ikinci kolon ALTA düşer (öğe gizlenmez). */
+@media (max-width: 640px) {
+  .pdf-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── İSG uyarı kutusu (156-162) ───────────────────────────────────────────── */
+.pdf-ohs {
+  margin-top: var(--space-4); /* 16px — 156 */
+  padding: 12px 14px;
+  border-radius: var(--radius-10);
+  background: var(--color-amber-tint-cell); /* #fffbeb */
+  border: 1px solid var(--color-warning-border-soft); /* #fcd34d */
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--color-warning-deep-text); /* #92400e — 157 */
+}
+.pdf-ohs__link {
+  color: var(--color-warning-deep-text); /* 160 */
+  font-weight: var(--weight-bold);
+}
+
+/* Devre-dışı öğelerin GÖRÜNÜR gerekçesi (F-TH kanonu) — `title` içinde
+   SAKLANMAZ. */
+.pdf-readonly-note {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+
+/* Hata satırı — mockup'ta yok, sessiz yutma yasak. */
+.pdf__error {
+  margin-top: var(--space-3);
+  font-size: 12px;
+  color: var(--color-danger-strong);
+}
