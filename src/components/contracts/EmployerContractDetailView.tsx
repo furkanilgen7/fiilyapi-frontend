@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { ProgressPaymentsListBody } from "@/components/progress-payments/ProgressPaymentsList";
+import { EmployerItemFormModal } from "@/components/contract-item-form/EmployerItemFormModal";
 import { useEmployerContract, useEmployerContractItems } from "@/lib/api/hooks/useContract";
 import { useProgressPayments } from "@/lib/api/hooks/useProgressPayments";
 import { useProject } from "@/lib/api/hooks/useProjects";
@@ -58,6 +60,9 @@ export function EmployerContractDetailView({ projectId }: EmployerContractDetail
   // önbellek anahtarı ısıtmamak için `project_id` HER ZAMAN gönderilir.
   const paymentsQuery = useProgressPayments({ project_id: projectId });
 
+  // F-BLG T2a · "+ Poz Ekle" diyalogu; sahibi bu ekrandır (tablo yalnız tetikler).
+  const [isAddItemOpen, setIsAddItemOpen] = useState(false);
+
   if (isForbidden(contractQuery.error)) return <AccessDenied />;
 
   const detail = contractQuery.data;
@@ -104,13 +109,24 @@ export function EmployerContractDetailView({ projectId }: EmployerContractDetail
           )}
 
           {tab === "items" && (
-            <EmployerContractItemsTable
-              projectId={projectId}
-              detail={detail}
-              isError={itemsQuery.isError}
-              isLoading={itemsQuery.isLoading}
-              data={itemsQuery.data}
-            />
+            <>
+              <EmployerContractItemsTable
+                projectId={projectId}
+                detail={detail}
+                isError={itemsQuery.isError}
+                isLoading={itemsQuery.isLoading}
+                data={itemsQuery.data}
+                onAddItem={() => setIsAddItemOpen(true)}
+              />
+              {isAddItemOpen && itemsQuery.data && (
+                <EmployerItemFormModal
+                  projectId={projectId}
+                  groups={itemsQuery.data.groups}
+                  detail={detail}
+                  onClose={() => setIsAddItemOpen(false)}
+                />
+              )}
+            </>
           )}
 
           {tab === "payments" && (

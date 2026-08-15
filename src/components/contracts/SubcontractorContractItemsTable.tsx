@@ -7,7 +7,7 @@ import { cx } from "@/lib/cx";
 import { formatAmount, formatQuantity } from "@/lib/format";
 import type { SubcontractorContractItemResponse } from "@/lib/api/hooks/useSubcontractorContractMutations";
 import { decimalInputValue, groupContractItems } from "@/components/subcontractor-contract-form/item-rows";
-import { ADD_ITEM_PENDING_REASON, FSO_TEXT } from "@/components/subcontractor-contract-form/constants";
+import { FSO_TEXT } from "@/components/subcontractor-contract-form/constants";
 
 import { contractProgressWidth } from "./contract-progress";
 import { tsdProgressTone } from "./subcontractor-item-progress";
@@ -46,6 +46,11 @@ export interface SubcontractorContractItemsTableProps {
   /** Satır hatası (PATCH reddi) — mockup'ta yok, sessiz yutma yasak. */
   errorMessage: string | null;
   onCommitUnitPrice: (itemId: string, value: string) => void;
+  /**
+   * 92 · "+ Poz Ekle". Form mockup'ı geldi (`Form - Poz Ekle Taseron.dc.html`)
+   * → buton ARTIK AKTİF; diyalogu sahibi ekran (TSD) açar.
+   */
+  onAddItem: () => void;
 }
 
 const COLUMN_COUNT = 7;
@@ -64,6 +69,7 @@ export function SubcontractorContractItemsTable({
   isBusy,
   errorMessage,
   onCommitUnitPrice,
+  onAddItem,
 }: SubcontractorContractItemsTableProps) {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const groups = groupContractItems(items);
@@ -93,14 +99,14 @@ export function SubcontractorContractItemsTable({
             {employerContractNo}&apos;den yüklendi
           </span>
         )}
-        {/* 92 · "+ Poz Ekle" — backend ucu VAR ama mockup satır FORMU çizmemiş
-            (FSO ile aynı gerekçe); buton SİLİNMEZ, devre-dışı + gerekçe. */}
+        {/* 92 · "+ Poz Ekle" — form mockup'ı geldi (F-BLG T2a), buton AKTİF.
+            Diyalog: `SubcontractorItemFormModal`. */}
         <Button
           variant="ghost"
           className="tsd-items__add"
-          disabled
-          title={ADD_ITEM_PENDING_REASON}
-          data-testid="tsd-add-item-disabled"
+          onClick={onAddItem}
+          disabled={isBusy}
+          data-testid="tsd-add-item"
         >
           {FSO_TEXT.addItem}
         </Button>

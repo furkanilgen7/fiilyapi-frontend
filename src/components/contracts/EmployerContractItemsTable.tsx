@@ -1,6 +1,11 @@
 import Link from "next/link";
 
+import { Button } from "@/components/ui";
 import { CheckIcon, inlineSymbolProps } from "@/components/ui/icons";
+import {
+  EMPLOYER_ADD_NEEDS_GROUPS_REASON,
+  EMPLOYER_ITEM_TEXT,
+} from "@/components/contract-item-form/constants";
 import { cx } from "@/lib/cx";
 import { formatAmount, formatQuantity } from "@/lib/format";
 import type {
@@ -37,6 +42,13 @@ export interface EmployerContractItemsTableProps {
   isError: boolean;
   isLoading: boolean;
   data?: EmployerContractItemsResponse;
+  /**
+   * F-BLG T2a · "+ Poz Ekle" (kanon `Form - Poz Ekle Isveren.dc.html`). E14
+   * mockup'ında bu sekme çizili olmadığı için buton POZ ekranının ekleme
+   * girişinden türetilmedi; forma giden TEK görünür giriş budur. Grup listesi
+   * yüklenmeden basılamaz (`group_id` ZORUNLU) — gerekçe görünür basılır.
+   */
+  onAddItem: () => void;
 }
 
 const COLUMN_COUNT = 7;
@@ -47,8 +59,11 @@ export function EmployerContractItemsTable({
   isError,
   isLoading,
   data,
+  onAddItem,
 }: EmployerContractItemsTableProps) {
   const groups = data?.groups;
+  // `group_id` zorunlu olduğu için grup listesi olmadan form açılamaz.
+  const hasGroups = (groups?.length ?? 0) > 0;
 
   return (
     <section className="ecd-items" aria-labelledby="ecd-items-title">
@@ -65,7 +80,22 @@ export function EmployerContractItemsTable({
         >
           Poz Dağılımı →
         </Link>
+        <Button
+          variant="ghost"
+          className="ecd-items__add"
+          onClick={onAddItem}
+          disabled={!hasGroups}
+          data-testid="ecd-add-item"
+        >
+          {EMPLOYER_ITEM_TEXT.addItem}
+        </Button>
       </div>
+
+      {!hasGroups && !isLoading && !isError && (
+        <p className="ecd-items__notice" data-testid="ecd-add-item-reason">
+          {EMPLOYER_ADD_NEEDS_GROUPS_REASON}
+        </p>
+      )}
 
       {isError ? (
         <p className="ecd-empty">İş kalemleri yüklenemedi</p>

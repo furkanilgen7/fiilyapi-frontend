@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
 import { backendClient } from "@/lib/api/client";
 import { unwrap } from "@/lib/api/unwrap";
+import type { components } from "@/lib/api/schema";
 import type { ContractDistributionSave } from "@/lib/contract-distribution-save";
 
 import {
@@ -38,6 +39,42 @@ export function useSaveContractDistribution(
     onSuccess: (data) => {
       queryClient.setQueryData([CONTRACT_DISTRIBUTION_QUERY_KEY, projectId], data);
       queryClient.invalidateQueries({ queryKey: [EMPLOYER_CONTRACT_ITEMS_QUERY_KEY, projectId] });
+      queryClient.invalidateQueries({ queryKey: [EMPLOYER_CONTRACT_QUERY_KEY, projectId] });
+    },
+  });
+}
+
+export type EmployerContractItemCreateRequest =
+  components["schemas"]["EmployerContractItemCreate"];
+export type EmployerContractItemResponse =
+  components["schemas"]["EmployerContractItemResponse"];
+
+/**
+ * F-BLG T2a · İşveren sözleşmesine elle poz ekleme
+ * (`POST /projects/{project_id}/contract/items`; kanon
+ * `Form - Poz Ekle Isveren.dc.html`).
+ *
+ * Geçersiz kılma `useSaveContractDistribution` ile AYNI üç anahtarı tazeler —
+ * yeni poz hem kalem listesinde (`items`), hem dağıtım ızgarasında
+ * (`distribution`, yeni satır olarak), hem de sözleşme metriklerinde
+ * (`items_total`/`items_total_diff`) görünür. `setQueryData` YOKTUR: yanıt tek
+ * kalemdir, listeyi temsil etmez — yarım önbellek yazmak yerine yeniden çekilir.
+ */
+export function useCreateEmployerContractItem(
+  projectId: string,
+): UseMutationResult<EmployerContractItemResponse, Error, EmployerContractItemCreateRequest> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body) =>
+      unwrap(
+        await backendClient.POST("/projects/{project_id}/contract/items", {
+          params: { path: { project_id: projectId } },
+          body,
+        }),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [EMPLOYER_CONTRACT_ITEMS_QUERY_KEY, projectId] });
+      queryClient.invalidateQueries({ queryKey: [CONTRACT_DISTRIBUTION_QUERY_KEY, projectId] });
       queryClient.invalidateQueries({ queryKey: [EMPLOYER_CONTRACT_QUERY_KEY, projectId] });
     },
   });

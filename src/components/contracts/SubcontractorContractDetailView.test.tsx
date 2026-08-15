@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, within, waitFor } from "@testing-library/react";
+import { render, screen, within, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import {
@@ -19,6 +19,7 @@ import {
   useSubcontractorPaymentLines,
 } from "@/lib/api/hooks/useSubcontractorContractPayments";
 import {
+  useCreateSubcontractorContractItem,
   useUpdateSubcontractorContract,
   useUpdateSubcontractorContractItem,
 } from "@/lib/api/hooks/useSubcontractorContractMutations";
@@ -41,6 +42,7 @@ vi.mock("@/lib/api/hooks/useSubcontractorContractMutations", async (importOrigin
   ...(await importOriginal<
     typeof import("@/lib/api/hooks/useSubcontractorContractMutations")
   >()),
+  useCreateSubcontractorContractItem: vi.fn(),
   useUpdateSubcontractorContract: vi.fn(),
   useUpdateSubcontractorContractItem: vi.fn(),
 }));
@@ -150,6 +152,7 @@ const PAYMENT: SubcontractorProgressPaymentListItem = {
 
 const updateContractMutate = vi.fn();
 const updateItemMutate = vi.fn();
+const createItemMutateAsync = vi.fn();
 
 interface Overrides {
   detail?: SubcontractorContractDetail | undefined;
@@ -246,6 +249,13 @@ function setup(overrides: Overrides = {}) {
     mutate: updateItemMutate,
     isPending: false,
   } as unknown as ReturnType<typeof useUpdateSubcontractorContractItem>);
+
+  // Diyalog (F-BLG T2a) gerçek `useMutation` çağırır; bu dosyada
+  // QueryClientProvider yoktur, bu yüzden ekleme hook'u da sahtelenir.
+  vi.mocked(useCreateSubcontractorContractItem).mockReturnValue({
+    mutateAsync: createItemMutateAsync,
+    isPending: false,
+  } as unknown as ReturnType<typeof useCreateSubcontractorContractItem>);
 
   return render(<SubcontractorContractDetailView contractId={CONTRACT_ID} />);
 }
@@ -466,8 +476,11 @@ describe("TSD — devre-dışı yüzeyler SİLİNMEZ", () => {
     expect(screen.getByText(/Dışa aktarma modülüyle birlikte gelir\./)).toBeInTheDocument();
   });
 
-  it("'+ Poz Ekle' devre dışıdır (mockup satır formu çizmemiş) (92)", () => {
+  it("'+ Poz Ekle' ARTIK AKTİF: form mockup'ı geldi, diyalogu açar (92)", () => {
     setup();
-    expect(screen.getByTestId("tsd-add-item-disabled")).toBeDisabled();
+    const add = screen.getByTestId("tsd-add-item");
+    expect(add).toBeEnabled();
+    fireEvent.click(add);
+    expect(screen.getByRole("dialog", { name: "Taşeron Sözleşmesine Poz Ekle" })).toBeInTheDocument();
   });
 });
