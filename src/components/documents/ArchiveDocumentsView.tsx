@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+import { ArchiveDocumentFormModal } from "@/components/document-form/ArchiveDocumentFormModal";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Button } from "@/components/ui/button/Button";
 import { Input } from "@/components/ui/input/Input";
@@ -89,7 +90,10 @@ export function ArchiveDocumentsView() {
   });
 
   const [downloadError, setDownloadError] = useState<string | undefined>(undefined);
-  const [openDialog, setOpenDialog] = useState<"upload" | "folder" | null>(null);
+  // "belge-ekle" = F-BLG T2b `Form - Belge Ekle.dc.html` yüzeyi: projeyi
+  // formun İÇİNDE seçtirir, bu yüzden ekranda proje seçili OLMASA da açılır.
+  // "upload" (mevcut proje-kapsamlı diyalog) DURUYOR — iki akış ayrıdır.
+  const [openDialog, setOpenDialog] = useState<"upload" | "folder" | "belge-ekle" | null>(null);
 
   const isForbidden =
     (documentsQuery.error instanceof BackendError && documentsQuery.error.status === 403) ||
@@ -213,6 +217,17 @@ export function ArchiveDocumentsView() {
                 ↑ Yükle
               </Button>
             )}
+            {/* F-BLG T2b — projeyi kendi içinde seçtiren bağımsız yüzey;
+                ekranda proje seçili olmasa da açılır. */}
+            {canWrite && (
+              <Button
+                variant="secondary"
+                onClick={() => setOpenDialog("belge-ekle")}
+                data-testid="e12-belge-ekle"
+              >
+                + Belge Ekle
+              </Button>
+            )}
             {canWrite && selectedProjectId && (
               <Button variant="primary" onClick={() => setOpenDialog("folder")}>
                 + Yeni Klasör
@@ -261,6 +276,12 @@ export function ArchiveDocumentsView() {
           projectId={selectedProjectId}
           folders={folders}
           activeFolderId={activeFolderId}
+          onClose={() => setOpenDialog(null)}
+        />
+      )}
+      {openDialog === "belge-ekle" && (
+        <ArchiveDocumentFormModal
+          initialProjectId={selectedProjectId || undefined}
           onClose={() => setOpenDialog(null)}
         />
       )}
