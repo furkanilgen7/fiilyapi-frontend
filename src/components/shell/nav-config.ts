@@ -62,6 +62,10 @@ export const NAV_GROUPS: NavGroup[] = [
       // nav href guard testi bunu ayrıca doğrular.
       { label: "Satış Yönetimi", href: "/satis", Icon: BuildingIcon },
       { label: "Muhasebe", href: "/muhasebe", Icon: BankIcon },
+      // F-FAT2 T2: FY (`Fatura Yönetimi.dc.html` 39) mockup'ın "Mali" bloğunda
+      // Muhasebe'nin hemen ardında durur; rota GERÇEKTİR (`/faturalar`),
+      // ComingSoon DEĞİL.
+      { label: "Fatura Yönetimi", href: "/faturalar", Icon: FileTextIcon },
       { label: "Hazine", href: "/hazine", Icon: WalletIcon },
       { label: "Hakedişler", href: "/hakedisler", Icon: ClockIcon },
       { label: "Mali Tablolar", href: "/mali-tablolar", Icon: TrendingUpIcon },

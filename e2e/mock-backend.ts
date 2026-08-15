@@ -8524,6 +8524,183 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       return send(200, TREASURY_UPCOMING);
     }
 
+    // --- F-FAT2 T2 · Fatura uçları (FAT-1, 12 yol) -----------------------
+    // Fikstürler ve yardımcılar dosyanın SONUNDADIR (bkz. `INVOICE_FIXTURES`).
+
+    if (method === "GET" && path === "/invoices") {
+      const limit = Number(parsed.searchParams.get("limit") ?? "50");
+      // Tavan aşımı 422'dir (kırpma DEĞİL) — gerçek sunucunun `maximum: 200`ü.
+      if (limit > 200) return send(422, { detail: "limit en fazla 200 olabilir." });
+      const offset = Number(parsed.searchParams.get("offset") ?? "0");
+      const direction = parsed.searchParams.get("direction");
+      const status = parsed.searchParams.get("status");
+      const dateFrom = parsed.searchParams.get("date_from");
+      const dateTo = parsed.searchParams.get("date_to");
+      const q = (parsed.searchParams.get("q") ?? "").trim().toLocaleLowerCase("tr");
+
+      let rows = invoiceState.invoices;
+      if (direction) rows = rows.filter((row) => row.direction === direction);
+      if (status) rows = rows.filter((row) => row.status === status);
+      if (dateFrom) rows = rows.filter((row) => row.issue_date >= dateFrom);
+      if (dateTo) rows = rows.filter((row) => row.issue_date <= dateTo);
+      if (q) {
+        rows = rows.filter(
+          (row) =>
+            row.invoice_no.toLocaleLowerCase("tr").includes(q) ||
+            row.party_name.toLocaleLowerCase("tr").includes(q),
+        );
+      }
+      // `total` SÜZÜLMÜŞ kümenin tamamıdır, sayfanın DEĞİL (TB3 kanonu).
+      return send(200, {
+        items: rows.slice(offset, offset + limit).map(invoiceHeader),
+        total: rows.length,
+        limit,
+        offset,
+      });
+    }
+
+    if (method === "GET" && path === "/invoices/summary") {
+      return send(200, INVOICE_SUMMARY);
+    }
+
+    if (method === "POST" && path === "/invoices") {
+      return withBody((body) => {
+        const lines = Array.isArray(body.lines) ? (body.lines as Record<string, unknown>[]) : [];
+        // 🔴 Hesaplanmış alan gövdeden GELEMEZ (gerçek sunucu 422 verir).
+        for (const line of lines) {
+          if ("line_total" in line || "sort_order" in line) {
+            return send(422, { detail: "`line_total`/`sort_order` gövdeden gönderilemez." });
+          }
+        }
+        if ("status" in body) return send(422, { detail: "`status` gövdeden gönderilemez." });
+        const partyName = String(body.party_name ?? "").trim();
+        if (!partyName) return send(422, { detail: "Alıcı adı zorunludur." });
+
+        invoiceState.seq += 1;
+        const created = buildMockInvoice(invoiceState.seq, body, lines);
+        invoiceState.invoices = [created, ...invoiceState.invoices];
+        return send(201, created);
+      });
+    }
+
+    const invoicePaymentsMatch = path.match(/^\/invoices\/([^/]+)\/payments$/);
+    if (invoicePaymentsMatch) {
+      const invoice = invoiceState.invoices.find((row) => row.id === invoicePaymentsMatch[1]);
+      if (!invoice) return send(404, { detail: "Fatura bulunamadı." });
+      const rows = invoiceState.payments.filter((row) => row.invoice_id === invoice.id);
+      // 🔴 K5: iki toplam TÜM satırlardan gelir, sayfadan DEĞİL.
+      const paidTotal = rows.reduce((sum, row) => sum + Number(row.amount), 0);
+      if (method === "GET") {
+        const limit = Number(parsed.searchParams.get("limit") ?? "50");
+        if (limit > 200) return send(422, { detail: "limit en fazla 200 olabilir." });
+        return send(200, {
+          items: rows.slice(0, limit),
+          total: rows.length,
+          limit,
+          offset: 0,
+          paid_total: paidTotal.toFixed(2),
+          remaining: (Number(invoice.total) - paidTotal).toFixed(2),
+        });
+      }
+      if (method === "POST") {
+        return withBody((body) => {
+          const amount = Number(body.amount);
+          if (!Number.isFinite(amount) || amount <= 0) {
+            return send(422, { detail: "Tutar sıfırdan büyük olmalıdır." });
+          }
+          // 🔴 K6: Σ + yeni > total → 422, tolerans YOK.
+          if (paidTotal + amount > Number(invoice.total) + 1e-9) {
+            return send(422, { detail: "Tahsilat toplamı fatura tutarını aşamaz." });
+          }
+          invoiceState.seq += 1;
+          const created = {
+            id: `pay-new-${invoiceState.seq}`,
+            invoice_id: invoice.id,
+            bank_account_id: String(body.bank_account_id ?? ""),
+            method: (body.method as MockPayment["method"] | undefined) ?? "transfer",
+            amount: amount.toFixed(2),
+            paid_on: String(body.paid_on ?? "2026-07-25"),
+            note: (body.note as string | undefined) ?? null,
+            created_by_id: ME.id,
+            created_at: "2026-07-25T09:00:00Z",
+            updated_at: "2026-07-25T09:00:00Z",
+          };
+          invoiceState.payments = [...invoiceState.payments, created];
+          // 🔴 K5: durum Σ'dan TÜREYEREK damgalanır.
+          if (
+            invoice.direction === "outgoing" &&
+            invoice.status === "sent" &&
+            paidTotal + amount >= Number(invoice.total)
+          ) {
+            invoice.status = "collected";
+          }
+          return send(201, created);
+        });
+      }
+    }
+
+    const invoiceActionMatch = path.match(
+      /^\/invoices\/([^/]+)\/(approve|dispute|send|mark-collected)$/,
+    );
+    if (method === "POST" && invoiceActionMatch) {
+      const invoice = invoiceState.invoices.find((row) => row.id === invoiceActionMatch[1]);
+      if (!invoice) return send(404, { detail: "Fatura bulunamadı." });
+      const action = invoiceActionMatch[2];
+      const outgoing = invoice.direction === "outgoing";
+      // Yön dışı geçiş 409'dur (matrisin sahibi sunucudur).
+      if ((action === "approve" || action === "dispute") && outgoing) {
+        return send(409, { detail: "Bu işlem yalnız gelen faturada yapılabilir." });
+      }
+      if ((action === "send" || action === "mark-collected") && !outgoing) {
+        return send(409, { detail: "Bu işlem yalnız giden faturada yapılabilir." });
+      }
+      // 🔴 K6: kalemsiz fatura gönderilemez/onaylanamaz (422).
+      if ((action === "send" || action === "approve") && invoice.lines.length === 0) {
+        return send(422, { detail: "Kalemsiz fatura gönderilemez." });
+      }
+      const expected: Record<string, string> = {
+        send: "draft",
+        "mark-collected": "sent",
+        approve: "pending",
+        dispute: "pending",
+      };
+      if (invoice.status !== expected[action]) {
+        return send(409, { detail: "Faturanın durumu bu işleme uygun değil." });
+      }
+      const next: Record<string, string> = {
+        send: "sent",
+        "mark-collected": "collected",
+        approve: "approved",
+        dispute: "disputed",
+      };
+      invoice.status = (next[action] as MockInvoice["status"] | undefined) ?? invoice.status;
+      return send(200, invoice);
+    }
+
+    const invoiceIdMatch = path.match(/^\/invoices\/([^/]+)$/);
+    if (invoiceIdMatch) {
+      const invoice = invoiceState.invoices.find((row) => row.id === invoiceIdMatch[1]);
+      if (!invoice) return send(404, { detail: "Fatura bulunamadı." });
+      if (method === "GET") return send(200, invoice);
+    }
+
+    const invoicePaymentIdMatch = path.match(/^\/payments\/([^/]+)$/);
+    if (method === "DELETE" && invoicePaymentIdMatch) {
+      const payment = invoiceState.payments.find((row) => row.id === invoicePaymentIdMatch[1]);
+      if (!payment) return send(404, { detail: "Ödeme bulunamadı." });
+      invoiceState.payments = invoiceState.payments.filter((row) => row.id !== payment.id);
+      return send(204);
+    }
+
+    // FGE:104-143 eşleştirme kartının GERÇEK kaynağı (MK-2).
+    const rentalInvoiceMatch = path.match(/^\/equipment\/rental-invoices\/([^/]+)$/);
+    if (method === "GET" && rentalInvoiceMatch) {
+      if (rentalInvoiceMatch[1] !== RENTAL_MATCH_FIXTURE.id) {
+        return send(404, { detail: "Kira faturası bulunamadı." });
+      }
+      return send(200, RENTAL_MATCH_FIXTURE);
+    }
+
     return send(404, { detail: "not found" });
   });
 
@@ -8531,5 +8708,345 @@ export function startMockBackend(port: number): { server: Server; close: () => P
   return {
     server,
     close: () => new Promise<void>((resolve) => server.close(() => resolve())),
+  };
+}
+
+// --- F-FAT2 T2 · Fatura fikstürleri --------------------------------------
+// Bu blok dosyanın SONUNA eklendi (paralel dallarla birleştirme çakışmasını
+// en aza indirmek için). Modül değerlendirmesi `startMockBackend` çağrısından
+// ÖNCE biter, bu yüzden yukarıdaki istek işleyicisi bunlara güvenle erişir.
+
+type MockInvoiceLine = components["schemas"]["InvoiceLineResponse"];
+type MockInvoice = components["schemas"]["InvoiceDetailResponse"];
+type MockPayment = components["schemas"]["PaymentResponse"];
+
+/** Künye = detay eksi `lines` (gerçek sunucuda liste `InvoiceResponse` döner). */
+function invoiceHeader(invoice: MockInvoice): components["schemas"]["InvoiceResponse"] {
+  const { lines: _lines, ...header } = invoice;
+  return header;
+}
+
+function mockLine(
+  id: string,
+  sortOrder: number,
+  description: string,
+  unit: string,
+  quantity: string,
+  unitPrice: string,
+): MockInvoiceLine {
+  return {
+    id,
+    sort_order: sortOrder,
+    description,
+    unit,
+    quantity,
+    unit_price: unitPrice,
+    vat_rate: "20",
+    line_total: (Number(quantity) * Number(unitPrice)).toFixed(2),
+    detail_note: null,
+  };
+}
+
+/** Her faturanın taşıdığı NULL alanların ortak tabanı (tekrar yazılmaz). */
+const INVOICE_BASE = {
+  payment_method: "transfer" as const,
+  note: null,
+  party_tax_office: "Kızılay",
+  party_address: "Söğütözü Cad. No:14\nÇankaya / ANKARA",
+  employer_id: null,
+  customer_id: null,
+  supplier_id: null,
+  subcontractor_id: null,
+  progress_payment_id: null,
+  subcontractor_progress_payment_id: null,
+  equipment_rental_invoice_id: null,
+  purchase_order_id: null,
+  project_id: null,
+  site_id: null,
+  advance_rate: null,
+  advance_amount: "0.00",
+  retention_rate: null,
+  retention_amount: "0.00",
+  withholding_rate: null,
+  withholding_amount: "0.00",
+  created_by_id: "11111111-1111-1111-1111-111111111111",
+  created_at: "2026-07-18T09:14:00Z",
+  updated_at: "2026-07-18T09:14:00Z",
+};
+
+/**
+ * BEŞ fatura: iki yönün DÖRT durumu + dönem penceresi dışında kalan bir
+ * taslak. Sonuncusu (2026-06) `date_from`/`date_to` süzgecinin gerçekten
+ * uygulandığını kanıtlar — hepsi Temmuz olsaydı o dal hiç ölçülemezdi.
+ */
+const INVOICE_FIXTURES: MockInvoice[] = [
+  {
+    ...INVOICE_BASE,
+    id: "inv-out-1",
+    direction: "outgoing",
+    invoice_no: "FIL2026000184",
+    document_type: "einvoice",
+    status: "sent",
+    issue_date: "2026-07-18",
+    due_date: "2026-08-18", // → "Vadeli" (K1)
+    party_name: "Güneşkent Gayrimenkul A.Ş.",
+    party_tax_number: "9876543210",
+    progress_payment_id: "pp-1",
+    advance_rate: "20",
+    advance_amount: "984120.00",
+    retention_rate: "5",
+    retention_amount: "246030.00",
+    subtotal: "5432040.00",
+    tax_base: "4201890.00",
+    vat_amount: "840378.00",
+    total: "5042268.00",
+    lines: [
+      mockLine("li-1", 0, "Kat Döşemesi Betonu C25/30 (Poz 03.001)", "m³", "1320.000", "2113.00"),
+      mockLine("li-2", 1, "Kolon Betonu C30/37 (Poz 03.002)", "m³", "300.000", "2398.00"),
+    ],
+  },
+  {
+    ...INVOICE_BASE,
+    id: "inv-out-2",
+    direction: "outgoing",
+    invoice_no: "FIL2026000183",
+    document_type: "einvoice",
+    status: "collected",
+    issue_date: "2026-07-15",
+    due_date: null, // vadesiz → "Tahsil Edildi", "Vadeli" DEĞİL
+    party_name: "Çelik Holding A.Ş.",
+    party_tax_number: "5566778899",
+    subtotal: "1840000.00",
+    tax_base: "1840000.00",
+    vat_amount: "368000.00",
+    total: "2208000.00",
+    lines: [mockLine("li-3", 0, "OSB Saha Betonu", "m³", "800.000", "2300.00")],
+  },
+  {
+    ...INVOICE_BASE,
+    id: "inv-in-1",
+    direction: "incoming",
+    invoice_no: "LT2026070184",
+    document_type: "einvoice",
+    status: "pending",
+    issue_date: "2026-07-16",
+    due_date: "2026-08-15",
+    party_name: "Liebherr Türkiye A.Ş.",
+    party_tax_number: "4455667788",
+    party_tax_office: "Beykoz V.D.",
+    party_address: "Organize Sanayi Bölgesi\nBeykoz / İSTANBUL",
+    equipment_rental_invoice_id: "rental-1", // → eşleştirme kartı
+    subtotal: "103760.00",
+    tax_base: "103760.00",
+    vat_amount: "20752.00",
+    withholding_rate: "20",
+    withholding_amount: "4150.00",
+    total: "146995.00",
+    lines: [
+      mockLine("li-4", 0, "Tower Crane TC-48 Kiralama", "Saat", "186.000", "320.00"),
+      mockLine("li-5", 1, "Ekskavatör CAT 320 Kiralama", "Saat", "158.000", "280.00"),
+    ],
+  },
+  {
+    ...INVOICE_BASE,
+    id: "inv-in-2",
+    direction: "incoming",
+    invoice_no: "DMS2026001122",
+    document_type: "einvoice",
+    status: "pending",
+    issue_date: "2026-07-15",
+    due_date: null,
+    party_name: "Demirsan A.Ş.",
+    party_tax_number: "1122334455",
+    purchase_order_id: "po-1", // rotası YOK → solgun çip
+    subtotal: "322500.00",
+    tax_base: "322500.00",
+    vat_amount: "64500.00",
+    total: "387000.00",
+    lines: [mockLine("li-6", 0, "Nervürlü Demir Ø12", "Ton", "15.000", "21500.00")],
+  },
+  {
+    ...INVOICE_BASE,
+    id: "inv-out-old",
+    direction: "outgoing",
+    invoice_no: "FIL2026000150",
+    document_type: "earchive",
+    status: "draft",
+    issue_date: "2026-06-10", // 🔴 Temmuz penceresinin DIŞINDA
+    due_date: null,
+    party_name: "Bursa Belediyesi",
+    party_tax_number: "9988776655",
+    subtotal: "620000.00",
+    tax_base: "620000.00",
+    vat_amount: "124000.00",
+    total: "744000.00",
+    lines: [mockLine("li-7", 0, "Yol Alt Temel", "m³", "2000.000", "310.00")],
+  },
+];
+
+const INVOICE_PAYMENT_FIXTURES: MockPayment[] = [
+  {
+    id: "pay-1",
+    invoice_id: "inv-out-2",
+    bank_account_id: "ba-1",
+    method: "transfer",
+    amount: "2208000.00",
+    paid_on: "2026-07-20",
+    note: null,
+    created_by_id: "11111111-1111-1111-1111-111111111111",
+    created_at: "2026-07-20T10:00:00Z",
+    updated_at: "2026-07-20T10:00:00Z",
+  },
+];
+
+const INVOICE_SUMMARY: components["schemas"]["InvoiceSummaryResponse"] = {
+  issued_this_month: { amount: "4920600.00", count: 18 },
+  received_this_month: { amount: "3840000.00", count: 34 },
+  receivable: { amount: "2100000.00", count: 4 },
+  // NEGATİF olabilir demiştik; fikstür pozitif bir değer taşır.
+  vat_difference: "216000.00",
+  pending_approval: 3, // ADET
+};
+
+/** FGE:116-129 — iki satır: biri eşleşen, biri FAZLA faturalanan. */
+const RENTAL_MATCH_FIXTURE: components["schemas"]["RentalInvoiceDetailResponse"] = {
+  id: "rental-1",
+  supplier_id: "sup-1",
+  supplier_name: "Liebherr Türkiye A.Ş.",
+  invoice_no: "LT2026070184",
+  invoice_amount: "103760.00",
+  period_year: 2026,
+  period_month: 7,
+  site_id: null,
+  site_name: null,
+  rate_period: "hourly",
+  vat_rate: "20",
+  vat_amount: "20752.00",
+  payable_total: "146995.00",
+  status: "draft",
+  approved_by_id: null,
+  approved_at: null,
+  paid_at: null,
+  created_at: "2026-07-16T08:00:00Z",
+  lines: [
+    {
+      id: "rl-1",
+      equipment_id: "eq-1",
+      equipment_name: "Tower Crane TC-48",
+      equipment_brand: "Liebherr",
+      equipment_plate_no: null,
+      site_id: "site-1",
+      site_name: "Güneşkent A-Blok",
+      line_kind: "rented",
+      worked_hours: "186.00",
+      breakdown_hours: "0.00",
+      rate_amount: "320.00",
+      effective_rate_amount: "320.00",
+      our_amount: "59520.00",
+      breakdown_amount: "0.00",
+      invoiced_hours: "186.00",
+      hours_variance: "0.00",
+      variance_status: "match",
+    },
+    {
+      id: "rl-2",
+      equipment_id: "eq-2",
+      equipment_name: "Ekskavatör CAT 320",
+      equipment_brand: "CAT",
+      equipment_plate_no: null,
+      site_id: "site-2",
+      site_name: "Liman Altyapı",
+      line_kind: "rented",
+      worked_hours: "152.00",
+      breakdown_hours: "0.00",
+      rate_amount: "280.00",
+      effective_rate_amount: "280.00",
+      our_amount: "42560.00",
+      breakdown_amount: "0.00",
+      invoiced_hours: "158.00",
+      hours_variance: "6.00",
+      variance_status: "over",
+    },
+  ],
+  totals: {
+    our_total: "102080.00",
+    our_total_unknown_count: 0,
+    owned_total: "0.00",
+    owned_total_unknown_count: 0,
+    excluded_breakdown_amount: "0.00",
+    excluded_breakdown_unknown_count: 0,
+    invoice_amount: "103760.00",
+    vat_rate: "20",
+    vat_amount: "20752.00",
+    payable_total: "146995.00",
+  },
+  site_distribution: [],
+};
+
+/**
+ * ⚠️ Fatura durumu YAZILABİLİRDİR (approve/send/tahsilat uçları onu oynatır),
+ * bu yüzden fikstürler KOPYALANARAK modül düzeyinde tutulur. `e2e/invoices.
+ * spec.ts` her mutasyonu AYRI bir fatura üzerinde koşar; aynı faturayı iki
+ * test oynatsaydı `fullyParallel` altında yarış doğardı.
+ */
+const invoiceState: {
+  invoices: MockInvoice[];
+  payments: MockPayment[];
+  seq: number;
+} = {
+  invoices: INVOICE_FIXTURES.map((invoice) => ({ ...invoice })),
+  payments: INVOICE_PAYMENT_FIXTURES.map((payment) => ({ ...payment })),
+  seq: 0,
+};
+
+/** `POST /invoices` yanıtı — sunucu toplamları KENDİ hesaplar (K7). */
+function buildMockInvoice(
+  seq: number,
+  body: Record<string, unknown>,
+  rawLines: Record<string, unknown>[],
+): MockInvoice {
+  const lines = rawLines.map((line, index) =>
+    mockLine(
+      `li-new-${seq}-${index}`,
+      index,
+      String(line.description ?? ""),
+      String(line.unit ?? ""),
+      Number(line.quantity ?? 0).toFixed(3),
+      Number(line.unit_price ?? 0).toFixed(2),
+    ),
+  );
+  const subtotal = lines.reduce((sum, line) => sum + Number(line.line_total), 0);
+  const advanceRate = Number(body.advance_rate ?? 0);
+  const retentionRate = Number(body.retention_rate ?? 0);
+  const advance = (subtotal * advanceRate) / 100;
+  const retention = (subtotal * retentionRate) / 100;
+  const taxBase = subtotal - advance - retention;
+  const vat = taxBase * 0.2;
+  return {
+    ...INVOICE_BASE,
+    id: `inv-new-${seq}`,
+    direction: "outgoing",
+    invoice_no: `FIL20260002${String(seq).padStart(2, "0")}`,
+    document_type: (body.document_type as MockInvoice["document_type"]) ?? "einvoice",
+    // Giden fatura `draft` doğar (K2); `status` gövdeden GELMEZ.
+    status: "draft",
+    issue_date: String(body.issue_date ?? "2026-07-25"),
+    due_date: (body.due_date as string | undefined) ?? null,
+    payment_method: (body.payment_method as MockInvoice["payment_method"]) ?? "transfer",
+    note: (body.note as string | undefined) ?? null,
+    party_name: String(body.party_name ?? ""),
+    party_tax_number: (body.party_tax_number as string | undefined) ?? null,
+    party_tax_office: (body.party_tax_office as string | undefined) ?? null,
+    party_address: (body.party_address as string | undefined) ?? null,
+    progress_payment_id: (body.progress_payment_id as string | undefined) ?? null,
+    advance_rate: advanceRate > 0 ? String(advanceRate) : null,
+    advance_amount: advance.toFixed(2),
+    retention_rate: retentionRate > 0 ? String(retentionRate) : null,
+    retention_amount: retention.toFixed(2),
+    subtotal: subtotal.toFixed(2),
+    tax_base: taxBase.toFixed(2),
+    vat_amount: vat.toFixed(2),
+    total: (taxBase + vat).toFixed(2),
+    lines,
   };
 }

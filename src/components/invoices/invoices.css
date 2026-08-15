@@ -1,0 +1,569 @@
+/* F-FAT2 · Fatura ekranları. Kanon: projedesign
+   "Fatura Yönetimi.dc.html" (FY) · "Fatura - Kes.dc.html" (FK) ·
+   "Fatura - Giden Detay.dc.html" (FGI) · "Fatura - Gelen Detay.dc.html" (FGE).
+   Parantez içi sayılar O dosyaların SATIR numaralarıdır. Prefix `fat`.
+   Mockup'ların üst barı ve sol menüsü UYGULAMA KABUĞUdur (F3 Topbar +
+   Sidebar) — bu sayfalar onları YENİDEN ÇİZMEZ. */
+
+.fat {
+  animation: var(--anim-fade-up); /* FY:58 */
+}
+
+.fat__eyebrow {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+  margin-bottom: 6px;
+}
+
+.fat__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+}
+
+.fat__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.fat__title {
+  font-size: var(--text-page-title);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+}
+
+.fat__subtitle {
+  font-size: var(--text-body);
+  color: var(--color-text-subtle);
+  margin-top: var(--space-1);
+}
+
+.fat__actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+/* Görünür gerekçe / uyarı bantları — sessiz düşüş YOK. */
+.fat-notice {
+  margin-bottom: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: var(--space-2) var(--space-3);
+  line-height: var(--leading-normal);
+}
+.fat-notice--danger {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger);
+}
+.fat-notice--info {
+  color: var(--color-primary-hover);
+  background: var(--color-nav-active-bg); /* FY:78 */
+  border-color: var(--color-primary-ring);
+}
+
+/* Sekme şeridi (FY:61-66). */
+.fat-tabs {
+  display: flex;
+  gap: var(--space-1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-10);
+  padding: var(--space-1);
+  width: fit-content;
+  margin-bottom: var(--space-5);
+}
+.fat-tab {
+  padding: 7px 16px; /* FY:62 */
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-7);
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+.fat-tab[aria-current="page"] {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  background: var(--color-nav-active-bg); /* FY:62 */
+}
+.fat-tab:disabled {
+  cursor: not-allowed;
+  color: var(--color-text-subtle);
+  opacity: 0.6;
+}
+
+/* KPI şeridi (FY:69-75) — BEŞ kart. */
+.fat-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr); /* FY:69 */
+  gap: var(--space-3); /* FY:69 — 12px */
+  margin-bottom: var(--space-5);
+}
+.fat-kpi {
+  background: var(--color-surface);
+  border-radius: var(--radius-12); /* FY:70 */
+  padding: 14px;
+  border: 1px solid var(--color-border);
+}
+.fat-kpi--success {
+  border-left: 4px solid var(--color-success); /* FY:70 */
+}
+.fat-kpi--danger {
+  border-left: 4px solid var(--color-danger); /* FY:71 */
+}
+.fat-kpi--warning {
+  border-left: 4px solid var(--color-warning); /* FY:74 */
+}
+.fat-kpi__label {
+  font-size: 10px; /* FY:70 */
+  color: var(--color-text-subtle);
+  margin-bottom: var(--space-1);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+.fat-kpi__value {
+  font-size: 20px; /* FY:70 */
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+}
+.fat-kpi__value--success {
+  color: var(--color-success);
+}
+.fat-kpi__value--danger {
+  color: var(--color-danger);
+}
+.fat-kpi__value--warning {
+  color: var(--color-warning);
+}
+.fat-kpi__value--primary {
+  color: var(--color-primary);
+}
+/* FY:74 "Onay Bekleyen" ADETtir — mono DEĞİL (mockup o kartta mono yazmaz). */
+.fat-kpi__value--count {
+  font-family: var(--font-sans);
+  color: var(--color-warning);
+}
+.fat-kpi__hint {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+
+/* Tablo kartı (FY:88-96 · FY:148-152). */
+.fat-panel {
+  background: var(--color-surface);
+  border-radius: var(--radius-14); /* FY:88 */
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  margin-bottom: var(--space-5);
+}
+.fat-panel__head {
+  padding: 13px var(--space-4); /* FY:89 */
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.fat-panel__head--incoming {
+  background: var(--color-danger-soft); /* FY:149 */
+}
+.fat-panel__title {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.fat-panel__title--incoming {
+  color: var(--color-danger);
+}
+.fat-panel__hint {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+.fat-panel__search {
+  margin-left: auto;
+  min-width: 200px;
+}
+.fat-panel__push {
+  margin-left: auto;
+}
+.fat-panel__body {
+  padding: var(--space-4);
+}
+
+/* Tablo (FY:97-144). Dar pencerede YATAY kaydırma KENDİ kabındadır. */
+.fat-table-scroll {
+  overflow-x: auto;
+}
+.fat-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.fat-table th {
+  padding: 10px var(--space-3); /* FY:99 */
+  text-align: left;
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+.fat-table td {
+  padding: var(--space-3); /* FY:110 */
+  font-size: var(--text-body);
+  border-bottom: 1px solid var(--color-divider);
+  vertical-align: top;
+}
+.fat-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.fat-table .is-center {
+  text-align: center;
+}
+.fat-table .is-right {
+  text-align: right;
+}
+.fat-table .is-mono {
+  font-family: var(--font-mono);
+}
+.fat-table__strong {
+  font-weight: var(--weight-bold);
+}
+.fat-table__muted {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+.fat-table__no {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+.fat-table__party {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.fat-table tfoot td {
+  background: var(--color-surface-2);
+  border-top: 2px solid var(--color-border);
+  border-bottom: none;
+  font-size: var(--text-body);
+}
+.fat-table tfoot .fat-total-row td {
+  background: var(--color-primary-soft); /* FGI:183 */
+  border-top: 2px solid var(--color-primary);
+  font-weight: var(--weight-bold);
+}
+.fat-table tfoot .fat-total-row--incoming td {
+  background: var(--color-danger-soft); /* FGE:188 */
+  border-top: 2px solid var(--color-danger);
+}
+.fat-total-row__amount {
+  font-size: 20px; /* FGI:185 */
+  font-family: var(--font-mono);
+  color: var(--color-primary);
+}
+.fat-total-row--incoming .fat-total-row__amount {
+  color: var(--color-danger);
+}
+
+/* Kaynak çipi (FY:113 · FY:167). */
+.fat-chip {
+  display: inline-block;
+  font-size: var(--text-small);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-8);
+  font-weight: var(--weight-semibold);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+.fat-chip--muted {
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+}
+
+/* Detay üst kartı (FGI:54-99 · FGE:64-102). */
+.fat-hero {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  padding: var(--space-6); /* FGI:54 — 24px */
+  margin-bottom: var(--space-5);
+  box-shadow: var(--shadow-card);
+}
+.fat-hero__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.fat-hero__badges {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.fat-hero__no {
+  font-size: var(--text-xl); /* FGI:62 — 24px */
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.4px;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  margin-bottom: var(--space-1);
+}
+.fat-hero__sub {
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+}
+.fat-hero__amount-box {
+  text-align: right;
+}
+.fat-hero__amount-label {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-bottom: 3px;
+}
+.fat-hero__amount {
+  font-size: 28px; /* FGI:67 */
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+  color: var(--color-primary);
+}
+.fat-hero__amount--incoming {
+  color: var(--color-danger); /* FGE:77 */
+}
+.fat-hero__due {
+  font-size: var(--text-xs);
+  color: var(--color-warning);
+  font-weight: var(--weight-medium);
+  margin-top: 2px;
+}
+.fat-hero__parties {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+  padding-top: 18px;
+  border-top: 1px solid var(--color-divider);
+}
+.fat-party__label {
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  margin-bottom: var(--space-2);
+}
+.fat-party__name {
+  font-size: 14px; /* FGI:75 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  margin-bottom: var(--space-1);
+}
+.fat-party__meta {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  line-height: 1.7;
+  white-space: pre-line;
+}
+.fat-hero__meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* FGI:93 */
+  gap: var(--space-4);
+  padding-top: 18px;
+  margin-top: 18px;
+  border-top: 1px solid var(--color-divider);
+}
+.fat-meta__label {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-bottom: 3px;
+}
+.fat-meta__value {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+/* İki sütunlu alt bölge (FGI:192). */
+.fat-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5);
+  align-items: start;
+}
+
+/* Form (FK) düzeni. */
+.fat-form__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* FK:98 */
+  gap: var(--space-5);
+}
+.fat-form__col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.fat-form__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* FK:123 */
+  gap: var(--space-2);
+}
+.fat-source {
+  background: var(--color-nav-active-bg); /* FK:56 */
+  border: 1px solid var(--color-primary-ring);
+  border-radius: var(--radius-12);
+  padding: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+.fat-source__title {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary-hover);
+  margin-bottom: var(--space-3);
+}
+.fat-source__cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* FK:58 */
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.fat-source__card {
+  border: 2px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-10);
+  padding: 14px;
+  text-align: center;
+  cursor: pointer;
+  font-family: inherit;
+  width: 100%;
+}
+.fat-source__card[aria-pressed="true"] {
+  border-color: var(--color-primary); /* FK:61 */
+}
+.fat-source__card:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.fat-source__card-title {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
+}
+.fat-source__card[aria-pressed="true"] .fat-source__card-title {
+  color: var(--color-primary); /* FK:63 */
+}
+.fat-source__card-hint {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+
+/* Kesintiler (FK:219-241). */
+.fat-deductions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.fat-deduction {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.fat-deduction__label {
+  flex: 1;
+  font-size: var(--text-body);
+  color: var(--color-text-secondary);
+}
+.fat-deduction__rate {
+  width: 72px;
+}
+.fat-deduction__unit {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+}
+
+/* Özet listesi (FK:245-251 · ödeme paneli). */
+.fat-summary-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 7px 0;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: var(--text-body);
+}
+.fat-summary-row:last-child {
+  border-bottom: none;
+}
+.fat-summary-row__label {
+  color: var(--color-text-muted);
+}
+.fat-summary-row__value {
+  font-weight: var(--weight-semibold);
+  font-family: var(--font-mono);
+}
+.fat-summary-row__value--muted {
+  font-family: var(--font-sans);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-subtle);
+}
+.fat-summary-row__value--danger {
+  color: var(--color-danger);
+}
+
+/* Eşleştirme kartı (FGE:105-143). */
+.fat-match {
+  border: 2px solid var(--color-warning); /* FGE:105 */
+}
+.fat-match__actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  flex-wrap: wrap;
+}
+.fat-variance--over {
+  color: var(--color-danger);
+  font-weight: var(--weight-bold);
+}
+.fat-variance--under {
+  color: var(--color-warning);
+  font-weight: var(--weight-semibold);
+}
+
+/* Devre-dışı basılan yüzeylerin ortak solgunluğu. */
+.fat-disabled-surface {
+  opacity: 0.6;
+}
+
+/* Dar pencere: ızgaralar tek sütuna iner, yatay taşma OLMAZ. */
+@media (max-width: 1100px) {
+  .fat-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .fat-columns,
+  .fat-form__grid,
+  .fat-hero__parties,
+  .fat-source__cards {
+    grid-template-columns: 1fr;
+  }
+  .fat-hero__meta {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
