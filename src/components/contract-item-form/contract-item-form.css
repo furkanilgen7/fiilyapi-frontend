@@ -185,6 +185,10 @@
   font-weight: var(--weight-semibold);
   color: var(--color-text-subtle);
 }
+/* İŞV 208: "Grup" değeri mono DEĞİL (serbest metin, kod değil). */
+.pif-summary__value--text {
+  font-family: var(--font-sans);
+}
 .pif-summary__value--filled {
   color: var(--color-text);
 }

@@ -171,6 +171,13 @@ export const EMPLOYER_ITEM_TEXT = {
   indexType: "Varsayılan Endeks", // 190
   summaryCard: "Poz Özeti", // 206
   summaryGroup: "Grup", // 208
+  /**
+   * 🔴 Özet rayındaki miktar etiketi FORM alanınınkinden AYRIDIR: mockup 158
+   * alanı "Sözleşme Miktarı" derken 210'daki özet satırı yalnız "Miktar" der.
+   * Mockup ikisini bilinçle ayırmış (alan uzun/açıklayıcı, dar özet rayı kısa)
+   * → tek sabite bağlanmaz.
+   */
+  summaryQuantity: "Miktar", // 210
   summaryUnitPrice: "Birim Fiyat", // 211
   summaryAmount: "Bedel", // 213
   contractCard: "Sözleşme Durumu", // 220

@@ -317,7 +317,6 @@ export function EmployerItemFormModal({
                   <Select
                     {...control}
                     disabled
-                    title={ESCALATION_READONLY_REASON}
                     value={detail.has_price_escalation ? "yes" : "no"}
                     data-testid="eci-escalation"
                     onChange={() => undefined}
@@ -332,7 +331,6 @@ export function EmployerItemFormModal({
                   <Select
                     {...control}
                     disabled
-                    title={ESCALATION_READONLY_REASON}
                     value={detail.index_type ?? ""}
                     data-testid="eci-index-type"
                     onChange={() => undefined}
@@ -358,9 +356,14 @@ export function EmployerItemFormModal({
           <section className="pif-card pif-card--flush">
             <h3 className="pif-card__subtitle">{TEXT.summaryCard}</h3>
             <div className="pif-summary">
-              <SummaryRow label={TEXT.summaryGroup} value={selectedGroup?.name ?? ""} />
+              {/* Grup değeri mockup 208'de mono DEĞİL; 209-211 mono. */}
+              <SummaryRow
+                label={TEXT.summaryGroup}
+                value={selectedGroup?.name ?? ""}
+                mono={false}
+              />
               <SummaryRow label={TEXT.code} value={values.code.trim()} />
-              <SummaryRow label={TEXT.quantity} value={values.quantity.trim()} />
+              <SummaryRow label={TEXT.summaryQuantity} value={values.quantity.trim()} />
               <SummaryRow
                 label={TEXT.summaryUnitPrice}
                 value={values.unitPrice.trim()}
