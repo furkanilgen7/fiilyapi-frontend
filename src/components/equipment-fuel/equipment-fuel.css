@@ -189,11 +189,13 @@
 }
 .makine-yakit-consumption__deviation {
   font-weight: var(--weight-semibold);
-  /* Sol boşluk CSS'ten gelir, `{" "}` metin düğümünden DEĞİL: self-host
-     edilen yazı tipi Latin alt-kümesinde `⚠ ✓ —` yok, yedek yazı tipine
-     düşünce metin-boşluğu genişliği yedeğin metriğine göre değişip
-     görsel kapıda kayıyordu (makine-yakit, CI run 31788449253, 244px). */
-  margin-left: var(--space-1); /* 52 */
+  /* Sol boşluk BİLEREK CSS'te DEĞİL: JSX'teki `{" "}` metin düğümünden gelir ve
+     deterministiktir — U+0020 self-host Inter alt-kümesinde kapsanır
+     (`unicode-range: u+00??`, src/styles/fonts.css); tarayıcıda ölçüldü,
+     10px'te 2,53px. Mockup da literal boşluk kullanır
+     (projedesign/Makine - Yakıt Takibi.dc.html:52). Buraya margin EKLEME.
+     `⚠` (U+26A0) / `✓` (U+2713) ise hiçbir alt-kümede YOK, `Inter Fallback`
+     (local Arial) basar — bu karenin baseline'ı o yüzden tazelendi. */
 }
 .makine-yakit-consumption__deviation--success {
   color: var(--color-success); /* 57 */
