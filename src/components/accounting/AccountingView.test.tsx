@@ -700,6 +700,34 @@ describe("Yevmiye Kaydı diyaloğu (T4)", () => {
     }
   });
 
+  /**
+   * 🔴 T7 BULGUSU (mutasyon hayatta kalmıştı): katalog sayfalanmış ya da
+   * süzülmüş gelirse düzenlenen fişin hesabı seçenek listesinde OLMAYABİLİR.
+   * Seçenek basılmazsa tarayıcı `value`yu sessizce ilk seçeneğe ("Hesap seçin")
+   * kaydırır — kullanıcı yalnız tarihi değiştirdiğini sanırken fişin HESABINI
+   * kaybederdi. `JournalLinesEditor`ın `isKnown` dalı bunun için yazılmıştı ama
+   * hiçbir test onu ölçmüyordu.
+   */
+  it("🔴 katalogda OLMAYAN hesap secenekten DUSMEZ; secili kalir ve kendi adiyla basilir", async () => {
+    // Katalog yalnız `acc-320`yi döndürür: fişin `acc-120` bacağı sayfada YOK.
+    vi.mocked(useChartOfAccounts).mockReturnValue(
+      queryOk({ ...ACCOUNTS, items: [ACCOUNTS.items[1]], total: 1 }),
+    );
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<AccountingView />);
+    await user.click(screen.getByTestId("mu-draft-edit-entry-draft"));
+
+    const select = screen.getByTestId("mu-line-account-0");
+    // Değer KAYMAZ: hâlâ fişin kendi hesabı seçilidir.
+    expect(select).toHaveValue("acc-120");
+    // Etiket fişin KENDİ satırından okunur (katalogdan değil).
+    expect(within(select).getByRole("option", { name: "120.01 · Alıcılar" })).toBeInTheDocument();
+
+    // Ve bu tek başına bir DEĞİŞİKLİK sayılmaz: kaydet hiçbir satır isteği atmaz.
+    await user.click(screen.getByTestId("mu-entry-dialog-save"));
+    expect(formSpies.replaceLines).not.toHaveBeenCalled();
+  });
+
   it("duzenlemede yalniz BASLIK oynarsa PUT …/lines HIC atilmaz", async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<AccountingView />);

@@ -462,4 +462,32 @@ describe("Hesap diyaloğu (T4)", () => {
     expect(error).toHaveTextContent("Hesap oluşturulamadı.");
     expect(error.textContent).not.toContain("string_pattern");
   });
+
+  /**
+   * 🔴 T7 BULGUSU (mutasyon hayatta kalmıştı): düzenlenecek satır bu arada
+   * listeden düşerse (arama daraldı, sayfa kaydı, başka biri sildi) diyalog
+   * OLUŞTURMA kipine SESSİZCE KAYMAMALIDIR — kullanıcı "Kasa"yı düzenlediğini
+   * sanarken ikinci bir hesap yaratırdı. `ChartAccountDialogHost` bunun için
+   * yazılmıştı ama hiçbir test onu ölçmüyordu.
+   */
+  it("🔴 düzenlenen satır listeden DÜŞERSE oluşturma kipine kaymaz, gerekçe basılır", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<ChartOfAccountsView />);
+    await user.click(screen.getByTestId("hp-edit-100"));
+    expect(screen.getByRole("dialog", { name: "Hesap Düzenle" })).toBeInTheDocument();
+
+    // Satır listeden düşer (ör. arama daraldı / kayıt silindi).
+    vi.mocked(useChartOfAccounts).mockReturnValue(
+      queryResult({ data: listResponse(ACCOUNTS.filter((a) => a.code !== "100")) }),
+    );
+    rerender(<ChartOfAccountsView />);
+
+    expect(screen.getByTestId("hp-dialog-missing")).toHaveTextContent("Hesap listede bulunamadı");
+    // 🔴 EN KRİTİK İDDİA: BOŞ "Yeni Hesap" formu AÇILMAZ.
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByTestId("hp-dialog-code")).toBeNull();
+
+    await user.click(screen.getByTestId("hp-dialog-close"));
+    expect(screen.queryByTestId("hp-dialog-missing")).toBeNull();
+  });
 });
