@@ -19,12 +19,52 @@ export function formatCompactCurrency(value: string | number): string {
   return `₺ ${short(n)}`;
 }
 
+/** `formatCompactCurrencyTight` ondalik tavani — E9:103-104 IKI basamak yazar. */
+const COMPACT_TIGHT_FRACTION_DIGITS = 2;
+
+/** En fazla IKI ondalik, sondaki sifirlar atilir: 4,12 · 3,84 · 4 */
+function shortTight(value: number): string {
+  return new Intl.NumberFormat(LOCALE, {
+    maximumFractionDigits: COMPACT_TIGHT_FRACTION_DIGITS,
+  }).format(value);
+}
+
+/**
+ * Nakit akisi aciklama seridi (F-HZ T3.0 · E9:103 `₺4,12M` · E9:104 `₺3,84M`).
+ *
+ * `formatCompactCurrency`den IKI farki vardir: `₺` ile sayi arasinda BOSLUK
+ * YOKTUR ve ondalik tavani BIR degil IKIdir. E9 kendi icinde tutarlidir —
+ * BOSLUKLU bicim yalniz kart bakiyelerinindir (E9:72/77/82 `₺ 2.840.500`),
+ * geri kalan her para BOSLUKSUZ yazilir (E9:103/104/114/118/122). Ayni okuma
+ * `formatCurrencyTight`i (E9:114) da dogurmustu.
+ *
+ * 🔴 `formatCompactCurrency` DEGISTIRILMEZ: `/makine` KPI'i ("₺ 144,2B") ve 20+
+ * cagiran ona baglidir; tek ondalikli/bosluklu bicimi oynatmak o ekranlarin
+ * baseline'larini sessizce kirardi. Bu yuzden AYRI bir varyant acildi.
+ */
+export function formatCompactCurrencyTight(value: string | number): string {
+  const n = toNumber(value);
+  if (Math.abs(n) >= MILLION) return `₺${shortTight(n / MILLION)}M`;
+  if (Math.abs(n) >= THOUSAND) return `₺${shortTight(n / THOUSAND)}B`;
+  return `₺${shortTight(n)}`;
+}
+
 /** Portfoy tutari: mockup'taki "24.870.500" gosterimi. */
 export function formatCurrency(value: string | number): string {
   const formatted = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 0 }).format(
     toNumber(value),
   );
   return `₺ ${formatted}`;
+}
+
+/**
+ * Yaklasan odeme satirinin tutari (F-HZ T2 · E9:114 `₺1.016.800`).
+ * `formatCurrency`den TEK farki: `₺` ile sayi arasinda BOSLUK YOKTUR. Mockup
+ * ayni ekranda iki farkli bicim kullanir — kart bakiyesi bosluklu (E9:72
+ * `₺ 2.840.500`), odeme satiri bosluksuz (E9:114) — ikisi de birebir uygulanir.
+ */
+export function formatCurrencyTight(value: string | number): string {
+  return `₺${new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 0 }).format(toNumber(value))}`;
 }
 
 /** Ilerleme yuzdesi: "%42,5" · "%75" */

@@ -511,6 +511,51 @@
     var(--color-accent-purple-grad-start),
     var(--color-accent-purple-grad-end)
   ); /* 105 */
+
+  /* ── Hazine · E9 (F-HZ T2) ────────────────────────────────────────────────
+     Kanon: projedesign "Ekran 9 - Hazine.dc.html"; parantez içi sayılar o
+     dosyanın SATIR numaralarıdır.
+     Kart şeridinin ÜÇ gradyanı ızgarada SIRAYA göre döner (hesabın TİPİNE
+     bağlı DEĞİL — E9:71 ve E9:76 ikisi de `Vadesiz` ama farklı gradyan).
+     Altı gradyan ucunun HEPSİ mevcut token'larla karşılanıyor: E9:70 =
+     --color-primary-hover/--color-primary-light · E9:75 =
+     --color-accent-teal-start/--color-accent-teal-end · E9:80 =
+     --color-accent-purple/--color-accent-purple-grad-end.
+     Satır tonlarının da çoğu karşılanıyor (turuncu E9:112 =
+     --color-warning/--color-orange-tint · yeşil E9:120 =
+     --color-success-strong/--color-success-tint); YALNIZ kırmızı satırın
+     zemini yeniydi (E9:116) — --color-danger-soft ondan KOYU,
+     --color-danger-tint ondan PEMBEdir. */
+  --gradient-treasury-card-1: linear-gradient(
+    135deg,
+    var(--color-primary-hover),
+    var(--color-primary-light)
+  ); /* 70 */
+  --gradient-treasury-card-2: linear-gradient(
+    135deg,
+    var(--color-accent-teal-start),
+    var(--color-accent-teal-end)
+  ); /* 75 */
+  --gradient-treasury-card-3: linear-gradient(
+    135deg,
+    var(--color-accent-purple),
+    var(--color-accent-purple-grad-end)
+  ); /* 80 */
+  --color-danger-row-bg: #fef2f2; /* kırmızı ödeme satırı zemini (116) */
+  --text-treasury-balance: 26px; /* kart bakiyesi, mono (72, 77, 82) */
+  --space-treasury-card-gap: 14px; /* kart şeridi ızgara boşluğu (69) */
+  --space-treasury-strip-gap: 20px; /* kart şeridi alt boşluğu (69) */
+  --space-treasury-panel-gap: 16px; /* iki panel arası + alt boşluk (88) */
+  /* İki panel başlığının alt boşluğu mockup'ta AYNI DEĞİL: nakit akışı 16px
+     (91), yaklaşan ödemeler 14px (110). Yazı boyu ikisinde de 13px'tir. */
+  --space-treasury-panel-title-gap: 14px; /* yaklaşan ödemeler başlığı (110) */
+  --size-treasury-chart-height: 100px; /* SVG yüksekliği (92) */
+  --width-treasury-legend-line: 12px; /* açıklama çizgisi genişliği (103) */
+  --size-treasury-legend-line: 2px; /* açıklama çizgisi kalınlığı (103) */
+  --border-width-treasury-row: 3px; /* ödeme satırı sol kenarlığı (112) */
+  --space-treasury-row-gap: 10px; /* satırlar arası boşluk (111) */
+  --space-treasury-row-y: 10px; /* satır dikey iç boşluğu (112) */
+  --space-treasury-row-x: 12px; /* satır yatay iç boşluğu (112) */
 }
 
 @keyframes fadeUp {

@@ -1,0 +1,179 @@
+/* Hazine (F-HZ T2). Kanon: projedesign "Ekran 9 - Hazine.dc.html";
+   parantez içi sayılar o dosyanın SATIR numaralarıdır. Prefix `hazine`.
+   Mockup'ın üst barı (20-33) ve sol menüsü (36-59) UYGULAMA KABUĞUdur
+   (F3 Topbar + Sidebar) — bu sayfa onları YENİDEN ÇİZMEZ. */
+.hazine {
+  animation: var(--anim-fade-up); /* 61 */
+}
+
+/* Başlık şeridi (62-66). */
+.hazine__eyebrow {
+  font-size: var(--text-xs); /* 62 — 12px */
+  color: var(--color-text-subtle);
+  margin-bottom: 6px;
+}
+.hazine__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-6); /* 63 — 24px */
+}
+.hazine__title {
+  font-size: var(--text-page-title); /* 64 — 26px */
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight); /* 64 — -0.5px */
+  color: var(--color-text);
+}
+
+/* Görünür gerekçe/uyarı bantları — sessiz düşüş YOK. */
+.hazine-notice {
+  margin-bottom: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: var(--space-2) var(--space-3);
+}
+.hazine-notice--danger {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger);
+}
+
+/* Banka/kasa kartı şeridi (69-85). */
+.hazine-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 69 */
+  gap: var(--space-treasury-card-gap); /* 69 — 14px */
+  margin-bottom: var(--space-treasury-strip-gap); /* 69 — 20px */
+}
+.hazine-card {
+  border-radius: var(--radius-14); /* 70 */
+  padding: var(--space-5); /* 70 — 20px */
+  color: var(--color-on-brand);
+  /* Zemin degradesi satır-içi `style` ile bağlanır (sıra bazlı döngü) —
+     değerler tokens.css'teki --gradient-treasury-card-{1,2,3}. */
+}
+.hazine-card__label {
+  font-size: var(--text-small); /* 71 — 11px */
+  color: var(--color-on-brand-70);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide); /* 71 — 0.8px */
+  margin-bottom: var(--space-2); /* 71 — 8px */
+}
+.hazine-card__balance {
+  font-size: var(--text-treasury-balance); /* 72 — 26px */
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono); /* 72 — JetBrains Mono */
+  margin-bottom: var(--space-1); /* 72 — 4px */
+}
+.hazine-card__identity {
+  font-size: var(--text-xs); /* 73 — 12px */
+  color: var(--color-on-brand-70);
+}
+
+/* İki sütunlu panel ızgarası (88). */
+.hazine-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 88 */
+  gap: var(--space-treasury-panel-gap); /* 88 — 16px */
+  margin-bottom: var(--space-treasury-panel-gap); /* 88 — 16px */
+}
+.hazine-panel {
+  background: var(--color-surface); /* 90, 109 */
+  border-radius: var(--radius-14); /* 90, 109 */
+  padding: var(--space-5); /* 90, 109 — 20px */
+  border: 1px solid var(--color-border); /* 90, 109 */
+  box-shadow: var(--shadow-card); /* 90, 109 */
+}
+.hazine-panel__title {
+  font-size: var(--text-body); /* 91, 110 — 13px */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--space-4); /* 91 — 16px */
+}
+/* Yaklaşan ödemeler paneli başlığının alt boşluğu mockup'ta 14px'tir (110),
+   nakit akışınınki 16px (91). Ortak sınıf ikisini eşitliyordu. */
+.hazine-panel__title--upcoming {
+  margin-bottom: var(--space-treasury-panel-title-gap); /* 110 — 14px */
+}
+
+/* Nakit akışı grafiği (92). */
+.hazine-chart {
+  width: 100%;
+  height: var(--size-treasury-chart-height); /* 92 — 100px */
+  display: block;
+}
+
+/* Açıklama şeridi (102-105). */
+.hazine-legend {
+  display: flex;
+  gap: var(--space-4); /* 102 — 16px */
+  margin-top: var(--space-2); /* 102 — 8px */
+}
+.hazine-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 6px; /* 103 */
+}
+.hazine-legend__line {
+  width: var(--width-treasury-legend-line); /* 103 — 12px */
+  height: var(--size-treasury-legend-line); /* 103 — 2px */
+  border-radius: 1px; /* 103 */
+}
+.hazine-legend__line--in {
+  background: var(--color-success); /* 103 */
+}
+.hazine-legend__line--out {
+  background: var(--color-danger); /* 104 */
+  border-style: dashed; /* 104 */
+}
+.hazine-legend__text {
+  font-size: var(--text-small); /* 103 — 11px */
+  color: var(--color-text-muted);
+}
+
+/* Yaklaşan ödeme satırları (111-123). */
+.hazine-rows {
+  display: flex;
+  flex-direction: column; /* 111 */
+  gap: var(--space-treasury-row-gap); /* 111 — 10px */
+}
+.hazine-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* 112 */
+  padding: var(--space-treasury-row-y) var(--space-treasury-row-x); /* 112 */
+  border-radius: var(--radius-8); /* 112 */
+  border-left: var(--border-width-treasury-row) solid; /* 112 — 3px */
+}
+/* Ton kuralı `upcomingPaymentTone` ile monotondur (onaylı sapma, gerekçesi
+   treasury-labels.ts'te); mockup'ın ÜÇ tonu ve renk değerleri birebirdir. */
+.hazine-row--danger {
+  background: var(--color-danger-row-bg); /* 116 */
+  border-left-color: var(--color-danger); /* 116 */
+}
+.hazine-row--warning {
+  background: var(--color-orange-tint); /* 112 */
+  border-left-color: var(--color-warning); /* 112 */
+}
+.hazine-row--success {
+  background: var(--color-success-tint); /* 120 */
+  border-left-color: var(--color-success-strong); /* 120 */
+}
+.hazine-row__title {
+  font-size: var(--text-body); /* 113 — 13px */
+  font-weight: var(--weight-medium); /* 113 — 500 */
+  color: var(--color-text);
+}
+.hazine-row__meta {
+  font-size: var(--text-small); /* 113 — 11px */
+  color: var(--color-text-subtle);
+}
+.hazine-row__amount {
+  font-size: var(--text-body); /* 114 — 13px */
+  font-weight: var(--weight-bold); /* 114 — 700 */
+  color: var(--color-text);
+  font-family: var(--font-mono); /* 114 — JetBrains Mono */
+}

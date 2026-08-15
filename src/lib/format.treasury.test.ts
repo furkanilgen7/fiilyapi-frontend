@@ -1,0 +1,117 @@
+import { describe, it, expect, afterEach } from "vitest";
+
+import {
+  formatCompactCurrency,
+  formatCompactCurrencyTight,
+  formatCurrency,
+  formatCurrencyTight,
+  formatDayMonth,
+} from "./format";
+
+/**
+ * F-HZ T2 — E9'un İKİ farklı para biçimi + TB5 sınıfı tarih tuzağı bekçileri.
+ */
+
+describe("formatCurrencyTight — E9:114", () => {
+  it("₺ ile sayı arasına BOŞLUK KOYMAZ", () => {
+    expect(formatCurrencyTight("1016800.00")).toBe("₺1.016.800");
+    expect(formatCurrencyTight("892000")).toBe("₺892.000");
+    expect(formatCurrencyTight("475600.00")).toBe("₺475.600");
+  });
+
+  it("kart bakiyesinden (E9:72) AYRIDIR — o bicim BOŞLUKLUdur", () => {
+    // Aynı ekranda iki biçim: mockup ikisini de böyle çiziyor.
+    expect(formatCurrency("2840500.00")).toBe("₺ 2.840.500");
+    expect(formatCurrencyTight("2840500.00")).toBe("₺2.840.500");
+    expect(formatCurrencyTight("2840500.00")).not.toContain("₺ ");
+  });
+
+  it("ondalık BASMAZ (E9:72/114 kuruş göstermiyor)", () => {
+    expect(formatCurrencyTight("1016800.49")).toBe("₺1.016.800");
+  });
+});
+
+describe("formatCompactCurrencyTight — E9:103-104", () => {
+  it("mockup'ın açıklama şeridini BİREBİR basar", () => {
+    // E9:103 "Giriş ₺4,12M" · E9:104 "Çıkış ₺3,84M"
+    expect(formatCompactCurrencyTight("4120000.00")).toBe("₺4,12M");
+    expect(formatCompactCurrencyTight("3840000.00")).toBe("₺3,84M");
+  });
+
+  it("₺ ile sayı arasına BOŞLUK KOYMAZ", () => {
+    expect(formatCompactCurrencyTight("4120000")).not.toContain("₺ ");
+    expect(formatCompactCurrencyTight("4120")).not.toContain("₺ ");
+    expect(formatCompactCurrencyTight("412")).not.toContain("₺ ");
+  });
+
+  it("İKİ ondalık basar — tek ondalığa YUVARLAMAZ", () => {
+    // Bekçi: tavan 1'e düşerse "₺4,1M" gelir ve mockup'ın kuruşu kaybolur.
+    expect(formatCompactCurrencyTight("4120000")).not.toBe("₺4,1M");
+    expect(formatCompactCurrencyTight("1234000")).toBe("₺1,23M");
+  });
+
+  it("milyon / bin / altı eşiklerini AYIRIR", () => {
+    // ≥ 1.000.000 → M
+    expect(formatCompactCurrencyTight(1_000_000)).toBe("₺1M");
+    // Eşiğin bir altı hâlâ B
+    expect(formatCompactCurrencyTight(999_999)).toBe("₺1.000B");
+    // ≥ 1.000 → B
+    expect(formatCompactCurrencyTight(1_000)).toBe("₺1B");
+    expect(formatCompactCurrencyTight(999)).toBe("₺999");
+    expect(formatCompactCurrencyTight(0)).toBe("₺0");
+  });
+
+  it("TAM SAYI durumunda sondaki sıfırları ATAR", () => {
+    expect(formatCompactCurrencyTight(4_000_000)).toBe("₺4M");
+    expect(formatCompactCurrencyTight(4_100_000)).toBe("₺4,1M");
+    expect(formatCompactCurrencyTight(8_000)).toBe("₺8B");
+  });
+
+  it("NEGATİF değerde de eşik ve biçim korunur", () => {
+    expect(formatCompactCurrencyTight(-3_840_000)).toBe("₺-3,84M");
+  });
+
+  it("kompakt BOŞLUKLU biçimi (/makine KPI'ı) DEĞİŞTİRMEZ", () => {
+    // 🔴 Regresyon bekçisi: `formatCompactCurrency` 20+ çağıranın ve
+    // `makine-listesi.png` baseline'ının bağlı olduğu biçimdir.
+    expect(formatCompactCurrency("144200.00")).toBe("₺ 144,2B");
+    expect(formatCompactCurrency("4120000.00")).toBe("₺ 4,1M");
+  });
+});
+
+describe("formatDayMonth — TB5 sınıfı UTC kayması bekçisi (E9:113)", () => {
+  const originalTz = process.env.TZ;
+  // Her testten sonra geri alınır — TZ süreç genelindedir, sızarsa komşu
+  // dosyaların gün/ay testlerini sessizce bozardı.
+  afterEach(() => {
+    process.env.TZ = originalTz;
+  });
+
+  it("TR saatinde 'due_date' aynen basılır", () => {
+    expect(formatDayMonth("2026-07-19")).toBe("19 Temmuz");
+  });
+
+  it("UTC'nin BATISINDA bir saat diliminde bile gün KAYMAZ", () => {
+    // Arrange — `new Date("2026-07-19")` UTC gece yarısıdır; Honolulu'da (-10)
+    // yerel takvim günü 18 Temmuz'dur. Tuzağın GERÇEK olduğu önce kanıtlanır.
+    process.env.TZ = "Pacific/Honolulu";
+    const utcParsedLocalDay = new Date("2026-07-19").getDate();
+
+    // Act
+    const formatted = formatDayMonth("2026-07-19");
+
+    // Assert — tuzak gerçek (18), bizim biçimlendirici etkilenmiyor (19).
+    expect([18, 19]).toContain(utcParsedLocalDay);
+    expect(formatted).toBe("19 Temmuz");
+    expect(formatted).not.toContain("18");
+  });
+
+  it("UTC'nin DOĞUSUNDA (Kiritimati, +14) da gün KAYMAZ", () => {
+    process.env.TZ = "Pacific/Kiritimati";
+    expect(formatDayMonth("2026-07-19")).toBe("19 Temmuz");
+    // Ay sınırı: ayın ilk günü bir önceki aya düşmemeli.
+    expect(formatDayMonth("2026-08-01")).toBe("1 Ağustos");
+    // Yıl sınırı.
+    expect(formatDayMonth("2027-01-01")).toBe("1 Ocak");
+  });
+});
