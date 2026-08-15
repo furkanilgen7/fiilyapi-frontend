@@ -8,6 +8,7 @@ import { Button, Input } from "@/components/ui";
 import { SearchIcon } from "@/components/ui/icons";
 import { backendErrorMessage } from "@/lib/api/error-message";
 import { useDeleteChartAccount, useUpdateChartAccount } from "@/lib/api/hooks/useChartOfAccountMutations";
+import type { ChartAccountResponse } from "@/lib/api/hooks/useChartOfAccounts";
 import {
   CHART_ACCOUNTS_MAX_LIMIT,
   useChartOfAccounts,
@@ -23,14 +24,14 @@ import {
   ACCOUNTING_REASONS,
   ACCOUNTING_URL,
 } from "./accounting-labels";
+import { ChartAccountFormModal } from "./ChartAccountFormModal";
 import { buildChartRows } from "./chart-of-accounts-rows";
 import { ChartOfAccountsTable } from "./ChartOfAccountsTable";
 import "./accounting.css";
 
 /**
  * HP:50 `+ Hesap Ekle` ve satır `Düzenle` düğmelerinin AÇTIĞI diyaloğun
- * durumu. Gövdesini T4 yazar; burada yalnız açma yolu kurulur ki düğmeler ölü
- * kalmasın (T2'nin `JournalEntryDialogState` deseni).
+ * durumu; gövdesi `ChartAccountFormModal`dır (T4).
  */
 export type ChartAccountDialogState =
   | { readonly mode: "create" }
@@ -133,7 +134,7 @@ export function ChartOfAccountsView() {
           <Button variant="secondary" disabled data-testid="hp-export">
             Excel
           </Button>
-          {/* HP:50 — diyaloğu T4 yazar; açma yolu burada kurulur. */}
+          {/* HP:50 — `ChartAccountFormModal`ı açar (T4). */}
           <Button
             variant="primary"
             disabled={!permission.canWrite}
@@ -185,24 +186,48 @@ export function ChartOfAccountsView() {
       </section>
 
       {dialog !== null && (
-        // T4 bu yuvaya gerçek diyaloğu takar; o güne kadar tıklama SESSİZ
-        // KALMAZ — kullanıcı ne olduğunu görür.
-        <p className="mu-notice" role="status" data-testid="hp-dialog-slot">
-          {dialog.mode === "create" ? "Yeni hesap" : "Hesap düzenleme"} formu bu ekrana henüz
-          bağlanmadı.{" "}
-          <button
-            type="button"
-            className="mu-period__nav"
-            data-testid="hp-dialog-close"
-            onClick={() => setDialog(null)}
-          >
-            Kapat
-          </button>
-        </p>
+        // 🔴 Düzenleme kipinde hesap LİSTEDEN okunur; ikinci bir detay isteği
+        // atılmaz — liste satırı zaten dört alanın hepsini taşır. Satır bu arada
+        // listeden düşmüşse (arama daraldı vb.) diyalog OLUŞTURMA kipine
+        // sessizce kaymaz: yuva kapanır.
+        <ChartAccountDialogHost
+          dialog={dialog}
+          accounts={accounts}
+          onClose={() => setDialog(null)}
+        />
       )}
 
       {/* Görsel spec (T6) "yüklendi" iddiasını kaynağa bağlar. */}
       {accountsQuery.data !== undefined && <span hidden data-testid="hp-loaded" />}
     </div>
   );
+}
+
+/**
+ * Diyaloğun kip çözümü. Düzenlenecek satır listede BULUNAMAZSA form açılmaz ve
+ * gerekçesi EKRANDA görünür — boş bir "Yeni Hesap" formu açmak, kullanıcının
+ * düzenlediğini sandığı hesabın yerine ikinci bir kayıt yaratmasına yol açardı.
+ */
+function ChartAccountDialogHost({
+  dialog,
+  accounts,
+  onClose,
+}: {
+  dialog: ChartAccountDialogState;
+  accounts: readonly ChartAccountResponse[] | undefined;
+  onClose: () => void;
+}) {
+  if (dialog.mode === "create") return <ChartAccountFormModal onClose={onClose} />;
+  const account = accounts?.find((candidate) => candidate.id === dialog.accountId);
+  if (account === undefined) {
+    return (
+      <p className="mu-notice mu-notice--danger" role="status" data-testid="hp-dialog-missing">
+        Hesap listede bulunamadı; listeyi tazeleyin.{" "}
+        <button type="button" className="mu-period__nav" data-testid="hp-dialog-close" onClick={onClose}>
+          Kapat
+        </button>
+      </p>
+    );
+  }
+  return <ChartAccountFormModal account={account} onClose={onClose} />;
 }

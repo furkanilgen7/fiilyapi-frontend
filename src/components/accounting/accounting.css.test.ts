@@ -115,3 +115,25 @@ describe("accounting.css — HP'ye (Hesap Planı) bağlı kurallar", () => {
     expect(css).toMatch(/\.mu-chart__balance--danger\s*{[^}]*var\(--color-danger\)/);
   });
 });
+
+describe("accounting.css — T4 diyalogları", () => {
+  it("fiş diyaloğu varsayılan 480px kabuktan GENİŞtir (üç sütunlu satır tablosu)", () => {
+    expect(css).toMatch(/\.mu-modal\s*{[^}]*width:\s*min\(760px, 92vw\)/);
+  });
+
+  it("denge şeridi ÜÇ sütundur: Toplam Borç / Toplam Alacak / Fark", () => {
+    expect(css).toMatch(/\.mu-balance\s*{[^}]*grid-template-columns:\s*repeat\(3, 1fr\)/);
+  });
+
+  it("🔴 denge DURUMU renkle ayrışır: dengeli yeşil, dengesiz kırmızı", () => {
+    expect(css).toMatch(/\.mu-balance__value--ok\s*{[^}]*var\(--color-success\)/);
+    expect(css).toMatch(/\.mu-balance__value--off\s*{[^}]*var\(--color-danger\)/);
+    expect(css).toMatch(/\.mu-balance__state--off\s*{[^}]*var\(--color-danger\)/);
+    // İkisi AYNI rengi almamalı — aksi hâlde şerit bilgi taşımazdı.
+    expect(/\.mu-balance__value--off\s*{[^}]*var\(--color-success\)/.test(css)).toBe(false);
+  });
+
+  it("kapalı kaydet düğmesinin gerekçe listesi GÖRÜNÜR bir uyarı bandıdır", () => {
+    expect(css).toMatch(/\.mu-blockers\s*{[^}]*var\(--color-danger-soft\)/);
+  });
+});

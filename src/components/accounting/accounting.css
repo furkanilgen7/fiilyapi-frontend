@@ -373,3 +373,96 @@
 .mu-chart__dot--off {
   background: var(--color-border-strong);
 }
+
+/* ---------------------------------------------------------------------------
+   T4 · Yevmiye Kaydı / Hesap diyalogları. Form mockup'ı YOKTUR (S-FRM):
+   kap `settings/modal.css` + `settings-form` ızgarasıdır, buradaki kurallar
+   yalnız fişe özgü iki yüzeyi (satır tablosu + DENGE göstergesi) kurar.
+--------------------------------------------------------------------------- */
+
+/* Varsayılan 480px kabuk üç sütunlu satır tablosuna dardır. */
+.mu-modal {
+  width: min(760px, 92vw);
+}
+
+.mu-lines {
+  margin-top: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-12);
+  overflow: hidden;
+}
+.mu-lines__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 10px var(--space-4);
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* 🔴 DENGE GÖSTERGESİ — toplamlar ve fark CANLI görünür; kaydet kapısı
+   dengesizken KAPALIdır ve gerekçe ekrandadır (sunucunun 422'si son çaredir). */
+.mu-balance {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  align-items: end;
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-12);
+}
+.mu-balance__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mu-balance__label {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+.mu-balance__value {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-body);
+}
+.mu-balance__value--ok {
+  color: var(--color-success);
+}
+.mu-balance__value--off {
+  color: var(--color-danger);
+}
+.mu-balance__state {
+  grid-column: 1 / -1;
+  font-size: var(--text-xs);
+}
+.mu-balance__state--ok {
+  color: var(--color-success);
+}
+.mu-balance__state--off {
+  color: var(--color-danger);
+}
+
+/* Kaydet kapısının GEREKÇELERİ — kapalı düğme sessiz kalmaz. */
+.mu-blockers {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-6);
+  list-style: disc;
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-8);
+}
+
+/* Dar pencerede denge şeridi tek sütuna iner. */
+@media (max-width: 640px) {
+  .mu-balance {
+    grid-template-columns: 1fr;
+  }
+}

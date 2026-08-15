@@ -34,6 +34,7 @@ import {
   type Period,
 } from "./accounting-labels";
 import { DraftEntriesPanel } from "./DraftEntriesPanel";
+import { JournalEntryFormModal } from "./JournalEntryFormModal";
 import { JournalKpiStrip } from "./JournalKpiStrip";
 import { LedgerTable } from "./LedgerTable";
 import { PeriodPicker } from "./PeriodPicker";
@@ -41,8 +42,7 @@ import "./accounting.css";
 
 /**
  * "+ Yevmiye Kaydı" (E8:67) ve "Düzenle" düğmelerinin AÇTIĞI diyaloğun
- * durumu. Gövdesini T4 yazar; burada yalnız açma yolu kurulur ki düğmeler
- * ölü kalmasın.
+ * durumu; gövdesi `JournalEntryFormModal`dır (T4).
  */
 export type JournalEntryDialogState =
   | { readonly mode: "create" }
@@ -152,7 +152,7 @@ export function AccountingView() {
           <Button variant="secondary" disabled data-testid="mu-export">
             Dışa Aktar
           </Button>
-          {/* E8:67 — diyaloğu T4 yazar; açma yolu burada kurulur. */}
+          {/* E8:67 — `JournalEntryFormModal`ı açar (T4). */}
           <Button
             variant="primary"
             disabled={!permission.canWrite}
@@ -275,20 +275,10 @@ export function AccountingView() {
       />
 
       {entryDialog !== null && (
-        // T4 bu yuvaya gerçek diyaloğu takar; o güne kadar tıklama SESSİZ
-        // KALMAZ — kullanıcı ne olduğunu görür.
-        <p className="mu-notice" role="status" data-testid="mu-entry-dialog-slot">
-          {entryDialog.mode === "create" ? "Yeni yevmiye fişi" : "Yevmiye fişi düzenleme"} formu
-          bu ekrana henüz bağlanmadı.{" "}
-          <button
-            type="button"
-            className="mu-period__nav"
-            data-testid="mu-entry-dialog-close"
-            onClick={() => setEntryDialog(null)}
-          >
-            Kapat
-          </button>
-        </p>
+        <JournalEntryFormModal
+          entryId={entryDialog.mode === "edit" ? entryDialog.entryId : null}
+          onClose={() => setEntryDialog(null)}
+        />
       )}
 
       {/* Görsel spec (T6) "yüklendi" iddiasını KAYNAK BAŞINA kurar. */}

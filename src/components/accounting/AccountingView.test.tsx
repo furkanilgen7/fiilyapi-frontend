@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query";
 
@@ -24,6 +24,13 @@ import { useLedger } from "@/lib/api/hooks/useLedger";
 import { BackendError } from "@/lib/api/unwrap";
 import type { MeResponse } from "@/lib/auth/types";
 
+import { useJournalEntry } from "@/lib/api/hooks/useJournalEntry";
+import {
+  useCreateJournalEntry,
+  useReplaceJournalLines,
+  useUpdateJournalEntry,
+} from "@/lib/api/hooks/useJournalEntryFormMutations";
+
 import { AccountingView } from "./AccountingView";
 
 vi.mock("@/lib/api/hooks/useJournalSummary", async (importOriginal) => ({
@@ -46,6 +53,12 @@ vi.mock("@/lib/api/hooks/useJournalEntryMutations", () => ({
   usePostJournalEntry: vi.fn(),
   useReverseJournalEntry: vi.fn(),
   useDeleteJournalEntry: vi.fn(),
+}));
+vi.mock("@/lib/api/hooks/useJournalEntry", () => ({ useJournalEntry: vi.fn() }));
+vi.mock("@/lib/api/hooks/useJournalEntryFormMutations", () => ({
+  useCreateJournalEntry: vi.fn(),
+  useUpdateJournalEntry: vi.fn(),
+  useReplaceJournalLines: vi.fn(),
 }));
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
 
@@ -128,8 +141,20 @@ const ACCOUNTS: ChartAccountListResponse = {
       class_code: "1",
       level: 3,
     },
+    {
+      id: "acc-320",
+      code: "320.04",
+      name: "Satıcılar",
+      account_type: "liability",
+      is_active: true,
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      balance: "0.00",
+      class_code: "3",
+      level: 3,
+    },
   ],
-  total: 1,
+  total: 2,
   limit: 200,
   offset: 0,
 };
@@ -155,6 +180,48 @@ const mutateSpies = {
   post: vi.fn(),
   reverse: vi.fn(),
   remove: vi.fn(),
+};
+
+/** T4 diyaloğu `mutateAsync` kullanır (düzenlemede iki adımlı yazma sırası var). */
+const formSpies = {
+  create: vi.fn(),
+  update: vi.fn(),
+  replaceLines: vi.fn(),
+};
+
+function asyncMutationStub<TVariables>(
+  mutateAsync: ReturnType<typeof vi.fn>,
+): UseMutationResult<JournalEntryDetailResponse, Error, TVariables> {
+  return { mutateAsync, isPending: false } as unknown as UseMutationResult<
+    JournalEntryDetailResponse,
+    Error,
+    TVariables
+  >;
+}
+
+/** Sunucudan gelen DENGELİ taslak fiş — düzenleme kipinin kaynağı. */
+const DRAFT_DETAIL: JournalEntryDetailResponse = {
+  ...entry(),
+  lines: [
+    {
+      id: "line-1",
+      sort_order: 0,
+      account_id: "acc-120",
+      account_code: "120.01",
+      account_name: "Alıcılar",
+      debit: "1000.00",
+      credit: "0.00",
+    },
+    {
+      id: "line-2",
+      sort_order: 1,
+      account_id: "acc-320",
+      account_code: "320.04",
+      account_name: "Satıcılar",
+      debit: "0.00",
+      credit: "1000.00",
+    },
+  ],
 };
 
 function mutationStub(mutate: ReturnType<typeof vi.fn>) {
@@ -184,6 +251,13 @@ beforeEach(() => {
   vi.mocked(useDeleteJournalEntry).mockReturnValue(
     mutationStub(mutateSpies.remove) as unknown as UseMutationResult<void, Error, string>,
   );
+  formSpies.create.mockResolvedValue(undefined);
+  formSpies.update.mockResolvedValue(undefined);
+  formSpies.replaceLines.mockResolvedValue(undefined);
+  vi.mocked(useCreateJournalEntry).mockReturnValue(asyncMutationStub(formSpies.create));
+  vi.mocked(useUpdateJournalEntry).mockReturnValue(asyncMutationStub(formSpies.update));
+  vi.mocked(useReplaceJournalLines).mockReturnValue(asyncMutationStub(formSpies.replaceLines));
+  vi.mocked(useJournalEntry).mockReturnValue(queryOk(DRAFT_DETAIL));
 });
 
 afterEach(() => {
@@ -211,13 +285,15 @@ describe("AccountingView — başlık ve eylemler (E8:62-67)", () => {
     );
   });
 
-  it("'+ Yevmiye Kaydi' tiklanabilir ve diyalog yuvasini ACAR (T4 baglayacak)", async () => {
+  it("'+ Yevmiye Kaydi' GERCEK diyalogu OLUSTURMA kipinde acar", async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<AccountingView />);
 
-    expect(screen.queryByTestId("mu-entry-dialog-slot")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     await user.click(screen.getByTestId("mu-create-entry"));
-    expect(screen.getByTestId("mu-entry-dialog-slot")).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Yeni Yevmiye Fişi" })).toBeInTheDocument();
+    // 📅 Varsayılan tarih YEREL takvimden (sistem saati 17 Temmuz 2026).
+    expect(screen.getByTestId("mu-entry-date")).toHaveValue("2026-07-17");
   });
 
   it("yazma yetkisi yoksa '+ Yevmiye Kaydi' devre disidir ve gerekce gorunur", () => {
@@ -463,14 +539,17 @@ describe("Taslak Fişler paneli (onaylı sapma adayı)", () => {
     expect(screen.getByTestId("mu-draft-edit-entry-draft")).toBeDisabled();
   });
 
-  it("Duzenle diyalog yuvasini fis kimligiyle acar (T4 baglayacak)", async () => {
+  it("Duzenle diyalogu FIS KIMLIGIYLE acar ve bacaklari doldurur", async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<AccountingView />);
 
     await user.click(screen.getByTestId("mu-draft-edit-entry-draft"));
-    expect(screen.getByTestId("mu-entry-dialog-slot")).toHaveTextContent(
-      "Yevmiye fişi düzenleme",
-    );
+    expect(vi.mocked(useJournalEntry)).toHaveBeenCalledWith("entry-draft");
+    expect(screen.getByRole("dialog", { name: "Yevmiye Fişi Düzenle" })).toBeInTheDocument();
+    expect(screen.getAllByTestId("mu-line-row")).toHaveLength(2);
+    // SIFIR taraf formda BOŞ görünür (tek-taraf kısıtı ekranda anlaşılsın).
+    expect(screen.getByTestId("mu-line-debit-0")).toHaveValue(1000);
+    expect(screen.getByTestId("mu-line-credit-0")).toHaveValue(null);
   });
 
   it("mutation hatasi GORUNUR bir bantla basilir", async () => {
@@ -503,5 +582,214 @@ describe("Taslak Fişler paneli (onaylı sapma adayı)", () => {
     );
     render(<AccountingView />);
     expect(screen.getByTestId("mu-drafts-error")).toHaveTextContent("Taslaklar yüklenemedi.");
+  });
+});
+
+/**
+ * T4 · Yevmiye Kaydı diyaloğu. Form mockup'ı YOKTUR (S-FRM kanonu): alanlar
+ * `JournalEntryCreate` + `JournalLineInput`tan birebir türer.
+ */
+describe("Yevmiye Kaydı diyaloğu (T4)", () => {
+  async function openCreate() {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<AccountingView />);
+    await user.click(screen.getByTestId("mu-create-entry"));
+    return user;
+  }
+
+  it("hesap secicisi YALNIZ yaprak hesaplari sunar (backend §4c)", async () => {
+    await openCreate();
+    const options = within(screen.getByTestId("mu-line-account-0")).getAllByRole("option");
+    expect(options.map((option) => option.textContent)).toEqual([
+      "Hesap seçin",
+      "120.01 · Alıcılar",
+      "320.04 · Satıcılar",
+    ]);
+  });
+
+  /** 🔴 TEK TARAF: aynı satırda hem borç hem alacak dolamaz. */
+  it("bir tarafa deger girilince oteki TEMIZLENIR ve KILITLENIR", async () => {
+    const user = await openCreate();
+    await user.type(screen.getByTestId("mu-line-credit-0"), "500");
+    expect(screen.getByTestId("mu-line-debit-0")).toBeDisabled();
+
+    await user.clear(screen.getByTestId("mu-line-credit-0"));
+    await user.type(screen.getByTestId("mu-line-debit-0"), "300");
+    expect(screen.getByTestId("mu-line-credit-0")).toBeDisabled();
+    expect(screen.getByTestId("mu-line-credit-0")).toHaveValue(null);
+  });
+
+  /**
+   * 🔴 DENGE KAPISI — kullanıcı dengesizliği GÖNDERMEDEN ÖNCE görür.
+   * Kuruş farkı da dengesizdir (tolerans YOK).
+   */
+  it("denge kapisi: esitken ACIK, bir kurus kayinca KAPALI", async () => {
+    const user = await openCreate();
+    await user.type(screen.getByTestId("mu-entry-description"), "Kasa Devri");
+    await user.selectOptions(screen.getByTestId("mu-line-account-0"), "acc-120");
+    await user.selectOptions(screen.getByTestId("mu-line-account-1"), "acc-320");
+    await user.type(screen.getByTestId("mu-line-debit-0"), "100.00");
+    await user.type(screen.getByTestId("mu-line-credit-1"), "100.01");
+
+    expect(screen.getByTestId("mu-balance-difference")).toHaveTextContent("-0,01");
+    expect(screen.getByTestId("mu-balance-state")).toHaveTextContent("Fiş dengede değil");
+    expect(screen.getByTestId("mu-entry-dialog-save")).toBeDisabled();
+    expect(screen.getByTestId("mu-entry-dialog-blockers")).toHaveTextContent(
+      "Fiş dengede değil: borç ve alacak toplamları eşit olmalıdır",
+    );
+
+    // Tek karakter geri alınır → kapı AÇILIR.
+    await user.clear(screen.getByTestId("mu-line-credit-1"));
+    await user.type(screen.getByTestId("mu-line-credit-1"), "100.00");
+    expect(screen.getByTestId("mu-balance-state")).toHaveTextContent("Fiş dengede.");
+    expect(screen.getByTestId("mu-entry-dialog-save")).toBeEnabled();
+  });
+
+  /** 🔴 AYRIŞMA NOKTASI: float aritmetiğiyle bu fiş "dengesiz" görünürdü. */
+  it("0.1 + 0.2 vs 0.3 fisinde kapi ACIKTIR (kayan nokta kapiya sizmaz)", async () => {
+    const user = await openCreate();
+    await user.type(screen.getByTestId("mu-entry-description"), "Kuruş testi");
+    await user.click(screen.getByTestId("mu-line-add"));
+    await user.selectOptions(screen.getByTestId("mu-line-account-0"), "acc-120");
+    await user.selectOptions(screen.getByTestId("mu-line-account-1"), "acc-120");
+    await user.selectOptions(screen.getByTestId("mu-line-account-2"), "acc-320");
+    await user.type(screen.getByTestId("mu-line-debit-0"), "0.1");
+    await user.type(screen.getByTestId("mu-line-debit-1"), "0.2");
+    await user.type(screen.getByTestId("mu-line-credit-2"), "0.3");
+
+    expect(screen.getByTestId("mu-balance-state")).toHaveTextContent("Fiş dengede.");
+    expect(screen.getByTestId("mu-entry-dialog-save")).toBeEnabled();
+  });
+
+  it("tek satirli fiste kaydet KAPALIdir (sunucu en az iki satir ister)", async () => {
+    const user = await openCreate();
+    await user.type(screen.getByTestId("mu-entry-description"), "Tek bacak");
+    await user.click(screen.getByTestId("mu-line-remove-1"));
+    expect(screen.getAllByTestId("mu-line-row")).toHaveLength(1);
+    expect(screen.getByTestId("mu-entry-dialog-blockers")).toHaveTextContent(
+      "Fişte en az iki satır olmalıdır",
+    );
+    expect(screen.getByTestId("mu-entry-dialog-save")).toBeDisabled();
+  });
+
+  it("olusturma govdesi: bos taraf '0' GIDER, turev alan SIZMAZ", async () => {
+    const user = await openCreate();
+    await user.type(screen.getByTestId("mu-entry-description"), "Kasa Devri");
+    await user.type(screen.getByTestId("mu-entry-detail-note"), "Ziraat · TRF-1");
+    await user.selectOptions(screen.getByTestId("mu-line-account-0"), "acc-120");
+    await user.selectOptions(screen.getByTestId("mu-line-account-1"), "acc-320");
+    await user.type(screen.getByTestId("mu-line-debit-0"), "1000");
+    await user.type(screen.getByTestId("mu-line-credit-1"), "1000");
+    await user.click(screen.getByTestId("mu-entry-dialog-save"));
+
+    expect(formSpies.create).toHaveBeenCalledWith({
+      entry_date: "2026-07-17",
+      description: "Kasa Devri",
+      detail_note: "Ziraat · TRF-1",
+      lines: [
+        { account_id: "acc-120", debit: "1000", credit: "0" },
+        { account_id: "acc-320", debit: "0", credit: "1000" },
+      ],
+    });
+    const [body] = formSpies.create.mock.calls[0] as [Record<string, unknown>];
+    for (const derived of ["status", "total_debit", "total_credit", "period_year"]) {
+      expect(body).not.toHaveProperty(derived);
+    }
+  });
+
+  it("duzenlemede yalniz BASLIK oynarsa PUT …/lines HIC atilmaz", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<AccountingView />);
+    await user.click(screen.getByTestId("mu-draft-edit-entry-draft"));
+
+    await user.clear(screen.getByTestId("mu-entry-description"));
+    await user.type(screen.getByTestId("mu-entry-description"), "Düzeltilmiş açıklama");
+    await user.click(screen.getByTestId("mu-entry-dialog-save"));
+
+    expect(formSpies.update).toHaveBeenCalledWith({
+      entryId: "entry-draft",
+      body: { description: "Düzeltilmiş açıklama" },
+    });
+    expect(formSpies.replaceLines).not.toHaveBeenCalled();
+  });
+
+  it("duzenlemede hicbir sey degismediyse HICBIR istek atilmaz", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<AccountingView />);
+    await user.click(screen.getByTestId("mu-draft-edit-entry-draft"));
+    await user.click(screen.getByTestId("mu-entry-dialog-save"));
+
+    expect(formSpies.update).not.toHaveBeenCalled();
+    expect(formSpies.replaceLines).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  /** 🔴 KISMİ BAŞARISIZLIK SESSİZCE YUTULMAZ. */
+  it("baslik yazilip satirlar patlarsa kullaniciya IKISI de soylenir", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    formSpies.replaceLines.mockRejectedValue(
+      new BackendError(422, { detail: "Fiş dengede değil: borç ve alacak toplamları eşit olmalıdır" }),
+    );
+    render(<AccountingView />);
+    await user.click(screen.getByTestId("mu-draft-edit-entry-draft"));
+
+    await user.clear(screen.getByTestId("mu-entry-description"));
+    await user.type(screen.getByTestId("mu-entry-description"), "Yeni açıklama");
+    await user.clear(screen.getByTestId("mu-line-debit-0"));
+    await user.type(screen.getByTestId("mu-line-debit-0"), "1500");
+    await user.clear(screen.getByTestId("mu-line-credit-1"));
+    await user.type(screen.getByTestId("mu-line-credit-1"), "1500");
+    await user.click(screen.getByTestId("mu-entry-dialog-save"));
+
+    const error = await screen.findByTestId("mu-entry-dialog-error");
+    expect(error).toHaveTextContent("Başlık güncellendi ancak satırlar kaydedilemedi");
+    expect(error).toHaveTextContent("Fiş dengede değil");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("🔴 sunucu hatasi TURKCE cumleyle basilir; ham govde EKRANA CIKMAZ", async () => {
+    const user = await openCreate();
+    formSpies.create.mockRejectedValue(
+      new BackendError(422, { detail: [{ loc: ["body", "lines"], type: "missing" }] }),
+    );
+    await user.type(screen.getByTestId("mu-entry-description"), "Kasa Devri");
+    await user.selectOptions(screen.getByTestId("mu-line-account-0"), "acc-120");
+    await user.selectOptions(screen.getByTestId("mu-line-account-1"), "acc-320");
+    await user.type(screen.getByTestId("mu-line-debit-0"), "1000");
+    await user.type(screen.getByTestId("mu-line-credit-1"), "1000");
+    await user.click(screen.getByTestId("mu-entry-dialog-save"));
+
+    const error = await screen.findByTestId("mu-entry-dialog-error");
+    expect(error).toHaveTextContent("Fiş oluşturulamadı.");
+    expect(error.textContent).not.toContain("loc");
+  });
+
+  it("SAVUNMACI: draft OLMAYAN fisle acilirsa form KILITLIDIR", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    vi.mocked(useJournalEntry).mockReturnValue(
+      queryOk({ ...DRAFT_DETAIL, status: "posted" as const }),
+    );
+    render(<AccountingView />);
+    await user.click(screen.getByTestId("mu-draft-edit-entry-draft"));
+
+    expect(screen.getByTestId("mu-entry-dialog-locked")).toBeInTheDocument();
+    expect(screen.getByTestId("mu-entry-dialog-save")).toBeDisabled();
+    expect(screen.getByTestId("mu-entry-description")).toBeDisabled();
+  });
+
+  it("detay yuklenirken ve hata verirken diyalog SESSIZ kalmaz", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    vi.mocked(useJournalEntry).mockReturnValue(queryLoading());
+    const loading = render(<AccountingView />);
+    await user.click(screen.getByTestId("mu-draft-edit-entry-draft"));
+    expect(screen.getByTestId("mu-entry-dialog-loading")).toBeInTheDocument();
+    loading.unmount();
+
+    vi.mocked(useJournalEntry).mockReturnValue(
+      queryError(new BackendError(404, { detail: "Fiş bulunamadı" })),
+    );
+    render(<AccountingView />);
+    await user.click(screen.getByTestId("mu-draft-edit-entry-draft"));
+    expect(screen.getByTestId("mu-entry-dialog-load-error")).toHaveTextContent("Fiş bulunamadı");
   });
 });

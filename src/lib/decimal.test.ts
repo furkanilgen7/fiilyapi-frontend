@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 
-import { multiplyDecimalStrings, sumDecimalStrings } from "./decimal";
+import {
+  isZeroDecimalString,
+  multiplyDecimalStrings,
+  subtractDecimalStrings,
+  sumDecimalStrings,
+} from "./decimal";
 
 describe("sumDecimalStrings", () => {
   it("boş dizide '0' döner", () => {
@@ -71,5 +76,51 @@ describe("multiplyDecimalStrings", () => {
 
   it("sifir carpani negatif isaret basmaz", () => {
     expect(multiplyDecimalStrings("-5", "0")).toBe("0");
+  });
+});
+
+describe("subtractDecimalStrings", () => {
+  it("olcekleri farkli terimleri hizalar", () => {
+    expect(subtractDecimalStrings("100", "99.99")).toBe("0.01");
+    expect(subtractDecimalStrings("100.00", "100")).toBe("0.00");
+  });
+
+  it("negatif fark isareti korur", () => {
+    expect(subtractDecimalStrings("40.00", "100.00")).toBe("-60.00");
+  });
+
+  /**
+   * 🔴 AYRIŞMA NOKTASI (F-FAT2 kanonu): float aritmetigi burada YANLIS cevap
+   * verir — `0.1 + 0.2 - 0.3 === 5.55e-17`, yani denge kapisi "dengesiz" derdi.
+   */
+  it("float kalintisi URETMEZ (0.1 + 0.2 vs 0.3)", () => {
+    const debit = sumDecimalStrings(["0.1", "0.2"]);
+    expect(subtractDecimalStrings(debit, "0.3")).toBe("0.0");
+    expect(Number("0.1") + Number("0.2") - Number("0.3")).not.toBe(0);
+  });
+
+  it("cok satirli birikimde de kaymaz (1.1 x 3 vs 3.30)", () => {
+    const debit = sumDecimalStrings(["1.1", "1.1", "1.1"]);
+    expect(subtractDecimalStrings(debit, "3.30")).toBe("0.00");
+    expect(Number("1.1") + Number("1.1") + Number("1.1")).not.toBe(3.3);
+  });
+});
+
+describe("isZeroDecimalString", () => {
+  it("her olcekteki sifiri sifir sayar", () => {
+    for (const zero of ["0", "0.0", "0.00", "-0.000", "+0"]) {
+      expect(isZeroDecimalString(zero), zero).toBe(true);
+    }
+  });
+
+  it("bir kurusluk farki sifir SAYMAZ", () => {
+    expect(isZeroDecimalString("0.01")).toBe(false);
+    expect(isZeroDecimalString("-0.01")).toBe(false);
+  });
+
+  it("sayi olmayan girdi sifir DEGILDIR (sessiz gecis yok)", () => {
+    expect(isZeroDecimalString("")).toBe(false);
+    expect(isZeroDecimalString("abc")).toBe(false);
+    expect(isZeroDecimalString(".")).toBe(false);
   });
 });

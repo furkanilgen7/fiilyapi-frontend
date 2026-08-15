@@ -10,9 +10,11 @@ import type {
 } from "@/lib/api/hooks/useChartOfAccounts";
 import { useChartOfAccounts } from "@/lib/api/hooks/useChartOfAccounts";
 import type {
+  ChartAccountCreate,
   ChartAccountUpdateVariables,
 } from "@/lib/api/hooks/useChartOfAccountMutations";
 import {
+  useCreateChartAccount,
   useDeleteChartAccount,
   useUpdateChartAccount,
 } from "@/lib/api/hooks/useChartOfAccountMutations";
@@ -26,6 +28,7 @@ vi.mock("@/lib/api/hooks/useChartOfAccounts", async (importOriginal) => ({
   useChartOfAccounts: vi.fn(),
 }));
 vi.mock("@/lib/api/hooks/useChartOfAccountMutations", () => ({
+  useCreateChartAccount: vi.fn(),
   useUpdateChartAccount: vi.fn(),
   useDeleteChartAccount: vi.fn(),
 }));
@@ -89,6 +92,9 @@ function listResponse(
 
 const updateMutate = vi.fn();
 const deleteMutate = vi.fn();
+/** Diyalog `mutateAsync` kullanır (iki adımlı yazmada sıra gerekir). */
+const createAsync = vi.fn();
+const updateAsync = vi.fn();
 
 function queryResult(partial: Record<string, unknown>) {
   return {
@@ -109,8 +115,16 @@ function setSession(level: string | undefined) {
 beforeEach(() => {
   vi.clearAllMocks();
   setSession("full");
+  createAsync.mockResolvedValue(undefined);
+  updateAsync.mockResolvedValue(undefined);
+  vi.mocked(useCreateChartAccount).mockReturnValue({
+    mutateAsync: createAsync,
+    isPending: false,
+  } as unknown as UseMutationResult<ChartAccountResponse, Error, ChartAccountCreate>);
   vi.mocked(useUpdateChartAccount).mockReturnValue({
     mutate: updateMutate,
+    mutateAsync: updateAsync,
+    isPending: false,
   } as unknown as UseMutationResult<ChartAccountResponse, Error, ChartAccountUpdateVariables>);
   vi.mocked(useDeleteChartAccount).mockReturnValue({
     mutate: deleteMutate,
@@ -137,20 +151,25 @@ describe("Hesap Planı ekranı — HP başlık şeridi", () => {
     );
   });
 
-  it("HP:50 `+ Hesap Ekle` T4 diyaloğunun yuvasını AÇAR (ölü düğme yok)", async () => {
+  it("HP:50 `+ Hesap Ekle` GERÇEK diyaloğu OLUŞTURMA kipinde açar", async () => {
     const user = userEvent.setup();
     render(<ChartOfAccountsView />);
     await user.click(screen.getByTestId("hp-create"));
-    expect(screen.getByTestId("hp-dialog-slot")).toHaveTextContent("Yeni hesap");
-    await user.click(screen.getByTestId("hp-dialog-close"));
-    expect(screen.queryByTestId("hp-dialog-slot")).toBeNull();
+    expect(screen.getByRole("dialog", { name: "Yeni Hesap" })).toBeInTheDocument();
+    // Boş formda kaydet KAPALIdır ve gerekçesi EKRANDA görünür.
+    expect(screen.getByTestId("hp-dialog-save")).toBeDisabled();
+    expect(screen.getByTestId("hp-dialog-blockers")).toHaveTextContent("Hesap kodu zorunludur.");
+    await user.click(screen.getByRole("button", { name: "Vazgeç" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("satır `Düzenle` aynı diyaloğu DÜZENLEME kipinde açar", async () => {
+  it("satır `Düzenle` aynı diyaloğu DÜZENLEME kipinde ve DOLU açar", async () => {
     const user = userEvent.setup();
     render(<ChartOfAccountsView />);
     await user.click(screen.getByTestId("hp-edit-100"));
-    expect(screen.getByTestId("hp-dialog-slot")).toHaveTextContent("Hesap düzenleme");
+    expect(screen.getByRole("dialog", { name: "Hesap Düzenle" })).toBeInTheDocument();
+    expect(screen.getByTestId("hp-dialog-code")).toHaveValue("100");
+    expect(screen.getByTestId("hp-dialog-name")).toHaveValue("Kasa");
   });
 
   it("yazma yetkisi yoksa `+ Hesap Ekle` kapalıdır ve gerekçe basılır", () => {
@@ -335,5 +354,112 @@ describe("kırpılma / boş / hata / yükleniyor", () => {
     );
     const { container } = render(<ChartOfAccountsView />);
     expect(within(container).queryByRole("heading", { name: "Hesap Planı" })).toBeNull();
+  });
+});
+
+/**
+ * T4 · Hesap Ekle/Düzenle diyaloğu. Form mockup'ı YOKTUR (S-FRM kanonu):
+ * alanlar `ChartAccountCreate`ten birebir türer ve DÖRTTÜR.
+ */
+describe("Hesap diyaloğu (T4)", () => {
+  it("oluşturma: gövde DÖRT alandır, türev alan SIZMAZ", async () => {
+    const user = userEvent.setup();
+    render(<ChartOfAccountsView />);
+    await user.click(screen.getByTestId("hp-create"));
+
+    await user.type(screen.getByTestId("hp-dialog-code"), "120.01");
+    await user.type(screen.getByTestId("hp-dialog-name"), "Alıcılar");
+    await user.selectOptions(screen.getByTestId("hp-dialog-type"), "liability");
+    await user.click(screen.getByTestId("hp-dialog-save"));
+
+    expect(createAsync).toHaveBeenCalledWith({
+      code: "120.01",
+      name: "Alıcılar",
+      account_type: "liability",
+      is_active: true,
+    });
+    // `balance`/`class_code`/`level` gövdeye GİREMEZ (sunucuda 422).
+    const [body] = createAsync.mock.calls[0] as [Record<string, unknown>];
+    for (const derived of ["balance", "class_code", "level", "id"]) {
+      expect(body).not.toHaveProperty(derived);
+    }
+  });
+
+  /** 🔴 MUTASYON KANITI: kod biçimi bozulunca kaydet KAPANIR ve istek ATILMAZ. */
+  it("biçimi bozuk kodda kaydet KAPALIdır ve ağa çıkılmaz", async () => {
+    const user = userEvent.setup();
+    render(<ChartOfAccountsView />);
+    await user.click(screen.getByTestId("hp-create"));
+
+    await user.type(screen.getByTestId("hp-dialog-code"), "1000");
+    await user.type(screen.getByTestId("hp-dialog-name"), "Kasa");
+    expect(screen.getByTestId("hp-dialog-save")).toBeDisabled();
+    expect(screen.getByTestId("hp-dialog-blockers")).toHaveTextContent(
+      "100.01 biçiminde olmalıdır",
+    );
+
+    await user.clear(screen.getByTestId("hp-dialog-code"));
+    await user.type(screen.getByTestId("hp-dialog-code"), "100");
+    expect(screen.getByTestId("hp-dialog-save")).toBeEnabled();
+    expect(createAsync).not.toHaveBeenCalled();
+  });
+
+  it("düzenleme: yalnız DEĞİŞEN alan PATCH'lenir", async () => {
+    const user = userEvent.setup();
+    render(<ChartOfAccountsView />);
+    await user.click(screen.getByTestId("hp-edit-100"));
+
+    await user.clear(screen.getByTestId("hp-dialog-name"));
+    await user.type(screen.getByTestId("hp-dialog-name"), "Merkez Kasa");
+    await user.click(screen.getByTestId("hp-dialog-save"));
+
+    expect(updateAsync).toHaveBeenCalledWith({
+      accountId: "id-100",
+      body: { name: "Merkez Kasa" },
+    });
+  });
+
+  it("hiçbir alan değişmediyse istek ATILMAZ, diyalog kapanır", async () => {
+    const user = userEvent.setup();
+    render(<ChartOfAccountsView />);
+    await user.click(screen.getByTestId("hp-edit-100"));
+    await user.click(screen.getByTestId("hp-dialog-save"));
+
+    expect(updateAsync).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("🔴 sunucu hatası TÜRKÇE cümleyle basılır; ham gövde EKRANA ÇIKMAZ", async () => {
+    const user = userEvent.setup();
+    createAsync.mockRejectedValue(
+      new BackendError(409, { detail: "Bu hesap kodu zaten kayıtlı" }),
+    );
+    render(<ChartOfAccountsView />);
+    await user.click(screen.getByTestId("hp-create"));
+    await user.type(screen.getByTestId("hp-dialog-code"), "100");
+    await user.type(screen.getByTestId("hp-dialog-name"), "Kasa");
+    await user.click(screen.getByTestId("hp-dialog-save"));
+
+    const error = await screen.findByTestId("hp-dialog-error");
+    expect(error).toHaveTextContent("Bu hesap kodu zaten kayıtlı");
+    expect(error.textContent).not.toContain("{");
+    // Diyalog AÇIK kalır: kullanıcı doldurduğu formu kaybetmez.
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("🔴 `detail` STRING değilse ham nesne basılmaz, Türkçe yedeğe düşer", async () => {
+    const user = userEvent.setup();
+    createAsync.mockRejectedValue(
+      new BackendError(422, { detail: [{ loc: ["body", "code"], type: "string_pattern" }] }),
+    );
+    render(<ChartOfAccountsView />);
+    await user.click(screen.getByTestId("hp-create"));
+    await user.type(screen.getByTestId("hp-dialog-code"), "100");
+    await user.type(screen.getByTestId("hp-dialog-name"), "Kasa");
+    await user.click(screen.getByTestId("hp-dialog-save"));
+
+    const error = await screen.findByTestId("hp-dialog-error");
+    expect(error).toHaveTextContent("Hesap oluşturulamadı.");
+    expect(error.textContent).not.toContain("string_pattern");
   });
 });
