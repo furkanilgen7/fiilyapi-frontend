@@ -112,8 +112,13 @@ describe("NAV_GROUPS — href geçerliliği (kırık link koruması)", () => {
     expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "static" });
   });
 
-  it("henüz yazılmamış 'Muhasebe' catch-all'a düşer (kontrol grubu)", () => {
+  // F-MU1 T2: `/muhasebe` GERÇEK sayfa oldu (E8 · Yevmiye Defteri) — bu satır
+  // artık "henüz yazılmamış" kontrol grubu DEĞİL, `/satinalma` ile aynı
+  // dönüşün kilididir: rota klasörü silinirse kullanıcı sessizce "yakında"
+  // görmez.
+  it("'Muhasebe' /muhasebe statik rotasına düşer (catch-all DEĞİL)", () => {
     const item = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.label === "Muhasebe");
-    expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "catch-all" });
+    expect(item?.href).toBe("/muhasebe");
+    expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "static" });
   });
 });
