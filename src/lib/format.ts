@@ -27,6 +27,16 @@ export function formatCurrency(value: string | number): string {
   return `₺ ${formatted}`;
 }
 
+/**
+ * Yaklasan odeme satirinin tutari (F-HZ T2 · E9:114 `₺1.016.800`).
+ * `formatCurrency`den TEK farki: `₺` ile sayi arasinda BOSLUK YOKTUR. Mockup
+ * ayni ekranda iki farkli bicim kullanir — kart bakiyesi bosluklu (E9:72
+ * `₺ 2.840.500`), odeme satiri bosluksuz (E9:114) — ikisi de birebir uygulanir.
+ */
+export function formatCurrencyTight(value: string | number): string {
+  return `₺${new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 0 }).format(toNumber(value))}`;
+}
+
 /** Ilerleme yuzdesi: "%42,5" · "%75" */
 export function formatPercent(value: string | number): string {
   return `%${short(toNumber(value))}`;

@@ -65,8 +65,16 @@ const tokensCss = readFileSync(
  * warning/danger/border); YALNIZ koyu kırmızı başlık tonu (BT 51, 81) yeniydi —
  * `--color-danger-strong` ondan AÇIKtır ve başlık/gövde hiyerarşisini düşürürdü
  * (`--color-danger-deep`).
+ *
+ * F-HZ T2 (E9 · Hazine): 82 → 83. Kart şeridinin ÜÇ gradyanının altı ucu da
+ * mevcut token'larla karşılandı (primary-hover/primary-light ·
+ * accent-teal-start/-end · accent-purple/accent-purple-grad-end) ve ödeme
+ * satırlarının turuncu/yeşil tonları da mevcut (warning/orange-tint ·
+ * success-strong/success-tint); YALNIZ kırmızı satırın zemini (#fef2f2, E9:116)
+ * yeniydi — `--color-danger-soft` (#fee2e2) ondan KOYU, `--color-danger-tint`
+ * (#fff0f0) ondan PEMBEdir (`--color-danger-row-bg`).
  */
-const EXPECTED_HEX_COUNT = 82;
+const EXPECTED_HEX_COUNT = 83;
 
 describe("tokens.css", () => {
   it("çekirdek renk token'larını tanımlar (açık tema Slate + Blue)", () => {
