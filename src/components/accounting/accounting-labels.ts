@@ -125,6 +125,8 @@ export function hasCarriedBalance(value: string | undefined): boolean {
 export const ACCOUNTING_REASONS = {
   /** E8:66 "Dışa Aktar" — muhasebe kökünde HİÇBİR dışa aktarma ucu yok. */
   export: "accounting_export",
+  /** HP:49 "Excel" — hesap planının da dışa aktarma ucu yok (T3). */
+  chartExport: "chart_of_accounts_export",
   /** Yazma yetkisi yoksa. */
   write: "Muhasebe modülünde yazma yetkiniz yok.",
 } as const;

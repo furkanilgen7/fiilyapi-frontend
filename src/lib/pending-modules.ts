@@ -143,6 +143,12 @@ const MODULE_LABELS: Record<string, string> = {
   // Düğme SİLİNMEZ (F-TH kanonu), devre dışı + GÖRÜNÜR gerekçeyle basılır —
   // gerekçeyi `title`da saklamak yasaktır.
   accounting_export: "Yevmiye defteri dışa aktarma ucu henüz açılmadı",
+  // F-MU1 T3 (HP:49 "Excel") — AYRI bir anahtar açıldı, `accounting_export`
+  // paylaşılmadı: o metin adıyla "yevmiye defteri" der ve Hesap Planı
+  // ekranında yanlış yüzeyi işaret ederdi. İkisi de aynı gerçeği anlatır
+  // (muhasebe kökünde HİÇBİR dışa aktarma ucu yoktur) ama her ekran kendi
+  // düğmesinin gerekçesini okur.
+  chart_of_accounts_export: "Hesap planı dışa aktarma ucu henüz açılmadı",
 };
 
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";

@@ -256,3 +256,120 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Hesap Planı (T3). Kanon: `Muhasebe - Hesap Planı.dc.html` (HP); parantez içi
+   sayılar O dosyanın SATIR numaralarıdır. Tablo kabı/başlıkları E8'inkiyle
+   AYNIdır (`.mu-table`), yalnız HP'ye özgü kurallar burada.
+--------------------------------------------------------------------------- */
+
+/* HP:41 — geri bağlantısı mavi ve altı çizgisizdir. */
+.mu__back {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.mu__back:hover {
+  text-decoration: underline;
+}
+
+/* HP:60/62 — Tür ve Durum sütunları ORTALIdır. */
+.mu-table .is-center {
+  text-align: center;
+}
+
+/* HP:68-69 · 134-135 · 160-161 · 186-187 — SINIF bantları.
+   🔴 Renkler `tokens.css`e YENİ TOKEN olarak eklenmedi (dosya bu dilimde
+   dokunulmaz); mockup'ın on iki renk değerinin ONU zaten mevcut token'larda
+   BİREBİR vardır. Kalan ikisi HP:186-187'nin mor kenarlığı ve mor metnidir;
+   onlar için tokens.css'in "Muhasebe (mor) ailesi" komşuları kullanıldı
+   (`--color-accent-purple-line` / `--color-accent-purple-deep`). Aynı mor
+   ailesidir, ikinci bir palet doğurmaz — ve ÇIPLAK HEX yazılmaz (bu dosyanın
+   kendi bekçisi hex'i kırmızıya düşürür). */
+.mu-chart__class td {
+  padding: 10px var(--space-4); /* HP:69 */
+  font-size: 12px; /* HP:69 — 12/700 */
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-group); /* HP:69 — 0.5px */
+  background: var(--mu-class-bg);
+  color: var(--mu-class-text);
+  border-bottom: 1px solid var(--mu-class-border);
+}
+.mu-chart__class--1 {
+  --mu-class-bg: var(--color-nav-active-bg); /* HP:68 */
+  --mu-class-border: var(--color-primary-ring); /* HP:68 */
+  --mu-class-text: var(--color-primary-hover); /* HP:69 */
+}
+.mu-chart__class--2 {
+  --mu-class-bg: var(--color-success-tint); /* HP:134 */
+  --mu-class-border: var(--color-success-tint-border); /* HP:134 */
+  --mu-class-text: var(--color-success-deep); /* HP:135 */
+}
+.mu-chart__class--3 {
+  --mu-class-bg: var(--color-orange-tint); /* HP:160 */
+  --mu-class-border: var(--color-orange-tint-border); /* HP:160 */
+  --mu-class-text: var(--color-orange-tint-text); /* HP:161 */
+}
+.mu-chart__class--5 {
+  --mu-class-bg: var(--color-purple-tint); /* HP:186 */
+  --mu-class-border: var(--color-accent-purple-line);
+  --mu-class-text: var(--color-accent-purple-deep);
+}
+/* Mockup'ta ÇİZİLMEMİŞ sınıf (4/6/7/8/9): başlık İCAT EDİLMEZ, tema de
+   ödünç alınmaz — nötr (slate) basılır. */
+.mu-chart__class--neutral {
+  --mu-class-bg: var(--color-surface-2);
+  --mu-class-border: var(--color-border);
+  --mu-class-text: var(--color-text-muted);
+}
+
+/* HP:71-73 · 96-98 · 114-116 — `level === 1` grup satırı. */
+.mu-chart__group td {
+  padding: var(--space-2) var(--space-4); /* HP:72 — 8px 16px */
+  font-size: var(--text-small); /* HP:72 — 11/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2); /* HP:71 */
+  border-bottom: 1px solid var(--color-border); /* HP:71 */
+  text-transform: uppercase; /* HP:73 */
+  letter-spacing: var(--tracking-group); /* HP:73 */
+}
+
+/* Kod girintisi — adım 16px. HP:76 ana hesabı (`level 2`) 32px = 2 adım
+   yazar; alt hesap (`level 3`, HP'de çizilmemiş) aynı adımla 48px olur.
+   `mu-table td` yatay iç boşluğu zaten 16px olduğu için EK sol boşluk
+   (adım − 1) × 16px'tir. */
+.mu-chart__code--0 {
+  padding-left: var(--space-4);
+}
+.mu-chart__code--2 {
+  padding-left: calc(2 * var(--space-4)); /* HP:76 — 32px */
+}
+.mu-chart__code--3 {
+  padding-left: calc(3 * var(--space-4)); /* 48px */
+}
+
+/* HP:79/155 — bakiye kalın MONO; ton `balanceTone`dan gelir. */
+.mu-chart__balance {
+  font-weight: var(--weight-semibold);
+}
+.mu-chart__balance--success {
+  color: var(--color-success); /* HP:79 */
+}
+.mu-chart__balance--danger {
+  color: var(--color-danger); /* HP:155 · HP:167 */
+}
+
+/* HP:80 — Durum noktası 8px. Pasif hâli mockup'ta ÖRNEKLENMEMİŞTİR (eksik
+   ÖRNEK, eksik alan değil) → gri (şef kararı). */
+.mu-chart__dot {
+  display: inline-block;
+  width: 8px; /* HP:80 */
+  height: 8px; /* HP:80 */
+  border-radius: 50%; /* HP:80 */
+}
+.mu-chart__dot--on {
+  background: var(--color-success); /* HP:80 */
+}
+.mu-chart__dot--off {
+  background: var(--color-border-strong);
+}

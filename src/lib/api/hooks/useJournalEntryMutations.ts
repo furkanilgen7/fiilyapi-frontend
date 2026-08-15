@@ -2,23 +2,13 @@ import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/r
 import { backendClient } from "@/lib/api/client";
 import { unwrap } from "@/lib/api/unwrap";
 
-import { JOURNAL_ENTRIES_QUERY_KEY, type JournalEntryDetailResponse } from "./useJournalEntries";
-import { JOURNAL_SUMMARY_QUERY_KEY } from "./useJournalSummary";
-import { LEDGER_QUERY_KEY } from "./useLedger";
-import { CHART_OF_ACCOUNTS_QUERY_KEY } from "./useChartOfAccounts";
+import { invalidateAccountingScope } from "./accounting-invalidate";
+import { type JournalEntryDetailResponse } from "./useJournalEntries";
 
 // F-MU1 T2 · Taslak Fişler panelinin YAZMA uçları.
 //
-// 🔴 Bir fişin DURUMUNU oynatan her yazma DÖRT okumayı birden bayatlatır:
-// fiş listesi · defter (`draft → posted` satırları deftere GİRER) · KPI şeridi
-// (`POSTING_STATUSES` toplamı değişir) · hesap planı (`balance` TÜREVDİR).
-// Dördü tek yerde geçersizleştirilir; çağıran başına kopyalanmaz.
-function invalidateAccountingScope(queryClient: ReturnType<typeof useQueryClient>): void {
-  queryClient.invalidateQueries({ queryKey: [JOURNAL_ENTRIES_QUERY_KEY] });
-  queryClient.invalidateQueries({ queryKey: [LEDGER_QUERY_KEY] });
-  queryClient.invalidateQueries({ queryKey: [JOURNAL_SUMMARY_QUERY_KEY] });
-  queryClient.invalidateQueries({ queryKey: [CHART_OF_ACCOUNTS_QUERY_KEY] });
-}
+// 🔴 Ortak geçersizleştirme kapsamı `accounting-invalidate.ts`e TAŞINDI (T3):
+// hesap mutasyonları da aynı dört okumayı bayatlatır, formül iki yerde yaşamaz.
 
 /**
  * `POST /journal-entries/{id}/post` — `draft → posted`, fişi MALİ İZE sokar.

@@ -54,3 +54,64 @@ describe("accounting.css — E8'e bağlı kurallar", () => {
     expect(css.match(/#[0-9a-fA-F]{3,8}\b/g)).toBeNull();
   });
 });
+
+describe("accounting.css — HP'ye (Hesap Planı) bağlı kurallar", () => {
+  it("dört SINIF bandının zemin/kenarlık/metin üçlüsü TOKEN'dan gelir", () => {
+    const BANDS: Record<string, readonly string[]> = {
+      "1": ["--color-nav-active-bg", "--color-primary-ring", "--color-primary-hover"],
+      "2": ["--color-success-tint", "--color-success-tint-border", "--color-success-deep"],
+      "3": ["--color-orange-tint", "--color-orange-tint-border", "--color-orange-tint-text"],
+      "5": [
+        "--color-purple-tint",
+        "--color-accent-purple-line",
+        "--color-accent-purple-deep",
+      ],
+    };
+    for (const [klass, tokens] of Object.entries(BANDS)) {
+      const rule = new RegExp(`\\.mu-chart__class--${klass}\\s*{([^}]*)}`).exec(css);
+      expect(rule, `SINIF ${klass} kuralı yok`).not.toBeNull();
+      for (const token of tokens) {
+        expect(rule?.[1]).toContain(`var(${token})`);
+      }
+    }
+  });
+
+  it("🔴 çizilmemiş sınıf NÖTRdür — dördünün renklerini ödünç ALMAZ", () => {
+    const neutral = /\.mu-chart__class--neutral\s*{([^}]*)}/.exec(css)?.[1] ?? "";
+    expect(neutral).toContain("var(--color-surface-2)");
+    for (const borrowed of [
+      "--color-nav-active-bg",
+      "--color-success-tint",
+      "--color-orange-tint",
+      "--color-purple-tint",
+    ]) {
+      expect(neutral).not.toContain(borrowed);
+    }
+  });
+
+  it("kod girintisi 16px adımlıdır: level 2 = 32px (HP:76), level 3 = 48px", () => {
+    expect(css).toMatch(
+      /\.mu-chart__code--2\s*{[^}]*padding-left:\s*calc\(2 \* var\(--space-4\)\)/,
+    );
+    expect(css).toMatch(
+      /\.mu-chart__code--3\s*{[^}]*padding-left:\s*calc\(3 \* var\(--space-4\)\)/,
+    );
+  });
+
+  it("grup satırı gri zeminli ve KÜÇÜK/KALIN'dır (HP:71-73)", () => {
+    expect(css).toMatch(/\.mu-chart__group td\s*{[^}]*background:\s*var\(--color-surface-2\)/);
+    expect(css).toMatch(/\.mu-chart__group td\s*{[^}]*font-weight:\s*var\(--weight-bold\)/);
+  });
+
+  it("🔴 Durum noktası: aktif YEŞİL (HP:80), pasif GRİ (şef kararı)", () => {
+    expect(css).toMatch(/\.mu-chart__dot--on\s*{[^}]*var\(--color-success\)/);
+    expect(css).toMatch(/\.mu-chart__dot--off\s*{[^}]*var\(--color-border-strong\)/);
+    // İkisi AYNI rengi almamalı — aksi hâlde `Durum` sütunu bilgi taşımazdı.
+    expect(/\.mu-chart__dot--off\s*{[^}]*var\(--color-success\)/.test(css)).toBe(false);
+  });
+
+  it("bakiye tonları: yeşil (HP:79) / kırmızı (HP:155)", () => {
+    expect(css).toMatch(/\.mu-chart__balance--success\s*{[^}]*var\(--color-success\)/);
+    expect(css).toMatch(/\.mu-chart__balance--danger\s*{[^}]*var\(--color-danger\)/);
+  });
+});
