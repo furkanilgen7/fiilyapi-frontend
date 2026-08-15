@@ -4,6 +4,318 @@
  */
 
 export interface paths {
+    "/chart-of-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Chart Accounts Endpoint
+         * @description HP:58-62 tablosu — her satır **TÜRETİLMİŞ `balance`** + `class_code` + `level` taşır.
+         *
+         *     Süzgeçler HP'nin filtre çubuğundan gelir: `q` (HP:47, **kod ve ad** üzerinde;
+         *     LIKE jokeri KAÇIRILIR) · `account_type` (HP:60 `Tür`) · `is_active` (HP:62
+         *     `Durum`). Sıralama `code ASC`tir ve hiyerarşiyi kendiliğinden üretir.
+         *
+         *     🔴 `Tür` ile `Durum` AYRI ŞEYLERDİR (R3): ikisi de Türkçe'de "aktif" okunur
+         *     ama biri dört üyeli kapalı bir enum, öteki boolean bir kaldırma bayrağıdır.
+         *
+         *     `limit` varsayılan 50, tavan 200 — aşım **422** (kırpma DEĞİL).
+         *
+         *     🔴 **Proje/şantiye kapsam süzgeci YOKTUR (spec §3):** hesap planı şirket
+         *     geneli bir katalogtur, erişimi `accounting` izni denetler.
+         */
+        get: operations["list_chart_accounts_endpoint_chart_of_accounts_get"];
+        put?: never;
+        /**
+         * Create Chart Account Endpoint
+         * @description Yeni hesap (HP:50 `+ Hesap Ekle`).
+         *
+         *     * `code` KAPALI biçim kümesindedir: `NN` · `NNN` · `NNN.NN` — üçüncü kırılım
+         *       ve sınıf kodu **422**dir (DB CHECK'i son savunma)
+         *     * `account_type` KAPALI kümedir: Aktif/Pasif/Gelir/Gider (K5)
+         *     * aynı kod **409**
+         *     * 🔴 **K-Ş3:** fiş satırı OLAN bir hesabın altına çocuk açmak **409**
+         *     * `balance`/`class_code`/`level` gövdeden GELEMEZ (**422**): türevdirler
+         */
+        post: operations["create_chart_account_endpoint_chart_of_accounts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chart-of-accounts/{account_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Chart Account Endpoint
+         * @description Tek hesap + türetilmiş bakiye. Bakiye liste ucuyla AYNI kaynaktan gelir.
+         */
+        get: operations["get_chart_account_endpoint_chart_of_accounts__account_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Chart Account Endpoint
+         * @description **YALNIZ `admin`** → 204; fiş satırı ya da alt hesabı olan hesap **409**.
+         *
+         *     `full` seviyesi (muhasebe) 403 alır — gerekçe modül docstring'indedir.
+         *     409 SERVİSTEN gelir: ham FK ihlalinin 500'ü ya da ayrımsız "Veri bütünlüğü
+         *     hatası" kullanıcıya SIZMAZ. Yanıt gövdesizdir.
+         */
+        delete: operations["delete_chart_account_endpoint_chart_of_accounts__account_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Chart Account Endpoint
+         * @description Kısmi güncelleme; kayıt DENETİMLERDEN ÖNCE kilitlenir (TOCTOU).
+         *
+         *     🔴 `code` değişimi yalnız **hiç fiş satırı olmayan** hesapta serbesttir
+         *     (**409**): aksi hâlde tüm geçmiş yevmiye sessizce kayardı. Aynı kodu geri
+         *     göndermek serbesttir — kapı DEĞİŞİME bakar.
+         *
+         *     Kullanımdan kaldırma yolu budur: `{"is_active": false}`.
+         */
+        patch: operations["update_chart_account_endpoint_chart_of_accounts__account_id__patch"];
+        trace?: never;
+    };
+    "/journal-entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Journal Entries Endpoint
+         * @description 🔴 **ONAYLI SAPMA (K-Ş4):** mockup'ta fiş listesi ekranı YOKTUR.
+         *
+         *     Yine de vardır çünkü K2 gereği `draft` fişler deftere (`/journal`) GİRMEZ:
+         *     bu uç olmasaydı açılan bir taslağı bulup kayıtlaştırmanın BAŞKA HİÇBİR YOLU
+         *     kalmazdı. Yapısal bir boşluğu kapatır ve "mockup'ta yok" diye geri alınmaz.
+         *
+         *     Süzgeçler: `status` · `year` · `month`. `limit` varsayılan 50, tavan 200 —
+         *     aşım **422** (kırpma DEĞİL). Sıralama `entry_date DESC` ve son ölçütü `id`dir
+         *     (aynı gün girilen iki fiş keyfî sırada dönmesin).
+         *
+         *     🔴 **Proje/şantiye kapsam süzgeci YOKTUR (spec §3):** üç tabloda da böyle bir
+         *     kolon yoktur; erişimi `accounting` izni denetler.
+         */
+        get: operations["list_journal_entries_endpoint_journal_entries_get"];
+        put?: never;
+        /**
+         * Create Journal Entry Endpoint
+         * @description Yeni fiş (E8:67 `+ Yevmiye Kaydı`) — başlık + bacaklar TEK gövde, ATOMİK.
+         *
+         *     * durum **SUNUCUDAN** gelir (`INITIAL_STATUS` = `draft`); gövde `status`
+         *       GÖNDEREMEZ (**422**)
+         *     * 🔴 **K1 kapısı:** `Σ borç = Σ alacak` · en az iki satır · yalnız yaprak
+         *       hesap — üç engel TEK **422**'de toplanır
+         *     * 🔴 gövde içi hesap referansı yoksa **404** (biçim hatası değil, var
+         *       olmayan KAYIT)
+         *     * `total_debit`/`total_credit`/`period_*`/`reversal_of_id` gövdeden GELEMEZ
+         *       (**422**): türev ya da sunucu alanlarıdır
+         *
+         *     Bozuk bir satır varsa HİÇBİR ŞEY yazılmaz — ne başlık ne bacak.
+         */
+        post: operations["create_journal_entry_endpoint_journal_entries_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/journal-entries/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Journal Summary Endpoint
+         * @description E8:79-88 KPI şeridi — `total_debit` · `total_credit` · `net_balance`.
+         *
+         *     🔴 `net_balance = **ALACAK − BORÇ**` (E8:88 `4.120.000−3.842.600=277.400`
+         *     aritmetiğinden KANITLI).
+         *
+         *     🔴 **Hesap süzgeci ALMAZ** (E8:72 — şerit tablonun ve filtre çubuğunun
+         *     DIŞINDADIR). Varsayılan dönem `timezone.today()`nin ayıdır (K6 sınır
+         *     çağrısı); `draft` sayılmaz, `reversed` SAYILIR (`POSTING_STATUSES`).
+         */
+        get: operations["journal_summary_endpoint_journal_entries_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/journal-entries/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Journal Entry Endpoint
+         * @description Başlık + bacaklar. Toplamlar okuma anında YENİDEN HESAPLANMAZ: fiş,
+         *     kayıtlaştırıldıktan sonra donmuş bir belgedir.
+         */
+        get: operations["get_journal_entry_endpoint_journal_entries__entry_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Journal Entry Endpoint
+         * @description **YALNIZ `admin`** → 204; `posted`/`reversed` fiş **409**.
+         *
+         *     `full` seviyesi (muhasebe) 403 alır — gerekçe modül docstring'indedir.
+         *     Bacaklar açıkça silinir (DB'de CASCADE de vardır). Yanıt gövdesizdir.
+         */
+        delete: operations["delete_journal_entry_endpoint_journal_entries__entry_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Journal Entry Endpoint
+         * @description **Yalnız `draft`** — aksi **409** (yetki değil DURUM engeli).
+         *
+         *     Kayıt DENETİMLERDEN ÖNCE kilitlenir (TOCTOU). `entry_date` değişirse dönem
+         *     kolonları onunla BİRLİKTE taşınır (K9); satır kümesi buradan DEĞİŞMEZ.
+         */
+        patch: operations["update_journal_entry_endpoint_journal_entries__entry_id__patch"];
+        trace?: never;
+    };
+    "/journal-entries/{entry_id}/lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Replace Journal Lines Endpoint
+         * @description Bacak kümesini TOPTAN yazar (hakediş/puantaj emsali) — **yalnız `draft`**.
+         *
+         *     🔴 R5: "posted fişin satırı UPDATE edilemez" iddiası DB'de zorlanamaz
+         *     (trigger yoktur); satır yazan TEK yol budur ve kapı burada durur.
+         *
+         *     K1 kapısı burada da koşar: boş küme "en az iki satır" engeline takılır ve
+         *     **422** döner. Başlık toplamları aynı kümeden yeniden yazılır — satırlar ile
+         *     başlık ASLA ayrışmaz.
+         */
+        put: operations["replace_journal_lines_endpoint_journal_entries__entry_id__lines_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/journal-entries/{entry_id}/post": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Journal Entry Endpoint
+         * @description `draft → posted` — fişi MALİ İZE sokar.
+         *
+         *     🔴 **EŞİK = KİLİT:** satır kilitlenerek okunur, matris ve K1 kapısı KİLİTLİ
+         *     satır üzerinde koşar (ayrıntı `state_service.py` modül docstring'i). İki
+         *     eşzamanlı istekten yalnız biri geçer, öteki **409** alır.
+         *
+         *     🔴 K1 kapısı burada **YENİDEN** koşar (**422**): fiş taslakken yaprak olan
+         *     bir hesabın altına sonradan çocuk açılmış olabilir ve o fiş artık deftere
+         *     girmemelidir — yoksa MU-2 mizanı üst hesabı ÇİFT SAYARDI.
+         *
+         *     Denetim satırı `AuditAction.approve` ile yazılır (yeni üye AÇILMADI); ayrım
+         *     metindedir.
+         */
+        post: operations["post_journal_entry_endpoint_journal_entries__entry_id__post_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/journal-entries/{entry_id}/reverse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reverse Journal Entry Endpoint
+         * @description `posted → reversed` + 🔴 **YENİ bir storno fişi** → **201**.
+         *
+         *     Yanıt STORNONUN detayıdır (yeni doğan kayıt): orijinali döndürmek, kullanıcıyı
+         *     ekranda göremeyeceği bir fişle baş başa bırakırdı.
+         *
+         *     * storno doğrudan `posted`tır ve 🔴 tarihi **`timezone.today()`**dir (K6
+         *       sınır çağrısı — orijinalin tarihi KAPALI bir döneme düşerdi)
+         *     * bacaklar `debit ↔ credit` TAKASLIDIR, `sort_order` KORUNUR
+         *     * **409**: fiş `posted` değil (matris) · stornosu zaten var · fişin kendisi
+         *       bir stornodur (sonsuz zincir)
+         *
+         *     🔴 K3: orijinal `reversed` olur ama defterden ÇIKMAZ (`POSTING_STATUSES`e
+         *     dahildir) — ikisi birlikte hesabın bakiyesini TAM SIFIRA götürür. Yalnız
+         *     `posted` sayılsaydı net `−orijinal` çıkardı (çift ters kayıt).
+         */
+        post: operations["reverse_journal_entry_endpoint_journal_entries__entry_id__reverse_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/journal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Journal Ledger Endpoint
+         * @description E8:101-106 defteri — 🔴 tablo **SATIR bazlıdır**, fiş bazlı değil.
+         *
+         *     Zarf K7'nindir + kökünde 🔴 **`carried_balance`** (pencere ÖNCESİ toplam)
+         *     taşır: olmasaydı ay değişince ya da sayfa atlanınca koşan bakiye sıfırdan
+         *     başlar ve anlamsız bir seri çıkardı.
+         *
+         *     * dönem varsayılanı `timezone.today()`nin ayıdır (E8:75, K6 sınır çağrısı)
+         *     * `account_id` OPSİYONELDİR (E8:96 `Tüm Hesaplar`)
+         *     * `draft` deftere GİRMEZ, `reversed` GİRER (`POSTING_STATUSES`)
+         *     * gösterim tarih **DESC** (E8:111-157), birikim **ASC** — ayrıntı
+         *       `ledger.py` modül docstring'indedir
+         *     * `running_balance` HAM `net`tir (borç `+`, alacak `−`); türe göre
+         *       ÇEVRİLMEZ, çünkü karışık hesaplarda tür-bazlı işaret tanımsızdır
+         */
+        get: operations["journal_ledger_endpoint_journal_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/audit-log": {
         parameters: {
             query?: never;
@@ -5655,6 +5967,133 @@ export interface components {
             outflow_total: string;
         };
         /**
+         * ChartAccountCreate
+         * @description `POST /chart-of-accounts` (HP:50 `+ Hesap Ekle`).
+         *
+         *     🔴 K-Ş1: form mockup'ı YOKTUR ve alan İCAT EDİLMEZ — gövde yalnızca HP:58-62'nin
+         *     çizili sütunlarından türer: `Kod` · `Hesap Adı` · `Tür` · `Durum`.
+         *     (`Bakiye` sütunu türevdir, gövdeye giremez.)
+         *
+         *     `is_active` gövdeden gelebilir çünkü kullanımdan kaldırma yolu odur (repo
+         *     kanonu: DELETE değil `is_active=false`).
+         *
+         *     Ebeveyn kaydı ZORUNLU DEĞİLDİR: hesap planı boş açılır (R14) ve kullanıcı
+         *     doğrudan `120.01` girebilir. Zorunlu kılınsaydı hiçbir mockup'ın istemediği
+         *     bir giriş sırası dayatılırdı.
+         */
+        ChartAccountCreate: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            account_type: components["schemas"]["ChartAccountType"];
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+        };
+        /**
+         * ChartAccountListResponse
+         * @description K7 liste zarfı: `items` + `total` + `limit`/`offset` (repo kanonu).
+         */
+        ChartAccountListResponse: {
+            /** Items */
+            items: components["schemas"]["ChartAccountResponse"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * ChartAccountResponse
+         * @description Hesap satırı + ÜÇ TÜREV alan (HP:58-62 tablosunun tamamı).
+         *
+         *     * `balance` — 🔴 K3, saklanan bir kolon DEĞİLDİR ve buraya `balance.py`nin
+         *       TEK kaynağından gelir; ikinci bir formül yazılsaydı liste ile detay aynı
+         *       hesap için farklı sayı basar ve hiçbir kolon farkı ele vermezdi.
+         *     * `class_code` — 🔴 K15, KODUN ilk hanesi. HP:187 bandı `SINIF 5` yazıp
+         *       altına `600`/`730`/`760` dizer; **satırlar kazanır**, bant etiketi bir
+         *       sunucu alanı DEĞİLDİR.
+         *     * `level` — grup `1` · ana hesap `2` · alt hesap `3`. Sınıf sayılmaz (kayıt
+         *       değildir). İstemci girintiyi bundan kurar; sunucu HTML girintisi ya da
+         *       `parent_id` göndermez.
+         *
+         *     🔴 `is_active` (HP:62 `Durum`) ile `account_type` (HP:60 `Tür`) AYRI
+         *     ŞEYLERDİR — ikisi de Türkçe'de "aktif" okunur ama biri boolean bir kaldırma
+         *     bayrağı, öteki dört üyeli kapalı bir enum'dur (R3).
+         */
+        ChartAccountResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            account_type: components["schemas"]["ChartAccountType"];
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Balance */
+            balance: string;
+            /** Class Code */
+            class_code: string;
+            /** Level */
+            level: number;
+        };
+        /**
+         * ChartAccountType
+         * @description Hesap turu — HP:60 `Tur` sutununun KAPALI kumesi birebir.
+         *
+         *     Dort rozet cizilidir: `Aktif` (HP:78) · `Pasif` (HP:154) · `Gelir` (HP:192)
+         *     · `Gider` (HP:199). **Besinci uye ICAT EDILMEZ** — ozkaynak/nazim gibi bir
+         *     tur eklenseydi hicbir ekranda karsiligi olmayan bir kumeyi kalici olarak
+         *     DB'ye yazardik.
+         *
+         *     🔴 Bu enum HP:62 `Durum` sutunu DEGILDIR (bkz. modul docstring'i R3):
+         *     Durum `is_active` boolean'idir, Tur budur.
+         *
+         *     K3 isaret kurali bu turden okunur: `asset`/`expense` → `+1`,
+         *     `liability`/`revenue` → `−1` (`balance.py` TEK KAYNAK).
+         * @enum {string}
+         */
+        ChartAccountType: "asset" | "liability" | "revenue" | "expense";
+        /**
+         * ChartAccountUpdate
+         * @description `PATCH /chart-of-accounts/{id}` — KISMİ gövde.
+         *
+         *     Her alan `| None`dır ama bu yalnızca "gönderilmedi" demektir: dört kolonun
+         *     hiçbiri NULLABLE değildir, dolayısıyla açıkça `null` göndermek bir TEMİZLEME
+         *     değildir ve servis onu "değişmedi" sayar (`exclude_unset` + `is not None`).
+         *
+         *     🔴 `code` değişimi yalnız hiç fiş satırı olmayan hesapta serbesttir
+         *     (`guards.ACCOUNT_CODE_LOCKED`, 409): satırlar `account_id` ile bağlıdır ama
+         *     defter ve mizan KODU basar.
+         */
+        ChartAccountUpdate: {
+            /** Code */
+            code?: string | null;
+            /** Name */
+            name?: string | null;
+            account_type?: components["schemas"]["ChartAccountType"] | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
+        /**
          * CollectionKpi
          * @description S58 "Tahsil Edilen" · ₺24,8M · "%79 tahsilat".
          *
@@ -7805,6 +8244,268 @@ export interface components {
             /** Withholding Rate */
             withholding_rate?: number | string | null;
         };
+        /**
+         * JournalEntryCreate
+         * @description `POST /journal-entries` (E8:67 `+ Yevmiye Kaydı`).
+         *
+         *     🔴 K-Ş1: form mockup'ı YOKTUR ve alan İCAT EDİLMEZ — gövde yalnızca E8'in
+         *     çizili sütunlarından türer: `Tarih` (E8:101) · `Açıklama` üst satırı
+         *     (E8:103/113) · `Açıklama` alt satırı (`detail_note`) · satırlar.
+         *
+         *     `detail_note` bir FK DEĞİLDİR: E8'in altı örneğinden biri
+         *     (`48 personel · SGK dahil`) hiçbir varlığa çözülmez — heterojen küme =
+         *     SERBEST METİN. FK açılsaydı MU-3'ün (entegrasyon) işi buraya sızardı.
+         */
+        JournalEntryCreate: {
+            /**
+             * Entry Date
+             * Format: date
+             */
+            entry_date: string;
+            /** Description */
+            description: string;
+            /** Detail Note */
+            detail_note?: string | null;
+            /** Lines */
+            lines?: components["schemas"]["JournalLineInput"][];
+        };
+        /**
+         * JournalEntryDetailResponse
+         * @description Başlık + bacaklar. Yedi ucun HEPSİ bu şekli döner (liste hariç): tek
+         *     yerde kurulmasaydı `POST` ile `PATCH` farklı alan kümeleri basardı.
+         */
+        JournalEntryDetailResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Entry Date
+             * Format: date
+             */
+            entry_date: string;
+            /** Period Year */
+            period_year: number;
+            /** Period Month */
+            period_month: number;
+            /** Description */
+            description: string;
+            /** Detail Note */
+            detail_note: string | null;
+            status: components["schemas"]["JournalEntryStatus"];
+            /** Total Debit */
+            total_debit: string;
+            /** Total Credit */
+            total_credit: string;
+            /** Reversal Of Id */
+            reversal_of_id: string | null;
+            /**
+             * Created By Id
+             * Format: uuid
+             */
+            created_by_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Lines */
+            lines: components["schemas"]["JournalLineResponse"][];
+        };
+        /**
+         * JournalEntryListResponse
+         * @description K7 liste zarfı. `items` BAŞLIKTIR, satır taşımaz: liste ekranı fiş
+         *     seçmek içindir ve her fişin bacaklarını çekmek listeyi N+1'e sokardı.
+         */
+        JournalEntryListResponse: {
+            /** Items */
+            items: components["schemas"]["JournalEntryResponse"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * JournalEntryResponse
+         * @description Fiş başlığı — SAKLANAN kolonlar (toplamlar dahil, spec §4 istisnası).
+         */
+        JournalEntryResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Entry Date
+             * Format: date
+             */
+            entry_date: string;
+            /** Period Year */
+            period_year: number;
+            /** Period Month */
+            period_month: number;
+            /** Description */
+            description: string;
+            /** Detail Note */
+            detail_note: string | null;
+            status: components["schemas"]["JournalEntryStatus"];
+            /** Total Debit */
+            total_debit: string;
+            /** Total Credit */
+            total_credit: string;
+            /** Reversal Of Id */
+            reversal_of_id: string | null;
+            /**
+             * Created By Id
+             * Format: uuid
+             */
+            created_by_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * JournalEntryStatus
+         * @description Fis durumu — K2 durum makinesi (`transitions.py` matris TEK kopya).
+         *
+         *         draft ──post──▶ posted ──reverse──▶ reversed
+         *
+         *     Ters kayit YENI BIR FIS uretir (alan ya da bayrak degil): orijinal
+         *     `reversed` damgalanir, storno dogrudan `posted` dogar ve
+         *     `reversal_of_id` ile orijinali gosterir. `reversed` TERMINALDIR —
+         *     stornonun stornosu sonsuz zincir acardi, mali anlami yoktur.
+         *
+         *     🔴 `reversed` fis BAKIYEDEN DUSMEZ (`POSTING_STATUSES` = posted + reversed):
+         *     yalniz `posted` sayilsaydi orijinal defterden duser, storno ters bacaklariyla
+         *     eklenir ve net **−orijinal** cikardi (cift ters kayit). Ikisi de sayilinca
+         *     net TAM SIFIR olur.
+         * @enum {string}
+         */
+        JournalEntryStatus: "draft" | "posted" | "reversed";
+        /**
+         * JournalEntryUpdate
+         * @description `PATCH /journal-entries/{id}` — KISMİ gövde, yalnız `draft`ta (409 aksi).
+         *
+         *     `entry_date`/`description` için `| None` yalnızca "gönderilmedi" demektir:
+         *     kolonları NULLABLE DEĞİLDİR, dolayısıyla açıkça `null` göndermek bir
+         *     TEMİZLEME değildir ve servis onu "değişmedi" sayar.
+         *
+         *     🔴 `detail_note` bunun İSTİSNASIDIR ve kolonu NULLABLE'dır: açıkça `null`
+         *     göndermek onu GERÇEKTEN temizler. Ayrım `exclude_unset` ile korunur —
+         *     onsuz, yalnız açıklamayı düzelten bir istek dayanağı sessizce silerdi.
+         *
+         *     Satırlar buradan DEĞİŞMEZ: kümenin tek yazma yolu `PUT …/lines`tir, çünkü
+         *     toplamlar (K1) ancak kümenin TAMAMI bilinirken tutarlı yazılabilir.
+         */
+        JournalEntryUpdate: {
+            /** Entry Date */
+            entry_date?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Detail Note */
+            detail_note?: string | null;
+        };
+        /**
+         * JournalLineInput
+         * @description Fişin bir bacağı (E8:102-105) — 🔴 K-Ş1: alan İCAT EDİLMEDİ.
+         *
+         *     Gövde yalnızca E8'in ÇİZİLİ sütunlarından türer: `Hesap Kodu` (kimlik olarak
+         *     `account_id`) · `Borç` · `Alacak`. Satırda `description` ve `sort_order`
+         *     YOKTUR: ilki bir fişin iki bacağında tekrarlanır ve ayrışırdı (spec §3c),
+         *     ikincisi gövde DİZİSİNİN İNDEKSİDİR ve sunucu yazar.
+         *
+         *     🔴 `debit`/`credit` ZORUNLUDUR (`| None` DEĞİL): NULL/eksik/boş **422**dir.
+         */
+        JournalLineInput: {
+            /**
+             * Account Id
+             * Format: uuid
+             */
+            account_id: string;
+            /** Debit */
+            debit: number | string;
+            /** Credit */
+            credit: number | string;
+        };
+        /**
+         * JournalLineResponse
+         * @description Yanıt satırı — hesabın KODU ve ADI da taşınır (E8:102).
+         *
+         *     İstemcinin hesap planını ayrıca çekmesi gerekmez; N+1'i sunucuya taşımak
+         *     yerine tek `join`de çözülür.
+         */
+        JournalLineResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Sort Order */
+            sort_order: number;
+            /**
+             * Account Id
+             * Format: uuid
+             */
+            account_id: string;
+            /** Account Code */
+            account_code: string;
+            /** Account Name */
+            account_name: string;
+            /** Debit */
+            debit: string;
+            /** Credit */
+            credit: string;
+        };
+        /**
+         * JournalLinesReplace
+         * @description `PUT /journal-entries/{id}/lines` — kümeyi TOPTAN yazar (hakediş emsali).
+         *
+         *     Kısmi güncelleme YOKTUR: `sort_order` dizinin indeksidir ve toplamlar
+         *     kümenin tamamından türer; tek satır güncellenseydi başlık ile satırlar
+         *     ayrışabilirdi.
+         */
+        JournalLinesReplace: {
+            /** Lines */
+            lines: components["schemas"]["JournalLineInput"][];
+        };
+        /**
+         * JournalSummaryResponse
+         * @description E8:79-88 KPI şeridi — ÜÇ kart.
+         *
+         *     🔴 `net_balance = ALACAK − BORÇ`. Yön mockup'tan KANITLIDIR:
+         *     `4.120.000 − 3.842.600 = 277.400` (E8:88) tam tutar ve bu, E8'deki tek
+         *     göstermelik-olmayan aritmetiktir.
+         *
+         *     Şerit yalnız DÖNEME bağlıdır; hesap süzgeci ALMAZ (E8:72 — KPI'lar tablonun
+         *     ve filtre çubuğunun DIŞINDADIR).
+         */
+        JournalSummaryResponse: {
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            /** Total Debit */
+            total_debit: string;
+            /** Total Credit */
+            total_credit: string;
+            /** Net Balance */
+            net_balance: string;
+        };
         /** LandShareCard */
         LandShareCard: {
             /** Landowner Name */
@@ -8090,6 +8791,67 @@ export interface components {
             color: string | null;
             /** Sort Order */
             sort_order: number;
+        };
+        /**
+         * LedgerResponse
+         * @description K7 zarfı + 🔴 **`carried_balance`** (pencere ÖNCESİ toplam).
+         *
+         *     Ad `bank_accounts.opening_balance`tan bilinçli olarak AYRIDIR: orası
+         *     SAKLANAN bir kolondur, bu ise TÜREVDİR. Aynı ad kullanılsaydı frontend
+         *     ikisini ayırt edemez ve türetilmiş bir sayıyı düzenlenebilir sanırdı.
+         */
+        LedgerResponse: {
+            /** Items */
+            items: components["schemas"]["LedgerRow"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Carried Balance */
+            carried_balance: string;
+        };
+        /**
+         * LedgerRow
+         * @description `GET /journal` satırı (E8:101-106) — 🔴 tablo SATIR bazlıdır, fiş bazlı
+         *     değil.
+         *
+         *     `running_balance` TÜREVDİR ve gövdeden GELEMEZ; tanımı `ledger.py`dedir.
+         *     `entry_id` + `entry_status` fişe dönüş yolunu açar: defterdeki bir satırdan
+         *     kaynağına gidilemeseydi kullanıcı düzeltmeyi hiç bulamazdı.
+         */
+        LedgerRow: {
+            /**
+             * Entry Id
+             * Format: uuid
+             */
+            entry_id: string;
+            /**
+             * Entry Date
+             * Format: date
+             */
+            entry_date: string;
+            entry_status: components["schemas"]["JournalEntryStatus"];
+            /**
+             * Account Id
+             * Format: uuid
+             */
+            account_id: string;
+            /** Account Code */
+            account_code: string;
+            /** Account Name */
+            account_name: string;
+            /** Description */
+            description: string;
+            /** Detail Note */
+            detail_note: string | null;
+            /** Debit */
+            debit: string;
+            /** Credit */
+            credit: string;
+            /** Running Balance */
+            running_balance: string;
         };
         /**
          * ListPlaceholder
@@ -15849,6 +16611,751 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    list_chart_accounts_endpoint_chart_of_accounts_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                account_type?: components["schemas"]["ChartAccountType"] | null;
+                is_active?: boolean | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChartAccountListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_chart_account_endpoint_chart_of_accounts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChartAccountCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChartAccountResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kod zaten kayıtlı ya da üst hesabın yevmiye kaydı var */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kod biçimi geçersiz ya da türev alan gönderildi */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_chart_account_endpoint_chart_of_accounts__account_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChartAccountResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Hesap bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_chart_account_endpoint_chart_of_accounts__account_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Hesap bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Hesaba bağlı yevmiye kaydı ya da alt hesap var */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_chart_account_endpoint_chart_of_accounts__account_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChartAccountUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChartAccountResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Hesap bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kod zaten kayıtlı ya da üst hesabın yevmiye kaydı var */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kod biçimi geçersiz ya da türev alan gönderildi */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    list_journal_entries_endpoint_journal_entries_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["JournalEntryStatus"] | null;
+                year?: number | null;
+                month?: number | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_journal_entry_endpoint_journal_entries_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JournalEntryCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fiş satırındaki hesap bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Denge · en az iki satır · yaprak hesap kuralı ihlali */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    journal_summary_endpoint_journal_entries_summary_get: {
+        parameters: {
+            query?: {
+                year?: number | null;
+                month?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalSummaryResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_journal_entry_endpoint_journal_entries__entry_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fiş bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_journal_entry_endpoint_journal_entries__entry_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fiş bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yalnızca taslak fiş silinebilir */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_journal_entry_endpoint_journal_entries__entry_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JournalEntryUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fiş bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fiş bu işlem/düzenleme için uygun durumda değil */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Gövde kuralı ihlali */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    replace_journal_lines_endpoint_journal_entries__entry_id__lines_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JournalLinesReplace"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fiş ya da satırdaki hesap bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fiş bu işlem/düzenleme için uygun durumda değil */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Denge · en az iki satır · yaprak hesap kuralı ihlali */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_journal_entry_endpoint_journal_entries__entry_id__post_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fiş bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fiş bu işlem/düzenleme için uygun durumda değil */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Denge · en az iki satır · yaprak hesap kuralı ihlali */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    reverse_journal_entry_endpoint_journal_entries__entry_id__reverse_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fiş bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fiş kayıtlı değil · stornosu zaten var · fişin kendisi storno */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    journal_ledger_endpoint_journal_get: {
+        parameters: {
+            query?: {
+                year?: number | null;
+                month?: number | null;
+                account_id?: string | null;
+                status?: components["schemas"]["JournalEntryStatus"] | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_audit_log_endpoint_audit_log_get: {
         parameters: {
             query?: {

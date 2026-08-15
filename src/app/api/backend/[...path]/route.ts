@@ -190,6 +190,20 @@ const ALLOWED_ROOTS = new Set([
   "bank-accounts",
   "payments",
   "treasury",
+  // MU-1 (muhasebe çekirdeği, canlıda 2026-08-15) — üç kök:
+  //   · `chart-of-accounts` → `GET/POST /chart-of-accounts`,
+  //     `GET/PATCH/DELETE /chart-of-accounts/{id}`
+  //   · `journal-entries`   → `GET/POST /journal-entries`,
+  //     `GET /journal-entries/summary`, `GET/PATCH/DELETE /journal-entries/{id}`,
+  //     `PUT /journal-entries/{id}/lines`, `POST /journal-entries/{id}/post`,
+  //     `POST /journal-entries/{id}/reverse`
+  //   · `journal`           → `GET /journal` (satır bazlı defter, koşan bakiye)
+  // Üçü de KENDİ kökünden gelir, başka kökün ALTINDA DEĞİLDİR. Ekranlar
+  // (F-MU1) ayrı dilimin işi — kökler önden hazır. Eksikse muhasebe yüzeyi
+  // YALNIZ CANLIDA 404 alır; jsdom testleri bunu GÖRMEZ.
+  "chart-of-accounts",
+  "journal-entries",
+  "journal",
 ]);
 
 // JSON/metin sayilan icerik tipleri: govde metne cozulup JSON olarak islenir.
