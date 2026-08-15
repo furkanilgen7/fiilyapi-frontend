@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Badge } from "@/components/ui";
+import { WarningTriangleIcon, inlineSymbolProps } from "@/components/ui/icons";
 import type { EquipmentResponse } from "@/lib/api/hooks/useEquipment";
 import { formatCurrency, formatDateLong } from "@/lib/format";
 
@@ -73,7 +74,8 @@ export function EquipmentCard({ equipment, siteLabel, operatorName }: EquipmentC
       {showWarningBox ? (
         <div className="makine-card__warning" data-testid="makine-card-warning-box">
           <div className="makine-card__warning-note">
-            ⚠ {equipment.status_note ?? EQUIPMENT_EMPTY_VALUE}
+            <WarningTriangleIcon {...inlineSymbolProps} />{" "}
+            {equipment.status_note ?? EQUIPMENT_EMPTY_VALUE}
           </div>
           <div className="makine-card__warning-date">
             {equipment.status === "broken" ? "Tahmini onarım" : "Dönüş"}:{" "}

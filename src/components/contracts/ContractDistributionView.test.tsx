@@ -291,10 +291,17 @@ describe("POZ dağılımı — ızgara", () => {
   it("Kalan rozeti 0'da ✓ 0, aksi hâlde kalan miktardır (yumuşak Σ gösterimi)", () => {
     render(<ContractDistributionView projectId="p-1" />);
 
+    // `✓` inline SVG'dir (F-SEM) ⇒ metinden okunamaz. İddia ZAYIFLAMAZ:
+    // kapanmışlık artık `data-settled` damgasından YAPISAL olarak okunur —
+    // "0" metnini basan ama kapanmamış bir rozet bu testi geçemez.
     const badges = screen.getAllByTestId("cdist-remaining");
-    expect(badges[0]).toHaveTextContent("✓ 0");
+    expect(badges[0]).toHaveAttribute("data-settled", "true");
+    expect(badges[0]).toHaveTextContent("0");
+    expect(badges[0].querySelector("svg")).not.toBeNull();
     expect(badges[0].className).toContain("ecd-items__remaining--zero");
+    expect(badges[2]).toHaveAttribute("data-settled", "false");
     expect(badges[2]).toHaveTextContent("18.400");
+    expect(badges[2].querySelector("svg")).toBeNull();
     expect(badges[2].className).toContain("cdist-grid__remaining--open");
   });
 
@@ -302,7 +309,10 @@ describe("POZ dağılımı — ızgara", () => {
     render(<ContractDistributionView projectId="p-1" />);
 
     const row = screen.getByTestId("cdist-undistributed-row");
-    expect(within(row).getByText("⚠ Henüz şantiyeye atanmadı")).toBeInTheDocument();
+    // `⚠` inline SVG'dir (F-SEM); metin + ikon AYRI AYRI doğrulanır.
+    const note = within(row).getByTestId("cdist-undistributed-note");
+    expect(note).toHaveTextContent("Henüz şantiyeye atanmadı");
+    expect(note.querySelector("svg")).not.toBeNull();
     expect(cell("05.001", "A-Blok").value).toBe("");
   });
 

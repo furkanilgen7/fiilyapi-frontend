@@ -1,3 +1,4 @@
+import { CheckIcon, WarningTriangleIcon, inlineSymbolProps } from "@/components/ui/icons";
 import { formatCurrencyPrecise, formatDecimal, formatPercent } from "@/lib/format";
 import type { EquipmentNormUnit } from "@/lib/api/hooks/useEquipment";
 import type { FuelSummaryRow } from "@/lib/api/hooks/useEquipmentFuelSummary";
@@ -109,7 +110,16 @@ export function EquipmentFuelConsumptionList({
                   ) : (
                     `${formatDecimal(row.norm, 1)} ${unitLabel}`
                   )}
-                  {" "}
+                  {/* Ayırıcı BİLEREK sert boşluk (U+00A0), sıradan boşluk DEĞİL.
+                      Ölçüldü (CI run 31886457731): sıradan `{" "}` metin düğümü
+                      hemen ardından YERİ DOLDURULAN bir öğe (inline `<svg>`)
+                      gelince turdan tura kâh 3px basıyor kâh hiç basmıyordu —
+                      kare 242px oynadı. Sapma `—` basan (SVG'siz) satır AYNI
+                      turda hiç kaymadı; fark tam da SVG'li iki satırdaydı.
+                      U+00A0 daraltılamaz (CSS onu boşluk sayıp yutmaz), Inter
+                      alt-kümesinde kapsanır (`u+00??`) ve sıradan boşlukla aynı
+                      genişliktedir → görünüm korunur, genişlik sabitlenir. */}
+                  {"\u00A0"}
                   {row.deviation_pct === null ? (
                     <span
                       className="makine-yakit-consumption__deviation makine-yakit-consumption__deviation--neutral"
@@ -123,14 +133,15 @@ export function EquipmentFuelConsumptionList({
                       className="makine-yakit-consumption__deviation makine-yakit-consumption__deviation--success"
                       data-testid="makine-yakit-deviation-normal"
                     >
-                      ✓ Normal
+                      <CheckIcon {...inlineSymbolProps} />{"\u00A0"}Normal
                     </span>
                   ) : (
                     <span
                       className={`makine-yakit-consumption__deviation makine-yakit-consumption__deviation--${tone}`}
                       data-testid="makine-yakit-deviation-abnormal"
                     >
-                      ⚠ {formatPercent(row.deviation_pct)}
+                      <WarningTriangleIcon {...inlineSymbolProps} />{"\u00A0"}
+                      {formatPercent(row.deviation_pct)}
                     </span>
                   )}
                 </div>

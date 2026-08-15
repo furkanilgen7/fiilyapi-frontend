@@ -186,9 +186,20 @@ export function paymentPlanCell(sale: SaleRow): PaymentPlanCell {
 
 export type CustomerLineTone = "muted" | "danger" | "warning";
 
+/**
+ * Satırın metninden ÖNCE basılan ikon (F-SEM). Mockup 179'daki `⚠` bir GLİF
+ * değil bir İKONdur: `text` alanına gömülmez, çünkü `⚠` (U+26A0) self-host
+ * alt-kümelerde YOKTUR ve sistem yedeğine düşünce kare oynar. Bu alan
+ * SEMANTİKtir — hangi ikonun basılacağına render tarafı (`SalesTable`) karar
+ * verir, bu dosya yalnız "burada uyarı var" der.
+ */
+export type CustomerLineIcon = "warning";
+
 export interface CustomerLine {
   text: string;
   tone: CustomerLineTone;
+  /** Yoksa ikon basılmaz — satırların çoğu (161/188/197) ikonsuzdur. */
+  icon?: CustomerLineIcon;
 }
 
 /**
@@ -205,7 +216,12 @@ export interface CustomerLine {
  */
 export function customerLine(sale: SaleRow): CustomerLine | null {
   if (sale.overdue_installment_count > 0) {
-    return { text: `⚠ ${sale.overdue_installment_count} taksit gecikmiş`, tone: "danger" }; // 179
+    // 179 — `⚠` metne GÖMÜLMEZ, `icon` alanıyla taşınır (F-SEM).
+    return {
+      text: `${sale.overdue_installment_count} taksit gecikmiş`,
+      tone: "danger",
+      icon: "warning",
+    };
   }
   if (sale.status === "reservation") {
     const due =

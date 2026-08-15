@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui";
+import { CheckIcon, inlineSymbolProps } from "@/components/ui/icons";
 import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
 import { cx } from "@/lib/cx";
 import "./integrations-screen.css";
@@ -81,9 +82,20 @@ const CARDS: IntegrationCard[] = [
 ];
 
 const STATUS_LABEL: Record<Status, string> = {
-  connected: "Bağlı ✓",
+  connected: "Bağlı",
   unconfigured: "Yapılandırılmadı",
   off: "Bağlı Değil",
+};
+
+/**
+ * Mockup'ta yalnız "Bağlı" rozeti sonuna `✓` alır. Sembol ETİKETE GÖMÜLMEZ
+ * (F-SEM): `✓` (U+2713) self-host alt-kümelerde yoktur, glif olarak basılınca
+ * kare oynar. Etiket metni yukarıda, ikon kararı burada.
+ */
+const STATUS_HAS_CHECK: Record<Status, boolean> = {
+  connected: true,
+  unconfigured: false,
+  off: false,
 };
 
 export function IntegrationsScreen() {
@@ -111,6 +123,12 @@ export function IntegrationsScreen() {
             <div className="integration-card__footer">
               <span className={cx("integration-badge", `integration-badge--${c.status}`)}>
                 {STATUS_LABEL[c.status]}
+                {STATUS_HAS_CHECK[c.status] && (
+                  <>
+                    {" "}
+                    <CheckIcon {...inlineSymbolProps} />
+                  </>
+                )}
               </span>
               <Button variant={c.primary ? "primary" : "secondary"} size="sm" disabled>
                 {c.action}

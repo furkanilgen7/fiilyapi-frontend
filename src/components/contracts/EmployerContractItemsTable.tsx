@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { CheckIcon, inlineSymbolProps } from "@/components/ui/icons";
 import { cx } from "@/lib/cx";
 import { formatAmount, formatQuantity } from "@/lib/format";
 import type {
@@ -157,8 +158,17 @@ function GroupRows({
                   isSettled ? "ecd-items__remaining--zero" : "ecd-items__remaining--open",
                 )}
                 data-testid="ecd-item-remaining"
+                // `✓` artık inline SVG (F-SEM) ⇒ metinden ayırt edilemez;
+                // kapanmış rozet YAPISAL olarak da damgalanır.
+                data-settled={isSettled ? "true" : "false"}
               >
-                {isSettled ? "✓ 0" : formatQuantity(item.remaining_quantity)}
+                {isSettled ? (
+                  <>
+                    <CheckIcon {...inlineSymbolProps} /> 0
+                  </>
+                ) : (
+                  formatQuantity(item.remaining_quantity)
+                )}
               </span>
             </td>
           </tr>

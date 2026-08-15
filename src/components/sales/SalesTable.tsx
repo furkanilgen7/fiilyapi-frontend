@@ -1,4 +1,5 @@
 import { Badge, Select } from "@/components/ui";
+import { WarningTriangleIcon, inlineSymbolProps } from "@/components/ui/icons";
 import { cx } from "@/lib/cx";
 import { formatAmount } from "@/lib/format";
 
@@ -153,7 +154,15 @@ export function SalesTable({
                 <td className="satis-table__td">
                   <div className="satis-table__customer">{row.customer_name}</div>
                   {line && (
-                    <div className={cx("satis-table__note", `satis-table__note--${line.tone}`)}>
+                    <div
+                      className={cx("satis-table__note", `satis-table__note--${line.tone}`)}
+                      data-icon={line.icon ?? "none"}
+                    >
+                      {line.icon === "warning" && (
+                        <>
+                          <WarningTriangleIcon {...inlineSymbolProps} />{" "}
+                        </>
+                      )}
                       {line.text}
                     </div>
                   )}

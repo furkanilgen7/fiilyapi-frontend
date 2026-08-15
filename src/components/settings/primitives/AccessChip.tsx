@@ -1,3 +1,4 @@
+import { CheckIcon, inlineSymbolProps } from "@/components/ui/icons";
 import { cx } from "@/lib/cx";
 import type { PresetKey } from "@/lib/api/permission-presets";
 import "./settings-primitives.css";
@@ -27,7 +28,15 @@ export function AccessChip({
 }) {
   if (presetKey === "none" || presetKey === "")
     return <span className="access-chip access-chip--none">—</span>;
+  // `✓` glif DEĞİL ikondur (F-SEM). Burada sembol TEK BAŞINA anlam taşır —
+  // yanında yazı yoktur — bu yüzden `label` görünmez metin olarak KORUNUR;
+  // ikonsuz bir okuyucu için çip boş bir kutuya dönüşmez.
   if (presetKey === "full" || presetKey === "super")
-    return <span className="access-chip access-chip--full">✓</span>;
+    return (
+      <span className="access-chip access-chip--full">
+        <CheckIcon {...inlineSymbolProps} />
+        <span className="sr-only">{label}</span>
+      </span>
+    );
   return <span className={cx("access-chip", CLASS[presetKey] ?? "access-chip--amber")}>{label}</span>;
 }

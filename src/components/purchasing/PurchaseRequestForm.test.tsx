@@ -220,7 +220,11 @@ describe("FST · kalem satırları", () => {
 
     expect(screen.getByTestId("talep-mevcut-stok-0").textContent).toContain("2,4");
     expect(screen.getByText("Ton")).toBeInTheDocument();
-    expect(screen.getByText("⚠ Kritik stok")).toBeInTheDocument();
+    // `⚠` inline SVG'dir (F-SEM) ⇒ metinle aranamaz. İddia ZAYIFLAMAZ:
+    // kritik notun VARLIĞI + tam metni + uyarı ikonunu birlikte doğrular.
+    const criticalNote = screen.getByTestId("talep-kritik-stok-0");
+    expect(criticalNote).toHaveTextContent("Kritik stok");
+    expect(criticalNote.querySelector("svg")).not.toBeNull();
   });
 
   it("SERBEST kalemde “Mevcut Stok” 0 DEĞİL “—” + gerekçedir", () => {

@@ -1,3 +1,5 @@
+import { CheckIcon, inlineSymbolProps } from "@/components/ui/icons";
+
 import {
   bossApprovalStepLabel,
   estimatePurchaseApproval,
@@ -32,7 +34,9 @@ export function PurchaseRequestApprovalBox({ lines }: PurchaseRequestApprovalBox
       <h2 className="saf-approval__title">Onay Akışı</h2>
       <div className="saf-approval__chain">
         {/* 159 — talebi açan HER ZAMAN aktör; adım tamamlanmış sayılır */}
-        <span className="saf-step saf-step--done">✓ Talep Eden (Siz)</span>
+        <span className="saf-step saf-step--done" data-testid="talep-onay-adim-tamam">
+          <CheckIcon {...inlineSymbolProps} /> Talep Eden (Siz)
+        </span>
         <span className="saf-step__arrow" aria-hidden="true">
           →
         </span>
