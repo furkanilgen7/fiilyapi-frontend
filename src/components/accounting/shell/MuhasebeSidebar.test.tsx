@@ -56,10 +56,11 @@ describe("🔴 çift aktiflik bekçisi (F-SD T7 dersi)", () => {
 
 describe("🔴 devre dışı sekmeler: tıklanamaz + gerekçesi GÖRÜNÜR", () => {
   const CASES: readonly [string, string][] = [
-    ["Mizan", "Mizan, MU-2 dilimiyle açılacak."],
+    // MU-2 canlıda: Mizan/KDV backend'i hazır, eksik olan yalnız ekran.
+    ["Mizan", "Mizan backend'i MU-2 ile canlıda; ekranı sonraki dilimde açılacak."],
     ["Banka Mutabakatı", "Banka Mutabakatı'nın backend ucu henüz yok."],
     ["e-Fatura", "e-Fatura/GİB entegrasyonu ertelendi (kullanıcı kararı)."],
-    ["KDV Beyanı", "KDV Beyanı, MU-2 dilimiyle açılacak."],
+    ["KDV Beyanı", "KDV Beyanı backend'i MU-2 ile canlıda; ekranı sonraki dilimde açılacak."],
   ];
 
   it("dördü de bağlantı DEĞİLDİR ve aria-disabled taşır", () => {

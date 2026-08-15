@@ -51,8 +51,14 @@ export const ACCOUNTING_SUB_NAV: readonly AccountingNavItem[] = [
   { kind: "link", label: "Yevmiye Defteri", href: "/muhasebe", exact: true },
   // HP:32
   { kind: "link", label: "Hesap Planı", href: "/muhasebe/hesap-plani", exact: false },
-  // HP:33
-  { kind: "disabled", label: "Mizan", reason: "Mizan, MU-2 dilimiyle açılacak." },
+  // HP:33 — MU-2 canlıda (2026-08-15): `GET /trial-balance` ucu HAZIR ve BFF
+  // kökü açıldı; eksik olan yalnız EKRAN. Gerekçe bu yüzden "backend yok"
+  // DEMEZ — kullanıcıya doğru bilgiyi verir.
+  {
+    kind: "disabled",
+    label: "Mizan",
+    reason: "Mizan backend'i MU-2 ile canlıda; ekranı sonraki dilimde açılacak.",
+  },
   // HP:34
   {
     kind: "disabled",
@@ -65,8 +71,13 @@ export const ACCOUNTING_SUB_NAV: readonly AccountingNavItem[] = [
     label: "e-Fatura",
     reason: "e-Fatura/GİB entegrasyonu ertelendi (kullanıcı kararı).",
   },
-  // HP:36
-  { kind: "disabled", label: "KDV Beyanı", reason: "KDV Beyanı, MU-2 dilimiyle açılacak." },
+  // HP:36 — MU-2 canlıda: `GET /vat-return` ucu HAZIR ve BFF kökü açıldı;
+  // eksik olan yalnız EKRAN (Mizan ile aynı gerekçe).
+  {
+    kind: "disabled",
+    label: "KDV Beyanı",
+    reason: "KDV Beyanı backend'i MU-2 ile canlıda; ekranı sonraki dilimde açılacak.",
+  },
 ];
 
 /**

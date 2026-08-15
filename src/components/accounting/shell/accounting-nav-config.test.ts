@@ -34,10 +34,13 @@ describe("Muhasebe drill nav — HP:29-38 birebir", () => {
 
 describe("🔴 devre dışı sekmeler GERÇEK bir gerekçe taşır", () => {
   const REASONS: Record<string, string> = {
-    Mizan: "Mizan, MU-2 dilimiyle açılacak.",
+    // MU-2 canlıya çıkınca (2026-08-15) Mizan/KDV gerekçeleri DEĞİŞTİ: backend
+    // artık hazır, eksik olan yalnız ekran. Banka Mutabakatı ve e-Fatura'nın
+    // gerekçesi AYNEN durur — MU-2 onların ucunu getirmedi.
+    Mizan: "Mizan backend'i MU-2 ile canlıda; ekranı sonraki dilimde açılacak.",
     "Banka Mutabakatı": "Banka Mutabakatı'nın backend ucu henüz yok.",
     "e-Fatura": "e-Fatura/GİB entegrasyonu ertelendi (kullanıcı kararı).",
-    "KDV Beyanı": "KDV Beyanı, MU-2 dilimiyle açılacak.",
+    "KDV Beyanı": "KDV Beyanı backend'i MU-2 ile canlıda; ekranı sonraki dilimde açılacak.",
   };
 
   it("dört gerekçe metni BİREBİR sabittir", () => {
