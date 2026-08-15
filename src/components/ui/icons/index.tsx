@@ -224,6 +224,25 @@ export const LockIcon = (p: IconProps) => (
  * fontconfig ikamesi turdan tura değişebilir — `makine-yakit` karesi bu yüzden
  * oynaktı. Inline SVG tek deterministik yoldur.
  *
+ * 🔴 KAPSAM — YALNIZ ÇIPLAK SEMBOL. Ayrım MEKANİKTİR, keyfî değil:
+ *   · Çıplak `⚠` (U+26A0, VS'siz) `Emoji_Presentation=No` ama emoji-yetenekli
+ *     ⇒ ÇİFT ADAY: metin sembol yazı tipi VEYA renkli emoji yazı tipi. İkame
+ *     turdan tura FLIP EDEBİLİR. Dönüştürülür.
+ *   · `⚠️` (U+26A0 + U+FE0F) emoji sunumunu ZORUNLU kılar ⇒ TEK ADAY (Noto
+ *     Color Emoji), deterministik. DÖNÜŞTÜRÜLMEZ — ayrıca monokrom üçgene
+ *     çevirmek GÖRÜNÜR bir tasarım değişikliğidir (mockup sadakati kanonu).
+ *     Bu yüzden `ContractDistributionView` ve `PersonnelDocumentAlertBanner`
+ *     bandları `⚠️` OLARAK KALIR.
+ * Aynı gerekçeyle `←`/`→` ve ~70 emoji de yerinde bırakıldı: alt-küme dışı
+ * olmak OYNAK olmak DEĞİLDİR (son 100 turun 42'si tam yeşil, hepsi 292 karenin
+ * hepsini geçti ve hepsi `Sidebar.tsx`in `⚙️ 🚪`sını taşıyordu).
+ *
+ * `✗` (U+2717) bu dilimde HİÇBİR yerde ikona çevrilemedi: tek render yeri
+ * `STOCK_QUALITY_OPTIONS` ve orası NATIVE `<option>`dır — `<option>` yalnız
+ * metin taşır, içine SVG konulamaz (HTML kısıtı). Orada glif KASITLI kaldı:
+ * içerik kaybı kesin, oynaklık riski teorik (`stok-giris-formu` 42 yeşil turda
+ * hiç oynamadı) — riski alıp kaybı almama kararı.
+ *
  * Boyut `1em`: ikon çevresindeki metnin `font-size`ına oturur, sabit px'e
  * DEĞİL. Dikey hiza `.icon-inline` sınıfından (`icons.css`). Renk `base()`in
  * `stroke: currentColor`undan, yani çağıran sınıfın tonundan gelir.

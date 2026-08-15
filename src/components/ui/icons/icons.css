@@ -12,8 +12,8 @@
    sınıf belirler (`--success` / `--warning` / `--danger`). */
 .icon-inline {
   vertical-align: -0.125em;
-  /* Flex bağlamında (ör. `.cdist-warning`, `.personel-alert`) ikon bir flex
-     öğesidir; varsayılan `flex-shrink: 1` onu ezebilir. Metin düğümü olan
-     sembolde bu risk yoktu — SVG'ye geçerken korunur. */
+  /* Flex bağlamında ikon bir flex öğesidir ve varsayılan `flex-shrink: 1` onu
+     ezebilir. Metin düğümü olan sembolde bu risk yoktu — SVG'ye geçerken
+     korunur. */
   flex: none;
 }

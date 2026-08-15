@@ -207,9 +207,19 @@
            tamamı `Sidebar.tsx`in `⚙️ 🚪` emojilerini taşıyor; `←` taşıyan
            `makine-calisma` karesi de HİÇ oynamadı. Kırmızı turlarda da 292
            karenin 291'i geçti, tek düşen `makine-yakit`ti. ⇒ dokunulan küme
-           BİLEREK bu üç sembolle sınırlı tutuldu; emoji ve oklar YERİNDE
+           BİLEREK ÇIPLAK sembolle sınırlı tutuldu; emoji ve oklar YERİNDE
            kaldı (ayrıca onları SVG'ye çevirmek görünümü değiştirirdi =
            mockup sadakati kanonuna aykırı, ayrı bir tasarım dilimi).
+     İKİ KASITLI İSTİSNA — glif olarak KALDILAR, geri alma değil KARAR:
+       · `⚠️` (U+26A0 + VS16) — emoji sunumu ZORUNLU ⇒ tek aday (Noto Color
+         Emoji) ⇒ zaten deterministik. `ContractDistributionView` ve
+         `PersonnelDocumentAlertBanner` bandları böyle. Çıplak `⚠` ise çift
+         adaydır (metin VEYA emoji yazı tipi) ve ikame flip edebilir — ayrım
+         mekaniktir, bu satırdaki sembol ÇIPLAKTI, o yüzden çevrildi.
+       · `STOCK_QUALITY_OPTIONS`un `✓ ⚠ ✗`si — NATIVE `<option>` yalnız metin
+         taşır, SVG alamaz (HTML kısıtı). İşaretleri metinden silmek
+         KULLANICIYA GÖRÜNEN içeriği değiştirirdi; `stok-giris-formu` karesi
+         de 42 yeşil turda hiç oynamadı. Kesin kayıp yerine teorik risk.
      Tarihsel kayıt — kareyi bu hâle getiren gözlemler: commit'li baseline
      yazı tipi göçünden ÖNCE alınmıştı (`5d7b321` < `beb5b7b`); tazeleme
      ÇÖZMEDİ (`--update-snapshots` çıktısı bile 244px verdi, run
