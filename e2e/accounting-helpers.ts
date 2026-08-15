@@ -30,6 +30,18 @@ export const ACCOUNTING_READ_TIME = new Date("2026-07-20T09:00:00");
  */
 export const ACCOUNTING_WRITE_TIME = new Date("2026-06-20T09:00:00");
 
+/**
+ * 📭 BOŞ AY — hiçbir fikstürün DÜŞMEDİĞİ dönem (T6 boş-durum kadrajı).
+ *
+ * Ocak 2026 seçilir çünkü mock backend'de yalnız İKİ ay doludur: Temmuz
+ * (okuma) ve Haziran (mutasyon adası). Boş durumu Haziran'da ölçmek YASAK
+ * olurdu (yazma akışları o ayı oynatıyor); `page.route` ile sahte boş yanıt
+ * uydurmaya da gerek yoktur — defter/özet/fiş uçlarının HEPSİ dönem
+ * süzgeçlidir ve Ocak'ta yapısal olarak boş döner. Kadrajın gördüğü her değer
+ * yine SUNUCUDAN gelir.
+ */
+export const ACCOUNTING_EMPTY_TIME = new Date("2026-01-15T09:00:00");
+
 export async function loginAt(page: Page, fixedTime: Date) {
   // Saat NAVİGASYONDAN ÖNCE kurulur (F-SD/F-FAT2 yöntemi).
   await page.clock.setFixedTime(fixedTime);
