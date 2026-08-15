@@ -221,8 +221,19 @@ export const LockIcon = (p: IconProps) => (
  * (fonttools ile tarandı). Alt-küme `unicode-range`ini genişletmek bu yüzden
  * İMKÂNSIZ bir çözümdür: kapsanacak glif dosyada yok. Tarayıcı `Inter
  * Fallback`e (`local("Arial")`) düşer, `ubuntu-latest`te Arial YOKTUR ve
- * fontconfig ikamesi turdan tura değişebilir — `makine-yakit` karesi bu yüzden
- * oynaktı. Inline SVG tek deterministik yoldur.
+ * fontconfig ikamesi turdan tura değişebilir. Inline SVG tek deterministik
+ * yoldur.
+ *
+ * 🔴 DÜRÜST KAYIT — BU ÇEVRİM `makine-yakit` OYNAKLIĞINI ÇÖZMEDİ. Çevrimden
+ * sonraki tur (run 31886457731) kareyi yine kırmızı verdi (242px). Başarısız
+ * turun `test-results/` artifact'i indirilip beklenen/gerçek karşılaştırıldı:
+ * fark bir yeniden çizim değil KAYMAYDI (dx=-3px farkın %93'ünü açıklıyor),
+ * ve yalnız SVG taşıyan satırlar kaymıştı. Gerçek neden yanındaki `{" "}`
+ * yalnız-boşluk metin düğümüydü; U+00A0'ya çevrilerek kapatıldı
+ * (`EquipmentFuelConsumptionList.tsx`, commit 45392bd).
+ * Bu çevrim yine de KALIR: ayrı ve gerçek bir riski (çıplak sembolün sistem
+ * yedeğine düşmesi) kapatır. Ama o karenin nedeni O DEĞİLDİ — bir sonraki
+ * okuyucu bu ikisini KARIŞTIRMASIN.
  *
  * 🔴 KAPSAM — YALNIZ ÇIPLAK SEMBOL. Ayrım MEKANİKTİR, keyfî değil:
  *   · Çıplak `⚠` (U+26A0, VS'siz) `Emoji_Presentation=No` ama emoji-yetenekli
