@@ -1,0 +1,343 @@
+/* "Poz Ekle" formları (F-BLG T2a). Kanon: projedesign
+   "Form - Poz Ekle Taseron.dc.html" (TAŞ) ve "Form - Poz Ekle Isveren.dc.html"
+   (İŞV); parantez içindeki sayılar ilgili dosyanın SATIR numaralarıdır.
+   Prefix `pif` (poz item form).
+
+   ⚠️ Mockup'ların üst şeridi + sol menüsü (TAŞ 40-70 · İŞV 38-70) uygulamanın
+   KABUĞUdur (F3 Topbar + Sidebar) ve burada YENİDEN ÇİZİLMEZ — E14/TSD ile
+   aynı karar. Form, sözleşme detay ekranının üzerinde diyalog olarak açılır
+   (BOQ `BoqItemFormModal` emsali), bu yüzden mockup'ın sözleşme bağlam bandı
+   (TAŞ 78-85 · İŞV 78-85) da basılmaz: altındaki ekranın başlık kartı zaten
+   aynı sözleşmeyi gösterir. Mockup'ın FORM gövdesi (iki kolon) birebir kalır. */
+
+/* Diyalog kabuğu 480px'tir; mockup'ın iki kolonu (1fr + 320px, TAŞ 87 · İŞV 97)
+   oraya sığmaz — yalnız bu form için genişletilir. */
+.pif-modal {
+  max-width: 880px;
+}
+
+.pif {
+  display: grid;
+  grid-template-columns: 1fr 320px; /* TAŞ 87 · İŞV 97 */
+  gap: var(--space-4); /* 16px */
+  align-items: start;
+}
+
+/* Dar ekranda özet rayı forma DÜŞER (öğe gizlenmez). */
+@media (max-width: 800px) {
+  .pif {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pif__title {
+  font-size: var(--text-body); /* TAŞ 75 · İŞV 75 alt başlık */
+  color: var(--color-text-subtle);
+  margin: 0 0 var(--space-4);
+}
+
+.pif__side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px; /* TAŞ 161 · İŞV 204 */
+}
+
+/* ── Kart (TAŞ/İŞV ortak `.card`) ─────────────────────────────────────────── */
+.pif-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-form-card); /* 14px */
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5); /* 20px */
+  margin-bottom: var(--space-4); /* 16px */
+}
+.pif-card--flush {
+  margin-bottom: 0;
+}
+.pif-card--muted {
+  background: var(--color-surface-2); /* TAŞ 175 · İŞV 219 */
+}
+.pif-card__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-form-card-title); /* 14px/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--space-4);
+}
+.pif-card__subtitle {
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
+  margin: 0 0 10px; /* İŞV 220 */
+}
+
+/* ── Alan ızgaraları ──────────────────────────────────────────────────────── */
+.pif-grid {
+  display: grid;
+  gap: 14px; /* TAŞ 93 · İŞV 118 */
+  margin-bottom: 14px;
+}
+.pif-grid--code {
+  grid-template-columns: 140px 1fr; /* TAŞ 93 · İŞV 118 */
+}
+.pif-grid--two {
+  grid-template-columns: 1fr 1fr; /* TAŞ 114 · İŞV 180 */
+}
+.pif-grid--three {
+  grid-template-columns: 1fr 1fr 1fr; /* İŞV 139 */
+}
+.pif-grid--flush {
+  margin-bottom: 0;
+}
+
+/* ── Fiyat kutusu + fiyatsız poz uyarısı (TAŞ 140-148) ────────────────────── */
+.pif-price {
+  padding: 14px;
+  background: var(--color-amber-tint-cell); /* #fffbeb — 140 */
+  border: var(--border-width-form) solid var(--color-warning-border-soft); /* 1.5px #fcd34d */
+  border-radius: var(--radius-10);
+}
+.pif-price__input {
+  text-align: right; /* 142 */
+  border-color: var(--color-warning-border-soft);
+  background: var(--color-surface);
+}
+/* `.hint-warn` (TAŞ 23) — fiyatsız poz uyarısı. */
+.pif-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  margin-top: 5px;
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-relaxed);
+  color: var(--color-warning-strong); /* #d97706 */
+}
+.pif-warn__icon {
+  flex-shrink: 0;
+}
+
+/* ── Satır bedeli önizlemesi ──────────────────────────────────────────────── */
+.pif-total {
+  margin-top: 14px;
+  padding: var(--space-3) 14px; /* TAŞ 150 · İŞV 169 */
+  border-radius: var(--radius-9);
+  background: var(--color-surface-2); /* TAŞ 150 */
+}
+.pif-total--employer {
+  margin-top: var(--space-4);
+  background: var(--color-info-tint); /* İŞV 169 #f0f9ff */
+  border: 1px solid var(--color-primary-ring);
+}
+.pif-total__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.pif-total__label {
+  font-size: var(--text-body);
+  color: var(--color-text-secondary); /* TAŞ 152 */
+}
+.pif-total--employer .pif-total__label {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text); /* İŞV 171 */
+}
+.pif-total__value {
+  font-family: var(--font-mono);
+  font-size: 16px; /* TAŞ 153 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text-subtle);
+}
+.pif-total--employer .pif-total__value {
+  font-size: 17px; /* İŞV 172 */
+  color: var(--color-primary);
+}
+.pif-total__hint {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+.pif-total--employer .pif-total__hint {
+  color: var(--color-primary-light); /* İŞV 174 */
+}
+
+/* ── Özet rayı (TAŞ 162-184 · İŞV 205-228) ────────────────────────────────── */
+.pif-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.pif-summary__row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+.pif-summary__label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.pif-summary__value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+}
+/* İŞV 208: "Grup" değeri mono DEĞİL (serbest metin, kod değil). */
+.pif-summary__value--text {
+  font-family: var(--font-sans);
+}
+.pif-summary__value--filled {
+  color: var(--color-text);
+}
+.pif-summary__value--missing {
+  color: var(--color-warning-strong); /* TAŞ 167 */
+}
+/* Durum satırı (TAŞ 168-171) */
+.pif-summary__status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2px;
+  padding: 10px var(--space-3);
+  border-radius: var(--radius-8);
+  background: var(--color-warning-soft); /* #fef3c7 */
+}
+.pif-summary__status-label {
+  font-size: 12px;
+  font-weight: var(--weight-bold);
+  color: var(--color-warning-deep-text);
+}
+.pif-summary__status-badge {
+  padding: 3px 9px;
+  border-radius: var(--radius-9);
+  background: var(--color-warning-strong);
+  color: var(--color-on-brand);
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+}
+/* Bedel satırı (İŞV 212-215) */
+.pif-summary__amount {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2px;
+  padding: 10px var(--space-3);
+  border-radius: var(--radius-8);
+  background: var(--color-primary-soft);
+}
+.pif-summary__amount-label {
+  font-size: 12px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.pif-summary__amount-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-form-card-title);
+  font-weight: var(--weight-bold);
+  color: var(--color-primary);
+}
+
+/* Sözleşme durumu listesi (TAŞ 177-183 · İŞV 221-227) */
+.pif-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.pif-stats__row {
+  display: flex;
+  justify-content: space-between;
+}
+.pif-stats__label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.pif-stats__value {
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.pif-stats__value--ok {
+  color: var(--color-success); /* TAŞ 179 · İŞV 223 */
+}
+.pif-stats__value--warn {
+  color: var(--color-warning-strong); /* TAŞ 180 · İŞV 224 */
+}
+.pif-stats__rule {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--color-border);
+}
+.pif-stats__total-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+/* ── Bilgi bantları ───────────────────────────────────────────────────────── */
+/* TAŞ 186-191 — mavi not */
+.pif-note {
+  padding: var(--space-3) 14px;
+  border-radius: var(--radius-10);
+  background: var(--color-nav-active-bg); /* #eff6ff */
+  border: 1px solid var(--color-primary-ring);
+  font-size: 11px;
+  line-height: var(--leading-loose);
+  color: var(--color-primary-hover); /* #1d4ed8 */
+}
+/* İŞV 230-235 — kehribar "sonraki adım" notu */
+.pif-note--next {
+  background: var(--color-amber-tint-cell);
+  border-color: var(--color-warning-border-soft);
+  color: var(--color-warning-deep-text);
+}
+.pif-note--next a {
+  color: var(--color-warning-deep-text);
+  font-weight: var(--weight-bold);
+}
+/* İŞV 88-95 — yeşil iş kuralı bandı */
+.pif-rule {
+  display: flex;
+  gap: 10px;
+  padding: 13px var(--space-4);
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-12);
+  background: var(--color-success-tint);
+  border: 1px solid var(--color-success-tint-border);
+  font-size: 12px;
+  line-height: var(--leading-loose);
+  color: var(--color-success-deep);
+}
+.pif-rule__icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Devre-dışı fiyat farkı alanlarının GÖRÜNÜR gerekçesi (İŞV 178-200). */
+.pif-readonly-note {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+
+/* Hata / durum satırı — mockup'ta yok, sessiz yutma yasak. */
+.pif__error {
+  margin-top: var(--space-3);
+  font-size: 12px;
+  color: var(--color-danger-strong);
+}
+.pif__saved {
+  margin-top: var(--space-3);
+  font-size: 12px;
+  color: var(--color-success-deep);
+}
+
+/* Alt eylem şeridi: onay kutusu SOLDA (TAŞ 195-199 · İŞV 239-243). */
+.pif__keep-open {
+  margin-right: auto;
+  font-size: var(--text-body);
+  color: var(--color-text-secondary);
+}

@@ -23,6 +23,17 @@ vi.mock("@/lib/api/hooks/useProjects", () => ({
 vi.mock("@/lib/api/hooks/useSites", () => ({
   useSites: () => ({ data: { items: [] }, isLoading: false, isError: false, error: null }),
 }));
+// Depo diyaloğunun şantiye seçenekleri sınırlı-eşzamanlı fan-out'tan gelir.
+vi.mock("@/lib/api/hooks/useSiteFanOutOptions", () => ({
+  useSiteFanOutOptions: () => ({
+    options: [],
+    isLoading: false,
+    isError: false,
+    failedProjectNames: [],
+    truncation: { isTruncated: false, shownCount: 0, totalCount: 0 },
+    isPartial: false,
+  }),
+}));
 
 const replaceMock = vi.fn();
 let searchParams = new URLSearchParams();
@@ -162,10 +173,10 @@ describe("StockView — aksiyonlar", () => {
     expect(screen.getByRole("dialog", { name: "Yeni Malzeme Kartı" })).toBeInTheDocument();
   });
 
-  it("'+ Depo Ekle' türetilmiş diyaloğu açar (S3)", () => {
+  it("'+ Depo Ekle' mockup diyaloğunu açar (F-BLG T2c · DP 72)", () => {
     render(<StockView />);
     fireEvent.click(screen.getByRole("button", { name: "+ Depo Ekle" }));
-    expect(screen.getByRole("dialog", { name: "Yeni Depo" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Yeni Depo Ekle" })).toBeInTheDocument();
   });
 
   it("yazma izni yoksa iki tetikleyici de BASILMAZ (devre dışı düğme kalır)", () => {

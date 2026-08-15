@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
+
+import { PersonnelDocumentFormModal } from "@/components/personnel-document-form/PersonnelDocumentFormModal";
 import { Badge } from "@/components/ui";
 import {
   buildDocumentMetaLine,
-  DOCUMENT_ADD_PENDING_REASON,
   DOCUMENT_DOWNLOAD_PENDING_REASON,
   DOCUMENT_NO_FILE_REASON,
   resolveDocumentStatusLabel,
@@ -13,21 +15,25 @@ import {
 import "@/components/hr-documents/hr-documents.css";
 import { backendErrorMessage } from "@/lib/api/error-message";
 import { usePersonnelDocuments } from "@/lib/api/hooks/useHrDocuments";
+import type { PersonnelDetailResponse } from "@/lib/api/hooks/usePersonnelDetail";
 
 export interface PersonnelDocumentsSummaryCardProps {
-  /** Belge listesinin sahibi; boşsa hook ağa çıkmaz. */
-  personnelId: string;
+  /**
+   * Belge listesinin sahibi. F-BLG T2c'den beri TÜM personel kaydı gelir
+   * (yalnız id değil): ekleme diyaloğu bağlam bandını (ad/meslek/SGK) ve
+   * yükleme kapısını (`assigned_project_id`) bu kayıttan okur.
+   */
+  personnel: PersonnelDetailResponse;
 }
 
 /**
  * PD 130-141 · "Belgeler" kartı — F-İK T5'ten beri GERÇEK:
  * `GET /personnel/{personnel_id}/documents` listesi basılır.
  *
- * ⚠️ Kart SALT-OKUNURDUR. `POST/PATCH/DELETE` uçları backend'de VARDIR ama
- * belge ekleme FORMUNUN/DİYALOĞUNUN mockup'ı YOKTUR (`projedesign/` tarandı:
- * PD yalnız düğmeyi çizer, BT'de de yükleme formu yok) — WORKFLOW §3 gereği
- * o parça form mockup'ı gelene kadar BEKLER. Bu, yönetime bildirilecek AÇIK
- * bir maddedir; "+ Ekle" devre-dışı ve gerekçesi görünürdür.
+ * ⚠️ F-BLG T2c: "+ Ekle" ARTIK GERÇEK — `Form - Personel Belgesi.dc.html`
+ * geldi ve düğme `PersonnelDocumentFormModal`ı açar (S-FRM: form yeni rota
+ * değil, bu kartın üstünde diyalog). Kartın kendisi hâlâ salt-okunurdur:
+ * düzenleme/silme yüzeyi mockup'ta yoktur.
  *
  * ⚠️ Mockup satır altında "PDF · 2.4 MB" gösterir; DOSYA UZANTISI/BOYUTU
  * sunucuda YOKTUR — basılmaz (uydurma yok). Alt satır durum + tarihten kurulur.
@@ -36,25 +42,32 @@ export interface PersonnelDocumentsSummaryCardProps {
  * bilinmeyen değere DAYANIKLIdır (`resolve*` fonksiyonları), `as any` YOK.
  */
 export function PersonnelDocumentsSummaryCard({
-  personnelId,
+  personnel,
 }: PersonnelDocumentsSummaryCardProps) {
-  const documentsQuery = usePersonnelDocuments(personnelId);
+  const documentsQuery = usePersonnelDocuments(personnel.id);
   const documents = documentsQuery.data;
+  const [isFormOpen, setFormOpen] = useState(false);
 
   return (
     <section className="pd-card" data-testid="personnel-documents-card">
       <div className="pd-card__head">
         <h2 className="pd-card__title">Belgeler</h2>
-        {/* PD 131 — uç VAR, form mockup'ı YOK: devre-dışı + görünür gerekçe */}
+        {/* PD 131 — F-BLG T2c'den beri GERÇEK: belge ekleme diyaloğunu açar */}
         <button
           type="button"
           className="pd-card__add-btn"
-          disabled
-          title={DOCUMENT_ADD_PENDING_REASON}
+          onClick={() => setFormOpen(true)}
         >
           + Ekle
         </button>
       </div>
+
+      {isFormOpen && (
+        <PersonnelDocumentFormModal
+          personnel={personnel}
+          onClose={() => setFormOpen(false)}
+        />
+      )}
 
       {documentsQuery.isError ? (
         <div className="pd-card__pending" aria-disabled="true">

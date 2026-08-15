@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, within, fireEvent } from "@testing-library/react";
 
 import { EmployerContractDetailView } from "./EmployerContractDetailView";
 import {
@@ -22,6 +22,11 @@ vi.mock("@/lib/api/hooks/useContract", async (importOriginal) => ({
 vi.mock("@/lib/api/hooks/useProgressPayments", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useProgressPayments")>()),
   useProgressPayments: vi.fn(),
+}));
+// Diyalog (F-BLG T2a) gerçek `useMutation` çağırır; bu dosyada
+// QueryClientProvider yoktur, bu yüzden ekleme hook'u sahtelenir.
+vi.mock("@/lib/api/hooks/useContractMutations", () => ({
+  useCreateEmployerContractItem: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 vi.mock("@/lib/api/hooks/useProjects", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useProjects")>()),
@@ -501,6 +506,31 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
         "href",
         "/sozlesmeler/isveren/p-1/poz-dagilimi",
       );
+    });
+
+    it("'+ Poz Ekle' poz ekleme diyalogunu açar (F-BLG T2a)", () => {
+      mockAll();
+      render(<EmployerContractDetailView projectId="p-1" />);
+
+      const add = screen.getByTestId("ecd-add-item");
+      expect(add).toBeEnabled();
+      fireEvent.click(add);
+      expect(
+        screen.getByRole("dialog", { name: "İşveren Sözleşmesine Poz Ekle" }),
+      ).toBeInTheDocument();
+    });
+
+    it("grup yokken buton devre dışıdır ve gerekçe GÖRÜNÜRDÜR (`group_id` zorunlu)", () => {
+      mockAll();
+      vi.mocked(useEmployerContractItems).mockReturnValue({
+        data: { groups: [] },
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useEmployerContractItems>);
+      render(<EmployerContractDetailView projectId="p-1" />);
+
+      expect(screen.getByTestId("ecd-add-item")).toBeDisabled();
+      expect(screen.getByTestId("ecd-add-item-reason")).toBeInTheDocument();
     });
 
     it("`items_total` / `items_total_diff` tfoot'ta gösterilir (veri kaybı yok)", () => {

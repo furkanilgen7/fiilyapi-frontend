@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { cx } from "@/lib/cx";
 import "./modal.css";
 
 interface ModalProps {
@@ -9,6 +10,11 @@ interface ModalProps {
   onClose: () => void;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  /**
+   * Diyalog kabuğuna eklenen sınıf. Varsayılan genişlik (480px) mockup'ı iki
+   * kolonlu çizilmiş formlara dar geldiğinde kullanılır — davranış değişmez.
+   */
+  className?: string;
 }
 
 // Odaklanabilir ogeler — `aria-modal` tek basina tarayicida Tab'i hapsetmez,
@@ -31,7 +37,7 @@ function focusableElementsOf(root: HTMLElement): HTMLElement[] {
   );
 }
 
-export function Modal({ title, onClose, children, footer }: ModalProps) {
+export function Modal({ title, onClose, children, footer, className }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
   // Acilista odagi diyalogun icine tasi; kapanista tetikleyen ogeye geri ver.
@@ -98,7 +104,7 @@ export function Modal({ title, onClose, children, footer }: ModalProps) {
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className="modal"
+        className={cx("modal", className)}
         role="dialog"
         aria-modal="true"
         aria-label={title}

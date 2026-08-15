@@ -80,9 +80,9 @@ export function PersonnelDetailView() {
           testId="personnel-project-history-card"
         />
 
-        {/* 130-141 — F-İK T5'ten beri GERÇEK liste (SALT-OKUNUR: ekleme formu
-            mockup'ı yok, indirme ayrı sözleşme). */}
-        <PersonnelDocumentsSummaryCard personnelId={id} />
+        {/* 130-141 — F-İK T5'ten beri GERÇEK liste; F-BLG T2c'den beri
+            "+ Ekle" de gerçek (indirme hâlâ ayrı sözleşme). */}
+        <PersonnelDocumentsSummaryCard personnel={personnel} />
       </div>
     </div>
   );

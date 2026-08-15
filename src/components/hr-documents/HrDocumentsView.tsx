@@ -62,11 +62,17 @@ export function HrDocumentsView() {
           <Button variant="secondary" disabled title={APPOINTMENT_PENDING_REASON}>
             Toplu Randevu
           </Button>
-          <Button variant="primary" disabled title={UPLOAD_PENDING_REASON}>
+          <Button variant="primary" disabled data-testid="bt-upload-button">
             + Belge Yükle
           </Button>
         </div>
       </div>
+
+      {/* F-BLG T3/G7 — gerekçe EKRANDA basılır (`title`da saklanmaz) ve
+          kullanıcıyı Personel Detay'daki GERÇEK girişe yönlendirir. */}
+      <p className="bt__pending-reason" data-testid="bt-upload-reason">
+        {UPLOAD_PENDING_REASON}
+      </p>
 
       {/* `/personel` ile ORTAK sekme şeridi; burada bu sekme AKTİFtir. */}
       <PersonnelTabsStrip activeTab={HR_DOCUMENTS_TAB_LABEL} />

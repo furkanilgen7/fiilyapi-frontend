@@ -1,0 +1,137 @@
+/**
+ * "Poz Ekle" formlarının SAF doğrulaması (React'sız, ayrı test edilir).
+ *
+ * Sıra MOCKUP sırasıdır: ilk hatalı alan bulunur ve odak oraya verilir
+ * (`BoqItemFormModal` emsali). Kurallar openapi şemalarından gelir:
+ *   `code`/`description`/`unit`  → zorunlu + `maxLength`
+ *   `quantity`                   → zorunlu, `exclusiveMinimum: 0`
+ *   `unit_price`                 → TAŞ'ta nullable, İŞV'de zorunlu; `minimum: 0`
+ *   `group_id`                   → yalnız İŞV'de, zorunlu
+ */
+
+import { MAX_LENGTH } from "./constants";
+
+export type ContractItemFormField =
+  | "group"
+  | "code"
+  | "description"
+  | "unit"
+  | "quantity"
+  | "unitPrice"
+  | "sortOrder";
+
+export interface ContractItemFormProblem {
+  field: ContractItemFormField;
+  message: string;
+}
+
+/** Ortak alanlar — iki form da bunları taşır. */
+export interface ContractItemFormValues {
+  code: string;
+  description: string;
+  unit: string;
+  quantity: string;
+  unitPrice: string;
+  sortOrder: string;
+}
+
+export interface EmployerItemFormValues extends ContractItemFormValues {
+  groupId: string;
+}
+
+/**
+ * openapi'nin ondalık deseni (`anyOf` string dalı). Değer STRING kalır;
+ * doğrulama için `Number()`a çevrilse bile gövdeye giden metin bozulmaz.
+ */
+const DECIMAL_PATTERN = /^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$/;
+
+export function isDecimalString(raw: string): boolean {
+  return DECIMAL_PATTERN.test(raw.trim());
+}
+
+/** Doğrulama için sayısal karşılık; `NaN` = okunamadı. */
+function decimalValue(raw: string): number {
+  return Number(raw.trim());
+}
+
+function tooLong(value: string, max: number): boolean {
+  return value.trim().length > max;
+}
+
+/** Ortak alanların doğrulaması — iki formda da AYNI sırayla koşar. */
+function validateCommon(values: ContractItemFormValues): ContractItemFormProblem | null {
+  if (!values.code.trim()) return { field: "code", message: "Poz No zorunludur." };
+  if (tooLong(values.code, MAX_LENGTH.code))
+    return { field: "code", message: `Poz No en fazla ${MAX_LENGTH.code} karakter olabilir.` };
+
+  if (!values.description.trim())
+    return { field: "description", message: "İş Kalemi Tanımı zorunludur." };
+  if (tooLong(values.description, MAX_LENGTH.description))
+    return {
+      field: "description",
+      message: `İş Kalemi Tanımı en fazla ${MAX_LENGTH.description} karakter olabilir.`,
+    };
+
+  if (!values.unit.trim()) return { field: "unit", message: "Birim zorunludur." };
+  if (tooLong(values.unit, MAX_LENGTH.unit))
+    return { field: "unit", message: `Birim en fazla ${MAX_LENGTH.unit} karakter olabilir.` };
+
+  if (!values.quantity.trim()) return { field: "quantity", message: "Miktar zorunludur." };
+  if (!isDecimalString(values.quantity))
+    return { field: "quantity", message: "Miktar sayı olmalıdır." };
+  if (!(decimalValue(values.quantity) > 0))
+    return { field: "quantity", message: "Miktar sıfırdan büyük olmalıdır." };
+
+  return null;
+}
+
+/** `Sıra` boş bırakılabilir; doluysa negatif olmayan tam sayıdır. */
+function validateSortOrder(raw: string): ContractItemFormProblem | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (!/^\d+$/.test(trimmed))
+    return { field: "sortOrder", message: "Sıra negatif olmayan tam sayı olmalıdır." };
+  return null;
+}
+
+/**
+ * TAŞ formu. `unit_price` BOŞ bırakılabilir (mockup 142 "Boş bırakılabilir");
+ * doluysa negatif olamaz. Boş fiyat HATA DEĞİLDİR — uyarı gösterilir (140-148).
+ */
+export function validateSubcontractorItem(
+  values: ContractItemFormValues,
+): ContractItemFormProblem | null {
+  const common = validateCommon(values);
+  if (common) return common;
+
+  const price = values.unitPrice.trim();
+  if (price) {
+    if (!isDecimalString(price))
+      return { field: "unitPrice", message: "Taşeron Birim Fiyatı sayı olmalıdır." };
+    if (!(decimalValue(price) >= 0))
+      return { field: "unitPrice", message: "Taşeron Birim Fiyatı negatif olamaz." };
+  }
+
+  return validateSortOrder(values.sortOrder);
+}
+
+/**
+ * İŞV formu. İki fark: `group_id` zorunlu (mockup 104) ve `unit_price`
+ * ZORUNLU (163 — "Fiyatsız poz girilemez", 94).
+ */
+export function validateEmployerItem(
+  values: EmployerItemFormValues,
+): ContractItemFormProblem | null {
+  if (!values.groupId.trim()) return { field: "group", message: "Poz Grubu zorunludur." };
+
+  const common = validateCommon(values);
+  if (common) return common;
+
+  const price = values.unitPrice.trim();
+  if (!price) return { field: "unitPrice", message: "Birim Fiyat zorunludur." };
+  if (!isDecimalString(price)) return { field: "unitPrice", message: "Birim Fiyat sayı olmalıdır." };
+  if (!(decimalValue(price) >= 0))
+    return { field: "unitPrice", message: "Birim Fiyat negatif olamaz." };
+
+  return validateSortOrder(values.sortOrder);
+}

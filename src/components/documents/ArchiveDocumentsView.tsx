@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+import { ArchiveDocumentFormModal } from "@/components/document-form/ArchiveDocumentFormModal";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Button } from "@/components/ui/button/Button";
 import { Input } from "@/components/ui/input/Input";
@@ -24,6 +25,20 @@ import { documentGridMessage } from "./grid-message";
 import { RecentDocumentsList } from "./RecentDocumentsList";
 import { recentDocuments } from "./recent-documents";
 import "./documents.css";
+
+/**
+ * F-BLG T3/G3 — E12'de İKİ yükleme girişi yan yana durur ve yönetim ikisinin
+ * de kalmasına karar verdi. Kullanıcının ayırt edebilmesi ŞARTTIR:
+ *
+ *   • "↑ Yükle" (`DocumentUploadModal`) — YALNIZ bir proje seçiliyken basılır
+ *     ve o an EKRANDA SEÇİLİ olan proje/şantiye/klasör kapsamına yükler.
+ *   • bu düğme (`ArchiveDocumentFormModal`) — kapsamı KENDİ İÇİNDE seçtiren
+ *     bağımsız akıştır, ekranda proje seçili olmasa da açılır.
+ *
+ * Ayırt edici ETİKETTEDİR (ekranda okunur); `title` özniteliğine saklanmaz —
+ * bu dilimin kanonu gerekçenin görünür kalmasıdır.
+ */
+export const ARCHIVE_ADD_DOCUMENT_LABEL = "+ Belge Ekle (proje seçerek)";
 
 /** URL durumu anahtarları — proje/klasör/arama paylaşılabilir olmalı. */
 const PROJECT_PARAM = "proje";
@@ -89,7 +104,10 @@ export function ArchiveDocumentsView() {
   });
 
   const [downloadError, setDownloadError] = useState<string | undefined>(undefined);
-  const [openDialog, setOpenDialog] = useState<"upload" | "folder" | null>(null);
+  // "belge-ekle" = F-BLG T2b `Form - Belge Ekle.dc.html` yüzeyi: projeyi
+  // formun İÇİNDE seçtirir, bu yüzden ekranda proje seçili OLMASA da açılır.
+  // "upload" (mevcut proje-kapsamlı diyalog) DURUYOR — iki akış ayrıdır.
+  const [openDialog, setOpenDialog] = useState<"upload" | "folder" | "belge-ekle" | null>(null);
 
   const isForbidden =
     (documentsQuery.error instanceof BackendError && documentsQuery.error.status === 403) ||
@@ -213,6 +231,22 @@ export function ArchiveDocumentsView() {
                 ↑ Yükle
               </Button>
             )}
+            {/* F-BLG T2b — projeyi kendi içinde seçtiren bağımsız yüzey;
+                ekranda proje seçili olmasa da açılır.
+
+                F-BLG T3/G3 — İKİ yükleme girişi yan yana durur ve yönetim
+                ikisinin de kalmasına karar verdi. Ayırt edici ETİKETE yazılır
+                (`title` özniteliğinde SAKLANMAZ): "↑ Yükle" ekranda SEÇİLİ
+                olan kapsama yükler, bu düğme projeyi kendi içinde seçtirir. */}
+            {canWrite && (
+              <Button
+                variant="secondary"
+                onClick={() => setOpenDialog("belge-ekle")}
+                data-testid="e12-belge-ekle"
+              >
+                {ARCHIVE_ADD_DOCUMENT_LABEL}
+              </Button>
+            )}
             {canWrite && selectedProjectId && (
               <Button variant="primary" onClick={() => setOpenDialog("folder")}>
                 + Yeni Klasör
@@ -261,6 +295,12 @@ export function ArchiveDocumentsView() {
           projectId={selectedProjectId}
           folders={folders}
           activeFolderId={activeFolderId}
+          onClose={() => setOpenDialog(null)}
+        />
+      )}
+      {openDialog === "belge-ekle" && (
+        <ArchiveDocumentFormModal
+          initialProjectId={selectedProjectId || undefined}
           onClose={() => setOpenDialog(null)}
         />
       )}

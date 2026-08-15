@@ -27,6 +27,12 @@ export interface EquipmentCardProps {
   siteLabel: string | null | undefined;
   /** `operator_id` → personel adı çözümü — aynı üç-kaynak deseni. */
   operatorName: string | null | undefined;
+  /**
+   * F-BLG T2b · "Belge Ekle" kart aksiyonu (`Form - Ekipman Belgesi.dc.html`
+   * giriş noktası). Verilmezse buton BASILMAZ — izinsiz/salt-okunur bağlamda
+   * yazma tetikleyicisi görünmemelidir.
+   */
+  onAddDocumentClick?: (equipment: EquipmentResponse) => void;
 }
 
 /**
@@ -40,7 +46,12 @@ export interface EquipmentCardProps {
  * düzenine düşer (ne arıza notu ne bakım notu vardır, tek anlamlı gösterim
  * kira/operatör ikilisidir) — rapora ayrıca not edilir.
  */
-export function EquipmentCard({ equipment, siteLabel, operatorName }: EquipmentCardProps) {
+export function EquipmentCard({
+  equipment,
+  siteLabel,
+  operatorName,
+  onAddDocumentClick,
+}: EquipmentCardProps) {
   const tone = equipmentCardTone(equipment.status);
   const showWarningBox = equipment.status === "broken" || equipment.status === "maintenance";
 
@@ -112,13 +123,25 @@ export function EquipmentCard({ equipment, siteLabel, operatorName }: EquipmentC
       )}
 
       {/* K4 — detay sayfası yok; tek eylem düzenleme formuna gider (T3'te açılır). */}
-      <Link
-        href={`/makine/${equipment.id}/duzenle`}
-        className="makine-card__edit"
-        data-testid="makine-card-edit-link"
-      >
-        Düzenle
-      </Link>
+      <div className="makine-card__actions">
+        <Link
+          href={`/makine/${equipment.id}/duzenle`}
+          className="makine-card__edit"
+          data-testid="makine-card-edit-link"
+        >
+          Düzenle
+        </Link>
+        {onAddDocumentClick && (
+          <button
+            type="button"
+            className="makine-card__edit"
+            data-testid="makine-card-document-button"
+            onClick={() => onAddDocumentClick(equipment)}
+          >
+            Belge Ekle
+          </button>
+        )}
+      </div>
     </div>
   );
 }

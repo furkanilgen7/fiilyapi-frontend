@@ -6,6 +6,7 @@ import Link from "next/link";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Button } from "@/components/ui";
 import { ContractTermsCard } from "@/components/subcontractor-contract-form/ContractTermsCard";
+import { SubcontractorItemFormModal } from "@/components/contract-item-form/SubcontractorItemFormModal";
 import { buildContractTermsUpdateBody } from "@/components/subcontractor-contract-form/build-body";
 import {
   contractTermsFromDetail,
@@ -110,6 +111,9 @@ export function SubcontractorContractDetailView({
   const [termsError, setTermsError] = useState<string | null>(null);
   const [termsSaved, setTermsSaved] = useState(false);
   const [itemsError, setItemsError] = useState<string | null>(null);
+  // 92 · "+ Poz Ekle" diyalogu (F-BLG T2a). Sahibi bu ekrandır; tablo yalnız
+  // tetikler (sunum bileşeni veri yazmaz).
+  const [isAddItemOpen, setIsAddItemOpen] = useState(false);
 
   // Sunucu verisi geldiğinde şart alanları BİR KEZ tohumlanır; kullanıcının
   // yazdıkları sonraki tazelemelerde ezilmez (FSO ile aynı karar).
@@ -268,7 +272,18 @@ export function SubcontractorContractDetailView({
         isBusy={updateItem.isPending}
         errorMessage={itemsError}
         onCommitUnitPrice={handleCommitUnitPrice}
+        onAddItem={() => setIsAddItemOpen(true)}
       />
+
+      {isAddItemOpen && (
+        <SubcontractorItemFormModal
+          contractId={detail.id}
+          items={detail.items}
+          contractTotal={detail.contract_total}
+          itemsMissingPrice={detail.items_missing_price}
+          onClose={() => setIsAddItemOpen(false)}
+        />
+      )}
 
       <SubcontractorContractPaymentsCard
         items={payments.items}

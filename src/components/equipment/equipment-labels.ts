@@ -1,5 +1,5 @@
 import type { BadgeVariant } from "@/components/ui/badge/Badge";
-import type { EquipmentStatus } from "@/lib/api/hooks/useEquipment";
+import type { EquipmentOwnership, EquipmentStatus } from "@/lib/api/hooks/useEquipment";
 
 /**
  * F-MK T2 · M1 (`Makine & Ekipman.dc.html`) etiket/renk sözlüğü.
@@ -66,3 +66,14 @@ export const EQUIPMENT_TAB_MAINTENANCE_CALENDAR_REASON =
  * ------------------------------------------------------------------------ */
 export const EQUIPMENT_CREATE_FORM_PENDING_REASON =
   "Kayıt formu mockup'ı henüz çizilmedi";
+
+/* ---------------------------------------------------------------------------
+ * F-BLG T2b — "Belge Ekle" diyaloğunun bağlam bandı (`Form - Ekipman
+ * Belgesi.dc.html` 79) sahiplik etiketini metin olarak taşır. Sözlük M2
+ * formunun `OWNERSHIP_OPTIONS` başlıklarıyla (`equipment-form/constants.ts`
+ * 57 · 65) AYNIdır; iki yerde de mockup metni kaynaktır.
+ * ------------------------------------------------------------------------ */
+export const EQUIPMENT_OWNERSHIP_LABELS: Record<EquipmentOwnership, string> = {
+  owned: "Kendi Malımız",
+  rented: "Kiralık",
+};

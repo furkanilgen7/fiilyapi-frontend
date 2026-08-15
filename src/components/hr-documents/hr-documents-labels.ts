@@ -44,9 +44,25 @@ export const APPOINTMENT_PENDING_REASON =
  */
 export const ROW_ACTION_LABEL = "Aksiyon Al";
 
-/** BT 23 · "+ Belge Yükle" — uç VAR ama belge yükleme FORMUNUN mockup'ı yok. */
+/**
+ * BT 23 · "+ Belge Yükle".
+ *
+ * F-BLG T2c personel belge FORMUNU yazdı (`Form - Personel Belgesi.dc.html`)
+ * ama o form BİR PERSONELE bağlıdır: uç `POST /personnel/{id}/documents`tir.
+ * BT ekranı personel bağlamı TAŞIMAZ (`GET /hr/documents/summary` sunucunun
+ * TÜM dünyasını özetler), dolayısıyla burada çalışması için önce bir "personel
+ * seç" adımı gerekir ve ONUN mockup'ı YOKTUR — eksik yüzey İCAT EDİLMEZ
+ * (WORKFLOW §3), mockup istenir.
+ *
+ * Bu yüzden düğme devre-dışı KALIR, ama gerekçe kullanıcıyı MEVCUT ve GERÇEK
+ * girişe yönlendirir: Personel Detay'daki "Belgeler" kartının "+ Ekle"
+ * düğmesi (`PersonnelDocumentsSummaryCard`, PD 131) T2c'den beri bu formu
+ * açar. Metin `title` özniteliğinde SAKLANMAZ, ekranda basılır.
+ */
 export const UPLOAD_PENDING_REASON =
-  "Belge yükleme formunun mockup'ı henüz yok; form tasarımı gelene kadar bu düğme açılmaz.";
+  "Belge yükleme personel seçilerek yapılır: personel listesinden ilgili kişinin " +
+  "detayını açıp “Belgeler” kartındaki “+ Ekle” düğmesini kullanın. " +
+  "Bu ekrandan toplu yükleme, personel seçim adımının tasarımı gelince açılacak.";
 
 /**
  * BT 67-76 · süzgeç şeridi. ŞEF KARARI: `GET /hr/documents/summary` SORGU
@@ -268,15 +284,15 @@ export function buildDocumentMetaLine(document: {
   return parts.join(" · ");
 }
 
-/**
- * PD 131 · "+ Ekle" düğmesi. ŞEF KARARI + YÖNETİME AÇIK MADDE:
- * `POST /personnel/{id}/documents` ucu VARDIR ama belge ekleme FORMUNUN /
- * DİYALOĞUNUN mockup'ı YOKTUR (`projedesign/` tarandı: PD yalnız düğmeyi
- * çizer, BT'de de yükleme formu yok). WORKFLOW §3 gereği o parça form
- * mockup'ı gelene kadar BEKLER — bu dilimde belge yüzeyleri SALT-OKUNURdur.
+/*
+ * PD 131 · "+ Ekle" düğmesi ARTIK GERÇEK (F-BLG T2c). Buradaki
+ * `DOCUMENT_ADD_PENDING_REASON` gerekçesi "form mockup'ı yok" diyordu;
+ * `Form - Personel Belgesi.dc.html` geldi ve düğme
+ * `PersonnelDocumentFormModal`ı açıyor — gerekçe geçersiz kaldığı için sabit
+ * KALDIRILDI (ölü metin bırakılmaz). BT ekranının kendi "+ Belge Yükle"
+ * düğmesi (`UPLOAD_PENDING_REASON`) AYRI kalır: o ekran personel bağlamı
+ * TAŞIMAZ, bu form ise bir personele bağlıdır.
  */
-export const DOCUMENT_ADD_PENDING_REASON =
-  "Belge ekleme ucu hazır ama formun mockup'ı yok; form tasarımı gelmeden ekleme açılmıyor.";
 
 /**
  * PD 141 · "İndir" düğmesi. ŞEF KARARI: `document_id` bir Belge Arşivi

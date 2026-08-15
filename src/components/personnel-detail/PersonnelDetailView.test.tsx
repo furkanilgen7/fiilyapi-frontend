@@ -267,14 +267,14 @@ describe("PersonnelDetailView · 4 pending kart", () => {
   });
 
   // F-İK T5: kart artık GERÇEK listedir (kart-içi davranışın tam kapsamı
-  // `PersonnelDocumentsSummaryCard.test.tsx`tedir). Burada yalnız kartın
-  // detay ekranına DOĞRU personel kimliğiyle bağlandığı ve "+ Ekle"nin
-  // devre-dışı kaldığı (form mockup'ı yok — şef kararı) sınanır.
-  it("Belgeler kartı personelin KENDİ kimliğiyle sorgular; '+ Ekle' devre-dışıdır", () => {
+  // `PersonnelDocumentsSummaryCard.test.tsx`tedir). F-BLG T2c: "+ Ekle" de
+  // gerçek oldu (form mockup'ı geldi). Burada yalnız kartın detay ekranına
+  // DOĞRU personel kimliğiyle bağlandığı sınanır.
+  it("Belgeler kartı personelin KENDİ kimliğiyle sorgular; '+ Ekle' AÇIKtır", () => {
     render(<PersonnelDetailView />);
     const card = screen.getByTestId("personnel-documents-card");
 
-    expect(card.querySelector(".pd-card__add-btn")).toBeDisabled();
+    expect(card.querySelector(".pd-card__add-btn")).toBeEnabled();
     expect(vi.mocked(usePersonnelDocuments)).toHaveBeenCalledWith("per-9");
   });
 

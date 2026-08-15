@@ -469,6 +469,17 @@ interface MockState {
   workLogs: MockWorkLog[];
   fuelLogs: MockFuelLog[];
   equipmentSeq: number;
+  // F-BLG T3 — ekipman belgeleri (MK-2). Yükleme akışı `eq-2`ye sürgündür;
+  // `eq-1`in sayacı GÖRSEL kadrajın kaynağıdır ve DEĞİŞMEZ.
+  equipmentDocuments: components["schemas"]["EquipmentDocumentResponse"][];
+  equipmentDocumentSeq: number;
+  // F-BLG T3 — personel belge takip kayıtları (İK-1). Anahtar `personnel_id`.
+  // 🔒 `per-1`/`per-3` GÖRSEL kadrajların kaynağıdır; yazma akışı `per-2`ye
+  // sürgündür (o personel BOŞ listeyle başlar).
+  personnelDocuments: Record<string, components["schemas"]["PersonnelDocumentResponse"][]>;
+  personnelDocumentSeq: number;
+  // F-BLG T3 — işveren sözleşmesine elle eklenen poz sayacı.
+  contractItemSeq: number;
   permissions: Record<string, Record<string, { access_level: string; scope: string }>>;
   projectAccess: Record<string, { all_projects: boolean; project_ids: string[] }>;
   company: {
@@ -1292,8 +1303,16 @@ function buildContractsListResponse(state: MockState, query: URLSearchParams) {
   };
 }
 
-/** `GET /projects/{id}/contract/items` — E14 "İş Kalemleri" sekmesi. */
-function buildEmployerContractItemsResponse(state: MockState) {
+/**
+ * `GET /projects/{id}/contract/items` — E14 "İş Kalemleri" sekmesi.
+ *
+ * F-BLG T3: dönüş tipi ARTIK `schema.d.ts`ten TÜRETİLİR (F-SA dersi) — mock
+ * ile şema arasındaki kayma `pnpm typecheck`te patlasın. Aynı kurucu POST
+ * yanıtını da besler (yeni kalem listeden okunur, elle kurulmaz).
+ */
+function buildEmployerContractItemsResponse(
+  state: MockState,
+): components["schemas"]["EmployerContractItemsResponse"] {
   const groupNames = Array.from(new Set(state.contractItems.map((i) => i.groupName)));
   return {
     groups: groupNames.map((name, index) => ({
@@ -2040,6 +2059,17 @@ function seedState(): MockState {
     workLogs: WORK_LOG_FIXTURES.map((log) => ({ ...log })),
     fuelLogs: FUEL_LOG_FIXTURES.map((log) => ({ ...log })),
     equipmentSeq: 0,
+    equipmentDocuments: EQUIPMENT_DOCUMENT_FIXTURES.map((doc) => ({ ...doc })),
+    equipmentDocumentSeq: 0,
+    // DERİN kopya: POST diziyi büyütür, modül sabiti kirlenmemelidir.
+    personnelDocuments: Object.fromEntries(
+      Object.entries(PERSONNEL_DOCUMENT_FIXTURES).map(([id, docs]) => [
+        id,
+        docs.map((doc) => ({ ...doc })),
+      ]),
+    ),
+    personnelDocumentSeq: 0,
+    contractItemSeq: 0,
     permissions,
     projectAccess: {
       "u-1": { all_projects: true, project_ids: [] },
@@ -4859,6 +4889,62 @@ const FUEL_LOG_FIXTURES: MockFuelLog[] = [
 ];
 
 /**
+ * F-BLG T3 · `GET /equipment/document-types` — şema notu "altı sabit slot
+ * (CRUD ucu YOK)": liste kullanıcıya göre DEĞİŞMEZ, bu yüzden `state`e
+ * girmez ve mutasyon uçları yoktur.
+ *
+ * `Form - Ekipman Belgesi.dc.html`ın altı `<option>`u (103-108) GÖSTERMELİKtir;
+ * gerçek seçenekler buradan gelir ve `sort_order` SUNUCU sırasıdır — form
+ * kendi sıralamasını İCAT ETMEZ.
+ */
+const EQUIPMENT_DOCUMENT_TYPES_FIXTURE: components["schemas"]["EquipmentDocumentTypeListResponse"] =
+  {
+    items: [
+      { id: "edt-1", code: "ruhsat", name: "Ruhsat", is_required: true, sort_order: 1 },
+      { id: "edt-2", code: "sigorta", name: "Sigorta Poliçesi", is_required: true, sort_order: 2 },
+      { id: "edt-3", code: "muayene", name: "Periyodik Muayene Raporu", is_required: true, sort_order: 3 },
+      { id: "edt-4", code: "operator", name: "Operatör Belgesi", is_required: false, sort_order: 4 },
+      { id: "edt-5", code: "kasko", name: "Kasko Poliçesi", is_required: false, sort_order: 5 },
+      { id: "edt-6", code: "diger", name: "Diğer", is_required: false, sort_order: 6 },
+    ],
+  };
+
+/**
+ * F-BLG T3 · `GET /equipment/{equipment_id}/documents` başlangıç kayıtları.
+ *
+ * 🔒 FİKSTÜR İZOLASYONU: formun bağlam bandındaki sayaç (mockup 81) bu listenin
+ * UZUNLUĞUDUR ve GÖRSEL kadraja girer. Kadraj `eq-1` üzerinde kurulur; YAZMA
+ * akışı `eq-2`ye sürgün edilir (aşağıdaki POST orayı büyütür, `eq-1`i değil).
+ */
+const EQUIPMENT_DOCUMENT_FIXTURES: components["schemas"]["EquipmentDocumentResponse"][] = [
+  {
+    id: "edoc-1",
+    equipment_id: "eq-1",
+    type_id: "edt-1",
+    type_code: "ruhsat",
+    type_name: "Ruhsat",
+    filename: "tower-crane-ruhsat.pdf",
+    mime_type: "application/pdf",
+    size_bytes: 184320,
+    valid_until: "2027-04-30",
+    created_at: "2026-04-30T08:00:00Z",
+  },
+  {
+    id: "edoc-2",
+    equipment_id: "eq-1",
+    type_id: "edt-3",
+    type_code: "muayene",
+    type_name: "Periyodik Muayene Raporu",
+    filename: "tc48-muayene-2026.pdf",
+    mime_type: "application/pdf",
+    size_bytes: 96256,
+    // Süre takibi YAPILMAYAN belge — `valid_until` NULL, boş dize DEĞİL.
+    valid_until: null,
+    created_at: "2026-05-12T08:00:00Z",
+  },
+];
+
+/**
  * `GET /equipment/summary` — SABİT özet (MK-1 K15/K21: sunucu sayar, istemci
  * saymaz). `monthly_cost_unknown_count: 1` `eq-4`ün bilinmeyen kira bedelidir.
  */
@@ -5627,6 +5713,61 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       if (!state.projects.some((p) => p.id === projectId)) return send(404, { detail: "proje yok" });
       if (projectId !== "p-1") return send(404, { detail: "bu proje icin sozlesme yok" });
       return send(200, buildEmployerContractItemsResponse(state));
+    }
+
+    // F-BLG T3 · POST /projects/{project_id}/contract/items — İşveren
+    // sözleşmesine ELLE poz ekleme (`Form - Poz Ekle Isveren.dc.html`).
+    //
+    // 🔴 `group_id` ZORUNLUDUR ve VAR OLAN bir gruba işaret etmelidir; gruplar
+    // kalem ucunun `groups[]`ından gelir, AYRI bir GET yoktur. Gövde içi
+    // varlık referansı = 404 (ST kanonu).
+    //
+    // 🔴 FİKSTÜR UYARISI: bu uç `p-1`i BÜYÜTÜR (E14 kalem listesi + dağıtım
+    // ızgarası + sözleşme metrikleri o kalemlerden türer). Görsel kadrajlar
+    // diyaloğu YALNIZ AÇAR, KAYDETMEZ — kaydeden bir spec yazılacaksa önce
+    // `page.route` ile pinlenmeli ya da ayrı bir projeye sürgün edilmelidir.
+    if (method === "POST" && contractItemsMatch) {
+      const projectId = contractItemsMatch[1];
+      if (!state.projects.some((p) => p.id === projectId)) return send(404, { detail: "proje yok" });
+      if (projectId !== "p-1") return send(404, { detail: "bu proje icin sozlesme yok" });
+      return withBody((body) => {
+        const groups = buildEmployerContractItemsResponse(state).groups;
+        const group = groups.find((g) => g.id === String(body.group_id ?? ""));
+        if (!group) return send(404, { detail: "Poz grubu bulunamadı." });
+
+        const code = String(body.code ?? "").trim();
+        if (!code) return send(422, { detail: "Poz numarası zorunludur." });
+        if (state.contractItems.some((item) => item.code === code)) {
+          return send(409, { detail: "Bu poz numarası zaten kullanılıyor." });
+        }
+        // `quantity`/`unit_price` DECIMAL-STRING taşınır; sayıya çevrilip geri
+        // yazılmaz (kayan nokta kaybı olmasın).
+        const quantity = String(body.quantity ?? "");
+        const unitPrice = String(body.unit_price ?? "");
+        if (!quantity || !unitPrice) {
+          return send(422, { detail: "Miktar ve birim fiyat zorunludur." });
+        }
+
+        state.contractItemSeq += 1;
+        const created: MockContractItem = {
+          id: `ci-new-${state.contractItemSeq}`,
+          code,
+          description: String(body.description ?? ""),
+          unit: String(body.unit ?? ""),
+          quantity,
+          unit_price: unitPrice,
+          groupName: group.name,
+          groupSortOrder: group.sort_order,
+          allocations: [],
+        };
+        state.contractItems = [...state.contractItems, created];
+
+        const refreshed = buildEmployerContractItemsResponse(state)
+          .groups.find((g) => g.id === group.id)
+          ?.items.find((item) => item.id === created.id);
+        if (!refreshed) return send(500, { detail: "kalem kurulamadi" });
+        return send(201, refreshed);
+      });
     }
 
     // GET /contracts — SZL sekmeli listesi (F-P5 T1). `type` ZORUNLUDUR;
@@ -6602,7 +6743,76 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     // BOŞ dizi alır (404 DEĞİL) — boş-durum yolu bu yüzden kanıtlanabilir.
     const personnelDocumentsMatch = path.match(/^\/personnel\/([^/]+)\/documents$/);
     if (method === "GET" && personnelDocumentsMatch) {
-      return send(200, PERSONNEL_DOCUMENT_FIXTURES[personnelDocumentsMatch[1]] ?? []);
+      return send(200, state.personnelDocuments[personnelDocumentsMatch[1]] ?? []);
+    }
+
+    // F-BLG T3 · POST /personnel/{personnel_id}/documents — belge TAKİP kaydı.
+    //
+    // 🔴 Uç **JSON** alır, DOSYA ALMAZ (`PersonnelDocumentCreate`): dosya iki
+    // adımlı akışın BİRİNCİ adımında `POST /documents` ile arşive gider ve
+    // künyesi buraya `document_id` olarak bağlanır. Gövdede `file` YOKTUR;
+    // multipart gelirse `JSON.parse` patlar — o yüzden bilerek `withBody`.
+    //
+    // 🔴 `type_id` XOR `free_label` — TAM BİRİ dolu olmalı (şema
+    // `model_validator`). İkisi de dolu YA DA ikisi de boş gövde 422 alır;
+    // gerçek sunucunun kuralı budur ve istemcinin de doğruladığı kapıdır.
+    if (method === "POST" && personnelDocumentsMatch) {
+      const personnelId = personnelDocumentsMatch[1];
+      const personnel = state.personnel.find((p) => p.id === personnelId);
+      if (!personnel) return send(404, { detail: "Personel bulunamadı." });
+      return withBody((body) => {
+        const typeId = body.type_id === undefined || body.type_id === null
+          ? null
+          : String(body.type_id);
+        const freeLabel = body.free_label === undefined || body.free_label === null
+          ? null
+          : String(body.free_label);
+        if ((typeId === null) === (freeLabel === null)) {
+          return send(422, {
+            detail: "Belge tipi ile serbest etiketten TAM BİRİ verilmelidir.",
+          });
+        }
+        const documentId = body.document_id === undefined || body.document_id === null
+          ? null
+          : String(body.document_id);
+        if (documentId !== null && !state.documents.some((d) => d.id === documentId)) {
+          // Gövde içi varlık referansı = 404 (ST kanonu).
+          return send(404, { detail: "Belge bulunamadı." });
+        }
+        // `type_name`/`is_mandatory`/`validity_months` SUNUCU türevidir —
+        // istemci bunları göndermez, gövdeden okunmaz.
+        const catalog = HR_DOCUMENTS_SUMMARY_FIXTURE.by_type.find((t) => t.type_id === typeId);
+        if (typeId !== null && !catalog) return send(404, { detail: "Belge tipi bulunamadı." });
+
+        state.personnelDocumentSeq += 1;
+        const created: components["schemas"]["PersonnelDocumentResponse"] = {
+          id: `pdoc-new-${state.personnelDocumentSeq}`,
+          personnel_id: personnelId,
+          type_id: typeId,
+          type_name: catalog?.type_name ?? null,
+          is_mandatory: catalog?.is_mandatory ?? null,
+          validity_months: catalog?.validity_months ?? null,
+          free_label: freeLabel,
+          document_id: documentId,
+          issued_at: body.issued_at === undefined || body.issued_at === null
+            ? null
+            : String(body.issued_at),
+          valid_until: body.valid_until === undefined || body.valid_until === null
+            ? null
+            : String(body.valid_until),
+          note: body.note === undefined || body.note === null ? null : String(body.note),
+          // `status`/`days_left` SUNUCU damgasıdır; istemci eşik hesaplamaz.
+          status: "valid",
+          days_left: null,
+          created_at: "2026-08-15T09:00:00Z",
+          updated_at: "2026-08-15T09:00:00Z",
+        };
+        state.personnelDocuments = {
+          ...state.personnelDocuments,
+          [personnelId]: [...(state.personnelDocuments[personnelId] ?? []), created],
+        };
+        return send(201, created);
+      });
     }
 
     // GET/PATCH /personnel/{personnel_id} — F-PT2 T1 · Personel Detay ekranı
@@ -8321,6 +8531,73 @@ export function startMockBackend(port: number): { server: Server; close: () => P
 
     if (method === "GET" && path === "/equipment/summary") {
       return send(200, EQUIPMENT_SUMMARY_FIXTURE);
+    }
+
+    // F-BLG T3 · GET /equipment/document-types — altı SABİT slot (CRUD ucu
+    // YOK). ⚠️ Bu satır `/equipment/{equipment_id}` deseninden ÖNCE gelmek
+    // ZORUNDADIR, yoksa "document-types" bir ekipman kimliği sanılır ve 404
+    // döner (yukarıdaki SIRA uyarısının aynısı).
+    if (method === "GET" && path === "/equipment/document-types") {
+      return send(200, EQUIPMENT_DOCUMENT_TYPES_FIXTURE);
+    }
+
+    const equipmentDocumentsMatch = path.match(/^\/equipment\/([^/]+)\/documents$/);
+    if (equipmentDocumentsMatch) {
+      const equipmentId = equipmentDocumentsMatch[1];
+      if (!state.equipment.some((item) => item.id === equipmentId)) {
+        return send(404, { detail: "Ekipman bulunamadı." });
+      }
+
+      // GET — form yalnız bağlam bandının SAYACI için okur (mockup 81).
+      if (method === "GET") {
+        return send(200, {
+          items: state.equipmentDocuments.filter((doc) => doc.equipment_id === equipmentId),
+        });
+      }
+
+      // POST — MULTIPART. Gövde JSON'a çevrilmişse ayrıştırma başarısız olur
+      // ve 422 döner; yani BFF'in ham geçirme davranışının uçtan uca kapısıdır
+      // (`POST /documents` ile aynı gerekçe).
+      if (method === "POST") {
+        const chunks: Buffer[] = [];
+        req.on("data", (c: Buffer) => chunks.push(c));
+        req.on("end", () => {
+          const parsedBody = parseMultipart(
+            Buffer.concat(chunks),
+            req.headers["content-type"] ?? "",
+          );
+          if (!parsedBody?.file) return send(422, { detail: "Dosya alanı okunamadı." });
+
+          const typeId = parsedBody.fields.type_id;
+          const type = EQUIPMENT_DOCUMENT_TYPES_FIXTURE.items.find((t) => t.id === typeId);
+          if (!type) return send(422, { detail: "Belge türü seçilmedi." });
+          if (parsedBody.file.size > DOCUMENT_MAX_BYTES) {
+            return send(413, { detail: "Dosya boyutu sınırı aşıldı." });
+          }
+          const extension = documentExtension(parsedBody.file.filename);
+          if (!DOCUMENT_ALLOWED_EXTENSIONS.includes(extension)) {
+            return send(422, { detail: "Bu dosya türü kabul edilmiyor." });
+          }
+
+          state.equipmentDocumentSeq += 1;
+          const created: components["schemas"]["EquipmentDocumentResponse"] = {
+            id: `edoc-new-${state.equipmentDocumentSeq}`,
+            equipment_id: equipmentId,
+            type_id: type.id,
+            type_code: type.code,
+            type_name: type.name,
+            filename: parsedBody.file.filename,
+            mime_type: parsedBody.file.mimeType,
+            size_bytes: parsedBody.file.size,
+            // Alan GEÇİLMEDİYSE süre takibi YAPILMAZ — boş dize DEĞİL, NULL.
+            valid_until: parsedBody.fields.valid_until || null,
+            created_at: "2026-08-15T09:00:00Z",
+          };
+          state.equipmentDocuments = [...state.equipmentDocuments, created];
+          return send(201, created);
+        });
+        return;
+      }
     }
 
     // Özet SABİTTİR (rozet/oran SUNUCU damgasıdır) ama YALNIZ fikstür ayında

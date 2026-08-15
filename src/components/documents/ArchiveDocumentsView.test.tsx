@@ -303,6 +303,20 @@ describe("ArchiveDocumentsView · izin kapıları", () => {
     expect(screen.getByRole("button", { name: "Dosya Yükle" })).toBeInTheDocument();
   });
 
+  // F-BLG T3/G3 — İKİ yükleme girişi de KALIR (yönetim kararı), şartı
+  // kullanıcının ayırt edebilmesidir. Ayrım ETİKETTEDİR, `title`da değil.
+  it("iki yükleme girişi ekranda AYIRT EDİLEBİLİR etiketlerle durur", () => {
+    render(<ArchiveDocumentsView />);
+
+    const scoped = screen.getByRole("button", { name: "↑ Yükle" });
+    const standalone = screen.getByTestId("e12-belge-ekle");
+
+    expect(scoped).toBeInTheDocument();
+    expect(standalone).toHaveTextContent("+ Belge Ekle (proje seçerek)");
+    expect(standalone).not.toHaveAttribute("title");
+    expect(standalone).not.toBe(scoped);
+  });
+
   it("proje seçilmemişken yükleme tetikleyicisi basılmaz (project_id zorunlu)", () => {
     searchParams = new URLSearchParams();
     render(<ArchiveDocumentsView />);

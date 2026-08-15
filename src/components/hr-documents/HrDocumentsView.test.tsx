@@ -221,6 +221,22 @@ describe("HrDocumentsView — BT", () => {
     expect(screen.getByRole("button", { name: "Toplu Randevu Al" })).toBeDisabled();
   });
 
+  // F-BLG T3/G7 — gerekçe `title`da SAKLANMAZ, ekranda basılır ve kullanıcıyı
+  // GERÇEK girişe (Personel Detay > "Belgeler" kartı > "+ Ekle") yönlendirir.
+  it("'+ Belge Yükle' devre-dışı kalır; gerekçesi EKRANDA okunur ve yol tarif eder", () => {
+    render(<HrDocumentsView />);
+
+    const button = screen.getByTestId("bt-upload-button");
+    expect(button).toBeDisabled();
+    expect(button).not.toHaveAttribute("title");
+
+    const reason = screen.getByTestId("bt-upload-reason");
+    expect(reason).toBeVisible();
+    expect(reason).toHaveTextContent(/personel seçilerek/i);
+    expect(reason).toHaveTextContent(/Belgeler/);
+    expect(reason).toHaveTextContent(/\+ Ekle/);
+  });
+
   it("görüntüleme izni yoksa AccessDenied basar", () => {
     vi.mocked(useSession).mockReturnValue({
       me: { permissions: { personnel: "none" } } as unknown as MeResponse,

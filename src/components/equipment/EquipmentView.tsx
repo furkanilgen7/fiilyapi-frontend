@@ -1,17 +1,26 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 
+import { EquipmentDocumentFormModal } from "@/components/document-form/EquipmentDocumentFormModal";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { backendErrorMessage } from "@/lib/api/error-message";
-import { EQUIPMENT_LIST_MAX_LIMIT, useEquipment } from "@/lib/api/hooks/useEquipment";
+import {
+  EQUIPMENT_LIST_MAX_LIMIT,
+  useEquipment,
+  type EquipmentResponse,
+} from "@/lib/api/hooks/useEquipment";
 import { useEquipmentSummary } from "@/lib/api/hooks/useEquipmentSummary";
 import { usePersonnel, PERSONNEL_MAX_LIMIT } from "@/lib/api/hooks/usePersonnel";
 import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
 import { isForbidden } from "@/lib/api/unwrap";
+import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncation";
 
+import { equipmentCategoryIcon } from "./category-icon";
+import { EQUIPMENT_OWNERSHIP_LABELS } from "./equipment-labels";
 import { EquipmentCard } from "./EquipmentCard";
 import { EquipmentKpiStrip } from "./EquipmentKpiStrip";
 import { EquipmentTabsStrip } from "./EquipmentTabsStrip";
@@ -43,6 +52,11 @@ export function EquipmentView() {
   const summaryQuery = useEquipmentSummary();
   const siteOptions = useSiteOptions();
   const personnelQuery = usePersonnel({ limit: PERSONNEL_MAX_LIMIT });
+
+  // F-BLG T2b · "Belge Ekle" diyaloğu (`Form - Ekipman Belgesi.dc.html`).
+  // Yazma yüzeyi `full` ister; izinsiz kullanıcıda tetikleyici BASILMAZ.
+  const [documentTarget, setDocumentTarget] = useState<EquipmentResponse | null>(null);
+  const canWrite = hasAtLeast(permission.level, "full");
 
   if (!permission.canView || isForbidden(equipmentQuery.error)) return <AccessDenied />;
 
@@ -110,6 +124,7 @@ export function EquipmentView() {
               equipment={equipment}
               siteLabel={resolveSiteLabel(equipment.site_id)}
               operatorName={resolveOperatorName(equipment.operator_id)}
+              onAddDocumentClick={canWrite ? setDocumentTarget : undefined}
             />
           ))}
         </div>
@@ -123,6 +138,16 @@ export function EquipmentView() {
       {summaryQuery.data !== undefined && <span hidden data-testid="makine-loaded-summary" />}
       {!siteOptions.isLoading && <span hidden data-testid="makine-loaded-sites" />}
       {personnelQuery.data !== undefined && <span hidden data-testid="makine-loaded-personnel" />}
+
+      {documentTarget && (
+        <EquipmentDocumentFormModal
+          equipment={documentTarget}
+          siteLabel={resolveSiteLabel(documentTarget.site_id)}
+          categoryIcon={equipmentCategoryIcon(documentTarget.category)}
+          ownershipLabel={EQUIPMENT_OWNERSHIP_LABELS[documentTarget.ownership]}
+          onClose={() => setDocumentTarget(null)}
+        />
+      )}
     </div>
   );
 }

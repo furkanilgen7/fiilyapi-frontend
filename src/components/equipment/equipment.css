@@ -230,9 +230,21 @@
 }
 
 /* K4 — mockup'ta yok, onaylı sapma: kartın tek eylemi düzenleme formuna gider. */
+/* İki kart aksiyonu yan yana: "Düzenle" (K4) + "Belge Ekle" (F-BLG T2b). */
+.makine-card__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
 .makine-card__edit {
   display: inline-block;
   margin-top: 12px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
   font-size: 12px;
   font-weight: var(--weight-medium);
   color: var(--color-primary);

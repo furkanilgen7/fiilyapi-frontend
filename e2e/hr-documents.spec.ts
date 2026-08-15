@@ -159,9 +159,27 @@ test("personel adından detaya gidilir; oradaki 'Belgeler' kartı GERÇEK listed
   // Dosya uzantısı/boyutu sunucuda YOK — uydurulmaz.
   await expect(card).not.toContainText(/PDF|MB/);
 
-  // SALT-OKUNUR: ekleme ve indirme bu dilimde bağlanmaz.
-  await expect(card.getByRole("button", { name: "+ Ekle" })).toBeDisabled();
+  // "İndir" HÂLÂ bağlanmadı (arşiv indirme ucu bu karta çekilmedi).
   await expect(card.getByRole("button", { name: "İndir" }).first()).toBeDisabled();
+
+  // F-BLG T2c: "+ Ekle" ARTIK GERÇEK — `Form - Personel Belgesi.dc.html`
+  // geldi ve düğme `PersonnelDocumentFormModal`ı açar. "Aktif" iddiası tek
+  // başına yetmez (kapalı bir `onClick` de aktif görünür): diyalogun
+  // GERÇEKTEN açıldığı iddia edilir. Diyalog KAYDETMEZ — `per-1` fikstürü
+  // (PD/BT baseline'larının kaynağı) dokunulmadan bırakılır.
+  const addButton = card.getByRole("button", { name: "+ Ekle" });
+  await expect(addButton).toBeEnabled();
+  await addButton.click();
+
+  const dialog = page.getByRole("dialog", { name: "Personel Belgesi Ekle" });
+  await expect(dialog).toBeVisible();
+  // Bağlam bandı personelin KENDİ kaydını taşır (yanlış personele belge
+  // eklenmesin) ve tip kataloğu İK özetinden doldu.
+  await expect(dialog.getByTestId("pdf-context")).toContainText("Mehmet Kılıç");
+  await expect(dialog.getByTestId("pdf-type")).toContainText("Sağlık Raporu");
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
 });
 
 test("belgesi olmayan personelde kart sade boş-durum basar", async ({ page }) => {

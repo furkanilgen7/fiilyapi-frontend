@@ -1,0 +1,209 @@
+/* Belge yükleme formları (F-BLG T2b). Kanon: projedesign
+   "Form - Ekipman Belgesi.dc.html" (EKP) ve "Form - Belge Ekle.dc.html" (ARŞ);
+   parantez içindeki sayılar ilgili dosyanın SATIR numaralarıdır.
+   Prefix `dcf` (document form).
+
+   ⚠️ ONAYLI SAPMA S-FRM: mockup'ların üst şeridi, breadcrumb'ı ve sol menüsü
+   (EKP 37-67 · ARŞ 38-64) tasarım kütüphanesinin HARNESS'ıdır, ürün kabuğu
+   değildir — formlar giriş noktalarının üzerinde diyalog olarak açılır
+   (`contract-item-form` emsali). Gövde BİREBİR kalır. */
+
+/* Diyalog kabuğu 480px'tir; mockup gövdesi 820px'e kadar açılır
+   (EKP 69 · ARŞ 66 `max-width:820px`) ve iki kolonlu ızgara (EKP 98 · ARŞ 85)
+   480px'e sığmaz — yalnız bu formlar için genişletilir. */
+.dcf-modal {
+  max-width: 820px;
+}
+
+.dcf__subtitle {
+  font-size: var(--text-body); /* EKP 72 · ARŞ 69 */
+  color: var(--color-text-subtle);
+  margin: 0 0 var(--space-5); /* 20px */
+}
+
+/* ── Kart (EKP/ARŞ ortak `.card`) ─────────────────────────────────────────── */
+.dcf-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-form-card); /* 14px */
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5); /* 20px */
+  margin-bottom: var(--space-4); /* 16px */
+}
+.dcf-card--flush {
+  margin-bottom: 0;
+}
+.dcf-card__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-form-card-title); /* 14px/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--space-4);
+}
+.dcf-card__req {
+  color: var(--color-danger-strong); /* `.req` — EKP 86 · ARŞ 73 */
+}
+
+/* ── Dosya kutusu (EKP 87-92 · ARŞ 74-79) ─────────────────────────────────── */
+/* `.drop` kesikli çerçevesi korunur; içindeki gizli `<input type=file>` yerine
+   `FileInput` primitive'i basılır (ham `<input type=file>` yasağı). */
+.dcf-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2); /* 8px */
+  padding: var(--space-6); /* 24px */
+  border: 2px dashed var(--color-border-strong); /* #cbd5e1 */
+  border-radius: var(--radius-10);
+  background: var(--color-surface-2); /* #f8fafc */
+}
+.dcf-drop__title {
+  font-size: var(--text-form-card-title); /* 14px */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary); /* EKP 90 · ARŞ 77 */
+}
+.dcf-drop__hint {
+  font-size: 11px;
+  color: var(--color-text-subtle); /* `.hint` */
+}
+.dcf-drop__control {
+  width: 100%;
+}
+
+/* ── Alan ızgarası (EKP 98 · ARŞ 85) ──────────────────────────────────────── */
+.dcf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+/* Dar ekranda ikinci kolon ALTA düşer (öğe gizlenmez). */
+@media (max-width: 640px) {
+  .dcf-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Rozet önizleme kutusu (EKP 126-143) ──────────────────────────────────── */
+.dcf-legend {
+  margin-top: var(--space-4); /* 16px — 127 */
+  padding: 14px;
+  border-radius: var(--radius-10);
+  background: var(--color-surface-2); /* #f8fafc */
+}
+.dcf-legend__title {
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
+  margin: 0 0 10px; /* 128 */
+}
+.dcf-legend__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2); /* 8px — 129 */
+}
+.dcf-legend__row {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* 130 */
+}
+.dcf-legend__badge {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: var(--radius-9);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+.dcf-legend__badge--ok {
+  background: var(--color-success-soft); /* #dcfce7 — 131 */
+  color: var(--color-success);
+}
+.dcf-legend__badge--warn {
+  background: var(--color-warning-soft); /* #fef3c7 — 135 */
+  color: var(--color-warning-strong);
+}
+.dcf-legend__badge--danger {
+  background: var(--color-danger-soft); /* #fee2e2 — 139 */
+  color: var(--color-danger-strong);
+}
+.dcf-legend__text {
+  font-size: 12px;
+  color: var(--color-text-muted); /* 132 */
+}
+
+/* ── Ekipman bağlam bandı (EKP 75-82) ─────────────────────────────────────── */
+.dcf-context {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-12);
+  background: var(--color-nav-active-bg); /* #eff6ff */
+  border: 1px solid var(--color-primary-ring); /* #bfdbfe */
+}
+.dcf-context__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-10);
+  background: var(--color-primary-soft); /* #dbeafe */
+  font-size: 20px;
+}
+.dcf-context__body {
+  flex: 1;
+}
+.dcf-context__name {
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--color-text); /* 78 */
+}
+.dcf-context__meta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-primary-light); /* 79 */
+}
+.dcf-context__count {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: var(--radius-8);
+  background: var(--color-surface);
+  border: 1px solid var(--color-primary-ring);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary); /* 81 */
+}
+
+/* Devre-dışı alanların GÖRÜNÜR gerekçesi (F-TH kanonu, `pif-readonly-note`
+   ile aynı ton). Gerekçe `title` özniteliğinde SAKLANMAZ. */
+.dcf-readonly-note {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+
+/* Hata / durum satırı — mockup'ta yok, sessiz yutma yasak. */
+.dcf__error {
+  margin-top: var(--space-3);
+  font-size: 12px;
+  color: var(--color-danger-strong);
+}
+.dcf__saved {
+  margin-top: var(--space-3);
+  font-size: 12px;
+  color: var(--color-success-deep);
+}
+
+/* Alt eylem şeridi: onay kutusu SOLDA (ARŞ 136-140). */
+.dcf__keep-open {
+  margin-right: auto;
+  font-size: var(--text-body);
+  color: var(--color-text-secondary);
+}

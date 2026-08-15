@@ -64,4 +64,27 @@ describe("employer-contract-detail.css — E14 mockup'ına bağlı kurallar", ()
   it("çıplak hex renk YOKTUR — palet yalnız token'dan gelir", () => {
     expect(css.match(/#[0-9a-fA-F]{3,8}\b/g)).toBeNull();
   });
+
+  /**
+   * 🔴 NÜKS BEKÇİSİ (F-BLG T5'te ÖLÇÜLEREK bulundu).
+   *
+   * Başlıktaki iki buton `Button` primitive'idir, yani `.btn--md` ZATEN bir
+   * yatay dolgu (16px) veriyor; `.ecd-head__btn` mockup'ın 14px'ini uygular.
+   * İkisi de TEK SINIF seçici yazılırsa özgüllükleri EŞİTtir ve kazanan
+   * yalnızca CSS demetindeki sıraya kalır — yani sayfaya eklenen HERHANGİ bir
+   * yeni CSS import'u butonun genişliğini sessizce oynatabilir. Bu fiilen oldu:
+   * bu dilim `EmployerItemFormModal`ı import edince `isveren-sozlesme-genel` ve
+   * `-belgeler` kareleri 1061 piksel kaydı (kontrol: main'de taze baseline turu
+   * commit'li PNG'yi BİREBİR üretiyordu → kayma bu dala aitti).
+   *
+   * Kural: kuralın kapsayıcıyla yazılması ÖZGÜLLÜĞÜ yükseltir ve mockup değeri
+   * sıradan BAĞIMSIZ kazanır. Tek-sınıf hâline geri dönülürse bu test KIRMIZI.
+   */
+  it("başlık butonu kuralı SIRA-BAĞIMSIZDIR (kapsayıcıyla özgüllük)", () => {
+    expect(css).toMatch(/\.ecd-head__actions\s+\.ecd-head__btn\s*{[^}]*padding:[^}]*14px/s);
+    // Kapsayıcısız (satır başında duran) `.ecd-head__btn {` bloğu KALMAMALI —
+    // `.ecd-head__actions .ecd-head__btn` satır başında `.ecd-head__actions`
+    // ile başladığı için bu iddiaya TAKILMAZ.
+    expect(css).not.toMatch(/^\.ecd-head__btn\s*{/m);
+  });
 });
