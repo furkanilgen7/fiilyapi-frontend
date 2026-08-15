@@ -189,12 +189,39 @@
 }
 .makine-yakit-consumption__deviation {
   font-weight: var(--weight-semibold);
-  /* Sol boşluk BİLEREK CSS'te DEĞİL: JSX'teki `{" "}` metin düğümünden gelir ve
-     deterministiktir — U+0020 self-host Inter alt-kümesinde kapsanır
-     (`unicode-range: u+00??`, src/styles/fonts.css); tarayıcıda ölçüldü,
-     10px'te 2,53px. Mockup da literal boşluk kullanır
-     (projedesign/Makine - Yakıt Takibi.dc.html:52). Buraya margin EKLEME.
-     ✅ ÇÖZÜLDÜ (F-SEM): bu satırdaki `⚠`/`✓` artık GLİF DEĞİL, inline SVG
+  /* Sol boşluk BİLEREK CSS'te DEĞİL: JSX'ten gelir. Mockup da literal boşluk
+     kullanır (projedesign/Makine - Yakıt Takibi.dc.html:52). Buraya margin
+     EKLEME — boşluk zaten metin düğümünde, margin onu İKİYE KATLAR.
+
+     🔴 O metin düğümü artık SIRADAN boşluk değil, SERT boşluk (U+00A0).
+     NEDENİ ÖLÇÜLDÜ, tahmin değil — ve bu dilimin EN ÖNEMLİ BULGUSU:
+
+     `⚠`/`✓`yi inline SVG'ye çevirmek kareyi DÜZELTMEDİ. Çevrimden sonra
+     koşulan CI turu (run 31886457731) `makine-yakit`i yine kırmızı verdi,
+     242px. Başarısız turun `test-results/` artifact'i indirildi ve beklenen
+     ile gerçek kare piksel piksel karşılaştırıldı:
+       · Fark ÜÇ dar bölgedeydi ve iki tanesi TAM OLARAK bir KAYMAYDI:
+         dx = -3px kaydırınca ortalama fark 11,8 → 0,8'e düşüyor (%93
+         açıklanıyor). Yani glifler AYNI basılmıştı, yalnızca 3px SOLA
+         kaymışlardı. 3px = 10px'te bir boşluğun genişliği (2,53px).
+       · Kayan iki satır, sapma kutusunda SVG taşıyan satırlardı; `—` basan
+         (SVG'siz) ÜÇÜNCÜ satır AYNI turda hiç kaymadı.
+     ⇒ Oynaklığın kaynağı GLİF RASTERİZASYONU DEĞİL, yanındaki `{" "}`
+     BOŞLUK DÜĞÜMÜDÜR: yalnız-boşluk metin düğümü hemen ardından YERİ
+     DOLDURULAN bir öğe (inline `<svg>`) gelince kâh basılıyor kâh basılmıyordu.
+     U+00A0 daraltılabilir boşluk SAYILMAZ; CSS onu yutamaz, genişliği sabittir
+     ve `u+00??` ile Inter alt-kümesinde kapsanır → görünüm aynı, ölçü sabit.
+
+     🔴 KAYDA GEÇ: daha önceki turda ölçülen "245px ⟺ margin VAR /
+     244px ⟺ margin YOK" korelasyonu DOĞRUYDU ve yanlışlıkla geri çekilmişti.
+     O gözlem tam da bu boşluk bistabilitesini ölçüyordu; "yetersiz örneklem"
+     diye elenen şey aslında doğru izdi.
+
+     Aşağıdaki SVG çevrimi yine de KALIR: gerçek ve ayrı bir riski
+     (yazı tipi yedeğine düşen çıplak sembol) kapatır, ama bu karenin
+     oynaklığının nedeni O DEĞİLDİ.
+
+     Çevrimin kendi gerekçesi (F-SEM): bu satırdaki `⚠`/`✓` artık GLİF DEĞİL, inline SVG
      (`WarningTriangleIcon`/`CheckIcon` + `inlineSymbolProps`). Kare artık
      hiçbir yazı tipine bağlı değil; sistem yedeği devreye giremez.
      Kararı dayandıran İKİ ÖLÇÜM:
@@ -225,10 +252,8 @@
      ÇÖZMEDİ (`--update-snapshots` çıktısı bile 244px verdi, run
      31882761178); ve aynı kod iki farklı kare bastı (`d815ebe` 244px KIRMIZI
      run 31883403295 → `119861b` YEŞİL run 31883754172, aradaki tek fark bir
-     YORUMDU). "İki örnek = determinizm" sanma; oradaki 245px⟺margin-VAR /
-     244px⟺margin-YOK ayrımı doğruydu ama YETERSİZ ÖRNEKLEMDİ.
-     Buraya margin EKLEME: yukarıdaki `{" "}` gerekçesi AYNEN GEÇERLİ —
-     sembol ikona döndü ama aradaki boşluk hâlâ U+0020 metin düğümüdür. */
+     YORUMDU). Bugün biliyoruz ki bu turlar arasında değişen şey glif değil,
+     boşluğun basılıp basılmamasıydı. */
 }
 .makine-yakit-consumption__deviation--success {
   color: var(--color-success); /* 57 */
