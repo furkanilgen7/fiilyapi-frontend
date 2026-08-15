@@ -26,6 +26,46 @@ describe("Modal", () => {
   });
 });
 
+// F-BLG T2a `className` prop'unu EKLEDI (mockup'i iki kolonlu cizilmis alti
+// form diyalogu 480px varsayilana sigmiyordu). Prop OPSIYONELdir; asagidaki
+// uc kare "eklemenin ZARARSIZ oldugunu" kilitler: gecmeyen 17 cagiranin
+// govdesi DEGISMEZ. `cx` bosluk/undefined sizdirirsa (or. `join` yerine
+// sablon dizesi) bu testler kirmizi olur.
+describe("Modal · opsiyonel className (F-BLG T2a additive kaniti)", () => {
+  it("className GECILMEZSE kabuk sinifi tam olarak `modal`dir", () => {
+    render(<Modal title="Test" onClose={() => {}}><span>govde</span></Modal>);
+    // `toHaveClass` fazladan sinifi gormez; ham `class` degeri karsilastirilir
+    // ki "modal " (arta kalan bosluk) veya "modal undefined" de yakalansin.
+    expect(screen.getByRole("dialog").getAttribute("class")).toBe("modal");
+  });
+
+  it("className GECILIRSE `modal`in YANINA eklenir, yerine GECMEZ", () => {
+    render(
+      <Modal title="Test" onClose={() => {}} className="pif-modal">
+        <span>govde</span>
+      </Modal>,
+    );
+    expect(screen.getByRole("dialog").getAttribute("class")).toBe("modal pif-modal");
+  });
+
+  it("className diyalogun IC yapisini degistirmez (baslik/govde/dipnot ayni)", () => {
+    const bare = render(
+      <Modal title="Test" onClose={() => {}} footer={<button>Kaydet</button>}>
+        <span>govde</span>
+      </Modal>,
+    );
+    const bareDialog = screen.getByRole("dialog").innerHTML;
+    bare.unmount();
+
+    render(
+      <Modal title="Test" onClose={() => {}} className="dcf-modal" footer={<button>Kaydet</button>}>
+        <span>govde</span>
+      </Modal>,
+    );
+    expect(screen.getByRole("dialog").innerHTML).toBe(bareDialog);
+  });
+});
+
 // A11Y BULGUSU: diyalog `aria-modal` tasiyordu ama odak yonetimi yoktu —
 // klavye kullanicisi acilista sayfada kaliyor ve Tab ile gorsel olarak
 // ortulmus icerige cikabiliyordu. Tuzak paylasilan primitive'de kuruldu.
