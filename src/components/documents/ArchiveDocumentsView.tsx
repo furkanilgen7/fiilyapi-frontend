@@ -26,6 +26,20 @@ import { RecentDocumentsList } from "./RecentDocumentsList";
 import { recentDocuments } from "./recent-documents";
 import "./documents.css";
 
+/**
+ * F-BLG T3/G3 — E12'de İKİ yükleme girişi yan yana durur ve yönetim ikisinin
+ * de kalmasına karar verdi. Kullanıcının ayırt edebilmesi ŞARTTIR:
+ *
+ *   • "↑ Yükle" (`DocumentUploadModal`) — YALNIZ bir proje seçiliyken basılır
+ *     ve o an EKRANDA SEÇİLİ olan proje/şantiye/klasör kapsamına yükler.
+ *   • bu düğme (`ArchiveDocumentFormModal`) — kapsamı KENDİ İÇİNDE seçtiren
+ *     bağımsız akıştır, ekranda proje seçili olmasa da açılır.
+ *
+ * Ayırt edici ETİKETTEDİR (ekranda okunur); `title` özniteliğine saklanmaz —
+ * bu dilimin kanonu gerekçenin görünür kalmasıdır.
+ */
+export const ARCHIVE_ADD_DOCUMENT_LABEL = "+ Belge Ekle (proje seçerek)";
+
 /** URL durumu anahtarları — proje/klasör/arama paylaşılabilir olmalı. */
 const PROJECT_PARAM = "proje";
 const FOLDER_PARAM = "folder";
@@ -218,14 +232,19 @@ export function ArchiveDocumentsView() {
               </Button>
             )}
             {/* F-BLG T2b — projeyi kendi içinde seçtiren bağımsız yüzey;
-                ekranda proje seçili olmasa da açılır. */}
+                ekranda proje seçili olmasa da açılır.
+
+                F-BLG T3/G3 — İKİ yükleme girişi yan yana durur ve yönetim
+                ikisinin de kalmasına karar verdi. Ayırt edici ETİKETE yazılır
+                (`title` özniteliğinde SAKLANMAZ): "↑ Yükle" ekranda SEÇİLİ
+                olan kapsama yükler, bu düğme projeyi kendi içinde seçtirir. */}
             {canWrite && (
               <Button
                 variant="secondary"
                 onClick={() => setOpenDialog("belge-ekle")}
                 data-testid="e12-belge-ekle"
               >
-                + Belge Ekle
+                {ARCHIVE_ADD_DOCUMENT_LABEL}
               </Button>
             )}
             {canWrite && selectedProjectId && (

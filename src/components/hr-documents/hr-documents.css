@@ -34,6 +34,16 @@
   gap: 10px; /* 21 */
 }
 
+/* F-BLG T3/G7 — devre-dışı "+ Belge Yükle" düğmesinin gerekçesi EKRANDA
+   okunur (title özniteliğinde saklanmaz) ve kullanıcıyı gerçek girişe
+   yönlendirir. Başlık şeridinin ALTINDA, tam genişlikte durur. */
+.bt__pending-reason {
+  margin: -10px 0 18px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-text-subtle);
+}
+
 /* Kritik uyarı bandı (48-55). */
 .bt-alert {
   background: var(--color-audit-danger-row-bg); /* 48 */
