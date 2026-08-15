@@ -196,15 +196,20 @@
      (projedesign/Makine - Yakıt Takibi.dc.html:52). Buraya margin EKLEME.
      `⚠` (U+26A0) / `✓` (U+2713) ise hiçbir alt-kümede YOK, `Inter Fallback`
      (local Arial) basar; `ubuntu-latest`te Arial YOK → fontconfig ikame eder.
-     `makine-yakit` karesi bu yüzden kırmızı ve iki AYRI olgu var:
-       (1) Commit'li baseline yazı tipi göçünden ÖNCE alındı — ölçüldü:
+     `makine-yakit` karesi bu yüzden oynak. ÖLÇÜLEN üç olgu:
+       (1) Commit'li baseline yazı tipi göçünden ÖNCE alındı:
            `5d7b321` 13:18 < `beb5b7b` 14:25, `--is-ancestor` HAYIR.
-       (2) Tazeleme bunu ÇÖZMEDİ: `--update-snapshots` ile üretilen kare bile
-           `playwright test` yolunda 244px fark verdi (run 31882761178) — yani
-           ÜRETİM yolu ile KARŞILAŞTIRMA yolu aynı koddan farklı kare basıyor.
-     🔴 Kare ÇİFT-MODLU (bistable) DEĞİLDİR — bu iddia ölçülüp GERİ ÇEKİLDİ:
-     beş turda 245px ⟺ burada margin VARken, 244px ⟺ YOKken çıktı; sapma
-     tamamen kod durumunu izliyor, tur tur salınım yok.
+       (2) Tazeleme ÇÖZMEDİ: `--update-snapshots` çıktısı bile karşılaştırma
+           yolunda 244px verdi (run 31882761178). Hangi varyant commit'lenirse
+           öbürü kırmızı — roller takas oluyor.
+       (3) 🔴 KARE DETERMİNİSTİK DEĞİL. Kanıt: `d815ebe` 244px KIRMIZI
+           (run 31883403295) → `119861b` YEŞİL (run 31883754172, 292 kare);
+           iki taahhüt arasındaki TEK fark BU YORUMDUR. Yorum render'ı
+           etkilemez ⇒ aynı kod iki farklı kare basıyor, 244px arayla.
+     ⚠️ Ara bir turda "çift-modlu değil" denmişti (245px ⟺ margin VAR,
+     244px ⟺ YOK). O gözlem doğruydu ama YETERSİZ ÖRNEKLEMDİ: margin'in
+     konum etkisi GERÇEK, üstüne tur-tur rastgelelik BİNİYOR. İddia (3)'teki
+     yeşil turla geri çekildi — "iki örnek = determinizm" sanma.
      Çözüm bu iki glifi sistem yedeğine düşmeyecek şekilde basmaktır
      (alt-kümeye kapsatma ya da inline SVG) — F-SEM dilimi, 11 yüzey.
      Buraya margin EKLEME. */
