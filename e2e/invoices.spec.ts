@@ -289,7 +289,7 @@ test("🔴 K6: fatura tutarını AŞAN tahsilat sunucuda reddedilir ve metni ekr
   );
 });
 
-test("fatura kesme formu: satır tutarı hesaplanır, SUNUCU toplamları '—' kalır", async ({
+test("fatura kesme formu: FK:246-250 özeti uçtan uca hesaplanır", async ({
   page,
 }) => {
   await login(page);
@@ -311,9 +311,25 @@ test("fatura kesme formu: satır tutarı hesaplanır, SUNUCU toplamları '—' k
   await expect(row.getByTestId("fat-line-total")).toHaveText("2.789.160");
   await expect(page.getByTestId("fat-subtotal-preview")).toHaveText("2.789.160");
 
-  // 🔴 Kesinti/matrah/KDV/toplam İSTEMCİDE hesaplanmaz.
+  // FK:246-250 — kesinti YOKken matrah = ara toplam, KDV %20.
+  await expect(page.getByTestId("fat-tax-base")).toHaveText("2.789.160");
+  await expect(page.getByTestId("fat-vat-amount")).toHaveText("+ 557.832");
+  await expect(page.getByTestId("fat-total")).toHaveText("₺3.346.992");
+  // FK:237 — tevkifat kutusu işaretsiz: mockup'ın "—" hücresi.
+  await expect(page.getByTestId("fat-withholding-amount")).toHaveText("—");
+
+  // FK:222-227 — avans %20 işaretlenince matrah DÜŞER, KDV matrah üzerinden
+  // yeniden hesaplanır (kesintinin matrahı ara toplam, KDV'ninki matrah).
+  await page.getByTestId("fat-advance-toggle").check();
+  await expect(page.getByTestId("fat-advance-amount")).toHaveText("– 557.832");
+  await expect(page.getByTestId("fat-deduction-total")).toHaveText("– 557.832");
+  await expect(page.getByTestId("fat-tax-base")).toHaveText("2.231.328");
+  await expect(page.getByTestId("fat-vat-amount")).toHaveText("+ 446.265,6");
+  await expect(page.getByTestId("fat-total")).toHaveText("₺2.677.593,6");
+
+  // 🔴 Önizleme OTORİTE DEĞİL — ekran bunu söyler.
   await expect(page.getByTestId("fat-totals-reason")).toContainText(
-    "Kesinti, matrah, KDV ve fatura toplamını SUNUCU hesaplar",
+    "Tutarlar ÖNİZLEMEDİR; kaydedilen değerleri sunucu hesaplar",
   );
 });
 

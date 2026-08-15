@@ -59,6 +59,25 @@ describe("invoices.css — fatura mockup'larına bağlı kurallar", () => {
     expect(css).toMatch(/\.fat-table-scroll\s*{[^}]*overflow-x:\s*auto/);
   });
 
+  it("FK:250 'Fatura Toplamı' satırı mavi vurgu kutusudur", () => {
+    expect(css).toMatch(
+      /\.fat-summary-row--total\s*{[^}]*background:\s*var\(--color-primary-soft\)/,
+    );
+    expect(css).toMatch(
+      /\.fat-summary-row--total \.fat-summary-row__value\s*{[^}]*font-size:\s*var\(--text-lg\)/,
+    );
+    // Modifier ortak kuralı EZMELİ (sonra tanımlanmalı).
+    expect(css.indexOf(".fat-summary-row--total")).toBeGreaterThan(
+      css.indexOf(".fat-summary-row {"),
+    );
+  });
+
+  it("FK:225/231/237 kesinti tutarı 90px sağa dayalı mono sütundur", () => {
+    expect(css).toMatch(/\.fat-deduction__amount\s*{[^}]*width:\s*90px/);
+    expect(css).toMatch(/\.fat-deduction__amount\s*{[^}]*text-align:\s*right/);
+    expect(css).toMatch(/\.fat-deduction__amount\s*{[^}]*var\(--font-mono\)/);
+  });
+
   it("🔴 BEKÇİ: çıplak hex renk YOKTUR — palet yalnız token'dan gelir", () => {
     expect(css.match(/#[0-9a-fA-F]{3,8}\b/g)).toBeNull();
   });

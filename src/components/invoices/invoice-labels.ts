@@ -227,9 +227,16 @@ export const REASONS = {
   fromOrder: "Siparişten fatura doldurma ucu henüz açılmadı.",
   /** FK:163 "Hakediş #5'ten yüklendi" — otomatik kalem doldurma ucu yok. */
   autoFill: "Hakedişten kalem otomatik doldurma ucu yok; kalemleri elle girin.",
-  /** FK:246-250 sunucu hesabı olan toplamlar. */
-  serverTotals:
-    "Kesinti, matrah, KDV ve fatura toplamını SUNUCU hesaplar; kayıttan sonra detay ekranında görünür.",
+  /**
+   * FK:225/231/237 · FK:246-250 tutar önizlemesi.
+   *
+   * Önizleme `invoice-amount-preview.ts` ile HESAPLANIR (kaynak: backend
+   * `invoicing/amounts.py`), ama OTORİTE DEĞİLDİR: kaydedilen tutarları sunucu
+   * kendi hesabıyla yazar. Bu cümle ekranda görünür — kullanıcı baktığı sayının
+   * ne olduğunu bilmelidir.
+   */
+  previewOnly:
+    "Tutarlar ÖNİZLEMEDİR; kaydedilen değerleri sunucu hesaplar ve detay ekranında görünür.",
   /** FK:253 · FGE:197-241 muhasebe/yevmiye. */
   accounting: "Muhasebe (yevmiye) kaydı bu dilimde üretilmiyor.",
   /** FGI:24 "PDF İndir" · FGI:25 "XML". */

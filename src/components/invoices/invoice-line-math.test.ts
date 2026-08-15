@@ -7,7 +7,6 @@ import {
   isBlankLine,
   lineTotal,
   parseNumeric,
-  subtotalPreview,
   type InvoiceLineDraft,
 } from "./invoice-line-math";
 
@@ -44,19 +43,6 @@ describe("parseNumeric — 'girilmedi' ile 'sıfır' AYRIDIR", () => {
     expect(parseNumeric("")).toBeNull();
     expect(parseNumeric("   ")).toBeNull();
     expect(parseNumeric("0")).toBe(0);
-  });
-});
-
-describe("subtotalPreview — FK:246 Mal/Hizmet Toplamı", () => {
-  it("dört satırın toplamı 5.432.040'tır (FK:246)", () => {
-    expect(subtotalPreview(MOCKUP_LINES)).toEqual({ amount: 5_432_040, unknownCount: 0 });
-  });
-
-  it("🔴 BEKÇİ: çözülemeyen satır SESSİZCE 0 sayılmaz, SAYILIR", () => {
-    const lines = [...MOCKUP_LINES, draft({ key: "5", description: "Eksik", quantity: "" })];
-    const preview = subtotalPreview(lines);
-    expect(preview.amount).toBe(5_432_040);
-    expect(preview.unknownCount).toBe(1);
   });
 });
 

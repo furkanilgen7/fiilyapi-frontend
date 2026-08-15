@@ -31,7 +31,8 @@ import {
   invoiceDetailUrl,
   REASONS,
 } from "./invoice-labels";
-import { buildLines, emptyLineDraft, subtotalPreview, type InvoiceLineDraft } from "./invoice-line-math";
+import { computeAmountPreview } from "./invoice-amount-preview";
+import { buildLines, emptyLineDraft, type InvoiceLineDraft } from "./invoice-line-math";
 import "./invoices.css";
 
 type SourceKind = "progress_payment" | "purchase_order" | "manual";
@@ -54,6 +55,43 @@ function progressPaymentOptionLabel(item: ProgressPaymentListItem): string {
   )}`;
 }
 
+/** Değeri hesaplanamayan hücre — mockup FK:237 de aynı işareti basar. */
+const UNKNOWN = "—";
+
+/**
+ * FK:225/231/237 kesinti TUTARI sütunu. `amount === null` → kutu işaretli
+ * değil ya da önizleme hesaplanamadı; mockup'ın kendi "—" hücresi basılır.
+ */
+function DeductionAmount({ amount, testId }: { amount: string | null; testId: string }) {
+  if (amount === null) {
+    return (
+      <span
+        className="fat-deduction__amount fat-deduction__amount--muted"
+        data-testid={testId}
+        title={REASONS.previewOnly}
+      >
+        {UNKNOWN}
+      </span>
+    );
+  }
+  return (
+    <span className="fat-deduction__amount" data-testid={testId} title={REASONS.previewOnly}>
+      – {formatAmount(amount)}
+    </span>
+  );
+}
+
+/**
+ * FK:249 başlığı. Mockup tek oran çizer ("KDV (%20)") ama kalem tablosu KDV
+ * oranını SATIR BAZINDA taşır (FK:182) — çok oranlı faturada tek bir oran
+ * yazmak YALAN olurdu.
+ */
+function vatLabel(rates: readonly string[]): string {
+  if (rates.length === 0) return "KDV";
+  if (rates.length === 1) return `KDV (%${rates[0]})`;
+  return `KDV (karma oran: %${rates.join(" · %")})`;
+}
+
 /**
  * FK · `/faturalar/kes` — mockup `Fatura - Kes.dc.html` (kanonik). Yorumlardaki
  * sayılar O dosyanın SATIR numaralarıdır.
@@ -61,11 +99,13 @@ function progressPaymentOptionLabel(item: ProgressPaymentListItem): string {
  * ⚠️ VERİ KAYNAKLARI (T3 için): işveren listesi (alıcı seçici) · onaylı hakediş
  * listesi. İkisi de kendi hata yolunu işletir.
  *
- * 🔴 TOPLAMLAR BURADA HESAPLANMAZ. Ekran YALNIZ satır tutarını ve mal/hizmet
- * toplamını gösterir (ikisi de mockup rakamlarıyla doğrulandı); kesinti,
- * matrah, KDV ve fatura toplamı SUNUCUNUN saklanan kolonlarıdır (K7) ve
- * kayıttan sonra detay ekranında görünür. İstemcide ikinci bir formül yazmak,
- * sunucununkiyle ayrıştığı gün YANLIŞ PARA basardı.
+ * 🔴 TUTARLAR ÖNİZLEMEDİR, OTORİTE DEĞİL. FK:225-250 rakamları
+ * `invoice-amount-preview.ts` ile hesaplanır; o modül backend
+ * `invoicing/amounts.py`in PORTUDUR (ikisi de aynı yedi adımı, aynı sırayla,
+ * aynı `ROUND_HALF_UP` ile koşar ve backend'in kendi test fixture'larıyla
+ * kilitlenmiştir). Kaydedilen değerleri yine SUNUCU yazar; bu ekran yalnız
+ * kullanıcı "Kaydet"e basmadan önce ne olacağını gösterir ve bunu ekranda
+ * açıkça söyler (`REASONS.previewOnly`).
  */
 export function InvoiceCreateView() {
   const router = useRouter();
@@ -107,7 +147,15 @@ export function InvoiceCreateView() {
   if (!permission.canView) return <AccessDenied />;
 
   const busy = createMutation.isPending || actionMutation.isPending;
-  const preview = subtotalPreview(lines);
+  // FK:246-250 — backend `invoicing/amounts.py`in yedi adımının PORTU.
+  // İşaretlenmemiş kesinti `null` gider: "oran girilmedi" ile "%0" ayrıdır.
+  const previewResult = computeAmountPreview({
+    lines,
+    advanceRate: advanceOn ? advanceRate : null,
+    retentionRate: retentionOn ? retentionRate : null,
+    withholdingRate: withholdingOn ? withholdingRate : null,
+  });
+  const preview = previewResult.ok ? previewResult.preview : null;
 
   function patchLine(key: string, patch: Partial<InvoiceLineDraft>) {
     setLines((current) =>
@@ -521,6 +569,11 @@ export function InvoiceCreateView() {
                   onChange={(event) => setAdvanceRate(event.target.value)}
                 />
                 <span className="fat-deduction__unit">%</span>
+                {/* 225 */}
+                <DeductionAmount
+                  testId="fat-advance-amount"
+                  amount={advanceOn && preview !== null ? preview.advanceAmount : null}
+                />
               </div>
               {/* 228-233 */}
               <div className="fat-deduction">
@@ -541,6 +594,11 @@ export function InvoiceCreateView() {
                   onChange={(event) => setRetentionRate(event.target.value)}
                 />
                 <span className="fat-deduction__unit">%</span>
+                {/* 231 */}
+                <DeductionAmount
+                  testId="fat-retention-amount"
+                  amount={retentionOn && preview !== null ? preview.retentionAmount : null}
+                />
               </div>
               {/* 234-239 */}
               <div className="fat-deduction">
@@ -561,10 +619,16 @@ export function InvoiceCreateView() {
                   onChange={(event) => setWithholdingRate(event.target.value)}
                 />
                 <span className="fat-deduction__unit">%</span>
+                {/* 237 — mockup burada "—" basar (kutu işaretli DEĞİL). */}
+                <DeductionAmount
+                  testId="fat-withholding-amount"
+                  amount={withholdingOn && preview !== null ? preview.withholdingAmount : null}
+                />
               </div>
             </div>
             <p className="fat-notice" data-testid="fat-deduction-reason">
-              Kesinti TUTARLARI sunucunun hesabıdır; formda yalnız ORAN girilir.
+              Tevkifatın matrahı KDV tutarıdır (mal/hizmet toplamı değil) ve fatura toplamından
+              DÜŞÜLÜR. {REASONS.previewOnly}
             </p>
           </div>
         </section>
@@ -574,34 +638,63 @@ export function InvoiceCreateView() {
             <span className="fat-panel__title">Fatura Özeti</span>
           </div>
           <div className="fat-panel__body">
-            {/* 246 — TEK güvenilir önizleme. */}
+            {/* 246 */}
             <div className="fat-summary-row">
               <span className="fat-summary-row__label">Mal/Hizmet Toplamı</span>
               <span className="fat-summary-row__value" data-testid="fat-subtotal-preview">
-                {formatAmount(preview.amount)}
+                {preview === null ? UNKNOWN : formatAmount(preview.subtotal)}
               </span>
             </div>
-            {/* 247-250 — sunucunun hesabı; "0" UYDURULMAZ. */}
-            {["Kesintiler", "Vergi Matrahı", "KDV", "Fatura Toplamı"].map((label) => (
-              <div className="fat-summary-row" key={label}>
-                <span className="fat-summary-row__label">{label}</span>
-                <span
-                  className="fat-summary-row__value fat-summary-row__value--muted"
-                  title={REASONS.serverTotals}
-                >
-                  {"—"}
-                  <span className="sr-only"> {REASONS.serverTotals}</span>
-                </span>
-              </div>
-            ))}
-            {preview.unknownCount > 0 && (
+            {/* 247 — avans + teminat (tevkifat DEĞİL: onun matrahı KDV'dir). */}
+            <div className="fat-summary-row">
+              <span className="fat-summary-row__label">Kesintiler</span>
+              <span
+                className="fat-summary-row__value fat-summary-row__value--danger"
+                data-testid="fat-deduction-total"
+              >
+                {preview === null ? UNKNOWN : `– ${formatAmount(preview.deductionTotal)}`}
+              </span>
+            </div>
+            {/* 248 */}
+            <div className="fat-summary-row">
+              <span className="fat-summary-row__label">Vergi Matrahı</span>
+              <span className="fat-summary-row__value" data-testid="fat-tax-base">
+                {preview === null ? UNKNOWN : formatAmount(preview.taxBase)}
+              </span>
+            </div>
+            {/* 249 — mockup TEK oran yazar ("KDV (%20)"); fatura çok oranlı
+                olabildiği için başlık gerçek oranlardan kurulur. */}
+            <div className="fat-summary-row">
+              <span className="fat-summary-row__label">
+                {preview === null ? "KDV" : vatLabel(preview.vatRates)}
+              </span>
+              <span
+                className="fat-summary-row__value fat-summary-row__value--success"
+                data-testid="fat-vat-amount"
+              >
+                {preview === null ? UNKNOWN : `+ ${formatAmount(preview.vatAmount)}`}
+              </span>
+            </div>
+            {/* 250 */}
+            <div className="fat-summary-row fat-summary-row--total">
+              <span className="fat-summary-row__label">Fatura Toplamı</span>
+              <span className="fat-summary-row__value" data-testid="fat-total">
+                {preview === null ? UNKNOWN : `₺${formatAmount(preview.total)}`}
+              </span>
+            </div>
+            {!previewResult.ok && (
+              <p className="fat-notice fat-notice--danger" data-testid="fat-preview-blocked">
+                Önizleme hesaplanamadı: {previewResult.reason}
+              </p>
+            )}
+            {previewResult.ok && previewResult.unknownCount > 0 && (
               <p className="fat-notice" data-testid="fat-subtotal-unknown">
-                {preview.unknownCount} kalemin tutarı çözülemedi (miktar/birim fiyat eksik) —
-                yukarıdaki toplam EKSİKTİR.
+                {previewResult.unknownCount} kalemin tutarı çözülemedi (miktar/birim fiyat eksik) —
+                yukarıdaki tutarlar EKSİKTİR.
               </p>
             )}
             <p className="fat-notice" data-testid="fat-totals-reason">
-              {REASONS.serverTotals} {REASONS.accounting}
+              {REASONS.previewOnly} {REASONS.accounting}
             </p>
           </div>
         </section>

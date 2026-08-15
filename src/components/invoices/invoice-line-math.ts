@@ -49,31 +49,6 @@ export function lineTotal(line: InvoiceLineDraft): number | null {
   return quantity * unitPrice;
 }
 
-export interface SubtotalPreview {
-  /** Okunabilen satırların toplamı. */
-  amount: number;
-  /** Tutarı ÇÖZÜLEMEYEN satır sayısı — sıfır değilse toplam EKSİKTİR. */
-  unknownCount: number;
-}
-
-/**
- * FK:246 "Mal/Hizmet Toplamı" önizlemesi.
- *
- * Çözülemeyen satır sessizce `0` sayılmaz: `unknownCount` ile SAYILIR ve ekran
- * toplamın eksik olduğunu söyler (SA/T3 "bilinmeyen büyük sayılır" dersinin
- * istemci karşılığı — eksiklik gizlenmez).
- */
-export function subtotalPreview(lines: readonly InvoiceLineDraft[]): SubtotalPreview {
-  let amount = 0;
-  let unknownCount = 0;
-  for (const line of lines) {
-    const total = lineTotal(line);
-    if (total === null) unknownCount += 1;
-    else amount += total;
-  }
-  return { amount, unknownCount };
-}
-
 /** Sunucuya gidecek hâle çevrilebilen satır mı (boş satır sessizce ATILMAZ). */
 export function isBlankLine(line: InvoiceLineDraft): boolean {
   return (

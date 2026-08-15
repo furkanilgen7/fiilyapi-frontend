@@ -527,6 +527,42 @@
 .fat-summary-row__value--danger {
   color: var(--color-danger);
 }
+/* FK:249 KDV satırı yeşil basılır. */
+.fat-summary-row__value--success {
+  color: var(--color-success);
+}
+/* FK:250 "Fatura Toplamı" — mavi vurgu kutusu (8px köşe, 18px mavi mono). */
+.fat-summary-row--total {
+  padding: var(--space-3);
+  margin-top: var(--space-1);
+  background: var(--color-primary-soft);
+  border-bottom: none;
+  border-radius: var(--radius-md);
+}
+.fat-summary-row--total .fat-summary-row__label {
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.fat-summary-row--total .fat-summary-row__value {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-primary);
+}
+
+/* FK:225/231/237 — kesinti satırının TUTAR sütunu (90px, sağa dayalı). */
+.fat-deduction__amount {
+  width: 90px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-danger);
+}
+.fat-deduction__amount--muted {
+  font-family: var(--font-sans);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-subtle);
+}
 
 /* Eşleştirme kartı (FGE:105-143). */
 .fat-match {
