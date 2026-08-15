@@ -93,6 +93,11 @@
   color: var(--color-text);
   margin-bottom: var(--space-4); /* 91 — 16px */
 }
+/* Yaklaşan ödemeler paneli başlığının alt boşluğu mockup'ta 14px'tir (110),
+   nakit akışınınki 16px (91). Ortak sınıf ikisini eşitliyordu. */
+.hazine-panel__title--upcoming {
+  margin-bottom: var(--space-treasury-panel-title-gap); /* 110 — 14px */
+}
 
 /* Nakit akışı grafiği (92). */
 .hazine-chart {

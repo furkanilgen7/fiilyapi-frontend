@@ -37,7 +37,7 @@ export function UpcomingPaymentsPanel({
   return (
     <section className="hazine-panel" data-testid="hazine-upcoming-panel">
       {/* 110 */}
-      <h2 className="hazine-panel__title">
+      <h2 className="hazine-panel__title hazine-panel__title--upcoming">
         {upcoming === undefined
           ? "Yaklaşan Ödemeler"
           : `Yaklaşan Ödemeler (${upcoming.days} Gün)`}

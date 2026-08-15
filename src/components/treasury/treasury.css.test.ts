@@ -45,6 +45,26 @@ describe("treasury.css — E9 mockup'ına bağlı kurallar", () => {
     expect(css).toMatch(/\.hazine-legend__line--out\s*{[^}]*border-style:\s*dashed/);
   });
 
+  it("iki panel başlığının ALT BOŞLUĞU farklıdır: 91=16px · 110=14px", () => {
+    // Mockup ham değerleri (projedesign/Ekran 9 - Hazine.dc.html):
+    //   91  → font-size:13px … margin-bottom:16px
+    //   110 → font-size:13px … margin-bottom:14px
+    // Yazı boyu AYNI; ayrışan tek ölçü alt boşluktur.
+    expect(css).toMatch(/\.hazine-panel__title\s*{[^}]*margin-bottom:\s*var\(--space-4\)/);
+    expect(css).toMatch(
+      /\.hazine-panel__title--upcoming\s*{[^}]*margin-bottom:\s*var\(--space-treasury-panel-title-gap\)/,
+    );
+    // Bekçi: modifier ortak kuralı gerçekten EZMELİ (sonra tanımlanmalı).
+    expect(css.indexOf(".hazine-panel__title--upcoming")).toBeGreaterThan(
+      css.indexOf(".hazine-panel__title {"),
+    );
+  });
+
+  it("her iki panel başlığı da 13px'tir (91, 110) — yazı boyu ayrışmaz", () => {
+    expect(css).toMatch(/\.hazine-panel__title\s*{[^}]*font-size:\s*var\(--text-body\)/);
+    expect(css).not.toMatch(/\.hazine-panel__title--upcoming\s*{[^}]*font-size:/);
+  });
+
   it("çıplak hex renk YOKTUR — palet yalnız token'dan gelir", () => {
     expect(css.match(/#[0-9a-fA-F]{3,8}\b/g)).toBeNull();
   });

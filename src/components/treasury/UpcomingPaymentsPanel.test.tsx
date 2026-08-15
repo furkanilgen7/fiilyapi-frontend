@@ -44,6 +44,13 @@ describe("UpcomingPaymentsPanel — E9:109-125", () => {
     expect(screen.queryByText("Yaklaşan Ödemeler (7 Gün)")).not.toBeInTheDocument();
   });
 
+  it("E9:110 başlığı ayrık modifier taşır (alt boşluğu 14px, 91'deki 16px değil)", () => {
+    renderPanel(RESPONSE);
+    const title = screen.getByText("Yaklaşan Ödemeler (7 Gün)");
+    expect(title).toHaveClass("hazine-panel__title");
+    expect(title).toHaveClass("hazine-panel__title--upcoming");
+  });
+
   it("E9:113 satır başlığını en-dash + kaynak etiketiyle kurar", () => {
     renderPanel(RESPONSE);
     expect(screen.getByText("Akın İnşaat – Hakediş #47")).toBeInTheDocument();

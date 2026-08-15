@@ -546,6 +546,9 @@
   --space-treasury-card-gap: 14px; /* kart şeridi ızgara boşluğu (69) */
   --space-treasury-strip-gap: 20px; /* kart şeridi alt boşluğu (69) */
   --space-treasury-panel-gap: 16px; /* iki panel arası + alt boşluk (88) */
+  /* İki panel başlığının alt boşluğu mockup'ta AYNI DEĞİL: nakit akışı 16px
+     (91), yaklaşan ödemeler 14px (110). Yazı boyu ikisinde de 13px'tir. */
+  --space-treasury-panel-title-gap: 14px; /* yaklaşan ödemeler başlığı (110) */
   --size-treasury-chart-height: 100px; /* SVG yüksekliği (92) */
   --width-treasury-legend-line: 12px; /* açıklama çizgisi genişliği (103) */
   --size-treasury-legend-line: 2px; /* açıklama çizgisi kalınlığı (103) */
