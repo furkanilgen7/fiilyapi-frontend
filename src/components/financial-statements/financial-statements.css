@@ -576,3 +576,132 @@
 .fs-cf-chart__dot {
   fill: var(--color-primary); /* NA:139 */
 }
+
+/* =========================================================================
+   F-MT T4 · KÖK EKRAN (`/mali-tablolar`) — kanon `Ekran 11 - Mali Tablo.dc.html`
+   (E11). Aşağıdaki parantez içi sayılar O dosyanın SATIR numaralarıdır.
+   Blok öneki `fs-mt`; yukarıdaki `fs-side` (bilanço) ve `fs-cf` (nakit akışı)
+   blokları PAYLAŞILMAZ — üç ekran aynı iskeleti taşımıyor.
+   🔴 Bu ekranın veri yüzeylerinin HEPSİ devre dışıdır (uç yok); aşağıdaki
+   kurallar mockup'ın GEOMETRİSİNİ korur, veri stilini değil.
+   ========================================================================= */
+
+/* E11:66 — segment denetimi: tek çerçeve, içinde bitişik üç bölme. */
+.fs-mt-seg {
+  display: flex;
+  background: var(--color-surface); /* E11:66 */
+  border: 1px solid var(--color-border); /* E11:66 */
+  border-radius: var(--radius-8); /* E11:66 */
+  overflow: hidden; /* E11:66 — aktif bölmenin zemini köşeleri taşmasın */
+}
+
+.fs-mt-seg__item {
+  padding: 7px 14px; /* E11:67-69 — token karşılığı yok */
+  font-size: var(--text-body); /* E11:68 — 13px */
+  color: var(--color-text-secondary); /* E11:68 */
+  text-decoration: none;
+  white-space: nowrap;
+}
+a.fs-mt-seg__item:hover {
+  background: var(--color-surface-2);
+}
+a.fs-mt-seg__item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* 🔴 E11:67 — BULUNULAN bölme. İki ton AYNI olamaz: eşitlerse denetim hangi
+   tabloya bakıldığını SÖYLEMEZ. */
+.fs-mt-seg__item--current {
+  background: var(--color-nav-active-bg); /* E11:67 */
+  color: var(--color-primary); /* E11:67 */
+  font-weight: var(--weight-semibold); /* E11:67 */
+}
+
+/* E11:76 — dönem gezgini + proje süzgeci aynı satırda. */
+.fs-mt-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3); /* E11:76 — 12px */
+  margin-bottom: var(--space-5); /* E11:76 — 20px */
+}
+
+/* E11:77 — gezgin kutusu. */
+.fs-mt-period {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2); /* E11:77 — 8px */
+  background: var(--color-surface); /* E11:77 */
+  border: 1px solid var(--color-border); /* E11:77 */
+  border-radius: var(--radius-8); /* E11:77 */
+  padding: 6px var(--space-3); /* E11:77 */
+}
+
+/* E11:78/80 — oklar. 🔴 DEVRE DIŞI: bu ekranda yeniden çekilecek veri yok. */
+.fs-mt-period__arrow {
+  background: none;
+  border: none;
+  font-size: var(--text-lg); /* E11:78 — 18px */
+  line-height: 1;
+  color: var(--color-text-secondary); /* E11:78 */
+}
+.fs-mt-period__arrow:disabled {
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+}
+
+.fs-mt-period__label {
+  font-size: var(--text-body); /* E11:79 — 13/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+/* E11:85 — İKİ EŞİT sütun, 20px boşluk. */
+.fs-mt-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* E11:85 */
+  gap: var(--space-5); /* E11:85 — 20px */
+  align-items: start;
+}
+
+/* E11:150 — sağ sütun: iki kart, 14px aralıkla dikey. */
+.fs-mt-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 14px; /* E11:150 — token karşılığı yok */
+}
+
+/* E11:87 · E11:151 · E11:169 — kart gövdesi (üç kart AYNI iskelet). */
+.fs-mt-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* E11:87 */
+  box-shadow: var(--shadow-card); /* E11:87 */
+  overflow: hidden; /* E11:87 — başlık şeridinin zemini köşeleri taşmasın */
+}
+
+/* E11:88 — başlık şeridi: gri zemin, altında ayırıcı. */
+.fs-mt-card__head {
+  padding: var(--space-4) var(--space-5); /* E11:88 — 16px 20px */
+  background: var(--color-surface-2); /* E11:88 */
+  border-bottom: 1px solid var(--color-border); /* E11:88 */
+}
+.fs-mt-card__title {
+  font-size: var(--text-body); /* E11:89 — 13/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.fs-mt-card__sub {
+  margin-top: 2px; /* E11:90 */
+  font-size: var(--text-small); /* E11:90 — 11px */
+  color: var(--color-text-subtle); /* E11:90 */
+}
+
+/* 🔴 K8 — devre dışı kart SİLİNMEZ, SOLUK basılır ve gerekçesini GÖSTERİR.
+   `fs-cf-panel--disabled` emsalinin aynısı. */
+.fs-mt-card--disabled {
+  background: var(--color-surface-2);
+}
+.fs-mt-card--disabled .fs-notice {
+  margin: var(--space-4); /* gerekçe kart gövdesinin içinde durur */
+}

@@ -139,6 +139,18 @@ describe("NAV_GROUPS — href geçerliliği (kırık link koruması)", () => {
   // kalırdı. Kontrol artık YAZILMAMIŞ BİR EKRANA bağlı DEĞİLDİR (o bağ her
   // yeni dilimde kopuyordu): uydurma bir yol kullanılır ve o yol tanım gereği
   // hiçbir zaman statik olmaz.
+  //
+  // 🔴 F-MT T4 · SEÇİMİN GEREKÇESİ ÖLÇÜLDÜ VE KAYDA GEÇTİ. Alternatif,
+  // kontrolü HÂLÂ yazılmamış GERÇEK bir nav öğesine bağlamaktı; öyle dört öğe
+  // vardır (`/onay-kutusu`, `/raporlar`, `/bordro`, `/sirket-varliklari` —
+  // dördü de bugün `catch-all` çözümlüyor), yani "aday yok" değildi. Yine de
+  // UYDURMA yol tercih edilir: gerçek bir öğeye bağlanan kontrol, o ekran
+  // yazıldığı gün kırılır ve dilim dilim taşınmak zorunda kalır (bu dosyada
+  // tam olarak bu oldu). Uydurma yolun koruma gücü ÖLÇÜLDÜ: `resolveHrefIn`
+  // her çağrıda `{kind:"static"}` döndürecek şekilde sabitlendiğinde YALNIZ
+  // bu test kırmızıya döner. Gerçek bir öğeye bağlamak aynı kod yolunu sınar,
+  // fazladan hiçbir şey kanıtlamaz — ikisini birden tutmak yalnız bakım
+  // maliyetini geri getirirdi.
   it("kontrol grubu: var olmayan bir yol catch-all'a düşer (NEGATİF yol)", () => {
     expect(NAV_GROUPS.flatMap((g) => g.items).some((i) => i.href === "/boyle-bir-rota-yok")).toBe(
       false,

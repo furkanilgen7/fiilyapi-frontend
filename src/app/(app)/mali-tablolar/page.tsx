@@ -1,24 +1,25 @@
-import ComingSoon from "@/components/shell/ComingSoon";
-import { moduleNameForSlug } from "@/components/shell/nav-config";
+import { FinancialStatementsHomeView } from "@/components/financial-statements/FinancialStatementsHomeView";
 
 /**
- * F-MT T2 · `/mali-tablolar` KÖK ekranı — DAVRANIŞ DEĞİŞTİRMEYEN köprü dosyası.
+ * F-MT T4 · `/mali-tablolar` KÖK ekranı (mockup E11 · `Ekran 11 - Mali
+ * Tablo.dc.html`).
  *
- * 🔴 NEDEN VAR: `/mali-tablolar/bilanco` rotası yazılınca `mali-tablolar`
- * klasörü DOĞDU ve `[...slug]` catch-all'ı bu dalı ARTIK YAKALAMIYOR — kök yol
- * `not-found`a (gerçek 404) düşüyordu. Kırılanlar ölçüldü: BL:33 breadcrumb'ı
- * (`← Mali Tablolar`), BL:27 sidebar üst öğesi ve HP:38'den beri duran
- * `accounting-nav-config` kardeş bağlantısı — üçü de aynı yola gider ve
- * `accounting-nav-config.test.ts`in kırık-link bekçisi bunu kırmızıya çevirdi.
+ * 🔴 ROTANIN VARLIK GEREKÇESİ (T2'den devralındı, hâlâ geçerli):
+ * `/mali-tablolar/bilanco` yazılınca `mali-tablolar` klasörü DOĞDU ve
+ * `[...slug]` catch-all'ı bu dalı ARTIK YAKALAMIYOR — kök yol `not-found`a
+ * (gerçek 404) düşerdi. Üç canlı bağlantı buraya gelir: BL:33/NA:33
+ * breadcrumb'ı, BL:27 sidebar üst öğesi ve `accounting-nav-config` kardeş
+ * bağlantısı.
  *
- * Bu dosya catch-all'ın BASTIĞI ŞEYİN AYNISINI basar: davranış bir piksel bile
- * değişmez, yalnız 404 yerine eskisi gibi `ComingSoon` görünür. Kök ekranın
- * GERÇEK tasarımı (mockup E11) AYRI bir görevin işidir ve bu gövdeyi
- * değiştirecektir — burada hiçbir yüzey İCAT EDİLMEZ.
+ * 🔴 T2'nin `ComingSoon` yer tutucusu KALDIRILDI: ekran artık E11'in
+ * iskeletini basıyor, veri yüzeyleri ise DEVRE DIŞI + görünür (ve kayıttan
+ * TÜREYEN) gerekçelidir — gelir tablosu ucu ayrı bir backend diliminde
+ * (MT-2) gelecek.
  *
- * 🔴 Bu rota drill sidebar'ı BASMAZ (E11 onu çizmiyor); sidebar'ı
- * `BalanceSheetView` kendi içinde basar, grup `layout.tsx`i BİLEREK yoktur.
+ * 🔴 Bu rota drill sidebar'ı BASMAZ (E11:36-58 tam kabuk menüsünü çiziyor);
+ * grup `layout.tsx`i BİLEREK yoktur, iki yaprak ekran sidebar'ı kendi içinde
+ * basar.
  */
 export default function MaliTablolarPage() {
-  return <ComingSoon moduleName={moduleNameForSlug("mali-tablolar")} />;
+  return <FinancialStatementsHomeView />;
 }

@@ -176,3 +176,56 @@ describe("financial-statements.css — NA'ya bağlı kurallar (F-MT T3)", () => 
     expect(css.match(/#[0-9a-fA-F]{3,8}\b/g)).toBeNull();
   });
 });
+
+describe("financial-statements.css — E11'e bağlı kurallar (F-MT T4)", () => {
+  it("E11:66 — segment denetimi TEK çerçevedir ve köşeleri kırpar", () => {
+    expect(css).toMatch(/\.fs-mt-seg\s*{[^}]*display:\s*flex/);
+    expect(css).toMatch(/\.fs-mt-seg\s*{[^}]*border-radius:\s*var\(--radius-8\)/);
+    // Aktif bölmenin zemini 8px köşeden TAŞMAMALIDIR.
+    expect(css).toMatch(/\.fs-mt-seg\s*{[^}]*overflow:\s*hidden/);
+  });
+
+  it("🔴 E11:67 — BULUNULAN bölme pasif bölmelerle AYNI tonda olamaz", () => {
+    expect(css).toMatch(
+      /\.fs-mt-seg__item--current\s*{[^}]*background:\s*var\(--color-nav-active-bg\)/,
+    );
+    expect(css).toMatch(/\.fs-mt-seg__item--current\s*{[^}]*color:\s*var\(--color-primary\)/);
+    // Pasif bölme İKİNCİL metin rengindedir; ikisi eşitse denetim hangi
+    // tabloya bakıldığını SÖYLEMEZ.
+    expect(css).toMatch(/\.fs-mt-seg__item\s*{[^}]*color:\s*var\(--color-text-secondary\)/);
+    expect(/\.fs-mt-seg__item\s*{[^}]*color:\s*var\(--color-primary\)/.test(css)).toBe(false);
+  });
+
+  it("🔴 E11:78/80 — dönem okunun DEVRE DIŞI hâli AYRI bir görünüm taşır", () => {
+    // İşler görünüp hiçbir şey yapmayan bir denetim sessiz yalandır: `disabled`
+    // durumu görsel olarak da ayrılır.
+    expect(css).toMatch(/\.fs-mt-period__arrow:disabled\s*{[^}]*cursor:\s*not-allowed/);
+    expect(css).toMatch(/\.fs-mt-period__arrow:disabled\s*{[^}]*var\(--color-text-subtle\)/);
+  });
+
+  it("E11:85 — kartlar İKİ EŞİT sütunlu ızgaradır (20px boşluk)", () => {
+    expect(css).toMatch(/\.fs-mt-grid\s*{[^}]*grid-template-columns:\s*1fr 1fr/);
+    expect(css).toMatch(/\.fs-mt-grid\s*{[^}]*gap:\s*var\(--space-5\)/);
+  });
+
+  it("E11:150 — sağ sütun 14px aralıkla dikey yığındır", () => {
+    expect(css).toMatch(/\.fs-mt-aside\s*{[^}]*flex-direction:\s*column/);
+    expect(css).toMatch(/\.fs-mt-aside\s*{[^}]*gap:\s*14px/);
+  });
+
+  it("E11:87-88 — kart 14px köşeli/gölgeli, başlık şeridi gri zeminlidir", () => {
+    expect(css).toMatch(/\.fs-mt-card\s*{[^}]*border-radius:\s*var\(--radius-14\)/);
+    expect(css).toMatch(/\.fs-mt-card\s*{[^}]*box-shadow:\s*var\(--shadow-card\)/);
+    expect(css).toMatch(/\.fs-mt-card__head\s*{[^}]*background:\s*var\(--color-surface-2\)/);
+  });
+
+  it("🔴 K8 — devre dışı kart SİLİNMEZ, ayrı bir zeminle basılır", () => {
+    expect(css).toMatch(/\.fs-mt-card--disabled\s*{[^}]*background:\s*var\(--color-surface-2\)/);
+  });
+
+  it("🔴 BEKÇİ (E11 blokları dahil): çıplak hex renk YOKTUR", () => {
+    // Aynı iddia üçüncü kez yazılır: E11 blokları BU dosyaya eklendi ve kural
+    // onlar için de bağlayıcıdır.
+    expect(css.match(/#[0-9a-fA-F]{3,8}\b/g)).toBeNull();
+  });
+});
