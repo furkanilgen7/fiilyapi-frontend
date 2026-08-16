@@ -954,6 +954,57 @@ describe("BFF /api/backend/[...path]", () => {
       },
     );
 
+    // F-MUF · T-son — Muhasebe formlarinin IKI kokU ADLI kapiya baglanir.
+    // 🔴 DURUSTLUK NOTU — bu bekcinin gerekcesi MU-2/MT-1'inkiyle AYNI DEGIL:
+    // o kokleri cagiran kod HENUZ YOKTU ve `cagrilan ⊆ izinli` bekcisi onlari
+    // HIC GORMUYORDU. Bunlarin ise cagiran kodu VAR (`useChartOfAccounts` ·
+    // `useJournalEntries` ve mutasyon kancalari), yani dinamik bekci su an
+    // ikisini de goruyor. Adli kapi buraya yine de yazilir cunku dinamik
+    // bekcinin kapsami CAGIRAN KODUN VARLIGINA baglidir: muhasebe ekranlari
+    // ileride yeniden duzenlenir ya da bir kanca gecici olarak devre disi
+    // birakilirsa kok sessizce bekcisiz kalir ve YALNIZ CANLIDA 404 doner
+    // (jsdom bunu GORMEZ). *Arac varligi koruma degildir; koruma, yuzeyin
+    // araca KAYDEDILMESIDIR* (F-PRJTAB dersi).
+    //   · `chart-of-accounts` → GET/POST /chart-of-accounts,
+    //                           GET/PATCH/DELETE /chart-of-accounts/{id}
+    //   · `journal-entries`   → GET/POST /journal-entries, .../{id}/lines,
+    //                           .../{id}/post, .../{id}/reverse
+    it.each(["chart-of-accounts", "journal-entries"])(
+      "%s koku (F-MUF muhasebe formlari) allow-list'te GERCEK girdi olarak tanimlidir",
+      (root) => {
+        const source = readFileSync(
+          resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+          "utf8",
+        );
+        const allowList = source.slice(
+          source.indexOf("const ALLOWED_ROOTS"),
+          source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+        );
+        // 🔴 Yorum metni DEGIL, tirnakli GERCEK girdiler okunur — iki kok de
+        // `route.ts`in ACIKLAMA blogunda ADIYLA geciyor, dolayisiyla ham metin
+        // taramasi yapan bir test allow-list'ten silinseler bile GECERDI
+        // (sahte bekci). Bu ayrim burada teorik degil: olculdu.
+        const entries = [...allowList.matchAll(/^\s*"([a-z0-9-]+)",/gm)].map((m) => m[1]);
+        expect(entries).toContain(root);
+      },
+    );
+
+    it.each(["chart-of-accounts", "journal-entries"])(
+      "%s koku forward edilir (F-MUF)",
+      async (root) => {
+        const fetchMock = vi.fn().mockResolvedValue(
+          new Response("{}", { status: 200, headers: { "content-type": "application/json" } }),
+        );
+        vi.stubGlobal("fetch", fetchMock);
+        const res = await GET(
+          req(`/api/backend/${root}/x`, "GET", { [ACCESS_COOKIE]: "acc" }),
+          ctx([root, "x"]),
+        );
+        expect(res.status).toBe(200);
+        expect(String(fetchMock.mock.calls[0][0])).toContain(`/${root}/x`);
+      },
+    );
+
     // F-BC · T1 — Belge Arşivi IKI yeni kok ekler ve ikisi de ADLI kapiya
     // baglanir:
     //   · `documents`        → POST/GET /documents, /documents/{id}[/download]
