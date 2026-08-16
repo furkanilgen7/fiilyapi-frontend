@@ -84,6 +84,16 @@ function band(
   };
 }
 
+/**
+ * 🔴 K6 — FİKSTÜR KÖRLÜĞÜNÜ KAPATAN LİSTE. `ACCOUNTS`un tamamı
+ * `is_contra: false`tı, yani hiçbir kapı kontra hesabı görmüyordu. `ACCOUNTS`
+ * olduğu gibi DURUR (bant/sütun iddiaları ona dayanıyor); bu onun YANINDA
+ * yalnız kontra testlerinin kullandığı türetilmiş listedir.
+ */
+const ACCOUNTS_WITH_CONTRA: ChartAccountResponse[] = ACCOUNTS.map((account) =>
+  account.code === "257" ? { ...account, is_contra: true } : account,
+);
+
 function listResponse(
   items: ChartAccountResponse[],
   total = items.length,
@@ -529,13 +539,7 @@ describe("Hesap diyaloğu — kontra kontrolü + canlı önizleme (F-MUF T2)", (
    */
   it("düzenleme: mevcut işaret GÖRÜNÜR ve kaldırılınca PATCH `is_contra: false` gider", async () => {
     vi.mocked(useChartOfAccounts).mockReturnValue(
-      queryResult({
-        data: listResponse(
-          ACCOUNTS.map((a) =>
-            a.code === "257" ? { ...a, is_contra: true } : a,
-          ),
-        ),
-      }),
+      queryResult({ data: listResponse(ACCOUNTS_WITH_CONTRA) }),
     );
     const user = userEvent.setup();
     render(<ChartOfAccountsView />);
@@ -549,6 +553,39 @@ describe("Hesap diyaloğu — kontra kontrolü + canlı önizleme (F-MUF T2)", (
       accountId: "id-257",
       body: { is_contra: false },
     });
+  });
+
+  /**
+   * 🔴🔴 K6 — SESSİZ KONTRA SİLME BEKÇİSİ, BİLEŞEN KATMANINDA.
+   *
+   * Kullanıcı kontra bir hesabın yalnız ADINI düzenler. Kutuya HİÇ dokunmaz.
+   * Form state'i sunucudaki `is_contra`yı okumazsa `false` başlar ve kaydetme
+   * gövdeye `is_contra: false` koyar → hesap adı düzenlendiği için sessizce
+   * bozulur, bilanço tutmaz. Buradaki iddia GERÇEKTEN yakalanan PATCH
+   * gövdesinedir; ayrıca kutunun AÇILIŞTA İŞARETLİ geldiği de ölçülür —
+   * bu, state'in `false` başlamadığının doğrudan kanıtıdır.
+   */
+  it("🔴 K6: kontra hesabin ADI degistirilince PATCH `is_contra` TASIMAZ", async () => {
+    vi.mocked(useChartOfAccounts).mockReturnValue(
+      queryResult({ data: listResponse(ACCOUNTS_WITH_CONTRA) }),
+    );
+    const user = userEvent.setup();
+    render(<ChartOfAccountsView />);
+    await user.click(screen.getByTestId("hp-edit-257"));
+
+    // Doğrudan kanıt: state sunucudan geldi, `false` başlamadı.
+    expect(screen.getByTestId("hp-dialog-contra")).toBeChecked();
+
+    await user.clear(screen.getByTestId("hp-dialog-name"));
+    await user.type(screen.getByTestId("hp-dialog-name"), "Birikmis Amortismanlar");
+    await user.click(screen.getByTestId("hp-dialog-save"));
+
+    await waitFor(() => expect(updateAsync).toHaveBeenCalledTimes(1));
+    const [variables] = updateAsync.mock.calls[0] as [ChartAccountUpdateVariables];
+    expect(variables.accountId).toBe("id-257");
+    // 🔴 `toBeUndefined()` YETMEZ: anahtarın VARLIĞI ölçülür.
+    expect(variables.body).not.toHaveProperty("is_contra");
+    expect(Object.keys(variables.body)).toEqual(["name"]);
   });
 
   /**

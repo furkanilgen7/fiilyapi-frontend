@@ -32,6 +32,26 @@ const ACCOUNT: ChartAccountResponse = {
   updated_at: "2026-07-01T00:00:00Z",
 };
 
+/**
+ * 🔴 K6 — FİKSTÜR KÖRLÜĞÜNÜ KAPATAN İKİNCİ HESAP. Bu dosyadaki bütün
+ * fikstürler `is_contra: false`tı; yani "testler yeşil" cümlesi kontra
+ * hesaplar hakkında HİÇBİR ŞEY söylemiyordu. `ACCOUNT` olduğu gibi DURUR,
+ * bu onun YANINA konur (mevcut iddialar ona dayanıyor).
+ *
+ * Kanon: `backend/app/modules/accounting/balance_sheet.py:159-180` —
+ * `257` `liability` + `is_contra = True`.
+ */
+const KONTRA_ACCOUNT: ChartAccountResponse = {
+  ...ACCOUNT,
+  id: "acc-257",
+  code: "257",
+  name: "Birikmiş Amortismanlar (-)",
+  account_type: "liability",
+  is_contra: true,
+  balance: "-620000.00",
+  class_code: "2",
+};
+
 function form(overrides: Partial<ChartAccountFormState> = {}): ChartAccountFormState {
   return {
     code: "100",
@@ -113,6 +133,89 @@ describe("changedChartAccountFields — yalniz DEGISEN alanlar", () => {
     expect(changedChartAccountFields(form({ isContra: false }), kontra)).toEqual({
       is_contra: false,
     });
+  });
+
+  /**
+   * 🔴🔴 K6 — SESSİZ KONTRA SİLME BEKÇİSİ (bu dilimin en tehlikeli kusuru).
+   *
+   * Kusurun anatomisi: `chartAccountFormOf` sunucudaki `is_contra`yı OKUMAZSA
+   * form `false` başlar; kullanıcı SADECE hesap ADINI değiştirip kaydettiğinde
+   * `changedChartAccountFields` "kontra kaldırıldı (true→false)" sanır, gövdeye
+   * `is_contra: false` koyar ve MEVCUT bir kontra hesap adı düzenlendiği için
+   * SESSİZCE bozulur → bilanço dengesizleşir. F-İK'nın `touched` dersinin
+   * birebir tekrarı.
+   *
+   * 🔴 `toBeUndefined()` YETMEZ: `undefined` DEĞERİ taşıyan bir anahtar da
+   * gövdededir ve serileşmede `null`a dönebilir; `null` ise backend'de
+   * (`accounts_service.py:259`) "değişmedi" demektir — yani sessizce yanlış bir
+   * sözleşme. Bu yüzden ANAHTARIN VARLIĞI ve TAM anahtar kümesi ölçülür.
+   */
+  it("🔴 K6: kontra hesapta BASKA alan degisirse `is_contra` govdeye HIC girmez", () => {
+    const state: ChartAccountFormState = {
+      ...chartAccountFormOf(KONTRA_ACCOUNT),
+      name: "Birikmis Amortismanlar",
+    };
+    const body = changedChartAccountFields(state, KONTRA_ACCOUNT);
+
+    expect(body).not.toHaveProperty("is_contra");
+    expect(Object.keys(body)).toEqual(["name"]);
+    expect(body).toEqual({ name: "Birikmis Amortismanlar" });
+  });
+
+  /** Aynı bekçi, alan alan: kod · tür · durum oynatıldığında da kontra sabit. */
+  it("🔴 K6: kod/tur/durum oynasa da kontra hesabin bayragi govdeye girmez", () => {
+    const base = chartAccountFormOf(KONTRA_ACCOUNT);
+    const cases: readonly Partial<ChartAccountFormState>[] = [
+      { code: "258" },
+      { accountType: "asset" },
+      { isActive: false },
+    ];
+    for (const patch of cases) {
+      const body = changedChartAccountFields({ ...base, ...patch }, KONTRA_ACCOUNT);
+      expect(body, JSON.stringify(patch)).not.toHaveProperty("is_contra");
+      expect(Object.keys(body), JSON.stringify(patch)).toHaveLength(1);
+    }
+  });
+
+  /**
+   * 🔴 (d) `PATCH`te `null` = "DEĞİŞMEDİ" (`accounts_service.py:259`).
+   * Null göndererek temizleme YOKTUR; bu yüzden gövde hiçbir koşulda `null`
+   * (ya da `undefined`) DEĞER taşımaz — taşırsa sessizce yutulan bir yazma olur.
+   */
+  it("govde hicbir kosulda `null`/`undefined` DEGER tasimaz", () => {
+    const bodies = [
+      changedChartAccountFields(chartAccountFormOf(KONTRA_ACCOUNT), KONTRA_ACCOUNT),
+      changedChartAccountFields(
+        { ...chartAccountFormOf(KONTRA_ACCOUNT), name: "Yeni" },
+        KONTRA_ACCOUNT,
+      ),
+      changedChartAccountFields(
+        { ...chartAccountFormOf(KONTRA_ACCOUNT), isContra: false },
+        KONTRA_ACCOUNT,
+      ),
+      changedChartAccountFields(form({ isContra: true }), ACCOUNT),
+    ];
+    for (const body of bodies) {
+      for (const [key, value] of Object.entries(body)) {
+        expect(value, key).not.toBeNull();
+        expect(value, key).not.toBeUndefined();
+      }
+    }
+  });
+
+  /**
+   * 🔴 TERS YÖN — "hiç gönderme" diye bir düzeltme yazan biri yukarıdaki
+   * bekçiyi yeşil geçirir ama kullanıcı kontra bayrağını KALDIRAMAZ. Kutu
+   * GERÇEKTEN oynatıldığında alan gövdede OLMAK ZORUNDA.
+   */
+  it("🔴 K6 ters yon: kutu GERCEKTEN oynatilirsa `is_contra: false` govdede OLMALI", () => {
+    const body = changedChartAccountFields(
+      { ...chartAccountFormOf(KONTRA_ACCOUNT), isContra: false },
+      KONTRA_ACCOUNT,
+    );
+    expect(body).toHaveProperty("is_contra");
+    expect(body.is_contra).toBe(false);
+    expect(Object.keys(body)).toEqual(["is_contra"]);
   });
 
   /**
