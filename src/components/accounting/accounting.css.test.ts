@@ -176,3 +176,40 @@ describe("accounting.css — F-MU2 · Mizan (MZ)", () => {
     expect(css).toMatch(/\.mu-tb thead tr:first-child th\s*{[^}]*border-bottom-width:\s*2px/);
   });
 });
+
+describe("accounting.css — F-MU2 · KDV Beyannamesi", () => {
+  it("KDV:54 · :72 — üç kart ve İKİ panel kendi ızgaralarındadır", () => {
+    expect(css).toMatch(/\.mu-vat-cards\s*{[^}]*grid-template-columns:\s*1fr 1fr 1fr/);
+    expect(css).toMatch(/\.mu-vat-grid\s*{[^}]*grid-template-columns:\s*1fr 1fr/);
+  });
+
+  it("🔴 K1 — vurgu kartının İKİ tonu vardır ve AYNI paleti paylaşmazlar", () => {
+    expect(css).toMatch(/\.mu-vat-card--payable\s*{[^}]*var\(--color-orange-tint\)/);
+    expect(css).toMatch(/\.mu-vat-card--carried\s*{[^}]*var\(--color-success-tint\)/);
+    // Turuncu = devlete borç, yeşil = devletten alacak; ikisi aynı zemine
+    // düşerse paranın YÖNÜ ekrandan okunamaz.
+    expect(/\.mu-vat-card--carried\s*{[^}]*var\(--color-orange-tint\)/.test(css)).toBe(false);
+  });
+
+  it("🔴 K1 — sonuç şeridinin İKİ tonu da 2px üst çizgi taşır (KDV:135)", () => {
+    expect(css).toMatch(/\.mu-vat-result\s*{[^}]*border-top:\s*2px solid transparent/);
+    expect(css).toMatch(/\.mu-vat-result--payable\s*{[^}]*var\(--color-warning\)/);
+    expect(css).toMatch(/\.mu-vat-result--carried\s*{[^}]*var\(--color-success\)/);
+  });
+
+  it("KDV:91-95 — istisna satırı SOLGUN ve İTALİKtir", () => {
+    expect(css).toMatch(/\.mu-vat-exempt td\s*{[^}]*var\(--color-text-subtle\)/);
+    expect(css).toMatch(/\.mu-vat-exempt td:first-child\s*{[^}]*font-style:\s*italic/);
+  });
+
+  it("KDV:96 · :126 — iki toplam satırı FARKLI zemin taşır (mavi ↔ yeşil)", () => {
+    expect(css).toMatch(/\.mu-vat-total--calculated td\s*{[^}]*var\(--color-info-tint\)/);
+    expect(css).toMatch(/\.mu-vat-total--deduction td\s*{[^}]*var\(--color-success-tint\)/);
+    expect(css).toMatch(/\.mu-vat-total--calculated \.mu-vat-total__accent\s*{[^}]*var\(--color-danger\)/);
+    expect(css).toMatch(/\.mu-vat-total--deduction \.mu-vat-total__accent\s*{[^}]*var\(--color-success\)/);
+  });
+
+  it("ızgaradaki paneller kendi alt boşluklarını TAŞIMAZ (boşluğu `gap` verir)", () => {
+    expect(css).toMatch(/\.mu-vat-grid \.mu-panel\s*{[^}]*margin-bottom:\s*0/);
+  });
+});

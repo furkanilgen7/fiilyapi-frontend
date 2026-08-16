@@ -557,3 +557,195 @@
 .mu-tb__foot .mu-tb__cell--closing {
   font-size: 14px; /* MZ:168 — `--text-body`den (13px) 1px büyük; token yok */
 }
+
+/* ---------------------------------------------------------------------------
+   F-MU2 · KDV Beyannamesi (KDV). Kanon: `Muhasebe - KDV Beyanı.dc.html`;
+   parantez içi sayılar O dosyanın SATIR numaralarıdır.
+--------------------------------------------------------------------------- */
+
+/* KDV:54 — ÜÇ eşit özet kartı. */
+.mu-vat-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr; /* KDV:54 */
+  gap: var(--space-4); /* KDV:54 — 16px */
+  margin-bottom: var(--space-6); /* KDV:54 — 24px */
+}
+
+/* KDV:55-59 — kart. `.mu-kpi`den AYRIdır: mockup burada 18px iç boşluk,
+   26px değer ve ÜÇÜNCÜ bir satır (alt not) çizer; `.mu-kpi`yi genişletmek
+   E8'in kadrajını gerekçesiz oynatırdı. */
+.mu-vat-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-12); /* KDV:55 */
+  border: 1px solid var(--color-border);
+  padding: 18px; /* KDV:55 — token yok (16px/20px arası), KDV satırıyla gerekçeli */
+}
+.mu-vat-card__label {
+  font-size: var(--text-small); /* KDV:56 — 11px */
+  color: var(--color-text-subtle);
+  margin-bottom: 6px; /* KDV:56 */
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+.mu-vat-card__value {
+  /* KDV:57 — 26px. `--text-numeric` 22px'tir (o ölçü sonuç şeridinindir,
+     KDV:141) ve `--text-page-title` 26px olsa da SAYFA BAŞLIĞInındır; kart
+     değerine ödünç vermek anlamı bulandırırdı → KDV satırıyla gerekçeli px. */
+  font-size: 26px;
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+  color: var(--color-text);
+}
+.mu-vat-card__value--danger {
+  color: var(--color-danger); /* KDV:57 — satıştan doğan BORÇ */
+}
+.mu-vat-card__value--success {
+  color: var(--color-success); /* KDV:62 — alımdan doğan ALACAK */
+}
+.mu-vat-card__note {
+  font-size: var(--text-small); /* KDV:58 — 11px */
+  color: var(--color-text-subtle);
+  margin-top: 3px; /* KDV:58 */
+}
+
+/* KDV:65-69 — VURGU kartı. 🔴 K1: İKİ ton. Turuncu bu mockup'ın sözlüğünde
+   "devlete borç"tur (KDV:57 kırmızı = borç, :62 yeşil = alacak); devreden KDV
+   devletten ALACAK olduğu için yeşile döner — turuncu basmak parayı TERS
+   gösterirdi. */
+.mu-vat-card--accent .mu-vat-card__label {
+  font-weight: var(--weight-bold); /* KDV:66 */
+}
+.mu-vat-card--accent .mu-vat-card__note {
+  font-weight: var(--weight-medium); /* KDV:68 */
+}
+.mu-vat-card--payable {
+  background: var(--color-orange-tint); /* KDV:65 */
+  border-color: var(--color-orange-tint-border); /* KDV:65 */
+}
+.mu-vat-card--payable .mu-vat-card__label,
+.mu-vat-card--payable .mu-vat-card__value {
+  color: var(--color-orange-tint-text); /* KDV:66-67 */
+}
+.mu-vat-card--payable .mu-vat-card__note {
+  color: var(--color-warning-strong); /* KDV:68 */
+}
+/* K1 — devreden dalı (mockup'ta ÇİZİLMEMİŞ). */
+.mu-vat-card--carried {
+  background: var(--color-success-tint);
+  border-color: var(--color-success-tint-border);
+}
+.mu-vat-card--carried .mu-vat-card__label,
+.mu-vat-card--carried .mu-vat-card__value {
+  color: var(--color-success-deep);
+}
+.mu-vat-card--carried .mu-vat-card__note {
+  color: var(--color-success);
+}
+
+/* KDV:72 — iki panel YAN YANA, eşit genişlikte. */
+.mu-vat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* KDV:72 */
+  gap: var(--space-5); /* KDV:72 — 20px */
+  align-items: start;
+}
+/* Izgara içindeki paneller kendi alt boşluklarını TAŞIMAZ (boşluğu `gap`
+   verir); `.mu-panel`in E8'den gelen 20px'i burada çift boşluk yapardı. */
+.mu-vat-grid .mu-panel {
+  margin-bottom: 0;
+}
+
+/* KDV:78-88 — KDV tablolarının hücreleri E8'inkinden DARdır. */
+.mu-vat-table th {
+  padding: 9px 10px; /* KDV:79 */
+}
+.mu-vat-table td {
+  padding: 10px 10px; /* KDV:86 */
+}
+.mu-vat-table th:first-child,
+.mu-vat-table td:first-child {
+  padding-left: 14px; /* KDV:78 · :85 */
+}
+
+/* KDV:91-95 — istisna satırı İTALİK ve SOLGUNdur (rakamları da). */
+.mu-vat-exempt td {
+  color: var(--color-text-subtle); /* KDV:91-94 */
+}
+.mu-vat-exempt td:first-child {
+  font-style: italic; /* KDV:91 */
+}
+
+/* KDV:96-101 · :126-130 — toplam satırı `tfoot` DEĞİL, `tbody`nin son
+   `tr`idir; zemini tablonun rengini taşır. */
+.mu-vat-total td {
+  font-weight: var(--weight-bold); /* KDV:97 */
+  border-bottom: none;
+}
+.mu-vat-total__accent {
+  font-size: var(--text-body); /* KDV:100 — gövdenin 12px'inden büyük */
+}
+.mu-vat-total--calculated td {
+  background: var(--color-info-tint); /* KDV:96 */
+  border-top: 1px solid var(--color-primary-ring); /* KDV:96 */
+}
+.mu-vat-total--calculated .mu-vat-total__accent {
+  color: var(--color-danger); /* KDV:100 */
+}
+.mu-vat-total--deduction td {
+  background: var(--color-success-tint); /* KDV:126 */
+  border-top: 1px solid var(--color-success-tint-border); /* KDV:126 */
+}
+.mu-vat-total--deduction .mu-vat-total__accent {
+  color: var(--color-success); /* KDV:129 */
+}
+
+/* KDV:134-143 — sonuç şeridi panelin İÇİNDEDİR (ayrı kart değil). */
+.mu-vat-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4); /* KDV:135 — 16px */
+  border-top: 2px solid transparent; /* KDV:135 */
+}
+.mu-vat-result__title {
+  font-size: var(--text-body); /* KDV:138 — 13/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.mu-vat-result__date {
+  font-size: 12px; /* KDV:139 — token yok (`--text-body` 13px), KDV satırıyla gerekçeli */
+  margin-top: 3px; /* KDV:139 */
+}
+.mu-vat-result__amount {
+  font-size: var(--text-numeric); /* KDV:141 — 22/700 Mono */
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+.mu-vat-result--payable {
+  background: var(--color-orange-tint); /* KDV:135 */
+  border-top-color: var(--color-warning); /* KDV:135 */
+}
+.mu-vat-result--payable .mu-vat-result__date {
+  color: var(--color-warning-strong); /* KDV:139 */
+}
+.mu-vat-result--payable .mu-vat-result__amount {
+  color: var(--color-orange-tint-text); /* KDV:141 */
+}
+/* K1 — devreden dalı: aynı iskelet, YEŞİL. */
+.mu-vat-result--carried {
+  background: var(--color-success-tint);
+  border-top-color: var(--color-success);
+}
+.mu-vat-result--carried .mu-vat-result__amount {
+  color: var(--color-success-deep);
+}
+
+/* Dar pencerede kartlar ve iki panel tek sütuna iner; yatay taşma OLMAZ. */
+@media (max-width: 1100px) {
+  .mu-vat-cards,
+  .mu-vat-grid {
+    grid-template-columns: 1fr;
+  }
+}
