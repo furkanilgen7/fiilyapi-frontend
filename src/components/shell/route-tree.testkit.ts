@@ -15,6 +15,16 @@
 // sayılır — dinamik segmentler statik href parçalarını yutamaz. Gerçek
 // ID'lerle üretilmiş href'lerde (ör. "/projeler/1/santiyeler/9") dinamik
 // eşleşme beklenen davranıştır: `allowDynamicFallback` onun içindir.
+//
+// F-PRJTAB T4 GENİŞLETMESİ — `dynamicAllowedSegments`:
+// `allowDynamicFallback: true` tek başına KÖRDÜR: dinamik klasör kardeşi olan
+// her segmenti yutar. Sekme şeritleri gibi href'i hem gerçek kimlikten hem
+// sabit metinden kuran kaynaklarda bu, "/hakedisler/isveren" tipi UYDURMA bir
+// yolun sessizce yeşil geçmesi demektir (F-TH'de fiilen yaşandı).
+// Çözüm: çağıran, bileşene AYIRT EDİCİ sentinel kimlikler ("__PRJ__" gibi)
+// verir ve bu kümeyi geçer; dinamik düşüş YALNIZ o sentinel değerler için
+// serbesttir, başka her segmentin dinamik klasöre düşmesi GEÇERSİZ sayılır.
+// Parametre opsiyoneldir — verilmezse bugünkü davranış birebir korunur.
 import { existsSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -59,6 +69,12 @@ export function resolveHrefIn(
   tree: RouteNode,
   href: string,
   allowDynamicFallback: boolean,
+  /**
+   * Verilirse dinamik düşüş YALNIZ bu kümedeki segment değerleri için
+   * serbesttir (bkz. dosya başındaki F-PRJTAB T4 genişletmesi). Verilmezse
+   * `allowDynamicFallback` tek başına belirler — mevcut çağıranlar etkilenmez.
+   */
+  dynamicAllowedSegments?: ReadonlySet<string>,
 ): ResolveResult {
   const segments = href.split("/").filter(Boolean);
   let node = tree;
@@ -71,7 +87,8 @@ export function resolveHrefIn(
       continue;
     }
     if (node.dynamicChild) {
-      if (!allowDynamicFallback) {
+      const segmentAllowed = dynamicAllowedSegments ? dynamicAllowedSegments.has(segment) : true;
+      if (!allowDynamicFallback || !segmentAllowed) {
         return { kind: "dynamic-fallback", dynamicSegmentName: node.dynamicChild.name, matchedPrefix };
       }
       node = node.dynamicChild.node;
