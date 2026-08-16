@@ -23,13 +23,26 @@ describe("PersonnelTabsStrip", () => {
     );
   });
 
-  it("rotasız ÜÇ sekme DEVRE-DIŞIdır ve gerekçesi title'da görünür (kalıcı kural)", () => {
+  it("'İzin Yönetimi' GERÇEK bir bağlantıdır (F-IZN T5)", () => {
     render(<PersonnelTabsStrip />);
-    for (const label of ["İzin Yönetimi", "Bordro", "SGK"]) {
+    expect(screen.getByRole("tab", { name: "İzin Yönetimi" })).toHaveAttribute(
+      "href",
+      "/personel/izinler",
+    );
+  });
+
+  it("rotasız İKİ sekme DEVRE-DIŞIdır ve gerekçesi title'da görünür (kalıcı kural)", () => {
+    render(<PersonnelTabsStrip />);
+    for (const label of ["Bordro", "SGK"]) {
       const tab = screen.getByRole("tab", { name: label });
       expect(tab).toHaveAttribute("aria-disabled", "true");
       expect(tab).toHaveAttribute("title", "Bu ekran henüz yazılmadı.");
       expect(tab.tagName).not.toBe("A");
     }
+  });
+
+  it("canlanan 'İzin Yönetimi' sekmesi gerekçe title'ı TAŞIMAZ (görünür gerekçe canonu)", () => {
+    render(<PersonnelTabsStrip />);
+    expect(screen.getByRole("tab", { name: "İzin Yönetimi" })).not.toHaveAttribute("title");
   });
 });

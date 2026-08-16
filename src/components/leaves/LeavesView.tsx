@@ -107,10 +107,10 @@ export function LeavesView({ currentYear = new Date().getFullYear() }: LeavesVie
   return (
     <div className="iz">
       <p className="iz__eyebrow">{LEAVES_EYEBROW}</p>
-      {/* Mockup İZ ekranında talep AÇMA düğmesi ÇİZMEZ; ama talep formunun
-          kendi karar kaydı "İK > İzin Yönetimi ekranından diyalog olarak
-          açılır" der (T 32). Tetikleyici olmadan form ULAŞILAMAZ olurdu —
-          başlık satırına en sade hâliyle eklendi. */}
+      {/* F-IZN T5 şef ölçümü: mockup düğmeyi ÇİZER (`İK - İzin Yönetimi.dc.html:21`
+          — "+ İzin Talebi"); T4'ün "mockup çizmez" gerekçesi YANLIŞTI, etiket
+          buna göre düzeltildi. Diyaloğun BAŞLIĞI ayrı sabit ("Yeni İzin
+          Talebi", `Form - Izin Talebi.dc.html:71`) ve DEĞİŞMEDİ. */}
       <div className="iz__title-row">
         <h1 className="iz__title">{LEAVES_PAGE_TITLE}</h1>
         <Button
@@ -123,9 +123,11 @@ export function LeavesView({ currentYear = new Date().getFullYear() }: LeavesVie
         </Button>
       </div>
 
-      {/* `/personel` ile ORTAK sekme şeridi (F-IZN T5 bu sekmeyi gerçek
-          rotasına bağlar; şerit BU dilimde DEĞİŞTİRİLMEZ). */}
-      <PersonnelTabsStrip />
+      {/* `/personel` ile ORTAK sekme şeridi. F-IZN T5: "İzin Yönetimi" artık
+          GERÇEK rotaya bağlı — bu ekran aktif sekmesini kendisi bildirir (aktif
+          sekme kendi sayfasına bağlanmaz, düz metne düşer; şerit bileşeninin
+          KENDİSİ bu dilimde DEĞİŞTİRİLMEZ, yalnız parametre verilir). */}
+      <PersonnelTabsStrip activeTab="İzin Yönetimi" />
 
       {/* 45-51 */}
       <LeavesKpiStrip summary={summary} />

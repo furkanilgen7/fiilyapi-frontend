@@ -109,8 +109,13 @@ export const DECISION_PENDING_REASON =
  * (T) = `Form - Izin Talebi.dc.html` · (R) = `Form - Izin Reddi.dc.html`
  */
 
-/** İZ ekranındaki tetikleyici — mockup'ta YOKTUR, gerekçesi `LeavesView`de. */
-export const NEW_REQUEST_ACTION_LABEL = "Yeni İzin Talebi";
+/**
+ * F-IZN T5 · şef ölçümü: İZ ekranındaki tetikleyici mockup'ta VARDIR
+ * (`İK - İzin Yönetimi.dc.html:21` — `+ İzin Talebi`); T4'ün "mockup çizmez"
+ * varsayımı yanlıştı. Diyaloğun BAŞLIĞI ayrı sabittir (`REQUEST_FORM_TITLE`,
+ * `Form - Izin Talebi.dc.html:71` — "Yeni İzin Talebi") ve DEĞİŞMEZ.
+ */
+export const NEW_REQUEST_ACTION_LABEL = "+ İzin Talebi";
 
 /** Not/gerekçe alanlarının tavanı (T 180 · R 106). */
 export const MAX_TEXT_LENGTH = 500;

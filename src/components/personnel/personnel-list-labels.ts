@@ -101,6 +101,12 @@ export const EXPORT_PENDING_REASON = "Dışa aktarma ucu backend'de henüz yok."
 export const HR_DOCUMENTS_ROUTE = "/personel/belgeler";
 
 /**
+ * F-IZN T3/T5 · İzin Yönetimi ekranının rotası. Sekme şeridi bu sabiti
+ * kullanır (rota tek yerde tanımlı olsun — `HR_DOCUMENTS_ROUTE` emsali).
+ */
+export const LEAVES_ROUTE = "/personel/izinler";
+
+/**
  * P 80-86 · uyarı bandı metni. ŞEF KARARI: sunucu (`GET /hr/documents/summary`)
  * BELGE sayısı verir; mockup'ın "N personelin…" ifadesinin sunucuda karşılığı
  * YOKTUR — personel sayısı UYDURULMAZ, cümle belge sayısı üzerinden kurulur.
