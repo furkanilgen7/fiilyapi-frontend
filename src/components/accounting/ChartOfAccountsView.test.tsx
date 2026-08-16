@@ -156,7 +156,10 @@ describe("Hesap Planı ekranı — HP başlık şeridi", () => {
     const user = userEvent.setup();
     render(<ChartOfAccountsView />);
     await user.click(screen.getByTestId("hp-create"));
-    expect(screen.getByRole("dialog", { name: "Yeni Hesap" })).toBeInTheDocument();
+    // 🔴 İDDİA TAŞINDI, SİLİNMEDİ (F-MUF T2): başlık `Yeni Hesap` → `Yeni Hesap
+    // Ekle`. Kaynak `Form - Hesap Ekle.dc.html:63` — RTL'de `name` TAM eşleşir
+    // (Playwright'ın alt dizge davranışı DEĞİL), o yüzden metin güncellendi.
+    expect(screen.getByRole("dialog", { name: "Yeni Hesap Ekle" })).toBeInTheDocument();
     // Boş formda kaydet KAPALIdır ve gerekçesi EKRANDA görünür.
     expect(screen.getByTestId("hp-dialog-save")).toBeDisabled();
     expect(screen.getByTestId("hp-dialog-blockers")).toHaveTextContent("Hesap kodu zorunludur.");
@@ -491,5 +494,157 @@ describe("Hesap diyaloğu (T4)", () => {
 
     await user.click(screen.getByTestId("hp-dialog-close"));
     expect(screen.queryByTestId("hp-dialog-missing")).toBeNull();
+  });
+});
+
+/**
+ * F-MUF T2 · `Form - Hesap Ekle.dc.html` sadakati + `is_contra` kontrolü.
+ * `M:` ön eki O mockup'ın satır numarasıdır.
+ */
+describe("Hesap diyaloğu — kontra kontrolü + canlı önizleme (F-MUF T2)", () => {
+  it("M:111-131 — kontra kutusu işaretlenirse POST gövdesi `is_contra: true` taşır", async () => {
+    const user = userEvent.setup();
+    render(<ChartOfAccountsView />);
+    await user.click(screen.getByTestId("hp-create"));
+
+    await user.type(screen.getByTestId("hp-dialog-code"), "257");
+    await user.type(screen.getByTestId("hp-dialog-name"), "Birikmiş Amortismanlar (-)");
+    await user.selectOptions(screen.getByTestId("hp-dialog-type"), "liability");
+    await user.click(screen.getByTestId("hp-dialog-contra"));
+    await user.click(screen.getByTestId("hp-dialog-save"));
+
+    expect(createAsync).toHaveBeenCalledWith({
+      code: "257",
+      name: "Birikmiş Amortismanlar (-)",
+      account_type: "liability",
+      is_active: true,
+      is_contra: true,
+    });
+  });
+
+  /**
+   * 🔴 F-MU1'in AÇIK BORCU BUYDU: kontra hesap arayüzden İŞARETLENEMİYORDU.
+   * Düzenleme kipinde işaretin KALDIRILABİLMESİ de şart — yanlış işaretlenmiş
+   * bir hesap yoksa UI'dan geri alınamazdı (bilanço UI'dan düzeltilemez).
+   */
+  it("düzenleme: mevcut işaret GÖRÜNÜR ve kaldırılınca PATCH `is_contra: false` gider", async () => {
+    vi.mocked(useChartOfAccounts).mockReturnValue(
+      queryResult({
+        data: listResponse(
+          ACCOUNTS.map((a) =>
+            a.code === "257" ? { ...a, is_contra: true } : a,
+          ),
+        ),
+      }),
+    );
+    const user = userEvent.setup();
+    render(<ChartOfAccountsView />);
+    await user.click(screen.getByTestId("hp-edit-257"));
+
+    expect(screen.getByTestId("hp-dialog-contra")).toBeChecked();
+    await user.click(screen.getByTestId("hp-dialog-contra"));
+    await user.click(screen.getByTestId("hp-dialog-save"));
+
+    expect(updateAsync).toHaveBeenCalledWith({
+      accountId: "id-257",
+      body: { is_contra: false },
+    });
+  });
+
+  /**
+   * 🔴 K3: önizleme `account_type`tan TEK BAŞINA türemez. `257` (Pasif+kontra)
+   * AKTİF tarafta durur; kutu işaretlenmeden basılan cümle bunun TERSİdir.
+   */
+  it("M:133-147 — canlı önizleme tür VE bayrak değişiminde YENİDEN türer", async () => {
+    const user = userEvent.setup();
+    render(<ChartOfAccountsView />);
+    await user.click(screen.getByTestId("hp-create"));
+
+    const preview = screen.getByTestId("hp-dialog-preview");
+    expect(preview).toHaveTextContent("Normal — aktif toplama eklenir");
+
+    await user.selectOptions(screen.getByTestId("hp-dialog-type"), "liability");
+    expect(preview).toHaveTextContent("Normal — pasif toplama eklenir");
+
+    await user.click(screen.getByTestId("hp-dialog-contra"));
+    expect(preview).toHaveTextContent("Kontra — aktif toplamdan düşülür");
+
+    await user.selectOptions(screen.getByTestId("hp-dialog-type"), "revenue");
+    expect(preview).toHaveTextContent("Gelir tablosu hesabı");
+  });
+
+  it("M:137-140 — önizleme şeridi kod · ad · tür rozeti · durum rozetini basar", async () => {
+    const user = userEvent.setup();
+    render(<ChartOfAccountsView />);
+    await user.click(screen.getByTestId("hp-create"));
+    await user.type(screen.getByTestId("hp-dialog-code"), "257.01");
+    await user.type(screen.getByTestId("hp-dialog-name"), "Birikmiş Amortismanlar");
+
+    const strip = screen.getByTestId("hp-dialog-preview-head");
+    expect(strip).toHaveTextContent("257.01");
+    expect(strip).toHaveTextContent("Birikmiş Amortismanlar");
+    expect(strip).toHaveTextContent("Aktif");
+    expect(strip).toHaveTextContent("KULLANIMDA");
+  });
+
+  /** 🔴 KARŞI ÖRNEK EKRANDA OLMAK ZORUNDA (K1) — yoksa yanlış kural öğrenilir. */
+  it("M:110-131 — yardım kutusu DOĞRU örneği, KARŞI örneği ve boş bırakma cümlesini basar", async () => {
+    const user = userEvent.setup();
+    render(<ChartOfAccountsView />);
+    await user.click(screen.getByTestId("hp-create"));
+
+    const help = screen.getByTestId("hp-dialog-contra-help");
+    expect(help).toHaveTextContent("257 Birikmiş Amortismanlar (-)");
+    expect(help).toHaveTextContent("501 Ödenmemiş Sermaye (-)");
+    expect(help).toHaveTextContent("İŞARETLENMEZ");
+    expect(help).toHaveTextContent("Emin değilseniz boş bırakın.");
+    // K2: uydurma `102 Alınan Çekler Reeskontu` SİLİNDİ, `122` kaldı.
+    expect(help).toHaveTextContent("122 Alacak Senetleri Reeskontu (-)");
+    expect(help.textContent ?? "").not.toContain("102 Alınan Çekler");
+  });
+
+  /** 🔴 ÇIPLAK GLİF YASAĞI — `⚠` (U+26A0) ve `≠` (U+2260) fontta YOK (tofu basar). */
+  it("diyalogda kapsanmayan glif YOKTUR (⚠ · ≠ · 📒)", async () => {
+    const user = userEvent.setup();
+    render(<ChartOfAccountsView />);
+    await user.click(screen.getByTestId("hp-create"));
+    expect(screen.getByRole("dialog").textContent ?? "").not.toMatch(/[⚠≠📒]/u);
+  });
+
+  /** K8 — `M:89` placeholder eklendi: seçenek sayısı 5'ten 6'ya çıktı. */
+  it("M:89 — Tür açılırında SEÇİLEMEZ bir placeholder vardır, varsayılan `asset` KALIR", async () => {
+    const user = userEvent.setup();
+    render(<ChartOfAccountsView />);
+    await user.click(screen.getByTestId("hp-create"));
+
+    const select = screen.getByTestId("hp-dialog-type") as HTMLSelectElement;
+    expect(select.options).toHaveLength(6);
+    expect(select.options[0].text).toBe("Tür seçiniz...");
+    expect(select.options[0].disabled).toBe(true);
+    expect(select.value).toBe("asset");
+  });
+
+  /** M:152-154 — "Kaydettikten sonra yeni hesap ekle" YALNIZ oluşturma kipinde. */
+  it("M:152-154 — tekrar kutusu işaretliyse diyalog AÇIK kalır ve form sıfırlanır", async () => {
+    const user = userEvent.setup();
+    render(<ChartOfAccountsView />);
+    await user.click(screen.getByTestId("hp-create"));
+
+    await user.click(screen.getByTestId("hp-dialog-repeat"));
+    await user.type(screen.getByTestId("hp-dialog-code"), "120.01");
+    await user.type(screen.getByTestId("hp-dialog-name"), "Alıcılar");
+    await user.click(screen.getByTestId("hp-dialog-save"));
+
+    await waitFor(() => expect(screen.getByTestId("hp-dialog-code")).toHaveValue(""));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByTestId("hp-dialog-name")).toHaveValue("");
+    expect(createAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it("tekrar kutusu DÜZENLEME kipinde HİÇ basılmaz", async () => {
+    const user = userEvent.setup();
+    render(<ChartOfAccountsView />);
+    await user.click(screen.getByTestId("hp-edit-100"));
+    expect(screen.queryByTestId("hp-dialog-repeat")).toBeNull();
   });
 });

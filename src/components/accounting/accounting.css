@@ -806,3 +806,200 @@ span.mu-tb__total {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   F-MUF T2 · `Form - Hesap Ekle.dc.html` (aşağıda `M:` = O dosyanın satırı).
+   Düzen/renk/tipografi mockup'tan BİREBİR; kutunun CÜMLELERİ kanondan gelir
+   (K1 — gerekçe `chart-account-form.ts` başında).
+   Palet YALNIZ token'dan (bekçi: bu dosyada ÇIPLAK HEX YASAK):
+   M:111 zemin = --color-amber-tint-cell · M:111 kenarlık =
+   --color-warning-border-soft · M:115 başlık = --color-warning-deep-text ·
+   M:116 gövde = --color-warning-body-text · M:113 vurgu =
+   --color-warning-strong.
+--------------------------------------------------------------------------- */
+
+/* M:57 — diyalog `max-width:560px`; varsayılan kabuk 480px'tir. */
+.mu-modal--account {
+  width: min(560px, 92vw);
+}
+
+/* M:64 — başlığın altındaki açıklama (Modal alt başlık almadığı için gövdede). */
+.mu-account-form__subtitle {
+  font-size: 12px; /* M:64 — token yok (--text-body 13px), mockup satırıyla gerekçeli */
+  color: var(--color-text-subtle);
+  margin-top: calc(-1 * var(--space-2));
+}
+
+/* M:85 — iki eşit sütun; M:72 kod sütunu 150px sabittir. */
+.mu-account-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-form-section-gap); /* M:72/85 — 14px */
+  align-items: start;
+}
+.mu-account-form__row--code {
+  grid-template-columns: 150px 1fr; /* M:72 */
+}
+
+/* M:100 — anahtar ile durum sözcüğü aynı satırda, 12px arayla. */
+.mu-account-form__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3); /* M:100 — 12px */
+  padding: var(--space-2) 0; /* M:100 */
+}
+.mu-account-form__state {
+  font-size: var(--text-body); /* M:104 — 13/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+.mu-account-form__state--on {
+  color: var(--color-success); /* M:104 */
+}
+
+/* M:152 — alt şeritteki tekrar kutusu esner, düğmeleri sağa iter. */
+.mu-account-form__repeat-box {
+  flex: 1;
+  font-size: 12px; /* M:152 */
+  color: var(--color-text-secondary);
+}
+
+/* ---- M:111-131 KRİTİK: kontra hesap kutusu ---- */
+.mu-contra {
+  /* 🔴 ZARİF DÜŞÜŞ: M:123 iç kutunun kenarlığı dış kenarlıktan bir ton AÇIKTIR
+     ve o tonun tokens.css'te karşılığı YOK. tokens.css bu dilimde
+     DEĞİŞTİRİLEMEZ, çıplak hex de yasak (bu dosyanın kör bekçisi) → aynı
+     kehribar ailesinin mevcut token'ı kullanılır. Ton farkı kaybolur, karar
+     görünür kalır. */
+  --mu-contra-inner-border: var(--color-warning-border-soft); /* M:123 (yaklaşık) */
+  padding: 15px; /* M:111 */
+  background: var(--color-amber-tint-cell); /* M:111 */
+  border: 1.5px solid var(--color-warning-border-soft); /* M:111 */
+  border-radius: 11px; /* M:111 — 11px token yok */
+  display: flex;
+  flex-direction: column;
+  gap: 5px; /* M:115 başlık→gövde */
+}
+
+/* M:113 — kutucuk 17×17 ve turuncu vurgulu; M:115 başlık 13/700. */
+.mu-contra__box .checkbox {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--color-warning-strong);
+}
+.mu-contra__title {
+  font-size: var(--text-body); /* M:115 — 13/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-warning-deep-text);
+}
+
+/* M:116 — gövde 12px, satır yüksekliği 1.7, koyu kehribar. */
+.mu-contra__body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px; /* M:116 */
+  line-height: 1.7; /* M:116 */
+  color: var(--color-warning-body-text); /* M:116 */
+  /* Kutucuk (17px) + M:112 `gap:11px` kadar içeri: metin başlıkla hizalanır. */
+  padding-left: 28px;
+}
+.mu-contra__body .is-mono {
+  font-family: var(--font-mono); /* M:118 `.mono` */
+}
+.mu-contra__fallback {
+  font-weight: var(--weight-semibold);
+}
+
+/* M:123-127 — "Neden önemli" iç kutusu: BEYAZ zemin, açık kehribar kenarlık. */
+.mu-contra__why {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 4px; /* M:123 — 9px'in kutu gap'iyle toplamı */
+  padding: 9px 11px; /* M:123 */
+  background: var(--color-surface); /* M:123 */
+  border: 1px solid var(--mu-contra-inner-border); /* M:123 */
+  border-radius: var(--radius-8); /* M:123 */
+  font-size: var(--text-small); /* M:124 — 11px */
+  line-height: var(--leading-normal); /* M:124 */
+  color: var(--color-warning-deep-text); /* M:124 */
+}
+/* M:125'teki `⚠` (U+26A0) fontta YOKTUR → ikon. Metnin ilk satırına hizalanır. */
+.mu-contra__why-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ---- M:134-147 CANLI ÖNİZLEME ---- */
+.mu-preview {
+  padding: var(--space-form-section-gap); /* M:134 — 14px */
+  background: var(--color-surface-2); /* M:134 */
+  border: 1px solid var(--color-border); /* M:134 */
+  border-radius: var(--radius-10); /* M:134 */
+}
+.mu-preview__eyebrow {
+  font-size: var(--text-small); /* M:135 — 11/600 uppercase ls .8 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 11px; /* M:135 */
+}
+.mu-preview__head {
+  display: flex;
+  align-items: center;
+  gap: 11px; /* M:136 */
+  margin-bottom: 10px; /* M:136 */
+}
+.mu-preview__code {
+  font-size: var(--text-body); /* M:137 — 13/700 MONO */
+  font-weight: var(--weight-bold);
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+}
+.mu-preview__name {
+  flex: 1; /* M:138 */
+  font-size: var(--text-body); /* M:138 — 13/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* M:142 — davranış satırı BEYAZ kartta, etiket solda değer sağda. */
+.mu-preview__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 9px 11px; /* M:142 */
+  background: var(--color-surface); /* M:142 */
+  border: 1px solid var(--color-border); /* M:142 */
+  border-radius: var(--radius-7); /* M:142 */
+}
+.mu-preview__label {
+  font-size: 12px; /* M:143 */
+  color: var(--color-text-muted); /* M:143 */
+}
+.mu-preview__value {
+  font-size: 12px; /* M:144 */
+  font-weight: var(--weight-semibold);
+  text-align: right;
+}
+/* M:144 — normal hâl MAVİ; kontra hâl mockup'ta çizilmemiş, kutunun kehribar
+   ailesinden alınır (aynı kararın iki yüzü aynı renkle konuşur). */
+.mu-preview__value--normal {
+  color: var(--color-primary);
+}
+.mu-preview__value--contra {
+  color: var(--color-warning-strong);
+}
+
+/* Dar pencerede iki sütunlu satırlar teke iner; yatay taşma OLMAZ. */
+@media (max-width: 640px) {
+  .mu-account-form__row,
+  .mu-account-form__row--code {
+    grid-template-columns: 1fr;
+  }
+}
