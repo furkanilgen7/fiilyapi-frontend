@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { HR_DOCUMENTS_ROUTE, TAB_PENDING_REASON } from "./personnel-list-labels";
+import { HR_DOCUMENTS_ROUTE, LEAVES_ROUTE, TAB_PENDING_REASON } from "./personnel-list-labels";
 import "./personnel-list.css";
 
 interface TabDef {
@@ -10,20 +10,20 @@ interface TabDef {
 }
 
 /** Şeridi basan ekranların kullandığı sekme adları — serbest string değil. */
-export type PersonnelTabLabel = "Personel Listesi" | "Belge & Sertifika";
+export type PersonnelTabLabel = "Personel Listesi" | "Belge & Sertifika" | "İzin Yönetimi";
 
 // P 70-77 · İK sekme şeridi. Kalıcı kural: rotası olmayan mockup öğesi
-// SİLİNMEZ, devre-dışı + görünür gerekçeyle basılır. "Puantaj" (spec K3) ve
-// F-İK T2'den beri "Belge & Sertifika" GERÇEK rotaya gider; İzin Yönetimi /
-// Bordro / SGK ekranları henüz yazılmadı.
+// SİLİNMEZ, devre-dışı + görünür gerekçeyle basılır. "Puantaj" (spec K3),
+// F-İK T2'den beri "Belge & Sertifika" ve F-IZN T5'ten beri "İzin Yönetimi"
+// GERÇEK rotaya gider; Bordro / SGK ekranları henüz yazılmadı.
 //
-// F-İK T5: şerit artık İKİ ekran tarafından paylaşılır (`/personel` ve
-// `/personel/belgeler`) — aktif sekme SABİT DEĞİL, parametreyle gelir. İkinci
-// bir şerit YAZILMAZ (görev emri kuralı): aktif olan sekme düz metne düşer,
-// diğerleri gerçek rotalarına bağlanır.
+// F-İK T5: şerit artık BİRDEN ÇOK ekran tarafından paylaşılır (`/personel`,
+// `/personel/belgeler`, `/personel/izinler`) — aktif sekme SABİT DEĞİL,
+// parametreyle gelir. İkinci bir şerit YAZILMAZ (görev emri kuralı): aktif
+// olan sekme düz metne düşer, diğerleri gerçek rotalarına bağlanır.
 const TABS: TabDef[] = [
   { label: "Personel Listesi", href: "/personel" },
-  { label: "İzin Yönetimi" },
+  { label: "İzin Yönetimi", href: LEAVES_ROUTE },
   { label: "Belge & Sertifika", href: HR_DOCUMENTS_ROUTE },
   { label: "Puantaj", href: "/puantaj" },
   { label: "Bordro" },

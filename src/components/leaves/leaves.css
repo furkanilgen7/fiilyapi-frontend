@@ -1,0 +1,660 @@
+/* F-IZN T3 · İZ — `/personel/izinler` (İzin Yönetimi). Kanon
+   `İK - İzin Yönetimi.dc.html`; parantez içi sayılar o dosyanın SATIR
+   numaralarıdır.
+
+   Mockup'ın KENDİ üst barı (14-22) ve KENDİ sol menüsü (25-40) UYGULAMA
+   KABUĞUdur (F3 Topbar + Sidebar) — bu sayfa onları YENİDEN ÇİZMEZ. Sekme
+   şeridi `/personel` ile ORTAKTIR (`.personel-tabs`), burada tanımlanmaz.
+   Prefix `iz`. Çıplak hex/px palet YOKTUR: renk yalnız `tokens.css`ten gelir. */
+.iz {
+  animation: var(--anim-fade-up); /* 42 */
+}
+.iz__eyebrow {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+  margin-bottom: 6px;
+}
+.iz__title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.iz__title {
+  font-size: var(--text-page-title);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+  margin-right: auto;
+}
+
+/* ── KPI şeridi (45-51) ─────────────────────────────────────────────────── */
+.iz-kpi {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr); /* 45 */
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.iz-kpi__card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-12); /* 46 */
+  padding: 14px;
+}
+/* 46 — bekleyen talep kartının sol kenarı turuncudur */
+.iz-kpi__card--pending {
+  border-left: 4px solid var(--color-warning);
+}
+/* 50 — devreden risk kartının sol kenarı kırmızıdır */
+.iz-kpi__card--risk {
+  border-left: 4px solid var(--color-danger);
+}
+.iz-kpi__label {
+  font-size: 10px;
+  color: var(--color-text-subtle);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+.iz-kpi__value {
+  font-size: var(--text-numeric); /* 46-50 · 22/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.iz-kpi__value--pending {
+  color: var(--color-warning); /* 46 */
+}
+.iz-kpi__value--debt {
+  color: var(--color-primary); /* 49 */
+}
+.iz-kpi__value--risk {
+  color: var(--color-danger); /* 50 */
+}
+.iz-kpi__hint {
+  font-size: 10px; /* 50 */
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+
+/* ── Kart kabuğu (54 · 116) ─────────────────────────────────────────────── */
+.iz-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* 54 */
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.iz-card__head {
+  padding: 13px 16px; /* 55 · 117 */
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-2); /* 117 */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+/* 55 — bekleyen talepler başlığının zemini kehribardır */
+.iz-card__head--warning {
+  background: var(--color-amber-tint-cell);
+}
+.iz-card__title {
+  font-size: var(--text-body); /* 118 · 13/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.iz-card__title--warning {
+  font-weight: var(--weight-bold); /* 56 */
+  color: var(--color-warning-deep-text);
+}
+.iz-card__hint {
+  font-size: var(--text-small); /* 119 */
+  color: var(--color-text-subtle);
+}
+.iz-card__hint--warning {
+  color: var(--color-warning-body-text); /* 57 */
+}
+/* 120 — yıl seçici başlığın SAĞ ucuna yaslanır */
+.iz-card__tools {
+  margin-left: auto;
+}
+/* T4 devri: karar geri çağrıları bağlanmadan gerekçe EKRANDA okunur
+   (`title` özniteliğinde saklanmaz). */
+.iz-card__pending-reason {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+}
+
+/* ── Ortak tablo (59-112 · 122-170) ─────────────────────────────────────── */
+.iz-table-scroll {
+  overflow-x: auto;
+}
+.iz-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.iz-table__th {
+  padding: 10px 12px; /* 61-68 */
+  text-align: center;
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+.iz-table__th:first-child {
+  padding-left: 16px; /* 61 */
+  text-align: left;
+}
+.iz-table__th--center {
+  text-align: center;
+}
+/* 130 — "Kalan" sütun başlığı yeşildir */
+.iz-table__th--success {
+  color: var(--color-success);
+}
+.iz-table thead th:not(.iz-table__th--center):not(:first-child) {
+  text-align: left;
+}
+.iz-table__row {
+  border-bottom: 1px solid var(--color-divider); /* 71 */
+}
+.iz-table__row:last-child {
+  border-bottom: none; /* 101 · 160 */
+}
+/* 91 — hak aşan talep satırının zemini pembemsi */
+.iz-table__row--overrun {
+  background: var(--color-audit-danger-row-bg);
+}
+/* 151 — devreden yanma riski taşıyan bakiye satırının zemini sarımsı */
+.iz-table__row--risk {
+  background: var(--color-amber-tint-cell);
+}
+.iz-table__td {
+  padding: 12px; /* 72-79 */
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  vertical-align: middle;
+}
+.iz-table__td:first-child {
+  padding-left: 16px;
+}
+.iz-table__td--center {
+  text-align: center;
+}
+.iz-table__td--date {
+  white-space: nowrap;
+}
+.iz-table__td--name {
+  font-size: var(--text-body); /* 134 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.iz-table__td--days {
+  font-size: var(--text-body); /* 76 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.iz-table__td--strong {
+  font-size: var(--text-body); /* 136 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.iz-table__td--used {
+  font-size: var(--text-body); /* 138 */
+  color: var(--color-danger);
+}
+.iz-table__td--muted {
+  font-size: var(--text-body); /* 137 */
+  color: var(--color-text-muted);
+}
+.iz-table__td--warning {
+  font-size: var(--text-body); /* 155 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-warning-strong);
+}
+.iz-table__td--danger {
+  color: var(--color-danger-strong); /* 96 · 98 */
+}
+.iz-table__td--note {
+  color: var(--color-text-muted); /* 78 */
+}
+/* Boş durum / yükleniyor / hata satırı (K3 istisnası: boş durum ZORUNLU). */
+.iz-table__state {
+  padding: 18px 16px;
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+}
+.iz-table__state--error {
+  color: var(--color-danger-strong);
+}
+
+/* ── Personel hücresi (72) ──────────────────────────────────────────────── */
+.iz-person {
+  display: flex;
+  align-items: center;
+  gap: 9px; /* 72 */
+}
+/* 72 — mockup satır başına FARKLI gradyan kullanır ama bunu belirleyen bir
+   sunucu alanı YOKTUR; rastgele renk İCAT etmek yerine tek kararlı gradyan
+   basılır (personel listesi emsali `--gradient-avatar-blue`). */
+.iz-person__avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-7);
+  background-image: var(--gradient-avatar-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  color: var(--color-on-brand);
+  flex-shrink: 0;
+}
+.iz-person__name {
+  display: block;
+  font-size: var(--text-body); /* 72 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.iz-person__trade {
+  display: block;
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* ── İzin tipi rozeti (73/83/93/103) ────────────────────────────────────── */
+/* Rengi SUNUCU verir (`leave_type_color`); istemci sabit renk seçmez. Zemin,
+   aynı renkten türetilir — `color-mix` desteklenmezse token zemine düşer. */
+.iz-type-badge {
+  display: inline-block;
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  padding: 2px 8px;
+  border-radius: var(--radius-8);
+  color: var(--iz-type-color, var(--color-primary));
+  background: var(--color-primary-soft);
+  background: color-mix(in srgb, var(--iz-type-color, var(--color-primary)) 15%, var(--color-surface));
+  white-space: nowrap;
+}
+
+/* ── Kalan hak hücresi (77/87/97) ───────────────────────────────────────── */
+.iz-remaining {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+.iz-remaining--ok {
+  color: var(--color-success); /* 77 · 107 */
+}
+/* 87 — yıllık haktan düşmeyen tip: nötr ton (uyarı DEĞİL) */
+.iz-remaining--not-deducted {
+  color: var(--color-text-subtle);
+  font-weight: var(--weight-regular);
+}
+/* 🔴 "bilinmiyor" hâli — "hakkı bitti" ile karışmasın diye SOLUKtur */
+.iz-remaining--unknown {
+  color: var(--color-text-subtle);
+  font-weight: var(--weight-regular);
+}
+.iz-remaining--exceeded {
+  color: var(--color-danger); /* 97 */
+}
+.iz-remaining__icon {
+  width: 12px;
+  height: 12px;
+  margin-left: 4px;
+  vertical-align: -1px;
+}
+
+/* ── Açıklama hücresindeki belge eki (88) ───────────────────────────────── */
+.iz-attachment {
+  margin-left: 6px;
+  color: var(--color-text-subtle);
+}
+.iz-attachment__icon {
+  width: 12px;
+  height: 12px;
+  vertical-align: -2px;
+}
+.iz-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Satır eylemleri (79/99) ────────────────────────────────────────────── */
+.iz-actions {
+  display: flex;
+  gap: 5px; /* 79 */
+  justify-content: center;
+}
+.iz-action {
+  border-radius: var(--radius-7); /* 79 */
+  padding: 5px 11px;
+  line-height: 1;
+}
+/* 79 — red düğmesi beyaz zeminli, kırmızı metinli ve kırmızı kenarlıdır */
+.iz-action--reject {
+  background: var(--color-surface);
+  color: var(--color-danger-text);
+  border: 1px solid var(--color-danger-border-soft);
+}
+.iz-action--reject:hover:not(:disabled) {
+  background: var(--color-danger-soft);
+}
+/* 99 — pasif onay düğmesi tıklanabilir GÖRÜNMEZ */
+.iz-action:disabled {
+  cursor: not-allowed;
+}
+
+/* ── Kullanım çubuğu (140/149/158) ──────────────────────────────────────── */
+.iz-bar {
+  display: block;
+  height: 6px; /* 140 */
+  background: var(--color-divider);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.iz-bar__fill {
+  display: block;
+  height: 100%;
+  width: var(--iz-bar-pct, 0%);
+  background: var(--color-primary);
+  border-radius: var(--radius-sm);
+}
+/* 158 — devreden riski taşıyan satırın çubuğu kehribardır */
+.iz-bar__fill--risk {
+  background: var(--color-warning);
+}
+.iz-usage-text {
+  display: block;
+  font-size: 10px; /* 140 */
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+.iz-usage-text--risk {
+  color: var(--color-warning-strong); /* 158 */
+}
+
+/* ── Bakiye "Kalan" hücresi (139/157/166) ───────────────────────────────── */
+.iz-balance-remaining {
+  font-size: var(--text-sm); /* 139 · 14/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-success);
+}
+.iz-balance-remaining--risk {
+  color: var(--color-warning-strong); /* 157 */
+}
+/* 166 — "Hak yok": sayı DEĞİL, bu yüzden ne yeşil ne kalın basılır */
+.iz-balance-remaining--none {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-subtle);
+}
+
+/* ═══ T4 · iki form diyaloğu ════════════════════════════════════════════════
+   (T) = `Form - Izin Talebi.dc.html` · (R) = `Form - Izin Reddi.dc.html`
+   K6: mockup'ların soluk üst şeridi/sol menüsü harness'tır, çizilmez. */
+
+/* T 66 — talep diyaloğu 600px'tir (Modal varsayılanı 480). R 55 = 480. */
+.iz-modal--request {
+  max-width: 600px;
+}
+.iz-form__subtitle {
+  font-size: var(--text-small); /* T 72 · R 63 */
+  color: var(--color-text-subtle);
+  margin-bottom: 16px;
+}
+.iz-form__hint {
+  font-size: var(--text-small); /* T 171 · R 119 */
+  color: var(--color-text-subtle);
+  line-height: 1.5;
+  margin-top: 4px;
+}
+.iz-form__error {
+  font-size: var(--text-xs);
+  color: var(--color-danger-strong);
+  margin-top: 8px;
+}
+/* T 185 · R 124-126 — pasif düğmenin gerekçesi footer'ın SOL ucunda okunur */
+.iz-form__footer-note {
+  margin-right: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-danger-strong);
+}
+.iz-form__footer-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+/* Onayın 409'u ekranın gövdesinde basılır (diyalog yok, satır eylemi var). */
+.iz-decision-error {
+  margin: -12px 0 20px;
+  padding: 10px 14px;
+  border-radius: var(--radius-10);
+  background: var(--color-danger-tint);
+  border: 1px solid var(--color-danger-tint-border);
+  font-size: var(--text-xs);
+  color: var(--color-danger-deep);
+}
+
+/* T 92-106 · personel hak özeti kartı */
+.iz-form-balance {
+  padding: 13px 15px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-10);
+  margin: 16px 0;
+}
+.iz-form-balance__head {
+  display: flex;
+  align-items: center;
+  gap: 11px; /* T 93 */
+  margin-bottom: 10px;
+}
+.iz-form-balance__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* T 100 */
+  gap: 9px;
+}
+.iz-form-balance__box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 8px;
+  background: var(--color-surface);
+  border-radius: var(--radius-7);
+}
+/* T 104 — "Kalan" kutusu yeşil zeminlidir */
+.iz-form-balance__box--remaining {
+  background: var(--color-success-soft);
+}
+.iz-form-balance__value {
+  font-size: var(--text-sm); /* T 101 · 15/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.iz-form-balance__value--carried {
+  color: var(--color-warning-strong); /* T 102 */
+}
+.iz-form-balance__value--used {
+  color: var(--color-danger); /* T 103 */
+}
+.iz-form-balance__value--remaining {
+  color: var(--color-success); /* T 104 */
+}
+.iz-form-balance__label {
+  font-size: 10px; /* T 101 */
+  color: var(--color-text-subtle);
+}
+.iz-form-balance__box--remaining .iz-form-balance__label {
+  color: var(--color-success-deep); /* T 104 */
+  font-weight: var(--weight-semibold);
+}
+
+/* T 120-127 · izin tipi rozet önizlemesi */
+.iz-form-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 9px 0 16px;
+}
+/* 122 — seçili tipin rozeti kalın + çerçevelidir (`✓` glifi BASILMAZ, K7) */
+.iz-type-badge--active {
+  font-weight: var(--weight-bold);
+  border: 1px solid var(--iz-type-color, var(--color-primary));
+}
+
+/* T 132-146 · tarih ızgarası; üçüncü kolon "Gün" dar ve TÜRETİLMİŞtir */
+.iz-form-dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr 100px; /* T 132 */
+  gap: 12px;
+  margin-bottom: 16px;
+}
+/* T 143 — salt-okunur gün alanı: gri, ortalanmış, tıklanabilir GÖRÜNMEZ */
+.iz-form-days {
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+  text-align: center;
+  font-weight: var(--weight-bold);
+  cursor: not-allowed;
+}
+
+/* T 149-158 · KARAR 4 · hak aşımı bandı */
+.iz-form-overrun {
+  display: flex;
+  gap: 11px;
+  padding: 14px 16px;
+  background: var(--color-danger-tint);
+  border: 1px solid var(--color-danger-tint-border);
+  border-radius: var(--radius-10);
+  margin-bottom: 16px;
+}
+.iz-form-overrun__icon {
+  width: 19px; /* T 150 */
+  height: 19px;
+  flex-shrink: 0;
+  color: var(--color-danger-strong);
+}
+.iz-form-overrun__title {
+  font-size: var(--text-body); /* T 152 */
+  font-weight: var(--weight-bold);
+  color: var(--color-danger-deep);
+  margin-bottom: 4px;
+}
+.iz-form-overrun__body {
+  font-size: var(--text-xs); /* T 153 */
+  line-height: 1.7;
+  color: var(--color-danger-strong);
+}
+
+/* T 161-174 · KARAR 3 · koşullu zorunlu belge kartı */
+.iz-form-file {
+  padding: 14px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-10);
+  margin-bottom: 16px;
+}
+/* 161 — tip belge zorunlu tutuyorsa kart kehribar çerçeveyle VURGULANIR */
+.iz-form-file--required {
+  background: var(--color-amber-tint-cell);
+  border-color: var(--color-warning-border-soft);
+}
+
+/* R 71-100 · reddedilen talep özeti */
+.iz-form-summary {
+  padding: 14px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-10);
+  margin-bottom: 18px;
+}
+.iz-form-summary__title {
+  font-size: var(--text-small); /* R 72 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  margin-bottom: 11px;
+}
+.iz-form-summary__head {
+  display: flex;
+  align-items: center;
+  gap: 11px; /* R 73 */
+  margin-bottom: 12px;
+}
+.iz-form-summary__who {
+  flex: 1;
+}
+.iz-form-summary__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* R 81 */
+  gap: 9px;
+}
+/* R 90-93 — gün kutusu kırmızı zeminlidir */
+.iz-form-balance__box--days {
+  background: var(--color-danger-tint);
+}
+.iz-form-summary__value {
+  font-size: var(--text-xs); /* R 84 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.iz-form-summary__value--days {
+  font-weight: var(--weight-bold); /* R 92 */
+  color: var(--color-danger-strong);
+}
+.iz-form-balance__box--days .iz-form-balance__label {
+  color: var(--color-danger-deep); /* R 91 */
+}
+/* R 95-99 — sistem notu; YALNIZ hesaplanabilen aşımda basılır */
+.iz-form-summary__note {
+  margin-top: 10px;
+  padding: 9px 11px;
+  background: var(--color-danger-tint);
+  border-left: 3px solid var(--color-danger);
+  border-radius: var(--radius-7);
+  font-size: var(--text-small);
+  line-height: 1.6;
+  color: var(--color-danger-strong);
+}
+
+/* R 110-120 · hazır gerekçe düğmeleri */
+.iz-form-presets {
+  margin-top: 14px;
+}
+.iz-form-presets__title {
+  font-size: var(--text-small); /* R 111 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+.iz-form-presets__row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.iz-form-preset {
+  font-size: var(--text-small); /* R 113 */
+  padding: 5px 11px;
+  border-radius: var(--radius-8);
+}

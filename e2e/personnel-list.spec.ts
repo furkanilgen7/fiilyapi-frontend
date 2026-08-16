@@ -45,14 +45,19 @@ test("KPI şeridi + sekmeler + tablo sunucu fikstüründen gelir", async ({ page
   await expect(strip).toContainText("Şirket Kadrosu");
   await expect(strip).toContainText("Taşeron İşçisi");
 
-  // Sekme şeridi: yalnız "Puantaj" gerçek rotaya gider (spec K3).
+  // Sekme şeridi: "Puantaj" (spec K3) ve F-IZN T5'ten beri "İzin Yönetimi"
+  // gerçek rotaya gider; "Bordro"/"SGK" hâlâ devre-dışıdır.
   await expect(page.getByRole("tab", { name: "Personel Listesi" })).toHaveAttribute(
     "aria-selected",
     "true",
   );
   const timesheetTab = page.getByRole("tab", { name: "Puantaj" }).first();
   await expect(timesheetTab).toHaveAttribute("href", "/puantaj");
-  await expect(page.getByRole("tab", { name: "İzin Yönetimi" })).toHaveAttribute(
+  await expect(page.getByRole("tab", { name: "İzin Yönetimi" }).first()).toHaveAttribute(
+    "href",
+    "/personel/izinler",
+  );
+  await expect(page.getByRole("tab", { name: "Bordro" })).toHaveAttribute(
     "aria-disabled",
     "true",
   );
@@ -173,6 +178,27 @@ test("Detay bağlantısı doğru rotaya gider", async ({ page }) => {
 
   const detailLink = page.getByTestId("personel-row-per-1").getByRole("link", { name: "Detay" });
   await expect(detailLink).toHaveAttribute("href", "/personel/per-1");
+});
+
+test("sekme şeridinden 'İzin Yönetimi' GERÇEK ekranı açar (ComingSoon DEĞİL) ve geri döner", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto(PERSONNEL_URL);
+
+  await page.getByRole("tab", { name: "İzin Yönetimi" }).first().click();
+  await expect(page).toHaveURL(/\/personel\/izinler$/);
+  await expect(page.getByText("Bu modül yakında eklenecek.")).toHaveCount(0);
+  await expect(page.getByRole("tab", { name: "İzin Yönetimi" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+
+  // "Personel Listesi" burada GERÇEK bağlantıdır — geri dönüş çalışır.
+  const listTab = page.getByRole("tab", { name: "Personel Listesi" });
+  await expect(listTab).toHaveAttribute("href", "/personel");
+  await listTab.click();
+  await expect(page).toHaveURL(/\/personel$/);
 });
 
 test("'+ Personel Ekle' mevcut forma döner, 'Dışa Aktar' devre-dışıdır", async ({ page }) => {

@@ -9459,6 +9459,294 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       return send(200, cashFlowStatementFixture(year, month));
     }
 
+    // --- F-IZN T6 · İzin yönetimi (YEDİ uç) --------------------------------
+    // BFF izin listesindeki üç kök burada karşılanır (`leave-types` ·
+    // `leave-requests` · `leave-balances`); özet ucu mevcut `hr` kökündendir.
+
+    if (method === "GET" && path === "/leave-types") {
+      // Uç YALNIZ AKTİF tipleri, `sort_order` sırasında döner.
+      const body: MockLeaveType[] = [...LEAVE_TYPE_FIXTURES].sort(
+        (a, b) => a.sort_order - b.sort_order,
+      );
+      return send(200, body);
+    }
+
+    if (method === "GET" && path === "/hr/leaves/summary") {
+      const rawYear = parsed.searchParams.get("year");
+      const year = rawYear === null ? LEAVE_YEAR : Number(rawYear);
+      // 🔴 Yıl YALNIZ bakiye eksenini kaydırır; KPI'lar BUGÜNE bağlıdır ve
+      // yıla göre değişmez (şema notu). Fikstür yılı dışındaki yıl BOŞ bakiye
+      // döner — bakiye tablosunun boş durumu böylece gerçekten ölçülebilir.
+      const balances: MockLeaveBalance[] =
+        year === LEAVE_YEAR ? LEAVE_BALANCE_FIXTURES.map((balance) => ({ ...balance })) : [];
+      const body: components["schemas"]["HrLeavesSummaryResponse"] = {
+        year,
+        ...HR_LEAVES_SUMMARY_KPIS,
+        balances,
+      };
+      return send(200, body);
+    }
+
+    const leaveBalanceMatch = path.match(/^\/leave-balances\/([^/]+)\/(\d+)$/);
+    if (leaveBalanceMatch && (method === "GET" || method === "PUT")) {
+      const personnelId = leaveBalanceMatch[1];
+      const year = Number(leaveBalanceMatch[2]);
+      const personnel = state.personnel.find((person) => person.id === personnelId);
+      if (personnel === undefined) return send(404, { detail: "Personel bulunamadı." });
+      const fixture = leaveBalanceFixture(personnelId);
+      // 🔴 Bakiye SATIRI olmayan personel de 200 alır (devreden 0) — satır
+      // yalnız MANUEL devreden içindir, yokluğu veri eksikliği DEĞİLDİR.
+      const current: MockLeaveBalance = fixture
+        ? { ...fixture, year }
+        : {
+            personnel_id: personnelId,
+            personnel_name: personnel.full_name,
+            year,
+            hire_date: null,
+            seniority_years: null,
+            seniority_months: null,
+            annual_entitlement: null,
+            carried_over: "0.00",
+            used: 0,
+            remaining: null,
+            usage_pct: null,
+          };
+      if (method === "GET") return send(200, current);
+      return withBody((body) => {
+        // 🔴 YALNIZ `carried_over` yazılabilir; türev alan gönderilirse 422
+        // (sessizce yutulsaydı istemci hakkı değiştirdiğini sanırdı).
+        const forbidden = Object.keys(body).filter((key) => key !== "carried_over");
+        if (forbidden.length > 0) {
+          return send(422, { detail: `Türev alan yazılamaz: ${forbidden.join(", ")}` });
+        }
+        const carriedOver = Number(body.carried_over);
+        if (!Number.isFinite(carriedOver) || carriedOver < 0) {
+          return send(422, { detail: "Devreden gün negatif olamaz." });
+        }
+        // UPSERT: aynı istek iki kez ikinci satır AÇMAZ. Fikstür DONDURULMUŞ
+        // olduğu için yanıt türetilir, paylaşılan durum KİRLENMEZ (yazma
+        // akışının bakiye tablosunun kadrajını oynatmaması bilinçlidir).
+        return send(200, { ...current, carried_over: carriedOver.toFixed(2) });
+      });
+    }
+
+    if (method === "GET" && path === "/leave-requests") {
+      const rawLimit = parsed.searchParams.get("limit");
+      const limit = rawLimit === null ? LEAVE_LIMIT_DEFAULT : Number(rawLimit);
+      // TB3 korkuluğu: tavanı aşan istek SESSİZCE KIRPILMAZ, 422 olur.
+      if (!Number.isInteger(limit) || limit < 1 || limit > LEAVE_LIMIT_MAX) {
+        return send(422, { detail: `limit 1 ile ${LEAVE_LIMIT_MAX} arasında olmalıdır.` });
+      }
+      const offset = Number(parsed.searchParams.get("offset") ?? 0);
+      const status = parsed.searchParams.get("status");
+      const personnelId = parsed.searchParams.get("personnel_id");
+      const projectId = parsed.searchParams.get("project_id");
+
+      let rows = [...leaveState.requests];
+      if (status) rows = rows.filter((row) => row.status === status);
+      if (personnelId) rows = rows.filter((row) => row.personnel_id === personnelId);
+      if (projectId) {
+        // Talebin KENDİ proje kolonu yoktur — süzgeç PERSONELİN projesinden geçer.
+        rows = rows.filter(
+          (row) =>
+            state.personnel.find((person) => person.id === row.personnel_id)
+              ?.assigned_project_id === projectId,
+        );
+      }
+      // Sıralama sunucudakiyle aynı: en yeni önce, eşitlikte `id`.
+      rows.sort((a, b) =>
+        a.created_at === b.created_at
+          ? a.id.localeCompare(b.id)
+          : b.created_at.localeCompare(a.created_at),
+      );
+
+      const body: components["schemas"]["LeaveRequestListResponse"] = {
+        items: rows.slice(offset, offset + limit),
+        // 🔴 `total` SAYFADAN BAĞIMSIZ sayaçtır (sunucu ayrı `count` sorgusu
+        // atar). Sayfa penceresi daraltılınca `items.length`ten AYRIŞIR — K5'in
+        // başlık sayısının satır sayısı OLMADIĞININ kanıtı budur.
+        total: rows.length,
+        limit,
+        offset,
+      };
+      return send(200, body);
+    }
+
+    if (method === "POST" && path === "/leave-requests") {
+      return withBody((body) => {
+        // Şema `extra="forbid"`: `days`/`status` gönderilirse 422.
+        const allowed = new Set([
+          "personnel_id",
+          "leave_type_id",
+          "start_date",
+          "end_date",
+          "note",
+          "document_id",
+        ]);
+        const extras = Object.keys(body).filter((key) => !allowed.has(key));
+        if (extras.length > 0) {
+          return send(422, { detail: `Bilinmeyen alan: ${extras.join(", ")}` });
+        }
+        const personnel = state.personnel.find((person) => person.id === body.personnel_id);
+        if (personnel === undefined) return send(404, { detail: "Personel bulunamadı." });
+        const type = leaveTypeFixture(String(body.leave_type_id ?? ""));
+        if (type === undefined) return send(404, { detail: "İzin tipi bulunamadı." });
+        const startDate = String(body.start_date ?? "");
+        const endDate = String(body.end_date ?? "");
+        const days = leaveDayCount(startDate, endDate);
+        if (days === null) return send(422, { detail: "Bitiş tarihi başlangıçtan önce olamaz." });
+        const documentId =
+          body.document_id === undefined || body.document_id === null
+            ? null
+            : String(body.document_id);
+        // Gövde içi varlık referansı = 404 (BC görünürlük korkuluğu / ST kanonu).
+        if (documentId !== null && !state.documents.some((doc) => doc.id === documentId)) {
+          return send(404, { detail: "Belge bulunamadı." });
+        }
+        leaveState.seq += 1;
+        const stamp = new Date().toISOString();
+        const created: MockLeaveRequest = {
+          // 🔒 `lv-new-` öneki `pinLeaveRequests` süzgecinin DIŞINDADIR:
+          // yaratma akışı görsel kadrajı kirletmez.
+          id: `lv-new-${leaveState.seq}`,
+          personnel_id: personnel.id,
+          personnel_name: personnel.full_name,
+          personnel_trade: personnel.trade,
+          leave_type_id: type.id,
+          leave_type_name: type.name,
+          leave_type_color: type.color,
+          deducts_from_annual: type.deducts_from_annual,
+          start_date: startDate,
+          end_date: endDate,
+          // `days` SUNUCU hesabıdır; `status` HER ZAMAN `pending` başlar.
+          days,
+          note: body.note === undefined || body.note === null ? null : String(body.note),
+          document_id: documentId,
+          status: "pending",
+          decided_by: null,
+          decided_at: null,
+          reject_reason: null,
+          created_at: stamp,
+          updated_at: stamp,
+        };
+        leaveState.requests = [...leaveState.requests, created];
+        return send(201, created);
+      });
+    }
+
+    const leaveDecisionMatch = path.match(/^\/leave-requests\/([^/]+)\/(approve|reject)$/);
+    if (method === "POST" && leaveDecisionMatch) {
+      const request = leaveState.requests.find((row) => row.id === leaveDecisionMatch[1]);
+      if (request === undefined) return send(404, { detail: "İzin talebi bulunamadı." });
+      const isApprove = leaveDecisionMatch[2] === "approve";
+      return withBody((body) => {
+        if (request.status !== "pending") {
+          return send(409, { detail: "Karara bağlanmış talep yeniden karara bağlanamaz." });
+        }
+        const stamp = new Date().toISOString();
+
+        if (!isApprove) {
+          // 🔴 `reason` ZORUNLU — `strip()` sonrası boş 422. Ekranın kapısı da
+          // `trim()` üzerinden kuruludur; ikisi AYNI normalizasyonu kullanır.
+          const reason = typeof body.reason === "string" ? body.reason.trim() : "";
+          if (reason.length === 0) return send(422, { detail: "Red gerekçesi zorunludur." });
+          // 🔴 RED HER ZAMAN SERBEST: hak aşımı/çakışma reddi ENGELLEMEZ.
+          request.status = "rejected";
+          request.reject_reason = reason;
+          request.decided_by = ME.full_name;
+          request.decided_at = stamp;
+          request.updated_at = stamp;
+          return send(200, request);
+        }
+
+        // 🔴 Onay GÖVDESİZDİR: alan taşıyan gövde 422 (karar alanları SUNUCU
+        // damgasıdır). Sahte backend bu kuralı yalanlamaz.
+        if (Object.keys(body).length > 0) {
+          return send(422, { detail: "Onay ucu gövde kabul etmez." });
+        }
+        // Çakışan ONAYLI izin → 409 (K3).
+        const overlaps = leaveState.requests.some(
+          (row) =>
+            row.id !== request.id &&
+            row.personnel_id === request.personnel_id &&
+            row.status === "approved" &&
+            row.start_date <= request.end_date &&
+            row.end_date >= request.start_date,
+        );
+        if (overlaps) return send(409, { detail: "Aynı tarihlerde onaylı izin var." });
+        if (request.deducts_from_annual) {
+          const remaining = leaveBalanceFixture(request.personnel_id)?.remaining;
+          // 🔴 FAIL-CLOSED: kalan hak HESAPLANAMIYORSA onay verilmez.
+          if (remaining === undefined || remaining === null) {
+            return send(409, {
+              detail: "Kalan izin hakkı hesaplanamıyor — talep onaylanamaz.",
+            });
+          }
+          // Sınır günü SERBESTtir: kapı `>` ile kuruludur, `>=` DEĞİL.
+          if (request.days > Number(remaining)) {
+            return send(409, { detail: "Talep yıllık izin hakkını aşıyor." });
+          }
+        }
+        request.status = "approved";
+        request.decided_by = ME.full_name;
+        request.decided_at = stamp;
+        request.updated_at = stamp;
+        return send(200, request);
+      });
+    }
+
+    const leaveRequestMatch = path.match(/^\/leave-requests\/([^/]+)$/);
+    if (leaveRequestMatch && (method === "GET" || method === "PATCH" || method === "DELETE")) {
+      const request = leaveState.requests.find((row) => row.id === leaveRequestMatch[1]);
+      if (request === undefined) return send(404, { detail: "İzin talebi bulunamadı." });
+      if (method === "GET") return send(200, request);
+      if (method === "DELETE") {
+        if (request.status !== "pending") {
+          return send(409, { detail: "Yalnızca bekleyen talep silinebilir." });
+        }
+        leaveState.requests = leaveState.requests.filter((row) => row.id !== request.id);
+        return send(204);
+      }
+      return withBody((body) => {
+        // YALNIZ `pending` kayıt düzenlenebilir; karara bağlanmış → 409.
+        if (request.status !== "pending") {
+          return send(409, { detail: "Karara bağlanmış talep düzenlenemez." });
+        }
+        const startDate = body.start_date === undefined || body.start_date === null
+          ? request.start_date
+          : String(body.start_date);
+        const endDate = body.end_date === undefined || body.end_date === null
+          ? request.end_date
+          : String(body.end_date);
+        // Tarih değişirse `days` YENİDEN sunucu hesabıdır.
+        const days = leaveDayCount(startDate, endDate);
+        if (days === null) return send(422, { detail: "Bitiş tarihi başlangıçtan önce olamaz." });
+        if (body.leave_type_id !== undefined && body.leave_type_id !== null) {
+          const type = leaveTypeFixture(String(body.leave_type_id));
+          if (type === undefined) return send(404, { detail: "İzin tipi bulunamadı." });
+          request.leave_type_id = type.id;
+          request.leave_type_name = type.name;
+          request.leave_type_color = type.color;
+          request.deducts_from_annual = type.deducts_from_annual;
+        }
+        if (body.document_id !== undefined) {
+          const documentId = body.document_id === null ? null : String(body.document_id);
+          if (documentId !== null && !state.documents.some((doc) => doc.id === documentId)) {
+            return send(404, { detail: "Belge bulunamadı." });
+          }
+          request.document_id = documentId;
+        }
+        if (body.note !== undefined) {
+          request.note = body.note === null ? null : String(body.note);
+        }
+        request.start_date = startDate;
+        request.end_date = endDate;
+        request.days = days;
+        request.updated_at = new Date().toISOString();
+        return send(200, request);
+      });
+    }
+
     return send(404, { detail: "not found" });
   });
 
@@ -10689,6 +10977,136 @@ function balanceSheet(
   };
 }
 
+// --- F-IZN T6 · İzin yönetimi fikstürleri ---------------------------------
+// Yedi uç: `GET /leave-types` · `GET,POST /leave-requests` ·
+// `GET,PATCH,DELETE /leave-requests/{id}` · `POST .../approve` ·
+// `POST .../reject` · `GET,PUT /leave-balances/{personnel_id}/{year}` ·
+// `GET /hr/leaves/summary`.
+//
+// 🔴 KADROYA DOKUNULMADI: izin kayıtları MEVCUT `per-1…per-6` personeline
+// bağlanır. Yeni personel eklemek `personnel-list-visual.spec.ts`in "toplam
+// TAM 6" iddiasını ve puantaj baseline'larını kırardı.
+
+type MockLeaveType = components["schemas"]["LeaveTypeResponse"];
+type MockLeaveRequest = components["schemas"]["LeaveRequestResponse"];
+type MockLeaveBalance = components["schemas"]["LeaveBalanceResponse"];
+type MockLeaveStatus = components["schemas"]["LeaveStatus"];
+
+/** Bakiye/talep fikstürlerinin yılı — İZ ekranının varsayılan yılı. */
+const LEAVE_YEAR = 2026;
+
+/**
+ * `GET /leave-types` — talep formunun tip seçeneği (T 110-119) ve rozetleri.
+ *
+ * Dizi `sort_order` sırasındadır (sunucu da böyle döner). `Hastalık İzni`
+ * `requires_document: true`dur — formun KOŞULLU BELGE dalı (KARAR 3) ancak
+ * böyle bir tip varsa ölçülebilir. Renkler DOLU: rozetin `--iz-type-color`
+ * değişkeni sunucudan gelir, kodda çıplak hex durmaz.
+ */
+const LEAVE_TYPE_FIXTURES: readonly MockLeaveType[] = [
+  { id: "lt-1", name: "Yıllık İzin", deducts_from_annual: true, is_paid: true, requires_document: false, color: "#3b82f6", sort_order: 1 },
+  { id: "lt-2", name: "Hastalık İzni", deducts_from_annual: false, is_paid: true, requires_document: true, color: "#ef4444", sort_order: 2 },
+  { id: "lt-3", name: "Ücretsiz İzin", deducts_from_annual: false, is_paid: false, requires_document: false, color: "#94a3b8", sort_order: 3 },
+  { id: "lt-4", name: "Mazeret İzni", deducts_from_annual: true, is_paid: true, requires_document: false, color: "#f59e0b", sort_order: 4 },
+];
+
+function leaveTypeFixture(id: string): MockLeaveType | undefined {
+  return LEAVE_TYPE_FIXTURES.find((type) => type.id === id);
+}
+
+function leavePersonnelFixture(id: string): MockPersonnel {
+  const found = PERSONNEL_FIXTURES.find((person) => person.id === id);
+  // Fikstür bütünlüğü DERLEME DEĞİL ÇALIŞMA zamanında kırılır: kimlik değişirse
+  // sahte backend sessizce "bilinmeyen personel" basmasın.
+  if (found === undefined) throw new Error(`İzin fikstürü bilinmeyen personele bağlı: ${id}`);
+  return found;
+}
+
+const LEAVE_MS_PER_DAY = 86_400_000;
+
+/** Sunucunun `calculate_leave_days` ikizi: takvim günü, iki uç DAHİL. */
+function leaveDayCount(startDate: string, endDate: string): number | null {
+  const start = Date.parse(`${startDate}T00:00:00Z`);
+  const end = Date.parse(`${endDate}T00:00:00Z`);
+  if (Number.isNaN(start) || Number.isNaN(end) || end < start) return null;
+  return (end - start) / LEAVE_MS_PER_DAY + 1;
+}
+
+/**
+ * 🔒 BAKİYE FİKSTÜRÜ SABİTTİR (`HR_DOCUMENTS_SUMMARY_FIXTURE` emsali).
+ *
+ * `used`/`remaining` onaylanan taleplerden TÜRETİLSEYDİ, bu dosyadaki onay
+ * akışı `fullyParallel` altında bakiye tablosunun kadrajını sessizce
+ * oynatırdı. Sunucuda türevdir; sahte backend'de DONDURULMUŞTUR ve gerekçe
+ * budur.
+ *
+ * ⚠️ `hire_date` burada DOLUdur ama `PERSONNEL_FIXTURES`ta NULL'dır: personel
+ * fikstürüne tarih eklemek personel detay/liste baseline'larını kırardı
+ * (F-IZN T6 dokunma yasağı). Bilinçli, dilim-içi bir sapmadır.
+ *
+ * Kapsanan dallar (İZ 122-171):
+ *  · per-1 — normal satır
+ *  · per-2 — devreden > 0 ⇒ "yanma riski" (151-158)
+ *  · per-3 — kalan 2 ⇒ lv-2'nin HAK AŞIMI satırını üretir (91-99)
+ *  · per-4 — kalan 3 ⇒ lv-3'ün SINIR GÜNÜ satırını üretir (`<` ≠ `<=`)
+ *  · per-5 — hak/kalan/yüzde NULL ⇒ "Hak yok" + "1 yıl dolunca..." (161-167)
+ *  · per-6 — LİSTEDE YOK ⇒ lv-5'in "bilinmiyor" (—) hücresi (K4)
+ */
+const LEAVE_BALANCE_FIXTURES: readonly MockLeaveBalance[] = [
+  { personnel_id: "per-1", personnel_name: leavePersonnelFixture("per-1").full_name, year: LEAVE_YEAR, hire_date: "2019-04-15", seniority_years: 7, seniority_months: 3, annual_entitlement: 20, carried_over: "0.00", used: 8, remaining: "12.00", usage_pct: 40 },
+  { personnel_id: "per-2", personnel_name: leavePersonnelFixture("per-2").full_name, year: LEAVE_YEAR, hire_date: "2023-02-01", seniority_years: 3, seniority_months: 6, annual_entitlement: 14, carried_over: "6.00", used: 2, remaining: "18.00", usage_pct: 10 },
+  { personnel_id: "per-3", personnel_name: leavePersonnelFixture("per-3").full_name, year: LEAVE_YEAR, hire_date: "2021-09-10", seniority_years: 4, seniority_months: 10, annual_entitlement: 14, carried_over: "0.00", used: 12, remaining: "2.00", usage_pct: 85.7 },
+  { personnel_id: "per-4", personnel_name: leavePersonnelFixture("per-4").full_name, year: LEAVE_YEAR, hire_date: "2018-06-01", seniority_years: 8, seniority_months: 2, annual_entitlement: 20, carried_over: "2.00", used: 19, remaining: "3.00", usage_pct: 86.4 },
+  // 🔴 Kıdemi 1 yılı DOLDURMADI: hak/kalan/yüzde ÜÇÜ DE NULL (İZ 161-167).
+  { personnel_id: "per-5", personnel_name: leavePersonnelFixture("per-5").full_name, year: LEAVE_YEAR, hire_date: "2026-03-01", seniority_years: 0, seniority_months: 5, annual_entitlement: null, carried_over: "0.00", used: 0, remaining: null, usage_pct: null },
+];
+
+function leaveBalanceFixture(personnelId: string): MockLeaveBalance | undefined {
+  return LEAVE_BALANCE_FIXTURES.find((balance) => balance.personnel_id === personnelId);
+}
+
+interface LeaveRequestSeed {
+  readonly id: string;
+  readonly personnelId: string;
+  readonly leaveTypeId: string;
+  readonly startDate: string;
+  readonly endDate: string;
+  readonly note?: string | null;
+  readonly documentId?: string | null;
+  readonly createdAt: string;
+  readonly status?: MockLeaveStatus;
+}
+
+/** `days` SUNUCU hesabıdır — fikstürde de elle yazılmaz, tarihlerden türer. */
+function buildLeaveRequest(seed: LeaveRequestSeed): MockLeaveRequest {
+  const personnel = leavePersonnelFixture(seed.personnelId);
+  const type = leaveTypeFixture(seed.leaveTypeId);
+  if (type === undefined) throw new Error(`İzin fikstürü bilinmeyen tipe bağlı: ${seed.leaveTypeId}`);
+  const days = leaveDayCount(seed.startDate, seed.endDate);
+  if (days === null) throw new Error(`İzin fikstürünün tarihleri ters: ${seed.id}`);
+  return {
+    id: seed.id,
+    personnel_id: personnel.id,
+    personnel_name: personnel.full_name,
+    personnel_trade: personnel.trade,
+    leave_type_id: type.id,
+    leave_type_name: type.name,
+    leave_type_color: type.color,
+    deducts_from_annual: type.deducts_from_annual,
+    start_date: seed.startDate,
+    end_date: seed.endDate,
+    days,
+    note: seed.note ?? null,
+    document_id: seed.documentId ?? null,
+    status: seed.status ?? "pending",
+    decided_by: null,
+    decided_at: null,
+    reject_reason: null,
+    created_at: seed.createdAt,
+    updated_at: seed.createdAt,
+  };
+}
+
 /**
  * 📅 31 TEMMUZ 2026 — DENGELİ bilanço (`ACCOUNTING_READ_TIME`in ürettiği
  * varsayılan gün: `defaultBalanceSheetAsOf` içinde bulunulan AYIN SON günüdür).
@@ -11108,3 +11526,60 @@ export function cashFlowStatementFixture(year: number, month: number): MockCashF
     sections: zeroCashFlowSections(CASH_FLOW_JULY_SEED.sections),
   });
 }
+
+/**
+ * 🔒 FİKSTÜR İZOLASYONU (F-PT2/F-MU2 dersi): `lv-1…lv-5` OKUMA adasıdır ve
+ * hiçbir test onları KARARA BAĞLAMAZ; yazma akışları `lv-w1`/`lv-w2` üzerinde
+ * koşar, yeni talepler `lv-new-*` doğar. `e2e/leaves-helpers.ts`in
+ * `pinLeaveRequests`i kadrajı `/^lv-\d+$/` ile süzer ⇒ görsel kare bu dosyanın
+ * yazma akışlarından YAPISAL olarak bağımsızdır.
+ *
+ * Sıra `created_at DESC`tir (sunucu da öyle sıralar): tabloda lv-1 en üsttedir
+ * ve süzülen `lv-w*` en alttaki iki satırdır — süzgeç üst satırları KAYDIRMAZ.
+ */
+const LEAVE_REQUEST_SEEDS: readonly LeaveRequestSeed[] = [
+  // NORMAL satır — kalan 12, talep 5 ⇒ onay serbest.
+  { id: "lv-1", personnelId: "per-1", leaveTypeId: "lt-1", startDate: "2026-08-24", endDate: "2026-08-28", note: "Bayram öncesi aile ziyareti", createdAt: "2026-08-14T09:00:00Z" },
+  // 🔴 HAK AŞIMI (İZ 91-99): kalan 2, talep 6 ⇒ onay PASİF, red AKTİF, satır
+  // vurgulu, açıklama hücresi "Hak aşımı — 4 gün fazla" basar. `note` BOŞtur ki
+  // aşım metni gerçekten görünsün.
+  { id: "lv-2", personnelId: "per-3", leaveTypeId: "lt-1", startDate: "2026-09-07", endDate: "2026-09-12", createdAt: "2026-08-13T09:00:00Z" },
+  // 🔴 SINIR GÜNÜ: talep 3 === kalan 3 ⇒ onay SERBEST. `days > remaining`
+  // kapısı `>=` olarak mutasyona uğrarsa BU satır kırmızıya döner.
+  { id: "lv-3", personnelId: "per-4", leaveTypeId: "lt-1", startDate: "2026-08-31", endDate: "2026-09-02", note: "Kalan hakka eşit talep", createdAt: "2026-08-12T09:00:00Z" },
+  // 🔴 K9 + BELGE EKLİ (İZ 87-88): tip yıllık haktan DÜŞMEZ ⇒ "Düşmez";
+  // `document_id` dolu ⇒ ataç ikonu + "belge ekli" erişilebilir adı.
+  { id: "lv-4", personnelId: "per-2", leaveTypeId: "lt-2", startDate: "2026-08-19", endDate: "2026-08-21", note: "Rapor arşive yüklendi", documentId: "doc-p1-1", createdAt: "2026-08-11T09:00:00Z" },
+  // 🔴 K4 "bilinmiyor": per-6'nın bakiye satırı YOKTUR ⇒ hücre `—` (0 DEĞİL).
+  // Onay denendiğinde sunucu FAIL-CLOSED 409 verir (kalan hesaplanamıyor).
+  { id: "lv-5", personnelId: "per-6", leaveTypeId: "lt-1", startDate: "2026-09-21", endDate: "2026-09-24", note: "Bakiye kaydı yok", createdAt: "2026-08-10T09:00:00Z" },
+  // 🔒 YAZMA ADASI — kadrajdan süzülür.
+  { id: "lv-w1", personnelId: "per-1", leaveTypeId: "lt-4", startDate: "2026-10-05", endDate: "2026-10-06", note: "ONAY akışı ölçümü", createdAt: "2026-08-09T09:00:00Z" },
+  { id: "lv-w2", personnelId: "per-4", leaveTypeId: "lt-3", startDate: "2026-10-12", endDate: "2026-10-16", note: "RED akışı ölçümü", createdAt: "2026-08-08T09:00:00Z" },
+];
+
+/**
+ * 🔴 KPI'lar SABİTtir ve BEŞİ DE sıfırdan ve birbirinden farklıdır — bir kart
+ * yanlış alanı bassaydı ayırt edilemezdi. `unknown_entitlement_personnel`
+ * DOLUdur ama ekran onu BASMAZ (fail-closed sayacı; kanıtı `leaves.spec.ts`).
+ *
+ * Sayaçlar bakiye fikstürüyle TUTARLIdır: `carryover_risk_personnel` = devreden
+ * günü olan iki satır (per-2, per-4), `unknown_entitlement_personnel` = hakkı
+ * hesaplanamayan tek satır (per-5).
+ */
+const HR_LEAVES_SUMMARY_KPIS = {
+  pending_requests: 7,
+  on_leave_today: 3,
+  days_used_this_month: 46,
+  total_leave_debt: "128.50",
+  carryover_risk_personnel: 2,
+  unknown_entitlement_personnel: 1,
+} as const;
+
+const LEAVE_LIMIT_DEFAULT = 50;
+const LEAVE_LIMIT_MAX = 200;
+
+const leaveState: { requests: MockLeaveRequest[]; seq: number } = {
+  requests: LEAVE_REQUEST_SEEDS.map(buildLeaveRequest),
+  seq: 0,
+};
