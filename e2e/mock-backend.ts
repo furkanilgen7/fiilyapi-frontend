@@ -9772,6 +9772,8 @@ interface ChartAccountSeed {
   /** Yaprak bakiyesi; üst hesapta YOKTUR (hesaplanır). */
   readonly leafBalance?: string;
   readonly isActive?: boolean;
+  /** K5 · kontra hesap bayrağı (`is_contra`); varsayılan `false`. */
+  readonly isContra?: boolean;
 }
 
 /**
@@ -9810,7 +9812,17 @@ const ACCOUNTING_CHART_SEEDS: readonly ChartAccountSeed[] = [
   { code: "252", name: "Binalar", type: "asset", leafBalance: "2400000.00" },
   { code: "254", name: "Taşıt Araçları", type: "asset", leafBalance: "1840000.00" },
   // 🔴 TEK NEGATİF bakiye (HP:155 `(620.000)`), türü `Pasif` ama noktası YEŞİL.
-  { code: "257", name: "Birikmiş Amortismanlar (-)", type: "liability", leafBalance: "-620000.00" },
+  // 🔴 K5: TOHUMUN TEK KONTRA HESABI. Yeni satır EKLENMEDİ — var olan `257`
+  // gerçek kontra yapıldı; böylece görsel spec'lerdeki satır/rozet SAYILARI
+  // (`accounting-visual` 26/30/22… · `accounting-reports-visual` 9/4/3/2)
+  // kırılmaz, yalnız bu satıra kontra rozeti gelir.
+  {
+    code: "257",
+    name: "Birikmiş Amortismanlar (-)",
+    type: "liability",
+    leafBalance: "-620000.00",
+    isContra: true,
+  },
   // SINIF 3 — HP:161
   { code: "320", name: "Satıcılar", type: "liability" }, // HP:167 — çocuğu var
   { code: "320.04", name: "Taşeron Satıcılar", type: "liability", leafBalance: "2184000.00" }, // E8:121
@@ -9859,11 +9871,13 @@ function buildChartAccount(seed: ChartAccountSeed): MockChartAccount {
     name: seed.name,
     account_type: seed.type,
     is_active: seed.isActive ?? true,
-    // MT-1/KK-1: tohum hesaplarının hiçbiri kontra DEĞİLDİR — mevcut tohum kod
-    // evreninde (100·102·120·150·320·391·600·730) `257` gibi bir kontra hesap
-    // YOKTUR, o yüzden sabit `false`. Kontra tohum eklenirse `ChartAccountSeed`e
-    // alan açılır; burada `true` yazmak sessizce yanlış bilanço üretirdi.
-    is_contra: false,
+    // 🔴 K10 — BAYAT YORUM DÜZELTİLDİ (eskisi "tohum hesaplarının hiçbiri
+    // kontra DEĞİLDİR … `257` gibi bir kontra hesap YOKTUR" diyordu; `257`
+    // tohumda BAŞTAN BERİ duruyordu, yalnız bayrağı sabit `false`tı).
+    // MT-1/KK-1 devrinden sonra bayrak TOHUMDAN gelir: `257 Birikmiş
+    // Amortismanlar (-)` gerçek kontradır. Değeri burada elle YAZILMAZ —
+    // sabit `true` yazmak bütün tohumu sessizce yanlış bilançoya çevirirdi.
+    is_contra: seed.isContra ?? false,
     created_at: ACCOUNTING_STAMP,
     updated_at: ACCOUNTING_STAMP,
     balance: chartSeedBalance(seed),

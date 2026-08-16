@@ -8,15 +8,22 @@ import type { JournalEntryUpdate } from "@/lib/api/hooks/useJournalEntryFormMuta
 import { normalizeDecimalInput, isZeroDecimalString, subtractDecimalStrings, sumDecimalStrings } from "@/lib/decimal";
 
 /**
- * F-MU1 T4 · Yevmiye fişi diyaloğunun SAF katmanı: satır taslakları, tek-taraf
- * kısıtı, denge aritmetiği ve kaydet kapısının engelleri.
+ * Yevmiye fişi diyaloğunun SAF katmanı: satır taslakları, tek-taraf kısıtı,
+ * denge aritmetiği, kaydet kapısının engelleri ve ekranın SABİT METİNLERİ.
  *
- * 🔴 Form mockup'ı YOKTUR (S-FRM kanonu): alanlar `backend/app/modules/
- * accounting/schemas.py`ten BİREBİR türetilmiştir — `entry_date` ·
- * `description` · `detail_note` · `lines[]{account_id, debit, credit}`.
- * Sunucunun türev/damga alanları (`status`, `total_debit`/`total_credit`,
- * `period_year`/`period_month`, `reversal_of_id`, satırın `sort_order`ı) gövdeye
- * GİREMEZ: şemalar `extra="forbid"`dir, gönderilirse **422**dir.
+ * 🔴 GÖVDE ŞEMADAN TÜRER, MOCKUP'TAN DEĞİL: alanlar `backend/app/modules/
+ * accounting/schemas.py`ten BİREBİRdir — `entry_date` · `description` ·
+ * `detail_note` · `lines[]{account_id, debit, credit}`. Sunucunun türev/damga
+ * alanları (`status`, `total_debit`/`total_credit`, `period_year`/
+ * `period_month`, `reversal_of_id`, satırın `sort_order`ı) gövdeye GİREMEZ:
+ * şemalar `extra="forbid"`dir, gönderilirse **422**dir.
+ *
+ * 🔴 BAYAT SATIR DÜZELTİLDİ (F-MUF T4): burada eskiden "form mockup'ı YOKTUR
+ * (S-FRM kanonu)" yazıyordu. ARTIK VAR — `projedesign/Form - Yevmiye
+ * Kaydi.dc.html` (aşağıda `M:` = o dosyanın satırı) ve düzen/metin ondan
+ * gelir. Şemadan türeme kuralı YİNE DE geçerlidir: mockup'ın İCAT ETTİĞİ iki
+ * alan (`M:99` `Fiş No` · `M:121` `Satır Açıklaması`) BASILMAZ — gerekçe
+ * `JournalEntryFormModal` / `JournalLinesEditor` başlarında.
  *
  * Bu modülde AĞ ve DOM yoktur; testi `journal-entry-form.test.ts`te yaşar.
  */
@@ -59,6 +66,74 @@ export const JOURNAL_FORM_BLOCKERS = {
   singleSide: "Fiş satırı ya borç ya alacak taşır; ikisi birden ya da ikisi de boş olamaz",
   unbalanced: "Fiş dengede değil: borç ve alacak toplamları eşit olmalıdır",
 } as const;
+
+// --- Ekranın sabit metinleri (M:) ----------------------------------------
+
+/**
+ * 🔴 `description` sınırı — ÖLÇÜLDÜ: `FREE_TEXT_MAX_LENGTH` = 2000
+ * (`backend/app/core/text.py:15`, `accounting/schemas.py:292`).
+ *
+ * `M:96` "Maks 500 karakter" der ve YANLIŞTIR. `schema.d.ts` bu sınırı hiç
+ * taşımaz (openapi üretimi Pydantic `Field` kısıtını düşürür), bu yüzden
+ * ölçüm şemanın KENDİSİNDEN yapıldı. Mockup'ın sayısı basılsaydı kullanıcı
+ * sunucunun İZİN VERDİĞİ metnin dörtte birinde durdurulurdu.
+ */
+export const JOURNAL_DESCRIPTION_MAX = 2000;
+
+/** `M:105` detay notu sınırı — `_DETAIL_NOTE_MAX` (`schemas.py:239`). */
+export const JOURNAL_DETAIL_NOTE_MAX = 200;
+
+/** Mockup'ın çizili metinleri; `M:` = `Form - Yevmiye Kaydi.dc.html` satırı. */
+export const JOURNAL_FORM_TEXT = {
+  /** `M:83` */
+  subtitle: "Çift taraflı kayıt — borç ve alacak toplamları eşit olmalı",
+  /** `M:87` */
+  headerCardTitle: "Fiş Bilgileri",
+  /** `M:96` — sayı ölçümden gelir (yukarıdaki gerekçe). */
+  descriptionHint: `Maks ${JOURNAL_DESCRIPTION_MAX} karakter · Yevmiye listesinde bu metin görünür`,
+  /** `M:95` */
+  descriptionPlaceholder: "Örn. Taşeron ödemesi — Akın İnşaat Hakediş #47",
+  /** `M:106` */
+  detailNotePlaceholder: "Fatura no, banka referansı, ek açıklama...",
+  /** `M:113` */
+  linesTitle: "Fiş Kalemleri",
+  /** `M:114` */
+  linesHint: "Her satırda ya borç ya alacak dolar — ikisi birden dolamaz",
+} as const;
+
+export interface BalanceNarration {
+  readonly title: string;
+  readonly detail: string;
+}
+
+/**
+ * Denge bandının İKİ SATIRI (`M:200-201` dengesiz · `M:228-229` dengeli).
+ *
+ * 🔴 Tek cümle ("Fiş dengede değil; kaydedilemez.") ile İKİ satır arasındaki
+ * fark biçimsel değildir: mockup gerekçeyi ("borç ve alacak toplamları eşit
+ * olmadan") ikinci satırda AÇIKÇA yazar — kullanıcı neyi düzelteceğini
+ * başlıktan değil oradan öğrenir.
+ */
+export function balanceNarration(isBalanced: boolean): BalanceNarration {
+  return isBalanced
+    ? { title: "Fiş dengede", detail: "Kaydedilmeye hazır" }
+    : {
+        title: "Fiş dengede değil",
+        detail: "Borç ve alacak toplamları eşit olmadan kaydedilemez",
+      };
+}
+
+/**
+ * `M:251` — alt şeridin uyarısı. Fark BİÇİMLENMİŞ gelir (`formatAmount`);
+ * burada biçimlendirme YAPILMAZ, aynı sayı iki farklı yerde iki farklı
+ * biçimde görünmesin diye.
+ *
+ * `₺` (U+20BA) `fonts.css`in `u+20ad-20c0` aralığındadır — çıplak basılabilir
+ * (çıplak glif yasağı `⚠`/`≠` içindir, bu ikisi ekranda HİÇ geçmez).
+ */
+export function differenceWarning(formattedDifference: string): string {
+  return `Fark ₺${formattedDifference} — sıfırlanmadan fiş kaydedilemez`;
+}
 
 // --- Tarih ---------------------------------------------------------------
 

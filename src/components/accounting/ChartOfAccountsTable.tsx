@@ -6,6 +6,9 @@ import {
   accountTypeLabel,
   accountTypeVariant,
   balanceTone,
+  CONTRA_BADGE_LABEL,
+  CONTRA_BADGE_TEXT,
+  CONTRA_BADGE_VARIANT,
   formatBalance,
   type ChartRow,
 } from "./chart-of-accounts-rows";
@@ -131,6 +134,22 @@ export function ChartOfAccountsTable({
                   {/* HP:76 — kod MONO ve girintilidir (adım 16px). */}
                   <td className={`mu-table__meta is-mono mu-chart__code--${row.indent}`}>
                     {account.code}
+                    {/* 🔴 K5 — `is_contra`nın EKRANDAKİ tek görünür sonucu.
+                        Kodun YANINDA durur: kontra bilgisi hesabın kimliğine
+                        aittir, bakiyesinin yorumuna değil (`Bakiye` sütunu
+                        kontra BİLMEZ — `balance.py:52-57`). */}
+                    {row.isContra && (
+                      <Badge
+                        variant={CONTRA_BADGE_VARIANT}
+                        className="mu-chart__contra"
+                        role="img"
+                        aria-label={CONTRA_BADGE_LABEL}
+                        title={CONTRA_BADGE_LABEL}
+                        data-testid={`hp-contra-${account.code}`}
+                      >
+                        {CONTRA_BADGE_TEXT}
+                      </Badge>
+                    )}
                   </td>
                   <td>{account.name}</td>
                   {/* HP:60 `Tür` — `account_type` rozeti. */}

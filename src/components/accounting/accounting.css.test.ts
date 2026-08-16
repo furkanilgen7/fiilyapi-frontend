@@ -121,16 +121,49 @@ describe("accounting.css — T4 diyalogları", () => {
     expect(css).toMatch(/\.mu-modal\s*{[^}]*width:\s*min\(760px, 92vw\)/);
   });
 
-  it("denge şeridi ÜÇ sütundur: Toplam Borç / Toplam Alacak / Fark", () => {
-    expect(css).toMatch(/\.mu-balance\s*{[^}]*grid-template-columns:\s*repeat\(3, 1fr\)/);
+  /* İDDİA TAŞINDI (F-MUF T4): şerit eskiden `repeat(3, 1fr)` idi; mockup
+     `M:196` durumu anlatan DÖRDÜNCÜ (ve ilk) hücreyi ekler. */
+  it("denge şeridi M:196 ızgarasıdır: durum + Toplam Borç / Alacak / Fark", () => {
+    expect(css).toMatch(/\.mu-balance\s*{[^}]*grid-template-columns:\s*1fr 190px 190px 210px/);
   });
 
+  /* İDDİA TAŞINDI: ton artık TEK TEK değere değil ŞERİDİN KENDİSİNE
+     uygulanır (M:195 kırmızı / M:223 yeşil) — değerler o bağlamdan boyanır. */
   it("🔴 denge DURUMU renkle ayrışır: dengeli yeşil, dengesiz kırmızı", () => {
-    expect(css).toMatch(/\.mu-balance__value--ok\s*{[^}]*var\(--color-success\)/);
-    expect(css).toMatch(/\.mu-balance__value--off\s*{[^}]*var\(--color-danger\)/);
-    expect(css).toMatch(/\.mu-balance__state--off\s*{[^}]*var\(--color-danger\)/);
-    // İkisi AYNI rengi almamalı — aksi hâlde şerit bilgi taşımazdı.
-    expect(/\.mu-balance__value--off\s*{[^}]*var\(--color-success\)/.test(css)).toBe(false);
+    expect(css).toMatch(/\.mu-balance--ok\s*{[^}]*var\(--color-success-tint\)/);
+    expect(css).toMatch(/\.mu-balance--off\s*{[^}]*var\(--color-danger-tint\)/);
+    expect(css).toMatch(
+      /\.mu-balance--off \.mu-balance__state-title\s*{[^}]*var\(--color-danger-deep\)/,
+    );
+    expect(css).toMatch(
+      /\.mu-balance--ok \.mu-balance__state-title\s*{[^}]*var\(--color-success-deep\)/,
+    );
+    // İkisi AYNI zemine düşerse şerit denge bilgisini TAŞIMAZ.
+    expect(/\.mu-balance--off\s*{[^}]*var\(--color-success-tint\)/.test(css)).toBe(false);
+  });
+
+  /* 🔴 M:234/238 — DENGELİYKEN toplamlar nötr koyudur; renk DURUM taşır. */
+  it("M:234 dengeli hâlde toplamlar NÖTR koyudur", () => {
+    expect(css).toMatch(/\.mu-balance__value--neutral\s*{[^}]*color:\s*var\(--color-text\)/);
+  });
+
+  it("M:143/162 dolu taraf vurgulanır: borç kırmızı, alacak yeşil zemin", () => {
+    expect(css).toMatch(/\.mu-line-amount--debit\.is-filled\s*{[^}]*var\(--color-danger-tint\)/);
+    expect(css).toMatch(/\.mu-line-amount--credit\.is-filled\s*{[^}]*var\(--color-success-tint\)/);
+    // Ters eşleşme satırın tarafını YANLIŞ anlatırdı.
+    expect(/\.mu-line-amount--debit\.is-filled\s*{[^}]*var\(--color-success-tint\)/.test(css)).toBe(
+      false,
+    );
+  });
+
+  it("M:119/130 sıra numarası sütunu dar, ortalı ve MONO'dur", () => {
+    expect(css).toMatch(/\.mu-lines__no\s*{[^}]*var\(--font-mono\)/);
+    expect(css).toMatch(/\.mu-lines__th-no,\s*\n\.mu-lines__no\s*{[^}]*width:\s*44px/);
+  });
+
+  it("M:122-123 kalem başlıkları: Borç KIRMIZI, Alacak YEŞİL", () => {
+    expect(css).toMatch(/\.mu-lines__th--debit\s*{[^}]*var\(--color-danger\)/);
+    expect(css).toMatch(/\.mu-lines__th--credit\s*{[^}]*var\(--color-success\)/);
   });
 
   it("kapalı kaydet düğmesinin gerekçe listesi GÖRÜNÜR bir uyarı bandıdır", () => {

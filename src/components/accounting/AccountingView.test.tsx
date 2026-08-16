@@ -591,8 +591,12 @@ describe("Taslak Fişler paneli (onaylı sapma adayı)", () => {
 });
 
 /**
- * T4 · Yevmiye Kaydı diyaloğu. Form mockup'ı YOKTUR (S-FRM kanonu): alanlar
- * `JournalEntryCreate` + `JournalLineInput`tan birebir türer.
+ * Yevmiye Kaydı diyaloğu. Kanon: `projedesign/Form - Yevmiye Kaydi.dc.html`
+ * (`M:` = o dosyanın satırı).
+ *
+ * 🔴 BAYAT SATIR DÜZELTİLDİ (F-MUF T4): burada eskiden "Form mockup'ı YOKTUR
+ * (S-FRM kanonu)" yazıyordu — ARTIK VAR. Gövde YİNE de şemadan türer:
+ * mockup'ın icat ettiği `Fiş No` ve `Satır Açıklaması` BASILMAZ.
  */
 describe("Yevmiye Kaydı diyaloğu (T4)", () => {
   async function openCreate() {
@@ -646,7 +650,7 @@ describe("Yevmiye Kaydı diyaloğu (T4)", () => {
     // Tek karakter geri alınır → kapı AÇILIR.
     await user.clear(screen.getByTestId("mu-line-credit-1"));
     await user.type(screen.getByTestId("mu-line-credit-1"), "100.00");
-    expect(screen.getByTestId("mu-balance-state")).toHaveTextContent("Fiş dengede.");
+    expect(screen.getByTestId("mu-balance-state")).toHaveTextContent("Fiş dengede");
     expect(screen.getByTestId("mu-entry-dialog-save")).toBeEnabled();
   });
 
@@ -662,7 +666,7 @@ describe("Yevmiye Kaydı diyaloğu (T4)", () => {
     await user.type(screen.getByTestId("mu-line-debit-1"), "0.2");
     await user.type(screen.getByTestId("mu-line-credit-2"), "0.3");
 
-    expect(screen.getByTestId("mu-balance-state")).toHaveTextContent("Fiş dengede.");
+    expect(screen.getByTestId("mu-balance-state")).toHaveTextContent("Fiş dengede");
     expect(screen.getByTestId("mu-entry-dialog-save")).toBeEnabled();
   });
 
@@ -824,5 +828,138 @@ describe("Yevmiye Kaydı diyaloğu (T4)", () => {
     render(<AccountingView />);
     await user.click(screen.getByTestId("mu-draft-edit-entry-draft"));
     expect(screen.getByTestId("mu-entry-dialog-load-error")).toHaveTextContent("Fiş bulunamadı");
+  });
+
+  // --- M: mockup sadakati ------------------------------------------------
+
+  /**
+   * 🔴 KARAR K4 — MOCKUP'IN İCAT ETTİĞİ İKİ ALAN ÇİZİLMEZ.
+   *
+   * `M:99-101` `Fiş No` ve `M:121` `Satır Açıklaması` şemada YOKTUR
+   * (`JournalEntryResponse`te `entry_no`/`document_no` yok;
+   * `JournalLineInput` = `account_id`·`debit`·`credit`, `extra=forbid`).
+   * DEVRE DIŞI da basılmazlar: kapalı bir "Fiş No" kutusu var olmayan bir
+   * numaralandırma VAAT EDER, `Satır Açıklaması` ise yazılanı sessizce yutardı.
+   */
+  it("K4: mockup'ın icat ettiği `Fiş No` ve `Satır Açıklaması` HİÇ basılmaz", async () => {
+    await openCreate();
+    expect(screen.queryByLabelText(/Fiş No/i)).toBeNull();
+    expect(screen.queryByText(/Fiş No/i)).toBeNull();
+    expect(screen.queryByText("Satır Açıklaması")).toBeNull();
+
+    const headers = within(screen.getByTestId("mu-lines-editor")).getAllByRole("columnheader");
+    expect(headers.map((cell) => cell.textContent?.trim())).toEqual([
+      "#",
+      "Hesap *",
+      "Borç ₺",
+      "Alacak ₺",
+      "Sil",
+    ]);
+  });
+
+  it("M:119/130 sıra numarası sütunu satırları numaralar", async () => {
+    const user = await openCreate();
+    await user.click(screen.getByTestId("mu-line-add"));
+    const numbers = screen.getAllByTestId(/^mu-line-no-/).map((cell) => cell.textContent);
+    expect(numbers).toEqual(["1", "2", "3"]);
+  });
+
+  it("M:82-83/113-114 başlık, alt başlık ve kalem ipucu ekrandadır", async () => {
+    await openCreate();
+    expect(screen.getByTestId("mu-entry-dialog-subtitle")).toHaveTextContent(
+      "Çift taraflı kayıt — borç ve alacak toplamları eşit olmalı",
+    );
+    expect(screen.getByText("Fiş Bilgileri")).toBeInTheDocument();
+    expect(screen.getByText("Fiş Kalemleri")).toBeInTheDocument();
+    expect(screen.getByTestId("mu-lines-hint")).toHaveTextContent(
+      "Her satırda ya borç ya alacak dolar — ikisi birden dolamaz",
+    );
+  });
+
+  it("M:96 açıklama ipucu ÖLÇÜLEN sınırı söyler (mockup'ın 500'ünü değil)", async () => {
+    await openCreate();
+    const hint = screen.getByText(/Yevmiye listesinde bu metin görünür/);
+    expect(hint).toHaveTextContent("Maks 2000 karakter");
+    expect(screen.getByTestId("mu-entry-description")).toHaveAttribute(
+      "aria-describedby",
+      hint.id,
+    );
+  });
+
+  /** `M:143`/`:162` — dolu taraf VURGULU, `M:144`/`:161` kilitli taraf soluk. */
+  it("M:143 dolu taraf vurgulanır, öteki taraf kilitlenir", async () => {
+    const user = await openCreate();
+    await user.type(screen.getByTestId("mu-line-debit-0"), "100");
+    expect(screen.getByTestId("mu-line-debit-0")).toHaveClass("is-filled");
+    expect(screen.getByTestId("mu-line-credit-0")).not.toHaveClass("is-filled");
+    expect(screen.getByTestId("mu-line-credit-0")).toBeDisabled();
+
+    await user.type(screen.getByTestId("mu-line-credit-1"), "100");
+    expect(screen.getByTestId("mu-line-credit-1")).toHaveClass("is-filled");
+    expect(screen.getByTestId("mu-line-debit-1")).toBeDisabled();
+  });
+
+  /** `M:194-217` ↔ `M:220-246`: aynı iskelet, iki ton, İKİ satırlı anlatı. */
+  it("M:200/228 denge bandı iki satırlı anlatıyı ve tonu çevirir", async () => {
+    const user = await openCreate();
+    await user.type(screen.getByTestId("mu-entry-description"), "Kasa Devri");
+    await user.selectOptions(screen.getByTestId("mu-line-account-0"), "acc-120");
+    await user.selectOptions(screen.getByTestId("mu-line-account-1"), "acc-320");
+    await user.type(screen.getByTestId("mu-line-debit-0"), "1000");
+    await user.type(screen.getByTestId("mu-line-credit-1"), "400");
+
+    expect(screen.getByTestId("mu-balance-strip")).toHaveClass("mu-balance--off");
+    expect(screen.getByTestId("mu-balance-state")).toHaveTextContent("Fiş dengede değil");
+    expect(screen.getByTestId("mu-balance-state-detail")).toHaveTextContent(
+      "Borç ve alacak toplamları eşit olmadan kaydedilemez",
+    );
+
+    await user.clear(screen.getByTestId("mu-line-credit-1"));
+    await user.type(screen.getByTestId("mu-line-credit-1"), "1000");
+    expect(screen.getByTestId("mu-balance-strip")).toHaveClass("mu-balance--ok");
+    expect(screen.getByTestId("mu-balance-state")).toHaveTextContent("Fiş dengede");
+    expect(screen.getByTestId("mu-balance-state-detail")).toHaveTextContent(
+      "Kaydedilmeye hazır",
+    );
+  });
+
+  /** `M:57`/`:256` — fark sıfırlanmadan kaydedilemez; `M:249-251` gerekçe alt şeritte. */
+  it("M:249-251 fark uyarısı YALNIZ dengesizken basılır, düğme kapalıdır", async () => {
+    const user = await openCreate();
+    await user.type(screen.getByTestId("mu-entry-description"), "Kasa Devri");
+    await user.selectOptions(screen.getByTestId("mu-line-account-0"), "acc-120");
+    await user.selectOptions(screen.getByTestId("mu-line-account-1"), "acc-320");
+    await user.type(screen.getByTestId("mu-line-debit-0"), "1000");
+    await user.type(screen.getByTestId("mu-line-credit-1"), "400");
+
+    expect(screen.getByTestId("mu-entry-dialog-diff-warning")).toHaveTextContent(
+      "Fark ₺600 — sıfırlanmadan fiş kaydedilemez",
+    );
+    expect(screen.getByTestId("mu-entry-dialog-save")).toBeDisabled();
+
+    await user.clear(screen.getByTestId("mu-line-credit-1"));
+    await user.type(screen.getByTestId("mu-line-credit-1"), "1000");
+    expect(screen.queryByTestId("mu-entry-dialog-diff-warning")).toBeNull();
+    expect(screen.getByTestId("mu-entry-dialog-save")).toBeEnabled();
+  });
+
+  /**
+   * 🔴 `M:56`/`:255` `Taslak Kaydet` İKİNCİ DÜĞMESİ ÇİZİLMEZ — ÖLÇÜM: `POST
+   * /journal-entries` fişi ZATEN `draft` üretir; `posted`a geçiren ayrı bir uç
+   * vardır (`POST /journal-entries/{id}/post`) ve o düğme Taslak Fişler
+   * panelindeki `Kayıtlaştır`dır. İki düğme AYNI isteği atardı.
+   */
+  it("M:57 kaydet düğmesi TEKtir ve 'Fişi Kaydet' der (Taslak Kaydet ikizi yok)", async () => {
+    await openCreate();
+    expect(screen.getByTestId("mu-entry-dialog-save")).toHaveTextContent("Fişi Kaydet");
+    expect(screen.queryByRole("button", { name: "Taslak Kaydet" })).toBeNull();
+  });
+
+  it("M:105-106 detay notu ÇOK SATIRLIdır (textarea) ve şemadaki alandır", async () => {
+    const user = await openCreate();
+    const note = screen.getByTestId("mu-entry-detail-note");
+    expect(note.tagName).toBe("TEXTAREA");
+    await user.type(note, "Ziraat · TRF-1");
+    expect(note).toHaveValue("Ziraat · TRF-1");
   });
 });

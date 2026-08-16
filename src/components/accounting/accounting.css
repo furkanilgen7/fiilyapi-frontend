@@ -348,6 +348,13 @@
   padding-left: calc(3 * var(--space-4)); /* 48px */
 }
 
+/* 🔴 K5 — kontra rozeti kodun YANINDA durur; kod hücresinin MONO/solgun
+   biçiminden ayrılsın diye rozet primitive'inin kendi tipografisini korur. */
+.mu-chart__contra {
+  margin-left: var(--space-2);
+  vertical-align: middle;
+}
+
 /* HP:79/155 — bakiye kalın MONO; ton `balanceTone`dan gelir. */
 .mu-chart__balance {
   font-weight: var(--weight-semibold);
@@ -375,9 +382,13 @@
 }
 
 /* ---------------------------------------------------------------------------
-   T4 · Yevmiye Kaydı / Hesap diyalogları. Form mockup'ı YOKTUR (S-FRM):
-   kap `settings/modal.css` + `settings-form` ızgarasıdır, buradaki kurallar
-   yalnız fişe özgü iki yüzeyi (satır tablosu + DENGE göstergesi) kurar.
+   T4 · Yevmiye Kaydı / Hesap diyalogları.
+   🔴 BAYAT SATIR DÜZELTİLDİ (F-MUF T2/T4): burada eskiden "Form mockup'ı
+   YOKTUR (S-FRM)" yazıyordu — ARTIK VAR (`projedesign/Form - Yevmiye
+   Kaydı.dc.html` + `Form - Hesap Ekle.dc.html`). Kap yine `settings/modal.css`
+   + `settings-form` ızgarasıdır, buradaki kurallar fişe özgü yüzeyleri
+   (satır tablosu + DENGE göstergesi) ve hesap diyaloğunun kontra kutusu +
+   canlı önizlemesini kurar.
 --------------------------------------------------------------------------- */
 
 /* Varsayılan 480px kabuk üç sütunlu satır tablosuna dardır. */
@@ -391,60 +402,135 @@
   border-radius: var(--radius-12);
   overflow: hidden;
 }
+/* M:112-116 — başlık, kuralın ipucu ve SAĞA yaslı ekleme düğmesi tek satırda. */
 .mu-lines__head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
+  gap: 10px; /* M:112 */
   padding: 10px var(--space-4);
   background: var(--color-surface-2);
   border-bottom: 1px solid var(--color-border);
 }
+.mu-lines__hint {
+  font-size: var(--text-small); /* M:114 — 11px. `--text-form-hint` DEĞİL: o token yalnız field.css'indir (field-adoption bekçisi); ikisinin değeri de 11px. */
+  color: var(--color-text-subtle);
+}
+.mu-lines__add {
+  margin-left: auto; /* M:115 */
+}
 
 /* 🔴 DENGE GÖSTERGESİ — toplamlar ve fark CANLI görünür; kaydet kapısı
-   dengesizken KAPALIdır ve gerekçe ekrandadır (sunucunun 422'si son çaredir). */
+   dengesizken KAPALIdır ve gerekçe ekrandadır (sunucunun 422'si son çaredir).
+
+   Kanon `Form - Yevmiye Kaydi.dc.html` (aşağıda `M:`): `M:194-217` dengesiz,
+   `M:220-246` dengeli. İSKELET TEK, TON İKİ — ızgara (`M:196`/`M:224`) ve
+   tipografi iki dalda BİREBİR aynıdır, yalnız renk ailesi döner. */
 .mu-balance {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-3);
-  align-items: end;
+  grid-template-columns: 1fr 190px 190px 210px; /* M:196 */
+  gap: var(--space-form-section-gap); /* M:196 — 14px */
+  align-items: center;
   margin-top: var(--space-4);
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-surface-2);
+  padding: var(--space-4) var(--space-5); /* M:195 — 16px 20px */
   border: 1px solid var(--color-border);
   border-radius: var(--radius-12);
 }
+/* M:195 — dengesiz hâl: ÜST kenar 2px kırmızı, zemin soluk kırmızı. */
+.mu-balance--off {
+  background: var(--color-danger-tint);
+  border-color: var(--color-danger-tint-border);
+  border-top: 2px solid var(--color-danger);
+}
+/* M:223 — dengeli hâl: yeşil kenarlık + soluk yeşil zemin. */
+.mu-balance--ok {
+  background: var(--color-success-tint);
+  border-color: var(--color-success-tint-border);
+  border-top: 2px solid var(--color-success);
+}
+/* M:197-203 — ikon + iki satırlık anlatı. */
+.mu-balance__state {
+  display: flex;
+  align-items: center;
+  gap: 9px; /* M:197 */
+}
+.mu-balance__icon {
+  flex-shrink: 0; /* M:198 */
+}
+.mu-balance__state-title {
+  font-size: var(--text-body); /* M:200 — 13/700 */
+  font-weight: var(--weight-bold);
+}
+.mu-balance__state-detail {
+  font-size: var(--text-small); /* M:201 — 11px */
+  margin-top: 1px; /* M:201 */
+}
+.mu-balance--off .mu-balance__icon,
+.mu-balance--off .mu-balance__state-detail {
+  color: var(--color-danger-strong); /* M:198/201 */
+}
+.mu-balance--off .mu-balance__state-title {
+  color: var(--color-danger-deep); /* M:200 */
+}
+.mu-balance--ok .mu-balance__icon,
+.mu-balance--ok .mu-balance__state-detail {
+  color: var(--color-success); /* M:226/229 */
+}
+.mu-balance--ok .mu-balance__state-title {
+  color: var(--color-success-deep); /* M:228 */
+}
+/* M:204-211 — sayılar SAĞA yaslı; etiket küçük ve seyrek harflidir. */
 .mu-balance__cell {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px; /* M:205 */
+  text-align: right;
 }
 .mu-balance__label {
-  font-size: var(--text-small);
+  font-size: var(--text-small); /* M:205 — 10px'e en yakın token (11px) */
   color: var(--color-text-subtle);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
 }
 .mu-balance__value {
   font-family: var(--font-mono);
-  font-weight: var(--weight-semibold);
-  font-size: var(--text-body);
+  font-weight: var(--weight-bold); /* M:206 — 700 */
+  font-size: 17px; /* M:206 — token yok, mockup satırıyla gerekçeli */
 }
-.mu-balance__value--ok {
-  color: var(--color-success);
+/* 🔴 M:234/238 — DENGELİYKEN toplamlar NÖTR koyudur: renk burada dekorasyon
+   değil DURUM taşır, denge sağlanınca kırmızı/yeşil ayrımı susar. */
+.mu-balance__value--neutral {
+  color: var(--color-text);
 }
-.mu-balance__value--off {
-  color: var(--color-danger);
+/* M:212-215 / M:240-243 — Fark VURGULU kutudadır. */
+.mu-balance__diff {
+  padding: 10px 14px; /* M:212 */
+  border-radius: var(--radius-9); /* M:212 */
+  border: 1.5px solid;
 }
-.mu-balance__state {
-  grid-column: 1 / -1;
-  font-size: var(--text-xs);
+.mu-balance__diff-value {
+  font-size: 19px; /* M:214 — token yok, mockup satırıyla gerekçeli */
 }
-.mu-balance__state--ok {
-  color: var(--color-success);
+.mu-balance--off .mu-balance__diff {
+  background: var(--color-danger-soft); /* M:212 */
+  border-color: var(--color-danger-border-soft);
 }
-.mu-balance__state--off {
-  color: var(--color-danger);
+.mu-balance--off .mu-balance__diff .mu-balance__label {
+  color: var(--color-danger-deep); /* M:213 */
+  font-weight: var(--weight-bold);
+}
+.mu-balance--off .mu-balance__diff-value {
+  color: var(--color-danger-strong); /* M:214 */
+}
+.mu-balance--ok .mu-balance__diff {
+  background: var(--color-success-soft); /* M:240 */
+  border-color: var(--color-success-border-soft);
+}
+.mu-balance--ok .mu-balance__diff .mu-balance__label {
+  color: var(--color-success-deep); /* M:241 */
+  font-weight: var(--weight-bold);
+}
+.mu-balance--ok .mu-balance__diff-value {
+  color: var(--color-success); /* M:242 */
 }
 
 /* Kaydet kapısının GEREKÇELERİ — kapalı düğme sessiz kalmaz. */
@@ -803,6 +889,322 @@ span.mu-tb__total {
 @media (max-width: 1100px) {
   .mu-vat-cards,
   .mu-vat-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   F-MUF T2 · `Form - Hesap Ekle.dc.html` (aşağıda `M:` = O dosyanın satırı).
+   Düzen/renk/tipografi mockup'tan BİREBİR; kutunun CÜMLELERİ kanondan gelir
+   (K1 — gerekçe `chart-account-form.ts` başında).
+   Palet YALNIZ token'dan (bekçi: bu dosyada ÇIPLAK HEX YASAK):
+   M:111 zemin = --color-amber-tint-cell · M:111 kenarlık =
+   --color-warning-border-soft · M:115 başlık = --color-warning-deep-text ·
+   M:116 gövde = --color-warning-body-text · M:113 vurgu =
+   --color-warning-strong.
+--------------------------------------------------------------------------- */
+
+/* M:57 — diyalog `max-width:560px`; varsayılan kabuk 480px'tir. */
+.mu-modal--account {
+  width: min(560px, 92vw);
+}
+
+/* M:64 — başlığın altındaki açıklama (Modal alt başlık almadığı için gövdede). */
+.mu-account-form__subtitle {
+  font-size: 12px; /* M:64 — token yok (--text-body 13px), mockup satırıyla gerekçeli */
+  color: var(--color-text-subtle);
+  margin-top: calc(-1 * var(--space-2));
+}
+
+/* M:85 — iki eşit sütun; M:72 kod sütunu 150px sabittir. */
+.mu-account-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-form-section-gap); /* M:72/85 — 14px */
+  align-items: start;
+}
+.mu-account-form__row--code {
+  grid-template-columns: 150px 1fr; /* M:72 */
+}
+
+/* M:100 — anahtar ile durum sözcüğü aynı satırda, 12px arayla. */
+.mu-account-form__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3); /* M:100 — 12px */
+  padding: var(--space-2) 0; /* M:100 */
+}
+.mu-account-form__state {
+  font-size: var(--text-body); /* M:104 — 13/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+.mu-account-form__state--on {
+  color: var(--color-success); /* M:104 */
+}
+
+/* M:152 — alt şeritteki tekrar kutusu esner, düğmeleri sağa iter. */
+.mu-account-form__repeat-box {
+  flex: 1;
+  font-size: 12px; /* M:152 */
+  color: var(--color-text-secondary);
+}
+
+/* ---- M:111-131 KRİTİK: kontra hesap kutusu ---- */
+.mu-contra {
+  /* 🔴 ZARİF DÜŞÜŞ: M:123 iç kutunun kenarlığı dış kenarlıktan bir ton AÇIKTIR
+     ve o tonun tokens.css'te karşılığı YOK. tokens.css bu dilimde
+     DEĞİŞTİRİLEMEZ, çıplak hex de yasak (bu dosyanın kör bekçisi) → aynı
+     kehribar ailesinin mevcut token'ı kullanılır. Ton farkı kaybolur, karar
+     görünür kalır. */
+  --mu-contra-inner-border: var(--color-warning-border-soft); /* M:123 (yaklaşık) */
+  padding: 15px; /* M:111 */
+  background: var(--color-amber-tint-cell); /* M:111 */
+  border: 1.5px solid var(--color-warning-border-soft); /* M:111 */
+  border-radius: 11px; /* M:111 — 11px token yok */
+  display: flex;
+  flex-direction: column;
+  gap: 5px; /* M:115 başlık→gövde */
+}
+
+/* M:113 — kutucuk 17×17 ve turuncu vurgulu; M:115 başlık 13/700. */
+.mu-contra__box .checkbox {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--color-warning-strong);
+}
+.mu-contra__title {
+  font-size: var(--text-body); /* M:115 — 13/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-warning-deep-text);
+}
+
+/* M:116 — gövde 12px, satır yüksekliği 1.7, koyu kehribar. */
+.mu-contra__body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px; /* M:116 */
+  line-height: 1.7; /* M:116 */
+  color: var(--color-warning-body-text); /* M:116 */
+  /* Kutucuk (17px) + M:112 `gap:11px` kadar içeri: metin başlıkla hizalanır. */
+  padding-left: 28px;
+}
+.mu-contra__body .is-mono {
+  font-family: var(--font-mono); /* M:118 `.mono` */
+}
+.mu-contra__fallback {
+  font-weight: var(--weight-semibold);
+}
+
+/* M:123-127 — "Neden önemli" iç kutusu: BEYAZ zemin, açık kehribar kenarlık. */
+.mu-contra__why {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 4px; /* M:123 — 9px'in kutu gap'iyle toplamı */
+  padding: 9px 11px; /* M:123 */
+  background: var(--color-surface); /* M:123 */
+  border: 1px solid var(--mu-contra-inner-border); /* M:123 */
+  border-radius: var(--radius-8); /* M:123 */
+  font-size: var(--text-small); /* M:124 — 11px */
+  line-height: var(--leading-normal); /* M:124 */
+  color: var(--color-warning-deep-text); /* M:124 */
+}
+/* M:125'teki `⚠` (U+26A0) fontta YOKTUR → ikon. Metnin ilk satırına hizalanır. */
+.mu-contra__why-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ---- M:134-147 CANLI ÖNİZLEME ---- */
+.mu-preview {
+  padding: var(--space-form-section-gap); /* M:134 — 14px */
+  background: var(--color-surface-2); /* M:134 */
+  border: 1px solid var(--color-border); /* M:134 */
+  border-radius: var(--radius-10); /* M:134 */
+}
+.mu-preview__eyebrow {
+  font-size: var(--text-small); /* M:135 — 11/600 uppercase ls .8 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 11px; /* M:135 */
+}
+.mu-preview__head {
+  display: flex;
+  align-items: center;
+  gap: 11px; /* M:136 */
+  margin-bottom: 10px; /* M:136 */
+}
+.mu-preview__code {
+  font-size: var(--text-body); /* M:137 — 13/700 MONO */
+  font-weight: var(--weight-bold);
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+}
+.mu-preview__name {
+  flex: 1; /* M:138 */
+  font-size: var(--text-body); /* M:138 — 13/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* M:142 — davranış satırı BEYAZ kartta, etiket solda değer sağda. */
+.mu-preview__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 9px 11px; /* M:142 */
+  background: var(--color-surface); /* M:142 */
+  border: 1px solid var(--color-border); /* M:142 */
+  border-radius: var(--radius-7); /* M:142 */
+}
+.mu-preview__label {
+  font-size: 12px; /* M:143 */
+  color: var(--color-text-muted); /* M:143 */
+}
+.mu-preview__value {
+  font-size: 12px; /* M:144 */
+  font-weight: var(--weight-semibold);
+  text-align: right;
+}
+/* M:144 — normal hâl MAVİ; kontra hâl mockup'ta çizilmemiş, kutunun kehribar
+   ailesinden alınır (aynı kararın iki yüzü aynı renkle konuşur). */
+.mu-preview__value--normal {
+  color: var(--color-primary);
+}
+.mu-preview__value--contra {
+  color: var(--color-warning-strong);
+}
+
+/* Dar pencerede iki sütunlu satırlar teke iner; yatay taşma OLMAZ. */
+@media (max-width: 640px) {
+  .mu-account-form__row,
+  .mu-account-form__row--code {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   F-MUF T4 · `Form - Yevmiye Kaydi.dc.html` (aşağıda `M:` = O dosyanın satırı).
+   Denge bandının kuralları yukarıda, `.mu-balance` bloğunda yaşar; burada
+   diyaloğun BİLGİ KARTI ve KALEM TABLOSU vardır.
+   🔴 `M:99` `Fiş No` ve `M:121` `Satır Açıklaması` için KURAL YOKTUR: o iki
+   öğe hiç basılmaz (K4 — gerekçe bileşenlerin başında).
+--------------------------------------------------------------------------- */
+
+/* M:83 — başlığın altındaki kural cümlesi (Modal alt başlık almadığı için
+   gövdenin ilk satırı; T2'nin `mu-account-form__subtitle` emsali). */
+.mu-entry-form__subtitle {
+  font-size: var(--text-body); /* M:83 — 13px */
+  color: var(--color-text-subtle);
+  margin-top: calc(-1 * var(--space-2));
+}
+
+/* M:86-108 — Fiş Bilgileri kartı. Diyaloğun içindeki kart, sayfa kartından
+   DAHA HAFİFtir: gölge yerine yalnız kenarlık (kabuk zaten yükseltilmiş). */
+.mu-entry-form__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-form-section-gap); /* M:88 — 14px */
+  padding: var(--space-5); /* M:23 `.card` — 20px */
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* M:23 */
+}
+.mu-entry-form__card-title {
+  font-size: var(--text-body); /* M:24 `.card-t` — 14px'e en yakın token */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+/* M:88 — `170px 1fr 170px`ün K4'ten sonra kalan iki sütunu. */
+.mu-entry-form__row {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: var(--space-form-section-gap);
+  align-items: start;
+}
+
+/* M:249-251 — alt şeridin uyarısı; düğmeleri sağa iter (T2'nin `repeat-box`
+   emsali). `M:250`nin `⚠` glifi yerine ikon (F-SEM). */
+.mu-entry-form__diff-warning {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 7px; /* M:249 */
+  font-size: 12px; /* M:249 — token yok, mockup satırıyla gerekçeli */
+  color: var(--color-danger-strong); /* M:249 */
+}
+.mu-entry-form__diff-icon {
+  flex-shrink: 0;
+}
+
+/* M:119/130 — sıra numarası sütunu: dar, ortalı, MONO ve solgun. */
+.mu-lines__th-no,
+.mu-lines__no {
+  width: 44px; /* M:119 */
+  text-align: center;
+}
+.mu-lines__no {
+  font-family: var(--font-mono); /* M:130 */
+  color: var(--color-text-subtle);
+}
+/* M:120 — `Hesap` başlığındaki zorunluluk yıldızı. */
+.mu-lines__req {
+  color: var(--color-danger);
+}
+/* M:122-123 — Borç KIRMIZI, Alacak YEŞİL başlıklı ve 700 ağırlıktadır. */
+.mu-lines__th--debit {
+  color: var(--color-danger);
+  font-weight: var(--weight-bold);
+}
+.mu-lines__th--credit {
+  color: var(--color-success);
+  font-weight: var(--weight-bold);
+}
+.mu-lines__table .mu-lines__th--debit,
+.mu-lines__table .mu-lines__th--credit {
+  width: 140px; /* M:122-123 */
+}
+
+/* 🔴 M:143/162 — DOLU taraf vurgulanır: tutar hangi tarafa yazıldı, satıra
+   bakan biri bir bakışta görür. Kilitli taraf `.input:disabled`ın kendi soluk
+   hâlindedir (M:144/161 · M:30 `.r-num:disabled`) — orada kural gerekmez. */
+.mu-line-amount {
+  font-family: var(--font-mono); /* M:28 `.r-num` */
+  text-align: right;
+}
+.mu-line-amount--debit.is-filled {
+  background: var(--color-danger-tint); /* M:143 */
+  border-color: var(--color-danger-border-soft);
+  color: var(--color-danger-strong);
+  font-weight: var(--weight-bold);
+}
+.mu-line-amount--credit.is-filled {
+  background: var(--color-success-tint); /* M:162 */
+  border-color: var(--color-success-border-soft);
+  color: var(--color-success);
+  font-weight: var(--weight-bold);
+}
+
+/* M:183-190 — tablonun altındaki kesikli ekleme satırı. */
+.mu-lines__foot td {
+  background: var(--color-surface-2); /* M:183 */
+  padding: 11px var(--space-4); /* M:184 */
+}
+.mu-lines__add-row {
+  border: 1px dashed var(--color-border-strong); /* M:185 */
+  border-radius: var(--radius-7); /* M:185 */
+  color: var(--color-text-muted); /* M:185 */
+}
+
+/* Dar pencerede bilgi kartı ve denge bandı tek sütuna iner; taşma OLMAZ. */
+@media (max-width: 640px) {
+  .mu-entry-form__row {
     grid-template-columns: 1fr;
   }
 }

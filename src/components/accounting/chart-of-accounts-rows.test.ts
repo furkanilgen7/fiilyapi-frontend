@@ -11,6 +11,8 @@ import {
   buildChartRows,
   classBandLabel,
   classBandTheme,
+  CONTRA_BADGE_LABEL,
+  CONTRA_BADGE_TEXT,
   formatBalance,
   indentSteps,
 } from "./chart-of-accounts-rows";
@@ -172,5 +174,46 @@ describe("buildChartRows", () => {
       .filter((r) => r.kind !== "class")
       .map((r) => r.account.code);
     expect(codes).toEqual(["300", "100"]);
+  });
+});
+
+// --- 🔴 K5: kontra göstergesi -------------------------------------------
+
+/**
+ * `is_contra` bayrağının EKRANDA bir sonucu olmalıdır. Kutu forma eklendi ama
+ * liste bayrağı okumadığı sürece kullanıcı yanlış işaretlediğini göremez ve
+ * yanlış işaretlenmiş hesabı listede BULAMAZ.
+ *
+ * 🔴 `Bakiye` sütunu kontra bilmez ve BİLMEYECEK (`balance.py:52-57` salt-okuma
+ * kararı) — bu yüzden kontra bilgisi ancak AYRI bir gösterge olarak görünür.
+ */
+describe("K5 · kontra göstergesi satır akışında taşınır", () => {
+  it("rozet metni ve erişilebilir adı mockup'ın dilindedir", () => {
+    // HP:154 hesap adı `Birikmiş Amortismanlar (-)` — mockup'ın kontra dili
+    // ASCII `(-)`dir; rozet o işareti kodun yanına taşır.
+    expect(CONTRA_BADGE_TEXT).toBe("(-)");
+    // Renk/sembol TEK BAŞINA bilgi taşımaz → okunur bir ad şarttır.
+    expect(CONTRA_BADGE_LABEL).toBe("Kontra hesap");
+  });
+
+  it("🔴 satır `is_contra`yı OKUR — kontra hesapta true, diğerlerinde false", () => {
+    const rows = buildChartRows([
+      account({ code: "254" }),
+      account({ code: "257", account_type: "liability", is_contra: true }),
+    ]);
+    const data = rows.filter((r) => r.kind === "account");
+    expect(data.map((r) => r.account.code)).toEqual(["254", "257"]);
+    expect(data.map((r) => r.isContra)).toEqual([false, true]);
+  });
+
+  it("kontra bayrağı `is_active`ten de `account_type`tan da BAĞIMSIZDIR", () => {
+    // `501 Ödenmemiş Sermaye (-)` → `equity` + `is_contra: false`; adında `(-)`
+    // geçmesi bayrağı kurmaz, rozet YALNIZ bayrağı izler.
+    const rows = buildChartRows([
+      account({ code: "501", name: "Ödenmemiş Sermaye (-)", account_type: "equity" }),
+      account({ code: "108", is_active: false, is_contra: true }),
+    ]);
+    const data = rows.filter((r) => r.kind === "account");
+    expect(data.map((r) => r.isContra)).toEqual([false, true]);
   });
 });

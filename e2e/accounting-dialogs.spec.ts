@@ -58,7 +58,12 @@ test.describe("yevmiye fişi diyaloğu — denge kapısı", () => {
 
     // Dengesiz: şerit "dengede değil" der, engel listesi görünür, Kaydet KAPALI.
     await expect(page.getByTestId("mu-balance-strip")).toBeVisible();
-    await expect(page.getByTestId("mu-balance-state")).toHaveText("Fiş dengede değil; kaydedilemez.");
+    // İDDİA TAŞINDI (F-MUF T4): mockup `M:200-201` başlığı ve gerekçeyi AYRI
+    // iki satıra böler; tek cümle artık iki `data-testid`dedir.
+    await expect(page.getByTestId("mu-balance-state")).toHaveText("Fiş dengede değil");
+    await expect(page.getByTestId("mu-balance-state-detail")).toHaveText(
+      "Borç ve alacak toplamları eşit olmadan kaydedilemez",
+    );
     await expect(page.getByTestId("mu-balance-difference")).toHaveText("600");
     await expect(page.getByTestId("mu-entry-dialog-blockers")).toContainText(
       "Fiş dengede değil: borç ve alacak toplamları eşit olmalıdır",
@@ -67,7 +72,8 @@ test.describe("yevmiye fişi diyaloğu — denge kapısı", () => {
 
     // Dengele → kapı AÇILIR ve engel listesi kaybolur.
     await page.getByTestId("mu-line-credit-1").fill("1000");
-    await expect(page.getByTestId("mu-balance-state")).toHaveText("Fiş dengede.");
+    await expect(page.getByTestId("mu-balance-state")).toHaveText("Fiş dengede");
+    await expect(page.getByTestId("mu-balance-state-detail")).toHaveText("Kaydedilmeye hazır");
     await expect(page.getByTestId("mu-balance-difference")).toHaveText("0");
     await expect(page.getByTestId("mu-entry-dialog-blockers")).toHaveCount(0);
     await expect(save).toBeEnabled();

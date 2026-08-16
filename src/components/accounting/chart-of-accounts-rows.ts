@@ -120,6 +120,38 @@ export function balanceTone(value: string, accountType: ChartAccountType): Balan
   return accountTypeVariant(accountType) === "success" ? "success" : "danger";
 }
 
+// --- Kontra göstergesi (`is_contra`) -------------------------------------
+
+/**
+ * 🔴 K5 · `is_contra`nın EKRANDAKİ tek görünür sonucu.
+ *
+ * Bayrak forma eklendi (K6/K7) ama liste onu OKUMADIĞI sürece kullanıcı yanlış
+ * işaretlediğini asla göremez ve yanlış işaretlenmiş hesabı listede BULAMAZ.
+ *
+ * 🔴 `Bakiye` sütunu kontra BİLMEZ ve bilmeyecek: sunucunun bakiyesi ham
+ * borç−alacak farkıdır (`balance.py:52-57`), işaret çevirimi YALNIZ bilanço
+ * derlemesinde yapılır (`balance_sheet.py:180`). Yani bu rozet bakiyeyi
+ * yorumlamaz, sadece "bu hesabın kalemi ters tarafta durur" der.
+ *
+ * Metin mockup'ın kendi dilidir: HP:154 hesap ADI `Birikmiş Amortismanlar (-)`
+ * yazar — TDHP'nin kontra işareti ASCII `(-)`dir. Rozet o işareti hesap adının
+ * içinden çıkarıp KODUN yanına, her kontra hesapta AYNI yere taşır (adında
+ * `(-)` geçmeyen bir kontra hesap da işaretli görünsün diye).
+ */
+export const CONTRA_BADGE_TEXT = "(-)";
+
+/** Renk/sembol TEK BAŞINA bilgi taşımaz — rozetin okunur bir adı olmalıdır. */
+export const CONTRA_BADGE_LABEL = "Kontra hesap";
+
+/**
+ * Rozetin rengi NÖTRdür.
+ *
+ * 🔴 Kontra bir HATA ya da uyarı değil, hesabın yapısal özelliğidir. Yeşil ve
+ * kırmızı bu ekranda ZATEN `Tür`ün (ve bakiyenin) anlamını taşıyor; üçüncü bir
+ * renkli rozet aynı satırda hangi rengin neyi söylediğini belirsizleştirirdi.
+ */
+export const CONTRA_BADGE_VARIANT: BadgeVariant = "neutral";
+
 // --- Sınıf bantları (HP:68-69 · 134-135 · 160-161 · 186-187) -------------
 
 export type ClassBandTheme = "1" | "2" | "3" | "5" | "neutral";
@@ -193,6 +225,12 @@ export type ChartRow =
       readonly key: string;
       readonly account: ChartAccountResponse;
       readonly indent: number;
+      /**
+       * K5 · kontra rozeti basılacak mı. Bayrak burada, SAF katmanda okunur;
+       * bileşen `account.is_contra`ya kendi başına uzanmaz ki gösterge birim
+       * testiyle bekçilenebilsin.
+       */
+      readonly isContra: boolean;
     };
 
 /**
@@ -224,7 +262,13 @@ export function buildChartRows(
     rows.push(
       account.level === 1
         ? { kind: "group", key: account.id, account }
-        : { kind: "account", key: account.id, account, indent: indentSteps(account.level) },
+        : {
+            kind: "account",
+            key: account.id,
+            account,
+            indent: indentSteps(account.level),
+            isContra: account.is_contra,
+          },
     );
   }
   return rows;

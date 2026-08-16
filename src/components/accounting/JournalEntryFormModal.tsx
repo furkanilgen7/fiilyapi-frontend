@@ -3,7 +3,9 @@
 import { useMemo, useState } from "react";
 
 import { Modal } from "@/components/settings/Modal";
-import { Button, Field, Input } from "@/components/ui";
+import { Button, Field, Input, Textarea } from "@/components/ui";
+import { WarningTriangleIcon } from "@/components/ui/icons";
+import { formatAmount } from "@/lib/format";
 import { backendErrorMessage } from "@/lib/api/error-message";
 import {
   CHART_ACCOUNTS_MAX_LIMIT,
@@ -22,6 +24,7 @@ import { JournalLinesEditor } from "./JournalLinesEditor";
 import {
   applyLineAmount,
   changedEntryFields,
+  differenceWarning,
   draftsFromEntry,
   emptyJournalLine,
   initialJournalLines,
@@ -31,6 +34,8 @@ import {
   selectableLineAccounts,
   todayIsoDate,
   toJournalLineInputs,
+  JOURNAL_DETAIL_NOTE_MAX,
+  JOURNAL_FORM_TEXT,
   type JournalEntryFormState,
   type JournalLineDraft,
   type LineSide,
@@ -49,6 +54,26 @@ const NOT_DRAFT_NOTICE =
 
 /**
  * E8:67 `+ Yevmiye Kaydı` / taslak satırının `Düzenle` diyaloğu.
+ * Kanon: `projedesign/Form - Yevmiye Kaydi.dc.html` (`M:` = o dosyanın satırı).
+ *
+ * 🔴 **`M:99-101` `Fiş No` ALANI ÇİZİLMEZ — KARAR K4.** Mockup onu devre dışı
+ * bir kutu + "Kayıtta üretilir" ipucuyla çizer; ŞEMADA KARŞILIĞI YOKTUR:
+ * `JournalEntryResponse`ta `entry_no`/`document_no` diye bir alan yok
+ * (ölçüldü). F-TH'nin *"rotası olmayan öğe devre-dışı basılır"* kanonu burada
+ * YANLIŞ REÇETEdir — devre dışı bir `Fiş No` kutusu kullanıcıya VAR OLMAYAN
+ * bir numaralandırma VAAT EDER ve kullanıcı fişini o numarayla arar. Alan HİÇ
+ * basılmaz; sonraki okuyucu mockup'a bakıp "eksik kalmış" SANMASIN.
+ * (İkiz karar — `M:121` `Satır Açıklaması` — `JournalLinesEditor` başında.)
+ *
+ * 🔴 **`M:56`/`M:255` `Taslak Kaydet` İKİNCİ DÜĞMESİ ÇİZİLMEZ.** ÖLÇÜM: `POST
+ * /journal-entries` fişi ZATEN `draft` üretir; `posted`a geçiren AYRI bir uç
+ * vardır (`POST /journal-entries/{id}/post`) ve onun düğmesi Taslak Fişler
+ * panelindeki `Kayıtlaştır`dır. Mockup'ın iki düğmesi bu üründe AYNI isteği
+ * atardı — ikincisi uydurma bir ayrım vaat ederdi.
+ *
+ * 🔴 `M:87` `📅` ve `M:113` `📋` emojileri basılmaz (T2'nin `M:61` `📒`
+ * kararıyla aynı): kart başlığının anlamını taşımazlar, görsel kareye ise
+ * yazı tipi ikamesi riski sokarlar.
  *
  * Düzenleme kipinde bacaklar LİSTE ucundan gelemez (o yalnız başlık döner) —
  * `useJournalEntry` ile detay çekilir ve form ancak veri geldikten sonra
@@ -233,6 +258,15 @@ function JournalEntryFormBody({
       onClose={onClose}
       footer={
         <>
+          {/* `M:249-251` — kapalı düğmenin GEREKÇESİ alt şeridin solundadır.
+              `M:250`deki `⚠` (U+26A0) `fonts.css` unicode-range'lerinde YOKTUR
+              → ikon (F-SEM kanonu). */}
+          {!totals.isBalanced && (
+            <p className="mu-entry-form__diff-warning" data-testid="mu-entry-dialog-diff-warning">
+              <WarningTriangleIcon className="mu-entry-form__diff-icon" width={13} height={13} />
+              <span>{differenceWarning(formatAmount(totals.difference))}</span>
+            </p>
+          )}
           <Button variant="secondary" onClick={onClose} disabled={isPending}>
             Vazgeç
           </Button>
@@ -242,7 +276,7 @@ function JournalEntryFormBody({
             disabled={!canSave}
             data-testid="mu-entry-dialog-save"
           >
-            Kaydet
+            {isEdit ? "Kaydet" : "Fişi Kaydet"}
           </Button>
         </>
       }
@@ -253,48 +287,67 @@ function JournalEntryFormBody({
             {NOT_DRAFT_NOTICE}
           </p>
         )}
-        <Field label="Tarih" required>
-          {(control) => (
-            <Input
-              {...control}
-              type="date"
-              value={form.entryDate}
-              disabled={!isEditable}
-              data-testid="mu-entry-date"
-              onChange={(event) =>
-                setForm((current) => ({ ...current, entryDate: event.target.value }))
-              }
-            />
-          )}
-        </Field>
-        <Field label="Açıklama" required>
-          {(control) => (
-            <Input
-              {...control}
-              value={form.description}
-              disabled={!isEditable}
-              data-testid="mu-entry-description"
-              onChange={(event) =>
-                setForm((current) => ({ ...current, description: event.target.value }))
-              }
-            />
-          )}
-        </Field>
-        {/* E8:113'ün İKİNCİ satırı (`detail_note`) — serbest metindir, bir FK
-            değildir; boşaltmak GERÇEK bir temizlemedir (kolon NULLABLE). */}
-        <Field label="Alt Açıklama" hint="Dayanak / açıklama ikinci satırı">
-          {(control) => (
-            <Input
-              {...control}
-              value={form.detailNote}
-              disabled={!isEditable}
-              data-testid="mu-entry-detail-note"
-              onChange={(event) =>
-                setForm((current) => ({ ...current, detailNote: event.target.value }))
-              }
-            />
-          )}
-        </Field>
+        {/* `M:83` — başlığın altındaki kural cümlesi; `Modal` alt başlık
+            almadığı için gövdenin ilk satırıdır (T2'nin emsali). */}
+        <p className="mu-entry-form__subtitle" data-testid="mu-entry-dialog-subtitle">
+          {JOURNAL_FORM_TEXT.subtitle}
+        </p>
+
+        {/* `M:86-108` — Fiş Bilgileri kartı. */}
+        <section className="mu-entry-form__card">
+          <h3 className="mu-entry-form__card-title">{JOURNAL_FORM_TEXT.headerCardTitle}</h3>
+          {/* `M:88` ızgarası `170px 1fr 170px`tir; üçüncü sütun `Fiş No`ydu ve
+              K4 ile DÜŞTÜ → iki sütun kalır. */}
+          <div className="mu-entry-form__row">
+            <Field label="Fiş Tarihi" required>
+              {(control) => (
+                <Input
+                  {...control}
+                  type="date"
+                  value={form.entryDate}
+                  disabled={!isEditable}
+                  data-testid="mu-entry-date"
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, entryDate: event.target.value }))
+                  }
+                />
+              )}
+            </Field>
+            <Field label="Açıklama" required hint={JOURNAL_FORM_TEXT.descriptionHint}>
+              {(control) => (
+                <Input
+                  {...control}
+                  value={form.description}
+                  placeholder={JOURNAL_FORM_TEXT.descriptionPlaceholder}
+                  disabled={!isEditable}
+                  data-testid="mu-entry-description"
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, description: event.target.value }))
+                  }
+                />
+              )}
+            </Field>
+          </div>
+          {/* `M:104-107` — `Detay Notu`: E8:113'ün İKİNCİ satırı (`detail_note`).
+              Serbest metindir, bir FK değildir; boşaltmak GERÇEK bir
+              temizlemedir (kolon NULLABLE). `M:106` çok satırlı çizer. */}
+          <Field label="Detay Notu">
+            {(control) => (
+              <Textarea
+                {...control}
+                rows={2}
+                value={form.detailNote}
+                maxLength={JOURNAL_DETAIL_NOTE_MAX}
+                placeholder={JOURNAL_FORM_TEXT.detailNotePlaceholder}
+                disabled={!isEditable}
+                data-testid="mu-entry-detail-note"
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, detailNote: event.target.value }))
+                }
+              />
+            )}
+          </Field>
+        </section>
       </div>
 
       {accountsQuery.isError && (
