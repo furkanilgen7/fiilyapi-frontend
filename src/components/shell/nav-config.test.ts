@@ -122,17 +122,41 @@ describe("NAV_GROUPS — href geçerliliği (kırık link koruması)", () => {
     expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "static" });
   });
 
-  // 🔴 KONTROL GRUBU (F-MU1 T3'te YENİDEN kuruldu). Yukarıdaki beş iddia
-  // "yazılmış öğe gerçekten statik rotaya düşüyor mu" diye sorar; hepsi
-  // `resolveHrefIn`in POZİTİF yolunu sınar. T2'de `/muhasebe` gerçek sayfaya
-  // dönünce dosyada hiç NEGATİF örnek kalmamıştı — `resolveHrefIn` her şeye
-  // `{kind:"static"}` döndürecek şekilde bozulsaydı testlerin TAMAMI yeşil
-  // kalırdı. "Mali Tablolar" bugün yazılmamış tek nav öğesidir ve gerçekten
-  // catch-all'a düşer; yazıldığı gün bu test kırmızıya döner ve ONU da
-  // yukarıdaki listeye taşımak gerekir (kasıtlı bakım noktası).
-  it("kontrol grubu: 'Mali Tablolar' HENÜZ yazılmamıştır → catch-all'a düşer", () => {
+  // 🔴 F-MT T2: iddia SİLİNMEDİ, YENİ GERÇEĞE TAŞINDI (F-MU2 kanonu). Yukarıdaki
+  // notun kendi öngördüğü "kasıtlı bakım noktası" geldi: `/mali-tablolar`
+  // GERÇEK bir sayfa oldu. Zorunluydu — `/mali-tablolar/bilanco` yazılınca
+  // `mali-tablolar` klasörü doğdu ve kök yol catch-all'ın kapsamından çıkıp
+  // `not-found`a (gerçek 404) düşüyordu.
+  it("'Mali Tablolar' /mali-tablolar statik rotasına düşer (catch-all DEĞİL)", () => {
     const item = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.label === "Mali Tablolar");
     expect(item?.href).toBe("/mali-tablolar");
-    expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "catch-all" });
+    expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "static" });
+  });
+
+  // 🔴 KONTROL GRUBU. Yukarıdaki iddiaların HEPSİ `resolveHrefIn`in POZİTİF
+  // yolunu sınar; dosyada hiç NEGATİF örnek kalmazsa `resolveHrefIn` her şeye
+  // `{kind:"static"}` döndürecek şekilde bozulsa bile testlerin TAMAMI yeşil
+  // kalırdı. Kontrol artık YAZILMAMIŞ BİR EKRANA bağlı DEĞİLDİR (o bağ her
+  // yeni dilimde kopuyordu): uydurma bir yol kullanılır ve o yol tanım gereği
+  // hiçbir zaman statik olmaz.
+  //
+  // 🔴 F-MT T4 · SEÇİMİN GEREKÇESİ ÖLÇÜLDÜ VE KAYDA GEÇTİ. Alternatif,
+  // kontrolü HÂLÂ yazılmamış GERÇEK bir nav öğesine bağlamaktı; öyle dört öğe
+  // vardır (`/onay-kutusu`, `/raporlar`, `/bordro`, `/sirket-varliklari` —
+  // dördü de bugün `catch-all` çözümlüyor), yani "aday yok" değildi. Yine de
+  // UYDURMA yol tercih edilir: gerçek bir öğeye bağlanan kontrol, o ekran
+  // yazıldığı gün kırılır ve dilim dilim taşınmak zorunda kalır (bu dosyada
+  // tam olarak bu oldu). Uydurma yolun koruma gücü ÖLÇÜLDÜ: `resolveHrefIn`
+  // her çağrıda `{kind:"static"}` döndürecek şekilde sabitlendiğinde YALNIZ
+  // bu test kırmızıya döner. Gerçek bir öğeye bağlamak aynı kod yolunu sınar,
+  // fazladan hiçbir şey kanıtlamaz — ikisini birden tutmak yalnız bakım
+  // maliyetini geri getirirdi.
+  it("kontrol grubu: var olmayan bir yol catch-all'a düşer (NEGATİF yol)", () => {
+    expect(NAV_GROUPS.flatMap((g) => g.items).some((i) => i.href === "/boyle-bir-rota-yok")).toBe(
+      false,
+    );
+    expect(resolveHrefIn(ROUTE_TREE, "/boyle-bir-rota-yok", false)).toEqual({
+      kind: "catch-all",
+    });
   });
 });

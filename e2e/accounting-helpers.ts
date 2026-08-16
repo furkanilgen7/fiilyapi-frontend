@@ -100,3 +100,54 @@ export async function openVatReturn(page: Page, fixedTime = ACCOUNTING_READ_TIME
   await page.goto(VAT_RETURN_URL);
   await expect(page.getByTestId("kdv-loaded")).toBeAttached();
 }
+
+/* ------------------------------------------------------------------ */
+/* F-MT T5 · Mali Tablolar (E11 · BL · NA)                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Rotalar. 🔴 Mali tablo ekranları MUHASEBE modülünün izniyle korunur
+ * (`ACCOUNTING_PERMISSION_MODULE`) ve dönemleri de aynı takvimden türer —
+ * bu yüzden burada, muhasebe helper'larıyla AYNI dosyada yaşarlar. İkinci bir
+ * helper dosyası ikinci bir takvim demek olurdu ve bu dosyanın başındaki
+ * gerekçe tam olarak bunu yasaklıyor.
+ */
+export const FINANCIAL_STATEMENTS_URL = "/mali-tablolar";
+export const BALANCE_SHEET_URL = "/mali-tablolar/bilanco";
+export const CASH_FLOW_STATEMENT_URL = "/mali-tablolar/nakit-akisi";
+
+/**
+ * 📅 `ACCOUNTING_READ_TIME`in (20 Temmuz 2026) ürettiği VARSAYILAN değerler.
+ *
+ * Bilanço `defaultBalanceSheetAsOf` ile içinde bulunulan AYIN SON gününü,
+ * nakit akışı `defaultCashFlowPeriod` ile içinde bulunulan AY'ı seçer. Mock
+ * backend fikstürleri TAM BU anahtarlara konmuştur; sabitleri burada yazmak,
+ * "hangi kareyi ölçüyoruz" sorusunun cevabını tek yerde tutar.
+ */
+export const BALANCE_SHEET_DEFAULT_AS_OF = "2026-07-31";
+export const CASH_FLOW_DEFAULT_YEAR = 2026;
+export const CASH_FLOW_DEFAULT_MONTH = 7;
+
+/** 📅 `ACCOUNTING_EMPTY_TIME` (15 Ocak 2026) ⇒ DENGESİZ bilanço günü. */
+export const BALANCE_SHEET_IMBALANCED_AS_OF = "2026-01-31";
+
+/** `/mali-tablolar` — E11 kök ekranı; TEK veri kaynağı YOKTUR (hepsi devre dışı). */
+export async function openFinancialStatementsHome(page: Page, fixedTime = ACCOUNTING_READ_TIME) {
+  await loginAt(page, fixedTime);
+  await page.goto(FINANCIAL_STATEMENTS_URL);
+  await expect(page.getByTestId("mt-loaded")).toBeAttached();
+}
+
+/** `/mali-tablolar/bilanco` — TEK veri kaynağı (`GET /balance-sheet`). */
+export async function openBalanceSheet(page: Page, fixedTime = ACCOUNTING_READ_TIME) {
+  await loginAt(page, fixedTime);
+  await page.goto(BALANCE_SHEET_URL);
+  await expect(page.getByTestId("bl-loaded")).toBeAttached();
+}
+
+/** `/mali-tablolar/nakit-akisi` — TEK veri kaynağı (`GET /cash-flow-statement`). */
+export async function openCashFlowStatement(page: Page, fixedTime = ACCOUNTING_READ_TIME) {
+  await loginAt(page, fixedTime);
+  await page.goto(CASH_FLOW_STATEMENT_URL);
+  await expect(page.getByTestId("na-loaded")).toBeAttached();
+}

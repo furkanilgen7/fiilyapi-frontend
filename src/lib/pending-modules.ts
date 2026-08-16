@@ -155,6 +155,47 @@ const MODULE_LABELS: Record<string, string> = {
   // Tek metin iki düğmeyi birden karşılar: ikisinin de eksiği AYNI şeydir
   // (mizanın hiçbir dışa aktarma ucu yok), biçim farkı değil.
   trial_balance_export: "Mizan dışa aktarma ucu henüz açılmadı (Excel de PDF de)",
+  // F-MT T2 (BL:38 "PDF") — AYNI K6 kuralı: EKRAN BAŞINA ayrı anahtar.
+  // `trial_balance_export` adıyla "mizan" der ve bilanço ekranında YANLIŞ
+  // yüzeyi işaret ederdi. Uç açıklaması kapsam dışını adıyla sayıyor:
+  // "`PDF` düğmesi (BL:38 — düğme dışında hiçbir şey söylemiyor)".
+  balance_sheet_export: "Bilanço dışa aktarma ucu henüz açılmadı (PDF)",
+  // F-MT T3 (NA:38 "PDF") — AYNI K6 kuralı: EKRAN BAŞINA ayrı anahtar.
+  // `balance_sheet_export` adıyla "bilanço" der ve nakit akışı ekranında
+  // YANLIŞ yüzeyi işaret ederdi.
+  cash_flow_statement_export: "Nakit akış tablosu dışa aktarma ucu henüz açılmadı (PDF)",
+  // F-MT T3 · K8 (NA:143-159 "3 Aylık Projeksiyon") — uç açıklaması kartı
+  // ADIYLA kapsam dışına koyuyor: ileriye dönük tahmin, algoritması mockup'ta
+  // YOK, satır açıklamaları ("Hakediş + bordro") serbest metin. Üç satır
+  // UYDURULMAZ; kart yerinde durur, gerekçe BU anahtardan türer.
+  cash_flow_projection: "Nakit akışı projeksiyonu henüz hesaplanmıyor (tahmin ucu yok)",
+  // F-MT T4 (E11 · `/mali-tablolar` KÖK ekranı) — 🔴 ÖLÇÜLDÜ: `schema.d.ts`te
+  // `income-statement|IncomeStatement|profit-loss|ProfitLoss|gelir-tablosu`
+  // için SIFIR eşleşme var. MT-1 backend dilimi YALNIZ `/balance-sheet` ve
+  // `/cash-flow-statement` uçlarını açtı; E11'in üç veri yüzeyi de olmayan bir
+  // uçtan beslenir. Kart/sütun SİLİNMEZ, sayı İCAT EDİLMEZ (F-TH kanonu).
+  income_statement: "Gelir tablosu ucu henüz açılmadı (ayrı backend dilimi: MT-2)",
+  // E11:151-167 · E11:169-189 — iki özet kartı da gelir tablosunun TÜREVİdir
+  // (marj/kâr oranı). AYRI anahtarlar: `income_statement` metni "tablo" der ve
+  // bu iki kartın yerinde YANLIŞ yüzeyi işaret ederdi (K6).
+  financial_performance_summary:
+    "Performans oranları gelir tablosu ucuyla birlikte gelir (MT-2)",
+  project_profitability: "Proje bazlı kârlılık gelir tablosu ucuyla birlikte gelir (MT-2)",
+  // E11:71 (`PDF İndir`) — K6, EKRAN BAŞINA ayrı anahtar: `balance_sheet_export`
+  // adıyla "bilanço", `cash_flow_statement_export` "nakit akış tablosu" der;
+  // ikisi de bu ekranda YANLIŞ yüzeyi işaret ederdi.
+  income_statement_export: "Gelir tablosu dışa aktarma ucu henüz açılmadı (PDF)",
+  // 🔴 E11:76-81 (dönem gezgini) — bu sayfada YENİDEN ÇEKİLECEK veri YOKTUR:
+  // tek veri kaynağı olan gelir tablosu ucu açılmadı. İşler görünüp hiçbir şeyi
+  // değiştirmeyen bir denetim SESSİZ YALANDIR; gezgin devre dışı basılır ve
+  // sahte durum BAĞLANMAZ.
+  income_statement_period: "Dönem seçimi gelir tablosu ucuyla birlikte gelir (MT-2)",
+  // 🔴 E11:82 (proje süzgeci) — ÖLÇÜLDÜ: canlı iki ucun sorgu parametrelerinde
+  // `project_id` YOKTUR ve uç açıklamaları kapsam dışını adıyla sayıyor:
+  // "proje/şantiye süzgeci (üç muhasebe tablosunda da `project_id`/`site_id`
+  // YOKTUR ve mockup süzgeç çizmiyor)".
+  financial_statements_project_filter:
+    "Mali tablolarda proje süzgeci yok (uçlar project_id parametresi almıyor)",
   // F-MU2 T3 (KDV:48 "XML İndir" · KDV:49 "GİB'e Gönder") — gerekçe metni
   // `accounting-nav-config.ts:72`den gelen KARARIN aynısıdır: e-Fatura/GİB
   // entegrasyonu kullanıcı kararıyla ertelendi. Beyannameyi XML'e yazmak da

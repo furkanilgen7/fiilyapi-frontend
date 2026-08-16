@@ -9445,6 +9445,20 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       return send(200, vatReturnFixture(year, month));
     }
 
+    // --- F-MT · MT-1 mali tablo uçları ------------------------------------
+    // 🔴 Fikstürler yine DONMUŞ HARİTALARDIR (dosyanın sonunda) ve
+    // `accountingState`ten TÜRETİLMEZ — gerekçe yukarıdakiyle aynı.
+    if (method === "GET" && path === "/balance-sheet") {
+      // 🔴 NOKTA-ZAMAN: tek bir ISO gün (`year`+`month` DEĞİL).
+      return send(200, balanceSheetFixture(parsed.searchParams.get("as_of") ?? ""));
+    }
+
+    if (method === "GET" && path === "/cash-flow-statement") {
+      const year = Number(parsed.searchParams.get("year"));
+      const month = Number(parsed.searchParams.get("month"));
+      return send(200, cashFlowStatementFixture(year, month));
+    }
+
     return send(404, { detail: "not found" });
   });
 
@@ -10553,4 +10567,544 @@ export function vatReturnFixture(year: number, month: number): MockVatReturn {
     payable: "0.00",
     carried_forward: "0.00",
   };
+}
+
+// --- F-MT T5 · Bilanço + Nakit Akış Tablosu fikstürleri -------------------
+// Bu blok dosyanın SONUNA eklendi (paralel dallarla birleştirme çakışmasını
+// en aza indirmek için; F-FAT2/F-MU2 emsali). Modül değerlendirmesi
+// `startMockBackend` çağrısından ÖNCE biter, bu yüzden yukarıdaki istek
+// işleyicisi bunlara güvenle erişir.
+//
+// 🔴 DONMUŞ HARİTALAR — `accountingState`ten TÜRETİLMEZ. Gerekçe F-MU2 ile
+// AYNI: yazma akışları HAZİRAN'da (mutasyon adası) koşar ve `fullyParallel`
+// altında dosya içi sıra bile garanti değildir; türetilen bir fikstür bu iki
+// ekranın karesini sessizce oynatırdı.
+//
+// 🔴 YANIT GÖVDELERİ ŞEMAYLA ANOTASYONLUDUR: mock ↔ `schema.d.ts` kayması
+// `pnpm typecheck`te patlar (F-SA kanonu) — sessizce eskiyen bir fikstür,
+// gerçek uçla uyuşmayan bir kareyi baseline'a sokardı.
+
+type MockBalanceSheet = components["schemas"]["BalanceSheetResponse"];
+type MockBalanceSheetSide = components["schemas"]["BalanceSheetSide"];
+type MockBalanceSheetSection = components["schemas"]["BalanceSheetSection"];
+type MockBalanceSheetLine = components["schemas"]["BalanceSheetLine"];
+type MockCashFlowStatement = components["schemas"]["CashFlowStatementResponse"];
+type MockCashFlowSection = components["schemas"]["CashFlowStatementSection"];
+type MockCashFlowLine = components["schemas"]["CashFlowStatementLine"];
+type MockMonthlyCashPoint = components["schemas"]["MonthlyCashPoint"];
+
+/**
+ * 🔴🔴 TEK KAYNAK KURALI (MT yönetim kararı K5/4 · ürün kararı KK-2).
+ *
+ * Bilanço'nun `Kasa ve Bankalar` kalemi ile Nakit Akış Tablosu'nun
+ * `closing_cash`i ÜRÜNDE aynı hesap grubundan (10) türer — yani zorunlu olarak
+ * EŞİTtirler. Mockup'lar burada BİRBİRİYLE ÇELİŞİYOR (BL:51 `4.249.500` ↔
+ * NA:109 `6.249.500`); bu bir mockup artefaktıdır ve fikstüre TAŞINMAZ.
+ *
+ * Seçilen değer NA'nınkidir çünkü NA tablosu KENDİ İÇİNDE tutarlıdır
+ * (`2.447.500 + 3.802.000 = 6.249.500`, NA:101/105/109) — BL'nin rakamını
+ * seçmek NA'nın üç satırlık kapanışını bozardı. Bilanço tarafında karşılığı
+ * `Dönem Net Kârı` kaleminde dengelenir (aşağıda ölçüsü yazılı).
+ *
+ * İki taraf da BU sabitten okur; ayrıca `financial-statements.spec.ts` eşitliği
+ * İKİ EKRANIN BASILMIŞ HÂLİNDEN ölçer (tek taraflı bir düzenleme kırmızı olur).
+ */
+const GROUP_10_CASH_JULY = 6_249_500;
+
+/** Aynı kural DENGESİZ (Ocak) dalında da geçerlidir. */
+const GROUP_10_CASH_JANUARY = 1_200_000;
+
+/* ---------------- Bilanço ---------------- */
+
+interface BalanceSheetLineSeed {
+  readonly key: string;
+  readonly label: string;
+  readonly amount: number;
+  readonly accountCodes: readonly string[];
+  readonly groupCodes: readonly string[];
+}
+
+interface BalanceSheetSectionSeed {
+  readonly key: string;
+  readonly title: string;
+  readonly subtotalLabel: string;
+  readonly lines: readonly BalanceSheetLineSeed[];
+}
+
+interface BalanceSheetSideSeed {
+  readonly key: string;
+  readonly title: string;
+  readonly totalLabel: string;
+  readonly sections: readonly BalanceSheetSectionSeed[];
+}
+
+function balanceSheetLine(seed: BalanceSheetLineSeed): MockBalanceSheetLine {
+  return {
+    key: seed.key,
+    label: seed.label,
+    amount: seed.amount.toFixed(2),
+    account_codes: [...seed.accountCodes],
+    group_codes: [...seed.groupCodes],
+  };
+}
+
+/** 🔴 `subtotal` KALEMLERDEN toplanır (şema notu) — elle yazılmaz. */
+function balanceSheetSection(seed: BalanceSheetSectionSeed): MockBalanceSheetSection {
+  const lines = seed.lines.map(balanceSheetLine);
+  return {
+    key: seed.key,
+    title: seed.title,
+    subtotal_label: seed.subtotalLabel,
+    subtotal: lines.reduce((total, line) => total + Number(line.amount), 0).toFixed(2),
+    lines,
+  };
+}
+
+/** 🔴 `total` ARA TOPLAMLARDAN toplanır. */
+function balanceSheetSide(seed: BalanceSheetSideSeed): MockBalanceSheetSide {
+  const sections = seed.sections.map(balanceSheetSection);
+  return {
+    key: seed.key,
+    title: seed.title,
+    total_label: seed.totalLabel,
+    total: sections.reduce((total, section) => total + Number(section.subtotal), 0).toFixed(2),
+    sections,
+  };
+}
+
+function balanceSheet(
+  asOf: string,
+  assetsSeed: BalanceSheetSideSeed,
+  liabilitiesSeed: BalanceSheetSideSeed,
+): MockBalanceSheet {
+  const assets = balanceSheetSide(assetsSeed);
+  const liabilities = balanceSheetSide(liabilitiesSeed);
+  return {
+    as_of: asOf,
+    // 🔴 ÖLÇÜLÜR, `true` SABİTLENMEZ (şema notu + `trialBalance()` emsali):
+    // sabitlenseydi K3'ün dengesiz dalı YAPISAL olarak ölçülemez olurdu.
+    is_balanced: assets.total === liabilities.total,
+    assets,
+    liabilities,
+  };
+}
+
+/**
+ * 📅 31 TEMMUZ 2026 — DENGELİ bilanço (`ACCOUNTING_READ_TIME`in ürettiği
+ * varsayılan gün: `defaultBalanceSheetAsOf` içinde bulunulan AYIN SON günüdür).
+ *
+ * Sayılar BL:44-63'ten gelir; TEK sapma `Kasa ve Bankalar` (tek kaynak kuralı,
+ * yukarı bakınız): 4.249.500 → 6.249.500, yani +2.000.000. Aktif toplam bu
+ * kadar büyüdüğü için pasif tarafta `Dönem Net Kârı` da +2.000.000 yapılır
+ * (3.512.700 → 5.512.700) ve iki taraf 22.642.220'de buluşur — bilançoyu
+ * dengede tutmanın tek dürüst yolu budur.
+ */
+const BALANCE_SHEET_JULY_ASSETS: BalanceSheetSideSeed = {
+  key: "assets",
+  title: "AKTİF (Varlıklar)",
+  totalLabel: "AKTİF TOPLAM",
+  sections: [
+    {
+      key: "current",
+      title: "I. DÖNEN VARLIKLAR",
+      subtotalLabel: "Dönen Varlıklar Toplamı",
+      lines: [
+        // 🔴 TEK KAYNAK — NA'nın `closing_cash`i ile AYNI sabitten okur.
+        {
+          key: "cash",
+          label: "Kasa ve Bankalar",
+          amount: GROUP_10_CASH_JULY,
+          accountCodes: ["100", "102"],
+          groupCodes: ["10"],
+        },
+        {
+          key: "trade-receivables",
+          label: "Ticari Alacaklar",
+          amount: 8_524_200,
+          accountCodes: ["120", "121"],
+          groupCodes: ["12"],
+        },
+        { key: "inventory", label: "Stoklar", amount: 3_240_000, accountCodes: ["150", "153"], groupCodes: ["15"] },
+        {
+          key: "other-current",
+          label: "Diğer Dönen Varlıklar",
+          amount: 768_520,
+          accountCodes: ["180", "190"],
+          groupCodes: ["18", "19"],
+        },
+      ],
+    },
+    {
+      key: "fixed",
+      title: "II. DURAN VARLIKLAR",
+      subtotalLabel: "Duran Varlıklar Toplamı",
+      lines: [
+        // 🔴 K4 — kontra hesap (257) SUNUCUDA netlenir; tek ve POZİTİF satır.
+        {
+          key: "tangible",
+          label: "Maddi Duran Varlıklar (net)",
+          amount: 3_620_000,
+          accountCodes: ["252", "253", "257"],
+          groupCodes: ["25"],
+        },
+        {
+          key: "other-fixed",
+          label: "Diğer Duran Varlıklar",
+          amount: 240_000,
+          accountCodes: ["260", "280"],
+          groupCodes: ["26", "28"],
+        },
+      ],
+    },
+  ],
+};
+
+const BALANCE_SHEET_JULY_LIABILITIES: BalanceSheetSideSeed = {
+  key: "liabilities",
+  title: "PASİF (Kaynaklar)",
+  totalLabel: "PASİF TOPLAM",
+  sections: [
+    {
+      key: "short-term",
+      title: "I. KISA VADELİ YÜKÜMLÜLÜKLER",
+      subtotalLabel: "Kısa Vadeli Yük. Toplamı",
+      lines: [
+        { key: "trade-payables", label: "Ticari Borçlar", amount: 2_184_000, accountCodes: ["320"], groupCodes: ["32"] },
+        {
+          key: "tax-payables",
+          label: "Vergi Borçları",
+          amount: 696_000,
+          accountCodes: ["360", "391"],
+          groupCodes: ["36", "39"],
+        },
+        {
+          key: "other-short",
+          label: "Diğer Kısa Vadeli Borçlar",
+          amount: 480_000,
+          accountCodes: ["335", "381"],
+          groupCodes: ["33", "38"],
+        },
+      ],
+    },
+    {
+      key: "long-term",
+      title: "II. UZUN VADELİ YÜKÜMLÜLÜKLER",
+      subtotalLabel: "Uzun Vadeli Yük. Toplamı",
+      lines: [
+        { key: "long-loans", label: "Uzun Vadeli Krediler", amount: 2_400_000, accountCodes: ["400"], groupCodes: ["40"] },
+      ],
+    },
+    {
+      key: "equity",
+      title: "III. ÖZKAYNAKLAR",
+      subtotalLabel: "Özkaynaklar Toplamı",
+      lines: [
+        { key: "capital", label: "Sermaye", amount: 8_000_000, accountCodes: ["500"], groupCodes: ["50"] },
+        { key: "retained", label: "Geçmiş Yıllar Kârları", amount: 3_369_520, accountCodes: ["570"], groupCodes: ["57"] },
+        // 🔴 Tek kaynak kuralının bilanço tarafındaki KARŞILIĞI: BL:87'nin
+        // 3.512.700'ü + 2.000.000 (bkz. `GROUP_10_CASH_JULY` gerekçesi).
+        { key: "profit", label: "Dönem Net Kârı", amount: 5_512_700, accountCodes: ["590"], groupCodes: ["59"] },
+      ],
+    },
+  ],
+};
+
+/**
+ * 📅 31 OCAK 2026 — DENGESİZ bilanço (K3'ün mockup'ta ÇİZİLMEMİŞ dalı; T6
+ * `mali-tablolar-bilanco-dengesiz` karesi buradan çekilir).
+ *
+ * `ACCOUNTING_EMPTY_TIME` (15 Ocak 2026) saatinde ekranın varsayılan günü
+ * `2026-01-31`dir — mizanın dengesiz dalıyla AYNI ay, aynı gerekçe. Fark
+ * bilerek 140.000'dir (mizanın dengesiz dalıyla aynı büyüklük):
+ * `1.500.000 − 1.360.000`.
+ */
+const BALANCE_SHEET_JANUARY_ASSETS: BalanceSheetSideSeed = {
+  key: "assets",
+  title: "AKTİF (Varlıklar)",
+  totalLabel: "AKTİF TOPLAM",
+  sections: [
+    {
+      key: "current",
+      title: "I. DÖNEN VARLIKLAR",
+      subtotalLabel: "Dönen Varlıklar Toplamı",
+      lines: [
+        // 🔴 Tek kaynak kuralı bu dalda da geçerlidir (Ocak nakit akışıyla eşit).
+        {
+          key: "cash",
+          label: "Kasa ve Bankalar",
+          amount: GROUP_10_CASH_JANUARY,
+          accountCodes: ["100", "102"],
+          groupCodes: ["10"],
+        },
+        {
+          key: "trade-receivables",
+          label: "Ticari Alacaklar",
+          amount: 300_000,
+          accountCodes: ["120"],
+          groupCodes: ["12"],
+        },
+      ],
+    },
+  ],
+};
+
+const BALANCE_SHEET_JANUARY_LIABILITIES: BalanceSheetSideSeed = {
+  key: "liabilities",
+  title: "PASİF (Kaynaklar)",
+  totalLabel: "PASİF TOPLAM",
+  sections: [
+    {
+      key: "short-term",
+      title: "I. KISA VADELİ YÜKÜMLÜLÜKLER",
+      subtotalLabel: "Kısa Vadeli Yük. Toplamı",
+      lines: [
+        { key: "trade-payables", label: "Ticari Borçlar", amount: 400_000, accountCodes: ["320"], groupCodes: ["32"] },
+      ],
+    },
+    {
+      key: "equity",
+      title: "III. ÖZKAYNAKLAR",
+      subtotalLabel: "Özkaynaklar Toplamı",
+      lines: [
+        { key: "capital", label: "Sermaye", amount: 800_000, accountCodes: ["500"], groupCodes: ["50"] },
+        { key: "profit", label: "Dönem Net Kârı", amount: 160_000, accountCodes: ["590"], groupCodes: ["59"] },
+      ],
+    },
+  ],
+};
+
+/** Bir tarafın kalemlerini SIFIRLAR — iskelet korunur, tutarlar `0.00` olur. */
+function zeroBalanceSheetSide(seed: BalanceSheetSideSeed): BalanceSheetSideSeed {
+  return {
+    ...seed,
+    sections: seed.sections.map((section) => ({
+      ...section,
+      lines: section.lines.map((line) => ({ ...line, amount: 0 })),
+    })),
+  };
+}
+
+/**
+ * `as_of` → bilanço.
+ *
+ * 🔴 TANINMAYAN GÜN 404 DEĞİLDİR (`vatReturnFixture` emsali): saat bir gün
+ * kayarsa ekran BOŞ inmemeli, YAPISAL OLARAK GEÇERLİ ve tamamen SIFIR bir
+ * bilanço basmalıdır. Sıfır bilanço dengededir ve bu doğrudur.
+ */
+export function balanceSheetFixture(asOf: string): MockBalanceSheet {
+  if (asOf === "2026-07-31") {
+    return balanceSheet(asOf, BALANCE_SHEET_JULY_ASSETS, BALANCE_SHEET_JULY_LIABILITIES);
+  }
+  if (asOf === "2026-01-31") {
+    return balanceSheet(asOf, BALANCE_SHEET_JANUARY_ASSETS, BALANCE_SHEET_JANUARY_LIABILITIES);
+  }
+  return balanceSheet(
+    asOf,
+    zeroBalanceSheetSide(BALANCE_SHEET_JULY_ASSETS),
+    zeroBalanceSheetSide(BALANCE_SHEET_JULY_LIABILITIES),
+  );
+}
+
+/* ---------------- Nakit Akış Tablosu ---------------- */
+
+interface CashFlowLineSeed {
+  readonly key: string;
+  readonly label: string;
+  /** İŞARETLİ: `+` giriş, `−` çıkış (şema notu). */
+  readonly amount: number;
+  readonly accountCodes: readonly string[];
+}
+
+interface CashFlowSectionSeed {
+  readonly key: string;
+  readonly code: string;
+  readonly title: string;
+  readonly subtotalLabel: string;
+  readonly lines: readonly CashFlowLineSeed[];
+}
+
+interface CashFlowSeed {
+  readonly year: number;
+  readonly month: number;
+  readonly openingCash: number;
+  readonly sections: readonly CashFlowSectionSeed[];
+  /**
+   * Ocak..`month` ay SONU BAKİYELERİ — bir AKIŞ serisi değil (şema notu).
+   * SON eleman `closing_cash`e EŞİT olmak zorundadır; `cashFlowStatement()`
+   * bunu kendisi yazar, tohum yalnız ÖNCEKİ ayları taşır.
+   */
+  readonly monthlyCashBefore: readonly number[];
+}
+
+function cashFlowLine(seed: CashFlowLineSeed): MockCashFlowLine {
+  return {
+    key: seed.key,
+    label: seed.label,
+    amount: seed.amount.toFixed(2),
+    account_codes: [...seed.accountCodes],
+  };
+}
+
+/** 🔴 `subtotal` KALEMLERDEN toplanır (K15: satırlar kazanır). */
+function cashFlowSection(seed: CashFlowSectionSeed): MockCashFlowSection {
+  const lines = seed.lines.map(cashFlowLine);
+  return {
+    key: seed.key,
+    code: seed.code,
+    title: seed.title,
+    subtotal_label: seed.subtotalLabel,
+    subtotal: lines.reduce((total, line) => total + Number(line.amount), 0).toFixed(2),
+    lines,
+  };
+}
+
+/**
+ * 🔴 `net_change` = A+B+C (ARA TOPLAMLARDAN), `closing_cash` = açılış + net.
+ *
+ * K2: mockup'ın KPI kartı (NA:58 `+ 4.802.000`) tablosuyla ÇELİŞİYOR; ölçüm
+ * `5.842.000 − 1.240.000 − 800.000 = 3.802.000` ve tablo kendi içinde tutarlı
+ * (`2.447.500 + 3.802.000 = 6.249.500`). Fikstür ARİTMETİĞİ DOĞRU olanı döner;
+ * ekran zaten iki yerde de SUNUCUNUN alanını basar.
+ */
+function cashFlowStatement(seed: CashFlowSeed): MockCashFlowStatement {
+  const sections = seed.sections.map(cashFlowSection);
+  const netChange = sections.reduce((total, section) => total + Number(section.subtotal), 0);
+  const closingCash = seed.openingCash + netChange;
+
+  // Seri Ocak..`month`; SON nokta `closing_cash`tir (ay sonu BAKİYESİ).
+  const monthlyCash: MockMonthlyCashPoint[] = seed.monthlyCashBefore.map((value, index) => ({
+    year: seed.year,
+    month: index + 1,
+    closing_cash: value.toFixed(2),
+  }));
+  monthlyCash.push({ year: seed.year, month: seed.month, closing_cash: closingCash.toFixed(2) });
+
+  return {
+    year: seed.year,
+    month: seed.month,
+    sections,
+    net_change: netChange.toFixed(2),
+    opening_cash: seed.openingCash.toFixed(2),
+    closing_cash: closingCash.toFixed(2),
+    monthly_cash: monthlyCash,
+  };
+}
+
+/**
+ * 📅 OCAK–TEMMUZ 2026 (`year=2026&month=7`) — `ACCOUNTING_READ_TIME`in
+ * ürettiği varsayılan dönem (`defaultCashFlowPeriod` = içinde bulunulan ay).
+ *
+ * Kalemler ve tutarlar NA:71-97'den BİREBİR gelir; A ara toplamı satırlarla
+ * TUTAR (5.842.000). Açılış NA:101'in `2.447.500`üdür ⇒ kapanış
+ * `6.249.500 = GROUP_10_CASH_JULY` (tek kaynak kuralı).
+ */
+const CASH_FLOW_JULY_SEED: CashFlowSeed = {
+  year: 2026,
+  month: 7,
+  openingCash: 2_447_500,
+  monthlyCashBefore: [2_700_000, 3_150_000, 3_480_000, 4_260_000, 4_980_000, 5_640_000],
+  sections: [
+    {
+      key: "operating",
+      code: "A",
+      title: "A. İŞLETME FAALİYETLERİNDEN NAKITLER",
+      subtotalLabel: "İşletme Faaliyetleri Net Nakit",
+      lines: [
+        { key: "collections", label: "Müşterilerden Tahsilat", amount: 24_994_700, accountCodes: ["120"] },
+        { key: "suppliers", label: "Tedarikçilere Ödeme", amount: -12_480_000, accountCodes: ["320"] },
+        { key: "payroll", label: "Personele Ödeme", amount: -5_840_000, accountCodes: ["335", "770"] },
+        { key: "tax", label: "Vergi Ödemesi", amount: -605_300, accountCodes: ["360", "391"] },
+        { key: "other-out", label: "Diğer Nakit Çıkışları", amount: -227_400, accountCodes: ["180", "770"] },
+      ],
+    },
+    {
+      key: "investing",
+      code: "B",
+      title: "B. YATIRIM FAALİYETLERİNDEN NAKITLER",
+      subtotalLabel: "Yatırım Faaliyetleri Net Nakit",
+      lines: [{ key: "equipment", label: "Ekipman Alımı", amount: -1_240_000, accountCodes: ["253"] }],
+    },
+    {
+      key: "financing",
+      code: "C",
+      title: "C. FİNANSMAN FAALİYETLERİNDEN NAKITLER",
+      subtotalLabel: "Finansman Faaliyetleri Net Nakit",
+      lines: [{ key: "loan-repayment", label: "Kredi Geri Ödemesi", amount: -800_000, accountCodes: ["300", "400"] }],
+    },
+  ],
+};
+
+/**
+ * 📅 OCAK 2026 — dengesiz bilanço dalının KARDEŞİ. Kapanışı
+ * `GROUP_10_CASH_JANUARY`dir; tek kaynak kuralı bu ayda da ölçülebilsin diye
+ * vardır (bilanço dengesizken bile nakit TEK kaynaktan gelir).
+ *
+ * 🔴 `month === 1` ⇒ seri TEK noktalıdır ve o nokta `closing_cash`tir.
+ */
+const CASH_FLOW_JANUARY_SEED: CashFlowSeed = {
+  year: 2026,
+  month: 1,
+  openingCash: 1_000_000,
+  monthlyCashBefore: [],
+  sections: [
+    {
+      key: "operating",
+      code: "A",
+      title: "A. İŞLETME FAALİYETLERİNDEN NAKITLER",
+      subtotalLabel: "İşletme Faaliyetleri Net Nakit",
+      lines: [
+        { key: "collections", label: "Müşterilerden Tahsilat", amount: 500_000, accountCodes: ["120"] },
+        { key: "suppliers", label: "Tedarikçilere Ödeme", amount: -200_000, accountCodes: ["320"] },
+      ],
+    },
+    {
+      key: "investing",
+      code: "B",
+      title: "B. YATIRIM FAALİYETLERİNDEN NAKITLER",
+      subtotalLabel: "Yatırım Faaliyetleri Net Nakit",
+      lines: [{ key: "equipment", label: "Ekipman Alımı", amount: -60_000, accountCodes: ["253"] }],
+    },
+    {
+      key: "financing",
+      code: "C",
+      title: "C. FİNANSMAN FAALİYETLERİNDEN NAKITLER",
+      subtotalLabel: "Finansman Faaliyetleri Net Nakit",
+      lines: [{ key: "loan-repayment", label: "Kredi Geri Ödemesi", amount: -40_000, accountCodes: ["300", "400"] }],
+    },
+  ],
+};
+
+/** Bölümlerin kalemlerini SIFIRLAR — iskelet korunur. */
+function zeroCashFlowSections(
+  sections: readonly CashFlowSectionSeed[],
+): readonly CashFlowSectionSeed[] {
+  return sections.map((section) => ({
+    ...section,
+    lines: section.lines.map((line) => ({ ...line, amount: 0 })),
+  }));
+}
+
+/**
+ * `(yıl, ay)` → nakit akış tablosu.
+ *
+ * 🔴 TANINMAYAN DÖNEM 404 DEĞİLDİR (`vatReturnFixture` emsali): saat bir ay
+ * kayarsa ekran BOŞ inmemeli, yapısal olarak geçerli ve tamamen SIFIR bir
+ * tablo basmalıdır. Seri yine Ocak..`month` uzunluğundadır ki grafik bir
+ * eğri çizebilsin.
+ */
+export function cashFlowStatementFixture(year: number, month: number): MockCashFlowStatement {
+  if (year === CASH_FLOW_JULY_SEED.year && month === CASH_FLOW_JULY_SEED.month) {
+    return cashFlowStatement(CASH_FLOW_JULY_SEED);
+  }
+  if (year === CASH_FLOW_JANUARY_SEED.year && month === CASH_FLOW_JANUARY_SEED.month) {
+    return cashFlowStatement(CASH_FLOW_JANUARY_SEED);
+  }
+  const safeMonth = Number.isInteger(month) && month >= 1 && month <= 12 ? month : 1;
+  return cashFlowStatement({
+    year: Number.isInteger(year) ? year : CASH_FLOW_JULY_SEED.year,
+    month: safeMonth,
+    openingCash: 0,
+    monthlyCashBefore: new Array(safeMonth - 1).fill(0) as number[],
+    sections: zeroCashFlowSections(CASH_FLOW_JULY_SEED.sections),
+  });
 }
