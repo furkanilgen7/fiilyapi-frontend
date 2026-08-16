@@ -18,9 +18,11 @@ export type HrLeavesSummaryResponse = components["schemas"]["HrLeavesSummaryResp
 export type LeaveBalanceResponse = components["schemas"]["LeaveBalanceResponse"];
 export type LeaveRequestResponse = components["schemas"]["LeaveRequestResponse"];
 export type LeaveRequestListResponse = components["schemas"]["LeaveRequestListResponse"];
+export type LeaveTypeResponse = components["schemas"]["LeaveTypeResponse"];
 
 export const HR_LEAVES_SUMMARY_QUERY_KEY = "hr-leaves-summary";
 export const LEAVE_REQUESTS_QUERY_KEY = "leave-requests";
+export const LEAVE_TYPES_QUERY_KEY = "leave-types";
 
 /**
  * `GET /hr/leaves/summary?year=` — beş KPI (46-50) + bakiye tablosu (122-170).
@@ -47,6 +49,29 @@ export function useHrLeavesSummary(year: number): UseQueryResult<HrLeavesSummary
  * durum süzgeci İCAT EDİLMEZ (mockup'ta yoktur); istek durumu SABİTtir, çağıran
  * onu değiştiremesin diye parametre bile almaz.
  */
+/**
+ * `GET /leave-types` — F-IZN T4 talep formunun "İzin Tipi" seçeneği
+ * (`Form - Izin Talebi.dc.html` 110-119) ve rozet önizlemesi (120-127).
+ *
+ * Uç YALNIZ AKTİF tipleri döner (backend `list_leave_types` docstring'i:
+ * "Talep formunun tip listesi — YALNIZ AKTİF"), bu yüzden istemci ayrıca
+ * süzmez. Sıralama `sort_order` alanına göre BURADA yapılır: mockup rozetleri
+ * belirli bir sırada çizer ve o sıra sunucunun `sort_order`ıdır.
+ *
+ * Katalog nadiren değişir ama önbelleği ELLE UZATILMAZ — projedeki hiçbir
+ * sorgu kendi `staleTime`ını kurmuyor; tek istisna açmak sessiz bir kural
+ * çatallanması olurdu.
+ */
+export function useLeaveTypes(): UseQueryResult<LeaveTypeResponse[], Error> {
+  return useQuery({
+    queryKey: [LEAVE_TYPES_QUERY_KEY],
+    queryFn: async () => {
+      const types = unwrap(await backendClient.GET("/leave-types", {}));
+      return [...types].sort((a, b) => a.sort_order - b.sort_order);
+    },
+  });
+}
+
 export function usePendingLeaveRequests(): UseQueryResult<LeaveRequestListResponse, Error> {
   return useQuery({
     queryKey: [LEAVE_REQUESTS_QUERY_KEY, "pending"],

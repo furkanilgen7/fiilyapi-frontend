@@ -1,8 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { useSession } from "@/components/shell/SessionProvider";
+import { useUploadDocument } from "@/lib/api/hooks/useDocumentMutations";
+import {
+  useApproveLeaveRequest,
+  useCreateLeaveRequest,
+  useRejectLeaveRequest,
+} from "@/lib/api/hooks/useLeaveMutations";
+import { usePersonnel } from "@/lib/api/hooks/usePersonnel";
 import {
   useHrLeavesSummary,
   usePendingLeaveRequests,
@@ -22,7 +29,21 @@ vi.mock("@/lib/api/hooks/useLeaves", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useLeaves")>()),
   useHrLeavesSummary: vi.fn(),
   usePendingLeaveRequests: vi.fn(),
+  useLeaveTypes: vi.fn(() => ({ data: [], isError: false })),
 }));
+// T4 · karar akışı BU bileşende yaşar; üç mutasyon da taklit edilir.
+vi.mock("@/lib/api/hooks/useLeaveMutations", () => ({
+  useApproveLeaveRequest: vi.fn(),
+  useRejectLeaveRequest: vi.fn(),
+  useCreateLeaveRequest: vi.fn(),
+}));
+vi.mock("@/lib/api/hooks/useDocumentMutations", () => ({ useUploadDocument: vi.fn() }));
+vi.mock("@/lib/api/hooks/usePersonnel", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/usePersonnel")>()),
+  usePersonnel: vi.fn(),
+}));
+
+const approveMutate = vi.fn();
 
 function queryStub<T>(
   data: T | undefined,
@@ -140,6 +161,26 @@ beforeEach(() => {
     me: { permissions: { personnel: "full" } } as unknown as MeResponse,
     isLoading: false,
   } as ReturnType<typeof useSession>);
+  vi.mocked(useApproveLeaveRequest).mockReturnValue({
+    mutate: approveMutate,
+    isPending: false,
+  } as unknown as ReturnType<typeof useApproveLeaveRequest>);
+  vi.mocked(useRejectLeaveRequest).mockReturnValue({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  } as unknown as ReturnType<typeof useRejectLeaveRequest>);
+  vi.mocked(useCreateLeaveRequest).mockReturnValue({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  } as unknown as ReturnType<typeof useCreateLeaveRequest>);
+  vi.mocked(useUploadDocument).mockReturnValue({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  } as unknown as ReturnType<typeof useUploadDocument>);
+  vi.mocked(usePersonnel).mockReturnValue({
+    data: { items: [], total: 0, limit: 200, offset: 0 },
+    isError: false,
+  } as unknown as ReturnType<typeof usePersonnel>);
   vi.mocked(useHrLeavesSummary).mockReturnValue(queryStub(summary()));
   vi.mocked(usePendingLeaveRequests).mockReturnValue(
     queryStub(requestList()) as unknown as ReturnType<typeof usePendingLeaveRequests>,
@@ -210,7 +251,7 @@ describe("LeavesView — onay bekleyen talepler (54-113)", () => {
   });
 
   it("hak aşan satırda onay PASİF, red AKTİFtir (98-99)", () => {
-    render(<LeavesView currentYear={2026} onApproveRequest={vi.fn()} onRejectRequest={vi.fn()} />);
+    render(<LeavesView currentYear={2026} />);
 
     expect(screen.getByTestId("iz-approve-lr-2")).toBeDisabled();
     expect(screen.getByTestId("iz-reject-lr-2")).toBeEnabled();
@@ -219,33 +260,59 @@ describe("LeavesView — onay bekleyen talepler (54-113)", () => {
     expect(screen.getByTestId("iz-pending-row-lr-2")).toHaveTextContent("Hak aşımı");
   });
 
-  it("düğmelerin erişilebilir adı vardır ve geri çağrıyı ÇAĞIRIR (T4 arayüzü)", async () => {
-    const onApproveRequest = vi.fn();
-    const onRejectRequest = vi.fn();
-    render(
-      <LeavesView
-        currentYear={2026}
-        onApproveRequest={onApproveRequest}
-        onRejectRequest={onRejectRequest}
-      />,
-    );
+  it("🔴 T4 · karar akışı BAĞLI: gerekçe metni ekranda KALMAZ", () => {
+    render(<LeavesView currentYear={2026} />);
+
+    // GÖRÜNÜR GEREKÇE canon'u: gerekçe öğenin KENDİ durumundan türetilir.
+    // Handler'lar bağlıyken hâlâ basılıyorsa canlı bir düğmeyi yalanlar.
+    expect(screen.queryByTestId("iz-decision-reason")).not.toBeInTheDocument();
+    expect(screen.queryByText(DECISION_PENDING_REASON)).not.toBeInTheDocument();
+    expect(screen.getByTestId("iz-approve-lr-1")).toBeEnabled();
+    expect(screen.getByTestId("iz-reject-lr-1")).toBeEnabled();
+  });
+
+  it("onay GÖVDESİZ ucu doğrudan çağırır (diyalog YOKTUR)", async () => {
+    render(<LeavesView currentYear={2026} />);
 
     // Aynı personelin iki talebi vardır: erişilebilir ad tarihle AYRIŞIR.
     await userEvent.click(
       screen.getByRole("button", { name: "Onayla: Ayşe Demir, 04.08.2026" }),
     );
-    await userEvent.click(screen.getByTestId("iz-reject-lr-2"));
 
-    expect(onApproveRequest).toHaveBeenCalledWith(expect.objectContaining({ id: "lr-1" }));
-    expect(onRejectRequest).toHaveBeenCalledWith(expect.objectContaining({ id: "lr-2" }));
+    expect(approveMutate).toHaveBeenCalledWith("lr-1", expect.anything());
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("geri çağrı bağlı değilken düğmeler devre-dışıdır ve gerekçe EKRANDA yazar", () => {
+  it("🔴 onayın 409'u (çakışma/hak aşımı/hesaplanamayan kalan) EKRANDA basılır", async () => {
     render(<LeavesView currentYear={2026} />);
+    await userEvent.click(screen.getByTestId("iz-approve-lr-1"));
 
-    expect(screen.getByTestId("iz-approve-lr-1")).toBeDisabled();
-    expect(screen.getByTestId("iz-reject-lr-1")).toBeDisabled();
-    expect(screen.getByTestId("iz-decision-reason")).toHaveTextContent(DECISION_PENDING_REASON);
+    const { onError } = approveMutate.mock.calls[0][1] as { onError: (e: Error) => void };
+    act(() => onError(new BackendError(409, { detail: "Çakışan onaylı izin var." })));
+
+    expect(screen.getByTestId("iz-decision-error")).toHaveTextContent(
+      "Çakışan onaylı izin var.",
+    );
+  });
+
+  it("red DİYALOG açar ve talebin künyesini taşır", async () => {
+    render(<LeavesView currentYear={2026} />);
+    await userEvent.click(screen.getByTestId("iz-reject-lr-2"));
+
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByTestId("iz-reject-summary")).toHaveTextContent("Ayşe Demir");
+    expect(within(dialog).getByTestId("iz-reject-summary")).toHaveTextContent("23.08.2026");
+    // Gerekçe boşken düğme PASİFtir (R 123-128).
+    expect(within(dialog).getByTestId("iz-reject-submit")).toBeDisabled();
+  });
+
+  it("talep formu başlık satırındaki düğmeyle açılır", async () => {
+    render(<LeavesView currentYear={2026} />);
+    expect(screen.queryByTestId("iz-request-personnel")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId("iz-new-request"));
+
+    expect(screen.getByTestId("iz-request-personnel")).toBeVisible();
   });
 
   it("belge eki `document_id` doluyken SVG + erişilebilir adla basılır (88)", () => {

@@ -10,12 +10,22 @@ import {
   formatDateDots,
   hasCarryoverRisk,
   isApprovalBlocked,
+  isRejectReasonReady,
+  leaveOverrun,
+  leaveRequestBlockReason,
   overrunDays,
   pendingTableHeading,
+  previewLeaveDays,
   remainingBalanceText,
   seniorityText,
   usageCell,
 } from "./leaves-derive";
+import {
+  BLOCK_REASON_DATE_ORDER,
+  BLOCK_REASON_DOCUMENT_REQUIRED,
+  BLOCK_REASON_MISSING_FIELDS,
+  BLOCK_REASON_OVERRUN,
+} from "./leaves-labels";
 
 /**
  * F-IZN T3 · saf türetme ikizi.
@@ -240,5 +250,130 @@ describe("kullanım hücresi (140/158/167)", () => {
 describe("TR tarih biçimi (74-75)", () => {
   it("`YYYY-MM-DD` → `GG.AA.YYYY`", () => {
     expect(formatDateDots("2026-08-04")).toBe("04.08.2026");
+  });
+});
+
+/* ═══ F-IZN T4 · form türetmeleri ══════════════════════════════════════════ */
+
+describe("gün sayısı türetmesi (T 141-145 · KARAR 1)", () => {
+  it("takvim günü, başlangıç ve bitiş DAHİL — sunucu formülünün ikizi", () => {
+    // Mockup 135/139: 24.08 → 04.09 = 12 gün.
+    expect(previewLeaveDays("2026-08-24", "2026-09-04")).toBe(12);
+    expect(previewLeaveDays("2026-08-04", "2026-08-08")).toBe(5);
+  });
+
+  it("tek günlük izin 1'dir (0 DEĞİL)", () => {
+    expect(previewLeaveDays("2026-08-04", "2026-08-04")).toBe(1);
+  });
+
+  it("ay/yıl sınırını aşan aralık doğru sayılır", () => {
+    expect(previewLeaveDays("2026-12-31", "2027-01-02")).toBe(3);
+  });
+
+  it("DST geçişi gün sayısını KAYDIRMAZ (UTC ayrıştırma)", () => {
+    // TR'de yaz saati 29 Mart 2026'da başlar; yerel saatte 23 saatlik gün çıkar.
+    expect(previewLeaveDays("2026-03-28", "2026-03-30")).toBe(3);
+  });
+
+  it("ters tarih ve geçersiz/taşan girdi `null` döner (negatif gün BASILMAZ)", () => {
+    expect(previewLeaveDays("2026-09-04", "2026-08-24")).toBeNull();
+    expect(previewLeaveDays("", "2026-08-24")).toBeNull();
+    expect(previewLeaveDays("2026-02-31", "2026-03-05")).toBeNull();
+  });
+});
+
+describe("hak aşımı önizlemesi (T 149-158 · KARAR 4)", () => {
+  const base = { days: 12, remaining: "8", deductsFromAnnual: true, startDate: "2026-08-24" };
+
+  it("aşım varsa fark ve ÖNERİLEN bitiş tarihi hesaplanır (155)", () => {
+    expect(leaveOverrun(base)).toEqual({
+      requestedDays: 12,
+      remainingDays: 8,
+      overrunDays: 4,
+      // 8 günlük izin 24.08'de başlarsa 31.08'de biter (başlangıç dahil).
+      suggestedEndDate: "2026-08-31",
+    });
+  });
+
+  it("kalan hak yetiyorsa uyarı YOKTUR (eşit gün de aşım değildir)", () => {
+    expect(leaveOverrun({ ...base, days: 8 })).toBeNull();
+    expect(leaveOverrun({ ...base, days: 3 })).toBeNull();
+  });
+
+  it("🔴 kalan hak BİLİNMİYORSA aşım İDDİA EDİLMEZ (fail-closed görüntüsü)", () => {
+    expect(leaveOverrun({ ...base, remaining: null })).toBeNull();
+    expect(leaveOverrun({ ...base, remaining: undefined })).toBeNull();
+  });
+
+  it("🔴 yıllık haktan DÜŞMEYEN tipte uyarı basılmaz (şema kanonu)", () => {
+    expect(leaveOverrun({ ...base, deductsFromAnnual: false })).toBeNull();
+  });
+
+  it("gün hesaplanamıyorsa (ters tarih) aşım da hesaplanmaz", () => {
+    expect(leaveOverrun({ ...base, days: null })).toBeNull();
+  });
+
+  it("kalan 1 günden azken öneri YOKTUR ama aşım DURUR", () => {
+    const overrun = leaveOverrun({ ...base, remaining: "0" });
+    expect(overrun?.overrunDays).toBe(12);
+    expect(overrun?.suggestedEndDate).toBeNull();
+  });
+});
+
+describe("red gerekçesi kapısı (R 104-128)", () => {
+  it("dolu gerekçe geçer", () => {
+    expect(isRejectReasonReady("Kalan izin hakkı yetersiz")).toBe(true);
+  });
+
+  it("🔴 boş dize DE yalnız boşluk DA geçmez (`strip()` sonrası boş → 422)", () => {
+    expect(isRejectReasonReady("")).toBe(false);
+    expect(isRejectReasonReady(" ")).toBe(false);
+    expect(isRejectReasonReady("   \n\t ")).toBe(false);
+  });
+});
+
+describe("talep formu kapısı (T 184-188)", () => {
+  const ready = {
+    personnelId: "per-1",
+    leaveTypeId: "lt-1",
+    startDate: "2026-08-24",
+    endDate: "2026-08-26",
+    requiresDocument: false,
+    hasDocument: false,
+    isOverrun: false,
+  };
+
+  it("eksiksiz form engelsizdir", () => {
+    expect(leaveRequestBlockReason(ready)).toBeNull();
+  });
+
+  it("zorunlu alan eksikse gerekçe basılır", () => {
+    expect(leaveRequestBlockReason({ ...ready, personnelId: "" })).toBe(
+      BLOCK_REASON_MISSING_FIELDS,
+    );
+    expect(leaveRequestBlockReason({ ...ready, leaveTypeId: "" })).toBe(
+      BLOCK_REASON_MISSING_FIELDS,
+    );
+  });
+
+  it("ters tarih sunucuya BIRAKILMAZ — ekran söyler", () => {
+    expect(leaveRequestBlockReason({ ...ready, endDate: "2026-08-01" })).toBe(
+      BLOCK_REASON_DATE_ORDER,
+    );
+  });
+
+  it("hak aşımında gönderim KAPALIdır (187)", () => {
+    expect(leaveRequestBlockReason({ ...ready, isOverrun: true })).toBe(BLOCK_REASON_OVERRUN);
+  });
+
+  it("🔴 KARAR 3 · belge YALNIZ `requires_document` tiplerde zorunludur", () => {
+    expect(leaveRequestBlockReason({ ...ready, requiresDocument: true })).toBe(
+      BLOCK_REASON_DOCUMENT_REQUIRED,
+    );
+    expect(
+      leaveRequestBlockReason({ ...ready, requiresDocument: true, hasDocument: true }),
+    ).toBeNull();
+    // Belge istemeyen tipte dosyasız form ENGELLENMEZ.
+    expect(leaveRequestBlockReason({ ...ready, requiresDocument: false })).toBeNull();
   });
 });

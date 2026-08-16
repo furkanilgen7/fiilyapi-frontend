@@ -2,6 +2,10 @@ import { formatDateDots, formatDecimal, formatPercent } from "@/lib/format";
 import type { LeaveBalanceResponse, LeaveRequestResponse } from "@/lib/api/hooks/useLeaves";
 
 import {
+  BLOCK_REASON_DATE_ORDER,
+  BLOCK_REASON_DOCUMENT_REQUIRED,
+  BLOCK_REASON_MISSING_FIELDS,
+  BLOCK_REASON_OVERRUN,
   CARRYOVER_RISK_LABEL,
   NO_ENTITLEMENT_HINT,
   NO_ENTITLEMENT_LABEL,
@@ -195,4 +199,153 @@ export function usageCell(balance: LeaveBalanceResponse): UsageCell {
   const pct = Math.min(Math.max(balance.usage_pct, 0), 100);
   if (hasCarryoverRisk(balance)) return { pct, text: CARRYOVER_RISK_LABEL };
   return { pct, text: `${formatPercent(balance.usage_pct)} kullanıldı` };
+}
+
+/* ═══ F-IZN T4 · form türetmeleri ═══════════════════════════════════════════
+ * Yorumlardaki sayılar `Form - Izin Talebi.dc.html` (T) ve
+ * `Form - Izin Reddi.dc.html` (R) SATIR numaralarıdır.
+ */
+
+const MS_PER_DAY = 86_400_000;
+const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/**
+ * `YYYY-MM-DD` → UTC damgası; ayrıştırılamayan ya da TAŞAN tarih `null`.
+ *
+ * UTC seçildi: yerel saatte `new Date("2026-03-29")` DST geçişinde bir gün
+ * kayabilir ve gün sayısı 12 yerine 11 çıkardı. `2026-02-31` gibi taşan girdi
+ * sessizce 3 Mart'a KAYDIRILMAZ — `null` döner (tarayıcı `type=date` bunu
+ * üretmez ama form durumu dizedir ve doğrudan da doldurulabilir).
+ */
+function parseIsoDateUtc(iso: string): number | null {
+  const match = ISO_DATE.exec(iso);
+  if (match === null) return null;
+  const [, year, month, day] = match;
+  const time = Date.UTC(Number(year), Number(month) - 1, Number(day));
+  const parsed = new Date(time);
+  if (parsed.getUTCMonth() !== Number(month) - 1 || parsed.getUTCDate() !== Number(day)) {
+    return null;
+  }
+  return time;
+}
+
+/**
+ * T 141-145 · "Gün" alanı — 🔴 KARAR 1: TÜRETİLİR, kullanıcı yazamaz.
+ *
+ * Formül sunucunun `calculate_leave_days`inin BİREBİR ikizidir: takvim günü,
+ * başlangıç ve bitiş DAHİL (`(end-start).days + 1`). Ekranda yalnız ÖNİZLEMEdir
+ * — gövdede `days` GÖNDERİLMEZ (`extra="forbid"` → 422); sayı yine sunucudan
+ * gelir ve iki taraf ayrışırsa doğru olan sunucudur.
+ *
+ * Tarih eksik/geçersizse ya da bitiş başlangıçtan ÖNCEyse `null`: ters aralıkta
+ * negatif ya da 0 gün BASILMAZ (sunucu da 422 verir), ekran bunu kendi hatasıyla
+ * söyler.
+ */
+export function previewLeaveDays(startDate: string, endDate: string): number | null {
+  const start = parseIsoDateUtc(startDate);
+  const end = parseIsoDateUtc(endDate);
+  if (start === null || end === null || end < start) return null;
+  return (end - start) / MS_PER_DAY + 1;
+}
+
+/** `YYYY-MM-DD` + N gün → `YYYY-MM-DD`; geçersiz girdi `null`. */
+export function addDays(startDate: string, days: number): string | null {
+  const start = parseIsoDateUtc(startDate);
+  if (start === null) return null;
+  return new Date(start + days * MS_PER_DAY).toISOString().slice(0, 10);
+}
+
+export interface LeaveOverrun {
+  requestedDays: number;
+  remainingDays: number;
+  overrunDays: number;
+  /** T 155 · "Bitiş tarihini X yaparsanız..." — hesaplanamıyorsa `null`. */
+  suggestedEndDate: string | null;
+}
+
+export interface LeaveOverrunInput {
+  /** `previewLeaveDays` çıktısı. */
+  days: number | null;
+  /** Seçili personelin bakiyesindeki `remaining` (string decimal ya da NULL). */
+  remaining: string | null | undefined;
+  /** Seçili izin tipinin `deducts_from_annual` bayrağı. */
+  deductsFromAnnual: boolean;
+  startDate: string;
+}
+
+/**
+ * T 149-158 · 🔴 KARAR 4 — hak aşımı bandı.
+ *
+ * ÜÇ koşulun HEPSİ gerekir, hiçbiri varsayılmaz:
+ *  1. gün sayısı hesaplanabiliyor,
+ *  2. tip yıllık haktan DÜŞÜYOR (`deducts_from_annual`) — şema bunu açıkça
+ *     söyler; ücretsiz izinde "hakkı aşıyor" demek YALAN olurdu,
+ *  3. kalan hak BİLİNİYOR (`remaining !== null`).
+ *
+ * 🔴 Üçüncüsü fail-closed'ın GÖRÜNTÜ hâlidir: bilinmeyen kalan ne "aşıldı" ne
+ * "aşılmadı" diye basılır — hiçbir şey basılmaz. (Onayı ise sunucu 409 ile
+ * kapatır; iddiayı ekran ÜRETMEZ.)
+ *
+ * Önerilen bitiş tarihi kalan 1 günden azsa `null`dur: 0 gün için "bitişi
+ * başlangıçtan bir gün önceye alın" demek anlamsız bir aralık önerirdi.
+ */
+export function leaveOverrun(input: LeaveOverrunInput): LeaveOverrun | null {
+  const { days, remaining, deductsFromAnnual, startDate } = input;
+  if (days === null || !deductsFromAnnual) return null;
+  if (remaining === null || remaining === undefined) return null;
+
+  const remainingDays = Number(remaining);
+  if (!Number.isFinite(remainingDays) || days <= remainingDays) return null;
+
+  const usableDays = Math.floor(remainingDays);
+  return {
+    requestedDays: days,
+    remainingDays,
+    overrunDays: days - remainingDays,
+    suggestedEndDate: usableDays >= 1 ? addDays(startDate, usableDays - 1) : null,
+  };
+}
+
+/**
+ * R 104-107/123-128 · red gerekçesi kapısı.
+ *
+ * 🔴 `trim()` ŞARTTIR: sunucu kuralı `strip()` sonrası boşluktur, `reason !== ""`
+ * ile kurulan bir kapıyı TEK BOŞLUK karakteri geçer ve kullanıcı düğmeye basıp
+ * 422 yer. Ekranın kapısı sunucununkiyle AYNI normalizasyonu kullanır.
+ */
+export function isRejectReasonReady(reason: string): boolean {
+  return reason.trim().length > 0;
+}
+
+export interface LeaveRequestFormState {
+  personnelId: string;
+  leaveTypeId: string;
+  startDate: string;
+  endDate: string;
+  /** Seçili tipin `requires_document` bayrağı (T 161-174 · KARAR 3). */
+  requiresDocument: boolean;
+  /** Belge eklendi mi (arşive yüklenmiş künye ya da seçilmiş dosya). */
+  hasDocument: boolean;
+  /** `leaveOverrun` bir aşım buldu mu (T 187 · onay düğmesi PASİF). */
+  isOverrun: boolean;
+}
+
+/**
+ * T 184-188 · "Onaya Gönder" düğmesinin kapısı — engel varsa GÖRÜNÜR gerekçe,
+ * yoksa `null`.
+ *
+ * Metin döndürür, boolean değil: pasif düğmenin gerekçesi ekranda okunmalıdır
+ * (mockup 185 de footer'a yazar). "Neden basamıyorum" sorusunu `title`da
+ * saklamak T3'te de reddedilmişti.
+ */
+export function leaveRequestBlockReason(state: LeaveRequestFormState): string | null {
+  if (!state.personnelId || !state.leaveTypeId || !state.startDate || !state.endDate) {
+    return BLOCK_REASON_MISSING_FIELDS;
+  }
+  // 🔴 Ters tarihi sunucuya BIRAKMAZ (T 132-146): 422 yerine ekran söyler.
+  if (previewLeaveDays(state.startDate, state.endDate) === null) return BLOCK_REASON_DATE_ORDER;
+  if (state.isOverrun) return BLOCK_REASON_OVERRUN;
+  // 🔴 KARAR 3: belge YALNIZ `requires_document` tiplerde zorunludur.
+  if (state.requiresDocument && !state.hasDocument) return BLOCK_REASON_DOCUMENT_REQUIRED;
+  return null;
 }

@@ -4,18 +4,30 @@ import { useState } from "react";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { PersonnelTabsStrip } from "@/components/personnel/PersonnelTabsStrip";
+import { Button } from "@/components/ui";
 import { backendErrorMessage } from "@/lib/api/error-message";
-import { useHrLeavesSummary, usePendingLeaveRequests } from "@/lib/api/hooks/useLeaves";
+import { useApproveLeaveRequest } from "@/lib/api/hooks/useLeaveMutations";
+import {
+  useHrLeavesSummary,
+  usePendingLeaveRequests,
+  type LeaveRequestResponse,
+} from "@/lib/api/hooks/useLeaves";
 import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 
-import { LEAVES_EYEBROW, LEAVES_PAGE_TITLE, REQUESTS_ERROR_PREFIX, SUMMARY_ERROR_PREFIX } from "./leaves-labels";
-import { LeaveBalancesTable } from "./LeaveBalancesTable";
-import { LeavesKpiStrip } from "./LeavesKpiStrip";
 import {
-  PendingLeaveRequestsTable,
-  type LeaveDecisionHandlers,
-} from "./PendingLeaveRequestsTable";
+  APPROVE_ERROR_FALLBACK,
+  LEAVES_EYEBROW,
+  LEAVES_PAGE_TITLE,
+  NEW_REQUEST_ACTION_LABEL,
+  REQUESTS_ERROR_PREFIX,
+  SUMMARY_ERROR_PREFIX,
+} from "./leaves-labels";
+import { LeaveBalancesTable } from "./LeaveBalancesTable";
+import { LeaveRejectModal } from "./LeaveRejectModal";
+import { LeaveRequestFormModal } from "./LeaveRequestFormModal";
+import { LeavesKpiStrip } from "./LeavesKpiStrip";
+import { PendingLeaveRequestsTable } from "./PendingLeaveRequestsTable";
 import "./leaves.css";
 
 /**
@@ -41,20 +53,40 @@ function buildYearOptions(currentYear: number): number[] {
   return Array.from({ length: YEAR_OPTION_COUNT }, (_, index) => currentYear - index);
 }
 
-export interface LeavesViewProps extends LeaveDecisionHandlers {
-  /** Testler ve T4 için sabitlenebilir "bugün"ün yılı. */
+export interface LeavesViewProps {
+  /** Testler için sabitlenebilir "bugün"ün yılı. */
   currentYear?: number;
 }
 
-export function LeavesView({
-  currentYear = new Date().getFullYear(),
-  onApproveRequest,
-  onRejectRequest,
-}: LeavesViewProps = {}) {
+/**
+ * 🔴 T4 · KARAR AKIŞININ SAHİBİ BU BİLEŞENDİR.
+ *
+ * T3 karar geri çağrılarını PROP olarak dışarı açmıştı ("henüz bağlanmadı"
+ * gerekçesiyle birlikte). T4'te akış BURADA kapanır: onay gövdesizdir ve
+ * doğrudan çağrılır, red diyalog açar. Geri çağrılar prop olarak DIŞARIDA
+ * BIRAKILMAZ — iki çağıran iki farklı karar akışı kurabilirdi. Tablo yine
+ * sunumsaldır (prop alır), kap bileşen budur.
+ */
+export function LeavesView({ currentYear = new Date().getFullYear() }: LeavesViewProps = {}) {
   const permission = useModulePermission("personnel");
   const [year, setYear] = useState(currentYear);
   const summaryQuery = useHrLeavesSummary(year);
   const requestsQuery = usePendingLeaveRequests();
+  const approveRequest = useApproveLeaveRequest();
+
+  /** Açık diyaloglar — ikisi de aynı anda açılmaz (tetikleyicileri ayrı). */
+  const [isRequestFormOpen, setRequestFormOpen] = useState(false);
+  const [rejectTarget, setRejectTarget] = useState<LeaveRequestResponse | null>(null);
+  /** 🔴 Onayın 409'u (çakışma · hak aşımı · kalan hesaplanamıyor) YUTULMAZ. */
+  const [decisionError, setDecisionError] = useState<string | null>(null);
+
+  function handleApprove(request: LeaveRequestResponse) {
+    setDecisionError(null);
+    // Onay GÖVDESİZDİR ve diyalog gerektirmez (spec §5 K4).
+    approveRequest.mutate(request.id, {
+      onError: (error) => setDecisionError(backendErrorMessage(error, APPROVE_ERROR_FALLBACK)),
+    });
+  }
 
   if (
     !permission.canView ||
@@ -75,7 +107,21 @@ export function LeavesView({
   return (
     <div className="iz">
       <p className="iz__eyebrow">{LEAVES_EYEBROW}</p>
-      <h1 className="iz__title">{LEAVES_PAGE_TITLE}</h1>
+      {/* Mockup İZ ekranında talep AÇMA düğmesi ÇİZMEZ; ama talep formunun
+          kendi karar kaydı "İK > İzin Yönetimi ekranından diyalog olarak
+          açılır" der (T 32). Tetikleyici olmadan form ULAŞILAMAZ olurdu —
+          başlık satırına en sade hâliyle eklendi. */}
+      <div className="iz__title-row">
+        <h1 className="iz__title">{LEAVES_PAGE_TITLE}</h1>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => setRequestFormOpen(true)}
+          data-testid="iz-new-request"
+        >
+          {NEW_REQUEST_ACTION_LABEL}
+        </Button>
+      </div>
 
       {/* `/personel` ile ORTAK sekme şeridi (F-IZN T5 bu sekmeyi gerçek
           rotasına bağlar; şerit BU dilimde DEĞİŞTİRİLMEZ). */}
@@ -91,9 +137,16 @@ export function LeavesView({
         balances={summary?.balances}
         isLoading={requestsQuery.isLoading}
         errorMessage={requestsError}
-        onApproveRequest={onApproveRequest}
-        onRejectRequest={onRejectRequest}
+        onApproveRequest={handleApprove}
+        onRejectRequest={setRejectTarget}
       />
+
+      {/* 🔴 Onayın sunucu reddi (409) EKRANDA okunur — sessizce yutulmaz. */}
+      {decisionError !== null && (
+        <p className="iz-decision-error" data-testid="iz-decision-error">
+          {decisionError}
+        </p>
+      )}
 
       {/* 116-171 */}
       <LeaveBalancesTable
@@ -104,6 +157,21 @@ export function LeavesView({
         yearOptions={buildYearOptions(currentYear)}
         onYearChange={setYear}
       />
+
+      {/* Talep formu bakiye kartını İÇİNDE BULUNULAN yıldan okur: bakiye
+          tablosunun yıl seçicisi geçmişe alındığında yeni talep geçmiş yılın
+          hakkıyla değerlendirilemez. */}
+      {isRequestFormOpen && (
+        <LeaveRequestFormModal year={currentYear} onClose={() => setRequestFormOpen(false)} />
+      )}
+
+      {rejectTarget !== null && (
+        <LeaveRejectModal
+          request={rejectTarget}
+          balances={summary?.balances}
+          onClose={() => setRejectTarget(null)}
+        />
+      )}
     </div>
   );
 }

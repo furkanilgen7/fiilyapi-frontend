@@ -104,3 +104,117 @@ export const REQUESTS_ERROR_PREFIX = "İzin talepleri yüklenemedi";
  */
 export const DECISION_PENDING_REASON =
   "Onay ve red diyalogları henüz bağlanmadı — düğmeler bir işlem başlatmaz.";
+
+/* ═══ F-IZN T4 · iki form diyaloğunun METİNLERİ ═════════════════════════════
+ * (T) = `Form - Izin Talebi.dc.html` · (R) = `Form - Izin Reddi.dc.html`
+ */
+
+/** İZ ekranındaki tetikleyici — mockup'ta YOKTUR, gerekçesi `LeavesView`de. */
+export const NEW_REQUEST_ACTION_LABEL = "Yeni İzin Talebi";
+
+/** Not/gerekçe alanlarının tavanı (T 180 · R 106). */
+export const MAX_TEXT_LENGTH = 500;
+
+/* ── Talep formu (T) ────────────────────────────────────────────────────── */
+export const REQUEST_FORM_TITLE = "Yeni İzin Talebi"; // T 71
+export const REQUEST_FORM_SUBTITLE = "Talep şantiye şefi ardından İK onay akışına girer"; // T 72
+export const REQUEST_PERSONNEL_LABEL = "Personel"; // T 81
+export const REQUEST_PERSONNEL_PLACEHOLDER = "Personel seçiniz..."; // T 83
+export const REQUEST_TYPE_LABEL = "İzin Tipi"; // T 110
+export const REQUEST_TYPE_PLACEHOLDER = "Tip seçiniz..."; // T 112
+export const REQUEST_START_LABEL = "Başlangıç"; // T 134
+export const REQUEST_END_LABEL = "Bitiş"; // T 138
+export const REQUEST_DAYS_LABEL = "Gün"; // T 142
+/** T 144 · gün alanının ipucu metni — KARAR 1'in kullanıcıya söylenmiş hâli. */
+export const REQUEST_DAYS_HINT = "Türetilir";
+export const REQUEST_NOTE_LABEL = "Açıklama"; // T 178
+export const REQUEST_NOTE_PLACEHOLDER = "İzin gerekçesi, iletişim bilgisi..."; // T 179
+export const REQUEST_NOTE_HINT = "Maks 500 karakter"; // T 180
+export const REQUEST_SENIORITY_PREFIX = "Kıdem:"; // T 97
+export const REQUEST_ENTITLEMENT_LABEL = "Yıllık Hak"; // T 101
+export const REQUEST_CARRIED_LABEL = "Devreden"; // T 102
+export const REQUEST_USED_LABEL = "Kullanılan"; // T 103
+export const REQUEST_REMAINING_LABEL = "Kalan"; // T 104
+/** Seçili personelin bakiye satırı YOKSA kart sahte sayı basmaz, bunu yazar. */
+export const REQUEST_NO_BALANCE_NOTE = "Bu personel için bu yıla ait bakiye kaydı yok.";
+export const REQUEST_SUBMIT_LABEL = "Onaya Gönder"; // T 187
+export const CANCEL_LABEL = "Vazgeç"; // T 186 · R 127
+
+/** T 161-174 · KARAR 3 — belge kartı. */
+export const REQUEST_DOCUMENT_LABEL = "Rapor / Belge Eki"; // T 162
+export const REQUEST_DOCUMENT_DROP_TITLE = "Belgeyi yükleyin"; // T 167
+export const REQUEST_DOCUMENT_DROP_HINT = "PDF veya fotoğraf"; // T 168
+export const REQUEST_DOCUMENT_ACCEPT = ".pdf,image/*"; // T 164
+/** T 171-173 · alanın neden zorunlu (ya da opsiyonel) olduğunu SÖYLER. */
+export const REQUEST_DOCUMENT_REQUIRED_HINT =
+  "Seçilen izin tipi belge zorunlu tutuyor. Belge istemeyen tiplerde bu alan opsiyoneldir.";
+export const REQUEST_DOCUMENT_OPTIONAL_HINT =
+  "Seçilen izin tipi belge zorunlu tutmuyor — dosya eklemek isteğe bağlıdır.";
+/**
+ * 🔴 İKİ ADIMLI AKIŞ (F-BLG `PersonnelDocumentFormModal` emsali): gövde dosya
+ * DEĞİL `document_id` alır. Dosya önce arşive (`POST /documents`) yüklenir,
+ * dönen künye talebe bağlanır. Kullanıcı bunu bilmeli — sessiz sihir yok.
+ */
+export const REQUEST_DOCUMENT_TWO_STEP_NOTE =
+  "Yüklediğiniz dosya önce genel arşive kaydedilir, ardından bu izin talebine bağlanır.";
+/**
+ * 🔴 Arşiv yüklemesi PROJE zorunlu tutuyor; projesi olmayan personelde birinci
+ * adım koşamaz. Sessiz atlama YOK — form durur ve gerekçeyi basar.
+ */
+export const REQUEST_NO_PROJECT_UPLOAD_REASON =
+  "Seçili personelin atanmış projesi yok; dosya arşive yüklenemiyor (arşiv yüklemesi proje zorunlu tutuyor). Personele proje atayın ya da belge istemeyen bir izin tipi seçin.";
+
+/** T 149-158 · hak aşımı bandı. */
+export const OVERRUN_TITLE = "Hak aşımı — talep kaydedilemez"; // T 152
+
+/** T 185 · footer uyarısı + düğme kapısının gerekçeleri. */
+export const BLOCK_REASON_MISSING_FIELDS = "Personel, izin tipi ve iki tarih zorunludur.";
+export const BLOCK_REASON_DATE_ORDER = "Bitiş tarihi başlangıçtan önce olamaz.";
+export const BLOCK_REASON_OVERRUN = "Hak aşımı düzeltilmeden gönderilemez.";
+export const BLOCK_REASON_DOCUMENT_REQUIRED = "Seçilen izin tipi için belge eki zorunludur.";
+
+export const REQUEST_ERROR_FALLBACK = "İzin talebi oluşturulamadı.";
+export const UPLOAD_ERROR_FALLBACK = "Dosya arşive yüklenemedi.";
+/**
+ * 🔴 Birinci adım BAŞARILI + ikinci adım BAŞARISIZ: arşivde ÖKSÜZ belge kalır.
+ * Künye durumda TUTULUR (tekrar denemede ikinci kopya doğmaz) ve kullanıcı
+ * dosyanın nerede olduğunu ÖĞRENİR (F-BLG emsali).
+ */
+export function buildOrphanFileMessage(fileName: string, detail: string): string {
+  return `Dosya (${fileName}) arşive YÜKLENDİ ama izin talebine bağlanamadı: ${detail} Dosya Belge Arşivi'nde duruyor; tekrar kaydettiğinizde aynı dosya kullanılır, ikinci kopya oluşmaz.`;
+}
+
+/** Personel/tip listesi düşerse form boş seçenekle sessizce durmaz. */
+export const PERSONNEL_LIST_ERROR = "Personel listesi yüklenemedi — seçim yapılamıyor.";
+export const TYPE_LIST_ERROR = "İzin tipi kataloğu yüklenemedi — seçim yapılamıyor.";
+
+/* ── Red diyaloğu (R) ───────────────────────────────────────────────────── */
+export const REJECT_FORM_TITLE = "İzin Talebini Reddet"; // R 62
+export const REJECT_FORM_SUBTITLE = "Gerekçe personele bildirim olarak gönderilir"; // R 63
+export const REJECT_SUMMARY_TITLE = "Reddedilen Talep"; // R 72
+export const REJECT_START_LABEL = "Başlangıç"; // R 83
+export const REJECT_END_LABEL = "Bitiş"; // R 87
+export const REJECT_DAYS_LABEL = "Gün"; // R 91
+export const REJECT_REASON_LABEL = "Red Gerekçesi"; // R 104
+export const REJECT_REASON_PLACEHOLDER =
+  "Talebin neden reddedildiğini açıklayın — personele bu metin iletilir"; // R 105
+export const REJECT_REASON_HINT = "Maks 500 karakter · Zorunlu alan"; // R 106
+export const REJECT_PRESET_TITLE = "Hazır gerekçeler"; // R 111
+export const REJECT_PRESET_HINT = "Tıklayınca gerekçe alanına yazılır, düzenleyebilirsiniz"; // R 119
+export const REJECT_REASON_REQUIRED = "Gerekçe zorunlu"; // R 125
+export const REJECT_SUBMIT_LABEL = "Reddet"; // R 128
+export const REJECT_ERROR_FALLBACK = "İzin talebi reddedilemedi.";
+/** R 95-99 · sistem notu; YALNIZ aşım gerçekten hesaplanabiliyorsa basılır. */
+export const REJECT_SYSTEM_NOTE_PREFIX = "Sistem notu:"; // R 97
+
+/** R 113-117 · beş hazır gerekçe, mockup'tan BİREBİR. */
+export const REJECT_PRESETS: readonly string[] = [
+  "Kalan izin hakkı yetersiz",
+  "Kritik iş programı çakışması",
+  "Aynı dönemde yeterli personel yok",
+  "Belge eksik",
+  "Tarih revizesi gerekli",
+];
+
+/** Onay akışı (diyalogsuz) — 409 gövdesi yoksa basılan yedek metin. */
+export const APPROVE_ERROR_FALLBACK = "İzin talebi onaylanamadı.";
