@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 
 import { ProgressPaymentsView } from "./ProgressPaymentsView";
 import { useProgressPayments } from "@/lib/api/hooks/useProgressPayments";
+import { useProjects } from "@/lib/api/hooks/useProjects";
 import { useSession } from "@/components/shell/SessionProvider";
 import { BackendError } from "@/lib/api/unwrap";
 import type { MeResponse } from "@/lib/auth/types";
@@ -15,6 +16,22 @@ vi.mock("@/lib/api/hooks/useProgressPayments", async (importOriginal) => ({
 // `useModulePermission` ağ isteği atmaz, kaynağı `useSession`'dır — kapı
 // testlerinde o taklit edilir (bkz. `useModulePermission.test.tsx`).
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
+
+// F-PRJTAB T3: görünüm artık proje süzgecini URL'den okur ve süzgeç çubuğu
+// proje listesini çeker — ikisi de taklit edilir (QueryClient sarmalayıcısı
+// gerekmez).
+vi.mock("@/lib/api/hooks/useProjects", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useProjects")>()),
+  useProjects: vi.fn(),
+}));
+
+const replace = vi.fn();
+let searchParams = new URLSearchParams();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace }),
+  usePathname: () => "/hakedisler",
+  useSearchParams: () => searchParams,
+}));
 
 const BASE_ME = {
   id: "11111111-1111-1111-1111-111111111111",
@@ -56,7 +73,16 @@ const baseItem = {
 describe("ProgressPaymentsView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    searchParams = new URLSearchParams();
     mockSession({ progress_payments: "draft" });
+    vi.mocked(useProjects).mockReturnValue({
+      // Süzgeç seçeneğinin adı liste satırlarındaki proje adından KASTEN
+      // farklı — aksi halde `getByText` iki eşleşme bulur.
+      data: { items: [{ id: "33333333-3333-3333-3333-333333333333", name: "Deniz Konakları" }], counts: {} },
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as never);
   });
 
   it("yukleniyor durumunu basar", () => {
@@ -170,5 +196,44 @@ describe("ProgressPaymentsView", () => {
     render(<ProgressPaymentsView />);
     expect(screen.getByTestId("pp-kpi-subtitle")).toHaveTextContent("2 hakediş");
     expect(screen.getByTestId("pp-kpi-subtitle").textContent).not.toMatch(/%/);
+  });
+
+  // F-PRJTAB T3 · URL proje süzgeci. Sekme şeridi proje detayından
+  // `?project_id=<id>` ile gelir; liste sorgusu bu parametreyi backend'e
+  // GEÇİRMELİDİR.
+  describe("proje suzgeci (project_id)", () => {
+    it("URL'de project_id varken backend istegine gecer", () => {
+      searchParams = new URLSearchParams("project_id=33333333-3333-3333-3333-333333333333");
+      mockQuery({ data: { items: [baseItem] } });
+      render(<ProgressPaymentsView />);
+      expect(useProgressPayments).toHaveBeenCalledWith({
+        project_id: "33333333-3333-3333-3333-333333333333",
+      });
+    });
+
+    // VARSAYILAN YOL BEKÇİSİ: parametre yokken süzgeç GÖNDERİLMEZ, liste tüm
+    // projeleri kapsar.
+    it("URL'de project_id yokken suzgecsiz kosar (tum projeler)", () => {
+      mockQuery({ data: { items: [baseItem] } });
+      render(<ProgressPaymentsView />);
+      expect(useProgressPayments).toHaveBeenCalledWith({ project_id: undefined });
+    });
+
+    it("suzgec cubugu gorunur ve URL'deki proje secili durur", () => {
+      searchParams = new URLSearchParams("project_id=33333333-3333-3333-3333-333333333333");
+      mockQuery({ data: { items: [baseItem] } });
+      render(<ProgressPaymentsView />);
+      const select = screen.getByRole("combobox", { name: "Proje filtresi" });
+      expect(select).toHaveValue("33333333-3333-3333-3333-333333333333");
+      expect(screen.getByRole("option", { name: "Tüm Projeler" })).toBeInTheDocument();
+    });
+
+    it("suzgec aktifken bos liste ayri (zarif) bos durum metni basar", () => {
+      searchParams = new URLSearchParams("project_id=33333333-3333-3333-3333-333333333333");
+      mockQuery({ data: { items: [] } });
+      render(<ProgressPaymentsView />);
+      expect(screen.getByText("Seçili projede hakediş yok")).toBeInTheDocument();
+      expect(screen.queryByText("Henüz hakediş oluşturulmadı")).not.toBeInTheDocument();
+    });
   });
 });

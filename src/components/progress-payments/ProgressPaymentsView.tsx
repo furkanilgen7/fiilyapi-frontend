@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { useProgressPayments } from "@/lib/api/hooks/useProgressPayments";
 import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 
+import { parseEmployerFilters } from "./employer-filters";
+import { ProgressPaymentsFilters } from "./ProgressPaymentsFilters";
 import { ProgressPaymentsListBody } from "./ProgressPaymentsList";
 import { ProgressPaymentsTotalsStrip } from "./ProgressPaymentsTotalsStrip";
 import { ProgressPaymentsTabs } from "./shared/ProgressPaymentsTabs";
@@ -29,8 +32,17 @@ import "./progress-payments.css";
 // F-TH T2 (§S3 kullanıcı kararı): bu sayfa artık "İşveren | Taşeron" sekmeli
 // kardeşin İşveren yarısı — `ProgressPaymentsTabs` (paylaşılan, kopyasız)
 // başlığın ÜSTÜNE eklendi, aşağıdaki içerik DEĞİŞMEDİ.
+//
+// F-PRJTAB T3: proje detayının "İşveren Hakediş" sekmesi bu ekrana
+// `?project_id=<id>` ile gelir. Süzgeç URL'de yaşar (bileşen state'inde
+// değil) — kardeş ekran `/hakedisler/taseron` ile aynı parametre adı ve aynı
+// desen. Parametre yoksa liste süzgeçsiz (tüm projeler) koşar.
 export function ProgressPaymentsView() {
-  const paymentsQuery = useProgressPayments();
+  const searchParams = useSearchParams();
+  const filters = parseEmployerFilters(searchParams);
+  const paymentsQuery = useProgressPayments({
+    project_id: filters.projectId ?? undefined,
+  });
   // Yazma yüzeyi kapısı (spec §2.5): "Yeni Hakediş" yalnız `draft` ve üstü
   // seviyede görünür. Yetki zorlaması HER ZAMAN backend'dedir.
   const { canWrite } = useModulePermission("progress_payments");
@@ -49,12 +61,15 @@ export function ProgressPaymentsView() {
         )}
       </div>
 
+      <ProgressPaymentsFilters />
+
       <ProgressPaymentsTotalsStrip items={paymentsQuery.data?.items} />
 
       <ProgressPaymentsListBody
         isError={paymentsQuery.isError}
         isLoading={paymentsQuery.isLoading}
         data={paymentsQuery.data}
+        isFiltered={filters.projectId !== null}
       />
     </div>
   );
