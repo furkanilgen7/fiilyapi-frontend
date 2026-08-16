@@ -134,6 +134,15 @@ export function validateEmployerItem(
   if (!values.groupId.trim()) return { field: "group", message: "Poz Grubu zorunludur." };
   if (values.groupId === NEW_GROUP_OPTION && !values.groupName.trim())
     return { field: "groupName", message: "Grup adı zorunludur." };
+  // İKİ KATMAN: `maxLength` girdiyi yazarken keser, bu dal yapıştırma/otomatik
+  // doldurma yolunu kapatır — `code`/`description`/`unit` ile AYNI desen.
+  // Sınır openapi `EmployerContractGroupCreate.name` (2000) ile birebirdir;
+  // aşılırsa sunucu 422 döner, kullanıcı düzeltilebilir bir mesaj görmelidir.
+  if (values.groupId === NEW_GROUP_OPTION && tooLong(values.groupName, MAX_LENGTH.groupName))
+    return {
+      field: "groupName",
+      message: `Grup Adı en fazla ${MAX_LENGTH.groupName} karakter olabilir.`,
+    };
 
   const common = validateCommon(values);
   if (common) return common;
