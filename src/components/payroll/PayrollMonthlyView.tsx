@@ -68,6 +68,7 @@ import {
 } from "./payroll-labels";
 import { PayrollPaymentSummary } from "./PayrollPaymentSummary";
 import { PayrollTable } from "./PayrollTable";
+import { PayrollTabsStrip } from "./PayrollTabsStrip";
 import "./payroll.css";
 
 /**
@@ -193,6 +194,12 @@ export function PayrollMonthlyView() {
 
   return (
     <div className="bor">
+      {/* F-BOR T3 — üç bordro ekranının ORTAK sekme şeridi (BG:27-31). Aylık
+          Bordro mockup'ı şeridi çizmez ama kardeş ekranlar buraya dönmek için
+          bir yol ister; ikinci bir şerit yazmak yerine paylaşılan bileşen
+          basılır (aktif sekme yoldan türer). */}
+      <PayrollTabsStrip />
+
       {/* BY:46 */}
       <p className="bor__eyebrow">{BREADCRUMB}</p>
 

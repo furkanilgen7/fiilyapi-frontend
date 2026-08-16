@@ -1,0 +1,226 @@
+/* F-BOR T3 · `/bordro/gecmis` — Bordro Geçmişi. Kanon: projedesign
+   `Bordro Geçmişi.dc.html` (BG); parantez içi sayılar O dosyanın SATIR
+   numaralarıdır. Prefix `borg`. Mockup'ın üst barı (BG:14-24) ve sol menüsü
+   uygulama kabuğudur; bu dosya onları YENİDEN ÇİZMEZ.
+   Palet YALNIZ token'dan gelir (çıplak hex yok). */
+
+.borg {
+  animation: var(--anim-fade-up); /* BG:26 */
+}
+
+/* ------------------------------------------------------------ başlık (32-35) */
+
+.borg__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5); /* BG:32 — 20px */
+}
+
+.borg__title {
+  /* BG:33 22/700 ls -0.3 yazar; kardeş ekran BY:48 ise 26/700 ls -0.5. İki
+     mockup ÇELİŞİYOR — aynı ürün ailesinin iki sayfası aynı başlık ölçüsünü
+     kullanır ve tokens.css'te 22px'in Ayarlar'a özgü olmayan bir karşılığı
+     yoktur; sayfa başlığı token'ı seçildi (T2 ile aynı ölçü). */
+  font-size: var(--text-page-title);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+}
+
+.borg__subtitle {
+  font-size: var(--text-xs); /* BG:33 — 12px */
+  color: var(--color-text-subtle);
+  margin-top: 2px; /* BG:33 */
+}
+
+.borg__filter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.borg__export-reason {
+  max-width: 320px;
+  margin-top: var(--space-1);
+  font-size: var(--text-small);
+  line-height: var(--leading-normal);
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+/* ------------------------------------------------------------ bildirimler */
+
+.borg-notice {
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.borg-notice--danger {
+  color: var(--color-danger-strong);
+}
+
+/* ------------------------------------------------------------ tablo (36-117) */
+
+.borg-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* BG:36 */
+  overflow: hidden;
+  box-shadow: var(--shadow-card); /* BG:36 */
+}
+
+.borg-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.borg-table__head {
+  background: var(--color-surface-2); /* BG:38 */
+  border-bottom: 1px solid var(--color-border); /* BG:38 */
+}
+
+.borg-th {
+  padding: 11px 12px; /* BG:40 */
+  font-size: var(--text-table-head); /* BG:39 — 11/600 uppercase */
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.borg-th--lead {
+  text-align: left;
+  padding-left: var(--space-4); /* BG:39 — 16px */
+}
+
+.borg-th--num {
+  text-align: right;
+}
+
+.borg-row {
+  border-bottom: 1px solid var(--color-divider); /* BG:50 */
+}
+
+/* BG:50 — ödeme bekleyen dönemin kehribar zemini. Koşul SATIRDAN türer
+   (`paid_at === null`), mockup'taki gibi ilk satıra sabitlenmez. */
+.borg-row--pending {
+  background: var(--color-amber-tint-cell); /* BG:50 */
+}
+
+.borg-cell {
+  padding: 12px; /* BG:52 */
+  font-size: var(--text-body); /* BG:52 — 13px */
+  color: var(--color-text-secondary);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.borg-cell--period {
+  padding-left: var(--space-4); /* BG:51 — 16px */
+  text-align: left;
+}
+
+.borg-cell--num {
+  text-align: right;
+  font-family: var(--font-mono); /* BG:53 */
+}
+
+.borg-cell--count {
+  font-weight: var(--weight-semibold); /* BG:52 — 13/600 */
+  color: var(--color-text);
+}
+
+.borg-cell--sgk {
+  color: var(--color-danger); /* BG:54 */
+}
+
+.borg-cell--net,
+.borg-cell--cost {
+  font-weight: var(--weight-bold); /* BG:55/56 — 13/700 */
+  color: var(--color-text);
+}
+
+.borg-cell--date {
+  font-size: var(--text-xs); /* BG:68 — 12px */
+  color: var(--color-text-muted);
+}
+
+/* BG:57 — ödenmemiş dönemin vadesi vurgulu. */
+.borg-cell--date-due {
+  font-weight: var(--weight-semibold);
+  color: var(--color-danger); /* BG:57 */
+}
+
+.borg-period__name {
+  font-size: var(--text-body); /* BG:51 — 13/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+.borg-period__note {
+  font-size: var(--text-small); /* BG:51 — 11/500 */
+  font-weight: var(--weight-medium);
+  color: var(--color-warning); /* BG:51 */
+  margin-top: 2px; /* BG:51 */
+}
+
+.borg-detail-link {
+  font-size: var(--text-xs); /* BG:59 — 12/500 */
+  font-weight: var(--weight-medium);
+  color: var(--color-primary); /* BG:59 */
+  text-decoration: none;
+}
+
+.borg-detail-link:hover {
+  text-decoration: underline;
+}
+
+/* --------------------------------------------------------- tfoot (106-116) */
+
+.borg-total {
+  background: var(--color-info-tint); /* BG:107 */
+  border-top: var(--border-width-total) solid var(--color-primary); /* BG:107 */
+}
+
+.borg-total__label {
+  padding: 12px var(--space-4); /* BG:108 */
+  font-size: var(--text-body); /* BG:108 — 13/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  text-align: left;
+}
+
+.borg-total__avg {
+  padding: 12px; /* BG:109 */
+  text-align: center;
+  font-size: var(--text-xs); /* BG:109 — 12px */
+  color: var(--color-text-muted);
+}
+
+.borg-total__value {
+  padding: 12px; /* BG:110 */
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--text-body); /* BG:110 — 13/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+.borg-total__value--sgk {
+  color: var(--color-danger); /* BG:111 */
+}
+
+.borg-total__value--cost {
+  font-size: var(--text-table-total-this); /* BG:113 — 14/700 */
+  color: var(--color-primary); /* BG:113 */
+}
+
+.borg-empty-row {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: var(--space-6) var(--space-4);
+}
