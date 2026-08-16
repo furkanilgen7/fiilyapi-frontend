@@ -9,10 +9,11 @@
  *   `group_id`                   → yalnız İŞV'de, zorunlu
  */
 
-import { MAX_LENGTH } from "./constants";
+import { MAX_LENGTH, NEW_GROUP_OPTION } from "./constants";
 
 export type ContractItemFormField =
   | "group"
+  | "groupName"
   | "code"
   | "description"
   | "unit"
@@ -36,7 +37,10 @@ export interface ContractItemFormValues {
 }
 
 export interface EmployerItemFormValues extends ContractItemFormValues {
+  /** Mevcut grubun id'si YA DA `NEW_GROUP_OPTION` sentinel'i. */
   groupId: string;
+  /** Yalnız sentinel seçiliyken anlamlı: yaratılacak grubun adı. */
+  groupName: string;
 }
 
 /**
@@ -118,11 +122,27 @@ export function validateSubcontractorItem(
 /**
  * İŞV formu. İki fark: `group_id` zorunlu (mockup 104) ve `unit_price`
  * ZORUNLU (163 — "Fiyatsız poz girilemez", 94).
+ *
+ * "+ Yeni Grup" seçiliyken `groupId` sentinel taşır — o hâlde zorunluluk
+ * GRUP ADI alanına kayar (`BoqItemFormModal` 136-137 emsali; oradaki
+ * "Grup adı zorunludur." metni birebir kullanılır). Boş seçimin metni İŞV'nin
+ * kendi envanterindeki "Poz Grubu zorunludur." olarak KALIR.
  */
 export function validateEmployerItem(
   values: EmployerItemFormValues,
 ): ContractItemFormProblem | null {
   if (!values.groupId.trim()) return { field: "group", message: "Poz Grubu zorunludur." };
+  if (values.groupId === NEW_GROUP_OPTION && !values.groupName.trim())
+    return { field: "groupName", message: "Grup adı zorunludur." };
+  // İKİ KATMAN: `maxLength` girdiyi yazarken keser, bu dal yapıştırma/otomatik
+  // doldurma yolunu kapatır — `code`/`description`/`unit` ile AYNI desen.
+  // Sınır openapi `EmployerContractGroupCreate.name` (2000) ile birebirdir;
+  // aşılırsa sunucu 422 döner, kullanıcı düzeltilebilir bir mesaj görmelidir.
+  if (values.groupId === NEW_GROUP_OPTION && tooLong(values.groupName, MAX_LENGTH.groupName))
+    return {
+      field: "groupName",
+      message: `Grup Adı en fazla ${MAX_LENGTH.groupName} karakter olabilir.`,
+    };
 
   const common = validateCommon(values);
   if (common) return common;

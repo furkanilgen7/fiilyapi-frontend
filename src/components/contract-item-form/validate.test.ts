@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { MAX_LENGTH } from "./constants";
+import { MAX_LENGTH, NEW_GROUP_OPTION } from "./constants";
 import {
   validateEmployerItem,
   validateSubcontractorItem,
@@ -20,6 +20,7 @@ const VALID: ContractItemFormValues = {
 const VALID_EMPLOYER: EmployerItemFormValues = {
   ...VALID,
   groupId: "gggggggg-0000-0000-0000-000000000001",
+  groupName: "",
 };
 
 describe("validateSubcontractorItem (TAŞ)", () => {
@@ -84,5 +85,23 @@ describe("validateEmployerItem (İŞV)", () => {
 
   it("negatif birim fiyatı reddeder", () => {
     expect(validateEmployerItem({ ...VALID_EMPLOYER, unitPrice: "-3" })?.field).toBe("unitPrice");
+  });
+
+  // F-POZGRUP · "+ Yeni Grup" dalının SINIR değeri. Kanon: her uzunluk sınırı
+  // `N` kabul · `N+1` reddedilir diye AYRI AYRI sınanır.
+  it("🔴 yeni grup adı SINIRDA (2000) kabul edilir, 2001'de reddedilir", () => {
+    const newGroup = { ...VALID_EMPLOYER, groupId: NEW_GROUP_OPTION };
+
+    expect(validateEmployerItem({ ...newGroup, groupName: "g".repeat(2000) })).toBeNull();
+
+    const problem = validateEmployerItem({ ...newGroup, groupName: "g".repeat(2001) });
+    expect(problem?.field).toBe("groupName");
+    expect(problem?.message).toBe("Grup Adı en fazla 2000 karakter olabilir.");
+  });
+
+  it("🔴 uzunluk sınırı YALNIZ yeni grup dalında koşar — mevcut grup seçiliyken groupName YOK SAYILIR", () => {
+    expect(
+      validateEmployerItem({ ...VALID_EMPLOYER, groupName: "g".repeat(2001) }),
+    ).toBeNull();
   });
 });

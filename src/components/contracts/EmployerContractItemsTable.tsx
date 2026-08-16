@@ -3,8 +3,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui";
 import { CheckIcon, inlineSymbolProps } from "@/components/ui/icons";
 import {
-  EMPLOYER_ADD_NEEDS_GROUPS_REASON,
   EMPLOYER_ITEM_TEXT,
+  EMPLOYER_NO_GROUPS_HINT,
 } from "@/components/contract-item-form/constants";
 import { cx } from "@/lib/cx";
 import { formatAmount, formatQuantity } from "@/lib/format";
@@ -45,8 +45,9 @@ export interface EmployerContractItemsTableProps {
   /**
    * F-BLG T2a · "+ Poz Ekle" (kanon `Form - Poz Ekle Isveren.dc.html`). E14
    * mockup'ında bu sekme çizili olmadığı için buton POZ ekranının ekleme
-   * girişinden türetilmedi; forma giden TEK görünür giriş budur. Grup listesi
-   * yüklenmeden basılamaz (`group_id` ZORUNLU) — gerekçe görünür basılır.
+   * girişinden türetilmedi; forma giden TEK görünür giriş budur. Sözleşmede
+   * hiç grup olmasa da basılabilir (F-POZGRUP): `group_id` zorunluluğu formun
+   * "+ Yeni Grup" akışıyla karşılanır, düğme kapatılarak DEĞİL.
    */
   onAddItem: () => void;
 }
@@ -62,7 +63,10 @@ export function EmployerContractItemsTable({
   onAddItem,
 }: EmployerContractItemsTableProps) {
   const groups = data?.groups;
-  // `group_id` zorunlu olduğu için grup listesi olmadan form açılamaz.
+  // 🔴 Grup YOKLUĞU artık düğmeyi KAPATMAZ (F-POZGRUP): `group_id` hâlâ
+  // zorunludur ama grup formun içinden ("+ Yeni Grup") yaratılabildiği için
+  // düğmeyi kapatmak sözleşmeyi sonsuza kadar pozsuz bırakıyordu. Bayrak
+  // yalnız yönlendirme metnini basmak için kalır.
   const hasGroups = (groups?.length ?? 0) > 0;
 
   return (
@@ -84,7 +88,6 @@ export function EmployerContractItemsTable({
           variant="ghost"
           className="ecd-items__add"
           onClick={onAddItem}
-          disabled={!hasGroups}
           data-testid="ecd-add-item"
         >
           {EMPLOYER_ITEM_TEXT.addItem}
@@ -93,7 +96,7 @@ export function EmployerContractItemsTable({
 
       {!hasGroups && !isLoading && !isError && (
         <p className="ecd-items__notice" data-testid="ecd-add-item-reason">
-          {EMPLOYER_ADD_NEEDS_GROUPS_REASON}
+          {EMPLOYER_NO_GROUPS_HINT}
         </p>
       )}
 

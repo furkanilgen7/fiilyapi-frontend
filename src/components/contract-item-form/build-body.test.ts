@@ -19,6 +19,7 @@ const BASE: ContractItemFormValues = {
 const EMPLOYER_BASE: EmployerItemFormValues = {
   ...BASE,
   groupId: "gggggggg-0000-0000-0000-000000000001",
+  groupName: "",
 };
 
 describe("nextSortOrder", () => {

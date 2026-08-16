@@ -9,7 +9,10 @@ import { CheckCircleIcon } from "@/components/ui/icons";
 import { Modal } from "@/components/settings/Modal";
 import { backendErrorMessage } from "@/lib/api/error-message";
 import { formatAmount } from "@/lib/format";
-import { useCreateEmployerContractItem } from "@/lib/api/hooks/useContractMutations";
+import {
+  useCreateEmployerContractGroup,
+  useCreateEmployerContractItem,
+} from "@/lib/api/hooks/useContractMutations";
 import type {
   EmployerContractDetail,
   EmployerContractItemsResponse,
@@ -28,6 +31,7 @@ import {
   INDEX_TYPE_LABELS,
   INDEX_TYPE_ORDER,
   MAX_LENGTH,
+  NEW_GROUP_OPTION,
   SUMMARY_DASH,
   UNIT_OPTIONS,
   UNIT_PLACEHOLDER_OPTION,
@@ -49,6 +53,13 @@ import "./contract-item-form.css";
  * OKUNUR ve poz gövdesine GİRMEZ (`EmployerContractItemCreate` böyle bir alan
  * tanımlamaz — poz sözleşmenin ayarını devralır). Kart mockup'ta çizili
  * olduğu için SİLİNMEZ; gerekçe `title`da saklanmaz, görünür basılır.
+ *
+ * 🔴 ONAYLI SAPMA (F-POZGRUP) — Grup açılırındaki "+ Yeni Grup" seçeneği ve
+ * onu izleyen "Grup Adı" alanı mockup'ta ÇİZİLİ DEĞİLDİR. Gerekçe: mockup'ın
+ * çizdiği hâl ilk pozu eklemeyi imkânsız kılıyor — yeni sözleşmede hiç grup
+ * yoktur, `group_id` ise zorunludur, grup yaratmanın başka girişi de yoktur.
+ * Mockup'ın alan sırası/etiketleri/hint'leri DEĞİŞMEDİ; yeni alan grup
+ * açılırının hemen ardına, `BoqItemFormModal` (Ekran 13) deseniyle eklendi.
  */
 export interface EmployerItemFormModalProps {
   projectId: string;
@@ -61,6 +72,7 @@ export interface EmployerItemFormModalProps {
 
 const EMPTY_VALUES: EmployerItemFormValues = {
   groupId: "",
+  groupName: "",
   code: "",
   description: "",
   unit: "",
@@ -76,19 +88,37 @@ export function EmployerItemFormModal({
   onClose,
 }: EmployerItemFormModalProps) {
   const router = useRouter();
+  const createGroup = useCreateEmployerContractGroup(projectId);
   const createItem = useCreateEmployerContractItem(projectId);
 
-  const [values, setValues] = useState<EmployerItemFormValues>(EMPTY_VALUES);
+  const [values, setValues] = useState<EmployerItemFormValues>(() =>
+    // BOQ 93-94 birebir: hiç grup yoksa form doğrudan "+ Yeni Grup" seçili
+    // açılır — kullanıcı boş bir açılırla baş başa bırakılmaz.
+    groups.length > 0 ? EMPTY_VALUES : { ...EMPTY_VALUES, groupId: NEW_GROUP_OPTION },
+  );
+  /**
+   * Yaratılmış ama listeye (kalem sorgusu) HENÜZ yansımamış grup. Açılıra
+   * geçici seçenek olarak eklenir: tazeleme gelene kadar `values.groupId`
+   * hiçbir `<option>`la eşleşmezse tarayıcı seçimi boş gösterirdi.
+   */
+  const [createdGroup, setCreatedGroup] = useState<{ id: string; name: string } | null>(null);
   const [goToDistribution, setGoToDistribution] = useState(true); // 241 · işaretli
   const [formError, setFormError] = useState<string | null>(null);
 
   const groupRef = useRef<HTMLSelectElement>(null);
+  const groupNameRef = useRef<HTMLInputElement>(null);
   const codeRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
   const unitRef = useRef<HTMLSelectElement>(null);
   const quantityRef = useRef<HTMLInputElement>(null);
   const unitPriceRef = useRef<HTMLInputElement>(null);
   const sortOrderRef = useRef<HTMLInputElement>(null);
+
+  const isNewGroup = values.groupId === NEW_GROUP_OPTION;
+  const isPending = createGroup.isPending || createItem.isPending;
+  // Yaratılmış grup listeye düştüyse geçici seçenek tekrarlanmaz.
+  const pendingGroupOption =
+    createdGroup && !groups.some((group) => group.id === createdGroup.id) ? createdGroup : null;
 
   const selectedGroup = groups.find((group) => group.id === values.groupId) ?? null;
   // 126 · mockup'ın "11"i GÖSTERMELİKtir: sıra GRUP İÇİNDE hesaplanır (127).
@@ -109,6 +139,7 @@ export function EmployerItemFormModal({
   function focusField(field: string) {
     const map: Record<string, { focus: () => void } | null | undefined> = {
       group: groupRef.current,
+      groupName: groupNameRef.current,
       code: codeRef.current,
       description: descriptionRef.current,
       unit: unitRef.current,
@@ -128,10 +159,42 @@ export function EmployerItemFormModal({
     }
     setFormError(null);
 
+    // ── 1. adım · gerekiyorsa GRUP (BOQ 189-203 deseni) ──────────────────
+    let targetGroupId = values.groupId;
+    let groupJustCreated = false;
+    if (isNewGroup) {
+      try {
+        const created = await createGroup.mutateAsync({
+          name: values.groupName.trim(),
+          sort_order: nextSortOrder(groups.map((group) => group.sort_order)),
+        });
+        targetGroupId = created.id;
+        groupJustCreated = true;
+        setCreatedGroup({ id: created.id, name: created.name });
+        // 🔴 ŞEF KARARI (F-POZGRUP K3): grup YARATILDIKTAN sonra seçim
+        // sentinel'de BIRAKILMAZ, gerçek id'ye çekilir. Sentinel'de kalsaydı
+        // kalem isteği patladığında kullanıcının "tekrar dene"si İKİNCİ bir
+        // aynı adlı grup yaratırdı. Bu aynı zamanda "grup açılırda seçili
+        // kalır" şartını da karşılar.
+        setValues((prev) => ({ ...prev, groupId: created.id }));
+      } catch (err) {
+        setFormError(backendErrorMessage(err));
+        return;
+      }
+    }
+
+    // ── 2. adım · KALEM ──────────────────────────────────────────────────
     try {
-      await createItem.mutateAsync(buildEmployerItemBody(values, defaultSortOrder));
+      await createItem.mutateAsync(
+        buildEmployerItemBody({ ...values, groupId: targetGroupId }, defaultSortOrder),
+      );
     } catch (err) {
-      setFormError(backendErrorMessage(err));
+      // İki adımlı yazmada ikinci istek patlarsa grup SİLİNMEZ ve form
+      // kapanmaz — kullanıcının yazdığı hiçbir alan kaybolmaz (BOQ 226-230).
+      const message = backendErrorMessage(err);
+      setFormError(
+        groupJustCreated ? `Grup oluşturuldu, kalem eklenemedi: ${message}` : message,
+      );
       return;
     }
 
@@ -154,15 +217,15 @@ export function EmployerItemFormModal({
               size="lg"
               label={TEXT.goToDistribution}
               checked={goToDistribution}
-              disabled={createItem.isPending}
+              disabled={isPending}
               onChange={(event) => setGoToDistribution(event.target.checked)}
               data-testid="eci-go-distribution"
             />
           </span>
-          <Button variant="secondary" onClick={onClose} disabled={createItem.isPending}>
+          <Button variant="secondary" onClick={onClose} disabled={isPending}>
             {TEXT.cancel}
           </Button>
-          <Button variant="primary" onClick={handleSubmit} disabled={createItem.isPending}>
+          <Button variant="primary" onClick={handleSubmit} disabled={isPending}>
             {TEXT.submit}
           </Button>
         </>
@@ -198,9 +261,29 @@ export function EmployerItemFormModal({
                         {group.name}
                       </option>
                     ))}
+                    {pendingGroupOption && (
+                      <option value={pendingGroupOption.id}>{pendingGroupOption.name}</option>
+                    )}
+                    {/* ONAYLI SAPMA — bkz. dosya başı notu. */}
+                    <option value={NEW_GROUP_OPTION}>{TEXT.newGroupOption}</option>
                   </Select>
                 )}
               </Field>
+              {/* Alan sırası korunur: yeni alan grup açılırının HEMEN ardında,
+                  "Poz No"dan ÖNCE (BOQ 329-340 deseni). */}
+              {isNewGroup && (
+                <Field label={TEXT.groupName} required hint={TEXT.groupNameHint}>
+                  {(control) => (
+                    <Input
+                      {...control}
+                      ref={groupNameRef}
+                      maxLength={MAX_LENGTH.groupName}
+                      value={values.groupName}
+                      onChange={(event) => set("groupName", event.target.value)}
+                    />
+                  )}
+                </Field>
+              )}
             </div>
             <div className="pif-grid pif-grid--code">
               <Field label={TEXT.code} required hint={TEXT.codeHint}>
@@ -359,7 +442,9 @@ export function EmployerItemFormModal({
               {/* Grup değeri mockup 208'de mono DEĞİL; 209-211 mono. */}
               <SummaryRow
                 label={TEXT.summaryGroup}
-                value={selectedGroup?.name ?? ""}
+                // Yeni grup seçiliyken özet, yazılmakta olan grup ADINI
+                // gösterir — henüz kaydı olmayan grup için boş satır basılmaz.
+                value={isNewGroup ? values.groupName.trim() : (selectedGroup?.name ?? "")}
                 mono={false}
               />
               <SummaryRow label={TEXT.code} value={values.code.trim()} />
