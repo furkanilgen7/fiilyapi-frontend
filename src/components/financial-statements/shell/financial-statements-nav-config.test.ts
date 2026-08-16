@@ -132,15 +132,15 @@ describe("kırık link koruması — yüzey nav bekçisine KAYDEDİLİR", () => 
   );
 
   /**
-   * 🔴 T2 KAPSAMI: bu dilim `/mali-tablolar/bilanco` EKRANINI ve `/mali-tablolar`
-   * KÖPRÜ rotasını yazar (kök rota, `bilanco` klasörü doğduğu anda catch-all'ın
-   * kapsamından çıktığı için ZORUNLUdur — bkz. o dosyanın başlığı).
+   * 🔴 T3'te BOŞALDI. T2 burada `/mali-tablolar/nakit-akisi`i bekliyordu
+   * (o gün hâlâ `[...slug]` catch-all'ına, yani ComingSoon'a düşüyordu);
+   * bu dilim rotayı YAZDI ve marker aynı commit'te kaldırıldı.
    *
-   * `Nakit Akışı` KARDEŞ bir görevin (T3) dosyasıdır; bugün hâlâ `[...slug]`
-   * catch-all'ına (ComingSoon) düşer. O görev rotasını yazınca bu küme
-   * BOŞALMALIDIR — küme sayılıdır, sessizce büyüyemez.
+   * Küme SAYILIDIR: sessizce büyüyemez, çünkü aşağıdaki iddia beklenen
+   * kümeyi ölçülenle TAM eşitler. Devre dışı `Gelir Tablosu` (BL:28) bu
+   * kümeye GİRMEZ — o bir `link` değildir, hiç çözümlenmez.
    */
-  const PENDING_ROUTE_HREFS = new Set(["/mali-tablolar/nakit-akisi"]);
+  const PENDING_ROUTE_HREFS = new Set<string>([]);
 
   it("hiçbir bağlantı dinamik bir segmente ya da hiçliğe düşmez", () => {
     for (const item of LINKS) {
@@ -156,6 +156,12 @@ describe("kırık link koruması — yüzey nav bekçisine KAYDEDİLİR", () => 
     // Bir sekme LİNK'e çevrilip rotası açılmazsa kullanıcı "açıldı" sanılan
     // boş bir ComingSoon ekranı görür (F-MU2 dersi).
     expect(resolveHrefIn(ROUTE_TREE, "/mali-tablolar/bilanco", false)).toEqual({
+      kind: "static",
+    });
+    // 🔴 T3'ün açtığı yol: GERÇEK statik rota olduğu KANITLANIR. `link`e
+    // çevrilip rotası açılmasaydı kullanıcı "açıldı" sanılan boş bir
+    // ComingSoon ekranı görürdü (F-MU2 dersi).
+    expect(resolveHrefIn(ROUTE_TREE, "/mali-tablolar/nakit-akisi", false)).toEqual({
       kind: "static",
     });
     expect(resolveHrefIn(ROUTE_TREE, "/muhasebe", false)).toEqual({ kind: "static" });

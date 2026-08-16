@@ -160,6 +160,15 @@ const MODULE_LABELS: Record<string, string> = {
   // yüzeyi işaret ederdi. Uç açıklaması kapsam dışını adıyla sayıyor:
   // "`PDF` düğmesi (BL:38 — düğme dışında hiçbir şey söylemiyor)".
   balance_sheet_export: "Bilanço dışa aktarma ucu henüz açılmadı (PDF)",
+  // F-MT T3 (NA:38 "PDF") — AYNI K6 kuralı: EKRAN BAŞINA ayrı anahtar.
+  // `balance_sheet_export` adıyla "bilanço" der ve nakit akışı ekranında
+  // YANLIŞ yüzeyi işaret ederdi.
+  cash_flow_statement_export: "Nakit akış tablosu dışa aktarma ucu henüz açılmadı (PDF)",
+  // F-MT T3 · K8 (NA:143-159 "3 Aylık Projeksiyon") — uç açıklaması kartı
+  // ADIYLA kapsam dışına koyuyor: ileriye dönük tahmin, algoritması mockup'ta
+  // YOK, satır açıklamaları ("Hakediş + bordro") serbest metin. Üç satır
+  // UYDURULMAZ; kart yerinde durur, gerekçe BU anahtardan türer.
+  cash_flow_projection: "Nakit akışı projeksiyonu henüz hesaplanmıyor (tahmin ucu yok)",
   // F-MU2 T3 (KDV:48 "XML İndir" · KDV:49 "GİB'e Gönder") — gerekçe metni
   // `accounting-nav-config.ts:72`den gelen KARARIN aynısıdır: e-Fatura/GİB
   // entegrasyonu kullanıcı kararıyla ertelendi. Beyannameyi XML'e yazmak da
