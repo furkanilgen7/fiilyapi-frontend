@@ -51,14 +51,10 @@ export const ACCOUNTING_SUB_NAV: readonly AccountingNavItem[] = [
   { kind: "link", label: "Yevmiye Defteri", href: "/muhasebe", exact: true },
   // HP:32
   { kind: "link", label: "Hesap Planı", href: "/muhasebe/hesap-plani", exact: false },
-  // HP:33 — MU-2 canlıda (2026-08-15): `GET /trial-balance` ucu HAZIR ve BFF
-  // kökü açıldı; eksik olan yalnız EKRAN. Gerekçe bu yüzden "backend yok"
-  // DEMEZ — kullanıcıya doğru bilgiyi verir.
-  {
-    kind: "disabled",
-    label: "Mizan",
-    reason: "Mizan backend'i MU-2 ile canlıda; ekranı sonraki dilimde açılacak.",
-  },
+  // HP:33 — F-MU2 ile EKRAN da açıldı: satır devre-dışıdan LİNK'e döndü.
+  // `exact: false` — alt yol yoktur ama kural kardeşleriyle aynıdır; kök
+  // (`/muhasebe`) `exact: true` olduğu için bu yol onu YAKMAZ (F-SD dersi).
+  { kind: "link", label: "Mizan", href: "/muhasebe/mizan", exact: false },
   // HP:34
   {
     kind: "disabled",
@@ -71,13 +67,8 @@ export const ACCOUNTING_SUB_NAV: readonly AccountingNavItem[] = [
     label: "e-Fatura",
     reason: "e-Fatura/GİB entegrasyonu ertelendi (kullanıcı kararı).",
   },
-  // HP:36 — MU-2 canlıda: `GET /vat-return` ucu HAZIR ve BFF kökü açıldı;
-  // eksik olan yalnız EKRAN (Mizan ile aynı gerekçe).
-  {
-    kind: "disabled",
-    label: "KDV Beyanı",
-    reason: "KDV Beyanı backend'i MU-2 ile canlıda; ekranı sonraki dilimde açılacak.",
-  },
+  // HP:36 — F-MU2 ile EKRAN da açıldı (Mizan ile aynı gerekçe).
+  { kind: "link", label: "KDV Beyanı", href: "/muhasebe/kdv-beyani", exact: false },
 ];
 
 /**

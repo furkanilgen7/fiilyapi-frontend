@@ -25,25 +25,30 @@ describe("Muhasebe drill nav — HP:29-38 birebir", () => {
     expect(ACCOUNTING_SIBLING_NAV.map((i) => i.label)).toEqual(["Hazine", "Mali Tablolar"]);
   });
 
-  it("yalnız ilk iki alt sekme AKTİFtir, diğer dördü devre dışı", () => {
+  // 🔴 F-MU2: iddia SİLİNMEDİ, YENİ GERÇEĞE TAŞINDI. Mizan ve KDV Beyanı'nın
+  // EKRANLARI açıldı (backend'leri MU-2 ile zaten canlıydı) ⇒ aktif 2 → 4,
+  // devre dışı 4 → 2. Kalan ikisinin gerekçesi DEĞİŞMEDİ.
+  it("DÖRT alt sekme AKTİFtir, kalan ikisi devre dışı", () => {
     const links = ACCOUNTING_SUB_NAV.filter((i) => i.kind === "link");
-    expect(links.map((i) => i.label)).toEqual(["Yevmiye Defteri", "Hesap Planı"]);
-    expect(ACCOUNTING_SUB_NAV.filter((i) => i.kind === "disabled")).toHaveLength(4);
+    expect(links.map((i) => i.label)).toEqual([
+      "Yevmiye Defteri",
+      "Hesap Planı",
+      "Mizan",
+      "KDV Beyanı",
+    ]);
+    expect(ACCOUNTING_SUB_NAV.filter((i) => i.kind === "disabled")).toHaveLength(2);
   });
 });
 
 describe("🔴 devre dışı sekmeler GERÇEK bir gerekçe taşır", () => {
+  // 🔴 F-MU2: harita 4 → 2 girdiye indi. Mizan/KDV artık BAĞLANTIDIR;
+  // kalan ikisinin metni AYNEN durur — F-MU2 onların ucunu getirmedi.
   const REASONS: Record<string, string> = {
-    // MU-2 canlıya çıkınca (2026-08-15) Mizan/KDV gerekçeleri DEĞİŞTİ: backend
-    // artık hazır, eksik olan yalnız ekran. Banka Mutabakatı ve e-Fatura'nın
-    // gerekçesi AYNEN durur — MU-2 onların ucunu getirmedi.
-    Mizan: "Mizan backend'i MU-2 ile canlıda; ekranı sonraki dilimde açılacak.",
     "Banka Mutabakatı": "Banka Mutabakatı'nın backend ucu henüz yok.",
     "e-Fatura": "e-Fatura/GİB entegrasyonu ertelendi (kullanıcı kararı).",
-    "KDV Beyanı": "KDV Beyanı backend'i MU-2 ile canlıda; ekranı sonraki dilimde açılacak.",
   };
 
-  it("dört gerekçe metni BİREBİR sabittir", () => {
+  it("iki gerekçe metni BİREBİR sabittir", () => {
     for (const item of ACCOUNTING_SUB_NAV) {
       if (item.kind !== "disabled") continue;
       expect(item.reason).toBe(REASONS[item.label]);
@@ -53,10 +58,14 @@ describe("🔴 devre dışı sekmeler GERÇEK bir gerekçe taşır", () => {
   it("hiçbir gerekçe İÇİ BOŞ bir cümle değildir", () => {
     // "bu ekran henüz açılmadı" gibi bilgi taşımayan metinler YASAK: gerekçe
     // hangi dilimde/hangi kararla geleceğini söylemek zorundadır.
-    for (const item of ACCOUNTING_SUB_NAV) {
-      if (item.kind !== "disabled") continue;
+    const disabled = ACCOUNTING_SUB_NAV.filter((i) => i.kind === "disabled");
+    // 🔴 Boş küme üzerinde dönen bir `for` HİÇBİR ŞEY kanıtlamaz — kalan iki
+    // öğenin gerçekten var olduğu ÖNCE ölçülür (F-MU2'de dört öğeden ikisi
+    // düştü; sayı denetimi olmasa iddia sessizce körelirdi).
+    expect(disabled).toHaveLength(2);
+    for (const item of disabled) {
       expect(item.reason.length).toBeGreaterThan(20);
-      expect(item.reason).toMatch(/MU-2|backend|ertelendi/);
+      expect(item.reason).toMatch(/backend|ertelendi/);
     }
   });
 });
@@ -75,6 +84,16 @@ describe("🔴 çift aktiflik bekçisi (F-SD T7 dersi)", () => {
 
   it("`/muhasebe` kökünde TEK bir öğe aktiftir", () => {
     expect(activeAccountingNavLabels("/muhasebe")).toEqual(["Yevmiye Defteri"]);
+  });
+
+  // 🔴 F-MU2: bekçi İKİ YENİ YOLA genişletildi. Kök `exact: true` olduğu için
+  // yeni alt yollar onu YAKMAZ; bunu iddia etmek testin işidir.
+  it("`/muhasebe/mizan`de TEK bir öğe aktiftir", () => {
+    expect(activeAccountingNavLabels("/muhasebe/mizan")).toEqual(["Mizan"]);
+  });
+
+  it("`/muhasebe/kdv-beyani`de TEK bir öğe aktiftir", () => {
+    expect(activeAccountingNavLabels("/muhasebe/kdv-beyani")).toEqual(["KDV Beyanı"]);
   });
 
   it("kardeş modül yolunda muhasebe sekmelerinin HİÇBİRİ aktif değildir", () => {
@@ -103,10 +122,16 @@ describe("kırık link koruması", () => {
     }
   });
 
-  it("iki AÇIK sekme GERÇEK statik rotadır (catch-all DEĞİL)", () => {
-    expect(resolveHrefIn(ROUTE_TREE, "/muhasebe", false)).toEqual({ kind: "static" });
-    expect(resolveHrefIn(ROUTE_TREE, "/muhasebe/hesap-plani", false)).toEqual({
-      kind: "static",
-    });
+  // 🔴 F-MU2: 2 → 4. Bir sekme LİNK'e çevrilip rotası açılmazsa catch-all
+  // ComingSoon'a düşer ve kullanıcı "açıldı" sanılan boş bir ekran görür.
+  it("DÖRT AÇIK sekme de GERÇEK statik rotadır (catch-all DEĞİL)", () => {
+    for (const href of [
+      "/muhasebe",
+      "/muhasebe/hesap-plani",
+      "/muhasebe/mizan",
+      "/muhasebe/kdv-beyani",
+    ]) {
+      expect(resolveHrefIn(ROUTE_TREE, href, false), href).toEqual({ kind: "static" });
+    }
   });
 });
