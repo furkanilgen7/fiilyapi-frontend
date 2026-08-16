@@ -32,6 +32,27 @@ test("hakedişler listesi ekrani gorsel", async ({ page }) => {
   await expect(page.getByTestId("pp-kpi-subtitle")).toBeVisible();
   await expect(page.getByText("Kat 6–8 döşeme")).toBeVisible();
 
+  // İKİNCİ BAĞIMSIZ VERİ KAYNAĞI (F-PRJTAB T6 · F-İK dersi): proje süzgeci
+  // hakediş listesinden AYRI bir sorgudan (`useProjects` → GET /projects)
+  // beslenir ve AYRI çözülür. Yalnız hakediş verisini beklemek yetmez —
+  // baseline turu süzgeci "Tüm Projeler"den ibaret, yüklenmemiş hâlde
+  // donmuş yakalayabilir ve o bozuk kare sessizce commit'lenir. Bu yüzden
+  // seçeneklerin TAMAMI ölçülür (fikstür: `PROJECT_FIXTURES`, dört proje;
+  // `GET /projects` süzgeçsiz çağrıldığında tamamlanmış p-4 de döner).
+  const projectFilter = page.getByRole("combobox", { name: "Proje filtresi" });
+  await expect(projectFilter).toBeVisible();
+  await expect(projectFilter.locator("option")).toHaveText([
+    "Tüm Projeler",
+    "Kule A",
+    "Villa B",
+    "Bahçelievler Konut",
+    "Güneşkent B-Blok",
+  ]);
+  // Süzgeçsiz giriş: `project_id` URL'de yok → "Tüm Projeler" seçili basılır.
+  await expect(projectFilter).toHaveValue("");
+  // Hiçbir yüzey yükleme metnini basmıyor.
+  await expect(page.getByText("Yükleniyor…")).toHaveCount(0);
+
   // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("hakedisler-listesi.png", { fullPage: true });
