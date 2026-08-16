@@ -363,7 +363,7 @@ describe("kırpılma / boş / hata / yükleniyor", () => {
  * alanlar `ChartAccountCreate`ten birebir türer ve DÖRTTÜR.
  */
 describe("Hesap diyaloğu (T4)", () => {
-  it("oluşturma: gövde DÖRT alandır, türev alan SIZMAZ", async () => {
+  it("oluşturma: gövde BEŞ alandır, türev alan SIZMAZ", async () => {
     const user = userEvent.setup();
     render(<ChartOfAccountsView />);
     await user.click(screen.getByTestId("hp-create"));

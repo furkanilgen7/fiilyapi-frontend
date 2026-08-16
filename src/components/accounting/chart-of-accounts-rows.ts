@@ -18,7 +18,8 @@ import { formatAmount } from "@/lib/format";
 /**
  * 🔴 **`Tür` ≠ `Durum`.** İkisi de ekranda renkli basılır ve Türkçe'de ikisi de
  * "aktif" okunabilir, ama:
- *   * `Tür` = `account_type`, DÖRT üyeli kapalı bir enum (HP:78/154/192/199);
+ *   * `Tür` = `account_type`, BEŞ üyeli kapalı bir enum (HP:78/154/192/199 +
+ *     `equity` → BL:80, MT-1/KK-1 ile açıldı);
  *   * `Durum` = `is_active`, iki değerli bir KALDIRMA bayrağı (HP:80 nokta).
  *
  * Şema bunu ayrıca yazıyor (`ChartAccountResponse` açıklaması R3). `asset`ın

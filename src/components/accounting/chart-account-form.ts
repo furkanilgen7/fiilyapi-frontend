@@ -10,7 +10,11 @@ import { ACCOUNT_TYPE_LABELS } from "./chart-of-accounts-rows";
  * F-MU1 T4 · Hesap Ekle/Düzenle diyaloğunun SAF katmanı.
  *
  * 🔴 Form mockup'ı YOKTUR (S-FRM kanonu): alanlar `ChartAccountCreate`ten
- * BİREBİR türer ve DÖRTTÜR — `code` · `name` · `account_type` · `is_active`.
+ * BİREBİR türer. Gövde BEŞ alandır — `code` · `name` · `account_type` ·
+ * `is_active` · `is_contra`; ama FORMDA DÖRT KONTROL vardır: `is_contra` için
+ * mockup çizilmemiştir, sunucu varsayılanı (`false`) açıkça gönderilir.
+ * ⚠️ Sonucu bir AÇIK BORÇTUR: kontra hesap (`257` gibi) arayüzden
+ * işaretlenemez → bilanço o hesap kadar dengesiz kalır ve UI'dan düzeltilemez.
  * `balance`/`class_code`/`level` TÜREVDİR (`schemas.py`: `extra="forbid"`
  * yüzünden gövdeye girerlerse **422**), bu yüzden formda salt-okunur bile
  * gösterilmezler: kullanıcı düzenlediğini sanacağı bir sayı görmemelidir.

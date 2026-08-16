@@ -151,8 +151,13 @@ test("hesap ekle diyalogu gorsel", async ({ page }) => {
   await expect(dialog.getByTestId("hp-dialog-save")).toBeDisabled();
   // Kod ipucu (HP:47 biçim gerekçesi) da kadrajda okunur.
   await expect(dialog.getByText("Grup 10 · ana hesap 100 · alt hesap 100.01")).toBeVisible();
-  // Tür seçici DÖRT üyeli kapalı enumu taşır; "Kullanımda" anahtarı AÇIKtır.
-  await expect(dialog.getByTestId("hp-dialog-type").locator("option")).toHaveCount(4);
+  // Tür seçici BEŞ üyeli kapalı enumu taşır; "Kullanımda" anahtarı AÇIKtır.
+  // 🔴 BİLİNÇLİ GÖÇ (MT-1/KK-1 devri, 2026-08-16): iddia DÖRT'ten BEŞ'e taşındı,
+  // gevşetilmedi. `equity` beşinci üye olarak açıldı (kullanıcı kararı). Sayım
+  // iddiası KALIR: enum kapalıdır ve sessizce büyümesi görülmelidir.
+  // ⚠️ Bu satır kırmızıya YALNIZ Linux CI'da döndü — 5. kapı `--grep-invert
+  // "gorsel"` ile bu dosyayı DIŞLAR, dolayısıyla yerelde hiç koşmadı.
+  await expect(dialog.getByTestId("hp-dialog-type").locator("option")).toHaveCount(5);
   await expect(dialog.getByTestId("hp-dialog-active")).toBeChecked();
   await expect(dialog.getByTestId("hp-dialog-error")).toHaveCount(0);
   await expectNoLoadingText(page);
