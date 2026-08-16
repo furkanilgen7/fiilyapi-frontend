@@ -63,6 +63,17 @@ describe("ProjectDetailTabs — rotasi olmayan sekme devre-disi basilir", () => 
     );
   });
 
+  // Not, devre-disi sekmeden TURETILIR (sabit basilmaz): sekme ileride yazilirsa
+  // not da kendiliginden kalkar. Baglantiyi burada kilitliyoruz — ayrisirlarsa
+  // canli bir sekmenin altinda onu yalanlayan bir not kalabilirdi.
+  it("gerekce notu devre-disi sekmenin kendi gerekcesidir (ayrisamaz)", () => {
+    render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} />);
+    const disabled = screen.getByRole("tab", { name: "İş Kalemleri" });
+    const title = disabled.getAttribute("title");
+    expect(title).toBeTruthy();
+    expect(screen.getByTestId("project-tabs-work-items-reason")).toHaveTextContent(title!);
+  });
+
   it("gerekce metninde tipografik sembol yoktur (cıplak glif yasagi)", () => {
     // Ok/onay/uyari gibi semboller fonts.css unicode-range kumelerinde kapsanmaz.
     expect(WORK_ITEMS_TAB_DISABLED_HINT).not.toMatch(/[→✓⚠≠]/u);

@@ -20,6 +20,11 @@ interface TabDef {
    * `written` olmayan sekmede yoktur.
    */
   hrefFor?: (projectId: string) => string;
+  /**
+   * Devre-dışı sekmenin kullanıcıya GÖRÜNEN gerekçesi. Yalnız yazılmamış
+   * sekmede bulunur — gerekçe notu bu alandan TÜRETİLİR, ayrıca yazılmaz.
+   */
+  disabledReason?: string;
 }
 
 /**
@@ -55,7 +60,7 @@ const TABS: TabDef[] = [
     written: true,
     hrefFor: (id) => `/projeler/${encodeURIComponent(id)}`,
   },
-  { label: "İş Kalemleri" },
+  { label: "İş Kalemleri", disabledReason: WORK_ITEMS_TAB_DISABLED_HINT },
   {
     label: "İşveren Hakediş",
     written: true,
@@ -74,6 +79,12 @@ const TABS: TabDef[] = [
 ];
 
 export function ProjectDetailTabs({ projectId, activePath }: ProjectDetailTabsProps) {
+  // Gerekçe notu devre-dışı sekmeden TÜRETİLİR, sabit basılmaz: sekme ileride
+  // yazılırsa (hrefFor + written eklenirse) not da KENDİLİĞİNDEN kalkar.
+  // Sabit basılsaydı, canlı bir sekmenin altında onu yalanlayan bir not
+  // kalırdı ve bekçi bunu göremezdi — bu dilimin düzelttiği çürüme sınıfı.
+  const disabledTab = TABS.find((tab) => !tab.written || !tab.hrefFor);
+
   return (
     <>
       <div className="project-hero__tabs" role="tablist" aria-label="Proje detay sekmeleri">
@@ -88,7 +99,7 @@ export function ProjectDetailTabs({ projectId, activePath }: ProjectDetailTabsPr
                 aria-selected={false}
                 aria-disabled
                 tabIndex={-1}
-                title={WORK_ITEMS_TAB_DISABLED_HINT}
+                title={tab.disabledReason}
                 className="project-hero__tab project-hero__tab--disabled"
               >
                 {tab.label}
@@ -112,9 +123,11 @@ export function ProjectDetailTabs({ projectId, activePath }: ProjectDetailTabsPr
         })}
       </div>
       {/* Devre-dışı sekmenin gerekçesi ekranda GÖRÜNÜR (TreasuryView deseni). */}
-      <p className="project-hero__tab-note" data-testid="project-tabs-work-items-reason">
-        {WORK_ITEMS_TAB_DISABLED_HINT}
-      </p>
+      {disabledTab?.disabledReason ? (
+        <p className="project-hero__tab-note" data-testid="project-tabs-work-items-reason">
+          {disabledTab.disabledReason}
+        </p>
+      ) : null}
     </>
   );
 }
