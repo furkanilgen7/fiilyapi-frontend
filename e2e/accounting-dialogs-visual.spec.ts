@@ -156,8 +156,19 @@ test("hesap ekle diyalogu gorsel", async ({ page }) => {
   // 🔴 Boş formda engel listesi GÖRÜNÜR ve Kaydet KAPALIdır — kadrajın konusu.
   await expect(dialog.getByTestId("hp-dialog-blockers")).toBeVisible();
   await expect(dialog.getByTestId("hp-dialog-save")).toBeDisabled();
-  // Kod ipucu (HP:47 biçim gerekçesi) da kadrajda okunur.
-  await expect(dialog.getByText("Grup 10 · ana hesap 100 · alt hesap 100.01")).toBeVisible();
+  // Kod ipucu da kadrajda okunur.
+  // 🔴 BİLİNÇLİ GÖÇ (F-MUF T2): ipucunun METNİ değişti, iddia GEVŞETİLMEDİ.
+  // Eski metin "Grup 10 · ana hesap 100 · alt hesap 100.01" HP:47'den
+  // türetilmişti; form mockup'ı geldiğinde (`Form - Hesap Ekle.dc.html:76`)
+  // ipucu kendi sözcükleriyle yazıldığı için metin oraya taşındı. Kural
+  // (biçim + "üçüncü kırılım yok") AYNI kaldı, yalnız cümlesi mockup'ın oldu.
+  // 🔑 Bu satır bu turda CI'da KIRMIZI geldi ve dersi kayda geçiriyor: görsel
+  // spec'lerdeki durum iddiaları 5. kapıda (`--grep-invert "gorsel"`) HİÇ
+  // koşmaz, dolayısıyla metin göçü YALNIZ Linux CI'da patlar. Tarama
+  // `toHaveCount`la sınırlı tutulmuştu; `getByText` de taranmalıydı.
+  await expect(
+    dialog.getByText("Biçim: 10 · 100 · 100.01 — üçüncü kırılım desteklenmez"),
+  ).toBeVisible();
   // Tür seçici BEŞ üyeli kapalı enumu taşır; "Kullanımda" anahtarı AÇIKtır.
   // 🔴 BİLİNÇLİ GÖÇ (MT-1/KK-1 devri, 2026-08-16): iddia DÖRT'ten BEŞ'e taşındı,
   // gevşetilmedi. `equity` beşinci üye olarak açıldı (kullanıcı kararı). Sayım
