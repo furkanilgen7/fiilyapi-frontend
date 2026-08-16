@@ -1,0 +1,248 @@
+/* F-MT T2 · Mali Tablolar ekranları. Kanon: projedesign
+   `Mali Tablo - Bilanço.dc.html` (BL). Parantez içi sayılar O dosyanın SATIR
+   numaralarıdır. Prefix `fs`.
+   Mockup'ın üst barı (BL:14-22) ve sol menüsü (BL:24-31) ayrı yüzeylerdir:
+   üst bar UYGULAMA KABUĞUdur (F3 Topbar), sol menü `FinancialStatementsSidebar`
+   olarak `financial-statements-shell.css`te yaşar — bu dosya ikisini de
+   YENİDEN ÇİZMEZ.
+   Palet YALNIZ token'dan gelir (çıplak hex yok); token karşılığı olmayan
+   birkaç ölçü px olarak, BL satır numarasıyla gerekçelendirilerek yazılır
+   (`accounting.css` emsali). */
+
+.fs {
+  animation: var(--anim-fade-up); /* BL:32 */
+}
+
+.fs__eyebrow {
+  font-size: var(--text-xs); /* BL:33 — 12px */
+  color: var(--color-text-subtle);
+  margin-bottom: 6px; /* BL:33 */
+}
+
+.fs__back {
+  color: var(--color-primary); /* BL:33 */
+  text-decoration: none;
+}
+.fs__back:hover {
+  text-decoration: underline;
+}
+
+.fs__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6); /* BL:34 — 24px */
+}
+
+.fs__title {
+  font-size: var(--text-page-title); /* BL:35 — 26/700 */
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+}
+
+.fs__actions {
+  display: flex;
+  gap: 10px; /* BL:36 */
+  align-items: center;
+}
+
+/* Görünür gerekçe / uyarı bantları — sessiz düşüş YOK. */
+.fs-notice {
+  margin-bottom: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: var(--space-2) var(--space-3);
+  line-height: var(--leading-normal);
+}
+.fs-notice--danger {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger);
+}
+
+/* 🔴 K3 — denge banner'ı. BL mockup'ta ÇİZİLMEZ (onaylı sapma); iskelet
+   `mu-banner` emsalinin AYNISIdır: tek bant, İKİ ton. */
+.fs-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-10);
+  border: 1px solid transparent;
+  margin-bottom: var(--space-5);
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+}
+.fs-banner__icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+/* İkonun konturu metinden BİR TON açıktır; `currentColor` bırakılsaydı ikisi
+   aynı renge düşerdi. */
+.fs-banner--ok .fs-banner__icon {
+  color: var(--color-success);
+}
+.fs-banner--off .fs-banner__icon {
+  color: var(--color-danger);
+}
+.fs-banner--ok {
+  background: var(--color-success-tint);
+  border-color: var(--color-success-tint-border);
+  color: var(--color-success-deep);
+}
+/* K3 — dengesiz dalın tonu: aynı iskelet, `--danger` ailesi. İki ton AYNI
+   olamaz; eşitlerse banner denge bilgisini TAŞIMAZ. */
+.fs-banner--off {
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger);
+  color: var(--color-danger-strong);
+}
+
+/* BL:42 — İKİ SÜTUNLU ızgara, 20px boşluk. */
+.fs-sides {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5); /* BL:42 — 20px */
+}
+
+/* BL:44 · BL:66 — taraf kartı. */
+.fs-side {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* BL:44 */
+  overflow: hidden; /* BL:44 — koyu toplam satırı köşeleri taşmasın */
+  box-shadow: var(--shadow-card); /* BL:44 */
+}
+
+/* BL:45 · BL:67 — başlık şeridi: altında 2px'lik VURGU çizgisi. */
+.fs-side__head {
+  padding: 14px var(--space-5); /* BL:45 — 14px 20px */
+  border-bottom: 2px solid transparent;
+}
+.fs-side__title {
+  font-size: var(--text-form-card-title); /* BL:46 — 14/700 */
+  font-weight: var(--weight-bold);
+}
+
+.fs-side__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* BL:50 · BL:56 — bölüm bandı. */
+.fs-side__band-cell {
+  padding: 9px var(--space-4); /* BL:50 */
+  background: var(--color-surface-2); /* BL:50 */
+  border-bottom: 1px solid var(--color-border); /* BL:50 */
+  font-size: var(--text-small); /* BL:50 — 11/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px; /* BL:50 */
+  text-align: left;
+}
+
+/* BL:51-54 — kalem satırı. */
+.fs-side__line {
+  border-bottom: 1px solid var(--color-divider); /* BL:51 */
+}
+.fs-side__line-label {
+  padding: 9px var(--space-5); /* BL:51 — 9px 20px */
+  font-size: var(--text-body); /* BL:51 — 13/400 */
+  font-weight: var(--weight-regular);
+  color: var(--color-text-secondary);
+  text-align: left;
+}
+.fs-side__line-value {
+  padding: 9px var(--space-4); /* BL:51 */
+  text-align: right; /* BL:51 */
+  font-size: var(--text-body); /* BL:51 — 13/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  font-family: var(--font-mono); /* BL:51 */
+}
+
+/* BL:55 · BL:59 — ara toplam. */
+.fs-side__subtotal {
+  border-bottom: 2px solid var(--color-border); /* BL:55 */
+}
+.fs-side__subtotal-label {
+  padding: 11px var(--space-4); /* BL:55 */
+  font-size: var(--text-body); /* BL:55 — 13/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  text-align: left;
+}
+.fs-side__subtotal-value {
+  padding: 11px var(--space-4); /* BL:55 */
+  text-align: right;
+  font-size: var(--text-form-card-title); /* BL:55 — 14/700 */
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+}
+
+/* BL:60 · BL:85 — genel toplam: TAM GENİŞLİK, KOYU zemin, beyaz metin. */
+.fs-side__total-label {
+  padding: 13px var(--space-4); /* BL:60 */
+  font-size: var(--text-form-card-title); /* BL:60 — 14/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-on-brand); /* BL:60 */
+  text-align: left;
+}
+.fs-side__total-value {
+  padding: 13px var(--space-4); /* BL:60 */
+  text-align: right;
+  font-size: 16px; /* BL:60 — 16/700; token karşılığı yok */
+  font-weight: var(--weight-bold);
+  color: var(--color-on-brand);
+  font-family: var(--font-mono);
+}
+
+/* 🔴 İKİ TON. AKTİF mavi (BL:44-63), PASİF yeşil (BL:66-88). Fark YALNIZ
+   vurgu rengidir; ölçü/yapı kuralları yukarıda TEK KEZ yazılır.
+   Seçiciler `.fs-side--<ton>` ile nitelenir, böylece yukarıdaki temel
+   kurallarla ÖZGÜLLÜK EŞİTLİĞİ doğmaz (F-BLG dersi: eşitlikte kazanan yalnız
+   demet sırasıdır). */
+.fs-side--assets .fs-side__head {
+  background: var(--color-nav-active-bg); /* BL:45 */
+  border-bottom-color: var(--color-primary); /* BL:45 */
+}
+.fs-side--assets .fs-side__title {
+  color: var(--color-primary-hover); /* BL:46 */
+}
+.fs-side--assets .fs-side__subtotal-label,
+.fs-side--assets .fs-side__subtotal-value {
+  background: var(--color-info-tint); /* BL:55 */
+}
+.fs-side--assets .fs-side__subtotal-value {
+  color: var(--color-primary); /* BL:55 */
+}
+.fs-side--assets .fs-side__total-label,
+.fs-side--assets .fs-side__total-value {
+  background: var(--color-primary); /* BL:60 */
+}
+
+.fs-side--liabilities .fs-side__head {
+  background: var(--color-success-tint); /* BL:67 */
+  border-bottom-color: var(--color-success); /* BL:67 */
+}
+.fs-side--liabilities .fs-side__title {
+  color: var(--color-success-deep); /* BL:68 */
+}
+.fs-side--liabilities .fs-side__subtotal-label,
+.fs-side--liabilities .fs-side__subtotal-value {
+  background: var(--color-success-tint); /* BL:76 */
+}
+.fs-side--liabilities .fs-side__subtotal-value {
+  color: var(--color-success); /* BL:76 */
+}
+.fs-side--liabilities .fs-side__total-label,
+.fs-side--liabilities .fs-side__total-value {
+  background: var(--color-success); /* BL:85 */
+}

@@ -155,6 +155,11 @@ const MODULE_LABELS: Record<string, string> = {
   // Tek metin iki düğmeyi birden karşılar: ikisinin de eksiği AYNI şeydir
   // (mizanın hiçbir dışa aktarma ucu yok), biçim farkı değil.
   trial_balance_export: "Mizan dışa aktarma ucu henüz açılmadı (Excel de PDF de)",
+  // F-MT T2 (BL:38 "PDF") — AYNI K6 kuralı: EKRAN BAŞINA ayrı anahtar.
+  // `trial_balance_export` adıyla "mizan" der ve bilanço ekranında YANLIŞ
+  // yüzeyi işaret ederdi. Uç açıklaması kapsam dışını adıyla sayıyor:
+  // "`PDF` düğmesi (BL:38 — düğme dışında hiçbir şey söylemiyor)".
+  balance_sheet_export: "Bilanço dışa aktarma ucu henüz açılmadı (PDF)",
   // F-MU2 T3 (KDV:48 "XML İndir" · KDV:49 "GİB'e Gönder") — gerekçe metni
   // `accounting-nav-config.ts:72`den gelen KARARIN aynısıdır: e-Fatura/GİB
   // entegrasyonu kullanıcı kararıyla ertelendi. Beyannameyi XML'e yazmak da
