@@ -149,6 +149,17 @@ const MODULE_LABELS: Record<string, string> = {
   // (muhasebe kökünde HİÇBİR dışa aktarma ucu yoktur) ama her ekran kendi
   // düğmesinin gerekçesini okur.
   chart_of_accounts_export: "Hesap planı dışa aktarma ucu henüz açılmadı",
+  // F-MU2 T2 (MZ:48 "Excel" · MZ:49 "PDF") — K6: EKRAN BAŞINA ayrı anahtar.
+  // `accounting_export` "yevmiye defteri" der, `chart_of_accounts_export`
+  // "hesap planı" — ikisi de mizan ekranında YANLIŞ yüzeyi işaret ederdi.
+  // Tek metin iki düğmeyi birden karşılar: ikisinin de eksiği AYNI şeydir
+  // (mizanın hiçbir dışa aktarma ucu yok), biçim farkı değil.
+  trial_balance_export: "Mizan dışa aktarma ucu henüz açılmadı (Excel de PDF de)",
+  // F-MU2 T3 (KDV:48 "XML İndir" · KDV:49 "GİB'e Gönder") — gerekçe metni
+  // `accounting-nav-config.ts:72`den gelen KARARIN aynısıdır: e-Fatura/GİB
+  // entegrasyonu kullanıcı kararıyla ertelendi. Beyannameyi XML'e yazmak da
+  // GİB'e göndermek de O entegrasyonun parçasıdır.
+  vat_return_gib: "e-Fatura/GİB entegrasyonu ertelendi (kullanıcı kararı)",
 };
 
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";

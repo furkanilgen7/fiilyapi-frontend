@@ -7,6 +7,17 @@ import { shiftPeriod, type Period } from "./accounting-labels";
 interface PeriodPickerProps {
   period: Period;
   onChange: (period: Period) => void;
+  /**
+   * F-MU2 · Gezginin GÖRÜNEN etiketi. Varsayılan bugünkü davranıştır
+   * (`formatPeriod` — tek ay), bu yüzden mevcut çağıranlar PİKSEL bazında
+   * değişmez.
+   *
+   * 🔴 Neden opsiyonel bir prop: Mizan'ın penceresi BİRİKİMLİDİR (MZ:45
+   * `Ocak–Temmuz 2026`) — aynı `year`/`month` çifti orada bir ARALIĞI
+   * adlandırır. Etiketi bileşenin içinde dallandırmak, gezgini çağıranın
+   * anlamını bilmek zorunda bırakırdı.
+   */
+  label?: string;
 }
 
 /**
@@ -17,8 +28,8 @@ interface PeriodPickerProps {
  * bekçisinin yasak sınıfında (`⚠ ✓ ✗`) DEĞİLLER, ama okuyucuya anlamlarını
  * `aria-label` söyler.
  */
-export function PeriodPicker({ period, onChange }: PeriodPickerProps) {
-  const label = formatPeriod(period.year, period.month);
+export function PeriodPicker({ period, onChange, label }: PeriodPickerProps) {
+  const text = label ?? formatPeriod(period.year, period.month);
   return (
     <div className="mu-period" data-testid="mu-period">
       <button
@@ -31,7 +42,7 @@ export function PeriodPicker({ period, onChange }: PeriodPickerProps) {
         &lsaquo;
       </button>
       <span className="mu-period__label" data-testid="mu-period-label">
-        {label}
+        {text}
       </span>
       <button
         type="button"

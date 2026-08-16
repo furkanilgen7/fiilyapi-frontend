@@ -9295,6 +9295,25 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       return send(200, body);
     }
 
+    // --- F-MU2 · MU-2 salt-okur uçları ------------------------------------
+    // 🔴 Fikstürler DONMUŞ HARİTALARDIR (dosyanın sonunda), `accountingState`ten
+    // TÜRETİLMEZ. Gerekçe: yazma akışları HAZİRAN'da koşar (mutasyon adası) ve
+    // KDV ekranının VARSAYILAN dönemi de Haziran'dır (beyanname önceki ayın
+    // beyanıdır). Türetilseydi bir fiş oluşturma testi, KDV karesini
+    // `fullyParallel` altında sessizce oynatırdı. Bekçisi
+    // `accounting-reports.spec.ts`tedir.
+    if (method === "GET" && path === "/trial-balance") {
+      const year = Number(parsed.searchParams.get("year"));
+      const month = Number(parsed.searchParams.get("month"));
+      return send(200, trialBalanceFixture(year, month));
+    }
+
+    if (method === "GET" && path === "/vat-return") {
+      const year = Number(parsed.searchParams.get("year"));
+      const month = Number(parsed.searchParams.get("month"));
+      return send(200, vatReturnFixture(year, month));
+    }
+
     return send(404, { detail: "not found" });
   });
 
@@ -10171,4 +10190,217 @@ function applyJournalLines(
   entry.total_debit = totalDebit.toFixed(2);
   entry.total_credit = totalCredit.toFixed(2);
   return {};
+}
+
+// --- F-MU2 T5 · Mizan + KDV fikstürleri ----------------------------------
+// Bu blok dosyanın SONUNA eklendi (paralel dallarla birleştirme çakışmasını
+// en aza indirmek için; F-FAT2 emsali). Modül değerlendirmesi
+// `startMockBackend` çağrısından ÖNCE biter.
+//
+// 🔴 YANIT GÖVDELERİ ŞEMAYLA ANOTASYONLUDUR: mock ↔ `schema.d.ts` kayması
+// `pnpm typecheck`te patlar (F-SA kanonu) — sessizce eskiyen bir fikstür,
+// gerçek uçla uyuşmayan bir kareyi baseline'a sokardı.
+
+type MockTrialBalance = components["schemas"]["TrialBalanceResponse"];
+type MockTrialBalanceRow = components["schemas"]["TrialBalanceRow"];
+type MockTrialBalanceTotals = components["schemas"]["TrialBalanceTotals"];
+type MockVatReturn = components["schemas"]["VatReturnResponse"];
+
+/** Satır tohumu — kapanış İKİLİSİ tohumdan TÜRETİLİR, elle yazılmaz. */
+interface TrialBalanceSeed {
+  readonly code: string;
+  readonly name: string;
+  readonly openingDebit?: number;
+  readonly openingCredit?: number;
+  readonly periodDebit?: number;
+  readonly periodCredit?: number;
+}
+
+/**
+ * 🔴 Kapanış NET'tir: `net = (açılış borç − açılış alacak) + (dönem borç −
+ * dönem alacak)`; pozitifse BORÇ tarafı, negatifse ALACAK tarafı dolar, öbürü
+ * `0.00` kalır. Elle yazılsaydı fikstür kendi içinde çelişebilir ve ekranın
+ * "satır-içi aritmetik" iddiasını sahte kılardı.
+ *
+ * `period_*` BRÜT kalır (ikisi birden dolu olabilir) — mockup MZ:85-86'nın
+ * kanıtladığı ayrım budur.
+ */
+function trialBalanceRow(seed: TrialBalanceSeed): MockTrialBalanceRow {
+  const openingDebit = seed.openingDebit ?? 0;
+  const openingCredit = seed.openingCredit ?? 0;
+  const periodDebit = seed.periodDebit ?? 0;
+  const periodCredit = seed.periodCredit ?? 0;
+  const net = openingDebit - openingCredit + periodDebit - periodCredit;
+  return {
+    account_id: `tb-${seed.code}`,
+    account_code: seed.code,
+    account_name: seed.name,
+    opening_debit: openingDebit.toFixed(2),
+    opening_credit: openingCredit.toFixed(2),
+    period_debit: periodDebit.toFixed(2),
+    period_credit: periodCredit.toFixed(2),
+    closing_debit: (net > 0 ? net : 0).toFixed(2),
+    closing_credit: (net < 0 ? -net : 0).toFixed(2),
+  };
+}
+
+/** Altı kolonun AYRI toplamı (MZ:161-171 `GENEL TOPLAM`). */
+function trialBalanceTotals(rows: readonly MockTrialBalanceRow[]): MockTrialBalanceTotals {
+  const sum = (pick: (row: MockTrialBalanceRow) => string) =>
+    rows.reduce((total, row) => total + Number(pick(row)), 0).toFixed(2);
+  return {
+    opening_debit: sum((row) => row.opening_debit),
+    opening_credit: sum((row) => row.opening_credit),
+    period_debit: sum((row) => row.period_debit),
+    period_credit: sum((row) => row.period_credit),
+    closing_debit: sum((row) => row.closing_debit),
+    closing_credit: sum((row) => row.closing_credit),
+  };
+}
+
+function trialBalance(year: number, month: number, seeds: readonly TrialBalanceSeed[]): MockTrialBalance {
+  const rows = seeds.map(trialBalanceRow);
+  const totals = trialBalanceTotals(rows);
+  return {
+    year,
+    month,
+    // 🔴 Denge SUNUCUNUN kararıdır ve TOPLAMLARDAN türer — fikstür bunu elle
+    // `true`ya sabitleseydi, ekranın dengesiz dalı hiç ölçülemezdi.
+    is_balanced: totals.closing_debit === totals.closing_credit,
+    rows,
+    totals,
+  };
+}
+
+/**
+ * 📅 TEMMUZ 2026 — DENGELİ mizan (Mizan ekranının varsayılan dönemi,
+ * `ACCOUNTING_READ_TIME` ile aynı ay).
+ *
+ * 🔴 K3: mockup'ın sekiz satırı DENGESİZDİR (ölçüldü: kapanış toplamları
+ * 21.729.500 / 27.466.500 iken tfoot ikisine de 47.284.520 yazıyor; öbür dört
+ * toplam ise satırlarla TUTUYOR). Yani mockup 8 hesaplık EKSİK BİR KESİTtir ve
+ * tasarım niyeti — tfoot'un iki kapanışı EŞİT basması — DENGELİ mizandır.
+ * Fikstür bu yüzden mockup'ın rakamlarını KOPYALAMAZ: yapı, sütun semantiği ve
+ * satır sayısı mertebesi alınır, eksik kalan 5.737.000'lik borç tarafı
+ * `253 Tesis, Makine ve Cihazlar` satırıyla tamamlanır.
+ */
+const TRIAL_BALANCE_JULY_SEEDS: readonly TrialBalanceSeed[] = [
+  // Açılış NET borç + dönem BRÜT (İKİ taraf dolu) — MZ:80-89.
+  { code: "100", name: "Kasa", openingDebit: 180_000, periodDebit: 2_640_000, periodCredit: 2_535_200 },
+  { code: "102", name: "Bankalar", openingDebit: 1_200_000, periodDebit: 12_840_000, periodCredit: 10_075_300 },
+  { code: "120", name: "Alıcılar", openingDebit: 3_200_000, periodDebit: 24_870_500, periodCredit: 19_670_500 },
+  { code: "150", name: "İlk Madde ve Malzeme", openingDebit: 1_800_000, periodDebit: 8_440_000, periodCredit: 7_000_000 },
+  // K3 — mockup'ın eksik bıraktığı borç tarafı.
+  { code: "253", name: "Tesis, Makine ve Cihazlar", periodDebit: 5_737_000 },
+  // Açılış NET alacak + dönem BRÜT + kapanış NET ALACAK — MZ:120-129.
+  { code: "320", name: "Satıcılar", openingCredit: 840_000, periodDebit: 6_120_000, periodCredit: 7_464_000 },
+  // Açılışı HİÇ olmayan hesap: dört hücre birden `—` — MZ:130-139.
+  { code: "391", name: "Hesaplanan KDV", periodCredit: 412_000 },
+  { code: "600", name: "Yurt İçi Satışlar", periodCredit: 24_870_500 },
+  { code: "730", name: "Genel Üretim Giderleri", periodDebit: 5_840_000 },
+];
+
+/**
+ * 📅 OCAK 2026 — DENGESİZ mizan (K2'nin çizilmemiş dalı; `ACCOUNTING_EMPTY_TIME`
+ * ile aynı ay). Yevmiye defterinin BOŞ dönemiyle çakışmaz: o kare `/muhasebe`
+ * kökündedir ve defter/özet/fiş uçlarına bakar, `/trial-balance`e DEĞİL.
+ *
+ * Kapanış toplamları 140.000 ↔ 280.000 ⇒ `is_balanced` YANLIŞ, fark 140.000.
+ */
+const TRIAL_BALANCE_JANUARY_SEEDS: readonly TrialBalanceSeed[] = [
+  { code: "100", name: "Kasa", openingDebit: 50_000, periodDebit: 120_000, periodCredit: 30_000 },
+  { code: "320", name: "Satıcılar", openingCredit: 20_000, periodCredit: 60_000 },
+  { code: "600", name: "Yurt İçi Satışlar", periodCredit: 200_000 },
+];
+
+/** `(yıl, ay)` → mizan. Anahtar dışındaki her dönem BOŞ ve dengelidir. */
+export function trialBalanceFixture(year: number, month: number): MockTrialBalance {
+  if (year === 2026 && month === 7) return trialBalance(year, month, TRIAL_BALANCE_JULY_SEEDS);
+  if (year === 2026 && month === 1) return trialBalance(year, month, TRIAL_BALANCE_JANUARY_SEEDS);
+  return trialBalance(year, month, []);
+}
+
+/**
+ * KDV beyanının vadesi: İZLEYEN ayın 28'i (mockup KDV:45 Haziran ↔ :68
+ * `28.07.2026`). Fatura verisine DEĞİL takvime bağlıdır — boş dönemde bile
+ * doludur (şema notu).
+ */
+function vatDueDate(year: number, month: number): string {
+  const dueYear = month === 12 ? year + 1 : year;
+  const dueMonth = month === 12 ? 1 : month + 1;
+  return `${dueYear}-${String(dueMonth).padStart(2, "0")}-28`;
+}
+
+/**
+ * 🔴 DONMUŞ HARİTA — `accountingState`ten TÜRETİLMEZ.
+ *
+ * Gerekçe ölçülmüştür: KDV ekranının varsayılan dönemi ÖNCEKİ AYDIR ve okuma
+ * saatinde (Temmuz 2026) bu HAZİRAN'a düşer — yani tam da yazma akışlarının
+ * koştuğu MUTASYON ADASINA. Fikstür fişlerden türetilseydi, bir "fiş oluştur"
+ * testi `fullyParallel` altında KDV karesini oynatırdı ve kimse nedenini
+ * bulamazdı. Bekçisi `accounting-reports.spec.ts`te: mutasyondan ÖNCE ve
+ * SONRA alınan yanıt BİREBİR aynı olmalıdır.
+ */
+const VAT_RETURN_FIXTURES: readonly MockVatReturn[] = [
+  // 📅 HAZİRAN 2026 — ÖDENECEK dalı (mockup dalı; okuma saatinin varsayılanı).
+  {
+    year: 2026,
+    month: 6,
+    due_date: "2026-07-28",
+    // İki oran satırı: `Tablo 1` çok oranlı dönemi de basabilmeli.
+    taxable_rows: [
+      { rate: "20.00", base: "4120000.00", vat: "824000.00" },
+      { rate: "10.00", base: "1000000.00", vat: "100000.00" },
+    ],
+    // 🔴 SIFIR DEĞİL: sıfırken "istisna matrahı toplama dâhil mi" sorusu
+    // AYIRT EDİLEMEZ (iki okuma da aynı sayıyı verir). Matrah toplamı bu
+    // fikstürde 4.120.000 + 1.000.000 + 500.000 = 5.620.000'dir.
+    exempt_base: "500000.00",
+    calculated_vat: "924000.00",
+    // 🔴 Sunucu TEK satır döner (`vat_return.py:125`); mockup'ın Mal/Hizmet
+    // ayrımının veri modelinde karşılığı YOKTUR — fikstür de uydurmaz.
+    deductions: [{ source: "Alışlar", base: "2060500.00", vat: "412000.00" }],
+    deductible_vat: "412000.00",
+    payable: "512000.00", // 924.000 − 412.000
+    carried_forward: "0.00",
+  },
+  // 📅 OCAK 2026 — DEVREDEN dalı (K1'in çizilmemiş dalı). Ekran bu dönemi
+  // ŞUBAT saatinde gösterir (beyanname önceki ayındır).
+  {
+    year: 2026,
+    month: 1,
+    due_date: "2026-02-28",
+    taxable_rows: [{ rate: "20.00", base: "900000.00", vat: "180000.00" }],
+    // Burada SIFIRDIR: K7'nin "bu ekranda `0` yazılır" kuralı kadrajda ölçülür.
+    exempt_base: "0.00",
+    calculated_vat: "180000.00",
+    deductions: [{ source: "Alışlar", base: "2600000.00", vat: "520000.00" }],
+    deductible_vat: "520000.00",
+    payable: "0.00",
+    carried_forward: "340000.00", // 520.000 − 180.000
+  },
+];
+
+/**
+ * `(yıl, ay)` → beyanname. Haritada olmayan dönem her yeri `0` basar ama
+ * `due_date` YİNE doludur (şema notu) — "boş dönem" bir hata değil, geçerli
+ * bir beyandır.
+ */
+export function vatReturnFixture(year: number, month: number): MockVatReturn {
+  const found = VAT_RETURN_FIXTURES.find(
+    (fixture) => fixture.year === year && fixture.month === month,
+  );
+  if (found !== undefined) return found;
+  return {
+    year,
+    month,
+    due_date: vatDueDate(year, month),
+    taxable_rows: [],
+    exempt_base: "0.00",
+    calculated_vat: "0.00",
+    deductions: [],
+    deductible_vat: "0.00",
+    payable: "0.00",
+    carried_forward: "0.00",
+  };
 }

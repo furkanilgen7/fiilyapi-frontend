@@ -11,6 +11,8 @@ import { expect, type Page } from "@playwright/test";
 
 export const ACCOUNTING_URL = "/muhasebe";
 export const CHART_OF_ACCOUNTS_URL = "/muhasebe/hesap-plani";
+export const TRIAL_BALANCE_URL = "/muhasebe/mizan";
+export const VAT_RETURN_URL = "/muhasebe/kdv-beyani";
 
 /**
  * 📅 OKUMA AYI — mock backend'in defter/özet fikstürleri YALNIZ burada
@@ -31,7 +33,11 @@ export const ACCOUNTING_READ_TIME = new Date("2026-07-20T09:00:00");
 export const ACCOUNTING_WRITE_TIME = new Date("2026-06-20T09:00:00");
 
 /**
- * 📭 BOŞ AY — hiçbir fikstürün DÜŞMEDİĞİ dönem (T6 boş-durum kadrajı).
+ * 📭 BOŞ AY — YEVMİYE yüzeylerinde hiçbir fikstürün düşmediği dönem (T6
+ * boş-durum kadrajı). 🔴 F-MU2 devri: "hiçbir fikstür" artık YALNIZ defter/
+ * özet/fiş uçları için doğrudur — Ocak 2026'da bir MİZAN fikstürü (dengesiz)
+ * ve bir KDV fikstürü (devreden) VARDIR. İkisi de ayrı uçlardadır, bu yüzden
+ * `/muhasebe` kökünün boş kadrajını KİRLETMEZLER.
  *
  * Ocak 2026 seçilir çünkü mock backend'de yalnız İKİ ay doludur: Temmuz
  * (okuma) ve Haziran (mutasyon adası). Boş durumu Haziran'da ölçmek YASAK
@@ -66,4 +72,31 @@ export async function openChartOfAccounts(page: Page, fixedTime = ACCOUNTING_REA
   await loginAt(page, fixedTime);
   await page.goto(CHART_OF_ACCOUNTS_URL);
   await expect(page.getByTestId("hp-loaded")).toBeAttached();
+}
+
+/**
+ * 📅 F-MU2 · KDV'nin DEVREDEN dalını gösteren saat.
+ *
+ * Beyanname ÖNCEKİ ayın beyanıdır (`shiftPeriod(currentPeriod, -1)`), yani bu
+ * saatte ekran OCAK 2026'yı gösterir — mock backend'in `carried_forward > 0`
+ * fikstürünün durduğu ay. Ayrı bir sabit gerekiyor çünkü `ACCOUNTING_EMPTY_TIME`
+ * (Ocak) KDV ekranında ARALIK 2025'e düşerdi.
+ *
+ * Mizan'ın dengesiz dalı ise `ACCOUNTING_EMPTY_TIME`de ölçülür (o ekranın
+ * dönemi kaydırılmaz: Ocak saatinde Ocak mizanı gösterilir).
+ */
+export const ACCOUNTING_VAT_CARRIED_TIME = new Date("2026-02-10T09:00:00");
+
+/** `/muhasebe/mizan` — TEK veri kaynağı (`GET /trial-balance`). */
+export async function openTrialBalance(page: Page, fixedTime = ACCOUNTING_READ_TIME) {
+  await loginAt(page, fixedTime);
+  await page.goto(TRIAL_BALANCE_URL);
+  await expect(page.getByTestId("mz-loaded")).toBeAttached();
+}
+
+/** `/muhasebe/kdv-beyani` — TEK veri kaynağı (`GET /vat-return`). */
+export async function openVatReturn(page: Page, fixedTime = ACCOUNTING_READ_TIME) {
+  await loginAt(page, fixedTime);
+  await page.goto(VAT_RETURN_URL);
+  await expect(page.getByTestId("kdv-loaded")).toBeAttached();
 }

@@ -52,18 +52,33 @@ describe("🔴 çift aktiflik bekçisi (F-SD T7 dersi)", () => {
     expect(current).toHaveLength(1);
     expect(current[0]).toHaveTextContent("Yevmiye Defteri");
   });
+
+  // 🔴 F-MU2: iki yeni yol da bekçiye alındı — kök `exact` olmasaydı burada
+  // İKİ öğe birden yanardı.
+  it("`/muhasebe/mizan`de aria-current TEK öğededir", () => {
+    renderAt("/muhasebe/mizan");
+    const current = screen.getAllByRole("link").filter((el) => el.getAttribute("aria-current"));
+    expect(current).toHaveLength(1);
+    expect(current[0]).toHaveTextContent("Mizan");
+  });
+
+  it("`/muhasebe/kdv-beyani`de aria-current TEK öğededir", () => {
+    renderAt("/muhasebe/kdv-beyani");
+    const current = screen.getAllByRole("link").filter((el) => el.getAttribute("aria-current"));
+    expect(current).toHaveLength(1);
+    expect(current[0]).toHaveTextContent("KDV Beyanı");
+  });
 });
 
 describe("🔴 devre dışı sekmeler: tıklanamaz + gerekçesi GÖRÜNÜR", () => {
+  // 🔴 F-MU2: Mizan ve KDV Beyanı artık BAĞLANTIDIR (ekranları açıldı);
+  // liste 4 → 2 girdiye indi. İddia silinmedi, yeni gerçeğe taşındı.
   const CASES: readonly [string, string][] = [
-    // MU-2 canlıda: Mizan/KDV backend'i hazır, eksik olan yalnız ekran.
-    ["Mizan", "Mizan backend'i MU-2 ile canlıda; ekranı sonraki dilimde açılacak."],
     ["Banka Mutabakatı", "Banka Mutabakatı'nın backend ucu henüz yok."],
     ["e-Fatura", "e-Fatura/GİB entegrasyonu ertelendi (kullanıcı kararı)."],
-    ["KDV Beyanı", "KDV Beyanı backend'i MU-2 ile canlıda; ekranı sonraki dilimde açılacak."],
   ];
 
-  it("dördü de bağlantı DEĞİLDİR ve aria-disabled taşır", () => {
+  it("ikisi de bağlantı DEĞİLDİR ve aria-disabled taşır", () => {
     renderAt("/muhasebe");
     for (const [label] of CASES) {
       expect(screen.queryByRole("link", { name: new RegExp(label) })).toBeNull();
