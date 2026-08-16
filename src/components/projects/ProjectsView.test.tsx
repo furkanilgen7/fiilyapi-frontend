@@ -48,9 +48,17 @@ const item = {
   investment: null,
   land_share: null,
 };
+// BOR-TEMIZ (SITE-1) `/projects`e sayfalama ekledi: `total/limit/offset` ZORUNLU alanlar.
+// 🔴 `counts` ile `total` AYNI ŞEY DEĞİLDİR (WORKFLOW §4 "iki sayaç ayrı şeylerdir"):
+// `counts` süzgeçten de sayfadan da etkilenmez, tüm görünür kümeyi sayar; `total` ise
+// SÜZGEÇLENMİŞ kümenin boyutudur. Burada bilerek FARKLI seçildi (all=4, total=1) —
+// eşit seçilseydi ikisini karıştıran bir regresyonu hiçbir test yakalayamazdı.
 const data = {
   counts: { all: 4, taahhut: 2, kendi_yatirim: 1, kat_karsiligi: 1, completed: 1, draft: 0 },
   items: [item],
+  total: 1,
+  limit: 50,
+  offset: 0,
 };
 
 function mockQuery(value: Partial<ReturnType<typeof useProjects>>) {
