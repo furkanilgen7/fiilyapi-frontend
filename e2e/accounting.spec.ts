@@ -296,6 +296,30 @@ test.describe("hesap planı ekranı (SALT-OKUR)", () => {
     await expect(page.getByTestId("hp-status-108")).toHaveAttribute("aria-label", "Kullanım dışı");
   });
 
+  /**
+   * 🔴 K5 — `is_contra`nın EKRANDAKİ tek görünür sonucu 5. kapıda bekçilenir.
+   * Bayrak forma eklendi (K6/K7) ama liste onu okumazsa kullanıcı yanlış
+   * işaretlediğini göremez ve yanlış işaretlenmiş hesabı listede BULAMAZ.
+   */
+  test("🔴 K5: kontra hesap ROZETLE işaretlenir, kontra olmayan satırda rozet YOK", async ({
+    page,
+  }) => {
+    await openChartOfAccounts(page);
+
+    // Tohumun TEK kontra hesabı (`257`, `isContra: true`).
+    const rozet = page.getByTestId("hp-contra-257");
+    await expect(rozet).toBeVisible();
+    await expect(rozet).toHaveText("(-)");
+    // Renk/sembol tek başına bilgi taşımaz → okunur ad ZORUNLU.
+    await expect(rozet).toHaveAttribute("aria-label", "Kontra hesap");
+
+    // Komşu hesap (`254`, aynı sınıf, kontra DEĞİL) işaretsizdir — aksi halde
+    // rozet bilgi taşımayan bir süs olurdu.
+    await expect(page.getByTestId("hp-contra-254")).toHaveCount(0);
+    // Bütün listede TEK rozet vardır.
+    await expect(page.getByLabel("Kontra hesap")).toHaveCount(1);
+  });
+
   test("arama SUNUCUYA gider; eşleşmeyen satırlar tablodan düşer", async ({ page }) => {
     await openChartOfAccounts(page);
 

@@ -533,6 +533,38 @@ describe("Hesap diyaloğu — kontra kontrolü + canlı önizleme (F-MUF T2)", (
   });
 
   /**
+   * 🔴🔴 K5 — İŞARETİN EKRANDA GÖRÜNÜR SONUCU.
+   *
+   * Kutu forma eklendi ama liste `is_contra`yı okumadığı sürece kullanıcı
+   * YANLIŞ işaretlediğini asla göremez ve yanlış işaretlenmiş hesabı listede
+   * BULAMAZ. `Bakiye` sütunu kontra bilmez ve bilmeyecek (`balance.py:52-57`
+   * salt-okuma kararı), Bilanço ekranı da henüz yok → tek görünür yüzey budur.
+   */
+  it("🔴 K5: kontra hesap listede ROZETLE işaretlenir, diğerleri işaretlenmez", () => {
+    vi.mocked(useChartOfAccounts).mockReturnValue(
+      queryResult({ data: listResponse(ACCOUNTS_WITH_CONTRA) }),
+    );
+    render(<ChartOfAccountsView />);
+
+    const rozet = screen.getByTestId("hp-contra-257");
+    // Mockup'ın kontra dili ASCII `(-)` (HP:154 hesap adı).
+    expect(rozet).toHaveTextContent("(-)");
+    // 🔴 Renk/sembol TEK BAŞINA bilgi taşımaz.
+    expect(rozet).toHaveAttribute("aria-label", "Kontra hesap");
+    expect(rozet).toHaveAttribute("title", "Kontra hesap");
+
+    // Kontra OLMAYAN satırlarda rozet HİÇ basılmaz (aksi halde gösterge
+    // bilgi taşımaz, süs olurdu).
+    expect(screen.queryByTestId("hp-contra-254")).toBeNull();
+    expect(screen.queryByTestId("hp-contra-100")).toBeNull();
+  });
+
+  it("🔴 K5: hiçbir hesap kontra değilse listede TEK bir rozet bile yoktur", () => {
+    render(<ChartOfAccountsView />);
+    expect(screen.queryByLabelText("Kontra hesap")).toBeNull();
+  });
+
+  /**
    * 🔴 F-MU1'in AÇIK BORCU BUYDU: kontra hesap arayüzden İŞARETLENEMİYORDU.
    * Düzenleme kipinde işaretin KALDIRILABİLMESİ de şart — yanlış işaretlenmiş
    * bir hesap yoksa UI'dan geri alınamazdı (bilanço UI'dan düzeltilemez).

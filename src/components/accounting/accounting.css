@@ -348,6 +348,13 @@
   padding-left: calc(3 * var(--space-4)); /* 48px */
 }
 
+/* 🔴 K5 — kontra rozeti kodun YANINDA durur; kod hücresinin MONO/solgun
+   biçiminden ayrılsın diye rozet primitive'inin kendi tipografisini korur. */
+.mu-chart__contra {
+  margin-left: var(--space-2);
+  vertical-align: middle;
+}
+
 /* HP:79/155 — bakiye kalın MONO; ton `balanceTone`dan gelir. */
 .mu-chart__balance {
   font-weight: var(--weight-semibold);
