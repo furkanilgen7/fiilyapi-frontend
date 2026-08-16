@@ -927,6 +927,33 @@ describe("BFF /api/backend/[...path]", () => {
       },
     );
 
+    // MT-1 (mali tablolar) IKI kokU — ayni ADLI kapi, ayni gerekce.
+    // 🔴 Bu kokleri CAGIRAN KOD YOK (mali tablo ekranlari F-MT diliminin isi),
+    // dolayisiyla `cagrilan ⊆ izinli` bekcisi onlari HIC GORMEZ. MU-2'nin uc
+    // kokUnde ayni bosluk YASANDI: kokler eklenmedigi icin uclar canlida
+    // `{"ok":false,"code":"not_found"}` donuyordu ve dort kapinin dordU de
+    // yesildi. Ayni hataya ucuncu kez dusmemek icin ADLI bekci ONDEN yazilir.
+    it.each(["balance-sheet", "cash-flow-statement"])(
+      "%s koku (MT-1) allow-list'te GERCEK girdi olarak tanimlidir",
+      (root) => {
+        const source = readFileSync(
+          resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+          "utf8",
+        );
+        const allowList = source.slice(
+          source.indexOf("const ALLOWED_ROOTS"),
+          source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+        );
+        // Yorum metni DEGIL, tirnakli GERCEK girdiler okunur (sahte bekci onlemi).
+        const entries = [...allowList.matchAll(/^\s*"([a-z0-9-]+)",/gm)].map((m) => m[1]);
+        expect(entries).toContain(root);
+        // 🔴 `cash-flow-statement` MT-1'in yevmiye tablosudur; `treasury` ise
+        // HZ-1'in gunluk serisinin kokUdUr. IKISI DE AYRI AYRI durur — biri
+        // otekinin yerine gecmez, birlestirilmez.
+        expect(entries).toContain("treasury");
+      },
+    );
+
     // F-BC · T1 — Belge Arşivi IKI yeni kok ekler ve ikisi de ADLI kapiya
     // baglanir:
     //   · `documents`        → POST/GET /documents, /documents/{id}[/download]

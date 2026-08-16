@@ -222,6 +222,19 @@ const ALLOWED_ROOTS = new Set([
   "accounting-periods",
   "trial-balance",
   "vat-return",
+  // MT-1 (mali tablolar, canlıda 2026-08-16 · backend `a0706cc`, 213 yol) — İKİ kök.
+  //   · `balance-sheet`         → `GET /balance-sheet?as_of=` (bilanço, nokta-zaman)
+  //   · `cash-flow-statement`   → `GET /cash-flow-statement?year=&month=` (birikimli)
+  // 🔴 `cash-flow-statement` ≠ `treasury/cash-flow`. İkincisi HZ-1'in GÜNLÜK
+  // giriş/çıkış serisidir ve `payments`ten türer; bu ise YEVMİYEDEN türeyen
+  // işletme/yatırım/finansman tablosudur (KK-2). Aynı kelimeyi taşıyan iki uç
+  // FARKLI sayı basar — `treasury` kökü (satır 192) ayrı durur, birleştirilmez.
+  // MT-1'in uçları `prefix` TAŞIMAZ (birinci seviye) → her yol AYRI KÖKTÜR.
+  // Bu kökleri ÇAĞIRAN KOD HENÜZ YOK — mali tablo ekranları F-MT diliminin işi;
+  // kökler önden hazır kalır. Eksikse o ekranlar YALNIZ CANLIDA 404 alır;
+  // jsdom testleri bunu GÖRMEZ.
+  "balance-sheet",
+  "cash-flow-statement",
 ]);
 
 // JSON/metin sayilan icerik tipleri: govde metne cozulup JSON olarak islenir.
