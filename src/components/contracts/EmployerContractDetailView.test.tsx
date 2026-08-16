@@ -13,7 +13,11 @@ import {
   type ProgressPaymentListResponse,
 } from "@/lib/api/hooks/useProgressPayments";
 import { useProject } from "@/lib/api/hooks/useProjects";
-import { EMPLOYER_NO_GROUPS_HINT } from "@/components/contract-item-form/constants";
+import {
+  EMPLOYER_ITEM_TEXT,
+  EMPLOYER_NO_GROUPS_HINT,
+  NEW_GROUP_OPTION,
+} from "@/components/contract-item-form/constants";
 
 vi.mock("@/lib/api/hooks/useContract", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useContract")>()),
@@ -540,6 +544,26 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
       expect(screen.getByTestId("ecd-add-item-reason")).toHaveTextContent(
         EMPLOYER_NO_GROUPS_HINT,
       );
+    });
+
+    // 🔴 F-POZGRUP T3 (a) · İKİ HALKA TEK İDDİADA: düğme açılır VE açılan form
+    // doğrudan "+ Yeni Grup" kipindedir. Halkalardan biri kopsa (düğme yine
+    // kapatılsa YA DA form boş açılırla açılsa) ilk poz gene eklenemez.
+    it("🔴 grup yokken '+ Poz Ekle' diyaloğu '+ Yeni Grup' kipinde açar", () => {
+      mockAll();
+      vi.mocked(useEmployerContractItems).mockReturnValue({
+        data: { groups: [] },
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useEmployerContractItems>);
+      render(<EmployerContractDetailView projectId="p-1" />);
+
+      fireEvent.click(screen.getByTestId("ecd-add-item"));
+      const dialog = screen.getByRole("dialog", { name: "İşveren Sözleşmesine Poz Ekle" });
+      expect(within(dialog).getByLabelText(EMPLOYER_ITEM_TEXT.group)).toHaveValue(
+        NEW_GROUP_OPTION,
+      );
+      expect(within(dialog).getByLabelText(EMPLOYER_ITEM_TEXT.groupName)).toBeInTheDocument();
     });
 
     it("`items_total` / `items_total_diff` tfoot'ta gösterilir (veri kaybı yok)", () => {
