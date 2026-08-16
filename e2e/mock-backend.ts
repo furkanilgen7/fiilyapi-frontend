@@ -9045,6 +9045,8 @@ export function startMockBackend(port: number): { server: Server; close: () => P
             name,
             account_type: (rawBody.account_type as MockChartAccountType | undefined) ?? "asset",
             is_active: rawBody.is_active === undefined ? true : rawBody.is_active === true,
+            // MT-1/KK-1: sunucu varsayılanı `false`; gövde verirse ona uyulur.
+            is_contra: rawBody.is_contra === true,
             created_at: ACCOUNTING_STAMP,
             updated_at: ACCOUNTING_STAMP,
             // 🔴 Üçü de SUNUCU türevidir; gövdeden değil KODDAN gelir.
@@ -9844,6 +9846,11 @@ function buildChartAccount(seed: ChartAccountSeed): MockChartAccount {
     name: seed.name,
     account_type: seed.type,
     is_active: seed.isActive ?? true,
+    // MT-1/KK-1: tohum hesaplarının hiçbiri kontra DEĞİLDİR — mevcut tohum kod
+    // evreninde (100·102·120·150·320·391·600·730) `257` gibi bir kontra hesap
+    // YOKTUR, o yüzden sabit `false`. Kontra tohum eklenirse `ChartAccountSeed`e
+    // alan açılır; burada `true` yazmak sessizce yanlış bilanço üretirdi.
+    is_contra: false,
     created_at: ACCOUNTING_STAMP,
     updated_at: ACCOUNTING_STAMP,
     balance: chartSeedBalance(seed),

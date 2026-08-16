@@ -19,6 +19,7 @@ const ACCOUNT: ChartAccountResponse = {
   name: "Kasa",
   account_type: "asset",
   is_active: true,
+  is_contra: false,
   balance: "284800.00",
   class_code: "1",
   level: 2,
@@ -112,18 +113,30 @@ describe("form baslangici", () => {
     });
   });
 
-  it("Tur acilirinda DORT secenek vardir ve etiketleri HP kanonundandir", () => {
+  // 🔴 BILINCLI GOC (MT-1/KK-1 devri, 2026-08-16): iddia DORT'ten BES'e tasindi,
+  // SILINMEDI. Sebep: `ChartAccountType`a `equity` besinci uye olarak eklendi
+  // (kullanici karari — TAM TDHP UYUMU). Secenek uretimi `ACCOUNT_TYPE_LABELS`
+  // anahtarlarindan turedigi icin besinci secenek KENDILIGINDEN geldi; test onu
+  // yakaladi. Etiket kaynagi `Mali Tablo - Bilanço.dc.html:80` (`III. OZKAYNAKLAR`)
+  // — Hesap Plani mockup'inda 5xx hesap HIC cizilmemis, o yuzden HP kanonu bu
+  // uye icin SUSAR ve etiket kardes mockup'tan alinir.
+  // 🔴 Secenegin SUNULMASI zorunludur: canlida hesap plani BOSTUR (seed yok),
+  // yani kullanici 5xx hesabini ancak bu formdan acabilir. Sunulmazsa bilancoda
+  // OZKAYNAKLAR bolumu SONSUZA KADAR bos kalir ve AKTIF != PASIF olur.
+  it("Tur acilirinda BES secenek vardir ve etiketleri HP + BL kanonundandir", () => {
     expect(ACCOUNT_TYPE_OPTIONS.map((option) => option.value)).toEqual([
       "asset",
       "liability",
       "revenue",
       "expense",
+      "equity",
     ]);
     expect(ACCOUNT_TYPE_OPTIONS.map((option) => option.label)).toEqual([
       "Aktif",
       "Pasif",
       "Gelir",
       "Gider",
+      "Özkaynak",
     ]);
   });
 });

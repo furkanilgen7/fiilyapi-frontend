@@ -71,6 +71,15 @@ export function ChartAccountFormModal({ account, onClose }: ChartAccountFormModa
           name: form.name.trim(),
           account_type: form.accountType,
           is_active: form.isActive,
+          // 🔴 AÇIK BORÇ (MT-1/KK-1 devri, 2026-08-16): `is_contra` sunucuda
+          // açıldı ve varsayılanı `false`. Formda KONTROLÜ YOKTUR — bu alan için
+          // çizilmiş bir mockup yok (form mockup'ı önce istenir kuralı). Burada
+          // sunucunun kendi varsayılanı AÇIKÇA gönderiliyor; davranış değişmiyor.
+          // ⚠️ Sonucu: kullanıcı `257 Birikmiş Amortismanlar (-)` gibi bir KONTRA
+          // hesabı arayüzden işaretleyemez → bilançoda o hesap düşülmez yerine
+          // eklenir ve `is_balanced` FALSE kalır, kullanıcı da düzeltemez.
+          // Kontrol F-MT diliminde (ya da ayrı küçük dilimde) mockup'la açılır.
+          is_contra: false,
         });
       } else {
         const body = changedChartAccountFields(form, account);

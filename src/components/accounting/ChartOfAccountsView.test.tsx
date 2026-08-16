@@ -74,6 +74,7 @@ function band(
     name,
     account_type: "asset",
     is_active: true,
+    is_contra: false,
     created_at: "2026-07-01T00:00:00Z",
     updated_at: "2026-07-01T00:00:00Z",
     balance: "0.00",
@@ -377,6 +378,7 @@ describe("Hesap diyaloğu (T4)", () => {
       name: "Alıcılar",
       account_type: "liability",
       is_active: true,
+      is_contra: false,
     });
     // `balance`/`class_code`/`level` gövdeye GİREMEZ (sunucuda 422).
     const [body] = createAsync.mock.calls[0] as [Record<string, unknown>];

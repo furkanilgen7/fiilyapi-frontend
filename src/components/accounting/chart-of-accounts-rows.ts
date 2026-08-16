@@ -32,6 +32,13 @@ export const ACCOUNT_TYPE_LABELS: Record<ChartAccountType, string> = {
   liability: "Pasif", // HP:154 · HP:166
   revenue: "Gelir", // HP:192
   expense: "Gider", // HP:199
+  // 🔴 MOCKUP BOŞLUĞU (MT-1/KK-1 devri, 2026-08-16): `equity` beşinci üye olarak
+  // backend'de açıldı ama Hesap Planı mockup'ında 5xx hesap HİÇ ÇİZİLMEMİŞ
+  // (ölçüldü: kod evreni 100·101·102·120·127·150·191·252·254·257·320·360·391·
+  // 600·730·760) — yani bu rozetin mockup'ta bir örneği YOKTUR. Etiket
+  // uydurulmadı, `Mali Tablo - Bilanço.dc.html:80` bandındaki kendi sözcüğünden
+  // alındı: `III. ÖZKAYNAKLAR`. Diğer dördü gibi TEK sözcük, tekil biçim.
+  equity: "Özkaynak", // BL:80 (`III. ÖZKAYNAKLAR`)
 };
 
 export function accountTypeLabel(accountType: ChartAccountType): string {

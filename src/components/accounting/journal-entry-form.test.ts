@@ -47,6 +47,7 @@ function account(code: string, id = code): ChartAccountResponse {
     name: `Hesap ${code}`,
     account_type: "asset",
     is_active: true,
+    is_contra: false,
     balance: "0.00",
     class_code: code[0],
     level: code.includes(".") ? 3 : code.length === 2 ? 1 : 2,

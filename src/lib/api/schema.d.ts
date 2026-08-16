@@ -498,6 +498,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/balance-sheet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Balance Sheet Endpoint
+         * @description Bilanço — AKTİF/PASİF, üç seviye (bölüm bandı → kalem → ara toplam).
+         *
+         *     🔴 **Dönem modeli NOKTA-ZAMANDIR**, mizanın birikimli aralığından FARKLI:
+         *     mockup BL:37 üç ayrı **tek gün** sunar (`31 Temmuz 2026` / `30 Haziran 2026`
+         *     / `31 Aralık 2025`). Gövde `entry_date <= as_of` kümülatif nettir; tek
+         *     istisna `Dönem Net Kârı` kalemidir ve penceresi `{as_of.year}-01-01` ile
+         *     `as_of` arasıdır (yılbaşından bugüne). Aritmetik ve kontra netlemesi
+         *     `balance_sheet.py` modül docstring'indedir.
+         *
+         *     🔴 **`is_balanced` ÖLÇÜLÜR, `True` VARSAYILMAZ**: dengesiz bir `reversed`
+         *     fiş DB'ye girebilir (`ck_journal_entries_posted_balanced` yalnız `posted`ı
+         *     bağlar) ve sabit `True` basan bir bilanço sessizce yalan söylerdi.
+         *
+         *     🔴 **Sayfalama YOKTUR** (K7 zarfı kullanılmaz): `total` GENEL TOPLAMDIR ve
+         *     `is_balanced` onun üzerinden kurulur — sayfalanmış bir bilançoda ikisi de
+         *     anlamsızlaşırdı. Küme SABİTTİR: iki taraf, 13 kalem.
+         *
+         *     Kapsam dışı (bilinçli): proje/şantiye süzgeci (üç muhasebe tablosunda da
+         *     `project_id`/`site_id` YOKTUR ve mockup süzgeç çizmiyor) · karşılaştırma
+         *     sütunu (mockup tabloları 2 sütunlu, BL:48-62) · `PDF` düğmesi (BL:38 — düğme
+         *     dışında hiçbir şey söylemiyor) · dönem kilidi rozeti (salt-okuma ucu).
+         */
+        get: operations["balance_sheet_endpoint_balance_sheet_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cash-flow-statement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cash Flow Statement Endpoint
+         * @description Nakit Akış Tablosu — `A` işletme · `B` yatırım · `C` finansman.
+         *
+         *     🔴 **`/treasury/cash-flow` İLE AYNI ŞEY DEĞİLDİR ve yol adı bilinçli olarak
+         *     ayrıdır.** O uç `payments`+`invoices`ten türeyen **GÜNLÜK giriş/çıkış
+         *     serisidir** (F-HZ hazine paneli, E9:90-106); bu uç **yevmiyeden** türeyen
+         *     işletme/yatırım/finansman tablosudur (KK-2). İkisi farklı sayı basar ve bu
+         *     bir kusur DEĞİLDİR — ayrım her iki modül docstring'inde de yazılıdır.
+         *     Bilanço ile bu tablo TEK tabandan gelir, bu yüzden `Kasa ve Bankalar`
+         *     (BL:51) ile `closing_cash` birebir aynıdır.
+         *
+         *     🔴 **Pencere BİRİKİMLİDİR** (mockup NA:37 `Ocak–Temmuz 2026`): yılın Ocak
+         *     ayından `month`un SON GÜNÜNE kadar — mizanla AYNI semantik. `year`/`month`
+         *     ZORUNLUDUR; `/treasury/cash-flow`un aksine içinde bulunulan aya DÜŞMEZ
+         *     (sunucunun "bugün"ü hiç okunmaz).
+         *
+         *     🔴 **DÖRT ALAN BİRDEN DÖNER:** `net_change` (A+B+C) · `opening_cash` ·
+         *     `closing_cash` · bölüm ara toplamları. Mockup'ın alt bandı
+         *     `DÖNEM SONU NAKİT (A+B+C)` **diyor** ama değeri kapanış nakdidir (NA:100 =
+         *     BL:51) — ikisi ayrı şeydir ve mockup'ta `DÖNEM BAŞI NAKİT` satırı EKSİKTİR.
+         *     Hangisinin basılacağına frontend kendi diliminde karar verir.
+         *
+         *     `monthly_cash[]` = `Aylık Nakit Pozisyonu` grafiği (NA:108-131): Ocak'tan
+         *     seçilen aya kadar **ay sonu nakit BAKİYESİ** (akış değil).
+         *
+         *     Kapsam dışı (bilinçli): `3 Aylık Projeksiyon` kartı (NA:134-150) — ileriye
+         *     dönük tahmin, algoritması mockup'ta YOK, açıklama metinleri serbest metin;
+         *     İCAT EDİLMEZ · `PDF` düğmesi (NA:38) · proje/şantiye süzgeci (üç muhasebe
+         *     tablosunda da kolon yok, mockup süzgeç çizmiyor).
+         */
+        get: operations["cash_flow_statement_endpoint_cash_flow_statement_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/audit-log": {
         parameters: {
             query?: never;
@@ -5719,6 +5806,114 @@ export interface components {
             list_price_total: string;
         };
         /**
+         * BalanceSheetLine
+         * @description Bilançonun bir KALEMİ — mockup'ın tek bir satırı (ör. BL:51).
+         *
+         *     `amount` **YUVARLANMAZ** (MT-K2): `Numeric(18,2)` kuruşuyla döner ve
+         *     yuvarlama bir GÖSTERİM kararıdır. Uç yuvarlasaydı ara toplamlar
+         *     bileşenlerinden 1 TL sapar ve `is_balanced` sahte biçimde `False` çıkardı.
+         *
+         *     İşaret: kalem, ait olduğu tarafta POZİTİF basar (mockup'ın 13 satırının
+         *     hepsi pozitiftir). `320` Satıcılar `2.184.000` gösterir, `−2.184.000`
+         *     değil — ham `net` `SIGN[tür]` ile çevrilir. **Kontra hesap ise DÜŞÜLÜR**
+         *     (`is_contra`, MT-K1: BL:57 `Maddi Duran Varlıklar (net)`). Bir kalem yine de
+         *     NEGATİF çıkabilir: geçmiş yıl zararı ya da dönem zararı gerçek bir sonuçtur
+         *     ve `0`a kırpılsaydı `AKTİF ≠ PASİF` olurdu.
+         *
+         *     🔴 `account_codes` / `group_codes` mockup'ta BASILMIYOR ama yine de döner:
+         *     bir kalemin İÇİNE bakmanın (drill-down) tek yolu budur ve asıl işlevi
+         *     "Diğer …" kalemlerini ŞEFFAF kılmaktır — haritaya girmeyen bir hesabın
+         *     NEREYE düştüğü kullanıcıya ancak buradan görünür. Alan açmak ucuzdur,
+         *     sonradan eklemek kırıcıdır. Frontend basmayabilir.
+         */
+        BalanceSheetLine: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Amount */
+            amount: string;
+            /** Account Codes */
+            account_codes: string[];
+            /** Group Codes */
+            group_codes: string[];
+        };
+        /**
+         * BalanceSheetResponse
+         * @description Bilançonun tamamı — 🔴 **K7 SAYFALAMA ZARFI YOKTUR** (mizan/KDV emsali).
+         *
+         *     Gerekçe: `total` GENEL TOPLAMDIR ve `is_balanced` onun üzerinden kurulur;
+         *     sayfalanmış bir bilançoda ikisi de anlamsızlaşır. Küme zaten SABİTTİR: 13
+         *     kalem, iki taraf.
+         *
+         *     `as_of` yanıtta TEKRARLANIR: mockup BL:37 seçicisinin başlığı buradan
+         *     kurulur ve istemci hangi ANI gördüğünü kendi isteğinden değil SUNUCUNUN
+         *     cevabından okur.
+         *
+         *     🔴 **`is_balanced` ÖLÇÜLÜR, `True` VARSAYILMAZ.** Gerekçe ölçüldü:
+         *     `ck_journal_entries_posted_balanced` (`models.py`) yalnız `posted`ı bağlar,
+         *     yani **dengesiz bir `reversed` fiş satırı DB'ye GİREBİLİR** (açık borç) ve
+         *     `POSTING_STATUSES` `reversed`ı deftere alır. Sabit `True` basan bir bilanço
+         *     SESSİZCE YALAN SÖYLERDİ. Gösterge ayrıca `is_contra` veri hatalarını da
+         *     yakalar: kontra işaretlenmemiş bir `257` iki katı tutar kaydırır ve burada
+         *     görünür.
+         *
+         *     🔴 **Dönem kilidi rozeti YOKTUR** (MT-K8): bilanço salt-okumadır, kapalı
+         *     dönemin bilançosu ile açığınki arasında fark yoktur ve mockup rozet
+         *     çizmemiştir. **Karşılaştırma (önceki dönem) sütunu da YOKTUR** (MT-K6):
+         *     mockup tabloları 2 sütunludur, BL:37'deki `31 Aralık 2025` seçeneği bir
+         *     karşılaştırma sütunu DEĞİL ayrı bir sorgudur.
+         */
+        BalanceSheetResponse: {
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Is Balanced */
+            is_balanced: boolean;
+            assets: components["schemas"]["BalanceSheetSide"];
+            liabilities: components["schemas"]["BalanceSheetSide"];
+        };
+        /**
+         * BalanceSheetSection
+         * @description Bölüm bandı + kalemleri + ara toplam (mockup BL:50-55 kalıbı).
+         *
+         *     `subtotal` kalemlerinden HESAPLANIR, mockup'tan kopyalanmaz (K15: mockup'ın
+         *     toplamları satırlarıyla çelişebilir ve o bir SUNUM göstermeliğidir).
+         */
+        BalanceSheetSection: {
+            /** Key */
+            key: string;
+            /** Title */
+            title: string;
+            /** Subtotal Label */
+            subtotal_label: string;
+            /** Subtotal */
+            subtotal: string;
+            /** Lines */
+            lines: components["schemas"]["BalanceSheetLine"][];
+        };
+        /**
+         * BalanceSheetSide
+         * @description Bilançonun bir TARAFI — AKTİF (BL:44-63) ya da PASİF (BL:66-88).
+         *
+         *     İki taraf ayrı nesnelerdir çünkü mockup onları AYRI KARTLARDA çizer (BL:42
+         *     iki sütunlu ızgara) ve `total` her tarafın kendi genel toplamıdır.
+         */
+        BalanceSheetSide: {
+            /** Key */
+            key: string;
+            /** Title */
+            title: string;
+            /** Total Label */
+            total_label: string;
+            /** Total */
+            total: string;
+            /** Sections */
+            sections: components["schemas"]["BalanceSheetSection"][];
+        };
+        /**
          * BankAccountCreate
          * @description `POST /bank-accounts` (E9:70-84 kartının yazma yolu).
          *
@@ -6220,6 +6415,94 @@ export interface components {
             outflow_total: string;
         };
         /**
+         * CashFlowStatementLine
+         * @description Nakit akışının bir KALEMİ (ör. NA:71 `Müşterilerden Tahsilat`).
+         *
+         *     🔴 `amount` **İŞARETLİDİR**: giriş `+`, çıkış `−` (mockup NA:71-75 `+`/`−`
+         *     önekleri). Mutlak değer basıp yönü etikete gömen bir uç, `Ekipman Alımı`
+         *     satırında bir ekipman SATIŞINI ayırt edemezdi — mockup B bölümünde TEK
+         *     kalem çizer ve satış da oraya düşer (K15: kalem sayısı bağlayıcı).
+         *
+         *     `account_codes` mockup'ta basılmıyor ama döner: bir kalemin İÇİNE bakmanın
+         *     tek yolu budur ve `Diğer Nakit Çıkışları` kovasını ŞEFFAF kılar.
+         */
+        CashFlowStatementLine: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Amount */
+            amount: string;
+            /** Account Codes */
+            account_codes: string[];
+        };
+        /**
+         * CashFlowStatementResponse
+         * @description Nakit Akış Tablosunun tamamı — yevmiyeden türer (KK-2).
+         *
+         *     🔴 **`/treasury/cash-flow` İLE AYNI ŞEY DEĞİLDİR.** O uç
+         *     `payments`+`invoices`ten türeyen GÜNLÜK giriş/çıkış serisidir (F-HZ ekranı);
+         *     bu uç yevmiyeden türeyen işletme/yatırım/finansman tablosudur. İkisi farklı
+         *     sayı basar ve bu bir kusur değildir — ayrım her iki modül docstring'inde de
+         *     yazılıdır.
+         *
+         *     🔴 **DÖRT ALAN BİRDEN DÖNER** ve gerekçesi ölçülmüştür: mockup'ın alt bandı
+         *     `DÖNEM SONU NAKİT (A+B+C)` **diyor** ama değeri `4.249.500`, yani
+         *     Bilanço'daki `Kasa ve Bankalar` (BL:51) ile BİREBİR aynı — bu KAPANIŞ
+         *     NAKDİDİR. A+B+C ise `4.802.000`dir (NA:58). İkisi AYRI ŞEYDİR ve mockup'ta
+         *     **DÖNEM BAŞI NAKİT satırı EKSİKTİR** (türetilen açılış `−552.500` çıkar,
+         *     imkânsız). Uç dördünü de döndürür; hangisinin basılacağına frontend kendi
+         *     diliminde karar verir (MU-2'nin `carried_forward`ı emsal).
+         *
+         *     Kimlik: `closing_cash == opening_cash + net_change`.
+         *
+         *     `year`/`month` yanıtta TEKRARLANIR: mockup NA:37 (`Ocak–Temmuz 2026`)
+         *     başlığı buradan kurulur.
+         *
+         *     Kapsam dışı: `3 Aylık Projeksiyon` kartı (NA:134-150) — ileriye dönük
+         *     tahmin, algoritması mockup'ta YOK ve açıklama metinleri (`"Hakediş +
+         *     bordro"`) serbest metin. İCAT EDİLMEZ; frontend devre-dışı + gerekçeyle
+         *     basar (F-TH kanonu).
+         */
+        CashFlowStatementResponse: {
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            /** Sections */
+            sections: components["schemas"]["CashFlowStatementSection"][];
+            /** Net Change */
+            net_change: string;
+            /** Opening Cash */
+            opening_cash: string;
+            /** Closing Cash */
+            closing_cash: string;
+            /** Monthly Cash */
+            monthly_cash: components["schemas"]["MonthlyCashPoint"][];
+        };
+        /**
+         * CashFlowStatementSection
+         * @description `A`/`B`/`C` bölümü + kalemleri + ara toplam (mockup NA:68-79 kalıbı).
+         *
+         *     `subtotal` kalemlerinden HESAPLANIR. 🔴 K15: mockup'ın A bölümü satırları
+         *     `5.842.000` toplarken ara toplam `6.842.000` basıyor (NA:71-78, 1.000.000
+         *     fark) — SATIRLAR kazanır, tfoot bir SUNUM göstermeliğidir.
+         */
+        CashFlowStatementSection: {
+            /** Key */
+            key: string;
+            /** Code */
+            code: string;
+            /** Title */
+            title: string;
+            /** Subtotal Label */
+            subtotal_label: string;
+            /** Subtotal */
+            subtotal: string;
+            /** Lines */
+            lines: components["schemas"]["CashFlowStatementLine"][];
+        };
+        /**
          * ChartAccountCreate
          * @description `POST /chart-of-accounts` (HP:50 `+ Hesap Ekle`).
          *
@@ -6245,6 +6528,12 @@ export interface components {
              * @default true
              */
             is_active: boolean;
+            /**
+             * Is Contra
+             * @description Hesabın doğal bakiye yönü, düştüğü mali tablo kaleminin tarafının TERSİ ise işaretlenir; bakiyesi o kalemden DÜŞÜLÜR. Örnek: `257 Birikmiş Amortismanlar (-)` Pasif türdedir ama Aktif tarafta `Maddi Duran Varlıklar (net)` kalemine düşer → işaretlenir. `501 Ödenmemiş Sermaye (-)` ise Özkaynak türdedir ve Pasif tarafta kalır → İŞARETLENMEZ (borç bakiyesi zaten düşürür).
+             * @default false
+             */
+            is_contra: boolean;
         };
         /**
          * ChartAccountListResponse
@@ -6291,6 +6580,8 @@ export interface components {
             account_type: components["schemas"]["ChartAccountType"];
             /** Is Active */
             is_active: boolean;
+            /** Is Contra */
+            is_contra: boolean;
             /**
              * Created At
              * Format: date-time
@@ -6310,21 +6601,34 @@ export interface components {
         };
         /**
          * ChartAccountType
-         * @description Hesap turu — HP:60 `Tur` sutununun KAPALI kumesi birebir.
+         * @description Hesap turu — HP:60 `Tur` sutunu + MT-1'in `equity` uyesi.
          *
-         *     Dort rozet cizilidir: `Aktif` (HP:78) · `Pasif` (HP:154) · `Gelir` (HP:192)
-         *     · `Gider` (HP:199). **Besinci uye ICAT EDILMEZ** — ozkaynak/nazim gibi bir
-         *     tur eklenseydi hicbir ekranda karsiligi olmayan bir kumeyi kalici olarak
-         *     DB'ye yazardik.
+         *     HP dort rozet cizer: `Aktif` (HP:78) · `Pasif` (HP:154) · `Gelir` (HP:192)
+         *     · `Gider` (HP:199).
+         *
+         *     🔑 **KULLANICI KARARI (2026-08-16, MT-1/KK-1 — TAM TDHP UYUMU): `equity`
+         *     BESINCI UYE OLARAK ACILDI.** Bu, MU-1'in *"Besinci uye ICAT EDILMEZ"*
+         *     kanonunun **bilincli iptalidir** ve gerekcesi olculmustur: Bilanco'nun
+         *     `III. OZKAYNAKLAR` bolumu (BL:80-84 — `Sermaye` · `Gecmis Yillar Karlari` ·
+         *     `Donem Net Kari`) dort uyeli kumeyle ifade edilemiyor. `500 Sermaye`
+         *     `liability` sayilsaydi hesap plani ekraninda `Pasif` rozeti basar ve
+         *     bilanco bu satirlari `I. KISA VADELI YUKUMLULUKLER` bolumunden ayiramazdi.
+         *     Iptal `equity` ILE SINIRLIDIR: `memorandum`/`cost`/`contra` gibi bir ALTINCI
+         *     uye hala acilmaz (kontra bir TUR degil, `is_contra` bayragidir).
          *
          *     🔴 Bu enum HP:62 `Durum` sutunu DEGILDIR (bkz. modul docstring'i R3):
          *     Durum `is_active` boolean'idir, Tur budur.
          *
          *     K3 isaret kurali bu turden okunur: `asset`/`expense` → `+1`,
-         *     `liability`/`revenue` → `−1` (`balance.py` TEK KAYNAK).
+         *     `liability`/`revenue`/**`equity`** → `−1` (`balance.py` TEK KAYNAK).
+         *     🔴 `balance.SIGN` sozlugune `equity` girisi ZORUNLUDUR: `sign_case()`in
+         *     `else_` dali BILEREK yoktur ve eksik uye **NULL** uretir.
+         *
+         *     Uye SIRASI kilitlidir: Postgres'te `ALTER TYPE … ADD VALUE` uyeyi SONA
+         *     ekler, `enum_range` da o sirayi doner (migration testi bunu olcer).
          * @enum {string}
          */
-        ChartAccountType: "asset" | "liability" | "revenue" | "expense";
+        ChartAccountType: "asset" | "liability" | "revenue" | "expense" | "equity";
         /**
          * ChartAccountUpdate
          * @description `PATCH /chart-of-accounts/{id}` — KISMİ gövde.
@@ -6345,6 +6649,8 @@ export interface components {
             account_type?: components["schemas"]["ChartAccountType"] | null;
             /** Is Active */
             is_active?: boolean | null;
+            /** Is Contra */
+            is_contra?: boolean | null;
         };
         /**
          * CollectionKpi
@@ -9180,6 +9486,23 @@ export interface components {
             group: components["schemas"]["ModuleGroup"];
             /** Sort Order */
             sort_order: number;
+        };
+        /**
+         * MonthlyCashPoint
+         * @description `Aylık Nakit Pozisyonu` grafiğinin bir noktası (mockup NA:108-131).
+         *
+         *     🔴 **BAKİYE, akış DEĞİL:** grafiğin adı "Pozisyon"dur ve nokta o ayın
+         *     SONUNDAKİ nakit bakiyesidir (açılış nakdi dâhil). Aylık akış basan bir
+         *     uygulama aynı veriyle bambaşka bir eğri çizer ve son noktası
+         *     `closing_cash`e denk GELMEZDİ.
+         */
+        MonthlyCashPoint: {
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            /** Closing Cash */
+            closing_cash: string;
         };
         /** NotificationPrefItem */
         NotificationPrefItem: {
@@ -17998,6 +18321,97 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VatReturnResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    balance_sheet_endpoint_balance_sheet_get: {
+        parameters: {
+            query: {
+                as_of: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BalanceSheetResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cash_flow_statement_endpoint_cash_flow_statement_get: {
+        parameters: {
+            query: {
+                year: number;
+                month: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashFlowStatementResponse"];
                 };
             };
             /** @description Yetkisiz işlem */

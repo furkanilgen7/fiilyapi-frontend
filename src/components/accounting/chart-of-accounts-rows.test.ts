@@ -21,6 +21,7 @@ function account(partial: Partial<ChartAccountResponse> & { code: string }): Cha
     name: "Hesap",
     account_type: "asset",
     is_active: true,
+    is_contra: false,
     created_at: "2026-07-01T00:00:00Z",
     updated_at: "2026-07-01T00:00:00Z",
     balance: "0.00",
