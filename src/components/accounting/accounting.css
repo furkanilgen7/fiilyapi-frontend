@@ -466,3 +466,94 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   F-MU2 · Mizan (MZ). Kanon: `Muhasebe - Mizan.dc.html`; parantez içi sayılar
+   O dosyanın SATIR numaralarıdır. Tablo kabı E8/HP ile AYNIdır (`.mu-table`),
+   yalnız MZ'ye özgü kurallar burada.
+--------------------------------------------------------------------------- */
+
+/* MZ:54-57 — kontrol banner'ı. İSKELET TEK, ton İKİ (K2: dengesiz dal
+   mockup'ta çizilmemiştir; ayrı bir yüzey icat etmek yerine aynı bandın tonu
+   döner). */
+.mu-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* MZ:54 */
+  padding: var(--space-3) var(--space-4); /* MZ:54 — 12px 16px */
+  border-radius: var(--radius-10); /* MZ:54 */
+  border: 1px solid transparent;
+  margin-bottom: var(--space-5); /* MZ:54 — 20px */
+  font-size: var(--text-body); /* MZ:56 — 13/600 */
+  font-weight: var(--weight-semibold);
+}
+.mu-banner__icon {
+  flex: none;
+}
+.mu-banner--ok {
+  background: var(--color-success-tint); /* MZ:54 */
+  border-color: var(--color-success-tint-border); /* MZ:54 */
+  color: var(--color-success-deep); /* MZ:56 */
+}
+/* K2 — dengesiz dalın tonu: aynı iskelet, `--danger` ailesi. */
+.mu-banner--off {
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger);
+  color: var(--color-danger-strong);
+}
+
+/* MZ:63 — kod sütunu dar ve sabittir. */
+.mu-tb__code-head {
+  width: 100px; /* MZ:63 */
+}
+
+/* MZ:62 — İKİ KATMAN ARASINDAKİ çizgi 2px'tir; alt katmanın altındaki (MZ:69)
+   `.mu-table th`in 1px'i olarak kalır. */
+.mu-tb thead tr:first-child th {
+  border-bottom-width: 2px;
+}
+
+/* MZ:69-77 — başlığın İKİNCİ katmanı: daha küçük, çizgisi ince. */
+.mu-tb__subhead th {
+  padding: 6px var(--space-3); /* MZ:70-76 */
+  font-size: 10px; /* MZ:71 — token yok (`--text-small` 11px); MZ satırıyla gerekçeli px */
+  letter-spacing: normal;
+  text-transform: none;
+}
+/* 🔴 1. RENK KATMANI — SÜTUN BAŞLIKLARI (MZ:71-76). Gövdeden bağımsızdır:
+   başlık her zaman renklidir, hücre yalnız kapanış grubunda renklenir. */
+.mu-tb__side--debit {
+  color: var(--color-danger); /* MZ:71/73/75 */
+}
+.mu-tb__side--credit {
+  color: var(--color-success); /* MZ:72/74/76 */
+}
+
+/* 🔴 2. RENK KATMANI — gövdenin AÇILIŞ + DÖNEM hücreleri NÖTR ve NORMAL
+   ağırlıktadır (MZ:83, :85-86). Defterdeki `.mu-amount--debit/credit` burada
+   KULLANILMAZ; kullanılsaydı sekiz sütunun altısı kırmızı-yeşil yanar ve
+   mockup'ın kapanışa verdiği vurgu KAYBOLURDU. */
+.mu-tb__plain {
+  color: var(--color-text); /* MZ:83 */
+  font-weight: var(--weight-regular);
+}
+
+/* 🔴 4. RENK KATMANI — `tfoot` (MZ:162-170). 3. katman gövdenin kapanış
+   ikilisidir ve `.mu-amount--debit/credit`in kendi `600`ünü kullanır. */
+.mu-tb__foot td {
+  padding: 13px var(--space-4); /* MZ:163 */
+  font-size: var(--text-body); /* MZ:163 — 13/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  background: var(--color-info-tint); /* MZ:162 */
+  border-top: 2px solid var(--color-primary); /* MZ:162 */
+  border-bottom: none;
+}
+.mu-tb__total {
+  font-weight: var(--weight-bold); /* MZ:164-169 — gövdenin 600'ünü EZER */
+}
+/* MZ:168-169 — kapanış ikilisi öbür dört toplamdan 1px BÜYÜKtür (mizanın
+   asıl cevabı odur). */
+.mu-tb__foot .mu-tb__cell--closing {
+  font-size: 14px; /* MZ:168 — `--text-body`den (13px) 1px büyük; token yok */
+}

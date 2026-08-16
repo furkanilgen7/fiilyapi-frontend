@@ -127,6 +127,10 @@ export const ACCOUNTING_REASONS = {
   export: "accounting_export",
   /** HP:49 "Excel" — hesap planının da dışa aktarma ucu yok (T3). */
   chartExport: "chart_of_accounts_export",
+  /** MZ:48-49 "Excel"/"PDF" — F-MU2 K6: mizanın KENDİ anahtarı. */
+  trialBalanceExport: "trial_balance_export",
+  /** KDV:48-49 "XML İndir"/"GİB'e Gönder" — F-MU2 K6. */
+  vatReturnGib: "vat_return_gib",
   /** Yazma yetkisi yoksa. */
   write: "Muhasebe modülünde yazma yetkiniz yok.",
 } as const;

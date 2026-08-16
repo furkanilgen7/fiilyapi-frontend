@@ -137,3 +137,42 @@ describe("accounting.css — T4 diyalogları", () => {
     expect(css).toMatch(/\.mu-blockers\s*{[^}]*var\(--color-danger-soft\)/);
   });
 });
+
+describe("accounting.css — F-MU2 · Mizan (MZ)", () => {
+  it("🔴 kontrol banner'ının İKİ tonu da vardır ve AYNI rengi almazlar (K2)", () => {
+    expect(css).toMatch(/\.mu-banner--ok\s*{[^}]*var\(--color-success-tint\)/);
+    expect(css).toMatch(/\.mu-banner--off\s*{[^}]*var\(--color-danger-soft\)/);
+    // İkisi aynı zemine düşerse banner denge bilgisini TAŞIMAZ.
+    expect(/\.mu-banner--off\s*{[^}]*var\(--color-success-tint\)/.test(css)).toBe(false);
+  });
+
+  it("1. RENK KATMANI — sütun başlıkları: Borç kırmızı, Alacak yeşil (MZ:71-76)", () => {
+    expect(css).toMatch(/\.mu-tb__side--debit\s*{[^}]*var\(--color-danger\)/);
+    expect(css).toMatch(/\.mu-tb__side--credit\s*{[^}]*var\(--color-success\)/);
+  });
+
+  it("🔴 2. RENK KATMANI — gövdenin açılış/dönem hücreleri NÖTR ve NORMAL ağırlık (MZ:83)", () => {
+    const plain = /\.mu-tb__plain\s*{([^}]*)}/.exec(css)?.[1] ?? "";
+    expect(plain).toContain("var(--color-text)");
+    expect(plain).toContain("var(--weight-regular)");
+    // Defterin kırmızı/yeşil ikilisini ÖDÜNÇ ALMAZ — alsaydı MZ'nin kapanışa
+    // verdiği vurgu kaybolurdu.
+    expect(plain).not.toContain("--color-danger");
+    expect(plain).not.toContain("--color-success");
+  });
+
+  it("4. RENK KATMANI — tfoot mavi zeminli, üstü 2px birincil çizgi, 700 (MZ:162-163)", () => {
+    const foot = /\.mu-tb__foot td\s*{([^}]*)}/.exec(css)?.[1] ?? "";
+    expect(foot).toContain("var(--color-info-tint)");
+    expect(foot).toContain("border-top: 2px solid var(--color-primary)");
+    expect(foot).toContain("var(--weight-bold)");
+  });
+
+  it("MZ:168-169 — tfoot'un KAPANIŞ ikilisi öbür dört toplamdan büyüktür", () => {
+    expect(css).toMatch(/\.mu-tb__foot \.mu-tb__cell--closing\s*{[^}]*font-size:\s*14px/);
+  });
+
+  it("MZ:62 — iki başlık katmanı ARASINDAKİ çizgi 2px'tir", () => {
+    expect(css).toMatch(/\.mu-tb thead tr:first-child th\s*{[^}]*border-bottom-width:\s*2px/);
+  });
+});
