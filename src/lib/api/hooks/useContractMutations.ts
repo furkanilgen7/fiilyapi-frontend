@@ -44,6 +44,41 @@ export function useSaveContractDistribution(
   });
 }
 
+export type EmployerContractGroupCreateRequest =
+  components["schemas"]["EmployerContractGroupCreate"];
+export type EmployerContractGroupResponse =
+  components["schemas"]["EmployerContractGroupResponse"];
+
+/**
+ * F-POZGRUP · İşveren sözleşmesine POZ GRUBU açma
+ * (`POST /projects/{project_id}/contract/groups`).
+ *
+ * 🔴 Bu hook olmadan yeni bir sözleşmeye İLK poz hiçbir şekilde eklenemiyordu:
+ * `group_id` zorunlu, grup listesi boş, grup yaratma ucunu çağıran kod yok.
+ * `useCreateBoqGroup` emsalidir (aynı iki adımlı "grup + kalem" akışı).
+ *
+ * Geçersiz kılma ŞART: işveren grupları AYRI bir GET ucundan gelmez, kalem
+ * listesi yanıtının (`GET .../contract/items`) `groups` alanından okunur —
+ * o sorgu tazelenmezse yeni grup açılırda hiç görünmez.
+ */
+export function useCreateEmployerContractGroup(
+  projectId: string,
+): UseMutationResult<EmployerContractGroupResponse, Error, EmployerContractGroupCreateRequest> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body) =>
+      unwrap(
+        await backendClient.POST("/projects/{project_id}/contract/groups", {
+          params: { path: { project_id: projectId } },
+          body,
+        }),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [EMPLOYER_CONTRACT_ITEMS_QUERY_KEY, projectId] });
+    },
+  });
+}
+
 export type EmployerContractItemCreateRequest =
   components["schemas"]["EmployerContractItemCreate"];
 export type EmployerContractItemResponse =

@@ -23,6 +23,8 @@ export const MAX_LENGTH = {
   description: 2000,
   /** `unit` — TAŞ 130 · İŞV 155 "Maks 50 karakter" */
   unit: 50,
+  /** `name` — openapi `EmployerContractGroupCreate` (mockup'ta alan yok). */
+  groupName: 2000,
 } as const;
 
 /**
@@ -48,6 +50,18 @@ export const UNIT_PLACEHOLDER_OPTION = "Birim seçiniz...";
 
 /** İŞV 106 · seçilmemiş grup seçeneği. */
 export const GROUP_PLACEHOLDER_OPTION = "Grup seçiniz...";
+
+/**
+ * 🔴 ONAYLI SAPMA — mockup'ta ÇİZİLİ DEĞİL (`Form - Poz Ekle Isveren.dc.html`
+ * 104-116 yalnız mevcut grupları listeler).
+ *
+ * Gerekçe: mockup'ın çizdiği hâl İLK pozu eklemeyi imkânsız kılıyor. Yeni bir
+ * işveren sözleşmesinde hiç grup yoktur, `group_id` ise ZORUNLUdur — grup
+ * yaratma girişi olmadan sözleşme sonsuza kadar pozsuz kalır. Çözüm İCAT
+ * EDİLMEDİ: `BoqItemFormModal` (Ekran 13) aynı problemi aynı sentinel seçenekle
+ * çözmüştür, o desen birebir izlenir. Sentinel değeri UUID ile çakışmaz.
+ */
+export const NEW_GROUP_OPTION = "__new__";
 
 /**
  * İŞV 184-185 · "Fiyat Farkı Uygulanır mı?" seçenekleri. SALT-OKUNURdur:
@@ -147,6 +161,10 @@ export const EMPLOYER_ITEM_TEXT = {
   escalationCard: "📈 Fiyat Farkı Ayarı", // 179
   group: "Poz Grubu", // 104
   groupHint: "Pozlar hakediş ve BOQ ekranlarında bu gruba göre gruplanır", // 116
+  /** ONAYLI SAPMA (bkz. `NEW_GROUP_OPTION`) — BOQ'un seçenek metni birebir. */
+  newGroupOption: "+ Yeni Grup",
+  groupName: "Grup Adı",
+  groupNameHint: "Poz kaydedilirken bu adla yeni bir poz grubu oluşturulur",
   code: "Poz No", // 120
   codePlaceholder: "03.012", // 121
   codeHint: "Maks 50 karakter", // 122
@@ -208,6 +226,13 @@ export const SUMMARY_DASH = "—";
 export const ESCALATION_READONLY_REASON =
   "Fiyat farkı ayarı sözleşmeden gelir — poz onu devralır, burada değiştirilemez";
 
-/** Ekleme butonunun grup listesi olmadan çalışamama gerekçesi (İŞV 104). */
-export const EMPLOYER_ADD_NEEDS_GROUPS_REASON =
-  "Poz grubu zorunludur — sözleşmede henüz grup yok, önce iş kalemi grubu oluşturulmalı";
+/**
+ * Sözleşmede henüz grup yokken tablonun altına basılan YÖNLENDİRME.
+ *
+ * 🔴 Eskiden bu metin "önce iş kalemi grubu oluşturulmalı" diyerek kullanıcıyı
+ * ÇIKMAZA sokuyordu: grup yaratmanın hiçbir girişi yoktu, `+ Poz Ekle` de
+ * kapalıydı. Artık düğme AÇIK ve ilk grup formun içinden ("+ Yeni Grup")
+ * yaratılıyor — metin de gerekçe değil EYLEM anlatır.
+ */
+export const EMPLOYER_NO_GROUPS_HINT =
+  "Sözleşmede henüz poz grubu yok — “+ Poz Ekle” ile ilk pozu eklerken grubu da oluşturabilirsiniz";

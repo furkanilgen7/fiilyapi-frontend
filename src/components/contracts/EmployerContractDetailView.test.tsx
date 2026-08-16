@@ -13,6 +13,7 @@ import {
   type ProgressPaymentListResponse,
 } from "@/lib/api/hooks/useProgressPayments";
 import { useProject } from "@/lib/api/hooks/useProjects";
+import { EMPLOYER_NO_GROUPS_HINT } from "@/components/contract-item-form/constants";
 
 vi.mock("@/lib/api/hooks/useContract", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useContract")>()),
@@ -27,6 +28,7 @@ vi.mock("@/lib/api/hooks/useProgressPayments", async (importOriginal) => ({
 // QueryClientProvider yoktur, bu yüzden ekleme hook'u sahtelenir.
 vi.mock("@/lib/api/hooks/useContractMutations", () => ({
   useCreateEmployerContractItem: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateEmployerContractGroup: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 vi.mock("@/lib/api/hooks/useProjects", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useProjects")>()),
@@ -520,7 +522,12 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
       ).toBeInTheDocument();
     });
 
-    it("grup yokken buton devre dışıdır ve gerekçe GÖRÜNÜRDÜR (`group_id` zorunlu)", () => {
+    // 🔴 F-POZGRUP · DAVRANIŞ BİLİNÇLİ DEĞİŞTİ. Eskiden düğme grup yokken
+    // KAPALIydı — bu, yeni bir sözleşmeye ilk pozun hiçbir şekilde
+    // eklenememesi demekti (grup yaratmanın başka girişi yok). Artık düğme
+    // AÇIK ve ilk grup formun içinden yaratılıyor; alttaki metin de gerekçe
+    // değil EYLEM anlatır.
+    it("grup yokken de buton AÇIKTIR ve yönlendirme metni GÖRÜNÜRDÜR", () => {
       mockAll();
       vi.mocked(useEmployerContractItems).mockReturnValue({
         data: { groups: [] },
@@ -529,8 +536,10 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
       } as unknown as ReturnType<typeof useEmployerContractItems>);
       render(<EmployerContractDetailView projectId="p-1" />);
 
-      expect(screen.getByTestId("ecd-add-item")).toBeDisabled();
-      expect(screen.getByTestId("ecd-add-item-reason")).toBeInTheDocument();
+      expect(screen.getByTestId("ecd-add-item")).toBeEnabled();
+      expect(screen.getByTestId("ecd-add-item-reason")).toHaveTextContent(
+        EMPLOYER_NO_GROUPS_HINT,
+      );
     });
 
     it("`items_total` / `items_total_diff` tfoot'ta gösterilir (veri kaybı yok)", () => {

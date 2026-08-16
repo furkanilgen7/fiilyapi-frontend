@@ -176,6 +176,13 @@ interface MockEmployer {
 // CONTRACT_ITEMS_P1 yorumu — mockup satır numaraları orada).
 interface MockContractItem {
   id: string;
+  /**
+   * F-POZGRUP · sahibi proje. Fikstürlerin TAMAMI `p-1`e aittir, bu yüzden
+   * alan İSTEĞE BAĞLIdır ve boşsa `p-1` sayılır — mevcut fikstür sabiti
+   * (`CONTRACT_ITEMS_P1`) dokunulmadan kalır. Boş sözleşme fikstürüne
+   * (`p-4`) eklenen kalemler kendi projelerini taşır.
+   */
+  projectId?: string;
   code: string;
   description: string;
   unit: string;
@@ -184,6 +191,14 @@ interface MockContractItem {
   groupName: string;
   groupSortOrder: number;
   allocations: Array<{ site_id: string; quantity: string }>;
+}
+
+/** F-POZGRUP · `POST /projects/{id}/contract/groups` ile yaratılan poz grubu. */
+interface MockContractGroup {
+  id: string;
+  projectId: string;
+  name: string;
+  sort_order: number;
 }
 
 // `ProgressPaymentLineDetail` (schema.d.ts) ile birebir alan kümesi.
@@ -399,6 +414,16 @@ interface MockState {
   // DEĞİŞTİRİLEBİLİR durumdadır (modül sabiti `CONTRACT_ITEMS_P1`den
   // kopyalanır). Birleştirme semantiğinin e2e kanıtı buna dayanır.
   contractItems: MockContractItem[];
+  /**
+   * F-POZGRUP · İşveren poz GRUPLARI artık GERÇEK bir koleksiyondur.
+   *
+   * 🔴 Eskiden gruplar YALNIZCA kalemlerin `groupName` alanından türetiliyordu;
+   * bu yüzden BOŞ bir grup (ve dolayısıyla "grup yaratıldı ama kalem
+   * eklenemedi" hâli) mock'ta hiç temsil edilemiyordu. Koleksiyon BOŞ başlar —
+   * `p-1` yanıtı bire bir eskisi gibi kalemlerden türer, kare/test kaymaz.
+   */
+  contractGroups: MockContractGroup[];
+  contractGroupSeq: number;
   // F-P5 T1 — Taşeron FİRMA kayıtları (TL listesi + "+ Taşeron Ekle" modalı).
   subcontractors: MockSubcontractor[];
   subcontractorSeq: number;
@@ -758,6 +783,19 @@ const EMPLOYER_CONTRACT_P1 = {
   items_total_diff: "0.00",
   advance_amount: "2240000.00",
 };
+
+/**
+ * F-POZGRUP · BOŞ (GRUPSUZ) SÖZLEŞME FİKSTÜRÜ.
+ *
+ * "Yeni bir sözleşmeye ilk poz eklenemiyor" kusuru YALNIZCA hiç grubu olmayan
+ * bir sözleşmede görülebilir; `p-1` dört kalemle ve iki grupla doludur. Bu
+ * yüzden ikinci bir proje (`p-4` · Güneşkent B-Blok, taahhüt) boş bir işveren
+ * sözleşmesi taşır. `p-1`in davranışı HİÇ değişmez.
+ *
+ * Şekil `EMPLOYER_CONTRACT_P1`den KOPYALANIR (alan kayması olmasın); yalnız
+ * kimlik ve toplamlar boş sözleşmeye çekilir.
+ */
+const EMPTY_CONTRACT_PROJECT_ID = "p-4";
 
 // `ProgressPaymentSummary` — SABİT (liste uzunluğundan bağımsız), BOQ_FIXTURE
 // totals'ının aynı deseni: `Ekran 15…`in KPI'ları (Toplam Hakediş ₺8,4M /
@@ -1134,7 +1172,11 @@ function buildProgressPaymentFixtures(): MockProgressPayment[] {
 // `GET .../contract/distribution` yanıtı — `state.contractItems`ten türetilir
 // (F-P5 T1: PUT ucu bu diziyi BİRLEŞTİRME semantiğiyle değiştirir).
 function buildContractDistributionResponse(state: MockState, projectId: string) {
-  const contractItems = state.contractItems;
+  // F-POZGRUP · kalemler artık proje taşır; boş sözleşme fikstürüne (`p-4`)
+  // eklenenler `p-1`in dağılım ızgarasına SIZMAZ.
+  const contractItems = state.contractItems.filter(
+    (i) => (i.projectId ?? "p-1") === projectId,
+  );
   const sites = state.sites
     .filter((s) => s.project_id === projectId)
     .map((s) => ({ id: s.id, name: s.name }));
@@ -1312,20 +1354,38 @@ function buildContractsListResponse(state: MockState, query: URLSearchParams) {
  */
 function buildEmployerContractItemsResponse(
   state: MockState,
+  projectId = "p-1",
 ): components["schemas"]["EmployerContractItemsResponse"] {
-  const groupNames = Array.from(new Set(state.contractItems.map((i) => i.groupName)));
-  return {
-    groups: groupNames.map((name, index) => ({
+  const items = state.contractItems.filter((i) => (i.projectId ?? "p-1") === projectId);
+  // F-POZGRUP · İKİ kaynak birleşir: (1) kalemlerden TÜRETİLEN gruplar —
+  // fikstür davranışı, id'leri ve sırası DEĞİŞMEDEN korunur; (2) uçtan
+  // YARATILAN gruplar, sona eklenir (boş olabilirler). Koleksiyon boşken
+  // sonuç eski kurucuyla bire bir aynıdır.
+  const created = state.contractGroups.filter((g) => g.projectId === projectId);
+  const createdNames = new Set(created.map((g) => g.name));
+  const derived = Array.from(new Set(items.map((i) => i.groupName)))
+    .filter((name) => !createdNames.has(name))
+    .map((name, index) => ({
       id: `cg-${index + 1}`,
       name,
-      sort_order: state.contractItems.find((i) => i.groupName === name)?.groupSortOrder ?? 0,
-      items: state.contractItems
+      sort_order: items.find((i) => i.groupName === name)?.groupSortOrder ?? 0,
+    }));
+  const groups = [
+    ...derived,
+    ...created.map((g) => ({ id: g.id, name: g.name, sort_order: g.sort_order })),
+  ];
+  return {
+    groups: groups.map(({ id, name, sort_order }) => ({
+      id,
+      name,
+      sort_order,
+      items: items
         .filter((i) => i.groupName === name)
         .map((item, itemIndex) => {
           const distributed = item.allocations.reduce((sum, a) => sum + Number(a.quantity), 0);
           return {
             id: item.id,
-            group_id: `cg-${index + 1}`,
+            group_id: id,
             code: item.code,
             description: item.description,
             unit: item.unit,
@@ -2014,6 +2074,9 @@ function seedState(): MockState {
       ...item,
       allocations: item.allocations.map((a) => ({ ...a })),
     })),
+    // F-POZGRUP · BOŞ başlar: `p-1` grupları eskisi gibi kalemlerden türer.
+    contractGroups: [],
+    contractGroupSeq: 0,
     subcontractors: SUBCONTRACTOR_FIXTURES.map((s) => ({ ...s })),
     subcontractorSeq: 0,
     subcontractorContracts: SUBCONTRACTOR_CONTRACTS.map((c) => ({
@@ -5702,6 +5765,22 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const projectId = contractMatch[1];
       const project = state.projects.find((p) => p.id === projectId);
       if (!project) return send(404, { detail: "proje yok" });
+      // F-POZGRUP · boş sözleşme fikstürü (bkz. EMPTY_CONTRACT_PROJECT_ID):
+      // pozsuz/grupsuz sözleşme ekranı ancak böyle açılabilir.
+      if (projectId === EMPTY_CONTRACT_PROJECT_ID) {
+        return send(200, {
+          ...EMPLOYER_CONTRACT_P1,
+          project_id: EMPTY_CONTRACT_PROJECT_ID,
+          contract_no: project.contract_no,
+          amount: "9400000.00",
+          items_total: "0.00",
+          items_total_diff: "9400000.00",
+          progress_payment_summary: buildProgressPaymentSummary(state, projectId),
+          milestones: null,
+          documents: null,
+          pending_modules: [] as string[],
+        });
+      }
       if (projectId !== "p-1") return send(404, { detail: "bu proje icin sozlesme yok" });
       return send(200, {
         ...EMPLOYER_CONTRACT_P1,
@@ -5719,8 +5798,37 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     if (method === "GET" && contractItemsMatch) {
       const projectId = contractItemsMatch[1];
       if (!state.projects.some((p) => p.id === projectId)) return send(404, { detail: "proje yok" });
-      if (projectId !== "p-1") return send(404, { detail: "bu proje icin sozlesme yok" });
-      return send(200, buildEmployerContractItemsResponse(state));
+      // F-POZGRUP · `p-4` BOŞ sözleşmedir: 200 + boş `groups` döner (eskiden
+      // 404'tü, bu yüzden grupsuz sözleşme hâli mock'ta hiç üretilemiyordu).
+      if (projectId !== "p-1" && projectId !== EMPTY_CONTRACT_PROJECT_ID) {
+        return send(404, { detail: "bu proje icin sozlesme yok" });
+      }
+      return send(200, buildEmployerContractItemsResponse(state, projectId));
+    }
+
+    // F-POZGRUP · POST /projects/{project_id}/contract/groups — poz GRUBU
+    // açma. Formdaki "+ Yeni Grup" akışının ilk adımı; bu uç olmadan yeni bir
+    // sözleşmeye ilk poz hiçbir şekilde eklenemez.
+    const contractGroupsMatch = path.match(/^\/projects\/([^/]+)\/contract\/groups$/);
+    if (method === "POST" && contractGroupsMatch) {
+      const projectId = contractGroupsMatch[1];
+      if (!state.projects.some((p) => p.id === projectId)) return send(404, { detail: "proje yok" });
+      if (projectId !== "p-1" && projectId !== EMPTY_CONTRACT_PROJECT_ID) {
+        return send(404, { detail: "bu proje icin sozlesme yok" });
+      }
+      return withBody((body) => {
+        const name = String(body.name ?? "").trim();
+        if (!name) return send(422, { detail: "Grup adı zorunludur." });
+        state.contractGroupSeq += 1;
+        const created: MockContractGroup = {
+          id: `cg-new-${state.contractGroupSeq}`,
+          projectId,
+          name,
+          sort_order: Number(body.sort_order ?? 0),
+        };
+        state.contractGroups = [...state.contractGroups, created];
+        return send(201, { id: created.id, name: created.name, sort_order: created.sort_order });
+      });
     }
 
     // F-BLG T3 · POST /projects/{project_id}/contract/items — İşveren
@@ -5737,15 +5845,22 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     if (method === "POST" && contractItemsMatch) {
       const projectId = contractItemsMatch[1];
       if (!state.projects.some((p) => p.id === projectId)) return send(404, { detail: "proje yok" });
-      if (projectId !== "p-1") return send(404, { detail: "bu proje icin sozlesme yok" });
+      if (projectId !== "p-1" && projectId !== EMPTY_CONTRACT_PROJECT_ID) {
+        return send(404, { detail: "bu proje icin sozlesme yok" });
+      }
       return withBody((body) => {
-        const groups = buildEmployerContractItemsResponse(state).groups;
+        const groups = buildEmployerContractItemsResponse(state, projectId).groups;
         const group = groups.find((g) => g.id === String(body.group_id ?? ""));
         if (!group) return send(404, { detail: "Poz grubu bulunamadı." });
 
         const code = String(body.code ?? "").trim();
         if (!code) return send(422, { detail: "Poz numarası zorunludur." });
-        if (state.contractItems.some((item) => item.code === code)) {
+        // Poz No benzersizliği SÖZLEŞME içindedir (proje kapsamı).
+        if (
+          state.contractItems.some(
+            (item) => (item.projectId ?? "p-1") === projectId && item.code === code,
+          )
+        ) {
           return send(409, { detail: "Bu poz numarası zaten kullanılıyor." });
         }
         // `quantity`/`unit_price` DECIMAL-STRING taşınır; sayıya çevrilip geri
@@ -5759,6 +5874,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         state.contractItemSeq += 1;
         const created: MockContractItem = {
           id: `ci-new-${state.contractItemSeq}`,
+          projectId,
           code,
           description: String(body.description ?? ""),
           unit: String(body.unit ?? ""),
@@ -5770,7 +5886,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         };
         state.contractItems = [...state.contractItems, created];
 
-        const refreshed = buildEmployerContractItemsResponse(state)
+        const refreshed = buildEmployerContractItemsResponse(state, projectId)
           .groups.find((g) => g.id === group.id)
           ?.items.find((item) => item.id === created.id);
         if (!refreshed) return send(500, { detail: "kalem kurulamadi" });

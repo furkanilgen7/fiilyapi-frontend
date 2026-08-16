@@ -20,6 +20,7 @@ const VALID: ContractItemFormValues = {
 const VALID_EMPLOYER: EmployerItemFormValues = {
   ...VALID,
   groupId: "gggggggg-0000-0000-0000-000000000001",
+  groupName: "",
 };
 
 describe("validateSubcontractorItem (TAŞ)", () => {

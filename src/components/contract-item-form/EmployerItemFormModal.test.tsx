@@ -8,7 +8,10 @@ import {
   ESCALATION_READONLY_REASON,
   INDEX_TYPE_LABELS,
 } from "./constants";
-import { useCreateEmployerContractItem } from "@/lib/api/hooks/useContractMutations";
+import {
+  useCreateEmployerContractGroup,
+  useCreateEmployerContractItem,
+} from "@/lib/api/hooks/useContractMutations";
 import type {
   EmployerContractDetail,
   EmployerContractItemsResponse,
@@ -16,6 +19,7 @@ import type {
 
 vi.mock("@/lib/api/hooks/useContractMutations", () => ({
   useCreateEmployerContractItem: vi.fn(),
+  useCreateEmployerContractGroup: vi.fn(),
 }));
 
 const push = vi.fn();
@@ -23,6 +27,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 const PROJECT_ID = "pppppppp-0000-0000-0000-000000000001";
 const GROUP_ID = "gggggggg-0000-0000-0000-000000000002";
+const NEW_GROUP_ID = "gggggggg-0000-0000-0000-000000000009";
 
 const GROUPS: EmployerContractItemsResponse["groups"] = [
   {
@@ -57,13 +62,17 @@ const DETAIL = {
 } as EmployerContractDetail;
 
 const createItem = vi.fn();
+const createGroup = vi.fn();
 const onClose = vi.fn();
 
-function renderModal(detail: EmployerContractDetail = DETAIL) {
+function renderModal(
+  detail: EmployerContractDetail = DETAIL,
+  groups: EmployerContractItemsResponse["groups"] = GROUPS,
+) {
   return render(
     <EmployerItemFormModal
       projectId={PROJECT_ID}
-      groups={GROUPS}
+      groups={groups}
       detail={detail}
       onClose={onClose}
     />,
@@ -86,6 +95,11 @@ beforeEach(() => {
   createItem.mockResolvedValue({});
   vi.mocked(useCreateEmployerContractItem).mockReturnValue({
     mutateAsync: createItem,
+    isPending: false,
+  } as never);
+  createGroup.mockResolvedValue({ id: NEW_GROUP_ID, name: "C — Kaba İşler", sort_order: 30 });
+  vi.mocked(useCreateEmployerContractGroup).mockReturnValue({
+    mutateAsync: createGroup,
     isPending: false,
   } as never);
 });
