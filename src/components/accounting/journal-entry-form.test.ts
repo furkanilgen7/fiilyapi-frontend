@@ -5,13 +5,17 @@ import type { JournalEntryDetailResponse } from "@/lib/api/hooks/useJournalEntri
 
 import {
   applyLineAmount,
+  balanceNarration,
   changedEntryFields,
+  differenceWarning,
   draftsFromEntry,
   emptyJournalLine,
   initialJournalLines,
   isLeafChartAccount,
   isSideLocked,
+  JOURNAL_DESCRIPTION_MAX,
   JOURNAL_FORM_BLOCKERS,
+  JOURNAL_FORM_TEXT,
   journalFormBlockers,
   journalTotals,
   lineFilledSide,
@@ -316,6 +320,63 @@ describe("satir taslaklari", () => {
       debit: "1000.00",
       credit: "",
     });
+  });
+});
+
+/**
+ * `Form - Yevmiye Kaydi.dc.html` (aşağıda `M:`) metinleri. Cümleler mockup'tan
+ * BİREBİR alınır; TEK sapma `M:96`nın karakter sınırıdır (ölçüm aşağıda).
+ */
+describe("M: mockup metinleri", () => {
+  it("M:83 alt başlığı BİREBİR taşınır", () => {
+    expect(JOURNAL_FORM_TEXT.subtitle).toBe(
+      "Çift taraflı kayıt — borç ve alacak toplamları eşit olmalı",
+    );
+  });
+
+  it("M:114 kalem ipucu BİREBİR taşınır", () => {
+    expect(JOURNAL_FORM_TEXT.linesHint).toBe(
+      "Her satırda ya borç ya alacak dolar — ikisi birden dolamaz",
+    );
+  });
+
+  /**
+   * 🔴 M:96 "Maks 500 karakter" ÖLÇÜLDÜ ve YANLIŞTIR: `description` sınırı
+   * `FREE_TEXT_MAX_LENGTH` = **2000**tir (`backend/app/core/text.py:15`,
+   * `accounting/schemas.py:292`). `schema.d.ts` `maxLength` taşımaz — openapi
+   * üretimi Field kısıtını düşürür, dolayısıyla tek ölçülebilir kaynak
+   * şemanın kendisidir. Mockup'ın sayısı basılsaydı kullanıcı 500'de durur ve
+   * sunucunun İZİN VERDİĞİ metni yazamazdı.
+   */
+  it("M:96 ipucu ÖLÇÜLEN sunucu sınırını söyler (mockup'ın 500'ünü DEĞİL)", () => {
+    expect(JOURNAL_DESCRIPTION_MAX).toBe(2000);
+    expect(JOURNAL_FORM_TEXT.descriptionHint).toBe(
+      "Maks 2000 karakter · Yevmiye listesinde bu metin görünür",
+    );
+    expect(JOURNAL_FORM_TEXT.descriptionHint).not.toContain("500");
+  });
+});
+
+describe("denge bandı anlatısı (M:194-246)", () => {
+  it("M:200-201 dengesiz hâl: başlık + gerekçe AYRI iki satırdır", () => {
+    expect(balanceNarration(false)).toEqual({
+      title: "Fiş dengede değil",
+      detail: "Borç ve alacak toplamları eşit olmadan kaydedilemez",
+    });
+  });
+
+  it("M:228-229 dengeli hâl", () => {
+    expect(balanceNarration(true)).toEqual({
+      title: "Fiş dengede",
+      detail: "Kaydedilmeye hazır",
+    });
+  });
+
+  /** M:251 — alt şeritteki uyarı, farkın BİÇİMLENMİŞ hâlini taşır. */
+  it("M:251 uyarı cümlesi farkı içerir", () => {
+    expect(differenceWarning("116.800,00")).toBe(
+      "Fark ₺116.800,00 — sıfırlanmadan fiş kaydedilemez",
+    );
   });
 });
 
