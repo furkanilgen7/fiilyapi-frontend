@@ -1468,5 +1468,35 @@ describe("BFF /api/backend/[...path]", () => {
       expect(res.status).toBe(404);
       expect(fetchMock).not.toHaveBeenCalled();
     });
+
+    // F-IZN (izin yonetimi) UC kokU — ayni ADLI kapi, ayni gerekce (MU-2/MT-1
+    // emsali). Yonetim OLCTU: ucu de su an ALLOWED_ROOTS'ta YOK (grep 0/0/0).
+    // 🔴 Bu kokleri CAGIRAN KOD henuz bu adli bekciyle ES ZAMANLI yazilmadan
+    // ONCE yoktu, dolayisiyla "cagrilan her kok ALLOWED_ROOTS'ta tanimlidir"
+    // bekcisi onlari HIC GORMEZ — biri duserse tek bir dinamik test bile
+    // kirmiziya donmez. Kok duserse ilgili izin uclari YALNIZ CANLIDA 404
+    // alir; jsdom testleri bunu GORMEZ. Kokler:
+    //   · `leave-types`    → GET /leave-types
+    //   · `leave-requests` → GET,POST /leave-requests,
+    //                        GET,PATCH,DELETE /leave-requests/{id},
+    //                        POST .../{id}/approve|reject
+    //   · `leave-balances` → GET,PUT /leave-balances/{personnel_id}/{year}
+    // (`GET /hr/leaves/summary` mevcut "hr" kokunden gecer — ayri kok gerekmez.)
+    it.each(["leave-requests", "leave-types", "leave-balances"])(
+      "%s koku (F-IZN) allow-list'te GERCEK girdi olarak tanimlidir",
+      (root) => {
+        const source = readFileSync(
+          resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+          "utf8",
+        );
+        const allowList = source.slice(
+          source.indexOf("const ALLOWED_ROOTS"),
+          source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+        );
+        // Yorum metni DEGIL, tirnakli GERCEK girdiler okunur (sahte bekci onlemi).
+        const entries = [...allowList.matchAll(/^\s*"([a-z0-9-]+)",/gm)].map((m) => m[1]);
+        expect(entries).toContain(root);
+      },
+    );
   });
 });

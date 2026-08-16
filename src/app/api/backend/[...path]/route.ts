@@ -235,6 +235,20 @@ const ALLOWED_ROOTS = new Set([
   // jsdom testleri bunu GÖRMEZ.
   "balance-sheet",
   "cash-flow-statement",
+  // F-IZN (izin yonetimi) — UC kok. Yonetim OLCTU: ucu de su an YOK (grep
+  // 0/0/0). "hr" ve "personnel" zaten mevcut ama izin uclarinin ilk path
+  // segmenti onlardan FARKLI. Kokler:
+  //   · `leave-types`    → `GET /leave-types`
+  //   · `leave-requests` → `GET,POST /leave-requests`,
+  //     `GET,PATCH,DELETE /leave-requests/{request_id}`,
+  //     `POST .../{request_id}/approve|reject`
+  //   · `leave-balances` → `GET,PUT /leave-balances/{personnel_id}/{year}`
+  // (`GET /hr/leaves/summary` mevcut "hr" kokunden gecer — ayri kok gerekmez.)
+  // Eksikse izin yonetimi modulu YALNIZ CANLIDA 404 alir; jsdom testleri
+  // bunu GORMEZ.
+  "leave-requests",
+  "leave-types",
+  "leave-balances",
 ]);
 
 // JSON/metin sayilan icerik tipleri: govde metne cozulup JSON olarak islenir.
