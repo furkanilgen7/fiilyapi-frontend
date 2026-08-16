@@ -4926,7 +4926,11 @@ const EQUIPMENT_DOCUMENT_FIXTURES: components["schemas"]["EquipmentDocumentRespo
     filename: "tower-crane-ruhsat.pdf",
     mime_type: "application/pdf",
     size_bytes: 184320,
+    // BOR-TEMIZ (FRM-1) ile açılan üç alan. Bu kayıt DOLU dalı temsil eder.
+    document_no: "TC-48-RUH-2026",
+    issued_at: "2026-04-30",
     valid_until: "2027-04-30",
+    note: "Yıllık yenileme takibi İK'da.",
     created_at: "2026-04-30T08:00:00Z",
   },
   {
@@ -4939,7 +4943,11 @@ const EQUIPMENT_DOCUMENT_FIXTURES: components["schemas"]["EquipmentDocumentRespo
     mime_type: "application/pdf",
     size_bytes: 96256,
     // Süre takibi YAPILMAYAN belge — `valid_until` NULL, boş dize DEĞİL.
+    // Üç yeni alan da NULL: bu kayıt BOŞ dalı temsil eder (dolu dalı `edoc-1` tutar).
+    document_no: null,
+    issued_at: null,
     valid_until: null,
+    note: null,
     created_at: "2026-05-12T08:00:00Z",
   },
 ];
@@ -8590,7 +8598,12 @@ export function startMockBackend(port: number): { server: Server; close: () => P
             mime_type: parsedBody.file.mimeType,
             size_bytes: parsedBody.file.size,
             // Alan GEÇİLMEDİYSE süre takibi YAPILMAZ — boş dize DEĞİL, NULL.
+            // BOR-TEMIZ (FRM-1) üç alanı create'e açtı; sunucu gibi burada da
+            // "geçilmedi" ile "boş dize" AYNI sonuca (NULL) düşer.
+            document_no: parsedBody.fields.document_no || null,
+            issued_at: parsedBody.fields.issued_at || null,
             valid_until: parsedBody.fields.valid_until || null,
+            note: parsedBody.fields.note || null,
             created_at: "2026-08-15T09:00:00Z",
           };
           state.equipmentDocuments = [...state.equipmentDocuments, created];

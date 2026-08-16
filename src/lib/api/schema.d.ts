@@ -1341,6 +1341,14 @@ export interface paths {
          *     Uzantı kontrolünün okumadan önce olması bilinçlidir: yasak uzantılı 50 MB'lık
          *     bir gövdeyi sonuna kadar okumanın hiçbir karşılığı yoktur.
          *
+         *     `filename` OPSİYONELDİR (T1). Verilmezse yüklenen dosyanın adı kullanılır
+         *     (mevcut davranış). Verilirse künyeye YAZILACAK NİHAİ ad odur ve `file.filename`
+         *     hiç kullanılmaz — kaynak ne olursa olsun (form alanı ya da yüklenen dosyanın
+         *     adı) aynı iki kapıdan (normalize + beyaz liste) geçer, biri diğerini
+         *     ATLATAMAZ. `max_length=255` `DocumentUpdate.filename`in (PATCH) aynı
+         *     kuralıdır — iki giriş noktası ayrı ayrı yazılsaydı biri güncellenip diğeri
+         *     unutulur, biri diğerinden gevşek kalırdı.
+         *
          *     Künye + baytlar TEK transaction'da yazılır; `put` patlarsa künye de yazılmaz.
          */
         post: operations["upload_document_endpoint_documents_post"];
@@ -1663,12 +1671,41 @@ export interface paths {
         /**
          * Create Equipment Document Endpoint
          * @description Multipart yükleme (M2:134-159). Kapı sırası modül docstring'inde.
+         *
+         *     FRM-1'in üç künye alanı (`document_no`/`issued_at`/`note`) OPSİYONELDİR:
+         *     hiç gönderilmezse NULL kalır ve önceki davranış birebir korunur.
          */
         post: operations["create_equipment_document_endpoint_equipment__equipment_id__documents_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/equipment/documents/{document_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Equipment Document Endpoint */
+        delete: operations["delete_equipment_document_endpoint_equipment_documents__document_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Equipment Document Endpoint
+         * @description Kısmi künye güncellemesi (K2) — DÖRT alan: `document_no` · `issued_at` ·
+         *     `note` · `valid_until`.
+         *
+         *     🔴 Dosyanın kendisi (içerik/ad/mime tipi) ve belge TİPİ bu uçtan
+         *     DEĞİŞTİRİLEMEZ; yanlış dosya silinip yeniden yüklenir. Yetki DELETE/POST
+         *     ile aynı (`full`), görünmeyen kayıt 404'tür (403 DEĞİL — varlık sızmaz).
+         */
+        patch: operations["update_equipment_document_endpoint_equipment_documents__document_id__patch"];
         trace?: never;
     };
     "/equipment/documents/{document_id}/download": {
@@ -1689,23 +1726,6 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/equipment/documents/{document_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete Equipment Document Endpoint */
-        delete: operations["delete_equipment_document_endpoint_equipment_documents__document_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2846,6 +2866,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/personnel/document-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Personnel Document Types Endpoint
+         * @description Katalog tipleri, `sort_order` sırasıyla. CRUD ucu YOK (K5 notu).
+         */
+        get: operations["list_personnel_document_types_endpoint_personnel_document_types_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/personnel": {
         parameters: {
             query?: never;
@@ -3866,7 +3906,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Projects Endpoint */
+        /**
+         * List Projects Endpoint
+         * @description Proje listesi (SITE-1b sonrası sayfalı).
+         *
+         *     `counts` süzgeçten de sayfadan da ETKİLENMEZ (sekme rakamları);
+         *     `total` SÜZGEÇLENMİŞ kümenin boyutudur (sayfa çubuğu). Ayrıntı:
+         *     `ProjectListResponse` docstring'i.
+         */
         get: operations["list_projects_endpoint_projects_get"];
         put?: never;
         /** Create Project Endpoint */
@@ -4662,6 +4709,26 @@ export interface paths {
          *     (Hafta/Ay/Sprint) backend'e AÇILMAZ — mockup göstermiyor (spec §2, §6 S4).
          */
         put: operations["save_site_plan_sprint_endpoint_sites__site_id__plan_sprint_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Site Options Endpoint
+         * @description Proje bagimsiz santiye secenekleri (yalin sema, K3).
+         */
+        get: operations["list_site_options_endpoint_sites_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -6196,6 +6263,12 @@ export interface components {
             type_id: string;
             /** Valid Until */
             valid_until?: string | null;
+            /** Document No */
+            document_no?: string | null;
+            /** Issued At */
+            issued_at?: string | null;
+            /** Note */
+            note?: string | null;
         };
         /** Body_import_units_endpoint_projects__project_id__units_import_post */
         Body_import_units_endpoint_projects__project_id__units_import_post: {
@@ -6224,6 +6297,8 @@ export interface components {
             folder_id?: string | null;
             /** Description */
             description?: string | null;
+            /** Filename */
+            filename?: string | null;
         };
         /** Body_upload_logo_endpoint_company_logo_post */
         Body_upload_logo_endpoint_company_logo_post: {
@@ -7588,8 +7663,14 @@ export interface components {
             mime_type: string;
             /** Size Bytes */
             size_bytes: number;
+            /** Document No */
+            document_no: string | null;
+            /** Issued At */
+            issued_at: string | null;
             /** Valid Until */
             valid_until: string | null;
+            /** Note */
+            note: string | null;
             /**
              * Created At
              * Format: date-time
@@ -7619,6 +7700,30 @@ export interface components {
             is_required: boolean;
             /** Sort Order */
             sort_order: number;
+        };
+        /**
+         * EquipmentDocumentUpdate
+         * @description `PATCH /equipment/documents/{id}` — KAPSAM DAR (K2).
+         *
+         *     Yalnız DÖRT künye alanı güncellenir: `document_no` · `issued_at` · `note` ·
+         *     `valid_until`. Dosyanın kendisi (`content`/`filename`/`mime_type`/
+         *     `size_bytes`) ve belgenin KİMLİĞİ (`type_id`) DEĞİŞMEZ — yanlış tiple ya da
+         *     yanlış dosyayla açılan kayıt silinip yeniden yüklenir
+         *     (`PersonnelDocumentUpdate` emsalinin birebiri). Gövdeye bu alanlar
+         *     gönderilse bile Pydantic onları YOK SAYAR.
+         *
+         *     `exclude_unset` ile "gönderilmedi" ≠ "null gönderildi" ayrımı korunur:
+         *     gönderilmeyen alana DOKUNULMAZ, açıkça `null` gönderilen alan TEMİZLENİR.
+         */
+        EquipmentDocumentUpdate: {
+            /** Document No */
+            document_no?: string | null;
+            /** Issued At */
+            issued_at?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Valid Until */
+            valid_until?: string | null;
         };
         /**
          * EquipmentDocumentsSummaryResponse
@@ -10416,6 +10521,32 @@ export interface components {
              */
             updated_at: string;
         };
+        /** PersonnelDocumentTypeListResponse */
+        PersonnelDocumentTypeListResponse: {
+            /** Items */
+            items: components["schemas"]["PersonnelDocumentTypeResponse"][];
+        };
+        /**
+         * PersonnelDocumentTypeResponse
+         * @description `GET /personnel/document-types` satırı — katalog künyesi.
+         */
+        PersonnelDocumentTypeResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Is Mandatory */
+            is_mandatory: boolean;
+            /** Validity Months */
+            validity_months: number | null;
+            /** Sort Order */
+            sort_order: number;
+            /** Is Active */
+            is_active: boolean;
+        };
         /**
          * PersonnelDocumentUpdate
          * @description Kısmi güncelleme (spec §3). `type_id`/`free_label` DEĞİŞMEZ — belgenin
@@ -11261,11 +11392,31 @@ export interface components {
             investment: components["schemas"]["InvestmentCard"] | null;
             land_share: components["schemas"]["LandShareCard"] | null;
         };
-        /** ProjectListResponse */
+        /**
+         * ProjectListResponse
+         * @description 🔴 İKİ SAYAÇ FARKLI ŞEYLERİ SAYAR — karıştırma.
+         *
+         *     * `counts` — SÜZGEÇTEN DE SAYFALAMADAN DA ETKİLENMEZ; hep tüm görünür
+         *       kümeyi sayar (spec §5.1). Mockup'ın "Tümü / Taahhüt / Kat Karşılığı /
+         *       Tamamlanan / Taslak" sekme rakamları buradan basılır; sekme rakamının
+         *       seçili sekmeye göre değişmesi anlamsız olurdu.
+         *     * `total` — SÜZGEÇLENMİŞ kümenin boyutu (`type`/`status` uygulandıktan
+         *       SONRA, sayfalamadan ÖNCE). Sayfa çubuğunun sayfa sayısı buradan çıkar;
+         *       `counts.all` kullanılsaydı süzgeçli listede yanlış sayfa sayısı görünürdü.
+         *
+         *     K4 (BOR-TEMIZ T5): `counts` ve `items` AYNEN korundu — kaldırma/yeniden
+         *     adlandırma geriye dönük kırıcı olurdu; zarfa yalnız üç alan EKLENDİ.
+         */
         ProjectListResponse: {
             counts: components["schemas"]["ProjectCounts"];
             /** Items */
             items: components["schemas"]["ProjectListItem"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
         };
         /**
          * ProjectProfitProjection
@@ -13628,6 +13779,47 @@ export interface components {
             subcontractor_count: components["schemas"]["CountPlaceholder"];
             active_worker_count: components["schemas"]["CountPlaceholder"];
             average_margin: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+        };
+        /**
+         * SiteOptionListResponse
+         * @description K7 sayfalama zarfi (`PersonnelListResponse` ile birebir).
+         *
+         *     ⚠️ `SiteListResponse.totals` ile KARISTIRILMAZ: o bir KPI seridi, bu
+         *     sayfalama. `total` SUZGECTEN GECMIS kumeyi sayar (SQL COUNT), sayfayi degil.
+         */
+        SiteOptionListResponse: {
+            /** Items */
+            items: components["schemas"]["SiteOptionResponse"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * SiteOptionResponse
+         * @description Proje secmeden santiye secmek icin YALIN satir (mockup "santiye sec"
+         *     dropdown'lari). Secenek metni *santiye · proje* basildigi icin proje
+         *     kimligi ve adi buradadir — `SiteCard`ta ikisi de YOKTUR.
+         */
+        SiteOptionResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Project Name */
+            project_name: string;
         };
         /**
          * SitePlanCellInput
@@ -21785,7 +21977,7 @@ export interface operations {
             };
         };
     };
-    download_equipment_document_endpoint_equipment_documents__document_id__download_get: {
+    delete_equipment_document_endpoint_equipment_documents__document_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -21797,13 +21989,59 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Belge bulunamadı (görünmeyen ekipmanın belgesi dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_equipment_document_endpoint_equipment_documents__document_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquipmentDocumentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
-                    "application/octet-stream": unknown;
+                    "application/json": components["schemas"]["EquipmentDocumentResponse"];
                 };
             };
             /** @description Yetkisiz işlem */
@@ -21831,7 +22069,7 @@ export interface operations {
             };
         };
     };
-    delete_equipment_document_endpoint_equipment_documents__document_id__delete: {
+    download_equipment_document_endpoint_equipment_documents__document_id__download_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -21843,11 +22081,14 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            204: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": unknown;
+                    "application/octet-stream": unknown;
+                };
             };
             /** @description Yetkisiz işlem */
             403: {
@@ -24656,6 +24897,40 @@ export interface operations {
             };
         };
     };
+    list_personnel_document_types_endpoint_personnel_document_types_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonnelDocumentTypeListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     list_personnel_endpoint_personnel_get: {
         parameters: {
             query?: {
@@ -27327,6 +27602,8 @@ export interface operations {
             query?: {
                 type?: components["schemas"]["ProjectType"] | null;
                 status?: components["schemas"]["ProjectStatus"] | null;
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;
@@ -29442,6 +29719,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SitePlanSprintRead"] | null;
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_site_options_endpoint_sites_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteOptionListResponse"];
                 };
             };
             /** @description Yetkisiz işlem */
