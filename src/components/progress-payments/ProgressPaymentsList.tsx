@@ -23,6 +23,7 @@ export function ProgressPaymentsListBody({
   isLoading,
   data,
   showProjectName = true,
+  isFiltered = false,
 }: {
   isError: boolean;
   isLoading: boolean;
@@ -35,14 +36,27 @@ export function ProgressPaymentsListBody({
    * `true` → mevcut çağıran (`ProgressPaymentsView`) davranışı DEĞİŞMEZ.
    */
   showProjectName?: boolean;
+  /**
+   * F-PRJTAB T3: liste bir süzgeçle daraltılmışken boş dönerse "hiç hakediş
+   * yok" demek YANLIŞ olur — kayıt olabilir, seçili projede yoktur. Boş durum
+   * metni bunu ayırt eder. Varsayılan `false` → mevcut çağıranların
+   * (şantiye sekmesi) davranışı DEĞİŞMEZ.
+   */
+  isFiltered?: boolean;
 }) {
   if (isError) return <p className="pp-message">Hakedişler yüklenemedi</p>;
   if (isLoading || !data) return <p className="pp-message">Yükleniyor…</p>;
   if (data.items.length === 0) {
     return (
       <section className="pp-empty">
-        <p className="pp-empty__title">Henüz hakediş oluşturulmadı</p>
-        <p className="pp-empty__hint">+ Yeni Hakediş ile başlayın</p>
+        <p className="pp-empty__title">
+          {isFiltered ? "Seçili projede hakediş yok" : "Henüz hakediş oluşturulmadı"}
+        </p>
+        <p className="pp-empty__hint">
+          {isFiltered
+            ? "Tüm hakedişleri görmek için proje süzgecini Tüm Projeler yapın"
+            : "+ Yeni Hakediş ile başlayın"}
+        </p>
       </section>
     );
   }

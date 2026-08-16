@@ -37,6 +37,19 @@
   color: var(--color-text-muted);
 }
 
+/* F-PRJTAB T3 · proje süzgeci çubuğu — kardeş ekranın (`.thk-filters`)
+   ölçüleriyle aynı; bu ekranda tek seçici var, sola yaslı durur. */
+.pp-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: 20px;
+}
+.pp-filters .select-wrap,
+.pp-filters .select {
+  width: auto;
+}
+
 /* Kart kabuğu (mockup satır 91: beyaz zemin, ince kenarlık, radius). */
 .pp-card {
   background: var(--color-surface);
