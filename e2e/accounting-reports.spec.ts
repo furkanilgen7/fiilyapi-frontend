@@ -65,7 +65,17 @@ test.describe("BFF kökleri (telden)", () => {
     expect(grossRows.length).toBeGreaterThan(0);
 
     // Toplamlar satırlarla UZLAŞIR (K15: satırlar kazanır).
-    for (const key of ["opening_debit", "period_debit", "closing_debit", "closing_credit"]) {
+    // 🔴 ALTI kolonun HEPSİ: dördünü ölçüp "toplamlar uzlaşıyor" demek,
+    // ölçülmeyen ikisini (`opening_credit` ve fikstürün EN BÜYÜK sayısı olan
+    // `period_credit`) bekçisiz bırakırdı.
+    for (const key of [
+      "opening_debit",
+      "opening_credit",
+      "period_debit",
+      "period_credit",
+      "closing_debit",
+      "closing_credit",
+    ]) {
       const rowSum = tb.rows.reduce(
         (total, row) => total + Number(row[key as keyof (typeof tb.rows)[number]]),
         0,
@@ -92,6 +102,9 @@ test.describe("BFF kökleri (telden)", () => {
       2,
     );
     // 🔴 `rate = 0` satırı listeye GİRMEZ; istisna `exempt_base` skalerindedir.
+    // Döngüden ÖNCE liste doluluğu ölçülür — boş dizi üzerinde dönen bir
+    // `for` hiçbir şey kanıtlamaz (aynı sınıf kusur T4'te de kapatıldı).
+    expect(vat.taxable_rows.length).toBeGreaterThan(0);
     for (const row of vat.taxable_rows) {
       expect(Number(row.rate)).toBeGreaterThan(0);
     }
@@ -118,13 +131,19 @@ test.describe("BFF kökleri (telden)", () => {
     const before = await (await page.request.get("/api/backend/vat-return?year=2026&month=6")).text();
 
     // Haziran adasına GERÇEK bir fiş yazılır (dengeli, iki bacaklı).
+    // 🔴 Bacaklardan biri KDV HESABINA (391 Hesaplanan KDV) düşer. Yalnız
+    // Kasa/Satışlar kullanılsaydı, `vatReturnFixture`ı `accountingState`e
+    // bağlayan en DOĞAL regresyon (beyanı 191/391 satırlarından türetmek) bu
+    // yanıtı hiç oynatmaz ve bekçi YEŞİL kalırdı — mutasyon kanıtı sahte
+    // olurdu.
     const created = await page.request.post("/api/backend/journal-entries", {
       data: {
         entry_date: "2026-06-19",
         description: "MUT · KDV fikstür bağımsızlık ölçümü",
         lines: [
-          { account_id: "coa-100", debit: "1000000", credit: "0" },
+          { account_id: "coa-100", debit: "1200000", credit: "0" },
           { account_id: "coa-600", debit: "0", credit: "1000000" },
+          { account_id: "coa-391", debit: "0", credit: "200000" },
         ],
       },
     });

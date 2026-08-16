@@ -182,9 +182,11 @@ function VatReturnBody({ data }: { data: VatReturnResponse }) {
                 </tr>
               </thead>
               <tbody>
-                {taxableRows.map((row) => (
+                {taxableRows.map((row, index) => (
                   <tr
-                    key={row.key}
+                    // Anahtar İNDEKSLE tamamlanır: sunucu bir gün aynı oranı
+                    // iki kez dönerse `key` çakışırdı (`data-testid` DEĞİŞMEZ).
+                    key={`${row.key}-${index}`}
                     className={row.isExempt ? "mu-vat-exempt" : undefined}
                     data-testid={`kdv-taxable-${row.key}`}
                   >
@@ -244,8 +246,11 @@ function VatReturnBody({ data }: { data: VatReturnResponse }) {
                     (`Alışlar`): ayrımın veri modelinde karşılığı YOKTUR
                     (MU-2'de ölçülüp kararlaştırıldı). Satır UYDURULMAZ —
                     `deductions` ne dönüyorsa o basılır; fark AÇIK BORÇtur. */}
-                {data.deductions.map((row) => (
-                  <tr key={row.source} data-testid={`kdv-deduction-${row.source}`}>
+                {data.deductions.map((row, index) => (
+                  <tr
+                    key={`${row.source}-${index}`}
+                    data-testid={`kdv-deduction-${row.source}`}
+                  >
                     <td>{row.source}</td>
                     <td className="is-right is-mono">{formatAmount(row.base)}</td>
                     <td className="is-right is-mono mu-amount--credit">{formatAmount(row.vat)}</td>

@@ -489,6 +489,17 @@
 }
 .mu-banner__icon {
   flex: none;
+  width: 18px; /* MZ:55 */
+  height: 18px; /* MZ:55 */
+}
+/* MZ:55 — ikonun konturu metinden BİR TON açıktır (`--color-success` ↔
+   `--color-success-deep`); `currentColor` bırakılsaydı ikisi aynı yeşile
+   düşerdi. (Çıplak hex bu dosyanın KENDİ bekçisine takılır — yorumda bile.) */
+.mu-banner--ok .mu-banner__icon {
+  color: var(--color-success);
+}
+.mu-banner--off .mu-banner__icon {
+  color: var(--color-danger);
 }
 .mu-banner--ok {
   background: var(--color-success-tint); /* MZ:54 */
@@ -509,12 +520,32 @@
 
 /* MZ:81/83 — mizanın gövde hücreleri E8'inkinden (13px) KÜÇÜKtür; yalnız
    `Hesap Adı` 13px kalır (MZ:82). Özgüllük BİLEREK eşitsizdir: `td.` eki
-   olmadan iki kural eşit çıkar ve kazanan DEMET SIRASINA bağlı olurdu. */
+   olmadan iki kural eşit çıkar ve kazanan DEMET SIRASINA bağlı olurdu.
+
+   🔴 İÇ BOŞLUK da MZ'nindir, E8'in DEĞİL: para sütunları yatayda 12px
+   (MZ:83-88), kimlik sütunları 16px (MZ:81-82); dikeyde 10px (E8'in 12px'i
+   değil). E8'in 16px'i sekiz sütuna uygulanınca tablo tasarımdan ~48px daha
+   geniş, ~36px daha uzun basardı — hem de yatay kaydırma gerektirdiğini
+   kendi kabıyla ilan eden bir tabloda. (KDV tabloları aynı düzeltmeyi
+   `.mu-vat-table`da zaten taşıyor; MZ'de eksikti.) */
 .mu-tb td {
+  padding: 10px var(--space-3); /* MZ:83-88 — 10px 12px */
   font-size: 12px; /* MZ:81 · :83 */
+}
+/* MZ:81-82 — iki kimlik sütunu YATAYDA 16px kalır. */
+.mu-tb td:first-child,
+.mu-tb td.mu-tb__name {
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
 }
 .mu-tb td.mu-tb__name {
   font-size: var(--text-body); /* MZ:82 — 13px */
+}
+/* MZ:65-67 — üç GRUP başlığı yatayda 12px (kimlik başlıkları MZ:63-64'te
+   16px kalır, `.mu-table th`ten gelir). */
+.mu-tb thead tr:first-child th[colspan] {
+  padding-left: var(--space-3);
+  padding-right: var(--space-3);
 }
 
 /* MZ:62 — İKİ KATMAN ARASINDAKİ çizgi 2px'tir; alt katmanın altındaki (MZ:69)
@@ -523,8 +554,11 @@
   border-bottom-width: 2px;
 }
 
-/* MZ:69-77 — başlığın İKİNCİ katmanı: daha küçük, çizgisi ince. */
-.mu-tb__subhead th {
+/* MZ:69-77 — başlığın İKİNCİ katmanı: daha küçük, çizgisi ince.
+   🔴 `.mu-tb thead tr…` öneki ŞART: yalın `.mu-tb__subhead th` (0,1,1)
+   `.mu-table th` ile EŞİT çıkar ve iki katmanlı başlığın bütün görünümü
+   (10px · uppercase yok · dar boşluk) DEMET SIRASINA bağlı kalırdı. */
+.mu-tb thead tr.mu-tb__subhead th {
   padding: 6px var(--space-3); /* MZ:70-76 */
   font-size: 10px; /* MZ:71 — token yok (`--text-small` 11px); MZ satırıyla gerekçeli px */
   letter-spacing: normal;
@@ -550,8 +584,10 @@
 
 /* 🔴 4. RENK KATMANI — `tfoot` (MZ:162-170). 3. katman gövdenin kapanış
    ikilisidir ve `.mu-amount--debit/credit`in kendi `600`ünü kullanır. */
-.mu-tb__foot td {
-  padding: 13px var(--space-4); /* MZ:163 */
+/* `.mu-tb tfoot` öneki ŞART: yalın `.mu-tb__foot td` (0,1,1) yukarıdaki
+   `.mu-tb td` ile EŞİTtir. */
+.mu-tb tfoot td {
+  padding: 13px var(--space-4); /* MZ:163 — `GENEL TOPLAM` hücresi */
   font-size: var(--text-body); /* MZ:163 — 13/700 */
   font-weight: var(--weight-bold);
   color: var(--color-text);
@@ -559,12 +595,19 @@
   border-top: 2px solid var(--color-primary); /* MZ:162 */
   border-bottom: none;
 }
-.mu-tb__total {
+/* MZ:164-169 — altı toplam hücresi yatayda 12px (gövdeyle aynı hizada). */
+.mu-tb tfoot td.mu-tb__cell {
+  padding-left: var(--space-3);
+  padding-right: var(--space-3);
+}
+/* `span.` öneki ŞART: yalın `.mu-tb__total` (0,1,0) `.mu-amount--debit`in
+   600'üyle EŞİTtir. */
+span.mu-tb__total {
   font-weight: var(--weight-bold); /* MZ:164-169 — gövdenin 600'ünü EZER */
 }
 /* MZ:168-169 — kapanış ikilisi öbür dört toplamdan 1px BÜYÜKtür (mizanın
    asıl cevabı odur). */
-.mu-tb__foot td.mu-tb__cell--closing {
+.mu-tb tfoot td.mu-tb__cell--closing {
   font-size: 14px; /* MZ:168 — `--text-body`den (13px) 1px büyük; token yok */
 }
 

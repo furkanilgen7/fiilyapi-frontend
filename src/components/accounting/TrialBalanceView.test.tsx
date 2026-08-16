@@ -68,16 +68,28 @@ const ROWS: TrialBalanceRow[] = [
     period_credit: "24870500.00",
     closing_credit: "24870500.00",
   }),
+  // K3'ün eksik bıraktığı BORÇ tarafı — fikstür kendi içinde DENGELİ olsun.
+  row({
+    account_code: "730",
+    account_name: "Genel Üretim Giderleri",
+    period_debit: "26769700.00",
+    closing_debit: "26769700.00",
+  }),
 ];
 
-/** İki kapanış toplamı EŞİT ⇒ `is_balanced` doğrudur (K3'ün dengeli kesiti). */
+/**
+ * 🔴 Toplamlar SATIRLARIN gerçek toplamıdır — uydurulmuş değil. Bir toplam
+ * satırının satırlarıyla uzlaşmak zorunda olduğu bu dilimin kendi ilkesidir
+ * (`vat-return.ts` notu); fikstürün onu çiğnemesi okuyucuyu yanıltırdı.
+ * İki kapanış toplamı EŞİT ⇒ `is_balanced` doğrudur (K3'ün dengeli kesiti).
+ */
 const BALANCED_TOTALS: TrialBalanceTotals = {
   opening_debit: "180000.00",
   opening_credit: "840000.00",
-  period_debit: "8760000.00",
-  period_credit: "34869700.00",
-  closing_debit: "27339300.00",
-  closing_credit: "27339300.00",
+  period_debit: "35529700.00", // 2.640.000 + 6.120.000 + 26.769.700
+  period_credit: "34869700.00", // 2.535.200 + 7.464.000 + 24.870.500
+  closing_debit: "27054500.00", // 284.800 + 26.769.700
+  closing_credit: "27054500.00", // 2.184.000 + 24.870.500
 };
 
 function response(partial: Partial<TrialBalanceResponse> = {}): TrialBalanceResponse {
@@ -164,7 +176,7 @@ describe("🔴 MZ:54-57 kontrol banner'ı — İKİ dal (K2)", () => {
   it("dengedeyken YEŞİL dal: kapanış toplamı basılır", () => {
     render(<TrialBalanceView />);
     const banner = screen.getByTestId("mz-banner");
-    expect(banner).toHaveTextContent("Mizan Dengede — Toplam Borç = Toplam Alacak: ₺ 27.339.300");
+    expect(banner).toHaveTextContent("Mizan Dengede — Toplam Borç = Toplam Alacak: ₺ 27.054.500");
     expect(banner).toHaveClass("mu-banner--ok");
   });
 
@@ -173,14 +185,14 @@ describe("🔴 MZ:54-57 kontrol banner'ı — İKİ dal (K2)", () => {
       queryResult({
         data: response({
           is_balanced: false,
-          totals: { ...BALANCED_TOTALS, closing_credit: "27466500.00" },
+          totals: { ...BALANCED_TOTALS, closing_credit: "27194500.00" },
         }),
       }),
     );
     render(<TrialBalanceView />);
     const banner = screen.getByTestId("mz-banner");
     expect(banner).toHaveTextContent("Mizan Dengede Değil");
-    expect(banner).toHaveTextContent("fark: ₺ 127.200");
+    expect(banner).toHaveTextContent("fark: ₺ 140.000");
     expect(banner).toHaveClass("mu-banner--off");
   });
 
@@ -275,12 +287,12 @@ describe("MZ:59-173 tablo — sekiz sütun, iki katmanlı başlık", () => {
     render(<TrialBalanceView />);
     const foot = screen.getByTestId("mz-totals");
     expect(foot).toHaveTextContent("GENEL TOPLAM");
-    expect(foot).toHaveTextContent("8.760.000");
+    expect(foot).toHaveTextContent("35.529.700");
     expect(foot).toHaveTextContent("34.869.700");
     // 🔴 K15: iki kapanış toplamı dengede EŞİTtir (mockup'ın yapısal iddiası).
     const cells = within(foot).getAllByRole("cell");
-    expect(cells[5]).toHaveTextContent("27.339.300");
-    expect(cells[6]).toHaveTextContent("27.339.300");
+    expect(cells[5]).toHaveTextContent("27.054.500");
+    expect(cells[6]).toHaveTextContent("27.054.500");
     // Kapanış ikilisi 1px büyüktür (MZ:168-169) — sınıfla kilitlenir.
     expect(cells[5]?.className).toContain("mu-tb__cell--closing");
     expect(cells[6]?.className).toContain("mu-tb__cell--closing");
@@ -292,6 +304,10 @@ describe("MZ:59-173 tablo — sekiz sütun, iki katmanlı başlık", () => {
     );
     render(<TrialBalanceView />);
     expect(screen.getByTestId("mz-empty")).toBeInTheDocument();
+    // Altı `—` taşıyan bir GENEL TOPLAM, "hesap yok" mesajının altında
+    // gürültüdür ve toplamın bir şeyi topladığını ima ederdi (hata dalının
+    // kardeşi kural).
+    expect(screen.queryByTestId("mz-totals")).toBeNull();
   });
 
   it("hata YUTULMAZ: sunucunun Türkçe metni tabloya basılır", () => {

@@ -137,7 +137,10 @@ export function TrialBalanceTable({
             satırlarıyla çelişir; buradan alınan yalnız YAPIdır (iki kimlik
             sütununu birleştiren `colspan=2` + altı ayrı toplam). Rakamlar
             SUNUCUNUN `totals` alanından gelir — istemci toplam ÜRETMEZ. */}
-        {errorMessage === undefined && totals !== undefined && (
+        {/* 🔴 Boş dönemde tfoot da BASILMAZ (hata dalının kardeşi): altı `—`
+            taşıyan bir `GENEL TOPLAM`, "hesap yok" mesajının hemen altında
+            gürültüdür ve toplamın bir şeyi topladığını ima ederdi. */}
+        {errorMessage === undefined && totals !== undefined && rows !== undefined && rows.length > 0 && (
           <tfoot>
             <tr className="mu-tb__foot" data-testid="mz-totals">
               <td colSpan={2}>GENEL TOPLAM</td>
@@ -174,7 +177,7 @@ function Money({
   foot?: boolean;
   closing?: boolean;
 }) {
-  const cellClass = ["is-right", "is-mono", closing ? "mu-tb__cell--closing" : null]
+  const cellClass = ["is-right", "is-mono", "mu-tb__cell", closing ? "mu-tb__cell--closing" : null]
     .filter((part) => part !== null)
     .join(" ");
   if (isZeroDecimalString(value)) {

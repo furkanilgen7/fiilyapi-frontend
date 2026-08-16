@@ -33,7 +33,11 @@ export const ACCOUNTING_READ_TIME = new Date("2026-07-20T09:00:00");
 export const ACCOUNTING_WRITE_TIME = new Date("2026-06-20T09:00:00");
 
 /**
- * 📭 BOŞ AY — hiçbir fikstürün DÜŞMEDİĞİ dönem (T6 boş-durum kadrajı).
+ * 📭 BOŞ AY — YEVMİYE yüzeylerinde hiçbir fikstürün düşmediği dönem (T6
+ * boş-durum kadrajı). 🔴 F-MU2 devri: "hiçbir fikstür" artık YALNIZ defter/
+ * özet/fiş uçları için doğrudur — Ocak 2026'da bir MİZAN fikstürü (dengesiz)
+ * ve bir KDV fikstürü (devreden) VARDIR. İkisi de ayrı uçlardadır, bu yüzden
+ * `/muhasebe` kökünün boş kadrajını KİRLETMEZLER.
  *
  * Ocak 2026 seçilir çünkü mock backend'de yalnız İKİ ay doludur: Temmuz
  * (okuma) ve Haziran (mutasyon adası). Boş durumu Haziran'da ölçmek YASAK

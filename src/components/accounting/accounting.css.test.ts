@@ -162,7 +162,7 @@ describe("accounting.css — F-MU2 · Mizan (MZ)", () => {
   });
 
   it("4. RENK KATMANI — tfoot mavi zeminli, üstü 2px birincil çizgi, 700 (MZ:162-163)", () => {
-    const foot = /\.mu-tb__foot td\s*{([^}]*)}/.exec(css)?.[1] ?? "";
+    const foot = /\.mu-tb tfoot td\s*{([^}]*)}/.exec(css)?.[1] ?? "";
     expect(foot).toContain("var(--color-info-tint)");
     expect(foot).toContain("border-top: 2px solid var(--color-primary)");
     expect(foot).toContain("var(--weight-bold)");
@@ -171,7 +171,26 @@ describe("accounting.css — F-MU2 · Mizan (MZ)", () => {
   it("MZ:168-169 — tfoot'un KAPANIŞ ikilisi öbür dört toplamdan büyüktür", () => {
     // 🔴 `td.` eki ŞART: eksik olursa kural `.mu-tb__foot td` ile EŞİT
     // özgüllükte kalır ve kazanan DEMET SIRASINA bağlı olur (F-BLG dersi).
-    expect(css).toMatch(/\.mu-tb__foot td\.mu-tb__cell--closing\s*{[^}]*font-size:\s*14px/);
+    expect(css).toMatch(/\.mu-tb tfoot td\.mu-tb__cell--closing\s*{[^}]*font-size:\s*14px/);
+  });
+
+  it("🔴 ÜÇ özgüllük TIE'si de kapatıldı — kazanan DEMET SIRASINA bağlı DEĞİL", () => {
+    // Her biri `.mu-table`/`.mu-tb` kardeşiyle EŞİT özgüllükte kalabilirdi;
+    // eşitlikte kazanan yalnız kaynak sırasıdır (F-BLG dersi) ve bu, iki
+    // katmanlı başlığın bütün görünümünü ŞANSA bağlardı.
+    expect(css).toMatch(/\.mu-tb thead tr\.mu-tb__subhead th\s*{/);
+    expect(css).toMatch(/\.mu-tb tfoot td\s*{/);
+    expect(css).toMatch(/span\.mu-tb__total\s*{/);
+    // Yalın (TIE bırakan) biçimleri geri sızmasın.
+    expect(css).not.toMatch(/\n\.mu-tb__subhead th\s*{/);
+    expect(css).not.toMatch(/\n\.mu-tb__foot td\s*{/);
+    expect(css).not.toMatch(/\n\.mu-tb__total\s*{/);
+  });
+
+  it("MZ:55 — banner ikonu 18px'tir ve tonu metinden AYRIdır", () => {
+    expect(css).toMatch(/\.mu-banner__icon\s*{[^}]*width:\s*18px/);
+    expect(css).toMatch(/\.mu-banner--ok \.mu-banner__icon\s*{[^}]*var\(--color-success\)/);
+    expect(css).toMatch(/\.mu-banner--off \.mu-banner__icon\s*{[^}]*var\(--color-danger\)/);
   });
 
   it("MZ:62 — iki başlık katmanı ARASINDAKİ çizgi 2px'tir", () => {
@@ -223,6 +242,9 @@ describe("accounting.css — F-MU2 · KDV Beyannamesi", () => {
     // hücresi 13px. İkisi de `td.` ekiyle yazılır, yoksa yukarıdaki
     // (0,1,1) kuralları onları EZERDİ.
     expect(css).toMatch(/\.mu-tb td\.mu-tb__name\s*{[^}]*var\(--text-body\)/);
+    // MZ:83-88 · :81-82 — iç boşluk da MZ'nindir (E8'in 16px'i DEĞİL).
+    expect(css).toMatch(/\.mu-tb td\s*{[^}]*padding:\s*10px var\(--space-3\)/);
+    expect(css).toMatch(/\.mu-vat-table td\s*{[^}]*padding:\s*10px 10px/);
     expect(css).toMatch(/\.mu-vat-table td\.mu-vat-total__accent\s*{[^}]*var\(--text-body\)/);
   });
 
