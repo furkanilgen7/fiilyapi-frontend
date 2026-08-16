@@ -507,6 +507,16 @@
   width: 100px; /* MZ:63 */
 }
 
+/* MZ:81/83 — mizanın gövde hücreleri E8'inkinden (13px) KÜÇÜKtür; yalnız
+   `Hesap Adı` 13px kalır (MZ:82). Özgüllük BİLEREK eşitsizdir: `td.` eki
+   olmadan iki kural eşit çıkar ve kazanan DEMET SIRASINA bağlı olurdu. */
+.mu-tb td {
+  font-size: 12px; /* MZ:81 · :83 */
+}
+.mu-tb td.mu-tb__name {
+  font-size: var(--text-body); /* MZ:82 — 13px */
+}
+
 /* MZ:62 — İKİ KATMAN ARASINDAKİ çizgi 2px'tir; alt katmanın altındaki (MZ:69)
    `.mu-table th`in 1px'i olarak kalır. */
 .mu-tb thead tr:first-child th {
@@ -554,7 +564,7 @@
 }
 /* MZ:168-169 — kapanış ikilisi öbür dört toplamdan 1px BÜYÜKtür (mizanın
    asıl cevabı odur). */
-.mu-tb__foot .mu-tb__cell--closing {
+.mu-tb__foot td.mu-tb__cell--closing {
   font-size: 14px; /* MZ:168 — `--text-body`den (13px) 1px büyük; token yok */
 }
 
@@ -647,7 +657,9 @@
   display: grid;
   grid-template-columns: 1fr 1fr; /* KDV:72 */
   gap: var(--space-5); /* KDV:72 — 20px */
-  align-items: start;
+  /* 🔴 `align-items` BİLDİRİLMEZ: mockup da bildirmiyor (KDV:72) ⇒ tarayıcı
+     varsayılanı `stretch` geçerlidir ve iki panel aynı yüksekliğe oturur.
+     `start` yazmak mockup'ta OLMAYAN bir karar olurdu. */
 }
 /* Izgara içindeki paneller kendi alt boşluklarını TAŞIMAZ (boşluğu `gap`
    verir); `.mu-panel`in E8'den gelen 20px'i burada çift boşluk yapardı. */
@@ -661,6 +673,7 @@
 }
 .mu-vat-table td {
   padding: 10px 10px; /* KDV:86 */
+  font-size: 12px; /* KDV:85-88 — E8'in 13px'inden KÜÇÜK */
 }
 .mu-vat-table th:first-child,
 .mu-vat-table td:first-child {
@@ -681,8 +694,9 @@
   font-weight: var(--weight-bold); /* KDV:97 */
   border-bottom: none;
 }
-.mu-vat-total__accent {
-  font-size: var(--text-body); /* KDV:100 — gövdenin 12px'inden büyük */
+/* `td.` eki ŞART: `.mu-vat-table td` (0,1,1) bu kuralı (0,1,0) EZERDİ. */
+.mu-vat-table td.mu-vat-total__accent {
+  font-size: var(--text-body); /* KDV:100 — gövdenin 12px'inden büyük (13px) */
 }
 .mu-vat-total--calculated td {
   background: var(--color-info-tint); /* KDV:96 */

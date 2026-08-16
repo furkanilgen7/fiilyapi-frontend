@@ -121,7 +121,8 @@ export function TrialBalanceTable({
               <tr key={row.account_id} data-testid={`mz-row-${row.account_code}`}>
                 {/* MZ:81-82 — kod MONO ve solgun, ad normal. */}
                 <td className="mu-table__meta is-mono">{row.account_code}</td>
-                <td>{row.account_name}</td>
+                {/* MZ:82 — ad, rakamlardan 1px BÜYÜKtür (13px). */}
+                <td className="mu-tb__name">{row.account_name}</td>
                 <Money value={row.opening_debit} />
                 <Money value={row.opening_credit} />
                 <Money value={row.period_debit} />

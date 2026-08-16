@@ -169,7 +169,9 @@ describe("accounting.css — F-MU2 · Mizan (MZ)", () => {
   });
 
   it("MZ:168-169 — tfoot'un KAPANIŞ ikilisi öbür dört toplamdan büyüktür", () => {
-    expect(css).toMatch(/\.mu-tb__foot \.mu-tb__cell--closing\s*{[^}]*font-size:\s*14px/);
+    // 🔴 `td.` eki ŞART: eksik olursa kural `.mu-tb__foot td` ile EŞİT
+    // özgüllükte kalır ve kazanan DEMET SIRASINA bağlı olur (F-BLG dersi).
+    expect(css).toMatch(/\.mu-tb__foot td\.mu-tb__cell--closing\s*{[^}]*font-size:\s*14px/);
   });
 
   it("MZ:62 — iki başlık katmanı ARASINDAKİ çizgi 2px'tir", () => {
@@ -211,5 +213,27 @@ describe("accounting.css — F-MU2 · KDV Beyannamesi", () => {
 
   it("ızgaradaki paneller kendi alt boşluklarını TAŞIMAZ (boşluğu `gap` verir)", () => {
     expect(css).toMatch(/\.mu-vat-grid \.mu-panel\s*{[^}]*margin-bottom:\s*0/);
+  });
+
+  it("🔴 hücre punto'ları MOCKUP'IN ölçüleridir; özgüllük TIE bırakmaz", () => {
+    // MZ:81/83 · KDV:85-88 — gövde 12px (E8'in 13px'i DEĞİL).
+    expect(css).toMatch(/\.mu-tb td\s*{[^}]*font-size:\s*12px/);
+    expect(css).toMatch(/\.mu-vat-table td\s*{[^}]*font-size:\s*12px/);
+    // MZ:82 — yalnız `Hesap Adı` 13px; KDV:100 — yalnız toplamın vergi
+    // hücresi 13px. İkisi de `td.` ekiyle yazılır, yoksa yukarıdaki
+    // (0,1,1) kuralları onları EZERDİ.
+    expect(css).toMatch(/\.mu-tb td\.mu-tb__name\s*{[^}]*var\(--text-body\)/);
+    expect(css).toMatch(/\.mu-vat-table td\.mu-vat-total__accent\s*{[^}]*var\(--text-body\)/);
+  });
+
+  it("🔴 KDV ızgarası `align-items` BİLDİRMEZ — mockup da bildirmiyor (KDV:72)", () => {
+    // Yorum GÖVDESİ hariç tutulur: kuralın kendi gerekçe metni "align-items"
+    // sözcüğünü AÇIKÇA içerir ve bu bir bildirim değildir.
+    const grid = (/\.mu-vat-grid\s*{([^}]*)}/.exec(css)?.[1] ?? "").replace(
+      /\/\*[\s\S]*?\*\//g,
+      "",
+    );
+    expect(grid).toContain("grid-template-columns");
+    expect(grid).not.toContain("align-items");
   });
 });
