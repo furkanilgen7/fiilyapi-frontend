@@ -382,9 +382,13 @@
 }
 
 /* ---------------------------------------------------------------------------
-   T4 · Yevmiye Kaydı / Hesap diyalogları. Form mockup'ı YOKTUR (S-FRM):
-   kap `settings/modal.css` + `settings-form` ızgarasıdır, buradaki kurallar
-   yalnız fişe özgü iki yüzeyi (satır tablosu + DENGE göstergesi) kurar.
+   T4 · Yevmiye Kaydı / Hesap diyalogları.
+   🔴 BAYAT SATIR DÜZELTİLDİ (F-MUF T2/T4): burada eskiden "Form mockup'ı
+   YOKTUR (S-FRM)" yazıyordu — ARTIK VAR (`projedesign/Form - Yevmiye
+   Kaydı.dc.html` + `Form - Hesap Ekle.dc.html`). Kap yine `settings/modal.css`
+   + `settings-form` ızgarasıdır, buradaki kurallar fişe özgü yüzeyleri
+   (satır tablosu + DENGE göstergesi) ve hesap diyaloğunun kontra kutusu +
+   canlı önizlemesini kurar.
 --------------------------------------------------------------------------- */
 
 /* Varsayılan 480px kabuk üç sütunlu satır tablosuna dardır. */

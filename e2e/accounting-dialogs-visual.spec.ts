@@ -89,8 +89,11 @@ test("yevmiye kaydi diyalogu dengesiz gorsel", async ({ page }) => {
 
   // Kadrajın KONUSU: fark şeridi kırmızı, engel listesi dolu, Kaydet KAPALI.
   await expect(dialog.getByTestId("mu-balance-difference")).toHaveText("600");
-  await expect(dialog.getByTestId("mu-balance-state")).toHaveText(
-    "Fiş dengede değil; kaydedilemez.",
+  // 🔴 İDDİA GÖÇÜ (F-MUF T4): tek cümle ("Fiş dengede değil; kaydedilemez.")
+  // BAŞLIK + AYRI gerekçe satırına ikiye ayrıldı (`mu-balance-state-detail`).
+  await expect(dialog.getByTestId("mu-balance-state")).toHaveText("Fiş dengede değil");
+  await expect(dialog.getByTestId("mu-balance-state-detail")).toHaveText(
+    "Borç ve alacak toplamları eşit olmadan kaydedilemez",
   );
   await expect(dialog.getByTestId("mu-entry-dialog-blockers")).toBeVisible();
   await expect(dialog.getByTestId("mu-entry-dialog-save")).toBeDisabled();
@@ -118,7 +121,10 @@ test("yevmiye kaydi diyalogu dengeli gorsel", async ({ page }) => {
 
   // Kadrajın KONUSU: fark sıfır, şerit YEŞİL, engel listesi YOK, Kaydet AÇIK.
   await expect(dialog.getByTestId("mu-balance-difference")).toHaveText("0");
-  await expect(dialog.getByTestId("mu-balance-state")).toHaveText("Fiş dengede.");
+  // 🔴 İDDİA GÖÇÜ (F-MUF T4): "Fiş dengede." → "Fiş dengede" (nokta düştü,
+  // gerekçe AYRI `mu-balance-state-detail`e taşındı).
+  await expect(dialog.getByTestId("mu-balance-state")).toHaveText("Fiş dengede");
+  await expect(dialog.getByTestId("mu-balance-state-detail")).toHaveText("Kaydedilmeye hazır");
   await expect(dialog.getByTestId("mu-entry-dialog-blockers")).toHaveCount(0);
   await expect(dialog.getByTestId("mu-entry-dialog-save")).toBeEnabled();
   await expect(dialog.getByTestId("mu-entry-dialog-error")).toHaveCount(0);
@@ -140,7 +146,8 @@ test("hesap ekle diyalogu gorsel", async ({ page }) => {
   await expect(page.getByTestId("hp-balance-257")).toHaveText("(620.000)");
 
   await page.getByTestId("hp-create").click();
-  const dialog = page.getByRole("dialog", { name: "Yeni Hesap" });
+  // 🔴 İDDİA GÖÇÜ (F-MUF T2): başlık "Yeni Hesap" → "Yeni Hesap Ekle".
+  const dialog = page.getByRole("dialog", { name: "Yeni Hesap Ekle" });
   await expect(dialog).toBeVisible();
 
   // Diyaloğun KENDİ sorgusu YOKTUR (form tamamen istemci durumudur) — bu
@@ -155,11 +162,21 @@ test("hesap ekle diyalogu gorsel", async ({ page }) => {
   // 🔴 BİLİNÇLİ GÖÇ (MT-1/KK-1 devri, 2026-08-16): iddia DÖRT'ten BEŞ'e taşındı,
   // gevşetilmedi. `equity` beşinci üye olarak açıldı (kullanıcı kararı). Sayım
   // iddiası KALIR: enum kapalıdır ve sessizce büyümesi görülmelidir.
-  // ⚠️ Bu satır kırmızıya YALNIZ Linux CI'da döndü — 5. kapı `--grep-invert
-  // "gorsel"` ile bu dosyayı DIŞLAR, dolayısıyla yerelde hiç koşmadı.
-  await expect(dialog.getByTestId("hp-dialog-type").locator("option")).toHaveCount(5);
+  // 🔴 İKİNCİ GÖÇ (F-MUF T2): BEŞ'ten ALTI'ya — `Tür seçiniz...` SEÇİLEMEZ
+  // (disabled) placeholder `<option>`u eklendi (K8). Seçenek sayımı gene KALIR,
+  // gevşetilmedi.
+  await expect(dialog.getByTestId("hp-dialog-type").locator("option")).toHaveCount(6);
   await expect(dialog.getByTestId("hp-dialog-active")).toBeChecked();
   await expect(dialog.getByTestId("hp-dialog-error")).toHaveCount(0);
+  // 🔴 YENİ YÜZEY (F-MUF T2): kontra onay kutusu + canlı önizleme kadraja
+  // girdi (diyalog ~2× uzadı). Boş formda varsayılan tür `asset`, kontra
+  // İŞARETLİ DEĞİL → önizleme "Normal — aktif toplama eklenir" der.
+  await expect(dialog.getByTestId("hp-dialog-contra")).not.toBeChecked();
+  await expect(dialog.getByTestId("hp-dialog-contra-help")).toBeVisible();
+  await expect(dialog.getByTestId("hp-dialog-preview")).toHaveText(
+    "Normal — aktif toplama eklenir",
+  );
+  await expect(dialog.getByTestId("hp-dialog-preview-head")).toContainText("Aktif");
   await expectNoLoadingText(page);
 
   // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.

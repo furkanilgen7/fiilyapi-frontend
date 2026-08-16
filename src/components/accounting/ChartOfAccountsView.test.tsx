@@ -372,8 +372,12 @@ describe("kırpılma / boş / hata / yükleniyor", () => {
 });
 
 /**
- * T4 · Hesap Ekle/Düzenle diyaloğu. Form mockup'ı YOKTUR (S-FRM kanonu):
- * alanlar `ChartAccountCreate`ten birebir türer ve DÖRTTÜR.
+ * T4 · Hesap Ekle/Düzenle diyaloğu.
+ * 🔴 BAYAT SATIR DÜZELTİLDİ (F-MUF T2): burada eskiden "Form mockup'ı YOKTUR
+ * (S-FRM kanonu) … alanlar DÖRTTÜR" yazıyordu — ARTIK VAR
+ * (`projedesign/Form - Hesap Ekle.dc.html`, kanon `chart-account-form.ts`).
+ * Gövde `ChartAccountCreate`ten birebir türer ve BEŞTİR: `code` · `name` ·
+ * `account_type` · `is_active` · `is_contra`.
  */
 describe("Hesap diyaloğu (T4)", () => {
   it("oluşturma: gövde BEŞ alandır, türev alan SIZMAZ", async () => {

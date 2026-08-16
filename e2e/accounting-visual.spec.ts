@@ -153,6 +153,10 @@ test("muhasebe hesap plani gorsel", async ({ page }) => {
   await expect(page.getByTestId("hp-type-257")).toHaveText("Pasif");
   await expect(page.getByTestId("hp-type-600")).toHaveText("Gelir");
   await expect(page.getByTestId("hp-type-760")).toHaveText("Gider");
+  // 🔴 YENİ YÜZEY (F-MUF T5): kontra rozeti — tohumda 257 GERÇEK kontra
+  // (Birikmiş Amortismanlar), 254/100 kontra DEĞİL.
+  await expect(page.getByTestId("hp-contra-257")).toHaveAttribute("aria-label", "Kontra hesap");
+  await expect(page.getByTestId("hp-contra-100")).toHaveCount(0);
 
   // Devre-dışı "Excel" ve gerekçe bandı da kadrajın parçasıdır.
   await expect(page.getByTestId("hp-export")).toBeDisabled();
