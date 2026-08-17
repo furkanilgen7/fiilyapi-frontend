@@ -17,7 +17,42 @@ const MODULE_LABELS: Record<string, string> = {
   site_diary: "Şantiye günlüğüyle birlikte gelir",
   // F-P6 T3 (Bölüm formu) — devre dışı kartlar
   equipment: "Ekipman/makine modülüyle birlikte gelir",
-  gantt: "Proje takvimi (Gantt) modülüyle birlikte gelir",
+  // ⚠️ F-TKV T5'te KALDIRILDI: `gantt` anahtarı bölüm formundaki üç kontrolün
+  // (Bağımlılık seçici + Milestone metin/tarih) devre-dışı gerekçesiydi. P11
+  // uçları açıldı (`SectionCreate.depends_on_section_id`/`milestones`,
+  // `SectionUpdate` aynısı) ve `/projeler/takvim` ekranı yazıldı — üç kontrol
+  // de GERÇEK oldu, anahtarın tüketicisi kalmadı. Yeniden eklenmemeli:
+  // "Gantt modülü yok" artık YALAN bir gerekçedir (F-PRJTAB kanonu).
+  // F-TKV T4 (Proje Takvimi ekranı) — mockup'ta ÇİZİLİ olup ürününde KARŞILIĞI
+  // OLMAYAN üç yüzey. Üst kural (F-TH kanonu): öğe SİLİNMEZ, yerinde devre
+  // dışı + GÖRÜNÜR gerekçeyle basılır; gerekçe `title`da SAKLANMAZ.
+  //
+  // 🔴 K2 — PT 159/187/214/243/271 proje `%75`, faz `%62` gibi yüzdeler ve iki
+  // parçalı (koyu tamamlanan + açık kalan) barlar çiziyor. Bu verinin kaynağı
+  // üründe YOKTUR ve P11 bunu KALICI olarak reddetti — `TimelineSection` şema
+  // açıklaması gerekçeyi kendi yazıyor: "ILERLEME YUZDESI YOKTUR … Kaynagi
+  // olmayan bir sayiyi bos zarfla dondurmek, ekranda doldurulmayi bekleyen
+  // sahte bir sozlesme birakir." Barlar TEK PARÇADIR, rengi `status`tan gelir.
+  // (`projects.progress_pct` kolonu BAĞLANMAZ: `ProjectCreate`/`ProjectUpdate`
+  // şemalarında yoktur, `default=0`dır ve canlıda her projede 0 basar.)
+  timeline_progress_pct: "İlerleme yüzdesi ölçülmüyor — barlar bölüm durumundan renklenir",
+  // 🔴 K4 — PT 32 "Haftalık" düğmesi. Uç zaten zoom parametresi almaz (üçü de
+  // istemci işidir), ama haftalık ızgara veriden türeyen pencerede yüzlerce
+  // sütun eder ve mockup onu HİÇ çizmemiştir (ızgara 120-147 yalnız ay
+  // sütunları). Düğme silinmez, devre dışı + gerekçeli durur.
+  timeline_weekly_zoom: "Haftalık ızgara çizilmedi — portföy penceresi yüzlerce sütun eder",
+  // 🔴 K6 — PT 301 "Toplam Hakediş". Portföy düzeyinde hakediş toplayan bir uç
+  // YOKTUR (`/projects/timeline` gövdesi hakediş taşımaz, şema açıklaması bunu
+  // adıyla kapsam dışına koyuyor: "PT 300-303 portfoy ozeti (toplam sozlesme/
+  // hakedis) buraya KONMAZ"). Tek dekoratif sayı için proje başına ek istek +
+  // kısmi hata dalı AÇILMAZ. Öbür üç sayı gövdeden hesaplanır ve basılır.
+  portfolio_progress_payment_total: "Portföy hakediş toplamı tek uçtan gelmiyor",
+  // F-TKV T5 — `Form - Bolum Ekle` 237 "Bölümü proje takvimine (Gantt)
+  // otomatik ekle". Kutu artık "modül yok" diye değil, SEÇENEK OLMADIĞI için
+  // devre dışıdır: `/projects/timeline` şantiyeleri atlayıp bölümleri doğrudan
+  // projenin altına dizer ve HER bölümü döndürür — bir bölümü takvimden
+  // dışarıda tutan bir alan ne şemada ne de üründe vardır.
+  gantt_auto_add: "Bölümler proje takvimine her zaman girer; ayrı bir seçim yoktur",
   // F-TH T2 (Ekran 2 · Taşeron Hakedişi listesi) — `SubcontractorProgress
   // PaymentListItem` şemasında taşımayan ÜÇ alan (brief §Zarif düşüş): kolon
   // silinmez, mockup'taki yerinde bu etiketlerle pending gösterilir.
@@ -53,6 +88,15 @@ const MODULE_LABELS: Record<string, string> = {
   // devre dışı + görünür gerekçeyle basılır.
   // 99-123 "Milestone Takvimi": `EmployerContractDetail.milestones` şemada
   // AÇIKÇA `null` tipindedir (proje takvimi = P11).
+  // ⚠️ AÇIK BORÇ (F-TKV T4'te ÖLÇÜLDÜ, BİLEREK DEĞİŞTİRİLMEDİ): P11 uçları
+  // artık AÇIK ve `/projeler/takvim` ekranı YAZILDI — bu metin bugün YANLIŞ
+  // bir şeyi işaret ediyor (eksik olan takvim modülü değil, `Employer
+  // ContractDetail.milestones` ALANININ kendisi). Doğrusu: "Sözleşme
+  // milestone'ları uçtan gelmiyor (şemada null)". DEĞİŞTİRİLMEDİ çünkü metin
+  // F-P5 yüzeyinin görsel baseline'ında ve iki iddiada sabittir
+  // (`EmployerContractDetailView.test.tsx:348`, `e2e/employer-contract-detail
+  // .spec.ts:81`); paralel dilim turunda başka bir ekranın karesini oynatmak
+  // merge sırasını riske atar. Yönetim kararına bırakıldı.
   contract_milestones: "Proje takvimi (P11) ile birlikte gelir",
   // 77 "Düzenle": işveren sözleşmesinin kendi alanları için backend'de YAZMA
   // UCU YOKTUR (şema açıklaması: "Sözleşmenin kendi alanları için YENİ yazma

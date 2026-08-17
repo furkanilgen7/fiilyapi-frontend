@@ -16,6 +16,11 @@ export const MESSAGES = {
   budgetRequired: "Bölüm bedeli zorunludur.",
   sectionCodeConflict:
     "Bu bölüm kodu bu şantiyede zaten kullanılıyor. Farklı bir kod girin veya kodu boş bırakın.",
+  // F-TKV T5 — "Milestone Ekle" satırı YARIM bırakılamaz: backend
+  // `SectionMilestoneInput`te `title` ve `milestone_date` ikisi de ZORUNLUDUR
+  // (422). Yarım satır sessizce DÜŞÜRÜLSEYDİ kullanıcı milestone girdiğini
+  // sanır, kayıt hiç oluşmazdı.
+  milestoneIncomplete: "Milestone için hem ad hem tarih girilmelidir.",
 } as const;
 
 export type SectionFormErrors = Partial<Record<keyof SectionFormValues, string>>;
@@ -66,6 +71,14 @@ export function validateSectionForm(
     values.endDate < values.startDate
   ) {
     errors.endDate = MESSAGES.endBeforeStart;
+  }
+
+  // Milestone satırı YARIM olamaz — taslakta da geçerli (backend `title`/
+  // `milestone_date` ikisini de ister, taslak bayrağı bunu gevşetmez).
+  const hasMilestoneTitle = values.milestoneTitle.trim().length > 0;
+  const hasMilestoneDate = values.milestoneDate.trim().length > 0;
+  if (hasMilestoneTitle !== hasMilestoneDate) {
+    errors.milestoneTitle = MESSAGES.milestoneIncomplete;
   }
 
   if (!isDraft) {

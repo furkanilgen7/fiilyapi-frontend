@@ -12,6 +12,7 @@ import { useProject } from "@/lib/api/hooks/useProjects";
 import { useSection } from "@/lib/api/hooks/useSection";
 import { useCreateSection, useUpdateSection } from "@/lib/api/hooks/useSectionMutations";
 import { useSite } from "@/lib/api/hooks/useSites";
+import { useSiteSections } from "@/lib/api/hooks/useSiteSections";
 import { useUserOptions } from "@/lib/api/hooks/useUserOptions";
 import { BackendError, isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
@@ -29,6 +30,9 @@ import { hasSectionFormErrors, MESSAGES, validateSectionForm, type SectionFormEr
 // Sıra önemli: önce paylaşılan kabuk, sonra forma özgü bloklar.
 import "@/styles/form-shell.css";
 import "./section-form.css";
+
+/** F-TKV T5 — devre dışı Gantt kutusunun GÖRÜNÜR gerekçesi (test bunu import eder). */
+export const GANTT_AUTO_ADD_REASON = pendingModuleLabel("gantt_auto_add");
 
 export type SectionFormProps =
   | { mode: "create"; projectId: string; siteId: string }
@@ -59,6 +63,11 @@ export function SectionForm(props: SectionFormProps) {
   const detailQuery = useSection(isEdit ? props.sectionId : "");
   const detail = isEdit ? detailQuery.data : undefined;
   const users = useUserOptions();
+  // F-TKV T5 — Bağımlılık seçicisinin seçenekleri: AYNI şantiyenin öbür
+  // bölümleri. Backend "aynı şantiye / kendisi / döngü" ihlallerinde 422 verir;
+  // listeden kendini çıkarmak o hatalardan yalnız BİRİNİ (self) önler,
+  // öbürleri kullanıcıya GÖRÜNÜR hata olarak basılır (handleMutationError).
+  const siteSections = useSiteSections(props.siteId);
 
   const createSection = useCreateSection(props.siteId);
   const updateSection = useUpdateSection(isEdit ? props.sectionId : "");
@@ -108,6 +117,10 @@ export function SectionForm(props: SectionFormProps) {
 
   const site = siteQuery.data;
   const project = projectQuery.data;
+  const dependencyOptions = (siteSections.data?.items ?? [])
+    .filter((item) => !isEdit || item.id !== props.sectionId)
+    .map((item) => ({ id: item.id, name: item.name }));
+  const existingMilestones = detail?.milestones ?? [];
 
   function handleChange<K extends keyof SectionFormValues>(field: K, value: SectionFormValues[K]) {
     setValues((prev) => ({ ...prev, [field]: value }));
@@ -150,7 +163,7 @@ export function SectionForm(props: SectionFormProps) {
     }
 
     setFormError(null);
-    const body = buildSectionBody(values, { isDraft });
+    const body = buildSectionBody(values, { isDraft, existingMilestones });
 
     if (!isEdit) {
       createSection.mutate(body, {
@@ -219,7 +232,13 @@ export function SectionForm(props: SectionFormProps) {
         <div className="pf-body" data-testid="section-form-body" ref={formRef}>
           <SectionInfoCard values={values} onChange={handleChange} siteName={site.name} errors={errors} />
           <TeamCard values={values} onChange={handleChange} errors={errors} />
-          <ScheduleBudgetCard values={values} onChange={handleChange} errors={errors} />
+          <ScheduleBudgetCard
+            values={values}
+            onChange={handleChange}
+            errors={errors}
+            dependencyOptions={dependencyOptions}
+            existingMilestones={existingMilestones}
+          />
           <BoqAssignmentCard />
           <DocumentsCard />
         </div>
@@ -233,13 +252,19 @@ export function SectionForm(props: SectionFormProps) {
         <FormActions
           variant="split"
           leading={
-            // F236-239: Gantt'a otomatik ekleme — devre dışı (→P11), gövdeye girmez.
-            <Checkbox
-              checked
-              disabled
-              title={pendingModuleLabel("gantt")}
-              label="Bölümü proje takvimine (Gantt) otomatik ekle"
-            />
+            // F236-239: Gantt'a otomatik ekleme. F-TKV T5'ten sonra kutu
+            // "modül yok" diye değil, SEÇENEK OLMADIĞI için devre dışıdır:
+            // `/projects/timeline` her bölümü döndürür, bir bölümü takvimden
+            // dışarıda tutan alan ne şemada ne üründe vardır. Gerekçe ekrana
+            // basılır (title'da saklanmaz).
+            <span className="sf-gantt-note">
+              <Checkbox
+                checked
+                disabled
+                label="Bölümü proje takvimine (Gantt) otomatik ekle"
+              />
+              <span className="sf-gantt-note__reason">{GANTT_AUTO_ADD_REASON}</span>
+            </span>
           }
           onCancel={handleCancel}
           // Kullanıcı kararı: düzenleme kipinde "Taslak Kaydet" YOK — yayına

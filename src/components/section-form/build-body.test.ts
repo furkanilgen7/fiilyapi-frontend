@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { buildSectionBody, numberOrNull, textOrNull } from "./build-body";
+import { buildSectionBody, numberOrNull, textOrNull, type SectionMilestone } from "./build-body";
 import { emptySectionFormValues, type SectionFormValues } from "./form-state";
 
 /**
@@ -25,6 +25,9 @@ const ALLOWED_KEYS = [
   "end_date",
   "budget_amount",
   "is_draft",
+  // F-TKV T5 — GANTT KİLİDİ AÇILDI: bu iki alan artık gövdenin GERÇEK parçası.
+  "depends_on_section_id",
+  "milestones",
 ] as const;
 
 const FORBIDDEN_KEYS = [
@@ -34,11 +37,16 @@ const FORBIDDEN_KEYS = [
   "deputy_manager_name",
   "subcontractor_ids",
   "equipment_ids",
+  // Yanlış ADLAR — gerçek alanlar `depends_on_section_id` / `milestones`tir.
   "dependency_section_id",
-  "milestones",
+  // Gantt onay kutusunun gövde karşılığı YOKTUR (her bölüm takvime girer).
   "gantt_auto_add",
   "documents",
   "boq_items",
+];
+
+const EXISTING: SectionMilestone[] = [
+  { id: "ms-1", title: "Kat 12 döşeme", milestone_date: "2026-12-01", sort_order: 0 },
 ];
 
 function values(overrides: Partial<SectionFormValues> = {}): SectionFormValues {
@@ -54,6 +62,50 @@ describe("buildSectionBody", () => {
     for (const forbidden of FORBIDDEN_KEYS) {
       expect(body).not.toHaveProperty(forbidden);
     }
+  });
+
+  it("milestone kutusu BOŞKEN `milestones` anahtarı HİÇ gönderilmez (null = dokunma)", () => {
+    const body = buildSectionBody(values(), { isDraft: false });
+    expect(body).not.toHaveProperty("milestones");
+  });
+
+  it("🔴 form ASLA `milestones: []` (hepsini sil) göndermez — kayıtlılar varken de", () => {
+    const body = buildSectionBody(values(), { isDraft: false, existingMilestones: EXISTING });
+    expect(body).not.toHaveProperty("milestones");
+  });
+
+  it("yeni satır doluysa kayıtlılar `id`leriyle KORUNUR ve yeni satır SONA eklenir", () => {
+    const body = buildSectionBody(
+      values({ milestoneTitle: " Kat 14 döşeme ", milestoneDate: "2027-01-15" }),
+      { isDraft: false, existingMilestones: EXISTING },
+    );
+    expect(body.milestones).toEqual([
+      { id: "ms-1", title: "Kat 12 döşeme", milestone_date: "2026-12-01" },
+      { title: "Kat 14 döşeme", milestone_date: "2027-01-15" },
+    ]);
+  });
+
+  it("`sort_order` GÖVDEDEN GELMEZ — sunucu dizi sırasından atar", () => {
+    const body = buildSectionBody(
+      values({ milestoneTitle: "Yeni", milestoneDate: "2027-01-15" }),
+      { isDraft: false, existingMilestones: EXISTING },
+    );
+    for (const milestone of body.milestones ?? []) {
+      expect(milestone).not.toHaveProperty("sort_order");
+    }
+  });
+
+  it("YARIM milestone satırı gövdeye girmez (doğrulama ayrı katmandadır)", () => {
+    expect(buildSectionBody(values({ milestoneTitle: "Yalnız ad" }), { isDraft: false })).not.toHaveProperty("milestones");
+    expect(buildSectionBody(values({ milestoneDate: "2027-01-15" }), { isDraft: false })).not.toHaveProperty("milestones");
+  });
+
+  it("bağımlılık seçilmemişse null gönderilir (anahtar DÜŞMEZ — bağı temizlemek mümkün)", () => {
+    expect(buildSectionBody(values(), { isDraft: false }).depends_on_section_id).toBeNull();
+    expect(
+      buildSectionBody(values({ dependsOnSectionId: "sec-9" }), { isDraft: false })
+        .depends_on_section_id,
+    ).toBe("sec-9");
   });
 
   it("kod boşsa anahtar hiç gönderilmez (F68 — sunucu BLM-NN üretir)", () => {

@@ -153,3 +153,14 @@
   text-align: right;
   color: var(--color-text-subtle);
 }
+
+/* F-TKV T5: Gantt kutusunun GÖRÜNÜR gerekçesi (title'da saklanmaz). */
+.sf-gantt-note {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sf-gantt-note__reason {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}

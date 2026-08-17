@@ -13,6 +13,12 @@ import { TypeLegend } from "./TypeLegend";
 import { parseProjectTab, tabToFilter, type ProjectTab } from "./tabs";
 import "./projects.css";
 
+/**
+ * Proje Takvimi (Gantt) rotası — bekçiye kayıtlı olabilmesi için DIŞA AKTARILIR
+ * (`projects-routes.test.ts`). Elle yazılmış bir kopya bayatlar.
+ */
+export const PROJECT_TIMELINE_HREF = "/projeler/takvim";
+
 export function ProjectsView() {
   const router = useRouter();
   const pathname = usePathname();
@@ -44,9 +50,17 @@ export function ProjectsView() {
       <p className="prj__breadcrumb">Portföy · {activeCount} Aktif Proje</p>
       <div className="prj__title-row">
         <h1 className="prj__title">Projeler</h1>
-        <Link href="/projeler/yeni" className="prj__new-btn">
-          + Yeni Proje
-        </Link>
+        <div className="prj__title-actions">
+          {/* F-TKV K1 — Proje Takvimi'nin TEK giriş noktası. Sidebar'a satır
+              EKLENMEZ (bir nav satırı 44 görsel kareyi birden oynatır); bağlantı
+              `projects-routes.test.ts` bekçisine KAYITLIDIR. */}
+          <Link href={PROJECT_TIMELINE_HREF} className="prj__timeline-btn">
+            Proje Takvimi
+          </Link>
+          <Link href="/projeler/yeni" className="prj__new-btn">
+            + Yeni Proje
+          </Link>
+        </div>
       </div>
       <TypeLegend counts={counts} />
       <ProjectTabs active={tab} counts={counts} onChange={handleTabChange} />

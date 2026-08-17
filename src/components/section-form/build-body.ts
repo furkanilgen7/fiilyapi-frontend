@@ -1,5 +1,9 @@
 import type { SectionCreateRequest } from "@/lib/api/hooks/useSectionMutations";
+import type { components } from "@/lib/api/schema";
 import type { SectionFormValues } from "./form-state";
+
+export type SectionMilestone = components["schemas"]["SectionMilestoneResponse"];
+type SectionMilestoneInput = components["schemas"]["SectionMilestoneInput"];
 
 /** Boş/boşluk metin → `null` (site-form/build-body.ts deseniyle aynı). */
 export function textOrNull(value: string): string | null {
@@ -30,21 +34,60 @@ export function numberOrNull(value: string): number | null {
  *   olduğu gibi kalır.
  * - Görevli Taşeronlar / Kullanılacak Makineler (F88-98) — devre dışı kart,
  *   backend alanı yok.
- * - Bağımlılık / Milestone / Gantt checkbox (F115-123, F237) — devre dışı,
- *   →P11.
+ * - Gantt checkbox (F237) — devre dışı. ARTIK "modül yok" diye değil, SEÇENEK
+ *   OLMADIĞI için: `/projects/timeline` HER bölümü döndürür, bir bölümü
+ *   takvimden dışarıda tutan alan ne şemada ne üründe vardır.
  * - Bölüm Belgeleri (F214-233) — yükleme yok, gövde alanı yok.
  * - Bölüme Atanacak İş Kalemleri (F131-211) — kalıcı karar 1, veri katmanında
  *   kapalı.
  * - `duration_days` (F109) — türev, saklanmaz.
  * - `site_id` — yol parametresidir, gövdeye ayrı alan olarak GİTMEZ.
  */
+export interface BuildSectionBodyOptions {
+  isDraft: boolean;
+  /**
+   * F-TKV T5 — düzenleme kipinde kayıtlı milestone'lar. `SectionUpdate.
+   * milestones` İKİ GÖVDE SEMANTİĞİ taşır: `null`/anahtar yok = DOKUNMA,
+   * `[]` = HEPSİNİ SİL. Mockup TEK bir "Milestone Ekle" satırı çizer, silme
+   * yüzeyi ÇİZMEZ → bu form ASLA `[]` göndermez. Yeni satır doluysa gövde
+   * mevcutları `id`leriyle birlikte taşır (`SectionMilestoneInput.id` satırın
+   * KİMLİĞİNİ korur, `ShareholderInput` emsali) ve yenisini SONA ekler.
+   * `sort_order` GÖVDEDEN GELMEZ — sunucu dizi sırasından atar.
+   */
+  existingMilestones?: readonly SectionMilestone[];
+}
+
+/** Yeni milestone satırı gövdeye girer mi — İKİ alan da dolu olmalı. */
+function newMilestone(values: SectionFormValues): SectionMilestoneInput | null {
+  const title = values.milestoneTitle.trim();
+  const date = values.milestoneDate.trim();
+  if (!title || !date) return null;
+  return { title, milestone_date: date };
+}
+
 export function buildSectionBody(
   values: SectionFormValues,
-  { isDraft }: { isDraft: boolean },
+  { isDraft, existingMilestones = [] }: BuildSectionBodyOptions,
 ): SectionCreateRequest {
   const code = values.code.trim();
+  const added = newMilestone(values);
+  const milestones: SectionMilestoneInput[] | null =
+    added === null
+      ? null
+      : [
+          ...existingMilestones.map((milestone) => ({
+            id: milestone.id,
+            title: milestone.title,
+            milestone_date: milestone.milestone_date,
+          })),
+          added,
+        ];
 
   return {
+    depends_on_section_id: values.dependsOnSectionId || null,
+    // Anahtar YALNIZ yeni satır varken girer; yoksa `null` semantiği (dokunma)
+    // için hiç gönderilmez.
+    ...(milestones === null ? {} : { milestones }),
     name: values.name.trim(),
     // Kod boşsa anahtar HİÇ gönderilmez: sunucu `BLM-NN` üretir (F68).
     ...(code ? { code } : {}),

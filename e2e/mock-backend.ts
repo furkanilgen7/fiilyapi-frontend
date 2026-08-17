@@ -133,8 +133,19 @@ interface MockSection {
   planned_worker_count: number | null;
   budget_amount: string | null;
   is_draft: boolean;
+  // F-TKV T6 — P11 alanları. `SectionResponse`/`SectionDetailResponse` ikisi de
+  // ZORUNLU taşır; eksik bırakılırsa Gantt ekranı elmasları hiç göremezdi.
+  depends_on_section_id: string | null;
+  milestones: MockMilestone[];
   created_at: string;
   updated_at: string;
+}
+
+interface MockMilestone {
+  id: string;
+  title: string;
+  milestone_date: string;
+  sort_order: number;
 }
 
 // Ekran 13 · İş Kalemleri (BOQ) — BoqGroupResponse/BoqItemResponse ile birebir
@@ -627,6 +638,13 @@ const LAND_SHARE_PLACEHOLDERS = (
 
 // Dört tip/durumu da kapsar; "Kule A"/"Villa B" adları korunur — mevcut
 // dashboard/settings e2e'leri onlara bakıyor (plan Task 7).
+/**
+ * F-TKV T6 — `/projects/timeline` sunucu damgası. Sabit: istemcinin saatinden
+ * BAĞIMSIZDIR ve `page.clock.setFixedTime` bunu değiştirmez (damga gövdeden
+ * gelir), bu yüzden bugün çizgisi her turda AYNI yerde durur.
+ */
+const MOCK_TIMELINE_TODAY = "2026-07-17";
+
 const PROJECT_FIXTURES: MockProject[] = [
   {
     id: "p-1", code: "PRJ-1", name: "Kule A", project_type: "taahhut", status: "active",
@@ -2029,6 +2047,12 @@ function seedState(): MockState {
       sort_order: 0, section_type: "structural", description: "6-10 kat arası kaba inşaat imalatları.",
       deputy_manager_user_id: "u-4", deputy_manager_name: "Kadir Arslan", planned_worker_count: 24,
       budget_amount: "1250000.00", is_draft: false,
+      // F-TKV T6 — Gantt elmasları + bağımlılık zinciri (sec-2 → sec-1).
+      depends_on_section_id: "sec-2",
+      milestones: [
+        { id: "ms-1", title: "Kat 8 döşeme tamamlandı", milestone_date: "2026-05-15", sort_order: 0 },
+        { id: "ms-2", title: "Kaba inşaat teslim", milestone_date: "2026-09-30", sort_order: 1 },
+      ],
       created_at: "2026-01-01T08:00:00Z", updated_at: "2026-01-01T08:00:00Z",
     },
     {
@@ -2036,6 +2060,10 @@ function seedState(): MockState {
       manager_user_id: null, manager_name: "M. Arslan", start_date: "2025-03-01", end_date: "2025-12-01",
       sort_order: 1, section_type: "structural", description: null, deputy_manager_user_id: null,
       deputy_manager_name: null, planned_worker_count: 12, budget_amount: "480000.00", is_draft: false,
+      depends_on_section_id: null,
+      milestones: [
+        { id: "ms-3", title: "Zemin kat teslim", milestone_date: "2025-12-01", sort_order: 0 },
+      ],
       created_at: "2025-03-01T08:00:00Z", updated_at: "2025-12-01T08:00:00Z",
     },
     // Taslak + `on_hold` — §4 zorunluluk kuralinin YALNIZ `is_draft: false`
@@ -2045,6 +2073,8 @@ function seedState(): MockState {
       manager_user_id: null, manager_name: null, start_date: null, end_date: null, sort_order: 2,
       section_type: null, description: null, deputy_manager_user_id: null, deputy_manager_name: null,
       planned_worker_count: null, budget_amount: null, is_draft: true,
+      // Tarihsiz + milestone'suz: Gantt'ta BAR ÇİZİLMEZ ama satır KALIR (K8).
+      depends_on_section_id: null, milestones: [],
       created_at: "2026-02-01T08:00:00Z", updated_at: "2026-02-01T08:00:00Z",
     },
   ];
@@ -2217,6 +2247,8 @@ function buildSectionListItems(state: MockState, siteId: string) {
       boq_item_count: COUNT_PENDING("boq"),
       budget: METRIC_PENDING("boq"),
       worker_count: COUNT_PENDING("timesheet"),
+      depends_on_section_id: sec.depends_on_section_id,
+      milestones: sec.milestones,
     }));
 }
 
@@ -2278,9 +2310,41 @@ function buildSectionDetail(section: MockSection) {
     planned_worker_count: section.planned_worker_count,
     budget_amount: section.budget_amount,
     is_draft: section.is_draft,
+    depends_on_section_id: section.depends_on_section_id,
+    milestones: section.milestones,
     created_at: section.created_at,
     updated_at: section.updated_at,
   };
+}
+
+/**
+ * F-TKV T6 — `SectionUpdate.milestones` İKİ GÖVDE SEMANTİĞİ (backend
+ * `_merge_milestones` emsali): anahtar YOK / `null` = DOKUNMA, `[]` = HEPSİNİ
+ * SİL, dolu dizi = birleştir. `id` verilen satır YERİNDE güncellenir,
+ * verilmeyen YENİdir. `sort_order` GÖVDEDEN GELMEZ — dizi sırasından atanır.
+ * Bilinmeyen/başka bölüme ait `id` sessizce yeni satıra DÖNMEZ, 422 verir.
+ */
+function mergeMilestones(
+  current: MockMilestone[],
+  raw: unknown,
+  seq: () => string,
+): MockMilestone[] | { error: string } {
+  if (raw === undefined || raw === null) return current;
+  if (!Array.isArray(raw)) return { error: "milestones bir liste olmalıdır" };
+  const known = new Set(current.map((m) => m.id));
+  const next: MockMilestone[] = [];
+  for (const [index, entry] of raw.entries()) {
+    const row = entry as Record<string, unknown>;
+    const title = typeof row.title === "string" ? row.title.trim() : "";
+    const date = typeof row.milestone_date === "string" ? row.milestone_date : "";
+    if (!title || !date) return { error: "Milestone icin ad ve tarih zorunludur" };
+    const id = typeof row.id === "string" && row.id ? row.id : null;
+    if (id !== null && !known.has(id)) {
+      return { error: "Bilinmeyen milestone id" };
+    }
+    next.push({ id: id ?? seq(), title, milestone_date: date, sort_order: index });
+  }
+  return next;
 }
 
 /**
@@ -5273,6 +5337,7 @@ const TREASURY_UPCOMING: components["schemas"]["UpcomingPaymentsResponse"] = {
 
 export function startMockBackend(port: number): { server: Server; close: () => Promise<void> } {
   const state = seedState();
+  let milestoneSeq = 3;
 
   const server = createServer((req, res) => {
     const rawUrl = req.url ?? "";
@@ -5303,6 +5368,10 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     if (!auth.startsWith("Bearer ")) return send(401, { detail: "unauthenticated" });
 
     if (method === "GET" && path === "/auth/me") return send(200, ME);
+
+    // F-TKV T6 — milestone id sayaci. `Date.now()` YASAK (determinizm):
+    // fikstürler `ms-1`..`ms-3` kullaniyor, yeni satirlar `ms-4`ten devam eder.
+    const nextMilestoneId = () => `ms-${++milestoneSeq}`;
 
     // Govde okuma yardimcisi
     const withBody = (handler: (body: Record<string, unknown>) => void) => {
@@ -5392,6 +5461,59 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       });
     }
 
+    // 🔴 F-TKV T6 — `GET /projects/timeline` (P11 portföy Gantt'i).
+    // SIRA KRİTİK: hemen aşağıdaki `/^\/projects\/([^/]+)$/` deseni "timeline"ı
+    // proje kimliği sanıp YUTAR ve 404 döner; e2e'de bu "boş takvim" olarak
+    // SESSİZCE YEŞİL geçerdi. Bu blok o desenden ÖNCE durmak zorundadır.
+    //
+    // Yanıt STATE'ten türer (donmuş harita DEĞİL): T5 bölüm formu milestone ve
+    // bağımlılık yazar, takvim ekranı o yazmayı görebilmelidir.
+    // Bölümler şantiyeler ÜZERİNDEN projeye bağlanır (şema: "santiye seviyesi
+    // YOKTUR — bolumler santiyeler uzerinden toplanip dogrudan projenin altina
+    // dizilir").
+    if (method === "GET" && path === "/projects/timeline") {
+      const siteIdsByProject = new Map<string, Set<string>>();
+      for (const site of state.sites) {
+        const bucket = siteIdsByProject.get(site.project_id) ?? new Set<string>();
+        bucket.add(site.id);
+        siteIdsByProject.set(site.project_id, bucket);
+      }
+      const items = state.projects.map((project) => {
+        const siteIds = siteIdsByProject.get(project.id) ?? new Set<string>();
+        const sections = state.sections
+          .filter((sec) => siteIds.has(sec.site_id))
+          .sort((a, b) => a.sort_order - b.sort_order)
+          .map((sec) => ({
+            id: sec.id,
+            name: sec.name,
+            status: sec.status,
+            start_date: sec.start_date,
+            end_date: sec.end_date,
+            sort_order: sec.sort_order,
+            depends_on_section_id: sec.depends_on_section_id,
+            milestones: sec.milestones.map((ms) => ({
+              id: ms.id,
+              title: ms.title,
+              milestone_date: ms.milestone_date,
+            })),
+          }));
+        return {
+          id: project.id,
+          code: project.code,
+          name: project.name,
+          status: project.status,
+          start_date: project.start_date,
+          end_date: project.end_date,
+          contract_amount: project.contract_amount,
+          sections,
+        };
+      });
+      // `today` SUNUCU damgasidir — `page.clock` bunu ETKILEMEZ, bu yuzden
+      // SABITTIR (kare determinizmi). Deger p-1'in penceresinin ortasina
+      // dusuyor ki "bugun" cizgisi izgarada gorunsun.
+      return send(200, { today: MOCK_TIMELINE_TODAY, items });
+    }
+
     // /projects/{project_id} — Proje Detay hero + sekmeler (Task 8, spec §4.1).
     const projectIdMatch = path.match(/^\/projects\/([^/]+)$/);
     if (method === "GET" && projectIdMatch) {
@@ -5477,6 +5599,8 @@ export function startMockBackend(port: number): { server: Server; close: () => P
             status: "planned",
             manager_user_id: managerUserId,
             manager_name: userNameById(state, row.manager_user_id),
+            depends_on_section_id: null,
+            milestones: [],
             start_date: row.start_date ? String(row.start_date) : null,
             end_date: row.end_date ? String(row.end_date) : null,
             sort_order: index,
@@ -5574,9 +5698,15 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           planned_worker_count: typeof body.planned_worker_count === "number" ? body.planned_worker_count : null,
           budget_amount: budgetAmount,
           is_draft: isDraft,
+          depends_on_section_id:
+            typeof body.depends_on_section_id === "string" ? body.depends_on_section_id : null,
+          milestones: [],
           created_at: nowIso,
           updated_at: nowIso,
         };
+        const createdMilestones = mergeMilestones([], body.milestones, nextMilestoneId);
+        if ("error" in createdMilestones) return send(422, { detail: createdMilestones.error });
+        section.milestones = createdMilestones;
         state.sections.push(section);
         return send(201, buildSectionDetail(section));
       });
@@ -5632,8 +5762,21 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         });
         if (validationError) return send(422, { detail: validationError });
 
+        const dependsOn = pick("depends_on_section_id", (v) => (typeof v === "string" && v ? v : null));
+        if (dependsOn !== null) {
+          const target = state.sections.find((sec) => sec.id === dependsOn);
+          if (dependsOn === sectionId) return send(422, { detail: "Bolum kendine bagimli olamaz" });
+          if (!target || target.site_id !== section.site_id) {
+            return send(422, { detail: "Bagimlilik ayni santiyenin bolumu olmalidir" });
+          }
+        }
+        const mergedMilestones = mergeMilestones(section.milestones, body.milestones, nextMilestoneId);
+        if ("error" in mergedMilestones) return send(422, { detail: mergedMilestones.error });
+
         const updated: MockSection = {
           ...section,
+          depends_on_section_id: dependsOn,
+          milestones: mergedMilestones,
           code,
           name: pick("name", (v) => (v ? String(v) : section.name)),
           status: pick("status", (v) => (v ? (String(v) as MockSection["status"]) : section.status)),

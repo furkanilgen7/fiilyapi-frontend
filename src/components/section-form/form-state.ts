@@ -19,6 +19,19 @@ export interface SectionFormValues {
   startDate: string;
   endDate: string;
   budgetAmount: string;
+  /**
+   * F-TKV T5 — Bağımlılık seçici (F115-118). P11 uçları açıldı
+   * (`SectionCreate.depends_on_section_id`), kontrol artık GERÇEK.
+   */
+  dependsOnSectionId: string;
+  /**
+   * F-TKV T5 — "Milestone Ekle" satırı (F119-123). Mockup TEK satır çizer ve
+   * etiketi "EKLE"dir → bu iki alan EKLEME kutusudur, mevcut listenin editörü
+   * DEĞİLDİR. Boş bırakılırsa gövdeye `milestones` anahtarı HİÇ girmez
+   * (`null` = dokunma) ve kayıtlı milestone'lar korunur.
+   */
+  milestoneTitle: string;
+  milestoneDate: string;
 }
 
 export function emptySectionFormValues(): SectionFormValues {
@@ -35,6 +48,9 @@ export function emptySectionFormValues(): SectionFormValues {
     startDate: "",
     endDate: "",
     budgetAmount: "",
+    dependsOnSectionId: "",
+    milestoneTitle: "",
+    milestoneDate: "",
   };
 }
 
@@ -64,5 +80,10 @@ export function sectionFormValuesFromDetail(detail: SectionDetailResponse): Sect
     startDate: detail.start_date ?? "",
     endDate: detail.end_date ?? "",
     budgetAmount: detail.budget_amount ?? "",
+    dependsOnSectionId: detail.depends_on_section_id ?? "",
+    // Ekleme kutusu HER ZAMAN boş açılır — mevcut milestone'lar
+    // `build-body.ts`de `existingMilestones` üzerinden korunur.
+    milestoneTitle: "",
+    milestoneDate: "",
   };
 }

@@ -9,6 +9,10 @@ function values(overrides: Partial<SectionFormValues> = {}): SectionFormValues {
 
 const AVAILABLE = { isUserListUnavailable: false, hasExistingManagerName: false };
 
+function opts(overrides: { isDraft?: boolean } = {}) {
+  return { isDraft: false, ...AVAILABLE, ...overrides };
+}
+
 describe("validateSectionForm — taslak (is_draft: true)", () => {
   it("ad HARİÇ hiçbir zorunluluk uygulanmaz", () => {
     const errors = validateSectionForm(values({ name: "Temel" }), { isDraft: true, ...AVAILABLE });
@@ -105,5 +109,38 @@ describe("validateSectionForm — taslak dışı (is_draft: false, Bölümü Olu
     );
     expect(errors.endDate).toBe(MESSAGES.endBeforeStart);
     expect(errors.startDate).toBeUndefined();
+  });
+});
+
+describe("milestone satırı (F-TKV T5)", () => {
+  it("iki alan da BOŞsa hata yoktur", () => {
+    expect(validateSectionForm(values(), opts()).milestoneTitle).toBeUndefined();
+  });
+
+  it("iki alan da DOLUysa hata yoktur", () => {
+    const errors = validateSectionForm(
+      values({ milestoneTitle: "Kat 14 döşeme", milestoneDate: "2027-01-15" }),
+      opts(),
+    );
+    expect(errors.milestoneTitle).toBeUndefined();
+  });
+
+  it("YALNIZ ad girilirse hata verir — satır sessizce DÜŞÜRÜLMEZ", () => {
+    expect(
+      validateSectionForm(values({ milestoneTitle: "Kat 14 döşeme" }), opts()).milestoneTitle,
+    ).toBe(MESSAGES.milestoneIncomplete);
+  });
+
+  it("YALNIZ tarih girilirse hata verir", () => {
+    expect(validateSectionForm(values({ milestoneDate: "2027-01-15" }), opts()).milestoneTitle).toBe(
+      MESSAGES.milestoneIncomplete,
+    );
+  });
+
+  it("TASLAK yolunda da uygulanır (backend her iki alanı da ister)", () => {
+    expect(
+      validateSectionForm(values({ milestoneTitle: "Yarım" }), opts({ isDraft: true }))
+        .milestoneTitle,
+    ).toBe(MESSAGES.milestoneIncomplete);
   });
 });
