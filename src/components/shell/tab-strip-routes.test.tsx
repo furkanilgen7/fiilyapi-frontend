@@ -4,7 +4,9 @@ import type { ReactElement } from "react";
 
 import { buildRouteTree, resolveHrefIn } from "./route-tree.testkit";
 import { ProjectDetailTabs } from "../project-detail/ProjectDetailTabs";
+import { SectionDetailTabs } from "../section-detail/SectionDetailTabs";
 import { SiteDetailTabs } from "../site-detail/SiteDetailTabs";
+import { pendingModuleLabel } from "@/lib/pending-modules";
 
 /**
  * KÖR BEKÇİ — sekme şeritlerinin ölü bağlantı üretmesi YAPISAL OLARAK imkânsız.
@@ -64,6 +66,48 @@ const STRIPS: readonly StripCase[] = [
     ),
   },
 ];
+
+/**
+ * ROTASIZ ŞERİTLER (F-BOLLINK, 2026-08-17).
+ *
+ * Bölüm detayı şeridi `Link` DEĞİL `<button>` + yerel state kullanır — bölüm
+ * seviyesinde rota yoktur (kabul edilmiş sapma, task-2-brief §Rota). Yukarıdaki
+ * `StripCase` iddiası olduğu gibi uygulanamaz: hiçbir sekmenin `href`i yok ve
+ * hiçbiri `aria-disabled` de değil (sekme GERÇEKTEN çalışır, yalnız içeriği
+ * bölüme kırılmamıştır).
+ *
+ * 🔴 BEKÇİNİN ASIL İŞİ: sekmenin taşıdığı GEREKÇENİN bayatladığını yakalamak.
+ * Kusurun kendisi buydu: `puantaj` ve `stok` rotaları yazıldığı hâlde şerit
+ * hâlâ `pendingModule: "timesheet"/"stock"` diyor ("modül yok") ve kimse fark
+ * etmiyordu. Çözüm: her sekme, içeriğini BUGÜN taşıyan şantiye seviyesi
+ * rotasını `data-module-route` + `data-module-written` ile İDDİA EDER ve bekçi
+ * bunu dosya sistemindeki gerçek rota ağacıyla İKİ YÖNDE karşılaştırır:
+ *   - `written="true"` → rota GERÇEKTEN var olmalı (silinir/yeniden adlandırılırsa KIRMIZI)
+ *   - `written="false"` → rota GERÇEKTEN olmamalı (modül yazılınca KIRMIZI ← kusurun sınıfı)
+ */
+interface RoutelessStripCase {
+  readonly name: string;
+  readonly expectedTabCount: number;
+  readonly render: () => ReactElement;
+}
+
+const ROUTELESS_STRIPS: readonly RoutelessStripCase[] = [
+  {
+    name: "SectionDetailTabs (bölüm detay şeridi — rotasız, yerel state)",
+    expectedTabCount: 5,
+    render: () => (
+      <SectionDetailTabs
+        projectId={PROJECT_SENTINEL}
+        siteId={SITE_SENTINEL}
+        activeIndex={0}
+        onSelect={() => {}}
+      />
+    ),
+  },
+];
+
+/** `pendingModuleLabel`in genel yedeği — eşlenmemiş anahtar bununla döner. */
+const PENDING_FALLBACK = pendingModuleLabel("__eslenmemis_anahtar__");
 
 /** Query string ve fragment ÇÖZÜMDEN ÖNCE atılır (`/hakedisler?x=1` → `/hakedisler`). */
 function pathOf(href: string): string {
@@ -134,6 +178,75 @@ describe("Sekme şeritleri — her sekme gerçek bir rotaya gider veya devre-dı
         if (result.kind !== "static") {
           throw new Error(
             `${strip.name}: "${label}" sekmesi (href="${href}") geçersiz: eşleşen bir sayfa (page.tsx) yok.`,
+          );
+        }
+      }
+      cleanup();
+    });
+  });
+});
+
+describe("Rotasız sekme şeritleri — gerekçe bayatlarsa KIRMIZI", () => {
+  describe.each(ROUTELESS_STRIPS)("$name", (strip) => {
+    it("beklenen sayıda sekme basar (boş/vakumlu geçiş yasağı)", () => {
+      render(strip.render());
+      expect(screen.getAllByRole("tab")).toHaveLength(strip.expectedTabCount);
+      cleanup();
+    });
+
+    it("her sekme ya gerçek bir rotaya bağlanır ya da MAKİNEYLE DENETLENEBİLİR bir gerekçe taşır", () => {
+      render(strip.render());
+      const tabs = screen.getAllByRole("tab");
+      expect(tabs.length).toBeGreaterThanOrEqual(strip.expectedTabCount);
+
+      for (const tab of tabs) {
+        const label = tab.textContent ?? "(etiketsiz)";
+        const href = tab.getAttribute("href");
+        if (href !== null) {
+          // Rotalı sekme: normal şerit kuralı geçerli.
+          expect(resolveHrefIn(ROUTE_TREE, pathOf(href), true, DYNAMIC_ALLOWED)).toEqual({
+            kind: "static",
+          });
+          continue;
+        }
+
+        const pendingKey = tab.getAttribute("data-content-pending");
+        if (!pendingKey) {
+          throw new Error(
+            `${strip.name}: "${label}" sekmesinin ne href'i ne de data-content-pending gerekçesi var — ` +
+              `kullanıcı gerekçesiz bir yer tutucu görüyor.`,
+          );
+        }
+        const reason = pendingModuleLabel(pendingKey);
+        if (reason === PENDING_FALLBACK) {
+          throw new Error(
+            `${strip.name}: "${label}" sekmesinin gerekçe anahtarı ("${pendingKey}") ` +
+              `pending-modules'te EŞLENMEMİŞ — kullanıcı genel yedek metni görür.`,
+          );
+        }
+
+        // İKİ YÖNLÜ ÇAPA: iddia edilen şantiye seviyesi rotası ile gerçek
+        // rota ağacı birbirini tutmalı. Bu iddia, "modül yazıldı ama sekme
+        // hâlâ yakında diyor" çürümesini yakalar.
+        const moduleRoute = tab.getAttribute("data-module-route");
+        const writtenClaim = tab.getAttribute("data-module-written");
+        if (!moduleRoute || (writtenClaim !== "true" && writtenClaim !== "false")) {
+          throw new Error(
+            `${strip.name}: "${label}" sekmesi data-module-route + data-module-written ikilisini taşımıyor — ` +
+              `gerekçesi makineyle denetlenemez, sessizce bayatlayabilir.`,
+          );
+        }
+
+        const resolved = resolveHrefIn(ROUTE_TREE, pathOf(moduleRoute), true, DYNAMIC_ALLOWED);
+        const actuallyWritten = resolved.kind === "static";
+        if (actuallyWritten !== (writtenClaim === "true")) {
+          throw new Error(
+            `${strip.name}: "${label}" sekmesi "${moduleRoute}" rotası için ` +
+              `moduleWritten=${writtenClaim} diyor ama dosya sistemi tersini söylüyor ` +
+              `(çözüm: ${resolved.kind}). ` +
+              (actuallyWritten
+                ? `Rota YAZILDI — sekmenin gerekçesi bayat, "modül yok" demeyi bırak.`
+                : `Rota YOK — yeniden adlandırıldıysa slug'ı güncelle.`),
           );
         }
       }

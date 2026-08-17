@@ -228,7 +228,7 @@ describe("SectionDetailView — izin kapısı (Düzenle butonu)", () => {
   });
 });
 
-describe("SectionDetailView — sekmeler (D99-105, hepsi pending-modules)", () => {
+describe("SectionDetailView — sekmeler (D99-105, hepsi BÖLÜM BAĞI bekleyen içerik)", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("5 sekme başlığı mockup sırasıyla basılır", () => {
@@ -252,7 +252,55 @@ describe("SectionDetailView — sekmeler (D99-105, hepsi pending-modules)", () =
     renderView();
     await user.click(screen.getByRole("tab", { name: "Malzeme" }));
     const panel = screen.getByRole("tabpanel");
-    expect(within(panel).getByText(/Stok modülüyle birlikte gelir/)).toBeInTheDocument();
+    // 🔴 F-BOLLINK: gerekçe artık "Stok modülüyle birlikte gelir" DEĞİL —
+    // stok modülü YAZILI, eksik olan BÖLÜM BAĞI. Eski metin yanlış bilgiydi.
+    expect(within(panel).getByText(/Malzeme hareketleri bu bölüme henüz kırılmıyor/)).toBeInTheDocument();
+    expect(within(panel).queryByText(/Stok modülüyle birlikte gelir/)).not.toBeInTheDocument();
+  });
+
+  it("hiçbir sekme 'modül yok' demez — beşi de bölüm bağı gerekçesi taşır", () => {
+    mockPermission("view");
+    mockQueries();
+    renderView();
+    for (const tab of screen.getAllByRole("tab")) {
+      expect(tab.getAttribute("data-content-pending")).toMatch(/^section_/);
+      expect(tab).toHaveAttribute("data-module-written", "true");
+    }
+  });
+});
+
+describe("SectionDetailView — alt kart bağlantıları (K1 · K2)", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("'Puantaj →' bölüm süzgecini TAŞIR (hedef ekran ?section= okur)", () => {
+    mockPermission("view");
+    mockQueries();
+    renderView();
+    expect(screen.getByRole("link", { name: "Puantaj →" })).toHaveAttribute(
+      "href",
+      `/projeler/${PROJECT_ID}/santiyeler/${SITE_ID}/puantaj?section=${SECTION_ID}`,
+    );
+  });
+
+  it("'Tümü →' bölüm süzgeci TAŞIMAZ — hedef ekran okumuyor, ölü parametre yazılmaz", () => {
+    mockPermission("view");
+    mockQueries();
+    renderView();
+    expect(screen.getByRole("link", { name: "Tümü →" })).toHaveAttribute(
+      "href",
+      `/projeler/${PROJECT_ID}/santiyeler/${SITE_ID}/stok`,
+    );
+  });
+
+  it("iki bağlantı da BAYAT 'Bu bölüm yakında' ipucunu taşımaz (rotalar yazılı)", () => {
+    mockPermission("view");
+    mockQueries();
+    renderView();
+    for (const name of ["Puantaj →", "Tümü →"]) {
+      const link = screen.getByRole("link", { name });
+      expect(link).not.toHaveAttribute("title", "Bu bölüm yakında");
+      expect(link.getAttribute("title")).toMatch(/açar/);
+    }
   });
 });
 

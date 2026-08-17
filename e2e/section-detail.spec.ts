@@ -67,16 +67,29 @@ test("santiye detayindan bolum detayina link, hero + KPI + sekmeler + Hakedis Ol
   await expect(page.getByText("İş Kalemleri — bu bölümde henüz görüntülenemiyor")).toBeVisible();
 
   // 6) Alt satır kartları (D215-272) — pending, ama gerçek navigasyona açık.
+  // 🔴 F-BOLLINK: "Puantaj →" artık BÖLÜM SÜZGECİNİ taşır (hedef ekran
+  // `?section=` okur); "Tümü →" taşımaz (stok ekranı okumuyor — ölü parametre).
   await expect(page.getByText("Bu Bölümdeki İşçiler", { exact: false })).toBeVisible();
   await expect(page.getByRole("link", { name: "Puantaj →" })).toHaveAttribute(
     "href",
-    "/projeler/p-1/santiyeler/s-1/puantaj",
+    "/projeler/p-1/santiyeler/s-1/puantaj?section=sec-1",
   );
   await expect(page.getByText("Bölüm Malzeme Durumu")).toBeVisible();
   await expect(page.getByRole("link", { name: "Tümü →" })).toHaveAttribute(
     "href",
     "/projeler/p-1/santiyeler/s-1/stok",
   );
+});
+
+test("bolum detayindaki 'Puantaj →' baglantisi bolum suzgecli puantaj ekranini acar", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/projeler/p-1/santiyeler/s-1/bolumler/sec-1");
+  await page.getByRole("link", { name: "Puantaj →" }).click();
+  // Bağlantı bölümü UNUTMUYOR: URL süzgeci taşır ve hedef ekran onu OKUR.
+  await expect(page).toHaveURL(/\/santiyeler\/s-1\/puantaj\?section=sec-1$/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Puantaj");
 });
 
 test("taslak + beklemede bolum: durum rozeti ve bos alanlarda durust yer tutucu", async ({ page }) => {

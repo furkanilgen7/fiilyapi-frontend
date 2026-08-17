@@ -245,6 +245,22 @@ const MODULE_LABELS: Record<string, string> = {
   // entegrasyonu kullanıcı kararıyla ertelendi. Beyannameyi XML'e yazmak da
   // GİB'e göndermek de O entegrasyonun parçasıdır.
   vat_return_gib: "e-Fatura/GİB entegrasyonu ertelendi (kullanıcı kararı)",
+  // 🔴 F-BOLLINK (2026-08-17) — BÖLÜM DETAYINA ÖZEL beş anahtar. Ekran daha
+  // önce `boq`/`timesheet`/`stock`/`progress_payments`/`site_diary` anahtarlarını
+  // kullanıyordu; o metinler "… modülüyle birlikte gelir" diyerek kullanıcıya
+  // MODÜLÜN OLMADIĞINI söylüyordu. ÖLÇÜLDÜ: beş modülün de şantiye seviyesinde
+  // YAZILI rotası var (`is-kalemleri` · `puantaj` · `stok` · `hakedisler` ·
+  // `gunluk-kayit`) — eksik olan MODÜL değil, BÖLÜM BAĞI.
+  // Paylaşılan anahtarların metni DEĞİŞTİRİLMEDİ: aynı beş anahtar backend'in
+  // `pending_module` alanından proje/şantiye/kart yüzeylerine de geliyor
+  // (ölçüldü: `SectionCard`, `SiteCard`, `SiteHeroBar`, `ProjectCard`,
+  // `SiteTotalsStrip`, `PlanMaterialsCard`, `BoqAssignmentCard`, `SectionsCard`).
+  // K6 kuralı: EKRAN BAŞINA ayrı anahtar.
+  section_boq: "Bu bölüme henüz iş kalemi bağlanamıyor",
+  section_timesheet: "Puantaj bu bölüme henüz kırılmıyor (şantiye genelinde tutulur)",
+  section_stock: "Malzeme hareketleri bu bölüme henüz kırılmıyor (şantiye genelinde tutulur)",
+  section_progress_payments: "Hakediş bu bölüme henüz kırılmıyor (şantiye genelinde tutulur)",
+  section_site_diary: "Günlük kayıt bu bölüme henüz kırılmıyor (şantiye genelinde tutulur)",
 };
 
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";
