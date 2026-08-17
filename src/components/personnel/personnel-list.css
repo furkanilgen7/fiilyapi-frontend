@@ -57,11 +57,8 @@
   color: var(--color-primary); /* 71 */
   background: var(--color-nav-active-bg);
 }
-/* Rotasız sekmeler — kalıcı kural: silinmez, devre-dışı basılır. */
-.personel-tabs__tab--disabled {
-  cursor: not-allowed;
-  color: var(--color-text-subtle);
-}
+/* F-BOR T5 (K8): şeritte rotasız sekme KALMADI — "Bordro"/"SGK" gerçek
+   rotaya bağlandı, `--disabled` kuralı ölü CSS olarak kaldırıldı. */
 
 /* Uyarı bandı (80-86) — `GET /hr/documents/summary` sayaçlarından kurulur. */
 .personel-alert {

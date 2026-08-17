@@ -1,0 +1,535 @@
+/* F-BOR T2 · Aylık Bordro ekranı. Kanon: projedesign `Bordro Yönetimi.dc.html`
+   (BY). Parantez içi sayılar O dosyanın SATIR numaralarıdır. Prefix `bor`.
+   Mockup'ın üst barı (BY:20-28) ve sol menüsü (BY:31-43) uygulama kabuğudur;
+   bu dosya onları YENİDEN ÇİZMEZ.
+   Palet YALNIZ token'dan gelir (çıplak hex yok); token karşılığı olmayan
+   birkaç ölçü px olarak, BY satır numarasıyla gerekçelendirilerek yazılır
+   (`financial-statements.css` emsali). */
+
+.bor {
+  animation: var(--anim-fade-up); /* BY:45 */
+}
+
+.bor__eyebrow {
+  font-size: var(--text-xs); /* BY:46 — 12px */
+  color: var(--color-text-subtle);
+  margin-bottom: 6px; /* BY:46 */
+}
+
+.bor__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5); /* BY:47 — 20px */
+}
+
+.bor__title {
+  font-size: var(--text-page-title); /* BY:48 — 26/700 */
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+}
+
+.bor__actions {
+  display: flex;
+  gap: var(--space-form-action-gap); /* BY:49 — 10px */
+  align-items: center;
+}
+
+/* ---------------------------------------------------------- ay gezgini (50-54) */
+
+.bor-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2); /* BY:50 — 8px */
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: 6px 12px; /* BY:50 */
+}
+
+.bor-stepper__arrow {
+  font-size: 18px; /* BY:51/53 — `‹`/`›` 18px */
+  line-height: 1;
+  color: var(--color-text-muted);
+  padding: 0 var(--space-1);
+}
+
+.bor-stepper__label {
+  font-size: var(--text-body); /* BY:52 — 13/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- bildirimler */
+
+.bor-notice {
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.bor-notice--danger {
+  color: var(--color-danger-strong);
+}
+
+/* BY:61-64 — dönem durumu bandı. */
+.bor-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3); /* BY:61 — 12px */
+  background: var(--color-warning-soft); /* BY:61 */
+  border: 1px solid var(--color-warning-border-soft); /* BY:61 */
+  border-radius: var(--radius-10); /* BY:61 */
+  padding: 12px 18px; /* BY:61 */
+  margin-bottom: var(--space-5); /* BY:61 — 20px */
+}
+
+.bor-banner__text {
+  font-size: var(--text-body); /* BY:63 — 13/500 */
+  font-weight: var(--weight-medium);
+  color: var(--color-warning-deep-text);
+}
+
+/* ------------------------------------------------------------ KPI (67-93) */
+
+.bor-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* BY:67 */
+  gap: 14px; /* BY:67 */
+  margin-bottom: var(--space-5); /* BY:67 — 20px */
+}
+
+.bor-kpi {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-12); /* BY:68 */
+  padding: var(--space-4); /* BY:68 — 16px */
+}
+
+/* BY:73 · BY:81 — sol kenar vurgusu. */
+.bor-kpi--bank {
+  border-left: 4px solid var(--color-primary);
+}
+.bor-kpi--cash {
+  border-left: 4px solid var(--color-success);
+}
+
+.bor-kpi__label {
+  display: flex;
+  align-items: center;
+  gap: 6px; /* BY:74 */
+  font-size: var(--text-kpi-label); /* BY:69 — 10px */
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-subtle);
+  margin-bottom: 5px; /* BY:69 */
+}
+
+.bor-kpi--bank .bor-kpi__label {
+  color: var(--color-primary); /* BY:76 */
+}
+.bor-kpi--cash .bor-kpi__label {
+  color: var(--color-success); /* BY:84 */
+}
+
+.bor-kpi__icon {
+  width: 14px; /* BY:75 */
+  height: 14px;
+}
+
+.bor-kpi__value {
+  font-family: var(--font-mono);
+  font-size: var(--text-numeric); /* BY:70 — 22/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+.bor-kpi--bank .bor-kpi__value {
+  color: var(--color-primary); /* BY:78 */
+}
+.bor-kpi--cash .bor-kpi__value {
+  color: var(--color-success); /* BY:86 */
+}
+.bor-kpi--cost .bor-kpi__value {
+  color: var(--color-danger); /* BY:91 */
+}
+
+.bor-kpi__hint {
+  font-size: var(--text-small); /* BY:71 — 11px */
+  color: var(--color-text-subtle);
+  margin-top: 3px; /* BY:71 */
+}
+
+/* --------------------------------------------------------- sekmeler (97-103) */
+
+.bor-tabs {
+  display: flex;
+  gap: var(--space-1); /* BY:97 — 4px */
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-10); /* BY:97 */
+  padding: var(--space-1); /* BY:97 */
+  width: fit-content;
+  margin-bottom: var(--space-4); /* BY:97 — 16px */
+}
+
+.bor-tab {
+  font-size: var(--text-xs); /* BY:98 — 12px */
+  border-radius: var(--radius-7); /* BY:98 */
+  color: var(--color-text-muted);
+  padding: 7px 14px; /* BY:98 */
+}
+
+.bor-tab--active {
+  color: var(--color-primary); /* BY:98 */
+  background: var(--color-nav-active-bg);
+  font-weight: var(--weight-semibold);
+}
+
+/* ----------------------------------------------------------- tablo (106-307) */
+
+.bor-table-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* BY:106 */
+  overflow: hidden;
+  box-shadow: var(--shadow-card); /* BY:106 */
+}
+
+.bor-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.bor-table__head {
+  background: var(--color-surface-2); /* BY:109 */
+  border-bottom: var(--border-width-total) solid var(--color-border); /* BY:109 */
+}
+
+.bor-th {
+  padding: 11px 10px; /* BY:111 */
+  font-size: var(--text-table-head); /* BY:110 — 11/600 uppercase */
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.bor-th--lead {
+  text-align: left;
+  padding-left: 14px; /* BY:110 */
+}
+
+.bor-th--num {
+  text-align: right;
+}
+
+.bor-th--center {
+  text-align: center;
+}
+
+/* BY:116/117 — emoji YERİNE SVG (K5); ikon metinle aynı satırda hizalanır. */
+.bor-th--bank {
+  color: var(--color-primary);
+}
+.bor-th--cash {
+  color: var(--color-success);
+}
+
+.bor-th__icon {
+  width: 12px; /* başlık yazısıyla (11px) aynı optik ağırlık */
+  height: 12px;
+  margin-right: var(--space-1);
+  vertical-align: -2px;
+}
+
+/* BY:124-128 · 172-176 · 240-244 · 268-272 — bölüm bandı. */
+.bor-band__cell {
+  padding: 8px 14px; /* BY:125 */
+  font-size: var(--text-table-head); /* BY:125 — 11/700 */
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-group);
+  text-align: left;
+}
+
+.bor-band__dot {
+  width: 8px; /* BY:126 */
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px; /* BY:126 */
+  background: currentcolor;
+  vertical-align: 0;
+}
+
+.bor-band--company {
+  background: var(--color-nav-active-bg); /* BY:124 */
+}
+.bor-band--company .bor-band__cell {
+  color: var(--color-primary-hover); /* BY:125 */
+}
+
+.bor-band--subcontractor {
+  background: var(--color-orange-tint); /* BY:172 */
+}
+.bor-band--subcontractor .bor-band__cell {
+  color: var(--color-orange-tint-text); /* BY:173 */
+}
+
+.bor-band--freelance {
+  background: var(--color-purple-tint); /* BY:240 */
+}
+.bor-band--freelance .bor-band__cell {
+  color: var(--color-accent-purple); /* BY:241 */
+}
+
+.bor-band--intern {
+  background: var(--color-surface-2); /* BY:268 */
+}
+.bor-band--intern .bor-band__cell {
+  color: var(--color-text-secondary); /* BY:269 */
+}
+
+/* Mockup'ta ÇİZİLMEYEN beşinci bölüm (enum tamlığı) — nötr yüzey. */
+.bor-band--general {
+  background: var(--color-surface-muted);
+}
+.bor-band--general .bor-band__cell {
+  color: var(--color-text-secondary);
+}
+
+.bor-row {
+  border-bottom: 1px solid var(--color-divider); /* BY:130 */
+}
+
+/* Ödemeye girmeyen satır GÖRSEL OLARAK da ayrışır (K3). */
+.bor-row--excluded {
+  background: var(--color-surface-muted);
+}
+
+.bor-cell {
+  padding: 11px 10px; /* BY:138 */
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  vertical-align: middle;
+}
+
+.bor-cell--person {
+  padding-left: 14px; /* BY:131 */
+}
+
+.bor-cell--center {
+  text-align: center;
+}
+
+.bor-cell--num {
+  text-align: right;
+  font-family: var(--font-mono); /* BY:139 */
+}
+
+.bor-cell--days {
+  font-size: var(--text-body); /* BY:138 — 13/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.bor-cell--deduction {
+  color: var(--color-danger); /* BY:140 */
+}
+
+.bor-cell--net {
+  font-size: var(--text-body); /* BY:141 — 13/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+.bor-person {
+  display: flex;
+  align-items: center;
+  gap: 9px; /* BY:132 */
+}
+
+.bor-person__avatar {
+  width: 30px; /* BY:133 */
+  height: 30px;
+  border-radius: var(--radius-7); /* BY:133 */
+  background: var(--gradient-avatar-blue); /* BY:133 */
+  color: var(--color-on-brand);
+  font-size: var(--text-kpi-label); /* BY:133 — 10/700 */
+  font-weight: var(--weight-bold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bor-person__name {
+  font-size: var(--text-body); /* BY:134 — 13/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.bor-amount {
+  width: 80px; /* BY:143 */
+  text-align: right;
+}
+
+.bor-amount--cash {
+  width: 72px; /* BY:146 */
+}
+
+.bor-row__reason,
+.bor-row__error {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--text-small);
+  line-height: var(--leading-normal);
+  text-align: center;
+}
+
+.bor-row__reason {
+  color: var(--color-text-subtle);
+}
+
+.bor-row__error {
+  color: var(--color-danger-strong);
+}
+
+.bor-empty-row {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: var(--space-6) var(--space-4);
+}
+
+/* BY:296-306 — tfoot. */
+.bor-total {
+  background: var(--color-info-tint); /* BY:297 */
+  border-top: var(--border-width-total) solid var(--color-primary); /* BY:297 */
+}
+
+.bor-total__label {
+  padding: 13px 14px; /* BY:298 */
+  font-size: var(--text-body); /* BY:298 — 13/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+.bor-total__value {
+  padding: 13px 10px; /* BY:299 */
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--text-table-total-this); /* BY:299 — 14/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+.bor-total__value--bank {
+  color: var(--color-primary); /* BY:300 */
+}
+.bor-total__value--cash {
+  color: var(--color-success); /* BY:301 */
+}
+
+.bor-total__action {
+  padding: 13px 10px; /* BY:302 */
+  text-align: center;
+}
+
+.bor-total__reason {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* --------------------------------------------------- ödeme kutuları (311-330) */
+
+.bor-payboxes {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* BY:311 */
+  gap: var(--space-4); /* BY:311 — 16px */
+  margin-top: var(--space-4); /* BY:311 */
+}
+
+.bor-paybox {
+  display: flex;
+  align-items: center;
+  gap: 14px; /* BY:312 */
+  border-radius: var(--radius-12); /* BY:312 */
+  padding: var(--space-4); /* BY:312 — 16px */
+}
+
+.bor-paybox--bank {
+  background: var(--color-nav-active-bg); /* BY:312 */
+  border: 1px solid var(--color-primary-ring); /* BY:312 */
+}
+
+.bor-paybox--cash {
+  background: var(--color-success-tint); /* BY:321 */
+  border: 1px solid var(--color-success-tint-border); /* BY:321 */
+}
+
+.bor-paybox__icon {
+  width: 28px; /* BY:313 */
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.bor-paybox--bank .bor-paybox__icon {
+  color: var(--color-primary);
+}
+.bor-paybox--cash .bor-paybox__icon {
+  color: var(--color-success);
+}
+
+.bor-paybox__label {
+  font-size: var(--text-small); /* BY:315 — 11/600 uppercase */
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  margin-bottom: 3px; /* BY:315 */
+}
+
+.bor-paybox--bank .bor-paybox__label {
+  color: var(--color-primary-hover); /* BY:315 */
+}
+.bor-paybox--cash .bor-paybox__label {
+  color: var(--color-success-deep); /* BY:324 */
+}
+
+.bor-paybox__value {
+  font-family: var(--font-mono);
+  font-size: var(--text-kpi-value); /* BY:316 — 20/700 */
+  font-weight: var(--weight-bold);
+}
+
+.bor-paybox--bank .bor-paybox__value {
+  color: var(--color-primary); /* BY:316 */
+}
+.bor-paybox--cash .bor-paybox__value {
+  color: var(--color-success); /* BY:325 */
+}
+
+.bor-paybox__hint {
+  font-size: var(--text-small); /* BY:317 — 11px */
+  color: var(--color-text-muted);
+  margin-top: 2px; /* BY:317 */
+}
+
+.bor-paybox__action {
+  margin-left: auto; /* BY:319 */
+  max-width: 240px; /* gerekçe metni kutunun yarısını aşmaz */
+  text-align: right;
+}
+
+.bor-paybox__reason {
+  margin-top: var(--space-1);
+  font-size: var(--text-small);
+  line-height: var(--leading-normal);
+  color: var(--color-text-muted);
+}

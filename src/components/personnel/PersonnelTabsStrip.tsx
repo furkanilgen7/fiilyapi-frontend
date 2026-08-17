@@ -1,33 +1,48 @@
 import Link from "next/link";
 
-import { HR_DOCUMENTS_ROUTE, LEAVES_ROUTE, TAB_PENDING_REASON } from "./personnel-list-labels";
+import { PAYROLL_ROUTE, PAYROLL_SGK_ROUTE } from "@/components/payroll/payroll-labels";
+
+import { HR_DOCUMENTS_ROUTE, LEAVES_ROUTE } from "./personnel-list-labels";
 import "./personnel-list.css";
 
 interface TabDef {
   label: string;
-  /** Gerçek rotası olan sekmenin href'i; yoksa `undefined` (devre-dışı basılır). */
-  href?: string;
+  href: string;
 }
 
 /** Şeridi basan ekranların kullandığı sekme adları — serbest string değil. */
 export type PersonnelTabLabel = "Personel Listesi" | "Belge & Sertifika" | "İzin Yönetimi";
 
-// P 70-77 · İK sekme şeridi. Kalıcı kural: rotası olmayan mockup öğesi
-// SİLİNMEZ, devre-dışı + görünür gerekçeyle basılır. "Puantaj" (spec K3),
-// F-İK T2'den beri "Belge & Sertifika" ve F-IZN T5'ten beri "İzin Yönetimi"
-// GERÇEK rotaya gider; Bordro / SGK ekranları henüz yazılmadı.
+// P 70-77 · İK sekme şeridi.
 //
-// F-İK T5: şerit artık BİRDEN ÇOK ekran tarafından paylaşılır (`/personel`,
+// F-İK T5: şerit BİRDEN ÇOK ekran tarafından paylaşılır (`/personel`,
 // `/personel/belgeler`, `/personel/izinler`) — aktif sekme SABİT DEĞİL,
 // parametreyle gelir. İkinci bir şerit YAZILMAZ (görev emri kuralı): aktif
 // olan sekme düz metne düşer, diğerleri gerçek rotalarına bağlanır.
-const TABS: TabDef[] = [
+//
+// 🔴 F-BOR T5 (K8) · ŞERİDİN SON İKİ ÖLÜ SEKMESİ CANLANDI. "Bordro" ve "SGK"
+// bugüne kadar href'siz + `aria-disabled` + "henüz yazılmadı" gerekçesiyle
+// basılıyordu ("rotası olmayan mockup öğesi SİLİNMEZ, devre-dışı basılır" —
+// F-TH kanonu). Bu dilimde her iki ekran da yazıldı (`/bordro`,
+// `/bordro/sgk`), yani gerekçe ORTADAN KALKTI ve sekmeler GERÇEK rotaya
+// bağlanır — F-İK ("Belge & Sertifika") ve F-IZN ("İzin Yönetimi") ile birebir
+// aynı yol.
+//
+// 🔴 Sonuç: şeritte artık rotasız sekme KALMADI ⇒ `href` zorunlu alan oldu ve
+// devre-dışı dalı (`--disabled` sınıfı + `TAB_PENDING_REASON` title'ı) ÖLÜ KOD
+// olarak kaldırıldı. Kanon iptal edilmedi, YALNIZCA bu şeritte uygulanacak
+// örnek kalmadı; ileride rotasız bir sekme doğarsa desen `PayrollSgkView`
+// (K11) ve `PersonnelDetailView`teki "Bordroyu Gör" düğmesinde canlıdır.
+//
+// 🔴 "Bordroyu Gör" (`PersonnelDetailView`) DEVRE-DIŞI KALIR: kişi bazlı
+// bordro rotası mockup'ta YOKTUR, bu dilim onu açmaz.
+const TABS: readonly TabDef[] = [
   { label: "Personel Listesi", href: "/personel" },
   { label: "İzin Yönetimi", href: LEAVES_ROUTE },
   { label: "Belge & Sertifika", href: HR_DOCUMENTS_ROUTE },
   { label: "Puantaj", href: "/puantaj" },
-  { label: "Bordro" },
-  { label: "SGK" },
+  { label: "Bordro", href: PAYROLL_ROUTE },
+  { label: "SGK", href: PAYROLL_SGK_ROUTE },
 ];
 
 export interface PersonnelTabsStripProps {
@@ -42,7 +57,7 @@ export function PersonnelTabsStrip({ activeTab = "Personel Listesi" }: Personnel
         const isActive = tab.label === activeTab;
 
         // Aktif sekme kendi sayfasına bağlanmaz (gezinme değil, konum bildirir).
-        if (tab.href && !isActive) {
+        if (!isActive) {
           return (
             <Link key={tab.label} href={tab.href} role="tab" className="personel-tabs__tab">
               {tab.label}
@@ -54,14 +69,9 @@ export function PersonnelTabsStrip({ activeTab = "Personel Listesi" }: Personnel
           <span
             key={tab.label}
             role="tab"
-            aria-selected={isActive}
-            aria-disabled={!isActive}
+            aria-selected
             tabIndex={-1}
-            title={isActive ? undefined : TAB_PENDING_REASON}
-            className={
-              "personel-tabs__tab" +
-              (isActive ? " personel-tabs__tab--active" : " personel-tabs__tab--disabled")
-            }
+            className="personel-tabs__tab personel-tabs__tab--active"
           >
             {tab.label}
           </span>

@@ -31,18 +31,35 @@ describe("PersonnelTabsStrip", () => {
     );
   });
 
-  it("rotasız İKİ sekme DEVRE-DIŞIdır ve gerekçesi title'da görünür (kalıcı kural)", () => {
+  // 🔴 F-BOR T5 · K8/K9 · İDDİA GÖÇÜ. Buradaki iki test eskiden "Bordro" ve
+  // "SGK" sekmelerinin DEVRE-DIŞI olduğunu (aria-disabled + gerekçe title'ı +
+  // `A` olmayan etiket) iddia ediyordu. O iddia SİLİNMEDİ, tersine ÇEVRİLEREK
+  // taşındı: aynı iki sekme artık gerçek rotaya bağlanır.
+  //
+  // 🔴 Bu iddia GÖRSEL KAPIYLA DEĞİL, DOM'la kanıtlanır ve bu zorunluluktur:
+  // devre-dışı sekme `--color-text-subtle` (#94a3b8), canlı sekme
+  // `--color-text-muted` (#64748b) basar; ölçülmüş pixelmatch delta'sı 1120,
+  // görsel kapının eşiği 1408.6 ⇒ KARE OYNAMAZ. Yüzeyin ölüden canlıya
+  // geçtiğini yalnız `href` kanıtlayabilir.
+  it("'Bordro' GERÇEK bir bağlantıdır (F-BOR T5 · K8)", () => {
     render(<PersonnelTabsStrip />);
-    for (const label of ["Bordro", "SGK"]) {
-      const tab = screen.getByRole("tab", { name: label });
-      expect(tab).toHaveAttribute("aria-disabled", "true");
-      expect(tab).toHaveAttribute("title", "Bu ekran henüz yazılmadı.");
-      expect(tab.tagName).not.toBe("A");
-    }
+    const tab = screen.getByRole("tab", { name: "Bordro" });
+    expect(tab).toHaveAttribute("href", "/bordro");
+    expect(tab.tagName).toBe("A");
   });
 
-  it("canlanan 'İzin Yönetimi' sekmesi gerekçe title'ı TAŞIMAZ (görünür gerekçe canonu)", () => {
+  it("'SGK' GERÇEK bir bağlantıdır (F-BOR T5 · K8)", () => {
     render(<PersonnelTabsStrip />);
-    expect(screen.getByRole("tab", { name: "İzin Yönetimi" })).not.toHaveAttribute("title");
+    const tab = screen.getByRole("tab", { name: "SGK" });
+    expect(tab).toHaveAttribute("href", "/bordro/sgk");
+    expect(tab.tagName).toBe("A");
+  });
+
+  it("şeritte artık DEVRE-DIŞI sekme KALMADI (gerekçe title'ı da yok)", () => {
+    render(<PersonnelTabsStrip />);
+    for (const tab of screen.getAllByRole("tab")) {
+      expect(tab).not.toHaveAttribute("aria-disabled");
+      expect(tab).not.toHaveAttribute("title");
+    }
   });
 });

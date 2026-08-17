@@ -149,5 +149,9 @@ export function formatWageCell(item: {
   return `${formatCurrencyPrecise(item.wage_amount)}${suffix}`;
 }
 
-/** 72-77 · rotasız İK sekmeleri (kalıcı kural: silinmez, devre-dışı basılır). */
-export const TAB_PENDING_REASON = "Bu ekran henüz yazılmadı.";
+/*
+ * `TAB_PENDING_REASON` (72-77 · rotasız İK sekmelerinin gerekçesi) F-BOR
+ * T5'te KALDIRILDI: şeridin son iki rotasız sekmesi ("Bordro" / "SGK")
+ * `/bordro` ve `/bordro/sgk` ekranları yazıldığı için gerçek rotaya bağlandı,
+ * geriye gerekçe basılacak sekme kalmadı.
+ */

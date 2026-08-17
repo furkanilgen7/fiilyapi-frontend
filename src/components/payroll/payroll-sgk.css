@@ -1,0 +1,337 @@
+/* F-BOR T4 · `/bordro/sgk` — SGK Bildirimi. Kanon: projedesign
+   `SGK Bildirimi.dc.html` (SGK); parantez içi sayılar O dosyanın SATIR
+   numaralarıdır. Prefix `bors`. Mockup'ın üst barı (SGK:16-24) ve sol menüsü
+   uygulama kabuğudur; bu dosya onları YENİDEN ÇİZMEZ.
+   Palet YALNIZ token'dan gelir (çıplak hex yok); token karşılığı olmayan
+   birkaç ölçü px olarak, SGK satır numarasıyla gerekçelendirilerek yazılır
+   (`payroll.css` emsali). */
+
+.bors {
+  animation: var(--anim-fade-up); /* SGK:27 */
+  max-width: 900px; /* SGK:27 — ekran dar bir kolona oturur */
+}
+
+/* ------------------------------------------------------------ başlık (34-41) */
+
+.bors__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5); /* SGK:34 — 20px */
+}
+
+.bors__title {
+  /* SGK:35 22/700 ls -0.3; kardeş ekranlarla (T2/T3) aynı token seçildi. */
+  font-size: var(--text-page-title);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+}
+
+.bors__subtitle {
+  font-size: var(--text-xs); /* SGK:35 — 12px */
+  color: var(--color-text-subtle);
+  margin-top: 2px; /* SGK:35 */
+}
+
+.bors__actions {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+/* K11 — devre dışı eylemin görünür gerekçesi. */
+.bors__reason {
+  max-width: 320px;
+  margin-top: var(--space-1);
+  font-size: var(--text-small);
+  line-height: var(--leading-normal);
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+/* --------------------------------------------------------- ay gezgini (36-40) */
+
+.bors-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2); /* SGK:36 — 8px */
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: 6px 12px; /* SGK:36 */
+}
+
+.bors-stepper__arrow {
+  font-size: 18px; /* SGK:37/39 — `‹`/`›` 18px */
+  line-height: 1;
+  color: var(--color-text-muted);
+  padding: 0 var(--space-1);
+}
+
+.bors-stepper__label {
+  font-size: var(--text-body); /* SGK:38 — 13/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- bildirimler */
+
+.bors-notice {
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.bors-notice--danger {
+  color: var(--color-danger-strong);
+}
+
+/* ----------------------------------------------------- durum bandı (44-51) */
+
+.bors-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3); /* SGK:44 — 12px */
+  border-radius: var(--radius-12); /* SGK:44 */
+  padding: 14px 18px; /* SGK:44 */
+  margin-bottom: var(--space-5); /* SGK:44 — 20px */
+}
+
+.bors-status--pending {
+  background: var(--color-warning-soft); /* SGK:44 */
+  border: 1px solid var(--color-warning-border-soft); /* SGK:44 */
+}
+
+/* K3 — mockup'ta ÇİZİLMEYEN "damgalandı" hâli; başarı tonu. */
+.bors-status--done {
+  background: var(--color-success-tint);
+  border: 1px solid var(--color-success-tint-border);
+}
+
+.bors-status__body {
+  flex: 1;
+}
+
+.bors-status__title {
+  font-size: var(--text-body); /* SGK:47 — 13/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-warning-deep-text);
+}
+
+.bors-status--done .bors-status__title {
+  color: var(--color-success-deep);
+}
+
+.bors-status__text {
+  font-size: var(--text-xs); /* SGK:48 — 12px */
+  color: var(--color-warning-body-text);
+  margin-top: 2px; /* SGK:48 */
+}
+
+.bors-status--done .bors-status__text {
+  color: var(--color-success-deep);
+}
+
+.bors-status__note {
+  font-size: var(--text-small);
+  line-height: var(--leading-normal);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+}
+
+.bors-status__error {
+  font-size: var(--text-small);
+  line-height: var(--leading-normal);
+  color: var(--color-danger-strong);
+  margin-top: var(--space-1);
+}
+
+/* ------------------------------------------------------------ KPI (54-59) */
+
+.bors-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* SGK:54 */
+  gap: var(--space-3); /* SGK:54 — 12px */
+  margin-bottom: var(--space-5); /* SGK:54 — 20px */
+}
+
+.bors-kpi {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-12); /* SGK:55 */
+  padding: 14px; /* SGK:55 */
+}
+
+.bors-kpi__label {
+  font-size: var(--text-kpi-label); /* SGK:55 — 10px uppercase */
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-subtle);
+  margin-bottom: var(--space-1); /* SGK:55 — 4px */
+}
+
+.bors-kpi__value {
+  font-family: var(--font-mono); /* SGK:56 */
+  font-size: var(--text-kpi-value); /* SGK:56 — 20/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+/* SGK:55 — bildirilen çalışan SAYIDIR, para değil: mockup 22px basar. */
+.bors-kpi--count .bors-kpi__value {
+  font-size: var(--text-numeric); /* SGK:55 — 22/700 */
+}
+
+.bors-kpi--premium .bors-kpi__value {
+  color: var(--color-danger); /* SGK:57 */
+}
+
+.bors-kpi__hint {
+  font-size: var(--text-small); /* SGK:55 — 11px */
+  color: var(--color-text-subtle);
+  margin-top: 2px; /* SGK:55 */
+}
+
+/* ------------------------------------------------------- prim kartı (62-93) */
+
+.bors-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* SGK:62 */
+  overflow: hidden;
+  box-shadow: var(--shadow-card); /* SGK:62 */
+  margin-bottom: var(--space-5); /* SGK:62 — 20px */
+}
+
+.bors-card__title {
+  padding: 13px 18px; /* SGK:63 */
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-2); /* SGK:63 */
+  font-size: var(--text-body); /* SGK:63 — 13/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.bors-card__body {
+  padding: var(--space-5); /* SGK:65 — 20px */
+}
+
+.bors-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* SGK:66 */
+  gap: var(--space-5); /* SGK:66 — 20px */
+}
+
+.bors-columns__title {
+  font-size: var(--text-xs); /* SGK:68 — 12/700 uppercase */
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-group);
+  color: var(--color-text);
+  margin-bottom: var(--space-3); /* SGK:68 — 12px */
+}
+
+.bors-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2); /* SGK:69 — 8px */
+}
+
+.bors-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 9px 12px; /* SGK:70 */
+  background: var(--color-surface-2); /* SGK:70 */
+  border-radius: var(--radius-8); /* SGK:70 */
+}
+
+.bors-row__label {
+  font-size: var(--text-body); /* SGK:70 — 13px */
+  color: var(--color-text-secondary);
+}
+
+.bors-row__value {
+  font-family: var(--font-mono); /* SGK:70 */
+  font-size: var(--text-body); /* SGK:70 — 13/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+/* SGK:74 · 83 — vurgulu toplam satırı. */
+.bors-row--total {
+  padding: var(--space-3) 12px; /* SGK:74 — 10px/12px */
+}
+
+.bors-row__label--total {
+  font-weight: var(--weight-bold); /* SGK:74 — 13/700 */
+  color: var(--color-text);
+}
+
+.bors-row__value--total {
+  font-size: var(--text-table-total-this); /* SGK:74 — 14/700 */
+  font-weight: var(--weight-bold);
+}
+
+.bors-row--employee {
+  background: var(--color-danger-soft); /* SGK:74 */
+}
+
+.bors-row--employee .bors-row__value--total {
+  color: var(--color-danger); /* SGK:74 */
+}
+
+.bors-row--employer {
+  background: var(--color-orange-tint); /* SGK:83 */
+}
+
+.bors-row--employer .bors-row__value--total {
+  color: var(--color-orange-tint-text); /* SGK:83 */
+}
+
+/* -------------------------------------------------- ödenecek prim (86-91) */
+
+.bors-payable {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: 14px; /* SGK:86 */
+  padding: 14px; /* SGK:86 */
+  background: var(--color-success-tint); /* SGK:86 */
+  border: 1px solid var(--color-success-tint-border); /* SGK:86 */
+  border-radius: var(--radius-10); /* SGK:86 */
+}
+
+.bors-payable__label {
+  font-size: var(--text-body); /* SGK:88 — 13/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+.bors-payable__hint {
+  font-size: var(--text-small); /* SGK:89 — 11px */
+  line-height: var(--leading-normal);
+  color: var(--color-text-muted);
+  margin-top: 2px; /* SGK:89 */
+}
+
+.bors-payable__value {
+  font-family: var(--font-mono); /* SGK:91 */
+  /* SGK:91 — 24/700. `tokens.css`te 24px karşılığı YOKTUR ve o dosya bu
+     dilimde DOKUNULMAZDIR; ölçü mockup satırıyla gerekçelendirilerek px
+     yazılır (`payroll.css`teki `.bor-stepper__arrow` 18px ölçüsünün emsali).
+     🔴 CSS yorumları İÇ İÇE GEÇMEZ: yorumun içine ikinci bir yorum bloğu
+     gömmek dış yorumu erken kapatır ve `pnpm build` PostCSS'te çöker (F-BOR
+     T7'de fiilen oldu). `typecheck` / `lint` / `test` üçü de bunu GÖRMEZ —
+     yalnız `build` görür. */
+  font-size: 24px;
+  font-weight: var(--weight-bold);
+  color: var(--color-success); /* SGK:91 */
+  white-space: nowrap;
+}

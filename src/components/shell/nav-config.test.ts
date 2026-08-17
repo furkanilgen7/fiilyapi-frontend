@@ -133,6 +133,16 @@ describe("NAV_GROUPS — href geçerliliği (kırık link koruması)", () => {
     expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "static" });
   });
 
+  // 🔴 F-BOR T5 (K1) · `/mali-tablolar` ile BİREBİR aynı tuzak: `bordro/`
+  // klasörü bu dilimde doğdu (`/bordro`, `/bordro/gecmis`, `/bordro/sgk`) ve
+  // kök yol `[...slug]` catch-all'ının kapsamından ÇIKTI. Kök `/bordro` gerçek
+  // bir `page.tsx` olmasaydı sidebar linki `not-found`a (gerçek 404) düşerdi.
+  it("'Bordro' /bordro statik rotasına düşer (catch-all DEĞİL)", () => {
+    const item = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.label === "Bordro");
+    expect(item?.href).toBe("/bordro");
+    expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "static" });
+  });
+
   // 🔴 KONTROL GRUBU. Yukarıdaki iddiaların HEPSİ `resolveHrefIn`in POZİTİF
   // yolunu sınar; dosyada hiç NEGATİF örnek kalmazsa `resolveHrefIn` her şeye
   // `{kind:"static"}` döndürecek şekilde bozulsa bile testlerin TAMAMI yeşil
@@ -141,9 +151,13 @@ describe("NAV_GROUPS — href geçerliliği (kırık link koruması)", () => {
   // hiçbir zaman statik olmaz.
   //
   // 🔴 F-MT T4 · SEÇİMİN GEREKÇESİ ÖLÇÜLDÜ VE KAYDA GEÇTİ. Alternatif,
-  // kontrolü HÂLÂ yazılmamış GERÇEK bir nav öğesine bağlamaktı; öyle dört öğe
-  // vardır (`/onay-kutusu`, `/raporlar`, `/bordro`, `/sirket-varliklari` —
-  // dördü de bugün `catch-all` çözümlüyor), yani "aday yok" değildi. Yine de
+  // kontrolü HÂLÂ yazılmamış GERÇEK bir nav öğesine bağlamaktı; o gün öyle
+  // DÖRT öğe vardı (`/onay-kutusu`, `/raporlar`, `/bordro`,
+  // `/sirket-varliklari`), yani "aday yok" değildi.
+  // 🔴 F-BOR T5 (K10) · o liste ARTIK BAYAT: `/bordro` bu dilimde statik rota
+  // oldu (yukarıdaki iddia) ve catch-all çözümleyen nav öğeleri ÜÇE düştü —
+  // `/onay-kutusu`, `/raporlar`, `/sirket-varliklari`. Bu tam olarak aşağıda
+  // anlatılan aşınmadır ve uydurma yol seçiminin gerekçesini güçlendirir. Yine de
   // UYDURMA yol tercih edilir: gerçek bir öğeye bağlanan kontrol, o ekran
   // yazıldığı gün kırılır ve dilim dilim taşınmak zorunda kalır (bu dosyada
   // tam olarak bu oldu). Uydurma yolun koruma gücü ÖLÇÜLDÜ: `resolveHrefIn`
