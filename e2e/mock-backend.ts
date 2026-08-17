@@ -9747,6 +9747,358 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       });
     }
 
+    // --- F-BOR T6 · Bordro (İK-3) — ON ÜÇ uç ------------------------------
+    // 🔴 Yanıtların HEPSİ `payrollState`ten TÜRER (`buildPayrollX(...)`);
+    // donmuş yanıt haritası YOKTUR. Gerekçe fikstür bloğunun başında.
+    // 🔴 Sıra ÖNEMLİ: alt yollar (`/approve`, `/pay`, …) genel `{id}`
+    // kalıbından ÖNCE eşleşmelidir, yoksa `pp-2026-07/approve` bir dönem
+    // KİMLİĞİ sanılır ve 404 döner.
+
+    if (path === "/payroll/rates" && method === "GET") {
+      // Sayfalama YOKTUR (şema kararı): tablo yılda birkaç satır büyür.
+      return send(200, { items: payrollState.rates, total: payrollState.rates.length });
+    }
+
+    const payrollRateMatch = path.match(/^\/payroll\/rates\/(\d+)\/([^/]+)$/);
+    if (payrollRateMatch && method === "PUT") {
+      const rateYear = Number(payrollRateMatch[1]);
+      const rateSource = payrollRateMatch[2] as MockPayrollWorkerSource;
+      return withBody((body) => {
+        // 🔴 PARA KORKULUĞU: o yılda onaylanmış/ödenmiş dönem varsa oran
+        // DEĞİŞMEZ — geçmiş bir dönemin raporlanmış maliyeti ve SGK bildirimi
+        // geriye dönük oynardı. Kapı YILA kapanır (yeni tip açmak da aynı
+        // sonucu doğururdu).
+        const isYearLocked = payrollState.periods.some(
+          (period) =>
+            period.year === rateYear &&
+            (period.status === "approved" || period.status === "paid"),
+        );
+        if (isYearLocked) {
+          return send(409, {
+            detail: `${rateYear} yılında onaylanmış dönem var; oran seti değiştirilemez.`,
+          });
+        }
+
+        const requiredRateKeys = [
+          "sgk_employee_pct",
+          "unemployment_employee_pct",
+          "income_tax_pct",
+          "stamp_tax_pct",
+          "sgk_employer_pct",
+          "unemployment_employer_pct",
+          "short_work_pct",
+        ] as const;
+        // Gövde TAM SETTİR: yedi oranın hepsi zorunlu, kısmi yama yok.
+        const missingRateKeys = requiredRateKeys.filter(
+          (key) => body[key] === undefined || body[key] === null,
+        );
+        if (missingRateKeys.length > 0) {
+          return send(422, { detail: `Eksik oran alanı: ${missingRateKeys.join(", ")}` });
+        }
+
+        const nextRate: MockPayrollRate = {
+          id: `pr-${rateYear}-${rateSource}`,
+          year: rateYear,
+          personnel_source: rateSource,
+          sgk_employee_pct: String(body.sgk_employee_pct),
+          unemployment_employee_pct: String(body.unemployment_employee_pct),
+          income_tax_pct: String(body.income_tax_pct),
+          stamp_tax_pct: String(body.stamp_tax_pct),
+          sgk_employer_pct: String(body.sgk_employer_pct),
+          unemployment_employer_pct: String(body.unemployment_employer_pct),
+          short_work_pct: String(body.short_work_pct),
+          is_active: body.is_active === undefined ? true : Boolean(body.is_active),
+        };
+        payrollState.rates = [
+          ...payrollState.rates.filter(
+            (rate) => !(rate.year === rateYear && rate.personnel_source === rateSource),
+          ),
+          nextRate,
+        ];
+        return send(200, nextRate);
+      });
+    }
+
+    if (path === "/payroll/periods" && method === "GET") {
+      const rawPayrollLimit = Number(parsed.searchParams.get("limit") ?? PAYROLL_LIMIT_DEFAULT);
+      const rawPayrollOffset = Number(parsed.searchParams.get("offset") ?? 0);
+      const payrollLimit = Number.isFinite(rawPayrollLimit)
+        ? Math.min(Math.max(rawPayrollLimit, 1), PAYROLL_LIMIT_MAX)
+        : PAYROLL_LIMIT_DEFAULT;
+      const payrollOffset = Number.isFinite(rawPayrollOffset) ? Math.max(rawPayrollOffset, 0) : 0;
+      // 🔴 Uç `year` parametresi ALMAZ (K6) — gönderilse bile YOK SAYILIR.
+      // Yıl süzgeci istemcidedir; uydurma parametre buradan da kanıtlanır.
+      return send(200, {
+        items: payrollState.periods
+          .slice(payrollOffset, payrollOffset + payrollLimit)
+          .map((period) => buildPayrollPeriodListRow(payrollState, period)),
+        total: payrollState.periods.length,
+        limit: payrollLimit,
+        offset: payrollOffset,
+      });
+    }
+
+    if (path === "/payroll/periods" && method === "POST") {
+      return withBody((body) => {
+        const newYear = Number(body.year);
+        const newMonth = Number(body.month);
+        if (
+          !Number.isInteger(newYear) ||
+          !Number.isInteger(newMonth) ||
+          newMonth < 1 ||
+          newMonth > 12
+        ) {
+          return send(422, { detail: "Geçersiz dönem (yıl/ay)." });
+        }
+        if (findPayrollPeriod(payrollPeriodId(newYear, newMonth)) !== undefined) {
+          return send(409, { detail: "Bu dönem zaten açılmış." });
+        }
+        // 🔴 `status` gövdeden ALINMAZ: yeni dönem HER ZAMAN `draft`tır (şema
+        // kararı) — aksi hâlde istemci bir ayı doğrudan `paid` açıp onay
+        // zincirini atlardı.
+        const createdPeriod: MockPayrollPeriod = {
+          ...buildPayrollPeriod({
+            year: newYear,
+            month: newMonth,
+            status: "draft",
+            isSgkSubmitted: false,
+          }),
+          payment_due_date:
+            body.payment_due_date === undefined || body.payment_due_date === null
+              ? null
+              : String(body.payment_due_date),
+        };
+        payrollState.periods = [...payrollState.periods, createdPeriod];
+        return send(201, buildPayrollPeriodDetail(payrollState, createdPeriod));
+      });
+    }
+
+    const payrollComputeMatch = path.match(/^\/payroll\/periods\/([^/]+)\/compute$/);
+    if (payrollComputeMatch && method === "POST") {
+      const period = findPayrollPeriod(payrollComputeMatch[1]);
+      if (period === undefined) return send(404, { detail: "Dönem bulunamadı." });
+      // Satırlar tohumda zaten açıktır; yeniden hesap ELLE DÜZELTİLMİŞ (S6) ve
+      // ONAYLI/ÖDENMİŞ (S5) satırları KORUR ve bunu sayaçla söyler.
+      let computeUpdated = 0;
+      let computeSkippedOverridden = 0;
+      let computeSkippedApproved = 0;
+      for (const line of period.lines) {
+        if (line.isOverridden) computeSkippedOverridden += 1;
+        else if (line.approval !== "pending") computeSkippedApproved += 1;
+        else computeUpdated += 1;
+      }
+      return send(200, {
+        created: 0,
+        updated: computeUpdated,
+        skipped_overridden: computeSkippedOverridden,
+        skipped_approved: computeSkippedApproved,
+      });
+    }
+
+    const payrollApproveMatch = path.match(/^\/payroll\/periods\/([^/]+)\/approve$/);
+    if (payrollApproveMatch && method === "POST") {
+      const period = findPayrollPeriod(payrollApproveMatch[1]);
+      if (period === undefined) return send(404, { detail: "Dönem bulunamadı." });
+      const nextStatus = PAYROLL_NEXT_STATUS[period.status];
+      // Zincir TEK ADIM ilerler ve `approved`/`paid`ten ileri gitmez (S8).
+      if (nextStatus === null) return send(409, { detail: "Dönem bu durumdan onaylanamaz." });
+
+      let approvedCount = 0;
+      let approveSkippedUncomputed = 0;
+      let approveSkippedExcluded = 0;
+      let approveSkippedAlready = 0;
+      for (const line of period.lines) {
+        const status = payrollLineStatus(line, payrollLineAmounts(payrollState, period, line));
+        if (status === "excluded") approveSkippedExcluded += 1;
+        else if (status === "uncomputed") approveSkippedUncomputed += 1;
+        else if (status !== "pending") approveSkippedAlready += 1;
+        else {
+          line.approval = "approved";
+          approvedCount += 1;
+        }
+      }
+      period.status = nextStatus;
+      period.approved_at = new Date().toISOString();
+      return send(200, {
+        period_status: period.status,
+        approved: approvedCount,
+        skipped_uncomputed: approveSkippedUncomputed,
+        skipped_excluded: approveSkippedExcluded,
+        skipped_already_approved: approveSkippedAlready,
+      });
+    }
+
+    const payrollPayMatch = path.match(/^\/payroll\/periods\/([^/]+)\/pay$/);
+    if (payrollPayMatch && method === "POST") {
+      const period = findPayrollPeriod(payrollPayMatch[1]);
+      if (period === undefined) return send(404, { detail: "Dönem bulunamadı." });
+      // 🔴 İDEMPOTENT DEĞİL: ikinci çağrı 409'dur (ikinci ödeme). İK-3 dersi
+      // burada YAŞAR — kilit olmasaydı iki eşzamanlı istek bordroyu İKİ KEZ
+      // öderdi; ekran da bu yüzden düğmeyi gönderim boyunca kilitler (K7).
+      if (period.status !== "approved") {
+        return send(409, { detail: "Dönem onaylanmadan ödenemez." });
+      }
+
+      let paidCount = 0;
+      let paidNetTotal = 0;
+      let paySkippedUnapproved = 0;
+      let paySkippedUncomputed = 0;
+      let paySkippedExcluded = 0;
+      for (const line of period.lines) {
+        const amounts = payrollLineAmounts(payrollState, period, line);
+        const status = payrollLineStatus(line, amounts);
+        if (status === "excluded") paySkippedExcluded += 1;
+        else if (status === "uncomputed") paySkippedUncomputed += 1;
+        else if (status === "pending") paySkippedUnapproved += 1;
+        else if (status === "approved" && amounts !== null) {
+          line.approval = "paid";
+          // 🔴 Taşeron satırı bu toplama GİRMEZ (K2) — yukarıdaki dal onu
+          // zaten `skipped_excluded`a yazdı. Girseydi aynı emek hem
+          // hakedişten hem bordrodan ödenirdi.
+          paidNetTotal += amounts.net;
+          paidCount += 1;
+        }
+      }
+      period.status = "paid";
+      period.paid_at = new Date().toISOString();
+      return send(200, {
+        period_status: period.status,
+        paid_at: period.paid_at,
+        paid: paidCount,
+        paid_net_total: payrollKurus(paidNetTotal),
+        skipped_unapproved: paySkippedUnapproved,
+        skipped_uncomputed: paySkippedUncomputed,
+        skipped_excluded: paySkippedExcluded,
+      });
+    }
+
+    const payrollSgkSummaryMatch = path.match(/^\/payroll\/periods\/([^/]+)\/sgk-summary$/);
+    if (payrollSgkSummaryMatch && method === "GET") {
+      const period = findPayrollPeriod(payrollSgkSummaryMatch[1]);
+      if (period === undefined) return send(404, { detail: "Dönem bulunamadı." });
+      return send(200, buildPayrollSgkSummary(payrollState, period));
+    }
+
+    const payrollSgkSubmitMatch = path.match(/^\/payroll\/periods\/([^/]+)\/sgk-submit$/);
+    if (payrollSgkSubmitMatch && method === "POST") {
+      const period = findPayrollPeriod(payrollSgkSubmitMatch[1]);
+      if (period === undefined) return send(404, { detail: "Dönem bulunamadı." });
+      // Uç DIŞ SİSTEME hiçbir şey göndermez; yalnız DAMGA basar. İkinci damga
+      // 409'dur ⇒ tek-uçuş şart (K7).
+      if (period.sgk_submitted_at !== null) {
+        return send(409, { detail: "Bu dönem için SGK bildirimi zaten damgalandı." });
+      }
+      period.sgk_submitted_at = new Date().toISOString();
+      return send(200, { period_id: period.id, sgk_submitted_at: period.sgk_submitted_at });
+    }
+
+    const payrollExportMatch = path.match(/^\/payroll\/periods\/([^/]+)\/export$/);
+    if (payrollExportMatch && method === "GET") {
+      const period = findPayrollPeriod(payrollExportMatch[1]);
+      if (period === undefined) return send(404, { detail: "Dönem bulunamadı." });
+      // 🔴 İKİLİ gövde — `send` JSON yazar, bu yüzden yanıt ELDE kurulur.
+      // İçerik gerçek bir XLSX değildir (istemci yalnız `Blob` + dosya adı
+      // görür); sözleşmenin sınanan yanı İÇERİK TİPİ ve `content-disposition`.
+      const exportName = `bordro-${period.year}-${String(period.month).padStart(2, "0")}.xlsx`;
+      res.writeHead(200, {
+        "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "content-disposition": `attachment; filename="${exportName}"`,
+      });
+      res.end(Buffer.from("PK-fiil-bordro", "utf8"));
+      return;
+    }
+
+    const payrollLineDecisionMatch = path.match(/^\/payroll\/lines\/([^/]+)\/(approve|reject)$/);
+    if (payrollLineDecisionMatch && method === "POST") {
+      const found = findPayrollLine(payrollLineDecisionMatch[1]);
+      if (found === undefined) return send(404, { detail: "Bordro satırı bulunamadı." });
+      const amounts = payrollLineAmounts(payrollState, found.period, found.line);
+      const status = payrollLineStatus(found.line, amounts);
+      if (status === "excluded") return send(409, { detail: PAYROLL_EXCLUDED_REASON });
+      if (status === "uncomputed") {
+        return send(409, { detail: "Brütü hesaplanmamış satır onaylanamaz." });
+      }
+      if (status === "paid") return send(409, { detail: "Ödenmiş satırın onayı değiştirilemez." });
+      found.line.approval = payrollLineDecisionMatch[2] === "approve" ? "approved" : "pending";
+      return send(200, buildPayrollLineResponse(payrollState, found.period, found.line));
+    }
+
+    const payrollLineMatch = path.match(/^\/payroll\/lines\/([^/]+)$/);
+    if (payrollLineMatch && method === "PATCH") {
+      const found = findPayrollLine(payrollLineMatch[1]);
+      if (found === undefined) return send(404, { detail: "Bordro satırı bulunamadı." });
+      const { period, line } = found;
+      return withBody((body) => {
+        const touchedFields = ["gross_amount", "bank_amount", "cash_amount"].filter(
+          (key) => body[key] !== undefined,
+        );
+        // Boş gövde bir İŞLEM DEĞİLDİR; 200 dönmek "kaydettim" demek olurdu.
+        if (touchedFields.length === 0) return send(422, { detail: "Boş gövde." });
+
+        if (
+          payrollLineStatus(line, payrollLineAmounts(payrollState, period, line)) === "excluded"
+        ) {
+          return send(409, { detail: PAYROLL_EXCLUDED_REASON });
+        }
+
+        if (body.gross_amount !== undefined && body.gross_amount !== null) {
+          const overrideGross = payrollParseKurus(String(body.gross_amount));
+          if (overrideGross === null) return send(422, { detail: "Geçersiz brüt tutar." });
+          line.previousGrossKurus = line.grossKurus;
+          line.grossKurus = overrideGross;
+          line.isOverridden = true;
+          line.overriddenAt = new Date().toISOString();
+          // Brüt değişti ⇒ eski bölüşüm artık NETLE TUTMAZ; varsayılana
+          // ("hepsi bankaya") düşer. Korunsaydı satır sessizce tutarsız kalırdı.
+          line.bankKurus = null;
+        }
+
+        const amounts = payrollLineAmounts(payrollState, period, line);
+        if (body.bank_amount !== undefined || body.cash_amount !== undefined) {
+          // 🔴 İKİSİ BİRLİKTE gelir (şema kararı): yalnız biri gelip öteki
+          // sunucuya tamamlatılsaydı bölüşüm bir DOĞRULAMA değil bir HESAP
+          // olurdu ve "gerisi elden mi, yoksa yanlış mı yazdım?" ayrımı
+          // kaybolurdu.
+          if (body.bank_amount === undefined || body.cash_amount === undefined) {
+            return send(422, { detail: "Banka ve elden tutarları birlikte gönderilmelidir." });
+          }
+          if (amounts === null) {
+            return send(409, { detail: "Net tutarı hesaplanmamış satırda bölüşüm yapılamaz." });
+          }
+          const bankKurus = payrollParseKurus(String(body.bank_amount));
+          const cashKurus = payrollParseKurus(String(body.cash_amount));
+          if (bankKurus === null || cashKurus === null) {
+            return send(422, { detail: "Geçersiz tutar." });
+          }
+          // 🔴 DOĞRULAMA: toplam NETE eşit olmalı. Sunucu farkı KAPATMAZ —
+          // kapatsaydı kullanıcı yanlış yazdığını hiç öğrenemezdi.
+          if (bankKurus + cashKurus !== amounts.net) {
+            return send(422, {
+              detail: `Banka + elden toplamı net tutara eşit olmalı (${payrollKurus(amounts.net)}).`,
+            });
+          }
+          line.bankKurus = bankKurus;
+        }
+
+        return send(200, buildPayrollLineResponse(payrollState, period, line));
+      });
+    }
+
+    const payrollPeriodMatch = path.match(/^\/payroll\/periods\/([^/]+)$/);
+    if (payrollPeriodMatch && (method === "GET" || method === "PATCH")) {
+      const period = findPayrollPeriod(payrollPeriodMatch[1]);
+      if (period === undefined) return send(404, { detail: "Dönem bulunamadı." });
+      if (method === "GET") return send(200, buildPayrollPeriodDetail(payrollState, period));
+      return withBody((body) => {
+        // YALNIZ ödeme tarihi değişir (T4b): `year`/`month` kimliktir,
+        // `status` geçiş tablosunun işidir, damgalar kendi uçlarında basılır.
+        if (body.payment_due_date === undefined) return send(422, { detail: "Boş gövde." });
+        period.payment_due_date =
+          body.payment_due_date === null ? null : String(body.payment_due_date);
+        return send(200, buildPayrollPeriodDetail(payrollState, period));
+      });
+    }
+
     return send(404, { detail: "not found" });
   });
 
@@ -11583,3 +11935,681 @@ const leaveState: { requests: MockLeaveRequest[]; seq: number } = {
   requests: LEAVE_REQUEST_SEEDS.map(buildLeaveRequest),
   seq: 0,
 };
+
+// --- F-BOR T6 · Bordro (İK-3) fikstürleri ---------------------------------
+//
+// 🔴 ON ÜÇ uç burada karşılanır:
+//   `GET,POST /payroll/periods` · `GET,PATCH /payroll/periods/{id}` ·
+//   `POST /payroll/periods/{id}/compute` · `PATCH /payroll/lines/{id}` ·
+//   `POST /payroll/lines/{id}/approve` · `POST /payroll/lines/{id}/reject` ·
+//   `POST /payroll/periods/{id}/approve` · `POST /payroll/periods/{id}/pay` ·
+//   `GET /payroll/periods/{id}/sgk-summary` ·
+//   `POST /payroll/periods/{id}/sgk-submit` · `GET /payroll/rates` ·
+//   `PUT /payroll/rates/{year}/{source}` · `GET /payroll/periods/{id}/export`.
+//
+// 🔴🔴 YANITLAR DONMUŞ HARİTA DEĞİL, DURUMDAN TÜRER. Bu dilim MUTASYONLUDUR
+// (onay/ödeme satır durumunu ve dönem damgalarını oynatır); donmuş bir yanıt
+// haritası, onaydan sonra ekranın hâlâ "Beklemede" yazdığı bir sahte dünya
+// üretir ve e2e hiçbir şey kanıtlamazdı. Tutulan şey YALNIZ çekirdek veridir
+// (dönemler + satırlar + oran setleri); listeler, detaylar, KPI'lar, SGK
+// özeti ve atlama sayaçlarının hepsi `buildX(state, …)` ile o çekirdekten
+// HESAPLANIR.
+//
+// 🔴 K4 · MOCKUP ARİTMETİĞİ KOPYALANMAZ. BY/BG/SGK mockup'larının üçü de
+// kendi içinde tutarsızdır (BY taşeron satırlarında 200 TL sapma · BG tfoot
+// "7 Ay" derken 5 satır · SGK işveren toplamı kendi oranlarıyla 25.852
+// tutmuyor). Buradaki HİÇBİR tutar elle yazılmaz: brütten ve ORAN SETİNDEN
+// tam sayı kuruş aritmetiğiyle türetilir, böylece
+//   `brüt − kesinti = net` ve `banka + elden = net`
+// her satırda YAPISAL OLARAK doğrudur. Kör bekçisi
+// `payroll-fixtures.test.ts` (tutarlılık bekçisi).
+//
+// 🔴 KADROYA DOKUNULMADI. Şirket/taşeron/genel satırları MEVCUT `per-1…per-5`
+// personeline bağlanır; `personnel-list-visual.spec.ts`in "toplam TAM 6"
+// iddiası ve puantaj baseline'ları korunur. Serbest meslek + stajyer
+// satırları mockup'ın DÖRT bandını canlandırmak için gereklidir ve kadroya
+// EKLENMEZ: `PayrollLineResponse` personel adını satırın İÇİNDE taşır
+// (ekranda `/personel`e giden bir bağlantı yoktur), bu yüzden bu iki satır
+// kartoteksi büyütmeden basılabilir. Alternatif — kadroya iki personel
+// eklemek — dört ayrı baseline'ı oynatırdı.
+//
+// 🔴 YILLAR AYRILDI (F-PT `pinRoster` dersi: paylaşılan mock GLOBALDİR):
+//   * **2026** — GÖRSEL yıl. Beş dönem; `bordro-aylik`, `bordro-gecmis` ve
+//     `bordro-sgk` kareleri buradan çıkar. Hiçbir spec bu yılda MUTASYON
+//     yapmaz, yoksa kareler koşu sırasına göre kâh şöyle kâh böyle üretilir.
+//   * **2025** — MUTASYON alanı (onay/ödeme/SGK damgası). BG'nin varsayılan
+//     yılı en YENİ yıldır (2026), bu yüzden 2025'teki durum değişiklikleri
+//     hiçbir kadraja sızmaz.
+//   * **2024** — ORAN SETİ OLMAYAN yıl (K3): tüm satırlar `uncomputed`,
+//     `unknown_rate_count > 0`. `bordro-aylik-oransiz` karesi buradan çıkar.
+
+type MockPayrollPeriodStatus = components["schemas"]["PayrollPeriodStatus"];
+type MockPayrollLineStatus = components["schemas"]["PayrollLineStatus"];
+type MockPayrollWorkerSource = components["schemas"]["WorkerSource"];
+type MockPayrollRate = components["schemas"]["PayrollRateResponse"];
+
+/** Satırın ONAY zinciri — ekrana çıkan `status` bundan TÜREMEZ, bkz. `payrollLineStatus`. */
+type MockPayrollApproval = "pending" | "approved" | "paid";
+
+interface MockPayrollLine {
+  id: string;
+  personnel_id: string;
+  personnel_name: string;
+  personnel_source: MockPayrollWorkerSource;
+  days: number | null;
+  /** Brüt KURUŞ. `null` = ücret verisi yok (S4) ⇒ satır `uncomputed`. */
+  grossKurus: number | null;
+  approval: MockPayrollApproval;
+  /** Banka payı KURUŞ; `null` = "kalanın hepsi bankaya" varsayılanı. */
+  bankKurus: number | null;
+  isOverridden: boolean;
+  overriddenAt: string | null;
+  previousGrossKurus: number | null;
+}
+
+interface MockPayrollPeriod {
+  id: string;
+  year: number;
+  month: number;
+  status: MockPayrollPeriodStatus;
+  payment_due_date: string | null;
+  approved_at: string | null;
+  paid_at: string | null;
+  sgk_submitted_at: string | null;
+  lines: MockPayrollLine[];
+}
+
+interface MockPayrollState {
+  periods: MockPayrollPeriod[];
+  rates: MockPayrollRate[];
+  seq: number;
+}
+
+/* ------------------------------------------------------------ kuruş aritmetiği */
+
+/**
+ * Tam sayı kuruş → Decimal metin (`3045000` → `"30450.00"`).
+ * Para ASLA kayan noktada tutulmaz; yalnız çıkışta metne çevrilir.
+ */
+function payrollKurus(value: number): string {
+  const isNegative = value < 0;
+  const digits = String(Math.abs(value)).padStart(3, "0");
+  const whole = digits.slice(0, digits.length - 2);
+  return `${isNegative ? "-" : ""}${whole}.${digits.slice(digits.length - 2)}`;
+}
+
+/** Decimal metin → tam sayı kuruş; ayrıştırılamayan girdi `null`. */
+function payrollParseKurus(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!/^\d+([.,]\d{1,2})?$/.test(trimmed)) return null;
+  const [whole, fraction = ""] = trimmed.replace(",", ".").split(".");
+  return Number(whole) * 100 + Number(`${fraction}00`.slice(0, 2));
+}
+
+/**
+ * Oranın kuruş karşılığı. 🔴 ORAN para DEĞİLDİR (`"20.50"` = yüzde), bu yüzden
+ * `Number`a çevrilmesi güvenlidir; ÇARPIMIN SONUCU tam sayı kuruşa yuvarlanır
+ * ve toplamlar hep bu yuvarlanmış parçalardan kurulur — böylece
+ * `parçaların toplamı = toplam` her zaman TAM tutar.
+ */
+function payrollPctOf(baseKurus: number, pct: string): number {
+  return Math.round((baseKurus * Number(pct)) / 100);
+}
+
+/* ------------------------------------------------------------------ oranlar */
+
+interface PayrollRateSeed {
+  source: MockPayrollWorkerSource;
+  sgkEmployee: string;
+  unemploymentEmployee: string;
+  incomeTax: string;
+  stampTax: string;
+  sgkEmployer: string;
+  unemploymentEmployer: string;
+}
+
+/**
+ * 🔴 K2 · `short_work_pct` HER SETTE `"0.000"`. Kısa çalışma ödeneği (%1)
+ * SGK ekranında ÇİZİLMEZ (KK-5) ve doğru düzeltme istemcinin toplamı
+ * oynatması değil, oranın SIFIR tohumlanmasıdır (`IK3-SEED`). Sıfır olduğu
+ * için `employer_burden_total` ile ekranda basılan İKİ satırın toplamı
+ * BİREBİR tutar; istemcinin sunucuyu yalanlaması gerekmez.
+ */
+const PAYROLL_SHORT_WORK_PCT = "0.000";
+
+const PAYROLL_RATE_SEEDS: readonly PayrollRateSeed[] = [
+  // SGK 4a — şirket kadrosu ve genel işçi aynı sete tabidir.
+  { source: "company", sgkEmployee: "14.000", unemploymentEmployee: "1.000", incomeTax: "15.000", stampTax: "0.759", sgkEmployer: "20.500", unemploymentEmployer: "2.000" },
+  { source: "general", sgkEmployee: "14.000", unemploymentEmployee: "1.000", incomeTax: "15.000", stampTax: "0.759", sgkEmployer: "20.500", unemploymentEmployer: "2.000" },
+  // Taşeron işçisinin seti VARDIR: satır ödenmez (K2) ama MALİYET tabanına
+  // girer; set olmasaydı maliyet kartı sessizce eksik çıkardı.
+  { source: "subcontractor", sgkEmployee: "14.000", unemploymentEmployee: "1.000", incomeTax: "15.000", stampTax: "0.759", sgkEmployer: "20.500", unemploymentEmployer: "2.000" },
+  // BY:240 "Serbest Makbuz · %20 Stopaj" — SGK yok, yalnız stopaj + damga.
+  { source: "freelance", sgkEmployee: "0.000", unemploymentEmployee: "0.000", incomeTax: "20.000", stampTax: "0.759", sgkEmployer: "0.000", unemploymentEmployer: "0.000" },
+  // BY:268 "Staj ücreti" — kesintisiz.
+  { source: "intern", sgkEmployee: "0.000", unemploymentEmployee: "0.000", incomeTax: "0.000", stampTax: "0.000", sgkEmployer: "0.000", unemploymentEmployer: "0.000" },
+];
+
+/** Oran seti TANIMLI yıllar. 2024 bilinçli olarak DIŞARIDADIR (K3). */
+const PAYROLL_RATE_YEARS: readonly number[] = [2025, 2026];
+
+function buildPayrollRates(): MockPayrollRate[] {
+  return PAYROLL_RATE_YEARS.flatMap((year) =>
+    PAYROLL_RATE_SEEDS.map((seed) => ({
+      id: `pr-${year}-${seed.source}`,
+      year,
+      personnel_source: seed.source,
+      sgk_employee_pct: seed.sgkEmployee,
+      unemployment_employee_pct: seed.unemploymentEmployee,
+      income_tax_pct: seed.incomeTax,
+      stamp_tax_pct: seed.stampTax,
+      sgk_employer_pct: seed.sgkEmployer,
+      unemployment_employer_pct: seed.unemploymentEmployer,
+      short_work_pct: PAYROLL_SHORT_WORK_PCT,
+      is_active: true,
+    })),
+  );
+}
+
+function payrollRateFor(
+  state: MockPayrollState,
+  year: number,
+  source: MockPayrollWorkerSource,
+): MockPayrollRate | undefined {
+  return state.rates.find((rate) => rate.year === year && rate.personnel_source === source);
+}
+
+/* --------------------------------------------------------- satır aritmetiği */
+
+interface PayrollLineAmounts {
+  gross: number;
+  sgkEmployee: number;
+  unemploymentEmployee: number;
+  incomeTax: number;
+  stampTax: number;
+  deduction: number;
+  net: number;
+  sgkEmployer: number;
+  unemploymentEmployer: number;
+  shortWork: number;
+  employerBurden: number;
+}
+
+/**
+ * Satırın TÜM tutarları — brütten ve oran setinden türer. `null` dönmesinin
+ * İKİ ayrı sebebi vardır ve ikisi de görünür sayaca dönüşür:
+ *   * brüt yok (ücret verisi girilmemiş)  → `uncomputed_count`
+ *   * oran seti yok (yıl tohumlanmamış)   → `unknown_rate_count` (fail-closed)
+ *
+ * 🔴 `deduction` dört parçanın TOPLAMIDIR, brütün yüzdesi değil: parçalar tek
+ * tek yuvarlandığı için "yüzdeyi bir kez uygula" yaklaşımı ekrandaki dört
+ * satırla toplamı 1-2 kuruş ayırırdı. `net = brüt − kesinti` de bu yüzden
+ * TAM tutar.
+ */
+function payrollLineAmounts(
+  state: MockPayrollState,
+  period: MockPayrollPeriod,
+  line: MockPayrollLine,
+): PayrollLineAmounts | null {
+  if (line.grossKurus === null) return null;
+  const rate = payrollRateFor(state, period.year, line.personnel_source);
+  if (rate === undefined) return null;
+
+  const gross = line.grossKurus;
+  const sgkEmployee = payrollPctOf(gross, rate.sgk_employee_pct);
+  const unemploymentEmployee = payrollPctOf(gross, rate.unemployment_employee_pct);
+  const incomeTax = payrollPctOf(gross, rate.income_tax_pct);
+  const stampTax = payrollPctOf(gross, rate.stamp_tax_pct);
+  const deduction = sgkEmployee + unemploymentEmployee + incomeTax + stampTax;
+
+  const sgkEmployer = payrollPctOf(gross, rate.sgk_employer_pct);
+  const unemploymentEmployer = payrollPctOf(gross, rate.unemployment_employer_pct);
+  const shortWork = payrollPctOf(gross, rate.short_work_pct);
+
+  return {
+    gross,
+    sgkEmployee,
+    unemploymentEmployee,
+    incomeTax,
+    stampTax,
+    deduction,
+    net: gross - deduction,
+    sgkEmployer,
+    unemploymentEmployer,
+    shortWork,
+    employerBurden: sgkEmployer + unemploymentEmployer + shortWork,
+  };
+}
+
+/** Taşeron satırı ödenmez (K2); tutarsız satır `uncomputed`; kalanı onay zinciri. */
+function payrollLineStatus(
+  line: MockPayrollLine,
+  amounts: PayrollLineAmounts | null,
+): MockPayrollLineStatus {
+  if (line.personnel_source === "subcontractor") return "excluded";
+  if (amounts === null) return "uncomputed";
+  return line.approval;
+}
+
+/** Ödenebilir satır = ne taşeron ne hesaplanamamış. Ödeme tabanının tanımı. */
+function isPayablePayrollLine(
+  line: MockPayrollLine,
+  amounts: PayrollLineAmounts | null,
+): boolean {
+  const status = payrollLineStatus(line, amounts);
+  return status !== "excluded" && status !== "uncomputed";
+}
+
+const PAYROLL_EXCLUDED_REASON =
+  "Taşeron işçisi bordrodan ödenmez; ödemesi taşeron hakedişi üzerinden yapılır.";
+
+/** Banka/elden bölüşümü: kullanıcı dokunmadıysa NETİN TAMAMI bankadan. */
+function payrollSplit(
+  line: MockPayrollLine,
+  amounts: PayrollLineAmounts | null,
+): { bank: number; cash: number } | null {
+  if (amounts === null) return null;
+  if (line.personnel_source === "subcontractor") return null;
+  const bank = line.bankKurus ?? amounts.net;
+  return { bank, cash: amounts.net - bank };
+}
+
+function buildPayrollLineResponse(
+  state: MockPayrollState,
+  period: MockPayrollPeriod,
+  line: MockPayrollLine,
+) {
+  const amounts = payrollLineAmounts(state, period, line);
+  const split = payrollSplit(line, amounts);
+  return {
+    id: line.id,
+    personnel_id: line.personnel_id,
+    personnel_name: line.personnel_name,
+    personnel_source: line.personnel_source,
+    days: line.days,
+    gross_amount: amounts === null ? null : payrollKurus(amounts.gross),
+    deduction_amount: amounts === null ? null : payrollKurus(amounts.deduction),
+    net_amount: amounts === null ? null : payrollKurus(amounts.net),
+    bank_amount: split === null ? null : payrollKurus(split.bank),
+    cash_amount: split === null ? null : payrollKurus(split.cash),
+    status: payrollLineStatus(line, amounts),
+    excluded_reason: line.personnel_source === "subcontractor" ? PAYROLL_EXCLUDED_REASON : null,
+    is_overridden: line.isOverridden,
+    overridden_at: line.overriddenAt,
+    previous_gross_amount:
+      line.previousGrossKurus === null ? null : payrollKurus(line.previousGrossKurus),
+  };
+}
+
+/* -------------------------------------------------------------- özet + detay */
+
+/** Bölümlerin çıkış sırası — `WorkerSource` enum sırası (ekran yine kendi sıralar). */
+const PAYROLL_SOURCE_ORDER: readonly MockPayrollWorkerSource[] = [
+  "company",
+  "subcontractor",
+  "general",
+  "freelance",
+  "intern",
+];
+
+function buildPayrollSections(state: MockPayrollState, period: MockPayrollPeriod) {
+  return PAYROLL_SOURCE_ORDER.flatMap((source) => {
+    const lines = period.lines.filter((line) => line.personnel_source === source);
+    if (lines.length === 0) return [];
+    return [
+      {
+        personnel_source: source,
+        line_count: lines.length,
+        lines: lines.map((line) => buildPayrollLineResponse(state, period, line)),
+      },
+    ];
+  });
+}
+
+/** Yüzde metni (`"71.5"`); bölen sıfırsa `null` — istemci bölme YAPMAZ. */
+function payrollPctString(part: number, whole: number): string | null {
+  if (whole === 0) return null;
+  return ((part / whole) * 100).toFixed(1);
+}
+
+/**
+ * 🔴 İKİ TABAN AYRIDIR (şema kararı) ve bu fonksiyon onu görünür kılar:
+ *   * `net/bank/cash` → ÖDEME tabanı (`excluded` ve `uncomputed` HARİÇ);
+ *   * `gross/sgk_employer/total_employer_cost` → MALİYET tabanı (`excluded`
+ *     DAHİL — taşeron işçisi ödenmez ama şirkete maliyettir).
+ * İkisini birbirinden türetmek, mockup'ın yaptığı hatanın aynısı olurdu.
+ */
+function buildPayrollSummary(state: MockPayrollState, period: MockPayrollPeriod) {
+  let netTotal = 0;
+  let netCount = 0;
+  let bankTotal = 0;
+  let bankCount = 0;
+  let cashTotal = 0;
+  let cashCount = 0;
+  let grossTotal = 0;
+  let sgkEmployerTotal = 0;
+  let uncomputedCount = 0;
+  let excludedCount = 0;
+  let unknownCostCount = 0;
+
+  for (const line of period.lines) {
+    const amounts = payrollLineAmounts(state, period, line);
+    const status = payrollLineStatus(line, amounts);
+
+    if (status === "uncomputed") uncomputedCount += 1;
+    if (status === "excluded") excludedCount += 1;
+    if (amounts === null) {
+      // 🔴 İKİ SAYAÇ ÇAKIŞMAZ. Brütü hiç olmayan satırı `uncomputed_count`
+      // zaten sayar; `unknown_cost_count` YALNIZ brütü BİLİNEN ama ORAN SETİ
+      // olmadığı için maliyeti hesaplanamayan satırları sayar. İkisini aynı
+      // satır için birden saymak, ekranda aynı eksiği iki ayrı bantla anlatıp
+      // kullanıcıya iki ayrı sorun varmış gibi gösterirdi.
+      if (line.grossKurus !== null) unknownCostCount += 1;
+      continue;
+    }
+
+    grossTotal += amounts.gross;
+    sgkEmployerTotal += amounts.employerBurden;
+
+    if (!isPayablePayrollLine(line, amounts)) continue;
+    const split = payrollSplit(line, amounts);
+    if (split === null) continue;
+    netTotal += amounts.net;
+    netCount += 1;
+    if (split.bank > 0) {
+      bankTotal += split.bank;
+      bankCount += 1;
+    }
+    if (split.cash > 0) {
+      cashTotal += split.cash;
+      cashCount += 1;
+    }
+  }
+
+  return {
+    line_count: period.lines.length,
+    net_total: payrollKurus(netTotal),
+    net_personnel_count: netCount,
+    bank_total: payrollKurus(bankTotal),
+    bank_personnel_count: bankCount,
+    bank_pct: payrollPctString(bankTotal, netTotal),
+    cash_total: payrollKurus(cashTotal),
+    cash_personnel_count: cashCount,
+    cash_pct: payrollPctString(cashTotal, netTotal),
+    gross_total: payrollKurus(grossTotal),
+    sgk_employer_total: payrollKurus(sgkEmployerTotal),
+    total_employer_cost: payrollKurus(grossTotal + sgkEmployerTotal),
+    uncomputed_count: uncomputedCount,
+    excluded_count: excludedCount,
+    unknown_cost_count: unknownCostCount,
+  };
+}
+
+function buildPayrollPeriodDetail(state: MockPayrollState, period: MockPayrollPeriod) {
+  return {
+    id: period.id,
+    year: period.year,
+    month: period.month,
+    status: period.status,
+    payment_due_date: period.payment_due_date,
+    approved_at: period.approved_at,
+    paid_at: period.paid_at,
+    sgk_submitted_at: period.sgk_submitted_at,
+    summary: buildPayrollSummary(state, period),
+    sections: buildPayrollSections(state, period),
+  };
+}
+
+/**
+ * BG satırı. 🔴 `personnel_count` dönemin TÜM satırlarını sayar; KPI'daki
+ * "çalışan" ise ÖDENEBİLİR satırlardır. İkisi kasten farklıdır (şema
+ * açıklaması) — tek alana indirgenseydi biri yalan söylerdi.
+ */
+function buildPayrollPeriodListRow(state: MockPayrollState, period: MockPayrollPeriod) {
+  const summary = buildPayrollSummary(state, period);
+  return {
+    id: period.id,
+    year: period.year,
+    month: period.month,
+    status: period.status,
+    payment_due_date: period.payment_due_date,
+    paid_at: period.paid_at,
+    personnel_count: summary.line_count,
+    gross_total: summary.gross_total,
+    sgk_employer_total: summary.sgk_employer_total,
+    net_total: summary.net_total,
+    total_cost: summary.total_employer_cost,
+  };
+}
+
+/* ---------------------------------------------------------------- SGK özeti */
+
+/**
+ * SGK 55-95. Bildirilen çalışan = SGK'ya BİZİM bildirdiğimiz satırlar; taşeron
+ * işçisini kendi işvereni bildirir, bu yüzden matraha girmez.
+ *
+ * 🔴 `unknown_rate_count` TİP sayar (şema: "oran seti olmayan tipleri"), satır
+ * değil: eksik olan şey bir satırın verisi değil, bir tipin oran setidir.
+ */
+function buildPayrollSgkSummary(state: MockPayrollState, period: MockPayrollPeriod) {
+  let base = 0;
+  let sgkEmployee = 0;
+  let unemploymentEmployee = 0;
+  let incomeTax = 0;
+  let stampTax = 0;
+  let sgkEmployer = 0;
+  let unemploymentEmployer = 0;
+  let shortWork = 0;
+  let declared = 0;
+  let uncomputed = 0;
+  const missingRateSources = new Set<MockPayrollWorkerSource>();
+
+  for (const line of period.lines) {
+    if (payrollRateFor(state, period.year, line.personnel_source) === undefined) {
+      missingRateSources.add(line.personnel_source);
+    }
+    const amounts = payrollLineAmounts(state, period, line);
+    if (amounts === null) {
+      uncomputed += 1;
+      continue;
+    }
+    if (line.personnel_source === "subcontractor") continue;
+
+    declared += 1;
+    base += amounts.gross;
+    sgkEmployee += amounts.sgkEmployee;
+    unemploymentEmployee += amounts.unemploymentEmployee;
+    incomeTax += amounts.incomeTax;
+    stampTax += amounts.stampTax;
+    sgkEmployer += amounts.sgkEmployer;
+    unemploymentEmployer += amounts.unemploymentEmployer;
+    shortWork += amounts.shortWork;
+  }
+
+  const sgkPremium = sgkEmployee + sgkEmployer;
+  const unemployment = unemploymentEmployee + unemploymentEmployer;
+
+  return {
+    period_id: period.id,
+    year: period.year,
+    month: period.month,
+    sgk_submitted_at: period.sgk_submitted_at,
+    declared_personnel_count: declared,
+    sgk_base_total: payrollKurus(base),
+    sgk_premium_total: payrollKurus(sgkPremium),
+    unemployment_total: payrollKurus(unemployment),
+    sgk_employee_total: payrollKurus(sgkEmployee),
+    unemployment_employee_total: payrollKurus(unemploymentEmployee),
+    income_tax_total: payrollKurus(incomeTax),
+    stamp_tax_total: payrollKurus(stampTax),
+    // 🔴 Dört parçanın TOPLAMI — ekranda basılan dört satırla BİREBİR tutar.
+    employee_deduction_total: payrollKurus(
+      sgkEmployee + unemploymentEmployee + incomeTax + stampTax,
+    ),
+    sgk_employer_total: payrollKurus(sgkEmployer),
+    unemployment_employer_total: payrollKurus(unemploymentEmployer),
+    short_work_total: payrollKurus(shortWork),
+    // 🔴 K2 — `short_work` SIFIR olduğu için bu toplam, ekranda çizilen İKİ
+    // satırın toplamına EŞİTTİR. İstemcinin toplamı düzeltmesine gerek yok.
+    employer_burden_total: payrollKurus(sgkEmployer + unemploymentEmployer + shortWork),
+    // SGK'ya ödenecek = prim + işsizlik. Gelir/damga vergisi VERGİ DAİRESİNE
+    // gider, bu kutuya girmez.
+    sgk_payable_total: payrollKurus(sgkPremium + unemployment),
+    uncomputed_count: uncomputed,
+    unknown_rate_count: missingRateSources.size,
+  };
+}
+
+/* ---------------------------------------------------------------- tohumlama */
+
+interface PayrollLineSeed {
+  personnelId: string;
+  name: string;
+  source: MockPayrollWorkerSource;
+  /** Günlük/aylık taban brüt (kuruş); `null` = ücret verisi yok (S4). */
+  baseGrossKurus: number | null;
+  baseDays: number | null;
+  /** Sabit banka payı (kuruş) — `null` ise netin tamamı bankaya gider. */
+  bankKurus?: number;
+}
+
+/**
+ * 🔴 `per-1…per-5` MEVCUT kadrodan gelir ve tipleri kartoteksle BİREBİR
+ * uyuşur (`per-5 Osman Şahin`in ücreti kartotekste de BOŞTUR — `uncomputed`
+ * satırı uydurma değil, kadronun gerçeğidir). Son iki satır kadroya
+ * EKLENMEYEN serbest meslek + stajyer bantlarıdır (gerekçe blok başında).
+ */
+const PAYROLL_LINE_SEEDS: readonly PayrollLineSeed[] = [
+  { personnelId: "per-1", name: "Mehmet Kılıç", source: "company", baseGrossKurus: 3_045_000, baseDays: 21 },
+  { personnelId: "per-2", name: "Hasan Demirci", source: "company", baseGrossKurus: 4_200_000, baseDays: 30, bankKurus: 2_400_000 },
+  { personnelId: "per-3", name: "Ramazan Yıldız", source: "subcontractor", baseGrossKurus: 3_264_800, baseDays: 22 },
+  { personnelId: "per-4", name: "İsmail Aksoy", source: "subcontractor", baseGrossKurus: 3_168_000, baseDays: 24 },
+  { personnelId: "per-5", name: "Osman Şahin", source: "general", baseGrossKurus: null, baseDays: 19 },
+  { personnelId: "pay-fl-1", name: "Yusuf Ergin", source: "freelance", baseGrossKurus: 1_800_000, baseDays: null },
+  { personnelId: "pay-int-1", name: "Elif Yalçın", source: "intern", baseGrossKurus: 900_000, baseDays: 20 },
+];
+
+/**
+ * Aylar arası değişkenlik DETERMİNİSTİKTİR (`month`ten türer): BG tablosunun
+ * beş satırı birbirinin kopyası olmasın diye, ama koşudan koşuya oynamasın
+ * diye. Rastgelelik YOKTUR.
+ */
+function payrollSeedGross(seed: PayrollLineSeed, month: number): number | null {
+  if (seed.baseGrossKurus === null) return null;
+  // %5: 2026 kadrajının beş ayı (3-7) BEŞ AYRI değer üretir — %4 olsaydı
+  // Mart ile Temmuz aynı tutara düşer ve BG tablosu iki satırı kopya basardı.
+  return seed.baseGrossKurus + (month % 5) * 25_000;
+}
+
+interface PayrollPeriodSeed {
+  year: number;
+  month: number;
+  status: MockPayrollPeriodStatus;
+  isSgkSubmitted: boolean;
+}
+
+/**
+ * 🔴 Dört `PayrollPeriodStatus` değerinin DÖRDÜ de temsil edilir (K3):
+ * `paid` (2026-03…05) · `approved` (2026-06 ve 2025-11) ·
+ * `pending_approval` (2026-07) · `draft` (2025-12 ve 2024-12).
+ */
+const PAYROLL_PERIOD_SEEDS: readonly PayrollPeriodSeed[] = [
+  // ---- 2024: oran seti YOK (K3) — `bordro-aylik-oransiz` karesinin kaynağı.
+  { year: 2024, month: 12, status: "draft", isSgkSubmitted: false },
+  // ---- 2025: MUTASYON alanı (hiçbir kadraja girmez).
+  // 🔴 HER MUTASYON TESTİNE AYRI DÖNEM. `playwright.config.ts` `fullyParallel`
+  // olduğu için aynı dosyanın testleri BAŞKA worker'larda EŞZAMANLI koşabilir;
+  // iki test aynı dönemi oynatsaydı sonuç koşu sırasına bağlı olurdu.
+  { year: 2025, month: 9, status: "draft", isSgkSubmitted: false }, // satır PATCH
+  { year: 2025, month: 10, status: "approved", isSgkSubmitted: false }, // ödeme
+  { year: 2025, month: 11, status: "approved", isSgkSubmitted: false }, // SGK damgası
+  { year: 2025, month: 12, status: "draft", isSgkSubmitted: false }, // dönem onayı
+  // ---- 2026: GÖRSEL yıl (mutasyon YASAK).
+  { year: 2026, month: 3, status: "paid", isSgkSubmitted: true },
+  { year: 2026, month: 4, status: "paid", isSgkSubmitted: true },
+  { year: 2026, month: 5, status: "paid", isSgkSubmitted: true },
+  { year: 2026, month: 6, status: "approved", isSgkSubmitted: true },
+  // Mockup'ın çizdiği hâl (BY:63 "onay bekliyor") — varsayılan dönem budur.
+  { year: 2026, month: 7, status: "pending_approval", isSgkSubmitted: false },
+];
+
+/** Dönem durumundan satırın onay hâli — ikisi ASLA çelişmez. */
+function payrollApprovalFor(status: MockPayrollPeriodStatus): MockPayrollApproval {
+  if (status === "paid") return "paid";
+  if (status === "approved") return "approved";
+  return "pending";
+}
+
+function payrollPeriodId(year: number, month: number): string {
+  return `pp-${year}-${String(month).padStart(2, "0")}`;
+}
+
+/** Ödeme vadesi: izleyen ayın 5'i. Damgalar SABİT — koşudan koşuya oynamaz. */
+function payrollDueDate(year: number, month: number): string {
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const nextYear = month === 12 ? year + 1 : year;
+  return `${nextYear}-${String(nextMonth).padStart(2, "0")}-05`;
+}
+
+function buildPayrollPeriod(seed: PayrollPeriodSeed): MockPayrollPeriod {
+  const approval = payrollApprovalFor(seed.status);
+  return {
+    id: payrollPeriodId(seed.year, seed.month),
+    year: seed.year,
+    month: seed.month,
+    status: seed.status,
+    payment_due_date: payrollDueDate(seed.year, seed.month),
+    approved_at:
+      seed.status === "approved" || seed.status === "paid"
+        ? `${payrollDueDate(seed.year, seed.month)}T09:00:00Z`
+        : null,
+    paid_at: seed.status === "paid" ? `${payrollDueDate(seed.year, seed.month)}T14:30:00Z` : null,
+    sgk_submitted_at: seed.isSgkSubmitted
+      ? `${payrollDueDate(seed.year, seed.month)}T11:15:00Z`
+      : null,
+    lines: PAYROLL_LINE_SEEDS.map((lineSeed, index) => ({
+      id: `pl-${seed.year}-${String(seed.month).padStart(2, "0")}-${index + 1}`,
+      personnel_id: lineSeed.personnelId,
+      personnel_name: lineSeed.name,
+      personnel_source: lineSeed.source,
+      days: lineSeed.baseDays,
+      grossKurus: payrollSeedGross(lineSeed, seed.month),
+      approval,
+      bankKurus: lineSeed.bankKurus ?? null,
+      isOverridden: false,
+      overriddenAt: null,
+      previousGrossKurus: null,
+    })),
+  };
+}
+
+const payrollState: MockPayrollState = {
+  periods: PAYROLL_PERIOD_SEEDS.map(buildPayrollPeriod),
+  rates: buildPayrollRates(),
+  seq: 0,
+};
+
+function findPayrollPeriod(periodId: string): MockPayrollPeriod | undefined {
+  return payrollState.periods.find((period) => period.id === periodId);
+}
+
+function findPayrollLine(
+  lineId: string,
+): { period: MockPayrollPeriod; line: MockPayrollLine } | undefined {
+  for (const period of payrollState.periods) {
+    const line = period.lines.find((row) => row.id === lineId);
+    if (line !== undefined) return { period, line };
+  }
+  return undefined;
+}
+
+/** Dönem zinciri TEK ADIM ilerler; atlama YOKTUR (S8). */
+const PAYROLL_NEXT_STATUS: Record<MockPayrollPeriodStatus, MockPayrollPeriodStatus | null> = {
+  draft: "pending_approval",
+  pending_approval: "approved",
+  approved: null,
+  paid: null,
+};
+
+const PAYROLL_LIMIT_DEFAULT = 50;
+const PAYROLL_LIMIT_MAX = 240;

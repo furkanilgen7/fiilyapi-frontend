@@ -398,15 +398,24 @@ function PayrollPeriodBody({
         </Alert>
       )}
       {/* 🔴 Bu ekranın sayacı `unknown_cost_count`tur — `unknown_rate_count`
-          dönem detayında YOKTUR (o SGK özetinin alanıdır). */}
+          dönem detayında YOKTUR (o SGK özetinin alanıdır).
+
+          🔴 F-BOR T7 · METİN DÜZELTİLDİ (ölçüldü). Eskiden "N personelin ücret
+          verisi tanımlı değil" yazıyordu; bu, `uncomputed_count` bandının
+          söylediği şeyin AYNISIDIR ve iki bandı bir tek sebebe indirger. Oysa
+          ücreti hiç olmayan satırı zaten üstteki bant sayar; bu sayaç geriye
+          kalan sebebi taşır — brütü BİLİNEN ama işveren maliyeti
+          hesaplanamayan satırlar (tipin o yıla tanımlı prim oranı seti yoksa
+          böyle olur; SGK ekranında aynı eksik `unknown_rate_count` olarak
+          görünür). Metin bu yüzden SEBEP UYDURMAZ, sonucu söyler. */}
       {summary.unknown_cost_count > 0 && (
         <Alert
           variant="warning"
           title={UNKNOWN_COST_BAND_TITLE}
           data-testid="bordro-unknown-cost-band"
         >
-          {summary.unknown_cost_count} personelin ücret verisi tanımlı değil; işveren
-          maliyeti bu satırlar OLMADAN hesaplandı.
+          {summary.unknown_cost_count} satırın işveren maliyeti hesaplanamadı; maliyet kartı
+          bu satırlar OLMADAN hesaplandı.
         </Alert>
       )}
       {summary.excluded_count > 0 && (

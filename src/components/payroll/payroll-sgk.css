@@ -325,8 +325,11 @@
   font-family: var(--font-mono); /* SGK:91 */
   /* SGK:91 — 24/700. `tokens.css`te 24px karşılığı YOKTUR ve o dosya bu
      dilimde DOKUNULMAZDIR; ölçü mockup satırıyla gerekçelendirilerek px
-     yazılır (`payroll.css`teki `.bor-stepper__arrow { 18px /* BY:51 */ }`
-     emsali). */
+     yazılır (`payroll.css`teki `.bor-stepper__arrow` 18px ölçüsünün emsali).
+     🔴 CSS yorumları İÇ İÇE GEÇMEZ: yorumun içine ikinci bir yorum bloğu
+     gömmek dış yorumu erken kapatır ve `pnpm build` PostCSS'te çöker (F-BOR
+     T7'de fiilen oldu). `typecheck` / `lint` / `test` üçü de bunu GÖRMEZ —
+     yalnız `build` görür. */
   font-size: 24px;
   font-weight: var(--weight-bold);
   color: var(--color-success); /* SGK:91 */

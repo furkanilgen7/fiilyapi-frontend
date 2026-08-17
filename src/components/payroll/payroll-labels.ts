@@ -10,6 +10,21 @@ import type {
  * `Bordro Yönetimi.dc.html` ("BY") dosyasının SATIR numaralarıdır.
  */
 
+/* ------------------------------------------------------------------ rotalar */
+
+/**
+ * F-BOR T5 (K1/K8) · Üç bordro ekranının rotaları — TEK TANIM.
+ *
+ * 🔴 Bu dosya `"use client"` DEĞİLDİR ve bilinçli olarak öyle kalır: rotaları
+ * `PayrollTabsStrip`te (client) tutup oradan `PersonnelTabsStrip`e (server
+ * component) import etmek, yalnız iki string uğruna o sunucu bileşenini
+ * istemci sınırına çekerdi. Sabitler bu yüzden düz bir modülde yaşar
+ * (`HR_DOCUMENTS_ROUTE` / `LEAVES_ROUTE` emsali), iki şerit de buradan okur.
+ */
+export const PAYROLL_ROUTE = "/bordro";
+export const PAYROLL_HISTORY_ROUTE = "/bordro/gecmis";
+export const PAYROLL_SGK_ROUTE = "/bordro/sgk";
+
 /* ------------------------------------------------------------------ başlık */
 
 export const BREADCRUMB = "Mali · Bordro"; // BY:46
@@ -112,7 +127,17 @@ export const SOURCE_SECTION_REGIME: Record<WorkerSource, string> = {
   freelance: "Serbest Makbuz · %20 Stopaj", // BY:243
   intern: "Staj ücreti", // BY:271
   // Mockup'ta karşılığı YOK; rejim UYDURULMAZ, eksikliği söylenir.
-  general: "Bordro oran seti tanımsız",
+  //
+  // 🔴 F-BOR T7 · METİN DÜZELTİLDİ (ölçüldü). Eskiden "Bordro oran seti
+  // tanımsız" yazıyordu ve bu bir OLGU İDDİASIDIR — oysa bu bant, oranların
+  // durumunu HİÇ okumaz: sabit bir kaynak etiketidir ve `general` tipin oran
+  // seti PEKÂLÂ tanımlı olabilir (sahte backend'de tanımlıdır). Oran
+  // eksikliğinin GERÇEK yüzeyi ayrıdır ve veriden türer:
+  // `unknown_cost_count` bandı (bu ekran) ile `unknown_rate_count` bandı (SGK
+  // ekranı). Sabit etiket o iki bandı YALANLIYORDU: kullanıcı, oranı tanımlı
+  // bir tipte "oran seti tanımsız" okuyup bandların susmasını çelişki sanardı.
+  // Yeni metin yalnız BİLİNMEYENİ söyler, olmayan bir olgu bildirmez.
+  general: "Bordro rejimi belirtilmedi",
 };
 
 /** Bölüm başlığındaki sayaç birimi (BY:127 "12 çalışan" · BY:175 "29 işçi"). */
@@ -197,7 +222,7 @@ export const NO_LINES_MESSAGE = "Bu dönemde gösterilecek bordro satırı yok."
  * `unknown_cost_count`tur: satır düzeyinde ÜCRET verisi yoktur.
  */
 export const UNCOMPUTED_BAND_TITLE = "Bazı satırlar hesaplanamadı";
-export const UNKNOWN_COST_BAND_TITLE = "Bazı satırların ücret verisi eksik";
+export const UNKNOWN_COST_BAND_TITLE = "Bazı satırların işveren maliyeti hesaplanamadı";
 export const EXCLUDED_BAND_TITLE = "Ödemeye girmeyen satırlar var";
 export const EXCLUDED_BAND_BODY =
   "Taşeron işçisi satırları maliyette görünür ama bordrodan ÖDENMEZ — ödemeleri taşeron hakedişi üzerinden yapılır.";

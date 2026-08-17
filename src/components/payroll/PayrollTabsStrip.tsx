@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { PAYROLL_HISTORY_ROUTE, PAYROLL_ROUTE, PAYROLL_SGK_ROUTE } from "./payroll-labels";
 import "./payroll-tabs.css";
 
 /**
@@ -26,9 +27,9 @@ interface PayrollTabDef {
 }
 
 export const PAYROLL_TABS: readonly PayrollTabDef[] = [
-  { label: "Aylık Bordro", href: "/bordro" }, // BG:28
-  { label: "Bordro Geçmişi", href: "/bordro/gecmis" }, // BG:29
-  { label: "SGK Bildirimi", href: "/bordro/sgk" }, // BG:30
+  { label: "Aylık Bordro", href: PAYROLL_ROUTE }, // BG:28
+  { label: "Bordro Geçmişi", href: PAYROLL_HISTORY_ROUTE }, // BG:29
+  { label: "SGK Bildirimi", href: PAYROLL_SGK_ROUTE }, // BG:30
 ];
 
 export function PayrollTabsStrip() {

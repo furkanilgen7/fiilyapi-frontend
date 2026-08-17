@@ -45,8 +45,10 @@ test("KPI şeridi + sekmeler + tablo sunucu fikstüründen gelir", async ({ page
   await expect(strip).toContainText("Şirket Kadrosu");
   await expect(strip).toContainText("Taşeron İşçisi");
 
-  // Sekme şeridi: "Puantaj" (spec K3) ve F-IZN T5'ten beri "İzin Yönetimi"
-  // gerçek rotaya gider; "Bordro"/"SGK" hâlâ devre-dışıdır.
+  // Sekme şeridi. 🔴 F-BOR T5 (K8/K9): şeritteki ALTI sekmenin ALTISI da artık
+  // gerçek rotaya gider — "Bordro"/"SGK" bu dilimde canlandı. İddia görsel
+  // kapıya BIRAKILAMAZ: devre-dışı→canlı geçişi yalnız gri tonunu değiştirir
+  // (#94a3b8 → #64748b, ölçülmüş delta 1120 < eşik 1408.6) ve kare OYNAMAZ.
   await expect(page.getByRole("tab", { name: "Personel Listesi" })).toHaveAttribute(
     "aria-selected",
     "true",
@@ -57,9 +59,13 @@ test("KPI şeridi + sekmeler + tablo sunucu fikstüründen gelir", async ({ page
     "href",
     "/personel/izinler",
   );
-  await expect(page.getByRole("tab", { name: "Bordro" })).toHaveAttribute(
-    "aria-disabled",
-    "true",
+  await expect(page.getByRole("tab", { name: "Bordro" }).first()).toHaveAttribute(
+    "href",
+    "/bordro",
+  );
+  await expect(page.getByRole("tab", { name: "SGK" }).first()).toHaveAttribute(
+    "href",
+    "/bordro/sgk",
   );
 
   // Tablo satırları — Tür rozeti sunucudan.

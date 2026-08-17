@@ -131,7 +131,12 @@ export function lineSplitDisabledReason(line: PayrollLineResponse): string | und
   }
   if (line.status === "paid") return "Satır ödendi; ödeme dağıtımı artık değiştirilemez.";
   if (line.status === "uncomputed") {
-    return "Ücret verisi olmadığı için net tutar hesaplanamadı; bölüşülecek tutar yok.";
+    // 🔴 F-BOR T7 · SEBEP UYDURULMAZ. Eskiden "Ücret verisi olmadığı için…"
+    // yazıyordu; oysa `uncomputed` İKİ ayrı sebepten doğar (ücret verisi yok
+    // ya da tipin o yıla oran seti yok) ve SATIR bunları AYIRT ETTİRMEZ —
+    // şemada satır düzeyinde bir sebep alanı yoktur. Metin bu yüzden yalnız
+    // SONUCU söyler; sebep, ekranın üstündeki iki ayrı bandın işidir.
+    return "Net tutar hesaplanmadığı için bölüşülecek tutar yok.";
   }
   return "Bu satırın net tutarı hesaplanmadı.";
 }

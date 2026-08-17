@@ -7,6 +7,8 @@
  * `PERIOD_STATUS_VARIANTS` tek kaynaktır (K3: dört durumun HEPSİ etiketli).
  */
 
+import { PAYROLL_ROUTE } from "./payroll-labels";
+
 /* ------------------------------------------------------------------ başlık */
 
 export const HISTORY_PAGE_TITLE = "Bordro Geçmişi"; // BG:33
@@ -40,7 +42,8 @@ export const HCOL_STATUS = "Durum"; // BG:46
 export const HCOL_DETAIL = "Detay bağlantısı";
 
 export const DETAIL_LINK_LABEL = "Detay"; // BG:59
-export const MONTHLY_ROUTE = "/bordro"; // BG:59 — Aylık Bordro ekranı
+/** BG:59 — Aylık Bordro ekranı. Rota TEK yerde tanımlıdır (F-BOR T5). */
+export const MONTHLY_ROUTE = PAYROLL_ROUTE;
 
 /** BG:51 — dönem adının altındaki ikincil satır. */
 export const PAYMENT_PENDING_NOTE = "Ödeme bekliyor";

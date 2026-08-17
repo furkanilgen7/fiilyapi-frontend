@@ -353,7 +353,10 @@ describe("🔴 K3 — dürüst hâller", () => {
       }),
     );
     render(<PayrollMonthlyView />);
-    expect(screen.getByTestId("bordro-unknown-cost-band")).toHaveTextContent("3 personelin");
+    // F-BOR T7 · metin "N personelin ücret verisi…"den "N satırın işveren
+    // maliyeti…"ye döndü: eski cümle `uncomputed_count` bandının söylediğinin
+    // aynısıydı ve iki bandı tek sebebe indirgiyordu (gerekçe bileşende).
+    expect(screen.getByTestId("bordro-unknown-cost-band")).toHaveTextContent("3 satırın");
   });
 
   it("sayaçlar sıfırken hiçbir bant yanmaz", () => {
