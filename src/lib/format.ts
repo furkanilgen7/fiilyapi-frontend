@@ -172,6 +172,16 @@ export function formatMonthName(month: number): string {
 }
 
 /**
+ * Ay KISALTMASI tek başına, yılsız (F-TKV T3, Proje Takvimi mockup 123-146:
+ * ızgara başlığında "Oca"/"Şub"… yazar, yıl AYRI bir sütundadır — 121).
+ * `formatPeriodShort`in yılsız kardeşi; ay adları `TR_MONTHS_SHORT` tek
+ * kaynağından gelir, kopyalanmaz.
+ */
+export function formatMonthShort(month: number): string {
+  return TR_MONTHS_SHORT[month - 1] ?? String(month);
+}
+
+/**
  * Gün + ay (F-SD T3, GK360: "16 Temmuz"). Girdi `YYYY-MM-DD` ISO tarihidir ve
  * STRING olarak ayrıştırılır — `new Date(iso)` UTC yorumlar, TR saatinde bir
  * gün geri kayardı (`derive.ts/isoDate`in aynı gerekçesi). ICU'ya da bağlı

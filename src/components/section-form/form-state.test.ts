@@ -19,8 +19,8 @@ const DETAIL: SectionDetailResponse = {
   start_date: "2026-10-01",
   end_date: "2027-03-31",
   sort_order: 6,
-  depends_on_section_id: null,
-  milestones: [],
+  depends_on_section_id: "sec-9",
+  milestones: [{ id: "ms-1", title: "Kat 12 döşeme", milestone_date: "2026-12-01", sort_order: 0 }],
   section_type: "structural",
   description: "Kat 11–14 arası betonarme, kalıp ve demir imalatı.",
   planned_worker_count: 42,
@@ -59,6 +59,13 @@ describe("sectionFormValuesFromDetail", () => {
       startDate: "2026-10-01",
       endDate: "2027-03-31",
       budgetAmount: "2840000",
+      // F-TKV T5 — bağımlılık DETAYDAN gelir (kilit açıldı).
+      dependsOnSectionId: "sec-9",
+      // 🔴 Milestone satırı EKLEME kutusudur: kayıtlı satırlar buraya
+      // TOHUMLANMAZ (tek satırlık kutu 1'den fazlasını temsil edemez) —
+      // korunmaları `build-body.ts`nin `existingMilestones` yolundan gelir.
+      milestoneTitle: "",
+      milestoneDate: "",
     });
   });
 

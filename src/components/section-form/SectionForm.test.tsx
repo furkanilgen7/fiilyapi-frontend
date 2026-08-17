@@ -9,9 +9,11 @@ import { useProject } from "@/lib/api/hooks/useProjects";
 import { useSection } from "@/lib/api/hooks/useSection";
 import { useCreateSection, useUpdateSection } from "@/lib/api/hooks/useSectionMutations";
 import { useSite } from "@/lib/api/hooks/useSites";
+import { useSiteSections } from "@/lib/api/hooks/useSiteSections";
 import { useUserOptions } from "@/lib/api/hooks/useUserOptions";
 import { BackendError } from "@/lib/api/unwrap";
 import { MESSAGES } from "./validate";
+import { GANTT_AUTO_ADD_REASON } from "./SectionForm";
 
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
 
@@ -25,6 +27,10 @@ vi.mock("@/lib/api/hooks/useProjects", async (importOriginal) => ({
 vi.mock("@/lib/api/hooks/useSites", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useSites")>()),
   useSite: vi.fn(),
+}));
+vi.mock("@/lib/api/hooks/useSiteSections", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useSiteSections")>()),
+  useSiteSections: vi.fn(),
 }));
 vi.mock("@/lib/api/hooks/useSection", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useSection")>()),
@@ -44,6 +50,8 @@ const SITE_ID = "22222222-2222-2222-2222-222222222222";
 const SECTION_ID = "33333333-3333-3333-3333-333333333333";
 const MANAGER_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const NEW_SECTION_ID = "44444444-4444-4444-4444-444444444444";
+const SIBLING_ID = "55555555-5555-4555-8555-555555555555";
+const MILESTONE_ID = "66666666-6666-4666-8666-666666666666";
 
 const BASE_ME = {
   id: "user-0",
@@ -95,6 +103,20 @@ const SECTION_DETAIL = {
   worker_count: COUNT_PLACEHOLDER,
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
+  // F-TKV T5 — P11 alanları artık formda GERÇEK.
+  depends_on_section_id: SIBLING_ID,
+  milestones: [
+    { id: MILESTONE_ID, title: "Kat 12 döşeme", milestone_date: "2026-12-01", sort_order: 0 },
+  ],
+} as never;
+
+/** Aynı şantiyedeki öbür bölümler — Bağımlılık seçicisinin kaynağı. */
+const SITE_SECTIONS = {
+  counts: { planned: 1, active: 1, completed: 0 },
+  items: [
+    { id: SECTION_ID, name: "Kat 11–14 Kaba İnşaat" },
+    { id: SIBLING_ID, name: "Zemin Kat Kaba İnşaat" },
+  ],
 } as never;
 
 function queryResult<T>(value: Partial<{ data: T; isLoading: boolean; isError: boolean; error: unknown }>) {
@@ -118,6 +140,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockSession({ sites: "full" });
   vi.mocked(useSite).mockReturnValue(queryResult({ data: SITE }));
+  vi.mocked(useSiteSections).mockReturnValue(queryResult({ data: SITE_SECTIONS }));
   vi.mocked(useProject).mockReturnValue(queryResult({ data: PROJECT }));
   vi.mocked(useSection).mockReturnValue(queryResult({ data: undefined }));
   vi.mocked(useCreateSection).mockReturnValue({ mutate: createMutate, isPending: false } as never);
@@ -169,6 +192,20 @@ describe("SectionForm — create kipi kabuk (F35-60)", () => {
     const gantt = screen.getByLabelText("Bölümü proje takvimine (Gantt) otomatik ekle");
     expect(gantt).toBeDisabled();
     expect(gantt).toBeChecked();
+    // 🔴 F-TKV T5: gerekçe artık `title`da SAKLANMAZ, ekrana basılır — ve
+    // "Gantt modülü yok" DEMEZ (modül var), seçenek olmadığını söyler.
+    expect(screen.getByText(GANTT_AUTO_ADD_REASON)).toBeInTheDocument();
+    expect(GANTT_AUTO_ADD_REASON).not.toMatch(/birlikte gelir/);
+  });
+
+  it("🔴 F-TKV T5: GANTT KİLİDİ AÇIK — Bağımlılık ve Milestone kontrolleri ETKİN", () => {
+    renderCreate();
+    const dependency = screen.getByLabelText("Bağımlılık (Önce Bitmesi Gereken Bölüm)");
+    expect(dependency).toBeEnabled();
+    // Seçenekler aynı şantiyenin bölümlerinden gelir (uydurma DEĞİL).
+    expect(within(dependency as HTMLElement).getByRole("option", { name: "Zemin Kat Kaba İnşaat" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Milestone Ekle")).toBeEnabled();
+    expect(screen.getByLabelText("Milestone tarihi")).toBeEnabled();
   });
 });
 
@@ -306,6 +343,62 @@ describe("SectionForm — edit kipi", () => {
     expect(screen.getByLabelText("Bölüm Kodu")).toHaveValue("BLM-06");
     expect(screen.getByLabelText("Bölüm Sorumlusu")).toHaveValue(MANAGER_ID);
     expect(screen.getByLabelText("Bölüm Bedeli (₺)")).toHaveValue(2840000);
+  });
+
+  it("🔴 F-TKV T5 UÇTAN UCA: bağımlılık DETAYDAN tohumlanır ve gövdeye GERÇEKTEN girer", async () => {
+    const user = userEvent.setup();
+    renderEdit();
+    expect(screen.getByLabelText("Bağımlılık (Önce Bitmesi Gereken Bölüm)")).toHaveValue(SIBLING_ID);
+    await clickFooterAction(user, "Kaydet");
+    const [body] = updateMutate.mock.calls[0];
+    expect(body.depends_on_section_id).toBe(SIBLING_ID);
+  });
+
+  it("🔴 F-TKV T5 UÇTAN UCA: yeni milestone gövdeye girer, KAYITLI olan KORUNUR", async () => {
+    const user = userEvent.setup();
+    renderEdit();
+    // Kayıtlı satır sayısı ipucunda GÖRÜNÜR (öğenin kendi verisinden türer).
+    expect(screen.getByText(/kayıtlı 1 milestone korunur/)).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Milestone Ekle"), "Kat 14 döşeme");
+    fireEvent.change(screen.getByLabelText("Milestone tarihi"), { target: { value: "2027-01-15" } });
+    await clickFooterAction(user, "Kaydet");
+
+    const [body] = updateMutate.mock.calls[0];
+    expect(body.milestones).toEqual([
+      { id: MILESTONE_ID, title: "Kat 12 döşeme", milestone_date: "2026-12-01" },
+      { title: "Kat 14 döşeme", milestone_date: "2027-01-15" },
+    ]);
+  });
+
+  it("🔴 milestone kutusuna DOKUNULMAZSA anahtar gönderilmez — kayıtlılar SİLİNMEZ", async () => {
+    const user = userEvent.setup();
+    renderEdit();
+    await clickFooterAction(user, "Kaydet");
+    const [body] = updateMutate.mock.calls[0];
+    expect(body).not.toHaveProperty("milestones");
+  });
+
+  it("YARIM milestone satırı gönderimi DURDURUR ve görünür hata basar", async () => {
+    const user = userEvent.setup();
+    renderEdit();
+    await user.type(screen.getByLabelText("Milestone Ekle"), "Yalnız ad");
+    await clickFooterAction(user, "Kaydet");
+    expect(updateMutate).not.toHaveBeenCalled();
+    expect(screen.getAllByText(MESSAGES.milestoneIncomplete).length).toBeGreaterThan(0);
+  });
+
+  it("bağımlılık 422'si (aynı şantiye / döngü) kullanıcıya GÖRÜNÜR hata olarak basılır", async () => {
+    const user = userEvent.setup();
+    renderEdit();
+    await clickFooterAction(user, "Kaydet");
+    const [, opts] = updateMutate.mock.calls[0];
+    act(() =>
+      opts.onError(
+        new BackendError(422, { detail: "Bağımlılık döngüsü oluşturulamaz." }),
+      ),
+    );
+    expect(screen.getByText("Bağımlılık döngüsü oluşturulamaz.")).toBeInTheDocument();
   });
 
   it("kaydedince updateSection çağrılır ve bölüm detayına yönlendirir", async () => {

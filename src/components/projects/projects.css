@@ -19,6 +19,26 @@
   letter-spacing: -0.5px;
   color: var(--color-text);
 }
+/* F-TKV K1 — "Proje Takvimi" + "+ Yeni Proje" yan yana. */
+.prj__title-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.prj__timeline-btn {
+  display: inline-block;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary-ring);
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.prj__timeline-btn:hover {
+  background: var(--color-nav-active-bg);
+}
 .prj__new-btn {
   display: inline-block;
   background: var(--color-primary);
