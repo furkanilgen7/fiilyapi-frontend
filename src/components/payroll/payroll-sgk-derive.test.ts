@@ -36,6 +36,7 @@ function summary(
     sgk_payable_total: "278700.00",
     uncomputed_count: 0,
     unknown_rate_count: 0,
+    unknown_tax_count: 0,
     ...overrides,
   };
 }

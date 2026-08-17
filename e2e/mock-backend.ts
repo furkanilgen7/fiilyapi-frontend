@@ -12298,6 +12298,10 @@ function payrollLineAmounts(
   const rate = payrollRateFor(state, period.year, line.personnel_source);
   if (rate === undefined) return null;
 
+  // IK3-GV sonrası `income_tax_pct` nullable: sabit oran yerine dilimli motor devrede.
+  // Oran yoksa satır HESAPLANAMAZ — 0 sayıp sessizce eksik kesinti üretmeyiz.
+  if (rate.income_tax_pct === null) return null;
+
   const gross = line.grossKurus;
   const sgkEmployee = payrollPctOf(gross, rate.sgk_employee_pct);
   const unemploymentEmployee = payrollPctOf(gross, rate.unemployment_employee_pct);
