@@ -41,6 +41,31 @@ describe("pendingModuleLabel", () => {
     expect(pendingModuleLabel("site_planning")).toBe("Şantiye planlama türeviyle birlikte gelir");
   });
 
+  // 🔴 F-BOLLINK: bölüm detayına özel anahtarlar. Metin "modül yok" DEMEZ —
+  // beş modülün de şantiye seviyesinde yazılı rotası var, eksik olan bölüm bağı.
+  it("F-BOLLINK bolum anahtarlarini esler ve 'modulle birlikte gelir' DEMEZ", () => {
+    const keys = [
+      "section_boq",
+      "section_timesheet",
+      "section_stock",
+      "section_progress_payments",
+      "section_site_diary",
+    ];
+    for (const key of keys) {
+      const label = pendingModuleLabel(key);
+      expect(label).not.toBe("İlgili modülle birlikte gelir");
+      expect(label).not.toMatch(/modülüyle birlikte gelir/);
+    }
+    expect(pendingModuleLabel("section_boq")).toBe("Bu bölüme henüz iş kalemi bağlanamıyor");
+  });
+
+  // Paylasilan anahtarlarin metni DEGISMEDI (baska ekranlar okuyor).
+  it("paylasilan anahtarlarin metni F-BOLLINK'te degismedi", () => {
+    expect(pendingModuleLabel("boq")).toBe("İş kalemleri modülüyle birlikte gelir");
+    expect(pendingModuleLabel("stock")).toBe("Stok modülüyle birlikte gelir");
+    expect(pendingModuleLabel("timesheet")).toBe("Puantaj modülüyle birlikte gelir");
+  });
+
   it("bilinmeyen anahtarda genel metin doner", () => {
     expect(pendingModuleLabel("bilinmeyen")).toBe("İlgili modülle birlikte gelir");
   });

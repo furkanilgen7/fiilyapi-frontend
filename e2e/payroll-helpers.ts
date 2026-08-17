@@ -40,19 +40,33 @@ export async function pinPayrollPeriods(
         await route.continue();
         return;
       }
-      const response = await route.fetch();
-      const body = (await response.json()) as {
-        items: { year: number; month: number }[];
-        total: number;
-        limit: number;
-        offset: number;
-      };
-      const items = body.items.filter(keep);
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ ...body, items, total: items.length }),
-      });
+      // 🔴 TEARDOWN YARIŞI (F-BOLLINK'te CI'da 3 turda yakalandı, 2026-08-17):
+      // onay/kaydetme sonrası React Query listeyi YENİDEN ÇEKER. O istek testin
+      // son iddiasından SONRA kapıya gelirse, `route.fetch()`in yanıtı sayfa
+      // kapatılırken atılır ve `Response has been disposed` handler'ın İÇİNDE
+      // patlar → Playwright bunu TESTİN hatası sayar (`bordro.spec.ts:183`
+      // K7 turu, "1 failed"). Kusur ürüne ait DEĞİL, sırf test ömrüne aittir:
+      // aynı tur bazen yeşil geçer (sıralamaya bağlı), yani gate FLAKY'dir.
+      // Kural: kapanış sırasında ölen bir yönlendirme SESSİZ düşer — testin
+      // kendi iddiaları zaten bitmiştir; ömür içindeki her istek eskisi gibi
+      // süzülür (semantik DEĞİŞMEDİ).
+      try {
+        const response = await route.fetch();
+        const body = (await response.json()) as {
+          items: { year: number; month: number }[];
+          total: number;
+          limit: number;
+          offset: number;
+        };
+        const items = body.items.filter(keep);
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ ...body, items, total: items.length }),
+        });
+      } catch {
+        // Sayfa/context kapandı: yönlendirilecek bir istek kalmadı.
+      }
     },
   );
 }
