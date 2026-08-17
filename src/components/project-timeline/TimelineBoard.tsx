@@ -78,7 +78,7 @@ export const TimelineBoard = forwardRef<HTMLDivElement, TimelineBoardProps>(func
                 className={`tkv__chevron${row.isCollapsed ? " tkv__chevron--collapsed" : ""}`}
               />
               <span className="tkv__proj-dot" aria-hidden="true" />
-              <span>
+              <span className="tkv__proj-text">
                 <span className="tkv__proj-name">{row.project.name}</span>
                 <span className="tkv__proj-meta">
                   {[
