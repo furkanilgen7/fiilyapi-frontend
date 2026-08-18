@@ -55,9 +55,31 @@ function maxSortOrder(values: number[]): number {
   return values.reduce((acc, value) => (value > acc ? value : acc), -1);
 }
 
-// 409 disinda backend'in Turkce govdesi aynen gecer (spec §7.1.5).
+/**
+ * Backend'in Turkce govdesi HER durumda aynen gecer (spec §7.1.5 + BOQ-SEC-F K4).
+ *
+ * 🔴 K4 — DUZELTILEN CANLI KUSUR: bu fonksiyon 409'u KOSULSUZ
+ * `DUPLICATE_CODE_MESSAGE`e esliyordu. Tek 409 kaynagi poz-kodu cakismasiyken
+ * dogruydu; BOQ-SEC'ten sonra DEGIL — backend bugun UC ayri 409 donuyor
+ * (`app/modules/boq/service.py:49-56`):
+ *
+ *   - "Bu poz numarasi bu santiyede zaten kullaniliyor"            (kod cakismasi)
+ *   - "Poz miktari bolumlere dagitilan toplamin altina indirilemez" (PATCH kota)
+ *   - "Bolumlere dagitilan miktar poz miktarini asamaz"             (PUT tahsis)
+ *
+ * Kullanici miktari dusurmeye calistiginda poz numarasina HIC DOKUNMAMISKEN
+ * "poz numarasi zaten kullaniliyor" goruyordu. Bu, genel hataya dusmekten
+ * DAHA KOTUDUR: sunucunun dogru cumlesi yutulup yerine alakasiz bir yalan
+ * basiliyordu. Kanon: ekranin gorevi OLDUGU GIBI BASMAKTIR.
+ *
+ * `DUPLICATE_CODE_MESSAGE` YEDEK olarak kalir — govdesiz bir 409'da (proxy /
+ * ag katmani `detail` tasimazsa) ekran genel bir cumleye dusmek yerine en
+ * olasi nedeni soyler.
+ */
 function itemErrorMessage(err: unknown): string {
-  if (err instanceof BackendError && err.status === 409) return DUPLICATE_CODE_MESSAGE;
+  if (err instanceof BackendError && err.status === 409) {
+    return backendErrorMessage(err, DUPLICATE_CODE_MESSAGE);
+  }
   return backendErrorMessage(err);
 }
 
@@ -196,6 +218,14 @@ export function BoqItemFormModal({
         });
         targetGroupId = created.id;
         groupJustCreated = true;
+        // 🔴 K3 — DUZELTILEN CANLI KUSUR (emsal:
+        // `contract-item-form/EmployerItemFormModal.tsx:179`, F-POZGRUP K3).
+        // Yerel `targetGroupId` YETMEZ: `groupId` state'i sentinel'de kalirsa,
+        // kalem istegi patlayip modal ACIK kaldiginda kullanicinin ikinci
+        // "Kaydet"i bu bloga TEKRAR girer ve AYNI ADLI IKINCI GRUBU yaratir.
+        // Backend'de grup adi tekilligi YOKTUR → istek basarili olur ve kusur
+        // SESSIZ VERI KIRLILIGI olarak canliya yazilir.
+        setGroupId(created.id);
       } catch (err) {
         setFormError(backendErrorMessage(err));
         return;
