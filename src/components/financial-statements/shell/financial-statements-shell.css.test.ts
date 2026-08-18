@@ -38,9 +38,17 @@ describe("financial-statements-shell.css — BL:24-31", () => {
     expect(/\.fs-shell-item--ancestor\s*{[^}]*var\(--color-primary-soft\)/.test(css)).toBe(false);
   });
 
-  it("🔴 devre dışı sekmenin gerekçesi BLOK olarak basılır (gizlenmez)", () => {
-    expect(css).toMatch(/\.fs-shell-item__reason\s*{[^}]*display:\s*block/);
-    expect(css).not.toMatch(/\.fs-shell-item__reason\s*{[^}]*display:\s*none/);
+  it("🔴 F-MT2 K3 — YANSITICI satır `devre dışı` tonuna DÜŞMEZ", () => {
+    // Uç açıldı; "henüz yok" tonu çalışan bir ekranla ÇELİŞİRDİ. Eski
+    // `--disabled`/`__reason` kuralları tüketicileriyle birlikte SİLİNDİ.
+    expect(css).toMatch(/\.fs-shell-item--mirror\s*{[^}]*var\(--color-text-secondary\)/);
+    expect(css).not.toMatch(/fs-shell-item--disabled/);
+    expect(css).not.toMatch(/fs-shell-item__reason/);
+  });
+
+  it("🔴 K3 — yansıtıcı satırın KÖKTEKİ vurgusu `--current` ile AYNI ikilidir", () => {
+    expect(css).toMatch(/\.fs-shell-item--mirror-current\s*{[^}]*var\(--color-primary-soft\)/);
+    expect(css).toMatch(/\.fs-shell-item--mirror-current\s*{[^}]*var\(--color-primary-hover\)/);
   });
 
   it("🔴 BEKÇİ: çıplak hex renk YOKTUR — palet yalnız token'dan gelir", () => {

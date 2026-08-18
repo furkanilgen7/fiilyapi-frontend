@@ -230,11 +230,15 @@ const ALLOWED_ROOTS = new Set([
   // işletme/yatırım/finansman tablosudur (KK-2). Aynı kelimeyi taşıyan iki uç
   // FARKLI sayı basar — `treasury` kökü (satır 192) ayrı durur, birleştirilmez.
   // MT-1'in uçları `prefix` TAŞIMAZ (birinci seviye) → her yol AYRI KÖKTÜR.
-  // Bu kökleri ÇAĞIRAN KOD HENÜZ YOK — mali tablo ekranları F-MT diliminin işi;
-  // kökler önden hazır kalır. Eksikse o ekranlar YALNIZ CANLIDA 404 alır;
-  // jsdom testleri bunu GÖRMEZ.
+  // Eksikse o ekranlar YALNIZ CANLIDA 404 alır; jsdom testleri bunu GÖRMEZ.
   "balance-sheet",
   "cash-flow-statement",
+  // MT-2 (gelir tablosu) — TEK kök: `income-statement` → `GET /income-statement
+  // ?year=&month=` (BİRİKİMLİ pencere, nakit akışıyla aynı semantik).
+  // 🔴 Bu kök F-MT2 diliminde eklendi çünkü ÇAĞIRAN KOD GELDİ: `/mali-tablolar`
+  // kök ekranı (E11) artık gerçek tabloyu basıyor (kanon: *çağıran kod yoksa
+  // BFF kökü bekçisiz kalır*). Uç `prefix` TAŞIMAZ (birinci seviye) → AYRI KÖK.
+  "income-statement",
   // F-IZN (izin yonetimi) — UC kok. Yonetim OLCTU: ucu de su an YOK (grep
   // 0/0/0). "hr" ve "personnel" zaten mevcut ama izin uclarinin ilk path
   // segmenti onlardan FARKLI. Kokler:

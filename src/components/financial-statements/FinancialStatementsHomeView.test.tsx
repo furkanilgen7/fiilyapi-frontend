@@ -1,20 +1,28 @@
+import type { UseQueryResult } from "@tanstack/react-query";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useSession } from "@/components/shell/SessionProvider";
+import type { IncomeStatementResponse } from "@/lib/api/hooks/useIncomeStatement";
+import { useIncomeStatement } from "@/lib/api/hooks/useIncomeStatement";
+import { BackendError } from "@/lib/api/unwrap";
 import type { MeResponse } from "@/lib/auth/types";
 import { pendingModuleLabel } from "@/lib/pending-modules";
 
 import { FinancialStatementsHomeView } from "./FinancialStatementsHomeView";
 import {
   INCOME_STATEMENT_EXPORT_REASON,
-  INCOME_STATEMENT_PERIOD_REASON,
-  INCOME_STATEMENT_REASON,
+  INCOME_STATEMENT_TREND_REASON,
   PERFORMANCE_SUMMARY_REASON,
   PROJECT_FILTER_REASON,
   PROJECT_PROFITABILITY_REASON,
 } from "./income-statement";
 
+vi.mock("@/lib/api/hooks/useIncomeStatement", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useIncomeStatement")>()),
+  useIncomeStatement: vi.fn(),
+}));
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
 vi.mock("next/navigation", () => ({ usePathname: () => "/mali-tablolar" }));
 
@@ -31,6 +39,58 @@ vi.mock("@/lib/pending-modules", async (importOriginal) => ({
 
 const SEAL = (key: string | null | undefined) => `GEREKÇE[${String(key)}]`;
 
+/**
+ * Fikstür E11:95-145'in RAKAMLARIDIR ve mockup'ın TABLOSUYLA tutar:
+ * 24.870.500 + 124.200 = 24.994.700 ✓ ·
+ * 12.480.000 + 5.840.000 + 3.120.000 + 42.000 = 21.482.000 ✓ ·
+ * 24.994.700 − 21.482.000 = 3.512.700 ✓ (E11:141).
+ */
+function response(partial: Partial<IncomeStatementResponse> = {}): IncomeStatementResponse {
+  return {
+    year: 2026,
+    month: 7,
+    sections: [
+      {
+        key: "revenue",
+        title: "GELİRLER", // E11:96
+        subtotal_label: "Toplam Gelir", // E11:106
+        subtotal: "24994700.00", // E11:107
+        lines: [
+          { key: "construction_revenue", label: "İş Hasılatı", amount: "24870500.00", account_codes: ["600"] }, // E11:98
+          { key: "other_revenue", label: "Diğer Gelirler", amount: "124200.00", account_codes: ["649"] }, // E11:102
+        ],
+      },
+      {
+        key: "expenses",
+        title: "GİDERLER", // E11:114
+        subtotal_label: "Toplam Gider", // E11:132
+        subtotal: "21482000.00", // E11:133
+        lines: [
+          { key: "material_costs", label: "Malzeme Giderleri", amount: "12480000.00", account_codes: ["150"] }, // E11:116
+          { key: "labor_costs", label: "İşçilik Giderleri", amount: "5840000.00", account_codes: ["720"] }, // E11:121
+          { key: "subcontractor_costs", label: "Taşeron Ödemeleri", amount: "3120000.00", account_codes: ["740"] }, // E11:126
+          { key: "general_expenses", label: "Genel Giderler", amount: "42000.00", account_codes: ["770"] }, // E11:129
+        ],
+      },
+    ],
+    total_revenue: "24994700.00",
+    total_expense: "21482000.00",
+    profit_label: "DÖNEM KARI", // E11:140
+    period_profit: "3512700.00", // E11:141
+    ...partial,
+  };
+}
+
+function queryResult(partial: Record<string, unknown>) {
+  return {
+    data: undefined,
+    error: null,
+    isLoading: false,
+    isError: false,
+    ...partial,
+  } as unknown as UseQueryResult<IncomeStatementResponse, Error>;
+}
+
 function setSession(level: string | undefined) {
   vi.mocked(useSession).mockReturnValue({
     me: {
@@ -41,8 +101,13 @@ function setSession(level: string | undefined) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  // 📅 YEREL takvim (TB5): varsayılan dönem `getFullYear()/getMonth()`ten
+  // türer. 20 Temmuz 2026 ⇒ mockup'ın `Ocak – Temmuz 2026` aralığı çıkar.
+  vi.setSystemTime(new Date(2026, 6, 20, 9, 0, 0));
   setSession("full");
   vi.mocked(pendingModuleLabel).mockImplementation(SEAL);
+  vi.mocked(useIncomeStatement).mockReturnValue(queryResult({ data: response() }));
 });
 
 describe("E11 · `/mali-tablolar` kök ekranı — başlık şeridi", () => {
@@ -86,36 +151,115 @@ describe("E11:66-70 segment denetimi", () => {
     expect(current).toHaveClass("fs-mt-seg__item--current");
   });
 
-  it("🔴 segmentte `aria-current` YOKTUR — kabuk sidebar'ı bu rotada zaten sürüyor", () => {
-    render(<FinancialStatementsHomeView />);
-    const marked = screen
-      .getByTestId("mt-segments")
-      .querySelectorAll('[aria-current="page"]');
-    expect(marked).toHaveLength(0);
+  it("🔴 K3/K7 — sayfada `aria-current` sürecek İKİNCİ bir öğe YOKTUR", () => {
+    const { container } = render(<FinancialStatementsHomeView />);
+    // Kabuk sidebar'ının `Mali Tablolar` girdisi bu rotada zaten sürüyor; bu
+    // ekranın kendi DOM'u hiç sürmemelidir.
+    expect(container.querySelectorAll('[aria-current="page"]')).toHaveLength(0);
   });
 });
 
-describe("🔴 UCU OLMAYAN YÜZEYLER — silinmez, DEVRE DIŞI + TÜREVİ gerekçeyle basılır", () => {
+describe("🔴 E11:87-147 · GELİR TABLOSU artık GERÇEKTİR (uç açıldı)", () => {
+  it("tablo sunucunun kalemlerini ve toplamlarını basar", () => {
+    render(<FinancialStatementsHomeView />);
+    expect(screen.getByTestId("mt-is-table")).toBeInTheDocument();
+    expect(screen.getByTestId("mt-is-section-revenue-construction_revenue")).toHaveTextContent(
+      "24.870.500",
+    );
+    expect(screen.getByTestId("mt-is-section-revenue-subtotal")).toHaveTextContent("24.994.700");
+    expect(screen.getByTestId("mt-is-section-expenses-subtotal")).toHaveTextContent("21.482.000");
+    expect(screen.getByTestId("mt-is-profit")).toHaveTextContent("3.512.700");
+  });
+
+  it("🔴 kart alt başlığı SUNUCUNUN dönemidir (istemcinin isteği DEĞİL)", () => {
+    // Sunucu Haziran döndürüyorsa ekran Haziran yazar — istemci Temmuz istemiş
+    // olsa bile. Hangi dönemin görüldüğünün tek kanıtı yanıttır.
+    vi.mocked(useIncomeStatement).mockReturnValue(
+      queryResult({ data: response({ year: 2026, month: 6 }) }),
+    );
+    render(<FinancialStatementsHomeView />);
+    expect(screen.getByTestId("mt-is-period-label")).toHaveTextContent("Ocak–Haziran 2026");
+  });
+
+  it("🔴 K1 mutabakat şeridi VERİ GELMEDEN basılmaz, geldiğinde BASILIR", () => {
+    vi.mocked(useIncomeStatement).mockReturnValue(queryResult({ isLoading: true }));
+    const { unmount } = render(<FinancialStatementsHomeView />);
+    expect(screen.queryByTestId("mt-is-banner")).toBeNull();
+    expect(screen.getByTestId("mt-loading")).toBeInTheDocument();
+    unmount();
+
+    vi.mocked(useIncomeStatement).mockReturnValue(queryResult({ data: response() }));
+    render(<FinancialStatementsHomeView />);
+    expect(screen.getByTestId("mt-is-banner")).toHaveClass("fs-banner--ok");
+  });
+
+  it("hata dalında tablo BASILMAZ, hata metni basılır", () => {
+    vi.mocked(useIncomeStatement).mockReturnValue(
+      queryResult({ isError: true, error: new BackendError(500, { detail: "patladı" }) }),
+    );
+    render(<FinancialStatementsHomeView />);
+    expect(screen.getByTestId("mt-error")).toBeInTheDocument();
+    expect(screen.queryByTestId("mt-is-table")).toBeNull();
+    expect(screen.queryByTestId("mt-loaded")).toBeNull();
+  });
+
+  it("403 dalında erişim reddi ekranı basılır", () => {
+    vi.mocked(useIncomeStatement).mockReturnValue(
+      queryResult({ isError: true, error: new BackendError(403, { detail: "yok" }) }),
+    );
+    render(<FinancialStatementsHomeView />);
+    expect(screen.queryByRole("heading", { name: "Mali Tablolar", level: 1 })).toBeNull();
+  });
+});
+
+describe("🔴 E11:76-81 · DÖNEM GEZGİNİ ARTIK ÇALIŞIR", () => {
+  it("varsayılan dönem YEREL takvimden gelir ve BİRİKİMLİ aralık basar", () => {
+    render(<FinancialStatementsHomeView />);
+    expect(screen.getByTestId("mt-period-label")).toHaveTextContent("Ocak–Temmuz 2026");
+    // Uç GERÇEKTEN o dönemle çağrıldı (etiket süslemesi değil).
+    expect(vi.mocked(useIncomeStatement)).toHaveBeenCalledWith(2026, 7);
+  });
+
+  it("`‹` bir ay geriye gider ve UCU YENİDEN ÇAĞIRIR", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<FinancialStatementsHomeView />);
+
+    await user.click(screen.getByTestId("mt-period-prev"));
+    expect(screen.getByTestId("mt-period-label")).toHaveTextContent("Ocak–Haziran 2026");
+    expect(vi.mocked(useIncomeStatement)).toHaveBeenCalledWith(2026, 6);
+  });
+
+  it("🔴 `›` İÇİNDE BULUNULAN AYDA KAPALIDIR (geleceğin gelir tablosu yoktur)", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<FinancialStatementsHomeView />);
+
+    expect(screen.getByTestId("mt-period-next")).toBeDisabled();
+    // Geri gidince AÇILIR — kapalılık bir dönem KARARIdır, sabit bir hâl değil.
+    await user.click(screen.getByTestId("mt-period-prev"));
+    expect(screen.getByTestId("mt-period-next")).toBeEnabled();
+    await user.click(screen.getByTestId("mt-period-next"));
+    expect(screen.getByTestId("mt-period-label")).toHaveTextContent("Ocak–Temmuz 2026");
+  });
+
+  it("YIL sınırı aşılır: Ocak'ın öncesi önceki yılın Aralık'ıdır", async () => {
+    vi.setSystemTime(new Date(2026, 0, 15, 9, 0, 0));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<FinancialStatementsHomeView />);
+
+    // Ocak'ta aralığın iki ucu AYNIdır ⇒ kısa yazım.
+    expect(screen.getByTestId("mt-period-label")).toHaveTextContent("Ocak 2026");
+    await user.click(screen.getByTestId("mt-period-prev"));
+    expect(vi.mocked(useIncomeStatement)).toHaveBeenCalledWith(2025, 12);
+  });
+});
+
+describe("🔴 K2 · KAYNAKSIZ YÜZEYLER — silinmez, DEVRE DIŞI + TÜREVİ gerekçeyle basılır", () => {
   it("E11:71 `PDF İndir` devre dışıdır ve gerekçesi KAYITTAN gelir", () => {
     render(<FinancialStatementsHomeView />);
     expect(screen.getByTestId("mt-export-pdf")).toBeDisabled();
     expect(screen.getByTestId("mt-export-reason")).toHaveTextContent(
       SEAL(INCOME_STATEMENT_EXPORT_REASON),
     );
-  });
-
-  it("🔴 E11:76-81 dönem gezgini İŞLEMEZ: iki ok da devre dışıdır", () => {
-    render(<FinancialStatementsHomeView />);
-    expect(screen.getByTestId("mt-period-prev")).toBeDisabled();
-    expect(screen.getByTestId("mt-period-next")).toBeDisabled();
-    expect(screen.getByTestId("mt-period-reason")).toHaveTextContent(
-      SEAL(INCOME_STATEMENT_PERIOD_REASON),
-    );
-  });
-
-  it("🔴 dönem etiketi bir DÖNEM UYDURMAZ (mockup'ın `Ocak – Temmuz 2026`u basılmaz)", () => {
-    render(<FinancialStatementsHomeView />);
-    expect(screen.getByTestId("mt-period-label").textContent).not.toMatch(/20\d\d/);
   });
 
   it("E11:82 proje süzgeci devre dışıdır ve gerekçesi KAYITTAN gelir", () => {
@@ -126,14 +270,22 @@ describe("🔴 UCU OLMAYAN YÜZEYLER — silinmez, DEVRE DIŞI + TÜREVİ gerek�
     );
   });
 
-  it("E11:87-147 · 151-167 · 169-189 — ÜÇ kart da devre dışıdır", () => {
+  it("E11:99 TREND sütununun gerekçesi KAYITTAN gelir", () => {
     render(<FinancialStatementsHomeView />);
-    for (const testId of ["mt-income-statement", "mt-performance", "mt-profitability"]) {
+    expect(screen.getByTestId("mt-is-ratio-note")).toHaveTextContent(
+      SEAL(INCOME_STATEMENT_TREND_REASON),
+    );
+  });
+
+  it("🔴 SAĞ SÜTUNUN İKİ KARTI devre dışıdır — TABLO KARTI ARTIK DEĞİL", () => {
+    render(<FinancialStatementsHomeView />);
+    for (const testId of ["mt-performance", "mt-profitability"]) {
       expect(screen.getByTestId(testId)).toHaveClass("fs-mt-card--disabled");
     }
-    expect(screen.getByTestId("mt-income-statement-reason")).toHaveTextContent(
-      SEAL(INCOME_STATEMENT_REASON),
-    );
+    // 🔴 Ayrışma noktası: tablo kartı devre dışı SINIFINI TAŞIMAZ.
+    expect(screen.getByTestId("mt-income-statement")).not.toHaveClass("fs-mt-card--disabled");
+    expect(screen.queryByTestId("mt-income-statement-reason")).toBeNull();
+
     expect(screen.getByTestId("mt-performance-reason")).toHaveTextContent(
       SEAL(PERFORMANCE_SUMMARY_REASON),
     );
@@ -142,16 +294,19 @@ describe("🔴 UCU OLMAYAN YÜZEYLER — silinmez, DEVRE DIŞI + TÜREVİ gerek�
     );
   });
 
-  it("🔴 hiçbir kart SAYI İCAT ETMEZ (mockup'ın rakamları ekrana sızmaz)", () => {
+  it("🔴 İKİ ÖZET KARTI SAYI İCAT ETMEZ (mockup'ın kaynaksız yüzdeleri sızmaz)", () => {
     render(<FinancialStatementsHomeView />);
-    const text = screen.getByTestId("mt-grid").textContent ?? "";
-    for (const invented of ["24.870.500", "24.994.700", "3.512.700", "%14,1", "%76,7"]) {
+    const aside = screen.getByTestId("mt-grid").querySelector(".fs-mt-aside");
+    const text = aside?.textContent ?? "";
+    // `%76,7` (Bütçe Kullanımı) · `%66,3` (Tahsilat Oranı) · `%16,2`…
+    // (proje kârlılıkları) HİÇBİR uçtan gelmiyor.
+    for (const invented of ["%76,7", "%66,3", "%16,2", "%12,8", "%11,4", "%18,5", "Güneşkent"]) {
       expect(text).not.toContain(invented);
     }
   });
 });
 
-describe("🔴 altı anahtar kayıtta GERÇEKTEN tanımlıdır", () => {
+describe("🔴 dört anahtar kayıtta GERÇEKTEN tanımlıdır", () => {
   it("hiçbiri genel fallback metnine düşmez ve ölçülmüş olguyu söyler", async () => {
     // Mühür KALDIRILIR: gerçek `pendingModuleLabel` koşar. Anahtar kayıtta
     // yoksa "İlgili modülle birlikte gelir" döner — o metin bu ekranda hiçbir
@@ -159,19 +314,34 @@ describe("🔴 altı anahtar kayıtta GERÇEKTEN tanımlıdır", () => {
     const actual =
       await vi.importActual<typeof import("@/lib/pending-modules")>("@/lib/pending-modules");
     const keys = [
-      INCOME_STATEMENT_REASON,
       INCOME_STATEMENT_EXPORT_REASON,
-      INCOME_STATEMENT_PERIOD_REASON,
+      INCOME_STATEMENT_TREND_REASON,
       PROJECT_FILTER_REASON,
       PERFORMANCE_SUMMARY_REASON,
       PROJECT_PROFITABILITY_REASON,
     ];
-    // Altı anahtar da BİRBİRİNDEN farklıdır (K6: ekran/yüzey başına ayrı metin).
+    // Beş anahtar da BİRBİRİNDEN farklıdır (K6: ekran/yüzey başına ayrı metin).
     expect(new Set(keys).size).toBe(keys.length);
     for (const key of keys) {
       const label = actual.pendingModuleLabel(key);
       expect(label).not.toBe("İlgili modülle birlikte gelir");
       expect(label.length).toBeGreaterThan(20);
+    }
+  });
+
+  /**
+   * 🔴 K2 — İKİ ÖZET KARTININ gerekçeleri BUGÜN YANLIŞTI: "gelir tablosu
+   * ucuyla birlikte gelir (MT-2)" diyorlardı. Uç AÇILDI ve kartlar hâlâ
+   * kapalı; metin artık bir YALANDIR. Bekçi metnin o vaadi TEKRARLAMADIĞINI
+   * çakar (F-PRJTAB kanonu: yaşayan gerekçe çalışan yüzeyle ÇELİŞEMEZ).
+   */
+  it("🔴 iki özet kartının gerekçesi ARTIK `MT-2 ile gelir` DEMEZ", async () => {
+    const actual =
+      await vi.importActual<typeof import("@/lib/pending-modules")>("@/lib/pending-modules");
+    for (const key of [PERFORMANCE_SUMMARY_REASON, PROJECT_PROFITABILITY_REASON]) {
+      const label = actual.pendingModuleLabel(key);
+      expect(label).not.toMatch(/MT-2/);
+      expect(label).not.toMatch(/gelir tablosu ucuyla/i);
     }
   });
 });

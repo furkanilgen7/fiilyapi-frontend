@@ -10,6 +10,7 @@ import {
   activeFinancialNavLabels,
   isFinancialNavItemAncestor,
   isFinancialNavItemCurrent,
+  isFinancialNavItemMirrorCurrent,
 } from "./financial-statements-nav-config";
 
 describe("Mali Tablolar drill nav — BL:24-31 birebir", () => {
@@ -58,22 +59,47 @@ describe("Mali Tablolar drill nav — BL:24-31 birebir", () => {
       href: "/mali-tablolar/nakit-akisi",
       exact: true,
     });
-    expect(FINANCIAL_SUB_NAV[0]?.kind).toBe("disabled");
+    // 🔴 F-MT2 K3 — artık `disabled` DEĞİL, üst öğeyi YANSITAN işaretçi.
+    expect(FINANCIAL_SUB_NAV[0]).toEqual({
+      kind: "mirror",
+      label: "Gelir Tablosu",
+      mirrorsHref: "/mali-tablolar",
+    });
   });
 });
 
-describe("🔴 devre dışı `Gelir Tablosu` GERÇEK bir gerekçe taşır", () => {
-  // 🔴 F-PRJTAB kanonu: görünür gerekçe öğenin KENDİ alanından TÜRER — testte
-  // de öyle okunur. Ekran yazıldığında gerekçe kendiliğinden kaybolur.
-  it("gerekçe içi boş bir cümle değildir ve ÖLÇÜLMÜŞ olguyu söyler", () => {
-    const disabled = FINANCIAL_SUB_NAV.filter((i) => i.kind === "disabled");
+describe("🔴 F-MT2 K3 · `Gelir Tablosu` satırı ÜST ÖĞEYLE AYNI HEDEFİ yansıtır", () => {
+  const MIRRORS = FINANCIAL_SUB_NAV.filter((i) => i.kind === "mirror");
+
+  it("küme SAYILIDIR ve hedefi üst öğenin href'iyle BİREBİR aynıdır", () => {
     // Boş küme üzerinde dönen bir `for` HİÇBİR ŞEY kanıtlamaz.
-    expect(disabled).toHaveLength(1);
-    for (const item of disabled) {
-      expect(item.reason.length).toBeGreaterThan(20);
-      // Ölçüm: `schema.d.ts`te `income-statement|IncomeStatement|profit-loss`
-      // için SIFIR eşleşme var — uç ayrı bir backend dilimidir (MT-2).
-      expect(item.reason).toMatch(/backend|MT-2/);
+    expect(MIRRORS).toHaveLength(1);
+    for (const item of MIRRORS) {
+      // 🔴 Sabit bir dize yazmak yerine ÜST ÖĞEDEN türetilir: hedefler
+      // ayrışırsa (ör. ayrı bir rota açılırsa) bu iddia kırmızı olur.
+      expect(FINANCIAL_NAV_PARENT.kind).toBe("link");
+      if (FINANCIAL_NAV_PARENT.kind !== "link") return;
+      expect(item.mirrorsHref).toBe(FINANCIAL_NAV_PARENT.href);
+    }
+  });
+
+  it("🔴 KÖKTE görsel olarak CURRENT'tır ama `aria-current` SÜRMEZ", () => {
+    const mirror = MIRRORS[0];
+    expect(mirror).toBeDefined();
+    if (mirror === undefined) return;
+
+    expect(isFinancialNavItemMirrorCurrent("/mali-tablolar", mirror)).toBe(true);
+    // 🔴 K7 — aria-current katmanı ONU HİÇ SAYMAZ; saysaydı kökte iki tane
+    // olurdu (üst öğe + bu satır) ve bekçi kırmızıya dönerdi.
+    expect(isFinancialNavItemCurrent("/mali-tablolar", mirror)).toBe(false);
+  });
+
+  it("yaprak ekranlarda ne görsel CURRENT ne de `aria-current` olur", () => {
+    const mirror = MIRRORS[0];
+    if (mirror === undefined) return;
+    for (const path of ["/mali-tablolar/bilanco", "/mali-tablolar/nakit-akisi", "/muhasebe"]) {
+      expect(isFinancialNavItemMirrorCurrent(path, mirror)).toBe(false);
+      expect(isFinancialNavItemCurrent(path, mirror)).toBe(false);
     }
   });
 });
@@ -111,13 +137,23 @@ describe("🔴 K7 · İKİ KATMANLI aktiflik bekçisi", () => {
     expect(activeFinancialNavLabels("/mali-tablolar/nakit-akisi")).toEqual(["Nakit Akışı"]);
   });
 
-  it("devre dışı öğe HİÇBİR yolda ne CURRENT ne ATA olabilir", () => {
-    const disabled = FINANCIAL_SUB_NAV.filter((i) => i.kind === "disabled");
-    expect(disabled).toHaveLength(1);
-    for (const item of disabled) {
+  it("bağlantı OLMAYAN öğe HİÇBİR yolda ne CURRENT ne ATA olabilir", () => {
+    const nonLinks = FINANCIAL_SUB_NAV.filter((i) => i.kind !== "link");
+    expect(nonLinks).toHaveLength(1);
+    for (const item of nonLinks) {
       expect(isFinancialNavItemCurrent("/mali-tablolar", item)).toBe(false);
       expect(isFinancialNavItemAncestor("/mali-tablolar/bilanco", item)).toBe(false);
     }
+  });
+
+  /**
+   * 🔴 K3 BEKÇİSİ ZAYIFLATILMADI — kural HÂLÂ "sayfa başına TEK aria-current".
+   * Değişen tek şey satırın `disabled` yerine `mirror` olmasıdır; kökte
+   * `aria-current` sayısı 1 KALIR.
+   */
+  it("🔴 kökte `aria-current` sayısı `mirror` satırdan SONRA da TEKtir", () => {
+    expect(activeFinancialNavLabels("/mali-tablolar")).toHaveLength(1);
+    expect(currentLabels("/mali-tablolar")).toEqual(["Mali Tablolar"]);
   });
 
   it("kardeş modül yolunda mali tablo sekmelerinin HİÇBİRİ aktif değildir", () => {
@@ -137,8 +173,9 @@ describe("kırık link koruması — yüzey nav bekçisine KAYDEDİLİR", () => 
    * bu dilim rotayı YAZDI ve marker aynı commit'te kaldırıldı.
    *
    * Küme SAYILIDIR: sessizce büyüyemez, çünkü aşağıdaki iddia beklenen
-   * kümeyi ölçülenle TAM eşitler. Devre dışı `Gelir Tablosu` (BL:28) bu
-   * kümeye GİRMEZ — o bir `link` değildir, hiç çözümlenmez.
+   * kümeyi ölçülenle TAM eşitler. Yansıtıcı `Gelir Tablosu` (BL:28) bu
+   * kümeye GİRMEZ — o bir `link` değildir, hiç çözümlenmez (hedefi zaten üst
+   * öğenin href'idir ve O çözümlenir).
    */
   const PENDING_ROUTE_HREFS = new Set<string>([]);
 

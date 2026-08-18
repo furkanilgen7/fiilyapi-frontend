@@ -213,27 +213,36 @@ const MODULE_LABELS: Record<string, string> = {
   // YOK, satır açıklamaları ("Hakediş + bordro") serbest metin. Üç satır
   // UYDURULMAZ; kart yerinde durur, gerekçe BU anahtardan türer.
   cash_flow_projection: "Nakit akışı projeksiyonu henüz hesaplanmıyor (tahmin ucu yok)",
-  // F-MT T4 (E11 · `/mali-tablolar` KÖK ekranı) — 🔴 ÖLÇÜLDÜ: `schema.d.ts`te
-  // `income-statement|IncomeStatement|profit-loss|ProfitLoss|gelir-tablosu`
-  // için SIFIR eşleşme var. MT-1 backend dilimi YALNIZ `/balance-sheet` ve
-  // `/cash-flow-statement` uçlarını açtı; E11'in üç veri yüzeyi de olmayan bir
-  // uçtan beslenir. Kart/sütun SİLİNMEZ, sayı İCAT EDİLMEZ (F-TH kanonu).
-  income_statement: "Gelir tablosu ucu henüz açılmadı (ayrı backend dilimi: MT-2)",
-  // E11:151-167 · E11:169-189 — iki özet kartı da gelir tablosunun TÜREVİdir
-  // (marj/kâr oranı). AYRI anahtarlar: `income_statement` metni "tablo" der ve
-  // bu iki kartın yerinde YANLIŞ yüzeyi işaret ederdi (K6).
+  // ⚠️ F-MT2'de KALDIRILDI: `income_statement` anahtarı E11 tablosunun "uç yok"
+  // gerekçesiydi. `GET /income-statement` AÇILDI ve tablo GERÇEK oldu; anahtarın
+  // tüketicisi kalmadı. Yeniden eklenmemeli — "gelir tablosu ucu yok" artık
+  // YALAN bir gerekçedir (F-PRJTAB kanonu, `gantt` emsali).
+  // ⚠️ `income_statement_period` de AYNI turda kaldırıldı: dönem gezgini artık
+  // ÇALIŞIYOR ve ucu gerçekten yeniden çağırıyor.
+  //
+  // 🔴 F-MT2 K2 · E11:151-167 · E11:169-189 — iki özet kartı GELİR TABLOSU
+  // UCUYLA AÇILMADI ve eski metinleri ("… gelir tablosu ucuyla birlikte gelir
+  // (MT-2)") bugün YALAN olurdu. ÖLÇÜLDÜ:
+  //   · `Performans Özeti`nin üç satırından yalnız `Brüt Marj %14,1` (ki aslında
+  //     NET marjdır) hesaplanabilir ve o zaten tablonun kapanış satırındadır;
+  //     `Bütçe Kullanımı %76,7` ile `Tahsilat Oranı %66,3` HİÇBİR uçtan gelmez
+  //     (bütçe/tahsilat mali tablo uçlarının kapsamında değil).
+  //   · `Proje Bazlı Karlılık` bir uç eksikliği DEĞİL, bir VERİ MODELİ
+  //     eksikliğidir: üç mali tablo ucunun hiçbiri `project_id`/`site_id`
+  //     taşımaz ve muhasebe tabloları proje kırılımı TUTMAZ.
   financial_performance_summary:
-    "Performans oranları gelir tablosu ucuyla birlikte gelir (MT-2)",
-  project_profitability: "Proje bazlı kârlılık gelir tablosu ucuyla birlikte gelir (MT-2)",
+    "Bütçe kullanımı ve tahsilat oranı hiçbir uçtan gelmiyor (net marj tabloda basılır)",
+  project_profitability:
+    "Muhasebe kayıtları proje kırılımı tutmuyor (mali tablo uçları project_id almıyor)",
   // E11:71 (`PDF İndir`) — K6, EKRAN BAŞINA ayrı anahtar: `balance_sheet_export`
   // adıyla "bilanço", `cash_flow_statement_export` "nakit akış tablosu" der;
   // ikisi de bu ekranda YANLIŞ yüzeyi işaret ederdi.
   income_statement_export: "Gelir tablosu dışa aktarma ucu henüz açılmadı (PDF)",
-  // 🔴 E11:76-81 (dönem gezgini) — bu sayfada YENİDEN ÇEKİLECEK veri YOKTUR:
-  // tek veri kaynağı olan gelir tablosu ucu açılmadı. İşler görünüp hiçbir şeyi
-  // değiştirmeyen bir denetim SESSİZ YALANDIR; gezgin devre dışı basılır ve
-  // sahte durum BAĞLANMAZ.
-  income_statement_period: "Dönem seçimi gelir tablosu ucuyla birlikte gelir (MT-2)",
+  // 🔴 F-MT2 K2 (E11:99 `↑ %8,3` TREND sütunu) — uç trendi BİLEREK dışladı.
+  // `IncomeStatementLine` şema açıklaması gerekçeyi kendi yazıyor: "trend
+  // önceki dönem karşılaştırması ister; mockup hangi dönem olduğunu SÖYLEMİYOR
+  // ve algoritma İCAT EDİLMEZ". Sütun silinmez; gelir kalemlerinde `—` basar.
+  income_statement_trend: "Trend için önceki dönem karşılaştırması yok (uç trend döndürmüyor)",
   // 🔴 E11:82 (proje süzgeci) — ÖLÇÜLDÜ: canlı iki ucun sorgu parametrelerinde
   // `project_id` YOKTUR ve uç açıklamaları kapsam dışını adıyla sayıyor:
   // "proje/şantiye süzgeci (üç muhasebe tablosunda da `project_id`/`site_id`

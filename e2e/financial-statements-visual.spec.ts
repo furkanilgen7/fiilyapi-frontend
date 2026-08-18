@@ -19,9 +19,10 @@ import { prepareFrame } from "./visual-scroll";
 // `--grep-invert "gorsel"` ile BAŞLIĞA göre süzer; içermeyen bir görsel test
 // fonksiyonel turda baseline'sız koşar ve KIRMIZI olur.
 //
-// 🔴 DÖRT KARE, BİRİ MOCKUP BOŞLUĞU: `mali-tablolar-bilanco-dengesiz` (K3'ün
-// dengesiz dalı) hiçbir mockup'ta ÇİZİLMEMİŞTİR — o dalın var olduğunu
-// YALNIZ bu kare kanıtlar (`accounting-reports-visual`in K1/K2 emsali).
+// 🔴 BEŞ KARE, İKİSİ MOCKUP BOŞLUĞU: `mali-tablolar-bilanco-dengesiz` (BL K3'ün
+// dengesiz dalı) ve `mali-tablolar-gelir-tablosu-ayrisik` (F-MT2 K1'in ayrışık
+// dalı) hiçbir mockup'ta ÇİZİLMEMİŞTİR — o dalların var olduğunu YALNIZ bu
+// kareler kanıtlar (`accounting-reports-visual`in K1/K2 emsali).
 //
 // 🔒 SALT-OKUR: bu dosya hiçbir POST/PATCH/DELETE tetiklemez. Üç ekranın da
 // uçları YALNIZ `GET` tanımlar; ayrıca `balanceSheetFixture` /
@@ -50,8 +51,10 @@ const VISUAL_VIEWPORT = { width: 1440, height: 900 } as const;
  * `BalanceSheetView` TEK sorgu (`useBalanceSheet`), `CashFlowStatementView`
  * TEK sorgu (`useCashFlowStatement` — KPI şeridi, A/B/C tablosu, aylık grafik
  * ve kapanış satırlarının HEPSİ o TEK yanıttan beslenir),
- * `FinancialStatementsHomeView` ise HİÇ sorgu yapmaz (üç veri yüzeyi de
- * devre dışıdır). Üçünde de `useModulePermission` AĞA ÇIKMAZ —
+ * `FinancialStatementsHomeView` de TEK sorgu (`useIncomeStatement` — tablo,
+ * oran sütunu ve mutabakat şeridi O TEK yanıttan beslenir; sağ sütunun iki
+ * kartı KAYNAKSIZdır ve ağa hiç çıkmaz). Üçünde de `useModulePermission`
+ * AĞA ÇIKMAZ —
  * `SessionProvider`ın zaten çektiği `/auth/me` yükünü okur.
  *
  * Yine de kabuk da metin basabileceği için ortak kalıp + yüzeylerin KENDİ
@@ -61,6 +64,7 @@ async function expectNoLoadingText(page: Page) {
   await expect(page.getByText(/yükleniyor/i)).toHaveCount(0);
   await expect(page.getByTestId("bl-loading")).toHaveCount(0);
   await expect(page.getByTestId("na-loading")).toHaveCount(0);
+  await expect(page.getByTestId("mt-loading")).toHaveCount(0);
 }
 
 // ---------------------------------------------------------------------------
@@ -216,13 +220,13 @@ test("mali tablolar nakit akisi gorsel", async ({ page }) => {
 });
 
 // ---------------------------------------------------------------------------
-// 4) E11 · Mali Tablolar kökü — DEVRE DIŞI gelir tablosu yüzeyleri
+// 4) E11 · Mali Tablolar kökü = GELİR TABLOSU (Ocak–Temmuz 2026) · MUTABIK dal
 // ---------------------------------------------------------------------------
-// 🔴 Bu kare bir "boş durum" karesi DEĞİLDİR: gelir tablosu ucu (MT-2) henüz
-// açılmadığı için üç veri yüzeyi de kasten devre dışı basılır (F-TH kanonu:
-// rotası olmayan mockup öğesi SİLİNMEZ). Kare, o kararın nasıl göründüğünü
-// kilitler — sayı UYDURULDUĞU gün kırmızı olur.
-test("mali tablolar gelir tablosu devre disi gorsel", async ({ page }) => {
+// 🔴 KARE YENİLENDİ VE ADI DEĞİŞTİ: `…-devre-disi` adı bugün YALAN olurdu —
+// `GET /income-statement` açıldı ve tablo GERÇEK. Devre dışı kalanlar yalnız
+// KAYNAKSIZ yüzeylerdir (sağ sütunun iki kartı + trend sütunu + PDF + proje
+// süzgeci) ve kare o kararın nasıl göründüğünü kilitler.
+test("mali tablolar gelir tablosu gorsel", async ({ page }) => {
   await page.setViewportSize({ ...VISUAL_VIEWPORT });
   await openFinancialStatementsHome(page);
 
@@ -237,29 +241,86 @@ test("mali tablolar gelir tablosu devre disi gorsel", async ({ page }) => {
   await expect(page.getByTestId("mt-seg-bilanco")).toHaveText("Bilanço");
   await expect(page.getByTestId("mt-seg-nakit-akisi")).toHaveText("Nakit Akışı");
 
-  // Üç veri yüzeyi de BASILDI, başlıkları yerinde ve gerekçeleri GÖRÜNÜR.
-  await expect(page.getByTestId("mt-income-statement")).toContainText("Gelir Tablosu");
-  await expect(page.getByTestId("mt-performance")).toContainText("Performans Özeti");
-  await expect(page.getByTestId("mt-profitability")).toContainText("Proje Bazlı Karlılık");
-  for (const testId of ["mt-income-statement", "mt-performance", "mt-profitability"]) {
+  // 📅 `page.clock` KANITI: BİRİKİMLİ aralık içinde bulunulan aya kadar.
+  await expect(page.getByTestId("mt-period-label")).toHaveText("Ocak–Temmuz 2026");
+  await expect(page.getByTestId("mt-is-period-label")).toHaveText("Ocak–Temmuz 2026");
+  // İleri ok içinde bulunulan ayda KAPALIdır (geleceğin gelir tablosu yok).
+  await expect(page.getByTestId("mt-period-next")).toBeDisabled();
+
+  // 🔴 Damga ("mt-loaded") "veri geldi" der, "ekrana bastı" DEMEZ — tek
+  // kaynağın GERÇEK rakamları ayrıca ölçülür (WORKFLOW §4, 5. parça).
+  await expect(page.getByTestId("mt-is-table").locator("tbody tr")).toHaveCount(11);
+  await expect(page.getByTestId("mt-is-section-revenue-band")).toContainText("GELİRLER");
+  await expect(page.getByTestId("mt-is-section-revenue-subtotal")).toContainText("24.994.700");
+  await expect(page.getByTestId("mt-is-section-expenses-band")).toContainText("GİDERLER");
+  await expect(page.getByTestId("mt-is-section-expenses-subtotal")).toContainText("21.482.000");
+  await expect(page.getByTestId("mt-is-profit")).toContainText("3.512.700");
+  // 🔴 K2 — gider payı HESAPLANIR, trend HESAPLANMAZ (`—`).
+  await expect(page.getByTestId("mt-is-section-expenses-material_costs")).toContainText("%49,9");
+  await expect(page.getByTestId("mt-is-profit")).toContainText("%14,1");
+  await expect(
+    page.getByTestId("mt-is-section-revenue-other_revenue").locator(".fs-is-ratio"),
+  ).toHaveText("—");
+  await expect(page.getByTestId("mt-is-ratio-note")).toBeVisible();
+
+  // 🔴 K1 — mutabakat şeridi YEŞİL dalda.
+  const banner = page.getByTestId("mt-is-banner");
+  await expect(banner).toHaveClass(/fs-banner--ok/);
+  await expect(banner).toContainText("Mutabık");
+
+  // 🔴 K2 — sağ sütunun İKİ kartı devre dışı, gerekçeleri GÖRÜNÜR; tablo
+  // kartı ARTIK DEĞİL (kare bu ayrımı kilitler).
+  for (const testId of ["mt-performance", "mt-profitability"]) {
+    await expect(page.getByTestId(testId)).toContainText(/./);
     await expect(page.getByTestId(`${testId}-reason`)).toBeVisible();
   }
-
-  // 🔴 SAHTE DURUM BAĞLANMAZ: dönem gezgini işlemez ve mockup'ın
-  // `Ocak – Temmuz 2026` etiketi BASILMAZ — yuvada `—` durur.
-  await expect(page.getByTestId("mt-period-prev")).toBeDisabled();
-  await expect(page.getByTestId("mt-period-next")).toBeDisabled();
-  await expect(page.getByTestId("mt-period-label")).toHaveText("—");
-  await expect(page.getByTestId("mt-project-filter")).toBeDisabled();
+  await expect(page.getByTestId("mt-income-statement")).not.toHaveClass(/fs-mt-card--disabled/);
 
   await expect(page.getByTestId("mt-export-pdf")).toBeDisabled();
   await expect(page.getByTestId("mt-export-reason")).toBeVisible();
-  await expect(page.getByTestId("mt-period-reason")).toBeVisible();
+  await expect(page.getByTestId("mt-project-filter")).toBeDisabled();
   await expect(page.getByTestId("mt-project-filter-reason")).toBeVisible();
+  await expect(page.getByTestId("mt-error")).toHaveCount(0);
   await expectNoLoadingText(page);
 
   await prepareFrame(page);
-  await expect(page).toHaveScreenshot("mali-tablolar-gelir-tablosu-devre-disi.png", {
+  await expect(page).toHaveScreenshot("mali-tablolar-gelir-tablosu.png", { fullPage: true });
+});
+
+// ---------------------------------------------------------------------------
+// 5) E11 · Gelir Tablosu — 🔴 K1'in AYRIŞIK dalı (Ocak 2026)
+// ---------------------------------------------------------------------------
+// 🔴 Bu dal HİÇBİR MOCKUP'TA ÇİZİLMEMİŞTİR (E11 `DÖNEM KARI = Toplam Gelir −
+// Toplam Gider` özdeşliğini varsayıyor). Ayrışmanın var olduğunu ve nasıl
+// göründüğünü YALNIZ bu kare kanıtlar — `mali-tablolar-bilanco-dengesiz`in
+// kardeşidir. `DÖNEM KARI` satırı burada da `period_profit` basar.
+test("mali tablolar gelir tablosu ayrisik gorsel", async ({ page }) => {
+  await page.setViewportSize({ ...VISUAL_VIEWPORT });
+  await openFinancialStatementsHome(page, ACCOUNTING_EMPTY_TIME);
+
+  // 📅 Ocak saatinde aralığın iki ucu AYNIdır ⇒ kısa yazım.
+  await expect(page.getByTestId("mt-period-label")).toHaveText("Ocak 2026");
+  await expect(page.getByTestId("mt-is-period-label")).toHaveText("Ocak 2026");
+
+  // 🔴 K1 — şerit KIRMIZI dala döndü; farkı ve GEREKÇESİNİ birlikte basar.
+  // `≠` glifi YAZILMAZ (F-SEM glif kuralı), "eşit değil" yazılır.
+  const banner = page.getByTestId("mt-is-banner");
+  await expect(banner).toHaveClass(/fs-banner--off/);
+  await expect(banner).toContainText("eşit değil");
+  await expect(banner).toContainText("fark: ₺ 51.270");
+  await expect(banner).toContainText("maliyet aktarım");
+
+  // 🔴 Kadrajın asıl konusu: kalemlerden çıkan fark (2.499.470 − 2.148.200 =
+  // 351.270) ile basılan `DÖNEM KARI` (300.000) FARKLIdır ve sunucununki basılır.
+  await expect(page.getByTestId("mt-is-section-revenue-subtotal")).toContainText("2.499.470");
+  await expect(page.getByTestId("mt-is-section-expenses-subtotal")).toContainText("2.148.200");
+  await expect(page.getByTestId("mt-is-profit")).toContainText("300.000");
+  await expect(page.getByTestId("mt-is-table").locator("tbody tr")).toHaveCount(11);
+  await expect(page.getByTestId("mt-error")).toHaveCount(0);
+  await expectNoLoadingText(page);
+
+  await prepareFrame(page);
+  await expect(page).toHaveScreenshot("mali-tablolar-gelir-tablosu-ayrisik.png", {
     fullPage: true,
   });
 });

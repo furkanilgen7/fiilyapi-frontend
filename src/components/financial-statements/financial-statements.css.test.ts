@@ -203,6 +203,10 @@ describe("financial-statements.css — E11'e bağlı kurallar (F-MT T4)", () => 
     expect(css).toMatch(/\.fs-mt-period__arrow:disabled\s*{[^}]*var\(--color-text-subtle\)/);
   });
 
+  it("🔴 E11:79 — dönem aralığı TEK SATIRDA durur (kutu mockup yüksekliğinde kalır)", () => {
+    expect(css).toMatch(/\.fs-mt-period__label\s*{[^}]*white-space:\s*nowrap/);
+  });
+
   it("E11:85 — kartlar İKİ EŞİT sütunlu ızgaradır (20px boşluk)", () => {
     expect(css).toMatch(/\.fs-mt-grid\s*{[^}]*grid-template-columns:\s*1fr 1fr/);
     expect(css).toMatch(/\.fs-mt-grid\s*{[^}]*gap:\s*var\(--space-5\)/);
@@ -221,6 +225,31 @@ describe("financial-statements.css — E11'e bağlı kurallar (F-MT T4)", () => 
 
   it("🔴 K8 — devre dışı kart SİLİNMEZ, ayrı bir zeminle basılır", () => {
     expect(css).toMatch(/\.fs-mt-card--disabled\s*{[^}]*background:\s*var\(--color-surface-2\)/);
+  });
+
+  it("E11:98-100 — üç sütun: etiket GİRİNTİLİ, tutar MONO/sağa yaslı, oran sağa yaslı", () => {
+    expect(css).toMatch(/\.fs-is-line__label\s*{[^}]*padding:\s*10px var\(--space-5\) 10px 28px/);
+    expect(css).toMatch(/\.fs-is-line__value\s*{[^}]*text-align:\s*right/);
+    expect(css).toMatch(/\.fs-is-line__value\s*{[^}]*font-family:\s*var\(--font-mono\)/);
+    expect(css).toMatch(/\.fs-is-ratio\s*{[^}]*text-align:\s*right/);
+  });
+
+  it("🔴 İKİ ARA TOPLAM AYNI ZEMİNİ PAYLAŞMAZ (E11:105 mavi · E11:131 turuncu)", () => {
+    expect(css).toMatch(/\.fs-is-subtotal--revenue\s*{[^}]*var\(--color-info-tint\)/);
+    expect(css).toMatch(/\.fs-is-subtotal--expense\s*{[^}]*var\(--color-orange-tint\)/);
+    // Eşitlerlerse tablo geliri giderden AYIRT ETTİRMEZ.
+    expect(/\.fs-is-subtotal--expense\s*{[^}]*var\(--color-info-tint\)/.test(css)).toBe(false);
+    // E11:133 — `Toplam Gider` tutarı kırmızıdır.
+    expect(css).toMatch(
+      /\.fs-is-subtotal--expense \.fs-is-subtotal__value\s*{[^}]*var\(--color-danger\)/,
+    );
+  });
+
+  it("E11:139-142 — DÖNEM KARI yeşil zeminli, tutarı 18px MONO, marjı kalın yeşildir", () => {
+    expect(css).toMatch(/\.fs-is-profit\s*{[^}]*background:\s*var\(--color-success-tint\)/);
+    expect(css).toMatch(/\.fs-is-profit__value\s*{[^}]*font-size:\s*var\(--text-lg\)/);
+    expect(css).toMatch(/\.fs-is-profit__value\s*{[^}]*font-family:\s*var\(--font-mono\)/);
+    expect(css).toMatch(/\.fs-is-ratio--strong\s*{[^}]*var\(--color-success\)/);
   });
 
   it("🔴 BEKÇİ (E11 blokları dahil): çıplak hex renk YOKTUR", () => {

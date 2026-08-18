@@ -154,6 +154,80 @@ test.describe("BFF kökleri (telden)", () => {
   });
 
   /**
+   * 🔴 F-MT2 K4 — `income-statement` kökü BU dilimde eklendi. "Zaten var"
+   * VARSAYILMAZ: kök listeden düşerse `/mali-tablolar` YALNIZ CANLIDA 404
+   * alır ve jsdom testleri bunu GÖRMEZ (BFF TUZAĞI kanonu).
+   *
+   * 🔴 İddia `length > 0` DEĞİLDİR (reponun eski SAHTE BFF bekçisinin kusuru):
+   * durum kodu VE gövdenin İÇ ARİTMETİĞİ ölçülür.
+   */
+  test("income-statement kökü BFF'ten geçer ve gövdesi kendi içinde tutarlıdır", async ({
+    page,
+  }) => {
+    await loginAt(page, ACCOUNTING_READ_TIME);
+
+    const response = await page.request.get(
+      `/api/backend/income-statement?year=${CASH_FLOW_DEFAULT_YEAR}&month=${CASH_FLOW_DEFAULT_MONTH}`,
+    );
+    expect(response.status()).toBe(200);
+
+    // 🔴 `200`ün GERÇEKTEN izin listesini ölçtüğünün kanıtı: listede OLMAYAN
+    // bir kök aynı proxy'den 404 döner. Bu satır olmadan yukarıdaki `200`,
+    // "proxy her şeyi geçiriyor" ihtimalinden ayırt edilemezdi.
+    const notAllowed = await page.request.get("/api/backend/income-statement-nope");
+    expect(notAllowed.status()).toBe(404);
+
+    const statement = (await response.json()) as {
+      year: number;
+      month: number;
+      sections: Array<{
+        key: string;
+        subtotal: string;
+        lines: Array<{ key: string; amount: string; account_codes: string[] }>;
+      }>;
+      total_revenue: string;
+      total_expense: string;
+      profit_label: string;
+      period_profit: string;
+    };
+
+    // İstenen DÖNEM yanıtta TEKRARLANIR (şema notu: istemci hangi dönemi
+    // gördüğünü kendi isteğinden değil sunucudan okur).
+    expect(statement.year).toBe(CASH_FLOW_DEFAULT_YEAR);
+    expect(statement.month).toBe(CASH_FLOW_DEFAULT_MONTH);
+
+    // Küme SABİTtir: 2 bölüm · 6 kalem (2 + 4).
+    expect(statement.sections.map((section) => section.key)).toEqual(["revenue", "expenses"]);
+    expect(statement.sections[0]?.lines).toHaveLength(2);
+    expect(statement.sections[1]?.lines).toHaveLength(4);
+
+    for (const section of statement.sections) {
+      // Ara toplam KALEMLERDEN gelir; fikstür kendi içinde çelişirse kadraj
+      // anlamsız bir tablo gösterirdi.
+      const lineSum = section.lines.reduce((total, line) => total + Number(line.amount), 0);
+      expect(Number(section.subtotal)).toBeCloseTo(lineSum, 2);
+      for (const line of section.lines) {
+        // 🔴 POZİTİF sözleşme: gider kalemleri de pozitif basar.
+        expect(Number(line.amount)).toBeGreaterThan(0);
+        // `account_codes` mockup'ta basılmaz ama ZORUNLUDUR (kalemin kanıtı).
+        expect(line.account_codes.length).toBeGreaterThan(0);
+      }
+    }
+
+    expect(Number(statement.total_revenue)).toBeCloseTo(Number(statement.sections[0]?.subtotal), 2);
+    expect(Number(statement.total_expense)).toBeCloseTo(Number(statement.sections[1]?.subtotal), 2);
+    // Etiket SUNUCUDAN gelir (ekran onu sabitlemez).
+    expect(statement.profit_label.length).toBeGreaterThan(0);
+    // 🔴 K1 — varsayılan dönemde aktarım fişi YOK ⇒ üç alan MUTABIK.
+    expect(Number(statement.period_profit)).toBeCloseTo(
+      Number(statement.total_revenue) - Number(statement.total_expense),
+      2,
+    );
+    // Boş/sıfır bir gövde bu testi sessizce geçemesin.
+    expect(Number(statement.total_revenue)).toBeGreaterThan(0);
+  });
+
+  /**
    * 🔴 TANINMAYAN DÖNEM 404 DEĞİLDİR: saat bir gün/ay kayarsa ekran BOŞ
    * inmemeli, yapısal olarak GEÇERLİ ve sıfır bir gövde almalıdır.
    */
@@ -191,6 +265,20 @@ test.describe("BFF kökleri (telden)", () => {
     // Grafik yine bir eğri çizebilsin: seri Ocak..Mart uzunluğundadır.
     expect(cf.monthly_cash.length).toBe(3);
     expect(cf.monthly_cash[cf.monthly_cash.length - 1]?.closing_cash).toBe(cf.closing_cash);
+
+    const incomeStatement = await page.request.get("/api/backend/income-statement?year=2024&month=3");
+    expect(incomeStatement.status()).toBe(200);
+    const is = (await incomeStatement.json()) as {
+      sections: Array<{ lines: unknown[] }>;
+      total_revenue: string;
+      period_profit: string;
+    };
+    // 🔴 Küme SABİT kalır: hareketsiz kalem listeden DÜŞMEZ, `0` basar.
+    expect(is.sections.length).toBe(2);
+    expect(is.sections[0]?.lines).toHaveLength(2);
+    expect(is.sections[1]?.lines).toHaveLength(4);
+    expect(Number(is.total_revenue)).toBe(0);
+    expect(Number(is.period_profit)).toBe(0);
   });
 });
 
@@ -345,23 +433,97 @@ test.describe("Nakit Akış Tablosu ekranı (NA)", () => {
   });
 });
 
-test.describe("Mali Tablolar kökü (E11)", () => {
-  test("üç veri kartı da devre dışıdır ve gerekçeleri GÖRÜNÜRdür", async ({ page }) => {
+test.describe("Mali Tablolar kökü (E11) · GELİR TABLOSU ekranı", () => {
+  test("dolu dönem: tablo, oran sütunu ve DÖNEM KARI basılır", async ({ page }) => {
     await openFinancialStatementsHome(page);
 
     await expect(page.getByRole("heading", { level: 1, name: "Mali Tablolar" })).toBeVisible();
+    // 📅 `page.clock` KANITI: birikimli aralık içinde bulunulan aya kadardır.
+    await expect(page.getByTestId("mt-period-label")).toHaveText("Ocak–Temmuz 2026");
+    await expect(page.getByTestId("mt-is-period-label")).toHaveText("Ocak–Temmuz 2026");
 
-    for (const testId of ["mt-income-statement", "mt-performance", "mt-profitability"]) {
+    // 2 bant + 6 kalem + 2 ara toplam + 1 kâr = 11 satır.
+    await expect(page.getByTestId("mt-is-table").locator("tbody tr")).toHaveCount(11);
+    await expect(page.getByTestId("mt-is-section-revenue-band")).toContainText("GELİRLER");
+    await expect(page.getByTestId("mt-is-section-revenue-construction_revenue")).toContainText(
+      "24.870.500",
+    );
+    await expect(page.getByTestId("mt-is-section-revenue-subtotal")).toContainText("24.994.700");
+    await expect(page.getByTestId("mt-is-section-expenses-subtotal")).toContainText("21.482.000");
+    await expect(page.getByTestId("mt-is-profit")).toContainText("3.512.700");
+
+    // 🔴 K2 — oran sütunu: gider payı HESAPLANIR, trend HESAPLANMAZ.
+    await expect(page.getByTestId("mt-is-section-expenses-material_costs")).toContainText("%49,9");
+    await expect(page.getByTestId("mt-is-profit")).toContainText("%14,1");
+    await expect(
+      page.getByTestId("mt-is-section-revenue-construction_revenue").locator(".fs-is-ratio"),
+    ).toHaveText("—");
+    await expect(page.getByTestId("mt-is-ratio-note")).toBeVisible();
+
+    await expect(page.getByTestId("mt-error")).toHaveCount(0);
+  });
+
+  /**
+   * 🔴 K1 · İKİ AYRI BEKÇİ (kanon: *"atladı mı" ve "bağırdı mı" AYRI çakılır*).
+   * Bu test ŞERİDİN ÇIKTIĞINI ölçer; bir sonraki DOĞRU SAYININ basıldığını.
+   */
+  test("K1 · mutabakat şeridi MUTABIK dalda yeşil, AYRIŞIK dalda kırmızıdır", async ({ page }) => {
+    await openFinancialStatementsHome(page);
+    const banner = page.getByTestId("mt-is-banner");
+    await expect(banner).toHaveClass(/fs-banner--ok/);
+    await expect(banner).toContainText("Mutabık");
+
+    // 📅 Ocak 2026 — maliyet aktarım fişi ATILMIŞ defter.
+    await openFinancialStatementsHome(page, ACCOUNTING_EMPTY_TIME);
+    const offBanner = page.getByTestId("mt-is-banner");
+    await expect(offBanner).toHaveClass(/fs-banner--off/);
+    await expect(offBanner).toContainText("eşit değil");
+    await expect(offBanner).toContainText("fark: ₺ 51.270");
+    await expect(offBanner).toContainText("maliyet aktarım");
+  });
+
+  test("🔴 K1 · AYRIŞIK dalda `DÖNEM KARI` satırı `period_profit` basar", async ({ page }) => {
+    await openFinancialStatementsHome(page, ACCOUNTING_EMPTY_TIME);
+
+    // Kalemlerden çıkan fark 351.270'tir; sunucunun `period_profit`i 300.000.
+    // 🔴 Basılan sayı SUNUCUNUNKİdir — Bilanço'nun `Dönem Net Kârı` ile AYNI
+    // fonksiyondan gelir; kalemlerden yeniden toplansaydı iki mali tablo
+    // AYNI dönem için FARKLI kâr gösterirdi.
+    const profit = await amountText(page.getByTestId("mt-is-profit").locator(".fs-is-profit__value"));
+    expect(profit).toBe("300.000");
+    await expect(page.getByTestId("mt-is-section-revenue-subtotal")).toContainText("2.499.470");
+    await expect(page.getByTestId("mt-is-section-expenses-subtotal")).toContainText("2.148.200");
+  });
+
+  test("🔴 E11:76-81 dönem gezgini UCU YENİDEN ÇAĞIRIR", async ({ page }) => {
+    await openFinancialStatementsHome(page);
+
+    // İleri ok içinde bulunulan ayda KAPALIDIR (geleceğin tablosu yoktur).
+    await expect(page.getByTestId("mt-period-next")).toBeDisabled();
+
+    await page.getByTestId("mt-period-prev").click();
+    await expect(page.getByTestId("mt-period-label")).toHaveText("Ocak–Haziran 2026");
+    // 🔴 Etiket süslemesi DEĞİL: sunucunun döndürdüğü dönem de değişti.
+    await expect(page.getByTestId("mt-is-period-label")).toHaveText("Ocak–Haziran 2026");
+    await expect(page.getByTestId("mt-period-next")).toBeEnabled();
+  });
+
+  test("🔴 K2 · sağ sütunun İKİ kartı devre dışıdır ve gerekçeleri GÖRÜNÜRdür", async ({
+    page,
+  }) => {
+    await openFinancialStatementsHome(page);
+
+    for (const testId of ["mt-performance", "mt-profitability"]) {
       await expect(page.getByTestId(testId)).toBeVisible();
       await expect(page.getByTestId(`${testId}-reason`)).toBeVisible();
     }
+    // 🔴 Ayrışma noktası: TABLO kartı artık devre dışı DEĞİL.
+    await expect(page.getByTestId("mt-income-statement")).not.toHaveClass(/fs-mt-card--disabled/);
+    await expect(page.getByTestId("mt-income-statement-reason")).toHaveCount(0);
 
     await expect(page.getByTestId("mt-export-pdf")).toBeDisabled();
     await expect(page.getByTestId("mt-export-reason")).toBeVisible();
-    await expect(page.getByTestId("mt-period-prev")).toBeDisabled();
-    await expect(page.getByTestId("mt-period-next")).toBeDisabled();
     await expect(page.getByTestId("mt-project-filter")).toBeDisabled();
-    await expect(page.getByTestId("mt-period-reason")).toBeVisible();
     await expect(page.getByTestId("mt-project-filter-reason")).toBeVisible();
   });
 
@@ -378,6 +540,22 @@ test.describe("Mali Tablolar kökü (E11)", () => {
     const active = page.locator("[aria-current='page']");
     await expect(active).toHaveCount(1);
     await expect(active).toHaveText("Mali Tablolar");
+  });
+
+  /**
+   * 🔴 F-MT2 K3 — yaprak ekranların drill sidebar'ında `Gelir Tablosu` satırı
+   * BAĞLANTI DEĞİLDİR (hedefi üst öğeyle aynıdır) ve `aria-current` SÜRMEZ.
+   * Bekçi ZAYIFLATILMADI: sayfada hâlâ TAM BİR `aria-current` vardır.
+   */
+  test("K3 · yaprak ekranda `Gelir Tablosu` satırı bağlantı değildir, aria-current TEKtir", async ({
+    page,
+  }) => {
+    await openBalanceSheet(page);
+    const sidebar = page.getByRole("complementary", { name: "Mali tablolar menüsü" });
+
+    await expect(sidebar.locator("[aria-current='page']")).toHaveCount(1);
+    await expect(sidebar.getByText("Gelir Tablosu", { exact: true })).toBeVisible();
+    await expect(sidebar.locator("a", { hasText: "Gelir Tablosu" })).toHaveCount(0);
   });
 
   test("segment denetimi iki yaprak ekrana gider", async ({ page }) => {

@@ -12,6 +12,7 @@ import {
   FINANCIAL_SUB_NAV,
   isFinancialNavItemAncestor,
   isFinancialNavItemCurrent,
+  isFinancialNavItemMirrorCurrent,
   type FinancialNavItem,
 } from "./financial-statements-nav-config";
 import "./financial-statements-shell.css";
@@ -65,18 +66,22 @@ function NavItem({
   pathname: string;
   testId?: string;
 }) {
-  if (item.kind === "disabled") {
-    // 🔴 `<a>`/`Link` DEĞİL: tıklanabilir bir öğe var olmayan bir yetenek vaat
-    // eder. Gerekçe `title` içinde SAKLANMAZ, satırın altında BASILIR ve
-    // öğenin KENDİ alanından türer (F-PRJTAB kanonu).
+  if (item.kind === "mirror") {
+    // 🔴 F-MT2 K3 — `<a>`/`Link` DEĞİL: hedefi ÜST ÖĞEYLE AYNI olduğu için
+    // ikinci bir bağlantı sayfada İKİ `aria-current="page"` doğururdu (K7).
+    // `aria-disabled` de KONMAZ: satır bir yetenek eksikliği DEĞİL, ekranın
+    // nerede yaşadığının işaretidir — "devre dışı" demek YALAN olurdu.
+    const mirrorCurrent = isFinancialNavItemMirrorCurrent(pathname, item);
     return (
       <span
-        className="fs-shell-item fs-shell-item--disabled"
-        aria-disabled="true"
+        className={cx(
+          "fs-shell-item",
+          "fs-shell-item--mirror",
+          mirrorCurrent && "fs-shell-item--mirror-current",
+        )}
         data-testid={testId}
       >
         <span className="fs-shell-item__label">{item.label}</span>
-        <span className="fs-shell-item__reason">{item.reason}</span>
       </span>
     );
   }

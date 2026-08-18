@@ -131,7 +131,12 @@ export const CASH_FLOW_DEFAULT_MONTH = 7;
 /** 📅 `ACCOUNTING_EMPTY_TIME` (15 Ocak 2026) ⇒ DENGESİZ bilanço günü. */
 export const BALANCE_SHEET_IMBALANCED_AS_OF = "2026-01-31";
 
-/** `/mali-tablolar` — E11 kök ekranı; TEK veri kaynağı YOKTUR (hepsi devre dışı). */
+/**
+ * `/mali-tablolar` — E11 kök = GELİR TABLOSU ekranı; TEK veri kaynağı
+ * (`GET /income-statement`). 🔴 F-MT2'de değişti: eskiden hiç sorgu yoktu ve
+ * `mt-loaded` damgası koşulsuz basılıyordu; artık damga YALNIZ veri geldiğinde
+ * basılır — helper böylece "yüklendi" iddiasını GERÇEKTEN taşır.
+ */
 export async function openFinancialStatementsHome(page: Page, fixedTime = ACCOUNTING_READ_TIME) {
   await loginAt(page, fixedTime);
   await page.goto(FINANCIAL_STATEMENTS_URL);

@@ -9709,6 +9709,15 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       return send(200, cashFlowStatementFixture(year, month));
     }
 
+    // --- F-MT2 · MT-2 gelir tablosu ucu -----------------------------------
+    if (method === "GET" && path === "/income-statement") {
+      // 🔴 BİRİKİMLİ pencere (`year`+`month`), bilançonun `as_of` NOKTA-ZAMANI
+      // DEĞİL — nakit akışıyla AYNI semantik.
+      const year = Number(parsed.searchParams.get("year"));
+      const month = Number(parsed.searchParams.get("month"));
+      return send(200, incomeStatementFixture(year, month));
+    }
+
     // --- F-IZN T6 · İzin yönetimi (YEDİ uç) --------------------------------
     // BFF izin listesindeki üç kök burada karşılanır (`leave-types` ·
     // `leave-requests` · `leave-balances`); özet ucu mevcut `hr` kökündendir.
@@ -11482,6 +11491,9 @@ type MockCashFlowStatement = components["schemas"]["CashFlowStatementResponse"];
 type MockCashFlowSection = components["schemas"]["CashFlowStatementSection"];
 type MockCashFlowLine = components["schemas"]["CashFlowStatementLine"];
 type MockMonthlyCashPoint = components["schemas"]["MonthlyCashPoint"];
+type MockIncomeStatement = components["schemas"]["IncomeStatementResponse"];
+type MockIncomeStatementSection = components["schemas"]["IncomeStatementSection"];
+type MockIncomeStatementLine = components["schemas"]["IncomeStatementLine"];
 
 /**
  * 🔴🔴 TEK KAYNAK KURALI (MT yönetim kararı K5/4 · ürün kararı KK-2).
@@ -12126,6 +12138,164 @@ export function cashFlowStatementFixture(year: number, month: number): MockCashF
     openingCash: 0,
     monthlyCashBefore: new Array(safeMonth - 1).fill(0) as number[],
     sections: zeroCashFlowSections(CASH_FLOW_JULY_SEED.sections),
+  });
+}
+
+/* ---------------------------------------------------------------------- */
+/* F-MT2 · GELİR TABLOSU (`GET /income-statement`) fikstürleri              */
+/* ---------------------------------------------------------------------- */
+
+interface IncomeLineSeed {
+  readonly key: string;
+  readonly label: string;
+  /** 🔴 POZİTİF sözleşme: gider kalemleri de pozitif basar (şema notu). */
+  readonly amount: number;
+  readonly accountCodes: readonly string[];
+}
+
+interface IncomeSectionSeed {
+  readonly key: string;
+  readonly title: string;
+  readonly subtotalLabel: string;
+  readonly lines: readonly IncomeLineSeed[];
+}
+
+interface IncomeStatementSeed {
+  readonly year: number;
+  readonly month: number;
+  readonly sections: readonly IncomeSectionSeed[];
+  /**
+   * 🔴 K1 — MALİYET AKTARIM NETİ. `period_profit()` bu hesapları SAYAR, kalem
+   * tutarları SAYMAZ; fark tam olarak budur. `0` ⇒ tablo MUTABIK.
+   */
+  readonly costReflectionNet: number;
+}
+
+/**
+ * Seed'den gelir tablosu. 🔴 HİÇBİR TOPLAM ELLE YAZILMAZ: ara toplamlar
+ * kalemlerden, `total_revenue`/`total_expense` ara toplamlardan,
+ * `period_profit` ise ikisinin farkı ARTI aktarım netinden türer. Elle
+ * yazılmış bir toplam, fikstürü kendi içinde çelişkili yapabilir ve ekranın
+ * kadrajı anlamsız bir tablo gösterirdi (K15).
+ */
+function incomeStatement(seed: IncomeStatementSeed): MockIncomeStatement {
+  const sections: MockIncomeStatementSection[] = seed.sections.map((section) => {
+    const lines: MockIncomeStatementLine[] = section.lines.map((line) => ({
+      key: line.key,
+      label: line.label,
+      amount: line.amount.toFixed(2),
+      account_codes: [...line.accountCodes],
+    }));
+    const subtotal = section.lines.reduce((total, line) => total + line.amount, 0);
+    return {
+      key: section.key,
+      title: section.title,
+      subtotal_label: section.subtotalLabel,
+      subtotal: subtotal.toFixed(2),
+      lines,
+    };
+  });
+
+  const totalRevenue = Number(sections[0]?.subtotal ?? "0");
+  const totalExpense = Number(sections[1]?.subtotal ?? "0");
+
+  return {
+    year: seed.year,
+    month: seed.month,
+    sections,
+    total_revenue: totalRevenue.toFixed(2),
+    total_expense: totalExpense.toFixed(2),
+    profit_label: INCOME_STATEMENT_PROFIT_LABEL,
+    period_profit: (totalRevenue - totalExpense + seed.costReflectionNet).toFixed(2),
+  };
+}
+
+/** E11:140 — `profit_label` SUNUCUDAN gelir; tek yerde durur. */
+const INCOME_STATEMENT_PROFIT_LABEL = "DÖNEM KARI";
+
+/** İki bölümün İSKELETİ — tutarlar sıfırlansa bile küme SABİT kalır. */
+const INCOME_STATEMENT_SECTIONS: readonly IncomeSectionSeed[] = [
+  {
+    key: "revenue",
+    title: "GELİRLER", // E11:96
+    subtotalLabel: "Toplam Gelir", // E11:106
+    lines: [
+      { key: "construction_revenue", label: "İş Hasılatı", amount: 24_870_500, accountCodes: ["600", "601", "602"] }, // E11:98
+      { key: "other_revenue", label: "Diğer Gelirler", amount: 124_200, accountCodes: ["602", "640", "649"] }, // E11:102
+    ],
+  },
+  {
+    key: "expenses",
+    title: "GİDERLER", // E11:114
+    subtotalLabel: "Toplam Gider", // E11:132
+    lines: [
+      { key: "material_costs", label: "Malzeme Giderleri", amount: 12_480_000, accountCodes: ["710", "730"] }, // E11:116
+      { key: "labor_costs", label: "İşçilik Giderleri", amount: 5_840_000, accountCodes: ["720", "770"] }, // E11:121
+      { key: "subcontractor_costs", label: "Taşeron Ödemeleri", amount: 3_120_000, accountCodes: ["740"] }, // E11:126
+      { key: "general_expenses", label: "Genel Giderler", amount: 42_000, accountCodes: ["760", "780", "790"] }, // E11:129
+    ],
+  },
+];
+
+/**
+ * 📅 OCAK–TEMMUZ 2026 (`year=2026&month=7`) — `ACCOUNTING_READ_TIME`in
+ * ürettiği varsayılan dönem. Rakamlar E11:98-133'ten BİREBİR gelir ve
+ * mockup'ın aritmetiği bu tabloda TEMİZDİR (24.870.500 + 124.200 = 24.994.700 ·
+ * 12.480.000 + 5.840.000 + 3.120.000 + 42.000 = 21.482.000 · fark 3.512.700).
+ *
+ * 🔴 `costReflectionNet: 0` ⇒ MUTABIK dal (şerit YEŞİL).
+ */
+const INCOME_STATEMENT_JULY_SEED: IncomeStatementSeed = {
+  year: 2026,
+  month: 7,
+  sections: INCOME_STATEMENT_SECTIONS,
+  costReflectionNet: 0,
+};
+
+/**
+ * 📅 OCAK 2026 — 🔴 K1'in AYRIŞMA dalı (`total_revenue − total_expense ≠
+ * period_profit`). Bilançonun DENGESİZ günüyle aynı saatte (`ACCOUNTING_EMPTY_
+ * TIME`) düşer, böylece "çizilmemiş dal" kareleri tek saatte toplanır.
+ *
+ * 🔴 Fark ELLE UYDURULMAZ: `costReflectionNet` maliyet aktarım hesaplarının
+ * netidir ve `period_profit`i tek başına o kaydırır — mutabakat şeridinin
+ * bastığı 512.700, fikstürün bu tek alanından TÜRER.
+ */
+const INCOME_STATEMENT_JANUARY_SEED: IncomeStatementSeed = {
+  year: 2026,
+  month: 1,
+  sections: INCOME_STATEMENT_SECTIONS.map((section) => ({
+    ...section,
+    lines: section.lines.map((line) => ({ ...line, amount: Math.round(line.amount / 10) })),
+  })),
+  costReflectionNet: -51_270,
+};
+
+/**
+ * `(yıl, ay)` → gelir tablosu.
+ *
+ * 🔴 TANINMAYAN DÖNEM 404 DEĞİLDİR (`cashFlowStatementFixture` emsali): saat
+ * bir ay kayarsa ekran BOŞ inmemeli, yapısal olarak geçerli ve tamamen SIFIR
+ * bir tablo basmalıdır. Küme SABİTtir — hareketsiz kalem listeden DÜŞMEZ.
+ */
+export function incomeStatementFixture(year: number, month: number): MockIncomeStatement {
+  if (year === INCOME_STATEMENT_JULY_SEED.year && month === INCOME_STATEMENT_JULY_SEED.month) {
+    return incomeStatement(INCOME_STATEMENT_JULY_SEED);
+  }
+  if (
+    year === INCOME_STATEMENT_JANUARY_SEED.year &&
+    month === INCOME_STATEMENT_JANUARY_SEED.month
+  ) {
+    return incomeStatement(INCOME_STATEMENT_JANUARY_SEED);
+  }
+  return incomeStatement({
+    year: Number.isInteger(year) ? year : INCOME_STATEMENT_JULY_SEED.year,
+    month: Number.isInteger(month) && month >= 1 && month <= 12 ? month : 1,
+    sections: INCOME_STATEMENT_SECTIONS.map((section) => ({
+      ...section,
+      lines: section.lines.map((line) => ({ ...line, amount: 0 })),
+    })),
+    costReflectionNet: 0,
   });
 }
 

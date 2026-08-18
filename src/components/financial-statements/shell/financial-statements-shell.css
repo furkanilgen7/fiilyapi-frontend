@@ -94,16 +94,25 @@ a.fs-shell-item:focus-visible {
 
 /* BL:28 — devre dışı sekme: SİLİNMEZ, solgun basılır ve gerekçesi ekranda
    GÖRÜNÜR (`title`da saklanmaz). */
-.fs-shell-item--disabled {
-  color: var(--color-text-subtle);
-  cursor: not-allowed;
+/* 🔴 F-MT2 K3 — ÜST ÖĞEYİ YANSITAN satır (BL:28 `Gelir Tablosu`).
+   Bağlantı DEĞİLDİR: hedefi üst öğeninkiyle aynıdır ve gezinme oradadır.
+   `--disabled` tonunu ALMAZ — satır bir yetenek eksikliğini değil, ekranın
+   NEREDE yaşadığını söyler; "devre dışı" görünmesi YALAN olurdu.
+   (Eski `--disabled`/`__reason` kuralları bu dilimde SİLİNDİ: uç açıldı,
+   tüketicileri kalmadı ve yaşayan bir "henüz yok" tonu çalışan bir yüzeyle
+   ÇELİŞİRDİ — F-PRJTAB kanonu.) */
+.fs-shell-item--mirror {
+  color: var(--color-text-secondary);
+  cursor: default;
 }
-.fs-shell-item__reason {
-  display: block;
-  margin-top: 2px;
-  font-size: var(--text-small); /* 11px */
-  line-height: var(--leading-normal);
-  color: var(--color-text-subtle);
+/* Kökte (yalnız orada) satır bulunulan ekranı işaret eder — `aria-current`
+   SÜRMEDEN, salt görsel olarak (K7: sayfada tek `aria-current`). */
+.fs-shell-item--mirror-current {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}
+.fs-shell-item--mirror-current .fs-shell-item__label {
+  font-weight: var(--weight-semibold);
 }
 
 /* İçerik sarmalayıcı — global `.app-content` zaten 220px ofset + 28/32px iç
