@@ -229,6 +229,11 @@ const MODULE_LABELS: Record<string, string> = {
   // adıyla "bilanço", `cash_flow_statement_export` "nakit akış tablosu" der;
   // ikisi de bu ekranda YANLIŞ yüzeyi işaret ederdi.
   income_statement_export: "Gelir tablosu dışa aktarma ucu henüz açılmadı (PDF)",
+  // 🔴 F-MT2 K2 (E11:99 `↑ %8,3` TREND sütunu) — uç trendi BİLEREK dışladı.
+  // `IncomeStatementLine` şema açıklaması gerekçeyi kendi yazıyor: "trend
+  // önceki dönem karşılaştırması ister; mockup hangi dönem olduğunu SÖYLEMİYOR
+  // ve algoritma İCAT EDİLMEZ". Sütun silinmez; gelir kalemlerinde `—` basar.
+  income_statement_trend: "Trend için önceki dönem karşılaştırması yok (uç trend döndürmüyor)",
   // 🔴 E11:76-81 (dönem gezgini) — bu sayfada YENİDEN ÇEKİLECEK veri YOKTUR:
   // tek veri kaynağı olan gelir tablosu ucu açılmadı. İşler görünüp hiçbir şeyi
   // değiştirmeyen bir denetim SESSİZ YALANDIR; gezgin devre dışı basılır ve

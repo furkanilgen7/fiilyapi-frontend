@@ -223,6 +223,31 @@ describe("financial-statements.css — E11'e bağlı kurallar (F-MT T4)", () => 
     expect(css).toMatch(/\.fs-mt-card--disabled\s*{[^}]*background:\s*var\(--color-surface-2\)/);
   });
 
+  it("E11:98-100 — üç sütun: etiket GİRİNTİLİ, tutar MONO/sağa yaslı, oran sağa yaslı", () => {
+    expect(css).toMatch(/\.fs-is-line__label\s*{[^}]*padding:\s*10px var\(--space-5\) 10px 28px/);
+    expect(css).toMatch(/\.fs-is-line__value\s*{[^}]*text-align:\s*right/);
+    expect(css).toMatch(/\.fs-is-line__value\s*{[^}]*font-family:\s*var\(--font-mono\)/);
+    expect(css).toMatch(/\.fs-is-ratio\s*{[^}]*text-align:\s*right/);
+  });
+
+  it("🔴 İKİ ARA TOPLAM AYNI ZEMİNİ PAYLAŞMAZ (E11:105 mavi · E11:131 turuncu)", () => {
+    expect(css).toMatch(/\.fs-is-subtotal--revenue\s*{[^}]*var\(--color-info-tint\)/);
+    expect(css).toMatch(/\.fs-is-subtotal--expense\s*{[^}]*var\(--color-orange-tint\)/);
+    // Eşitlerlerse tablo geliri giderden AYIRT ETTİRMEZ.
+    expect(/\.fs-is-subtotal--expense\s*{[^}]*var\(--color-info-tint\)/.test(css)).toBe(false);
+    // E11:133 — `Toplam Gider` tutarı kırmızıdır.
+    expect(css).toMatch(
+      /\.fs-is-subtotal--expense \.fs-is-subtotal__value\s*{[^}]*var\(--color-danger\)/,
+    );
+  });
+
+  it("E11:139-142 — DÖNEM KARI yeşil zeminli, tutarı 18px MONO, marjı kalın yeşildir", () => {
+    expect(css).toMatch(/\.fs-is-profit\s*{[^}]*background:\s*var\(--color-success-tint\)/);
+    expect(css).toMatch(/\.fs-is-profit__value\s*{[^}]*font-size:\s*var\(--text-lg\)/);
+    expect(css).toMatch(/\.fs-is-profit__value\s*{[^}]*font-family:\s*var\(--font-mono\)/);
+    expect(css).toMatch(/\.fs-is-ratio--strong\s*{[^}]*var\(--color-success\)/);
+  });
+
   it("🔴 BEKÇİ (E11 blokları dahil): çıplak hex renk YOKTUR", () => {
     // Aynı iddia üçüncü kez yazılır: E11 blokları BU dosyaya eklendi ve kural
     // onlar için de bağlayıcıdır.

@@ -705,3 +705,122 @@ a.fs-mt-seg__item:focus-visible {
 .fs-mt-card--disabled .fs-notice {
   margin: var(--space-4); /* gerekçe kart gövdesinin içinde durur */
 }
+
+/* =========================================================================
+   F-MT2 T3 · GELİR TABLOSU (E11:87-147) — kanon `Ekran 11 - Mali Tablo.dc.html`.
+   Blok öneki `fs-is`; kart kabuğu YUKARIDAKİ `fs-mt-card`tır (aynı iskelet,
+   tekrar edilmez). Üç sütun: etiket · tutar (mono, sağa yaslı) · oran.
+   ========================================================================= */
+
+.fs-is-table {
+  width: 100%; /* E11:92 */
+  border-collapse: collapse; /* E11:92 */
+}
+
+/* E11:95 · E11:113 — `colspan=3` gri bölüm bandı. */
+.fs-is-band__cell {
+  padding: 10px var(--space-5); /* E11:96 */
+  background: var(--color-surface-2); /* E11:95 */
+  border-bottom: 1px solid var(--color-neutral-soft); /* E11:95 */
+  font-size: var(--text-small); /* E11:96 — 11/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text-secondary);
+  text-align: left;
+  text-transform: uppercase; /* E11:96 */
+  letter-spacing: 0.8px; /* E11:96 */
+}
+
+/* E11:97-104 — kalem satırı. */
+.fs-is-line {
+  border-bottom: 1px solid var(--color-neutral-soft); /* E11:97 */
+}
+.fs-is-line__label {
+  padding: 10px var(--space-5) 10px 28px; /* E11:98 — kalemler GİRİNTİLİdir */
+  font-size: var(--text-body); /* E11:98 — 13/400 */
+  font-weight: var(--weight-regular);
+  color: var(--color-text-secondary);
+  text-align: left;
+}
+.fs-is-line__value {
+  padding: 10px var(--space-5); /* E11:99 */
+  text-align: right; /* E11:99 */
+  font-size: var(--text-body);
+  font-family: var(--font-mono); /* E11:99 — para MONO basılır */
+  color: var(--color-text-secondary);
+}
+
+/* 🔴 K2 — ORAN sütunu. Gelir kalemlerinde `—`dir (trendin kaynağı yok);
+   gerekçesi tablonun ALTINDA, `fs-notice` olarak basılır. */
+.fs-is-ratio {
+  padding: 10px var(--space-5); /* E11:100 */
+  text-align: right; /* E11:100 */
+  font-size: var(--text-xs); /* E11:100 — 12px */
+  color: var(--color-text-subtle); /* E11:100 */
+  white-space: nowrap;
+}
+/* E11:142 — kapanış satırının marjı: daha büyük, kalın ve YEŞİL. */
+.fs-is-ratio--strong {
+  padding: 14px var(--space-5);
+  font-size: var(--text-body); /* E11:142 — 13/600 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-success);
+}
+
+/* E11:105-110 · E11:131-137 — ara toplam satırı: 2px'lik kalın ayırıcı. */
+.fs-is-subtotal {
+  border-bottom: 2px solid var(--color-border); /* E11:105 */
+}
+.fs-is-subtotal__label {
+  padding: 10px var(--space-5); /* E11:106 — ara toplam GİRİNTİSİZdir */
+  font-size: var(--text-body); /* E11:106 — 13/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  text-align: left;
+}
+.fs-is-subtotal__value {
+  padding: 10px var(--space-5);
+  text-align: right;
+  font-size: var(--text-sm); /* E11:107 — 14/700 */
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+  color: var(--color-text);
+}
+
+/* 🔴 İKİ ARA TOPLAM AYNI ZEMİNİ PAYLAŞMAZ: eşitlerse tablo gelirle gideri
+   ayırt ETTİRMEZ. Gelir mavi tint, gider turuncu tint (E11:105 · E11:131). */
+.fs-is-subtotal--revenue {
+  background: var(--color-info-tint); /* E11:105 */
+}
+.fs-is-subtotal--expense {
+  background: var(--color-orange-tint); /* E11:131 */
+}
+/* E11:133 — `Toplam Gider` tutarı KIRMIZIdır ama İŞARETSİZdir (tutarlar
+   pozitif sözleşmelidir; `-` öneki basmak sunucunun sözleşmesini bozardı). */
+.fs-is-subtotal--expense .fs-is-subtotal__value {
+  color: var(--color-danger); /* E11:133 */
+}
+
+/* E11:139-145 — DÖNEM KARI: tam genişlik yeşil kapanış. */
+.fs-is-profit {
+  background: var(--color-success-tint); /* E11:139 */
+}
+.fs-is-profit__label {
+  padding: 14px var(--space-5); /* E11:140 */
+  font-size: var(--text-sm); /* E11:140 — 14/700 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  text-align: left;
+}
+.fs-is-profit__value {
+  padding: 14px var(--space-5);
+  text-align: right;
+  font-size: var(--text-lg); /* E11:141 — 18/700 */
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+  color: var(--color-success); /* E11:141 */
+}
+
+/* Oran sütununun gerekçesi kartın İÇİNDE, tablonun altında durur. */
+.fs-mt-card .fs-notice {
+  margin: var(--space-4);
+}
