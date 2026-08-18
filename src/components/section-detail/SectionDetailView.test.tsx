@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { SectionDetailView } from "./SectionDetailView";
 import { useSection } from "@/lib/api/hooks/useSection";
+import { useBoq } from "@/lib/api/hooks/useBoq";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { useSession } from "@/components/shell/SessionProvider";
 import { BackendError } from "@/lib/api/unwrap";
@@ -22,6 +23,12 @@ vi.mock("@/lib/api/hooks/useSites", async (importOriginal) => ({
 }));
 
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
+
+// BOQ-SEC-F: İş Kalemleri sekmesi artık CANLI — süzgeçli BOQ sorgusu mock'lanır.
+vi.mock("@/lib/api/hooks/useBoq", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useBoq")>()),
+  useBoq: vi.fn(),
+}));
 
 const PROJECT_ID = "11111111-1111-1111-1111-111111111111";
 const SITE_ID = "44444444-4444-4444-4444-444444444444";
@@ -70,7 +77,52 @@ const BASE_SECTION: SectionDetailResponse = {
   updated_at: "2026-01-01T00:00:00Z",
 };
 
+const BOQ_RESPONSE = {
+  totals: {
+    contract_total: { available: false, value: null, pending_module: "contracts" },
+    realized_total: { available: false, value: null, pending_module: "progress_payments" },
+    remaining_total: { available: false, value: null, pending_module: "contracts" },
+    revision_total: { available: false, value: null, pending_module: "contracts" },
+    grand_total: "2220000.00",
+    grand_progress_pct: { available: false, value: null, pending_module: "progress_payments" },
+  },
+  groups: [
+    {
+      id: "g-1",
+      name: "Betonarme İşleri",
+      sort_order: 10,
+      group_total: "2220000.00",
+      items: [
+        {
+          id: "i-1",
+          code: "03.001",
+          description: "Kat Döşemesi — C25/30",
+          unit: "m³",
+          quantity: "1200.000",
+          allocated_quantity: "1700.000",
+          unallocated_quantity: "300.000",
+          unit_price: "1850.00",
+          amount: "2220000.00",
+          sort_order: 0,
+          progress_pct: { available: false, value: null, pending_module: "progress_payments" },
+        },
+      ],
+    },
+  ],
+};
+
+function mockBoq(overrides: Record<string, unknown> = {}) {
+  vi.mocked(useBoq).mockReturnValue({
+    data: BOQ_RESPONSE,
+    isLoading: false,
+    isError: false,
+    error: null,
+    ...overrides,
+  } as never);
+}
+
 function mockQueries(section: Partial<ReturnType<typeof useSection>> = {}, site: Partial<ReturnType<typeof useSite>> = {}) {
+  mockBoq();
   vi.mocked(useSection).mockReturnValue({
     data: BASE_SECTION,
     isLoading: false,
@@ -258,12 +310,26 @@ describe("SectionDetailView — sekmeler (D99-105, hepsi BÖLÜM BAĞI bekleyen 
     expect(within(panel).queryByText(/Stok modülüyle birlikte gelir/)).not.toBeInTheDocument();
   });
 
-  it("hiçbir sekme 'modül yok' demez — beşi de bölüm bağı gerekçesi taşır", () => {
+  // BOQ-SEC-F GÖÇÜ: artık BEŞ değil DÖRT sekme gerekçe taşır — "İş Kalemleri"
+  // bölüm bağı AÇILDI ve içerik gerçekten basılıyor. Eski hâli aynen bıraksaydık
+  // test, canlı sekmeden hâlâ "henüz kırılmıyor" gerekçesi isterdi.
+  it("gerekçe taşıyan sekmeler 'modül yok' demez — hepsi bölüm bağı gerekçesidir", () => {
     mockPermission("view");
     mockQueries();
     renderView();
-    for (const tab of screen.getAllByRole("tab")) {
+    const tabs = screen.getAllByRole("tab");
+    const live = tabs.filter((tab) => tab.getAttribute("data-content-live") === "true");
+    const pending = tabs.filter((tab) => tab.getAttribute("data-content-live") !== "true");
+
+    // Canlı sekme TAM OLARAK BİRDİR (İş Kalemleri) ve gerekçe TAŞIMAZ.
+    expect(live.map((tab) => tab.textContent)).toEqual(["İş Kalemleri"]);
+    expect(live[0]).not.toHaveAttribute("data-content-pending");
+
+    expect(pending).toHaveLength(4);
+    for (const tab of pending) {
       expect(tab.getAttribute("data-content-pending")).toMatch(/^section_/);
+    }
+    for (const tab of tabs) {
       expect(tab).toHaveAttribute("data-module-written", "true");
     }
   });
@@ -328,5 +394,63 @@ describe("SectionDetailView — alt satır kartları (D213-273)", () => {
     mockQueries();
     renderView();
     expect(screen.getByText("Bölüm Malzeme Durumu")).toBeInTheDocument();
+  });
+});
+
+/**
+ * BOQ-SEC-F T5 — İş Kalemleri sekmesi bölüm bağını GERÇEKTEN kullanır.
+ *
+ * 🔑 Bu blok "sekme canlı mı" sorusunu DOM'dan cevaplar (F-IZN kanonu: bir
+ * yüzeyin ölüden canlıya geçtiğini görsel kapı KANITLAMAZ).
+ */
+describe("SectionDetailView — İş Kalemleri sekmesi (BOQ-SEC-F)", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("varsayılan sekmede gerçek tablo basılır, yer tutucu kart DEĞİL", () => {
+    mockPermission("view");
+    mockQueries();
+    renderView();
+    const panel = screen.getByRole("tabpanel");
+    expect(within(panel).getByText("İş Kalemleri — Kat 6–10 Kaba İnşaat")).toBeInTheDocument();
+    expect(within(panel).getByText("03.001")).toBeInTheDocument();
+    expect(within(panel).queryByText(/henüz görüntülenemiyor/)).not.toBeInTheDocument();
+  });
+
+  it("🔴 BOQ sorgusu BÖLÜM SÜZGECİYLE çağrılır — süzgeçsiz çağrı bütün şantiyeyi basardı", () => {
+    mockPermission("view");
+    mockQueries();
+    renderView();
+    expect(useBoq).toHaveBeenCalledWith(SITE_ID, SECTION_ID);
+  });
+
+  it("yüklenirken boş tablo BASILMAZ — 'kalem atanmadı' yalanı söylenmez", () => {
+    mockPermission("view");
+    mockQueries();
+    mockBoq({ data: undefined, isLoading: true });
+    renderView();
+    const panel = screen.getByRole("tabpanel");
+    expect(within(panel).getByText("Yükleniyor…")).toBeInTheDocument();
+    expect(within(panel).queryByTestId("section-boq-empty")).not.toBeInTheDocument();
+  });
+
+  it("hata (ör. başka şantiyenin bölümü → 404) sessizce boş listeye DÜŞMEZ", () => {
+    mockPermission("view");
+    mockQueries();
+    mockBoq({ data: undefined, isError: true, error: new BackendError(404, null) });
+    renderView();
+    const panel = screen.getByRole("tabpanel");
+    expect(within(panel).getByText("İş kalemleri yüklenemedi")).toBeInTheDocument();
+    expect(within(panel).queryByTestId("section-boq-empty")).not.toBeInTheDocument();
+  });
+
+  it("öbür sekmeler HÂLÂ gerekçeli yer tutucu basar (canlılık sızmaz)", async () => {
+    const user = userEvent.setup();
+    mockPermission("view");
+    mockQueries();
+    renderView();
+    await user.click(screen.getByRole("tab", { name: "Hakediş" }));
+    const panel = screen.getByRole("tabpanel");
+    expect(within(panel).getByText(/Hakediş bu bölüme henüz kırılmıyor/)).toBeInTheDocument();
+    expect(within(panel).queryByText("03.001")).not.toBeInTheDocument();
   });
 });

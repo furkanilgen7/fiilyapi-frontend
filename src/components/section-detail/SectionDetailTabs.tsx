@@ -38,14 +38,37 @@ export interface SectionTabDef {
    * iddia edilip rota silinirse de test KIRMIZI olur.
    */
   readonly moduleWritten: boolean;
-  /** Bölüm kapsamlı içeriğin neden basılmadığı — `pending-modules` anahtarı. */
-  readonly contentPending: string;
 }
+
+/**
+ * BOQ-SEC-F — sekmenin İÇERİK hâli, AYRIK BİRLİK olarak.
+ *
+ * `tab-strip-routes` bekçisi bugüne kadar iki hâl tanıyordu: (a) bir rotaya
+ * çözülen `href`li sekme, (b) `contentPending` gerekçesiyle devre dışı sekme.
+ * Bölüm şeridi YEREL state ile geçiş yapar (rota yok) ve İş Kalemleri sekmesi
+ * artık GERÇEK içerik basıyor — ikisi de değil. İşaretlenmezse bekçi canlı bir
+ * sekmeyi "gerekçesiz" sayıp kırmızı olurdu.
+ *
+ * Ayrık birlik BİLİNÇLİ: `contentPending: string | null` yazılsaydı, gerekçe
+ * basan dal `null`ı da kabul etmek zorunda kalır ve derleyici "canlı sekmenin
+ * gerekçesi yok" gerçeğini KORUYAMAZDI — ekran sessizce boş bir gerekçe basardı.
+ */
+export type SectionTabContent =
+  /** İçerik bu ekranda GERÇEKTEN basılır. */
+  | { readonly contentLive: true; readonly contentPending?: undefined }
+  /** İçerik basılmaz; gerekçe `pending-modules` anahtarından gelir. */
+  | { readonly contentLive?: undefined; readonly contentPending: string };
 
 // 🔴 `moduleWritten` ÖLÇÜLDÜ (2026-08-17), varsayılmadı: beş rotanın BEŞİ de
 // `src/app/(app)/projeler/[projectId]/santiyeler/[siteId]/` altında yazılıdır.
-export const SECTION_TABS: readonly SectionTabDef[] = [
-  { label: "İş Kalemleri", siteSlug: "is-kalemleri", moduleWritten: true, contentPending: "section_boq" },
+export const SECTION_TABS: readonly (SectionTabDef & SectionTabContent)[] = [
+  // BOQ-SEC-F: bölüm bağı AÇILDI — `GET /sites/{id}/boq?section_id=` canlı.
+  {
+    label: "İş Kalemleri",
+    siteSlug: "is-kalemleri",
+    moduleWritten: true,
+    contentLive: true,
+  },
   { label: "İşçiler & Puantaj", siteSlug: "puantaj", moduleWritten: true, contentPending: "section_timesheet" },
   { label: "Malzeme", siteSlug: "stok", moduleWritten: true, contentPending: "section_stock" },
   { label: "Hakediş", siteSlug: "hakedisler", moduleWritten: true, contentPending: "section_progress_payments" },
@@ -77,7 +100,8 @@ export function SectionDetailTabs({
           aria-selected={activeIndex === index}
           // Bekçi çapaları (DOM'dan okunur — sabiti import etmek bileşenin
           // kendi mantığını atlardı, F-PRJTAB kanonu).
-          data-content-pending={tab.contentPending}
+          data-content-pending={tab.contentPending ?? undefined}
+          data-content-live={tab.contentLive ? "true" : undefined}
           data-module-route={`${base}/${tab.siteSlug}`}
           data-module-written={String(tab.moduleWritten)}
           className={

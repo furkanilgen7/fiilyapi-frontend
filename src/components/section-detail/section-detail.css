@@ -226,3 +226,48 @@
 .section-detail__message {
   color: var(--color-text-muted);
 }
+
+/* --- BOQ-SEC-F · İş Kalemleri sekmesi (mockup Bölüm Detay.dc.html:107-205) --- */
+/* Kart gövdesi `.section-panel`in İÇİNDE, kenar boşluksuz oturur: tablo kendi
+   kenarlıklarını taşır, ikinci bir çerçeve mockup'ta YOKTUR. */
+.section-panel__body--flush {
+  padding: 0;
+}
+.section-boq__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+.section-boq__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+.section-boq__meta {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+/* D112: düğme sağa yaslanır; görünür gerekçe düğmenin SOLUNDA durur (metin
+   düğmeyi itmez, ikisi birlikte sağa yaslanır). */
+.section-boq__add {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.section-boq__add-reason {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  text-align: right;
+  max-width: 34ch;
+  line-height: 1.4;
+}
+.section-boq__table {
+  width: 100%;
+}
+.section-boq__col--status {
+  width: 80px;
+  text-align: center;
+}
