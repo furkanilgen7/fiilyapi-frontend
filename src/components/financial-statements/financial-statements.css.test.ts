@@ -203,6 +203,10 @@ describe("financial-statements.css — E11'e bağlı kurallar (F-MT T4)", () => 
     expect(css).toMatch(/\.fs-mt-period__arrow:disabled\s*{[^}]*var\(--color-text-subtle\)/);
   });
 
+  it("🔴 E11:79 — dönem aralığı TEK SATIRDA durur (kutu mockup yüksekliğinde kalır)", () => {
+    expect(css).toMatch(/\.fs-mt-period__label\s*{[^}]*white-space:\s*nowrap/);
+  });
+
   it("E11:85 — kartlar İKİ EŞİT sütunlu ızgaradır (20px boşluk)", () => {
     expect(css).toMatch(/\.fs-mt-grid\s*{[^}]*grid-template-columns:\s*1fr 1fr/);
     expect(css).toMatch(/\.fs-mt-grid\s*{[^}]*gap:\s*var\(--space-5\)/);

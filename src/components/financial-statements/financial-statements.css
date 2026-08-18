@@ -654,6 +654,10 @@ a.fs-mt-seg__item:focus-visible {
   font-size: var(--text-body); /* E11:79 — 13/600 */
   font-weight: var(--weight-semibold);
   color: var(--color-text);
+  /* 🔴 E11:79 aralığı TEK SATIRDIR. Uç açıldıktan sonra yuvaya `—` yerine
+     `Ocak–Temmuz 2026` girdi ve dar kapta İKİ SATIRA bölündü — gezgin kutusu
+     mockup'ın iki katı yüksekliğe çıkıyordu. */
+  white-space: nowrap;
 }
 
 /* E11:85 — İKİ EŞİT sütun, 20px boşluk. */
