@@ -585,6 +585,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/income-statement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Income Statement Endpoint
+         * @description Gelir Tablosu — `GELİRLER` / `GİDERLER` + `DÖNEM KARI` (mockup GT:86-147).
+         *
+         *     🔴 **Pencere BİRİKİMLİDİR** (mockup GT:90 `Ocak – Temmuz 2026`): yılın Ocak
+         *     ayından `month`un SON GÜNÜNE kadar — mizan ve nakit akışıyla AYNI semantik.
+         *     Bilançonun `as_of` NOKTA-ZAMANI burada YANLIŞ olurdu: gelir tablosu bir AKIŞ
+         *     tablosudur ve kümülatif bir pencere geçmiş yılların hasılatını bu yılın
+         *     cirosuna eklerdi. `year`/`month` ZORUNLUDUR; sunucunun "bugün"ü HİÇ okunmaz
+         *     (TB5'in yerel-takvim kusuru bu uçta yapısal olarak imkânsız).
+         *
+         *     🔴 **Yapı SABİTTİR: 2 bölüm · 6 kalem · 2 ara toplam · 1 genel toplam** (K1).
+         *     TDHP'nin `Brüt Satış Kârı` / `Faaliyet Kârı` basamakları YAZILMAZ — mockup
+         *     onları çizmiyor ve icat edilmiş bir kalem tasarım otoritesini aşardı.
+         *     `Taşeron Ödemeleri` grup `74 Hizmet Üretim Maliyeti`nden gelir: TDHP'de
+         *     "taşeron" grubu YOKTUR (`101 Alınan Çekler` tuzağının kardeşi) ve satırı boş
+         *     bırakıp `0` bastırmak İKİ ANLAMLI bir `0` üretirdi.
+         *
+         *     🔴 **`period_profit` hiçbir kalemden toplanmaz:** Bilanço'nun `Dönem Net
+         *     Kârı` kalemiyle (BL:83) **AYNI FONKSİYONDAN** gelir (`statement_map.
+         *     period_profit()`, TEK KOPYA) — `/income-statement?year=Y&month=12` ile
+         *     `/balance-sheet?as_of=Y-12-31` ayrışamaz. `total_revenue − total_expense`
+         *     ise KALEMLERDEN toplanır ve ikisi AYRIŞABİLİR: gider kalemleri 7/A yansıtma
+         *     hesaplarını dışlar (satır BRÜT gideri gösterir, K7), `period_profit()` ise
+         *     onları sayar. Üç alan da döner ki fark GÖRÜNÜR kalsın.
+         *
+         *     🔴 **Sayfalama YOKTUR** (K7 zarfı kullanılmaz): küme SABİTTİR (6 kalem) ve
+         *     `period_profit` GENEL sonuçtur — sayfalanmış bir gelir tablosunda
+         *     anlamsızlaşırdı.
+         *
+         *     Kapsam dışı (bilinçli): **trend kolonu** (GT:99 `↑ %8,3`) — önceki dönem
+         *     karşılaştırması demektir, mockup hangi dönem olduğunu SÖYLEMİYOR ve
+         *     algoritma İCAT EDİLMEZ (nakit akışının `3 Aylık Projeksiyon`u aynı
+         *     gerekçeyle dışlandı) · **oran/marj kolonu** (GT:117 `%49,9`, GT:142 `%14,1`)
+         *     — yanıtta `total_revenue` ve satır tutarı zaten var; bölme bir GÖSTERİM
+         *     kararıdır ve `0` gelirde `ZeroDivisionError` üretirdi, frontend hesaplar ·
+         *     **proje süzgeci** (GT:81) — üç muhasebe tablosunda da `project_id`/`site_id`
+         *     kolonu YOKTUR (bilanço ve nakit akışı aynı gerekçeyle dışladı) · **dönem
+         *     kilidi rozeti** — salt-okuma ucu, dönem kilidi HİÇ okunmaz.
+         */
+        get: operations["income_statement_endpoint_income_statement_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/audit-log": {
         parameters: {
             query?: never;
@@ -712,7 +768,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Boq Endpoint */
+        /**
+         * Get Boq Endpoint
+         * @description `section_id` YOKSA davranis birebir eskisidir (BOQ-SEC K5).
+         *
+         *     Baska santiyenin bolum kimligi BOS LISTE degil **404** alir
+         *     (`service.visible_section_in_site` gerekcesi).
+         */
         get: operations["get_boq_endpoint_sites__site_id__boq_get"];
         put?: never;
         post?: never;
@@ -733,6 +795,10 @@ export interface paths {
          * Export Boq Endpoint
          * @description Spec §5.3: BOQ'yu xlsx olarak indirir. Okuma ucudur — `record_audit`
          *     cagirmaz (T7 kurali: okumalar denetim gunlugune yazmaz).
+         *
+         *     BOQ-SEC K5: `section_id` ekran ucuyla AYNI cagriyi besler
+         *     (`get_boq_export_for_site`) — ikinci bir suzme kodu yazilmaz, yoksa Excel
+         *     ile ekran zamanla ayrisirdi.
          */
         get: operations["export_boq_endpoint_sites__site_id__boq_export_get"];
         put?: never;
@@ -830,6 +896,32 @@ export interface paths {
         head?: never;
         /** Update Boq Item Endpoint */
         patch: operations["update_boq_item_endpoint_boq_items__item_id__patch"];
+        trace?: never;
+    };
+    "/boq/items/{item_id}/allocations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Replace Boq Item Allocations Endpoint
+         * @description BOQ-SEC K4 — pozun bolum tahsislerini TAM KUME olarak degistirir.
+         *
+         *     Kapi `_FULL`dur (K8): tahsis YAZMADIR, mevcut BOQ yazma uclariyla BIREBIR
+         *     ayni izin. Yeni izin modulu ACILMAZ, izin matrisi DEGISMEZ.
+         *
+         *     Govdedeki `allocations` alani ZORUNLUDUR: gonderilmezse 422. Bos dizi `[]`
+         *     tum tahsisleri kaldirir — "dokunma" anlami YOKTUR (K4).
+         */
+        put: operations["replace_boq_item_allocations_endpoint_boq_items__item_id__allocations_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/company": {
@@ -6356,6 +6448,61 @@ export interface components {
             /** Sort Order */
             sort_order?: number | null;
         };
+        /**
+         * BoqItemAllocation
+         * @description Yaziladan SONRAKI tahsis satiri. `section_name` UI icindir (mockup F131-211).
+         *
+         *     Bu sema santiye BOQ listesinde BASILMAZ (K6): her kalem icin tahsis listesi
+         *     donmek N+1 acar ve liste ekraninin ihtiyaci olan sey zaten `allocated_quantity`
+         *     ozetidir.
+         */
+        BoqItemAllocation: {
+            /**
+             * Section Id
+             * Format: uuid
+             */
+            section_id: string;
+            /** Section Name */
+            section_name: string;
+            /** Quantity */
+            quantity: string;
+        };
+        /**
+         * BoqItemAllocationInput
+         * @description Tek tahsis satiri (BOQ-SEC K4).
+         *
+         *     `quantity` STRICT pozitiftir: sifir tahsis bir satir olarak TUTULMAZ (K1
+         *     `CHECK`i ile ayni kural) — "bu bolumden cikar" demenin yolu satiri govdeden
+         *     DUSURMEKTIR, sifir yazmak degil.
+         */
+        BoqItemAllocationInput: {
+            /**
+             * Section Id
+             * Format: uuid
+             */
+            section_id: string;
+            /** Quantity */
+            quantity: number | string;
+        };
+        /**
+         * BoqItemAllocationsReplace
+         * @description `PUT /boq/items/{item_id}/allocations` govdesi — TAM KUME DEGISTIRME.
+         *
+         *     🔴 `allocations` ZORUNLUDUR (varsayilani YOKTUR): alan hic gonderilmezse ya
+         *     da `null` gecilirse istek 422 alir. Bu ucta "dokunma" anlami YOKTUR; bos
+         *     dizi `[]` "hepsini kaldir" demektir ve eksik alani sessizce ona ya da
+         *     "degistirme"ye yorumlamak, kullanicinin niyetini SUNUCUNUN uydurmasi olurdu.
+         */
+        BoqItemAllocationsReplace: {
+            /** Allocations */
+            allocations: components["schemas"]["BoqItemAllocationInput"][];
+        };
+        /** BoqItemAllocationsResponse */
+        BoqItemAllocationsResponse: {
+            item: components["schemas"]["BoqItemResponse"];
+            /** Allocations */
+            allocations: components["schemas"]["BoqItemAllocation"][];
+        };
         /** BoqItemCreate */
         BoqItemCreate: {
             /**
@@ -6404,6 +6551,10 @@ export interface components {
             progress_pct: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
             /** Sort Order */
             sort_order: number;
+            /** Allocated Quantity */
+            allocated_quantity: string;
+            /** Unallocated Quantity */
+            unallocated_quantity: string;
             /** Amount */
             readonly amount: string;
         };
@@ -6588,9 +6739,11 @@ export interface components {
          *     `is_active` gövdeden gelebilir çünkü kullanımdan kaldırma yolu odur (repo
          *     kanonu: DELETE değil `is_active=false`).
          *
-         *     Ebeveyn kaydı ZORUNLU DEĞİLDİR: hesap planı boş açılır (R14) ve kullanıcı
-         *     doğrudan `120.01` girebilir. Zorunlu kılınsaydı hiçbir mockup'ın istemediği
-         *     bir giriş sırası dayatılırdı.
+         *     Ebeveyn kaydı ZORUNLU DEĞİLDİR: `NNN.NN` alt hesap `e5f6a7b8c9d0`
+         *     tohumunda hiç YAZILMAZ (K2) ve kullanıcı doğrudan `120.01` girebilir; ayrıca
+         *     `120` gibi tohumlanmış bir ana hesabı silmiş ya da hiç migrate etmemiş
+         *     olabilir (R14). Zorunlu kılınsaydı hiçbir mockup'ın istemediği bir giriş
+         *     sırası dayatılırdı.
          */
         ChartAccountCreate: {
             /** Code */
@@ -7015,10 +7168,14 @@ export interface components {
          * ContractSummary
          * @description `SZL` 34-38 üst KPI şeridi.
          *
-         *     `progress_payment_total` (P7/H9, spec §9.6): işveren listesinde listelenen
-         *     sözleşmelerin KÜMÜLATİF BRÜT hakediş toplamı — artık `MetricPlaceholder`
-         *     DEĞİL düz `Decimal`. Taşeron listesinde `None`'dır: taşeron hakedişi ayrı
-         *     dilimdir (spec §1.2), sahte bir 0 yerine dürüst boş değer döner.
+         *     `progress_payment_total` (P7/H9, spec §9.6): listelenen sözleşmelerin
+         *     KÜMÜLATİF BRÜT (`approved|paid`) hakediş toplamı — artık `MetricPlaceholder`
+         *     DEĞİL düz `Decimal`. TH-SUM dilimiyle İKİ sekmede de doludur: işveren tarafı
+         *     `progress_payments`, taşeron tarafı `subcontractor_progress_payments`
+         *     üzerinden hesaplanır; liste ucu artık iki dalda da değer döner ve hakedişi
+         *     olmayan küme `0.00`'dır (bilinmiyor değil, gerçekten sıfır). Alan tipi
+         *     `Decimal | None` KALIR — şema uyumluluğu için (frontend typecheck'i bu
+         *     dilimde kırılmaz), varsayılanı hâlâ `None`'dır.
          *
          *     ⚠️ **Frontend için kırıcı değişiklik** (spec §10/4): alan artık
          *     `{available, value, pending_module}` sarmalayıcısı değildir; `gen:api`
@@ -8382,6 +8539,109 @@ export interface components {
             unknown_entitlement_personnel: number;
             /** Balances */
             balances: components["schemas"]["LeaveBalanceResponse"][];
+        };
+        /**
+         * IncomeStatementLine
+         * @description Gelir tablosunun bir KALEMİ — mockup'ın tek bir satırı (ör. GT:98).
+         *
+         *     🔴 `amount` **POZİTİF sözleşmelidir**: gelir kalemleri `Σ(alacak − borç)`,
+         *     gider kalemleri `Σ(borç − alacak)` basar ve doğru işlenmiş bir defterde
+         *     ikisi de pozitiftir (mockup'ın altı satırının hepsi pozitif; `Toplam Gider`
+         *     kırmızıdır ama işaretsizdir, GT:137). Gider kalemini negatif basan bir uç,
+         *     `DÖNEM KARI = Toplam Gelir − Toplam Gider` mockup aritmetiğini bozardı.
+         *     Kalem yine de NEGATİF çıkabilir — `İş Hasılatı` satışın altında bir iade
+         *     hacminde (`61` grubu) eksiye döner ve bu GERÇEK bir sonuçtur, `0`a
+         *     kırpılsaydı toplam yalan söylerdi.
+         *
+         *     🔴 **YUVARLANMAZ** (MT-K2): `Numeric(18,2)` kuruşuyla döner. Yüzde/marj
+         *     (`%49,9`) ve trend (`↑ %8,3`) BURADA YOKTUR — oran bir GÖSTERİM kararıdır
+         *     (`0` gelirde `ZeroDivisionError` üretirdi) ve trend önceki dönem
+         *     karşılaştırması ister; mockup hangi dönem olduğunu SÖYLEMİYOR ve algoritma
+         *     İCAT EDİLMEZ (nakit akışının `3 Aylık Projeksiyon`u ile aynı gerekçe).
+         *
+         *     `account_codes` mockup'ta basılmıyor ama **ZORUNLUDUR**: bir kalemin
+         *     hangi hesaplardan geldiğinin tek kanıtı budur ve `Genel Giderler` kovasını
+         *     (on grup) ŞEFFAF kılar. 🔴 Gider kalemlerinde MALİYET AKTARIM hesapları
+         *     listede YOKTUR çünkü tutara da girmezler — çiftin **alacak** bacağı
+         *     (`711`, `741`, …, K7) **ve borç** bacağı (`700`, `799`, K7-b) birlikte
+         *     dışlanır; satır böylece BRÜT gideri gösterir.
+         */
+        IncomeStatementLine: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Amount */
+            amount: string;
+            /** Account Codes */
+            account_codes: string[];
+        };
+        /**
+         * IncomeStatementResponse
+         * @description Gelir Tablosunun tamamı — 🔴 **K7 SAYFALAMA ZARFI YOKTUR** (bilanço emsali).
+         *
+         *     Küme SABİTTİR: **2 bölüm · 6 kalem · 2 ara toplam · 1 genel toplam.**
+         *     TDHP'nin `Brüt Satış Kârı` / `Faaliyet Kârı` basamakları YAZILMAZ — mockup
+         *     onları çizmiyor ve icat edilmiş bir kalem tasarım otoritesini aşardı.
+         *
+         *     🔴 **`period_profit` hiçbir kalemden toplanmaz.** Değeri
+         *     `statement_map.period_profit()`ten gelir ve Bilanço'nun `Dönem Net Kârı`
+         *     kalemi (BL:83) ile **BİREBİR AYNI** fonksiyondur — iki uç ayrışamaz.
+         *     `total_revenue − total_expense` ise KALEMLERDEN toplanır.
+         *
+         *     🔴 **İkisi AYRIŞABİLİR ve bu bilinçlidir (K7 + K7-b):** gider kalemleri
+         *     maliyet aktarım hesaplarının İKİ bacağını da dışlar (satır BRÜT gideri
+         *     gösterir), `period_profit()` ise ikisini de sayar — orada birbirlerini
+         *     götürürler. Aktarım fişi ATILMIŞ bir defterde
+         *     `total_revenue − total_expense ≠ period_profit` olur. Üç alanın da
+         *     dönmesinin sebebi budur: fark GÖRÜNÜR kalsın, sessizce bir tarafa
+         *     yazılmasın (`CashFlowStatementResponse`un dört alanı emsal).
+         *
+         *     `year`/`month` yanıtta TEKRARLANIR: mockup GT:90 (`Ocak – Temmuz 2026`)
+         *     başlığı buradan kurulur ve istemci hangi dönemi gördüğünü kendi isteğinden
+         *     değil SUNUCUNUN cevabından okur.
+         *
+         *     Kapsam dışı (bilinçli): trend kolonu (GT:99 `↑ %8,3`) · oran/marj kolonu
+         *     (GT:117 `%49,9`, GT:142 `%14,1`) · proje süzgeci (GT:81 — üç muhasebe
+         *     tablosunda da `project_id`/`site_id` YOKTUR) · dönem kilidi rozeti
+         *     (salt-okuma ucu).
+         */
+        IncomeStatementResponse: {
+            /** Year */
+            year: number;
+            /** Month */
+            month: number;
+            /** Sections */
+            sections: components["schemas"]["IncomeStatementSection"][];
+            /** Total Revenue */
+            total_revenue: string;
+            /** Total Expense */
+            total_expense: string;
+            /** Profit Label */
+            profit_label: string;
+            /** Period Profit */
+            period_profit: string;
+        };
+        /**
+         * IncomeStatementSection
+         * @description `GELİRLER` (GT:95) ya da `GİDERLER` (GT:113) bölümü + ara toplamı.
+         *
+         *     `subtotal` kalemlerinden HESAPLANIR, mockup'tan KOPYALANMAZ (K15). Mockup'ın
+         *     aritmetiği bu tabloda TEMİZDİR (24.870.500+124.200 = 24.994.700 ·
+         *     12.480.000+5.840.000+3.120.000+42.000 = 21.482.000) ama kural rakamın doğru
+         *     çıkmasına bağlı değildir.
+         */
+        IncomeStatementSection: {
+            /** Key */
+            key: string;
+            /** Title */
+            title: string;
+            /** Subtotal Label */
+            subtotal_label: string;
+            /** Subtotal */
+            subtotal: string;
+            /** Lines */
+            lines: components["schemas"]["IncomeStatementLine"][];
         };
         /**
          * InstallmentPayInput
@@ -9851,6 +10111,12 @@ export interface components {
              * @description Onaylı/ödenmiş olduğu için KORUNAN satır sayısı (S5)
              */
             skipped_approved: number;
+            /**
+             * Missing Prior Period Count
+             * @description Aynı yılda bu aydan ÖNCE gelen ve henüz açılmamış ya da taslak olan dönem sayısı: kümülatif vergi matrahı EKSİK olabilir (K4)
+             * @default 0
+             */
+            missing_prior_period_count: number;
         };
         /**
          * PayrollLineResponse
@@ -9889,6 +10155,12 @@ export interface components {
             bank_amount: string | null;
             /** Cash Amount */
             cash_amount: string | null;
+            /** Tax Base Amount */
+            tax_base_amount: string | null;
+            /** Cumulative Tax Base */
+            cumulative_tax_base: string | null;
+            /** Income Tax Amount */
+            income_tax_amount: string | null;
             status: components["schemas"]["PayrollLineStatus"];
             /** Excluded Reason */
             excluded_reason: string | null;
@@ -10166,7 +10438,7 @@ export interface components {
             /** Unemployment Employee Pct */
             unemployment_employee_pct: string;
             /** Income Tax Pct */
-            income_tax_pct: string;
+            income_tax_pct: string | null;
             /** Stamp Tax Pct */
             stamp_tax_pct: string;
             /** Sgk Employer Pct */
@@ -10193,7 +10465,7 @@ export interface components {
             /** Unemployment Employee Pct */
             unemployment_employee_pct: number | string;
             /** Income Tax Pct */
-            income_tax_pct: number | string;
+            income_tax_pct: number | string | null;
             /** Stamp Tax Pct */
             stamp_tax_pct: number | string;
             /** Sgk Employer Pct */
@@ -10318,6 +10590,8 @@ export interface components {
             uncomputed_count: number;
             /** Unknown Rate Count */
             unknown_rate_count: number;
+            /** Unknown Tax Count */
+            unknown_tax_count: number;
         };
         /**
          * PayrollSummaryResponse
@@ -18631,6 +18905,52 @@ export interface operations {
             };
         };
     };
+    income_statement_endpoint_income_statement_get: {
+        parameters: {
+            query: {
+                year: number;
+                month: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncomeStatementResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_audit_log_endpoint_audit_log_get: {
         parameters: {
             query?: {
@@ -18843,7 +19163,10 @@ export interface operations {
     };
     get_boq_endpoint_sites__site_id__boq_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Bolum suzgeci. Verilirse yalniz o bolume tahsisi olan kalemler doner ve `quantity` o bolume tahsis edilen miktardir (poz kotasi degil). */
+                section_id?: string | null;
+            };
             header?: never;
             path: {
                 site_id: string;
@@ -18888,7 +19211,10 @@ export interface operations {
     };
     export_boq_endpoint_sites__site_id__boq_export_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Bolum suzgeci. Verilirse yalniz o bolume tahsisi olan kalemler doner ve `quantity` o bolume tahsis edilen miktardir (poz kotasi degil). */
+                section_id?: string | null;
+            };
             header?: never;
             path: {
                 site_id: string;
@@ -19186,6 +19512,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BoqItemResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_boq_item_allocations_endpoint_boq_items__item_id__allocations_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoqItemAllocationsReplace"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoqItemAllocationsResponse"];
                 };
             };
             /** @description Yetkisiz işlem */

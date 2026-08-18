@@ -83,6 +83,7 @@ function sgkSummary(
     sgk_payable_total: "278700.00", // SGK:91
     uncomputed_count: 0,
     unknown_rate_count: 0,
+    unknown_tax_count: 0,
     ...overrides,
   };
 }

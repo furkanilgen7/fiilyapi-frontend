@@ -68,6 +68,9 @@ function line(overrides: Partial<PayrollLineResponse> = {}): PayrollLineResponse
     is_overridden: false,
     overridden_at: null,
     previous_gross_amount: null,
+    tax_base_amount: null,
+    cumulative_tax_base: null,
+    income_tax_amount: null,
     ...overrides,
   };
 }
