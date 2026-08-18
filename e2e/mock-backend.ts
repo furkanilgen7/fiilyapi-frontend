@@ -160,6 +160,12 @@ interface MockBoqItem {
   unit_price: string;
   amount: string;
   sort_order: number;
+  /**
+   * BOQ-SEC-F — poz kotasının BÖLÜMLERE dağılımı (`section_id` → miktar).
+   * Gerçek backend `boq_item_section_allocations` tablosunda tutar; burada
+   * fikstür üzerinde yaşar. Verilmeyen kalem hiçbir bölüme tahsis EDİLMEMİŞTİR.
+   */
+  allocations?: Record<string, string>;
 }
 
 interface MockBoqGroup {
@@ -692,19 +698,76 @@ const PROJECT_FIXTURES: MockProject[] = [
 // alandır; burada mockup'ın bastığı tutar aynen verilir (frontend hesaplamaz).
 // Mockup'ın renkli `Gerç. %` rozetleri veri tarafında da yer tutucudur (spec §5.4):
 // altı kalem + genel toplam yüzdesi hakediş modülünü bekler.
+// --- BOQ-SEC-F · sahte backend'in ondalık aritmetiği ----------------------
+//
+// `Number()` ile toplamak YASAK: miktar/para sınıfı alanlarda IEEE-754 kalıntısı
+// (`0.1 + 0.2 = 0.30000000000000004`) ekrana kaçar ve baseline karesi turdan
+// tura oynar. Ölçekli tamsayı (`BigInt`) aritmetiği kullanılır — `src/lib/
+// decimal.ts` kanonunun sahte backend içindeki dar ikizi (o modül tarayıcı
+// paketine aittir, e2e yardımcısı ondan import ETMEZ).
+
+/** Miktar ölçeği `Numeric(14, 3)` ile birebir; para ölçeği `0.01`. */
+const BOQ_QUANTITY_SCALE = 3;
+const BOQ_MONEY_SCALE = 2;
+
+function boqToScaled(value: string, scale: number): bigint {
+  const trimmed = value.trim();
+  const negative = trimmed.startsWith("-");
+  const [intPart = "0", fractionPart = ""] = trimmed.replace(/^[-+]/, "").split(".");
+  const digits = `${intPart || "0"}${fractionPart.padEnd(scale, "0").slice(0, scale)}`;
+  const magnitude = BigInt(digits);
+  return negative ? -magnitude : magnitude;
+}
+
+function boqFromScaled(scaled: bigint, scale: number): string {
+  const negative = scaled < 0n;
+  const magnitude = negative ? -scaled : scaled;
+  const digits = magnitude.toString().padStart(scale + 1, "0");
+  const intPart = digits.slice(0, digits.length - scale);
+  const unsigned = `${intPart}.${digits.slice(digits.length - scale)}`;
+  return negative && magnitude !== 0n ? `-${unsigned}` : unsigned;
+}
+
+function boqSumQuantities(values: string[]): string {
+  const total = values.reduce((sum, value) => sum + boqToScaled(value, BOQ_QUANTITY_SCALE), 0n);
+  return boqFromScaled(total, BOQ_QUANTITY_SCALE);
+}
+
+function boqSubtractQuantities(a: string, b: string): string {
+  const scale = BOQ_QUANTITY_SCALE;
+  return boqFromScaled(boqToScaled(a, scale) - boqToScaled(b, scale), scale);
+}
+
+function boqSumMoney(values: string[]): string {
+  const total = values.reduce((sum, value) => sum + boqToScaled(value, BOQ_MONEY_SCALE), 0n);
+  return boqFromScaled(total, BOQ_MONEY_SCALE);
+}
+
+/** `quantity × unit_price`, para ölçeğine yuvarlanır (backend `_quantize_money`). */
+function boqMultiplyMoney(quantity: string, unitPrice: string): string {
+  const product =
+    boqToScaled(quantity, BOQ_QUANTITY_SCALE) * boqToScaled(unitPrice, BOQ_MONEY_SCALE);
+  // Ölçek: 3 + 2 = 5 → paraya (2) indirilirken 10^3 ile bölünür, HALF_UP.
+  const divisor = 10n ** BigInt(BOQ_QUANTITY_SCALE);
+  const negative = product < 0n;
+  const magnitude = negative ? -product : product;
+  const rounded = (magnitude + divisor / 2n) / divisor;
+  return boqFromScaled(negative ? -rounded : rounded, BOQ_MONEY_SCALE);
+}
+
 const BOQ_FIXTURE: MockBoqGroup[] = [
   {
     id: "bg-1", name: "TOPRAK VE TEMEL İŞLERİ", sort_order: 10, group_total: "471900.00",
     items: [
-      { id: "bi-1", code: "01.001", description: "Kazı (Makine ile)", unit: "m³", quantity: "1240.000", unit_price: "280.00", amount: "347200.00", sort_order: 0 },
+      { id: "bi-1", code: "01.001", description: "Kazı (Makine ile)", unit: "m³", quantity: "1240.000", unit_price: "280.00", amount: "347200.00", sort_order: 0, allocations: { "sec-1": "400.000", "sec-2": "300.000" } },
       { id: "bi-2", code: "01.002", description: "Geri Dolgu ve Sıkıştırma", unit: "m³", quantity: "860.000", unit_price: "145.00", amount: "124700.00", sort_order: 1 },
     ],
   },
   {
     id: "bg-2", name: "BETONARME İŞLERİ", sort_order: 20, group_total: "9250000.00",
     items: [
-      { id: "bi-3", code: "02.001", description: "C25/30 Beton (Döşeme)", unit: "m³", quantity: "3200.000", unit_price: "1850.00", amount: "5920000.00", sort_order: 0 },
-      { id: "bi-4", code: "02.002", description: "Demir Donatı (Ø8-Ø20)", unit: "Ton", quantity: "180.000", unit_price: "18500.00", amount: "3330000.00", sort_order: 1 },
+      { id: "bi-3", code: "02.001", description: "C25/30 Beton (Döşeme)", unit: "m³", quantity: "3200.000", unit_price: "1850.00", amount: "5920000.00", sort_order: 0, allocations: { "sec-1": "1200.000", "sec-2": "500.000" } },
+      { id: "bi-4", code: "02.002", description: "Demir Donatı (Ø8-Ø20)", unit: "Ton", quantity: "180.000", unit_price: "18500.00", amount: "3330000.00", sort_order: 1, allocations: { "sec-1": "85.000" } },
     ],
   },
   {
@@ -5802,17 +5865,61 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     // /sites/{site_id}/boq — Ekran 13 İş Kalemleri (F11, spec §6.1). Tablo ve üst
     // KPI şeridi tek yanıttan beslenir. Fikstür şantiyeden bağımsızdır: görsel test
     // tek şantiyeye bakar, ikinci bir yük çeşidi baseline'a değer katmaz.
+    //
+    // 🔴 BOQ-SEC-F — `?section_id=` SÜZGECİ. Bu handler süzgeci ESKİDEN HİÇ
+    // OKUMUYORDU: bölüm detay sekmesi şantiyenin bütün pozlarını basar ve test
+    // yeşil geçerdi. Süzgeç verildiğinde gerçek backend'in üç kuralı taklit edilir
+    // (`app/modules/boq/service.py:178-203`):
+    //   1. yalnız o bölüme TAHSİSİ OLAN kalemler döner,
+    //   2. `quantity` o bölümün payına MASKELENİR (`amount` da ondan türer),
+    //   3. BOŞALAN GRUPLAR listeden DÜŞER,
+    // ama `allocated_quantity`/`unallocated_quantity` HER ZAMAN pozun GERÇEK
+    // kotasından türer (K2 iki anlam tuzağı — maskelenmez).
     const boqMatch = path.match(/^\/sites\/([^/]+)\/boq$/);
     if (method === "GET" && boqMatch) {
       const site = state.sites.find((s) => s.id === boqMatch[1]);
       if (!site) return send(404, { detail: "santiye yok" });
+
+      const sectionId = parsed.searchParams.get("section_id");
+      if (sectionId) {
+        // Gerçek backend: BAŞKA şantiyenin bölümü 404'tür (boş liste DEĞİL) —
+        // boş liste "bu bölüme hiç kalem atanmamış" YALANINI söylerdi.
+        const section = state.sections.find((sec) => sec.id === sectionId);
+        if (!section || section.site_id !== site.id) {
+          return send(404, { detail: "Bölüm bulunamadı" });
+        }
+      }
+
+      const groups = BOQ_FIXTURE.map((group) => ({
+        ...group,
+        items: group.items
+          .filter((item) => !sectionId || item.allocations?.[sectionId] !== undefined)
+          .map((item) => {
+            const allocated = boqSumQuantities(Object.values(item.allocations ?? {}));
+            const quantity = sectionId ? (item.allocations?.[sectionId] as string) : item.quantity;
+            return {
+              ...item,
+              allocations: undefined,
+              quantity,
+              amount: boqMultiplyMoney(quantity, item.unit_price),
+              // 🔴 MASKELENMEZ: iki alan da pozun GERÇEK kotasından türer.
+              allocated_quantity: allocated,
+              unallocated_quantity: boqSubtractQuantities(item.quantity, allocated),
+              progress_pct: METRIC_PENDING("progress_payments"),
+            };
+          }),
+      })).filter((group) => !sectionId || group.items.length > 0);
+
+      const grandTotal = sectionId
+        ? boqSumMoney(groups.flatMap((group) => group.items.map((item) => item.amount)))
+        : "12399900.00";
+
       return send(200, {
-        groups: BOQ_FIXTURE.map((group) => ({
+        groups: groups.map((group) => ({
           ...group,
-          items: group.items.map((item) => ({
-            ...item,
-            progress_pct: METRIC_PENDING("progress_payments"),
-          })),
+          group_total: sectionId
+            ? boqSumMoney(group.items.map((item) => item.amount))
+            : group.group_total,
         })),
         totals: {
           // Dördü de yer tutucu (spec §3.2/§4): sözleşme P5'i, hakediş P7'yi bekler.
@@ -5821,7 +5928,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           remaining_total: METRIC_PENDING("progress_payments"),
           revision_total: METRIC_PENDING("contracts"),
           // Mockup 176 — tek gerçek toplam; frontend yeniden hesaplamaz.
-          grand_total: "12399900.00",
+          grand_total: grandTotal,
           grand_progress_pct: METRIC_PENDING("progress_payments"),
         },
       });

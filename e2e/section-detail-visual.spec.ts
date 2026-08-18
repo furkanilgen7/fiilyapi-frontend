@@ -40,8 +40,15 @@ test("bolum detay ekrani gorsel", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Kat 6–10 Kaba İnşaat" })).toBeVisible();
   // Bölüm Bedeli (gerçek veri) yüklendi — yükleme/iskelet durumunu dondurmamak için.
   await expect(page.getByTestId("section-hero-kpi-budget")).toContainText("₺");
-  // Varsayılan sekme paneli (İş Kalemleri) render oldu.
-  await expect(page.getByText("İş Kalemleri — bu bölümde henüz görüntülenemiyor")).toBeVisible();
+  // 🔴 BOQ-SEC-F: varsayılan sekme artık YER TUTUCU DEĞİL, gerçek tablo basıyor.
+  // "Yüklendi" iddiası HER BAĞIMSIZ VERİ KAYNAĞINI kapsar (görsel spec 5. parça):
+  // bölüm detayı (`useSection`) yukarıdaki başlık/KPI iddialarıyla, süzgeçli BOQ
+  // (`useBoq(siteId, sectionId)`) ise aşağıdaki satır iddiasıyla doğrulanır —
+  // aksi hâlde kadraj "Yükleniyor…" hâlini dondurabilirdi.
+  await expect(page.getByText("İş Kalemleri — Kat 6–10 Kaba İnşaat")).toBeVisible();
+  await expect(page.getByTestId("section-boq-row")).toHaveCount(3);
+  await expect(page.getByTestId("section-boq-total-amount")).toContainText("3.904.500");
+  await expect(page.getByText("Yükleniyor…")).toHaveCount(0);
   // Alt satır kartları (Bu Bölümdeki İşçiler / Bölüm Malzeme Durumu) kadrajda.
   await expect(page.getByText("Bölüm Malzeme Durumu")).toBeVisible();
   // Saat sabitlemesi işledi: Kalan Gün deterministik (2026-09-01 → 2026-09-30 = 29 gün).
