@@ -180,15 +180,3 @@ export function isLatestIncomeStatementPeriod(period: Period, today: Date): bool
   return period.month >= now.month;
 }
 
-/* ------------------------------------------------------------------ */
-/* ⏳ T5'te KALDIRILACAK — F-MT T4'ün devre-dışı kabuğunun anahtarları  */
-/* ------------------------------------------------------------------ */
-
-/**
- * ⏳ E11:87-147 tablosunun ESKİ "uç yok" gerekçesi. Uç açıldı; bu anahtar
- * T5'te (ekran dönüşümünde) tüketicisiyle birlikte SİLİNİR.
- */
-export const INCOME_STATEMENT_REASON = "income_statement";
-
-/** ⏳ E11:76-81 dönem gezgininin ESKİ gerekçesi — gezgin T5'te ÇALIŞIR olur. */
-export const INCOME_STATEMENT_PERIOD_REASON = "income_statement_period";

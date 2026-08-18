@@ -32,14 +32,21 @@ export type FinancialNavItem =
       readonly exact: boolean;
     }
   | {
-      readonly kind: "disabled";
-      readonly label: string;
       /**
-       * 🔴 EKRANDA GÖRÜNÜR gerekçe. `title`da SAKLANMAZ ve "bu ekran henüz
-       * açılmadı" gibi içi boş bir metin OLAMAZ — hangi dilimde/hangi kararla
-       * geleceğini söyler.
+       * 🔴 F-MT2 K3 — ÜST ÖĞEYLE AYNI HEDEFİ gösteren, BAĞLANTI OLMAYAN satır.
+       *
+       * `Gelir Tablosu` ekranı KÖKTE yaşar (E11 mockup'ı onu `/mali-tablolar`
+       * olarak çiziyor; ayrı bir `/mali-tablolar/gelir-tablosu` rotası AÇILMAZ
+       * — mockup'a aykırı olurdu). Satır bir `Link` yapılsaydı kökte hem üst
+       * öğe hem bu satır CURRENT olur ve sayfada İKİ `aria-current="page"`
+       * doğardı (K7 bekçisi kırmızı, ekran okuyucu "iki ayrı sayfadasınız").
+       *
+       * Bu yüzden satır bir İŞARETÇİdir: hedefini `mirrorsHref` ile SÖYLER ama
+       * gezinmeyi üst öğeye bırakır ve `aria-current` ASLA sürmez.
        */
-      readonly reason: string;
+      readonly kind: "mirror";
+      readonly label: string;
+      readonly mirrorsHref: string;
     };
 
 /**
@@ -63,14 +70,10 @@ export const FINANCIAL_NAV_PARENT: FinancialNavItem = {
 
 /** BL:28-30 — üst öğenin altındaki ÜÇ girintili alt sekme. */
 export const FINANCIAL_SUB_NAV: readonly FinancialNavItem[] = [
-  // BL:28 — 🔴 ÖLÇÜLDÜ: `schema.d.ts`te `income-statement`/`IncomeStatement`/
-  // `profit-loss` için SIFIR eşleşme var. Uç yok ⇒ ekran da yok; satır
-  // SİLİNMEZ (mockup çiziyor), devre dışı + görünür gerekçeyle basılır.
-  {
-    kind: "disabled",
-    label: "Gelir Tablosu",
-    reason: "Gelir Tablosu'nun backend ucu henüz yok (ayrı dilim: MT-2).",
-  },
+  // BL:28 — 🔴 F-MT2 K3 (yönetim kararı A): uç AÇILDI (`GET /income-statement`)
+  // ve ekran KÖKTE (`/mali-tablolar`) yaşıyor. Satır artık devre dışı DEĞİL,
+  // üst öğenin hedefini yansıtan bir İŞARETÇİdir; gezinme üst öğededir.
+  { kind: "mirror", label: "Gelir Tablosu", mirrorsHref: FINANCIAL_STATEMENTS_URL },
   // BL:29 — bu dilimin ekranı. `exact: true`: alt yolu yoktur ama kural
   // kardeşleriyle aynıdır ve üst öğeyle çift yanmayı yapısal olarak keser.
   { kind: "link", label: "Bilanço", href: "/mali-tablolar/bilanco", exact: true },
@@ -88,6 +91,21 @@ export function isFinancialNavItemCurrent(
 ): boolean {
   if (item.kind !== "link") return false;
   return item.exact ? pathname === item.href : isActivePath(pathname, item.href);
+}
+
+/**
+ * 🔴 K3 · 3. KATMAN — YANSITICI satırın SALT GÖRSEL vurgusu.
+ *
+ * Kökte `Mali Tablolar` (üst öğe) `aria-current="page"` sürerken alt satır da
+ * aynı sayfayı gösterdiğini KULLANICIYA söylemelidir; ama `aria-current`
+ * SÜRMEZ — sayfada tam bir tane olmalıdır (K7). Yani bu yüklem
+ * `isFinancialNavItemCurrent`in yerine geçmez, ONUN YANINDA yaşar.
+ */
+export function isFinancialNavItemMirrorCurrent(
+  pathname: string,
+  item: FinancialNavItem,
+): boolean {
+  return item.kind === "mirror" && pathname === item.mirrorsHref;
 }
 
 /**
