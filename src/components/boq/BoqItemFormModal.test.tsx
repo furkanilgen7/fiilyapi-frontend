@@ -251,13 +251,21 @@ describe("BoqItemFormModal — create kipi (spec §7.1.2)", () => {
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
-  it("409 → 'Bu poz numarası bu şantiyede zaten kullanılıyor.' basılır", async () => {
-    createItem.mockRejectedValue(new BackendError(409, { detail: "duplicate key value" }));
+  // BOQ-SEC-F K4 GOCU: bu test eskiden `detail: "duplicate key value"` gonderip
+  // SABIT Turkce cumleyi bekliyordu — yani KUSURU cakiyordu. Backend artik UC
+  // ayri 409 donduruyor (kod cakismasi / kota dusurme / tahsis asimi); ekran
+  // sunucunun cumlesini OLDUGU GIBI basar. Testin ozgun niyeti korundu (kod
+  // cakismasinda dogru cumle basilir), fiksturu GERCEK govdeye cevrildi.
+  // Ayrimin kendisi `BoqItemFormModal.conflicts.test.tsx`te caki�lidir.
+  it("409 → backend'in poz kodu çakışması cümlesi basılır", async () => {
+    createItem.mockRejectedValue(
+      new BackendError(409, { detail: "Bu poz numarası bu şantiyede zaten kullanılıyor" }),
+    );
     renderCreate();
     fillValidCreateForm();
     save();
     expect(
-      await screen.findByText("Bu poz numarası bu şantiyede zaten kullanılıyor."),
+      await screen.findByText("Bu poz numarası bu şantiyede zaten kullanılıyor"),
     ).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
   });
@@ -390,13 +398,16 @@ describe("BoqItemFormModal — edit kipi (spec §7.1.2)", () => {
     expect(updateItem.mock.calls[0][0].body).toEqual({ group_id: GROUP_2 });
   });
 
-  it("edit kipinde de 409 özel mesajı basılır", async () => {
-    updateItem.mockRejectedValue(new BackendError(409, { detail: "duplicate" }));
+  // BOQ-SEC-F K4 GOCU (yukaridakiyle ayni gerekce).
+  it("edit kipinde de 409 gövdesindeki cümle basılır", async () => {
+    updateItem.mockRejectedValue(
+      new BackendError(409, { detail: "Bu poz numarası bu şantiyede zaten kullanılıyor" }),
+    );
     renderEdit();
     setField("Poz No", "02.001");
     save();
     expect(
-      await screen.findByText("Bu poz numarası bu şantiyede zaten kullanılıyor."),
+      await screen.findByText("Bu poz numarası bu şantiyede zaten kullanılıyor"),
     ).toBeInTheDocument();
   });
 });

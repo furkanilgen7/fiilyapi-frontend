@@ -58,13 +58,13 @@ test("santiye detayindan bolum detayina link, hero + KPI + sekmeler + Hakedis Ol
     "/hakedisler/yeni?project=p-1",
   );
 
-  // 5) Sekme geçişi (D99-105): varsayılan "İş Kalemleri" pending kartı; başka
-  // bir sekmeye geçince panel içeriği değişir, sekme geri seçilebilir.
-  await expect(page.getByText("İş Kalemleri — bu bölümde henüz görüntülenemiyor")).toBeVisible();
+  // 5) Sekme geçişi (D99-105): 🔴 BOQ-SEC-F'ten sonra varsayılan "İş Kalemleri"
+  // sekmesi GERÇEK tablodur, pending kartı değil; öbür sekmeler pending kalır.
+  await expect(page.getByText("İş Kalemleri — Kat 6–10 Kaba İnşaat")).toBeVisible();
   await page.getByRole("tab", { name: "İşçiler & Puantaj" }).click();
   await expect(page.getByText("İşçiler & Puantaj — bu bölümde henüz görüntülenemiyor")).toBeVisible();
   await page.getByRole("tab", { name: "İş Kalemleri" }).click();
-  await expect(page.getByText("İş Kalemleri — bu bölümde henüz görüntülenemiyor")).toBeVisible();
+  await expect(page.getByTestId("section-boq-row")).toHaveCount(3);
 
   // 6) Alt satır kartları (D215-272) — pending, ama gerçek navigasyona açık.
   // 🔴 F-BOLLINK: "Puantaj →" artık BÖLÜM SÜZGECİNİ taşır (hedef ekran
@@ -106,4 +106,68 @@ test("taslak + beklemede bolum: durum rozeti ve bos alanlarda durust yer tutucu"
   await expect(page.getByTestId("section-hero-kpi-budget")).toContainText("—");
   // Kalan Gün: end_date null → durust "—".
   await expect(page.getByTestId("section-hero-kpi-days")).toContainText("—");
+});
+
+
+/**
+ * BOQ-SEC-F T7 — bölüm detayı · İş Kalemleri sekmesi (bölüm süzgeçli BOQ).
+ *
+ * 🔴 Bu spec'in ASIL işi, ucun "200 + DOLU gövde" döndüğünü DOĞRUDAN ölçmektir.
+ * Sahte backend'de `?section_id=` okunmasaydı ekran şantiyenin BÜTÜN pozlarını
+ * basardı ve naif bir test yine yeşil geçerdi (F-TKV M11 kanonu).
+ */
+test("bolum detayi Is Kalemleri sekmesi BOLUM SUZGECLI veriyi basar", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel(/e-posta/i).fill("patron@fiil.com");
+  await page.getByLabel(/^şifre$/i).fill("dogruparola");
+  await page.getByRole("button", { name: /giriş yap/i }).click();
+  await expect(page.getByRole("heading", { name: "Gösterge Paneli" })).toBeVisible();
+
+  await page.goto("/projeler/p-1/santiyeler/s-1/bolumler/sec-1");
+  await expect(page.getByRole("heading", { level: 1, name: "Kat 6–10 Kaba İnşaat" })).toBeVisible();
+
+  // (a) SÜZGEÇ İŞLİYOR: şantiyede 6 poz var, bu bölüme yalnız 3'ü tahsisli.
+  await expect(page.getByTestId("section-boq-row")).toHaveCount(3);
+  // Tahsisi olmayan poz EKRANDA OLMAMALI — süzgeç okunmasaydı görünürdü.
+  await expect(page.getByText("Geri Dolgu ve Sıkıştırma")).toHaveCount(0);
+  await expect(page.getByText("Tuğla Duvar (19cm)")).toHaveCount(0);
+
+  // (b) BOŞALAN GRUP DÜŞER: "DUVAR VE KAPLAMA İŞLERİ" grubunun bu bölümde hiç
+  // kalemi yok → başlığı da basılmaz (boş başlık dizisi yazılmaz).
+  await expect(page.getByTestId("section-boq-group")).toHaveCount(2);
+  await expect(page.getByTestId("section-boq-group").first()).toHaveText(
+    "A. TOPRAK VE TEMEL İŞLERİ",
+  );
+
+  // (c) 🔴 K2 — MİKTAR SÜTUNU BÖLÜM PAYIDIR, poz kotası DEĞİL.
+  // "C25/30 Beton (Döşeme)" şantiye kotası 3.200; bu bölümün payı 1.200.
+  const quantities = page.getByTestId("section-boq-quantity");
+  await expect(quantities.nth(1)).toHaveText("1.200");
+  await expect(page.getByText("3.200", { exact: true })).toHaveCount(0);
+
+  // (d) Toplam da maskelenmiş miktardan türer: 112.000 + 2.220.000 + 1.572.500.
+  await expect(page.getByTestId("section-boq-total-amount")).toContainText("3.904.500");
+  await expect(page.getByText("BÖLÜM TOPLAM (3 kalem)")).toBeVisible();
+
+  // (e) K1 — poz seçici YOK: "+ Kalem Ekle" silinmedi, GEREKÇELİ devre dışı.
+  await expect(page.getByRole("button", { name: "+ Kalem Ekle" })).toBeDisabled();
+  await expect(page.getByText(/Poz seçme ekranı henüz tasarlanmadı/)).toBeVisible();
+
+  // (f) Backend'de karşılığı olmayan iki sütun sahte veriyle DOLDURULMAZ.
+  await expect(page.getByTestId("section-boq-status").first()).toHaveText(/^—/);
+  await expect(page.getByTestId("section-boq-pct").first()).toHaveText(/^—/);
+});
+
+test("hic tahsisi olmayan bolumde durust bos durum basilir", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel(/e-posta/i).fill("patron@fiil.com");
+  await page.getByLabel(/^şifre$/i).fill("dogruparola");
+  await page.getByRole("button", { name: /giriş yap/i }).click();
+  await expect(page.getByRole("heading", { name: "Gösterge Paneli" })).toBeVisible();
+
+  // sec-3 ("Peyzaj Düzenlemesi") hiçbir pozdan pay almadı.
+  await page.goto("/projeler/p-1/santiyeler/s-1/bolumler/sec-3");
+  await expect(page.getByTestId("section-boq-empty")).toBeVisible();
+  await expect(page.getByText("Bu bölüme henüz iş kalemi atanmadı.")).toBeVisible();
+  await expect(page.getByText(/^0 kalem ·/)).toBeVisible();
 });

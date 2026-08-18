@@ -43,9 +43,10 @@ describe("pendingModuleLabel", () => {
 
   // 🔴 F-BOLLINK: bölüm detayına özel anahtarlar. Metin "modül yok" DEMEZ —
   // beş modülün de şantiye seviyesinde yazılı rotası var, eksik olan bölüm bağı.
+  // 🔴 BOQ-SEC-F GÖÇÜ: `section_boq` listeden ÇIKARILDI — o bağ artık AÇIK,
+  // sekme gerçek tablo basıyor. Anahtarın YOKLUĞU ayrıca çakılır (aşağıda).
   it("F-BOLLINK bolum anahtarlarini esler ve 'modulle birlikte gelir' DEMEZ", () => {
     const keys = [
-      "section_boq",
       "section_timesheet",
       "section_stock",
       "section_progress_payments",
@@ -56,7 +57,13 @@ describe("pendingModuleLabel", () => {
       expect(label).not.toBe("İlgili modülle birlikte gelir");
       expect(label).not.toMatch(/modülüyle birlikte gelir/);
     }
-    expect(pendingModuleLabel("section_boq")).toBe("Bu bölüme henüz iş kalemi bağlanamıyor");
+  });
+
+  // BOQ-SEC-F bekçisi: anahtar geri gelirse birileri canlı sekmeye yeniden
+  // "henüz bağlanamıyor" gerekçesi bağlamış demektir — bu test o çürümeyi
+  // yakalar. (Yedek metne düşmesi, eşlenmemiş olmasının kanıtıdır.)
+  it("section_boq anahtari ARTIK YOK - bolum bagi acildi", () => {
+    expect(pendingModuleLabel("section_boq")).toBe("İlgili modülle birlikte gelir");
   });
 
   // Paylasilan anahtarlarin metni DEGISMEDI (baska ekranlar okuyor).

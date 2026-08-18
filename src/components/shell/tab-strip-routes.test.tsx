@@ -210,6 +210,16 @@ describe("Rotasız sekme şeritleri — gerekçe bayatlarsa KIRMIZI", () => {
           continue;
         }
 
+        // BOQ-SEC-F — ÜÇÜNCÜ HÂL: sekme rotasız AMA içeriği bu ekranda
+        // GERÇEKTEN basıyor (bölüm detayı · İş Kalemleri). Böyle bir sekmenin
+        // "gerekçe"si olmaz; gerekçe istemek onu ölü yer tutucu sanmak olurdu.
+        // 🔴 İşaret İKİ YÖNLÜ çapadır: `contentLive` konup içerik BAĞLANMAZSA
+        // ekran boş kalır ve bunu `SectionDetailView.test.tsx` yakalar;
+        // kaldırılıp içerik canlı kalırsa burada gerekçe istenir ve KIRMIZI olur.
+        if (tab.getAttribute("data-content-live") === "true") {
+          continue;
+        }
+
         const pendingKey = tab.getAttribute("data-content-pending");
         if (!pendingKey) {
           throw new Error(

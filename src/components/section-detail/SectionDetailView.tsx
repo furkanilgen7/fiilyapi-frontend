@@ -6,10 +6,12 @@ import { useParams } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { CardEmptyState } from "@/components/dashboard/CardEmptyState";
+import { useBoq } from "@/lib/api/hooks/useBoq";
 import { useSection } from "@/lib/api/hooks/useSection";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
+import { SectionBoqCard } from "./SectionBoqCard";
 import { SECTION_TABS, SectionDetailTabs } from "./SectionDetailTabs";
 import { SectionHeroCard } from "./SectionHeroCard";
 import "./section-detail.css";
@@ -56,6 +58,10 @@ export function SectionDetailView() {
   }>();
   const sectionQuery = useSection(sectionId);
   const siteQuery = useSite(siteId);
+  // BOQ-SEC-F: bölüm süzgeçli BOQ. Hook koşullu ÇAĞRILAMAZ, bu yüzden sekme
+  // seçili olmasa da bağlanır; `enabled` kapısı `siteId`dedir. Süzgeç sorgu
+  // ANAHTARINDADIR — şantiye BOQ ekranının önbelleğini EZMEZ.
+  const sectionBoq = useBoq(siteId, sectionId);
   // İzin: ekran `sites:view`, "Düzenle" butonu `sites:full` (task-2-brief §İzin).
   const { canView, canWrite } = useModulePermission("sites");
   const [activeTab, setActiveTab] = useState(0);
@@ -78,6 +84,7 @@ export function SectionDetailView() {
 
   const section = sectionQuery.data;
   const siteName = siteQuery.data?.name ?? "";
+  const activeTabDef = SECTION_TABS[activeTab];
   const workerIsReal =
     section.worker_count.available &&
     section.worker_count.count !== null &&
@@ -101,12 +108,31 @@ export function SectionDetailView() {
       />
 
       <div className="section-panel" role="tabpanel">
-        <div className="section-panel__body">
-          <CardEmptyState
-            title={`${SECTION_TABS[activeTab].label} — bu bölümde henüz görüntülenemiyor`}
-            pendingModule={SECTION_TABS[activeTab].contentPending}
-          />
-        </div>
+        {activeTabDef.contentLive ? (
+          <div className="section-panel__body section-panel__body--flush">
+            {/* Yükleme/hata dalları AYRI basılır: `data` yokken boş tabloya
+                düşmek kullanıcıya "bu bölüme kalem atanmadı" YALANINI
+                söylerdi. Başka şantiyenin bölümü backend'de 404'tür. */}
+            {sectionBoq.isError ? (
+              <p className="section-detail__message">İş kalemleri yüklenemedi</p>
+            ) : sectionBoq.isLoading || !sectionBoq.data ? (
+              <p className="section-detail__message">Yükleniyor…</p>
+            ) : (
+              <SectionBoqCard
+                groups={sectionBoq.data.groups}
+                totals={sectionBoq.data.totals}
+                sectionName={section.name}
+              />
+            )}
+          </div>
+        ) : (
+          <div className="section-panel__body">
+            <CardEmptyState
+              title={`${activeTabDef.label} — bu bölümde henüz görüntülenemiyor`}
+              pendingModule={activeTabDef.contentPending}
+            />
+          </div>
+        )}
       </div>
 
       <div className="section-detail__bottom-row">
