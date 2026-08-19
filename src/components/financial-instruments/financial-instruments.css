@@ -1,0 +1,217 @@
+/* F-FIN · Çek & Senet ekranı. Kanon: projedesign
+   "Ekran 10 - Finans Çek Ödeme.dc.html" (E10). Parantez içi sayılar O dosyanın
+   SATIR numaralarıdır. Prefix `fin`.
+   Mockup'ın üst barı (20-33) ve sol menüsü (36-59) UYGULAMA KABUĞUdur
+   (F3 Topbar + Sidebar) — bu sayfa onları YENİDEN ÇİZMEZ. */
+
+.fin {
+  animation: var(--anim-fade-up); /* E10:61 */
+}
+
+/* E10:62 */
+.fin__eyebrow {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+  margin-bottom: 6px;
+}
+
+/* E10:63 */
+.fin__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6); /* 24px */
+}
+
+/* E10:64 */
+.fin__title {
+  font-size: var(--text-page-title);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+}
+
+/* Görünür gerekçe / uyarı bantları — sessiz düşüş YOK. */
+.fin-notice {
+  margin-bottom: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: var(--space-2) var(--space-3);
+  line-height: var(--leading-normal);
+}
+.fin-notice--danger {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger);
+}
+
+/* E10:69 — DÖRT eşit sütun, 12px aralık, 20px alt boşluk. */
+.fin-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+/* E10:70 */
+.fin-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-12);
+  padding: var(--space-4);
+}
+
+/* E10:71 */
+.fin-card__label {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+/* E10:72 — 22px/700, JetBrains Mono. */
+.fin-card__value {
+  font-size: var(--text-numeric);
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+}
+.fin-card__value--success { color: var(--color-success); } /* E10:72  */
+.fin-card__value--danger { color: var(--color-danger); } /* E10:77  */
+.fin-card__value--warning { color: var(--color-warning); } /* E10:82  */
+.fin-card__value--muted { color: var(--color-text-muted); } /* E10:87  */
+
+/* E10:73 */
+.fin-card__hint {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-top: 3px;
+}
+
+/* E10:93 — sekme şeridi. */
+.fin-tabs {
+  display: flex;
+  gap: var(--space-1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-10);
+  padding: var(--space-1);
+  width: fit-content;
+  margin-bottom: var(--space-4);
+}
+
+/* E10:95-96 — pasif sekme. */
+.fin-tab {
+  padding: 7px 18px;
+  font-size: var(--text-body);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  border-radius: var(--radius-7);
+  cursor: pointer;
+}
+.fin-tab:hover {
+  color: var(--color-text);
+}
+/* E10:94 — etkin sekme. */
+.fin-tab[aria-current="page"] {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  background: var(--color-nav-active-bg);
+}
+
+/* E10:99 — tablo kabı. */
+.fin-table-wrap {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.fin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* E10:103 — başlık satırı. */
+.fin-table thead tr {
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.fin-table th {
+  padding: 11px var(--space-4);
+  text-align: left;
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+/* E10:113 — gövde satırı; SON satırın alt çizgisi YOKTUR (E10:153). */
+.fin-table tbody tr {
+  border-bottom: 1px solid var(--color-divider);
+}
+.fin-table tbody tr:last-child {
+  border-bottom: none;
+}
+.fin-table td {
+  padding: 13px var(--space-4);
+  font-size: var(--text-body);
+  color: var(--color-text);
+}
+
+.fin-table .is-center { text-align: center; }
+.fin-table .is-right { text-align: right; }
+.fin-table .is-mono { font-family: var(--font-mono); }
+
+/* E10:116 — keşideci adı 13/500. */
+.fin-table__drawer {
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+/* E10:116 alt satırı — açıklama 11px, soluk. */
+.fin-table__desc {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+.fin-table__muted {
+  color: var(--color-text-muted);
+}
+/* E10:119 — tutar 13/700 mono. */
+.fin-table__amount {
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+/* E10:118 / 127 / 154 — vade hücresi rozetin TÜREVİYLE aynı tonu taşır. */
+.fin-table__due {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+}
+.fin-table__due--due { color: var(--color-warning); } /* E10:118 */
+.fin-table__due--portfolio { color: var(--color-success); } /* E10:127 */
+.fin-table__due--settled,
+.fin-table__due--closed {
+  color: var(--color-text-muted);
+  font-weight: var(--weight-regular); /* E10:154 — kalın DEĞİL */
+}
+
+/* E10:121 — "Vadede" rozetinin METNİ koyu turuncudur (koyu turuncu), zeminiyle
+   (`--color-warning-soft`) aynı token ailesinden gelmez: `Badge`in `warning`
+   varyantı metni `--color-warning` (açık turuncu) basar. Mockup kazanır → tek
+   özellik ezilir (`ui/badge` DEĞİŞTİRİLMEZ, yalnız kullanılır).
+   Ayrıca E10:121 `white-space: nowrap` yazar. */
+.fin-badge--due {
+  color: var(--color-warning-strong);
+  white-space: nowrap;
+}
+
+/* Çıplak hex yok — palet yalnız token'dan gelir (tokens.css). */

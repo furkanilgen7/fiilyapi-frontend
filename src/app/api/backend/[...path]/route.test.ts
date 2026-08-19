@@ -1498,5 +1498,31 @@ describe("BFF /api/backend/[...path]", () => {
         expect(entries).toContain(root);
       },
     );
+
+    // F-FIN (Cek & Senet, E10) TEK kokU — ayni ADLI kapi, ayni gerekce.
+    // Dinamik bekci bu koku ZATEN gorur (cagiran kod bu dilimde geldi:
+    // `src/lib/api/hooks/useFinancialInstruments.ts`), ama adli kapi ikinci
+    // katmandir: ileride cagiran kod tasinsa/yeniden yazilsa bile kokun
+    // gerekcesi burada KAYITLI kalir. Kok duserse E10 ekrani YALNIZ CANLIDA
+    // 404 alir; jsdom testleri bunu GORMEZ.
+    //   · GET,POST /financial-instruments
+    //   · GET /financial-instruments/summary
+    //   · GET,PATCH,DELETE /financial-instruments/{id}
+    //   · POST /financial-instruments/{id}/status
+    // 🔴 "treasury" koku bunu KAPSAMAZ: FIN-1 uclari birinci seviyededir,
+    // `/treasury/...` altinda DEGILDIR.
+    it("financial-instruments koku (F-FIN) allow-list'te GERCEK girdi olarak tanimlidir", () => {
+      const source = readFileSync(
+        resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+        "utf8",
+      );
+      const allowList = source.slice(
+        source.indexOf("const ALLOWED_ROOTS"),
+        source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+      );
+      // Yorum metni DEGIL, tirnakli GERCEK girdiler okunur (sahte bekci onlemi).
+      const entries = [...allowList.matchAll(/^\s*"([a-z0-9-]+)",/gm)].map((m) => m[1]);
+      expect(entries).toContain("financial-instruments");
+    });
   });
 });
