@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
-import { useProjects } from "@/lib/api/hooks/useProjects";
+import { PROJECT_LIST_MAX_LIMIT, useProjects } from "@/lib/api/hooks/useProjects";
 import { isForbidden } from "@/lib/api/unwrap";
+import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncation";
 
 import { ProjectCard } from "./ProjectCard";
 import { ProjectTabs } from "./ProjectTabs";
@@ -25,7 +26,12 @@ export function ProjectsView() {
   const searchParams = useSearchParams();
   const tab = parseProjectTab(searchParams.get("tab"));
 
-  const projectsQuery = useProjects(tabToFilter(tab));
+  // Kırpma korkuluğu (F-FIN emsali): tavan AÇIKÇA gönderilir, eksik kalan
+  // kayıt `total` üzerinden GÖRÜNÜR bir bantla bildirilir — sessizce
+  // kırpılmaz. Mockup (`Ekran 4 - Projeler.dc.html`) sayfalama çubuğu
+  // ÇİZMEZ (ölçüldü: 0 eşleşme) — bu yüzden çubuk EKLENMEDİ, yalnızca
+  // tavanı aşan portföy bandı görür.
+  const projectsQuery = useProjects({ ...tabToFilter(tab), limit: PROJECT_LIST_MAX_LIMIT });
 
   function handleTabChange(next: ProjectTab) {
     const params = new URLSearchParams(searchParams.toString());
@@ -41,9 +47,10 @@ export function ProjectsView() {
     return <p className="prj-message">Yükleniyor…</p>;
   }
 
-  const { counts, items } = projectsQuery.data;
+  const { counts, items, total } = projectsQuery.data;
   // Backend ayri "active" sayaci vermiyor; tamamlanmamis her sey portfoydedir (spec §4.1).
   const activeCount = counts.all - counts.completed;
+  const truncation = buildListTruncation(items.length, total);
 
   return (
     <div className="prj">
@@ -64,6 +71,14 @@ export function ProjectsView() {
       </div>
       <TypeLegend counts={counts} />
       <ProjectTabs active={tab} counts={counts} onChange={handleTabChange} />
+      {/* Görünür kırpılma bandı — mockup sayfalama çizmez (F-PRJPAGE),
+          bu yüzden sayfa çubuğu EKLENMEDİ; yalnızca tavanı aşan portföy
+          bandı basılır. `total <= gösterilen` iken hiçbir şey basmaz. */}
+      {truncation.isTruncated && (
+        <p className="prj-notice" data-testid="prj-truncation">
+          {listTruncationMessage(truncation)}
+        </p>
+      )}
       {items.length === 0 ? (
         <section className="prj-empty">
           <p className="prj-empty__title">

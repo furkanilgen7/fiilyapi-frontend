@@ -58,6 +58,17 @@
   font-size: 14px;
   color: var(--color-text-muted);
 }
+/* Görünür kırpılma bandı (F-FIN emsali) — sessiz düşüş YOK. */
+.prj-notice {
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  line-height: 1.4;
+}
 
 /* Tip aciklama kartlari (mockup satir 69-91) */
 .prj-legend {
