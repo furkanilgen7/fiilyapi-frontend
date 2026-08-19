@@ -79,7 +79,8 @@ export function resolveHrefIn(
   const segments = href.split("/").filter(Boolean);
   let node = tree;
   let matchedPrefix = "";
-  for (const segment of segments) {
+  for (let depth = 0; depth < segments.length; depth++) {
+    const segment = segments[depth];
     const literal = node.literalChildren.get(segment);
     if (literal) {
       node = literal;
@@ -95,8 +96,13 @@ export function resolveHrefIn(
       matchedPrefix += `/${segment}`;
       continue;
     }
-    // Ne literal ne dinamik kardeş var: [...slug] catch-all'a düşer.
-    return { kind: "catch-all" };
+    // Ne literal ne dinamik kardeş var. `[...slug]` yalnız `src/app/(app)`
+    // KÖKÜNDE var (`buildRouteTree` onu bilerek ağaca dahil etmiyor) — yani
+    // gerçek Next davranışında catch-all yalnız SEGMENT 0 başarısız olursa
+    // devreye girer. Daha derin bir segmentte kaybolmak (ör. `muhasebe`
+    // literal klasörü segment 0'ı tükettikten SONRA `olmayan` bulunamazsa)
+    // gerçek 404'tür: `muhasebe` altında kendi catch-all'ı YOK.
+    return depth === 0 ? { kind: "catch-all" } : { kind: "not-found" };
   }
   return node.hasPage ? { kind: "static" } : { kind: "not-found" };
 }

@@ -88,16 +88,13 @@ const MODULE_LABELS: Record<string, string> = {
   // devre dışı + görünür gerekçeyle basılır.
   // 99-123 "Milestone Takvimi": `EmployerContractDetail.milestones` şemada
   // AÇIKÇA `null` tipindedir (proje takvimi = P11).
-  // ⚠️ AÇIK BORÇ (F-TKV T4'te ÖLÇÜLDÜ, BİLEREK DEĞİŞTİRİLMEDİ): P11 uçları
-  // artık AÇIK ve `/projeler/takvim` ekranı YAZILDI — bu metin bugün YANLIŞ
-  // bir şeyi işaret ediyor (eksik olan takvim modülü değil, `Employer
-  // ContractDetail.milestones` ALANININ kendisi). Doğrusu: "Sözleşme
-  // milestone'ları uçtan gelmiyor (şemada null)". DEĞİŞTİRİLMEDİ çünkü metin
-  // F-P5 yüzeyinin görsel baseline'ında ve iki iddiada sabittir
-  // (`EmployerContractDetailView.test.tsx:348`, `e2e/employer-contract-detail
-  // .spec.ts:81`); paralel dilim turunda başka bir ekranın karesini oynatmak
-  // merge sırasını riske atar. Yönetim kararına bırakıldı.
-  contract_milestones: "Proje takvimi (P11) ile birlikte gelir",
+  // F-TB2 T2'de DÜZELTİLDİ: eski metin ("Proje takvimi (P11) ile birlikte
+  // gelir") P11 uçları açılıp `/projeler/takvim` yazıldıktan sonra YANLIŞ
+  // hâle gelmişti — eksik olan takvim modülü değil, `EmployerContractDetail
+  // .milestones` ALANININ kendisiydi (şemada hâlâ null). İki iddia + görsel
+  // baseline eşzamanlı güncellendi: `EmployerContractDetailView.test.tsx:348`,
+  // `e2e/employer-contract-detail.spec.ts:81`.
+  contract_milestones: "Sözleşme milestone'ları uçtan gelmiyor (şemada null)",
   // 77 "Düzenle": işveren sözleşmesinin kendi alanları için backend'de YAZMA
   // UCU YOKTUR (şema açıklaması: "Sözleşmenin kendi alanları için YENİ yazma
   // ucu AÇILMAZ … bu yalnız okuma şemasıdır") ve proje formu yalnız OLUŞTURMA

@@ -345,7 +345,7 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
 
       expect(screen.getByText("Milestone Takvimi")).toBeInTheDocument();
       expect(screen.getByTestId("ecd-milestones-pending")).toHaveTextContent(
-        "Proje takvimi (P11) ile birlikte gelir",
+        "Sözleşme milestone'ları uçtan gelmiyor (şemada null)",
       );
     });
 
