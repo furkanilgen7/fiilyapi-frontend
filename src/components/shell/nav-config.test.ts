@@ -173,4 +173,18 @@ describe("NAV_GROUPS — href geçerliliği (kırık link koruması)", () => {
       kind: "catch-all",
     });
   });
+
+  // 🔴 F-TB2 T1: `[...slug]` YALNIZ kökte (`src/app/(app)/[...slug]`) var —
+  // `buildRouteTree` onu bilerek ağaca dahil ETMEZ (dosya başındaki yorum),
+  // yani `resolveHrefIn` içindeki eşleşmesi "kökte tanımlıymış gibi" örtük
+  // varsayılır. `/muhasebe` GERÇEK bir literal klasördür ve segment 0'ı
+  // tüketir; altında `olmayan` diye bir alt sayfa/dinamik/catch-all klasörü
+  // YOK. Gerçek Next bu yolda 404 verir. Eski `resolveHrefIn` derinlik
+  // gözetmeden HER eşleşme başarısızlığında catch-all döndürüyordu — bu
+  // segment-1 kaybını da (yanlışlıkla) "geçerli" sayıyordu.
+  it("'/muhasebe/olmayan' segment 1'de kaybolur → not-found (catch-all DEĞİL)", () => {
+    expect(resolveHrefIn(ROUTE_TREE, "/muhasebe/olmayan", false)).toEqual({
+      kind: "not-found",
+    });
+  });
 });

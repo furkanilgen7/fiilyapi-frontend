@@ -78,7 +78,7 @@ test("işveren sözleşme detayı: Genel sekmesi — özet kartı, milestone PEN
   // Milestone Takvimi: bölüm SİLİNMEZ, PENDING + gerekçe; sahte veri YOK.
   await expect(page.getByRole("heading", { name: "Milestone Takvimi" })).toBeVisible();
   await expect(page.getByTestId("ecd-milestones-pending")).toContainText(
-    "Proje takvimi (P11) ile birlikte gelir",
+    "Sözleşme milestone'ları uçtan gelmiyor (şemada null)",
   );
   await expect(page.getByText("Temel ve Bodrum Katlar")).toHaveCount(0);
 

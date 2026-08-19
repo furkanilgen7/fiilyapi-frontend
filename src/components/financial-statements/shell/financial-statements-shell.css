@@ -95,15 +95,14 @@ a.fs-shell-item:focus-visible {
 /* BL:28 — devre dışı sekme: SİLİNMEZ, solgun basılır ve gerekçesi ekranda
    GÖRÜNÜR (`title`da saklanmaz). */
 /* 🔴 F-MT2 K3 — ÜST ÖĞEYİ YANSITAN satır (BL:28 `Gelir Tablosu`).
-   Bağlantı DEĞİLDİR: hedefi üst öğeninkiyle aynıdır ve gezinme oradadır.
-   `--disabled` tonunu ALMAZ — satır bir yetenek eksikliğini değil, ekranın
-   NEREDE yaşadığını söyler; "devre dışı" görünmesi YALAN olurdu.
    (Eski `--disabled`/`__reason` kuralları bu dilimde SİLİNDİ: uç açıldı,
    tüketicileri kalmadı ve yaşayan bir "henüz yok" tonu çalışan bir yüzeyle
-   ÇELİŞİRDİ — F-PRJTAB kanonu.) */
+   ÇELİŞİRDİ — F-PRJTAB kanonu.)
+   🔴 F-NAVRETRY T2 — satır artık `<a>`dır (`Link`), hedefi üst öğeyle
+   AYNIDIR; `cursor: default` KALDIRILDI, `a.fs-shell-item` seçicisinden gelen
+   hover/focus stilleri buraya da otomatik uygulanır. */
 .fs-shell-item--mirror {
   color: var(--color-text-secondary);
-  cursor: default;
 }
 /* Kökte (yalnız orada) satır bulunulan ekranı işaret eder — `aria-current`
    SÜRMEDEN, salt görsel olarak (K7: sayfada tek `aria-current`). */

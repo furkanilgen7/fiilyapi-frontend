@@ -543,19 +543,38 @@ test.describe("Mali Tablolar kökü (E11) · GELİR TABLOSU ekranı", () => {
   });
 
   /**
-   * 🔴 F-MT2 K3 — yaprak ekranların drill sidebar'ında `Gelir Tablosu` satırı
-   * BAĞLANTI DEĞİLDİR (hedefi üst öğeyle aynıdır) ve `aria-current` SÜRMEZ.
-   * Bekçi ZAYIFLATILMADI: sayfada hâlâ TAM BİR `aria-current` vardır.
+   * 🔴 F-NAVRETRY T2 (kullanıcı kararı, 2026-08-19) — yaprak ekranların drill
+   * sidebar'ında `Gelir Tablosu` satırı artık TIKLANABİLİR bir `<a>`dır
+   * (hedefi üst öğeyle aynıdır) ama `aria-current` HÂLÂ SÜRMEZ. Bekçi
+   * ZAYIFLATILMADI: sayfada hâlâ TAM BİR `aria-current` vardır (K7).
    */
-  test("K3 · yaprak ekranda `Gelir Tablosu` satırı bağlantı değildir, aria-current TEKtir", async ({
+  test("K3/T2 · yaprak ekranda `Gelir Tablosu` satırı BAĞLANTIDIR, aria-current TEKtir", async ({
     page,
   }) => {
     await openBalanceSheet(page);
     const sidebar = page.getByRole("complementary", { name: "Mali tablolar menüsü" });
 
     await expect(sidebar.locator("[aria-current='page']")).toHaveCount(1);
-    await expect(sidebar.getByText("Gelir Tablosu", { exact: true })).toBeVisible();
-    await expect(sidebar.locator("a", { hasText: "Gelir Tablosu" })).toHaveCount(0);
+    const mirrorLink = sidebar.locator("a", { hasText: "Gelir Tablosu" });
+    await expect(mirrorLink).toHaveCount(1);
+    await expect(mirrorLink).toHaveAttribute("href", FINANCIAL_STATEMENTS_URL);
+    await expect(mirrorLink).not.toHaveAttribute("aria-current", "page");
+  });
+
+  /**
+   * 🔴 F-NAVRETRY T2 — satır tıklanınca GERÇEKTEN üst öğenin hedefine gider
+   * ve kökte `aria-current` sayısı YİNE TEKtir (mirror satır onu asla almaz).
+   */
+  test("T2 · `Gelir Tablosu` satırına tıklamak `/mali-tablolar`a götürür", async ({ page }) => {
+    await openBalanceSheet(page);
+    const sidebar = page.getByRole("complementary", { name: "Mali tablolar menüsü" });
+
+    await sidebar.locator("a", { hasText: "Gelir Tablosu" }).click();
+
+    await expect(page).toHaveURL(new RegExp(`${FINANCIAL_STATEMENTS_URL}$`));
+    const active = page.locator("[aria-current='page']");
+    await expect(active).toHaveCount(1);
+    await expect(active).toHaveText("Mali Tablolar");
   });
 
   test("segment denetimi iki yaprak ekrana gider", async ({ page }) => {

@@ -67,13 +67,15 @@ function NavItem({
   testId?: string;
 }) {
   if (item.kind === "mirror") {
-    // 🔴 F-MT2 K3 — `<a>`/`Link` DEĞİL: hedefi ÜST ÖĞEYLE AYNI olduğu için
-    // ikinci bir bağlantı sayfada İKİ `aria-current="page"` doğururdu (K7).
-    // `aria-disabled` de KONMAZ: satır bir yetenek eksikliği DEĞİL, ekranın
-    // nerede yaşadığının işaretidir — "devre dışı" demek YALAN olurdu.
+    // 🔴 F-NAVRETRY T2 — satır TIKLANABİLİR (kullanıcı kararı, 2026-08-19):
+    // `mirrorsHref` üst öğeyle AYNI hedefi taşıdığı için bir `Link`e çevrilir.
+    // AMA `aria-current` HİÇ BASILMAZ (yapısal — bu dal ona hiç değinmez):
+    // ikinci bir `aria-current="page"` K7 bekçisini kırardı. Görsel "buradasın"
+    // sinyali `mirrorCurrent`ten gelen 3. katman sınıfıyla KORUNUR.
     const mirrorCurrent = isFinancialNavItemMirrorCurrent(pathname, item);
     return (
-      <span
+      <Link
+        href={item.mirrorsHref}
         className={cx(
           "fs-shell-item",
           "fs-shell-item--mirror",
@@ -82,7 +84,7 @@ function NavItem({
         data-testid={testId}
       >
         <span className="fs-shell-item__label">{item.label}</span>
-      </span>
+      </Link>
     );
   }
 
