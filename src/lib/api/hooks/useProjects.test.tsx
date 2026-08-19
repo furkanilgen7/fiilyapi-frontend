@@ -3,7 +3,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
-import { useProjects, useProject } from "./useProjects";
+import { useProjects, useProject, PROJECT_LIST_MAX_LIMIT } from "./useProjects";
 import { backendClient } from "@/lib/api/client";
 
 vi.mock("@/lib/api/client", () => ({ backendClient: { GET: vi.fn() } }));
@@ -43,6 +43,24 @@ describe("useProjects", () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(backendClient.GET).toHaveBeenCalledWith("/projects", {
       params: { query: { type: "taahhut" } },
+    });
+  });
+
+  // F-PRJPAGE — sessiz kırpma korkuluğu: `limit`/`offset` istek parametresinde
+  // FİİLEN gitmeli (kod okuması değil, istek iddiası).
+  it("limit ve offset acikca istek parametresine gider", async () => {
+    vi.mocked(backendClient.GET).mockResolvedValue({
+      data: RESPONSE, error: undefined, response: new Response(),
+    } as never);
+
+    const { result } = renderHook(
+      () => useProjects({ limit: PROJECT_LIST_MAX_LIMIT, offset: 0 }),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(backendClient.GET).toHaveBeenCalledWith("/projects", {
+      params: { query: { limit: 200, offset: 0 } },
     });
   });
 });
