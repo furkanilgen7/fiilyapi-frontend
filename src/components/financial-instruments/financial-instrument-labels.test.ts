@@ -5,6 +5,7 @@ import type { FinancialInstrumentStatus } from "@/lib/api/hooks/useFinancialInst
 import {
   INSTRUMENT_TABS,
   instrumentBadge,
+  instrumentSerialColumnLabel,
   instrumentTabFilter,
   instrumentTabFromParam,
 } from "./financial-instrument-labels";
@@ -124,6 +125,39 @@ describe("🔴 K3 — rozet `status` (kalıcı) + `is_due` (TÜREV) BİLEŞİMİ
         const badge = instrumentBadge(status, isDue);
         expect(badge.label.length, `${status}/${isDue}`).toBeGreaterThan(0);
       }
+    }
+  });
+});
+
+/**
+ * 🔴 YÖNETİM DENETİMİNDE KAREYE BAKILARAK BULUNDU: "Senetler" sekmesinde
+ * tablo başlığı "ÇEK NO" yazarken hücrelerde `SN-2026-0044` vardı — ekran
+ * senede "çek" diyordu. Mockup o sekmenin tablosunu ÇİZMEDİĞİ için hiçbir
+ * kapı bunu göremezdi. Bu blok kusuru KİLİTLER.
+ */
+describe("🔴 E10:104 seri no sütun başlığı SEKMEYE bağlıdır", () => {
+  it("Alınan Çekler → `Çek No`", () => {
+    expect(instrumentSerialColumnLabel("alinan")).toBe("Çek No");
+  });
+
+  it("Verilen Çekler → `Çek No` (yön başlığı DEĞİŞTİRMEZ)", () => {
+    expect(instrumentSerialColumnLabel("verilen")).toBe("Çek No");
+  });
+
+  it("🔴 Senetler → `Senet No`", () => {
+    expect(instrumentSerialColumnLabel("senet")).toBe("Senet No");
+  });
+
+  /**
+   * Başlık sekmeden DEĞİL, sekmenin sunucuya gönderdiği `instrument_kind`
+   * süzgecinden türer. Bu iddia iki katmanın AYRIŞMASINI yasaklar: bir sekme
+   * ileride senede süzülür de başlığı çekte kalırsa test KIRMIZI olur.
+   */
+  it("🔴 başlık, sekmenin GÖNDERDİĞİ `instrument_kind` ile TUTARLIDIR", () => {
+    for (const tab of INSTRUMENT_TABS) {
+      const kind = instrumentTabFilter(tab.key).instrumentKind;
+      const expected = kind === "promissory_note" ? "Senet No" : "Çek No";
+      expect(instrumentSerialColumnLabel(tab.key), tab.key).toBe(expected);
     }
   });
 });

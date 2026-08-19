@@ -19,6 +19,7 @@ import { InstrumentsTable } from "./InstrumentsTable";
 import {
   FINANCIAL_INSTRUMENT_PERMISSION_MODULE,
   INSTRUMENT_TABS,
+  instrumentSerialColumnLabel,
   instrumentTabFilter,
   instrumentTabFromParam,
 } from "./financial-instrument-labels";
@@ -132,6 +133,7 @@ export function FinancialInstrumentsView() {
       )}
       <InstrumentsTable
         rows={rows}
+        serialColumnLabel={instrumentSerialColumnLabel(tab)}
         isLoading={listQuery.isLoading}
         errorMessage={
           listQuery.isError

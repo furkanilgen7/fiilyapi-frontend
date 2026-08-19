@@ -22,10 +22,16 @@ import { instrumentBadge } from "./financial-instrument-labels";
  */
 export function InstrumentsTable({
   rows,
+  serialColumnLabel,
   isLoading,
   errorMessage,
 }: {
   rows: readonly FinancialInstrumentResponse[] | undefined;
+  /**
+   * 🔴 E10:104 başlığı SEKMEYE göre değişir ("Çek No" ↔ "Senet No") ve
+   * çağıranın seçtiği süzgeçten TÜRER — tabloda `if (tab === ...)` YAZILMAZ.
+   */
+  serialColumnLabel: string;
   isLoading: boolean;
   errorMessage: string | undefined;
 }) {
@@ -57,7 +63,7 @@ export function InstrumentsTable({
       <table className="fin-table" data-testid="fin-table">
         <thead>
           <tr>
-            <th scope="col">Çek No</th>
+            <th scope="col">{serialColumnLabel}</th>
             <th scope="col">Keşideci</th>
             <th scope="col">Banka</th>
             <th scope="col" className="is-center">

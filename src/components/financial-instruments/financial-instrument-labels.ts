@@ -103,3 +103,26 @@ export function instrumentBadge(
   if (status === "returned") return { tone: "closed", label: "İade", variant: "neutral" };
   return { tone: "closed", label: "İptal", variant: "neutral" };
 }
+
+/**
+ * 🔴 E10:104 "ÇEK NO" başlığı SEKMEYE BAĞLIDIR.
+ *
+ * Mockup YALNIZ çek sekmesini çizer; "Senetler" sekmesinde (E10:96) aynı sütun
+ * senet numarası taşır (`SN-2026-0044`) ve sabit "Çek No" başlığı **ekranın
+ * senede "çek" demesine** yol açıyordu. Kusuru dört kapının hiçbiri göremezdi
+ * (mockup o sekmenin tablosunu çizmediği için karşılaştırılacak bir doğru
+ * yoktu) — YALNIZ üretilen kareye bakmak yakaladı.
+ *
+ * 🔑 MEKANİZMA: başlık sekmeden DEĞİL, sekmenin sunucuya gönderdiği
+ * `instrument_kind` SÜZGECİNDEN türer. Böylece süzgeç ile başlık **aynı tek
+ * kaynaktan** gelir; biri değişip öteki bayatlayamaz (bir sekme ileride
+ * senede süzülürse başlık kendiliğinden düzelir).
+ *
+ * Not: bu türev YALNIZ seri numarası sütununu kapsar. `Keşideci` ve `Banka`
+ * her iki kıymet türü için de doğrudur ve DEĞİŞMEZ.
+ */
+export function instrumentSerialColumnLabel(tab: InstrumentTabKey): string {
+  return instrumentTabFilter(tab).instrumentKind === "promissory_note"
+    ? "Senet No"
+    : "Çek No"; // E10:104
+}

@@ -63,6 +63,11 @@ test("E10:94-96 sekmeleri SUZGECTIR — uc ayri kume doner", async ({ page }) =>
   // 🔴 Senetler sekmesi YÖN SÜZMEZ: alınan da verilen de görünür.
   await page.getByTestId("fin-tab-senet").click();
   await expect(page.getByTestId("fin-row")).toHaveCount(2);
+  // 🔴 Seri no sütunu SENET numarası taşır → başlığı da senet olmalı
+  // (kareye bakılarak bulunan kusur; sekme değişince başlık DA değişir).
+  await expect(page.getByTestId("fin-table").getByRole("columnheader").first()).toHaveText(
+    "Senet No",
+  );
   await expect(page.getByTestId("fin-row").first()).toContainText("SN-2026-0044");
   await expect(page.getByTestId("fin-row").nth(1)).toContainText("SN-2026-0051");
   // Mockup'ta çizilmeyen dördüncü hâl SESSİZCE atlanmaz.
@@ -71,6 +76,9 @@ test("E10:94-96 sekmeleri SUZGECTIR — uc ayri kume doner", async ({ page }) =>
   await page.getByTestId("fin-tab-alinan").click();
   await expect(page).toHaveURL(new RegExp(`\\${INSTRUMENTS_URL}$`));
   await expect(page.getByTestId("fin-row")).toHaveCount(5);
+  await expect(page.getByTestId("fin-table").getByRole("columnheader").first()).toHaveText(
+    "Çek No",
+  );
 });
 
 test("URL sekme parametresi DOGRUDAN acilir (paylasilabilir durum)", async ({ page }) => {

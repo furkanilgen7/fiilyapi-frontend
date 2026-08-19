@@ -274,6 +274,30 @@ describe("E10:99-161 — yedi sütunlu tablo", () => {
     ]);
   });
 
+  /**
+   * 🔴 KAREYE BAKILARAK BULUNAN KUSUR (yönetim denetimi): "Senetler"
+   * sekmesinde başlık "Çek No" kalıyordu ama hücreler senet numarası
+   * taşıyordu. Üç sekme için de iddia yazılır — yalnız senet sekmesine bakan
+   * bir test, başlığı sabit "Senet No" yapan ters mutasyonu GEÇİRİRDİ.
+   */
+  it("🔴 seri no sütun başlığı ÜÇ sekmede de doğru basılır", () => {
+    const headOf = () =>
+      within(screen.getByTestId("fin-table")).getAllByRole("columnheader")[0].textContent;
+
+    const { unmount } = render(<FinancialInstrumentsView />);
+    expect(headOf()).toBe("Çek No");
+    unmount();
+
+    searchParams = new URLSearchParams("sekme=verilen");
+    const verilen = render(<FinancialInstrumentsView />);
+    expect(headOf()).toBe("Çek No");
+    verilen.unmount();
+
+    searchParams = new URLSearchParams("sekme=senet");
+    render(<FinancialInstrumentsView />);
+    expect(headOf()).toBe("Senet No");
+  });
+
   it("satır hücreleri mockup biçimleriyle basılır (E10:114-121)", () => {
     render(<FinancialInstrumentsView />);
     const cells = within(screen.getAllByTestId("fin-row")[0]).getAllByRole("cell");

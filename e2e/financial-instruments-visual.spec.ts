@@ -55,6 +55,11 @@ test("cek senet senetler sekmesi gorsel", async ({ page }) => {
   await expect(page.getByTestId("fin-tab-senet")).toHaveAttribute("aria-current", "page");
   await expect(page.getByTestId("fin-row")).toHaveCount(2);
   await expect(page.getByTestId("fin-row").nth(1).locator(".badge")).toHaveText("İptal");
+  // 🔴 Kadrajın ASIL kanıtı: seri no sütunu bu sekmede "Senet No" başlığını
+  // taşır (E10 bu tabloyu çizmez; kusur YALNIZ kareye bakılarak bulunmuştu).
+  await expect(page.getByTestId("fin-table").getByRole("columnheader").first()).toHaveText(
+    "Senet No",
+  );
 
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("cek-senet-senetler.png", { fullPage: true });
