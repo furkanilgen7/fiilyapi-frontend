@@ -9718,6 +9718,40 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       return send(200, incomeStatementFixture(year, month));
     }
 
+    // --- F-FIN · FIN-1 çek/senet OKUMA uçları -------------------------------
+    // 🔴 Fikstür DONMUŞ bir dizidir (dosyanın sonunda) ve `is_due` de DONMUŞ
+    // bir ALANDIR — makinenin saatinden TÜRETİLMEZ. Türetilseydi kadraj
+    // gerçek tarih ilerledikçe sessizce ton değiştirirdi (turuncu "Vadede"
+    // satırları bir gün yeşile dönerdi) ve baseline gerekçesiz kırılırdı.
+    //
+    // 🔴 Sıra `summary`nin ÖNÜNDEDİR fark etmez: burada yollar birebir
+    // karşılaştırılır, FastAPI'nin kayıt-sırası tuzağı (literal ↔ UUID) mock'ta
+    // yoktur; yine de literal önce yazıldı ki okuyan aynı sırayı görsün.
+    if (method === "GET" && path === "/financial-instruments/summary") {
+      return send(200, FINANCIAL_INSTRUMENT_SUMMARY_FIXTURE);
+    }
+
+    if (method === "GET" && path === "/financial-instruments") {
+      // Sekmeler AYRI UÇ DEĞİL SÜZGEÇTİR — mock da tam olarak bu iki
+      // parametreyi uygular; istemcide süzme YOKTUR.
+      const direction = parsed.searchParams.get("direction");
+      const kind = parsed.searchParams.get("instrument_kind");
+      const items = FINANCIAL_INSTRUMENT_FIXTURES.filter(
+        (row) =>
+          (direction === null || row.direction === direction) &&
+          (kind === null || row.instrument_kind === kind),
+      );
+      return send(200, {
+        items,
+        // `total` SÜZGEÇLENMİŞ kümenin boyutudur (sayfalamadan ÖNCE) — kart
+        // sayaçlarıyla KARIŞTIRILMAZ (BOR-TEMIZ kanonu).
+        total: items.length,
+        limit: Number(parsed.searchParams.get("limit") ?? 50),
+        offset: Number(parsed.searchParams.get("offset") ?? 0),
+        as_of: FINANCIAL_INSTRUMENT_AS_OF,
+      });
+    }
+
     // --- F-IZN T6 · İzin yönetimi (YEDİ uç) --------------------------------
     // BFF izin listesindeki üç kök burada karşılanır (`leave-types` ·
     // `leave-requests` · `leave-balances`); özet ucu mevcut `hr` kökündendir.
@@ -13037,3 +13071,220 @@ const PAYROLL_NEXT_STATUS: Record<MockPayrollPeriodStatus, MockPayrollPeriodStat
 
 const PAYROLL_LIMIT_DEFAULT = 50;
 const PAYROLL_LIMIT_MAX = 240;
+
+/* ---------------------------------------------------------------------- */
+/* F-FIN · ÇEK & SENET (`GET /financial-instruments[/summary]`) fikstürleri */
+/* ---------------------------------------------------------------------- */
+
+/**
+ * 🔴 `as_of` SUNUCUNUN günüdür ve ECHO edilir; istemci kendi saatiyle
+ * hesaplamaz (şema notu: TR gecesi 00:00-03:00'te bir gün sapardı).
+ */
+const FINANCIAL_INSTRUMENT_AS_OF = "2026-07-20";
+
+interface MockFinancialInstrument {
+  readonly id: string;
+  readonly instrument_kind: "cheque" | "promissory_note";
+  readonly direction: "received" | "issued";
+  readonly serial_no: string;
+  readonly drawer_name: string;
+  readonly description: string | null;
+  readonly bank_name: string | null;
+  readonly issue_date: string;
+  readonly due_date: string;
+  readonly amount: string;
+  readonly status: "portfolio" | "collected" | "paid" | "returned" | "cancelled";
+  readonly project_id: string | null;
+  readonly bank_account_id: string | null;
+  readonly created_at: string | null;
+  readonly updated_at: string | null;
+  /** 🔴 TÜREV alan — burada DONMUŞTUR (yukarıdaki gerekçe). */
+  readonly is_due: boolean;
+}
+
+function instrument(
+  seed: Omit<MockFinancialInstrument, "project_id" | "bank_account_id" | "created_at" | "updated_at">,
+): MockFinancialInstrument {
+  return {
+    ...seed,
+    project_id: null,
+    bank_account_id: null,
+    created_at: null,
+    updated_at: null,
+  };
+}
+
+/**
+ * İlk BEŞ kayıt E10:113-160'ın BEŞ SATIRIDIR — seri no, keşideci, açıklama,
+ * banka, iki tarih, tutar ve durum MOCKUP'TAN birebir alınmıştır.
+ *
+ * Kalan dört kayıt mockup'ta ÇİZİLMEMİŞTİR ve uydurma değil GEREKLİDİR: E10
+ * yalnız "Alınan Çekler" sekmesinin tablosunu çizer, öbür iki sekmenin
+ * (E10:95-96) süzgeç olarak ÇALIŞTIĞINI ancak onların da dolu olduğu bir
+ * kümede kanıtlayabiliriz. Üç sekmenin kümeleri KESİŞMEZ — aynı satırı iki
+ * sekmede gösteren bir süzgeç kusuru böylece görünür olur.
+ */
+const FINANCIAL_INSTRUMENT_FIXTURES: readonly MockFinancialInstrument[] = [
+  // E10:114-122 — "Vadede" (portföy + vade penceresi).
+  instrument({
+    id: "fi000001-0000-4000-8000-000000000001",
+    instrument_kind: "cheque",
+    direction: "received",
+    serial_no: "0123456789",
+    drawer_name: "Güneşkent A.Ş.",
+    description: "Proje iş avansı",
+    bank_name: "Ziraat Bank",
+    issue_date: "2026-07-01",
+    due_date: "2026-07-25",
+    amount: "1200000.00",
+    status: "portfolio",
+    is_due: true,
+  }),
+  // E10:123-131 — "Portföyde".
+  instrument({
+    id: "fi000002-0000-4000-8000-000000000002",
+    instrument_kind: "cheque",
+    direction: "received",
+    serial_no: "0987654321",
+    drawer_name: "Çelik Holding",
+    description: "Hakediş ödemesi",
+    bank_name: "İş Bank",
+    issue_date: "2026-06-15",
+    due_date: "2026-08-15",
+    amount: "850000.00",
+    status: "portfolio",
+    is_due: false,
+  }),
+  // E10:132-140 — "Portföyde".
+  instrument({
+    id: "fi000003-0000-4000-8000-000000000003",
+    instrument_kind: "cheque",
+    direction: "received",
+    serial_no: "0456789123",
+    drawer_name: "Belediye",
+    description: "Yol projesi",
+    bank_name: "Yapı Kredi",
+    issue_date: "2026-05-01",
+    due_date: "2026-09-30",
+    amount: "600000.00",
+    status: "portfolio",
+    is_due: false,
+  }),
+  // E10:141-149 — "Vadede".
+  instrument({
+    id: "fi000004-0000-4000-8000-000000000004",
+    instrument_kind: "cheque",
+    direction: "received",
+    serial_no: "0345678912",
+    drawer_name: "Liman İşletme",
+    description: "Avans çeki",
+    bank_name: "Halkbank",
+    issue_date: "2026-07-10",
+    due_date: "2026-07-20",
+    amount: "720000.00",
+    status: "portfolio",
+    is_due: true,
+  }),
+  // E10:150-158 — "Tahsil Edildi". 🔴 AYRIŞMA NOKTASI: vadesi GEÇMİŞ
+  // (`is_due` sunucuda da doğru olurdu) ama durum kalıcı olarak `collected` —
+  // rozet MAVİ basmalı, turuncu DEĞİL.
+  instrument({
+    id: "fi000005-0000-4000-8000-000000000005",
+    instrument_kind: "cheque",
+    direction: "received",
+    serial_no: "0234567891",
+    drawer_name: "Güneşkent A.Ş.",
+    description: "Eski hakediş",
+    bank_name: "Ziraat Bank",
+    issue_date: "2026-04-01",
+    due_date: "2026-06-01",
+    amount: "240000.00",
+    status: "collected",
+    is_due: true,
+  }),
+  // --- E10:95 "Verilen Çekler" sekmesi (mockup tablo çizmez) --------------
+  instrument({
+    id: "fi000006-0000-4000-8000-000000000006",
+    instrument_kind: "cheque",
+    direction: "issued",
+    serial_no: "0771234500",
+    drawer_name: "FİİL Yapı A.Ş.",
+    description: "Beton tedarik ödemesi",
+    bank_name: "Garanti BBVA",
+    issue_date: "2026-07-05",
+    due_date: "2026-07-28",
+    amount: "1100000.00",
+    status: "portfolio",
+    is_due: true,
+  }),
+  instrument({
+    id: "fi000007-0000-4000-8000-000000000007",
+    instrument_kind: "cheque",
+    direction: "issued",
+    serial_no: "0771234501",
+    drawer_name: "FİİL Yapı A.Ş.",
+    // 🔴 Açıklaması OLMAYAN kayıt: keşideci hücresinin alt satırı bu satırda
+    // HİÇ basılmaz — boş bir alt satır bırakmadığı ölçülebilsin.
+    description: null,
+    // 🔴 Bankası OLMAYAN kayıt: hücre sessizce boş kalmaz, "—" basar.
+    bank_name: null,
+    issue_date: "2026-06-20",
+    due_date: "2026-09-10",
+    amount: "700000.00",
+    status: "portfolio",
+    is_due: false,
+  }),
+  // --- E10:96 "Senetler" sekmesi (mockup tablo çizmez) --------------------
+  // 🔴 İKİ YÖN BİRDEN: senet sekmesi yön SÜZMEZ; alınan da verilen de burada
+  // görünür. Sekme yön süzseydi ikinci satır hiçbir sekmede GÖRÜNMEZDİ.
+  instrument({
+    id: "fi000008-0000-4000-8000-000000000008",
+    instrument_kind: "promissory_note",
+    direction: "received",
+    serial_no: "SN-2026-0044",
+    drawer_name: "Anadolu Prefabrik",
+    description: "Taşeron teminatı",
+    bank_name: null,
+    issue_date: "2026-05-18",
+    due_date: "2026-11-18",
+    amount: "480000.00",
+    status: "portfolio",
+    is_due: false,
+  }),
+  instrument({
+    id: "fi000009-0000-4000-8000-000000000009",
+    instrument_kind: "promissory_note",
+    direction: "issued",
+    serial_no: "SN-2026-0051",
+    drawer_name: "FİİL Yapı A.Ş.",
+    description: "İptal edilen senet",
+    bank_name: null,
+    issue_date: "2026-03-02",
+    due_date: "2026-04-30",
+    amount: "150000.00",
+    // 🔴 Mockup'ta ÇİZİLMEYEN dördüncü hâl — dördüncü kart ("İade / İptal",
+    // E10:85-89) bu kayıtların var olduğunu söylüyor; rozeti nötr basar.
+    status: "cancelled",
+    is_due: false,
+  }),
+];
+
+/**
+ * E10:69-90'ın DÖRT kartı — tutarlar ve adetler MOCKUP'TAN (E10:72-73, 77-78,
+ * 82-83, 87-88).
+ *
+ * 🔴 Sayaçlar listenin uzunluğuyla KASITLI OLARAK TUTMAZ (8 · 5 · 3 · 2'ye
+ * karşılık listede 9 kayıt var): kart TÜM kümeyi sayar, liste yalnız SAYFAYI
+ * döndürür. İkisinin eşit olduğu bir fikstür, `items.length`e kayan bir
+ * mutasyonu sessizce geçirirdi (BOR-TEMIZ "iki sayaç ayrı şeydir").
+ *
+ * 🔴 Kartlar ÖRTÜŞÜR ve bu TANIMDIR: portföydeki bir çek aynı anda "bu ay
+ * vadeli"dir; 8 + 5 ile 3 ayrı sayılır, toplamları birbirine eşitlenmez.
+ */
+const FINANCIAL_INSTRUMENT_SUMMARY_FIXTURE = {
+  portfolio_received: { amount: "3600000.00", count: 8 },
+  issued: { amount: "1800000.00", count: 5 },
+  due_this_month: { amount: "920000.00", count: 3 },
+  returned_cancelled: { amount: "240000.00", count: 2 },
+  as_of: FINANCIAL_INSTRUMENT_AS_OF,
+} as const;

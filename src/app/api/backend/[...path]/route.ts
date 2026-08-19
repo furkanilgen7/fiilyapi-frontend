@@ -253,6 +253,19 @@ const ALLOWED_ROOTS = new Set([
   "leave-requests",
   "leave-types",
   "leave-balances",
+  // F-FIN (Çek & Senet ekranı, E10) — TEK kök. FIN-1'in YEDİ ucunun hepsinin
+  // ilk path segmenti "financial-instruments"tır; "treasury" kökünün ALTINDA
+  // DEĞİLDİR (uçlar birinci seviyedir) → ayrı kök ŞART:
+  //   · `GET,POST /financial-instruments`
+  //   · `GET /financial-instruments/summary`
+  //   · `GET,PATCH,DELETE /financial-instruments/{id}`
+  //   · `POST /financial-instruments/{id}/status`
+  // 🔴 Bu kökü ÇAĞIRAN KOD bu dilimde GELDİ (`useFinancialInstruments.ts` →
+  // `/hazine/cek-senet`), yani "çağrılan her kök ALLOWED_ROOTS'ta tanımlıdır"
+  // bekçisi artık onu GÖRÜR (kanon: çağıran kod yoksa BFF kökü bekçisiz
+  // kalır). Eksikse Çek & Senet ekranı YALNIZ CANLIDA 404 alır; jsdom
+  // testleri bunu GÖRMEZ.
+  "financial-instruments",
 ]);
 
 // JSON/metin sayilan icerik tipleri: govde metne cozulup JSON olarak islenir.
