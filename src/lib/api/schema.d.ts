@@ -905,7 +905,19 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get Boq Item Allocations Endpoint
+         * @description BOQ-ALLOC — pozun bolum tahsislerinin TAMAMI, TEK cagrida.
+         *
+         *     🔴 Bu uc olmadan `PUT .../allocations` yazmaya ACILAMAZ: PUT tam kume
+         *     degistirmedir (K4) ve kismi gorusu olan bir ekran gormedigi bolumlerin
+         *     paylarini sessizce siler. Bolum ekrani yalniz KENDI payini gorur.
+         *
+         *     Kapi `_VIEW`dir (K1), PUT'un `_FULL`u DEGIL: okuma ucudur ve izin matrisi
+         *     DEGISMEZ. `record_audit` CAGIRILMAZ (K3, T7 kurali — `export_boq_endpoint`
+         *     emsali). Gorunmeyen kalem **404** alir, 403 degil (K2).
+         */
+        get: operations["get_boq_item_allocations_endpoint_boq_items__item_id__allocations_get"];
         /**
          * Replace Boq Item Allocations Endpoint
          * @description BOQ-SEC K4 — pozun bolum tahsislerini TAM KUME olarak degistirir.
@@ -3113,6 +3125,21 @@ export interface paths {
         /**
          * List Leave Types Endpoint
          * @description Aktif izin tipleri (`sort_order`). Yazma ucu YOKTUR — katalog ayarlar dilimidir.
+         *
+         *     🔴 **Kapı İK-2.1'de `personnel=view`den KİMLİK DOĞRULAMASINA indirildi** ve
+         *     bu, self-servis talep ucunun ÇALIŞABİLMESİ için zorunludur: matriste
+         *     `personnel=none` olan `procurement` rolündeki bir çalışan kendi talebini
+         *     açabiliyor ama tip listesini okuyamasaydı **formu dolduramazdı**.
+         *
+         *     Veri sızıntısı DEĞİLDİR: bu uç bir **referans kataloğudur** — izin tipinin
+         *     adı, rengi, sırası ve "yıllıktan düşer mi / belge ister mi" bayrakları. Ne
+         *     kişi, ne kayıt, ne tutar, ne de proje bilgisi taşır; şirkete özgü hiçbir
+         *     gizli değer yoktur ve satırları `leave_types` SEED'i belirler. Kapı yine de
+         *     ANONİM DEĞİLDİR (`get_current_user`): dışarıya açılmadı, yalnız oturum açmış
+         *     her role açıldı.
+         *
+         *     Genişleme BURADA BİTER: `/personnel*`, `/leave-requests` (klasik liste),
+         *     `approve`/`reject` ve bakiye uçlarının kapıları AYNEN durur.
          */
         get: operations["list_leave_types_endpoint_leave_types_get"];
         put?: never;
@@ -3149,6 +3176,39 @@ export interface paths {
          *     görünmez BC belgesi (`document_id`) → 404 (IDOR korkuluğu).
          */
         post: operations["create_leave_request_endpoint_leave_requests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/leave-requests/self": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Self Leave Requests Endpoint
+         * @description Aktörün KENDİ izin talepleri (K6).
+         *
+         *     `personnel_id` süzgeci YOKTUR — sunucu koyar; bu uç başka bir personelin
+         *     listesine çevrilemez. Bağlı personel kaydı yok → 404 · birden fazla → 409.
+         */
+        get: operations["list_self_leave_requests_endpoint_leave_requests_self_get"];
+        put?: never;
+        /**
+         * Create Self Leave Request Endpoint
+         * @description Personelin KENDİ izin talebi — onay akışı DEĞİŞMEZ, İK'da kalır.
+         *
+         *     Hedef personel gövdeden alınmaz, `user_id` köprüsünden çözülür; gövdeye
+         *     `personnel_id` konması 422'dir ve cevap hedefin var olup olmadığına göre
+         *     DEĞİŞMEZ. Bağlı kayıt yok → 404 (K3) · birden fazla kayıt → 409 (K4) ·
+         *     izin tipi yok → 404, pasif → 422 · ters tarih → 422 · görünmez BC belgesi
+         *     → 404.
+         */
+        post: operations["create_self_leave_request_endpoint_leave_requests_self_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10612,6 +10672,8 @@ export interface components {
              */
             bank_account_id: string;
             method: components["schemas"]["PaymentMethodKind"];
+            /** Financial Instrument Id */
+            financial_instrument_id?: string | null;
             /** Amount */
             amount: number | string;
             /**
@@ -10712,6 +10774,8 @@ export interface components {
              * Format: uuid
              */
             bank_account_id: string;
+            /** Financial Instrument Id */
+            financial_instrument_id: string | null;
             method: components["schemas"]["PaymentMethodKind"];
             /** Amount */
             amount: string;
@@ -13979,6 +14043,43 @@ export interface components {
             depends_on_section_id?: string | null;
             /** Milestones */
             milestones?: components["schemas"]["SectionMilestoneInput"][] | null;
+        };
+        /**
+         * SelfLeaveRequestCreate
+         * @description İK-2.1 — personelin KENDİ izin talebi. `LeaveRequestCreate`in `personnel_id`
+         *     ALINMIŞ hâlidir ve fark BİLİNÇLİDİR, kopya değil.
+         *
+         *     🔴 **`personnel_id` alanı YOKTUR ve `extra="forbid"` onu REDDEDER.** Başkasının
+         *     adına talep açmak bu yüzden 403/404 kararı gerektiren bir YETKİ SORUSU değil,
+         *     **yapısal olarak imkânsız** bir gövdedir: hangi personel adına yazılacağını
+         *     sunucu aktörün `user_id` köprüsünden ÇÖZER, istemci SÖYLEYEMEZ. Cevap (422)
+         *     hedefin var olup olmadığına göre DEĞİŞMEZ — sunucu "bu personel var" bilgisini
+         *     hiçbir biçimde sızdırmaz (IDOR korkuluğu).
+         *
+         *     Diğer her şey `LeaveRequestCreate` ile AYNIDIR: `days` SUNUCU hesabıdır,
+         *     `status` her zaman `pending` başlar, `document_id` görünürlüğü SERVİSTE
+         *     denetlenir. Alan kümesi genişletilmez — yetki genişlemesi DAR olmalıdır.
+         */
+        SelfLeaveRequestCreate: {
+            /**
+             * Leave Type Id
+             * Format: uuid
+             */
+            leave_type_id: string;
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+            /** Note */
+            note?: string | null;
+            /** Document Id */
+            document_id?: string | null;
         };
         /**
          * ShareholderInput
@@ -20178,6 +20279,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BoqItemResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_boq_item_allocations_endpoint_boq_items__item_id__allocations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoqItemAllocationsResponse"];
                 };
             };
             /** @description Yetkisiz işlem */
@@ -26478,6 +26624,100 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["LeaveRequestCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequestResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_self_leave_requests_endpoint_leave_requests_self_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["LeaveStatus"] | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequestListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_self_leave_request_endpoint_leave_requests_self_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SelfLeaveRequestCreate"];
             };
         };
         responses: {
