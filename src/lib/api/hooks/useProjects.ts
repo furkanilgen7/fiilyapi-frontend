@@ -15,16 +15,32 @@ export type ProjectTypeFilter = "taahhut" | "kendi_yatirim" | "kat_karsiligi";
 export interface ProjectListFilter {
   type?: ProjectTypeFilter;
   status?: "completed";
+  limit?: number;
+  offset?: number;
 }
 
 export const PROJECTS_QUERY_KEY = "projects";
 export const PROJECT_ACCESS_QUERY_KEY = "project-access";
 
+/**
+ * `GET /projects` `limit` tavanı (openapi.json: `le=200`). Sunucu varsayılanı
+ * 50'dir — F-FIN (`useFinancialInstruments.ts`) emsaliyle AYNI sayı: çağıran
+ * `limit`i AÇIKÇA gönderir, eksik kalan kayıtlar `total` üzerinden
+ * `buildListTruncation` ile GÖRÜNÜR kılınır (sessiz kırpma YOK).
+ */
+export const PROJECT_LIST_MAX_LIMIT = 200;
+
 export function useProjects(
   filter: ProjectListFilter = {},
 ): UseQueryResult<ProjectListResponse, Error> {
   return useQuery({
-    queryKey: [PROJECTS_QUERY_KEY, filter.type ?? null, filter.status ?? null],
+    queryKey: [
+      PROJECTS_QUERY_KEY,
+      filter.type ?? null,
+      filter.status ?? null,
+      filter.limit ?? null,
+      filter.offset ?? null,
+    ],
     queryFn: async () =>
       unwrap(
         await backendClient.GET("/projects", {
@@ -32,6 +48,8 @@ export function useProjects(
             query: {
               ...(filter.type ? { type: filter.type } : {}),
               ...(filter.status ? { status: filter.status } : {}),
+              ...(filter.limit !== undefined ? { limit: filter.limit } : {}),
+              ...(filter.offset !== undefined ? { offset: filter.offset } : {}),
             },
           },
         }),

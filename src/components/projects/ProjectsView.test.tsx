@@ -119,4 +119,24 @@ describe("ProjectsView", () => {
     render(<ProjectsView />);
     expect(screen.getByText("Projeler yüklenemedi")).toBeInTheDocument();
   });
+
+  // F-PRJPAGE — 50'den fazla proje varken sessiz kırpma yasak (F-FIN emsali).
+  it("useProjects'i acikca limit=200 ile cagirir", () => {
+    mockQuery({ data });
+    render(<ProjectsView />);
+    expect(useProjects).toHaveBeenCalledWith(expect.objectContaining({ limit: 200 }));
+  });
+
+  it("total gosterilenden buyukse kirpilma bandini basar (gercek sayilarla)", () => {
+    mockQuery({ data: { ...data, items: [item], total: 57 } });
+    render(<ProjectsView />);
+    const notice = screen.getByTestId("prj-truncation");
+    expect(notice).toHaveTextContent("İlk 1 kayıt gösteriliyor (toplam 57)");
+  });
+
+  it("total gosterilene esit/kucukse kirpilma bandi BASILMAZ", () => {
+    mockQuery({ data });
+    render(<ProjectsView />);
+    expect(screen.queryByTestId("prj-truncation")).not.toBeInTheDocument();
+  });
 });
