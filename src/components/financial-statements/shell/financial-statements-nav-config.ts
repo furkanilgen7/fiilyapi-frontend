@@ -33,16 +33,23 @@ export type FinancialNavItem =
     }
   | {
       /**
-       * 🔴 F-MT2 K3 — ÜST ÖĞEYLE AYNI HEDEFİ gösteren, BAĞLANTI OLMAYAN satır.
+       * 🔴 F-NAVRETRY T2 (kullanıcı kararı, 2026-08-19) — ÜST ÖĞEYLE AYNI
+       * HEDEFİ gösteren TIKLANABİLİR satır.
        *
        * `Gelir Tablosu` ekranı KÖKTE yaşar (E11 mockup'ı onu `/mali-tablolar`
        * olarak çiziyor; ayrı bir `/mali-tablolar/gelir-tablosu` rotası AÇILMAZ
-       * — mockup'a aykırı olurdu). Satır bir `Link` yapılsaydı kökte hem üst
-       * öğe hem bu satır CURRENT olur ve sayfada İKİ `aria-current="page"`
-       * doğardı (K7 bekçisi kırmızı, ekran okuyucu "iki ayrı sayfadasınız").
+       * — mockup'a aykırı olurdu). `mirrorsHref` üst öğenin `href`iyle
+       * BİREBİR aynıdır ve `FinancialStatementsSidebar` onu bir `Link`e
+       * çevirir — satır tıklanınca kullanıcı üst öğeyle AYNI yere gider.
        *
-       * Bu yüzden satır bir İŞARETÇİdir: hedefini `mirrorsHref` ile SÖYLER ama
-       * gezinmeyi üst öğeye bırakır ve `aria-current` ASLA sürmez.
+       * 🔴 YÖNETİM ÖLÇTÜ: naif "aynı href'e ikinci bir `link` öğesi" çözümü
+       * `isFinancialNavItemCurrent`i HER İKİ öğe için de `true` yapardı →
+       * kökte İKİ `aria-current="page"` (K7 bekçisi kırmızı, ekran okuyucu
+       * "iki ayrı sayfadasınız" der). Bu yüzden `kind` HÂLÂ `"mirror"`dur,
+       * `"link"` DEĞİL: `isFinancialNavItemCurrent` yapısal olarak
+       * `item.kind !== "link"` dalından döner, mirror hiçbir yolda
+       * `aria-current` üretmez. Görsel "buradasın" sinyali AYRI bir
+       * yüklemden (`isFinancialNavItemMirrorCurrent`, 3. katman) gelir.
        */
       readonly kind: "mirror";
       readonly label: string;
@@ -71,8 +78,9 @@ export const FINANCIAL_NAV_PARENT: FinancialNavItem = {
 /** BL:28-30 — üst öğenin altındaki ÜÇ girintili alt sekme. */
 export const FINANCIAL_SUB_NAV: readonly FinancialNavItem[] = [
   // BL:28 — 🔴 F-MT2 K3 (yönetim kararı A): uç AÇILDI (`GET /income-statement`)
-  // ve ekran KÖKTE (`/mali-tablolar`) yaşıyor. Satır artık devre dışı DEĞİL,
-  // üst öğenin hedefini yansıtan bir İŞARETÇİdir; gezinme üst öğededir.
+  // ve ekran KÖKTE (`/mali-tablolar`) yaşıyor. F-NAVRETRY T2 (2026-08-19):
+  // satır artık TIKLANABİLİR (üst öğenin hedefine giden bir `Link`), ama
+  // `aria-current` hâlâ yalnız üst öğeden gelir (bkz. tip tanımı yorumu).
   { kind: "mirror", label: "Gelir Tablosu", mirrorsHref: FINANCIAL_STATEMENTS_URL },
   // BL:29 — bu dilimin ekranı. `exact: true`: alt yolu yoktur ama kural
   // kardeşleriyle aynıdır ve üst öğeyle çift yanmayı yapısal olarak keser.
