@@ -4071,6 +4071,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/projects/{project_id}/land-share/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Land Share Summary Endpoint */
+        get: operations["get_land_share_summary_endpoint_projects__project_id__land_share_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/land-share/units": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Land Share Units Endpoint */
+        get: operations["list_land_share_units_endpoint_projects__project_id__land_share_units_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/roles": {
         parameters: {
             query?: never;
@@ -5382,6 +5416,140 @@ export interface paths {
         get: operations["get_cash_flow_endpoint_treasury_cash_flow_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/financial-instruments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Financial Instruments Endpoint
+         * @description E10:99-161 tablosu — `direction` sekmeleri (E10:94-95) ve `instrument_kind`
+         *     (E10:96 `Senetler`) SUZGECTIR, ayri uc DEGIL.
+         *
+         *     🔴 Yanit SAYFALIDIR (`limit`/`offset`/`total`): portfoy buyur ve sayfasiz
+         *     liste bir sonraki turun borcu olurdu. `limit` varsayilan 50, tavan 200 —
+         *     asim **422** (kirpma DEGIL).
+         *
+         *     🔴 `status` bir SUZGECTIR ama "Vadede" DEGILDIR: rozet turevdir (K2) ve her
+         *     satirda `is_due` alani olarak doner. "Bu ay vadeli olanlar" isteniyorsa yol
+         *     `status=portfolio&due_before=<ay sonu>`tur.
+         *
+         *     Kapsam suzgeci HER ZAMAN uygulanir ve `total`a DA yansir; projesiz (sirket
+         *     geneli) cekler izni olan herkese gorunur (`scope_clause`in ucuncu hali).
+         */
+        get: operations["list_financial_instruments_endpoint_financial_instruments_get"];
+        put?: never;
+        /**
+         * Create Financial Instrument Endpoint
+         * @description E10:65 `+ Cek Ekle`.
+         *
+         *     ⚠️ **Formun MOCKUP'I YOKTUR** — alan kumesi tablonun sutunlarindan
+         *     (E10:104-110) ve emrin K1 tablosundan alindi, UYDURULMADI.
+         *
+         *     * `status` govdede KABUL EDILMEZ (**422**, K7): yeni kayit HER ZAMAN
+         *       `portfolio` dogar;
+         *     * `due_date < issue_date` → **422**;
+         *     * `amount` `0.005` gibi bir deger → **422** (sessizce yuvarlanmaz);
+         *     * gorunmeyen `project_id` / var olmayan `bank_account_id` → **404**.
+         */
+        post: operations["create_financial_instrument_endpoint_financial_instruments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/financial-instruments/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Financial Instruments Summary Endpoint
+         * @description E10:69-90 — dort kart, DORDU DE TUREV (K8).
+         *
+         *     🔴 **Kartlar ORTUSUR ve bu TANIMDIR:** portfoydeki bir cek ayni anda "bu ay
+         *     vadeli"dir; mockup da 8 + 5 ≠ 3'u ayri sayar (E10:73,78,83). Kartlarin
+         *     toplaminin portfoye esit olmasi BEKLENMEZ.
+         *
+         *     "Bu ay" TAKVIM AYIDIR (ayin 1'i – son gunu), "bugunden 30 gun" DEGIL.
+         *     `as_of` ECHO edilir: onsuz kartin hangi aya gore hesaplandigi dogrulanamaz.
+         */
+        get: operations["financial_instruments_summary_endpoint_financial_instruments_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/financial-instruments/{instrument_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Financial Instrument Endpoint
+         * @description Tek kayit + turev `is_due`. Gorunmeyen kayit ile var OLMAYAN kayit AYNI
+         *     404 govdesini dondurur (repo kanonu).
+         */
+        get: operations["get_financial_instrument_endpoint_financial_instruments__instrument_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Financial Instrument Endpoint
+         * @description **YALNIZ `admin`** (modul docstring'i) → 204; terminal durumda **409**.
+         *
+         *     `full` seviyesi (muhasebe) 403 alir: silme mali izi yok eder ve tahsil
+         *     edilmis bir cekin kaydi hicbir seviyede silinemez.
+         */
+        delete: operations["delete_financial_instrument_endpoint_financial_instruments__instrument_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Financial Instrument Endpoint
+         * @description Kismi guncelleme; kayit DENETIMLERDEN ONCE kilitlenir (TOCTOU).
+         *
+         *     🔴 **`status` govdede KABUL EDILMEZ (422, K7)** — durum degisiminin TEK yolu
+         *     asagidaki `/status` ucudur. Ayni uca konsaydi invaryantin IKI YAZMA KAPISI
+         *     dogar ve biri kilitsiz kalirdi (BOQ-SEC-B kanonu).
+         */
+        patch: operations["update_financial_instrument_endpoint_financial_instruments__instrument_id__patch"];
+        trace?: never;
+    };
+    "/financial-instruments/{instrument_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change Financial Instrument Status Endpoint
+         * @description 🔴 K7 — durumun TEK yazma kapisi (K2 tablosu burada koşar).
+         *
+         *     Uc ayri **409** tanisi doner: terminal durum · yon uyusmazligi · gecersiz
+         *     gecis. Ayni metni paylassalardi kullanicinin yapabilecegi sey gizlenirdi.
+         *
+         *     Satir DENETIMLERDEN ONCE kilitlenir (EŞİK=KİLİT): kilitsiz olsaydi iki
+         *     eszamanli istek AYNI `portfolio` degerini okur ve IKISI DE gecerdi.
+         */
+        post: operations["change_financial_instrument_status_endpoint_financial_instruments__instrument_id__status_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8210,6 +8378,239 @@ export interface components {
             reservation_deposit: string | null;
         };
         /**
+         * FinancialInstrumentCreate
+         * @description `POST /financial-instruments` — E10 tablosunun yazma yolu.
+         *
+         *     ⚠️ **MOCKUP'TA FORM YOKTUR.** E10:65'te `+ Cek Ekle` dugmesi cizilmis ama
+         *     acildiginda gorunecek form CIZILMEMISTIR. Alan kumesi bu yuzden UYDURULMADI:
+         *     tablonun sutunlarindan (E10:104-110) ve emrin K1 tablosundan BIREBIR alindi.
+         *     Formun kendisi frontend dilimi icin ACIK BORCTUR (rapor).
+         */
+        FinancialInstrumentCreate: {
+            instrument_kind: components["schemas"]["FinancialInstrumentKind"];
+            direction: components["schemas"]["FinancialInstrumentDirection"];
+            /** Serial No */
+            serial_no: string;
+            /** Drawer Name */
+            drawer_name: string;
+            /** Description */
+            description?: string | null;
+            /** Bank Name */
+            bank_name?: string | null;
+            /**
+             * Issue Date
+             * Format: date
+             */
+            issue_date: string;
+            /**
+             * Due Date
+             * Format: date
+             */
+            due_date: string;
+            /** Amount */
+            amount: number | string;
+            /** Project Id */
+            project_id?: string | null;
+            /** Bank Account Id */
+            bank_account_id?: string | null;
+        };
+        /**
+         * FinancialInstrumentDirection
+         * @description Yon — E10:94-95 `Alinan Cekler` / `Verilen Cekler` sekmeleri.
+         *
+         *     Yon KOLONDUR ve turetilmez: `payments`ta yon bagli faturanin
+         *     `direction`'indan gelir (K4) cunku odemenin bir sahibi vardir; cek ise
+         *     KENDI BASINA durur — hicbir faturaya bagli olmayan bir cek de portfoydedir.
+         * @enum {string}
+         */
+        FinancialInstrumentDirection: "received" | "issued";
+        /**
+         * FinancialInstrumentKind
+         * @description Kiymetli evrak turu — E10:94-96 sekmeleri.
+         *
+         *     🔴 **K1: CEK VE SENET AYRI TABLO ACMAZ.** Alan kumesi %95 ortaktir; ayirmak
+         *     iki kopya dogrulayici, iki kopya KPI ve iki kopya durum makinesi demektir —
+         *     ve biri otekinden sessizce sapardi. Tur bu yuzden bir KOLONDUR.
+         *
+         *     Kume `PaymentMethodKind`in ODEME SEKLI kumesiyle etiket duzeyinde kesisir
+         *     ama AYRI BIR TIPTIR: odeme sekli ayrica `transfer`/`cash` tasir ve tek tipte
+         *     birlestirilseydi portfoye "Nakit cek" gibi anlamsiz bir uye vaat edilirdi.
+         * @enum {string}
+         */
+        FinancialInstrumentKind: "cheque" | "promissory_note";
+        /**
+         * FinancialInstrumentListResponse
+         * @description TB3 liste zarfi: `items` + `total` + `limit`/`offset` (repo kanonu).
+         *
+         *     🔴 Sayfalama BASINDAN vardir: portfoy buyur ve sayfasiz liste bir sonraki
+         *     turun borcu olurdu (`/projects` bunu zaten yasadi).
+         *
+         *     `as_of` ECHO edilir: `is_due` onsuz DOGRULANAMAZ — istemci kendi saatiyle
+         *     hesaplarsa TR gecesi 00:00-03:00 arasinda sunucudan bir gun sapar
+         *     (`UpcomingPaymentsResponse.as_of` emsali).
+         */
+        FinancialInstrumentListResponse: {
+            /** Items */
+            items: components["schemas"]["FinancialInstrumentResponse"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+        };
+        /**
+         * FinancialInstrumentResponse
+         * @description Satir + 🔴 TUREV `is_due` (K2).
+         *
+         *     `status` (kalici) ve `is_due` (turev) **AYRI alanlardir** ve frontend rozeti
+         *     IKISINDEN kurar. Tek alanda birlestirilseydi (or. `status='due'`) kalici
+         *     durum kaybolur, ertesi ay geri getirilemez ve E10:130 `Portfoyde` ile
+         *     E10:121 `Vadede` ayni kolona yazilmis olurdu.
+         */
+        FinancialInstrumentResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            instrument_kind: components["schemas"]["FinancialInstrumentKind"];
+            direction: components["schemas"]["FinancialInstrumentDirection"];
+            /** Serial No */
+            serial_no: string;
+            /** Drawer Name */
+            drawer_name: string;
+            /** Description */
+            description: string | null;
+            /** Bank Name */
+            bank_name: string | null;
+            /**
+             * Issue Date
+             * Format: date
+             */
+            issue_date: string;
+            /**
+             * Due Date
+             * Format: date
+             */
+            due_date: string;
+            /** Amount */
+            amount: string;
+            status: components["schemas"]["FinancialInstrumentStatus"];
+            /** Project Id */
+            project_id: string | null;
+            /** Bank Account Id */
+            bank_account_id: string | null;
+            /** Created At */
+            created_at: string | null;
+            /** Updated At */
+            updated_at: string | null;
+            /** Is Due */
+            is_due: boolean;
+        };
+        /**
+         * FinancialInstrumentStatus
+         * @description Durum — gorev emri K2 birebir.
+         *
+         *     🔴 **"VADEDE" BURADA YOKTUR VE OLMAYACAK.** E10:121,148'in turuncu rozeti bir
+         *     enum uyesi DEGIL TUREVDIR (`status = portfolio` **ve** vade penceresi icinde).
+         *     Enum'a konsaydi her gun bir cron'un satirlari guncellemesi gerekirdi ve
+         *     **zamanla degisen bir olguyu kalici kolona yazmak BAYATLAR** — ertesi gun
+         *     yanlis rozet basar, kimse fark etmez. Turev `instruments/derive.py`dedir ve
+         *     yanitta `is_due` olarak AYRI bir alandir.
+         *
+         *     Gecis kurallari `instruments/transitions.py`de TEK TABLODADIR; burada
+         *     `if status == ...` YAZILMAZ.
+         * @enum {string}
+         */
+        FinancialInstrumentStatus: "portfolio" | "collected" | "paid" | "returned" | "cancelled";
+        /**
+         * FinancialInstrumentStatusChange
+         * @description `POST /financial-instruments/{id}/status` — TEK alan.
+         *
+         *     Sema hedefin GECERLILIGINI dogrulamaz, yalniz tipini: kural tablosu
+         *     `transitions.py`dedir ve tabloda olmayan her cift **409**dur. Sema burada
+         *     reddetseydi "gecersiz gecis" hatasi iki ayri kod donduren iki ayri katmana
+         *     bolunurdu ve istemci hangisini bekleyecegini bilemezdi.
+         */
+        FinancialInstrumentStatusChange: {
+            status: components["schemas"]["FinancialInstrumentStatus"];
+        };
+        /**
+         * FinancialInstrumentSummaryCard
+         * @description E10:70-89'un TEK karti — tutar VE adet (E10:73 `8 adet`).
+         *
+         *     Adet ayri bir alandir, `items` uzunlugundan turetilmez: kart TUM kumeyi
+         *     sayar, liste ise SAYFAYI dondurur (BOR-TEMIZ'in "iki sayac ayri seydir"
+         *     kanonu).
+         */
+        FinancialInstrumentSummaryCard: {
+            /** Amount */
+            amount: string;
+            /** Count */
+            count: number;
+        };
+        /**
+         * FinancialInstrumentSummaryResponse
+         * @description E10:69-90 — dort kart, DORDU DE TUREV (K8).
+         *
+         *     🔴 **`due_this_month` obur ucuyle ORTUSUR** ve bu bir kusur degil TANIMDIR:
+         *     portfoydeki bir cek ayni anda "bu ay vadeli"dir. Mockup da 8 + 5 ≠ 3'u ayri
+         *     sayar (E10:73,78,83). Kartlarin toplaminin portfoye esit olmasini bekleyen
+         *     bir test YAZILMAZ; tersine, ortusmeyi KANITLAYAN bir bekci yazilir.
+         *
+         *     `as_of` yine ECHO edilir: "Bu Ay Vadeli" hangi aya gore hesaplandigi
+         *     bilinmeden dogrulanamaz.
+         */
+        FinancialInstrumentSummaryResponse: {
+            portfolio_received: components["schemas"]["FinancialInstrumentSummaryCard"];
+            issued: components["schemas"]["FinancialInstrumentSummaryCard"];
+            due_this_month: components["schemas"]["FinancialInstrumentSummaryCard"];
+            returned_cancelled: components["schemas"]["FinancialInstrumentSummaryCard"];
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+        };
+        /**
+         * FinancialInstrumentUpdate
+         * @description `PATCH /financial-instruments/{id}` — KISMI govde, `status` HARIC (K7).
+         *
+         *     Her alan `| None`dir ama anlamlari AYRIDIR ve servis ikisini `exclude_unset`
+         *     ile ayirir: gonderilmeyen alan DEGISMEZ, acikca `null` gonderilen alan
+         *     TEMIZLENIR. Zorunlu kolonlara (`serial_no`, `drawer_name`, tarihler, tutar)
+         *     acikca `null` gondermek servis katmaninda korunur — sema hepsini `| None`
+         *     yazmak zorundadir cunku govde kismidir.
+         */
+        FinancialInstrumentUpdate: {
+            instrument_kind?: components["schemas"]["FinancialInstrumentKind"] | null;
+            direction?: components["schemas"]["FinancialInstrumentDirection"] | null;
+            /** Serial No */
+            serial_no?: string | null;
+            /** Drawer Name */
+            drawer_name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Bank Name */
+            bank_name?: string | null;
+            /** Issue Date */
+            issue_date?: string | null;
+            /** Due Date */
+            due_date?: string | null;
+            /** Amount */
+            amount?: number | string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Bank Account Id */
+            bank_account_id?: string | null;
+        };
+        /**
          * FuelLogCreate
          * @description `POST /equipment/fuel-logs` — M4 kaydı.
          *
@@ -9430,6 +9831,14 @@ export interface components {
             /** Net Balance */
             net_balance: string;
         };
+        /**
+         * LandShareBalance
+         * @description İki denge YAN YANA döner; tek "dengede mi" bayrağına indirgenmez (K2).
+         */
+        LandShareBalance: {
+            count_balance: components["schemas"]["LandShareCountBalance"];
+            value_balance: components["schemas"]["LandShareValueBalance"];
+        };
         /** LandShareCard */
         LandShareCard: {
             /** Landowner Name */
@@ -9465,6 +9874,256 @@ export interface components {
             estimated_profit: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
             margin: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
             construction_progress: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+        };
+        /**
+         * LandShareContract
+         * @description `Proje - Kat Karşılığı` sözleşme kartı — YALNIZ modelde GERÇEKTEN VAR OLAN
+         *     kolonlar (K5).
+         *
+         *     T1 ölçümü: mockup'ın çizdiği yedi alanın (sözleşme no · noter tarihi · arsa
+         *     alanı · inşaat alanı · teslim tarihi · gecikme cezası · teminat) YEDİSİ DE
+         *     `ProjectLandShare`de kolon olarak vardır. Uydurulan alan yoktur ve bu dilim
+         *     kolon AÇMAZ.
+         *
+         *     Hepsi `None` olabilir (`landowner_name` ve iki oran hariç): sözleşme
+         *     kademeli girilir ve boş alan "bilinmiyor"dur — uydurma değer üretilmez.
+         */
+        LandShareContract: {
+            /** Landowner Name */
+            landowner_name: string;
+            /** Our Share Pct */
+            our_share_pct: string;
+            /** Owner Share Pct */
+            owner_share_pct: string;
+            /** Contract No */
+            contract_no: string | null;
+            /** Notary Date */
+            notary_date: string | null;
+            /** Land Area M2 */
+            land_area_m2: string | null;
+            /** Construction Area M2 */
+            construction_area_m2: string | null;
+            /** Delivery Date */
+            delivery_date: string | null;
+            /** Daily Penalty */
+            daily_penalty: string | null;
+            /** Guarantee Amount */
+            guarantee_amount: string | null;
+        };
+        /**
+         * LandShareCountBalance
+         * @description `Ünite Sayısı Dengesi` kartı (mockup `Form - Paylasim Girisi`).
+         *
+         *     `*_missing_count` İŞARETLİDİR: artı = eksik atama, eksi = fazla atama.
+         *     Mutlak değere indirgemek "3 eksik" ile "3 fazla"yı aynı sayı yapardı.
+         *
+         *     Beklenen adetler TEK yuvarlamadan türer (`owner = toplam − our`), bu yüzden
+         *     `our_expected_count + owner_expected_count == total_unit_count` her zaman
+         *     doğrudur — ayrı yuvarlama 42 üniteyi 23+20=43 yapardı.
+         */
+        LandShareCountBalance: {
+            /** Total Unit Count */
+            total_unit_count: number;
+            /** Our Expected Count */
+            our_expected_count: number;
+            /** Owner Expected Count */
+            owner_expected_count: number;
+            /** Our Assigned Count */
+            our_assigned_count: number;
+            /** Owner Assigned Count */
+            owner_assigned_count: number;
+            /** Unassigned Count */
+            unassigned_count: number;
+            /** Our Missing Count */
+            our_missing_count: number;
+            /** Owner Missing Count */
+            owner_missing_count: number;
+        };
+        /**
+         * LandShareOurSide
+         * @description `BİZİM PAY` kartı — satış kırılımı yalnız BU tarafta anlamlıdır.
+         *
+         *     `available_count` YALNIZ `listed` üniteleri sayar; `closed` (satışa kapalı)
+         *     ve `sales_status` NULL olan satırlar HİÇBİR sayaca girmez — uydurulmuş bir
+         *     durum atanmaz. Bu yüzden üç sayacın toplamı `unit_count`a eşit OLMAYABİLİR.
+         *     `remaining_value` ise `value_total − sold_value` türevidir ve tüm satılmamış
+         *     stoku kapsar (mockup: 23 ünite − 8 satılan = 15 "Kalan Stok").
+         */
+        LandShareOurSide: {
+            /** Unit Count */
+            unit_count: number;
+            /** Value Total */
+            value_total: string;
+            /** Sold Count */
+            sold_count: number;
+            /** Reserved Count */
+            reserved_count: number;
+            /** Available Count */
+            available_count: number;
+            /** Sold Value */
+            sold_value: string;
+            /** Remaining Value */
+            remaining_value: string;
+        };
+        /**
+         * LandShareOwnerSide
+         * @description `ARSA SAHİBİ PAYI` kartı. Satış sayaçları YOKTUR ve eklenmeyecektir:
+         *     arsa sahibi ünitelerini KENDİSİ satar, bizim satış sistemimize dahil
+         *     değildir (mockup `Proje - Kat Karşılığı`).
+         */
+        LandShareOwnerSide: {
+            /** Unit Count */
+            unit_count: number;
+            /** Value Total */
+            value_total: string;
+        };
+        /**
+         * LandSharePartition
+         * @description Bir kümenin (arsa sahibi payı · atanmamış) adet + değer toplamı.
+         */
+        LandSharePartition: {
+            /** Unit Count */
+            unit_count: number;
+            /** Value Total */
+            value_total: string;
+        };
+        /**
+         * LandShareShareholderRow
+         * @description `Hissedar Dağılımı` satırı (mockup: "Ahmet Yılmaz (%50) · 10 ünite").
+         *
+         *     `share_pct` OLDUĞU GİBİ basılır; oranlar toplamı 100 değilse uç düzeltmez
+         *     (K2 kanonu: ekranın görevi toplamı olduğu gibi basmaktır). Ünite sayımı
+         *     YALNIZ `owner_side = landowner` VE bu hissedara atanmış satırları sayar —
+         *     çelişkili veri (bkz. `land_share.py`) hissedar dağılımına sızmaz.
+         */
+        LandShareShareholderRow: {
+            /**
+             * Shareholder Id
+             * Format: uuid
+             */
+            shareholder_id: string;
+            /** Name */
+            name: string;
+            /** Share Pct */
+            share_pct: string;
+            /** Unit Count */
+            unit_count: number;
+            /** Value Total */
+            value_total: string;
+        };
+        /**
+         * LandShareSummaryResponse
+         * @description `GET /projects/{id}/land-share/summary`.
+         *
+         *     Kat karşılığı OLMAYAN proje (kayıt yok) burada 404 alır, BOŞ ÖZET DEĞİL:
+         *     boş özet ekrana "%0/%0 paylaşım" bastırır ve kullanıcı veriyi kaybettiğini
+         *     sanardı.
+         */
+        LandShareSummaryResponse: {
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Project Name */
+            project_name: string;
+            contract: components["schemas"]["LandShareContract"];
+            totals: components["schemas"]["LandSharePartition"];
+            our_side: components["schemas"]["LandShareOurSide"];
+            owner_side: components["schemas"]["LandShareOwnerSide"];
+            /** Shareholders */
+            shareholders: components["schemas"]["LandShareShareholderRow"][];
+            unassigned: components["schemas"]["LandSharePartition"];
+            balance: components["schemas"]["LandShareBalance"];
+        };
+        /**
+         * LandShareUnitListResponse
+         * @description SAYFALI: 42 ünite bugün küçük, 400 ünite yarın değil.
+         *
+         *     `total` SÜZGEÇLENMİŞ kümenin boyutudur (sayfalamadan ÖNCE) — sayfa çubuğu
+         *     buradan çıkar (`ProjectListResponse.total` ile aynı sözleşme).
+         */
+        LandShareUnitListResponse: {
+            /** Items */
+            items: components["schemas"]["LandShareUnitRow"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * LandShareUnitRow
+         * @description `Kat Karşılığı - Paylaşım` orta tablosunun bir satırı.
+         *
+         *     `shareholder_name` ve `buyer_name` YANITTA gelir (mockup "Hissedar / Alıcı"
+         *     sütununda arsa satırında hissedarı, bizim satırda alıcıyı basar) — frontend
+         *     satır başına ikinci bir istek atmaya zorlanmaz (N+1 yasağı).
+         */
+        LandShareUnitRow: {
+            /**
+             * Unit Id
+             * Format: uuid
+             */
+            unit_id: string;
+            /**
+             * Block Id
+             * Format: uuid
+             */
+            block_id: string;
+            /** Block Name */
+            block_name: string;
+            /** Unit No */
+            unit_no: string;
+            unit_kind: components["schemas"]["UnitKind"];
+            /** Layout */
+            layout: string | null;
+            /** Floor */
+            floor: string | null;
+            /** Gross Area M2 */
+            gross_area_m2: string | null;
+            /** Appraisal Value */
+            appraisal_value: string | null;
+            owner_side: components["schemas"]["UnitOwnerSide"] | null;
+            /** Shareholder Id */
+            shareholder_id: string | null;
+            /** Shareholder Name */
+            shareholder_name: string | null;
+            /** Buyer Name */
+            buyer_name: string | null;
+            sales_status: components["schemas"]["UnitSalesStatus"] | null;
+        };
+        /**
+         * LandShareValueBalance
+         * @description `Değer Dengesi (Rayiç)` kartı — adet dengesinden AYRI hesaplanır (K2).
+         *
+         *     Payda ATANMIŞ değerdir (atanmamış üniteler girmez): henüz paylaşılmamış bir
+         *     ünitenin rayici gerçekleşen oranı seyreltemez.
+         *
+         *     Dört alan `None` olabilir ve bu "HESAPLANAMAZ"dır, "sıfır" değil: atanmış
+         *     rayiç değer toplamı 0 ise (rayiç girilmemiş proje) sapma tanımsızdır ve `0`
+         *     dönmek ekrana "✓ denge uygun" bastırırdı. `tolerance_pct` bu durumda BİLE
+         *     döner — frontend eşiği kopyalamak zorunda kalmasın diye (bir eşik iki yerde
+         *     yaşarsa ayrışır).
+         */
+        LandShareValueBalance: {
+            /** Our Value */
+            our_value: string;
+            /** Owner Value */
+            owner_value: string;
+            /** Assigned Value Total */
+            assigned_value_total: string;
+            /** Our Actual Pct */
+            our_actual_pct: string | null;
+            /** Owner Actual Pct */
+            owner_actual_pct: string | null;
+            /** Deviation Pct */
+            deviation_pct: string | null;
+            /** Tolerance Pct */
+            tolerance_pct: string;
+            /** Is Within Tolerance */
+            is_within_tolerance: boolean | null;
         };
         /**
          * LeaveApproveRequest
@@ -10000,9 +10659,16 @@ export interface components {
          * PaymentMethodKind
          * @description Odeme sekli — FGI:225-228 KAPALI kumesi BIREBIR.
          *
-         *     ⚠️ `cheque` / `promissory_note` yalnizca ODEME SEKLININ ETIKETIDIR: cek ya
-         *     da senet KAYDI ACMAZ (cek varligi HZ-2'nin isi, `cheque_id` kolonu bu
-         *     yuzden yoktur).
+         *     ⚠️ `cheque` / `promissory_note` yalnizca ODEME SEKLININ ETIKETIDIR ve
+         *     OYLE KALIR: bu alan tek basina bir cek KAYDI ACMAZ.
+         *
+         *     🔴 **FIN-1 (2026-08-18) ILE DEGISEN KISIM:** artik cek/senet VARLIGI vardir
+         *     (`FinancialInstrument`) ve `payments.financial_instrument_id` ile bu tabloya
+         *     ISTEGE BAGLI bir bag kurulabilir. HZ-1'in "`cheque_id` kolonu bu yuzden
+         *     yoktur" cumlesi ARTIK GECERSIZDIR — ama bagin **ZORUNLU OLMAMASI** bilincli
+         *     bir karardir (FIN-1 K4): bugunku `method='cheque'` kayitlarinin hepsi bossa
+         *     ve migration onlari dolduramiyorsa, zorunluluk MEVCUT VERIYI gecersiz
+         *     kilardi. Yani etiket ile varlik AYRI iki olgudur ve biri otekini ima ETMEZ.
          *
          *     `invoicing.InvoicePaymentMethod` ile AYRI bir tiptir ve oyle kalir: fatura
          *     tarafi `credit_card` tasir ama `promissory_note` tasimaz — kumeler
@@ -28240,6 +28906,102 @@ export interface operations {
             };
         };
     };
+    get_land_share_summary_endpoint_projects__project_id__land_share_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LandShareSummaryResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_land_share_units_endpoint_projects__project_id__land_share_units_get: {
+        parameters: {
+            query?: {
+                owner_side?: components["schemas"]["UnitOwnerSideFilter"] | null;
+                block_id?: string | null;
+                q?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LandShareUnitListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_roles_endpoint_roles_get: {
         parameters: {
             query?: never;
@@ -31717,6 +32479,343 @@ export interface operations {
             };
             /** @description Kayıt bulunamadı */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_financial_instruments_endpoint_financial_instruments_get: {
+        parameters: {
+            query?: {
+                direction?: components["schemas"]["FinancialInstrumentDirection"] | null;
+                instrument_kind?: components["schemas"]["FinancialInstrumentKind"] | null;
+                status?: components["schemas"]["FinancialInstrumentStatus"] | null;
+                project_id?: string | null;
+                due_before?: string | null;
+                due_after?: string | null;
+                q?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinancialInstrumentListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_financial_instrument_endpoint_financial_instruments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinancialInstrumentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinancialInstrumentResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt ya da gövdedeki proje/banka hesabı bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Gövde kuralı ihlali (vade keşide tarihinden önce, tutar ölçeği) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    financial_instruments_summary_endpoint_financial_instruments_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinancialInstrumentSummaryResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_financial_instrument_endpoint_financial_instruments__instrument_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                instrument_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinancialInstrumentResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Çek/senet kaydı bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_financial_instrument_endpoint_financial_instruments__instrument_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                instrument_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Çek/senet kaydı bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yalnızca portföydeki kayıt silinebilir */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_financial_instrument_endpoint_financial_instruments__instrument_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                instrument_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinancialInstrumentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinancialInstrumentResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt ya da gövdedeki proje/banka hesabı bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Portföyden çıkmış kayıtta yön/tür */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Gövde kuralı ihlali (vade keşide tarihinden önce, tutar ölçeği) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    change_financial_instrument_status_endpoint_financial_instruments__instrument_id__status_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                instrument_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinancialInstrumentStatusChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinancialInstrumentResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Çek/senet kaydı bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Geçersiz geçiş · terminal durum · yön uyuşmazlığı */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
