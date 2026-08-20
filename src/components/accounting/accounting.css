@@ -1317,6 +1317,34 @@ span.mu-tb__total {
   line-height: 1.7;
 }
 
+/* DK:194-211 — engelli bandın İÇİNDEKİ taslak fiş listesi (yönetim
+   düzeltmesi: `journal-entries` süzülebiliyor, liste UYDURULMAZ ÇEKİLİR). */
+.dkap-draft-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px; /* DK:210 */
+  margin-top: 9px;
+  list-style: none;
+}
+.dkap-draft-list__row {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* DK:211 */
+  padding: 8px 11px; /* DK:211 */
+  background: var(--color-surface); /* DK:211 beyaz */
+  border-radius: var(--radius-7);
+}
+.dkap-draft-list__desc {
+  flex: 1;
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+}
+.dkap-draft-list__amount {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
 /* DK:257-267 — onay diyaloğu "Fiş Sayısı" / "Mizan Durumu" ikilisi. */
 .dkap-confirm-grid {
   display: grid;

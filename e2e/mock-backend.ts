@@ -13335,7 +13335,12 @@ let accountingPeriodsState: MockAccountingPeriod[] = [
   { id: "ap-2026-05", year: 2026, month: 5, status: "closed", entry_count: 192, draft_count: 0, closed_by_id: ME.id, closed_by_name: ME.full_name, closed_at: "2026-06-04T09:00:00Z", created_at: "2026-05-01T00:00:00Z", updated_at: "2026-06-04T09:00:00Z" },
   { id: "ap-2026-06", year: 2026, month: 6, status: "closed", entry_count: 204, draft_count: 0, closed_by_id: ME.id, closed_by_name: ME.full_name, closed_at: "2026-07-07T09:00:00Z", created_at: "2026-06-01T00:00:00Z", updated_at: "2026-07-07T09:00:00Z" },
   // DK:170-215 — Temmuz ENGELLİ (K2): status "open" + draft_count > 0.
-  { id: "ap-2026-07", year: 2026, month: 7, status: "open", entry_count: 218, draft_count: 3, closed_by_id: null, closed_by_name: null, closed_at: null, created_at: "2026-07-01T00:00:00Z", updated_at: "2026-07-01T00:00:00Z" },
+  // 🔴 draft_count=2 GERÇEK veriyle EŞLEŞİR: `ACCOUNTING_READ_ENTRY_SEEDS`
+  // Temmuz'da TAM İKİ `draft` fiş taşır (je-2607-draft-1/2). Bu iki dizi
+  // AYRI fikstürdür ama artık BlockedReasonRow ikisini BİRLİKTE gösteriyor —
+  // sayı UYUŞMAZSA banner "N taslak fiş var" derken listede farklı sayıda
+  // satır basardı.
+  { id: "ap-2026-07", year: 2026, month: 7, status: "open", entry_count: 218, draft_count: 2, closed_by_id: null, closed_by_name: null, closed_at: null, created_at: "2026-07-01T00:00:00Z", updated_at: "2026-07-01T00:00:00Z" },
   // DK:220-235 — Ağustos KAPATILABİLİR (K2): status "open" + draft_count 0.
   { id: "ap-2026-08", year: 2026, month: 8, status: "open", entry_count: 86, draft_count: 0, closed_by_id: null, closed_by_name: null, closed_at: null, created_at: "2026-08-01T00:00:00Z", updated_at: "2026-08-01T00:00:00Z" },
   // Eylül-Aralık 2026: kayıt YOK (K3) — bilinçli olarak eklenmedi.

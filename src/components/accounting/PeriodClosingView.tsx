@@ -12,9 +12,11 @@ import {
   useCloseAccountingPeriod,
   useReopenAccountingPeriod,
 } from "@/lib/api/hooks/useAccountingPeriodMutations";
+import { useJournalEntries } from "@/lib/api/hooks/useJournalEntries";
 import { isForbidden } from "@/lib/api/unwrap";
 import { canDelete, hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
+import { formatCurrency } from "@/lib/format";
 
 import {
   ACCOUNTING_PERMISSION_MODULE,
@@ -358,15 +360,30 @@ function PeriodRowAction({
 }
 
 /**
- * DK:186-215 — Temmuz satırının altındaki hata bandı. Backend `draft_count`
- * (SAYI) döner, taslak fişlerin KENDİSİNİ (numara/açıklama/tutar) DEĞİL —
- * `AccountingPeriodListItem` şeması bunu bilinçli taşımaz (K9 docstring'i:
- * tek bir dönemi döndüren uçlar için bu ek sorgu turu GEREKSİZDİR). Mockup'ın
- * üç örnek satırı (`YEV-2026-0214` vb.) bu yüzden UYDURULMAZ; bunun yerine
- * kullanıcı Yevmiye Defteri'ne yönlendirilir — zarif düşüş (WORKFLOW §3).
+ * DK:186-215 — Temmuz satırının altındaki hata bandı. 🔴 YÖNETİM ÖLÇÜMÜYLE
+ * DÜZELTİLDİ: `GET /journal-entries` `status`+`year`+`month` süzer (şema
+ * notu, `useJournalEntries.ts`) — taslak fişlerin KENDİSİ ÇEKİLEBİLİR.
+ * İlk sürüm bunu "backend vermiyor" varsayıp tek bir jenerik linke
+ * düşmüştü; bu bir ÖLÇÜM HATASIYDI, gerçek bir backend boşluğu DEĞİLDİ.
+ *
+ * 🔴 N+1 KORKULUĞU: sorgu yalnız BU bileşende (satır başına BİR engelli
+ * dönem varsa BİR çağrı) yaşar — 12 satırlık tabloda kapatılabilir/kapalı/
+ * kayıt-yok satırlar hiç çağrı YAPMAZ, yalnız `blocked` durumundaki satırlar
+ * kendi döneminin taslaklarını çeker.
+ *
+ * 🔴 FİŞ NUMARASI (`YEV-2026-0214`) UYDURULMAZ: `JournalEntryResponse`
+ * şemasında böyle bir alan YOKTUR (yalnız `id` UUID'dir) — mockup'ın
+ * numarası örnek/kurgu biçimdir. Ekran gerçekte var olan alanları basar:
+ * tarih · açıklama · tutar · Yevmiye Defteri'ne link (WORKFLOW §3 zarif
+ * düşüş — numara YOK ama liste GERÇEK).
  */
 function BlockedReasonRow({ row }: { row: PeriodRow }) {
   const count = row.item?.draft_count ?? 0;
+  const draftsQuery = useJournalEntries({ status: "draft", year: row.year, month: row.month });
+  const errorMessage = draftsQuery.isError
+    ? backendErrorMessage(draftsQuery.error, "Taslak fişler yüklenemedi.")
+    : undefined;
+
   return (
     <tr className="dkap-row--blocked" data-testid={`dkap-blocked-reason-${row.month}`}>
       <td colSpan={6}>
@@ -378,9 +395,29 @@ function BlockedReasonRow({ row }: { row: PeriodRow }) {
             </p>
             <p className="dkap-blocked-banner__detail">
               Taslak durumdaki fişler kapanışa dâhil edilemez. Kapatmadan önce hepsini
-              kesinleştirin veya silin.{" "}
-              <Link href={ACCOUNTING_URL}>Yevmiye Defteri&apos;nde görüntüle →</Link>
+              kesinleştirin veya silin.
             </p>
+
+            {errorMessage !== undefined && (
+              <p className="dkap-blocked-banner__detail" data-testid={`dkap-drafts-error-${row.month}`}>
+                {errorMessage}{" "}
+                <Link href={ACCOUNTING_URL}>Yevmiye Defteri&apos;nde görüntüle →</Link>
+              </p>
+            )}
+
+            {errorMessage === undefined && draftsQuery.data !== undefined && (
+              <ul className="dkap-draft-list" data-testid={`dkap-draft-list-${row.month}`}>
+                {draftsQuery.data.items.map((entry) => (
+                  <li key={entry.id} className="dkap-draft-list__row">
+                    <span className="dkap-draft-list__desc">{entry.description}</span>
+                    <span className="dkap-draft-list__amount is-mono">
+                      {formatCurrency(entry.total_debit)}
+                    </span>
+                    <Link href={ACCOUNTING_URL}>Aç →</Link>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </td>

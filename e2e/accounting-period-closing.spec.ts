@@ -52,8 +52,43 @@ test.describe("Dönem Kapanışı ekranı (DK)", () => {
     const closeButton = page.getByTestId("dkap-close-7");
     await expect(closeButton).toBeDisabled();
     await expect(page.getByTestId("dkap-blocked-reason-7")).toContainText(
-      "Dönem kapatılamıyor — 3 taslak fiş var",
+      "Dönem kapatılamıyor — 2 taslak fiş var",
     );
+  });
+
+  // 🔴 Yönetim bulgusu (mockup birebir): "N taslak fiş var" bir SAYI DEĞİL,
+  // bir LİSTE vaat eder — `GET /journal-entries?status=draft&year=&month=`
+  // süzülebildiği ÖLÇÜLDÜ, liste artık GERÇEK verilerle basılır. Fiş
+  // NUMARASI (`YEV-2026-0214`) UYDURULMAZ (şemada yok); açıklama + tutar
+  // GERÇEK `ACCOUNTING_READ_ENTRY_SEEDS`ten gelir.
+  test("🔴 engelli bandın taslak listesi GERÇEK fişleri gösterir (uydurma numara YOK)", async ({
+    page,
+  }) => {
+    await openPeriodClosing(page);
+    const list = page.getByTestId("dkap-draft-list-7");
+    await expect(list.locator("li")).toHaveCount(2);
+    // Sunucu sırası entry_date DESC: 19 Temmuz önce, 18 Temmuz sonra.
+    await expect(list.locator("li").nth(0)).toContainText("Ofis Kira Gideri – Temmuz");
+    await expect(list.locator("li").nth(0)).toContainText("₺ 48.000");
+    await expect(list.locator("li").nth(1)).toContainText("Kasa Sayım Farkı");
+    await expect(list.locator("li").nth(1)).toContainText("₺ 12.500");
+    await expect(list.getByRole("link", { name: "Aç →" })).toHaveCount(2);
+  });
+
+  // 🔴 N+1 korkuluğu: BU testte tek engelli dönem var (Temmuz); ekran
+  // `journal-entries`e TAM BİR çağrı yapar — 12 satırlık tablo başına DEĞİL.
+  test("🔴 N+1 korkuluğu: journal-entries BFF'e yalnız TEK çağrı gider", async ({ page }) => {
+    const calls: string[] = [];
+    page.on("request", (request) => {
+      const url = new URL(request.url());
+      if (url.pathname === "/api/backend/journal-entries") calls.push(url.search);
+    });
+    await openPeriodClosing(page);
+    await expect(page.getByTestId("dkap-draft-list-7").locator("li")).toHaveCount(2);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toContain("status=draft");
+    expect(calls[0]).toContain("year=2026");
+    expect(calls[0]).toContain("month=7");
   });
 
   // 🔴 K1'in permission-eşiği (full/admin ayrımı) BURADA sınanmaz: mock

@@ -10,6 +10,7 @@ import {
   useCloseAccountingPeriod,
   useReopenAccountingPeriod,
 } from "@/lib/api/hooks/useAccountingPeriodMutations";
+import { useJournalEntries } from "@/lib/api/hooks/useJournalEntries";
 import { useTrialBalance } from "@/lib/api/hooks/useTrialBalance";
 import { BackendError } from "@/lib/api/unwrap";
 import type { MeResponse } from "@/lib/auth/types";
@@ -27,6 +28,10 @@ vi.mock("@/lib/api/hooks/useAccountingPeriodMutations", () => ({
 vi.mock("@/lib/api/hooks/useTrialBalance", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useTrialBalance")>()),
   useTrialBalance: vi.fn(),
+}));
+vi.mock("@/lib/api/hooks/useJournalEntries", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useJournalEntries")>()),
+  useJournalEntries: vi.fn(),
 }));
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
 
@@ -101,6 +106,22 @@ beforeEach(() => {
       Error
     >,
   );
+  // K2 düzeltmesi (yönetim bulgusu): engelli bandın taslak listesi
+  // `useJournalEntries({status:"draft", year, month})`ten gelir.
+  vi.mocked(useJournalEntries).mockReturnValue(
+    queryResult({
+      data: {
+        items: [
+          { id: "je-1", description: "Malzeme alımı — Demirsan A.Ş.", total_debit: "387000.00" },
+          { id: "je-2", description: "Makine kirası — Liebherr", total_debit: "146995.00" },
+          { id: "je-3", description: "Personel avansı", total_debit: "24000.00" },
+        ],
+        total: 3,
+        limit: 50,
+        offset: 0,
+      },
+    }) as unknown as ReturnType<typeof useJournalEntries>,
+  );
 });
 
 describe("DK — başlık + yetki notu", () => {
@@ -145,6 +166,25 @@ describe("K2 — engelli satır (draft_count > 0)", () => {
 
     const banner = screen.getByTestId("dkap-blocked-reason-7");
     expect(within(banner).getByText("Dönem kapatılamıyor — 3 taslak fiş var")).toBeInTheDocument();
+  });
+
+  it("🔴 yönetim bulgusu: taslak fişlerin KENDİSİ listelenir (numara/açıklama/tutar UYDURULMAZ)", () => {
+    render(<PeriodClosingView />);
+    expect(vi.mocked(useJournalEntries)).toHaveBeenCalledWith({
+      status: "draft",
+      year: 2026,
+      month: 7,
+    });
+    const list = screen.getByTestId("dkap-draft-list-7");
+    expect(within(list).getByText("Malzeme alımı — Demirsan A.Ş.")).toBeInTheDocument();
+    expect(within(list).getByText("₺ 387.000")).toBeInTheDocument();
+    expect(within(list).getAllByText("Aç →")).toHaveLength(3);
+  });
+
+  it("🔴 N+1 korkuluğu: kapatılabilir/kapalı/kayıt-yok satırlar için useJournalEntries HİÇ çağrılmaz", () => {
+    render(<PeriodClosingView />);
+    // TEK engelli dönem (Temmuz) var ⇒ tam bir çağrı; 12 satır için 12 DEĞİL.
+    expect(vi.mocked(useJournalEntries)).toHaveBeenCalledTimes(1);
   });
 
   it("Ağustos (kapatılabilir) satırında düğme AKTİFtir", () => {

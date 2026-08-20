@@ -41,6 +41,12 @@ test("muhasebe donem kapanisi gorsel", async ({ page }) => {
   await expect(page.getByTestId("dkap-blocked-reason-7")).toBeVisible();
   await expect(page.getByTestId("dkap-status-9")).toContainText("Kayıt yok");
 
+  // ⚠️ Engelli bandın taslak listesi BAĞIMSIZ bir kaynaktır
+  // (`useJournalEntries`) — kadrajdan önce KENDİ oturduğu ayrıca ölçülür
+  // (GÖRSEL SPEC KURALI 5. parça); aksi hâlde kare "Yükleniyor…" hâlini
+  // donmuş yakalayabilir.
+  await expect(page.getByTestId("dkap-draft-list-7").locator("li")).toHaveCount(2);
+
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("muhasebe-donem-kapanisi.png", { fullPage: true });
 });
