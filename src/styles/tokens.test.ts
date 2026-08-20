@@ -74,7 +74,9 @@ const tokensCss = readFileSync(
  * yeniydi — `--color-danger-soft` (#fee2e2) ondan KOYU, `--color-danger-tint`
  * (#fff0f0) ondan PEMBEdir (`--color-danger-row-bg`).
  */
-const EXPECTED_HEX_COUNT = 83;
+// F-DKAP: 83 → 84 — `--color-purple-tint-border` (DK:71) mevcut token'larda
+// karşılanmıyordu, TEK yeni renk açıldı (bekçinin kendisi doğruladı).
+const EXPECTED_HEX_COUNT = 84;
 
 describe("tokens.css", () => {
   it("çekirdek renk token'larını tanımlar (açık tema Slate + Blue)", () => {

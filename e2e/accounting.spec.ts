@@ -125,10 +125,10 @@ test.describe("BFF kökleri (telden)", () => {
 });
 
 test.describe("drill-in sidebar", () => {
-  // 🔴 F-MU2: iddia SİLİNMEDİ, YENİ GERÇEĞE TAŞINDI — Mizan ve KDV Beyanı'nın
-  // EKRANLARI açıldı, ikisi de artık gezilebilir bağlantıdır. Devre-dışı
+  // 🔴 F-DKAP: iddia SİLİNMEDİ, YENİ GERÇEĞE TAŞINDI — Dönem Kapanışı'nın
+  // EKRANI da açıldı, artık gezilebilir bağlantıdır (dört → beş). Devre-dışı
   // kalanlar yalnız Banka Mutabakatı ve e-Fatura'dır (uçları hâlâ yok).
-  test("DÖRT sekme gezilebilir; İKİ devre-dışı sekme tıklanamaz ve gerekçesi EKRANDA", async ({
+  test("BEŞ sekme gezilebilir; İKİ devre-dışı sekme tıklanamaz ve gerekçesi EKRANDA", async ({
     page,
   }) => {
     await openAccounting(page);
@@ -141,12 +141,16 @@ test.describe("drill-in sidebar", () => {
     await expect(page).toHaveURL(/\/muhasebe\/hesap-plani$/);
     await expect(page.getByRole("heading", { level: 1, name: "Hesap Planı" })).toBeVisible();
 
-    // 🔴 F-MU2'nin iki yeni sekmesi de GERÇEKTEN gezilebilir olmalı: link
+    // 🔴 F-MU2/F-DKAP'ın yeni sekmeleri de GERÇEKTEN gezilebilir olmalı: link
     // basmak yetmez, catch-all ComingSoon'a düşerse kullanıcı "açıldı" sanılan
     // boş bir ekran görürdü.
     await sidebar.getByRole("link", { name: "Mizan" }).click();
     await expect(page).toHaveURL(/\/muhasebe\/mizan$/);
     await expect(page.getByRole("heading", { level: 1, name: "Mizan" })).toBeVisible();
+
+    await sidebar.getByRole("link", { name: "Dönem Kapanışı" }).click();
+    await expect(page).toHaveURL(/\/muhasebe\/donem-kapanisi$/);
+    await expect(page.getByRole("heading", { level: 1, name: "Dönem Kapanışı" })).toBeVisible();
 
     await sidebar.getByRole("link", { name: "KDV Beyanı" }).click();
     await expect(page).toHaveURL(/\/muhasebe\/kdv-beyani$/);

@@ -9,12 +9,13 @@ import {
   isAccountingNavItemActive,
 } from "./accounting-nav-config";
 
-describe("Muhasebe drill nav — HP:29-38 birebir", () => {
-  it("alt sekmeler mockup'ın SIRASIYLA altı tanedir (HP:31-36)", () => {
+describe("Muhasebe drill nav — HP:29-38 + F-DKAP birebir", () => {
+  it("alt sekmeler mockup'ın SIRASIYLA yedi tanedir (HP:31-36 + DK:36)", () => {
     expect(ACCOUNTING_SUB_NAV.map((i) => i.label)).toEqual([
       "Yevmiye Defteri",
       "Hesap Planı",
       "Mizan",
+      "Dönem Kapanışı",
       "Banka Mutabakatı",
       "e-Fatura",
       "KDV Beyanı",
@@ -25,15 +26,16 @@ describe("Muhasebe drill nav — HP:29-38 birebir", () => {
     expect(ACCOUNTING_SIBLING_NAV.map((i) => i.label)).toEqual(["Hazine", "Mali Tablolar"]);
   });
 
-  // 🔴 F-MU2: iddia SİLİNMEDİ, YENİ GERÇEĞE TAŞINDI. Mizan ve KDV Beyanı'nın
-  // EKRANLARI açıldı (backend'leri MU-2 ile zaten canlıydı) ⇒ aktif 2 → 4,
-  // devre dışı 4 → 2. Kalan ikisinin gerekçesi DEĞİŞMEDİ.
-  it("DÖRT alt sekme AKTİFtir, kalan ikisi devre dışı", () => {
+  // 🔴 F-DKAP: iddia SİLİNMEDİ, YENİ GERÇEĞE TAŞINDI. Dönem Kapanışı'nın
+  // EKRANI açıldı (backend'i MU-2 ile zaten canlıydı) ⇒ aktif 4 → 5,
+  // devre dışı 2 SABİT KALDI (Banka Mutabakatı/e-Fatura bu turun kapsamı DEĞİL).
+  it("BEŞ alt sekme AKTİFtir, kalan ikisi devre dışı", () => {
     const links = ACCOUNTING_SUB_NAV.filter((i) => i.kind === "link");
     expect(links.map((i) => i.label)).toEqual([
       "Yevmiye Defteri",
       "Hesap Planı",
       "Mizan",
+      "Dönem Kapanışı",
       "KDV Beyanı",
     ]);
     expect(ACCOUNTING_SUB_NAV.filter((i) => i.kind === "disabled")).toHaveLength(2);
@@ -96,6 +98,10 @@ describe("🔴 çift aktiflik bekçisi (F-SD T7 dersi)", () => {
     expect(activeAccountingNavLabels("/muhasebe/kdv-beyani")).toEqual(["KDV Beyanı"]);
   });
 
+  it("`/muhasebe/donem-kapanisi`de TEK bir öğe aktiftir", () => {
+    expect(activeAccountingNavLabels("/muhasebe/donem-kapanisi")).toEqual(["Dönem Kapanışı"]);
+  });
+
   it("kardeş modül yolunda muhasebe sekmelerinin HİÇBİRİ aktif değildir", () => {
     expect(activeAccountingNavLabels("/hazine")).toEqual(["Hazine"]);
   });
@@ -122,13 +128,14 @@ describe("kırık link koruması", () => {
     }
   });
 
-  // 🔴 F-MU2: 2 → 4. Bir sekme LİNK'e çevrilip rotası açılmazsa catch-all
+  // 🔴 F-DKAP: 4 → 5. Bir sekme LİNK'e çevrilip rotası açılmazsa catch-all
   // ComingSoon'a düşer ve kullanıcı "açıldı" sanılan boş bir ekran görür.
-  it("DÖRT AÇIK sekme de GERÇEK statik rotadır (catch-all DEĞİL)", () => {
+  it("BEŞ AÇIK sekme de GERÇEK statik rotadır (catch-all DEĞİL)", () => {
     for (const href of [
       "/muhasebe",
       "/muhasebe/hesap-plani",
       "/muhasebe/mizan",
+      "/muhasebe/donem-kapanisi",
       "/muhasebe/kdv-beyani",
     ]) {
       expect(resolveHrefIn(ROUTE_TREE, href, false), href).toEqual({ kind: "static" });
