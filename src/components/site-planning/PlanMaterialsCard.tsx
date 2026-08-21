@@ -23,7 +23,7 @@ export function PlanMaterialsCard() {
       </h2>
 
       <p className="plan__notice">
-        Haftalık malzeme ihtiyacı henüz açılmadı — {pendingModuleLabel("stock")}.
+        Haftalık malzeme ihtiyacı hesaplanmıyor — {pendingModuleLabel("stock")}.
       </p>
 
       {/* P188-200: üç malzeme satırının yerini tutan devre dışı yüzey. */}

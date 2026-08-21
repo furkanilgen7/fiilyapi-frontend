@@ -25,7 +25,7 @@ describe("buildSubcontractorRowSubtitle", () => {
     expect(result.isCombinedPending).toBe(false);
     expect(result.segments).toEqual([
       { kind: "text", value: "Elektrik Tesisatı" },
-      { kind: "pending", title: "Bölüm adı çözümlemesiyle birlikte gelir" },
+      { kind: "pending", title: "Bölüm adı bu satırda çözümlenmiyor (yalnız kimliği geliyor)" },
     ]);
   });
 
@@ -34,7 +34,7 @@ describe("buildSubcontractorRowSubtitle", () => {
     const result = buildSubcontractorRowSubtitle(null, null);
     expect(result.isCombinedPending).toBe(false);
     expect(result.segments).toEqual([
-      { kind: "pending", title: "İş kategorisi alanıyla birlikte gelir" },
+      { kind: "pending", title: "İş kategorisi liste ucundan gelmiyor" },
       { kind: "text", value: "Tüm Bölümler" },
     ]);
   });
@@ -45,7 +45,7 @@ describe("buildSubcontractorRowSubtitle", () => {
     expect(result.isCombinedPending).toBe(true);
     expect(result.segments).toEqual([]);
     expect(result.combinedPendingTitle).toBe(
-      "İş kategorisi alanıyla birlikte gelir; Bölüm adı çözümlemesiyle birlikte gelir",
+      "İş kategorisi liste ucundan gelmiyor; Bölüm adı bu satırda çözümlenmiyor (yalnız kimliği geliyor)",
     );
   });
 });

@@ -304,10 +304,13 @@ describe("SectionDetailView — sekmeler (D99-105, hepsi BÖLÜM BAĞI bekleyen 
     renderView();
     await user.click(screen.getByRole("tab", { name: "Malzeme" }));
     const panel = screen.getByRole("tabpanel");
-    // 🔴 F-BOLLINK: gerekçe artık "Stok modülüyle birlikte gelir" DEĞİL —
+    // 🔴 F-BOLLINK: gerekçe paylaşılan `stock` anahtarının metni DEĞİL —
     // stok modülü YAZILI, eksik olan BÖLÜM BAĞI. Eski metin yanlış bilgiydi.
+    // (F-UNIT1 T5: `stock` metni de düzeltildi, iddia yeni metne taşındı.)
     expect(within(panel).getByText(/Malzeme hareketleri bu bölüme henüz kırılmıyor/)).toBeInTheDocument();
-    expect(within(panel).queryByText(/Stok modülüyle birlikte gelir/)).not.toBeInTheDocument();
+    expect(
+      within(panel).queryByText(/Stok verisi bu yüzeye henüz bağlanmadı/),
+    ).not.toBeInTheDocument();
   });
 
   // BOQ-SEC-F GÖÇÜ: artık BEŞ değil DÖRT sekme gerekçe taşır — "İş Kalemleri"

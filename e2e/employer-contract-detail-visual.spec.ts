@@ -67,7 +67,7 @@ test("isveren sozlesme detayi belgeler sekmesi gorsel", async ({ page }) => {
   // Yerleşim oturdu: PENDING kartı basıldı (bölüm SİLİNMEZ kuralının kanıtı
   // baseline'a girer); arşiv yüzeyi bu dilimde YOKTUR.
   await expect(page.getByTestId("ecd-documents-pending")).toContainText(
-    "Belge modülüyle birlikte gelir",
+    "Belge verisi bu yüzeye henüz bağlanmadı",
   );
 
   await prepareFrame(page);

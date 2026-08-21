@@ -64,9 +64,9 @@ describe("ProgressPaymentsTotalsStrip", () => {
     const taseronValue = screen.getByText("Toplam Taşeron Ödemesi").nextSibling as HTMLElement;
     const margeValue = screen.getByText("Brüt Kar Marjı").nextSibling as HTMLElement;
     expect(taseronValue).toHaveTextContent("—");
-    expect(taseronValue).toHaveAttribute("title", "Taşeron sözleşmeleriyle birlikte gelir");
+    expect(taseronValue).toHaveAttribute("title", "Taşeron sözleşmesi verisi bu yüzeye henüz bağlanmadı");
     expect(margeValue).toHaveTextContent("—");
-    expect(margeValue).toHaveAttribute("title", "Taşeron sözleşmeleriyle birlikte gelir");
+    expect(margeValue).toHaveAttribute("title", "Taşeron sözleşmesi verisi bu yüzeye henüz bağlanmadı");
     // Sahte/0 değer basılmadığını doğrular — rakam İÇERMEZ.
     expect(taseronValue.textContent).not.toMatch(/\d/);
     expect(margeValue.textContent).not.toMatch(/\d/);

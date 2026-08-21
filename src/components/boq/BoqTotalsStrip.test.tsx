@@ -45,14 +45,14 @@ describe("BoqTotalsStrip (spec §4, mockup 72–89)", () => {
     const values = screen.getAllByTestId("boq-kpi-value");
     // 1. kart: bilinmeyen anahtar → yedek metin; 2. kart: yükteki anahtarın metni.
     expect(values[0]).toHaveAttribute("title", "İlgili modülle birlikte gelir");
-    expect(values[1]).toHaveAttribute("title", "Hakediş modülüyle birlikte gelir");
+    expect(values[1]).toHaveAttribute("title", "Hakediş verisi bu yüzeye henüz bağlanmadı");
   });
 
   it("yer tutucu değer sr-only metinle de erişilebilir (title tek başına yeterli değil)", () => {
     render(<BoqTotalsStrip totals={totalsWith()} />);
     const value = screen.getAllByTestId("boq-kpi-value")[0];
-    expect(value).toHaveAttribute("title", "Sözleşme modülüyle birlikte gelir");
-    expect(within(value).getByText("Sözleşme modülüyle birlikte gelir")).toHaveClass("sr-only");
+    expect(value).toHaveAttribute("title", "Sözleşme verisi bu yüzeye henüz bağlanmadı");
+    expect(within(value).getByText("Sözleşme verisi bu yüzeye henüz bağlanmadı")).toHaveClass("sr-only");
   });
 
   it("grand_total kart olarak basılmaz", () => {

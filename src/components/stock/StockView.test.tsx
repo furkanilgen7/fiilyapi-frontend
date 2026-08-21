@@ -119,10 +119,10 @@ describe("StockView — E3 başlık ve KPI şeridi", () => {
     render(<StockView />);
     const pendingValue = screen.getByTestId("stok-kpi-pending-orders");
     expect(pendingValue).toHaveTextContent("—");
-    expect(pendingValue).toHaveAttribute("title", "Satınalma modülüyle birlikte gelir");
+    expect(pendingValue).toHaveAttribute("title", "Satınalma verisi bu yüzeye henüz bağlanmadı");
     expect(
       screen.getByTestId("stok-kpi-strip"),
-    ).toHaveTextContent("Satınalma modülüyle birlikte gelir");
+    ).toHaveTextContent("Satınalma verisi bu yüzeye henüz bağlanmadı");
     // Mockup'ın örnek "12 Sipariş" değeri UYDURULMAZ.
     expect(screen.queryByText("12 Sipariş")).not.toBeInTheDocument();
   });

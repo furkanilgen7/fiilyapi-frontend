@@ -97,7 +97,7 @@ describe("SiteStockTable — ŞS 95-163", () => {
     expect(need).toHaveTextContent("—");
     expect(section).toHaveTextContent("—");
     for (const cell of [need, section]) {
-      expect(cell).toHaveAttribute("title", "Şantiye planlama türeviyle birlikte gelir");
+      expect(cell).toHaveAttribute("title", "Şantiye planlama verisi bu yüzeye henüz bağlanmadı");
     }
   });
 
@@ -129,8 +129,8 @@ describe("SiteStockTable — ŞS 95-163", () => {
     expect(normal).toHaveTextContent("Detay");
     for (const button of [critical, low, normal]) expect(button).toBeDisabled();
 
-    expect(critical).toHaveAttribute("title", "Satınalma modülüyle birlikte gelir");
-    expect(low).toHaveAttribute("title", "Satınalma modülüyle birlikte gelir");
+    expect(critical).toHaveAttribute("title", "Satınalma verisi bu yüzeye henüz bağlanmadı");
+    expect(low).toHaveAttribute("title", "Satınalma verisi bu yüzeye henüz bağlanmadı");
     expect(normal).toHaveAttribute(
       "title",
       "Malzeme detay ekranı henüz tasarlanmadı — mockup çizilince açılacak",

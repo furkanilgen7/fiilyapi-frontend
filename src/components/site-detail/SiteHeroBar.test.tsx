@@ -67,7 +67,7 @@ describe("SiteHeroBar — 5 KPI hucresi gercek/yer tutucu ayrimi (spec §5.2, ta
     render(<SiteHeroBar site={SITE} />);
     const cell = screen.getByTestId("site-hero-kpi-progress");
     expect(within(cell).getByText("Fiziksel İlerleme")).toBeInTheDocument();
-    const value = within(cell).getByTitle("Hakediş modülüyle birlikte gelir");
+    const value = within(cell).getByTitle("Hakediş verisi bu yüzeye henüz bağlanmadı");
     expect(value).toHaveTextContent("—");
     expect(screen.queryByTestId("site-hero-progress-fill")).not.toBeInTheDocument();
   });
@@ -86,7 +86,7 @@ describe("SiteHeroBar — 5 KPI hucresi gercek/yer tutucu ayrimi (spec §5.2, ta
     render(<SiteHeroBar site={SITE} />);
     const cell = screen.getByTestId("site-hero-kpi-worker");
     expect(within(cell).getByText("Aktif İşçi")).toBeInTheDocument();
-    const value = within(cell).getByTitle("Puantaj modülüyle birlikte gelir");
+    const value = within(cell).getByTitle("Puantaj verisi bu yüzeye henüz bağlanmadı");
     expect(value).toHaveTextContent("—");
   });
 
@@ -103,7 +103,7 @@ describe("SiteHeroBar — 5 KPI hucresi gercek/yer tutucu ayrimi (spec §5.2, ta
     render(<SiteHeroBar site={SITE} />);
     const cell = screen.getByTestId("site-hero-kpi-payment");
     expect(within(cell).getByText("Toplam Hakediş")).toBeInTheDocument();
-    const value = within(cell).getByTitle("Hakediş modülüyle birlikte gelir");
+    const value = within(cell).getByTitle("Hakediş verisi bu yüzeye henüz bağlanmadı");
     expect(value).toHaveTextContent("—");
   });
 

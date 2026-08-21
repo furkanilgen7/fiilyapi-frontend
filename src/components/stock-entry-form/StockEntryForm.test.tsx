@@ -199,7 +199,7 @@ describe("StockEntryForm — pending yüzeyler (spec §5 S5)", () => {
 
     const order = screen.getByTestId("stok-giris-siparis");
     expect(order).toBeDisabled();
-    expect(order).toHaveAttribute("title", "Satınalma modülüyle birlikte gelir");
+    expect(order).toHaveAttribute("title", "Satınalma verisi bu yüzeye henüz bağlanmadı");
   });
 
   it("'Sipariş' sütunu gerekçeli '—' basar (mockup'ın 15/500 örnekleri BASILMAZ)", () => {
@@ -207,7 +207,7 @@ describe("StockEntryForm — pending yüzeyler (spec §5 S5)", () => {
 
     const cell = screen.getByTestId("stok-giris-siparis-0");
     expect(cell).toHaveTextContent("—");
-    expect(cell).toHaveAttribute("title", "Satınalma modülüyle birlikte gelir");
+    expect(cell).toHaveAttribute("title", "Satınalma verisi bu yüzeye henüz bağlanmadı");
     expect(screen.queryByText("SP-2026-042'den yüklendi")).toBeNull();
   });
 
@@ -217,7 +217,7 @@ describe("StockEntryForm — pending yüzeyler (spec §5 S5)", () => {
     const notify = screen.getByTestId("stok-giris-bildirim");
     expect(notify).toBeDisabled();
     expect(notify).not.toBeChecked();
-    expect(notify).toHaveAttribute("title", "Satınalma modülüyle birlikte gelir");
+    expect(notify).toHaveAttribute("title", "Satınalma verisi bu yüzeye henüz bağlanmadı");
   });
 
   it("belge kutuları yükleme yapmaz; gerekçe görünür (BC form-slot)", () => {

@@ -149,7 +149,7 @@ test.describe("planlama ızgarası (SALT-OKUR, s-1)", () => {
     ).toHaveValue("service_pending");
 
     // Malzeme Planı kartı PENDING — mockup'ın sahte satırları BASILMAZ.
-    await expect(page.getByText("Haftalık malzeme ihtiyacı henüz açılmadı", { exact: false })).toBeVisible();
+    await expect(page.getByText("Haftalık malzeme ihtiyacı hesaplanmıyor", { exact: false })).toBeVisible();
   });
 
   test("‹ / › haftayı URL'de taşır ve ızgarayı tazeler", async ({ page }) => {

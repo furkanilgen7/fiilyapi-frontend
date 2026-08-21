@@ -379,7 +379,7 @@ describe("SitePlanningView — hedefler ve pending kart", () => {
     expect(
       screen.getByRole("heading", { name: "📦 Malzeme Planı — Bu Hafta" }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Haftalık malzeme ihtiyacı henüz açılmadı/)).toBeInTheDocument();
+    expect(screen.getByText(/Haftalık malzeme ihtiyacı hesaplanmıyor/)).toBeInTheDocument();
     expect(screen.queryByText(/Nervürlü Demir/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Acil Sipariş/)).not.toBeInTheDocument();
   });

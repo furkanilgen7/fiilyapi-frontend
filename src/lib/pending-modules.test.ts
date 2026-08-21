@@ -1,44 +1,87 @@
 import { describe, it, expect } from "vitest";
 
-import { pendingModuleLabel } from "./pending-modules";
+import { MODULE_LABELS, pendingModuleLabel } from "./pending-modules";
 
+/**
+ * 🔴 F-UNIT1 T5 · METİNLER TOPLUCA DÜZELTİLDİ. Eski iddialar "<Modül>
+ * modülüyle birlikte gelir" metnini KİLİTLİYORDU; o kalıp artık YALANDIR —
+ * modüllerin neredeyse hepsi arada geldi (`/hakedisler` · `/faturalar` ·
+ * `/puantaj` · `/sozlesmeler` · `/satis` · `/is-kalemleri` · `/stok` ·
+ * `/belgeler` · `/makine` · `/satinalma` · `/gunluk-kayit`).
+ *
+ * İddialar SİLİNMEDİ, YENİ GERÇEĞE TAŞINDI (F-MU2 kanonu): her anahtar hâlâ
+ * eşleniyor mu diye sınanır, yalnız beklenen metin değişti.
+ */
 describe("pendingModuleLabel", () => {
   it("F6 anahtarlarini esler", () => {
-    expect(pendingModuleLabel("progress_payments")).toBe("Hakediş modülüyle birlikte gelir");
-    expect(pendingModuleLabel("invoicing")).toBe("Fatura yönetimiyle birlikte gelir");
+    expect(pendingModuleLabel("progress_payments")).toBe(
+      "Hakediş verisi bu yüzeye henüz bağlanmadı",
+    );
+    expect(pendingModuleLabel("invoicing")).toBe("Fatura verisi bu yüzeye henüz bağlanmadı");
+    expect(pendingModuleLabel("inventory")).toBe("Risk listesi henüz hiçbir uçtan hesaplanmıyor");
+  });
+
+  // 🔴 TEK "modül yok" METNİ VE O DOĞRUDUR: `/onay-kutusu` YAZILMADI (kabuk
+  // nav'ında catch-all/ComingSoon'a düşen üç öğeden biri). O ekran açıldığı gün
+  // BU iddia kırılır ve metnin de düzeltilmesi gerektiğini söyler.
+  it("approvals metni DEGISMEDI - `/onay-kutusu` gercekten yazilmadi", () => {
     expect(pendingModuleLabel("approvals")).toBe("Onay kutusuyla birlikte gelir");
-    expect(pendingModuleLabel("inventory")).toBe("Stok ve saha modülleriyle birlikte gelir");
   });
 
   it("P1 anahtarlarini esler", () => {
-    expect(pendingModuleLabel("timesheet")).toBe("Puantaj modülüyle birlikte gelir");
-    expect(pendingModuleLabel("subcontracts")).toBe("Taşeron sözleşmeleriyle birlikte gelir");
-    expect(pendingModuleLabel("units")).toBe("Ünite satış modülüyle birlikte gelir");
-    expect(pendingModuleLabel("project_costs")).toBe("Maliyet takibiyle birlikte gelir");
+    expect(pendingModuleLabel("timesheet")).toBe("Puantaj verisi bu yüzeye henüz bağlanmadı");
+    expect(pendingModuleLabel("subcontracts")).toBe(
+      "Taşeron sözleşmesi verisi bu yüzeye henüz bağlanmadı",
+    );
+    expect(pendingModuleLabel("units")).toBe("Ünite verisi bu yüzeye henüz bağlanmadı");
+    expect(pendingModuleLabel("project_costs")).toBe("Maliyet verisi bu yüzeye henüz bağlanmadı");
   });
 
   it("P2 anahtarlarini esler", () => {
-    expect(pendingModuleLabel("contracts")).toBe("Sözleşme modülüyle birlikte gelir");
-    expect(pendingModuleLabel("boq")).toBe("İş kalemleri modülüyle birlikte gelir");
-    expect(pendingModuleLabel("stock")).toBe("Stok modülüyle birlikte gelir");
-    expect(pendingModuleLabel("documents")).toBe("Belge modülüyle birlikte gelir");
-    expect(pendingModuleLabel("site_diary")).toBe("Şantiye günlüğüyle birlikte gelir");
+    expect(pendingModuleLabel("contracts")).toBe("Sözleşme verisi bu yüzeye henüz bağlanmadı");
+    expect(pendingModuleLabel("boq")).toBe("İş kalemi verisi bu yüzeye henüz bağlanmadı");
+    expect(pendingModuleLabel("stock")).toBe("Stok verisi bu yüzeye henüz bağlanmadı");
+    expect(pendingModuleLabel("documents")).toBe("Belge verisi bu yüzeye henüz bağlanmadı");
+    expect(pendingModuleLabel("equipment")).toBe("Makine verisi bu yüzeye henüz bağlanmadı");
   });
 
-  it("F-TH T2 anahtarlarini esler", () => {
-    expect(pendingModuleLabel("work_category")).toBe("İş kategorisi alanıyla birlikte gelir");
-    expect(pendingModuleLabel("vat")).toBe("KDV hesaplamasıyla birlikte gelir");
-    expect(pendingModuleLabel("progress")).toBe("İlerleme takibiyle birlikte gelir");
+  // 🔴 F-UNIT1 T5'te KALDIRILDI (`gantt` / `income_statement` / `section_boq`
+  // emsali): ÖLÇÜLDÜ — backend `site_diary`yi HİÇBİR yerde `pending_module`
+  // olarak yayınlamıyor (yalnız izin matrisi anahtarı) ve frontend'de de onu
+  // okuyan kimse yok (bölüm detayı F-BOLLINK'te `section_site_diary`ye geçti).
+  // Yedek metne düşmesi, eşlenmemiş olmasının kanıtıdır.
+  it("site_diary anahtari ARTIK YOK - okuyani da yayinlayani da kalmadi", () => {
+    expect(pendingModuleLabel("site_diary")).toBe("İlgili modülle birlikte gelir");
+  });
+
+  // 🔴 Üçü de LİSTE UCUNUN taşımadığı alanlardır, bir yetenek eksikliği DEĞİL:
+  // KDV hakediş formunda hesaplanıyor, ilerleme hakediş detayında gösteriliyor.
+  it("F-TH T2 anahtarlarini esler (liste ucu eksikligi, modul degil)", () => {
+    expect(pendingModuleLabel("work_category")).toBe("İş kategorisi liste ucundan gelmiyor");
+    expect(pendingModuleLabel("vat")).toBe("KDV liste ucundan gelmiyor (hakediş formunda hesaplanır)");
+    expect(pendingModuleLabel("progress")).toBe(
+      "İlerleme liste ucundan gelmiyor (hakediş detayında gösterilir)",
+    );
   });
 
   it("F-TH T5 fix round 1 anahtarini esler (bolum adi cozumlemesi)", () => {
-    expect(pendingModuleLabel("section_name")).toBe("Bölüm adı çözümlemesiyle birlikte gelir");
+    expect(pendingModuleLabel("section_name")).toBe(
+      "Bölüm adı bu satırda çözümlenmiyor (yalnız kimliği geliyor)",
+    );
   });
 
   // F-ST T3: canli sunucunun stok anahtarlari (`inventory/service.py`).
   it("F-ST anahtarlarini esler (purchasing + site_planning)", () => {
-    expect(pendingModuleLabel("purchasing")).toBe("Satınalma modülüyle birlikte gelir");
-    expect(pendingModuleLabel("site_planning")).toBe("Şantiye planlama türeviyle birlikte gelir");
+    expect(pendingModuleLabel("purchasing")).toBe("Satınalma verisi bu yüzeye henüz bağlanmadı");
+    expect(pendingModuleLabel("site_planning")).toBe(
+      "Şantiye planlama verisi bu yüzeye henüz bağlanmadı",
+    );
+  });
+
+  // `procurement` canlı sunucudan HİÇ gelmez (backend `purchasing` yayınlar) ama
+  // F-ST T3 kararıyla eşli kalır; iki anahtar AYNI metni verir.
+  it("procurement ve purchasing AYNI metni verir", () => {
+    expect(pendingModuleLabel("procurement")).toBe(pendingModuleLabel("purchasing"));
   });
 
   // 🔴 F-BOLLINK: bölüm detayına özel anahtarlar. Metin "modül yok" DEMEZ —
@@ -66,13 +109,6 @@ describe("pendingModuleLabel", () => {
     expect(pendingModuleLabel("section_boq")).toBe("İlgili modülle birlikte gelir");
   });
 
-  // Paylasilan anahtarlarin metni DEGISMEDI (baska ekranlar okuyor).
-  it("paylasilan anahtarlarin metni F-BOLLINK'te degismedi", () => {
-    expect(pendingModuleLabel("boq")).toBe("İş kalemleri modülüyle birlikte gelir");
-    expect(pendingModuleLabel("stock")).toBe("Stok modülüyle birlikte gelir");
-    expect(pendingModuleLabel("timesheet")).toBe("Puantaj modülüyle birlikte gelir");
-  });
-
   it("bilinmeyen anahtarda genel metin doner", () => {
     expect(pendingModuleLabel("bilinmeyen")).toBe("İlgili modülle birlikte gelir");
   });
@@ -82,5 +118,41 @@ describe("pendingModuleLabel", () => {
   it("null/undefined anahtarda genel metne duser", () => {
     expect(pendingModuleLabel(null)).toBe("İlgili modülle birlikte gelir");
     expect(pendingModuleLabel(undefined)).toBe("İlgili modülle birlikte gelir");
+  });
+});
+
+/**
+ * 🔴 F-UNIT1 T5 · ÇÜRÜME BEKÇİSİ (anahtar başına iddiadan DAHA GÜÇLÜ).
+ *
+ * Yukarıdaki iddialar YALNIZ bugün bilinen anahtarları sınar; yarın eklenen
+ * bayat metinli bir anahtar hepsini yeşil bırakırdı. Bu blok haritanın
+ * TAMAMINI tarar ve "<Modül> modülüyle birlikte gelir" kalıbını YASAKLAR —
+ * bu turda düzeltilen tam olarak o kalıptı.
+ */
+describe("MODULE_LABELS — bayat 'modül gelecek' kalıbı yasağı", () => {
+  // Ölçüldü: `/onay-kutusu` hâlâ yazılmamış tek modüldür, metni DOĞRUDUR.
+  const ALLOWED_MODULE_PROMISES = new Set(["approvals"]);
+
+  // ⚠️ Tek tek `expect` YAZILMAZ: ilk başarısızlıkta test durur ve geri kalan
+  // ihlaller GÖRÜNMEZ olur (bu turda tam olarak öyle oldu — üç ihlal ardı
+  // ardına ortaya çıktı). İhlaller TOPLANIR, tek iddiada basılır.
+  it("hicbir metin '… modülüyle birlikte gelir' demez", () => {
+    const offenders = Object.entries(MODULE_LABELS)
+      .filter(([, label]) => /modülüyle birlikte gelir/.test(label))
+      .map(([key]) => key);
+    expect(offenders).toEqual([]);
+  });
+
+  it("'birlikte gelir' vaadi yalniz gercekten yazilmamis modulde kalir", () => {
+    const offenders = Object.entries(MODULE_LABELS)
+      .filter(([key, label]) => /birlikte gelir/.test(label) && !ALLOWED_MODULE_PROMISES.has(key))
+      .map(([key]) => key);
+    expect(offenders).toEqual([]);
+  });
+
+  it("her anahtarin metni bos degildir", () => {
+    for (const [key, label] of Object.entries(MODULE_LABELS)) {
+      expect(label.length, `"${key}" boş`).toBeGreaterThan(0);
+    }
   });
 });

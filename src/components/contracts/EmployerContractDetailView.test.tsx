@@ -256,7 +256,7 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
       const pdf = screen.getByTestId("ecd-pdf-disabled");
       expect(pdf).toBeDisabled();
       expect(pdf).toHaveTextContent("PDF");
-      expect(pdf).toHaveAttribute("title", "Dışa aktarma modülüyle birlikte gelir");
+      expect(pdf).toHaveAttribute("title", "Dışa aktarma ucu henüz açılmadı");
 
       const edit = screen.getByTestId("ecd-edit-disabled");
       expect(edit).toBeDisabled();
@@ -267,7 +267,7 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
       );
 
       // Gerekçe yalnız `title`da saklı kalmaz — ekranda da yazar.
-      expect(screen.getByText(/Dışa aktarma modülüyle birlikte gelir/)).toBeInTheDocument();
+      expect(screen.getByText(/Dışa aktarma ucu henüz açılmadı/)).toBeInTheDocument();
       expect(
         screen.getByText(/İşveren sözleşmesi proje formunda kurulur/),
       ).toBeInTheDocument();
@@ -619,7 +619,7 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
 
       expect(screen.getByText("Belgeler", { selector: "h2" })).toBeInTheDocument();
       expect(screen.getByTestId("ecd-documents-pending")).toHaveTextContent(
-        "Belge modülüyle birlikte gelir",
+        "Belge verisi bu yüzeye henüz bağlanmadı",
       );
     });
   });

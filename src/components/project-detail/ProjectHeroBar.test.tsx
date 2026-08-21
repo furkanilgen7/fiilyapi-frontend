@@ -41,7 +41,7 @@ describe("ProjectHeroBar", () => {
   it("Toplam Sozlesme yer tutucudur — '—' basar, title'da contracts aciklamasi verir (spec §7.1)", () => {
     render(<ProjectHeroBar project={BASE} activePath={`/projeler/${BASE.id}`} />);
     expect(screen.getByText("Toplam Sözleşme")).toBeInTheDocument();
-    const value = screen.getByTitle("Sözleşme modülüyle birlikte gelir");
+    const value = screen.getByTitle("Sözleşme verisi bu yüzeye henüz bağlanmadı");
     expect(value).toHaveTextContent("—");
   });
 

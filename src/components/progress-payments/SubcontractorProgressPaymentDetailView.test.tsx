@@ -208,7 +208,7 @@ describe("SubcontractorProgressPaymentDetailView — PDF butonu (ölü yüzey ya
     renderDetail();
     const pdfButton = screen.getByRole("button", { name: "PDF" });
     expect(pdfButton).toBeDisabled();
-    expect(pdfButton).toHaveAttribute("title", "Dışa aktarma modülüyle birlikte gelir");
+    expect(pdfButton).toHaveAttribute("title", "Dışa aktarma ucu henüz açılmadı");
   });
 });
 

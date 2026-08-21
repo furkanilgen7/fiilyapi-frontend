@@ -101,9 +101,9 @@ describe("SiteCard — tamamlanmis varyant (spec §4.3)", () => {
 describe("SiteCard — yer tutucu hucreler (spec §7.1)", () => {
   it("Isci ve Ilerleme yer tutucuysa '—' basar ve title'da aciklama verir", () => {
     render(<SiteCard projectId={PROJECT_ID} site={ACTIVE_SITE} />);
-    const worker = screen.getByTitle("Puantaj modülüyle birlikte gelir");
+    const worker = screen.getByTitle("Puantaj verisi bu yüzeye henüz bağlanmadı");
     expect(worker).toHaveTextContent("—");
-    const progress = screen.getByTitle("Hakediş modülüyle birlikte gelir");
+    const progress = screen.getByTitle("Hakediş verisi bu yüzeye henüz bağlanmadı");
     expect(progress).toHaveTextContent("—");
   });
 

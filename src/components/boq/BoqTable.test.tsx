@@ -174,8 +174,8 @@ describe("BoqTable — Gerç. % yer tutucu sütunu (spec §5.4)", () => {
     render(<BoqTable groups={[GROUPS[1]]} totals={TOTALS} />);
     const cell = screen.getByTestId("boq-pct");
     expect(cell).toHaveTextContent("—");
-    expect(cell).toHaveAttribute("title", "Hakediş modülüyle birlikte gelir");
-    expect(within(cell).getByText("Hakediş modülüyle birlikte gelir")).toHaveClass("sr-only");
+    expect(cell).toHaveAttribute("title", "Hakediş verisi bu yüzeye henüz bağlanmadı");
+    expect(within(cell).getByText("Hakediş verisi bu yüzeye henüz bağlanmadı")).toHaveClass("sr-only");
   });
 
   it("Gerç. % sütun başlığı kaybolmaz", () => {
@@ -229,8 +229,8 @@ describe("BoqTable — GENEL TOPLAM satırı (mockup 174–177, spec §5.5)", ()
     render(<BoqTable groups={GROUPS} totals={TOTALS} />);
     const cell = screen.getByTestId("boq-total-pct");
     expect(cell).toHaveTextContent("—");
-    expect(cell).toHaveAttribute("title", "Hakediş modülüyle birlikte gelir");
-    expect(within(cell).getByText("Hakediş modülüyle birlikte gelir")).toHaveClass("sr-only");
+    expect(cell).toHaveAttribute("title", "Hakediş verisi bu yüzeye henüz bağlanmadı");
+    expect(within(cell).getByText("Hakediş verisi bu yüzeye henüz bağlanmadı")).toHaveClass("sr-only");
   });
 
   // Mockup 177 `%75` basiyor; bu dilimde veri yok, sahte yuzde UYDURULMAZ.

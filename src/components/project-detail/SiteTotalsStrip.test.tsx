@@ -31,10 +31,10 @@ describe("SiteTotalsStrip", () => {
 
   it("her yer tutucu hucre dogru turkce title tasir", () => {
     render(<SiteTotalsStrip totals={TOTALS} />);
-    expect(screen.getByTitle("Hakediş modülüyle birlikte gelir")).toBeInTheDocument();
-    expect(screen.getByTitle("Taşeron sözleşmeleriyle birlikte gelir")).toBeInTheDocument();
-    expect(screen.getByTitle("Puantaj modülüyle birlikte gelir")).toBeInTheDocument();
-    expect(screen.getByTitle("Maliyet takibiyle birlikte gelir")).toBeInTheDocument();
+    expect(screen.getByTitle("Hakediş verisi bu yüzeye henüz bağlanmadı")).toBeInTheDocument();
+    expect(screen.getByTitle("Taşeron sözleşmesi verisi bu yüzeye henüz bağlanmadı")).toBeInTheDocument();
+    expect(screen.getByTitle("Puantaj verisi bu yüzeye henüz bağlanmadı")).toBeInTheDocument();
+    expect(screen.getByTitle("Maliyet verisi bu yüzeye henüz bağlanmadı")).toBeInTheDocument();
   });
 
   // KOD INCELEME BULGUSU: bilesen `totals`i hic okumuyor, dort pending_module
@@ -49,10 +49,10 @@ describe("SiteTotalsStrip", () => {
         }}
       />,
     );
-    expect(screen.getByTitle("Fatura yönetimiyle birlikte gelir")).toBeInTheDocument();
-    expect(screen.getByTitle("Sözleşme modülüyle birlikte gelir")).toBeInTheDocument();
-    expect(screen.queryByTitle("Hakediş modülüyle birlikte gelir")).not.toBeInTheDocument();
-    expect(screen.queryByTitle("Maliyet takibiyle birlikte gelir")).not.toBeInTheDocument();
+    expect(screen.getByTitle("Fatura verisi bu yüzeye henüz bağlanmadı")).toBeInTheDocument();
+    expect(screen.getByTitle("Sözleşme verisi bu yüzeye henüz bağlanmadı")).toBeInTheDocument();
+    expect(screen.queryByTitle("Hakediş verisi bu yüzeye henüz bağlanmadı")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("Maliyet verisi bu yüzeye henüz bağlanmadı")).not.toBeInTheDocument();
   });
 
   it("hicbir KPI karti sessizce dusurulmez — dort etiket + dort deger birlikte var", () => {

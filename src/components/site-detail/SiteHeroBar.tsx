@@ -158,7 +158,9 @@ function SectionCountCell({ site }: { site: SiteDetail }) {
 
 // Şantiye Detay hero şeridi (spec §5.2). Beş KPI hücresinden yalnız Bölüm
 // Sayısı ve Kalan Gün gerçek değerdir; Fiziksel İlerleme/Aktif İşçi/Toplam
-// Hakediş `progress_payments`/`timesheet` modülleriyle birlikte gelir (§7.1).
+// Hakediş `progress_payments`/`timesheet` yer tutucularıdır (§7.1).
+// 🔴 F-UNIT1 T5: iki modül de CANLIDIR (`/hakedisler`, `/puantaj`) — eksik olan
+// verinin BU ŞERİDE toplanmasıdır, modülün kendisi değil.
 export function SiteHeroBar({ site }: SiteHeroBarProps) {
   const base = `/projeler/${site.project.id}/santiyeler/${site.id}`;
   const meta = metaParts(site);
