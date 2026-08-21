@@ -299,7 +299,13 @@ test.describe("F-UNIT2 yazma akışları (p-2)", () => {
     await page.goto(`/satis/blok-ekle?proje=${WRITE_PROJECT}`);
     await expect(page.getByTestId("blok-form-proje")).toHaveValue(WRITE_PROJECT);
 
-    await page.getByTestId("blok-form-santiye").selectOption({ label: "Villa B Şantiyesi" });
+    // 🔴 ŞANTİYE SEÇİLMEZ ve bu BİLEREKtir: `p-2`nin `state.sites`te şantiyesi
+    // YOKTUR. T3 buraya bir şantiye eklemişti; şantiye seçicileri KÜRESELdir
+    // (proje bağımsız) ve `Yeni Depo Ekle` diyaloğunun seçenek sayısını
+    // 3→4 yaparak `form-dialogs-visual.spec.ts:282`yi KIRMIZI etti. Şantiye
+    // geri alındı; bu zincirin iddiası zaten şantiye DEĞİL, gezinmedir.
+    // `site_id` gövdeye girmez — BE formunda alan boş kalır (KARAR 11: istemci
+    // zorunlu alan diye kaydı ENGELLEMEZ).
     await page.getByTestId("blok-form-ad").fill("T3 Zincir Bloğu");
     await page.getByTestId("blok-form-kat").fill("4");
     await page.getByTestId("blok-form-kat-basina-daire").fill("2");

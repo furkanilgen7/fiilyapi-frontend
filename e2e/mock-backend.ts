@@ -2102,15 +2102,18 @@ function seedState(): MockState {
     // etmemişti). Yazma alanının (`p-2`) blok/Excel formlarında şantiye
     // seçicisi GERÇEK bir seçenek göstersin diye kayıt açıldı.
     //
-    // 🔒 İZOLASYON: `p-2`nin hiçbir görsel kadrajı YOKTUR (ölçüldü: proje
-    // kapsamlı kadrajların hepsi `p-1`), `p-2`nin BÖLÜMÜ de yoktur — portföy
-    // Gantt'i (`/projects/timeline`) bölümleri şantiyeler üzerinden toplar,
-    // bölümsüz bir şantiye o satırı DEĞİŞTİRMEZ.
-    {
-      id: "s-p2-1", project_id: "p-2", code: "VILLA", name: "Villa B Şantiyesi", status: "active",
-      address: "Bağlıca Mah.", city: "Ankara", city_inherited: false, site_manager_name: "N. Aydın",
-      start_date: "2025-01-01", end_date: "2026-06-01", delivery_date: null, remaining_days: null,
-    },
+    // 🔴 BURAYA `s-p2-1` EKLENMEZ — F-UNIT2 T3 ekledi ve GÖRSEL KAPI KIRMIZI
+    // OLDU. Gerekçesi doğruydu ama EKSİKTİ: izolasyon yalnız PROJE KAPSAMLI
+    // yüzeylerde (kadrajlar `p-1`, Gantt bölümsüz şantiyeyi saymaz) doğrulanmıştı.
+    // Oysa `Yeni Depo Ekle` diyaloğunun şantiye seçicisi KÜRESELDİR — TÜM
+    // şantiyeleri listeler — ve `form-dialogs-visual.spec.ts:282` seçenek
+    // sayısını (yer tutucu + iki şantiye = 3) SAYIYOR. Yeni şantiye onu 4 yaptı.
+    //
+    // KANON: fikstür izolasyonu "hangi PROJE" sorusuyla bitmez; eklenen satırın
+    // girdiği KÜRESEL listeler de sayılır (şantiye · tedarikçi · müşteri · depo
+    // gibi proje bağımsız seçiciler). `blk-2` bu id'yi ÖNCEDEN de referans
+    // ediyordu ve `state.sites`te KARŞILIĞI YOKTU; bu sarkan referans zararsızdır
+    // ve BİLEREK korunur — düzeltmek başka bir dilimin karesini oynatır.
   ];
   // P6 · T1 — sec-1 "en az bir dolu bölüm" fikstürüdür (spec kabul kriteri):
   // TÜM P6 alanları dolu, `is_draft: false`. sec-2/sec-3 durum çeşitliliği
