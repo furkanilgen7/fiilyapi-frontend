@@ -27,13 +27,17 @@ import { PeriodCloseConfirmModal } from "./PeriodCloseConfirmModal";
 import {
   buildPeriodRows,
   closeButtonDisabledReason,
+  periodBlockReason,
   periodClosedAtText,
   periodClosedByText,
   periodEntryCountText,
   periodRowLabel,
   periodStatusLabel,
+  periodStatusVariant,
   periodSummaryText,
   reopenButtonDisabledReason,
+  SEQUENCE_BLOCKED_DETAIL,
+  sequenceBlockedTitle,
   summarizePeriodRows,
   type PeriodRow,
 } from "./period-closing";
@@ -274,12 +278,16 @@ function PeriodTableRow({
   onRequestClose,
   onReopen,
 }: PeriodTableRowProps) {
+  // 🔴 K3.5 — `blocked_sequence` için mockup'ta AYRI bir renk ÇİZİLİ DEĞİL
+  // (ölçüldü: "sıra/önceki/kronolojik" geçen 0 satır); `periodStatusVariant`
+  // onu taslak engelinin görsel diline indirger ve YENİ CSS yazılmaz.
+  const variant = periodStatusVariant(row.status);
   const rowClassName =
-    row.status === "blocked"
+    variant === "blocked"
       ? "dkap-row--blocked"
-      : row.status === "closable"
+      : variant === "closable"
         ? "dkap-row--closable"
-        : row.status === "no_record"
+        : variant === "no_record"
           ? "dkap-row--no-record"
           : undefined;
 
@@ -289,7 +297,7 @@ function PeriodTableRow({
         <td className="dkap-row__period">{periodRowLabel(row)}</td>
         <td className="is-center">
           <span
-            className={`dkap-status dkap-status--${row.status}`}
+            className={`dkap-status dkap-status--${variant}`}
             data-testid={`dkap-status-${row.month}`}
           >
             {row.status === "closed" && (
@@ -315,6 +323,7 @@ function PeriodTableRow({
         </td>
       </tr>
       {row.status === "blocked" && <BlockedReasonRow row={row} />}
+      {row.status === "blocked_sequence" && <SequenceReasonRow row={row} />}
     </>
   );
 }
@@ -371,6 +380,12 @@ function PeriodRowAction({
  * kayıt-yok satırlar hiç çağrı YAPMAZ, yalnız `blocked` durumundaki satırlar
  * kendi döneminin taslaklarını çeker.
  *
+ * 🔴 K3.1 TEK KARAR NOKTASI — bant başlığı `periodBlockReason`den gelir;
+ * taslak SAYISI görünümde HİÇ okunmaz. Önceki hâli sayıyı burada okuyup
+ * başlığı ikinci kez kopyalıyordu: tooltip ile bant sessizce ayrışabilirdi.
+ * Bekçisi mekaniktir — `period-closing.ts` dışındaki hiçbir dosya bu alanların
+ * ADINI bile taşımaz.
+ *
  * 🔴 FİŞ NUMARASI (`YEV-2026-0214`) UYDURULMAZ: `JournalEntryResponse`
  * şemasında böyle bir alan YOKTUR (yalnız `id` UUID'dir) — mockup'ın
  * numarası örnek/kurgu biçimdir. Ekran gerçekte var olan alanları basar:
@@ -378,7 +393,6 @@ function PeriodRowAction({
  * düşüş — numara YOK ama liste GERÇEK).
  */
 function BlockedReasonRow({ row }: { row: PeriodRow }) {
-  const count = row.item?.draft_count ?? 0;
   const draftsQuery = useJournalEntries({ status: "draft", year: row.year, month: row.month });
   const errorMessage = draftsQuery.isError
     ? backendErrorMessage(draftsQuery.error, "Taslak fişler yüklenemedi.")
@@ -390,9 +404,7 @@ function BlockedReasonRow({ row }: { row: PeriodRow }) {
         <div className="dkap-blocked-banner">
           <AlertIcon className="dkap-blocked-banner__icon" />
           <div>
-            <p className="dkap-blocked-banner__title">
-              Dönem kapatılamıyor — {count} taslak fiş var
-            </p>
+            <p className="dkap-blocked-banner__title">{periodBlockReason(row)}</p>
             <p className="dkap-blocked-banner__detail">
               Taslak durumdaki fişler kapanışa dâhil edilemez. Kapatmadan önce hepsini
               kesinleştirin veya silin.
@@ -418,6 +430,34 @@ function BlockedReasonRow({ row }: { row: PeriodRow }) {
                 ))}
               </ul>
             )}
+          </div>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+/**
+ * SIRA-B — sıra engelinin bandı. Yapısı DK:167-197 taslak bandının AYNISIdır
+ * (`.dkap-blocked-banner` jenerik, yeni CSS yazılmaz).
+ *
+ * 🔴 Taslak bandının fiş LİSTESİ burada YOKTUR ve `useJournalEntries`
+ * ÇAĞRILMAZ: sıra engelinin satır satır dökülecek bir listesi yok — kullanıcının
+ * yapacağı tek iş "önceki ayı kapat"tır ve o ay zaten AYRI BİR SATIRDIR.
+ *
+ * 🔴 K3.6 — çıplak glif yasağı: uyarı sembolü `ui/icons`in `AlertIcon`ıdır.
+ */
+function SequenceReasonRow({ row }: { row: PeriodRow }) {
+  return (
+    <tr className="dkap-row--blocked" data-testid={`dkap-sequence-reason-${row.month}`}>
+      <td colSpan={6}>
+        <div className="dkap-blocked-banner">
+          <AlertIcon className="dkap-blocked-banner__icon" />
+          <div>
+            <p className="dkap-blocked-banner__title">
+              {sequenceBlockedTitle(row.year, row.month)}
+            </p>
+            <p className="dkap-blocked-banner__detail">{SEQUENCE_BLOCKED_DETAIL}</p>
           </div>
         </div>
       </td>

@@ -10092,6 +10092,160 @@
         }
       }
     },
+    "/payroll/tax-brackets": {
+      "get": {
+        "tags": [
+          "payroll"
+        ],
+        "summary": "List Payroll Tax Brackets Endpoint",
+        "description": "GVK m.103 artan oranlı tarifesi (IK3-GV K2) — `(yıl, gelir türü, sıra)`.\n\nPasif setler de döner: geçmiş bir bordronun hangi tarifeyle hesaplandığı\nokunabilir kalmalıdır. Sayfalama YOKTUR (gerekçe `schemas`).\n\n🔴 Bu uç aynı zamanda PUT'un ÖN KOŞULUDUR: tam küme değiştirmeye açılan bir\nyüzeyin, kümenin TAMAMINI okuyan bir eşi olmak zorundadır — yoksa kullanıcı\nneyin üstüne yazdığını göremeden yazar.",
+        "operationId": "list_payroll_tax_brackets_endpoint_payroll_tax_brackets_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            }
+          },
+          {
+            "name": "income_kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/IncomeKind"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Income Kind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollTaxBracketListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/payroll/tax-brackets/{year}/{income_kind}": {
+      "put": {
+        "tags": [
+          "payroll"
+        ],
+        "summary": "Replace Payroll Tax Brackets Endpoint",
+        "description": "Yılın tarifesini **TAM KÜME** olarak değiştirir (K1: mevzuat VERİDİR).\n\n🔴 **GEÇMİŞ DÖNEM DEĞİŞMEZ (para korkuluğu):** o yılda `approved`/`paid` bir\ndönem varsa **409**. Gerekçe oran ucununkiyle AYNI DEĞİLDİR ve ölçülmüştür —\nvergi satıra SNAPSHOT edilir, ama ayın vergisi `T(önceki+bu ay) − T(önceki)`\nolduğu için yıl ortasında değişen bir tarife, sonraki ilk bordroya ödenmiş\nayların farkını YÜKLER.\n\nGövde yılın TÜM dilimlerini taşır; kısmi güncelleme YOKTUR (tarife birikimli\nokunur, tek dilimi yamalamak setin bütününün anlamını değiştirirdi). Kümenin\nbütünlüğü (boşluk · örtüşme · ortada açık uç · sınırsız SON dilim)\n`income_tax.normalize_brackets` ile doğrulanır → **422**.",
+        "operationId": "replace_payroll_tax_brackets_endpoint_payroll_tax_brackets__year___income_kind__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "year",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2100,
+              "minimum": 2000,
+              "title": "Year"
+            }
+          },
+          {
+            "name": "income_kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/IncomeKind"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayrollTaxBracketSetUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollTaxBracketListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "409": {
+            "description": "Bu yılda onaylanmış/ödenmiş dönem var: tarife değiştirilemez"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/payroll/periods/{period_id}/export": {
       "get": {
         "tags": [
@@ -21323,6 +21477,10 @@
               }
             ],
             "title": "Closed By Name"
+          },
+          "previous_period_open": {
+            "type": "boolean",
+            "title": "Previous Period Open"
           }
         },
         "type": "object",
@@ -21337,10 +21495,11 @@
           "updated_at",
           "entry_count",
           "draft_count",
-          "closed_by_name"
+          "closed_by_name",
+          "previous_period_open"
         ],
         "title": "AccountingPeriodListItem",
-        "description": "DKAP-B — liste satırı, `AccountingPeriodResponse`e ÜÇ türetilmiş alan\nEKLER. `close`/`reopen` cevabı hâlâ çıplak `AccountingPeriodResponse`dir\n(görev emri kapsamı yalnız `GET /accounting-periods`); tek bir dönemi\ndöndüren o iki uç için bu alanları hesaplamak GEREKSİZ bir sorgu turudur\nve emrin \"kod/uçlar DEĞİŞMEZ\" maddesini ihlal ederdi.\n\n🔴 K9 — bu ekranda İKİ AYRI kapı vardır (ayrıntı `repository.\ncount_entries_by_period` docstring'i): (1) kapalı döneme YAZMA yasağı —\nSTATÜ AYRIMI YAPMAZ; (2) kapanışın ÖN KOŞULU (`has_draft_entries`) —\nYALNIZ `draft` fişe bakar. `entry_count` (1)e, `draft_count` (2)ye karşılık\ngelir; ikisi AYNI alanmış gibi anlatılırsa (önceki tur böyleydi, K2\nçürütüldü) ekranın \"142 fiş var ama kapatamıyorum\" sorusu cevapsız kalır.\n\n`entry_count` — o döneme (`period_year`/`period_month`) ait TÜM yevmiye\nfişi sayısı, STATÜ AYRIMI YAPMADAN. Kapalı dönemde zaten `draft` KALMAZ\n(kapanış onu reddeder), bu yüzden toplamda ayrıma gerek yoktur ve\nmockup'ın \"Fiş\" sütunu (defter hacmi) budur. Mockup kanıtı: Temmuz satırı\n\"3 taslak fiş var\" uyarısıyla birlikte Fiş=218 basar — taslak sayının\nİÇİNDEDİR, toplamdan ayrı bir sayı DEĞİLDİR.\n\n`draft_count` — AYNI dönemdeki `draft` fiş sayısı (`has_draft_entries`in\nbaktığı KÜME). Mockup özet şeridindeki \"1 engelli\" bunun türevidir: ekran\n`draft_count > 0` ile \"bu dönem kapatılamaz\" OLGUSUNU üretir. 🔴\nKapanabilirlik KARARININ kendisi (`can_close` gibi) burada TAŞINMAZ —\nkarar `periods_service`in kapısıdır; ikinci bir karar kopyası kapı bir gün\ndeğişince ekranı sessizce yanlış bırakırdı.\n\n`closed_by_name` — `users.full_name` (K5: depodaki TEK ad kolonu,\n`audit/repository.py`nin `outerjoin(User, ...)` deseniyle AYNI yoldan\nokunur). NULL olabilir (K4): açık dönemde veya kapatan kullanıcı\nsilinmişse `None` kalır, `\"Bilinmiyor\"` gibi bir metin UYDURULMAZ."
+        "description": "DKAP-B — liste satırı, `AccountingPeriodResponse`e ÜÇ türetilmiş alan\nEKLER (SIRA-B ile DÖRT). `close`/`reopen` cevabı hâlâ çıplak `AccountingPeriodResponse`dir\n(görev emri kapsamı yalnız `GET /accounting-periods`); tek bir dönemi\ndöndüren o iki uç için bu alanları hesaplamak GEREKSİZ bir sorgu turudur\nve emrin \"kod/uçlar DEĞİŞMEZ\" maddesini ihlal ederdi.\n\n🔴 K9 — bu ekranda İKİ AYRI kapı vardır (ayrıntı `repository.\ncount_entries_by_period` docstring'i): (1) kapalı döneme YAZMA yasağı —\nSTATÜ AYRIMI YAPMAZ; (2) kapanışın ÖN KOŞULU (`has_draft_entries`) —\nYALNIZ `draft` fişe bakar. `entry_count` (1)e, `draft_count` (2)ye karşılık\ngelir; ikisi AYNI alanmış gibi anlatılırsa (önceki tur böyleydi, K2\nçürütüldü) ekranın \"142 fiş var ama kapatamıyorum\" sorusu cevapsız kalır.\n\n`entry_count` — o döneme (`period_year`/`period_month`) ait TÜM yevmiye\nfişi sayısı, STATÜ AYRIMI YAPMADAN. Kapalı dönemde zaten `draft` KALMAZ\n(kapanış onu reddeder), bu yüzden toplamda ayrıma gerek yoktur ve\nmockup'ın \"Fiş\" sütunu (defter hacmi) budur. Mockup kanıtı: Temmuz satırı\n\"3 taslak fiş var\" uyarısıyla birlikte Fiş=218 basar — taslak sayının\nİÇİNDEDİR, toplamdan ayrı bir sayı DEĞİLDİR.\n\n`draft_count` — AYNI dönemdeki `draft` fiş sayısı (`has_draft_entries`in\nbaktığı KÜME). Mockup özet şeridindeki \"1 engelli\" bunun türevidir: ekran\n`draft_count > 0` ile \"bu dönem kapatılamaz\" OLGUSUNU üretir. 🔴\nKapanabilirlik KARARININ kendisi (`can_close` gibi) burada TAŞINMAZ —\nkarar `periods_service`in kapısıdır; ikinci bir karar kopyası kapı bir gün\ndeğişince ekranı sessizce yanlış bırakırdı.\n\n`previous_period_open` — SIRA-B: takvim olarak BİR ÖNCEKİ ayın\n`accounting_periods`ta KAYITLI ve `open` olup olmadığı. 🔴 Anlamı bu kadar\nDARDIR ve `draft_count` ile AYNI sınıftandır: bir OLGU taşır, bir KARAR\ndeğil. Adı `can_close` DEĞİLDİR ve olmayacaktır — kapatılabilirlik\n`status` + `draft_count` + bu olgunun BİRLEŞİMİDİR ve o birleşimi\n`periods_service.close_period` tanımlar; kararın bir kopyası burada\ndursaydı kapı bir gün değiştiğinde ekran SESSİZCE yanlış kalırdı\n(DKAP-B kanonu).\n\n🔴 Ekran bunu KENDİ listesinden türetemez, bu yüzden alan ŞART: Ocak'ın\nöncesi bir önceki yılın Aralığıdır ve liste `year` süzgeciyle tek yıl\nçeker — o satır sayfada HİÇ olmaz. Ayrıca sayfa sınırındaki dönemin\nöncesi de sayfada olmayabilir.\n\n🔴 K10 — olgu ile kapı AYNI iki yardımcıdan beslenir\n(`periods_service.previous_period` + `repository.open_periods_among`);\n\"kaydı olmayan ay\" ikisinde de `false`/engel-değil demektir (K2).\n\n🔴 Bu alan YALNIZ liste satırındadır. `close`/`reopen` cevabı çıplak\n`AccountingPeriodResponse` KALIR: tek bir dönem için fazladan bir sorgu\nturudur ve o iki uç zaten kararı KENDİSİ vermiştir — cevabına \"önceki\naçık mı\" iliştirmek, az önce geçilmiş bir kapıyı tekrar anlatmak olurdu.\n\n`closed_by_name` — `users.full_name` (K5: depodaki TEK ad kolonu,\n`audit/repository.py`nin `outerjoin(User, ...)` deseniyle AYNI yoldan\nokunur). NULL olabilir (K4): açık dönemde veya kapatan kullanıcı\nsilinmişse `None` kalır, `\"Bilinmiyor\"` gibi bir metin UYDURULMAZ."
       },
       "AccountingPeriodListResponse": {
         "properties": {
@@ -28862,6 +29021,15 @@
         "title": "HrLeavesSummaryResponse",
         "description": "İZ özet ucu: 5 KPI (46-50) + bakiye tablosu (122-170).\n\nKPI'ların İKİ AYRI zaman ekseni vardır ve bu bilinçlidir:\n\n* `pending_requests` / `on_leave_today` / `days_used_this_month` **BUGÜNE**\n  bağlıdır — geçmiş bir yıl seçmek \"bugün izinli\"yi anlamsız kılardı,\n* `total_leave_debt` / `carryover_risk_personnel` / `balances` ise SEÇİLEN\n  **yıla** bağlıdır (İZ 120 yıl seçici).\n\n🔴 `unknown_entitlement_personnel` fail-closed kanonun GÖRÜNÜR yüzüdür: hakkı\nhesaplanamayan personel (kıdem<1 ya da `hire_date` NULL, İZ 163-167) borç\ntoplamına 0 olarak KARIŞMAZ; ayrı sayılır ki ekran \"418 gün\" derken kaç kişinin\nhesap dışı kaldığı SÖYLENSİN. Sessiz 0, veri eksiğini bilançoda saklardı.\n\nTüm sayılar AKTİF + YAYINDA personelin dünyasını anlatır (İK-1 özet kanonu)."
       },
+      "IncomeKind": {
+        "type": "string",
+        "enum": [
+          "wage",
+          "non_wage"
+        ],
+        "title": "IncomeKind",
+        "description": "Gelir türü — GVK m.103 tarifesinin HANGİ tablosu (K5).\n\nÜcret ve ücret dışı tarifeler 3. dilimden itibaren AYRIŞIR (2026'da ücret\n1.500.000/%27 iken ücret dışı 1.000.000'dur). Bordro HER ZAMAN `wage`\nkullanır ve tohumda yalnız `wage` BASILIR — ücret dışı satırlar\nkullanılmadığı için uydurulmaz (WORKFLOW §3).\n\n🔴 Kolon YİNE DE ŞİMDİ açılır: sonradan eklenseydi geçmiş tohumun hangi\ntabloya ait olduğu belirsiz kalır ve varsayılan bir değer atamak, ücret dışı\nbir tarifeyi ücret tarifesi gibi göstermeyi mümkün kılardı."
+      },
       "IncomeStatementLine": {
         "properties": {
           "key": {
@@ -34318,6 +34486,152 @@
         ],
         "title": "PayrollSummaryResponse",
         "description": "BY 69-93'ün dört kartı + görünür sayaçlar (`summary.PeriodSummary` aynası).\n\n🔴 İki taban ayrıdır: ilk üç kart ÖDEME tabanını (`excluded`/`uncomputed`\nhariç), dördüncü kart MALİYET tabanını (`excluded` DAHİL) gösterir.\nAyrıntı `summary.py` docstring'inde."
+      },
+      "PayrollTaxBracketInput": {
+        "properties": {
+          "ordinal": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Ordinal"
+          },
+          "upper_bound": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,12}|(?=[\\d.]{1,15}0*$)\\d{0,12}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upper Bound"
+          },
+          "rate_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,3}|(?=[\\d.]{1,7}0*$)\\d{0,3}\\.\\d{0,3}0*$)"
+              }
+            ],
+            "title": "Rate Pct"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ordinal",
+          "rate_pct"
+        ],
+        "title": "PayrollTaxBracketInput",
+        "description": "Tarifenin BİR dilimi — gövdedeki hâli.\n\n`is_active` burada YOKTUR: aktiflik SETİN özelliğidir, dilimin değil. Dilim\nbaşına bırakılsaydı yarısı aktif bir tarife kurulabilir ve\n`income_tax.normalize_brackets` onu \"delikli\" sayıp TÜM yılı fail-closed'a\ndüşürürdü — üstelik kullanıcı bunu hiçbir uçtan göremezdi."
+      },
+      "PayrollTaxBracketListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PayrollTaxBracketResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "PayrollTaxBracketListResponse",
+        "description": "Dilimler — **sayfalama YOKTUR ve bu bilinçlidir** (`PayrollRateListResponse` emsali).\n\nTablo yılda en çok bir avuç satır büyür (2026 ücret tarifesi BEŞ dilim);\nTB3 sayfalama korkuluğu sınırsız büyüyen listeler içindir. `limit`\neklenseydi kullanıcı bir yılın tarifesini PARÇA PARÇA görür ve setin\nbütünlüğünü (deliği olup olmadığını) ekrandan hiç okuyamazdı."
+      },
+      "PayrollTaxBracketResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "year": {
+            "type": "integer",
+            "title": "Year"
+          },
+          "income_kind": {
+            "$ref": "#/components/schemas/IncomeKind"
+          },
+          "ordinal": {
+            "type": "integer",
+            "title": "Ordinal"
+          },
+          "upper_bound": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upper Bound"
+          },
+          "rate_pct": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Rate Pct"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "year",
+          "income_kind",
+          "ordinal",
+          "upper_bound",
+          "rate_pct",
+          "is_active"
+        ],
+        "title": "PayrollTaxBracketResponse",
+        "description": "Bir dilim — `(yıl, gelir türü, sıra)` anahtarlı (models.py)."
+      },
+      "PayrollTaxBracketSetUpdate": {
+        "properties": {
+          "brackets": {
+            "items": {
+              "$ref": "#/components/schemas/PayrollTaxBracketInput"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Brackets"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "brackets"
+        ],
+        "title": "PayrollTaxBracketSetUpdate",
+        "description": "`PUT /payroll/tax-brackets/{year}/{income_kind}` gövdesi — **TAM KÜME**.\n\n🔴 Kısmi güncelleme YOKTUR ve bu bir tercih değil, ZORUNLULUKTUR: tarife\nbirikimli okunur (`tax_for_base` dilimleri baştan tarar), yani tek bir\ndilimi değiştirmek setin BÜTÜNÜNÜN anlamını değiştirir. Beş dilimli bir\nsetin 3.'sünü yamalayan bir uç, geri kalan dördünü sessizce eski mevzuatta\nbırakırdı.\n\n🔴 Küme doğrulaması `income_tax.normalize_brackets`e DEVREDİLİR — ikinci bir\nkopya yazılsaydı hesap motoru ile uç iki farklı \"geçerli tarife\" tanımına\nsahip olurdu ve uçtan geçen bir set motorda `uncomputed` üretebilirdi."
       },
       "PendingApprovalsPlaceholder": {
         "properties": {

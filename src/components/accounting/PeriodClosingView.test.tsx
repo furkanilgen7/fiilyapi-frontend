@@ -15,6 +15,11 @@ import { useTrialBalance } from "@/lib/api/hooks/useTrialBalance";
 import { BackendError } from "@/lib/api/unwrap";
 import type { MeResponse } from "@/lib/auth/types";
 
+import {
+  draftBlockedTitle,
+  SEQUENCE_BLOCKED_DETAIL,
+  sequenceBlockedTitle,
+} from "./period-closing";
 import { PeriodClosingView } from "./PeriodClosingView";
 
 vi.mock("@/lib/api/hooks/useAccountingPeriods", async (importOriginal) => ({
@@ -48,6 +53,7 @@ function item(partial: Partial<AccountingPeriodListItem>): AccountingPeriodListI
     entry_count: 0,
     draft_count: 0,
     closed_by_name: null,
+    previous_period_open: false,
     ...partial,
   };
 }
@@ -289,5 +295,104 @@ describe("K8 — 'Dönemi Kapat' onay diyaloğu ister", () => {
     expect(await screen.findByTestId("dkap-confirm-error")).toHaveTextContent(
       "Dönem zaten kapalı.",
     );
+  });
+});
+
+/**
+ * 🔴 SIRA-B (T2 KIRMIZI) — kronolojik sıra kapısının EKRAN kanıtı.
+ *
+ * K2.1: çıplak "düğme devre-dışı" iddiası bekçi DEĞİLDİR (yetki/meşguliyet/
+ * taslak da devre-dışı bırakır). Her iddia `sequenceBlockedTitle`/
+ * `draftBlockedTitle`/`SEQUENCE_BLOCKED_DETAIL` ÇAĞRILARAK üretilen METİNLE
+ * güçlendirilir; elle string kopyalanmaz.
+ *
+ * Bant metinle sorgulanır (`getByText`), `getByRole("alert")` ile DEĞİL
+ * (F-P6 dersi) ve testid'ye bağlanmaz — T3 bandın yapısında serbesttir.
+ */
+describe("SIRA-B — takvim olarak önceki dönem açıkken kapatma engellenir", () => {
+  // Haziran kapatılabilir (öncesi kayıtsız), Temmuz'un ÖNCESİ (Haziran) AÇIK.
+  const SEQUENCE_ITEMS: AccountingPeriodListItem[] = [
+    item({ month: 6, status: "open", entry_count: 204, draft_count: 0, previous_period_open: false }),
+    item({ month: 7, status: "open", entry_count: 218, draft_count: 0, previous_period_open: true }),
+  ];
+
+  it("'Dönemi Kapat' devre dışıdır ve title'ı SIRA metnidir (çıplak disabled YETMEZ)", () => {
+    const expectedTitle = sequenceBlockedTitle(2026, 7);
+    vi.mocked(useAccountingPeriods).mockReturnValue(queryResult({ data: SEQUENCE_ITEMS }));
+    render(<PeriodClosingView />);
+
+    const closeButton = screen.getByTestId("dkap-close-7");
+    expect(closeButton).toBeDisabled();
+    expect(closeButton).toHaveAttribute("title", expectedTitle);
+  });
+
+  it("sıra bandı görünür: başlıkta SIRA metni, açıklamada SEQUENCE_BLOCKED_DETAIL", () => {
+    const expectedTitle = sequenceBlockedTitle(2026, 7);
+    expect(typeof SEQUENCE_BLOCKED_DETAIL).toBe("string");
+    vi.mocked(useAccountingPeriods).mockReturnValue(queryResult({ data: SEQUENCE_ITEMS }));
+    render(<PeriodClosingView />);
+
+    expect(screen.getByText(expectedTitle)).toBeInTheDocument();
+    expect(screen.getByText(SEQUENCE_BLOCKED_DETAIL)).toBeInTheDocument();
+  });
+
+  it("sıra-engelli ay TASLAK bandını basmaz: taslak fiş sorgusu HİÇ yapılmaz", () => {
+    vi.mocked(useAccountingPeriods).mockReturnValue(queryResult({ data: SEQUENCE_ITEMS }));
+    render(<PeriodClosingView />);
+
+    expect(vi.mocked(useJournalEntries)).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("dkap-blocked-reason-7")).not.toBeInTheDocument();
+  });
+
+  it("önceki dönemi (Haziran) kapatmak AKTİFtir — kapanış eskiden yeniye yürür", () => {
+    vi.mocked(useAccountingPeriods).mockReturnValue(queryResult({ data: SEQUENCE_ITEMS }));
+    render(<PeriodClosingView />);
+
+    expect(screen.getByTestId("dkap-close-6")).toBeEnabled();
+  });
+
+  it("engelli ay özet şeridinde 'engelli' SAYILIR — DK:91 hâlâ DÖRT sayıdır", () => {
+    vi.mocked(useAccountingPeriods).mockReturnValue(queryResult({ data: SEQUENCE_ITEMS }));
+    render(<PeriodClosingView />);
+
+    expect(screen.getByTestId("dkap-summary")).toHaveTextContent(
+      "0 kapalı · 1 kapatılabilir · 1 engelli · 10 kayıt yok",
+    );
+  });
+});
+
+/**
+ * 🔴 K3.2 — İKİ ENGEL BİRDEN ekranda: backend kapı sırası (TASLAK önce, SIRA
+ * sonra) yüzünden kullanıcı ÖNCE kendi dönemindeki eksiği duyar. Bandın
+ * "hangisi" olduğu, SIRA metninin ekranda BULUNMADIĞI da ölçülerek kanıtlanır
+ * — yalnız taslak bandının varlığını görmek öncelik kanıtı DEĞİLDİR.
+ */
+describe("SIRA-B K3.2 — taslak VE sıra birlikte engelliyken TASLAK bandı basılır", () => {
+  const BOTH_BLOCKED_ITEMS: AccountingPeriodListItem[] = [
+    item({ month: 6, status: "open", entry_count: 204, draft_count: 0, previous_period_open: false }),
+    item({ month: 7, status: "open", entry_count: 218, draft_count: 3, previous_period_open: true }),
+  ];
+
+  it("bandın başlığı TASLAK metnidir, SIRA metni ekranda BULUNMAZ", () => {
+    expect(typeof SEQUENCE_BLOCKED_DETAIL).toBe("string"); // yanlış-yeşil korkuluğu
+    const sequenceTitle = sequenceBlockedTitle(2026, 7);
+    vi.mocked(useAccountingPeriods).mockReturnValue(queryResult({ data: BOTH_BLOCKED_ITEMS }));
+    render(<PeriodClosingView />);
+
+    const banner = screen.getByTestId("dkap-blocked-reason-7");
+    expect(within(banner).getByText(draftBlockedTitle(3))).toBeInTheDocument();
+
+    expect(screen.queryByText(SEQUENCE_BLOCKED_DETAIL)).toBeNull();
+    expect(screen.queryByText(sequenceTitle)).toBeNull();
+  });
+
+  it("düğmenin title'ı da TASLAK gerekçesidir, SIRA gerekçesi DEĞİL", () => {
+    vi.mocked(useAccountingPeriods).mockReturnValue(queryResult({ data: BOTH_BLOCKED_ITEMS }));
+    render(<PeriodClosingView />);
+
+    const closeButton = screen.getByTestId("dkap-close-7");
+    expect(closeButton).toBeDisabled();
+    expect(closeButton).toHaveAttribute("title", draftBlockedTitle(3));
+    expect(closeButton).not.toHaveAttribute("title", sequenceBlockedTitle(2026, 7));
   });
 });
