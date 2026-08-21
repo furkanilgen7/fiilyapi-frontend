@@ -174,3 +174,101 @@ describe("SalesView — ünite 403'ü ekranı düşürmez", () => {
     ).toBeInTheDocument();
   });
 });
+
+/**
+ * 🔴 F-UNIT1 T3 — BLOK/ÜNİTE FORM GİRİŞLERİ.
+ *
+ * İki form (`/satis/blok-ekle`, `/satis/unite-ekle`) T1/T2'de yazıldı ama
+ * ÜRÜNDE HİÇBİR GİRİŞ NOKTASI YOKTU: rotalar yalnız elle URL yazarak
+ * açılabiliyordu. Konumu mockup'ın KENDİSİ söylüyor — BE 35 / UE 37
+ * breadcrumb'ları "Satış Yönetimi / …" yazar ve `Satış Yönetimi.dc.html`e
+ * link verir.
+ *
+ * 🔴 KAPI `projects`, `sales` DEĞİL: blok/ünite uçlarının izin modülü
+ * `projects`tir (`useProjectUnits.ts` ölçümü). Aşağıdaki iki test bu ayrımı
+ * TERSİNDEN de sınar — biri olup öteki olmayan kullanıcılar ayrışmazsa
+ * ikisinden biri sessizce yanlış kapıya bağlanmış demektir.
+ */
+describe("SalesView — blok/ünite form girişleri (F-UNIT1 T3)", () => {
+  function grantProjects(level: string) {
+    vi.mocked(useSession).mockReturnValue({
+      me: { permissions: { sales: "full", projects: level } } as unknown as MeResponse,
+      isLoading: false,
+    } as ReturnType<typeof useSession>);
+  }
+
+  it("'projects' yazma yetkisiyle iki giriş de basılır", () => {
+    grantProjects("full");
+    render(<SalesView />);
+    expect(screen.getByRole("link", { name: "+ Blok Ekle" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "+ Ünite Ekle" })).toBeInTheDocument();
+  });
+
+  it("seçili proje `?proje=` ile forma TAŞINIR (bağlam kaybolmaz)", () => {
+    grantProjects("full");
+    searchParams = new URLSearchParams("proje=p-2");
+    render(<SalesView />);
+    expect(screen.getByRole("link", { name: "+ Blok Ekle" })).toHaveAttribute(
+      "href",
+      "/satis/blok-ekle?proje=p-2",
+    );
+    expect(screen.getByRole("link", { name: "+ Ünite Ekle" })).toHaveAttribute(
+      "href",
+      "/satis/unite-ekle?proje=p-2",
+    );
+  });
+
+  it("URL'de seçim yoksa listenin İLK projesi taşınır", () => {
+    grantProjects("full");
+    render(<SalesView />);
+    expect(screen.getByRole("link", { name: "+ Blok Ekle" })).toHaveAttribute(
+      "href",
+      "/satis/blok-ekle?proje=p-1",
+    );
+  });
+
+  it("hiç proje yokken bağlamsız (çıplak) rotaya gider", () => {
+    grantProjects("full");
+    vi.mocked(useProjects).mockReturnValue(queryStub({ items: [] }));
+    render(<SalesView />);
+    expect(screen.getByRole("link", { name: "+ Ünite Ekle" })).toHaveAttribute(
+      "href",
+      "/satis/unite-ekle",
+    );
+  });
+
+  // 🔴 ASIL BEKÇİ: `sales` yetkisi VAR, `projects` yetkisi YOK. Kapı `sales`e
+  // bağlanmış olsaydı bu kullanıcı iki düğmeyi de görür, tıklayınca 403 alırdı.
+  it("yalnız 'sales' yetkisi olan (projects: view) kullanıcı girişleri GÖRMEZ", () => {
+    grantProjects("view");
+    render(<SalesView />);
+    expect(screen.queryByRole("link", { name: "+ Blok Ekle" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "+ Ünite Ekle" })).not.toBeInTheDocument();
+    // Satış formu AYRI kapıdadır ve etkilenmez.
+    expect(screen.getByRole("link", { name: "+ Satış Kaydı" })).toBeInTheDocument();
+  });
+
+  // Ters yön: `projects` yazar ama `sales` yalnız okur → blok/ünite görünür,
+  // satış kaydı görünmez. İki kapının GERÇEKTEN ayrı olduğunu bu kanıtlar.
+  it("'projects' yazar / 'sales' okur kullanıcıda yalnız blok-ünite girişleri kalır", () => {
+    vi.mocked(useSession).mockReturnValue({
+      me: { permissions: { sales: "view", projects: "full" } } as unknown as MeResponse,
+      isLoading: false,
+    } as ReturnType<typeof useSession>);
+    render(<SalesView />);
+    expect(screen.getByRole("link", { name: "+ Blok Ekle" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "+ Satış Kaydı" })).not.toBeInTheDocument();
+  });
+
+  // 🔴 F-UNIT2 KAPSAMI BURAYA GİRMEZ: "Toplu Üretim / Excel İçe Aktar /
+  // Paylaşım Girişi" mockup'ta (BE 50-52 · UE 52-54) FORMUN İÇİNDEKİ sekme
+  // şeridinde çizilir, `/satis` başlığında DEĞİL. İkinci bir devre-dışı kopya
+  // basmak mockup'ın hiç çizmediği bir yüzeyi icat etmek olurdu.
+  it("F-UNIT2 sekmeleri `/satis` başlığında BASILMAZ (mockup onları forma çizer)", () => {
+    grantProjects("full");
+    render(<SalesView />);
+    for (const label of ["Toplu Üretim", "Excel İçe Aktar", "Paylaşım Girişi"]) {
+      expect(screen.queryByText(label)).not.toBeInTheDocument();
+    }
+  });
+});

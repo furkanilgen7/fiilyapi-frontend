@@ -12,6 +12,7 @@ import { useSales } from "@/lib/api/hooks/useSales";
 import { useSalesSummary } from "@/lib/api/hooks/useSalesSummary";
 import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
+import { BLOCK_FORM_HREF, UNIT_FORM_HREF } from "@/components/unit-shell/routes";
 
 import { BlockOccupancyMap } from "./BlockOccupancyMap";
 import { SalesKpiStrip } from "./SalesKpiStrip";
@@ -50,6 +51,11 @@ export function SalesView() {
   const searchParams = useSearchParams();
 
   const permission = useModulePermission("sales");
+  // 🔴 AYRI KAPI: blok/ünite uçlarının izin modülü `projects`tir (`sales`
+  // DEĞİL) — `useProjectUnits.ts`in ölçtüğü ayrım, iki formun kendisi de aynı
+  // kapıyı kullanıyor (`BlockCreateView`/`UnitCreateView`). Yalnız `sales`
+  // yetkisi olan kullanıcı bu iki girişi GÖRMEZ; gördüğü an form 403 verirdi.
+  const unitPermission = useModulePermission("projects");
 
   const projectsQuery = useProjects();
   const projects = projectsQuery.data?.items ?? [];
@@ -74,6 +80,16 @@ export function SalesView() {
     else params.delete(key);
     const next = params.toString();
     router.replace(next.length > 0 ? `${pathname}?${next}` : pathname, { scroll: false });
+  }
+
+  /**
+   * Seçili projeyi forma TAŞIR (`PROJECT_PARAM` ile aynı anahtar). Bağlam
+   * gitmezse form proje seçicisi boş açılır ve kullanıcı seçimini tekrarlar.
+   */
+  function formHref(base: string): string {
+    return selectedProjectId
+      ? `${base}?${PROJECT_PARAM}=${encodeURIComponent(selectedProjectId)}`
+      : base;
   }
 
   // Ünite haritası AYRI izin modülüne (`projects`) bağlıdır: 403 ekranı
@@ -108,6 +124,27 @@ export function SalesView() {
           <Button variant="secondary" disabled title={PRICE_LIST_PENDING_REASON}>
             Fiyat Listesi
           </Button>
+          {/* 🔴 ONAYLI TÜRETİM — iki form kendi KONUMUNU söylüyor. BE 35 ve UE 37
+              breadcrumb'ları "Satış Yönetimi / Blok Ekle" (href="Satış
+              Yönetimi.dc.html") yazar; üründe hiçbir ekran bu formlara link
+              vermiyordu, yani rotaları YALNIZ elle URL yazarak açılıyordu.
+              Giriş noktası mockup'ın kendi beyanına göre buradadır.
+
+              Düğme dili İCAT EDİLMEZ: `btn btn--secondary btn--md` ikisi de
+              zaten var olan sınıflardır (`Fiyat Listesi` ikincil, `+ Satış
+              Kaydı` link-düğme). İkincil seçilmesinin nedeni hiyerarşidir —
+              mockup bu şeritte TEK birincil eylem çizer, üç mavi düğme onu
+              siler. Sıra iş akışıdır: blok → ünite → satış. */}
+          {unitPermission.canWrite && (
+            <>
+              <Link href={formHref(BLOCK_FORM_HREF)} className="btn btn--secondary btn--md">
+                + Blok Ekle
+              </Link>
+              <Link href={formHref(UNIT_FORM_HREF)} className="btn btn--secondary btn--md">
+                + Ünite Ekle
+              </Link>
+            </>
+          )}
           {/* 25 · satış formu (spec K1) */}
           {permission.canWrite && (
             <Link href={NEW_SALE_HREF} className="btn btn--primary btn--md">
