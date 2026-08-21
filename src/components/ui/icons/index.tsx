@@ -205,6 +205,36 @@ export const BellIcon = (p: IconProps) => (
     <path d="M13.73 21a2 2 0 0 1-3.46 0" />
   </svg>
 );
+/**
+ * Yukari ok + taban cizgisi — dosya birakma alaninin ikonu.
+ * Kanon: `Form - Unite Excel Import.dc.html` satir 77'nin inline SVG'si
+ * (viewBox 30, stroke 1.8, yuvarlak uclar) BIREBIR tasinmistir.
+ */
+export const UploadIcon = (p: IconProps) => (
+  <svg {...base({ viewBox: "0 0 30 30", strokeWidth: 1.8, width: 30, height: 30, ...p })}>
+    <path d="M15 4v16M8 12l7-8 7 8" />
+    <path d="M4 25h22" />
+  </svg>
+);
+
+/**
+ * Terazi — denge/tartim basliklarinin ikonu.
+ * `⚖️` (U+2696 + VS16) glif bekcisinin izin listesinde YOKTUR ve VS16
+ * kurtarmasi YALNIZ `⚠` (U+26A0) icindir; baska bir emoji ile ikame etmek
+ * mockup sadakatini bozardi → SVG.
+ * Kanon: `Form - Paylasim Girisi.dc.html` satir 245 "⚖️ Paylasim Denge
+ * Kontrolu" baslıgi.
+ */
+export const ScalesIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+    <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+    <path d="M7 21h10" />
+    <path d="M12 3v18" />
+    <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" />
+  </svg>
+);
+
 // Asma kilit — kabuk sidebar'indaki kullanici kartinin sag ucundaki ikon
 export const LockIcon = (p: IconProps) => (
   <svg {...base({ viewBox: "0 0 14 14", strokeWidth: 1.2, width: 14, height: 14, ...p })}>

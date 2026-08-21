@@ -1,10 +1,15 @@
 /**
  * F-UNIT1 T1 · BE ("Yeni Blok Ekle") formunun DURUM modeli.
  *
- * ⚠️ PENDING YÜZEYLER GÖVDEYE SIZAMAZ (F-ST/F-PT/F-P8 emsali): BE 109'daki
- * "toplu ünite üretimine geç" kutusu bu arayüzde HİÇ YOKTUR. Ekranda devre
- * dışı basılır ama durumda karşılığı olmadığı için `build-body.ts`ten
- * geçemez — sızıntı yapısal olarak imkânsızdır.
+ * ⚠️ GÖVDE OLMAYAN ALANLAR BURADA YAŞAR AMA GÖVDEYE GİRMEZ. İki örnek:
+ * `projectId` bir PATH parametresidir, `goToBulkUnits` ise bir GEZİNME
+ * bayrağıdır (BE 109). İkisi de formun durumudur; ikisi de `build-body.ts`in
+ * AÇIKÇA saydığı anahtarlar arasında DEĞİLDİR ve `build-body.test.ts` bunu
+ * gövde anahtar kümesiyle kapıya bağlar.
+ *
+ * 🔴 `goToBulkUnits` T2c'ye kadar HİÇ YOKTU: hedefi olmayan bir kutucuğun
+ * durumu da olmamalıydı. Hedef (`/satis/toplu-uretim`) açıldığı için alan
+ * eklendi — ama gövdeye değil, `router.push`a bağlandı.
  *
  * ⚠️ `sort_order` mockup'ta YOKTUR: forma bir kutu olarak GİRMEZ. Gövdede yine
  * de bulunur (üretilmiş tip tuzağı, bkz. `build-body.ts`), ama kullanıcı onu
@@ -54,6 +59,12 @@ export interface BlockFormValues {
   status: BlockStatus;
   /** BE 102 — max 500. */
   notes: string;
+  /**
+   * BE 109 — 🔴 GEZİNME BAYRAĞI, GÖVDE ALANI DEĞİL. İşaretliyken başarılı
+   * kayıttan sonra toplu üretim ekranına gidilir; `BlockCreate` gövdesinde
+   * karşılığı YOKTUR ve `build-body.ts` onu hiç okumaz.
+   */
+  goToBulkUnits: boolean;
 }
 
 export type BlockFormField = keyof BlockFormValues;
@@ -90,6 +101,10 @@ export function emptyBlockFormValues(): BlockFormValues {
     estimatedDeliveryDate: "",
     status: "construction", // BE 101 — `selected` "İnşaat Halinde"
     notes: "",
+    // BE 109 — mockup kutuyu `checked` çizer, ama bu bir ÖRNEK VERİDİR:
+    // kullanıcı adına "kaydettikten sonra beni başka ekrana götür" kararı
+    // verilmez (boş form gerçekten boştur, sayı kutularıyla aynı karar).
+    goToBulkUnits: false,
   };
 }
 

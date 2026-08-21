@@ -1,0 +1,482 @@
+/* F-UNIT2 T2b · "Excel'den Ünite İçe Aktarma" formuna ÖZGÜ bloklar — kanon:
+   projedesign "Form - Unite Excel Import.dc.html" (EI). Parantez içi sayılar O
+   DOSYANIN satır numaralarıdır. Çıplak hex yok — tüm renk/ölçüler token.
+
+   Sıra önemli: `form-shell.css` (ortak `.pf-*`) → `unit-shell.css` (aile
+   ortağı `.uf-*`) → bu dosya. Özgü olan kazansın.
+
+   EI 45 içerik sütunu 1050px'tir; `--form-column-max` (1000px) ile arasındaki
+   50px fark bu ekranın DOKUZ SÜTUNLU rapor tablosundan gelir, bu yüzden
+   `.ei-page` için AÇIK bir genişlik yazılır (TU'da böyle bir sapma YOKTU). */
+.ei-page {
+  max-width: 1050px; /* (45) */
+}
+
+/* Kart başlıklarındaki adım numarası. Mockup `1️⃣2️⃣3️⃣` keycap'leri kullanır
+   (58/93/108); U+20E3 birleştiricisi glif bekçisinin izin listesinde YOKTUR ve
+   başka bir emoji ile İKAME ETMEK mockup sadakatini bozar → numara bir sayı
+   rozeti olarak basılır. */
+.ei-step {
+  flex-shrink: 0;
+}
+
+/* ── EI 65-73 yüklenmiş dosya özeti ───────────────────────────────────────── */
+.ei-file {
+  display: flex;
+  align-items: center;
+  gap: 14px; /* (65) */
+  margin-top: var(--space-4);
+  padding: var(--space-4); /* 16px (65) */
+  background: var(--color-success-tint); /* #f0fdf4 (65) */
+  border: 2px solid var(--color-success-tint-border); /* #bbf7d0 (65) */
+  border-radius: var(--radius-12); /* 12px (65) */
+}
+.ei-file__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px; /* (66) */
+  height: 44px; /* (66) */
+  flex-shrink: 0;
+  background: var(--color-success-soft); /* #dcfce7 (66) */
+  border-radius: var(--radius-10); /* 10px (66) */
+  font-size: 22px; /* (66) */
+}
+.ei-file__text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.ei-file__name {
+  font-size: var(--text-form-card-title); /* 14px (68) */
+  font-weight: var(--weight-semibold); /* 600 (68) */
+  color: var(--color-text); /* #1e293b (68) */
+  overflow-wrap: anywhere;
+}
+.ei-file__meta {
+  margin-top: 2px; /* (69) */
+  font-size: var(--text-xs); /* 12px (69) */
+  color: var(--color-success); /* #16a34a (69) */
+}
+/* EI 72 — kırmızı kaldırma düğmesi; mockup'ta `×` glifi, burada ikon. */
+.ei-file .ei-file__remove {
+  color: var(--color-danger); /* #ef4444 (72) */
+}
+/* Dosya seçilmeden yeşil kutu ÇİZİLMEZ; yerine gerekçe durur. */
+.ei-file-empty {
+  margin-top: var(--space-4);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* ── EI 75-80 dosya bırakma alanı ─────────────────────────────────────────── */
+.ei-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2); /* 8px (75) */
+  margin-top: var(--space-3); /* 12px (75) */
+  padding: var(--space-6); /* 24px (75) */
+  background: var(--color-surface-2); /* #f8fafc (75) */
+  border: 2px dashed var(--color-dashed-border); /* #cbd5e1 (75) */
+  border-radius: var(--radius-12); /* 12px (75) */
+}
+.ei-drop__icon {
+  color: var(--color-text-subtle); /* #94a3b8 (77) */
+}
+.ei-drop__field {
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+
+/* ── EI 82-88 beklenen kolonlar şeridi ────────────────────────────────────── */
+.ei-columns {
+  display: flex;
+  align-items: center;
+  gap: var(--space-card-head-gap); /* 10px (82) */
+  margin-top: var(--space-3); /* 12px (82) */
+  padding: var(--space-3) 14px; /* 12px 14px (82) */
+  background: var(--color-nav-active-bg); /* #eff6ff (82) */
+  border-radius: var(--radius-9); /* 9px (82) */
+  flex-wrap: wrap;
+}
+.ei-columns__icon {
+  font-size: var(--space-4); /* 16px (83) */
+}
+.ei-columns__text {
+  flex: 1;
+  min-width: 240px;
+  margin: 0;
+  font-size: var(--text-xs); /* 12px (84) */
+  line-height: 1.6; /* (84) */
+  color: var(--color-primary-hover); /* #1d4ed8 (84) */
+}
+.ei-columns .ei-columns__button {
+  white-space: nowrap; /* (87) */
+}
+
+/* Alan dışı hata/gerekçe metinleri. */
+.ei-inline-error {
+  margin-top: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-danger-text);
+}
+.ei-notice {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.ei-recheck-note {
+  margin-bottom: var(--space-4);
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* ── EI 94-99 dört sayaç ──────────────────────────────────────────────────── */
+.ei-counters {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* (94) */
+  gap: var(--space-3); /* 12px (94) */
+  margin-bottom: var(--space-4); /* 16px (94) */
+}
+.ei-counter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px; /* (95) */
+  border-radius: var(--radius-10); /* 10px (95) */
+  border: 1px solid transparent;
+  text-align: center; /* (95) */
+}
+.ei-counter__value {
+  font-size: var(--text-xl); /* 24px (95) */
+  font-weight: var(--weight-bold); /* 700 (95) */
+}
+.ei-counter__label {
+  margin-top: 2px; /* (95) */
+  font-size: var(--text-small); /* 11px (95) */
+}
+.ei-counter--neutral {
+  background: var(--color-surface-2); /* #f8fafc (95) */
+}
+.ei-counter--neutral .ei-counter__value {
+  color: var(--color-text); /* #1e293b (95) */
+}
+.ei-counter--neutral .ei-counter__label {
+  color: var(--color-text-muted); /* #64748b (95) */
+}
+.ei-counter--valid {
+  background: var(--color-success-tint); /* #f0fdf4 (96) */
+  border-color: var(--color-success-tint-border); /* #bbf7d0 (96) */
+}
+.ei-counter--valid .ei-counter__value {
+  color: var(--color-success); /* #16a34a (96) */
+}
+.ei-counter--valid .ei-counter__label {
+  color: var(--color-success-deep); /* #15803d (96) */
+}
+.ei-counter--warning {
+  background: var(--color-amber-tint-cell); /* #fffbeb (97) */
+  border-color: var(--color-warning-border-soft); /* #fcd34d (97) */
+}
+.ei-counter--warning .ei-counter__value {
+  color: var(--color-warning-strong); /* #d97706 (97) */
+}
+.ei-counter--warning .ei-counter__label {
+  color: var(--color-warning-deep-text); /* #92400e (97) */
+}
+.ei-counter--error {
+  background: var(--color-audit-danger-row-bg); /* #fff7f7 (98) */
+  border-color: var(--color-danger-border-soft); /* #fca5a5 (98) */
+}
+.ei-counter--error .ei-counter__value {
+  color: var(--color-danger); /* #ef4444 (98) */
+}
+.ei-counter--error .ei-counter__label {
+  color: var(--color-danger-deep); /* #991b1b (98) */
+}
+
+/* ── EI 100-102 kırmızı özet şeridi ───────────────────────────────────────── */
+.ei-strip {
+  padding: var(--space-3) 14px; /* 12px 14px (100) */
+  border-radius: var(--radius-9); /* 9px (100) */
+  font-size: var(--text-xs); /* 12px (100) */
+  line-height: 1.6; /* (100) */
+}
+.ei-strip--danger {
+  background: var(--color-audit-danger-row-bg); /* #fff7f7 (100) */
+  border-left: 3px solid var(--color-danger); /* #ef4444 (100) */
+  color: var(--color-danger-deep); /* #991b1b (100) */
+}
+
+/* MOCKUP'TA KUTUSU YOK — `blocks_to_create` bilgilendirmesi. Bilgi tonu
+   seçildi: yeni blok açmak bir HATA değildir, ama sessiz de kalmamalıdır. */
+.ei-blocks {
+  margin-top: var(--space-3);
+  padding: var(--space-3) 14px;
+  background: var(--color-nav-active-bg);
+  border-radius: var(--radius-9);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--color-primary-hover);
+}
+.ei-blocks__stale {
+  color: var(--color-warning-deep-text);
+}
+
+/* ── EI 105-197 satır detayları ───────────────────────────────────────────── */
+/* Kenardan kenara kart (105: `padding:0;overflow:hidden`). */
+.ei-flush-card {
+  padding: 0; /* (105) */
+  overflow: hidden; /* (105) */
+}
+.ei-rows__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-card-head-gap); /* 10px (106) */
+  padding: var(--space-4) var(--space-5); /* 16px 20px (106) */
+  border-bottom: 1px solid var(--color-border); /* (106) */
+  flex-wrap: wrap;
+}
+.ei-rows__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-form-card-title); /* 14px (108) */
+  font-weight: var(--weight-semibold); /* 600 (108) */
+  color: var(--color-text); /* #1e293b (108) */
+}
+.ei-rows__filters {
+  display: flex;
+  gap: var(--space-1); /* 4px (109) */
+  margin-left: var(--space-2); /* 8px (109) */
+  padding: 3px; /* (109) */
+  background: var(--color-surface-muted); /* #f1f5f9 (109) */
+  border-radius: var(--radius-8); /* 8px (109) */
+}
+.ei-filter {
+  padding: 5px var(--space-3); /* 5px 12px (110) */
+  font-size: var(--text-xs); /* 12px (110) */
+  background: transparent; /* (111) */
+  border: 0;
+  border-radius: var(--radius-6); /* 6px (110) */
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+.ei-filter--error {
+  color: var(--color-danger-strong); /* #dc2626 (111) */
+}
+.ei-filter--warning {
+  color: var(--color-warning-strong); /* #d97706 (112) */
+}
+/* Seçili süzgeç: beyaz zemin + mavi kalın metin (110). */
+.ei-filter--on {
+  background: var(--color-surface); /* #fff (110) */
+  font-weight: var(--weight-semibold); /* 600 (110) */
+  color: var(--color-primary); /* #2563eb (110) */
+}
+
+/* EI 115 — tablo kendi içinde kaydırılır; kart büyümez. */
+.ei-rows__scroll {
+  max-height: 400px; /* (115) */
+  overflow-y: auto; /* (115) */
+}
+.ei-rows-table {
+  width: 100%; /* (116) */
+  border-collapse: collapse; /* (116) */
+}
+.ei-rows-table thead tr {
+  background: var(--color-surface-2); /* #f8fafc (117) */
+  border-bottom: 1px solid var(--color-border); /* (117) */
+}
+/* EI 117 — kaydırırken sütun adı kaybolmaz. */
+.ei-rows-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--color-surface-2);
+  padding: 9px var(--space-card-head-gap); /* 9px 10px (118-126) */
+  font-size: var(--text-table-head); /* 11px (118) */
+  font-weight: var(--weight-semibold); /* 600 (118) */
+  color: var(--color-text-muted); /* #64748b (118) */
+  text-transform: uppercase; /* (118) */
+  letter-spacing: 0.7px; /* (118) */
+  text-align: left; /* (120) */
+}
+.ei-rows-table th:first-child,
+.ei-rows-table td:first-child {
+  padding-left: 14px; /* (118/130) */
+  text-align: center; /* (118) */
+}
+.ei-rows-table td {
+  padding: var(--space-card-head-gap); /* 10px (130-138) */
+  font-size: var(--text-xs); /* 12px (130) */
+  color: var(--color-text-secondary); /* #475569 (132) */
+  vertical-align: top;
+}
+.ei-rows-table tbody tr {
+  border-bottom: 1px solid var(--color-divider); /* #f1f5f9 (129) */
+}
+.ei-rows-table__center {
+  text-align: center; /* (132-135) */
+}
+.ei-rows-table__right {
+  text-align: right; /* (136/137) */
+}
+/* EI 130 — satır numarası mono ve soluktur; hatalıda kırmızı+kalın (152). */
+.ei-rows-table__no {
+  font-family: var(--font-mono); /* (130) */
+  color: var(--color-text-subtle); /* #94a3b8 (130) */
+}
+.ei-rows-table__unit {
+  font-size: var(--text-body); /* 13px (131) */
+  font-weight: var(--weight-semibold); /* 600 (131) */
+  color: var(--color-text); /* #1e293b (131) */
+  font-family: var(--font-mono); /* (131) */
+}
+.ei-rows-table__num {
+  font-family: var(--font-mono); /* (136) */
+}
+.ei-rows-table__price {
+  font-weight: var(--weight-semibold); /* 600 (137) */
+  font-family: var(--font-mono); /* (137) */
+}
+.ei-rows-table__empty {
+  padding: var(--space-3) 14px; /* (186) */
+  text-align: center; /* (186) */
+  color: var(--color-text-subtle); /* #94a3b8 (186) */
+}
+/* EI 152 hatalı satır · EI 164 uyarılı satır — zemin RENK TEK BAŞINA yeterli
+   değildir, durum sütunu ayrıca ikon + gizli metin taşır. */
+.ei-rows-table tbody tr.ei-rows-table__row--error {
+  background: var(--color-audit-danger-row-bg); /* #fff7f7 (152) */
+}
+.ei-rows-table tbody tr.ei-rows-table__row--error .ei-rows-table__no {
+  color: var(--color-danger-strong); /* #dc2626 (153) */
+  font-weight: var(--weight-bold); /* 700 (153) */
+}
+.ei-rows-table tbody tr.ei-rows-table__row--warning {
+  background: var(--color-amber-tint-cell); /* #fffbeb (164) */
+}
+.ei-rows-table tbody tr.ei-rows-table__row--warning .ei-rows-table__no {
+  color: var(--color-warning-strong); /* #d97706 (165) */
+  font-weight: var(--weight-bold); /* 700 (165) */
+}
+
+/* EI 131/142/154/166/177 durum sütunu — `✓ ✗ ⚠` yerine ikon. */
+.ei-status {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--text-form-card-title); /* 14px (131) */
+}
+.ei-status--ok {
+  color: var(--color-success); /* #16a34a (131) */
+}
+.ei-status--warning {
+  color: var(--color-warning); /* #f59e0b (166) */
+}
+.ei-status--error {
+  color: var(--color-danger); /* #ef4444 (154) */
+}
+/* Durum metni GÖRSEL olarak gizlidir ama erişilebilir ada girer: renk körü ve
+   ekran okuyucu kullanıcısı durumu yalnız renkten okuyamaz. */
+.ei-status__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* EI 138/161/173 mesaj hücresi — `messages` bir LİSTEDİR ve birleştirilmez. */
+.ei-message-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ei-message {
+  display: block;
+  font-size: var(--text-small); /* 11px (138) */
+  font-weight: var(--weight-medium); /* 500 (161) */
+  color: var(--color-danger-strong); /* #dc2626 (161) */
+  line-height: 1.5;
+}
+.ei-rows-table__row--warning .ei-message {
+  color: var(--color-warning-strong); /* #d97706 (173) */
+}
+.ei-message--ready {
+  font-weight: var(--weight-regular); /* (138) */
+  color: var(--color-success); /* #16a34a (138) */
+}
+
+/* ── EI 191-196 alt şerit ─────────────────────────────────────────────────── */
+.ei-rows__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: 14px var(--space-5); /* 14px 20px (191) */
+  background: var(--color-surface-2); /* #f8fafc (191) */
+  border-top: 1px solid var(--color-border); /* (191) */
+  flex-wrap: wrap;
+}
+.ei-rows__foot-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+  max-width: 420px;
+}
+/* EI 195 — sunucuda karşılığı YOK: devre dışı ama SİLİNMEZ. */
+.ei-rows__foot .ei-error-report {
+  color: var(--color-danger-text); /* #dc2626 (195) */
+  border-color: var(--color-danger-border-soft); /* #fca5a5 (195) */
+}
+/* Devre-dışı yüzeyin GÖRÜNÜR gerekçesi — `title`da saklanmaz. */
+.ei-pending-reason {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  text-align: right;
+}
+
+/* ── Aktarım sonucu (mockup'ta karşılığı YOK) ─────────────────────────────── */
+.ei-result--done {
+  border-color: var(--color-success-tint-border);
+}
+.ei-result--empty {
+  border-color: var(--color-danger-tint-border);
+}
+.ei-result__hint {
+  margin-bottom: var(--space-3);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+.ei-result__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  margin: var(--space-3) 0 0;
+}
+.ei-result__item {
+  padding: var(--space-3);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-10);
+  text-align: center;
+}
+.ei-result__label {
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+.ei-result__value {
+  margin: 2px 0 0;
+  font-size: var(--text-kpi-value);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+}

@@ -2097,6 +2097,23 @@ function seedState(): MockState {
       address: "Kuyubaşı Mah.", city: "Ankara", city_inherited: false, site_manager_name: "K. Arslan",
       start_date: "2024-01-01", end_date: null, delivery_date: "2026-05-01", remaining_days: null,
     },
+    // F-UNIT2 T3 — `blk-2` bu şantiyeye ADIYLA atıf yapıyordu ama kayıt
+    // `state.sites`te YOKTU (blok kendi künyesini taşıdığı için kimse fark
+    // etmemişti). Yazma alanının (`p-2`) blok/Excel formlarında şantiye
+    // seçicisi GERÇEK bir seçenek göstersin diye kayıt açıldı.
+    //
+    // 🔴 BURAYA `s-p2-1` EKLENMEZ — F-UNIT2 T3 ekledi ve GÖRSEL KAPI KIRMIZI
+    // OLDU. Gerekçesi doğruydu ama EKSİKTİ: izolasyon yalnız PROJE KAPSAMLI
+    // yüzeylerde (kadrajlar `p-1`, Gantt bölümsüz şantiyeyi saymaz) doğrulanmıştı.
+    // Oysa `Yeni Depo Ekle` diyaloğunun şantiye seçicisi KÜRESELDİR — TÜM
+    // şantiyeleri listeler — ve `form-dialogs-visual.spec.ts:282` seçenek
+    // sayısını (yer tutucu + iki şantiye = 3) SAYIYOR. Yeni şantiye onu 4 yaptı.
+    //
+    // KANON: fikstür izolasyonu "hangi PROJE" sorusuyla bitmez; eklenen satırın
+    // girdiği KÜRESEL listeler de sayılır (şantiye · tedarikçi · müşteri · depo
+    // gibi proje bağımsız seçiciler). `blk-2` bu id'yi ÖNCEDEN de referans
+    // ediyordu ve `state.sites`te KARŞILIĞI YOKTU; bu sarkan referans zararsızdır
+    // ve BİLEREK korunur — düzeltmek başka bir dilimin karesini oynatır.
   ];
   // P6 · T1 — sec-1 "en az bir dolu bölüm" fikstürüdür (spec kabul kriteri):
   // TÜM P6 alanları dolu, `is_draft: false`. sec-2/sec-3 durum çeşitliliği
@@ -2198,8 +2215,11 @@ function seedState(): MockState {
     })),
     stockSeq: 0,
     customers: CUSTOMER_FIXTURES.map((c) => ({ ...c })),
-    unitBlocks: UNIT_BLOCK_FIXTURES.map((b) => ({ ...b })),
-    units: UNIT_FIXTURES.map((u) => ({ ...u })),
+    // F-UNIT2 T3 — iki fikstür kümesi AYRI dosyada değil ama AYRI dizide
+    // yaşar: hangi satırın hangi dilime ait olduğu (ve hangi projeye
+    // dokunduğu) tek bakışta okunsun.
+    unitBlocks: [...UNIT_BLOCK_FIXTURES, ...F_UNIT2_BLOCK_FIXTURES].map((b) => ({ ...b })),
+    units: [...UNIT_FIXTURES, ...F_UNIT2_UNIT_FIXTURES].map((u) => ({ ...u })),
     unitSales: UNIT_SALE_FIXTURES.map((s) => ({ ...s })),
     saleInstallments: SALE_INSTALLMENT_FIXTURES.map((i) => ({ ...i })),
     saleSeq: 0,
@@ -3867,6 +3887,25 @@ interface MockUnit {
   /** SATIŞTAN TÜREVDİR — `POST /projects/{id}/sales` bunu sunucuda günceller. */
   sales_status: "listed" | "reserved" | "sold" | "closed";
   sort_order: number;
+  /**
+   * F-UNIT2 T3 — PG ("Kat Karşılığı Paylaşım Girişi") satırlarının "Rayiç
+   * Değer" sütunu ve DEĞER dengesinin TEK kaynağı.
+   *
+   * İSTEĞE BAĞLIDIR: `buildUnitResponse` bu alanı bugüne kadar SABİT `null`
+   * yazıyordu, dolayısıyla alanı vermeyen mevcut fikstürlerin (p-1/p-2)
+   * çıktısı BİREBİR aynı kalır — hiçbir baseline oynamaz.
+   *
+   * 🔴 `null` "girilmemiş"tir, `0` DEĞİL: atanmış rayiç toplamı 0 iken değer
+   * dengesi HESAPLANAMAZ döner (`our_actual_pct` vb. `null`), `0` dönmek
+   * ekrana yeşil "denge uygun" bastırırdı.
+   */
+  appraisal_value?: string | null;
+  /**
+   * F-UNIT2 T3 — PG hissedar sütunu. YALNIZ `owner_side === "landowner"`
+   * satırda anlamlıdır; `PATCH …/units/allocation` "Biz" ataması yaparken
+   * bunu TEMİZLER (GUARD 10).
+   */
+  shareholder_id?: string | null;
 }
 
 interface MockUnitSale {
@@ -3963,6 +4002,264 @@ const UNIT_FIXTURES: MockUnit[] = [
   { id: "u-p2-2", project_id: "p-2", block_id: "blk-2", unit_no: "V2", unit_kind: "apartment", layout: "5+2", gross_area_m2: "320.00", net_area_m2: "270.00", list_price: "8400000.00", owner_side: "contractor", floor: "Müstakil", min_sale_price: null, vat_rate: "1.00", sales_status: "listed", sort_order: 1 },
   { id: "u-p2-3", project_id: "p-2", block_id: "blk-2", unit_no: "V3", unit_kind: "apartment", layout: "6+2", gross_area_m2: "380.00", net_area_m2: "320.00", list_price: "9800000.00", owner_side: "contractor", floor: "Müstakil", min_sale_price: null, vat_rate: "1.00", sales_status: "listed", sort_order: 2 },
 ];
+
+// --- F-UNIT2 T3 · Toplu Üretim (TU) · Excel İçe Aktarma (EI) · Paylaşım
+//     Girişi (PG) fikstürleri --------------------------------------------
+//
+// 🔒 FİKSTÜR İZOLASYONU — BU DİLİMİN EN PAHALI KURALI. Mock backend TÜM
+// spec'lerde TEK paylaşılan süreçtir, `playwright.config.ts` `fullyParallel`
+// koşar ve DURUM SIFIRLANMAZ; yani bir spec'in yazması, başka bir spec'in
+// kadrajını SIRAYA BAĞLI olarak oynatabilir. Bu dilim projeleri ROL ROL ayırır:
+//
+//   · `p-1` (Kule A)             → SALT-OKUR. TU/EI kadrajları buradan besleniyor
+//                                   ve iki uç da (`bulk/preview`, `import/validate`)
+//                                   sunucuda TEK SATIR bile yazmaz. `p-1`in blok/
+//                                   ünite evrenine bu dilimde HİÇBİR yazma dokunmaz
+//                                   (`satis-listesi`, `unite-ekle-formu`,
+//                                   `blok-ekle-formu` baseline'ları güvende).
+//   · `p-3` (Bahçelievler Konut) → PG BASELINE ADASI. Bugün SIFIR blok, SIFIR
+//                                   ünite taşıyor ve hiçbir ekran onun ünite/blok/
+//                                   satış yüzeyini çizmiyor (ölçüldü: `state.units`
+//                                   ve `state.unitBlocks` okumalarının HEPSİ proje
+//                                   kapsamlı). Buraya eklenen 42 ünite mevcut
+//                                   hiçbir kareye giremez. Projenin KARTI
+//                                   (`projects-visual`) `MockProject.land_share`
+//                                   yer tutucularından çizilir ve o alan
+//                                   DEĞİŞTİRİLMEDİ.
+//   · `p-4` (Güneşkent B-Blok)   → PG "HESAPLANAMAZ" ADASI (rayiç girilmemiş).
+//   · `p-2` (Villa B)            → YAZMA ALANI (deponun yerleşik yazma projesi).
+//                                   Toplu üretim, blok oluşturma ve paylaşım
+//                                   kaydetme buraya yazar. `sales-form.spec.ts`
+//                                   `u-p2-1`i ADIYLA seçer ve yazmalarını
+//                                   `page.route` ile yakalar; bu dilim onun
+//                                   ünitelerine DOKUNMAZ, kendi bloklarını ekler.
+//
+// 🔴 KAT KARŞILIĞI SÖZLEŞMESİ AYRI BİR HARİTADIR (`LAND_SHARE_CONTRACT_FIXTURES`)
+// ve `MockProject.land_share` alanını OKUMAZ. Gerekçe ölçüldü: o alan proje
+// KARTINI besler (`/projects` → `projects-visual` baseline'ı) ve üç yeni kova
+// açmak için oraya dokunmak, bu dilimle hiç ilgisi olmayan bir kareyi
+// oynatırdı. İki yüzey bilerek ayrıdır.
+
+/** PG satırlarının oda tipi → (brüt m², rayiç değer) sözlüğü. */
+const LAND_SHARE_LAYOUTS = {
+  "1+1": { gross: "78.00", net: "66.00", appraisal: "700000.00" },
+  "2+1": { gross: "112.00", net: "96.00", appraisal: "1000000.00" },
+  "3+1": { gross: "148.00", net: "128.00", appraisal: "1400000.00" },
+  "4+1": { gross: "186.00", net: "160.00", appraisal: "1800000.00" },
+} as const;
+
+type LandShareLayout = keyof typeof LAND_SHARE_LAYOUTS;
+type LandShareSide = "contractor" | "landowner" | null;
+/** `[oda tipi, sahiplik, hissedar]` — hissedar YALNIZ arsa payında anlamlıdır. */
+type LandSharePlanRow = readonly [LandShareLayout, LandShareSide, string | null];
+
+/**
+ * 🔴 ONAYLI SAPMA — MOCKUP'IN RAYİÇ SAYILARI KANON DEĞİLDİR (TU 146'nın
+ * "₺27.264.000"ıyla AYNI sınıf, bkz. `bulk.py::total_list_value`). Buradaki
+ * rayiç değerler mockup'ın satır sayılarını değil, mockup'ın kendi HÜKMÜNÜ
+ * birebir üretmek için seçildi:
+ *
+ *   biz 26.400.000 ₺ (20 ünite) · arsa 21.100.000 ₺ (16 ünite)
+ *   → gerçekleşen %55,58 / %44,42 → ekranda "%55,6 / %44,4"  (PG 260)
+ *   → sapma %0,58 → ekranda "%0,6", eşik %1 içinde → "Değer dengesi uygun" (PG 265)
+ *   → `formatCompactCurrencyTight` ⇒ "₺26,4M" / "₺21,1M"      (PG 257-258)
+ *
+ * Adetler de mockup'la BİREBİR: 42 ünite · beklenen 23/19 · atanan 20/16 ·
+ * atanmayan 6 · eksik 3/3 (PG 71 · 73-81 · 247-253).
+ *
+ * Ünite numaraları mockup'ın çizdiği satırları korur: A-9 (kat 3, 3+1) ve
+ * A-10 (kat 4, 2+1) ATANMAMIŞTIR (PG 131-160) — kadraj bekçileri bu iki
+ * numaraya bakar.
+ */
+const P3_BLOCK_A_PLAN: readonly LandSharePlanRow[] = [
+  ["3+1", "contractor", null], ["2+1", "contractor", null], ["4+1", "contractor", null], // A-1..A-3  (kat 1)
+  ["3+1", "contractor", null], ["2+1", "contractor", null], ["4+1", "contractor", null], // A-4..A-6  (kat 2)
+  ["3+1", "contractor", null], ["2+1", "contractor", null], ["3+1", null, null],         // A-7..A-9  (kat 3)
+  ["2+1", null, null],         ["3+1", "contractor", null], ["2+1", "contractor", null], // A-10..A-12 (kat 4)
+  ["4+1", "contractor", null], ["3+1", "contractor", null], ["2+1", "contractor", null], // A-13..A-15 (kat 5)
+  ["3+1", "contractor", null], ["2+1", "contractor", null], ["4+1", "contractor", null], // A-16..A-18 (kat 6)
+  ["3+1", "landowner", "sh-1"], ["2+1", "landowner", "sh-1"], ["4+1", "landowner", "sh-1"], // A-19..A-21 (kat 7)
+  ["3+1", "landowner", "sh-2"], ["1+1", "landowner", "sh-2"], ["1+1", null, null],       // A-22..A-24 (kat 8)
+];
+
+/** `blk-p3-b` — 18 ünite, 6 kat × 3. B-14 (kat 5, 4+1) mockup'ta ATANMAMIŞTIR. */
+const P3_BLOCK_B_PLAN: readonly LandSharePlanRow[] = [
+  ["3+1", "contractor", null], ["2+1", "contractor", null], ["3+1", "landowner", "sh-1"], // B-1..B-3   (kat 1)
+  ["3+1", "contractor", null], ["2+1", "contractor", null], ["3+1", "landowner", "sh-1"], // B-4..B-6   (kat 2)
+  ["3+1", "landowner", "sh-1"], ["3+1", "landowner", "sh-1"], ["4+1", "landowner", "sh-1"], // B-7..B-9 (kat 3)
+  ["3+1", "landowner", "sh-2"], ["3+1", "landowner", "sh-2"], ["4+1", "landowner", "sh-2"], // B-10..B-12 (kat 4)
+  ["1+1", "landowner", "sh-3"], ["4+1", null, null],          ["1+1", "landowner", "sh-3"], // B-13..B-15 (kat 5)
+  ["3+1", "landowner", "sh-3"], ["3+1", null, null],          ["2+1", null, null],          // B-16..B-18 (kat 6)
+];
+
+/**
+ * `p-4` — DEĞER DENGESİ HESAPLANAMAZ adası: sekiz ünitenin HİÇBİRİNDE rayiç
+ * değer YOKTUR. Adet dengesi yine hesaplanır (sayılar rayiçten bağımsızdır);
+ * değer dengesi `null` döner ve ekran nötr "hesaplanamaz" hükmünü basar —
+ * derleyicinin GÖREMEDİĞİ hata sınıfının tek kanıtı budur.
+ */
+const P4_BLOCK_PLAN: readonly LandSharePlanRow[] = [
+  ["3+1", "contractor", null], ["2+1", "contractor", null],
+  ["3+1", "landowner", "sh-g1"], ["2+1", "landowner", "sh-g1"],
+  ["3+1", null, null], ["2+1", null, null], ["4+1", null, null], ["1+1", null, null],
+];
+
+/** `p-2` — paylaşım YAZMA adası. Dördü de atanmamış başlar. */
+const P2_ALLOCATION_PLAN: readonly LandSharePlanRow[] = [
+  ["3+1", null, null], ["2+1", null, null], ["4+1", null, null], ["1+1", null, null],
+];
+
+/**
+ * Plan tablosunu `MockUnit` satırlarına açar.
+ *
+ * `floor` METİNDİR (kolonun kendisi metin: "Zemin"/"Çatı Katı" sayıya
+ * çevrilemez, karar 4) ve kat numarası `⌈sıra / kat başına daire⌉`tir —
+ * mockup'ın A-9→kat 3, A-10→kat 4, B-14→kat 5 satırlarıyla birebir.
+ *
+ * 🔴 `withAppraisal: false` verilen blokta rayiç ATLANMAZ, `null` YAZILIR:
+ * "girilmemiş" ile "sıfır" ayrımı fikstürde de korunur.
+ */
+function buildLandSharePlanUnits(options: {
+  projectId: string;
+  blockId: string;
+  unitPrefix: string;
+  unitsPerFloor: number;
+  plan: readonly LandSharePlanRow[];
+  withAppraisal: boolean;
+}): MockUnit[] {
+  return options.plan.map(([layout, side, shareholderId], index) => {
+    const sizes = LAND_SHARE_LAYOUTS[layout];
+    return {
+      id: `${options.blockId}-u${index + 1}`,
+      project_id: options.projectId,
+      block_id: options.blockId,
+      unit_no: `${options.unitPrefix}-${index + 1}`,
+      unit_kind: "apartment",
+      layout,
+      gross_area_m2: sizes.gross,
+      net_area_m2: sizes.net,
+      list_price: sizes.appraisal,
+      owner_side: side,
+      floor: String(Math.ceil((index + 1) / options.unitsPerFloor)),
+      min_sale_price: null,
+      vat_rate: "1.00",
+      sales_status: "listed",
+      sort_order: index,
+      appraisal_value: options.withAppraisal ? sizes.appraisal : null,
+      shareholder_id: shareholderId,
+    };
+  });
+}
+
+/**
+ * F-UNIT2 blokları. `site_id`/`site_name` blokla birlikte taşınır (`blk-2`
+ * emsali): `buildBlockResponse` `state.sites`e BAKMAZ, bu yüzden `p-3`/`p-4`
+ * için şantiye kaydı açmak GEREKMEZ — ve açmamak, şantiye yüzeyi olan hiçbir
+ * ekranı riske atmamak demektir.
+ */
+const F_UNIT2_BLOCK_FIXTURES: MockUnitBlock[] = [
+  // `p-3` — PG baseline adası (24 + 18 = 42 ünite).
+  { id: "blk-p3-a", project_id: "p-3", name: "A Blok", site_id: "s-p3-1", site_name: "Bahçelievler Şantiyesi", sort_order: 0, code: "BH-A", basement_floor_count: 1, floor_count: 8, roof_type: "terrace", units_per_floor: 3, ground_floor_usage: "apartment", shop_count: 0, construction_area_m2: "4200.00", elevator_count: 2, parking_type: "closed", estimated_delivery_date: "2027-03-01", status: "construction", notes: null },
+  { id: "blk-p3-b", project_id: "p-3", name: "B Blok", site_id: "s-p3-1", site_name: "Bahçelievler Şantiyesi", sort_order: 1, code: "BH-B", basement_floor_count: 1, floor_count: 6, roof_type: "none", units_per_floor: 3, ground_floor_usage: "apartment", shop_count: 0, construction_area_m2: "3100.00", elevator_count: 1, parking_type: "open", estimated_delivery_date: "2027-06-01", status: "construction", notes: null },
+  // `p-4` — rayiçsiz ada.
+  { id: "blk-p4-1", project_id: "p-4", name: "B-Blok", site_id: "s-p4-1", site_name: "Güneşkent Şantiyesi", sort_order: 0, code: "GK-B", basement_floor_count: 0, floor_count: 4, roof_type: "none", units_per_floor: 2, ground_floor_usage: "apartment", shop_count: 0, construction_area_m2: "1800.00", elevator_count: 1, parking_type: "open", estimated_delivery_date: null, status: "completed", notes: null },
+  // `p-2` — YAZMA alanı. `blk-p2-pay` paylaşım kaydetme testinin satırlarını
+  // taşır; `blk-p2-tu` BOŞ açılır ve toplu üretim testi ONA yazar (kendi
+  // numara uzayı: `TU-1…`, mevcut `V1/V2/V3` ile çakışamaz).
+  { id: "blk-p2-pay", project_id: "p-2", name: "Paylaşım Bloğu", site_id: "s-p2-1", site_name: "Villa B Şantiyesi", sort_order: 1, code: "VP", basement_floor_count: 0, floor_count: 2, roof_type: "none", units_per_floor: 2, ground_floor_usage: "apartment", shop_count: 0, construction_area_m2: "900.00", elevator_count: 1, parking_type: "none", estimated_delivery_date: null, status: "planning", notes: null },
+  { id: "blk-p2-tu", project_id: "p-2", name: "Üretim Bloğu", site_id: "s-p2-1", site_name: "Villa B Şantiyesi", sort_order: 2, code: "TU", basement_floor_count: 0, floor_count: 3, roof_type: "none", units_per_floor: 2, ground_floor_usage: "apartment", shop_count: 0, construction_area_m2: "1100.00", elevator_count: 1, parking_type: "none", estimated_delivery_date: null, status: "planning", notes: null },
+];
+
+const F_UNIT2_UNIT_FIXTURES: MockUnit[] = [
+  ...buildLandSharePlanUnits({ projectId: "p-3", blockId: "blk-p3-a", unitPrefix: "A", unitsPerFloor: 3, plan: P3_BLOCK_A_PLAN, withAppraisal: true }),
+  ...buildLandSharePlanUnits({ projectId: "p-3", blockId: "blk-p3-b", unitPrefix: "B", unitsPerFloor: 3, plan: P3_BLOCK_B_PLAN, withAppraisal: true }),
+  ...buildLandSharePlanUnits({ projectId: "p-4", blockId: "blk-p4-1", unitPrefix: "G", unitsPerFloor: 2, plan: P4_BLOCK_PLAN, withAppraisal: false }),
+  ...buildLandSharePlanUnits({ projectId: "p-2", blockId: "blk-p2-pay", unitPrefix: "PB", unitsPerFloor: 2, plan: P2_ALLOCATION_PLAN, withAppraisal: true }),
+];
+
+interface MockLandShareShareholder {
+  id: string;
+  name: string;
+  share_pct: string;
+}
+
+interface MockLandShareContract {
+  landowner_name: string;
+  our_share_pct: string;
+  owner_share_pct: string;
+  contract_no: string | null;
+  notary_date: string | null;
+  land_area_m2: string | null;
+  construction_area_m2: string | null;
+  delivery_date: string | null;
+  daily_penalty: string | null;
+  guarantee_amount: string | null;
+  shareholders: readonly MockLandShareShareholder[];
+}
+
+/**
+ * 🔴 KAT KARŞILIĞI OLMAYAN PROJE **404** ALIR, BOŞ ÖZET DEĞİL
+ * (`LandShareSummaryResponse`: *"bos ozet ekrana '%0/%0 paylasim' bastirir ve
+ * kullanici veriyi kaybettigini sanardi"*). Bu haritada olmayan her proje —
+ * `p-1` dâhil — o 404'ü alır ve PG onu AÇIKLAYICI BOŞ HÂL olarak basar.
+ */
+const LAND_SHARE_CONTRACT_FIXTURES: Readonly<Record<string, MockLandShareContract>> = {
+  "p-3": {
+    landowner_name: "Yılmaz Ailesi",
+    our_share_pct: "55.00",
+    owner_share_pct: "45.00",
+    contract_no: "KKS-2026-001", // PG 61
+    notary_date: "2026-01-18",
+    land_area_m2: "3400.00",
+    construction_area_m2: "7300.00",
+    delivery_date: "2027-06-30",
+    daily_penalty: "4500.00",
+    guarantee_amount: "1500000.00",
+    // PG 96-99 — hissedar seçeneklerinin TEK kaynağı; ayrı bir `/shareholders`
+    // kökü GEREKMEZ (özetin `shareholders` alanından gelir).
+    shareholders: [
+      { id: "sh-1", name: "Ahmet Yılmaz", share_pct: "50.00" },
+      { id: "sh-2", name: "Fatma Yılmaz", share_pct: "30.00" },
+      { id: "sh-3", name: "Ali Yılmaz", share_pct: "20.00" },
+    ],
+  },
+  "p-4": {
+    landowner_name: "Güneş Kardeşler",
+    our_share_pct: "50.00",
+    owner_share_pct: "50.00",
+    contract_no: "KKS-2023-014",
+    notary_date: "2023-02-02",
+    land_area_m2: null,
+    construction_area_m2: null,
+    delivery_date: null,
+    daily_penalty: null,
+    guarantee_amount: null,
+    shareholders: [{ id: "sh-g1", name: "Hasan Güneş", share_pct: "100.00" }],
+  },
+  "p-2": {
+    landowner_name: "Villa Arsa Sahipleri",
+    our_share_pct: "60.00",
+    owner_share_pct: "40.00",
+    contract_no: "KKS-2026-777",
+    notary_date: "2026-02-10",
+    land_area_m2: null,
+    construction_area_m2: null,
+    delivery_date: null,
+    daily_penalty: null,
+    guarantee_amount: null,
+    shareholders: [
+      { id: "sh-v1", name: "Zeynep Arsa", share_pct: "70.00" },
+      { id: "sh-v2", name: "Kemal Arsa", share_pct: "30.00" },
+    ],
+  },
+};
+
+/** Hissedar adını kimlikten çözer; bilinmeyen kimlik `null` döner. */
+function landShareShareholderName(projectId: string, shareholderId: string | null): string | null {
+  if (shareholderId === null) return null;
+  const contract = LAND_SHARE_CONTRACT_FIXTURES[projectId];
+  return contract?.shareholders.find((s) => s.id === shareholderId)?.name ?? null;
+}
 
 const UNIT_SALE_FIXTURES: MockUnitSale[] = [
   {
@@ -4281,7 +4578,8 @@ function buildUnitResponse(state: MockState, unit: MockUnit) {
     gross_area_m2: unit.gross_area_m2,
     net_area_m2: unit.net_area_m2,
     list_price: unit.list_price,
-    appraisal_value: null,
+    // F-UNIT2 T3 — fikstür vermezse ESKİ davranış (`null`) aynen sürer.
+    appraisal_value: unit.appraisal_value ?? null,
     owner_side: unit.owner_side,
     sort_order: unit.sort_order,
     floor: unit.floor,
@@ -4294,8 +4592,11 @@ function buildUnitResponse(state: MockState, unit: MockUnit) {
     sales_status: unit.sales_status,
     sale_price: sale?.sale_price ?? null,
     buyer_name: customer?.name ?? null,
-    shareholder_id: null,
-    shareholder_name: null,
+    // F-UNIT2 T3 — `PATCH …/units/allocation` yanıtı bu İKİ alanı taşır ve PG
+    // tabloyu ONDAN tazeler (`saved-rows.ts`); eksik bırakılırsa kaydetme
+    // sonrası ekran sessizce eski satırı gösterirdi.
+    shareholder_id: unit.shareholder_id ?? null,
+    shareholder_name: landShareShareholderName(unit.project_id, unit.shareholder_id ?? null),
     unit_cost: METRIC_VALUE(money2(listPrice * 0.62)),
     expected_profit: METRIC_VALUE(money2(listPrice * 0.38)),
     label: `${block?.name ?? ""} · ${unit.unit_no}`,
@@ -4419,6 +4720,371 @@ function buildUnitListResponse(state: MockState, projectId: string) {
     }),
   };
 }
+
+// --- F-UNIT2 T3 · TU (toplu üretim) SAF ÇEKİRDEĞİ ------------------------
+//
+// `backend/app/modules/units/bulk.py` ile AYNI gövde. Sabit bir "24 satır"
+// fikstürü döndürmek CAZİPTİ ama YANLIŞ olurdu: TU'nun ekranda ölçülecek tek
+// mekanizması numaralandırma deseni + kat turu + bileşik fiyat artışıdır;
+// sahte bir liste o mekanizmayı hiç çalıştırmadan yeşil geçerdi (F-HZ2 kazası
+// bunun ta kendisiydi).
+
+const BULK_ROOF_FLOOR_LABEL = "Çatı Katı";
+
+/** `bulk.py::floor_label` ile BİREBİR. */
+function bulkFloorLabel(floor: number): string {
+  if (floor === 0) return "Zemin";
+  if (floor > 0) return `${floor}. Kat`;
+  return `${-floor}. Bodrum`;
+}
+
+const BULK_CODE_FOLD: Readonly<Record<string, string>> = {
+  Ç: "C", ç: "C", Ğ: "G", ğ: "G", İ: "I", I: "I", ı: "I", i: "I",
+  Ö: "O", ö: "O", Ş: "S", ş: "S", Ü: "U", ü: "U",
+};
+
+/**
+ * `codes.effective_block_code` — kod NULL ise addan ANLIK türetilir ve
+ * SAKLANMAZ (karar 8). "A Blok" → `A`, "Villa Blok" → `VILLA`; "BLOK"/"BLOCK"
+ * kelimesi ATILIR çünkü kodun kendisi zaten addır.
+ */
+function effectiveBlockCode(code: string | null | undefined, name: string): string {
+  if (code) return code;
+  const folded = [...name].map((ch) => BULK_CODE_FOLD[ch] ?? ch).join("").toUpperCase();
+  const words = folded
+    .split(/[^A-Z0-9]+/)
+    .filter((word) => word !== "" && word !== "BLOK" && word !== "BLOCK");
+  return words.join("-").slice(0, 20);
+}
+
+interface BulkGeneratedUnit {
+  unit_no: string;
+  floor: number;
+  floor_label: string;
+  layout: string | null;
+  gross_area_m2: string | null;
+  net_area_m2: string | null;
+  facing: string | null;
+  list_price: string | null;
+}
+
+/** Metin/sayı gövde alanını sayıya çevirir; boş/`null` → `null`. */
+function bulkNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function bulkText(value: unknown): string | null {
+  return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
+}
+
+/**
+ * `bulk.py::_price` — artış BİLEŞİKTİR ve sonuç EN YAKIN 100 ₺'ye yuvarlanır
+ * (karar 6). `pct` yokken taban AYNEN yazılır: kullanıcının girdiği
+ * 1.234.567 ₺ sessizce 1.234.600 olmamalıdır.
+ */
+function bulkPrice(base: number | null, pct: number | null, exponent: number): string | null {
+  if (base === null) return null;
+  if (pct === null) return money2(base);
+  const raw = base * Math.pow(1 + pct / 100, exponent);
+  return money2(Math.round(raw / 100) * 100);
+}
+
+/** `bulk.py::_unit_no` — `{Sıra}` jetonunun İKİ anlamı burada ayrışır. */
+function bulkUnitNo(
+  body: Record<string, unknown>,
+  blockCode: string,
+  opts: { floor: number; slot: number; index: number; width: number },
+): string {
+  const prefix = typeof body.prefix === "string" ? body.prefix : "";
+  const startNumber = bulkNumber(body.start_number) ?? 1;
+  const number = startNumber + opts.index;
+  const padded = String(opts.slot).padStart(opts.width, "0");
+  switch (String(body.numbering ?? "sequential")) {
+    case "block_sequence":
+      return `${prefix}${blockCode}-${number}`;
+    case "label_sequence":
+      return `${prefix}Daire ${number}`;
+    case "floor_sequence":
+      return `${prefix}${opts.floor}${padded}`;
+    case "block_floor_sequence":
+      return `${prefix}${blockCode}${opts.floor}${padded}`;
+    default:
+      return `${prefix}${number}`;
+  }
+}
+
+/** `bulk.py::generate_units`. Çatı turu `end_floor`dan SONRA fazladan bir turdur. */
+function generateBulkUnits(body: Record<string, unknown>, blockCode: string): BulkGeneratedUnit[] {
+  const startFloor = bulkNumber(body.start_floor) ?? 0;
+  const endFloor = bulkNumber(body.end_floor) ?? 0;
+  const unitsPerFloor = bulkNumber(body.units_per_floor) ?? 0;
+  const pct = bulkNumber(body.floor_price_increase_pct);
+  const rawSlots = Array.isArray(body.slots) ? (body.slots as Record<string, unknown>[]) : [];
+  // `slots` boşsa ortak varsayılanlardan TEK slot kümesi kurulur (P3 davranışı
+  // tek kod yolundan korunur — ikinci üretim dalı açılmaz).
+  const slots =
+    rawSlots.length > 0
+      ? [...rawSlots].sort((a, b) => (bulkNumber(a.sequence) ?? 0) - (bulkNumber(b.sequence) ?? 0))
+      : Array.from<unknown, Record<string, unknown>>({ length: unitsPerFloor }, (_, index) => ({
+          sequence: index + 1,
+          layout: body.layout,
+          gross_area_m2: body.gross_area_m2,
+          net_area_m2: body.net_area_m2,
+          list_price: body.list_price,
+          // `facing` ORTAK VARSAYILANLARDA YOKTUR (`bulk.py::_slots`): TU
+          // cepheyi yalnız slot satırında veriyor, mockup'ta olmayan bir alan
+          // icat edilmez.
+          facing: null,
+        }));
+  const width = String(unitsPerFloor).length;
+
+  const rounds: [number, string, number][] = [];
+  for (let floor = startFloor; floor <= endFloor; floor += 1) {
+    rounds.push([floor, bulkFloorLabel(floor), floor - startFloor]);
+  }
+  if (body.roof_floor === true) {
+    rounds.push([endFloor + 1, BULK_ROOF_FLOOR_LABEL, endFloor - startFloor + 1]);
+  }
+
+  const generated: BulkGeneratedUnit[] = [];
+  for (const [floor, label, exponent] of rounds) {
+    for (const slot of slots) {
+      const gross = bulkNumber(slot.gross_area_m2);
+      const net = bulkNumber(slot.net_area_m2);
+      generated.push({
+        unit_no: bulkUnitNo(body, blockCode, {
+          floor,
+          slot: bulkNumber(slot.sequence) ?? 1,
+          index: generated.length,
+          width,
+        }),
+        floor,
+        // 🔴 `floor` ile `floor_label` AYRI alanlardır (karar 4): ekran etiketi
+        // basar, çizgili zemini SAYIYA göre kurar. Biri ötekinden türetilemez.
+        floor_label: label,
+        layout: bulkText(slot.layout),
+        gross_area_m2: gross === null ? null : money2(gross),
+        net_area_m2: net === null ? null : money2(net),
+        facing: bulkText(slot.facing),
+        list_price: bulkPrice(bulkNumber(slot.list_price), pct, exponent),
+      });
+    }
+  }
+  return generated;
+}
+
+/** `UnitBulkCreate.model_validator` — istek KURULMADAN önce reddedilenler. */
+function bulkRangeError(body: Record<string, unknown>): string | null {
+  const startFloor = bulkNumber(body.start_floor);
+  const endFloor = bulkNumber(body.end_floor);
+  const unitsPerFloor = bulkNumber(body.units_per_floor);
+  if (startFloor === null || startFloor < -5 || startFloor > 100) return "Başlangıç katı geçersiz.";
+  if (endFloor === null || endFloor < -5 || endFloor > 100) return "Bitiş katı geçersiz.";
+  if (endFloor < startFloor) return "Bitiş katı başlangıç katından küçük olamaz";
+  if (unitsPerFloor === null || unitsPerFloor < 1 || unitsPerFloor > 20) {
+    return "Kat başına daire 1 ile 20 arasında olmalı";
+  }
+  const rounds = endFloor - startFloor + 1 + (body.roof_floor === true ? 1 : 0);
+  if (rounds * unitsPerFloor > 500) return "Tek seferde en fazla 500 ünite üretilebilir";
+  const slots = Array.isArray(body.slots) ? body.slots : [];
+  if (slots.length > 0 && slots.length !== unitsPerFloor) {
+    return "Kat şablonu satır sayısı kat başına daire ile aynı olmalı.";
+  }
+  return null;
+}
+
+// --- F-UNIT2 T3 · PG (kat karşılığı paylaşım) TÜREVLERİ -------------------
+//
+// `backend/app/modules/projects/land_share_balance.py` ile AYNI formüller.
+// 🔴 Sabit bir özet döndürmek YASAK: `PATCH …/units/allocation` sonrası ekran
+// özeti YENİDEN ÇEKER ve sayılar değişmezse "kaydettim ama denge oynamadı"
+// diye sessiz bir yanılgı doğardı.
+
+/** Yarıyı YUKARI yuvarlar (Python `ROUND_HALF_UP`; JS `Math.round` pozitifte aynıdır). */
+function roundHalfUp(value: number, digits: number): number {
+  const factor = Math.pow(10, digits);
+  return Math.round(value * factor) / factor;
+}
+
+function landShareProjectUnits(state: MockState, projectId: string): MockUnit[] {
+  return state.units
+    .filter((u) => u.project_id === projectId)
+    .sort((a, b) => a.block_id.localeCompare(b.block_id) || a.sort_order - b.sort_order);
+}
+
+function landShareUnitValue(unit: MockUnit): number {
+  return Number(unit.appraisal_value ?? 0);
+}
+
+/** `LandShareUnitRow` — PG tablosunun satırı. */
+function buildLandShareUnitRow(state: MockState, unit: MockUnit) {
+  const block = state.unitBlocks.find((b) => b.id === unit.block_id);
+  const sale = state.unitSales.find((s) => s.unit_id === unit.id && s.status !== "cancelled");
+  const customer = sale ? state.customers.find((c) => c.id === sale.customer_id) : undefined;
+  return {
+    unit_id: unit.id,
+    block_id: unit.block_id,
+    block_name: block?.name ?? "",
+    unit_no: unit.unit_no,
+    unit_kind: unit.unit_kind,
+    layout: unit.layout,
+    floor: unit.floor,
+    gross_area_m2: unit.gross_area_m2,
+    // 🔴 `null` = "rayiç girilmemiş"; `0` DEĞİL.
+    appraisal_value: unit.appraisal_value ?? null,
+    owner_side: unit.owner_side,
+    shareholder_id: unit.shareholder_id ?? null,
+    shareholder_name: landShareShareholderName(unit.project_id, unit.shareholder_id ?? null),
+    buyer_name: customer?.name ?? null,
+    sales_status: unit.sales_status,
+  };
+}
+
+/** `LandShareSummaryResponse` — sözleşme + partisyonlar + hissedarlar + denge. */
+function buildLandShareSummary(state: MockState, projectId: string) {
+  const contract = LAND_SHARE_CONTRACT_FIXTURES[projectId];
+  const project = state.projects.find((p) => p.id === projectId);
+  const units = landShareProjectUnits(state, projectId);
+  const ours = units.filter((u) => u.owner_side === "contractor");
+  const owner = units.filter((u) => u.owner_side === "landowner");
+  const unassigned = units.filter((u) => u.owner_side === null);
+
+  const sum = (rows: MockUnit[]) => rows.reduce((total, u) => total + landShareUnitValue(u), 0);
+  const ourValue = sum(ours);
+  const ownerValue = sum(owner);
+  const assignedTotal = roundHalfUp(ourValue + ownerValue, 2);
+  const ourSharePct = Number(contract.our_share_pct);
+
+  // Beklenen adet: YUVARLAMA TEK YERDE — arsa tarafı `toplam − biz` ile TÜRER
+  // (iki tarafı ayrı yuvarlamak toplamı bozardı).
+  const ourExpected = Math.round((units.length * ourSharePct) / 100);
+  const ownerExpected = units.length - ourExpected;
+
+  // 🔴 SIFIRA BÖLME: atanmış değer 0 ise DÖRT alan `null` döner, `0` DEĞİL.
+  const computable = assignedTotal > 0;
+  const ourActual = computable ? roundHalfUp((ourValue / assignedTotal) * 100, 2) : null;
+  const deviation = ourActual === null ? null : roundHalfUp(ourActual - ourSharePct, 2);
+  const soldOurs = ours.filter((u) => u.sales_status === "sold" || u.sales_status === "closed");
+
+  return {
+    project_id: projectId,
+    project_name: project?.name ?? "",
+    contract: {
+      landowner_name: contract.landowner_name,
+      our_share_pct: contract.our_share_pct,
+      owner_share_pct: contract.owner_share_pct,
+      contract_no: contract.contract_no,
+      notary_date: contract.notary_date,
+      land_area_m2: contract.land_area_m2,
+      construction_area_m2: contract.construction_area_m2,
+      delivery_date: contract.delivery_date,
+      daily_penalty: contract.daily_penalty,
+      guarantee_amount: contract.guarantee_amount,
+    },
+    totals: { unit_count: units.length, value_total: money2(sum(units)) },
+    our_side: {
+      unit_count: ours.length,
+      value_total: money2(ourValue),
+      sold_count: soldOurs.length,
+      reserved_count: ours.filter((u) => u.sales_status === "reserved").length,
+      available_count: ours.filter((u) => u.sales_status === "listed").length,
+      sold_value: money2(sum(soldOurs)),
+      remaining_value: money2(ourValue - sum(soldOurs)),
+    },
+    owner_side: { unit_count: owner.length, value_total: money2(ownerValue) },
+    shareholders: contract.shareholders.map((shareholder) => {
+      const rows = owner.filter((u) => u.shareholder_id === shareholder.id);
+      return {
+        shareholder_id: shareholder.id,
+        name: shareholder.name,
+        share_pct: shareholder.share_pct,
+        unit_count: rows.length,
+        value_total: money2(sum(rows)),
+      };
+    }),
+    unassigned: { unit_count: unassigned.length, value_total: money2(sum(unassigned)) },
+    balance: {
+      count_balance: {
+        total_unit_count: units.length,
+        our_expected_count: ourExpected,
+        owner_expected_count: ownerExpected,
+        our_assigned_count: ours.length,
+        owner_assigned_count: owner.length,
+        unassigned_count: unassigned.length,
+        // İŞARETLİ: artı = eksik atama, eksi = FAZLA atama.
+        our_missing_count: ourExpected - ours.length,
+        owner_missing_count: ownerExpected - owner.length,
+      },
+      value_balance: {
+        our_value: money2(ourValue),
+        owner_value: money2(ownerValue),
+        assigned_value_total: money2(assignedTotal),
+        our_actual_pct: ourActual === null ? null : money2(ourActual),
+        owner_actual_pct: ourActual === null ? null : money2(roundHalfUp(100 - ourActual, 2)),
+        deviation_pct: deviation === null ? null : money2(deviation),
+        // 🔴 EŞİK HESAPLANAMAZ HÂLDE BİLE DÖNER — istemci onu kopyalamak
+        // zorunda kalmasın diye (`land_share_balance.py` K3).
+        tolerance_pct: "1.00",
+        is_within_tolerance: deviation === null ? null : Math.abs(deviation) <= 1,
+      },
+    },
+  };
+}
+
+// --- F-UNIT2 T3 · EI (Excel içe aktarma) RAPORU ---------------------------
+//
+// 🔴 BU MOCK `.xlsx` AYRIŞTIRMAZ ve ayrıştırıyormuş gibi de YAPMAZ: iki
+// multipart uç SABİT bir rapor döner ve `POST …/units/import` DURUMU
+// DEĞİŞTİRMEZ. Sınanan sözleşme dosyanın İÇERİĞİ değil, ekranın yüzeyidir —
+// dört sayaç, üç durumlu satır tablosu, ÇOK MESAJLI hata satırı, açılacak
+// blok listesi ve `created`/`skipped` şeridi. Uydurma bir "yazma" bunların
+// hiçbirini güçlendirmez, ama `state.units`ı kirletip komşu kadrajları
+// oynatabilirdi.
+
+const IMPORT_TOTAL_ROWS = 24; // EI 95
+const IMPORT_ERROR_ROW = 7; // EI 154 — İKİ mesajlı satır
+const IMPORT_WARNING_ROW = 11; // EI 166
+
+function buildImportRowReports(imported: (row: number) => boolean) {
+  // Excel satır numaraları 2'den başlar (1. satır başlıktır).
+  return Array.from({ length: IMPORT_TOTAL_ROWS }, (_, index) => {
+    const row = index + 2;
+    const sequence = index + 1;
+    const isError = row === IMPORT_ERROR_ROW;
+    const isWarning = row === IMPORT_WARNING_ROW;
+    const layout = sequence % 2 === 1 ? "3+1" : "2+1";
+    const status = isError ? "error" : isWarning ? "warning" : "ok";
+    return {
+      row,
+      status,
+      unit_no: `C-${sequence}`,
+      block_name: "C",
+      floor: String(Math.ceil(sequence / 3)),
+      // EI 161 — hatalı satırın oda tipi BOŞ; ekran "—" basar.
+      layout: isError ? null : layout,
+      gross_area_m2: isError ? "0.00" : layout === "3+1" ? "148.00" : "112.00",
+      list_price: isError ? "1258600.00" : isWarning ? "890000.00" : layout === "3+1" ? "1280000.00" : "940000.00",
+      // 🔴 `messages` LİSTEDİR — EI 161 tek satırda İKİ mesaj gösterir ve
+      // ekran onları AYRI elemanlar olarak basar (tek metne birleştirilmez).
+      messages: isError
+        ? ["Oda Tipi boş", "Brüt m² sıfır olamaz"]
+        : isWarning
+          ? ["Fiyat maliyetin altında (₺860K) — kontrol edin"]
+          : [],
+      imported: imported(row),
+    };
+  });
+}
+
+/** `valid + warning + error === total_rows` — `checkImportSummary`in değişmezi. */
+const IMPORT_SUMMARY = {
+  total_rows: IMPORT_TOTAL_ROWS,
+  valid: IMPORT_TOTAL_ROWS - 2,
+  warning: 1,
+  error: 1,
+};
 
 /**
  * Ünitenin `sales_status`u SATIŞTAN TÜREVDİR — satış açılınca/iptal edilince
@@ -7954,6 +8620,62 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       return send(200, buildBlockListResponse(state, projectId));
     }
 
+    // POST /projects/{project_id}/blocks — F-UNIT2 T3: BE ("Yeni Blok Ekle")
+    // formunun yazma ucu. 🔴 Bu uç BUGÜNE KADAR MOCK'TA YOKTU: BE formu
+    // jsdom'da test ediliyordu ve e2e'de HİÇ gönderilmiyordu, bu yüzden
+    // eksikliği kimse görmüyordu. BE 109 ("kaydettikten sonra toplu üretime
+    // geç") zincirinin uçtan uca kanıtlanabilmesi ONA bağlıdır.
+    if (method === "POST" && projectBlocksMatch) {
+      const projectId = projectBlocksMatch[1];
+      return withBody((body) => {
+        if (!state.projects.some((p) => p.id === projectId)) {
+          return send(404, { detail: "Proje bulunamadı." });
+        }
+        const name = String(body.name ?? "").trim();
+        // KARAR 11: istemci "zorunlu alan" reddi YAPMAZ — kararı SUNUCU verir.
+        if (name === "") return send(422, { detail: "Blok adı zorunludur." });
+        const siteId = typeof body.site_id === "string" && body.site_id !== "" ? body.site_id : null;
+        if (siteId !== null && !state.sites.some((s) => s.id === siteId)) {
+          return send(404, { detail: "Şantiye bulunamadı." });
+        }
+        const site = siteId === null ? undefined : state.sites.find((s) => s.id === siteId);
+        const block: MockUnitBlock = {
+          // Kimlik BLOK sayısından türer, `saleSeq`ten DEĞİL: paylaşılan bir
+          // sayacı artırmak satış kimliklerini sessizce kaydırırdı. Bloklar
+          // yalnız EKLENİR (silme ucu yok), bu yüzden sayı benzersizdir ve
+          // `Date.now()` gerekmez (determinizm).
+          id: `blk-new-${state.unitBlocks.length + 1}`,
+          project_id: projectId,
+          name,
+          // `BlockResponse.site_id`/`site_name` şemada ZORUNLUDUR; şantiye
+          // seçilmemişse blok projenin ilk şantiyesine bağlanır.
+          site_id: site?.id ?? state.sites.find((s) => s.project_id === projectId)?.id ?? "",
+          site_name:
+            site?.name ?? state.sites.find((s) => s.project_id === projectId)?.name ?? "",
+          sort_order: state.unitBlocks.filter((b) => b.project_id === projectId).length,
+          code: typeof body.code === "string" && body.code !== "" ? body.code : null,
+          basement_floor_count: bulkNumber(body.basement_floor_count),
+          floor_count: bulkNumber(body.floor_count),
+          roof_type: (body.roof_type as MockUnitBlock["roof_type"]) ?? null,
+          units_per_floor: bulkNumber(body.units_per_floor),
+          ground_floor_usage: (body.ground_floor_usage as MockUnitBlock["ground_floor_usage"]) ?? null,
+          shop_count: bulkNumber(body.shop_count),
+          construction_area_m2:
+            body.construction_area_m2 === undefined || body.construction_area_m2 === null
+              ? null
+              : money2(Number(body.construction_area_m2)),
+          elevator_count: bulkNumber(body.elevator_count),
+          parking_type: (body.parking_type as MockUnitBlock["parking_type"]) ?? null,
+          estimated_delivery_date:
+            typeof body.estimated_delivery_date === "string" ? body.estimated_delivery_date : null,
+          status: (body.status as MockUnitBlock["status"]) ?? null,
+          notes: typeof body.notes === "string" ? body.notes : null,
+        };
+        state.unitBlocks = [...state.unitBlocks, block];
+        return send(201, buildBlockResponse(block, []));
+      });
+    }
+
     // GET /projects/{project_id}/units — DS ünite seçicisinin kaynağı.
     const projectUnitsMatch = path.match(/^\/projects\/([^/]+)\/units$/);
     if (method === "GET" && projectUnitsMatch) {
@@ -7962,6 +8684,292 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         return send(404, { detail: "Proje bulunamadı." });
       }
       return send(200, buildUnitListResponse(state, projectId));
+    }
+
+    // === F-UNIT2 T3 · TU · EI · PG uçları ================================
+    //
+    // Sekiz ucun HEPSİ `projects` kökünden geçer; BFF izin listesine yeni kök
+    // EKLENMEZ (F-MT2 kanonu: çağıranı olmayan kök bekçisizdir).
+
+    // POST /projects/{project_id}/units/bulk/preview — 🔴 HİÇBİR ŞEY YAZMAZ.
+    // Çakışma HATA DEĞİLDİR: satırlar `conflict: true` ile 200 döner (TU 177).
+    const bulkPreviewMatch = path.match(/^\/projects\/([^/]+)\/units\/bulk\/preview$/);
+    if (method === "POST" && bulkPreviewMatch) {
+      const projectId = bulkPreviewMatch[1];
+      return withBody((body) => {
+        if (!state.projects.some((p) => p.id === projectId)) {
+          return send(404, { detail: "Proje bulunamadı." });
+        }
+        const block = state.unitBlocks.find(
+          (b) => b.id === String(body.block_id ?? "") && b.project_id === projectId,
+        );
+        // IDOR-9: başka projenin bloğu 404 alır, 403 DEĞİL.
+        if (!block) return send(404, { detail: "Blok bulunamadı." });
+        const rangeError = bulkRangeError(body);
+        if (rangeError !== null) return send(422, { detail: rangeError });
+
+        const generated = generateBulkUnits(body, effectiveBlockCode(block.code, block.name));
+        const taken = new Set(
+          state.units.filter((u) => u.block_id === block.id).map((u) => u.unit_no),
+        );
+        return send(200, {
+          total_units: generated.length,
+          // TU 171-172 — toplam SATIRLARDAN toplanır; mockup'ın
+          // "₺27.264.000"ı kanon DEĞİLDİR (`bulk.py::total_list_value`).
+          total_list_value: money2(
+            generated.reduce((sum, unit) => sum + Number(unit.list_price ?? 0), 0),
+          ),
+          // ÜRETİM SIRASI korunur (küme sırası değil): kullanıcı hangi
+          // aralığın çakıştığını ancak sıralı listede görebilir.
+          conflicting_unit_nos: generated
+            .map((unit) => unit.unit_no)
+            .filter((unitNo) => taken.has(unitNo)),
+          rows: generated.map((unit) => ({ ...unit, conflict: taken.has(unit.unit_no) })),
+        });
+      });
+    }
+
+    // POST /projects/{project_id}/units/bulk — 🔴 HEP-YA-HİÇ (409).
+    const bulkCreateMatch = path.match(/^\/projects\/([^/]+)\/units\/bulk$/);
+    if (method === "POST" && bulkCreateMatch) {
+      const projectId = bulkCreateMatch[1];
+      return withBody((body) => {
+        if (!state.projects.some((p) => p.id === projectId)) {
+          return send(404, { detail: "Proje bulunamadı." });
+        }
+        const block = state.unitBlocks.find(
+          (b) => b.id === String(body.block_id ?? "") && b.project_id === projectId,
+        );
+        if (!block) return send(404, { detail: "Blok bulunamadı." });
+        const rangeError = bulkRangeError(body);
+        if (rangeError !== null) return send(422, { detail: rangeError });
+
+        const generated = generateBulkUnits(body, effectiveBlockCode(block.code, block.name));
+        const taken = new Set(
+          state.units.filter((u) => u.block_id === block.id).map((u) => u.unit_no),
+        );
+        const conflicting = generated
+          .map((unit) => unit.unit_no)
+          .filter((unitNo) => taken.has(unitNo));
+        if (conflicting.length > 0) {
+          // 🔴 TEK SATIR BİLE YAZILMAZ: `state.units` bu daldan HİÇ
+          // değişmez. Ekran bu 409'a "hiçbiri yazılmadı" cümlesini EKLER
+          // (sunucu gövdesi yalnız dolu numaraları söyler).
+          return send(409, {
+            detail: `Üretilecek ünite numaralarından bazıları blokta zaten var: ${conflicting.slice(0, 10).join(", ")}`,
+          });
+        }
+
+        const nextSortOrder =
+          state.units
+            .filter((u) => u.block_id === block.id)
+            .reduce((max, u) => Math.max(max, u.sort_order), -1) + 1;
+        const appraisal = bulkNumber(body.appraisal_value);
+        state.units = [
+          ...state.units,
+          ...generated.map((unit, offset) => ({
+            id: `${block.id}-bulk-${nextSortOrder + offset}`,
+            project_id: projectId,
+            block_id: block.id,
+            unit_no: unit.unit_no,
+            unit_kind: (body.unit_kind as MockUnit["unit_kind"]) ?? "apartment",
+            layout: unit.layout,
+            gross_area_m2: unit.gross_area_m2,
+            net_area_m2: unit.net_area_m2,
+            list_price: unit.list_price,
+            // Üretilen üniteler PAY ATANMAMIŞ başlar (`UnitBulkCreate`te
+            // `owner_side` alanı YOKTUR — spec §5.3/§3.3).
+            owner_side: null,
+            // Sütuna kat ETİKETİ yazılır (metin), sayısal `floor` DEĞİL.
+            floor: unit.floor_label,
+            min_sale_price: null,
+            vat_rate: null,
+            sales_status: "listed" as const,
+            sort_order: nextSortOrder + offset,
+            appraisal_value: appraisal === null ? null : money2(appraisal),
+            shareholder_id: null,
+          })),
+        ];
+        return send(201, buildUnitListResponse(state, projectId));
+      });
+    }
+
+    // POST /projects/{project_id}/units/import/validate — MULTIPART, YAZMAZ.
+    // POST /projects/{project_id}/units/import        — MULTIPART, bu mock'ta
+    // de YAZMAZ (yukarıdaki gerekçe: `.xlsx` ayrıştırılmıyor).
+    const importMatch = path.match(/^\/projects\/([^/]+)\/units\/import(\/validate)?$/);
+    if (method === "POST" && importMatch) {
+      const projectId = importMatch[1];
+      const isValidate = importMatch[2] !== undefined;
+      const chunks: Buffer[] = [];
+      req.on("data", (c: Buffer) => chunks.push(c));
+      req.on("end", () => {
+        if (!state.projects.some((p) => p.id === projectId)) {
+          return send(404, { detail: "Proje bulunamadı." });
+        }
+        const parsedBody = parseMultipart(Buffer.concat(chunks), req.headers["content-type"] ?? "");
+        // Gövde JSON'a çevrilmiş olsaydı ayrıştırma burada düşerdi: bu uç,
+        // BFF'in ham geçirme davranışının uçtan uca kapısıdır.
+        if (!parsedBody?.file) return send(422, { detail: "Dosya alanı okunamadı." });
+        // Sunucunun KENDİ sırası: önce uzantı, sonra boyut (`importer.py`).
+        if (!parsedBody.file.filename.toLowerCase().endsWith(".xlsx")) {
+          return send(422, { detail: "Yalnızca .xlsx dosyası yüklenebilir" });
+        }
+        if (parsedBody.file.size > 2 * 1024 * 1024) {
+          return send(413, { detail: "Dosya çok büyük (en fazla 2 MB)" });
+        }
+        const siteId = parsedBody.fields.site_id;
+        if (siteId && !state.sites.some((s) => s.id === siteId)) {
+          return send(404, { detail: "Şantiye bulunamadı." });
+        }
+        const includeWarnings = parsedBody.fields.include_warnings !== "false";
+
+        if (isValidate) {
+          return send(200, {
+            summary: IMPORT_SUMMARY,
+            rows: buildImportRowReports(() => false),
+            // 🔴 Mockup'ta kutusu YOK ama aktarım bu bloğu AÇAR — söylememek
+            // sessiz sürpriz olurdu.
+            blocks_to_create: ["C Blok"],
+          });
+        }
+
+        const willImport = (row: number) =>
+          row !== IMPORT_ERROR_ROW && (includeWarnings || row !== IMPORT_WARNING_ROW);
+        const rows = buildImportRowReports(willImport);
+        const created = rows.filter((r) => r.imported).length;
+        // 🔴 HİÇ geçerli satır yoksa 422 — `created=0` ile 200 dönmek
+        // kullanıcının "aktarıldı" sanmasına yol açardı.
+        if (created === 0) {
+          return send(422, { detail: "Dosyada aktarılabilir satır yok." });
+        }
+        return send(200, {
+          summary: IMPORT_SUMMARY,
+          created,
+          skipped: IMPORT_SUMMARY.total_rows - created,
+          blocks_created: 1,
+          rows,
+        });
+      });
+      return;
+    }
+
+    // GET /projects/{project_id}/units/import/template — İKİLİ `.xlsx`.
+    // `send` JSON yazar, bu yüzden yanıt ELDE kurulur. Sınanan sözleşme
+    // içerik DEĞİL, İÇERİK TİPİ + `content-disposition`tır (BFF'in ikili dalı
+    // Content-Type'a bakar: `template` bir `download` segmenti DEĞİLDİR).
+    const importTemplateMatch = path.match(/^\/projects\/([^/]+)\/units\/import\/template$/);
+    if (method === "GET" && importTemplateMatch) {
+      const project = state.projects.find((p) => p.id === importTemplateMatch[1]);
+      if (!project) return send(404, { detail: "Proje bulunamadı." });
+      res.writeHead(200, {
+        "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "content-disposition": `attachment; filename="unite-sablonu-${project.code}.xlsx"`,
+      });
+      res.end(Buffer.from("PK-fiil-unite-sablonu", "utf8"));
+      return;
+    }
+
+    // GET /projects/{project_id}/land-share/summary — 🔴 kat karşılığı OLMAYAN
+    // proje 404 alır, BOŞ ÖZET DEĞİL.
+    const landShareSummaryMatch = path.match(/^\/projects\/([^/]+)\/land-share\/summary$/);
+    if (method === "GET" && landShareSummaryMatch) {
+      const projectId = landShareSummaryMatch[1];
+      if (!state.projects.some((p) => p.id === projectId)) {
+        return send(404, { detail: "Proje bulunamadı." });
+      }
+      if (LAND_SHARE_CONTRACT_FIXTURES[projectId] === undefined) {
+        return send(404, { detail: "Bu projede kat karşılığı sözleşmesi yok." });
+      }
+      return send(200, buildLandShareSummary(state, projectId));
+    }
+
+    // GET /projects/{project_id}/land-share/units — SAYFALI. `total`
+    // SÜZGEÇLENMİŞ kümenin boyutudur (sayfalamadan ÖNCE).
+    const landShareUnitsMatch = path.match(/^\/projects\/([^/]+)\/land-share\/units$/);
+    if (method === "GET" && landShareUnitsMatch) {
+      const projectId = landShareUnitsMatch[1];
+      if (!state.projects.some((p) => p.id === projectId)) {
+        return send(404, { detail: "Proje bulunamadı." });
+      }
+      if (LAND_SHARE_CONTRACT_FIXTURES[projectId] === undefined) {
+        return send(404, { detail: "Bu projede kat karşılığı sözleşmesi yok." });
+      }
+      const ownerSide = parsed.searchParams.get("owner_side");
+      const blockId = parsed.searchParams.get("block_id");
+      const query = parsed.searchParams.get("q");
+      const limit = Number(parsed.searchParams.get("limit") ?? 50);
+      const offset = Number(parsed.searchParams.get("offset") ?? 0);
+      let rows = landShareProjectUnits(state, projectId);
+      // "Tümü" bir enum üyesi DEĞİL, süzgecin HİÇ gönderilmemesidir.
+      if (ownerSide === "unassigned") rows = rows.filter((u) => u.owner_side === null);
+      else if (ownerSide) rows = rows.filter((u) => u.owner_side === ownerSide);
+      if (blockId) rows = rows.filter((u) => u.block_id === blockId);
+      if (query) {
+        const needle = query.toLocaleLowerCase("tr");
+        rows = rows.filter((u) => u.unit_no.toLocaleLowerCase("tr").includes(needle));
+      }
+      return send(200, {
+        items: rows.slice(offset, offset + limit).map((u) => buildLandShareUnitRow(state, u)),
+        total: rows.length,
+        limit,
+        offset,
+      });
+    }
+
+    // PATCH /projects/{project_id}/units/allocation — 🔴 **PATCH**, POST/PUT
+    // DEĞİL. ATOMİK: tek satır bile reddedilirse HİÇBİRİ yazılmaz.
+    const allocationMatch = path.match(/^\/projects\/([^/]+)\/units\/allocation$/);
+    if (method === "PATCH" && allocationMatch) {
+      const projectId = allocationMatch[1];
+      return withBody((body) => {
+        if (!state.projects.some((p) => p.id === projectId)) {
+          return send(404, { detail: "Proje bulunamadı." });
+        }
+        const items = Array.isArray(body.items) ? (body.items as Record<string, unknown>[]) : [];
+        if (items.length === 0) return send(422, { detail: "En az bir ünite gerekir." });
+
+        const contract = LAND_SHARE_CONTRACT_FIXTURES[projectId];
+        // 🔴 ÖNCE TAM DOĞRULAMA, SONRA TEK YAZMA: kısmi yazma diye bir hâl
+        // yoktur (IDOR-8: başka projenin ünitesi 404 verir ve bu projenin
+        // hiçbir satırı değişmez).
+        const resolved: { unit: MockUnit; side: MockUnit["owner_side"]; shareholderId: string | null }[] = [];
+        for (const item of items) {
+          const unit = state.units.find(
+            (u) => u.id === String(item.unit_id ?? "") && u.project_id === projectId,
+          );
+          if (!unit) return send(404, { detail: "Ünite bulunamadı." });
+          const side = (item.owner_side ?? null) as MockUnit["owner_side"];
+          const shareholderId =
+            typeof item.shareholder_id === "string" && item.shareholder_id !== ""
+              ? item.shareholder_id
+              : null;
+          if (shareholderId !== null && side !== "landowner") {
+            return send(422, { detail: "Hissedar yalnız arsa sahibi payındaki üniteye atanabilir." });
+          }
+          if (
+            shareholderId !== null &&
+            !(contract?.shareholders ?? []).some((s) => s.id === shareholderId)
+          ) {
+            return send(404, { detail: "Hissedar bulunamadı." });
+          }
+          resolved.push({ unit, side, shareholderId });
+        }
+
+        state.units = state.units.map((unit) => {
+          const change = resolved.find((r) => r.unit.id === unit.id);
+          if (change === undefined) return unit;
+          return {
+            ...unit,
+            owner_side: change.side,
+            // GUARD 10: "Biz" ataması hissedarı TEMİZLER.
+            shareholder_id: change.side === "landowner" ? change.shareholderId : null,
+          };
+        });
+        // 🔴 Yanıt GÜNCEL TAM LİSTEDİR — ekran tabloyu ONDAN yeniden çizer ve
+        // ikinci bir GET atmaz (`saved-rows.ts`).
+        return send(200, buildUnitListResponse(state, projectId));
+      });
     }
 
     // GET /projects/{project_id}/sales — SÜZGEÇSİZ + SAYFASIZ (openapi).

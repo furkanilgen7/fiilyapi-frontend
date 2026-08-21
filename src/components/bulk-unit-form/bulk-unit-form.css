@@ -1,0 +1,289 @@
+/* F-UNIT2 T2a · "Toplu Ünite Üretimi" formuna ÖZGÜ bloklar — kanon:
+   projedesign "Form - Toplu Unite.dc.html" (TU). Parantez içi sayılar O
+   DOSYANIN satır numaralarıdır. Çıplak hex yok — tüm renk/ölçüler token.
+
+   Sıra önemli: `form-shell.css` (ortak `.pf-*`) → `unit-shell.css` (aile
+   ortağı `.uf-*`) → bu dosya. Özgü olan kazansın.
+
+   TU 45 içerik sütunu 1000px'tir ve bu ZATEN `--form-column-max`in kendisidir
+   (`.pf`) — UE'nin 960px'i gibi bir sapma YOKTUR, bu yüzden `.tu-page` için
+   genişlik kuralı YAZILMAZ. */
+
+/* ── TU 73 "Toplam Üretilecek": salt-okunur TÜREV kutusu ──────────────────── */
+/* 🔴 `readonly`dır, `disabled` DEĞİL (UE 89 ile aynı ayrım): değer CANLI bir
+   türevdir, "yakında" bekleyen bir yüzey değil. Mockup da yeşil zemin +
+   yeşil kalın metin + sağa yaslı çizer. */
+.tu-total {
+  background: var(--color-success-tint); /* #f0fdf4 (73) */
+  color: var(--color-success); /* #16a34a (73) */
+  font-weight: var(--weight-bold); /* 700 (73) */
+  text-align: right; /* (73) */
+}
+/* Aralık geçersizken sayı BASILMAZ; kutu yeşil kalırsa "geçerli" der. */
+.tu-total--invalid {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+}
+
+/* TU 75 — üretim kuralları kartını ikiye bölen ince çizgi. */
+.tu-rules-divider {
+  height: 1px;
+  background: var(--color-divider); /* #f1f5f9 (75) */
+  margin: var(--space-4) 0; /* 16px 0 (75) */
+  border: 0;
+}
+
+/* ── Kenardan kenara tablo kartı (TU 91 · TU 143) ─────────────────────────── */
+.tu-flush-card {
+  padding: 0; /* (91/143) */
+  overflow: hidden; /* (91/143) */
+}
+
+/* TU 92-94 — kat şablonu başlık şeridi. */
+.tu-slot-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-card-head-gap); /* 10px (92) */
+  padding: var(--space-4) var(--space-5); /* 16px 20px (92) */
+  border-bottom: 1px solid var(--color-border); /* (92) */
+}
+.tu-slot-head__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-form-card-title); /* 14px (93) */
+  font-weight: var(--weight-semibold); /* 600 (93) */
+  color: var(--color-text); /* #1e293b (93) */
+}
+.tu-slot-head__hint {
+  font-size: var(--text-small); /* 11px (94) */
+  color: var(--color-text-subtle); /* #94a3b8 (94) */
+}
+
+/* ── Kat şablonu tablosu (TU 96-135) ──────────────────────────────────────── */
+.tu-slot-table {
+  width: 100%; /* (96) */
+  border-collapse: collapse; /* (96) */
+}
+.tu-slot-table thead tr {
+  background: var(--color-surface-2); /* #f8fafc (97) */
+  border-bottom: 1px solid var(--color-border); /* (97) */
+}
+.tu-slot-table th {
+  padding: 10px var(--space-3); /* 10px 12px (99-104) */
+  font-size: var(--text-table-head); /* 11px (98) */
+  font-weight: var(--weight-semibold); /* 600 (98) */
+  color: var(--color-text-muted); /* #64748b (98) */
+  text-transform: uppercase; /* (98) */
+  letter-spacing: 0.7px; /* (98) */
+  text-align: left; /* (98) */
+}
+.tu-slot-table th:first-child,
+.tu-slot-table td:first-child {
+  padding-left: var(--space-4); /* 16px (98/108) */
+}
+.tu-slot-table td {
+  padding: 10px var(--space-3); /* 10px 12px (108-114) */
+  vertical-align: middle;
+}
+.tu-slot-table tbody tr {
+  border-bottom: 1px solid var(--color-divider); /* #f1f5f9 (107/116) */
+}
+/* TU 125 — son satırda `border-bottom` YOKTUR. */
+.tu-slot-table tbody tr:last-child {
+  border-bottom: 0;
+}
+.tu-slot-table__right {
+  text-align: right; /* (100/101/103/104) */
+}
+/* TU 108 — "Sıra" hücresi 13/600 koyu; girdi DEĞİL, `resizeSlots` üretir. */
+.tu-slot-table__seq {
+  font-size: var(--text-body); /* 13px (108) */
+  font-weight: var(--weight-semibold); /* 600 (108) */
+  color: var(--color-text); /* #1e293b (108) */
+}
+
+/* Kenardan kenara kartta yaşayan açıklama/gerekçe metinleri (TU 104 Maliyet
+   sütununun GÖRÜNÜR gerekçesi burada durur — `title`da saklanmaz). */
+.tu-slot-note {
+  padding: var(--space-3) var(--space-5);
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* ── TU 136-139 alt şerit: fiyat artışı ───────────────────────────────────── */
+.tu-slot-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-boq-strip-gap); /* 20px (136) */
+  padding: 14px var(--space-5); /* 14px 20px (136) */
+  background: var(--color-surface-2); /* #f8fafc (136) */
+  border-top: 1px solid var(--color-border); /* (136) */
+  flex-wrap: wrap;
+}
+.tu-slot-foot__pct {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2); /* 8px (138) */
+  font-size: var(--text-xs); /* 12px (138) */
+  color: var(--color-text-muted); /* #64748b (138) */
+}
+.tu-slot-foot__pct-input {
+  width: 60px; /* (138) */
+  text-align: center; /* (138) */
+  font-family: var(--font-mono); /* (138) */
+}
+
+/* ── TU 142-174 Üretim Önizlemesi ─────────────────────────────────────────── */
+.tu-preview {
+  border-color: var(--color-success-tint-border); /* #bbf7d0 (143) */
+}
+.tu-preview__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-card-head-gap); /* 10px (144) */
+  padding: var(--space-4) var(--space-5); /* 16px 20px (144) */
+  background: var(--color-success-tint); /* #f0fdf4 (144) */
+  border-bottom: 1px solid var(--color-success-tint-border); /* #bbf7d0 (144) */
+  flex-wrap: wrap;
+}
+.tu-preview__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-form-card-title); /* 14px (145) */
+  font-weight: var(--weight-bold); /* 700 (145) */
+  color: var(--color-success-deep); /* #15803d (145) */
+}
+.tu-preview__meta {
+  font-size: var(--text-small); /* 11px (146) */
+  color: var(--color-success); /* #16a34a (146) */
+}
+/* TU 148 — tablo kendi içinde kaydırılır; kart büyümez. */
+.tu-preview__scroll {
+  max-height: 280px; /* (148) */
+  overflow-y: auto; /* (148) */
+}
+.tu-preview__notice {
+  padding: var(--space-4) var(--space-5);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+/* Çakışma UYARIDIR, hata değil (uç 200 döner) — amber, kırmızı DEĞİL. */
+.tu-preview__conflict {
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--color-warning-deep-text);
+  background: var(--color-amber-tint-cell);
+  border-bottom: 1px solid var(--color-warning-border-soft);
+}
+.tu-preview__error {
+  padding: var(--space-4) var(--space-5);
+  font-size: var(--text-xs);
+  color: var(--color-danger-text);
+  background: var(--color-danger-soft);
+}
+
+.tu-preview-table {
+  width: 100%; /* (149) */
+  border-collapse: collapse; /* (149) */
+}
+.tu-preview-table thead tr {
+  background: var(--color-surface-2); /* #f8fafc (150) */
+  border-bottom: 1px solid var(--color-border); /* (150) */
+}
+/* TU 150 — kaydırırken başlık yerinde kalır. */
+.tu-preview-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--color-surface-2);
+  padding: 9px var(--space-3); /* 9px 12px (152-156) */
+  font-size: var(--text-table-head); /* 11px (151) */
+  font-weight: var(--weight-semibold); /* 600 (151) */
+  color: var(--color-text-muted); /* #64748b (151) */
+  text-transform: uppercase; /* (151) */
+  letter-spacing: 0.7px; /* (151) */
+  text-align: left; /* (151) */
+}
+.tu-preview-table th:first-child,
+.tu-preview-table td:first-child {
+  padding-left: var(--space-4); /* 16px (151/159) */
+}
+.tu-preview-table td {
+  padding: 9px var(--space-3); /* 9px 12px (159) */
+  font-size: var(--text-xs); /* 12px (159) */
+  color: var(--color-text-muted); /* #64748b (159) */
+}
+.tu-preview-table tbody tr {
+  border-bottom: 1px solid var(--color-divider); /* #f1f5f9 (159) */
+}
+.tu-preview-table__center {
+  text-align: center; /* (152/153) */
+}
+.tu-preview-table__right {
+  text-align: right; /* (154/156) */
+}
+/* TU 159 — ünite numarası 13/600 koyu ve mono. */
+.tu-preview-table__no {
+  font-size: var(--text-body); /* 13px (159) */
+  font-weight: var(--weight-semibold); /* 600 (159) */
+  color: var(--color-text); /* #1e293b (159) */
+  font-family: var(--font-mono); /* (159) */
+}
+.tu-preview-table__area {
+  font-family: var(--font-mono); /* (159) */
+}
+.tu-preview-table__price {
+  font-size: var(--text-body); /* 13px (159) */
+  font-weight: var(--weight-semibold); /* 600 (159) */
+  color: var(--color-text);
+  font-family: var(--font-mono); /* (159) */
+}
+/* TU 162-164 — KAT grupları dönüşümlü zeminle ayrılır (satır sırası değil). */
+.tu-preview-table tbody tr.tu-preview-row--stripe {
+  background: var(--color-surface-2); /* #f8fafc (162) */
+}
+/* Çakışan satır: amber. Kırmızı DEĞİL — önizleme 200 döner ve kullanıcı
+   `start_number`ı değiştirip yeniden önizleyebilir. */
+.tu-preview-table tbody tr.tu-preview-row--conflict {
+  background: var(--color-amber-tint-cell);
+}
+.tu-preview-row__flag {
+  margin-left: var(--space-2);
+}
+
+/* TU 170-172 — toplam şeridi. Sayılar SUNUCUDAN gelir. */
+.tu-preview__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 14px var(--space-5); /* 14px 20px (170) */
+  background: var(--color-success-tint); /* #f0fdf4 (170) */
+  border-top: 2px solid var(--color-success); /* #16a34a (170) */
+}
+.tu-preview__foot-label {
+  font-size: var(--text-body); /* 13px (171) */
+  font-weight: var(--weight-bold); /* 700 (171) */
+  color: var(--color-text); /* #1e293b (171) */
+}
+.tu-preview__foot-value {
+  font-size: var(--text-lg); /* 18px (172) */
+  font-weight: var(--weight-bold); /* 700 (172) */
+  color: var(--color-success); /* #16a34a (172) */
+  font-family: var(--font-mono); /* (172) */
+}
+
+/* ── TU 176-178 dikkat şeridi ─────────────────────────────────────────────── */
+.tu-warning {
+  margin-bottom: var(--space-4); /* 16px (176) */
+  padding: 13px var(--space-4); /* 13px 16px (176) */
+  background: var(--color-amber-tint-cell); /* #fffbeb (176) */
+  border: 1px solid var(--color-warning-border-soft); /* #fcd34d (176) */
+  border-radius: var(--radius-12); /* 12px (176) */
+  font-size: var(--text-xs); /* 12px (176) */
+  line-height: 1.6; /* (176) */
+  color: var(--color-warning-deep-text); /* #92400e (176) */
+}

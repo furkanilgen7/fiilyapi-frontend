@@ -1,0 +1,455 @@
+/* F-UNIT2 T2c · "Kat Karşılığı Paylaşım Girişi" formuna ÖZGÜ bloklar — kanon:
+   projedesign "Form - Paylasim Girisi.dc.html" (PG). Parantez içi sayılar O
+   DOSYANIN satır numaralarıdır. Çıplak hex yok — tüm renk/ölçüler token.
+
+   Sıra önemli: `form-shell.css` (ortak `.pf-*`) → `unit-shell.css` (aile
+   ortağı `.uf-*`) → bu dosya. Özgü olan kazansın.
+
+   PG 45 içerik sütunu 1050px'tir — EI ile AYNI sapma, aynı gerekçeyle: bu
+   ekranın tablosu SEKİZ sütunludur (kutucuk + yedi başlık) ve ortak 1000px'e
+   sıkışmaz. */
+.pg-page {
+  max-width: 1050px; /* (45) */
+}
+
+/* ── PG 57-83 "Sözleşme & Hedef" ──────────────────────────────────────────── */
+
+/* PG 61 — SALT OKUNUR sözleşme numarası. Mockup burada `<select>` DEĞİL `<div>`
+   çizer: bu bir seçim değil, sunucudan gelen bir olgudur. `disabled` bir
+   `<select>` basmak "seçebilirdin ama şimdi olmaz" derdi. */
+.pg-contract-box {
+  border: 1px solid var(--color-divider); /* #f1f5f9 (61) */
+  background: var(--color-surface-2); /* #f8fafc (61) */
+  border-radius: var(--radius-8); /* 8px (61) */
+  padding: 9px var(--space-3); /* 9px 12px (61) */
+  font-size: var(--text-body); /* 13px (61) */
+  color: var(--color-text-muted); /* #64748b (61) */
+  font-family: var(--font-mono); /* (61) */
+}
+/* Sözleşme numarası girilmemişse mono/koyu görünmek "bir numara var" derdi. */
+.pg-contract-box--empty {
+  font-family: inherit;
+  color: var(--color-text-subtle);
+}
+
+/* PG 64-82 — iki kutucuk yan yana. */
+.pg-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* (64) */
+  gap: 14px; /* (64) */
+  margin-top: var(--space-4); /* 16px (64) */
+}
+.pg-tile {
+  padding: 14px; /* (65/73) */
+  border-radius: var(--radius-10); /* 10px (65/73) */
+}
+.pg-tile--ratio {
+  background: var(--color-accent-teal-tint); /* #f0fdfa (65) */
+  border: 1px solid var(--color-accent-teal-line); /* #99f6e4 (65) */
+}
+.pg-tile--state {
+  background: var(--color-amber-tint-cell); /* #fffbeb (73) */
+  border: 1px solid var(--color-warning-border-soft); /* #fcd34d (73) */
+}
+.pg-tile__title {
+  font-size: var(--text-xs); /* 12px (66/74) */
+  font-weight: var(--weight-semibold); /* 600 (66/74) */
+  margin-bottom: var(--space-2); /* 8px (66/74) */
+}
+.pg-tile--ratio .pg-tile__title {
+  color: var(--color-accent-teal-start); /* #0f766e (66) */
+}
+.pg-tile--state .pg-tile__title {
+  color: var(--color-warning-deep-text); /* #92400e (74) */
+}
+
+/* PG 67-70 · 75-79 — oran/adet şeridi. Genişlikler SUNUCU sayılarından türer. */
+.pg-bar {
+  display: flex;
+  gap: 0; /* (67/75) */
+  border-radius: var(--radius-8); /* 8px (67/75) */
+  overflow: hidden; /* (67/75) */
+  height: 34px; /* (67/75) */
+}
+.pg-bar__seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs); /* 12px (68/76) */
+  font-weight: var(--weight-bold); /* 700 (68/76) */
+  white-space: nowrap;
+  overflow: hidden;
+}
+.pg-bar__seg--ours {
+  background: var(--color-accent-teal-start); /* #0f766e (68/76) */
+  color: var(--color-surface); /* white (68/76) */
+}
+/* #94a3b8 (69/77) — arsa sahibi payı nötr slate. */
+.pg-bar__seg--owner {
+  background: var(--color-text-subtle);
+  color: var(--color-surface);
+}
+.pg-bar__seg--unassigned {
+  background: var(--color-warning-border-soft); /* #fcd34d (78) */
+  color: var(--color-warning-deep-text); /* #92400e (78) */
+}
+
+.pg-tile__note {
+  font-size: var(--text-small); /* 11px (71/80) */
+  margin-top: 6px; /* (71/80) */
+}
+.pg-tile--ratio .pg-tile__note {
+  color: var(--color-accent-teal-end); /* #14b8a6 (71) */
+}
+.pg-tile--state .pg-tile__note {
+  color: var(--color-warning-body-text); /* #b45309 (80) */
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* ── PG 85-103 "Toplu İşlem" barı ─────────────────────────────────────────── */
+.pg-bulk {
+  padding: 14px var(--space-5); /* 14px 20px (86) */
+  background: var(--color-surface-2); /* #f8fafc (86) */
+}
+.pg-bulk__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3); /* 12px (87) */
+  flex-wrap: wrap; /* (87) */
+}
+.pg-bulk__title {
+  font-size: var(--text-body); /* 13px (88) */
+  font-weight: var(--weight-semibold); /* 600 (88) */
+  color: var(--color-text); /* #1e293b (88) */
+}
+/* PG 89 — dikey ayraç. */
+.pg-bulk__sep {
+  height: 22px;
+  width: 1px;
+  background: var(--color-border); /* #e2e8f0 (89) */
+}
+.pg-bulk__hint {
+  font-size: var(--text-xs); /* 12px (91) */
+  color: var(--color-text-muted); /* #64748b (91) */
+}
+/* PG 101 — sağa yaslanır. */
+.pg-bulk__auto {
+  margin-left: auto;
+}
+.pg-bulk__notice {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-warning-deep-text);
+}
+
+/* ── PG 105-241 ünite listesi ─────────────────────────────────────────────── */
+.pg-flush-card {
+  padding: 0; /* (106) */
+  overflow: hidden; /* (106) */
+}
+.pg-units__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-card-head-gap); /* 10px (107) */
+  padding: 14px var(--space-5); /* 14px 20px (107) */
+  border-bottom: 1px solid var(--color-border); /* (107) */
+  flex-wrap: wrap;
+}
+/* PG 111 — dört süzgeç düğmesi tek bir kapsül içinde. */
+.pg-units__filters {
+  display: flex;
+  gap: var(--space-1); /* 4px (111) */
+  background: var(--color-surface-muted); /* #f1f5f9 (111) */
+  border-radius: var(--radius-8); /* 8px (111) */
+  padding: 3px; /* (111) */
+  margin-left: var(--space-2); /* 8px (111) */
+}
+.pg-filter {
+  padding: 5px var(--space-3); /* 5px 12px (112-115) */
+  font-size: var(--text-xs); /* 12px (112-115) */
+  color: var(--color-text-muted); /* #64748b (113-115) */
+  background: transparent; /* (113-115) */
+  border: none;
+  border-radius: var(--radius-6); /* 6px (112-115) */
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pg-filter--on {
+  font-weight: var(--weight-semibold); /* 600 (112) */
+  color: var(--color-warning-strong); /* #d97706 (112) */
+  background: var(--color-surface); /* #fff (112) */
+}
+.pg-filter:hover:not(.pg-filter--on) {
+  color: var(--color-text);
+}
+
+.pg-units-table {
+  width: 100%; /* (118) */
+  border-collapse: collapse; /* (118) */
+}
+.pg-units-table thead tr {
+  background: var(--color-surface-2); /* #f8fafc (119) */
+  border-bottom: 1px solid var(--color-border); /* (119) */
+}
+.pg-units-table th {
+  padding: 10px; /* (120-127) */
+  font-size: var(--text-table-head); /* 11px (121) */
+  font-weight: var(--weight-semibold); /* 600 (121) */
+  color: var(--color-text-muted); /* #64748b (121) */
+  text-transform: uppercase; /* (121) */
+  letter-spacing: 0.7px; /* (121) */
+  text-align: left; /* (121) */
+}
+/* PG 126 — "Sahiplik Ataması" başlığı VURGULU: bu ekranın asıl sütunu odur. */
+.pg-units-table th.pg-units-table__own {
+  font-weight: var(--weight-bold); /* 700 (126) */
+  color: var(--color-accent-teal-start); /* #0f766e (126) */
+  text-align: center;
+}
+.pg-units-table th:first-child,
+.pg-units-table td:first-child {
+  padding-left: 14px; /* (120/131) */
+  text-align: center;
+  width: 44px; /* (120) */
+}
+.pg-units-table td {
+  padding: 11px 10px; /* (131-145) */
+  vertical-align: middle;
+}
+.pg-units-table tbody tr {
+  border-bottom: 1px solid var(--color-divider); /* #f1f5f9 (130) */
+}
+.pg-units-table__center {
+  text-align: center; /* (122/123) */
+}
+.pg-units-table__right {
+  text-align: right; /* (124/125) */
+}
+/* PG 132 — ünite numarası 13/600 koyu ve mono. */
+.pg-units-table__no {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+}
+.pg-units-table__area {
+  font-size: var(--text-xs); /* 12px (135) */
+  font-family: var(--font-mono); /* (135) */
+}
+/* PG 136 — rayiç değer 13/600 mono. */
+.pg-units-table__value {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  font-family: var(--font-mono);
+}
+.pg-units-table__cell {
+  font-size: var(--text-xs); /* 12px (133/134) */
+  color: var(--color-text-muted); /* #64748b (133/134) */
+}
+
+/* PG 130/166 — atanmamış satır amber, bizim satır teal zeminlidir; arsa
+   satırının zemini YOKTUR (PG 210). Renk TEK gösterge değildir: hissedar
+   sütunu her satırda durumu METİNLE de yazar. */
+.pg-units-table tbody tr.pg-row--unassigned {
+  background: var(--color-amber-tint-cell); /* #fffbeb (130) */
+}
+.pg-units-table tbody tr.pg-row--ours {
+  background: var(--color-accent-teal-tint); /* #f0fdfa (166) */
+}
+/* Kaydedilmemiş (bekleyen) atama: sol kenardan işaretlenir — kullanıcı neyin
+   henüz sunucuya gitmediğini GÖREBİLMELİDİR. */
+.pg-units-table tbody tr.pg-row--pending td:first-child {
+  box-shadow: inset 3px 0 0 0 var(--color-primary);
+}
+
+/* PG 138-142 — satır içi ikili düğme (Biz / Arsa). Primitive'i YOKTUR:
+   `aria-pressed` taşıyan düz `<button type="button">` (T2b emsali). */
+.pg-side {
+  display: flex;
+  gap: var(--space-1); /* 4px (139) */
+  background: var(--color-surface-muted); /* #f1f5f9 (139) */
+  border-radius: var(--radius-7); /* 7px (139) */
+  padding: 3px; /* (139) */
+}
+.pg-side__btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: 5px; /* (140/141) */
+  font-size: var(--text-small); /* 11px (140/141) */
+  color: var(--color-text-muted); /* #64748b (140/141) */
+  background: transparent; /* (140/141) */
+  border: none;
+  border-radius: var(--radius-5); /* 5px (140/141) */
+  cursor: pointer;
+}
+.pg-side__btn:hover:not(:disabled) {
+  color: var(--color-text);
+}
+.pg-side__btn--on-ours {
+  font-weight: var(--weight-bold); /* 700 (186) */
+  color: var(--color-surface); /* white (186) */
+  background: var(--color-accent-teal-start); /* #0f766e (186) */
+}
+/* #64748b (218) — arsa tarafı nötr slate; teal YALNIZ bizim payımızındır. */
+.pg-side__btn--on-owner {
+  font-weight: var(--weight-bold);
+  color: var(--color-surface);
+  background: var(--color-text-muted);
+}
+.pg-side__btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* PG 144/190 — hissedar sütununun metin hâlleri. */
+.pg-row-note {
+  font-size: var(--text-small); /* 11px (144/190) */
+  font-weight: var(--weight-medium); /* 500 (144) */
+}
+.pg-row-note--unassigned {
+  color: var(--color-warning-strong); /* #d97706 (144) */
+}
+.pg-row-note--ours {
+  color: var(--color-accent-teal-start); /* #0f766e (190) */
+  font-weight: var(--weight-semibold); /* 600 (190) */
+}
+
+.pg-units__notice {
+  padding: var(--space-4) var(--space-5);
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.pg-units__notice--error {
+  color: var(--color-danger-text);
+  background: var(--color-danger-soft);
+}
+
+/* Sayfa çubuğu — mockup'ta YOKTUR (statik 42 satır çizer) ama uç SAYFALIDIR. */
+.pg-pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+}
+.pg-pager__label {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* ── PG 243-267 "Paylaşım Denge Kontrolü" ─────────────────────────────────── */
+.pg-balance {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* (246) */
+  gap: var(--space-boq-strip-gap); /* 20px (246) */
+}
+.pg-balance__title {
+  font-size: var(--text-xs); /* 12px (248/256) */
+  font-weight: var(--weight-semibold); /* 600 (248/256) */
+  color: var(--color-text-secondary); /* #475569 (248/256) */
+  margin-bottom: var(--space-card-head-gap); /* 10px (248/256) */
+}
+.pg-balance__list {
+  display: flex;
+  flex-direction: column; /* (249/257) */
+  gap: var(--space-2); /* 8px (249/257) */
+}
+.pg-balance-row {
+  display: flex;
+  justify-content: space-between; /* (250) */
+  gap: var(--space-3);
+  padding: 9px var(--space-3); /* 9px 12px (250) */
+  border-radius: var(--radius-8); /* 8px (250) */
+}
+.pg-balance-row--ours {
+  background: var(--color-accent-teal-tint); /* #f0fdfa (250/258) */
+}
+.pg-balance-row--neutral {
+  background: var(--color-surface-2); /* #f8fafc (251/259) */
+}
+.pg-balance-row--missing {
+  background: var(--color-amber-tint-cell); /* #fffbeb (252) */
+}
+.pg-balance-row--actual {
+  background: var(--color-success-tint); /* #f0fdf4 (260) */
+}
+.pg-balance-row__label {
+  font-size: var(--text-xs); /* 12px (250-252) */
+  color: var(--color-text-muted); /* #64748b (251) */
+}
+.pg-balance-row--ours .pg-balance-row__label {
+  color: var(--color-accent-teal-start); /* #0f766e (250/258) */
+}
+.pg-balance-row--missing .pg-balance-row__label {
+  color: var(--color-warning-deep-text); /* #92400e (252) */
+}
+.pg-balance-row--actual .pg-balance-row__label {
+  color: var(--color-success-deep); /* #15803d (260) */
+}
+.pg-balance-row__value {
+  font-size: var(--text-body); /* 13px (250-252) */
+  font-weight: var(--weight-bold); /* 700 (250-252) */
+  color: var(--color-text); /* #1e293b (251) */
+  white-space: nowrap;
+}
+.pg-balance-row--ours .pg-balance-row__value {
+  color: var(--color-accent-teal-start); /* #0f766e (250) */
+}
+.pg-balance-row--missing .pg-balance-row__value {
+  color: var(--color-warning-strong); /* #d97706 (252) */
+}
+.pg-balance-row--actual .pg-balance-row__value {
+  color: var(--color-success); /* #16a34a (260) */
+}
+.pg-balance-row--money .pg-balance-row__value {
+  font-family: var(--font-mono); /* (258/259) */
+}
+
+/* PG 264-266 — hüküm şeridi. ÜÇ hâl, ÜÇ ton (bkz. `value-balance.ts`). */
+.pg-verdict {
+  margin-top: 14px; /* (264) */
+  padding: var(--space-3) 14px; /* 12px 14px (264) */
+  border-radius: var(--radius-9); /* 9px (264) */
+  font-size: var(--text-xs); /* 12px (264) */
+  line-height: 1.6; /* (264) */
+}
+.pg-verdict--ok {
+  background: var(--color-success-tint); /* #f0fdf4 (264) */
+  border-left: 3px solid var(--color-success); /* #16a34a (264) */
+  color: var(--color-success-deep); /* #15803d (264) */
+}
+/* Sapma UYGUN DEĞİL: aynı şerit kırmızıya döner — yeşil basmak sunucunun
+   `is_within_tolerance=false` cevabını yalanlardı. */
+.pg-verdict--off {
+  background: var(--color-danger-soft);
+  border-left: 3px solid var(--color-danger);
+  color: var(--color-danger-text);
+}
+/* 🔴 HESAPLANAMAZ hâl NÖTRDÜR — ne yeşil ne kırmızı. Yeşil "denge uygun",
+   kırmızı "denge bozuk" derdi; sunucu İKİSİNİ DE söylemiyor. */
+.pg-verdict--uncomputable {
+  background: var(--color-surface-2);
+  border-left: 3px solid var(--color-text-subtle);
+  color: var(--color-text-secondary);
+}
+.pg-verdict__title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: var(--weight-bold); /* (265) */
+}
+
+/* ── PG 269-278 alt şerit ─────────────────────────────────────────────────── */
+.pg-pdf {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}

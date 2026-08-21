@@ -110,10 +110,16 @@ export const BLOCK_ESTIMATE_EMPTY = "—";
 /**
  * BE 109 "Kaydettikten sonra toplu ünite üretimine geç".
  *
- * Hedefi (Toplu Ünite ekranı) F-UNIT2 kapsamındadır ve HENÜZ YOKTUR. Canon
- * gereği kutu SİLİNMEZ, devre dışı + işaretsiz + GÖRÜNÜR gerekçeyle basılır ve
- * gövdeye HİÇBİR anahtar eklemez (`form-state.ts` bu alanı hiç tanımlamaz).
+ * 🔴 F-UNIT2 T2c İTİBARIYLA GERÇEKTİR. Hedefi (`/satis/toplu-uretim`) T2a'da
+ * açıldı, bu yüzden `BLOCK_BULK_UNITS_PENDING_REASON` KALDIRILDI: ekran canlıyken
+ * "henüz açılmadı" diyen bir gerekçe kullanıcıya YALAN söylerdi (sekme şeridinin
+ * türev gerekçesiyle aynı çürüme sınıfı — orada kendiliğinden kalkıyor, burada
+ * elle kaldırıldı çünkü sabit bir cümleydi).
+ *
+ * 🔴 KUTUCUK BİR GEZİNME BAYRAĞIDIR, GÖVDE ALANI DEĞİL. İşaretliyken kayıt
+ * başarılı olursa kullanıcı toplu üretim ekranına `?proje=…&blok=…` bağlamıyla
+ * götürülür; `build-body.ts` bu alanı HİÇ okumaz ve `build-body.test.ts` gövdeye
+ * sızmadığını adlı bir testle kapıya bağlar (`projectId` ile aynı sınıf: durumda
+ * yaşar, gövdede yaşamaz).
  */
 export const BLOCK_BULK_UNITS_LABEL = "Kaydettikten sonra toplu ünite üretimine geç"; // BE 109
-export const BLOCK_BULK_UNITS_PENDING_REASON =
-  "Toplu ünite üretimi ekranı henüz açılmadı — blok kaydedildikten sonra üniteleri tek tek ekleyebilirsiniz";

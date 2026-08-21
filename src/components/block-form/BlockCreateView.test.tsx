@@ -2,11 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 import { BlockCreateView } from "./BlockCreateView";
-import {
-  BLOCK_BULK_UNITS_PENDING_REASON,
-  BLOCK_PROJECT_REQUIRED_MESSAGE,
-} from "./constants";
-import { UNIT_FORM_TABS_PENDING_REASON } from "@/components/unit-shell/routes";
+import { BLOCK_PROJECT_REQUIRED_MESSAGE } from "./constants";
+import { UNIT_FORM_TABS, unitFormTabsPendingReason } from "@/components/unit-shell/routes";
 import { useProjects } from "@/lib/api/hooks/useProjects";
 import { useSites } from "@/lib/api/hooks/useSites";
 import { useCreateBlock } from "@/lib/api/hooks/useUnitMutations";
@@ -95,26 +92,64 @@ describe("BlockCreateView — TAM SAYFA kabuğu (BE 30-56)", () => {
   });
 });
 
-describe("BlockCreateView — PENDING yüzeyler: devre dışı + GÖRÜNÜR gerekçe", () => {
-  it("BE 107-110 toplu üretim kutucuğu devre dışı, İŞARETSİZ ve gerekçesi EKRANDA", () => {
+describe("🔴 BE 107-110 toplu üretim kutucuğu ARTIK GERÇEK (F-UNIT2 T2c)", () => {
+  it("kutucuk ETKİNDİR, başlangıçta işaretsizdir ve pending gerekçesi KALMADI", () => {
     render(<BlockCreateView />);
     const checkbox = screen.getByTestId("blok-form-toplu-uretim");
-    expect(checkbox).toBeDisabled();
+    expect(checkbox).toBeEnabled();
+    // Mockup kutuyu `checked` çizer ama bu ÖRNEK VERİDİR: gezinme kararı
+    // kullanıcı adına verilmez.
     expect(checkbox).not.toBeChecked();
-    // Gerekçe `title`da SAKLANMAZ — ekranda metin olarak da bulunur.
-    expect(screen.getByText(BLOCK_BULK_UNITS_PENDING_REASON)).toBeInTheDocument();
+    // Hedef ekran canlıyken "henüz açılmadı" diyen bir not ekranda KALMAZ.
+    expect(screen.queryByText(/henüz açılmadı/i)).toBeNull();
   });
 
-  it("BE 50-52 üç sekme devre dışıdır ve gerekçeleri EKRANDA", () => {
+  it("işaretliyken başarılı kayıt TOPLU ÜRETİM ekranına proje + YENİ BLOK bağlamıyla gider", async () => {
+    // Yalnız `?proje=` vermek kullanıcıyı blok seçicisi BOŞ bir ekrana
+    // bırakırdı ve kutucuk süsten ibaret kalırdı; blok kimliği oluşturma
+    // cevabından (`BlockResponse.id`) gelir.
     render(<BlockCreateView />);
-    for (const label of ["Toplu Üretim", "Excel İçe Aktar", "Paylaşım Girişi"]) {
-      const tab = screen.getByRole("tab", { name: label });
-      expect(tab, label).toHaveAttribute("aria-disabled", "true");
-      expect(tab, label).not.toHaveAttribute("href");
-    }
-    expect(screen.getByTestId("unite-form-sekme-gerekce")).toHaveTextContent(
-      UNIT_FORM_TABS_PENDING_REASON,
+    selectProject();
+    fireEvent.click(screen.getByTestId("blok-form-toplu-uretim"));
+    fireEvent.click(screen.getByTestId("blok-form-kaydet"));
+    await waitFor(() =>
+      expect(pushMock).toHaveBeenCalledWith("/satis/toplu-uretim?proje=prj-1&blok=blk-yeni"),
     );
+  });
+
+  it("işaretsizken davranış DEĞİŞMEDİ — satış listesine dönülür", async () => {
+    render(<BlockCreateView />);
+    selectProject();
+    fireEvent.click(screen.getByTestId("blok-form-kaydet"));
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/satis"));
+  });
+
+  it("🔴 gezinme bayrağı GÖVDEYE GİRMEZ (kutucuk işaretliyken bile)", () => {
+    render(<BlockCreateView />);
+    selectProject();
+    fireEvent.click(screen.getByTestId("blok-form-toplu-uretim"));
+    fireEvent.click(screen.getByTestId("blok-form-kaydet"));
+    const body = mutateAsync.mock.calls[0][0].body as Record<string, unknown>;
+    expect(Object.keys(body).filter((key) => /bulk|batch|toplu|generate/i.test(key))).toEqual([]);
+  });
+});
+
+describe("BlockCreateView — PENDING yüzeyler: devre dışı + GÖRÜNÜR gerekçe", () => {
+
+  it("BE 50-52 rotası YAZILMAMIŞ sekmeler devre dışıdır ve gerekçeleri EKRANDA", () => {
+    // 🔴 Liste SABİT DEĞİL: F-UNIT2 sekmeleri tek tek canlandırdıkça küme
+    // küçülür (bugün "Toplu Üretim" GERÇEK rotadadır).
+    render(<BlockCreateView />);
+    for (const tab of UNIT_FORM_TABS.filter((item) => item.href === undefined)) {
+      const element = screen.getByRole("tab", { name: tab.label });
+      expect(element, tab.label).toHaveAttribute("aria-disabled", "true");
+      expect(element, tab.label).not.toHaveAttribute("href");
+    }
+    const reason = unitFormTabsPendingReason();
+    expect(screen.queryByTestId("unite-form-sekme-gerekce") !== null).toBe(reason !== null);
+    if (reason !== null) {
+      expect(screen.getByTestId("unite-form-sekme-gerekce")).toHaveTextContent(reason);
+    }
   });
 
   it("BE 49 'Ünite Ekle' sekmesi GERÇEK rotaya bağlıdır (silinmemiş, canlı)", () => {

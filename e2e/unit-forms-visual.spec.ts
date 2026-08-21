@@ -48,9 +48,10 @@ test("blok ekle formu gorsel", async ({ page }) => {
   // (c) BE 88-94 tahmin bandı basıldı; üç girdi de boş olduğu için sayı YOK
   //     (backend `estimated_unit_count` kuralı: hepsi boşsa null, "0" DEĞİL),
   await expect(page.getByTestId("blok-form-tahmin")).toBeVisible();
-  // (d) BE 107-110 toplu üretim kutusu DEVRE DIŞI (hedefi F-UNIT2) — mockup
-  //     öğesi silinmedi, görünür gerekçeyle basıldı.
-  await expect(page.getByTestId("blok-form-toplu-uretim")).toBeDisabled();
+  // (d) BE 107-110 toplu üretim kutusu ARTIK ETKİN (F-UNIT2 T2c): hedefi
+  //     `/satis/toplu-uretim` canlıdır, bu yüzden kutucuk gerçek bir gezinme
+  //     bayrağıdır ve "henüz açılmadı" gerekçesi kaldırıldı.
+  await expect(page.getByTestId("blok-form-toplu-uretim")).toBeEnabled();
 
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("blok-ekle-formu.png", { fullPage: true });

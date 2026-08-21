@@ -2,28 +2,29 @@ import Link from "next/link";
 
 import { cx } from "@/lib/cx";
 
-import { UNIT_FORM_TABS, type UnitFormTabLabel } from "./routes";
+import { UNIT_FORM_TABS, unitFormTabsPendingReason, type UnitFormTabLabel } from "./routes";
 import "./unit-shell.css";
 
 export interface UnitFormTabsProps {
-  /** Bu ekranda AKTİF olan sekme (BE 48 `tab-on` / UE 51 `tab-on`). */
+  /** Bu ekranda AKTİF olan sekme (BE 48 / UE 51 / TU 50 `tab-on`). */
   activeTab: UnitFormTabLabel;
 }
 
 /**
- * BE 47-53 · UE 49-55 — blok/ünite form ailesinin ortak sekme şeridi.
+ * BE 47-53 · UE 49-55 · TU 47-53 — blok/ünite form ailesinin ortak sekme şeridi.
  *
  * ⚠️ Aktif sekme `Link` DEĞİL `<span>`dır: gezinme değil KONUM bildirir
  * (`PersonnelTabsStrip` deseni).
  *
- * 🔴 Rotası olmayan üç sekme SİLİNMEZ, `<span aria-disabled>` olarak basılır ve
+ * 🔴 Rotası olmayan sekme SİLİNMEZ, `<span aria-disabled>` olarak basılır ve
  * gerekçe şeridin ALTINDA GÖRÜNÜR bir paragrafta durur — `title`da saklanmaz
- * (F-TH kanonu). Gerekçe sekme tanımından TÜRETİLİR: üçü de gerçek rotaya
- * bağlandığında paragraf kendiliğinden kaybolur, ekranda onu yalanlayan bayat
- * bir not KALMAZ (`ProjectDetailTabs`in düzelttiği çürüme sınıfı).
+ * (F-TH kanonu). Gerekçe sekme tanımından TÜRETİLİR (`unitFormTabsPendingReason`):
+ * her yeni rota cümleyi kısaltır, sonuncusu bağlandığında paragraf
+ * kendiliğinden kaybolur ve ekranda onu yalanlayan bayat bir not KALMAZ
+ * (`ProjectDetailTabs`in düzelttiği çürüme sınıfı).
  */
 export function UnitFormTabs({ activeTab }: UnitFormTabsProps) {
-  const pendingReason = UNIT_FORM_TABS.find((tab) => tab.href === undefined)?.pendingReason;
+  const pendingReason = unitFormTabsPendingReason();
 
   return (
     <>
@@ -39,7 +40,7 @@ export function UnitFormTabs({ activeTab }: UnitFormTabsProps) {
                 aria-selected={false}
                 aria-disabled
                 tabIndex={-1}
-                title={tab.pendingReason}
+                title={pendingReason ?? undefined}
                 className="uf-tabs__tab uf-tabs__tab--disabled"
               >
                 {tab.label}
