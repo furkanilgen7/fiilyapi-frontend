@@ -1,5 +1,5 @@
 /**
- * F-UNIT1 T1 · `POST /projects/{project_id}/units` gövdesinin TEK kurucusu.
+ * F-UNIT1 · `POST /projects/{project_id}/units` gövdesinin TEK kurucusu.
  *
  * BEŞ bağlayıcı kural (hepsinin adlı testi `build-body.test.ts`tedir):
  *
@@ -15,7 +15,9 @@
  * 3. **DOKUNMA KAPISI:** UE 66 · 75 · 78 · 81 · 93 · 95 seçicilerinin BOŞ
  *    SEÇENEĞİ YOKTUR. Kullanıcı dokunmadıysa anahtar gövdeye HİÇ konmaz,
  *    sütun `NULL` kalır. `parking_right="none"` ("Yok") ile `NULL`
- *    ("belirtilmedi") AYNI ŞEY DEĞİLDİR.
+ *    ("belirtilmedi") AYNI ŞEY DEĞİLDİR. Ölçüt "değer boş mu" DEĞİL,
+ *    `touched` kümesidir — seçicilerin değeri hiçbir zaman boş olmadığı için
+ *    boşluğa bakan bir kapı FİİLEN HİÇ KAPANMAZDI (T1 taslağının kusuru).
  * 4. **🔴 MALİYET SIZINTISI YASAK (KARAR 3):** gövdede `cost` / `unit_cost` /
  *    `expected_profit` / `profit` ADINDA HİÇBİR ANAHTAR OLAMAZ — sunucuda
  *    böyle bir sütun YOKTUR. Aynı şekilde `site_id` (UE 64 süzgeci),
@@ -25,46 +27,57 @@
  */
 
 import type { components } from "@/lib/api/schema";
-import { normalizeDecimalInput } from "@/lib/decimal";
+import { normalizeDecimalInput, parseCountInput } from "@/lib/decimal";
 
-import type { UnitFormField, UnitFormValues, UnitTouched } from "./form-state";
+import type { UnitFormValues, UnitTouched } from "./form-state";
 
 export type UnitCreate = components["schemas"]["UnitCreate"];
 
 /** Mockup'ta kutusu olmayan `sort_order` için tek kaynak (şema varsayılanı). */
 export const UNIT_DEFAULT_SORT_ORDER = 0;
 
-export function buildUnitBody(values: UnitFormValues, touched: UnitTouched): UnitCreate {
-  // 🔴 T1 TASLAĞI (T2 düzeltir): kapı "dokunuldu mu" yerine "boş değil mi"
-  // soruyor. Seçicilerin varsayılanı hiçbir zaman boş olmadığı için kapı
-  // FİİLEN HİÇ KAPANMIYOR — canon 3 henüz kurulmadı.
-  const isTouched = (field: UnitFormField): boolean =>
-    touched.has(field) || values[field] !== "";
-
-  return {
-    block_id: values.blockId,
-    unit_no: values.unitNo,
-    unit_kind: values.unitKind,
-    sort_order: UNIT_DEFAULT_SORT_ORDER,
-    sales_status: values.salesStatus,
-    ...(isTouched("floor") ? { floor: values.floor } : {}),
-    ...(isTouched("layout") ? { layout: values.layout } : {}),
-    // 🔴 T1 TASLAĞI: `normalizeDecimalInput` çağrılmıyor — TR virgülü ham
-    // geçiyor ve boş kutu için anahtar yine de kuruluyor (T2).
-    gross_area_m2: values.grossAreaM2,
-    net_area_m2: values.netAreaM2,
-    ...(isTouched("facing") ? { facing: values.facing } : {}),
-    balcony_area_m2: values.balconyAreaM2,
-    // 🔴 T1 TASLAĞI: boş kutu `Number("")` ile 0'a düşüyor (T2).
-    bathroom_count: Number(values.bathroomCount),
-    ...(isTouched("parkingRight") ? { parking_right: values.parkingRight } : {}),
-    list_price: values.listPrice,
-    appraisal_value: values.appraisalValue,
-    min_sale_price: values.minSalePrice,
-    ...(isTouched("vatRate") ? { vat_rate: values.vatRate } : {}),
-    ...(isTouched("ownerSide") ? { owner_side: values.ownerSide } : {}),
-  };
+/** Kırpılmış metin; boşsa `undefined` (anahtar HİÇ kurulmaz). */
+function text(raw: string): string | undefined {
+  const trimmed = raw.trim();
+  return trimmed === "" ? undefined : trimmed;
 }
 
-/** T2 için not: ondalık alan gövdeye STRING girer; kanon `@/lib/decimal`tedir. */
-export { normalizeDecimalInput };
+/**
+ * Opsiyonel anahtarı YALNIZ değer varken kurar. `{ key: undefined }` yazmak
+ * yetmez: `Object.keys` onu SAYAR ve gövde anahtar kümesi testi (18 anahtar)
+ * kırmızıya döner.
+ */
+function entry<K extends string, V>(key: K, value: V | null | undefined): Partial<Record<K, V>> {
+  return value === null || value === undefined ? {} : ({ [key]: value } as Record<K, V>);
+}
+
+export function buildUnitBody(values: UnitFormValues, touched: UnitTouched): UnitCreate {
+  return {
+    // Üretilmiş tipte ZORUNLU üçlü + NOT NULL `unit_kind`: dokunma kapısına
+    // GİRMEZLER, gövdede DAİMA bulunurlar (ezilecek bir `NULL` yoktur).
+    block_id: values.blockId, // UE 65
+    unit_no: values.unitNo.trim(), // UE 73
+    unit_kind: values.unitKind, // UE 74 — sunucuda NOT NULL
+    sort_order: UNIT_DEFAULT_SORT_ORDER,
+    sales_status: values.salesStatus, // UE 94
+
+    // UE 66 — KARAR 4: `floor` METİNDİR, `Number`a ÇEVRİLMEZ ("Zemin" /
+    // "Çatı Katı" sayıya çevrilemez ve `ck_units_floor` diye bir CHECK
+    // bilerek YOKTUR).
+    ...(touched.has("floor") ? entry("floor", text(values.floor)) : {}),
+    ...(touched.has("layout") ? entry("layout", text(values.layout)) : {}), // UE 75
+    // UE 76 · 77 · 79 · 88 · 90 · 92 — ondalıklar gövdeye STRING girer.
+    ...entry("gross_area_m2", normalizeDecimalInput(values.grossAreaM2)),
+    ...entry("net_area_m2", normalizeDecimalInput(values.netAreaM2)),
+    ...(touched.has("facing") ? { facing: values.facing } : {}), // UE 78
+    ...entry("balcony_area_m2", normalizeDecimalInput(values.balconyAreaM2)),
+    ...entry("bathroom_count", parseCountInput(values.bathroomCount)), // UE 80
+    ...(touched.has("parkingRight") ? { parking_right: values.parkingRight } : {}), // UE 81
+    ...entry("list_price", normalizeDecimalInput(values.listPrice)),
+    ...entry("appraisal_value", normalizeDecimalInput(values.appraisalValue)),
+    // KARAR 2: `min_sale_price > list_price` MEŞRUDUR — kırpılmaz, düzeltilmez.
+    ...entry("min_sale_price", normalizeDecimalInput(values.minSalePrice)),
+    ...(touched.has("vatRate") ? { vat_rate: values.vatRate } : {}), // UE 93
+    ...(touched.has("ownerSide") ? { owner_side: values.ownerSide } : {}), // UE 95
+  };
+}

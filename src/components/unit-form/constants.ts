@@ -1,5 +1,5 @@
 /**
- * F-UNIT1 T1 · UE (`Form - Unite Ekle.dc.html`) — "Ünite Ekle" formunun
+ * F-UNIT1 · UE (`Form - Unite Ekle.dc.html`) — "Ünite Ekle" formunun
  * sabitleri. Parantez içi `UE nn` O DOSYANIN satır numarasıdır.
  */
 
@@ -72,17 +72,19 @@ export const UNIT_LAYOUT_OPTIONS: readonly string[] = [
 /**
  * UE 78 "Cephe / Yön".
  *
- * 🔴 T1 TASLAĞI: mockup DÖRT seçenek çizer (Güney · Güney-Batı · Doğu ·
- * Kuzey) ama sunucu enum'u BEŞ değerlidir (`UnitFacing` = south · southwest ·
- * east · north · **west**). Dördünü basmak `west`i UI'dan ULAŞILMAZ kılar:
- * içe aktarmayla ya da başka bir yoldan `west` yazılmış bir ünite ekranda
- * düzeltilemez hale gelir. T2 beşincisini ("Batı") EKLER.
+ * 🔴 ONAYLI SAPMA — MOCKUP + BİR: mockup DÖRT seçenek çizer (Güney ·
+ * Güney-Batı · Doğu · Kuzey) ama sunucu enum'u BEŞ değerlidir (`UnitFacing` =
+ * south · southwest · east · north · **west**). Dördünü basmak `west`i UI'dan
+ * ULAŞILMAZ kılardı: içe aktarmayla ya da başka bir yoldan `west` yazılmış bir
+ * ünite ekranda düzeltilemez hale gelirdi. Beşincisi ("Batı") EKLENDİ; ilk
+ * dördünün etiketi mockup'tan BİREBİR korunur.
  */
 export const FACING_OPTIONS: readonly UnitOption<UnitFacing>[] = [
   { value: "south", label: "Güney" }, // UE 78
   { value: "southwest", label: "Güney-Batı" }, // UE 78 (`selected`)
   { value: "east", label: "Doğu" }, // UE 78
   { value: "north", label: "Kuzey" }, // UE 78
+  { value: "west", label: "Batı" }, // mockup'ta YOK — enum'un beşinci değeri
 ];
 
 /** UE 81 "Otopark Hakkı" — boş seçenek YOK → dokunma kapısı. */
@@ -149,10 +151,25 @@ export const UNIT_EXPECTED_PROFIT_FORMULA = "Liste fiyatı − maliyet"; // UE 9
 export const UNIT_EXPECTED_PROFIT_PENDING_REASON =
   "Maliyet henüz hesaplanmadığı için beklenen kâr gösterilemiyor";
 
+/**
+ * PATH parametresi eksikken kaydetme denemesinin GÖRÜNÜR gerekçesi.
+ *
+ * 🔴 KARAR 11'in İSTİSNASI DEĞİLDİR: karar GÖVDE ALANLARI içindir, oysa
+ * `project_id` gövdede değil YOLDADIR (`POST /projects/{project_id}/units`).
+ * Boşken istek `/projects//units` olur, fetch onu `/projects/units`e normalize
+ * eder ve backend 422 döner — kullanıcı sebebini ASLA öğrenemez (F-P5'te canlı
+ * smoke'ta yakalanan kusur sınıfı). İstek hiç kurulmaz, bu cümle basılır.
+ */
+export const UNIT_PROJECT_REQUIRED_MESSAGE =
+  "Önce bir proje seçin — ünite kaydı projenin altına yazılır.";
+
+/** Sunucu hatası için genel yedek metin. */
+export const UNIT_SAVE_ERROR_FALLBACK = "Ünite kaydedilemedi.";
+
 /** UE 104-121 "Ünite Belgeleri" — BC form-slot'a pending. */
 export const UNIT_DOCUMENTS_TITLE = "Ünite Belgeleri"; // UE 104
 export const UNIT_DOCUMENTS_PENDING_REASON =
-  "Belge yükleme Belge Yönetimi'ne bağlanınca açılacak — `documents` tablosunda henüz ünite bağı yok";
+  "Belge yükleme Belge Yönetimi'ne bağlanınca açılacak — belge kaydında henüz ünite bağı yok";
 
 /** UE 106-120 — üç belge kutusu (emoji + zemin tonu + başlık + alt metin). */
 export const UNIT_DOCUMENTS: readonly DocumentPlaceholderItem[] = [

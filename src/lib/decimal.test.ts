@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  divideDecimalStrings,
   isZeroDecimalString,
   multiplyDecimalStrings,
+  parseCountInput,
   subtractDecimalStrings,
   sumDecimalStrings,
 } from "./decimal";
@@ -122,5 +124,75 @@ describe("isZeroDecimalString", () => {
     expect(isZeroDecimalString("")).toBe(false);
     expect(isZeroDecimalString("abc")).toBe(false);
     expect(isZeroDecimalString(".")).toBe(false);
+  });
+});
+
+describe("divideDecimalStrings — F-UNIT1 · UE 89 m² birim fiyat", () => {
+  it("float kalintisi URETMEZ (1480000 / 178)", () => {
+    // 🔴 T1 olcumu: `Number("1480000") / Number("178")` = 8314.610000000001.
+    // Kalinti hem salt-okunur kutuya hem sunucu paritesine sizardi.
+    expect(divideDecimalStrings("1480000", "178", 2)).toBe("8314.61");
+    expect(Number("1480000") / Number("178")).not.toBe(8314.61);
+  });
+
+  it("ROUND_HALF_UP: tam yarim SIFIRDAN UZAGA yuvarlanir", () => {
+    // 1 / 8 = 0.125 → ucuncu basamak tam yarim → 0.13 (0.12 DEGIL).
+    expect(divideDecimalStrings("1", "8", 2)).toBe("0.13");
+    expect(divideDecimalStrings("-1", "8", 2)).toBe("-0.13");
+    // 1000 / 3 = 333.333… → asagi.
+    expect(divideDecimalStrings("1000", "3", 2)).toBe("333.33");
+  });
+
+  it("olcek TAM olarak istenen basamak sayisini basar", () => {
+    expect(divideDecimalStrings("100", "8", 2)).toBe("12.50");
+    expect(divideDecimalStrings("10", "2", 0)).toBe("5");
+    expect(divideDecimalStrings("10", "4", 4)).toBe("2.5000");
+  });
+
+  it("bolen ve bolunen ondalikli olabilir", () => {
+    expect(divideDecimalStrings("1480000.00", "178.00", 2)).toBe("8314.61");
+    expect(divideDecimalStrings("7.5", "2.5", 2)).toBe("3.00");
+  });
+
+  it("SIFIRA bolme null doner (sunucu paritesi: `not gross_area_m2`)", () => {
+    expect(divideDecimalStrings("1480000", "0", 2)).toBeNull();
+    expect(divideDecimalStrings("1480000", "0.00", 2)).toBeNull();
+  });
+
+  it("isaret dogru tasinir", () => {
+    expect(divideDecimalStrings("-100", "4", 2)).toBe("-25.00");
+    expect(divideDecimalStrings("100", "-4", 2)).toBe("-25.00");
+    expect(divideDecimalStrings("-100", "-4", 2)).toBe("25.00");
+  });
+});
+
+describe("parseCountInput — tam sayi kutulari (BE 78/79/81/83/85 · UE 80)", () => {
+  it("dolu kutu SAYI doner", () => {
+    expect(parseCountInput("8")).toBe(8);
+    expect(parseCountInput(" 12 ")).toBe(12);
+    expect(parseCountInput("0")).toBe(0);
+  });
+
+  it("BOS kutu null doner — 0 UYDURULMAZ", () => {
+    // "girilmedi" ile "sifir girildi" ayni sey DEGILDIR; `Number("")` ikisini
+    // ayni yaziyordu (T1'in taslak kusuru).
+    expect(parseCountInput("")).toBeNull();
+    expect(parseCountInput("   ")).toBeNull();
+  });
+
+  it("anlamsiz / ondalikli girdi null doner (NaN kacmaz)", () => {
+    expect(parseCountInput("abc")).toBeNull();
+    expect(parseCountInput("3.5")).toBeNull();
+    expect(parseCountInput("3,5")).toBeNull();
+    expect(parseCountInput("1e3")).toBeNull();
+  });
+
+  it("guvenli tamsayi araligi disi null doner", () => {
+    expect(parseCountInput("9007199254740993")).toBeNull();
+  });
+
+  it("isaretli girdi okunur (sunucu sinirlarini istemci ZORLAMAZ)", () => {
+    expect(parseCountInput("-2")).toBe(-2);
+    expect(parseCountInput("+4")).toBe(4);
   });
 });

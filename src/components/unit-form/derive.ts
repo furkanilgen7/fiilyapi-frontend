@@ -1,5 +1,5 @@
 /**
- * F-UNIT1 T1 · UE 89 "m² Birim Fiyat" — SAF türev (salt-okunur kutu).
+ * F-UNIT1 · UE 89 "m² Birim Fiyat" — SAF türev (salt-okunur kutu).
  *
  * 🔴 SUNUCUYLA BİREBİR AYNI KURAL. Aynı hesap sunucuda `UnitResponse`
  * üzerinde `unit_price_per_m2` computed field olarak ZATEN vardır
@@ -24,7 +24,7 @@
  */
 
 import { formatAmount } from "@/lib/format";
-import { normalizeDecimalInput } from "@/lib/decimal";
+import { divideDecimalStrings, normalizeDecimalInput } from "@/lib/decimal";
 
 import { EMPTY_METRIC } from "./constants";
 import type { UnitFormValues } from "./form-state";
@@ -36,16 +36,21 @@ export interface UnitPricePerM2 {
   text: string;
 }
 
+/** Sunucunun `_quantize_money` ölçeği — para iki ondalıktır. */
+const MONEY_SCALE = 2;
+
 export function deriveUnitPricePerM2(values: UnitFormValues): UnitPricePerM2 {
-  // 🔴 T1 TASLAĞI (T2 düzeltir): BÖLME YOK — liste fiyatı olduğu gibi
-  // dönüyor. Brüt m² hiç okunmuyor, sıfıra bölme dalı yok, yuvarlama yok.
-  //
-  // T2 notu: `Number(a) / Number(b)` yerine `@/lib/decimal` kanonuna bir
-  // bölme yardımcısı eklemek yeğdir — float kalıntısı ("8314.610000000001")
-  // hem kutuya hem sunucu paritesine sızar.
-  const listPrice = normalizeDecimalInput(values.listPrice);
+  const listPrice = normalizeDecimalInput(values.listPrice); // UE 88
+  const grossAreaM2 = normalizeDecimalInput(values.grossAreaM2); // UE 76 — TABAN
+  if (listPrice === null || grossAreaM2 === null) {
+    return { value: null, text: EMPTY_METRIC };
+  }
+
+  // `divideDecimalStrings` sıfır bölende `null` döner — sunucunun
+  // `not self.gross_area_m2` dalıyla aynı sonuç, sıfıra bölme YOK.
+  const value = divideDecimalStrings(listPrice, grossAreaM2, MONEY_SCALE);
   return {
-    value: listPrice,
-    text: listPrice === null ? EMPTY_METRIC : formatAmount(listPrice),
+    value,
+    text: value === null ? EMPTY_METRIC : formatAmount(value),
   };
 }

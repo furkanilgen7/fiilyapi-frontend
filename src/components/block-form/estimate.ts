@@ -26,6 +26,8 @@
  * yazdığında ekran hâlâ "8 kat" der.
  */
 
+import { parseCountInput } from "@/lib/decimal";
+
 import type { BlockFormValues } from "./form-state";
 
 export interface BlockEstimate {
@@ -36,12 +38,26 @@ export interface BlockEstimate {
 }
 
 export function deriveBlockEstimate(values: BlockFormValues): BlockEstimate {
-  // 🔴 T1 TASLAĞI (T2 düzeltir): yalnız kat sayısı okunuyor, `units_per_floor`
-  // ve `shop_count` hiç geçmiyor; "üçü de boşsa null" kuralı YOK; alt yazı
-  // mockup'tan KOPYALANMIŞ sabit — yani tam olarak yasaklanan davranış.
-  const floorCount = Number(values.floorCount);
+  // BE 79 · 81 · 83 — formülün ÜÇ girdisi. `parseCountInput` boş ve anlamsız
+  // girdiyi aynı şekilde `null` verir: ikisi de "kullanıcı bir sayı vermedi"
+  // demektir, `NaN` ekrana kaçmaz.
+  const floorCount = parseCountInput(values.floorCount);
+  const unitsPerFloor = parseCountInput(values.unitsPerFloor);
+  const shopCount = parseCountInput(values.shopCount);
+
+  // Sunucu paritesi: üçü de boşsa None — "0" hesaplanmış bir sıfır iddiasıdır.
+  // (BE 78 bodrum bu dala DA girmez: formülün parçası değildir.)
+  if (floorCount === null && unitsPerFloor === null && shopCount === null) {
+    return { count: null, caption: null };
+  }
+
+  const floors = floorCount ?? 0;
+  const perFloor = unitsPerFloor ?? 0;
+  const shops = shopCount ?? 0;
+
   return {
-    count: Number.isFinite(floorCount) ? floorCount : null,
-    caption: "8 kat × 3 daire + 2 dükkan",
+    count: floors * perFloor + shops,
+    // BE 91 — cümle O ANKİ girdilerle yeniden kurulur, mockup'tan kopyalanmaz.
+    caption: `${floors} kat × ${perFloor} daire + ${shops} dükkan`,
   };
 }

@@ -1,5 +1,5 @@
 /**
- * F-UNIT1 T1 · BE (`Form - Blok Ekle.dc.html`) — "Yeni Blok Ekle" formunun
+ * F-UNIT1 · BE (`Form - Blok Ekle.dc.html`) — "Yeni Blok Ekle" formunun
  * sabitleri. Parantez içi `BE nn` O DOSYANIN satır numarasıdır.
  *
  * UI metni Türkçe ve mockup'tan BİREBİR kopyalanır; renk/ölçü kararları
@@ -37,6 +37,31 @@ export const BLOCK_NOTES_MAX_LENGTH = 500; // BE 102
 
 /** BE 68 — mockup "Bu projede 2 şantiye var" der; sayı ÇALIŞMA ZAMANINDA gelir. */
 export const BLOCK_SITE_HINT_SUFFIX = "şantiye var — seçim zorunlu";
+
+/**
+ * BE 68 ipucunun tam cümlesi. Mockup'ın "2"si O PROJENİN o günkü şantiye
+ * sayısıdır; sabitlenirse tek şantiyeli bir projede de "2 şantiye var" yazardı.
+ * Liste henüz gelmemişken (0) ipucu HİÇ basılmaz — sıfır bir sayı iddiasıdır.
+ */
+export function blockSiteHint(siteCount: number): string | null {
+  return siteCount > 0 ? `Bu projede ${siteCount} ${BLOCK_SITE_HINT_SUFFIX}` : null;
+}
+
+/**
+ * PATH parametresi eksikken kaydetme denemesinin GÖRÜNÜR gerekçesi.
+ *
+ * 🔴 KARAR 11'in İSTİSNASI DEĞİLDİR: karar GÖVDE ALANLARI içindir ("hiçbir alan
+ * zorunlu değil"), oysa `project_id` gövdede değil YOLDADIR. Boşken istek
+ * `/projects//blocks` olur, fetch onu `/projects/blocks`e normalize eder ve
+ * backend 422 döner — kullanıcı sebebini ASLA öğrenemeyeceği bir hata görür
+ * (F-P5'te canlı smoke'ta yakalanan kusur sınıfı). Bu yüzden istek hiç
+ * kurulmaz, yerine bu cümle basılır.
+ */
+export const BLOCK_PROJECT_REQUIRED_MESSAGE =
+  "Önce bir proje seçin — blok kaydı projenin altına yazılır.";
+
+/** Sunucu hatası için genel yedek metin. */
+export const BLOCK_SAVE_ERROR_FALLBACK = "Blok kaydedilemedi.";
 export const BLOCK_CODE_HINT = "Boş bırakılırsa otomatik"; // BE 71
 export const BLOCK_UNITS_PER_FLOOR_HINT = "Toplu üretimde kullanılır"; // BE 81
 

@@ -120,7 +120,5 @@ export function setUnitField<K extends UnitFormField>(
   field: K,
   value: UnitFormValues[K],
 ): UnitFormValues {
-  // 🔴 T1 TASLAĞI (T2 düzeltir): yerinde yazıyor — yeni nesne DÖNMÜYOR.
-  values[field] = value;
-  return values;
+  return { ...values, [field]: value };
 }

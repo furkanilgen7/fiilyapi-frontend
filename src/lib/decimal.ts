@@ -68,6 +68,65 @@ export function subtractDecimalStrings(a: string, b: string): string {
 }
 
 /**
+ * İki ondalık string'i KAYIPSIZ böler ve `scale` basamağa **ROUND_HALF_UP**
+ * ile yuvarlar (F-UNIT1 T2 · UE 89 "m² Birim Fiyat").
+ *
+ * 🔴 `Number(a) / Number(b)` YASAK — T1 bunu adıyla ölçtü: 1480000 / 178 float
+ * bölmesi `8314.610000000001` verir ve kalıntı hem salt-okunur kutuya hem de
+ * sunucu paritesine sızar. Sunucu aynı hesabı `Decimal`de yapıp
+ * `_quantize_money` (iki basamak, ROUND_HALF_UP) uygular; istemci farklı
+ * yuvarlarsa kullanıcı kaydetmeden önce bir sayı, kaydettikten sonra BAŞKA bir
+ * sayı görür.
+ *
+ * ROUND_HALF_UP = Python `decimal`ın kuralı: tam yarım SIFIRDAN UZAĞA yuvarlar
+ * (JS'in `Math.round`u negatifte YUKARI yuvarlar, aynı şey değildir).
+ *
+ * Bölen SIFIRSA `null` döner — sunucu da `not self.gross_area_m2` dalında
+ * `None` verir; çağıran "hesap yok" dalını seçer.
+ */
+export function divideDecimalStrings(
+  dividend: string,
+  divisor: string,
+  scale: number,
+): string | null {
+  const dividendScale = fractionLength(dividend);
+  const divisorScale = fractionLength(divisor);
+  const scaledDivisor = toScaledBigInt(divisor, divisorScale);
+  if (scaledDivisor === 0n) return null;
+
+  // (A / 10^sa) / (B / 10^sb) * 10^scale  =  A * 10^(sb + scale) / (B * 10^sa)
+  const numerator = toScaledBigInt(dividend, dividendScale) * 10n ** BigInt(divisorScale + scale);
+  const denominator = scaledDivisor * 10n ** BigInt(dividendScale);
+
+  const isNegative = numerator < 0n !== denominator < 0n;
+  const absNumerator = numerator < 0n ? -numerator : numerator;
+  const absDenominator = denominator < 0n ? -denominator : denominator;
+
+  let quotient = absNumerator / absDenominator;
+  // Tam yarım ve üzeri YUKARI (sıfırdan uzağa) — `2 * kalan >= bölen`.
+  if ((absNumerator % absDenominator) * 2n >= absDenominator) quotient += 1n;
+
+  return fromScaledBigInt(isNegative ? -quotient : quotient, scale);
+}
+
+/**
+ * Kullanıcının yazdığı TAM SAYIYI okur (F-UNIT1 T2 · BE 78/79/81/83/85 kat ve
+ * adet kutuları, UE 80 banyo sayısı).
+ *
+ * `normalizeDecimalInput`in tamsayı ikizidir ve aynı gerekçeyle BURADADIR:
+ * ondan önce her form kendi `Number(values.x)`ini yazıyordu ve boş kutu sessizce
+ * `0`a düşüyordu — yani "girilmedi" ile "sıfır girildi" veriye AYNI yazılıyordu.
+ * Boş/anlamsız/ondalıklı girdi `null` döner; çağıran anahtarı HİÇ kurmaz.
+ */
+export function parseCountInput(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (trimmed === "") return null;
+  if (!/^[-+]?\d+$/.test(trimmed)) return null;
+  const parsed = Number(trimmed);
+  return Number.isSafeInteger(parsed) ? parsed : null;
+}
+
+/**
  * Ondalık string SIFIR mı? `"0"` · `"0.00"` · `"-0.000"` hepsi sıfırdır.
  *
  * Metin karşılaştırması (`value === "0"`) YETMEZ: `sumDecimalStrings` ölçeği

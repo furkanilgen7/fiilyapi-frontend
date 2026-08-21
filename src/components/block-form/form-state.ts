@@ -103,7 +103,5 @@ export function setBlockField<K extends BlockFormField>(
   field: K,
   value: BlockFormValues[K],
 ): BlockFormValues {
-  // 🔴 T1 TASLAĞI (T2 düzeltir): yerinde yazıyor — yeni nesne DÖNMÜYOR.
-  values[field] = value;
-  return values;
+  return { ...values, [field]: value };
 }
