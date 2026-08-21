@@ -56,6 +56,20 @@ describe("UnitFormTabs — BE 47-53 / UE 49-55 / TU 47-53", () => {
     expect(tab).not.toHaveAttribute("aria-disabled");
   });
 
+  it("EI 51 'Excel İçe Aktar' sekmesi GERÇEK rotaya bağlandı (F-UNIT2 T2b)", () => {
+    render(<UnitFormTabs activeTab="Blok Ekle" />);
+    const tab = screen.getByRole("tab", { name: "Excel İçe Aktar" });
+    expect(tab).toHaveAttribute("href", "/satis/excel-ice-aktar");
+    expect(tab).not.toHaveAttribute("aria-disabled");
+  });
+
+  it("EI 51 aktifken 'Excel İçe Aktar' KONUM bildirir (bağlantı değil)", () => {
+    render(<UnitFormTabs activeTab="Excel İçe Aktar" />);
+    const active = screen.getByRole("tab", { name: "Excel İçe Aktar" });
+    expect(active).toHaveAttribute("aria-selected", "true");
+    expect(active).not.toHaveAttribute("href");
+  });
+
   it("TU 50 aktifken 'Toplu Üretim' KONUM bildirir (bağlantı değil)", () => {
     render(<UnitFormTabs activeTab="Toplu Üretim" />);
     const active = screen.getByRole("tab", { name: "Toplu Üretim" });
@@ -102,6 +116,16 @@ describe("UnitFormTabs — pending gerekçe BAYATLAMAZ", () => {
     expect(screen.queryByTestId("unite-form-sekme-gerekce") !== null).toBe(hasPendingTab);
     expect(unitFormTabsPendingReason() !== null).toBe(hasPendingTab);
     cleanup();
+  });
+
+  it("🔴 T2b sonrası gerekçe TEK sekmeye indi — cümle kendiliğinden kısaldı", () => {
+    // "Excel İçe Aktar" rotaya bağlandığı anda gerekçeden DÜŞTÜ; geriye yalnız
+    // "Paylaşım Girişi" kaldı ve cümle TEKİL yazıldı. Ayrı bir temizlik adımı
+    // gerekmedi — bu, gerekçenin türev olmasının ÖLÇÜLEBİLİR sonucudur.
+    expect(pendingLabels).toEqual(["Paylaşım Girişi"]);
+    expect(unitFormTabsPendingReason()).toBe(
+      "Paylaşım Girişi ekranı henüz açılmadı — bu sekme şimdilik tıklanamaz",
+    );
   });
 
   it("boş kümede gerekçe `null`dur (sabit metin DÖNMEZ)", () => {

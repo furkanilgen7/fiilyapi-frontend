@@ -19,6 +19,9 @@ export const UNIT_FORM_HREF = "/satis/unite-ekle";
 /** TU'nun kendi rotası (`Form - Toplu Unite.dc.html`, F-UNIT2 T2a). */
 export const BULK_UNIT_FORM_HREF = "/satis/toplu-uretim";
 
+/** EI'nin kendi rotası (`Form - Unite Excel Import.dc.html`, F-UNIT2 T2b). */
+export const UNIT_IMPORT_FORM_HREF = "/satis/excel-ice-aktar";
+
 export type UnitFormTabLabel =
   | "Blok Ekle"
   | "Ünite Ekle"
@@ -36,7 +39,7 @@ export const UNIT_FORM_TABS: readonly UnitFormTabDef[] = [
   { label: "Blok Ekle", href: BLOCK_FORM_HREF }, // BE 48 / UE 50 / TU 48
   { label: "Ünite Ekle", href: UNIT_FORM_HREF }, // BE 49 / UE 51 / TU 49
   { label: "Toplu Üretim", href: BULK_UNIT_FORM_HREF }, // BE 50 / UE 52 / TU 50
-  { label: "Excel İçe Aktar" }, // BE 51 / UE 53 / TU 51 — rotası HENÜZ yok
+  { label: "Excel İçe Aktar", href: UNIT_IMPORT_FORM_HREF }, // BE 51 / UE 53 / TU 51
   { label: "Paylaşım Girişi" }, // BE 52 / UE 54 / TU 52 — rotası HENÜZ yok
 ];
 

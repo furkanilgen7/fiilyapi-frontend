@@ -147,3 +147,145 @@ export const IMPORT_EMPTY_FILE_MESSAGE =
  */
 export const IMPORT_SUMMARY_INCONSISTENT_MESSAGE =
   "Doğrulama özeti tutarsız — sayaçlar toplam satır sayısını tutmuyor";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// T2b eklentileri — ekran katmanının ihtiyaç duyduğu metinler. T1'in ölçtüğü
+// sözleşme kararları YUKARIDA durur; buradakiler o kararların GÖRÜNEN yüzüdür.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** EI 60/61 seçicilerinin boş seçeneği (`unit-form` ailesiyle aynı metin). */
+export const IMPORT_PLACEHOLDER = "Seçiniz...";
+
+/** EI 65-73 — yüklenmiş dosya özeti şeridi. */
+export const IMPORT_FILE_READY_LABEL = "Dosya seçildi"; // EI 69 (mockup'ın `✓`sı ikonla basılır)
+export const IMPORT_FILE_REPLACE_LABEL = "Değiştir"; // EI 71
+export const IMPORT_FILE_REMOVE_LABEL = "Dosyayı kaldır"; // EI 72 (`×`)
+export const IMPORT_ROWS_READ_SUFFIX = "satır okundu"; // EI 69
+
+/**
+ * EI 65-73 kutusu yalnız dosya SEÇİLDİKTEN sonra çizilir; öncesinde mockup'ın
+ * kesikli bırakma alanı (EI 75-80) tek başına durur ve gerekçesi budur.
+ */
+export const IMPORT_NO_FILE_NOTICE =
+  "Henüz dosya seçilmedi — şablonu doldurup .xlsx olarak yükleyin.";
+
+/** İstek KURULMADAN önce sağlanması gereken iki ön koşul. */
+export const IMPORT_PROJECT_REQUIRED_MESSAGE = "Önce hedef projeyi seçin.";
+export const IMPORT_FILE_REQUIRED_MESSAGE = "Önce bir .xlsx dosyası seçin.";
+
+/** Sunucu gövdesi okunamazsa basılan yedek metinler. */
+export const IMPORT_VALIDATE_ERROR_FALLBACK = "Dosya doğrulanamadı.";
+export const IMPORT_SUBMIT_ERROR_FALLBACK = "Ünite aktarımı yapılamadı.";
+export const IMPORT_TEMPLATE_ERROR_FALLBACK = "Şablon indirilemedi.";
+
+/** EI 93 kartı doğrulama gelmeden BOŞ bırakılmaz; gerekçe yazılır. */
+export const IMPORT_VALIDATION_EMPTY_NOTICE =
+  "Dosya seçildiğinde satırlar doğrulanır ve sonuç burada görünür.";
+
+/** Doğrulama sonrası dosya/proje değişirse eski sonuç ATILIR (bayat tablo yasak). */
+export const IMPORT_VALIDATION_STALE_NOTICE =
+  "Girdiler değişti — önceki doğrulama sonucu temizlendi. Yeniden doğrulayın.";
+
+/** EI 108 tablosu satırsız kalırsa (süzgeç eşleşmedi). */
+export const IMPORT_ROWS_EMPTY_NOTICE = "Bu süzgeçte satır yok.";
+
+/**
+ * EI 202'nin sayısı TÜREVDİR ve `deriveValidationOutcome`ın `importableCount`u
+ * ile aynıdır — yani AKTARILACAK satır sayısı.
+ *
+ * 🔴 ONAYLI SAPMA — MOCKUP ARİTMETİĞİ KENDİ İÇİNDE TUTARSIZ. EI 202 "22 Geçerli
+ * Satırı Aktar" yazıyor ama AYNI mockup'ta EI 192 kutucuğu İŞARETLİ ve EI 97
+ * bir uyarılı satır sayıyor: o hâlde yazılacak satır 22 değil **23**tür. 22
+ * basmak, sunucunun 23 satır yazdığı bir işlemi 22 diye anlatırdı. TU'nun
+ * "₺27.264.000"ı için verilen kararla aynı sınıf (*"mockup'in sayisi KANON
+ * DEGILDIR"*): ekran GERÇEĞİ basar.
+ */
+export const IMPORT_SUBMIT_COUNT_SUFFIX = "Geçerli Satırı Aktar"; // EI 202
+
+export function importSubmitLabel(importableCount: number | null): string {
+  return importableCount === null
+    ? IMPORT_SUBMIT_LABEL
+    : `${importableCount} ${IMPORT_SUBMIT_COUNT_SUFFIX}`;
+}
+
+/**
+ * EI 100-102 kırmızı özet şeridi. Sayı `total_rows - importableCount`tir, yani
+ * kutucuğun durumuna göre DEĞİŞİR: mockup'ın "1 satır aktarılamayacak"ı EI 192
+ * işaretliyken doğrudur; kutucuk kapatılırsa uyarılı satır da aktarılmayacaktır
+ * ve sayı 2 olur. Sabit basılan bir cümle o hâlde YALAN söylerdi.
+ */
+export function importBlockedRowsText(blockedCount: number): string {
+  return `${blockedCount} satır aktarılamayacak.`;
+}
+export const IMPORT_BLOCKED_ROWS_HINT =
+  "Hatalı satırları düzeltip tekrar yükleyin veya sadece geçerli satırları aktarın."; // EI 101
+
+/**
+ * 🔴 MOCKUP'TA KUTUSU YOK, EKRANDA VAR — `blocks_to_create`.
+ *
+ * `UnitImportValidation` dosyada geçen ama projede OLMAYAN blokların adlarını
+ * döner ve aktarım onları AÇAR. Mockup'ın hiçbir yüzeyi bunu söylemez; sessizce
+ * blok açmak, kullanıcının bir yazım hatası yüzünden ("D Blok" yerine "D  Blok")
+ * fazladan blok açtığını ancak SONRADAN fark etmesi demekti. Bu yüzden
+ * bilgilendirici bir not olarak basılır — MOCKUP + BİR, F-UNIT1'in `west`
+ * cephesi ve `unit_kind` kararlarıyla aynı sınıf.
+ */
+export const IMPORT_BLOCKS_TO_CREATE_LABEL = "Bu aktarım yeni blok açacak:";
+export const IMPORT_BLOCKS_TO_CREATE_HINT =
+  "Yeni bloklar EI 61'de seçilen şantiyeye bağlanır.";
+
+/**
+ * 🔴 ÖLÇÜLMÜŞ İNCE NOKTA: `blocks_to_create` `include_warnings`E BAĞLIDIR
+ * (`batch.py::_blocks_to_create` yalnız YAZILACAK satırlara bakar), sayaçlar ve
+ * satırlar ise DEĞİLDİR (`_summary` durum sayar). Kutucuk doğrulamadan SONRA
+ * değişirse tablo ve sayaçlar geçerli kalır ama blok listesi bayatlar — o dar
+ * bayatlık sessizce bırakılmaz, söylenir.
+ */
+export const IMPORT_BLOCKS_STALE_NOTICE =
+  "Uyarı kutucuğu değişti — açılacak blok listesi için yeniden doğrulayın.";
+
+/** EI 202 sonrası sonuç şeridi (`UnitImportResult`). */
+export const IMPORT_RESULT_CREATED_LABEL = "Oluşturulan ünite";
+export const IMPORT_RESULT_SKIPPED_LABEL = "Atlanan satır";
+export const IMPORT_RESULT_BLOCKS_LABEL = "Açılan blok";
+export const IMPORT_RESULT_PARTIAL_HINT =
+  "Kısmi aktarım tamamlandı: geçerli satırlar yazıldı, kalanlar atlandı. Atlanan satırları düzeltip dosyayı yeniden yükleyebilirsiniz.";
+export const IMPORT_RESULT_ALL_HINT = "Dosyadaki tüm aktarılabilir satırlar yazıldı.";
+
+/**
+ * 🔴 EI 195 "Hata Raporunu İndir" — SUNUCUDA KARŞILIĞI YOK.
+ *
+ * Ölçüldü: `units/router.py` sekiz uç açar ve hiçbiri bir hata raporu üretmez
+ * (`import/template` boş şablondur, `export.xlsx` KKP'nin paylaşım tablosudur).
+ * Kanon (F-UNIT1'in BE 109 kutucuğu · PG 270-272 tutanağı): düğme SİLİNMEZ,
+ * devre dışı basılır ve gerekçe `title`da saklanmaz, EKRANDA durur. Hata
+ * satırları zaten EI 108 tablosunda tam metinleriyle görünür.
+ */
+export const IMPORT_ERROR_REPORT_PENDING_REASON =
+  "Hata raporu dosyası henüz üretilmiyor — hatalı satırlar aşağıdaki tabloda tam mesajlarıyla listelenir.";
+
+/**
+ * EI 138/149/184 — hatasız ve uyarısız satırın mesaj hücresi. `messages` boş
+ * geldiğinde hücre BOŞ bırakılmaz; mockup'ın kendi metni basılır.
+ */
+export const IMPORT_ROW_READY_LABEL = "Hazır"; // EI 138
+
+/**
+ * EI 131/142/154/166/177 durum sütunu. Mockup `✓ ✗ ⚠` glifleriyle çizer;
+ * ÜÇÜ DE glif bekçisinin yasak sınıfındadır (`✓`/`✗` için VS16 kurtarması bile
+ * yoktur) → `ui/icons` SVG'leri ile basılır. Buradaki metinler ekranda GÖRSEL
+ * olarak gizlidir ama erişilebilir ada girer: renk körü ve ekran okuyucu
+ * kullanıcısı için durum yalnız renkten okunamaz.
+ */
+export const IMPORT_STATUS_LABELS: Readonly<Record<"ok" | "warning" | "error", string>> = {
+  ok: "Geçerli",
+  warning: "Uyarılı",
+  error: "Hatalı",
+};
+
+/** EI 193 — kutucuk etiketindeki sayı uyarılı satır sayısıdır. */
+export function importIncludeWarningsLabel(warningCount: number | null): string {
+  return warningCount === null
+    ? IMPORT_INCLUDE_WARNINGS_LABEL
+    : `${IMPORT_INCLUDE_WARNINGS_LABEL} (${warningCount} satır)`;
+}
