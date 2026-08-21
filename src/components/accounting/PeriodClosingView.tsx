@@ -32,8 +32,11 @@ import {
   periodEntryCountText,
   periodRowLabel,
   periodStatusLabel,
+  periodStatusVariant,
   periodSummaryText,
   reopenButtonDisabledReason,
+  SEQUENCE_BLOCKED_DETAIL,
+  sequenceBlockedTitle,
   summarizePeriodRows,
   type PeriodRow,
 } from "./period-closing";
@@ -274,12 +277,16 @@ function PeriodTableRow({
   onRequestClose,
   onReopen,
 }: PeriodTableRowProps) {
+  // 🔴 K3.5 — `blocked_sequence` için mockup'ta AYRI bir renk ÇİZİLİ DEĞİL
+  // (ölçüldü: "sıra/önceki/kronolojik" geçen 0 satır); `periodStatusVariant`
+  // onu taslak engelinin görsel diline indirger ve YENİ CSS yazılmaz.
+  const variant = periodStatusVariant(row.status);
   const rowClassName =
-    row.status === "blocked"
+    variant === "blocked"
       ? "dkap-row--blocked"
-      : row.status === "closable"
+      : variant === "closable"
         ? "dkap-row--closable"
-        : row.status === "no_record"
+        : variant === "no_record"
           ? "dkap-row--no-record"
           : undefined;
 
@@ -289,7 +296,7 @@ function PeriodTableRow({
         <td className="dkap-row__period">{periodRowLabel(row)}</td>
         <td className="is-center">
           <span
-            className={`dkap-status dkap-status--${row.status}`}
+            className={`dkap-status dkap-status--${variant}`}
             data-testid={`dkap-status-${row.month}`}
           >
             {row.status === "closed" && (
@@ -315,6 +322,7 @@ function PeriodTableRow({
         </td>
       </tr>
       {row.status === "blocked" && <BlockedReasonRow row={row} />}
+      {row.status === "blocked_sequence" && <SequenceReasonRow row={row} />}
     </>
   );
 }
@@ -418,6 +426,34 @@ function BlockedReasonRow({ row }: { row: PeriodRow }) {
                 ))}
               </ul>
             )}
+          </div>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+/**
+ * SIRA-B — sıra engelinin bandı. Yapısı DK:167-197 taslak bandının AYNISIdır
+ * (`.dkap-blocked-banner` jenerik, yeni CSS yazılmaz).
+ *
+ * 🔴 Taslak bandının fiş LİSTESİ burada YOKTUR ve `useJournalEntries`
+ * ÇAĞRILMAZ: sıra engelinin satır satır dökülecek bir listesi yok — kullanıcının
+ * yapacağı tek iş "önceki ayı kapat"tır ve o ay zaten AYRI BİR SATIRDIR.
+ *
+ * 🔴 K3.6 — çıplak glif yasağı: uyarı sembolü `ui/icons`in `AlertIcon`ıdır.
+ */
+function SequenceReasonRow({ row }: { row: PeriodRow }) {
+  return (
+    <tr className="dkap-row--blocked" data-testid={`dkap-sequence-reason-${row.month}`}>
+      <td colSpan={6}>
+        <div className="dkap-blocked-banner">
+          <AlertIcon className="dkap-blocked-banner__icon" />
+          <div>
+            <p className="dkap-blocked-banner__title">
+              {sequenceBlockedTitle(row.year, row.month)}
+            </p>
+            <p className="dkap-blocked-banner__detail">{SEQUENCE_BLOCKED_DETAIL}</p>
           </div>
         </div>
       </td>
