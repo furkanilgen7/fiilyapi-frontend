@@ -3829,6 +3829,25 @@ interface MockUnitBlock {
   site_id: string;
   site_name: string;
   sort_order: number;
+  // F-UNIT1 T6 — BE (Blok Ekle) yapisal alanlari. Bu alanlari BUGUNE KADAR
+  // hicbir yuzey OKUMUYORDU (`BlockOccupancyMap` yalniz `id`/`name` ve
+  // uniteden turetilen sayimlari basar), bu yuzden fiksturu zenginlestirmek
+  // MEVCUT hicbir kareyi oynatmaz. Ünite formunun `Kat` secicisi ise bunlari
+  // GERCEKTEN okur: `floor_count`/`basement_floor_count`/`roof_type` olmadan
+  // liste bos kalir ve kadraj ozelligi hic olcmez.
+  code?: string | null;
+  basement_floor_count?: number | null;
+  floor_count?: number | null;
+  roof_type?: "none" | "duplex" | "terrace" | null;
+  units_per_floor?: number | null;
+  ground_floor_usage?: "commercial" | "apartment" | "common" | null;
+  shop_count?: number | null;
+  construction_area_m2?: string | null;
+  elevator_count?: number | null;
+  parking_type?: "closed" | "open" | "none" | null;
+  estimated_delivery_date?: string | null;
+  status?: "planning" | "construction" | "completed" | null;
+  notes?: string | null;
 }
 
 interface MockUnit {
@@ -3896,8 +3915,35 @@ const CUSTOMER_FIXTURES: MockCustomer[] = [
 ];
 
 const UNIT_BLOCK_FIXTURES: MockUnitBlock[] = [
-  { id: "blk-1", project_id: "p-1", name: "A Blok", site_id: "s-1", site_name: "A-Blok Şantiyesi", sort_order: 0 },
-  // 🔒 YAZMA ALANI — `p-2`nin bloğu (kendi şantiye künyesiyle).
+  // `blk-1` BE alanlarini DOLU tasir: ünite formunun `Kat` secicisi bu blogun
+  // `basement_floor_count`/`floor_count`/`roof_type` uclusunden turetilir
+  // (2 bodrum + Zemin + 8 kat + Cati Kati = 12 secenek). Bos birakilsaydi
+  // kadraj yalnizca "kat sayisi girilmemis" ipucunu gosterirdi.
+  {
+    id: "blk-1",
+    project_id: "p-1",
+    name: "A Blok",
+    site_id: "s-1",
+    site_name: "A-Blok Şantiyesi",
+    sort_order: 0,
+    code: "YV-A",
+    basement_floor_count: 2,
+    floor_count: 8,
+    roof_type: "duplex",
+    units_per_floor: 3,
+    ground_floor_usage: "commercial",
+    shop_count: 2,
+    construction_area_m2: "3200.00",
+    elevator_count: 1,
+    parking_type: "closed",
+    estimated_delivery_date: "2027-06-30",
+    status: "construction",
+    notes: null,
+  },
+  // 🔒 YAZMA ALANI — `p-2`nin bloğu (kendi şantiye künyesiyle). BE alanlari
+  // BILEREK bostur: `roof_type` yokken "Cati Kati" secenegi DUSER ve
+  // `floor_count` null iken "kat sayisi girilmemis" ipucu basilir — iki
+  // davranis da ancak bos bir blokla olculebilir.
   { id: "blk-2", project_id: "p-2", name: "Villa Blok", site_id: "s-p2-1", site_name: "Villa B Şantiyesi", sort_order: 0 },
 ];
 
@@ -4258,6 +4304,64 @@ function buildUnitResponse(state: MockState, unit: MockUnit) {
   };
 }
 
+/**
+ * `BlockResponse` — TEK kaynak. Hem `UnitListResponse.blocks[].block` hem
+ * `GET /projects/{id}/blocks` bunu dondurur; iki yerde ayri ayri yazilsaydi
+ * ünite formunun okudugu blok ile satis ekranininki sessizce ayrisirdi.
+ *
+ * `estimated_unit_count` BE 88-94 panelinin SUNUCU tarafidir ve backend'in
+ * `BlockResponse.estimated_unit_count` computed field'iyle AYNI kurali tasir
+ * (`backend/app/modules/units/schemas.py`): uc girdi de bossa **null** doner —
+ * `0` "hesaplandi ve sifir" der ve bu YANLIS bilgidir.
+ */
+function buildBlockResponse(block: MockUnitBlock, blockUnits: MockUnit[]) {
+  const floors = block.floor_count ?? null;
+  const perFloor = block.units_per_floor ?? null;
+  const shops = block.shop_count ?? null;
+  const estimated =
+    floors === null && perFloor === null && shops === null
+      ? null
+      : (floors ?? 0) * (perFloor ?? 0) + (shops ?? 0);
+
+  return {
+    id: block.id,
+    name: block.name,
+    site_id: block.site_id,
+    site_name: block.site_name,
+    sort_order: block.sort_order,
+    counts: unitKindBreakdown(blockUnits),
+    code: block.code ?? null,
+    basement_floor_count: block.basement_floor_count ?? null,
+    floor_count: floors,
+    roof_type: block.roof_type ?? null,
+    units_per_floor: perFloor,
+    ground_floor_usage: block.ground_floor_usage ?? null,
+    shop_count: shops,
+    construction_area_m2: block.construction_area_m2 ?? null,
+    elevator_count: block.elevator_count ?? null,
+    parking_type: block.parking_type ?? null,
+    estimated_delivery_date: block.estimated_delivery_date ?? null,
+    status: block.status ?? null,
+    notes: block.notes ?? null,
+    estimated_unit_count: estimated,
+  };
+}
+
+/** `BlockListResponse` — ünite formunun Blok seçicisinin kaynağı (BE/UE 65). */
+function buildBlockListResponse(state: MockState, projectId: string) {
+  const blocks = state.unitBlocks
+    .filter((b) => b.project_id === projectId)
+    .sort((a, b) => a.sort_order - b.sort_order);
+  return {
+    blocks: blocks.map((block) =>
+      buildBlockResponse(
+        block,
+        state.units.filter((u) => u.block_id === block.id),
+      ),
+    ),
+  };
+}
+
 /** `UnitListResponse` — DS'nin ünite seçicisinin kaynağı (bloklara gruplu). */
 function buildUnitListResponse(state: MockState, projectId: string) {
   const units = state.units
@@ -4309,28 +4413,7 @@ function buildUnitListResponse(state: MockState, projectId: string) {
     blocks: blocks.map((block) => {
       const blockUnits = units.filter((u) => u.block_id === block.id);
       return {
-        block: {
-          id: block.id,
-          name: block.name,
-          site_id: block.site_id,
-          site_name: block.site_name,
-          sort_order: block.sort_order,
-          counts: unitKindBreakdown(blockUnits),
-          code: null,
-          basement_floor_count: null,
-          floor_count: null,
-          roof_type: null,
-          units_per_floor: null,
-          ground_floor_usage: null,
-          shop_count: null,
-          construction_area_m2: null,
-          elevator_count: null,
-          parking_type: null,
-          estimated_delivery_date: null,
-          status: null,
-          notes: null,
-          estimated_unit_count: null,
-        },
+        block: buildBlockResponse(block, blockUnits),
         units: blockUnits.map((u) => buildUnitResponse(state, u)),
       };
     }),
@@ -7837,6 +7920,18 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const customer = state.customers.find((c) => c.id === customerIdMatch[1]);
       if (!customer) return send(404, { detail: "Müşteri bulunamadı." });
       return send(200, customer);
+    }
+
+    // GET /projects/{project_id}/blocks — F-UNIT1: ünite formunun Blok seçicisi
+    // (UE 65) ve `Kat` türetimi (UE 66) bu uçtan beslenir. Eksikken seçici
+    // sessizce BOŞ kalıyordu — jsdom bunu görmez, yalnız kadraj gösterir.
+    const projectBlocksMatch = path.match(/^\/projects\/([^/]+)\/blocks$/);
+    if (method === "GET" && projectBlocksMatch) {
+      const projectId = projectBlocksMatch[1];
+      if (!state.projects.some((p) => p.id === projectId)) {
+        return send(404, { detail: "Proje bulunamadı." });
+      }
+      return send(200, buildBlockListResponse(state, projectId));
     }
 
     // GET /projects/{project_id}/units — DS ünite seçicisinin kaynağı.
