@@ -33,12 +33,17 @@ test("muhasebe donem kapanisi gorsel", async ({ page }) => {
   await expect(page.getByText(/yükleniyor/i)).toHaveCount(0);
 
   // DÖRT durumun HEPSİ kadrajda: K2/K3/K4'ün görsel kanıtı.
+  // 🔴 SIRA-B: sayılar 6/1/1/4 → 6/1/2/3 (Ağustos artık sıra-engelli, Kasım
+  // kapatılabilir); gerekçe fonksiyonel spec'in K4 testinde yazılıdır.
   await expect(page.getByTestId("dkap-summary")).toContainText(
-    "6 kapalı · 1 kapatılabilir · 1 engelli · 4 kayıt yok",
+    "6 kapalı · 1 kapatılabilir · 2 engelli · 3 kayıt yok",
   );
   await expect(page.getByTestId("dkap-status-1")).toContainText("Kapalı");
   await expect(page.getByTestId("dkap-status-8")).toContainText("Açık");
   await expect(page.getByTestId("dkap-blocked-reason-7")).toBeVisible();
+  // 🔴 YENİ BANT kadrajda: Ağustos'un sıra gerekçesi. Görünürlüğü İDDİA
+  // EDİLMEZSE kare bandı sessizce kaybedebilir ve kimse fark etmez.
+  await expect(page.getByTestId("dkap-sequence-reason-8")).toBeVisible();
   await expect(page.getByTestId("dkap-status-9")).toContainText("Kayıt yok");
 
   // ⚠️ Engelli bandın taslak listesi BAĞIMSIZ bir kaynaktır
@@ -57,13 +62,19 @@ test("muhasebe donem kapanisi onay diyalogu gorsel", async ({ page }) => {
   await page.goto(PERIOD_CLOSING_URL);
   await expect(page.getByTestId("dkap-loaded")).toBeAttached();
 
-  // 2026 Ağustos — kapatılabilir tek satır (mock fikstürünün OKUMA yılı,
-  // MUTASYONA UĞRAMAZ: bu test yalnız diyaloğu AÇAR, "Dönemi Kapat"a
-  // BASMAZ).
-  await page.getByTestId("dkap-close-8").click();
-  const dialog = page.getByRole("dialog", { name: "Ağustos 2026 Kapatılsın mı?" });
+  // 2026 KASIM — kapatılabilir tek satır (mock fikstürünün OKUMA yılı,
+  // MUTASYONA UĞRAMAZ: bu test yalnız diyaloğu AÇAR, "Dönemi Kapat"a BASMAZ).
+  //
+  // 🔴 SIRA-B devri: eskiden Ağustos'a tıklanıyordu; Ağustos artık SIRA-ENGELLİ
+  // (öncesi Temmuz açık) ve düğmesi devre-dışıdır. Diyalog karesi 2025 YAZMA
+  // adasına TAŞINMADI: kare `fullPage` çekilir, modalın ARKASINDAKİ tablo da
+  // kadraja girer ve K8 mutasyonu (Haziran 2025) o tabloyu oynatarak kareyi
+  // FLAKY yapardı. Bunun yerine 2026 OKUMA adasının içine kapatılabilir bir ay
+  // (Kasım, öncesi Ekim KAYITSIZ) açıldı.
+  await page.getByTestId("dkap-close-11").click();
+  const dialog = page.getByRole("dialog", { name: "Kasım 2026 Kapatılsın mı?" });
   await expect(dialog).toBeVisible();
-  await expect(page.getByTestId("dkap-confirm-entry-count")).toContainText("86");
+  await expect(page.getByTestId("dkap-confirm-entry-count")).toContainText("34");
   // Diyaloğun İKİNCİ bağımsız veri kaynağı (`useTrialBalance`) de kadrajdan
   // önce OTURMALI — aksi hâlde kare "Yükleniyor…" hâlini donmuş yakalayabilir
   // (F-İK dersi, GÖRSEL SPEC KURALI 5. parça).

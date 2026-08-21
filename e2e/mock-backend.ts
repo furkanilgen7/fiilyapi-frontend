@@ -13317,9 +13317,18 @@ const FINANCIAL_INSTRUMENT_SUMMARY_FIXTURE = {
 } as const;
 
 // --- F-DKAP T2 · Dönem Kapanışı fikstürü ---------------------------------
-// DK:93-236 örnek dağılımının BİREBİR kopyası: Ocak-Haziran kapalı, Temmuz
-// engelli (3 taslak), Ağustos kapatılabilir, Eylül-Aralık kayıt yok (satır
-// hiç YOK — K3 kanonu, backend proaktif satır açmaz).
+// DK:93-236 örnek dağılımının kopyası + SIRA-B düzeltmesi: Ocak-Haziran
+// kapalı, Temmuz TASLAK-engelli (2 taslak), Ağustos SIRA-engelli (öncesi
+// Temmuz KAYITLI ve AÇIK), Kasım KAPATILABİLİR (öncesi Ekim KAYITSIZ),
+// kalan aylar kayıt yok (satır hiç YOK — K3 kanonu, backend proaktif satır
+// açmaz).
+//
+// 🔴 Ağustos NEDEN artık "kapatılabilir" DEĞİL: SIRA-B ile backend, önceki
+// dönem KAYITLI ve `open` iken kapanışı 409'lar. Temmuz burada kayıtlı ve
+// açıktır — yani "Ağustos kapatılabilir" backend'in ÜRETEMEYECEĞİ bir
+// fikstürdü. Kapatılabilir kareyi artık Kasım taşır: öncesi (Ekim) KAYITSIZ
+// olduğu için engel DEĞİLDİR (backend K2/K3), dolayısıyla fikstür kuralı
+// yalnız uymakla kalmaz, ayrıca SERGİLER.
 //
 // 🔴 MUTASYON İZOLASYONU: close/reopen bu diziyi DEĞİŞTİRİR. Okuma testleri
 // 2026 yılına bakar; yazma testleri ÇAKIŞMAYAN bir yılda (2020) çalışır ki
@@ -13327,7 +13336,18 @@ const FINANCIAL_INSTRUMENT_SUMMARY_FIXTURE = {
 // (`accounting-reports.spec.ts`teki KDV izolasyon dersiyle aynı desen).
 type MockAccountingPeriod = components["schemas"]["AccountingPeriodListItem"];
 
-let accountingPeriodsState: MockAccountingPeriod[] = [
+/**
+ * 🔴 SIRA-B — DEPOLANAN satır `previous_period_open` TAŞIMAZ.
+ *
+ * O alan bir OLGU değil bir TÜREVDİR: komşu ayın durumundan doğar. Sabit
+ * yazılsaydı ilk mutasyonda (bir "kapat" testi komşu ayı kapatır) gerçekle
+ * çelişir ve fikstür backend'in HİÇBİR ZAMAN üretemeyeceği bir hâle düşerdi
+ * ("önceki ay artık kapalı ama satır hâlâ `previous_period_open: true`").
+ * Bu yüzden alan YALNIZ liste ucunda, o ANKİ state'ten hesaplanır.
+ */
+type MockAccountingPeriodRow = Omit<MockAccountingPeriod, "previous_period_open">;
+
+let accountingPeriodsState: MockAccountingPeriodRow[] = [
   { id: "ap-2026-01", year: 2026, month: 1, status: "closed", entry_count: 142, draft_count: 0, closed_by_id: ME.id, closed_by_name: ME.full_name, closed_at: "2026-02-05T09:00:00Z", created_at: "2026-01-01T00:00:00Z", updated_at: "2026-02-05T09:00:00Z" },
   { id: "ap-2026-02", year: 2026, month: 2, status: "closed", entry_count: 168, draft_count: 0, closed_by_id: ME.id, closed_by_name: ME.full_name, closed_at: "2026-03-04T09:00:00Z", created_at: "2026-02-01T00:00:00Z", updated_at: "2026-03-04T09:00:00Z" },
   { id: "ap-2026-03", year: 2026, month: 3, status: "closed", entry_count: 184, draft_count: 0, closed_by_id: ME.id, closed_by_name: ME.full_name, closed_at: "2026-04-06T09:00:00Z", created_at: "2026-03-01T00:00:00Z", updated_at: "2026-04-06T09:00:00Z" },
@@ -13341,21 +13361,60 @@ let accountingPeriodsState: MockAccountingPeriod[] = [
   // sayı UYUŞMAZSA banner "N taslak fiş var" derken listede farklı sayıda
   // satır basardı.
   { id: "ap-2026-07", year: 2026, month: 7, status: "open", entry_count: 218, draft_count: 2, closed_by_id: null, closed_by_name: null, closed_at: null, created_at: "2026-07-01T00:00:00Z", updated_at: "2026-07-01T00:00:00Z" },
-  // DK:220-235 — Ağustos KAPATILABİLİR (K2): status "open" + draft_count 0.
+  // DK:220-235 — Ağustos: status "open" + draft_count 0, AMA öncesi (Temmuz)
+  // KAYITLI ve AÇIK ⇒ SIRA-ENGELLİ (`blocked_sequence`). Taslak engeli yoktur;
+  // engel KOMŞU satırdan gelir. İki engelin AYRI gerekçeleri böylece aynı
+  // kadrajda yan yana durur (Temmuz taslak bandı · Ağustos sıra bandı).
   { id: "ap-2026-08", year: 2026, month: 8, status: "open", entry_count: 86, draft_count: 0, closed_by_id: null, closed_by_name: null, closed_at: null, created_at: "2026-08-01T00:00:00Z", updated_at: "2026-08-01T00:00:00Z" },
-  // Eylül-Aralık 2026: kayıt YOK (K3) — bilinçli olarak eklenmedi.
+  // Eylül + Ekim 2026: kayıt YOK (K3) — bilinçli olarak eklenmedi.
+  // 🔓 KASIM 2026 — 2026 OKUMA adasının İÇİNDEKİ tek KAPATILABİLİR ay: öncesi
+  // (Ekim) KAYITSIZ olduğu için `previous_period_open` FALSE türer.
+  // 🔴 Diyalog karesi (T4 görsel spec) BUNU açar, 2025 yazma adasına TAŞINMAZ:
+  // kare `fullPage` çekilir ve modalın ARKASINDAKİ tablo da kadraja girer —
+  // 2025'te K8 mutasyonu (Haziran 2025) o tabloyu oynatır ve kare FLAKY olurdu.
+  { id: "ap-2026-11", year: 2026, month: 11, status: "open", entry_count: 34, draft_count: 0, closed_by_id: null, closed_by_name: null, closed_at: null, created_at: "2026-11-01T00:00:00Z", updated_at: "2026-11-01T00:00:00Z" },
+  // Aralık 2026: kayıt YOK (K3) — bilinçli olarak eklenmedi.
   // 🔒 YAZMA ADASI (`accounting-helpers.ts` `DKAP_MUTATION_YEAR/_MONTH`):
   // 2025 yılı 2026'nın hiçbir K2/K3/K4 iddiasında GEÇMEZ — bir "kapat" testi
   // bu satırı değiştirse bile paralel okuma testleri bunu HİÇ görmez.
   { id: "ap-2025-06", year: 2025, month: 6, status: "open", entry_count: 12, draft_count: 0, closed_by_id: null, closed_by_name: null, closed_at: null, created_at: "2025-06-01T00:00:00Z", updated_at: "2025-06-01T00:00:00Z" },
 ];
 
+/**
+ * 🔴 SIRA-B — TAKVİM olarak bir önceki dönem; backend `periods_service.
+ * previous_period` ile BİREBİR. Ocak'ın öncesi ÖNCEKİ YILIN Aralığıdır:
+ * `(year, month - 1)` yazılsaydı Ocak için `(year, 0)` üretirdi, öyle bir
+ * dönem hiç kaydedilmediği için sıra denetimi her 1 Ocak'ta SESSİZCE geçerdi.
+ */
+function previousAccountingPeriod(year: number, month: number): readonly [number, number] {
+  return month === 1 ? [year - 1, 12] : [year, month - 1];
+}
+
+/**
+ * 🔴 Arama TÜM state ÜZERİNDE yapılır, süzülen YIL İÇİNDE değil — Ocak'ın
+ * öncesi önceki yılın Aralığıdır ve liste tek yıl süzer. `previous_period_open`
+ * alanının VAR OLMA SEBEBİ tam olarak budur (ekran onu kendi listesinden
+ * türetemez); mock da aynı yerden bakmazsa alan yalancı olur.
+ *
+ * 🔴 KAYIT YOK ⇒ FALSE (backend K2): satırın doğduğu tek yer bir yazma/kapatma
+ * isteğidir, yani "satır yok" = *o ayda hiç iş olmamış*, "açık" DEĞİL. Engel
+ * sayılsaydı sistemin İLK kapanışı hiçbir zaman yapılamazdı.
+ */
+function isAccountingPeriodOpen(year: number, month: number): boolean {
+  const row = accountingPeriodsState.find((item) => item.year === year && item.month === month);
+  return row !== undefined && row.status === "open";
+}
+
 /** `(yıl)` → o yılın kayıtlı dönemleri, `year DESC, month DESC` (uç kanonu — burada tek yıl olduğu için yalnız `month DESC`). */
 function accountingPeriodsFixture(year: number): MockAccountingPeriod[] {
   return accountingPeriodsState
     .filter((row) => row.year === year)
     .slice()
-    .sort((a, b) => b.month - a.month);
+    .sort((a, b) => b.month - a.month)
+    .map((row) => {
+      const [prevYear, prevMonth] = previousAccountingPeriod(row.year, row.month);
+      return { ...row, previous_period_open: isAccountingPeriodOpen(prevYear, prevMonth) };
+    });
 }
 
 /**
@@ -13395,6 +13454,20 @@ function closeOrReopenAccountingPeriod(
       return {
         status: 409,
         body: { detail: `Dönem kapatılamıyor — ${row.draft_count} taslak fiş var.` },
+      };
+    }
+    // 🔴 SIRA-B — ÜÇÜNCÜ kapı, ve TASLAK kapısından SONRA koşar: backend
+    // `close_period` sırası (2 DURUM → 3 TASLAK → 4 SIRA) BİREBİR aynasıdır.
+    // Ters kurulsaydı iki engel birden varken mock, sunucunun döndüreceğinden
+    // BAŞKA bir 409 metni verir ve ekranın gerçek hata yüzeyi yanlış ölçülürdü.
+    const [prevYear, prevMonth] = previousAccountingPeriod(year, month);
+    if (isAccountingPeriodOpen(prevYear, prevMonth)) {
+      return {
+        status: 409,
+        body: {
+          // `guards.PERIOD_PREVIOUS_OPEN` ile AYNI SINIF: ay SIFIR DOLGULU.
+          detail: `Önceki dönem (${prevYear}/${String(prevMonth).padStart(2, "0")}) hâlâ açık; dönemler kronolojik sırayla kapatılır`,
+        },
       };
     }
     row.status = "closed";
