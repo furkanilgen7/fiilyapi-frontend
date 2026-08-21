@@ -72,7 +72,7 @@ describe("SiteSubcontractorPaymentsPanel", () => {
       />,
     );
     expect(screen.getByText("Akın İnşaat #47")).toBeInTheDocument();
-    const pending = screen.getByTitle("İş kategorisi alanıyla birlikte gelir");
+    const pending = screen.getByTitle("İş kategorisi liste ucundan gelmiyor");
     expect(pending).toHaveTextContent("—");
   });
 
@@ -88,7 +88,7 @@ describe("SiteSubcontractorPaymentsPanel", () => {
         />,
       );
       expect(screen.getByText("Elektrik Tesisatı")).toBeInTheDocument();
-      const pending = screen.getByTitle("Bölüm adı çözümlemesiyle birlikte gelir");
+      const pending = screen.getByTitle("Bölüm adı bu satırda çözümlenmiyor (yalnız kimliği geliyor)");
       expect(pending).toHaveTextContent("—");
     });
 
@@ -101,7 +101,7 @@ describe("SiteSubcontractorPaymentsPanel", () => {
         />,
       );
       expect(screen.getByText("Tüm Bölümler")).toBeInTheDocument();
-      expect(screen.queryByTitle("Bölüm adı çözümlemesiyle birlikte gelir")).not.toBeInTheDocument();
+      expect(screen.queryByTitle("Bölüm adı bu satırda çözümlenmiyor (yalnız kimliği geliyor)")).not.toBeInTheDocument();
     });
 
     it("(c) kategori VE bölüm birlikte pending ise TEK birleşik gösterge basılır ('— · —' üretmez)", () => {
@@ -117,7 +117,7 @@ describe("SiteSubcontractorPaymentsPanel", () => {
       expect(dashes).toHaveLength(1);
       expect(dashes[0]).toHaveAttribute(
         "title",
-        "İş kategorisi alanıyla birlikte gelir; Bölüm adı çözümlemesiyle birlikte gelir",
+        "İş kategorisi liste ucundan gelmiyor; Bölüm adı bu satırda çözümlenmiyor (yalnız kimliği geliyor)",
       );
     });
   });

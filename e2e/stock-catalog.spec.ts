@@ -47,7 +47,7 @@ test("KPI şeridi sunucudan gelir; 'Bekleyen Sipariş' SA'ya pending kalır", as
 
   // S5: uydurma "12 Sipariş" YOK, görünür gerekçe VAR.
   await expect(page.getByTestId("stok-kpi-pending-orders")).toHaveText("—");
-  await expect(strip).toContainText("Satınalma modülüyle birlikte gelir");
+  await expect(strip).toContainText("Satınalma verisi bu yüzeye henüz bağlanmadı");
 });
 
 test("katalog rozetleri SUNUCUDAN basılır; eşiksiz kalemin durumu '—'", async ({ page }) => {

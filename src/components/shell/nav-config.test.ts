@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NAV_GROUPS, moduleNameForSlug } from "./nav-config";
+import { activeNavHref, NAV_GROUPS, moduleNameForSlug } from "./nav-config";
 import { buildRouteTree, COMING_SOON_PARENT_HREFS, resolveHrefIn } from "./route-tree.testkit";
 
 describe("NAV_GROUPS", () => {
@@ -30,6 +30,16 @@ describe("NAV_GROUPS", () => {
     expect(dash.label).toBe("Gösterge Paneli");
     expect(dash.href).toBe("/");
   });
+  // 🔴 F-UNIT1 T4 — `Çek & Ödeme` mockup'ta Hazine'nin HEMEN ARDINDADIR
+  // (`Fatura Yönetimi.dc.html` 43-45: 🏦 Hazine → 💳 Çek & Ödeme → 📊 Mali
+  // Tablolar). Sıra kayarsa ekran hâlâ erişilebilir olur ama mockup'ın
+  // çizdiği yerde durmaz.
+  it("cek-odeme kalemi hazine ile hakedisler arasindadir (mockup sirasi)", () => {
+    const mali = NAV_GROUPS.find((g) => g.heading === "Sözleşme & Mali");
+    const labels = mali!.items.map((i) => i.label);
+    expect(labels.indexOf("Çek & Ödeme")).toBe(labels.indexOf("Hazine") + 1);
+  });
+
   it("sirket varliklari kalemi bordro ile belge arsivi arasindadir", () => {
     const mali = NAV_GROUPS.find((g) => g.heading === "Sözleşme & Mali");
     const labels = mali!.items.map((i) => i.label);
@@ -143,6 +153,18 @@ describe("NAV_GROUPS — href geçerliliği (kırık link koruması)", () => {
     expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "static" });
   });
 
+  // 🔴 F-UNIT1 T4 · ÖLÜ EKRAN. `/hazine/cek-senet` (E10) sayfası, görünümü,
+  // testi ve görsel kareleri vardı ama repoda ona giden HİÇBİR `Link`/`push`
+  // yoktu — ekran yalnız elle URL yazılarak açılıyordu. Nav öğesi eklendi;
+  // bu iddia rotanın GERÇEK olduğunu kilitler. Ayrıca kabuk nav'ındaki İLK
+  // İKİ SEGMENTLİ href budur: `resolveHrefIn` derinlik hatası yaparsa
+  // (`/muhasebe/olmayan` negatif iddiasının ikizi) burada kırmızıya döner.
+  it("'Çek & Ödeme' /hazine/cek-senet statik rotasına düşer (catch-all DEĞİL)", () => {
+    const item = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.label === "Çek & Ödeme");
+    expect(item?.href).toBe("/hazine/cek-senet");
+    expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "static" });
+  });
+
   // 🔴 KONTROL GRUBU. Yukarıdaki iddiaların HEPSİ `resolveHrefIn`in POZİTİF
   // yolunu sınar; dosyada hiç NEGATİF örnek kalmazsa `resolveHrefIn` her şeye
   // `{kind:"static"}` döndürecek şekilde bozulsa bile testlerin TAMAMI yeşil
@@ -186,5 +208,49 @@ describe("NAV_GROUPS — href geçerliliği (kırık link koruması)", () => {
     expect(resolveHrefIn(ROUTE_TREE, "/muhasebe/olmayan", false)).toEqual({
       kind: "not-found",
     });
+  });
+});
+
+/**
+ * 🔴 F-UNIT1 T4 · ÇİFT AKTİFLİK BEKÇİSİ.
+ *
+ * `Çek & Ödeme` kabuk nav'ının İLK iç içe href'idir (`/hazine/cek-senet`,
+ * `/hazine`in altı). `isActivePath` bir PREFİX kuralı olduğu için o yolda
+ * `Hazine` de eşleşir; satır başına `isActivePath` çağıran eski sidebar İKİ
+ * öğeyi birden yakar ve aynı `<nav>` içinde İKİ `aria-current="page"` basardı
+ * (Muhasebe drill-in nav'ının `exact` bayrağıyla çözdüğü F-SD T7 tuzağı).
+ */
+describe("activeNavHref — en uzun eşleşme kazanır", () => {
+  it("/hazine/cek-senet yolunda YALNIZ alt öğe aktiftir (üst öğe DEĞİL)", () => {
+    expect(activeNavHref("/hazine/cek-senet")).toBe("/hazine/cek-senet");
+  });
+
+  it("/hazine kökünde üst öğe aktiftir", () => {
+    expect(activeNavHref("/hazine")).toBe("/hazine");
+  });
+
+  // Nav'da karşılığı OLMAYAN bir alt rota üst öğeyi aktif TUTAR — `exact`
+  // bayrağı yerine uzunluk kuralı seçilmesinin nedeni budur.
+  it("nav'da karşılığı olmayan alt rota üst öğeyi aktif tutar", () => {
+    expect(activeNavHref("/projeler/p-1")).toBe("/projeler");
+  });
+
+  it("kök yol yalnız TAM eşleşmede aktiftir", () => {
+    expect(activeNavHref("/")).toBe("/");
+    expect(activeNavHref("/projeler")).toBe("/projeler");
+  });
+
+  it("hiçbir nav öğesine düşmeyen yolda hiçbiri aktif değildir", () => {
+    expect(activeNavHref("/boyle-bir-rota-yok")).toBeUndefined();
+  });
+
+  // Bütünsel bekçi: HİÇBİR yolda birden fazla öğe aktif olamaz.
+  it("her nav yolunda AYNI ANDA yalnız tek öğe aktiftir", () => {
+    const hrefs = NAV_GROUPS.flatMap((g) => g.items.map((i) => i.href));
+    for (const href of hrefs) {
+      const matches = hrefs.filter((candidate) => activeNavHref(href) === candidate);
+      expect(matches, `"${href}" yolunda aktif öğe sayısı`).toHaveLength(1);
+      expect(activeNavHref(href)).toBe(href);
+    }
   });
 });

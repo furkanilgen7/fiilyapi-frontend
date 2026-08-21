@@ -6,6 +6,8 @@ import { buildRouteTree, resolveHrefIn } from "./route-tree.testkit";
 import { ProjectDetailTabs } from "../project-detail/ProjectDetailTabs";
 import { SectionDetailTabs } from "../section-detail/SectionDetailTabs";
 import { SiteDetailTabs } from "../site-detail/SiteDetailTabs";
+import { UnitFormTabs } from "../unit-shell/UnitFormTabs";
+import { BLOCK_FORM_HREF, UNIT_FORM_HREF } from "../unit-shell/routes";
 import { pendingModuleLabel } from "@/lib/pending-modules";
 
 /**
@@ -41,6 +43,21 @@ interface StripCase {
   readonly name: string;
   readonly expectedTabCount: number;
   readonly render: () => ReactElement;
+  /**
+   * F-UNIT1 T2 GENİŞLETMESİ — AKTİF SEKMENİN ROTASI.
+   *
+   * Bazı şeritler aktif sekmeyi `<Link>` DEĞİL `<span aria-selected>` olarak
+   * basar: mockup öyle çizer (BE 48 / UE 51 `.tab-on` bir `<span>`dır) ve
+   * `PersonnelTabsStrip` bunu F-İK'ten beri böyle yapar — aktif sekme GEZİNME
+   * değil KONUM bildirir. Bu sekmenin href'i YOKTUR ama `aria-disabled` de
+   * DEĞİLDİR; ikisini de sağlamayan üçüncü, MEŞRU bir hâldir.
+   *
+   * Bekçi bu hâli KÖR NOKTAYA çevirmez: `aria-selected="true"` bir sekmeyi
+   * geçirmek için şerit, ÜZERİNDE DURDUĞU rotayı burada İDDİA ETMEK
+   * ZORUNDADIR ve bekçi o rotayı dosya sistemiyle karşılaştırır. Yani şeridin
+   * kendi sayfası silinir/yeniden adlandırılırsa test KIRMIZI olur.
+   */
+  readonly selfRoute?: string;
 }
 
 const STRIPS: readonly StripCase[] = [
@@ -64,6 +81,22 @@ const STRIPS: readonly StripCase[] = [
         activePath={`/projeler/${PROJECT_SENTINEL}/santiyeler/${SITE_SENTINEL}`}
       />
     ),
+  },
+  {
+    // F-UNIT1 · BE 47-53 — "Blok Ekle" ekranındaki hâli.
+    name: "UnitFormTabs · Blok Ekle (blok/ünite form şeridi)",
+    expectedTabCount: 5,
+    selfRoute: BLOCK_FORM_HREF,
+    render: () => <UnitFormTabs activeTab="Blok Ekle" />,
+  },
+  {
+    // F-UNIT1 · UE 49-55 — "Ünite Ekle" ekranındaki hâli. Aynı şerit iki kez
+    // kaydedilir: her turda ÖTEKİ gerçek sekme `<Link>` olur ve rotası
+    // denetlenir — tek turda biri hep `<span>` kalırdı.
+    name: "UnitFormTabs · Ünite Ekle (blok/ünite form şeridi)",
+    expectedTabCount: 5,
+    selfRoute: UNIT_FORM_HREF,
+    render: () => <UnitFormTabs activeTab="Ünite Ekle" />,
   },
 ];
 
@@ -152,6 +185,23 @@ describe("Sekme şeritleri — her sekme gerçek bir rotaya gider veya devre-dı
         const href = tab.getAttribute("href");
 
         if (href === null) {
+          // Üçüncü meşru hâl: AKTİF sekme (mockup `.tab-on` bir `<span>`dır).
+          // Kör nokta olmasın diye şerit, üzerinde durduğu rotayı İDDİA EDER
+          // ve o rota dosya sisteminde GERÇEKTEN var olmak zorundadır.
+          if (tab.getAttribute("aria-selected") === "true") {
+            if (strip.selfRoute === undefined) {
+              throw new Error(
+                `${strip.name}: "${label}" sekmesi aria-selected ama şerit kendi rotasını (selfRoute) ` +
+                  `İDDİA ETMİYOR — aktif sekme denetlenemeyen bir kör nokta olurdu.`,
+              );
+            }
+            expect(
+              resolveHrefIn(ROUTE_TREE, pathOf(strip.selfRoute), true, DYNAMIC_ALLOWED),
+              `${strip.name}: selfRoute "${strip.selfRoute}" gerçek bir sayfaya (page.tsx) çözülmüyor`,
+            ).toEqual({ kind: "static" });
+            continue;
+          }
+
           if (tab.getAttribute("aria-disabled") !== "true") {
             throw new Error(
               `${strip.name}: "${label}" sekmesinin href'i YOK ama aria-disabled="true" de taşımıyor — ` +

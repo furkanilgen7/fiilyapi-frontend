@@ -11,9 +11,14 @@ import type { BoqGroup, BoqTotals } from "@/lib/api/hooks/useBoq";
 import "@/components/boq/boq.css";
 import "./section-detail.css";
 
-/** Mockup D124 sekizinci sütunu — backend'de karşılığı YOK, gerekçe ekrana basılır. */
-export const STATUS_COLUMN_REASON =
-  "Kalem durumu backend'de tutulmuyor — hakediş modülüyle birlikte gelir";
+/**
+ * Mockup D124 sekizinci sütunu — backend'de karşılığı YOK, gerekçe ekrana basılır.
+ *
+ * 🔴 F-UNIT1 T5 · İKİNCİ YARISI DÜZELTİLDİ. "hakediş modülüyle birlikte gelir"
+ * BAYATTI (`/hakedisler` CANLI); ilk yarısı ("backend'de tutulmuyor") zaten
+ * gerçek gerekçeydi ve tek başına yeter.
+ */
+export const STATUS_COLUMN_REASON = "Kalem durumu backend'de tutulmuyor";
 
 /** Mockup D112 "+ Kalem Ekle" — poz seçici diyaloğunun mockup'ı ÇİZİLMEMİŞ (K1). */
 export const ADD_ITEM_DISABLED_REASON =

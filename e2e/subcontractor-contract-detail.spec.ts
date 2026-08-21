@@ -109,7 +109,7 @@ test("TSD: devre-dışı PDF yerinde durur; '+ Poz Ekle' ARTIK diyalog açar", a
   await page.goto(`/sozlesmeler/taseron/${CONTRACT_ID}`);
 
   await expect(page.getByTestId("tsd-pdf-disabled")).toBeDisabled();
-  await expect(page.getByText(/Dışa aktarma modülüyle birlikte gelir/)).toBeVisible();
+  await expect(page.getByText(/Dışa aktarma ucu henüz açılmadı/)).toBeVisible();
 
   // F-BLG T2a: form mockup'ı geldi, buton devre-dışı gerekçesinden kurtuldu.
   // Testid `tsd-add-item-disabled` → `tsd-add-item`. "Aktif" iddiası TEK

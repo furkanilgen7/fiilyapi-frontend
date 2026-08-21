@@ -1,22 +1,83 @@
 // Backend pending_module anahtari doner; kullaniciya gosterilen metin frontend'in isi.
 // Tek kaynak: hem gosterge paneli (F6) hem Projeler (P1) bunu kullanir (spec §7.2).
-const MODULE_LABELS: Record<string, string> = {
-  progress_payments: "Hakediş modülüyle birlikte gelir",
-  invoicing: "Fatura yönetimiyle birlikte gelir",
+//
+// 🔴 F-UNIT1 T5 · TOPLU BAYATLIK DÜZELTMESİ (2026-08-21).
+//
+// Bu haritanın ilk kuşak metinleri "<Modül> modülüyle birlikte gelir" kalıbını
+// kullanıyordu ve kullanıcıya MODÜLÜN OLMADIĞINI söylüyordu. ÖLÇÜLDÜ: o
+// modüllerin neredeyse hepsi ARADA GELDİ ve canlıda kendi rotası var —
+// `/hakedisler` · `/faturalar` · `/puantaj` · `/sozlesmeler(/taseronlar)` ·
+// `/satis` · `/is-kalemleri` · `/stok` · `/belgeler` · `/makine` ·
+// `/satinalma` · `/gunluk-kayit`. Yani metinler artık YALAN söylüyordu.
+//
+// Anahtarlar SİLİNMEDİ (biri hariç, aşağıda): hepsi hâlâ CANLI —
+// backend'in `pending_module` alanından ya da ekranın kendi çağrısından
+// geliyorlar. Değişen yalnız METİNDİR: eksik olan MODÜL değil, o modülün
+// verisinin BU YÜZEYE BAĞLANMASIDIR. `gantt` (F-TKV) · `income_statement`
+// (F-MT2) · `section_boq` (BOQ-SEC-F) emsalleri ise gerçekten ÖLMÜŞ
+// anahtarlardı ve silindiler; ayrım şudur:
+//   · gerekçe hâlâ okunuyor ama YANLIŞ  → METİN düzeltilir (bu tur),
+//   · gerekçeyi okuyan kimse kalmamış   → ANAHTAR silinir.
+//
+// ⚠️ "Modül yok" diyen tek metin `approvals`tır ve o DOĞRUDUR: `/onay-kutusu`
+// hâlâ yazılmamıştır (kabuk nav'ında catch-all/ComingSoon'a düşer).
+/**
+ * ⚠️ DIŞA AÇIK olmasının TEK nedeni ÇÜRÜME BEKÇİSİDİR (`pending-modules.test.ts`):
+ * yeni bir anahtar "<Modül> modülüyle birlikte gelir" kalıbıyla eklenirse test
+ * kırmızıya döner. Ürün kodu bu haritayı DOĞRUDAN OKUMAZ — tek giriş
+ * `pendingModuleLabel`dir (yedek metin dalı orada yaşar).
+ */
+export const MODULE_LABELS: Record<string, string> = {
+  // `/hakedisler` CANLI (+ `/hakedisler/taseron`, `/hakedisler/yeni`). Boş
+  // kalan şey hakediş modülü değil, hakediş toplamlarının proje/şantiye/BOQ
+  // kartlarına ve gösterge paneli portföyüne toplanmasıdır.
+  progress_payments: "Hakediş verisi bu yüzeye henüz bağlanmadı",
+  // `/faturalar` (+ `/faturalar/kes`, detay) CANLI.
+  invoicing: "Fatura verisi bu yüzeye henüz bağlanmadı",
+  // ✅ HÂLÂ DOĞRU — `/onay-kutusu` YAZILMADI (nav href guard testinde
+  // catch-all'a düşen üç öğeden biri). Metne dokunulmadı.
   approvals: "Onay kutusuyla birlikte gelir",
-  inventory: "Stok ve saha modülleriyle birlikte gelir",
-  timesheet: "Puantaj modülüyle birlikte gelir",
-  subcontracts: "Taşeron sözleşmeleriyle birlikte gelir",
-  units: "Ünite satış modülüyle birlikte gelir",
-  project_costs: "Maliyet takibiyle birlikte gelir",
+  // Gösterge panelinin `risks` listesi. Anahtar `inventory` ama eksik olan stok
+  // DEĞİL (`/stok` canlı): riski hesaplayan bir uç HİÇ yoktur.
+  inventory: "Risk listesi henüz hiçbir uçtan hesaplanmıyor",
+  // `/puantaj` CANLI. Anahtar ayrıca DOLU zarfın kaynak etiketidir
+  // (`CountPlaceholder(available=True, …, pending_module="timesheet")`).
+  timesheet: "Puantaj verisi bu yüzeye henüz bağlanmadı",
+  // `/sozlesmeler/taseronlar` + `/sozlesmeler/taseron/[id]` CANLI. Bölüm
+  // formundaki "Görevli Taşeronlar" paneli de bu anahtarı okur.
+  subcontracts: "Taşeron sözleşmesi verisi bu yüzeye henüz bağlanmadı",
+  // 🔴 BRIEF'İN ÖRNEĞİ. Eski metin ("Ünite satış modülüyle birlikte gelir")
+  // P8/P9'dan beri YALANDI: `/satis` canlı, `sales_revenue`/`sold_units`
+  // gerçek değer döndürüyor. Anahtar SİLİNEMEZ — `projects/service.py`
+  // (`_UNITS = "units"`) onu ALTI proje-kartı ölçütü için hâlâ yayınlıyor:
+  // `sold_amount`/`sales_ratio`/`unit_summary` (154-156) ve
+  // `our_unit_count`/`owner_unit_count`/`our_share_value` (181-185).
+  units: "Ünite verisi bu yüzeye henüz bağlanmadı",
+  // P10 maliyet kartları CANLI (`cost_cards.py` gerçek değer basar); zarf
+  // yalnız o projenin kaydı YOKKEN boş döner. Ünite maliyet/kâr alanları ve
+  // şantiye ortalama marjı ise hiç hesaplanmıyor.
+  project_costs: "Maliyet verisi bu yüzeye henüz bağlanmadı",
   // P2 (Şantiye & Bölüm) — spec §7.1
-  contracts: "Sözleşme modülüyle birlikte gelir",
-  boq: "İş kalemleri modülüyle birlikte gelir",
-  stock: "Stok modülüyle birlikte gelir",
-  documents: "Belge modülüyle birlikte gelir",
-  site_diary: "Şantiye günlüğüyle birlikte gelir",
-  // F-P6 T3 (Bölüm formu) — devre dışı kartlar
-  equipment: "Ekipman/makine modülüyle birlikte gelir",
+  // `/sozlesmeler` CANLI.
+  contracts: "Sözleşme verisi bu yüzeye henüz bağlanmadı",
+  // `/projeler/…/santiyeler/…/is-kalemleri` CANLI.
+  boq: "İş kalemi verisi bu yüzeye henüz bağlanmadı",
+  // `/stok` CANLI. Tek tüketicisi `PlanMaterialsCard` (haftalık malzeme
+  // türevi); backend bu anahtarı HİÇ yayınlamıyor.
+  stock: "Stok verisi bu yüzeye henüz bağlanmadı",
+  // `/belgeler` CANLI (F-BC). Eksik olan belge modülü değil, kaydın kendi
+  // belge yuvasıdır.
+  documents: "Belge verisi bu yüzeye henüz bağlanmadı",
+  // ⚠️ F-UNIT1 T5'te KALDIRILDI: `site_diary` anahtarı. ÖLÇÜLDÜ — backend onu
+  // HİÇBİR yerde `pending_module` olarak yayınlamıyor (yalnız izin matrisi
+  // anahtarı olarak yaşıyor: `site_diary/service.py:PERMISSION_MODULE`) ve
+  // frontend'de de `pendingModuleLabel("site_diary")` çağıran KİMSE yok
+  // (bölüm detayı F-BOLLINK'te `section_site_diary`ye geçti). `gunluk-kayit`
+  // rotası da CANLI. Yani hem gerekçe YALANDI hem de okuyanı kalmamıştı —
+  // `gantt`/`income_statement`/`section_boq` emsali.
+  // F-P6 T3 (Bölüm formu) — devre dışı kartlar. `/makine` CANLI; eksik olan
+  // bölüm formunun makine ataması taşımamasıdır.
+  equipment: "Makine verisi bu yüzeye henüz bağlanmadı",
   // ⚠️ F-TKV T5'te KALDIRILDI: `gantt` anahtarı bölüm formundaki üç kontrolün
   // (Bağımlılık seçici + Milestone metin/tarih) devre-dışı gerekçesiydi. P11
   // uçları açıldı (`SectionCreate.depends_on_section_id`/`milestones`,
@@ -56,22 +117,43 @@ const MODULE_LABELS: Record<string, string> = {
   // F-TH T2 (Ekran 2 · Taşeron Hakedişi listesi) — `SubcontractorProgress
   // PaymentListItem` şemasında taşımayan ÜÇ alan (brief §Zarif düşüş): kolon
   // silinmez, mockup'taki yerinde bu etiketlerle pending gösterilir.
-  work_category: "İş kategorisi alanıyla birlikte gelir",
-  vat: "KDV hesaplamasıyla birlikte gelir",
-  progress: "İlerleme takibiyle birlikte gelir",
+  //
+  // 🔴 F-UNIT1 T5 · ÜÇÜ DE DÜZELTİLDİ. Eski metinler bir MODÜL/YETENEK
+  // eksikliği ima ediyordu; ÖLÇÜLDÜ, ikisi üründe ZATEN VAR: KDV taşeron
+  // hakediş formunda hesaplanıp basılıyor (`payment-calculation-rows.ts`
+  // `vat` satırı + `SubcontractorProgressPaymentForm` `percents.vat_pct`) ve
+  // ilerleme hakediş DETAYINDA gösteriliyor (`PaymentProgressCard`,
+  // `ProgressPaymentDetail["progress"]`). Eksik olan yetenek değil, LİSTE
+  // UCUNUN o alanları taşımamasıdır — `purchase_request_quantity` /
+  // `purchase_request_quote_count` emsalinin birebir aynısı.
+  work_category: "İş kategorisi liste ucundan gelmiyor",
+  vat: "KDV liste ucundan gelmiyor (hakediş formunda hesaplanır)",
+  progress: "İlerleme liste ucundan gelmiyor (hakediş detayında gösterilir)",
   // F-TH T4 (Ekran 15 taşeron uyarlaması) — PDF/dışa aktarma ucu openapi'de
   // yok (yalnız CRUD + durum aksiyonları var); "Sözleşme İlerlemesi" kartının
   // üç çubuğu ve "Toplam Hakediş"/"Kalan" KPI'ları
   // `SubcontractorContractDetail.progress_payment_summary` alanına bağlı —
   // şema bu alanı BUGÜN her zaman `null` döndürüyor (bkz. openapi açıklaması).
-  pdf_export: "Dışa aktarma modülüyle birlikte gelir",
-  contract_progress: "Sözleşme ilerleme özetiyle birlikte gelir",
+  // 🔴 F-UNIT1 T5 · İKİSİ DE DÜZELTİLDİ. "Dışa aktarma modülü" diye bir şey
+  // ÜRÜNDE YOKTUR ve olması da beklenmiyor — muhasebe/mali tablo kardeşlerinin
+  // hepsi (`accounting_export`, `trial_balance_export`, `balance_sheet_export`
+  // …) eksiği doğru adıyla "dışa aktarma UCU henüz açılmadı" diye anıyor.
+  // `contract_progress` ise bir modül değil, ŞEMA ALANI eksikliğidir:
+  // `SubcontractorContractDetail.progress_payment_summary` bugün her zaman
+  // `null` döner (`contract_milestones` emsalinin birebir aynısı).
+  pdf_export: "Dışa aktarma ucu henüz açılmadı",
+  contract_progress: "Sözleşme ilerleme özeti uçtan gelmiyor (şemada null)",
   // F-TH T5 fix round 1 (coordinator review) — taşeron hakedişi satırında
   // bölüm KİMLİĞİ (`section_id`) var ama ADINI çözecek bir uç/hook bu
   // dilimde YOK. `section_id === null` (gerçekten "Tüm Bölümler") bu
   // etiketi KULLANMAZ — yalnız `section_id` DOLU olup adı çözülemeyen
   // durumda gösterilir.
-  section_name: "Bölüm adı çözümlemesiyle birlikte gelir",
+  // 🔴 F-UNIT1 T5 · DÜZELTİLDİ. Eski metin bölüm adı çözümlemesini GELECEK bir
+  // yetenek gibi anlatıyordu; ÖLÇÜLDÜ, o yetenek ÜRÜNDE VAR
+  // (`useSection` → `GET /sections/{section_id}`, `useSiteSections` →
+  // `GET /sites/{site_id}/sections`). Eksik olan, taşeron hakedişi satırının
+  // o çözümlemeye BAĞLANMAMIŞ olmasıdır.
+  section_name: "Bölüm adı bu satırda çözümlenmiyor (yalnız kimliği geliyor)",
   // ⚠️ F-P5 T7'de KALDIRILDI: `subcontractor_contract_detail` etiketi F-TH'nin
   // devre-dışı "Sözleşmeyi Gör →" + breadcrumb bağlantılarının gerekçesiydi.
   // TSD rotası (`/sozlesmeler/taseron/[contractId]`) yazıldı, iki bağlantı da
@@ -111,7 +193,8 @@ const MODULE_LABELS: Record<string, string> = {
   // taşıdığı anahtar. "Bekleyen Sipariş" kartının (E3 81-84) kaynağı SATINALMA
   // modülüdür; backend bugün `available: false` döndürür, ekran uydurma sayı
   // basmak yerine "—" + bu gerekçeyi gösterir.
-  procurement: "Satınalma modülüyle birlikte gelir",
+  // `/satinalma` (+ talepler/siparisler/tedarikciler) CANLI.
+  procurement: "Satınalma verisi bu yüzeye henüz bağlanmadı",
   // F-ST T3 — CANLI SUNUCUNUN gerçek anahtarları. Backend
   // `app/modules/inventory/service.py`: `PENDING_PURCHASING = "purchasing"`
   // (E3 "Bekleyen Sipariş" KPI'ı) ve `PENDING_SITE_PLANNING = "site_planning"`
@@ -119,8 +202,10 @@ const MODULE_LABELS: Record<string, string> = {
   // eşlenmişti; canlıda o anahtar HİÇ gelmediği için KPI gerekçesi genel
   // metne düşerdi — iki anahtar da burada eşlenir (`procurement` izin
   // matrisinin modül anahtarı olarak ayrıca yaşamaya devam eder).
-  purchasing: "Satınalma modülüyle birlikte gelir",
-  site_planning: "Şantiye planlama türeviyle birlikte gelir",
+  purchasing: "Satınalma verisi bu yüzeye henüz bağlanmadı",
+  // `/…/gunluk-kayit/planlama` CANLI; eksik olan stok satırının plana
+  // bağlanmasıdır.
+  site_planning: "Şantiye planlama verisi bu yüzeye henüz bağlanmadı",
   // F-SA T2 (SAT · Satınalma & Teklif tablosu) — `PurchaseRequestListRow`
   // şemasının BİLEREK taşımadığı iki sütun. Şema açıklaması gerekçeyi
   // kendi yazıyor: "SAT tablosunun bir satiri — KALEMLERI TASIMAZ … tasimak
@@ -271,6 +356,15 @@ const MODULE_LABELS: Record<string, string> = {
   section_site_diary: "Günlük kayıt bu bölüme henüz kırılmıyor (şantiye genelinde tutulur)",
 };
 
+/**
+ * 🔴 F-UNIT1 T5 ÖLÇÜMÜ — bu metin de aynı bayat kalıptadır ama DEĞİŞTİRİLMEDİ:
+ * tanınmayan anahtar hangi modülü kastettiğini SÖYLEMEZ, dolayısıyla ondan daha
+ * doğru bir cümle kurulamaz. Bugün buraya düşen CANLI anahtarlar ölçüldü:
+ * backend `projects/cost_summary.py` `accounting` ve `treasury` yayınlıyor;
+ * ikisinin de tüketicisi henüz YOK (proje maliyet özeti ekranı yazılmadı).
+ * O ekran yazıldığında iki anahtar BURAYA eklenmelidir, aksi hâlde kullanıcı
+ * bu genel metni görür.
+ */
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";
 
 // P10 devri (2026-08-11): `app__modules__projects__schemas__MetricPlaceholder`

@@ -91,13 +91,18 @@ export const MORTGAGE_LABEL = "İpotek var (banka kredisi)"; // 162
 
 /**
  * "Peşinat için otomatik fatura kesilsin" (206) — `UnitSaleCreate`te KARŞILIĞI
- * YOKTUR ve Fatura Yönetimi modülü henüz bağlanmadı. Bu yüzden kutu DEVRE DIŞI
- * basılır (stok-girişi "otomatik bildirim" emsali) ve gövdeye HİÇBİR anahtar
- * eklemez — seçili bir kutu "fatura kesilecek" demesin.
+ * YOKTUR. Kutu DEVRE DIŞI basılır (stok-girişi "otomatik bildirim" emsali) ve
+ * gövdeye HİÇBİR anahtar eklemez — seçili bir kutu "fatura kesilecek" demesin.
+ *
+ * 🔴 F-UNIT1 T5 · GEREKÇE DÜZELTİLDİ. Eski metin ("Fatura Yönetimi modülü henüz
+ * bağlanmadı") BAYATTI: `/faturalar` + `/faturalar/kes` CANLI. Eksik olan modül
+ * değil, satıştan faturaya giden OTOMASYONDUR — fatura ekranının kendi metni
+ * bunu zaten doğru söylüyor (`invoice-labels.ts`: "Hakediş → Fatura otomasyonu
+ * henüz açılmadı; faturalar elle kesilir").
  */
 export const AUTO_INVOICE_LABEL = "Peşinat için otomatik fatura kesilsin"; // 206
 export const AUTO_INVOICE_PENDING_REASON =
-  "Fatura Yönetimi modülü henüz bağlanmadı — otomatik fatura ileride açılacak";
+  "Satıştan otomatik fatura kesme henüz açılmadı — fatura Fatura Yönetimi'nden elle kesilir";
 
 /** "Satış Belgeleri" kartı (167-201) — BC form-slot'a pending. */
 export const SALE_DOCUMENTS_TITLE = "Satış Belgeleri"; // 169

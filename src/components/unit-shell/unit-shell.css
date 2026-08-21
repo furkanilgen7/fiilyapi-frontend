@@ -1,0 +1,83 @@
+/* F-UNIT1 T2 · Blok/Ünite form ailesinin ORTAK blokları.
+   Kanon: projedesign "Form - Blok Ekle.dc.html" (BE) ve
+   "Form - Unite Ekle.dc.html" (UE). Parantez içi sayılar O DOSYALARIN satır
+   numaralarıdır. Çıplak hex yok — tüm renk/ölçüler token.
+
+   Ortak form kabuğu (`.pf`, `.pf-topbar`, `.pf-card`, `.pf-grid*`,
+   `.pf-actions*`, `.pf-doc*`) `src/styles/form-shell.css`'ten gelir ve
+   görünümler onu bu dosyadan ÖNCE import eder. */
+
+/* ── Sekme şeridi (BE 47-53 · UE 49-55) ──────────────────────────────────── */
+/* Mockup'ın kendi `.tab` / `.tab-on` kuralları; `personel-tabs` ile aynı
+   geometri (o da aynı mockup ailesinden gelir), ama ÖLÇÜLERİ BE/UE'den okundu:
+   şeritte gap 3px (BE 47), sekmede padding 7px 15px (BE 48). */
+.uf-tabs {
+  display: flex;
+  gap: 3px; /* BE 47 — 3px'lik token yok */
+  background: var(--color-surface); /* BE 47 */
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-10); /* BE 47 */
+  padding: var(--space-1); /* BE 47 — 4px */
+  width: fit-content;
+  margin-bottom: var(--space-5); /* BE 47 — 20px */
+}
+.uf-tabs__tab {
+  padding: 7px 15px; /* BE 48 */
+  font-size: var(--text-body); /* BE 48 — 13px */
+  color: var(--color-text-muted); /* BE 48 */
+  border-radius: var(--radius-7); /* BE 48 */
+  text-decoration: none;
+  white-space: nowrap;
+}
+.uf-tabs__tab:hover,
+.uf-tabs__tab:focus,
+.uf-tabs__tab:active {
+  text-decoration: none;
+}
+.uf-tabs__tab--active {
+  font-weight: var(--weight-semibold); /* BE 48 `.tab-on` */
+  color: var(--color-primary);
+  background: var(--color-nav-active-bg);
+}
+/* Rotası olmayan sekme (BE 50-52): tıklanamaz görünür ama SİLİNMEZ. */
+.uf-tabs__tab--disabled {
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+}
+/* Devre-dışı sekmelerin GÖRÜNÜR gerekçesi — `title`da saklanmaz. */
+.uf-tabs__note {
+  margin-top: calc(var(--space-5) * -1);
+  margin-bottom: var(--space-5);
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* ── Sayısal girişler (BE 78-85 · UE 76-92) ──────────────────────────────── */
+/* Mockup her sayı kutusuna `font-family:'JetBrains Mono'` + `text-align:right`
+   yazar; iki form da aynı kuralı kullandığı için burada TEK kez tanımlanır. */
+.uf-num {
+  font-family: var(--font-mono);
+  text-align: right;
+}
+/* Blok kodu mono ama SOLA yaslı (BE 71 — `text-align` yok). */
+.uf-mono {
+  font-family: var(--font-mono);
+}
+
+/* ── Devre-dışı yüzeylerin GÖRÜNÜR gerekçesi (BE 109 · UE 91 · UE 98) ────── */
+.uf-pending-reason {
+  margin-top: var(--space-1);
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* ── Alan dışı bilgi/uyarı şeridi ────────────────────────────────────────── */
+.uf-notice {
+  margin-bottom: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-warning-deep-text);
+  background: var(--color-orange-tint);
+  border: 1px solid var(--color-orange-tint-border);
+  border-radius: var(--radius-8);
+  padding: 8px 12px;
+}

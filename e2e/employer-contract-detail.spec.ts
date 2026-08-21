@@ -53,7 +53,7 @@ test("işveren sözleşme detayı: başlık kartı + 5 metrik + devre-dışı bu
   // Üst kural: buton SİLİNMEZ, devre dışı + görünür gerekçe.
   await expect(page.getByTestId("ecd-pdf-disabled")).toBeDisabled();
   await expect(page.getByTestId("ecd-edit-disabled")).toBeDisabled();
-  await expect(page.getByText(/Dışa aktarma modülüyle birlikte gelir/)).toBeVisible();
+  await expect(page.getByText(/Dışa aktarma ucu henüz açılmadı/)).toBeVisible();
   await expect(page.getByText(/İşveren sözleşmesi proje formunda kurulur/)).toBeVisible();
 
   await expect(page.getByRole("link", { name: "← Sözleşmeler" })).toHaveAttribute(
@@ -166,7 +166,7 @@ test("işveren sözleşme detayı: Belgeler sekmesi basılır, içerik PENDING'd
   await page.goto("/sozlesmeler/isveren/p-1?tab=documents");
 
   await expect(page.getByTestId("ecd-documents-pending")).toContainText(
-    "Belge modülüyle birlikte gelir",
+    "Belge verisi bu yüzeye henüz bağlanmadı",
   );
   // Arşiv ekranı bu dilimde YAZILMAZ — tablo/yükleme yüzeyi yok.
   await expect(page.locator(".ecd-items")).toHaveCount(0);

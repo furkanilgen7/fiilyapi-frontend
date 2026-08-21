@@ -82,11 +82,11 @@ test("pending yüzeyler devre dışıdır ve gerekçeleri GÖRÜNÜR (spec §5 S
 
   const order = page.getByTestId("stok-giris-siparis");
   await expect(order).toBeDisabled();
-  await expect(order).toHaveAttribute("title", "Satınalma modülüyle birlikte gelir");
+  await expect(order).toHaveAttribute("title", "Satınalma verisi bu yüzeye henüz bağlanmadı");
 
   const orderCell = page.getByTestId("stok-giris-siparis-0");
   await expect(orderCell).toContainText("—");
-  await expect(orderCell).toHaveAttribute("title", "Satınalma modülüyle birlikte gelir");
+  await expect(orderCell).toHaveAttribute("title", "Satınalma verisi bu yüzeye henüz bağlanmadı");
 
   const notify = page.getByTestId("stok-giris-bildirim");
   await expect(notify).toBeDisabled();
@@ -94,7 +94,7 @@ test("pending yüzeyler devre dışıdır ve gerekçeleri GÖRÜNÜR (spec §5 S
 
   // Belge kutuları: yükleme yüzeyi HİÇ basılmaz.
   await expect(page.locator('input[type="file"]')).toHaveCount(0);
-  await expect(page.getByText("Belge modülüyle birlikte gelir").first()).toBeVisible();
+  await expect(page.getByText("Belge verisi bu yüzeye henüz bağlanmadı").first()).toBeVisible();
 
   // Mockup'ın örnek içeriği basılmaz.
   await expect(page.getByText("SP-2026-042")).toHaveCount(0);

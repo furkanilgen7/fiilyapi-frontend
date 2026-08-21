@@ -66,7 +66,7 @@ test("planlama izgarasi (dolu) gorsel", async ({ page }) => {
   // ⚠️ Metin locator'ı da akış-SSR çift kopyasına AÇIKTIR (sınıf locator'ları
   // gibi) — `.first()` olmadan strict-mode ihlali verir. Yalnız Linux CI'da.
   await expect(
-    page.getByText("Haftalık malzeme ihtiyacı henüz açılmadı", { exact: false }).first(),
+    page.getByText("Haftalık malzeme ihtiyacı hesaplanmıyor", { exact: false }).first(),
   ).toBeVisible();
   // Kapsamsız `.plan-goals__row` sayımı akış-SSR çift kopyasında İKİYE KATLANIR
   // (bkz. expectGridLoaded notu) — kart kapsamı + `.first()` zorunludur.

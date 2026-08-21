@@ -141,9 +141,9 @@ describe("SiteStockView — pending yüzeyler ve aksiyonlar", () => {
     render(<SiteStockView />);
     const button = screen.getByRole("button", { name: "Satınalma Talebi →" });
     expect(button).toBeDisabled();
-    expect(button).toHaveAttribute("title", "Satınalma modülüyle birlikte gelir");
+    expect(button).toHaveAttribute("title", "Satınalma verisi bu yüzeye henüz bağlanmadı");
     expect(screen.getByTestId("santiye-stok-pending-notice")).toHaveTextContent(
-      "Satınalma modülüyle birlikte gelir",
+      "Satınalma verisi bu yüzeye henüz bağlanmadı",
     );
   });
 
@@ -152,7 +152,7 @@ describe("SiteStockView — pending yüzeyler ve aksiyonlar", () => {
     const notice = screen.getByTestId("santiye-stok-pending-notice");
     expect(notice).toHaveTextContent("Aylık İhtiyaç");
     expect(notice).toHaveTextContent("Bölüm");
-    expect(notice).toHaveTextContent("Şantiye planlama türeviyle birlikte gelir");
+    expect(notice).toHaveTextContent("Şantiye planlama verisi bu yüzeye henüz bağlanmadı");
     expect(notice).toHaveTextContent("Malzeme detay ekranı henüz tasarlanmadı");
   });
 

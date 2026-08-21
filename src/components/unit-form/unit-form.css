@@ -1,0 +1,58 @@
+/* F-UNIT1 T2 · "Ünite Ekle" formuna ÖZGÜ bloklar — kanon: projedesign
+   "Form - Unite Ekle.dc.html" (UE). Parantez içi sayılar O DOSYANIN satır
+   numaralarıdır. Çıplak hex yok — tüm renk/ölçüler token.
+
+   Sıra önemli: `form-shell.css` (ortak `.pf-*`) → `unit-shell.css` (aile
+   ortağı `.uf-*`) → bu dosya. Özgü olan kazansın. */
+
+/* İçerik sütunu UE 47'de 960px'tir (BE'nin 900px'inden FARKLI; ortak
+   `--form-column-max` 1000px'tir — üçü de ayrı ölçüdür, birleştirilmez). */
+.ue-page.pf {
+  max-width: 960px; /* UE 47 */
+}
+
+/* ── Salt-okunur türev kutusu: "m² Birim Fiyat" (UE 89) ──────────────────── */
+/* Değer SUNUCU PARİTELİ bir türevdir (`divideDecimalStrings`), kullanıcı
+   yazamaz — mockup da `readonly` + gri zemin çizer. */
+.ue-derived {
+  background: var(--color-surface-2); /* #f8fafc (89) */
+  color: var(--color-text-muted); /* #64748b (89) */
+}
+
+/* ── "Beklenen Kâr" bandı (UE 97-99) — yeşil şerit ───────────────────────── */
+/* 🔴 Bandın SAYISI BASILMAZ: girdisi maliyettir ve sunucuda maliyet sütunu
+   YOKTUR (KARAR 3). Mockup'ın yeşil tutarı (99) ve "%33,8 marj" satırı
+   uydurma olurdu; bandın sağ ucunda "—" + görünür gerekçe durur. */
+.ue-profit {
+  margin-top: var(--space-3); /* UE 97 — 14px */
+  padding: 12px 14px; /* UE 97 */
+  background: var(--color-success-tint); /* #f0fdf4 (97) */
+  border-radius: var(--radius-9); /* UE 97 */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+}
+.ue-profit__label {
+  font-size: var(--text-body); /* UE 98 — 13px */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text); /* #1e293b (98) */
+}
+.ue-profit__formula {
+  font-size: var(--text-small); /* UE 98 — 11px */
+  color: var(--color-success-deep); /* #15803d (98) */
+  margin-top: 1px;
+}
+.ue-profit__value {
+  font-size: 17px; /* UE 99 */
+  font-weight: var(--weight-bold);
+  color: var(--color-text-muted); /* hesaplanamıyor: yeşil DEĞİL, gri */
+  font-family: var(--font-mono); /* UE 99 */
+  text-align: right;
+}
+.ue-profit__reason {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  text-align: right;
+  max-width: 46ch;
+}

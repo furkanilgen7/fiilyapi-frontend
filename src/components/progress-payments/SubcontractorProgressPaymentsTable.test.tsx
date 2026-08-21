@@ -112,9 +112,9 @@ describe("SubcontractorProgressPaymentsTable", () => {
 
   it("uc zarif dusus alani (is kategorisi, KDV, ilerleme) yerinde pending gosterge ile basilir, sessizce atlanmaz", () => {
     renderTable([BASE_ITEM]);
-    expect(screen.getByTitle("İş kategorisi alanıyla birlikte gelir")).toBeInTheDocument();
-    expect(screen.getByTitle("KDV hesaplamasıyla birlikte gelir")).toBeInTheDocument();
-    expect(screen.getByTitle("İlerleme takibiyle birlikte gelir")).toBeInTheDocument();
+    expect(screen.getByTitle("İş kategorisi liste ucundan gelmiyor")).toBeInTheDocument();
+    expect(screen.getByTitle("KDV liste ucundan gelmiyor (hakediş formunda hesaplanır)")).toBeInTheDocument();
+    expect(screen.getByTitle("İlerleme liste ucundan gelmiyor (hakediş detayında gösterilir)")).toBeInTheDocument();
   });
 
   it("donem null ise tire basar (turetme yok)", () => {

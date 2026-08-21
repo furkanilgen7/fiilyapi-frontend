@@ -473,7 +473,7 @@ describe("TSD — devre-dışı yüzeyler SİLİNMEZ", () => {
     setup();
     const pdf = screen.getByTestId("tsd-pdf-disabled");
     expect(pdf).toBeDisabled();
-    expect(screen.getByText(/Dışa aktarma modülüyle birlikte gelir\./)).toBeInTheDocument();
+    expect(screen.getByText(/Dışa aktarma ucu henüz açılmadı\./)).toBeInTheDocument();
   });
 
   it("'+ Poz Ekle' ARTIK AKTİF: form mockup'ı geldi, diyalogu açar (92)", () => {

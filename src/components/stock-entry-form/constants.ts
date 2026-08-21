@@ -117,12 +117,17 @@ export const STOCK_ENTRY_DOCUMENTS: readonly DocumentPlaceholderItem[] = [
 ];
 
 /**
- * Tedarikçi alanı (86) mockup'ta bir SELECT'tir ama backend'de tedarikçi
+ * Tedarikçi alanı (86) mockup'ta bir SELECT'tir ama STOK GİRİŞİ UCUNDA tedarikçi
  * KATALOĞU YOKTUR: `supplier_name` SERBEST METİNDİR (backend spec §7 S3).
  * Uydurma bir seçenek listesi basmak yerine metin kutusu + bu ipucu gösterilir.
+ *
+ * 🔴 F-UNIT1 T5 · GEREKÇE DÜZELTİLDİ. Eski metin ("Satınalma modülüyle gelir")
+ * BAYATTI: `/satinalma/tedarikciler` CANLI ve gerçek tedarikçi kartları basıyor.
+ * Eksik olan modül değil, `StockEntryCreate` gövdesinin tedarikçi KİMLİĞİ
+ * taşımaması — alan hâlâ serbest metindir.
  */
 export const STOCK_ENTRY_SUPPLIER_HINT =
-  "Tedarikçi kataloğu Satınalma modülüyle gelir — şimdilik serbest metin";
+  "Stok girişi tedarikçi kimliği taşımıyor — ad serbest metin olarak yazılır";
 
 /** Şantiyeye tanımlı depo yoksa (boş kurulum kilidi, spec §5 S3). */
 export const STOCK_ENTRY_NO_WAREHOUSE_NOTICE =

@@ -81,15 +81,15 @@ test("'Aylık İhtiyaç' ve 'Bölüm' sütunları GEREKÇELİ pending basar (say
   const section = page.getByTestId("santiye-stok-section-SNK-0421");
   await expect(need).toHaveText("—");
   await expect(section).toHaveText("—");
-  await expect(need).toHaveAttribute("title", "Şantiye planlama türeviyle birlikte gelir");
-  await expect(section).toHaveAttribute("title", "Şantiye planlama türeviyle birlikte gelir");
+  await expect(need).toHaveAttribute("title", "Şantiye planlama verisi bu yüzeye henüz bağlanmadı");
+  await expect(section).toHaveAttribute("title", "Şantiye planlama verisi bu yüzeye henüz bağlanmadı");
 
   // Mockup'ın örnek değerleri (15 / "Kat 6–10 Kaba İnşaat") BASILMAZ.
   await expect(page.getByText("Kat 6–10 Kaba İnşaat")).toHaveCount(0);
 
   // Gerekçe `title`da görünmez kalmasın diye metne de basılır.
   await expect(page.getByTestId("santiye-stok-pending-notice")).toContainText(
-    "Şantiye planlama türeviyle birlikte gelir",
+    "Şantiye planlama verisi bu yüzeye henüz bağlanmadı",
   );
 });
 
@@ -101,12 +101,12 @@ test("satır aksiyonları ve 'Satınalma Talebi →' SA'ya pending: devre dış�
 
   const headerButton = page.getByRole("button", { name: "Satınalma Talebi →" });
   await expect(headerButton).toBeDisabled();
-  await expect(headerButton).toHaveAttribute("title", "Satınalma modülüyle birlikte gelir");
+  await expect(headerButton).toHaveAttribute("title", "Satınalma verisi bu yüzeye henüz bağlanmadı");
 
   const criticalAction = page.getByTestId("santiye-stok-action-SNK-0421");
   await expect(criticalAction).toHaveText("Acil Sipariş");
   await expect(criticalAction).toBeDisabled();
-  await expect(criticalAction).toHaveAttribute("title", "Satınalma modülüyle birlikte gelir");
+  await expect(criticalAction).toHaveAttribute("title", "Satınalma verisi bu yüzeye henüz bağlanmadı");
 
   const detailAction = page.getByTestId("santiye-stok-action-SNK-0055");
   await expect(detailAction).toHaveText("Detay");

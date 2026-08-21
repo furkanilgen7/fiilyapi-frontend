@@ -137,7 +137,7 @@ describe("siteStockRowAction — satır düğmesi (S5 pending)", () => {
   });
 
   it("sipariş gerekçesi SA modülünün TEK kaynaktan gelen metnidir", () => {
-    expect(siteStockRowAction("critical").reason).toBe("Satınalma modülüyle birlikte gelir");
+    expect(siteStockRowAction("critical").reason).toBe("Satınalma verisi bu yüzeye henüz bağlanmadı");
     expect(siteStockRowAction("low").reason).toBe(SITE_STOCK_ORDER_PENDING_REASON);
     expect(siteStockRowAction("normal").reason).toBe(SITE_STOCK_DETAIL_PENDING_REASON);
   });
@@ -145,7 +145,7 @@ describe("siteStockRowAction — satır düğmesi (S5 pending)", () => {
 
 describe("pending sütun gerekçesi + T4 rota sözleşmesi", () => {
   it("'Aylık İhtiyaç'/'Bölüm' gerekçesi sunucunun `site_planning` anahtarındandır", () => {
-    expect(SITE_STOCK_COLUMN_PENDING_REASON).toBe("Şantiye planlama türeviyle birlikte gelir");
+    expect(SITE_STOCK_COLUMN_PENDING_REASON).toBe("Şantiye planlama verisi bu yüzeye henüz bağlanmadı");
     expect(STOCK_SITE_PLANNING_PENDING_MODULE).toBe("site_planning");
     expect(STOCK_PURCHASING_PENDING_MODULE).toBe("purchasing");
   });

@@ -58,7 +58,7 @@ describe("ProjectCard — taahhut", () => {
     expect(screen.getByText("₺ 11,2M")).toBeInTheDocument();
     expect(screen.getByText("Mar 2025")).toBeInTheDocument();
     expect(screen.getByText("Ara 2026")).toBeInTheDocument();
-    expect(screen.getByTitle("Maliyet takibiyle birlikte gelir")).toHaveTextContent("—");
+    expect(screen.getByTitle("Maliyet verisi bu yüzeye henüz bağlanmadı")).toHaveTextContent("—");
     expect(screen.getByText("Fiziksel İlerleme")).toBeInTheDocument();
     expect(screen.getByText("%75")).toBeInTheDocument();
   });
@@ -89,7 +89,7 @@ describe("ProjectCard — taahhut", () => {
     );
     expect(screen.getByText("Tamamlandı")).toBeInTheDocument();
     expect(screen.getByText("Final Hakediş")).toBeInTheDocument();
-    expect(screen.getByTitle("Hakediş modülüyle birlikte gelir")).toHaveTextContent("—");
+    expect(screen.getByTitle("Hakediş verisi bu yüzeye henüz bağlanmadı")).toHaveTextContent("—");
     expect(screen.queryByText("Başlangıç")).not.toBeInTheDocument();
     expect(screen.getByText("%100")).toBeInTheDocument();
   });
@@ -122,7 +122,7 @@ describe("ProjectCard — kendi yatirim", () => {
     expect(screen.getByText("Konut · Ankara")).toBeInTheDocument();
     expect(screen.getByText("Satış Hedefi")).toBeInTheDocument();
     expect(screen.getByText("₺ 48,2M")).toBeInTheDocument();
-    expect(screen.getByTitle("Ünite satış modülüyle birlikte gelir")).toHaveTextContent("—");
+    expect(screen.getByTitle("Ünite verisi bu yüzeye henüz bağlanmadı")).toHaveTextContent("—");
     // Mockup "Satış Oranı" der; units modulu gelene kadar durust etiket (spec §7.5)
     expect(screen.getByText("İnşaat İlerlemesi")).toBeInTheDocument();
   });
@@ -202,7 +202,7 @@ describe("ProjectCard — kat karsiligi", () => {
     expect(screen.getByText("Arsa Maliyeti")).toBeInTheDocument();
     expect(screen.getByText("₺ 0")).toBeInTheDocument();
     expect(screen.getByText("Kendi Pay Değeri")).toBeInTheDocument();
-    expect(screen.getByTitle("Ünite satış modülüyle birlikte gelir")).toHaveTextContent("—");
+    expect(screen.getByTitle("Ünite verisi bu yüzeye henüz bağlanmadı")).toHaveTextContent("—");
     // Zarf bos oldugunda marj cipi SILINMEZ: "—" + gerekce basar (mockup 160).
     expect(screen.getByText("— marj")).toBeInTheDocument();
   });
@@ -265,7 +265,7 @@ describe("ProjectCard — dolu zarf `available` bayragina bakar", () => {
     );
     expect(screen.getByText("Harcanan")).toBeInTheDocument();
     expect(screen.getByText("₺ 8,4M")).toBeInTheDocument();
-    expect(screen.queryByTitle("Maliyet takibiyle birlikte gelir")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("Maliyet verisi bu yüzeye henüz bağlanmadı")).not.toBeInTheDocument();
   });
 
   // Zarf dolu ama deger null gelirse (sozlesme disi yuk) pending gorunumu KALIR.

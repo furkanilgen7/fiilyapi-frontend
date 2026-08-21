@@ -103,6 +103,6 @@ describe("DocumentsPlaceholderCard (paylaşılan yer tutucu)", () => {
   });
 
   it("documents pending_module etiketi tanımlı", () => {
-    expect(pendingModuleLabel("documents")).toBe("Belge modülüyle birlikte gelir");
+    expect(pendingModuleLabel("documents")).toBe("Belge verisi bu yüzeye henüz bağlanmadı");
   });
 });

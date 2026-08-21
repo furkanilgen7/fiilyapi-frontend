@@ -1,0 +1,48 @@
+/* F-UNIT1 T2 · "Yeni Blok Ekle" formuna ÖZGÜ bloklar — kanon: projedesign
+   "Form - Blok Ekle.dc.html" (BE). Parantez içi sayılar O DOSYANIN satır
+   numaralarıdır. Çıplak hex yok — tüm renk/ölçüler token.
+
+   Sıra önemli: `form-shell.css` (ortak `.pf-*`) → `unit-shell.css` (aile
+   ortağı `.uf-*`) → bu dosya. Özgü olan kazansın. */
+
+/* İçerik sütunu BE 44'te 900px'tir; ortak `--form-column-max` 1000px'i proje
+   formundan gelir (token karşılığı olmayan ölçü, mockup satırıyla yazılır). */
+.be-page.pf {
+  max-width: 900px; /* BE 44 */
+}
+
+/* ── "Tahmini Toplam Ünite" paneli (BE 88-94) — mavi şerit ───────────────── */
+.be-estimate {
+  margin-top: var(--space-4); /* BE 88 — 16px */
+  padding: 13px 16px; /* BE 88 */
+  background: var(--color-nav-active-bg); /* #eff6ff (88) */
+  border-radius: var(--radius-10); /* BE 88 */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.be-estimate__label {
+  font-size: var(--text-body); /* BE 90 — 13px */
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary-hover); /* #1d4ed8 (90) */
+}
+.be-estimate__caption {
+  font-size: var(--text-small); /* BE 91 — 11px */
+  color: var(--color-primary-light); /* #3b82f6 (91) */
+  margin-top: 1px;
+}
+.be-estimate__value {
+  font-size: 22px; /* BE 93 */
+  font-weight: var(--weight-bold);
+  color: var(--color-primary); /* #2563eb (93) */
+  font-family: var(--font-mono); /* BE 93 */
+}
+
+/* ── Alt şeridin sol ucundaki devre-dışı kutucuk (BE 107-110) ────────────── */
+.be-bulk {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-body); /* BE 107 — 13px */
+  color: var(--color-text-secondary);
+}
