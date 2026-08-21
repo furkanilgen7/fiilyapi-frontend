@@ -80,9 +80,21 @@ export function filterImportRows(
 }
 
 /**
- * Rozet sayıları ÖZETTEN gelir, satır listesinden değil: doğrulama yanıtı
- * hataların yalnız ilk 50'sini taşıyabilir (`MAX_REPORTED_ERRORS`), yani
- * satırları saymak "Hatalı (50)" gibi YANLIŞ bir sayı üretirdi.
+ * Rozet sayıları ÖZETTEN gelir, satır listesinden değil.
+ *
+ * 🔴 GEREKÇE DÜZELTİLDİ (F-UNIT2 final review): burada önce *"yanıt hataların
+ * yalnız ilk 50'sini taşıyabilir (`MAX_REPORTED_ERRORS`)"* yazıyordu. ÖLÇÜLDÜ:
+ * `MAX_REPORTED_ERRORS` `importer.py:31`de TANIMLI ama backend'in HİÇBİR
+ * yerinde KULLANILMIYOR; `batch.py` `rows`u EKSİKSİZ döndürüyor. Uydurulmuş
+ * bir gerekçe, doğru koddan daha tehlikelidir: bir sonraki ajan onu veri
+ * sayarak "kırpma" mantığı yazmaya kalkardı.
+ *
+ * GERÇEK gerekçe: `summary` sunucunun KENDİ sayımıdır ve tek otoritedir.
+ * Rozetleri `rows`tan saymak, rozeti istemcinin O AN elinde tuttuğu alt kümeye
+ * bağlardı — süzgeç sekmeleri (EI 110-112) listeyi zaten daraltıyor ve uç
+ * SAYFALANIRSA (bugün değil) sayı sessizce yanlışa döner. Değişmez
+ * `valid + warning + error == total_rows` da `summary` üzerinde denetlenir
+ * (`checkImportSummary`), yani iki sayı iki kaynaktan gelmez.
  */
 export function importFilterCounts(summary: UnitImportSummary): ImportFilterCounts {
   return { all: summary.total_rows, error: summary.error, warning: summary.warning };
