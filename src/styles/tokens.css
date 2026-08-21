@@ -186,6 +186,10 @@
   /* Entegrasyon ikon rozeti tonlari (Ayarlar > Entegrasyonlar, mockup-derived) */
   --color-amber-tint: #fef9f0;
   --color-purple-tint: #fdf4ff;
+  /* F-DKAP · Dönem Kapanışı yetki notu kenarlığı (DK:71) — en yakın mevcut
+     mor kenarlık token'ı (`--color-accent-purple-line`) BİREBİR eşleşmiyor,
+     bu yüzden ayrı bir token açıldı. */
+  --color-purple-tint-border: #e9d5ff;
 
   /* F-TH T5 — Şantiye Hakedişler "Taşeron Hakedişleri" panel başlığı zemin/
      metin tonu (mockup `Şantiye - Hakedişler.dc.html` satır 137-138).

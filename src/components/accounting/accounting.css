@@ -1208,3 +1208,171 @@ span.mu-tb__total {
     grid-template-columns: 1fr;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* F-DKAP · Dönem Kapanışı — mockup `Muhasebe - Dönem Kapanışı.dc.html`
+   (DK). Prefix `dkap`. Palet YALNIZ token'dan: `--color-purple-tint-border`
+   F-DKAP'ta EKLENDİ (tokens.css), `--color-audit-danger-row-bg` MEVCUT
+   token'ın YENİDEN KULLANIMIdır (DK:170/181'in zeminiyle bayt aynı — ikinci
+   bir token açmak DRY'yi ihlal ederdi). */
+
+/* DK:70-77 — yetki notu (mor kutu). `.mu-notice`in ikonlu varyantı. */
+.mu-notice--purple {
+  display: flex;
+  gap: 11px; /* DK:71 */
+  align-items: flex-start;
+  color: var(--color-accent-purple-deep); /* DK:72 */
+  background: var(--color-purple-tint); /* DK:71 */
+  border-color: var(--color-purple-tint-border); /* DK:71 */
+}
+.mu-notice__icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--color-accent-purple); /* DK:79 */
+}
+
+/* DK:248-256 — onay diyaloğunun uyarı bandı (sarı). */
+.mu-notice--warning {
+  color: var(--color-warning-deep-text); /* DK:250 */
+  background: var(--color-warning-soft); /* DK:249 */
+  border-color: var(--color-warning-border-soft); /* DK:249 */
+  line-height: 1.8; /* DK:250 */
+}
+
+/* DK:242 — onay diyaloğu alt yazısı: DÜZ METİN, kutu/kenarlık YOK. */
+.dkap-confirm-subtitle {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+  margin-bottom: var(--space-3);
+}
+
+/* DK:57-59 — panel başlığı + özet şeridi TEK satırda. */
+.dkap-panel__summary {
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+}
+
+/* DK:60-92 — satır durumuna göre zemin (K2'nin görsel karşılığı). */
+.dkap-row--blocked td {
+  background: var(--color-audit-danger-row-bg); /* DK:170/181 */
+  border-bottom-color: var(--color-danger-tint-border); /* DK:170 */
+}
+.dkap-row--closable td {
+  background: var(--color-success-tint); /* DK:229 */
+}
+.dkap-row--no-record td {
+  color: var(--color-text-subtle); /* DK:246-262 satır metni soluk */
+}
+.dkap-row__period {
+  font-weight: var(--weight-semibold);
+}
+
+/* DK:99/107/... — durum rozeti. */
+.dkap-status {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  padding: 3px 10px;
+  border-radius: 10px;
+}
+.dkap-status--closed {
+  background: var(--color-neutral-soft); /* DK:99 */
+  color: var(--color-text-muted); /* DK:99 */
+}
+.dkap-status--closable,
+.dkap-status--blocked {
+  background: var(--color-success-soft); /* DK:229 */
+  color: var(--color-success); /* DK:229 */
+}
+.dkap-status--no_record {
+  background: var(--color-surface-2); /* DK:246 */
+  color: var(--color-text-subtle); /* DK:246 */
+  border: 1px solid var(--color-border); /* DK:246 */
+}
+
+/* DK:186-215 — engelli satırın altındaki hata bandı. */
+.dkap-blocked-banner {
+  display: flex;
+  gap: 11px;
+  padding: 13px 15px;
+  background: var(--color-danger-soft); /* DK:187 */
+  border: 1.5px solid var(--color-danger-border-soft); /* DK:187 */
+  border-radius: var(--radius-10);
+}
+.dkap-blocked-banner__icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--color-danger-strong); /* DK:189 */
+}
+.dkap-blocked-banner__title {
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--color-danger-deep); /* DK:191 */
+  margin-bottom: 4px;
+}
+.dkap-blocked-banner__detail {
+  font-size: var(--text-xs);
+  color: var(--color-danger-strong); /* DK:192 */
+  line-height: 1.7;
+}
+
+/* DK:194-211 — engelli bandın İÇİNDEKİ taslak fiş listesi (yönetim
+   düzeltmesi: `journal-entries` süzülebiliyor, liste UYDURULMAZ ÇEKİLİR). */
+.dkap-draft-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px; /* DK:210 */
+  margin-top: 9px;
+  list-style: none;
+}
+.dkap-draft-list__row {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* DK:211 */
+  padding: 8px 11px; /* DK:211 */
+  background: var(--color-surface); /* DK:211 beyaz */
+  border-radius: var(--radius-7);
+}
+.dkap-draft-list__desc {
+  flex: 1;
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+}
+.dkap-draft-list__amount {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+/* DK:257-267 — onay diyaloğu "Fiş Sayısı" / "Mizan Durumu" ikilisi. */
+.dkap-confirm-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 14px 0;
+}
+.dkap-confirm-cell {
+  padding: 10px 12px;
+  background: var(--color-surface-2); /* DK:259 */
+  border-radius: var(--radius-8);
+}
+.dkap-confirm-cell--success {
+  background: var(--color-success-tint); /* DK:263 */
+}
+.dkap-confirm-cell__label {
+  font-size: 10px;
+  color: var(--color-text-subtle); /* DK:260 */
+  margin-bottom: 3px;
+}
+.dkap-confirm-cell--success .dkap-confirm-cell__label {
+  color: var(--color-success-deep); /* DK:264 */
+}
+.dkap-confirm-cell__value {
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.dkap-confirm-cell--success .dkap-confirm-cell__value {
+  color: var(--color-success); /* DK:266 */
+}

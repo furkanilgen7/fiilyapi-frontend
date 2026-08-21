@@ -13,6 +13,7 @@ export const ACCOUNTING_URL = "/muhasebe";
 export const CHART_OF_ACCOUNTS_URL = "/muhasebe/hesap-plani";
 export const TRIAL_BALANCE_URL = "/muhasebe/mizan";
 export const VAT_RETURN_URL = "/muhasebe/kdv-beyani";
+export const PERIOD_CLOSING_URL = "/muhasebe/donem-kapanisi";
 
 /**
  * 📅 OKUMA AYI — mock backend'in defter/özet fikstürleri YALNIZ burada
@@ -100,6 +101,29 @@ export async function openVatReturn(page: Page, fixedTime = ACCOUNTING_READ_TIME
   await page.goto(VAT_RETURN_URL);
   await expect(page.getByTestId("kdv-loaded")).toBeAttached();
 }
+
+/**
+ * `/muhasebe/donem-kapanisi` — TEK veri kaynağı (`GET /accounting-periods`).
+ * Yıl seçici YEREL takvimden gelir (`currentPeriod`), bu yüzden saat
+ * `ACCOUNTING_READ_TIME` (2026) — mock fikstürü de o yıla göre kurulu.
+ */
+export async function openPeriodClosing(page: Page, fixedTime = ACCOUNTING_READ_TIME) {
+  await loginAt(page, fixedTime);
+  await page.goto(PERIOD_CLOSING_URL);
+  await expect(page.getByTestId("dkap-loaded")).toBeAttached();
+}
+
+/**
+ * 📅 F-DKAP · yazma izolasyonu — yıl seçici yalnız `[currentYear,
+ * currentYear-1, currentYear-2]` sunar (K3: mockup'ın `2026/2025/2024`
+ * ÖRNEK dağılımı buradan türetilir), yani mutasyon testi 2020 gibi bağımsız
+ * bir yıla GİDEMEZ (dropdown'da yok). Bunun yerine mock fikstürü 2025'e TEK
+ * bir "yazma adası" satırı taşır — 2026'nın K2/K3/K4 okuma iddialarıyla
+ * hiçbir ay çakışmaz, bu yüzden bir "kapat" testi paralel okuma testlerini
+ * oynatmaz (KDV'nin Haziran/Temmuz ayrımıyla AYNI desen).
+ */
+export const DKAP_MUTATION_YEAR = 2025;
+export const DKAP_MUTATION_MONTH = 6;
 
 /* ------------------------------------------------------------------ */
 /* F-MT T5 · Mali Tablolar (E11 · BL · NA)                             */

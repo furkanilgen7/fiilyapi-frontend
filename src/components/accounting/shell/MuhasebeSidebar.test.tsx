@@ -23,12 +23,13 @@ describe("MuhasebeSidebar — HP:28-38", () => {
     expect(screen.getByTestId("mu-nav-parent").tagName).not.toBe("A");
   });
 
-  it("altı alt sekmenin hepsi EKRANDA görünür (silinmez)", () => {
+  it("yedi alt sekmenin hepsi EKRANDA görünür (silinmez)", () => {
     renderAt("/muhasebe");
     for (const label of [
       "Yevmiye Defteri",
       "Hesap Planı",
       "Mizan",
+      "Dönem Kapanışı",
       "Banka Mutabakatı",
       "e-Fatura",
       "KDV Beyanı",
@@ -67,6 +68,13 @@ describe("🔴 çift aktiflik bekçisi (F-SD T7 dersi)", () => {
     const current = screen.getAllByRole("link").filter((el) => el.getAttribute("aria-current"));
     expect(current).toHaveLength(1);
     expect(current[0]).toHaveTextContent("KDV Beyanı");
+  });
+
+  it("`/muhasebe/donem-kapanisi`de aria-current TEK öğededir", () => {
+    renderAt("/muhasebe/donem-kapanisi");
+    const current = screen.getAllByRole("link").filter((el) => el.getAttribute("aria-current"));
+    expect(current).toHaveLength(1);
+    expect(current[0]).toHaveTextContent("Dönem Kapanışı");
   });
 });
 

@@ -55,6 +55,11 @@ export const ACCOUNTING_SUB_NAV: readonly AccountingNavItem[] = [
   // `exact: false` — alt yol yoktur ama kural kardeşleriyle aynıdır; kök
   // (`/muhasebe`) `exact: true` olduğu için bu yol onu YAKMAZ (F-SD dersi).
   { kind: "link", label: "Mizan", href: "/muhasebe/mizan", exact: false },
+  // DK:36 (mockup sidebar'ı) — F-DKAP ile EKRAN da açıldı: mockup'ın kendi
+  // sidebar çizimi bu satırı Mizan ile KDV Beyanı ARASINDA gösteriyor (DK
+  // mockup dosyasının kendi sol menüsü, HP DEĞİL — bu ekran ürüne HP'nin
+  // ÇİZMEDİĞİ bir modül ekliyor, `hesap-plani`nin HP boşluğuyla AYNI sınıf).
+  { kind: "link", label: "Dönem Kapanışı", href: "/muhasebe/donem-kapanisi", exact: false },
   // HP:34
   {
     kind: "disabled",

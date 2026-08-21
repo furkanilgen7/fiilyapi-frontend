@@ -9696,6 +9696,31 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       return send(200, vatReturnFixture(year, month));
     }
 
+    // --- F-DKAP · Dönem Kapanışı uçları ------------------------------------
+    // 🔴 `accounting-periods` fikstürü de MZ/KDV emsali DONMUŞ bir dizidir
+    // (dosyanın sonunda), ama close/reopen onu MUTASYONLA değiştirir — periyot
+    // durumu bu ekranın KENDİ konusu olduğu için (`accountingState.entries`ten
+    // TÜRETİLMEZ, K9 docstring'i aynısını söylüyor). Yazma testleri, okuma
+    // fikstürünün ayları (2026 Oca-Ağu) ile ÇAKIŞMAYAN bir dönemde çalışır
+    // (bkz. `accounting-helpers.ts` `DKAP_WRITE_*`).
+    if (method === "GET" && path === "/accounting-periods") {
+      const year = Number(parsed.searchParams.get("year"));
+      const items = accountingPeriodsFixture(year);
+      return send(200, { items, total: items.length, limit: 50, offset: 0 });
+    }
+
+    const accountingPeriodActionMatch = path.match(
+      /^\/accounting-periods\/(\d+)\/(\d+)\/(close|reopen)$/,
+    );
+    if (method === "POST" && accountingPeriodActionMatch) {
+      const year = Number(accountingPeriodActionMatch[1]);
+      const month = Number(accountingPeriodActionMatch[2]);
+      const action = accountingPeriodActionMatch[3];
+      const result = closeOrReopenAccountingPeriod(year, month, action as "close" | "reopen");
+      if (result.status !== 200) return send(result.status, result.body);
+      return send(200, result.body);
+    }
+
     // --- F-MT · MT-1 mali tablo uçları ------------------------------------
     // 🔴 Fikstürler yine DONMUŞ HARİTALARDIR (dosyanın sonunda) ve
     // `accountingState`ten TÜRETİLMEZ — gerekçe yukarıdakiyle aynı.
@@ -13290,3 +13315,103 @@ const FINANCIAL_INSTRUMENT_SUMMARY_FIXTURE = {
   returned_cancelled: { amount: "240000.00", count: 2 },
   as_of: FINANCIAL_INSTRUMENT_AS_OF,
 } as const;
+
+// --- F-DKAP T2 · Dönem Kapanışı fikstürü ---------------------------------
+// DK:93-236 örnek dağılımının BİREBİR kopyası: Ocak-Haziran kapalı, Temmuz
+// engelli (3 taslak), Ağustos kapatılabilir, Eylül-Aralık kayıt yok (satır
+// hiç YOK — K3 kanonu, backend proaktif satır açmaz).
+//
+// 🔴 MUTASYON İZOLASYONU: close/reopen bu diziyi DEĞİŞTİRİR. Okuma testleri
+// 2026 yılına bakar; yazma testleri ÇAKIŞMAYAN bir yılda (2020) çalışır ki
+// `fullyParallel` altında bir "kapat" testi okuma karesini oynatmasın
+// (`accounting-reports.spec.ts`teki KDV izolasyon dersiyle aynı desen).
+type MockAccountingPeriod = components["schemas"]["AccountingPeriodListItem"];
+
+let accountingPeriodsState: MockAccountingPeriod[] = [
+  { id: "ap-2026-01", year: 2026, month: 1, status: "closed", entry_count: 142, draft_count: 0, closed_by_id: ME.id, closed_by_name: ME.full_name, closed_at: "2026-02-05T09:00:00Z", created_at: "2026-01-01T00:00:00Z", updated_at: "2026-02-05T09:00:00Z" },
+  { id: "ap-2026-02", year: 2026, month: 2, status: "closed", entry_count: 168, draft_count: 0, closed_by_id: ME.id, closed_by_name: ME.full_name, closed_at: "2026-03-04T09:00:00Z", created_at: "2026-02-01T00:00:00Z", updated_at: "2026-03-04T09:00:00Z" },
+  { id: "ap-2026-03", year: 2026, month: 3, status: "closed", entry_count: 184, draft_count: 0, closed_by_id: ME.id, closed_by_name: ME.full_name, closed_at: "2026-04-06T09:00:00Z", created_at: "2026-03-01T00:00:00Z", updated_at: "2026-04-06T09:00:00Z" },
+  { id: "ap-2026-04", year: 2026, month: 4, status: "closed", entry_count: 176, draft_count: 0, closed_by_id: ME.id, closed_by_name: ME.full_name, closed_at: "2026-05-05T09:00:00Z", created_at: "2026-04-01T00:00:00Z", updated_at: "2026-05-05T09:00:00Z" },
+  { id: "ap-2026-05", year: 2026, month: 5, status: "closed", entry_count: 192, draft_count: 0, closed_by_id: ME.id, closed_by_name: ME.full_name, closed_at: "2026-06-04T09:00:00Z", created_at: "2026-05-01T00:00:00Z", updated_at: "2026-06-04T09:00:00Z" },
+  { id: "ap-2026-06", year: 2026, month: 6, status: "closed", entry_count: 204, draft_count: 0, closed_by_id: ME.id, closed_by_name: ME.full_name, closed_at: "2026-07-07T09:00:00Z", created_at: "2026-06-01T00:00:00Z", updated_at: "2026-07-07T09:00:00Z" },
+  // DK:170-215 — Temmuz ENGELLİ (K2): status "open" + draft_count > 0.
+  // 🔴 draft_count=2 GERÇEK veriyle EŞLEŞİR: `ACCOUNTING_READ_ENTRY_SEEDS`
+  // Temmuz'da TAM İKİ `draft` fiş taşır (je-2607-draft-1/2). Bu iki dizi
+  // AYRI fikstürdür ama artık BlockedReasonRow ikisini BİRLİKTE gösteriyor —
+  // sayı UYUŞMAZSA banner "N taslak fiş var" derken listede farklı sayıda
+  // satır basardı.
+  { id: "ap-2026-07", year: 2026, month: 7, status: "open", entry_count: 218, draft_count: 2, closed_by_id: null, closed_by_name: null, closed_at: null, created_at: "2026-07-01T00:00:00Z", updated_at: "2026-07-01T00:00:00Z" },
+  // DK:220-235 — Ağustos KAPATILABİLİR (K2): status "open" + draft_count 0.
+  { id: "ap-2026-08", year: 2026, month: 8, status: "open", entry_count: 86, draft_count: 0, closed_by_id: null, closed_by_name: null, closed_at: null, created_at: "2026-08-01T00:00:00Z", updated_at: "2026-08-01T00:00:00Z" },
+  // Eylül-Aralık 2026: kayıt YOK (K3) — bilinçli olarak eklenmedi.
+  // 🔒 YAZMA ADASI (`accounting-helpers.ts` `DKAP_MUTATION_YEAR/_MONTH`):
+  // 2025 yılı 2026'nın hiçbir K2/K3/K4 iddiasında GEÇMEZ — bir "kapat" testi
+  // bu satırı değiştirse bile paralel okuma testleri bunu HİÇ görmez.
+  { id: "ap-2025-06", year: 2025, month: 6, status: "open", entry_count: 12, draft_count: 0, closed_by_id: null, closed_by_name: null, closed_at: null, created_at: "2025-06-01T00:00:00Z", updated_at: "2025-06-01T00:00:00Z" },
+];
+
+/** `(yıl)` → o yılın kayıtlı dönemleri, `year DESC, month DESC` (uç kanonu — burada tek yıl olduğu için yalnız `month DESC`). */
+function accountingPeriodsFixture(year: number): MockAccountingPeriod[] {
+  return accountingPeriodsState
+    .filter((row) => row.year === year)
+    .slice()
+    .sort((a, b) => b.month - a.month);
+}
+
+/**
+ * `POST /accounting-periods/{year}/{month}/close|reopen` — K9'un iki gerçek
+ * kapısını (kapalı dönem yasağı · `draft_count` ön koşulu) BİREBİR taklit
+ * eder. 🔴 Kayıt yoksa (K3) dönem AÇIK sayılır ve UPSERT ile satır doğar —
+ * gerçek backend'in "kilitlenecek satırın varlığı da kilidin parçasıdır"
+ * kanonunun mock karşılığı (davranış aynı, kilit mekaniği YOK — tek işlemli
+ * mock'ta gerek yok).
+ */
+function closeOrReopenAccountingPeriod(
+  year: number,
+  month: number,
+  action: "close" | "reopen",
+): { status: number; body: unknown } {
+  let row = accountingPeriodsState.find((item) => item.year === year && item.month === month);
+  if (row === undefined) {
+    row = {
+      id: `ap-${year}-${String(month).padStart(2, "0")}`,
+      year,
+      month,
+      status: "open",
+      entry_count: 0,
+      draft_count: 0,
+      closed_by_id: null,
+      closed_by_name: null,
+      closed_at: null,
+      created_at: `${year}-${String(month).padStart(2, "0")}-01T00:00:00Z`,
+      updated_at: `${year}-${String(month).padStart(2, "0")}-01T00:00:00Z`,
+    };
+    accountingPeriodsState = [...accountingPeriodsState, row];
+  }
+
+  if (action === "close") {
+    if (row.status === "closed") return { status: 409, body: { detail: "Dönem zaten kapalı." } };
+    if (row.draft_count > 0) {
+      return {
+        status: 409,
+        body: { detail: `Dönem kapatılamıyor — ${row.draft_count} taslak fiş var.` },
+      };
+    }
+    row.status = "closed";
+    row.closed_at = new Date().toISOString();
+    row.closed_by_id = ME.id;
+    row.closed_by_name = ME.full_name;
+  } else {
+    if (row.status === "open") return { status: 409, body: { detail: "Dönem zaten açık." } };
+    row.status = "open";
+    row.closed_at = null;
+    row.closed_by_id = null;
+    row.closed_by_name = null;
+  }
+  row.updated_at = new Date().toISOString();
+
+  // K9 — close/reopen yanıtı ÇIPLAK `AccountingPeriodResponse`dir: liste
+  // türevlerini (`entry_count`/`draft_count`/`closed_by_name`) TAŞIMAZ.
+  const { entry_count: _entryCount, draft_count: _draftCount, closed_by_name: _closedByName, ...response } = row;
+  return { status: 200, body: response };
+}
