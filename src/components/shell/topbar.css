@@ -16,32 +16,18 @@
   height: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 20px;
+  /* Alan ölçüldü: kullanılabilir yükseklik 52px, genişlik 220px - 2*14px =
+     192px. Logo (3.75:1) 48x180 olarak bu alana sığar; topbar/sidebar
+     yüksekliği (52px) ve sidebar genişliği (220px) DEĞİŞTİRİLMEDİ — bu ikisi
+     11 başka dosyada tekrarlanıyor (bkz. F-LOGO raporu), bu dilim onlara
+     dokunmuyor. */
+  padding: 0 14px;
   border-right: 1px solid var(--color-border);
 }
-.topbar-logo__mark {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: var(--color-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.topbar-logo__image {
+  height: 48px;
+  width: auto;
   flex-shrink: 0;
-}
-.topbar-logo__name {
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.3px;
-  color: var(--color-text);
-}
-.topbar-logo__sub {
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 1px;
-  margin-left: -4px;
-  color: var(--color-text-subtle);
 }
 .topbar-actions {
   margin-left: auto;
