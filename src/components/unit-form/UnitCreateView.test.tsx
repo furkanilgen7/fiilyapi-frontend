@@ -9,7 +9,7 @@ import {
   UNIT_PROJECT_REQUIRED_MESSAGE,
 } from "./constants";
 import { UNKNOWN_FLOOR_COUNT_HINT } from "./floor-options";
-import { UNIT_FORM_TABS_PENDING_REASON } from "@/components/unit-shell/routes";
+import { UNIT_FORM_TABS, unitFormTabsPendingReason } from "@/components/unit-shell/routes";
 import { useProjectBlocks, type BlockResponse } from "@/lib/api/hooks/useProjectBlocks";
 import { useProjects } from "@/lib/api/hooks/useProjects";
 import { useSites } from "@/lib/api/hooks/useSites";
@@ -158,17 +158,23 @@ describe("UnitCreateView — DÖRT pending yüzey: devre dışı + GÖRÜNÜR ge
     expect(document.querySelectorAll('input[type="file"]')).toHaveLength(0);
   });
 
-  it("UE 52-54 üç sekme devre dışıdır ve gerekçeleri EKRANDA", () => {
+  it("UE 52-54 rotası YAZILMAMIŞ sekmeler devre dışıdır ve gerekçeleri EKRANDA", () => {
+    // 🔴 Liste SABİT DEĞİL: F-UNIT2 sekmeleri tek tek canlandırdıkça küme
+    // küçülür. Sabit üçlü yazılsaydı bu iddia canlı bir sekmeyi "devre dışı"
+    // sanarak kırmızıya düşerdi.
     render(<UnitCreateView />);
-    for (const label of ["Toplu Üretim", "Excel İçe Aktar", "Paylaşım Girişi"]) {
-      expect(screen.getByRole("tab", { name: label }), label).toHaveAttribute(
+    const pending = UNIT_FORM_TABS.filter((tab) => tab.href === undefined);
+    for (const tab of pending) {
+      expect(screen.getByRole("tab", { name: tab.label }), tab.label).toHaveAttribute(
         "aria-disabled",
         "true",
       );
     }
-    expect(screen.getByTestId("unite-form-sekme-gerekce")).toHaveTextContent(
-      UNIT_FORM_TABS_PENDING_REASON,
-    );
+    const reason = unitFormTabsPendingReason();
+    expect(screen.queryByTestId("unite-form-sekme-gerekce") !== null).toBe(reason !== null);
+    if (reason !== null) {
+      expect(screen.getByTestId("unite-form-sekme-gerekce")).toHaveTextContent(reason);
+    }
   });
 
   it("UE 50 'Blok Ekle' sekmesi GERÇEK rotaya bağlıdır", () => {

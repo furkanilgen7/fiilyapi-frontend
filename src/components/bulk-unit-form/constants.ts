@@ -151,3 +151,101 @@ export const BULK_UNITS_PER_FLOOR_MESSAGE = `Kat başına daire ${BULK_UNITS_PER
 
 /** TU 73 kutusunda değer yokken basılan metin (UE 89 emsali). */
 export const BULK_EMPTY_TOTAL = "—";
+
+/* ── T2a · YALNIZ EKRANIN kullandığı metinler ─────────────────────────────── */
+
+/** TU 63 — blok seçicisinin boş seçeneği (UE 65 ile aynı metin). */
+export const BULK_PLACEHOLDER = "Seçiniz...";
+
+/** TU 62 — şantiye YALNIZ süzgeç olduğu için "hepsi" meşru bir hâldir. */
+export const BULK_ALL_SITES = "Tüm şantiyeler";
+
+/** TU 61 — proje PATH parametresidir; seçilmeden hiçbir uç ÇAĞRILAMAZ. */
+export const BULK_PROJECT_REQUIRED_MESSAGE =
+  "Önce bir proje seçin — toplu üretim proje altında çalışır.";
+
+/**
+ * TU 63 — `block_id` gövdenin ZORUNLU alanıdır. KARAR 11 istemcinin "zorunlu
+ * alan" reddini yasaklar; bu kapı ondan AYRIDIR: blok seçilmemişken gönderilen
+ * boş dize geçerli bir UUID bile değildir, istek ağa çıkmadan 422 olurdu.
+ */
+export const BULK_BLOCK_REQUIRED_MESSAGE = "Önce hedef bloğu seçin.";
+
+/** TU 63 — proje seçilmeden blok listesi yüklenemez (UE emsali). */
+export const BULK_NO_PROJECT_BLOCK_NOTICE =
+  "Önce bir proje seçin — blok listesi projeye bağlıdır.";
+
+/** TU 151-156 — önizleme tablosunun sütun başlıkları. */
+export const BULK_PREVIEW_COLUMNS = {
+  unitNo: "Ünite No", // TU 151
+  floor: "Kat", // TU 152
+  layout: "Tip", // TU 153
+  area: "Brüt/Net m²", // TU 154
+  facing: "Cephe", // TU 155
+  listPrice: "Liste Fiyatı", // TU 156
+} as const;
+
+/**
+ * 🔴 TU 142-174 önizleme kartı, veri gelmeden BOŞ BIRAKILMAZ. Mockup kartı
+ * dolu çizer çünkü mockup'ta zaten bir önizleme yapılmıştır; gerçek ekran ilk
+ * açılışta hiçbir şey bilmez. Boş bir kart kullanıcıya "üretilecek ünite yok"
+ * der ki bu YANLIŞ — henüz SORULMAMIŞTIR.
+ */
+export const BULK_PREVIEW_EMPTY_NOTICE =
+  "Önizleme henüz alınmadı — “Önizlemeyi Yenile” düğmesine basın. Bu adım hiçbir şey yazmaz.";
+
+/**
+ * Form değişince önizleme atılır. Ekranda BAŞKA bir kural gösterip başka bir
+ * gövde göndermek (TU 73'ün sayısı ile tablonun satırlarının ayrışması) sessiz
+ * hata sınıfıdır; sunucu da bunu böyle görür (`POST …/units/bulk` önizlemeden
+ * gelen satırları KABUL ETMEZ, aynı girdiden YENİDEN üretir).
+ */
+export const BULK_PREVIEW_STALE_NOTICE =
+  "Kurallar değişti — önizleme temizlendi. Güncel sonucu görmek için yeniden önizleyin.";
+
+export const BULK_PREVIEW_ERROR_FALLBACK = "Önizleme alınamadı.";
+export const BULK_SAVE_ERROR_FALLBACK = "Üniteler oluşturulamadı.";
+
+/** TU 146/171 — sunucu sayıları; istemci HESAPLAMAZ. */
+export const BULK_PREVIEW_UNIT_SUFFIX = "ünite oluşturulacak"; // TU 146
+export const BULK_PREVIEW_VALUE_PREFIX = "Toplam değer"; // TU 146
+
+/**
+ * 🔴 ÖNİZLEMEDE ÇAKIŞMA HATA DEĞİLDİR. Uç açıklaması: *"Cakisma HATA DEGILDIR
+ * (TU 177) — satirlar `conflict=true` ile 200 doner"*. Satır UYARI tonunda
+ * işaretlenir, kırmızı hata olarak değil.
+ */
+export const BULK_CONFLICT_ROW_LABEL = "Çakışma";
+export const BULK_CONFLICT_PREVIEW_NOTICE =
+  "Bu numaralar blokta zaten var. Kaydetme HEP-YA-HİÇ çalışır: bu hâliyle hiçbir ünite yazılmaz. Başlangıç numarasını ya da deseni değiştirip yeniden önizleyin.";
+
+/**
+ * 🔴 409'un ANLAMI istemcide tamamlanır. Sunucunun gövdesi yalnız
+ * *"Üretilecek ünite numaralarından bazıları blokta zaten var: C-1, C-2"*
+ * der (`units/guards.py::BULK_NUMBERS_TAKEN`) — "hiçbiri yazılmadı" cümlesi
+ * ORADA YOKTUR. Bu cümle olmadan kullanıcı bir kısmının yazıldığını sanar ve
+ * ikinci denemede numaraları elle atlamaya çalışır.
+ */
+export const BULK_CONFLICT_HINT =
+  "Hiçbir ünite yazılmadı (hep-ya-hiç): parti bütün hâlde reddedildi.";
+
+/** TU 40/183 — sayı TÜREVDİR ve etiketin İÇİNDE yaşar. */
+export const BULK_SUBMIT_COUNT_SUFFIX = "Üniteyi Oluştur";
+
+/**
+ * TU 40/183 "24 Üniteyi Oluştur". Sayı bilinmiyorsa (kat aralığı seçilmemiş,
+ * aralık geçersiz) UYDURULMAZ: sayısız etikete (TU 39 ailesinden
+ * `BULK_SUBMIT_LABEL`) düşülür. "0 Üniteyi Oluştur" basmak, formun eksik
+ * olduğunu değil sıfır ünite üretileceğini söylerdi.
+ */
+export function bulkSubmitLabel(total: number | null): string {
+  return total === null ? BULK_SUBMIT_LABEL : `${total} ${BULK_SUBMIT_COUNT_SUFFIX}`;
+}
+
+/**
+ * TU 96-135 — satır sayısı `units_per_floor` ile KİLİTLİDİR (`slots.ts`).
+ * Daire sayısı girilmeden tablo BOŞ kalır; boş bir `<tbody>` basmak yerine
+ * gerekçe yazılır (kullanıcı tablonun bozulduğunu sanmasın).
+ */
+export const BULK_SLOT_EMPTY_NOTICE =
+  "Kat başına daire sayısını girin — şablon satırları o sayıya göre açılır.";

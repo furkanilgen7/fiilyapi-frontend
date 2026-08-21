@@ -11,11 +11,15 @@ import { SALES_SUMMARY_QUERY_KEY } from "./useSalesSummary";
  * F-UNIT1 T2 · `units` modülünün YAZMA yüzeyi — bu dilimde İKİ mutasyon vardır:
  * blok oluşturma (BE formu) ve ünite oluşturma (UE formu).
  *
- * ⚠️ KALICI SINIR: `PATCH /blocks/{id}`, `PATCH /units/{id}`, `DELETE`ler ve
- * toplu üretim/içe aktarma uçları (`.../units/bulk`, `.../units/import`) için
- * hook YAZILMAZ — düzenleme ekranının mockup'ı bu dilimde yoktur, toplu üretim
- * F-UNIT2'nin kapsamıdır. Buraya bir güncelleme/silme hook'u eklemek ekran
- * icadıdır (`useSaleMutations` emsali).
+ * ⚠️ KALICI SINIR: `PATCH /blocks/{id}`, `PATCH /units/{id}` ve `DELETE`ler
+ * için hook YAZILMAZ — düzenleme ekranının mockup'ı yoktur. Buraya bir
+ * güncelleme/silme hook'u eklemek ekran icadıdır (`useSaleMutations` emsali).
+ *
+ * ⚠️ Toplu üretim uçları (`.../units/bulk`, `.../units/bulk/preview`) F-UNIT2
+ * dilimindedir ve KOMŞU dosyada (`useUnitBulk.ts`) yaşar; ortak olan tek şey
+ * `invalidateUnitDerived`tır ve o BURADAN dışa verilir — ikinci bir kopya
+ * yazmak, biri güncellenip öteki unutulduğunda bayat sayı basan ekranlar
+ * doğururdu.
  *
  * ⚠️ BFF İZİN LİSTESİ: iki uç da `projects` segmentiyle başlar ve o kök
  * `ALLOWED_ROOTS`ta ZATEN tanımlıdır. `blocks`/`units` kökleri EKLENMEZ: bu
@@ -35,8 +39,13 @@ export type UnitCreate = components["schemas"]["UnitCreate"];
  * özeti (`available_units` ünite sayısından türer). Üçü BİRLİKTE geçersiz
  * kılınır — biri unutulursa ekran eski sayıyı basmaya devam eder
  * (`invalidateSaleDerived` deseni).
+ *
+ * 🔴 DIŞA VERİLİR: toplu üretim (`useUnitBulk.ts::useCreateBulkUnits`) 24 üniteyi
+ * TEK istekte yazar ve aynı üç türevi bayatlatır. Orada üç satırı kopyalamak
+ * kümeyi ikiye böler; dördüncü bir türev eklendiğinde biri güncellenir öteki
+ * unutulurdu.
  */
-function invalidateUnitDerived(queryClient: ReturnType<typeof useQueryClient>): void {
+export function invalidateUnitDerived(queryClient: ReturnType<typeof useQueryClient>): void {
   queryClient.invalidateQueries({ queryKey: [PROJECT_BLOCKS_QUERY_KEY] });
   queryClient.invalidateQueries({ queryKey: [PROJECT_UNITS_QUERY_KEY] });
   queryClient.invalidateQueries({ queryKey: [SALES_SUMMARY_QUERY_KEY] });

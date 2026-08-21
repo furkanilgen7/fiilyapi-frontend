@@ -6,7 +6,7 @@ import {
   BLOCK_BULK_UNITS_PENDING_REASON,
   BLOCK_PROJECT_REQUIRED_MESSAGE,
 } from "./constants";
-import { UNIT_FORM_TABS_PENDING_REASON } from "@/components/unit-shell/routes";
+import { UNIT_FORM_TABS, unitFormTabsPendingReason } from "@/components/unit-shell/routes";
 import { useProjects } from "@/lib/api/hooks/useProjects";
 import { useSites } from "@/lib/api/hooks/useSites";
 import { useCreateBlock } from "@/lib/api/hooks/useUnitMutations";
@@ -105,16 +105,20 @@ describe("BlockCreateView — PENDING yüzeyler: devre dışı + GÖRÜNÜR gere
     expect(screen.getByText(BLOCK_BULK_UNITS_PENDING_REASON)).toBeInTheDocument();
   });
 
-  it("BE 50-52 üç sekme devre dışıdır ve gerekçeleri EKRANDA", () => {
+  it("BE 50-52 rotası YAZILMAMIŞ sekmeler devre dışıdır ve gerekçeleri EKRANDA", () => {
+    // 🔴 Liste SABİT DEĞİL: F-UNIT2 sekmeleri tek tek canlandırdıkça küme
+    // küçülür (bugün "Toplu Üretim" GERÇEK rotadadır).
     render(<BlockCreateView />);
-    for (const label of ["Toplu Üretim", "Excel İçe Aktar", "Paylaşım Girişi"]) {
-      const tab = screen.getByRole("tab", { name: label });
-      expect(tab, label).toHaveAttribute("aria-disabled", "true");
-      expect(tab, label).not.toHaveAttribute("href");
+    for (const tab of UNIT_FORM_TABS.filter((item) => item.href === undefined)) {
+      const element = screen.getByRole("tab", { name: tab.label });
+      expect(element, tab.label).toHaveAttribute("aria-disabled", "true");
+      expect(element, tab.label).not.toHaveAttribute("href");
     }
-    expect(screen.getByTestId("unite-form-sekme-gerekce")).toHaveTextContent(
-      UNIT_FORM_TABS_PENDING_REASON,
-    );
+    const reason = unitFormTabsPendingReason();
+    expect(screen.queryByTestId("unite-form-sekme-gerekce") !== null).toBe(reason !== null);
+    if (reason !== null) {
+      expect(screen.getByTestId("unite-form-sekme-gerekce")).toHaveTextContent(reason);
+    }
   });
 
   it("BE 49 'Ünite Ekle' sekmesi GERÇEK rotaya bağlıdır (silinmemiş, canlı)", () => {
