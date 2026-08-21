@@ -2943,6 +2943,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/payroll/tax-brackets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Payroll Tax Brackets Endpoint
+         * @description GVK m.103 artan oranlı tarifesi (IK3-GV K2) — `(yıl, gelir türü, sıra)`.
+         *
+         *     Pasif setler de döner: geçmiş bir bordronun hangi tarifeyle hesaplandığı
+         *     okunabilir kalmalıdır. Sayfalama YOKTUR (gerekçe `schemas`).
+         *
+         *     🔴 Bu uç aynı zamanda PUT'un ÖN KOŞULUDUR: tam küme değiştirmeye açılan bir
+         *     yüzeyin, kümenin TAMAMINI okuyan bir eşi olmak zorundadır — yoksa kullanıcı
+         *     neyin üstüne yazdığını göremeden yazar.
+         */
+        get: operations["list_payroll_tax_brackets_endpoint_payroll_tax_brackets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payroll/tax-brackets/{year}/{income_kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Replace Payroll Tax Brackets Endpoint
+         * @description Yılın tarifesini **TAM KÜME** olarak değiştirir (K1: mevzuat VERİDİR).
+         *
+         *     🔴 **GEÇMİŞ DÖNEM DEĞİŞMEZ (para korkuluğu):** o yılda `approved`/`paid` bir
+         *     dönem varsa **409**. Gerekçe oran ucununkiyle AYNI DEĞİLDİR ve ölçülmüştür —
+         *     vergi satıra SNAPSHOT edilir, ama ayın vergisi `T(önceki+bu ay) − T(önceki)`
+         *     olduğu için yıl ortasında değişen bir tarife, sonraki ilk bordroya ödenmiş
+         *     ayların farkını YÜKLER.
+         *
+         *     Gövde yılın TÜM dilimlerini taşır; kısmi güncelleme YOKTUR (tarife birikimli
+         *     okunur, tek dilimi yamalamak setin bütününün anlamını değiştirirdi). Kümenin
+         *     bütünlüğü (boşluk · örtüşme · ortada açık uç · sınırsız SON dilim)
+         *     `income_tax.normalize_brackets` ile doğrulanır → **422**.
+         */
+        put: operations["replace_payroll_tax_brackets_endpoint_payroll_tax_brackets__year___income_kind__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/payroll/periods/{period_id}/export": {
         parameters: {
             query?: never;
@@ -6051,7 +6109,7 @@ export interface components {
         /**
          * AccountingPeriodListItem
          * @description DKAP-B — liste satırı, `AccountingPeriodResponse`e ÜÇ türetilmiş alan
-         *     EKLER. `close`/`reopen` cevabı hâlâ çıplak `AccountingPeriodResponse`dir
+         *     EKLER (SIRA-B ile DÖRT). `close`/`reopen` cevabı hâlâ çıplak `AccountingPeriodResponse`dir
          *     (görev emri kapsamı yalnız `GET /accounting-periods`); tek bir dönemi
          *     döndüren o iki uç için bu alanları hesaplamak GEREKSİZ bir sorgu turudur
          *     ve emrin "kod/uçlar DEĞİŞMEZ" maddesini ihlal ederdi.
@@ -6076,6 +6134,29 @@ export interface components {
          *     Kapanabilirlik KARARININ kendisi (`can_close` gibi) burada TAŞINMAZ —
          *     karar `periods_service`in kapısıdır; ikinci bir karar kopyası kapı bir gün
          *     değişince ekranı sessizce yanlış bırakırdı.
+         *
+         *     `previous_period_open` — SIRA-B: takvim olarak BİR ÖNCEKİ ayın
+         *     `accounting_periods`ta KAYITLI ve `open` olup olmadığı. 🔴 Anlamı bu kadar
+         *     DARDIR ve `draft_count` ile AYNI sınıftandır: bir OLGU taşır, bir KARAR
+         *     değil. Adı `can_close` DEĞİLDİR ve olmayacaktır — kapatılabilirlik
+         *     `status` + `draft_count` + bu olgunun BİRLEŞİMİDİR ve o birleşimi
+         *     `periods_service.close_period` tanımlar; kararın bir kopyası burada
+         *     dursaydı kapı bir gün değiştiğinde ekran SESSİZCE yanlış kalırdı
+         *     (DKAP-B kanonu).
+         *
+         *     🔴 Ekran bunu KENDİ listesinden türetemez, bu yüzden alan ŞART: Ocak'ın
+         *     öncesi bir önceki yılın Aralığıdır ve liste `year` süzgeciyle tek yıl
+         *     çeker — o satır sayfada HİÇ olmaz. Ayrıca sayfa sınırındaki dönemin
+         *     öncesi de sayfada olmayabilir.
+         *
+         *     🔴 K10 — olgu ile kapı AYNI iki yardımcıdan beslenir
+         *     (`periods_service.previous_period` + `repository.open_periods_among`);
+         *     "kaydı olmayan ay" ikisinde de `false`/engel-değil demektir (K2).
+         *
+         *     🔴 Bu alan YALNIZ liste satırındadır. `close`/`reopen` cevabı çıplak
+         *     `AccountingPeriodResponse` KALIR: tek bir dönem için fazladan bir sorgu
+         *     turudur ve o iki uç zaten kararı KENDİSİ vermiştir — cevabına "önceki
+         *     açık mı" iliştirmek, az önce geçilmiş bir kapıyı tekrar anlatmak olurdu.
          *
          *     `closed_by_name` — `users.full_name` (K5: depodaki TEK ad kolonu,
          *     `audit/repository.py`nin `outerjoin(User, ...)` deseniyle AYNI yoldan
@@ -6113,6 +6194,8 @@ export interface components {
             draft_count: number;
             /** Closed By Name */
             closed_by_name: string | null;
+            /** Previous Period Open */
+            previous_period_open: boolean;
         };
         /**
          * AccountingPeriodListResponse
@@ -9068,6 +9151,21 @@ export interface components {
             balances: components["schemas"]["LeaveBalanceResponse"][];
         };
         /**
+         * IncomeKind
+         * @description Gelir türü — GVK m.103 tarifesinin HANGİ tablosu (K5).
+         *
+         *     Ücret ve ücret dışı tarifeler 3. dilimden itibaren AYRIŞIR (2026'da ücret
+         *     1.500.000/%27 iken ücret dışı 1.000.000'dur). Bordro HER ZAMAN `wage`
+         *     kullanır ve tohumda yalnız `wage` BASILIR — ücret dışı satırlar
+         *     kullanılmadığı için uydurulmaz (WORKFLOW §3).
+         *
+         *     🔴 Kolon YİNE DE ŞİMDİ açılır: sonradan eklenseydi geçmiş tohumun hangi
+         *     tabloya ait olduğu belirsiz kalır ve varsayılan bir değer atamak, ücret dışı
+         *     bir tarifeyi ücret tarifesi gibi göstermeyi mümkün kılardı.
+         * @enum {string}
+         */
+        IncomeKind: "wage" | "non_wage";
+        /**
          * IncomeStatementLine
          * @description Gelir tablosunun bir KALEMİ — mockup'ın tek bir satırı (ör. GT:98).
          *
@@ -11428,6 +11526,83 @@ export interface components {
             excluded_count: number;
             /** Unknown Cost Count */
             unknown_cost_count: number;
+        };
+        /**
+         * PayrollTaxBracketInput
+         * @description Tarifenin BİR dilimi — gövdedeki hâli.
+         *
+         *     `is_active` burada YOKTUR: aktiflik SETİN özelliğidir, dilimin değil. Dilim
+         *     başına bırakılsaydı yarısı aktif bir tarife kurulabilir ve
+         *     `income_tax.normalize_brackets` onu "delikli" sayıp TÜM yılı fail-closed'a
+         *     düşürürdü — üstelik kullanıcı bunu hiçbir uçtan göremezdi.
+         */
+        PayrollTaxBracketInput: {
+            /** Ordinal */
+            ordinal: number;
+            /** Upper Bound */
+            upper_bound?: number | string | null;
+            /** Rate Pct */
+            rate_pct: number | string;
+        };
+        /**
+         * PayrollTaxBracketListResponse
+         * @description Dilimler — **sayfalama YOKTUR ve bu bilinçlidir** (`PayrollRateListResponse` emsali).
+         *
+         *     Tablo yılda en çok bir avuç satır büyür (2026 ücret tarifesi BEŞ dilim);
+         *     TB3 sayfalama korkuluğu sınırsız büyüyen listeler içindir. `limit`
+         *     eklenseydi kullanıcı bir yılın tarifesini PARÇA PARÇA görür ve setin
+         *     bütünlüğünü (deliği olup olmadığını) ekrandan hiç okuyamazdı.
+         */
+        PayrollTaxBracketListResponse: {
+            /** Items */
+            items: components["schemas"]["PayrollTaxBracketResponse"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * PayrollTaxBracketResponse
+         * @description Bir dilim — `(yıl, gelir türü, sıra)` anahtarlı (models.py).
+         */
+        PayrollTaxBracketResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Year */
+            year: number;
+            income_kind: components["schemas"]["IncomeKind"];
+            /** Ordinal */
+            ordinal: number;
+            /** Upper Bound */
+            upper_bound: string | null;
+            /** Rate Pct */
+            rate_pct: string;
+            /** Is Active */
+            is_active: boolean;
+        };
+        /**
+         * PayrollTaxBracketSetUpdate
+         * @description `PUT /payroll/tax-brackets/{year}/{income_kind}` gövdesi — **TAM KÜME**.
+         *
+         *     🔴 Kısmi güncelleme YOKTUR ve bu bir tercih değil, ZORUNLULUKTUR: tarife
+         *     birikimli okunur (`tax_for_base` dilimleri baştan tarar), yani tek bir
+         *     dilimi değiştirmek setin BÜTÜNÜNÜN anlamını değiştirir. Beş dilimli bir
+         *     setin 3.'sünü yamalayan bir uç, geri kalan dördünü sessizce eski mevzuatta
+         *     bırakırdı.
+         *
+         *     🔴 Küme doğrulaması `income_tax.normalize_brackets`e DEVREDİLİR — ikinci bir
+         *     kopya yazılsaydı hesap motoru ile uç iki farklı "geçerli tarife" tanımına
+         *     sahip olurdu ve uçtan geçen bir set motorda `uncomputed` üretebilirdi.
+         */
+        PayrollTaxBracketSetUpdate: {
+            /** Brackets */
+            brackets: components["schemas"]["PayrollTaxBracketInput"][];
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
         };
         /**
          * PendingApprovalsPlaceholder
@@ -26088,6 +26263,109 @@ export interface operations {
                 content?: never;
             };
             /** @description Bu yılda onaylanmış/ödenmiş dönem var: oranlar değiştirilemez */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_payroll_tax_brackets_endpoint_payroll_tax_brackets_get: {
+        parameters: {
+            query?: {
+                year?: number | null;
+                income_kind?: components["schemas"]["IncomeKind"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollTaxBracketListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_payroll_tax_brackets_endpoint_payroll_tax_brackets__year___income_kind__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                year: number;
+                income_kind: components["schemas"]["IncomeKind"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayrollTaxBracketSetUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollTaxBracketListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bu yılda onaylanmış/ödenmiş dönem var: tarife değiştirilemez */
             409: {
                 headers: {
                     [name: string]: unknown;

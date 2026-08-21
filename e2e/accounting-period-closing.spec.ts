@@ -38,10 +38,17 @@ test.describe("Dönem Kapanışı ekranı (DK)", () => {
     await expect(page.getByTestId("dkap-year-select")).toHaveValue("2026");
   });
 
-  test("K4 — özet şeridinin dört sayısı DK:69 örneğiyle aynıdır (6/1/1/4)", async ({ page }) => {
+  // 🔴 SIRA-B devri — sayılar DK:69'un 6/1/1/4'ünden 6/1/2/3'e KAYDI, çünkü
+  // mock fikstürü değişmek ZORUNDAYDI: Ağustos'un öncesi (Temmuz) KAYITLI ve
+  // AÇIK olduğu için "Ağustos kapatılabilir" backend'in ÜRETEMEYECEĞİ bir
+  // durumdur. Ağustos artık SIRA-engellidir (engelli 1→2) ve kapatılabilir
+  // kareyi Kasım taşır (öncesi Ekim KAYITSIZ ⇒ engel değil), böylece kayıt-yok
+  // 4→3'e iner. Şerit yine DÖRT sayıdır — `blocked_sequence` beşinci bir
+  // sayaç AÇMAZ, "engelli"ye eklenir.
+  test("K4 — özet şeridinin dört sayısı satırlardan SAYILIR (6/1/2/3)", async ({ page }) => {
     await openPeriodClosing(page);
     await expect(page.getByTestId("dkap-summary")).toContainText(
-      "6 kapalı · 1 kapatılabilir · 1 engelli · 4 kayıt yok",
+      "6 kapalı · 1 kapatılabilir · 2 engelli · 3 kayıt yok",
     );
   });
 
@@ -54,6 +61,36 @@ test.describe("Dönem Kapanışı ekranı (DK)", () => {
     await expect(page.getByTestId("dkap-blocked-reason-7")).toContainText(
       "Dönem kapatılamıyor — 2 taslak fiş var",
     );
+  });
+
+  // 🔴 SIRA-B (K3.3) — Ağustos'ta TASLAK YOKTUR (`draft_count` 0); engel
+  // KOMŞU aydan gelir. Gerekçe hangi ayın kapatılması gerektiğini ADIYLA
+  // söyler; genel bir "dönemler sırayla kapatılır" cümlesi kullanıcıyı on iki
+  // satırlık listede hangi ayın açık kaldığını aramaya zorlardı.
+  //
+  // ⚠️ `getByRole("alert")` KULLANILMAZ (F-P6 dersi) — bant testid ile bulunur.
+  test("🔴 SIRA-B — Ağustos sıra-engelli: düğme devre dışı, gerekçe 'Temmuz 2026'yı ADIYLA söyler", async ({
+    page,
+  }) => {
+    await openPeriodClosing(page);
+    await expect(page.getByTestId("dkap-close-8")).toBeDisabled();
+    const band = page.getByTestId("dkap-sequence-reason-8");
+    await expect(band).toBeVisible();
+    await expect(band).toContainText("Temmuz 2026");
+    // İki engel KARIŞMASIN: sıra engelinde taslak listesi HİÇ basılmaz.
+    await expect(page.getByTestId("dkap-draft-list-8")).toHaveCount(0);
+  });
+
+  // 🔴 SIRA-B'nin İKİNCİ yüzü (backend K2/K3): kaydı OLMAYAN önceki ay ENGEL
+  // DEĞİLDİR. Kasım'ın öncesi (Ekim) kayıtsızdır ⇒ `previous_period_open`
+  // false ⇒ satır kapatılabilir. Bu kural olmasaydı sistemin İLK kapanışı
+  // hiçbir zaman yapılamazdı (her ayın öncesinde sonsuz kayıtsız ay vardır).
+  test("🔴 SIRA-B — Kasım kapatılabilir: kaydı olmayan önceki ay (Ekim) ENGEL DEĞİL", async ({
+    page,
+  }) => {
+    await openPeriodClosing(page);
+    await expect(page.getByTestId("dkap-close-11")).toBeEnabled();
+    await expect(page.getByTestId("dkap-sequence-reason-11")).toHaveCount(0);
   });
 
   // 🔴 Yönetim bulgusu (mockup birebir): "N taslak fiş var" bir SAYI DEĞİL,
