@@ -104,6 +104,24 @@ export const UPCOMING_COUNTERPARTY_HINT =
   "Kaynak evrakta karşı taraf adı boş — taslak taşeron sözleşmesinde bu alan boş bırakılabilir.";
 
 /**
+ * Dönem `document_no`su BOŞ geldiğinde basılan açık ifade.
+ *
+ * 🔴 ÖLÇÜLDÜ (F-HZ2 final review): `document_no` şemada `minLength` TAŞIMAZ —
+ * `openapi.json`da `UpcomingPaymentItem.document_no` yalnız
+ * `{"type": "string"}`tir, yani boş dize SÖZLEŞMEYE GÖRE YASALDIR. Ham boş
+ * dizeye düşülseydi başlık `"Bordro – "` olurdu: SARKAN AYRAÇ. Bu, "baştaki
+ * ayraç basılmaz" kuralının kuyruktaki aynı kusurudur ve kullanıcıya "eksik
+ * veri" değil "bozuk arayüz" gibi görünür.
+ *
+ * Bu dosyanın kanonu eksik değeri AÇIK TÜRKÇE İFADEYLE basar
+ * (`UPCOMING_COUNTERPARTY_EMPTY` · `BANK_ACCOUNT_IDENTITY_EMPTY`); aynı desen
+ * burada da uygulanır. 🔴 Kapsam DARDIR: bozuk ama DOLU girdi (`"abc"`,
+ * `"2026-13"`) HAM basılmaya devam eder — orada kullanıcıya gösterilecek
+ * gerçek bir değer vardır ve onu bu ifadeyle örtmek veriyi GİZLERDİ.
+ */
+export const UPCOMING_PERIOD_EMPTY = "Dönem belirtilmemiş";
+
+/**
  * `counterparty === null` HER kaynakta eksiklik DEĞİLDİR. Panel bu kararı
  * kendi kurmaz — sayım da tooltip de buradan geçer, yoksa kusursuz bir bordro
  * kaydı için yanlış alarm ("taslak taşeron sözleşmesinde…") basılırdı.
@@ -125,10 +143,12 @@ const PERIOD_DOCUMENT_NO = /^\d{4}-(\d{2})$/;
  * 2026" yazar, E9:117 ise yılsız "Temmuz" çizer.
  *
  * Beklenen biçime uymayan girdi (biçim bozuk ya da ay 1..12 dışında) ZARİF
- * DÜŞER: ham `document_no` basılır. Sessiz atlama yoktur ve çıktı asla
- * "undefined"/"NaN"/"null" içermez.
+ * DÜŞER: ham `document_no` basılır. Girdi BOŞ ise basılacak ham değer de
+ * yoktur → `UPCOMING_PERIOD_EMPTY` (sarkan ayraç gerekçesi orada). Sessiz
+ * atlama yoktur ve çıktı asla "undefined"/"NaN"/"null" içermez.
  */
 function upcomingPeriodText(documentNo: string): string {
+  if (documentNo.trim() === "") return UPCOMING_PERIOD_EMPTY;
   const match = PERIOD_DOCUMENT_NO.exec(documentNo);
   const rawMonth = match?.[1];
   if (rawMonth === undefined) return documentNo;

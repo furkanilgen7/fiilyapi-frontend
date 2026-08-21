@@ -7,6 +7,7 @@ import {
   BANK_ACCOUNT_TYPE_LABELS,
   UPCOMING_SOURCE_DOCUMENT_NO_KIND,
   UPCOMING_SOURCE_HAS_COUNTERPARTY,
+  UPCOMING_PERIOD_EMPTY,
   UPCOMING_SOURCE_LABELS,
   bankAccountIdentityLine,
   isUpcomingCounterpartyMissing,
@@ -361,5 +362,62 @@ describe("UPCOMING_SOURCE_DOCUMENT_NO_KIND — evrak no mu DÖNEM mi", () => {
     expect(UPCOMING_SOURCE_DOCUMENT_NO_KIND.payroll).toBe("period");
     expect(UPCOMING_SOURCE_HAS_COUNTERPARTY.invoice).toBe(true);
     expect(UPCOMING_SOURCE_DOCUMENT_NO_KIND.invoice).toBe("document");
+  });
+});
+
+/**
+ * F-HZ2 FINAL REVIEW · SARKAN AYRAÇ. `document_no` şemada `minLength` TAŞIMAZ
+ * (`openapi.json`: `{"type": "string"}`), yani boş dize sözleşmeye göre
+ * yasaldır. Ham boş dizeye düşülürse başlık `"Bordro – "` olur — "baştaki
+ * ayraç basılmaz" kuralının KUYRUKTAKİ aynı kusuru. T2'nin
+ * `trim().length > 0` iddiası bunu YAKALAMIYORDU ("Bordro –" 8 karakterdir).
+ */
+describe("upcomingPaymentTitle — bordroda SARKAN AYRAÇ basılmaz", () => {
+  it.each(["", "   ", "\t"])(
+    "boş/boşluklu document_no (%j) açık ifadeye düşer, ayraç sarkmaz",
+    (documentNo) => {
+      const title = upcomingPaymentTitle({
+        counterparty: null,
+        document_no: documentNo,
+        source_type: "payroll",
+      });
+
+      // Elle yazılmış beklenen değer.
+      expect(title).toBe("Bordro – Dönem belirtilmemiş");
+      // Ayraç kuyrukta SARKMAZ.
+      expect(title.endsWith("–")).toBe(false);
+      expect(title.trimEnd().endsWith("–")).toBe(false);
+    },
+  );
+
+  it("zarif düşüş metni TEK KAYNAKTAN gelir", () => {
+    expect(UPCOMING_PERIOD_EMPTY).toBe("Dönem belirtilmemiş");
+  });
+
+  it("🔴 KAPSAM DAR: bozuk ama DOLU document_no HAM basılmayı sürdürür", () => {
+    // İkinci iddia ŞART: her bozuk girdiyi bu ifadeyle örten bir uygulama
+    // gerçek veriyi GİZLERDİ ve yukarıdaki testi yine de geçerdi.
+    expect(
+      upcomingPaymentTitle({
+        counterparty: null,
+        document_no: "abc",
+        source_type: "payroll",
+      }),
+    ).toBe("Bordro – abc");
+    expect(
+      upcomingPaymentTitle({
+        counterparty: null,
+        document_no: "2026-13",
+        source_type: "payroll",
+      }),
+    ).toBe("Bordro – 2026-13");
+    // Geçerli dönem hiç etkilenmedi.
+    expect(
+      upcomingPaymentTitle({
+        counterparty: null,
+        document_no: "2026-07",
+        source_type: "payroll",
+      }),
+    ).toBe("Bordro – Temmuz");
   });
 });
