@@ -3,6 +3,7 @@ import { formatCurrencyTight, formatDayMonth } from "@/lib/format";
 
 import {
   UPCOMING_COUNTERPARTY_HINT,
+  isUpcomingCounterpartyMissing,
   upcomingDaysText,
   upcomingPaymentTitle,
   upcomingPaymentTone,
@@ -25,6 +26,10 @@ export interface UpcomingPaymentsPanelProps {
  * 🔴 `due_date` düz takvim tarihidir; `formatDayMonth` string'ten ayrıştırır —
  * `new Date("2026-07-19")` UTC gece yarısı olurdu ve TR'de BİR GÜN GERİ kayardı
  * (TB5 sınıfı kusur).
+ * 🔴 "Karşı taraf boş mu" kararı panelde KURULMAZ: `counterparty === null`
+ * okumak bordroyu (dış karşı tarafı TANIM GEREĞİ yok) yanlış alarma sokardı —
+ * karar `isUpcomingCounterpartyMissing`tedir, sayım ve tooltip aynı kaynaktan
+ * geçer.
  */
 export function UpcomingPaymentsPanel({
   upcoming,
@@ -32,7 +37,7 @@ export function UpcomingPaymentsPanel({
   errorMessage,
 }: UpcomingPaymentsPanelProps) {
   const items = upcoming?.items ?? [];
-  const missingCounterpartyCount = items.filter((item) => item.counterparty === null).length;
+  const missingCounterpartyCount = items.filter(isUpcomingCounterpartyMissing).length;
 
   return (
     <section className="hazine-panel" data-testid="hazine-upcoming-panel">
@@ -80,7 +85,7 @@ export function UpcomingPaymentsPanel({
                   {/* 113 */}
                   <div
                     className="hazine-row__title"
-                    {...(item.counterparty === null
+                    {...(isUpcomingCounterpartyMissing(item)
                       ? { title: UPCOMING_COUNTERPARTY_HINT }
                       : {})}
                   >

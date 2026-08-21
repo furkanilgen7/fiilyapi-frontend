@@ -19307,7 +19307,7 @@
           "treasury"
         ],
         "summary": "List Upcoming Payments Endpoint",
-        "description": "E9:109-125 — önümüzdeki `days` gün içinde ödenecekler.\n\n`days` varsayılanı **7**dir (E9:110 `(7 Gün)`) ve tavanı 90'dır; aşım\n**422**dir, sessiz kırpma DEĞİL (TB3 kanonu).\n\n🔴 **K10:** yanıt `days_remaining` (sayı) + `source_type` taşır; `urgency`/\n`color` gibi bir alan YOKTUR — renk kararı istemcinindir.\n\n🔴 **K9:** kaynaklar bugün fatura ve taşeron hakedişidir; **bordro hiç satır\nüretmez** (vade kolonu yok, uydurulmaz) — ayrıntı `upcoming.py`de.\n\n🔴 **Kapsam:** hesap şirket geneli olsa da (K3) KAYNAKLAR proje kapsamlıdır\nve her satır karşı taraf + tutar sızdırır → süzgeç UYGULANIR.",
+        "description": "E9:109-125 — önümüzdeki `days` gün içinde ödenecekler.\n\n`days` varsayılanı **7**dir (E9:110 `(7 Gün)`) ve tavanı 90'dır; aşım\n**422**dir, sessiz kırpma DEĞİL (TB3 kanonu).\n\n🔴 **K10:** yanıt `days_remaining` (sayı) + `source_type` taşır; `urgency`/\n`color` gibi bir alan YOKTUR — renk kararı istemcinindir.\n\n🔴 **K9:** kaynaklar ÜÇTÜR — fatura · taşeron hakedişi · **bordro dönemi**\n(TB8). Bordronun iki ek kapısı vardır: yalnız `approved` dönem listelenir\n(vade ancak onaydan sonra bir TAAHHÜTTÜR) ve satır `payroll:view` izni\nolmayan aktörden GİZLENİR. Vade hiçbir kaynakta UYDURULMAZ: vadesi NULL\nolan kayıt listeye girmez — ayrıntı `upcoming.py`de.\n\n🔴 **Kapsam:** hesap şirket geneli olsa da (K3) fatura/hakediş KAYNAKLARI\nproje kapsamlıdır ve her satır karşı taraf + tutar sızdırır → süzgeç\nUYGULANIR. Bordroda proje kapsamı YOKTUR (`payroll_periods`ta `project_id`\nyok); oradaki kapı saf modül iznidir.",
         "operationId": "list_upcoming_payments_endpoint_treasury_upcoming_payments_get",
         "security": [
           {
@@ -52972,7 +52972,7 @@
           "amount"
         ],
         "title": "UpcomingPaymentItem",
-        "description": "E9:109-125 satırı — mockup'ın BEŞ alanı + kaynak damgası.\n\n🔴 **K10: aciliyet/renk alanı YOKTUR ve açılmaz.** E9'un kodlaması kendi\niçinde tutarsızdır (2 gün→turuncu, 3 gün→**kırmızı**, 7 gün→yeşil); sunucu\nbir eşik uydurursa mockup'ın hangi yarısının doğru olduğuna KARAR VERMİŞ\nolur. Yanıt yalnız `days_remaining` sayısını ve `source_type`ı verir; renk\nistemcinindir (SA'nın \"EN HIZLI rozeti sunucuda üretilmez\" kanonu).\n\n`counterparty` NULLABLE'dır ve olmalıdır: taşeron sözleşmesinde\n`subcontractor_name` taslak aşamasında boş bırakılabilir. Boş metinle\nya da \"Bilinmeyen\" gibi bir dolgu ile doldurmak, kullanıcıya var olmayan\nbir kayıt adı gösterirdi.\n\n`document_no` yalnız TANIMLAYICIDIR, cümle DEĞİL: faturada `invoice_no`,\nhakedişte `sequence_no`nun metni. Sunucu \"Hakediş #47\" cümlesini KURMAZ —\no birleştirme (E9:113) `source_type` ile birlikte istemcide yapılır ve\nçeviri/biçim kararı sunucuya sızmaz."
+        "description": "E9:109-125 satırı — mockup'ın BEŞ alanı + kaynak damgası.\n\n🔴 **K10: aciliyet/renk alanı YOKTUR ve açılmaz.** E9'un kodlaması kendi\niçinde tutarsızdır (2 gün→turuncu, 3 gün→**kırmızı**, 7 gün→yeşil); sunucu\nbir eşik uydurursa mockup'ın hangi yarısının doğru olduğuna KARAR VERMİŞ\nolur. Yanıt yalnız `days_remaining` sayısını ve `source_type`ı verir; renk\nistemcinindir (SA'nın \"EN HIZLI rozeti sunucuda üretilmez\" kanonu).\n\n`counterparty` NULLABLE'dır ve olmalıdır: taşeron sözleşmesinde\n`subcontractor_name` taslak aşamasında boş bırakılabilir. Boş metinle\nya da \"Bilinmeyen\" gibi bir dolgu ile doldurmak, kullanıcıya var olmayan\nbir kayıt adı gösterirdi.\n\n`document_no` yalnız TANIMLAYICIDIR, cümle DEĞİL: faturada `invoice_no`,\nhakedişte `sequence_no`nun metni, bordroda dönemin `\"YYYY-MM\"`i. Sunucu\n\"Hakediş #47\" cümlesini KURMAZ — o birleştirme (E9:113) `source_type` ile\nbirlikte istemcide yapılır ve çeviri/biçim kararı sunucuya sızmaz. Aynı\nkanon bordroda E9:117'nin \"Temmuz\"unu da DIŞARIDA bırakır: ay adı bir\nÇEVİRİ kararıdır, `\"2026-07\"`den istemcide üretilir.\n\nBordro satırı `counterparty`yi **`None`** taşır: E9:117 bir karşı taraf adı\nçizmez (\"Bordro – Temmuz\"), oysa fatura satırı \"Yılmaz Elektrik\" basar.\nAlan yine de zarfta DURUR — kaynağa göre şekil değiştiren bir zarf,\nistemcide kaynak başına ayrı bir okuma yolu doğururdu."
       },
       "UpcomingPaymentsResponse": {
         "properties": {
@@ -53006,10 +53006,11 @@
         "type": "string",
         "enum": [
           "invoice",
-          "subcontractor_progress_payment"
+          "subcontractor_progress_payment",
+          "payroll"
         ],
         "title": "UpcomingSourceType",
-        "description": "Yaklaşan ödemenin KAYNAK EVRAK tipi (K9).\n\nE9:113/117/121 ÜÇ kaynak çizer — hakediş · **bordro** · fatura — ama bugün\nyalnız İKİSİ üretilebilir:\n\n* ✅ `invoice` — `invoices.due_date` gerçek bir vade kolonudur;\n* ✅ `subcontractor_progress_payment` — vade `approved_at` +\n  `subcontractor_contracts.payment_term_days`ten TÜRER;\n* ⛔ **bordro — ÜYE OLARAK AÇILMAZ.** `payroll_periods`ta ödeme vadesi\n  kavramı YOKTUR (İK-3'te vade kolonu açılmadı) ve uydurulmaz. Üretilemeyen\n  bir enum üyesi istemciye tutulamayacak bir söz verirdi: ekran o rozeti\n  çizer, hiçbir satır onu taşımazdı. Vade kolonu açıldığında üye de eklenir\n  (ROADMAP borcu)."
+        "description": "Yaklaşan ödemenin KAYNAK EVRAK tipi (K9).\n\nE9:113/117/121 ÜÇ kaynak çizer — hakediş · bordro · fatura — ve ÜÇÜ DE\nüretilir; her üyenin arkasında GERÇEK bir vade vardır:\n\n* `invoice` — `invoices.due_date`, doğrudan bir kolon;\n* `subcontractor_progress_payment` — `approved_at` +\n  `subcontractor_contracts.payment_term_days`ten TÜRER;\n* `payroll` — `payroll_periods.payment_due_date` (BY 63 \"Son ödeme\"),\n  doğrudan bir kolon. TB8'de ÖLÇÜLDÜ: alan İK-3'ten beri vardır, yani\n  \"bordroda vade kavramı yok\" gerekçesi yanlıştı. Vade UYDURULMAZ — NULL\n  olan dönem listeye girmez (fail-closed) ve yalnız `approved` dönem\n  girer: `service.update_period` vadeyi `draft`/`pending_approval`da\n  serbestçe değiştirir, `approved`/`paid`de 409 verir, yani vade ancak\n  onaydan sonra bir TAAHHÜTTÜR.\n\nÜye yalnız satır ÜRETİLEBİLDİĞİNDE açılır: üretilemeyen bir üye istemciye\ntutulamayacak bir söz verir (ekran rozeti çizer, hiçbir satır taşımaz)."
       },
       "UserCreate": {
         "properties": {

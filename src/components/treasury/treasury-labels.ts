@@ -1,5 +1,6 @@
 import type { BankAccountType } from "@/lib/api/hooks/useBankAccounts";
 import type { UpcomingSourceType } from "@/lib/api/hooks/useUpcomingPayments";
+import { formatMonthName } from "@/lib/format";
 
 /**
  * F-HZ T2 · Hazine — saf eşleme/karar katmanı. Bileşenler kendi etiketini ya da
@@ -51,13 +52,48 @@ export function bankAccountIdentityLine(account: {
 }
 
 /**
- * E9:113 "Hakediş #47" · E9:121 "Fatura". Sunucu bu cümleyi KURMAZ
- * (`UpcomingPaymentItem` şema notu): `document_no` yalnız tanımlayıcıdır,
- * birleştirme istemcide yapılır.
+ * E9:113 "Hakediş #47" · E9:117 "Bordro" · E9:121 "Fatura". Sunucu bu cümleyi
+ * KURMAZ (`UpcomingPaymentItem` şema notu): `document_no` yalnız
+ * tanımlayıcıdır, birleştirme istemcide yapılır.
+ *
+ * `payroll` TB8 ile açılan ÜÇÜNCÜ kaynaktır; "Bordro" etiketi mockup'tan
+ * OKUNDU (E9:117 "Bordro – Temmuz"), uydurulmadı.
  */
 export const UPCOMING_SOURCE_LABELS: Record<UpcomingSourceType, string> = {
   invoice: "Fatura",
   subcontractor_progress_payment: "Hakediş",
+  payroll: "Bordro",
+};
+
+/**
+ * Kaynağın DIŞ bir karşı tarafı var mı? Bordronun yoktur — ödeme şirketin
+ * kendi çalışanlarınadır, E9:117 bilerek ad çizmez. Bu yüzden bordroda
+ * `counterparty: null` bir EKSİKLİK DEĞİL TANIMdır.
+ *
+ * 🔴 Aşağıdaki `UPCOMING_SOURCE_DOCUMENT_NO_KIND` ile BİRLEŞTİRİLMEZ: "dış
+ * karşı tarafı yok" ile "`document_no` bir dönem" iki AYRI olgudur. Bugün
+ * ikisi de yalnız `payroll`da doğru olsa bile tek bayrağa indirgenirse
+ * dördüncü bir kaynak (ör. dış karşı tarafı OLAN ama dönemle numaralanan)
+ * eklendiğinde biri diğerinin arkasına saklanırdı.
+ */
+export const UPCOMING_SOURCE_HAS_COUNTERPARTY: Record<UpcomingSourceType, boolean> = {
+  invoice: true,
+  subcontractor_progress_payment: true,
+  payroll: false,
+};
+
+/**
+ * `document_no` bir EVRAK numarası mı yoksa bir DÖNEM mi? Bordroda sunucu
+ * `f"{yil:04d}-{ay:02d}"` üretir (backend `upcoming.py:_payroll_rows`) — bu
+ * bir numara değildir, `#` ön eki BASILMAZ ve ay adına çevrilir.
+ */
+export const UPCOMING_SOURCE_DOCUMENT_NO_KIND: Record<
+  UpcomingSourceType,
+  "document" | "period"
+> = {
+  invoice: "document",
+  subcontractor_progress_payment: "document",
+  payroll: "period",
 };
 
 /** E9:113 ayracı EN-DASH'tir (`–`), tire değil. */
@@ -68,18 +104,82 @@ export const UPCOMING_COUNTERPARTY_HINT =
   "Kaynak evrakta karşı taraf adı boş — taslak taşeron sözleşmesinde bu alan boş bırakılabilir.";
 
 /**
- * Satırın sol üst metni. `document_no` sunucuda ZORUNLUdur (şema), bu yüzden
- * E9:121'in numarasız "Fatura" yazımı yerine iki kaynak tipinde de numara
- * basılır — tanımlayıcıyı gizlemek kullanıcının evrağı bulmasını engellerdi
- * (MK-1 · K15: mockup kendi içinde tutarsızsa TUTARLI okuma kazanır).
+ * Dönem `document_no`su BOŞ geldiğinde basılan açık ifade.
+ *
+ * 🔴 ÖLÇÜLDÜ (F-HZ2 final review): `document_no` şemada `minLength` TAŞIMAZ —
+ * `openapi.json`da `UpcomingPaymentItem.document_no` yalnız
+ * `{"type": "string"}`tir, yani boş dize SÖZLEŞMEYE GÖRE YASALDIR. Ham boş
+ * dizeye düşülseydi başlık `"Bordro – "` olurdu: SARKAN AYRAÇ. Bu, "baştaki
+ * ayraç basılmaz" kuralının kuyruktaki aynı kusurudur ve kullanıcıya "eksik
+ * veri" değil "bozuk arayüz" gibi görünür.
+ *
+ * Bu dosyanın kanonu eksik değeri AÇIK TÜRKÇE İFADEYLE basar
+ * (`UPCOMING_COUNTERPARTY_EMPTY` · `BANK_ACCOUNT_IDENTITY_EMPTY`); aynı desen
+ * burada da uygulanır. 🔴 Kapsam DARDIR: bozuk ama DOLU girdi (`"abc"`,
+ * `"2026-13"`) HAM basılmaya devam eder — orada kullanıcıya gösterilecek
+ * gerçek bir değer vardır ve onu bu ifadeyle örtmek veriyi GİZLERDİ.
+ */
+export const UPCOMING_PERIOD_EMPTY = "Dönem belirtilmemiş";
+
+/**
+ * `counterparty === null` HER kaynakta eksiklik DEĞİLDİR. Panel bu kararı
+ * kendi kurmaz — sayım da tooltip de buradan geçer, yoksa kusursuz bir bordro
+ * kaydı için yanlış alarm ("taslak taşeron sözleşmesinde…") basılırdı.
+ */
+export function isUpcomingCounterpartyMissing(item: {
+  counterparty: string | null;
+  source_type: UpcomingSourceType;
+}): boolean {
+  return UPCOMING_SOURCE_HAS_COUNTERPARTY[item.source_type] && item.counterparty === null;
+}
+
+/** Sunucunun dönem biçimi: `f"{yil:04d}-{ay:02d}"` (backend `upcoming.py`). */
+const PERIOD_DOCUMENT_NO = /^\d{4}-(\d{2})$/;
+
+/**
+ * Dönem `document_no`sundan ay adı. Ay adları `@/lib/format`in `TR_MONTHS` TEK
+ * kaynağından gelir (`formatMonthName`, `CashFlowPanel`in de kullandığı
+ * yardımcı) — bu dosyaya KOPYALANMAZ. `formatPeriod` KULLANILMAZ: "Temmuz
+ * 2026" yazar, E9:117 ise yılsız "Temmuz" çizer.
+ *
+ * Beklenen biçime uymayan girdi (biçim bozuk ya da ay 1..12 dışında) ZARİF
+ * DÜŞER: ham `document_no` basılır. Girdi BOŞ ise basılacak ham değer de
+ * yoktur → `UPCOMING_PERIOD_EMPTY` (sarkan ayraç gerekçesi orada). Sessiz
+ * atlama yoktur ve çıktı asla "undefined"/"NaN"/"null" içermez.
+ */
+function upcomingPeriodText(documentNo: string): string {
+  if (documentNo.trim() === "") return UPCOMING_PERIOD_EMPTY;
+  const match = PERIOD_DOCUMENT_NO.exec(documentNo);
+  const rawMonth = match?.[1];
+  if (rawMonth === undefined) return documentNo;
+  const month = Number(rawMonth);
+  if (!Number.isInteger(month) || month < 1 || month > 12) return documentNo;
+  return formatMonthName(month);
+}
+
+/**
+ * Satırın sol üst metni.
+ *
+ * · `documentNoKind === "period"` (bordro, E9:117 "Bordro – Temmuz"): karşı
+ *   taraf yuvası ve `#` HİÇ basılmaz — bordronun dış karşı tarafı yoktur ve
+ *   `document_no` bir numara değil DÖNEMdir.
+ * · Aksi hâlde (fatura/hakediş) mevcut davranış AYNEN korunur: `document_no`
+ *   sunucuda ZORUNLUdur (şema), bu yüzden E9:121'in numarasız "Fatura" yazımı
+ *   yerine numara basılır — tanımlayıcıyı gizlemek kullanıcının evrağı
+ *   bulmasını engellerdi (MK-1 · K15: mockup kendi içinde tutarsızsa TUTARLI
+ *   okuma kazanır).
  */
 export function upcomingPaymentTitle(item: {
   counterparty: string | null;
   document_no: string;
   source_type: UpcomingSourceType;
 }): string {
+  const label = UPCOMING_SOURCE_LABELS[item.source_type];
+  if (UPCOMING_SOURCE_DOCUMENT_NO_KIND[item.source_type] === "period") {
+    return `${label} ${UPCOMING_SEPARATOR} ${upcomingPeriodText(item.document_no)}`;
+  }
   const who = item.counterparty ?? UPCOMING_COUNTERPARTY_EMPTY;
-  return `${who} ${UPCOMING_SEPARATOR} ${UPCOMING_SOURCE_LABELS[item.source_type]} #${item.document_no}`;
+  return `${who} ${UPCOMING_SEPARATOR} ${label} #${item.document_no}`;
 }
 
 export type UpcomingTone = "danger" | "warning" | "success";
