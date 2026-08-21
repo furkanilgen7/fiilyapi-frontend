@@ -5496,11 +5496,16 @@ export interface paths {
          *     🔴 **K10:** yanıt `days_remaining` (sayı) + `source_type` taşır; `urgency`/
          *     `color` gibi bir alan YOKTUR — renk kararı istemcinindir.
          *
-         *     🔴 **K9:** kaynaklar bugün fatura ve taşeron hakedişidir; **bordro hiç satır
-         *     üretmez** (vade kolonu yok, uydurulmaz) — ayrıntı `upcoming.py`de.
+         *     🔴 **K9:** kaynaklar ÜÇTÜR — fatura · taşeron hakedişi · **bordro dönemi**
+         *     (TB8). Bordronun iki ek kapısı vardır: yalnız `approved` dönem listelenir
+         *     (vade ancak onaydan sonra bir TAAHHÜTTÜR) ve satır `payroll:view` izni
+         *     olmayan aktörden GİZLENİR. Vade hiçbir kaynakta UYDURULMAZ: vadesi NULL
+         *     olan kayıt listeye girmez — ayrıntı `upcoming.py`de.
          *
-         *     🔴 **Kapsam:** hesap şirket geneli olsa da (K3) KAYNAKLAR proje kapsamlıdır
-         *     ve her satır karşı taraf + tutar sızdırır → süzgeç UYGULANIR.
+         *     🔴 **Kapsam:** hesap şirket geneli olsa da (K3) fatura/hakediş KAYNAKLARI
+         *     proje kapsamlıdır ve her satır karşı taraf + tutar sızdırır → süzgeç
+         *     UYGULANIR. Bordroda proje kapsamı YOKTUR (`payroll_periods`ta `project_id`
+         *     yok); oradaki kapı saf modül iznidir.
          */
         get: operations["list_upcoming_payments_endpoint_treasury_upcoming_payments_get"];
         put?: never;
@@ -18216,9 +18221,16 @@ export interface components {
          *     bir kayıt adı gösterirdi.
          *
          *     `document_no` yalnız TANIMLAYICIDIR, cümle DEĞİL: faturada `invoice_no`,
-         *     hakedişte `sequence_no`nun metni. Sunucu "Hakediş #47" cümlesini KURMAZ —
-         *     o birleştirme (E9:113) `source_type` ile birlikte istemcide yapılır ve
-         *     çeviri/biçim kararı sunucuya sızmaz.
+         *     hakedişte `sequence_no`nun metni, bordroda dönemin `"YYYY-MM"`i. Sunucu
+         *     "Hakediş #47" cümlesini KURMAZ — o birleştirme (E9:113) `source_type` ile
+         *     birlikte istemcide yapılır ve çeviri/biçim kararı sunucuya sızmaz. Aynı
+         *     kanon bordroda E9:117'nin "Temmuz"unu da DIŞARIDA bırakır: ay adı bir
+         *     ÇEVİRİ kararıdır, `"2026-07"`den istemcide üretilir.
+         *
+         *     Bordro satırı `counterparty`yi **`None`** taşır: E9:117 bir karşı taraf adı
+         *     çizmez ("Bordro – Temmuz"), oysa fatura satırı "Yılmaz Elektrik" basar.
+         *     Alan yine de zarfta DURUR — kaynağa göre şekil değiştiren bir zarf,
+         *     istemcide kaynak başına ayrı bir okuma yolu doğururdu.
          */
         UpcomingPaymentItem: {
             source_type: components["schemas"]["UpcomingSourceType"];
@@ -18267,20 +18279,25 @@ export interface components {
          * UpcomingSourceType
          * @description Yaklaşan ödemenin KAYNAK EVRAK tipi (K9).
          *
-         *     E9:113/117/121 ÜÇ kaynak çizer — hakediş · **bordro** · fatura — ama bugün
-         *     yalnız İKİSİ üretilebilir:
+         *     E9:113/117/121 ÜÇ kaynak çizer — hakediş · bordro · fatura — ve ÜÇÜ DE
+         *     üretilir; her üyenin arkasında GERÇEK bir vade vardır:
          *
-         *     * ✅ `invoice` — `invoices.due_date` gerçek bir vade kolonudur;
-         *     * ✅ `subcontractor_progress_payment` — vade `approved_at` +
+         *     * `invoice` — `invoices.due_date`, doğrudan bir kolon;
+         *     * `subcontractor_progress_payment` — `approved_at` +
          *       `subcontractor_contracts.payment_term_days`ten TÜRER;
-         *     * ⛔ **bordro — ÜYE OLARAK AÇILMAZ.** `payroll_periods`ta ödeme vadesi
-         *       kavramı YOKTUR (İK-3'te vade kolonu açılmadı) ve uydurulmaz. Üretilemeyen
-         *       bir enum üyesi istemciye tutulamayacak bir söz verirdi: ekran o rozeti
-         *       çizer, hiçbir satır onu taşımazdı. Vade kolonu açıldığında üye de eklenir
-         *       (ROADMAP borcu).
+         *     * `payroll` — `payroll_periods.payment_due_date` (BY 63 "Son ödeme"),
+         *       doğrudan bir kolon. TB8'de ÖLÇÜLDÜ: alan İK-3'ten beri vardır, yani
+         *       "bordroda vade kavramı yok" gerekçesi yanlıştı. Vade UYDURULMAZ — NULL
+         *       olan dönem listeye girmez (fail-closed) ve yalnız `approved` dönem
+         *       girer: `service.update_period` vadeyi `draft`/`pending_approval`da
+         *       serbestçe değiştirir, `approved`/`paid`de 409 verir, yani vade ancak
+         *       onaydan sonra bir TAAHHÜTTÜR.
+         *
+         *     Üye yalnız satır ÜRETİLEBİLDİĞİNDE açılır: üretilemeyen bir üye istemciye
+         *     tutulamayacak bir söz verir (ekran rozeti çizer, hiçbir satır taşımaz).
          * @enum {string}
          */
-        UpcomingSourceType: "invoice" | "subcontractor_progress_payment";
+        UpcomingSourceType: "invoice" | "subcontractor_progress_payment" | "payroll";
         /** UserCreate */
         UserCreate: {
             /**

@@ -9,7 +9,8 @@ import { TREASURY_URL, login } from "./treasury-helpers";
 // Kapsam: kabuk sidebar girişi (ComingSoon DEĞİL) · `is_active` süzgeci +
 // IBAN'sız kasa kartı · ton eşiklerinin SATIRA düşüşü · rotası olmayan
 // "+ Ödeme Planla" düğmesinin devre-dışı + gerekçeli hâli · `counterparty`
-// NULL satırının zarif düşüşü.
+// NULL satırının zarif düşüşü · TB8 bordro satırı (E9:117) ve onun NULL
+// karşı tarafının EKSİKLİK SAYILMAMASI.
 //
 // 🔒 SALT-OKUR: bu dosya hiçbir POST/PATCH tetiklemez; hazine uçlarının üçü de
 // GET'tir → `fullyParallel` altında yarış YOKTUR.
@@ -76,7 +77,7 @@ test("yaklaşan ödeme satırlarının tonu `days_remaining` eşiklerine UYAR", 
   const panel = page.getByTestId("hazine-upcoming-panel");
   // Başlıktaki gün sayısı `days` ECHO'sudur, sabit yazılmaz.
   await expect(panel.getByRole("heading", { name: "Yaklaşan Ödemeler (7 Gün)" })).toBeVisible();
-  await expect(page.getByTestId("hazine-upcoming-row")).toHaveCount(4);
+  await expect(page.getByTestId("hazine-upcoming-row")).toHaveCount(5);
 
   // ≤2 gün → danger
   const akin = page.locator('[data-source-id="sp-1"]');
@@ -97,6 +98,26 @@ test("yaklaşan ödeme satırlarının tonu `days_remaining` eşiklerine UYAR", 
   await expect(demir).toContainText("7 gün kaldı");
 });
 
+// F-HZ2 T3 · TB8 üçüncü kaynak. Fikstüre bordro satırı EKLENMEDEN bu kod
+// kadraja HİÇ girmiyordu — beşinci kapı boşuna yeşil veriyordu.
+test("bordro satırı E9:117'yi basar: karşı taraf adı da '#' de YOK", async ({ page }) => {
+  await login(page);
+  await page.goto(TREASURY_URL);
+
+  const bordro = page.locator('[data-source-id="pr-1"]');
+  // `document_no` "2026-07" bir NUMARA değil DÖNEMdir → ay adına çevrilir.
+  await expect(bordro).toContainText("Bordro – Temmuz");
+  await expect(bordro).toContainText("20 Temmuz · 3 gün kaldı");
+  await expect(bordro).toContainText("₺892.000");
+  // Ton MEVCUT eşikten gelir (3 gün → warning); bordroya özel eşik YOKTUR.
+  await expect(bordro).toHaveAttribute("data-tone", "warning");
+
+  // 🔴 Bordronun `counterparty`si NULL'dır ama bu EKSİKLİK DEĞİL TANIMdır:
+  // ne düşüş metni ne de "kaynak evrakta boş" ipucu basılır.
+  await expect(bordro).not.toContainText("Karşı taraf belirtilmemiş");
+  await expect(bordro.locator(".hazine-row__title")).not.toHaveAttribute("title", /.+/);
+});
+
 test("karşı tarafı BOŞ ödeme zarif düşer ve GÖRÜNÜR bildirim basar", async ({ page }) => {
   await login(page);
   await page.goto(TREASURY_URL);
@@ -109,6 +130,9 @@ test("karşı tarafı BOŞ ödeme zarif düşer ve GÖRÜNÜR bildirim basar", a
 
   // Sessiz atlama YOK: eksiklik kullanıcıya bildirilir.
   // (`getByRole("alert")` KULLANILMAZ — F-P6 dersi.)
+  // 🔴 "1" SAYISI UÇTAN UCA KANIT: fikstürde `counterparty: null` olan İKİ
+  // satır vardır (`sp-2` hakediş + `pr-1` bordro); bordro yanlış sayılsaydı
+  // burada "2 ödemenin…" yazardı.
   const notice = page.getByTestId("hazine-upcoming-counterparty-notice");
   await expect(notice).toBeVisible();
   await expect(notice).toHaveText("1 ödemenin karşı taraf adı kaynak evrakta boş.");
