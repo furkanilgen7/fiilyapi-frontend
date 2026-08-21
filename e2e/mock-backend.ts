@@ -5430,9 +5430,19 @@ const TREASURY_CASH_FLOW: components["schemas"]["CashFlowResponse"] = {
  *
  * Satırlar ÜÇ TONU da kapsar (`upcomingPaymentTone` eşikleri):
  *   · `days_remaining ≤ 2` → danger · `3-4` → warning · `≥ 5` → success
- * ve `UpcomingSourceType`ın İKİ üyesini de taşır. Son satırın
- * `counterparty`si NULL'dır → zarif düşüş yüzeyi (satır metni + görünür
- * bildirim) kadraja girer; hepsi dolu olsaydı o dal hiç basılmazdı.
+ * ve `UpcomingSourceType`ın ÜÇ üyesini de taşır (TB8 ile `payroll` eklendi) —
+ * eksik bir üye görsel kapının yeni kodu HİÇ görmemesi demektir.
+ *
+ * 🔴 İKİ satırın `counterparty`si NULL'dır ama ANLAMLARI FARKLIDIR:
+ *   · `sp-2` (hakediş) → GERÇEK eksiklik; zarif düşüş yüzeyi (satır metni +
+ *     görünür bildirim + tooltip) kadraja girer, hepsi dolu olsaydı o dal hiç
+ *     basılmazdı.
+ *   · `pr-1` (bordro) → TANIM; bordronun dış karşı tarafı yoktur (E9:117
+ *     bilerek ad çizmez). Sayıma GİRMEZ, tooltip ALMAZ. Bildirimin "1
+ *     ödemenin…" demesi düzeltmenin uçtan uca kanıtıdır.
+ *
+ * Sıra sunucununkidir: vadeye göre artan, eşitlikte `document_no`
+ * ("2026-07" < "FT-2026-0311").
  */
 const TREASURY_UPCOMING: components["schemas"]["UpcomingPaymentsResponse"] = {
   days: 7,
@@ -5447,6 +5457,16 @@ const TREASURY_UPCOMING: components["schemas"]["UpcomingPaymentsResponse"] = {
       due_date: "2026-07-19",
       days_remaining: 2,
       amount: "1016800.00",
+    },
+    // 3-4 gün → warning · TB8 üçüncü kaynak (E9:117 "Bordro – Temmuz").
+    {
+      source_type: "payroll",
+      source_id: "pr-1",
+      counterparty: null,
+      document_no: "2026-07",
+      due_date: "2026-07-20",
+      days_remaining: 3,
+      amount: "892000.00",
     },
     // 3-4 gün → warning.
     {

@@ -54,7 +54,7 @@ test("hazine ekrani gorsel", async ({ page }) => {
   await expect(page.getByTestId("hazine-cashflow-panel")).toContainText("Giriş ₺4,12M");
   // (c) yaklaşan ödemeler (`GET /treasury/upcoming-payments`) — GERÇEK satır
   await expect(page.getByTestId("hazine-loaded-upcoming")).toHaveCount(1);
-  await expect(page.getByTestId("hazine-upcoming-row")).toHaveCount(4);
+  await expect(page.getByTestId("hazine-upcoming-row")).toHaveCount(5);
   await expect(page.getByTestId("hazine-upcoming-panel")).toContainText(
     "Akın İnşaat – Hakediş #47",
   );
