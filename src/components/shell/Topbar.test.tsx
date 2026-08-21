@@ -7,10 +7,9 @@ vi.mock("./SessionProvider", () => ({
 }));
 
 describe("Topbar", () => {
-  it("marka adini gosterir", () => {
+  it("marka logosunu gosterir", () => {
     render(<Topbar />);
-    expect(screen.getByText("FİİL")).toBeInTheDocument();
-    expect(screen.getByText("YAPI")).toBeInTheDocument();
+    expect(screen.getByAltText("FİİL YAPI İNŞAAT MİMARLIK SAN. TİC. A.Ş.")).toBeInTheDocument();
   });
   it("kullanici bas harflerini avatar'da gosterir", () => {
     render(<Topbar />);
