@@ -27,6 +27,7 @@ import { PeriodCloseConfirmModal } from "./PeriodCloseConfirmModal";
 import {
   buildPeriodRows,
   closeButtonDisabledReason,
+  periodBlockReason,
   periodClosedAtText,
   periodClosedByText,
   periodEntryCountText,
@@ -379,6 +380,12 @@ function PeriodRowAction({
  * kayıt-yok satırlar hiç çağrı YAPMAZ, yalnız `blocked` durumundaki satırlar
  * kendi döneminin taslaklarını çeker.
  *
+ * 🔴 K3.1 TEK KARAR NOKTASI — bant başlığı `periodBlockReason`den gelir;
+ * taslak SAYISI görünümde HİÇ okunmaz. Önceki hâli sayıyı burada okuyup
+ * başlığı ikinci kez kopyalıyordu: tooltip ile bant sessizce ayrışabilirdi.
+ * Bekçisi mekaniktir — `period-closing.ts` dışındaki hiçbir dosya bu alanların
+ * ADINI bile taşımaz.
+ *
  * 🔴 FİŞ NUMARASI (`YEV-2026-0214`) UYDURULMAZ: `JournalEntryResponse`
  * şemasında böyle bir alan YOKTUR (yalnız `id` UUID'dir) — mockup'ın
  * numarası örnek/kurgu biçimdir. Ekran gerçekte var olan alanları basar:
@@ -386,7 +393,6 @@ function PeriodRowAction({
  * düşüş — numara YOK ama liste GERÇEK).
  */
 function BlockedReasonRow({ row }: { row: PeriodRow }) {
-  const count = row.item?.draft_count ?? 0;
   const draftsQuery = useJournalEntries({ status: "draft", year: row.year, month: row.month });
   const errorMessage = draftsQuery.isError
     ? backendErrorMessage(draftsQuery.error, "Taslak fişler yüklenemedi.")
@@ -398,9 +404,7 @@ function BlockedReasonRow({ row }: { row: PeriodRow }) {
         <div className="dkap-blocked-banner">
           <AlertIcon className="dkap-blocked-banner__icon" />
           <div>
-            <p className="dkap-blocked-banner__title">
-              Dönem kapatılamıyor — {count} taslak fiş var
-            </p>
+            <p className="dkap-blocked-banner__title">{periodBlockReason(row)}</p>
             <p className="dkap-blocked-banner__detail">
               Taslak durumdaki fişler kapanışa dâhil edilemez. Kapatmadan önce hepsini
               kesinleştirin veya silin.
