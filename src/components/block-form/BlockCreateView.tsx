@@ -7,7 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Button, Checkbox } from "@/components/ui";
 import { UnitFormTabs } from "@/components/unit-shell/UnitFormTabs";
-import { SALES_LIST_HREF } from "@/components/unit-shell/routes";
+import { BULK_UNIT_FORM_HREF, SALES_LIST_HREF } from "@/components/unit-shell/routes";
 import { backendErrorMessage } from "@/lib/api/error-message";
 import { useProjects } from "@/lib/api/hooks/useProjects";
 import { useSites } from "@/lib/api/hooks/useSites";
@@ -18,7 +18,6 @@ import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { buildBlockBody } from "./build-body";
 import {
   BLOCK_BULK_UNITS_LABEL,
-  BLOCK_BULK_UNITS_PENDING_REASON,
   BLOCK_CANCEL_LABEL,
   BLOCK_FORM_SUBTITLE,
   BLOCK_FORM_TITLE,
@@ -42,6 +41,9 @@ import "./block-form.css";
 
 /** Seçili proje URL'de taşınır (SY/`SalesView` ile aynı anahtar). */
 const PROJECT_PARAM = "proje";
+
+/** Toplu üretim ekranının blok bağlamı (`BulkUnitCreateView` aynı adı okur). */
+const BLOCK_PARAM = "blok";
 
 /**
  * BE — "Yeni Blok Ekle" formu (`Form - Blok Ekle.dc.html`, kanonik).
@@ -137,10 +139,22 @@ export function BlockCreateView() {
     }
     setFormError(null);
     try {
-      await createBlock.mutateAsync({
+      const block = await createBlock.mutateAsync({
         projectId: values.projectId,
         body: buildBlockBody(values, touched),
       });
+      // BE 109 — 🔴 GEZİNME BAYRAĞI. İşaretliyse kullanıcı toplu üretim
+      // ekranına YENİ BLOĞUN bağlamıyla götürülür: yalnız `?proje=` vermek onu
+      // blok seçicisi BOŞ bir ekrana bırakır ve kutucuk süs olurdu. Blok
+      // kimliği oluşturma cevabından gelir (`BlockResponse.id`).
+      if (values.goToBulkUnits) {
+        const params = new URLSearchParams({
+          [PROJECT_PARAM]: values.projectId,
+          [BLOCK_PARAM]: block.id,
+        });
+        router.push(`${BULK_UNIT_FORM_HREF}?${params.toString()}`);
+        return;
+      }
       router.push(SALES_LIST_HREF);
     } catch (error) {
       // Sunucunun 422/409 gövdesi OLDUĞU GİBİ basılır — kayıt başarılı gibi
@@ -221,21 +235,22 @@ export function BlockCreateView() {
 
         {/* 106-115 — alt eylem şeridi */}
         <div className="pf-actions pf-actions--split">
-          {/* 107-110 — toplu üretim kutucuğu F-UNIT2'ye pending: SİLİNMEZ,
-              devre dışı + İŞARETSİZ + GÖRÜNÜR gerekçe. Mockup kutuyu `checked`
-              çizer; işaretli basmak, arkasında hiçbir şey olmayan bir sözü
-              tutuyormuş gibi görünmek olurdu. */}
+          {/* 107-110 — 🔴 ARTIK GERÇEK (F-UNIT2 T2c): hedefi `/satis/toplu-uretim`
+              T2a'da açıldı, bu yüzden kutucuk etkinleştirildi ve "henüz
+              açılmadı" gerekçesi KALDIRILDI — canlı bir ekranı yalanlayan not
+              ekranda bırakılmaz. İşaretlenirse kayıt başarısında `router.push`
+              çalışır; bayrak GÖVDEYE GİRMEZ (`build-body.ts`). Mockup kutuyu
+              `checked` çizer ama bu ÖRNEK VERİDİR: kullanıcı adına gezinme
+              kararı verilmez. */}
           <span className="be-bulk">
             <Checkbox
               size="lg"
-              disabled
-              checked={false}
-              readOnly
-              title={BLOCK_BULK_UNITS_PENDING_REASON}
               data-testid="blok-form-toplu-uretim"
               label={BLOCK_BULK_UNITS_LABEL}
+              checked={values.goToBulkUnits}
+              disabled={isSaving}
+              onChange={(event) => handleChangeField("goToBulkUnits", event.target.checked)}
             />
-            <span className="uf-pending-reason">{BLOCK_BULK_UNITS_PENDING_REASON}</span>
           </span>
 
           <div className="pf-actions__group">

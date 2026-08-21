@@ -260,6 +260,17 @@ describe("BulkUnitCreateView — kaskad: proje → şantiye (süzgeç) → blok"
     render(<BulkUnitCreateView />);
     expect(screen.getByTestId("toplu-form-proje")).toHaveValue("prj-1");
   });
+
+  it("🔴 `?blok=` bağlamı da TOHUMLANIR — BE 109'un geldiği yer burasıdır", () => {
+    // `BlockCreateView` "Kaydettikten sonra toplu ünite üretimine geç"
+    // işaretliyken buraya `?proje=…&blok=<yeni blok>` ile yönlendirir. `blok`
+    // okunmazsa kullanıcı blok seçicisi BOŞ bir ekrana düşer ve o kutucuk
+    // süsten ibaret kalırdı.
+    searchParams = new URLSearchParams("proje=prj-1&blok=blk-a");
+    render(<BulkUnitCreateView />);
+    expect(screen.getByTestId("toplu-form-proje")).toHaveValue("prj-1");
+    expect(screen.getByTestId("toplu-form-blok")).toHaveValue("blk-a");
+  });
 });
 
 describe("BulkUnitCreateView — TU 70/71 kat aralığı SEÇİLİ BLOKTAN türer", () => {

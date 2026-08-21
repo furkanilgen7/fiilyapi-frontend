@@ -222,21 +222,46 @@ describe("buildBlockBody — pending sızıntısı ve PATH parametresi", () => {
     expect(body).not.toHaveProperty("project_id");
   });
 
-  it("BE 109 'toplu ünite üretimine geç' kutusu ne durumda ne gövdede karşılık bulur", () => {
-    // Canon: rotası olmayan mockup öğesi SİLİNMEZ, devre dışı basılır — ama
-    // durumda alanı olmadığı için gövdeye SIZAMAZ.
+  it("🔴 BE 109 gezinme bayrağı GÖVDEYE SIZMAZ (durumda yaşar, gövdede yaşamaz)", () => {
+    // 🔴 BU BEKÇİ DARALTILDI, SİLİNMEDİ. Eskiden hem DURUM hem GÖVDE anahtarları
+    // `/bulk|batch|toplu|generate/i` ile eşleşmesin diye bakıyordu; o hâliyle
+    // doğruydu çünkü kutucuğun hedefi yoktu ve `BlockFormValues`ta alanı da
+    // yoktu. T2c'de hedef (`/satis/toplu-uretim`) açıldı ve kutucuk GERÇEK
+    // oldu: `goToBulkUnits` artık durumun meşru bir üyesidir — tıpkı gövdeye
+    // girmeyen `projectId` (PATH parametresi) gibi.
+    //
+    // Korunması GEREKEN kısım DEĞİŞMEDİ ve burada güçlendirildi: bayrak bir
+    // GEZİNME kararıdır, `BlockCreate` gövdesinde karşılığı YOKTUR ve oraya
+    // sızarsa sunucu 422 döner. Bu yüzden desen artık YALNIZ gövdeye
+    // uygulanır — ve durum tarafında bayrağın GERÇEKTEN VAR OLDUĞU ayrıca
+    // ölçülür, yoksa kutucuk sessizce ölü bir yüzeye dönebilirdi.
     const stateKeys = Object.keys(emptyBlockFormValues());
-    expect(stateKeys.filter((key) => /bulk|batch|toplu|generate/i.test(key))).toEqual([]);
+    expect(stateKeys).toContain("goToBulkUnits");
 
-    const body = buildBlockBody(MOCKUP_VALUES, ALL_TOUCHED);
+    const body = buildBlockBody(
+      { ...MOCKUP_VALUES, goToBulkUnits: true },
+      ALL_TOUCHED,
+    ) as Record<string, unknown>;
+    // Gövdede desenle eşleşen TEK BİR anahtar bile olmamalı (adlarını tek tek
+    // saymak yeni bir isim uydurulduğunda kaçırırdı).
+    expect(Object.keys(body).filter((key) => /bulk|batch|toplu|generate/i.test(key))).toEqual([]);
     for (const forbidden of [
       "bulk_units",
       "generate_units",
       "create_units",
       "go_to_bulk",
+      "goToBulkUnits",
       "documents",
     ]) {
       expect(body, forbidden).not.toHaveProperty(forbidden);
     }
+  });
+
+  it("gezinme bayrağı AÇIK/KAPALI iken gövde AYNIDIR", () => {
+    // Bayrağın gövdeyi hiçbir şekilde etkilemediğinin doğrudan ölçümü:
+    // anahtar kümesi karşılaştırması bir gün gevşerse bu iddia yine tutar.
+    expect(buildBlockBody({ ...MOCKUP_VALUES, goToBulkUnits: true }, ALL_TOUCHED)).toEqual(
+      buildBlockBody({ ...MOCKUP_VALUES, goToBulkUnits: false }, ALL_TOUCHED),
+    );
   });
 });

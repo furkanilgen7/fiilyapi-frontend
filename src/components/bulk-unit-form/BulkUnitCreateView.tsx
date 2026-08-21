@@ -58,6 +58,14 @@ import "./bulk-unit-form.css";
 /** Seçili proje URL'de taşınır (SY/`SalesView`/UE ile aynı anahtar). */
 const PROJECT_PARAM = "proje";
 
+/**
+ * 🔴 BE 109'un ("Kaydettikten sonra toplu ünite üretimine geç") getirdiği blok
+ * bağlamı. `BlockCreateView` kayıttan sonra `?proje=…&blok=<yeni blok>` ile
+ * buraya yönlendirir; bu parametre OKUNMAZSA kullanıcı blok seçicisi BOŞ bir
+ * ekrana düşer ve o kutucuk süsten ibaret kalırdı.
+ */
+const BLOCK_PARAM = "blok";
+
 /** `POST …/units/bulk`ın HEP-YA-HİÇ reddi. */
 const CONFLICT_STATUS = 409;
 
@@ -109,13 +117,23 @@ export function BulkUnitCreateView() {
   const previewMutation = useBulkUnitPreview();
   const createBulk = useCreateBulkUnits();
 
-  // `?proje=` tohumlaması — YALNIZ BİR KEZ (`UnitCreateView` deseni).
-  const projectSeededRef = useRef(false);
+  // `?proje=` + `?blok=` tohumlaması — YALNIZ BİR KEZ (`UnitCreateView` deseni).
+  // Tek `useRef` ikisini birlikte korur: ayrı bayraklar, kullanıcı seçimi
+  // değiştirdikten sonra URL güncellenince tohumu YENİDEN uygulayabilirdi.
+  const contextSeededRef = useRef(false);
   useEffect(() => {
-    if (projectSeededRef.current) return;
-    projectSeededRef.current = true;
+    if (contextSeededRef.current) return;
+    contextSeededRef.current = true;
     const projeParam = searchParams.get(PROJECT_PARAM);
-    if (projeParam) setValues((prev) => ({ ...prev, projectId: projeParam }));
+    const blokParam = searchParams.get(BLOCK_PARAM);
+    if (!projeParam && !blokParam) return;
+    setValues((prev) => ({
+      ...prev,
+      ...(projeParam ? { projectId: projeParam } : {}),
+      // Blok listesi projeye bağlıdır; blok tek başına gelirse de yazılır ve
+      // liste geldiğinde seçici o bloğa oturur.
+      ...(blokParam ? { blockId: blokParam } : {}),
+    }));
   }, [searchParams]);
 
   const projects = projectsQuery.data?.items ?? [];

@@ -118,14 +118,51 @@ describe("UnitFormTabs — pending gerekçe BAYATLAMAZ", () => {
     cleanup();
   });
 
-  it("🔴 T2b sonrası gerekçe TEK sekmeye indi — cümle kendiliğinden kısaldı", () => {
-    // "Excel İçe Aktar" rotaya bağlandığı anda gerekçeden DÜŞTÜ; geriye yalnız
-    // "Paylaşım Girişi" kaldı ve cümle TEKİL yazıldı. Ayrı bir temizlik adımı
-    // gerekmedi — bu, gerekçenin türev olmasının ÖLÇÜLEBİLİR sonucudur.
-    expect(pendingLabels).toEqual(["Paylaşım Girişi"]);
-    expect(unitFormTabsPendingReason()).toBe(
-      "Paylaşım Girişi ekranı henüz açılmadı — bu sekme şimdilik tıklanamaz",
-    );
+  it("🔴 T2c sonrası BEKLEYEN SEKME KALMADI — gerekçe `null`dur", () => {
+    // Son sekme ("Paylaşım Girişi") rotaya bağlandığı anda cümle boşaldı.
+    // Ayrı bir temizlik adımı gerekmedi: bu, gerekçenin SABİT değil TÜREV
+    // olmasının ölçülebilir sonucudur (`ProjectDetailTabs`in düzelttiği
+    // çürüme sınıfı burada YAPISAL olarak imkânsız).
+    expect(pendingLabels).toEqual([]);
+    expect(unitFormTabsPendingReason()).toBeNull();
+  });
+
+  it("🔴 HİÇBİR sekme beklemiyorken gerekçe PARAGRAFI HİÇ BASILMAZ", () => {
+    // Kapanış iddiası: ekranda artık sekmeleri YALANLAYAN bayat bir not
+    // yoktur. Paragrafın yokluğu doğrudan ölçülür — türetilmiş bir
+    // karşılaştırmayla değil.
+    render(<UnitFormTabs activeTab="Blok Ekle" />);
+    expect(screen.queryByTestId("unite-form-sekme-gerekce")).toBeNull();
+    // ...ve devre dışı sekme de kalmadı: beşinin beşi de gerçek hedeflidir.
+    for (const tab of screen.getAllByRole("tab")) {
+      expect(tab, tab.textContent ?? "").not.toHaveAttribute("aria-disabled");
+    }
+  });
+
+  it("PG 52 'Paylaşım Girişi' sekmesi GERÇEK rotaya bağlandı (F-UNIT2 T2c)", () => {
+    render(<UnitFormTabs activeTab="Blok Ekle" />);
+    const tab = screen.getByRole("tab", { name: "Paylaşım Girişi" });
+    expect(tab).toHaveAttribute("href", "/satis/paylasim-girisi");
+    expect(tab).not.toHaveAttribute("aria-disabled");
+  });
+
+  it("PG 52 aktifken 'Paylaşım Girişi' KONUM bildirir (bağlantı değil)", () => {
+    render(<UnitFormTabs activeTab="Paylaşım Girişi" />);
+    const active = screen.getByRole("tab", { name: "Paylaşım Girişi" });
+    expect(active).toHaveAttribute("aria-selected", "true");
+    expect(active).not.toHaveAttribute("href");
+  });
+
+  it("mekanizma SİLİNMEDİ: rotasız bir sekme verilince cümle yine kurulur", () => {
+    // Paragraf bugün basılmıyor diye türev KALDIRILMAZ — aile altıncı bir
+    // sekme kazandığında aynı davranışın çalışması gerekir. Bu iddia,
+    // "bekleyen yok" hâlinin işlevin YOK OLMASI anlamına gelmediğini ölçer.
+    expect(
+      unitFormTabsPendingReason([
+        { label: "Blok Ekle", href: "/satis/blok-ekle" },
+        { label: "Paylaşım Girişi" },
+      ]),
+    ).toBe("Paylaşım Girişi ekranı henüz açılmadı — bu sekme şimdilik tıklanamaz");
   });
 
   it("boş kümede gerekçe `null`dur (sabit metin DÖNMEZ)", () => {

@@ -22,6 +22,9 @@ export const BULK_UNIT_FORM_HREF = "/satis/toplu-uretim";
 /** EI'nin kendi rotası (`Form - Unite Excel Import.dc.html`, F-UNIT2 T2b). */
 export const UNIT_IMPORT_FORM_HREF = "/satis/excel-ice-aktar";
 
+/** PG'nin kendi rotası (`Form - Paylasim Girisi.dc.html`, F-UNIT2 T2c). */
+export const LAND_SHARE_ALLOCATION_FORM_HREF = "/satis/paylasim-girisi";
+
 export type UnitFormTabLabel =
   | "Blok Ekle"
   | "Ünite Ekle"
@@ -40,7 +43,7 @@ export const UNIT_FORM_TABS: readonly UnitFormTabDef[] = [
   { label: "Ünite Ekle", href: UNIT_FORM_HREF }, // BE 49 / UE 51 / TU 49
   { label: "Toplu Üretim", href: BULK_UNIT_FORM_HREF }, // BE 50 / UE 52 / TU 50
   { label: "Excel İçe Aktar", href: UNIT_IMPORT_FORM_HREF }, // BE 51 / UE 53 / TU 51
-  { label: "Paylaşım Girişi" }, // BE 52 / UE 54 / TU 52 — rotası HENÜZ yok
+  { label: "Paylaşım Girişi", href: LAND_SHARE_ALLOCATION_FORM_HREF }, // BE 52 / UE 54 / TU 52
 ];
 
 /** "A, B ve C" — gerekçe cümlesinin Türkçe listesi. */
@@ -63,6 +66,14 @@ function joinTurkish(labels: readonly string[]): string {
  * her yeni rota ile cümle KENDİLİĞİNDEN kısalır ve sonuncusu bağlandığında
  * `null` dönerek paragraf kendiliğinden kaybolur (`UnitFormTabs` `null`ı
  * basmaz). Ayrı bir temizlik adımı GEREKMEZ, dolayısıyla unutulamaz.
+ *
+ * 🔴 F-UNIT2 T2c İTİBARIYLA BEŞ SEKMENİN BEŞİ DE ROTALIDIR ve bu işlev
+ * `UNIT_FORM_TABS` için artık `null` döner — paragraf EKRANDAN KALKTI.
+ * Mekanizma SİLİNMEZ: tam olarak bu kendiliğinden kalkma, sabit bir cümlenin
+ * ekranda çürümesini engelleyen davranıştır ve aile altıncı bir sekme
+ * kazandığında yine çalışması gerekir. `UnitFormTabs.test.tsx` hem "hiç
+ * bekleyen sekme yokken paragraf BASILMAZ" hem de "rotasız sekme verilince
+ * cümle kurulur" iddialarını ayrı ayrı ölçer.
  */
 export function unitFormTabsPendingReason(
   tabs: readonly UnitFormTabDef[] = UNIT_FORM_TABS,
