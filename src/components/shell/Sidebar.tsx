@@ -4,9 +4,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cx } from "@/lib/cx";
 import { initials } from "@/lib/shell/initials";
-import { isActivePath } from "@/lib/shell/isActive";
 import { LockIcon } from "@/components/ui/icons";
-import { NAV_GROUPS } from "./nav-config";
+import { activeNavHref, NAV_GROUPS } from "./nav-config";
 import { useSession } from "./SessionProvider";
 import "./sidebar.css";
 
@@ -14,6 +13,10 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { me } = useSession();
+  // ⚠️ Aktiflik SATIR BAŞINA değil, nav'ın TAMAMINA bakılarak seçilir:
+  // `/hazine/cek-senet` yolunda `/hazine` de eşleşir ve iki öğe birden yanardı
+  // (bkz. `activeNavHref` notu).
+  const currentHref = activeNavHref(pathname);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -27,7 +30,7 @@ export default function Sidebar() {
           <div key={group.heading} className="sidebar-group">
             <div className="sidebar-group__heading">{group.heading}</div>
             {group.items.map(({ label, href, Icon }) => {
-              const active = isActivePath(pathname, href);
+              const active = href === currentHref;
               return (
                 <Link
                   key={href}
