@@ -1,9 +1,6 @@
 import Link from "next/link";
 
-import {
-  EQUIPMENT_TAB_LEASE_SETTLEMENT_REASON,
-  EQUIPMENT_TAB_MAINTENANCE_CALENDAR_REASON,
-} from "./equipment-labels";
+import { EQUIPMENT_TAB_MAINTENANCE_CALENDAR_REASON } from "./equipment-labels";
 import "./equipment.css";
 
 interface TabDef {
@@ -28,18 +25,16 @@ export type EquipmentTabLabel =
 // İKİSİNİN BİRLEŞİMİDİR (beş sekme). Kalıcı kural (F-TH emsali): rotası
 // olmayan mockup öğesi SİLİNMEZ, devre-dışı + görünür gerekçeyle basılır.
 //
-// "Çalışma Kaydı" ve "Yakıt Takibi" rotaları bu dilimde (T3/T4) henüz
-// yazılmadı ama spec §1'de rotaları AÇIKÇA ayrılmış ve backend'i (MK-1)
-// canlıdır — `href` ŞİMDİDEN verilir (K4'ün "Düzenle" bağlantısıyla aynı
-// karar): hedef sayfa yazılana kadar kabuğun catch-all'ı ComingSoon basar,
-// bu KIRIK bir bağlantı değildir. "Kira Hakedişi" (backend'i MK-2'de hâlâ
-// yazılıyor) ve "Bakım Takvimi" (mockup'ı hiç yok) bu ayrıcalığı taşımaz —
-// ikisi de kalıcı gerekçeyle devre-dışı basılır.
+// "Çalışma Kaydı" ve "Yakıt Takibi" rotaları F-MK'da yazıldı. "Kira Hakedişi"
+// F-KIRA'da CANLIYA ALINDI: MK-2 backend'i (`/equipment/rental-invoices*`,
+// 7 yol) canlıda ve `/makine/kira` liste ekranı bu dilimde yazıldı — sekme
+// artık gerçek bir rotaya iner. "Bakım Takvimi" (mockup'ı hiç yok) tek
+// devre-dışı sekmedir ve kalıcı gerekçeyle basılır.
 const TABS: TabDef[] = [
   { label: "Ekipman Listesi", href: "/makine" },
   { label: "Çalışma Kaydı", href: "/makine/calisma" },
   { label: "Yakıt Takibi", href: "/makine/yakit" },
-  { label: "Kira Hakedişi", disabledReason: EQUIPMENT_TAB_LEASE_SETTLEMENT_REASON },
+  { label: "Kira Hakedişi", href: "/makine/kira" },
   { label: "Bakım Takvimi", disabledReason: EQUIPMENT_TAB_MAINTENANCE_CALENDAR_REASON },
 ];
 
@@ -50,6 +45,11 @@ export interface EquipmentTabsStripProps {
 
 /** Paylaşılan sekme şeridi — T3/T4 (Çalışma Kaydı/Yakıt Takibi) AYNISINI kullanır. */
 export function EquipmentTabsStrip({ activeTab = "Ekipman Listesi" }: EquipmentTabsStripProps) {
+  // Görünür gerekçe listesi ŞERİDİN KENDİSİNDEN türer (aşağıdaki nota bak).
+  const disabledReasons = TABS.filter((tab) => !tab.href)
+    .map((tab) => tab.disabledReason)
+    .filter((reason): reason is string => Boolean(reason));
+
   return (
     <div className="makine-tabs-block">
       <div className="makine-tabs" role="tablist" aria-label="Makine & Ekipman sekmeleri">
@@ -91,10 +91,20 @@ export function EquipmentTabsStrip({ activeTab = "Ekipman Listesi" }: EquipmentT
         yalnız imleç üstündeyken çıkar; kullanıcı sekmenin neden tıklanamadığını
         fareyi bekletmeden görebilmelidir (F-TH kalıcı kuralı: rotası olmayan
         mockup öğesi silinmez, devre-dışı + GÖRÜNÜR gerekçeyle basılır).
+
+        🔴 GEREKÇE, AÇIKLADIĞI ÖĞEDEN TÜRETİLİR (F-PRJTAB final review kanonu).
+        Metin önceden iki sabiti ELLE yan yana basıyordu; "Kira Hakedişi"
+        canlıya alındığında o cümle ekranda kalır ve ARTIK ÇALIŞAN bir sekmeyi
+        yalanlardı — rota bekçileri `href` denetler, METNİ denetlemez. Artık
+        liste `TABS`ten türer: bir sekme `href` kazandığı anda gerekçesi
+        kendiliğinden düşer, hiçbir yerde ikinci bir güncelleme gerekmez.
+        Devre-dışı sekme kalmazsa paragraf hiç basılmaz.
       */}
-      <p className="makine-tabs__reason" data-testid="makine-tabs-reasons">
-        {EQUIPMENT_TAB_LEASE_SETTLEMENT_REASON} {EQUIPMENT_TAB_MAINTENANCE_CALENDAR_REASON}
-      </p>
+      {disabledReasons.length > 0 && (
+        <p className="makine-tabs__reason" data-testid="makine-tabs-reasons">
+          {disabledReasons.join(" ")}
+        </p>
+      )}
     </div>
   );
 }

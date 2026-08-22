@@ -103,33 +103,40 @@ test("K4 — kart üzerindeki 'Düzenle' düzenleme rotasına gider (detay sayfa
   await expect(page.getByRole("heading", { level: 1, name: "Makine / Ekipman Düzenle" })).toBeVisible();
 });
 
-test("K1 — beş sekme; gerçek rotalar gezinir, iki sekme devre-dışı + GÖRÜNÜR gerekçeli", async ({
+test("K1 — beş sekme; dört gerçek rota gezinir, TEK sekme devre-dışı + GÖRÜNÜR gerekçeli", async ({
   page,
 }) => {
   await login(page);
   await page.goto(EQUIPMENT_URL);
 
   await expect(page.getByRole("tab")).toHaveCount(5);
-  // Yalnız GERÇEK rotası olan iki sekme bağlantıdır (aktif sekme kendi
-  // sayfasına bağlanmaz) — devre-dışı ikisi bağlantı DEĞİLDİR.
-  await expect(page.locator('a[role="tab"]')).toHaveCount(2);
+  // 🔴 F-KIRA: "Kira Hakedişi" devre-dışıdan CANLIYA geçti → bağlantı sayısı
+  // 2'den 3'e çıktı (aktif sekme kendi sayfasına bağlanmaz, "Bakım Takvimi"
+  // hâlâ devre-dışı).
+  await expect(page.locator('a[role="tab"]')).toHaveCount(3);
 
+  // 🔴 Bir yüzeyin ölüden canlıya geçtiğini GÖRSEL KAPI KANITLAMAZ (F-IZN
+  // dersi): span→link geçişinin renk deltası pixelmatch eşiğinin altındadır.
+  // Kanıt DOM'dan alınır.
   const leaseTab = page.getByRole("tab", { name: "Kira Hakedişi" });
+  await expect(leaseTab).toHaveAttribute("href", "/makine/kira");
+
   const maintenanceTab = page.getByRole("tab", { name: "Bakım Takvimi" });
-  await expect(leaseTab).toHaveAttribute("aria-disabled", "true");
   await expect(maintenanceTab).toHaveAttribute("aria-disabled", "true");
 
   // Gerekçeler `title` ipucuna GÖMÜLÜ DEĞİL, ekranda okunur (F-TH kuralı).
+  // Düşen sekmenin cümlesi de paragraftan KALKAR (F-PRJTAB kanonu: gerekçe
+  // açıkladığı öğeden türer, sabit basılsaydı canlı sekmeyi yalanlardı).
   const reasons = page.getByTestId("makine-tabs-reasons");
-  await expect(reasons).toContainText("Kira hakedişi ekranı sıradaki dilimde açılacak");
   await expect(reasons).toContainText("Bakım takvimi mockup'ı henüz yok");
+  await expect(reasons).not.toContainText("Kira hakedişi");
 
   // Devre-dışı sekmeye tıklamak HİÇBİR YERE gitmez. `force: true` ZORUNLU:
   // Playwright `aria-disabled="true"` taşıyan öğeyi "enabled değil" sayar ve
   // normal `click()` eyleme geçmeden zaman aşımına düşer — bu da tıklanamazlığın
   // kanıtıdır ama testi kırar. Zorlanmış tıklama korkuluğu ATLAR ve asıl
   // iddiayı kurar: gezinme YOK.
-  await leaseTab.click({ force: true });
+  await maintenanceTab.click({ force: true });
   await expect(page).toHaveURL(/\/makine$/);
 
   // Gerçek rotalar gezinir.
@@ -140,4 +147,10 @@ test("K1 — beş sekme; gerçek rotalar gezinir, iki sekme devre-dışı + GÖR
   await page.getByRole("tab", { name: "Yakıt Takibi" }).click();
   await expect(page).toHaveURL(/\/makine\/yakit/);
   await expect(page.getByRole("heading", { level: 1, name: "Yakıt Takibi" })).toBeVisible();
+
+  // 🔴 F-KIRA: sekmenin GERÇEKTEN indiği yer ölçülür (rota çözümü VARSAYILMAZ —
+  // `/makine/[id]` dinamik kardeşi sabit metni yutabilirdi, F-TKV dersi).
+  await page.getByRole("tab", { name: "Kira Hakedişi" }).click();
+  await expect(page).toHaveURL(/\/makine\/kira/);
+  await expect(page.getByRole("heading", { level: 1, name: "Kira Hakedişi" })).toBeVisible();
 });
