@@ -191,14 +191,24 @@ export function useUnapproveProgressPayment(): UseMutationResult<ProgressPayment
 }
 
 /**
- * Beklemede → taslak + red gerekçesi (spec §7, K12: ek form YOK — yalnız
- * isteğe bağlı `reason`, denetim günlüğüne taşınır). Şemadaki alan adı
- * `reason`'dır (`RejectBody`).
+ * Beklemede → taslak + red gerekçesi (spec §7). Şemadaki alan adı `reason`'dır
+ * (`RejectBody`).
+ *
+ * 🔴 GÖVDE VE `reason` ZORUNLUDUR — backend `d888591` (OK-1A K2) bunu KIRICI
+ * biçimde değiştirdi; eskiden uç `RejectBody | None` kabul ediyordu ve bu hook
+ * gerekçe verilmeyince `body: null` gönderiyordu. Artık gövdesiz ya da
+ * boş/yalnız boşluktan oluşan gerekçeyle atılan istek 422 döner (kırpma tek
+ * kopya `approvals.service.clean_reject_reason`tadır — `min_length` DEĞİL,
+ * çünkü "   " üç karakterdir). Bu yüzden `body` isteğe bağlı DEĞİLDİR: boş
+ * gerekçeyi tipin kendisi reddeder, çağıran ekran kırpılmış metni verir.
+ *
+ * DEĞİŞMEYEN: gerekçe bu ailede hiçbir kolona yazılmaz, tek kalıcı izi denetim
+ * günlüğüdür (K2 gerekçenin ZORUNLULUĞUNU bağladı, DEPOLANDIĞI yeri değil).
  */
 export function useRejectProgressPayment(): UseMutationResult<
   ProgressPaymentDetail,
   Error,
-  { paymentId: string; body?: RejectBody }
+  { paymentId: string; body: RejectBody }
 > {
   const invalidate = useProgressPaymentInvalidator();
   return useMutation({
@@ -206,7 +216,7 @@ export function useRejectProgressPayment(): UseMutationResult<
       unwrap(
         await backendClient.POST("/progress-payments/{payment_id}/reject", {
           params: { path: { payment_id: paymentId } },
-          body: body ?? null,
+          body,
         }),
       ),
     onSuccess: (data) => invalidate(data.id, data.project_id),

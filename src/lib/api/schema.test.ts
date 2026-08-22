@@ -277,12 +277,24 @@ describe("Hakediş (progress-payments) tip üretimi (P7 T1 kapısı)", () => {
     expect(linesSave.lines).toHaveLength(1);
   });
 
-  it("RejectBody gerekçe alanının adı 'reason'dır (POST …/reject gövdesi)", () => {
+  // ⚠️ SÖZLEŞME KORKULUĞU (derleme zamanı). `RejectBody.reason` backend
+  // `d888591` (OK-1A K2) ile ZORUNLU oldu; eskiden burada `{} satisfies Reject`
+  // yazıyordu, yani test tam tersini — alanın atlanabildiğini — bekçiliyordu.
+  // Aşağıdaki `@ts-expect-error` POZİTİF bir kapıdır (`permissions.test.ts` ile
+  // aynı ev deseni): uç bir gün `reason`ı yeniden opsiyonele çevirirse hata
+  // KAYBOLUR, `@ts-expect-error` KULLANILMAZ hâle gelir ve `pnpm typecheck`
+  // kırmızı döner — sessizce gevşeme mümkün değildir.
+  it("RejectBody gerekçe alanının adı 'reason'dır ve ZORUNLUdur (POST …/reject gövdesi)", () => {
     type Reject = components["schemas"]["RejectBody"];
     const withReason = { reason: "eksik metraj" } satisfies Reject;
-    const empty = {} satisfies Reject;
+    // @ts-expect-error `reason` zorunludur — gerekçesiz gövde derlemede reddedilmelidir
+    const empty: Reject = {};
+
     expectTypeOf<Reject>().toHaveProperty("reason");
+    expectTypeOf<Reject["reason"]>().toEqualTypeOf<string>();
     expect(withReason.reason).toBe("eksik metraj");
+    // Çalışma anında `empty` gerçekten boştur: derleyici atlatılsa bile gövde
+    // gerekçe TAŞIMAZ ve sunucu 422 döndürür.
     expect(empty).toEqual({});
   });
 
