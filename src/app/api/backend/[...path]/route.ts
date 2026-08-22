@@ -123,8 +123,8 @@ const ALLOWED_ROOTS = new Set([
   //     `POST .../{id}/quotes/{quote_id}/select-and-order`.
   //     Teklif uçlarının ilk segmenti "quotes" DEĞİL, talebin kökü olan
   //     "purchase-requests"tir — ayrı bir "quotes" kökü EKLENMEZ.
-  //     `approve`/`reject` bu dilimde EKRANA BAĞLANMAZ (spec K6: Onay Kutusu
-  //     ayrı dilim) ama uçlar API'den kullanılabilir kalır.
+  //     `approve`/`reject` uçları Onay Kutusu ekranına BAĞLANIR (spec K6);
+  //     o ekran BU dilimde gelir (bkz. "approvals" kökü, kümenin sonunda).
   //   · `purchase-orders`   → `GET/POST /purchase-orders`,
   //     `GET/PATCH /purchase-orders/{id}` — SIP tablosu. Talebe bağlı sipariş
   //     `select-and-order` üzerinden doğar, bu kökten DEĞİL.
@@ -266,6 +266,24 @@ const ALLOWED_ROOTS = new Set([
   // kalır). Eksikse Çek & Senet ekranı YALNIZ CANLIDA 404 alır; jsdom
   // testleri bunu GÖRMEZ.
   "financial-instruments",
+  // OK-1A (Onay Kutusu API sözleşmesi, backend `17036dc` — 230 yol/338
+  // operasyon) — TEK kök: `approvals`. DÖRT ucu vardır:
+  //   · `GET /approvals`                  — onay kutusu listesi
+  //   · `GET,PUT /approvals/settings`      — onay ayarları
+  //   · `GET /approvals/roles`             — onay rolleri listesi
+  //   · `PUT /approvals/roles/{user_id}`   — kullanıcının onay rolünü günceller
+  // 🔴 "settings" (satır 16) ve "roles" (satır 9) ALLOWED_ROOTS'ta ZATEN AYRI
+  // kök olarak vardır ama `/approvals/settings` ve `/approvals/roles` ONLARIN
+  // ALTINA DÜŞMEZ — yönlendirme İLK path segmentine göre karar verilir, o da
+  // "approvals"tır, "settings"/"roles" DEĞİL. Var olan iki kökün "yeter"
+  // sanılması TAM OLARAK bu dosyanın önlemeye çalıştığı tuzaktır; ayrı bir
+  // "approvals" kökü ŞARTTIR.
+  // Bu kökü ÇAĞIRAN KOD bu dilimin İLERİDEKİ bir adımında gelecek
+  // (`useApprovals.ts` → `/onay-kutusu`); o an "çağrılan her kök
+  // ALLOWED_ROOTS'ta tanımlıdır" bekçisi onu GÖRECEK (kanon: çağıran kod
+  // yoksa BFF kökü bekçisiz kalır). Eksikse Onay Kutusu ekranı YALNIZ
+  // CANLIDA 404 alır; jsdom testleri bunu GÖRMEZ.
+  "approvals",
 ]);
 
 // JSON/metin sayilan icerik tipleri: govde metne cozulup JSON olarak islenir.
