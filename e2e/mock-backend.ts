@@ -12293,6 +12293,20 @@ const ACCOUNTING_SUMMARY = buildAccountingSummary();
 interface JournalEntrySeed {
   readonly id: string;
   readonly date: string;
+  /**
+   * 🔴 Yevmiye numarasının SIRA parçası (`YEV-{yıl}-{sıra:04d}`, FIS-NO kararı 1).
+   * ZORUNLUDUR ve bilinçlidir: sıra bir zamanlar `buildJournalEntry` içinde
+   * ad-hoc bir `id → sıra` haritasından okunuyordu ve harita `Record<string,
+   * number>`a DARALTILMIŞTI — haritada olmayan bir seed için değer `undefined`
+   * olur, `String(undefined).padStart(4,"0")` ise **`YEV-2026-undefined`**
+   * üretirdi. Alan ekranda BASILMADIĞI için (F-FISNO ayrı dilim) ne bir kapı ne
+   * de bir kare bunu görürdü — sessiz kusur. Sıra artık seed'in KENDİSİNDE:
+   * yeni bir seed ekleyen dilim numarayı vermeye DERLEYİCİ tarafından zorlanır.
+   *
+   * Sıra KRONOLOJİK yaratılış sırasıdır (storno kaynağından SONRAKİ numarayı
+   * alır), dizideki konum DEĞİL; fikstürün tek yılı 2026'dır.
+   */
+  readonly seq: number;
   readonly status: components["schemas"]["JournalEntryStatus"];
   readonly description: string;
   readonly detailNote?: string | null;
@@ -12334,24 +12348,10 @@ function buildJournalEntry(seed: JournalEntrySeed): MockJournalEntry {
     total_credit: totalCredit.toFixed(2),
     reversal_of_id: seed.reversalOfId ?? null,
     // 🔴 `entry_no` — FIS-NO kararı 1: `YEV-{yıl}-{sıra:04d}`; yıl `seed.date`ten
-    // (yukarıdaki `year`) TÜRER. Sıra, fikstürün TEK yılındaki (2026) KRONOLOJİK
-    // yaratılış sırasıdır — storno (`je-2607-storno-1`) kaynağından (`je-2607-rev-1`)
-    // SONRAKİ numarayı alır (Karar 3), `.map(buildJournalEntry)`in dizi konumu DEĞİL.
-    entry_no: `YEV-${year}-${String(
-      (
-        {
-          "je-2606-mut-post": 1,
-          "je-2606-mut-delete": 2,
-          "je-2606-mut-edit": 3,
-          "je-2606-mut-reverse": 4,
-          "je-2607-rev-1": 5,
-          "je-2607-storno-1": 6,
-          "je-2607-post-1": 7,
-          "je-2607-draft-1": 8,
-          "je-2607-draft-2": 9,
-        } as Record<string, number>
-      )[seed.id],
-    ).padStart(4, "0")}`,
+    // (yukarıdaki `year`) TÜRER, sıra seed'in ZORUNLU `seq` alanından gelir
+    // (gerekçe: `JournalEntrySeed.seq` docstring'i — ad-hoc harita sessizce
+    // `YEV-2026-undefined` üretebiliyordu).
+    entry_no: `YEV-${year}-${String(seed.seq).padStart(4, "0")}`,
     created_by_id: ME.id,
     created_at: ACCOUNTING_STAMP,
     updated_at: ACCOUNTING_STAMP,
@@ -12368,29 +12368,29 @@ function buildJournalEntry(seed: JournalEntrySeed): MockJournalEntry {
  */
 const ACCOUNTING_READ_ENTRY_SEEDS: readonly JournalEntrySeed[] = [
   {
-    id: "je-2607-draft-2", date: "2026-07-19", status: "draft",
+    id: "je-2607-draft-2", seq: 9, date: "2026-07-19", status: "draft",
     description: "Ofis Kira Gideri – Temmuz",
     legs: [["760", "48000.00", "0.00"], ["102", "0.00", "48000.00"]],
   },
   {
-    id: "je-2607-draft-1", date: "2026-07-18", status: "draft",
+    id: "je-2607-draft-1", seq: 8, date: "2026-07-18", status: "draft",
     description: "Kasa Sayım Farkı", detailNote: "Temmuz sayım tutanağı",
     legs: [["100", "12500.00", "0.00"], ["600", "0.00", "12500.00"]],
   },
   {
-    id: "je-2607-post-1", date: "2026-07-17", status: "posted",
+    id: "je-2607-post-1", seq: 7, date: "2026-07-17", status: "posted",
     description: "Hakediş Tahsilatı – Güneşkent", detailNote: "Ziraat Bank · TRF-20260717",
     legs: [["102", "1240000.00", "0.00"], ["120.01", "0.00", "1240000.00"]],
   },
   {
     // Stornonun KENDİSİ: `posted` doğar ve orijinali gösterir (K2).
-    id: "je-2607-storno-1", date: "2026-07-16", status: "posted",
+    id: "je-2607-storno-1", seq: 6, date: "2026-07-16", status: "posted",
     description: "Storno: Taşeron Ödemesi – Akın İnşaat", reversalOfId: "je-2607-rev-1",
     legs: [["102", "1016800.00", "0.00"], ["320.04", "0.00", "1016800.00"]],
   },
   {
     // Terslenen ORİJİNAL — `reversed` TERMİNALDİR, hiçbir eylem sunulmaz.
-    id: "je-2607-rev-1", date: "2026-07-16", status: "reversed",
+    id: "je-2607-rev-1", seq: 5, date: "2026-07-16", status: "reversed",
     description: "Taşeron Ödemesi – Akın İnşaat", detailNote: "Fatura No: AKN-2026-047",
     legs: [["320.04", "1016800.00", "0.00"], ["102", "0.00", "1016800.00"]],
   },
@@ -12404,22 +12404,22 @@ const ACCOUNTING_READ_ENTRY_SEEDS: readonly JournalEntrySeed[] = [
  */
 const ACCOUNTING_MUTATION_ENTRY_SEEDS: readonly JournalEntrySeed[] = [
   {
-    id: "je-2606-mut-post", date: "2026-06-10", status: "draft",
+    id: "je-2606-mut-post", seq: 1, date: "2026-06-10", status: "draft",
     description: "MUT · kayıtlaştırma ölçümü",
     legs: [["100", "1000.00", "0.00"], ["600", "0.00", "1000.00"]],
   },
   {
-    id: "je-2606-mut-delete", date: "2026-06-11", status: "draft",
+    id: "je-2606-mut-delete", seq: 2, date: "2026-06-11", status: "draft",
     description: "MUT · silme ölçümü",
     legs: [["100", "2000.00", "0.00"], ["600", "0.00", "2000.00"]],
   },
   {
-    id: "je-2606-mut-edit", date: "2026-06-12", status: "draft",
+    id: "je-2606-mut-edit", seq: 3, date: "2026-06-12", status: "draft",
     description: "MUT · düzenleme ölçümü", detailNote: "İlk dayanak",
     legs: [["100", "3000.00", "0.00"], ["600", "0.00", "3000.00"]],
   },
   {
-    id: "je-2606-mut-reverse", date: "2026-06-13", status: "posted",
+    id: "je-2606-mut-reverse", seq: 4, date: "2026-06-13", status: "posted",
     description: "MUT · storno ölçümü",
     legs: [["100", "4000.00", "0.00"], ["600", "0.00", "4000.00"]],
   },
