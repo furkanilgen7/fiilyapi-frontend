@@ -10665,6 +10665,9 @@ export function startMockBackend(port: number): { server: Server; close: () => P
             detail_note: (rawBody.detail_note as string | null | undefined) ?? null,
             // 🔴 Fiş `draft` DOĞAR (K2); `status` gövdeden GELMEZ.
             status: "draft",
+            // 🔴 `entry_no` — FIS-NO kararı 1: `YEV-{yıl}-{sıra:04d}`; yıl `entryDate`ten
+            // (yukarıdaki `year`) TÜRER, sıra zaten artırılmış `accountingState.seq`dir.
+            entry_no: `YEV-${year}-${String(accountingState.seq).padStart(4, "0")}`,
             total_debit: "0.00",
             total_credit: "0.00",
             reversal_of_id: null,
@@ -12276,6 +12279,25 @@ function buildJournalEntry(seed: JournalEntrySeed): MockJournalEntry {
     total_debit: totalDebit.toFixed(2),
     total_credit: totalCredit.toFixed(2),
     reversal_of_id: seed.reversalOfId ?? null,
+    // 🔴 `entry_no` — FIS-NO kararı 1: `YEV-{yıl}-{sıra:04d}`; yıl `seed.date`ten
+    // (yukarıdaki `year`) TÜRER. Sıra, fikstürün TEK yılındaki (2026) KRONOLOJİK
+    // yaratılış sırasıdır — storno (`je-2607-storno-1`) kaynağından (`je-2607-rev-1`)
+    // SONRAKİ numarayı alır (Karar 3), `.map(buildJournalEntry)`in dizi konumu DEĞİL.
+    entry_no: `YEV-${year}-${String(
+      (
+        {
+          "je-2606-mut-post": 1,
+          "je-2606-mut-delete": 2,
+          "je-2606-mut-edit": 3,
+          "je-2606-mut-reverse": 4,
+          "je-2607-rev-1": 5,
+          "je-2607-storno-1": 6,
+          "je-2607-post-1": 7,
+          "je-2607-draft-1": 8,
+          "je-2607-draft-2": 9,
+        } as Record<string, number>
+      )[seed.id],
+    ).padStart(4, "0")}`,
     created_by_id: ME.id,
     created_at: ACCOUNTING_STAMP,
     updated_at: ACCOUNTING_STAMP,
