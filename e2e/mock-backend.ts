@@ -1787,7 +1787,37 @@ function buildSubcontractorProgressPaymentFixtures(): MockSubcontractorProgressP
     hiddenFromLists: true,
   });
 
-  return [scpp1, scpp2, scpp3, scpp4, scpp5, scpp6, scpp7];
+  // #8 — sc-3, ONAY BEKLİYOR, `hiddenFromLists: true` (F-OK T5 test izolasyonu).
+  // 🔴 NEDEN YENİ BİR KAYIT: onay kutusundan "Onayla"ya basmak MEVCUT evrak
+  // ucunu çağırır, yani GERÇEK bir evrakı mutasyona uğratır. `pending_approval`
+  // durumundaki üç aday kaydın ÜÇÜ DE başkasının bekçisidir ve MUTASYONA
+  // UĞRATILAMAZ:
+  //   · `pp-5`   → `progress-payment-detail-visual.spec.ts` karesini alır,
+  //   · `scpp-3` → `subcontractor-progress-payment-detail-visual.spec.ts` alır,
+  //   · `pr-2`   → `purchasing-requests-visual.spec.ts:42` durumunu iddia eder.
+  // Bu yüzden `e2e/onay-kutusu.spec.ts`in TIKLADIĞI kalem KENDİ kaydıdır.
+  //
+  // İZOLASYON İKİ KATLI: (a) `hiddenFromLists` liste + özet uçlarından tamamen
+  // dışlar (pp-6/scpp-6/scpp-7 emsali), (b) sözleşme `sc-3`tür — bugün SIFIR
+  // hakedişi olan kayıt, dolayısıyla sc-1/sc-2 altında üretilecek bir
+  // `sequence_no` bu eklemeden ETKİLENMEZ. `sc-3`ün `subcontractor_id`si sc-1
+  // ile aynı (`sub-1`) olduğundan "Aktif Taşeron KPI 2'de kalır" iddiası da
+  // oynamaz (o sayı sözleşmelerden türer, hakedişlerden değil).
+  const scpp8 = withTotals({
+    id: "scpp-8", contract_id: "sc-3", project_id: "p-1", sequence_no: 1,
+    period_year: 2026, period_month: 7, description: "Onay kutusu yazma hedefi",
+    status: "pending_approval", vat_pct: "20.00", advance_pct: "20.00", retainage_pct: "5.00",
+    default_coefficient: "1.00", section_id: null,
+    submitted_at: "2026-07-28T09:00:00Z", approved_at: null, approved_by: null,
+    paid_at: null, rejected_at: null, rejection_reason: null,
+    is_revision_required: false, created_by: patronId,
+    created_at: "2026-07-25T09:00:00Z", updated_at: "2026-07-28T09:00:00Z",
+    lines: [],
+    dropped_orphan_count: 0,
+    hiddenFromLists: true,
+  });
+
+  return [scpp1, scpp2, scpp3, scpp4, scpp5, scpp6, scpp7, scpp8];
 }
 
 function buildSubcontractorPaymentDetail(state: MockState, payment: MockSubcontractorProgressPayment) {
@@ -10904,6 +10934,30 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       });
     }
 
+    // --- F-OK · Onay Kutusu OKUMA uçları (`GET /approvals[/settings]`) -----
+    // 🔴 YALNIZ BU İKİ UÇ eklendi. Onay/ret uçları MEVCUT evrak uçlarıdır
+    // (`/subcontractor-progress-payments/{id}/approve` vb.) ve zaten yukarıda
+    // karşılanır — onay kutusundan basılan düğme gerçek evrağı mutasyona
+    // uğratır, bu yüzden liste her istekte O EVRAĞIN durumundan türetilir
+    // (bkz. `approvalInboxFixture`): onaylanan kalem kümeden DÜŞER ve ekranın
+    // `invalidate` davranışı gerçekten ölçülebilir olur.
+    //
+    // Sıra: `settings` literal'i çıplak `/approvals`tan ÖNCE denetlenir.
+    if (method === "GET" && path === "/approvals/settings") {
+      return send(200, { approval_threshold_try: APPROVAL_THRESHOLD_TRY });
+    }
+
+    if (method === "GET" && path === "/approvals") {
+      // Sözleşme: `limit` varsayılan 50, tavan 200 (aşım 422 — sessiz kırpma
+      // DEĞİL); `offset` varsayılan 0.
+      const limit = Number(parsed.searchParams.get("limit") ?? "50");
+      const offset = Number(parsed.searchParams.get("offset") ?? "0");
+      if (!Number.isFinite(limit) || limit < 1 || limit > 200) {
+        return send(422, { detail: "limit 1-200 araliginda olmalidir" });
+      }
+      return send(200, approvalInboxFixture(state, limit, offset));
+    }
+
     // --- F-IZN T6 · İzin yönetimi (YEDİ uç) --------------------------------
     // BFF izin listesindeki üç kök burada karşılanır (`leave-types` ·
     // `leave-requests` · `leave-balances`); özet ucu mevcut `hr` kökündendir.
@@ -14632,4 +14686,194 @@ function closeOrReopenAccountingPeriod(
   // türevlerini (`entry_count`/`draft_count`/`closed_by_name`) TAŞIMAZ.
   const { entry_count: _entryCount, draft_count: _draftCount, closed_by_name: _closedByName, ...response } = row;
   return { status: 200, body: response };
+}
+
+/* ---------------------------------------------------------------------- */
+/* F-OK · ONAY KUTUSU (`GET /approvals[/settings]`) fikstürleri            */
+/* ---------------------------------------------------------------------- */
+
+/**
+ * 🔴 `threshold_snapshot` ile `GET /approvals/settings`in
+ * `approval_threshold_try` değeri TUTARLI olmak ZORUNDADIR: ekran eşiği iki
+ * yerde birden basar (rol akışı şeridi ayardan, kart rozeti kalemin donmuş
+ * anlık görüntüsünden). İki sayı ayrışırsa ekran KENDİ KENDİNİ yalanlar.
+ */
+const APPROVAL_THRESHOLD_TRY = "500000.00";
+
+type MockApprovalStep = components["schemas"]["ApprovalStepRead"];
+type MockApprovalItem = components["schemas"]["ApprovalInboxItem"];
+
+/**
+ * 🔴 KALEMLER MEVCUT EVRAKLARA BAĞLIDIR ve "hâlâ onay bekliyor mu" sorusu her
+ * istekte O EVRAĞIN DURUMUNDAN okunur (`approvalInboxFixture` aşağıda).
+ * Donmuş bir dizi kullanılsaydı "Onayla"dan sonra liste TAZELENMEZ, ekranın
+ * `invalidate` davranışı e2e'de ölçülemezdi — ve mock, gerçek backend'in
+ * "kullanıcıya DÜŞEN sıradaki adımlar" sözleşmesiyle çelişirdi.
+ *
+ * 🔒 OKUMA kalemleri (`scpp-3` · `pr-2` · `pp-5`) BAŞKA spec'lerin sabit
+ * kayıtlarıdır: GÖSTERİLEBİLİR ama MUTASYONA UĞRATILAMAZ. Yazan tek kalem
+ * `scpp-8`dir (`hiddenFromLists`, `sc-3`).
+ *
+ * ⚠️ `● (bekliyor)` durumu (mockup `:133`) fikstürde TEMSİL EDİLEMEZ ve bu
+ * SÖZLEŞMENİN SONUCUDUR: uç yalnız "sıradaki adımı BANA düşen" zincirleri
+ * döndürür, dolayısıyla sıradaki adım HER ZAMAN benimdir. O dal
+ * `approval-labels.test.ts`te birim testiyle doğrulanır.
+ */
+interface MockApprovalSeed {
+  chain_id: string;
+  document_type: MockApprovalItem["document_type"];
+  document_id: string;
+  created_by_name: string | null;
+  created_at: string;
+  current_step_no: number;
+  steps: MockApprovalStep[];
+  title: string | null;
+  subtitle: string | null;
+  gross_amount: string | null;
+  net_amount: string | null;
+  amount_snapshot: string | null;
+}
+
+function approvalStep(
+  stepNo: number,
+  role: MockApprovalStep["approval_role"],
+  decidedAt: string | null,
+  decidedByName: string | null = null,
+): MockApprovalStep {
+  return { step_no: stepNo, approval_role: role, decided_at: decidedAt, decided_by_name: decidedByName };
+}
+
+const APPROVAL_SEEDS: readonly MockApprovalSeed[] = [
+  // 1) TAŞERON HAKEDİŞ (mockup :118-148) — patron adımı VAR ⇒ eşik rozeti
+  //    kadraja girer. Adım şeridi: karar verilmiş · karar verilmiş · BENİM.
+  {
+    chain_id: "chain-scpp-3",
+    document_type: "subcontractor_progress_payment",
+    document_id: "scpp-3",
+    created_by_name: "Sercan Öztürk",
+    created_at: "2026-07-20T08:52:00Z",
+    current_step_no: 3,
+    steps: [
+      approvalStep(1, "site_chief", "2026-07-19T08:00:00Z", "Sercan Öztürk"),
+      approvalStep(2, "project_manager", "2026-07-19T10:30:00Z", "Elif Kaya"),
+      approvalStep(3, "patron", null),
+    ],
+    title: "Akın İnşaat — Hakediş #47 (Betonarme)",
+    // Dönem `MM/YYYY` GÖMÜLÜ gelir (backend'de Türkçe ay adı sözlüğü YOKTUR) —
+    // ekran onu "Temmuz 2026"ya çevirir.
+    subtitle: "Güneşkent A-Blok · Kat 6–8 · 07/2026",
+    gross_amount: "1240000.00",
+    net_amount: "1016800.00",
+    amount_snapshot: "1240000.00",
+  },
+  // 2) SATIN ALMA (mockup :151-179) — patron adımı VAR, TEK tutar kutusu
+  //    (`net_amount` satınalmada HER ZAMAN null) ve teklif çipi.
+  //    🔴 `gross_amount: null` — `pr-2`nin ikinci kalemi FİYATSIZDIR; ekran
+  //    `0` DEĞİL `—` basmalıdır (SA/NULL-EŞİK kanonu).
+  {
+    chain_id: "chain-pr-2",
+    document_type: "purchase_request",
+    document_id: "pr-2",
+    created_by_name: "Yasemin Kaya",
+    created_at: "2026-08-11T09:00:00Z",
+    current_step_no: 4,
+    steps: [
+      approvalStep(1, "procurement", "2026-08-11T09:10:00Z", "Yasemin Kaya"),
+      approvalStep(2, "project_manager", "2026-08-11T11:00:00Z", "Elif Kaya"),
+      approvalStep(3, "accounting", "2026-08-12T08:00:00Z", "Ayşe Demir"),
+      approvalStep(4, "patron", null),
+    ],
+    title: "C25/30 Hazır Beton — 320 m³",
+    subtitle: "Güneşkent A-Blok · Kat 9 döşeme",
+    gross_amount: null,
+    net_amount: null,
+    amount_snapshot: null,
+  },
+  // 3) İŞVEREN HAKEDİŞ (mockup :209-238) — patron adımı YOK ⇒ eşik ROZETSİZ
+  //    hâl kadraja girer. Adım şeridi: karar verilmiş · BENİM.
+  {
+    chain_id: "chain-pp-5",
+    document_type: "progress_payment",
+    document_id: "pp-5",
+    created_by_name: "Ayşe Demir",
+    created_at: "2026-07-28T09:00:00Z",
+    current_step_no: 2,
+    steps: [
+      approvalStep(1, "accounting", "2026-07-28T09:05:00Z", "Ayşe Demir"),
+      approvalStep(2, "project_manager", null),
+    ],
+    title: "Güneşkent Konut — İşveren Hakediş #5",
+    subtitle: "Kat 6–8 döşeme · 07/2026",
+    gross_amount: "2100000.00",
+    net_amount: "1674570.00",
+    amount_snapshot: "2100000.00",
+  },
+  // 4) 🔒 YAZMA HEDEFİ — `scpp-8` (`hiddenFromLists`, `sc-3`). GELECEK adım
+  //    (`○`) yalnız burada temsil edilir. Bu kalemi `e2e/onay-kutusu.spec.ts`
+  //    GERÇEKTEN onaylar/reddeder; başka hiçbir spec ona bakmaz.
+  {
+    chain_id: "chain-scpp-8",
+    document_type: "subcontractor_progress_payment",
+    document_id: "scpp-8",
+    created_by_name: null,
+    created_at: "2026-07-28T09:00:00Z",
+    current_step_no: 2,
+    steps: [
+      approvalStep(1, "site_chief", "2026-07-27T08:00:00Z", "Sercan Öztürk"),
+      approvalStep(2, "project_manager", null),
+      approvalStep(3, "patron", null),
+    ],
+    title: "Onay Kutusu Yazma Hedefi — Hakediş #1",
+    subtitle: "Çelik OSB · 07/2026",
+    gross_amount: "180000.00",
+    net_amount: "147600.00",
+    amount_snapshot: "180000.00",
+  },
+];
+
+/**
+ * `my_approval_roles` — ME (`Ahmet Yılmaz`, Patron) hem `patron` hem
+ * `project_manager` adımlarını imzalayabilir. İki rol de gereklidir: fikstürün
+ * dört zincirinin sıradaki adımı bu iki rolden birine düşer ve uç ancak
+ * "BANA düşen" zincirleri döndürebilir.
+ */
+const MY_APPROVAL_ROLES: readonly MockApprovalItem["steps"][number]["approval_role"][] = [
+  "patron",
+  "project_manager",
+];
+
+function approvalInboxFixture(state: MockState, limit: number, offset: number) {
+  const pending = APPROVAL_SEEDS.filter((seed) => {
+    switch (seed.document_type) {
+      case "subcontractor_progress_payment":
+        return (
+          state.subcontractorProgressPayments.find((p) => p.id === seed.document_id)?.status ===
+          "pending_approval"
+        );
+      case "progress_payment":
+        return (
+          state.progressPayments.find((p) => p.id === seed.document_id)?.status ===
+          "pending_approval"
+        );
+      case "purchase_request":
+        return (
+          PURCHASE_REQUEST_FIXTURES.find((r) => r.id === seed.document_id)?.status ===
+          "pending_approval"
+        );
+    }
+  });
+
+  const items: MockApprovalItem[] = pending
+    .slice(offset, offset + limit)
+    .map((seed) => ({ ...seed, threshold_snapshot: APPROVAL_THRESHOLD_TRY }));
+
+  return {
+    items,
+    // `total` SÜZGEÇLENMİŞ kümenin boyutudur (sayfalamadan ÖNCE) — kırpma
+    // bandının tek kaynağı budur.
+    total: pending.length,
+    limit,
+    offset,
+    my_approval_roles: MY_APPROVAL_ROLES,
+  };
 }
