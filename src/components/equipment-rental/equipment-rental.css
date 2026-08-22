@@ -1,0 +1,411 @@
+/*
+ * F-KIRA · Makine Kira Hakedişi ekranları.
+ *
+ * Ad alanı `makine-kira*` — `EquipmentWorkView`in `makine-cal*` deseniyle
+ * kardeş (aynı modülün sekmeleri aynı görsel dili konuşur). Çıplak hex/px
+ * YASAK: her değer `src/styles/tokens.css`ten gelir.
+ *
+ * Liste ekranının mockup'ı YOKTUR (onaylı sapma adayı, TASARIM-BRIEFI-2 md.17)
+ * → ölçüler emsalden (`subcontractor-progress-payments.css` + `equipment-work.css`)
+ * alınmıştır, yeni görsel dil üretilmemiştir. Detay ekranı ise
+ * `Makine - Kira Hakedişi.dc.html`ten satır numarasıyla gerekçelidir.
+ */
+
+/* ===========================================================================
+ * LİSTE — /makine/kira
+ * ======================================================================== */
+
+.makine-kira__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.makine-kira__title {
+  font-size: var(--text-page-title);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+/* Devre-dışı öğenin GÖRÜNÜR gerekçesi (F-TH kuralı; `title` tek başına yetmez). */
+.makine-kira__reason {
+  margin-bottom: var(--space-4);
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+.makine-kira__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.makine-kira__panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.makine-kira__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.makine-kira__table th {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.makine-kira__table td {
+  padding: var(--space-3);
+  font-size: var(--text-body);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.makine-kira__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.makine-kira__num {
+  text-align: right;
+}
+
+.makine-kira__mono {
+  font-family: var(--font-mono);
+}
+
+.makine-kira__link {
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+.makine-kira__link:hover,
+.makine-kira__link:focus {
+  text-decoration: underline;
+}
+
+.makine-kira__empty {
+  padding: var(--space-6) var(--space-3);
+  text-align: center;
+  color: var(--color-text-subtle);
+}
+
+.makine-kira__limit-note {
+  margin-top: var(--space-2);
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+/* ===========================================================================
+ * DETAY / DOĞRULAMA — /makine/kira/[invoiceId]
+ * Ölçüler `Makine - Kira Hakedişi.dc.html` (M5) satır numaralarıyla gerekçeli.
+ * Çıplak hex YASAK: mockup değerlerinin HEPSİNİN `tokens.css`te karşılığı
+ * ölçüldü ve kullanıldı (tokens.css bu dilime YASAK, yeni token açılmadı).
+ * ======================================================================== */
+
+/* M5:18-24 breadcrumb */
+.makine-kira__crumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+  font-size: var(--text-body);
+}
+.makine-kira__crumbs a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+.makine-kira__crumbs a:hover,
+.makine-kira__crumbs a:focus {
+  text-decoration: underline;
+}
+.makine-kira__crumbs span[aria-hidden="true"] {
+  color: var(--color-border);
+}
+.makine-kira__crumb-current {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+/* M5:32 — içerik sütunu 960px'te sınırlanır. */
+.makine-kira--detail {
+  max-width: 960px;
+}
+
+.makine-kira__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* KART A · M5:35-43 bilgi kutusu.
+   Zemin #eff6ff = --color-nav-active-bg (deponun bu değeri taşıyan TEK
+   token'ı; yeni token açmak bu dilime yasak). Kenarlık #bfdbfe, metin
+   #1d4ed8 mockup'la birebir. */
+.makine-kira__info {
+  background: var(--color-nav-active-bg);
+  border: 1px solid var(--color-primary-ring);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  font-size: var(--text-body);
+  line-height: 1.8;
+  color: var(--color-primary-hover);
+}
+
+.makine-kira__card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-4);
+  overflow: hidden;
+}
+.makine-kira__card-body {
+  padding: var(--space-4);
+}
+.makine-kira__card-title {
+  font-size: var(--text-form-card-title);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+/* M5:81-84 tablo başlık şeridi */
+.makine-kira__card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.makine-kira__card-note {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+.makine-kira__card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+/* KART B · M5:46-66 — tek satırda yan yana alanlar. */
+.makine-kira__incoming {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+/* Kart B (M5:46-66) alanlari YAN YANA durur: `Field` varsayilan olarak
+   etiketi kontrolun USTUNE koyar, burada satir eksenine cevrilir. Etiket
+   TIPOGRAFISI Field'in kendi kuralindadir (field-adoption bekcisi:
+   `--text-form-label` yalniz `field.css`te yasar). */
+.makine-kira__inline-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.makine-kira__inline-field .field__label-row {
+  margin-bottom: 0;
+}
+.makine-kira__incoming-end {
+  margin-left: auto;
+}
+.makine-kira__amount-input {
+  width: 120px; /* M5:63 */
+}
+
+/* KART C · M5:71 — dört eşit sütun. */
+.makine-kira__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.makine-kira__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.makine-kira__period {
+  display: flex;
+  gap: var(--space-1);
+}
+/* M5:75 — salt-okuma kutusu. */
+.makine-kira__static {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-surface-muted);
+  border-radius: var(--radius-md);
+  font-size: var(--text-body);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-muted);
+}
+
+/* KART D · M5:85-173 tablo */
+.makine-kira__table-scroll {
+  overflow-x: auto;
+}
+.makine-kira__lines {
+  width: 100%;
+  border-collapse: collapse;
+}
+.makine-kira__lines th {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  text-align: left;
+  white-space: nowrap;
+}
+.makine-kira__lines td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-surface-muted);
+  font-size: var(--text-body);
+  color: var(--color-text);
+  vertical-align: top;
+}
+/* M5:91-96 — sayısal kolonlar sağa, "Tür" ortaya yaslanır. */
+.makine-kira__col--workedHours,
+.makine-kira__col--breakdownHours,
+.makine-kira__col--rateAmount,
+.makine-kira__col--ourAmount,
+.makine-kira__col--invoicedHours {
+  text-align: right;
+}
+.makine-kira__col--lineKind,
+.makine-kira__col--variance {
+  text-align: center;
+}
+.makine-kira__line-name {
+  display: block;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.makine-kira__line-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-document-meta);
+  color: var(--color-text-subtle);
+}
+.makine-kira__amount {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+}
+/* M5:138 — hariç tutulan tutar üstü çizili ve soluk. */
+.makine-kira__amount--excluded {
+  font-family: var(--font-mono);
+  color: var(--color-text-subtle);
+  text-decoration: line-through;
+}
+.makine-kira__muted {
+  color: var(--color-text-subtle);
+}
+.makine-kira__center {
+  text-align: center;
+}
+.makine-kira__row-input {
+  width: 72px; /* M5:109/111 */
+  text-align: right;
+}
+
+/* M5:154-171 tfoot — dört satır, hepsi DOKUZ kolona hizalı (K3). */
+.makine-kira__lines tfoot td {
+  padding: var(--space-3);
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+}
+.makine-kira__foot--ours {
+  background: var(--color-success-tint);
+  border-top: 2px solid var(--color-success);
+}
+.makine-kira__foot--ours .makine-kira__num {
+  color: var(--color-success);
+  font-size: var(--text-total-amount);
+}
+.makine-kira__foot--theirs {
+  background: var(--color-audit-danger-row-bg);
+  border-top: 1px solid var(--color-danger-tint-border);
+  color: var(--color-danger-strong);
+}
+.makine-kira__foot--theirs .makine-kira__num {
+  color: var(--color-danger-strong);
+  font-size: var(--text-total-amount);
+}
+.makine-kira__foot--vat {
+  background: var(--color-surface-2);
+  border-top: 1px solid var(--color-border);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-muted);
+}
+.makine-kira__foot--payable {
+  background: var(--color-primary-soft);
+  border-top: 2px solid var(--color-primary);
+}
+.makine-kira__payable {
+  color: var(--color-primary);
+  font-size: var(--text-numeric);
+}
+
+.makine-kira__warning {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-small);
+  color: var(--color-warning-strong);
+}
+
+/* KART E · M5:177-193 proje dağılımı */
+.makine-kira__dist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.makine-kira__dist-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-nav-active-bg);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-md);
+}
+.makine-kira__dist-name {
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+.makine-kira__dist-meta {
+  margin-top: 2px;
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+.makine-kira__dist-amount {
+  font-size: var(--text-form-card-title);
+  font-weight: var(--weight-bold);
+  color: var(--color-primary);
+}
+.makine-kira__dist-note {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+  font-size: var(--text-body);
+  color: var(--color-text-subtle);
+}

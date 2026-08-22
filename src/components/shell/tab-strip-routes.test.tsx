@@ -3,6 +3,7 @@ import { render, screen, cleanup } from "@testing-library/react";
 import type { ReactElement } from "react";
 
 import { buildRouteTree, resolveHrefIn } from "./route-tree.testkit";
+import { EquipmentTabsStrip } from "../equipment/EquipmentTabsStrip";
 import { ProjectDetailTabs } from "../project-detail/ProjectDetailTabs";
 import { SectionDetailTabs } from "../section-detail/SectionDetailTabs";
 import { SiteDetailTabs } from "../site-detail/SiteDetailTabs";
@@ -97,6 +98,27 @@ const STRIPS: readonly StripCase[] = [
     expectedTabCount: 5,
     selfRoute: UNIT_FORM_HREF,
     render: () => <UnitFormTabs activeTab="Ünite Ekle" />,
+  },
+  {
+    // 🔴 F-KIRA — KÖR BEKÇİ KAPATILDI. Bu şerit F-MK'da yazıldığından beri
+    // `STRIPS`te KAYITLI DEĞİLDİ (ölçüldü: grep boş), yani dosyanın başındaki
+    // "yeni şerit eklendiğinde satır ekle" notu ATLANMIŞTI ve şeridin dört
+    // gerçek rotası hiçbir bekçi tarafından denetlenmiyordu — F-PRJTAB'ın
+    // kapattığı çürüme sınıfının aynısı burada AÇIK duruyordu.
+    name: "EquipmentTabsStrip · Ekipman Listesi (makine sekme şeridi)",
+    expectedTabCount: 5,
+    selfRoute: "/makine",
+    render: () => <EquipmentTabsStrip activeTab="Ekipman Listesi" />,
+  },
+  {
+    // İkinci tur (UnitFormTabs emsali): aktif sekme `<span>` basıldığı için
+    // tek turda onun rotası denetlenmez. "Kira Hakedişi" aktifken ÖTEKİ dört
+    // sekme `<Link>` olur; bu tur ayrıca F-KIRA'nın açtığı `/makine/kira`
+    // rotasının GERÇEKTEN var olduğunu (catch-all'a düşmediğini) çakar.
+    name: "EquipmentTabsStrip · Kira Hakedişi (makine sekme şeridi)",
+    expectedTabCount: 5,
+    selfRoute: "/makine/kira",
+    render: () => <EquipmentTabsStrip activeTab="Kira Hakedişi" />,
   },
 ];
 

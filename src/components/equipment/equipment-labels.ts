@@ -54,8 +54,9 @@ export const EQUIPMENT_UNASSIGNED_SITE_LABEL = "Depoda (Atanmadı)";
  * gerekçesi mockup'ın kendisinden DEĞİL, spec K1'den birebir alınır.
  * ------------------------------------------------------------------------ */
 
-export const EQUIPMENT_TAB_LEASE_SETTLEMENT_REASON =
-  "Kira hakedişi ekranı sıradaki dilimde açılacak";
+// F-KIRA: `EQUIPMENT_TAB_LEASE_SETTLEMENT_REASON` KALDIRILDI — "Kira Hakedişi"
+// sekmesi artık `/makine/kira` rotasına iner, devre-dışı değildir. Gerekçe
+// sabiti bırakılsaydı hiçbir yerden okunmayan ölü bir metin olurdu.
 export const EQUIPMENT_TAB_MAINTENANCE_CALENDAR_REASON =
   "Bakım takvimi mockup'ı henüz yok";
 

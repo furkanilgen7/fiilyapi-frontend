@@ -183,10 +183,13 @@ export function invoiceSource(fields: InvoiceSourceFields): InvoiceSource | null
     };
   }
   if (fields.equipment_rental_invoice_id !== null) {
+    // 🔴 F-KIRA: gerekçe BAYATLADI ve düştü — `/makine/kira/[invoiceId]` detay
+    // ekranı bu dilimde yazıldı, kaynak artık GERÇEK bir rotaya bağlanır
+    // (`progress_payment_id` dalıyla aynı biçim).
     return {
       label: "Makine Kira Faturası",
-      href: null,
-      reason: "Makine kira faturasının detay ekranı henüz yazılmadı.",
+      href: `/makine/kira/${fields.equipment_rental_invoice_id}`,
+      reason: null,
     };
   }
   if (fields.purchase_order_id !== null) {

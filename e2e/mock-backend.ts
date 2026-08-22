@@ -511,6 +511,14 @@ interface MockState {
   workLogs: MockWorkLog[];
   fuelLogs: MockFuelLog[];
   equipmentSeq: number;
+  // F-KIRA — MK-2 kira hakedişleri.
+  // 🔒 İZOLASYON: `RENTAL_MATCH_FIXTURE` (`rental-1`) BU DİZİYE GİRMEZ. O
+  // fikstür `/faturalar/inv-in-1` ekranının eşleştirme kartını besliyor ve
+  // `faturalar-detay-gelen.png` baseline'ı ona bakıyor; durum uçları onu
+  // oynatsaydı BAŞKA bir dilimin karesi sessizce kayardı.
+  // `rental-2` GÖRSEL kadrajın kaynağıdır ve MUTASYONA UĞRAMAZ;
+  // yazma akışları `rental-3` (pending) ve `rental-4` (approved) üzerinde koşar.
+  rentalInvoices: RentalInvoiceDetail[];
   // F-BLG T3 — ekipman belgeleri (MK-2). Yükleme akışı `eq-2`ye sürgündür;
   // `eq-1`in sayacı GÖRSEL kadrajın kaynağıdır ve DEĞİŞMEZ.
   equipmentDocuments: components["schemas"]["EquipmentDocumentResponse"][];
@@ -2265,6 +2273,15 @@ function seedState(): MockState {
     workLogs: WORK_LOG_FIXTURES.map((log) => ({ ...log })),
     fuelLogs: FUEL_LOG_FIXTURES.map((log) => ({ ...log })),
     equipmentSeq: 0,
+    rentalInvoices: RENTAL_INVOICE_FIXTURES.map((invoice) => ({
+      ...invoice,
+      lines: invoice.lines.map((line) => ({ ...line })),
+      totals: { ...invoice.totals },
+      site_distribution: invoice.site_distribution.map((entry) => ({
+        ...entry,
+        equipments: entry.equipments.map((equipment) => ({ ...equipment })),
+      })),
+    })),
     equipmentDocuments: EQUIPMENT_DOCUMENT_FIXTURES.map((doc) => ({ ...doc })),
     equipmentDocumentSeq: 0,
     // DERİN kopya: POST diziyi büyütür, modül sabiti kirlenmemelidir.
@@ -10263,6 +10280,150 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       });
     }
 
+    /* -----------------------------------------------------------------
+     * F-KIRA · MK-2 kira hakedişi uçları.
+     *
+     * 🔴 SIRA BİR SÖZLEŞMEDİR (F-TKV M11 kanonu). Bu blok, AŞAĞIDAKİ
+     * `equipmentIdMatch` deseninden ÖNCE durmak ZORUNDADIR: o desen
+     * `/^\/equipment\/([^/]+)$/` biçimindedir ve `/equipment/rental-invoices`
+     * TEK SEGMENTLİ olduğu için ona UYAR — kimliği "rental-invoices" olan bir
+     * ekipman bulunamayınca 404 "Ekipman bulunamadı." döner ve liste ekranı
+     * bunu BOŞ LİSTE olarak basardı. Beş kapı da yeşil kalırdı; kusuru yalnız
+     * "uç 200 + dolu gövde döndü mü" diye DOĞRUDAN ölçen bir test görür.
+     * (Detay/satır yolları çok segmentli olduğu için o desene takılmaz, ama
+     * hepsi tek yerde tutulur.)
+     * ----------------------------------------------------------------- */
+    const rentalInvoiceOf = (id: string) =>
+      state.rentalInvoices.find((invoice) => invoice.id === id);
+
+    if (method === "GET" && path === "/equipment/rental-invoices") {
+      const limit = Number(parsed.searchParams.get("limit") ?? "50");
+      if (limit > 200) return send(422, { detail: "limit en fazla 200 olabilir." });
+      const offset = Number(parsed.searchParams.get("offset") ?? "0");
+      const supplierId = parsed.searchParams.get("supplier_id");
+      const siteId = parsed.searchParams.get("site_id");
+      const status = parsed.searchParams.get("status");
+      const periodYear = parsed.searchParams.get("period_year");
+      const periodMonth = parsed.searchParams.get("period_month");
+
+      let rows = state.rentalInvoices;
+      if (supplierId) rows = rows.filter((invoice) => invoice.supplier_id === supplierId);
+      if (siteId) rows = rows.filter((invoice) => invoice.site_id === siteId);
+      if (status) rows = rows.filter((invoice) => invoice.status === status);
+      if (periodYear) rows = rows.filter((invoice) => invoice.period_year === Number(periodYear));
+      if (periodMonth) rows = rows.filter((invoice) => invoice.period_month === Number(periodMonth));
+
+      // Liste satırı BAŞLIKTIR: `lines`/`totals`/`site_distribution` TAŞIMAZ
+      // (şema gerekçesi) — gerçek sunucu da öyle döner.
+      const items = rows.slice(offset, offset + limit).map((invoice) => {
+        const { lines: _lines, totals: _totals, site_distribution: _dist, ...header } = invoice;
+        return header;
+      });
+      return send(200, { items, total: rows.length, limit, offset });
+    }
+
+    const rentalDetailMatch = path.match(/^\/equipment\/rental-invoices\/([^/]+)$/);
+    if (rentalDetailMatch && (method === "GET" || method === "PATCH")) {
+      const invoice = rentalInvoiceOf(rentalDetailMatch[1]);
+      // `rental-1` BİLEREK burada YOK: o fikstür fatura ekranına aittir ve
+      // aşağıdaki eski işleyici onu kendi başına servis eder.
+      if (!invoice) {
+        if (rentalDetailMatch[1] === RENTAL_MATCH_FIXTURE.id) return send(200, RENTAL_MATCH_FIXTURE);
+        return send(404, { detail: "Kira faturası bulunamadı." });
+      }
+      if (method === "GET") return send(200, invoice);
+      return withBody((body) => {
+        // K5 — `approved`/`paid` faturada HİÇBİR ŞEY düzenlenemez.
+        if (invoice.status === "approved" || invoice.status === "paid") {
+          return send(409, {
+            detail:
+              "Onaylanmış ya da ödenmiş bir kira hakedişi düzenlenemez. Düzeltme için önce hakedişin onayını geri alın.",
+          });
+        }
+        // GÖNDERİLMEYEN anahtar mevcut değeri KORUR (`model_fields_set`).
+        for (const [key, value] of Object.entries(body)) {
+          if (value === undefined) continue;
+          Object.assign(invoice, { [key]: value });
+        }
+        return send(200, invoice);
+      });
+    }
+
+    const rentalActionMatch = path.match(
+      /^\/equipment\/rental-invoices\/([^/]+)\/(approve|pay|reject)$/,
+    );
+    if (method === "POST" && rentalActionMatch) {
+      const invoice = rentalInvoiceOf(rentalActionMatch[1]);
+      if (!invoice) return send(404, { detail: "Kira faturası bulunamadı." });
+      const action = rentalActionMatch[2];
+
+      // `rental_transitions.py:34-42` tablosunun birebir yansıması.
+      if (action === "approve") {
+        if (invoice.status === "draft") invoice.status = "pending_verification";
+        else if (invoice.status === "pending_verification") invoice.status = "approved";
+        else return send(409, { detail: "Bu kira hakedişi onaylanamaz." });
+      } else if (action === "pay") {
+        if (invoice.status !== "approved") {
+          return send(409, { detail: "Kira hakedişi bu duruma geçirilemez." });
+        }
+        invoice.status = "paid";
+        invoice.paid_at = "2026-08-01T09:00:00Z";
+      } else {
+        if (invoice.status !== "approved") {
+          return send(409, {
+            detail: "Yalnız onaylanmış bir kira hakedişinin onayı geri alınabilir.",
+          });
+        }
+        invoice.status = "pending_verification";
+        invoice.approved_by_id = null;
+        invoice.approved_at = null;
+      }
+      // Durum uçları BAŞLIK döner (satırsız) — gerçek sunucuyla aynı.
+      const { lines: _l, totals: _t, site_distribution: _d, ...header } = invoice;
+      return send(200, header);
+    }
+
+    const rentalLineMatch = path.match(/^\/equipment\/rental-invoice-lines\/([^/]+)$/);
+    if (method === "PATCH" && rentalLineMatch) {
+      const owner = state.rentalInvoices.find((invoice) =>
+        invoice.lines.some((line) => line.id === rentalLineMatch[1]),
+      );
+      const line = owner?.lines.find((row) => row.id === rentalLineMatch[1]);
+      if (!owner || !line) return send(404, { detail: "Kira hakedişi satırı bulunamadı." });
+      if (owner.status === "approved" || owner.status === "paid") {
+        return send(409, {
+          detail:
+            "Onaylanmış ya da ödenmiş bir kira hakedişi düzenlenemez. Düzeltme için önce hakedişin onayını geri alın.",
+        });
+      }
+      return withBody((body) => {
+        // `extra="forbid"`: bu iki alan DIŞINDA hiçbir alan kabul edilmez.
+        for (const key of Object.keys(body)) {
+          if (key !== "rate_amount" && key !== "invoiced_hours") {
+            return send(422, { detail: `Tanınmayan alan: ${key}` });
+          }
+        }
+        if (body.rate_amount !== undefined) {
+          line.rate_amount = body.rate_amount === null ? null : String(body.rate_amount);
+        }
+        if (body.invoiced_hours !== undefined) {
+          line.invoiced_hours =
+            body.invoiced_hours === null ? null : String(body.invoiced_hours);
+          // `variance_status`/`hours_variance` SUNUCU DAMGASIDIR — istemci
+          // hesaplamaz. Sahte sunucu da onları burada TÜRETİR.
+          if (line.invoiced_hours === null) {
+            line.hours_variance = null;
+            line.variance_status = "unknown";
+          } else {
+            const fark = Number(line.invoiced_hours) - Number(line.worked_hours);
+            line.hours_variance = fark.toFixed(2);
+            line.variance_status = fark === 0 ? "match" : fark > 0 ? "over" : "under";
+          }
+        }
+        return send(200, line);
+      });
+    }
+
     const equipmentIdMatch = path.match(/^\/equipment\/([^/]+)$/);
     if (equipmentIdMatch) {
       const equipment = state.equipment.find((item) => item.id === equipmentIdMatch[1]);
@@ -11915,6 +12076,273 @@ const RENTAL_MATCH_FIXTURE: components["schemas"]["RentalInvoiceDetailResponse"]
   },
   site_distribution: [],
 };
+
+/* ---------------------------------------------------------------------------
+ * F-KIRA · kira hakedişi fikstürleri (MK-2).
+ *
+ * 🔒 `RENTAL_MATCH_FIXTURE` (`rental-1`) BU LİSTEYE GİRMEZ — bkz. `state`
+ * tipindeki not. Buradaki kayıtlar F-KIRA'nın KENDİ ekranlarına aittir.
+ *
+ * 🔒 MUTASYON ADASI (F-BOR kanonu) — HER YAZMA TESTİNE AYRI FATURA. İlk
+ * sürümde `rental-3`ü ÜÇ test paylaşıyordu (onay · satır PATCH'i · süzgeç) ve
+ * onay testi durumu `approved`a çevirince satır PATCH'inin düzenlenebilir
+ * kutuları KAYBOLUYORDU — CI'da `element(s) not found` ile yakalandı.
+ * `fullyParallel` altında test sırası garanti DEĞİLDİR.
+ *
+ *   rental-2 → SALT-OKUR (görsel kadraj + tablo/varyans iddiaları)
+ *   rental-3 → YAZMA: ileri adım (pending → approved)
+ *   rental-4 → YAZMA: onayı geri alma (approved → pending)
+ *   rental-5 → SALT-OKUR: fail-closed kadrajı
+ *   rental-6 → YAZMA: satır PATCH'i (durumu hiç oynatılmaz)
+ *   rental-7 → SALT-OKUR `approved` (süzgeç testinin pozitif iddiası)
+ *
+ * 🔒 DÖNEM AYRIMI: yazma fikstürlerinin hepsi FARKLI aydadır ve görsel liste
+ * kadrajı döneme süzülür — yoksa durumu oynayan bir satır liste karesini
+ * kâh şöyle kâh böyle bastırırdı.
+ *
+ * 🔒 GLOBAL LİSTELERE SATIR EKLENMEDİ: tedarikçiler (`SUPPLIER_FIXTURES`),
+ * şantiyeler ve ekipmanlar MEVCUT kimliklerden referans alınır. F-UNIT2 tek
+ * bir şantiye ekleyip F-ST'nin spec'ini kırmıştı; onarım GERİ ALMAKTIR.
+ * ------------------------------------------------------------------------ */
+type RentalInvoiceDetail = components["schemas"]["RentalInvoiceDetailResponse"];
+type RentalLine = components["schemas"]["RentalInvoiceLineResponse"];
+
+function rentalLine(overrides: Partial<RentalLine> & { id: string }): RentalLine {
+  return {
+    equipment_id: "eq-1",
+    equipment_name: "Tower Crane TC-48",
+    equipment_brand: "Liebherr",
+    equipment_plate_no: "06 TC 4800",
+    site_id: "s-1",
+    site_name: "A-Blok Şantiyesi",
+    line_kind: "rented",
+    worked_hours: "186.00",
+    breakdown_hours: "0.00",
+    rate_amount: "320.00",
+    effective_rate_amount: "320.00",
+    our_amount: "59520.00",
+    breakdown_amount: "0.00",
+    invoiced_hours: "186.00",
+    hours_variance: "0.00",
+    variance_status: "match",
+    ...overrides,
+  };
+}
+
+/**
+ * `rental-2` — GÖRSEL KADRAJIN kaynağı. Mockup M5'in dört satırını taşır:
+ * eşleşen kiralık · 6 saat fazla faturalanan kiralık · arıza (hariç) · kendi
+ * malı. Toplamlar mockup aritmetiğiyle birebir (122.496 × 0,20 = 24.499,20;
+ * ödenecek 146.995,20).
+ */
+const RENTAL_INVOICE_VISUAL: RentalInvoiceDetail = {
+  id: "rental-2",
+  supplier_id: "sup-1",
+  supplier_name: "Yıldız Hazır Beton A.Ş.",
+  invoice_no: "LT-2026-07-0184",
+  invoice_amount: "122496.00",
+  period_year: 2026,
+  period_month: 7,
+  site_id: null,
+  site_name: null,
+  rate_period: "hourly",
+  vat_rate: "20.00",
+  vat_amount: "24499.20",
+  payable_total: "146995.20",
+  status: "pending_verification",
+  approved_by_id: null,
+  approved_at: null,
+  paid_at: null,
+  created_at: "2026-07-16T08:00:00Z",
+  lines: [
+    rentalLine({ id: "rl2-1" }),
+    rentalLine({
+      id: "rl2-2",
+      equipment_id: "eq-2",
+      equipment_name: "Ekskavatör CAT 320",
+      equipment_brand: "Caterpillar",
+      equipment_plate_no: "35 EK 3200",
+      site_id: "s-2",
+      site_name: "B-Blok Şantiyesi",
+      worked_hours: "152.00",
+      rate_amount: "280.00",
+      effective_rate_amount: "280.00",
+      our_amount: "42560.00",
+      invoiced_hours: "158.00",
+      hours_variance: "6.00",
+      variance_status: "over",
+    }),
+    rentalLine({
+      id: "rl2-3",
+      equipment_name: "Tower Crane TC-48 — Arıza",
+      line_kind: "breakdown",
+      worked_hours: "0.00",
+      breakdown_hours: "38.00",
+      our_amount: null,
+      breakdown_amount: "12160.00",
+      invoiced_hours: null,
+      hours_variance: null,
+      variance_status: "unknown",
+    }),
+    rentalLine({
+      id: "rl2-4",
+      equipment_id: "eq-3",
+      equipment_name: "Damperli Kamyon 34 AB 1234",
+      equipment_brand: "Mercedes",
+      equipment_plate_no: null,
+      site_id: "s-2",
+      site_name: "B-Blok Şantiyesi",
+      line_kind: "owned",
+      worked_hours: "168.00",
+      rate_amount: null,
+      effective_rate_amount: null,
+      our_amount: "23520.00",
+      invoiced_hours: null,
+      hours_variance: null,
+      variance_status: "unknown",
+    }),
+  ],
+  totals: {
+    our_total: "102080.00",
+    our_total_unknown_count: 0,
+    owned_total: "23520.00",
+    owned_total_unknown_count: 0,
+    excluded_breakdown_amount: "12160.00",
+    excluded_breakdown_unknown_count: 0,
+    invoice_amount: "122496.00",
+    vat_rate: "20.00",
+    vat_amount: "24499.20",
+    payable_total: "146995.20",
+  },
+  site_distribution: [
+    {
+      site_id: "s-1",
+      site_name: "A-Blok Şantiyesi",
+      hours: "186.00",
+      amount: "59520.00",
+      unknown_count: 0,
+      equipments: [{ id: "eq-1", name: "Tower Crane TC-48" }],
+    },
+    {
+      site_id: "s-2",
+      site_name: "B-Blok Şantiyesi",
+      hours: "152.00",
+      amount: "42560.00",
+      unknown_count: 0,
+      equipments: [{ id: "eq-2", name: "Ekskavatör CAT 320" }],
+    },
+  ],
+};
+
+/** `rental-3` — YAZMA ADASI: ileri adım (`pending_verification → approved`). */
+const RENTAL_INVOICE_WRITE_PENDING: RentalInvoiceDetail = {
+  ...RENTAL_INVOICE_VISUAL,
+  id: "rental-3",
+  invoice_no: "LT-2026-06-0155",
+  period_month: 6,
+  status: "pending_verification",
+  lines: [rentalLine({ id: "rl3-1" })],
+  site_distribution: [],
+};
+
+/** `rental-4` — YAZMA ADASI: `approved` (ödeme + onay geri alma yolları). */
+const RENTAL_INVOICE_WRITE_APPROVED: RentalInvoiceDetail = {
+  ...RENTAL_INVOICE_VISUAL,
+  id: "rental-4",
+  invoice_no: "LT-2026-05-0131",
+  period_month: 5,
+  status: "approved",
+  approved_by_id: "u-1",
+  approved_at: "2026-06-01T09:00:00Z",
+  lines: [rentalLine({ id: "rl4-1" })],
+  site_distribution: [],
+};
+
+/**
+ * `rental-5` — FAIL-CLOSED kadrajı: bedeli bilinmeyen satır + fatura tutarı
+ * HENÜZ GİRİLMEMİŞ taslak. K8 uyarı bandını ve K9'un "hesaplanamadı" dalını
+ * aynı anda görünür kılar (ikisi de yalnız bu yükte basılır).
+ */
+const RENTAL_INVOICE_UNKNOWN: RentalInvoiceDetail = {
+  ...RENTAL_INVOICE_VISUAL,
+  id: "rental-5",
+  invoice_no: null,
+  invoice_amount: null,
+  period_month: 8,
+  status: "draft",
+  vat_amount: null,
+  payable_total: null,
+  lines: [
+    rentalLine({
+      id: "rl5-1",
+      rate_amount: null,
+      effective_rate_amount: null,
+      our_amount: null,
+      invoiced_hours: null,
+      hours_variance: null,
+      variance_status: "unknown",
+    }),
+  ],
+  totals: {
+    our_total: "0.00",
+    our_total_unknown_count: 1,
+    owned_total: "0.00",
+    owned_total_unknown_count: 0,
+    excluded_breakdown_amount: "0.00",
+    excluded_breakdown_unknown_count: 0,
+    invoice_amount: null,
+    vat_rate: "20.00",
+    vat_amount: null,
+    payable_total: null,
+  },
+  site_distribution: [
+    {
+      site_id: null,
+      site_name: null,
+      hours: "186.00",
+      amount: "0.00",
+      unknown_count: 1,
+      equipments: [{ id: "eq-1", name: "Tower Crane TC-48" }],
+    },
+  ],
+};
+
+/** `rental-6` — YAZMA ADASI: satır PATCH'i (durumu HİÇ oynatılmaz). */
+const RENTAL_INVOICE_WRITE_LINE: RentalInvoiceDetail = {
+  ...RENTAL_INVOICE_VISUAL,
+  id: "rental-6",
+  invoice_no: "LT-2026-04-0102",
+  period_month: 4,
+  status: "pending_verification",
+  lines: [rentalLine({ id: "rl6-1" })],
+  site_distribution: [],
+};
+
+/**
+ * `rental-7` — SALT-OKUR `approved`. Süzgeç testinin pozitif iddiası buna
+ * bakar: `rental-4`ün durumunu red testi oynattığı için ona bakan bir süzgeç
+ * iddiası `fullyParallel` altında kâh geçer kâh kalırdı.
+ */
+const RENTAL_INVOICE_APPROVED_READONLY: RentalInvoiceDetail = {
+  ...RENTAL_INVOICE_VISUAL,
+  id: "rental-7",
+  invoice_no: "LT-2026-03-0088",
+  period_month: 3,
+  status: "approved",
+  approved_by_id: "u-1",
+  approved_at: "2026-04-01T09:00:00Z",
+  lines: [rentalLine({ id: "rl7-1" })],
+  site_distribution: [],
+};
+
+const RENTAL_INVOICE_FIXTURES: RentalInvoiceDetail[] = [
+  RENTAL_INVOICE_VISUAL,
+  RENTAL_INVOICE_WRITE_PENDING,
+  RENTAL_INVOICE_WRITE_APPROVED,
+  RENTAL_INVOICE_UNKNOWN,
+  RENTAL_INVOICE_WRITE_LINE,
+  RENTAL_INVOICE_APPROVED_READONLY,
+];
 
 /**
  * ⚠️ Fatura durumu YAZILABİLİRDİR (approve/send/tahsilat uçları onu oynatır),
