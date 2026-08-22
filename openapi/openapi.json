@@ -48537,6 +48537,18 @@
             "type": "string",
             "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Pending"
+          },
+          "progress_pct": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress Pct"
           }
         },
         "type": "object",
@@ -48548,10 +48560,11 @@
           "work_category",
           "contract_amount",
           "paid",
-          "pending"
+          "pending",
+          "progress_pct"
         ],
         "title": "SubcontractorCostRow",
-        "description": "KY 205-249 taşeron maliyet tablosunun bir satırı — SÖZLEŞME başına.\n\nSatır birimi mockup'ta iş kapsamıdır: her satırda taşeron adı + kategori\nrozeti + ayrı bir \"İş Kalemi\" metni vardır (\"Kaba İnşaat + Kalıp\" · \"Elektrik\nTesisatı (52 ünite)\" · \"PVC Pencere + Cephe\", KY 219/227/235) ve bu SÖZLEŞME\ndüzeyi bir kavramdır. Taşeron başına gruplarsak aynı taşeronun iki iş kapsamı\ntek satıra ezilir ve sözleşme kimliği geri getirilemez şekilde kaybolur.\n\n**\"İş Kalemi\" sütunu `work_category` ile beslenir (KULLANICI KARARI\n2026-08-09):** bu sütun için YENİ KOLON AÇILMAZ — `subcontractor_contracts.\nwork_category` zaten vardır ve satır birimi sözleşme olduğu için kategori\ndoğrudan sözleşmeden okunur. Değer NULL olabilir ve bu MEŞRUDUR (taslak\nsözleşmede kategori girilmemiş olabilir): satır yine açılır, sütun ekranda BOŞ\nbasılır — uydurma metin ÜRETİLMEZ. Satır ayrıca `contract_id`/`contract_no`\ntaşır ki ekran sözleşmeye gidebilsin.\n\n`subcontractor_id` boş olabilir (sözleşmede kartoteks bağı zorunlu değildir);\nad anlık görüntüsü `subcontractor_name`de kalır. `work_category` doğrudan\nsözleşmedendir (KY 219'un ad altındaki alt satırı) — satır artık tek bir\nsözleşme olduğu için \"kategoriler ayrışırsa None\" kuralı GEREKMEZ."
+        "description": "KY 205-249 taşeron maliyet tablosunun bir satırı — SÖZLEŞME başına.\n\nSatır birimi mockup'ta iş kapsamıdır: her satırda taşeron adı + kategori\nrozeti + ayrı bir \"İş Kalemi\" metni vardır (\"Kaba İnşaat + Kalıp\" · \"Elektrik\nTesisatı (52 ünite)\" · \"PVC Pencere + Cephe\", KY 219/227/235) ve bu SÖZLEŞME\ndüzeyi bir kavramdır. Taşeron başına gruplarsak aynı taşeronun iki iş kapsamı\ntek satıra ezilir ve sözleşme kimliği geri getirilemez şekilde kaybolur.\n\n**\"İş Kalemi\" sütunu `work_category` ile beslenir (KULLANICI KARARI\n2026-08-09):** bu sütun için YENİ KOLON AÇILMAZ — `subcontractor_contracts.\nwork_category` zaten vardır ve satır birimi sözleşme olduğu için kategori\ndoğrudan sözleşmeden okunur. Değer NULL olabilir ve bu MEŞRUDUR (taslak\nsözleşmede kategori girilmemiş olabilir): satır yine açılır, sütun ekranda BOŞ\nbasılır — uydurma metin ÜRETİLMEZ. Satır ayrıca `contract_id`/`contract_no`\ntaşır ki ekran sözleşmeye gidebilsin.\n\n`subcontractor_id` boş olabilir (sözleşmede kartoteks bağı zorunlu değildir);\nad anlık görüntüsü `subcontractor_name`de kalır. `work_category` doğrudan\nsözleşmedendir (KY 219'un ad altındaki alt satırı) — satır artık tek bir\nsözleşme olduğu için \"kategoriler ayrışırsa None\" kuralı GEREKMEZ.\n\n## `progress_pct` — FİNANSAL ilerleme, FİZİKSEL DEĞİL\n\n🔴 Bu alan **paranın oranıdır**: `paid / contract_amount × 100`. İşin\nsahada ne kadarının bittiğini SÖYLEMEZ; yalnız sözleşme bedelinin ne\nkadarının ÖDENDİĞİNİ söyler. Kardeş alan `ContractingCard.\nphysical_progress` BAŞKA BİR KAVRAMDIR (fiziksel imalat ilerlemesi) ve\nhenüz yer tutucudur — ikisi birbirinin yerine KULLANILAMAZ, ekranda da\n\"Fiziksel İlerleme\" etiketiyle basılamaz. (Bu repoda bir mockup'ın harcama\noranını \"Fiziksel İlerleme\" diye etiketlediği CANLI bir tuzak zaten var;\nbu alan onun ikinci örneği OLMAYACAK.)\n\nİkiz alan `progress_payments.schemas.ProgressPaymentSummary.progress_pct`tir\n(işveren tarafı, \"§8 finansal ilerleme\") — ad ve tip bilerek AYNIDIR, formül\nde tek kopyadan çağrılır (`cost_summary._row` notu).\n\nPayda `0` ise (kalemsiz sözleşme ya da bütün kalemleri `unit_price IS NULL`\nolan sözleşme — ikisi de üretimde MEŞRU) değer `None`'dur: uydurma `%0`\nbasmak \"veri yok\"u \"ilerleme yok\" diye gösterirdi. Bedeli olup hiç ödeme\ngörmemiş sözleşme ise GERÇEK `0.00` döner (KY 236-243 \"₺1,8M / ₺0\" satırı\nmockup'ta harfiyen `%0` basar)."
       },
       "SubcontractorCostSummary": {
         "properties": {
@@ -48578,7 +48591,7 @@
           "pending"
         ],
         "title": "SubcontractorCostSummary",
-        "description": "KY 244-248 tfoot \"TOPLAM TAŞERON MALİYETİ\" üçlüsü.\n\nSatırların toplamıdır ve AYNI kaynaktan hesaplanır: iki ayrı toplama yolu\naçılsaydı tablo ile alt toplam zamanla ayrışırdı (`_list_stmt` dersi)."
+        "description": "KY 244-248 tfoot \"TOPLAM TAŞERON MALİYETİ\" üçlüsü.\n\nSatırların toplamıdır ve AYNI kaynaktan hesaplanır: iki ayrı toplama yolu\naçılsaydı tablo ile alt toplam zamanla ayrışırdı (`_list_stmt` dersi).\n\n**`progress_pct` BURADA YOKTUR ve bu bilinçlidir:** KY tfoot'unun \"İlerleme\"\nhücresi HARFİYEN BOŞTUR (`<td></td>`, KY 248), KK tablosunun ise tfoot'u hiç\nyoktur. Toplam bir ilerleme yüzdesi eklemek mockup'ın İSTEMEDİĞİ bir sayıyı\nicat etmek olurdu; üstelik \"hangi ortalama\" sorusunun tek doğru cevabı da\nyoktur (satırların ortalaması ile `Σödenen / Σbedel` farklı sayılardır).\nSütun SATIR düzeyinde yaşar."
       },
       "SubcontractorCreate": {
         "properties": {
