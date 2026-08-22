@@ -5,18 +5,21 @@ import { login } from "./equipment-helpers";
 /*
  * F-KIRA · Makine Kira Hakedişi (MK-2) fonksiyonel e2e'si.
  *
- * 🔒 MUTASYON ADASI (F-BOR kanonu): `rental-2` yalnız OKUNUR ve görsel
- * kadrajın kaynağıdır — bu dosyadaki yazma testleri ona DOKUNMAZ.
- * Yazmalar `rental-3` (pending_verification) ve `rental-4` (approved)
- * üzerinde koşar, her test AYRI bir fatura kullanır: `fullyParallel` altında
- * dosya/test sırası garanti değildir.
+ * 🔒 MUTASYON ADASI (F-BOR kanonu) — HER YAZMA TESTİNE AYRI FATURA.
+ * İlk sürümde üç test `rental-3`ü paylaşıyordu; onay testi durumu `approved`a
+ * çevirince satır PATCH'inin düzenlenebilir kutuları kayboluyordu ve CI
+ * `element(s) not found` verdi. `fullyParallel` altında test sırası garanti
+ * DEĞİLDİR, bu yüzden durumu oynatan her testin kendi faturası vardır ve
+ * salt-okur iddialar durumu HİÇ oynatılmayan fikstürlere bakar.
  */
 
 const RENTAL_LIST_URL = "/makine/kira";
 const VISUAL_INVOICE = "rental-2";
-const PENDING_INVOICE = "rental-3";
-const APPROVED_INVOICE = "rental-4";
-const UNKNOWN_INVOICE = "rental-5";
+const APPROVE_INVOICE = "rental-3"; // YAZMA: ileri adım
+const REJECT_INVOICE = "rental-4"; // YAZMA: onayı geri alma
+const UNKNOWN_INVOICE = "rental-5"; // SALT-OKUR: fail-closed
+const LINE_EDIT_INVOICE = "rental-6"; // YAZMA: satır PATCH'i
+const APPROVED_READONLY = "rental-7"; // SALT-OKUR: `approved` süzgeç iddiası
 
 test("liste ucu GERCEKTEN 200 + dolu govde doner (rota sirasi bekcisi)", async ({ page }) => {
   await login(page);
@@ -56,8 +59,10 @@ test("liste ekrani suzgecleri URL'e yazar ve satirlari basar", async ({ page }) 
   // Durum süzgeci URL'e yazılır (paylaşılabilir/geri-ileri çalışır).
   await page.getByTestId("makine-kira-filter-status").selectOption("approved");
   await expect(page).toHaveURL(/status=approved/);
-  await expect(page.locator(`[data-rental-invoice-id="${APPROVED_INVOICE}"]`)).toBeVisible();
-  await expect(page.locator(`[data-rental-invoice-id="${PENDING_INVOICE}"]`)).toHaveCount(0);
+  // İddialar durumu HİÇ oynatılmayan fikstürlere bakar: `rental-4`ün durumunu
+  // red testi, `rental-3`ünkünü onay testi değiştiriyor.
+  await expect(page.locator(`[data-rental-invoice-id="${APPROVED_READONLY}"]`)).toBeVisible();
+  await expect(page.locator(`[data-rental-invoice-id="${VISUAL_INVOICE}"]`)).toHaveCount(0);
 });
 
 test("arama kutusu YOKTUR (uc `q` parametresi tanimiyor)", async ({ page }) => {
@@ -158,7 +163,7 @@ test("K8/K9 — bilinmeyen bedel ve matrahsiz toplam SESSIZ KALMAZ", async ({ pa
 
 test("K5 — durum makinesi: pending_verification ileri adimi ONAYLAR", async ({ page }) => {
   await login(page);
-  await page.goto(`/makine/kira/${PENDING_INVOICE}`);
+  await page.goto(`/makine/kira/${APPROVE_INVOICE}`);
   await expect(page.getByTestId("makine-kira-loaded-detail")).toBeAttached();
 
   // 🔴 M5:27 "Kiracıya Gönder" KULLANILMADI — backend'in ONAYLI SAPMA etiketi.
@@ -182,7 +187,7 @@ test("K5 — approved faturada onay GERI ALINIR (ayri bir `rejected` durumu YOK)
   page,
 }) => {
   await login(page);
-  await page.goto(`/makine/kira/${APPROVED_INVOICE}`);
+  await page.goto(`/makine/kira/${REJECT_INVOICE}`);
   await expect(page.getByTestId("makine-kira-loaded-detail")).toBeAttached();
 
   await expect(page.getByTestId("makine-kira-approve")).toHaveCount(0);
@@ -198,7 +203,9 @@ test("K5 — approved faturada onay GERI ALINIR (ayri bir `rejected` durumu YOK)
 
 test("satir PATCH'i yalniz DEGISEN kutuda istek atar ve rozeti tazeler", async ({ page }) => {
   await login(page);
-  await page.goto(`/makine/kira/${PENDING_INVOICE}`);
+  // 🔒 KENDİ faturası: onay testi başka bir faturayı ilerletir, yoksa bu
+  // ekran `approved` olur ve düzenlenebilir kutular HİÇ basılmazdı.
+  await page.goto(`/makine/kira/${LINE_EDIT_INVOICE}`);
   await expect(page.getByTestId("makine-kira-loaded-detail")).toBeAttached();
 
   const invoicedHours = page.getByTestId("makine-kira-invoiced_hours").first();

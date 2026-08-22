@@ -15,6 +15,7 @@ import {
   RENTAL_UNASSIGNED_SITE_LABEL,
   RENTAL_VARIANCE_DIFF_SUFFIX,
   RENTAL_VARIANCE_MATCH_LABEL,
+  RENTAL_VARIANCE_TOTAL_UNKNOWN_LABEL,
   RENTAL_VARIANCE_UNKNOWN_LABEL,
   VARIANCE_BADGE_VARIANT,
   type RentalColumnKey,
@@ -213,6 +214,23 @@ export function rentalVarianceLabel(
   }
   if (line.variance_status === "match") return RENTAL_VARIANCE_MATCH_LABEL;
   return `${absTrimmedDecimal(line.hours_variance)} ${RENTAL_VARIANCE_DIFF_SUFFIX}`;
+}
+
+/**
+ * tfoot varyans rozetinin METNİ (M5:162).
+ *
+ * 🔴 DRY: satır rozetiyle AYNI biçimlendirmeyi kullanır. Tablo bileşeni kendi
+ * `${sayı} saat fark` cümlesini kurmaz — iki yerde yaşayan bir metin, biri
+ * güncellendiğinde öbürü sessizce ayrışırdı (satır "6 saat fark" derken
+ * tfoot "6,00 saat fark" diyebilirdi).
+ */
+export function rentalVarianceTotalLabel(total: {
+  totalHours: string;
+  status: VarianceStatus;
+}): string {
+  if (total.status === "unknown") return RENTAL_VARIANCE_TOTAL_UNKNOWN_LABEL;
+  if (total.status === "match") return RENTAL_VARIANCE_MATCH_LABEL;
+  return `${absTrimmedDecimal(total.totalHours)} ${RENTAL_VARIANCE_DIFF_SUFFIX}`;
 }
 
 /** Türe göre DEĞİŞEN beş hücre. `switch` exhaustive, `default` YOK. */

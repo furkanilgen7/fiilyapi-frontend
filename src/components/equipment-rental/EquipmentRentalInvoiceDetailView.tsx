@@ -97,18 +97,22 @@ export function EquipmentRentalInvoiceDetailView({
 
   if (isForbidden(detailQuery.error)) return <AccessDenied />;
 
-  if (detailQuery.isLoading || draft === null || detail === undefined) {
-    return (
-      <div className="makine-kira">
-        <p className="makine-kira__muted">Yükleniyor…</p>
-      </div>
-    );
-  }
-
+  // 🔴 SIRA ÖNEMLİ — HATA DALI YÜKLEME DALINDAN ÖNCE gelir. Hata hâlinde
+  // `isLoading` false'tur ama `detail` yine `undefined` ve `draft` yine
+  // `null`dur; yükleme dalı önce gelseydi onu yutar ve ekran SONSUZA KADAR
+  // "Yükleniyor…" basardı — kullanıcı hiçbir zaman hata görmezdi.
   if (detailQuery.isError) {
     return (
       <div className="makine-kira">
         <Alert variant="danger">Kira hakedişi yüklenemedi.</Alert>
+      </div>
+    );
+  }
+
+  if (detailQuery.isLoading || draft === null || detail === undefined) {
+    return (
+      <div className="makine-kira">
+        <p className="makine-kira__muted">Yükleniyor…</p>
       </div>
     );
   }

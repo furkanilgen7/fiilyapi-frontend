@@ -18,6 +18,7 @@ import {
   rentalSiteLabel,
   rentalUnknownWarning,
   rentalVarianceLabel,
+  rentalVarianceTotalLabel,
 } from "./rental-derive";
 import { RENTAL_COLUMNS, RENTAL_EMPTY_CELL, RENTAL_OWNED_RATE_LABEL } from "./rental-labels";
 import type {
@@ -512,5 +513,35 @@ describe("rentalVarianceLabel · M5:112/126'nin SOZCUK hali", () => {
 describe("RENTAL_EMPTY_CELL kullanimi", () => {
   it("bos hucre isareti tek kaynaktan gelir", () => {
     expect(RENTAL_EMPTY_CELL).toBe("—");
+  });
+});
+
+/* --------------------------------------------------------------------------
+ * tfoot ROZET METNI — satir rozetiyle AYNI bicimlendirmeyi paylasir (DRY).
+ * Tablo bileseni kendi cumlesini kurarsa iki metin sessizce ayrisir.
+ * ----------------------------------------------------------------------- */
+describe("rentalVarianceTotalLabel · M5:162", () => {
+  it("mockup'in dort satiri tfoot'ta `6 saat fark` uretir", () => {
+    expect(rentalVarianceTotalLabel(rentalHoursVarianceTotal(MOCKUP_LINES))).toBe("6 saat fark");
+  });
+
+  it("eslesme (satir rozetiyle AYNI sozcuk)", () => {
+    expect(rentalVarianceTotalLabel({ totalHours: "0.00", status: "match" })).toBe("Eşleşiyor");
+  });
+
+  it("negatif toplam MUTLAK deger basar (yon renkte degil durumda yasar)", () => {
+    expect(rentalVarianceTotalLabel({ totalHours: "-4.00", status: "under" })).toBe("4 saat fark");
+  });
+
+  it("bilinmezlik TOPLAM cumlesidir, satirinki DEGIL (karistirilamaz)", () => {
+    const total = rentalVarianceTotalLabel({ totalHours: "0", status: "unknown" });
+    expect(total).toBe("Doğrulanamadı");
+    expect(total).not.toBe(rentalVarianceLabel(line({ hours_variance: null })));
+  });
+
+  it("satir ve tfoot AYNI sayiyi AYNI bicimde basar (ayrisma bekcisi)", () => {
+    const satir = rentalVarianceLabel(line({ hours_variance: "6.00", variance_status: "over" }));
+    const toplam = rentalVarianceTotalLabel({ totalHours: "6.00", status: "over" });
+    expect(toplam).toBe(satir);
   });
 });

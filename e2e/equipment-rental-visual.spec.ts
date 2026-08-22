@@ -11,8 +11,15 @@ import { prepareFrame } from "./visual-scroll";
  * F-KIRA · Makine Kira Hakedişi görsel kadrajları (M5 + liste).
  *
  * SALT-OKUR: bu dosya hiçbir POST/PATCH tetiklemez. Kadrajların kaynağı
- * `rental-2`dir ve o fikstür MUTASYONA UĞRAMAZ (yazma spec'leri `rental-3`/
- * `rental-4` üzerinde koşar) — `fullyParallel` altında yarış YOKTUR.
+ * `rental-2` ve `rental-5`tir; ikisinin de durumu HİÇBİR test tarafından
+ * oynatılmaz (yazmalar `rental-3`/`rental-4`/`rental-6` üzerinde koşar).
+ *
+ * 🔴 LİSTE KADRAJI DÖNEME SÜZÜLÜR. Süzülmeseydi kare, durumu yazma testleri
+ * tarafından oynatılan satırları da basardı ve `fullyParallel` altında
+ * "Doğrulama Bekliyor" ile "Onaylandı" arasında kâh şöyle kâh böyle çıkardı —
+ * hangi varyant baseline'a girerse öbürü CI'da KIRMIZI olurdu (eşik ayarı
+ * yok, yani yeşil geçmesi ZAR ATMAK olurdu). Yazma fikstürlerinin hepsi
+ * FARKLI aydadır; Temmuz 2026 süzgeci yalnız salt-okur `rental-2`yi bırakır.
  *
  * 📅 TARİH BAĞIMSIZ: kira ekranları dönemi URL'den değil FATURADAN okur
  * (`period_year`/`period_month` sunucu alanıdır), listede de dönem süzgeci
@@ -32,15 +39,17 @@ const LOADING_TEXT = "Yükleniyor…";
 
 test("makine kira hakedisi listesi gorsel", async ({ page }) => {
   await visualLogin(page);
-  await page.goto("/makine/kira");
+  await page.goto("/makine/kira?period_year=2026&period_month=7");
 
   await expect(page.getByRole("heading", { level: 1, name: "Kira Hakedişi" })).toBeVisible();
   // (a) kira listesi · (b) tedarikçi seçenekleri · (c) şantiye seçenekleri
   await expect(page.getByTestId("makine-kira-loaded-list")).toBeAttached();
   await expect(page.getByTestId("makine-kira-loaded-suppliers")).toBeAttached();
   await expect(page.getByTestId("makine-kira-loaded-sites")).toBeAttached();
-  // Satırlar gerçekten basıldı (boş tablo kadraja girmesin).
-  await expect(page.locator("[data-rental-invoice-id]")).not.toHaveCount(0);
+  // Süzgeç TAM OLARAK salt-okur faturayı bırakır: satır sayısı sabittir,
+  // yani kare yazma testlerinin sırasından BAĞIMSIZDIR.
+  await expect(page.locator("[data-rental-invoice-id]")).toHaveCount(1);
+  await expect(page.locator('[data-rental-invoice-id="rental-2"]')).toBeVisible();
   await expect(page.getByText(LOADING_TEXT)).toHaveCount(0);
 
   await prepareFrame(page);

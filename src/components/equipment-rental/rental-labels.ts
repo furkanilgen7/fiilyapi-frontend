@@ -166,3 +166,12 @@ export const RENTAL_CREATE_FORM_PENDING_REASON =
  */
 export const RENTAL_RELOAD_PENDING_REASON =
   "Dönem veya şantiye değiştirmek satırları yeniden yüklemez; çalışma kaydından tazeleme yüzeyi henüz çizilmedi.";
+
+/**
+ * tfoot varyans rozetinin bilinmezlik hâli. Satır düzeyindeki
+ * `RENTAL_VARIANCE_UNKNOWN_LABEL`ten AYRI bir cümledir: orada TEK bir satırın
+ * fatura saati girilmemiştir, burada TOPLAM doğrulanamamıştır (kiralık satır
+ * yok ya da en az birinin saati eksik). Aynı metin kullanılsaydı tfoot,
+ * olmayan tek bir satır hakkında konuşurdu.
+ */
+export const RENTAL_VARIANCE_TOTAL_UNKNOWN_LABEL = "Doğrulanamadı";

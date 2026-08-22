@@ -12083,10 +12083,22 @@ const RENTAL_MATCH_FIXTURE: components["schemas"]["RentalInvoiceDetailResponse"]
  * 🔒 `RENTAL_MATCH_FIXTURE` (`rental-1`) BU LİSTEYE GİRMEZ — bkz. `state`
  * tipindeki not. Buradaki kayıtlar F-KIRA'nın KENDİ ekranlarına aittir.
  *
- * 🔒 MUTASYON ADASI (F-BOR kanonu): `rental-2` yalnız OKUNUR ve görsel
- * kadrajın kaynağıdır; yazma spec'leri `rental-3`/`rental-4` üzerinde koşar.
- * `fullyParallel` altında dosya sırası garanti değildir — kadrajın verisine
- * dokunan bir yazma testi kareyi kâh şöyle kâh böyle üretirdi.
+ * 🔒 MUTASYON ADASI (F-BOR kanonu) — HER YAZMA TESTİNE AYRI FATURA. İlk
+ * sürümde `rental-3`ü ÜÇ test paylaşıyordu (onay · satır PATCH'i · süzgeç) ve
+ * onay testi durumu `approved`a çevirince satır PATCH'inin düzenlenebilir
+ * kutuları KAYBOLUYORDU — CI'da `element(s) not found` ile yakalandı.
+ * `fullyParallel` altında test sırası garanti DEĞİLDİR.
+ *
+ *   rental-2 → SALT-OKUR (görsel kadraj + tablo/varyans iddiaları)
+ *   rental-3 → YAZMA: ileri adım (pending → approved)
+ *   rental-4 → YAZMA: onayı geri alma (approved → pending)
+ *   rental-5 → SALT-OKUR: fail-closed kadrajı
+ *   rental-6 → YAZMA: satır PATCH'i (durumu hiç oynatılmaz)
+ *   rental-7 → SALT-OKUR `approved` (süzgeç testinin pozitif iddiası)
+ *
+ * 🔒 DÖNEM AYRIMI: yazma fikstürlerinin hepsi FARKLI aydadır ve görsel liste
+ * kadrajı döneme süzülür — yoksa durumu oynayan bir satır liste karesini
+ * kâh şöyle kâh böyle bastırırdı.
  *
  * 🔒 GLOBAL LİSTELERE SATIR EKLENMEDİ: tedarikçiler (`SUPPLIER_FIXTURES`),
  * şantiyeler ve ekipmanlar MEVCUT kimliklerden referans alınır. F-UNIT2 tek
@@ -12295,11 +12307,41 @@ const RENTAL_INVOICE_UNKNOWN: RentalInvoiceDetail = {
   ],
 };
 
+/** `rental-6` — YAZMA ADASI: satır PATCH'i (durumu HİÇ oynatılmaz). */
+const RENTAL_INVOICE_WRITE_LINE: RentalInvoiceDetail = {
+  ...RENTAL_INVOICE_VISUAL,
+  id: "rental-6",
+  invoice_no: "LT-2026-04-0102",
+  period_month: 4,
+  status: "pending_verification",
+  lines: [rentalLine({ id: "rl6-1" })],
+  site_distribution: [],
+};
+
+/**
+ * `rental-7` — SALT-OKUR `approved`. Süzgeç testinin pozitif iddiası buna
+ * bakar: `rental-4`ün durumunu red testi oynattığı için ona bakan bir süzgeç
+ * iddiası `fullyParallel` altında kâh geçer kâh kalırdı.
+ */
+const RENTAL_INVOICE_APPROVED_READONLY: RentalInvoiceDetail = {
+  ...RENTAL_INVOICE_VISUAL,
+  id: "rental-7",
+  invoice_no: "LT-2026-03-0088",
+  period_month: 3,
+  status: "approved",
+  approved_by_id: "u-1",
+  approved_at: "2026-04-01T09:00:00Z",
+  lines: [rentalLine({ id: "rl7-1" })],
+  site_distribution: [],
+};
+
 const RENTAL_INVOICE_FIXTURES: RentalInvoiceDetail[] = [
   RENTAL_INVOICE_VISUAL,
   RENTAL_INVOICE_WRITE_PENDING,
   RENTAL_INVOICE_WRITE_APPROVED,
   RENTAL_INVOICE_UNKNOWN,
+  RENTAL_INVOICE_WRITE_LINE,
+  RENTAL_INVOICE_APPROVED_READONLY,
 ];
 
 /**

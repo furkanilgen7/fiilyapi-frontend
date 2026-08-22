@@ -13,7 +13,6 @@ import {
   RENTAL_COLUMNS,
   RENTAL_COLUMN_LABEL,
   RENTAL_EMPTY_CELL,
-  RENTAL_VARIANCE_DIFF_SUFFIX,
   VARIANCE_BADGE_VARIANT,
 } from "./rental-labels";
 import {
@@ -21,6 +20,7 @@ import {
   rentalPayableUnavailable,
   rentalRowCells,
   rentalUnknownWarning,
+  rentalVarianceTotalLabel,
   type RentalCellContent,
   type RentalEditableField,
 } from "./rental-derive";
@@ -129,11 +129,7 @@ export function RentalLinesTable({
                   variant={VARIANCE_BADGE_VARIANT[variance.status]}
                   data-testid="makine-kira-variance-total"
                 >
-                  {variance.status === "match"
-                    ? "Eşleşiyor"
-                    : variance.status === "unknown"
-                      ? "Doğrulanamadı"
-                      : `${formatDecimal(variance.totalHours.replace("-", ""), 2)} ${RENTAL_VARIANCE_DIFF_SUFFIX}`}
+                  {rentalVarianceTotalLabel(variance)}
                 </Badge>
               </td>
             </tr>
