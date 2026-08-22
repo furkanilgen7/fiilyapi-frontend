@@ -13,6 +13,7 @@ import {
   useRejectProgressPayment,
   useSubmitProgressPayment,
   useUnapproveProgressPayment,
+  type RejectBody,
 } from "@/lib/api/hooks/useProgressPaymentMutations";
 import { PROGRESS_PAYMENT_QUERY_KEY, type ProgressPaymentDetail } from "@/lib/api/hooks/useProgressPayments";
 import { BackendError } from "@/lib/api/unwrap";
@@ -28,6 +29,9 @@ import { permittedPaymentActions } from "./shared/status-actions";
 export interface ProgressPaymentStatusActionsProps {
   detail: ProgressPaymentDetail;
 }
+
+/** Sözleşme tavanı: `RejectBody.reason` `max_length=500` (taşeron ucuyla aynı). */
+const REJECT_REASON_MAX_LENGTH = 500;
 
 /**
  * Ekran 15 başlık aksiyon alanı (P7 T4). Buton kümesi backend
@@ -97,13 +101,31 @@ export function ProgressPaymentStatusActions({ detail }: ProgressPaymentStatusAc
     setRejectOpen(true);
   }
 
+  // 🔴 GEREKÇE ZORUNLUDUR (backend `d888591` / OK-1A K2 — `RejectBody` artık
+  // `| None` değil). Kapı `trim()` üzerinden kurulur, `!== ""` üzerinden DEĞİL:
+  // yalnız boşluktan oluşan metin sunucuda `clean_reject_reason` ile budanır ve
+  // 422 olur, kullanıcı da yalnız "Reddedilemedi." görürdü.
+  //
+  // Gövde TEK yerde türetilir ve boş gerekçede `null`dur. Bu, ekranın iki
+  // kapısını TİPE bağlar:
+  //   1. `rejectDisabled` — buton `disabled` kalır (görünür kapı),
+  //   2. `confirmReject`teki koruma cümlesi — `null`ı daraltır (davranış kapısı).
+  // Koruma cümlesi SİLİNEMEZ: `useRejectProgressPayment` `body: RejectBody`
+  // ister, `RejectBody | null` KABUL ETMEZ — silinirse `pnpm typecheck` kırmızı
+  // döner. `disabled` tek başına yeterli DEĞİLDİR (klavye/programatik çağrıyı
+  // garanti etmez), ama tek başına da bekçilenemez; asıl bekçi burada tiptir.
+  const trimmedReason = rejectReason.trim();
+  const rejectBody: RejectBody | null =
+    trimmedReason.length === 0 ? null : { reason: trimmedReason };
+  const rejectDisabled = rejectBody === null;
+
   function confirmReject() {
+    if (rejectBody === null) return;
     setError(null);
-    const trimmed = rejectReason.trim();
-    // Gövde İSTEĞE BAĞLIDIR (RejectBody.reason nullable) — boş bırakılırsa
-    // gövdesiz çağrılır (brief §Aksiyon davranışları).
+    // Sunucuya BUDANMIŞ metin gider: baştaki/sondaki boşluk gerekçenin parçası
+    // değildir ve sunucu da aynı kırpmayı uygular.
     reject.mutate(
-      { paymentId: detail.id, body: trimmed ? { reason: trimmed } : undefined },
+      { paymentId: detail.id, body: rejectBody },
       {
         onSuccess: () => setRejectOpen(false),
         onError: (err) => handleError(err, "Reddedilemedi."),
@@ -155,21 +177,37 @@ export function ProgressPaymentStatusActions({ detail }: ProgressPaymentStatusAc
               <Button variant="secondary" onClick={() => setRejectOpen(false)} disabled={reject.isPending}>
                 Vazgeç
               </Button>
-              <Button variant="danger" onClick={confirmReject} disabled={reject.isPending}>
+              <Button
+                variant="danger"
+                onClick={confirmReject}
+                disabled={reject.isPending || rejectDisabled}
+              >
                 {reject.isPending ? "Reddediliyor…" : "Reddet"}
               </Button>
             </>
           }
         >
           <div className="settings-form">
+            {/* Etiket "(zorunlu)"yu METİNDE taşır ve `required` yıldızı
+                KULLANILMAZ — taşeron kardeşiyle (`Subcontractor
+                ProgressPaymentStatusActions`) birebir aynı olsun diye: iki
+                ekran aynı ailenin iki yüzü, yan yana açıldığında ret
+                diyaloğunun farklı görünmesi kullanıcıya açıklanamaz.
+                Aynı gerekçeyle İZ'in (`LeaveRejectModal`) disabled butonun
+                YANINDAKİ "Gerekçe zorunlu" uyarı notu da BURAYA ALINMADI:
+                ödeme ailesinde emsal kardeş ekrandır, İZ değil.
+                `hint`in yarısı hâlâ DOĞRUdur — K2 gerekçenin zorunluluğunu
+                bağladı, depolandığı yeri değil; bu ailede `rejection_reason`
+                kolonu yoktur, tek kalıcı iz denetim günlüğüdür. */}
             <Field
-              label="Gerekçe (isteğe bağlı)"
+              label="Gerekçe (zorunlu)"
               hint="Gerekçe hakedişin hiçbir alanına kaydedilmez, yalnız denetim günlüğüne yazılır."
             >
               {(control) => (
                 <Textarea
                   {...control}
                   rows={3}
+                  maxLength={REJECT_REASON_MAX_LENGTH}
                   value={rejectReason}
                   onChange={(event) => setRejectReason(event.target.value)}
                 />

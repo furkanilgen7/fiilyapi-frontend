@@ -107,9 +107,12 @@ const LEDGER: LedgerResponse = {
 };
 
 function entry(overrides: Partial<JournalEntryResponse> = {}): JournalEntryResponse {
+  // 🔴 `entry_no` — FIS-NO kararı 1: `YEV-{yıl}-{sıra:04d}`; yıl override edilebilen
+  // `entry_date`ten TÜRER (bkz. `overrides.entry_date`), hardcode değil.
+  const entryDate = overrides.entry_date ?? "2026-07-18";
   return {
     id: "entry-draft",
-    entry_date: "2026-07-18",
+    entry_date: entryDate,
     period_year: 2026,
     period_month: 7,
     description: "Kasa Devri",
@@ -118,6 +121,7 @@ function entry(overrides: Partial<JournalEntryResponse> = {}): JournalEntryRespo
     total_debit: "1000.00",
     total_credit: "1000.00",
     reversal_of_id: null,
+    entry_no: `YEV-${entryDate.slice(0, 4)}-0001`,
     created_by_id: "user-1",
     created_at: "2026-07-18T09:00:00Z",
     updated_at: "2026-07-18T09:00:00Z",

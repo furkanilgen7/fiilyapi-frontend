@@ -44,12 +44,19 @@ test("taşeron: sekme gezinmesi (gerçek URL değişimi, geri tuşu)", async ({ 
 });
 
 // Coordinator review (Important) — kilit testi: `sc-3` (TB2 U1 kanıt kaydı,
-// `site_id: null`, sıfır hakedişli) `active_subcontractor_count`i (KPI
+// `site_id: null`) `active_subcontractor_count`i (KPI
 // şeridindeki "Aktif Taşeron") ARTIRMAMALI. `buildSubcontractorPaymentSummary`
 // bu sayıyı `state.subcontractorContracts` üzerinden projeye/hakedişe göre
 // SÜZMEDEN, distinct `subcontractor_id`ye göre hesaplıyor — `sc-3` sc-1 ile
 // AYNI `subcontractor_id`yi (`sub-1`) taşıdığından sayı sc-1/sc-2'nin ikisiyle
 // (2) sınırlı kalmalı. Bu test o tuzağın yeniden AÇILMASINI engeller.
+//
+// ⚠️ GÜNCELLEME (F-OK): `sc-3` artık "sıfır hakedişli" DEĞİLDİR — onay kutusunun
+// yazma hedefi `scpp-8` bu sözleşmeye bağlıdır (`hiddenFromLists: true`). İddia
+// yine de GEÇERLİDİR ve bu bir tesadüf değildir: sayı `state.subcontractor
+// Contracts` üzerinden SÖZLEŞMELERDEN türer, hakedişlerden DEĞİL — bir hakediş
+// eklemek onu tanım gereği oynatamaz. `scpp-8` ayrıca `sub-1` taşıyan `sc-3`e
+// bağlandığı için distinct kümeye de yeni üye katmaz (iki katlı güvence).
 test("taşeron: Aktif Taşeron KPI'ı 2'de kalır (sc-3 kanıt kaydı distinct subcontractor_id'yi ARTIRMAZ)", async ({
   page,
 }) => {

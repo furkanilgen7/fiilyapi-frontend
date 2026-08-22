@@ -19,8 +19,14 @@
 //   · gerekçe hâlâ okunuyor ama YANLIŞ  → METİN düzeltilir (bu tur),
 //   · gerekçeyi okuyan kimse kalmamış   → ANAHTAR silinir.
 //
-// ⚠️ "Modül yok" diyen tek metin `approvals`tır ve o DOĞRUDUR: `/onay-kutusu`
-// hâlâ yazılmamıştır (kabuk nav'ında catch-all/ComingSoon'a düşer).
+// ⚠️ F-OK T6 (2026-08-23) — yukarıdaki paragrafın "approvals" istisnası ARTIK
+// YANLIŞ: `/onay-kutusu` ekranı BU dilimde yazıldı (nav href guard testi
+// artık catch-all'a değil GERÇEK bir statik rotaya düşüyor). Eksik olan modül
+// DEĞİL, gösterge panelinin `PendingApprovalsCard` yüzeyinin o modülün
+// verisine BAĞLANMASIDIR — backend'in `PendingApprovalsPlaceholder` zarfı
+// hâlâ boş döner (`available` varsayılanı `false`). Yani `approvals` artık
+// istisna DEĞİLDİR; diğer anahtarlarla (`progress_payments`, `invoicing`, …)
+// AYNI kalıba uyar (bkz. aşağıdaki giriş).
 /**
  * ⚠️ DIŞA AÇIK olmasının TEK nedeni ÇÜRÜME BEKÇİSİDİR (`pending-modules.test.ts`):
  * yeni bir anahtar "<Modül> modülüyle birlikte gelir" kalıbıyla eklenirse test
@@ -34,9 +40,13 @@ export const MODULE_LABELS: Record<string, string> = {
   progress_payments: "Hakediş verisi bu yüzeye henüz bağlanmadı",
   // `/faturalar` (+ `/faturalar/kes`, detay) CANLI.
   invoicing: "Fatura verisi bu yüzeye henüz bağlanmadı",
-  // ✅ HÂLÂ DOĞRU — `/onay-kutusu` YAZILMADI (nav href guard testinde
-  // catch-all'a düşen üç öğeden biri). Metne dokunulmadı.
-  approvals: "Onay kutusuyla birlikte gelir",
+  // 🔴 F-OK T6 · DÜZELTİLDİ (2026-08-23). `/onay-kutusu` ekranı BU dilimde
+  // yazıldı — eski metin ("Onay kutusuyla birlikte gelir") artık YALAN: modül
+  // var, rota GERÇEK. Anahtar SİLİNMEZ: backend'in `PendingApprovalsPlaceholder`
+  // zarfı hâlâ boş döner (`available: false` varsayılanı) — eksik olan modül
+  // değil, gösterge panelinin bu yüzeyinin (`PendingApprovalsCard`) onay
+  // verisine BAĞLANMAMIŞ OLMASIDIR.
+  approvals: "Onay verisi bu yüzeye henüz bağlanmadı",
   // Gösterge panelinin `risks` listesi. Anahtar `inventory` ama eksik olan stok
   // DEĞİL (`/stok` canlı): riski hesaplayan bir uç HİÇ yoktur.
   inventory: "Risk listesi henüz hiçbir uçtan hesaplanmıyor",

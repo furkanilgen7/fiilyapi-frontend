@@ -214,17 +214,23 @@ describe("useRejectProgressPayment", () => {
     expectStandardInvalidation();
   });
 
-  it("gövde verilmezse null gönderir (K12: ek form yok, gerekçe isteğe bağlı)", async () => {
+  // 🔴 Bu test eskiden TAM TERSİNİ ("gövde verilmezse null gönderir")
+  // bekçiliyordu. Backend `d888591` (OK-1A K2) gövdeyi ve `reason`ı ZORUNLU
+  // yaptı: `null` gövde artık 422'dir. Yeni bekçi, gövdenin `null`/`undefined`
+  // olarak ASLA sarmalanmadığını — çağıranın verdiği nesnenin AYNEN gittiğini —
+  // ölçer; `body ?? null` gibi bir sarmalama geri gelirse kırmızı döner.
+  it("gövdeyi olduğu gibi geçirir — null/undefined'a düşürmez (K2: gövde zorunlu)", async () => {
     vi.mocked(backendClient.POST).mockResolvedValue(okResponse(DETAIL));
 
     const { result } = renderHook(() => useRejectProgressPayment(), { wrapper });
-    act(() => result.current.mutate({ paymentId: PAYMENT_ID }));
+    act(() => result.current.mutate({ paymentId: PAYMENT_ID, body: { reason: "   " } }));
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(backendClient.POST).toHaveBeenCalledWith("/progress-payments/{payment_id}/reject", {
-      params: { path: { payment_id: PAYMENT_ID } },
-      body: null,
-    });
+    const [, options] = vi.mocked(backendClient.POST).mock.calls[0] as [string, { body: unknown }];
+    // Kırpma EKRANIN işidir (hook taşıyıcıdır): burada ölçülen, hook'un gövdeyi
+    // sessizce `null`a çevirmemesidir.
+    expect(options.body).toEqual({ reason: "   " });
+    expect(options.body).not.toBeNull();
   });
 });
 

@@ -165,6 +165,17 @@ describe("NAV_GROUPS — href geçerliliği (kırık link koruması)", () => {
     expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "static" });
   });
 
+  // 🔴 F-OK T6 · Onay Kutusu ekranı BU dilimde yazılır (`/onay-kutusu`). Nav
+  // öğesi (ve href'i) F3 kabuk canon'undan beri duruyordu — `nav-config.ts`
+  // DEĞİŞMEDİ, yalnız hedefi ComingSoon'dan gerçek sayfaya döner. Rota klasörü
+  // (`src/app/(app)/onay-kutusu/`) bu iddiadan SONRAKİ bir görevde doğar; o
+  // klasör yoksa bu iddia BEKLENEN ŞEKİLDE kırmızıdır — bekçi zayıflatılmaz.
+  it("'Onay Kutusu' /onay-kutusu statik rotasına düşer (catch-all DEĞİL)", () => {
+    const item = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.label === "Onay Kutusu");
+    expect(item?.href).toBe("/onay-kutusu");
+    expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "static" });
+  });
+
   // 🔴 KONTROL GRUBU. Yukarıdaki iddiaların HEPSİ `resolveHrefIn`in POZİTİF
   // yolunu sınar; dosyada hiç NEGATİF örnek kalmazsa `resolveHrefIn` her şeye
   // `{kind:"static"}` döndürecek şekilde bozulsa bile testlerin TAMAMI yeşil
@@ -187,6 +198,11 @@ describe("NAV_GROUPS — href geçerliliği (kırık link koruması)", () => {
   // bu test kırmızıya döner. Gerçek bir öğeye bağlamak aynı kod yolunu sınar,
   // fazladan hiçbir şey kanıtlamaz — ikisini birden tutmak yalnız bakım
   // maliyetini geri getirirdi.
+  //
+  // 🔴 F-OK T6 · o liste de ARTIK BAYAT: `/onay-kutusu` bu dilimde statik
+  // rotaya taşındı (yukarıdaki "Onay Kutusu" iddiası) ve catch-all çözümleyen
+  // nav öğeleri İKİYE düştü — `/raporlar`, `/sirket-varliklari`. Aşınma
+  // sürüyor; UYDURMA yol seçiminin gerekçesi bir kez daha doğrulandı.
   it("kontrol grubu: var olmayan bir yol catch-all'a düşer (NEGATİF yol)", () => {
     expect(NAV_GROUPS.flatMap((g) => g.items).some((i) => i.href === "/boyle-bir-rota-yok")).toBe(
       false,

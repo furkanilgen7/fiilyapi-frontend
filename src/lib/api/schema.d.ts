@@ -516,9 +516,13 @@ export interface paths {
          *     `as_of` arasıdır (yılbaşından bugüne). Aritmetik ve kontra netlemesi
          *     `balance_sheet.py` modül docstring'indedir.
          *
-         *     🔴 **`is_balanced` ÖLÇÜLÜR, `True` VARSAYILMAZ**: dengesiz bir `reversed`
-         *     fiş DB'ye girebilir (`ck_journal_entries_posted_balanced` yalnız `posted`ı
-         *     bağlar) ve sabit `True` basan bir bilanço sessizce yalan söylerdi.
+         *     🔴 **`is_balanced` ÖLÇÜLÜR, `True` VARSAYILMAZ**: gerekçe TB6 T2'de
+         *     DEĞİŞTİ, sonuç DEĞİŞMEDİ. Dengesiz bir `reversed` BAŞLIK artık yazılamaz
+         *     (`ck_journal_entries_posting_balanced` deftere girenlerin HEPSİNİ bağlar),
+         *     ama kısıt BAŞLIK toplamlarını bağlar, bilanço ise `journal_lines`ı toplar —
+         *     başlığı dengeli, satırları dengesiz bir fiş HÂLÂ kurulabilir; ayrıca
+         *     `is_contra` işaretlenmemiş bir `257` iki katı tutar kaydırır. Sabit `True`
+         *     basan bir bilanço sessizce yalan söylerdi.
          *
          *     🔴 **Sayfalama YOKTUR** (K7 zarfı kullanılmaz): `total` GENEL TOPLAMDIR ve
          *     `is_balanced` onun üzerinden kurulur — sayfalanmış bir bilançoda ikisi de
@@ -634,6 +638,102 @@ export interface paths {
          */
         get: operations["income_statement_endpoint_income_statement_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approvals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List My Approvals Endpoint
+         * @description Kullaniciya DUSEN siradaki onay adimlari.
+         *
+         *     Ayri bir yetki kapisi YOKTUR ve olmamalidir: donen kume zaten "bu adim
+         *     SANA dustu" olgusuyla sinirlidir; `approvals` izni dusuk olan bir rol de
+         *     kendine dusen imzayi gormek zorundadir (matriste sef/saha/IK = `_OWN`).
+         */
+        get: operations["list_my_approvals_endpoint_approvals_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approvals/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Approval Settings Endpoint
+         * @description Esik OKUMASI kapisizdir (`GET /company` emsali): ekran, zincirin neden
+         *     Patron adimi tasidigini aciklamak icin esigi bilmek zorundadir.
+         */
+        get: operations["get_approval_settings_endpoint_approvals_settings_get"];
+        /**
+         * Update Approval Settings Endpoint
+         * @description Esigi YALNIZ `admin` degistirir (K3).
+         *
+         *     🔴 Degisiklik ACIK zincirleri ETKILEMEZ: her zincir kuruldugu andaki esigi
+         *     (ve tutari) KENDI satirinda dondurur (MK-2 kanonu).
+         */
+        put: operations["update_approval_settings_endpoint_approvals_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approvals/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Approval Role Assignments Endpoint
+         * @description EN AZ BIR onay rolu tasiyan kullanicilar. Rolu OLMAYANLAR burada DONMEZ:
+         *     bu uc atamalarin listesidir, kullanici katalogu `GET /users`tur.
+         */
+        get: operations["list_approval_role_assignments_endpoint_approvals_roles_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approvals/roles/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Approval Roles Endpoint
+         * @description Bir kullanicinin onay rollerini TAM KUME olarak yazar (K1).
+         *
+         *     Onay rolu HICBIR IZIN VERMEZ: yalnizca zincirde imza adayligidir. Bu yuzden
+         *     burada izin matrisine DOKUNULMAZ ve yeni bir rol/modul acilmaz.
+         */
+        put: operations["set_approval_roles_endpoint_approvals_roles__user_id__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -3316,9 +3416,11 @@ export interface paths {
          * @description Talebi onaylar (TEK adım). Karar alanları SUNUCU damgasıdır — gövde ALAN
          *     KABUL ETMEZ (gönderilirse 422).
          *
-         *     Talep yok → 404 · `pending` değil → 409 · çakışan ONAYLI izin → 409 (K3) ·
-         *     hak aşımı → 409 (K5) · **kalan hak hesaplanamıyor → 409** (🔴 fail-closed:
-         *     kıdem 1 yılı doldurmadı ya da `hire_date` boş). RED bu kapılardan etkilenmez.
+         *     Talep yok → 404 · `pending` değil → 409 · 🔴 **KENDİ talebi → 403** (OK-1A T5,
+         *     kullanıcı kararı 2026-08-21; TEK istisna `admin` ve o da denetime "vekâleten"
+         *     işaretiyle geçer) · çakışan ONAYLI izin → 409 (K3) · hak aşımı → 409 (K5) ·
+         *     **kalan hak hesaplanamıyor → 409** (🔴 fail-closed: kıdem 1 yılı doldurmadı
+         *     ya da `hire_date` boş). RED bu kapılardan HİÇBİRİNDEN etkilenmez — 403 dâhil.
          */
         post: operations["approve_leave_request_endpoint_leave_requests__request_id__approve_post"];
         delete?: never;
@@ -3593,9 +3695,16 @@ export interface paths {
          * Approve Purchase Request Endpoint
          * @description `pending_approval → quote_wait` (§3: onay ARA durum üretmez).
          *
+         *     🔴 **OK-1A T3: YOL ve KAPI KORUNDU, ANLAM DEĞİŞTİ.** Uç artık onay
+         *     ZİNCİRİNİN sıradaki adımını ilerletir (mockup `Onay Kutusu.dc.html:150-178`:
+         *     Satınalma → Proje Müdürü → Muhasebe, eşik üstünde + Patron). Talep ancak SON
+         *     adımda `quote_wait`e geçer; ara adımlarda `pending_approval`da KALIR ve
+         *     damga ATILMAZ. Zincirsiz ESKİ kayıtlarda bugünkü tek adımlı davranış sürer.
+         *
          *     **₺500K eşiği BURADA ve ONAY ANINDA koşar** (`transitions`): tutar o anki
-         *     kalemlerden yeniden hesaplanır, kayıtta donmuş bir toplam okunmaz.
-         *     `approved_by_user_id`/`approved_at` damgalanır.
+         *     kalemlerden yeniden hesaplanır, kayıtta donmuş bir toplam okunmaz. Bu izin
+         *     kapısı zincirle DEĞİŞMEDİ — iki katman birbirinin yedeğidir.
+         *     `approved_by_user_id`/`approved_at` SON adımda damgalanır.
          */
         post: operations["approve_purchase_request_endpoint_purchase_requests__request_id__approve_post"];
         delete?: never;
@@ -3621,6 +3730,11 @@ export interface paths {
          *     gösterir) — `sale_cancelled`ın denetim-günlüğü kararının aksine burada
          *     kalıcı bir yer vardır. `rejected` TERMİNALDİR: diriltme geçişi yoktur,
          *     ihtiyaç sürüyorsa YENİ talep açılır.
+         *
+         *     🔴 **OK-1A T3:** ret onay zincirini de BİTİRİR (`approval_chains` satırı
+         *     SİLİNİR, adımlar CASCADE). Hakediş ikilisinden FARK: orada evrak `draft`a
+         *     döner ve yeniden gönderilince YENİ bir zincir açılır; burada `rejected`
+         *     TERMİNAL olduğu için ikinci bir zincir HİÇ açılmaz.
          */
         post: operations["reject_purchase_request_endpoint_purchase_requests__request_id__reject_post"];
         delete?: never;
@@ -4028,7 +4142,16 @@ export interface paths {
         put?: never;
         /**
          * Approve Progress Payment Endpoint
-         * @description `pending_approval → approved`; kota kilit altında YENİDEN doğrulanır.
+         * @description 🔴 **OK-1A T3: YOL ve KAPI KORUNDU, ANLAM DEĞİŞTİ.**
+         *
+         *     Uç artık onay ZİNCİRİNİN sıradaki adımını ilerletir. Evrak ancak SON adım
+         *     onaylanınca `pending_approval → approved` geçişini yapar; ara adımlarda
+         *     `pending_approval`da KALIR (durum makinesi DEĞİŞMEDİ, ona giden yol
+         *     uzadı). Zincirsiz ESKİ kayıtlarda bugünkü tek adımlı davranış sürer.
+         *
+         *     Kota kilit altında YENİDEN doğrulanır — HER adımda, yalnız sonuncusunda
+         *     değil: aşmış bir hakedişin ara imzalarını toplaması, aşımı ancak son anda
+         *     görülen bir sürprize çevirirdi.
          */
         post: operations["approve_progress_payment_endpoint_progress_payments__payment_id__approve_post"];
         delete?: never;
@@ -4050,8 +4173,13 @@ export interface paths {
          * Reject Progress Payment Endpoint
          * @description `pending_approval → draft` — ret sonrası taslak yeniden düzenlenebilir.
          *
-         *     Gövde İSTEĞE BAĞLIDIR (K12: mockup'ta ret formu yok). `reason` hiçbir
-         *     kolona yazılmaz — TEK kalıcı izi denetim günlüğüdür (spec §11).
+         *     🔴 **KIRICI (OK-1A K2):** gövde ve gerekçe artık ZORUNLUDUR; eskiden
+         *     `RejectBody | None` idi. `reason` yine hiçbir kolona yazılmaz — TEK kalıcı
+         *     izi denetim günlüğüdür (spec §11) ve K2 bunu değiştirmez: kullanıcı kararı
+         *     gerekçenin ZORUNLULUĞUNU bağladı, DEPOLANDIĞI yeri değil.
+         *
+         *     Ret zinciri de BİTİRİR: `approval_chains` satırı SİLİNİR (adımlar CASCADE)
+         *     ve yeniden gönderim ADIM 1'den, YENİ eşik snapshot'ıyla başlar.
          */
         post: operations["reject_progress_payment_endpoint_progress_payments__payment_id__reject_post"];
         delete?: never;
@@ -4093,6 +4221,13 @@ export interface paths {
         /**
          * Unapprove Progress Payment Endpoint
          * @description `approved → pending_approval` (geri çek) — YALNIZ `admin` (§7 tablosu).
+         *
+         *     🔴 **OK-1A Y4: YOL, `_ADMIN` KAPISI ve GEÇİŞ TABLOSU KORUNDU; anlam eklendi.**
+         *     Uç artık zincirin SON karara bağlanmış adımını da GERİ SARAR (`decided_by`/
+         *     `decided_at` NULL'lanır) — zincir SİLİNMEZ (ret'ten farkı budur) ve o adım
+         *     yeniden sıradaki adım olur. Geri sarmasaydı tamamlanmış zincirli bir evrak
+         *     `pending_approval`a döner ve sonraki onay "zincir tamamlanmış" 409'una
+         *     çarpardı: evrak KİLİTLENİRDİ.
          *
          *     `paid` kaynak DEĞİLDİR (K7): ödenmiş hakedişin geri dönüşü yoktur, denemesi
          *     409'dur.
@@ -5268,8 +5403,16 @@ export interface paths {
         put?: never;
         /**
          * Approve Subcontractor Progress Payment Endpoint
-         * @description `pending_approval → approved`; kota KİLİT ALTINDA sırasız TAM küme
-         *     üzerinden YENİDEN doğrulanır (spec §4) — aşım 422, onay GERÇEKLEŞMEZ.
+         * @description 🔴 **OK-1A T3: YOL ve KAPI KORUNDU, ANLAM DEĞİŞTİ.**
+         *
+         *     Uç artık onay ZİNCİRİNİN sıradaki adımını ilerletir (mockup zinciri
+         *     `Onay Kutusu.dc.html:120-144`: Şantiye Şefi → Proje Müdürü → Muhasebe,
+         *     eşik üstünde + Patron). Evrak ancak SON adımda `approved` olur; ara
+         *     adımlarda `pending_approval`da KALIR. Zincirsiz ESKİ kayıtlarda bugünkü
+         *     tek adımlı davranış sürer.
+         *
+         *     Kota KİLİT ALTINDA sırasız TAM küme üzerinden YENİDEN doğrulanır (spec §4)
+         *     — aşım 422, onay GERÇEKLEŞMEZ.
          */
         post: operations["approve_subcontractor_progress_payment_endpoint_subcontractor_progress_payments__payment_id__approve_post"];
         delete?: never;
@@ -5335,6 +5478,13 @@ export interface paths {
         /**
          * Unapprove Subcontractor Progress Payment Endpoint
          * @description `approved → pending_approval` (geri çek) — YALNIZ `admin`.
+         *
+         *     🔴 **OK-1A Y4:** uç artık zincirin SON karara bağlanmış adımını da GERİ
+         *     SARAR; zincir SİLİNMEZ (ret'ten farkı budur). Sözleşme Y4 bu davranışı
+         *     yalnız işveren hakedişi için yazıyordu — ÖLÇÜM taşerona da ZORUNLU olduğunu
+         *     gösterdi: geri sarmayan bir `unapprove`, tamamlanmış zincirli bir evrağı
+         *     `pending_approval`a döndürür ve sonraki onay `CHAIN_COMPLETED` 409'una
+         *     çarpardı, yani evrak KİLİTLENİRDİ.
          *
          *     `paid` kaynak DEĞİLDİR: ödenmiş hakedişin geri dönüşü yoktur, denemesi 409.
          *     Denetim mesajı ESKİ onaylayanı taşır — `transitions.perform` bu ikisini
@@ -6274,6 +6424,166 @@ export interface components {
          */
         AccountingPeriodStatus: "open" | "closed";
         /**
+         * ApprovalDocumentType
+         * @description Zincire giren evrak aileleri (K4 — bu dilim YALNIZ bu ucudur).
+         *
+         *     Fatura ve bordro donemi OK-1B'nin isidir. IZIN TALEBI ve BORDRO SATIRI
+         *     zincire HIC GIRMEZ (kullanici karari): izin talebinin ₺ tutari yoktur ve
+         *     esik anlamsizdir; 48 personellik bir bordro ise 48 zincir acardi.
+         * @enum {string}
+         */
+        ApprovalDocumentType: "subcontractor_progress_payment" | "purchase_request" | "progress_payment";
+        /**
+         * ApprovalInboxItem
+         * @description Onay kutusu satiri — mockup kartinin BES parcasi (`Onay Kutusu.dc.html`).
+         *
+         *     | Kart parcasi | Mockup | Alan |
+         *     |---|---|---|
+         *     | tip rozeti | `:123` `:157` `:216` | `document_type` |
+         *     | olusturan + zaman | `:124` `:159` `:217` | `created_by_name` · `created_at` |
+         *     | baslik | `:126` `:161` `:219` | `title` |
+         *     | alt baslik | `:127` `:162` `:220` | `subtitle` |
+         *     | adim seridi | `:129-135` `:164-170` `:222-224` | `steps` |
+         *     | tutar(lar) | `:138-139` `:173` `:227-228` | `gross_amount` · `net_amount` |
+         *
+         *     🔴 `net_amount` SATINALMADA `null`dur: talebin brut/net ayrimi YOKTUR
+         *     (mockup `:173` TEK kutu). 🔴 `gross_amount` da `null` OLABILIR — tutarin
+         *     BELIRLENEMEDIGI hâl gercektir (fiyatsiz kalem) ve `0` yazmak "eksik veri"
+         *     ile "sifir tutar"i ayirt edilemez kilardi (SA kanonu).
+         */
+        ApprovalInboxItem: {
+            /**
+             * Chain Id
+             * Format: uuid
+             */
+            chain_id: string;
+            document_type: components["schemas"]["ApprovalDocumentType"];
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /** Created By Name */
+            created_by_name: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Threshold Snapshot */
+            threshold_snapshot: string;
+            /** Amount Snapshot */
+            amount_snapshot: string | null;
+            /** Current Step No */
+            current_step_no: number;
+            /** Steps */
+            steps: components["schemas"]["ApprovalStepRead"][];
+            /** Title */
+            title: string | null;
+            /** Subtitle */
+            subtitle: string | null;
+            /** Gross Amount */
+            gross_amount: string | null;
+            /** Net Amount */
+            net_amount: string | null;
+        };
+        /**
+         * ApprovalInboxResponse
+         * @description 🔴 KANON E: `can_approve` gibi bir KARAR ALANI YOKTUR.
+         *
+         *     `my_approval_roles` OLGUSU doner; "bu satiri onaylayabilir miyim" kararini
+         *     ekran, adim rolu ile bu kume uzerinden TEK yardimcida birlestirir.
+         *     🔴 ACILIYET/RENK de SUNUCUDA URETILMEZ (K10 kanonu).
+         */
+        ApprovalInboxResponse: {
+            /** Items */
+            items: components["schemas"]["ApprovalInboxItem"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** My Approval Roles */
+            my_approval_roles: components["schemas"]["ApprovalRole"][];
+        };
+        /**
+         * ApprovalRole
+         * @description Onay zincirinin ADIM ROLU — sistem rolu DEGILDIR (modul docstring'i).
+         *
+         *     Degerler `roles/seed_data.py` anahtarlariyla BIREBIR aynidir; bu bilinclidir
+         *     ve degistirilmemelidir (R1).
+         * @enum {string}
+         */
+        ApprovalRole: "site_chief" | "project_manager" | "accounting" | "patron" | "procurement";
+        /** ApprovalRoleAssignmentListResponse */
+        ApprovalRoleAssignmentListResponse: {
+            /** Items */
+            items: components["schemas"]["ApprovalRoleAssignmentRead"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /** ApprovalRoleAssignmentRead */
+        ApprovalRoleAssignmentRead: {
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /** Full Name */
+            full_name: string;
+            /** Email */
+            email: string;
+            /** Approval Roles */
+            approval_roles: components["schemas"]["ApprovalRole"][];
+        };
+        /**
+         * ApprovalRoleAssignmentUpdate
+         * @description TAM KUME yazar: gonderilmeyen rol KALKAR (kismi ekleme ucu YOKTUR).
+         */
+        ApprovalRoleAssignmentUpdate: {
+            /** Approval Roles */
+            approval_roles: components["schemas"]["ApprovalRole"][];
+        };
+        /** ApprovalSettingsRead */
+        ApprovalSettingsRead: {
+            /** Approval Threshold Try */
+            approval_threshold_try: string;
+        };
+        /**
+         * ApprovalSettingsUpdate
+         * @description Esik ayari. Kolonun kendisi `Numeric(18, 2)`dir; sema onunla BIREBIR.
+         *
+         *     🔴 Bu alan `CompanyUpdate`e EKLENMEZ (R7): `PUT /company` "Sirket Bilgileri"
+         *     formudur ve `settings: full` seviyesine acikken esik `approvals: admin`
+         *     ister. Tek govdede birlesselerdi dusuk kapidan gecen istek yuksek kapinin
+         *     ardindaki degeri yazardi.
+         */
+        ApprovalSettingsUpdate: {
+            /** Approval Threshold Try */
+            approval_threshold_try: number | string;
+        };
+        /**
+         * ApprovalStepRead
+         * @description Adim SERIDI (mockup `Onay Kutusu.dc.html:129-135`).
+         *
+         *     🔴 "bekliyor / onaylandi" bir DURUM ALANI olarak DONMEZ: `decided_at`
+         *     NULL'sa adim beklemededir ve bunu ekran soyler (KANON E).
+         */
+        ApprovalStepRead: {
+            /** Step No */
+            step_no: number;
+            approval_role: components["schemas"]["ApprovalRole"];
+            /** Decided At */
+            decided_at: string | null;
+            /** Decided By Name */
+            decided_by_name: string | null;
+        };
+        /**
          * AuditAction
          * @description Denetim gunlugunde kaydedilen islem turleri.
          *
@@ -6391,13 +6701,14 @@ export interface components {
          *     kurulur ve istemci hangi ANI gördüğünü kendi isteğinden değil SUNUCUNUN
          *     cevabından okur.
          *
-         *     🔴 **`is_balanced` ÖLÇÜLÜR, `True` VARSAYILMAZ.** Gerekçe ölçüldü:
-         *     `ck_journal_entries_posted_balanced` (`models.py`) yalnız `posted`ı bağlar,
-         *     yani **dengesiz bir `reversed` fiş satırı DB'ye GİREBİLİR** (açık borç) ve
-         *     `POSTING_STATUSES` `reversed`ı deftere alır. Sabit `True` basan bir bilanço
-         *     SESSİZCE YALAN SÖYLERDİ. Gösterge ayrıca `is_contra` veri hatalarını da
-         *     yakalar: kontra işaretlenmemiş bir `257` iki katı tutar kaydırır ve burada
-         *     görünür.
+         *     🔴 **`is_balanced` ÖLÇÜLÜR, `True` VARSAYILMAZ.** Gerekçe TB6 T2'de
+         *     DEĞİŞTİ, sonuç DEĞİŞMEDİ: eski `ck_journal_entries_posted_balanced` yalnız
+         *     `posted`ı bağlıyordu ve dengesiz bir `reversed` fiş DB'ye girebiliyordu —
+         *     **o borç KAPANDI** (`ck_journal_entries_posting_balanced` deftere girenlerin
+         *     HEPSİNİ bağlar). Ama kısıt **BAŞLIK** toplamlarını bağlar, bilanço ise
+         *     `journal_lines`ı toplar — başlığı dengeli, satırları dengesiz bir fiş HÂLÂ
+         *     kurulabilir. Gösterge ayrıca `is_contra` veri hatalarını da yakalar: kontra
+         *     işaretlenmemiş bir `257` iki katı tutar kaydırır ve burada görünür.
          *
          *     🔴 **Dönem kilidi rozeti YOKTUR** (MT-K8): bilanço salt-okumadır, kapalı
          *     dönemin bilançosu ile açığınki arasında fark yoktur ve mockup rozet
@@ -9834,6 +10145,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Entry No */
+            entry_no: string;
             /**
              * Entry Date
              * Format: date
@@ -9897,6 +10210,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Entry No */
+            entry_no: string;
             /**
              * Entry Date
              * Format: date
@@ -13440,21 +13755,34 @@ export interface components {
         };
         /**
          * RejectBody
-         * @description `POST …/reject` gövdesi (spec §7, K12: ek form YOK) — yalnız isteğe
-         *     bağlı gerekçe, denetim günlüğüne taşınır (ayrı kolon AÇILMAZ).
+         * @description `POST …/reject` gövdesi — 🔴 **OK-1A K2 ile KIRICI biçimde değişti.**
          *
-         *     `max_length=500` (H10 denetimi Y3, spec §10/6): DB kolonu yok, TEK kalıcı
-         *     iz denetim metnidir (`audit/messages.py.progress_payment_rejected`) —
-         *     sınırsız gövde keyfi uzunlukta metni günlüğe yazardı. Modülde bu deseni
-         *     (kalıcı kolonu olmayan, yalnız günlüğe taşınan serbest metin) paylaşan
-         *     başka bir alan yok; en yakın emsaller (`roles.RoleCreate.description`
-         *     max_length=2000, uzun biçim rol açıklaması) amaç bakımından farklı — 500,
-         *     tek satırlık kısa bir ret gerekçesi için yeterli ve günlük okunabilirliğini
-         *     (çok satırlı/şişirilmiş metin) koruyan bir üst sınırdır.
+         *     ## Ne değişti, ne DEĞİŞMEDİ
+         *
+         *     * **DEĞİŞTİ:** gerekçe artık ZORUNLUDUR (`str`, `| None` DEĞİL) ve gövdenin
+         *       kendisi de zorunludur. Eski hâli K12'nin ("mockup'ta ret formu yok")
+         *       çıkarımıydı; kullanıcı 2026-08-21'de K2'yi bağladı ve o çıkarımın YERİNE
+         *       GEÇTİ: "Ret gerekçesi ZORUNLU metindir (boş geçilemez)."
+         *     * **DEĞİŞMEDİ:** gerekçenin DEPOLANDIĞI yer. Bu ailede `rejection_reason`
+         *       KOLONU YOKTUR ve AÇILMADI (K2 "zorunlu metin" der, "kolon" demez);
+         *       tek kalıcı iz yine denetim günlüğüdür. Taşeron ailesi kolonu KORUR —
+         *       asimetri bilinçlidir, çünkü orada gerekçe L177 "Revize Gerekli"
+         *       rozetinin ekranda gösterilen açıklamasıdır.
+         *
+         *     Boş/yalnız boşluktan oluşan metnin reddi `min_length` ile YAPILMAZ ("   "
+         *     üç karakterdir): kırpma kuralı TEK kopya
+         *     `approvals.service.clean_reject_reason`tadır ve üç evrak ailesi de aynı
+         *     huniden geçer.
+         *
+         *     `max_length=500` KORUNDU (H10 denetimi Y3, spec §10/6) ve motorun
+         *     `FREE_TEXT_MAX_LENGTH` tavanına yükseltilmedi: kardeş uç
+         *     (`SubcontractorRejectBody`) da 500'dür ve aynı ekran ailesinde iki farklı
+         *     sınır göstermek kullanıcıya açıklanamaz. Motorun tavanı DIŞ sınır olarak
+         *     yerinde durur.
          */
         RejectBody: {
             /** Reason */
-            reason?: string | null;
+            reason: string;
         };
         /**
          * RentalInvoiceCreate
@@ -19949,6 +20277,228 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IncomeStatementResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_my_approvals_endpoint_approvals_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalInboxResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_approval_settings_endpoint_approvals_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalSettingsRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    update_approval_settings_endpoint_approvals_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApprovalSettingsUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalSettingsRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_approval_role_assignments_endpoint_approvals_roles_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalRoleAssignmentListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_approval_roles_endpoint_approvals_roles__user_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApprovalRoleAssignmentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalRoleAssignmentRead"];
                 };
             };
             /** @description Yetkisiz işlem */
@@ -29109,9 +29659,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": components["schemas"]["RejectBody"] | null;
+                "application/json": components["schemas"]["RejectBody"];
             };
         };
         responses: {

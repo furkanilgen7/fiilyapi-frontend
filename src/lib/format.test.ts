@@ -10,6 +10,7 @@ import {
   formatMonthYear,
   formatPercent,
   formatPeriod,
+  formatPeriodLabel,
   formatPeriodShort,
   formatQuantity,
   formatWeekdayShort,
@@ -165,5 +166,27 @@ describe("formatWeekdayShort", () => {
     // 2026-01-01 Perşembe; yerel Date kurulsaydı TR'de gece yarısı kayması
     // riski olurdu.
     expect(formatWeekdayShort("2026-01-01")).toBe("Per");
+  });
+});
+
+// F-OK T5 · `MM/YYYY` → Türkçe dönem. Backend dönemi ALT BAŞLIK METNİNE gömer
+// (yapılandırılmış alan YOK) ve Türkçe ay adı sözlüğü TAŞIMAZ.
+describe("formatPeriodLabel", () => {
+  it("`MM/YYYY` kalıbını ay adına çevirir (Onay Kutusu :127 :220)", () => {
+    expect(formatPeriodLabel("07/2026")).toBe("Temmuz 2026");
+    expect(formatPeriodLabel("01/2026")).toBe("Ocak 2026");
+    expect(formatPeriodLabel("12/2025")).toBe("Aralık 2025");
+  });
+
+  it("kalıba UYMAYAN girdi AYNEN döner (zarif düşüş — dönem taşımayan metin)", () => {
+    expect(formatPeriodLabel("Kat 6–8")).toBe("Kat 6–8");
+    expect(formatPeriodLabel("7/2026")).toBe("7/2026");
+    expect(formatPeriodLabel("2026-07")).toBe("2026-07");
+    expect(formatPeriodLabel("")).toBe("");
+  });
+
+  it("1-12 dışındaki ay numarası da AYNEN döner (sıfır dolgusu korunur)", () => {
+    expect(formatPeriodLabel("00/2026")).toBe("00/2026");
+    expect(formatPeriodLabel("13/2026")).toBe("13/2026");
   });
 });

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -80,6 +80,18 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+/**
+ * OLUMSUZ iddia (`not.toHaveBeenCalled`) icin bekleme: `waitFor` olumsuzu
+ * bekcileyemez (ilk denemede gecer). Mutasyon istegi bir mikro-gorevde
+ * atildigindan, sayaci okumadan once kuyrugun bosalmasi BEKLENIR — aksi hâlde
+ * kusur geri geldiginde sayac "henuz cagrilmadi" diye SAHTE-YESIL doner.
+ */
+async function flushMutations() {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+}
+
 describe("ProgressPaymentStatusActions — durum eşleşmesi (izin bilinmiyorken bilinmezlik kuralı hepsini gösterir)", () => {
   it("draft: yalnız Onaya Gönder görünür", () => {
     mockSession();
@@ -146,32 +158,56 @@ describe("ProgressPaymentStatusActions — izin kapısı (approve/admin eşikler
   });
 });
 
-describe("ProgressPaymentStatusActions — Reddet diyaloğu (K12: gerekçe isteğe bağlı)", () => {
-  it("gerekçe boş bırakılırsa gövdesiz çağrılır", async () => {
+// 🔴 KAPI — ret gerekçesi ZORUNLUDUR. Bu blok eskiden TAM TERSİNİ ("gerekçe
+// boş bırakılırsa gövdesiz çağrılır") bekçiliyordu: K12'nin "mockup'ta ret
+// formu yok" çıkarımıydı ve backend `d888591` (OK-1A K2) onu KIRICI biçimde
+// geçersiz kıldı. Eski hâliyle ekran CANLIDA boş gerekçeyi POST ediyor,
+// kullanıcı 422'yi yalnız "Reddedilemedi." olarak görüyordu.
+//
+// Ölçü `toBeDisabled()` DEĞİL, GERÇEK ÇAĞRI SAYACIdır: `disabled` yalnız
+// butonun görünümünü söyler, isteğin atılmadığını SÖYLEMEZ.
+describe("ProgressPaymentStatusActions — Reddet diyaloğu (gerekçe ZORUNLU)", () => {
+  it("gerekçe boşken Reddet onay butonu disabled kalır ve HİÇBİR istek atılmaz", async () => {
     mockSession({ progress_payments: "approve" });
-    let capturedText: string | null | undefined;
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (input: RequestInfo | URL) => {
-        const request = input as Request;
-        if (String(request).includes("/reject") && request.method === "POST") {
-          capturedText = await request.text();
-          return jsonResponse(makeDetail("draft"));
-        }
-        return jsonResponse({});
-      }),
-    );
+    const fetchMock = vi.fn(async () => jsonResponse({}));
+    vi.stubGlobal("fetch", fetchMock);
 
     renderActions(makeDetail("pending_approval"));
     await userEvent.click(screen.getByRole("button", { name: "Reddet" }));
     const dialog = screen.getByRole("dialog", { name: "Hakedişi Reddet" });
-    await userEvent.click(within(dialog).getByRole("button", { name: "Reddet" }));
+    const confirmButton = within(dialog).getByRole("button", { name: "Reddet" });
 
-    await waitFor(() => expect(capturedText).not.toBeUndefined());
-    expect(capturedText ? JSON.parse(capturedText) : null).toBeNull();
+    // SIRA ÖNEMLİ: önce çağrı sayacı. `toBeDisabled()` önce yazılırsa kusur
+    // geri geldiğinde test O satırda düşer ve asıl ölçü — isteğin ATILMAMASI —
+    // hiç çalışmaz; sayaç bekçilik etmiyor olur.
+    await userEvent.click(confirmButton);
+    await flushMutations();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(confirmButton).toBeDisabled();
   });
 
-  it("gerekçe doluyken reason alanıyla çağrılır", async () => {
+  it("yalnız boşluktan oluşan gerekçede de HİÇBİR istek atılmaz (kırpma kuralı)", async () => {
+    mockSession({ progress_payments: "approve" });
+    const fetchMock = vi.fn(async () => jsonResponse({}));
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderActions(makeDetail("pending_approval"));
+    await userEvent.click(screen.getByRole("button", { name: "Reddet" }));
+    const dialog = screen.getByRole("dialog", { name: "Hakedişi Reddet" });
+    // "   " ÜÇ karakterdir: `!== ""` ile kurulmuş bir kapı bunu geçirir ve
+    // sunucu `clean_reject_reason` kırpmasıyla 422 döndürürdü.
+    await userEvent.type(within(dialog).getByLabelText("Gerekçe (zorunlu)"), "   ");
+    const confirmButton = within(dialog).getByRole("button", { name: "Reddet" });
+
+    await userEvent.click(confirmButton);
+    await flushMutations();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(confirmButton).toBeDisabled();
+  });
+
+  // Kırpma SUNUCUYA GİDEN gövdede de ölçülür: baştaki/sondaki boşluk gerekçenin
+  // parçası değildir ve sunucu zaten aynı kırpmayı uygular.
+  it("gerekçe doluyken KIRPILMIŞ reason alanıyla çağrılır", async () => {
     mockSession({ progress_payments: "approve" });
     let capturedText: string | null | undefined;
     vi.stubGlobal(
@@ -189,7 +225,7 @@ describe("ProgressPaymentStatusActions — Reddet diyaloğu (K12: gerekçe iste�
     renderActions(makeDetail("pending_approval"));
     await userEvent.click(screen.getByRole("button", { name: "Reddet" }));
     const dialog = screen.getByRole("dialog", { name: "Hakedişi Reddet" });
-    await userEvent.type(within(dialog).getByLabelText("Gerekçe (isteğe bağlı)"), "eksik belge");
+    await userEvent.type(within(dialog).getByLabelText("Gerekçe (zorunlu)"), "  eksik belge  ");
     await userEvent.click(within(dialog).getByRole("button", { name: "Reddet" }));
 
     await waitFor(() => expect(capturedText).not.toBeUndefined());

@@ -21,11 +21,13 @@ describe("pendingModuleLabel", () => {
     expect(pendingModuleLabel("inventory")).toBe("Risk listesi henüz hiçbir uçtan hesaplanmıyor");
   });
 
-  // 🔴 TEK "modül yok" METNİ VE O DOĞRUDUR: `/onay-kutusu` YAZILMADI (kabuk
-  // nav'ında catch-all/ComingSoon'a düşen üç öğeden biri). O ekran açıldığı gün
-  // BU iddia kırılır ve metnin de düzeltilmesi gerektiğini söyler.
-  it("approvals metni DEGISMEDI - `/onay-kutusu` gercekten yazilmadi", () => {
-    expect(pendingModuleLabel("approvals")).toBe("Onay kutusuyla birlikte gelir");
+  // 🔴 F-OK T6 (2026-08-23) · BU İDDİA TASARIM GEREĞİ KIRILDI: yukarıdaki
+  // yorum "/onay-kutusu YAZILMADI" derken tam olarak onu yazan dilim geldi.
+  // Eski metin ("Onay kutusuyla birlikte gelir") artık YALAN olurdu; yeni
+  // metin modülün VAR olduğunu ama gösterge panelinin ona henüz bağlanmadığını
+  // söylüyor (`PendingApprovalsPlaceholder` backend'de hâlâ boş zarf döner).
+  it("approvals metni DEGISTI - '/onay-kutusu' artik yazildi, panel baglanmadi", () => {
+    expect(pendingModuleLabel("approvals")).toBe("Onay verisi bu yüzeye henüz bağlanmadı");
   });
 
   it("P1 anahtarlarini esler", () => {
@@ -130,8 +132,13 @@ describe("pendingModuleLabel", () => {
  * bu turda düzeltilen tam olarak o kalıptı.
  */
 describe("MODULE_LABELS — bayat 'modül gelecek' kalıbı yasağı", () => {
-  // Ölçüldü: `/onay-kutusu` hâlâ yazılmamış tek modüldür, metni DOĞRUDUR.
-  const ALLOWED_MODULE_PROMISES = new Set(["approvals"]);
+  // 🔴 F-OK T6 (2026-08-23) — istisna KAPANDI: `/onay-kutusu` bu dilimde
+  // yazıldı ve `approvals` metni "… birlikte gelir" kalıbından "… henüz
+  // bağlanmadı" kalıbına döndü (bkz. pending-modules.ts). Artık hiçbir anahtar
+  // gerçekten yazılmamış bir modül VAAT ETMİYOR — küme BOŞ kalır. Yeniden
+  // gerçekten yazılmamış bir modül için bir anahtar eklenirse buraya da
+  // EKLENİR; sessizce boş bırakılmaz.
+  const ALLOWED_MODULE_PROMISES = new Set<string>([]);
 
   // ⚠️ Tek tek `expect` YAZILMAZ: ilk başarısızlıkta test durur ve geri kalan
   // ihlaller GÖRÜNMEZ olur (bu turda tam olarak öyle oldu — üç ihlal ardı
