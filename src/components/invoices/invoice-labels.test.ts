@@ -119,11 +119,17 @@ describe("invoiceSource — bağlantı UYDURULMAZ", () => {
     );
   });
 
-  it("🔴 BEKÇİ: rotası OLMAYAN kaynakta `href` null'dır ve gerekçe DOLUDUR", () => {
+  /* 🔴 F-KIRA: kira faturası ARTIK rotalıdır (`/makine/kira/[invoiceId]` bu
+   * dilimde yazıldı) — gerekçesi bayatladı ve düştü. Bekçinin kendisi
+   * KALIR: rotası hâlâ olmayan `purchase_order_id` dalı aynı iddiayı taşır,
+   * yoksa "href null + gerekçe dolu" kuralı bekçisiz kalırdı. */
+  it("F-KIRA — makine kira faturası kendi rotasına bağlanır (gerekçe DÜŞTÜ)", () => {
     const rental = invoiceSource({ ...NO_SOURCE, equipment_rental_invoice_id: "ri-1" });
-    expect(rental?.href).toBeNull();
-    expect(rental?.reason).toBe("Makine kira faturasının detay ekranı henüz yazılmadı.");
+    expect(rental?.href).toBe("/makine/kira/ri-1");
+    expect(rental?.reason).toBeNull();
+  });
 
+  it("🔴 BEKÇİ: rotası OLMAYAN kaynakta `href` null'dır ve gerekçe DOLUDUR", () => {
     const order = invoiceSource({ ...NO_SOURCE, purchase_order_id: "po-1" });
     expect(order?.href).toBeNull();
     expect(order?.reason).toBe("Sipariş detay ekranı henüz yazılmadı.");
