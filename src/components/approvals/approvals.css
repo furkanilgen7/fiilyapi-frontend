@@ -1,0 +1,527 @@
+/* F-OK T5 · Onay Kutusu (`/onay-kutusu`).
+   Kanon: `projedesign/Onay Kutusu.dc.html` — parantez içi sayılar O dosyanın
+   SATIR numaralarıdır. Çıplak hex YASAK; palet yalnız `tokens.css`ten gelir.
+
+   🔴 `tokens.css` ve `src/components/ui/` bu turda DONDURULMUŞTUR (iki paralel
+   dilim paylaşıyor). Mockup'ın karşılığı olmayan İKİ tonu en yakın mevcut
+   token'a düştü ve bu ONAYLI SAPMADIR:
+     · 42 kutu kenarlığı `#bae6fd` → `--color-primary-ring` (#bfdbfe)
+     · 43 başlık metni  `#0369a1` → `--color-primary-hover` (#1d4ed8)
+   Yeni token açmak paylaşılan yüzeyi oynatırdı; iki fark da pixelmatch'in
+   varsayılan eşiğinin (YIQ 1408) altında kalır. */
+
+/* --- Sayfa kabuğu (39) --------------------------------------------------- */
+
+.ok {
+  padding: var(--space-6) var(--space-8); /* 24px 32px (39) */
+  max-width: var(--form-column-max); /* 1000px (39) */
+}
+
+.ok__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.ok__title {
+  font-size: var(--text-page-title);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+}
+
+/* 32 · "7 bekleyen" — mockup'ın üst barından SAYFAYA taşındı (kabuk canon'u
+   mockup topbar'ını basmaz). */
+.ok__pending {
+  font-size: var(--text-body);
+  color: var(--color-text-subtle);
+  margin-left: auto;
+}
+
+/* Bilgi/uyarı bantları — devre-dışı gerekçeleri, kırpma bandı, hata. */
+.ok-notice {
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.ok-notice--danger {
+  color: var(--color-danger-strong);
+}
+
+/* --- 42-68 · Rol akışı şeridi -------------------------------------------- */
+
+.ok-flow {
+  background: var(--color-info-tint); /* #f0f9ff (42) */
+  border: 1px solid var(--color-primary-ring); /* ~#bae6fd (42) */
+  border-radius: var(--radius-12); /* 12px (42) */
+  padding: 14px 18px; /* (42) */
+  margin-bottom: var(--space-5); /* 20px (42) */
+}
+
+.ok-flow__title {
+  font-size: var(--text-body); /* 13px (43) */
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary-hover); /* ~#0369a1 (43) */
+  margin-bottom: var(--space-2); /* 8px (43) */
+}
+
+.ok-flow__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2); /* 8px (44) */
+  flex-wrap: wrap;
+  font-size: var(--text-xs); /* 12px (44) — `--text-form-label` Field katmanına AİTTİR (field-adoption bekçisi) */
+}
+
+.ok-flow__role {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3); /* 6px 12px (45) */
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+}
+
+.ok-flow__role--patron {
+  background: var(--color-primary); /* #2563eb (60) */
+  border-color: var(--color-primary-hover); /* #1d4ed8 (60) */
+}
+
+.ok-flow__role-name {
+  display: block;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.ok-flow__role-desc {
+  display: block;
+  color: var(--color-text-subtle);
+  font-size: 10px; /* (47) */
+}
+
+.ok-flow__role-icon {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.ok-flow__role--patron .ok-flow__role-icon {
+  color: var(--color-on-brand);
+}
+
+.ok-flow__role--patron .ok-flow__role-name {
+  color: var(--color-on-brand);
+}
+
+.ok-flow__role--patron .ok-flow__role-desc {
+  color: var(--color-on-brand-70); /* rgba(255,255,255,.7) (62) */
+}
+
+/* 48 · rol kartları arasındaki ok — mockup'ın KENDİ inline SVG'si
+   (`M5 10h10M11 6l4 4-4 4`); `→` glifi fontta KAPSANMIYOR. */
+.ok-flow__arrow {
+  color: var(--color-text-subtle); /* stroke #94a3b8 (48) */
+  flex-shrink: 0;
+}
+
+.ok-flow__pill {
+  margin-left: auto; /* (64) */
+  font-size: var(--text-small); /* 11px (64) */
+  color: var(--color-text-muted);
+  background: var(--color-neutral-soft);
+  padding: var(--space-2) var(--space-3); /* 6px 12px (64) */
+  border-radius: var(--radius-8);
+}
+
+/* --- 71-76 · Sekme şeridi ------------------------------------------------ */
+
+.ok-tabs {
+  display: flex;
+  gap: var(--space-1); /* 4px (71) */
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-10); /* 10px (71) */
+  padding: var(--space-1);
+  width: fit-content;
+  margin-bottom: var(--space-3);
+}
+
+.ok-tab {
+  padding: 7px var(--space-4); /* 7px 16px (72) */
+  font-size: var(--text-body); /* 13px (72) */
+  color: var(--color-text-muted); /* #64748b (73) */
+  border-radius: var(--radius-7); /* 7px (72) */
+  background: transparent;
+  border: none;
+  font-family: var(--font-sans);
+}
+
+/* 72 · etkin sekme — mavi metin + mavi zemin, 600. Ortak kuraldan SONRA
+   tanımlanır ki gerçekten ezsin. */
+.ok-tab[aria-current="page"] {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  background: var(--color-nav-active-bg);
+}
+
+.ok-tab[aria-disabled="true"] {
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+}
+
+/* --- 79 · Kart listesi --------------------------------------------------- */
+
+.ok-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3); /* 12px (79) */
+}
+
+.ok-empty {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14);
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--text-body);
+}
+
+/* --- 17-18, 118-148 · Kart ---------------------------------------------- */
+
+.ok-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-14); /* 14px (17) */
+  border: 1px solid var(--color-border);
+  padding: 18px var(--space-5); /* 18px 20px (17) */
+  box-shadow: var(--shadow-card); /* 0 1px 4px rgba(0,0,0,.06) (17) */
+  transition: box-shadow var(--duration-fast) ease;
+}
+
+.ok-card:hover {
+  box-shadow: var(--shadow-md); /* 0 4px 12px (18) */
+}
+
+/* 152 · patron adımı olan kart vurgulanır (mockup o kartı "Patron'dan onay
+   gerekiyor" diye işaretler). Ton veriden TÜRETİLİR, sıraya göre DEĞİL. */
+.ok-card--patron {
+  border-color: var(--color-primary-ring); /* #bfdbfe (152) */
+  background: var(--color-surface-2); /* ~#f8faff (152) */
+}
+
+.ok-card__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px; /* (83) */
+}
+
+.ok-card__icon {
+  width: 42px;
+  height: 42px; /* (120) */
+  border-radius: var(--radius-10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--color-nav-active-bg); /* #eff6ff (120, 154) */
+  color: var(--color-primary);
+}
+
+.ok-card__icon--isveren {
+  background: var(--color-purple-tint); /* #fdf4ff (213) */
+  color: var(--color-accent-purple);
+}
+
+.ok-card__icon--bilinmeyen {
+  background: var(--color-neutral-soft);
+  color: var(--color-text-muted);
+}
+
+.ok-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ok-card__meta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2); /* 8px (122) */
+  margin-bottom: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.ok-card__meta {
+  font-size: var(--text-small); /* 11px (124) */
+  color: var(--color-text-subtle);
+}
+
+.ok-card__title {
+  font-size: 15px; /* (126) */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--space-1);
+}
+
+.ok-card__subtitle {
+  font-size: var(--text-xs); /* 12px (127) */
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
+
+/* 123 · rozetler — mockup köşesi 8px, `Badge` primitive'i 999px pill basar. */
+.ok-badge {
+  border-radius: var(--radius-8);
+  font-weight: var(--weight-semibold);
+}
+
+/* 123 · HAKEDİŞ — `warning` varyantının zemini birebir (#fef3c7), metni
+   mockup'ta bir ton KOYU (#d97706): tek özellik ezilir. */
+.ok-badge--hakedis {
+  color: var(--color-warning-strong);
+}
+
+/* 157 · SATIN ALMA — `primary` varyantı (#dbeafe zemin), metin bir ton koyu. */
+.ok-badge--satinalma {
+  color: var(--color-primary-hover);
+}
+
+/* 216 · İŞVEREN HAKEDİŞ — `ui/badge`de mor VARYANT YOK, dilim-yerel sınıf. */
+.ok-badge--isveren {
+  background: var(--color-purple-tint);
+  color: var(--color-accent-purple);
+  border: 1px solid var(--color-purple-tint-border);
+}
+
+.ok-badge--bilinmeyen {
+  background: var(--color-neutral-soft);
+  color: var(--color-text-muted);
+}
+
+/* 158 · eşik rozeti — `success` varyantı (#dcfce7), mockup bir ton AÇIK. */
+.ok-badge--esik {
+  background: var(--color-success-tint);
+  color: var(--color-success);
+  white-space: nowrap;
+}
+
+/* --- 129-135 · Adım şeridi ---------------------------------------------- */
+
+.ok-steps {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3); /* 12px (128) */
+  flex-wrap: wrap;
+}
+
+.ok-step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2); /* 6px (19) */
+  font-size: var(--text-small); /* 11px (19) */
+  font-weight: var(--weight-semibold);
+  padding: 3px var(--space-2); /* 3px 10px (19) */
+  border-radius: var(--radius-8);
+}
+
+.ok-step__note {
+  font-size: 10px; /* (133) */
+  font-weight: var(--weight-regular);
+}
+
+/* 130 · karar verilmiş — `✓` GLİFİ DEĞİL `CheckIcon` (glif yasağı). */
+.ok-step--decided {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+/* 133 · sıradaki, BAŞKASININ — bu sekmede ULAŞILAMAZ (bilinçli, `Tümü`
+   sekmesi için hazır durur). */
+.ok-step--current-other {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+/* 170 · sıradaki, BENİM */
+.ok-step--current-mine {
+  background: var(--color-primary);
+  color: var(--color-on-brand);
+}
+
+/* 135 · gelecek adım */
+.ok-step--upcoming {
+  background: var(--color-neutral-soft);
+  color: var(--color-text-muted);
+}
+
+/* 130/135 · `●` ve `○` glifleri fontta KAPSANMIYOR → CSS daire.
+   Dolu = `background`, boş = yalnız `border`. */
+.ok-step__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.ok-step__dot--hollow {
+  background: transparent;
+  border: 1px solid currentColor;
+}
+
+.ok-step__icon {
+  flex-shrink: 0;
+}
+
+/* 131 · adımlar arası 20x1px ayırıcı */
+.ok-step-divider {
+  width: 20px;
+  height: 1px;
+  background: var(--color-border);
+  flex-shrink: 0;
+}
+
+/* --- 137-141 · Tutar kutuları + bağlantı çipi ---------------------------- */
+
+.ok-amounts {
+  display: flex;
+  gap: 10px; /* (137) */
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ok-amount {
+  background: var(--color-surface-2); /* #f8fafc (138) */
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: var(--space-2) 14px; /* 8px 14px (138) */
+}
+
+.ok-amount__label {
+  display: block;
+  font-size: 10px; /* (138) */
+  color: var(--color-text-subtle);
+}
+
+.ok-amount__value {
+  display: block;
+  font-size: 14px; /* (138) */
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+  color: var(--color-text);
+}
+
+/* 229 · "Hakediş Detayı" çipi — nötr zemin, MOR metin. */
+.ok-chip {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: var(--space-2) 14px;
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-accent-purple);
+}
+
+/* 174 · "Teklif Karşılaştırması" çipi — mavi zemin/kenarlık/metin. */
+.ok-chip--primary {
+  background: var(--color-nav-active-bg);
+  border-color: var(--color-primary-ring);
+  color: var(--color-primary);
+}
+
+/* --- 143-146 · Aksiyon sütunu ------------------------------------------- */
+
+.ok-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2); /* 6px (143) */
+  flex-shrink: 0;
+}
+
+/* Ortak ölçü: 8px 18px / 12px (143-146). `Button` `sm` boyutu 4px/12px'tir. */
+.ok-card .btn.ok-btn {
+  padding: var(--space-2) 18px;
+  font-size: var(--text-xs); /* 12px (143-146) */
+  border-radius: var(--radius-8);
+}
+
+/* 143 · taşeron hakediş onayı — `success` varyantı BİREBİR (#16a34a). */
+.ok-card .btn.ok-btn--approve-success {
+  font-weight: var(--weight-bold);
+}
+
+/* 178 · satınalma onayı — `primary` varyantı BİREBİR (#2563eb). */
+.ok-card .btn.ok-btn--approve-primary {
+  font-weight: var(--weight-bold);
+}
+
+/* 233 · işveren hakediş onayı — `ui/button`da MOR VARYANT YOK; dilim-yerel
+   sınıf ve `--color-accent-purple-grad-start` BİREBİR #8b5cf6'dır.
+   Özgüllük `.ok-card .btn.x` (0,3,0) > `.btn--primary` (0,1,0). */
+.ok-card .btn.ok-btn--approve-purple {
+  background: var(--color-accent-purple-grad-start);
+  color: var(--color-on-brand);
+  font-weight: var(--weight-bold);
+}
+
+.ok-card .btn.ok-btn--approve-purple:hover:not(:disabled) {
+  background: var(--color-accent-purple);
+}
+
+/* 144 · Reddet — beyaz zemin / kırmızı metin / açık kırmızı kenarlık.
+   `danger` varyantı DOLU kırmızıdır, karşılamaz. */
+.ok-card .btn.ok-btn--reject {
+  background: var(--color-surface);
+  color: var(--color-danger-strong);
+  border-color: var(--color-danger-border-soft);
+  font-weight: var(--weight-semibold);
+}
+
+.ok-card .btn.ok-btn--reject:hover:not(:disabled) {
+  background: var(--color-danger-tint);
+}
+
+/* 145 · Detay — `ghost` şeffaftır, `secondary` kenarlıklıdır; ikisi de
+   karşılamaz. Zemin #f1f5f9, metin #475569 BİREBİR token'dır. */
+.ok-card .btn.ok-btn--detail {
+  background: var(--color-neutral-soft);
+  color: var(--color-text-secondary);
+  border-color: transparent;
+}
+
+.ok-card .btn.ok-btn--detail:hover:not(:disabled) {
+  background: var(--color-border);
+}
+
+/* Devre-dışı hedefin/aksiyonun GÖRÜNÜR gerekçesi — `title` tek başına yetmez. */
+.ok-card__reason {
+  margin-top: var(--space-2);
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* --- Ret diyaloğu -------------------------------------------------------- */
+
+.ok-reject__target {
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.ok-reject__required {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-right: auto;
+  font-size: var(--text-small);
+  color: var(--color-warning-strong);
+}
+
+.ok-reject__error {
+  margin-top: var(--space-3);
+  font-size: var(--text-small);
+  color: var(--color-danger-strong);
+}

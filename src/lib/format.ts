@@ -251,3 +251,26 @@ export function formatWeekdayShort(iso: string): string {
   const date = new Date(Date.UTC(year, month - 1, day));
   return TR_WEEKDAYS_SHORT[date.getUTCDay()] ?? "";
 }
+
+/**
+ * `MM/YYYY` → "Temmuz 2026" (F-OK T5 · `Onay Kutusu.dc.html:127` `:220`
+ * "Temmuz 2026" yazar).
+ *
+ * 🔴 NEDEN AYRI BİR YARDIMCI: `ApprovalInboxItem`ta YAPILANDIRILMIŞ dönem alanı
+ * YOKTUR (`period_year`/`period_month` yok). Backend dönemi `subtitle` metnine
+ * `MM/YYYY` olarak GÖMER (`approvals/inbox.py`) ve modül docstring'i bunu
+ * bilinçli sapma olarak yazar: *"backend'de Türkçe AY ADI sözlüğü YOKTUR"*.
+ * Türkçeleştirme bu yüzden istemcidedir.
+ *
+ * `TR_MONTHS` TEK KAYNAK kalır — `formatPeriod`a devredilir, ay adı sözlüğü
+ * KOPYALANMAZ. Kalıba uymayan girdi (ya da 1-12 dışındaki ay) AYNEN geri döner:
+ * `formatDateDots`/`formatDayMonth` ailesinin düşüş üslubu — alt başlık dönem
+ * TAŞIMAYABİLİR ve o hâlde metne dokunulmamalıdır.
+ */
+export function formatPeriodLabel(period: string): string {
+  const match = /^(\d{2})\/(\d{4})$/.exec(period);
+  if (match === null) return period;
+  const month = Number(match[1]);
+  if (month < 1 || month > 12) return period;
+  return formatPeriod(Number(match[2]), month);
+}

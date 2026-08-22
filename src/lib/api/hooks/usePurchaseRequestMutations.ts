@@ -13,9 +13,13 @@ import { PURCHASING_SUMMARY_QUERY_KEY } from "./usePurchasingSummary";
 // düğmeleri (spec §1) buradan beslenir.
 //
 // ⚠️ KALICI KARAR (spec K6): `POST /purchase-requests/{id}/approve` ve
-// `.../reject` uçlarına BU DİLİMDE hook YAZILMAZ — onay/red EKRANI ayrı bir
-// dilimdir ("Onay Kutusu"). Uçlar backend'de durur ve BFF kökü tanımlıdır;
-// eksiklik BİLEREKtir. Buraya onay/red hook'u eklemek = review bulgusu.
+// `.../reject` uçlarına BU DOSYADA hook YAZILMAZ — onay/red EKRANI ayrı bir
+// dilimdir ("Onay Kutusu"). Buraya onay/red hook'u eklemek = review bulgusu.
+//
+// ✅ F-OK T5 (2026-08-23): o dilim YAZILDI. İki ucun TEK evi
+// `src/lib/api/hooks/useApprovals.ts`tir (`useApproveApprovalItem` /
+// `useRejectApprovalItem`) ve orada üç evrak ailesini birlikte dağıtır —
+// buraya bir KOPYA formül açılmaz.
 //
 // ⚠️ `DELETE /purchase-requests/{id}` de basılmaz: SAT tablosunda silme
 // düğmesi yoktur (`can_delete` alanı yanıtta durur ama ekranı yoktur).
