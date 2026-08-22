@@ -1,0 +1,109 @@
+/*
+ * F-KIRA · Makine Kira Hakedişi ekranları.
+ *
+ * Ad alanı `makine-kira*` — `EquipmentWorkView`in `makine-cal*` deseniyle
+ * kardeş (aynı modülün sekmeleri aynı görsel dili konuşur). Çıplak hex/px
+ * YASAK: her değer `src/styles/tokens.css`ten gelir.
+ *
+ * Liste ekranının mockup'ı YOKTUR (onaylı sapma adayı, TASARIM-BRIEFI-2 md.17)
+ * → ölçüler emsalden (`subcontractor-progress-payments.css` + `equipment-work.css`)
+ * alınmıştır, yeni görsel dil üretilmemiştir. Detay ekranı ise
+ * `Makine - Kira Hakedişi.dc.html`ten satır numarasıyla gerekçelidir.
+ */
+
+/* ===========================================================================
+ * LİSTE — /makine/kira
+ * ======================================================================== */
+
+.makine-kira__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.makine-kira__title {
+  font-size: var(--text-page-title);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+/* Devre-dışı öğenin GÖRÜNÜR gerekçesi (F-TH kuralı; `title` tek başına yetmez). */
+.makine-kira__reason {
+  margin-bottom: var(--space-4);
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+.makine-kira__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.makine-kira__panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.makine-kira__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.makine-kira__table th {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.makine-kira__table td {
+  padding: var(--space-3);
+  font-size: var(--text-body);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.makine-kira__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.makine-kira__num {
+  text-align: right;
+}
+
+.makine-kira__mono {
+  font-family: var(--font-mono);
+}
+
+.makine-kira__link {
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+.makine-kira__link:hover,
+.makine-kira__link:focus {
+  text-decoration: underline;
+}
+
+.makine-kira__empty {
+  padding: var(--space-6) var(--space-3);
+  text-align: center;
+  color: var(--color-text-subtle);
+}
+
+.makine-kira__limit-note {
+  margin-top: var(--space-2);
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}

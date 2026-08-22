@@ -140,3 +140,29 @@ export const RENTAL_COLUMN_LABEL: Record<RentalColumnKey, string> = {
   invoicedHours: "Fatura Saati",
   variance: "Fark / Onay",
 };
+
+/* ---------------------------------------------------------------------------
+ * PENDING GEREKÇELERİ — rotası/formu olmayan öğeler SİLİNMEZ, devre-dışı +
+ * GÖRÜNÜR gerekçeyle basılır (F-TH kalıcı kuralı). Metinler tek kaynaktan
+ * gelir; ekranlar cümle KOPYALAMAZ.
+ * ------------------------------------------------------------------------ */
+
+/**
+ * `POST /equipment/rental-invoices` uç olarak AÇIKTIR ama oluşturma formunun
+ * mockup'ı çizilmemiştir: `Makine - Kira Hakedişi.dc.html` dolu bir
+ * `pending_verification` faturasını gösterir, boş/oluşturma hâlini değil
+ * (TASARIM-BRIEFI-2 madde 17'de borç olarak kayıtlı). Uç açık diye form
+ * İCAT EDİLMEZ — F-MK'nın `+ Kayıt Ekle` düğmesiyle aynı karar
+ * (`equipment-work/work-labels.ts:5-7`).
+ */
+export const RENTAL_CREATE_FORM_PENDING_REASON =
+  "Kira hakedişi oluşturma formunun mockup'ı henüz yok.";
+
+/**
+ * `POST …/reload` (çalışma kaydından tazeleme) mockup'ta ÇİZİLMEMİŞTİR (K2) →
+ * bu dilimde basılmaz. Dönem/şantiye değişikliği satırları KENDİLİĞİNDEN
+ * tazelemez (`RentalInvoiceUpdate` açıklaması), bu yüzden kullanıcı sessiz
+ * bırakılmaz: başlık düzenleme alanlarının yanında bu not görünür.
+ */
+export const RENTAL_RELOAD_PENDING_REASON =
+  "Dönem veya şantiye değiştirmek satırları yeniden yüklemez; çalışma kaydından tazeleme yüzeyi henüz çizilmedi.";
