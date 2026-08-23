@@ -911,9 +911,15 @@ span.mu-tb__total {
    --color-warning-strong.
 --------------------------------------------------------------------------- */
 
-/* M:57 — diyalog `max-width:560px`; varsayılan kabuk 480px'tir. */
+/* M:57 — diyalog `max-width:560px`; varsayılan kabuk 480px'tir.
+   🔴 `max-width` ŞART, `width` TEK BAŞINA ATILDIR: `.modal` (settings/modal.css)
+   `max-width: 480px` verir, iki seçici de TEK SINIF olduğu için özgüllük EŞİTTİR
+   ve kaskadı demet sırası belirler — ezme olmadan diyalog 480px'e kırpılıyordu
+   (F-FISNO'da `.mu-modal` için ölçülen kusurun kardeşi; burada AÇIK KALMIŞTI).
+   Bekçi metin taraması DEĞİL, tarayıcıda ölçen `e2e/accounting-dialogs.spec.ts`. */
 .mu-modal--account {
   width: min(560px, 92vw);
+  max-width: min(560px, 92vw);
 }
 
 /* M:64 — başlığın altındaki açıklama (Modal alt başlık almadığı için gövdede). */

@@ -282,6 +282,41 @@ test.describe("hesap ekle diyaloğu", () => {
     });
   }
 
+  /**
+   * 🔴 TARAYICIDA ÖLÇEN BEKÇİ — `accounting.css.test.ts`in metin taraması bunu
+   * YAPAMAZ. Emsal ve gerekçe: aynı dosyadaki fiş diyaloğu bekçisi (`:137`).
+   *
+   * `.mu-modal--account` YALNIZ `width` bildiriyordu; `max-width` YOKTU ve
+   * `settings/modal.css` `.modal { max-width: 480px }` kaskadı KAZANIYORDU
+   * (iki seçici de tek sınıf ⇒ eşit özgüllük ⇒ demet sırası karar verir).
+   * Ölçülen sonuç: diyalog 480px basıyordu, mockup `M:57` 560px istiyor.
+   *
+   * Beklenen değer ELLE yazıldı, üretim ifadesinden türetilmedi: viewport 1280
+   * (playwright.config) ⇒ `min(560px, 92vw)` = `min(560, 1177.6)` = **560**.
+   * `box-sizing: border-box` (globals.css) ⇒ `boundingBox` kenarlık dahil 560.
+   */
+  test("hesap diyaloğu TARAYICIDA 560px'tir — 480px kabuk ezmesi GERÇEKTEN yürürlükte", async ({
+    page,
+  }) => {
+    await openChartOfAccounts(page);
+    await page.getByTestId("hp-create").click();
+
+    const dialog = page.getByRole("dialog", { name: "Yeni Hesap Ekle" });
+    await expect(dialog).toBeVisible();
+
+    const box = await dialog.boundingBox();
+    expect(box).not.toBeNull();
+    expect(Math.round(box!.width)).toBe(560);
+
+    // Varsayılan kabuğun 480px'ine DÜŞMEDİĞİ ayrıca ve AÇIKÇA iddia edilir:
+    // `max-width` ezmesi silinirse ölçülen genişlik tam olarak buraya düşer.
+    expect(Math.round(box!.width)).not.toBe(480);
+
+    // Hesaplanmış `max-width` de 560px'tir — `.modal`ın 480px'i EZİLMİŞTİR.
+    const computedMaxWidth = await dialog.evaluate((el) => getComputedStyle(el).maxWidth);
+    expect(computedMaxWidth).toBe("560px");
+  });
+
   test("geçerli kod KAYDEDİLİR; kayıt aramayla bulunur", async ({ page }) => {
     await openChartOfAccounts(page);
     await page.getByTestId("hp-create").click();
