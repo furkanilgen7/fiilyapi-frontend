@@ -120,6 +120,29 @@ describe("DateInput — kullanıcı girişi ISO döndürür", () => {
     expect(el).toHaveValue(tr);
   });
 
+  it("🔴 DOLU tarihi düzenlerken yarım kalan metin SİLİNMEZ", async () => {
+    // MUTASYON TURU DERSİ: "taslak silinmez" testim BOŞ değerden başlıyordu ve
+    // bu yolu HİÇ ölçmüyordu. Dolu bir tarihten bir karakter silindiğinde ISO
+    // "" olur, ebeveyn value'yu "" yapar — bileşen bunu "dışarıdan geldi"
+    // sanarsa kullanıcının yazdığını ANINDA siler ve tarih DÜZENLENEMEZ olur.
+    render(<ControlledDateInput initial={iso} />);
+    const el = screen.getByRole("textbox", { name: "Tarih" });
+    expect(el).toHaveValue(tr);
+    await userEvent.type(el, "{backspace}");
+    expect(el).toHaveValue("19.07.202");
+  });
+
+  it("🔴 yarım kalan metin tamamlanınca ISO yeniden yayınlanır", async () => {
+    const onIso = vi.fn();
+    render(<ControlledDateInput initial={iso} onIso={onIso} />);
+    const el = screen.getByRole("textbox", { name: "Tarih" });
+    await userEvent.type(el, "{backspace}");
+    expect(onIso).toHaveBeenLastCalledWith("");
+    await userEvent.type(el, "7");
+    expect(el).toHaveValue("19.07.2027");
+    expect(onIso).toHaveBeenLastCalledWith("2027-07-19");
+  });
+
   it("takvimde OLMAYAN gün reddedilir (31.02) — ISO boş kalır", async () => {
     const onValueChange = vi.fn();
     render(<DateInput aria-label="Tarih" value="" onValueChange={onValueChange} />);

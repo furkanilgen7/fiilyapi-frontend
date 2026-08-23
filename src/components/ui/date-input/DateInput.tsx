@@ -39,7 +39,11 @@ export interface DateInputProps
     // `size` burada ÖLÇÜ varyantıdır (DOM'un sayısal `size`ı değil).
     // `type` sabittir: native tarih kontrolüne dönüş biçimi geri kırardı.
     // `value`/`onChange` YERİNE ISO sözleşmesi gelir (aşağıdaki nota bak).
-    "size" | "type" | "value" | "onChange"
+    // `placeholder` de KAPALI: kalıp (`gg.aa.yyyy`) girdinin sözleşmesinin bir
+    // parçasıdır, süsü değil. Açık bırakılsaydı çağıranın verdiği değer
+    // SESSİZCE yutulurdu (bileşen kendi kalıbını sonradan basıyor); kapalı
+    // olunca derleme hatası olur.
+    "size" | "type" | "value" | "onChange" | "placeholder"
   > {
   /** ISO `YYYY-MM-DD` ya da boş dize. Gösterim biçimi bu değerden TÜRETİLİR. */
   value: string;
@@ -98,9 +102,14 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     // yapar. Naif bir "value değişti → taslağı tazele" kuralı kullanıcının
     // yazdığını ANINDA silerdi. Bu yüzden taslağın hangi ISO'dan türediği
     // saklanır; yalnız DIŞARIDAN gelen (bizim yayınlamadığımız) değer tazeler.
-    const syncedIso = useRef(value);
-    if (value !== syncedIso.current) {
-      syncedIso.current = value;
+    //
+    // Bunu REF değil DURUM tutar: render sırasında ref'i değiştirmek eşzamanlı
+    // (concurrent) render'da atılan bir render'ın izini KALICI bırakır ve
+    // tazeleme sessizce atlanabilir. React'in belgelediği desen "prop değişince
+    // durumu ayarla"dır (`useState` + render içinde karşılaştırma).
+    const [syncedIso, setSyncedIso] = useState(value);
+    if (value !== syncedIso) {
+      setSyncedIso(value);
       setDraft(isoToDisplay(value));
     }
 
@@ -108,7 +117,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
 
     function emit(nextDraft: string, nextIso: string) {
       setDraft(nextDraft);
-      syncedIso.current = nextIso;
+      setSyncedIso(nextIso);
       onValueChange(nextIso);
     }
 
