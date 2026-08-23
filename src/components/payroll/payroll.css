@@ -533,3 +533,48 @@
   line-height: var(--leading-normal);
   color: var(--color-text-muted);
 }
+
+/* ═══ F-BORDRO T2 · "Dönem Aç" diyaloğu ═════════════════════════════════════
+   🔴 ONAYLI SAPMA — mockup'ı YOKTUR. Ölçüler kanonik form modalı kabuğundan
+   (`leaves.css` §T4, `Form - Izin Talebi.dc.html`) BİREBİR alınmıştır; yeni
+   bir görsel dil İCAT EDİLMEDİ. Diyalog dar olduğu için `Modal` varsayılan
+   genişliği (480px) korunur — `iz-modal--request`in 600px'i iki kolonlu
+   mockup'a aitti, burada karşılığı yok. */
+
+.bor-form__subtitle {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+/* Ay + yıl TEK satırda (`ProgressPaymentForm` `pp-form__period-row` emsali):
+   ay adı uzundur, yıl dört hanedir — oran bu yüzden 1fr/96px. */
+.bor-form__period-row {
+  display: grid;
+  grid-template-columns: 1fr 96px;
+  gap: var(--space-2);
+}
+
+.bor-form__error {
+  font-size: var(--text-xs);
+  color: var(--color-danger-strong);
+  margin-top: 8px;
+}
+
+/* Pasif düğmenin gerekçesi footer'ın SOL ucunda okunur (S-FRM kanonu). */
+.bor-form__footer-note {
+  margin-right: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-danger-strong);
+}
+
+.bor-form__footer-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}

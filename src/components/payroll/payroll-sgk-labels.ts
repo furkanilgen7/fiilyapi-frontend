@@ -128,9 +128,11 @@ export const SGK_ERROR_FALLBACK = "SGK bildirim özeti yüklenemedi.";
 export const SGK_PERIODS_ERROR_FALLBACK = "Bordro dönemleri yüklenemedi.";
 
 /**
- * 🔴 K3 — hiç dönem yoksa AÇIKLAYICI boş durum basılır ve **dönem açma
- * DÜĞMESİ ÇİZİLMEZ** (`POST /payroll/periods` ucu var ama formunun mockup'ı
- * yok, uydurulmaz).
+ * 🔴 K3 — hiç dönem yoksa AÇIKLAYICI boş durum basılır.
+ *
+ * 🔴 F-BORDRO T2 — dönem açma düğmesi BU ekranda çizilmez (SGK mockup'ı da
+ * çizmez); tek giriş noktası `Aylık Bordro` başlığıdır. Gövde metni zaten
+ * "ekran yok" demiyordu, bu yüzden DEĞİŞMEDİ — yalnız bu not tazelendi.
  */
 export const SGK_EMPTY_TITLE = "Henüz bordro dönemi yok";
 export const SGK_EMPTY_BODY =

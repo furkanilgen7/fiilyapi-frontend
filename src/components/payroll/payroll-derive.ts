@@ -1,6 +1,7 @@
 import type {
   PayrollLineResponse,
   PayrollPeriodListRow,
+  PayrollPeriodStatus,
   PayrollSectionResponse,
   WorkerSource,
 } from "@/lib/api/hooks/usePayroll";
@@ -62,6 +63,90 @@ export function periodNavigation(
     nextId: sorted[index + 1]?.id,
     current: sorted[index],
   };
+}
+
+/* ---------------------------------------------------- dönem açma formu */
+
+/**
+ * `POST /payroll/periods` gövdesinin yıl sınırları — şemadan ÖLÇÜLDÜ
+ * (`PayrollPeriodCreate.year`, `ge=2000 le=2100`). Uydurulmadı.
+ */
+export const MIN_PAYROLL_YEAR = 2000;
+export const MAX_PAYROLL_YEAR = 2100;
+
+export interface PeriodSuggestion {
+  year: number;
+  month: number;
+}
+
+/**
+ * F-BORDRO T2 · "Dönem Aç" formunun AÇILIŞ değerleri = en yeni dönemin BİR
+ * SONRAKİ ayı (Aralık → izleyen yılın Ocak'ı).
+ *
+ * 🔴 `new Date()` KULLANILMAZ ve bu bilinçlidir: bu ekranın hiçbir yüzeyi
+ * istemci takvimini okumaz (F-BOR T7'nin "TARİH BAĞIMSIZ" kadraj kararı).
+ * Okusaydı modalın görsel karesi HER AY başka bir değer basar ve baseline
+ * kendiliğinden çürürdü. Öneri VERİDEN türer.
+ *
+ * Hiç dönem yoksa öneri de YOKTUR: ilk kurulumda "doğru" ay bilinemez,
+ * uydurulmuş bir yıl basmaktansa alan boş kalır ve kullanıcı kendi ayını
+ * yazar.
+ */
+export function nextPeriodSuggestion(
+  rows: readonly PayrollPeriodListRow[],
+): PeriodSuggestion | undefined {
+  const sorted = sortPeriodsChronologically(rows);
+  const newest = sorted[sorted.length - 1];
+  if (newest === undefined) return undefined;
+  return newest.month === 12
+    ? { year: newest.year + 1, month: 1 }
+    : { year: newest.year, month: newest.month + 1 };
+}
+
+/**
+ * "Dönem Aç" formunun kapısı — pasif düğmenin GÖRÜNÜR gerekçesi.
+ *
+ * 🔴 Sunucu bu kuralların HEPSİNİ kendi de uygular (422 · 409); buradaki
+ * doğrulama onu İKAME ETMEZ, yalnız ÖNCELER. Kullanıcı "zaten açılmış" bir ayı
+ * göndermeden önce öğrenir; yine de gönderilirse 409 metni ekrana basılır
+ * (yarış: başka bir kullanıcı aynı ayı bu arada açmış olabilir).
+ */
+export function periodFormBlockReason(input: {
+  year: number | null;
+  month: number | null;
+  rows: readonly PayrollPeriodListRow[];
+}): string | undefined {
+  if (input.year === null) return "Yıl girin.";
+  if (input.year < MIN_PAYROLL_YEAR || input.year > MAX_PAYROLL_YEAR) {
+    return `Yıl ${MIN_PAYROLL_YEAR}-${MAX_PAYROLL_YEAR} aralığında olmalı.`;
+  }
+  if (input.month === null) return "Ay seçin.";
+  if (input.rows.some((row) => row.year === input.year && row.month === input.month)) {
+    return "Bu ay için bordro dönemi zaten açılmış.";
+  }
+  return undefined;
+}
+
+/**
+ * F-BORDRO T3 · `Hesapla` düğmesinin kapısı — 🔴 durum kümesi KODDAN ÖLÇÜLDÜ
+ * (`payroll/service.py:73` `LOCKED_PERIOD_STATUSES = {approved, paid}`),
+ * tahmin edilmedi. `draft` ve `pending_approval` hesaplanabilir; ötekiler
+ * **409** döner.
+ *
+ * Uçsuz/kapalı düğme SİLİNMEZ, devre dışı basılır ve gerekçe GÖRÜNÜR (K11).
+ */
+export function computeDisabledReason(
+  status: PayrollPeriodStatus,
+  canWrite: boolean,
+): string | undefined {
+  if (!canWrite) return "Bordro yazma izniniz yok.";
+  if (status === "paid") {
+    return "Dönem ödendi; ödenmiş bir bordro yeniden hesaplanamaz.";
+  }
+  if (status === "approved") {
+    return "Dönem onaylandı; yeniden hesaplamak için önce onayın geri alınması gerekir.";
+  }
+  return undefined;
 }
 
 /* -------------------------------------------------------------- bölümler */

@@ -1,7 +1,112 @@
+import { readFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
+import nodePath from "node:path";
 
 // YALNIZ tip: derleme sonrasi silinir, Playwright calisma zamanina sizmaz.
 import type { components } from "@/lib/api/schema";
+
+/* ══════════════ SÖZLEŞME SORGU KISITLARI (F-BORDRO T1) ══════════════════════
+ * 🔴 SAHTE-YEŞİLİN YEDİNCİ HÂLİ. Sahte backend `limit`i DOĞRULAMIYOR,
+ * KIRPIYORDU (`Math.min(...)`) ve kendi tavanını `240` yazmıştı — yani
+ * frontend'in HATASINI taklit ediyordu. Sonuç: `PAYROLL_PERIODS_LIMIT = 240`
+ * canlıda HER çağrıda 422 üretirken (`Input should be less than or equal to
+ * 200`) 6173 birim testi, e2e'ler ve dört kapı da YEŞİL geçti.
+ *
+ * Kısıtlar bu yüzden UYDURULMAZ, `openapi.json`dan OKUNUR ve TEK bir kapıda
+ * uygulanır — 28 ayrı `limit` okuma yerini tek tek düzeltmek yerine istek
+ * girişinde bir kez bakılır, böylece SONRADAN eklenen uçlar da kapsanır.
+ * ================================================================= */
+
+interface MockQuerySchema {
+  maximum?: number;
+  minimum?: number;
+}
+
+interface MockQueryRule {
+  /** Şablon yolun (`/x/{id}`) somut yola uyan hâli. */
+  matcher: RegExp;
+  params: Map<string, MockQuerySchema>;
+}
+
+function loadQueryConstraints(): MockQueryRule[] {
+  const file = nodePath.join(process.cwd(), "openapi", "openapi.json");
+  const spec = JSON.parse(readFileSync(file, "utf8")) as {
+    paths: Record<
+      string,
+      Record<string, { parameters?: { name: string; in: string; schema?: MockQuerySchema }[] }>
+    >;
+  };
+  const rules: MockQueryRule[] = [];
+  for (const [template, operations] of Object.entries(spec.paths)) {
+    const params = new Map<string, MockQuerySchema>();
+    for (const operation of Object.values(operations)) {
+      for (const parameter of operation.parameters ?? []) {
+        if (parameter.in !== "query") continue;
+        const schema = parameter.schema ?? {};
+        // Yalnız SAYISAL kısıt taşıyan parametreler; ötekiler bu kapının işi değil.
+        if (schema.maximum === undefined && schema.minimum === undefined) continue;
+        params.set(parameter.name, { maximum: schema.maximum, minimum: schema.minimum });
+      }
+    }
+    if (params.size === 0) continue;
+    const pattern = `^${template
+      .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+      .replace(/\\\{[^}]+\\\}/g, "[^/]+")}$`;
+    rules.push({ matcher: new RegExp(pattern), params });
+  }
+  return rules;
+}
+
+/** TEK KEZ okunur — her istekte 1,6 MB ayrıştırmak testleri yavaşlatırdı. */
+const QUERY_CONSTRAINTS: MockQueryRule[] = loadQueryConstraints();
+
+/**
+ * FastAPI'nin ürettiği 422 gövdesini BİREBİR taklit eder: kullanıcının canlıda
+ * gördüğü metin (`Input should be less than or equal to 200`) buradan gelir.
+ * Yaklaşık bir mesaj yazmak, hatayı ekranda arayan testi kandırırdı.
+ */
+function queryConstraintViolation(
+  requestPath: string,
+  searchParams: URLSearchParams,
+): unknown | null {
+  const rule = QUERY_CONSTRAINTS.find((candidate) => candidate.matcher.test(requestPath));
+  if (rule === undefined) return null;
+  for (const [name, schema] of rule.params) {
+    const raw = searchParams.get(name);
+    if (raw === null) continue;
+    const value = Number(raw);
+    // Sayı OLMAYAN değer ayrı bir hata sınıfıdır (`int_parsing`) ve bu kapının
+    // işi değildir — sessizce geçirilir, uç kendi davranışını sürdürür.
+    if (!Number.isFinite(value)) continue;
+    if (schema.maximum !== undefined && value > schema.maximum) {
+      return {
+        detail: [
+          {
+            type: "less_than_equal",
+            loc: ["query", name],
+            msg: `Input should be less than or equal to ${schema.maximum}`,
+            input: raw,
+            ctx: { le: schema.maximum },
+          },
+        ],
+      };
+    }
+    if (schema.minimum !== undefined && value < schema.minimum) {
+      return {
+        detail: [
+          {
+            type: "greater_than_equal",
+            loc: ["query", name],
+            msg: `Input should be greater than or equal to ${schema.minimum}`,
+            input: raw,
+            ctx: { ge: schema.minimum },
+          },
+        ],
+      };
+    }
+  }
+  return null;
+}
 
 // exp'i uzak gelecekte olan sahte JWT (base64url payload).
 function fakeJwt(): string {
@@ -6468,6 +6573,12 @@ export function startMockBackend(port: number): { server: Server; close: () => P
 
     if (method === "GET" && path === "/auth/me") return send(200, ME);
 
+    // 🔴 SÖZLEŞME KAPISI — sorgu kısıtları TEK yerde uygulanır (yukarıdaki
+    // blok). Kimlik kontrolünden SONRA gelir: gerçek FastAPI'de de 401,
+    // gövde/parametre doğrulamasından önce döner.
+    const queryViolation = queryConstraintViolation(path, parsed.searchParams);
+    if (queryViolation !== null) return send(422, queryViolation);
+
     // F-TKV T6 — milestone id sayaci. `Date.now()` YASAK (determinizm):
     // fikstürler `ms-1`..`ms-3` kullaniyor, yeni satirlar `ms-4`ten devam eder.
     const nextMilestoneId = () => `ms-${++milestoneSeq}`;
@@ -11795,6 +11906,17 @@ export function startMockBackend(port: number): { server: Server; close: () => P
             status: "draft",
             isSgkSubmitted: false,
           }),
+          // 🔴🔴 F-BORDRO T1 — **AY AÇILIR, DOLDURULMAZ** (`payroll/router.py`
+          // `create_payroll_period_endpoint`: *"Ay AÇAR, doldurmaz — satırlar
+          // `compute` ucundan gelir."*).
+          //
+          // Burası daha önce TOHUMLANMIŞ 7 satırlık DOLU bir dönem döndürüyordu
+          // ve bu, modülün gerçek İLK KURULUM hâlini harness'ta YAPISAL OLARAK
+          // imkânsız kılıyordu: 6173 testlik paket "dönem açtım ama tablo boş"
+          // durumunu hiç göremedi, çünkü sahte backend'de öyle bir durum
+          // OLUŞAMIYORDU. Canlıdaki *"bordro kısmı çalışmıyor"* kusuru tam
+          // olarak buydu. Kanıt: `e2e/payroll-api.spec.ts`.
+          lines: [],
           payment_due_date:
             body.payment_due_date === undefined || body.payment_due_date === null
               ? null
@@ -11809,21 +11931,85 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     if (payrollComputeMatch && method === "POST") {
       const period = findPayrollPeriod(payrollComputeMatch[1]);
       if (period === undefined) return send(404, { detail: "Dönem bulunamadı." });
-      // Satırlar tohumda zaten açıktır; yeniden hesap ELLE DÜZELTİLMİŞ (S6) ve
-      // ONAYLI/ÖDENMİŞ (S5) satırları KORUR ve bunu sayaçla söyler.
+      // 🔴 F-BORDRO T1 — KİLİTLİ DÖNEM 409 (`service.py`
+      // `LOCKED_PERIOD_STATUSES` = {approved, paid}). Sahte backend burada
+      // 200 dönüyordu; `Hesapla` düğmesinin etkin olduğu durum kümesini
+      // sınayan HER test sahte-yeşil geçerdi.
+      if (period.status === "approved" || period.status === "paid") {
+        return send(409, { detail: "Onaylanmış veya ödenmiş dönem yeniden hesaplanamaz." });
+      }
+
+      // 🔴 F-BORDRO T1 — `compute` ARTIK GERÇEKTEN HESAPLIYOR. Eskiden yalnız
+      // mevcut satırları SAYIYORDU ve `created` SABİT `0` basıyordu; oysa
+      // şema `created`ı *"Yeni açılan satır sayısı"* diye tanımlar — yani
+      // ucun ASIL İŞİ. Yeniden hesap ELLE DÜZELTİLMİŞ (S6) ve ONAYLI/ÖDENMİŞ
+      // (S5) satırları KORUR ve bunu sayaçla söyler (sessiz atlama yok).
+      let computeCreated = 0;
       let computeUpdated = 0;
       let computeSkippedOverridden = 0;
       let computeSkippedApproved = 0;
-      for (const line of period.lines) {
-        if (line.isOverridden) computeSkippedOverridden += 1;
-        else if (line.approval !== "pending") computeSkippedApproved += 1;
-        else computeUpdated += 1;
+
+      const computeApproval = payrollApprovalFor(period.status);
+      // 🔴 Önceki satırlar AYRI bir değişkene alınır: `period.lines` doğrudan
+      // okunsaydı iddia "atama map bittikten SONRA olur" gibi ince bir
+      // değerlendirme sırası kuralına dayanırdı. Kapalı dünya: satırların TEK
+      // kaynağı `PAYROLL_LINE_SEEDS`tir, bu yüzden yeniden kurulan dizi mevcut
+      // satırların hepsini kapsar.
+      const previousLines = period.lines;
+      period.lines = PAYROLL_LINE_SEEDS.map((lineSeed, index) => {
+        const existing = previousLines.find(
+          (line) => line.personnel_id === lineSeed.personnelId,
+        );
+        if (existing === undefined) {
+          computeCreated += 1;
+          return buildPayrollLine(period.year, period.month, lineSeed, index, computeApproval);
+        }
+        if (existing.isOverridden) {
+          computeSkippedOverridden += 1;
+          return existing;
+        }
+        if (existing.approval !== "pending") {
+          computeSkippedApproved += 1;
+          return existing;
+        }
+        computeUpdated += 1;
+        // Yeniden hesap ücret/günü TAZELER; kullanıcının banka/elden bölüşümü
+        // bir DÜZELTME değil bir TERCİHTİR ve korunur.
+        return {
+          ...existing,
+          days: lineSeed.baseDays,
+          grossKurus: payrollSeedGross(lineSeed, period.month),
+        };
+      });
+
+      // K4 — aynı yılda bu aydan ÖNCE gelen ve henüz açılmamış ya da TASLAK
+      // olan dönem sayısı: kümülatif vergi matrahı EKSİK olabilir. Şemada
+      // ZORUNLU bir alandır; basılmadığı için ekran uyarıyı hiç göremiyordu.
+      let missingPrior = 0;
+      for (let priorMonth = 1; priorMonth < period.month; priorMonth += 1) {
+        const prior = findPayrollPeriod(payrollPeriodId(period.year, priorMonth));
+        if (prior === undefined || prior.status === "draft") missingPrior += 1;
       }
+
+      // T6 — hesaplanan dönem KENDİLİĞİNDEN onaya düşer; ödenebilir tek satır
+      // bile çıkmadıysa `draft` KALIR (`_promote_period_after_compute`).
+      if (
+        period.status === "draft" &&
+        period.lines.some(
+          (line) =>
+            payrollLineStatus(line, payrollLineAmounts(payrollState, period, line)) ===
+            "pending",
+        )
+      ) {
+        period.status = "pending_approval";
+      }
+
       return send(200, {
-        created: 0,
+        created: computeCreated,
         updated: computeUpdated,
         skipped_overridden: computeSkippedOverridden,
         skipped_approved: computeSkippedApproved,
+        missing_prior_period_count: missingPrior,
       });
     }
 
@@ -14955,19 +15141,39 @@ function buildPayrollPeriod(seed: PayrollPeriodSeed): MockPayrollPeriod {
     sgk_submitted_at: seed.isSgkSubmitted
       ? `${payrollDueDate(seed.year, seed.month)}T11:15:00Z`
       : null,
-    lines: PAYROLL_LINE_SEEDS.map((lineSeed, index) => ({
-      id: `pl-${seed.year}-${String(seed.month).padStart(2, "0")}-${index + 1}`,
-      personnel_id: lineSeed.personnelId,
-      personnel_name: lineSeed.name,
-      personnel_source: lineSeed.source,
-      days: lineSeed.baseDays,
-      grossKurus: payrollSeedGross(lineSeed, seed.month),
-      approval,
-      bankKurus: lineSeed.bankKurus ?? null,
-      isOverridden: false,
-      overriddenAt: null,
-      previousGrossKurus: null,
-    })),
+    lines: PAYROLL_LINE_SEEDS.map((lineSeed, index) =>
+      buildPayrollLine(seed.year, seed.month, lineSeed, index, approval),
+    ),
+  };
+}
+
+/**
+ * TEK satır — `compute` ucunun ÜRETTİĞİ şey (F-BORDRO T1).
+ *
+ * 🔴 Gövde `buildPayrollPeriod`tan ÇIKARILDI çünkü artık İKİ çağıranı var:
+ * fikstür tohumu (dönem DOLU doğar) ve `compute` (dönem BOŞ açılır, satırları
+ * hesap üretir). Kopyalansaydı iki üretici sessizce ayrışır ve "hesaplanan
+ * satır" ile "tohumlanan satır" farklı alanlar taşımaya başlardı.
+ */
+function buildPayrollLine(
+  year: number,
+  month: number,
+  lineSeed: PayrollLineSeed,
+  index: number,
+  approval: MockPayrollApproval,
+): MockPayrollLine {
+  return {
+    id: `pl-${year}-${String(month).padStart(2, "0")}-${index + 1}`,
+    personnel_id: lineSeed.personnelId,
+    personnel_name: lineSeed.name,
+    personnel_source: lineSeed.source,
+    days: lineSeed.baseDays,
+    grossKurus: payrollSeedGross(lineSeed, month),
+    approval,
+    bankKurus: lineSeed.bankKurus ?? null,
+    isOverridden: false,
+    overriddenAt: null,
+    previousGrossKurus: null,
   };
 }
 
@@ -15000,7 +15206,13 @@ const PAYROLL_NEXT_STATUS: Record<MockPayrollPeriodStatus, MockPayrollPeriodStat
 };
 
 const PAYROLL_LIMIT_DEFAULT = 50;
-const PAYROLL_LIMIT_MAX = 240;
+/**
+ * 🔴 Sözleşme tavanı **200**dür (`payroll/router.py` `_LIMIT`). Burası `240`
+ * yazıyordu — sahte backend, frontend'in hatasını taklit ediyordu. Artık
+ * aşım `queryConstraintViolation` kapısında 422 olur; bu sabit yalnız
+ * kırpma-sonrası güvenlik ağıdır.
+ */
+const PAYROLL_LIMIT_MAX = 200;
 
 /* ---------------------------------------------------------------------- */
 /* F-FIN · ÇEK & SENET (`GET /financial-instruments[/summary]`) fikstürleri */

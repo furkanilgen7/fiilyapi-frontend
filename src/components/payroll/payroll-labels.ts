@@ -200,13 +200,19 @@ export const APPROVE_ERROR_FALLBACK = "Onay işlemi tamamlanamadı.";
 export const PAY_ERROR_FALLBACK = "Ödeme damgası basılamadı.";
 
 /**
- * 🔴 K3 — hiç dönem yoksa AÇIKLAYICI boş durum basılır ve **dönem açma
- * DÜĞMESİ ÇİZİLMEZ**: `POST /payroll/periods` ucu vardır ama formunun
- * mockup'ı YOKTUR, uydurulmaz.
+ * 🔴 K3 — hiç dönem yoksa AÇIKLAYICI boş durum basılır.
+ *
+ * 🔴 F-BORDRO T2 · **KARAR DEĞİŞTİ.** Burası eskiden *"Dönem açma ekranı henüz
+ * çizilmedi"* diyordu ve `POST /payroll/periods` ucunun HİÇBİR yüzeyi yoktu.
+ * Canlıda `payroll_periods` tablosuna satır basan bir migration OLMADIĞI için
+ * (bilinçli — dönemi kullanıcı açar) üç bordro ekranı da KALICI olarak boş
+ * kalıyordu; kullanıcının bildirdiği *"bordro kısmı çalışmıyor"* kusuru buydu.
+ * Yönetim kararı: modülün kullanılamaz kalması, mockup'ı olmayan bir formdan
+ * daha kötüdür ⇒ form kanonik kabuktan TÜRETİLDİ (ONAYLI SAPMA).
  */
 export const EMPTY_TITLE = "Henüz bordro dönemi yok";
 export const EMPTY_BODY =
-  "Bu şirkette açılmış bir bordro dönemi bulunmuyor. Dönem açma ekranı henüz çizilmedi; dönemler açıldığında ay gezgini burada listelenir.";
+  "Bu şirkette açılmış bir bordro dönemi bulunmuyor. Başlıktaki “Dönem Aç” düğmesiyle ilk ayı açın; ay açıldıktan sonra satırları “Hesapla” üretir.";
 
 export const NO_LINES_MESSAGE = "Bu dönemde gösterilecek bordro satırı yok.";
 
@@ -253,6 +259,58 @@ export const SKIP_UNCOMPUTED_LABEL = "hesaplanamadığı için atlanan";
 export const SKIP_EXCLUDED_LABEL = "taşeron olduğu için atlanan";
 export const SKIP_ALREADY_APPROVED_LABEL = "zaten onaylı";
 export const SKIP_UNAPPROVED_LABEL = "onaylanmadığı için ödenmeyen";
+
+/* ------------------------------------------- F-BORDRO · dönem aç + hesapla */
+
+/**
+ * 🔴 ONAYLI SAPMA (F-BORDRO T2/T3): `Bordro Yönetimi.dc.html` başlığı YALNIZ
+ * üç denetim çizer — ay gezgini (50-54) · `Excel` (55) · `Ödemeyi Onayla` (56).
+ * `Dönem Aç` ve `Hesapla` mockup'ta YOKTUR ve mockup'ları da yoktur
+ * (`TASARIM-BRIEFI-2`de bile kayıtlı değil). İkisi de modülün BAŞLANGIÇ
+ * yüzeyidir: onlarsız hiçbir dönem açılamaz ve açılan dönem satırsız kalır —
+ * yani modül kullanılamaz. Sapma bu gerekçeyle onaylandı ve `ROADMAP-FRONTEND`
+ * "Onaylı sapmalar" bölümüne yazıldı. Diğer eksik yüzeyler (satır bazında
+ * onay/ret) mockup'ta ÇİZİLMEDİĞİ için EKLENMEDİ.
+ */
+export const OPEN_PERIOD_LABEL = "Dönem Aç";
+export const COMPUTE_LABEL = "Hesapla";
+
+/* dönem açma diyaloğu */
+export const OPEN_PERIOD_TITLE = "Bordro Dönemi Aç";
+export const OPEN_PERIOD_SUBTITLE =
+  "Ay yalnızca AÇILIR; satırlar bu adımda oluşmaz. Dönem açıldıktan sonra “Hesapla” ile puantaj, ücret ve oranlardan bordro satırları üretilir.";
+export const OPEN_PERIOD_PERIOD_LABEL = "Dönem";
+export const OPEN_PERIOD_YEAR_ARIA = "Bordro yılı";
+export const OPEN_PERIOD_MONTH_ARIA = "Bordro ayı";
+export const OPEN_PERIOD_DUE_LABEL = "Son ödeme tarihi";
+/**
+ * 🔴 Alan OPSİYONELDİR ve bu ÖLÇÜLDÜ (`PayrollPeriodCreate.payment_due_date`
+ * `date | None = None`): sunucu tarih ÜRETMEZ, varsayılan KOYMAZ ve dönemin
+ * yıl/ayıyla tutarlılığını DENETLEMEZ (ödeme sonraki aya sarkabilir).
+ */
+export const OPEN_PERIOD_DUE_HINT =
+  "İsteğe bağlı. Boş bırakılırsa sunucu tarih üretmez; sonradan düzenlenebilir.";
+export const OPEN_PERIOD_SUBMIT_LABEL = "Dönemi Aç";
+export const OPEN_PERIOD_CANCEL_LABEL = "Vazgeç";
+export const OPEN_PERIOD_ERROR_FALLBACK = "Bordro dönemi açılamadı.";
+
+/* hesaplama sonucu */
+export const COMPUTE_ERROR_FALLBACK = "Bordro hesaplanamadı.";
+export const COMPUTE_RESULT_PREFIX = "Oluşturulan satır";
+export const COMPUTE_UPDATED_LABEL = "yeniden hesaplanan";
+export const SKIP_OVERRIDDEN_LABEL = "elle düzeltildiği için korunan";
+export const SKIP_COMPUTE_APPROVED_LABEL = "onaylı/ödenmiş olduğu için korunan";
+
+/**
+ * 🔴 K4 — aynı yılda bu aydan ÖNCE gelen ve henüz açılmamış ya da TASLAK olan
+ * dönem varsa kümülatif vergi matrahı EKSİK olabilir. Sunucu bunu sayıyla
+ * söyler (`missing_prior_period_count`); sessizce yutulursa kullanıcı yanlış
+ * hesaplanmış bir bordroyu doğru sanır.
+ */
+export const COMPUTE_MISSING_PRIOR_TITLE = "Önceki dönemler eksik";
+export function computeMissingPriorBody(count: number): string {
+  return `Bu yılda bu aydan önce gelen ${count} dönem henüz açılmamış ya da taslak durumda. Kümülatif gelir vergisi matrahı EKSİK hesaplanmış olabilir; önceki ayları açıp hesapladıktan sonra bu dönemi yeniden hesaplayın.`;
+}
 
 /** Ödeme vadesi bandı (BY:61-64). */
 export const DUE_DATE_PREFIX = "Son ödeme:";

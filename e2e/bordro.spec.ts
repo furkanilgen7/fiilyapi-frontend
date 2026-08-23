@@ -1,5 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { PAYROLL_PERIODS_LIMIT } from "@/lib/api/hooks/usePayroll";
+
 import { loginForPayroll, pinPayrollPeriods, toKurus } from "./payroll-helpers";
 
 /**
@@ -84,7 +86,12 @@ test("bordro fikstürleri kendi içinde tutarlıdır (K4 bekçisi)", async ({ pa
 
   const list = await getJson<{ items: { id: string }[]; total: number }>(
     page,
-    "/api/backend/payroll/periods?limit=240",
+    // 🔴 Limit ELLE YAZILMAZ. Burası `240` yazıyordu — sözleşme tavanı 200'dür
+    // ve gerçek backend aşımda 422 döner; test, canlıda ölü olan bir çağrıyı
+    // "çalışıyor" diye bekçiliyordu (sahte backend kırpıyordu). Değer artık
+    // ekranın KULLANDIĞI sabitten gelir; o sabit de `query-limits.contract`
+    // bekçisiyle `openapi.json`a bağlıdır.
+    `/api/backend/payroll/periods?limit=${PAYROLL_PERIODS_LIMIT}`,
   );
   // Kırpılma yok: bekçi TÜM dönemleri gördü (aksi hâlde sessizce bir alt kümeyi
   // doğrulayıp "hepsi tutarlı" derdi).
@@ -300,4 +307,77 @@ test("sgk damgasi tek ucustur ve ikinci damga reddedilir", async ({ page }) => {
     `/api/backend/payroll/periods/${periodId}/sgk-submit`,
   );
   expect(second.status()).toBe(409);
+});
+
+/* ── 5) 🔴 F-BORDRO · KULLANICI KUSURU: modül boştan kullanılabilir hâle gelir ─ */
+
+/**
+ * 🔴 Bu test kullanıcının bildirdiği kusurun TA KENDİSİDİR: canlıda
+ * `payroll_periods` tablosuna satır basan bir migration YOKTUR (bilinçli —
+ * dönemi kullanıcı açar), dolayısıyla modül BOŞ açılır. Dönem açma ve hesaplama
+ * yüzeyleri çizilmemiş olduğu için ekran o boşlukta KİLİTLİ kalıyordu:
+ * *"bordro kısmı çalışmıyor"*.
+ *
+ * Akış BAŞTAN SONA yürütülür: boş ekran → dönem aç → SATIRSIZ dönem → hesapla →
+ * satırlar. Uçların üçü de (`POST /payroll/periods` · `.../compute` ·
+ * `GET .../{id}`) gerçekten çağrılır.
+ *
+ * 🔒 MUTASYON ADASI: 2025-05, bu testin TEK sahibi olduğu ay. Süzgeç kadrajı o
+ * aya kilitler; başlangıçta o ay YOKTUR ⇒ ekran gerçekten boş durumda açılır.
+ */
+test("bos bordro modulu donem acilip hesaplanarak kullanilabilir hale gelir", async ({
+  page,
+}) => {
+  await pinPayrollPeriods(page, (row) => row.year === 2025 && row.month === 5);
+
+  await loginForPayroll(page);
+  await page.goto("/bordro");
+  await expect(page.getByTestId("bordro-loaded")).toBeAttached();
+
+  // 1) BAŞLANGIÇ HÂLİ — hiç dönem yok ve ekran bunu açıkça söylüyor.
+  await expect(page.getByTestId("bordro-empty")).toBeVisible();
+  await expect(page.getByTestId("bordro-table")).toHaveCount(0);
+
+  // 🔴 ÇIKIŞ YOLU VAR: eski hâlde bu düğme YOKTU ve kullanıcı burada tıkanıyordu.
+  const openButton = page.getByTestId("bordro-open-period");
+  await expect(openButton).toBeEnabled();
+  await openButton.click();
+
+  // 2) DÖNEM AÇ — alanlar uçtan ölçülen şemaya karşılık gelir.
+  await page.getByTestId("bordro-open-month").selectOption("5");
+  await page.getByTestId("bordro-open-year").fill("2025");
+  await page.getByTestId("bordro-open-submit").click();
+
+  // Açılan dönem seçili hâle geldi (ay gezgini oraya atladı).
+  await expect(page.getByTestId("bordro-period-label")).toHaveText("Mayıs 2025");
+  await expect(page.getByTestId("bordro-empty")).toHaveCount(0);
+
+  // 3) 🔴 AÇILAN DÖNEM SATIRSIZDIR — uç ayı AÇAR, DOLDURMAZ. İkinci duvar
+  //    tam burada: eski sahte backend burayı 7 satır dolu döndürdüğü için
+  //    harness bu hâli hiç üretemiyordu.
+  await expect(page.getByTestId("bordro-loaded")).toBeAttached();
+  await expect(page.getByTestId("bordro-line-pl-2025-05-1")).toHaveCount(0);
+
+  // 4) HESAPLA — satırları bu uç üretir.
+  const compute = page.getByTestId("bordro-compute");
+  await expect(compute).toBeEnabled();
+  await compute.click();
+
+  // Sonuç sayıyla raporlanır (sessiz atlama yok) ve satırlar GERÇEKTEN geldi.
+  await expect(page.getByTestId("bordro-action-result")).toBeVisible();
+  await expect(page.getByTestId("bordro-action-error")).toHaveCount(0);
+  await expect(page.getByTestId("bordro-line-pl-2025-05-1")).toBeVisible();
+  await expect(page.getByTestId("bordro-table")).toBeVisible();
+
+  // Dönem kendiliğinden onaya düştü (T6) — kullanıcı için sıradaki adım budur.
+  await expect(page.getByTestId("bordro-status")).toHaveText("Onay Bekliyor");
+
+  // 5) Aynı ayı ikinci kez açmak ENGELLENİR (409'a gitmeden, formda).
+  await openButton.click();
+  await page.getByTestId("bordro-open-month").selectOption("5");
+  await page.getByTestId("bordro-open-year").fill("2025");
+  await expect(page.getByTestId("bordro-open-block-reason")).toContainText(
+    "zaten açılmış",
+  );
+  await expect(page.getByTestId("bordro-open-submit")).toBeDisabled();
 });
