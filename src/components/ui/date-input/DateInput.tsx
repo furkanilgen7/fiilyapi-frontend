@@ -1,3 +1,10 @@
+// Taslak/secici durumu icin hook kullanir → istemci bileseni olmak ZORUNDA.
+// `ui/` primitive'lerinin cogu hooksuzdur ve bu satira ihtiyac duymaz; emsal
+// `ui/popover/AnchoredPopover.tsx`. 🔴 Bunu DORT KAPIDAN YALNIZ `pnpm build`
+// yakalar: jsdom testleri, typecheck ve lint sorunsuz gecer, sunucu bileseni
+// sinirinda derleme patlar.
+"use client";
+
 import { forwardRef, useRef, useState } from "react";
 
 import { cx } from "@/lib/cx";
