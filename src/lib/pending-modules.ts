@@ -19,14 +19,26 @@
 //   · gerekçe hâlâ okunuyor ama YANLIŞ  → METİN düzeltilir (bu tur),
 //   · gerekçeyi okuyan kimse kalmamış   → ANAHTAR silinir.
 //
-// ⚠️ F-OK T6 (2026-08-23) — yukarıdaki paragrafın "approvals" istisnası ARTIK
-// YANLIŞ: `/onay-kutusu` ekranı BU dilimde yazıldı (nav href guard testi
-// artık catch-all'a değil GERÇEK bir statik rotaya düşüyor). Eksik olan modül
-// DEĞİL, gösterge panelinin `PendingApprovalsCard` yüzeyinin o modülün
-// verisine BAĞLANMASIDIR — backend'in `PendingApprovalsPlaceholder` zarfı
-// hâlâ boş döner (`available` varsayılanı `false`). Yani `approvals` artık
-// istisna DEĞİLDİR; diğer anahtarlarla (`progress_payments`, `invoicing`, …)
-// AYNI kalıba uyar (bkz. aşağıdaki giriş).
+// 🔴 P-YT2 (2026-08-23, backend merge `a843ecd`) — yukarıdaki "⚠️ F-OK T6" notu
+// ARTIK YANLIŞ: `backend/app/modules/dashboard/service.py:106-108` artık
+// `PendingApprovalsPlaceholder(available=True, count=<gerçek toplam>,
+// pending_module="approvals")` döndürüyor. `available` HER ZAMAN `true`,
+// `count` GERÇEK bir sayı; yalnız `items` bilinçli olarak boş kalıyor (backend
+// gerekçesi: mockup satırının dört olgusunu — başlık · tutar · göreli zaman ·
+// aciliyet çipi — sunucuda bir metne yapıştırmak, ekranın vermesi gereken bir
+// sunum kararını sunucuda üretmek olurdu). Gösterge panelinin kartı da
+// düzeltildi: artık `available`a değil `count`/`items`e dallanıyor ve
+// `count === 0`ken boş-durum ipucu satırını BASMIYOR. Sonuç:
+// `pendingModuleLabel("approvals")` artık HİÇBİR ürün kodu tarafından
+// çağrılmıyor.
+//
+// Anahtar yine de SİLİNMEZ: backend'in kendi yorumu (`service.py:38-42`)
+// `pending_module`ın anlamını KASITLI olarak genişletti — "bekleyen" demeye
+// devam etse de artık yalnızca KAYNAĞI işaret eder: "bağlı bir kart da
+// anahtarını taşır, çünkü ekran 'bu sayı nereden geliyor' sorusunu sormaya
+// devam eder". `approvals` artık "modül eksik" istisnası DEĞİL, KAYNAK
+// ETİKETİ örneğidir — diğer anahtarlarla (`progress_payments`, `invoicing`,
+// …) AYNI kalıba uymaz, ondan AYRI bir sınıftadır (bkz. aşağıdaki giriş).
 /**
  * ⚠️ DIŞA AÇIK olmasının TEK nedeni ÇÜRÜME BEKÇİSİDİR (`pending-modules.test.ts`):
  * yeni bir anahtar "<Modül> modülüyle birlikte gelir" kalıbıyla eklenirse test
@@ -40,13 +52,17 @@ export const MODULE_LABELS: Record<string, string> = {
   progress_payments: "Hakediş verisi bu yüzeye henüz bağlanmadı",
   // `/faturalar` (+ `/faturalar/kes`, detay) CANLI.
   invoicing: "Fatura verisi bu yüzeye henüz bağlanmadı",
-  // 🔴 F-OK T6 · DÜZELTİLDİ (2026-08-23). `/onay-kutusu` ekranı BU dilimde
-  // yazıldı — eski metin ("Onay kutusuyla birlikte gelir") artık YALAN: modül
-  // var, rota GERÇEK. Anahtar SİLİNMEZ: backend'in `PendingApprovalsPlaceholder`
-  // zarfı hâlâ boş döner (`available: false` varsayılanı) — eksik olan modül
-  // değil, gösterge panelinin bu yüzeyinin (`PendingApprovalsCard`) onay
-  // verisine BAĞLANMAMIŞ OLMASIDIR.
-  approvals: "Onay verisi bu yüzeye henüz bağlanmadı",
+  // 🔴 P-YT2 · DÜZELTİLDİ (2026-08-23, backend merge `a843ecd`). Önceki not
+  // burada da aynı YALANI tekrarlıyordu: "PendingApprovalsPlaceholder zarfı
+  // hâlâ boş döner". ÖLÇÜLDÜ — artık dönmüyor: `available` HER ZAMAN `true`,
+  // `count` GERÇEK bir toplam (yalnız `items` bilinçli boş). Gösterge
+  // panelinin kartı (`PendingApprovalsCard`) bu veriye bağlandı; eksik olan
+  // BAĞLANTI değil. Anahtar yine de SİLİNMEZ — backend'in kendi yorumu
+  // (`service.py:38-42`) `pending_module`ı artık bir KAYNAK ETİKETİ olarak
+  // tanımlıyor: "bağlı bir kart da anahtarını taşır, çünkü ekran 'bu sayı
+  // nereden geliyor' sorusunu sormaya devam eder". Metin de bunu söylüyor —
+  // eksik bir bağlantı VAAT ETMİYOR, sayının KAYNAĞINI adlandırıyor.
+  approvals: "Onay verisi Onay Kutusu ekranından gelir",
   // Gösterge panelinin `risks` listesi. Anahtar `inventory` ama eksik olan stok
   // DEĞİL (`/stok` canlı): riski hesaplayan bir uç HİÇ yoktur.
   inventory: "Risk listesi henüz hiçbir uçtan hesaplanmıyor",

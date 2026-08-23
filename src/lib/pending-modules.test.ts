@@ -21,13 +21,14 @@ describe("pendingModuleLabel", () => {
     expect(pendingModuleLabel("inventory")).toBe("Risk listesi henüz hiçbir uçtan hesaplanmıyor");
   });
 
-  // 🔴 F-OK T6 (2026-08-23) · BU İDDİA TASARIM GEREĞİ KIRILDI: yukarıdaki
-  // yorum "/onay-kutusu YAZILMADI" derken tam olarak onu yazan dilim geldi.
-  // Eski metin ("Onay kutusuyla birlikte gelir") artık YALAN olurdu; yeni
-  // metin modülün VAR olduğunu ama gösterge panelinin ona henüz bağlanmadığını
-  // söylüyor (`PendingApprovalsPlaceholder` backend'de hâlâ boş zarf döner).
-  it("approvals metni DEGISTI - '/onay-kutusu' artik yazildi, panel baglanmadi", () => {
-    expect(pendingModuleLabel("approvals")).toBe("Onay verisi bu yüzeye henüz bağlanmadı");
+  // 🔴 P-YT2 (2026-08-23, backend merge `a843ecd`) · BU İDDİA YİNE KIRILDI —
+  // ama bu kez ÇÖZÜLME yönünde. Bir önceki tur (F-OK T6) metni "panel
+  // bağlanmadı"ya çevirmişti; ÖLÇÜLDÜ, backend artık `available=True` +
+  // gerçek `count` döndürüyor ve kart bu veriye bağlandı. Metin artık eksik
+  // bir bağlantı VAAT ETMİYOR, sayının KAYNAĞINI (Onay Kutusu ekranı)
+  // adlandırıyor — anahtar "modül yok" istisnası değil, KAYNAK ETİKETİ.
+  it("approvals metni DEGISTI - panel BAGLANDI, metin artik KAYNAK etiketi", () => {
+    expect(pendingModuleLabel("approvals")).toBe("Onay verisi Onay Kutusu ekranından gelir");
   });
 
   it("P1 anahtarlarini esler", () => {
@@ -196,10 +197,12 @@ describe("pendingModuleLabel", () => {
 describe("MODULE_LABELS — bayat 'modül gelecek' kalıbı yasağı", () => {
   // 🔴 F-OK T6 (2026-08-23) — istisna KAPANDI: `/onay-kutusu` bu dilimde
   // yazıldı ve `approvals` metni "… birlikte gelir" kalıbından "… henüz
-  // bağlanmadı" kalıbına döndü (bkz. pending-modules.ts). Artık hiçbir anahtar
-  // gerçekten yazılmamış bir modül VAAT ETMİYOR — küme BOŞ kalır. Yeniden
-  // gerçekten yazılmamış bir modül için bir anahtar eklenirse buraya da
-  // EKLENİR; sessizce boş bırakılmaz.
+  // bağlanmadı" kalıbına döndü. 🔴 P-YT2 (2026-08-23, backend merge `a843ecd`)
+  // — metin BİR TUR DAHA değişti: kart artık gerçek `count`a bağlı, "…
+  // ekranından gelir" bir KAYNAK ETİKETİ. Hiçbiri "… birlikte gelir" kalıbına
+  // dönmedi (bkz. pending-modules.ts), dolayısıyla küme hâlâ BOŞ kalır. Bir
+  // gün gerçekten yazılmamış bir modül için "… birlikte gelir" gerekçeli bir
+  // anahtar eklenirse buraya da EKLENİR; sessizce boş bırakılmaz.
   const ALLOWED_MODULE_PROMISES = new Set<string>([]);
 
   // ⚠️ Tek tek `expect` YAZILMAZ: ilk başarısızlıkta test durur ve geri kalan
