@@ -17,6 +17,7 @@ const sections = [
   "section-buttons",
   "section-inputs",
   "section-fields",
+  "section-date-input",
   "section-controls",
   "section-badges",
   "section-alerts",

@@ -1,0 +1,145 @@
+import { forwardRef, useRef, useState } from "react";
+
+import { cx } from "@/lib/cx";
+import { formatDateDots, parseDateDots } from "@/lib/format";
+import { CalendarIcon } from "@/components/ui/icons";
+import type { InputSize, InputStatus } from "../input/Input";
+// 🔴 CSS'i BİLEŞENİN KENDİSİ getirir. Çağırana bırakılırsa dört kapı da 5.
+// kapı da GÖRMEZ (stil eksikliği DOM'u değiştirmez) — bkz.
+// `subcontractor-contract-form/ContractTermsCard.tsx` başlığındaki uyarı.
+import "./date-input.css";
+
+/** TR kullanıcının gördüğü ve yazdığı kalıp. */
+const DISPLAY_PLACEHOLDER = "gg.aa.yyyy";
+
+export interface DateInputProps
+  extends Omit<
+    React.InputHTMLAttributes<HTMLInputElement>,
+    // `size` burada ÖLÇÜ varyantıdır (DOM'un sayısal `size`ı değil).
+    // `type` sabittir: native tarih kontrolüne dönüş biçimi geri kırardı.
+    // `value`/`onChange` YERİNE ISO sözleşmesi gelir (aşağıdaki nota bak).
+    "size" | "type" | "value" | "onChange"
+  > {
+  /** ISO `YYYY-MM-DD` ya da boş dize. Gösterim biçimi bu değerden TÜRETİLİR. */
+  value: string;
+  /**
+   * ISO `YYYY-MM-DD` (ya da girdi ayrıştırılamıyorsa boş dize) döndürür.
+   *
+   * 🔴 NEDEN `onChange` DEĞİL: DOM olayı görünen TR metni taşır. Prop adı
+   * korunsaydı mevcut `onChange={(e) => set(alan, e.target.value)}` çağrıları
+   * tip denetiminden GEÇER ve "19.07.2026"yı sunucuya ISO sanarak yazardı —
+   * sessiz veri bozulması. Ad değiştiği için 38 çağrı yerinin hepsi göç
+   * edene kadar DERLEME HATASI verir: tip sistemi göçün bekçisidir.
+   */
+  onValueChange: (isoDate: string) => void;
+  status?: InputStatus;
+  size?: InputSize;
+}
+
+/**
+ * TR biçimli tarih girdisi — `gg.aa.yyyy` gösterir, ISO `YYYY-MM-DD` taşır.
+ *
+ * 🔴 NEDEN NATIVE `<input type="date">` KULLANILMIYOR (F-DATE T0 ölçümü,
+ * `scripts/date-locale-probe.mjs`): native kontrolün gösterim biçimi YALNIZCA
+ * tarayıcının ARAYÜZ DİLİNE bağlıdır. `document.lang="tr"`, `Intl` varsayılanı
+ * ve `Accept-Language` biçimi DEĞİŞTİRMEZ (kare bayt bayt aynı çıktı). Arayüz
+ * dili bir OS/tarayıcı ayarıdır ve web uygulamasının ona erişimi YOKTUR —
+ * yani biçim kullanıcıdan kullanıcıya değişir: İngilizce arayüzlü Chrome
+ * kullanan bir TR şantiye müdürü `07/19/2026` görür.
+ *
+ * Hedef biçim UYDURULMADI: `projedesign/`de tarih METİN olarak 144 kez
+ * yazılmış ve 144'ü de `gg.aa.yyyy`; `mm/dd/yyyy` SIFIR. Chromium da Türkçe
+ * arayüzde tam olarak `19.07.2026` basar.
+ *
+ * Takvim seçici KORUNUR (yönetim kararı 2026-08-23): gizli bir native tarih
+ * girdisi `showPicker()` ile açılır — özel takvim UI'ı ÇİZİLMEZ (mockup'ların
+ * çizmediği takvim davranışları kapsam dışı).
+ */
+export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
+  (
+    {
+      value,
+      onValueChange,
+      status = "default",
+      size = "form",
+      className,
+      disabled,
+      readOnly,
+      ...rest
+    },
+    ref,
+  ) => {
+    // Kullanıcı yazarken gösterim ARA HÂLLERDEN geçer ("19.07.20") ve bunlar
+    // ISO'ya çevrilemez. Taslak bu yüzden ayrı tutulur.
+    const [draft, setDraft] = useState(() => formatDateDots(value));
+
+    // 🔴 DENETİMLİ DÖNGÜ TUZAĞI: yarım girdi "" yayınlar, ebeveyn `value`yi ""
+    // yapar. Naif bir "value değişti → taslağı tazele" kuralı kullanıcının
+    // yazdığını ANINDA silerdi. Bu yüzden taslağın hangi ISO'dan türediği
+    // saklanır; yalnız DIŞARIDAN gelen (bizim yayınlamadığımız) değer tazeler.
+    const syncedIso = useRef(value);
+    if (value !== syncedIso.current) {
+      syncedIso.current = value;
+      setDraft(formatDateDots(value));
+    }
+
+    const pickerRef = useRef<HTMLInputElement>(null);
+
+    function emit(nextDraft: string, nextIso: string) {
+      setDraft(nextDraft);
+      syncedIso.current = nextIso;
+      onValueChange(nextIso);
+    }
+
+    return (
+      <span className="date-input-wrap">
+        <input
+          {...rest}
+          ref={ref}
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder={DISPLAY_PLACEHOLDER}
+          disabled={disabled}
+          readOnly={readOnly}
+          value={draft}
+          onChange={(event) => emit(event.target.value, parseDateDots(event.target.value))}
+          className={cx(
+            "date-input",
+            status !== "default" && `date-input--${status}`,
+            size !== "form" && `date-input--${size}`,
+            className,
+          )}
+        />
+        {/* Gizli native kontrol YALNIZ takvim penceresini açmak için durur.
+            `aria-hidden` + `tabIndex=-1`: ekran okuyucuya ikinci bir alan
+            gibi görünmez ve sekme sırasına durak EKLEMEZ. `id` VERİLMEZ —
+            Field'in id'si tektir ve görünen girdiye aittir. */}
+        <input
+          ref={pickerRef}
+          type="date"
+          className="date-input-picker"
+          tabIndex={-1}
+          aria-hidden="true"
+          disabled={disabled || readOnly}
+          value={parseDateDots(draft)}
+          onChange={(event) =>
+            emit(formatDateDots(event.target.value), event.target.value)
+          }
+        />
+        <button
+          type="button"
+          className="date-input-trigger"
+          tabIndex={-1}
+          aria-hidden="true"
+          disabled={disabled || readOnly}
+          onClick={() => pickerRef.current?.showPicker()}
+        >
+          <CalendarIcon />
+        </button>
+      </span>
+    );
+  },
+);
+
+DateInput.displayName = "DateInput";

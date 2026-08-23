@@ -1,5 +1,5 @@
-import { createRef } from "react";
-import { render, screen } from "@testing-library/react";
+import { createRef, useState } from "react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 
@@ -18,6 +18,32 @@ import { DateInput } from "./DateInput";
 
 const iso = "2026-07-19";
 const tr = "19.07.2026";
+
+/**
+ * Gerçek çağrı yerlerinin modeli: `value` ebeveyn durumunda tutulur.
+ * Denetimli bir bileşen ebeveyn `value`yi güncellemezse gösterimi geri alır —
+ * bu DOĞRU davranıştır, bu yüzden gidiş-dönüş iddiaları harness ile kurulur.
+ */
+function ControlledDateInput({
+  initial = "",
+  onIso,
+  ...rest
+}: { initial?: string; onIso?: (v: string) => void } & Partial<
+  React.ComponentProps<typeof DateInput>
+>) {
+  const [value, setValue] = useState(initial);
+  return (
+    <DateInput
+      aria-label="Tarih"
+      {...rest}
+      value={value}
+      onValueChange={(next) => {
+        setValue(next);
+        onIso?.(next);
+      }}
+    />
+  );
+}
 
 describe("DateInput — gösterim/değer sözleşmesi", () => {
   it("ISO değeri TR biçiminde gösterir", () => {
@@ -70,6 +96,15 @@ describe("DateInput — kullanıcı girişi ISO döndürür", () => {
     const el = screen.getByRole("textbox", { name: "Tarih" });
     await userEvent.type(el, "19.07.20");
     expect(el).toHaveValue("19.07.20");
+  });
+
+  it("🔴 GİDİŞ-DÖNÜŞ: denetimli ebeveynle yazılan tarih ekranda KALIR", async () => {
+    // Ebeveyn ISO'yu geri beslediğinde taslak tazelenir; tazeleme aynı metni
+    // üretmezse kullanıcı yazdıkça imleç/metin zıplardı.
+    render(<ControlledDateInput />);
+    const el = screen.getByRole("textbox", { name: "Tarih" });
+    await userEvent.type(el, tr);
+    expect(el).toHaveValue(tr);
   });
 
   it("takvimde OLMAYAN gün reddedilir (31.02) — ISO boş kalır", async () => {
@@ -232,6 +267,30 @@ describe("DateInput — takvim seçici (yönetim kararı: KORUNUR)", () => {
     expect(tabbable).toHaveLength(1);
   });
 
+  it("🔴 YAPISAL: gizli seçici girdisi erişilebilirlik ağacından gizlidir", () => {
+    // 🔴 MUTASYON TURU DERSİ: bu olgu ÖNCE yalnız `getAllByRole("textbox")`
+    // ile kontrol ediliyordu ve gizli girdiden `aria-hidden` SİLİNDİĞİNDE test
+    // YEŞİL KALDI — jsdom `input[type=date]`i `textbox` rolüne eşlemiyor.
+    // Rol sorgusu burada bekçilik ETMİYOR; iddia YAPIYA bağlandı.
+    const { container } = render(
+      <DateInput aria-label="Tarih" value="" onValueChange={() => {}} />,
+    );
+    expect(container.querySelector('input[type="date"]')).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+  });
+
+  it("🔴 YAPISAL: gizli seçici girdisi sekme durağı DEĞİLDİR", () => {
+    const { container } = render(
+      <DateInput aria-label="Tarih" value="" onValueChange={() => {}} />,
+    );
+    expect(container.querySelector('input[type="date"]')).toHaveAttribute(
+      "tabindex",
+      "-1",
+    );
+  });
+
   it("🔴 YAPISAL: erişilebilirlik ağacında TEK bir textbox vardır", () => {
     // Gizli `type=date` eşlikçisi ekran okuyucuya ikinci bir alan gibi
     // görünmemeli.
@@ -249,17 +308,41 @@ describe("DateInput — takvim seçici (yönetim kararı: KORUNUR)", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("seçiciden gelen ISO doğrudan yayınlanır", async () => {
+  it("seçiciden gelen ISO doğrudan yayınlanır", () => {
     const onValueChange = vi.fn();
     const { container } = render(
       <DateInput aria-label="Tarih" value="" onValueChange={onValueChange} />,
     );
-    const picker = container.querySelector('input[type="date"]') as HTMLInputElement;
+    const picker = container.querySelector<HTMLInputElement>('input[type="date"]');
     expect(picker).not.toBeNull();
-    await userEvent.clear(picker);
-    picker.value = iso;
-    picker.dispatchEvent(new Event("change", { bubbles: true }));
+    fireEvent.change(picker!, { target: { value: iso } });
     expect(onValueChange).toHaveBeenLastCalledWith(iso);
+  });
+
+  it("seçiciden gelen ISO ekranda TR biçiminde görünür (denetimli ebeveyn)", () => {
+    const { container } = render(<ControlledDateInput />);
+    fireEvent.change(container.querySelector<HTMLInputElement>('input[type="date"]')!, {
+      target: { value: iso },
+    });
+    expect(screen.getByRole("textbox", { name: "Tarih" })).toHaveValue(tr);
+  });
+
+  it("🔴 disabled iken GİZLİ seçici de devre dışıdır (alt kontrol kaçağı yok)", () => {
+    // Devre dışı bir alanın alt kontrolü açık kalmamalı: `showPicker()`
+    // programatik olarak da çağrılabilir.
+    const { container } = render(
+      <DateInput aria-label="Tarih" value="" disabled onValueChange={() => {}} />,
+    );
+    expect(container.querySelector('input[type="date"]')).toBeDisabled();
+  });
+
+  it("🔴 readOnly iken GİZLİ seçici devre dışıdır (salt okunur gerçekten kilitli)", () => {
+    // `type="date"` native kontrolünde `readOnly` seçiciyi ENGELLEMEZ — bu
+    // yüzden salt okunurluk `disabled` ile kurulur.
+    const { container } = render(
+      <DateInput aria-label="Tarih" value="" readOnly onValueChange={() => {}} />,
+    );
+    expect(container.querySelector('input[type="date"]')).toBeDisabled();
   });
 
   it("disabled iken seçici düğmesi de devre dışıdır", () => {

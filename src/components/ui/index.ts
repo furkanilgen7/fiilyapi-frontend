@@ -1,5 +1,6 @@
 export * from "./button";
 export * from "./input";
+export * from "./date-input";
 export * from "./select";
 export * from "./file-input";
 export * from "./textarea";

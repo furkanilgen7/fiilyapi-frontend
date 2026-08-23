@@ -5,6 +5,7 @@ import {
   Button,
   Field,
   Input,
+  DateInput,
   Select,
   Checkbox,
   Radio,
@@ -29,6 +30,7 @@ const VARIANTS: ButtonVariant[] = [
 const SIZES: ButtonSize[] = ["sm", "md", "lg", "xl"];
 
 export default function DesignSystemPage() {
+  const [demoDate, setDemoDate] = useState("2026-07-19");
   const [checked, setChecked] = useState(true);
   const [toggled, setToggled] = useState(true);
 
@@ -96,6 +98,22 @@ export default function DesignSystemPage() {
         <Field label="Sifre" size="lg" labelAside={<span>Sifremi unuttum</span>}>
           {(control) => <Input {...control} type="password" placeholder="Sifrenizi girin" />}
         </Field>
+      </section>
+
+      {/* F-DATE — TR biçimli tarih girdisi. AYRI bir kardeş bölümdür:
+          `section-inputs`/`section-fields` kadrajları ELEMAN kadrajı olduğu
+          için bu bölümün eklenmesi onları OYNATMAZ (yeni kare +1, mevcut 0). */}
+      <section data-testid="section-date-input" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", maxWidth: 360 }}>
+        <h2 style={{ fontSize: "var(--text-section)", fontWeight: 600 }}>DateInput</h2>
+        <Field label="Baslangic Tarihi" required hint="gg.aa.yyyy">
+          {(control) => (
+            <DateInput {...control} value={demoDate} onValueChange={setDemoDate} />
+          )}
+        </Field>
+        <DateInput aria-label="Bos" value="" onValueChange={() => {}} />
+        <DateInput aria-label="Hata" value={demoDate} status="error" onValueChange={() => {}} />
+        <DateInput aria-label="Devre disi" value={demoDate} disabled onValueChange={() => {}} />
+        <DateInput aria-label="Satir ici" value={demoDate} size="row" onValueChange={() => {}} />
       </section>
 
       <section data-testid="section-controls" style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
