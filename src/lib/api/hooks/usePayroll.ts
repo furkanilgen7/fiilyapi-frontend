@@ -38,11 +38,23 @@ export const PAYROLL_PERMISSION_MODULE = "payroll";
  * parametre göndermek yerine CÖMERT bir `limit` ile çekilir ve adımlama
  * istemcide yapılır (F-BOR briefi K6 ile aynı karar).
  *
- * 240 = 20 yıllık ay — gerçek bir kurulumda dönem sayısı bunun çok altında
- * kalır; yine de kırpılma `buildListTruncation` ile GÖRÜNÜR kılınır
- * (çağıran ekranın işi), sessizce yutulmaz.
+ * 🔴🔴 **TAVAN ÜRÜNÜN DEĞİL, SÖZLEŞMENİN KARARIDIR.** Burası eskiden `240`
+ * yazıyordu ("20 yıllık ay" gerekçesiyle) ve bu, MODÜLÜ CANLIDA TAMAMEN
+ * ÇALIŞMAZ HÂLE GETİRİYORDU: `GET /payroll/periods` `limit` tavanı **200**dür
+ * (TB3 sayfalama standardı, `payroll/router.py`) ve backend aşımı *sessizce
+ * KIRPMAZ, 422 döner*. Kullanıcının gördüğü hata birebir şuydu:
+ * `Input should be less than or equal to 200`. Üç bordro ekranı da bu tek
+ * hook'a bağlı olduğu için hepsi birden ölüyordu — kenar durum DEĞİL.
+ *
+ * Değer bir ürün tercihi olarak SEÇİLMEZ; sözleşmenin tavanına eşitlenir ve
+ * `query-limits.contract.test.ts` bunu `openapi.json`ı OKUYARAK bekçiler.
+ * (Sabiti tekrar yazan bir test hiçbir şey bekçilemezdi.)
+ *
+ * 200 ay ≈ 16,6 yıl. Gerçek bir kurulumda dönem sayısı bunun çok altında
+ * kalır; yine de aşılırsa kırpılma `buildListTruncation` ile GÖRÜNÜR kılınır
+ * (çağıran ekranın işi, `bordro-truncation`), sessizce yutulmaz.
  */
-export const PAYROLL_PERIODS_LIMIT = 240;
+export const PAYROLL_PERIODS_LIMIT = 200;
 
 export function usePayrollPeriods(): UseQueryResult<PayrollPeriodListResponse, Error> {
   return useQuery({
