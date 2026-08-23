@@ -93,6 +93,10 @@ export const JOURNAL_FORM_TEXT = {
   descriptionHint: `Maks ${JOURNAL_DESCRIPTION_MAX} karakter · Yevmiye listesinde bu metin görünür`,
   /** `M:95` */
   descriptionPlaceholder: "Örn. Taşeron ödemesi — Akın İnşaat Hakediş #47",
+  /** `M:100` */
+  entryNoPlaceholder: "Otomatik",
+  /** `M:101` — YALNIZ oluşturma kipinde basılır; numarası olan fişte YALAN olur. */
+  entryNoHint: "Kayıtta üretilir",
   /** `M:106` */
   detailNotePlaceholder: "Fatura no, banka referansı, ek açıklama...",
   /** `M:113` */
