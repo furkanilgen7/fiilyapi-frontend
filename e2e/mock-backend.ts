@@ -4250,6 +4250,226 @@ interface MockLandShareContract {
  * kullanici veriyi kaybettigini sanardi"*). Bu haritada olmayan her proje —
  * `p-1` dâhil — o 404'ü alır ve PG onu AÇIKLAYICI BOŞ HÂL olarak basar.
  */
+// === F-PKK · `GET /projects/{id}/costs` fikstürleri =====================
+//
+// Sayılar KY (`Proje - Kendi Yatırım`) ve KK (`Proje - Kat Karşılığı`)
+// mockup'larından alınmıştır. Üç zarf (`permits`/`financing`/`marketing`)
+// BOŞ döner — backend de öyle yapıyor (`cost_summary.py:154-156`) ve
+// ekranın gerekçe dalının GERÇEKTEN koştuğunun kanıtı budur.
+//
+// `total_spent` üç boş zarfı İÇERMEZ (arsa + inşaat): boş zarf toplama
+// katkı yapmaz. Mockup'ın ₺20,28M'i o üç kalemi de sayıyordu; buradaki
+// toplam sunucunun BUGÜNKÜ tanımıyla tutarlıdır.
+interface MockMetricPlaceholder {
+  available: boolean;
+  value: string | null;
+  pending_module: string;
+}
+
+const pendingMetric = (moduleKey: string): MockMetricPlaceholder => ({
+  available: false,
+  value: null,
+  pending_module: moduleKey,
+});
+
+interface MockSubcontractorCostRow {
+  contract_id: string;
+  contract_no: string | null;
+  subcontractor_id: string | null;
+  subcontractor_name: string | null;
+  work_category: string | null;
+  contract_amount: string;
+  paid: string;
+  pending: string;
+  /** `null` = sözleşme bedeli `0`; oran TANIMSIZ (uydurma `%0` YOK). */
+  progress_pct: string | null;
+}
+
+interface MockProjectCosts {
+  project_id: string;
+  project_type: string;
+  breakdown: {
+    land_cost: string | null;
+    construction_spent: string;
+    construction_budget: string;
+    permits: MockMetricPlaceholder;
+    financing: MockMetricPlaceholder;
+    marketing: MockMetricPlaceholder;
+    total_spent: string;
+  };
+  profit: {
+    revenue: string | null;
+    cost: string | null;
+    profit: string | null;
+    margin_pct: string | null;
+    realized_sales: string | null;
+    remaining_stock_value: string | null;
+  };
+  subcontractors: MockSubcontractorCostRow[];
+  subcontractor_total: { contract_amount: string; paid: string; pending: string };
+}
+
+function emptyProjectCosts(projectId: string, projectType: string): MockProjectCosts {
+  return {
+    project_id: projectId,
+    project_type: projectType,
+    breakdown: {
+      land_cost: null,
+      construction_spent: "0.00",
+      construction_budget: "0.00",
+      permits: pendingMetric("accounting"),
+      financing: pendingMetric("treasury"),
+      marketing: pendingMetric("accounting"),
+      total_spent: "0.00",
+    },
+    profit: {
+      revenue: null,
+      cost: null,
+      profit: null,
+      margin_pct: null,
+      realized_sales: null,
+      remaining_stock_value: null,
+    },
+    subcontractors: [],
+    subcontractor_total: { contract_amount: "0.00", paid: "0.00", pending: "0.00" },
+  };
+}
+
+const PROJECT_COSTS_FIXTURES: Readonly<Record<string, MockProjectCosts>> = {
+  // p-2 "Villa B" — KENDİ YATIRIM (KY mockup'ı).
+  "p-2": {
+    project_id: "p-2",
+    project_type: "kendi_yatirim",
+    breakdown: {
+      land_cost: "8400000.00",
+      construction_spent: "10240000.00",
+      construction_budget: "15058823.53",
+      permits: pendingMetric("accounting"),
+      financing: pendingMetric("treasury"),
+      marketing: pendingMetric("accounting"),
+      total_spent: "18640000.00",
+    },
+    profit: {
+      revenue: "48200000.00",
+      cost: "29800000.00",
+      profit: "18400000.00",
+      margin_pct: "38.20",
+      realized_sales: "31420000.00",
+      remaining_stock_value: "16780000.00",
+    },
+    // KY 217-243 · üç satır. Üçüncüsü hakedişi HİÇ olmayan sözleşmedir ve
+    // GERÇEK `0.00` döner — `null` (bedeli sıfır) hâlinden AYRIDIR.
+    subcontractors: [
+      {
+        contract_id: "sc-fx-1",
+        contract_no: "TSD-2026-11",
+        subcontractor_id: "sub-1",
+        subcontractor_name: "Akın İnşaat",
+        work_category: "Kaba İnşaat + Kalıp",
+        contract_amount: "8400000.00",
+        paid: "5712000.00",
+        pending: "840000.00",
+        progress_pct: "68.00",
+      },
+      {
+        contract_id: "sc-fx-2",
+        contract_no: "TSD-2026-12",
+        subcontractor_id: "sub-2",
+        subcontractor_name: "Yılmaz Elektrik",
+        work_category: "Elektrik Tesisatı (52 ünite)",
+        contract_amount: "2400000.00",
+        paid: "1200000.00",
+        pending: "0.00",
+        progress_pct: "50.00",
+      },
+      {
+        contract_id: "sc-fx-3",
+        contract_no: null,
+        subcontractor_id: null,
+        subcontractor_name: "Demirci Alüminyum",
+        work_category: "PVC Pencere + Cephe",
+        contract_amount: "1800000.00",
+        paid: "0.00",
+        pending: "0.00",
+        progress_pct: "0.00",
+      },
+    ],
+    subcontractor_total: {
+      contract_amount: "12600000.00",
+      paid: "6912000.00",
+      pending: "840000.00",
+    },
+  },
+
+  // p-3 "Bahçelievler Konut" — KAT KARŞILIĞI (KK mockup'ı).
+  // Arsa maliyeti GERÇEK bir `0`dır (kat karşılığında arsa parası ödenmez),
+  // yer tutucu DEĞİL — ekran ikisini ayrı basar.
+  "p-3": {
+    project_id: "p-3",
+    project_type: "kat_karsiligi",
+    breakdown: {
+      land_cost: "0.00",
+      construction_spent: "7400000.00",
+      construction_budget: "17600000.00",
+      permits: pendingMetric("accounting"),
+      financing: pendingMetric("treasury"),
+      marketing: pendingMetric("accounting"),
+      total_spent: "7400000.00",
+    },
+    profit: {
+      revenue: "30415000.00",
+      cost: "17600000.00",
+      profit: "12815000.00",
+      margin_pct: "42.10",
+      realized_sales: "10600000.00",
+      remaining_stock_value: "19800000.00",
+    },
+    subcontractors: [
+      {
+        contract_id: "sc-fx-4",
+        contract_no: "TSD-2026-21",
+        subcontractor_id: "sub-1",
+        subcontractor_name: "Akın İnşaat",
+        work_category: "Kaba İnşaat (Betonarme + Kalıp)",
+        contract_amount: "6800000.00",
+        paid: "2856000.00",
+        pending: "420000.00",
+        progress_pct: "42.00",
+      },
+      {
+        contract_id: "sc-fx-5",
+        contract_no: "TSD-2026-22",
+        subcontractor_id: "sub-2",
+        subcontractor_name: "Yılmaz Elektrik",
+        work_category: "Elektrik Tesisatı (42 ünite)",
+        contract_amount: "1900000.00",
+        paid: "380000.00",
+        pending: "0.00",
+        progress_pct: "20.00",
+      },
+      // 🔴 BEDELİ GİRİLMEMİŞ sözleşme: `progress_pct` **null**dur ve ekran
+      // `%0` DEĞİL `—` basar. Sahte `%0` "veri yok"u "ilerleme yok" diye
+      // gösterirdi; bu satır o dalın e2e kanıtıdır.
+      {
+        contract_id: "sc-fx-6",
+        contract_no: null,
+        subcontractor_id: null,
+        subcontractor_name: "Kardeş Su",
+        work_category: null,
+        contract_amount: "0.00",
+        paid: "0.00",
+        pending: "0.00",
+        progress_pct: null,
+      },
+    ],
+    subcontractor_total: {
+      contract_amount: "8700000.00",
+      paid: "3236000.00",
+      pending: "420000.00",
+    },
+  },
+};
+
 const LAND_SHARE_CONTRACT_FIXTURES: Readonly<Record<string, MockLandShareContract>> = {
   "p-3": {
     landowner_name: "Yılmaz Ailesi",
@@ -8915,6 +9135,47 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       });
       res.end(Buffer.from("PK-fiil-unite-sablonu", "utf8"));
       return;
+    }
+
+    // === F-PKK · Proje Özeti uçları ======================================
+
+    // GET /projects/{project_id}/units/export.xlsx — İKİLİ `.xlsx`.
+    // 🔴 SÜZGEÇ ALMAZ (uç açıklaması): paylaşım tablosunun TAMAMINI indirir.
+    // `send` JSON yazar, bu yüzden yanıt ELDE kurulur — `import/template`
+    // emsalinin aynısı. BFF ikili dalı SON SEGMENTten karar verir
+    // (`.xlsx` ∈ `BINARY_DOWNLOAD_SUFFIXES`), gövde ham geçer.
+    const unitsExportMatch = path.match(/^\/projects\/([^/]+)\/units\/export\.xlsx$/);
+    if (method === "GET" && unitsExportMatch) {
+      const project = state.projects.find((p) => p.id === unitsExportMatch[1]);
+      if (!project) return send(404, { detail: "Proje bulunamadı." });
+      res.writeHead(200, {
+        "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "content-disposition": `attachment; filename="paylasim-${project.code}.xlsx"`,
+      });
+      res.end(Buffer.from("PK-fiil-paylasim-tablosu", "utf8"));
+      return;
+    }
+
+    // GET /projects/{project_id}/costs — SALT OKUMA türevi (yazma ikizi YOK).
+    //
+    // 🔴 TAŞERON SATIRLARI `state.subcontractorContracts`TEN TÜRETİLMEZ ve bu
+    // BİLİNÇLİDİR. O liste GLOBALDİR ve `buildSubcontractorPaymentSummary`in
+    // `active_subcontractor_count`ı onu PROJEYE GÖRE SÜZMEDEN sayar (dosyanın
+    // sc-3 fikstüründeki uyarı) — p-2/p-3 için oraya sözleşme eklemek
+    // `taseron-hakedisleri-listesi.png` baseline'ını SESSİZCE bozardı
+    // (F-UNIT2'nin F-ST'yi kırdığı sınıfın aynısı). Bu yüzden maliyet ucunun
+    // satırları KENDİ fikstürüdür ve hiçbir global listeye dokunmaz.
+    const projectCostsMatch = path.match(/^\/projects\/([^/]+)\/costs$/);
+    if (method === "GET" && projectCostsMatch) {
+      const project = state.projects.find((p) => p.id === projectCostsMatch[1]);
+      if (!project) return send(404, { detail: "Proje bulunamadı." });
+      const fixture = PROJECT_COSTS_FIXTURES[project.id];
+      if (!fixture) {
+        // Fikstürü olmayan proje BOŞ ama GEÇERLİ bir gövde alır: uç 404
+        // vermez, "maliyet yok" diye bir kavram yoktur.
+        return send(200, emptyProjectCosts(project.id, project.project_type));
+      }
+      return send(200, { ...fixture, project_id: project.id, project_type: project.project_type });
     }
 
     // GET /projects/{project_id}/land-share/summary — 🔴 kat karşılığı OLMAYAN
