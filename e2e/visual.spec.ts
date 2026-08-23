@@ -17,11 +17,12 @@ const sections = [
   "section-buttons",
   "section-inputs",
   "section-fields",
-  "section-date-input",
   "section-controls",
   "section-badges",
   "section-alerts",
   "section-cards",
+  // F-DATE: sayfanin SONUNDA — altinda kimse kalmasin diye (page.tsx notu).
+  "section-date-input",
 ];
 
 for (const id of sections) {
