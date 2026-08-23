@@ -26,6 +26,14 @@ import { prepareFrame } from "./visual-scroll";
 /** Kadrajın sabit "bugün"ü — fikstür dünyasıyla tutarlı, TZ'den bağımsız. */
 const FIXED_TODAY = "2026-08-10T09:00:00Z";
 const FIXED_TODAY_ISO = "2026-08-10";
+/**
+ * Aynı günün TR gösterimi. Tarih alanı artık `ui/date-input` primitive'idir ve
+ * ekrana `gg.aa.yyyy` basar (F-DATE) — ama iddia hâlâ AYNI ŞEYİ kanıtlar:
+ * alan dondurulmuş GÜNDEN dolar. İkinci bir tarih sabiti YAZILMAZ; ISO
+ * sabitinden TÜRETİLİR ki saat dondurma değiştiğinde ikisi ayrışmasın.
+ */
+const FIXED_TODAY_DISPLAY = FIXED_TODAY_ISO.split("-").reverse().join(".");
+
 
 const ENTRY_URL = "/projeler/p-1/santiyeler/s-1/stok/giris";
 
@@ -55,7 +63,7 @@ test("stok giris formu gorsel", async ({ page }) => {
   // (c) kullanıcı listesi geldi — "Teslim Alan" devre dışı DEĞİL,
   await expect(page.getByTestId("stok-giris-teslim-alan")).toBeEnabled();
   // (d) saat sabitlemesi İŞLEDİ: tarih alanı deterministik.
-  await expect(page.getByTestId("stok-giris-tarih")).toHaveValue(FIXED_TODAY_ISO);
+  await expect(page.getByTestId("stok-giris-tarih")).toHaveValue(FIXED_TODAY_DISPLAY);
 
   // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
   await prepareFrame(page);

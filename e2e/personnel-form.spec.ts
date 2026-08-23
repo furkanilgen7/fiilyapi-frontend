@@ -51,7 +51,7 @@ async function fillPublishable(
   await page.getByLabel("Çalışan Tipi").first().selectOption("subcontractor");
   await page.getByLabel("Meslek / Görev").first().selectOption("Elektrikçi");
   await page.getByLabel("TC Kimlik No").first().fill(values.tcNo);
-  await page.getByLabel("Doğum Tarihi").first().fill("1985-04-12");
+  await page.getByLabel("Doğum Tarihi").first().fill("12.04.1985");
   await page.getByLabel("Cep Telefonu").first().fill("0532 123 45 67");
   await page.getByLabel("Adres").first().fill("Cumhuriyet Mah. 12/3 Ankara");
   await page.getByLabel("Acil Durum Kişisi").first().fill("Ayşe Yılmaz");
