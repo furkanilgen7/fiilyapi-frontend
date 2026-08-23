@@ -117,8 +117,23 @@ describe("accounting.css — HP'ye (Hesap Planı) bağlı kurallar", () => {
 });
 
 describe("accounting.css — T4 diyalogları", () => {
+  /**
+   * 🔴 BU BEKÇİ SAHTE-YEŞİLDİ (F-FISNO'da ölçüldü) — `max-width` iddiası EKLENDİ.
+   *
+   * Eskiden yalnız `width: min(760px, 92vw)` bildiriminin METİNDE var olduğunu
+   * arıyordu. Bildirim yerindeydi ama ETKİSİ SIFIRDI: `.modal` (settings/modal.css)
+   * `max-width: 480px` verir ve kaskadı O kazanır. Diyalog aylardır 480px'te
+   * kırpılıyordu (ölçülen iç genişlik 478px) ve bu test hep yeşil kaldı.
+   *
+   * 🔑 KANON: bir kuralın DOSYADA YAZILI olması, KASKADI KAZANDIĞI anlamına gelmez.
+   * Metin taraması bir CSS kuralının ETKİSİNİ bekçileyemez — bu yüzden asıl bekçi
+   * `e2e/accounting-dialogs.spec.ts`tedir ve TARAYICIDA ÖLÇÜLEN genişliği iddia eder.
+   * Buradaki iki iddia yalnız bildirimin SİLİNMEDİĞİNİ korur.
+   */
   it("fiş diyaloğu varsayılan 480px kabuktan GENİŞtir (üç sütunlu satır tablosu)", () => {
     expect(css).toMatch(/\.mu-modal\s*{[^}]*width:\s*min\(760px, 92vw\)/);
+    // `max-width` olmadan yukarıdaki `width` ATILDIR — ikisi BİRLİKTE anlamlıdır.
+    expect(css).toMatch(/\.mu-modal\s*{[^}]*max-width:\s*min\(760px, 92vw\)/);
   });
 
   /* İDDİA TAŞINDI (F-MUF T4): şerit eskiden `repeat(3, 1fr)` idi; mockup

@@ -56,14 +56,16 @@ const NOT_DRAFT_NOTICE =
  * E8:67 `+ Yevmiye Kaydı` / taslak satırının `Düzenle` diyaloğu.
  * Kanon: `projedesign/Form - Yevmiye Kaydi.dc.html` (`M:` = o dosyanın satırı).
  *
- * 🔴 **`M:99-101` `Fiş No` ALANI ÇİZİLMEZ — KARAR K4.** Mockup onu devre dışı
- * bir kutu + "Kayıtta üretilir" ipucuyla çizer; ŞEMADA KARŞILIĞI YOKTUR:
- * `JournalEntryResponse`ta `entry_no`/`document_no` diye bir alan yok
- * (ölçüldü). F-TH'nin *"rotası olmayan öğe devre-dışı basılır"* kanonu burada
- * YANLIŞ REÇETEdir — devre dışı bir `Fiş No` kutusu kullanıcıya VAR OLMAYAN
- * bir numaralandırma VAAT EDER ve kullanıcı fişini o numarayla arar. Alan HİÇ
- * basılmaz; sonraki okuyucu mockup'a bakıp "eksik kalmış" SANMASIN.
- * (İkiz karar — `M:121` `Satır Açıklaması` — `JournalLinesEditor` başında.)
+ * 🔴 **`M:99-101` `Fiş No` ALANI ARTIK ÇİZİLİR — K4'ün bu yarısı DÜŞTÜ.**
+ * K4'ün tek gerekçesi "şemada karşılığı yok"tu; FIS-NO dilimi `entry_no`yu
+ * ÜRETTİ, F-OK devri sözleşmeye indirdi: hem `JournalEntryResponse` hem
+ * `JournalEntryDetailResponse` üzerinde `string`, ZORUNLU, nullable DEĞİL.
+ * Kutu artık VAR OLMAYAN bir numaralandırma vaat etmiyor. Alan HER KİPTE
+ * devre dışıdır (numarayı SUNUCU üretir; forma/mutasyona GİRMEZ — şemalar
+ * `extra="forbid"`, gönderilse 422 dönerdi) ve oluşturma kipinde BOŞ durur:
+ * önden basılmış bir `YEV-…` sunucununkiyle çakışan bir numara vaat ederdi.
+ * (İkiz karar `M:121` `Satır Açıklaması` HÂLÂ AYAKTA — gerekçesi ölçümle
+ * çürümedi; `JournalLinesEditor` başında.)
  *
  * 🔴 **`M:56`/`M:255` `Taslak Kaydet` İKİNCİ DÜĞMESİ ÇİZİLMEZ.** ÖLÇÜM: `POST
  * /journal-entries` fişi ZATEN `draft` üretir; `posted`a geçiren AYRI bir uç
@@ -296,8 +298,9 @@ function JournalEntryFormBody({
         {/* `M:86-108` — Fiş Bilgileri kartı. */}
         <section className="mu-entry-form__card">
           <h3 className="mu-entry-form__card-title">{JOURNAL_FORM_TEXT.headerCardTitle}</h3>
-          {/* `M:88` ızgarası `170px 1fr 170px`tir; üçüncü sütun `Fiş No`ydu ve
-              K4 ile DÜŞTÜ → iki sütun kalır. */}
+          {/* `M:88` ızgarası `170px 1fr 170px` — mockup'ın ÜÇ sütunu GERİ GELDİ.
+              K4 üçüncü sütunu (`Fiş No`) düşürmüştü; FIS-NO `entry_no`yu üretti,
+              F-OK devri sözleşmeye indirdi → sütun yeniden basılıyor. */}
           <div className="mu-entry-form__row">
             <Field label="Fiş Tarihi" required>
               {(control) => (
@@ -324,6 +327,25 @@ function JournalEntryFormBody({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, description: event.target.value }))
                   }
+                />
+              )}
+            </Field>
+            {/* `M:99-101` — `Fiş No`: SUNUCU türevi, HER KİPTE devre dışı
+                (`isEditable`e BAĞLANMAZ: hiçbir kipte yazılabilir değil).
+                İpucu YALNIZ oluşturma kipinde basılır — numara üretildikten
+                sonra "Kayıtta üretilir" cümlesi orada YALAN olurdu. */}
+            <Field
+              label="Fiş No"
+              hint={entry === undefined ? JOURNAL_FORM_TEXT.entryNoHint : undefined}
+            >
+              {(control) => (
+                <Input
+                  {...control}
+                  className="mu-entry-form__no"
+                  value={entry?.entry_no ?? ""}
+                  placeholder={JOURNAL_FORM_TEXT.entryNoPlaceholder}
+                  disabled
+                  data-testid="mu-entry-no"
                 />
               )}
             </Field>

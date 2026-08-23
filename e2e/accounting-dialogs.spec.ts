@@ -113,6 +113,50 @@ test.describe("yevmiye fişi diyaloğu — denge kapısı", () => {
     );
     await expect(page.getByTestId("mu-entry-dialog-save")).toBeDisabled();
   });
+
+  /**
+   * 🔴 HESAPLANMIŞ SONUÇ BEKÇİSİ — F-FISNO'da doğan sınıfı KAPATIR.
+   *
+   * KÖK OLAY: `accounting.css` aylardır `.mu-modal { width: min(760px, 92vw) }`
+   * yazıyordu ve `accounting.css.test.ts` o bildirimin METİNDE var olduğunu
+   * doğruluyordu — test hep yeşildi. Ama bildirim ATILDI: `.modal`
+   * (`settings/modal.css`) `width:100%` + **`max-width:480px`** verir ve
+   * `max-width` kaskadı KAZANIR. Diyalog 480px'te kırpılıyordu; ölçülen iç
+   * genişlik 478px'ti. Sonuç: `M:88`in `170px 1fr 170px` ızgarası `Açıklama`ya
+   * yalnız 70px bırakıyor, ipucu 6 satıra sarıyor, gövde 66px kayıyordu.
+   *
+   * 🔑 KANON: **bir kuralın DOSYADA YAZILI olması, KASKADI KAZANDIĞI anlamına
+   * gelmez.** Metin taraması bir CSS kuralının ETKİSİNİ bekçileyemez. Bu yüzden
+   * bu bekçi TARAYICIDA ÖLÇER: `max-width` ezmesi geri alınırsa genişlik 480'e
+   * düşer ve bu test KIRILIR (metin taraması kırılmazdı).
+   *
+   * Beklenen değer ELLE yazıldı, üretim ifadesinden türetilmedi: viewport 1280
+   * (playwright.config) ⇒ `min(760px, 92vw)` = `min(760, 1177.6)` = **760**.
+   * `box-sizing: border-box` (globals.css) ⇒ `boundingBox` kenarlık dahil 760.
+   */
+  test("fiş diyaloğu TARAYICIDA 760px'tir — 480px kabuk ezmesi GERÇEKTEN yürürlükte", async ({
+    page,
+  }) => {
+    await openAccounting(page);
+    await page.getByTestId("mu-create-entry").click();
+
+    const dialog = page.getByRole("dialog", { name: "Yeni Yevmiye Fişi" });
+    await expect(dialog).toBeVisible();
+
+    const box = await dialog.boundingBox();
+    expect(box).not.toBeNull();
+    expect(Math.round(box!.width)).toBe(760);
+
+    // Varsayılan kabuğun 480px'ine DÜŞMEDİĞİ ayrıca ve AÇIKÇA iddia edilir:
+    // `max-width` ezmesi silinirse ölçülen genişlik tam olarak buraya düşer.
+    expect(Math.round(box!.width)).not.toBe(480);
+
+    // Hesaplanmış `max-width` de 760px'tir — `.modal`ın 480px'i EZİLMİŞTİR.
+    const computedMaxWidth = await dialog.evaluate(
+      (el) => getComputedStyle(el).maxWidth,
+    );
+    expect(computedMaxWidth).toBe("760px");
+  });
 });
 
 test.describe("yevmiye fişi diyaloğu — yazma akışları (HAZİRAN adası)", () => {
@@ -198,6 +242,10 @@ test.describe("yevmiye fişi diyaloğu — yazma akışları (HAZİRAN adası)",
     await expect(page.getByTestId("mu-entry-description")).toHaveValue("MUT · düzenleme ölçümü");
     await expect(page.getByTestId("mu-line-debit-0")).toHaveValue("3000.00");
     await expect(page.getByTestId("mu-entry-detail-note")).toHaveValue("İlk dayanak");
+    // 🔴 `entry_no` SUNUCUDAN gelir ve salt-okunur basılır (F-FISNO). Beklenen
+    // dize ELLE yazıldı: `je-2606-mut-edit` tohumu `seq: 3` + `date: "2026-06-12"`
+    // ⇒ `YEV-{yıl}-{sıra:04d}`. Üretim ifadesinden KOPYALANMADI.
+    await expect(page.getByTestId("mu-entry-no")).toHaveValue("YEV-2026-0003");
 
     await page.getByTestId("mu-entry-description").fill("MUT · düzenleme ölçümü (güncel)");
     await page.getByTestId("mu-line-debit-0").fill("3300");

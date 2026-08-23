@@ -12727,9 +12727,13 @@ interface JournalEntrySeed {
    * ad-hoc bir `id → sıra` haritasından okunuyordu ve harita `Record<string,
    * number>`a DARALTILMIŞTI — haritada olmayan bir seed için değer `undefined`
    * olur, `String(undefined).padStart(4,"0")` ise **`YEV-2026-undefined`**
-   * üretirdi. Alan ekranda BASILMADIĞI için (F-FISNO ayrı dilim) ne bir kapı ne
-   * de bir kare bunu görürdü — sessiz kusur. Sıra artık seed'in KENDİSİNDE:
-   * yeni bir seed ekleyen dilim numarayı vermeye DERLEYİCİ tarafından zorlanır.
+   * üretirdi. O sırada alan ekranda BASILMIYORDU (F-FISNO ayrı dilimdi) — ne
+   * bir kapı ne de bir kare bunu görürdü, sessiz kusur. BAYAT SATIR DÜZELTİLDİ
+   * (F-FISNO T3): alan ARTIK basılıyor (`mu-entry-no`, `JournalEntryFormModal`)
+   * ve `e2e/accounting-dialogs.spec.ts`teki bir iddia gerçek numarayı bekçiliyor.
+   * Ayrıca `seq`in ZORUNLU olması riski zaten YAPISAL olarak kapanmıştı: sıra
+   * artık seed'in KENDİSİNDE, yeni bir seed ekleyen dilim numarayı vermeye
+   * DERLEYİCİ tarafından zorlanır — `undefined` bir daha üretilemez.
    *
    * Sıra KRONOLOJİK yaratılış sırasıdır (storno kaynağından SONRAKİ numarayı
    * alır), dizideki konum DEĞİL; fikstürün tek yılı 2026'dır.

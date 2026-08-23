@@ -391,9 +391,16 @@
    canlı önizlemesini kurar.
 --------------------------------------------------------------------------- */
 
-/* Varsayılan 480px kabuk üç sütunlu satır tablosuna dardır. */
+/* Varsayılan 480px kabuk üç sütunlu satır tablosuna dardır.
+   🔴 `max-width` DE EZİLİR — F-FISNO'da ölçüldü: `.modal` (settings/modal.css)
+   `width:100%` + `max-width:480px` verir. Yalnız `width`i ezmek YETMEZ; `max-width`
+   kaskadı kazanır ve diyalog 480px'te kırpılırdı. Bildirim aylardır YAZILIYDI ama
+   ATILDI: ölçülen iç genişlik 478px'ti, `M:88`in `170px 1fr 170px` ızgarası
+   `Açıklama`ya 70px bırakıyor, ipucu 6 satıra sarıyor ve gövde 66px kayıyordu.
+   🔑 Bir kuralın DOSYADA YAZILI olması, KASKADI KAZANDIĞI anlamına gelmez. */
 .mu-modal {
   width: min(760px, 92vw);
+  max-width: min(760px, 92vw);
 }
 
 .mu-lines {
@@ -1094,8 +1101,11 @@ span.mu-tb__total {
    F-MUF T4 · `Form - Yevmiye Kaydi.dc.html` (aşağıda `M:` = O dosyanın satırı).
    Denge bandının kuralları yukarıda, `.mu-balance` bloğunda yaşar; burada
    diyaloğun BİLGİ KARTI ve KALEM TABLOSU vardır.
-   🔴 `M:99` `Fiş No` ve `M:121` `Satır Açıklaması` için KURAL YOKTUR: o iki
-   öğe hiç basılmaz (K4 — gerekçe bileşenlerin başında).
+   🔴 `M:99` `Fiş No` için ARTIK KURAL VARDIR (`.mu-entry-form__no`, aşağıda):
+   `entry_no` sözleşmeye girdi, alan basılıyor (F-FISNO). `M:121` `Satır
+   Açıklaması` için hâlâ KURAL YOKTUR — o öğe hiç basılmaz, çünkü
+   `JournalLineInput` = `account_id`·`debit`·`credit` ve
+   `additionalProperties: false` (gerekçe `JournalLinesEditor` başında).
 --------------------------------------------------------------------------- */
 
 /* M:83 — başlığın altındaki kural cümlesi (Modal alt başlık almadığı için
@@ -1121,12 +1131,23 @@ span.mu-tb__total {
   font-weight: var(--weight-semibold);
   color: var(--color-text);
 }
-/* M:88 — `170px 1fr 170px`ün K4'ten sonra kalan iki sütunu. */
+/* M:88 — mockup'ın ÜÇ sütunu: `Fiş Tarihi` · `Açıklama` · `Fiş No`. K4
+   üçüncüyü düşürmüştü; `entry_no` sözleşmeye girince geri geldi (F-FISNO). */
 .mu-entry-form__row {
   display: grid;
-  grid-template-columns: 170px 1fr;
+  grid-template-columns: 170px 1fr 170px;
   gap: var(--space-form-section-gap);
   align-items: start;
+}
+
+/* M:100 `.mono` — `Fiş No` bir TANIMLAYICIdır: monospace VERİLİR ama
+   `.input--numeric` VERİLMEZ (o sağa yaslar + tabular-nums; `YEV-2026-0001`
+   bir sayı değil, sola yaslı kalır). Devre dışı görünümü `.input:disabled`
+   token'larından gelir — M:101'in satır-içi zemin/metin ikilisinin TOKEN
+   karşılığı; burada EK KURAL yazılmaz. (Hex'ler bilerek yazılmadı: çıplak hex
+   bekçisi YORUMLARI da tarar.) */
+.mu-entry-form__no {
+  font-family: var(--font-mono);
 }
 
 /* M:249-251 — alt şeridin uyarısı; düğmeleri sağa iter (T2'nin `repeat-box`

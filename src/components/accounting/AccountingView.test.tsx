@@ -600,13 +600,27 @@ describe("Taslak Fişler paneli (onaylı sapma adayı)", () => {
  *
  * 🔴 BAYAT SATIR DÜZELTİLDİ (F-MUF T4): burada eskiden "Form mockup'ı YOKTUR
  * (S-FRM kanonu)" yazıyordu — ARTIK VAR. Gövde YİNE de şemadan türer:
- * mockup'ın icat ettiği `Fiş No` ve `Satır Açıklaması` BASILMAZ.
+ * mockup'ın icat ettiği `Satır Açıklaması` BASILMAZ (K4). `Fiş No` ise ARTIK
+ * BASILIR (BAYAT SATIR DÜZELTİLDİ — F-FISNO T3): FIS-NO dilimi `entry_no`yu
+ * üretti (`YEV-{yıl}-{sıra:04d}`), F-OK'un openapi devri onu sözleşmeye
+ * `required` (nullable değil) indirdi — artık şemadan türeyen bir alan.
  */
 describe("Yevmiye Kaydı diyaloğu (T4)", () => {
   async function openCreate() {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<AccountingView />);
     await user.click(screen.getByTestId("mu-create-entry"));
+    return user;
+  }
+
+  /**
+   * Düzenleme/kilitli kipin ortak açılışı. `useJournalEntry` mock'u `beforeEach`te
+   * `DRAFT_DETAIL` döner; başka bir fiş isteyen test bunu ÇAĞIRMADAN ÖNCE ezer.
+   */
+  async function openEdit() {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<AccountingView />);
+    await user.click(screen.getByTestId("mu-draft-edit-entry-draft"));
     return user;
   }
 
@@ -837,18 +851,21 @@ describe("Yevmiye Kaydı diyaloğu (T4)", () => {
   // --- M: mockup sadakati ------------------------------------------------
 
   /**
-   * 🔴 KARAR K4 — MOCKUP'IN İCAT ETTİĞİ İKİ ALAN ÇİZİLMEZ.
+   * 🔴 KARAR K4 — MOCKUP'IN İCAT ETTİĞİ `Satır Açıklaması` ÇİZİLMEZ.
    *
-   * `M:99-101` `Fiş No` ve `M:121` `Satır Açıklaması` şemada YOKTUR
-   * (`JournalEntryResponse`te `entry_no`/`document_no` yok;
-   * `JournalLineInput` = `account_id`·`debit`·`credit`, `extra=forbid`).
-   * DEVRE DIŞI da basılmazlar: kapalı bir "Fiş No" kutusu var olmayan bir
-   * numaralandırma VAAT EDER, `Satır Açıklaması` ise yazılanı sessizce yutardı.
+   * `M:121` `Satır Açıklaması` şemada YOKTUR: `JournalLineInput` =
+   * `account_id`·`debit`·`credit` ve `additionalProperties: false` (ölçüldü).
+   * DEVRE DIŞI da basılmaz: yazılanı sessizce yutardı.
+   *
+   * 🔴 BU TEST BÖLÜNDÜ (F-FISNO). K4'ün ikizi olan `M:99-101` `Fiş No`
+   * iddiası ARTIK GEÇERSİZDİR — `entry_no` sözleşmeye girdi ve alan basılıyor
+   * (aşağıdaki FIS-NO bekçileri). İki iddia aynı `it` içindeyken `Fiş No`
+   * satırları İLK SIRADAYDI: alan basılır basılmaz orada patlıyor, arkasındaki
+   * HÂLÂ GEÇERLİ `Satır Açıklaması` + sütun başlığı bekçileri HİÇ KOŞMUYORDU.
+   * Negatif iddia kendi testinde durur.
    */
-  it("K4: mockup'ın icat ettiği `Fiş No` ve `Satır Açıklaması` HİÇ basılmaz", async () => {
+  it("K4: mockup'ın icat ettiği `Satır Açıklaması` sütunu HİÇ basılmaz", async () => {
     await openCreate();
-    expect(screen.queryByLabelText(/Fiş No/i)).toBeNull();
-    expect(screen.queryByText(/Fiş No/i)).toBeNull();
     expect(screen.queryByText("Satır Açıklaması")).toBeNull();
 
     const headers = within(screen.getByTestId("mu-lines-editor")).getAllByRole("columnheader");
@@ -859,6 +876,78 @@ describe("Yevmiye Kaydı diyaloğu (T4)", () => {
       "Alacak ₺",
       "Sil",
     ]);
+  });
+
+  // --- FIS-NO: `M:99-101` `Fiş No` alanı ---------------------------------
+
+  /**
+   * 🔴 K4'ÜN `Fiş No` YARISI DÜŞTÜ — GEREKÇESİ ÖLÇÜMLE ÇÜRÜDÜ.
+   *
+   * `entry_no` artık sözleşmede VAR: hem `JournalEntryResponse` hem
+   * `JournalEntryDetailResponse` üzerinde `string`, ZORUNLU, nullable DEĞİL.
+   * Yani mockup'ın kutusu artık var olmayan bir numaralandırma VAAT ETMİYOR;
+   * gerçek bir alanın karşılığı. `M:99-101`: etiket `Fiş No`, DEVRE DIŞI
+   * input, placeholder `Otomatik`, ipucu `Kayıtta üretilir`, monospace.
+   *
+   * 🔴 UYDURMA VERİ YASAĞI (F-UNIT2): numarayı SUNUCU üretir. Form onu
+   * oluşturma kipinde TAHMİN ETMEZ — kutu BOŞ durur. Önden basılmış bir
+   * `YEV-…` kullanıcıya sunucununkiyle çakışacak bir numara vaat ederdi.
+   */
+  it("FIS-NO oluşturmada `Fiş No` kutusu VARDIR, kilitlidir ve SAHTE numara basmaz", async () => {
+    await openCreate();
+
+    const fisNo = screen.getByLabelText(/^Fiş No$/);
+    expect(fisNo).toBeDisabled();
+    expect(fisNo).toHaveValue("");
+    expect(fisNo).toHaveAttribute("placeholder", "Otomatik");
+    expect(screen.getByText("Kayıtta üretilir")).toBeInTheDocument();
+
+    // Diyalogda `YEV-…` biçiminde TEK bir metin bile yoktur.
+    expect(within(screen.getByRole("dialog")).queryByText(/YEV-\d{4}-\d{4}/)).toBeNull();
+  });
+
+  /**
+   * Düzenleme kipi (taslak) — numara SUNUCUDAN gelir ve OKUNUR basılır.
+   *
+   * 🔴 Beklenen dize ELLE yazıldı. `YEV-${entry().entry_date.slice(0, 4)}-0001`
+   * gibi bir ifade kendi ifadesini kendisiyle karşılaştırır ve HİÇBİR ŞEY
+   * bekçilemez — biçim bozulsa bile yeşil kalırdı.
+   */
+  it("FIS-NO düzenlemede SUNUCUDAN gelen gerçek numara basılır", async () => {
+    await openEdit();
+
+    const fisNo = screen.getByLabelText(/^Fiş No$/);
+    expect(fisNo).toHaveValue("YEV-2026-0001");
+    expect(fisNo).toBeDisabled();
+  });
+
+  /**
+   * 🔴 NEGATİF İDDİA KENDİ TESTİNDE (OK-1C/F-OK dersi). Yukarıdaki
+   * pozitif iddia kırılırsa bu bekçi onun arkasında SESSİZCE ATLANMASIN.
+   * Numara zaten üretilmiştir; `Kayıtta üretilir` cümlesi burada YALAN olurdu.
+   */
+  it("FIS-NO düzenlemede `Kayıtta üretilir` ipucu BASILMAZ", async () => {
+    await openEdit();
+    expect(screen.queryByText("Kayıtta üretilir")).toBeNull();
+  });
+
+  /** Kilitli kip (`posted`) de bir GÖRÜNTÜLEME kipidir — numara orada da basılır. */
+  it("FIS-NO kilitli (posted) fişte numara YİNE basılır", async () => {
+    vi.mocked(useJournalEntry).mockReturnValue(
+      queryOk({ ...DRAFT_DETAIL, status: "posted" as const }),
+    );
+    await openEdit();
+
+    expect(screen.getByTestId("mu-entry-dialog-locked")).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Fiş No$/)).toHaveValue("YEV-2026-0001");
+  });
+
+  /** Biçim bekçisi: `YEV-{yıl}-{sıra:04d}` — dört haneli yıl, dört haneli sıra. */
+  it("FIS-NO basılan numara `YEV-{yıl}-{sıra:04d}` biçimindedir", async () => {
+    await openEdit();
+
+    const fisNo = screen.getByLabelText(/^Fiş No$/) as HTMLInputElement;
+    expect(fisNo.value).toMatch(/^YEV-\d{4}-\d{4}$/);
   });
 
   it("M:119/130 sıra numarası sütunu satırları numaralar", async () => {

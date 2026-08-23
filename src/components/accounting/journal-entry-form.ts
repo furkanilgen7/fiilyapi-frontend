@@ -18,12 +18,16 @@ import { normalizeDecimalInput, isZeroDecimalString, subtractDecimalStrings, sum
  * `period_month`, `reversal_of_id`, satırın `sort_order`ı) gövdeye GİREMEZ:
  * şemalar `extra="forbid"`dir, gönderilirse **422**dir.
  *
- * 🔴 BAYAT SATIR DÜZELTİLDİ (F-MUF T4): burada eskiden "form mockup'ı YOKTUR
- * (S-FRM kanonu)" yazıyordu. ARTIK VAR — `projedesign/Form - Yevmiye
- * Kaydi.dc.html` (aşağıda `M:` = o dosyanın satırı) ve düzen/metin ondan
- * gelir. Şemadan türeme kuralı YİNE DE geçerlidir: mockup'ın İCAT ETTİĞİ iki
- * alan (`M:99` `Fiş No` · `M:121` `Satır Açıklaması`) BASILMAZ — gerekçe
- * `JournalEntryFormModal` / `JournalLinesEditor` başlarında.
+ * 🔴 BAYAT SATIR DÜZELTİLDİ (F-MUF T4, sonra F-FISNO T3): burada eskiden "form
+ * mockup'ı YOKTUR (S-FRM kanonu)" yazıyordu. ARTIK VAR — `projedesign/Form -
+ * Yevmiye Kaydi.dc.html` (aşağıda `M:` = o dosyanın satırı) ve düzen/metin
+ * ondan gelir. Şemadan türeme kuralı YİNE DE geçerlidir: `M:121` `Satır
+ * Açıklaması` mockup'ın İCAT ETTİĞİ bir alandır ve BASILMAZ — gerekçe
+ * `JournalLinesEditor` başında. `M:99-101` `Fiş No` ise ARTIK BASILIR: FIS-NO
+ * dilimi `entry_no`yu üretti (`YEV-{yıl}-{sıra:04d}`), F-OK'un openapi devri
+ * onu sözleşmeye `required` indirdi (`JournalEntryResponse` /
+ * `JournalEntryDetailResponse`, nullable değil) — artık şemadan türer, gerekçe
+ * `JournalEntryFormModal` başında.
  *
  * Bu modülde AĞ ve DOM yoktur; testi `journal-entry-form.test.ts`te yaşar.
  */
@@ -93,6 +97,10 @@ export const JOURNAL_FORM_TEXT = {
   descriptionHint: `Maks ${JOURNAL_DESCRIPTION_MAX} karakter · Yevmiye listesinde bu metin görünür`,
   /** `M:95` */
   descriptionPlaceholder: "Örn. Taşeron ödemesi — Akın İnşaat Hakediş #47",
+  /** `M:100` */
+  entryNoPlaceholder: "Otomatik",
+  /** `M:101` — YALNIZ oluşturma kipinde basılır; numarası olan fişte YALAN olur. */
+  entryNoHint: "Kayıtta üretilir",
   /** `M:106` */
   detailNotePlaceholder: "Fatura no, banka referansı, ek açıklama...",
   /** `M:113` */
