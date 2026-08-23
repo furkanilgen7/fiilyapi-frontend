@@ -7,12 +7,16 @@ export function CardEmptyState({
   pendingModule,
 }: {
   title: string;
-  pendingModule: string;
+  // Opsiyonel: gerekce satiri YALNIZ anahtar verildiginde basilir. Anahtarin
+  // bayat kaldigi yuzeylerde (or. onay karti) cagiran taraf bilerek atlar.
+  pendingModule?: string;
 }) {
   return (
     <div className="dash-empty">
       <p className="dash-empty__title">{title}</p>
-      <p className="dash-empty__hint">{pendingModuleLabel(pendingModule)}</p>
+      {pendingModule !== undefined && (
+        <p className="dash-empty__hint">{pendingModuleLabel(pendingModule)}</p>
+      )}
     </div>
   );
 }

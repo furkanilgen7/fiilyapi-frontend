@@ -20,3 +20,10 @@ describe("CardEmptyState", () => {
     expect(screen.getByText("Fatura verisi bu yüzeye henüz bağlanmadı")).toBeInTheDocument();
   });
 });
+
+describe("CardEmptyState · pendingModule verilmediginde", () => {
+  it("gerekce paragrafi HIC basilmaz", () => {
+    const { container } = render(<CardEmptyState title="Onay bekleyen kayıt yok" />);
+    expect(container.querySelector(".dash-empty__hint")).toBeNull();
+  });
+});
