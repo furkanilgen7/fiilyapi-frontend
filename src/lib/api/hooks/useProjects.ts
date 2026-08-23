@@ -10,7 +10,19 @@ export type ProjectListResponse = components["schemas"]["ProjectListResponse"];
 export type ProjectListItem = components["schemas"]["ProjectListItem"];
 export type ProjectDetail = components["schemas"]["ProjectDetailResponse"];
 export type ProjectCounts = ProjectListResponse["counts"];
-export type ProjectTypeFilter = "taahhut" | "kendi_yatirim" | "kat_karsiligi";
+/**
+ * Proje türü enum'u — `ProjectDetailResponse.project_type` ve
+ * `ProjectCostsResponse.project_type` alanlarının tipi (F-PKK spec §2: proje
+ * türü ayrımını yapan alan BUDUR, `contracting`/`investment`/`land_share`
+ * kartları yalnız ipucudur).
+ */
+export type ProjectType = components["schemas"]["ProjectType"];
+/**
+ * Liste süzgeci ile TÜRÜN KENDİSİ bugün AYNI kümedir; elle yazılmış birleşim
+ * yerine şemadan türetilir — şemaya dördüncü bir tür eklendiğinde süzgeç
+ * sessizce eksik kalmaz (F-PKK T1).
+ */
+export type ProjectTypeFilter = ProjectType;
 
 export interface ProjectListFilter {
   type?: ProjectTypeFilter;

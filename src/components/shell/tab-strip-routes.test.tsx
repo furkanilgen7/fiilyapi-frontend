@@ -62,13 +62,42 @@ interface StripCase {
 }
 
 const STRIPS: readonly StripCase[] = [
+  // 🔴 F-PKK — ŞERİT ARTIK PROJE TÜRÜNE GÖRE FARKLI SAYIDA SEKME BASAR, bu
+  // yüzden ÜÇ TÜRÜN ÜÇÜ DE ayrı kaydedilir. Tek tur kaydetmek, yalnız o türde
+  // görünen sekmelerin rotalarını denetimsiz bırakırdı — `UnitFormTabs`ın iki
+  // kez kaydedilmesiyle aynı gerekçe.
   {
-    name: "ProjectDetailTabs (proje detay şeridi)",
+    name: "ProjectDetailTabs · taahhüt (proje detay şeridi)",
     expectedTabCount: 5,
     render: () => (
       <ProjectDetailTabs
         projectId={PROJECT_SENTINEL}
         activePath={`/projeler/${PROJECT_SENTINEL}`}
+        projectType="taahhut"
+      />
+    ),
+  },
+  {
+    // "Proje Özeti" EKLENİR (`/projeler/{id}/ozet`), "Paylaşım Tablosu" YOK.
+    name: "ProjectDetailTabs · kendi yatırım (proje detay şeridi)",
+    expectedTabCount: 6,
+    render: () => (
+      <ProjectDetailTabs
+        projectId={PROJECT_SENTINEL}
+        activePath={`/projeler/${PROJECT_SENTINEL}`}
+        projectType="kendi_yatirim"
+      />
+    ),
+  },
+  {
+    // İKİ sekme de EKLENİR (`/ozet` + `/paylasim`).
+    name: "ProjectDetailTabs · kat karşılığı (proje detay şeridi)",
+    expectedTabCount: 7,
+    render: () => (
+      <ProjectDetailTabs
+        projectId={PROJECT_SENTINEL}
+        activePath={`/projeler/${PROJECT_SENTINEL}`}
+        projectType="kat_karsiligi"
       />
     ),
   },

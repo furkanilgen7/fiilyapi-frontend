@@ -16731,6 +16731,27 @@ export interface components {
          *     ad anlık görüntüsü `subcontractor_name`de kalır. `work_category` doğrudan
          *     sözleşmedendir (KY 219'un ad altındaki alt satırı) — satır artık tek bir
          *     sözleşme olduğu için "kategoriler ayrışırsa None" kuralı GEREKMEZ.
+         *
+         *     ## `progress_pct` — FİNANSAL ilerleme, FİZİKSEL DEĞİL
+         *
+         *     🔴 Bu alan **paranın oranıdır**: `paid / contract_amount × 100`. İşin
+         *     sahada ne kadarının bittiğini SÖYLEMEZ; yalnız sözleşme bedelinin ne
+         *     kadarının ÖDENDİĞİNİ söyler. Kardeş alan `ContractingCard.
+         *     physical_progress` BAŞKA BİR KAVRAMDIR (fiziksel imalat ilerlemesi) ve
+         *     henüz yer tutucudur — ikisi birbirinin yerine KULLANILAMAZ, ekranda da
+         *     "Fiziksel İlerleme" etiketiyle basılamaz. (Bu repoda bir mockup'ın harcama
+         *     oranını "Fiziksel İlerleme" diye etiketlediği CANLI bir tuzak zaten var;
+         *     bu alan onun ikinci örneği OLMAYACAK.)
+         *
+         *     İkiz alan `progress_payments.schemas.ProgressPaymentSummary.progress_pct`tir
+         *     (işveren tarafı, "§8 finansal ilerleme") — ad ve tip bilerek AYNIDIR, formül
+         *     de tek kopyadan çağrılır (`cost_summary._row` notu).
+         *
+         *     Payda `0` ise (kalemsiz sözleşme ya da bütün kalemleri `unit_price IS NULL`
+         *     olan sözleşme — ikisi de üretimde MEŞRU) değer `None`'dur: uydurma `%0`
+         *     basmak "veri yok"u "ilerleme yok" diye gösterirdi. Bedeli olup hiç ödeme
+         *     görmemiş sözleşme ise GERÇEK `0.00` döner (KY 236-243 "₺1,8M / ₺0" satırı
+         *     mockup'ta harfiyen `%0` basar).
          */
         SubcontractorCostRow: {
             /**
@@ -16752,6 +16773,8 @@ export interface components {
             paid: string;
             /** Pending */
             pending: string;
+            /** Progress Pct */
+            progress_pct: string | null;
         };
         /**
          * SubcontractorCostSummary
@@ -16759,6 +16782,13 @@ export interface components {
          *
          *     Satırların toplamıdır ve AYNI kaynaktan hesaplanır: iki ayrı toplama yolu
          *     açılsaydı tablo ile alt toplam zamanla ayrışırdı (`_list_stmt` dersi).
+         *
+         *     **`progress_pct` BURADA YOKTUR ve bu bilinçlidir:** KY tfoot'unun "İlerleme"
+         *     hücresi HARFİYEN BOŞTUR (`<td></td>`, KY 248), KK tablosunun ise tfoot'u hiç
+         *     yoktur. Toplam bir ilerleme yüzdesi eklemek mockup'ın İSTEMEDİĞİ bir sayıyı
+         *     icat etmek olurdu; üstelik "hangi ortalama" sorusunun tek doğru cevabı da
+         *     yoktur (satırların ortalaması ile `Σödenen / Σbedel` farklı sayılardır).
+         *     Sütun SATIR düzeyinde yaşar.
          */
         SubcontractorCostSummary: {
             /** Contract Amount */

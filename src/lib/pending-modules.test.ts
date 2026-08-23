@@ -111,6 +111,68 @@ describe("pendingModuleLabel", () => {
     expect(pendingModuleLabel("section_boq")).toBe("İlgili modülle birlikte gelir");
   });
 
+  // 🔴 F-PKK T1 · Proje Özeti (KY/KK) + Paylaşım Tablosu (KKP) ekranlarının
+  // mockup'ta ÇİZİLİ olup üründe KARŞILIĞI OLMAYAN yüzeyleri. Beşi de bir
+  // MODÜL eksikliği DEĞİL, ALAN/UÇ eksikliğidir — metinler bunu söyler.
+  it("F-PKK anahtarlarini esler (alan/uc eksikligi, modul degil)", () => {
+    expect(pendingModuleLabel("construction_progress")).toBe(
+      "İnşaat ilerlemesi hesaplanmıyor (hakediş yüzdesi proje düzeyine toplanmıyor)",
+    );
+    expect(pendingModuleLabel("project_cash_position")).toBe(
+      "Proje nakit durumu hiçbir uçtan gelmiyor (maliyet ucu nakit taşımaz)",
+    );
+    expect(pendingModuleLabel("sales_breakeven")).toBe(
+      "Başabaş noktası hesaplanmıyor (maliyet ucu eşik ünite sayısı döndürmüyor)",
+    );
+    expect(pendingModuleLabel("landowner_delivery_tracking")).toBe(
+      "Arsa sahibi teslim takibi hiçbir uçtan gelmiyor (kat karşılığı özeti teslim adımı taşımaz)",
+    );
+    expect(pendingModuleLabel("subcontractor_contract_status")).toBe(
+      "Sözleşme durumu maliyet satırından gelmiyor",
+    );
+  });
+
+  // 🔴 F-PKK T1 · EMRİN ALTINCI ANAHTARI ÖLÇÜLDÜ VE ÇÜRÜTÜLDÜ. KK 161-163
+  // hissedar başına "10 ünite" basar ve emir bunu `shareholder_unit_count`
+  // gerekçesiyle devre dışı bırakmamı istiyordu. Kaynak VARDIR:
+  // `LandShareShareholderRow` (`GET /projects/{id}/land-share/summary` →
+  // `shareholders[]`) `unit_count` VE `value_total` taşır ve o ucun hook'u
+  // canlıdır (`useLandShareSummary`). Yalnız `ProjectDetailResponse
+  // .land_share.shareholders` (`ShareholderResponse`) sayıyı taşımaz — ekran
+  // ÖZET ucunu okur. Anahtar EKLENMEZ: eklenirse ekran gerçek veriyi
+  // bastırıp YALAN bir gerekçe basardı (`section_boq` emsali).
+  it("shareholder_unit_count anahtari EKLENMEDI - kaynak land-share/summary'de VAR", () => {
+    expect(pendingModuleLabel("shareholder_unit_count")).toBe("İlgili modülle birlikte gelir");
+  });
+
+  // 🔴 F-PKK T2 · ÖNCEDEN KAYIT EDİLMİŞ BORÇ. `FALLBACK_LABEL`in kendi notu bu
+  // iki anahtarı isim isim sayıp "o ekran yazıldığında BURAYA eklenmelidir,
+  // aksi hâlde kullanıcı genel metni görür" diyordu. Ekran BU dilimde yazıldı.
+  // Backend eşlemesi (`projects/cost_summary.py:154-156`): permits→accounting ·
+  // financing→treasury · marketing→accounting.
+  it("accounting ve treasury artik GENEL YEDEGE DUSMEZ (F-PKK borcu odendi)", () => {
+    const fallback = pendingModuleLabel("__eslenmemis_anahtar__");
+
+    expect(pendingModuleLabel("accounting")).not.toBe(fallback);
+    expect(pendingModuleLabel("treasury")).not.toBe(fallback);
+    expect(pendingModuleLabel("accounting")).toBe(
+      "Muhasebe verisi bu yüzeye henüz bağlanmadı (gider hesapları projeye kırılmıyor)",
+    );
+    expect(pendingModuleLabel("treasury")).toBe(
+      "Hazine verisi bu yüzeye henüz bağlanmadı (kredi ve faiz projeye kırılmıyor)",
+    );
+  });
+
+  // İkisi de MODÜL eksikliği DEĞİL: `/muhasebe` ve `/hazine` CANLI. Metin
+  // "modül yok" derse bayat kalıba geri düşmüş oluruz (F-UNIT1 T5 dersi).
+  it("iki yeni metin de bayat 'modulyle birlikte gelir' kalibini KULLANMAZ", () => {
+    for (const key of ["accounting", "treasury"]) {
+      expect(pendingModuleLabel(key), `"${key}" bayat kalıba düştü`).not.toMatch(
+        /modülle birlikte gelir|modülüyle birlikte gelir/,
+      );
+    }
+  });
+
   it("bilinmeyen anahtarda genel metin doner", () => {
     expect(pendingModuleLabel("bilinmeyen")).toBe("İlgili modülle birlikte gelir");
   });
