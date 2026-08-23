@@ -222,8 +222,9 @@
   color: var(--color-text-muted);
 }
 
-/* Onay karti · sayac dolu ama satirlar gelmiyor hali — mockup satir 308-313'un
-   kutusunu (10px 12px / #f8fafc / 1px #e2e8f0 / 8px) aynen kullanan tek bag. */
+/* Onay karti · sayac dolu ama satirlar gelmiyor hali — mockup satir 310'un
+   kutusunu (10px 12px / #f8fafc / 1px #e2e8f0 / 8px) aynen kullanan tek bag;
+   baslik 312 (13px/500 #1e293b), alt satir 313 (11px #94a3b8 margin-top:2px). */
 .dash-list__row--link {
   display: block;
   text-decoration: none;

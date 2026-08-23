@@ -18,7 +18,8 @@ export function PendingApprovalsCard({ data }: { data: Placeholder }) {
   // Tek olcut: `data.count` ve `items.length`.
   let body;
   if (items.length > 0) {
-    // Mockup satir 308-313: dolu liste.
+    // Mockup satir 309-331: dolu liste (309 sutun sarmalayici gap:10px,
+    // 310-316 satir kutusu).
     body = (
       <ul className="dash-list">
         {items.map((item) => (
@@ -30,8 +31,15 @@ export function PendingApprovalsCard({ data }: { data: Placeholder }) {
     );
   } else if (data.count > 0) {
     // Sayac var ama satirlar gelmiyor: kullaniciyi kaydin durdugu yere
-    // (`/onay-kutusu`) gonderen tek satir. Kutu mockup satir 308-313'un
-    // ayni kutusudur (`.dash-list__row`).
+    // (`/onay-kutusu`) gonderen tek satir. Kutu mockup satir 310'un AYNI
+    // kutusudur (`.dash-list__row`); baslik 312 (13/500), alt satir 313
+    // (11px, #94a3b8, margin-top:2px).
+    // 🔴 Metin UYDURULMADI, kanondan olculdu: "Onay Kutusu" =
+    // `shell/nav-config.ts:35` + `approvals/ApprovalsView.tsx:31`
+    // (`PAGE_TITLE`) + `projedesign/Onay Kutusu.dc.html:28`;
+    // "{count} bekleyen" = `projedesign/Onay Kutusu.dc.html:32`.
+    // Mockup bu HALI cizmiyor (yalniz dolu listeyi cizer) — WORKFLOW.md §3
+    // "backend'in vermedigi alan -> zarif dusus + kullaniciya bildirim".
     body = (
       <div className="dash-list">
         <Link className="dash-list__row dash-list__row--link" href="/onay-kutusu">
