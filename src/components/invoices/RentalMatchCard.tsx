@@ -1,3 +1,7 @@
+// Bu kart MK-2 makine kira faturasını gösterir (bkz. aşağıdaki yorum bloğu),
+// generik fatura verisini DEĞİL — bu yüzden rozet-renk eşlemesinin doğru
+// sahibi equipment-rental'daki sözlüktür, burada tekrar TANIMLANMAZ.
+import { VARIANCE_BADGE_VARIANT } from "@/components/equipment-rental/rental-labels";
 import { Badge, Button } from "@/components/ui";
 import { formatDecimal } from "@/lib/format";
 import type {
@@ -12,13 +16,6 @@ const VARIANCE_LABELS: Record<VarianceStatus, string> = {
   over: "Fark Var", // FGE:128
   under: "Eksik Faturalanmış",
   unknown: "Karşılaştırılamadı",
-};
-
-const VARIANCE_VARIANTS: Record<VarianceStatus, "success" | "warning" | "neutral"> = {
-  match: "success",
-  over: "warning",
-  under: "warning",
-  unknown: "neutral",
 };
 
 /**
@@ -111,7 +108,7 @@ export function RentalMatchCard({
                       : `${formatDecimal(line.hours_variance, 2)} saat`}
                   </td>
                   <td className="is-center">
-                    <Badge variant={VARIANCE_VARIANTS[line.variance_status]}>
+                    <Badge variant={VARIANCE_BADGE_VARIANT[line.variance_status]}>
                       {VARIANCE_LABELS[line.variance_status]}
                     </Badge>
                   </td>

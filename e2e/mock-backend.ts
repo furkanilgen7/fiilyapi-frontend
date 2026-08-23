@@ -6495,7 +6495,18 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         portfolio: { available: false, value: null, pending_module: "progress_payments" },
         receivables: { available: false, value: null, pending_module: "invoicing" },
         average_margin: { available: false, value: null, pending_module: "progress_payments" },
-        pending_approvals: { available: false, items: [], count: 0, pending_module: "approvals" },
+        // 🔴 ARTIK YER TUTUCU DEGIL. Gercek backend (`dashboard/service.py`,
+        // P-YT2) onay motoruna BAGLANDI: `available` HER ZAMAN true, `count`
+        // gercek toplam, `items` ise BILEREK BOS (zarf `list[str]`tir, mockup
+        // satiri dort olgu ister — o is F-OK'undur). Fikstur ucunu de aynen
+        // taklit eder; sayinin nasil turedigi ve neden yaristan bagimsiz
+        // oldugu icin `dashboardPendingApprovalsCount`a bak.
+        pending_approvals: {
+          available: true,
+          items: [],
+          count: dashboardPendingApprovalsCount(state),
+          pending_module: "approvals",
+        },
         risks: { available: false, items: [], pending_module: "inventory" },
       });
     }
@@ -15535,8 +15546,17 @@ const MY_APPROVAL_ROLES: readonly MockApprovalItem["steps"][number]["approval_ro
   "project_manager",
 ];
 
-function approvalInboxFixture(state: MockState, limit: number, offset: number) {
-  const pending = APPROVAL_SEEDS.filter((seed) => {
+/**
+ * Onay kutusunun YAZMA HEDEFI. `onay-kutusu.spec.ts` bu kaydi GERCEKTEN onaylar
+ * ve testin sonunda geri alir; obur UC tohum (`scpp-3` · `pr-2` · `pp-5`) tum
+ * spec'lerde SALT-OKURDUR (`onay-kutusu-visual.spec.ts:19-21` bunu yazili
+ * olarak taahhut eder).
+ */
+const APPROVAL_WRITE_TARGET_ID = "scpp-8";
+
+/** `/approvals` kutusunun suzgeci — TEK KAYNAK (kutu ve panel ayni kurali okur). */
+function pendingApprovalSeeds(state: MockState) {
+  return APPROVAL_SEEDS.filter((seed) => {
     switch (seed.document_type) {
       case "subcontractor_progress_payment":
         return (
@@ -15555,6 +15575,37 @@ function approvalInboxFixture(state: MockState, limit: number, offset: number) {
         );
     }
   });
+}
+
+/**
+ * Gosterge paneli "Onay Bekleyenler" rozetinin sayisi.
+ *
+ * 🔴 YARIS TUZAGI VE YAPISAL CARE. Sayi durust olsun diye kutunun SUZGECINDEN
+ * turer (kopya suzgec yazilmaz) ama YAZMA HEDEFI sayimdan CIKARILIR.
+ * Gerekce olculdu: `onay-kutusu.spec.ts:214` `scpp-8`i gercekten onaylar
+ * (`:221`de geri alir). `playwright.config.ts` `fullyParallel: true`dur ve TUM
+ * spec'ler TEK sahte backend'i paylasir — `dashboard.png` / `shell-home.png`
+ * kareleri o mutasyon penceresine denk gelirse rozet 4 yerine 3 basar ve
+ * baseline'in hangi varyanta oturdugu SANSA kalirdi.
+ * Zamanlamaya guvenen cozumler (sirala / afterAll reset) bu pencereyi
+ * KAPATMAZ — ayni gerekce `mock-backend.ts`in "Elenen alternatifler" notunda
+ * zaten yazili. `onay-kutusu-visual.spec.ts` ayni sinifi ELEMAN KADRAJIYLA
+ * cozdu; panelde kadraj daraltilamaz (rozet sayfanin icinde), bu yuzden burada
+ * SAYIM daraltilir ⇒ sonuc her kosuda SABIT 3.
+ *
+ * ⚠️ BILINEN VE KABUL EDILEN 1 FARK: kutu dort satir listeler, panel uc der.
+ * Determinizm ugruna odenmis bilincli bir fikstur bedelidir; GERCEK backend'de
+ * boyle bir dislama YOKTUR (`dashboard/service.py` sayiyi dogrudan
+ * `approvals_service.pending_for_user` TOPLAMINDAN alir).
+ */
+function dashboardPendingApprovalsCount(state: MockState): number {
+  return pendingApprovalSeeds(state).filter(
+    (seed) => seed.document_id !== APPROVAL_WRITE_TARGET_ID,
+  ).length;
+}
+
+function approvalInboxFixture(state: MockState, limit: number, offset: number) {
+  const pending = pendingApprovalSeeds(state);
 
   const items: MockApprovalItem[] = pending
     .slice(offset, offset + limit)

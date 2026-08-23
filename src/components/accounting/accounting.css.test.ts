@@ -136,6 +136,16 @@ describe("accounting.css — T4 diyalogları", () => {
     expect(css).toMatch(/\.mu-modal\s*{[^}]*max-width:\s*min\(760px, 92vw\)/);
   });
 
+  /* 🔴 KARDEŞ KUSUR (F-BORC T2): F-FISNO düzeltmeyi YALNIZ `.mu-modal`a
+     uygulamıştı; `.mu-modal--account` `max-width`siz KALDI ve hesap diyaloğu
+     TARAYICIDA 480px basıyordu (ölçüldü, mockup `M:57` 560 ister).
+     Buradaki iki iddia yalnız bildirimin SİLİNMEDİĞİNİ korur; ETKİNİN bekçisi
+     `e2e/accounting-dialogs.spec.ts`teki tarayıcıda ölçen testtir. */
+  it("hesap diyaloğu da varsayılan 480px kabuktan GENİŞtir (M:57 = 560px)", () => {
+    expect(css).toMatch(/\.mu-modal--account\s*{[^}]*width:\s*min\(560px, 92vw\)/);
+    expect(css).toMatch(/\.mu-modal--account\s*{[^}]*max-width:\s*min\(560px, 92vw\)/);
+  });
+
   /* İDDİA TAŞINDI (F-MUF T4): şerit eskiden `repeat(3, 1fr)` idi; mockup
      `M:196` durumu anlatan DÖRDÜNCÜ (ve ilk) hücreyi ekler. */
   it("denge şeridi M:196 ızgarasıdır: durum + Toplam Borç / Alacak / Fark", () => {

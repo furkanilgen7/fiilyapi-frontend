@@ -96,16 +96,37 @@ test("409 kod cakismasi: Bolum Kodu alaninin altinda tek hata, genel banner basi
     await page.getByLabel("Bölüm Bedeli (₺)").fill("300000");
   }
 
-  // 1) Kurulum: B-Blok'ta "B2-E2E" koduyla bir bölüm oluştur (bu test kendi
-  // verisini kendi içinde kurar, başka teste bel bağlamaz).
+  // 🔴 KOD DENEME BAŞINA BENZERSİZDİR — "retry zehirlenmesi"ni önler.
+  // Sahte backend koşu boyunca TEK süreçtir, koşu başına BİR KEZ tohumlanır ve
+  // sıfırlama ucu YOKTUR (bilinçli karar: `mock-backend.ts` "Elenen
+  // alternatifler" notu). Bu test 1. adımda GERÇEKTEN bir bölüm oluşturur.
+  // Kod SABİT olsaydı zincir şuydu: ilk deneme 1. adımdan SONRA düşerse kayıt
+  // state'te KALIR → `playwright.config.ts` `retries: 1` ile gelen retry AYNI
+  // süreçte, AYNI kodla koşar → 1. ADIMIN KENDİSİ 409 alır.
+  // 🔴 İDDİA BOZULMADI: testin iddiası "AYNI kod ikinci kez reddedilir"dir ve
+  // aşağıdaki İKİ adım da `code` değişkeninin AYNI değerini kullanır. Kodun
+  // KOŞULAR/DENEMELER ARASI sabit olması iddianın parçası DEĞİLDİR.
+  const { workerIndex, retry } = test.info();
+  const code = `B2-E2E-${workerIndex}-${retry}`;
+
+  // 1) Kurulum: B-Blok'ta bu kodla bir bölüm oluştur (bu test kendi verisini
+  // kendi içinde kurar, başka teste bel bağlamaz).
   await page.goto("/projeler/p-1/santiyeler/s-2/bolumler/yeni");
-  await fillRequired("B2-E2E");
+  await fillRequired(code);
   await footerButton(page, "Bölümü Oluştur").click();
   await expect(page).toHaveURL(/\/santiyeler\/s-2\/bolumler\/[^/]+$/);
+  // 🔴 KURULUMUN GERÇEKTEN OLDUĞU AYRICA İDDİA EDİLİR (ÖLÇÜLDÜ — bu satır
+  // olmadan adım KÖR BEKÇİYDİ): yukarıdaki `[^/]+` kalıbı `.../bolumler/yeni`
+  // dizesini DE eşler, yani oluşturma 409 alıp sayfa `/yeni`de KALSA BİLE URL
+  // iddiası yeşil geçerdi. O hâlde kurulum sessizce hiçbir şey kurmaz ve test
+  // "409 döner" iddiasını kendi ARTIĞI üzerinde doğrulamış olurdu.
+  // Emsal: aynı dosyada `:60-61` ve `:81-82` URL iddiasını hep bir BAŞLIK
+  // iddiasıyla destekler; kör kalan TEK yer burasıydı (ardından `goto` gelir).
+  await expect(page.getByRole("heading", { level: 1, name: "Temel Kazı" })).toBeVisible();
 
   // 2) Aynı kodla İKİNCİ bir bölüm oluşturmaya çalış → 409.
   await page.goto("/projeler/p-1/santiyeler/s-2/bolumler/yeni");
-  await fillRequired("B2-E2E");
+  await fillRequired(code);
   await footerButton(page, "Bölümü Oluştur").click();
 
   const codeField = page.getByLabel("Bölüm Kodu");
