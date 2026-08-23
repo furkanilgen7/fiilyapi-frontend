@@ -66,7 +66,10 @@ export function ProjectSummaryHero({ project, costs, totals }: ProjectSummaryHer
   const landShare = project.land_share;
 
   return (
-    <header className={`psum-hero psum-hero--${project.project_type}`}>
+    <header
+      className={`psum-hero psum-hero--${project.project_type}`}
+      data-testid="psum-hero"
+    >
       <div className="psum-hero__top">
         <div>
           <p className="psum-hero__type">

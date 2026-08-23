@@ -62,7 +62,7 @@ test.describe("Proje Özeti (KY · p-2)", () => {
   });
 
   test("hero'da 'Insaat Ilerlemesi' ve 'Nakit Durumu' gerekceli bos basar", async ({ page }) => {
-    const hero = page.getByRole("banner");
+    const hero = page.getByTestId("psum-hero");
     await expect(hero).toContainText("hakediş yüzdesi proje düzeyine toplanmıyor");
     await expect(hero).toContainText("maliyet ucu nakit taşımaz");
   });
@@ -100,7 +100,7 @@ test.describe("Proje Özeti (KK · p-3)", () => {
   });
 
   test("kat karsiligi hero'sunda arsa maliyeti GERCEK sifirdir", async ({ page }) => {
-    const hero = page.getByRole("banner");
+    const hero = page.getByTestId("psum-hero");
     await expect(hero).toContainText("Paylaşım Oranı");
     await expect(hero).toContainText("Arsa Maliyeti");
   });

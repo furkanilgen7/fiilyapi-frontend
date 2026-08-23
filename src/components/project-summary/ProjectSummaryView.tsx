@@ -59,11 +59,11 @@ export function ProjectSummaryView({ projectId, activePath }: ProjectSummaryView
   if (project.project_type === "taahhut") {
     return (
       <div className="psum">
-        <ProjectDetailTabs
-          projectId={projectId}
-          activePath={activePath}
-          projectType={project.project_type}
-        />
+        <div className="psum-tabbar">          <ProjectDetailTabs
+            projectId={projectId}
+            activePath={activePath}
+            projectType={project.project_type}
+          />        </div>
         <p className="psum-message">
           Proje özeti yalnız kendi yatırım ve kat karşılığı projelerinde tutulur; taahhüt
           projesinin özeti proje detay ekranındadır.
@@ -74,11 +74,11 @@ export function ProjectSummaryView({ projectId, activePath }: ProjectSummaryView
 
   return (
     <div className="psum">
-      <ProjectDetailTabs
-        projectId={projectId}
-        activePath={activePath}
-        projectType={project.project_type}
-      />
+      <div className="psum-tabbar">        <ProjectDetailTabs
+          projectId={projectId}
+          activePath={activePath}
+          projectType={project.project_type}
+        />      </div>
       <ProjectSummaryHero
         project={project}
         costs={costs}

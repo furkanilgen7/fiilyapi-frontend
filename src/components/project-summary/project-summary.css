@@ -561,3 +561,29 @@
   color: var(--color-text);
   font-variant-numeric: tabular-nums;
 }
+
+/* --- Sekme şeridi kabı ------------------------------------------------- */
+
+/*
+ * 🔴 GÖRSEL TURDA ÖLÇÜLEN KUSUR (kare 1'de görüldü): `ProjectDetailTabs`
+ * `--color-on-brand*` renklerini kullanır ve marka DEGRADESİNİN ÜSTÜNDE
+ * durmak üzere tasarlanmıştır (`.project-hero` içinde yaşar). Bu iki ekran
+ * şeridi kendi başına bastığı için sekmeler AÇIK ZEMİNDE AÇIK RENK kalıyor
+ * ve okunmuyordu — devre-dışı sekmenin gerekçe notu da öyle.
+ *
+ * Çözüm şeridi KENDİ yüzeyine oturtmaktır. `project-detail.css`e
+ * DOKUNULMADI: orası `ProjectHeroBar` ile paylaşılıyor ve oradaki bir
+ * değişiklik `proje-detay.png` baseline'ını oynatırdı.
+ */
+.psum-tabbar {
+  background: var(--gradient-hero-project);
+  border-radius: var(--radius-lg, 16px);
+  padding: var(--space-2, 8px) var(--space-6, 24px) var(--space-4, 16px);
+  color: var(--color-on-brand);
+}
+
+/* Şerit kabın İÇİNDE tek öğedir; hero içindeki üst boşluğuna ihtiyacı yok. */
+.psum-tabbar .project-hero__tabs {
+  margin-top: var(--space-2, 8px);
+  flex-wrap: wrap;
+}

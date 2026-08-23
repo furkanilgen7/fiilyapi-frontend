@@ -103,11 +103,11 @@ export function LandShareTableView({ projectId, activePath }: LandShareTableView
 
   return (
     <div className="psum">
-      <ProjectDetailTabs
-        projectId={projectId}
-        activePath={activePath}
-        projectType={projectType}
-      />
+      <div className="psum-tabbar">        <ProjectDetailTabs
+          projectId={projectId}
+          activePath={activePath}
+          projectType={projectType}
+        />      </div>
 
       <div className="psum-card__head">
         <div>
