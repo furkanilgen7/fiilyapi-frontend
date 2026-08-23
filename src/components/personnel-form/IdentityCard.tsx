@@ -1,4 +1,4 @@
-import { Field, Input, Select } from "@/components/ui";
+import { DateInput, Field, Input, Select } from "@/components/ui";
 
 import {
   GENDER_OPTIONS,
@@ -121,12 +121,11 @@ export function IdentityCard({ values, onChange, errors }: IdentityCardProps) {
           {/* PE 66 */}
           <Field label="Doğum Tarihi" required error={errors?.birthDate}>
             {(control) => (
-              <Input
+              <DateInput
                 {...control}
-                type="date"
                 value={values.birthDate}
                 status={errors?.birthDate ? "error" : "default"}
-                onChange={(event) => onChange("birthDate", event.target.value)}
+                onValueChange={(iso) => onChange("birthDate", iso)}
               />
             )}
           </Field>

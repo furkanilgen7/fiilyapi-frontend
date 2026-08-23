@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { Button, Field, Input, Select } from "@/components/ui";
+import { Button, DateInput, Field, Input, Select } from "@/components/ui";
 import { isoDate } from "@/components/site-diary/derive";
 import { backendErrorMessage } from "@/lib/api/error-message";
 import {
@@ -209,13 +209,12 @@ export function InvoicePaymentsPanel({
           {/* 236-238 */}
           <Field label={isIncoming ? "Ödeme Tarihi" : "Tahsilat Tarihi"}>
             {(control) => (
-              <Input
+              <DateInput
                 {...control}
-                type="date"
                 value={paidOn}
                 disabled={!canWrite}
                 data-testid="fat-payment-date"
-                onChange={(event) => setPaidOn(event.target.value)}
+                onValueChange={(iso) => setPaidOn(iso)}
               />
             )}
           </Field>

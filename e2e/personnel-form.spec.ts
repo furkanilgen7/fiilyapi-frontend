@@ -56,7 +56,7 @@ async function fillPublishable(
   await page.getByLabel("Adres").first().fill("Cumhuriyet Mah. 12/3 Ankara");
   await page.getByLabel("Acil Durum Kişisi").first().fill("Ayşe Yılmaz");
   await page.getByLabel("Acil Durum Telefonu").first().fill("0533 987 65 43");
-  await page.getByLabel("İşe Giriş Tarihi").first().fill("2026-08-01");
+  await page.getByLabel("İşe Giriş Tarihi").first().fill("01.08.2026");
   await page.getByLabel("Atandığı Proje").first().selectOption({ index: 1 });
   await page.getByLabel("Ücret Tutarı (₺)").first().fill("1200");
 }

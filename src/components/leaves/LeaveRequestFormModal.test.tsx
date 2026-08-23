@@ -134,8 +134,8 @@ function setup(
 async function fillBase(user: ReturnType<typeof userEvent.setup>, typeId = "lt-1") {
   await user.selectOptions(screen.getByTestId("iz-request-personnel"), "per-1");
   await user.selectOptions(screen.getByTestId("iz-request-type"), typeId);
-  await user.type(screen.getByTestId("iz-request-start"), "2026-08-24");
-  await user.type(screen.getByTestId("iz-request-end"), "2026-08-26");
+  await user.type(screen.getByTestId("iz-request-start"), "24.08.2026");
+  await user.type(screen.getByTestId("iz-request-end"), "26.08.2026");
 }
 
 beforeEach(() => {
@@ -200,8 +200,8 @@ describe("LeaveRequestFormModal — gövde (T 79-181)", () => {
   it("gün alanı TÜRETİLİR ve salt-okunurdur (141-145 · KARAR 1)", async () => {
     const user = userEvent.setup();
     render(<LeaveRequestFormModal year={2026} onClose={vi.fn()} />);
-    await user.type(screen.getByTestId("iz-request-start"), "2026-08-24");
-    await user.type(screen.getByTestId("iz-request-end"), "2026-09-04");
+    await user.type(screen.getByTestId("iz-request-start"), "24.08.2026");
+    await user.type(screen.getByTestId("iz-request-end"), "04.09.2026");
 
     const days = screen.getByTestId("iz-request-days");
     expect(days).toHaveValue("12");
@@ -235,8 +235,8 @@ describe("LeaveRequestFormModal — hak aşımı (T 149-158 · KARAR 4)", () => 
     render(<LeaveRequestFormModal year={2026} onClose={vi.fn()} />);
     await user.selectOptions(screen.getByTestId("iz-request-personnel"), "per-1");
     await user.selectOptions(screen.getByTestId("iz-request-type"), "lt-1");
-    await user.type(screen.getByTestId("iz-request-start"), "2026-08-24");
-    await user.type(screen.getByTestId("iz-request-end"), "2026-09-04");
+    await user.type(screen.getByTestId("iz-request-start"), "24.08.2026");
+    await user.type(screen.getByTestId("iz-request-end"), "04.09.2026");
 
     const band = screen.getByTestId("iz-request-overrun");
     expect(band).toHaveTextContent("Hak aşımı — talep kaydedilemez");
@@ -251,8 +251,8 @@ describe("LeaveRequestFormModal — hak aşımı (T 149-158 · KARAR 4)", () => 
     render(<LeaveRequestFormModal year={2026} onClose={vi.fn()} />);
     await user.selectOptions(screen.getByTestId("iz-request-personnel"), "per-1");
     await user.selectOptions(screen.getByTestId("iz-request-type"), "lt-1");
-    await user.type(screen.getByTestId("iz-request-start"), "2026-08-24");
-    await user.type(screen.getByTestId("iz-request-end"), "2026-09-04");
+    await user.type(screen.getByTestId("iz-request-start"), "24.08.2026");
+    await user.type(screen.getByTestId("iz-request-end"), "04.09.2026");
 
     expect(screen.queryByTestId("iz-request-overrun")).not.toBeInTheDocument();
     expect(screen.getByTestId("iz-request-submit")).toBeEnabled();
@@ -264,8 +264,8 @@ describe("LeaveRequestFormModal — hak aşımı (T 149-158 · KARAR 4)", () => 
     // `lt-2` belge ister ama yıllık haktan DÜŞMEZ.
     await user.selectOptions(screen.getByTestId("iz-request-personnel"), "per-1");
     await user.selectOptions(screen.getByTestId("iz-request-type"), "lt-2");
-    await user.type(screen.getByTestId("iz-request-start"), "2026-08-24");
-    await user.type(screen.getByTestId("iz-request-end"), "2026-09-04");
+    await user.type(screen.getByTestId("iz-request-start"), "24.08.2026");
+    await user.type(screen.getByTestId("iz-request-end"), "04.09.2026");
 
     expect(screen.queryByTestId("iz-request-overrun")).not.toBeInTheDocument();
   });

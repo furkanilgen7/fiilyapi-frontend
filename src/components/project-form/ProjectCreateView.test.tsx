@@ -55,10 +55,10 @@ async function fillValidContracting(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("İl / İlçe"), "Çankaya / Ankara");
   await user.selectOptions(screen.getByLabelText("İşveren Firma"), "emp-1");
   await user.type(screen.getByLabelText("Sözleşme No"), "SZL-2026-005");
-  await user.type(screen.getByLabelText("İmza Tarihi"), "2026-01-10");
+  await user.type(screen.getByLabelText("İmza Tarihi"), "10.01.2026");
   await user.type(screen.getByLabelText("Sözleşme Bedeli (₺)"), "22400000");
-  await user.type(screen.getByLabelText("Başlangıç Tarihi"), "2026-02-01");
-  await user.type(screen.getByLabelText("Bitiş Tarihi"), "2027-11-01");
+  await user.type(screen.getByLabelText("Başlangıç Tarihi"), "01.02.2026");
+  await user.type(screen.getByLabelText("Bitiş Tarihi"), "01.11.2027");
   await user.type(screen.getByLabelText("Baz Endeks Değeri (D0)"), "1.000");
 }
 
@@ -166,8 +166,8 @@ describe("ProjectCreateView — gönderim (F12)", () => {
     const user = userEvent.setup();
     render(<ProjectCreateView />);
     await user.type(screen.getByLabelText("Proje Adı"), "Taslak Proje");
-    await user.type(screen.getByLabelText("Başlangıç Tarihi"), "2026-05-01");
-    await user.type(screen.getByLabelText("Bitiş Tarihi"), "2026-04-01");
+    await user.type(screen.getByLabelText("Başlangıç Tarihi"), "01.05.2026");
+    await user.type(screen.getByLabelText("Bitiş Tarihi"), "01.04.2026");
     await user.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
 
     expect(mutate).not.toHaveBeenCalled();

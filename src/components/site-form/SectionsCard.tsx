@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 
-import { Input, Select } from "@/components/ui";
+import { DateInput, Input, Select } from "@/components/ui";
 import { pendingModuleLabel } from "@/lib/pending-modules";
 import { useUserOptions } from "@/lib/api/hooks/useUserOptions";
 import { emptySectionRow, type SectionIssue, type SectionRow } from "./sections-validate";
@@ -150,25 +150,23 @@ export function SectionsCard({ rows, onRowsChange, issues = [] }: SectionsCardPr
                   </Select>
                 </td>
                 <td className="sections__cell">
-                  <Input
+                  <DateInput
                     size="row"
-                    type="date"
                     aria-label={`${label}. bölümün başlangıç tarihi`}
                     value={row.startDate}
-                    onChange={(e) => updateRow(index, { startDate: e.target.value })}
+                    onValueChange={(iso) => updateRow(index, { startDate: iso })}
                   />
                 </td>
                 <td className="sections__cell">
-                  <Input
+                  <DateInput
                     size="row"
-                    type="date"
                     aria-label={`${label}. bölümün bitiş tarihi`}
                     value={row.endDate}
                     status={endIssue ? "error" : "default"}
                     {...(endIssue
                       ? { "aria-invalid": true as const, "aria-describedby": `${uid}-issue-${index}-endDate` }
                       : {})}
-                    onChange={(e) => updateRow(index, { endDate: e.target.value })}
+                    onValueChange={(iso) => updateRow(index, { endDate: iso })}
                   />
                 </td>
                 {/* YER TUTUCU (§3.5): kontrol basılmaz, odak sırasında değildir. */}

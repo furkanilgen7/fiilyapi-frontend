@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 
-import { Button, Field, FileInput, Input, Select, Textarea } from "@/components/ui";
+import { Button, DateInput, Field, FileInput, Input, Select, Textarea } from "@/components/ui";
 import { Modal } from "@/components/settings/Modal";
 import { resolveWorkerSourceLabel } from "@/components/site-diary/diary-labels";
 import { backendErrorMessage } from "@/lib/api/error-message";
@@ -302,13 +302,12 @@ export function PersonnelDocumentFormModal({
           {/* 144-147 · Düzenlenme Tarihi = `issued_at` */}
           <Field label={TEXT.issuedAt}>
             {(control) => (
-              <Input
+              <DateInput
                 {...control}
                 ref={issuedAtRef}
-                type="date"
                 value={values.issuedAt}
                 disabled={isPending}
-                onChange={(event) => set("issuedAt", event.target.value)}
+                onValueChange={(iso) => set("issuedAt", iso)}
                 data-testid="pdf-issued-at"
               />
             )}
@@ -317,13 +316,12 @@ export function PersonnelDocumentFormModal({
           {/* 148-152 · Geçerlilik Bitiş Tarihi = `valid_until` */}
           <Field label={TEXT.validUntil} hint={TEXT.validUntilHint}>
             {(control) => (
-              <Input
+              <DateInput
                 {...control}
                 ref={validUntilRef}
-                type="date"
                 value={values.validUntil}
                 disabled={isPending}
-                onChange={(event) => set("validUntil", event.target.value)}
+                onValueChange={(iso) => set("validUntil", iso)}
                 data-testid="pdf-valid-until"
               />
             )}

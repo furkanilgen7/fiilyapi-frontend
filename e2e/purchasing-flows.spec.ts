@@ -63,7 +63,7 @@ async function saveDraftRequest(
   line: { stockItemId: string; quantity: string; unitPrice?: string },
 ): Promise<DraftRequest> {
   await page.getByTestId("talep-proje").selectOption({ label: WRITE_PROJECT_LABEL });
-  await page.getByTestId("talep-ihtiyac-tarihi").fill("2026-09-15");
+  await page.getByTestId("talep-ihtiyac-tarihi").fill("15.09.2026");
   await page.getByTestId("talep-malzeme-0").selectOption(line.stockItemId);
   await page.getByTestId("talep-miktar-0").fill(line.quantity);
   if (line.unitPrice !== undefined) {

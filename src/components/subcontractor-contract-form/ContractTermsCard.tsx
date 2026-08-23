@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { Checkbox, Field, Input, Select } from "@/components/ui";
+import { Checkbox, DateInput, Field, Input, Select } from "@/components/ui";
 import { PAYMENT_PERIOD_OPTIONS, type PaymentPeriod } from "@/lib/contract-labels";
 
 import { FSO_TEXT, MAX_LENGTH, PCT_MAX, PCT_MIN } from "./constants";
@@ -75,13 +75,12 @@ export function ContractTermsCard({
 
         <Field label="İmza Tarihi" required error={errors.signatureDate}>
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               value={values.signatureDate}
               disabled={disabled}
               status={errors.signatureDate ? "error" : "default"}
-              onChange={(event) => onChange("signatureDate", event.target.value)}
+              onValueChange={(iso) => onChange("signatureDate", iso)}
             />
           )}
         </Field>
@@ -103,26 +102,24 @@ export function ContractTermsCard({
 
         <Field label="İşe Başlama" required error={errors.startDate}>
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               value={values.startDate}
               disabled={disabled}
               status={errors.startDate ? "error" : "default"}
-              onChange={(event) => onChange("startDate", event.target.value)}
+              onValueChange={(iso) => onChange("startDate", iso)}
             />
           )}
         </Field>
 
         <Field label="Bitiş Tarihi" required error={errors.endDate}>
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               value={values.endDate}
               disabled={disabled}
               status={errors.endDate ? "error" : "default"}
-              onChange={(event) => onChange("endDate", event.target.value)}
+              onValueChange={(iso) => onChange("endDate", iso)}
             />
           )}
         </Field>

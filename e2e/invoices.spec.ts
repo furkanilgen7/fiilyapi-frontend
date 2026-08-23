@@ -346,7 +346,7 @@ test("form taslak kaydeder ve yeni faturanın DETAYINA götürür", async ({ pag
   await page.getByTestId("fat-party-name").fill("Test Alıcı A.Ş.");
   // 🔒 Tarih Temmuz penceresinin DIŞINDA seçilir: yeni kayıt başka testlerin
   // liste iddialarını kirletmesin.
-  await page.getByTestId("fat-issue-date").fill("2026-05-05");
+  await page.getByTestId("fat-issue-date").fill("05.05.2026");
 
   const row = page.getByTestId("fat-line-row").first();
   await row.getByLabel("1. kalem açıklaması").fill("Deneme kalemi");

@@ -225,8 +225,8 @@ test("talep formu: gün TÜRETİLİR, belge zorunlu tip kapıyı kapatır, kayı
 
   // 🔴 KARAR 3 · belge zorunlu tip seçilince kapı KAPANIR.
   await page.getByTestId("iz-request-type").selectOption("lt-2");
-  await page.getByTestId("iz-request-start").fill("2026-11-02");
-  await page.getByTestId("iz-request-end").fill("2026-11-06");
+  await page.getByTestId("iz-request-start").fill("02.11.2026");
+  await page.getByTestId("iz-request-end").fill("06.11.2026");
   // 🔴 KARAR 1 · gün TÜRETİLİR (iki uç DAHİL: 2–6 Kasım = 5).
   await expect(page.getByTestId("iz-request-days")).toHaveValue("5");
   await expect(page.getByTestId("iz-request-block-reason")).toContainText(
@@ -239,11 +239,11 @@ test("talep formu: gün TÜRETİLİR, belge zorunlu tip kapıyı kapatır, kayı
   await expect(page.getByTestId("iz-request-block-reason")).toHaveCount(0);
 
   // Ters tarih ekranın KENDİ hatasıdır (sunucuya 422 yedirilmez).
-  await page.getByTestId("iz-request-end").fill("2026-11-01");
+  await page.getByTestId("iz-request-end").fill("01.11.2026");
   await expect(page.getByTestId("iz-request-block-reason")).toContainText(
     "Bitiş tarihi başlangıçtan önce olamaz.",
   );
-  await page.getByTestId("iz-request-end").fill("2026-11-06");
+  await page.getByTestId("iz-request-end").fill("06.11.2026");
 
   await page.getByTestId("iz-request-note").fill("E2E talep akışı");
   await page.getByTestId("iz-request-submit").click();

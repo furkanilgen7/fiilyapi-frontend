@@ -129,7 +129,7 @@ test("p-2 yazma akışı: müşteri→ünite→bedel→Plan Oluştur (Σ=bedel T
 
   await page.getByTestId("satis-form-pesinat").fill("2400000");
   await page.getByTestId("satis-form-taksit-sayisi").fill("2");
-  await page.getByTestId("satis-form-ilk-taksit").fill("2026-09-01");
+  await page.getByTestId("satis-form-ilk-taksit").fill("01.09.2026");
 
   // Plan Oluştur → önce POST sales, sonra generate-plan.
   await page.getByTestId("satis-form-plan-olustur").click();

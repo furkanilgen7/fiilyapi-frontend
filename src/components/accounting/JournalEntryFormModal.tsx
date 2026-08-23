@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { Modal } from "@/components/settings/Modal";
-import { Button, Field, Input, Textarea } from "@/components/ui";
+import { Button, DateInput, Field, Input, Textarea } from "@/components/ui";
 import { WarningTriangleIcon } from "@/components/ui/icons";
 import { formatAmount } from "@/lib/format";
 import { backendErrorMessage } from "@/lib/api/error-message";
@@ -304,14 +304,13 @@ function JournalEntryFormBody({
           <div className="mu-entry-form__row">
             <Field label="Fiş Tarihi" required>
               {(control) => (
-                <Input
+                <DateInput
                   {...control}
-                  type="date"
                   value={form.entryDate}
                   disabled={!isEditable}
                   data-testid="mu-entry-date"
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, entryDate: event.target.value }))
+                  onValueChange={(iso) =>
+                    setForm((current) => ({ ...current, entryDate: iso }))
                   }
                 />
               )}

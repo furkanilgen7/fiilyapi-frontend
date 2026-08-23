@@ -12,6 +12,20 @@ import "./date-input.css";
 /** TR kullanıcının gördüğü ve yazdığı kalıp. */
 const DISPLAY_PLACEHOLDER = "gg.aa.yyyy";
 
+/** Yalnız SALT TARİH ISO kabul edilir — saat taşıyan bir değer tarih değildir. */
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * ISO → TR gösterim. Kalıba UYMAYAN değer BOŞ gösterilir.
+ *
+ * 🔴 `formatDateDots`e doğrudan geçilseydi "2026-07-19T00:00:00" gibi bir
+ * değer `19T00:00:00.07.2026` basardı: ekranda ANLAMSIZ metin. Native
+ * `type="date"` böyle bir değeri boş gösterirdi; bu koruma o davranışı korur.
+ */
+function isoToDisplay(iso: string): string {
+  return ISO_DATE_PATTERN.test(iso) ? formatDateDots(iso) : "";
+}
+
 export interface DateInputProps
   extends Omit<
     React.InputHTMLAttributes<HTMLInputElement>,
@@ -71,7 +85,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
   ) => {
     // Kullanıcı yazarken gösterim ARA HÂLLERDEN geçer ("19.07.20") ve bunlar
     // ISO'ya çevrilemez. Taslak bu yüzden ayrı tutulur.
-    const [draft, setDraft] = useState(() => formatDateDots(value));
+    const [draft, setDraft] = useState(() => isoToDisplay(value));
 
     // 🔴 DENETİMLİ DÖNGÜ TUZAĞI: yarım girdi "" yayınlar, ebeveyn `value`yi ""
     // yapar. Naif bir "value değişti → taslağı tazele" kuralı kullanıcının
@@ -80,7 +94,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     const syncedIso = useRef(value);
     if (value !== syncedIso.current) {
       syncedIso.current = value;
-      setDraft(formatDateDots(value));
+      setDraft(isoToDisplay(value));
     }
 
     const pickerRef = useRef<HTMLInputElement>(null);
@@ -124,7 +138,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
           disabled={disabled || readOnly}
           value={parseDateDots(draft)}
           onChange={(event) =>
-            emit(formatDateDots(event.target.value), event.target.value)
+            emit(isoToDisplay(event.target.value), event.target.value)
           }
         />
         <button

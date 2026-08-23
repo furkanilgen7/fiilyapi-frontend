@@ -219,8 +219,8 @@ async function fillRequired(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("Bölüm Adı"), "Kat 11–14 Kaba İnşaat");
   await user.selectOptions(screen.getByLabelText("Bölüm Tipi"), "structural");
   await user.selectOptions(screen.getByLabelText("Bölüm Sorumlusu"), MANAGER_ID);
-  fireEvent.change(screen.getByLabelText("Başlangıç Tarihi"), { target: { value: "2026-10-01" } });
-  fireEvent.change(screen.getByLabelText("Planlanan Bitiş"), { target: { value: "2027-03-31" } });
+  fireEvent.change(screen.getByLabelText("Başlangıç Tarihi"), { target: { value: "01.10.2026" } });
+  fireEvent.change(screen.getByLabelText("Planlanan Bitiş"), { target: { value: "31.03.2027" } });
   await user.type(screen.getByLabelText("Bölüm Bedeli (₺)"), "2840000");
 }
 
@@ -251,8 +251,8 @@ describe("SectionForm — taslak / taslak dışı ayrımı", () => {
     const user = userEvent.setup();
     renderCreate();
     await user.type(screen.getByLabelText("Bölüm Adı"), "Temel");
-    fireEvent.change(screen.getByLabelText("Başlangıç Tarihi"), { target: { value: "2026-05-01" } });
-    fireEvent.change(screen.getByLabelText("Planlanan Bitiş"), { target: { value: "2026-04-01" } });
+    fireEvent.change(screen.getByLabelText("Başlangıç Tarihi"), { target: { value: "01.05.2026" } });
+    fireEvent.change(screen.getByLabelText("Planlanan Bitiş"), { target: { value: "01.04.2026" } });
     await clickFooterAction(user, "Taslak Kaydet");
 
     expect(screen.getAllByText(MESSAGES.endBeforeStart).length).toBeGreaterThan(0);
@@ -289,8 +289,8 @@ describe("SectionForm — taslak / taslak dışı ayrımı", () => {
     await user.type(screen.getByLabelText("Bölüm Adı"), "Temel");
     await user.selectOptions(screen.getByLabelText("Bölüm Tipi"), "structural");
     await user.selectOptions(screen.getByLabelText("Bölüm Sorumlusu"), MANAGER_ID);
-    fireEvent.change(screen.getByLabelText("Başlangıç Tarihi"), { target: { value: "2026-10-01" } });
-    fireEvent.change(screen.getByLabelText("Planlanan Bitiş"), { target: { value: "2027-03-31" } });
+    fireEvent.change(screen.getByLabelText("Başlangıç Tarihi"), { target: { value: "01.10.2026" } });
+    fireEvent.change(screen.getByLabelText("Planlanan Bitiş"), { target: { value: "31.03.2027" } });
     await user.type(screen.getByLabelText("Bölüm Bedeli (₺)"), "0");
     await clickFooterAction(user, "Bölümü Oluştur");
 
@@ -361,7 +361,7 @@ describe("SectionForm — edit kipi", () => {
     expect(screen.getByText(/kayıtlı 1 milestone korunur/)).toBeInTheDocument();
 
     await user.type(screen.getByLabelText("Milestone Ekle"), "Kat 14 döşeme");
-    fireEvent.change(screen.getByLabelText("Milestone tarihi"), { target: { value: "2027-01-15" } });
+    fireEvent.change(screen.getByLabelText("Milestone tarihi"), { target: { value: "15.01.2027" } });
     await clickFooterAction(user, "Kaydet");
 
     const [body] = updateMutate.mock.calls[0];

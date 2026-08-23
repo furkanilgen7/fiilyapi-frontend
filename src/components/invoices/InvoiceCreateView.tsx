@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
-import { Button, Checkbox, Field, Input, Select, Textarea } from "@/components/ui";
+import { Button, Checkbox, DateInput, Field, Input, Select, Textarea } from "@/components/ui";
 import { isoDate } from "@/components/site-diary/derive";
 import { backendErrorMessage } from "@/lib/api/error-message";
 import { useEmployers } from "@/lib/api/hooks/useEmployers";
@@ -453,26 +453,24 @@ export function InvoiceCreateView() {
                 {/* 125-127 */}
                 <Field label="Fatura Tarihi" required>
                   {(control) => (
-                    <Input
+                    <DateInput
                       {...control}
-                      type="date"
                       value={issueDate}
                       disabled={!canWrite}
                       data-testid="fat-issue-date"
-                      onChange={(event) => setIssueDate(event.target.value)}
+                      onValueChange={(iso) => setIssueDate(iso)}
                     />
                   )}
                 </Field>
                 {/* 129-131 */}
                 <Field label="Vade Tarihi">
                   {(control) => (
-                    <Input
+                    <DateInput
                       {...control}
-                      type="date"
                       value={dueDate}
                       disabled={!canWrite}
                       data-testid="fat-due-date"
-                      onChange={(event) => setDueDate(event.target.value)}
+                      onValueChange={(iso) => setDueDate(iso)}
                     />
                   )}
                 </Field>

@@ -64,6 +64,19 @@ describe("DateInput — gösterim/değer sözleşmesi", () => {
     expect(screen.getByRole("textbox", { name: "Tarih" })).toHaveValue(tr);
   });
 
+  it("🔴 saat taşıyan değer BOŞ gösterilir (anlamsız metin basmaz)", () => {
+    // `formatDateDots`e ham geçilseydi `19T00:00:00.07.2026` basardı.
+    render(
+      <DateInput aria-label="Tarih" value="2026-07-19T00:00:00" onValueChange={() => {}} />,
+    );
+    expect(screen.getByRole("textbox", { name: "Tarih" })).toHaveValue("");
+  });
+
+  it("🔴 bozuk biçimli değer BOŞ gösterilir", () => {
+    render(<DateInput aria-label="Tarih" value="19/07/2026" onValueChange={() => {}} />);
+    expect(screen.getByRole("textbox", { name: "Tarih" })).toHaveValue("");
+  });
+
   it("TARAYICI YERELİNE BAĞLI DEĞİLDİR: kontrol type=date DEĞİL", () => {
     // Kök neden (scripts/date-locale-probe.mjs): `type="date"` biçimi
     // tarayıcının ARAYÜZ DİLİNDEN gelir ve uygulama ona erişemez. Bu iddia

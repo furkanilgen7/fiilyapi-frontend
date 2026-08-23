@@ -192,7 +192,7 @@ test("fatura kesme formu gorsel", async ({ page }) => {
   // kutu işaretli değil) — eksik veri değil, KAPALI kesinti.
   await expect(page.getByTestId("fat-withholding-amount")).toHaveText("—");
   // 📅 `page.clock` KANITI: fatura tarihi dondurulmuş günden dolar.
-  await expect(page.getByTestId("fat-issue-date")).toHaveValue("2026-07-25");
+  await expect(page.getByTestId("fat-issue-date")).toHaveValue("25.07.2026");
   await expectNoLoadingText(page);
 
   await prepareFrame(page);

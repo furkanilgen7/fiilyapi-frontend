@@ -1,4 +1,4 @@
-import { Field, Input, Select } from "@/components/ui";
+import { DateInput, Field, Input, Select } from "@/components/ui";
 import { userOptionLabel, type UserOption } from "@/lib/api/hooks/useUserOptions";
 import type { WarehouseResponse } from "@/lib/api/hooks/useWarehouses";
 
@@ -109,12 +109,11 @@ export function StockEntryInfoCard({
         {/* 83 */}
         <Field label="Giriş Tarihi" required error={errors.entryDate}>
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               data-testid="stok-giris-tarih"
               value={values.entryDate}
-              onChange={(event) => onChange("entryDate", event.target.value)}
+              onValueChange={(iso) => onChange("entryDate", iso)}
             />
           )}
         </Field>

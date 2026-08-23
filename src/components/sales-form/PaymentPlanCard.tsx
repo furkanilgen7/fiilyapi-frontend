@@ -1,4 +1,4 @@
-import { Button, Field, Input, Select } from "@/components/ui";
+import { Button, DateInput, Field, Input, Select } from "@/components/ui";
 import { INSTALLMENT_PAYMENT_METHOD_OPTIONS } from "@/components/sales/sales-labels";
 import { formatAmount } from "@/lib/format";
 
@@ -117,13 +117,12 @@ export function PaymentPlanCard({
         </Field>
         <Field label="İlk Taksit Tarihi">
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               data-testid="satis-form-ilk-taksit"
               readOnly={locked}
               value={values.firstInstallmentDate}
-              onChange={(event) => onChangeField("firstInstallmentDate", event.target.value)}
+              onValueChange={(iso) => onChangeField("firstInstallmentDate", iso)}
             />
           )}
         </Field>
@@ -186,12 +185,11 @@ export function PaymentPlanCard({
                     />
                   </td>
                   <td className="sf-plan-table__center">
-                    <Input
+                    <DateInput
                       size="row"
-                      type="date"
                       aria-label={`${row.sequenceNo}. taksit vade tarihi`}
                       value={row.dueDate}
-                      onChange={(event) => patchRow(row.key, { dueDate: event.target.value })}
+                      onValueChange={(iso) => patchRow(row.key, { dueDate: iso })}
                     />
                   </td>
                   <td className="sf-plan-table__right">

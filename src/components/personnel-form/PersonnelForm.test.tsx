@@ -122,12 +122,12 @@ async function fillCore(user: ReturnType<typeof userEvent.setup>) {
 async function fillPublishable(user: ReturnType<typeof userEvent.setup>) {
   await fillCore(user);
   await user.type(screen.getByLabelText("TC Kimlik No"), "12345678901");
-  await user.type(screen.getByLabelText("Doğum Tarihi"), "1985-04-12");
+  await user.type(screen.getByLabelText("Doğum Tarihi"), "12.04.1985");
   await user.type(screen.getByLabelText("Cep Telefonu"), "0532 123 45 67");
   await user.type(screen.getByLabelText("Adres"), "Cumhuriyet Mah. 12/3");
   await user.type(screen.getByLabelText("Acil Durum Kişisi"), "Ayşe Yılmaz");
   await user.type(screen.getByLabelText("Acil Durum Telefonu"), "0533 987 65 43");
-  await user.type(screen.getByLabelText("İşe Giriş Tarihi"), "2026-08-01");
+  await user.type(screen.getByLabelText("İşe Giriş Tarihi"), "01.08.2026");
   await user.selectOptions(screen.getByLabelText("Atandığı Proje"), "p-1");
   await user.type(screen.getByLabelText("Ücret Tutarı (₺)"), "1200");
 }
@@ -441,12 +441,12 @@ describe("PersonnelForm (create) · taslak / yayın ayrımı (K4)", () => {
     render(<PersonnelForm mode="create" />);
     await fillCore(user);
     await user.type(screen.getByLabelText("TC Kimlik No"), "12345678901");
-    await user.type(screen.getByLabelText("Doğum Tarihi"), "1985-04-12");
+    await user.type(screen.getByLabelText("Doğum Tarihi"), "12.04.1985");
     await user.type(screen.getByLabelText("Cep Telefonu"), "0532 123 45 67");
     await user.type(screen.getByLabelText("Adres"), "Cumhuriyet Mah. 12/3");
     await user.type(screen.getByLabelText("Acil Durum Kişisi"), "Ayşe Yılmaz");
     await user.type(screen.getByLabelText("Acil Durum Telefonu"), "0533 987 65 43");
-    await user.type(screen.getByLabelText("İşe Giriş Tarihi"), "2026-08-01");
+    await user.type(screen.getByLabelText("İşe Giriş Tarihi"), "01.08.2026");
     await user.type(screen.getByLabelText("Ücret Tutarı (₺)"), "1200");
     await user.click(submitButton());
 
@@ -570,7 +570,7 @@ describe("PersonnelForm (edit) · önyükleme + mockup sadakati", () => {
     expect(screen.getByLabelText("Meslek / Görev")).toHaveValue("Elektrikçi");
     expect(screen.getByLabelText("TC Kimlik No")).toHaveValue("12345678901");
     expect(screen.getByLabelText("Cep Telefonu")).toHaveValue("0532 111 22 33");
-    expect(screen.getByLabelText("İşe Giriş Tarihi")).toHaveValue("2026-01-15");
+    expect(screen.getByLabelText("İşe Giriş Tarihi")).toHaveValue("15.01.2026");
     expect(screen.getByLabelText("Atandığı Proje")).toHaveValue("p-1");
   });
 
@@ -675,7 +675,7 @@ describe("PersonnelForm (edit) · yayın durumu (K4)", () => {
     expect(updateMutate).not.toHaveBeenCalled();
     expect(screen.getByText("Adres zorunludur.")).toBeVisible();
 
-    await user.type(screen.getByLabelText("Doğum Tarihi"), "1985-04-12");
+    await user.type(screen.getByLabelText("Doğum Tarihi"), "12.04.1985");
     await user.type(screen.getByLabelText("Adres"), "Cumhuriyet Mah. 12/3");
     await user.type(screen.getByLabelText("Acil Durum Kişisi"), "Ayşe Yılmaz");
     await user.type(screen.getByLabelText("Acil Durum Telefonu"), "0533 987 65 43");

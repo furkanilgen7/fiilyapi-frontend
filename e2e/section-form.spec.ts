@@ -71,8 +71,8 @@ test("ekleme kipi: zorunlu alan hatalari, taslak/tam ayrimi, tam zincir (olustur
   // Taslakta boş bırakılan zorunlu alanları doldurup GERÇEK bölüme çevir.
   await page.getByLabel("Bölüm Tipi").selectOption("structural");
   await page.getByLabel("Bölüm Sorumlusu").selectOption("u-2");
-  await page.getByLabel("Başlangıç Tarihi").fill("2026-10-01");
-  await page.getByLabel("Planlanan Bitiş").fill("2027-03-31");
+  await page.getByLabel("Başlangıç Tarihi").fill("01.10.2026");
+  await page.getByLabel("Planlanan Bitiş").fill("31.03.2027");
   await page.getByLabel("Bölüm Bedeli (₺)").fill("500000");
   await footerButton(page, "Kaydet").click();
 
@@ -91,8 +91,8 @@ test("409 kod cakismasi: Bolum Kodu alaninin altinda tek hata, genel banner basi
     await page.getByLabel("Bölüm Kodu").fill(code);
     await page.getByLabel("Bölüm Tipi").selectOption("foundation_infra");
     await page.getByLabel("Bölüm Sorumlusu").selectOption("u-2");
-    await page.getByLabel("Başlangıç Tarihi").fill("2026-10-01");
-    await page.getByLabel("Planlanan Bitiş").fill("2027-03-31");
+    await page.getByLabel("Başlangıç Tarihi").fill("01.10.2026");
+    await page.getByLabel("Planlanan Bitiş").fill("31.03.2027");
     await page.getByLabel("Bölüm Bedeli (₺)").fill("300000");
   }
 

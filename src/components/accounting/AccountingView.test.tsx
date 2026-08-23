@@ -299,7 +299,7 @@ describe("AccountingView — başlık ve eylemler (E8:62-67)", () => {
     await user.click(screen.getByTestId("mu-create-entry"));
     expect(screen.getByRole("dialog", { name: "Yeni Yevmiye Fişi" })).toBeInTheDocument();
     // 📅 Varsayılan tarih YEREL takvimden (sistem saati 17 Temmuz 2026).
-    expect(screen.getByTestId("mu-entry-date")).toHaveValue("2026-07-17");
+    expect(screen.getByTestId("mu-entry-date")).toHaveValue("17.07.2026");
   });
 
   it("yazma yetkisi yoksa '+ Yevmiye Kaydi' devre disidir ve gerekce gorunur", () => {

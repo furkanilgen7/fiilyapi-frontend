@@ -99,10 +99,10 @@ async function fillRequired(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("İnşaat Alanı (m²)"), "6420");
   // type="date" jsdom'da userEvent.type ile guvenilir degil.
   fireEvent.change(screen.getByLabelText("Başlangıç Tarihi"), {
-    target: { value: "2026-01-01" },
+    target: { value: "01.01.2026" },
   });
   fireEvent.change(screen.getByLabelText("Planlanan Bitiş"), {
-    target: { value: "2026-06-01" },
+    target: { value: "01.06.2026" },
   });
 }
 
@@ -425,7 +425,7 @@ describe("SiteCreateView — gönderim (T10, spec §9.3, §9.4, §12)", () => {
     const rows = screen.getAllByTestId("section-row");
     // Adı boş ama tarihi dolu satır: sessizce atılmaz, hata verir (§6.5).
     fireEvent.change(within(rows[0]).getByLabelText("1. bölümün başlangıç tarihi"), {
-      target: { value: "2026-02-01" },
+      target: { value: "01.02.2026" },
     });
     await clickSubmit(user);
 
