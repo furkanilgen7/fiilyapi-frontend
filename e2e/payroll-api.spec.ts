@@ -189,3 +189,44 @@ test("acilmis ay 409, gecersiz ay 422, kilitli donem 409 doner", async ({ page }
   const ok = await compute(page, first.id);
   expect(ok.created).toBeGreaterThan(0);
 });
+
+/* ── 4) 🔴 SAHTE-YEŞİLİN YEDİNCİ HÂLİ · mock sorgu kısıtlarını DOĞRULAR ───── */
+
+/**
+ * 🔴 Bu test canlıdaki kusurun **kaçtığı deliği** kapatır.
+ *
+ * `PAYROLL_PERIODS_LIMIT` elle `240` yazılmıştı; sözleşme tavanı **200**dür ve
+ * backend aşımı *sessizce KIRPMAZ, 422 döner*. Kullanıcı birebir şunu gördü:
+ * `Input should be less than or equal to 200`. Buna rağmen 6173 birim testi,
+ * dört e2e ve dört kapı da **yeşil** geçti — çünkü **sahte backend `limit`i
+ * DOĞRULAMIYOR, KIRPIYORDU** ve kendi tavanını da `240` yazmıştı: sahte
+ * backend, frontend'in HATASINI taklit ediyordu.
+ *
+ * Bir sahte backend'in sözleşmeden SAPMASI, o sapmanın canlıda kusur olarak
+ * yaşamasına izin verir. Kısıtlar bu yüzden `openapi.json`dan OKUNUR.
+ */
+test("mock sorgu kisitlarini sozlesmeden okur ve ihlalde 422 doner", async ({ page }) => {
+  await loginForPayroll(page);
+
+  // Tavan AŞIMI 422'dir — kırpılıp 200 dönmez.
+  const over = await page.request.get("/api/backend/payroll/periods?limit=201");
+  expect(over.status(), "limit=201 ⇒ 422").toBe(422);
+  // Mesaj FastAPI'nin ürettiğiyle aynı olmalı: kullanıcı bunu gördü.
+  expect(JSON.stringify(await over.json())).toContain(
+    "Input should be less than or equal to 200",
+  );
+
+  // Sınırın KENDİSİ geçerlidir (`le`, `lt` değil) — frontend tam burada durur.
+  const atCeiling = await page.request.get("/api/backend/payroll/periods?limit=200");
+  expect(atCeiling.status(), "limit=200 ⇒ 200").toBe(200);
+
+  // Taban ihlalleri de 422'dir (`ge=1` / `ge=0`).
+  expect((await page.request.get("/api/backend/payroll/periods?limit=0")).status()).toBe(422);
+  expect((await page.request.get("/api/backend/payroll/periods?offset=-1")).status()).toBe(
+    422,
+  );
+
+  // Parametresiz çağrı sunucunun varsayılanını kullanır (50) — kısıt YOK demek
+  // değil, "gönderilmedi" demektir.
+  expect((await page.request.get("/api/backend/payroll/periods")).status()).toBe(200);
+});

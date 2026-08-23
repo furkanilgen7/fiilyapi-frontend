@@ -1,7 +1,112 @@
+import { readFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
+import nodePath from "node:path";
 
 // YALNIZ tip: derleme sonrasi silinir, Playwright calisma zamanina sizmaz.
 import type { components } from "@/lib/api/schema";
+
+/* ══════════════ SÖZLEŞME SORGU KISITLARI (F-BORDRO T1) ══════════════════════
+ * 🔴 SAHTE-YEŞİLİN YEDİNCİ HÂLİ. Sahte backend `limit`i DOĞRULAMIYOR,
+ * KIRPIYORDU (`Math.min(...)`) ve kendi tavanını `240` yazmıştı — yani
+ * frontend'in HATASINI taklit ediyordu. Sonuç: `PAYROLL_PERIODS_LIMIT = 240`
+ * canlıda HER çağrıda 422 üretirken (`Input should be less than or equal to
+ * 200`) 6173 birim testi, e2e'ler ve dört kapı da YEŞİL geçti.
+ *
+ * Kısıtlar bu yüzden UYDURULMAZ, `openapi.json`dan OKUNUR ve TEK bir kapıda
+ * uygulanır — 28 ayrı `limit` okuma yerini tek tek düzeltmek yerine istek
+ * girişinde bir kez bakılır, böylece SONRADAN eklenen uçlar da kapsanır.
+ * ================================================================= */
+
+interface MockQuerySchema {
+  maximum?: number;
+  minimum?: number;
+}
+
+interface MockQueryRule {
+  /** Şablon yolun (`/x/{id}`) somut yola uyan hâli. */
+  matcher: RegExp;
+  params: Map<string, MockQuerySchema>;
+}
+
+function loadQueryConstraints(): MockQueryRule[] {
+  const file = nodePath.join(process.cwd(), "openapi", "openapi.json");
+  const spec = JSON.parse(readFileSync(file, "utf8")) as {
+    paths: Record<
+      string,
+      Record<string, { parameters?: { name: string; in: string; schema?: MockQuerySchema }[] }>
+    >;
+  };
+  const rules: MockQueryRule[] = [];
+  for (const [template, operations] of Object.entries(spec.paths)) {
+    const params = new Map<string, MockQuerySchema>();
+    for (const operation of Object.values(operations)) {
+      for (const parameter of operation.parameters ?? []) {
+        if (parameter.in !== "query") continue;
+        const schema = parameter.schema ?? {};
+        // Yalnız SAYISAL kısıt taşıyan parametreler; ötekiler bu kapının işi değil.
+        if (schema.maximum === undefined && schema.minimum === undefined) continue;
+        params.set(parameter.name, { maximum: schema.maximum, minimum: schema.minimum });
+      }
+    }
+    if (params.size === 0) continue;
+    const pattern = `^${template
+      .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+      .replace(/\\\{[^}]+\\\}/g, "[^/]+")}$`;
+    rules.push({ matcher: new RegExp(pattern), params });
+  }
+  return rules;
+}
+
+/** TEK KEZ okunur — her istekte 1,6 MB ayrıştırmak testleri yavaşlatırdı. */
+const QUERY_CONSTRAINTS: MockQueryRule[] = loadQueryConstraints();
+
+/**
+ * FastAPI'nin ürettiği 422 gövdesini BİREBİR taklit eder: kullanıcının canlıda
+ * gördüğü metin (`Input should be less than or equal to 200`) buradan gelir.
+ * Yaklaşık bir mesaj yazmak, hatayı ekranda arayan testi kandırırdı.
+ */
+function queryConstraintViolation(
+  requestPath: string,
+  searchParams: URLSearchParams,
+): unknown | null {
+  const rule = QUERY_CONSTRAINTS.find((candidate) => candidate.matcher.test(requestPath));
+  if (rule === undefined) return null;
+  for (const [name, schema] of rule.params) {
+    const raw = searchParams.get(name);
+    if (raw === null) continue;
+    const value = Number(raw);
+    // Sayı OLMAYAN değer ayrı bir hata sınıfıdır (`int_parsing`) ve bu kapının
+    // işi değildir — sessizce geçirilir, uç kendi davranışını sürdürür.
+    if (!Number.isFinite(value)) continue;
+    if (schema.maximum !== undefined && value > schema.maximum) {
+      return {
+        detail: [
+          {
+            type: "less_than_equal",
+            loc: ["query", name],
+            msg: `Input should be less than or equal to ${schema.maximum}`,
+            input: raw,
+            ctx: { le: schema.maximum },
+          },
+        ],
+      };
+    }
+    if (schema.minimum !== undefined && value < schema.minimum) {
+      return {
+        detail: [
+          {
+            type: "greater_than_equal",
+            loc: ["query", name],
+            msg: `Input should be greater than or equal to ${schema.minimum}`,
+            input: raw,
+            ctx: { ge: schema.minimum },
+          },
+        ],
+      };
+    }
+  }
+  return null;
+}
 
 // exp'i uzak gelecekte olan sahte JWT (base64url payload).
 function fakeJwt(): string {
@@ -6467,6 +6572,12 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     if (!auth.startsWith("Bearer ")) return send(401, { detail: "unauthenticated" });
 
     if (method === "GET" && path === "/auth/me") return send(200, ME);
+
+    // 🔴 SÖZLEŞME KAPISI — sorgu kısıtları TEK yerde uygulanır (yukarıdaki
+    // blok). Kimlik kontrolünden SONRA gelir: gerçek FastAPI'de de 401,
+    // gövde/parametre doğrulamasından önce döner.
+    const queryViolation = queryConstraintViolation(path, parsed.searchParams);
+    if (queryViolation !== null) return send(422, queryViolation);
 
     // F-TKV T6 — milestone id sayaci. `Date.now()` YASAK (determinizm):
     // fikstürler `ms-1`..`ms-3` kullaniyor, yeni satirlar `ms-4`ten devam eder.
@@ -15095,7 +15206,13 @@ const PAYROLL_NEXT_STATUS: Record<MockPayrollPeriodStatus, MockPayrollPeriodStat
 };
 
 const PAYROLL_LIMIT_DEFAULT = 50;
-const PAYROLL_LIMIT_MAX = 240;
+/**
+ * 🔴 Sözleşme tavanı **200**dür (`payroll/router.py` `_LIMIT`). Burası `240`
+ * yazıyordu — sahte backend, frontend'in hatasını taklit ediyordu. Artık
+ * aşım `queryConstraintViolation` kapısında 422 olur; bu sabit yalnız
+ * kırpma-sonrası güvenlik ağıdır.
+ */
+const PAYROLL_LIMIT_MAX = 200;
 
 /* ---------------------------------------------------------------------- */
 /* F-FIN · ÇEK & SENET (`GET /financial-instruments[/summary]`) fikstürleri */

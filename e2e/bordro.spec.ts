@@ -1,5 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { PAYROLL_PERIODS_LIMIT } from "@/lib/api/hooks/usePayroll";
+
 import { loginForPayroll, pinPayrollPeriods, toKurus } from "./payroll-helpers";
 
 /**
@@ -84,7 +86,12 @@ test("bordro fikstürleri kendi içinde tutarlıdır (K4 bekçisi)", async ({ pa
 
   const list = await getJson<{ items: { id: string }[]; total: number }>(
     page,
-    "/api/backend/payroll/periods?limit=240",
+    // 🔴 Limit ELLE YAZILMAZ. Burası `240` yazıyordu — sözleşme tavanı 200'dür
+    // ve gerçek backend aşımda 422 döner; test, canlıda ölü olan bir çağrıyı
+    // "çalışıyor" diye bekçiliyordu (sahte backend kırpıyordu). Değer artık
+    // ekranın KULLANDIĞI sabitten gelir; o sabit de `query-limits.contract`
+    // bekçisiyle `openapi.json`a bağlıdır.
+    `/api/backend/payroll/periods?limit=${PAYROLL_PERIODS_LIMIT}`,
   );
   // Kırpılma yok: bekçi TÜM dönemleri gördü (aksi hâlde sessizce bir alt kümeyi
   // doğrulayıp "hepsi tutarlı" derdi).
