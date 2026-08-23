@@ -1,0 +1,563 @@
+/*
+ * F-PKK · Proje Özeti + Paylaşım Tablosu ekranları.
+ *
+ * Renk değerleri `src/styles/tokens.css`ten gelir — çıplak hex YASAK
+ * (CLAUDE.md). YENİ TOKEN AÇILMADI: mockup'ın iki tür rengi (kendi yatırım
+ * moru · kat karşılığı teal'ı) tokens.css'te ZATEN tanımlı
+ * (`--color-accent-purple-*` / `--color-accent-teal-*`) ve proje kartları
+ * bugün de onları kullanıyor. İkinci bir kopya, kart ile özet ekranı
+ * arasında sessiz bir renk ayrışması kapısı olurdu.
+ */
+
+.psum {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5, 20px);
+}
+
+.psum-message {
+  padding: var(--space-6, 24px);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm, 13px);
+}
+
+.psum-empty {
+  padding: var(--space-5, 20px);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm, 13px);
+}
+
+/* --- Hero ------------------------------------------------------------- */
+
+.psum-hero {
+  border-radius: var(--radius-lg, 16px);
+  padding: var(--space-6, 24px) var(--space-7, 28px);
+  color: var(--color-surface);
+  background: linear-gradient(
+    135deg,
+    var(--color-accent-purple-deep) 0%,
+    var(--color-accent-purple-grad-start) 60%,
+    var(--color-accent-purple-grad-end) 100%
+  );
+}
+
+/* Kat karşılığı mockup'ı aynı iskeleti teal ailesiyle çizer (KK 64). */
+.psum-hero--kat_karsiligi {
+  background: linear-gradient(
+    135deg,
+    var(--color-accent-teal-start) 0%,
+    var(--color-accent-teal-end) 60%,
+    var(--color-accent-teal-light) 100%
+  );
+}
+
+.psum-hero__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4, 16px);
+  margin-bottom: var(--space-5, 18px);
+  flex-wrap: wrap;
+}
+
+.psum-hero__type {
+  font-size: var(--text-xs, 12px);
+  opacity: 0.75;
+  margin-bottom: var(--space-1, 6px);
+}
+
+.psum-hero__title {
+  font-size: var(--text-2xl, 26px);
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  margin-bottom: var(--space-1, 6px);
+}
+
+.psum-hero__meta {
+  font-size: var(--text-sm, 13px);
+  opacity: 0.85;
+}
+
+.psum-hero__profit {
+  text-align: right;
+  margin-left: auto;
+}
+
+.psum-hero__profit-label {
+  font-size: var(--text-xs, 11px);
+  opacity: 0.7;
+  margin-bottom: 3px;
+}
+
+.psum-hero__profit-value {
+  font-size: var(--text-3xl, 32px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.psum-hero__profit-margin {
+  font-size: var(--text-xs, 12px);
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.psum-hero__kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3, 14px);
+}
+
+.psum-hero__kpi,
+.psum-hero__pending {
+  background: rgb(255 255 255 / 12%);
+  border-radius: var(--radius-md, 10px);
+  padding: var(--space-3, 12px) var(--space-3, 14px);
+}
+
+.psum-hero__kpi-label {
+  font-size: var(--text-xs, 10px);
+  opacity: 0.65;
+  margin-bottom: 4px;
+}
+
+.psum-hero__kpi-value {
+  font-size: var(--text-xl, 22px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.psum-hero__kpi-note {
+  font-size: var(--text-xs, 11px);
+  opacity: 0.65;
+  margin-top: 4px;
+}
+
+/* --- Devre-dışı (gerekçeli) hücre ------------------------------------- */
+
+.psum-pending__label {
+  font-size: var(--text-xs, 10px);
+  opacity: 0.65;
+  margin-bottom: 4px;
+}
+
+.psum-pending__value {
+  font-size: var(--text-xl, 22px);
+  font-weight: 700;
+  opacity: 0.55;
+}
+
+.psum-pending__reason {
+  font-size: var(--text-xs, 11px);
+  line-height: 1.5;
+  opacity: 0.75;
+  margin-top: 4px;
+}
+
+/* Kart içindeki gerekçeler koyu zemin üzerinde değil; kendi rengini alır. */
+.psum-cost__pending .psum-pending__label,
+.psum-profit__pending .psum-pending__label {
+  color: var(--color-text-secondary);
+  opacity: 1;
+  font-size: var(--text-sm, 13px);
+}
+
+.psum-cost__pending .psum-pending__value,
+.psum-profit__pending .psum-pending__value {
+  color: var(--color-text-subtle);
+  font-size: var(--text-base, 15px);
+  opacity: 1;
+}
+
+.psum-cost__pending .psum-pending__reason,
+.psum-profit__pending .psum-pending__reason {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+/* --- Kartlar ---------------------------------------------------------- */
+
+.psum-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-5, 20px);
+}
+
+.psum-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 14px);
+  padding: var(--space-5, 20px);
+  box-shadow: var(--shadow-sm, 0 1px 4px rgb(0 0 0 / 6%));
+}
+
+.psum-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+  margin-bottom: var(--space-4, 16px);
+  flex-wrap: wrap;
+}
+
+.psum-card__title {
+  font-size: var(--text-base, 14px);
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: var(--space-4, 16px);
+}
+
+.psum-card__head .psum-card__title {
+  margin-bottom: 2px;
+}
+
+.psum-card__sub {
+  font-size: var(--text-xs, 12px);
+  color: var(--color-text-muted);
+}
+
+.psum-card__link {
+  font-size: var(--text-xs, 12px);
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.psum-card__note {
+  margin-top: var(--space-3, 12px);
+  font-size: var(--text-xs, 12px);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+/* --- Maliyet kırılımı ------------------------------------------------- */
+
+.psum-cost {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+}
+
+.psum-cost__head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2, 8px);
+  margin-bottom: 5px;
+}
+
+.psum-cost__label {
+  font-size: var(--text-sm, 13px);
+  color: var(--color-text-secondary);
+}
+
+.psum-cost__value {
+  font-size: var(--text-sm, 13px);
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.psum-cost__bar {
+  height: 7px;
+  background: var(--color-surface-muted);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.psum-cost__fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--color-accent-purple-grad-start);
+}
+
+.psum-cost__fill--land {
+  background: var(--color-accent-purple-deep);
+}
+
+.psum-cost__fill--danger {
+  background: var(--color-danger);
+}
+
+.psum-cost__note {
+  font-size: var(--text-xs, 11px);
+  color: var(--color-text-subtle);
+  margin-top: 3px;
+}
+
+.psum-cost__total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-3, 12px);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md, 10px);
+  margin-top: 4px;
+}
+
+.psum-cost__total-label {
+  font-size: var(--text-sm, 13px);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.psum-cost__total-value {
+  font-size: var(--text-lg, 17px);
+  font-weight: 700;
+  color: var(--color-accent-purple);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Kâr projeksiyonu ------------------------------------------------- */
+
+.psum-profit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+}
+
+.psum-profit__line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-2, 10px) var(--space-3, 12px);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-sm, 8px);
+}
+
+.psum-profit__line--revenue {
+  background: var(--color-success-soft);
+  border-left: 3px solid var(--color-success);
+}
+
+.psum-profit__line--stock {
+  background: var(--color-warning-soft);
+}
+
+.psum-profit__label {
+  font-size: var(--text-sm, 13px);
+  color: var(--color-text-secondary);
+}
+
+.psum-profit__note {
+  font-size: var(--text-xs, 11px);
+  color: var(--color-text-subtle);
+  margin-top: 1px;
+}
+
+.psum-profit__value {
+  font-size: var(--text-sm, 14px);
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.psum-profit__line--cost .psum-profit__value {
+  color: var(--color-danger);
+}
+
+.psum-profit__rule {
+  height: 1px;
+  border: 0;
+  background: var(--color-border);
+  margin: var(--space-1, 6px) 0;
+}
+
+.psum-profit__net {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3, 12px);
+  padding: var(--space-4, 14px);
+  background: var(--color-success-soft);
+  border: 1px solid var(--color-success-strong);
+  border-radius: var(--radius-md, 10px);
+  margin-top: 4px;
+}
+
+.psum-profit__net-label {
+  font-size: var(--text-base, 14px);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.psum-profit__net-note {
+  font-size: var(--text-xs, 11px);
+  color: var(--color-success-deep);
+  margin-top: 2px;
+}
+
+.psum-profit__net-figures {
+  text-align: right;
+}
+
+.psum-profit__net-value {
+  font-size: var(--text-xl, 20px);
+  font-weight: 700;
+  color: var(--color-success);
+  font-variant-numeric: tabular-nums;
+}
+
+.psum-profit__net-margin {
+  font-size: var(--text-xs, 12px);
+  font-weight: 600;
+  color: var(--color-success);
+}
+
+.psum-profit__pending {
+  padding: var(--space-2, 10px) var(--space-3, 12px);
+  background: var(--color-nav-active-bg);
+  border-radius: var(--radius-sm, 8px);
+  margin-top: 4px;
+}
+
+/* --- Tablolar --------------------------------------------------------- */
+
+.psum-tbl__scroll {
+  overflow-x: auto;
+}
+
+.psum-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm, 13px);
+}
+
+.psum-tbl th {
+  text-align: left;
+  font-size: var(--text-xs, 11px);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--color-text-muted);
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.psum-tbl td {
+  padding: var(--space-3, 12px);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  vertical-align: middle;
+}
+
+.psum-tbl__num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.psum-tbl__name {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.psum-tbl__sub {
+  font-size: var(--text-xs, 11px);
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+
+.psum-tbl__progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  min-width: 110px;
+}
+
+.psum-tbl__bar {
+  flex: 1;
+  height: 6px;
+  background: var(--color-surface-muted);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.psum-tbl__bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--color-accent-purple-grad-start);
+}
+
+.psum-tbl__pct {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.psum-tbl__pending {
+  color: var(--color-text-subtle);
+}
+
+.psum-tbl tfoot td {
+  font-weight: 700;
+  color: var(--color-text);
+  border-bottom: 0;
+  background: var(--color-surface-2);
+}
+
+/* --- Paylaşım tablosu ekranı ------------------------------------------ */
+
+.psum-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+}
+
+.psum-actions__link {
+  font-size: var(--text-sm, 13px);
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.psum-side {
+  display: inline-block;
+  padding: 2px var(--space-2, 8px);
+  border-radius: var(--radius-pill, 999px);
+  font-size: var(--text-xs, 11px);
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--color-surface);
+}
+
+.psum-side--contractor {
+  background: var(--color-accent-teal-start);
+}
+
+.psum-side--landowner {
+  background: var(--color-text-subtle);
+}
+
+.psum-pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3, 12px);
+  margin-top: var(--space-4, 16px);
+}
+
+.psum-pager__label {
+  font-size: var(--text-sm, 13px);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.psum-terms {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-3, 12px);
+  margin-top: var(--space-4, 16px);
+}
+
+.psum-terms dt {
+  font-size: var(--text-xs, 11px);
+  color: var(--color-text-muted);
+  margin-bottom: 3px;
+}
+
+.psum-terms dd {
+  font-size: var(--text-sm, 14px);
+  font-weight: 600;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}

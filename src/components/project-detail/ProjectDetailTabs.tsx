@@ -1,14 +1,32 @@
 import Link from "next/link";
 import { cx } from "@/lib/cx";
+import type { ProjectType } from "@/lib/api/hooks/useProjects";
 
 export interface ProjectDetailTabsProps {
   projectId: string;
   /** Aktif yol dışarıdan verilir; bileşen routing hook'u çağırmaz (DrillSidebar deseni). */
   activePath: string;
+  /**
+   * 🔴 F-PKK K1 — İKİ SEKME PROJE TÜRÜNE GÖRE KOŞULLUDUR.
+   *
+   * Ayrımı yapan alan ÖLÇÜLDÜ: `ProjectDetailResponse.project_type`
+   * (`ProjectType = "taahhut" | "kendi_yatirim" | "kat_karsiligi"`).
+   * `contracting`/`investment`/`land_share` kartlarının hangisinin dolu
+   * geldiği YALNIZ BİR İPUCUDUR ve ayrım için KULLANILMAZ: üçü de
+   * `… | null`dır, yani boş bir `land_share` kartı taşıyan kat karşılığı
+   * projesi sekmeleri sessizce kaybederdi.
+   */
+  projectType: ProjectType;
 }
 
 interface TabDef {
   label: string;
+  /**
+   * Bu sekmenin GÖRÜNDÜĞÜ proje türleri. Tanımsızsa sekme HER türde görünür
+   * (bugünkü beş sekmenin hepsi böyledir) — yani alan eklemek mevcut
+   * davranışı değiştirmez.
+   */
+  types?: readonly ProjectType[];
   /**
    * Bu sekmenin hedef ekranı YAZILDI mı — yazılmamış olan devre-dışı basılır
    * (silinmez). Sonraki dilim "burayı güncellemem gerekiyor"u bu bayraktan görür.
@@ -54,11 +72,43 @@ export const WORK_ITEMS_TAB_DISABLED_HINT =
 //
 // "Belgeler" BC + F-BC dilimleriyle geldi (`/belgeler`); `ArchiveDocumentsView`
 // proje süzgecini `proje` paramından okur (PROJECT_PARAM).
+/**
+ * F-PKK · İki yeni ekranın rota kurucuları. Sekme şeridi DIŞINDA da okunurlar
+ * (sayfaların kendi `activePath` karşılaştırması) — dize iki yerde
+ * yazılsaydı aktif sekme sessizce hiç işaretlenmezdi.
+ */
+export const projectSummaryHref = (projectId: string) =>
+  `/projeler/${encodeURIComponent(projectId)}/ozet`;
+export const projectAllocationHref = (projectId: string) =>
+  `/projeler/${encodeURIComponent(projectId)}/paylasim`;
+
 const TABS: TabDef[] = [
   {
     label: "Şantiyeler",
     written: true,
     hrefFor: (id) => `/projeler/${encodeURIComponent(id)}`,
+  },
+  // 🔴 F-PKK K1 · "Proje Özeti" — İKİ mockup, TEK rota. Ekran proje türüne
+  // göre KY (`Proje - Kendi Yatırım`) ya da KK (`Proje - Kat Karşılığı`)
+  // düzenini basar. Taahhütte YOKTUR: o türün özeti bu ekranın kendisidir
+  // (`Proje Detay - Şantiyeler`) ve maliyet ucunun kâr bloğu taahhütte
+  // ünite/satış taşımaz (`_profit`: `realized_sales`/`remaining_stock_value`
+  // taahhütte `None`).
+  {
+    label: "Proje Özeti",
+    types: ["kendi_yatirim", "kat_karsiligi"],
+    written: true,
+    hrefFor: projectSummaryHref,
+  },
+  // 🔴 F-PKK K1 · "Paylaşım Tablosu" (`Kat Karşılığı - Paylaşım`) YALNIZ kat
+  // karşılığında. Öteki türlerde `GET /projects/{id}/land-share/summary`
+  // 404 döner (şema notu: boş özet DEĞİL) — sekme basılsaydı kullanıcı her
+  // seferinde açıklanamayan bir boş ekrana giderdi.
+  {
+    label: "Paylaşım Tablosu",
+    types: ["kat_karsiligi"],
+    written: true,
+    hrefFor: projectAllocationHref,
   },
   { label: "İş Kalemleri", disabledReason: WORK_ITEMS_TAB_DISABLED_HINT },
   {
@@ -78,17 +128,25 @@ const TABS: TabDef[] = [
   },
 ];
 
-export function ProjectDetailTabs({ projectId, activePath }: ProjectDetailTabsProps) {
+export function ProjectDetailTabs({
+  projectId,
+  activePath,
+  projectType,
+}: ProjectDetailTabsProps) {
+  // Tür süzgeci ÖNCE uygulanır: gerekçe notu da yalnız GÖRÜNEN sekmelerden
+  // türemeli, yoksa hiç basılmayan bir sekmenin notu ekranda kalırdı.
+  const visibleTabs = TABS.filter((tab) => !tab.types || tab.types.includes(projectType));
+
   // Gerekçe notu devre-dışı sekmeden TÜRETİLİR, sabit basılmaz: sekme ileride
   // yazılırsa (hrefFor + written eklenirse) not da KENDİLİĞİNDEN kalkar.
   // Sabit basılsaydı, canlı bir sekmenin altında onu yalanlayan bir not
   // kalırdı ve bekçi bunu göremezdi — bu dilimin düzelttiği çürüme sınıfı.
-  const disabledTab = TABS.find((tab) => !tab.written || !tab.hrefFor);
+  const disabledTab = visibleTabs.find((tab) => !tab.written || !tab.hrefFor);
 
   return (
     <>
       <div className="project-hero__tabs" role="tablist" aria-label="Proje detay sekmeleri">
-        {TABS.map((tab) => {
+        {visibleTabs.map((tab) => {
           // Yazılmamış sekme TIKLANABİLİR DEĞİLDİR: <Link> değil <span>
           // (PersonnelTabsStrip deseni) — ölü bağlantı basılmaz.
           if (!tab.written || !tab.hrefFor) {

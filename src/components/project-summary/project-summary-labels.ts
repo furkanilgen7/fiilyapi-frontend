@@ -174,6 +174,15 @@ export const REASONS = {
   subcontractorCategoryBadge:
     "İş kategorisi tabloda kendi sütununda gösteriliyor; ad altında tekrarlanmaz.",
   /**
+   * KY/KK taşeron tablosunda `İlerleme` hücresi `null` geldiğinde.
+   * `pending_module` anahtarı YOKTUR: bu bir MODÜL eksikliği değil, o
+   * SATIRIN tanımsal hâlidir — bedeli `0` olan sözleşmede `ödenen/bedel`
+   * oranı TANIMSIZDIR. `%0` basmak "veri yok"u "ilerleme yok" diye
+   * gösterirdi; bedeli olup ödeme görmemiş sözleşme ise GERÇEK `%0` basar.
+   */
+  subcontractorZeroContract:
+    "Sözleşme bedeli girilmediği için ilerleme oranı hesaplanamıyor.",
+  /**
    * KKP 197 gecikme bandındaki risk yüzdesi. Günlük ceza TUTARI GERÇEKTİR
    * (`land_share.daily_penalty`) ve basılır; "gecikme riski %8" ise hiçbir
    * uçtan gelmez ve tahmin algoritmasını mockup SÖYLEMİYOR.

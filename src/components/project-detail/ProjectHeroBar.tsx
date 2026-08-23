@@ -57,7 +57,13 @@ export function ProjectHeroBar({ project, activePath }: ProjectHeroBarProps) {
           <div className="project-hero__contract-note">{project.site_count} şantiye</div>
         </div>
       </div>
-      <ProjectDetailTabs projectId={project.id} activePath={activePath} />
+      {/* F-PKK K1: tür bilgisi ZATEN elimizde (`ProjectDetailResponse`) —
+          sekme şeridi ikinci bir istek AÇMAZ. */}
+      <ProjectDetailTabs
+        projectId={project.id}
+        activePath={activePath}
+        projectType={project.project_type}
+      />
     </div>
   );
 }
