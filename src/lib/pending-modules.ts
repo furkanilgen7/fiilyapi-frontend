@@ -372,20 +372,46 @@ export const MODULE_LABELS: Record<string, string> = {
   // MODÜL değil ALAN/UÇ eksikliğidir (`work_category` emsali).
   //
   // KY 83 · KK 89 · KKP 183 "İnşaat İlerlemesi %68/%42" — İKİ kaynak da
-  // sahte: `ProjectCostBreakdown.construction_progress` BOŞ ZARF
+  // sahte: `LandShareCard.construction_progress` BOŞ ZARF
   // (`projects/service.py` `_metric(_PROGRESS_PAYMENTS)`) ve
   // `ProjectDetailResponse.progress_pct` TUZAK (kolon Create/Update
   // şemalarında YOK, `default=0`, canlıda her projede 0 — `timeline_progress
   // _pct` ile aynı ölçüm).
+  //
+  // ⚠️ ALAN ADRESİ DÜZELTİLDİ (F-PKK T2, ölçüm): önceki hâli bu zarfı
+  // `ProjectCostBreakdown.construction_progress` diye adresliyordu —
+  // `ProjectCostBreakdown`ta BÖYLE BİR ALAN YOKTUR (yedi alanı:
+  // `land_cost` · `construction_spent` · `construction_budget` · `permits` ·
+  // `financing` · `marketing` · `total_spent`). Zarf `LandShareCard`tadır ve
+  // YALNIZ kat karşılığı projesinde döner; kendi yatırımda (`InvestmentCard`)
+  // karşılığı hiç yoktur. Gerekçe İKİ ekranda da geçerlidir, adresi tekti.
   construction_progress:
     "İnşaat ilerlemesi hesaplanmıyor (hakediş yüzdesi proje düzeyine toplanmıyor)",
+  // 🔴 F-PKK T2 — ÖNCEDEN KAYIT EDİLMİŞ BORÇ ÖDENDİ. Aşağıdaki
+  // `FALLBACK_LABEL` notu bu iki anahtarı isim isim sayıp *"O ekran
+  // yazıldığında iki anahtar BURAYA eklenmelidir, aksi hâlde kullanıcı bu
+  // genel metni görür"* diyordu. O ekran BU DİLİMDE yazıldı (Proje Özeti,
+  // `/projeler/[projectId]/ozet`) ve `ProjectCostBreakdown`ın ÜÇ zarfını
+  // basıyor. Backend eşlemesi ÖLÇÜLDÜ (`projects/cost_summary.py:154-156`):
+  //   `permits`   → `accounting`
+  //   `financing` → `treasury`
+  //   `marketing` → `accounting`
+  // Anahtarlar eklenmeseydi KY 88-100 kırılımının üç satırı da "İlgili
+  // modülle birlikte gelir" genel metnini basardı.
+  //
+  // İkisi de MODÜL eksikliği DEĞİL (`/muhasebe` ve `/hazine` CANLI, rotaları
+  // ölçüldü): eksik olan, o modüllerin verisinin PROJEYE KIRILMASIDIR.
+  accounting: "Muhasebe verisi bu yüzeye henüz bağlanmadı (gider hesapları projeye kırılmıyor)",
+  treasury: "Hazine verisi bu yüzeye henüz bağlanmadı (kredi ve faiz projeye kırılmıyor)",
   // KY 103 "Nakit Durumu ₺11,1M". `ProjectCostsResponse` NAKİT TAŞIMAZ
   // (breakdown + profit + subcontractors) ve hazine uçları proje kırılımı
   // tutmaz — `project_profitability` ile aynı sınıf eksiklik.
   project_cash_position: "Proje nakit durumu hiçbir uçtan gelmiyor (maliyet ucu nakit taşımaz)",
-  // KY 193 "Başabaş noktası: 32 ünite". `ProjectProfitProjection`ın beş
-  // alanının hiçbiri eşik ünite sayısı değildir; ortalama fiyattan istemcide
-  // türetmek mockup'ın söylemediği bir formül uydurmak olurdu.
+  // KY 193 "Başabaş noktası: 32 ünite". `ProjectProfitProjection`ın ALTI
+  // alanının (`revenue` · `cost` · `profit` · `margin_pct` · `realized_sales` ·
+  // `remaining_stock_value`) hiçbiri eşik ünite sayısı değildir; ortalama
+  // fiyattan istemcide türetmek mockup'ın söylemediği bir formül uydurmak
+  // olurdu. (Sayı F-PKK T2'de ölçülerek düzeltildi: "beş" yazıyordu.)
   sales_breakeven: "Başabaş noktası hesaplanmıyor (maliyet ucu eşik ünite sayısı döndürmüyor)",
   // KKP 176-197 "Arsa Sahibi Teslim Takibi" kartı — backend emri BİLİNÇLİ
   // kapsam dışı bıraktı: `LandShareSummaryResponse` sözleşme/denge/hissedar
@@ -412,6 +438,13 @@ export const MODULE_LABELS: Record<string, string> = {
  * ikisinin de tüketicisi henüz YOK (proje maliyet özeti ekranı yazılmadı).
  * O ekran yazıldığında iki anahtar BURAYA eklenmelidir, aksi hâlde kullanıcı
  * bu genel metni görür.
+ *
+ * ✅ F-PKK T2 (2026-08-23) — YUKARIDAKİ TALİMAT YERİNE GETİRİLDİ; paragraf
+ * artık TARİHSELDİR. "Proje maliyet özeti ekranı" bu dilimde yazıldı
+ * (`/projeler/[projectId]/ozet`) ve `ProjectCostBreakdown`ın üç zarfını
+ * basıyor, dolayısıyla `accounting` + `treasury` `MODULE_LABELS`a EKLENDİ.
+ * İkisi de artık bu yedeğe DÜŞMEZ ve düşmediklerini `pending-modules.test.ts`
+ * çakar — not bir gün yeniden bayatlarsa test kırmızıya döner.
  */
 const FALLBACK_LABEL = "İlgili modülle birlikte gelir";
 

@@ -145,6 +145,34 @@ describe("pendingModuleLabel", () => {
     expect(pendingModuleLabel("shareholder_unit_count")).toBe("İlgili modülle birlikte gelir");
   });
 
+  // 🔴 F-PKK T2 · ÖNCEDEN KAYIT EDİLMİŞ BORÇ. `FALLBACK_LABEL`in kendi notu bu
+  // iki anahtarı isim isim sayıp "o ekran yazıldığında BURAYA eklenmelidir,
+  // aksi hâlde kullanıcı genel metni görür" diyordu. Ekran BU dilimde yazıldı.
+  // Backend eşlemesi (`projects/cost_summary.py:154-156`): permits→accounting ·
+  // financing→treasury · marketing→accounting.
+  it("accounting ve treasury artik GENEL YEDEGE DUSMEZ (F-PKK borcu odendi)", () => {
+    const fallback = pendingModuleLabel("__eslenmemis_anahtar__");
+
+    expect(pendingModuleLabel("accounting")).not.toBe(fallback);
+    expect(pendingModuleLabel("treasury")).not.toBe(fallback);
+    expect(pendingModuleLabel("accounting")).toBe(
+      "Muhasebe verisi bu yüzeye henüz bağlanmadı (gider hesapları projeye kırılmıyor)",
+    );
+    expect(pendingModuleLabel("treasury")).toBe(
+      "Hazine verisi bu yüzeye henüz bağlanmadı (kredi ve faiz projeye kırılmıyor)",
+    );
+  });
+
+  // İkisi de MODÜL eksikliği DEĞİL: `/muhasebe` ve `/hazine` CANLI. Metin
+  // "modül yok" derse bayat kalıba geri düşmüş oluruz (F-UNIT1 T5 dersi).
+  it("iki yeni metin de bayat 'modulyle birlikte gelir' kalibini KULLANMAZ", () => {
+    for (const key of ["accounting", "treasury"]) {
+      expect(pendingModuleLabel(key), `"${key}" bayat kalıba düştü`).not.toMatch(
+        /modülle birlikte gelir|modülüyle birlikte gelir/,
+      );
+    }
+  });
+
   it("bilinmeyen anahtarda genel metin doner", () => {
     expect(pendingModuleLabel("bilinmeyen")).toBe("İlgili modülle birlikte gelir");
   });
