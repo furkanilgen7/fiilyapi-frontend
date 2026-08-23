@@ -364,6 +364,44 @@ export const MODULE_LABELS: Record<string, string> = {
   section_stock: "Malzeme hareketleri bu bölüme henüz kırılmıyor (şantiye genelinde tutulur)",
   section_progress_payments: "Hakediş bu bölüme henüz kırılmıyor (şantiye genelinde tutulur)",
   section_site_diary: "Günlük kayıt bu bölüme henüz kırılmıyor (şantiye genelinde tutulur)",
+  // 🔴 F-PKK T1 (2026-08-23) — Proje Özeti (KY = `Proje - Kendi Yatırım`,
+  // KK = `Proje - Kat Karşılığı`) ve Paylaşım Tablosu
+  // (KKP = `Kat Karşılığı - Paylaşım`) ekranlarının mockup'ta ÇİZİLİ olup
+  // üründe KARŞILIĞI OLMAYAN yüzeyleri. Üst kural (F-TH kanonu): öğe
+  // SİLİNMEZ, yerinde devre dışı + GÖRÜNÜR gerekçeyle basılır. Beşi de bir
+  // MODÜL değil ALAN/UÇ eksikliğidir (`work_category` emsali).
+  //
+  // KY 83 · KK 89 · KKP 183 "İnşaat İlerlemesi %68/%42" — İKİ kaynak da
+  // sahte: `ProjectCostBreakdown.construction_progress` BOŞ ZARF
+  // (`projects/service.py` `_metric(_PROGRESS_PAYMENTS)`) ve
+  // `ProjectDetailResponse.progress_pct` TUZAK (kolon Create/Update
+  // şemalarında YOK, `default=0`, canlıda her projede 0 — `timeline_progress
+  // _pct` ile aynı ölçüm).
+  construction_progress:
+    "İnşaat ilerlemesi hesaplanmıyor (hakediş yüzdesi proje düzeyine toplanmıyor)",
+  // KY 103 "Nakit Durumu ₺11,1M". `ProjectCostsResponse` NAKİT TAŞIMAZ
+  // (breakdown + profit + subcontractors) ve hazine uçları proje kırılımı
+  // tutmaz — `project_profitability` ile aynı sınıf eksiklik.
+  project_cash_position: "Proje nakit durumu hiçbir uçtan gelmiyor (maliyet ucu nakit taşımaz)",
+  // KY 193 "Başabaş noktası: 32 ünite". `ProjectProfitProjection`ın beş
+  // alanının hiçbiri eşik ünite sayısı değildir; ortalama fiyattan istemcide
+  // türetmek mockup'ın söylemediği bir formül uydurmak olurdu.
+  sales_breakeven: "Başabaş noktası hesaplanmıyor (maliyet ucu eşik ünite sayısı döndürmüyor)",
+  // KKP 176-197 "Arsa Sahibi Teslim Takibi" kartı — backend emri BİLİNÇLİ
+  // kapsam dışı bıraktı: `LandShareSummaryResponse` sözleşme/denge/hissedar
+  // taşır, TESLİM ADIMI taşımaz. Kartın tek GERÇEK sayısı `daily_penalty`dir
+  // (KKP 197) ve o basılır.
+  landowner_delivery_tracking:
+    "Arsa sahibi teslim takibi hiçbir uçtan gelmiyor (kat karşılığı özeti teslim adımı taşımaz)",
+  // KK 218 "Durum" sütunu (227/235 "Aktif" · 243 "Başlamadı") — İKİ eksiklik
+  // üst üste: `SubcontractorCostRow`da durum alanı YOK, ayrıca
+  // `ContractStatus{active,completed,on_hold}` mockup sözcüklerine de oturmaz.
+  subcontractor_contract_status: "Sözleşme durumu maliyet satırından gelmiyor",
+  // ⚠️ F-PKK T1'de EKLENMEDİ: `shareholder_unit_count` (KK 161-163 "10
+  // ünite"). ÖLÇÜLDÜ ve ÇÜRÜTÜLDÜ — kaynak VAR: `LandShareShareholderRow`
+  // (`land-share/summary` → `shareholders[]`) `unit_count` taşır, hook'u
+  // canlı (`useLandShareSummary`). Gerekçe basmak gerçek veriyi bastırıp
+  // YALAN söylerdi (`section_boq` emsali); yokluğu testte çakılıdır.
 };
 
 /**

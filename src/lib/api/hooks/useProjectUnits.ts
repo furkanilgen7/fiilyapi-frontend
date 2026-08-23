@@ -10,6 +10,14 @@ export type UnitListResponse = components["schemas"]["UnitListResponse"];
 export type UnitBlockGroup = components["schemas"]["UnitBlockGroup"];
 export type UnitResponse = components["schemas"]["UnitResponse"];
 export type UnitSalesStatus = components["schemas"]["UnitSalesStatus"];
+// F-PKK T1 · Proje Özeti/Paylaşım ekranlarının okuduğu ALT ŞEKİLLER. Yanıtın
+// kendi parçalarıdır, ayrı bir uç DEĞİL — bu yüzden burada, yanıtın yanında
+// takma ad alırlar (`UnitListResponse` emsali).
+export type UnitTotals = components["schemas"]["UnitTotals"];
+export type UnitSideSummary = components["schemas"]["UnitSideSummary"];
+export type UnitKindBreakdown = components["schemas"]["UnitKindBreakdown"];
+export type UnitKind = components["schemas"]["UnitKind"];
+export type UnitOwnerSide = components["schemas"]["UnitOwnerSide"];
 
 export const PROJECT_UNITS_QUERY_KEY = "project-units";
 

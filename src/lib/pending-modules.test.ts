@@ -111,6 +111,40 @@ describe("pendingModuleLabel", () => {
     expect(pendingModuleLabel("section_boq")).toBe("İlgili modülle birlikte gelir");
   });
 
+  // 🔴 F-PKK T1 · Proje Özeti (KY/KK) + Paylaşım Tablosu (KKP) ekranlarının
+  // mockup'ta ÇİZİLİ olup üründe KARŞILIĞI OLMAYAN yüzeyleri. Beşi de bir
+  // MODÜL eksikliği DEĞİL, ALAN/UÇ eksikliğidir — metinler bunu söyler.
+  it("F-PKK anahtarlarini esler (alan/uc eksikligi, modul degil)", () => {
+    expect(pendingModuleLabel("construction_progress")).toBe(
+      "İnşaat ilerlemesi hesaplanmıyor (hakediş yüzdesi proje düzeyine toplanmıyor)",
+    );
+    expect(pendingModuleLabel("project_cash_position")).toBe(
+      "Proje nakit durumu hiçbir uçtan gelmiyor (maliyet ucu nakit taşımaz)",
+    );
+    expect(pendingModuleLabel("sales_breakeven")).toBe(
+      "Başabaş noktası hesaplanmıyor (maliyet ucu eşik ünite sayısı döndürmüyor)",
+    );
+    expect(pendingModuleLabel("landowner_delivery_tracking")).toBe(
+      "Arsa sahibi teslim takibi hiçbir uçtan gelmiyor (kat karşılığı özeti teslim adımı taşımaz)",
+    );
+    expect(pendingModuleLabel("subcontractor_contract_status")).toBe(
+      "Sözleşme durumu maliyet satırından gelmiyor",
+    );
+  });
+
+  // 🔴 F-PKK T1 · EMRİN ALTINCI ANAHTARI ÖLÇÜLDÜ VE ÇÜRÜTÜLDÜ. KK 161-163
+  // hissedar başına "10 ünite" basar ve emir bunu `shareholder_unit_count`
+  // gerekçesiyle devre dışı bırakmamı istiyordu. Kaynak VARDIR:
+  // `LandShareShareholderRow` (`GET /projects/{id}/land-share/summary` →
+  // `shareholders[]`) `unit_count` VE `value_total` taşır ve o ucun hook'u
+  // canlıdır (`useLandShareSummary`). Yalnız `ProjectDetailResponse
+  // .land_share.shareholders` (`ShareholderResponse`) sayıyı taşımaz — ekran
+  // ÖZET ucunu okur. Anahtar EKLENMEZ: eklenirse ekran gerçek veriyi
+  // bastırıp YALAN bir gerekçe basardı (`section_boq` emsali).
+  it("shareholder_unit_count anahtari EKLENMEDI - kaynak land-share/summary'de VAR", () => {
+    expect(pendingModuleLabel("shareholder_unit_count")).toBe("İlgili modülle birlikte gelir");
+  });
+
   it("bilinmeyen anahtarda genel metin doner", () => {
     expect(pendingModuleLabel("bilinmeyen")).toBe("İlgili modülle birlikte gelir");
   });
