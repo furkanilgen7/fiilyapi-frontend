@@ -391,9 +391,16 @@
    canlı önizlemesini kurar.
 --------------------------------------------------------------------------- */
 
-/* Varsayılan 480px kabuk üç sütunlu satır tablosuna dardır. */
+/* Varsayılan 480px kabuk üç sütunlu satır tablosuna dardır.
+   🔴 `max-width` DE EZİLİR — F-FISNO'da ölçüldü: `.modal` (settings/modal.css)
+   `width:100%` + `max-width:480px` verir. Yalnız `width`i ezmek YETMEZ; `max-width`
+   kaskadı kazanır ve diyalog 480px'te kırpılırdı. Bildirim aylardır YAZILIYDI ama
+   ATILDI: ölçülen iç genişlik 478px'ti, `M:88`in `170px 1fr 170px` ızgarası
+   `Açıklama`ya 70px bırakıyor, ipucu 6 satıra sarıyor ve gövde 66px kayıyordu.
+   🔑 Bir kuralın DOSYADA YAZILI olması, KASKADI KAZANDIĞI anlamına gelmez. */
 .mu-modal {
   width: min(760px, 92vw);
+  max-width: min(760px, 92vw);
 }
 
 .mu-lines {
