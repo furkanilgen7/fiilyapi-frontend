@@ -17,6 +17,7 @@ import {
 } from "@/lib/api/hooks/usePayroll";
 import {
   useApprovePayrollPeriod,
+  useComputePayrollPeriod,
   usePayPayrollPeriod,
 } from "@/lib/api/hooks/usePayrollMutations";
 import { downloadPayrollExport } from "@/lib/api/payroll-client";
@@ -26,6 +27,7 @@ import { formatDateLong, formatPeriod } from "@/lib/format";
 import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncation";
 
 import {
+  computeDisabledReason,
   defaultPeriodId,
   orderedSections,
   periodNavigation,
@@ -39,6 +41,12 @@ import {
   APPROVE_ERROR_FALLBACK,
   APPROVE_RESULT_PREFIX,
   BREADCRUMB,
+  COMPUTE_ERROR_FALLBACK,
+  COMPUTE_LABEL,
+  COMPUTE_MISSING_PRIOR_TITLE,
+  COMPUTE_RESULT_PREFIX,
+  COMPUTE_UPDATED_LABEL,
+  computeMissingPriorBody,
   DUE_DATE_MISSING,
   DUE_DATE_PREFIX,
   EMPTY_BODY,
@@ -52,13 +60,16 @@ import {
   PAY_ERROR_FALLBACK,
   PAY_LABEL,
   PAY_RESULT_PREFIX,
+  OPEN_PERIOD_LABEL,
   PERIOD_ERROR_FALLBACK,
   PERIOD_STATUS_LABELS,
   PERIOD_STATUS_VARIANTS,
   PERIODS_ERROR_FALLBACK,
   PREV_PERIOD_LABEL,
   SKIP_ALREADY_APPROVED_LABEL,
+  SKIP_COMPUTE_APPROVED_LABEL,
   SKIP_EXCLUDED_LABEL,
+  SKIP_OVERRIDDEN_LABEL,
   SKIP_UNAPPROVED_LABEL,
   SKIP_UNCOMPUTED_LABEL,
   SOURCE_ORDER,
@@ -67,6 +78,7 @@ import {
   UNKNOWN_COST_BAND_TITLE,
 } from "./payroll-labels";
 import { PayrollPaymentSummary } from "./PayrollPaymentSummary";
+import { PayrollPeriodFormModal } from "./PayrollPeriodFormModal";
 import { PayrollTable } from "./PayrollTable";
 import { PayrollTabsStrip } from "./PayrollTabsStrip";
 import "./payroll.css";
@@ -100,8 +112,12 @@ export function PayrollMonthlyView() {
 
   const approvePeriod = useApprovePayrollPeriod();
   const payPeriod = usePayPayrollPeriod();
+  const computePeriod = useComputePayrollPeriod();
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  /** K4 uyarısı SONUÇTAN gelir; ayrı bir bant olarak yaşar (sessiz yutma yok). */
+  const [missingPriorCount, setMissingPriorCount] = useState(0);
+  const [isOpenPeriodFormVisible, setIsOpenPeriodFormVisible] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
@@ -118,12 +134,18 @@ export function PayrollMonthlyView() {
 
   const navigation = periodNavigation(rows, periodId);
   const detail = detailQuery.data;
+  // Dönem yüklenmeden hesap kapısı AÇIK varsayılmaz (fail-closed).
+  const computeReason =
+    detail === undefined
+      ? "Önce bir bordro dönemi seçin."
+      : computeDisabledReason(detail.status, permission.canWrite);
   const truncation = buildListTruncation(rows.length, periodsQuery.data?.total);
 
   // 🔴 K7 TEK UÇUŞ: `isPending` doğrudan mutasyondan okunur; ayrı bir local
   // boolean YOKTUR ve her iki düğme de aynı bayrakla kilitlenir.
   const isApprovePending = approvePeriod.isPending;
   const isPayPending = payPeriod.isPending;
+  const isComputePending = computePeriod.isPending;
 
   async function handleApproveAll() {
     if (periodId === undefined) return;
@@ -159,6 +181,43 @@ export function PayrollMonthlyView() {
     } catch (error) {
       setActionError(backendErrorMessage(error, PAY_ERROR_FALLBACK));
     }
+  }
+
+  /**
+   * F-BORDRO T3 · `POST /payroll/periods/{id}/compute` — satırları ÜRETİR.
+   *
+   * 🔴 409 SESSİZCE YUTULMAZ: uç yalnız `draft`/`pending_approval` durumunda
+   * çalışır ve düğme zaten o kümede etkindir, ama dönem bu arada başka bir
+   * kullanıcı tarafından onaylanmış olabilir — o hâlde sunucunun gerekçesi
+   * OKUNUR bir mesaj olarak basılır.
+   */
+  async function handleCompute() {
+    if (periodId === undefined) return;
+    setActionError(null);
+    setActionMessage(null);
+    try {
+      const result = await computePeriod.mutateAsync(periodId);
+      setMissingPriorCount(result.missing_prior_period_count);
+      setActionMessage(
+        skipSummary(COMPUTE_RESULT_PREFIX, result.created, [
+          { label: COMPUTE_UPDATED_LABEL, count: result.updated },
+          { label: SKIP_OVERRIDDEN_LABEL, count: result.skipped_overridden },
+          { label: SKIP_COMPUTE_APPROVED_LABEL, count: result.skipped_approved },
+        ]),
+      );
+    } catch (error) {
+      setActionError(backendErrorMessage(error, COMPUTE_ERROR_FALLBACK));
+    }
+  }
+
+  /** Açılan dönem SEÇİLİ hâle gelir: kullanıcı açtığı ayı hemen görür. */
+  function handlePeriodCreated(newPeriodId: string) {
+    setActionError(null);
+    // Yeni dönem SATIRSIZDIR (uç ayı açar, doldurmaz) — bir sonraki adım
+    // "Hesapla"dır ve kullanıcı bunu ekrandan öğrenir.
+    setActionMessage(null);
+    setMissingPriorCount(0);
+    setSelectedId(newPeriodId);
   }
 
   async function handleExport() {
@@ -238,6 +297,33 @@ export function PayrollMonthlyView() {
             </Button>
           </div>
 
+          {/* 🔴 ONAYLI SAPMA (T2) — mockup başlığı bu düğmeyi ÇİZMEZ ve
+              formunun mockup'ı da yoktur. Modülün BAŞLANGIÇ yüzeyidir:
+              onsuz hiçbir dönem açılamaz ve üç ekran da kalıcı boş kalır.
+              Gerekçe `payroll-labels.ts` OPEN_PERIOD_LABEL notunda. */}
+          <Button
+            variant="secondary"
+            onClick={() => setIsOpenPeriodFormVisible(true)}
+            disabled={!permission.canWrite}
+            data-testid="bordro-open-period"
+          >
+            {OPEN_PERIOD_LABEL}
+          </Button>
+
+          {/* 🔴 ONAYLI SAPMA (T3) — `POST .../compute`. Durum kümesi KODDAN
+              ölçüldü: `draft`/`pending_approval` etkin, `approved`/`paid`
+              409 ⇒ düğme SİLİNMEZ, devre dışı basılır ve gerekçe `title`da
+              OKUNUR (K11). */}
+          <Button
+            variant="secondary"
+            onClick={handleCompute}
+            disabled={computeReason !== undefined || isComputePending}
+            title={computeReason}
+            data-testid="bordro-compute"
+          >
+            {COMPUTE_LABEL}
+          </Button>
+
           {/* BY:55 — GERÇEK uç: `GET /payroll/periods/{id}/export` (XLSX). */}
           <Button
             variant="secondary"
@@ -308,6 +394,20 @@ export function PayrollMonthlyView() {
         </p>
       )}
 
+      {/* 🔴 K4 — sunucu "önceki dönemler eksik" diyorsa kümülatif gelir vergisi
+          matrahı EKSİK hesaplanmış olabilir. Sayaç sıfırdan büyükken bant
+          GÖRÜNÜR; sessizce yutulsaydı kullanıcı yanlış bir bordroyu doğru
+          sanardı (fail-closed sayaç kanonu). */}
+      {missingPriorCount > 0 && (
+        <Alert
+          variant="warning"
+          title={COMPUTE_MISSING_PRIOR_TITLE}
+          data-testid="bordro-missing-prior-band"
+        >
+          {computeMissingPriorBody(missingPriorCount)}
+        </Alert>
+      )}
+
       {detail !== undefined && (
         <PayrollPeriodBody
           detail={detail}
@@ -320,6 +420,14 @@ export function PayrollMonthlyView() {
       )}
 
       {isLoaded && <span hidden data-testid="bordro-loaded" />}
+
+      {isOpenPeriodFormVisible && (
+        <PayrollPeriodFormModal
+          rows={rows}
+          onClose={() => setIsOpenPeriodFormVisible(false)}
+          onCreated={handlePeriodCreated}
+        />
+      )}
     </div>
   );
 }

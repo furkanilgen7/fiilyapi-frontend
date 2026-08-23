@@ -16,6 +16,8 @@ import type {
 import { usePayrollPeriod, usePayrollPeriods } from "@/lib/api/hooks/usePayroll";
 import {
   useApprovePayrollPeriod,
+  useComputePayrollPeriod,
+  useCreatePayrollPeriod,
   usePayPayrollPeriod,
   useUpdatePayrollLineSplit,
 } from "@/lib/api/hooks/usePayrollMutations";
@@ -34,6 +36,11 @@ vi.mock("@/lib/api/hooks/usePayrollMutations", () => ({
   useUpdatePayrollLineSplit: vi.fn(),
   useApprovePayrollPeriod: vi.fn(),
   usePayPayrollPeriod: vi.fn(),
+  // F-BORDRO T2/T3 — iki yeni yazma ucu. 🔴 Bu fabrika `importOriginal`
+  // KULLANMAZ (üstteki `usePayroll` mock'unun aksine): eksik bir isim burada
+  // sessiz `undefined` değil, açık bir "No X export is defined" hatasıdır.
+  useCreatePayrollPeriod: vi.fn(),
+  useComputePayrollPeriod: vi.fn(),
 }));
 vi.mock("@/lib/api/payroll-client", () => ({ downloadPayrollExport: vi.fn() }));
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
@@ -216,6 +223,8 @@ beforeEach(() => {
   vi.mocked(useUpdatePayrollLineSplit).mockReturnValue(mutationResult());
   vi.mocked(useApprovePayrollPeriod).mockReturnValue(mutationResult());
   vi.mocked(usePayPayrollPeriod).mockReturnValue(mutationResult());
+  vi.mocked(useCreatePayrollPeriod).mockReturnValue(mutationResult());
+  vi.mocked(useComputePayrollPeriod).mockReturnValue(mutationResult());
 });
 
 /* -------------------------------------------------------------- fikstür bekçisi */
@@ -326,7 +335,14 @@ describe("BY:61-93 — bant ve KPI kartları", () => {
 /* ------------------------------------------------------ dürüst boş/eksik hâller */
 
 describe("🔴 K3 — dürüst hâller", () => {
-  it("hiç dönem yoksa açıklayıcı boş durum basılır ve DÖNEM AÇMA düğmesi YOKTUR", () => {
+  /**
+   * 🔴 KARAR TERSİNE ÇEVRİLDİ (F-BORDRO T2). Bu test eskiden dönem açma
+   * düğmesinin BULUNMADIĞINI iddia ediyordu ve o iddia canlıdaki kusuru
+   * KORUYORDU: satır basan bir migration olmadığı için tablo boştu, boş
+   * ekranda da çıkış yolu yoktu ⇒ modül kullanılamıyordu. Test SİLİNMEDİ,
+   * TERSİNE ÇEVRİLDİ — boş durumun artık bir ÇIKIŞ YOLU sunması bekçilenir.
+   */
+  it("hiç dönem yoksa boş durum basılır ve DÖNEM AÇMA düğmesi SUNULUR", () => {
     vi.mocked(usePayrollPeriods).mockReturnValue(
       queryResult<PayrollPeriodListResponse>({ data: periodList([]) }),
     );
@@ -335,8 +351,27 @@ describe("🔴 K3 — dürüst hâller", () => {
     );
     render(<PayrollMonthlyView />);
     expect(screen.getByTestId("bordro-empty")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /dönem aç/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId("bordro-table")).not.toBeInTheDocument();
+
+    // Çıkış yolu: düğme VAR ve ETKİN (dönem yokluğu onu kapatmaz — kapatsaydı
+    // ilk dönem hiçbir zaman açılamazdı).
+    const openButton = screen.getByTestId("bordro-open-period");
+    expect(openButton).toBeInTheDocument();
+    expect(openButton).toBeEnabled();
+    // Boş durum metni de kullanıcıyı O düğmeye yönlendirir.
+    expect(screen.getByTestId("bordro-empty")).toHaveTextContent("Dönem Aç");
+  });
+
+  it("yazma izni yoksa dönem açma düğmesi DEVRE DIŞIDIR (silinmez)", () => {
+    setSession("view");
+    vi.mocked(usePayrollPeriods).mockReturnValue(
+      queryResult<PayrollPeriodListResponse>({ data: periodList([]) }),
+    );
+    vi.mocked(usePayrollPeriod).mockReturnValue(
+      queryResult<PayrollPeriodDetailResponse>({}),
+    );
+    render(<PayrollMonthlyView />);
+    expect(screen.getByTestId("bordro-open-period")).toBeDisabled();
   });
 
   it("`uncomputed_count` > 0 ise uyarı bandı yanar", () => {
@@ -620,6 +655,138 @@ describe("🔴 K11 — BY:311-330 uçsuz düğmeler", () => {
     );
     expect(screen.getByTestId("bordro-paybox-cash-reason")).toHaveTextContent(
       "Makbuz üretme ucu yok",
+    );
+  });
+});
+
+/* ══ F-BORDRO T3 · Hesapla ══════════════════════════════════════════════════ */
+
+describe("🔴 F-BORDRO T3 — Hesapla", () => {
+  it("draft ve pending_approval dönemde ETKİNDİR", () => {
+    vi.mocked(usePayrollPeriod).mockReturnValue(
+      queryResult<PayrollPeriodDetailResponse>({ data: detail({ status: "draft" }) }),
+    );
+    render(<PayrollMonthlyView />);
+    expect(screen.getByTestId("bordro-compute")).toBeEnabled();
+  });
+
+  it("approved/paid dönemde DEVRE DIŞIDIR ve gerekçe OKUNUR (K11)", () => {
+    // 🔴 Kapı `service.py` LOCKED_PERIOD_STATUSES'ten ölçüldü: uç 409 döner.
+    // Düğme SİLİNMEZ — silinseydi kullanıcı neden hesaplayamadığını bilemezdi.
+    vi.mocked(usePayrollPeriod).mockReturnValue(
+      queryResult<PayrollPeriodDetailResponse>({ data: detail({ status: "paid" }) }),
+    );
+    render(<PayrollMonthlyView />);
+    const button = screen.getByTestId("bordro-compute");
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("title", expect.stringContaining("ödendi"));
+  });
+
+  it("başarılı hesap sayaçları GÖSTERİR (sessiz atlama yok)", async () => {
+    const user = userEvent.setup();
+    const mutateAsync = vi.fn().mockResolvedValue({
+      created: 7,
+      updated: 0,
+      skipped_overridden: 2,
+      skipped_approved: 1,
+      missing_prior_period_count: 0,
+    });
+    vi.mocked(useComputePayrollPeriod).mockReturnValue(mutationResult({ mutateAsync }));
+
+    render(<PayrollMonthlyView />);
+    await user.click(screen.getByTestId("bordro-compute"));
+
+    const result = await screen.findByTestId("bordro-action-result");
+    expect(result).toHaveTextContent("7");
+    // Korunan satırlar AYRI AYRI görünür.
+    expect(result).toHaveTextContent("2 elle düzeltildiği için korunan");
+    expect(result).toHaveTextContent("1 onaylı/ödenmiş olduğu için korunan");
+  });
+
+  it("🔴 K4 — eksik önceki dönem sayacı BANT yakar", async () => {
+    const user = userEvent.setup();
+    const mutateAsync = vi.fn().mockResolvedValue({
+      created: 3,
+      updated: 0,
+      skipped_overridden: 0,
+      skipped_approved: 0,
+      missing_prior_period_count: 2,
+    });
+    vi.mocked(useComputePayrollPeriod).mockReturnValue(mutationResult({ mutateAsync }));
+
+    render(<PayrollMonthlyView />);
+    expect(screen.queryByTestId("bordro-missing-prior-band")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("bordro-compute"));
+
+    // Sayaç sıfırdan büyük ⇒ kümülatif matrah EKSİK olabilir; kullanıcı
+    // sayıları "doğru" sanmamalıdır.
+    const band = await screen.findByTestId("bordro-missing-prior-band");
+    expect(band).toHaveTextContent("2 dönem");
+  });
+
+  it("sayaç 0 iken K4 bandı BASILMAZ (gürültü yok)", async () => {
+    const user = userEvent.setup();
+    const mutateAsync = vi.fn().mockResolvedValue({
+      created: 3,
+      updated: 0,
+      skipped_overridden: 0,
+      skipped_approved: 0,
+      missing_prior_period_count: 0,
+    });
+    vi.mocked(useComputePayrollPeriod).mockReturnValue(mutationResult({ mutateAsync }));
+
+    render(<PayrollMonthlyView />);
+    await user.click(screen.getByTestId("bordro-compute"));
+
+    await screen.findByTestId("bordro-action-result");
+    expect(screen.queryByTestId("bordro-missing-prior-band")).not.toBeInTheDocument();
+  });
+
+  it("🔴 409 SESSİZCE YUTULMAZ — sunucunun gerekçesi basılır", async () => {
+    const user = userEvent.setup();
+    // Yarış: dönem bu arada başka bir kullanıcı tarafından onaylanmış olabilir.
+    const mutateAsync = vi
+      .fn()
+      .mockRejectedValue(new Error("Onaylanmış veya ödenmiş dönem yeniden hesaplanamaz."));
+    vi.mocked(useComputePayrollPeriod).mockReturnValue(mutationResult({ mutateAsync }));
+
+    render(<PayrollMonthlyView />);
+    await user.click(screen.getByTestId("bordro-compute"));
+
+    expect(await screen.findByTestId("bordro-action-error")).toBeInTheDocument();
+    expect(screen.queryByTestId("bordro-action-result")).not.toBeInTheDocument();
+  });
+});
+
+/* ══ F-BORDRO T2 · dönem açma diyaloğunun bağlanması ════════════════════════ */
+
+describe("🔴 F-BORDRO T2 — Dönem Aç bağlantısı", () => {
+  it("düğme diyaloğu açar", async () => {
+    const user = userEvent.setup();
+    render(<PayrollMonthlyView />);
+    expect(screen.queryByTestId("bordro-open-submit")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("bordro-open-period"));
+
+    expect(await screen.findByTestId("bordro-open-submit")).toBeInTheDocument();
+  });
+
+  it("açılan dönem SEÇİLİ hâle gelir (kullanıcı açtığı ayı görür)", async () => {
+    const user = userEvent.setup();
+    const mutateAsync = vi.fn().mockResolvedValue({ id: "period-6" });
+    vi.mocked(useCreatePayrollPeriod).mockReturnValue(mutationResult({ mutateAsync }));
+
+    render(<PayrollMonthlyView />);
+    // Varsayılan seçim EN YENİ dönemdir (period-7 · Temmuz).
+    expect(screen.getByTestId("bordro-period-label")).toHaveTextContent("Temmuz 2026");
+
+    await user.click(screen.getByTestId("bordro-open-period"));
+    await user.click(await screen.findByTestId("bordro-open-submit"));
+
+    // Açılan dönem seçildi ⇒ gezgin oraya atladı.
+    await waitFor(() =>
+      expect(screen.getByTestId("bordro-period-label")).toHaveTextContent("Haziran 2026"),
     );
   });
 });

@@ -140,6 +140,11 @@ test("aylik bordro gorsel", async ({ page }) => {
   await expect(page.getByTestId("bordro-paybox-bank-reason")).toBeVisible();
   await expect(page.getByTestId("bordro-paybox-cash-reason")).toBeVisible();
 
+  // 🔴 F-BORDRO T2/T3 — başlığın İKİ yeni denetimi kadrajda. 2026-07
+  // `pending_approval`dır ⇒ hesap kapısı AÇIKTIR (kilit `approved`/`paid`te).
+  await expect(page.getByTestId("bordro-open-period")).toBeEnabled();
+  await expect(page.getByTestId("bordro-compute")).toBeEnabled();
+
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("bordro-aylik.png", { fullPage: true });
 });
@@ -157,9 +162,15 @@ test("aylik bordro (donem yok) gorsel", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Bordro Yönetimi" })).toBeVisible();
   await expect(page.getByTestId("bordro-loaded")).toBeAttached();
 
-  // 🔴 K3 — açıklayıcı boş durum; "dönem aç" DÜĞMESİ ÇİZİLMEZ (formun
-  // mockup'ı yok). Ay gezgini de boş etikete düşer, uydurma ay basmaz.
+  // 🔴 F-BORDRO T2 — KARAR TERSİNE ÇEVRİLDİ. Bu kare eskiden "dönem aç düğmesi
+  // ÇİZİLMEZ" hâlini gömüyordu ve o hâl kullanıcının bildirdiği kusurun
+  // ta kendisiydi (boş modülden çıkış yolu yok). Artık boş durumun bir ÇIKIŞ
+  // YOLU sunması bekçilenir. Ay gezgini yine boş etikete düşer, uydurma ay
+  // basmaz.
   await expect(page.getByTestId("bordro-empty")).toBeVisible();
+  await expect(page.getByTestId("bordro-open-period")).toBeEnabled();
+  // Hesap düğmesi dönem YOKKEN kapalıdır ve gerekçesi kadrajda okunur.
+  await expect(page.getByTestId("bordro-compute")).toBeDisabled();
   await expect(page.getByTestId("bordro-table")).toHaveCount(0);
   await expect(page.getByTestId("bordro-kpis")).toHaveCount(0);
   await expect(page.getByTestId(MONTHLY_LOADING)).toHaveCount(0);
@@ -238,6 +249,44 @@ test("bordro gecmisi gorsel", async ({ page }) => {
 
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("bordro-gecmis.png", { fullPage: true });
+});
+
+/* ── 6) 🔴 F-BORDRO T2 · "Dönem Aç" diyaloğu (YENİ KARE) ─────────────────── */
+
+/**
+ * 🔴 ONAYLI SAPMA — bu diyaloğun MOCKUP'I YOKTUR; kanonik form modalı
+ * kabuğundan türetildi (gerekçe `PayrollPeriodFormModal.tsx` başlığında).
+ * Kare tam da bu yüzden vardır: türetilmiş bir yüzeyin görsel kapısı
+ * olmasaydı, sonraki her değişiklik onu sessizce kaydırabilirdi.
+ *
+ * 📅 TARİH BAĞIMSIZ: açılış değerleri `new Date()`ten DEĞİL, VERİDEN türer
+ * (`nextPeriodSuggestion` — en yeni dönem 2026-07 ⇒ öneri Ağustos 2026).
+ * İstemci takvimi okunsaydı bu kare her ay kendiliğinden çürürdü.
+ */
+test("donem ac diyalogu gorsel", async ({ page }) => {
+  await pinPayrollPeriods(page, (row) => row.year === 2026);
+  await login(page);
+  await page.goto("/bordro");
+
+  await expect(page.getByRole("heading", { level: 1, name: "Bordro Yönetimi" })).toBeVisible();
+  await expectMonthlyNavigatorLoaded(page, "Temmuz 2026");
+  await expectMonthlyDetailLoaded(page);
+
+  await page.getByTestId("bordro-open-period").click();
+
+  const dialog = page.getByRole("dialog", { name: "Bordro Dönemi Aç" });
+  await expect(dialog).toBeVisible();
+
+  // Diyalog OTURDU: iki türev alan da DOLU basılı (öneri veriden çözüldü) ve
+  // kapı açık — boş/engelli hâl kadraja donmamalıdır.
+  await expect(page.getByTestId("bordro-open-year")).toHaveValue("2026");
+  await expect(page.getByTestId("bordro-open-month")).toHaveValue("8");
+  await expect(page.getByTestId("bordro-open-submit")).toBeEnabled();
+  await expect(page.getByTestId("bordro-open-block-reason")).toHaveCount(0);
+  await expect(page.getByTestId("bordro-open-error")).toHaveCount(0);
+
+  await prepareFrame(page);
+  await expect(page).toHaveScreenshot("bordro-donem-ac.png", { fullPage: true });
 });
 
 /* ── 5) SGK · e-Bildirge ─────────────────────────────────────────────────── */

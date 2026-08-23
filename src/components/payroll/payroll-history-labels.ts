@@ -66,12 +66,16 @@ export const HISTORY_LOADING_MESSAGE = "Bordro geçmişi yükleniyor…";
 export const HISTORY_ERROR_FALLBACK = "Bordro dönemleri yüklenemedi.";
 
 /**
- * 🔴 K3 — hiç dönem yoksa AÇIKLAYICI boş durum basılır ve dönem açma DÜĞMESİ
- * ÇİZİLMEZ (`POST /payroll/periods` ucu vardır ama formunun mockup'ı yoktur).
+ * 🔴 K3 — hiç dönem yoksa AÇIKLAYICI boş durum basılır.
+ *
+ * 🔴 F-BORDRO T2 — dönem açma yüzeyi ARTIK VAR ama `Aylık Bordro` ekranındadır
+ * (`BG` mockup'ı başlığında böyle bir düğme ÇİZMEZ ve ikinci bir giriş noktası
+ * icat edilmedi). Metin kullanıcıyı oraya YÖNLENDİRİR; eskiden "ekran henüz
+ * çizilmedi" diyordu ve bu artık DOĞRU DEĞİL.
  */
 export const HISTORY_EMPTY_TITLE = "Henüz bordro dönemi yok";
 export const HISTORY_EMPTY_BODY =
-  "Bu şirkette açılmış bir bordro dönemi bulunmuyor. Dönem açma ekranı henüz çizilmedi; dönemler açıldığında geçmiş burada yıl yıl listelenir.";
+  "Bu şirkette açılmış bir bordro dönemi bulunmuyor. İlk dönemi “Aylık Bordro” ekranındaki “Dönem Aç” düğmesiyle açabilirsiniz; dönemler açıldığında geçmiş burada yıl yıl listelenir.";
 
 /** Dönem VAR ama seçili yılda YOK — süzgecin kendi boş hâli. */
 export const HISTORY_EMPTY_YEAR_TITLE = "Bu yılda bordro dönemi yok";

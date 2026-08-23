@@ -21,6 +21,10 @@ export type PayrollLineUpdate = components["schemas"]["PayrollLineUpdate"];
 export type PayrollPeriodApproveResult =
   components["schemas"]["PayrollPeriodApproveResult"];
 export type PayrollPeriodPayResult = components["schemas"]["PayrollPeriodPayResult"];
+export type PayrollPeriodCreate = components["schemas"]["PayrollPeriodCreate"];
+export type PayrollPeriodDetailResponse =
+  components["schemas"]["PayrollPeriodDetailResponse"];
+export type PayrollComputeResult = components["schemas"]["PayrollComputeResult"];
 
 function usePayrollInvalidator(): () => void {
   const queryClient = useQueryClient();
@@ -28,6 +32,66 @@ function usePayrollInvalidator(): () => void {
     queryClient.invalidateQueries({ queryKey: [PAYROLL_PERIOD_QUERY_KEY] });
     queryClient.invalidateQueries({ queryKey: [PAYROLL_PERIODS_QUERY_KEY] });
   };
+}
+
+/**
+ * F-BORDRO T2 · `POST /payroll/periods` — **DÖNEM AÇ**.
+ *
+ * 🔴 Modülün BAŞLANGIÇ ucudur ve bugüne kadar hiç çağrılmıyordu: canlıda
+ * `payroll_periods` tablosuna satır basan bir migration YOKTUR (bilinçli —
+ * dönemi kullanıcı açar), ama kullanıcının açacağı yüzey çizilmemişti. Üç
+ * bordro ekranı bu yüzden kalıcı olarak boş kalıyordu.
+ *
+ * 🔴 Ay AÇAR, DOLDURMAZ: dönüş 0 satırlıdır ve satırları `compute` üretir
+ * (`useComputePayrollPeriod`). Gövde `status` ALMAZ — yeni dönem her zaman
+ * `draft`tır, aksi hâlde istemci bir ayı doğrudan `paid` açıp onay zincirini
+ * atlardı (`extra="forbid"`).
+ *
+ * Var olan ay **409**dur (UQ `(year, month)`); mesaj kullanıcıya BASILIR.
+ */
+export function useCreatePayrollPeriod(): UseMutationResult<
+  PayrollPeriodDetailResponse,
+  Error,
+  PayrollPeriodCreate
+> {
+  const invalidate = usePayrollInvalidator();
+  return useMutation({
+    mutationFn: async (body) =>
+      unwrap(await backendClient.POST("/payroll/periods", { body })),
+    onSuccess: invalidate,
+  });
+}
+
+/**
+ * F-BORDRO T3 · `POST /payroll/periods/{id}/compute` — **HESAPLA**.
+ *
+ * 🔴 Dönemi puantaj + ücret + oranlardan DOLDURUR. Açılmış ama hesaplanmamış
+ * bir dönem satırsızdır; bu uç olmadan modül açıldığı yerde donup kalıyordu.
+ *
+ * 🔴 Durum kapısı ÖLÇÜLDÜ (`service.py:73` `LOCKED_PERIOD_STATUSES`):
+ * `draft`/`pending_approval` hesaplanır, `approved`/`paid` **409** döner.
+ * Kapı `computeDisabledReason`da yaşar; 409 yine de sessizce YUTULMAZ
+ * (yarış: dönem başka bir kullanıcı tarafından bu arada onaylanmış olabilir).
+ *
+ * Yanıttaki üç koruma sayacı (`skipped_overridden` — elle düzeltilmiş S6 ·
+ * `skipped_approved` — onaylı/ödenmiş S5) ve K4 uyarısı
+ * (`missing_prior_period_count`) ekranda GÖSTERİLİR.
+ */
+export function useComputePayrollPeriod(): UseMutationResult<
+  PayrollComputeResult,
+  Error,
+  string
+> {
+  const invalidate = usePayrollInvalidator();
+  return useMutation({
+    mutationFn: async (periodId) =>
+      unwrap(
+        await backendClient.POST("/payroll/periods/{period_id}/compute", {
+          params: { path: { period_id: periodId } },
+        }),
+      ),
+    onSuccess: invalidate,
+  });
 }
 
 export interface PayrollLineSplitInput {

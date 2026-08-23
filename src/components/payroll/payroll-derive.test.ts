@@ -9,11 +9,16 @@ import type {
 
 import {
   amountFieldValue,
+  computeDisabledReason,
   defaultPeriodId,
   isAmountInputValid,
   isLineSplitEditable,
   lineSplitDisabledReason,
+  MAX_PAYROLL_YEAR,
+  MIN_PAYROLL_YEAR,
+  nextPeriodSuggestion,
   orderedSections,
+  periodFormBlockReason,
   periodNavigation,
   skipSummary,
   sortPeriodsChronologically,
@@ -272,5 +277,94 @@ describe("etiket tamlığı", () => {
     for (const label of Object.values(SOURCE_TAB_LABELS)) {
       expect(emojiRange.test(label)).toBe(false);
     }
+  });
+});
+
+/* ══ F-BORDRO T2 · dönem açma önerisi ═══════════════════════════════════════ */
+
+describe("nextPeriodSuggestion", () => {
+  it("en yeni dönemin BİR SONRAKİ ayını önerir", () => {
+    // Arrange — sıra bilinçli olarak KARIŞIK: öneri kronolojiden türemeli,
+    // dizinin son elemanından değil.
+    const rows = [periodRow("b", 2026, 7), periodRow("a", 2026, 3)];
+
+    // Act
+    const suggestion = nextPeriodSuggestion(rows);
+
+    // Assert
+    expect(suggestion).toEqual({ year: 2026, month: 8 });
+  });
+
+  it("Aralık'tan sonra izleyen yılın Ocak'ını önerir", () => {
+    expect(nextPeriodSuggestion([periodRow("a", 2026, 12)])).toEqual({
+      year: 2027,
+      month: 1,
+    });
+  });
+
+  it("hiç dönem yoksa öneri ÜRETMEZ (uydurma yıl basmaz)", () => {
+    expect(nextPeriodSuggestion([])).toBeUndefined();
+  });
+});
+
+/* ══ F-BORDRO T2 · dönem açma formunun kapısı ═══════════════════════════════ */
+
+describe("periodFormBlockReason", () => {
+  const rows = [periodRow("a", 2026, 7)];
+
+  it("geçerli yeni ayda kapı AÇIKTIR", () => {
+    expect(periodFormBlockReason({ year: 2026, month: 8, rows })).toBeUndefined();
+  });
+
+  it("yıl girilmemişse gerekçe basar", () => {
+    expect(periodFormBlockReason({ year: null, month: 8, rows })).toBe("Yıl girin.");
+  });
+
+  it("ay seçilmemişse gerekçe basar", () => {
+    expect(periodFormBlockReason({ year: 2026, month: null, rows })).toBe("Ay seçin.");
+  });
+
+  it("şema sınırlarının DIŞINDAKİ yılı eler (uçtan ölçülen 2000-2100)", () => {
+    const tooEarly = periodFormBlockReason({ year: MIN_PAYROLL_YEAR - 1, month: 1, rows });
+    const tooLate = periodFormBlockReason({ year: MAX_PAYROLL_YEAR + 1, month: 1, rows });
+    expect(tooEarly).toContain(String(MIN_PAYROLL_YEAR));
+    expect(tooLate).toContain(String(MAX_PAYROLL_YEAR));
+    // Sınırın KENDİSİ geçerlidir (`ge`/`le`, `gt`/`lt` değil).
+    expect(
+      periodFormBlockReason({ year: MIN_PAYROLL_YEAR, month: 1, rows }),
+    ).toBeUndefined();
+    expect(
+      periodFormBlockReason({ year: MAX_PAYROLL_YEAR, month: 1, rows }),
+    ).toBeUndefined();
+  });
+
+  it("zaten açılmış ayı 409'a gitmeden eler", () => {
+    expect(periodFormBlockReason({ year: 2026, month: 7, rows })).toBe(
+      "Bu ay için bordro dönemi zaten açılmış.",
+    );
+  });
+
+  it("aynı ay BAŞKA yılda engellenmez", () => {
+    expect(periodFormBlockReason({ year: 2025, month: 7, rows })).toBeUndefined();
+  });
+});
+
+/* ══ F-BORDRO T3 · Hesapla düğmesinin durum kümesi ══════════════════════════ */
+
+describe("computeDisabledReason", () => {
+  it("draft ve pending_approval HESAPLANABİLİR", () => {
+    expect(computeDisabledReason("draft", true)).toBeUndefined();
+    expect(computeDisabledReason("pending_approval", true)).toBeUndefined();
+  });
+
+  it("approved ve paid KİLİTLİDİR (uç 409 döner)", () => {
+    // 🔴 Küme `service.py` LOCKED_PERIOD_STATUSES'ten ÖLÇÜLDÜ; gerekçe
+    // kullanıcıya ne yapacağını da söyler (sessiz pasiflik yok).
+    expect(computeDisabledReason("approved", true)).toContain("onay");
+    expect(computeDisabledReason("paid", true)).toContain("ödendi");
+  });
+
+  it("yazma izni yoksa durum ne olursa olsun kapalıdır", () => {
+    expect(computeDisabledReason("draft", false)).toBe("Bordro yazma izniniz yok.");
   });
 });
