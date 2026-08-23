@@ -287,13 +287,13 @@ describe("doğrulama ve alt eylemler", () => {
       target: { value: "TSZ-2026-004" },
     });
     fireEvent.change(screen.getByLabelText("İmza Tarihi"), {
-      target: { value: "2026-01-10" },
+      target: { value: "10.01.2026" },
     });
     fireEvent.change(screen.getByLabelText("İşe Başlama"), {
-      target: { value: "2026-01-15" },
+      target: { value: "15.01.2026" },
     });
     fireEvent.change(screen.getByLabelText("Bitiş Tarihi"), {
-      target: { value: "2026-06-30" },
+      target: { value: "30.06.2026" },
     });
 
     fireEvent.click(screen.getAllByRole("button", { name: FSO_TEXT.submit })[0]);

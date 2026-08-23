@@ -126,7 +126,7 @@ describe("EquipmentDocumentFormModal (EKP · Form - Ekipman Belgesi)", () => {
     renderModal();
     selectFile();
     fireEvent.change(screen.getByTestId("edf-type"), { target: { value: TYPE_ID } });
-    fireEvent.change(screen.getByTestId("edf-valid-until"), { target: { value: "2027-03-01" } });
+    fireEvent.change(screen.getByTestId("edf-valid-until"), { target: { value: "01.03.2027" } });
     fireEvent.click(screen.getByRole("button", { name: TEXT.submit }));
 
     await waitFor(() => expect(upload).toHaveBeenCalledTimes(1));

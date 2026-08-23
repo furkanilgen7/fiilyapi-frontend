@@ -1,6 +1,6 @@
 import { useId } from "react";
 
-import { Field, Input, Select } from "@/components/ui";
+import { DateInput, Field, Input, Select } from "@/components/ui";
 
 import {
   DEPRECIATION_YEAR_OPTIONS,
@@ -107,11 +107,10 @@ export function FinanceCard({ values, onChange, suppliers, errors }: FinanceCard
         {/* 99 */}
         <Field label="Alış Tarihi">
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               value={values.purchaseDate}
-              onChange={(event) => onChange("purchaseDate", event.target.value)}
+              onValueChange={(iso) => onChange("purchaseDate", iso)}
             />
           )}
         </Field>

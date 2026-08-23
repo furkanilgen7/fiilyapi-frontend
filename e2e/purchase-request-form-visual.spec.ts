@@ -30,6 +30,14 @@ const FORM_URL = "/satinalma/talep/yeni";
 /** Kadrajın sabit "bugünü" — fikstür dünyasıyla tutarlı, TZ'den bağımsız. */
 const FIXED_TODAY = "2026-08-12T09:00:00Z";
 const FIXED_TODAY_ISO = "2026-08-12";
+/**
+ * Aynı günün TR gösterimi. Tarih alanı artık `ui/date-input` primitive'idir ve
+ * ekrana `gg.aa.yyyy` basar (F-DATE) — ama iddia hâlâ AYNI ŞEYİ kanıtlar:
+ * alan dondurulmuş GÜNDEN dolar. İkinci bir tarih sabiti YAZILMAZ; ISO
+ * sabitinden TÜRETİLİR ki saat dondurma değiştiğinde ikisi ayrışmasın.
+ */
+const FIXED_TODAY_DISPLAY = FIXED_TODAY_ISO.split("-").reverse().join(".");
+
 
 test("satinalma talep formu gorsel", async ({ page }) => {
   await pinPurchasingFixtures(page);
@@ -41,7 +49,7 @@ test("satinalma talep formu gorsel", async ({ page }) => {
 
   // YERLEŞİM OTURDU (WORKFLOW §4, 1. parça):
   // (a) saat sabitlemesi İŞLEDİ: tarih alanı deterministik,
-  await expect(page.getByTestId("talep-tarihi")).toHaveValue(FIXED_TODAY_ISO);
+  await expect(page.getByTestId("talep-tarihi")).toHaveValue(FIXED_TODAY_DISPLAY);
   // (b) proje listesi GELDİ (yükleme/hata hâlinde select devre dışıdır),
   await expect(page.getByTestId("talep-proje")).toBeEnabled();
   // (c) stok kartları geldi — ilk satırın malzeme seçicisi devre dışı DEĞİL,

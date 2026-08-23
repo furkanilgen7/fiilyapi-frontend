@@ -1,4 +1,4 @@
-import { Field, Input } from "@/components/ui";
+import { DateInput, Field, Input } from "@/components/ui";
 import { durationDays } from "@/lib/form/derive";
 import type { SiteFormValues } from "./form-state";
 
@@ -21,24 +21,22 @@ export function ScheduleCard({ values, onChange, errors }: ScheduleCardProps) {
       <div className="pf-grid pf-grid--4">
         <Field label="Başlangıç Tarihi" required error={errors?.startDate}>
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               value={values.startDate}
               status={errors?.startDate ? "error" : "default"}
-              onChange={(e) => onChange("startDate", e.target.value)}
+              onValueChange={(iso) => onChange("startDate", iso)}
             />
           )}
         </Field>
 
         <Field label="Planlanan Bitiş" required error={errors?.endDate}>
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               value={values.endDate}
               status={errors?.endDate ? "error" : "default"}
-              onChange={(e) => onChange("endDate", e.target.value)}
+              onValueChange={(iso) => onChange("endDate", iso)}
             />
           )}
         </Field>

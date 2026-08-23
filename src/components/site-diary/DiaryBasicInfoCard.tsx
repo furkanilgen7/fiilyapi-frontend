@@ -1,3 +1,4 @@
+import { DateInput } from "@/components/ui/date-input/DateInput";
 import { Field } from "@/components/ui/field/Field";
 import { Input } from "@/components/ui/input/Input";
 import { Select } from "@/components/ui/select/Select";
@@ -36,12 +37,11 @@ export function DiaryBasicInfoCard({ form, onChange, disabled, sections }: Diary
       <div className="diary-basic__grid">
         <Field label="Tarih">
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               value={form.entryDate}
               disabled={disabled}
-              onChange={(event) => onChange({ entryDate: event.target.value })}
+              onValueChange={(iso) => onChange({ entryDate: iso })}
             />
           )}
         </Field>

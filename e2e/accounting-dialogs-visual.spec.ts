@@ -41,6 +41,14 @@ const VISUAL_VIEWPORT = { width: 1440, height: 900 } as const;
 
 /** Dondurulmuş günün ISO karşılığı — diyaloğun tarih alanı bununla dolar. */
 const READ_TIME_ISO_DATE = "2026-07-20";
+/**
+ * Aynı günün TR gösterimi. Tarih alanı artık `ui/date-input` primitive'idir ve
+ * ekrana `gg.aa.yyyy` basar (F-DATE) — ama iddia hâlâ AYNI ŞEYİ kanıtlar:
+ * alan dondurulmuş GÜNDEN dolar. İkinci bir tarih sabiti YAZILMAZ; ISO
+ * sabitinden TÜRETİLİR ki saat dondurma değiştiğinde ikisi ayrışmasın.
+ */
+const READ_TIME_DISPLAY = READ_TIME_ISO_DATE.split("-").reverse().join(".");
+
 
 async function expectNoLoadingText(page: Page) {
   await expect(page.getByText(/yükleniyor/i)).toHaveCount(0);
@@ -70,7 +78,7 @@ async function openEntryDialog(page: Page) {
   await expect(dialog.getByTestId("mu-line-account-1").locator('option[value="coa-600"]')).toHaveCount(1);
   await expect(dialog.getByTestId("mu-entry-accounts-error")).toHaveCount(0);
   // 📅 `page.clock` KANITI: tarih alanı dondurulmuş GÜNDEN dolar.
-  await expect(dialog.getByTestId("mu-entry-date")).toHaveValue(READ_TIME_ISO_DATE);
+  await expect(dialog.getByTestId("mu-entry-date")).toHaveValue(READ_TIME_DISPLAY);
   return dialog;
 }
 

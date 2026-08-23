@@ -1,4 +1,4 @@
-import { Checkbox, Field, Input, Select } from "@/components/ui";
+import { Checkbox, DateInput, Field, Select } from "@/components/ui";
 import type { SupplierCard } from "@/lib/api/hooks/useSuppliers";
 
 import { PAYMENT_TERMS_LABELS, PAYMENT_TERMS_OPTIONS } from "./purchasing-labels";
@@ -83,12 +83,11 @@ export function PurchaseRequestFormSupplierCard({
           {/* 133 — GERÇEK alan */}
           <Field label="Teklif Son Tarihi">
             {(control) => (
-              <Input
+              <DateInput
                 {...control}
-                type="date"
                 data-testid="talep-teklif-son-tarih"
                 value={quoteDeadline}
-                onChange={(event) => onChangeQuoteDeadline(event.target.value)}
+                onValueChange={(iso) => onChangeQuoteDeadline(iso)}
               />
             )}
           </Field>

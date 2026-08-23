@@ -1,4 +1,4 @@
-import { Field, Input, Select, Textarea } from "@/components/ui";
+import { DateInput, Field, Input, Select, Textarea } from "@/components/ui";
 import type { ProjectListItem } from "@/lib/api/hooks/useProjects";
 import type { SectionListItem } from "@/lib/api/hooks/useSiteSections";
 import type { SiteListItem } from "@/lib/api/hooks/useSites";
@@ -129,12 +129,11 @@ export function PurchaseRequestFormInfoCard({
         {/* 54 */}
         <Field label="Talep Tarihi">
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               data-testid="talep-tarihi"
               value={values.requestDate}
-              onChange={(event) => onChange("requestDate", event.target.value)}
+              onValueChange={(iso) => onChange("requestDate", iso)}
             />
           )}
         </Field>
@@ -225,12 +224,11 @@ export function PurchaseRequestFormInfoCard({
         {/* 58 */}
         <Field label="İhtiyaç Tarihi" required hint={NEEDED_BY_HINT} error={errors.neededBy}>
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               data-testid="talep-ihtiyac-tarihi"
               value={values.neededBy}
-              onChange={(event) => onChange("neededBy", event.target.value)}
+              onValueChange={(iso) => onChange("neededBy", iso)}
             />
           )}
         </Field>

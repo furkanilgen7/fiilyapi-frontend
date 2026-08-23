@@ -1,4 +1,4 @@
-import { Field, Input } from "@/components/ui";
+import { DateInput, Field, Input } from "@/components/ui";
 
 /**
  * Taahhüt dışı proje tiplerinin alan grupları (§7.3). Mockup yalnız taahhüt
@@ -175,21 +175,19 @@ export function LandShareFields({
         </Field>
         <Field label="Noter Tarihi" error={errors?.notaryDate}>
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               value={values.notaryDate}
-              onChange={(e) => onChange("notaryDate", e.target.value)}
+              onValueChange={(iso) => onChange("notaryDate", iso)}
             />
           )}
         </Field>
         <Field label="Teslim Tarihi" error={errors?.deliveryDate}>
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               value={values.deliveryDate}
-              onChange={(e) => onChange("deliveryDate", e.target.value)}
+              onValueChange={(iso) => onChange("deliveryDate", iso)}
             />
           )}
         </Field>

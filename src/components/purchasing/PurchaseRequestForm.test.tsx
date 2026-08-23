@@ -159,7 +159,7 @@ function submitButton(): HTMLElement {
 function fillSubmittableForm() {
   fireEvent.change(screen.getByTestId("talep-proje"), { target: { value: "p-1" } });
   fireEvent.change(screen.getByTestId("talep-ihtiyac-tarihi"), {
-    target: { value: "2026-08-20" },
+    target: { value: "20.08.2026" },
   });
   fireEvent.change(screen.getByTestId("talep-malzeme-0"), { target: { value: "s-1" } });
   fireEvent.change(screen.getByTestId("talep-miktar-0"), { target: { value: "15" } });
@@ -350,7 +350,7 @@ describe("FST · Taslak Kaydet + Onaya Gönder GERÇEKTİR", () => {
     render(<PurchaseRequestForm />);
     fireEvent.change(screen.getByTestId("talep-proje"), { target: { value: "p-1" } });
     fireEvent.change(screen.getByTestId("talep-ihtiyac-tarihi"), {
-      target: { value: "2026-08-20" },
+      target: { value: "20.08.2026" },
     });
     fireEvent.change(screen.getByTestId("talep-malzeme-0"), { target: { value: "s-1" } });
     fireEvent.change(screen.getByTestId("talep-miktar-0"), { target: { value: "15" } });

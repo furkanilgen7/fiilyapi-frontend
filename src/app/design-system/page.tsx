@@ -5,6 +5,7 @@ import {
   Button,
   Field,
   Input,
+  DateInput,
   Select,
   Checkbox,
   Radio,
@@ -29,6 +30,7 @@ const VARIANTS: ButtonVariant[] = [
 const SIZES: ButtonSize[] = ["sm", "md", "lg", "xl"];
 
 export default function DesignSystemPage() {
+  const [demoDate, setDemoDate] = useState("2026-07-19");
   const [checked, setChecked] = useState(true);
   const [toggled, setToggled] = useState(true);
 
@@ -131,6 +133,26 @@ export default function DesignSystemPage() {
         <Card title="Kart Basligi" actions={<Button size="sm" variant="ghost">Duzenle</Button>}>
           Kart govdesi icerigi burada yer alir.
         </Card>
+      </section>
+      {/* F-DATE — TR biçimli tarih girdisi. AYRI bir kardeş bölümdür ve
+          bilerek SAYFANIN SONUNDADIR.
+          🔴 ÖLÇÜLDÜ: önce `section-controls`un ÜSTÜNE konmuştu ve altındaki
+          İKİ kareyi (`section-controls` 214→215px, `section-cards` 169→170px)
+          oynattı. Kadrajlar ELEMAN kadrajı olduğu hâlde: yeni bölüm alttaki
+          her şeyi kaydırınca kesirli yerleşim yükseklikleri farklı tam sayıya
+          yuvarlandı. Sona alınınca altında kimse kalmaz — beklenen küme
+          dışında kare oynamaz (yeni kare +1, mevcut 0). */}
+      <section data-testid="section-date-input" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", maxWidth: 360 }}>
+        <h2 style={{ fontSize: "var(--text-section)", fontWeight: 600 }}>DateInput</h2>
+        <Field label="Baslangic Tarihi" required hint="gg.aa.yyyy">
+          {(control) => (
+            <DateInput {...control} value={demoDate} onValueChange={setDemoDate} />
+          )}
+        </Field>
+        <DateInput aria-label="Bos" value="" onValueChange={() => {}} />
+        <DateInput aria-label="Hata" value={demoDate} status="error" onValueChange={() => {}} />
+        <DateInput aria-label="Devre disi" value={demoDate} disabled onValueChange={() => {}} />
+        <DateInput aria-label="Satir ici" value={demoDate} size="row" onValueChange={() => {}} />
       </section>
     </main>
   );

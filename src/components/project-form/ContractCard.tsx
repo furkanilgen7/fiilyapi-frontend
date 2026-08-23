@@ -1,4 +1,4 @@
-import { Checkbox, Field, Input, Select } from "@/components/ui";
+import { Checkbox, DateInput, Field, Input, Select } from "@/components/ui";
 import { PRICE_INDEX_OPTIONS, type PriceIndexType } from "@/lib/contract-labels";
 import { durationDays } from "./derive";
 
@@ -80,12 +80,11 @@ export function ContractCard({ values, onChange, errors }: ContractCardProps) {
         </Field>
         <Field label="İmza Tarihi" required error={errors?.signatureDate}>
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               value={values.signatureDate}
               status={errors?.signatureDate ? "error" : "default"}
-              onChange={(e) => onChange("signatureDate", e.target.value)}
+              onValueChange={(iso) => onChange("signatureDate", iso)}
             />
           )}
         </Field>
@@ -103,23 +102,21 @@ export function ContractCard({ values, onChange, errors }: ContractCardProps) {
         </Field>
         <Field label="Başlangıç Tarihi" required error={errors?.startDate}>
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               value={values.startDate}
               status={errors?.startDate ? "error" : "default"}
-              onChange={(e) => onChange("startDate", e.target.value)}
+              onValueChange={(iso) => onChange("startDate", iso)}
             />
           )}
         </Field>
         <Field label="Bitiş Tarihi" required error={errors?.endDate}>
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               value={values.endDate}
               status={errors?.endDate ? "error" : "default"}
-              onChange={(e) => onChange("endDate", e.target.value)}
+              onValueChange={(iso) => onChange("endDate", iso)}
             />
           )}
         </Field>

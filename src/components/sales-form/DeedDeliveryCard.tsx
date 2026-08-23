@@ -1,4 +1,4 @@
-import { Checkbox, Field, Input, Select } from "@/components/ui";
+import { Checkbox, DateInput, Field, Select } from "@/components/ui";
 
 import {
   CONDOMINIUM_LABEL,
@@ -52,13 +52,12 @@ export function DeedDeliveryCard({ values, onChangeField, locked }: DeedDelivery
         {/* 157 */}
         <Field label="Planlanan Tapu Tarihi">
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               data-testid="satis-form-tapu-tarih"
               readOnly={locked}
               value={values.plannedDeedDate}
-              onChange={(event) => onChangeField("plannedDeedDate", event.target.value)}
+              onValueChange={(iso) => onChangeField("plannedDeedDate", iso)}
             />
           )}
         </Field>
@@ -66,13 +65,12 @@ export function DeedDeliveryCard({ values, onChangeField, locked }: DeedDelivery
         {/* 158 */}
         <Field label="Teslim Tarihi" hint="Anahtar teslim">
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               data-testid="satis-form-teslim-tarih"
               readOnly={locked}
               value={values.deliveryDate}
-              onChange={(event) => onChangeField("deliveryDate", event.target.value)}
+              onValueChange={(iso) => onChangeField("deliveryDate", iso)}
             />
           )}
         </Field>

@@ -164,7 +164,7 @@ test.describe("yevmiye fişi diyaloğu — yazma akışları (HAZİRAN adası)",
     await openMutationMonth(page);
     await page.getByTestId("mu-create-entry").click();
 
-    await page.getByTestId("mu-entry-date").fill("2026-06-18");
+    await page.getByTestId("mu-entry-date").fill("18.06.2026");
     await page.getByTestId("mu-entry-description").fill("MUT · yeni fiş uçtan uca");
     await page.getByTestId("mu-entry-detail-note").fill("T5 ölçüm dayanağı");
     await page.getByTestId("mu-line-account-0").selectOption("coa-100");

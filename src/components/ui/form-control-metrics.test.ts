@@ -13,6 +13,7 @@ const inputCss = read("./input/input.css");
 const selectCss = read("./select/select.css");
 const textareaCss = read("./textarea/textarea.css");
 const checkboxCss = read("./checkbox/checkbox.css");
+const dateInputCss = read("./date-input/date-input.css");
 
 /** Verilen selector'un ilk kural blogunu (suslu parantez icini) dondurur. */
 function ruleBlock(css: string, selector: string): string {
@@ -32,6 +33,7 @@ function declaration(block: string, property: string): string {
 }
 
 const inputBlock = ruleBlock(inputCss, ".input");
+const dateInputBlock = ruleBlock(dateInputCss, ".date-input");
 const selectBlock = ruleBlock(selectCss, ".select");
 const textareaBlock = ruleBlock(textareaCss, ".textarea");
 
@@ -48,6 +50,7 @@ describe("form kontrolu olcu token'lari", () => {
       "input.css": inputCss,
       "select.css": selectCss,
       "textarea.css": textareaCss,
+      "date-input.css": dateInputCss,
       "file-input.css": read("./file-input/file-input.css"),
       "company-screen.css": read("../settings/company/company-screen.css"),
       "audit-screen.css": read("../settings/audit/audit-screen.css"),
@@ -189,5 +192,66 @@ describe("row-control varyanti (mockup .row-in, satir 27)", () => {
     expect(declaration(inputBlock, "font-size")).toBe("var(--text-body)");
     expect(declaration(selectBlock, "font-size")).toBe("var(--text-body)");
     expect(declaration(inputBlock, "border")).toMatch(/var\(--border-width-form\)/);
+  });
+});
+
+/* ── F-DATE: TR biçimli tarih girdisi (`ui/date-input`) ────────────────────── */
+
+/** `line-height: 22px` → 22 */
+function pxValue(block: string, property: string): number {
+  const raw = declaration(block, property);
+  const match = /^(\d+(?:\.\d+)?)px$/.exec(raw);
+  expect(match, `${property} px cinsinden olmali (bulunan: ${raw})`).not.toBeNull();
+  return Number(match![1]);
+}
+
+describe("DateInput ayni form kontrolu kutusunu uretir (F-DATE)", () => {
+  it("ayni cerceve, yazi tipi olcusu ve yatay/dikey ic bosluk token'lari", () => {
+    expect(declaration(dateInputBlock, "border")).toBe(declaration(inputBlock, "border"));
+    expect(declaration(dateInputBlock, "font-size")).toBe(
+      declaration(inputBlock, "font-size"),
+    );
+    expect(declaration(dateInputBlock, "border-radius")).toBe(
+      declaration(inputBlock, "border-radius"),
+    );
+  });
+
+  it("dikey ic bosluk .input ile BIREBIR aynidir", () => {
+    const verticalPadding = (block: string): string =>
+      declaration(block, "padding").split(" ")[0];
+    expect(verticalPadding(dateInputBlock)).toBe("var(--space-form-y)");
+    expect(verticalPadding(dateInputBlock)).toBe(verticalPadding(inputBlock));
+  });
+
+  it("🔴 KUTU YUKSEKLIGI native `type=date` ile AYNI KALIR: satir yuksekligi +2px", () => {
+    // ÖLÇÜM (scripts/date-locale-probe.mjs · 45 font×boyut×satir-yuksekligi
+    // kombinasyonu): Chromium'un tarih golge-DOM'u AYNI CSS altinda kutuyu
+    // SABIT 2px buyutur — yazi tipinden ve olcuden BAGIMSIZ.
+    //
+    // Yonetim karari (2026-08-23): 40px'e normallestirmek 22 tam-sayfa
+    // karesinde genel bir kayma uretir ve bbox disiplinini KALICI olarak
+    // korlestirir. Bu yuzden native kontrolun yuksekligi KORUNUR; goc yalnizca
+    // kutunun ICINDEKI metni oynatir. Normallestirme kendi diliminin isidir.
+    expect(pxValue(dateInputBlock, "line-height")).toBe(
+      pxValue(inputBlock, "line-height") + 2,
+    );
+  });
+
+  it("🔴 satir varyanti da ayni +2px telafisini tasir", () => {
+    const dateRow = ruleBlock(dateInputCss, ".date-input--row");
+    const inputRow = ruleBlock(inputCss, ".input--row");
+    // `.input--row` satir yuksekligini yeniden tanimlamaz; taban .input'tan
+    // gelir. Tarih satir varyanti da ayni sekilde .date-input'tan miras alir —
+    // bu yuzden burada olculen sey OLCU token'larinin esitligidir.
+    expect(declaration(dateRow, "font-size")).toBe(declaration(inputRow, "font-size"));
+    expect(declaration(dateRow, "border-width")).toBe(
+      declaration(inputRow, "border-width"),
+    );
+    expect(declaration(dateRow, "border-radius")).toBe(
+      declaration(inputRow, "border-radius"),
+    );
+    expect(declaration(dateRow, "padding").split(" ")[0]).toBe(
+      "var(--space-row-control-y)",
+    );
   });
 });

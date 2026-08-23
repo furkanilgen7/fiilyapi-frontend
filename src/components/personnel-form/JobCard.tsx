@@ -1,6 +1,6 @@
 import { useId } from "react";
 
-import { Field, Input, Select } from "@/components/ui";
+import { DateInput, Field, Input, Select } from "@/components/ui";
 import type { SubcontractorListItem } from "@/lib/api/hooks/useSubcontractors";
 
 import {
@@ -199,12 +199,11 @@ export function JobCard({
         {/* 101 */}
         <Field label="İşe Giriş Tarihi" required error={errors?.hireDate}>
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               value={values.hireDate}
               status={errors?.hireDate ? "error" : "default"}
-              onChange={(event) => onChange("hireDate", event.target.value)}
+              onValueChange={(iso) => onChange("hireDate", iso)}
             />
           )}
         </Field>

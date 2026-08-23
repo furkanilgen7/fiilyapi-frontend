@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 
 import {
   formatAmount,
+  formatDateDots,
+  parseDateDots,
   formatCompactCurrency,
   formatCurrency,
   formatCurrencyPrecise,
@@ -188,5 +190,58 @@ describe("formatPeriodLabel", () => {
   it("1-12 dışındaki ay numarası da AYNEN döner (sıfır dolgusu korunur)", () => {
     expect(formatPeriodLabel("00/2026")).toBe("00/2026");
     expect(formatPeriodLabel("13/2026")).toBe("13/2026");
+  });
+});
+
+/* ── F-DATE: TR gösterim ⇄ ISO dönüşümü ───────────────────────────────────── */
+
+describe("parseDateDots — formatDateDots'un TERSİ", () => {
+  it("tam TR tarihi ISO'ya çevirir", () => {
+    expect(parseDateDots("19.07.2026")).toBe("2026-07-19");
+  });
+
+  it("🔴 formatDateDots ile GİDİŞ-DÖNÜŞ kayıpsızdır", () => {
+    // Tek kaynak iddiası: iki yardımcı birbirinin tam tersi olmalı, yoksa
+    // primitive değeri sessizce kaydırır.
+    for (const iso of ["2026-07-19", "2024-02-29", "2025-01-01", "2026-12-31"]) {
+      expect(parseDateDots(formatDateDots(iso))).toBe(iso);
+    }
+  });
+
+  it("yarım girdi BOŞ döner (yarım değer gövdeye sızmaz)", () => {
+    expect(parseDateDots("19.07.20")).toBe("");
+  });
+
+  it("boş girdi BOŞ döner", () => {
+    expect(parseDateDots("")).toBe("");
+  });
+
+  it("takvimde olmayan gün reddedilir (31.02.2026)", () => {
+    expect(parseDateDots("31.02.2026")).toBe("");
+  });
+
+  it("13. ay reddedilir", () => {
+    expect(parseDateDots("01.13.2026")).toBe("");
+  });
+
+  it("0. gün reddedilir", () => {
+    expect(parseDateDots("00.07.2026")).toBe("");
+  });
+
+  it("artık yıl 29.02.2028 kabul edilir", () => {
+    expect(parseDateDots("29.02.2028")).toBe("2028-02-29");
+  });
+
+  it("artık OLMAYAN yılda 29.02.2027 reddedilir", () => {
+    expect(parseDateDots("29.02.2027")).toBe("");
+  });
+
+  it("ISO girdisi TR sanılmaz — BOŞ döner", () => {
+    // `2026-07-19` yanlışlıkla geçirilirse sessizce kabul edilmemeli.
+    expect(parseDateDots("2026-07-19")).toBe("");
+  });
+
+  it("tek haneli gün/ay reddedilir (biçim sıkı)", () => {
+    expect(parseDateDots("1.7.2026")).toBe("");
   });
 });

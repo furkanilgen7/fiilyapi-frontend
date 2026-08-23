@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { Button, Field, FileInput, Input, Select, Textarea } from "@/components/ui";
+import { Button, DateInput, Field, FileInput, Input, Select, Textarea } from "@/components/ui";
 import { Modal } from "@/components/settings/Modal";
 import { WarningTriangleIcon } from "@/components/ui/icons";
 import { backendErrorMessage } from "@/lib/api/error-message";
@@ -367,24 +367,22 @@ export function LeaveRequestFormModal({ year, onClose }: LeaveRequestFormModalPr
       <div className="iz-form-dates">
         <Field label={REQUEST_START_LABEL} required>
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               value={startDate}
               disabled={isPending}
-              onChange={(event) => setStartDate(event.target.value)}
+              onValueChange={(iso) => setStartDate(iso)}
               data-testid="iz-request-start"
             />
           )}
         </Field>
         <Field label={REQUEST_END_LABEL} required>
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               value={endDate}
               disabled={isPending}
-              onChange={(event) => setEndDate(event.target.value)}
+              onValueChange={(iso) => setEndDate(iso)}
               data-testid="iz-request-end"
             />
           )}

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 
-import { Button, Field, FileInput, Input, Select, Textarea } from "@/components/ui";
+import { Button, DateInput, Field, FileInput, Input, Select, Textarea } from "@/components/ui";
 import { Modal } from "@/components/settings/Modal";
 import { backendErrorMessage } from "@/lib/api/error-message";
 import { useEquipmentDocumentTypes, useEquipmentDocuments } from "@/lib/api/hooks/useEquipmentDocuments";
@@ -248,14 +248,13 @@ export function EquipmentDocumentFormModal({
           {/* 🔴 115-118 · karşılığı YOK — devre-dışı + görünür gerekçe */}
           <Field label={TEXT.issueDate} hint={EQUIPMENT_ISSUE_DATE_REASON}>
             {(control) => (
-              <Input
+              <DateInput
                 {...control}
-                type="date"
                 disabled
                 readOnly
                 value=""
                 data-testid="edf-issue-date"
-                onChange={() => undefined}
+                onValueChange={() => undefined}
               />
             )}
           </Field>
@@ -263,13 +262,12 @@ export function EquipmentDocumentFormModal({
           {/* 119-123 · Geçerlilik Bitiş Tarihi = `valid_until` */}
           <Field label={TEXT.validUntil} hint={TEXT.validUntilHint}>
             {(control) => (
-              <Input
+              <DateInput
                 {...control}
                 ref={validUntilRef}
-                type="date"
                 value={values.validUntil}
                 disabled={isPending}
-                onChange={(event) => set("validUntil", event.target.value)}
+                onValueChange={(iso) => set("validUntil", iso)}
                 data-testid="edf-valid-until"
               />
             )}

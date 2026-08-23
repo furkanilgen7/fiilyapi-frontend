@@ -91,7 +91,7 @@ test("günlük kayıt: taslak aç → miktar gir → Taslak Kaydet → Kaydet & 
 
   await page.goto(SITE_DIARY_URL);
   await expect(page.getByRole("heading", { level: 1, name: "Günlük Kayıt & Planlama" })).toBeVisible();
-  await expect(page.getByLabel("Tarih")).toHaveValue("2026-09-10");
+  await expect(page.getByLabel("Tarih")).toHaveValue("10.09.2026");
   await expect(page.locator(".diary-recent__list")).toContainText("Bu ayda henüz günlük kayıt yok.");
 
   // 1) Kayıt yokken "Taslak Kaydet" kaydı AÇAR; satır iskeleti sunucudan gelir.

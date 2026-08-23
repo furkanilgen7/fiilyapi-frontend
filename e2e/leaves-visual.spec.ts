@@ -294,8 +294,8 @@ test("izin talep formu gorsel", async ({ page }) => {
   // kaynağın (tip bayrağı + özet `remaining`) kesişimini kanıtlar. Belge
   // kartı kadrajda yine var, "opsiyonel" varyantıyla.
   await dialog.getByTestId("iz-request-type").selectOption("lt-1");
-  await dialog.getByTestId("iz-request-start").fill("2026-09-07");
-  await dialog.getByTestId("iz-request-end").fill("2026-09-12");
+  await dialog.getByTestId("iz-request-start").fill("07.09.2026");
+  await dialog.getByTestId("iz-request-end").fill("12.09.2026");
   await expect(dialog.getByTestId("iz-request-days")).toHaveValue("6");
 
   const overrun = dialog.getByTestId("iz-request-overrun");

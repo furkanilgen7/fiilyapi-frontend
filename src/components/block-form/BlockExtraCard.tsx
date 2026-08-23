@@ -1,4 +1,4 @@
-import { Field, Input, Select, Textarea } from "@/components/ui";
+import { DateInput, Field, Select, Textarea } from "@/components/ui";
 
 import {
   BLOCK_EXTRA_CARD_TITLE,
@@ -31,12 +31,11 @@ export function BlockExtraCard({ values, onChangeField }: BlockExtraCardProps) {
         {/* 100 */}
         <Field label="Tahmini Teslim Tarihi">
           {(control) => (
-            <Input
+            <DateInput
               {...control}
-              type="date"
               data-testid="blok-form-teslim-tarihi"
               value={values.estimatedDeliveryDate}
-              onChange={(event) => onChangeField("estimatedDeliveryDate", event.target.value)}
+              onValueChange={(iso) => onChangeField("estimatedDeliveryDate", iso)}
             />
           )}
         </Field>

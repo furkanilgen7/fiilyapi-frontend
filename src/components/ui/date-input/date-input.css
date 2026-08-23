@@ -1,0 +1,97 @@
+/* TR biçimli tarih girdisi (F-DATE).
+
+   Kutu ölçüleri `.input` ile BİREBİR aynıdır — `select.css`/`textarea.css`
+   emsali: her kontrol kendi kuralını taşır, parity'yi `form-control-metrics.
+   test.ts` bekçiler. */
+.date-input-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+}
+
+.date-input {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  /* 🔴 22px, `.input`in 20px'i DEĞİL — bu 2px KASITLI bir telafidir.
+     Chromium'un `type="date"` gölge-DOM'u aynı CSS altında kutuyu SABİT 2px
+     büyütür (45 font×boyut×satır-yüksekliği kombinasyonunda ölçüldü; yazı
+     tipinden bağımsız). Native kontrolün yüksekliği KORUNUR ki göç yalnızca
+     kutunun İÇİNDEKİ metni oynatsın: 22 baseline karesinin farkı dar ve
+     alan alan bbox'lanabilir kalır. 40px'e normalleştirmek her karede genel
+     bir kayma üretir ve bbox disiplinini KALICI olarak körleştirirdi
+     (yönetim kararı 2026-08-23) — normalleştirme kendi diliminin işidir. */
+  line-height: 22px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: var(--border-width-form) solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: var(--space-form-y) var(--space-form-x);
+  /* Takvim düğmesine yer açar — metin ikonun altına girmez. */
+  padding-right: var(--space-8);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.date-input::placeholder {
+  color: var(--color-text-subtle);
+}
+.date-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+.date-input:disabled {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+.date-input--error {
+  border-color: var(--color-danger);
+}
+.date-input--error:focus {
+  box-shadow: var(--focus-ring-danger);
+}
+.date-input--success {
+  border-color: var(--color-success);
+}
+
+/* Gizli native kontrol: YALNIZ `showPicker()` penceresini açmak için durur.
+   Akıştan çıkarılır — akışta kalsaydı sarmalayıcıyı büyütür ve 22 karede
+   kutu ölçüsünü kaydırırdı. */
+.date-input-picker {
+  position: absolute;
+  right: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Takvim düğmesi — native kontrolün seçici ikonuyla AYNI yerde durur
+   (sağ iç kenar), böylece kutunun görünümü göç sonrası tanıdık kalır. */
+.date-input-trigger {
+  position: absolute;
+  right: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.date-input-trigger:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+/* Satır-içi düzenleme tablosu varyantı — `.input--row` ile aynı ölçüler
+   (mockup `.row-in`, şantiye satır 27). */
+.date-input--row {
+  font-size: var(--text-row-control);
+  border-width: var(--border-width-row-control);
+  border-radius: var(--radius-row-control);
+  padding: var(--space-row-control-y) var(--space-6) var(--space-row-control-y)
+    var(--space-row-control-x);
+}

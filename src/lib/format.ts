@@ -234,6 +234,35 @@ export function formatDateDots(iso: string): string {
   return `${day}.${month}.${year}`;
 }
 
+/**
+ * `formatDateDots`in TERSİ: "01.04.2025" → `YYYY-MM-DD` (F-DATE T2).
+ *
+ * `ui/date-input` primitive'i BUNU kullanır — TR gösterimden ISO değere dönüş
+ * tek kaynaktan gelir, ay/gün ayrıştırma kopyalanmaz.
+ *
+ * `new Date(...)` ile ayrıştırma KULLANILMAZ: `new Date("31.02.2026")` ortama
+ * göre ya `Invalid Date` verir ya da 3 Mart'a TAŞAR — sessiz veri kayması.
+ * Bunun yerine kalıp sıkı bir regexle okunur ve gün, AYIN GERÇEK uzunluğuna
+ * karşı doğrulanır (`Date.UTC(yıl, ay, 0)` = o ayın son günü; UTC seçildi ki
+ * yerel saat/DST gün sayısını kaydırmasın — `formatWeekdayShort` ile aynı
+ * gerekçe).
+ *
+ * Ayrıştırılamayan girdi BOŞ döner (yarım girdi gövdeye sızmamalı) — bu,
+ * `formatDateDots` ailesinin "girdiyi aynen geri ver" üslubundan BİLEREK
+ * ayrılır: burada dönen değer bir SUNUCU DEĞERİDİR, ekran metni değil.
+ */
+export function parseDateDots(display: string): string {
+  const match = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(display.trim());
+  if (match === null) return "";
+  const [, day, month, year] = match;
+  const monthNumber = Number(month);
+  if (monthNumber < 1 || monthNumber > 12) return "";
+  const dayNumber = Number(day);
+  const lastDayOfMonth = new Date(Date.UTC(Number(year), monthNumber, 0)).getUTCDate();
+  if (dayNumber < 1 || dayNumber > lastDayOfMonth) return "";
+  return `${year}-${month}-${day}`;
+}
+
 /** Haftanın günleri — dizinin sırası `Date.getUTCDay()` ile aynıdır (0 = Pazar). */
 const TR_WEEKDAYS_SHORT = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
 
