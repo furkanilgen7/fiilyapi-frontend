@@ -11795,6 +11795,17 @@ export function startMockBackend(port: number): { server: Server; close: () => P
             status: "draft",
             isSgkSubmitted: false,
           }),
+          // 🔴🔴 F-BORDRO T1 — **AY AÇILIR, DOLDURULMAZ** (`payroll/router.py`
+          // `create_payroll_period_endpoint`: *"Ay AÇAR, doldurmaz — satırlar
+          // `compute` ucundan gelir."*).
+          //
+          // Burası daha önce TOHUMLANMIŞ 7 satırlık DOLU bir dönem döndürüyordu
+          // ve bu, modülün gerçek İLK KURULUM hâlini harness'ta YAPISAL OLARAK
+          // imkânsız kılıyordu: 6173 testlik paket "dönem açtım ama tablo boş"
+          // durumunu hiç göremedi, çünkü sahte backend'de öyle bir durum
+          // OLUŞAMIYORDU. Canlıdaki *"bordro kısmı çalışmıyor"* kusuru tam
+          // olarak buydu. Kanıt: `e2e/payroll-api.spec.ts`.
+          lines: [],
           payment_due_date:
             body.payment_due_date === undefined || body.payment_due_date === null
               ? null
@@ -11809,21 +11820,85 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     if (payrollComputeMatch && method === "POST") {
       const period = findPayrollPeriod(payrollComputeMatch[1]);
       if (period === undefined) return send(404, { detail: "Dönem bulunamadı." });
-      // Satırlar tohumda zaten açıktır; yeniden hesap ELLE DÜZELTİLMİŞ (S6) ve
-      // ONAYLI/ÖDENMİŞ (S5) satırları KORUR ve bunu sayaçla söyler.
+      // 🔴 F-BORDRO T1 — KİLİTLİ DÖNEM 409 (`service.py`
+      // `LOCKED_PERIOD_STATUSES` = {approved, paid}). Sahte backend burada
+      // 200 dönüyordu; `Hesapla` düğmesinin etkin olduğu durum kümesini
+      // sınayan HER test sahte-yeşil geçerdi.
+      if (period.status === "approved" || period.status === "paid") {
+        return send(409, { detail: "Onaylanmış veya ödenmiş dönem yeniden hesaplanamaz." });
+      }
+
+      // 🔴 F-BORDRO T1 — `compute` ARTIK GERÇEKTEN HESAPLIYOR. Eskiden yalnız
+      // mevcut satırları SAYIYORDU ve `created` SABİT `0` basıyordu; oysa
+      // şema `created`ı *"Yeni açılan satır sayısı"* diye tanımlar — yani
+      // ucun ASIL İŞİ. Yeniden hesap ELLE DÜZELTİLMİŞ (S6) ve ONAYLI/ÖDENMİŞ
+      // (S5) satırları KORUR ve bunu sayaçla söyler (sessiz atlama yok).
+      let computeCreated = 0;
       let computeUpdated = 0;
       let computeSkippedOverridden = 0;
       let computeSkippedApproved = 0;
-      for (const line of period.lines) {
-        if (line.isOverridden) computeSkippedOverridden += 1;
-        else if (line.approval !== "pending") computeSkippedApproved += 1;
-        else computeUpdated += 1;
+
+      const computeApproval = payrollApprovalFor(period.status);
+      // 🔴 Önceki satırlar AYRI bir değişkene alınır: `period.lines` doğrudan
+      // okunsaydı iddia "atama map bittikten SONRA olur" gibi ince bir
+      // değerlendirme sırası kuralına dayanırdı. Kapalı dünya: satırların TEK
+      // kaynağı `PAYROLL_LINE_SEEDS`tir, bu yüzden yeniden kurulan dizi mevcut
+      // satırların hepsini kapsar.
+      const previousLines = period.lines;
+      period.lines = PAYROLL_LINE_SEEDS.map((lineSeed, index) => {
+        const existing = previousLines.find(
+          (line) => line.personnel_id === lineSeed.personnelId,
+        );
+        if (existing === undefined) {
+          computeCreated += 1;
+          return buildPayrollLine(period.year, period.month, lineSeed, index, computeApproval);
+        }
+        if (existing.isOverridden) {
+          computeSkippedOverridden += 1;
+          return existing;
+        }
+        if (existing.approval !== "pending") {
+          computeSkippedApproved += 1;
+          return existing;
+        }
+        computeUpdated += 1;
+        // Yeniden hesap ücret/günü TAZELER; kullanıcının banka/elden bölüşümü
+        // bir DÜZELTME değil bir TERCİHTİR ve korunur.
+        return {
+          ...existing,
+          days: lineSeed.baseDays,
+          grossKurus: payrollSeedGross(lineSeed, period.month),
+        };
+      });
+
+      // K4 — aynı yılda bu aydan ÖNCE gelen ve henüz açılmamış ya da TASLAK
+      // olan dönem sayısı: kümülatif vergi matrahı EKSİK olabilir. Şemada
+      // ZORUNLU bir alandır; basılmadığı için ekran uyarıyı hiç göremiyordu.
+      let missingPrior = 0;
+      for (let priorMonth = 1; priorMonth < period.month; priorMonth += 1) {
+        const prior = findPayrollPeriod(payrollPeriodId(period.year, priorMonth));
+        if (prior === undefined || prior.status === "draft") missingPrior += 1;
       }
+
+      // T6 — hesaplanan dönem KENDİLİĞİNDEN onaya düşer; ödenebilir tek satır
+      // bile çıkmadıysa `draft` KALIR (`_promote_period_after_compute`).
+      if (
+        period.status === "draft" &&
+        period.lines.some(
+          (line) =>
+            payrollLineStatus(line, payrollLineAmounts(payrollState, period, line)) ===
+            "pending",
+        )
+      ) {
+        period.status = "pending_approval";
+      }
+
       return send(200, {
-        created: 0,
+        created: computeCreated,
         updated: computeUpdated,
         skipped_overridden: computeSkippedOverridden,
         skipped_approved: computeSkippedApproved,
+        missing_prior_period_count: missingPrior,
       });
     }
 
@@ -14955,19 +15030,39 @@ function buildPayrollPeriod(seed: PayrollPeriodSeed): MockPayrollPeriod {
     sgk_submitted_at: seed.isSgkSubmitted
       ? `${payrollDueDate(seed.year, seed.month)}T11:15:00Z`
       : null,
-    lines: PAYROLL_LINE_SEEDS.map((lineSeed, index) => ({
-      id: `pl-${seed.year}-${String(seed.month).padStart(2, "0")}-${index + 1}`,
-      personnel_id: lineSeed.personnelId,
-      personnel_name: lineSeed.name,
-      personnel_source: lineSeed.source,
-      days: lineSeed.baseDays,
-      grossKurus: payrollSeedGross(lineSeed, seed.month),
-      approval,
-      bankKurus: lineSeed.bankKurus ?? null,
-      isOverridden: false,
-      overriddenAt: null,
-      previousGrossKurus: null,
-    })),
+    lines: PAYROLL_LINE_SEEDS.map((lineSeed, index) =>
+      buildPayrollLine(seed.year, seed.month, lineSeed, index, approval),
+    ),
+  };
+}
+
+/**
+ * TEK satır — `compute` ucunun ÜRETTİĞİ şey (F-BORDRO T1).
+ *
+ * 🔴 Gövde `buildPayrollPeriod`tan ÇIKARILDI çünkü artık İKİ çağıranı var:
+ * fikstür tohumu (dönem DOLU doğar) ve `compute` (dönem BOŞ açılır, satırları
+ * hesap üretir). Kopyalansaydı iki üretici sessizce ayrışır ve "hesaplanan
+ * satır" ile "tohumlanan satır" farklı alanlar taşımaya başlardı.
+ */
+function buildPayrollLine(
+  year: number,
+  month: number,
+  lineSeed: PayrollLineSeed,
+  index: number,
+  approval: MockPayrollApproval,
+): MockPayrollLine {
+  return {
+    id: `pl-${year}-${String(month).padStart(2, "0")}-${index + 1}`,
+    personnel_id: lineSeed.personnelId,
+    personnel_name: lineSeed.name,
+    personnel_source: lineSeed.source,
+    days: lineSeed.baseDays,
+    grossKurus: payrollSeedGross(lineSeed, month),
+    approval,
+    bankKurus: lineSeed.bankKurus ?? null,
+    isOverridden: false,
+    overriddenAt: null,
+    previousGrossKurus: null,
   };
 }
 
