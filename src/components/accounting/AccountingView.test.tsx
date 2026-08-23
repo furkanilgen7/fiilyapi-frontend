@@ -600,7 +600,10 @@ describe("Taslak Fişler paneli (onaylı sapma adayı)", () => {
  *
  * 🔴 BAYAT SATIR DÜZELTİLDİ (F-MUF T4): burada eskiden "Form mockup'ı YOKTUR
  * (S-FRM kanonu)" yazıyordu — ARTIK VAR. Gövde YİNE de şemadan türer:
- * mockup'ın icat ettiği `Fiş No` ve `Satır Açıklaması` BASILMAZ.
+ * mockup'ın icat ettiği `Satır Açıklaması` BASILMAZ (K4). `Fiş No` ise ARTIK
+ * BASILIR (BAYAT SATIR DÜZELTİLDİ — F-FISNO T3): FIS-NO dilimi `entry_no`yu
+ * üretti (`YEV-{yıl}-{sıra:04d}`), F-OK'un openapi devri onu sözleşmeye
+ * `required` (nullable değil) indirdi — artık şemadan türeyen bir alan.
  */
 describe("Yevmiye Kaydı diyaloğu (T4)", () => {
   async function openCreate() {

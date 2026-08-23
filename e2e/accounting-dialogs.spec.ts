@@ -198,6 +198,10 @@ test.describe("yevmiye fişi diyaloğu — yazma akışları (HAZİRAN adası)",
     await expect(page.getByTestId("mu-entry-description")).toHaveValue("MUT · düzenleme ölçümü");
     await expect(page.getByTestId("mu-line-debit-0")).toHaveValue("3000.00");
     await expect(page.getByTestId("mu-entry-detail-note")).toHaveValue("İlk dayanak");
+    // 🔴 `entry_no` SUNUCUDAN gelir ve salt-okunur basılır (F-FISNO). Beklenen
+    // dize ELLE yazıldı: `je-2606-mut-edit` tohumu `seq: 3` + `date: "2026-06-12"`
+    // ⇒ `YEV-{yıl}-{sıra:04d}`. Üretim ifadesinden KOPYALANMADI.
+    await expect(page.getByTestId("mu-entry-no")).toHaveValue("YEV-2026-0003");
 
     await page.getByTestId("mu-entry-description").fill("MUT · düzenleme ölçümü (güncel)");
     await page.getByTestId("mu-line-debit-0").fill("3300");
