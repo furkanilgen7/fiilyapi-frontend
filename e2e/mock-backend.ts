@@ -1452,8 +1452,45 @@ function applyDistributionSave(
   return { error: null };
 }
 
+/**
+ * Bir taşeron sözleşmesinin KÜMÜLATİF BRÜTÜ — backend
+ * `subcontractor_progress_payments.summary.cumulative_gross_by_contracts`
+ * ikizi: yalnız `approved|paid` (`repository.COMPLETED_STATUSES`) sayılır;
+ * taslak ve onaya sunulmuş evrak henüz gerçekleşmiş iş DEĞİLDİR.
+ *
+ * `hiddenFromLists` kayıtları DIŞLANIR — bu bayrak mock'un liste/özet uçları
+ * için test izolasyon aracıdır (bkz. `MockSubcontractorProgressPayment`
+ * yorumu) ve SZL listesi de bir liste ucudur. Fikstür tabanında fark ÜRETMEZ
+ * (dört gizli kaydın hiçbiri `approved|paid` değildir); bayrağı kullanan
+ * spec bir kaydı onayladığında SZL karesinin sessizce oynamasını önler.
+ */
+function subcontractorCumulativeGross(state: MockState, contractId: string): number {
+  return state.subcontractorProgressPayments
+    .filter(
+      (p) =>
+        p.contract_id === contractId &&
+        !p.hiddenFromLists &&
+        (p.status === "approved" || p.status === "paid"),
+    )
+    .reduce((sum, p) => sum + Number(p.calculation.gross), 0);
+}
+
+/**
+ * `progress_payments.summary.progress_pct` ikizi: `brüt / bedel × 100`.
+ * Bedel yok ya da `<= 0` ise `null` — sahte `%0` "veri yok"u "ilerleme yok"
+ * diye gösterirdi (backend `progress_pct` sıfır/negatif paydada bölme YAPMAZ).
+ */
+function contractProgressPct(cumulativeGross: number, amount: string): string | null {
+  const total = Number(amount);
+  if (!Number.isFinite(total) || total <= 0) return null;
+  return money2((cumulativeGross / total) * 100);
+}
+
 /** `GET /contracts` — SZL sekmeli listesi (özet + satırlar). */
-function buildContractsListResponse(state: MockState, query: URLSearchParams) {
+function buildContractsListResponse(
+  state: MockState,
+  query: URLSearchParams,
+): components["schemas"]["ContractListResponse"] {
   const type = query.get("type") ?? "employer";
   const projectId = query.get("project_id");
   const status = query.get("status");
@@ -1495,16 +1532,27 @@ function buildContractsListResponse(state: MockState, query: URLSearchParams) {
   } else {
     rows = state.subcontractorContracts.map((contract) => {
       const detail = buildSubcontractorContractDetailResponse(contract);
+      // 🔴 BEDEL TEK KEZ HESAPLANIR: hem "Bedel" sütunu hem yüzdenin
+      // PAYDASIDIR (backend `_subcontractor_item` yorumunun aynısı) — iki kez
+      // türetmek, ileride biri değişince ikisinin AYRIŞMASINA kapı bırakır.
+      const amount = detail.contract_total;
       return {
         id: contract.id,
         title: contract.work_category ?? "Taşeron Sözleşmesi",
         contract_no: contract.contract_no,
         counterparty_name: contract.subcontractor_name,
-        amount: detail.contract_total,
+        amount,
         start_date: contract.start_date,
         end_date: contract.end_date,
-        // Taşeron satırlarında backend `None` döner (spec §2) — "—" basılır.
-        progress_pct: null,
+        // 🔴 P-YT4 (backend `c0d3ac8`, 2026-08-23) — BU SATIR SABİT `null`DU ve
+        // yorumu *"taşeron satırlarında backend `None` döner"* diyordu. Gerekçe
+        // BAYATLADI: TH/TH-SUM yazıldı, `cumulative_gross_by_contracts` canlı ve
+        // `list_contracts` artık gerçek yüzdeyi satırlara geçiriyor. Formül
+        // İŞVEREN dalıyla AYNI kopyadan gelir (`progress_pct`) — SZL'nin TEK
+        // "İlerleme" sütunu sekmeye göre başka bir şey ÖLÇEMEZ.
+        // Bedelsiz sözleşmede `null` KALIR (fikstürde `sc-3`), hakedişi
+        // olmayan bedelli sözleşmede GERÇEK `0.00` döner (`sc-2`).
+        progress_pct: contractProgressPct(subcontractorCumulativeGross(state, contract.id), amount),
         status: contract.status,
         is_draft: contract.is_draft,
       };
@@ -1532,7 +1580,27 @@ function buildContractsListResponse(state: MockState, query: URLSearchParams) {
     summary: {
       total_amount: money2(rows.reduce((sum, row) => sum + Number(row.amount), 0)),
       active_count: rows.filter((row) => row.status === "active").length,
-      progress_payment_total: type === "employer" ? "8400000.00" : null,
+      // 🔴 F-SZLPCT'te ÖLÇÜLDÜ — `progress_pct` ile AYNI SINIFTAN İKİNCİ bir
+      // ayrışma, kimse kaydetmemişti: taşeron dalı `null` basıyordu ama
+      // backend `contracts/service.py:296-305` TH-SUM'dan (`cb9e26e`,
+      // 2026-08-16) beri İKİ dalda da gerçek toplamı döndürüyor ve yorumu
+      // harfiyen *"`None` bir daha DÖNMEZ — hakedişi olmayan sözleşme de,
+      // hiç sözleşme olmaması da `0.00` üretir"* diyor. Yani mock DOKUZ
+      // GÜNDÜR gerçek backend'in DÖNDÜRMEYECEĞİ bir yanıtı döndürüyordu.
+      //
+      // Toplam SÜZGEÇTEN GEÇMİŞ satırlar üzerinden alınır (backend de
+      // `contracts` listesini süzdükten sonra toplar) — sabit bir sayı
+      // yazmak, süzgeçli bir isteği mock'ta sessizce YANLIŞ cevaplatırdı.
+      // İşveren dalı sabit kalır: `p-1` tek sözleşmedir ve `8400000.00`
+      // fikstürden TÜREYEN doğru değerdir (`11200000.00 × %75`).
+      progress_payment_total:
+        type === "employer"
+          ? rows.length > 0
+            ? "8400000.00"
+            : "0.00"
+          : money2(
+              rows.reduce((sum, row) => sum + subcontractorCumulativeGross(state, row.id), 0),
+            ),
       expiring_this_month_count: 0,
     },
     items: rows,

@@ -44,10 +44,15 @@ test("sozlesmeler taseron sekmesi gorsel", async ({ page }) => {
 
   await expect(page.getByRole("heading", { level: 1, name: "Sözleşmeler" })).toBeVisible();
   await expect(page.getByTestId("szl-kpi-strip")).toBeVisible();
-  // Taşeron sekmesinin AYIRT EDİCİ üç öğesi kadrajda: "—" düşen ilerleme
-  // hücresi, "—" düşen hakediş KPI'ı ve yalnız bu sekmede çizilen giriş.
-  await expect(page.getByTestId("szl-progress-pending").first()).toBeVisible();
-  await expect(page.getByTestId("szl-kpi-payment-total")).toHaveText(/—/);
+  // 🔴 F-SZLPCT (2026-08-25) — eski iddialar ("ikisi de '—'") BAYATTI:
+  // `progress_pct` P-YT4'te, `progress_payment_total` TH-SUM'da BAĞLANDI.
+  // Kadrajın AYIRT EDİCİ öğeleri artık üç ilerleme dalının HEPSİDİR (gerçek
+  // yüzde × 2 + bedelsiz sözleşmenin "—"si) + yalnız bu sekmede çizilen giriş.
+  // (Bu iddialar `--grep-invert "gorsel"` ile koşan 5. kapıda ÇALIŞMAZ,
+  // yalnız Linux CI'ın `visual` işinde koşar — GÖRSEL SPEC'İN 1. PARÇASI.)
+  await expect(page.getByTestId("szl-progress")).toHaveCount(2);
+  await expect(page.getByTestId("szl-progress-pending")).toHaveCount(1);
+  await expect(page.getByTestId("szl-kpi-payment-total")).not.toHaveText(/—/);
   await expect(page.getByRole("link", { name: "Taşeron Firmaları →" })).toBeVisible();
 
   await prepareFrame(page);

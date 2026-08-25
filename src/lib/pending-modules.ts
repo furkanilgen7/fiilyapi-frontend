@@ -184,13 +184,28 @@ export const MODULE_LABELS: Record<string, string> = {
   // devre-dışı "Sözleşmeyi Gör →" + breadcrumb bağlantılarının gerekçesiydi.
   // TSD rotası (`/sozlesmeler/taseron/[contractId]`) yazıldı, iki bağlantı da
   // gerçek `Link`e döndü — etiketin tüketicisi kalmadı, yeniden eklenmemeli.
-  // F-P5 T2 (SZL · Sözleşmeler listesi) — TAŞERON sekmesinde backend'in
-  // BİLEREK `None` döndürdüğü iki alan (spec §2, openapi açıklaması):
-  // hakediş toplamı KPI'ı (`ContractSummary.progress_payment_total`) ve satır
-  // ilerlemesi (`ContractListItem.progress_pct`). Sahte `0` basmak yerine
-  // kart/kolon yerinde durur, "—" + bu gerekçe gösterilir.
-  subcontractor_progress_payment_total: "Taşeron hakediş toplamı henüz hesaplanmıyor",
-  subcontractor_progress_pct: "Taşeron sözleşmesinde ilerleme henüz hesaplanmıyor",
+  // F-P5 T2 (SZL · Sözleşmeler listesi) — iki alan da "sahte `0` basma, `—` bas"
+  // deseninin örneğiydi: hakediş toplamı KPI'ı
+  // (`ContractSummary.progress_payment_total`) ve satır ilerlemesi
+  // (`ContractListItem.progress_pct`). Kart/kolon SİLİNMEZ, "—" + gerekçe basılır.
+  //
+  // 🔴 F-SZLPCT (2026-08-25) — İKİSİNİN DE GEREKÇESİ BAYATLADI, metinler
+  // düzeltildi (yukarıdaki "gerekçe hâlâ okunuyor ama YANLIŞ → METİN
+  // düzeltilir" kuralı). ÖLÇÜM:
+  //   · `progress_payment_total`: TH-SUM (`cb9e26e`, 2026-08-16) bağladı;
+  //     `contracts/service.py:296-305` artık İKİ dalda da gerçek toplamı
+  //     döndürüyor ve backend yorumu harfiyen *"`None` bir daha DÖNMEZ"* diyor.
+  //     Anahtar SİLİNMEZ: şema tipi `Decimal | None` kaldığı için kart hâlâ
+  //     savunmacı `null` dalını taşır — ama gerekçe artık "hesaplanmıyor" değil.
+  //   · `progress_pct`: P-YT4 (`c0d3ac8`, 2026-08-23) bağladı; taşeron satırı
+  //     da işveren satırıyla AYNI formülü kullanıyor. "—" hücresi bundan sonra
+  //     YALNIZ bedelsiz (`amount <= 0`) sözleşmede görünür — `progress_pct`
+  //     sıfır/negatif paydada bölme yapmaz. Metin bu yüzden SEBEBİ söyler;
+  //     "taşeron sekmesinde ilerleme hiç hesaplanmıyor" demek artık YALANDI.
+  //     Gerekçe iki sekmede de aynı ProgressCell'den okunur (işveren sözleşmesi
+  //     de bedelsiz olabilir) — bu yüzden metin sekmeden BAĞIMSIZ yazılır.
+  subcontractor_progress_payment_total: "Taşeron hakediş toplamı bu görünüme gelmedi",
+  subcontractor_progress_pct: "Sözleşme bedeli girilmemiş — ilerleme oranı hesaplanamaz",
   // F-P5 T3 (E14 · İşveren sözleşme detayı) — mockup'ta ÇİZİLİ olup backend
   // karşılığı OLMAYAN üç yüzey. Üst kural: bölüm/buton SİLİNMEZ, yerinde
   // devre dışı + görünür gerekçeyle basılır.

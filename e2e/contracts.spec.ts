@@ -75,16 +75,29 @@ test("sözleşmeler: işveren sekmesi — çubuklu ilerleme + devre-dışı 'Yen
   );
 });
 
-test("sözleşmeler: taşeron sekmesi — ilerleme/hakediş '—' düşer, girişler açılır", async ({
+test("sözleşmeler: taşeron sekmesi — ilerleme GERÇEK, '—' yalnız BEDELSİZ sözleşmede", async ({
   page,
 }) => {
   await login(page);
   await page.goto("/sozlesmeler?type=subcontractor");
 
-  // Zarif düşüş: backend taşeron tarafında ikisini de `None` döndürür.
-  await expect(page.getByTestId("szl-kpi-payment-total")).toHaveText(/—/);
-  await expect(page.getByTestId("szl-progress-pending").first()).toBeVisible();
-  await expect(page.getByTestId("szl-progress")).toHaveCount(0);
+  // 🔴 F-SZLPCT (2026-08-25) — bu testin eski hâli *"backend taşeron tarafında
+  // ikisini de `None` döndürür"* diyordu ve ÜÇ KATMANIN (mock · bu spec ·
+  // görsel spec) birbirini doğruladığı bir YALANDI:
+  //   · `progress_pct`            → P-YT4  (`c0d3ac8`, 2026-08-23) bağladı,
+  //   · `progress_payment_total`  → TH-SUM (`cb9e26e`, 2026-08-16) bağladı.
+  // "—" ARTIK sekmenin özelliği DEĞİL, BEDELSİZ sözleşmenin özelliğidir:
+  // `progress_pct` sıfır/negatif paydada bölme yapmaz. Fikstürde üç dal da
+  // temsil edilir → sc-1 gerçek yüzde, sc-2 GERÇEK `%0` (hakedişi yok ama
+  // bedeli var), kalemsiz sc-3 "—".
+  await expect(page.getByTestId("szl-progress")).toHaveCount(2);
+  await expect(page.getByTestId("szl-progress-pending")).toHaveCount(1);
+  await expect(page.getByTestId("szl-progress-pending")).toHaveAttribute(
+    "title",
+    "Sözleşme bedeli girilmemiş — ilerleme oranı hesaplanamaz",
+  );
+  // Hakediş toplamı KPI'ı da GERÇEK bir sayıdır; "—" bir daha DÖNMEZ.
+  await expect(page.getByTestId("szl-kpi-payment-total")).not.toHaveText(/—/);
   // Kolon ve kart SİLİNMEZ.
   await expect(page.getByRole("columnheader", { name: "İlerleme" })).toBeVisible();
   await expect(page.getByText("Toplam Hakediş")).toBeVisible();
