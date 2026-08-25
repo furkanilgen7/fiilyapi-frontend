@@ -23,6 +23,16 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
       { label: "Kullanıcılar", href: "/ayarlar/kullanicilar", emoji: "👤" },
       { label: "Rol Yönetimi", href: "/ayarlar/roller", emoji: "🔐" },
       { label: "İzin Matrisi", href: "/ayarlar/izin-matrisi", emoji: "📋" },
+      // F-OKROL — mockup `Ayarlar - Onay Rolleri.dc.html:82` bu bağlantıyı
+      // "Kullanıcı & Erişim" grubunun SONUNA koyar. Rotası olmayan ekran
+      // kullanıcıya görünmez: bağlantı ekranla AYNI dilimde iner.
+      //
+      // ⚠️ ONAYLI SAPMA — mockup `✅` (U+2705) çiziyor; o kod noktası
+      // `src/styles/fonts.css`in HİÇBİR `unicode-range` kümesinde YOK
+      // (kapsanan emoji aralığı `u+1f??`). Kapsanmayan glif sistem yedeğine
+      // düşer ve kare `ubuntu-latest`te turdan tura oynar (F-MU2 kanonu).
+      // Diğer dokuz öğenin hepsi gibi `u+1f??` içinden bir emoji seçildi.
+      { label: "Onay Rolleri ve Eşik", href: "/ayarlar/onay-rolleri", emoji: "\u{1F44D}" },
     ],
   },
   {
