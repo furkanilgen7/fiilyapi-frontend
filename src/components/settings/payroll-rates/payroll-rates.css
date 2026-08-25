@@ -1,0 +1,423 @@
+/* F-BORORAN · `Ayarlar - Bordro Oranları`
+   Kanon: projedesign/Ayarlar - Bordro Oranları.dc.html (`:NN` = satır numarası).
+   Çıplak hex/px-palet YOK — mockup'ın tonları mevcut `tokens.css` paletiyle
+   karşılandı, yeni token EKLENMEDİ.
+   🔴 ÖNEK `bro-`DUR, `bor-` DEĞİL — ÖLÇÜLMÜŞ bir düzeltmedir. `bor-` öneki
+   `/bordro` ekranlarının (`src/components/payroll/*`) ZATEN kullandığı önektir
+   ve çakışan adlar arasında `bor-table`, `bor-tabs`, `bor-tab`, `bor-band`,
+   `bor-th--num`, `bor-td--num` VARDIR. Bu dosya `bor-` ile yazılsaydı üç bordro
+   ekranının tablosu ve sekme şeridi SESSİZCE bozulur, DÖRT KAPI DA YEŞİL
+   KALIRDI — CSS çakışmasının kapsamı DOSYA değil DEMETtir (WORKFLOW §4).
+   Ölçüm: `grep -rho "bor-[a-z_-]*" src/components/payroll` → 80 ad;
+   `grep -rn "bro-" src e2e` (bu dizin hariç) → 0. */
+
+.bro-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* --- Araç çubuğu (`:86-98`) --------------------------------------------- */
+.bro-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+.bro-toolbar__spacer {
+  flex: 1;
+}
+/* Etiket tipografisi `Field` primitive'inden gelir (`field-adoption` bekçisi:
+   `--text-form-label` / `--color-form-label` YALNIZ `field.css`te yaşar). */
+.bro-toolbar__year {
+  min-width: 190px;
+}
+
+/* --- Durum şeritleri ----------------------------------------------------- */
+.bro-band {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border-radius: var(--radius-12);
+  padding: 13px 18px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.bro-band__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+.bro-band--locked {
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+.bro-band--copied {
+  background: var(--color-info-tint);
+  border: 1px solid var(--color-primary-ring);
+  color: var(--color-primary-hover);
+  font-weight: 600;
+}
+/* `:131-140` — gelecek yıl uyarısı. */
+.bro-band--warn {
+  background: var(--color-danger-tint);
+  border: 1.5px solid var(--color-danger-tint-border);
+  color: var(--color-danger-text);
+}
+.bro-band--warn strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-danger-deep);
+}
+
+/* --- Tip sekmeleri (`:104-121`) ----------------------------------------- */
+.bro-tabs {
+  display: flex;
+  gap: var(--space-1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-12);
+  box-shadow: var(--shadow-card);
+  padding: 5px;
+}
+.bro-tab {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: none;
+  border-radius: var(--radius-8);
+  background: transparent;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.bro-tab:hover {
+  background: var(--color-surface-2);
+}
+.bro-tab--on {
+  background: var(--color-nav-active-bg);
+  font-weight: 700;
+  color: var(--color-primary);
+}
+.bro-tab:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+.bro-tab__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.bro-tab__dot--company {
+  background: var(--color-primary);
+}
+.bro-tab__dot--subcontractor {
+  background: var(--color-warning);
+}
+.bro-tab__dot--freelance {
+  background: var(--color-accent-purple);
+}
+.bro-tab__dot--intern {
+  background: var(--color-text-subtle);
+}
+.bro-tab__badge {
+  border-radius: var(--radius-6);
+  padding: 2px 6px;
+  font-size: 9px;
+  font-weight: 700;
+  background: var(--color-success-tint);
+  color: var(--color-success);
+}
+.bro-tab__badge--missing {
+  background: var(--color-danger-tint);
+  color: var(--color-danger);
+}
+
+.bro-hint {
+  padding-left: 2px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--color-text-subtle);
+}
+
+/* --- Aktif/pasif kartı (`:124-129`) ------------------------------------- */
+.bro-active {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-12);
+  box-shadow: var(--shadow-card);
+  padding: 14px 18px;
+}
+.bro-active__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+.bro-active__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-strong);
+}
+.bro-active__note {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+
+/* --- Kartlar (`:143` `:189`) -------------------------------------------- */
+.bro-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-12);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.bro-card__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+}
+.bro-card__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-strong);
+}
+.bro-card__note {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+.bro-card__warning {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--color-warning-deep-text);
+}
+.bro-card__warning--block {
+  display: block;
+  background: var(--color-warning-soft);
+  border-bottom: 1px solid var(--color-border);
+  padding: 10px 18px;
+}
+.bro-card__actions {
+  display: flex;
+  margin-left: auto;
+  gap: var(--space-2);
+}
+.bro-card__foot {
+  border-top: 1px solid var(--color-border);
+  background: var(--color-nav-active-bg);
+  padding: 12px 18px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--color-primary-hover);
+}
+
+/* Gelir türü sekmeleri (`:193-196`) */
+.bro-kind-tabs {
+  display: flex;
+  gap: 3px;
+  border-radius: var(--radius-7);
+  background: var(--color-surface-muted);
+  padding: 3px;
+}
+.bro-kind-tab {
+  border: none;
+  border-radius: var(--radius-5);
+  background: transparent;
+  padding: 5px 12px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.bro-kind-tab--on {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-tab-active);
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+/* --- Tablolar ------------------------------------------------------------ */
+.bro-table-scroll {
+  overflow-x: auto;
+}
+.bro-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.bro-table th,
+.bro-table td {
+  border-bottom: 1px solid var(--color-divider);
+  padding: 11px 12px;
+  text-align: left;
+}
+.bro-table thead th {
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+  padding: 10px 12px;
+  font-size: var(--text-table-head);
+  font-weight: 600;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.bro-table tbody tr:last-child th,
+.bro-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.bro-table tbody th[scope="row"] {
+  padding-left: 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-strong);
+}
+.bro-th--employee {
+  text-align: right;
+  width: 140px;
+  font-weight: 700;
+  color: var(--color-danger);
+}
+.bro-th--employer {
+  text-align: right;
+  width: 140px;
+  font-weight: 700;
+  color: var(--color-orange-tint-text);
+}
+.bro-th--total {
+  text-align: right;
+  width: 110px;
+}
+.bro-th--num,
+.bro-th--bound {
+  text-align: right;
+  width: 170px;
+}
+.bro-th--bound {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+.bro-th--ordinal {
+  width: 70px;
+  text-align: center;
+}
+.bro-th--remove {
+  width: 44px;
+}
+.bro-td--num {
+  text-align: right;
+}
+.bro-td--num .input-wrap {
+  display: inline-flex;
+  width: 96px;
+}
+.bro-td--derived,
+.bro-td--na {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+.bro-td--total {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-strong);
+}
+.bro-td--note {
+  padding-right: 18px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--color-text-subtle);
+}
+.bro-td--ordinal {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-subtle);
+}
+.bro-td--empty {
+  padding: 20px 18px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+.bro-td--remove {
+  text-align: center;
+}
+.bro-unbounded {
+  display: inline-block;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-row-control);
+  background: var(--color-surface-muted);
+  padding: var(--space-row-control-y) var(--space-row-control-x);
+  font-size: var(--text-row-control);
+  color: var(--color-text-subtle);
+}
+.bro-remove {
+  border: none;
+  background: none;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+}
+.bro-remove:hover {
+  color: var(--color-danger);
+}
+
+/* --- Boş hâl (`:224-241`) ----------------------------------------------- */
+.bro-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--color-surface);
+  border: 1.5px dashed var(--color-dashed-border);
+  border-radius: var(--radius-14);
+  padding: 40px 24px;
+  text-align: center;
+}
+.bro-empty__icon {
+  font-size: 38px;
+  line-height: 1;
+}
+.bro-empty__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-strong);
+}
+.bro-empty__text {
+  max-width: 440px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--color-text-subtle);
+}
+.bro-empty__actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.bro-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

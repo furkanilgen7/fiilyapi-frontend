@@ -12093,8 +12093,20 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           "short_work_pct",
         ] as const;
         // Gövde TAM SETTİR: yedi oranın hepsi zorunlu, kısmi yama yok.
-        const missingRateKeys = requiredRateKeys.filter(
-          (key) => body[key] === undefined || body[key] === null,
+        //
+        // 🔴 `income_tax_pct` İSTİSNADIR ve bu ÖLÇÜLMÜŞ bir DÜZELTMEDİR:
+        // sözleşmede alan `anyOf: [number, string, null]`dır ve `null` MEŞRU
+        // bir DEĞERDİR — "dilimli rejim" demektir (`payroll/models.py:367`:
+        // *"NULL = DİLİMLİ MOTOR, dolu = DÜZ ORAN"*). Sahte backend onu da
+        // "eksik alan" sayıp 422 döndürüyordu; yani gerçek sunucunun KABUL
+        // ETTİĞİ bir gövdeyi reddediyordu. Bu, sahte-yeşilin AYNASIdır
+        // (sahte-KIRMIZI): 2026 şirket kadrosunun gerçek oran satırı tam da
+        // `income_tax_pct IS NULL`dır, yani ekranın en yaygın kaydı hiç
+        // yazılamazdı. Ölçüm: `openapi.json` → `PayrollRateUpdate.income_tax_pct`.
+        const missingRateKeys = requiredRateKeys.filter((key) =>
+          key === "income_tax_pct"
+            ? body[key] === undefined
+            : body[key] === undefined || body[key] === null,
         );
         if (missingRateKeys.length > 0) {
           return send(422, { detail: `Eksik oran alanı: ${missingRateKeys.join(", ")}` });
@@ -12106,7 +12118,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           personnel_source: rateSource,
           sgk_employee_pct: String(body.sgk_employee_pct),
           unemployment_employee_pct: String(body.unemployment_employee_pct),
-          income_tax_pct: String(body.income_tax_pct),
+          income_tax_pct: body.income_tax_pct === null ? null : String(body.income_tax_pct),
           stamp_tax_pct: String(body.stamp_tax_pct),
           sgk_employer_pct: String(body.sgk_employer_pct),
           unemployment_employer_pct: String(body.unemployment_employer_pct),
@@ -12120,6 +12132,123 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           nextRate,
         ];
         return send(200, nextRate);
+      });
+    }
+
+    // --- F-BORORAN · gelir vergisi TARİFESİ (TB6 T1) — İKİ uç ------------
+    if (path === "/payroll/tax-brackets" && method === "GET") {
+      // Sayfalama YOKTUR (şema kararı). Sıra `(yıl azalan, tür, ordinal artan)`
+      // — `tax_brackets_service.list_tax_brackets` ile BİREBİR; `ordinal` bir
+      // süs değil TARİFENİN KENDİSİdir (birikimli okunur).
+      const bracketYear = parsed.searchParams.get("year");
+      const bracketKind = parsed.searchParams.get("income_kind");
+      const rows = payrollState.taxBrackets
+        .filter((row) => bracketYear === null || row.year === Number(bracketYear))
+        .filter((row) => bracketKind === null || row.income_kind === bracketKind)
+        .slice()
+        .sort(
+          (a, b) =>
+            b.year - a.year ||
+            a.income_kind.localeCompare(b.income_kind) ||
+            a.ordinal - b.ordinal,
+        );
+      return send(200, { items: rows, total: rows.length });
+    }
+
+    const payrollBracketMatch = path.match(/^\/payroll\/tax-brackets\/(\d+)\/([^/]+)$/);
+    if (payrollBracketMatch && method === "PUT") {
+      const bracketYear = Number(payrollBracketMatch[1]);
+      const bracketKind = payrollBracketMatch[2] as MockIncomeKind;
+      return withBody((body) => {
+        // 🔴 PARA KORKULUĞU — oran ucunun kardeşi ama GEREKÇESİ AYRIDIR:
+        // ayın vergisi `T(önceki+bu ay) − T(önceki)`dir ve İKİ çağrı da
+        // YÜRÜRLÜKTEKİ setle yapılır; yıl ortasında değişen bir tarife
+        // ödenmiş ayların farkını sonraki ilk bordroya YÜKLER.
+        const isYearLocked = payrollState.periods.some(
+          (period) =>
+            period.year === bracketYear &&
+            (period.status === "approved" || period.status === "paid"),
+        );
+        if (isYearLocked) {
+          return send(409, {
+            detail: `${bracketYear} yılında onaylanmış dönem var; gelir vergisi tarifesi değiştirilemez.`,
+          });
+        }
+
+        // 🔴 SAHTE BACKEND BEKÇİ OLMALIDIR, ONAYLAYICI DEĞİL: gerçek sunucunun
+        // REDDEDECEĞİ set burada da REDDEDİLİR. Kurallar
+        // `income_tax.normalize_brackets`ten BİREBİR alındı (beş kural +
+        // negatif oran yasağı) — kopyalanmadıkları takdirde istemci
+        // korkuluğunu kaldıran bir mutasyon sahte backend'de YEŞİL kalırdı.
+        const rawBrackets = body.brackets;
+        if (!Array.isArray(rawBrackets) || rawBrackets.length === 0) {
+          return send(422, { detail: "Gelir vergisi dilim seti BOŞ: vergi hesaplanamaz" });
+        }
+        const sorted = [...(rawBrackets as Record<string, unknown>[])].sort(
+          (a, b) => Number(a.ordinal) - Number(b.ordinal),
+        );
+        for (const [index, dilim] of sorted.entries()) {
+          if (Number(dilim.ordinal) !== index + 1) {
+            return send(422, {
+              detail: "Gelir vergisi dilimlerinin sırası 1..N aralıksız olmalıdır",
+            });
+          }
+          const oran = Number(dilim.rate_pct);
+          if (!Number.isFinite(oran) || oran < 0 || oran > 100) {
+            return send(422, { detail: `${index + 1}. dilimin oranı geçersiz: ${dilim.rate_pct}` });
+          }
+        }
+        let onceki: number | null = null;
+        for (const [index, dilim] of sorted.entries()) {
+          const isLast = index === sorted.length - 1;
+          const bound = dilim.upper_bound;
+          if (bound === null || bound === undefined) {
+            if (!isLast) {
+              return send(422, {
+                detail: `${index + 1}. dilimin üst sınırı YOK ama son dilim değil: sonraki dilimler erişilemez olurdu`,
+              });
+            }
+            continue;
+          }
+          if (isLast) {
+            return send(422, {
+              detail: `SON dilimin üst sınırı olmamalıdır; üstündeki matrah vergisiz kalırdı`,
+            });
+          }
+          const numeric = Number(bound);
+          if (!Number.isFinite(numeric) || numeric <= 0) {
+            return send(422, { detail: `${index + 1}. dilimin üst sınırı geçersiz: ${bound}` });
+          }
+          if (onceki !== null && numeric <= onceki) {
+            return send(422, {
+              detail: `${index + 1}. dilimin üst sınırı bir öncekinden büyük değil: aynı matrah iki dilime düşerdi`,
+            });
+          }
+          onceki = numeric;
+        }
+
+        // 🔴 TAM KÜME: eski satırlar SİLİNİR, pasifleştirilmez
+        // (`uq_payroll_tax_brackets_year_kind_ordinal`).
+        const isActive = body.is_active === undefined ? true : Boolean(body.is_active);
+        const nextRows: MockPayrollTaxBracket[] = sorted.map((dilim, index) => ({
+          id: `ptb-${bracketYear}-${bracketKind}-${index + 1}`,
+          year: bracketYear,
+          income_kind: bracketKind,
+          ordinal: index + 1,
+          upper_bound:
+            dilim.upper_bound === null || dilim.upper_bound === undefined
+              ? null
+              : String(dilim.upper_bound),
+          rate_pct: String(dilim.rate_pct),
+          is_active: isActive,
+        }));
+        payrollState.taxBrackets = [
+          ...payrollState.taxBrackets.filter(
+            (row) => !(row.year === bracketYear && row.income_kind === bracketKind),
+          ),
+          ...nextRows,
+        ];
+        return send(200, { items: nextRows, total: nextRows.length });
       });
     }
 
@@ -14850,9 +14979,13 @@ interface MockPayrollPeriod {
   lines: MockPayrollLine[];
 }
 
+type MockIncomeKind = components["schemas"]["IncomeKind"];
+type MockPayrollTaxBracket = components["schemas"]["PayrollTaxBracketResponse"];
+
 interface MockPayrollState {
   periods: MockPayrollPeriod[];
   rates: MockPayrollRate[];
+  taxBrackets: MockPayrollTaxBracket[];
   seq: number;
 }
 
@@ -14921,8 +15054,73 @@ const PAYROLL_RATE_SEEDS: readonly PayrollRateSeed[] = [
   { source: "intern", sgkEmployee: "0.000", unemploymentEmployee: "0.000", incomeTax: "0.000", stampTax: "0.000", sgkEmployer: "0.000", unemploymentEmployer: "0.000" },
 ];
 
-/** Oran seti TANIMLI yıllar. 2024 bilinçli olarak DIŞARIDADIR (K3). */
-const PAYROLL_RATE_YEARS: readonly number[] = [2025, 2026];
+/**
+ * Oran seti TANIMLI yıllar. 2024 bilinçli olarak DIŞARIDADIR (K3).
+ *
+ * 🔴 **2023 F-BORORAN'ın YAZMA ALANIdır** ve şu üç özelliği birden taşıdığı
+ * için seçildi: (a) `PAYROLL_PERIOD_SEEDS`te dönemi YOKTUR → yıl kilitli
+ * değildir, iki yazma ucu da 409 vermez; (b) hiçbir görsel kare o yılı
+ * BASMAZ (kadrajlar 2026 ve 2027); (c) SEÇENEK LİSTESİNDE ZATEN VARDIR —
+ * `buildYearOptions` yılları veriden türetir, dolayısıyla 2023'e yazmak
+ * `bro-year` açılır listesini OYNATMAZ. Yazma alanı seçilmeseydi ve mutasyon
+ * testi yeni bir yıl AÇSAYDI, o yıl seçeneklere eklenir ve üç kareyi birden
+ * kaydırırdı ("fazla fikstür başka birinin kodunu sessizce değiştirir").
+ */
+const PAYROLL_RATE_YEARS: readonly number[] = [2023, 2025, 2026];
+
+/**
+ * 🔴 2026 ÜCRET tarifesi — değerler MOCKUP'TAN DEĞİL, BACKEND'DEN alındı.
+ * Ölçüldü (`payroll/tax_bracket_seed_data.py::TAX_BRACKETS_2026_WAGE`, KK-6
+ * kullanıcı kararı 2026-08-17, GV Genel Tebliği 332): eşikler
+ * **190.000 / 400.000 / 1.500.000 / 5.300.000**tır. Mockup `:203-217`
+ * 158.000 / 330.000 / 800.000 / 4.300.000 çizer — bunlar **2025** tarifesidir.
+ * Sahte backend gerçeği taklit eder, mockup'ı değil (WORKFLOW §3 icat yasağı).
+ *
+ * `non_wage` BASILMAZ: bordro her zaman `wage` kullanır ve ücret dışı tarife
+ * tohumlanmamıştır — uydurulmaz. Ekranın "Ücret Dışı" sekmesi bu yüzden BOŞ
+ * durumu gösterir ve bu DOĞRU davranıştır.
+ */
+const TAX_BRACKET_SEEDS: readonly {
+  year: number;
+  kind: MockIncomeKind;
+  rows: readonly (readonly [number, string | null, string])[];
+}[] = [
+  {
+    year: 2026,
+    kind: "wage",
+    rows: [
+      [1, "190000.00", "15.000"],
+      [2, "400000.00", "20.000"],
+      [3, "1500000.00", "27.000"],
+      [4, "5300000.00", "35.000"],
+      [5, null, "40.000"],
+    ],
+  },
+  // 2023 = yazma alanı (yukarıdaki gerekçe). Değerler o yılın mevzuatı DEĞİL,
+  // yapısal olarak geçerli bir settir; hiçbir kare basmaz.
+  {
+    year: 2023,
+    kind: "wage",
+    rows: [
+      [1, "70000.00", "15.000"],
+      [2, null, "27.000"],
+    ],
+  },
+];
+
+function buildPayrollTaxBrackets(): MockPayrollTaxBracket[] {
+  return TAX_BRACKET_SEEDS.flatMap((seed) =>
+    seed.rows.map(([ordinal, upperBound, ratePct]) => ({
+      id: `ptb-${seed.year}-${seed.kind}-${ordinal}`,
+      year: seed.year,
+      income_kind: seed.kind,
+      ordinal,
+      upper_bound: upperBound,
+      rate_pct: ratePct,
+      is_active: true,
+    })),
+  );
+}
 
 function buildPayrollRates(): MockPayrollRate[] {
   return PAYROLL_RATE_YEARS.flatMap((year) =>
@@ -15441,6 +15639,7 @@ function buildPayrollLine(
 const payrollState: MockPayrollState = {
   periods: PAYROLL_PERIOD_SEEDS.map(buildPayrollPeriod),
   rates: buildPayrollRates(),
+  taxBrackets: buildPayrollTaxBrackets(),
   seq: 0,
 };
 

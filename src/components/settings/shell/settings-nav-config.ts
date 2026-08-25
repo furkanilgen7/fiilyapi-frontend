@@ -38,6 +38,11 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
   {
     heading: "SİSTEM",
     items: [
+      // F-BORORAN — mockup `Ayarlar - Bordro Oranları.dc.html:75` bu bağlantıyı
+      // "Sistem" grubunun BAŞINA koyar. Rotası olmayan ekran kullanıcıya
+      // görünmez: bağlantı ekranla AYNI dilimde iner.
+      // 💰 (U+1F4B0) `src/styles/fonts.css`in `u+1f??` kümesindedir (ölçüldü).
+      { label: "Bordro Oranları", href: "/ayarlar/bordro-oranlari", emoji: "\u{1F4B0}" },
       { label: "Entegrasyonlar", href: "/ayarlar/entegrasyonlar", emoji: "🔗" },
       { label: "Yedekleme", href: "/ayarlar/yedekleme", emoji: "📦" },
       { label: "Denetim Günlüğü", href: "/ayarlar/denetim-gunlugu", emoji: "📜" },

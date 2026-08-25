@@ -7,9 +7,15 @@ import {
 import { SETTINGS_NAV, settingsLabelForPath } from "./settings-nav-config";
 
 describe("SETTINGS_NAV", () => {
-  it("3 grup ve 10 öğe içerir", () => {
+  it("3 grup ve 11 öğe içerir", () => {
     expect(SETTINGS_NAV.map((g) => g.heading)).toEqual(["GENEL", "KULLANICI & ERİŞİM", "SİSTEM"]);
-    expect(SETTINGS_NAV.flatMap((g) => g.items)).toHaveLength(10);
+    expect(SETTINGS_NAV.flatMap((g) => g.items)).toHaveLength(11);
+  });
+  // F-BORORAN — mockup `:75` "Bordro Oranları"nı SİSTEM grubunun BAŞINA koyar.
+  it("Bordro Oranları, SİSTEM grubunun ilk öğesidir", () => {
+    const grup = SETTINGS_NAV.find((g) => g.heading === "SİSTEM");
+    expect(grup!.items[0]!.label).toBe("Bordro Oranları");
+    expect(grup!.items[0]!.href).toBe("/ayarlar/bordro-oranlari");
   });
   // F-OKROL — mockup `:82` "Onay Rolleri ve Eşik"i İzin Matrisi'nin HEMEN
   // ARDINA koyar. Sıra kayarsa ekran erişilebilir kalır ama mockup'ın
