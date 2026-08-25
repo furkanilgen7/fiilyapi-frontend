@@ -183,6 +183,31 @@ describe("yıl kilidi — 409'un ÖN kapısı", () => {
     expect(screen.queryByTestId("bro-save-brackets")).toBeNull();
     expect(screen.getByLabelText("SGK Primi işçi payı")).toHaveAttribute("readonly");
   });
+  /**
+   * ⚠️ Fikstür GEÇMİŞ bir veri yılı TAŞIMALIDIR: `bro-copy` yalnız "seçili
+   * yıldan önce, verisi olan bir yıl" varken basılır. Onsuz düğme ZATEN
+   * görünmez ve test hiçbir şey bekçilemez — ilk hâli tam bu yüzden
+   * MUTASYONU GEÇİRDİ (kilit kaldırıldığında da yeşil kaldı).
+   */
+  it("kilitli yılda araç çubuğundaki KOPYALA da basılmaz (ölü eylem yok)", () => {
+    vi.mocked(usePayrollRates).mockReturnValue(
+      q({ items: [rate("company"), rate("company", { year: DATA_YEAR - 1 })], total: 2 }),
+    );
+    vi.mocked(usePayrollPeriods).mockReturnValue(
+      q({ items: [period(DATA_YEAR, "paid")], total: 1, limit: 200, offset: 0 }),
+    );
+    render(<PayrollRatesScreen />);
+    expect(screen.queryByTestId("bro-copy")).toBeNull();
+    // Gelecek yılı (KİLİTSİZ) hedefleyen düğme KALIR.
+    expect(screen.getByTestId("bro-copy-next")).toBeInTheDocument();
+  });
+  it("kilitsiz yılda araç çubuğundaki KOPYALA GÖRÜNÜR (pozitif kontrol)", () => {
+    vi.mocked(usePayrollRates).mockReturnValue(
+      q({ items: [rate("company"), rate("company", { year: DATA_YEAR - 1 })], total: 2 }),
+    );
+    render(<PayrollRatesScreen />);
+    expect(screen.getByTestId("bro-copy")).toBeInTheDocument();
+  });
   it("taslak dönemli yıl SERBESTTİR (kural bordroyu tıkamaz)", () => {
     vi.mocked(usePayrollPeriods).mockReturnValue(
       q({ items: [period(DATA_YEAR, "draft")], total: 1, limit: 200, offset: 0 }),

@@ -137,6 +137,9 @@ export function PayrollRatesScreen() {
     Object.keys(bracketDrafts).some((k) => k.startsWith(`${year}:`));
   const isEmptyYear = !yearHasAnyRate && !yearHasAnyBracket && !yearHasDraft;
 
+  const ratesReadOnly = !canEditRates || locked;
+  const bracketsReadOnly = !canEditBrackets || locked;
+
   /** Kopyalanacak kaynak: seçili yıldan ÖNCEKİ, verisi olan en yakın yıl. */
   const copySource = yearOptions.find((option) => option < year && dataYears.includes(option));
   const nextYear = year + 1;
@@ -239,9 +242,6 @@ export function PayrollRatesScreen() {
     );
   }
 
-  const ratesReadOnly = !canEditRates || locked;
-  const bracketsReadOnly = !canEditBrackets || locked;
-
   return (
     <div className="bro-wrap" data-testid="bro-wrap">
       {/* :86-98 · yıl seçici + kopyala + kaydet kümesi */}
@@ -275,7 +275,11 @@ export function PayrollRatesScreen() {
             </Select>
           )}
         </Field>
-        {copySource !== undefined && (
+        {/* 🔴 SEÇİLİ YIL DÜZENLENEMİYORSA KOPYALA DA BASILMAZ: kopyalama formu
+            doldurur, kaydetme ise 409/403'e takılır — kaydedilemeyecek bir
+            formu dolduran düğme "sessizce çalışmayan düğme"dir. Alttaki iki
+            kopyalama düğmesi BAŞKA (kilitsiz) bir yılı hedefler, onlar kalır. */}
+        {copySource !== undefined && !ratesReadOnly && (
           <Button
             variant="secondary"
             data-testid="bro-copy"
