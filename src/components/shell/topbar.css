@@ -17,7 +17,8 @@
   display: flex;
   align-items: center;
   /* Alan ölçüldü: kullanılabilir yükseklik 52px, genişlik 220px - 2*14px =
-     192px. Logo (3.75:1) 48x180 olarak bu alana sığar; topbar/sidebar
+     192px. Logo (3.75:1) 40x150 olarak bu alana sığar (F-LOGO2: kullanıcı
+     isteğiyle 48x180'den küçültüldü, oran korundu); topbar/sidebar
      yüksekliği (52px) ve sidebar genişliği (220px) DEĞİŞTİRİLMEDİ — bu ikisi
      11 başka dosyada tekrarlanıyor (bkz. F-LOGO raporu), bu dilim onlara
      dokunmuyor. */
@@ -25,7 +26,7 @@
   border-right: 1px solid var(--color-border);
 }
 .topbar-logo__image {
-  height: 48px;
+  height: 40px;
   width: auto;
   flex-shrink: 0;
 }
