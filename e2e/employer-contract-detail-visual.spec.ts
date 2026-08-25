@@ -54,6 +54,17 @@ test("isveren sozlesme detayi is kalemleri sekmesi gorsel", async ({ page }) => 
   await expect(page.getByTestId("ecd-item-remaining").first()).toBeVisible();
   await expect(page.getByTestId("ecd-items-total")).toBeVisible();
   await expect(page.getByTestId("ecd-distribution-link")).toBeVisible();
+  // 🔴 F-ISVPOZ · kadrajın YENİ konusu: "Sözl. Birim F." ve "Toplam Miktar"
+  // hücreleri artık salt metin DEĞİL, satır-içi kontroldür; grup sonunda da
+  // satır-içi ekleme düğmesi vardır. Bu kare BU YÜZDEN oynar — beklenen.
+  // (Değer iddiası YAZILMAZ: `pinEmployerContractItems` yalnız türev
+  // kolonları sabitler, `quantity`/`unit_price` sabitli değildir.)
+  await expect(page.getByLabel("03.001 miktar")).toBeEditable();
+  await expect(page.getByLabel("03.001 birim fiyatı")).toBeEditable();
+  await expect(page.getByTestId("ecd-add-row-cg-1")).toBeEnabled();
+  // Taslak satır KAPALI hâliyle basılır (kadraj bir düzenleme oturumu değil).
+  await expect(page.getByTestId("ecd-new-row")).toHaveCount(0);
+  await expect(page.getByTestId("ecd-items-error")).toHaveCount(0);
 
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("isveren-sozlesme-kalemler.png", { fullPage: true });

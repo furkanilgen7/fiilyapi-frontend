@@ -114,3 +114,48 @@ export function useCreateEmployerContractItem(
     },
   });
 }
+
+export type EmployerContractItemUpdateRequest =
+  components["schemas"]["EmployerContractItemUpdate"];
+
+export interface EmployerContractItemUpdateVars {
+  itemId: string;
+  body: EmployerContractItemUpdateRequest;
+}
+
+/**
+ * F-ISVPOZ · İşveren sözleşmesi pozunun SATIR-İÇİ güncellenmesi
+ * (`PATCH /contracts/employer/items/{item_id}`).
+ *
+ * ⚠️ Uç PROJE altında DEĞİLDİR (`/contracts/employer/items/…`), ama tazelenecek
+ * önbellek anahtarları PROJE anahtarlıdır — bu yüzden hook `projectId` alır.
+ * `useCreateEmployerContractItem` ile AYNI üç anahtar geçersiz kılınır: kalem
+ * listesi, dağıtım ızgarası (miktar değişince `remaining` oynar) ve sözleşme
+ * metrikleri (`items_total`/`items_total_diff` birim fiyattan türer).
+ *
+ * `setQueryData` YOKTUR: yanıt tek kalemdir ve `distributed_quantity` gibi
+ * türev alanları taşısa da listeyi/metrikleri temsil etmez.
+ *
+ * 🔴 Kısıtlar (`quantity > 0`, `unit_price >= 0`) BU KATMANDA yaşamaz —
+ * şemadan üretilen tip onları ifade edemez. Korkuluk çağıran taraftadır
+ * (`validateQuantityField` / `validateEmployerUnitPriceField`).
+ */
+export function useUpdateEmployerContractItem(
+  projectId: string,
+): UseMutationResult<EmployerContractItemResponse, Error, EmployerContractItemUpdateVars> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ itemId, body }) =>
+      unwrap(
+        await backendClient.PATCH("/contracts/employer/items/{item_id}", {
+          params: { path: { item_id: itemId } },
+          body,
+        }),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [EMPLOYER_CONTRACT_ITEMS_QUERY_KEY, projectId] });
+      queryClient.invalidateQueries({ queryKey: [CONTRACT_DISTRIBUTION_QUERY_KEY, projectId] });
+      queryClient.invalidateQueries({ queryKey: [EMPLOYER_CONTRACT_QUERY_KEY, projectId] });
+    },
+  });
+}

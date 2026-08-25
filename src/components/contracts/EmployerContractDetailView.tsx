@@ -8,6 +8,13 @@ import { AccessDenied } from "@/components/settings/AccessDenied";
 import { ProgressPaymentsListBody } from "@/components/progress-payments/ProgressPaymentsList";
 import { EmployerItemFormModal } from "@/components/contract-item-form/EmployerItemFormModal";
 import { useEmployerContract, useEmployerContractItems } from "@/lib/api/hooks/useContract";
+import {
+  useCreateEmployerContractItem,
+  useUpdateEmployerContractItem,
+} from "@/lib/api/hooks/useContractMutations";
+import { backendErrorMessage } from "@/lib/api/error-message";
+import type { EmployerItemCreateBody } from "@/components/contract-item-form/build-body";
+import type { EmployerItemUpdateBody } from "./employer-item-inline";
 import { useProgressPayments } from "@/lib/api/hooks/useProgressPayments";
 import { useProject } from "@/lib/api/hooks/useProjects";
 import { isForbidden } from "@/lib/api/unwrap";
@@ -63,6 +70,32 @@ export function EmployerContractDetailView({ projectId }: EmployerContractDetail
   // F-BLG T2a · "+ Poz Ekle" diyalogu; sahibi bu ekrandır (tablo yalnız tetikler).
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
 
+  // F-ISVPOZ · satır-içi düzenleme/ekleme yazmaları. Mutasyon sahibi EKRANDIR
+  // (taşeron emsalinde de öyle: kart yalnız taslak tutar ve tetikler).
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const updateItem = useUpdateEmployerContractItem(projectId);
+  const createItem = useCreateEmployerContractItem(projectId);
+  const isItemBusy = updateItem.isPending || createItem.isPending;
+
+  function handleCommitItem(itemId: string, body: EmployerItemUpdateBody) {
+    setSaveError(null);
+    updateItem.mutate(
+      { itemId, body },
+      { onError: (error) => setSaveError(backendErrorMessage(error)) },
+    );
+  }
+
+  async function handleCreateItem(body: EmployerItemCreateBody): Promise<boolean> {
+    setSaveError(null);
+    try {
+      await createItem.mutateAsync(body);
+      return true;
+    } catch (error) {
+      setSaveError(backendErrorMessage(error));
+      return false;
+    }
+  }
+
   if (isForbidden(contractQuery.error)) return <AccessDenied />;
 
   const detail = contractQuery.data;
@@ -117,6 +150,10 @@ export function EmployerContractDetailView({ projectId }: EmployerContractDetail
                 isLoading={itemsQuery.isLoading}
                 data={itemsQuery.data}
                 onAddItem={() => setIsAddItemOpen(true)}
+                onCommitItem={handleCommitItem}
+                onCreateItem={handleCreateItem}
+                isBusy={isItemBusy}
+                saveError={saveError}
               />
               {isAddItemOpen && itemsQuery.data && (
                 <EmployerItemFormModal

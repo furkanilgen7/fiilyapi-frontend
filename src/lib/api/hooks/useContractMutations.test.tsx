@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import {
   useCreateEmployerContractItem,
   useSaveContractDistribution,
+  useUpdateEmployerContractItem,
 } from "./useContractMutations";
 import {
   CONTRACT_DISTRIBUTION_QUERY_KEY,
@@ -15,7 +16,9 @@ import {
 import { buildDistributionSaveBody } from "@/lib/contract-distribution-save";
 import { backendClient } from "@/lib/api/client";
 
-vi.mock("@/lib/api/client", () => ({ backendClient: { PUT: vi.fn(), POST: vi.fn() } }));
+vi.mock("@/lib/api/client", () => ({
+  backendClient: { PUT: vi.fn(), POST: vi.fn(), PATCH: vi.fn() },
+}));
 
 const PROJECT_ID = "p-1";
 
@@ -186,6 +189,63 @@ describe("useCreateEmployerContractItem", () => {
 
     const { result } = renderHook(() => useCreateEmployerContractItem(PROJECT_ID), { wrapper });
     act(() => result.current.mutate(CREATE_BODY));
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(invalidateSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("useUpdateEmployerContractItem · F-ISVPOZ satır-içi düzenleme", () => {
+  const PATCHED = { ...CREATED_ITEM, quantity: "1500.000" };
+
+  it("KISMİ gövdeyi kalem kimliğiyle PATCH eder (proje segmenti YOKTUR)", async () => {
+    vi.mocked(backendClient.PATCH).mockResolvedValue({
+      data: PATCHED,
+      error: undefined,
+      response: new Response(),
+    } as never);
+
+    const { result } = renderHook(() => useUpdateEmployerContractItem(PROJECT_ID), { wrapper });
+    act(() => result.current.mutate({ itemId: "ci-1", body: { quantity: "1500" } }));
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(backendClient.PATCH).toHaveBeenCalledWith("/contracts/employer/items/{item_id}", {
+      params: { path: { item_id: "ci-1" } },
+      body: { quantity: "1500" },
+    });
+  });
+
+  it("başarıda kalem/dağıtım/sözleşme okumalarını geçersiz kılar (metrikler birim fiyattan türer)", async () => {
+    vi.mocked(backendClient.PATCH).mockResolvedValue({
+      data: PATCHED,
+      error: undefined,
+      response: new Response(),
+    } as never);
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+
+    const { result } = renderHook(() => useUpdateEmployerContractItem(PROJECT_ID), { wrapper });
+    act(() => result.current.mutate({ itemId: "ci-1", body: { unit_price: "3000" } }));
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    for (const key of [
+      EMPLOYER_CONTRACT_ITEMS_QUERY_KEY,
+      CONTRACT_DISTRIBUTION_QUERY_KEY,
+      EMPLOYER_CONTRACT_QUERY_KEY,
+    ]) {
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [key, PROJECT_ID] });
+    }
+  });
+
+  it("backend hatasında hiçbir önbellek tazelenmez", async () => {
+    vi.mocked(backendClient.PATCH).mockResolvedValue({
+      data: undefined,
+      error: { detail: "Miktar sıfırdan büyük olmalıdır." },
+      response: new Response(null, { status: 422 }),
+    } as never);
+    const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+
+    const { result } = renderHook(() => useUpdateEmployerContractItem(PROJECT_ID), { wrapper });
+    act(() => result.current.mutate({ itemId: "ci-1", body: { quantity: "0" } }));
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(invalidateSpy).not.toHaveBeenCalled();

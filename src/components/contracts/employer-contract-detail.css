@@ -371,6 +371,10 @@
   color: var(--color-text-muted);
   border-bottom: 1px solid var(--color-divider);
 }
+/* Kısıt ihlali / sunucu hatası — sebep GÖRÜNÜR basılır, sessiz yutma yok. */
+.ecd-items__notice--error {
+  color: var(--color-danger);
+}
 .ecd-items__scroll {
   overflow-x: auto;
 }
@@ -433,6 +437,17 @@
 .ecd-items__td--center {
   text-align: center;
 }
+/* 🔴 BU İKİ KURAL PAYLAŞILIYOR — F-ISVPOZ'da ÖLÇÜLEREK bulundu.
+   E14 kalem tablosu bunları artık kullanmıyor (hücreler satır-içi `Input`
+   oldu) ama ÜÇ AYRI bileşen hâlâ kullanıyor:
+     · `ContractDistributionGrid.tsx`        (POZ dağılımı ızgarası)
+     · `SubcontractorContractItemsTable.tsx` (taşeron sözleşme detayı)
+     · `SubcontractorContractPaymentsCard.tsx`
+   "Bu dosyanın bileşeninde kullanılmıyor" = "ölü" DEĞİLDİR: sınıf adı
+   dosya değil DEMET kapsamındadır. Silindiklerinde üç kare birden oynadı
+   (`poz-dagilimi` 1197 px · `poz-ekle-taseron` 8317 px ·
+   `taseron-sozlesme-detay` 8634 px) — ölçüm: main'de taze baseline turu
+   146 karenin 146'sını BİREBİR ürettiyken bu dalda 5 kare oynuyordu. */
 .ecd-items__td--price {
   text-align: right;
   color: var(--color-text-secondary); /* POZ 96 */
@@ -444,6 +459,45 @@
   font-weight: var(--weight-semibold);
   color: var(--color-text);
   font-family: var(--font-mono);
+}
+/* F-ISVPOZ · POZ 96-97 hücreleri artık DÜZENLENEBİLİR (satır-içi `Input`).
+   Emsal `subcontractor-contract-form` `.fso-items__td--input` (FSO 137-138):
+   hücre sağa yaslı ve SABİT genişliktedir — kontrol satırdan satıra oynamaz.
+   Sayısal biçim (mono + tabular + sağa yaslı) `Input`'un `numeric` varyantından
+   gelir, burada TEKRARLANMAZ. */
+.ecd-items__td--input {
+  padding: 6px 10px;
+  text-align: right;
+  width: 120px;
+}
+/* Satır-içi ekleme taslağının eylem hücresi (Kaydet · Vazgeç). */
+.ecd-items__td--actions {
+  padding: 6px 10px;
+  text-align: right;
+  white-space: nowrap;
+}
+.ecd-items__row-submit,
+.ecd-items__row-cancel {
+  font-size: 12px;
+}
+.ecd-items__row-cancel {
+  margin-left: var(--space-2);
+}
+/* Grup sonundaki "+ Satır Ekle" — FSO 170-177 emsali (kesikli çerçeve). */
+.ecd-items__add-row {
+  background: var(--color-surface-2);
+}
+.ecd-items__add-row > td {
+  padding: var(--space-2) 10px;
+}
+.ecd-items__add-row-btn {
+  border-style: dashed;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.ecd-items__new-row {
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-divider);
 }
 /* POZ 98-99: şantiye kota kolonlarının E14'teki toplulaştırılmış karşılığı. */
 .ecd-items__td--distributed {

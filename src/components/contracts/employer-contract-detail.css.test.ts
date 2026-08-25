@@ -61,6 +61,23 @@ describe("employer-contract-detail.css — E14 mockup'ına bağlı kurallar", ()
     expect(css).toMatch(/\.ecd-items__scroll\s*{[^}]*overflow-x:\s*auto/s);
   });
 
+  /**
+   * 🔴 NÜKS BEKÇİSİ (F-ISVPOZ'da ÖLÇÜLEREK bulundu).
+   *
+   * `.ecd-items__td--price` / `--qty` E14 kalem tablosunda ARTIK
+   * KULLANILMIYOR (hücreler satır-içi `Input` oldu) ama ÜÇ BAŞKA bileşen
+   * hâlâ kullanıyor: `ContractDistributionGrid`,
+   * `SubcontractorContractItemsTable`, `SubcontractorContractPaymentsCard`.
+   * F-ISVPOZ turunda "ölü kural" sanılıp silindiler ve ÜÇ KARE birden oynadı
+   * (`poz-dagilimi` · `poz-ekle-taseron` · `taseron-sozlesme-detay`).
+   * Ders: CSS sınıfının kapsamı DOSYA değil DEMETtir — bir kuralın ölü
+   * olduğu, onu tanımlayan dosyanın bileşenine bakarak KANITLANAMAZ.
+   */
+  it("PAYLAŞILAN hücre kuralları silinmez (üç başka bileşen kullanıyor)", () => {
+    expect(css).toMatch(/\.ecd-items__td--price\s*{[^}]*var\(--font-mono\)/s);
+    expect(css).toMatch(/\.ecd-items__td--qty\s*{[^}]*var\(--font-mono\)/s);
+  });
+
   it("çıplak hex renk YOKTUR — palet yalnız token'dan gelir", () => {
     expect(css.match(/#[0-9a-fA-F]{3,8}\b/g)).toBeNull();
   });

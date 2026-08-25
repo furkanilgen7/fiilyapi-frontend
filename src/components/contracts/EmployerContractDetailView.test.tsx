@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, within, fireEvent } from "@testing-library/react";
+import { render, screen, within, fireEvent, act } from "@testing-library/react";
 
 import { EmployerContractDetailView } from "./EmployerContractDetailView";
 import {
@@ -28,11 +28,18 @@ vi.mock("@/lib/api/hooks/useProgressPayments", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useProgressPayments")>()),
   useProgressPayments: vi.fn(),
 }));
-// Diyalog (F-BLG T2a) gerçek `useMutation` çağırır; bu dosyada
-// QueryClientProvider yoktur, bu yüzden ekleme hook'u sahtelenir.
+// Diyalog (F-BLG T2a) ve satır-içi yazmalar (F-ISVPOZ) gerçek `useMutation`
+// çağırır; bu dosyada QueryClientProvider yoktur, bu yüzden yazma hook'ları
+// sahtelenir. Casuslar test başında `beforeEach`te sıfırlanır.
+const createItemMutateAsync = vi.fn(async (body: unknown) => body);
+const updateItemMutate = vi.fn();
 vi.mock("@/lib/api/hooks/useContractMutations", () => ({
-  useCreateEmployerContractItem: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateEmployerContractItem: () => ({
+    mutateAsync: createItemMutateAsync,
+    isPending: false,
+  }),
   useCreateEmployerContractGroup: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateEmployerContractItem: () => ({ mutate: updateItemMutate, isPending: false }),
 }));
 vi.mock("@/lib/api/hooks/useProjects", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useProjects")>()),
@@ -634,6 +641,201 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
       mockAll({ contractExtra: { data: undefined, isError: true } });
       render(<EmployerContractDetailView projectId="p-1" />);
       expect(screen.getByText("Sözleşme yüklenemedi")).toBeInTheDocument();
+    });
+  });
+  // -------------------------------------------------------------------------
+  // F-ISVPOZ · SATIR-İÇİ DÜZENLEME + SATIR-İÇİ EKLEME
+  // -------------------------------------------------------------------------
+  describe("İş Kalemleri · satır-içi düzenleme (ONAYLI SAPMA, emsal: taşeron `ContractItemsCard`)", () => {
+    function renderItemsTab() {
+      searchParams = new URLSearchParams("tab=items");
+      mockAll();
+      return render(<EmployerContractDetailView projectId="p-1" />);
+    }
+
+    it("miktar ve birim fiyat hücreleri DÜZENLENEBİLİR kontroldür, salt metin değil", () => {
+      renderItemsTab();
+
+      expect(screen.getByLabelText("03.001 miktar")).toHaveValue(3200);
+      expect(screen.getByLabelText("03.001 birim fiyatı")).toHaveValue(1850);
+    });
+
+    it("odak çıkışında (emsal tetikleyicisi) yalnız DEĞİŞEN alan PATCH'lenir", () => {
+      renderItemsTab();
+
+      const quantity = screen.getByLabelText("03.002 miktar");
+      fireEvent.change(quantity, { target: { value: "700" } });
+      fireEvent.blur(quantity);
+
+      expect(updateItemMutate).toHaveBeenCalledTimes(1);
+      expect(updateItemMutate.mock.calls[0][0]).toEqual({
+        itemId: "ci-2",
+        body: { quantity: "700" },
+      });
+    });
+
+    it("değeri değişmeyen hücre odak çıkışında istek UÇURMAZ", () => {
+      renderItemsTab();
+
+      const price = screen.getByLabelText("03.001 birim fiyatı");
+      fireEvent.blur(price);
+      fireEvent.change(price, { target: { value: "1850" } });
+      fireEvent.blur(price);
+
+      expect(updateItemMutate).not.toHaveBeenCalled();
+    });
+
+    /**
+     * 🔴 KISIT TİPTE YAŞAMAZ. `quantity` `exclusiveMinimum: 0` — `min={0}`
+     * yazmak YETMEZ, sıfır DAHİL DEĞİLDİR. İstek uçarsa canlı 422 döner.
+     */
+    it("miktar SIFIR gönderilmez, sebebi GÖRÜNÜR basılır ve hücre sunucu değerine döner", () => {
+      renderItemsTab();
+
+      const quantity = screen.getByLabelText("03.001 miktar");
+      fireEvent.change(quantity, { target: { value: "0" } });
+      fireEvent.blur(quantity);
+
+      expect(updateItemMutate).not.toHaveBeenCalled();
+      expect(screen.getByTestId("ecd-items-error")).toHaveTextContent(
+        "Miktar sıfırdan büyük olmalıdır.",
+      );
+      expect(screen.getByLabelText("03.001 miktar")).toHaveValue(3200);
+    });
+
+    it("negatif birim fiyat gönderilmez (`minimum: 0`)", () => {
+      renderItemsTab();
+
+      const price = screen.getByLabelText("03.002 birim fiyatı");
+      fireEvent.change(price, { target: { value: "-1" } });
+      fireEvent.blur(price);
+
+      expect(updateItemMutate).not.toHaveBeenCalled();
+      expect(screen.getByTestId("ecd-items-error")).toHaveTextContent(
+        "Birim Fiyat negatif olamaz.",
+      );
+    });
+
+    it("birim fiyat SIFIR kabul edilir — miktarla AYNI kural sanılmaz", () => {
+      renderItemsTab();
+
+      const price = screen.getByLabelText("03.002 birim fiyatı");
+      fireEvent.change(price, { target: { value: "0" } });
+      fireEvent.blur(price);
+
+      expect(updateItemMutate).toHaveBeenCalledTimes(1);
+      expect(updateItemMutate.mock.calls[0][0]).toEqual({
+        itemId: "ci-2",
+        body: { unit_price: "0" },
+      });
+    });
+  });
+
+  describe("İş Kalemleri · satır-içi poz ekleme", () => {
+    function openNewRow() {
+      searchParams = new URLSearchParams("tab=items");
+      mockAll();
+      render(<EmployerContractDetailView projectId="p-1" />);
+      fireEvent.click(screen.getByTestId("ecd-add-row-cg-1"));
+    }
+
+    it("grup sonundaki düğme tablonun İÇİNDE taslak satır açar (modal AÇILMAZ)", () => {
+      openNewRow();
+
+      expect(screen.getByTestId("ecd-new-row")).toBeInTheDocument();
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    it("dolu taslak POST edilir; `group_id` SATIRIN KONUMUNDAN, `sort_order` gruptan türer", async () => {
+      openNewRow();
+
+      fireEvent.change(screen.getByLabelText("Yeni poz no"), { target: { value: "03.003" } });
+      fireEvent.change(screen.getByLabelText("Yeni poz adı"), {
+        target: { value: "Perde Betonu C35/45" },
+      });
+      fireEvent.change(screen.getByLabelText("Yeni poz birimi"), { target: { value: "m³" } });
+      fireEvent.change(screen.getByLabelText("Yeni poz birim fiyatı"), {
+        target: { value: "2450" },
+      });
+      fireEvent.change(screen.getByLabelText("Yeni poz miktarı"), { target: { value: "150" } });
+      // Kaydetme `mutateAsync` bekler ve dönüşünde taslağı kapatır → durum
+      // güncellemesi `act` içinde tutulur (sabit zamanlayıcı YOK).
+      await act(async () => {
+        fireEvent.click(screen.getByTestId("ecd-new-row-submit"));
+      });
+
+      expect(screen.queryByTestId("ecd-new-row")).not.toBeInTheDocument();
+      expect(createItemMutateAsync).toHaveBeenCalledTimes(1);
+      expect(createItemMutateAsync.mock.calls[0][0]).toEqual({
+        group_id: "cg-1",
+        code: "03.003",
+        description: "Perde Betonu C35/45",
+        unit: "m³",
+        quantity: "150",
+        unit_price: "2450",
+        // Fikstürün en büyük `sort_order`ı 1 → sıradaki 2.
+        sort_order: 2,
+      });
+    });
+
+    it("miktarı SIFIR olan taslak POST EDİLMEZ — tam formla AYNI korkuluk", () => {
+      openNewRow();
+
+      fireEvent.change(screen.getByLabelText("Yeni poz no"), { target: { value: "03.004" } });
+      fireEvent.change(screen.getByLabelText("Yeni poz adı"), { target: { value: "Sıfır poz" } });
+      fireEvent.change(screen.getByLabelText("Yeni poz birimi"), { target: { value: "m³" } });
+      fireEvent.change(screen.getByLabelText("Yeni poz birim fiyatı"), {
+        target: { value: "100" },
+      });
+      fireEvent.change(screen.getByLabelText("Yeni poz miktarı"), { target: { value: "0" } });
+      fireEvent.click(screen.getByTestId("ecd-new-row-submit"));
+
+      expect(createItemMutateAsync).not.toHaveBeenCalled();
+      expect(screen.getByTestId("ecd-items-error")).toHaveTextContent(
+        "Miktar sıfırdan büyük olmalıdır.",
+      );
+    });
+
+    it("İŞV kuralı: birim fiyatsız satır POST EDİLMEZ (taşeron kuralı DEĞİL)", () => {
+      openNewRow();
+
+      fireEvent.change(screen.getByLabelText("Yeni poz no"), { target: { value: "03.005" } });
+      fireEvent.change(screen.getByLabelText("Yeni poz adı"), { target: { value: "Fiyatsız" } });
+      fireEvent.change(screen.getByLabelText("Yeni poz birimi"), { target: { value: "m³" } });
+      fireEvent.change(screen.getByLabelText("Yeni poz miktarı"), { target: { value: "10" } });
+      fireEvent.click(screen.getByTestId("ecd-new-row-submit"));
+
+      expect(createItemMutateAsync).not.toHaveBeenCalled();
+      expect(screen.getByTestId("ecd-items-error")).toHaveTextContent("Birim Fiyat zorunludur.");
+    });
+
+    it("'Vazgeç' taslağı kapatır, hiçbir istek uçmaz", () => {
+      openNewRow();
+      fireEvent.click(screen.getByTestId("ecd-new-row-cancel"));
+
+      expect(screen.queryByTestId("ecd-new-row")).not.toBeInTheDocument();
+      expect(createItemMutateAsync).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * 🔴 GEREKÇE, AÇIKLADIĞI ÖĞEDEN AYRIDIR: `employer_contract_edit` başlıktaki
+   * "Düzenle" düğmesinin (E14 77) gerekçesidir ve o düğme SÖZLEŞMENİN KENDİ
+   * alanlarını düzenler — backend'de o yazma ucu HÂLÂ YOKTUR. Poz düzenleme
+   * onu AÇMAZ; bu test ikisinin karıştırılmasını bekçiler.
+   */
+  describe("sözleşme BAŞLIĞI düzenleme ≠ poz düzenleme", () => {
+    it("pozlar satır-içi düzenlenebilirken başlıktaki 'Düzenle' HÂLÂ devre dışıdır", () => {
+      searchParams = new URLSearchParams("tab=items");
+      mockAll();
+      render(<EmployerContractDetailView projectId="p-1" />);
+
+      expect(screen.getByLabelText("03.001 miktar")).toBeEnabled();
+      expect(screen.getByTestId("ecd-edit-disabled")).toBeDisabled();
+      expect(screen.getByTestId("ecd-edit-disabled")).toHaveAttribute(
+        "title",
+        "İşveren sözleşmesi proje formunda kurulur; ayrı düzenleme ekranı henüz yok",
+      );
     });
   });
 });
