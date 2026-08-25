@@ -111,17 +111,19 @@ describe("ContractsView · SZL sekmeli liste", () => {
       expect(screen.getByText("Tüm projeler · 4 aktif sözleşme")).toBeInTheDocument();
     });
 
-    it("taşeron sekmesinde `progress_payment_total` null → kart silinmez, '—' + gerekçe", () => {
+    // 🔴 F-SZLPCT: bu SAVUNMACI daldır, backend davranışı DEĞİL. TH-SUM
+    // (`cb9e26e`) `progress_payment_total`ı bağladı ve backend yorumu
+    // *"`None` bir daha DÖNMEZ"* diyor; alan yalnız ŞEMA UYUMLULUĞU için
+    // `Decimal | None` kaldı. Dal silinmez (şema hâlâ null'a izin veriyor),
+    // ama testin adı ve GEREKÇE METNİ artık modülün eksik olduğunu SÖYLEMEZ.
+    it("`progress_payment_total` null gelirse kart silinmez, '—' + gerekçe basar", () => {
       searchParams = new URLSearchParams("type=subcontractor");
       mockContracts(subcontractorResponse());
       render(<ContractsView />);
 
       const card = screen.getByTestId("szl-kpi-payment-total");
       expect(card).toHaveTextContent("—");
-      expect(card).toHaveAttribute(
-        "title",
-        "Taşeron hakediş toplamı henüz hesaplanmıyor",
-      );
+      expect(card).toHaveAttribute("title", "Taşeron hakediş toplamı bu görünüme gelmedi");
       expect(screen.getByText("Toplam Hakediş")).toBeInTheDocument();
     });
   });
@@ -276,7 +278,11 @@ describe("ContractsView · SZL sekmeli liste", () => {
       );
     });
 
-    it("taşeron satırında `progress_pct` null → çubuk yerine '—' + gerekçe", () => {
+    // 🔴 F-SZLPCT: `progress_pct` P-YT4'te (`c0d3ac8`) taşeron satırında da
+    // BAĞLANDI. `null` artık "taşeron sekmesi" demek değil, "sözleşme bedeli
+    // yok/`<= 0`" demektir (`progress_pct` sıfır paydada bölme yapmaz) — dal
+    // İKİ sekmede de yaşar, çünkü işveren sözleşmesi de bedelsiz olabilir.
+    it("`progress_pct` null (bedelsiz sözleşme) → çubuk yerine '—' + gerekçe", () => {
       searchParams = new URLSearchParams("type=subcontractor");
       mockContracts(subcontractorResponse());
       render(<ContractsView />);
@@ -285,9 +291,26 @@ describe("ContractsView · SZL sekmeli liste", () => {
       expect(cell).toHaveTextContent("—");
       expect(cell).toHaveAttribute(
         "title",
-        "Taşeron sözleşmesinde ilerleme henüz hesaplanmıyor",
+        "Sözleşme bedeli girilmemiş — ilerleme oranı hesaplanamaz",
       );
       expect(screen.queryByTestId("szl-progress")).not.toBeInTheDocument();
+    });
+
+    // 🔴 YENİ (F-SZLPCT) — POZİTİF KONTROL: yukarıdaki test tek başına
+    // "hücre HER ZAMAN '—' basıyor" kusurunu da geçirirdi. Taşeron satırı
+    // GERÇEK bir yüzdeyle geldiğinde çubuğun ÇİZİLDİĞİ ayrıca çakılır.
+    it("taşeron satırı gerçek `progress_pct` ile gelirse çubuk ÇİZİLİR", () => {
+      searchParams = new URLSearchParams("type=subcontractor");
+      mockContracts({
+        ...subcontractorResponse(),
+        summary: { ...subcontractorResponse().summary, progress_payment_total: "110800.00" },
+        items: [{ ...SUBCONTRACTOR_ROW, progress_pct: "29.83" }],
+      });
+      render(<ContractsView />);
+
+      expect(screen.getByTestId("szl-progress")).toBeInTheDocument();
+      expect(screen.queryByTestId("szl-progress-pending")).not.toBeInTheDocument();
+      expect(screen.getByTestId("szl-kpi-payment-total")).not.toHaveTextContent("—");
     });
 
     it("boş listede tablo yerine boş durum basar", () => {
