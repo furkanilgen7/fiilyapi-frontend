@@ -665,6 +665,17 @@ interface MockState {
     accent_color: string;
   };
   notifications: Array<{ event_key: string; label: string; email: boolean; in_app: boolean; sms: boolean }>;
+  /**
+   * F-OKROL · `user_id -> onay rolleri` ATAMA haritası.
+   *
+   * 🔴 `my_approval_roles` (Onay Kutusu) BU HARİTADAN TÜRETİLMEZ ve
+   * türetilmemelidir: o alan oturum sahibinin kümesidir ve F-OK'un üç
+   * karesi ona bakar. İki kaynağı birleştirmek, bu dilimin bir yazmasını
+   * BAŞKASININ karesine sızdırırdı (F-UNIT2 dersi).
+   */
+  approvalRoles: Record<string, string[]>;
+  /** F-OKROL · `GET/PUT /approvals/settings` eşiği (artık DEĞİŞTİRİLEBİLİR). */
+  approvalThreshold: string;
   auditLog: Array<{
     id: string;
     occurred_at: string;
@@ -2510,6 +2521,19 @@ function seedState(): MockState {
       { event_key: "payroll_payday", label: "Bordro ödeme günü", email: true, in_app: true, sms: false },
       { event_key: "daily_log_missing", label: "Günlük kayıt girilmedi", email: false, in_app: true, sms: false },
     ],
+    // F-OKROL · Mockup'ın çizdiği atamalar (`Ayarlar - Onay Rolleri.dc.html`
+    // `:190-196` `:203-209` `:214-220` `:225-232` `:240-246`). Sercan Öztürk
+    // (`u-2`) mockup'ta TEK rollüdür; Yusuf Kaya (`u-5`) yalnız Satınalma.
+    // 🔴 Ayşe Demir (`u-3`) ve Kadir Arslan (`u-4`) mockup'taki gibi ÇOKLU/tekil
+    // rol taşır — "bir kişi birden çok rol taşıyabilir" olgusu kadraja girsin.
+    approvalRoles: {
+      "u-1": ["project_manager", "accounting", "patron"],
+      "u-2": ["site_chief"],
+      "u-3": ["accounting"],
+      "u-4": ["site_chief", "project_manager"],
+      "u-5": ["procurement"],
+    },
+    approvalThreshold: APPROVAL_THRESHOLD_TRY,
     // Mockup'taki satirlarla hizali (../projedesign/Ayarlar - Denetim Günlüğü.dc.html);
     // occurred_at gercek backend gibi UTC'dir (Z), ekran Europe/Istanbul'a cevirir —
     // yani UTC 06:14 mockup'taki 09:14 olarak gorunur ve baseline TZ'den etkilenmez.
@@ -11662,7 +11686,70 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     //
     // Sıra: `settings` literal'i çıplak `/approvals`tan ÖNCE denetlenir.
     if (method === "GET" && path === "/approvals/settings") {
-      return send(200, { approval_threshold_try: APPROVAL_THRESHOLD_TRY });
+      return send(200, approvalSettingsBody(state));
+    }
+
+    // --- F-OKROL · Onay Rolleri ve Eşik YÖNETİM uçları -------------------
+    // 🔴 BU MOCK BİR BEKÇİDİR, ONAYLAYICI DEĞİL: gerçek backend'in
+    // REDDEDECEĞİ gövde burada da 422 alır. Sözleşme
+    // `backend/app/modules/approvals/schemas.py:39`den ölçüldü —
+    // `Field(ge=0, max_digits=18, decimal_places=2)`; ayrıca `extra="forbid"`.
+    if (method === "PUT" && path === "/approvals/settings") {
+      return withBody((body) => {
+        const keys = Object.keys(body);
+        if (keys.length !== 1 || keys[0] !== "approval_threshold_try") {
+          return send(422, { detail: "approval_threshold_try disinda alan kabul edilmez" });
+        }
+        const raw = String(body.approval_threshold_try ?? "");
+        if (!isValidApprovalThreshold(raw)) {
+          return send(422, { detail: "approval_threshold_try ge=0, max_digits=18, decimal_places=2" });
+        }
+        state.approvalThreshold = raw;
+        return send(200, approvalSettingsBody(state));
+      });
+    }
+
+    if (method === "GET" && path === "/approvals/roles") {
+      const limit = Number(parsed.searchParams.get("limit") ?? "50");
+      const offset = Number(parsed.searchParams.get("offset") ?? "0");
+      if (!Number.isFinite(limit) || limit < 1 || limit > 200) {
+        return send(422, { detail: "limit 1-200 araliginda olmalidir" });
+      }
+      const items = approvalRoleAssignments(state);
+      return send(200, {
+        items: items.slice(offset, offset + limit),
+        total: items.length,
+        limit,
+        offset,
+      });
+    }
+
+    const approvalRoleMatch = path.match(/^\/approvals\/roles\/([^/]+)$/);
+    if (method === "PUT" && approvalRoleMatch) {
+      const userId = approvalRoleMatch[1];
+      return withBody((body) => {
+        const keys = Object.keys(body);
+        if (keys.length !== 1 || keys[0] !== "approval_roles") {
+          return send(422, { detail: "approval_roles disinda alan kabul edilmez" });
+        }
+        const roles = body.approval_roles;
+        if (!Array.isArray(roles) || roles.some((r) => !APPROVAL_ROLE_VALUES.includes(String(r)))) {
+          return send(422, { detail: "approval_roles gecerli rol dizisi olmalidir" });
+        }
+        const known =
+          state.users.find((u) => u.id === userId) ??
+          (userId === APPROVAL_ROLE_WRITE_TARGET.id ? APPROVAL_ROLE_WRITE_TARGET : undefined);
+        if (!known) return send(404, { detail: "Kullanici bulunamadi" });
+        // Sunucu tekrarları SESSİZCE tekilleştirir (`service.replace_user_roles`).
+        const tekil = [...new Set(roles.map(String))];
+        state.approvalRoles[userId] = tekil;
+        return send(200, {
+          user_id: known.id,
+          full_name: known.full_name,
+          email: known.email,
+          approval_roles: tekil,
+        });
+      });
     }
 
     if (method === "GET" && path === "/approvals") {
@@ -15789,6 +15876,66 @@ function closeOrReopenAccountingPeriod(
  * anlık görüntüsünden). İki sayı ayrışırsa ekran KENDİ KENDİNİ yalanlar.
  */
 const APPROVAL_THRESHOLD_TRY = "500000.00";
+
+/* --- F-OKROL · Onay Rolleri ve Eşik yardımcıları ----------------------- */
+
+/** `ApprovalRole` enum üyeleri — sözleşmeden TÜRETİLİR, elle yazılmaz. */
+const APPROVAL_ROLE_VALUES: string[] = [
+  "site_chief",
+  "project_manager",
+  "accounting",
+  "patron",
+  "procurement",
+] satisfies components["schemas"]["ApprovalRole"][];
+
+/**
+ * 🔒 YAZMA HEDEFİ — `PUT /approvals/roles/{user_id}` e2e'sinin dokunduğu TEK
+ * kullanıcı. `state.users`ta YOKTUR ve `approvalRoleAssignments` onu YAPISAL
+ * OLARAK dışlar (`hiddenFromLists` deseninin bu ekrandaki karşılığı): hiçbir
+ * kare onu görmez, dolayısıyla yazma testi hiçbir baseline'ı oynatamaz.
+ */
+const APPROVAL_ROLE_WRITE_TARGET = {
+  id: "u-okrol-write",
+  full_name: "OKROL Yazma Hedefi",
+  email: "okrol.write@fiil.com",
+};
+
+function approvalSettingsBody(
+  state: MockState,
+): components["schemas"]["ApprovalSettingsRead"] {
+  return { approval_threshold_try: state.approvalThreshold };
+}
+
+/**
+ * `GET /approvals/roles` — EN AZ BİR rolü olan kullanıcılar, `full_name`
+ * sırasında (gerçek uç `ORDER BY User.full_name, User.id`). Rolü boşalan
+ * kullanıcı kümeden DÜŞER.
+ */
+function approvalRoleAssignments(
+  state: MockState,
+): components["schemas"]["ApprovalRoleAssignmentRead"][] {
+  return state.users
+    .filter((user) => (state.approvalRoles[user.id] ?? []).length > 0)
+    .map((user) => ({
+      user_id: user.id,
+      full_name: user.full_name,
+      email: user.email,
+      approval_roles: (state.approvalRoles[user.id] ??
+        []) as components["schemas"]["ApprovalRole"][],
+    }))
+    .sort((a, b) => a.full_name.localeCompare(b.full_name, "tr") || a.user_id.localeCompare(b.user_id));
+}
+
+/**
+ * Eşik sözleşmesi (`ge=0`, `max_digits=18`, `decimal_places=2`). Mock'un
+ * REDDETMESİ şarttır — reddetmeyen bir mock onaylayıcıdır, bekçi değil.
+ */
+function isValidApprovalThreshold(raw: string): boolean {
+  if (!/^\d+(\.\d+)?$/.test(raw)) return false;
+  const [whole, fraction = ""] = raw.split(".");
+  if (fraction.length > 2) return false;
+  return whole.replace(/^0+/, "").length <= 16;
+}
 
 type MockApprovalStep = components["schemas"]["ApprovalStepRead"];
 type MockApprovalItem = components["schemas"]["ApprovalInboxItem"];

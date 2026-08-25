@@ -38,7 +38,7 @@ export function ApprovalFlowStrip({ threshold }: ApprovalFlowStripProps) {
               : role.description;
           return (
             <Fragment key={role.title}>
-              {index > 0 && <FlowArrow />}
+              {index > 0 && <ApprovalFlowArrow />}
               <div
                 className={cx("ok-flow__role", role.isHighlighted && "ok-flow__role--patron")}
                 data-testid="ok-flow-role"
@@ -71,8 +71,11 @@ export function ApprovalFlowStrip({ threshold }: ApprovalFlowStripProps) {
  * yeni bir ikon EKLENMEZ (paylaşılan yüzey donduruldu) — dilim-yerel bileşen;
  * emsal: `ui/` dışında inline `<svg>` kullanan 15 dosya (ör. `site-diary/
  * DiaryLinesCard.tsx`).
+ *
+ * F-OKROL: `Ayarlar - Onay Rolleri` ekranı da aynı oku çiziyor (`:161` `:170`
+ * `:176` `:132`). İKİNCİ BİR KOPYA AÇILMADI — bileşen buradan dışa verildi.
  */
-function FlowArrow() {
+export function ApprovalFlowArrow() {
   return (
     <svg
       width="20"
