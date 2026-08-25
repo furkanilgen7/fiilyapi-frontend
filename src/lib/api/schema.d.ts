@@ -3453,6 +3453,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/leave-requests/{request_id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw Leave Request Endpoint
+         * @description Talebi SAHİBİ geri çeker (İK-2.2, kullanıcı kararı 2026-08-22).
+         *
+         *     🔴 **Kapıda `_VIEW`/`_FULL` YOKTUR ve bu ZORUNLUDUR** — `/leave-requests/self`
+         *     ile aynı gerekçe: yetkinin kaynağı `personnel` modül izni DEĞİL kaydın
+         *     SAHİPLİĞİdir. Matriste `personnel=none` olan `procurement` rolündeki bir
+         *     çalışan kendi talebini AÇABİLİYOR; `_VIEW` konsaydı onu GERİ ÇEKEMEZ ve bu
+         *     dilim hiçbir şey çözmezdi.
+         *
+         *     🔴 **`admin` istisnası YOKTUR**: admin başkasının talebini geri çekemez (404).
+         *     Vazgeçme yetki yükseltmesi değildir — admin zaten `reject`/`DELETE` edebilir.
+         *
+         *     Talep yok **ya da sahibi değilsin** → 404 (ayırt edilemez) · `pending` değil
+         *     → 409. Kayıt SİLİNMEZ: `pending -> withdrawn` durum geçişidir.
+         */
+        post: operations["withdraw_leave_request_endpoint_leave_requests__request_id__withdraw_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/leave-balances/{personnel_id}/{year}": {
         parameters: {
             query?: never;
@@ -3845,6 +3877,30 @@ export interface paths {
          *     (`SP-YYYY-NNNN`, tutar = teklif × talebin toplam miktarı + nakliye) · talep
          *     `ordered` olur. Ara adımda hata çıkarsa HİÇBİRİ kalmaz (servisteki açık
          *     SAVEPOINT). Denetime TEK satır düşer: kullanıcının yaptığı tek bir eylemdir.
+         *
+         *     🔴 **SA-KILIT — kapı `visible_request_locked`TİR, `visible_request` DEĞİL.**
+         *     Bu bir DURUM GEÇİŞİDİR (`quote_wait → ordered`) ve
+         *     `transitions.apply_request_transition` kendi sözleşmesinde talep satırının
+         *     ÇAĞIRAN tarafından ZATEN kilitlenmiş olmasını şart koşar — `submit`/
+         *     `approve`/`reject` de aynı kapıdan geçer. Kilitsiz açıldığında CANLIDA tek
+         *     talebe İKİ SİPARİŞ yazılıyordu ve tedarikçiye para İKİ KEZ taahhüt
+         *     ediliyordu (ölçüldü: 2 sipariş / ₺500.000, beklenen ₺250.000).
+         *
+         *     🔴 **BEKLEMEK YENİDEN-DOĞRULAMA DEĞİLDİR** — kusurun asıl dersi budur.
+         *     İkinci istek kilitsiz kapıda da BEKLİYORDU (`apply_request_transition`
+         *     içindeki `UPDATE`, birincinin satır kilidine çarpıyordu); ama geçiş matrisi
+         *     o `UPDATE`ten ÖNCE, BELLEKTEKİ **bayat** `quote_wait` üzerinde koşmuştu.
+         *     Bloke çözülünce karar YENİDEN sorulmuyordu. Kilit kapıya alınınca ikinci
+         *     istek matristen ÖNCE bekler ve satırı TAZE okur (`populate_existing=True`),
+         *     `(ordered, select-and-order)` çifti tabloda olmadığı için **409** alır.
+         *
+         *     🔴 **KİLİT SIRASI** (deadlock): `purchase_requests` satırı HER ZAMAN İLK
+         *     kilittir — `submit`/`approve`/`reject` yolundaki sıranın aynısı. Bu uçta
+         *     sıra: talep satırı → teklif satırları → `pg_advisory_xact_lock(82502)`
+         *     (numara). Ters sırada ilerleyen bir yol YOKTUR: doğrudan sipariş
+         *     (`create_order`) danışma kilidini alır ama talep satırını HİÇ kilitlemez.
+         *
+         *     Bekçiler `tests/modules/procurement/test_select_and_order_yarisi.py`dedir.
          */
         post: operations["select_and_order_endpoint_purchase_requests__request_id__quotes__quote_id__select_and_order_post"];
         delete?: never;
@@ -3908,6 +3964,15 @@ export interface paths {
          *     bir STOK GİRİŞİ atar (§7 S4, T4'ün zinciri). Elle açık olsaydı hiç mal
          *     girmemiş bir sipariş teslim görünür, stok bakiyesiyle satınalma kaydı
          *     sessizce ayrışırdı. `total_amount` da düzeltilemez (şema gerekçesi).
+         *
+         *     🔴 **SA-KILIT T3 — kapı `visible_order_locked`TİR.** Bu da bir DURUM
+         *     GEÇİŞİDİR ve `transitions.assert_order_transition` kararını BELLEKTEKİ
+         *     `status` üzerinden verir. Kilitsiz açıkken ÖLÇÜLDÜ (2026-08-23): stok
+         *     girişinin `delivered` damgasıyla eş zamanlı bir `PATCH {"status":
+         *     "in_transit"}` geldiğinde sipariş **`in_transit`**, bağlı talep
+         *     **`delivered`** kalıyordu — teslim damgası KAYBOLUYOR ve ikili ÇELİŞKİLİ
+         *     oluyordu (mal girmiş ama sipariş "yolda"). Aynı kilitsizlik iki eş zamanlı
+         *     `PATCH`in İKİSİNİ birden geçiriyordu; şimdi ikincisi **409** alır.
          */
         patch: operations["update_order_endpoint_purchase_orders__order_id__patch"];
         trace?: never;
@@ -7222,8 +7287,26 @@ export interface components {
         /**
          * BoqItemResponse
          * @description Spec §5.1 poz kalemi satiri. `amount` turevdir, saklanmaz — quantity *
-         *     unit_price, para hassasiyetine (0.01) yuvarlanir. `progress_pct` hakediş
-         *     (P7) yer tutucusudur (spec §3.2).
+         *     unit_price, para hassasiyetine (0.01) yuvarlanir.
+         *
+         *     🔴 `progress_pct` — **(C) TUZAK** (P-YT3 denetimi, 2026-08-23). Eski yorum
+         *     *"hakediş (P7) yer tutucusudur"* diyordu; bu BAYATTI — `progress_payments`
+         *     modulu CANLI ve birlestirme anahtari da VAR:
+         *
+         *         boq_items.contract_item_id ──> employer_contract_items.id
+         *                                                 ^
+         *                   progress_payment_lines.(contract_item_id, site_id)
+         *
+         *     Yani "gerceklesen miktar / poz miktari" ilkece HESAPLANABILIR. Alan yine de
+         *     bagli DEGIL ve sebep veri degil **IZIN KAPISIDIR (K4, P-YT2 kanonu)**:
+         *     tohumlanmis matriste `procurement` `boq=view/limited` (2026-07-30 kullanici
+         *     karari) ama `progress_payments=none`. Zarfi doldurmak, isverene kesilen
+         *     hakedisin gerceklesme oranini satinalmaya BOQ ekranindan acardi — o modulun
+         *     `require_permission` kapisi hic calismadan.
+         *
+         *     Bekci: `tests/modules/test_boq_pyt3_yer_tutucu_denetimi.py` — veri KURULUP
+         *     zarfin yine de bos kaldigi ayri bir testle cakilidir; matris ayrismasi
+         *     kapanirsa `test_K4_*` haber verir.
          */
         BoqItemResponse: {
             /**
@@ -7280,8 +7363,31 @@ export interface components {
         };
         /**
          * BoqTotals
-         * @description Spec §5.1 ust KPI seridi. `grand_total` GERCEK deger, geri kalani yer
-         *     tutucu (sozlesme/hakediş bu dilimde yazilmiyor).
+         * @description Spec §5.1 ust KPI seridi. `grand_total` GERCEK deger (gruplarin toplami).
+         *
+         *     🔴 **P-YT3 DENETIMI (2026-08-23) — BES ZARFIN DE SINIFI VE SEBEBI.** Eski
+         *     yorum *"sozlesme/hakediş bu dilimde yazilmiyor"* diyordu ve BAYATTI: iki
+         *     modul de aylardir canli. Bugunku olgu:
+         *
+         *     | alan | sinif | bagli olmama SEBEBI |
+         *     |---|---|---|
+         *     | `contract_total` | (C) TUZAK | **K4** — `site_chief`+`procurement`: boq=view, contracts=none |
+         *     | `realized_total` | (C) TUZAK | **K4** — `procurement` `progress_payments`ta `none` |
+         *     | `remaining_total` | (C) TUZAK | `contract_total − realized_total`; iki ucu da K4 kapali |
+         *     | `revision_total` | (B) GECERLI | 🔑 **repoda REVIZYON KAVRAMI YOK** — kaynak yok |
+         *     | `grand_progress_pct` | (C) TUZAK | **K4** — `realized_total`in turevi |
+         *
+         *     🔑 `contract_total`in formulu ZATEN YAZILI ve TEK KOPYA:
+         *     `contracts/distribution.py::_site_summaries` santiye basina
+         *     `Σ (BOQ satiri miktari × SOZLESME kaleminin birim fiyati)` hesaplar (spec
+         *     §3.3: otorite sozlesmedir). Baglanacagi gun o cagrilir, KOPYALANMAZ (K3) —
+         *     burada ikinci bir carpim yazmak kurus farkli bir "Sozlesme Bedeli" uretirdi.
+         *
+         *     🔴 `revision_total` icin arama YAPILDI: `revision`/`revizyon` gecen tek yer
+         *     `subcontractor_progress_payments`taki `is_revision_required` BAYRAGIDIR
+         *     (hakedisin "duzeltilmeli" durumu) — sozlesme revizyonu ile ilgisi yoktur.
+         *     Sozlesme revizyonu ne modelde ne migration'da vardir; anahtar `contracts`
+         *     dogru kalir ama bekleyen sey MODUL degil **KAVRAMDIR**.
          */
         BoqTotals: {
             contract_total: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
@@ -7897,7 +8003,13 @@ export interface components {
         };
         /**
          * CountPlaceholder
-         * @description Veri kaynagi henuz yazilmamis sayac alani ("48 isci", "3 hissedar" gibi).
+         * @description Sayac alaninin zarfi ("48 isci", "3 hissedar" gibi).
+         *
+         *     ⚠️ Eski baslik *"veri kaynagi henuz YAZILMAMIS sayac alani"* diyordu;
+         *     2026-08-22 denetimi bunu OLCEREK curuttu ve P-YT4 (2026-08-23) burada da
+         *     duzeltti: `pending_module` "modul yok" DEMEZ, "veri hangi modulun
+         *     MULKIYETINDE" der (`projects/cards.py::_metric` kanonu). Bos kalmanin
+         *     gercek sebebi her CAGRI YERINDE yazilidir.
          *
          *     `MetricPlaceholder`in P10 T3'te kazandigi "dolu zarf `pending_module`
          *     TASIMAZ" kurali BURAYA UYGULANMAZ: puantaj sayaci (`_worker_count`)
@@ -10891,9 +11003,14 @@ export interface components {
          * @description İZ talep tablosu durumu (İK-2 spec §1). Onay TEK adimdir (spec §5 K4) —
          *
          *     cok-asamali onay MOTORU ACILMAZ, bu yuzden ara durum (`in_review` vb.) YOK.
+         *
+         *     🔴 İK-2.2 `withdrawn` uyesini ekledi ve bu K4'u BOZMAZ: onay hala TEK
+         *     adimdir. `withdrawn` bir onay ASAMASI DEGIL, talebin SAHIBININ
+         *     VAZGECMESIdir — karari onaylayan degil, talebi ACAN kisi verir ve durum
+         *     TERMINALdir (geri donusu yok; vazgecen kisi yeni talep acar).
          * @enum {string}
          */
-        LeaveStatus: "pending" | "approved" | "rejected";
+        LeaveStatus: "pending" | "approved" | "rejected" | "withdrawn";
         /**
          * LeaveTypeResponse
          * @description Katalog satırı — SALT OKUMA (spec §1: CRUD ucu AÇILMAZ, ayarlar dilimi).
@@ -12757,8 +12874,15 @@ export interface components {
          *     yer tutucu değildir, kaynağı VARDIR.
          *
          *     Üç kalem (`permits` KY 134-140 · `financing` 141-147 · `marketing` 148-154)
-         *     ise zarflıdır: kaynak modül henüz veri YAZMIYOR ve mockup'ta rakam
-         *     göründüğü için 0 basmak sahte bilgi üretmek olurdu (spec §2).
+         *     ise zarflıdır ve mockup'ta rakam göründüğü için 0 basmak sahte bilgi
+         *     üretmek olurdu (spec §2).
+         *
+         *     ⚠️ **P-YT4 (2026-08-23):** eski cümle *"kaynak modül henüz veri YAZMIYOR"*
+         *     idi ve BAYAT. `accounting` da `treasury` de CANLIDIR ve İKİSİ DE veri
+         *     yazar — yazamadıkları şey PROJE KIRILIMIDIR (muhasebenin üç tablosunda da
+         *     `project_id` yoktur; hazinede proje bağı yalnız çek/senet portföyündedir ve
+         *     o bir kredi faizi gideri değildir). Tam ölçüm `cost_summary.py`nin
+         *     `_ACCOUNTING`/`_TREASURY` notundadır — tek kopya orada yaşar.
          */
         ProjectCostBreakdown: {
             /** Land Cost */
@@ -15387,7 +15511,11 @@ export interface components {
         };
         /**
          * SiteListTotals
-         * @description Alt KPI seridi — bu dilimde TAMAMI yer tutucu (spec §4.1).
+         * @description Alt KPI seridi (spec §4.1).
+         *
+         *     🔴 "TAMAMI yer tutucu" ARTIK DOGRU DEGIL: `active_worker_count` T4'te
+         *     baglandi. Kalan uc alanin P-YT2 denetimi ve gerekceleri zarfin KURULDUGU
+         *     yerdedir — `sites/service/presenters.py:_totals`.
          */
         SiteListTotals: {
             total_progress_payment: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
@@ -15894,11 +16022,38 @@ export interface components {
          *     `balance` YALNIZ o şantiyenin depolarını kapsar; merkez depo (`site_id IS
          *     NULL`) hiçbir şantiyenin bakiyesine girmez (spec §3).
          *
-         *     `monthly_need` ("Aylık İhtiyaç") ve `section` ("Bölüm") sütunlarının GİRİŞ
-         *     YÜZEYİ YOKTUR: ikisi de ileride planlama/BOQ türevi olacaktır. Değer
-         *     üretilmez, mevcut yer tutucu zarfları taşınır — `section` metin listesi
+         *     `monthly_need` ("Aylık İhtiyaç") ve `section` ("Bölüm") sütunlarının değeri
+         *     ÜRETİLMEZ; mevcut yer tutucu zarfları taşınır — `section` metin listesi
          *     olduğu için `ListPlaceholder`, `monthly_need` tek sayı olduğu için
          *     `MetricPlaceholder`.
+         *
+         *     🔴 **P-YT3 DENETİMİ (2026-08-23) — GEREKÇE TAZELENDİ.** Eski cümle *"ikisi
+         *     de ileride planlama/BOQ türevi olacaktır"* diyordu; `site_planning` modülü
+         *     o gün geldi ve iki sütun da dolmadı. Bugünkü ölçülmüş olgu:
+         *
+         *     | alan | sınıf | engel |
+         *     |---|---|---|
+         *     | `monthly_need` | (B) GEÇERLİ | kaynak YOK ve gelmeyecek (aşağıda) |
+         *     | `section` | (C) TUZAK | makul görünen kaynak VAR ama ANLAMI yanlış |
+         *
+         *     **`monthly_need` — kaynak yok.** `PlanResourceKind` yalnız `crew` ve
+         *     `equipment` taşır; `SitePlanRow`da ne `stock_item_id` ne bir malzeme
+         *     miktarı vardır (tek sayısal kolon `planned_worker_count`) ve modelin kendi
+         *     docstring'i *"Plan-gerçekleşen kıyas kolonu YOKTUR (spec §5)"* der. Yani
+         *     bekleyen şey MODÜL değil, o modülün hiç taşımadığı bir KAVRAMdır.
+         *
+         *     **`section` — TUZAK.** Görünüşte işleyen bir kaynak vardır:
+         *     `purchase_requests.section_id` + `purchase_request_lines.stock_item_id`
+         *     ikilisi bir stok kartını bir bölüme bağlar. K4 bunu engellemez (`inventory`
+         *     okuyup `procurement`ta `none` olan rol YOKTUR). Engel ANLAMdır: o bağ *"bu
+         *     malzemeyi HANGİ BÖLÜM TALEP ETTİ"*dir — stoğun bulunduğu bölüm değil.
+         *     Depolar şantiyeye bağlıdır, bölüme DEĞİL (`warehouses.site_id`; `sections`a
+         *     FK yok). Basılsaydı ekran makul görünen ama yanlış bir "Bölüm" gösterirdi.
+         *
+         *     ⚠️ **İkinci engel — K4:** `site_planning` bir izin modülü DEĞİLDİR; router'ı
+         *     `site_diary` kapısını kullanır ve `procurement` `inventory=full` iken
+         *     `site_diary=none`dur. Plan verisi buraya basılsaydı o kapı atlanırdı.
+         *     Bekçi: `tests/modules/inventory/test_pyt3_yer_tutucu_denetimi.py`.
          */
         SiteStockRow: {
             /**
@@ -18122,9 +18277,22 @@ export interface components {
          * UnitResponse
          * @description KY 271-274 ve KKP 86-92 sutunlari.
          *
-         *     Satis alanlari (KY 275-277, KKP 92) P8 T5'te, hissedar (KKP 91) P9 T3'te
-         *     GERCEK degere baglandi; ikisi de artik yer tutucu DEGILDIR. Geriye kalan iki
-         *     yer tutucu (`unit_cost`, `expected_profit`) kalici karar 3 geregidir.
+         *     Satis alanlari (KY 275-277, KKP 92) P8 T5'te, hissedar (KKP 91) P9 T3'te,
+         *     maliyet/kâr (UE 91 / UE 97-99) P10 T3'te GERCEK degere baglandi.
+         *
+         *     🔴 **P-YT4 DENETIMI (2026-08-23): BU SEMADA ARTIK BOS DURAN ZARF YOKTUR.**
+         *     Eski not *"geriye kalan iki yer tutucu (`unit_cost`, `expected_profit`)"*
+         *     diyordu; OLCULDU ve BAYAT cikti — tek uretici (`units/summary.py::_to_unit`,
+         *     `UnitResponse(...)` bu semayi kuran YEGANE yerdir) iki alani da
+         *     `metric(cost.cost, ...)` / `metric(cost.expected_profit, ...)` ile
+         *     P10 T3'ten beri DOLDURUR. Zarf yalnizca girdi eksikse (m²'si girilmemis
+         *     unite, butcesi girilmemis proje) bos kalir — bu "modul bekliyor" DEGIL,
+         *     "kullanici bu alani girmemis"tir.
+         *
+         *     Alan TIPI `MetricPlaceholder` KALIR ve bu bilinclidir: zarf, degerin
+         *     GIRDIYE bagli olarak bilinmeyebilecegini ifade eder; duz `Decimal | None`e
+         *     cevirmek hem kirici olurdu hem de "neden bos" bilgisini (`pending_module`)
+         *     silerdi.
          */
         UnitResponse: {
             /**
@@ -18330,8 +18498,8 @@ export interface components {
             installment_paid_count: number;
             /** Overdue Installment Count */
             overdue_installment_count: number;
-            unit_cost?: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
-            sale_profit?: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            unit_cost: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            sale_profit: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
             /** Pending Modules */
             pending_modules?: string[];
         };
@@ -27896,6 +28064,51 @@ export interface operations {
                 "application/json": components["schemas"]["LeaveRejectRequest"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequestResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    withdraw_leave_request_endpoint_leave_requests__request_id__withdraw_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

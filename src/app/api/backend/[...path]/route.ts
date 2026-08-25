@@ -245,7 +245,7 @@ const ALLOWED_ROOTS = new Set([
   //   · `leave-types`    → `GET /leave-types`
   //   · `leave-requests` → `GET,POST /leave-requests`,
   //     `GET,PATCH,DELETE /leave-requests/{request_id}`,
-  //     `POST .../{request_id}/approve|reject`
+  //     `POST .../{request_id}/approve|reject|withdraw`
   //   · `leave-balances` → `GET,PUT /leave-balances/{personnel_id}/{year}`
   // (`GET /hr/leaves/summary` mevcut "hr" kokunden gecer — ayri kok gerekmez.)
   // Eksikse izin yonetimi modulu YALNIZ CANLIDA 404 alir; jsdom testleri
