@@ -206,6 +206,12 @@ export function PayrollPeriodFormModal({
               {...control}
               type="number"
               numeric
+              // FDA:74 `min="2000" max="2100"` — tarayıcının kendi kısıtı.
+              // Bu bir KOLAYLIKTIR, korkuluk DEĞİL: `min`/`max` yazmayı
+              // engellemez, yalnız artırıcı okları ve native doğrulamayı
+              // sınırlar. Gerçek kapı `periodFormBlockReason`dadır.
+              min={MIN_PAYROLL_YEAR}
+              max={MAX_PAYROLL_YEAR}
               disabled={isPending}
               aria-label={OPEN_PERIOD_YEAR_ARIA}
               value={yearText}
