@@ -144,6 +144,10 @@ test("aylik bordro gorsel", async ({ page }) => {
   // `pending_approval`dır ⇒ hesap kapısı AÇIKTIR (kilit `approved`/`paid`te).
   await expect(page.getByTestId("bordro-open-period")).toBeEnabled();
   await expect(page.getByTestId("bordro-compute")).toBeEnabled();
+  // 🔴 FDA:134 — Temmuz 2026'nın SATIRLARI var ⇒ etiket `Yeniden Hesapla`dır.
+  // Kanıt DOM'dan alınır, kareden DEĞİL (görsel kapı metin geçişlerini
+  // eşiğin altında yutabilir).
+  await expect(page.getByTestId("bordro-compute")).toHaveText("Yeniden Hesapla");
 
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("bordro-aylik.png", { fullPage: true });
@@ -284,6 +288,15 @@ test("donem ac diyalogu gorsel", async ({ page }) => {
   await expect(page.getByTestId("bordro-open-submit")).toBeEnabled();
   await expect(page.getByTestId("bordro-open-block-reason")).toHaveCount(0);
   await expect(page.getByTestId("bordro-open-error")).toHaveCount(0);
+
+  // 🔴 F-BORDONEM · FDA:55 + FDA:85-92 — kadraja giren İKİ yeni yüzey
+  // DURUM-TABANLI iddiayla doğrulanır. Kare bunları sessizce kaybederse
+  // (bir refactor kutuyu düşürür) baseline yine "yeşil bir kare" olurdu;
+  // görsel spec'in 1. parçası tam bunun için var.
+  await expect(page.getByTestId("bordro-open-step")).toHaveText("Adım 1 / 2");
+  await expect(page.getByTestId("bordro-open-notice")).toContainText(
+    "Bu adımda satırlar oluşmaz",
+  );
 
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("bordro-donem-ac.png", { fullPage: true });

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { Button, DateInput, Field, Input, Select } from "@/components/ui";
+import { Alert, Button, DateInput, Field, Input, Select } from "@/components/ui";
 import { Modal } from "@/components/settings/Modal";
 import { WarningTriangleIcon } from "@/components/ui/icons";
 import { backendErrorMessage } from "@/lib/api/error-message";
@@ -10,38 +10,51 @@ import type { PayrollPeriodListRow } from "@/lib/api/hooks/usePayroll";
 import { useCreatePayrollPeriod } from "@/lib/api/hooks/usePayrollMutations";
 import { PERIOD_MONTHS } from "@/lib/format";
 
-import { nextPeriodSuggestion, periodFormBlockReason } from "./payroll-derive";
+import {
+  MAX_PAYROLL_YEAR,
+  MIN_PAYROLL_YEAR,
+  nextPeriodSuggestion,
+  periodFormBlockReason,
+} from "./payroll-derive";
 import {
   OPEN_PERIOD_CANCEL_LABEL,
   OPEN_PERIOD_DUE_HINT,
   OPEN_PERIOD_DUE_LABEL,
   OPEN_PERIOD_ERROR_FALLBACK,
   OPEN_PERIOD_MONTH_ARIA,
-  OPEN_PERIOD_PERIOD_LABEL,
+  OPEN_PERIOD_MONTH_LABEL,
+  OPEN_PERIOD_MONTH_PLACEHOLDER,
+  OPEN_PERIOD_NOTICE_BODY,
+  OPEN_PERIOD_NOTICE_TITLE,
+  OPEN_PERIOD_STEP,
   OPEN_PERIOD_SUBMIT_LABEL,
-  OPEN_PERIOD_SUBTITLE,
   OPEN_PERIOD_TITLE,
   OPEN_PERIOD_YEAR_ARIA,
+  OPEN_PERIOD_YEAR_LABEL,
 } from "./payroll-labels";
 import "./payroll.css";
 
 /**
  * F-BORDRO T2 · **DÖNEM AÇ** diyaloğu — uç: `POST /payroll/periods`.
  *
- * 🔴🔴 **ONAYLI SAPMA — MOCKUP'I YOKTUR.** Bu deponun kuralı *"UI mockup'a
- * BİREBİR; kafana göre tasarım YOK"*tur. `Form - Dönem Aç` mockup'ı ne
- * `projedesign/`de ne de `TASARIM-BRIEFI-2`de vardır. Yönetim kararı:
- * **modülün kullanılamaz kalması, türetilmiş bir formdan daha kötüdür.**
- * Canlıda `payroll_periods`a satır basan migration YOKTUR (bilinçli — dönemi
- * kullanıcı açar), dolayısıyla bu form olmadan üç bordro ekranı da KALICI
- * olarak boştur; kullanıcının bildirdiği kusur buydu.
+ * 🟢 **F-BORDONEM · ONAYLI SAPMA KAPANDI.** Bu form bir tur boyunca mockup'sız
+ * yaşadı (kanonik form kabuğundan türetilmişti, serbest tasarım değil). Kanon
+ * artık VARDIR: `projedesign/Form - Donem Ac.dc.html` ("FDA"); yorumlardaki
+ * `FDA:n` O dosyanın satır numaralarıdır ve her yüzey ona çekildi.
  *
- * Sapma SERBEST TASARIM DEĞİLDİR — kanonik form modalı kabuğundan
- * (`LeaveRequestFormModal` / S-FRM deseni) BİREBİR türetildi:
- *   • kabuk `settings/Modal` (başlık + `footer` + odak tuzağı) — YENİ kabuk YOK;
- *   • alt başlık `iz-form__subtitle` emsali, hata `…__error`, pasif düğmenin
- *     gerekçesi footer'ın SOL ucunda `WarningTriangleIcon` ile OKUNUR;
- *   • ham `<select>`/`<input>` YOK — `ui/` primitive'leri; tarih `ui/DateInput`.
+ * 🔴 **MOCKUP'IN HTML YORUMU ÜÇ YERDE BAYAT — SÖZLEŞMEDEN ÖLÇÜLDÜ, YORUMDAN
+ * KOPYALANMADI** (`openapi/openapi.json`, 232 yol / 340 operasyon):
+ *   1. FDA:27 `due_date` diyor → alanın gerçek adı **`payment_due_date`**
+ *      (`PayrollPeriodCreate.payment_due_date`).
+ *   2. FDA:28 `POST .../calculate` diyor → gerçek yol **`.../compute`**
+ *      (`/payroll/periods/{period_id}/compute`; `calculate` diye bir yol YOK).
+ *   3. FDA:82 *"girilirse gösterge panelinde hatırlatma çıkar"* → gösterge
+ *      paneli yalnız ONAYLANMIŞ dönemleri listeler; **taslak dönemin vadesi
+ *      panelde çıkmaz**. Bu cümle EKRANA TAŞINMADI; yerine alanın gerçekte ne
+ *      yaptığını söyleyen `OPEN_PERIOD_DUE_HINT` basılır.
+ *
+ * Kabuk `settings/Modal`dır — YENİ kabuk yazılmaz. Ham `<select>`/`<input>`
+ * yoktur; `ui/` primitive'leri ve `ui/DateInput` kullanılır.
  *
  * 🔴 ALANLAR UÇTAN ÖLÇÜLDÜ, uydurulmadı (`PayrollPeriodCreate`):
  *   `year: number` (2000-2100) · `month: number` (1-12) ·
@@ -49,8 +62,14 @@ import "./payroll.css";
  * Şema `extra="forbid"`dir: `status` GÖVDEYE GİRMEZ — yeni dönem her zaman
  * `draft`tır, aksi hâlde bir ay doğrudan `paid` açılıp onay zinciri atlanırdı.
  *
- * 🔴 Yıl+ay ÇİFTİ `ProgressPaymentForm` kanonuyla aynı çizilir (tek `Field`
- * içinde ay `Select`i + yıl `Input`u); ay adları `PERIOD_MONTHS` TEK
+ * 🔴 **SÖZLEŞME KISITI TİPTE YAŞAMAZ.** `year` 2000-2100 ve `month` 1-12
+ * üretilen TS tipinde İFADE EDİLEMEZ (`year: number`); `typecheck` yeşilken
+ * canlı 422 verebilir. Korkuluk bu yüzden `periodFormBlockReason`dadır ve
+ * sınırlar `payroll-period-contract.test.ts` ile **sözleşmeye çakılıdır** —
+ * şema değişirse test kırmızı olur, sabitler sessizce bayatlamaz.
+ *
+ * 🔴 Ay ve yıl FDA:61-77'deki gibi İKİ AYRI `Field`tır (mockup'ta iki ayrı
+ * `.lbl` + yılın kendi `.hint`i var); ay adları `PERIOD_MONTHS` TEK
  * kaynağından gelir, kopyalanmaz.
  */
 export interface PayrollPeriodFormModalProps {
@@ -139,11 +158,17 @@ export function PayrollPeriodFormModal({
         </>
       }
     >
-      <p className="bor-form__subtitle">{OPEN_PERIOD_SUBTITLE}</p>
+      {/* FDA:55 — başlık altındaki adım sayacı. `Modal` kabuğunun başlığı
+          tek satırdır ve KABUK DEĞİŞTİRİLMEZ (ortak yüzey, başka dilimlerin
+          kareleri ona bağlı); adım satırı gövdenin ilk satırı olarak basılır. */}
+      <p className="bor-form__step" data-testid="bordro-open-step">
+        {OPEN_PERIOD_STEP}
+      </p>
 
-      <Field label={OPEN_PERIOD_PERIOD_LABEL} required>
-        {(control) => (
-          <div className="bor-form__period-row">
+      {/* FDA:61-77 — ay ve yıl İKİ KOLONLU ızgarada, her biri kendi etiketiyle. */}
+      <div className="bor-form__grid">
+        <Field label={OPEN_PERIOD_MONTH_LABEL} required>
+          {(control) => (
             <Select
               {...control}
               value={month ?? ""}
@@ -155,14 +180,30 @@ export function PayrollPeriodFormModal({
               }}
               data-testid="bordro-open-month"
             >
-              <option value="">{OPEN_PERIOD_MONTH_ARIA}</option>
+              <option value="">{OPEN_PERIOD_MONTH_PLACEHOLDER}</option>
+              {/* FDA:66-69 — seçenek metni `8 — Ağustos`. Ay ADI tek kaynaktan
+                  (`PERIOD_MONTHS`) gelir; numara ÖNEK olarak TÜRETİLİR,
+                  ikinci bir ay listesi yazılmaz. `—` (U+2014) glif
+                  kapsamındadır (`2000-206F`). */}
               {PERIOD_MONTHS.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {`${option.value} — ${option.label}`}
                 </option>
               ))}
             </Select>
+          )}
+        </Field>
+
+        <Field
+          label={OPEN_PERIOD_YEAR_LABEL}
+          required
+          // FDA:75 — yılın kendi ipucu sınır aralığını GÖSTERİR. Metin
+          // sabitlerden TÜRER: sözleşme sınırı değişirse ipucu da değişir.
+          hint={`${MIN_PAYROLL_YEAR} – ${MAX_PAYROLL_YEAR}`}
+        >
+          {(control) => (
             <Input
+              {...control}
               type="number"
               numeric
               disabled={isPending}
@@ -174,9 +215,9 @@ export function PayrollPeriodFormModal({
               }}
               data-testid="bordro-open-year"
             />
-          </div>
-        )}
-      </Field>
+          )}
+        </Field>
+      </div>
 
       <Field label={OPEN_PERIOD_DUE_LABEL} hint={OPEN_PERIOD_DUE_HINT}>
         {(control) => (
@@ -192,6 +233,18 @@ export function PayrollPeriodFormModal({
           />
         )}
       </Field>
+
+      {/* 🔴 FDA:85-92 — diyaloğun ASIL mesajı. Bu kutu olmadan kullanıcı
+          "kaydettim ama liste boş" hâline düşer; mockup'ın KARARI (FDA:29-31)
+          iki işlemi ayırmak ve sonraki adımı AÇIKÇA söylemektir. */}
+      <Alert
+        variant="warning"
+        title={OPEN_PERIOD_NOTICE_TITLE}
+        className="bor-form__notice"
+        data-testid="bordro-open-notice"
+      >
+        {OPEN_PERIOD_NOTICE_BODY}
+      </Alert>
 
       {formError !== null && (
         <p className="bor-form__error" data-testid="bordro-open-error">
