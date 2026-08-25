@@ -6169,6 +6169,10 @@ const EQUIPMENT_FIXTURES: MockEquipment[] = [
     site_id: "s-1", operator_id: "per-1", status: "working", status_note: null,
     status_expected_date: null, fuel_type: "diesel", norm_consumption: "4.20",
     norm_unit: "lt_hour", maintenance_period: "hours_500", monthly_capacity_hours: 200,
+    engine_power_kw: null, capacity_description: null, hourmeter_hours: null,
+    rental_contract_no: null, rental_start_date: null, rental_end_date: null,
+    rental_min_monthly_hours: null, rental_payment_terms: null,
+    last_service_date: null, last_service_hourmeter: null,
     is_company_asset: true, is_active: true, created_at: "2026-01-05T08:00:00Z",
   },
   {
@@ -6181,6 +6185,10 @@ const EQUIPMENT_FIXTURES: MockEquipment[] = [
     status_note: "Periyodik bakım — 500 saat servisi", status_expected_date: "2026-08-22",
     fuel_type: "diesel", norm_consumption: "5.50", norm_unit: "lt_hour",
     maintenance_period: "hours_500", monthly_capacity_hours: 200,
+    engine_power_kw: null, capacity_description: null, hourmeter_hours: null,
+    rental_contract_no: null, rental_start_date: null, rental_end_date: null,
+    rental_min_monthly_hours: null, rental_payment_terms: null,
+    last_service_date: null, last_service_hourmeter: null,
     is_company_asset: true, is_active: true, created_at: "2026-01-06T08:00:00Z",
   },
   {
@@ -6193,6 +6201,10 @@ const EQUIPMENT_FIXTURES: MockEquipment[] = [
     status_expected_date: null, fuel_type: "diesel", norm_consumption: "0.45",
     // 🔴 K3 — `lt_km`: kilometre verisi hiçbir ekranda girilmiyor, sapma `null`.
     norm_unit: "lt_km", maintenance_period: null, monthly_capacity_hours: 0,
+    engine_power_kw: null, capacity_description: null, hourmeter_hours: null,
+    rental_contract_no: null, rental_start_date: null, rental_end_date: null,
+    rental_min_monthly_hours: null, rental_payment_terms: null,
+    last_service_date: null, last_service_hourmeter: null,
     is_company_asset: false, is_active: true, created_at: "2026-01-07T08:00:00Z",
   },
   {
@@ -6205,6 +6217,10 @@ const EQUIPMENT_FIXTURES: MockEquipment[] = [
     status_note: "Hidrolik hortum patladı — parça bekleniyor",
     status_expected_date: "2026-08-19", fuel_type: null, norm_consumption: null,
     norm_unit: null, maintenance_period: null, monthly_capacity_hours: 200,
+    engine_power_kw: null, capacity_description: null, hourmeter_hours: null,
+    rental_contract_no: null, rental_start_date: null, rental_end_date: null,
+    rental_min_monthly_hours: null, rental_payment_terms: null,
+    last_service_date: null, last_service_hourmeter: null,
     is_company_asset: true, is_active: true, created_at: "2026-01-08T08:00:00Z",
   },
   {
@@ -6216,6 +6232,10 @@ const EQUIPMENT_FIXTURES: MockEquipment[] = [
     site_id: null, operator_id: null, status: "idle", status_note: null,
     status_expected_date: null, fuel_type: "diesel", norm_consumption: "2.10",
     norm_unit: "lt_hour", maintenance_period: "monthly", monthly_capacity_hours: 200,
+    engine_power_kw: null, capacity_description: null, hourmeter_hours: null,
+    rental_contract_no: null, rental_start_date: null, rental_end_date: null,
+    rental_min_monthly_hours: null, rental_payment_terms: null,
+    last_service_date: null, last_service_hourmeter: null,
     is_company_asset: true, is_active: true, created_at: "2026-01-09T08:00:00Z",
   },
 ];

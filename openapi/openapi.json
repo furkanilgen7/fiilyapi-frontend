@@ -5603,6 +5603,23 @@
             }
           },
           {
+            "name": "equipment_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Equipment Id"
+            }
+          },
+          {
             "name": "status",
             "in": "query",
             "required": false,
@@ -7790,6 +7807,78 @@
           },
           "422": {
             "description": "Sahip olunan ekipmanda alış bedeli zorunludur (K2)"
+          }
+        }
+      }
+    },
+    "/equipment/{equipment_id}/detail": {
+      "get": {
+        "tags": [
+          "equipment"
+        ],
+        "summary": "Get Equipment Detail Endpoint",
+        "description": "MK-4 — Ekipman Detay ekranının künye + İKİ TÜREV bloğu.\n\n🔴 `GET /{equipment_id}` DEĞİŞMEDİ: türevler oraya konsaydı LİSTE ucu da\n(aynı şemayı paylaşır) her çizilişte hareket tablosunu tarardı. Sözleşme\nADDITIVE genişler.\n\n`as_of` **tahmini bakım tarihinin dayanak günüdür** ve verilmezse TR\ntakviminde bugündür (`core.timezone.today`). Parametre olması, yanıtın\nhangi güne göre üretildiğini istemcinin de testin de SABİTLEYEBİLMESİ\niçindir — sunucunun kendi günü hesabın derinine gömülseydi ikisi de\nimkânsızdı.\n\nGörünmeyen kayıt var olmayanla AYNI 404'ü döner (K20).",
+        "operationId": "get_equipment_detail_endpoint_equipment__equipment_id__detail_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "equipment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Equipment Id"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "As Of"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
         }
       }
@@ -27199,6 +27288,138 @@
             "title": "Monthly Capacity Hours",
             "default": 200
           },
+          "engine_power_kw": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine Power Kw"
+          },
+          "capacity_description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity Description"
+          },
+          "hourmeter_hours": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hourmeter Hours"
+          },
+          "rental_contract_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rental Contract No"
+          },
+          "rental_start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rental Start Date"
+          },
+          "rental_end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rental End Date"
+          },
+          "rental_min_monthly_hours": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rental Min Monthly Hours"
+          },
+          "rental_payment_terms": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rental Payment Terms"
+          },
+          "last_service_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Service Date"
+          },
+          "last_service_hourmeter": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Service Hourmeter"
+          },
           "is_company_asset": {
             "type": "boolean",
             "title": "Is Company Asset",
@@ -27217,6 +27438,33 @@
         ],
         "title": "EquipmentCreate",
         "description": "`POST /equipment` — M2 formunun gövdesi.\n\n`purchase_amount` BURADA isteğe bağlıdır ve bu bir eksiklik DEĞİLDİR (K2):\nkural `ownership == owned` iken zorunluluk şeklindedir ve SERVİStedir (422).\nŞemaya konsaydı kiralık makine hiç kaydedilemezdi."
+      },
+      "EquipmentDetailResponse": {
+        "properties": {
+          "equipment": {
+            "$ref": "#/components/schemas/EquipmentResponse"
+          },
+          "maintenance": {
+            "$ref": "#/components/schemas/EquipmentMaintenanceBlock"
+          },
+          "rental": {
+            "$ref": "#/components/schemas/EquipmentRentalTotals"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          }
+        },
+        "type": "object",
+        "required": [
+          "equipment",
+          "maintenance",
+          "rental",
+          "as_of"
+        ],
+        "title": "EquipmentDetailResponse",
+        "description": "`GET /equipment/{equipment_id}/detail` — ekranın TAMAMININ veri tabanı.\n\n`equipment` SAKLANAN künyedir (`GET /equipment/{id}` ile BİREBİR aynı şema —\nikinci bir künye şeması iki ekranda iki farklı kart üretirdi); yanındaki iki\nblok TÜREVDİR."
       },
       "EquipmentDocumentListResponse": {
         "properties": {
@@ -27624,6 +27872,142 @@
         "title": "EquipmentListResponse",
         "description": "`personnel`/`inventory` liste deseni: `total` + `limit`/`offset`\n(TB3 sayfalama kanonu, `limit ≤ 200`)."
       },
+      "EquipmentMaintenanceBlock": {
+        "properties": {
+          "period": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EquipmentMaintenancePeriod"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "period_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Hours"
+          },
+          "last_service_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Service Date"
+          },
+          "last_service_hourmeter": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Service Hourmeter"
+          },
+          "hourmeter_hours": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hourmeter Hours"
+          },
+          "next_service_hourmeter": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Service Hourmeter"
+          },
+          "used_hours": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Used Hours"
+          },
+          "remaining_hours": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remaining Hours"
+          },
+          "usage_pct": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usage Pct"
+          },
+          "estimated_service_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Service Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "period_hours",
+          "last_service_date",
+          "last_service_hourmeter",
+          "hourmeter_hours",
+          "next_service_hourmeter",
+          "used_hours",
+          "remaining_hours",
+          "usage_pct",
+          "estimated_service_date"
+        ],
+        "title": "EquipmentMaintenanceBlock",
+        "description": "🔧 Bakım Bilgileri kartı (MD:145-160) + `Sonraki Bakım` KPI'ı (MD:46-48).\n\nİlk dört alan SAKLANAN girdinin aynasıdır (kart onları da basar), son beşi\n`maintenance.py`de her okumada TÜRER.\n\n🔴 **Her türev AYRI AYRI `None` olabilir** (MK-1 K16 deseni): periyodu\n`monthly` olan bir makinede saat cinsinden pencere YOKTUR ama son bakım\nTARİHİ bilinir. Tek bir \"bakım bilgisi yok\" bayrağına indirgenselerdi\nbilinen bir olgu, eksik bir ölçüt yüzünden ekrandan silinirdi."
+      },
       "EquipmentMaintenancePeriod": {
         "type": "string",
         "enum": [
@@ -27662,6 +28046,31 @@
         ],
         "title": "EquipmentRatePeriod",
         "description": "M2:109 — birim bedelin dönemi. K18 maliyet formülünün girdisi."
+      },
+      "EquipmentRentalTotals": {
+        "properties": {
+          "cumulative_paid": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Cumulative Paid"
+          },
+          "cumulative_paid_unknown_count": {
+            "type": "integer",
+            "title": "Cumulative Paid Unknown Count"
+          },
+          "paid_invoice_count": {
+            "type": "integer",
+            "title": "Paid Invoice Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cumulative_paid",
+          "cumulative_paid_unknown_count",
+          "paid_invoice_count"
+        ],
+        "title": "EquipmentRentalTotals",
+        "description": "📋 Kiralama Bilgileri kartının TEK türevi: MD:82 `Kümülatif Ödenen`.\n\nKartın öteki yedi alanı SAKLANIR ve `EquipmentResponse`ta durur.\n\n🔴 Tutarı hesaplanamayan satır UYDURMA `0` ile toplama GİRMEZ ama SESSİZ de\nKALMAZ (MK-1 `summarize` / MK-2 `our_total_unknown_count` kanonu): atlanır\nve ADETÇE bildirilir. Toplamın kendisi `None` yapılmadı — tek bedelsiz satır\nyüzünden bütün kartı gizlemek kullanıcıyı ekranın tamamından ederdi."
       },
       "EquipmentResponse": {
         "properties": {
@@ -27922,6 +28331,122 @@
             "type": "integer",
             "title": "Monthly Capacity Hours"
           },
+          "engine_power_kw": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine Power Kw"
+          },
+          "capacity_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity Description"
+          },
+          "hourmeter_hours": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hourmeter Hours"
+          },
+          "rental_contract_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rental Contract No"
+          },
+          "rental_start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rental Start Date"
+          },
+          "rental_end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rental End Date"
+          },
+          "rental_min_monthly_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rental Min Monthly Hours"
+          },
+          "rental_payment_terms": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rental Payment Terms"
+          },
+          "last_service_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Service Date"
+          },
+          "last_service_hourmeter": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Service Hourmeter"
+          },
           "is_company_asset": {
             "type": "boolean",
             "title": "Is Company Asset"
@@ -27965,6 +28490,16 @@
           "norm_unit",
           "maintenance_period",
           "monthly_capacity_hours",
+          "engine_power_kw",
+          "capacity_description",
+          "hourmeter_hours",
+          "rental_contract_no",
+          "rental_start_date",
+          "rental_end_date",
+          "rental_min_monthly_hours",
+          "rental_payment_terms",
+          "last_service_date",
+          "last_service_hourmeter",
           "is_company_asset",
           "is_active",
           "created_at"
@@ -28339,6 +28874,138 @@
               }
             ],
             "title": "Monthly Capacity Hours"
+          },
+          "engine_power_kw": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine Power Kw"
+          },
+          "capacity_description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity Description"
+          },
+          "hourmeter_hours": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hourmeter Hours"
+          },
+          "rental_contract_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rental Contract No"
+          },
+          "rental_start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rental Start Date"
+          },
+          "rental_end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rental End Date"
+          },
+          "rental_min_monthly_hours": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rental Min Monthly Hours"
+          },
+          "rental_payment_terms": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rental Payment Terms"
+          },
+          "last_service_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Service Date"
+          },
+          "last_service_hourmeter": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,8}|(?=[\\d.]{1,11}0*$)\\d{0,8}\\.\\d{0,2}0*$)"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Service Hourmeter"
           },
           "is_company_asset": {
             "anyOf": [
@@ -50023,7 +50690,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 10
+                "maxLength": 11
               },
               {
                 "type": "null"
@@ -50058,7 +50725,7 @@
           "payment_terms"
         ],
         "title": "SupplierCreate",
-        "description": "`POST /suppliers` govdesi — TED kartinin alanlari.\n\n`category` SERBEST METINDIR (spec §2): TED alt-etiketi (\"Hazir Beton\",\n\"Nakliye\", …) acik uclu bir kumedir, enum ICAT EDILSEYDI her yeni tedarikci\nturu migration gerektirirdi. `payment_terms` ise KAPALI kumedir (TED\n50/71/91/112 + FST 134), bu yuzden enum'dur.\n\n`tax_no` icin BICIM kurali (10 hane / yalniz rakam) UYDURULMAZ: mockup'ta\nalan zorunlu bile degildir ve dis ulke tedarikcisi ya da sahis firmasi\nkaliba oturmayabilir. Tek sinir kolonun kendi genisligidir."
+        "description": "`POST /suppliers` govdesi — TED kartinin alanlari.\n\n`category` SERBEST METINDIR (spec §2): TED alt-etiketi (\"Hazir Beton\",\n\"Nakliye\", …) acik uclu bir kumedir, enum ICAT EDILSEYDI her yeni tedarikci\nturu migration gerektirirdi. `payment_terms` ise KAPALI kumedir (TED\n50/71/91/112 + FST 134), bu yuzden enum'dur.\n\n`tax_no` TEK alandir ve HEM VKN'yi (tuzel kisi, 10 hane) HEM TCKN'yi\n(SAHIS SIRKETI, 11 hane) tasir — sinir `max_length=11` (SUP-TCKN,\n2026-08-25 kullanici karari; onceki 10 sahis tedarikcisini 422'ye\ndusuruyordu). BICIM kurali (yalniz rakam / tam 10 ya da 11 hane)\nUYDURULMAZ: mockup'ta alan zorunlu bile degildir ve dis ulke tedarikcisi\nya da sahis firmasi kaliba oturmayabilir. Tek sinir kolonun kendi\ngenisligidir."
       },
       "SupplierListResponse": {
         "properties": {
@@ -50194,7 +50861,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 10
+                "maxLength": 11
               },
               {
                 "type": "null"
