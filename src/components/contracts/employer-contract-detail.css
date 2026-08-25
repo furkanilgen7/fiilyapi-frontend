@@ -437,6 +437,29 @@
 .ecd-items__td--center {
   text-align: center;
 }
+/* 🔴 BU İKİ KURAL PAYLAŞILIYOR — F-ISVPOZ'da ÖLÇÜLEREK bulundu.
+   E14 kalem tablosu bunları artık kullanmıyor (hücreler satır-içi `Input`
+   oldu) ama ÜÇ AYRI bileşen hâlâ kullanıyor:
+     · `ContractDistributionGrid.tsx`        (POZ dağılımı ızgarası)
+     · `SubcontractorContractItemsTable.tsx` (taşeron sözleşme detayı)
+     · `SubcontractorContractPaymentsCard.tsx`
+   "Bu dosyanın bileşeninde kullanılmıyor" = "ölü" DEĞİLDİR: sınıf adı
+   dosya değil DEMET kapsamındadır. Silindiklerinde üç kare birden oynadı
+   (`poz-dagilimi` 1197 px · `poz-ekle-taseron` 8317 px ·
+   `taseron-sozlesme-detay` 8634 px) — ölçüm: main'de taze baseline turu
+   146 karenin 146'sını BİREBİR ürettiyken bu dalda 5 kare oynuyordu. */
+.ecd-items__td--price {
+  text-align: right;
+  color: var(--color-text-secondary); /* POZ 96 */
+  font-family: var(--font-mono);
+}
+.ecd-items__td--qty {
+  text-align: right;
+  font-size: var(--text-body); /* POZ 97 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+}
 /* F-ISVPOZ · POZ 96-97 hücreleri artık DÜZENLENEBİLİR (satır-içi `Input`).
    Emsal `subcontractor-contract-form` `.fso-items__td--input` (FSO 137-138):
    hücre sağa yaslı ve SABİT genişliktedir — kontrol satırdan satıra oynamaz.
