@@ -11855,6 +11855,61 @@
         }
       }
     },
+    "/leave-requests/{request_id}/withdraw": {
+      "post": {
+        "tags": [
+          "personnel"
+        ],
+        "summary": "Withdraw Leave Request Endpoint",
+        "description": "Talebi SAHİBİ geri çeker (İK-2.2, kullanıcı kararı 2026-08-22).\n\n🔴 **Kapıda `_VIEW`/`_FULL` YOKTUR ve bu ZORUNLUDUR** — `/leave-requests/self`\nile aynı gerekçe: yetkinin kaynağı `personnel` modül izni DEĞİL kaydın\nSAHİPLİĞİdir. Matriste `personnel=none` olan `procurement` rolündeki bir\nçalışan kendi talebini AÇABİLİYOR; `_VIEW` konsaydı onu GERİ ÇEKEMEZ ve bu\ndilim hiçbir şey çözmezdi.\n\n🔴 **`admin` istisnası YOKTUR**: admin başkasının talebini geri çekemez (404).\nVazgeçme yetki yükseltmesi değildir — admin zaten `reject`/`DELETE` edebilir.\n\nTalep yok **ya da sahibi değilsin** → 404 (ayırt edilemez) · `pending` değil\n→ 409. Kayıt SİLİNMEZ: `pending -> withdrawn` durum geçişidir.",
+        "operationId": "withdraw_leave_request_endpoint_leave_requests__request_id__withdraw_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveRequestResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Yetkisiz işlem"
+          },
+          "404": {
+            "description": "Kayıt bulunamadı"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/leave-balances/{personnel_id}/{year}": {
       "get": {
         "tags": [
@@ -13189,7 +13244,7 @@
           "procurement"
         ],
         "summary": "Select And Order Endpoint",
-        "description": "TEK'in \"Sipariş Ver\" düğmesi — **ATOMİK** üçlü (spec §3).\n\nTeklif işaretlenir (aynı talepteki diğerleri sıfırlanır) · sipariş üretilir\n(`SP-YYYY-NNNN`, tutar = teklif × talebin toplam miktarı + nakliye) · talep\n`ordered` olur. Ara adımda hata çıkarsa HİÇBİRİ kalmaz (servisteki açık\nSAVEPOINT). Denetime TEK satır düşer: kullanıcının yaptığı tek bir eylemdir.",
+        "description": "TEK'in \"Sipariş Ver\" düğmesi — **ATOMİK** üçlü (spec §3).\n\nTeklif işaretlenir (aynı talepteki diğerleri sıfırlanır) · sipariş üretilir\n(`SP-YYYY-NNNN`, tutar = teklif × talebin toplam miktarı + nakliye) · talep\n`ordered` olur. Ara adımda hata çıkarsa HİÇBİRİ kalmaz (servisteki açık\nSAVEPOINT). Denetime TEK satır düşer: kullanıcının yaptığı tek bir eylemdir.\n\n🔴 **SA-KILIT — kapı `visible_request_locked`TİR, `visible_request` DEĞİL.**\nBu bir DURUM GEÇİŞİDİR (`quote_wait → ordered`) ve\n`transitions.apply_request_transition` kendi sözleşmesinde talep satırının\nÇAĞIRAN tarafından ZATEN kilitlenmiş olmasını şart koşar — `submit`/\n`approve`/`reject` de aynı kapıdan geçer. Kilitsiz açıldığında CANLIDA tek\ntalebe İKİ SİPARİŞ yazılıyordu ve tedarikçiye para İKİ KEZ taahhüt\nediliyordu (ölçüldü: 2 sipariş / ₺500.000, beklenen ₺250.000).\n\n🔴 **BEKLEMEK YENİDEN-DOĞRULAMA DEĞİLDİR** — kusurun asıl dersi budur.\nİkinci istek kilitsiz kapıda da BEKLİYORDU (`apply_request_transition`\niçindeki `UPDATE`, birincinin satır kilidine çarpıyordu); ama geçiş matrisi\no `UPDATE`ten ÖNCE, BELLEKTEKİ **bayat** `quote_wait` üzerinde koşmuştu.\nBloke çözülünce karar YENİDEN sorulmuyordu. Kilit kapıya alınınca ikinci\nistek matristen ÖNCE bekler ve satırı TAZE okur (`populate_existing=True`),\n`(ordered, select-and-order)` çifti tabloda olmadığı için **409** alır.\n\n🔴 **KİLİT SIRASI** (deadlock): `purchase_requests` satırı HER ZAMAN İLK\nkilittir — `submit`/`approve`/`reject` yolundaki sıranın aynısı. Bu uçta\nsıra: talep satırı → teklif satırları → `pg_advisory_xact_lock(82502)`\n(numara). Ters sırada ilerleyen bir yol YOKTUR: doğrudan sipariş\n(`create_order`) danışma kilidini alır ama talep satırını HİÇ kilitlemez.\n\nBekçiler `tests/modules/procurement/test_select_and_order_yarisi.py`dedir.",
         "operationId": "select_and_order_endpoint_purchase_requests__request_id__quotes__quote_id__select_and_order_post",
         "security": [
           {
@@ -13495,7 +13550,7 @@
           "procurement"
         ],
         "summary": "Update Order Endpoint",
-        "description": "Tek meşru geçiş `approved → in_transit`tir.\n\n**`delivered`e ELLE geçilmez (409)** — o damgayı `purchase_order_id` taşıyan\nbir STOK GİRİŞİ atar (§7 S4, T4'ün zinciri). Elle açık olsaydı hiç mal\ngirmemiş bir sipariş teslim görünür, stok bakiyesiyle satınalma kaydı\nsessizce ayrışırdı. `total_amount` da düzeltilemez (şema gerekçesi).",
+        "description": "Tek meşru geçiş `approved → in_transit`tir.\n\n**`delivered`e ELLE geçilmez (409)** — o damgayı `purchase_order_id` taşıyan\nbir STOK GİRİŞİ atar (§7 S4, T4'ün zinciri). Elle açık olsaydı hiç mal\ngirmemiş bir sipariş teslim görünür, stok bakiyesiyle satınalma kaydı\nsessizce ayrışırdı. `total_amount` da düzeltilemez (şema gerekçesi).\n\n🔴 **SA-KILIT T3 — kapı `visible_order_locked`TİR.** Bu da bir DURUM\nGEÇİŞİDİR ve `transitions.assert_order_transition` kararını BELLEKTEKİ\n`status` üzerinden verir. Kilitsiz açıkken ÖLÇÜLDÜ (2026-08-23): stok\ngirişinin `delivered` damgasıyla eş zamanlı bir `PATCH {\"status\":\n\"in_transit\"}` geldiğinde sipariş **`in_transit`**, bağlı talep\n**`delivered`** kalıyordu — teslim damgası KAYBOLUYOR ve ikili ÇELİŞKİLİ\noluyordu (mal girmiş ama sipariş \"yolda\"). Aynı kilitsizlik iki eş zamanlı\n`PATCH`in İKİSİNİ birden geçiriyordu; şimdi ikincisi **409** alır.",
         "operationId": "update_order_endpoint_purchase_orders__order_id__patch",
         "security": [
           {
@@ -23963,7 +24018,7 @@
           "amount"
         ],
         "title": "BoqItemResponse",
-        "description": "Spec §5.1 poz kalemi satiri. `amount` turevdir, saklanmaz — quantity *\nunit_price, para hassasiyetine (0.01) yuvarlanir. `progress_pct` hakediş\n(P7) yer tutucusudur (spec §3.2)."
+        "description": "Spec §5.1 poz kalemi satiri. `amount` turevdir, saklanmaz — quantity *\nunit_price, para hassasiyetine (0.01) yuvarlanir.\n\n🔴 `progress_pct` — **(C) TUZAK** (P-YT3 denetimi, 2026-08-23). Eski yorum\n*\"hakediş (P7) yer tutucusudur\"* diyordu; bu BAYATTI — `progress_payments`\nmodulu CANLI ve birlestirme anahtari da VAR:\n\n    boq_items.contract_item_id ──> employer_contract_items.id\n                                            ^\n              progress_payment_lines.(contract_item_id, site_id)\n\nYani \"gerceklesen miktar / poz miktari\" ilkece HESAPLANABILIR. Alan yine de\nbagli DEGIL ve sebep veri degil **IZIN KAPISIDIR (K4, P-YT2 kanonu)**:\ntohumlanmis matriste `procurement` `boq=view/limited` (2026-07-30 kullanici\nkarari) ama `progress_payments=none`. Zarfi doldurmak, isverene kesilen\nhakedisin gerceklesme oranini satinalmaya BOQ ekranindan acardi — o modulun\n`require_permission` kapisi hic calismadan.\n\nBekci: `tests/modules/test_boq_pyt3_yer_tutucu_denetimi.py` — veri KURULUP\nzarfin yine de bos kaldigi ayri bir testle cakilidir; matris ayrismasi\nkapanirsa `test_K4_*` haber verir."
       },
       "BoqItemUpdate": {
         "properties": {
@@ -24120,7 +24175,7 @@
           "grand_progress_pct"
         ],
         "title": "BoqTotals",
-        "description": "Spec §5.1 ust KPI seridi. `grand_total` GERCEK deger, geri kalani yer\ntutucu (sozlesme/hakediş bu dilimde yazilmiyor)."
+        "description": "Spec §5.1 ust KPI seridi. `grand_total` GERCEK deger (gruplarin toplami).\n\n🔴 **P-YT3 DENETIMI (2026-08-23) — BES ZARFIN DE SINIFI VE SEBEBI.** Eski\nyorum *\"sozlesme/hakediş bu dilimde yazilmiyor\"* diyordu ve BAYATTI: iki\nmodul de aylardir canli. Bugunku olgu:\n\n| alan | sinif | bagli olmama SEBEBI |\n|---|---|---|\n| `contract_total` | (C) TUZAK | **K4** — `site_chief`+`procurement`: boq=view, contracts=none |\n| `realized_total` | (C) TUZAK | **K4** — `procurement` `progress_payments`ta `none` |\n| `remaining_total` | (C) TUZAK | `contract_total − realized_total`; iki ucu da K4 kapali |\n| `revision_total` | (B) GECERLI | 🔑 **repoda REVIZYON KAVRAMI YOK** — kaynak yok |\n| `grand_progress_pct` | (C) TUZAK | **K4** — `realized_total`in turevi |\n\n🔑 `contract_total`in formulu ZATEN YAZILI ve TEK KOPYA:\n`contracts/distribution.py::_site_summaries` santiye basina\n`Σ (BOQ satiri miktari × SOZLESME kaleminin birim fiyati)` hesaplar (spec\n§3.3: otorite sozlesmedir). Baglanacagi gun o cagrilir, KOPYALANMAZ (K3) —\nburada ikinci bir carpim yazmak kurus farkli bir \"Sozlesme Bedeli\" uretirdi.\n\n🔴 `revision_total` icin arama YAPILDI: `revision`/`revizyon` gecen tek yer\n`subcontractor_progress_payments`taki `is_revision_required` BAYRAGIDIR\n(hakedisin \"duzeltilmeli\" durumu) — sozlesme revizyonu ile ilgisi yoktur.\nSozlesme revizyonu ne modelde ne migration'da vardir; anahtar `contracts`\ndogru kalir ama bekleyen sey MODUL degil **KAVRAMDIR**."
       },
       "CashFlowBucket": {
         "properties": {
@@ -25462,7 +25517,7 @@
           "pending_module"
         ],
         "title": "CountPlaceholder",
-        "description": "Veri kaynagi henuz yazilmamis sayac alani (\"48 isci\", \"3 hissedar\" gibi).\n\n`MetricPlaceholder`in P10 T3'te kazandigi \"dolu zarf `pending_module`\nTASIMAZ\" kurali BURAYA UYGULANMAZ: puantaj sayaci (`_worker_count`)\n`available=True` + `pending_module=\"timesheet\"` doner ve bu BILINCLI bir\nemsaldir — ayni serit uzerindeki diger sayaclar hâlâ yer tutucudur, ekran\nseridin kaynagini oradan okur. Kirmak, canli taahhut kartini bozardi."
+        "description": "Sayac alaninin zarfi (\"48 isci\", \"3 hissedar\" gibi).\n\n⚠️ Eski baslik *\"veri kaynagi henuz YAZILMAMIS sayac alani\"* diyordu;\n2026-08-22 denetimi bunu OLCEREK curuttu ve P-YT4 (2026-08-23) burada da\nduzeltti: `pending_module` \"modul yok\" DEMEZ, \"veri hangi modulun\nMULKIYETINDE\" der (`projects/cards.py::_metric` kanonu). Bos kalmanin\ngercek sebebi her CAGRI YERINDE yazilidir.\n\n`MetricPlaceholder`in P10 T3'te kazandigi \"dolu zarf `pending_module`\nTASIMAZ\" kurali BURAYA UYGULANMAZ: puantaj sayaci (`_worker_count`)\n`available=True` + `pending_module=\"timesheet\"` doner ve bu BILINCLI bir\nemsaldir — ayni serit uzerindeki diger sayaclar hâlâ yer tutucudur, ekran\nseridin kaynagini oradan okur. Kirmak, canli taahhut kartini bozardi."
       },
       "CustomerCreate": {
         "properties": {
@@ -33198,10 +33253,11 @@
         "enum": [
           "pending",
           "approved",
-          "rejected"
+          "rejected",
+          "withdrawn"
         ],
         "title": "LeaveStatus",
-        "description": "İZ talep tablosu durumu (İK-2 spec §1). Onay TEK adimdir (spec §5 K4) —\n\ncok-asamali onay MOTORU ACILMAZ, bu yuzden ara durum (`in_review` vb.) YOK."
+        "description": "İZ talep tablosu durumu (İK-2 spec §1). Onay TEK adimdir (spec §5 K4) —\n\ncok-asamali onay MOTORU ACILMAZ, bu yuzden ara durum (`in_review` vb.) YOK.\n\n🔴 İK-2.2 `withdrawn` uyesini ekledi ve bu K4'u BOZMAZ: onay hala TEK\nadimdir. `withdrawn` bir onay ASAMASI DEGIL, talebin SAHIBININ\nVAZGECMESIdir — karari onaylayan degil, talebi ACAN kisi verir ve durum\nTERMINALdir (geri donusu yok; vazgecen kisi yeni talep acar)."
       },
       "LeaveTypeResponse": {
         "properties": {
@@ -37987,7 +38043,7 @@
           "total_spent"
         ],
         "title": "ProjectCostBreakdown",
-        "description": "KY 113-161 \"Maliyet Kırılımı\" kartının satırları.\n\n`land_cost` üç ayrı şey söyler ve bu yüzden `Decimal | None`dır (P10 spec §2,\n`costs.land_cost`): kendi yatırımda girilen bedel, kat karşılığında tanım\ngereği `0`, taahhütte `None` = kavram yok. Zarf KULLANILMAZ çünkü değer\nyer tutucu değildir, kaynağı VARDIR.\n\nÜç kalem (`permits` KY 134-140 · `financing` 141-147 · `marketing` 148-154)\nise zarflıdır: kaynak modül henüz veri YAZMIYOR ve mockup'ta rakam\ngöründüğü için 0 basmak sahte bilgi üretmek olurdu (spec §2)."
+        "description": "KY 113-161 \"Maliyet Kırılımı\" kartının satırları.\n\n`land_cost` üç ayrı şey söyler ve bu yüzden `Decimal | None`dır (P10 spec §2,\n`costs.land_cost`): kendi yatırımda girilen bedel, kat karşılığında tanım\ngereği `0`, taahhütte `None` = kavram yok. Zarf KULLANILMAZ çünkü değer\nyer tutucu değildir, kaynağı VARDIR.\n\nÜç kalem (`permits` KY 134-140 · `financing` 141-147 · `marketing` 148-154)\nise zarflıdır ve mockup'ta rakam göründüğü için 0 basmak sahte bilgi\nüretmek olurdu (spec §2).\n\n⚠️ **P-YT4 (2026-08-23):** eski cümle *\"kaynak modül henüz veri YAZMIYOR\"*\nidi ve BAYAT. `accounting` da `treasury` de CANLIDIR ve İKİSİ DE veri\nyazar — yazamadıkları şey PROJE KIRILIMIDIR (muhasebenin üç tablosunda da\n`project_id` yoktur; hazinede proje bağı yalnız çek/senet portföyündedir ve\no bir kredi faizi gideri değildir). Tam ölçüm `cost_summary.py`nin\n`_ACCOUNTING`/`_TREASURY` notundadır — tek kopya orada yaşar."
       },
       "ProjectCostsResponse": {
         "properties": {
@@ -45200,7 +45256,7 @@
           "average_margin"
         ],
         "title": "SiteListTotals",
-        "description": "Alt KPI seridi — bu dilimde TAMAMI yer tutucu (spec §4.1)."
+        "description": "Alt KPI seridi (spec §4.1).\n\n🔴 \"TAMAMI yer tutucu\" ARTIK DOGRU DEGIL: `active_worker_count` T4'te\nbaglandi. Kalan uc alanin P-YT2 denetimi ve gerekceleri zarfin KURULDUGU\nyerdedir — `sites/service/presenters.py:_totals`."
       },
       "SiteOptionListResponse": {
         "properties": {
@@ -46228,7 +46284,7 @@
           "section"
         ],
         "title": "SiteStockRow",
-        "description": "ŞS tablosunun bir satırı (Şantiye - Stok, 96-104).\n\n`balance` YALNIZ o şantiyenin depolarını kapsar; merkez depo (`site_id IS\nNULL`) hiçbir şantiyenin bakiyesine girmez (spec §3).\n\n`monthly_need` (\"Aylık İhtiyaç\") ve `section` (\"Bölüm\") sütunlarının GİRİŞ\nYÜZEYİ YOKTUR: ikisi de ileride planlama/BOQ türevi olacaktır. Değer\nüretilmez, mevcut yer tutucu zarfları taşınır — `section` metin listesi\nolduğu için `ListPlaceholder`, `monthly_need` tek sayı olduğu için\n`MetricPlaceholder`."
+        "description": "ŞS tablosunun bir satırı (Şantiye - Stok, 96-104).\n\n`balance` YALNIZ o şantiyenin depolarını kapsar; merkez depo (`site_id IS\nNULL`) hiçbir şantiyenin bakiyesine girmez (spec §3).\n\n`monthly_need` (\"Aylık İhtiyaç\") ve `section` (\"Bölüm\") sütunlarının değeri\nÜRETİLMEZ; mevcut yer tutucu zarfları taşınır — `section` metin listesi\nolduğu için `ListPlaceholder`, `monthly_need` tek sayı olduğu için\n`MetricPlaceholder`.\n\n🔴 **P-YT3 DENETİMİ (2026-08-23) — GEREKÇE TAZELENDİ.** Eski cümle *\"ikisi\nde ileride planlama/BOQ türevi olacaktır\"* diyordu; `site_planning` modülü\no gün geldi ve iki sütun da dolmadı. Bugünkü ölçülmüş olgu:\n\n| alan | sınıf | engel |\n|---|---|---|\n| `monthly_need` | (B) GEÇERLİ | kaynak YOK ve gelmeyecek (aşağıda) |\n| `section` | (C) TUZAK | makul görünen kaynak VAR ama ANLAMI yanlış |\n\n**`monthly_need` — kaynak yok.** `PlanResourceKind` yalnız `crew` ve\n`equipment` taşır; `SitePlanRow`da ne `stock_item_id` ne bir malzeme\nmiktarı vardır (tek sayısal kolon `planned_worker_count`) ve modelin kendi\ndocstring'i *\"Plan-gerçekleşen kıyas kolonu YOKTUR (spec §5)\"* der. Yani\nbekleyen şey MODÜL değil, o modülün hiç taşımadığı bir KAVRAMdır.\n\n**`section` — TUZAK.** Görünüşte işleyen bir kaynak vardır:\n`purchase_requests.section_id` + `purchase_request_lines.stock_item_id`\nikilisi bir stok kartını bir bölüme bağlar. K4 bunu engellemez (`inventory`\nokuyup `procurement`ta `none` olan rol YOKTUR). Engel ANLAMdır: o bağ *\"bu\nmalzemeyi HANGİ BÖLÜM TALEP ETTİ\"*dir — stoğun bulunduğu bölüm değil.\nDepolar şantiyeye bağlıdır, bölüme DEĞİL (`warehouses.site_id`; `sections`a\nFK yok). Basılsaydı ekran makul görünen ama yanlış bir \"Bölüm\" gösterirdi.\n\n⚠️ **İkinci engel — K4:** `site_planning` bir izin modülü DEĞİLDİR; router'ı\n`site_diary` kapısını kullanır ve `procurement` `inventory=full` iken\n`site_diary=none`dur. Plan verisi buraya basılsaydı o kapı atlanırdı.\nBekçi: `tests/modules/inventory/test_pyt3_yer_tutucu_denetimi.py`."
       },
       "SiteUpdate": {
         "properties": {
@@ -52177,7 +52233,7 @@
           "is_landowner_share"
         ],
         "title": "UnitResponse",
-        "description": "KY 271-274 ve KKP 86-92 sutunlari.\n\nSatis alanlari (KY 275-277, KKP 92) P8 T5'te, hissedar (KKP 91) P9 T3'te\nGERCEK degere baglandi; ikisi de artik yer tutucu DEGILDIR. Geriye kalan iki\nyer tutucu (`unit_cost`, `expected_profit`) kalici karar 3 geregidir."
+        "description": "KY 271-274 ve KKP 86-92 sutunlari.\n\nSatis alanlari (KY 275-277, KKP 92) P8 T5'te, hissedar (KKP 91) P9 T3'te,\nmaliyet/kâr (UE 91 / UE 97-99) P10 T3'te GERCEK degere baglandi.\n\n🔴 **P-YT4 DENETIMI (2026-08-23): BU SEMADA ARTIK BOS DURAN ZARF YOKTUR.**\nEski not *\"geriye kalan iki yer tutucu (`unit_cost`, `expected_profit`)\"*\ndiyordu; OLCULDU ve BAYAT cikti — tek uretici (`units/summary.py::_to_unit`,\n`UnitResponse(...)` bu semayi kuran YEGANE yerdir) iki alani da\n`metric(cost.cost, ...)` / `metric(cost.expected_profit, ...)` ile\nP10 T3'ten beri DOLDURUR. Zarf yalnizca girdi eksikse (m²'si girilmemis\nunite, butcesi girilmemis proje) bos kalir — bu \"modul bekliyor\" DEGIL,\n\"kullanici bu alani girmemis\"tir.\n\nAlan TIPI `MetricPlaceholder` KALIR ve bu bilinclidir: zarf, degerin\nGIRDIYE bagli olarak bilinmeyebilecegini ifade eder; duz `Decimal | None`e\ncevirmek hem kirici olurdu hem de \"neden bos\" bilgisini (`pending_module`)\nsilerdi."
       },
       "UnitSaleCreate": {
         "properties": {
@@ -52777,7 +52833,9 @@
           "remaining_amount",
           "installment_total",
           "installment_paid_count",
-          "overdue_installment_count"
+          "overdue_installment_count",
+          "unit_cost",
+          "sale_profit"
         ],
         "title": "UnitSaleResponse"
       },
