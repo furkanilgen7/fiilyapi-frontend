@@ -691,8 +691,21 @@ export function PayrollRatesScreen() {
 
 /* ------------------------------------------------------------------ satırlar */
 
+/**
+ * "Toplam" sütunu — mockup `:151` `34,50` · `:158` `3,00` · `:172` `15,00` ·
+ * `:180` `0,759`. Yani **en az 2, en çok 3** ondalık: `formatDecimal` tek
+ * başına yetmez (yalnız `maximumFractionDigits` alır ve `34,5` basardı).
+ */
+const RATE_TOTAL_FORMAT = new Intl.NumberFormat("tr-TR", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 3,
+});
+
 function formatRate(value: string): string {
-  return value.trim() === "" ? "—" : formatDecimal(value, 3);
+  const normalized = normalize(value);
+  if (normalized === "") return "—";
+  const numeric = Number(normalized);
+  return Number.isFinite(numeric) ? RATE_TOTAL_FORMAT.format(numeric) : "—";
 }
 
 function formatBound(value: string): string {

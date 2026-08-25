@@ -15,9 +15,14 @@ import { prepareFrame } from "./visual-scroll";
 // 🔴 BAŞLIK KURALI: her testin adında "gorsel" GEÇER (5. kapı `--grep-invert`
 // ile BAŞLIĞA göre süzer).
 //
-// 🔴 NEDEN ELEMAN KADRAJI (`fullPage` DEĞİL): Ayarlar kenar çubuğu ZATEN on
-// `settings-visual` karesinde basılıdır; bu ekranın kendi yüzeyi `.bro-wrap`a
-// sığar ve kenar çubuğunun tekrarı üç kareyi birden gereksizce büyütürdü.
+// 🔴 NEDEN `fullPage`, ELEMAN KADRAJI DEĞİL — ÖLÇÜLDÜ ve DÜZELTİLDİ: ilk
+// baseline turunda kadraj `.bro-wrap` elemanıydı ve üç karenin ÜÇÜNDE DE araç
+// çubuğu (yıl seçici + "Kopyala") KIRPIK çıktı. Sebep: eleman 900px'lik
+// görünür alandan uzundur, Playwright onu görünür alana kaydırır ve YAPIŞKAN
+// üst şerit elemanın üst bandını ÖRTER — kare "yeşil" olur ama mockup'ın araç
+// çubuğunu HİÇ göstermez. `fullPage` kadrajda böyle bir örtüşme yoktur.
+// (Kanıt: `ayarlar-bordro-oranlari-dolu` ilk turunda `.bro-toolbar` yerine
+// "Bordro Oranları / Çıkış Yap" üst şeridi basılmıştı.)
 //
 // 🔒 SALT-OKUR: bu dosya hiçbir mutasyon TETİKLEMEZ. "Kopyala" bir yazma
 // DEĞİLDİR (istemci tarafı, `POST …/copy` ucu yoktur), bu yüzden 3. kare de
@@ -44,11 +49,10 @@ test.beforeEach(async ({ page }) => {
 // ---------------------------------------------------------------------------
 test("ayarlar bordro oranlari dolu yil gorsel", async ({ page }) => {
   await openPayrollRates(page);
-  const wrap = page.getByTestId("bro-wrap");
-  await expect(wrap).toBeVisible();
+  await expect(page.getByTestId("bro-wrap")).toBeVisible();
 
   await prepareFrame(page);
-  await expect(wrap).toHaveScreenshot("ayarlar-bordro-oranlari-dolu.png");
+  await expect(page).toHaveScreenshot("ayarlar-bordro-oranlari-dolu.png", { fullPage: true });
 });
 
 // ---------------------------------------------------------------------------
@@ -61,9 +65,7 @@ test("ayarlar bordro oranlari bos yil gorsel", async ({ page }) => {
   await expect(bos).toBeVisible();
 
   await prepareFrame(page);
-  await expect(page.getByTestId("bro-wrap")).toHaveScreenshot(
-    "ayarlar-bordro-oranlari-bos.png",
-  );
+  await expect(page).toHaveScreenshot("ayarlar-bordro-oranlari-bos.png", { fullPage: true });
 });
 
 // ---------------------------------------------------------------------------
@@ -82,7 +84,5 @@ test("ayarlar bordro oranlari kopyalanmis yil gorsel", async ({ page }) => {
   await expect(page.getByTestId("bro-locked")).toHaveCount(0);
 
   await prepareFrame(page);
-  await expect(page.getByTestId("bro-wrap")).toHaveScreenshot(
-    "ayarlar-bordro-oranlari-kopya.png",
-  );
+  await expect(page).toHaveScreenshot("ayarlar-bordro-oranlari-kopya.png", { fullPage: true });
 });

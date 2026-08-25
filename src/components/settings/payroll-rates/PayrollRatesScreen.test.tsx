@@ -144,7 +144,10 @@ describe("gelir vergisi oranı — NULL DİLİMLİ REJİMDİR (mockup notu TERS)
 describe("toplam sütunu", () => {
   it("işçi + işveren payını ondalık aritmetikle toplar", () => {
     render(<PayrollRatesScreen />);
-    expect(screen.getByText("34,5")).toBeInTheDocument();
+    // Mockup `:151` "34,50" — EN AZ iki ondalık (sondaki sıfır ATILMAZ).
+    expect(screen.getByText("34,50")).toBeInTheDocument();
+    expect(screen.getByText("3,00")).toBeInTheDocument();
+    expect(screen.getByText("0,759")).toBeInTheDocument();
   });
 });
 
