@@ -2172,6 +2172,38 @@ export interface paths {
         patch: operations["update_equipment_endpoint_equipment__equipment_id__patch"];
         trace?: never;
     };
+    "/equipment/{equipment_id}/detail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Equipment Detail Endpoint
+         * @description MK-4 — Ekipman Detay ekranının künye + İKİ TÜREV bloğu.
+         *
+         *     🔴 `GET /{equipment_id}` DEĞİŞMEDİ: türevler oraya konsaydı LİSTE ucu da
+         *     (aynı şemayı paylaşır) her çizilişte hareket tablosunu tarardı. Sözleşme
+         *     ADDITIVE genişler.
+         *
+         *     `as_of` **tahmini bakım tarihinin dayanak günüdür** ve verilmezse TR
+         *     takviminde bugündür (`core.timezone.today`). Parametre olması, yanıtın
+         *     hangi güne göre üretildiğini istemcinin de testin de SABİTLEYEBİLMESİ
+         *     içindir — sunucunun kendi günü hesabın derinine gömülseydi ikisi de
+         *     imkânsızdı.
+         *
+         *     Görünmeyen kayıt var olmayanla AYNI 404'ü döner (K20).
+         */
+        get: operations["get_equipment_detail_endpoint_equipment__equipment_id__detail_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/stock/items": {
         parameters: {
             query?: never;
@@ -8579,6 +8611,26 @@ export interface components {
              * @default 200
              */
             monthly_capacity_hours: number;
+            /** Engine Power Kw */
+            engine_power_kw?: number | string | null;
+            /** Capacity Description */
+            capacity_description?: string | null;
+            /** Hourmeter Hours */
+            hourmeter_hours?: number | string | null;
+            /** Rental Contract No */
+            rental_contract_no?: string | null;
+            /** Rental Start Date */
+            rental_start_date?: string | null;
+            /** Rental End Date */
+            rental_end_date?: string | null;
+            /** Rental Min Monthly Hours */
+            rental_min_monthly_hours?: number | null;
+            /** Rental Payment Terms */
+            rental_payment_terms?: string | null;
+            /** Last Service Date */
+            last_service_date?: string | null;
+            /** Last Service Hourmeter */
+            last_service_hourmeter?: number | string | null;
             /**
              * Is Company Asset
              * @default true
@@ -8589,6 +8641,24 @@ export interface components {
              * @default true
              */
             is_active: boolean;
+        };
+        /**
+         * EquipmentDetailResponse
+         * @description `GET /equipment/{equipment_id}/detail` — ekranın TAMAMININ veri tabanı.
+         *
+         *     `equipment` SAKLANAN künyedir (`GET /equipment/{id}` ile BİREBİR aynı şema —
+         *     ikinci bir künye şeması iki ekranda iki farklı kart üretirdi); yanındaki iki
+         *     blok TÜREVDİR.
+         */
+        EquipmentDetailResponse: {
+            equipment: components["schemas"]["EquipmentResponse"];
+            maintenance: components["schemas"]["EquipmentMaintenanceBlock"];
+            rental: components["schemas"]["EquipmentRentalTotals"];
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
         };
         /** EquipmentDocumentListResponse */
         EquipmentDocumentListResponse: {
@@ -8790,6 +8860,39 @@ export interface components {
             offset: number;
         };
         /**
+         * EquipmentMaintenanceBlock
+         * @description 🔧 Bakım Bilgileri kartı (MD:145-160) + `Sonraki Bakım` KPI'ı (MD:46-48).
+         *
+         *     İlk dört alan SAKLANAN girdinin aynasıdır (kart onları da basar), son beşi
+         *     `maintenance.py`de her okumada TÜRER.
+         *
+         *     🔴 **Her türev AYRI AYRI `None` olabilir** (MK-1 K16 deseni): periyodu
+         *     `monthly` olan bir makinede saat cinsinden pencere YOKTUR ama son bakım
+         *     TARİHİ bilinir. Tek bir "bakım bilgisi yok" bayrağına indirgenselerdi
+         *     bilinen bir olgu, eksik bir ölçüt yüzünden ekrandan silinirdi.
+         */
+        EquipmentMaintenanceBlock: {
+            period: components["schemas"]["EquipmentMaintenancePeriod"] | null;
+            /** Period Hours */
+            period_hours: number | null;
+            /** Last Service Date */
+            last_service_date: string | null;
+            /** Last Service Hourmeter */
+            last_service_hourmeter: string | null;
+            /** Hourmeter Hours */
+            hourmeter_hours: string | null;
+            /** Next Service Hourmeter */
+            next_service_hourmeter: string | null;
+            /** Used Hours */
+            used_hours: string | null;
+            /** Remaining Hours */
+            remaining_hours: string | null;
+            /** Usage Pct */
+            usage_pct: string | null;
+            /** Estimated Service Date */
+            estimated_service_date: string | null;
+        };
+        /**
          * EquipmentMaintenancePeriod
          * @description K6 — M2:123'ün DÖRT seçeneği olduğu gibi.
          *
@@ -8819,6 +8922,25 @@ export interface components {
          * @enum {string}
          */
         EquipmentRatePeriod: "hourly" | "daily" | "monthly";
+        /**
+         * EquipmentRentalTotals
+         * @description 📋 Kiralama Bilgileri kartının TEK türevi: MD:82 `Kümülatif Ödenen`.
+         *
+         *     Kartın öteki yedi alanı SAKLANIR ve `EquipmentResponse`ta durur.
+         *
+         *     🔴 Tutarı hesaplanamayan satır UYDURMA `0` ile toplama GİRMEZ ama SESSİZ de
+         *     KALMAZ (MK-1 `summarize` / MK-2 `our_total_unknown_count` kanonu): atlanır
+         *     ve ADETÇE bildirilir. Toplamın kendisi `None` yapılmadı — tek bedelsiz satır
+         *     yüzünden bütün kartı gizlemek kullanıcıyı ekranın tamamından ederdi.
+         */
+        EquipmentRentalTotals: {
+            /** Cumulative Paid */
+            cumulative_paid: string;
+            /** Cumulative Paid Unknown Count */
+            cumulative_paid_unknown_count: number;
+            /** Paid Invoice Count */
+            paid_invoice_count: number;
+        };
         /**
          * EquipmentResponse
          * @description Kart künyesi — M1 kartının veri tabanı.
@@ -8877,6 +8999,26 @@ export interface components {
             maintenance_period: components["schemas"]["EquipmentMaintenancePeriod"] | null;
             /** Monthly Capacity Hours */
             monthly_capacity_hours: number;
+            /** Engine Power Kw */
+            engine_power_kw: string | null;
+            /** Capacity Description */
+            capacity_description: string | null;
+            /** Hourmeter Hours */
+            hourmeter_hours: string | null;
+            /** Rental Contract No */
+            rental_contract_no: string | null;
+            /** Rental Start Date */
+            rental_start_date: string | null;
+            /** Rental End Date */
+            rental_end_date: string | null;
+            /** Rental Min Monthly Hours */
+            rental_min_monthly_hours: number | null;
+            /** Rental Payment Terms */
+            rental_payment_terms: string | null;
+            /** Last Service Date */
+            last_service_date: string | null;
+            /** Last Service Hourmeter */
+            last_service_hourmeter: string | null;
             /** Is Company Asset */
             is_company_asset: boolean;
             /** Is Active */
@@ -8982,6 +9124,26 @@ export interface components {
             maintenance_period?: components["schemas"]["EquipmentMaintenancePeriod"] | null;
             /** Monthly Capacity Hours */
             monthly_capacity_hours?: number | null;
+            /** Engine Power Kw */
+            engine_power_kw?: number | string | null;
+            /** Capacity Description */
+            capacity_description?: string | null;
+            /** Hourmeter Hours */
+            hourmeter_hours?: number | string | null;
+            /** Rental Contract No */
+            rental_contract_no?: string | null;
+            /** Rental Start Date */
+            rental_start_date?: string | null;
+            /** Rental End Date */
+            rental_end_date?: string | null;
+            /** Rental Min Monthly Hours */
+            rental_min_monthly_hours?: number | null;
+            /** Rental Payment Terms */
+            rental_payment_terms?: string | null;
+            /** Last Service Date */
+            last_service_date?: string | null;
+            /** Last Service Hourmeter */
+            last_service_hourmeter?: number | string | null;
             /** Is Company Asset */
             is_company_asset?: boolean | null;
             /** Is Active */
@@ -17460,9 +17622,13 @@ export interface components {
          *     turu migration gerektirirdi. `payment_terms` ise KAPALI kumedir (TED
          *     50/71/91/112 + FST 134), bu yuzden enum'dur.
          *
-         *     `tax_no` icin BICIM kurali (10 hane / yalniz rakam) UYDURULMAZ: mockup'ta
-         *     alan zorunlu bile degildir ve dis ulke tedarikcisi ya da sahis firmasi
-         *     kaliba oturmayabilir. Tek sinir kolonun kendi genisligidir.
+         *     `tax_no` TEK alandir ve HEM VKN'yi (tuzel kisi, 10 hane) HEM TCKN'yi
+         *     (SAHIS SIRKETI, 11 hane) tasir — sinir `max_length=11` (SUP-TCKN,
+         *     2026-08-25 kullanici karari; onceki 10 sahis tedarikcisini 422'ye
+         *     dusuruyordu). BICIM kurali (yalniz rakam / tam 10 ya da 11 hane)
+         *     UYDURULMAZ: mockup'ta alan zorunlu bile degildir ve dis ulke tedarikcisi
+         *     ya da sahis firmasi kaliba oturmayabilir. Tek sinir kolonun kendi
+         *     genisligidir.
          */
         SupplierCreate: {
             /** Name */
@@ -23490,6 +23656,7 @@ export interface operations {
             query?: {
                 supplier_id?: string | null;
                 site_id?: string | null;
+                equipment_id?: string | null;
                 status?: components["schemas"]["RentalInvoiceStatus"] | null;
                 period_year?: number | null;
                 period_month?: number | null;
@@ -25087,6 +25254,53 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    get_equipment_detail_endpoint_equipment__equipment_id__detail_get: {
+        parameters: {
+            query?: {
+                as_of?: string | null;
+            };
+            header?: never;
+            path: {
+                equipment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentDetailResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };
