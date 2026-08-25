@@ -16,8 +16,8 @@ export default function Topbar() {
         <Image
           src="/logo-fiil-yapi.png"
           alt="FİİL YAPI İNŞAAT MİMARLIK SAN. TİC. A.Ş."
-          width={180}
-          height={48}
+          width={150}
+          height={40}
           priority
           unoptimized
           className="topbar-logo__image"
