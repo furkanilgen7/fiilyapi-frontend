@@ -5,6 +5,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PayrollPeriodListRow } from "@/lib/api/hooks/usePayroll";
 import { useCreatePayrollPeriod } from "@/lib/api/hooks/usePayrollMutations";
 
+import { MAX_PAYROLL_YEAR, MIN_PAYROLL_YEAR } from "./payroll-derive";
+import {
+  OPEN_PERIOD_CANCEL_LABEL,
+  OPEN_PERIOD_DUE_HINT,
+  OPEN_PERIOD_NOTICE_BODY,
+  OPEN_PERIOD_NOTICE_TITLE,
+  OPEN_PERIOD_STEP,
+} from "./payroll-labels";
 import { PayrollPeriodFormModal } from "./PayrollPeriodFormModal";
 
 vi.mock("@/lib/api/hooks/usePayrollMutations", () => ({
@@ -163,5 +171,67 @@ describe("PayrollPeriodFormModal · kapı ve hata", () => {
     expect(screen.getByTestId("bordro-open-submit")).toBeDisabled();
     expect(screen.getByTestId("bordro-open-month")).toBeDisabled();
     expect(screen.getByTestId("bordro-open-year")).toBeDisabled();
+  });
+});
+
+/* ══ F-BORDONEM · mockup `Form - Donem Ac.dc.html` ("FDA") ══════════════════ */
+
+describe("PayrollPeriodFormModal · FDA yüzeyleri", () => {
+  it("🔴 FDA:85-92 · “satırlar oluşmaz” uyarı kutusu BASILIR", () => {
+    renderModal();
+    const notice = screen.getByTestId("bordro-open-notice");
+    expect(notice).toHaveTextContent(OPEN_PERIOD_NOTICE_TITLE);
+    // Gövde ELLE yazılır (sabitten değil): sabiti sabite karşı çakmak
+    // mutasyonu geçirirdi.
+    expect(notice).toHaveTextContent(
+      "Dönem açılır ama personel satırları boş kalır.",
+    );
+    expect(notice).toHaveTextContent("“Hesapla” düğmesine basmanız gerekir.");
+    // Sabit de aynı cümleyi taşıyor olmalı — iki katman birbirini tutuyor.
+    expect(OPEN_PERIOD_NOTICE_BODY).toContain("personel satırları boş kalır");
+  });
+
+  it("FDA:55 · başlık altında adım sayacı vardır", () => {
+    renderModal();
+    expect(screen.getByTestId("bordro-open-step")).toHaveTextContent("Adım 1 / 2");
+    expect(OPEN_PERIOD_STEP).toBe("Adım 1 / 2");
+  });
+
+  it("FDA:66-69 · ay seçeneği `8 — Ağustos` biçimindedir ve boş seçenek FDA:65'tir", () => {
+    renderModal();
+    const month = screen.getByTestId("bordro-open-month");
+    expect(month).toHaveTextContent("Ay seçiniz…");
+    expect(month).toHaveTextContent("1 — Ocak");
+    expect(month).toHaveTextContent("8 — Ağustos");
+    expect(month).toHaveTextContent("12 — Aralık");
+  });
+
+  it("FDA:75 · yıl ipucu sözleşme sınırlarından TÜRER", () => {
+    renderModal();
+    expect(screen.getByText(`${MIN_PAYROLL_YEAR} – ${MAX_PAYROLL_YEAR}`)).toBeInTheDocument();
+  });
+
+  it("FDA:96 · vazgeçme düğmesinin metni `İptal`dir", () => {
+    renderModal();
+    expect(screen.getByRole("button", { name: "İptal" })).toBeInTheDocument();
+    expect(OPEN_PERIOD_CANCEL_LABEL).toBe("İptal");
+  });
+
+  /**
+   * 🔴 FDA:82'nin ipucu cümlesi BAYATTIR (*"girilirse gösterge panelinde
+   * hatırlatma çıkar"*): gösterge paneli yalnız ONAYLANMIŞ dönemleri
+   * listeler, taslak dönemin vadesi orada ÇIKMAZ. İddia YAPIYA bağlanır
+   * (ipucu düğümünün METNİ), yalnız "şu kelime geçmesin" negatifine değil —
+   * yoksa metin değişince bekçi sessizce körelirdi.
+   */
+  it("🔴 son ödeme ipucu, mockup'ın BAYAT cümlesini TAŞIMAZ", () => {
+    renderModal();
+    const due = screen.getByTestId("bordro-open-due");
+    const hintId = due.getAttribute("aria-describedby");
+    expect(hintId).not.toBeNull();
+    const hint = document.getElementById(hintId!);
+    expect(hint).not.toBeNull();
+    expect(hint!.textContent).toBe(OPEN_PERIOD_DUE_HINT);
+    expect(hint!.textContent).not.toMatch(/gösterge panel/i);
   });
 });

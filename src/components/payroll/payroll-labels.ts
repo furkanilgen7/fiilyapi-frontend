@@ -207,8 +207,8 @@ export const PAY_ERROR_FALLBACK = "Ödeme damgası basılamadı.";
  * Canlıda `payroll_periods` tablosuna satır basan bir migration OLMADIĞI için
  * (bilinçli — dönemi kullanıcı açar) üç bordro ekranı da KALICI olarak boş
  * kalıyordu; kullanıcının bildirdiği *"bordro kısmı çalışmıyor"* kusuru buydu.
- * Yönetim kararı: modülün kullanılamaz kalması, mockup'ı olmayan bir formdan
- * daha kötüdür ⇒ form kanonik kabuktan TÜRETİLDİ (ONAYLI SAPMA).
+ * 🟢 F-BORDONEM · form artık TÜRETİLMİŞ DEĞİL, kanonu var:
+ * `projedesign/Form - Donem Ac.dc.html` ("FDA") — onaylı sapma KAPANDI.
  */
 export const EMPTY_TITLE = "Henüz bordro dönemi yok";
 export const EMPTY_BODY =
@@ -274,15 +274,30 @@ export const SKIP_UNAPPROVED_LABEL = "onaylanmadığı için ödenmeyen";
  */
 export const OPEN_PERIOD_LABEL = "Dönem Aç";
 export const COMPUTE_LABEL = "Hesapla";
+/**
+ * 🔴 F-BORDONEM · mockup `Form - Donem Ac.dc.html` ("FDA") FDA:134 — dönemde
+ * SATIR VARSA düğme *"Yeniden Hesapla"*ya döner. Mockup'ın Hâl B notu
+ * (FDA:137) gerekçeyi kendi yazıyor: *"puantaj değişirse tekrar
+ * çalıştırılabilir"* — yani ikinci basış bir HATA değil, tasarlanmış bir
+ * akıştır ve etiketin bunu söylemesi gerekir.
+ */
+export const RECOMPUTE_LABEL = "Yeniden Hesapla";
 
 /* dönem açma diyaloğu */
-export const OPEN_PERIOD_TITLE = "Bordro Dönemi Aç";
-export const OPEN_PERIOD_SUBTITLE =
-  "Ay yalnızca AÇILIR; satırlar bu adımda oluşmaz. Dönem açıldıktan sonra “Hesapla” ile puantaj, ücret ve oranlardan bordro satırları üretilir.";
-export const OPEN_PERIOD_PERIOD_LABEL = "Dönem";
+export const OPEN_PERIOD_TITLE = "Bordro Dönemi Aç"; // FDA:54
+/**
+ * FDA:55 — diyalog başlığının altındaki adım sayacı. İki adım GERÇEKTİR ve
+ * uçtan ölçüldü: `POST /payroll/periods` (ay açar, satır üretmez) ve
+ * `POST /payroll/periods/{id}/compute` (satırları üretir).
+ */
+export const OPEN_PERIOD_STEP = "Adım 1 / 2";
+export const OPEN_PERIOD_MONTH_LABEL = "Ay"; // FDA:63
+export const OPEN_PERIOD_YEAR_LABEL = "Yıl"; // FDA:73
+/** FDA:65 — boş seçenek. `…` (U+2026) `2000-206F` kapsamındadır (glif kanonu). */
+export const OPEN_PERIOD_MONTH_PLACEHOLDER = "Ay seçiniz…";
 export const OPEN_PERIOD_YEAR_ARIA = "Bordro yılı";
 export const OPEN_PERIOD_MONTH_ARIA = "Bordro ayı";
-export const OPEN_PERIOD_DUE_LABEL = "Son ödeme tarihi";
+export const OPEN_PERIOD_DUE_LABEL = "Son Ödeme Tarihi"; // FDA:80
 /**
  * 🔴 Alan OPSİYONELDİR ve bu ÖLÇÜLDÜ (`PayrollPeriodCreate.payment_due_date`
  * `date | None = None`): sunucu tarih ÜRETMEZ, varsayılan KOYMAZ ve dönemin
@@ -290,9 +305,18 @@ export const OPEN_PERIOD_DUE_LABEL = "Son ödeme tarihi";
  */
 export const OPEN_PERIOD_DUE_HINT =
   "İsteğe bağlı. Boş bırakılırsa sunucu tarih üretmez; sonradan düzenlenebilir.";
-export const OPEN_PERIOD_SUBMIT_LABEL = "Dönemi Aç";
-export const OPEN_PERIOD_CANCEL_LABEL = "Vazgeç";
+export const OPEN_PERIOD_SUBMIT_LABEL = "Dönemi Aç"; // FDA:97
+export const OPEN_PERIOD_CANCEL_LABEL = "İptal"; // FDA:96
 export const OPEN_PERIOD_ERROR_FALLBACK = "Bordro dönemi açılamadı.";
+
+/**
+ * 🔴 FDA:85-92 — mockup'ın SARI uyarı kutusu. Diyaloğun tek amacı bu cümleyi
+ * kurmaktır: uç ayı AÇAR, doldurmaz; *"kaydettim ama liste boş"* şaşkınlığı
+ * bu yüzden mockup'ta ayrı bir kutuyla önlenir (FDA:29-31).
+ */
+export const OPEN_PERIOD_NOTICE_TITLE = "Bu adımda satırlar oluşmaz"; // FDA:86
+export const OPEN_PERIOD_NOTICE_BODY =
+  `Dönem açılır ama personel satırları boş kalır. Puantaj verisinden hesaplamak için dönem açıldıktan sonra “${COMPUTE_LABEL}” düğmesine basmanız gerekir.`;
 
 /* hesaplama sonucu */
 export const COMPUTE_ERROR_FALLBACK = "Bordro hesaplanamadı.";

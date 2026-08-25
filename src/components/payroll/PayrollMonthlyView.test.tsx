@@ -790,3 +790,109 @@ describe("🔴 F-BORDRO T2 — Dönem Aç bağlantısı", () => {
     );
   });
 });
+
+/* ══ F-BORDONEM · başlık düğme yerleşimi (FDA:102-156) ══════════════════════ */
+
+describe("🔴 F-BORDONEM — başlıktaki düğme şeridi", () => {
+  /**
+   * 🔴 SIRA BİR TASARIM KARARIDIR VE YAPIYA ÇAKILIR.
+   *
+   * FDA:104 sırayı yazıyor: *"Dönem seçicinin sağında, Ödeme Yap'ın solunda —
+   * sıra: aç → hesapla → öde"*; `Excel`in kanonik yeri ise BY:55, yani ay
+   * gezgininin hemen sağı. Eski hâlde `Excel` üçlünün ORTASINA giriyordu.
+   *
+   * İddia METNE değil DOM SIRASINA bağlanır: etiketler değişse bile yerleşim
+   * bekçisi ayakta kalır (etiket-tabanlı negatif iddia kanonu).
+   */
+  it("şeridin sırası: gezgin → Excel → Dönem Aç → Hesapla → Ödemeyi Onayla", () => {
+    render(<PayrollMonthlyView />);
+    const strip = screen.getByTestId("bordro-stepper").parentElement!;
+    const order = Array.from(strip.children).map((node) =>
+      node.getAttribute("data-testid"),
+    );
+    expect(order).toEqual([
+      "bordro-stepper",
+      "bordro-export",
+      "bordro-open-period",
+      "bordro-compute",
+      "bordro-pay",
+    ]);
+  });
+
+  it("FDA:117 · satırı OLMAYAN dönemde etiket `Hesapla` ve düğme BİRİNCİLDİR", () => {
+    vi.mocked(usePayrollPeriod).mockReturnValue(
+      queryResult<PayrollPeriodDetailResponse>({
+        data: detail({ status: "draft", sections: [] }),
+      }),
+    );
+    render(<PayrollMonthlyView />);
+    const button = screen.getByTestId("bordro-compute");
+    expect(button).toHaveTextContent("Hesapla");
+    expect(button).not.toHaveTextContent("Yeniden Hesapla");
+    expect(button.className).toContain("btn--primary");
+  });
+
+  it("FDA:134 · satırı OLAN dönemde etiket `Yeniden Hesapla` ve düğme İKİNCİLDİR", () => {
+    vi.mocked(usePayrollPeriod).mockReturnValue(
+      queryResult<PayrollPeriodDetailResponse>({ data: detail({ status: "draft" }) }),
+    );
+    render(<PayrollMonthlyView />);
+    const button = screen.getByTestId("bordro-compute");
+    expect(button).toHaveTextContent("Yeniden Hesapla");
+    expect(button.className).toContain("btn--secondary");
+  });
+
+  /**
+   * 🔴 Etiket DURUMDAN değil SATIRIN VARLIĞINDAN türer. `pending_approval`
+   * ama satırsız bir dönem (uç `compute` çağrılmadan durumu ilerletebilir)
+   * ayrışma noktasıdır: durumdan türetilseydi burada "Yeniden Hesapla" yazar
+   * ve kullanıcıya hiç var olmamış satırları YENİDEN hesaplattığını söylerdi.
+   */
+  it("🔴 AYRIŞMA NOKTASI · `pending_approval` ama SATIRSIZ dönemde etiket `Hesapla` kalır", () => {
+    vi.mocked(usePayrollPeriod).mockReturnValue(
+      queryResult<PayrollPeriodDetailResponse>({
+        data: detail({ status: "pending_approval", sections: [] }),
+      }),
+    );
+    render(<PayrollMonthlyView />);
+    expect(screen.getByTestId("bordro-compute")).not.toHaveTextContent("Yeniden Hesapla");
+  });
+
+  it("FDA:152 · kilitli dönemde düğme pasif + KİLİT ikonu taşır (emoji DEĞİL)", () => {
+    vi.mocked(usePayrollPeriod).mockReturnValue(
+      queryResult<PayrollPeriodDetailResponse>({ data: detail({ status: "approved" }) }),
+    );
+    render(<PayrollMonthlyView />);
+    const button = screen.getByTestId("bordro-compute");
+    expect(button).toBeDisabled();
+    // Yapısal iddia: ikon bir SVG'dir. `🔒` basılsaydı `fonts.css`in hiçbir
+    // `unicode-range`i onu kapsamadığı için kare turdan tura oynardı.
+    expect(button.querySelector("svg")).not.toBeNull();
+    expect(button.textContent).not.toMatch(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
+  });
+
+  /**
+   * 🔴 Kilit ikonu PASİFLİKTEN türetilmez: `computeReason` "dönem seçilmemiş"
+   * yüzünden de dolar. Boş ekranda kilit basılsaydı sebep YANLIŞ olurdu.
+   */
+  it("🔴 dönem HİÇ YOKKEN düğme pasiftir ama kilit ikonu YOKTUR", () => {
+    vi.mocked(usePayrollPeriods).mockReturnValue(
+      queryResult<PayrollPeriodListResponse>({ data: periodList([]) }),
+    );
+    vi.mocked(usePayrollPeriod).mockReturnValue(
+      queryResult<PayrollPeriodDetailResponse>({ data: undefined }),
+    );
+    render(<PayrollMonthlyView />);
+    const button = screen.getByTestId("bordro-compute");
+    expect(button).toBeDisabled();
+    expect(button.querySelector("svg")).toBeNull();
+  });
+
+  it("açık dönemde kilit ikonu YOKTUR", () => {
+    vi.mocked(usePayrollPeriod).mockReturnValue(
+      queryResult<PayrollPeriodDetailResponse>({ data: detail({ status: "draft" }) }),
+    );
+    render(<PayrollMonthlyView />);
+    expect(screen.getByTestId("bordro-compute").querySelector("svg")).toBeNull();
+  });
+});

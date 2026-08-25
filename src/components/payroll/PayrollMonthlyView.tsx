@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Alert, Badge, Button } from "@/components/ui";
+import { LockIcon } from "@/components/ui/icons";
 import { backendErrorMessage } from "@/lib/api/error-message";
 import type {
   PayrollPeriodDetailResponse,
@@ -66,6 +67,7 @@ import {
   PERIOD_STATUS_VARIANTS,
   PERIODS_ERROR_FALLBACK,
   PREV_PERIOD_LABEL,
+  RECOMPUTE_LABEL,
   SKIP_ALREADY_APPROVED_LABEL,
   SKIP_COMPUTE_APPROVED_LABEL,
   SKIP_EXCLUDED_LABEL,
@@ -241,8 +243,9 @@ export function PayrollMonthlyView() {
   }
 
   /**
-   * 🔴 K3 — dönem HİÇ YOKSA açıklayıcı boş durum; "dönem aç" DÜĞMESİ ÇİZİLMEZ
-   * (`POST /payroll/periods` ucu var ama formunun mockup'ı yok).
+   * 🔴 K3 — dönem HİÇ YOKSA açıklayıcı boş durum. Metin kullanıcıyı başlıktaki
+   * `Dönem Aç` düğmesine yollar ve sonraki adımın `Hesapla` olduğunu söyler
+   * (FDA:29-31'in ekran hâli).
    */
   const hasNoPeriods = periodsQuery.data !== undefined && rows.length === 0;
 
@@ -297,10 +300,30 @@ export function PayrollMonthlyView() {
             </Button>
           </div>
 
-          {/* 🔴 ONAYLI SAPMA (T2) — mockup başlığı bu düğmeyi ÇİZMEZ ve
-              formunun mockup'ı da yoktur. Modülün BAŞLANGIÇ yüzeyidir:
-              onsuz hiçbir dönem açılamaz ve üç ekran da kalıcı boş kalır.
-              Gerekçe `payroll-labels.ts` OPEN_PERIOD_LABEL notunda. */}
+          {/* BY:55 — GERÇEK uç: `GET /payroll/periods/{id}/export` (XLSX).
+
+              🔴 F-BORDONEM · SIRA DEĞİŞTİ ve bu ÖLÇÜLDÜ. Mockup'ın düğme
+              yerleşimi referansı (`Form - Donem Ac.dc.html` FDA:104) sırayı
+              yazıyor: *"Dönem seçicinin sağında, Ödeme Yap'ın solunda — sıra:
+              aç → hesapla → öde"*. Üç hâlde de (FDA:109/126/143) `Dönem Aç`,
+              `Hesapla` ve ödeme düğmesi BİTİŞİKTİR. `Excel` o referans
+              panelinde hiç yoktur; kanonik yeri `Bordro Yönetimi.dc.html`
+              BY:55'tir — ay gezgininin HEMEN SAĞI. Eski hâlde `Excel`,
+              `Hesapla` ile `Ödemeyi Onayla` arasına giriyor ve mockup'ın
+              çizdiği üçlüyü İKİYE BÖLÜYORDU. */}
+          <Button
+            variant="secondary"
+            onClick={handleExport}
+            disabled={periodId === undefined || isExporting}
+            data-testid="bordro-export"
+          >
+            {EXPORT_LABEL}
+          </Button>
+
+          {/* FDA:116/133/151 — `+ Dönem Aç`, üç hâlde de var ve HER ZAMAN
+              etkin (kilitli dönemde bile: kullanıcı BAŞKA bir ay açabilir).
+              Modülün BAŞLANGIÇ yüzeyidir; onsuz hiçbir dönem açılamaz ve üç
+              ekran da kalıcı boş kalır. */}
           <Button
             variant="secondary"
             onClick={() => setIsOpenPeriodFormVisible(true)}
@@ -310,28 +333,33 @@ export function PayrollMonthlyView() {
             {OPEN_PERIOD_LABEL}
           </Button>
 
-          {/* 🔴 ONAYLI SAPMA (T3) — `POST .../compute`. Durum kümesi KODDAN
-              ölçüldü: `draft`/`pending_approval` etkin, `approved`/`paid`
-              409 ⇒ düğme SİLİNMEZ, devre dışı basılır ve gerekçe `title`da
-              OKUNUR (K11). */}
+          {/* 🔴 `POST .../compute`. Durum kümesi SÖZLEŞMEDEN ölçüldü
+              (`PayrollPeriodStatus` + ucun açıklaması: *"Dönem
+              `approved`/`paid` ise 409"*) ⇒ `draft`/`pending_approval`
+              ETKİN. Düğme SİLİNMEZ, devre dışı basılır ve gerekçe `title`da
+              OKUNUR (K11).
+
+              🔴 FDA'nın ÜÇ HÂLİ burada yaşar:
+                • Hâl A (FDA:117) satır YOK  ⇒ `Hesapla`, BİRİNCİL (mavi dolu):
+                  dönemde yapılacak tek iş budur.
+                • Hâl B (FDA:134) satır VAR  ⇒ `Yeniden Hesapla`, İKİNCİL:
+                  birincil vurgu artık ödeme/onay düğmesindedir.
+                • Hâl C (FDA:152) kilitli    ⇒ pasif + KİLİT ikonu.
+              Kilit ikonu `ui/icons`ın inline SVG'sidir: mockup'ın `🔒`/`⚡`
+              emojileri `fonts.css`in HİÇBİR `unicode-range`inde YOKTUR
+              (ölçüldü) ve basılsalardı tarayıcı sistem yedeğine düşer, kare
+              turdan tura oynardı (glif kapsamı kanonu). */}
           <Button
-            variant="secondary"
+            variant={computeVariant(detail, computeReason)}
             onClick={handleCompute}
             disabled={computeReason !== undefined || isComputePending}
             title={computeReason}
             data-testid="bordro-compute"
           >
-            {COMPUTE_LABEL}
-          </Button>
-
-          {/* BY:55 — GERÇEK uç: `GET /payroll/periods/{id}/export` (XLSX). */}
-          <Button
-            variant="secondary"
-            onClick={handleExport}
-            disabled={periodId === undefined || isExporting}
-            data-testid="bordro-export"
-          >
-            {EXPORT_LABEL}
+            {isPeriodLocked(detail) && (
+              <LockIcon className="bor__button-icon" aria-hidden="true" />
+            )}
+            {hasComputedLines(detail) ? RECOMPUTE_LABEL : COMPUTE_LABEL}
           </Button>
 
           {/* 🔴 BY:56 — `/pay` ucu (gerekçe `usePayrollMutations.ts`te). */}
@@ -430,6 +458,48 @@ export function PayrollMonthlyView() {
       )}
     </div>
   );
+}
+
+/**
+ * 🔴 FDA:152 — kilit ikonunun koşulu DÖNEMİN KİLİTLİ OLMASIDIR, düğmenin
+ * pasifliği DEĞİL.
+ *
+ * `computeReason` üç ayrı sebeple dolabilir: dönem seçilmemiş · yazma izni
+ * yok · dönem `approved`/`paid`. Yalnız SONUNCUSU bir kilittir. İkona
+ * pasiflikten türetilseydi, hiç dönemi olmayan boş ekranda da kilit basılır
+ * ve kullanıcıya *"bu dönem kilitli"* diye YANLIŞ bir sebep söylenirdi
+ * ("kaynak yok" ile "izin yok" ayrı sebeplerdir kanonu).
+ */
+function isPeriodLocked(detail: PayrollPeriodDetailResponse | undefined): boolean {
+  if (detail === undefined) return false;
+  return detail.status === "approved" || detail.status === "paid";
+}
+
+/**
+ * 🔴 FDA:134/137 — dönemde SATIR VARSA `Hesapla` → `Yeniden Hesapla`.
+ *
+ * Ölçüt SATIRIN VARLIĞIDIR, dönemin durumu DEĞİL: `draft` bir dönem de
+ * hesaplanmış olabilir (`compute` durumu her zaman ilerletmez) ve
+ * `pending_approval` bir dönem mockup'ın Hâl B'sidir. Durumdan türetilseydi
+ * etiket, satırları duran bir `draft` dönemde YALAN söylerdi.
+ */
+function hasComputedLines(detail: PayrollPeriodDetailResponse | undefined): boolean {
+  if (detail === undefined) return false;
+  return totalLineCount(detail.sections) > 0;
+}
+
+/**
+ * FDA:117 ↔ FDA:134 — `Hesapla` BİRİNCİL, `Yeniden Hesapla` İKİNCİLDİR.
+ *
+ * Kapalı düğme de ikincil basılır (FDA:152 pasif hâli mavi dolu DEĞİL): pasif
+ * bir birincil düğme, ekranın ana eylemi hâlâ oymuş gibi görünürdü.
+ */
+function computeVariant(
+  detail: PayrollPeriodDetailResponse | undefined,
+  computeReason: string | undefined,
+): "primary" | "secondary" {
+  if (computeReason !== undefined) return "secondary";
+  return hasComputedLines(detail) ? "secondary" : "primary";
 }
 
 /** BY:56 düğmesinin kapısı: `pay` yalnız `approved` dönemde çalışır (aksi 409). */

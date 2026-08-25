@@ -61,6 +61,76 @@ function loadQueryConstraints(): MockQueryRule[] {
 const QUERY_CONSTRAINTS: MockQueryRule[] = loadQueryConstraints();
 
 /**
+ * 🔴 F-BORDONEM · **GÖVDE** kısıtları da sözleşmeden okunur.
+ *
+ * `loadQueryConstraints` yalnız SORGU parametrelerini kapsıyordu; gövde
+ * alanları kapsam DIŞIYDI ve bu ölçülebilir bir delikti: `POST
+ * /payroll/periods` gövdesinde `year` 2000-2100'dür (`PayrollPeriodCreate`),
+ * sahte backend ise yalnız `month`u denetliyordu — yani **1999 kabul ediyor,
+ * canlı 422 veriyordu**. Sahte backend, gerçek backend'in REDDEDECEĞİNİ
+ * kabul ettiğinde bir ONAYLAYICIDIR, bekçi değil.
+ */
+function loadBodyBounds(schemaName: string): Map<string, MockQuerySchema> {
+  const file = nodePath.join(process.cwd(), "openapi", "openapi.json");
+  const spec = JSON.parse(readFileSync(file, "utf8")) as {
+    components: {
+      schemas: Record<string, { properties?: Record<string, MockQuerySchema> }>;
+    };
+  };
+  const bounds = new Map<string, MockQuerySchema>();
+  for (const [name, schema] of Object.entries(
+    spec.components.schemas[schemaName]?.properties ?? {},
+  )) {
+    if (schema.maximum === undefined && schema.minimum === undefined) continue;
+    bounds.set(name, { maximum: schema.maximum, minimum: schema.minimum });
+  }
+  return bounds;
+}
+
+const PAYROLL_PERIOD_CREATE_BOUNDS = loadBodyBounds("PayrollPeriodCreate");
+
+/**
+ * FastAPI'nin gövde 422'sini BİREBİR taklit eder (`loc` "body" ile başlar).
+ * `null` = ihlal yok.
+ */
+function bodyBoundViolation(
+  bounds: Map<string, MockQuerySchema>,
+  body: Record<string, unknown>,
+): unknown | null {
+  for (const [name, schema] of bounds) {
+    const value = Number(body[name]);
+    if (!Number.isFinite(value)) continue;
+    if (schema.maximum !== undefined && value > schema.maximum) {
+      return {
+        detail: [
+          {
+            type: "less_than_equal",
+            loc: ["body", name],
+            msg: `Input should be less than or equal to ${schema.maximum}`,
+            input: body[name],
+            ctx: { le: schema.maximum },
+          },
+        ],
+      };
+    }
+    if (schema.minimum !== undefined && value < schema.minimum) {
+      return {
+        detail: [
+          {
+            type: "greater_than_equal",
+            loc: ["body", name],
+            msg: `Input should be greater than or equal to ${schema.minimum}`,
+            input: body[name],
+            ctx: { ge: schema.minimum },
+          },
+        ],
+      };
+    }
+  }
+  return null;
+}
+
+/**
  * FastAPI'nin ürettiği 422 gövdesini BİREBİR taklit eder: kullanıcının canlıda
  * gördüğü metin (`Input should be less than or equal to 200`) buradan gelir.
  * Yaklaşık bir mesaj yazmak, hatayı ekranda arayan testi kandırırdı.
@@ -12275,14 +12345,16 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       return withBody((body) => {
         const newYear = Number(body.year);
         const newMonth = Number(body.month);
-        if (
-          !Number.isInteger(newYear) ||
-          !Number.isInteger(newMonth) ||
-          newMonth < 1 ||
-          newMonth > 12
-        ) {
+        if (!Number.isInteger(newYear) || !Number.isInteger(newMonth)) {
           return send(422, { detail: "Geçersiz dönem (yıl/ay)." });
         }
+        // 🔴 F-BORDONEM — SINIRLAR SÖZLEŞMEDEN OKUNUR, ELLE YAZILMAZ. Eskiden
+        // yalnız `month` 1-12 elle denetleniyordu; `year`in 2000-2100 sınırı
+        // sahte backend'de HİÇ YOKTU ve 1999 kabul ediliyordu — oysa canlı
+        // 422 döner. Formun korkuluğu kaldırılsa bile hiçbir test kırmızı
+        // olmazdı: bekçi değil, onaylayıcıydı.
+        const boundViolation = bodyBoundViolation(PAYROLL_PERIOD_CREATE_BOUNDS, body);
+        if (boundViolation !== null) return send(422, boundViolation);
         if (findPayrollPeriod(payrollPeriodId(newYear, newMonth)) !== undefined) {
           return send(409, { detail: "Bu dönem zaten açılmış." });
         }

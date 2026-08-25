@@ -37,6 +37,15 @@
   align-items: center;
 }
 
+/* FDA:152 — kilitli `Hesapla` düğmesinin kilit ikonu. Mockup'ın `🔒` emojisi
+   `fonts.css`in hiçbir `unicode-range`inde YOK (ölçüldü) ⇒ inline SVG. */
+.bor__button-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  margin-right: 5px;
+}
+
 /* ---------------------------------------------------------- ay gezgini (50-54) */
 
 .bor-stepper {
@@ -541,19 +550,34 @@
    genişliği (480px) korunur — `iz-modal--request`in 600px'i iki kolonlu
    mockup'a aitti, burada karşılığı yok. */
 
-.bor-form__subtitle {
+/* 🔴 FDA:50 — diyalog `max-width: 440px`. Kural `.modal.bor-modal` diye
+   yazılır (özgüllük 0,2,0) çünkü `.modal { max-width: 480px }` (0,1,0) aynı
+   bildirimi taşıyor: tek sınıfla yazılsaydı bildirim METİNDE var olur ama
+   KASKADI KAYBEDERDİ (F-FISNO dersi — `.mu-modal` aylarca eziliyordu). */
+.modal.bor-modal {
+  max-width: 440px;
+}
+
+/* FDA:55 — başlık altındaki `Adım 1 / 2` satırı. */
+.bor-form__step {
   font-size: var(--text-small);
   color: var(--color-text-subtle);
   margin-bottom: 16px;
-  line-height: 1.5;
 }
 
-/* Ay + yıl TEK satırda (`ProgressPaymentForm` `pp-form__period-row` emsali):
-   ay adı uzundur, yıl dört hanedir — oran bu yüzden 1fr/96px. */
-.bor-form__period-row {
+/* FDA:61 — ay + yıl iki EŞİT kolonda (`grid-template-columns:1fr 1fr`). */
+.bor-form__grid {
   display: grid;
-  grid-template-columns: 1fr 96px;
-  gap: var(--space-2);
+  grid-template-columns: 1fr 1fr;
+  gap: 14px; /* FDA:61 */
+  /* FDA:61 `margin-bottom:14px` — `Field` kendi alt boşluğunu TAŞIMAZ
+     (ortak primitive; boşluğu her zaman kapsayıcı verir). */
+  margin-bottom: 14px;
+}
+
+/* FDA:85 — sarı uyarı kutusu formun SONUNDA, tarih alanından sonra. */
+.bor-form__notice {
+  margin-top: 16px; /* FDA:79 `margin-bottom:16px`in karşılığı */
 }
 
 .bor-form__error {

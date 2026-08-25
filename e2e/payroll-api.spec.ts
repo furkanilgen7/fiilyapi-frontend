@@ -230,3 +230,64 @@ test("mock sorgu kisitlarini sozlesmeden okur ve ihlalde 422 doner", async ({ pa
   // değil, "gönderilmedi" demektir.
   expect((await page.request.get("/api/backend/payroll/periods")).status()).toBe(200);
 });
+
+/* ── 5) 🔴 F-BORDONEM · GÖVDE kısıtları da sözleşmeden ölçülür ────────────── */
+
+/**
+ * 🔴 **SÖZLEŞME KISITI TİPTE YAŞAMAZ** — `PayrollPeriodCreate.year` `number`
+ * diye üretilir, `2000-2100` tipte İFADE EDİLEMEZ. Bu yüzden korkuluk (a)
+ * formda, (b) sahte backend'de ve (c) `payroll-period-contract.test.ts`te
+ * sözleşmeye çakılı olarak yaşar.
+ *
+ * Bu test (b)'yi ölçer: sahte backend 1999'u kabul ediyorsa, formun
+ * korkuluğunu kaldıran bir mutasyon HİÇBİR testi kırmaz ve kusur canlıya
+ * gider — sahte backend o hâlde ONAYLAYICIDIR, bekçi değil. (`limit=240`
+ * kusurunun tıpatıp aynısı.)
+ */
+test("gecersiz YIL govdesi 422 doner ve mesaj FastAPI'ninkiyle AYNIDIR", async ({
+  page,
+}) => {
+  await loginForPayroll(page);
+
+  const tooEarly = await page.request.post("/api/backend/payroll/periods", {
+    data: { year: 1999, month: 1 },
+  });
+  expect(tooEarly.status(), "1999 ⇒ 422").toBe(422);
+  expect(JSON.stringify(await tooEarly.json())).toContain(
+    "Input should be greater than or equal to 2000",
+  );
+
+  const tooLate = await page.request.post("/api/backend/payroll/periods", {
+    data: { year: 2101, month: 1 },
+  });
+  expect(tooLate.status(), "2101 ⇒ 422").toBe(422);
+  expect(JSON.stringify(await tooLate.json())).toContain(
+    "Input should be less than or equal to 2100",
+  );
+
+  // 🔴 **NEGATİF KONTROL** — kapı *"her gövdeye 422 diyor"* olmamalı.
+  //
+  // ⚠️ Sınır DEĞERİNİN (2000/2100) kabul edildiği BURADA ölçülmez ve bu
+  // bilinçlidir: `payrollState` modül düzeyindedir, yani 201 dönen bir
+  // istek 2000 ve 2100 yıllarını **kalıcı** olarak listeye sokar ve
+  // `bordro-gecmis` karesinin yıl seçicisine iki seçenek daha ekleyerek
+  // BAŞKA bir dilimin baseline'ını kırardı (FAZLA FİKSTÜR kanonu). Sınır
+  // değeri `payroll-period-contract.test.ts`te — şemadan okunan `minimum`/
+  // `maximum` ile — çakılıdır (`ge`/`le`, `gt`/`lt` değil).
+  //
+  // Buradaki kanıt: geçerli bir yıl gövde kapısından GEÇER ve reddi başka
+  // bir sebeple (409, açılmış ay) alır.
+  const validYear = await page.request.post("/api/backend/payroll/periods", {
+    data: { year: 2026, month: 7 },
+  });
+  expect(validYear.status(), "geçerli yıl gövde kapısını geçer ⇒ 409").toBe(409);
+
+  // Ay sınırı da AYNI kapıdan geçer (elle yazılmış `1..12` değil, şemadan).
+  const badMonth = await page.request.post("/api/backend/payroll/periods", {
+    data: { year: 2026, month: 0 },
+  });
+  expect(badMonth.status(), "0. ay ⇒ 422").toBe(422);
+  expect(JSON.stringify(await badMonth.json())).toContain(
+    "Input should be greater than or equal to 1",
+  );
+});
