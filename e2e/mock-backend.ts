@@ -7370,6 +7370,92 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       });
     }
 
+    // F-ISVPOZ · PATCH /contracts/employer/items/{item_id} — E14 poz
+    // tablosunun SATIR-İÇİ düzenlemesi.
+    //
+    // 🔴 BU HANDLER BİR BEKÇİDİR, ONAYLAYICI DEĞİL. Kontrol sorusu: "gerçek
+    // backend'in REDDEDECEĞİ bir isteği reddediyor mu?" — canlı şema
+    // `quantity` için `exclusiveMinimum: 0`, `unit_price` için `minimum: 0`,
+    // `code`/`unit` için `maxLength: 50`, `description` için `maxLength: 2000`
+    // dayatır ve bunların HİÇBİRİ üretilen TS tipinde yaşamaz. Mock bunları
+    // geçirseydi, istemci korkuluğu sökülse bile e2e YEŞİL kalırdı.
+    const employerItemMatch = path.match(/^\/contracts\/employer\/items\/([^/]+)$/);
+    if (method === "PATCH" && employerItemMatch) {
+      const itemId = employerItemMatch[1];
+      const existing = state.contractItems.find((item) => item.id === itemId);
+      if (!existing) return send(404, { detail: "Poz bulunamadı." });
+      const projectId = existing.projectId ?? "p-1";
+      return withBody((body) => {
+        // Kısmi güncelleme: yalnız GÖNDERİLEN alanlar denetlenir.
+        const patch: Partial<MockContractItem> = {};
+
+        if (body.quantity !== undefined && body.quantity !== null) {
+          const raw = String(body.quantity);
+          const value = Number(raw);
+          // 🔴 SIFIR DAHİL DEĞİL (`exclusiveMinimum`).
+          if (!Number.isFinite(value) || !(value > 0)) {
+            return send(422, { detail: "Miktar sıfırdan büyük olmalıdır." });
+          }
+          patch.quantity = raw;
+        }
+        if (body.unit_price !== undefined && body.unit_price !== null) {
+          const raw = String(body.unit_price);
+          const value = Number(raw);
+          if (!Number.isFinite(value) || value < 0) {
+            return send(422, { detail: "Birim fiyat negatif olamaz." });
+          }
+          patch.unit_price = raw;
+        }
+        if (body.code !== undefined && body.code !== null) {
+          const code = String(body.code).trim();
+          if (!code) return send(422, { detail: "Poz numarası zorunludur." });
+          if (code.length > 50) return send(422, { detail: "Poz No en fazla 50 karakter." });
+          if (
+            state.contractItems.some(
+              (item) =>
+                item.id !== itemId && (item.projectId ?? "p-1") === projectId && item.code === code,
+            )
+          ) {
+            return send(409, { detail: "Bu poz numarası zaten kullanılıyor." });
+          }
+          patch.code = code;
+        }
+        if (body.description !== undefined && body.description !== null) {
+          const description = String(body.description).trim();
+          if (!description) return send(422, { detail: "İş kalemi tanımı zorunludur." });
+          if (description.length > 2000)
+            return send(422, { detail: "Tanım en fazla 2000 karakter." });
+          patch.description = description;
+        }
+        if (body.unit !== undefined && body.unit !== null) {
+          const unit = String(body.unit).trim();
+          if (!unit) return send(422, { detail: "Birim zorunludur." });
+          if (unit.length > 50) return send(422, { detail: "Birim en fazla 50 karakter." });
+          patch.unit = unit;
+        }
+        if (body.group_id !== undefined && body.group_id !== null) {
+          // Gövde içi varlık referansı = 404 (ST kanonu).
+          const group = buildEmployerContractItemsResponse(state, projectId).groups.find(
+            (g) => g.id === String(body.group_id),
+          );
+          if (!group) return send(404, { detail: "Poz grubu bulunamadı." });
+          patch.groupName = group.name;
+          patch.groupSortOrder = group.sort_order;
+        }
+
+        // Mutasyon YOK: satır YENİ nesneyle değiştirilir.
+        state.contractItems = state.contractItems.map((item) =>
+          item.id === itemId ? { ...item, ...patch } : item,
+        );
+
+        const refreshed = buildEmployerContractItemsResponse(state, projectId)
+          .groups.flatMap((g) => g.items)
+          .find((item) => item.id === itemId);
+        if (!refreshed) return send(500, { detail: "kalem okunamadi" });
+        return send(200, refreshed);
+      });
+    }
+
     // GET /contracts — SZL sekmeli listesi (F-P5 T1). `type` ZORUNLUDUR;
     // sayfalama YOKTUR (yanıt yalnız summary+items taşır).
     if (method === "GET" && path === "/contracts") {

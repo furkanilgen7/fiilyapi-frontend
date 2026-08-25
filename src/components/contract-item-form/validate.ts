@@ -62,6 +62,40 @@ function tooLong(value: string, max: number): boolean {
   return value.trim().length > max;
 }
 
+/**
+ * 🔴 ALAN DÜZEYİNDE KISITLAR — TEK KAYNAK.
+ *
+ * `quantity` (`exclusiveMinimum: 0`) ve İŞV `unit_price` (`minimum: 0` +
+ * zorunlu) kuralları openapi TİPİNDE İFADE EDİLEMEZ: üretilen TS `quantity?:
+ * number | string | null` der, "sıfırdan büyük" demez. `typecheck` yeşilken
+ * canlı 422 verir. Bu yüzden kural İSTEMCİ KORKULUĞU olarak yaşar ve
+ * korkuluk **tek bir yerde** durur: hem tam form (`validateEmployerItem`)
+ * hem de tablo içi hücre düzenlemesi (`EmployerContractItemsTable`) BU
+ * fonksiyonları çağırır. İkinci bir kopya yazılırsa biri bayatlar.
+ *
+ * ⚠️ `min={0}` YETMEZ — sıfır DAHİL DEĞİLDİR (yaygın hata). Sınav:
+ * `quantity = "0"` REDDEDİLİR.
+ */
+export function validateQuantityField(raw: string): ContractItemFormProblem | null {
+  if (!raw.trim()) return { field: "quantity", message: "Miktar zorunludur." };
+  if (!isDecimalString(raw)) return { field: "quantity", message: "Miktar sayı olmalıdır." };
+  if (!(decimalValue(raw) > 0))
+    return { field: "quantity", message: "Miktar sıfırdan büyük olmalıdır." };
+  return null;
+}
+
+/** İŞV `unit_price`: ZORUNLU (mockup 94 "Fiyatsız poz girilemez") + `minimum: 0`. */
+export function validateEmployerUnitPriceField(
+  raw: string,
+): ContractItemFormProblem | null {
+  const price = raw.trim();
+  if (!price) return { field: "unitPrice", message: "Birim Fiyat zorunludur." };
+  if (!isDecimalString(price)) return { field: "unitPrice", message: "Birim Fiyat sayı olmalıdır." };
+  if (!(decimalValue(price) >= 0))
+    return { field: "unitPrice", message: "Birim Fiyat negatif olamaz." };
+  return null;
+}
+
 /** Ortak alanların doğrulaması — iki formda da AYNI sırayla koşar. */
 function validateCommon(values: ContractItemFormValues): ContractItemFormProblem | null {
   if (!values.code.trim()) return { field: "code", message: "Poz No zorunludur." };
@@ -80,13 +114,7 @@ function validateCommon(values: ContractItemFormValues): ContractItemFormProblem
   if (tooLong(values.unit, MAX_LENGTH.unit))
     return { field: "unit", message: `Birim en fazla ${MAX_LENGTH.unit} karakter olabilir.` };
 
-  if (!values.quantity.trim()) return { field: "quantity", message: "Miktar zorunludur." };
-  if (!isDecimalString(values.quantity))
-    return { field: "quantity", message: "Miktar sayı olmalıdır." };
-  if (!(decimalValue(values.quantity) > 0))
-    return { field: "quantity", message: "Miktar sıfırdan büyük olmalıdır." };
-
-  return null;
+  return validateQuantityField(values.quantity);
 }
 
 /** `Sıra` boş bırakılabilir; doluysa negatif olmayan tam sayıdır. */
@@ -147,11 +175,8 @@ export function validateEmployerItem(
   const common = validateCommon(values);
   if (common) return common;
 
-  const price = values.unitPrice.trim();
-  if (!price) return { field: "unitPrice", message: "Birim Fiyat zorunludur." };
-  if (!isDecimalString(price)) return { field: "unitPrice", message: "Birim Fiyat sayı olmalıdır." };
-  if (!(decimalValue(price) >= 0))
-    return { field: "unitPrice", message: "Birim Fiyat negatif olamaz." };
+  const price = validateEmployerUnitPriceField(values.unitPrice);
+  if (price) return price;
 
   return validateSortOrder(values.sortOrder);
 }
