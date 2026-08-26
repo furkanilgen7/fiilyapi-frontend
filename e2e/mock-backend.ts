@@ -1328,7 +1328,7 @@ const EMPTY_CONTRACT_PROJECT_ID = "p-4";
 // bu yüzden sayı mockup'ın "4 kaydına EK olarak" pp-2..pp-5 + pp-7 = 5
 // kayıt üzerinden "5 hakediş" basar (bkz. `buildProgressPaymentFixtures`
 // İZOLASYON notu — pp-7'nin eklenme gerekçesi).
-function buildProgressPaymentSummary(state: MockState, projectId: string) {
+function buildProgressPaymentSummary(state: MockState, projectId: string): components["schemas"]["ProgressPaymentSummary"] {
   const projectPayments = state.progressPayments.filter(
     (p) => p.project_id === projectId && !p.hiddenFromLists,
   );
@@ -1689,7 +1689,7 @@ function buildProgressPaymentFixtures(): MockProgressPayment[] {
 
 // `GET .../contract/distribution` yanıtı — `state.contractItems`ten türetilir
 // (F-P5 T1: PUT ucu bu diziyi BİRLEŞTİRME semantiğiyle değiştirir).
-function buildContractDistributionResponse(state: MockState, projectId: string) {
+function buildContractDistributionResponse(state: MockState, projectId: string): components["schemas"]["ContractDistributionResponse"] {
   // F-POZGRUP · kalemler artık proje taşır; boş sözleşme fikstürüne (`p-4`)
   // eklenenler `p-1`in dağılım ızgarasına SIZMAZ.
   const contractItems = state.contractItems.filter(
@@ -1986,7 +1986,7 @@ function buildEmployerContractItemsResponse(
   };
 }
 
-function buildPaymentDetail(state: MockState, payment: MockProgressPayment) {
+function buildPaymentDetail(state: MockState, payment: MockProgressPayment): components["schemas"]["ProgressPaymentDetail"] {
   const project = state.projects.find((p) => p.id === payment.project_id);
   return {
     id: payment.id,
@@ -2016,7 +2016,7 @@ function buildPaymentDetail(state: MockState, payment: MockProgressPayment) {
   };
 }
 
-function buildPaymentListItem(state: MockState, payment: MockProgressPayment) {
+function buildPaymentListItem(state: MockState, payment: MockProgressPayment): components["schemas"]["ProgressPaymentListItem"] {
   const project = state.projects.find((p) => p.id === payment.project_id);
   return {
     id: payment.id,
@@ -2325,7 +2325,7 @@ function buildSubcontractorProgressPaymentFixtures(): MockSubcontractorProgressP
   return [scpp1, scpp2, scpp3, scpp4, scpp5, scpp6, scpp7, scpp8];
 }
 
-function buildSubcontractorPaymentDetail(state: MockState, payment: MockSubcontractorProgressPayment) {
+function buildSubcontractorPaymentDetail(state: MockState, payment: MockSubcontractorProgressPayment): components["schemas"]["SubcontractorProgressPaymentDetail"] {
   const contract = findSubcontractorContract(state, payment.contract_id);
   const project = state.projects.find((p) => p.id === payment.project_id);
   return {
@@ -2369,7 +2369,7 @@ function buildSubcontractorPaymentDetail(state: MockState, payment: MockSubcontr
   };
 }
 
-function buildSubcontractorPaymentListItem(state: MockState, payment: MockSubcontractorProgressPayment) {
+function buildSubcontractorPaymentListItem(state: MockState, payment: MockSubcontractorProgressPayment): components["schemas"]["SubcontractorProgressPaymentListItem"] {
   const contract = findSubcontractorContract(state, payment.contract_id);
   const project = state.projects.find((p) => p.id === payment.project_id);
   return {
@@ -2404,7 +2404,7 @@ function buildSubcontractorPaymentListItem(state: MockState, payment: MockSubcon
 // + `useSiteSubcontractorPayments`in workCategory join'i. Bilinçli olarak
 // DAR: bedel/hakediş türevleri TAŞIMAZ (bkz. `SubcontractorContractListItem`
 // docstring'i, openapi.json).
-function buildSubcontractorContractListItem(state: MockState, contract: MockSubcontractorContract) {
+function buildSubcontractorContractListItem(state: MockState, contract: MockSubcontractorContract): components["schemas"]["SubcontractorContractListItem"] {
   const project = state.projects.find((p) => p.id === contract.project_id);
   const site = contract.site_id ? state.sites.find((s) => s.id === contract.site_id) : undefined;
   return {
@@ -2421,7 +2421,7 @@ function buildSubcontractorContractListItem(state: MockState, contract: MockSubc
   };
 }
 
-function buildSubcontractorContractDetailResponse(contract: MockSubcontractorContract) {
+function buildSubcontractorContractDetailResponse(contract: MockSubcontractorContract): components["schemas"]["SubcontractorContractDetail"] {
   const items = contract.items.map((item, index) => ({
     id: item.id,
     contract_id: contract.id,
@@ -2469,7 +2469,7 @@ function buildSubcontractorContractDetailResponse(contract: MockSubcontractorCon
   };
 }
 
-function buildSubcontractorPaymentSummary(state: MockState, query: URLSearchParams) {
+function buildSubcontractorPaymentSummary(state: MockState, query: URLSearchParams): components["schemas"]["SubcontractorProgressPaymentSummary"] {
   const projectId = query.get("project_id");
   const periodYearParam = query.get("period_year");
   const periodMonthParam = query.get("period_month");
@@ -2876,7 +2876,7 @@ function userNameById(state: MockState, userId: unknown): string | null {
  * listesi HEM `GET /sites/{id}/sections` liste ucu aynı şekli döndürür, bu
  * yüzden tek yerde kurulur.
  */
-function buildSectionListItems(state: MockState, siteId: string) {
+function buildSectionListItems(state: MockState, siteId: string): components["schemas"]["SectionResponse"][] {
   return state.sections
     .filter((sec) => sec.site_id === siteId)
     .sort((a, b) => a.sort_order - b.sort_order)
@@ -3101,7 +3101,7 @@ function diaryCumulativeQuantity(state: MockState, entry: MockDiaryEntry, boqIte
     .reduce((sum, l) => sum + Number(l.quantity), 0);
 }
 
-function buildDiaryLineRead(state: MockState, entry: MockDiaryEntry, line: MockDiaryLine) {
+function buildDiaryLineRead(state: MockState, entry: MockDiaryEntry, line: MockDiaryLine): components["schemas"]["SiteDiaryLineRead"] {
   return {
     id: line.id,
     boq_item_id: line.boq_item_id,
@@ -3229,7 +3229,7 @@ function buildDiarySummary(
   siteId: string,
   year: number | null,
   month: number | null,
-) {
+): components["schemas"]["SiteDiarySummary"] {
   const entries = state.diaryEntries.filter(
     (e) => e.site_id === siteId && e.status === "submitted" && diaryEntryInPeriod(e, year, month),
   );
@@ -3277,7 +3277,7 @@ function addDaysIso(startIso: string, offset: number): string {
  * Planı OLMAYAN gün de bir kutudur (`has_plan: false`); hafta sonu ayrı
  * biçim alır, bu yüzden `is_weekend` türevi de döner.
  */
-function buildPlanDaySummaryRange(state: MockState, siteId: string, start: string, days: number) {
+function buildPlanDaySummaryRange(state: MockState, siteId: string, start: string, days: number): components["schemas"]["SitePlanDaySummaryRange"] {
   const site = state.sites.find((s) => s.id === siteId);
   const project = state.projects.find((p) => p.id === site?.project_id);
   const planTexts = [
@@ -3928,7 +3928,7 @@ function buildTimesheetMatrix(
   year: number,
   month: number,
   sectionId: string | null,
-) {
+): components["schemas"]["TimesheetMatrix"] {
   const project = state.projects.find((p) => p.id === site.project_id);
   const section = sectionId ? state.sections.find((s) => s.id === sectionId) : undefined;
 
@@ -4228,7 +4228,10 @@ const STOCK_ENTRY_FIXTURES: MockStockEntry[] = [
 const STOCK_CRITICAL_RATIO = 0.5;
 const STOCK_EXCESS_RATIO = 5;
 
-function stockStatusOf(balance: number, minStock: string | null): string | null {
+function stockStatusOf(
+  balance: number,
+  minStock: string | null,
+): components["schemas"]["StockSummaryRow"]["status"] {
   if (minStock === null) return null;
   const min = Number(minStock);
   if (balance < min * STOCK_CRITICAL_RATIO) return "critical";
@@ -4270,7 +4273,7 @@ function stockLastUnitPrice(state: MockState, itemId: string): string | null {
   return last;
 }
 
-function buildStockSummaryRow(state: MockState, item: MockStockItem) {
+function buildStockSummaryRow(state: MockState, item: MockStockItem): components["schemas"]["StockSummaryRow"] {
   const balances = stockBalancesByWarehouse(state, item.id);
   const total = [...balances.values()].reduce((sum, value) => sum + value, 0);
   const warehouses = [...balances.entries()]
@@ -4313,7 +4316,7 @@ const SITE_STOCK_PENDING_SECTION = {
   pending_module: "site_planning",
 };
 
-function buildStockKpis(rows: ReturnType<typeof buildStockSummaryRow>[]) {
+function buildStockKpis(rows: ReturnType<typeof buildStockSummaryRow>[]): Omit<components["schemas"]["StockSummaryKpis"], "pending_orders"> {
   let totalValue = 0;
   let withoutPrice = 0;
   for (const row of rows) {
@@ -5110,7 +5113,7 @@ function installmentLateFee(sale: MockUnitSale, installment: MockSaleInstallment
   return (remaining * monthlyPct * daysOverdue) / (100 * 30);
 }
 
-function buildSaleInstallmentRead(sale: MockUnitSale, installment: MockSaleInstallment) {
+function buildSaleInstallmentRead(sale: MockUnitSale, installment: MockSaleInstallment): components["schemas"]["SaleInstallmentResponse"] {
   const remaining = Number(installment.amount) - Number(installment.paid_amount);
   return {
     id: installment.id,
@@ -5128,7 +5131,7 @@ function buildSaleInstallmentRead(sale: MockUnitSale, installment: MockSaleInsta
 }
 
 /** `SalePlanResponse` — toplamlar SUNUCUDAN; istemci `items`ten toplamaz. */
-function buildSalePlanResponse(state: MockState, sale: MockUnitSale) {
+function buildSalePlanResponse(state: MockState, sale: MockUnitSale): components["schemas"]["SalePlanResponse"] {
   const items = saleInstallmentsOf(state, sale.id);
   const total = items.reduce((sum, i) => sum + Number(i.amount), 0);
   const paid = items.reduce((sum, i) => sum + Number(i.paid_amount), 0);
@@ -5144,7 +5147,7 @@ function buildSalePlanResponse(state: MockState, sale: MockUnitSale) {
   };
 }
 
-function buildUnitSaleResponse(state: MockState, sale: MockUnitSale) {
+function buildUnitSaleResponse(state: MockState, sale: MockUnitSale): components["schemas"]["UnitSaleResponse"] {
   const unit = state.units.find((u) => u.id === sale.unit_id);
   const block = state.unitBlocks.find((b) => b.id === unit?.block_id);
   const customer = state.customers.find((c) => c.id === sale.customer_id);
@@ -5203,7 +5206,7 @@ function buildUnitSaleResponse(state: MockState, sale: MockUnitSale) {
 }
 
 /** Satışları listeler — `cancelled` kayıtlar da döner (durum süzgeci İSTEMCİDE). */
-function buildUnitSaleListResponse(state: MockState, projectId: string) {
+function buildUnitSaleListResponse(state: MockState, projectId: string): components["schemas"]["UnitSaleListResponse"] {
   const sales = state.unitSales.filter((s) => s.project_id === projectId);
   const items = sales.map((s) => buildUnitSaleResponse(state, s));
   const active = items.filter((i) => i.status !== "cancelled");
@@ -5221,7 +5224,7 @@ function buildUnitSaleListResponse(state: MockState, projectId: string) {
 }
 
 /** `SalesSummaryResponse` — SY'nin beş KPI kutusunun TEK kaynağı. */
-function buildSalesSummaryResponse(state: MockState, projectId: string) {
+function buildSalesSummaryResponse(state: MockState, projectId: string): components["schemas"]["SalesSummaryResponse"] {
   const sales = state.unitSales.filter(
     (s) => s.project_id === projectId && s.status !== "cancelled",
   );
@@ -5331,13 +5334,13 @@ function buildSalesSummaryResponse(state: MockState, projectId: string) {
   };
 }
 
-function unitKindBreakdown(units: MockUnit[]) {
+function unitKindBreakdown(units: MockUnit[]): components["schemas"]["UnitKindBreakdown"] {
   const counts = { apartment: 0, shop: 0, office: 0, warehouse: 0, parking: 0 };
   for (const unit of units) counts[unit.unit_kind] += 1;
   return { ...counts, total: units.length };
 }
 
-function buildUnitResponse(state: MockState, unit: MockUnit) {
+function buildUnitResponse(state: MockState, unit: MockUnit): components["schemas"]["UnitResponse"] {
   const block = state.unitBlocks.find((b) => b.id === unit.block_id);
   const sale = state.unitSales.find(
     (s) => s.unit_id === unit.id && s.status !== "cancelled",
@@ -5392,7 +5395,7 @@ function buildUnitResponse(state: MockState, unit: MockUnit) {
  * (`backend/app/modules/units/schemas.py`): uc girdi de bossa **null** doner —
  * `0` "hesaplandi ve sifir" der ve bu YANLIS bilgidir.
  */
-function buildBlockResponse(block: MockUnitBlock, blockUnits: MockUnit[]) {
+function buildBlockResponse(block: MockUnitBlock, blockUnits: MockUnit[]): components["schemas"]["BlockResponse"] {
   const floors = block.floor_count ?? null;
   const perFloor = block.units_per_floor ?? null;
   const shops = block.shop_count ?? null;
@@ -5426,7 +5429,7 @@ function buildBlockResponse(block: MockUnitBlock, blockUnits: MockUnit[]) {
 }
 
 /** `BlockListResponse` — ünite formunun Blok seçicisinin kaynağı (BE/UE 65). */
-function buildBlockListResponse(state: MockState, projectId: string) {
+function buildBlockListResponse(state: MockState, projectId: string): components["schemas"]["BlockListResponse"] {
   const blocks = state.unitBlocks
     .filter((b) => b.project_id === projectId)
     .sort((a, b) => a.sort_order - b.sort_order);
@@ -5441,7 +5444,7 @@ function buildBlockListResponse(state: MockState, projectId: string) {
 }
 
 /** `UnitListResponse` — DS'nin ünite seçicisinin kaynağı (bloklara gruplu). */
-function buildUnitListResponse(state: MockState, projectId: string) {
+function buildUnitListResponse(state: MockState, projectId: string): components["schemas"]["UnitListResponse"] {
   const units = state.units
     .filter((u) => u.project_id === projectId)
     .sort((a, b) => a.sort_order - b.sort_order);
@@ -5696,7 +5699,7 @@ function landShareUnitValue(unit: MockUnit): number {
 }
 
 /** `LandShareUnitRow` — PG tablosunun satırı. */
-function buildLandShareUnitRow(state: MockState, unit: MockUnit) {
+function buildLandShareUnitRow(state: MockState, unit: MockUnit): components["schemas"]["LandShareUnitRow"] {
   const block = state.unitBlocks.find((b) => b.id === unit.block_id);
   const sale = state.unitSales.find((s) => s.unit_id === unit.id && s.status !== "cancelled");
   const customer = sale ? state.customers.find((c) => c.id === sale.customer_id) : undefined;
@@ -5720,7 +5723,7 @@ function buildLandShareUnitRow(state: MockState, unit: MockUnit) {
 }
 
 /** `LandShareSummaryResponse` — sözleşme + partisyonlar + hissedarlar + denge. */
-function buildLandShareSummary(state: MockState, projectId: string) {
+function buildLandShareSummary(state: MockState, projectId: string): components["schemas"]["LandShareSummaryResponse"] {
   const contract = LAND_SHARE_CONTRACT_FIXTURES[projectId];
   const project = state.projects.find((p) => p.id === projectId);
   const units = landShareProjectUnits(state, projectId);
@@ -5824,7 +5827,7 @@ const IMPORT_TOTAL_ROWS = 24; // EI 95
 const IMPORT_ERROR_ROW = 7; // EI 154 — İKİ mesajlı satır
 const IMPORT_WARNING_ROW = 11; // EI 166
 
-function buildImportRowReports(imported: (row: number) => boolean) {
+function buildImportRowReports(imported: (row: number) => boolean): components["schemas"]["UnitImportRowReport"][] {
   // Excel satır numaraları 2'den başlar (1. satır başlıktır).
   return Array.from({ length: IMPORT_TOTAL_ROWS }, (_, index) => {
     const row = index + 2;
@@ -5970,7 +5973,7 @@ export const EMPTY_SALES_SUMMARY_RESPONSE = {
 };
 
 /** Künye — `content` DIŞARI VERİLMEZ (şemada yok). */
-function buildDocumentRead(doc: MockDocument) {
+function buildDocumentRead(doc: MockDocument): components["schemas"]["DocumentRead"] {
   const { content: _content, ...rest } = doc;
   return rest;
 }
@@ -15907,7 +15910,7 @@ function payrollPctString(part: number, whole: number): string | null {
  *     DAHİL — taşeron işçisi ödenmez ama şirkete maliyettir).
  * İkisini birbirinden türetmek, mockup'ın yaptığı hatanın aynısı olurdu.
  */
-function buildPayrollSummary(state: MockPayrollState, period: MockPayrollPeriod) {
+function buildPayrollSummary(state: MockPayrollState, period: MockPayrollPeriod): components["schemas"]["PayrollSummaryResponse"] {
   let netTotal = 0;
   let netCount = 0;
   let bankTotal = 0;
@@ -15993,7 +15996,7 @@ function buildPayrollPeriodDetail(state: MockPayrollState, period: MockPayrollPe
  * "çalışan" ise ÖDENEBİLİR satırlardır. İkisi kasten farklıdır (şema
  * açıklaması) — tek alana indirgenseydi biri yalan söylerdi.
  */
-function buildPayrollPeriodListRow(state: MockPayrollState, period: MockPayrollPeriod) {
+function buildPayrollPeriodListRow(state: MockPayrollState, period: MockPayrollPeriod): components["schemas"]["PayrollPeriodListRow"] {
   const summary = buildPayrollSummary(state, period);
   return {
     id: period.id,
@@ -16868,7 +16871,7 @@ const APPROVAL_SEEDS: readonly MockApprovalSeed[] = [
  * dört zincirinin sıradaki adımı bu iki rolden birine düşer ve uç ancak
  * "BANA düşen" zincirleri döndürebilir.
  */
-const MY_APPROVAL_ROLES: readonly MockApprovalItem["steps"][number]["approval_role"][] = [
+const MY_APPROVAL_ROLES: MockApprovalItem["steps"][number]["approval_role"][] = [
   "patron",
   "project_manager",
 ];
@@ -16882,7 +16885,7 @@ const MY_APPROVAL_ROLES: readonly MockApprovalItem["steps"][number]["approval_ro
 const APPROVAL_WRITE_TARGET_ID = "scpp-8";
 
 /** `/approvals` kutusunun suzgeci — TEK KAYNAK (kutu ve panel ayni kurali okur). */
-function pendingApprovalSeeds(state: MockState) {
+function pendingApprovalSeeds(state: MockState): MockApprovalSeed[] {
   return APPROVAL_SEEDS.filter((seed) => {
     switch (seed.document_type) {
       case "subcontractor_progress_payment":
@@ -16931,7 +16934,7 @@ function dashboardPendingApprovalsCount(state: MockState): number {
   ).length;
 }
 
-function approvalInboxFixture(state: MockState, limit: number, offset: number) {
+function approvalInboxFixture(state: MockState, limit: number, offset: number): components["schemas"]["ApprovalInboxResponse"] {
   const pending = pendingApprovalSeeds(state);
 
   const items: MockApprovalItem[] = pending
