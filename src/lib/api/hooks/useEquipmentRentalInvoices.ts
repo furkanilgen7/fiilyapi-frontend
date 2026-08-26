@@ -39,6 +39,19 @@ export const EQUIPMENT_RENTAL_INVOICES_MAX_LIMIT = 200;
 export interface EquipmentRentalInvoicesFilter {
   supplierId?: string;
   siteId?: string;
+  /**
+   * F-MKD · `equipment_id` — uçta ZATEN VARDI ama bu filtre onu TAŞIMIYORDU;
+   * eksikliği sessizdi çünkü fazladan alan göndermeyen bir istemci hiçbir
+   * hata almaz, yalnız FİLONUN TAMAMINI görürdü.
+   *
+   * 🔴 Bu süzgeç NEYİN kümesidir (sorgu gövdesinden —
+   * `rental_repository._filtered`): `equipment_id` BAŞLIKTA DEĞİL SATIRDADIR,
+   * bu yüzden süzgeç bir `EXISTS`tir, JOIN değil. Yani küme = "bu ekipmanın
+   * EN AZ BİR satırını taşıyan hakedişler" — satırın türü (`rented`/`owned`/
+   * `breakdown`) ve hakedişin durumu FARK ETMEZ, ve fatura listede yalnız
+   * BİR KEZ görünür (JOIN olsaydı iki satırlı fatura iki kez sayılırdı).
+   */
+  equipmentId?: string;
   status?: RentalInvoiceStatus;
   periodYear?: number;
   periodMonth?: number;
@@ -55,6 +68,7 @@ export function useEquipmentRentalInvoices(
       EQUIPMENT_RENTAL_INVOICES_QUERY_KEY,
       filter.supplierId ?? null,
       filter.siteId ?? null,
+      filter.equipmentId ?? null,
       filter.status ?? null,
       filter.periodYear ?? null,
       filter.periodMonth ?? null,
@@ -68,6 +82,7 @@ export function useEquipmentRentalInvoices(
             query: {
               ...(filter.supplierId ? { supplier_id: filter.supplierId } : {}),
               ...(filter.siteId ? { site_id: filter.siteId } : {}),
+              ...(filter.equipmentId ? { equipment_id: filter.equipmentId } : {}),
               ...(filter.status ? { status: filter.status } : {}),
               ...(filter.periodYear !== undefined ? { period_year: filter.periodYear } : {}),
               ...(filter.periodMonth !== undefined ? { period_month: filter.periodMonth } : {}),
