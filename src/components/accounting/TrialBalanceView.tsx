@@ -18,6 +18,7 @@ import {
   currentPeriod,
   type Period,
 } from "./accounting-labels";
+import { AccountingTabs } from "./shell/AccountingTabs";
 import { PeriodPicker } from "./PeriodPicker";
 import { trialBalanceRangeLabel } from "./trial-balance";
 import { TrialBalanceBanner } from "./TrialBalanceBanner";
@@ -91,6 +92,10 @@ export function TrialBalanceView() {
           </Button>
         </div>
       </div>
+
+      {/* F-MUP T1 — MP:105-112 modül sekmeleri; drill-in sidebar'ın YERİNE.
+          Şerit sayfa BAŞLIĞININ ALTINDADIR (MP:103 → MP:105). */}
+      <AccountingTabs />
 
       <p className="mu-notice" data-testid="mz-export-reason">
         “Excel” / “PDF”: {pendingModuleLabel(ACCOUNTING_REASONS.trialBalanceExport)}.

@@ -24,6 +24,7 @@ import {
   ACCOUNTING_REASONS,
   ACCOUNTING_URL,
 } from "./accounting-labels";
+import { AccountingTabs } from "./shell/AccountingTabs";
 import { ChartAccountFormModal } from "./ChartAccountFormModal";
 import { buildChartRows } from "./chart-of-accounts-rows";
 import { ChartOfAccountsTable } from "./ChartOfAccountsTable";
@@ -145,6 +146,10 @@ export function ChartOfAccountsView() {
           </Button>
         </div>
       </div>
+
+      {/* F-MUP T1 — MP:105-112 modül sekmeleri; drill-in sidebar'ın YERİNE.
+          Şerit sayfa BAŞLIĞININ ALTINDADIR (MP:103 → MP:105). */}
+      <AccountingTabs />
 
       <p className="mu-notice" data-testid="hp-export-reason">
         “Excel”: {pendingModuleLabel(ACCOUNTING_REASONS.chartExport)}.

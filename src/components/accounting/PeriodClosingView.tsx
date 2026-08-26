@@ -23,6 +23,7 @@ import {
   ACCOUNTING_URL,
   currentPeriod,
 } from "./accounting-labels";
+import { AccountingTabs } from "./shell/AccountingTabs";
 import { PeriodCloseConfirmModal } from "./PeriodCloseConfirmModal";
 import {
   buildPeriodRows,
@@ -139,6 +140,10 @@ export function PeriodClosingView() {
           </Select>
         </div>
       </div>
+
+      {/* F-MUP T1 — MP:105-112 modül sekmeleri; drill-in sidebar'ın YERİNE.
+          Şerit sayfa BAŞLIĞININ ALTINDADIR (MP:103 → MP:105). */}
+      <AccountingTabs />
 
       {/* DK:70-77 — Yetki notu. K1: metin backend'le birebir, UYDURULMAZ. */}
       <div className="mu-notice mu-notice--purple" data-testid="dkap-role-note">
