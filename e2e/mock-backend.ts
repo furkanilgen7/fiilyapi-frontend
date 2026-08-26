@@ -4,6 +4,12 @@ import nodePath from "node:path";
 
 // YALNIZ tip: derleme sonrasi silinir, Playwright calisma zamanina sizmaz.
 import type { components } from "@/lib/api/schema";
+// 🔴 DEGER importu (tip degil) — birim testi ikizi ile e2e ikizi TEK KAYNAKTAN
+// beslenir. Ikisi ayri yazilmisti ve AYRISMISTI: `SITE_CONTRACT_DEFAULTS`
+// sozlesmenin 16 alanini T0'dan beri tasiyor, e2e ikizi HICBIRINI dondurmuyordu.
+// Playwright globalSetup'i tsconfig `paths` eslemesini cozer (emsal:
+// `e2e/bordro.spec.ts` -> `@/lib/api/hooks/usePayroll`).
+import { SITE_CONTRACT_DEFAULTS } from "@/lib/api/hooks/site-fixtures";
 
 /* ══════════════ SÖZLEŞME SORGU KISITLARI (F-BORDRO T1) ══════════════════════
  * 🔴 SAHTE-YEŞİLİN YEDİNCİ HÂLİ. Sahte backend `limit`i DOĞRULAMIYOR,
@@ -510,7 +516,89 @@ interface MockProject {
 
 // Task 8/9 — Proje Detay/Şantiye Detay ekranlarını görsel testler için besler
 // (bkz. SiteDetailResponse/SectionResponse şeması, src/lib/api/schema.d.ts).
-interface MockSite {
+/**
+ * `SiteDetailResponse`in T0'da (2026-07-30) eklenen 16 ZORUNLU alani — TIP de
+ * sozlesmeden turer, elle listelenmez. Sozlesmeye bir alan eklenirse burasi
+ * kendiliginden buyur ve ikiz DERLEME ZAMANINDA kirmizi verir.
+ */
+type SiteContractFields = Pick<
+  components["schemas"]["SiteDetailResponse"],
+  | "is_draft"
+  | "site_manager_user_id"
+  | "safety_officer_user_id"
+  | "safety_officer_name"
+  | "safety_officer_is_outsourced"
+  | "neighborhood"
+  | "parcel"
+  | "gps_coordinates"
+  | "land_area_m2"
+  | "construction_area_m2"
+  | "floor_info"
+  | "budget"
+  | "facilities"
+  | "electricity_subscription_no"
+  | "water_subscription_no"
+  | "planned_worker_count"
+>;
+
+/**
+ * Paylasilan varsayilanin TAZE kopyasi.
+ *
+ * 🔴 `facilities` bir NESNEDIR: `SITE_CONTRACT_DEFAULTS`i dogrudan yaymak
+ * butun santiyelere AYNI referansi verirdi ve bir santiyenin tesisini
+ * degistiren bir yazma otekileri de sessizce oynatirdi.
+ */
+function siteContractDefaults(): SiteContractFields {
+  return { ...SITE_CONTRACT_DEFAULTS, facilities: { ...SITE_CONTRACT_DEFAULTS.facilities } };
+}
+
+/** Bos/eksik metin -> `null` (sunucunun `textOrNull` davranisinin aynasi). */
+function optionalText(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  return raw.trim() || null;
+}
+
+/** Bos/eksik kimlik -> `null`. */
+function optionalId(raw: unknown): string | null {
+  return typeof raw === "string" && raw.length > 0 ? raw : null;
+}
+
+/**
+ * 🔴 SAYI GIRER, DECIMAL METIN CIKAR. Govde `land_area_m2`/`budget` alanlarini
+ * SAYI olarak gonderir (`SiteCreate`), yanit ise Decimal METIN dondurur
+ * (`SiteDetailResponse`). Ikiz sayiyi oldugu gibi geri verseydi, gercek
+ * backend'in dondurmeyecegi bir tipi dondururdu ve iki alani okuyan her
+ * bicimlendirme testi yanlis girdiyle yesil gecerdi.
+ */
+function optionalDecimal(raw: unknown): string | null {
+  if (typeof raw === "number" && Number.isFinite(raw)) return raw.toFixed(2);
+  if (typeof raw === "string" && raw.trim() !== "") {
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed.toFixed(2) : null;
+  }
+  return null;
+}
+
+/** Tam sayi say degeri; sayi olmayan -> `null`. */
+function optionalCount(raw: unknown): number | null {
+  return typeof raw === "number" && Number.isFinite(raw) ? Math.trunc(raw) : null;
+}
+
+/**
+ * Tesis kutulari — SEKIZI DE ZORUNLUDUR (`SiteFacilities`). Govde eksik
+ * gonderirse `false` varsayilir; govdenin kendisi yoksa hepsi kapalidir.
+ */
+function siteFacilitiesFrom(raw: unknown): components["schemas"]["SiteFacilities"] {
+  const source = typeof raw === "object" && raw !== null ? (raw as Record<string, unknown>) : {};
+  const defaults = siteContractDefaults().facilities;
+  const out = { ...defaults };
+  for (const key of Object.keys(defaults) as (keyof typeof defaults)[]) {
+    out[key] = source[key] === true;
+  }
+  return out;
+}
+
+interface MockSite extends SiteContractFields {
   id: string;
   project_id: string;
   code: string;
@@ -2623,11 +2711,13 @@ function seedState(): MockState {
   // sabit değerlerle hizalı.
   const sites: MockSite[] = [
     {
+      ...siteContractDefaults(),
       id: "s-1", project_id: "p-1", code: "A-BLOK", name: "A-Blok Şantiyesi", status: "active",
       address: "Kuyubaşı Mah.", city: "Ankara", city_inherited: false, site_manager_name: "S. Öztürk",
       start_date: "2025-03-01", end_date: "2026-12-31", delivery_date: null, remaining_days: 157,
     },
     {
+      ...siteContractDefaults(),
       id: "s-2", project_id: "p-1", code: "B-BLOK", name: "B-Blok Şantiyesi", status: "completed",
       address: "Kuyubaşı Mah.", city: "Ankara", city_inherited: false, site_manager_name: "K. Arslan",
       start_date: "2024-01-01", end_date: null, delivery_date: "2026-05-01", remaining_days: null,
@@ -2892,10 +2982,39 @@ function buildSectionListItems(state: MockState, siteId: string): components["sc
     }));
 }
 
-function buildSiteDetail(state: MockState, site: MockSite) {
+/** `MockSite`in sozlesme alanlarini yaniti icin ayirir (sadece 16'si). */
+function siteContractPayload(site: MockSite): SiteContractFields {
+  return {
+    is_draft: site.is_draft,
+    site_manager_user_id: site.site_manager_user_id,
+    safety_officer_user_id: site.safety_officer_user_id,
+    safety_officer_name: site.safety_officer_name,
+    safety_officer_is_outsourced: site.safety_officer_is_outsourced,
+    neighborhood: site.neighborhood,
+    parcel: site.parcel,
+    gps_coordinates: site.gps_coordinates,
+    land_area_m2: site.land_area_m2,
+    construction_area_m2: site.construction_area_m2,
+    floor_info: site.floor_info,
+    budget: site.budget,
+    facilities: site.facilities,
+    electricity_subscription_no: site.electricity_subscription_no,
+    water_subscription_no: site.water_subscription_no,
+    planned_worker_count: site.planned_worker_count,
+  };
+}
+
+function buildSiteDetail(
+  state: MockState,
+  site: MockSite,
+): components["schemas"]["SiteDetailResponse"] {
   const project = state.projects.find((p) => p.id === site.project_id);
   const sectionItems = buildSectionListItems(state, site.id);
   return {
+    // 🔴 Sozlesmenin 16 alani KAYITTAN yayilir, tek tek yazilmaz: yazma ucuna
+    // giren deger GET'ten AYNEN geri gelmelidir. Once tek tek yazilmadigi icin
+    // hicbiri donmuyordu ve dort kapinin dordu de yesildi (K-MKD2).
+    ...siteContractPayload(site),
     id: site.id, code: site.code, name: site.name, status: site.status, address: site.address,
     city: site.city, city_inherited: site.city_inherited, site_manager_name: site.site_manager_name,
     start_date: site.start_date, end_date: site.end_date, delivery_date: site.delivery_date,
@@ -7312,7 +7431,11 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const projectId = projectSitesMatch[1];
       const items = state.sites
         .filter((s) => s.project_id === projectId)
-        .map((s) => ({
+        .map((s): components["schemas"]["SiteCard"] => ({
+          // AYNI 16 ALAN — `SiteCard` da hepsini ZORUNLU tutar. Liste ucu
+          // `buildSiteDetail` ile ayni kaynaktan beslenmeseydi, kart ile detay
+          // iki farkli gerceklik anlatirdi.
+          ...siteContractPayload(s),
           id: s.id, code: s.code, name: s.name, status: s.status, address: s.address, city: s.city,
           city_inherited: s.city_inherited, site_manager_name: s.site_manager_name,
           start_date: s.start_date, end_date: s.end_date, delivery_date: s.delivery_date,
@@ -7349,6 +7472,29 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         const siteId = `s-${state.sites.length + 1}`;
         const city = body.city ? String(body.city) : null;
         const site: MockSite = {
+          // 🔴 K-MKD2 — YAZILAN 16 ALAN SAKLANIR. Once hicbiri saklanmiyordu:
+          // Santiye Ekle formu ISG sorumlusunu, ada/parseli, alanlari, butceyi
+          // ve tesisleri GONDERIYOR (`buildSiteCreateBody`), ikiz gelen govdeyi
+          // SESSIZCE ATIYOR ve GET'te hicbirini dondurmuyordu. Ikiz "yazdim"
+          // diyen bir onaylayiciydi; artik yaziyi geri verdigi icin bir e2e
+          // iddiasi form -> detay yolunu GERCEKTEN olcebilir.
+          ...siteContractDefaults(),
+          is_draft: body.is_draft === true,
+          site_manager_user_id: optionalId(body.site_manager_user_id),
+          safety_officer_user_id: optionalId(body.safety_officer_user_id),
+          safety_officer_name: userNameById(state, body.safety_officer_user_id),
+          safety_officer_is_outsourced: body.safety_officer_is_outsourced === true,
+          neighborhood: optionalText(body.neighborhood),
+          parcel: optionalText(body.parcel),
+          gps_coordinates: optionalText(body.gps_coordinates),
+          land_area_m2: optionalDecimal(body.land_area_m2),
+          construction_area_m2: optionalDecimal(body.construction_area_m2),
+          floor_info: optionalText(body.floor_info),
+          budget: optionalDecimal(body.budget),
+          facilities: siteFacilitiesFrom(body.facilities),
+          electricity_subscription_no: optionalText(body.electricity_subscription_no),
+          water_subscription_no: optionalText(body.water_subscription_no),
+          planned_worker_count: optionalCount(body.planned_worker_count),
           id: siteId,
           project_id: projectId,
           // Kod boş gelirse sunucu üretir (spec §3.6) — mock da aynısını yapar.

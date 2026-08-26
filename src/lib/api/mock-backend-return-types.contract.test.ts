@@ -72,13 +72,6 @@ const FUNCTIONS = twinFunctions();
  * kendi diliminde, kare ölçümüyle yapılır.
  * ========================================================================= */
 const SOZLESMEDEN_SAPAN: Readonly<Record<string, string>> = {
-  buildSiteDetail:
-    "`SiteDetailResponse`in 36 ZORUNLU alanından 16'sını HİÇ döndürmüyor " +
-    "(is_draft, site_manager_user_id, safety_officer_*, neighborhood, parcel, " +
-    "gps_coordinates, land_area_m2, construction_area_m2, floor_info, budget, " +
-    "facilities, electricity/water_subscription_no, planned_worker_count). " +
-    "Birim testi ikizi bu 16'yı TAŞIYOR (src/lib/api/hooks/site-fixtures.ts " +
-    "`SITE_CONTRACT_DEFAULTS`) — yalnız e2e ikizi geride kalmış.",
   buildSectionDetail:
     "`section_type` ikizde `string | null`, sözleşmede 7 üyeli enum. Yazma ucu " +
     "(`String(body.section_type)`) sözleşme dışı her metni KABUL EDİYOR ⇒ ikiz " +
@@ -103,7 +96,7 @@ describe("🔴 test ikizi (`e2e/mock-backend.ts`) dönüş tipleri ↔ sözleşm
     const bound = FUNCTIONS.filter(
       (fn) => fn.returnType !== null && fn.returnType.includes('components["schemas"]'),
     );
-    expect(bound.length, "sözleşme tipine BAĞLI dönüş tipi sayısı").toBeGreaterThanOrEqual(54);
+    expect(bound.length, "sözleşme tipine BAĞLI dönüş tipi sayısı").toBeGreaterThanOrEqual(55);
     expect(Object.keys(SOZLESMEDEN_SAPAN).length).toBeGreaterThan(0);
   });
 
