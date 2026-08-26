@@ -213,6 +213,27 @@ describe("CANLI YARI — defter + kapanış bakiyesi", () => {
     expect(screen.queryByText("Hakediş Tahsilatı")).not.toBeInTheDocument();
   });
 
+  // 🔴 GERÇEK KUSUR — yerel kadrajda ölçüldü ve burada dondurulur.
+  it("hesap seçilmeden defter sorgusu KURULMAZ ve kırpma uyarısı BASILMAZ", () => {
+    // `total: 1` sunucudan gelse bile ekran "İlk 0 kayıt gösteriliyor
+    // (toplam 1) — liste eksik" diye YANLIŞ bir cümle basmamalı: kullanıcı
+    // henüz hiçbir şey İSTEMEDİ.
+    render(<BankReconciliationView />);
+    expect(screen.queryByTestId("bm-ledger-truncation")).not.toBeInTheDocument();
+    expect(vi.mocked(useLedger)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ enabled: false }),
+    );
+  });
+
+  it("hesap seçilince defter sorgusu AÇILIR ve hesapla süzülür", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<BankReconciliationView />);
+    await user.selectOptions(screen.getByTestId("bm-account"), "id-102");
+    expect(vi.mocked(useLedger)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ enabled: true, accountId: "id-102" }),
+    );
+  });
+
   it("hesap seçilince panel başlığı `kod – ad` olur ve defter satırı iner", async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<BankReconciliationView />);

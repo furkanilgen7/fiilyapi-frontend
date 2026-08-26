@@ -243,3 +243,33 @@
 .mu-pro-rail--disabled {
   background: var(--color-surface-2);
 }
+
+/* --- MP:142-147 · defter panelinin başlık satırı ------------------------- */
+
+/* 🔴 ÖLÇÜLDÜ (yerel kadraj): iki sütunlu düzende defter paneli daralınca
+   `.mu-panel__head`in esneyen `Select`i tüm satırı kaplıyor ve "Excel" düğmesi
+   ALT SATIRA düşüyordu — MP:143-146 ikisini de başlığın SAĞINDA, TEK satırda
+   çiziyor. Süzgeç sabit genişliğe çekilir ve boşluk `margin-left:auto` ile
+   başlığın hemen ardına verilir.
+
+   Kural `.mu-pro-grid` ALTINDA yaşar: aynı `.mu-panel__head` Banka
+   Mutabakatı'nda ve E8 emsali başka yerlerde de kullanılıyor, oraları
+   oynatmaz. */
+.mu-pro-grid .mu-panel__head {
+  flex-wrap: nowrap;
+}
+
+.mu-pro-grid .mu-panel__head .mu-panel__title {
+  margin-right: auto;
+  white-space: nowrap;
+}
+
+/* 🔴 Genişlik `.select-wrap` SARMALAYICISINA verilir, `select`in KENDİSİNE
+   DEĞİL: `ui/select` chevron'u sarmalayıcının SAĞ kenarına mutlak
+   konumlandırır — yalnız iç `select` daraltılsaydı ok, kutudan kopup satırın
+   sağında tek başına asılı kalırdı (yerel kadrajda ölçüldü). */
+.mu-pro-grid .mu-panel__head .select-wrap {
+  width: 190px;
+  min-width: 0;
+  flex: none;
+}

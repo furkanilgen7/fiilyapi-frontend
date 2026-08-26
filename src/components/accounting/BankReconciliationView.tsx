@@ -77,14 +77,18 @@ export function BankReconciliationView() {
 
   const accountsQuery = useChartOfAccounts({ limit: CHART_ACCOUNTS_MAX_LIMIT });
   const trialBalanceQuery = useTrialBalance(period.year, period.month);
-  // 🔴 Hesap SEÇİLMEDEN defter ÇAĞRILMAZ: süzgeçsiz `/journal` TÜM hesapların
-  // satırlarını döndürür ve ekran onları "102 hesabının hareketleri" başlığı
-  // altında basardı. `enabled` yerine `accountId` boşken sorgu hiç kurulmaz.
+  // 🔴 Hesap SEÇİLMEDEN defter sorgusu HİÇ KURULMAZ (`enabled: false`).
+  // Süzgeçsiz `/journal` TÜM hesapların satırlarını döndürürdü; ekran onları
+  // basmasa bile `total` üzerinden kurulan kırpma uyarısı "İlk 0 kayıt
+  // gösteriliyor (toplam N) — liste eksik" diye YANLIŞ bir cümle basıyordu
+  // (yerel kadrajda ölçüldü ve düzeltildi).
+  const hasAccount = accountId.length > 0;
   const ledgerQuery = useLedger({
     year: period.year,
     month: period.month,
     limit: LEDGER_MAX_LIMIT,
-    ...(accountId.length > 0 ? { accountId } : {}),
+    enabled: hasAccount,
+    ...(hasAccount ? { accountId } : {}),
   });
 
   if (
@@ -104,15 +108,15 @@ export function BankReconciliationView() {
   const bankAccounts =
     allAccounts === undefined ? undefined : bankLedgerAccounts(allAccounts);
   const selected = bankAccounts?.find((account) => account.id === accountId);
-  const closing =
-    accountId.length === 0
-      ? undefined
-      : ledgerClosingBalance(trialBalanceQuery.data, accountId);
+  const closing = hasAccount
+    ? ledgerClosingBalance(trialBalanceQuery.data, accountId)
+    : undefined;
 
-  const ledgerRows = accountId.length === 0 ? undefined : ledgerQuery.data?.items;
+  const ledgerRows = hasAccount ? ledgerQuery.data?.items : undefined;
+  // 🔴 Kırpma uyarısı YALNIZ defter GERÇEKTEN istendiğinde kurulur.
   const ledgerTruncation = buildListTruncation(
     ledgerRows?.length ?? 0,
-    ledgerQuery.data?.total,
+    hasAccount ? ledgerQuery.data?.total : undefined,
   );
 
   return (
@@ -195,7 +199,7 @@ export function BankReconciliationView() {
             {closing === undefined ? "—" : formatAmount(closing)}
           </div>
           <div className="bm-card__note">
-            {accountId.length === 0
+            {!hasAccount
               ? "Bir hesap seçin"
               : selected === undefined
                 ? "Seçili hesap listede yok"
@@ -249,7 +253,7 @@ export function BankReconciliationView() {
                 {listTruncationMessage(ledgerTruncation)}
               </p>
             )}
-            {accountId.length === 0 ? (
+            {!hasAccount ? (
               <p className="bm-empty" data-testid="bm-ledger-idle">
                 Defter satırlarını görmek için yukarıdan bir banka hesabı seçin.
               </p>
