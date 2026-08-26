@@ -33,10 +33,30 @@ function isFilterableStatus(value: string): value is SubcontractorPaymentStatus 
   return SUBCONTRACTOR_STATUS_FILTER_OPTIONS.some((option) => option.value === value);
 }
 
+/**
+ * 🔴 `GET /subcontractor-progress-payments` `period_month` tavanı **12**dir
+ * (ölçüldü); istemci yalnız "pozitif tam sayı" arıyordu. Kullanıcı URL'i elle
+ * yazabildiği için `?period_month=13` sunucuya gidiyor ve 422 dönüyordu.
+ * `rental-filters.ts` deseni: aralık dışı değer GÖNDERİLMEZ, sessizce
+ * "süzgeç yok" dalına düşer.
+ *
+ * ⚠️ `period_year` bu uçta sözleşmede sınır TAŞIMAZ (kira uçlarının aksine,
+ * orada 2000..2200'dür) — bu yüzden yıla aralık UYDURULMAZ, yalnız pozitif
+ * tam sayı denetimi kalır.
+ */
+const PERIOD_MONTH_MIN = 1;
+const PERIOD_MONTH_MAX = 12;
+
 function parsePositiveInt(value: string | null): number | null {
   if (!value) return null;
   const n = Number(value);
   return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+function parseBoundedInt(value: string | null, min: number, max: number): number | null {
+  const parsed = parsePositiveInt(value);
+  if (parsed === null) return null;
+  return parsed >= min && parsed <= max ? parsed : null;
 }
 
 /** URL query → tipli filtre durumu. Geçersiz/eksik alanlar sessizce `null`a düşer. */
@@ -45,7 +65,11 @@ export function parseSubcontractorFilters(searchParams: URLSearchParams): Subcon
   return {
     projectId: searchParams.get("project_id") || null,
     periodYear: parsePositiveInt(searchParams.get("period_year")),
-    periodMonth: parsePositiveInt(searchParams.get("period_month")),
+    periodMonth: parseBoundedInt(
+      searchParams.get("period_month"),
+      PERIOD_MONTH_MIN,
+      PERIOD_MONTH_MAX,
+    ),
     status: status && isFilterableStatus(status) ? status : null,
     q: searchParams.get("q") ?? "",
   };

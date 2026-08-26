@@ -108,6 +108,16 @@ interface MockBodyField {
   maxLength?: number;
   minLength?: number;
   exclusiveMinimum?: number;
+  /**
+   * 🔴 F-KISIT: sayısal TAVAN/TABAN da uygulanır. Bunlar olmadan sahte backend
+   * `advance_rate: 150` ya da `model_year: 202` gibi gövdeleri KABUL ediyordu —
+   * gerçek backend 422 verirken. Formun korkuluğunu kaldıran bir mutasyon
+   * hiçbir e2e'yi kırmazdı: *sahte backend, gerçeğin reddedeceğini kabul
+   * ettiğinde bir ONAYLAYICIDIR, bekçi değil.*
+   */
+  maximum?: number;
+  minimum?: number;
+  exclusiveMaximum?: number;
   enum?: string[];
 }
 
@@ -123,6 +133,9 @@ interface RawSchema {
   maxLength?: number;
   minLength?: number;
   exclusiveMinimum?: number;
+  maximum?: number;
+  minimum?: number;
+  exclusiveMaximum?: number;
   anyOf?: RawSchema[];
   $ref?: string;
 }
@@ -169,6 +182,11 @@ function loadBodySchema(schemaName: string): MockBodySchema {
       ...(resolved.exclusiveMinimum === undefined
         ? {}
         : { exclusiveMinimum: resolved.exclusiveMinimum }),
+      ...(resolved.maximum === undefined ? {} : { maximum: resolved.maximum }),
+      ...(resolved.minimum === undefined ? {} : { minimum: resolved.minimum }),
+      ...(resolved.exclusiveMaximum === undefined
+        ? {}
+        : { exclusiveMaximum: resolved.exclusiveMaximum }),
       ...(resolved.enum === undefined ? {} : { enum: resolved.enum }),
     });
   }
@@ -240,11 +258,51 @@ function bodySchemaViolation(
         );
       }
     }
+    if (field.exclusiveMaximum !== undefined) {
+      const numeric = Number(value);
+      if (Number.isFinite(numeric) && numeric >= field.exclusiveMaximum) {
+        return detail(
+          "less_than",
+          name,
+          `Input should be less than ${field.exclusiveMaximum}`,
+          value,
+        );
+      }
+    }
+    if (field.minimum !== undefined) {
+      const numeric = Number(value);
+      if (Number.isFinite(numeric) && numeric < field.minimum) {
+        return detail(
+          "greater_than_equal",
+          name,
+          `Input should be greater than or equal to ${field.minimum}`,
+          value,
+        );
+      }
+    }
+    if (field.maximum !== undefined) {
+      const numeric = Number(value);
+      if (Number.isFinite(numeric) && numeric > field.maximum) {
+        return detail(
+          "less_than_equal",
+          name,
+          `Input should be less than or equal to ${field.maximum}`,
+          value,
+        );
+      }
+    }
   }
   return null;
 }
 
 const FINANCIAL_INSTRUMENT_CREATE_SCHEMA = loadBodySchema("FinancialInstrumentCreate");
+
+/* 🔴 F-KISIT · aynı kapı, daha çok uç. Bu şemaların kısıtlarının hiçbiri
+ * sahte tarafta uygulanmıyordu; istemcideki korkuluğu kaldıran bir mutasyon
+ * e2e'de HİÇBİR ŞEY kırmıyordu (K-MKD2: "bir korkuluk İKİZDE yoksa,
+ * olmadığını hiçbir kapı söylemez"). */
+const SUPPLIER_CREATE_SCHEMA = loadBodySchema("SupplierCreate");
+const CUSTOMER_CREATE_SCHEMA = loadBodySchema("CustomerCreate");
 
 /**
  * 🔴 `amount` iki dallıdır (`anyOf`): sayısal dal `exclusiveMinimum: 0`,
@@ -9554,6 +9612,8 @@ export function startMockBackend(port: number): { server: Server; close: () => P
 
     if (method === "POST" && path === "/customers") {
       return withBody((body) => {
+        const schemaViolation = bodySchemaViolation(CUSTOMER_CREATE_SCHEMA, body);
+        if (schemaViolation !== null) return send(422, schemaViolation);
         const name = String(body.name ?? "").trim();
         const customerType = String(body.customer_type ?? "");
         if (!name) return send(422, { detail: "Müşteri adı zorunludur." });
@@ -10652,6 +10712,10 @@ export function startMockBackend(port: number): { server: Server; close: () => P
 
     if (method === "POST" && path === "/suppliers") {
       return withBody((body) => {
+        // Şema kapısı ADI denetlemeden ÖNCE koşar: `tax_no`/`phone` tavanları
+        // burada uygulanmazsa istemcideki korkuluk bekçisiz kalır.
+        const schemaViolation = bodySchemaViolation(SUPPLIER_CREATE_SCHEMA, body);
+        if (schemaViolation !== null) return send(422, schemaViolation);
         const name = String(body.name ?? "").trim();
         if (!name) return send(422, { detail: "Tedarikçi adı zorunludur." });
         state.purchasingSeq += 1;

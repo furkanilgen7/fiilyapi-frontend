@@ -280,3 +280,11 @@ export const EQUIPMENT_DOCUMENTS: readonly DocumentPlaceholderItem[] = [
 
 /** 167 — MK-1 K8: YALNIZ BİR İŞARET, hiçbir yan etkisi yok (sabit kıymet modülü yok). */
 export const COMPANY_ASSET_LABEL = "Şirket varlıklarına otomatik eklensin";
+
+/**
+ * 🔴 `EquipmentCreate.model_year` — sözleşme aralığı **1900..2200**
+ * (`form-limits.contract.test.ts` ölçer). İstemcide HİÇ denetlenmiyordu:
+ * "202" ya da "20222" gibi bir yazım hatası sunucudan UYARISIZ 422 döndürüyordu.
+ */
+export const MODEL_YEAR_MIN = 1900;
+export const MODEL_YEAR_MAX = 2200;

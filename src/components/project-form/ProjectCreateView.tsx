@@ -254,6 +254,7 @@ export function ProjectCreateView() {
               values={values.landShare}
               onChange={updateLandShare}
               errors={errors.landShare}
+              shareholderErrors={errors.shareholders}
             />
           )}
 

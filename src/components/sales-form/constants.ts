@@ -8,6 +8,29 @@ import type { DocumentPlaceholderItem } from "@/components/form-shell";
 import type { DeedCondition, PaymentPlanType, SaleType } from "@/lib/api/hooks/useSales";
 import type { CustomerType } from "@/lib/api/hooks/useCustomers";
 
+/**
+ * 🔴 `CustomerCreate` korkulukları — SÖZLEŞMEDEN ölçülmüştür, mockup'tan değil
+ * (`src/lib/api/form-limits.contract.test.ts` iki yönlü kapı).
+ *
+ * Alıcı kartında hiçbir uzunluk korkuluğu YOKTU: `phone` tavanı **20**dir
+ * (tedarikçininki 30 — ikisi FARKLI), kimlik kutusu ise `national_id` VEYA
+ * `tax_number` olarak gider ve ikisi de **11**dir. Korkuluksuz kutuda 21.
+ * karakter sessiz 422 üretiyordu.
+ */
+export const CUSTOMER_MAX_LENGTH = {
+  name: 200,
+  nationalId: 11,
+  taxNumber: 11,
+  phone: 20,
+  email: 254,
+} as const;
+
+/**
+ * Tek "TCKN / VKN" kutusunun korkuluğu. `buyerType`e göre alan DEĞİŞİR ama
+ * tavan ikisinde de aynıdır; eşitlik bekçide ayrıca doğrulanır.
+ */
+export const CUSTOMER_IDENTITY_MAX_LENGTH = CUSTOMER_MAX_LENGTH.nationalId;
+
 export const SALE_FORM_TITLE = "Yeni Satış Kaydı"; // 47
 export const SALE_FORM_SUBTITLE =
   "Daire / dükkan satışı — ödeme planı ve tapu takibi otomatik oluşturulur"; // 48

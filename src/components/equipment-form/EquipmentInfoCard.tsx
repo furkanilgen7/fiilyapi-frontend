@@ -6,6 +6,8 @@ import {
   CATEGORY_OPTIONS,
   INFO_CARD_TITLE,
   MODEL_LABEL,
+  MODEL_YEAR_MAX,
+  MODEL_YEAR_MIN,
   PHOTO_LABEL,
   PHOTO_PENDING_REASON,
   SELECT_PLACEHOLDER,
@@ -150,6 +152,8 @@ export function EquipmentInfoCard({ values, onChange, errors }: EquipmentInfoCar
                 type="number"
                 numeric
                 className="eqf-mono"
+                min={MODEL_YEAR_MIN}
+                max={MODEL_YEAR_MAX}
                 value={values.modelYear}
                 placeholder="2022"
                 onChange={(event) => onChange("modelYear", event.target.value)}

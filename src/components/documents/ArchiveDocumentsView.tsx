@@ -45,6 +45,14 @@ const PROJECT_PARAM = "proje";
 const FOLDER_PARAM = "folder";
 const QUERY_PARAM = "q";
 
+/**
+ * 🔴 `GET /documents` `q` parametresinin sözleşme tavanı **150**dir ve arama
+ * kutusunda korkuluk YOKTU: 151. karakterden itibaren HER TUŞ VURUŞU 422
+ * üretiyordu (arama her değişimde istek atar). Sayı sözleşmeden ölçülmüştür
+ * ve `form-limits.contract.test.ts` ikisini karşılaştırır.
+ */
+export const DOCUMENT_SEARCH_MAX_LENGTH = 150;
+
 /** Klasör panelinin durum metni (proje listesi + seçili projenin klasörleri). */
 function folderPanelMessage(options: {
   isProjectsLoading: boolean;
@@ -219,6 +227,7 @@ export function ArchiveDocumentsView() {
               className="sdoc__search"
               type="search"
               aria-label="Belge ara"
+              maxLength={DOCUMENT_SEARCH_MAX_LENGTH}
               placeholder="Belge ara..."
               leftIcon={<SearchIcon />}
               value={query}

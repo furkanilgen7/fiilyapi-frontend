@@ -79,3 +79,14 @@ export const DIARY_INCIDENT_NOTE_MAX = 2000;
 export const DIARY_QUANTITY_MAX = 20;
 /** İşçi sayısı hücresi (GK420): tamsayı — dört hane fazlasıyla yeter. */
 export const DIARY_WORKER_COUNT_MAX = 4;
+
+/**
+ * 🔴 `SiteDiaryEntryCreate.temperature_c` — sözleşme aralığı **-60..60**.
+ *
+ * Kutuda `maxLength={6}` vardı ama bu YANLIŞ ARAÇTIR: `type="number"` bir
+ * input'ta HTML `maxLength` niteliği ETKİSİZDİR (spec: yalnız metin türlerinde
+ * geçerli). Yani korkuluk var görünüyordu, hiçbir şey yapmıyordu — sahte
+ * korkuluk. Sayı aralığı `min`/`max` ile ifade edilir.
+ */
+export const DIARY_TEMPERATURE_MIN = -60;
+export const DIARY_TEMPERATURE_MAX = 60;
