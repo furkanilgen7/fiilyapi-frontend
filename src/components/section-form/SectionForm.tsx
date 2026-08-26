@@ -19,7 +19,7 @@ import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { pendingModuleLabel } from "@/lib/pending-modules";
 import { isUserListUnavailable } from "@/components/site-form/user-picker";
 
-import { BoqAssignmentCard } from "./BoqAssignmentCard";
+import { BoqAssignmentCard } from "@/components/boq-assignment/BoqAssignmentCard";
 import { buildSectionBody } from "./build-body";
 import { DocumentsCard } from "./DocumentsCard";
 import { emptySectionFormValues, sectionFormValuesFromDetail, type SectionFormValues } from "./form-state";
@@ -239,7 +239,27 @@ export function SectionForm(props: SectionFormProps) {
             dependencyOptions={dependencyOptions}
             existingMilestones={existingMilestones}
           />
-          <BoqAssignmentCard />
+          {/* 🔴 F-BLMPOZ — kart CANLANDIRILDI. Eski hâli tamamen ölü bir yer
+              tutucuydu ve gerekçesi ("iş kalemi ↔ bölüm bağı veri katmanında
+              KAPALI") BAYATTI: `boq_item_section_allocations` tablosu ve
+              `GET/PUT /boq/items/{id}/allocations` uçları VAR ve çalışıyor —
+              yalnız frontend'de onları çağıran TEK SATIR KOD YOKTU, yani
+              bölüme poz atamak arayüzden ULAŞILAMAZDI.
+
+              Kart KENDİ kaydını yapar: `SectionCreate`/`SectionUpdate` gövdesi
+              BOQ ataması KABUL ETMEZ, atama ayrı bir istektir. Oluşturma
+              kipinde bölüm henüz yoktur (tahsis `section_id` NOT NULL) →
+              kontroller görünür gerekçeyle devre dışı. */}
+          {isEdit ? (
+            <BoqAssignmentCard
+              mode="edit"
+              siteId={props.siteId}
+              sectionId={props.sectionId}
+              canWrite={canWrite}
+            />
+          ) : (
+            <BoqAssignmentCard mode="create" />
+          )}
           <DocumentsCard />
         </div>
 

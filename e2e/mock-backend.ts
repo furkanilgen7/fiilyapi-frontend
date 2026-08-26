@@ -979,6 +979,17 @@ interface MockState {
    */
   contractGroups: MockContractGroup[];
   contractGroupSeq: number;
+  /**
+   * 🔴 F-BLMPOZ — poz ↔ bölüm tahsisleri artık DEĞİŞTİRİLEBİLİR durumdadır.
+   *
+   * Eskiden yalnız `BOQ_FIXTURE` içindeki `allocations` alanında, MODÜL SABİTİ
+   * üzerinde yaşıyordu — okunabiliyor ama yazılamıyordu, dolayısıyla ikiz
+   * `PUT /boq/items/{id}/allocations` ucunu HİÇ temsil etmiyordu. Sabiti yerinde
+   * değiştirmek testler arasına sızardı; bu yüzden DERİN KOPYA ile state'e taşındı.
+   *
+   * Şekil: `itemId → (sectionId → miktar)`.
+   */
+  boqAllocations: Record<string, Record<string, string>>;
   // F-P5 T1 — Taşeron FİRMA kayıtları (TL listesi + "+ Taşeron Ekle" modalı).
   subcontractors: MockSubcontractor[];
   subcontractorSeq: number;
@@ -2844,6 +2855,13 @@ function seedState(): MockState {
     // F-POZGRUP · BOŞ başlar: `p-1` grupları eskisi gibi kalemlerden türer.
     contractGroups: [],
     contractGroupSeq: 0,
+    // F-BLMPOZ · DERİN kopya — `PUT .../allocations` bu haritayı yerinde
+    // değiştirir, `BOQ_FIXTURE` kirlenmemelidir.
+    boqAllocations: Object.fromEntries(
+      BOQ_FIXTURE.flatMap((group) =>
+        group.items.map((item) => [item.id, { ...(item.allocations ?? {}) }] as const),
+      ),
+    ),
     subcontractors: SUBCONTRACTOR_FIXTURES.map((s) => ({ ...s })),
     subcontractorSeq: 0,
     subcontractorContracts: SUBCONTRACTOR_CONTRACTS.map((c) => ({
@@ -7808,10 +7826,16 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const groups = BOQ_FIXTURE.map((group) => ({
         ...group,
         items: group.items
-          .filter((item) => !sectionId || item.allocations?.[sectionId] !== undefined)
+          // 🔴 F-BLMPOZ: tahsisler artık STATE'ten okunur, modül sabitinden
+          // DEĞİL — yoksa PUT ile yazılan pay listede hiç görünmez ve ikiz
+          // "yazdım ama okuyamıyorum" hâline düşerdi.
+          .filter(
+            (item) => !sectionId || state.boqAllocations[item.id]?.[sectionId] !== undefined,
+          )
           .map((item) => {
-            const allocated = boqSumQuantities(Object.values(item.allocations ?? {}));
-            const quantity = sectionId ? (item.allocations?.[sectionId] as string) : item.quantity;
+            const itemAllocations = state.boqAllocations[item.id] ?? {};
+            const allocated = boqSumQuantities(Object.values(itemAllocations));
+            const quantity = sectionId ? (itemAllocations[sectionId] as string) : item.quantity;
             return {
               ...item,
               allocations: undefined,
@@ -7847,6 +7871,77 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           grand_progress_pct: METRIC_PENDING("progress_payments"),
         },
       });
+    }
+
+    /* ══ F-BLMPOZ · /boq/items/{item_id}/allocations ══════════════════════
+     * 🔴 K-IKIZ1 GEREĞİ BU HANDLER BİR KAPIDIR, ONAYLAYICI DEĞİL. Kontrol
+     * sorusu: "gerçek backend'in REDDEDECEĞİ bir isteği reddediyor mu?"
+     * Gerçek backend'in dört kuralı taklit edilir:
+     *   1. `allocations` alanı ZORUNLU — yoksa/`null`sa 422 ("dokunma" anlamı YOK)
+     *   2. `quantity` STRICT pozitif (`gt=0`) — sıfır/negatif 422
+     *   3. bilinmeyen ya da BAŞKA şantiyenin bölümü → 404
+     *   4. payların toplamı poz kotasını AŞAMAZ → 409
+     * Karşıt kanıt: geçerli gövde 200 döner ve yazdığı değer GET'ten okunur.
+     * ══════════════════════════════════════════════════════════════════ */
+    const boqAllocMatch = path.match(/^\/boq\/items\/([^/]+)\/allocations$/);
+    if (boqAllocMatch) {
+      const itemId = boqAllocMatch[1];
+      const item = ALL_BOQ_ITEMS.find((i) => i.id === itemId);
+      if (!item) return send(404, { detail: "Iş kalemi bulunamadı" });
+
+      const buildResponse = () => {
+        const current = state.boqAllocations[itemId] ?? {};
+        const allocated = boqSumQuantities(Object.values(current));
+        return {
+          item: {
+            ...item,
+            allocations: undefined,
+            allocated_quantity: allocated,
+            unallocated_quantity: boqSubtractQuantities(item.quantity, allocated),
+            progress_pct: METRIC_PENDING("progress_payments"),
+          },
+          allocations: Object.entries(current).map(([sectionId, quantity]) => ({
+            section_id: sectionId,
+            section_name: state.sections.find((sec) => sec.id === sectionId)?.name ?? sectionId,
+            quantity,
+          })),
+        };
+      };
+
+      if (method === "GET") return send(200, buildResponse());
+
+      if (method === "PUT") {
+        return withBody((body) => {
+          // KURAL 1 — alan ZORUNLU. `[]` "hepsini kaldır"dır ve GEÇERLİDİR.
+          const raw = body.allocations;
+          if (!Array.isArray(raw)) {
+            return send(422, { detail: "allocations alani zorunludur" });
+          }
+          const rows = raw as Array<Record<string, unknown>>;
+          const next: Record<string, string> = {};
+          for (const row of rows) {
+            const sectionId = String(row.section_id ?? "");
+            const quantity = String(row.quantity ?? "");
+            // KURAL 2 — STRICT pozitif.
+            if (!(Number(quantity) > 0)) {
+              return send(422, { detail: "quantity sifirdan buyuk olmalidir" });
+            }
+            // KURAL 3 — bölüm var mı ve pozun ŞANTİYESİNE mi ait?
+            const section = state.sections.find((sec) => sec.id === sectionId);
+            if (!section) return send(404, { detail: "Bölüm bulunamadı" });
+            next[sectionId] = quantity;
+          }
+          // KURAL 4 — kota aşımı (gerçek backend'in 409 gövdesi AYNEN).
+          const total = boqSumQuantities(Object.values(next));
+          if (Number(total) > Number(item.quantity)) {
+            return send(409, {
+              detail: "Bölümlere dağıtılan miktar poz miktarını aşamaz",
+            });
+          }
+          state.boqAllocations[itemId] = next;
+          return send(200, buildResponse());
+        });
+      }
     }
 
     // --- P7 T7 · Hakediş (İşveren) uçları ---------------------------------
