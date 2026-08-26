@@ -5,6 +5,7 @@ import {
   emptyProjectFormValues,
   type ProjectFormValues,
 } from "./form-state";
+import type { LandShareValues } from "./TypeFieldGroups";
 import { hasErrors, taxNumberError, validateProjectForm } from "./validate";
 
 function withValues(patch: Partial<ProjectFormValues>): ProjectFormValues {
@@ -236,5 +237,61 @@ describe("buildProjectCreateBody (§3.3)", () => {
     });
     expect(body.sites).toEqual([]);
     expect(body.is_draft).toBe(true);
+  });
+});
+
+/* ═══════════ F-KISIT · SÖZLEŞME KISITI OLAN YÜZDE ALANLARI ════════════════
+ * 🔴 Kusur: bu üç alan da sözleşmede ZORUNLU ve `exclusiveMinimum: 0`.
+ * Boş bırakılan yüzde gövdeye `0` olarak giriyordu ⇒ sunucu 422, kullanıcıya
+ * HİÇBİR uyarı yok. Doğrulama eskiden 0'ı ve 100'ü GEÇERLİ sayıyordu.
+ * ======================================================================== */
+describe("F-KISIT · arsa payı ve hissedar payı sözleşme sınırları", () => {
+  function katKarsiligi(landShare: Partial<LandShareValues>) {
+    const base = emptyProjectFormValues();
+    return validateProjectForm(
+      {
+        ...base,
+        basic: { ...base.basic, name: "X", category: "Konut", city: "İstanbul" },
+        projectType: "kat_karsiligi",
+        landShare: { ...base.landShare, ...landShare },
+      },
+      { isDraft: false },
+    );
+  }
+
+  it("bos birakilan mutehhit/arsa sahibi payi HATA verir (eskiden 0 gonderiyordu)", () => {
+    const errors = katKarsiligi({ ourSharePct: "", ownerSharePct: "" });
+    expect(errors.landShare.ourSharePct).toBeDefined();
+    expect(errors.landShare.ownerSharePct).toBeDefined();
+  });
+
+  it("arsa payinda 0 ve 100 GECERSIZDIR (exclusiveMinimum/exclusiveMaximum)", () => {
+    expect(katKarsiligi({ ourSharePct: "0" }).landShare.ourSharePct).toBeDefined();
+    expect(katKarsiligi({ ourSharePct: "100" }).landShare.ourSharePct).toBeDefined();
+    expect(katKarsiligi({ ourSharePct: "45" }).landShare.ourSharePct).toBeUndefined();
+  });
+
+  it("hissedar payinda 100 GECERLIDIR ama 0 degildir — arsa payindan FARKLI", () => {
+    // Sözleşme farkı: `share_pct` maximum 100 (kapsayıcı),
+    // `our_share_pct` exclusiveMaximum 100. Tek bir `pctError` ikisi için de yanlıştır.
+    const withRow = (sharePct: string) =>
+      katKarsiligi({
+        ourSharePct: "50",
+        ownerSharePct: "50",
+        shareholders: [{ id: "r1", name: "Ali", sharePct }],
+      }).shareholders[0];
+    expect(withRow("100")).toBeNull();
+    expect(withRow("0")).not.toBeNull();
+    expect(withRow("")).not.toBeNull();
+  });
+
+  it("adi bos sablon satiri hata BASMAZ (govdeye zaten girmiyor)", () => {
+    const errors = katKarsiligi({
+      ourSharePct: "50",
+      ownerSharePct: "50",
+      shareholders: [{ id: "r1", name: "", sharePct: "" }],
+    });
+    expect(errors.shareholders[0]).toBeNull();
+    expect(hasErrors(errors)).toBe(false);
   });
 });

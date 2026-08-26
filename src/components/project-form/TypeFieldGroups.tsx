@@ -116,6 +116,8 @@ interface LandShareFieldsProps {
     value: LandShareValues[K],
   ) => void;
   errors?: LandShareTextErrors;
+  /** Satır index'ine hizalı hissedar payı hataları. */
+  shareholderErrors?: (string | null)[];
 }
 
 /** Kat Karşılığı alanları (P1 `land_share`), §7.3'te sıralanan alanlar. */
@@ -123,6 +125,7 @@ export function LandShareFields({
   values,
   onChange,
   errors,
+  shareholderErrors,
 }: LandShareFieldsProps) {
   function updateShareholder(index: number, patch: Partial<ShareholderRow>) {
     onChange(
@@ -227,12 +230,13 @@ export function LandShareFields({
                 />
               )}
             </Field>
-            <Field label="Pay (%)">
+            <Field label="Pay (%)" required error={shareholderErrors?.[index] ?? undefined}>
               {(control) => (
                 <Input
                   {...control}
                   numeric
                   value={row.sharePct}
+                  status={shareholderErrors?.[index] ? "error" : "default"}
                   onChange={(e) =>
                     updateShareholder(index, { sharePct: e.target.value })
                   }

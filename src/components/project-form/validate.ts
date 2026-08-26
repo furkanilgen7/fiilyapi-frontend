@@ -30,9 +30,34 @@ export const MESSAGES = {
   escalationRequired: "Endeks tipi ve baz endeks değeri zorunludur.",
   siteNameRequired: "Şantiye adı zorunludur.",
   taxNumberFormat: "VKN 10 veya 11 haneli rakam olmalıdır.",
+  landSharePctRequired: "Paylaşım oranı zorunludur.",
+  landSharePctRange: "Oran 0'dan büyük, 100'den küçük olmalıdır.",
+  shareholderPctRequired: "Hissedar payı zorunludur.",
+  shareholderPctRange: "Pay 0'dan büyük, en fazla 100 olmalıdır.",
   duplicateTaxNumber: "Bu VKN ile kayıtlı bir işveren zaten var.",
   projectCodeConflict: "Proje kodu üretilemedi, tekrar deneyin.",
 } as const;
+
+/* ── SÖZLEŞME SINIRLARI ────────────────────────────────────────────────────
+ * 🔴 Bu üç alan `ProjectLandShareInput`/`ShareholderInput` içinde ZORUNLUDUR
+ * ve sınırları `openapi.json`dan ÖLÇÜLMÜŞTÜR (`form-limits.contract.test.ts`
+ * ikisini karşılaştırır). Boş bırakılan yüzde eskiden gövdeye `0` olarak
+ * giriyordu — üçünde de `exclusiveMinimum: 0` olduğu için sunucu bunu
+ * REDDEDER: kullanıcı alanı boş bıraktığında form UYARISIZ 422 alıyordu.
+ *
+ * ⚠️ İKİ ALAN AYNI DEĞİLDİR — üst sınır farklıdır:
+ *   `our_share_pct` / `owner_share_pct` : exclusiveMaximum 100 ⇒ 100 GEÇERSİZ
+ *   `share_pct` (hissedar)              : maximum 100          ⇒ 100 GEÇERLİ
+ * Genel `pctError` (0..100 kapsayıcı) ikisi için de YANLIŞTIR.
+ * ------------------------------------------------------------------------ */
+
+/** `ProjectLandShareInput.our_share_pct` · `owner_share_pct` — 0 < x < 100. */
+export const LAND_SHARE_PCT_EXCLUSIVE_MIN = 0;
+export const LAND_SHARE_PCT_EXCLUSIVE_MAX = 100;
+
+/** `ShareholderInput.share_pct` — 0 < x ≤ 100 (üst sınır KAPSAYICI). */
+export const SHAREHOLDER_PCT_EXCLUSIVE_MIN = 0;
+export const SHAREHOLDER_PCT_MAX = 100;
 
 type TextErrors<T> = Partial<Record<keyof T, string>>;
 
@@ -43,6 +68,8 @@ export interface ProjectFormErrors {
   contract: TextErrors<ContractValues>;
   investment: TextErrors<InvestmentValues>;
   landShare: TextErrors<Omit<LandShareValues, "shareholders">>;
+  /** Satır index'ine hizalı hissedar payı hataları (`sites` deseniyle aynı). */
+  shareholders: (string | null)[];
   budget: TextErrors<BudgetValues>;
   /** Satır index'ine hizalı şantiye hataları. */
   sites: (string | null)[];
@@ -54,6 +81,7 @@ export function emptyProjectFormErrors(): ProjectFormErrors {
     contract: {},
     investment: {},
     landShare: {},
+    shareholders: [],
     budget: {},
     sites: [],
   };
@@ -66,9 +94,40 @@ export function hasErrors(errors: ProjectFormErrors): boolean {
     Object.keys(errors.contract).length > 0 ||
     Object.keys(errors.investment).length > 0 ||
     Object.keys(errors.landShare).length > 0 ||
+    errors.shareholders.some(Boolean) ||
     Object.keys(errors.budget).length > 0 ||
     errors.sites.some(Boolean)
   );
+}
+
+/**
+ * Arsa payı oranı: ZORUNLU, `0 < x < 100`. Boş bırakmak `0` göndermek demekti.
+ */
+function landSharePctError(value: string): string | undefined {
+  if (!value.trim()) return MESSAGES.landSharePctRequired;
+  const parsed = numberOrNull(value);
+  if (
+    parsed === null ||
+    parsed <= LAND_SHARE_PCT_EXCLUSIVE_MIN ||
+    parsed >= LAND_SHARE_PCT_EXCLUSIVE_MAX
+  ) {
+    return MESSAGES.landSharePctRange;
+  }
+  return undefined;
+}
+
+/** Hissedar payı: ZORUNLU, `0 < x ≤ 100` (arsa payından FARKLI üst sınır). */
+export function shareholderPctError(value: string): string | undefined {
+  if (!value.trim()) return MESSAGES.shareholderPctRequired;
+  const parsed = numberOrNull(value);
+  if (
+    parsed === null ||
+    parsed <= SHAREHOLDER_PCT_EXCLUSIVE_MIN ||
+    parsed > SHAREHOLDER_PCT_MAX
+  ) {
+    return MESSAGES.shareholderPctRange;
+  }
+  return undefined;
 }
 
 /** Yüzde alanı: boş geçerli, dolu ise 0..100 arası sayı olmalı. */
@@ -172,8 +231,8 @@ function validateLandShare(
   values: LandShareValues,
 ): TextErrors<Omit<LandShareValues, "shareholders">> {
   let errors: TextErrors<Omit<LandShareValues, "shareholders">> = {};
-  errors = assign(errors, "ourSharePct", pctError(values.ourSharePct));
-  errors = assign(errors, "ownerSharePct", pctError(values.ownerSharePct));
+  errors = assign(errors, "ourSharePct", landSharePctError(values.ourSharePct));
+  errors = assign(errors, "ownerSharePct", landSharePctError(values.ownerSharePct));
   errors = assign(errors, "dailyPenalty", moneyError(values.dailyPenalty));
   errors = assign(errors, "guaranteeAmount", moneyError(values.guaranteeAmount));
   if (
@@ -236,6 +295,14 @@ export function validateProjectForm(
       values.projectType === "kat_karsiligi"
         ? validateLandShare(values.landShare)
         : {},
+    // Yalnız ADI DOLU satırlar gövdeye girer (`form-state.ts`) — doğrulama da
+    // aynı satırları hedefler, boş şablon satırı hata BASMAZ.
+    shareholders:
+      values.projectType === "kat_karsiligi"
+        ? values.landShare.shareholders.map((row) =>
+            row.name.trim() ? (shareholderPctError(row.sharePct) ?? null) : null,
+          )
+        : [],
     budget: validateBudget(values.budget),
     sites: values.sites.map((row) => siteRowError(row)),
   };
