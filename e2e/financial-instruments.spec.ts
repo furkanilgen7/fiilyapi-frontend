@@ -5,8 +5,8 @@ import { INSTRUMENTS_URL, login, openInstruments } from "./financial-instruments
 // F-FIN · `/hazine/cek-senet` (E10) FONKSİYONEL turu — 5. kapı.
 // Bu dosya baseline GEREKTİRMEZ ve macOS'ta koşar; adında "gorsel" GEÇMEZ.
 //
-// 🔒 SALT-OKUR: hiçbir POST/PATCH/DELETE tetiklenmez. Ekran yalnız iki `GET`
-// çağırır; `+ Çek Ekle` DEVRE DIŞIDIR ve satır aksiyonu YOKTUR.
+// 🔒 SALT-OKUR: bu dosya hiçbir POST/PATCH/DELETE tetiklemez. Yazma akışı
+// AYRI dosyadadır (`financial-instruments-form.spec.ts`).
 
 test.beforeEach(async ({ page }) => {
   await login(page);
@@ -87,15 +87,18 @@ test("URL sekme parametresi DOGRUDAN acilir (paylasilabilir durum)", async ({ pa
   await expect(page.getByTestId("fin-row")).toHaveCount(2);
 });
 
-test("🔴 E10:65 + Cek Ekle dugmesi VAR ama TIKLANAMAZ", async ({ page }) => {
+/**
+ * 🟢 F-CEK · düğme AÇILDI (mockup geldi: `projedesign/Form - Cek Ekle.dc.html`).
+ * Devre-dışı turun GÖRÜNÜR gerekçe bandı EKRANDAN KALKMIŞ olmalı — kalsaydı
+ * canlı bir düğmeyi YALANLARDI (F-KIRA/F-PRJTAB kanonu).
+ */
+test("🔴 E10:65 + Cek Ekle dugmesi ETKIN ve eski gerekce bandi YOK", async ({ page }) => {
   await openInstruments(page);
   const add = page.getByTestId("fin-add");
   await expect(add).toBeVisible();
-  await expect(add).toBeDisabled();
-  await expect(page.getByTestId("fin-add-reason")).toContainText("tasarımı bekleniyor");
-  // Devre dışı düğme tıklanamaz: force ile tetiklense bile rota DEĞİŞMEZ.
-  await add.click({ force: true });
-  await expect(page).toHaveURL(new RegExp(`\\${INSTRUMENTS_URL}$`));
+  await expect(add).toBeEnabled();
+  await expect(page.getByTestId("fin-add-reason")).toHaveCount(0);
+  await expect(page.getByText(/tasarımı bekleniyor/)).toHaveCount(0);
 });
 
 test("bankasi/aciklamasi olmayan kayit SESSIZCE dusmez", async ({ page }) => {

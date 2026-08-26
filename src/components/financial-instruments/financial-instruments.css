@@ -215,3 +215,180 @@
 }
 
 /* Çıplak hex yok — palet yalnız token'dan gelir (tokens.css). */
+
+/* ══════════════ F-CEK · "Yeni Çek / Senet" formu ═══════════════════════════
+   Kanon: projedesign "Form - Cek Ekle.dc.html" (FCE). Sayılar O dosyanın
+   SATIR numaralarıdır. Prefix yine `fin` (aynı modül; `grep -rho "fin-[a-z-]*"
+   src` ile ölçüldü: 45 sınıf adının 45'i de bu modüle ait). */
+
+/* 🔴 FCE:71 — diyalog `max-width: 620px` (11 alan, iki kolonlu ızgara).
+   Kural `.modal.fin-modal` diye yazılır (özgüllük 0,2,0) çünkü
+   `.modal { max-width: 480px }` (0,1,0) AYNI bildirimi taşır: tek sınıfla
+   yazılsaydı bildirim metinde var olur ama KASKADI KAYBEDERDİ
+   (F-FISNO dersi). */
+.modal.fin-modal {
+  max-width: 620px;
+}
+
+/* FCE:76 — başlık altındaki alt satır. */
+.fin-form__lead {
+  /* FCE:20 `.hint` ölçüsü (11px). Form ipucu token'ı YALNIZ `field.css`te
+     kullanılabilir (etiket tipografisi bekçisi) — aynı değeri taşıyan genel
+     ölçü token'ı kullanılır. */
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+  margin-bottom: 16px;
+}
+
+/* FCE:103 — iki EŞİT kolon; `Field` kendi alt boşluğunu TAŞIMAZ. */
+.fin-form__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px; /* FCE:103 */
+  margin-bottom: 14px;
+}
+
+/* FCE:105 — segment: TEK çerçeve, içinde bitişik iki bölme. */
+.fin-seg {
+  display: flex;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-9);
+  overflow: hidden;
+}
+
+.fin-seg__item {
+  flex: 1;
+  padding: 9px 8px; /* FCE:27 */
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border: none;
+  border-right: 1px solid var(--color-border);
+  cursor: pointer;
+}
+
+.fin-seg__item:last-child {
+  border-right: none;
+}
+
+/* FCE:30 `.seg .on` — seçili bölme MAVİ zemin + beyaz metin. Modifier ortak
+   kuralı EZMELİ, bu yüzden sonra tanımlanır. */
+.fin-seg__item[aria-pressed="true"] {
+  background: var(--color-primary);
+  /* mockup beyazı (FCE:30/122) — palette karşılığı beyaz yüzey token'ı. */
+  color: var(--color-surface);
+}
+
+.fin-seg__item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+/* FCE:120 — seçili bileşim şeridi. */
+.fin-form__composition {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 13px;
+  background: var(--color-nav-active-bg);
+  border-radius: var(--radius-9);
+  margin-bottom: 18px; /* FCE:120 */
+}
+
+.fin-form__composition-label {
+  font-size: var(--text-small);
+  color: var(--color-primary-hover);
+}
+
+/* FCE:122 — rozet: mavi zemin, beyaz 11/700. */
+.fin-form__composition-badge {
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+  background: var(--color-primary);
+  /* mockup beyazı (FCE:30/122) — palette karşılığı beyaz yüzey token'ı. */
+  color: var(--color-surface);
+  padding: 3px 10px;
+  border-radius: var(--radius-8);
+}
+
+/* FCE:123 — sağa yaslı açıklama. */
+.fin-form__composition-note {
+  margin-left: auto;
+  font-size: var(--text-small);
+  color: var(--color-primary-light);
+}
+
+/* FCE:130 — seri no `.mono`dur ama SAĞA YASLI DEĞİLDİR (tutar öyle);
+   `numeric` primitive'i ikisini birden yapardı. */
+.fin-form__mono {
+  font-family: var(--font-mono);
+}
+
+/* FCE:159 — gri zeminli "İsteğe Bağlı" bölümü (KARAR 3). */
+.fin-form__optional {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-11);
+  padding: 16px;
+}
+
+/* FCE:160 — 12/700 uppercase, 0.8px izleme. */
+.fin-form__optional-title {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  margin-bottom: 14px;
+}
+
+/* FCE:159 — son ızgaranın alt boşluğu bölümün padding'ine düşer. */
+.fin-form__optional .fin-form__grid:last-child {
+  margin-bottom: 0;
+}
+
+/* FCE:174 — yeşil "durum alanı yok" notu. */
+.fin-form__status-note {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--color-success-tint);
+  border: 1px solid var(--color-success-tint-border);
+  border-radius: var(--radius-10);
+  font-size: var(--text-small);
+  line-height: 1.7;
+  color: var(--color-success-deep);
+}
+
+.fin-form__status-icon {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--color-success);
+}
+
+.fin-form__error {
+  font-size: var(--text-xs);
+  color: var(--color-danger-strong);
+  margin-top: 8px;
+}
+
+/* FCE:196 — pasif düğmenin gerekçesi footer'ın SOL ucunda (S-FRM kanonu). */
+.fin-form__footer-note {
+  margin-right: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-danger-strong);
+}
+
+.fin-form__footer-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}

@@ -39,7 +39,7 @@ test("cek senet alinan cekler gorsel", async ({ page }) => {
   // rakamları ayrıca ölçülür (WORKFLOW §4, 5. parça).
   await expect(page.getByTestId("fin-card-portfolio")).toContainText("₺ 3,6M");
   await expect(page.getByTestId("fin-row")).toHaveCount(5);
-  await expect(page.getByTestId("fin-add")).toBeDisabled();
+  await expect(page.getByTestId("fin-add")).toBeEnabled();
 
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("cek-senet-alinan.png", { fullPage: true });
@@ -63,4 +63,37 @@ test("cek senet senetler sekmesi gorsel", async ({ page }) => {
 
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("cek-senet-senetler.png", { fullPage: true });
+});
+
+// ---------------------------------------------------------------------------
+// 3) 🟢 F-CEK · FCE — "Yeni Çek / Senet" formu (mockup geldi, düğme açıldı)
+// ---------------------------------------------------------------------------
+//
+// 🔴 Bu kare YENİDİR ve baseline turu İSTER. Kadraj `fullPage`tir: modal
+// yapışkan şeridin ALTINDA kalan bir eleman kadrajında KIRPILIRDI.
+//
+// 🔒 SALT-OKUR kalır: form AÇILIR ama GÖNDERİLMEZ — gönderim başka bir
+// dosyanın işidir (`financial-instruments-form.spec.ts`) ve mock zaten
+// listeyi mutasyona uğratmaz.
+test("cek senet yeni cek formu gorsel", async ({ page }) => {
+  await page.setViewportSize({ ...VISUAL_VIEWPORT });
+  await openInstruments(page);
+
+  await page.getByTestId("fin-add").click();
+  await expect(page.getByRole("dialog", { name: "Yeni Çek / Senet" })).toBeVisible();
+
+  // 🔴 Kadraja giren yüzeyler DURUM-TABANLI iddiayla doğrulanır (görsel spec
+  // 1. parça): bir refactor kutuyu düşürürse kare yine "yeşil" olurdu.
+  await expect(page.getByTestId("fin-form-lead")).toHaveText("Kayıt portföye eklenir");
+  await expect(page.getByTestId("fin-form-composition")).toHaveText("ALINAN ÇEK");
+  await expect(page.getByTestId("fin-form-status-note")).toContainText("Durum alanı yok");
+  // Boş formda kapı KAPALI ve gerekçesi footer'da okunur (FCE:196).
+  await expect(page.getByTestId("fin-form-submit")).toBeDisabled();
+  await expect(page.getByTestId("fin-form-block-reason")).toBeVisible();
+  // İki opsiyonel seçicinin kaynağı da İNDİ — "Yükleniyor" hâli donmasın.
+  await expect(page.getByTestId("fin-form-project").locator("option")).not.toHaveCount(1);
+  await expect(page.getByTestId("fin-form-bank-account").locator("option")).not.toHaveCount(1);
+
+  await prepareFrame(page);
+  await expect(page).toHaveScreenshot("cek-senet-yeni-cek-formu.png", { fullPage: true });
 });

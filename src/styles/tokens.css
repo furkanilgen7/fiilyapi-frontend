@@ -280,6 +280,8 @@
      dosyanın SATIR numaralarıdır; göz kararı ölçü yoktur.
      Yeni RENK token'ı yok — mockup'ın 19 hex'i mevcut palette karşılanıyor. */
   --radius-9: 9px; /* kutucuk kutusu, belge ikon kutusu (152, 160, 182) */
+  /* F-CEK · "Form - Cek Ekle.dc.html" (FCE:159) "İsteğe Bağlı" bölümü. */
+  --radius-11: 11px;
   --leading-loose: 1.7; /* bilgi kutusu metni (55) */
   --space-info-banner-y: 14px; /* bilgi kutusu dikey iç boşluk (53) */
   --space-info-banner-x: 18px; /* bilgi kutusu yatay iç boşluk (53) */

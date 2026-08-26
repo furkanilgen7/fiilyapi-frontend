@@ -24,6 +24,18 @@ vi.mock("@/lib/api/hooks/useFinancialInstruments", async (importOriginal) => ({
   useFinancialInstrumentSummary: vi.fn(),
 }));
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
+// F-CEK · form diyaloğu KENDİ dosyasında sınanır (`InstrumentFormModal.test.tsx`);
+// burada yalnız AÇILDIĞI ölçülür — gerçek modal iki ek sorgu (proje + banka
+// hesabı) açar ve bu ekranın testine `QueryClientProvider` borcu bindirirdi.
+vi.mock("./InstrumentFormModal", () => ({
+  InstrumentFormModal: ({ onClose }: { onClose: () => void }) => (
+    <div data-testid="fin-form-modal-stub">
+      <button type="button" onClick={onClose}>
+        stub-kapat
+      </button>
+    </div>
+  ),
+}));
 
 const replace = vi.fn();
 let searchParams = new URLSearchParams();
@@ -142,28 +154,52 @@ describe("E10:62-66 — başlık şeridi", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Çek & Ödeme" })).toBeInTheDocument();
   });
 
-  /** 🔴 Emrin açık maddesi: düğme SİLİNMEZ, VAR ve TIKLANAMAZ. */
-  it("🔴 E10:65 `+ Çek Ekle` düğmesi VARDIR ama DEVRE DIŞIDIR", () => {
+  /**
+   * 🟢 F-CEK · düğme AÇILDI (mockup geldi: `Form - Cek Ekle.dc.html`).
+   * Önceki tur DEVRE DIŞIydı ve gerekçesi ekranda yazılıydı.
+   */
+  it("🔴 E10:65 `+ Çek Ekle` düğmesi ETKİNDİR ve formu AÇAR", async () => {
+    const user = userEvent.setup();
     render(<FinancialInstrumentsView />);
     const button = screen.getByTestId("fin-add");
-    expect(button).toBeInTheDocument();
     expect(button).toHaveTextContent("+ Çek Ekle");
-    expect(button).toBeDisabled();
-    expect(button).toHaveAttribute("title", "Çek/senet ekleme formunun tasarımı bekleniyor.");
+    expect(button).toBeEnabled();
+    // Devre-dışı turun `title` gerekçesi KALMAMALI — canlı düğmeyi yalanlardı.
+    expect(button).not.toHaveAttribute("title");
+    expect(screen.queryByTestId("fin-form-modal-stub")).not.toBeInTheDocument();
+
+    await user.click(button);
+    expect(screen.getByTestId("fin-form-modal-stub")).toBeInTheDocument();
   });
 
-  it("🔴 tıklanınca HİÇBİR gezinme/istek tetiklenmez", async () => {
+  it("form kapanınca diyalog DOM'dan düşer", async () => {
     const user = userEvent.setup();
     render(<FinancialInstrumentsView />);
     await user.click(screen.getByTestId("fin-add"));
-    expect(replace).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "stub-kapat" }));
+    expect(screen.queryByTestId("fin-form-modal-stub")).not.toBeInTheDocument();
   });
 
-  it("gerekçe EKRANDA görünür bir bantla da tekrarlanır (sessiz düşüş yok)", () => {
+  /**
+   * 🔴 GÖRÜNÜR GEREKÇE, AÇIKLADIĞI ÖĞEDEN TÜRER (F-PRJTAB/F-KIRA kanonu):
+   * devre-dışı turun bandı ekranda KALSAYDI canlı düğmeyi yalanlardı.
+   */
+  it("🔴 eski `tasarımı bekleniyor` bandı EKRANDA KALMAMIŞTIR", () => {
     render(<FinancialInstrumentsView />);
-    expect(screen.getByTestId("fin-add-reason")).toHaveTextContent(
-      "Çek/senet ekleme formunun tasarımı bekleniyor.",
-    );
+    expect(screen.queryByTestId("fin-add-reason")).not.toBeInTheDocument();
+    expect(screen.queryByText(/tasarımı bekleniyor/)).not.toBeInTheDocument();
+  });
+
+  /** Yazma izni AYRI kapıdır: `read` seviyesi listeyi görür, kayıt açamaz. */
+  it("🔒 yazma izni yoksa düğme DEVRE DIŞIdır ve gerekçesi taşınır", async () => {
+    const user = userEvent.setup();
+    setSession("view");
+    render(<FinancialInstrumentsView />);
+    const button = screen.getByTestId("fin-add");
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("title", "Çek/senet eklemek için yazma yetkiniz yok.");
+    await user.click(button);
+    expect(screen.queryByTestId("fin-form-modal-stub")).not.toBeInTheDocument();
   });
 });
 
