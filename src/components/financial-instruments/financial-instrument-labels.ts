@@ -204,10 +204,12 @@ export const INSTRUMENT_FORM_SUBMIT_LABEL = "Kaydet";
 export const INSTRUMENT_FORM_ERROR_FALLBACK = "Çek/senet kaydedilemedi.";
 
 /**
- * FCE:129 — seri no etiketi TÜRDEN türer (tablo başlığıyla AYNI kural,
- * `instrumentSerialColumnLabel`): senet seçiliyken "Çek No" yazan bir etiket
- * ekranın senede "çek" demesine yol açardı.
+ * FCE:129 — etiket SABİTTİR ve TÜRE BAĞLI DEĞİLDİR.
+ *
+ * 🔴 E10 TABLOSUNDAKİ kural (`instrumentSerialColumnLabel`) burada GEÇERSİZDİR
+ * ve kopyalanmadı: orada başlık sabit "Çek No"ydu ve senet sekmesinde ekranın
+ * senede "çek" demesine yol açıyordu. Mockup'ın FORM etiketi ise ZATEN her iki
+ * türü de kapsıyor ("Çek / Senet No") — türe göre değiştirmek mockup'ta
+ * OLMAYAN bir davranış İCAT ETMEK olurdu (%100 mockup sadakati, WORKFLOW §3).
  */
-export function instrumentSerialLabel(kind: FinancialInstrumentKind): string {
-  return kind === "promissory_note" ? "Senet No" : "Çek / Senet No";
-}
+export const INSTRUMENT_FORM_SERIAL_LABEL = "Çek / Senet No";

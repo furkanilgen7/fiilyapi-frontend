@@ -57,8 +57,8 @@ import {
   INSTRUMENT_FORM_STATUS_NOTE_BODY,
   INSTRUMENT_FORM_STATUS_NOTE_TITLE,
   INSTRUMENT_FORM_SUBMIT_LABEL,
+  INSTRUMENT_FORM_SERIAL_LABEL,
   INSTRUMENT_FORM_TITLE,
-  instrumentSerialLabel,
 } from "./financial-instrument-labels";
 import "./financial-instruments.css";
 
@@ -189,10 +189,10 @@ export function InstrumentFormModal({ onClose }: InstrumentFormModalProps) {
       {/* FCE:127-137 — zorunlu alanlar. */}
       <div className="fin-form__grid">
         <Field
-          // 🔴 Etiket TÜRE BAĞLIDIR: senet seçiliyken "Çek No" yazan bir
-          // etiket ekranın senede "çek" demesine yol açardı (E10 tablosunda
-          // aynı kusur ölçülmüştü, `instrumentSerialColumnLabel`).
-          label={instrumentSerialLabel(values.kind)}
+          // 🔴 FCE:129 — etiket SABİT ve TÜRDEN BAĞIMSIZ ("Çek / Senet No",
+          // iki türü de kapsar). Türe göre değiştirmek mockup'ta OLMAYAN bir
+          // davranış icat etmek olurdu; gerekçesi labels dosyasında.
+          label={INSTRUMENT_FORM_SERIAL_LABEL}
           required
           hint={INSTRUMENT_FORM_SERIAL_HINT}
           error={lengthError(values.serialNo.trim(), SERIAL_NO_MAX_LENGTH)}

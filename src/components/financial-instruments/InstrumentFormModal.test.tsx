@@ -113,12 +113,18 @@ describe("FCE · mockup yüzeyleri", () => {
     expect(screen.getByTestId("fin-form-kind-cheque")).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("seri no etiketi TÜRDEN türer (senet seçiliyken `Çek No` YAZMAZ)", async () => {
+  /**
+   * 🔴 Etiket SABİTTİR (FCE:129 "Çek / Senet No" — iki türü de kapsar). E10
+   * TABLOSUNDAKİ türeyen başlık kuralı buraya KOPYALANMAZ: mockup'ta olmayan
+   * bir davranış icat etmek olurdu.
+   */
+  it("seri no etiketi SABİTTİR — tür değişince DEĞİŞMEZ", async () => {
     const user = userEvent.setup();
     render(<InstrumentFormModal onClose={onClose} />);
     expect(screen.getByLabelText("Çek / Senet No")).toBeInTheDocument();
     await user.click(screen.getByTestId("fin-form-kind-promissory_note"));
-    expect(screen.getByLabelText("Senet No")).toBeInTheDocument();
+    expect(screen.getByLabelText("Çek / Senet No")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Senet No")).not.toBeInTheDocument();
   });
 
   /** 🔴 DENETİM SAPMASI 1 — banka SERBEST METİNDİR, kapalı liste değil. */
