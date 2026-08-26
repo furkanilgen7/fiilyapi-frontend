@@ -4,6 +4,12 @@ import nodePath from "node:path";
 
 // YALNIZ tip: derleme sonrasi silinir, Playwright calisma zamanina sizmaz.
 import type { components } from "@/lib/api/schema";
+// 🔴 DEGER importu (tip degil) — birim testi ikizi ile e2e ikizi TEK KAYNAKTAN
+// beslenir. Ikisi ayri yazilmisti ve AYRISMISTI: `SITE_CONTRACT_DEFAULTS`
+// sozlesmenin 16 alanini T0'dan beri tasiyor, e2e ikizi HICBIRINI dondurmuyordu.
+// Playwright globalSetup'i tsconfig `paths` eslemesini cozer (emsal:
+// `e2e/bordro.spec.ts` -> `@/lib/api/hooks/usePayroll`).
+import { SITE_CONTRACT_DEFAULTS } from "@/lib/api/hooks/site-fixtures";
 
 /* ══════════════ SÖZLEŞME SORGU KISITLARI (F-BORDRO T1) ══════════════════════
  * 🔴 SAHTE-YEŞİLİN YEDİNCİ HÂLİ. Sahte backend `limit`i DOĞRULAMIYOR,
@@ -304,6 +310,38 @@ const FINANCIAL_INSTRUMENT_CREATE_SCHEMA = loadBodySchema("FinancialInstrumentCr
 const SUPPLIER_CREATE_SCHEMA = loadBodySchema("SupplierCreate");
 const CUSTOMER_CREATE_SCHEMA = loadBodySchema("CustomerCreate");
 
+/* 🔴 TB-IKIZ · AYNI KAPI, ENUM UÇLARI. Aşağıdaki dört gövdenin ENUM alanları
+ * (`section_type` 7 üye · `weather` 5 üye · plan hücresi `tag` 6 üye) sahte
+ * tarafta HİÇ denetlenmiyordu: uçlar `String(body.x)` / `as string | null`
+ * yazıyor, yani sunucunun 422 vereceği HER metni kabul ediyorlardı. Böyle bir
+ * ikiz bir ONAYLAYICIDIR, bekçi değil — kontrol sorusu "bu mock, gerçek
+ * backend'in REDDEDECEĞİ bir isteği reddediyor mu?" ve cevabı HAYIRDI. */
+const SECTION_CREATE_SCHEMA = loadBodySchema("SectionCreate");
+const SECTION_UPDATE_SCHEMA = loadBodySchema("SectionUpdate");
+const SITE_DIARY_ENTRY_CREATE_SCHEMA = loadBodySchema("SiteDiaryEntryCreate");
+const SITE_DIARY_ENTRY_UPDATE_SCHEMA = loadBodySchema("SiteDiaryEntryUpdate");
+const SITE_PLAN_CELL_INPUT_SCHEMA = loadBodySchema("SitePlanCellInput");
+
+/**
+ * Enum daralt­ması — DARALTMA BİR SUSTURMA DEĞİL, BİR ÖLÇÜMDÜR: değer
+ * `openapi.json`daki üye listesine karşı ÇALIŞMA ZAMANINDA sınanır, listede
+ * yoksa `null` döner. Kısıt tipte yaşamadığı için (`components["schemas"]`
+ * yalnız birleşim tipi verir, üye listesini VERMEZ) tek kaynak spec dosyasıdır.
+ *
+ * Uçlar bu fonksiyona gelmeden önce `bodySchemaViolation`dan geçer; bu ikinci
+ * süzgeç, kapı bir gün o uçtan kaldırılırsa ikizin sözleşme DIŞI bir değeri
+ * duruma YAZMASINI yine de engeller (fail-closed).
+ */
+function enumValue<T extends string>(
+  schema: MockBodySchema,
+  field: string,
+  raw: unknown,
+): T | null {
+  if (typeof raw !== "string") return null;
+  const allowed = schema.fields.get(field)?.enum;
+  return allowed !== undefined && allowed.includes(raw) ? (raw as T) : null;
+}
+
 /**
  * 🔴 `amount` iki dallıdır (`anyOf`): sayısal dal `exclusiveMinimum: 0`,
  * string dalının deseni en fazla İKİ ondalık basamak kabul eder. `loadBodySchema`
@@ -510,7 +548,89 @@ interface MockProject {
 
 // Task 8/9 — Proje Detay/Şantiye Detay ekranlarını görsel testler için besler
 // (bkz. SiteDetailResponse/SectionResponse şeması, src/lib/api/schema.d.ts).
-interface MockSite {
+/**
+ * `SiteDetailResponse`in T0'da (2026-07-30) eklenen 16 ZORUNLU alani — TIP de
+ * sozlesmeden turer, elle listelenmez. Sozlesmeye bir alan eklenirse burasi
+ * kendiliginden buyur ve ikiz DERLEME ZAMANINDA kirmizi verir.
+ */
+type SiteContractFields = Pick<
+  components["schemas"]["SiteDetailResponse"],
+  | "is_draft"
+  | "site_manager_user_id"
+  | "safety_officer_user_id"
+  | "safety_officer_name"
+  | "safety_officer_is_outsourced"
+  | "neighborhood"
+  | "parcel"
+  | "gps_coordinates"
+  | "land_area_m2"
+  | "construction_area_m2"
+  | "floor_info"
+  | "budget"
+  | "facilities"
+  | "electricity_subscription_no"
+  | "water_subscription_no"
+  | "planned_worker_count"
+>;
+
+/**
+ * Paylasilan varsayilanin TAZE kopyasi.
+ *
+ * 🔴 `facilities` bir NESNEDIR: `SITE_CONTRACT_DEFAULTS`i dogrudan yaymak
+ * butun santiyelere AYNI referansi verirdi ve bir santiyenin tesisini
+ * degistiren bir yazma otekileri de sessizce oynatirdi.
+ */
+function siteContractDefaults(): SiteContractFields {
+  return { ...SITE_CONTRACT_DEFAULTS, facilities: { ...SITE_CONTRACT_DEFAULTS.facilities } };
+}
+
+/** Bos/eksik metin -> `null` (sunucunun `textOrNull` davranisinin aynasi). */
+function optionalText(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  return raw.trim() || null;
+}
+
+/** Bos/eksik kimlik -> `null`. */
+function optionalId(raw: unknown): string | null {
+  return typeof raw === "string" && raw.length > 0 ? raw : null;
+}
+
+/**
+ * 🔴 SAYI GIRER, DECIMAL METIN CIKAR. Govde `land_area_m2`/`budget` alanlarini
+ * SAYI olarak gonderir (`SiteCreate`), yanit ise Decimal METIN dondurur
+ * (`SiteDetailResponse`). Ikiz sayiyi oldugu gibi geri verseydi, gercek
+ * backend'in dondurmeyecegi bir tipi dondururdu ve iki alani okuyan her
+ * bicimlendirme testi yanlis girdiyle yesil gecerdi.
+ */
+function optionalDecimal(raw: unknown): string | null {
+  if (typeof raw === "number" && Number.isFinite(raw)) return raw.toFixed(2);
+  if (typeof raw === "string" && raw.trim() !== "") {
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed.toFixed(2) : null;
+  }
+  return null;
+}
+
+/** Tam sayi say degeri; sayi olmayan -> `null`. */
+function optionalCount(raw: unknown): number | null {
+  return typeof raw === "number" && Number.isFinite(raw) ? Math.trunc(raw) : null;
+}
+
+/**
+ * Tesis kutulari — SEKIZI DE ZORUNLUDUR (`SiteFacilities`). Govde eksik
+ * gonderirse `false` varsayilir; govdenin kendisi yoksa hepsi kapalidir.
+ */
+function siteFacilitiesFrom(raw: unknown): components["schemas"]["SiteFacilities"] {
+  const source = typeof raw === "object" && raw !== null ? (raw as Record<string, unknown>) : {};
+  const defaults = siteContractDefaults().facilities;
+  const out = { ...defaults };
+  for (const key of Object.keys(defaults) as (keyof typeof defaults)[]) {
+    out[key] = source[key] === true;
+  }
+  return out;
+}
+
+interface MockSite extends SiteContractFields {
   id: string;
   project_id: string;
   code: string;
@@ -544,7 +664,7 @@ interface MockSection {
   start_date: string | null;
   end_date: string | null;
   sort_order: number;
-  section_type: string | null;
+  section_type: components["schemas"]["SectionType"] | null;
   description: string | null;
   deputy_manager_user_id: string | null;
   deputy_manager_name: string | null;
@@ -2623,11 +2743,13 @@ function seedState(): MockState {
   // sabit değerlerle hizalı.
   const sites: MockSite[] = [
     {
+      ...siteContractDefaults(),
       id: "s-1", project_id: "p-1", code: "A-BLOK", name: "A-Blok Şantiyesi", status: "active",
       address: "Kuyubaşı Mah.", city: "Ankara", city_inherited: false, site_manager_name: "S. Öztürk",
       start_date: "2025-03-01", end_date: "2026-12-31", delivery_date: null, remaining_days: 157,
     },
     {
+      ...siteContractDefaults(),
       id: "s-2", project_id: "p-1", code: "B-BLOK", name: "B-Blok Şantiyesi", status: "completed",
       address: "Kuyubaşı Mah.", city: "Ankara", city_inherited: false, site_manager_name: "K. Arslan",
       start_date: "2024-01-01", end_date: null, delivery_date: "2026-05-01", remaining_days: null,
@@ -2892,10 +3014,39 @@ function buildSectionListItems(state: MockState, siteId: string): components["sc
     }));
 }
 
-function buildSiteDetail(state: MockState, site: MockSite) {
+/** `MockSite`in sozlesme alanlarini yaniti icin ayirir (sadece 16'si). */
+function siteContractPayload(site: MockSite): SiteContractFields {
+  return {
+    is_draft: site.is_draft,
+    site_manager_user_id: site.site_manager_user_id,
+    safety_officer_user_id: site.safety_officer_user_id,
+    safety_officer_name: site.safety_officer_name,
+    safety_officer_is_outsourced: site.safety_officer_is_outsourced,
+    neighborhood: site.neighborhood,
+    parcel: site.parcel,
+    gps_coordinates: site.gps_coordinates,
+    land_area_m2: site.land_area_m2,
+    construction_area_m2: site.construction_area_m2,
+    floor_info: site.floor_info,
+    budget: site.budget,
+    facilities: site.facilities,
+    electricity_subscription_no: site.electricity_subscription_no,
+    water_subscription_no: site.water_subscription_no,
+    planned_worker_count: site.planned_worker_count,
+  };
+}
+
+function buildSiteDetail(
+  state: MockState,
+  site: MockSite,
+): components["schemas"]["SiteDetailResponse"] {
   const project = state.projects.find((p) => p.id === site.project_id);
   const sectionItems = buildSectionListItems(state, site.id);
   return {
+    // 🔴 Sozlesmenin 16 alani KAYITTAN yayilir, tek tek yazilmaz: yazma ucuna
+    // giren deger GET'ten AYNEN geri gelmelidir. Once tek tek yazilmadigi icin
+    // hicbiri donmuyordu ve dort kapinin dordu de yesildi (K-MKD2).
+    ...siteContractPayload(site),
     id: site.id, code: site.code, name: site.name, status: site.status, address: site.address,
     city: site.city, city_inherited: site.city_inherited, site_manager_name: site.site_manager_name,
     start_date: site.start_date, end_date: site.end_date, delivery_date: site.delivery_date,
@@ -2927,7 +3078,9 @@ function buildSiteDetail(state: MockState, site: MockSite) {
  * üretilir, fikstürde SAKLANMAZ — `budget` (BOQ türevi) ile `budget_amount`
  * (elle girilen gerçek kolon) AYNI ŞEY DEĞİLDİR (P6 §7 S2a).
  */
-function buildSectionDetail(section: MockSection) {
+function buildSectionDetail(
+  section: MockSection,
+): components["schemas"]["SectionDetailResponse"] {
   return {
     id: section.id,
     code: section.code,
@@ -3058,7 +3211,7 @@ interface MockDiaryEntry {
   project_id: string;
   entry_date: string;
   section_id: string | null;
-  weather: string | null;
+  weather: components["schemas"]["Weather"] | null;
   temperature_c: string | null;
   work_done: string | null;
   chief_note: string | null;
@@ -3123,7 +3276,10 @@ function diaryWorkerTotal(entry: MockDiaryEntry): number {
   return entry.worker_counts.reduce((sum, w) => sum + w.count, 0);
 }
 
-function buildDiaryEntryDetail(state: MockState, entry: MockDiaryEntry) {
+function buildDiaryEntryDetail(
+  state: MockState,
+  entry: MockDiaryEntry,
+): components["schemas"]["SiteDiaryEntryDetail"] {
   return {
     id: entry.id,
     site_id: entry.site_id,
@@ -3151,7 +3307,9 @@ function buildDiaryEntryDetail(state: MockState, entry: MockDiaryEntry) {
   };
 }
 
-function buildDiaryEntryListItem(entry: MockDiaryEntry) {
+function buildDiaryEntryListItem(
+  entry: MockDiaryEntry,
+): components["schemas"]["SiteDiaryEntryListItem"] {
   return {
     id: entry.id,
     site_id: entry.site_id,
@@ -3331,7 +3489,7 @@ interface MockPlanCell {
   row_id: string;
   plan_date: string;
   text: string;
-  tag: string | null;
+  tag: components["schemas"]["PlanCellTag"] | null;
 }
 interface MockPlanGoal {
   id: string;
@@ -3412,7 +3570,11 @@ const PLAN_SPRINT_FIXTURES: MockPlanSprint[] = [
  * üretilir (`is_weekend` Cmt/Paz). Hücreler SEYREKTİR — planı olmayan gün
  * hücre üretmez, ızgara deliklerini `days` doldurur.
  */
-function buildSitePlanWeek(state: MockState, siteId: string, weekStart: string) {
+function buildSitePlanWeek(
+  state: MockState,
+  siteId: string,
+  weekStart: string,
+): components["schemas"]["SitePlanWeek"] {
   const site = state.sites.find((s) => s.id === siteId);
   const project = state.projects.find((p) => p.id === site?.project_id);
   const days = Array.from({ length: 7 }, (_, index) => {
@@ -3429,13 +3591,10 @@ function buildSitePlanWeek(state: MockState, siteId: string, weekStart: string) 
 
   // Gruplama anahtarı `(kind, section_id)` İKİLİSİ — ekipman satırları
   // bölümsüz oldukları için AYRI başlığa düşer.
-  const groups: Array<{
-    kind: MockPlanRow["kind"];
-    section_id: string | null;
-    section_name: string | null;
-    section_manager_name: string | null;
-    rows: unknown[];
-  }> = [];
+  // 🔴 `rows: unknown[]` idi — SATIRLARIN İÇİ SÖZLEŞMEYLE HİÇ KARŞILAŞTIRILMIYORDU;
+  // hücrenin `tag`i de dahil her alan tipsiz geçiyordu. Grup tipi artık
+  // sözleşmeden okunur.
+  const groups: components["schemas"]["SitePlanGroup"][] = [];
   for (const row of rows) {
     const section = state.sections.find((s) => s.id === row.section_id);
     const key = `${row.kind}::${row.section_id ?? ""}`;
@@ -7312,7 +7471,11 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const projectId = projectSitesMatch[1];
       const items = state.sites
         .filter((s) => s.project_id === projectId)
-        .map((s) => ({
+        .map((s): components["schemas"]["SiteCard"] => ({
+          // AYNI 16 ALAN — `SiteCard` da hepsini ZORUNLU tutar. Liste ucu
+          // `buildSiteDetail` ile ayni kaynaktan beslenmeseydi, kart ile detay
+          // iki farkli gerceklik anlatirdi.
+          ...siteContractPayload(s),
           id: s.id, code: s.code, name: s.name, status: s.status, address: s.address, city: s.city,
           city_inherited: s.city_inherited, site_manager_name: s.site_manager_name,
           start_date: s.start_date, end_date: s.end_date, delivery_date: s.delivery_date,
@@ -7349,6 +7512,29 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         const siteId = `s-${state.sites.length + 1}`;
         const city = body.city ? String(body.city) : null;
         const site: MockSite = {
+          // 🔴 K-MKD2 — YAZILAN 16 ALAN SAKLANIR. Once hicbiri saklanmiyordu:
+          // Santiye Ekle formu ISG sorumlusunu, ada/parseli, alanlari, butceyi
+          // ve tesisleri GONDERIYOR (`buildSiteCreateBody`), ikiz gelen govdeyi
+          // SESSIZCE ATIYOR ve GET'te hicbirini dondurmuyordu. Ikiz "yazdim"
+          // diyen bir onaylayiciydi; artik yaziyi geri verdigi icin bir e2e
+          // iddiasi form -> detay yolunu GERCEKTEN olcebilir.
+          ...siteContractDefaults(),
+          is_draft: body.is_draft === true,
+          site_manager_user_id: optionalId(body.site_manager_user_id),
+          safety_officer_user_id: optionalId(body.safety_officer_user_id),
+          safety_officer_name: userNameById(state, body.safety_officer_user_id),
+          safety_officer_is_outsourced: body.safety_officer_is_outsourced === true,
+          neighborhood: optionalText(body.neighborhood),
+          parcel: optionalText(body.parcel),
+          gps_coordinates: optionalText(body.gps_coordinates),
+          land_area_m2: optionalDecimal(body.land_area_m2),
+          construction_area_m2: optionalDecimal(body.construction_area_m2),
+          floor_info: optionalText(body.floor_info),
+          budget: optionalDecimal(body.budget),
+          facilities: siteFacilitiesFrom(body.facilities),
+          electricity_subscription_no: optionalText(body.electricity_subscription_no),
+          water_subscription_no: optionalText(body.water_subscription_no),
+          planned_worker_count: optionalCount(body.planned_worker_count),
           id: siteId,
           project_id: projectId,
           // Kod boş gelirse sunucu üretir (spec §3.6) — mock da aynısını yapar.
@@ -7438,6 +7624,8 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const site = state.sites.find((s) => s.id === siteId);
       if (!site) return send(404, { detail: "santiye yok" });
       return withBody((body) => {
+        const schemaViolation = bodySchemaViolation(SECTION_CREATE_SCHEMA, body);
+        if (schemaViolation !== null) return send(422, schemaViolation);
         const code = body.code ? String(body.code) : null;
         if (code && state.sections.some((sec) => sec.site_id === siteId && sec.code === code)) {
           return send(409, { detail: "Bu bölüm kodu bu şantiyede zaten kullanılıyor" });
@@ -7447,7 +7635,11 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         const managerName = body.manager_name ? String(body.manager_name) : null;
         const startDate = body.start_date ? String(body.start_date) : null;
         const endDate = body.end_date ? String(body.end_date) : null;
-        const sectionType = body.section_type ? String(body.section_type) : null;
+        const sectionType = enumValue<components["schemas"]["SectionType"]>(
+          SECTION_CREATE_SCHEMA,
+          "section_type",
+          body.section_type,
+        );
         const budgetAmount =
           body.budget_amount === undefined || body.budget_amount === null ? null : String(body.budget_amount);
         const validationError = validateSectionInput({
@@ -7513,6 +7705,8 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const section = state.sections.find((sec) => sec.id === sectionId);
       if (!section) return send(404, { detail: "bolum yok" });
       return withBody((body) => {
+        const schemaViolation = bodySchemaViolation(SECTION_UPDATE_SCHEMA, body);
+        if (schemaViolation !== null) return send(422, schemaViolation);
         const hasCode = Object.prototype.hasOwnProperty.call(body, "code");
         const code = hasCode ? (body.code ? String(body.code) : null) : section.code;
         if (
@@ -7529,7 +7723,9 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         const managerNameRaw = pick("manager_name", (v) => (v ? String(v) : null));
         const startDate = pick("start_date", (v) => (v ? String(v) : null));
         const endDate = pick("end_date", (v) => (v ? String(v) : null));
-        const sectionType = pick("section_type", (v) => (v ? String(v) : null));
+        const sectionType = pick("section_type", (v) =>
+          enumValue<components["schemas"]["SectionType"]>(SECTION_UPDATE_SCHEMA, "section_type", v),
+        );
         const budgetAmount = pick("budget_amount", (v) => (v === undefined || v === null ? null : String(v)));
         const managerName = managerNameRaw ?? userNameById(state, managerUserId);
 
@@ -8690,6 +8886,10 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         const input = Array.isArray(body.cells) ? (body.cells as Record<string, unknown>[]) : [];
         const next: MockPlanCell[] = [];
         for (const raw of input) {
+          // 🔴 HÜCRE HÜCRE denetlenir: `tag` enum'u burada yaşar, gövdenin
+          // kökünde değil. Kökü denetlemek `cells[]`in içine HİÇ bakmazdı.
+          const cellViolation = bodySchemaViolation(SITE_PLAN_CELL_INPUT_SCHEMA, raw);
+          if (cellViolation !== null) return send(422, cellViolation);
           const planDate = String(raw.plan_date ?? "");
           if (!weekDates.has(planDate)) {
             return send(422, { detail: "hucre istenen haftanin disinda" });
@@ -8701,7 +8901,11 @@ export function startMockBackend(port: number): { server: Server; close: () => P
             row_id: String(raw.row_id ?? ""),
             plan_date: planDate,
             text,
-            tag: typeof raw.tag === "string" ? raw.tag : null,
+            tag: enumValue<components["schemas"]["PlanCellTag"]>(
+              SITE_PLAN_CELL_INPUT_SCHEMA,
+              "tag",
+              raw.tag,
+            ),
           });
         }
         state.planCells = [
@@ -9143,6 +9347,8 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const site = state.sites.find((s) => s.id === siteDiaryMatch[1]);
       if (!site) return send(404, { detail: "santiye yok" });
       return withBody((body) => {
+        const schemaViolation = bodySchemaViolation(SITE_DIARY_ENTRY_CREATE_SCHEMA, body);
+        if (schemaViolation !== null) return send(422, schemaViolation);
         const entryDate = String(body.entry_date ?? "");
         if (!entryDate) return send(422, { detail: "entry_date zorunlu" });
         // Günde TEK kayıt: aynı güne ikinci POST 409 (spec §2).
@@ -9160,7 +9366,11 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           project_id: site.project_id,
           entry_date: entryDate,
           section_id: (body.section_id as string | null | undefined) ?? null,
-          weather: (body.weather as string | null | undefined) ?? null,
+          weather: enumValue<components["schemas"]["Weather"]>(
+            SITE_DIARY_ENTRY_CREATE_SCHEMA,
+            "weather",
+            body.weather,
+          ),
           temperature_c: body.temperature_c !== undefined && body.temperature_c !== null
             ? String(body.temperature_c)
             : null,
@@ -9252,6 +9462,8 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         return send(409, { detail: "Gönderilmiş kayıt düzenlenemez." });
       }
       return withBody((body) => {
+        const schemaViolation = bodySchemaViolation(SITE_DIARY_ENTRY_UPDATE_SCHEMA, body);
+        if (schemaViolation !== null) return send(422, schemaViolation);
         if (body.entry_date !== undefined && body.entry_date !== null) {
           const nextDate = String(body.entry_date);
           const clash = state.diaryEntries.find(
@@ -9261,7 +9473,13 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           entry.entry_date = nextDate;
         }
         if (body.section_id !== undefined) entry.section_id = (body.section_id as string | null) ?? null;
-        if (body.weather !== undefined) entry.weather = (body.weather as string | null) ?? null;
+        if (body.weather !== undefined) {
+          entry.weather = enumValue<components["schemas"]["Weather"]>(
+            SITE_DIARY_ENTRY_UPDATE_SCHEMA,
+            "weather",
+            body.weather,
+          );
+        }
         if (body.temperature_c !== undefined) {
           entry.temperature_c = body.temperature_c === null ? null : String(body.temperature_c);
         }
@@ -15752,6 +15970,15 @@ interface PayrollLineAmounts {
   gross: number;
   sgkEmployee: number;
   unemploymentEmployee: number;
+  /**
+   * Gelir vergisi MATRAHI = brüt − SGK işçi primi − işsizlik işçi primi.
+   *
+   * 🔴 Sözleşme `tax_base_amount`i `gross_amount`tan AYRI bir alan olarak
+   * taşır; ikisi aynı olsaydı ikinci alanın var olması için hiçbir sebep
+   * kalmazdı. SGK matrahı (`sgk_base_total`) brüttür, gelir vergisi matrahı
+   * DEĞİLDİR — bu ayrım şemanın kendisinden okunur.
+   */
+  taxBase: number;
   incomeTax: number;
   stampTax: number;
   deduction: number;
@@ -15801,6 +16028,7 @@ function payrollLineAmounts(
     gross,
     sgkEmployee,
     unemploymentEmployee,
+    taxBase: gross - sgkEmployee - unemploymentEmployee,
     incomeTax,
     stampTax,
     deduction,
@@ -15845,13 +16073,64 @@ function payrollSplit(
   return { bank, cash: amounts.net - bank };
 }
 
+/**
+ * KÜMÜLATİF gelir vergisi matrahı — aynı YIL içinde bu AYA KADAR (bu ay
+ * DAHİL) aynı personelin matrahlarının toplamı.
+ *
+ * 🔴 SATIRLAR ARASI TUTARLI OLMAK ZORUNDADIR. Alan "bu ayın matrahı" değil
+ * bir BİRİKİMDİR: Temmuz satırının kümülatifi, Mart-Temmuz satırlarının
+ * `tax_base_amount` toplamına EŞİT olmalıdır. Sabit ya da rastgele bir sayı
+ * yazılsaydı ekran matematiksel olarak imkânsız bir tablo basardı ve
+ * `missing_prior_period_count` (K4) bandının anlattığı şey — "önceki aylar
+ * açılmadıysa kümülatif EKSİKTİR" — ikizde HİÇ doğrulanamazdı.
+ *
+ * 🔴 Açılmamış ay TOPLAMA GİRMEZ, sıfır sayılmaz: K4 bandının varlık sebebi
+ * tam olarak budur. Eksik ay eksik kalır, kullanıcı bandı görür.
+ *
+ * `null` dönüşü, satırın kendi tutarları hesaplanamadığındadır (S4).
+ */
+function payrollCumulativeTaxBase(
+  state: MockPayrollState,
+  period: MockPayrollPeriod,
+  line: MockPayrollLine,
+): number | null {
+  if (payrollLineAmounts(state, period, line) === null) return null;
+  let total = 0;
+  for (const prior of state.periods) {
+    if (prior.year !== period.year) continue;
+    if (prior.month > period.month) continue;
+    const priorLine = prior.lines.find((row) => row.personnel_id === line.personnel_id);
+    if (priorLine === undefined) continue;
+    const priorAmounts = payrollLineAmounts(state, prior, priorLine);
+    if (priorAmounts === null) continue;
+    total += priorAmounts.taxBase;
+  }
+  return total;
+}
+
+/**
+ * 🔴 ÖLÇÜLEMEYEN KALAN (TB-IKIZ kaydı). Bu ikizde gelir vergisi HÂLÂ
+ * `income_tax_pct` × BRÜT olarak hesaplanır (`payrollLineAmounts`), oysa
+ * matrah brütten DÜŞÜKTÜR. Yani `income_tax_amount ÷ tax_base_amount`
+ * oranı `income_tax_pct`e EŞİT DEĞİLDİR.
+ *
+ * Neden BURADA kapatılmadı: hangi tabana vergilendiğini söyleyen tek kaynak
+ * backend deposudur ve bu dilimin kapsamı DIŞINDADIR. Tabanı değiştirmek
+ * `deduction_amount`/`net_amount`/`bank_amount`/`cash_amount`ı ve dolayısıyla
+ * bordronun ÜÇ görsel karesini birden oynatır — ölçülmemiş bir çıkarımla
+ * ekranın manşet sayılarını oynatmak, ölçülmüş bir eksiği kapatmaktan daha
+ * büyük bir kusurdur. `income_tax_amount` bu yüzden UYDURULMAZ: satırın
+ * `deduction_amount`ı içindeki gelir vergisi bileşeninin TA KENDİSİDİR ve
+ * bu ikizde DOĞRULANABİLİR bir değerdir.
+ */
 function buildPayrollLineResponse(
   state: MockPayrollState,
   period: MockPayrollPeriod,
   line: MockPayrollLine,
-) {
+): components["schemas"]["PayrollLineResponse"] {
   const amounts = payrollLineAmounts(state, period, line);
   const split = payrollSplit(line, amounts);
+  const cumulativeTaxBase = payrollCumulativeTaxBase(state, period, line);
   return {
     id: line.id,
     personnel_id: line.personnel_id,
@@ -15863,6 +16142,10 @@ function buildPayrollLineResponse(
     net_amount: amounts === null ? null : payrollKurus(amounts.net),
     bank_amount: split === null ? null : payrollKurus(split.bank),
     cash_amount: split === null ? null : payrollKurus(split.cash),
+    tax_base_amount: amounts === null ? null : payrollKurus(amounts.taxBase),
+    cumulative_tax_base:
+      cumulativeTaxBase === null ? null : payrollKurus(cumulativeTaxBase),
+    income_tax_amount: amounts === null ? null : payrollKurus(amounts.incomeTax),
     status: payrollLineStatus(line, amounts),
     excluded_reason: line.personnel_source === "subcontractor" ? PAYROLL_EXCLUDED_REASON : null,
     is_overridden: line.isOverridden,
@@ -15883,7 +16166,10 @@ const PAYROLL_SOURCE_ORDER: readonly MockPayrollWorkerSource[] = [
   "intern",
 ];
 
-function buildPayrollSections(state: MockPayrollState, period: MockPayrollPeriod) {
+function buildPayrollSections(
+  state: MockPayrollState,
+  period: MockPayrollPeriod,
+): components["schemas"]["PayrollSectionResponse"][] {
   return PAYROLL_SOURCE_ORDER.flatMap((source) => {
     const lines = period.lines.filter((line) => line.personnel_source === source);
     if (lines.length === 0) return [];
@@ -15976,7 +16262,10 @@ function buildPayrollSummary(state: MockPayrollState, period: MockPayrollPeriod)
   };
 }
 
-function buildPayrollPeriodDetail(state: MockPayrollState, period: MockPayrollPeriod) {
+function buildPayrollPeriodDetail(
+  state: MockPayrollState,
+  period: MockPayrollPeriod,
+): components["schemas"]["PayrollPeriodDetailResponse"] {
   return {
     id: period.id,
     year: period.year,
@@ -16016,13 +16305,29 @@ function buildPayrollPeriodListRow(state: MockPayrollState, period: MockPayrollP
 /* ---------------------------------------------------------------- SGK özeti */
 
 /**
+ * O yılın ÜCRET tarifesi tohumlanmış mı? `income_tax_pct` boş bırakıldığında
+ * (dilimli rejim) verginin tek kaynağı budur; yoksa satır fail-closed
+ * hesaplanamaz sayılır — sıfır vergi UYDURULMAZ.
+ *
+ * `non_wage` BAKILMAZ: bordro her zaman `wage` tarifesini kullanır.
+ */
+function payrollHasWageBrackets(state: MockPayrollState, year: number): boolean {
+  return state.taxBrackets.some(
+    (bracket) => bracket.year === year && bracket.income_kind === "wage" && bracket.is_active,
+  );
+}
+
+/**
  * SGK 55-95. Bildirilen çalışan = SGK'ya BİZİM bildirdiğimiz satırlar; taşeron
  * işçisini kendi işvereni bildirir, bu yüzden matraha girmez.
  *
  * 🔴 `unknown_rate_count` TİP sayar (şema: "oran seti olmayan tipleri"), satır
  * değil: eksik olan şey bir satırın verisi değil, bir tipin oran setidir.
  */
-function buildPayrollSgkSummary(state: MockPayrollState, period: MockPayrollPeriod) {
+function buildPayrollSgkSummary(
+  state: MockPayrollState,
+  period: MockPayrollPeriod,
+): components["schemas"]["PayrollSgkSummaryResponse"] {
   let base = 0;
   let sgkEmployee = 0;
   let unemploymentEmployee = 0;
@@ -16034,10 +16339,17 @@ function buildPayrollSgkSummary(state: MockPayrollState, period: MockPayrollPeri
   let declared = 0;
   let uncomputed = 0;
   const missingRateSources = new Set<MockPayrollWorkerSource>();
+  const missingTaxSources = new Set<MockPayrollWorkerSource>();
 
   for (const line of period.lines) {
-    if (payrollRateFor(state, period.year, line.personnel_source) === undefined) {
+    const lineRate = payrollRateFor(state, period.year, line.personnel_source);
+    if (lineRate === undefined) {
       missingRateSources.add(line.personnel_source);
+    } else if (
+      lineRate.income_tax_pct === null &&
+      !payrollHasWageBrackets(state, period.year)
+    ) {
+      missingTaxSources.add(line.personnel_source);
     }
     const amounts = payrollLineAmounts(state, period, line);
     if (amounts === null) {
@@ -16088,6 +16400,13 @@ function buildPayrollSgkSummary(state: MockPayrollState, period: MockPayrollPeri
     sgk_payable_total: payrollKurus(sgkPremium + unemployment),
     uncomputed_count: uncomputed,
     unknown_rate_count: missingRateSources.size,
+    // 🔴 `unknown_rate_count`in GELİR VERGİSİ AYNASI ve ondan AYRI bir
+    // sayaçtır: oran seti VAR ama gelir vergisi belirlenemiyor olabilir.
+    // `income_tax_pct` boşsa rejim DİLİMLİDİR (IK3-GV) ve o yılın ücret
+    // tarifesi tohumlanmamışsa vergi HESAPLANAMAZ. İki eksiği tek sayaca
+    // indirgemek, kullanıcıya "oranları gir" derken asıl eksik olanın
+    // TARİFE olduğunu gizlerdi. `unknown_rate_count` gibi TİP sayar.
+    unknown_tax_count: missingTaxSources.size,
   };
 }
 
