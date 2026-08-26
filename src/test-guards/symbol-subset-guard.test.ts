@@ -166,6 +166,12 @@ const ALLOWED: readonly (readonly [number, string])[] = [
   [0x1f69b, "🚛 kamyon ekipman kategorisi ikonu"],
   [0x1f69c, "🚜 iş makinesi kategorisi + operatör belgesi ikonu"],
   [0x1f527, "🔧 bakım/onarım ekipman kategorisi ikonu"],
+  // — F-MKD · Ekipman Detay kart başlıkları (`Makine - Ekipman Detay.dc.html`
+  //   MD:201 · MD:231). Mockup'tan gelirler; SVG'ye çevirmek TASARIM
+  //   DEĞİŞİKLİĞİ olurdu. İkisi de Emoji_Presentation=Yes ⇒ tek aday
+  //   (Noto Color Emoji), `⚠`in çift-aday sınıfında DEĞİLLER. —
+  [0x23f1, "⏱ çalışma kaydı özeti kart başlığı (equipment-detail)"],
+  [0x26fd, "⛽ yakıt takibi özeti kart başlığı (equipment-detail)"],
   [0x1f52c, "🔬 laboratuvar/deney raporu belgesi ikonu"],
   [0x1f4de, "📞 telefon/iletişim ikonu (personel kartı ve formu)"],
   [0x1f4f1, "📱 mobil entegrasyon kartı ikonu (IntegrationsScreen)"],

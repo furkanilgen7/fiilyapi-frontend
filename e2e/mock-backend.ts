@@ -6448,10 +6448,17 @@ const EQUIPMENT_FIXTURES: MockEquipment[] = [
     site_id: "s-1", operator_id: "per-1", status: "working", status_note: null,
     status_expected_date: null, fuel_type: "diesel", norm_consumption: "4.20",
     norm_unit: "lt_hour", maintenance_period: "hours_500", monthly_capacity_hours: 200,
-    engine_power_kw: null, capacity_description: null, hourmeter_hours: null,
+    // F-MKD — Ekipman Detay ekraninin TAM bakim yolu (MD:254-270) bu kayitta
+    // yasar: hourmeter + son bakim saati DOLU oldugu icin sunucu turevleri
+    // (`used_hours`/`remaining_hours`/`usage_pct`) hesaplanabilir. Alanlarin
+    // hicbiri M1 kartinda ya da M2 formunun iddia edilen alanlarinda
+    // BASILMAZ — mevcut `makine-listesi.png` karesi ve `equipment-form`
+    // e2e'si etkilenmez (olculdu).
+    engine_power_kw: "45.00", capacity_description: "8 Ton · 60 m yükseklik",
+    hourmeter_hours: "14286.00",
     rental_contract_no: null, rental_start_date: null, rental_end_date: null,
     rental_min_monthly_hours: null, rental_payment_terms: null,
-    last_service_date: null, last_service_hourmeter: null,
+    last_service_date: "2026-05-18", last_service_hourmeter: "14000.00",
     is_company_asset: true, is_active: true, created_at: "2026-01-05T08:00:00Z",
   },
   {
@@ -6480,10 +6487,17 @@ const EQUIPMENT_FIXTURES: MockEquipment[] = [
     status_expected_date: null, fuel_type: "diesel", norm_consumption: "0.45",
     // 🔴 K3 — `lt_km`: kilometre verisi hiçbir ekranda girilmiyor, sapma `null`.
     norm_unit: "lt_km", maintenance_period: null, monthly_capacity_hours: 0,
-    engine_power_kw: null, capacity_description: null, hourmeter_hours: null,
-    rental_contract_no: null, rental_start_date: null, rental_end_date: null,
-    rental_min_monthly_hours: null, rental_payment_terms: null,
-    last_service_date: null, last_service_hourmeter: null,
+    // F-MKD — KIRALIK detayin DOLU kiralama karti + BOS bakim karti ayni
+    // kayitta: `maintenance_period: null` oldugu icin bakim turevlerinin
+    // HEPSI `null` doner ve ekran "hesaplanamadi" bandini basar (MK-4'un
+    // "her turev AYRI AYRI null olabilir" kurali burada olculur).
+    engine_power_kw: "460.00", capacity_description: "26 Ton · 8x4",
+    hourmeter_hours: "38200.00",
+    rental_contract_no: "LT-KRA-2026-004",
+    rental_start_date: "2026-03-01", rental_end_date: "2026-12-31",
+    rental_min_monthly_hours: 160,
+    rental_payment_terms: "Aylık — fatura üzerinden",
+    last_service_date: "2026-06-04", last_service_hourmeter: null,
     is_company_asset: false, is_active: true, created_at: "2026-01-07T08:00:00Z",
   },
   {
@@ -6628,6 +6642,41 @@ const EQUIPMENT_DOCUMENT_FIXTURES: components["schemas"]["EquipmentDocumentRespo
     note: null,
     created_at: "2026-05-12T08:00:00Z",
   },
+  // F-MKD — Ekipman Detay belgeler tablosunun rozet yollari. `eq-1`e
+  // EKLENMEDI: `form-dialogs-visual.spec.ts` orada "2 belge kayıtlı"
+  // iddiasinda bulunuyor ve karesi oynardi (olculdu).
+  {
+    id: "edoc-3",
+    equipment_id: "eq-3",
+    type_id: "edt-3",
+    type_code: "muayene",
+    type_name: "Periyodik Muayene Raporu",
+    filename: "fmx-muayene-2026.pdf",
+    mime_type: "application/pdf",
+    size_bytes: 71680,
+    document_no: "FMX-MUA-2026",
+    issued_at: "2025-09-10",
+    // `as_of` (2026-08-20) + 21 gun ⇒ "21 gün kaldı" (SARI satir).
+    valid_until: "2026-09-10",
+    note: null,
+    created_at: "2025-09-10T08:00:00Z",
+  },
+  {
+    id: "edoc-4",
+    equipment_id: "eq-3",
+    type_id: "edt-2",
+    type_code: "sigorta",
+    type_name: "Sigorta Poliçesi",
+    filename: "fmx-sigorta.pdf",
+    mime_type: "application/pdf",
+    size_bytes: 51200,
+    document_no: "AK-2025-88214",
+    issued_at: "2025-07-01",
+    // `as_of`ten ONCE ⇒ "Süresi doldu" (KIRMIZI satir).
+    valid_until: "2026-07-01",
+    note: null,
+    created_at: "2025-07-01T08:00:00Z",
+  },
 ];
 
 /**
@@ -6725,6 +6774,90 @@ const FUEL_SUMMARY_FIXTURE: components["schemas"]["FuelSummaryResponse"] = {
     },
   ],
 };
+
+/**
+ * F-MKD · `GET /equipment/{id}/detail` (MK-4) ikizi.
+ *
+ * 🔴 `as_of` SABİTTİR ve fikstür ayının İÇİNDEDİR. İkiz `new Date()`
+ * kullansaydı ekran "bu ay" için boş bir çalışma/yakıt özeti alır, görsel
+ * kapı her ay başka bir kare üretir ve belge geçerlilik rozetleri (gün
+ * farkına bağlı) her koşuda kayardı.
+ */
+const EQUIPMENT_DETAIL_AS_OF = "2026-08-20";
+
+/** Bakım periyodunun SAAT karşılığı — `monthly` saat cinsinden DEĞİLDİR. */
+const MAINTENANCE_PERIOD_HOURS: Record<string, number | null> = {
+  hours_250: 250,
+  hours_500: 500,
+  hours_1000: 1000,
+  monthly: null,
+};
+
+/**
+ * MK-4 kira toplamları — İKİZ FİKSTÜRÜDÜR, formül değil.
+ *
+ * 🔴 `eq-3`te `cumulative_paid_unknown_count > 0`: hesaplanamayan satır
+ * SESSİZ DÜŞMEZ, adetçe bildirilir (ekranın görünür uyarı bandının kapısı).
+ * 🔴 `eq-5`te toplam `0` ama `paid_invoice_count` 1: ödenmiş hakedişi olan
+ * ama `rented` satırı olmayan ekipman — sunucunun `_rental_totals`ı fatura
+ * kimliğini `line_kind` süzgecinden ÖNCE sayar. Ekranın "0 = hiç ödeme yok"
+ * diye YORUMLAMADIĞININ kapısı budur.
+ */
+const EQUIPMENT_RENTAL_TOTALS_FIXTURE: Record<
+  string,
+  components["schemas"]["EquipmentRentalTotals"]
+> = {
+  "eq-1": { cumulative_paid: "0.00", cumulative_paid_unknown_count: 0, paid_invoice_count: 0 },
+  "eq-3": {
+    cumulative_paid: "284160.00",
+    cumulative_paid_unknown_count: 2,
+    paid_invoice_count: 3,
+  },
+  "eq-5": { cumulative_paid: "0.00", cumulative_paid_unknown_count: 0, paid_invoice_count: 1 },
+};
+
+/** MK-4 tahmini bakım tarihi — tempo hesabı SUNUCUNUNDUR, ikiz onu SABİT tutar. */
+const EQUIPMENT_ESTIMATED_SERVICE_FIXTURE: Record<string, string | null> = {
+  "eq-1": "2026-09-05",
+};
+
+/**
+ * Bakım bloğu ekipman künyesinden TÜRETİLİR (hard-coded DEĞİL): hourmeter aynı
+ * ekranda HEM hero'da HEM bakım kartında basılır; ikiz sabit bir sayı
+ * döndürseydi ekran kendi kendisiyle çelişir ve sahte bir kusur kovalanırdı.
+ * Bu bir formül OTORİTESİ değil, ŞEKİL ikizidir — gerçek formül
+ * `backend/app/modules/equipment/maintenance.py`dedir.
+ */
+function buildMaintenanceBlock(
+  equipment: MockEquipment,
+): components["schemas"]["EquipmentMaintenanceBlock"] {
+  const period = equipment.maintenance_period;
+  const periodHours = period === null ? null : MAINTENANCE_PERIOD_HOURS[period];
+  const hourmeter = equipment.hourmeter_hours === null ? null : Number(equipment.hourmeter_hours);
+  const lastHourmeter =
+    equipment.last_service_hourmeter === null ? null : Number(equipment.last_service_hourmeter);
+
+  const nextHourmeter =
+    lastHourmeter === null || periodHours === null ? null : lastHourmeter + periodHours;
+  const usedHours = hourmeter === null || lastHourmeter === null ? null : hourmeter - lastHourmeter;
+  const remaining = nextHourmeter === null || hourmeter === null ? null : nextHourmeter - hourmeter;
+  const usagePct =
+    usedHours === null || periodHours === null ? null : (usedHours / periodHours) * 100;
+
+  const two = (value: number | null) => (value === null ? null : value.toFixed(2));
+  return {
+    period,
+    period_hours: periodHours,
+    last_service_date: equipment.last_service_date,
+    last_service_hourmeter: two(lastHourmeter),
+    hourmeter_hours: two(hourmeter),
+    next_service_hourmeter: two(nextHourmeter),
+    used_hours: two(usedHours),
+    remaining_hours: two(remaining),
+    usage_pct: usagePct === null ? null : usagePct.toFixed(1),
+    estimated_service_date: EQUIPMENT_ESTIMATED_SERVICE_FIXTURE[equipment.id] ?? null,
+  };
+}
 
 /** Dönem SÜZGECİ — özet uçları istenen ay fikstür ayı DEĞİLSE boş özet döner. */
 function isEquipmentFixturePeriod(searchParams: URLSearchParams): boolean {
@@ -10921,6 +11054,27 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       return send(200, EQUIPMENT_DOCUMENT_TYPES_FIXTURE);
     }
 
+    // ⚠️ SIRA: `/equipment/{id}/detail` `/equipment/{equipment_id}` desenine de
+    // uyar — ondan ÖNCE eşleşmek ZORUNDADIR (dosyanın en üstündeki SIRA
+    // uyarısının aynısı).
+    const equipmentDetailMatch = path.match(/^\/equipment\/([^/]+)\/detail$/);
+    if (method === "GET" && equipmentDetailMatch) {
+      const equipment = state.equipment.find((item) => item.id === equipmentDetailMatch[1]);
+      // Görünmeyen kayıt var olmayanla AYNI 404'ü döner (K20).
+      if (!equipment) return send(404, { detail: "Ekipman bulunamadı." });
+      return send(200, {
+        equipment,
+        maintenance: buildMaintenanceBlock(equipment),
+        rental: EQUIPMENT_RENTAL_TOTALS_FIXTURE[equipment.id] ?? {
+          cumulative_paid: "0.00",
+          cumulative_paid_unknown_count: 0,
+          paid_invoice_count: 0,
+        },
+        // Sunucu `as_of` verilmediğinde KENDİ gününü damgalar.
+        as_of: parsed.searchParams.get("as_of") ?? EQUIPMENT_DETAIL_AS_OF,
+      });
+    }
+
     const equipmentDocumentsMatch = path.match(/^\/equipment\/([^/]+)\/documents$/);
     if (equipmentDocumentsMatch) {
       const equipmentId = equipmentDocumentsMatch[1];
@@ -11025,7 +11179,30 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           lt_per_hour_avg: null, avg_unit_price: null, abnormal_count: 0, rows: [],
         });
       }
-      return send(200, FUEL_SUMMARY_FIXTURE);
+      // 🔴 F-MKD — `equipment_id` süzgeci İKİZDE YOKTU ve eksikliği SESSİZDİ:
+      // ekipman detayının yakıt kutuları FİLONUN toplamını (2.840 Lt /
+      // ₺112.800) tek makinenin tüketimi gibi basıyordu ve dört kapı da yeşil
+      // kalıyordu. Gerçek sunucu süzgeci SQL'de uygular ve toplamları SÜZÜLMÜŞ
+      // satırlardan üretir (`service/fuel_summary.py:94-101`) — ikiz de öyle
+      // yapar, yoksa bekçi değil ONAYLAYICI olurdu.
+      const fuelEquipmentId = parsed.searchParams.get("equipment_id");
+      if (!fuelEquipmentId) return send(200, FUEL_SUMMARY_FIXTURE);
+      const fuelRows = FUEL_SUMMARY_FIXTURE.rows.filter(
+        (row) => row.equipment_id === fuelEquipmentId,
+      );
+      const fuelSum = (pick: (row: (typeof fuelRows)[number]) => string) =>
+        fuelRows.reduce((total, row) => total + Number(pick(row)), 0).toFixed(2);
+      return send(200, {
+        ...FUEL_SUMMARY_FIXTURE,
+        rows: fuelRows,
+        total_liters: fuelSum((row) => row.liters),
+        total_amount: fuelSum((row) => row.amount),
+        // Payda TEK makinenin saatidir; ikiz filo ortalamasını TAŞIMAZ.
+        lt_per_hour_avg: fuelRows[0]?.actual ?? null,
+        abnormal_count: fuelRows.filter(
+          (row) => row.consumption_status === "warning" || row.consumption_status === "critical",
+        ).length,
+      });
     }
 
     if (method === "GET" && path === "/equipment/work-logs") {
@@ -11138,6 +11315,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const offset = Number(parsed.searchParams.get("offset") ?? "0");
       const supplierId = parsed.searchParams.get("supplier_id");
       const siteId = parsed.searchParams.get("site_id");
+      const equipmentId = parsed.searchParams.get("equipment_id");
       const status = parsed.searchParams.get("status");
       const periodYear = parsed.searchParams.get("period_year");
       const periodMonth = parsed.searchParams.get("period_month");
@@ -11145,6 +11323,16 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       let rows = state.rentalInvoices;
       if (supplierId) rows = rows.filter((invoice) => invoice.supplier_id === supplierId);
       if (siteId) rows = rows.filter((invoice) => invoice.site_id === siteId);
+      // 🔴 F-MKD — `equipment_id` BAŞLIKTA DEĞİL SATIRDADIR: gerçek sunucu bunu
+      // bir `EXISTS` ile süzer (`rental_repository._filtered`), JOIN ile DEĞİL
+      // (iki satırlı fatura listede iki kez görünmesin). İkiz de aynısını
+      // yapar — `some(...)` tam olarak `EXISTS`tir. Bu süzgeç İKİZDE DE
+      // OLMASAYDI ekran filonun tamamını gösterir ve testler onu ONAYLARDI.
+      if (equipmentId) {
+        rows = rows.filter((invoice) =>
+          invoice.lines.some((line) => line.equipment_id === equipmentId),
+        );
+      }
       if (status) rows = rows.filter((invoice) => invoice.status === status);
       if (periodYear) rows = rows.filter((invoice) => invoice.period_year === Number(periodYear));
       if (periodMonth) rows = rows.filter((invoice) => invoice.period_month === Number(periodMonth));

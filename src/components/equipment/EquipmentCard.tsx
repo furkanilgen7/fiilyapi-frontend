@@ -77,7 +77,16 @@ export function EquipmentCard({
         </Badge>
       </div>
 
-      <div className="makine-card__name">{equipment.name}</div>
+      {/* F-MKD — kartın adı Ekipman Detay ekranının TEK giriş noktasıdır.
+          Mockup M1 kartta bir bağlantı ÇİZMİYOR (ölçüm: `projedesign` içinde
+          `Makine - Ekipman Detay.dc.html`e giden tek gönderme sol menüdedir,
+          o da uygulama kabuğudur ve ekipman kimliği taşıyamaz) — ekran
+          bağlantısız kalsaydı hiçbir yerden AÇILAMAZDI. Bağlantı GÖRÜNÜMÜ
+          değiştirmez (`makine-card__name` rengini/altını KORUR); yalnız
+          gezinme kazandırır. */}
+      <Link href={`/makine/${equipment.id}`} className="makine-card__name">
+        {equipment.name}
+      </Link>
       <div className="makine-card__meta">
         {equipment.brand ?? EQUIPMENT_EMPTY_VALUE} · {siteText}
       </div>

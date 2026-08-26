@@ -67,3 +67,29 @@ export function useSuppliers(
       ),
   });
 }
+
+export const SUPPLIER_QUERY_KEY = "supplier";
+
+/**
+ * F-MKD · `GET /suppliers/{supplier_id}` — TEK tedarikçinin künyesi.
+ *
+ * 🔴 Niçin listeden SÜZÜLMÜYOR: `GET /suppliers` SAYFALIDIR (sunucu varsayılanı
+ * 50, tavan 200). Ekipmanın `supplier_id`si o sayfanın DIŞINDA kalsaydı ad
+ * hiç bulunamaz ve ekran "Kiralayan Firma —" basardı; kırpılma sessizce bir
+ * VERİ YOKLUĞUNA dönüşürdü (TB3/F-TH kırpılma dersinin bu ekrandaki hâli).
+ * Tek kimlikli uç bu riski yapısal olarak ortadan kaldırır.
+ *
+ * Boş id ile ağa ÇIKILMAZ (`useEquipmentDetail` deseni).
+ */
+export function useSupplier(supplierId: string): UseQueryResult<SupplierCard, Error> {
+  return useQuery({
+    enabled: supplierId.length > 0,
+    queryKey: [SUPPLIER_QUERY_KEY, supplierId],
+    queryFn: async () =>
+      unwrap(
+        await backendClient.GET("/suppliers/{supplier_id}", {
+          params: { path: { supplier_id: supplierId } },
+        }),
+      ),
+  });
+}

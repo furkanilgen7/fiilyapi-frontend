@@ -1,0 +1,528 @@
+/* F-MKD · Ekipman Detay (MD = `projedesign/Makine - Ekipman Detay.dc.html`;
+   parantez içi sayılar o dosyanın SATIR numaralarıdır).
+
+   🔴 ÖNEK ÖLÇÜMÜ: `makine-det` seçildi çünkü depoda 0 sınıf adı taşıyor
+   (ölçüm: `grep -rn "makine-det" src/ | wc -l` → 0). `makine-` ailesi 370 ad
+   taşır ve alt aileleri (`makine-cal` · `makine-kira` · `makine-yakit` ·
+   `makine-kpi` · `makine-tabs` …) doludur; onlardan birine yazmak üç ekranı
+   sessizce bozardı.
+
+   Mockup'ın üst barı (28-42) ve sol menüsü (45-61) UYGULAMA KABUĞUdur
+   (F3 Topbar + Sidebar) — bu sayfa onları YENİDEN ÇİZMEZ. */
+
+.makine-det {
+  animation: var(--anim-fade-up); /* 63 */
+}
+
+/* Kırıntı (breadcrumb) — mockup üst barında (36-38); kabuk onu basmadığı için
+   sayfanın kendi başına taşınır (site-detail `__breadcrumb` emsali). */
+.makine-det__crumb {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-bottom: 10px;
+}
+.makine-det__crumb-sep {
+  color: var(--color-border);
+}
+.makine-det__crumb-current {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.makine-det__notice {
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: 8px 12px;
+}
+.makine-det__notice--danger {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger);
+}
+
+/* ---- KİMLİK KARTI (66-113) --------------------------------------------- */
+
+.makine-det__hero {
+  background: var(--gradient-hero-site); /* 67 — 135deg üçlü durak, birebir */
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin-bottom: 16px;
+  color: var(--color-on-brand);
+}
+.makine-det__hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px; /* 68 */
+}
+.makine-det__hero-id {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px; /* 69 */
+}
+.makine-det__hero-icon {
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.18); /* 70 */
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+.makine-det__hero-badges {
+  display: flex;
+  align-items: center;
+  gap: 9px; /* 72 */
+  margin-bottom: 5px;
+}
+/* Hero rozeti marka degradesinin ÜSTÜNDE durur — `ui/badge` varyantları açık
+   zemin için ayarlıdır; burada mockup'ın kendi yarı saydam çipi kullanılır
+   (73: rgba(255,255,255,.22)). Durum rozeti tam renklidir (74). */
+.makine-det__hero-chip {
+  font-size: 10px;
+  background: var(--color-on-brand-20);
+  padding: 3px 9px;
+  border-radius: 8px;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.2px;
+}
+.makine-det__hero-chip--status {
+  background: var(--color-success);
+}
+.makine-det__hero-chip--warning {
+  background: var(--color-warning);
+}
+.makine-det__hero-chip--danger {
+  background: var(--color-danger);
+}
+.makine-det__hero-chip--neutral {
+  background: var(--color-on-brand-30);
+}
+.makine-det__hero-title {
+  font-size: 24px; /* 75 */
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.4px;
+  margin-bottom: 5px;
+}
+.makine-det__hero-sub {
+  font-size: 13px; /* 76 */
+  color: var(--color-on-brand-85);
+}
+.makine-det__hero-money {
+  text-align: right;
+  flex-shrink: 0;
+}
+.makine-det__hero-money-label {
+  font-size: 11px; /* 79 */
+  color: var(--text-on-hero-muted);
+  margin-bottom: 3px;
+}
+.makine-det__hero-money-value {
+  font-size: 28px; /* 80 */
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+}
+.makine-det__hero-money-note {
+  font-size: 12px; /* 81 */
+  color: var(--color-on-brand-80);
+  margin-top: 2px;
+}
+
+.makine-det__hero-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr); /* 84 */
+  gap: 13px;
+}
+.makine-det__hero-kpi {
+  background: var(--surface-hero-tile); /* 86 */
+  border-radius: var(--radius-10);
+  padding: 12px 14px;
+}
+/* 105 — "Sonraki Bakım" kutusu mockup'ta amber zeminlidir. */
+.makine-det__hero-kpi--accent {
+  background: rgba(245, 158, 11, 0.28);
+  border: 1px solid rgba(252, 211, 77, 0.4);
+}
+.makine-det__hero-kpi-label {
+  font-size: 10px;
+  color: var(--text-on-hero-muted);
+  margin-bottom: 4px;
+}
+.makine-det__hero-kpi-value {
+  font-size: 18px; /* 89, 94, 99, 104 */
+  font-weight: var(--weight-bold);
+}
+.makine-det__hero-kpi-value--text {
+  font-size: 14px; /* 88 — "A-Blok" metin değeri daha küçüktür */
+}
+.makine-det__hero-kpi-value--mono {
+  font-family: var(--font-mono);
+}
+.makine-det__hero-kpi-note {
+  font-size: 11px;
+  color: var(--text-on-hero-muted);
+  margin-top: 3px;
+}
+.makine-det__hero-kpi-note--good {
+  color: var(--color-success-light);
+}
+.makine-det__hero-kpi-note--accent {
+  color: var(--color-warning-soft);
+}
+
+/* ---- ORTAK KART / anahtar-değer satırları ------------------------------ */
+
+.makine-det__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 115, 199, 254 */
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.makine-det__card {
+  background: var(--color-surface);
+  border-radius: var(--radius-14);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+}
+.makine-det__card--flush {
+  padding: 0;
+  overflow: hidden;
+}
+.makine-det__card-title {
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.makine-det__card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.makine-det__card-head .makine-det__card-title {
+  margin-bottom: 0;
+}
+.makine-det__card-more {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+
+.makine-det__kv {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+.makine-det__kv:last-child {
+  border-bottom: none;
+}
+.makine-det__k {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+.makine-det__v {
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  text-align: right;
+}
+.makine-det__v--mono {
+  font-family: var(--font-mono);
+}
+.makine-det__v--warning {
+  color: var(--color-warning-deep-text);
+}
+.makine-det__v--success {
+  color: var(--color-success);
+}
+.makine-det__v--muted {
+  color: var(--color-text-subtle);
+  font-weight: var(--weight-regular);
+}
+
+/* Kart altı açıklama bandı (135-140, 289-292). */
+.makine-det__band {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-8);
+  font-size: 11px;
+  color: var(--color-text-muted);
+  line-height: var(--leading-relaxed);
+}
+.makine-det__band--warning {
+  background: var(--color-warning-soft);
+  border: 1px solid var(--color-warning);
+  color: var(--color-warning-body-text);
+}
+
+/* ---- BELGELER (144-196) ------------------------------------------------ */
+
+.makine-det__doc-head {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.makine-det__doc-count {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+.makine-det__table-wrap {
+  overflow-x: auto;
+}
+.makine-det__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.makine-det__table th {
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+.makine-det__table th:first-child,
+.makine-det__table td:first-child {
+  padding-left: 18px;
+}
+.makine-det__table th:last-child,
+.makine-det__table td:last-child {
+  padding-right: 18px;
+  text-align: right;
+}
+.makine-det__table td {
+  padding: 12px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-divider);
+}
+.makine-det__table tbody tr:last-child td {
+  border-bottom: none;
+}
+.makine-det__table td.makine-det__td-name {
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.makine-det__td-center {
+  text-align: center;
+}
+/* 199 — süresi yaklaşan belge satırı amber zeminlidir. */
+.makine-det__row--expiring {
+  background: var(--color-amber-tint);
+}
+.makine-det__row--expired {
+  background: var(--color-danger-row-bg);
+}
+.makine-det__empty {
+  padding: 18px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* ---- ÜÇLÜ / İKİLİ SAYAÇ KUTULARI (204-208, 233-236) -------------------- */
+
+.makine-det__tiles {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.makine-det__tiles--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+.makine-det__tiles--2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+.makine-det__tile {
+  text-align: center;
+  padding: 11px;
+  border-radius: var(--radius-9);
+  background: var(--color-surface-2);
+}
+.makine-det__tile--primary {
+  background: var(--color-primary-soft);
+}
+.makine-det__tile--success {
+  background: var(--color-success-tint);
+}
+.makine-det__tile--danger {
+  background: var(--color-danger-tint);
+}
+.makine-det__tile-value {
+  font-size: 18px;
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+  color: var(--color-text);
+}
+.makine-det__tile--primary .makine-det__tile-value {
+  color: var(--color-primary);
+}
+.makine-det__tile--success .makine-det__tile-value {
+  color: var(--color-success);
+}
+.makine-det__tile--danger .makine-det__tile-value {
+  color: var(--color-danger);
+}
+.makine-det__tile-label {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+/* ---- İLERLEME ÇUBUĞU (241-245, 265-269) -------------------------------- */
+
+.makine-det__bar-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 5px;
+}
+.makine-det__bar-label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+.makine-det__bar-value {
+  font-size: 12px;
+  font-weight: var(--weight-bold);
+  color: var(--color-warning-deep-text);
+}
+.makine-det__bar-track {
+  height: 8px;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-progress-bar);
+  overflow: hidden;
+}
+.makine-det__bar-fill {
+  height: 100%;
+  border-radius: var(--radius-progress-bar);
+  background: var(--gradient-progress-duration);
+}
+.makine-det__bar-note {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  margin-top: 4px;
+}
+
+/* ---- MALİ BAĞLANTILAR (272-292) ---------------------------------------- */
+
+.makine-det__links {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.makine-det__link {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 14px;
+  border-radius: var(--radius-10);
+  background: var(--color-primary-soft);
+  border: 1px solid var(--color-primary-border-soft);
+  text-decoration: none;
+  color: inherit;
+}
+.makine-det__link--muted {
+  background: var(--color-surface-2);
+  border-color: var(--color-border);
+}
+/* Rotası olmayan mockup öğesi SİLİNMEZ — devre-dışı + görünür gerekçe
+   (F-TH kalıcı kuralı, `TreasuryView` "+ Ödeme Planla" emsali). */
+.makine-det__link--disabled {
+  background: var(--color-surface-2);
+  border-color: var(--color-dashed-border);
+  border-style: dashed;
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+}
+.makine-det__link-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  background: var(--color-primary-light);
+}
+.makine-det__link--muted .makine-det__link-icon,
+.makine-det__link--disabled .makine-det__link-icon {
+  background: var(--color-surface-muted);
+}
+.makine-det__link-body {
+  flex: 1;
+  min-width: 0;
+}
+.makine-det__link-title {
+  /* `<span>`ler <a> icinde satir ici kalirsa baslik ile not BIRLESIR
+     ("Kira HakedisiLT-2026-..."): blok yapmak ZORUNLU. */
+  display: block;
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.makine-det__link--disabled .makine-det__link-title {
+  color: var(--color-text-subtle);
+}
+.makine-det__link-note {
+  display: block;
+  font-size: 11px;
+  color: var(--color-primary);
+  margin-top: 1px;
+}
+.makine-det__link--muted .makine-det__link-note,
+.makine-det__link--disabled .makine-det__link-note {
+  color: var(--color-text-subtle);
+}
+.makine-det__link-amount {
+  font-size: 14px;
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+.makine-det__link-more {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+  flex-shrink: 0;
+}
+
+@media (max-width: 1100px) {
+  .makine-det__grid {
+    grid-template-columns: 1fr;
+  }
+  .makine-det__hero-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .makine-det__hero-top {
+    flex-direction: column;
+  }
+  .makine-det__hero-money {
+    text-align: left;
+  }
+}
