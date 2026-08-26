@@ -1,4 +1,5 @@
 import { equipmentCategoryIcon } from "@/components/equipment/category-icon";
+import { CheckIcon, inlineSymbolProps } from "@/components/ui/icons";
 import {
   EQUIPMENT_EMPTY_VALUE,
   EQUIPMENT_OWNERSHIP_LABELS,
@@ -148,7 +149,16 @@ export function EquipmentDetailHero({
         <HeroKpi
           label="Arıza Saati"
           value={workRow ? formatDecimal(workRow.breakdown_hours, 2) : EQUIPMENT_EMPTY_VALUE}
-          note={workRow && Number(workRow.breakdown_hours) === 0 ? "Sorunsuz ✓" : undefined}
+          // 🔴 Çıplak `✓` (U+2713) YASAK (`symbol-subset-guard`): kapsam dışı
+          // ve emoji sunumu olmadığı için ubuntu-latest'te fontconfig
+          // ikamesine düşer. MD:98'in onay işareti inline SVG'dir.
+          note={
+            workRow && Number(workRow.breakdown_hours) === 0 ? (
+              <>
+                Sorunsuz <CheckIcon {...inlineSymbolProps} />
+              </>
+            ) : undefined
+          }
           noteTone={workRow && Number(workRow.breakdown_hours) === 0 ? "good" : undefined}
           valueModifier="mono"
         />
@@ -189,7 +199,7 @@ export function EquipmentDetailHero({
 interface HeroKpiProps {
   label: string;
   value: string;
-  note?: string;
+  note?: React.ReactNode;
   noteTone?: "good" | "accent";
   valueModifier: "mono" | "text";
   accent?: boolean;
