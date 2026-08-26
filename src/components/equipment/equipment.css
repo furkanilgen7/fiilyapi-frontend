@@ -163,10 +163,23 @@
   line-height: 1;
 }
 .makine-card__name {
+  /* F-MKD — artik bir <a>. `display:block` + `text-decoration:none` ZORUNLU:
+     kural once bir <div>e uygulaniyordu ve satir ici bir baglanti kutu
+     yuksekligini/alt cizgisini degistirerek KARENIN kendisini oynatirdi. */
+  display: block;
+  text-decoration: none;
   font-size: 15px; /* 93 */
   font-weight: var(--weight-semibold);
   color: var(--color-text);
   margin-bottom: 3px;
+}
+.makine-card__name:hover {
+  color: var(--color-primary);
+}
+.makine-card__name:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-6);
 }
 .makine-card__meta {
   font-size: 12px; /* 94 */
