@@ -19,10 +19,12 @@ import {
   useReverseJournalEntry,
 } from "@/lib/api/hooks/useJournalEntryMutations";
 import { useJournalSummary } from "@/lib/api/hooks/useJournalSummary";
+import { useTrialBalance } from "@/lib/api/hooks/useTrialBalance";
+import { useVatReturn } from "@/lib/api/hooks/useVatReturn";
 import { LEDGER_MAX_LIMIT, useLedger } from "@/lib/api/hooks/useLedger";
 import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
-import { formatAmount } from "@/lib/format";
+import { formatAmount, formatCurrency } from "@/lib/format";
 import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncation";
 import { pendingModuleLabel } from "@/lib/pending-modules";
 
@@ -33,12 +35,15 @@ import {
   hasCarriedBalance,
   type Period,
 } from "./accounting-labels";
+import { AccountingKpiCards } from "./AccountingKpiCards";
+import { AccountBalancesPanel, EInvoicePanel } from "./AccountingRail";
 import { DraftEntriesPanel } from "./DraftEntriesPanel";
 import { JournalEntryFormModal } from "./JournalEntryFormModal";
-import { JournalKpiStrip } from "./JournalKpiStrip";
 import { LedgerTable } from "./LedgerTable";
 import { PeriodPicker } from "./PeriodPicker";
+import { AccountingTabs } from "./shell/AccountingTabs";
 import "./accounting.css";
+import "./accounting-pro.css";
 
 /**
  * "+ Yevmiye Kaydı" (E8:67) ve "Düzenle" düğmelerinin AÇTIĞI diyaloğun
@@ -100,6 +105,10 @@ export function AccountingView() {
     limit: JOURNAL_ENTRIES_MAX_LIMIT,
   });
   const accountsQuery = useChartOfAccounts({ limit: CHART_ACCOUNTS_MAX_LIMIT });
+  // MP:165-209 sağ ray — mini mizan. Mizan ekranıyla AYNI uç, AYNI dönem.
+  const railQuery = useTrialBalance(period.year, period.month);
+  // MP:128-131 KDV kartı — `journal-summary` bu sayıyı TAŞIMAZ, ayrı uçtur.
+  const vatQuery = useVatReturn(period.year, period.month);
 
   const postMutation = usePostJournalEntry();
   const reverseMutation = useReverseJournalEntry();
@@ -109,7 +118,9 @@ export function AccountingView() {
     !permission.canView ||
     isForbidden(summaryQuery.error) ||
     isForbidden(ledgerQuery.error) ||
-    isForbidden(draftsQuery.error)
+    isForbidden(draftsQuery.error) ||
+    isForbidden(railQuery.error) ||
+    isForbidden(vatQuery.error)
   ) {
     return <AccessDenied />;
   }
@@ -151,18 +162,19 @@ export function AccountingView() {
 
   return (
     <div className="mu">
-      {/* E8:62 — kabuktaki breadcrumb'ın metin karşılığı */}
+      {/* MP:101 — kabuktaki breadcrumb'ın metin karşılığı */}
       <p className="mu__eyebrow">Sözleşme &amp; Mali</p>
 
       <div className="mu__head">
-        {/* E8:64 */}
+        {/* MP:103 */}
         <h1 className="mu__title">Muhasebe</h1>
         <div className="mu__actions">
-          {/* E8:66 — ucu YOK; düğme SİLİNMEZ, devre dışı + gerekçesi EKRANDA. */}
-          <Button variant="secondary" disabled data-testid="mu-export">
-            Dışa Aktar
-          </Button>
-          {/* E8:67 — `JournalEntryFormModal`ı açar (T4). */}
+          {/* 🔴 MP:104 dönem seçiciyi BAŞLIK SATIRINA koyar (E8'de KPI
+              şeridinin içindeydi). Mockup ham bir `<select>` çizer; ham
+              form kontrolü YASAK ve `PeriodPicker` zaten bu modülün ölçülmüş
+              dönem gezginidir (‹ › + yıl taşması). */}
+          <PeriodPicker period={period} onChange={handlePeriodChange} />
+          {/* MP:104 — `JournalEntryFormModal`ı açar (T4). */}
           <Button
             variant="primary"
             disabled={!permission.canWrite}
@@ -174,32 +186,35 @@ export function AccountingView() {
         </div>
       </div>
 
-      <p className="mu-notice" data-testid="mu-export-reason">
-        “Dışa Aktar”: {pendingModuleLabel(ACCOUNTING_REASONS.export)}.
-      </p>
+      {/* MP:105-112 — modül sekmeleri; drill-in sidebar'ın YERİNE (KK-10). */}
+      <AccountingTabs />
+
       {!permission.canWrite && (
         <p className="mu-notice" data-testid="mu-write-notice">
           {ACCOUNTING_REASONS.write}
         </p>
       )}
 
-      {/* E8:72-89 — dönem seçici + ÜÇ KPI kartı TEK ızgarada. */}
+      {/* MP:114-139 — BEŞ KPI kartı. İki kaynak AYRI hata yolu işletir. */}
       {summaryQuery.isError && (
         <p className="mu-notice mu-notice--danger" data-testid="mu-summary-error">
           {backendErrorMessage(summaryQuery.error, "Dönem özeti yüklenemedi.")}
         </p>
       )}
-      <div className="mu-strip">
-        <PeriodPicker period={period} onChange={handlePeriodChange} />
-        <JournalKpiStrip summary={summaryQuery.data} />
-      </div>
+      {vatQuery.isError && (
+        <p className="mu-notice mu-notice--danger" data-testid="mu-vat-error">
+          {backendErrorMessage(vatQuery.error, "KDV özeti yüklenemedi.")}
+        </p>
+      )}
+      <AccountingKpiCards summary={summaryQuery.data} vat={vatQuery.data} />
 
-      {/* E8:93-159 */}
+      {/* MP:140-251 — İKİ SÜTUN: defter (esner) + 340px sağ ray. */}
+      <div className="mu-pro-grid">
       <section className="mu-panel" aria-label="Yevmiye Defteri">
         <div className="mu-panel__head">
-          {/* E8:95 */}
+          {/* MP:141 */}
           <span className="mu-panel__title">Yevmiye Defteri</span>
-          {/* E8:96 — ham <select> YASAK; `Select` primitive'i. */}
+          {/* MP:143 — ham <select> YASAK; `Select` primitive'i. */}
           <Select
             size="row"
             aria-label="Hesap süzgeci"
@@ -214,7 +229,18 @@ export function AccountingView() {
               </option>
             ))}
           </Select>
+          {/* MP:146 "Excel" — ucu YOK; düğme SİLİNMEZ, devre dışı + gerekçesi
+              EKRANDA (`title`da SAKLANMAZ). E8'de bu düğme sayfa başlığındaydı
+              ve "Dışa Aktar" diyordu; MP onu defter panelinin başlığına
+              taşıyıp "Excel" adını veriyor. */}
+          <Button variant="secondary" disabled data-testid="mu-export">
+            Excel
+          </Button>
         </div>
+
+        <p className="mu-notice" data-testid="mu-export-reason">
+          “Excel”: {pendingModuleLabel(ACCOUNTING_REASONS.export)}.
+        </p>
 
         {hasCarriedBalance(carriedBalance) && carriedBalance !== undefined && (
           // 🔴 `carried_balance` pencere ÖNCESİ toplamdır: sıfır değilse ilk
@@ -251,7 +277,45 @@ export function AccountingView() {
             }
           />
         </div>
+
+        {/* MP:247-250 — defterin ALTINDA dönem toplamları. Kaynak KPI
+            kartlarıyla AYNI uçtur (`journal-summary`), ikinci bir toplam
+            İSTEMCİDE hesaplanmaz: defter SAYFALANMIŞTIR ve görünen satırların
+            toplamı dönemin toplamı DEĞİLDİR. */}
+        <div className="mu-pro-foot" data-testid="mu-ledger-totals">
+          <span className="mu-pro-foot__cell">
+            Dönem Borç:{" "}
+            <strong className="mu-pro-foot__value mu-pro-foot__value--danger">
+              {summaryQuery.data === undefined
+                ? "—"
+                : formatCurrency(summaryQuery.data.total_debit)}
+            </strong>
+          </span>
+          <span className="mu-pro-foot__cell">
+            Dönem Alacak:{" "}
+            <strong className="mu-pro-foot__value mu-pro-foot__value--success">
+              {summaryQuery.data === undefined
+                ? "—"
+                : formatCurrency(summaryQuery.data.total_credit)}
+            </strong>
+          </span>
+        </div>
       </section>
+
+      {/* MP:163-239 — sağ ray: mini mizan + e-Fatura. */}
+      <div className="mu-pro-aside">
+        <AccountBalancesPanel
+          data={railQuery.data}
+          isLoading={railQuery.isLoading}
+          errorMessage={
+            railQuery.isError
+              ? backendErrorMessage(railQuery.error, "Hesap bakiyeleri yüklenemedi.")
+              : undefined
+          }
+        />
+        <EInvoicePanel />
+      </div>
+      </div>
 
       {actionError !== null && (
         <p className="mu-notice mu-notice--danger" data-testid="mu-action-error">
@@ -296,6 +360,8 @@ export function AccountingView() {
       {ledgerQuery.data !== undefined && <span hidden data-testid="mu-loaded-ledger" />}
       {draftsQuery.data !== undefined && <span hidden data-testid="mu-loaded-drafts" />}
       {accountsQuery.data !== undefined && <span hidden data-testid="mu-loaded-accounts" />}
+      {railQuery.data !== undefined && <span hidden data-testid="mu-loaded-rail" />}
+      {vatQuery.data !== undefined && <span hidden data-testid="mu-loaded-vat" />}
     </div>
   );
 }

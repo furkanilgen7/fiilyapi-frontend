@@ -1,0 +1,245 @@
+/* F-MUP · `Muhasebe - Profesyonel` ekranının KENDİ stilleri. Kanon:
+   `Muhasebe - Profesyonel.dc.html` (MP), parantez içi sayılar O dosyanın
+   SATIR numaralarıdır.
+
+   🔴 DOSYA AYRIDIR VE ÖYLE KALIR: `accounting.css` 1405 satırdır (800
+   tavanı borcu). Bu dilim o borcu BÜYÜTMEZ; bölmek ise 12 muhasebe karesini
+   birden oynatacağı için bu turda YAPILMADI (demet sırası değişince eşit
+   özgüllükte kazanan kural değişir).
+
+   🔴 Palet YALNIZ token'dan gelir — çıplak hex YOK. */
+
+/* --- MP:114 · BEŞ KPI kartı ---------------------------------------------- */
+
+.mu-pro-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-3); /* MP:114 — 12px */
+  margin-bottom: var(--space-5);
+}
+
+/* Dar ekranda beş kart 200px altına düşerdi; sayı okunmaz olmadan sarılır. */
+@media (max-width: 1200px) {
+  .mu-pro-kpis {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+}
+
+.mu-pro-kpi {
+  padding: 14px; /* MP:115 */
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-12); /* MP:115 */
+  background: var(--color-surface);
+}
+
+/* MP:116 — 10px, VERSAL, harf aralığı 0.8px. */
+.mu-pro-kpi__label {
+  margin-bottom: 4px;
+  font-size: var(--text-settings-nav-label);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+/* MP:117 — 17px/700, MONO. Para rakamları sabit genişlikte hizalanır. */
+.mu-pro-kpi__value {
+  font-family: var(--font-mono);
+  font-size: 17px;
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-normal);
+  color: var(--color-text);
+}
+.mu-pro-kpi__value--success {
+  color: var(--color-success);
+}
+.mu-pro-kpi__value--danger {
+  color: var(--color-danger);
+}
+.mu-pro-kpi__value--warning {
+  color: var(--color-warning);
+}
+.mu-pro-kpi__value--muted {
+  color: var(--color-text-subtle);
+}
+
+/* MP:118/131 — kartın alt satırı. */
+.mu-pro-kpi__note {
+  margin-top: 2px;
+  font-size: var(--text-settings-nav-label);
+  line-height: var(--leading-normal);
+  color: var(--color-text-subtle);
+}
+
+/* MP:132 — ucu OLMAYAN kart: silinmez, solgun basılır. */
+.mu-pro-kpi--disabled {
+  background: var(--color-surface-2);
+}
+
+/* --- MP:140 · iki sütunlu gövde ------------------------------------------ */
+
+.mu-pro-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px; /* MP:140 */
+  gap: var(--space-5); /* MP:140 — 20px */
+  align-items: start;
+  margin-bottom: var(--space-5);
+}
+
+/* Sağ ray 340px sabittir; toplam 1100px altında sütun altına iner. */
+@media (max-width: 1100px) {
+  .mu-pro-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Izgara hücresinin taşmaması için: tablo kendi içinde kaydırılır. */
+.mu-pro-grid > .mu-panel {
+  min-width: 0;
+}
+
+.mu-pro-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 14px; /* MP:163 */
+  min-width: 0;
+}
+
+/* --- MP:247-250 · defter altı dönem toplamları --------------------------- */
+
+.mu-pro-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-5); /* MP:247 — 20px */
+  padding: 10px var(--space-4); /* MP:247 */
+  border-top: 1px solid var(--color-divider);
+  /* 12px — `--text-form-label` YALNIZ field.css'indir (field-adoption
+     bekçisi), bu yüzden accounting.css'in `.mu-table__meta` emsalindeki gibi
+     çıplak px yazılır. */
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.mu-pro-foot__value {
+  font-family: var(--font-mono);
+}
+.mu-pro-foot__value--danger {
+  color: var(--color-danger);
+}
+.mu-pro-foot__value--success {
+  color: var(--color-success);
+}
+
+/* --- MP:165-238 · sağ ray panelleri -------------------------------------- */
+
+.mu-pro-rail {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* MP:165 */
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card); /* MP:165 */
+}
+
+.mu-pro-rail__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 13px var(--space-4); /* MP:166 */
+  border-bottom: 1px solid var(--color-border);
+}
+
+.mu-pro-rail__title {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+.mu-pro-rail__count {
+  margin-left: auto;
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
+/* Yükleme / boş küme / hata — ÜÇÜ DE aynı kutuda, AYRI metinlerle. */
+.mu-pro-rail__state {
+  padding: var(--space-3) var(--space-4);
+  font-size: 12px;
+  line-height: var(--leading-normal);
+  color: var(--color-text-subtle);
+}
+
+.mu-pro-rail__list {
+  /* 🔴 SATIR KIRPILMAZ (bileşen notu): liste uzarsa RAY kaydırılır, satır
+     düşürülmez. ~9 satır sonrası kaydırma başlar. */
+  max-height: 340px;
+  overflow-y: auto;
+  padding: var(--space-2) 0; /* MP:168 */
+  margin: 0;
+  list-style: none;
+}
+
+.mu-pro-rail__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4); /* MP:169 */
+  border-bottom: 1px solid var(--color-divider);
+}
+.mu-pro-rail__row:last-child {
+  border-bottom: none;
+}
+
+/* MP:171 — hesap kodu rozet gibi basılır, MONO. */
+.mu-pro-rail__code {
+  flex: none;
+  padding: 2px 6px;
+  /* MP:171 4px — depoda `--radius-4` token'ı YOK; en yakın mevcut token
+     kullanıldı, yeni px token AÇILMADI (1px sapma, bildirildi). */
+  border-radius: var(--radius-5);
+  background: var(--color-surface-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  color: var(--color-text-secondary);
+}
+
+.mu-pro-rail__name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mu-pro-rail__amount {
+  margin-left: auto;
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+}
+/* Alacak kalanı = yükümlülük tarafı. */
+.mu-pro-rail__amount--danger {
+  color: var(--color-danger);
+}
+.mu-pro-rail__amount--strong {
+  color: var(--color-text);
+}
+/* 🔴 GERÇEK SIFIR — "satır yok" DEĞİL. Soluk ama BASILI. */
+.mu-pro-rail__amount--flat {
+  font-weight: var(--weight-regular);
+  color: var(--color-text-subtle);
+}
+
+.mu-pro-rail__legend {
+  padding: var(--space-2) var(--space-4) var(--space-3);
+  border-top: 1px solid var(--color-divider);
+  font-size: var(--text-small);
+  line-height: var(--leading-normal);
+  color: var(--color-text-subtle);
+}
+
+/* MP:211 — ucu OLMAYAN panel. */
+.mu-pro-rail--disabled {
+  background: var(--color-surface-2);
+}

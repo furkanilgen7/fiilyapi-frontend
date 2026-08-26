@@ -131,6 +131,12 @@ export const ACCOUNTING_REASONS = {
   trialBalanceExport: "trial_balance_export",
   /** KDV:48-49 "XML İndir"/"GİB'e Gönder" — F-MU2 K6. */
   vatReturnGib: "vat_return_gib",
+  /** BM:83 "↑ İçe Aktar" — F-MUP: ekstre satırları hiçbir yerde saklanmıyor. */
+  bankStatementImport: "bank_statement_import",
+  /** BM:90 "Banka Ekstresindeki Bakiye" kartı — F-MUP. */
+  bankStatementBalance: "bank_statement_balance",
+  /** BM:76 "Mutabakat Yap" + BM:100 "Fark" kartı — F-MUP. */
+  bankReconciliationRun: "bank_reconciliation_run",
   /** Yazma yetkisi yoksa. */
   write: "Muhasebe modülünde yazma yetkiniz yok.",
 } as const;
