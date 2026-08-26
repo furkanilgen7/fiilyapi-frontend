@@ -1303,3 +1303,23 @@ describe("F-MUP · MP:247-250 defter altı dönem toplamları", () => {
     expect(screen.getByTestId("mu-export-reason").textContent?.length ?? 0).toBeGreaterThan(20);
   });
 });
+
+describe("F-MUP · sağ rayın PENCERESİ sayfanınkinden farklıdır", () => {
+  // 🔴 Ölçüldü (`/trial-balance` uç açıklaması): mizan penceresi BİRİKİMLİDİR
+  // ("Ocak → month'un son günü"), KPI şeridi ise TEK AYIN yevmiye toplamıdır.
+  // Ekran bu farkı SÖYLEMEZSE kullanıcı iki yüzeyi karşılaştırıp "tutmuyor"
+  // sanır ve var olmayan bir hata arar.
+  it("ray açıklaması pencereyi AÇIKÇA yazar", () => {
+    render(<AccountingView />);
+    expect(screen.getByTestId("mu-rail-list")).toBeInTheDocument();
+    expect(screen.getByText(/yıl başından bu yana kapanış bakiyesi/i)).toBeInTheDocument();
+  });
+
+  it("ray ve KPI şeridi AYNI dönem argümanıyla çağrılır (kayma İSTEMCİDE yok)", () => {
+    render(<AccountingView />);
+    // Pencere farkı SUNUCUNUN sözleşmesindedir; istemci ikinci bir kaydırma
+    // UYGULAMAZ (uygulasaydı iki kaynak sessizce ayrışırdı).
+    expect(vi.mocked(useTrialBalance)).toHaveBeenLastCalledWith(2026, 7);
+    expect(vi.mocked(useJournalSummary)).toHaveBeenLastCalledWith(2026, 7);
+  });
+});

@@ -35,6 +35,14 @@ const SIDE_TONE: Record<AccountBalanceSide, string> = {
  * hepsi basılır ve ray KENDİ İÇİNDE kaydırılır. Sessizce ilk N'e kırpmak,
  * bakiyesi olan bir hesabı ekrandan silmek olurdu. Kaç satır olduğu
  * başlıkta YAZAR.
+ *
+ * 🔴 **PENCERE, SAYFANIN DÖNEMİYLE AYNI DEĞİLDİR — ve bu EKRANDA YAZAR.**
+ * Ölçüldü (`/trial-balance` uç açıklaması): mizanın penceresi BİRİKİMLİDİR —
+ * "yılın Ocak ayından `month`un SON GÜNÜNE kadar". KPI şeridi ise TEK AYIN
+ * yevmiye toplamıdır. Yani sayfa başlığı "Temmuz 2026" derken bu raydaki
+ * sayılar Ocak–Temmuz kapanışıdır. İkisi TUTMAK ZORUNDA DEĞİLDİR; okuyucu
+ * bunu bilmezse rayı yevmiye toplamlarıyla karşılaştırıp "tutmuyor" sanır.
+ * Açıklama satırı bu yüzden pencereyi de söyler.
  */
 export function AccountBalancesPanel({
   data,
@@ -88,10 +96,11 @@ export function AccountBalancesPanel({
         </ul>
       )}
 
-      {/* Renk burada dekorasyon değil TARAF taşır; okunmadan anlaşılmaz. */}
+      {/* Renk burada dekorasyon değil TARAF taşır; okunmadan anlaşılmaz.
+          Pencere de yazar: ray BİRİKİMLİ, KPI şeridi TEK AYLIK. */}
       <p className="mu-pro-rail__legend">
-        Kapanış bakiyesi — alacak kalanı kırmızı, borç kalanı koyu, tam kapanan
-        hesap soluk sıfır.
+        Yıl başından bu yana kapanış bakiyesi — alacak kalanı kırmızı, borç
+        kalanı koyu, tam kapanan hesap soluk sıfır.
       </p>
     </section>
   );
