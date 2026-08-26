@@ -16,6 +16,11 @@ vi.mock("@/lib/api/hooks/useVatReturn", async (importOriginal) => ({
   useVatReturn: vi.fn(),
 }));
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
+// 🔴 F-MUP: modül sekme şeridi (`AccountingTabs`) artık görünümün İÇİNDEDİR
+// (drill-in sidebar kalktı) ve `usePathname` okur. Mock olmadan jsdom'da
+// `null` döner ve şeridin aktiflik kararı çökerdi.
+vi.mock("next/navigation", () => ({ usePathname: () => "/muhasebe/kdv-beyani" }));
+
 
 function response(partial: Partial<VatReturnResponse> = {}): VatReturnResponse {
   return {

@@ -21,6 +21,10 @@ import type { JournalSummaryResponse } from "@/lib/api/hooks/useJournalSummary";
 import { useJournalSummary } from "@/lib/api/hooks/useJournalSummary";
 import type { LedgerResponse, LedgerRow } from "@/lib/api/hooks/useLedger";
 import { useLedger } from "@/lib/api/hooks/useLedger";
+import type { TrialBalanceResponse } from "@/lib/api/hooks/useTrialBalance";
+import { useTrialBalance } from "@/lib/api/hooks/useTrialBalance";
+import type { VatReturnResponse } from "@/lib/api/hooks/useVatReturn";
+import { useVatReturn } from "@/lib/api/hooks/useVatReturn";
 import { BackendError } from "@/lib/api/unwrap";
 import type { MeResponse } from "@/lib/auth/types";
 
@@ -60,7 +64,21 @@ vi.mock("@/lib/api/hooks/useJournalEntryFormMutations", () => ({
   useUpdateJournalEntry: vi.fn(),
   useReplaceJournalLines: vi.fn(),
 }));
+// 🔴 F-MUP: MP:114-139 KPI şeridi ve MP:165-209 sağ rayı İKİ YENİ UCA bağlandı.
+vi.mock("@/lib/api/hooks/useTrialBalance", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useTrialBalance")>()),
+  useTrialBalance: vi.fn(),
+}));
+vi.mock("@/lib/api/hooks/useVatReturn", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useVatReturn")>()),
+  useVatReturn: vi.fn(),
+}));
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
+// 🔴 F-MUP: modül sekme şeridi (`AccountingTabs`) artık görünümün İÇİNDEDİR
+// (drill-in sidebar kalktı) ve `usePathname` okur. Mock olmadan jsdom'da
+// `null` döner ve şeridin aktiflik kararı çökerdi.
+vi.mock("next/navigation", () => ({ usePathname: () => "/muhasebe" }));
+
 
 const SUMMARY: JournalSummaryResponse = {
   year: 2026,
@@ -242,6 +260,75 @@ function setSession(level: string | undefined = "full") {
   } as ReturnType<typeof useSession>);
 }
 
+/**
+ * F-MUP · MP:165-209 sağ rayın fikstürü. 🔴 ÜÇÜNCÜ SATIR BİLEREK "gerçek
+ * sıfır"dır (iki kapanış tarafı da `0.00`): `include_empty=false` hareketsiz
+ * hesabı zaten eler, yani böyle bir satır "hareket gördü ve tam kapandı"
+ * demektir ve ekranda `0` BASILMALIDIR (K-MKD3).
+ */
+const RAIL: TrialBalanceResponse = {
+  year: 2026,
+  month: 7,
+  is_balanced: true,
+  rows: [
+    {
+      account_id: "acc-102",
+      account_code: "102",
+      account_name: "Bankalar",
+      opening_debit: "0.00",
+      opening_credit: "0.00",
+      period_debit: "3964700.00",
+      period_credit: "0.00",
+      closing_debit: "3964700.00",
+      closing_credit: "0.00",
+    },
+    {
+      account_id: "acc-320",
+      account_code: "320",
+      account_name: "Satıcılar",
+      opening_debit: "0.00",
+      opening_credit: "0.00",
+      period_debit: "0.00",
+      period_credit: "2184000.00",
+      closing_debit: "0.00",
+      closing_credit: "2184000.00",
+    },
+    {
+      account_id: "acc-100",
+      account_code: "100",
+      account_name: "Kasa",
+      opening_debit: "0.00",
+      opening_credit: "0.00",
+      period_debit: "500000.00",
+      period_credit: "500000.00",
+      closing_debit: "0.00",
+      closing_credit: "0.00",
+    },
+  ],
+  totals: {
+    opening_debit: "0.00",
+    opening_credit: "0.00",
+    period_debit: "4464700.00",
+    period_credit: "2684000.00",
+    closing_debit: "3964700.00",
+    closing_credit: "2184000.00",
+  },
+};
+
+/** MP:128-131 KDV kartı — `payable` ASLA negatif olmaz (şema notu). */
+const VAT: VatReturnResponse = {
+  year: 2026,
+  month: 7,
+  due_date: "2026-08-28",
+  calculated_vat: "900000.00",
+  deductible_vat: "488000.00",
+  payable: "412000.00",
+  carried_forward: "0.00",
+  taxable_rows: [],
+  exempt_base: "0.00",
+  deductions: [],
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   // 17 Temmuz 2026 YEREL öğle — E8:75 "Temmuz 2026" başlığının kaynağı.
@@ -252,6 +339,8 @@ beforeEach(() => {
   vi.mocked(useLedger).mockReturnValue(queryOk(LEDGER));
   vi.mocked(useJournalEntries).mockReturnValue(queryOk(DRAFTS));
   vi.mocked(useChartOfAccounts).mockReturnValue(queryOk(ACCOUNTS));
+  vi.mocked(useTrialBalance).mockReturnValue(queryOk(RAIL));
+  vi.mocked(useVatReturn).mockReturnValue(queryOk(VAT));
   vi.mocked(usePostJournalEntry).mockReturnValue(mutationStub(mutateSpies.post));
   vi.mocked(useReverseJournalEntry).mockReturnValue(mutationStub(mutateSpies.reverse));
   vi.mocked(useDeleteJournalEntry).mockReturnValue(

@@ -33,6 +33,11 @@ vi.mock("@/lib/api/hooks/useChartOfAccountMutations", () => ({
   useDeleteChartAccount: vi.fn(),
 }));
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
+// 🔴 F-MUP: modül sekme şeridi (`AccountingTabs`) artık görünümün İÇİNDEDİR
+// (drill-in sidebar kalktı) ve `usePathname` okur. Mock olmadan jsdom'da
+// `null` döner ve şeridin aktiflik kararı çökerdi.
+vi.mock("next/navigation", () => ({ usePathname: () => "/muhasebe/hesap-plani" }));
+
 
 const ACCOUNTS: ChartAccountResponse[] = [
   // HP:71-73 — grup

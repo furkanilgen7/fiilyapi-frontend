@@ -20,6 +20,11 @@ vi.mock("@/lib/api/hooks/useTrialBalance", async (importOriginal) => ({
   useTrialBalance: vi.fn(),
 }));
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
+// 🔴 F-MUP: modül sekme şeridi (`AccountingTabs`) artık görünümün İÇİNDEDİR
+// (drill-in sidebar kalktı) ve `usePathname` okur. Mock olmadan jsdom'da
+// `null` döner ve şeridin aktiflik kararı çökerdi.
+vi.mock("next/navigation", () => ({ usePathname: () => "/muhasebe/mizan" }));
+
 
 /**
  * 🔴 K3 — MOCKUP'IN 8 SATIRI DENGESİZDİR (tfoot'un iki kapanış rakamı
