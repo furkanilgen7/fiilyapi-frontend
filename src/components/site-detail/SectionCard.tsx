@@ -129,6 +129,8 @@ function MetricCell({ label, valueClassName = "section-card__metric-value", plac
   );
 }
 
+const BOQ_NOTE_TITLE = "İş kalemi tahsislerinden türeyen tutar (miktar × birim fiyat)";
+
 // ── "Bölüm Bedeli" hucresi — IKI ADAY, IKISI DE BASILIR ────────────────────
 //
 // 🔴 URUN KARARI (yonetim, 2026-08-27). `SectionResponse` bu turdan itibaren
@@ -181,7 +183,7 @@ function BudgetMetricCell({
       )}
       {isBoqReal ? (
         <div className="section-card__metric-note" title={BOQ_NOTE_TITLE}>
-          {`BOQ: ${formatCompactCurrency(boqBudget.value as string)}`}
+          {`BOQ: ${formatCompactCurrency(boqBudget.value ?? 0)}`}
         </div>
       ) : (
         <div
@@ -194,8 +196,6 @@ function BudgetMetricCell({
     </div>
   );
 }
-
-const BOQ_NOTE_TITLE = "İş kalemi tahsislerinden türeyen tutar (miktar × birim fiyat)";
 
 // ── "Planlanan İşçi" hucresi ───────────────────────────────────────────────
 //
