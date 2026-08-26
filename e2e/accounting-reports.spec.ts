@@ -201,10 +201,12 @@ test.describe("Mizan ekranı (MZ)", () => {
     await expect(page.getByTestId("mz-error")).toHaveCount(0);
   });
 
-  test("drill sidebar'da Mizan artık AKTİF bir bağlantıdır", async ({ page }) => {
+  test("modül şeridinde Mizan artık AKTİF bir bağlantıdır", async ({ page }) => {
     await openTrialBalance(page);
-    const sidebar = page.getByRole("navigation", { name: "Muhasebe alt sekmeleri" });
-    const active = sidebar.getByRole("link").and(page.locator("[aria-current='page']"));
+    // 🔴 F-MUP: drill-in sidebar KALKTI (KK-10), yerini MP:105-112 hap
+    // şeridi aldı. İddia SİLİNMEDİ, yeni yüzeye TAŞINDI.
+    const tabs = page.getByTestId("mu-tabs");
+    const active = tabs.getByRole("link").and(page.locator("[aria-current='page']"));
     await expect(active).toHaveCount(1);
     await expect(active).toHaveText("Mizan");
   });
@@ -270,10 +272,12 @@ test.describe("KDV Beyannamesi ekranı", () => {
     await expect(page.getByTestId("kdv-taxable-exempt")).toContainText("0");
   });
 
-  test("drill sidebar'da KDV Beyanı artık AKTİF bir bağlantıdır", async ({ page }) => {
+  test("modül şeridinde KDV Beyanı artık AKTİF bir bağlantıdır", async ({ page }) => {
     await openVatReturn(page);
-    const sidebar = page.getByRole("navigation", { name: "Muhasebe alt sekmeleri" });
-    const active = sidebar.getByRole("link").and(page.locator("[aria-current='page']"));
+    // 🔴 F-MUP: drill-in sidebar KALKTI (KK-10), yerini MP:105-112 hap
+    // şeridi aldı. İddia SİLİNMEDİ, yeni yüzeye TAŞINDI.
+    const tabs = page.getByTestId("mu-tabs");
+    const active = tabs.getByRole("link").and(page.locator("[aria-current='page']"));
     await expect(active).toHaveCount(1);
     await expect(active).toHaveText("KDV Beyanı");
   });

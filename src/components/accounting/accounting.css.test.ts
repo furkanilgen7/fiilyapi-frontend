@@ -117,9 +117,9 @@ describe("accounting.css — T4 diyalogları", () => {
    * Buradaki iki iddia yalnız bildirimin SİLİNMEDİĞİNİ korur.
    */
   it("fiş diyaloğu varsayılan 480px kabuktan GENİŞtir (üç sütunlu satır tablosu)", () => {
-    expect(css).toMatch(/\.mu-modal\s*{[^}]*width:\s*min\(760px, 92vw\)/);
+    expect(css).toMatch(/\.modal\.mu-modal\s*{[^}]*width:\s*min\(760px, 92vw\)/);
     // `max-width` olmadan yukarıdaki `width` ATILDIR — ikisi BİRLİKTE anlamlıdır.
-    expect(css).toMatch(/\.mu-modal\s*{[^}]*max-width:\s*min\(760px, 92vw\)/);
+    expect(css).toMatch(/\.modal\.mu-modal\s*{[^}]*max-width:\s*min\(760px, 92vw\)/);
   });
 
   /* 🔴 KARDEŞ KUSUR (F-BORC T2): F-FISNO düzeltmeyi YALNIZ `.mu-modal`a
@@ -128,8 +128,8 @@ describe("accounting.css — T4 diyalogları", () => {
      Buradaki iki iddia yalnız bildirimin SİLİNMEDİĞİNİ korur; ETKİNİN bekçisi
      `e2e/accounting-dialogs.spec.ts`teki tarayıcıda ölçen testtir. */
   it("hesap diyaloğu da varsayılan 480px kabuktan GENİŞtir (M:57 = 560px)", () => {
-    expect(css).toMatch(/\.mu-modal--account\s*{[^}]*width:\s*min\(560px, 92vw\)/);
-    expect(css).toMatch(/\.mu-modal--account\s*{[^}]*max-width:\s*min\(560px, 92vw\)/);
+    expect(css).toMatch(/\.modal\.mu-modal--account\s*{[^}]*width:\s*min\(560px, 92vw\)/);
+    expect(css).toMatch(/\.modal\.mu-modal--account\s*{[^}]*max-width:\s*min\(560px, 92vw\)/);
   });
 
   /* İDDİA TAŞINDI (F-MUF T4): şerit eskiden `repeat(3, 1fr)` idi; mockup
@@ -318,6 +318,28 @@ describe("accounting.css — F-MUP ile ÖKSÜZ kalan kurallar geri gelmedi", () 
     "`%s` kuralı DOSYADA YOK",
     (selector) => {
       expect(css).not.toMatch(new RegExp(`\\${selector}\\s*[,{]`));
+    },
+  );
+});
+
+/**
+ * 🔴 F-MUP · DEMET SIRASI BEKÇİSİ. İki diyalog ezmesi de `.modal` ile
+ * ZİNCİRLİ olmalıdır. Tek sınıflı hâlleri (`.mu-modal`) `.modal` ile EŞİT
+ * özgüllüktedir ve kazananı demet sırası belirler; F-MUP `layout.tsx`i
+ * kaldırınca sıra gerçekten değişti ve hesap diyaloğu 560 → 480px'e düştü.
+ *
+ * Bu metin taraması e2e'nin (tarayıcıda ölçen) YERİNE GEÇMEZ; zincirin
+ * sessizce sökülmesine karşı ucuz bir ilk kapıdır.
+ */
+describe("accounting.css — diyalog ezmeleri demet sırasından BAĞIMSIZ", () => {
+  it.each([".mu-modal", ".mu-modal--account"])(
+    "`%s` kuralı YALNIZ `.modal` ile zincirli biçimde yazılıdır",
+    (selector) => {
+      const escaped = selector.replace(/[.-]/g, (c) => `\\${c}`);
+      // Satır başında çıplak seçici OLMAMALI…
+      expect(css).not.toMatch(new RegExp(`^${escaped}\\s*{`, "m"));
+      // …ve `.modal` ile zincirli hâli VAR OLMALI.
+      expect(css).toMatch(new RegExp(`\\.modal${escaped}\\s*{`));
     },
   );
 });

@@ -354,8 +354,16 @@
    kaskadı kazanır ve diyalog 480px'te kırpılırdı. Bildirim aylardır YAZILIYDI ama
    ATILDI: ölçülen iç genişlik 478px'ti, `M:88`in `170px 1fr 170px` ızgarası
    `Açıklama`ya 70px bırakıyor, ipucu 6 satıra sarıyor ve gövde 66px kayıyordu.
-   🔑 Bir kuralın DOSYADA YAZILI olması, KASKADI KAZANDIĞI anlamına gelmez. */
-.mu-modal {
+   🔑 Bir kuralın DOSYADA YAZILI olması, KASKADI KAZANDIĞI anlamına gelmez.
+
+   🔴 F-MUP (2026-08-26) — SEÇİCİ `.modal` İLE ZİNCİRLENDİ. Ölçüldü: F-MUP
+   `/muhasebe` grubunun `layout.tsx`ini kaldırınca modül grafiği değişti ve
+   `settings/modal.css` bu dosyadan SONRA demetlendi; `.mu-modal--account`
+   kardeşi ANINDA 480px'e düştü (e2e tarayıcıda 560 yerine 480 ölçtü).
+   Tek sınıflı iki seçici EŞİT özgüllüktedir ve kazananı demet sırası
+   belirler — yani kural "şimdilik" kazanıyordu. `.modal` ile zincirlemek
+   özgüllüğü (0,2,0)'a çıkarır ve sonucu SIRADAN BAĞIMSIZ kılar. */
+.modal.mu-modal {
   width: min(760px, 92vw);
   max-width: min(760px, 92vw);
 }
@@ -873,8 +881,11 @@ span.mu-tb__total {
    `max-width: 480px` verir, iki seçici de TEK SINIF olduğu için özgüllük EŞİTTİR
    ve kaskadı demet sırası belirler — ezme olmadan diyalog 480px'e kırpılıyordu
    (F-FISNO'da `.mu-modal` için ölçülen kusurun kardeşi; burada AÇIK KALMIŞTI).
-   Bekçi metin taraması DEĞİL, tarayıcıda ölçen `e2e/accounting-dialogs.spec.ts`. */
-.mu-modal--account {
+   Bekçi metin taraması DEĞİL, tarayıcıda ölçen `e2e/accounting-dialogs.spec.ts`.
+
+   🔴 F-MUP (2026-08-26) — BU KUSUR GERÇEKTEN PATLADI ve `.modal` ile
+   zincirlenerek kapatıldı; gerekçenin tamamı `.modal.mu-modal` notundadır. */
+.modal.mu-modal--account {
   width: min(560px, 92vw);
   max-width: min(560px, 92vw);
 }

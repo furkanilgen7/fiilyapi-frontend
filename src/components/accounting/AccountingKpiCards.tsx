@@ -1,13 +1,15 @@
 import type { JournalSummaryResponse } from "@/lib/api/hooks/useJournalSummary";
 import type { VatReturnResponse } from "@/lib/api/hooks/useVatReturn";
-import { formatCurrency, formatDayMonthShort } from "@/lib/format";
+import { formatCurrency, formatDayMonthShort, formatPeriod } from "@/lib/format";
 import { pendingModuleLabel } from "@/lib/pending-modules";
 
-import { ACCOUNTING_REASONS, netBalanceTone } from "./accounting-labels";
+import { ACCOUNTING_REASONS, netBalanceTone, type Period } from "./accounting-labels";
 
 interface AccountingKpiCardsProps {
   summary: JournalSummaryResponse | undefined;
   vat: VatReturnResponse | undefined;
+  /** Beyanın dönemi — sayfa başlığındaki dönemin BİR AY ÖNCESİ. */
+  vatPeriod: Period;
 }
 
 /**
@@ -47,7 +49,7 @@ const AWAITING = "—";
  * için ikinci bir çağrı açıp yüzde ÜRETMEK, mockup'ın göstermelik sayısını
  * ekranda gerçekmiş gibi göstermek olurdu.
  */
-export function AccountingKpiCards({ summary, vat }: AccountingKpiCardsProps) {
+export function AccountingKpiCards({ summary, vat, vatPeriod }: AccountingKpiCardsProps) {
   const netTone = summary === undefined ? "neutral" : netBalanceTone(summary.net_balance);
 
   return (
@@ -97,7 +99,13 @@ export function AccountingKpiCards({ summary, vat }: AccountingKpiCardsProps) {
           {vat === undefined ? AWAITING : formatCurrency(vat.payable)}
         </div>
         <div className="mu-pro-kpi__note" data-testid="mu-kpi-vat-due">
-          {vat === undefined ? AWAITING : `${formatDayMonthShort(vat.due_date)} vadeli`}
+          {/* 🔴 MOCKUP SAPMASI 3 (bildirildi): MP:131 YALNIZ `28 Tem vadeli`
+              yazar. Kartın dönemi sayfa başlığından BİR AY GERİDE olduğu için
+              (yukarıdaki not) sadece vadeyi basmak kullanıcıya sayının HANGİ
+              aya ait olduğunu söylemezdi — beyan ayı da yazılır. */}
+          {vat === undefined
+            ? AWAITING
+            : `${formatPeriod(vatPeriod.year, vatPeriod.month)} beyanı · ${formatDayMonthShort(vat.due_date)} vadeli`}
         </div>
       </div>
 

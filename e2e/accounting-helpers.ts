@@ -14,6 +14,7 @@ export const CHART_OF_ACCOUNTS_URL = "/muhasebe/hesap-plani";
 export const TRIAL_BALANCE_URL = "/muhasebe/mizan";
 export const VAT_RETURN_URL = "/muhasebe/kdv-beyani";
 export const PERIOD_CLOSING_URL = "/muhasebe/donem-kapanisi";
+export const BANK_RECONCILIATION_URL = "/muhasebe/banka-mutabakati";
 
 /**
  * 📅 OKUMA AYI — mock backend'in defter/özet fikstürleri YALNIZ burada
@@ -59,7 +60,15 @@ export async function loginAt(page: Page, fixedTime: Date) {
   await expect(page.getByRole("heading", { name: "Gösterge Paneli" })).toBeVisible();
 }
 
-/** `/muhasebe` — DÖRT kaynağın hepsi inene kadar bekler (T2'nin damgaları). */
+/**
+ * `/muhasebe` — ALTI kaynağın hepsi inene kadar bekler.
+ *
+ * 🔴 F-MUP: DÖRT → ALTI. MP:114-139 KPI şeridi `/vat-return`e, MP:165-209 sağ
+ * rayı `/trial-balance`e bağlandı. İki yeni damga beklenmeseydi kadraj
+ * kaynaklardan biri hâlâ yoldayken çekilir ve kare KENDİ İÇİNDE tutarsız
+ * olurdu — üstelik boş bir ray da geçerli bir kare olduğu için kimse fark
+ * etmezdi.
+ */
 export async function openAccounting(page: Page, fixedTime = ACCOUNTING_READ_TIME) {
   await loginAt(page, fixedTime);
   await page.goto(ACCOUNTING_URL);
@@ -67,6 +76,19 @@ export async function openAccounting(page: Page, fixedTime = ACCOUNTING_READ_TIM
   await expect(page.getByTestId("mu-loaded-ledger")).toBeAttached();
   await expect(page.getByTestId("mu-loaded-drafts")).toBeAttached();
   await expect(page.getByTestId("mu-loaded-accounts")).toBeAttached();
+  await expect(page.getByTestId("mu-loaded-rail")).toBeAttached();
+  await expect(page.getByTestId("mu-loaded-vat")).toBeAttached();
+}
+
+/**
+ * `/muhasebe/banka-mutabakati` — İKİ kaynak (hesap planı + mizan). Defter
+ * ucu hesap SEÇİLENE KADAR ekrana basılmaz, bu yüzden damgası da yoktur.
+ */
+export async function openBankReconciliation(page: Page, fixedTime = ACCOUNTING_READ_TIME) {
+  await loginAt(page, fixedTime);
+  await page.goto(BANK_RECONCILIATION_URL);
+  await expect(page.getByTestId("bm-loaded-accounts")).toBeAttached();
+  await expect(page.getByTestId("bm-loaded-trial")).toBeAttached();
 }
 
 export async function openChartOfAccounts(page: Page, fixedTime = ACCOUNTING_READ_TIME) {

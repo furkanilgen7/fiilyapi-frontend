@@ -192,10 +192,12 @@ test.describe("Dönem Kapanışı ekranı (DK)", () => {
     await expect(page.getByTestId(`dkap-close-${DKAP_MUTATION_MONTH}`)).toHaveCount(0);
   });
 
-  test("drill sidebar'da Dönem Kapanışı artık AKTİF bir bağlantıdır", async ({ page }) => {
+  test("modül şeridinde Dönem Kapanışı artık AKTİF bir bağlantıdır", async ({ page }) => {
     await openPeriodClosing(page);
-    const sidebar = page.getByRole("navigation", { name: "Muhasebe alt sekmeleri" });
-    const active = sidebar.getByRole("link").and(page.locator("[aria-current='page']"));
+    // 🔴 F-MUP: drill-in sidebar KALKTI (KK-10), yerini MP:105-112 hap
+    // şeridi aldı. İddia SİLİNMEDİ, yeni yüzeye TAŞINDI.
+    const tabs = page.getByTestId("mu-tabs");
+    const active = tabs.getByRole("link").and(page.locator("[aria-current='page']"));
     await expect(active).toHaveCount(1);
     await expect(active).toHaveText("Dönem Kapanışı");
   });

@@ -33,6 +33,7 @@ import {
   ACCOUNTING_REASONS,
   currentPeriod,
   hasCarriedBalance,
+  shiftPeriod,
   type Period,
 } from "./accounting-labels";
 import { AccountingKpiCards } from "./AccountingKpiCards";
@@ -108,7 +109,18 @@ export function AccountingView() {
   // MP:165-209 sağ ray — mini mizan. Mizan ekranıyla AYNI uç, AYNI dönem.
   const railQuery = useTrialBalance(period.year, period.month);
   // MP:128-131 KDV kartı — `journal-summary` bu sayıyı TAŞIMAZ, ayrı uçtur.
-  const vatQuery = useVatReturn(period.year, period.month);
+  //
+  // 🔴 DÖNEM BİR AY GERİDİR ve bu MOCKUPTAN ÖLÇÜLDÜ: MP başlığı `Temmuz 2026`
+  // derken KDV kartı `28 Tem vadeli` yazar (MP:104 ↔ MP:131). Vade İZLEYEN
+  // ayın 28'idir, yani `28 Tem` HAZİRAN beyanının vadesidir. Beyanname ÖNCEKİ
+  // ayın beyanıdır — `VatReturnView` de tam olarak bu kaydırmayı yapar
+  // (`shiftPeriod(currentPeriod, -1)`), iki yüzey böylece AYNI sayıyı basar.
+  //
+  // Kaydırma yapılmasaydı kart, henüz beyan edilmemiş İÇİNDE BULUNULAN ayın
+  // kısmi KDV'sini "KDV Borcu" diye ilan ederdi ve KDV Beyanı sekmesindeki
+  // sayıyla ÇELİŞİRDİ.
+  const vatPeriod = shiftPeriod(period, -1);
+  const vatQuery = useVatReturn(vatPeriod.year, vatPeriod.month);
 
   const postMutation = usePostJournalEntry();
   const reverseMutation = useReverseJournalEntry();
@@ -206,7 +218,7 @@ export function AccountingView() {
           {backendErrorMessage(vatQuery.error, "KDV özeti yüklenemedi.")}
         </p>
       )}
-      <AccountingKpiCards summary={summaryQuery.data} vat={vatQuery.data} />
+      <AccountingKpiCards summary={summaryQuery.data} vat={vatQuery.data} vatPeriod={vatPeriod} />
 
       {/* MP:140-251 — İKİ SÜTUN: defter (esner) + 340px sağ ray. */}
       <div className="mu-pro-grid">

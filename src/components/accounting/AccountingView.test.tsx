@@ -316,10 +316,14 @@ const RAIL: TrialBalanceResponse = {
 };
 
 /** MP:128-131 KDV kartı — `payable` ASLA negatif olmaz (şema notu). */
+/**
+ * 🔴 HAZİRAN — beyan dönemi sayfa dönemi (Temmuz) DEĞİLDİR, bir ay geridir
+ * (MP:104 ↔ MP:131 ölçümü: `28 Tem vadeli` HAZİRAN beyanının vadesidir).
+ */
 const VAT: VatReturnResponse = {
   year: 2026,
-  month: 7,
-  due_date: "2026-08-28",
+  month: 6,
+  due_date: "2026-07-28",
   calculated_vat: "900000.00",
   deductible_vat: "488000.00",
   payable: "412000.00",
@@ -1197,10 +1201,21 @@ describe("F-MUP · MP:114-139 BEŞ KPI kartı", () => {
     expect(screen.queryByText("Toplam Gider")).not.toBeInTheDocument();
   });
 
+  // 🔴 MP:104 ↔ MP:131 ölçümü: kartın dönemi sayfa döneminin BİR AY ÖNCESİ.
+  it("🔴 KDV ucu ÖNCEKİ ayla çağrılır (beyanname önceki ayındır)", () => {
+    render(<AccountingView />);
+    // Sayfa Temmuz 2026'da; beyan Haziran 2026'nın olmalı.
+    expect(vi.mocked(useVatReturn)).toHaveBeenLastCalledWith(2026, 6);
+    // Yevmiye özeti ise SAYFA dönemindedir — ikisi karışmaz.
+    expect(vi.mocked(useJournalSummary)).toHaveBeenLastCalledWith(2026, 7);
+  });
+
   it("KDV kartı `/vat-return`den beslenir: tutar + VADE", () => {
     render(<AccountingView />);
     expect(screen.getByTestId("mu-kpi-vat")).toHaveTextContent("412.000");
-    expect(screen.getByTestId("mu-kpi-vat-due")).toHaveTextContent("28 Ağu vadeli");
+    expect(screen.getByTestId("mu-kpi-vat-due")).toHaveTextContent(
+      "Haziran 2026 beyanı · 28 Tem vadeli",
+    );
   });
 
   // 🔴 "BU UÇ NEYİN KÜMESİ" dersi — e-Fatura kartına `pending_approval`
