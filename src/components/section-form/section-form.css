@@ -120,9 +120,11 @@
   font-size: var(--text-body);
   color: var(--color-text-subtle);
 }
-/* Final review M1: F194-201 "Şantiye kotasından poz seç" satır-butonu —
-   `.sections__add-dashed` (site-form/SectionsCard.tsx) deseniyle aynı token
-   seti; kart devre dışı olduğu için buton da `disabled`dır (kalıcı karar 1). */
+/* F194-201 "Şantiye kotasından poz seç" satır-butonu — `.sections__add-dashed`
+   (site-form/SectionsCard.tsx) deseniyle aynı token seti.
+   🔴 F-BLMPOZ: buton artık CANLI (düzenleme kipinde poz seçiciyi açar), bu
+   yüzden `cursor: not-allowed` KOŞULA bağlandı — devre dışıyken yasak imleci,
+   etkinken işaretçi. Eski hâl etkin butonun üzerinde de "yasak" gösteriyordu. */
 .sf-boq-table__add-row {
   background: var(--color-surface-2);
 }
@@ -139,6 +141,9 @@
   padding: var(--space-dashed-btn-y) var(--space-dashed-btn-x);
   font-size: var(--text-xs);
   color: var(--color-text-muted);
+  cursor: pointer;
+}
+.sf-boq-table__add-dashed:disabled {
   cursor: not-allowed;
 }
 .sf-boq-table tfoot td {

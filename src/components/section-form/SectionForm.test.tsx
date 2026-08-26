@@ -14,6 +14,7 @@ import { useUserOptions } from "@/lib/api/hooks/useUserOptions";
 import { BackendError } from "@/lib/api/unwrap";
 import { MESSAGES } from "./validate";
 import { GANTT_AUTO_ADD_REASON } from "./SectionForm";
+import { CREATE_MODE_DISABLED_REASON } from "@/components/boq-assignment/BoqAssignmentCard";
 
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
 
@@ -43,6 +44,18 @@ vi.mock("@/lib/api/hooks/useSectionMutations", () => ({
 vi.mock("@/lib/api/hooks/useUserOptions", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useUserOptions")>()),
   useUserOptions: vi.fn(),
+}));
+// 🔴 F-BLMPOZ: `BoqAssignmentCard` DÜZENLEME kipinde artık GERÇEKTEN ağa
+// çıkıyor (iki `useBoq` sorgusu). Bu dosya `QueryClientProvider` kurmuyor —
+// kartın kendi davranışı `BoqAssignmentCard.test.tsx`te ölçülür, burada
+// yalnız formun içinde YER ALDIĞI doğrulanır.
+vi.mock("@/lib/api/hooks/useBoq", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useBoq")>()),
+  useBoq: () => ({ data: { groups: [], totals: {} }, isLoading: false, isError: false }),
+}));
+vi.mock("@/lib/api/hooks/useBoqAllocations", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useBoqAllocations")>()),
+  useReplaceBoqItemAllocations: () => ({ mutateAsync: vi.fn() }),
 }));
 
 const PROJECT_ID = "11111111-1111-1111-1111-111111111111";
@@ -185,8 +198,10 @@ describe("SectionForm — create kipi kabuk (F35-60)", () => {
 
   it("devre dışı kartlar render edilir ve kontrolleri disabled'dır", () => {
     renderCreate();
+    // 🔴 F-BLMPOZ: OLUŞTURMA kipinde kart hâlâ devre dışıdır ama gerekçesi
+    // DEĞİŞTİ — "veri katmanı kapalı" değil, "bölüm henüz kaydedilmedi".
     expect(screen.getByRole("button", { name: "+ Poz Seç" })).toBeDisabled();
-    expect(screen.getByText("Bu bölüme henüz iş kalemi atanmadı — iş kalemi bağları ile birlikte gelir.")).toBeInTheDocument();
+    expect(screen.getByText(CREATE_MODE_DISABLED_REASON)).toBeInTheDocument();
     // final review M1: F194-201 satır-butonu da basılmalı, devre dışı.
     expect(screen.getByRole("button", { name: "Şantiye kotasından poz seç" })).toBeDisabled();
     const gantt = screen.getByLabelText("Bölümü proje takvimine (Gantt) otomatik ekle");
