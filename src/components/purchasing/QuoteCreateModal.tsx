@@ -38,7 +38,8 @@ export interface QuoteCreateModalProps {
   onClose: () => void;
 }
 
-const MAX_LENGTH = { deliveryTime: 100, warrantyNote: 500 } as const;
+/** 🔴 Sözleşmeden okunur (`form-limits.contract.test.ts`); 500 yazılıydı → 422. */
+const MAX_LENGTH = { deliveryTime: 100, warrantyNote: 200 } as const;
 
 const MESSAGES = {
   supplierRequired: "Tedarikçi seçilmelidir.",

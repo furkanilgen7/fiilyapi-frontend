@@ -292,6 +292,7 @@ export function PersonnelDocumentFormModal({
                 ref={freeLabelRef}
                 value={values.freeLabel}
                 disabled={!isOther || isPending}
+                maxLength={MAX_LENGTH.freeLabel}
                 placeholder={TEXT.freeLabelPlaceholder}
                 onChange={(event) => set("freeLabel", event.target.value)}
                 data-testid="pdf-free-label"

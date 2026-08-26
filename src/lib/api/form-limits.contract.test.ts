@@ -16,8 +16,12 @@
 // ölçülerek bulundu.
 import { describe, expect, it } from "vitest";
 
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import path from "node:path";
+
 import {
   fieldSchema,
+  readNumericConst,
   readNumericMap,
   spec,
   toSnakeCase,
@@ -191,5 +195,113 @@ describe("🔴 form korkulukları ↔ sözleşme gövde kısıtları", () => {
           `korkuluk ekle ya da formda karşılığı yoksa \`notRendered\`e GEREKÇESİYLE yaz`,
       ).toEqual([]);
     });
+  });
+});
+
+/* ═══════════════ TEKİL SABİTLER — "İLAN EDİLDİ AMA BAĞLANMADI" ═════════════
+ * 🔴 Bu kapı bu dilimde ÖLÇÜLEREK doğdu: `JOURNAL_DESCRIPTION_MAX = 2000`
+ * doğru değeri taşıyordu, sözleşmeyle de uyuşuyordu — ama HİÇBİR input'a
+ * bağlanmamıştı (yalnız ipucu metninde geçiyordu). Değeri karşılaştıran bir
+ * bekçi bunu YEŞİL geçerdi: sabit doğruydu, korkuluk yoktu. Bu yüzden kapı
+ * İKİ ŞEY sorar — değer sözleşmeye eşit mi, VE sabit gerçekten bir
+ * `maxLength` niteliğine bağlanmış mı.
+ * ========================================================================= */
+
+interface StandaloneGuard {
+  readonly constName: string;
+  readonly file: string;
+  readonly schema: string;
+  readonly property: string;
+}
+
+const STANDALONE: readonly StandaloneGuard[] = [
+  {
+    constName: "JOURNAL_DESCRIPTION_MAX",
+    file: "src/components/accounting/journal-entry-form.ts",
+    schema: "JournalEntryCreate",
+    property: "description",
+  },
+  {
+    constName: "JOURNAL_DETAIL_NOTE_MAX",
+    file: "src/components/accounting/journal-entry-form.ts",
+    schema: "JournalEntryCreate",
+    property: "detail_note",
+  },
+  {
+    constName: "BLOCK_NAME_MAX_LENGTH",
+    file: "src/components/block-form/constants.ts",
+    schema: "BlockCreate",
+    property: "name",
+  },
+  {
+    constName: "BLOCK_CODE_MAX_LENGTH",
+    file: "src/components/block-form/constants.ts",
+    schema: "BlockCreate",
+    property: "code",
+  },
+  {
+    constName: "BLOCK_NOTES_MAX_LENGTH",
+    file: "src/components/block-form/constants.ts",
+    schema: "BlockCreate",
+    property: "notes",
+  },
+  {
+    constName: "UNIT_NO_MAX_LENGTH",
+    file: "src/components/unit-form/constants.ts",
+    schema: "UnitCreate",
+    property: "unit_no",
+  },
+  {
+    constName: "MAX_SPRINT_NAME",
+    file: "src/components/site-planning/PlanSprintEditor.tsx",
+    schema: "SitePlanSprintSave",
+    property: "name",
+  },
+];
+
+/** `src/` altındaki tüm kaynak dosyalar (testler hariç) — TEK okuma. */
+function sourceFiles(): string[] {
+  const found: string[] = [];
+  const walk = (dir: string): void => {
+    for (const name of readdirSync(dir)) {
+      const full = path.join(dir, name);
+      if (statSync(full).isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!/\.tsx?$/.test(name) || /\.test\./.test(name)) continue;
+      found.push(full);
+    }
+  };
+  walk(path.join(process.cwd(), "src"));
+  return found;
+}
+
+const SOURCES = sourceFiles().map((file) => readFileSync(file, "utf8"));
+
+describe("🔴 tekil korkuluk sabitleri ↔ sözleşme", () => {
+  it("bekçi GERÇEKTEN ölçüyor (boş küme sessizce yeşil geçemez)", () => {
+    expect(STANDALONE.length).toBeGreaterThanOrEqual(7);
+    expect(SOURCES.length, "taranan kaynak dosya sayısı").toBeGreaterThan(200);
+  });
+
+  it.each(STANDALONE)("$constName = $schema.$property", ({ constName, file, schema, property }) => {
+    const contract = fieldSchema(schema, property)?.maxLength;
+    expect(contract, `${schema}.${property} sözleşmede maxLength taşımıyor`).toBeDefined();
+    expect(
+      readNumericConst(file, constName),
+      `${constName} ≠ ${schema}.${property} (${contract}) ⇒ sessiz 422`,
+    ).toBe(contract);
+  });
+
+  it.each(STANDALONE)("$constName bir maxLength niteliğine GERÇEKTEN bağlıdır", ({ constName }) => {
+    // İlan edilmiş ama bağlanmamış sabit = korkuluk YOK. Değer karşılaştıran
+    // bekçi bunu göremez; bağlanmayı ayrıca ölçmek gerekir.
+    const wired = SOURCES.some((source) => source.includes(`maxLength={${constName}}`));
+    expect(
+      wired,
+      `${constName} hiçbir yerde \`maxLength={${constName}}\` olarak kullanılmıyor — ` +
+        `sabit doğru olsa bile kullanıcının önünde KORKULUK YOK`,
+    ).toBe(true);
   });
 });

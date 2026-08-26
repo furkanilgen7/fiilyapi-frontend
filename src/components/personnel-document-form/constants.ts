@@ -11,9 +11,17 @@
  * Gövde/alan/etiket/ölçü BİREBİR kalır.
  */
 
-/** `PersonnelDocumentCreate.note` — mockup 169 "Maks 2000 karakter". */
+/**
+ * Korkuluklar — sözleşmenin AYNASI (`form-limits.contract.test.ts` iki yönlü kapı).
+ *
+ * 🔴 `freeLabel` bu dilimde ÖLÇÜLEREK eklendi: kullanıcının yazdığı ve gövdeye
+ * `free_label` olarak giden alanın korkuluğu HİÇ YOKTU (sözleşme 150) —
+ * 151. karakterde sessiz 422. `note` ise sözleşmede sınır İLAN ETMEZ, 2000
+ * istemcinin kendi tavanıdır (mockup 169 "Maks 2000 karakter").
+ */
 export const MAX_LENGTH = {
   note: 2000,
+  freeLabel: 150,
 } as const;
 
 /** Boş (seçilmemiş) seçenek değeri. */

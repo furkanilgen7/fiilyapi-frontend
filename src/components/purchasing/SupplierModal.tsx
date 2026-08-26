@@ -27,12 +27,17 @@ import { PAYMENT_TERMS_LABELS, PAYMENT_TERMS_OPTIONS } from "./purchasing-labels
  *
  * ⚠️ `tax_no` için biçim kuralı UYDURULMAZ (şema açıklaması: mockup'ta alan
  * zorunlu bile değil, yabancı/şahıs firması kalıba oturmayabilir).
+ *
+ * 🔴 Sınırlar SÖZLEŞMEDEN gelir, mockup'tan değil — `form-limits.contract.test.ts`
+ * ikisini karşılaştırır. `tax_no` 11'dir (10 DEĞİL): şahıs tedarikçi 11 haneli
+ * TCKN kullanır (KK-8) ve backend alanı buna göre genişletildi. 10'a çekmek
+ * şahıs tedarikçiyi yeniden kırardı.
  */
 export interface SupplierModalProps {
   onClose: () => void;
 }
 
-const MAX_LENGTH = { name: 200, category: 100, taxNo: 50, phone: 50 } as const;
+const MAX_LENGTH = { name: 200, category: 100, taxNo: 11, phone: 30 } as const;
 
 const MESSAGES = {
   nameRequired: "Tedarikçi adı zorunludur.",

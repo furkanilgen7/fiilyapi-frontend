@@ -34,6 +34,7 @@ import {
   selectableLineAccounts,
   todayIsoDate,
   toJournalLineInputs,
+  JOURNAL_DESCRIPTION_MAX,
   JOURNAL_DETAIL_NOTE_MAX,
   JOURNAL_FORM_TEXT,
   type JournalEntryFormState,
@@ -319,6 +320,7 @@ function JournalEntryFormBody({
               {(control) => (
                 <Input
                   {...control}
+                  maxLength={JOURNAL_DESCRIPTION_MAX}
                   value={form.description}
                   placeholder={JOURNAL_FORM_TEXT.descriptionPlaceholder}
                   disabled={!isEditable}
