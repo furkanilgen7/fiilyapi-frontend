@@ -1139,6 +1139,13 @@ const COUNT_PENDING = (m: string): MockCount => ({ available: false, count: null
 // gibi imkansiz bir durumu test ederdi.
 const METRIC_VALUE = (value: string): MockMetric => ({ available: true, value, pending_module: null });
 
+// 🔴 DOLU `CountPlaceholder` — kurali `MetricPlaceholder`in TERSIDIR: dolu
+// sayac zarfi `pending_module`u TASIMAYA DEVAM EDER (backend
+// `sites/service/presenters.py::_boq_item_count`/`_worker_count` emsali,
+// `CountPlaceholder` docstring'i bunu acikca yaziyor). Ikisini tek kurala
+// indirgemek ikizi gercek sunucudan ayristirirdi.
+const COUNT_VALUE = (count: number, m: string): MockCount => ({ available: true, count, pending_module: m });
+
 // P10 sonrasi maliyet/kar zarflari ARTIK DOLABILIR. Fikstur evreni her iki
 // dali da tasir: deger veren proje (`spent`/`total_cost`/… gercek) ve hic
 // maliyeti olmayan proje (yer tutucu gorunumu KORUNUR) — ekran ikisini de
@@ -3012,6 +3019,36 @@ function userNameById(state: MockState, userId: unknown): string | null {
  * `POST /projects/{id}/sites` AYNI şekli döndürür, tek yerde kurulur.
  */
 /**
+ * F-BLMKART · BÖLÜM BOQ TÜREVLERİ — ikizin `boq/counts.py::by_section`i.
+ *
+ * Backend BLM-SAY (`1def2b9`) `boq_item_count` ve `budget` yer tutucularını
+ * BAĞLADI; ikiz onları hâlâ `*_PENDING` döndürürse e2e "ekran gerçek sayıyı
+ * basıyor mu" sorusunu HİÇ ÖLÇEMEZ (K-IKIZ1) — dört kapı yeşil kalır, ekran
+ * canlıda boş kutu basar. Kusurun kullanıcı tarafından bildirilen hâli tam
+ * olarak buydu.
+ *
+ * 🔴 İKİSİ DE AYNI SATIR KÜMESİNDEN türer (`state.boqAllocations`), tıpkı
+ * sunucudaki tek sorgu gibi — ayrışmaları yapısal olarak imkânsızdır:
+ *   · `item_count` = bu bölüme EN AZ BİR tahsis satırı düşmüş FARKLI poz sayısı
+ *   · `amount`     = aynı kümede Σ(miktar × birim fiyat), çarpım SATIR BAŞINA
+ *                    yuvarlanır (`boqMultiplyMoney`, K3 — BOQ ekranının kendi
+ *                    toplamıyla kuruş farkı olmaz).
+ *
+ * 🔴 Tahsisi olmayan bölüm `{0, "0.00"}` döner ve bu YER TUTUCU DEĞİLDİR
+ * (K-MKD3): birleşim anahtarlarının ikisi de NOT NULL, boş küme "kayıt
+ * bağlanmamış" anlamına GELEMEZ.
+ */
+function sectionBoqTotals(state: MockState, sectionId: string): { count: number; amount: string } {
+  const amounts: string[] = [];
+  for (const item of ALL_BOQ_ITEMS) {
+    const quantity = state.boqAllocations[item.id]?.[sectionId];
+    if (quantity === undefined) continue;
+    amounts.push(boqMultiplyMoney(quantity, item.unit_price));
+  }
+  return { count: amounts.length, amount: boqSumMoney(amounts) };
+}
+
+/**
  * `SectionResponse[]` (dar gövde) — HEM `GET /sites/{id}` hero'sunun gömülü
  * listesi HEM `GET /sites/{id}/sections` liste ucu aynı şekli döndürür, bu
  * yüzden tek yerde kurulur.
@@ -3020,16 +3057,24 @@ function buildSectionListItems(state: MockState, siteId: string): components["sc
   return state.sections
     .filter((sec) => sec.site_id === siteId)
     .sort((a, b) => a.sort_order - b.sort_order)
-    .map((sec) => ({
-      id: sec.id, code: sec.code, name: sec.name, status: sec.status, manager_name: sec.manager_name,
-      start_date: sec.start_date, end_date: sec.end_date, sort_order: sec.sort_order,
-      progress_pct: METRIC_PENDING("boq"),
-      boq_item_count: COUNT_PENDING("boq"),
-      budget: METRIC_PENDING("boq"),
-      worker_count: COUNT_PENDING("timesheet"),
-      depends_on_section_id: sec.depends_on_section_id,
-      milestones: sec.milestones,
-    }));
+    .map((sec) => {
+      const boq = sectionBoqTotals(state, sec.id);
+      return {
+        id: sec.id, code: sec.code, name: sec.name, status: sec.status, manager_name: sec.manager_name,
+        start_date: sec.start_date, end_date: sec.end_date, sort_order: sec.sort_order,
+        // ⛔ `progress_pct` YER TUTUCU KALIR — BLM-SAY buna DOKUNMADI
+        // (`pending_module: "progress_payments"`, besleyen taraf da yer tutucu).
+        progress_pct: METRIC_PENDING("progress_payments"),
+        boq_item_count: COUNT_VALUE(boq.count, "boq"),
+        budget: METRIC_VALUE(boq.amount),
+        worker_count: COUNT_PENDING("timesheet"),
+        // BLM-SAY: kayıtlı kolonlar LİSTE yanıtına da girer.
+        planned_worker_count: sec.planned_worker_count,
+        budget_amount: sec.budget_amount,
+        depends_on_section_id: sec.depends_on_section_id,
+        milestones: sec.milestones,
+      };
+    });
 }
 
 /** `MockSite`in sozlesme alanlarini yaniti icin ayirir (sadece 16'si). */
@@ -3097,8 +3142,10 @@ function buildSiteDetail(
  * (elle girilen gerçek kolon) AYNI ŞEY DEĞİLDİR (P6 §7 S2a).
  */
 function buildSectionDetail(
+  state: MockState,
   section: MockSection,
 ): components["schemas"]["SectionDetailResponse"] {
+  const boq = sectionBoqTotals(state, section.id);
   return {
     id: section.id,
     code: section.code,
@@ -3109,9 +3156,12 @@ function buildSectionDetail(
     start_date: section.start_date,
     end_date: section.end_date,
     sort_order: section.sort_order,
-    progress_pct: METRIC_PENDING("boq"),
-    boq_item_count: COUNT_PENDING("boq"),
-    budget: METRIC_PENDING("boq"),
+    // Backend `to_section_detail` zarfları `to_section`ten AYNEN devralır —
+    // ikiz de aynı türetmeyi kullanır, aksi hâlde LİSTE "3 iş kalemi" derken
+    // DETAY aynı bölüm için "—" basardı (ekranın kendi kendini yalanlaması).
+    progress_pct: METRIC_PENDING("progress_payments"),
+    boq_item_count: COUNT_VALUE(boq.count, "boq"),
+    budget: METRIC_VALUE(boq.amount),
     worker_count: COUNT_PENDING("timesheet"),
     site_id: section.site_id,
     section_type: section.section_type,
@@ -7700,7 +7750,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         if ("error" in createdMilestones) return send(422, { detail: createdMilestones.error });
         section.milestones = createdMilestones;
         state.sections.push(section);
-        return send(201, buildSectionDetail(section));
+        return send(201, buildSectionDetail(state, section));
       });
     }
 
@@ -7710,7 +7760,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const sectionId = sectionIdMatch[1];
       const section = state.sections.find((sec) => sec.id === sectionId);
       if (!section) return send(404, { detail: "bolum yok" });
-      return send(200, buildSectionDetail(section));
+      return send(200, buildSectionDetail(state, section));
     }
 
     // PATCH /sections/{section_id} — tam sayfa Bölüm formunun güncelleme ucu
@@ -7791,7 +7841,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           updated_at: new Date().toISOString(),
         };
         Object.assign(section, updated);
-        return send(200, buildSectionDetail(section));
+        return send(200, buildSectionDetail(state, section));
       });
     }
 

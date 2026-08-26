@@ -75,6 +75,15 @@ const STATUS_WORKER_LABEL: Record<SectionStatus, string> = {
   on_hold: "Planlanan İşçi",
 };
 
+// "Planlanan İşçi" etiketini tasiyan durumlar — hucrenin KAYNAGI da burada
+// belirlenir. Etiket ile kaynagin ayni yerden turemesi, ikisinin zamanla
+// ayrismasini (ör. "Planlanan İşçi" yazip AKTIF isci sayisi basmak) engeller.
+const PLANNED_WORKER_STATUSES: ReadonlySet<SectionStatus> = new Set<SectionStatus>(
+  (Object.keys(STATUS_WORKER_LABEL) as SectionStatus[]).filter(
+    (status) => STATUS_WORKER_LABEL[status] === "Planlanan İşçi",
+  ),
+);
+
 // Yer tutucu metrik hucresi — duzeni korur, "—" basar, title'da aciklama verir
 // (spec §7.1, SiteHeroBar/SiteCard'daki PlaceholderValue deseniyle ayni).
 function PlaceholderValue({ valueClassName, pendingModule }: { valueClassName: string; pendingModule: PendingModuleKey }) {
@@ -115,6 +124,104 @@ function MetricCell({ label, valueClassName = "section-card__metric-value", plac
         <div className={valueClassName}>{children}</div>
       ) : (
         <PlaceholderValue valueClassName={valueClassName} pendingModule={placeholder.pending_module} />
+      )}
+    </div>
+  );
+}
+
+// ── "Bölüm Bedeli" hucresi — IKI ADAY, IKISI DE BASILIR ────────────────────
+//
+// 🔴 URUN KARARI (yonetim, 2026-08-27). `SectionResponse` bu turdan itibaren
+// AYNI kutuya aday IKI alan tasiyor ve `Section` docstring'i (P6 §7 S2a) ikisinin
+// AYRI KOLON oldugunu, birinin digerinin YERINE GECMEDIGINI soyluyor:
+//   · `budget_amount` — ELLE GIRILEN bedel (bolum formundan). ASIL degerdir.
+//   · `budget`        — BOQ tahsislerinden TUREYEN tutar (BLM-SAY):
+//                       Σ(bolume tahsis edilen miktar × pozun birim fiyati).
+// Birini secip digerini gizlemek, kullanicinin elle girdigi bedelin BOQ'dan
+// ayristigini EKRANDAN OKUYAMAMASI demekti. Bu yuzden kutu iki satirlidir:
+// ust satir `budget_amount`, alt satir "BOQ: …". Ayrismayi ekran SAKLAMAZ.
+//
+// ⚠️ MOCKUP SAPMASI: `Şantiye Detay.dc.html:178-179` bu kutuda TEK satir cizer
+// ("₺1,84M"); alt satir mockup'ta YOKTUR. Sapma bilinclidir ve raporlandi.
+// Alt satirin bicimi mockup'in KOMSU kutusundaki not satirindan alinmistir
+// (`:175` "Tümü tamamlandı" — 11px, `margin-top:2px`), yani kart icinde yeni bir
+// tipografi ICAT EDILMEDI.
+//
+// `budget_amount` `null` iken sahte sifir basilmaz — SectionHeroCard'daki
+// `BudgetCell` ile AYNI metin/baslik kullanilir ("Bölüm bedeli girilmemiş").
+function BudgetMetricCell({
+  label,
+  budgetAmount,
+  boqBudget,
+}: {
+  label: string;
+  budgetAmount: SectionResponse["budget_amount"];
+  boqBudget: SectionResponse["budget"];
+}) {
+  const moneyClass = "section-card__metric-value section-card__metric-value--money";
+  const isManualReal = budgetAmount !== null && budgetAmount !== undefined;
+  // 🔴 K-MKD3: "satir yok" ≠ "deger 0" ≠ "henuz bilinmiyor". BOQ tarafinda
+  // tahsisi olmayan bolum `available: true` + `"0.00"` doner ve bu YER TUTUCU
+  // DEGILDIR — "BOQ: ₺ 0" DOGRU bir cumledir. Bu yuzden `available` bayragina
+  // bakilir, `pending_module`un varligina DEGIL (dolu `MetricPlaceholder`
+  // zaten `pending_module` TASIYAMAZ — `CountPlaceholder`in TERSI kural).
+  const isBoqReal = hasRealValue(boqBudget);
+  return (
+    <div className="section-card__metric">
+      <div className="section-card__metric-label">{label}</div>
+      {isManualReal ? (
+        <div className={moneyClass}>{formatCompactCurrency(budgetAmount)}</div>
+      ) : (
+        <div
+          className={cx(moneyClass, "section-card__metric-value--pending")}
+          title="Bölüm bedeli girilmemiş"
+        >
+          —
+        </div>
+      )}
+      {isBoqReal ? (
+        <div className="section-card__metric-note" title={BOQ_NOTE_TITLE}>
+          {`BOQ: ${formatCompactCurrency(boqBudget.value as string)}`}
+        </div>
+      ) : (
+        <div
+          className={cx("section-card__metric-note", "section-card__metric-note--pending")}
+          title={pendingModuleLabel(boqBudget.pending_module)}
+        >
+          BOQ: —
+        </div>
+      )}
+    </div>
+  );
+}
+
+const BOQ_NOTE_TITLE = "İş kalemi tahsislerinden türeyen tutar (miktar × birim fiyat)";
+
+// ── "Planlanan İşçi" hucresi ───────────────────────────────────────────────
+//
+// `planned_worker_count` DUZ bir sayidir (zarf DEGIL): "girilmemis" tek hâli
+// `null`dur, "hangi modul gelince dolacak" sorusu YOKTUR. Bu yuzden
+// `MetricCell`in zarf yolundan gecmez.
+function PlannedWorkerCell({
+  label,
+  plannedWorkerCount,
+}: {
+  label: string;
+  plannedWorkerCount: SectionResponse["planned_worker_count"];
+}) {
+  const isReal = plannedWorkerCount !== null && plannedWorkerCount !== undefined;
+  return (
+    <div className="section-card__metric">
+      <div className="section-card__metric-label">{label}</div>
+      {isReal ? (
+        <div className="section-card__metric-value">{plannedWorkerCount}</div>
+      ) : (
+        <div
+          className="section-card__metric-value section-card__metric-value--pending"
+          title="Planlanan işçi sayısı girilmemiş"
+        >
+          —
+        </div>
       )}
     </div>
   );
@@ -173,10 +280,22 @@ function ProgressMetricCell({
 }
 
 // Bölüm kartı (spec §5.4, mockup Şantiye Detay.dc.html satır 153+). Dört metrik
-// (İlerleme · İş Kalemleri · bedel · işçi — son ikisinin etiketi duruma gore
-// degisir, bkz. STATUS_BUDGET_LABEL/STATUS_WORKER_LABEL) bu dilimde HEPSI yer tutucudur —
-// backend henuz gercek deger uretmiyor. "3 gecikme riski" satiri KASITLI olarak
-// basilmaz (spec §7.2) — backend bu alani hic dondurmuyor.
+// (İlerleme · İş Kalemleri · bedel · işçi — son ikisinin etiketi VE bedel/işçi
+// hücrelerinin KAYNAĞI duruma gore degisir, bkz. STATUS_BUDGET_LABEL/
+// STATUS_WORKER_LABEL/PLANNED_WORKER_STATUSES).
+//
+// 🔴 F-BLMKART (2026-08-27) — kullanicinin canlida bildirdigi "dort alan da bos"
+// kusuru burada kapandi. Onceki surumde DORDU DE yer tutucuydu; backend BLM-SAY
+// (`1def2b9`) ile:
+//   · `boq_item_count` · `budget` yer tutucu OLMAKTAN CIKTI (BOQ tahsis turevi),
+//   · `budget_amount` · `planned_worker_count` LISTE yanitina EKLENDI
+//     (deger zaten vardi, uc dondurmuyordu — kusurun gercek sebebi buydu).
+// ⛔ `progress_pct` HÂLÂ YER TUTUCUDUR ve bilerek oyle birakildi: besleyen taraf
+// (`boq.schemas` `BoqItemResponse.progress_pct`) da yer tutucu, burada bir yuzde
+// uretmek onu ICAT etmek olurdu. "İlerleme" sutunu DURUST BOS kalir.
+//
+// "3 gecikme riski" satiri KASITLI olarak basilmaz (spec §7.2) — backend bu
+// alani hic dondurmuyor.
 //
 // F-P6 T2: Bölüm Detay ekranı artık GERÇEK olduğu için kart her durumda ORAYA
 // linklenir (task-2-brief.md "SectionCard güncellemesi") — önceki "planned ->
@@ -207,21 +326,46 @@ export function SectionCard({ projectId, siteId, section }: SectionCardProps) {
 
         <ProgressMetricCell progress={section.progress_pct} status={section.status} />
 
+        {/* "İş Kalemleri" — TEK SAYI basilir (yonetim karari, 2026-08-27).
+            🔴 MOCKUP SAPMASI: mockup bu kutuya KESIR yazar — `Şantiye Detay.dc.html:174`
+            "14 / 14", `:211` "22 / 22", `:248` "16 / 26", `:285` "0 / 18",
+            `:321` "0 / 6" — yani TAMAMLANAN / TOPLAM. Backend yalnizca PAYDAYI
+            uretebiliyor: `boq_item_count` = "bu bolume EN AZ BIR tahsis satiri
+            dusmus FARKLI poz" sayisi (`backend/app/modules/boq/counts.py`).
+            PAYIN KAYNAGI REPODA YOKTUR — `boq_item_section_allocations`ta
+            "tamamlandi" bayragi yok, gerceklesen taraf (`progress_pct`) hâlâ yer
+            tutucu. Pay UYDURULMADI: "26 is kalemi" DOGRU bir cumledir, "16 / 26"
+            olurdu ki 16'nin arkasinda hicbir olcum yok.
+            Mockup'in alt satirlari ("Tümü tamamlandı" `:175`/`:212` / "3 gecikme riski"
+            `:249`) de ayni sebeple basilmaz (spec §7.2, onceden alinmis karar).
+            🔴 K-MKD3: tahsisi olmayan bolum `available: true` + `count: 0` doner
+            ve bu YER TUTUCU DEGILDIR — "0" basilir, "—" YANLIS olurdu. */}
         <MetricCell label="İş Kalemleri" placeholder={section.boq_item_count}>
           {section.boq_item_count.count}
         </MetricCell>
 
-        <MetricCell
+        <BudgetMetricCell
           label={STATUS_BUDGET_LABEL[section.status]}
-          valueClassName="section-card__metric-value section-card__metric-value--money"
-          placeholder={section.budget}
-        >
-          {formatCompactCurrency(section.budget.value ?? 0)}
-        </MetricCell>
+          budgetAmount={section.budget_amount}
+          boqBudget={section.budget}
+        />
 
-        <MetricCell label={STATUS_WORKER_LABEL[section.status]} placeholder={section.worker_count}>
-          {section.worker_count.count}
-        </MetricCell>
+        {/* Isci hucresinin KAYNAGI etiketiyle birlikte degisir
+            (STATUS_WORKER_LABEL ile AYNI dallanma, tek yerde tutulur):
+            · "Aktif İşçi" / "İşçi (zirve)" → `worker_count` (puantaj turevi zarf)
+            · "Planlanan İşçi"              → `planned_worker_count` (kayitli kolon)
+            Planlanmis bir bolumde "aktif isci" sayisini basmak, is baslamamis bir
+            bolum icin puantaj sayisi gostermek olurdu. */}
+        {PLANNED_WORKER_STATUSES.has(section.status) ? (
+          <PlannedWorkerCell
+            label={STATUS_WORKER_LABEL[section.status]}
+            plannedWorkerCount={section.planned_worker_count}
+          />
+        ) : (
+          <MetricCell label={STATUS_WORKER_LABEL[section.status]} placeholder={section.worker_count}>
+            {section.worker_count.count}
+          </MetricCell>
+        )}
 
         <div className="section-card__action">
           <Link
