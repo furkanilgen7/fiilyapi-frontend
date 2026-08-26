@@ -56,15 +56,6 @@
   border-color: var(--color-danger);
 }
 
-/* Dönem seçici + KPI şeridi TEK ızgaradır (E8:72 `auto 1fr 1fr 1fr`). */
-.mu-strip {
-  display: grid;
-  grid-template-columns: auto 1fr 1fr 1fr; /* E8:72 */
-  gap: 14px; /* E8:72 */
-  margin-bottom: var(--space-5); /* E8:72 — 20px */
-  align-items: start;
-}
-
 /* Dönem kartı (E8:73-77). */
 .mu-period {
   background: var(--color-surface);
@@ -93,33 +84,6 @@
   font-weight: var(--weight-semibold);
   color: var(--color-text);
   white-space: nowrap;
-}
-
-/* KPI kartları (E8:78-89). */
-.mu-kpi {
-  background: var(--color-surface);
-  border-radius: var(--radius-12); /* E8:78 */
-  border: 1px solid var(--color-border);
-  padding: var(--space-4); /* E8:78 — 16px */
-}
-.mu-kpi__label {
-  font-size: var(--text-small); /* E8:79 — 11px */
-  color: var(--color-text-subtle);
-  margin-bottom: 5px; /* E8:79 */
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
-}
-.mu-kpi__value {
-  font-size: var(--text-kpi-value); /* E8:80 — 20/700 */
-  font-weight: var(--weight-bold);
-  font-family: var(--font-mono);
-  color: var(--color-text);
-}
-.mu-kpi__value--danger {
-  color: var(--color-danger); /* E8:80 */
-}
-.mu-kpi__value--success {
-  color: var(--color-success); /* E8:84, E8:88 */
 }
 
 /* Tablo kartı (E8:93-97 · taslak paneli aynı kabı kullanır). */
@@ -248,13 +212,6 @@
   gap: var(--space-2);
   flex-wrap: wrap;
   justify-content: flex-end;
-}
-
-/* Dar pencere: şerit tek sütuna iner, yatay taşma OLMAZ. */
-@media (max-width: 1100px) {
-  .mu-strip {
-    grid-template-columns: 1fr 1fr;
-  }
 }
 
 /* ---------------------------------------------------------------------------

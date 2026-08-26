@@ -1145,3 +1145,146 @@ describe("Yevmiye Kaydı diyaloğu (T4)", () => {
     expect(note).toHaveValue("Ziraat · TRF-1");
   });
 });
+
+// ---------------------------------------------------------------------------
+// F-MUP · `Muhasebe - Profesyonel` (MP) düzeni — KK-10 ile Ekran 8'in YERİNE.
+// ---------------------------------------------------------------------------
+
+describe("F-MUP · MP:105-112 modül sekmeleri", () => {
+  it("şerit ekrandadır ve AKTİF hap `Yevmiye`dir", () => {
+    render(<AccountingView />);
+    expect(screen.getByTestId("mu-tabs")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Yevmiye" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
+  it("🔴 AYNI ANDA TEK hap aktiftir (F-SD T7 çift-aktiflik dersi)", () => {
+    render(<AccountingView />);
+    const active = screen
+      .getAllByRole("link")
+      .filter((el) => el.getAttribute("aria-current") === "page");
+    expect(active).toHaveLength(1);
+  });
+
+  it("e-Fatura sekmesi SİLİNMEZ: bağlantı DEĞİL, gerekçesi EKRANDA", () => {
+    render(<AccountingView />);
+    expect(screen.queryByRole("link", { name: "e-Fatura" })).not.toBeInTheDocument();
+    expect(screen.getByTestId("mu-tabs-reason")).toHaveTextContent(
+      "e-Fatura: e-Fatura/GİB entegrasyonu ertelendi (kullanıcı kararı).",
+    );
+  });
+
+  it("Banka Mutabakatı sekmesi ARTIK bir bağlantıdır (KK-10)", () => {
+    render(<AccountingView />);
+    expect(screen.getByRole("link", { name: "Banka Mutabakatı" })).toHaveAttribute(
+      "href",
+      "/muhasebe/banka-mutabakati",
+    );
+  });
+});
+
+describe("F-MUP · MP:114-139 BEŞ KPI kartı", () => {
+  // 🔴 ONAYLI MOCKUP SAPMASI — etiketler `Toplam Gelir`/`Toplam Gider` DEĞİL.
+  // Gerekçe `AccountingKpiCards` başlığındadır: alacak toplamı GELİR değildir
+  // (müşteri tahsilatı 120'yi alacaklandırır ama gelir yaratmaz).
+  it("borç/alacak kartları MUHASEBE adlarını taşır, gelir/gider adını DEĞİL", () => {
+    render(<AccountingView />);
+    expect(screen.getByTestId("mu-kpi-debit")).toHaveTextContent("Toplam Borç");
+    expect(screen.getByTestId("mu-kpi-credit")).toHaveTextContent("Toplam Alacak");
+    expect(screen.queryByText("Toplam Gelir")).not.toBeInTheDocument();
+    expect(screen.queryByText("Toplam Gider")).not.toBeInTheDocument();
+  });
+
+  it("KDV kartı `/vat-return`den beslenir: tutar + VADE", () => {
+    render(<AccountingView />);
+    expect(screen.getByTestId("mu-kpi-vat")).toHaveTextContent("412.000");
+    expect(screen.getByTestId("mu-kpi-vat-due")).toHaveTextContent("28 Ağu vadeli");
+  });
+
+  // 🔴 "BU UÇ NEYİN KÜMESİ" dersi — e-Fatura kartına `pending_approval`
+  // BAĞLANMAZ: adı "bekleyen" der ama kümesi ONAY bekleyenlerdir, GİB
+  // cevabı bekleyenler değil.
+  it("e-Fatura kartı SİLİNMEZ ama sayı UYDURULMAZ; gerekçesi ekrandadır", () => {
+    render(<AccountingView />);
+    expect(screen.getByTestId("mu-kpi-einvoice")).toHaveTextContent("e-Fatura Bekleyen");
+    expect(screen.getByTestId("mu-kpi-einvoice")).toHaveTextContent("—");
+    expect(
+      screen.getByTestId("mu-kpi-einvoice-reason").textContent?.length ?? 0,
+    ).toBeGreaterThan(20);
+  });
+
+  it("🔴 KDV ucu patlarsa YEVMİYE kartları YAŞAR (tek bayrak yok)", () => {
+    vi.mocked(useVatReturn).mockReturnValue(
+      queryError(new Error("kdv patladı")) as unknown as UseQueryResult<
+        VatReturnResponse,
+        Error
+      >,
+    );
+    render(<AccountingView />);
+    expect(screen.getByTestId("mu-vat-error")).toBeInTheDocument();
+    expect(screen.getByTestId("mu-kpi-debit")).toHaveTextContent("3.842.600");
+    expect(screen.getByTestId("mu-kpi-vat")).toHaveTextContent("—");
+  });
+});
+
+describe("F-MUP · MP:165-209 sağ ray (mini mizan)", () => {
+  it("mizan satırları kod + ad + kapanışla basılır", () => {
+    render(<AccountingView />);
+    const list = screen.getByTestId("mu-rail-list");
+    expect(within(list).getByText("Bankalar")).toBeInTheDocument();
+    expect(screen.getByTestId("mu-rail-amount-102")).toHaveTextContent("3.964.700");
+    expect(screen.getByTestId("mu-rail-count")).toHaveTextContent("3 hesap");
+  });
+
+  // 🔴 K-MKD3 — bu turun en kritik ekran iddiası.
+  it("iki tarafı da sıfır olan hesap RAYDA KALIR ve `0` basar, `—` DEĞİL", () => {
+    render(<AccountingView />);
+    const zero = screen.getByTestId("mu-rail-amount-100");
+    expect(zero).toBeInTheDocument();
+    expect(zero).toHaveTextContent("0");
+    expect(zero).not.toHaveTextContent("—");
+  });
+
+  it("BOŞ mizan ile YÜKLENİYOR ayrı ayrı söylenir", () => {
+    vi.mocked(useTrialBalance).mockReturnValue(queryOk({ ...RAIL, rows: [] }));
+    const { unmount } = render(<AccountingView />);
+    expect(screen.getByTestId("mu-rail-empty")).toBeInTheDocument();
+    expect(screen.queryByTestId("mu-rail-loading")).not.toBeInTheDocument();
+    unmount();
+
+    vi.mocked(useTrialBalance).mockReturnValue(
+      queryLoading() as unknown as UseQueryResult<TrialBalanceResponse, Error>,
+    );
+    render(<AccountingView />);
+    expect(screen.getByTestId("mu-rail-loading")).toBeInTheDocument();
+    expect(screen.queryByTestId("mu-rail-empty")).not.toBeInTheDocument();
+  });
+
+  it("e-Fatura paneli SİLİNMEZ ama SAHTE SATIR basmaz", () => {
+    render(<AccountingView />);
+    expect(screen.getByTestId("mu-einvoice-reason")).toBeInTheDocument();
+    expect(screen.queryByText(/Yılmaz Elektrik/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/GİB Bekliyor/)).not.toBeInTheDocument();
+  });
+});
+
+describe("F-MUP · MP:247-250 defter altı dönem toplamları", () => {
+  it("toplamlar `journal-summary`den gelir (görünen satırlardan TOPLANMAZ)", () => {
+    render(<AccountingView />);
+    const foot = screen.getByTestId("mu-ledger-totals");
+    expect(foot).toHaveTextContent("Dönem Borç");
+    expect(foot).toHaveTextContent("3.842.600");
+    expect(foot).toHaveTextContent("Dönem Alacak");
+    expect(foot).toHaveTextContent("4.120.000");
+  });
+
+  it("MP:146 Excel düğmesi defter panelinin BAŞLIĞINDA ve devre dışıdır", () => {
+    render(<AccountingView />);
+    const button = screen.getByTestId("mu-export");
+    expect(button).toBeDisabled();
+    expect(button).toHaveTextContent("Excel");
+    expect(screen.getByTestId("mu-export-reason").textContent?.length ?? 0).toBeGreaterThan(20);
+  });
+});
