@@ -9278,7 +9278,7 @@
           "invoicing"
         ],
         "summary": "Mark Collected Invoice Endpoint",
-        "description": "`sent → collected` (FY:130 `Tahsil Edildi`) — YALNIZ giden fatura.\n\n**Tahsilat KAYDI değildir** (FGI:220-247 formu Hazine diliminindir:\n`bank_accounts` tablosu henüz YOK). Burada yalnız damga vardır; tutar,\nhesap ve tarih alanları AÇILMAZ — yazma yolu olmayan kolon her zaman NULL\ndöner ve uydurma alan olur.\n\nK6 kapısı UYGULANMAZ: `sent` bir fatura zaten kapıdan geçmiştir.",
+        "description": "`sent → collected` (FY:130 `Tahsil Edildi`) — YALNIZ giden fatura.\n\n**Tahsilat KAYDI değildir** (FGI:220-247 formu Hazine diliminindir:\n`bank_accounts` tablosu henüz YOK). Burada yalnız damga vardır; tutar,\nhesap ve tarih alanları AÇILMAZ — yazma yolu olmayan kolon her zaman NULL\ndöner ve uydurma alan olur.\n\nK6 kapısı UYGULANMAZ: `sent` bir fatura zaten kapıdan geçmiştir.\n\n🔴 **MU-3E İŞ 2 — ÖDEME ARANIR (kullanıcı kararı 2026-08-26).** Faturanın\ntoplamını karşılayan ödeme kaydı yoksa **422**. Ödemesiz damga muhasebede\n`120 Alıcılar`ı AÇIK bırakıyor ve mizan alıcıları fazla gösteriyordu:\nnakit bacağı `payments` satırından doğar (MU-3C), ödeme yoksa fiş de\nyoktur. Doğru yol `POST /payments`tir — tahsilat girildiğinde bu damga\nKENDİLİĞİNDEN basılır (K5) ve nakit fişi de aynı işlemde yazılır.",
         "operationId": "mark_collected_invoice_endpoint_invoices__invoice_id__mark_collected_post",
         "security": [
           {
@@ -9318,14 +9318,7 @@
             "description": "İşlem faturanın yönüne ya da durumuna uygulanamaz"
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "description": "Faturanın toplamını karşılayan ödeme kaydı yok (MU-3E İŞ 2)"
           }
         }
       }
@@ -10105,7 +10098,7 @@
           "payroll"
         ],
         "summary": "Approve Payroll Period Endpoint",
-        "description": "BY 303 \"Tümünü Onayla\" — dönemi TEK ADIM ilerletir, `pending` satırları onaylar.\n\n`draft → pending_approval → approved`; **atlama YOKTUR** (S8), üçüncü çağrı\n**409**. Ödeme damgası bu uçtan basılmaz (`/pay` ayrıdır).\n\n🔴 \"Tümünü\" onaylamaz: `uncomputed` (S4) ve taşeron (K2) satırlar ATLANIR ve\nyanıtta **sebebe göre ayrı sayılarla** raporlanır — sessiz atlama yoktur\n(WORKFLOW §3).",
+        "description": "BY 303 \"Tümünü Onayla\" — dönemi TEK ADIM ilerletir, `pending` satırları onaylar.\n\n`draft → pending_approval → approved`; **atlama YOKTUR** (S8), üçüncü çağrı\n**409**. Ödeme damgası bu uçtan basılmaz (`/pay` ayrıdır).\n\n🔴 \"Tümünü\" onaylamaz: `uncomputed` (S4) ve taşeron (K2) satırlar ATLANIR ve\nyanıtta **sebebe göre ayrı sayılarla** raporlanır — sessiz atlama yoktur\n(WORKFLOW §3).\n\n🔴 **MU-3E:** `approved` adımında bordronun TAHAKKUK FİŞİ kesilir\n(`730` gider · `335` personele borç · `360` vergi · `361` SGK). Fiş\nyazılamazsa onay da geri alınır: hedef ayın muhasebe dönemi kapalıysa\n**409**, hesap eşlemesi ya da satır bileşeni eksikse **422**.",
         "operationId": "approve_payroll_period_endpoint_payroll_periods__period_id__approve_post",
         "security": [
           {
@@ -10142,17 +10135,10 @@
             "description": "Kayıt bulunamadı"
           },
           "409": {
-            "description": "Dönem onay adımına geçirilemez"
+            "description": "Dönem onay adımına geçirilemez ya da muhasebe dönemi kapalı"
           },
           "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
+            "description": "Bordro fişi yazılamadı: hesap eşlemesi ya da satır bileşeni eksik"
           }
         }
       }
@@ -43199,6 +43185,29 @@
           "worker_count": {
             "$ref": "#/components/schemas/CountPlaceholder"
           },
+          "planned_worker_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Worker Count"
+          },
+          "budget_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Amount"
+          },
           "depends_on_section_id": {
             "anyOf": [
               {
@@ -43267,29 +43276,6 @@
             ],
             "title": "Deputy Manager Name"
           },
-          "planned_worker_count": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Planned Worker Count"
-          },
-          "budget_amount": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Budget Amount"
-          },
           "is_draft": {
             "type": "boolean",
             "title": "Is Draft"
@@ -43319,6 +43305,8 @@
           "boq_item_count",
           "budget",
           "worker_count",
+          "planned_worker_count",
+          "budget_amount",
           "depends_on_section_id",
           "milestones",
           "site_id",
@@ -43326,14 +43314,12 @@
           "description",
           "deputy_manager_user_id",
           "deputy_manager_name",
-          "planned_worker_count",
-          "budget_amount",
           "is_draft",
           "created_at",
           "updated_at"
         ],
         "title": "SectionDetailResponse",
-        "description": "P6 §5 — `GET /sections/{section_id}` govdesi: `sections`in TUM kolonlari.\n\n`SectionResponse`ten TUREYIR, YERINE GECMEZ: liste ucu (`SectionListResponse`)\ndar govdeyi tasimaya devam eder. Miras alinan DORT YER TUTUCU\n(`progress_pct`/`boq_item_count`/`budget`/`worker_count`) BILINCLI OLARAK\nKALIR (spec §6): hero KPI'lari bu dilimde placeholder desenindedir.\n\n`budget` (BOQ turevi yer tutucu) ile `budget_amount` (elle girilen gercek\nkolon) AYNI SEY DEGILDIR ve biri digerinin yerine gecmez — bkz. `Section`\ndocstring'i (P6 §7 S2a). BOQ-bolum bagi acildiginda yer tutucu gercege\ndonusecek, `budget_amount` ise turev degere cevrilecektir.\n\nMockup'ta gorunup burada OLMAYAN her sey `Section` modelinde de yoktur\n(BOQ atamalari, taseron/makine, bagimlilik/milestone, belgeler): spec §6\nlistesi — bu dilimde ARA COZUM yazilmaz."
+        "description": "P6 §5 — `GET /sections/{section_id}` govdesi: `sections`in TUM kolonlari.\n\n`SectionResponse`ten TUREYIR, YERINE GECMEZ: liste ucu (`SectionListResponse`)\ndar govdeyi tasimaya devam eder. 🔴 BLM-SAY'de dort yer tutucudan IKISI\nBAGLANDI (`boq_item_count` · `budget`) ve ikisi de MIRAS yoluyla ayni anda\nliste + detay + santiye detayinda dogdu; `progress_pct` yer tutucu KALDI\n(hakediş turevi, ayri is), `worker_count` T4'te zaten bagliydi.\n\n`budget` (BOQ turevi) ile `budget_amount` (elle girilen gercek kolon) AYNI\nSEY DEGILDIR ve biri digerinin yerine gecmez — bkz. `Section` docstring'i\n(P6 §7 S2a). Bag ACILDI, ama `budget_amount` bu dilimde TUREVE CEVRILMEDI:\no bir URUN KARARIDIR (canli kayitlarda elle girilmis bedeller var) ve\nyonetime raporlandi. Iki alan da yanittadir, hangisinin basilacagi ekranin\nkararidir.\n\nMockup'ta gorunup burada OLMAYAN her sey `Section` modelinde de yoktur\n(BOQ atamalari, taseron/makine, bagimlilik/milestone, belgeler): spec §6\nlistesi — bu dilimde ARA COZUM yazilmaz."
       },
       "SectionListResponse": {
         "properties": {
@@ -43508,6 +43494,29 @@
           "worker_count": {
             "$ref": "#/components/schemas/CountPlaceholder"
           },
+          "planned_worker_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Worker Count"
+          },
+          "budget_amount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Amount"
+          },
           "depends_on_section_id": {
             "anyOf": [
               {
@@ -43542,6 +43551,8 @@
           "boq_item_count",
           "budget",
           "worker_count",
+          "planned_worker_count",
+          "budget_amount",
           "depends_on_section_id",
           "milestones"
         ],

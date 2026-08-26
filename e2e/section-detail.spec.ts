@@ -41,11 +41,19 @@ test("santiye detayindan bolum detayina link, hero + KPI + sekmeler + Hakedis Ol
   await expect(page.getByText("Sorumlu: Sercan Öztürk")).toBeVisible();
 
   // 3) KPI ayrımı — Bölüm Bedeli (budget_amount) VE Kalan Gün (end_date türevi)
-  // GERÇEK; İlerleme/İşçi/İş Kalemleri yer tutucu (task-2-brief §KPI).
+  // GERÇEK; İlerleme/İşçi yer tutucu (task-2-brief §KPI).
+  //
+  // 🔴 F-BLMKART (2026-08-27) GÜNCELLEMESİ: "İş Kalemleri" ARTIK YER TUTUCU
+  // DEĞİLDİR. Backend BLM-SAY (`1def2b9`) `boq_item_count`u BOQ tahsislerinden
+  // türetti ve `to_section_detail` zarfları `to_section`ten AYNEN devraldığı
+  // için DETAY ekranı da gerçek sayıyı alır. Eski satır ("boq hâlâ pending")
+  // artık CANLIYI YALANLAYAN bir bekçiydi; ikiz düzeltildi ve bu satır onunla
+  // birlikte güncellendi. sec-1'e üç poz tahsis edilmiştir (bkz. `BOQ_FIXTURE`).
   await expect(page.getByTestId("section-hero-kpi-budget")).toContainText("₺");
   await expect(page.getByTestId("section-hero-kpi-progress").locator(".section-hero__kpi-value--pending")).toHaveCount(1);
   await expect(page.getByTestId("section-hero-kpi-worker").locator(".section-hero__kpi-value--pending")).toHaveCount(1);
-  await expect(page.getByTestId("section-hero-kpi-boq").locator(".section-hero__kpi-value--pending")).toHaveCount(1);
+  await expect(page.getByTestId("section-hero-kpi-boq").locator(".section-hero__kpi-value--pending")).toHaveCount(0);
+  await expect(page.getByTestId("section-hero-kpi-boq")).toContainText("3");
   await expect(page.getByTestId("section-hero-kpi-days").locator(".section-hero__kpi-value--pending")).toHaveCount(0);
 
   // 4) Eylemler: "Düzenle" doğru rotaya, "Hakediş Oluştur" P7 ekranına gider.

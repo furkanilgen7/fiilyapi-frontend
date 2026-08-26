@@ -19,10 +19,15 @@ const BASE_SECTION: SectionResponse = {
   sort_order: 0,
   depends_on_section_id: null,
   milestones: [],
-  progress_pct: { available: false, value: null, pending_module: "boq" },
+  // ⛔ `progress_pct` yer tutucu KALIR (BLM-SAY dokunmadi) — anahtari
+  // `progress_payments`tir, `boq` DEGIL (backend `to_section`).
+  progress_pct: { available: false, value: null, pending_module: "progress_payments" },
   boq_item_count: { available: false, count: null, pending_module: "boq" },
   budget: { available: false, value: null, pending_module: "boq" },
   worker_count: { available: false, count: null, pending_module: "timesheet" },
+  // F-BLMKART: BLM-SAY ile LISTE yanitina giren iki kayitli kolon.
+  planned_worker_count: null,
+  budget_amount: null,
 };
 
 function renderCard(overrides: Partial<SectionResponse> = {}) {
@@ -164,7 +169,7 @@ describe("SectionCard — sayilar paylasilan bicimlendiricilerden gecer", () => 
   });
 
   it("bolum bedeli formatCompactCurrency ile basilir", () => {
-    renderCard({ budget: { available: true, value: "8400000.00", pending_module: "boq" } });
+    renderCard({ budget_amount: "8400000.00" });
     expect(screen.getByText("₺ 8,4M")).toBeInTheDocument();
   });
 });
@@ -270,5 +275,138 @@ describe("SectionCard — eylem klavyeyle odaklanabilir (davranissal)", () => {
     renderCard({ status: "completed" });
     await user.tab();
     expect(screen.getByRole("link", { name: "Detay →" })).toHaveFocus();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// F-BLMKART (2026-08-27) — kullanicinin canlida bildirdigi "dort alan da bos"
+// kusurunun bekcileri. Backend BLM-SAY (`1def2b9`) iki yer tutucuyu BAGLADI ve
+// iki kayitli kolonu LISTE yanitina EKLEDI.
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("SectionCard — 'Bölüm Bedeli' kutusu İKİ değeri de gösterir (ürün kararı 2026-08-27)", () => {
+  it("elle girilen budget_amount ASIL değer olarak basılır", () => {
+    renderCard({ budget_amount: "4982030.00" });
+    expect(screen.getByText("₺ 5M")).toBeInTheDocument();
+  });
+
+  it("BOQ türevi budget alt satırda 'BOQ: …' olarak basılır", () => {
+    renderCard({ budget: { available: true, value: "3520000.00", pending_module: null } });
+    expect(screen.getByText("BOQ: ₺ 3,5M")).toBeInTheDocument();
+  });
+
+  // 🔴 EKRAN AYRISMAYI SAKLAMAZ: kullanici elle girdigi bedelin BOQ tahsis
+  // toplamindan farkli oldugunu KARTTA gorebilmelidir.
+  it("ikisi ayrıştığında İKİSİ DE aynı anda görünür — biri diğerini gizlemez", () => {
+    renderCard({
+      budget_amount: "4982030.00",
+      budget: { available: true, value: "3520000.00", pending_module: null },
+    });
+    expect(screen.getByText("₺ 5M")).toBeInTheDocument();
+    expect(screen.getByText("BOQ: ₺ 3,5M")).toBeInTheDocument();
+  });
+
+  it("budget_amount null iken sahte sıfır basılmaz, BOQ satırı yine de görünür", () => {
+    renderCard({
+      budget_amount: null,
+      budget: { available: true, value: "3520000.00", pending_module: null },
+    });
+    expect(screen.getByTitle("Bölüm bedeli girilmemiş")).toHaveTextContent("—");
+    expect(screen.getByText("BOQ: ₺ 3,5M")).toBeInTheDocument();
+  });
+
+  // 🔴 K-MKD3: "satir yok" ≠ "henuz bilinmiyor". Tahsisi olmayan bolum
+  // `available: true` + "0.00" doner; "BOQ: ₺ 0" DOGRU, "BOQ: —" YANLIS olurdu.
+  it("BOQ tahsisi olmayan bölüm 'BOQ: ₺ 0' basar — 'BOQ: —' DEĞİL", () => {
+    renderCard({ budget: { available: true, value: "0.00", pending_module: null } });
+    expect(screen.getByText("BOQ: ₺ 0")).toBeInTheDocument();
+    expect(screen.queryByText("BOQ: —")).not.toBeInTheDocument();
+  });
+
+  it("BOQ zarfı gerçekten yer tutucuyken 'BOQ: —' basılır ve sebebi title'da taşınır", () => {
+    renderCard({ budget: { available: false, value: null, pending_module: "boq" } });
+    const note = screen.getByText("BOQ: —");
+    expect(note).toHaveAttribute("title");
+    expect(note.getAttribute("title")).not.toBe("");
+  });
+});
+
+describe("SectionCard — 'İş Kalemleri' TEK SAYI basar (bilinçli mockup sapması)", () => {
+  it("boq_item_count gerçek değeri basılır", () => {
+    renderCard({ boq_item_count: { available: true, count: 26, pending_module: "boq" } });
+    expect(screen.getByText("26")).toBeInTheDocument();
+  });
+
+  // 🔴 K-MKD3: tahsisi olmayan bolum icin "0 is kalemi" DOGRU bir cumledir.
+  it("count 0 iken '0' basılır, '—' DEĞİL", () => {
+    renderCard({ boq_item_count: { available: true, count: 0, pending_module: "boq" } });
+    expect(screen.getByText("0")).toBeInTheDocument();
+    // Kalan uc metrik hâlâ yer tutucu (progress · bedel · isci) — dort DEGIL uc.
+    expect(screen.getAllByText("—")).toHaveLength(3);
+  });
+
+  // Mockup `Şantiye Detay.dc.html:248` "16 / 26" yazar; PAYIN kaynagi repoda
+  // YOKTUR ve UYDURULMADI.
+  it("mockup'taki kesir BASILMAZ — ekranda '/' içeren bir sayı yoktur", () => {
+    renderCard({ boq_item_count: { available: true, count: 26, pending_module: "boq" } });
+    expect(screen.queryByText(/^\d+\s*\/\s*\d+$/)).not.toBeInTheDocument();
+  });
+});
+
+describe("SectionCard — işçi hücresinin KAYNAĞI duruma göre değişir", () => {
+  const WORKER: SectionResponse["worker_count"] = { available: true, count: 48, pending_module: "timesheet" };
+
+  it("active -> worker_count basılır, planned_worker_count basılmaz", () => {
+    renderCard({ status: "active", worker_count: WORKER, planned_worker_count: 30 });
+    expect(screen.getByText("48")).toBeInTheDocument();
+    expect(screen.queryByText("30")).not.toBeInTheDocument();
+  });
+
+  it("completed -> worker_count basılır", () => {
+    renderCard({ status: "completed", worker_count: WORKER, planned_worker_count: 30 });
+    expect(screen.getByText("48")).toBeInTheDocument();
+    expect(screen.queryByText("30")).not.toBeInTheDocument();
+  });
+
+  it("planned -> planned_worker_count basılır, worker_count basılmaz", () => {
+    renderCard({ status: "planned", worker_count: WORKER, planned_worker_count: 30 });
+    expect(screen.getByText("30")).toBeInTheDocument();
+    expect(screen.queryByText("48")).not.toBeInTheDocument();
+  });
+
+  it("on_hold -> planned_worker_count basılır", () => {
+    renderCard({ status: "on_hold", worker_count: WORKER, planned_worker_count: 30 });
+    expect(screen.getByText("30")).toBeInTheDocument();
+    expect(screen.queryByText("48")).not.toBeInTheDocument();
+  });
+
+  it("planned + planned_worker_count null -> sahte sıfır basılmaz", () => {
+    renderCard({ status: "planned", worker_count: WORKER, planned_worker_count: null });
+    expect(screen.getByTitle("Planlanan işçi sayısı girilmemiş")).toHaveTextContent("—");
+    expect(screen.queryByText("48")).not.toBeInTheDocument();
+  });
+});
+
+// ⛔ POZITIF KONTROL KARSITI: diger uc alan GERCEK deger tasirken bile
+// "İlerleme" DURUST BOS kalmalidir. Bu test, ilerideki bir turun `progress_pct`i
+// yanlislikla baglamasini (ya da sahte %0 basmasini) yakalar.
+describe("SectionCard — 'İlerleme' YER TUTUCU KALIR (progress_pct'e dokunulmadı)", () => {
+  it("diğer üç alan gerçek değer taşırken bile ilerleme '—' basar, çubuk dolgusu çizilmez", () => {
+    renderCard({
+      status: "active",
+      boq_item_count: { available: true, count: 26, pending_module: "boq" },
+      budget: { available: true, value: "3520000.00", pending_module: null },
+      budget_amount: "4982030.00",
+      worker_count: { available: true, count: 48, pending_module: "timesheet" },
+    });
+    expect(screen.getByText("26")).toBeInTheDocument();
+    expect(screen.getByText("₺ 5M")).toBeInTheDocument();
+    expect(screen.getByText("48")).toBeInTheDocument();
+
+    const dashes = screen.getAllByText("—");
+    expect(dashes).toHaveLength(1);
+    expect(dashes[0].className).toContain("section-card__metric-value--progress");
+    expect(screen.queryByTestId("section-card-progress-fill")).not.toBeInTheDocument();
+    expect(screen.getByTestId("section-card-progress-track")).toBeInTheDocument();
   });
 });

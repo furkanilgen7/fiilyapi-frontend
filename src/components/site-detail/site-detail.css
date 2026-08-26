@@ -314,6 +314,22 @@
   cursor: help;
 }
 
+/* Metrik alt satırı — mockup'ta "İş Kalemleri" kutusunun altındaki not satırı
+   (`Şantiye Detay.dc.html:175` "Tümü tamamlandı", `:249` "3 gecikme riski";
+   11px, `margin-top:2px`). O iki metin BASILMAZ (spec §7.2, kaynağı yok);
+   tipografi F-BLMKART'ta "Bölüm Bedeli" kutusunun BOQ türevi alt satırı için
+   yeniden kullanılır — kart içinde yeni bir ölçek icat edilmedi.
+   ⚠️ Yeni önek AÇILMADI: `.section-card__metric-*` ailesi bu dosyada zaten
+   11 sınıf adı taşıyordu (ölçüldü), not satırı 12. ve 13. üyeleridir. */
+.section-card__metric-note {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+.section-card__metric-note--pending {
+  cursor: help;
+}
+
 /* İlerleme mini çubuğu (mockup satır 170, 207, 244, 281, 317 — her durumda
    çizilir). Yer tutucuyken dolgu basılmaz, boş iz kalır (spec §7.1). */
 .section-card__metric-track {

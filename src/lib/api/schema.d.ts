@@ -2599,6 +2599,13 @@ export interface paths {
          *     döner ve uydurma alan olur.
          *
          *     K6 kapısı UYGULANMAZ: `sent` bir fatura zaten kapıdan geçmiştir.
+         *
+         *     🔴 **MU-3E İŞ 2 — ÖDEME ARANIR (kullanıcı kararı 2026-08-26).** Faturanın
+         *     toplamını karşılayan ödeme kaydı yoksa **422**. Ödemesiz damga muhasebede
+         *     `120 Alıcılar`ı AÇIK bırakıyor ve mizan alıcıları fazla gösteriyordu:
+         *     nakit bacağı `payments` satırından doğar (MU-3C), ödeme yoksa fiş de
+         *     yoktur. Doğru yol `POST /payments`tir — tahsilat girildiğinde bu damga
+         *     KENDİLİĞİNDEN basılır (K5) ve nakit fişi de aynı işlemde yazılır.
          */
         post: operations["mark_collected_invoice_endpoint_invoices__invoice_id__mark_collected_post"];
         delete?: never;
@@ -2927,6 +2934,11 @@ export interface paths {
          *     🔴 "Tümünü" onaylamaz: `uncomputed` (S4) ve taşeron (K2) satırlar ATLANIR ve
          *     yanıtta **sebebe göre ayrı sayılarla** raporlanır — sessiz atlama yoktur
          *     (WORKFLOW §3).
+         *
+         *     🔴 **MU-3E:** `approved` adımında bordronun TAHAKKUK FİŞİ kesilir
+         *     (`730` gider · `335` personele borç · `360` vergi · `361` SGK). Fiş
+         *     yazılamazsa onay da geri alınır: hedef ayın muhasebe dönemi kapalıysa
+         *     **409**, hesap eşlemesi ya da satır bileşeni eksikse **422**.
          */
         post: operations["approve_payroll_period_endpoint_payroll_periods__period_id__approve_post"];
         delete?: never;
@@ -14678,14 +14690,17 @@ export interface components {
          * @description P6 §5 — `GET /sections/{section_id}` govdesi: `sections`in TUM kolonlari.
          *
          *     `SectionResponse`ten TUREYIR, YERINE GECMEZ: liste ucu (`SectionListResponse`)
-         *     dar govdeyi tasimaya devam eder. Miras alinan DORT YER TUTUCU
-         *     (`progress_pct`/`boq_item_count`/`budget`/`worker_count`) BILINCLI OLARAK
-         *     KALIR (spec §6): hero KPI'lari bu dilimde placeholder desenindedir.
+         *     dar govdeyi tasimaya devam eder. 🔴 BLM-SAY'de dort yer tutucudan IKISI
+         *     BAGLANDI (`boq_item_count` · `budget`) ve ikisi de MIRAS yoluyla ayni anda
+         *     liste + detay + santiye detayinda dogdu; `progress_pct` yer tutucu KALDI
+         *     (hakediş turevi, ayri is), `worker_count` T4'te zaten bagliydi.
          *
-         *     `budget` (BOQ turevi yer tutucu) ile `budget_amount` (elle girilen gercek
-         *     kolon) AYNI SEY DEGILDIR ve biri digerinin yerine gecmez — bkz. `Section`
-         *     docstring'i (P6 §7 S2a). BOQ-bolum bagi acildiginda yer tutucu gercege
-         *     donusecek, `budget_amount` ise turev degere cevrilecektir.
+         *     `budget` (BOQ turevi) ile `budget_amount` (elle girilen gercek kolon) AYNI
+         *     SEY DEGILDIR ve biri digerinin yerine gecmez — bkz. `Section` docstring'i
+         *     (P6 §7 S2a). Bag ACILDI, ama `budget_amount` bu dilimde TUREVE CEVRILMEDI:
+         *     o bir URUN KARARIDIR (canli kayitlarda elle girilmis bedeller var) ve
+         *     yonetime raporlandi. Iki alan da yanittadir, hangisinin basilacagi ekranin
+         *     kararidir.
          *
          *     Mockup'ta gorunup burada OLMAYAN her sey `Section` modelinde de yoktur
          *     (BOQ atamalari, taseron/makine, bagimlilik/milestone, belgeler): spec §6
@@ -14716,6 +14731,10 @@ export interface components {
             boq_item_count: components["schemas"]["CountPlaceholder"];
             budget: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
             worker_count: components["schemas"]["CountPlaceholder"];
+            /** Planned Worker Count */
+            planned_worker_count: number | null;
+            /** Budget Amount */
+            budget_amount: string | null;
             /** Depends On Section Id */
             depends_on_section_id: string | null;
             /** Milestones */
@@ -14732,10 +14751,6 @@ export interface components {
             deputy_manager_user_id: string | null;
             /** Deputy Manager Name */
             deputy_manager_name: string | null;
-            /** Planned Worker Count */
-            planned_worker_count: number | null;
-            /** Budget Amount */
-            budget_amount: string | null;
             /** Is Draft */
             is_draft: boolean;
             /**
@@ -14834,6 +14849,10 @@ export interface components {
             boq_item_count: components["schemas"]["CountPlaceholder"];
             budget: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
             worker_count: components["schemas"]["CountPlaceholder"];
+            /** Planned Worker Count */
+            planned_worker_count: number | null;
+            /** Budget Amount */
+            budget_amount: string | null;
             /** Depends On Section Id */
             depends_on_section_id: string | null;
             /** Milestones */
@@ -26294,14 +26313,12 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Validation Error */
+            /** @description Faturanın toplamını karşılayan ödeme kaydı yok (MU-3E İŞ 2) */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
+                content?: never;
             };
         };
     };
@@ -26990,21 +27007,19 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Dönem onay adımına geçirilemez */
+            /** @description Dönem onay adımına geçirilemez ya da muhasebe dönemi kapalı */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Validation Error */
+            /** @description Bordro fişi yazılamadı: hesap eşlemesi ya da satır bileşeni eksik */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
+                content?: never;
             };
         };
     };
