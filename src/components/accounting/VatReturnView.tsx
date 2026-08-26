@@ -21,6 +21,7 @@ import {
   shiftPeriod,
   type Period,
 } from "./accounting-labels";
+import { AccountingTabs } from "./shell/AccountingTabs";
 import { PeriodPicker } from "./PeriodPicker";
 import {
   buildVatTaxableRows,
@@ -86,6 +87,10 @@ export function VatReturnView() {
           </Button>
         </div>
       </div>
+
+      {/* F-MUP T1 — MP:105-112 modül sekmeleri; drill-in sidebar'ın YERİNE.
+          Şerit sayfa BAŞLIĞININ ALTINDADIR (MP:103 → MP:105). */}
+      <AccountingTabs />
 
       <p className="mu-notice" data-testid="kdv-send-reason">
         “XML İndir” / “GİB&apos;e Gönder”: {pendingModuleLabel(ACCOUNTING_REASONS.vatReturnGib)}.

@@ -377,6 +377,20 @@ export const MODULE_LABELS: Record<string, string> = {
   // entegrasyonu kullanıcı kararıyla ertelendi. Beyannameyi XML'e yazmak da
   // GİB'e göndermek de O entegrasyonun parçasıdır.
   vat_return_gib: "e-Fatura/GİB entegrasyonu ertelendi (kullanıcı kararı)",
+  // 🔴 F-MUP (2026-08-26) — BANKA MUTABAKATI ekranının ÜÇ ayrı boşluğu, ÜÇ
+  // ayrı anahtar. Tek anahtar açılsaydı ekranın hangi yarısının neden ölü
+  // olduğu okunamazdı: mutabakatın SONUCU (fark/eşleşme) ile ekstrenin
+  // KAYNAĞI (dosya içe aktarma) farklı işlerdir ve farklı turlarda gelirler.
+  //
+  // Ölçüm (openapi.json, 2026-08-26): `/bank-accounts` VAR ama o hazine
+  // kartıdır — `balance` alanı ŞİRKETİN KENDİ kayıtlarından türetilir,
+  // BANKANIN ekstresi DEĞİLDİR. Ekstre için hiçbir uç, hiçbir depolama yok.
+  bank_statement_import:
+    "Banka ekstresi içe aktarma ucu henüz açılmadı (ekstre satırları hiçbir yerde saklanmıyor)",
+  bank_statement_balance:
+    "Banka ekstresi bakiyesinin ucu henüz açılmadı; `/bank-accounts` bakiyesi şirketin KENDİ kaydıdır, bankanın ekstresi değildir",
+  bank_reconciliation_run:
+    "Mutabakat ucu henüz açılmadı; eşleştirme ve fark ekstre verisi olmadan hesaplanamaz",
   // 🔴 F-BOLLINK (2026-08-17) — BÖLÜM DETAYINA ÖZEL beş anahtar. Ekran daha
   // önce `boq`/`timesheet`/`stock`/`progress_payments`/`site_diary` anahtarlarını
   // kullanıyordu; o metinler "… modülüyle birlikte gelir" diyerek kullanıcıya

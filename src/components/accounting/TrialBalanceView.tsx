@@ -18,6 +18,7 @@ import {
   currentPeriod,
   type Period,
 } from "./accounting-labels";
+import { AccountingTabs } from "./shell/AccountingTabs";
 import { PeriodPicker } from "./PeriodPicker";
 import { trialBalanceRangeLabel } from "./trial-balance";
 import { TrialBalanceBanner } from "./TrialBalanceBanner";
@@ -29,8 +30,8 @@ import "./accounting.css";
  * sayılar O dosyanın SATIR numaralarıdır.
  *
  * Mockup'ın üst barı (MZ:18-26) ve sol menüsü (MZ:28-37) BASILMAZ: üst bar
- * kabuk canon'udur, sol menü `MuhasebeSidebar` olarak grubun `layout.tsx`inde
- * yaşar.
+ * kabuk canon'udur; MODÜL sekmeleri ise sol menüde DEĞİL, sayfa içi
+ * `AccountingTabs` şeridindedir (F-MUP · KK-10 ile drill-in sidebar kalktı).
  *
  * 🔴 EKRAN SALT-OKURDUR: burada hiçbir `POST/PATCH/PUT/DELETE` yoktur.
  * Dönem kapatma/açma uçları (`accounting-periods`) MU-2 ile canlıdadır ama
@@ -91,6 +92,10 @@ export function TrialBalanceView() {
           </Button>
         </div>
       </div>
+
+      {/* F-MUP T1 — MP:105-112 modül sekmeleri; drill-in sidebar'ın YERİNE.
+          Şerit sayfa BAŞLIĞININ ALTINDADIR (MP:103 → MP:105). */}
+      <AccountingTabs />
 
       <p className="mu-notice" data-testid="mz-export-reason">
         “Excel” / “PDF”: {pendingModuleLabel(ACCOUNTING_REASONS.trialBalanceExport)}.

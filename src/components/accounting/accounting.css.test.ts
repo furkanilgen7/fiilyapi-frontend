@@ -11,20 +11,6 @@ import { describe, it, expect } from "vitest";
 const css = readFileSync(fileURLToPath(new URL("./accounting.css", import.meta.url)), "utf8");
 
 describe("accounting.css — E8'e bağlı kurallar", () => {
-  it("dönem seçici + KPI şeridi TEK ızgaradır: `auto 1fr 1fr 1fr` (E8:72)", () => {
-    expect(css).toMatch(/\.mu-strip\s*{[^}]*grid-template-columns:\s*auto 1fr 1fr 1fr/);
-  });
-
-  it("KPI değeri 20px kalın MONO'dur (E8:80)", () => {
-    expect(css).toMatch(/\.mu-kpi__value\s*{[^}]*var\(--text-kpi-value\)/);
-    expect(css).toMatch(/\.mu-kpi__value\s*{[^}]*var\(--font-mono\)/);
-  });
-
-  it("Toplam Borç KIRMIZI, Toplam Alacak YEŞİL (E8:80 · E8:84)", () => {
-    expect(css).toMatch(/\.mu-kpi__value--danger\s*{[^}]*var\(--color-danger\)/);
-    expect(css).toMatch(/\.mu-kpi__value--success\s*{[^}]*var\(--color-success\)/);
-  });
-
   it("defter hücreleri MONO; Borç kırmızı, Alacak yeşil, Bakiye NÖTR koyu (E8:115-116)", () => {
     expect(css).toMatch(/\.mu-table \.is-mono\s*{[^}]*var\(--font-mono\)/);
     expect(css).toMatch(/\.mu-amount--debit\s*{[^}]*var\(--color-danger\)/);
@@ -131,9 +117,9 @@ describe("accounting.css — T4 diyalogları", () => {
    * Buradaki iki iddia yalnız bildirimin SİLİNMEDİĞİNİ korur.
    */
   it("fiş diyaloğu varsayılan 480px kabuktan GENİŞtir (üç sütunlu satır tablosu)", () => {
-    expect(css).toMatch(/\.mu-modal\s*{[^}]*width:\s*min\(760px, 92vw\)/);
+    expect(css).toMatch(/\.modal\.mu-modal\s*{[^}]*width:\s*min\(760px, 92vw\)/);
     // `max-width` olmadan yukarıdaki `width` ATILDIR — ikisi BİRLİKTE anlamlıdır.
-    expect(css).toMatch(/\.mu-modal\s*{[^}]*max-width:\s*min\(760px, 92vw\)/);
+    expect(css).toMatch(/\.modal\.mu-modal\s*{[^}]*max-width:\s*min\(760px, 92vw\)/);
   });
 
   /* 🔴 KARDEŞ KUSUR (F-BORC T2): F-FISNO düzeltmeyi YALNIZ `.mu-modal`a
@@ -142,8 +128,8 @@ describe("accounting.css — T4 diyalogları", () => {
      Buradaki iki iddia yalnız bildirimin SİLİNMEDİĞİNİ korur; ETKİNİN bekçisi
      `e2e/accounting-dialogs.spec.ts`teki tarayıcıda ölçen testtir. */
   it("hesap diyaloğu da varsayılan 480px kabuktan GENİŞtir (M:57 = 560px)", () => {
-    expect(css).toMatch(/\.mu-modal--account\s*{[^}]*width:\s*min\(560px, 92vw\)/);
-    expect(css).toMatch(/\.mu-modal--account\s*{[^}]*max-width:\s*min\(560px, 92vw\)/);
+    expect(css).toMatch(/\.modal\.mu-modal--account\s*{[^}]*width:\s*min\(560px, 92vw\)/);
+    expect(css).toMatch(/\.modal\.mu-modal--account\s*{[^}]*max-width:\s*min\(560px, 92vw\)/);
   });
 
   /* İDDİA TAŞINDI (F-MUF T4): şerit eskiden `repeat(3, 1fr)` idi; mockup
@@ -316,4 +302,44 @@ describe("accounting.css — F-MU2 · KDV Beyannamesi", () => {
     expect(grid).toContain("grid-template-columns");
     expect(grid).not.toContain("align-items");
   });
+});
+
+/**
+ * 🔴 F-MUP · ÖKSÜZ KURAL BEKÇİSİ. `.mu-strip` / `.mu-kpi*` kuralları E8'in
+ * üç kartlı KPI şeridine aitti; MP:114-139 beş kartlı ızgarayı
+ * `accounting-pro.css`e taşıyınca hiçbir TSX onları çağırmaz oldu ve
+ * SİLİNDİLER (accounting.css 1405 → 1362 satır, 800 tavanı borcuna doğru).
+ *
+ * Bu iddia silinmeleri kalıcı kılar: biri kuralı geri koyup çağıranı
+ * unutursa dosya sessizce yeniden şişerdi.
+ */
+describe("accounting.css — F-MUP ile ÖKSÜZ kalan kurallar geri gelmedi", () => {
+  it.each([".mu-strip", ".mu-kpi", ".mu-kpi__label", ".mu-kpi__value"])(
+    "`%s` kuralı DOSYADA YOK",
+    (selector) => {
+      expect(css).not.toMatch(new RegExp(`\\${selector}\\s*[,{]`));
+    },
+  );
+});
+
+/**
+ * 🔴 F-MUP · DEMET SIRASI BEKÇİSİ. İki diyalog ezmesi de `.modal` ile
+ * ZİNCİRLİ olmalıdır. Tek sınıflı hâlleri (`.mu-modal`) `.modal` ile EŞİT
+ * özgüllüktedir ve kazananı demet sırası belirler; F-MUP `layout.tsx`i
+ * kaldırınca sıra gerçekten değişti ve hesap diyaloğu 560 → 480px'e düştü.
+ *
+ * Bu metin taraması e2e'nin (tarayıcıda ölçen) YERİNE GEÇMEZ; zincirin
+ * sessizce sökülmesine karşı ucuz bir ilk kapıdır.
+ */
+describe("accounting.css — diyalog ezmeleri demet sırasından BAĞIMSIZ", () => {
+  it.each([".mu-modal", ".mu-modal--account"])(
+    "`%s` kuralı YALNIZ `.modal` ile zincirli biçimde yazılıdır",
+    (selector) => {
+      const escaped = selector.replace(/[.-]/g, (c) => `\\${c}`);
+      // Satır başında çıplak seçici OLMAMALI…
+      expect(css).not.toMatch(new RegExp(`^${escaped}\\s*{`, "m"));
+      // …ve `.modal` ile zincirli hâli VAR OLMALI.
+      expect(css).toMatch(new RegExp(`\\.modal${escaped}\\s*{`));
+    },
+  );
 });

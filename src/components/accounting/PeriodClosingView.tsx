@@ -23,6 +23,7 @@ import {
   ACCOUNTING_URL,
   currentPeriod,
 } from "./accounting-labels";
+import { AccountingTabs } from "./shell/AccountingTabs";
 import { PeriodCloseConfirmModal } from "./PeriodCloseConfirmModal";
 import {
   buildPeriodRows,
@@ -47,8 +48,9 @@ import "./accounting.css";
  * DK · `/muhasebe/donem-kapanisi` — mockup `Muhasebe - Dönem Kapanışı.dc.html`
  * (DK). Yorumlardaki sayılar O dosyanın SATIR numaralarıdır.
  *
- * Mockup'ın üst barı ve sol menüsü BASILMAZ: üst bar kabuk canon'u, sol menü
- * `MuhasebeSidebar`dedir (MZ/KDV emsali).
+ * Mockup'ın üst barı ve sol menüsü BASILMAZ: üst bar
+ * kabuk canon'udur; MODÜL sekmeleri ise sol menüde DEĞİL, sayfa içi
+ * `AccountingTabs` şeridindedir (F-MUP · KK-10 ile drill-in sidebar kalktı).
  *
  * 🔴 K1 — uçlar `_VIEW`/`_FULL`/`_ADMIN` üç ayrı eşiktedir; `useModulePermission`
  * TEK bir `AccessLevel` döner, eşik burada `hasAtLeast`/`canDelete` ile
@@ -139,6 +141,10 @@ export function PeriodClosingView() {
           </Select>
         </div>
       </div>
+
+      {/* F-MUP T1 — MP:105-112 modül sekmeleri; drill-in sidebar'ın YERİNE.
+          Şerit sayfa BAŞLIĞININ ALTINDADIR (MP:103 → MP:105). */}
+      <AccountingTabs />
 
       {/* DK:70-77 — Yetki notu. K1: metin backend'le birebir, UYDURULMAZ. */}
       <div className="mu-notice mu-notice--purple" data-testid="dkap-role-note">

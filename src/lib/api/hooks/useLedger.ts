@@ -27,6 +27,18 @@ export interface LedgerFilter {
   status?: JournalEntryStatus;
   limit?: number;
   offset?: number;
+  /**
+   * 🔴 F-MUP · sorgunun HİÇ KURULMAMASI gereken hâller için.
+   *
+   * Banka Mutabakatı ekranında hesap SEÇİLMEDEN defter çağrılırsa uç TÜM
+   * hesapların satırlarını döndürür ve ekran onları "102 hesabının
+   * hareketleri" başlığı altında basmaya aday olurdu; üstelik `total`
+   * üzerinden kurulan kırpma uyarısı da "İlk 0 kayıt gösteriliyor (toplam N)"
+   * diye YANLIŞ bir cümle basardı (yerel kadrajda ölçüldü).
+   *
+   * Varsayılan `true` — mevcut çağıranların davranışı DEĞİŞMEZ.
+   */
+  enabled?: boolean;
 }
 
 /**
@@ -49,6 +61,7 @@ export function useLedger(filter: LedgerFilter): UseQueryResult<LedgerResponse, 
       filter.limit ?? null,
       filter.offset ?? null,
     ],
+    enabled: filter.enabled ?? true,
     queryFn: async () =>
       unwrap(
         await backendClient.GET("/journal", {

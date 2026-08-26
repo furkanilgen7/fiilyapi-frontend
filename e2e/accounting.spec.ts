@@ -124,70 +124,68 @@ test.describe("BFF kökleri (telden)", () => {
   });
 });
 
-test.describe("drill-in sidebar", () => {
-  // 🔴 F-DKAP: iddia SİLİNMEDİ, YENİ GERÇEĞE TAŞINDI — Dönem Kapanışı'nın
-  // EKRANI da açıldı, artık gezilebilir bağlantıdır (dört → beş). Devre-dışı
-  // kalanlar yalnız Banka Mutabakatı ve e-Fatura'dır (uçları hâlâ yok).
-  test("BEŞ sekme gezilebilir; İKİ devre-dışı sekme tıklanamaz ve gerekçesi EKRANDA", async ({
+test.describe("modül sekmeleri (F-MUP: drill-in sidebar'ın YERİNE)", () => {
+  // 🔴 F-MUP · İDDİA SİLİNMEDİ, YENİ GERÇEĞE TAŞINDI. KK-10 ile sol menüdeki
+  // girintili liste kalktı ve yerini MP:105-112 hap şeridi aldı; Banka
+  // Mutabakatı da devre-dışıdan LİNK'e döndü (beş → ALTI gezilebilir sekme,
+  // iki → BİR devre dışı). Şeridin KENDİ testleri `accounting-tabs.spec.ts`te;
+  // burada YALNIZ eski iddianın taşınmış hâli durur.
+  test("ALTI sekme gezilebilir; e-Fatura tıklanamaz ve gerekçesi EKRANDA", async ({
     page,
   }) => {
     await openAccounting(page);
 
-    const sidebar = page.getByRole("complementary", { name: "Muhasebe menüsü" });
-    await expect(sidebar.getByRole("link", { name: "Yevmiye Defteri" })).toBeVisible();
+    const tabs = page.getByTestId("mu-tabs");
+    await expect(tabs.getByRole("link", { name: "Yevmiye", exact: true })).toBeVisible();
 
-    // Gezilebilir sekme: gerçekten rota değiştirir.
-    await sidebar.getByRole("link", { name: "Hesap Planı" }).click();
-    await expect(page).toHaveURL(/\/muhasebe\/hesap-plani$/);
-    await expect(page.getByRole("heading", { level: 1, name: "Hesap Planı" })).toBeVisible();
-
-    // 🔴 F-MU2/F-DKAP'ın yeni sekmeleri de GERÇEKTEN gezilebilir olmalı: link
-    // basmak yetmez, catch-all ComingSoon'a düşerse kullanıcı "açıldı" sanılan
-    // boş bir ekran görürdü.
-    await sidebar.getByRole("link", { name: "Mizan" }).click();
-    await expect(page).toHaveURL(/\/muhasebe\/mizan$/);
-    await expect(page.getByRole("heading", { level: 1, name: "Mizan" })).toBeVisible();
-
-    await sidebar.getByRole("link", { name: "Dönem Kapanışı" }).click();
-    await expect(page).toHaveURL(/\/muhasebe\/donem-kapanisi$/);
-    await expect(page.getByRole("heading", { level: 1, name: "Dönem Kapanışı" })).toBeVisible();
-
-    await sidebar.getByRole("link", { name: "KDV Beyanı" }).click();
-    await expect(page).toHaveURL(/\/muhasebe\/kdv-beyani$/);
-    await expect(page.getByRole("heading", { level: 1, name: "KDV Beyannamesi" })).toBeVisible();
-
-    for (const label of ["Banka Mutabakatı", "e-Fatura"]) {
-      // 🔴 Devre dışı öğe BİR BAĞLANTI DEĞİLDİR — tıklanabilir bir öğe var
-      // olmayan bir yetenek vaat ederdi.
-      await expect(sidebar.getByRole("link", { name: label })).toHaveCount(0);
-      const item = sidebar.locator('[aria-disabled="true"]', { hasText: label });
-      await expect(item).toBeVisible();
-      // 🔴 Gerekçe DOM METNİDİR, `title` içinde SAKLI DEĞİL.
-      const reason = item.locator(".mu-shell-item__reason");
-      await expect(reason).toBeVisible();
-      await expect(reason).not.toBeEmpty();
-      await expect(item).not.toHaveAttribute("title", /.+/);
+    // Gezilebilir sekme GERÇEKTEN rota değiştirir: link basmak yetmez,
+    // catch-all ComingSoon'a düşerse kullanıcı "açıldı" sanılan boş bir
+    // ekran görürdü.
+    for (const [label, url, heading] of [
+      ["Hesap Planı", /\/muhasebe\/hesap-plani$/, "Hesap Planı"],
+      ["Mizan", /\/muhasebe\/mizan$/, "Mizan"],
+      ["Banka Mutabakatı", /\/muhasebe\/banka-mutabakati$/, "Banka Mutabakatı"],
+      ["KDV Beyanı", /\/muhasebe\/kdv-beyani$/, "KDV Beyannamesi"],
+      ["Dönem Kapanışı", /\/muhasebe\/donem-kapanisi$/, "Dönem Kapanışı"],
+    ] as const) {
+      await page.getByTestId("mu-tabs").getByRole("link", { name: label }).click();
+      await expect(page).toHaveURL(url);
+      await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
     }
+
+    // 🔴 Devre dışı öğe BİR BAĞLANTI DEĞİLDİR — tıklanabilir bir öğe var
+    // olmayan bir yetenek vaat ederdi.
+    const strip = page.getByTestId("mu-tabs");
+    await expect(strip.getByRole("link", { name: "e-Fatura" })).toHaveCount(0);
+    const item = strip.locator('[aria-disabled="true"]', { hasText: "e-Fatura" });
+    await expect(item).toBeVisible();
+    await expect(item).not.toHaveAttribute("title", /.+/);
+    // 🔴 Gerekçe DOM METNİDİR, `title` içinde SAKLI DEĞİL.
+    const reason = page.getByTestId("mu-tabs-reason");
+    await expect(reason).toBeVisible();
+    await expect(reason).not.toBeEmpty();
   });
 
-  /** 🔴 F-SD T7 DERSİ: kök sekme `exact` değilse İKİ öğe birden mavi yanar. */
+  /** 🔴 F-SD T7 DERSİ: kök sekme `exact` değilse İKİ hap birden yanar. */
   test("hesap planındayken aria-current='page' TAM OLARAK BİR öğededir", async ({ page }) => {
     await openChartOfAccounts(page);
 
-    const sidebar = page.getByRole("complementary", { name: "Muhasebe menüsü" });
-    await expect(sidebar.locator('[aria-current="page"]')).toHaveCount(1);
-    await expect(sidebar.locator('[aria-current="page"]')).toHaveText("Hesap Planı");
+    const tabs = page.getByTestId("mu-tabs");
+    await expect(tabs.locator('[aria-current="page"]')).toHaveCount(1);
+    await expect(tabs.locator('[aria-current="page"]')).toHaveText("Hesap Planı");
 
-    // Kökte de tek olmalı (oradaki aktif öğe "Yevmiye Defteri"dir).
+    // Kökte de tek olmalı (oradaki aktif hap "Yevmiye"dir).
     await page.goto(ACCOUNTING_URL);
     await expect(page.getByTestId("mu-loaded-ledger")).toBeAttached();
-    await expect(sidebar.locator('[aria-current="page"]')).toHaveCount(1);
-    await expect(sidebar.locator('[aria-current="page"]')).toHaveText("Yevmiye Defteri");
+    await expect(page.getByTestId("mu-tabs").locator('[aria-current="page"]')).toHaveCount(1);
+    await expect(page.getByTestId("mu-tabs").locator('[aria-current="page"]')).toHaveText(
+      "Yevmiye",
+    );
   });
 });
 
 test.describe("devre-dışı dışa aktarma düğmeleri", () => {
-  test("E8:66 'Dışa Aktar' devre dışıdır ve gerekçesi EKRANDA basılır", async ({ page }) => {
+  test("MP:146 'Excel' devre dışıdır ve gerekçesi EKRANDA basılır", async ({ page }) => {
     await openAccounting(page);
 
     await expect(page.getByTestId("mu-export")).toBeDisabled();

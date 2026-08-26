@@ -1,20 +1,30 @@
 import { isActivePath } from "@/lib/shell/isActive";
 
 /**
- * F-MU1 T3 · Muhasebe drill-in sidebar'ı (HP:29-38 birebir).
+ * F-MUP T1 · Muhasebe modül SEKMELERİ — kanon `Muhasebe - Profesyonel.dc.html`
+ * (MP), yorumlardaki sayılar O dosyanın SATIR numaralarıdır.
  *
- * Desen `SettingsSidebar`/`DrillSidebar` emsalidir: grup başlığı → üst öğe →
- * girintili alt sekmeler. Bu dosya SAF yapılandırmadır; DOM'u
- * `MuhasebeSidebar.tsx` basar.
+ * 🔴 **KK-10 (bağlayıcı kullanıcı kararı, 2026-08-26):** `Muhasebe -
+ * Profesyonel` mockup'ı `Ekran 8 - Muhasebe`in YERİNE geçer. Bunun NAVİGASYON
+ * sonucu ölçüldü: MP'nin kendi sol menüsü (MP:36-72) DÜZ KABUKTUR — F-MU1'in
+ * çizdiği girintili drill-in listesi MP'de YOKTUR. Modül sekmeleri sol
+ * menüden çıkıp SAYFA İÇİ hap şeridine (MP:105-112) taşındı.
  *
- * 🔴 KABUK NAV'INA HİÇBİR ÖĞE EKLENMEZ (`nav-config.ts` dokunulmadı):
- * "Muhasebe" girdisi F3 kabuk canon'undan beri duruyor (F-SA/F-MK emsali).
+ * Bu dosya bu yüzden artık bir SIDEBAR yapılandırması değil, bir SEKME
+ * yapılandırmasıdır. `MuhasebeSidebar` + `accounting-shell.css` KALDIRILDI;
+ * DOM'u `AccountingTabs.tsx` basar.
+ *
+ * 🔴 KABUK NAV'INA HİÇBİR ÖĞE EKLENMEZ/ÇIKARILMAZ (`shell/nav-config.ts`
+ * dokunulmadı): drill sidebar'ın taşıdığı iki kardeş modül (`Hazine` ·
+ * `Mali Tablolar`) zaten kabuk nav'ında yaşıyor (ölçüldü:
+ * `shell/nav-config.ts:92` + `/hazine`), bu yüzden sidebar'ın kalkması
+ * hiçbir yolu ULAŞILAMAZ bırakmaz.
  */
 
-/** HP:29 — grup başlığı. */
+/** MP:101 — sayfa üstündeki breadcrumb metni. */
 export const ACCOUNTING_NAV_HEADING = "Sözleşme & Mali";
 
-/** HP:30 — üst öğe. Bir BAĞLANTI DEĞİLDİR; bkz. `ACCOUNTING_SUB_NAV` notu. */
+/** MP:103 — modül başlığı. */
 export const ACCOUNTING_NAV_PARENT = "Muhasebe";
 
 export type AccountingNavItem =
@@ -25,10 +35,10 @@ export type AccountingNavItem =
       /**
        * `true` ⇒ yalnız TAM eşleşmede aktif.
        *
-       * 🔴 F-SD T7 DERSİ: `/muhasebe` kök sekmesi `exact` DEĞİLSE
-       * `isActivePath` onu `/muhasebe/hesap-plani`de de aktif sayar (prefix
-       * kuralı) ve sidebar'da İKİ öğe birden mavi yanar. Kullanıcı hangi
-       * ekranda olduğunu okuyamaz.
+       * 🔴 F-SD T7 DERSİ (sekme şeridinde de AYNEN geçerli): `/muhasebe` kök
+       * sekmesi `exact` DEĞİLSE `isActivePath` onu `/muhasebe/mizan`de de
+       * aktif sayar (prefix kuralı) ve şeritte İKİ hap birden beyaz yanar.
+       * Kullanıcı hangi sekmede olduğunu okuyamaz.
        */
       readonly exact: boolean;
     }
@@ -36,53 +46,56 @@ export type AccountingNavItem =
       readonly kind: "disabled";
       readonly label: string;
       /**
-       * 🔴 EKRANDA GÖRÜNÜR gerekçe. `title`da SAKLANMAZ (kanon: devre dışı
-       * basılan her öğe görünür ve GERÇEK bir gerekçe taşır) ve "bu ekran
-       * henüz açılmadı" gibi içi boş bir metin OLAMAZ — hangi dilimde/hangi
-       * kararla geleceğini söyler.
+       * 🔴 EKRANDA GÖRÜNÜR gerekçe (kanon: devre dışı basılan her öğe görünür
+       * ve GERÇEK bir gerekçe taşır). Şerit dar olduğu için hap'ın ALTINDA
+       * değil, şeridin altındaki tek bir not satırında toplanır — ama yine
+       * `title`da SAKLANMAZ.
        */
       readonly reason: string;
     };
 
-/** HP:31-36 — `Muhasebe` üst öğesinin altındaki ALTI girintili alt sekme. */
-export const ACCOUNTING_SUB_NAV: readonly AccountingNavItem[] = [
-  // HP:31 — E8 (Yevmiye Defteri) `/muhasebe` KÖKÜNDE yaşar; kök sekmesi bu
-  // yüzden `exact`tir (yukarıdaki F-SD T7 notu).
-  { kind: "link", label: "Yevmiye Defteri", href: "/muhasebe", exact: true },
-  // HP:32
+/**
+ * MP:106-111 — mockup'ın çizdiği ALTI sekme + ölçülmüş BİR EK (aşağıdaki
+ * `Dönem Kapanışı` notu).
+ */
+export const ACCOUNTING_TABS: readonly AccountingNavItem[] = [
+  // MP:106 — etiket mockup'ta `Yevmiye`dir (`Yevmiye Defteri` DEĞİL; o,
+  // sayfanın İÇİNDEKİ panelin başlığıdır, MP:141). Kök `exact`tir.
+  { kind: "link", label: "Yevmiye", href: "/muhasebe", exact: true },
+  // MP:107
   { kind: "link", label: "Hesap Planı", href: "/muhasebe/hesap-plani", exact: false },
-  // HP:33 — F-MU2 ile EKRAN da açıldı: satır devre-dışıdan LİNK'e döndü.
-  // `exact: false` — alt yol yoktur ama kural kardeşleriyle aynıdır; kök
-  // (`/muhasebe`) `exact: true` olduğu için bu yol onu YAKMAZ (F-SD dersi).
+  // MP:108
   { kind: "link", label: "Mizan", href: "/muhasebe/mizan", exact: false },
-  // DK:36 (mockup sidebar'ı) — F-DKAP ile EKRAN da açıldı: mockup'ın kendi
-  // sidebar çizimi bu satırı Mizan ile KDV Beyanı ARASINDA gösteriyor (DK
-  // mockup dosyasının kendi sol menüsü, HP DEĞİL — bu ekran ürüne HP'nin
-  // ÇİZMEDİĞİ bir modül ekliyor, `hesap-plani`nin HP boşluğuyla AYNI sınıf).
-  { kind: "link", label: "Dönem Kapanışı", href: "/muhasebe/donem-kapanisi", exact: false },
-  // HP:34
+  // MP:109 — 🔴 KK-10 bu sekmeyi AÇIKÇA bu ekrana bağlıyor. Ekranın ne kadarı
+  // canlı, ne kadarı devre dışı: `BankReconciliationView` başlığındaki ölçüm.
   {
-    kind: "disabled",
+    kind: "link",
     label: "Banka Mutabakatı",
-    reason: "Banka Mutabakatı'nın backend ucu henüz yok.",
+    href: "/muhasebe/banka-mutabakati",
+    exact: false,
   },
-  // HP:35
+  // MP:110 — GİB entegrasyonu KULLANICI KARARIYLA ertelendi; uç YOK.
+  // Sekme SİLİNMEZ, devre dışı + görünür gerekçeyle basılır.
   {
     kind: "disabled",
     label: "e-Fatura",
     reason: "e-Fatura/GİB entegrasyonu ertelendi (kullanıcı kararı).",
   },
-  // HP:36 — F-MU2 ile EKRAN da açıldı (Mizan ile aynı gerekçe).
+  // MP:111
   { kind: "link", label: "KDV Beyanı", href: "/muhasebe/kdv-beyani", exact: false },
-];
-
-/**
- * HP:37-38 — alt sekmelerin ALTINDAKİ, girintisiz iki kardeş modül. İkisi de
- * kabuk nav'ında zaten vardır; burada mockup'ın çizdiği yerde tekrarlanırlar.
- */
-export const ACCOUNTING_SIBLING_NAV: readonly AccountingNavItem[] = [
-  { kind: "link", label: "Hazine", href: "/hazine", exact: false }, // HP:37
-  { kind: "link", label: "Mali Tablolar", href: "/mali-tablolar", exact: false }, // HP:38
+  // 🔴 MOCKUP SAPMASI (F-MUP, bildirildi) — `Dönem Kapanışı` MP'nin sekme
+  // şeridinde YOKTUR. Ekran F-DKAP ile AÇILDI, canlıdır ve kendi mockup'ı
+  // (`Muhasebe - Dönem Kapanışı.dc.html`) vardır. Sırf MP çizmiyor diye
+  // sekmeden düşürülseydi ÇALIŞAN bir ekran yalnız URL yazarak ulaşılır
+  // hâle gelirdi — emirdeki "var olan çalışan ekranları sebepsiz bozma"
+  // kuralının tam ihlali. MP'nin boşluğu, F-MU1'in `hesap-plani` için
+  // ölçtüğü boşlukla AYNI SINIFTADIR.
+  {
+    kind: "link",
+    label: "Dönem Kapanışı",
+    href: "/muhasebe/donem-kapanisi",
+    exact: false,
+  },
 ];
 
 /** Aktiflik kararı — `exact` bayrağı `isActivePath`in prefix kuralını EZER. */
@@ -95,11 +108,22 @@ export function isAccountingNavItemActive(
 }
 
 /**
- * Verili yolda aktif görünen öğelerin etiketleri. Testin "AYNI ANDA KAÇ öğe
- * aktif" sorusunu sorabilmesi için vardır (çift aktiflik bekçisi).
+ * Verili yolda aktif görünen sekmelerin etiketleri. Testin "AYNI ANDA KAÇ
+ * sekme aktif" sorusunu sorabilmesi için vardır (çift aktiflik bekçisi).
  */
 export function activeAccountingNavLabels(pathname: string): readonly string[] {
-  return [...ACCOUNTING_SUB_NAV, ...ACCOUNTING_SIBLING_NAV]
-    .filter((item) => isAccountingNavItemActive(pathname, item))
-    .map((item) => item.label);
+  return ACCOUNTING_TABS.filter((item) => isAccountingNavItemActive(pathname, item)).map(
+    (item) => item.label,
+  );
+}
+
+/**
+ * Devre dışı sekmelerin gerekçeleri — şeridin ALTINDA tek satırda basılır.
+ * Şeridin kendisi dar olduğu için her hap'ın altına ayrı bir not koymak
+ * ızgarayı bozardı; gerekçe yine de EKRANDADIR.
+ */
+export function disabledTabReasons(): readonly string[] {
+  return ACCOUNTING_TABS.filter((item) => item.kind === "disabled").map(
+    (item) => `${item.label}: ${item.reason}`,
+  );
 }

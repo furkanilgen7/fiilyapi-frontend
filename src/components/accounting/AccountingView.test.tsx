@@ -21,6 +21,10 @@ import type { JournalSummaryResponse } from "@/lib/api/hooks/useJournalSummary";
 import { useJournalSummary } from "@/lib/api/hooks/useJournalSummary";
 import type { LedgerResponse, LedgerRow } from "@/lib/api/hooks/useLedger";
 import { useLedger } from "@/lib/api/hooks/useLedger";
+import type { TrialBalanceResponse } from "@/lib/api/hooks/useTrialBalance";
+import { useTrialBalance } from "@/lib/api/hooks/useTrialBalance";
+import type { VatReturnResponse } from "@/lib/api/hooks/useVatReturn";
+import { useVatReturn } from "@/lib/api/hooks/useVatReturn";
 import { BackendError } from "@/lib/api/unwrap";
 import type { MeResponse } from "@/lib/auth/types";
 
@@ -60,7 +64,21 @@ vi.mock("@/lib/api/hooks/useJournalEntryFormMutations", () => ({
   useUpdateJournalEntry: vi.fn(),
   useReplaceJournalLines: vi.fn(),
 }));
+// 🔴 F-MUP: MP:114-139 KPI şeridi ve MP:165-209 sağ rayı İKİ YENİ UCA bağlandı.
+vi.mock("@/lib/api/hooks/useTrialBalance", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useTrialBalance")>()),
+  useTrialBalance: vi.fn(),
+}));
+vi.mock("@/lib/api/hooks/useVatReturn", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useVatReturn")>()),
+  useVatReturn: vi.fn(),
+}));
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
+// 🔴 F-MUP: modül sekme şeridi (`AccountingTabs`) artık görünümün İÇİNDEDİR
+// (drill-in sidebar kalktı) ve `usePathname` okur. Mock olmadan jsdom'da
+// `null` döner ve şeridin aktiflik kararı çökerdi.
+vi.mock("next/navigation", () => ({ usePathname: () => "/muhasebe" }));
+
 
 const SUMMARY: JournalSummaryResponse = {
   year: 2026,
@@ -242,6 +260,79 @@ function setSession(level: string | undefined = "full") {
   } as ReturnType<typeof useSession>);
 }
 
+/**
+ * F-MUP · MP:165-209 sağ rayın fikstürü. 🔴 ÜÇÜNCÜ SATIR BİLEREK "gerçek
+ * sıfır"dır (iki kapanış tarafı da `0.00`): `include_empty=false` hareketsiz
+ * hesabı zaten eler, yani böyle bir satır "hareket gördü ve tam kapandı"
+ * demektir ve ekranda `0` BASILMALIDIR (K-MKD3).
+ */
+const RAIL: TrialBalanceResponse = {
+  year: 2026,
+  month: 7,
+  is_balanced: true,
+  rows: [
+    {
+      account_id: "acc-102",
+      account_code: "102",
+      account_name: "Bankalar",
+      opening_debit: "0.00",
+      opening_credit: "0.00",
+      period_debit: "3964700.00",
+      period_credit: "0.00",
+      closing_debit: "3964700.00",
+      closing_credit: "0.00",
+    },
+    {
+      account_id: "acc-320",
+      account_code: "320",
+      account_name: "Satıcılar",
+      opening_debit: "0.00",
+      opening_credit: "0.00",
+      period_debit: "0.00",
+      period_credit: "2184000.00",
+      closing_debit: "0.00",
+      closing_credit: "2184000.00",
+    },
+    {
+      account_id: "acc-100",
+      account_code: "100",
+      account_name: "Kasa",
+      opening_debit: "0.00",
+      opening_credit: "0.00",
+      period_debit: "500000.00",
+      period_credit: "500000.00",
+      closing_debit: "0.00",
+      closing_credit: "0.00",
+    },
+  ],
+  totals: {
+    opening_debit: "0.00",
+    opening_credit: "0.00",
+    period_debit: "4464700.00",
+    period_credit: "2684000.00",
+    closing_debit: "3964700.00",
+    closing_credit: "2184000.00",
+  },
+};
+
+/** MP:128-131 KDV kartı — `payable` ASLA negatif olmaz (şema notu). */
+/**
+ * 🔴 HAZİRAN — beyan dönemi sayfa dönemi (Temmuz) DEĞİLDİR, bir ay geridir
+ * (MP:104 ↔ MP:131 ölçümü: `28 Tem vadeli` HAZİRAN beyanının vadesidir).
+ */
+const VAT: VatReturnResponse = {
+  year: 2026,
+  month: 6,
+  due_date: "2026-07-28",
+  calculated_vat: "900000.00",
+  deductible_vat: "488000.00",
+  payable: "412000.00",
+  carried_forward: "0.00",
+  taxable_rows: [],
+  exempt_base: "0.00",
+  deductions: [],
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   // 17 Temmuz 2026 YEREL öğle — E8:75 "Temmuz 2026" başlığının kaynağı.
@@ -252,6 +343,8 @@ beforeEach(() => {
   vi.mocked(useLedger).mockReturnValue(queryOk(LEDGER));
   vi.mocked(useJournalEntries).mockReturnValue(queryOk(DRAFTS));
   vi.mocked(useChartOfAccounts).mockReturnValue(queryOk(ACCOUNTS));
+  vi.mocked(useTrialBalance).mockReturnValue(queryOk(RAIL));
+  vi.mocked(useVatReturn).mockReturnValue(queryOk(VAT));
   vi.mocked(usePostJournalEntry).mockReturnValue(mutationStub(mutateSpies.post));
   vi.mocked(useReverseJournalEntry).mockReturnValue(mutationStub(mutateSpies.reverse));
   vi.mocked(useDeleteJournalEntry).mockReturnValue(
@@ -1054,5 +1147,179 @@ describe("Yevmiye Kaydı diyaloğu (T4)", () => {
     expect(note.tagName).toBe("TEXTAREA");
     await user.type(note, "Ziraat · TRF-1");
     expect(note).toHaveValue("Ziraat · TRF-1");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// F-MUP · `Muhasebe - Profesyonel` (MP) düzeni — KK-10 ile Ekran 8'in YERİNE.
+// ---------------------------------------------------------------------------
+
+describe("F-MUP · MP:105-112 modül sekmeleri", () => {
+  it("şerit ekrandadır ve AKTİF hap `Yevmiye`dir", () => {
+    render(<AccountingView />);
+    expect(screen.getByTestId("mu-tabs")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Yevmiye" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
+  it("🔴 AYNI ANDA TEK hap aktiftir (F-SD T7 çift-aktiflik dersi)", () => {
+    render(<AccountingView />);
+    const active = screen
+      .getAllByRole("link")
+      .filter((el) => el.getAttribute("aria-current") === "page");
+    expect(active).toHaveLength(1);
+  });
+
+  it("e-Fatura sekmesi SİLİNMEZ: bağlantı DEĞİL, gerekçesi EKRANDA", () => {
+    render(<AccountingView />);
+    expect(screen.queryByRole("link", { name: "e-Fatura" })).not.toBeInTheDocument();
+    expect(screen.getByTestId("mu-tabs-reason")).toHaveTextContent(
+      "e-Fatura: e-Fatura/GİB entegrasyonu ertelendi (kullanıcı kararı).",
+    );
+  });
+
+  it("Banka Mutabakatı sekmesi ARTIK bir bağlantıdır (KK-10)", () => {
+    render(<AccountingView />);
+    expect(screen.getByRole("link", { name: "Banka Mutabakatı" })).toHaveAttribute(
+      "href",
+      "/muhasebe/banka-mutabakati",
+    );
+  });
+});
+
+describe("F-MUP · MP:114-139 BEŞ KPI kartı", () => {
+  // 🔴 ONAYLI MOCKUP SAPMASI — etiketler `Toplam Gelir`/`Toplam Gider` DEĞİL.
+  // Gerekçe `AccountingKpiCards` başlığındadır: alacak toplamı GELİR değildir
+  // (müşteri tahsilatı 120'yi alacaklandırır ama gelir yaratmaz).
+  it("borç/alacak kartları MUHASEBE adlarını taşır, gelir/gider adını DEĞİL", () => {
+    render(<AccountingView />);
+    expect(screen.getByTestId("mu-kpi-debit")).toHaveTextContent("Toplam Borç");
+    expect(screen.getByTestId("mu-kpi-credit")).toHaveTextContent("Toplam Alacak");
+    expect(screen.queryByText("Toplam Gelir")).not.toBeInTheDocument();
+    expect(screen.queryByText("Toplam Gider")).not.toBeInTheDocument();
+  });
+
+  // 🔴 MP:104 ↔ MP:131 ölçümü: kartın dönemi sayfa döneminin BİR AY ÖNCESİ.
+  it("🔴 KDV ucu ÖNCEKİ ayla çağrılır (beyanname önceki ayındır)", () => {
+    render(<AccountingView />);
+    // Sayfa Temmuz 2026'da; beyan Haziran 2026'nın olmalı.
+    expect(vi.mocked(useVatReturn)).toHaveBeenLastCalledWith(2026, 6);
+    // Yevmiye özeti ise SAYFA dönemindedir — ikisi karışmaz.
+    expect(vi.mocked(useJournalSummary)).toHaveBeenLastCalledWith(2026, 7);
+  });
+
+  it("KDV kartı `/vat-return`den beslenir: tutar + VADE", () => {
+    render(<AccountingView />);
+    expect(screen.getByTestId("mu-kpi-vat")).toHaveTextContent("412.000");
+    expect(screen.getByTestId("mu-kpi-vat-due")).toHaveTextContent(
+      "Haziran 2026 beyanı · 28 Tem vadeli",
+    );
+  });
+
+  // 🔴 "BU UÇ NEYİN KÜMESİ" dersi — e-Fatura kartına `pending_approval`
+  // BAĞLANMAZ: adı "bekleyen" der ama kümesi ONAY bekleyenlerdir, GİB
+  // cevabı bekleyenler değil.
+  it("e-Fatura kartı SİLİNMEZ ama sayı UYDURULMAZ; gerekçesi ekrandadır", () => {
+    render(<AccountingView />);
+    expect(screen.getByTestId("mu-kpi-einvoice")).toHaveTextContent("e-Fatura Bekleyen");
+    expect(screen.getByTestId("mu-kpi-einvoice")).toHaveTextContent("—");
+    expect(
+      screen.getByTestId("mu-kpi-einvoice-reason").textContent?.length ?? 0,
+    ).toBeGreaterThan(20);
+  });
+
+  it("🔴 KDV ucu patlarsa YEVMİYE kartları YAŞAR (tek bayrak yok)", () => {
+    vi.mocked(useVatReturn).mockReturnValue(
+      queryError(new Error("kdv patladı")) as unknown as UseQueryResult<
+        VatReturnResponse,
+        Error
+      >,
+    );
+    render(<AccountingView />);
+    expect(screen.getByTestId("mu-vat-error")).toBeInTheDocument();
+    expect(screen.getByTestId("mu-kpi-debit")).toHaveTextContent("3.842.600");
+    expect(screen.getByTestId("mu-kpi-vat")).toHaveTextContent("—");
+  });
+});
+
+describe("F-MUP · MP:165-209 sağ ray (mini mizan)", () => {
+  it("mizan satırları kod + ad + kapanışla basılır", () => {
+    render(<AccountingView />);
+    const list = screen.getByTestId("mu-rail-list");
+    expect(within(list).getByText("Bankalar")).toBeInTheDocument();
+    expect(screen.getByTestId("mu-rail-amount-102")).toHaveTextContent("3.964.700");
+    expect(screen.getByTestId("mu-rail-count")).toHaveTextContent("3 hesap");
+  });
+
+  // 🔴 K-MKD3 — bu turun en kritik ekran iddiası.
+  it("iki tarafı da sıfır olan hesap RAYDA KALIR ve `0` basar, `—` DEĞİL", () => {
+    render(<AccountingView />);
+    const zero = screen.getByTestId("mu-rail-amount-100");
+    expect(zero).toBeInTheDocument();
+    expect(zero).toHaveTextContent("0");
+    expect(zero).not.toHaveTextContent("—");
+  });
+
+  it("BOŞ mizan ile YÜKLENİYOR ayrı ayrı söylenir", () => {
+    vi.mocked(useTrialBalance).mockReturnValue(queryOk({ ...RAIL, rows: [] }));
+    const { unmount } = render(<AccountingView />);
+    expect(screen.getByTestId("mu-rail-empty")).toBeInTheDocument();
+    expect(screen.queryByTestId("mu-rail-loading")).not.toBeInTheDocument();
+    unmount();
+
+    vi.mocked(useTrialBalance).mockReturnValue(
+      queryLoading() as unknown as UseQueryResult<TrialBalanceResponse, Error>,
+    );
+    render(<AccountingView />);
+    expect(screen.getByTestId("mu-rail-loading")).toBeInTheDocument();
+    expect(screen.queryByTestId("mu-rail-empty")).not.toBeInTheDocument();
+  });
+
+  it("e-Fatura paneli SİLİNMEZ ama SAHTE SATIR basmaz", () => {
+    render(<AccountingView />);
+    expect(screen.getByTestId("mu-einvoice-reason")).toBeInTheDocument();
+    expect(screen.queryByText(/Yılmaz Elektrik/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/GİB Bekliyor/)).not.toBeInTheDocument();
+  });
+});
+
+describe("F-MUP · MP:247-250 defter altı dönem toplamları", () => {
+  it("toplamlar `journal-summary`den gelir (görünen satırlardan TOPLANMAZ)", () => {
+    render(<AccountingView />);
+    const foot = screen.getByTestId("mu-ledger-totals");
+    expect(foot).toHaveTextContent("Dönem Borç");
+    expect(foot).toHaveTextContent("3.842.600");
+    expect(foot).toHaveTextContent("Dönem Alacak");
+    expect(foot).toHaveTextContent("4.120.000");
+  });
+
+  it("MP:146 Excel düğmesi defter panelinin BAŞLIĞINDA ve devre dışıdır", () => {
+    render(<AccountingView />);
+    const button = screen.getByTestId("mu-export");
+    expect(button).toBeDisabled();
+    expect(button).toHaveTextContent("Excel");
+    expect(screen.getByTestId("mu-export-reason").textContent?.length ?? 0).toBeGreaterThan(20);
+  });
+});
+
+describe("F-MUP · sağ rayın PENCERESİ sayfanınkinden farklıdır", () => {
+  // 🔴 Ölçüldü (`/trial-balance` uç açıklaması): mizan penceresi BİRİKİMLİDİR
+  // ("Ocak → month'un son günü"), KPI şeridi ise TEK AYIN yevmiye toplamıdır.
+  // Ekran bu farkı SÖYLEMEZSE kullanıcı iki yüzeyi karşılaştırıp "tutmuyor"
+  // sanır ve var olmayan bir hata arar.
+  it("ray açıklaması pencereyi AÇIKÇA yazar", () => {
+    render(<AccountingView />);
+    expect(screen.getByTestId("mu-rail-list")).toBeInTheDocument();
+    expect(screen.getByText(/yıl başından bu yana kapanış bakiyesi/i)).toBeInTheDocument();
+  });
+
+  it("ray ve KPI şeridi AYNI dönem argümanıyla çağrılır (kayma İSTEMCİDE yok)", () => {
+    render(<AccountingView />);
+    // Pencere farkı SUNUCUNUN sözleşmesindedir; istemci ikinci bir kaydırma
+    // UYGULAMAZ (uygulasaydı iki kaynak sessizce ayrışırdı).
+    expect(vi.mocked(useTrialBalance)).toHaveBeenLastCalledWith(2026, 7);
+    expect(vi.mocked(useJournalSummary)).toHaveBeenLastCalledWith(2026, 7);
   });
 });

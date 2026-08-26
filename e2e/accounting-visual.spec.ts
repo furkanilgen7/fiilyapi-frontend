@@ -3,6 +3,7 @@ import { test, expect, type Page } from "@playwright/test";
 import {
   ACCOUNTING_EMPTY_TIME,
   openAccounting,
+  openBankReconciliation,
   openChartOfAccounts,
 } from "./accounting-helpers";
 import { prepareFrame } from "./visual-scroll";
@@ -54,8 +55,10 @@ async function expectNoLoadingText(page: Page) {
 // ---------------------------------------------------------------------------
 test("muhasebe yevmiye defteri gorsel", async ({ page }) => {
   await page.setViewportSize({ ...VISUAL_VIEWPORT });
-  // `openAccounting` DÖRT yükleme damgasını da bekler (`mu-loaded-summary` ·
-  // `-ledger` · `-drafts` · `-accounts`).
+  // `openAccounting` ALTI yükleme damgasını da bekler (`mu-loaded-summary` ·
+  // `-ledger` · `-drafts` · `-accounts` · 🔴 F-MUP'un eklediği `-rail` ve
+  // `-vat`). İkisi beklenmeseydi kadraj sağ ray ya da KDV kartı hâlâ yoldayken
+  // çekilir ve kare KENDİ İÇİNDE tutarsız olurdu.
   await openAccounting(page);
 
   await expect(page.getByRole("heading", { level: 1, name: "Muhasebe" })).toBeVisible();
@@ -70,9 +73,26 @@ test("muhasebe yevmiye defteri gorsel", async ({ page }) => {
   await expect(page.getByTestId("mu-kpi-debit")).toContainText("2.842.600");
   await expect(page.getByTestId("mu-kpi-credit")).toContainText("1.820.000");
   await expect(page.getByTestId("mu-kpi-net-value")).toContainText("1.022.600");
-  await expect(page.getByTestId("mu-kpi-net-value")).toHaveClass(/mu-kpi__value--danger/);
+  await expect(page.getByTestId("mu-kpi-net-value")).toHaveClass(
+    /mu-pro-kpi__value--danger/,
+  );
   // 📅 `page.clock` KANITI: dönem başlığı dondurulmuş takvimden gelir.
   await expect(page.getByTestId("mu-period-label")).toHaveText("Temmuz 2026");
+
+  // (a2) 🔴 F-MUP · KDV KARTI (`GET /vat-return`) — BEŞİNCİ kaynak ve
+  //      dönemi sayfa döneminden BİR AY GERİDİR (MP:104 ↔ MP:131 ölçümü:
+  //      vade izleyen ayın 28'i, yani `28 Tem` HAZİRAN beyanınındır).
+  await expect(page.getByTestId("mu-kpi-vat-due")).toContainText("Haziran 2026 beyanı");
+  await expect(page.getByTestId("mu-kpi-vat")).toContainText("512.000");
+  // Ucu OLMAYAN beşinci kart kadrajdadır: SİLİNMEZ, sayı UYDURULMAZ.
+  await expect(page.getByTestId("mu-kpi-einvoice-reason")).toBeVisible();
+
+  // (a3) 🔴 F-MUP · SAĞ RAY (`GET /trial-balance`) — ALTINCI kaynak.
+  await expect(page.getByTestId("mu-rail-list")).toBeVisible();
+  await expect(page.getByTestId("mu-rail-count")).toContainText("hesap");
+  // e-Fatura paneli SİLİNMEZ ama mockup'ın üç örnek satırını BASMAZ.
+  await expect(page.getByTestId("mu-einvoice-reason")).toBeVisible();
+  await expect(page.getByText("Yılmaz Elektrik")).toHaveCount(0);
 
   // (b) DEFTER (`GET /journal`) — devir şeridi + altı SATIR.
   //     🔴 `carried_balance` sıfırdan farklıdır ⇒ şerit BASILIR; sıfır olsaydı
@@ -103,7 +123,15 @@ test("muhasebe yevmiye defteri gorsel", async ({ page }) => {
   await expect(page.getByTestId("mu-account-filter").locator("option")).toHaveCount(26);
   await expect(page.getByTestId("mu-account-filter")).toContainText("120.01 · Yurtiçi Alıcılar");
 
-  // Devre-dışı "Dışa Aktar" ve gerekçe bandı da kadrajın parçasıdır.
+  // MP:247-250 defter altı dönem toplamları da kadrajdadır ve KPI ile AYNI
+  // kaynaktan (`journal-summary`) gelir.
+  await expect(page.getByTestId("mu-ledger-totals")).toContainText("2.842.600");
+  await expect(page.getByTestId("mu-ledger-totals")).toContainText("1.820.000");
+
+  // MP:105-112 sekme şeridi kadrajın parçasıdır; TEK hap aktiftir.
+  await expect(page.getByTestId("mu-tabs").locator('[aria-current="page"]')).toHaveCount(1);
+
+  // Devre-dışı "Excel" ve gerekçe bandı da kadrajın parçasıdır.
   await expect(page.getByTestId("mu-export")).toBeDisabled();
   await expect(page.getByTestId("mu-export-reason")).toBeVisible();
   await expectNoLoadingText(page);
@@ -182,12 +210,12 @@ test("muhasebe bos donem gorsel", async ({ page }) => {
   // 📅 `page.clock` KANITI: dönem gerçekten boş aya çakılı.
   await expect(page.getByTestId("mu-period-label")).toHaveText("Ocak 2026");
 
-  // Dört kaynak da YÜKLENDİ ve dördü de BOŞLUĞUN kendi yüzeyini bastı:
+  // ALTI kaynak da YÜKLENDİ ve her biri BOŞLUĞUN kendi yüzeyini bastı:
   // (a) özet — `COALESCE` kanonu: boş ay `0` döner, "—" yer tutucusu DEĞİL.
   await expect(page.getByTestId("mu-kpi-debit")).toContainText("0");
   await expect(page.getByTestId("mu-kpi-net-value")).not.toHaveText("—");
   // Sıfır ne kırmızı ne yeşildir (nötr ton) — dolu kadrajın tersi dal.
-  await expect(page.getByTestId("mu-kpi-net-value")).not.toHaveClass(/mu-kpi__value--/);
+  await expect(page.getByTestId("mu-kpi-net-value")).not.toHaveClass(/mu-pro-kpi__value--/);
   // (b) defter — boş durum metni basıldı ve devir şeridi HİÇ basılmadı
   //     (`carried_balance` boş pencerede `0.00`).
   await expect(page.getByTestId("mu-ledger-empty")).toBeVisible();
@@ -198,9 +226,60 @@ test("muhasebe bos donem gorsel", async ({ page }) => {
   // (d) hesap kataloğu DÖNEM SÜZGEÇLİ DEĞİLDİR — boş ayda bile DOLUdur.
   //     Süzgecin boş inmesi ayrı bir kırıklık olurdu, o yüzden ölçülür.
   await expect(page.getByTestId("mu-account-filter").locator("option")).toHaveCount(26);
+  // (e) 🔴 F-MUP · SAĞ RAY — Ocak 2026'da mizanın KENDİ fikstürü VARDIR
+  //     (dengesiz dal, `TRIAL_BALANCE_JANUARY_SEEDS`). Yani bu kadraj
+  //     "yevmiye boş ama mizan dolu" hâlini ölçer: ray boş DEĞİLDİR ve
+  //     boş-durum metni BASILMAZ. İki yüzeyin ayrı uçlardan beslendiğinin
+  //     kanıtı da budur.
+  await expect(page.getByTestId("mu-rail-list")).toBeVisible();
+  await expect(page.getByTestId("mu-rail-empty")).toHaveCount(0);
   await expectNoLoadingText(page);
 
   // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("muhasebe-bos-donem.png", { fullPage: true });
+});
+
+// ---------------------------------------------------------------------------
+// 4) BM · Banka Mutabakatı (F-MUP · KK-10)
+// ---------------------------------------------------------------------------
+// 🔴 Bu kadrajın ASIL KONUSU ekranın İKİYE BÖLÜNMÜŞ olmasıdır: sol yarı ve iki
+// özet kartı UCU OLMADIĞI için devre dışıdır, sağ yarı CANLIDIR. Kare bu
+// bölünmeyi dondurur — biri bir gün ölü yarıya sahte satır basarsa kare
+// KIRMIZI olur.
+test("muhasebe banka mutabakati gorsel", async ({ page }) => {
+  await page.setViewportSize({ ...VISUAL_VIEWPORT });
+  await openBankReconciliation(page);
+
+  await expect(page.getByRole("heading", { level: 1, name: "Banka Mutabakatı" })).toBeVisible();
+  // 📅 `page.clock` KANITI.
+  await expect(page.getByTestId("mu-period-label")).toHaveText("Temmuz 2026");
+
+  // ÖLÜ YARI — üç gerekçe de EKRANDA, iki düğme de kapalı.
+  await expect(page.getByTestId("bm-run")).toBeDisabled();
+  await expect(page.getByTestId("bm-import")).toBeDisabled();
+  await expect(page.getByTestId("bm-statement-reason")).toBeVisible();
+  await expect(page.getByTestId("bm-card-statement-reason")).toBeVisible();
+  await expect(page.getByTestId("bm-card-diff-reason")).toBeVisible();
+  // 🔴 Mockup'ın `✓ Mutabık` damgası ve beş ekstre satırı kadrajda OLMAMALI.
+  await expect(page.getByText("Mutabık")).toHaveCount(0);
+  await expect(page.getByText("Güneşkent")).toHaveCount(0);
+
+  // CANLI YARI — hesap seçilmeden defter YOKTUR; kadraj bu hâli dondurur
+  // (seçim yapılsaydı `fullPage` kadrajı tıklama sonrası kayabilirdi ve
+  // F-PT'nin ölçtüğü "tıklama + fullPage = bozuk kare" tuzağına düşerdik).
+  await expect(page.getByTestId("bm-ledger-idle")).toBeVisible();
+  // Seçicinin KÜMESİ: yalnız 102 ile başlayan defter hesapları.
+  await expect(page.getByTestId("bm-account")).toBeVisible();
+
+  // MP:105-112 şeridi burada da TEK aktif hap taşır.
+  const active = page.getByTestId("mu-tabs").locator('[aria-current="page"]');
+  await expect(active).toHaveCount(1);
+  await expect(active).toHaveText("Banka Mutabakatı");
+
+  await expect(page.getByText(/yükleniyor/i)).toHaveCount(0);
+
+  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
+  await prepareFrame(page);
+  await expect(page).toHaveScreenshot("muhasebe-banka-mutabakati.png", { fullPage: true });
 });

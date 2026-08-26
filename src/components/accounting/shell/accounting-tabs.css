@@ -1,0 +1,71 @@
+/* F-MUP T1 · Muhasebe modül sekmeleri. Kanon: `Muhasebe - Profesyonel.dc.html`
+   (MP), parantez içi sayılar O dosyanın SATIR numaralarıdır.
+
+   🔴 ÖNEK ÖLÇÜMÜ (emir §4): depoda `.mu-` ailesinde 260 ayrı sınıf adı var,
+   ama `.mu-tab` diye ÇIPLAK bir sınıf YOK — yalnız `.mu-table*` (8 ad) var ve
+   sınıf seçicileri TAM DİZE eşleşir, `.mu-tabs` onlarla çakışmaz. Bu yüzden
+   yeni bir aile öneki AÇILMADI; mevcut `mu-` ailesi BEM ile sürdürüldü.
+
+   🔴 Dosya AYRIDIR (`accounting.css` 1405 satır, 800 tavanı borcu): bu dilim
+   o borcu BÜYÜTMEZ. */
+
+.mu-tabs-block {
+  margin-bottom: var(--space-5);
+}
+
+/* MP:105 — açık gri yuva, 3px iç boşluk, 10px köşe; genişlik İÇERİK KADAR
+   (`width: fit-content`), satırın tamamına YAYILMAZ. */
+.mu-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px;
+  border-radius: var(--radius-10);
+  background: var(--color-surface-2);
+}
+
+/* MP:107-111 — pasif hap: zeminsiz, ikincil metin. */
+.mu-tabs__pill {
+  padding: 7px var(--space-4);
+  border-radius: var(--radius-8);
+  font-size: var(--text-body);
+  line-height: var(--leading-normal);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+a.mu-tabs__pill:hover {
+  color: var(--color-text);
+}
+
+a.mu-tabs__pill:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* MP:106 — bulunulan sekme: BEYAZ zemin + hafif gölge (yuvadan "kalkar") +
+   mavi yarı-kalın metin. Renk burada dekorasyon değil KONUM taşır. */
+.mu-tabs__pill--active {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-tab-active); /* MP:106 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+
+/* MP:110 — devre dışı sekme: SİLİNMEZ, solgun ve tıklanamaz basılır. */
+.mu-tabs__pill--disabled {
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+}
+
+/* Devre dışı sekmelerin GÖRÜNÜR gerekçesi — şeridin altında, `title`da
+   SAKLANMADAN. */
+.mu-tabs__reason {
+  margin-top: var(--space-2);
+  font-size: var(--text-small);
+  line-height: var(--leading-normal);
+  color: var(--color-text-subtle);
+}
