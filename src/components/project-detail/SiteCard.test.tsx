@@ -64,6 +64,41 @@ describe("SiteCard — aktif varyant (spec §4.3)", () => {
       `/projeler/${PROJECT_ID}/santiyeler/${ACTIVE_SITE.id}`,
     );
   });
+
+  // 🔴 F-BLMPOZ — canli kusurun DAVRANISSAL bekcisi. Eski hedefler proje
+  // seviyesindeydi (`/projeler/{id}/is-kalemleri`) ve diskte YOKTU; kullanici
+  // 404 aliyordu. Rota VARLIGINI `site-card-chip-routes.contract.test.ts`
+  // diskten olcer; burasi ciplerin SANTIYE kimligini tasidigini olcer.
+  it("her cip SANTIYE kapsamli hedefe gider (site.id href'te YASAR)", () => {
+    render(<SiteCard projectId={PROJECT_ID} site={ACTIVE_SITE} />);
+    const siteBase = `/projeler/${PROJECT_ID}/santiyeler/${ACTIVE_SITE.id}`;
+    expect(screen.getByRole("link", { name: /İş Kalemleri/ })).toHaveAttribute(
+      "href",
+      `${siteBase}/is-kalemleri`,
+    );
+    expect(screen.getByRole("link", { name: /İşveren Hak\./ })).toHaveAttribute(
+      "href",
+      `${siteBase}/hakedisler`,
+    );
+    expect(screen.getByRole("link", { name: /Taşeron Hak\./ })).toHaveAttribute(
+      "href",
+      `${siteBase}/hakedisler`,
+    );
+    // Karsit kanit: eski (404 veren) proje seviyeli hedeflerden HICBIRI kalmadi.
+    for (const chip of screen.getAllByRole("link")) {
+      const href = chip.getAttribute("href") ?? "";
+      expect(href.startsWith(siteBase)).toBe(true);
+    }
+  });
+
+  // Bayat ipucu bekcisi: dort cip de artik gercek rotaya gidiyor, "yakinda"
+  // yalani basilmaz.
+  it("hicbir cip 'Bu bolum yakinda' ipucu tasimaz", () => {
+    render(<SiteCard projectId={PROJECT_ID} site={ACTIVE_SITE} />);
+    for (const chip of screen.getAllByRole("link")) {
+      expect(chip).not.toHaveAttribute("title");
+    }
+  });
 });
 
 describe("SiteCard — on_hold rozeti (kod inceleme bulgusu)", () => {
@@ -95,6 +130,10 @@ describe("SiteCard — tamamlanmis varyant (spec §4.3)", () => {
     expect(screen.getByRole("link", { name: /Final Hakediş/ })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Taşeron Hak\./ })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /İşveren Hak\./ })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Final Hakediş/ })).toHaveAttribute(
+      "href",
+      `/projeler/${PROJECT_ID}/santiyeler/${COMPLETED_SITE.id}/hakedisler`,
+    );
   });
 });
 

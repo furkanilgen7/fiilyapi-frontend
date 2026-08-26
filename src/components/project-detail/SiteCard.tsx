@@ -128,24 +128,51 @@ interface ChipDef {
   variant?: "detay";
 }
 
-// Yazilmamis rotalara giden cipler §7.3 desenini takip eder: gezinilebilir kalir,
-// title ile "Bu bolum yakinda" denir. "→ Detay" hedefi bu dilimin kendi rotasi
-// (Task 8'de yazilir), bu yuzden ayri title tasimaz.
+// 🔴 F-BLMPOZ — ÇİP HEDEFLERİ ÖLÇÜLEREK DÜZELTİLDİ.
+//
+// Eski hâl proje seviyesinde `/projeler/{id}/is-kalemleri`,
+// `.../isveren-hakedis`, `.../taseron-hakedis`e gidiyordu ve bu ÜÇ rotanın
+// ÜÇÜ DE `src/app` altında YOKTU — kullanıcı canlıda 404 alıyordu. Eski
+// gerekçe yorumu ("§7.3: gezinilebilir kalır, title ile 'yakında' denir") o
+// gün doğruydu; rotalar SONRADAN şantiye seviyesinde yazıldı ve çipler
+// güncellenmedi. Gerekçe bayatlayınca çalışan ekranı yalanlar hâle geldi.
+//
+// 🔑 ASIL KUSUR SEVİYE UYUŞMAZLIĞIYDI: çipler ŞANTİYE kartındadır, hedefleri
+// PROJE seviyesindeydi ve `site.id` taşımıyordu. Doğru hedefler şantiye
+// kapsamlıdır ve diskte VARDIR (`sectionScopedChipTargets` bekçisi bunu her
+// koşuda diskten ölçer):
+//   · .../santiyeler/{siteId}/is-kalemleri   → Ekran 13 (BOQ)
+//   · .../santiyeler/{siteId}/hakedisler     → İşveren VE Taşeron panelleri
+//                                              (SiteProgressPaymentsView)
+//
+// `ProjectDetailTabs` proje seviyesinde "İş Kalemleri" sekmesini BİLEREK
+// devre dışı basar (BOQ ŞANTİYE kapsamlıdır — K2+K3). Şantiye kartında ise
+// şantiye kimliği ELDEDİR, bu yüzden burada çip CANLIDIR: sekme çubuğuyla
+// çelişki değil, aynı kuralın iki seviyedeki doğru sonucudur.
 function chipsFor(projectId: string, site: SiteListItem): ChipDef[] {
-  const base = `/projeler/${projectId}`;
+  const siteBase = `/projeler/${projectId}/santiyeler/${site.id}`;
   const chips: ChipDef[] = [
-    { label: "İş Kalemleri", emoji: "📋", href: `${base}/is-kalemleri` },
+    { label: "İş Kalemleri", emoji: "📋", href: `${siteBase}/is-kalemleri` },
   ];
+  // 🔴 "İşveren Hak." / "Final Hakediş" / "Taşeron Hak." çiplerinin ÜÇÜ DE
+  // aynı şantiye hakediş ekranına gider ve bu ÖLÇÜLMÜŞ bir karardır, tembellik
+  // değil: `SiteProgressPaymentsView` tek sayfada İKİ paneli birden basar
+  // ("İşveren & Taşeron hakedişleri" alt başlığı + `spp__panel--employer` ve
+  // `SiteSubcontractorPaymentsPanel`). Şantiye seviyesinde AYRI bir taşeron
+  // rotası diskte YOKTUR; proje seviyesindeki `/hakedisler/taseron?project_id=`
+  // ise şantiye kimliğini DÜŞÜRÜR ve kullanıcıyı kartın kapsamından dışarı
+  // atardı. Çipi silmek de yanlıştır (kanon: karşılığı olan öğe silinmez) —
+  // karşılığı VARDIR, aynı ekranın taşeron panelidir.
   if (site.status === "completed") {
-    chips.push({ label: "Final Hakediş", emoji: "💰", href: `${base}/isveren-hakedis` });
+    chips.push({ label: "Final Hakediş", emoji: "💰", href: `${siteBase}/hakedisler` });
   } else {
-    chips.push({ label: "İşveren Hak.", emoji: "💰", href: `${base}/isveren-hakedis` });
-    chips.push({ label: "Taşeron Hak.", emoji: "🏗", href: `${base}/taseron-hakedis` });
+    chips.push({ label: "İşveren Hak.", emoji: "💰", href: `${siteBase}/hakedisler` });
+    chips.push({ label: "Taşeron Hak.", emoji: "🏗", href: `${siteBase}/hakedisler` });
   }
   chips.push({
     label: "→ Detay",
     emoji: "",
-    href: `${base}/santiyeler/${site.id}`,
+    href: siteBase,
     variant: "detay",
   });
   return chips;
@@ -208,7 +235,9 @@ export function SiteCard({ projectId, site }: SiteCardProps) {
             <Link
               key={chip.label}
               href={chip.href}
-              title={chip.variant === "detay" ? undefined : "Bu bölüm yakında"}
+              // 🔴 `title="Bu bölüm yakında"` KALDIRILDI: dört çipin dördü de
+              // artık diskte VAR OLAN bir rotaya gidiyor. Bayat ipucu, çalışan
+              // ekranların üstünde "yakında" yalanını basıyordu.
               className={cx(
                 "site-card__chip",
                 chip.variant === "detay" && "site-card__chip--detay",
