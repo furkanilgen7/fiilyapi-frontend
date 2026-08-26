@@ -30,8 +30,8 @@ import "./accounting.css";
  * sayılar O dosyanın SATIR numaralarıdır.
  *
  * Mockup'ın üst barı (MZ:18-26) ve sol menüsü (MZ:28-37) BASILMAZ: üst bar
- * kabuk canon'udur, sol menü `MuhasebeSidebar` olarak grubun `layout.tsx`inde
- * yaşar.
+ * kabuk canon'udur; MODÜL sekmeleri ise sol menüde DEĞİL, sayfa içi
+ * `AccountingTabs` şeridindedir (F-MUP · KK-10 ile drill-in sidebar kalktı).
  *
  * 🔴 EKRAN SALT-OKURDUR: burada hiçbir `POST/PATCH/PUT/DELETE` yoktur.
  * Dönem kapatma/açma uçları (`accounting-periods`) MU-2 ile canlıdadır ama

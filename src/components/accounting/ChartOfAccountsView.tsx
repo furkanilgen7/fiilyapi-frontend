@@ -45,8 +45,9 @@ const SEARCH_DEBOUNCE_MS = 300;
  * HP · `/muhasebe/hesap-plani` — mockup `Muhasebe - Hesap Planı.dc.html`.
  * Yorumlardaki sayılar O dosyanın SATIR numaralarıdır.
  *
- * Mockup'ın üst barı (18-26) ve sol menüsü (28-38) BASILMAZ: üst bar kabuk
- * canon'udur, sol menü `MuhasebeSidebar` olarak layout'ta yaşar.
+ * Mockup'ın üst barı (18-26) ve sol menüsü (28-38) BASILMAZ: üst bar
+ * kabuk canon'udur; MODÜL sekmeleri ise sol menüde DEĞİL, sayfa içi
+ * `AccountingTabs` şeridindedir (F-MUP · KK-10 ile drill-in sidebar kalktı).
  *
  * ⚠️ ARAMA SUNUCUYA GİDER (`q`); istemcide süzülen hiçbir şey YOKTUR — aksi
  * hâlde sayfalanan kümenin (tavan 200) dışındaki eşleşmeler sessizce

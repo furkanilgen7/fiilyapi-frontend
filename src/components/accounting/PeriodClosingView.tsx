@@ -48,8 +48,9 @@ import "./accounting.css";
  * DK · `/muhasebe/donem-kapanisi` — mockup `Muhasebe - Dönem Kapanışı.dc.html`
  * (DK). Yorumlardaki sayılar O dosyanın SATIR numaralarıdır.
  *
- * Mockup'ın üst barı ve sol menüsü BASILMAZ: üst bar kabuk canon'u, sol menü
- * `MuhasebeSidebar`dedir (MZ/KDV emsali).
+ * Mockup'ın üst barı ve sol menüsü BASILMAZ: üst bar
+ * kabuk canon'udur; MODÜL sekmeleri ise sol menüde DEĞİL, sayfa içi
+ * `AccountingTabs` şeridindedir (F-MUP · KK-10 ile drill-in sidebar kalktı).
  *
  * 🔴 K1 — uçlar `_VIEW`/`_FULL`/`_ADMIN` üç ayrı eşiktedir; `useModulePermission`
  * TEK bir `AccessLevel` döner, eşik burada `hasAtLeast`/`canDelete` ile
