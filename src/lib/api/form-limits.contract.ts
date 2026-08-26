@@ -114,7 +114,7 @@ export function readNumericMap(file: string, constName: string): Map<string, num
 export function readNumericConst(file: string, constName: string): number {
   const source = readFileSync(path.join(ROOT, file), "utf8");
   const literal = source.match(
-    new RegExp(`(?:export )?const ${constName}\\s*(?::[^=]+)?=\\s*(\\d+)\\s*;`),
+    new RegExp(`(?:export )?const ${constName}\\s*(?::[^=]+)?=\\s*(-?\\d+)\\s*;`),
   );
   if (literal !== null) return Number(literal[1]);
 

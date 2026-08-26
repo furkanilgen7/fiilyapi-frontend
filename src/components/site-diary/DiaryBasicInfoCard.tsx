@@ -4,7 +4,11 @@ import { Input } from "@/components/ui/input/Input";
 import { Select } from "@/components/ui/select/Select";
 import type { Weather } from "@/lib/api/hooks/useSiteDiary";
 
-import { WEATHER_OPTIONS } from "./diary-labels";
+import {
+  DIARY_TEMPERATURE_MAX,
+  DIARY_TEMPERATURE_MIN,
+  WEATHER_OPTIONS,
+} from "./diary-labels";
 import type { DiaryFormState } from "./form-state";
 
 export interface DiarySectionOption {
@@ -71,7 +75,8 @@ export function DiaryBasicInfoCard({ form, onChange, disabled, sections }: Diary
               type="number"
               inputMode="decimal"
               step="0.1"
-              maxLength={6}
+              min={DIARY_TEMPERATURE_MIN}
+              max={DIARY_TEMPERATURE_MAX}
               value={form.temperatureC}
               disabled={disabled}
               onChange={(event) => onChange({ temperatureC: event.target.value })}

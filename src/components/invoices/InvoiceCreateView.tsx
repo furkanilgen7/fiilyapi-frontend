@@ -38,6 +38,15 @@ import "./invoices.css";
 type SourceKind = "progress_payment" | "purchase_order" | "manual";
 
 /** "Elle gir" seçeneği — alıcı listede yoksa `party_name` serbest metindir. */
+/**
+ * 🔴 `InvoiceCreate.advance_rate` · `retention_rate` · `withholding_rate` —
+ * üçünün de sözleşme aralığı **0..100**dür (`form-limits.contract.test.ts`
+ * ölçer). İstemcide hiçbiri denetlenmiyordu: 150 yazan kullanıcı UYARISIZ
+ * 422 alıyordu.
+ */
+const INVOICE_RATE_MIN = 0;
+const INVOICE_RATE_MAX = 100;
+
 const MANUAL_PARTY = "__manual__";
 
 /**
@@ -562,6 +571,8 @@ export function InvoiceCreateView() {
                   type="number"
                   className="fat-deduction__rate"
                   aria-label="Avans kesintisi oranı"
+                  min={INVOICE_RATE_MIN}
+                  max={INVOICE_RATE_MAX}
                   value={advanceRate}
                   disabled={!canWrite || !advanceOn}
                   onChange={(event) => setAdvanceRate(event.target.value)}
@@ -587,6 +598,8 @@ export function InvoiceCreateView() {
                   type="number"
                   className="fat-deduction__rate"
                   aria-label="Teminat kesintisi oranı"
+                  min={INVOICE_RATE_MIN}
+                  max={INVOICE_RATE_MAX}
                   value={retentionRate}
                   disabled={!canWrite || !retentionOn}
                   onChange={(event) => setRetentionRate(event.target.value)}
@@ -612,6 +625,8 @@ export function InvoiceCreateView() {
                   type="number"
                   className="fat-deduction__rate"
                   aria-label="KDV tevkifatı oranı"
+                  min={INVOICE_RATE_MIN}
+                  max={INVOICE_RATE_MAX}
                   value={withholdingRate}
                   disabled={!canWrite || !withholdingOn}
                   onChange={(event) => setWithholdingRate(event.target.value)}

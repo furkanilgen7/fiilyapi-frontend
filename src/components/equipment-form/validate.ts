@@ -1,3 +1,4 @@
+import { MODEL_YEAR_MAX, MODEL_YEAR_MIN } from "./constants";
 import type { EquipmentFormValues } from "./form-state";
 
 /**
@@ -20,6 +21,7 @@ export const MESSAGES = {
   categoryRequired: "Kategori seçiniz.",
   purchaseAmountRequired: "Kendi malımız ekipmanda alış bedeli zorunludur.",
   siteRequired: "Atandığı proje seçiniz (depodaysa “Depoda (Atanmadı)” seçin).",
+  modelYearRange: `Model yılı ${MODEL_YEAR_MIN} ile ${MODEL_YEAR_MAX} arasında olmalıdır.`,
 } as const;
 
 export type EquipmentFormErrors = Partial<Record<keyof EquipmentFormValues, string>>;
@@ -64,6 +66,15 @@ export function validateEquipmentForm(
 
   if (context.hasSiteOptions && values.siteId === "") {
     errors.siteId = MESSAGES.siteRequired;
+  }
+
+  // Sözleşme aralığı — boş geçerli (alan nullable), dolu ise 1900..2200.
+  const modelYear = values.modelYear.trim();
+  if (modelYear !== "") {
+    const parsed = Number(modelYear);
+    if (!Number.isFinite(parsed) || parsed < MODEL_YEAR_MIN || parsed > MODEL_YEAR_MAX) {
+      errors.modelYear = MESSAGES.modelYearRange;
+    }
   }
 
   return errors;

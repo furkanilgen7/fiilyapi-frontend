@@ -345,3 +345,149 @@ describe("🔴 tekil korkuluk sabitleri ↔ sözleşme", () => {
     ).toBe(true);
   });
 });
+
+/* ═════════════════ SAYISAL ARALIKLAR — `maxLength`İN KARDEŞİ ═══════════════
+ * 🔴 `maximum` / `minimum` / `exclusiveMinimum` / `exclusiveMaximum` da tipte
+ * YAŞAMAZ. Bu kapı olmadan "yüzde 150" ya da "model yılı 202" gibi girdiler
+ * istemciden sessizce geçip sunucudan 422 döner.
+ *
+ * ⚠️ Kayıt AYNI ADI TAŞIYAN alanların AYNI sınıra sahip olduğunu VARSAYMAZ:
+ * bu dilimde ölçüldü ki `our_share_pct` 100'ü DIŞLAR ama `share_pct` DIŞLAMAZ;
+ * puantaj yılı 2000..2100 iken kira yılı 2000..2200'dür.
+ * ========================================================================= */
+
+type Bound = "minimum" | "maximum" | "exclusiveMinimum" | "exclusiveMaximum";
+
+interface NumericGuard {
+  readonly constName: string;
+  readonly file: string;
+  readonly bound: Bound;
+  /** Gövde alanı: `[şema, alan]`. */
+  readonly field?: readonly [string, string];
+  /** Sorgu parametresi: `[yol, metot, ad]`. */
+  readonly query?: readonly [string, string, string];
+}
+
+const NUMERIC: readonly NumericGuard[] = [
+  {
+    constName: "LAND_SHARE_PCT_EXCLUSIVE_MIN",
+    file: "src/components/project-form/validate.ts",
+    bound: "exclusiveMinimum",
+    field: ["ProjectLandShareInput", "our_share_pct"],
+  },
+  {
+    constName: "LAND_SHARE_PCT_EXCLUSIVE_MAX",
+    file: "src/components/project-form/validate.ts",
+    bound: "exclusiveMaximum",
+    field: ["ProjectLandShareInput", "our_share_pct"],
+  },
+  {
+    constName: "SHAREHOLDER_PCT_EXCLUSIVE_MIN",
+    file: "src/components/project-form/validate.ts",
+    bound: "exclusiveMinimum",
+    field: ["ShareholderInput", "share_pct"],
+  },
+  {
+    constName: "SHAREHOLDER_PCT_MAX",
+    file: "src/components/project-form/validate.ts",
+    bound: "maximum",
+    field: ["ShareholderInput", "share_pct"],
+  },
+  {
+    constName: "SECTION_NUMERIC_MIN",
+    file: "src/components/section-form/validate.ts",
+    bound: "minimum",
+    field: ["SectionCreate", "sort_order"],
+  },
+  {
+    constName: "MODEL_YEAR_MIN",
+    file: "src/components/equipment-form/constants.ts",
+    bound: "minimum",
+    field: ["EquipmentCreate", "model_year"],
+  },
+  {
+    constName: "MODEL_YEAR_MAX",
+    file: "src/components/equipment-form/constants.ts",
+    bound: "maximum",
+    field: ["EquipmentCreate", "model_year"],
+  },
+  {
+    constName: "DIARY_TEMPERATURE_MIN",
+    file: "src/components/site-diary/diary-labels.ts",
+    bound: "minimum",
+    field: ["SiteDiaryEntryCreate", "temperature_c"],
+  },
+  {
+    constName: "DIARY_TEMPERATURE_MAX",
+    file: "src/components/site-diary/diary-labels.ts",
+    bound: "maximum",
+    field: ["SiteDiaryEntryCreate", "temperature_c"],
+  },
+  {
+    constName: "INVOICE_RATE_MIN",
+    file: "src/components/invoices/InvoiceCreateView.tsx",
+    bound: "minimum",
+    field: ["InvoiceCreate", "advance_rate"],
+  },
+  {
+    constName: "INVOICE_RATE_MAX",
+    file: "src/components/invoices/InvoiceCreateView.tsx",
+    bound: "maximum",
+    field: ["InvoiceCreate", "advance_rate"],
+  },
+  {
+    constName: "PERIOD_MONTH_MIN",
+    file: "src/components/progress-payments/subcontractor-filters.ts",
+    bound: "minimum",
+    query: ["/subcontractor-progress-payments", "get", "period_month"],
+  },
+  {
+    constName: "PERIOD_MONTH_MAX",
+    file: "src/components/progress-payments/subcontractor-filters.ts",
+    bound: "maximum",
+    query: ["/subcontractor-progress-payments", "get", "period_month"],
+  },
+  {
+    constName: "TIMESHEET_YEAR_MIN",
+    file: "src/components/timesheet/month.ts",
+    bound: "minimum",
+    query: ["/sites/{site_id}/timesheet", "get", "year"],
+  },
+  {
+    constName: "TIMESHEET_YEAR_MAX",
+    file: "src/components/timesheet/month.ts",
+    bound: "maximum",
+    query: ["/sites/{site_id}/timesheet", "get", "year"],
+  },
+];
+
+describe("🔴 sayısal aralık korkulukları ↔ sözleşme", () => {
+  it("bekçi GERÇEKTEN ölçüyor (boş küme sessizce yeşil geçemez)", () => {
+    expect(NUMERIC.length).toBeGreaterThanOrEqual(15);
+  });
+
+  it.each(NUMERIC)("$constName = $bound", ({ constName, file, bound, field, query }) => {
+    const schema =
+      field !== undefined
+        ? fieldSchema(field[0], field[1])
+        : queryParamSchema(query![0], query![1], query![2]);
+    const target = field !== undefined ? `${field[0]}.${field[1]}` : `${query![0]} ?${query![2]}`;
+    expect(schema?.[bound], `${target} sözleşmede \`${bound}\` ilan etmiyor`).toBeDefined();
+    expect(
+      readNumericConst(file, constName),
+      `${constName} ≠ ${target} ${bound} (${schema?.[bound]}) ⇒ istemci korkuluğu ` +
+        `sözleşmeden AYRIŞTI, kullanıcı uyarısız 422 alır`,
+    ).toBe(schema?.[bound]);
+  });
+
+  it("aynı adlı alanlar aynı sınırı TAŞIMAYABİLİR (ölçülmüş iki örnek)", () => {
+    // Bu iki çift, "yüzde yüzdedir / yıl yıldır" varsayımının neden yanlış
+    // olduğunun kanıtıdır; kayıt bu yüzden alan alan tutulur.
+    expect(fieldSchema("ProjectLandShareInput", "our_share_pct")?.exclusiveMaximum).toBe(100);
+    expect(fieldSchema("ShareholderInput", "share_pct")?.maximum).toBe(100);
+    expect(fieldSchema("ProjectLandShareInput", "our_share_pct")?.maximum).toBeUndefined();
+
+    expect(queryParamSchema("/sites/{site_id}/timesheet", "get", "year")?.maximum).toBe(2100);
+    expect(queryParamSchema("/equipment/work-summary", "get", "year")?.maximum).toBe(2200);
+  });
+});

@@ -11,6 +11,19 @@ import type { TimesheetPeriod } from "@/lib/api/hooks/useTimesheet";
 const MIN_MONTH = 1;
 const MAX_MONTH = 12;
 
+/**
+ * 🔴 `/sites/{site_id}/timesheet` uçlarının `year` aralığı **2000..2100**dür
+ * (GET · PUT · export.xlsx üçü de aynı). İstemci `1000..9999` kabul ediyordu:
+ * `?year=1500` gibi elle yazılmış bir bağlantı üç ucun da 422'sine çarpıyor,
+ * ekran boş kalıyordu. Aralık dışı değer artık İÇİNDE BULUNULAN aya düşer —
+ * kırık bağlantı boş ekran üretmez (bu dosyanın zaten var olan kuralı).
+ *
+ * ⚠️ Makine/kira uçlarının aralığı FARKLIDIR (2000..2200); ortak bir sabit
+ * UYDURULMAZ, her uç kendi sözleşmesinden okunur.
+ */
+export const TIMESHEET_YEAR_MIN = 2000;
+export const TIMESHEET_YEAR_MAX = 2100;
+
 export function currentPeriod(now: Date = new Date()): TimesheetPeriod {
   return { year: now.getFullYear(), month: now.getMonth() + 1 };
 }
@@ -35,7 +48,9 @@ export function parsePeriod(
   const fallback = currentPeriod(now);
   const year = Number(yearParam);
   const month = Number(monthParam);
-  if (!Number.isInteger(year) || year < 1000 || year > 9999) return fallback;
+  if (!Number.isInteger(year) || year < TIMESHEET_YEAR_MIN || year > TIMESHEET_YEAR_MAX) {
+    return fallback;
+  }
   if (!Number.isInteger(month) || month < MIN_MONTH || month > MAX_MONTH) return fallback;
   return { year, month };
 }

@@ -21,7 +21,19 @@ export const MESSAGES = {
   // (422). Yarım satır sessizce DÜŞÜRÜLSEYDİ kullanıcı milestone girdiğini
   // sanır, kayıt hiç oluşmazdı.
   milestoneIncomplete: "Milestone için hem ad hem tarih girilmelidir.",
+  // F-KISIT · üçü de sözleşmede `minimum: 0` — negatif değer 422 döner.
+  negativeSortOrder: "Sıra numarası negatif olamaz.",
+  negativeWorkerCount: "Planlanan işçi sayısı negatif olamaz.",
+  negativeBudget: "Bölüm bedeli negatif olamaz.",
 } as const;
+
+/**
+ * 🔴 `SectionCreate.sort_order` · `planned_worker_count` · `budget_amount`
+ * üçünün de sözleşmedeki tabanı **0**dır (`form-limits.contract.test.ts`
+ * ölçer). İstemcide hiçbiri denetlenmiyordu: negatif bir değer forma
+ * girilebiliyor, sunucudan UYARISIZ 422 dönüyordu.
+ */
+export const SECTION_NUMERIC_MIN = 0;
 
 export type SectionFormErrors = Partial<Record<keyof SectionFormValues, string>>;
 
@@ -63,6 +75,20 @@ export function validateSectionForm(
   const errors: SectionFormErrors = {};
 
   if (!values.name.trim()) errors.name = MESSAGES.nameRequired;
+
+  // Sözleşme tabanları — taslakta DA uygulanır (eksik veri değil, YANLIŞ veri).
+  const sortOrder = numberOrNull(values.sortOrder);
+  if (sortOrder !== null && sortOrder < SECTION_NUMERIC_MIN) {
+    errors.sortOrder = MESSAGES.negativeSortOrder;
+  }
+  const workerCount = numberOrNull(values.plannedWorkerCount);
+  if (workerCount !== null && workerCount < SECTION_NUMERIC_MIN) {
+    errors.plannedWorkerCount = MESSAGES.negativeWorkerCount;
+  }
+  const budget = numberOrNull(values.budgetAmount);
+  if (budget !== null && budget < SECTION_NUMERIC_MIN) {
+    errors.budgetAmount = MESSAGES.negativeBudget;
+  }
 
   // Tutarlılık — HER ZAMAN, taslakta da (brief §Doğrulama).
   if (
