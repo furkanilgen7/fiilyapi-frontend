@@ -310,6 +310,38 @@ const FINANCIAL_INSTRUMENT_CREATE_SCHEMA = loadBodySchema("FinancialInstrumentCr
 const SUPPLIER_CREATE_SCHEMA = loadBodySchema("SupplierCreate");
 const CUSTOMER_CREATE_SCHEMA = loadBodySchema("CustomerCreate");
 
+/* 🔴 TB-IKIZ · AYNI KAPI, ENUM UÇLARI. Aşağıdaki dört gövdenin ENUM alanları
+ * (`section_type` 7 üye · `weather` 5 üye · plan hücresi `tag` 6 üye) sahte
+ * tarafta HİÇ denetlenmiyordu: uçlar `String(body.x)` / `as string | null`
+ * yazıyor, yani sunucunun 422 vereceği HER metni kabul ediyorlardı. Böyle bir
+ * ikiz bir ONAYLAYICIDIR, bekçi değil — kontrol sorusu "bu mock, gerçek
+ * backend'in REDDEDECEĞİ bir isteği reddediyor mu?" ve cevabı HAYIRDI. */
+const SECTION_CREATE_SCHEMA = loadBodySchema("SectionCreate");
+const SECTION_UPDATE_SCHEMA = loadBodySchema("SectionUpdate");
+const SITE_DIARY_ENTRY_CREATE_SCHEMA = loadBodySchema("SiteDiaryEntryCreate");
+const SITE_DIARY_ENTRY_UPDATE_SCHEMA = loadBodySchema("SiteDiaryEntryUpdate");
+const SITE_PLAN_CELL_INPUT_SCHEMA = loadBodySchema("SitePlanCellInput");
+
+/**
+ * Enum daralt­ması — DARALTMA BİR SUSTURMA DEĞİL, BİR ÖLÇÜMDÜR: değer
+ * `openapi.json`daki üye listesine karşı ÇALIŞMA ZAMANINDA sınanır, listede
+ * yoksa `null` döner. Kısıt tipte yaşamadığı için (`components["schemas"]`
+ * yalnız birleşim tipi verir, üye listesini VERMEZ) tek kaynak spec dosyasıdır.
+ *
+ * Uçlar bu fonksiyona gelmeden önce `bodySchemaViolation`dan geçer; bu ikinci
+ * süzgeç, kapı bir gün o uçtan kaldırılırsa ikizin sözleşme DIŞI bir değeri
+ * duruma YAZMASINI yine de engeller (fail-closed).
+ */
+function enumValue<T extends string>(
+  schema: MockBodySchema,
+  field: string,
+  raw: unknown,
+): T | null {
+  if (typeof raw !== "string") return null;
+  const allowed = schema.fields.get(field)?.enum;
+  return allowed !== undefined && allowed.includes(raw) ? (raw as T) : null;
+}
+
 /**
  * 🔴 `amount` iki dallıdır (`anyOf`): sayısal dal `exclusiveMinimum: 0`,
  * string dalının deseni en fazla İKİ ondalık basamak kabul eder. `loadBodySchema`
@@ -632,7 +664,7 @@ interface MockSection {
   start_date: string | null;
   end_date: string | null;
   sort_order: number;
-  section_type: string | null;
+  section_type: components["schemas"]["SectionType"] | null;
   description: string | null;
   deputy_manager_user_id: string | null;
   deputy_manager_name: string | null;
@@ -3046,7 +3078,9 @@ function buildSiteDetail(
  * üretilir, fikstürde SAKLANMAZ — `budget` (BOQ türevi) ile `budget_amount`
  * (elle girilen gerçek kolon) AYNI ŞEY DEĞİLDİR (P6 §7 S2a).
  */
-function buildSectionDetail(section: MockSection) {
+function buildSectionDetail(
+  section: MockSection,
+): components["schemas"]["SectionDetailResponse"] {
   return {
     id: section.id,
     code: section.code,
@@ -3177,7 +3211,7 @@ interface MockDiaryEntry {
   project_id: string;
   entry_date: string;
   section_id: string | null;
-  weather: string | null;
+  weather: components["schemas"]["Weather"] | null;
   temperature_c: string | null;
   work_done: string | null;
   chief_note: string | null;
@@ -3242,7 +3276,10 @@ function diaryWorkerTotal(entry: MockDiaryEntry): number {
   return entry.worker_counts.reduce((sum, w) => sum + w.count, 0);
 }
 
-function buildDiaryEntryDetail(state: MockState, entry: MockDiaryEntry) {
+function buildDiaryEntryDetail(
+  state: MockState,
+  entry: MockDiaryEntry,
+): components["schemas"]["SiteDiaryEntryDetail"] {
   return {
     id: entry.id,
     site_id: entry.site_id,
@@ -3270,7 +3307,9 @@ function buildDiaryEntryDetail(state: MockState, entry: MockDiaryEntry) {
   };
 }
 
-function buildDiaryEntryListItem(entry: MockDiaryEntry) {
+function buildDiaryEntryListItem(
+  entry: MockDiaryEntry,
+): components["schemas"]["SiteDiaryEntryListItem"] {
   return {
     id: entry.id,
     site_id: entry.site_id,
@@ -3450,7 +3489,7 @@ interface MockPlanCell {
   row_id: string;
   plan_date: string;
   text: string;
-  tag: string | null;
+  tag: components["schemas"]["PlanCellTag"] | null;
 }
 interface MockPlanGoal {
   id: string;
@@ -3531,7 +3570,11 @@ const PLAN_SPRINT_FIXTURES: MockPlanSprint[] = [
  * üretilir (`is_weekend` Cmt/Paz). Hücreler SEYREKTİR — planı olmayan gün
  * hücre üretmez, ızgara deliklerini `days` doldurur.
  */
-function buildSitePlanWeek(state: MockState, siteId: string, weekStart: string) {
+function buildSitePlanWeek(
+  state: MockState,
+  siteId: string,
+  weekStart: string,
+): components["schemas"]["SitePlanWeek"] {
   const site = state.sites.find((s) => s.id === siteId);
   const project = state.projects.find((p) => p.id === site?.project_id);
   const days = Array.from({ length: 7 }, (_, index) => {
@@ -3548,13 +3591,10 @@ function buildSitePlanWeek(state: MockState, siteId: string, weekStart: string) 
 
   // Gruplama anahtarı `(kind, section_id)` İKİLİSİ — ekipman satırları
   // bölümsüz oldukları için AYRI başlığa düşer.
-  const groups: Array<{
-    kind: MockPlanRow["kind"];
-    section_id: string | null;
-    section_name: string | null;
-    section_manager_name: string | null;
-    rows: unknown[];
-  }> = [];
+  // 🔴 `rows: unknown[]` idi — SATIRLARIN İÇİ SÖZLEŞMEYLE HİÇ KARŞILAŞTIRILMIYORDU;
+  // hücrenin `tag`i de dahil her alan tipsiz geçiyordu. Grup tipi artık
+  // sözleşmeden okunur.
+  const groups: components["schemas"]["SitePlanGroup"][] = [];
   for (const row of rows) {
     const section = state.sections.find((s) => s.id === row.section_id);
     const key = `${row.kind}::${row.section_id ?? ""}`;
@@ -7584,6 +7624,8 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const site = state.sites.find((s) => s.id === siteId);
       if (!site) return send(404, { detail: "santiye yok" });
       return withBody((body) => {
+        const schemaViolation = bodySchemaViolation(SECTION_CREATE_SCHEMA, body);
+        if (schemaViolation !== null) return send(422, schemaViolation);
         const code = body.code ? String(body.code) : null;
         if (code && state.sections.some((sec) => sec.site_id === siteId && sec.code === code)) {
           return send(409, { detail: "Bu bölüm kodu bu şantiyede zaten kullanılıyor" });
@@ -7593,7 +7635,11 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         const managerName = body.manager_name ? String(body.manager_name) : null;
         const startDate = body.start_date ? String(body.start_date) : null;
         const endDate = body.end_date ? String(body.end_date) : null;
-        const sectionType = body.section_type ? String(body.section_type) : null;
+        const sectionType = enumValue<components["schemas"]["SectionType"]>(
+          SECTION_CREATE_SCHEMA,
+          "section_type",
+          body.section_type,
+        );
         const budgetAmount =
           body.budget_amount === undefined || body.budget_amount === null ? null : String(body.budget_amount);
         const validationError = validateSectionInput({
@@ -7659,6 +7705,8 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const section = state.sections.find((sec) => sec.id === sectionId);
       if (!section) return send(404, { detail: "bolum yok" });
       return withBody((body) => {
+        const schemaViolation = bodySchemaViolation(SECTION_UPDATE_SCHEMA, body);
+        if (schemaViolation !== null) return send(422, schemaViolation);
         const hasCode = Object.prototype.hasOwnProperty.call(body, "code");
         const code = hasCode ? (body.code ? String(body.code) : null) : section.code;
         if (
@@ -7675,7 +7723,9 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         const managerNameRaw = pick("manager_name", (v) => (v ? String(v) : null));
         const startDate = pick("start_date", (v) => (v ? String(v) : null));
         const endDate = pick("end_date", (v) => (v ? String(v) : null));
-        const sectionType = pick("section_type", (v) => (v ? String(v) : null));
+        const sectionType = pick("section_type", (v) =>
+          enumValue<components["schemas"]["SectionType"]>(SECTION_UPDATE_SCHEMA, "section_type", v),
+        );
         const budgetAmount = pick("budget_amount", (v) => (v === undefined || v === null ? null : String(v)));
         const managerName = managerNameRaw ?? userNameById(state, managerUserId);
 
@@ -8836,6 +8886,10 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         const input = Array.isArray(body.cells) ? (body.cells as Record<string, unknown>[]) : [];
         const next: MockPlanCell[] = [];
         for (const raw of input) {
+          // 🔴 HÜCRE HÜCRE denetlenir: `tag` enum'u burada yaşar, gövdenin
+          // kökünde değil. Kökü denetlemek `cells[]`in içine HİÇ bakmazdı.
+          const cellViolation = bodySchemaViolation(SITE_PLAN_CELL_INPUT_SCHEMA, raw);
+          if (cellViolation !== null) return send(422, cellViolation);
           const planDate = String(raw.plan_date ?? "");
           if (!weekDates.has(planDate)) {
             return send(422, { detail: "hucre istenen haftanin disinda" });
@@ -8847,7 +8901,11 @@ export function startMockBackend(port: number): { server: Server; close: () => P
             row_id: String(raw.row_id ?? ""),
             plan_date: planDate,
             text,
-            tag: typeof raw.tag === "string" ? raw.tag : null,
+            tag: enumValue<components["schemas"]["PlanCellTag"]>(
+              SITE_PLAN_CELL_INPUT_SCHEMA,
+              "tag",
+              raw.tag,
+            ),
           });
         }
         state.planCells = [
@@ -9289,6 +9347,8 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const site = state.sites.find((s) => s.id === siteDiaryMatch[1]);
       if (!site) return send(404, { detail: "santiye yok" });
       return withBody((body) => {
+        const schemaViolation = bodySchemaViolation(SITE_DIARY_ENTRY_CREATE_SCHEMA, body);
+        if (schemaViolation !== null) return send(422, schemaViolation);
         const entryDate = String(body.entry_date ?? "");
         if (!entryDate) return send(422, { detail: "entry_date zorunlu" });
         // Günde TEK kayıt: aynı güne ikinci POST 409 (spec §2).
@@ -9306,7 +9366,11 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           project_id: site.project_id,
           entry_date: entryDate,
           section_id: (body.section_id as string | null | undefined) ?? null,
-          weather: (body.weather as string | null | undefined) ?? null,
+          weather: enumValue<components["schemas"]["Weather"]>(
+            SITE_DIARY_ENTRY_CREATE_SCHEMA,
+            "weather",
+            body.weather,
+          ),
           temperature_c: body.temperature_c !== undefined && body.temperature_c !== null
             ? String(body.temperature_c)
             : null,
@@ -9398,6 +9462,8 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         return send(409, { detail: "Gönderilmiş kayıt düzenlenemez." });
       }
       return withBody((body) => {
+        const schemaViolation = bodySchemaViolation(SITE_DIARY_ENTRY_UPDATE_SCHEMA, body);
+        if (schemaViolation !== null) return send(422, schemaViolation);
         if (body.entry_date !== undefined && body.entry_date !== null) {
           const nextDate = String(body.entry_date);
           const clash = state.diaryEntries.find(
@@ -9407,7 +9473,13 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           entry.entry_date = nextDate;
         }
         if (body.section_id !== undefined) entry.section_id = (body.section_id as string | null) ?? null;
-        if (body.weather !== undefined) entry.weather = (body.weather as string | null) ?? null;
+        if (body.weather !== undefined) {
+          entry.weather = enumValue<components["schemas"]["Weather"]>(
+            SITE_DIARY_ENTRY_UPDATE_SCHEMA,
+            "weather",
+            body.weather,
+          );
+        }
         if (body.temperature_c !== undefined) {
           entry.temperature_c = body.temperature_c === null ? null : String(body.temperature_c);
         }

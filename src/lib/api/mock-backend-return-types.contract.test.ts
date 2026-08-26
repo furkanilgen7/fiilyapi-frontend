@@ -58,32 +58,26 @@ function twinFunctions(): readonly TwinFunction[] {
 const FUNCTIONS = twinFunctions();
 
 /* ═══════════ SÖZLEŞMEDEN SAPAN ÜRETİCİLER — AÇIK BORÇ KAYDI ════════════════
- * 🔴 Buradaki her ad, TB-MOCKTIP'te tipi bağlanmaya ÇALIŞILMIŞ ve `typecheck`
- * KIRMIZI VERMİŞ bir üreticidir. Kırmızı bir kusur değil, **ikizin
- * sözleşmeden saptığının kanıtıdır**. Sapmayı `as any` ile gizlemek yerine
- * gerekçesiyle buraya yazılır.
+ * 🔴 Buraya YALNIZ tipi bağlanmaya ÇALIŞILMIŞ ve `typecheck` KIRMIZI VERMİŞ
+ * bir üretici yazılır. Kırmızı bir kusur değil, **ikizin sözleşmeden
+ * saptığının kanıtıdır**. Sapmayı `as any` ile gizlemek yerine gerekçesiyle
+ * buraya yazılır.
  *
  * 🔑 KAYIT İKİ YÖNLÜ ÇALIŞIR: bir ad buraya yazılıp da o üretici SONRADAN
  * tiplenirse (ya da adı değişirse) bu dosya KIRMIZI verir — bayat kayıt
  * sessizce birikemez.
  *
+ * 🟢 KAYIT ŞU AN BOŞ ve boş olması DOĞRU HÂLDİR: TB-MOCKTIP'in yazdığı DOKUZ
+ * sapmanın DOKUZU da TB-IKIZ'de kapatıldı (bordronun üç gelir vergisi alanı +
+ * `unknown_tax_count` · `SiteDetailResponse`in 16 zorunlu alanı · dört enum).
+ * Boşluk bekçiyi zayıflatmaz, TERSİNE en sıkı hâline getirir: kayıtta hiçbir ad
+ * olmadığı için tipsiz EKLENEN her üretici doğrudan kırmızı verir.
+ *
  * Bir adı buradan silmenin TEK yolu sapmayı gerçekten kapatmaktır. Sapmaların
  * çoğu ikizin DÖNDÜRDÜĞÜ VERİYİ değiştirir; o bir davranış değişikliğidir ve
  * kendi diliminde, kare ölçümüyle yapılır.
  * ========================================================================= */
-const SOZLESMEDEN_SAPAN: Readonly<Record<string, string>> = {
-  buildSectionDetail:
-    "`section_type` ikizde `string | null`, sözleşmede 7 üyeli enum. Yazma ucu " +
-    "(`String(body.section_type)`) sözleşme dışı her metni KABUL EDİYOR ⇒ ikiz " +
-    "onaylayıcı, bekçi değil. Girdi korkuluğu F-KISIT kaydının işidir.",
-  buildDiaryEntryDetail:
-    "`weather` ikizde `string | null`, sözleşmede 5 üyeli enum; yazma ucu " +
-    "(`body.weather as string | null`) her metni kabul ediyor. Aynı sınıf.",
-  buildDiaryEntryListItem: "aynı `weather` sapması (liste ucu).",
-  buildSitePlanWeek:
-    "plan hücresi `tag` ikizde `string | null`, sözleşmede 6 üyeli enum; yazma " +
-    "ucu `typeof raw.tag === 'string' ? raw.tag : null` her metni kabul ediyor.",
-};
+const SOZLESMEDEN_SAPAN: Readonly<Record<string, string>> = {};
 
 describe("🔴 test ikizi (`e2e/mock-backend.ts`) dönüş tipleri ↔ sözleşme", () => {
   it("bekçi GERÇEKTEN ölçüyor (boş küme sessizce yeşil geçemez)", () => {
@@ -96,8 +90,7 @@ describe("🔴 test ikizi (`e2e/mock-backend.ts`) dönüş tipleri ↔ sözleşm
     const bound = FUNCTIONS.filter(
       (fn) => fn.returnType !== null && fn.returnType.includes('components["schemas"]'),
     );
-    expect(bound.length, "sözleşme tipine BAĞLI dönüş tipi sayısı").toBeGreaterThanOrEqual(55);
-    expect(Object.keys(SOZLESMEDEN_SAPAN).length).toBeGreaterThan(0);
+    expect(bound.length, "sözleşme tipine BAĞLI dönüş tipi sayısı").toBeGreaterThanOrEqual(60);
   });
 
   it("her fonksiyonun dönüş tipi YAZILIDIR (kayıttakiler hariç)", () => {
