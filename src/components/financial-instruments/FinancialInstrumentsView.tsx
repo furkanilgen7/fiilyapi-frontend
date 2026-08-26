@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
@@ -14,6 +16,7 @@ import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncation";
 
+import { InstrumentFormModal } from "./InstrumentFormModal";
 import { InstrumentSummaryCards } from "./InstrumentSummaryCards";
 import { InstrumentsTable } from "./InstrumentsTable";
 import {
@@ -28,13 +31,20 @@ import "./financial-instruments.css";
 const TAB_PARAM = "sekme";
 
 /**
- * 🔴 E10:65 "+ Çek Ekle" — UÇ VARDIR (`POST /financial-instruments`), FORM
- * YOKTUR: mockup düğmeyi çizmiş ama açılınca görünecek formu ÇİZMEMİŞTİR
- * (openapi şeması bunu açıkça yazar). Kanon (F-TH · F-HZ "+ Ödeme Planla"):
- * *rotası/mockup'ı olmayan mockup öğesi SİLİNMEZ, DEVRE DIŞI basılır* —
- * uydurma form açılmaz.
+ * 🟢 **F-CEK · ONAYLI SAPMA KAPANDI.** E10:65 "+ Çek Ekle" bir tur boyunca
+ * DEVRE DIŞI basıldı: uç vardı (`POST /financial-instruments`) ama formun
+ * mockup'ı ÇİZİLMEMİŞTİ ve kanon *"rotası/mockup'ı olmayan öğe SİLİNMEZ,
+ * devre dışı basılır"* der — uydurma form açılmaz.
+ *
+ * Mockup artık VARDIR (`projedesign/Form - Cek Ekle.dc.html`) → düğme AÇILDI,
+ * gerekçe bandı KALDIRILDI. 🔑 Gerekçe metnini ekranda BIRAKMAK, canlı bir
+ * düğmeyi YALANLARDI (F-KIRA/F-PRJTAB kanonu).
+ *
+ * 🔴 Yazma izni AYRI bir kapıdır: `treasury` modülünde yalnız okuma yetkisi
+ * olan kullanıcı listeyi görür ama kayıt AÇAMAZ (fail-closed değil, çünkü
+ * `canWrite` bilinmezlikte `true`dur — kanon §2.5.3).
  */
-const ADD_DISABLED_HINT = "Çek/senet ekleme formunun tasarımı bekleniyor.";
+const ADD_FORBIDDEN_HINT = "Çek/senet eklemek için yazma yetkiniz yok.";
 
 /**
  * F-FIN · `/hazine/cek-senet` — mockup `Ekran 10 - Finans Çek Ödeme.dc.html`
@@ -57,6 +67,7 @@ export function FinancialInstrumentsView() {
   const permission = useModulePermission(FINANCIAL_INSTRUMENT_PERMISSION_MODULE);
 
   const tab = instrumentTabFromParam(searchParams.get(TAB_PARAM));
+  const [isFormOpen, setFormOpen] = useState(false);
 
   const summaryQuery = useFinancialInstrumentSummary();
   // Kırpma korkuluğu (TB3/F-TH): tavan AÇIKÇA gönderilir, eksik kalan kayıt
@@ -91,15 +102,19 @@ export function FinancialInstrumentsView() {
       {/* E10:63-66 */}
       <div className="fin__head">
         <h1 className="fin__title">Çek &amp; Ödeme</h1>
-        {/* E10:65 — devre dışı, gerekçesi hem `title` hem `sr-only` ile taşınır
-            ve altta GÖRÜNÜR bir bant tekrarlar (F-HZ emsali). */}
-        <Button variant="primary" disabled title={ADD_DISABLED_HINT} data-testid="fin-add">
-          + Çek Ekle<span className="sr-only"> — {ADD_DISABLED_HINT}</span>
+        {/* E10:65 — CANLI. Yetkisiz kullanıcıda devre dışı kalır ve gerekçe
+            hem `title` hem `sr-only` ile taşınır (F-HZ emsali). */}
+        <Button
+          variant="primary"
+          disabled={!permission.canWrite}
+          {...(permission.canWrite ? {} : { title: ADD_FORBIDDEN_HINT })}
+          onClick={() => setFormOpen(true)}
+          data-testid="fin-add"
+        >
+          + Çek Ekle
+          {!permission.canWrite && <span className="sr-only"> — {ADD_FORBIDDEN_HINT}</span>}
         </Button>
       </div>
-      <p className="fin-notice" data-testid="fin-add-reason">
-        {ADD_DISABLED_HINT}
-      </p>
 
       {/* E10:69-90 — dört kart, kendi hata yolu. */}
       {summaryQuery.isError && (
@@ -146,6 +161,11 @@ export function FinancialInstrumentsView() {
           ikinci kaynağın hâlâ pending olduğunu GİZLERDİ (F-İK dersi). */}
       {summaryQuery.data !== undefined && <span hidden data-testid="fin-loaded-summary" />}
       {listQuery.data !== undefined && <span hidden data-testid="fin-loaded-list" />}
+
+      {/* FCE:70 — form MODALDIR, ayrı sayfa değil (KARAR 1). */}
+      {isFormOpen && (
+        <InstrumentFormModal onClose={() => setFormOpen(false)} />
+      )}
     </div>
   );
 }

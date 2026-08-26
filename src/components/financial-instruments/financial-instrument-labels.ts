@@ -5,6 +5,13 @@ import type {
   FinancialInstrumentStatus,
 } from "@/lib/api/hooks/useFinancialInstruments";
 
+import {
+  BANK_NAME_MAX_LENGTH,
+  DESCRIPTION_MAX_LENGTH,
+  DRAWER_NAME_MAX_LENGTH,
+  SERIAL_NO_MAX_LENGTH,
+} from "./financial-instrument-form";
+
 /**
  * F-FIN · `Ekran 10 - Finans Çek Ödeme.dc.html` (E10) TÜREV katmanı.
  * Parantez içi sayılar O dosyanın SATIR numaralarıdır.
@@ -125,4 +132,82 @@ export function instrumentSerialColumnLabel(tab: InstrumentTabKey): string {
   return instrumentTabFilter(tab).instrumentKind === "promissory_note"
     ? "Senet No"
     : "Çek No"; // E10:104
+}
+
+/* ══════════════ F-CEK · "Yeni Çek / Senet" formu (FCE) ══════════════════════
+ * Kanonik mockup: `projedesign/Form - Cek Ekle.dc.html`. Sayılar O dosyanın
+ * SATIR numaralarıdır. Metinler TEK yerde durur: aynı cümlenin ikinci kopyası
+ * sessizce bayatlar (F-PRJTAB dersi).
+ * ========================================================================= */
+
+/** FCE:75 */
+export const INSTRUMENT_FORM_TITLE = "Yeni Çek / Senet";
+/** FCE:76 */
+export const INSTRUMENT_FORM_LEAD = "Kayıt portföye eklenir";
+/** FCE:106 */
+export const INSTRUMENT_FORM_KIND_LABEL = "Tür";
+/** FCE:114 */
+export const INSTRUMENT_FORM_DIRECTION_LABEL = "Yön";
+/** FCE:121 */
+export const INSTRUMENT_FORM_COMPOSITION_LABEL = "Seçili bileşim:";
+/** FCE:123 */
+export const INSTRUMENT_FORM_COMPOSITION_NOTE =
+  "Dört bileşim de geçerli — verilen senet dahil";
+/** FCE:131 — sınır sözleşmeden gelir, metne elle SAYI yazılmaz. */
+export const INSTRUMENT_FORM_SERIAL_HINT = `Maks ${SERIAL_NO_MAX_LENGTH} karakter`;
+/** FCE:134 */
+export const INSTRUMENT_FORM_AMOUNT_LABEL = "Tutar (₺)";
+/** FCE:140 */
+export const INSTRUMENT_FORM_DRAWER_LABEL = "Keşideci";
+/** FCE:142 */
+export const INSTRUMENT_FORM_DRAWER_HINT = `Maks ${DRAWER_NAME_MAX_LENGTH} karakter · Çeki düzenleyen kişi/kurum`;
+/** FCE:148 */
+export const INSTRUMENT_FORM_ISSUE_LABEL = "Keşide Tarihi";
+/** FCE:152 */
+export const INSTRUMENT_FORM_DUE_LABEL = "Vade";
+/** FCE:161 */
+export const INSTRUMENT_FORM_OPTIONAL_TITLE = "İsteğe Bağlı";
+/** FCE:164 */
+export const INSTRUMENT_FORM_BANK_LABEL = "Banka";
+/**
+ * 🔴 DENETİM SAPMASI 1 — mockup burada SABİT listeli bir `<select>` çizer
+ * (FCE:165-170); sözleşmede `bank_name` SERBEST METİNDİR (`maxLength: 100`).
+ * İpucu sınırı yazar ki kullanıcı 100. karakterde sürprizle karşılaşmasın.
+ */
+export const INSTRUMENT_FORM_BANK_HINT = `Serbest metin · maks ${BANK_NAME_MAX_LENGTH} karakter`;
+/** FCE:173 */
+export const INSTRUMENT_FORM_BANK_ACCOUNT_LABEL = "Banka Hesabı";
+/** FCE:179 */
+export const INSTRUMENT_FORM_BANK_ACCOUNT_HINT = "Tahsilat/ödeme bu hesaba işlenir";
+/** FCE:183 */
+export const INSTRUMENT_FORM_PROJECT_LABEL = "Proje";
+/** FCE:185 */
+export const INSTRUMENT_FORM_DESCRIPTION_LABEL = "Açıklama";
+/**
+ * 🔴 DENETİM SAPMASI 2 — sınır (200) mockup'ta ekranda YAZILI DEĞİLDİ; öteki
+ * metin alanlarının hepsi sınırını yazıyor, bu alan yazmıyordu.
+ */
+export const INSTRUMENT_FORM_DESCRIPTION_HINT = `Maks ${DESCRIPTION_MAX_LENGTH} karakter`;
+/** FCE:166/175 — "— Seçilmedi". */
+export const INSTRUMENT_FORM_SELECT_PLACEHOLDER = "— Seçilmedi";
+/** FCE:184 */
+export const INSTRUMENT_FORM_PROJECT_PLACEHOLDER = "— Proje bağlantısı yok";
+/** FCE:180 */
+export const INSTRUMENT_FORM_STATUS_NOTE_TITLE = "Durum alanı yok:";
+/** FCE:180-181 */
+export const INSTRUMENT_FORM_STATUS_NOTE_BODY =
+  "Yeni kayıt her zaman Portföyde olarak doğar. Tahsil/ödeme, ciro veya karşılıksız işlemleri liste ekranından yapılır.";
+/** FCE:198 */
+export const INSTRUMENT_FORM_CANCEL_LABEL = "İptal";
+/** FCE:199 */
+export const INSTRUMENT_FORM_SUBMIT_LABEL = "Kaydet";
+export const INSTRUMENT_FORM_ERROR_FALLBACK = "Çek/senet kaydedilemedi.";
+
+/**
+ * FCE:129 — seri no etiketi TÜRDEN türer (tablo başlığıyla AYNI kural,
+ * `instrumentSerialColumnLabel`): senet seçiliyken "Çek No" yazan bir etiket
+ * ekranın senede "çek" demesine yol açardı.
+ */
+export function instrumentSerialLabel(kind: FinancialInstrumentKind): string {
+  return kind === "promissory_note" ? "Senet No" : "Çek / Senet No";
 }
