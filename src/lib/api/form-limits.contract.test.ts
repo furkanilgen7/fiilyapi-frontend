@@ -21,6 +21,7 @@ import path from "node:path";
 
 import {
   fieldSchema,
+  queryParamSchema,
   readNumericConst,
   readNumericMap,
   spec,
@@ -130,6 +131,13 @@ const REGISTRY: readonly Registration[] = [
     },
   },
   {
+    label: "satış formu · alıcı kartı",
+    file: "src/components/sales-form/constants.ts",
+    constName: "CUSTOMER_MAX_LENGTH",
+    schema: "CustomerCreate",
+    notRendered: {},
+  },
+  {
     label: "arşiv belgesi formu",
     file: "src/components/document-form/constants.ts",
     constName: "MAX_LENGTH",
@@ -146,13 +154,13 @@ describe("🔴 form korkulukları ↔ sözleşme gövde kısıtları", () => {
     // boş küme üzerinde koşar ve dosya "yeşil" görünürdü — bekçinin KENDİSİ
     // sahte-yeşile düşerdi. Sayılar ölçülmüştür, aşağı inerlerse tarama
     // bozulmuş demektir.
-    expect(REGISTRY.length).toBeGreaterThanOrEqual(12);
+    expect(REGISTRY.length).toBeGreaterThanOrEqual(13);
     expect(Object.keys(spec().components.schemas).length).toBeGreaterThan(100);
     const totalGuards = REGISTRY.reduce(
       (sum, entry) => sum + readNumericMap(entry.file, entry.constName).size,
       0,
     );
-    expect(totalGuards, "taranan korkuluk alanı sayısı").toBeGreaterThanOrEqual(35);
+    expect(totalGuards, "taranan korkuluk alanı sayısı").toBeGreaterThanOrEqual(40);
   });
 
   describe.each(REGISTRY)("$label ($schema)", (entry) => {
@@ -278,6 +286,38 @@ function sourceFiles(): string[] {
 }
 
 const SOURCES = sourceFiles().map((file) => readFileSync(file, "utf8"));
+
+describe("🔴 sorgu parametresi korkulukları ↔ sözleşme", () => {
+  // A1 sınıfı: arama kutusu HER TUŞ VURUŞUNDA istek atar, bu yüzden tavanı
+  // aşan bir sorgu tek seferlik değil SÜREKLİ 422 üretir.
+  it("belge arama kutusu `GET /documents` q tavanına uyar", () => {
+    const contract = queryParamSchema("/documents", "get", "q")?.maxLength;
+    expect(contract, "`GET /documents` q sözleşmede maxLength taşımıyor").toBeDefined();
+    expect(
+      readNumericConst(
+        "src/components/documents/ArchiveDocumentsView.tsx",
+        "DOCUMENT_SEARCH_MAX_LENGTH",
+      ),
+    ).toBe(contract);
+  });
+});
+
+describe("🔴 tek kutuda birleşen iki sözleşme alanı", () => {
+  it("TCKN/VKN kutusu — national_id ve tax_number tavanları EŞİT olmalı", () => {
+    // Tek kutu iki alana gidiyorsa korkuluk ikisini de sağlamalıdır. Tavanlar
+    // ayrışırsa bu test kırmızı verir ve kutunun bölünmesi gerektiğini söyler.
+    const nationalId = fieldSchema("CustomerCreate", "national_id")?.maxLength;
+    const taxNumber = fieldSchema("CustomerCreate", "tax_number")?.maxLength;
+    expect(nationalId).toBeDefined();
+    expect(nationalId, "iki alanın tavanı ayrıştı — tek kutu artık YETMEZ").toBe(taxNumber);
+    expect(
+      readNumericConst(
+        "src/components/sales-form/constants.ts",
+        "CUSTOMER_IDENTITY_MAX_LENGTH",
+      ),
+    ).toBe(nationalId);
+  });
+});
 
 describe("🔴 tekil korkuluk sabitleri ↔ sözleşme", () => {
   it("bekçi GERÇEKTEN ölçüyor (boş küme sessizce yeşil geçemez)", () => {

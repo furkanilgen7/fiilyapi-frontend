@@ -105,12 +105,27 @@ export function readNumericMap(file: string, constName: string): Map<string, num
   return values;
 }
 
-/** Kaynak dosyadaki tekil `const NAME = 123;` sabitini okur. */
+/**
+ * Kaynak dosyadaki tekil `const NAME = 123;` sabitini okur.
+ *
+ * `const NAME = OTHER.key;` biçimindeki TÜRETİLMİŞ sabitler de çözülür —
+ * korkuluğu bir haritadan türetmek onu ölçülemez yapmamalıdır.
+ */
 export function readNumericConst(file: string, constName: string): number {
   const source = readFileSync(path.join(ROOT, file), "utf8");
-  const match = source.match(new RegExp(`(?:export )?const ${constName}\\s*(?::[^=]+)?=\\s*(\\d+)`));
-  if (match === null) throw new Error(`${file} içinde \`const ${constName} = <sayı>\` bulunamadı`);
-  return Number(match[1]);
+  const literal = source.match(
+    new RegExp(`(?:export )?const ${constName}\\s*(?::[^=]+)?=\\s*(\\d+)\\s*;`),
+  );
+  if (literal !== null) return Number(literal[1]);
+
+  const derived = source.match(
+    new RegExp(`(?:export )?const ${constName}\\s*(?::[^=]+)?=\\s*(\\w+)\\.(\\w+)\\s*;`),
+  );
+  if (derived !== null) {
+    const value = readNumericMap(file, derived[1]).get(derived[2]);
+    if (value !== undefined) return value;
+  }
+  throw new Error(`${file} içinde \`const ${constName}\` sayısal olarak çözülemedi`);
 }
 
 /** camelCase → snake_case (istemci anahtarı → sözleşme alanı). */

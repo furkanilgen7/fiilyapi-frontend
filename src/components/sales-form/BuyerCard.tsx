@@ -2,7 +2,11 @@ import { Field, Input, Select, Textarea } from "@/components/ui";
 import type { CustomerResponse } from "@/lib/api/hooks/useCustomers";
 import { userOptionLabel, type UserOption } from "@/lib/api/hooks/useUserOptions";
 
-import { CUSTOMER_TYPE_OPTIONS } from "./constants";
+import {
+  CUSTOMER_IDENTITY_MAX_LENGTH,
+  CUSTOMER_MAX_LENGTH,
+  CUSTOMER_TYPE_OPTIONS,
+} from "./constants";
 import type { SaleFormValues } from "./form-state";
 import type { SaleFormErrors } from "./validate";
 
@@ -111,6 +115,7 @@ export function BuyerCard({
             <Input
               {...control}
               data-testid="satis-form-alici-ad"
+              maxLength={CUSTOMER_MAX_LENGTH.name}
               placeholder="Serkan Öz"
               readOnly={readOnlyInline}
               value={values.buyerName}
@@ -126,6 +131,7 @@ export function BuyerCard({
               {...control}
               className="sf-amount-input"
               data-testid="satis-form-alici-kimlik"
+              maxLength={CUSTOMER_IDENTITY_MAX_LENGTH}
               placeholder="12345678901"
               readOnly={readOnlyInline}
               value={values.buyerNationalOrTaxId}
@@ -141,6 +147,7 @@ export function BuyerCard({
               {...control}
               type="tel"
               data-testid="satis-form-alici-telefon"
+              maxLength={CUSTOMER_MAX_LENGTH.phone}
               placeholder="0532 123 45 67"
               readOnly={readOnlyInline}
               value={values.buyerPhone}
@@ -156,6 +163,7 @@ export function BuyerCard({
               {...control}
               type="email"
               data-testid="satis-form-alici-eposta"
+              maxLength={CUSTOMER_MAX_LENGTH.email}
               placeholder="serkan@example.com"
               readOnly={readOnlyInline}
               value={values.buyerEmail}
