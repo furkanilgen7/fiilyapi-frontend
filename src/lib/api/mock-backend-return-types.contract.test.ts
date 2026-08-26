@@ -90,16 +90,6 @@ const SOZLESMEDEN_SAPAN: Readonly<Record<string, string>> = {
   buildSitePlanWeek:
     "plan hücresi `tag` ikizde `string | null`, sözleşmede 6 üyeli enum; yazma " +
     "ucu `typeof raw.tag === 'string' ? raw.tag : null` her metni kabul ediyor.",
-  buildPayrollLineResponse:
-    "🔴 `PayrollLineResponse`in ÜÇ ZORUNLU gelir vergisi alanı YOK: " +
-    "`tax_base_amount`, `cumulative_tax_base`, `income_tax_amount`. Bordro " +
-    "ekranının GV sütunlarını ölçen her test bugün HİÇBİR ŞEY ölçmüyor.",
-  buildPayrollSections: "yukarıdaki üç GV alanının BULAŞMASI (satırları sarar).",
-  buildPayrollPeriodDetail:
-    "aynı bulaşma — bordronun BİRİNCİL ucu (`GET /payroll/periods/{id}`) " +
-    "bu yüzden sözleşmeye HİÇ bağlanamıyor.",
-  buildPayrollSgkSummary:
-    "`PayrollSgkSummaryResponse`in zorunlu `unknown_tax_count` alanı YOK.",
 };
 
 describe("🔴 test ikizi (`e2e/mock-backend.ts`) dönüş tipleri ↔ sözleşme", () => {
@@ -113,7 +103,7 @@ describe("🔴 test ikizi (`e2e/mock-backend.ts`) dönüş tipleri ↔ sözleşm
     const bound = FUNCTIONS.filter(
       (fn) => fn.returnType !== null && fn.returnType.includes('components["schemas"]'),
     );
-    expect(bound.length, "sözleşme tipine BAĞLI dönüş tipi sayısı").toBeGreaterThanOrEqual(44);
+    expect(bound.length, "sözleşme tipine BAĞLI dönüş tipi sayısı").toBeGreaterThanOrEqual(54);
     expect(Object.keys(SOZLESMEDEN_SAPAN).length).toBeGreaterThan(0);
   });
 

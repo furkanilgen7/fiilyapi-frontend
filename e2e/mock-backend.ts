@@ -15752,6 +15752,15 @@ interface PayrollLineAmounts {
   gross: number;
   sgkEmployee: number;
   unemploymentEmployee: number;
+  /**
+   * Gelir vergisi MATRAHI = brüt − SGK işçi primi − işsizlik işçi primi.
+   *
+   * 🔴 Sözleşme `tax_base_amount`i `gross_amount`tan AYRI bir alan olarak
+   * taşır; ikisi aynı olsaydı ikinci alanın var olması için hiçbir sebep
+   * kalmazdı. SGK matrahı (`sgk_base_total`) brüttür, gelir vergisi matrahı
+   * DEĞİLDİR — bu ayrım şemanın kendisinden okunur.
+   */
+  taxBase: number;
   incomeTax: number;
   stampTax: number;
   deduction: number;
@@ -15801,6 +15810,7 @@ function payrollLineAmounts(
     gross,
     sgkEmployee,
     unemploymentEmployee,
+    taxBase: gross - sgkEmployee - unemploymentEmployee,
     incomeTax,
     stampTax,
     deduction,
@@ -15845,13 +15855,64 @@ function payrollSplit(
   return { bank, cash: amounts.net - bank };
 }
 
+/**
+ * KÜMÜLATİF gelir vergisi matrahı — aynı YIL içinde bu AYA KADAR (bu ay
+ * DAHİL) aynı personelin matrahlarının toplamı.
+ *
+ * 🔴 SATIRLAR ARASI TUTARLI OLMAK ZORUNDADIR. Alan "bu ayın matrahı" değil
+ * bir BİRİKİMDİR: Temmuz satırının kümülatifi, Mart-Temmuz satırlarının
+ * `tax_base_amount` toplamına EŞİT olmalıdır. Sabit ya da rastgele bir sayı
+ * yazılsaydı ekran matematiksel olarak imkânsız bir tablo basardı ve
+ * `missing_prior_period_count` (K4) bandının anlattığı şey — "önceki aylar
+ * açılmadıysa kümülatif EKSİKTİR" — ikizde HİÇ doğrulanamazdı.
+ *
+ * 🔴 Açılmamış ay TOPLAMA GİRMEZ, sıfır sayılmaz: K4 bandının varlık sebebi
+ * tam olarak budur. Eksik ay eksik kalır, kullanıcı bandı görür.
+ *
+ * `null` dönüşü, satırın kendi tutarları hesaplanamadığındadır (S4).
+ */
+function payrollCumulativeTaxBase(
+  state: MockPayrollState,
+  period: MockPayrollPeriod,
+  line: MockPayrollLine,
+): number | null {
+  if (payrollLineAmounts(state, period, line) === null) return null;
+  let total = 0;
+  for (const prior of state.periods) {
+    if (prior.year !== period.year) continue;
+    if (prior.month > period.month) continue;
+    const priorLine = prior.lines.find((row) => row.personnel_id === line.personnel_id);
+    if (priorLine === undefined) continue;
+    const priorAmounts = payrollLineAmounts(state, prior, priorLine);
+    if (priorAmounts === null) continue;
+    total += priorAmounts.taxBase;
+  }
+  return total;
+}
+
+/**
+ * 🔴 ÖLÇÜLEMEYEN KALAN (TB-IKIZ kaydı). Bu ikizde gelir vergisi HÂLÂ
+ * `income_tax_pct` × BRÜT olarak hesaplanır (`payrollLineAmounts`), oysa
+ * matrah brütten DÜŞÜKTÜR. Yani `income_tax_amount ÷ tax_base_amount`
+ * oranı `income_tax_pct`e EŞİT DEĞİLDİR.
+ *
+ * Neden BURADA kapatılmadı: hangi tabana vergilendiğini söyleyen tek kaynak
+ * backend deposudur ve bu dilimin kapsamı DIŞINDADIR. Tabanı değiştirmek
+ * `deduction_amount`/`net_amount`/`bank_amount`/`cash_amount`ı ve dolayısıyla
+ * bordronun ÜÇ görsel karesini birden oynatır — ölçülmemiş bir çıkarımla
+ * ekranın manşet sayılarını oynatmak, ölçülmüş bir eksiği kapatmaktan daha
+ * büyük bir kusurdur. `income_tax_amount` bu yüzden UYDURULMAZ: satırın
+ * `deduction_amount`ı içindeki gelir vergisi bileşeninin TA KENDİSİDİR ve
+ * bu ikizde DOĞRULANABİLİR bir değerdir.
+ */
 function buildPayrollLineResponse(
   state: MockPayrollState,
   period: MockPayrollPeriod,
   line: MockPayrollLine,
-) {
+): components["schemas"]["PayrollLineResponse"] {
   const amounts = payrollLineAmounts(state, period, line);
   const split = payrollSplit(line, amounts);
+  const cumulativeTaxBase = payrollCumulativeTaxBase(state, period, line);
   return {
     id: line.id,
     personnel_id: line.personnel_id,
@@ -15863,6 +15924,10 @@ function buildPayrollLineResponse(
     net_amount: amounts === null ? null : payrollKurus(amounts.net),
     bank_amount: split === null ? null : payrollKurus(split.bank),
     cash_amount: split === null ? null : payrollKurus(split.cash),
+    tax_base_amount: amounts === null ? null : payrollKurus(amounts.taxBase),
+    cumulative_tax_base:
+      cumulativeTaxBase === null ? null : payrollKurus(cumulativeTaxBase),
+    income_tax_amount: amounts === null ? null : payrollKurus(amounts.incomeTax),
     status: payrollLineStatus(line, amounts),
     excluded_reason: line.personnel_source === "subcontractor" ? PAYROLL_EXCLUDED_REASON : null,
     is_overridden: line.isOverridden,
@@ -15883,7 +15948,10 @@ const PAYROLL_SOURCE_ORDER: readonly MockPayrollWorkerSource[] = [
   "intern",
 ];
 
-function buildPayrollSections(state: MockPayrollState, period: MockPayrollPeriod) {
+function buildPayrollSections(
+  state: MockPayrollState,
+  period: MockPayrollPeriod,
+): components["schemas"]["PayrollSectionResponse"][] {
   return PAYROLL_SOURCE_ORDER.flatMap((source) => {
     const lines = period.lines.filter((line) => line.personnel_source === source);
     if (lines.length === 0) return [];
@@ -15976,7 +16044,10 @@ function buildPayrollSummary(state: MockPayrollState, period: MockPayrollPeriod)
   };
 }
 
-function buildPayrollPeriodDetail(state: MockPayrollState, period: MockPayrollPeriod) {
+function buildPayrollPeriodDetail(
+  state: MockPayrollState,
+  period: MockPayrollPeriod,
+): components["schemas"]["PayrollPeriodDetailResponse"] {
   return {
     id: period.id,
     year: period.year,
@@ -16016,13 +16087,29 @@ function buildPayrollPeriodListRow(state: MockPayrollState, period: MockPayrollP
 /* ---------------------------------------------------------------- SGK özeti */
 
 /**
+ * O yılın ÜCRET tarifesi tohumlanmış mı? `income_tax_pct` boş bırakıldığında
+ * (dilimli rejim) verginin tek kaynağı budur; yoksa satır fail-closed
+ * hesaplanamaz sayılır — sıfır vergi UYDURULMAZ.
+ *
+ * `non_wage` BAKILMAZ: bordro her zaman `wage` tarifesini kullanır.
+ */
+function payrollHasWageBrackets(state: MockPayrollState, year: number): boolean {
+  return state.taxBrackets.some(
+    (bracket) => bracket.year === year && bracket.income_kind === "wage" && bracket.is_active,
+  );
+}
+
+/**
  * SGK 55-95. Bildirilen çalışan = SGK'ya BİZİM bildirdiğimiz satırlar; taşeron
  * işçisini kendi işvereni bildirir, bu yüzden matraha girmez.
  *
  * 🔴 `unknown_rate_count` TİP sayar (şema: "oran seti olmayan tipleri"), satır
  * değil: eksik olan şey bir satırın verisi değil, bir tipin oran setidir.
  */
-function buildPayrollSgkSummary(state: MockPayrollState, period: MockPayrollPeriod) {
+function buildPayrollSgkSummary(
+  state: MockPayrollState,
+  period: MockPayrollPeriod,
+): components["schemas"]["PayrollSgkSummaryResponse"] {
   let base = 0;
   let sgkEmployee = 0;
   let unemploymentEmployee = 0;
@@ -16034,10 +16121,17 @@ function buildPayrollSgkSummary(state: MockPayrollState, period: MockPayrollPeri
   let declared = 0;
   let uncomputed = 0;
   const missingRateSources = new Set<MockPayrollWorkerSource>();
+  const missingTaxSources = new Set<MockPayrollWorkerSource>();
 
   for (const line of period.lines) {
-    if (payrollRateFor(state, period.year, line.personnel_source) === undefined) {
+    const lineRate = payrollRateFor(state, period.year, line.personnel_source);
+    if (lineRate === undefined) {
       missingRateSources.add(line.personnel_source);
+    } else if (
+      lineRate.income_tax_pct === null &&
+      !payrollHasWageBrackets(state, period.year)
+    ) {
+      missingTaxSources.add(line.personnel_source);
     }
     const amounts = payrollLineAmounts(state, period, line);
     if (amounts === null) {
@@ -16088,6 +16182,13 @@ function buildPayrollSgkSummary(state: MockPayrollState, period: MockPayrollPeri
     sgk_payable_total: payrollKurus(sgkPremium + unemployment),
     uncomputed_count: uncomputed,
     unknown_rate_count: missingRateSources.size,
+    // 🔴 `unknown_rate_count`in GELİR VERGİSİ AYNASI ve ondan AYRI bir
+    // sayaçtır: oran seti VAR ama gelir vergisi belirlenemiyor olabilir.
+    // `income_tax_pct` boşsa rejim DİLİMLİDİR (IK3-GV) ve o yılın ücret
+    // tarifesi tohumlanmamışsa vergi HESAPLANAMAZ. İki eksiği tek sayaca
+    // indirgemek, kullanıcıya "oranları gir" derken asıl eksik olanın
+    // TARİFE olduğunu gizlerdi. `unknown_rate_count` gibi TİP sayar.
+    unknown_tax_count: missingTaxSources.size,
   };
 }
 
