@@ -89,6 +89,191 @@ function loadBodyBounds(schemaName: string): Map<string, MockQuerySchema> {
 
 const PAYROLL_PERIOD_CREATE_BOUNDS = loadBodyBounds("PayrollPeriodCreate");
 
+/* ══════════════ F-CEK · GÖVDENİN TAM ŞEMA KAPISI ═══════════════════════════
+ * 🔴 `loadBodyBounds` YALNIZ SAYISAL sınırları (`minimum`/`maximum`) okur.
+ * `POST /financial-instruments` gövdesinin kısıtlarının **hiçbiri sayısal
+ * sınır değildir**: `maxLength` (50/200/200/100), `minLength: 1`, `enum`
+ * üyeliği, `exclusiveMinimum` ve `additionalProperties: false`. Yani o kapı bu
+ * dilim için TAMAMEN KÖRDÜR — sahte backend `serial_no`ya 500 karakter kabul
+ * ederken canlı **422** verirdi ve formun korkuluğunu kaldıran mutasyon
+ * HİÇBİR e2e'yi kırmazdı. *Sahte backend, gerçek backend'in REDDEDECEĞİNİ
+ * kabul ettiğinde bir ONAYLAYICIDIR, bekçi değil.*
+ *
+ * Bu kapı şemayı `openapi.json`dan OKUR (elle sınır yazılmaz) ve FastAPI'nin
+ * 422 gövdesini `type`/`loc`/`msg` düzeyinde taklit eder.
+ * ========================================================================= */
+
+interface MockBodyField {
+  required: boolean;
+  maxLength?: number;
+  minLength?: number;
+  exclusiveMinimum?: number;
+  enum?: string[];
+}
+
+interface MockBodySchema {
+  fields: Map<string, MockBodyField>;
+  /** `additionalProperties: false` ⇒ tanınmayan alan `extra_forbidden`. */
+  forbidExtra: boolean;
+}
+
+interface RawSchema {
+  type?: string;
+  enum?: string[];
+  maxLength?: number;
+  minLength?: number;
+  exclusiveMinimum?: number;
+  anyOf?: RawSchema[];
+  $ref?: string;
+}
+
+function loadBodySchema(schemaName: string): MockBodySchema {
+  const file = nodePath.join(process.cwd(), "openapi", "openapi.json");
+  const spec = JSON.parse(readFileSync(file, "utf8")) as {
+    components: {
+      schemas: Record<
+        string,
+        {
+          properties?: Record<string, RawSchema>;
+          required?: string[];
+          additionalProperties?: boolean;
+        }
+      >;
+    };
+  };
+  const schema = spec.components.schemas[schemaName]!;
+  const required = new Set(schema.required ?? []);
+
+  /** `$ref` ve `anyOf: [{…}, {null}]` sarmalını açar. */
+  function resolve(raw: RawSchema): RawSchema {
+    if (raw.$ref !== undefined) {
+      const name = raw.$ref.replace("#/components/schemas/", "");
+      return resolve(spec.components.schemas[name] as RawSchema);
+    }
+    if (raw.anyOf !== undefined) {
+      // `null` DIŞINDAKİ ilk dal kısıtı taşır; `null` dalı "opsiyonel"
+      // demektir ve zorunluluk `required` listesinden okunur.
+      const branch = raw.anyOf.find((item) => item.type !== "null");
+      if (branch !== undefined) return resolve(branch);
+    }
+    return raw;
+  }
+
+  const fields = new Map<string, MockBodyField>();
+  for (const [name, raw] of Object.entries(schema.properties ?? {})) {
+    const resolved = resolve(raw);
+    fields.set(name, {
+      required: required.has(name),
+      ...(resolved.maxLength === undefined ? {} : { maxLength: resolved.maxLength }),
+      ...(resolved.minLength === undefined ? {} : { minLength: resolved.minLength }),
+      ...(resolved.exclusiveMinimum === undefined
+        ? {}
+        : { exclusiveMinimum: resolved.exclusiveMinimum }),
+      ...(resolved.enum === undefined ? {} : { enum: resolved.enum }),
+    });
+  }
+  return { fields, forbidExtra: schema.additionalProperties === false };
+}
+
+/** FastAPI'nin `'a' or 'b'` biçimindeki enum mesajı. */
+function enumMessage(values: string[]): string {
+  const quoted = values.map((value) => `'${value}'`);
+  if (quoted.length === 1) return `Input should be ${quoted[0]}`;
+  return `Input should be ${quoted.slice(0, -1).join(", ")} or ${quoted[quoted.length - 1]}`;
+}
+
+function detail(type: string, name: string, msg: string, input: unknown): unknown {
+  return { detail: [{ type, loc: ["body", name], msg, input }] };
+}
+
+/**
+ * `null` = ihlal yok. Denetim SIRASI FastAPI'ninkiyle aynı sınıfları üretir;
+ * tek bir gövdede birden çok ihlal varsa İLKİ döner (mesaj metni testlerde
+ * birebir aranır).
+ */
+function bodySchemaViolation(
+  schema: MockBodySchema,
+  body: Record<string, unknown>,
+): unknown | null {
+  if (schema.forbidExtra) {
+    for (const name of Object.keys(body)) {
+      if (!schema.fields.has(name)) {
+        return detail("extra_forbidden", name, "Extra inputs are not permitted", body[name]);
+      }
+    }
+  }
+  for (const [name, field] of schema.fields) {
+    const value = body[name];
+    if (value === undefined || value === null) {
+      if (field.required) return detail("missing", name, "Field required", null);
+      continue;
+    }
+    if (field.enum !== undefined && !field.enum.includes(String(value))) {
+      return detail("enum", name, enumMessage(field.enum), value);
+    }
+    if (typeof value === "string") {
+      if (field.maxLength !== undefined && value.length > field.maxLength) {
+        return detail(
+          "string_too_long",
+          name,
+          `String should have at most ${field.maxLength} characters`,
+          value,
+        );
+      }
+      if (field.minLength !== undefined && value.length < field.minLength) {
+        return detail(
+          "string_too_short",
+          name,
+          `String should have at least ${field.minLength} characters`,
+          value,
+        );
+      }
+    }
+    if (field.exclusiveMinimum !== undefined) {
+      const numeric = Number(value);
+      if (Number.isFinite(numeric) && numeric <= field.exclusiveMinimum) {
+        return detail(
+          "greater_than",
+          name,
+          `Input should be greater than ${field.exclusiveMinimum}`,
+          value,
+        );
+      }
+    }
+  }
+  return null;
+}
+
+const FINANCIAL_INSTRUMENT_CREATE_SCHEMA = loadBodySchema("FinancialInstrumentCreate");
+
+/**
+ * 🔴 `amount` iki dallıdır (`anyOf`): sayısal dal `exclusiveMinimum: 0`,
+ * string dalının deseni en fazla İKİ ondalık basamak kabul eder. `loadBodySchema`
+ * `anyOf`un İLK dalını çözer, bu yüzden ÖLÇEK kuralı ayrıca uygulanır —
+ * şema açıklaması bunu açıkça yazar: *"`amount` `0.005` gibi bir değer →
+ * 422 (sessizce yuvarlanmaz)"*.
+ */
+function instrumentAmountViolation(raw: unknown): unknown | null {
+  const text = String(raw ?? "").trim();
+  const numeric = Number(text);
+  if (text === "" || !Number.isFinite(numeric)) {
+    return detail("decimal_parsing", "amount", "Input should be a valid decimal", raw);
+  }
+  if (numeric <= 0) {
+    return detail("greater_than", "amount", "Input should be greater than 0", raw);
+  }
+  const fraction = text.split(".")[1] ?? "";
+  if (fraction.length > 2) {
+    return detail(
+      "decimal_max_places",
+      "amount",
+      "Decimal input should have no more than 2 decimal places",
+      raw,
+    );
+  }
+  return null;
+}
+
 /**
  * FastAPI'nin gövde 422'sini BİREBİR taklit eder (`loc` "body" ile başlar).
  * `null` = ihlal yok.
@@ -11723,6 +11908,92 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     // yoktur; yine de literal önce yazıldı ki okuyan aynı sırayı görsün.
     if (method === "GET" && path === "/financial-instruments/summary") {
       return send(200, FINANCIAL_INSTRUMENT_SUMMARY_FIXTURE);
+    }
+
+    // --- F-CEK · E10:65 `+ Çek Ekle` YAZMA ucu ----------------------------
+    //
+    // 🔴🔴 **BU KAPI DİLİMİN ÇEKİRDEĞİDİR.** Gövdenin kısıtlarının HİÇBİRİ
+    // sayısal sınır değildir (`maxLength` · `minLength` · `enum` ·
+    // `exclusiveMinimum` · `additionalProperties:false`) — yani F-BORDONEM'in
+    // `bodyBoundViolation` kapısı burada TAMAMEN KÖRDÜR. Sınırlar
+    // `openapi.json`dan okunur (`FINANCIAL_INSTRUMENT_CREATE_SCHEMA`), elle
+    // yazılmaz.
+    //
+    // 🔒 **YARATILAN KAYIT LİSTEYE EKLENMEZ — BİLİNÇLİ.** `playwright.config`
+    // `fullyParallel: true`dur ve TEK bir mock sunucu paylaşılır; listeye
+    // eklenen bir satır ÜÇ sekmenin `toHaveCount` iddiasını ve İKİ görsel
+    // kareyi KOŞU SIRASINA BAĞLI olarak oynatırdı (F-UNIT2 "fazla fikstür"
+    // kanonu; F-BORDONEM aynı sebeple sınır-değeri 201'ini e2e'de ölçmedi).
+    // Yanıt yine de GERÇEK bir kayıttır (`status: "portfolio"`, `is_due`
+    // sunucu türevi) — ekranın başarı yolu bundan beslenir; listenin
+    // tazelenmesi `useCreateFinancialInstrument.onSuccess`te birim testiyle
+    // ölçülür.
+    if (method === "POST" && path === "/financial-instruments") {
+      return withBody((body) => {
+        const schemaViolation = bodySchemaViolation(FINANCIAL_INSTRUMENT_CREATE_SCHEMA, body);
+        if (schemaViolation !== null) return send(422, schemaViolation);
+
+        const amountViolation = instrumentAmountViolation(body.amount);
+        if (amountViolation !== null) return send(422, amountViolation);
+
+        // 🔴 ALANLAR ARASI kural — şemada İFADE EDİLEMEZ ama sunucu uygular
+        // (uç açıklaması: *"`due_date < issue_date` → 422"*). İstemci
+        // korkuluğu bu yüzden bir "kolaylık" DEĞİL, sunucu kuralının
+        // aynasıdır; burada modellenmezse korkuluğu kaldıran mutasyon
+        // hiçbir e2e'yi kırmazdı.
+        const issueDate = String(body.issue_date);
+        const dueDate = String(body.due_date);
+        if (dueDate < issueDate) {
+          return send(422, {
+            detail: [
+              {
+                type: "value_error",
+                loc: ["body", "due_date"],
+                msg: "Value error, Vade keşide tarihinden önce olamaz.",
+                input: dueDate,
+              },
+            ],
+          });
+        }
+
+        // Görünmeyen proje / var olmayan banka hesabı → 404 (uç açıklaması).
+        if (
+          body.project_id !== undefined &&
+          body.project_id !== null &&
+          !state.projects.some((project) => project.id === body.project_id)
+        ) {
+          return send(404, { detail: "Proje bulunamadı." });
+        }
+        if (
+          body.bank_account_id !== undefined &&
+          body.bank_account_id !== null &&
+          !TREASURY_BANK_ACCOUNTS.some((account) => account.id === body.bank_account_id)
+        ) {
+          return send(404, { detail: "Banka hesabı bulunamadı." });
+        }
+
+        // 🔴 `status` gövdeden ALINMAZ (şema `forbid` — yukarıdaki kapı zaten
+        // 422 verir): yeni kayıt HER ZAMAN `portfolio` doğar.
+        return send(201, {
+          id: `fi-new-${String(body.serial_no)}`,
+          instrument_kind: body.instrument_kind,
+          direction: body.direction,
+          serial_no: body.serial_no,
+          drawer_name: body.drawer_name,
+          description: body.description ?? null,
+          bank_name: body.bank_name ?? null,
+          issue_date: issueDate,
+          due_date: dueDate,
+          amount: String(body.amount),
+          status: "portfolio",
+          project_id: body.project_id ?? null,
+          bank_account_id: body.bank_account_id ?? null,
+          created_at: null,
+          updated_at: null,
+          // TÜREV — sunucunun `as_of` gününe göre. Fikstürle AYNI donmuş gün.
+          is_due: dueDate <= FINANCIAL_INSTRUMENT_AS_OF,
+        });
+      });
     }
 
     if (method === "GET" && path === "/financial-instruments") {
