@@ -47,9 +47,15 @@ export function EquipmentRentalCard({
     <section className="makine-det__card" aria-label="Kiralama Bilgileri">
       <h2 className="makine-det__card-title">📋 Kiralama Bilgileri</h2>
 
+      {/* 🔴 MD:126 `Kiralayan Firma`. Etiket SAHİPLİKTEN türer: `supplier_id`
+          sunucuda TEK bir tedarikçi kaydıdır ve M2 formunun kendi ipucu bunu
+          söyler ("Satıcı ve kiralama firması TEK tedarikçi kaydıdır").
+          KENDİ MALIMIZ bir makinede o kayıt SATICIDIR; "Kiralayan Firma"
+          diye basmak kullanıcıya var olmayan bir kira ilişkisi anlatırdı. */}
       <DetailKv
-        label="Kiralayan Firma"
+        label={isRented ? "Kiralayan Firma" : "Satıcı Firma"}
         value={supplierName === undefined ? "Yükleniyor…" : supplierName}
+        testId="makine-det-supplier"
       />
       <DetailKv label="Sözleşme No" value={equipment.rental_contract_no} tones={["mono"]} />
       <DetailKv

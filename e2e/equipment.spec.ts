@@ -88,7 +88,10 @@ test("K12 — kart alt kutuları DURUMA göre şekil değiştirir; K3 boş türe
   await expect(idle).toContainText("Boşta");
 });
 
-test("K4 — kart üzerindeki 'Düzenle' düzenleme rotasına gider (detay sayfası YOK)", async ({
+// F-MKD: "(detay sayfası YOK)" ibaresi KALDIRILDI — `/makine/{id}` artık VAR
+// ve kartın ADINDAN açılır. Bayat bir gerekçe cümlesi, ARTIK ÇALIŞAN bir
+// ekranı yalanlar (F-PRJTAB kanonu).
+test("K4 — kart üzerindeki 'Düzenle' düzenleme rotasına gider (ad ise DETAYA)", async ({
   page,
 }) => {
   await login(page);
@@ -101,6 +104,11 @@ test("K4 — kart üzerindeki 'Düzenle' düzenleme rotasına gider (detay sayfa
 
   await expect(page).toHaveURL(/\/makine\/eq-1\/duzenle$/);
   await expect(page.getByRole("heading", { level: 1, name: "Makine / Ekipman Düzenle" })).toBeVisible();
+
+  // İKİ eylem AYRI rotalara iner: ad → detay, "Düzenle" → form.
+  await page.goto(EQUIPMENT_URL);
+  await page.locator('[data-equipment-id="eq-1"]').getByText("Tower Crane TC-48").click();
+  await expect(page).toHaveURL(/\/makine\/eq-1$/);
 });
 
 test("K1 — beş sekme; dört gerçek rota gezinir, TEK sekme devre-dışı + GÖRÜNÜR gerekçeli", async ({

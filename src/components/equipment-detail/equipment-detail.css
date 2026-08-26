@@ -479,6 +479,9 @@
   min-width: 0;
 }
 .makine-det__link-title {
+  /* `<span>`ler <a> icinde satir ici kalirsa baslik ile not BIRLESIR
+     ("Kira HakedisiLT-2026-..."): blok yapmak ZORUNLU. */
+  display: block;
   font-size: 13px;
   font-weight: var(--weight-semibold);
   color: var(--color-text);
@@ -487,6 +490,7 @@
   color: var(--color-text-subtle);
 }
 .makine-det__link-note {
+  display: block;
   font-size: 11px;
   color: var(--color-primary);
   margin-top: 1px;

@@ -11179,7 +11179,30 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           lt_per_hour_avg: null, avg_unit_price: null, abnormal_count: 0, rows: [],
         });
       }
-      return send(200, FUEL_SUMMARY_FIXTURE);
+      // 🔴 F-MKD — `equipment_id` süzgeci İKİZDE YOKTU ve eksikliği SESSİZDİ:
+      // ekipman detayının yakıt kutuları FİLONUN toplamını (2.840 Lt /
+      // ₺112.800) tek makinenin tüketimi gibi basıyordu ve dört kapı da yeşil
+      // kalıyordu. Gerçek sunucu süzgeci SQL'de uygular ve toplamları SÜZÜLMÜŞ
+      // satırlardan üretir (`service/fuel_summary.py:94-101`) — ikiz de öyle
+      // yapar, yoksa bekçi değil ONAYLAYICI olurdu.
+      const fuelEquipmentId = parsed.searchParams.get("equipment_id");
+      if (!fuelEquipmentId) return send(200, FUEL_SUMMARY_FIXTURE);
+      const fuelRows = FUEL_SUMMARY_FIXTURE.rows.filter(
+        (row) => row.equipment_id === fuelEquipmentId,
+      );
+      const fuelSum = (pick: (row: (typeof fuelRows)[number]) => string) =>
+        fuelRows.reduce((total, row) => total + Number(pick(row)), 0).toFixed(2);
+      return send(200, {
+        ...FUEL_SUMMARY_FIXTURE,
+        rows: fuelRows,
+        total_liters: fuelSum((row) => row.liters),
+        total_amount: fuelSum((row) => row.amount),
+        // Payda TEK makinenin saatidir; ikiz filo ortalamasını TAŞIMAZ.
+        lt_per_hour_avg: fuelRows[0]?.actual ?? null,
+        abnormal_count: fuelRows.filter(
+          (row) => row.consumption_status === "warning" || row.consumption_status === "critical",
+        ).length,
+      });
     }
 
     if (method === "GET" && path === "/equipment/work-logs") {
