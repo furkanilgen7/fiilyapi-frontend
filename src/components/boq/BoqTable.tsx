@@ -160,7 +160,11 @@ export function BoqTable({
                           RENKLI rozeti hâlâ basilmaz — esik renkleri P7'ye
                           bagli ve bu dilimin kapsami disinda; baglanan yalniz
                           SAYININ KENDISI. */}
-                      <BoqPctCell progress={item.progress_pct} data-testid="boq-pct" />
+                      <BoqPctCell
+                        progress={item.progress_pct}
+                        className="boq-table__pct"
+                        data-testid="boq-pct"
+                      />
                     </tr>
                   );
                 })}

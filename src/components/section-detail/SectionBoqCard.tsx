@@ -161,7 +161,11 @@ export function SectionBoqCard({ groups, totals, sectionName }: SectionBoqCardPr
                       </td>
                       {/* ⚠️ `BoqTable` ile BIREBIR ayni hucre; kusur da iki
                           kopyada birden yasiyordu. Tek kaynak: `BoqPctCell`. */}
-                      <BoqPctCell progress={item.progress_pct} data-testid="section-boq-pct" />
+                      <BoqPctCell
+                        progress={item.progress_pct}
+                        className="boq-table__pct"
+                        data-testid="section-boq-pct"
+                      />
                       {/* D124 `Durum`: mockup renkli bir nokta basıyor; veri YOK
                           → nötr `—`, sahte durum uydurulmaz. */}
                       <td
@@ -194,6 +198,7 @@ export function SectionBoqCard({ groups, totals, sectionName }: SectionBoqCardPr
             </td>
             <BoqPctCell
               progress={totals.grand_progress_pct}
+              className="boq-table__total-pct boq-table__col--pct"
               data-testid="section-boq-total-pct"
             />
             <td className="section-boq__col--status" />

@@ -112,3 +112,34 @@ describe.each(YUZEYLER)("$ad · poz satırı Gerç. %", ({ testId, render: rende
     expect(cell).not.toHaveTextContent("%99");
   });
 });
+
+/**
+ * 🔴 SINIF BEKÇİSİ — F-ILRUI'de GERÇEKTEN OLAN KUSURUN bekçisi.
+ *
+ * Dört hücre `BoqPctCell`e alınırken `SectionBoqCard`ın TOPLAM hücresi
+ * `className` geçirmeyi atladı ve bileşenin o günkü `= "boq-table__pct"`
+ * VARSAYILANINA sessizce düştü: toplam hücresi satır sınıfıyla basıldı, `—`
+ * glifi 1px kaydı. Kusuru YALNIZ görsel kapı gördü (`bolum-detay` karesi);
+ * mevcut birim testlerinin hiçbiri kırmızı vermedi çünkü hepsi METNİ ölçüyordu,
+ * SINIFI değil. Varsayılan kaldırıldı (artık `typecheck` kırılır) ve bu test
+ * sınıfı da ölçer — iki bağımsız bekçi.
+ */
+describe("BoqPctCell · hücre sınıfları (satır ≠ toplam)", () => {
+  it("BoqTable: satır hücresi satır sınıfını, TOPLAM hücresi toplam sınıflarını taşır", () => {
+    render(<BoqTable groups={groups(DOLU)} totals={totals()} />);
+    expect(screen.getByTestId("boq-pct")).toHaveClass("boq-table__pct");
+    const total = screen.getByTestId("boq-total-pct");
+    expect(total).toHaveClass("boq-table__total-pct");
+    expect(total).toHaveClass("boq-table__col--pct");
+    expect(total).not.toHaveClass("boq-table__pct");
+  });
+
+  it("SectionBoqCard: AYNI ayrımı taşır (kusur tam olarak burada oluştu)", () => {
+    render(<SectionBoqCard groups={groups(DOLU)} totals={totals()} sectionName="A1" />);
+    expect(screen.getByTestId("section-boq-pct")).toHaveClass("boq-table__pct");
+    const total = screen.getByTestId("section-boq-total-pct");
+    expect(total).toHaveClass("boq-table__total-pct");
+    expect(total).toHaveClass("boq-table__col--pct");
+    expect(total).not.toHaveClass("boq-table__pct");
+  });
+});

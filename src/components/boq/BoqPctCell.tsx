@@ -7,8 +7,18 @@ import "./boq.css";
 export interface BoqPctCellProps {
   /** `BoqItemResponse.progress_pct` ya da `BoqTotals.grand_progress_pct`. */
   progress: MetricEnvelope;
-  /** Hücrenin taban sınıfı — satır `boq-table__pct`, toplam `…__total-pct`. */
-  className?: string;
+  /**
+   * Hücrenin taban sınıfı — satır `boq-table__pct`, toplam
+   * `boq-table__total-pct boq-table__col--pct`.
+   *
+   * 🔴 ZORUNLU, varsayılanı YOK ve bu ÖLÇÜLMÜŞ bir karardır. İlk hâlinde
+   * `= "boq-table__pct"` varsayılanı vardı; `SectionBoqCard`ın TOPLAM hücresi
+   * sınıfı geçirmeyi atlayınca satır sınıfına SESSİZCE düştü ve `—` glifi 1px
+   * kaydı. Kusuru yalnız görsel kapı gördü (`bolum-detay` karesi), tek bir
+   * birim testi bile kırmızı vermedi. Varsayılan olmayınca aynı atlama artık
+   * `typecheck`i kırar.
+   */
+  className: string;
   "data-testid": string;
 }
 
@@ -34,11 +44,7 @@ export interface BoqPctCellProps {
  * renkleri (mockup'ın dört renkli rozeti) hâlâ P7'ye bağlıdır ve BU dilimin
  * kapsamı dışındadır — bağlanan yalnızca SAYININ KENDİSİDİR.
  */
-export function BoqPctCell({
-  progress,
-  className = "boq-table__pct",
-  "data-testid": testId,
-}: BoqPctCellProps) {
+export function BoqPctCell({ progress, className, "data-testid": testId }: BoqPctCellProps) {
   const { text, hint } = metricCell(progress, formatPercent);
   return (
     <td
