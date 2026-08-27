@@ -391,6 +391,13 @@
 .prj-card--completed .prj-progress__pct {
   color: var(--color-success);
 }
+/* Bos zarf: tip renkleri (.prj-card--* .prj-progress__pct, ozgulluk 0,2,0) bu
+   kurali ezmesin diye kart secicisiyle esitlenip SONRA yaziliyor — esit
+   ozgullukte demet sirasi kazanir. */
+.prj-card .prj-progress__pct--pending {
+  color: var(--color-text-subtle);
+  font-weight: 400;
+}
 .prj-progress__bar {
   height: 6px;
   background: var(--color-neutral-soft);
