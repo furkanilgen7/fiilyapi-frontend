@@ -2,10 +2,9 @@ import { Fragment } from "react";
 
 import { Button } from "@/components/ui/button/Button";
 import { formatAmount, formatQuantity } from "@/lib/format";
-import { pendingModuleLabel } from "@/lib/pending-modules";
 import type { BoqGroup, BoqItem, BoqTotals } from "@/lib/api/hooks/useBoq";
 
-import { BoqTotalPctCell } from "./BoqTotalPctCell";
+import { BoqPctCell } from "./BoqPctCell";
 
 import "./boq.css";
 
@@ -107,7 +106,6 @@ export function BoqTable({
                 {/* `group_total` backend'de var ama mockup'ta grup alt-toplam
                     satiri YOK → basilmaz (spec §5.3). */}
                 {group.items.map((item) => {
-                  const hint = pendingModuleLabel(item.progress_pct.pending_module);
                   return (
                     <tr
                       key={item.id}
@@ -156,16 +154,13 @@ export function BoqTable({
                       <td className="boq-table__cell boq-table__cell--num boq-table__cell--amount boq-table__col--amount">
                         {formatAmount(item.amount)}
                       </td>
-                      {/* Gerç. % tamamen yer tutucu (spec §5.4): mockup'in dort
-                          renkli rozeti hic render edilmez, esik renkleri P7'ye
-                          birakildi — notr basilir. */}
-                      <td
-                        className="boq-table__pct boq-table__pct--pending"
-                        data-testid="boq-pct"
-                        title={hint}
-                      >
-                        —<span className="sr-only">{hint}</span>
-                      </td>
+                      {/* ⚠️ Eski not "Gerç. % TAMAMEN yer tutucu" diyordu ve
+                          BAYATLADI: satir yuzdesi ILR-1'de baglandi
+                          (`boq/service.py:126`, kaynak GUNLUK). Mockup'in dort
+                          RENKLI rozeti hâlâ basilmaz — esik renkleri P7'ye
+                          bagli ve bu dilimin kapsami disinda; baglanan yalniz
+                          SAYININ KENDISI. */}
+                      <BoqPctCell progress={item.progress_pct} data-testid="boq-pct" />
                     </tr>
                   );
                 })}
@@ -189,8 +184,12 @@ export function BoqTable({
             </td>
             {/* Mockup 177 `%75`. ⚠️ Eski not "veri hakedis modulunu bekliyor"
                 diyordu ve BAYATLADI — alan ILR-1'de baglandi; zarf dallanmasi
-                `BoqTotalPctCell`de, `SectionBoqCard` ile tek kaynaktan. */}
-            <BoqTotalPctCell progress={totals.grand_progress_pct} data-testid="boq-total-pct" />
+                `BoqPctCell`de, dort kopyayla tek kaynaktan. */}
+            <BoqPctCell
+              progress={totals.grand_progress_pct}
+              className="boq-table__total-pct boq-table__col--pct"
+              data-testid="boq-total-pct"
+            />
           </tr>
         </tfoot>
       </table>

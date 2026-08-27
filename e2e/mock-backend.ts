@@ -490,6 +490,14 @@ type MockCount = components["schemas"]["CountPlaceholder"];
 interface MockContracting {
   spent: MockMetric;
   physical_progress: MockMetric;
+  // ILR-2'de eklendi ve sozlesmede OPSIYONELDIR (`financial_progress?: ... | null`,
+  // `ContractingCard` `required` listesinde YOK). Ikiz bunu DOLU dondurur cunku
+  // gercek backend (`projects/cards.py:156`) onaylanmis isveren hakedisinden
+  // turetip gonderir; hicbir ekran bugun BASMAZ (mockup'ta karsiligi YOK —
+  // `projedesign/` genelinde "Mali/Finansal/Nakdi Ilerleme" dizelerinin ALTISI DA
+  // SIFIR eslesme verdi, 2026-08-27 olcumu). Ikiz yine de gercegi tasir: alan
+  // sessizce dusurulurse sozlesme sapmasi ikizde de gorunmez olurdu.
+  financial_progress?: MockMetric | null;
   final_progress_payment: MockMetric;
   worker_count: MockCount;
   subcontractor_count: MockCount;
@@ -1150,9 +1158,18 @@ const COUNT_VALUE = (count: number, m: string): MockCount => ({ available: true,
 // dali da tasir: deger veren proje (`spent`/`total_cost`/… gercek) ve hic
 // maliyeti olmayan proje (yer tutucu gorunumu KORUNUR) — ekran ikisini de
 // dogru basmak zorunda.
-const CONTRACTING_PLACEHOLDERS = (spent?: string): MockContracting => ({
+// 🔴 F-ILRUI: `physical_progress` ARTIK DOLABILIR (backend ILR-1, `ffb055e`).
+// Kaynagi santiye gunlugudur, hakedis DEGIL; bu yuzden `pending_module`
+// etiketi bos zarfta da "progress_payments" DEGIL — gercek engel gunluk
+// verisinin olmamasidir. Fikstur evreni K-IKIZ1 geregi IKI dali da tasir:
+// `p-1` DOLU (%75, mockup E4 185), `p-4` BOS — ekran ikisini de dogru basmali.
+const CONTRACTING_PLACEHOLDERS = (
+  spent?: string,
+  progress?: { physical: string; financial: string },
+): MockContracting => ({
   spent: spent === undefined ? METRIC_PENDING("project_costs") : METRIC_VALUE(spent),
-  physical_progress: METRIC_PENDING("progress_payments"),
+  physical_progress: progress ? METRIC_VALUE(progress.physical) : METRIC_PENDING("site_diary"),
+  financial_progress: progress ? METRIC_VALUE(progress.financial) : METRIC_PENDING("progress_payments"),
   final_progress_payment: METRIC_PENDING("progress_payments"),
   worker_count: COUNT_PENDING("timesheet"),
   subcontractor_count: COUNT_PENDING("subcontracts"),
@@ -1231,7 +1248,10 @@ const PROJECT_FIXTURES: MockProject[] = [
     id: "p-1", code: "PRJ-1", name: "Kule A", project_type: "taahhut", status: "active",
     category: "Konut", city: "Ankara", employer_name: "Güneşkent A.Ş.", contract_no: "SZL-2025-01",
     contract_amount: "11200000", start_date: "2025-03-01", end_date: "2026-12-01",
-    budget: "1000000", progress_pct: "20", contracting: CONTRACTING_PLACEHOLDERS("6480000"),
+    budget: "1000000", progress_pct: "20",
+    // `progress_pct: "20"` FOSIL sutundur ve BILEREK 75'ten FARKLI birakildi:
+    // ekran onu okursa gorsel kare "%20" basar ve kusur aninda goze carpar.
+    contracting: CONTRACTING_PLACEHOLDERS("6480000", { physical: "75.00", financial: "62.40" }),
     investment: null, land_share: null,
   },
   {
@@ -7579,7 +7599,13 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         totals: {
           total_progress_payment: METRIC_PENDING("progress_payments"),
           subcontractor_count: COUNT_PENDING("subcontracts"),
-          active_worker_count: COUNT_PENDING("timesheet"),
+          // 🔴 F-ILRUI: bu sayac backend'de BAGLI (T4,
+          // `sites/service/presenters.py:457` `_worker_count(...)` gercek sayi
+          // dondurur) — ikiz onu `COUNT_PENDING` dondurerek gercek sunucudan
+          // AYRISMISTI ve `SiteTotalsStrip`in kosulsuz "—" kusurunu ikizde
+          // gorunmez yapiyordu. Dolu `CountPlaceholder` `pending_module`u
+          // TASIMAYA DEVAM EDER (Metric'in tersi kural).
+          active_worker_count: COUNT_VALUE(48, "timesheet"),
           average_margin: METRIC_PENDING("project_costs"),
         },
       });

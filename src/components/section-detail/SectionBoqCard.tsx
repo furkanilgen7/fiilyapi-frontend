@@ -1,9 +1,8 @@
 import { Fragment } from "react";
 
 import { Button } from "@/components/ui/button/Button";
-import { BoqTotalPctCell } from "@/components/boq/BoqTotalPctCell";
+import { BoqPctCell } from "@/components/boq/BoqPctCell";
 import { formatAmount, formatQuantity } from "@/lib/format";
-import { pendingModuleLabel } from "@/lib/pending-modules";
 import type { BoqGroup, BoqTotals } from "@/lib/api/hooks/useBoq";
 
 // Tablo görsel dili şantiye BOQ ekranıyla AYNIDIR (aynı mockup ailesi) —
@@ -136,7 +135,6 @@ export function SectionBoqCard({ groups, totals, sectionName }: SectionBoqCardPr
                   </th>
                 </tr>
                 {group.items.map((item) => {
-                  const pctHint = pendingModuleLabel(item.progress_pct.pending_module);
                   return (
                     <tr key={item.id} className="boq-table__row" data-testid="section-boq-row">
                       <td className="boq-table__cell boq-table__cell--code boq-table__col--code">
@@ -161,13 +159,9 @@ export function SectionBoqCard({ groups, totals, sectionName }: SectionBoqCardPr
                       <td className="boq-table__cell boq-table__cell--num boq-table__cell--amount boq-table__col--amount">
                         {formatAmount(item.amount)}
                       </td>
-                      <td
-                        className="boq-table__pct boq-table__pct--pending"
-                        data-testid="section-boq-pct"
-                        title={pctHint}
-                      >
-                        —<span className="sr-only">{pctHint}</span>
-                      </td>
+                      {/* ⚠️ `BoqTable` ile BIREBIR ayni hucre; kusur da iki
+                          kopyada birden yasiyordu. Tek kaynak: `BoqPctCell`. */}
+                      <BoqPctCell progress={item.progress_pct} data-testid="section-boq-pct" />
                       {/* D124 `Durum`: mockup renkli bir nokta basıyor; veri YOK
                           → nötr `—`, sahte durum uydurulmaz. */}
                       <td
@@ -198,7 +192,7 @@ export function SectionBoqCard({ groups, totals, sectionName }: SectionBoqCardPr
             >
               {formatAmount(totals.grand_total)}
             </td>
-            <BoqTotalPctCell
+            <BoqPctCell
               progress={totals.grand_progress_pct}
               data-testid="section-boq-total-pct"
             />
