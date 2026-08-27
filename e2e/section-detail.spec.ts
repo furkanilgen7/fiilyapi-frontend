@@ -89,7 +89,17 @@ test("santiye detayindan bolum detayina link, hero + KPI + sekmeler + Hakedis Ol
   await page.getByRole("tab", { name: "İşçiler & Puantaj" }).click();
   await expect(page.getByTestId("section-timesheet")).toBeVisible();
   await expect(page.getByText("İşçiler & Puantaj — bu bölümde henüz görüntülenemiyor")).toHaveCount(0);
-  await expect(page.getByText(/bu bölüme henüz kırılmıyor/)).toHaveCount(0);
+  // 🔴 ŞEF DENETİMİ (F-BLMPUAN sonrası): regex PUANTAJA ÖZGÜ olmalıdır.
+  // "bu bölüme henüz kırılmıyor" DÖRT pending anahtarının ORTAK kalıbıdır ve
+  // alt sağdaki "Bölüm Malzeme Durumu" kartı onu HÂLÂ basar — stok bağı bu
+  // dilimde AÇILMADI, yani o metin DOĞRUDUR. Geniş regex ürünü değil KENDİNİ
+  // yanlışlıyordu (iki e2e kırmızısının tek sebebi buydu).
+  await expect(page.getByText(/[Pp]uantaj bu bölüme henüz kırılmıyor/)).toHaveCount(0);
+  // Pozitif kontrol — daraltma bir gerilemeyi GİZLEMİYOR: hâlâ pending olan
+  // stok kartı kendi dürüst gerekçesini basmaya devam ediyor.
+  await expect(
+    page.getByText(/Malzeme hareketleri bu bölüme henüz kırılmıyor/),
+  ).toHaveCount(1);
   // ŞP 117-119 karşılığı: bölüm adı + dönem, ve GÖRÜNEN kümenin türevleri.
   // sec-1'in 2026-08 kümesi: per-1 (3 gün + 1 izin), per-2 (3 gün),
   // per-3 (1 FM 3,00 sa + 1 geçici görev + 1 FM 2,50 sa) ⇒ 3 işçi.
@@ -237,7 +247,17 @@ test("puantaji olmayan bolumde 'bu ay kayit yok' der, 'modul yok' DEMEZ", async 
 
   const empty = page.getByTestId("section-workers-empty");
   await expect(empty).toHaveText("Ağustos 2026 döneminde bu bölümde puantaj kaydı yok.");
-  await expect(page.getByText(/bu bölüme henüz kırılmıyor/)).toHaveCount(0);
+  // 🔴 ŞEF DENETİMİ (F-BLMPUAN sonrası): regex PUANTAJA ÖZGÜ olmalıdır.
+  // "bu bölüme henüz kırılmıyor" DÖRT pending anahtarının ORTAK kalıbıdır ve
+  // alt sağdaki "Bölüm Malzeme Durumu" kartı onu HÂLÂ basar — stok bağı bu
+  // dilimde AÇILMADI, yani o metin DOĞRUDUR. Geniş regex ürünü değil KENDİNİ
+  // yanlışlıyordu (iki e2e kırmızısının tek sebebi buydu).
+  await expect(page.getByText(/[Pp]uantaj bu bölüme henüz kırılmıyor/)).toHaveCount(0);
+  // Pozitif kontrol — daraltma bir gerilemeyi GİZLEMİYOR: hâlâ pending olan
+  // stok kartı kendi dürüst gerekçesini basmaya devam ediyor.
+  await expect(
+    page.getByText(/Malzeme hareketleri bu bölüme henüz kırılmıyor/),
+  ).toHaveCount(1);
   await expect(page.getByText(/modülle birlikte gelir/)).toHaveCount(0);
   // Kart yine de "Puantaj →" yolunu KORUR — sekme onun yerine geçmez.
   await expect(page.getByRole("link", { name: "Puantaj →" })).toHaveAttribute(
