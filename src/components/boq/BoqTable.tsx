@@ -5,6 +5,8 @@ import { formatAmount, formatQuantity } from "@/lib/format";
 import { pendingModuleLabel } from "@/lib/pending-modules";
 import type { BoqGroup, BoqItem, BoqTotals } from "@/lib/api/hooks/useBoq";
 
+import { BoqTotalPctCell } from "./BoqTotalPctCell";
+
 import "./boq.css";
 
 export interface BoqTableProps {
@@ -37,7 +39,6 @@ export function BoqTable({
   // Duzenleme yalniz yazma yetkisi VE bir tetikleyici varken baglanir; aksi
   // halde "gorunup calismayan" odaklanabilir oge birakilmaz (spec §7.2).
   const isRowEditable = canWrite && Boolean(onEditItem);
-  const totalHint = pendingModuleLabel(totals.grand_progress_pct.pending_module);
   return (
     <div className="boq-table-card">
       <table className="boq-table">
@@ -186,15 +187,10 @@ export function BoqTable({
             >
               {formatAmount(totals.grand_total)}
             </td>
-            {/* Mockup 177 `%75` basiyor; veri hakedis modulunu bekliyor
-                (spec §5.5) — rozet degil duz metin, sahte yuzde uydurulmaz. */}
-            <td
-              className="boq-table__total-pct boq-table__pct--pending boq-table__col--pct"
-              data-testid="boq-total-pct"
-              title={totalHint}
-            >
-              —<span className="sr-only">{totalHint}</span>
-            </td>
+            {/* Mockup 177 `%75`. ⚠️ Eski not "veri hakedis modulunu bekliyor"
+                diyordu ve BAYATLADI — alan ILR-1'de baglandi; zarf dallanmasi
+                `BoqTotalPctCell`de, `SectionBoqCard` ile tek kaynaktan. */}
+            <BoqTotalPctCell progress={totals.grand_progress_pct} data-testid="boq-total-pct" />
           </tr>
         </tfoot>
       </table>
