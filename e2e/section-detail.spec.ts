@@ -14,9 +14,25 @@ async function login(page: import("@playwright/test").Page) {
   await expect(page.getByRole("heading", { name: "Gösterge Paneli" })).toBeVisible();
 }
 
+/**
+ * 🔴 F-BLMPUAN — SAATİ SABİTLEMEK ARTIK BİR DOĞRULUK KOŞULUDUR, süs değil.
+ *
+ * "İşçiler & Puantaj" sekmesi ve alt kart İÇİNDE BULUNULAN ayı gösterir
+ * (`currentPeriod()`, ekranda ay gezinmesi yok). Sabitlenmezse spec bir sonraki
+ * ay KENDİLİĞİNDEN kırmızıya döner.
+ *
+ * Ay seçimi de rastgele DEĞİL: `mock-backend.ts` fikstür izolasyonuna göre
+ * **2026-08 · s-1 hiçbir spec tarafından DEĞİŞTİRİLMEZ** (görsel kadraj ayı);
+ * **2026-09 · s-1 ise `PUT .../timesheet` oyun alanıdır** ve paralel koşan
+ * puantaj spec'leri onu mutasyona uğratır. Bu ekranın kareleri/iddiaları
+ * 2026-09'a bakarsa BAŞKA BİR SPEC'İN YAZMASINA bağımlı olur.
+ */
+const FIXED_TODAY = new Date("2026-08-20T12:00:00Z");
+
 test("santiye detayindan bolum detayina link, hero + KPI + sekmeler + Hakedis Olustur linki", async ({
   page,
 }) => {
+  await page.clock.setFixedTime(FIXED_TODAY);
   await login(page);
 
   // 1) Zincirin ilk halkası: Şantiye Detay'daki SectionCard "Detay →" linkinden
@@ -69,8 +85,36 @@ test("santiye detayindan bolum detayina link, hero + KPI + sekmeler + Hakedis Ol
   // 5) Sekme geçişi (D99-105): 🔴 BOQ-SEC-F'ten sonra varsayılan "İş Kalemleri"
   // sekmesi GERÇEK tablodur, pending kartı değil; öbür sekmeler pending kalır.
   await expect(page.getByText("İş Kalemleri — Kat 6–10 Kaba İnşaat")).toBeVisible();
+  // 🔴 F-BLMPUAN: "İşçiler & Puantaj" da artık YER TUTUCU DEĞİL, gerçek matris.
   await page.getByRole("tab", { name: "İşçiler & Puantaj" }).click();
-  await expect(page.getByText("İşçiler & Puantaj — bu bölümde henüz görüntülenemiyor")).toBeVisible();
+  await expect(page.getByTestId("section-timesheet")).toBeVisible();
+  await expect(page.getByText("İşçiler & Puantaj — bu bölümde henüz görüntülenemiyor")).toHaveCount(0);
+  // 🔴 ŞEF DENETİMİ (F-BLMPUAN sonrası): regex PUANTAJA ÖZGÜ olmalıdır.
+  // "bu bölüme henüz kırılmıyor" DÖRT pending anahtarının ORTAK kalıbıdır ve
+  // alt sağdaki "Bölüm Malzeme Durumu" kartı onu HÂLÂ basar — stok bağı bu
+  // dilimde AÇILMADI, yani o metin DOĞRUDUR. Geniş regex ürünü değil KENDİNİ
+  // yanlışlıyordu (iki e2e kırmızısının tek sebebi buydu).
+  await expect(page.getByText(/[Pp]uantaj bu bölüme henüz kırılmıyor/)).toHaveCount(0);
+  // Pozitif kontrol — daraltma bir gerilemeyi GİZLEMİYOR: hâlâ pending olan
+  // stok kartı kendi dürüst gerekçesini basmaya devam ediyor.
+  await expect(
+    page.getByText(/Malzeme hareketleri bu bölüme henüz kırılmıyor/),
+  ).toHaveCount(1);
+  // ŞP 117-119 karşılığı: bölüm adı + dönem, ve GÖRÜNEN kümenin türevleri.
+  // sec-1'in 2026-08 kümesi: per-1 (3 gün + 1 izin), per-2 (3 gün),
+  // per-3 (1 FM 3,00 sa + 1 geçici görev + 1 FM 2,50 sa) ⇒ 3 işçi.
+  await expect(page.locator(".ts-summary__title")).toHaveText(
+    "Kat 6–10 Kaba İnşaat · Ağustos 2026",
+  );
+  await expect(page.locator(".ts-summary__count")).toHaveText("3 işçi");
+  // 🔴 POZİTİF KONTROL — `.ts-cell` seçicisi GERÇEKTİR: dolu bölümde hücre
+  // rozeti basılır. Bu iddia olmadan, boş bölümdeki `toHaveCount(0)` bekçisi
+  // yanlış yazılmış bir seçiciyle de yeşil kalırdı (boş küme her zaman 0'dır).
+  const filledCells = await page.getByTestId("section-timesheet").locator(".ts-cell").count();
+  expect(filledCells).toBeGreaterThan(0);
+  // 🔴 SALT OKUNUR (K2): hücre düzenleme yolu bu ekranda AÇILMAZ.
+  await expect(page.locator(".ts-cell-button")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Kaydet" })).toHaveCount(0);
   await page.getByRole("tab", { name: "İş Kalemleri" }).click();
   await expect(page.getByTestId("section-boq-row")).toHaveCount(3);
 
@@ -78,6 +122,18 @@ test("santiye detayindan bolum detayina link, hero + KPI + sekmeler + Hakedis Ol
   // 🔴 F-BOLLINK: "Puantaj →" artık BÖLÜM SÜZGECİNİ taşır (hedef ekran
   // `?section=` okur); "Tümü →" taşımaz (stok ekranı okumuyor — ölü parametre).
   await expect(page.getByText("Bu Bölümdeki İşçiler", { exact: false })).toBeVisible();
+  // 🔴 F-BLMPUAN: kart artık GERÇEK gruplanmış satırlar basıyor (D219-246).
+  // sec-1 · 2026-08: per-2 Demirci (Şirket) · per-1 Kalıpçı (Şirket) ·
+  // per-3 Elektrikçi (Taşeron, sub-1). Eşit sayıda gruplar etikete göre (tr).
+  await expect(page.getByTestId("section-workers-row")).toHaveCount(3);
+  await expect(page.getByTestId("section-workers-row").nth(0)).toHaveText("ŞirketDemirci1 kişi");
+  await expect(page.getByTestId("section-workers-row").nth(1)).toHaveText("ŞirketKalıpçı1 kişi");
+  await expect(page.getByTestId("section-workers-row").nth(2)).toHaveText(
+    "TaşeronElektrikçi — Aydın Elektrik Taah.1 kişi",
+  );
+  // sec-2'nin işçileri (per-4 Duvarcı · per-5 Düz İşçi) BU KARTA SIZMAZ.
+  await expect(page.getByText("Duvarcı")).toHaveCount(0);
+  await expect(page.getByText("Düz İşçi")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Puantaj →" })).toHaveAttribute(
     "href",
     "/projeler/p-1/santiyeler/s-1/puantaj?section=sec-1",
@@ -101,6 +157,7 @@ test("bolum detayindaki 'Puantaj →' baglantisi bolum suzgecli puantaj ekranini
 });
 
 test("taslak + beklemede bolum: durum rozeti ve bos alanlarda durust yer tutucu", async ({ page }) => {
+  await page.clock.setFixedTime(FIXED_TODAY);
   await login(page);
 
   // sec-3: taslak + on_hold, section_type/manager/tarih/butce hepsi null —
@@ -178,4 +235,60 @@ test("hic tahsisi olmayan bolumde durust bos durum basilir", async ({ page }) =>
   await expect(page.getByTestId("section-boq-empty")).toBeVisible();
   await expect(page.getByText("Bu bölüme henüz iş kalemi atanmadı.")).toBeVisible();
   await expect(page.getByText(/^0 kalem ·/)).toBeVisible();
+});
+
+
+/**
+ * F-BLMPUAN — BOŞ VERİ ≠ MODÜL YOK.
+ *
+ * sec-3 ("Peyzaj Düzenlemesi") hiç puantaj hücresi taşımaz. Ekran boş kalır ama
+ * "bu bölüme kırılmıyor" DEMEZ — kusuru kapatmak yerine kılık değiştirmiş olurdu.
+ */
+test("puantaji olmayan bolumde 'bu ay kayit yok' der, 'modul yok' DEMEZ", async ({ page }) => {
+  await page.clock.setFixedTime(FIXED_TODAY);
+  await login(page);
+  await page.goto("/projeler/p-1/santiyeler/s-1/bolumler/sec-3");
+  await expect(page.getByRole("heading", { level: 1, name: "Peyzaj Düzenlemesi (Taslak)" })).toBeVisible();
+
+  const empty = page.getByTestId("section-workers-empty");
+  await expect(empty).toHaveText("Ağustos 2026 döneminde bu bölümde puantaj kaydı yok.");
+  // 🔴 ŞEF DENETİMİ (F-BLMPUAN sonrası): regex PUANTAJA ÖZGÜ olmalıdır.
+  // "bu bölüme henüz kırılmıyor" DÖRT pending anahtarının ORTAK kalıbıdır ve
+  // alt sağdaki "Bölüm Malzeme Durumu" kartı onu HÂLÂ basar — stok bağı bu
+  // dilimde AÇILMADI, yani o metin DOĞRUDUR. Geniş regex ürünü değil KENDİNİ
+  // yanlışlıyordu (iki e2e kırmızısının tek sebebi buydu).
+  await expect(page.getByText(/[Pp]uantaj bu bölüme henüz kırılmıyor/)).toHaveCount(0);
+  // Pozitif kontrol — daraltma bir gerilemeyi GİZLEMİYOR: hâlâ pending olan
+  // stok kartı kendi dürüst gerekçesini basmaya devam ediyor.
+  await expect(
+    page.getByText(/Malzeme hareketleri bu bölüme henüz kırılmıyor/),
+  ).toHaveCount(1);
+  await expect(page.getByText(/modülle birlikte gelir/)).toHaveCount(0);
+  // Kart yine de "Puantaj →" yolunu KORUR — sekme onun yerine geçmez.
+  await expect(page.getByRole("link", { name: "Puantaj →" })).toHaveAttribute(
+    "href",
+    "/projeler/p-1/santiyeler/s-1/puantaj?section=sec-3",
+  );
+
+  // Sekme de boş ama CANLI: yer tutucu kart değil, gerçek (boş) matris basar.
+  await page.getByRole("tab", { name: "İşçiler & Puantaj" }).click();
+  await expect(page.getByTestId("section-timesheet")).toBeVisible();
+  await expect(page.locator(".ts-summary__count")).toHaveText("0 işçi");
+  await expect(page.getByText("İşçiler & Puantaj — bu bölümde henüz görüntülenemiyor")).toHaveCount(0);
+
+  // 🔴 ŞEF ÖLÇÜMÜ (canlının İLK göreceği hâl budur — hiç puantaj kaydı yok).
+  // Panelin kendisi bir CÜMLE basmaz: K1 gereği satırlar AKTİF PERSONEL
+  // KARTOTEKSİNDEN kurulur, yani boş ayda bile 6 satır çizilir ve hepsi
+  // BOŞTUR ("0 işçi", "0 adam/gün"). Bu, şantiye ekranının `?section=`
+  // görünümüyle BİREBİR aynı davranıştır ve ŞP mockup'ının çizdiği hâldir —
+  // mockup'ta olmayan bir uyarı şeridi İCAT EDİLMEZ.
+  //
+  // Hâli DÜRÜST kılan şey, alt kartın AYNI ANDA ekranda durup dönemi açıkça
+  // söylemesidir. Bu yüzden BURASI bekçilenir: kart sekme açıkken gizlenirse
+  // kullanıcı çıplak bir boş ızgarayla kalır ve "modül çalışmıyor" sanır —
+  // yani kusur kapanmış değil KILIK DEĞİŞTİRMİŞ olurdu.
+  await expect(empty).toBeVisible();
+  await expect(empty).toHaveText("Ağustos 2026 döneminde bu bölümde puantaj kaydı yok.");
+  // Boş ızgaranın satırları GERÇEKTEN boş: tek bir hücre rozeti bile yok.
+  await expect(page.getByTestId("section-timesheet").locator(".ts-cell")).toHaveCount(0);
 });

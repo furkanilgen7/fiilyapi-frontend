@@ -6,12 +6,18 @@ import { useParams } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { CardEmptyState } from "@/components/dashboard/CardEmptyState";
+import { currentPeriod } from "@/components/timesheet/month";
+import { useTimesheetData } from "@/components/timesheet/useTimesheetData";
 import { useBoq } from "@/lib/api/hooks/useBoq";
 import { useSection } from "@/lib/api/hooks/useSection";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { isForbidden } from "@/lib/api/unwrap";
+import { formatPeriod } from "@/lib/format";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
+import { groupSectionWorkers } from "./section-workers";
 import { SectionBoqCard } from "./SectionBoqCard";
+import { SectionTimesheetPanel } from "./SectionTimesheetPanel";
+import { SectionWorkersList } from "./SectionWorkersList";
 import { SECTION_TABS, SectionDetailTabs } from "./SectionDetailTabs";
 import { SectionHeroCard } from "./SectionHeroCard";
 import "./section-detail.css";
@@ -62,6 +68,21 @@ export function SectionDetailView() {
   // seçili olmasa da bağlanır; `enabled` kapısı `siteId`dedir. Süzgeç sorgu
   // ANAHTARINDADIR — şantiye BOQ ekranının önbelleğini EZMEZ.
   const sectionBoq = useBoq(siteId, sectionId);
+  // F-BLMPUAN — bölüm süzgeçli puantaj. TEK çağrı: sekme paneli ve alt kart
+  // AYNI türev kümesini paylaşır (ikinci bir ağ isteği/türev turu oluşmaz).
+  //
+  // 🔴 K2 KORUNUR: `useTimesheetData` `section_id`yi AĞA GÖNDERMEZ, süzgeci
+  // yalnız GÖRÜNÜME uygular. Sunucu süzgeci (üçüncü argüman) BİLEREK
+  // KULLANILMADI — o yol satır kümesini de süzer ve bu ekranı "Puantaj →"
+  // bağlantısının açtığı `?section=` görünümünden FARKLI kılardı; ayrıca
+  // `derive.ts`in tüm türevleri (adam-gün, `4+`, `3G`) yeniden yazılırdı.
+  // Önbellek de şantiye ekranıyla PAYLAŞILIR (aynı `queryKey`).
+  //
+  // Dönem: ay gezinmesi YOKTUR (mockup bu sekme için hiçbir denetim çizmez) —
+  // içinde bulunulan ay, `SiteTimesheetView` ile AYNI kaynaktan (`month.ts`).
+  // İkinci bir varsayılan yazılmaz.
+  const period = currentPeriod();
+  const timesheet = useTimesheetData({ siteId, period, sectionId });
   // İzin: ekran `sites:view`, "Düzenle" butonu `sites:full` (task-2-brief §İzin).
   const { canView, canWrite } = useModulePermission("sites");
   const [activeTab, setActiveTab] = useState(0);
@@ -85,6 +106,9 @@ export function SectionDetailView() {
   const section = sectionQuery.data;
   const siteName = siteQuery.data?.name ?? "";
   const activeTabDef = SECTION_TABS[activeTab];
+  const periodLabel = formatPeriod(period.year, period.month);
+  // D219-246 — gruplama SUNUM kararıdır (bkz. `section-workers.ts`).
+  const workerGroups = groupSectionWorkers(timesheet.view.rows);
   const workerIsReal =
     section.worker_count.available &&
     section.worker_count.count !== null &&
@@ -110,19 +134,31 @@ export function SectionDetailView() {
       <div className="section-panel" role="tabpanel">
         {activeTabDef.contentLive ? (
           <div className="section-panel__body section-panel__body--flush">
-            {/* Yükleme/hata dalları AYRI basılır: `data` yokken boş tabloya
-                düşmek kullanıcıya "bu bölüme kalem atanmadı" YALANINI
-                söylerdi. Başka şantiyenin bölümü backend'de 404'tür. */}
-            {sectionBoq.isError ? (
-              <p className="section-detail__message">İş kalemleri yüklenemedi</p>
-            ) : sectionBoq.isLoading || !sectionBoq.data ? (
-              <p className="section-detail__message">Yükleniyor…</p>
-            ) : (
-              <SectionBoqCard
-                groups={sectionBoq.data.groups}
-                totals={sectionBoq.data.totals}
+            {activeTabDef.siteSlug === "puantaj" ? (
+              <SectionTimesheetPanel
                 sectionName={section.name}
+                periodLabel={periodLabel}
+                view={timesheet.view}
+                isLoading={timesheet.isLoading}
+                isError={timesheet.isError}
               />
+            ) : (
+              <>
+                {/* Yükleme/hata dalları AYRI basılır: `data` yokken boş tabloya
+                    düşmek kullanıcıya "bu bölüme kalem atanmadı" YALANINI
+                    söylerdi. Başka şantiyenin bölümü backend'de 404'tür. */}
+                {sectionBoq.isError ? (
+                  <p className="section-detail__message">İş kalemleri yüklenemedi</p>
+                ) : sectionBoq.isLoading || !sectionBoq.data ? (
+                  <p className="section-detail__message">Yükleniyor…</p>
+                ) : (
+                  <SectionBoqCard
+                    groups={sectionBoq.data.groups}
+                    totals={sectionBoq.data.totals}
+                    sectionName={section.name}
+                  />
+                )}
+              </>
             )}
           </div>
         ) : (
@@ -151,9 +187,13 @@ export function SectionDetailView() {
               {SIDE_LINKS.timesheet.label}
             </Link>
           </div>
-          <CardEmptyState
-            title="Puantaj verisi bu bölümde henüz görüntülenemiyor"
-            pendingModule="section_timesheet"
+          {/* D219-246 — GERÇEK gruplanmış satırlar. Yer tutucu kart SİLİNDİ:
+              bağ artık AÇIK, "henüz görüntülenemiyor" canlıyı yalanlardı. */}
+          <SectionWorkersList
+            groups={workerGroups}
+            isLoading={timesheet.isLoading}
+            isError={timesheet.isError}
+            periodLabel={periodLabel}
           />
         </div>
 

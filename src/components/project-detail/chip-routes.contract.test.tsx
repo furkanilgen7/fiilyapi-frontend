@@ -146,6 +146,8 @@ describe("eşleştirici pozitif kontrolü (karşıt kanıt taşır)", () => {
     `/projeler/${PROJECT_ID}/santiyeler/${SITE_ID}`,
     "/hakedisler/taseron",
     "/belgeler",
+    // F-PRJKALEM · proje sekmesinin yeni hedefi (query DÜŞÜRÜLÜR, yol kalır).
+    `/sozlesmeler/isveren/${PROJECT_ID}`,
   ])("GERÇEK rota kabul edilir: %s", (href) => {
     expect(routeExists(href)).toBe(true);
   });

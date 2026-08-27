@@ -57,6 +57,19 @@ describe("employer-contract-tabs · E14 sekme durumu URL'de", () => {
     expect(employerContractHref("p-1")).toBe("/sozlesmeler/isveren/p-1");
   });
 
+  // 🔴 F-PRJKALEM bekcisi: kimlik URL'e KODLANARAK yazilir. Kurucudan
+  // `encodeURIComponent` dusurulurse bosluk/`&` tasiyan bir kimlik rotayi
+  // bozar (query'ye sizar) — bugunku UUID cagiranlar bunu hic gostermez.
+  it("proje kimligi URL'e kodlanir (uc kurucunun UCU DE)", () => {
+    expect(employerContractHref("a b&c")).toBe("/sozlesmeler/isveren/a%20b%26c");
+    expect(employerContractTabHref("a b&c", "items")).toBe(
+      "/sozlesmeler/isveren/a%20b%26c?tab=items",
+    );
+    expect(employerContractDistributionHref("a b&c")).toBe(
+      "/sozlesmeler/isveren/a%20b%26c/poz-dagilimi",
+    );
+  });
+
   it("POZ ekranı rotası spec §1 tablosuyla birebirdir", () => {
     expect(employerContractDistributionHref("p-1")).toBe(
       "/sozlesmeler/isveren/p-1/poz-dagilimi",

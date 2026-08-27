@@ -45,9 +45,20 @@ export function parseEmployerContractTab(
     : DEFAULT_EMPLOYER_CONTRACT_TAB;
 }
 
-/** Temel rota — SZL satırının ("Detay →") hedefiyle birebir aynı. */
+/**
+ * Temel rota — SZL satırının ("Detay →") hedefiyle birebir aynı.
+ *
+ * 🔴 F-PRJKALEM · `encodeURIComponent` ÖLÇÜLEREK EKLENDİ. Kurucu düz
+ * interpolasyon yapıyordu; uygulamadaki öteki rota kurucularının HEPSİ
+ * (`projectSummaryHref`, `/belgeler?proje=`, `/hakedisler?project_id=` …)
+ * kimliği kodluyor. Bugünkü çağıranların hepsi UUID taşıdığı için fark
+ * görünmüyordu — yani bu, davranışı bozmadan kapanan sessiz bir tutarsızlıktı.
+ * Düzeltme ÇAĞIRANDA değil KURUCUDA yapılır: `employerContractTabHref` ve
+ * `employerContractDistributionHref` de buradan türer, üç yerde ayrı ayrı
+ * kodlamak aynı çürüme sınıfını üretirdi.
+ */
 export function employerContractHref(projectId: string): string {
-  return `/sozlesmeler/isveren/${projectId}`;
+  return `/sozlesmeler/isveren/${encodeURIComponent(projectId)}`;
 }
 
 /**

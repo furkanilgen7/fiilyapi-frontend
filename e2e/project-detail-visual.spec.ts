@@ -6,6 +6,11 @@ import { prepareFrame } from "./visual-scroll";
 // projesine bağlı iki şantiyeyi (A-Blok aktif, B-Blok tamamlandı) kullanır —
 // SiteCard'ın hem aktif hem tamamlanmış varyantını tek ekranda gösterir.
 //
+// F-PRJKALEM — sekme şeridinin "İş Kalemleri" iddiaları TERSİNE DÖNDÜ:
+// sekme artık devre-dışı değil, sözleşme pozu ekranına giden canlı bir
+// bağlantıdır. Tıklama davranışı fonksiyonel spec'te ölçülür
+// (`e2e/project-detail-tabs.spec.ts`) — burada yalnız şeridin kendisi.
+//
 // F-PRJTAB T6 — SEKME ŞERİDİNİN ANLAM BEKÇİSİ: aşağıdaki durum iddiaları
 // bilinçli olarak BU dosyada durur. 5. kapı (fonksiyonel e2e) bu dosyayı
 // `--grep-invert "gorsel"` ile dışlar; yani buradaki iddialar YALNIZ görsel
@@ -40,15 +45,21 @@ test("proje detay ekrani gorsel", async ({ page }) => {
   const tabs = page.getByRole("tablist", { name: "Proje detay sekmeleri" });
   await expect(tabs).toBeVisible();
 
-  // "İş Kalemleri" proje seviyesinde YOK: görünür ama devre-dışı ve
-  // TIKLANABİLİR DEĞİL — `<Link>` değil `<span>` olduğu için `href` TAŞIMAZ.
+  // 🔴 F-PRJKALEM · "İş Kalemleri" ARTIK CANLI: proje düzeyinde SÖZLEŞME POZU
+  // vardır (`GET /projects/{id}/contract/items`) ve ekranı yazılıdır
+  // (E14 `?tab=items`). Şantiye kartındaki çip ise ŞANTİYE BOQ'una gider —
+  // farklı kümeler; ayrım `title`da anlatılır.
   const workItemsTab = tabs.getByRole("tab", { name: "İş Kalemleri" });
   await expect(workItemsTab).toBeVisible();
-  await expect(workItemsTab).toHaveAttribute("aria-disabled", "true");
-  await expect(workItemsTab).not.toHaveAttribute("href", /.*/);
+  await expect(workItemsTab).not.toHaveAttribute("aria-disabled", /.*/);
+  await expect(workItemsTab).toHaveAttribute("href", "/sozlesmeler/isveren/p-1?tab=items");
+  await expect(workItemsTab).toHaveAttribute(
+    "title",
+    "Sözleşme pozları - proje sözleşmesinin iş kalemleri",
+  );
 
-  // Gerekçe kullanıcıya GÖRÜNÜR basılır (yalnız `title` yetmez).
-  await expect(page.getByTestId("project-tabs-work-items-reason")).toBeVisible();
+  // Devre-dışı sekme kalmadığı için gerekçe notu da BASILMAZ.
+  await expect(page.getByTestId("project-tabs-work-items-reason")).toHaveCount(0);
 
   // Canlı sekmeler gerçek ekranlara gider; proje kimliği query string'de
   // taşınır ve param adları hedef ekranların BUGÜN okuduğu adlardır.

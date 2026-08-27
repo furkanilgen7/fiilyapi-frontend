@@ -69,7 +69,14 @@ export const SECTION_TABS: readonly (SectionTabDef & SectionTabContent)[] = [
     moduleWritten: true,
     contentLive: true,
   },
-  { label: "İşçiler & Puantaj", siteSlug: "puantaj", moduleWritten: true, contentPending: "section_timesheet" },
+  // F-BLMPUAN: bölüm bağı AÇILDI — `TimesheetEntry.section_id` var ve matris
+  // bölüm süzgeciyle görünüme uygulanıyor (K2: süzgeç istemcide).
+  {
+    label: "İşçiler & Puantaj",
+    siteSlug: "puantaj",
+    moduleWritten: true,
+    contentLive: true,
+  },
   { label: "Malzeme", siteSlug: "stok", moduleWritten: true, contentPending: "section_stock" },
   { label: "Hakediş", siteSlug: "hakedisler", moduleWritten: true, contentPending: "section_progress_payments" },
   { label: "Günlük Kayıt", siteSlug: "gunluk-kayit", moduleWritten: true, contentPending: "section_site_diary" },

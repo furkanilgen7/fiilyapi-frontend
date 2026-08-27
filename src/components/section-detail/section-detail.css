@@ -271,3 +271,54 @@
   width: 80px;
   text-align: center;
 }
+
+/* --- F-BLMPUAN · "Bu Bölümdeki İşçiler" satırları (mockup D215-250) --- */
+/* Önek ÖLÇÜLDÜ: `grep -rn "section-work" src/ e2e/` bu dilimden ÖNCE sıfır
+   isabet verdi — `section-*` bu ekranın öneki, `ts-*` puantajınki. */
+.section-workers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2); /* D216: gap:8px */
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+/* D219: padding:8px 12px · background:#f8fafc · border-radius:8px */
+.section-workers__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-8);
+}
+/* D220: gap:8px */
+.section-workers__lead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+/* D222: font-size:13px · color:#1e293b */
+.section-workers__label {
+  font-size: var(--text-body);
+  color: var(--color-text);
+}
+/* D224: font-size:14px · font-weight:700 · color:#1e293b */
+.section-workers__count {
+  font-size: 14px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+/* --- F-BLMPUAN · "İşçiler & Puantaj" sekme paneli --- */
+/* Mockup bu panel için ÇİZİM TAŞIMAZ (D100 aktif sekme "İş Kalemleri"dir):
+   yüzey ŞP mockup'ından türetilmiş `TimesheetTable`/`TimesheetSummaryStrip`
+   ile kurulur. `.ts-card`ın kendi çerçevesi BURADA KULLANILMAZ —
+   `.section-panel` zaten çerçeveyi taşıyor, ikinci bir kenarlık mockup'ta
+   yok (`.section-panel__body--flush` ile aynı gerekçe). */
+.section-timesheet {
+  display: block;
+}
