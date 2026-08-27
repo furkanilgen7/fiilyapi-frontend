@@ -25,10 +25,12 @@ describe("project-detail.css — focus-visible kural metni var mı (regresyon ko
     expect(css).toMatch(/\.project-hero__tab:focus-visible\s*{[^}]*outline:\s*2px solid var\(--color-on-brand\)/);
   });
 
-  it("rotası olmayan sekme devre-dışı görünür (cursor: not-allowed + soluk on-brand renk)", () => {
-    // K3: sekme <span> olarak basılır; görünümü de tıklanabilir izlenimi vermemeli.
-    expect(css).toMatch(/\.project-hero__tab--disabled\s*{[^}]*cursor:\s*not-allowed/);
-    expect(css).toMatch(/\.project-hero__tab--disabled\s*{[^}]*var\(--color-on-brand-50\)/);
+  // 🔴 F-PRJKALEM: devre-dışı sekme sınıfları SİLİNDİ (çağıranı kalmadı).
+  // Bu iddia artık tersine döner: sınıflar geri sızarsa, onları basacak kod
+  // olmadığı için sessiz ölü CSS olurlar.
+  it("devre-dışı sekme sınıfları stylesheet'te YOKTUR (çağıransız ölü CSS)", () => {
+    expect(css).not.toMatch(/\.project-hero__tab--disabled/);
+    expect(css).not.toMatch(/\.project-hero__tab-note/);
   });
 
   it("şantiye kartı çipi :focus-visible ile tasarlanmış odak halkası tanımlar (--focus-ring)", () => {

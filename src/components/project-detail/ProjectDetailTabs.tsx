@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cx } from "@/lib/cx";
 import type { ProjectType } from "@/lib/api/hooks/useProjects";
+import { employerContractTabHref } from "../contracts/employer-contract-tabs";
 
 export interface ProjectDetailTabsProps {
   projectId: string;
@@ -28,41 +29,59 @@ interface TabDef {
    */
   types?: readonly ProjectType[];
   /**
-   * Bu sekmenin hedef ekranı YAZILDI mı — yazılmamış olan devre-dışı basılır
-   * (silinmez). Sonraki dilim "burayı güncellemem gerekiyor"u bu bayraktan görür.
+   * Sekmenin GERÇEK hedef yolu. Hedef ekran proje kimliğini ya yol
+   * segmentinde ya da query param olarak okur; param adları hedef ekranın
+   * BUGÜN okuduğu adlardır (uydurma yok).
+   *
+   * 🔴 F-PRJKALEM · ZORUNLUDUR. Eskiden isteğe bağlıydı: hedefi olmayan
+   * sekme `written: false` ile devre-dışı `<span>` basılıyor ve altına
+   * görünür bir gerekçe notu konuyordu. Bugün ŞERİTTEKİ BEŞ SEKMENİN
+   * BEŞİNİN DE hedefi var, yani o mekanizmanın hiç çağıranı kalmadı ve
+   * bekçisiz ölü kod hâline gelirdi (kayıtlı kanon: "çağıran kod yoksa
+   * bekçisiz kalır") — bu yüzden mekanizma SİLİNDİ. Rotası olmayan bir
+   * mockup öğesi ileride yine çıkarsa kural değişmedi (F-TH kanonu:
+   * silinmez, devre-dışı + görünür gerekçeyle basılır); mekanizma o gün
+   * geri yazılır ve o gün BEKÇİSİ de olur.
    */
-  written?: boolean;
+  hrefFor: (projectId: string) => string;
   /**
-   * Sekmenin GERÇEK hedef yolu. Hedef ekran proje kimliğini query param olarak
-   * okur; param adları hedef ekranın BUGÜN okuduğu adlardır (uydurma yok).
-   * `written` olmayan sekmede yoktur.
+   * İsteğe bağlı açıklama (`title`). Mockup'ta olmayan GÖRÜNÜR metin
+   * eklenmez; `title` ise zaten kullanılan bir mekanizmadır
+   * (`SectionDetailView` `SIDE_LINKS[].title` emsali).
    */
-  hrefFor?: (projectId: string) => string;
-  /**
-   * Devre-dışı sekmenin kullanıcıya GÖRÜNEN gerekçesi. Yalnız yazılmamış
-   * sekmede bulunur — gerekçe notu bu alandan TÜRETİLİR, ayrıca yazılmaz.
-   */
-  disabledReason?: string;
+  title?: string;
 }
 
 /**
- * "İş Kalemleri" sekmesinin devre-dışı olma gerekçesi — kullanıcıya GÖRÜNÜR
- * basılır (yalnız `title` yetmez). Testler bu sabiti import eder.
+ * 🔴 F-PRJKALEM · AYNI EKRANDA AYNI ETİKET İKİ FARKLI KÜMEYE GİDİYOR.
+ * Sekme şeridindeki "İş Kalemleri" SÖZLEŞME POZUNA, şantiye kartındaki
+ * "📋 İş Kalemleri" çipi ŞANTİYE BOQ'una gider. Mockup'ta ayrımı anlatan
+ * görünür bir metin YOK ve mockup sadakati gereği icat da EDİLMEZ; ayrım
+ * `title` ile verilir. Anlatan taraf YENİ GELEN taraftır (sekme) — çip
+ * bilinen ve dokunulmayan davranıştır.
  *
  * Çıplak glif yasağı: tipografik sembol yok, düz sözcük + normal tire.
  */
-export const WORK_ITEMS_TAB_DISABLED_HINT =
-  "İş kalemleri şantiye bazında tutulur - aşağıdaki şantiye kartlarından açın.";
+export const WORK_ITEMS_TAB_TITLE =
+  "Sözleşme pozları - proje sözleşmesinin iş kalemleri";
 
 // Sekmeler (spec §4.1, §7.3) — adlar ve SIRA mockup'tan gelir
-// (`Proje Detay - Şantiyeler.dc.html:88`), değiştirilmez.
+// (`Proje Detay - Şantiyeler.dc.html:87-91`), değiştirilmez.
 //
 // "Şantiyeler" bu ekranın kendisidir (kök rota).
 //
-// "İş Kalemleri" proje seviyesinde YOKTUR: BOQ şantiye kapsamlıdır, ne mockup'ta
-// ne backend'de "tüm şantiyelerin iş kalemleri" kavramı var. Kalıcı kural
-// (F-TH kanonu): rotası olmayan mockup öğesi SİLİNMEZ, devre-dışı + görünür
-// gerekçeyle basılır — bkz. WORK_ITEMS_TAB_DISABLED_HINT.
+// 🔴 "İş Kalemleri" — F-PRJKALEM · PROJE SEVİYESİNDE VARDIR VE DOLUDUR.
+// Eski gerekçe ("iş kalemleri şantiye bazında tutulur") YARIM DOĞRUYDU:
+// doğru olan kısmı ŞANTİYE BOQ'udur (`GET /sites/{id}/boq`) ve gerçekten
+// şantiye kapsamlıdır — proje düzeyinde "tüm şantiyelerin BOQ'u" diye bir
+// kavram YOK. Ama proje düzeyinde AYRI ve FARKLI bir küme var: SÖZLEŞME
+// POZLARI (`GET /projects/{project_id}/contract/items`,
+// `EmployerContractItemsResponse`). Ekranı da YAZILI: E14'ün "İş Kalemleri"
+// sekmesi (`EmployerContractDetailView`, `tab === "items"`). Sekme hedefi
+// olmadığı için değil, hedefi BAĞLANMADIĞI için kapalıydı.
+//
+// ⚠️ Bu yüzden `SiteCard`taki "📋 İş Kalemleri" çipiyle çelişki YOKTUR:
+// çip ŞANTİYE BOQ'una, sekme SÖZLEŞME POZUNA gider — iki farklı küme.
 //
 // "İşveren Hakediş" P7 dilimiyle geldi (`/hakedisler`); proje kimliği
 // `project_id` query paramı ile taşınır.
@@ -85,7 +104,6 @@ export const projectAllocationHref = (projectId: string) =>
 const TABS: TabDef[] = [
   {
     label: "Şantiyeler",
-    written: true,
     hrefFor: (id) => `/projeler/${encodeURIComponent(id)}`,
   },
   // 🔴 F-PKK K1 · "Proje Özeti" — İKİ mockup, TEK rota. Ekran proje türüne
@@ -97,7 +115,6 @@ const TABS: TabDef[] = [
   {
     label: "Proje Özeti",
     types: ["kendi_yatirim", "kat_karsiligi"],
-    written: true,
     hrefFor: projectSummaryHref,
   },
   // 🔴 F-PKK K1 · "Paylaşım Tablosu" (`Kat Karşılığı - Paylaşım`) YALNIZ kat
@@ -107,23 +124,27 @@ const TABS: TabDef[] = [
   {
     label: "Paylaşım Tablosu",
     types: ["kat_karsiligi"],
-    written: true,
     hrefFor: projectAllocationHref,
   },
-  { label: "İş Kalemleri", disabledReason: WORK_ITEMS_TAB_DISABLED_HINT },
+  // 🔴 F-PRJKALEM · href ELLE YAZILMAZ: kanonik kurucu `employerContractTabHref`
+  // kullanılır. Dize burada da yazılsaydı, sözleşme sekmelerinin param adı ya da
+  // kanonik-kısa-URL kuralı değiştiğinde bu sekme sessizce ayrışırdı — aynı
+  // gerekçeyle `projectSummaryHref`/`projectAllocationHref` de tek yerde durur.
+  {
+    label: "İş Kalemleri",
+    hrefFor: (id) => employerContractTabHref(id, "items"),
+    title: WORK_ITEMS_TAB_TITLE,
+  },
   {
     label: "İşveren Hakediş",
-    written: true,
     hrefFor: (id) => `/hakedisler?project_id=${encodeURIComponent(id)}`,
   },
   {
     label: "Taşeron Hakediş",
-    written: true,
     hrefFor: (id) => `/hakedisler/taseron?project_id=${encodeURIComponent(id)}`,
   },
   {
     label: "Belgeler",
-    written: true,
     hrefFor: (id) => `/belgeler?proje=${encodeURIComponent(id)}`,
   },
 ];
@@ -133,59 +154,32 @@ export function ProjectDetailTabs({
   activePath,
   projectType,
 }: ProjectDetailTabsProps) {
-  // Tür süzgeci ÖNCE uygulanır: gerekçe notu da yalnız GÖRÜNEN sekmelerden
-  // türemeli, yoksa hiç basılmayan bir sekmenin notu ekranda kalırdı.
   const visibleTabs = TABS.filter((tab) => !tab.types || tab.types.includes(projectType));
 
-  // Gerekçe notu devre-dışı sekmeden TÜRETİLİR, sabit basılmaz: sekme ileride
-  // yazılırsa (hrefFor + written eklenirse) not da KENDİLİĞİNDEN kalkar.
-  // Sabit basılsaydı, canlı bir sekmenin altında onu yalanlayan bir not
-  // kalırdı ve bekçi bunu göremezdi — bu dilimin düzelttiği çürüme sınıfı.
-  const disabledTab = visibleTabs.find((tab) => !tab.written || !tab.hrefFor);
-
   return (
-    <>
-      <div className="project-hero__tabs" role="tablist" aria-label="Proje detay sekmeleri">
-        {visibleTabs.map((tab) => {
-          // Yazılmamış sekme TIKLANABİLİR DEĞİLDİR: <Link> değil <span>
-          // (PersonnelTabsStrip deseni) — ölü bağlantı basılmaz.
-          if (!tab.written || !tab.hrefFor) {
-            return (
-              <span
-                key={tab.label}
-                role="tab"
-                aria-selected={false}
-                aria-disabled
-                tabIndex={-1}
-                title={tab.disabledReason}
-                className="project-hero__tab project-hero__tab--disabled"
-              >
-                {tab.label}
-              </span>
-            );
-          }
-
-          const href = tab.hrefFor(projectId);
-          const active = activePath === href;
-          return (
-            <Link
-              key={tab.label}
-              href={href}
-              role="tab"
-              aria-selected={active}
-              className={cx("project-hero__tab", active && "project-hero__tab--active")}
-            >
-              {tab.label}
-            </Link>
-          );
-        })}
-      </div>
-      {/* Devre-dışı sekmenin gerekçesi ekranda GÖRÜNÜR (TreasuryView deseni). */}
-      {disabledTab?.disabledReason ? (
-        <p className="project-hero__tab-note" data-testid="project-tabs-work-items-reason">
-          {disabledTab.disabledReason}
-        </p>
-      ) : null}
-    </>
+    <div className="project-hero__tabs" role="tablist" aria-label="Proje detay sekmeleri">
+      {visibleTabs.map((tab) => {
+        const href = tab.hrefFor(projectId);
+        // ⚠️ `activePath` `usePathname()`ten gelir ve QUERY TAŞIMAZ; query
+        // içeren href'ler (Belgeler, İşveren/Taşeron Hakediş ve artık İş
+        // Kalemleri) burada hiç eşleşmez. Bu MEVCUT ve KABUL EDİLMİŞ desendir:
+        // o sekmelerin hedef ekranları bu şeridi hiç basmaz (E14 kendi
+        // `EmployerContractTabs`ini basar), yani yanlış sekmenin aktif
+        // görünme riski YOKTUR.
+        const active = activePath === href;
+        return (
+          <Link
+            key={tab.label}
+            href={href}
+            role="tab"
+            aria-selected={active}
+            title={tab.title}
+            className={cx("project-hero__tab", active && "project-hero__tab--active")}
+          >
+            {tab.label}
+          </Link>
+        );
+      })}
+    </div>
   );
 }

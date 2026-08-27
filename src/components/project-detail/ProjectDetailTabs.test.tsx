@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import { ProjectDetailTabs, WORK_ITEMS_TAB_DISABLED_HINT } from "./ProjectDetailTabs";
+import { employerContractTabHref } from "../contracts/employer-contract-tabs";
+import { ProjectDetailTabs, WORK_ITEMS_TAB_TITLE } from "./ProjectDetailTabs";
 
 const PROJECT_ID = "11111111-1111-1111-1111-111111111111";
 const BASE = `/projeler/${PROJECT_ID}`;
@@ -31,52 +32,86 @@ describe("ProjectDetailTabs", () => {
   });
 });
 
-// K2 + K3: "İş Kalemleri" proje seviyesinde YOKTUR (BOQ santiye kapsamli).
-// Sekme silinmez ama TIKLANABILIR de degildir — olu baglanti basilmaz.
-describe("ProjectDetailTabs — rotasi olmayan sekme devre-disi basilir", () => {
-  it("Is Kalemleri sekmesinin href'i YOKTUR ve aria-disabled tasir", () => {
+// 🔴 F-PRJKALEM — "Is Kalemleri" sekmesi ARTIK CANLIDIR.
+//
+// Eski hal sekmeyi devre-disi basiyordu; gerekce ("BOQ santiye kapsamlidir")
+// YARIM DOGRU, sonuc olarak YANLISTI: proje seviyesinde BASKA bir is kalemi
+// kumesi vardir ve doludur — SOZLESME POZLARI
+// (`GET /projects/{project_id}/contract/items`, ekrani
+// `/sozlesmeler/isveren/{projectId}?tab=items`). Santiye kartindaki cip ise
+// SANTIYE BOQ'una (`/sites/{id}/boq`) gider. FARKLI KUMELERDIR.
+describe("ProjectDetailTabs — Is Kalemleri sekmesi sozlesme pozlarina baglanir", () => {
+  it("Is Kalemleri CANLI bir <a>'dir: aria-disabled TASIMAZ", () => {
     render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
-    const disabled = screen.getByRole("tab", { name: "İş Kalemleri" });
-    expect(disabled).not.toHaveAttribute("href");
-    expect(disabled).toHaveAttribute("aria-disabled", "true");
-    expect(disabled.tagName).toBe("SPAN");
-    expect(disabled).toHaveAttribute("title", WORK_ITEMS_TAB_DISABLED_HINT);
+    const tab = screen.getByRole("tab", { name: "İş Kalemleri" });
+    expect(tab.tagName).toBe("A");
+    expect(tab).not.toHaveAttribute("aria-disabled");
+    // Eski hal `tabIndex={-1}` ile klavye sirasindan cikariyordu; <a href>
+    // dogal olarak odaklanabilir, elle tabindex TASIMAZ.
+    expect(tab).not.toHaveAttribute("tabindex");
   });
 
-  it("devre-disi sekme klavye sirasinda yer almaz (tabIndex -1)", () => {
+  // m1 bekcisi: href'ten `?tab=items` dusurulurse sekme sozlesmenin GENEL
+  // sekmesine giderdi — kullanici poz tablosunu hic gormezdi.
+  it("href SOZLESME DETAYININ 'items' sekmesidir (genel sekme DEGIL)", () => {
     render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
-    expect(screen.getByRole("tab", { name: "İş Kalemleri" })).toHaveAttribute("tabindex", "-1");
+    const tab = screen.getByRole("tab", { name: "İş Kalemleri" });
+    expect(tab).toHaveAttribute("href", `/sozlesmeler/isveren/${PROJECT_ID}?tab=items`);
+    expect(tab.getAttribute("href")).not.toBe(employerContractTabHref(PROJECT_ID, "general"));
   });
 
-  it("devre-disi sekmeye tiklamak gezinme uretmez (baglanti degil)", async () => {
-    const user = userEvent.setup();
+  // m5 bekcisi: href elle yazilirsa kanonik kurucudan AYRISIR. Iddia
+  // kurucunun ciktisina baglanir — kurucu degisirse burasi da tasinir.
+  it("href kanonik kurucudan (employerContractTabHref) uretilir", () => {
     render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
-    const disabled = screen.getByRole("tab", { name: "İş Kalemleri" });
-    await user.click(disabled);
-    expect(disabled.closest("a")).toBeNull();
-  });
-
-  it("gerekce metni EKRANDA gorunur (yalniz title yetmez)", () => {
-    render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
-    expect(screen.getByTestId("project-tabs-work-items-reason")).toHaveTextContent(
-      WORK_ITEMS_TAB_DISABLED_HINT,
+    expect(screen.getByRole("tab", { name: "İş Kalemleri" })).toHaveAttribute(
+      "href",
+      employerContractTabHref(PROJECT_ID, "items"),
     );
   });
 
-  // Not, devre-disi sekmeden TURETILIR (sabit basilmaz): sekme ileride yazilirsa
-  // not da kendiliginden kalkar. Baglantiyi burada kilitliyoruz — ayrisirlarsa
-  // canli bir sekmenin altinda onu yalanlayan bir not kalabilirdi.
-  it("gerekce notu devre-disi sekmenin kendi gerekcesidir (ayrisamaz)", () => {
-    render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
-    const disabled = screen.getByRole("tab", { name: "İş Kalemleri" });
-    const title = disabled.getAttribute("title");
-    expect(title).toBeTruthy();
-    expect(screen.getByTestId("project-tabs-work-items-reason")).toHaveTextContent(title!);
+  it("proje kimligi URL'e kodlanarak yazilir (sozlesme rotasinda da)", () => {
+    render(
+      <ProjectDetailTabs projectId="a b&c" activePath="/projeler/a%20b%26c" projectType="taahhut" />,
+    );
+    expect(screen.getByRole("tab", { name: "İş Kalemleri" })).toHaveAttribute(
+      "href",
+      "/sozlesmeler/isveren/a%20b%26c?tab=items",
+    );
   });
 
-  it("gerekce metninde tipografik sembol yoktur (cıplak glif yasagi)", () => {
-    // Ok/onay/uyari gibi semboller fonts.css unicode-range kumelerinde kapsanmaz.
-    expect(WORK_ITEMS_TAB_DISABLED_HINT).not.toMatch(/[→✓⚠≠]/u);
+  // Gerekce notu ARTIK BASILMAZ: hicbir sekme devre-disi degil. Not kalsaydi
+  // canli bir sekmenin altinda onu YALANLAYAN bir metin dururdu.
+  // (5) ADAS AYRIMI: ayni ekranda ayni etiketle iki farkli kumeye gidiliyor.
+  // Mockup'ta gorunur ayrim metni YOK, o yuzden `title` ile veriliyor.
+  it("sekme, santiye cipiyle karismasin diye SOZLESME POZU oldugunu title'da soyler", () => {
+    render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
+    expect(screen.getByRole("tab", { name: "İş Kalemleri" })).toHaveAttribute(
+      "title",
+      WORK_ITEMS_TAB_TITLE,
+    );
+    // Erisilebilir ad ICERIKTEN gelir; `title` onu EZMEZ.
+    expect(screen.getByRole("tab", { name: "İş Kalemleri" })).toHaveTextContent("İş Kalemleri");
+  });
+
+  it("title metninde tipografik sembol yoktur (cıplak glif yasagi)", () => {
+    expect(WORK_ITEMS_TAB_TITLE).not.toMatch(/[→✓⚠≠]/u);
+  });
+
+  it("devre-disi gerekce notu EKRANDA YOKTUR", () => {
+    render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
+    expect(screen.queryByTestId("project-tabs-work-items-reason")).toBeNull();
+  });
+
+  it("hicbir sekme devre-disi basilmaz (span/aria-disabled kalmadi)", () => {
+    const { container } = render(
+      <ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="kat_karsiligi" />,
+    );
+    expect(container.querySelectorAll('[aria-disabled]')).toHaveLength(0);
+    // 🔴 Baglanti toplarken `getAllByRole("link")` KULLANILMAZ: bu sekmeler
+    // acik `role="tab"` tasiyan <a>'lardir ve o sorgu onlari GORMEZ.
+    const anchors = container.querySelectorAll("a[href]");
+    expect(anchors).toHaveLength(screen.getAllByRole("tab").length);
   });
 });
 
@@ -120,8 +155,14 @@ describe("ProjectDetailTabs — yazili sekmeler gercek ekranlara baglanir", () =
     );
   });
 
-  it("yazili sekmeler 'yakinda' ipucu tasimaz — gercek rotalari var", () => {
+  // Sekmelerin HICBIRI "yakinda" ipucu tasimaz — besinin de gercek rotasi var.
+  // "İş Kalemleri"nin `title`i bir YOKLUK gerekcesi degil, ADAS AYRIMIDIR
+  // (santiye cipiyle ayni etiket, farkli kume) — asagida ayrica bekcilenir.
+  it("hicbir sekme 'yakinda' ipucu tasimaz — gercek rotalari var", () => {
     render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
+    for (const tab of screen.getAllByRole("tab")) {
+      expect(tab.getAttribute("title") ?? "").not.toMatch(/yakında|yakinda/i);
+    }
     for (const label of ["Şantiyeler", "İşveren Hakediş", "Taşeron Hakediş", "Belgeler"]) {
       expect(screen.getByRole("tab", { name: label })).not.toHaveAttribute("title");
     }
@@ -138,9 +179,9 @@ describe("ProjectDetailTabs — klavye ile odaklanabilirlik ve sekme sirasi (dav
     const tabs = screen.getAllByRole("tab");
     expect(tabs).toHaveLength(5);
 
-    // Devre-disi sekme (tabIndex -1) siranin DISINDADIR — kalan dordu sirayla gelir.
+    // F-PRJKALEM: artik BESI de baglantidir, besi de sirada yer alir.
     const focusable = tabs.filter((tab) => tab.getAttribute("aria-disabled") !== "true");
-    expect(focusable).toHaveLength(4);
+    expect(focusable).toHaveLength(5);
 
     for (const tab of focusable) {
       await user.tab();
@@ -235,14 +276,18 @@ describe("ProjectDetailTabs — tür bazlı sekmeler (F-PKK K1)", () => {
     );
   });
 
-  // Devre-dışı sekmenin gerekçe notu YALNIZ GÖRÜNEN sekmelerden türer; tür
-  // süzgeci notu kaybettirmemeli (İş Kalemleri her türde görünür).
-  it("gerekce notu tur suzgecinden sonra da basilir", () => {
-    render(
-      <ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="kat_karsiligi" />,
-    );
-    expect(screen.getByTestId("project-tabs-work-items-reason")).toHaveTextContent(
-      WORK_ITEMS_TAB_DISABLED_HINT,
-    );
+  // "İş Kalemleri" her turde GORUNUR ve her turde CANLIDIR — tur suzgeci onu
+  // ne kaybettirir ne de devre-disi birakir.
+  it("Is Kalemleri her turde canli kalir (tur suzgeci onu etkilemez)", () => {
+    for (const type of ["taahhut", "kendi_yatirim", "kat_karsiligi"] as const) {
+      const { unmount } = render(
+        <ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType={type} />,
+      );
+      expect(screen.getByRole("tab", { name: "İş Kalemleri" })).toHaveAttribute(
+        "href",
+        employerContractTabHref(PROJECT_ID, "items"),
+      );
+      unmount();
+    }
   });
 });

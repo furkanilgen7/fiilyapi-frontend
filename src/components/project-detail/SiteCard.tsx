@@ -145,10 +145,18 @@ interface ChipDef {
 //   · .../santiyeler/{siteId}/hakedisler     → İşveren VE Taşeron panelleri
 //                                              (SiteProgressPaymentsView)
 //
-// `ProjectDetailTabs` proje seviyesinde "İş Kalemleri" sekmesini BİLEREK
-// devre dışı basar (BOQ ŞANTİYE kapsamlıdır — K2+K3). Şantiye kartında ise
-// şantiye kimliği ELDEDİR, bu yüzden burada çip CANLIDIR: sekme çubuğuyla
-// çelişki değil, aynı kuralın iki seviyedeki doğru sonucudur.
+// 🔴 F-PRJKALEM · AYNI ETİKET, İKİ FARKLI KÜME — çelişki DEĞİLDİR.
+// `ProjectDetailTabs`teki "İş Kalemleri" sekmesi de artık CANLIDIR ama
+// BAŞKA bir yere gider ve BAŞKA bir veri kümesini gösterir:
+//   · Proje sekmesi → SÖZLEŞME POZLARI
+//     (`GET /projects/{project_id}/contract/items`,
+//      ekran `/sozlesmeler/isveren/{projectId}?tab=items`)
+//   · Buradaki çip   → ŞANTİYE BOQ'u
+//     (`GET /sites/{id}/boq`, ekran `.../santiyeler/{siteId}/is-kalemleri`)
+// İkisi FARKLI KÜMELERDİR: proje düzeyinde "tüm şantiyelerin BOQ'u" diye bir
+// kavram yoktur, şantiye düzeyinde de sözleşme pozu tutulmaz. Çip şantiye
+// kimliğini taşıdığı için kartta durur ve DEĞİŞMEZ; ayrımı, yeni gelen taraf
+// olan proje SEKMESİ kendi `title`ında anlatır (bkz. WORK_ITEMS_TAB_TITLE).
 function chipsFor(projectId: string, site: SiteListItem): ChipDef[] {
   const siteBase = `/projeler/${projectId}/santiyeler/${site.id}`;
   const chips: ChipDef[] = [
