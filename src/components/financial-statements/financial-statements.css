@@ -601,6 +601,27 @@
   border: 1px solid var(--color-border); /* E11:66 */
   border-radius: var(--radius-8); /* E11:66 */
   overflow: hidden; /* E11:66 — aktif bölmenin zemini köşeleri taşmasın */
+  /* 🔴 BÜZÜLME MUAFİYETİ (ölçülen kusur, 2026-08-27). Yapraklarda
+     (`/bilanco`, `/nakit-akisi`) bu denetim 276px doğal genişliğinden 148px'e
+     düşüyor, `Nakit Akışı` sekmesi HİÇ görünmüyordu — kaldırılan drill
+     sidebar'ın taşıdığı yaprak-yaprak geçişi FİİLEN ölüydü.
+
+     İki koşul BİRLİKTE gerekiyordu:
+       (1) `.fs__actions`teki `Select` primitive'inin sarmalayıcısı
+           `.select-wrap` kuralı `width: 100%` taşır
+           (`ui/select/select.css`) ⇒
+           esnek taban boyutu KAPSAYICININ TAMAMIdır ve satır her koşulda
+           aşırı-talep eder. Kökte `Select` YOKTUR: kusur da orada yoktur.
+       (2) Yukarıdaki `overflow: hidden` bir esnek öğenin otomatik asgari
+           boyutunu (`min-width: auto`) 0'a düşürür ⇒ denetim min-content'inin
+           ALTINA orantılı büzülebilir hâle gelir.
+
+     (2) E11:66 gerekçesiyle duruyor, (1) paylaşılan primitive'dir; ikisine de
+     dokunmadan denetimi büzülmeden MUAF tutuyoruz. Açığı `Select` emer:
+     ölçüldü, min-content'ine iner (132/152px) ve metni KIRPILMAZ. Kökte satır
+     zaten aşırı-talep etmediğinden bu kuralın orada PİKSEL ETKİSİ YOKTUR
+     (ölçüldü: kök geometrisi bit-bit aynı). */
+  flex-shrink: 0;
 }
 
 .fs-mt-seg__item {
