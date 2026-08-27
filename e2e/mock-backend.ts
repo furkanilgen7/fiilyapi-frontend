@@ -2338,11 +2338,16 @@ function buildSubcontractorProgressPaymentFixtures(): MockSubcontractorProgressP
   });
 
   // #2 — sc-1, Haziran, ONAYLANDI (henüz ödenmedi).
+  // 🔴 F-BLMSEK T4 · KARŞI-KANIT (K-IKIZ1): `section_id` null→"sec-1". Sekiz
+  // hakedişin SEKİZİ de `null` olduğu sürece `partitionSectionPayments`ın
+  // "bu bölümün kaydı" dalı e2e'de HİÇ koşmuyordu. `scpp-1`/`scpp-4` BİLEREK
+  // `null` bırakıldı — `site-progress-payments-visual.spec.ts:68`in
+  // "Elektrik · Tüm Bölümler" iddiası (`.first()`) onlarla ayakta kalır.
   const scpp2 = withTotals({
     id: "scpp-2", contract_id: "sc-1", project_id: "p-1", sequence_no: 2,
     period_year: 2026, period_month: 6, description: "Haziran hakedişi",
     status: "approved", vat_pct: "20.00", advance_pct: "20.00", retainage_pct: "5.00",
-    default_coefficient: "1.00", section_id: null,
+    default_coefficient: "1.00", section_id: "sec-1",
     submitted_at: "2026-07-01T09:00:00Z", approved_at: "2026-07-03T09:00:00Z", approved_by: patronId,
     paid_at: null, rejected_at: null, rejection_reason: null,
     is_revision_required: false, created_by: patronId,
@@ -2352,11 +2357,17 @@ function buildSubcontractorProgressPaymentFixtures(): MockSubcontractorProgressP
   });
 
   // #3 — sc-1, Temmuz, ONAY BEKLİYOR.
+  // 🔴 F-BLMSEK T4 · KARŞI-KANIT (K-IKIZ1): `section_id` null→"sec-2", yani
+  // BAŞKA bölüm. Bölüm sekmesinin "başka bölümü DÜŞÜR" dalını bekçiler.
+  // ÖLÇÜLDÜ: `SubcontractorProgressPaymentDetailView.tsx` `section_id`ye SIFIR
+  // atıf yapar → bu kaydın kadrajını alan
+  // `subcontractor-progress-payment-detail-visual.spec.ts` taban karesi
+  // ETKİLENMEZ.
   const scpp3 = withTotals({
     id: "scpp-3", contract_id: "sc-1", project_id: "p-1", sequence_no: 3,
     period_year: 2026, period_month: 7, description: "Temmuz hakedişi",
     status: "pending_approval", vat_pct: "20.00", advance_pct: "20.00", retainage_pct: "5.00",
-    default_coefficient: "1.00", section_id: null,
+    default_coefficient: "1.00", section_id: "sec-2",
     submitted_at: "2026-08-01T09:00:00Z", approved_at: null, approved_by: null,
     paid_at: null, rejected_at: null, rejection_reason: null,
     is_revision_required: false, created_by: patronId,
@@ -3423,9 +3434,14 @@ function buildDiaryEntryFixtures(): MockDiaryEntry[] {
         { id: "d-1-w-3", trade: "Düz İşçi", source: "general", count: 6 },
       ],
     },
+    // 🔴 F-BLMSEK T4 · KARŞI-KANIT (K-IKIZ1). `d-2` ESKİDEN `sec-1`di, yani
+    // s-1'in İKİ günlük kaydı da AYNI bölümdeydi ve `partitionSectionDiaryEntries`
+    // SÜZMESE DE testler geçerdi — ikiz istemciyi YALANLAYAMIYORDU. Artık
+    // sec-1'de bir, sec-2'de bir kayıt var: süzgeci silen mutant KIRMIZI olur.
+    // s-1'in TOPLAM günlük SAYISI değişmedi (sayım iddiaları korunur).
     {
       id: "d-2", site_id: "s-1", project_id: "p-1", entry_date: "2026-07-16",
-      section_id: "sec-1", weather: "rainy", temperature_c: "19.0",
+      section_id: "sec-2", weather: "rainy", temperature_c: "19.0",
       work_done: "Yağış nedeniyle beton dökümü ertelendi.", chief_note: null,
       safety_meeting_held: true, ppe_checked: false, has_incident: false, incident_note: null,
       status: "draft", submitted_at: null,
