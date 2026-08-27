@@ -1,16 +1,24 @@
 /* F-MT T2 · Mali Tablolar ekranları. Kanon: projedesign
    `Mali Tablo - Bilanço.dc.html` (BL). Parantez içi sayılar O dosyanın SATIR
    numaralarıdır. Prefix `fs`.
-   Mockup'ın üst barı (BL:14-22) ve sol menüsü (BL:24-31) ayrı yüzeylerdir:
-   üst bar UYGULAMA KABUĞUdur (F3 Topbar), sol menü `FinancialStatementsSidebar`
-   olarak `financial-statements-shell.css`te yaşar — bu dosya ikisini de
-   YENİDEN ÇİZMEZ.
+   🔴 Drill sidebar (BL:24-31) KALDIRILDI (kullanıcı kararı 2026-08-27, F-MALI
+   dilimi) — `FinancialStatementsSidebar.tsx` + `financial-statements-shell.css`
+   silindi. `.mali-tablolar-content` o dosyadan BURAYA taşındı: üç ekranın da
+   `<div className="fs mali-tablolar-content">` sarmalayıcısı bu class'ı
+   kullanıyor ve tek canlı çağıran bu üç görünüm dosyasıdır.
    Palet YALNIZ token'dan gelir (çıplak hex yok); token karşılığı olmayan
    birkaç ölçü px olarak, BL satır numarasıyla gerekçelendirilerek yazılır
    (`accounting.css` emsali). */
 
 .fs {
   animation: var(--anim-fade-up); /* BL:32 */
+}
+
+/* Global `.app-content` zaten kabuk sidebar'ına göre ofset + iç boşluk
+   veriyor; burada ek bir ofset düzeltmesi YOKTUR. Sınıf yine de vardır: sayfa
+   alt ağacının tek bir tutamağı olsun. */
+.mali-tablolar-content {
+  min-width: 0;
 }
 
 .fs__eyebrow {
