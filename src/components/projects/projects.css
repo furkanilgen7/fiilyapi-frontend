@@ -409,6 +409,23 @@
   border-radius: 3px;
 }
 
+/* ONAYLI SAPMA (kullanici karari 2026-08-27) — mali ilerleme cubugu.
+   Mockup'ta YOKTUR (bkz. ProjectCard.tsx ProgressRow docstring); sonraki tur
+   silmesin. YENI GORSEL DIL ACILMADI: geometri fiziksel cubukla BIREBIR ayni,
+   tip gradyani (.prj-card--* .prj-progress__fill) aynen mirasla gelir; ayrimi
+   yalniz SOLUKLUK tasir — mali her zaman fizikselin gerisindedir ve ikincil
+   okunmalidir. Renk cikarimi token'lardan gelir, ciplak hex YOK. */
+.prj-progress--financial {
+  margin-top: -2px;
+}
+.prj-progress--financial .prj-progress__fill {
+  opacity: 0.5;
+}
+.prj-card .prj-progress--financial .prj-progress__pct {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
 /* Bos liste durumu (mockup'ta tanimsiz — F6 sifir-proje deseni, spec §7.9) */
 .prj-empty {
   background: var(--color-surface);

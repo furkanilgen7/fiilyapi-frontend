@@ -62,28 +62,73 @@ function progressMetric(project: Project): Metric | undefined {
 // `pendingModuleLabel(null)` bu hâlde `FALLBACK_LABEL` ("İlgili modülle birlikte
 // gelir") doner ki bu bir YALAN olur. `pendingModuleLabel`i degistirmek yerine
 // CAGRI YERINDE dallaniyoruz: anahtar yoksa gerekce HIC verilmez (undefined).
-function pendingReason(metric: Metric | undefined): string | undefined {
+function pendingReason(metric: Metric | undefined | null): string | undefined {
   return metric?.pending_module ? pendingModuleLabel(metric.pending_module) : undefined;
 }
 
-// Cubuk satiri — mockup'ta kart basina TEK cubuk (7 kart, 7 cubuk).
+/**
+ * 🔴 ONAYLI SAPMA (kullanici karari 2026-08-27) — MALI ILERLEME CUBUGU.
+ *
+ * Mockup bu alani CIZMIYOR: `projedesign/Ekran 4 - Projeler.dc.html` yalniz
+ * "Fiziksel İlerleme" cubuklarini tasir (185/210/235/260/279) ve "Mali /
+ * Finansal / Nakdi Ilerleme" dizelerinin ALTISI DA sifir eslesme verdi. Yine de
+ * basiliyor cunku kullanici acikca istedi. SONRAKI TUR BUNU "mockup'ta yok"
+ * DIYE SILMESIN.
+ *
+ * Kavram: fiziksel = sahada fiilen ne imal edildi (gonderilmis santiye
+ * gunlugu); mali = ne kadari ONAYLANMIS hakedise girdi. Ikisi KASTEN ayrisir,
+ * mali her zaman fizikselin gerisindedir ve aradaki fark yonetimin baktigi asil
+ * sayidir. Kullanici karari AYRI CUBUK — ayni cubugun icinde ikinci renk DEGIL.
+ *
+ * Alan (`ContractingCard.financial_progress`) YALNIZ taahhut kartinda yasar;
+ * `contracting` diger iki turde `null`dur, dolayisiyla cubuk da yoktur.
+ */
+type ProgressVariant = "primary" | "financial";
+
+// 🔴 VARSAYILAN VERILMEZ (bir onceki dilimin en pahali dersi): ayristirici
+// prop'a varsayilan konsaydi bir cagiran onu atlar, sessizce yanlis kimlige
+// duser ve birim testlerinin HICBIRI gormezdi — yalniz gorsel kapi gorurdu.
+// Bu yuzden `variant` ZORUNLUDUR ve testid'ler ondan turer.
+const PROGRESS_TESTIDS: Record<ProgressVariant, { pct: string; fill: string }> = {
+  primary: { pct: "prj-progress-pct", fill: "prj-progress-fill" },
+  financial: { pct: "prj-financial-pct", fill: "prj-financial-fill" },
+};
+
+// Cubuk satiri — mockup'ta kart basina TEK cubuk (7 kart, 7 cubuk); mali cubuk
+// yukaridaki onayli sapmayla taahhut kartlarina IKINCI satir olarak eklenir.
 // Bos zarfta cubuk SILINMEZ: etiket kalir, yuzde "—" olur ve DOLGU OGESI HIC
 // BASILMAZ (genislik 0 degil) — emsal `project-detail/SiteCard.tsx` ProgressBar.
-function ProgressRow({ project }: { project: Project }) {
-  const metric = progressMetric(project);
+//
+// NOT (`metricCell` yeniden kullanimi olculdu): `src/lib/placeholder-cell.ts`
+// ayni uc hâli okur ve dallanmasi `realValue`/`pendingReason` ikilisiyle
+// DAVRANIS OLARAK AYNIDIR (`available === true` + deger null/undefined degil).
+// Buraya YINE DE takilmadi: `metricCell` yalnizca BICIMLENMIS metni dondurur,
+// cubuk genisligi ise HAM sayiyi ister (`Math.min(Number(value), 100)`).
+// Zorlamak, ayni zarfi iki kez okumak ya da bicimli metni geri ayristirmak
+// demek olurdu; ikisi de mevcut kanondan kotu.
+function ProgressRow({
+  label,
+  metric,
+  variant,
+}: {
+  label: string;
+  metric: Metric | undefined | null;
+  variant: ProgressVariant;
+}) {
   const value = realValue(metric);
+  const testids = PROGRESS_TESTIDS[variant];
   return (
-    <div className="prj-progress">
+    <div className={cx("prj-progress", variant === "financial" && "prj-progress--financial")}>
       <div className="prj-progress__labels">
-        <span>{PROGRESS_LABELS[project.project_type]}</span>
+        <span>{label}</span>
         {value !== null ? (
-          <span className="prj-progress__pct" data-testid="prj-progress-pct">
+          <span className="prj-progress__pct" data-testid={testids.pct}>
             {formatPercent(value)}
           </span>
         ) : (
           <span
             className="prj-progress__pct prj-progress__pct--pending"
-            data-testid="prj-progress-pct"
+            data-testid={testids.pct}
             title={pendingReason(metric)}
           >
             —
@@ -94,7 +139,7 @@ function ProgressRow({ project }: { project: Project }) {
         {value !== null && (
           <div
             className="prj-progress__fill"
-            data-testid="prj-progress-fill"
+            data-testid={testids.fill}
             style={{ width: `${Math.min(Number(value), 100)}%` }}
           />
         )}
@@ -126,7 +171,7 @@ function KpiCell({ label, children }: { label: string; children: ReactNode }) {
 // Zarfin TEK okuma noktasi: dallanma alan TIPINE degil `available` BAYRAGINA
 // bakar (P10 sozlesmesi). Bayrak dolu ama deger yoksa yine bos durum sayilir —
 // "—" basmak, bos hucre birakmaktan durusttur.
-function realValue(metric: Metric | undefined): string | null {
+function realValue(metric: Metric | undefined | null): string | null {
   if (!metric?.available) return null;
   return metric.value ?? null;
 }
@@ -312,7 +357,25 @@ export function ProjectCard({ project }: { project: Project }) {
           {project.project_type === "taahhut" && <TaahhutKpis project={project} />}
           {project.project_type === "kendi_yatirim" && <KendiYatirimKpis project={project} />}
           {project.project_type === "kat_karsiligi" && <KatKarsiligiKpis project={project} />}
-          <ProgressRow project={project} />
+          <ProgressRow
+            label={PROGRESS_LABELS[project.project_type]}
+            metric={progressMetric(project)}
+            variant="primary"
+          />
+          {/* ONAYLI SAPMA — yukaridaki ProgressRow docstring'ine bak. Alan
+              OPSIYONEL (`financial_progress?:`): eski bir backend surumu
+              anahtari komple atlayabilir. O hâlde satir SILINMEZ, bos zarfin
+              AYNISI basilir ("—", dolgu yok, title yok) — cunku (a) bu dosyanin
+              kanonu "bos zarfta cubuk SILINMEZ", (b) `metricCell` de tanimsiz
+              zarfi bos hucre sayip ipucu UYDURMAZ, (c) alan gelip gittiginde
+              kart yuksekligi oynamaz. */}
+          {project.project_type === "taahhut" && (
+            <ProgressRow
+              label="Mali İlerleme"
+              metric={project.contracting?.financial_progress}
+              variant="financial"
+            />
+          )}
           {project.project_type === "kendi_yatirim" && (
             <MarginChip metric={project.investment?.margin} />
           )}
