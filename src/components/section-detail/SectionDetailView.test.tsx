@@ -417,7 +417,7 @@ describe("SectionDetailView — sekmeler (D99-105, hepsi BÖLÜM BAĞI bekleyen 
     // 🔴 F-BOLLINK: gerekçe paylaşılan `stock` anahtarının metni DEĞİL —
     // stok modülü YAZILI, eksik olan BÖLÜM BAĞI. Eski metin yanlış bilgiydi.
     // (F-UNIT1 T5: `stock` metni de düzeltildi, iddia yeni metne taşındı.)
-    expect(within(panel).getByText(/Malzeme hareketleri bu bölüme henüz kırılmıyor/)).toBeInTheDocument();
+    expect(within(panel).getByText(/Stok hareketi bölüm alanı taşımıyor/)).toBeInTheDocument();
     expect(
       within(panel).queryByText(/Stok verisi bu yüzeye henüz bağlanmadı/),
     ).not.toBeInTheDocument();
@@ -568,7 +568,7 @@ describe("SectionDetailView — İş Kalemleri sekmesi (BOQ-SEC-F)", () => {
     // "Malzeme"dir. Bekçi SİLİNMEZ, yalnız hâlâ pending olan sekmeye çevrilir.
     await user.click(screen.getByRole("tab", { name: "Malzeme" }));
     const panel = screen.getByRole("tabpanel");
-    expect(within(panel).getByText(/Malzeme hareketleri bu bölüme henüz kırılmıyor/)).toBeInTheDocument();
+    expect(within(panel).getByText(/Stok hareketi bölüm alanı taşımıyor/)).toBeInTheDocument();
     expect(within(panel).queryByText("03.001")).not.toBeInTheDocument();
   });
 });
@@ -692,7 +692,7 @@ describe("SectionDetailView — İşçiler & Puantaj sekmesi (F-BLMPUAN)", () =>
     // koruyan tek testtir.
     await user.click(screen.getByRole("tab", { name: "Malzeme" }));
     const panel = screen.getByRole("tabpanel");
-    expect(within(panel).getByText(/Malzeme hareketleri bu bölüme henüz kırılmıyor/)).toBeInTheDocument();
+    expect(within(panel).getByText(/Stok hareketi bölüm alanı taşımıyor/)).toBeInTheDocument();
     expect(within(panel).queryByTestId("section-timesheet")).not.toBeInTheDocument();
   });
 });

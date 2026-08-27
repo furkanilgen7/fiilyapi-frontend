@@ -20,6 +20,7 @@ import { groupSectionWorkers } from "./section-workers";
 import { SectionBoqCard } from "./SectionBoqCard";
 import { SectionDiaryPanel } from "./SectionDiaryPanel";
 import { SectionPaymentsPanel } from "./SectionPaymentsPanel";
+import { SectionStockPanel } from "./SectionStockPanel";
 import { SectionTimesheetPanel } from "./SectionTimesheetPanel";
 import { SectionWorkersList } from "./SectionWorkersList";
 import { SECTION_TABS, SectionDetailTabs } from "./SectionDetailTabs";
@@ -178,6 +179,18 @@ export function SectionDetailView() {
             paymentsHref={`/projeler/${projectId}/santiyeler/${siteId}/hakedisler`}
           />
         );
+      case "stok":
+        // 🔴 F-BLMSEK T3 — TEK kalan pending sekme. Diğer üçünün aksine bölüm
+        // bağı AÇILAMAZ (ölçüldü, `inventory/` SIFIR `section_id` isabeti);
+        // panel bunu SÖYLER ve kullanıcıyı şantiye stok ekranına yönlendirir.
+        // `sideLinkHref` TEK tanımı korunur — `carriesSection: false` kararı
+        // burada da geçerlidir, `?section=` EKLENMEZ.
+        return (
+          <SectionStockPanel
+            sectionName={section.name}
+            stockHref={sideLinkHref(SIDE_LINKS.stock)}
+          />
+        );
       default:
         // "is-kalemleri". Yükleme/hata dalları AYRI basılır: `data` yokken boş
         // tabloya düşmek kullanıcıya "bu bölüme kalem atanmadı" YALANINI
@@ -215,17 +228,14 @@ export function SectionDetailView() {
         onSelect={setActiveTab}
       />
 
+      {/* 🔴 F-BLMSEK T3 — Malzeme artık jenerik `CardEmptyState` dalına
+          DÜŞMEZ: `livePanel()` dispatch'i BEŞ sekmenin BEŞİNİ de kapsar
+          (dördü gerçek veri, "stok" `SectionStockPanel` ile kendi spesifik
+          gerekçesini basar). Eski `activeTabDef.contentLive` dalı jenerik
+          şablonun TEK tüketicisiydi — o tüketici kalmadığı için ayrım silindi
+          (BOQ-SEC-F / `section_boq` emsali: okuyanı kalmayan kod SİLİNİR). */}
       <div className="section-panel" role="tabpanel">
-        {activeTabDef.contentLive ? (
-          <div className="section-panel__body section-panel__body--flush">{livePanel()}</div>
-        ) : (
-          <div className="section-panel__body">
-            <CardEmptyState
-              title={`${activeTabDef.label} — bu bölümde henüz görüntülenemiyor`}
-              pendingModule={activeTabDef.contentPending}
-            />
-          </div>
-        )}
+        <div className="section-panel__body section-panel__body--flush">{livePanel()}</div>
       </div>
 
       <div className="section-detail__bottom-row">

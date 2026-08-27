@@ -408,17 +408,27 @@ export const MODULE_LABELS: Record<string, string> = {
   // F-BLMPUAN (2026-08-27): `section_timesheet` de AYNI gerekçeyle SİLİNDİ —
   // bölüm ↔ puantaj bağı AÇILDI (`TimesheetEntry.section_id`), sekme gerçek
   // matrisi ve alt kart gerçek işçi kırılımını basıyor.
-  section_stock: "Malzeme hareketleri bu bölüme henüz kırılmıyor (şantiye genelinde tutulur)",
-  section_progress_payments: "Hakediş bu bölüme henüz kırılmıyor (şantiye genelinde tutulur)",
-  section_site_diary: "Günlük kayıt bu bölüme henüz kırılmıyor (şantiye genelinde tutulur)",
-  // 🔴 F-BLMSEK T2 (2026-08-27) — `section_progress_payments` YUKARIDA DURUYOR
-  // ama sekme artık CANLI: bölüm ↔ TAŞERON hakedişi bağı AÇIK
-  // (`SubcontractorProgressPaymentListItem.section_id`). Açık KALMAYAN taraf
-  // İŞVEREN hakedişidir — ölçüldü: `backend/app/modules/progress_payments/`
-  // altında `section_id` SIFIR isabet, hiçbir alan/uç bölüm taşımaz.
-  // K6 gereği AYRI anahtar: metin bir MODÜL yokluğu iddia ETMEZ (`/hakedisler`
-  // CANLI), eksik olan ALANI adlandırır. Bu anahtar bir yer tutucu kartın
-  // gerekçesi DEĞİL, canlı panelin KAPSAM satırının kaynağıdır.
+  //
+  // 🔴 F-BLMSEK T3 (2026-08-27): `section_progress_payments` ve
+  // `section_site_diary` de AYNI gerekçeyle SİLİNDİ — T1/T2 bölüm ↔ günlük
+  // kayıt ve bölüm ↔ taşeron hakedişi bağlarını AÇTI ("Günlük Kayıt" ve
+  // "Hakediş" sekmeleri artık gerçek panel basıyor). Anahtarları bırakmak,
+  // hiçbir yerin okumadığı ölü bir gerekçe metni olurdu.
+  //
+  // `section_stock` TEK AÇILMAYAN kaldı — ölçüldü (`backend/app/modules/
+  // inventory/`): `section_id` SIFIR kolon isabeti, tek eşleşme bir YORUM
+  // satırı (`purchase_requests.section_id`ye değinir). Metin bu yüzden
+  // MODÜL değil ALANI adlandırır (`work_category` emsali): stok hareketi
+  // KAYDININ KENDİSİ bölüm alanı taşımıyor, `/stok` modülü YAZILIDIR.
+  section_stock: "Stok hareketi bölüm alanı taşımıyor (hareketler şantiye deposunda tutulur)",
+  // 🔴 F-BLMSEK T2 (2026-08-27) — sekme artık CANLI: bölüm ↔ TAŞERON hakedişi
+  // bağı AÇIK (`SubcontractorProgressPaymentListItem.section_id`). Açık
+  // KALMAYAN taraf İŞVEREN hakedişidir — ölçüldü: `backend/app/modules/
+  // progress_payments/` altında `section_id` SIFIR isabet, hiçbir alan/uç
+  // bölüm taşımaz. K6 gereği AYRI anahtar: metin bir MODÜL yokluğu iddia
+  // ETMEZ (`/hakedisler` CANLI), eksik olan ALANI adlandırır. Bu anahtar bir
+  // yer tutucu kartın gerekçesi DEĞİL, canlı panelin KAPSAM satırının
+  // kaynağıdır.
   section_employer_progress_payments:
     "İşveren hakedişi bölüme kırılmıyor (hakediş kaydı bölüm alanı taşımıyor)",
   // 🔴 F-PKK T1 (2026-08-23) — Proje Özeti (KY = `Proje - Kendi Yatırım`,

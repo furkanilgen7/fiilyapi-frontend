@@ -209,6 +209,6 @@ describe("SectionDetailView — Günlük Kayıt sekmesi (F-BLMSEK)", () => {
     const panel = screen.getByRole("tabpanel");
 
     expect(within(panel).queryByTestId("section-diary")).not.toBeInTheDocument();
-    expect(within(panel).getByText(/Malzeme hareketleri bu bölüme henüz kırılmıyor/)).toBeInTheDocument();
+    expect(within(panel).getByText(/Stok hareketi bölüm alanı taşımıyor/)).toBeInTheDocument();
   });
 });

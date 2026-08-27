@@ -472,3 +472,40 @@
 .section-pp__note-link {
   color: var(--color-primary);
 }
+
+/* --- F-BLMSEK T3 · "Malzeme" sekme paneli --- */
+/* Önek ÖLÇÜLDÜ: `grep -rn "section-stock\|section-scope" src/ e2e/` bu
+   dilimden ÖNCE SIFIR isabet verdi. Bu panel diğerleri gibi VERİ BASMAZ —
+   sekme BİLİNÇLİ pending kalır (`CardEmptyState` içeriği `dash-empty*`
+   sınıflarını kullanır); burada yalnız kabuk, başlık ve bağlantı tanımlanır. */
+.section-stock {
+  display: block;
+}
+.section-stock__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+.section-stock__title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.section-stock__link {
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+}
+.section-stock__body {
+  padding: 16px 14px;
+}
+.section-stock__hint {
+  margin: 8px 0 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+  line-height: var(--leading-normal);
+}
