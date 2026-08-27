@@ -183,6 +183,7 @@ export function EmployerContractDetailView({ projectId }: EmployerContractDetail
               isLoading={paymentsQuery.isLoading}
               data={paymentsQuery.data}
               showProjectName={false}
+              emptyScope="contract"
             />
           )}
 
