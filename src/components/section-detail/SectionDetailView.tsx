@@ -12,12 +12,14 @@ import { useBoq } from "@/lib/api/hooks/useBoq";
 import { useSection } from "@/lib/api/hooks/useSection";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { useSiteDiaryEntries } from "@/lib/api/hooks/useSiteDiary";
+import { useSiteSubcontractorPayments } from "@/lib/api/hooks/useSiteSubcontractorPayments";
 import { isForbidden } from "@/lib/api/unwrap";
 import { formatPeriod } from "@/lib/format";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { groupSectionWorkers } from "./section-workers";
 import { SectionBoqCard } from "./SectionBoqCard";
 import { SectionDiaryPanel } from "./SectionDiaryPanel";
+import { SectionPaymentsPanel } from "./SectionPaymentsPanel";
 import { SectionTimesheetPanel } from "./SectionTimesheetPanel";
 import { SectionWorkersList } from "./SectionWorkersList";
 import { SECTION_TABS, SectionDetailTabs } from "./SectionDetailTabs";
@@ -94,6 +96,14 @@ export function SectionDetailView() {
   // AYNI kalır (`["site-diary-entries", siteId, null, null, null, null]`) ve
   // önbellek paylaşılır. Süzgeç yalnız GÖRÜNÜME uygulanır.
   const diaryEntries = useSiteDiaryEntries(siteId);
+  // F-BLMSEK T2 — bölüm süzgeçli TAŞERON hakedişi. Hook koşullu ÇAĞRILAMAZ
+  // (yukarıdaki BOQ notunun aynısı), bu yüzden sekme seçili olmasa da bağlanır.
+  //
+  // 🔴 Bölüm parametresi YOK ve EKLENMEZ: liste ucu `section_id` KABUL ETMEZ
+  // (ölçüldü — `project_id`/`site_id`/`period_*`/`status`/`q`/`limit`/`offset`).
+  // Süzgeç yalnız GÖRÜNÜME uygulanır (`section-payments.ts`); imza değişmediği
+  // için önbellek şantiye "Hakedişler" ekranıyla PAYLAŞILIR, ikinci istek yok.
+  const subcontractorPayments = useSiteSubcontractorPayments(projectId, siteId);
   // İzin: ekran `sites:view`, "Düzenle" butonu `sites:full` (task-2-brief §İzin).
   const { canView, canWrite } = useModulePermission("sites");
   const [activeTab, setActiveTab] = useState(0);
@@ -153,6 +163,19 @@ export function SectionDetailView() {
             isLoading={diaryEntries.isLoading}
             isError={diaryEntries.isError}
             diaryHref={`/projeler/${projectId}/santiyeler/${siteId}/gunluk-kayit`}
+          />
+        );
+      case "hakedisler":
+        return (
+          <SectionPaymentsPanel
+            sectionId={sectionId}
+            sectionName={section.name}
+            items={subcontractorPayments.items}
+            isLoading={subcontractorPayments.isLoading}
+            isError={subcontractorPayments.isError}
+            isPartial={subcontractorPayments.isPartial}
+            truncation={subcontractorPayments.truncation}
+            paymentsHref={`/projeler/${projectId}/santiyeler/${siteId}/hakedisler`}
           />
         );
       default:

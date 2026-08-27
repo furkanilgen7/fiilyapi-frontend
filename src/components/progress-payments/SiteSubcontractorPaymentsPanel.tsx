@@ -52,7 +52,23 @@ export function SiteSubcontractorPaymentsPanel({
   );
 }
 
-function SubcontractorPaymentRow({ item }: { item: SiteSubcontractorPaymentItem }) {
+/**
+ * F-BLMSEK T2 — satır kabuğu DIŞARI AÇILDI. Bölüm Detay › "Hakediş" sekmesi
+ * bu satırı OLDUĞU GİBİ yeniden kullanır; ikinci bir liste yazılsaydı zamanla
+ * AYRIŞIRDI (mockup `Bölüm Detay.dc.html` 102-104 yalnız sekme düğmelerini
+ * çizer, panel çizimi taşımaz — F-BLMPUAN'ın kanonik cevabı: yeni görsel dil
+ * İCAT EDİLMEZ, şantiye bileşeni paylaşılır).
+ *
+ * `resolvedSectionName` OPSİYONELDİR ve şantiye ekranı onu GEÇMEZ → o ekranın
+ * bastığı DOM birebir aynı kalır (`santiye-hakedisler.png` görsel tabanı).
+ */
+export function SubcontractorPaymentRow({
+  item,
+  resolvedSectionName,
+}: {
+  item: SiteSubcontractorPaymentItem;
+  resolvedSectionName?: string | null;
+}) {
   const badge = PAYMENT_STATUS_BADGE[item.status];
   const href = `/hakedisler/taseron/${item.id}`;
   // Fix round 1 (coordinator review) — bileşik alt metin ("iş kategorisi ·
@@ -60,7 +76,11 @@ function SubcontractorPaymentRow({ item }: { item: SiteSubcontractorPaymentItem 
   // F-6: eski atıf "Ekran 2 satır 141" yanlıştı): iki parçanın "bilinmiyor" hâli AYRI anlamlar
   // taşıdığından `buildSubcontractorRowSubtitle` bunları ayırt eder (bkz.
   // dosyanın başlığı) — bölüm bileşeni artık HİÇ kaybolmaz.
-  const subtitle = buildSubcontractorRowSubtitle(item.workCategory, item.sectionId);
+  const subtitle = buildSubcontractorRowSubtitle(
+    item.workCategory,
+    item.sectionId,
+    resolvedSectionName,
+  );
 
   return (
     <li className="pp-row">

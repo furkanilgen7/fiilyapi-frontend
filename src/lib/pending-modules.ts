@@ -411,6 +411,16 @@ export const MODULE_LABELS: Record<string, string> = {
   section_stock: "Malzeme hareketleri bu bölüme henüz kırılmıyor (şantiye genelinde tutulur)",
   section_progress_payments: "Hakediş bu bölüme henüz kırılmıyor (şantiye genelinde tutulur)",
   section_site_diary: "Günlük kayıt bu bölüme henüz kırılmıyor (şantiye genelinde tutulur)",
+  // 🔴 F-BLMSEK T2 (2026-08-27) — `section_progress_payments` YUKARIDA DURUYOR
+  // ama sekme artık CANLI: bölüm ↔ TAŞERON hakedişi bağı AÇIK
+  // (`SubcontractorProgressPaymentListItem.section_id`). Açık KALMAYAN taraf
+  // İŞVEREN hakedişidir — ölçüldü: `backend/app/modules/progress_payments/`
+  // altında `section_id` SIFIR isabet, hiçbir alan/uç bölüm taşımaz.
+  // K6 gereği AYRI anahtar: metin bir MODÜL yokluğu iddia ETMEZ (`/hakedisler`
+  // CANLI), eksik olan ALANI adlandırır. Bu anahtar bir yer tutucu kartın
+  // gerekçesi DEĞİL, canlı panelin KAPSAM satırının kaynağıdır.
+  section_employer_progress_payments:
+    "İşveren hakedişi bölüme kırılmıyor (hakediş kaydı bölüm alanı taşımıyor)",
   // 🔴 F-PKK T1 (2026-08-23) — Proje Özeti (KY = `Proje - Kendi Yatırım`,
   // KK = `Proje - Kat Karşılığı`) ve Paylaşım Tablosu
   // (KKP = `Kat Karşılığı - Paylaşım`) ekranlarının mockup'ta ÇİZİLİ olup

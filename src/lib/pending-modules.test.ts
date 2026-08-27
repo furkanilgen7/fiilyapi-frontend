@@ -111,6 +111,20 @@ describe("pendingModuleLabel", () => {
     expect(pendingModuleLabel("section_boq")).toBe("İlgili modülle birlikte gelir");
   });
 
+  // 🔴 F-BLMSEK T2 · Bölüm Detay › "Hakediş" sekmesinin KAPSAM satırı bu
+  // anahtardan beslenir. K6 (ekran başına ayrı anahtar) korunur ve metin
+  // "modül yok" DEMEZ — `/hakedisler` CANLI; eksik olan İŞVEREN hakediş
+  // kaydındaki BÖLÜM ALANIDIR (ölçüldü: `progress_payments/` altında
+  // `section_id` SIFIR isabet). Metin bu yüzden ALANI adlandırır.
+  it("section_employer_progress_payments EKSIK ALANI adlandirir, modul yoklugu DEMEZ", () => {
+    const label = pendingModuleLabel("section_employer_progress_payments");
+    expect(label).toBe(
+      "İşveren hakedişi bölüme kırılmıyor (hakediş kaydı bölüm alanı taşımıyor)",
+    );
+    expect(label).not.toBe("İlgili modülle birlikte gelir");
+    expect(label).not.toMatch(/modülüyle birlikte gelir/);
+  });
+
   // F-BLMPUAN bekçisi: `section_timesheet` geri gelirse birileri CANLI puantaj
   // sekmesine yeniden "bu bölüme kırılmıyor" gerekçesi bağlamış demektir.
   it("section_timesheet anahtari ARTIK YOK - bolum bagi acildi", () => {

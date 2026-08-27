@@ -391,3 +391,84 @@
 .section-diary__note-link {
   color: var(--color-primary);
 }
+
+/* --- F-BLMSEK T2 · "Hakediş" sekme paneli --- */
+/* Önek ÖLÇÜLDÜ: `grep -rn "section-pp" src/ e2e/` bu dilimden ÖNCE SIFIR
+   isabet verdi (`.section-diary` T1'in, `.spp__` şantiye ekranınındır —
+   ikisi de yeniden kullanılmadı). Satırların KENDİSİ şantiye "Hakedişler"
+   ekranının `.pp-row*` sınıflarını yeniden kullanır (sunum tek kaynaktan);
+   burada yalnız kabuk, başlık, kapsam satırı, bant ve not tanımlanır.
+   Mockup bu panel için ÇİZİM TAŞIMAZ (D102-104 yalnız sekme düğmeleri). */
+.section-pp {
+  display: block;
+}
+.section-pp__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+.section-pp__title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.section-pp__link {
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+}
+/* 🔴 KAPSAM SATIRI — gizlenmez, kısılmaz, listeyle birlikte HER ZAMAN görünür. */
+.section-pp__scope {
+  margin: 0;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+  line-height: var(--leading-normal);
+}
+/* Kırpılma bandı: uyarı tonundadır — "yok" iddiasının güvenilmezliğini taşır. */
+.section-pp__band {
+  margin: 0;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--color-divider);
+  background: var(--color-warning-soft);
+  font-size: var(--text-small);
+  color: var(--color-text);
+  line-height: var(--leading-normal);
+}
+/* `.pp-list` ile birlikte kullanılır; buradaki iş yalnız liste sıfırlaması. */
+.section-pp__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.section-pp__empty {
+  padding: 16px 14px;
+}
+.section-pp__empty-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.section-pp__empty-hint {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  line-height: var(--leading-normal);
+}
+.section-pp__note {
+  margin: 0;
+  padding: 8px 14px;
+  border-top: 1px solid var(--color-divider);
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+  line-height: var(--leading-normal);
+}
+.section-pp__note-link {
+  color: var(--color-primary);
+}
