@@ -107,6 +107,11 @@ test("santiye detayindan bolum detayina link, hero + KPI + sekmeler + Hakedis Ol
     "Kat 6–10 Kaba İnşaat · Ağustos 2026",
   );
   await expect(page.locator(".ts-summary__count")).toHaveText("3 işçi");
+  // 🔴 POZİTİF KONTROL — `.ts-cell` seçicisi GERÇEKTİR: dolu bölümde hücre
+  // rozeti basılır. Bu iddia olmadan, boş bölümdeki `toHaveCount(0)` bekçisi
+  // yanlış yazılmış bir seçiciyle de yeşil kalırdı (boş küme her zaman 0'dır).
+  const filledCells = await page.getByTestId("section-timesheet").locator(".ts-cell").count();
+  expect(filledCells).toBeGreaterThan(0);
   // 🔴 SALT OKUNUR (K2): hücre düzenleme yolu bu ekranda AÇILMAZ.
   await expect(page.locator(".ts-cell-button")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Kaydet" })).toHaveCount(0);
@@ -270,4 +275,20 @@ test("puantaji olmayan bolumde 'bu ay kayit yok' der, 'modul yok' DEMEZ", async 
   await expect(page.getByTestId("section-timesheet")).toBeVisible();
   await expect(page.locator(".ts-summary__count")).toHaveText("0 işçi");
   await expect(page.getByText("İşçiler & Puantaj — bu bölümde henüz görüntülenemiyor")).toHaveCount(0);
+
+  // 🔴 ŞEF ÖLÇÜMÜ (canlının İLK göreceği hâl budur — hiç puantaj kaydı yok).
+  // Panelin kendisi bir CÜMLE basmaz: K1 gereği satırlar AKTİF PERSONEL
+  // KARTOTEKSİNDEN kurulur, yani boş ayda bile 6 satır çizilir ve hepsi
+  // BOŞTUR ("0 işçi", "0 adam/gün"). Bu, şantiye ekranının `?section=`
+  // görünümüyle BİREBİR aynı davranıştır ve ŞP mockup'ının çizdiği hâldir —
+  // mockup'ta olmayan bir uyarı şeridi İCAT EDİLMEZ.
+  //
+  // Hâli DÜRÜST kılan şey, alt kartın AYNI ANDA ekranda durup dönemi açıkça
+  // söylemesidir. Bu yüzden BURASI bekçilenir: kart sekme açıkken gizlenirse
+  // kullanıcı çıplak bir boş ızgarayla kalır ve "modül çalışmıyor" sanır —
+  // yani kusur kapanmış değil KILIK DEĞİŞTİRMİŞ olurdu.
+  await expect(empty).toBeVisible();
+  await expect(empty).toHaveText("Ağustos 2026 döneminde bu bölümde puantaj kaydı yok.");
+  // Boş ızgaranın satırları GERÇEKTEN boş: tek bir hücre rozeti bile yok.
+  await expect(page.getByTestId("section-timesheet").locator(".ts-cell")).toHaveCount(0);
 });
