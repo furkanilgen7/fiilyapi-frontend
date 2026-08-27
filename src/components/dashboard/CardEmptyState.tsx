@@ -1,4 +1,4 @@
-import { pendingModuleLabel } from "@/lib/pending-modules";
+import { pendingModuleLabel, type PendingModuleKey } from "@/lib/pending-modules";
 
 import "./dashboard.css";
 
@@ -9,7 +9,7 @@ export function CardEmptyState({
   title: string;
   // Opsiyonel: gerekce satiri YALNIZ anahtar verildiginde basilir. Anahtarin
   // bayat kaldigi yuzeylerde (or. onay karti) cagiran taraf bilerek atlar.
-  pendingModule?: string;
+  pendingModule?: PendingModuleKey;
 }) {
   return (
     <div className="dash-empty">

@@ -7377,7 +7377,7 @@ export interface components {
             quantity: string;
             /** Unit Price */
             unit_price: string;
-            progress_pct: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            progress_pct: components["schemas"]["MetricPlaceholder"];
             /** Sort Order */
             sort_order: number;
             /** Allocated Quantity */
@@ -7448,13 +7448,13 @@ export interface components {
          *     dogru kalir ama bekleyen sey MODUL degil **KAVRAMDIR**.
          */
         BoqTotals: {
-            contract_total: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
-            realized_total: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
-            remaining_total: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
-            revision_total: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            contract_total: components["schemas"]["MetricPlaceholder"];
+            realized_total: components["schemas"]["MetricPlaceholder"];
+            remaining_total: components["schemas"]["MetricPlaceholder"];
+            revision_total: components["schemas"]["MetricPlaceholder"];
             /** Grand Total */
             grand_total: string;
-            grand_progress_pct: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            grand_progress_pct: components["schemas"]["MetricPlaceholder"];
         };
         /**
          * CashFlowBucket
@@ -8053,10 +8053,10 @@ export interface components {
          * @description Taahhut karti — sozlesme bedeli/isveren ustte gercek, gerisi bos durum.
          */
         ContractingCard: {
-            spent: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
-            physical_progress: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
-            financial_progress?: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"] | null;
-            final_progress_payment: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            spent: components["schemas"]["MetricPlaceholder"];
+            physical_progress: components["schemas"]["MetricPlaceholder"];
+            financial_progress?: components["schemas"]["MetricPlaceholder"] | null;
+            final_progress_payment: components["schemas"]["MetricPlaceholder"];
             worker_count: components["schemas"]["CountPlaceholder"];
             subcontractor_count: components["schemas"]["CountPlaceholder"];
         };
@@ -8176,9 +8176,9 @@ export interface components {
             active_project_count: number;
             /** Projects */
             projects: components["schemas"]["DashboardProjectCard"][];
-            portfolio: components["schemas"]["app__modules__dashboard__schemas__MetricPlaceholder"];
-            receivables: components["schemas"]["app__modules__dashboard__schemas__MetricPlaceholder"];
-            average_margin: components["schemas"]["app__modules__dashboard__schemas__MetricPlaceholder"];
+            portfolio: components["schemas"]["MetricPlaceholder"];
+            receivables: components["schemas"]["MetricPlaceholder"];
+            average_margin: components["schemas"]["MetricPlaceholder"];
             pending_approvals: components["schemas"]["PendingApprovalsPlaceholder"];
             risks: components["schemas"]["ListPlaceholder"];
         };
@@ -9915,12 +9915,12 @@ export interface components {
             sales_target: string | null;
             /** Land Cost */
             land_cost: string | null;
-            sold_amount: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
-            sales_ratio: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            sold_amount: components["schemas"]["MetricPlaceholder"];
+            sales_ratio: components["schemas"]["MetricPlaceholder"];
             unit_summary: components["schemas"]["CountPlaceholder"];
-            total_cost: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
-            estimated_profit: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
-            margin: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            total_cost: components["schemas"]["MetricPlaceholder"];
+            estimated_profit: components["schemas"]["MetricPlaceholder"];
+            margin: components["schemas"]["MetricPlaceholder"];
         };
         /**
          * InvoiceCreate
@@ -10714,11 +10714,11 @@ export interface components {
             shareholders: components["schemas"]["ShareholderResponse"][];
             our_unit_count: components["schemas"]["CountPlaceholder"];
             owner_unit_count: components["schemas"]["CountPlaceholder"];
-            our_share_value: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
-            construction_cost: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
-            estimated_profit: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
-            margin: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
-            construction_progress: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            our_share_value: components["schemas"]["MetricPlaceholder"];
+            construction_cost: components["schemas"]["MetricPlaceholder"];
+            estimated_profit: components["schemas"]["MetricPlaceholder"];
+            margin: components["schemas"]["MetricPlaceholder"];
+            construction_progress: components["schemas"]["MetricPlaceholder"];
         };
         /**
          * LandShareContract
@@ -11340,6 +11340,42 @@ export interface components {
             permissions: {
                 [key: string]: components["schemas"]["AccessLevel"];
             };
+        };
+        /**
+         * MetricPlaceholder
+         * @description Tek degerli alanin zarfi: ya GERCEK deger ya durust bos durum tasir.
+         *
+         *     P10 T3: zarf sozlesmesi artik pydantic duzeyinde BAGLIDIR ve iki yonlu
+         *     calisir (ROADMAP §3 "celiskili sozlesme" borcu):
+         *
+         *     * `available=True` ⇒ `pending_module is None` — dolu bir alanin "hangi modul
+         *       gelince dolacak" bilgisi TASIMASI anlamsizdir; eski hâlinde `pending_module`
+         *       zorunlu oldugu icin dolu zarf bile bir modul adi tasimak zorundaydi ve
+         *       ekran o alani "hâlâ eksik" sanabiliyordu.
+         *     * `available=False` + `pending_module` DOLU — alan henuz BAGLANMADI; bos zarf
+         *       kaynagini bildirir, aksi hâlde ekran "—" basip nedenini soyleyemez.
+         *     * `available=False` + `pending_module is None` — 🔴 **ILR-1/2 UCUNCU HAL:
+         *       ROLUN IZNI YOK** (kullanici karari 2026-08-27). `pending_module` IZIN
+         *       anlamiyla YUKLENMEZ: *"bu modul daha yazilmadi"* ile *"bunu gormeye yetkin
+         *       yok"* farkli iki durumdur ve ilkini ikincisi icin kullanmak ekrani YALANCI
+         *       yapar. Bu hâl YALNIZ `restricted()` fabrikasindan kurulur.
+         *
+         *     Alan TIPI DEGISMEDI (`MetricPlaceholder` kalir): bu zarflari tuketen UI
+         *     CANLIDA (E4 proje kartlari) ve kirici bir sema degisikligi yapilmaz.
+         *
+         *     `CountPlaceholder`a bu kural UYGULANMAZ — orada dolu zarfin `pending_module`
+         *     tasimasi BILINCLI bir emsaldir (bkz. o sinifin notu).
+         */
+        MetricPlaceholder: {
+            /**
+             * Available
+             * @default false
+             */
+            available: boolean;
+            /** Value */
+            value?: string | null;
+            /** Pending Module */
+            pending_module?: string | null;
         };
         /**
          * ModuleGroup
@@ -13080,9 +13116,9 @@ export interface components {
             construction_spent: string;
             /** Construction Budget */
             construction_budget: string;
-            permits: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
-            financing: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
-            marketing: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            permits: components["schemas"]["MetricPlaceholder"];
+            financing: components["schemas"]["MetricPlaceholder"];
+            marketing: components["schemas"]["MetricPlaceholder"];
             /** Total Spent */
             total_spent: string;
         };
@@ -14742,9 +14778,9 @@ export interface components {
             end_date: string | null;
             /** Sort Order */
             sort_order: number;
-            progress_pct: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            progress_pct: components["schemas"]["MetricPlaceholder"];
             boq_item_count: components["schemas"]["CountPlaceholder"];
-            budget: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            budget: components["schemas"]["MetricPlaceholder"];
             worker_count: components["schemas"]["CountPlaceholder"];
             /** Planned Worker Count */
             planned_worker_count: number | null;
@@ -14860,9 +14896,9 @@ export interface components {
             end_date: string | null;
             /** Sort Order */
             sort_order: number;
-            progress_pct: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            progress_pct: components["schemas"]["MetricPlaceholder"];
             boq_item_count: components["schemas"]["CountPlaceholder"];
-            budget: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            budget: components["schemas"]["MetricPlaceholder"];
             worker_count: components["schemas"]["CountPlaceholder"];
             /** Planned Worker Count */
             planned_worker_count: number | null;
@@ -15039,7 +15075,7 @@ export interface components {
             /** Section Count */
             section_count: number;
             worker_count: components["schemas"]["CountPlaceholder"];
-            progress_pct: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            progress_pct: components["schemas"]["MetricPlaceholder"];
             /** Is Draft */
             is_draft: boolean;
             /** Site Manager User Id */
@@ -15180,7 +15216,7 @@ export interface components {
             /** Section Count */
             section_count: number;
             worker_count: components["schemas"]["CountPlaceholder"];
-            progress_pct: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            progress_pct: components["schemas"]["MetricPlaceholder"];
             /** Is Draft */
             is_draft: boolean;
             /** Site Manager User Id */
@@ -15216,8 +15252,8 @@ export interface components {
             section_status_counts: components["schemas"]["SectionStatusCounts"];
             /** Sections */
             sections: components["schemas"]["SectionResponse"][];
-            total_progress_payment: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
-            contract_amount: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            total_progress_payment: components["schemas"]["MetricPlaceholder"];
+            contract_amount: components["schemas"]["MetricPlaceholder"];
         };
         /**
          * SiteDiaryEntryCreate
@@ -15714,10 +15750,10 @@ export interface components {
          *     yerdedir — `sites/service/presenters.py:_totals`.
          */
         SiteListTotals: {
-            total_progress_payment: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            total_progress_payment: components["schemas"]["MetricPlaceholder"];
             subcontractor_count: components["schemas"]["CountPlaceholder"];
             active_worker_count: components["schemas"]["CountPlaceholder"];
-            average_margin: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            average_margin: components["schemas"]["MetricPlaceholder"];
         };
         /**
          * SiteOptionListResponse
@@ -16269,7 +16305,7 @@ export interface components {
             /** Balance */
             balance: string;
             status: components["schemas"]["StockStatus"] | null;
-            monthly_need: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            monthly_need: components["schemas"]["MetricPlaceholder"];
             section: components["schemas"]["ListPlaceholder"];
         };
         /**
@@ -16660,7 +16696,7 @@ export interface components {
             total_items: number;
             /** Items Without Price */
             items_without_price: number;
-            pending_orders: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            pending_orders: components["schemas"]["MetricPlaceholder"];
         };
         /** StockSummaryResponse */
         StockSummaryResponse: {
@@ -18547,8 +18583,8 @@ export interface components {
             shareholder_id: string | null;
             /** Shareholder Name */
             shareholder_name: string | null;
-            unit_cost: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
-            expected_profit: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            unit_cost: components["schemas"]["MetricPlaceholder"];
+            expected_profit: components["schemas"]["MetricPlaceholder"];
             /** Label */
             readonly label: string;
             /**
@@ -18701,8 +18737,8 @@ export interface components {
             installment_paid_count: number;
             /** Overdue Installment Count */
             overdue_installment_count: number;
-            unit_cost: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
-            sale_profit: components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+            unit_cost: components["schemas"]["MetricPlaceholder"];
+            sale_profit: components["schemas"]["MetricPlaceholder"];
             /** Pending Modules */
             pending_modules?: string[];
         };
@@ -19519,60 +19555,6 @@ export interface components {
          * @enum {string}
          */
         WorkerSource: "company" | "subcontractor" | "general" | "freelance" | "intern";
-        /**
-         * MetricPlaceholder
-         * @description Tek degerli KPI karti. v1'de veri kaynagi olmayan kartlar icin.
-         *
-         *     available alani bilincli olarak vardir: frontend sabite degil veriye dallanir,
-         *     ilgili alt-proje geldiginde backend true dondurmeye baslar (spec §2.3).
-         */
-        app__modules__dashboard__schemas__MetricPlaceholder: {
-            /**
-             * Available
-             * @default false
-             */
-            available: boolean;
-            /** Value */
-            value?: string | null;
-            /** Pending Module */
-            pending_module: string;
-        };
-        /**
-         * MetricPlaceholder
-         * @description Tek degerli alanin zarfi: ya GERCEK deger ya durust bos durum tasir.
-         *
-         *     P10 T3: zarf sozlesmesi artik pydantic duzeyinde BAGLIDIR ve iki yonlu
-         *     calisir (ROADMAP §3 "celiskili sozlesme" borcu):
-         *
-         *     * `available=True` ⇒ `pending_module is None` — dolu bir alanin "hangi modul
-         *       gelince dolacak" bilgisi TASIMASI anlamsizdir; eski hâlinde `pending_module`
-         *       zorunlu oldugu icin dolu zarf bile bir modul adi tasimak zorundaydi ve
-         *       ekran o alani "hâlâ eksik" sanabiliyordu.
-         *     * `available=False` + `pending_module` DOLU — alan henuz BAGLANMADI; bos zarf
-         *       kaynagini bildirir, aksi hâlde ekran "—" basip nedenini soyleyemez.
-         *     * `available=False` + `pending_module is None` — 🔴 **ILR-1/2 UCUNCU HAL:
-         *       ROLUN IZNI YOK** (kullanici karari 2026-08-27). `pending_module` IZIN
-         *       anlamiyla YUKLENMEZ: *"bu modul daha yazilmadi"* ile *"bunu gormeye yetkin
-         *       yok"* farkli iki durumdur ve ilkini ikincisi icin kullanmak ekrani YALANCI
-         *       yapar. Bu hâl YALNIZ `restricted()` fabrikasindan kurulur.
-         *
-         *     Alan TIPI DEGISMEDI (`MetricPlaceholder` kalir): bu zarflari tuketen UI
-         *     CANLIDA (E4 proje kartlari) ve kirici bir sema degisikligi yapilmaz.
-         *
-         *     `CountPlaceholder`a bu kural UYGULANMAZ — orada dolu zarfin `pending_module`
-         *     tasimasi BILINCLI bir emsaldir (bkz. o sinifin notu).
-         */
-        app__modules__projects__schemas__MetricPlaceholder: {
-            /**
-             * Available
-             * @default false
-             */
-            available: boolean;
-            /** Value */
-            value?: string | null;
-            /** Pending Module */
-            pending_module?: string | null;
-        };
     };
     responses: never;
     parameters: never;
