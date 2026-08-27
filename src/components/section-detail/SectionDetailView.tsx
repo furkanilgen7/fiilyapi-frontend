@@ -11,11 +11,16 @@ import { useTimesheetData } from "@/components/timesheet/useTimesheetData";
 import { useBoq } from "@/lib/api/hooks/useBoq";
 import { useSection } from "@/lib/api/hooks/useSection";
 import { useSite } from "@/lib/api/hooks/useSites";
+import { useSiteDiaryEntries } from "@/lib/api/hooks/useSiteDiary";
+import { useSiteSubcontractorPayments } from "@/lib/api/hooks/useSiteSubcontractorPayments";
 import { isForbidden } from "@/lib/api/unwrap";
 import { formatPeriod } from "@/lib/format";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { groupSectionWorkers } from "./section-workers";
 import { SectionBoqCard } from "./SectionBoqCard";
+import { SectionDiaryPanel } from "./SectionDiaryPanel";
+import { SectionPaymentsPanel } from "./SectionPaymentsPanel";
+import { SectionStockPanel } from "./SectionStockPanel";
 import { SectionTimesheetPanel } from "./SectionTimesheetPanel";
 import { SectionWorkersList } from "./SectionWorkersList";
 import { SECTION_TABS, SectionDetailTabs } from "./SectionDetailTabs";
@@ -83,6 +88,23 @@ export function SectionDetailView() {
   // İkinci bir varsayılan yazılmaz.
   const period = currentPeriod();
   const timesheet = useTimesheetData({ siteId, period, sectionId });
+  // F-BLMSEK — bölüm süzgeçli günlük kayıt. Hook koşullu ÇAĞRILAMAZ (yukarıdaki
+  // BOQ notunun aynısı), bu yüzden sekme seçili olmasa da bağlanır.
+  //
+  // 🔴 SÜZGEÇSİZ çağrılır — hem `section_id` sorgu parametresi liste ucunda
+  // YOK (verilse SESSİZCE yok sayılır, `section-diary.ts` başına bakınız), hem
+  // de dönem süzgeci VERİLMEZ: böylece sorgu anahtarı şantiye günlüğü ekranıyla
+  // AYNI kalır (`["site-diary-entries", siteId, null, null, null, null]`) ve
+  // önbellek paylaşılır. Süzgeç yalnız GÖRÜNÜME uygulanır.
+  const diaryEntries = useSiteDiaryEntries(siteId);
+  // F-BLMSEK T2 — bölüm süzgeçli TAŞERON hakedişi. Hook koşullu ÇAĞRILAMAZ
+  // (yukarıdaki BOQ notunun aynısı), bu yüzden sekme seçili olmasa da bağlanır.
+  //
+  // 🔴 Bölüm parametresi YOK ve EKLENMEZ: liste ucu `section_id` KABUL ETMEZ
+  // (ölçüldü — `project_id`/`site_id`/`period_*`/`status`/`q`/`limit`/`offset`).
+  // Süzgeç yalnız GÖRÜNÜME uygulanır (`section-payments.ts`); imza değişmediği
+  // için önbellek şantiye "Hakedişler" ekranıyla PAYLAŞILIR, ikinci istek yok.
+  const subcontractorPayments = useSiteSubcontractorPayments(projectId, siteId);
   // İzin: ekran `sites:view`, "Düzenle" butonu `sites:full` (task-2-brief §İzin).
   const { canView, canWrite } = useModulePermission("sites");
   const [activeTab, setActiveTab] = useState(0);
@@ -114,6 +136,81 @@ export function SectionDetailView() {
     section.worker_count.count !== null &&
     section.worker_count.count !== undefined;
 
+  /**
+   * CANLI sekmelerin gövde dağıtımı. `siteSlug` üzerinden AYRIK dallar —
+   * F-BLMSEK'te üçüncü canlı sekme gelince iç içe üçlü koşul okunamaz hâle
+   * gelirdi. Dalların BASTIĞI DOM değişmedi (iki sekmenin görsel tabanı var):
+   * eski `<>…</>` parçası da DOM üretmiyordu.
+   */
+  function livePanel() {
+    switch (activeTabDef.siteSlug) {
+      case "puantaj":
+        return (
+          <SectionTimesheetPanel
+            sectionName={section.name}
+            periodLabel={periodLabel}
+            view={timesheet.view}
+            isLoading={timesheet.isLoading}
+            isError={timesheet.isError}
+          />
+        );
+      case "gunluk-kayit":
+        return (
+          <SectionDiaryPanel
+            sectionId={sectionId}
+            sectionName={section.name}
+            sections={siteQuery.data?.sections ?? []}
+            items={diaryEntries.data?.items ?? []}
+            isLoading={diaryEntries.isLoading}
+            isError={diaryEntries.isError}
+            diaryHref={`/projeler/${projectId}/santiyeler/${siteId}/gunluk-kayit`}
+          />
+        );
+      case "hakedisler":
+        return (
+          <SectionPaymentsPanel
+            sectionId={sectionId}
+            sectionName={section.name}
+            items={subcontractorPayments.items}
+            isLoading={subcontractorPayments.isLoading}
+            isError={subcontractorPayments.isError}
+            isPartial={subcontractorPayments.isPartial}
+            truncation={subcontractorPayments.truncation}
+            paymentsHref={`/projeler/${projectId}/santiyeler/${siteId}/hakedisler`}
+          />
+        );
+      case "stok":
+        // 🔴 F-BLMSEK T3 — TEK kalan pending sekme. Diğer üçünün aksine bölüm
+        // bağı AÇILAMAZ (ölçüldü, `inventory/` SIFIR `section_id` isabeti);
+        // panel bunu SÖYLER ve kullanıcıyı şantiye stok ekranına yönlendirir.
+        // `sideLinkHref` TEK tanımı korunur — `carriesSection: false` kararı
+        // burada da geçerlidir, `?section=` EKLENMEZ.
+        return (
+          <SectionStockPanel
+            sectionName={section.name}
+            stockHref={sideLinkHref(SIDE_LINKS.stock)}
+          />
+        );
+      default:
+        // "is-kalemleri". Yükleme/hata dalları AYRI basılır: `data` yokken boş
+        // tabloya düşmek kullanıcıya "bu bölüme kalem atanmadı" YALANINI
+        // söylerdi. Başka şantiyenin bölümü backend'de 404'tür.
+        if (sectionBoq.isError) {
+          return <p className="section-detail__message">İş kalemleri yüklenemedi</p>;
+        }
+        if (sectionBoq.isLoading || !sectionBoq.data) {
+          return <p className="section-detail__message">Yükleniyor…</p>;
+        }
+        return (
+          <SectionBoqCard
+            groups={sectionBoq.data.groups}
+            totals={sectionBoq.data.totals}
+            sectionName={section.name}
+          />
+        );
+    }
+  }
+
   return (
     <div className="section-detail">
       <SectionHeroCard
@@ -131,44 +228,14 @@ export function SectionDetailView() {
         onSelect={setActiveTab}
       />
 
+      {/* 🔴 F-BLMSEK T3 — Malzeme artık jenerik `CardEmptyState` dalına
+          DÜŞMEZ: `livePanel()` dispatch'i BEŞ sekmenin BEŞİNİ de kapsar
+          (dördü gerçek veri, "stok" `SectionStockPanel` ile kendi spesifik
+          gerekçesini basar). Eski `activeTabDef.contentLive` dalı jenerik
+          şablonun TEK tüketicisiydi — o tüketici kalmadığı için ayrım silindi
+          (BOQ-SEC-F / `section_boq` emsali: okuyanı kalmayan kod SİLİNİR). */}
       <div className="section-panel" role="tabpanel">
-        {activeTabDef.contentLive ? (
-          <div className="section-panel__body section-panel__body--flush">
-            {activeTabDef.siteSlug === "puantaj" ? (
-              <SectionTimesheetPanel
-                sectionName={section.name}
-                periodLabel={periodLabel}
-                view={timesheet.view}
-                isLoading={timesheet.isLoading}
-                isError={timesheet.isError}
-              />
-            ) : (
-              <>
-                {/* Yükleme/hata dalları AYRI basılır: `data` yokken boş tabloya
-                    düşmek kullanıcıya "bu bölüme kalem atanmadı" YALANINI
-                    söylerdi. Başka şantiyenin bölümü backend'de 404'tür. */}
-                {sectionBoq.isError ? (
-                  <p className="section-detail__message">İş kalemleri yüklenemedi</p>
-                ) : sectionBoq.isLoading || !sectionBoq.data ? (
-                  <p className="section-detail__message">Yükleniyor…</p>
-                ) : (
-                  <SectionBoqCard
-                    groups={sectionBoq.data.groups}
-                    totals={sectionBoq.data.totals}
-                    sectionName={section.name}
-                  />
-                )}
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="section-panel__body">
-            <CardEmptyState
-              title={`${activeTabDef.label} — bu bölümde henüz görüntülenemiyor`}
-              pendingModule={activeTabDef.contentPending}
-            />
-          </div>
-        )}
+        <div className="section-panel__body section-panel__body--flush">{livePanel()}</div>
       </div>
 
       <div className="section-detail__bottom-row">

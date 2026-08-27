@@ -87,21 +87,25 @@ describe("pendingModuleLabel", () => {
     expect(pendingModuleLabel("procurement")).toBe(pendingModuleLabel("purchasing"));
   });
 
-  // 🔴 F-BOLLINK: bölüm detayına özel anahtarlar. Metin "modül yok" DEMEZ —
-  // beş modülün de şantiye seviyesinde yazılı rotası var, eksik olan bölüm bağı.
+  // 🔴 F-BOLLINK: bölüm detayına özel anahtar. Metin "modül yok" DEMEZ —
+  // `/stok` modülünün şantiye seviyesinde yazılı rotası var, eksik olan bölüm
+  // bağı DEĞİL (F-BLMSEK T3 ölçümü) — stok hareketi kaydının ALANI.
   // 🔴 BOQ-SEC-F GÖÇÜ: `section_boq` listeden ÇIKARILDI — o bağ artık AÇIK,
   // sekme gerçek tablo basıyor. Anahtarın YOKLUĞU ayrıca çakılır (aşağıda).
-  it("F-BOLLINK bolum anahtarlarini esler ve 'modulle birlikte gelir' DEMEZ", () => {
-    const keys = [
-      "section_stock",
-      "section_progress_payments",
-      "section_site_diary",
-    ];
-    for (const key of keys) {
-      const label = pendingModuleLabel(key);
-      expect(label).not.toBe("İlgili modülle birlikte gelir");
-      expect(label).not.toMatch(/modülüyle birlikte gelir/);
-    }
+  it("F-BOLLINK section_stock esler ve 'modulle birlikte gelir' DEMEZ", () => {
+    const label = pendingModuleLabel("section_stock");
+    expect(label).not.toBe("İlgili modülle birlikte gelir");
+    expect(label).not.toMatch(/modülüyle birlikte gelir/);
+  });
+
+  // 🔴 F-BLMSEK T3 · `section_stock`'un YENİ metni MODÜL değil ALAN adlandırır
+  // (`work_category` emsali) — eski "bu bölüme henüz kırılmıyor" kalıbı
+  // `section_progress_payments`/`section_site_diary` ile AYNI sesteydi; artık
+  // ayrı ve dürüst: stok hareketi KAYDININ KENDİSİ bölüm alanı taşımıyor.
+  it("section_stock ALANI adlandirir (kayit bolum alani tasimiyor)", () => {
+    expect(pendingModuleLabel("section_stock")).toBe(
+      "Stok hareketi bölüm alanı taşımıyor (hareketler şantiye deposunda tutulur)",
+    );
   });
 
   // BOQ-SEC-F bekçisi: anahtar geri gelirse birileri canlı sekmeye yeniden
@@ -109,6 +113,34 @@ describe("pendingModuleLabel", () => {
   // yakalar. (Yedek metne düşmesi, eşlenmemiş olmasının kanıtıdır.)
   it("section_boq anahtari ARTIK YOK - bolum bagi acildi", () => {
     expect(pendingModuleLabel("section_boq")).toBe("İlgili modülle birlikte gelir");
+  });
+
+  // 🔴 F-BLMSEK T3 bekçisi: `section_progress_payments` geri gelirse birileri
+  // CANLI "Hakediş" sekmesine (T2'de bölüm bağı AÇILDI) yeniden "bu bölüme
+  // kırılmıyor" gerekçesi bağlamış demektir.
+  it("section_progress_payments anahtari ARTIK YOK - bolum bagi acildi (T2)", () => {
+    expect(pendingModuleLabel("section_progress_payments")).toBe("İlgili modülle birlikte gelir");
+  });
+
+  // 🔴 F-BLMSEK T3 bekçisi: `section_site_diary` geri gelirse birileri CANLI
+  // "Günlük Kayıt" sekmesine (T1'de bölüm bağı AÇILDI) yeniden "bu bölüme
+  // kırılmıyor" gerekçesi bağlamış demektir.
+  it("section_site_diary anahtari ARTIK YOK - bolum bagi acildi (T1)", () => {
+    expect(pendingModuleLabel("section_site_diary")).toBe("İlgili modülle birlikte gelir");
+  });
+
+  // 🔴 F-BLMSEK T2 · Bölüm Detay › "Hakediş" sekmesinin KAPSAM satırı bu
+  // anahtardan beslenir. K6 (ekran başına ayrı anahtar) korunur ve metin
+  // "modül yok" DEMEZ — `/hakedisler` CANLI; eksik olan İŞVEREN hakediş
+  // kaydındaki BÖLÜM ALANIDIR (ölçüldü: `progress_payments/` altında
+  // `section_id` SIFIR isabet). Metin bu yüzden ALANI adlandırır.
+  it("section_employer_progress_payments EKSIK ALANI adlandirir, modul yoklugu DEMEZ", () => {
+    const label = pendingModuleLabel("section_employer_progress_payments");
+    expect(label).toBe(
+      "İşveren hakedişi bölüme kırılmıyor (hakediş kaydı bölüm alanı taşımıyor)",
+    );
+    expect(label).not.toBe("İlgili modülle birlikte gelir");
+    expect(label).not.toMatch(/modülüyle birlikte gelir/);
   });
 
   // F-BLMPUAN bekçisi: `section_timesheet` geri gelirse birileri CANLI puantaj

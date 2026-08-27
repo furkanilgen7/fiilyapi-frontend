@@ -13,7 +13,7 @@
  *   - "modül YAZILMADI" → hiçbir rotası yok, kullanıcı hiçbir yerde göremez.
  *   - "modül YAZILDI ama BÖLÜM kapsamlı içerik bağlanmadı" → şantiye
  *     seviyesinde ekran VAR, yalnız bu bölüme kırılmıyor.
- * BEŞ sekmenin BEŞİ de ikinci durumdadır: `is-kalemleri`, `puantaj`, `stok`,
+ * BEŞ sekmenin BEŞİ de ikinci durumdadır (DÖRDÜNDE bölüm bağı bu arada AÇILDI): `is-kalemleri`, `puantaj`, `stok`,
  * `hakedisler`, `gunluk-kayit` rotalarının hepsi yazılı (ölçüldü). Eski
  * `pendingModule: "boq" | "timesheet" | …` alanı kullanıcıya "modül yok"
  * diyordu — YANLIŞ bilgiydi; yerine `contentPending` (bölüm bağı yok) geçti.
@@ -78,8 +78,14 @@ export const SECTION_TABS: readonly (SectionTabDef & SectionTabContent)[] = [
     contentLive: true,
   },
   { label: "Malzeme", siteSlug: "stok", moduleWritten: true, contentPending: "section_stock" },
-  { label: "Hakediş", siteSlug: "hakedisler", moduleWritten: true, contentPending: "section_progress_payments" },
-  { label: "Günlük Kayıt", siteSlug: "gunluk-kayit", moduleWritten: true, contentPending: "section_site_diary" },
+  // F-BLMSEK T2: bölüm bağı AÇILDI — `SubcontractorProgressPaymentListItem`
+  // `section_id` taşır. İŞVEREN hakedişi taşımaz (ölçüldü, sıfır isabet); o
+  // eksiklik sekmeyi yer tutucuda tutmak yerine panelin GÖRÜNÜR kapsam
+  // satırında basılır (`section_employer_progress_payments`).
+  { label: "Hakediş", siteSlug: "hakedisler", moduleWritten: true, contentLive: true },
+  // F-BLMSEK: bölüm bağı AÇILDI — `SiteDiaryEntryListItem.section_id` var,
+  // liste ucu süzgeç KABUL ETMEDİĞİ için filtre istemcide (bkz. `section-diary.ts`).
+  { label: "Günlük Kayıt", siteSlug: "gunluk-kayit", moduleWritten: true, contentLive: true },
 ];
 
 export interface SectionDetailTabsProps {

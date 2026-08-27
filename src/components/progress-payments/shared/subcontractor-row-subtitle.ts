@@ -37,9 +37,15 @@ export interface SubcontractorRowSubtitle {
 export function buildSubcontractorRowSubtitle(
   workCategory: string | null,
   sectionId: string | null,
+  resolvedSectionName?: string | null,
 ): SubcontractorRowSubtitle {
   const categoryPending = workCategory === null;
-  const sectionPending = sectionId !== null;
+  // F-BLMSEK T2 — üçüncü argüman VERİLMEZSE davranış AYNEN korunur (şantiye
+  // "Hakedişler" ekranının DOM'u değişmez, görsel tabanı bozulmaz).
+  // `sectionId === null` iken ad EZMEZ: "Tüm Bölümler" kapsam iddiasıdır,
+  // tek bir bölümün adıyla değiştirmek kapsamı DARALTAN bir yalan olurdu.
+  const resolvedSection = sectionId !== null && resolvedSectionName ? resolvedSectionName : null;
+  const sectionPending = sectionId !== null && resolvedSection === null;
 
   if (categoryPending && sectionPending) {
     return {
@@ -54,7 +60,7 @@ export function buildSubcontractorRowSubtitle(
     : { kind: "text", value: workCategory as string };
   const sectionSegment: SubtitleSegment = sectionPending
     ? { kind: "pending", title: pendingModuleLabel("section_name") }
-    : { kind: "text", value: "Tüm Bölümler" };
+    : { kind: "text", value: resolvedSection ?? "Tüm Bölümler" };
 
   return { isCombinedPending: false, combinedPendingTitle: "", segments: [categorySegment, sectionSegment] };
 }

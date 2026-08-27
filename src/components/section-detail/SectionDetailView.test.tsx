@@ -417,7 +417,7 @@ describe("SectionDetailView — sekmeler (D99-105, hepsi BÖLÜM BAĞI bekleyen 
     // 🔴 F-BOLLINK: gerekçe paylaşılan `stock` anahtarının metni DEĞİL —
     // stok modülü YAZILI, eksik olan BÖLÜM BAĞI. Eski metin yanlış bilgiydi.
     // (F-UNIT1 T5: `stock` metni de düzeltildi, iddia yeni metne taşındı.)
-    expect(within(panel).getByText(/Malzeme hareketleri bu bölüme henüz kırılmıyor/)).toBeInTheDocument();
+    expect(within(panel).getByText(/Stok hareketi bölüm alanı taşımıyor/)).toBeInTheDocument();
     expect(
       within(panel).queryByText(/Stok verisi bu yüzeye henüz bağlanmadı/),
     ).not.toBeInTheDocument();
@@ -434,12 +434,14 @@ describe("SectionDetailView — sekmeler (D99-105, hepsi BÖLÜM BAĞI bekleyen 
     const live = tabs.filter((tab) => tab.getAttribute("data-content-live") === "true");
     const pending = tabs.filter((tab) => tab.getAttribute("data-content-live") !== "true");
 
-    // 🔴 F-BLMPUAN: canlı sekme artık İKİ — "İşçiler & Puantaj" bölüm bağını
-    // kazandı. Gerekçe TAŞIMAZLAR (canlı sekmenin gerekçesi olamaz).
-    expect(live.map((tab) => tab.textContent)).toEqual(["İş Kalemleri", "İşçiler & Puantaj"]);
+    // 🔴 F-BLMSEK: canlı sekme artık DÖRT — T1'de "Günlük Kayıt", T2'de
+    // "Hakediş" bölüm bağını kazandı. Gerekçe TAŞIMAZLAR (canlı sekmenin
+    // gerekçesi olamaz). Geriye gerekçeli TEK sekme kalır: "Malzeme".
+    const LIVE = ["İş Kalemleri", "İşçiler & Puantaj", "Hakediş", "Günlük Kayıt"];
+    expect(live.map((tab) => tab.textContent)).toEqual(LIVE);
     for (const tab of live) expect(tab).not.toHaveAttribute("data-content-pending");
 
-    expect(pending).toHaveLength(3);
+    expect(pending).toHaveLength(1);
     for (const tab of pending) {
       expect(tab.getAttribute("data-content-pending")).toMatch(/^section_/);
     }
@@ -562,9 +564,11 @@ describe("SectionDetailView — İş Kalemleri sekmesi (BOQ-SEC-F)", () => {
     mockPermission("view");
     mockQueries();
     renderView();
-    await user.click(screen.getByRole("tab", { name: "Hakediş" }));
+    // F-BLMSEK T2: "Hakediş" CANLIYA geçti — gerekçe taşıyan TEK sekme
+    // "Malzeme"dir. Bekçi SİLİNMEZ, yalnız hâlâ pending olan sekmeye çevrilir.
+    await user.click(screen.getByRole("tab", { name: "Malzeme" }));
     const panel = screen.getByRole("tabpanel");
-    expect(within(panel).getByText(/Hakediş bu bölüme henüz kırılmıyor/)).toBeInTheDocument();
+    expect(within(panel).getByText(/Stok hareketi bölüm alanı taşımıyor/)).toBeInTheDocument();
     expect(within(panel).queryByText("03.001")).not.toBeInTheDocument();
   });
 });
@@ -682,9 +686,13 @@ describe("SectionDetailView — İşçiler & Puantaj sekmesi (F-BLMPUAN)", () =>
     mockPermission("view");
     mockQueries();
     renderView();
-    await user.click(screen.getByRole("tab", { name: "Günlük Kayıt" }));
+    // F-BLMSEK: "Günlük Kayıt" (T1) ve "Hakediş" (T2) CANLIYA geçti — hâlâ
+    // gerekçe taşıyan TEK sekme "Malzeme"dir, yoksa test canlı bir sekmeden
+    // gerekçe isterdi. Bekçi SİLİNMEZ: canlı sekmenin gerekçe basmadığını
+    // koruyan tek testtir.
+    await user.click(screen.getByRole("tab", { name: "Malzeme" }));
     const panel = screen.getByRole("tabpanel");
-    expect(within(panel).getByText(/Günlük kayıt bu bölüme henüz kırılmıyor/)).toBeInTheDocument();
+    expect(within(panel).getByText(/Stok hareketi bölüm alanı taşımıyor/)).toBeInTheDocument();
     expect(within(panel).queryByTestId("section-timesheet")).not.toBeInTheDocument();
   });
 });

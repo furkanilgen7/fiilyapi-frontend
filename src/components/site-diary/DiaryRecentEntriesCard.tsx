@@ -1,6 +1,6 @@
 import { cx } from "@/lib/cx";
-import { pendingModuleLabel } from "@/lib/pending-modules";
 
+import { DiaryEntryRowBody } from "./DiaryEntryRowBody";
 import type { DiaryRecentEntryRow } from "./recent-entries";
 
 export interface DiaryRecentEntriesCardProps {
@@ -59,45 +59,7 @@ export function DiaryRecentEntriesCard({
               aria-current={row.entryDate === activeDate ? "true" : undefined}
               onClick={() => onSelectDate(row.entryDate)}
             >
-              {/* GK360-362 */}
-              <span className="diary-recent__top">
-                <span className="diary-recent__date">{row.dateLabel}</span>
-                <span className="diary-recent__badges">
-                  <span
-                    className={cx(
-                      "diary-recent__badge",
-                      row.isSubmitted
-                        ? "diary-recent__badge--submitted"
-                        : "diary-recent__badge--draft",
-                    )}
-                  >
-                    {row.statusLabel}
-                  </span>
-                  {/* GK372 — hava `rainy` günde kırmızı rozet (frontend türevi) */}
-                  {row.isRainy && (
-                    <span className="diary-recent__badge diary-recent__badge--rain">Yağışlı</span>
-                  )}
-                </span>
-              </span>
-              {/* GK363 */}
-              <span className="diary-recent__meta">
-                {row.workerLabel}
-                {" · "}
-                {row.sectionLabel ?? (
-                  <span className="diary-recent__pending" title={pendingModuleLabel("section_name")}>
-                    Bölüm adı yok
-                  </span>
-                )}
-                {" · "}
-                <span
-                  className="diary-recent__pending"
-                  title="Fotoğraf modülü henüz yok — sayı gösterilemiyor"
-                >
-                  — fotoğraf
-                </span>
-              </span>
-              {/* GK364 */}
-              <span className="diary-recent__amount">{row.amountLabel}</span>
+              <DiaryEntryRowBody row={row} />
             </button>
           ))}
       </div>

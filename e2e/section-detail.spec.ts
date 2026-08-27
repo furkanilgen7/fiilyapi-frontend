@@ -97,8 +97,14 @@ test("santiye detayindan bolum detayina link, hero + KPI + sekmeler + Hakedis Ol
   await expect(page.getByText(/[Pp]uantaj bu bölüme henüz kırılmıyor/)).toHaveCount(0);
   // Pozitif kontrol — daraltma bir gerilemeyi GİZLEMİYOR: hâlâ pending olan
   // stok kartı kendi dürüst gerekçesini basmaya devam ediyor.
+  //
+  // 🔴 F-BLMSEK T4 (2026-08-27) — METİN T3'TE YENİDEN YAZILDI, iddia BAYATTI.
+  // `section_stock` artık MODÜL değil ALAN adlandırıyor ("Stok hareketi bölüm
+  // alanı taşımıyor…"); eski regex hiçbir şeyle eşleşmiyordu ve `toHaveCount(1)`
+  // KIRMIZI olurdu. Pozitif kontrolün AMACI korunur (hâlâ pending olan tek
+  // yüzey gerekçesini basıyor), yalnız çapa güncel metne taşındı.
   await expect(
-    page.getByText(/Malzeme hareketleri bu bölüme henüz kırılmıyor/),
+    page.getByText(/Stok hareketi bölüm alanı taşımıyor/),
   ).toHaveCount(1);
   // ŞP 117-119 karşılığı: bölüm adı + dönem, ve GÖRÜNEN kümenin türevleri.
   // sec-1'in 2026-08 kümesi: per-1 (3 gün + 1 izin), per-2 (3 gün),
@@ -260,8 +266,14 @@ test("puantaji olmayan bolumde 'bu ay kayit yok' der, 'modul yok' DEMEZ", async 
   await expect(page.getByText(/[Pp]uantaj bu bölüme henüz kırılmıyor/)).toHaveCount(0);
   // Pozitif kontrol — daraltma bir gerilemeyi GİZLEMİYOR: hâlâ pending olan
   // stok kartı kendi dürüst gerekçesini basmaya devam ediyor.
+  //
+  // 🔴 F-BLMSEK T4 (2026-08-27) — METİN T3'TE YENİDEN YAZILDI, iddia BAYATTI.
+  // `section_stock` artık MODÜL değil ALAN adlandırıyor ("Stok hareketi bölüm
+  // alanı taşımıyor…"); eski regex hiçbir şeyle eşleşmiyordu ve `toHaveCount(1)`
+  // KIRMIZI olurdu. Pozitif kontrolün AMACI korunur (hâlâ pending olan tek
+  // yüzey gerekçesini basıyor), yalnız çapa güncel metne taşındı.
   await expect(
-    page.getByText(/Malzeme hareketleri bu bölüme henüz kırılmıyor/),
+    page.getByText(/Stok hareketi bölüm alanı taşımıyor/),
   ).toHaveCount(1);
   await expect(page.getByText(/modülle birlikte gelir/)).toHaveCount(0);
   // Kart yine de "Puantaj →" yolunu KORUR — sekme onun yerine geçmez.
