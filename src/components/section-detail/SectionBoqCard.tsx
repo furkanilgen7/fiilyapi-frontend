@@ -1,8 +1,8 @@
 import { Fragment } from "react";
 
 import { Button } from "@/components/ui/button/Button";
+import { BoqPctCell } from "@/components/boq/BoqPctCell";
 import { formatAmount, formatQuantity } from "@/lib/format";
-import { pendingModuleLabel } from "@/lib/pending-modules";
 import type { BoqGroup, BoqTotals } from "@/lib/api/hooks/useBoq";
 
 // Tablo görsel dili şantiye BOQ ekranıyla AYNIDIR (aynı mockup ailesi) —
@@ -51,14 +51,16 @@ export interface SectionBoqCardProps {
  * ⚠️ Süzgeçli yanıtta BOŞALAN GRUPLAR listeden düşer (backend `service.py:202`),
  * bu yüzden boş grup başlığı dalı YAZILMAZ — ölü kod olurdu.
  *
- * İki sütun backend'de KARŞILIKSIZDIR ve mockup'ta çizilidir:
- *   - `Gerç. %` → `progress_pct` yer tutucusu (hakediş/P7), her zaman `—`
+ * İki sütun mockup'ta çizilidir ve sahte veriyle DOLDURULMAZ:
+ *   - `Gerç. %` → SATIR bazında hâlâ `progress_pct` yer tutucusudur (hakediş/P7).
+ *     ⚠️ Eski not "her zaman `—`" diyordu ve TOPLAM SATIRI için BAYATLADI:
+ *     `totals.grand_progress_pct` ILR-1'de bağlandı (`boq/service.py:215`),
+ *     dolayısıyla BÖLÜM TOPLAM yüzdesi artık gerçek değer basabilir.
  *   - `Durum`   → hiçbir alan yok, `—` + görünür gerekçe
- * İkisi de SİLİNMEZ (F-TH kanonu) ve sahte veriyle DOLDURULMAZ.
+ * İkisi de SİLİNMEZ (F-TH kanonu).
  */
 export function SectionBoqCard({ groups, totals, sectionName }: SectionBoqCardProps) {
   const itemCount = groups.reduce((sum, group) => sum + group.items.length, 0);
-  const totalHint = pendingModuleLabel(totals.grand_progress_pct.pending_module);
 
   return (
     <section className="section-boq">
@@ -133,7 +135,6 @@ export function SectionBoqCard({ groups, totals, sectionName }: SectionBoqCardPr
                   </th>
                 </tr>
                 {group.items.map((item) => {
-                  const pctHint = pendingModuleLabel(item.progress_pct.pending_module);
                   return (
                     <tr key={item.id} className="boq-table__row" data-testid="section-boq-row">
                       <td className="boq-table__cell boq-table__cell--code boq-table__col--code">
@@ -158,13 +159,13 @@ export function SectionBoqCard({ groups, totals, sectionName }: SectionBoqCardPr
                       <td className="boq-table__cell boq-table__cell--num boq-table__cell--amount boq-table__col--amount">
                         {formatAmount(item.amount)}
                       </td>
-                      <td
-                        className="boq-table__pct boq-table__pct--pending"
+                      {/* ⚠️ `BoqTable` ile BIREBIR ayni hucre; kusur da iki
+                          kopyada birden yasiyordu. Tek kaynak: `BoqPctCell`. */}
+                      <BoqPctCell
+                        progress={item.progress_pct}
+                        className="boq-table__pct"
                         data-testid="section-boq-pct"
-                        title={pctHint}
-                      >
-                        —<span className="sr-only">{pctHint}</span>
-                      </td>
+                      />
                       {/* D124 `Durum`: mockup renkli bir nokta basıyor; veri YOK
                           → nötr `—`, sahte durum uydurulmaz. */}
                       <td
@@ -195,12 +196,11 @@ export function SectionBoqCard({ groups, totals, sectionName }: SectionBoqCardPr
             >
               {formatAmount(totals.grand_total)}
             </td>
-            <td
-              className="boq-table__total-pct boq-table__pct--pending boq-table__col--pct"
-              title={totalHint}
-            >
-              —<span className="sr-only">{totalHint}</span>
-            </td>
+            <BoqPctCell
+              progress={totals.grand_progress_pct}
+              className="boq-table__total-pct boq-table__col--pct"
+              data-testid="section-boq-total-pct"
+            />
             <td className="section-boq__col--status" />
           </tr>
         </tfoot>

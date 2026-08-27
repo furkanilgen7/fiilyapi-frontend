@@ -94,13 +94,24 @@ export const MODULE_LABELS: Record<string, string> = {
   // `/belgeler` CANLI (F-BC). Eksik olan belge modülü değil, kaydın kendi
   // belge yuvasıdır.
   documents: "Belge verisi bu yüzeye henüz bağlanmadı",
-  // ⚠️ F-UNIT1 T5'te KALDIRILDI: `site_diary` anahtarı. ÖLÇÜLDÜ — backend onu
-  // HİÇBİR yerde `pending_module` olarak yayınlamıyor (yalnız izin matrisi
-  // anahtarı olarak yaşıyor: `site_diary/service.py:PERMISSION_MODULE`) ve
-  // frontend'de de `pendingModuleLabel("site_diary")` çağıran KİMSE yok
-  // (bölüm detayı F-BOLLINK'te `section_site_diary`ye geçti). `gunluk-kayit`
-  // rotası da CANLI. Yani hem gerekçe YALANDI hem de okuyanı kalmamıştı —
-  // `gantt`/`income_statement`/`section_boq` emsali.
+  // 🔴 F-ILRUI (2026-08-27) — `site_diary` GERİ EKLENDİ; SİLİNME GEREKÇESİ BAYATLADI.
+  //
+  // F-UNIT1 T5 bu anahtarı *"backend onu HİÇBİR yerde `pending_module` olarak
+  // yayınlamıyor"* diye silmişti ve o gün bu ÖLÇÜM DOĞRUYDU. ILR-1/2 (backend
+  // `ffb055e`) onu YENİDEN YAYINLAMAYA BAŞLADI ve şimdi ÜÇ ayrı yerden geliyor:
+  //   · `projects/progress_cards.py:66`  → `ContractingCard.physical_progress`
+  //   · `boq/service.py:126`             → `BoqItemResponse.progress_pct`
+  //   · `boq/service.py:215`             → `BoqTotals.grand_progress_pct`
+  // Anahtar yokken `pendingModuleLabel("site_diary")` `FALLBACK_LABEL`e düşüyor
+  // ve ekran "İlgili modülle birlikte gelir" basıyordu — `/gunluk-kayit` CANLI
+  // olduğu için bu bir YALANDI, tam da silme gerekçesinin engellemek istediği
+  // hata. 🔑 KANON: *ölçüme dayanan silme kararı, ölçüm bayatlayınca geri alınır.*
+  //
+  // METİN diğerlerinden AYRI: burada eksik olan "veri bu yüzeye bağlanmadı"
+  // DEĞİL — yüzey BAĞLI, ortada gönderilmiş günlük YOK. İlerleme yüzdesi
+  // yalnız `submitted` günlükten hesaplanır (`boq/progress.py` kapsam notu);
+  // `draft` günlük paydaya girmez.
+  site_diary: "Gönderilmiş şantiye günlüğü yok — ilerleme günlükten hesaplanır",
   // F-P6 T3 (Bölüm formu) — devre dışı kartlar. `/makine` CANLI; eksik olan
   // bölüm formunun makine ataması taşımamasıdır.
   equipment: "Makine verisi bu yüzeye henüz bağlanmadı",

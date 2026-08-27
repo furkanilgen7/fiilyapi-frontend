@@ -48,14 +48,14 @@ describe("pendingModuleLabel", () => {
     expect(pendingModuleLabel("equipment")).toBe("Makine verisi bu yüzeye henüz bağlanmadı");
   });
 
-  // 🔴 F-UNIT1 T5'te KALDIRILDI (`gantt` / `income_statement` / `section_boq`
-  // emsali): ÖLÇÜLDÜ — backend `site_diary`yi HİÇBİR yerde `pending_module`
-  // olarak yayınlamıyor (yalnız izin matrisi anahtarı) ve frontend'de de onu
-  // okuyan kimse yok (bölüm detayı F-BOLLINK'te `section_site_diary`ye geçti).
-  // Yedek metne düşmesi, eşlenmemiş olmasının kanıtıdır.
-  it("site_diary anahtari ARTIK YOK - okuyani da yayinlayani da kalmadi", () => {
-    expect(pendingModuleLabel("site_diary")).toBe("İlgili modülle birlikte gelir");
-  });
+  // ⚠️ F-ILRUI (2026-08-27): BU İDDİA TERSİNE ÇEVRİLDİ, ZAYIFLATILMADI.
+  // Eski hâli `site_diary`nin yedek metne DÜŞTÜĞÜNÜ kilitliyordu ve dayanağı
+  // "backend bunu yayınlamıyor" ÖLÇÜMÜYDÜ. ILR-1/2 (`ffb055e`) onu üç yerden
+  // yeniden yayınlıyor (`progress_cards.py:66`, `boq/service.py:126`, `:215`),
+  // yani ölçüm bayatladı ve test artık BİR YALANI bekçiliyordu. Yerine geçen
+  // iddia dosyanın sonundaki "site_diary (F-ILRUI)" bloğundadır ve DAHA
+  // GÜÇLÜDÜR: hem yedek metne düşmediğini hem metnin "modül yok" DEMEDİĞİNİ
+  // ölçer. 🔑 KANON: ölçüme dayanan bekçi, ölçüm bayatlayınca ters çevrilir.
 
   // 🔴 Üçü de LİSTE UCUNUN taşımadığı alanlardır, bir yetenek eksikliği DEĞİL:
   // KDV hakediş formunda hesaplanıyor, ilerleme hakediş detayında gösteriliyor.
@@ -263,5 +263,28 @@ describe("MODULE_LABELS — bayat 'modül gelecek' kalıbı yasağı", () => {
     for (const [key, label] of Object.entries(MODULE_LABELS)) {
       expect(label.length, `"${key}" boş`).toBeGreaterThan(0);
     }
+  });
+});
+
+/**
+ * 🔴 F-ILRUI — BAYATLAYAN SİLME KARARININ BEKÇİSİ.
+ *
+ * `site_diary` anahtarı F-UNIT1 T5'te *"backend bunu `pending_module` olarak
+ * yayınlamıyor"* ölçümüyle SİLİNMİŞTİ. ILR-1/2 (backend `ffb055e`) onu üç
+ * yerden yeniden yayınlamaya başladı (`progress_cards.py:66`,
+ * `boq/service.py:126`, `boq/service.py:215`) ve anahtar yokken ekran
+ * `FALLBACK_LABEL` ("İlgili modülle birlikte gelir") basıyordu — `/gunluk-kayit`
+ * CANLI olduğu için bu bir YALAN. Bu test o hâle geri dönüşü engeller.
+ */
+describe("pendingModuleLabel · site_diary (F-ILRUI)", () => {
+  it("site_diary KENDİ metnini döndürür, FALLBACK'e DÜŞMEZ", () => {
+    const label = pendingModuleLabel("site_diary");
+    expect(label).not.toBe(pendingModuleLabel("boyle-bir-anahtar-yok"));
+    expect(label).toMatch(/günlük/i);
+  });
+
+  // Karşıt kanit: metin "modül eksik" demiyor — modül CANLI, eksik olan VERİ.
+  it("metin 'modül' yokluğu iddia ETMEZ", () => {
+    expect(pendingModuleLabel("site_diary")).not.toMatch(/modülle birlikte gelir/i);
   });
 });

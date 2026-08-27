@@ -309,6 +309,16 @@
   font-weight: 700;
   color: var(--color-text);
 }
+/* Mockup 179: para karti mono yuzle basar (`₺ 17,8M`). */
+.site-totals__value--mono {
+  font-family: var(--font-mono);
+}
+/* Mockup 187/191: "Aktif Isci" ve "Ortalama Marj" YESIL basar (#16a34a). */
+.site-totals__value--success {
+  color: var(--color-success);
+}
+/* Sirasi onemli: yer tutucu hâl mockup renklerini ezer (ayni ozgulluk) —
+   `boq-kpi__value--pending` ile ayni desen. */
 .site-totals__value--pending {
   color: var(--color-text-subtle);
   cursor: help;

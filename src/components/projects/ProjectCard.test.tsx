@@ -60,7 +60,13 @@ describe("ProjectCard — taahhut", () => {
     expect(screen.getByText("Ara 2026")).toBeInTheDocument();
     expect(screen.getByTitle("Maliyet verisi bu yüzeye henüz bağlanmadı")).toHaveTextContent("—");
     expect(screen.getByText("Fiziksel İlerleme")).toBeInTheDocument();
-    expect(screen.getByText("%75")).toBeInTheDocument();
+    // F-ILRUI: cubuk artik `contracting.physical_progress` zarfini basar. Bu
+    // fikstürde o zarf YER TUTUCU, dolayisiyla "—". `progress_pct: "75.00"`
+    // fosili DOLU oldugu hâlde basilmadigi burada da olculuyor (asil bekci
+    // `ProjectCard.progress.test.tsx`te).
+    expect(screen.getByTestId("prj-progress-pct")).toHaveTextContent("—");
+    expect(screen.queryByText("%75")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("prj-progress-fill")).not.toBeInTheDocument();
   });
 
   // 2026-07-30: eski "kart tiklanmaz" kurali (spec §9) gecersiz — detay ekrani P2'de
@@ -89,9 +95,16 @@ describe("ProjectCard — taahhut", () => {
     );
     expect(screen.getByText("Tamamlandı")).toBeInTheDocument();
     expect(screen.getByText("Final Hakediş")).toBeInTheDocument();
-    expect(screen.getByTitle("Hakediş verisi bu yüzeye henüz bağlanmadı")).toHaveTextContent("—");
+    // F-ILRUI: ayni gerekce artik IKI yerde basiliyor — Final Hakediş hucresi
+    // ve ilerleme cubugu (ikisi de `progress_payments` bekliyor). Iddia
+    // zayiflatilmadan sayiya baglaniyor.
+    const hakedisHints = screen.getAllByTitle("Hakediş verisi bu yüzeye henüz bağlanmadı");
+    expect(hakedisHints).toHaveLength(2);
+    hakedisHints.forEach((hint) => expect(hint).toHaveTextContent("—"));
     expect(screen.queryByText("Başlangıç")).not.toBeInTheDocument();
-    expect(screen.getByText("%100")).toBeInTheDocument();
+    // `progress_pct: "100.00"` fosili basilmaz; zarf bos oldugu icin "—".
+    expect(screen.getByTestId("prj-progress-pct")).toHaveTextContent("—");
+    expect(screen.queryByText("%100")).not.toBeInTheDocument();
   });
 });
 
@@ -122,9 +135,14 @@ describe("ProjectCard — kendi yatirim", () => {
     expect(screen.getByText("Konut · Ankara")).toBeInTheDocument();
     expect(screen.getByText("Satış Hedefi")).toBeInTheDocument();
     expect(screen.getByText("₺ 48,2M")).toBeInTheDocument();
-    expect(screen.getByTitle("Ünite verisi bu yüzeye henüz bağlanmadı")).toHaveTextContent("—");
-    // Mockup "Satış Oranı" der; units modulu gelene kadar durust etiket (spec §7.5)
-    expect(screen.getByText("İnşaat İlerlemesi")).toBeInTheDocument();
+    // `sold_amount` + `sales_ratio` (cubuk) ayni gerekceyi basar.
+    const unitHints = screen.getAllByTitle("Ünite verisi bu yüzeye henüz bağlanmadı");
+    expect(unitHints).toHaveLength(2);
+    unitHints.forEach((hint) => expect(hint).toHaveTextContent("—"));
+    // F-ILRUI: cubuk `investment.sales_ratio` bastigi icin etiket mockup 124'e
+    // dondu; eski "İnşaat İlerlemesi" gerekcesi (spec §7.5) bayatladi.
+    expect(screen.getByText("Satış Oranı")).toBeInTheDocument();
+    expect(screen.queryByText("İnşaat İlerlemesi")).not.toBeInTheDocument();
   });
 
   // P10 · alan seti mockup 120-123'e birebir

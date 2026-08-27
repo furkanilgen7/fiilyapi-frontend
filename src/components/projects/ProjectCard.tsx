@@ -29,13 +29,79 @@ const STATUS_LABELS: Record<Project["status"], string> = {
   completed: "Tamamlandı",
 };
 
-// Mockup kendi yatirimda "Satış Oranı" der; satis verisi units modulunde —
-// o gelene kadar cubuk progress_pct bastigi icin etiket de onu soyler (spec §7.5).
+// ⛔ ESKI GEREKCE (F-ILRUI · 2026-08-27 ITIBARIYLA BAYAT, tarihsel tutuluyor):
+// «Mockup kendi yatirimda "Satış Oranı" der; satis verisi units modulunde —
+//  o gelene kadar cubuk progress_pct bastigi icin etiket de onu soyler (spec §7.5).»
+// Gerekce OLDU: cubuk artik `progress_pct` BASMIYOR (o alan fosil, asagiya bak),
+// kendi yatirimda `investment.sales_ratio` zarfini basiyor. Etiketin "İnşaat
+// İlerlemesi" demesinin tek dayanagi bastigi verinin ilerleme olmasiydi; veri
+// artik satis orani, dolayisiyla etiket mockup'a (satir 124) doner.
+// Mockup 124 tam metni "Satış Oranı (34/52 ünite)"; parantezli sayac `units`
+// sayaclarina baglidir ve bu dilimin kapsami DISINDADIR — basilmaz.
 const PROGRESS_LABELS: Record<Project["project_type"], string> = {
-  taahhut: "Fiziksel İlerleme",
-  kendi_yatirim: "İnşaat İlerlemesi",
-  kat_karsiligi: "İnşaat İlerlemesi",
+  taahhut: "Fiziksel İlerleme", // mockup 185/210/235/260/279
+  kendi_yatirim: "Satış Oranı", // mockup 124
+  kat_karsiligi: "İnşaat İlerlemesi", // mockup 157
 };
+
+// 🔴 ILERLEME CUBUGUNUN KAYNAGI — `project.progress_pct` DEGIL.
+//
+// Olculdu (`backend/app/modules/projects/cards.py`): `projects.progress_pct`
+// sutununun HICBIR YAZMA YOLU YOKTUR. Kullanicinin actigi her projede kalici
+// olarak `0`, tohum satirlarinda ise hicbir ekranin duzeltemeyecegi donmus bir
+// sayi. Yani alan bir FOSIL; kullanicinin canlida "Fiziksel İlerleme %0"
+// gormesinin sebebi tam olarak buydu. Cubuk tip basina AYRI zarflardan okur.
+function progressMetric(project: Project): Metric | undefined {
+  if (project.project_type === "taahhut") return project.contracting?.physical_progress;
+  if (project.project_type === "kat_karsiligi") return project.land_share?.construction_progress;
+  return project.investment?.sales_ratio;
+}
+
+// K-ZARF ucuncu hâli: `available:false` + `pending_module:null` backend'in
+// `restricted()` fabrikasidir — modul EKSIK degil, ROLUN IZNI YOK.
+// `pendingModuleLabel(null)` bu hâlde `FALLBACK_LABEL` ("İlgili modülle birlikte
+// gelir") doner ki bu bir YALAN olur. `pendingModuleLabel`i degistirmek yerine
+// CAGRI YERINDE dallaniyoruz: anahtar yoksa gerekce HIC verilmez (undefined).
+function pendingReason(metric: Metric | undefined): string | undefined {
+  return metric?.pending_module ? pendingModuleLabel(metric.pending_module) : undefined;
+}
+
+// Cubuk satiri — mockup'ta kart basina TEK cubuk (7 kart, 7 cubuk).
+// Bos zarfta cubuk SILINMEZ: etiket kalir, yuzde "—" olur ve DOLGU OGESI HIC
+// BASILMAZ (genislik 0 degil) — emsal `project-detail/SiteCard.tsx` ProgressBar.
+function ProgressRow({ project }: { project: Project }) {
+  const metric = progressMetric(project);
+  const value = realValue(metric);
+  return (
+    <div className="prj-progress">
+      <div className="prj-progress__labels">
+        <span>{PROGRESS_LABELS[project.project_type]}</span>
+        {value !== null ? (
+          <span className="prj-progress__pct" data-testid="prj-progress-pct">
+            {formatPercent(value)}
+          </span>
+        ) : (
+          <span
+            className="prj-progress__pct prj-progress__pct--pending"
+            data-testid="prj-progress-pct"
+            title={pendingReason(metric)}
+          >
+            —
+          </span>
+        )}
+      </div>
+      <div className="prj-progress__bar">
+        {value !== null && (
+          <div
+            className="prj-progress__fill"
+            data-testid="prj-progress-fill"
+            style={{ width: `${Math.min(Number(value), 100)}%` }}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
 
 function metaLine(project: Project): string {
   const base = [project.category, project.city].filter(Boolean).join(" · ");
@@ -246,18 +312,7 @@ export function ProjectCard({ project }: { project: Project }) {
           {project.project_type === "taahhut" && <TaahhutKpis project={project} />}
           {project.project_type === "kendi_yatirim" && <KendiYatirimKpis project={project} />}
           {project.project_type === "kat_karsiligi" && <KatKarsiligiKpis project={project} />}
-          <div className="prj-progress">
-            <div className="prj-progress__labels">
-              <span>{PROGRESS_LABELS[project.project_type]}</span>
-              <span className="prj-progress__pct">{formatPercent(project.progress_pct)}</span>
-            </div>
-            <div className="prj-progress__bar">
-              <div
-                className="prj-progress__fill"
-                style={{ width: `${Math.min(Number(project.progress_pct), 100)}%` }}
-              />
-            </div>
-          </div>
+          <ProgressRow project={project} />
           {project.project_type === "kendi_yatirim" && (
             <MarginChip metric={project.investment?.margin} />
           )}
