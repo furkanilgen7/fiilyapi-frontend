@@ -93,7 +93,6 @@ describe("pendingModuleLabel", () => {
   // sekme gerçek tablo basıyor. Anahtarın YOKLUĞU ayrıca çakılır (aşağıda).
   it("F-BOLLINK bolum anahtarlarini esler ve 'modulle birlikte gelir' DEMEZ", () => {
     const keys = [
-      "section_timesheet",
       "section_stock",
       "section_progress_payments",
       "section_site_diary",
@@ -110,6 +109,12 @@ describe("pendingModuleLabel", () => {
   // yakalar. (Yedek metne düşmesi, eşlenmemiş olmasının kanıtıdır.)
   it("section_boq anahtari ARTIK YOK - bolum bagi acildi", () => {
     expect(pendingModuleLabel("section_boq")).toBe("İlgili modülle birlikte gelir");
+  });
+
+  // F-BLMPUAN bekçisi: `section_timesheet` geri gelirse birileri CANLI puantaj
+  // sekmesine yeniden "bu bölüme kırılmıyor" gerekçesi bağlamış demektir.
+  it("section_timesheet anahtari ARTIK YOK - bolum bagi acildi", () => {
+    expect(pendingModuleLabel("section_timesheet")).toBe("İlgili modülle birlikte gelir");
   });
 
   // 🔴 F-PKK T1 · Proje Özeti (KY/KK) + Paylaşım Tablosu (KKP) ekranlarının

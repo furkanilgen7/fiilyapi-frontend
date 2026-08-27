@@ -405,7 +405,9 @@ export const MODULE_LABELS: Record<string, string> = {
   // BOQ-SEC-F (2026-08-18): `section_boq` SİLİNDİ — bölüm ↔ iş kalemi bağı
   // AÇILDI (`GET /sites/{id}/boq?section_id=`), sekme gerçek tablo basıyor.
   // Anahtarı bırakmak, hiçbir yerin okumadığı ölü bir gerekçe metni olurdu.
-  section_timesheet: "Puantaj bu bölüme henüz kırılmıyor (şantiye genelinde tutulur)",
+  // F-BLMPUAN (2026-08-27): `section_timesheet` de AYNI gerekçeyle SİLİNDİ —
+  // bölüm ↔ puantaj bağı AÇILDI (`TimesheetEntry.section_id`), sekme gerçek
+  // matrisi ve alt kart gerçek işçi kırılımını basıyor.
   section_stock: "Malzeme hareketleri bu bölüme henüz kırılmıyor (şantiye genelinde tutulur)",
   section_progress_payments: "Hakediş bu bölüme henüz kırılmıyor (şantiye genelinde tutulur)",
   section_site_diary: "Günlük kayıt bu bölüme henüz kırılmıyor (şantiye genelinde tutulur)",

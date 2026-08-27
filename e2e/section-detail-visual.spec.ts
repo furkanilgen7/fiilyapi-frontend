@@ -27,8 +27,24 @@ import { prepareFrame } from "./visual-scroll";
 //
 // Baseline `.png` YALNIZ Linux CI'da üretilir (visual-baselines.yml →
 // workflow_dispatch); macOS'ta koşturulup commit edilmez.
+/**
+ * 🔴 F-BLMPUAN — SABİT "BUGÜN" 2026-09-01'DEN 2026-08-20'YE ALINDI.
+ *
+ * Ekran artık İÇİNDE BULUNULAN ayın puantajını basıyor (`currentPeriod()`).
+ * `mock-backend.ts` fikstür izolasyonuna göre **2026-09 · s-1, `PUT
+ * .../timesheet` oyun alanıdır** ve paralel koşan puantaj spec'leri onu
+ * mutasyona uğratır; kadraj o aya bakarsa BAŞKA BİR SPEC'İN YAZMASINA
+ * bağımlı, dolayısıyla DETERMİNİSTİK OLMAYAN bir kare üretirdi.
+ * **2026-08 · s-1 ise hiçbir spec tarafından değiştirilmez** (zengin, sabit
+ * görsel fikstür) — kadraj oraya çekildi.
+ *
+ * Sonucu: "Kalan Gün" 29 → **41** (2026-08-20 → sec-1 `end_date` 2026-09-30).
+ * Bölüm hâlâ `start_date`(2026-01-01)–`end_date` aralığında, "Aktif" tutarlı.
+ */
+const FIXED_TODAY = new Date("2026-08-20T12:00:00Z");
+
 test("bolum detay ekrani gorsel", async ({ page }) => {
-  await page.clock.setFixedTime(new Date("2026-09-01T12:00:00Z"));
+  await page.clock.setFixedTime(FIXED_TODAY);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/login");
   await page.getByLabel(/e-posta/i).fill("patron@fiil.com");
@@ -51,10 +67,71 @@ test("bolum detay ekrani gorsel", async ({ page }) => {
   await expect(page.getByText("Yükleniyor…")).toHaveCount(0);
   // Alt satır kartları (Bu Bölümdeki İşçiler / Bölüm Malzeme Durumu) kadrajda.
   await expect(page.getByText("Bölüm Malzeme Durumu")).toBeVisible();
-  // Saat sabitlemesi işledi: Kalan Gün deterministik (2026-09-01 → 2026-09-30 = 29 gün).
-  await expect(page.getByTestId("section-hero-kpi-days")).toContainText("29");
+  // 🔴 F-BLMPUAN — ÜÇÜNCÜ BAĞIMSIZ VERİ KAYNAĞI (görsel spec 5. parça): işçi
+  // kartı artık puantaj matrisinden besleniyor. İddia edilmezse kadraj o kartın
+  // "Yükleniyor…" hâlini dondurabilir.
+  await expect(page.getByTestId("section-workers-row")).toHaveCount(3);
+  // Saat sabitlemesi işledi: Kalan Gün deterministik (2026-08-20 → 2026-09-30 = 41 gün).
+  await expect(page.getByTestId("section-hero-kpi-days")).toContainText("41");
 
   // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("bolum-detay.png", { fullPage: true });
+});
+
+
+/**
+ * F-BLMPUAN — "İşçiler & Puantaj" sekmesinin DOLU hâli.
+ *
+ * Mockup bu panel için çizim taşımaz (D100 aktif sekme "İş Kalemleri"dir);
+ * yüzey ŞP mockup'ından türetilen `TimesheetTable`/`TimesheetSummaryStrip` ile
+ * kurulur, bu yüzden kadraj ŞP karesinin bölüm-kapsamlı kardeşidir.
+ */
+test("bolum detay puantaj sekmesi gorsel", async ({ page }) => {
+  await page.clock.setFixedTime(FIXED_TODAY);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/login");
+  await page.getByLabel(/e-posta/i).fill("patron@fiil.com");
+  await page.getByLabel(/^şifre$/i).fill("dogruparola");
+  await page.getByRole("button", { name: /giriş yap/i }).click();
+  await expect(page.getByRole("heading", { name: "Gösterge Paneli" })).toBeVisible();
+
+  await page.goto("/projeler/p-1/santiyeler/s-1/bolumler/sec-1");
+  await expect(page.getByRole("heading", { level: 1, name: "Kat 6–10 Kaba İnşaat" })).toBeVisible();
+  await page.getByRole("tab", { name: "İşçiler & Puantaj" }).click();
+
+  // Yerleşim oturdu (görsel spec 1. parça) — HER bağımsız kaynak ayrı ayrı:
+  // matris (özet şeridi + satırlar) ve alt kart.
+  await expect(page.locator(".ts-summary__title")).toHaveText("Kat 6–10 Kaba İnşaat · Ağustos 2026");
+  await expect(page.locator(".ts-summary__count")).toHaveText("3 işçi");
+  await expect(page.getByTestId("section-workers-row")).toHaveCount(3);
+  await expect(page.getByText("Yükleniyor…")).toHaveCount(0);
+
+  await prepareFrame(page);
+  await expect(page).toHaveScreenshot("bolum-detay-puantaj.png", { fullPage: true });
+});
+
+/**
+ * F-BLMPUAN — BOŞ hâlin AYRI karesi. "Veri yok" ile "modül yok" iki farklı
+ * ekrandır; boş kare olmadan ikisinin ayrıştığı görsel olarak kanıtlanmaz.
+ */
+test("bolum detay puantaj sekmesi BOS hali gorsel", async ({ page }) => {
+  await page.clock.setFixedTime(FIXED_TODAY);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/login");
+  await page.getByLabel(/e-posta/i).fill("patron@fiil.com");
+  await page.getByLabel(/^şifre$/i).fill("dogruparola");
+  await page.getByRole("button", { name: /giriş yap/i }).click();
+  await expect(page.getByRole("heading", { name: "Gösterge Paneli" })).toBeVisible();
+
+  // sec-3 hiç puantaj hücresi taşımaz.
+  await page.goto("/projeler/p-1/santiyeler/s-1/bolumler/sec-3");
+  await expect(page.getByRole("heading", { level: 1, name: "Peyzaj Düzenlemesi (Taslak)" })).toBeVisible();
+  await page.getByRole("tab", { name: "İşçiler & Puantaj" }).click();
+  await expect(page.locator(".ts-summary__count")).toHaveText("0 işçi");
+  await expect(page.getByTestId("section-workers-empty")).toBeVisible();
+  await expect(page.getByText("Yükleniyor…")).toHaveCount(0);
+
+  await prepareFrame(page);
+  await expect(page).toHaveScreenshot("bolum-detay-puantaj-bos.png", { fullPage: true });
 });

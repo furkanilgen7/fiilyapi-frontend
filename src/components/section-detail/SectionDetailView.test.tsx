@@ -8,6 +8,12 @@ import { useSection } from "@/lib/api/hooks/useSection";
 import { useBoq } from "@/lib/api/hooks/useBoq";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { useSession } from "@/components/shell/SessionProvider";
+import { useTimesheetData } from "@/components/timesheet/useTimesheetData";
+import { buildTimesheetView } from "@/components/timesheet/derive";
+import { currentPeriod } from "@/components/timesheet/month";
+import { formatPeriod } from "@/lib/format";
+import type { TimesheetMatrix } from "@/lib/api/hooks/useTimesheet";
+import type { PersonnelListItem } from "@/lib/api/hooks/usePersonnel";
 import { BackendError } from "@/lib/api/unwrap";
 import type { SectionDetailResponse } from "@/lib/api/hooks/useSection";
 import type { SiteDetail } from "@/lib/api/hooks/useSites";
@@ -28,6 +34,14 @@ vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
 vi.mock("@/lib/api/hooks/useBoq", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useBoq")>()),
   useBoq: vi.fn(),
+}));
+
+// F-BLMPUAN: puantaj VERİ KATMANI mock'lanır, TÜREV KATMANI mock'lanmaz —
+// `buildTimesheetView` GERÇEĞİ koşar. Türevleri de elle uydursaydık test,
+// ekranın bastığı sayıların doğruluğu hakkında HİÇBİR ŞEY söylemezdi.
+vi.mock("@/components/timesheet/useTimesheetData", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/components/timesheet/useTimesheetData")>()),
+  useTimesheetData: vi.fn(),
 }));
 
 const PROJECT_ID = "11111111-1111-1111-1111-111111111111";
@@ -121,8 +135,104 @@ function mockBoq(overrides: Record<string, unknown> = {}) {
   } as never);
 }
 
+/**
+ * F-BLMPUAN fikstürü — sec-1'de İKİ kaynak (Şirket/Taşeron), BAŞKA bölümde
+ * (`sec-other`) bir hücre daha: bölüm süzgecinin GERÇEKTEN süzdüğü ancak
+ * ayrışma noktası olan bir kurulumla ölçülebilir.
+ */
+const TS_PERSONNEL = [
+  { id: "per-1", full_name: "Ahmet Kaya", trade: "Kalıpçı", source: "company" },
+  { id: "per-2", full_name: "Bora Sen", trade: "Kalıpçı", source: "company" },
+  { id: "per-3", full_name: "Cem Ak", trade: "Demirci", source: "subcontractor" },
+  { id: "per-9", full_name: "Zeki Dur", trade: "Boyacı", source: "company" },
+] as unknown as PersonnelListItem[];
+
+/**
+ * 🔴 DÖNEM ZAMANA BAĞLIDIR: ekran ay gezinmesi taşımaz, İÇİNDE BULUNULAN ayı
+ * gösterir (`currentPeriod()`). Fikstür tarihleri o aydan TÜRETİLİR — sabit
+ * "2026-08" yazılsaydı test bir sonraki ay KENDİLİĞİNDEN kırmızıya dönerdi.
+ */
+const TS_PERIOD = currentPeriod();
+function tsDay(day: number): string {
+  return `${TS_PERIOD.year}-${String(TS_PERIOD.month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function tsCell(work_date: string, section_id: string | null, code = "worked") {
+  return { work_date, code, overtime_hours: null, section_id };
+}
+
+const TS_MATRIX = {
+  rows: [
+    {
+      personnel_id: "per-1",
+      full_name: "Ahmet Kaya",
+      trade: "Kalıpçı",
+      source: "company",
+      subcontractor_name: null,
+      man_days: 1,
+      cells: [tsCell(tsDay(3), SECTION_ID)],
+    },
+    {
+      personnel_id: "per-2",
+      full_name: "Bora Sen",
+      trade: "Kalıpçı",
+      source: "company",
+      subcontractor_name: null,
+      man_days: 1,
+      cells: [tsCell(tsDay(3), SECTION_ID)],
+    },
+    {
+      personnel_id: "per-3",
+      full_name: "Cem Ak",
+      trade: "Demirci",
+      source: "subcontractor",
+      subcontractor_name: "Akın İnşaat",
+      man_days: 1,
+      cells: [tsCell(tsDay(4), SECTION_ID)],
+    },
+    // 🔴 AYRIŞMA NOKTASI: BAŞKA bölümün hücresi. Süzgeç kaldırılırsa bu satır
+    // hem matriste hem işçi kartında görünür ve testler KIRMIZI olur.
+    {
+      personnel_id: "per-9",
+      full_name: "Zeki Dur",
+      trade: "Boyacı",
+      source: "company",
+      subcontractor_name: null,
+      man_days: 1,
+      cells: [tsCell(tsDay(5), "sec-other")],
+    },
+  ],
+} as unknown as TimesheetMatrix;
+
+function mockTimesheet(
+  overrides: { isLoading?: boolean; isError?: boolean; matrix?: TimesheetMatrix | undefined } = {},
+) {
+  // 🔴 `matrix: undefined` AÇIKÇA verilebilmelidir — varsayılan parametre
+  // sözdizimi (`matrix = TS_MATRIX`) açık `undefined`i de EZER ve "veri yok"
+  // dalı hiç koşmazdı (bu tuzak bu turda fiilen ısırdı).
+  const isLoading = overrides.isLoading ?? false;
+  const isError = overrides.isError ?? false;
+  const matrix = "matrix" in overrides ? overrides.matrix : TS_MATRIX;
+  vi.mocked(useTimesheetData).mockImplementation((input) => ({
+    // TÜREV GERÇEKTİR — `buildTimesheetView` bu testte gerçekten koşar.
+    view: buildTimesheetView({
+      year: input.period.year,
+      month: input.period.month,
+      personnel: TS_PERSONNEL,
+      matrix,
+      sectionId: input.sectionId,
+    }),
+    isLoading,
+    isError,
+    isForbidden: false,
+    isPersonnelUnavailable: false,
+    personnelTruncation: { isTruncated: false, shownCount: 0, totalCount: 0 },
+  }));
+}
+
 function mockQueries(section: Partial<ReturnType<typeof useSection>> = {}, site: Partial<ReturnType<typeof useSite>> = {}) {
   mockBoq();
+  mockTimesheet();
   vi.mocked(useSection).mockReturnValue({
     data: BASE_SECTION,
     isLoading: false,
@@ -324,11 +434,12 @@ describe("SectionDetailView — sekmeler (D99-105, hepsi BÖLÜM BAĞI bekleyen 
     const live = tabs.filter((tab) => tab.getAttribute("data-content-live") === "true");
     const pending = tabs.filter((tab) => tab.getAttribute("data-content-live") !== "true");
 
-    // Canlı sekme TAM OLARAK BİRDİR (İş Kalemleri) ve gerekçe TAŞIMAZ.
-    expect(live.map((tab) => tab.textContent)).toEqual(["İş Kalemleri"]);
-    expect(live[0]).not.toHaveAttribute("data-content-pending");
+    // 🔴 F-BLMPUAN: canlı sekme artık İKİ — "İşçiler & Puantaj" bölüm bağını
+    // kazandı. Gerekçe TAŞIMAZLAR (canlı sekmenin gerekçesi olamaz).
+    expect(live.map((tab) => tab.textContent)).toEqual(["İş Kalemleri", "İşçiler & Puantaj"]);
+    for (const tab of live) expect(tab).not.toHaveAttribute("data-content-pending");
 
-    expect(pending).toHaveLength(4);
+    expect(pending).toHaveLength(3);
     for (const tab of pending) {
       expect(tab.getAttribute("data-content-pending")).toMatch(/^section_/);
     }
@@ -455,5 +566,202 @@ describe("SectionDetailView — İş Kalemleri sekmesi (BOQ-SEC-F)", () => {
     const panel = screen.getByRole("tabpanel");
     expect(within(panel).getByText(/Hakediş bu bölüme henüz kırılmıyor/)).toBeInTheDocument();
     expect(within(panel).queryByText("03.001")).not.toBeInTheDocument();
+  });
+});
+
+
+/**
+ * F-BLMPUAN — "İşçiler & Puantaj" sekmesi + "Bu Bölümdeki İşçiler" kartı.
+ *
+ * 🔑 "Sekme canlı mı" sorusu DOM'dan cevaplanır (F-IZN kanonu: bir yüzeyin
+ * ölüden canlıya geçtiğini görsel kapı KANITLAMAZ).
+ */
+describe("SectionDetailView — İşçiler & Puantaj sekmesi (F-BLMPUAN)", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  async function openTimesheetTab() {
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("tab", { name: "İşçiler & Puantaj" }));
+    return screen.getByRole("tabpanel");
+  }
+
+  it("sekme YER TUTUCU DEĞİL gerçek matris basar", async () => {
+    mockPermission("view");
+    mockQueries();
+    renderView();
+    const panel = await openTimesheetTab();
+    expect(within(panel).getByTestId("section-timesheet")).toBeInTheDocument();
+    expect(within(panel).queryByText(/henüz görüntülenemiyor/)).not.toBeInTheDocument();
+    expect(within(panel).queryByText(/bu bölüme henüz kırılmıyor/)).not.toBeInTheDocument();
+  });
+
+  it("🔴 puantaj verisi BÖLÜM SÜZGECİYLE istenir — süzgeçsiz çağrı şantiyenin tamamını basardı", () => {
+    mockPermission("view");
+    mockQueries();
+    renderView();
+    expect(useTimesheetData).toHaveBeenCalledWith(
+      expect.objectContaining({ siteId: SITE_ID, sectionId: SECTION_ID }),
+    );
+  });
+
+  it("🔴 K2 KORUNUR: süzgeç GÖRÜNÜMDEDİR, dönem hep verilir", () => {
+    mockPermission("view");
+    mockQueries();
+    renderView();
+    const input = vi.mocked(useTimesheetData).mock.calls[0][0];
+    expect(input.period.year).toBeGreaterThan(2000);
+    expect(input.period.month).toBeGreaterThanOrEqual(1);
+    expect(input.period.month).toBeLessThanOrEqual(12);
+  });
+
+  it("başka bölümün satırı matriste GÖRÜNMEZ (süzgeç gerçekten süzüyor)", async () => {
+    mockPermission("view");
+    mockQueries();
+    renderView();
+    const panel = await openTimesheetTab();
+    // Zeki Dur'un TEK hücresi `sec-other`da; satırı kartoteksten gelir ama
+    // adam-günü 0'dır ve işçi sayımına GİRMEZ.
+    // Metin JSX'te birden fazla düğüme bölünüyor — kapsayıcıdan okunur.
+    expect(panel.querySelector(".ts-summary__metrics")).toHaveTextContent(
+      "3 adam/gün · 0 saat fazla mesai",
+    );
+    expect(within(panel).getByText("3 işçi")).toBeInTheDocument();
+  });
+
+  // 🔴 SALT OKUNURLUK BIR IS KURALIDIR (K2): `PUT .../timesheet` DONEM+SANTIYE
+  // kapsaminda DEGISTIRMEDIR; bolum kapsamli bir yuzeyden yazmak diger
+  // bolumlerin kayitlarini SILME riskini bu ekrana tasir. Bekci hucrelerin
+  // DUZENLENEBILIR OLMADIGINI olcer — yalnizca "Kaydet yok" demek yetmez,
+  // hucre popover'i tek basina yazma yoludur.
+  // 🔴 EKRANDA AY GEZINMESI YOK (mockup cizmiyor) — hangi ayin gosterildigi
+  // BASKA HICBIR YERDEN okunamaz. Donem basliktan dusurse ekran, kullanicinin
+  // bilmedigi bir ayin matrisini "bu bolumun puantaji" diye basar.
+  it("ozet seridi BOLUM ADINI ve DONEMI birlikte tasir", async () => {
+    mockPermission("view");
+    mockQueries();
+    renderView();
+    const panel = await openTimesheetTab();
+    const title = panel.querySelector(".ts-summary__title");
+    expect(title).toHaveTextContent(BASE_SECTION.name);
+    expect(title).toHaveTextContent(formatPeriod(TS_PERIOD.year, TS_PERIOD.month));
+  });
+
+  it("salt okunurdur — Kaydet/Excel BASILMAZ ve HUCRELER DUZENLENEMEZ", async () => {
+    mockPermission("full");
+    mockQueries();
+    renderView();
+    const panel = await openTimesheetTab();
+    expect(within(panel).queryByRole("button", { name: "Kaydet" })).not.toBeInTheDocument();
+    expect(within(panel).queryByRole("button", { name: "Excel" })).not.toBeInTheDocument();
+    expect(within(panel).queryAllByRole("button", { name: /puantajı$/ })).toHaveLength(0);
+    expect(panel.querySelectorAll(".ts-cell-button")).toHaveLength(0);
+  });
+
+  it("yüklenirken boş matris BASILMAZ — 'kimse çalışmadı' yalanı söylenmez", async () => {
+    mockPermission("view");
+    mockQueries();
+    mockTimesheet({ isLoading: true, matrix: undefined });
+    renderView();
+    const panel = await openTimesheetTab();
+    expect(within(panel).getByText("Yükleniyor…")).toBeInTheDocument();
+    expect(within(panel).queryByTestId("section-timesheet")).not.toBeInTheDocument();
+  });
+
+  it("hata sessizce boş matrise DÜŞMEZ", async () => {
+    mockPermission("view");
+    mockQueries();
+    mockTimesheet({ isError: true, matrix: undefined });
+    renderView();
+    const panel = await openTimesheetTab();
+    expect(within(panel).getByText("Puantaj matrisi yüklenemedi")).toBeInTheDocument();
+    expect(within(panel).queryByTestId("section-timesheet")).not.toBeInTheDocument();
+  });
+
+  it("öbür sekmeler HÂLÂ gerekçeli yer tutucu basar (canlılık sızmaz)", async () => {
+    const user = userEvent.setup();
+    mockPermission("view");
+    mockQueries();
+    renderView();
+    await user.click(screen.getByRole("tab", { name: "Günlük Kayıt" }));
+    const panel = screen.getByRole("tabpanel");
+    expect(within(panel).getByText(/Günlük kayıt bu bölüme henüz kırılmıyor/)).toBeInTheDocument();
+    expect(within(panel).queryByTestId("section-timesheet")).not.toBeInTheDocument();
+  });
+});
+
+describe("SectionDetailView — 'Bu Bölümdeki İşçiler' kartı (F-BLMPUAN, D215-250)", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("gerçek gruplanmış satırlar basılır, yer tutucu kart DEĞİL", () => {
+    mockPermission("view");
+    mockQueries();
+    renderView();
+    const rows = screen.getAllByTestId("section-workers-row");
+    expect(rows.map((row) => row.textContent)).toEqual([
+      "ŞirketKalıpçı2 kişi",
+      "TaşeronDemirci — Akın İnşaat1 kişi",
+    ]);
+    expect(screen.queryByText(/Puantaj verisi bu bölümde henüz görüntülenemiyor/)).not.toBeInTheDocument();
+  });
+
+  // 🔴 ROZET RENGI MOCKUP'TAN: D221 mavi (Şirket) · D228 amber (Taşeron).
+  // Tek renk basilirsa rozet kaynak bilgisini TASIMAZ ve metinle celisir.
+  it("rozet rengi kaynaga gore AYRISIR (D221 mavi · D228 amber)", () => {
+    mockPermission("view");
+    mockQueries();
+    renderView();
+    const [company, sub] = screen.getAllByTestId("section-workers-row");
+    expect(company.querySelector(".badge")).toHaveClass("badge--primary");
+    expect(sub.querySelector(".badge")).toHaveClass("badge--warning");
+  });
+
+  it("başka bölümün işçisi bu karta SIZMAZ", () => {
+    mockPermission("view");
+    mockQueries();
+    renderView();
+    expect(screen.queryByText(/Boyacı/)).not.toBeInTheDocument();
+  });
+
+  // 🔴 BOŞ VERİ ≠ MODÜL YOK. Boş kart "bu bölüme kırılmıyor" DEMEZ.
+  it("kayıt yokken 'bu ay kayıt yok' der — 'modül yok' DEMEZ", () => {
+    mockPermission("view");
+    mockQueries();
+    mockTimesheet({ matrix: undefined });
+    renderView();
+    const empty = screen.getByTestId("section-workers-empty");
+    expect(empty).toHaveTextContent(/döneminde bu bölümde puantaj kaydı yok/);
+    // Boş hâl HANGİ AY olduğunu söyler — "kayıt yok" tek başına yarım bilgidir.
+    expect(empty).toHaveTextContent(formatPeriod(TS_PERIOD.year, TS_PERIOD.month));
+    expect(empty).not.toHaveTextContent(/kırılmıyor/);
+    expect(empty).not.toHaveTextContent(/henüz görüntülenemiyor/);
+    expect(empty).not.toHaveTextContent(/modülle birlikte gelir/);
+  });
+
+  it("boş hâl bile 'Puantaj →' bağlantısını KORUR (sekme onun yerine geçmez)", () => {
+    mockPermission("view");
+    mockQueries();
+    mockTimesheet({ matrix: undefined });
+    renderView();
+    expect(screen.getByRole("link", { name: "Puantaj →" })).toHaveAttribute(
+      "href",
+      `/projeler/${PROJECT_ID}/santiyeler/${SITE_ID}/puantaj?section=${SECTION_ID}`,
+    );
+  });
+
+  it("yükleme ve hata dalları AYRI basılır", () => {
+    mockPermission("view");
+    mockQueries();
+    mockTimesheet({ isLoading: true, matrix: undefined });
+    const { unmount } = renderView();
+    expect(screen.queryByTestId("section-workers-empty")).not.toBeInTheDocument();
+    unmount();
+
+    vi.clearAllMocks();
+    mockPermission("view");
+    mockQueries();
+    mockTimesheet({ isError: true, matrix: undefined });
+    renderView();
+    expect(screen.getByText("Puantaj verisi yüklenemedi")).toBeInTheDocument();
+    expect(screen.queryByTestId("section-workers-empty")).not.toBeInTheDocument();
   });
 });
