@@ -67,6 +67,11 @@ export function EmployerContractDetailView({ projectId }: EmployerContractDetail
   // önbellek anahtarı ısıtmamak için `project_id` HER ZAMAN gönderilir.
   const paymentsQuery = useProgressPayments({ project_id: projectId });
 
+  // 84 · başlık kartının "Bitiş Tarihi" tonunun okuduğu TEK "bugün".
+  // Mount'ta bir kez dondurulur (`InvoiceDetailView` emsali): her render'da
+  // `new Date()` çağrılsaydı ton bir oturum ortasında sessizce kayabilirdi.
+  const [today] = useState(() => new Date());
+
   // F-BLG T2a · "+ Poz Ekle" diyalogu; sahibi bu ekrandır (tablo yalnız tetikler).
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
 
@@ -113,7 +118,11 @@ export function EmployerContractDetailView({ projectId }: EmployerContractDetail
         <p className="ecd__message">Yükleniyor…</p>
       ) : (
         <>
-          <EmployerContractHeaderCard detail={detail} projectName={projectQuery.data?.name} />
+          <EmployerContractHeaderCard
+            detail={detail}
+            projectName={projectQuery.data?.name}
+            today={today}
+          />
 
           {/* 76-77 · iki devre-dışı butonun gerekçesi `title`da saklı kalmaz. */}
           <p className="ecd__notice">
