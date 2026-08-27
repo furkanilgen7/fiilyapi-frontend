@@ -66,9 +66,14 @@ test("Gunluk Kayit sekmesi YALNIZ bu bolumun kayitlarini basar, disarida kalani 
   // (c) Sessiz atlama = ihlal: dışarıda kalan SAYILIR ve nerede görüleceği yazılır.
   const note = panel.getByTestId("section-diary-note");
   await expect(note).toBeVisible();
+  // 🔴 YALNIZ "başka bölüm" dalı iddia edilir — "atanmamış" dalı İDDİA EDİLEMEZ.
+  // ÖLÇÜLDÜ: bu panel AY SÜZGECİ UYGULAMAZ ve `e2e/site-diary.spec.ts`
+  // 2026-09 · s-1'de BÖLÜMSÜZ (`section_id: null`, mock create varsayılanı)
+  // bir kayıt AÇAR. O kayıt listeye girmez ama `unassignedCount`u 0→1 yapar,
+  // yani "atanmamış" dalının VARLIĞI `fullyParallel` sırasına bağlıdır.
+  // `otherSectionCount` ise sabittir (yalnız `d-2` → sec-2), çünkü açılan kayıt
+  // "atanmamış" sayılır, "başka bölüm" DEĞİL.
   await expect(note).toContainText("başka bölüme atanmış 1 kayıt bu listede yok");
-  // `d-3` s-2'dedir (bu şantiyenin listesinde HİÇ yok) → "atanmamış" dalı basılmaz.
-  await expect(note).not.toContainText("Bölüme atanmamış");
 
   // (d) Notun çıkış yolu GERÇEK bir bağlantıdır (`a[href]` ile toplanır).
   const noteHrefs = await note.evaluate((el) =>
