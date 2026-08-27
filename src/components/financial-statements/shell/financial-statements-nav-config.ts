@@ -15,6 +15,8 @@ import { isActivePath } from "@/lib/shell/isActive";
 export const FINANCIAL_NAV_HEADING = "Sözleşme & Mali";
 
 export const FINANCIAL_STATEMENTS_URL = "/mali-tablolar";
+export const BALANCE_SHEET_URL = "/mali-tablolar/bilanco";
+export const CASH_FLOW_URL = "/mali-tablolar/nakit-akisi";
 
 export type FinancialNavItem =
   | {
@@ -81,13 +83,28 @@ export const FINANCIAL_SUB_NAV: readonly FinancialNavItem[] = [
   // ve ekran KÖKTE (`/mali-tablolar`) yaşıyor. F-NAVRETRY T2 (2026-08-19):
   // satır artık TIKLANABİLİR (üst öğenin hedefine giden bir `Link`), ama
   // `aria-current` hâlâ yalnız üst öğeden gelir (bkz. tip tanımı yorumu).
-  { kind: "mirror", label: "Gelir Tablosu", mirrorsHref: FINANCIAL_STATEMENTS_URL },
+  {
+    kind: "mirror",
+    label: "Gelir Tablosu",
+    mirrorsHref: FINANCIAL_STATEMENTS_URL,
+  },
   // BL:29 — bu dilimin ekranı. `exact: true`: alt yolu yoktur ama kural
   // kardeşleriyle aynıdır ve üst öğeyle çift yanmayı yapısal olarak keser.
-  { kind: "link", label: "Bilanço", href: "/mali-tablolar/bilanco", exact: true },
+  { kind: "link", label: "Bilanço", href: BALANCE_SHEET_URL, exact: true },
   // BL:30 — kardeş görev (T3); backend ucu MT-1 ile canlıdadır.
-  { kind: "link", label: "Nakit Akışı", href: "/mali-tablolar/nakit-akisi", exact: true },
+  { kind: "link", label: "Nakit Akışı", href: CASH_FLOW_URL, exact: true },
 ];
+
+/**
+ * Öğenin HEDEF rotası — `link` için `href`, `mirror` için `mirrorsHref`.
+ *
+ * 🔴 İki `kind` da bir yere GİDER; ayrımları hedefte değil `aria-current`
+ * davranışındadır. Segment denetimi (üç ekranın ortak geçişi) yalnız hedefi
+ * sorar, bu yüzden `kind`a dallanmak zorunda kalmaz.
+ */
+export function financialNavItemHref(item: FinancialNavItem): string {
+  return item.kind === "mirror" ? item.mirrorsHref : item.href;
+}
 
 /**
  * 🔴 1. KATMAN — BULUNULAN ekran. `aria-current="page"`i YALNIZ bu sürer ve
@@ -98,7 +115,9 @@ export function isFinancialNavItemCurrent(
   item: FinancialNavItem,
 ): boolean {
   if (item.kind !== "link") return false;
-  return item.exact ? pathname === item.href : isActivePath(pathname, item.href);
+  return item.exact
+    ? pathname === item.href
+    : isActivePath(pathname, item.href);
 }
 
 /**
