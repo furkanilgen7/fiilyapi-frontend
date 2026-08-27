@@ -14,8 +14,21 @@ const css = readFileSync(
 );
 
 describe("employer-contract-detail.css — E14 mockup'ına bağlı kurallar", () => {
-  it("Bitiş Tarihi metriği KIRMIZIDIR (84)", () => {
+  /**
+   * 84 · Bitiş Tarihi'nin rengi ARTIK TÜREVDİR (F-SZLEKR, onaylı sapma):
+   * geçmiş = kırmızı, 0..30 gün = kehribar, ötesi nötr. İKİ değiştirici de
+   * stylesheet'te YAŞAMALIDIR — `contractEndTone` "warning" döndürüp CSS'i
+   * olmasaydı ekranda GÖRÜNMEYEN bir ton adı kalırdı (sessiz kusur).
+   */
+  it("Bitiş Tarihi metriğinin GEÇMİŞ tonu KIRMIZIDIR (84)", () => {
     expect(css).toMatch(/\.ecd-metrics__value--danger\s*{[^}]*var\(--color-danger\)/);
+  });
+
+  it("Bitiş Tarihi metriğinin YAKLAŞAN tonu KEHRİBARDIR — ürün çapında tek token", () => {
+    // `.sip-delivery--soon` ile AYNI token: "yaklaşıyor" anlamının tek rengi.
+    expect(css).toMatch(/\.ecd-metrics__value--warning\s*{[^}]*var\(--color-warning\)/);
+    // Kehribar bir yumuşak ZEMİN değil METİN rengidir (metrik şeridi düz).
+    expect(css).not.toMatch(/\.ecd-metrics__value--warning\s*{[^}]*var\(--color-warning-soft\)/);
   });
 
   it("Sözleşme Bedeli metriği mono + 15px/700'dür (81)", () => {

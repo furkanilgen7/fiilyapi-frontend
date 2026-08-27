@@ -5,6 +5,7 @@ import { formatCompactCurrency, formatDateDots, formatPercent } from "@/lib/form
 import { pendingModuleLabel } from "@/lib/pending-modules";
 import type { EmployerContractDetail } from "@/lib/api/hooks/useContract";
 
+import { contractEndTone } from "./contract-end-tone";
 import { CONTRACT_STATUS_BADGE } from "./contract-status";
 import "./employer-contract-detail.css";
 
@@ -23,7 +24,12 @@ import "./employer-contract-detail.css";
  * - 81  Sözleşme Bedeli           → `amount` (nullable), 15px/700 mono
  * - 82  İmza Tarihi               → `signature_date`
  * - 83  Başlangıç                 → `start_date`
- * - 84  Bitiş Tarihi              → `end_date` — KIRMIZI (mockup rengi)
+ * - 84  Bitiş Tarihi              → `end_date`. RENGİ TÜREVDİR, mockup'ın
+ *       sabit kırmızısı DEĞİL (F-SZLEKR · onaylı sapma): mockup 84 kırmızı
+ *       basar ama tarihi GELECEKTEDİR (31.12.2026), yani o kırmızı anlam
+ *       taşımaz. Kural `contract-end-tone.ts`tedir — geçmiş = kırmızı,
+ *       0..30 gün = kehribar, ötesi nötr. (`Subcontractor…HeaderCard` aynı
+ *       metriği nötr basıyordu; ürün içi çelişki de böyle kapanır.)
  * - 85  Avans                     → `advance_pct` · `advance_amount`
  *
  * Üst kural: backend'i olmayan öğe SİLİNMEZ. İki buton da yerinde durur,
@@ -34,6 +40,12 @@ export interface EmployerContractHeaderCardProps {
   detail: EmployerContractDetail;
   /** 72 · proje adı (`useProject`); henüz yüklenmediyse boş bırakılır. */
   projectName?: string;
+  /**
+   * 84 · "bugün" — ZORUNLUDUR, gizli `new Date()` YOKTUR. Bileşen saati
+   * kendisi okusaydı görsel kareler aynı baseline'ı turdan tura başka renkle
+   * basar ve kendiliğinden kırılırdı (`contract-end-tone.ts` gerekçesi).
+   */
+  today: Date;
 }
 
 export const PDF_DISABLED_REASON = pendingModuleLabel("pdf_export");
@@ -44,8 +56,11 @@ const DASH = "—";
 export function EmployerContractHeaderCard({
   detail,
   projectName,
+  today,
 }: EmployerContractHeaderCardProps) {
   const badge = CONTRACT_STATUS_BADGE[detail.status];
+  // 84 · nötr dalda HİÇ değiştirici sınıf basılmaz (`Metric` `tone`u opsiyonel).
+  const endTone = contractEndTone(detail.end_date, today);
 
   return (
     <section className="ecd-head" aria-labelledby="ecd-title">
@@ -102,7 +117,11 @@ export function EmployerContractHeaderCard({
         <Metric label="Başlangıç">
           {detail.start_date ? formatDateDots(detail.start_date) : DASH}
         </Metric>
-        <Metric label="Bitiş Tarihi" tone="danger">
+        <Metric
+          label="Bitiş Tarihi"
+          tone={endTone === "neutral" ? undefined : endTone}
+          testId="ecd-metric-end-date"
+        >
           {detail.end_date ? formatDateDots(detail.end_date) : DASH}
         </Metric>
         <Metric label="Avans">
@@ -116,16 +135,26 @@ export function EmployerContractHeaderCard({
 function Metric({
   label,
   tone,
+  testId,
   children,
 }: {
   label: string;
-  tone?: "money" | "danger";
+  /**
+   * `"warning"` F-SZLEKR'de EKLENDİ ve CSS'i de aynı turda yazıldı
+   * (`.ecd-metrics__value--warning`); ton adı stylesheet'te karşılığı
+   * olmadan yaşarsa ekranda GÖRÜNMEYEN bir ton olurdu (sessiz kusur).
+   */
+  tone?: "money" | "danger" | "warning";
+  testId?: string;
   children: React.ReactNode;
 }) {
   return (
     <div>
       <div className="ecd-metrics__label">{label}</div>
-      <div className={cx("ecd-metrics__value", tone && `ecd-metrics__value--${tone}`)}>
+      <div
+        className={cx("ecd-metrics__value", tone && `ecd-metrics__value--${tone}`)}
+        data-testid={testId}
+      >
         {children}
       </div>
     </div>

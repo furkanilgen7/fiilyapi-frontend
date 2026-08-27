@@ -15,6 +15,12 @@ import { ProgressPaymentsTotalsStrip } from "./ProgressPaymentsTotalsStrip";
 import { ProgressPaymentsTabs } from "./shared/ProgressPaymentsTabs";
 import "./progress-payments.css";
 
+// F-SZLEKR T2: düğme etiketi ve boş-durum ipucu AYNI sabitten okunur — ikisi
+// ayrı yerlerde elle tutarlı tutulursa (önceki durum) biri değişince öteki
+// unutulur (tam olarak bu oldu: ipucu "+ Yeni Hakediş"te kalırken bu ekranın
+// düğmesi yerinde kaldı ama şantiye sekmesininki "+ Hakediş Oluştur" oldu).
+const NEW_PAYMENT_LABEL = "+ Yeni Hakediş";
+
 // Ekran 14 · Hakedişler (P7 T2) — proje-genel İŞVEREN hakediş listesi.
 // Mockup `Şantiye - Hakedişler.dc.html`ın İŞVEREN HAKEDİŞLERİ yarısından
 // (satır 90-113) alınır: kart-içi satır listesi, sol başlık+açıklama, sağ
@@ -56,7 +62,7 @@ export function ProgressPaymentsView() {
         <h1 className="pp__title">Hakedişler</h1>
         {canWrite && (
           <Link href="/hakedisler/yeni" className="pp__new-btn">
-            + Yeni Hakediş
+            {NEW_PAYMENT_LABEL}
           </Link>
         )}
       </div>
@@ -69,7 +75,8 @@ export function ProgressPaymentsView() {
         isError={paymentsQuery.isError}
         isLoading={paymentsQuery.isLoading}
         data={paymentsQuery.data}
-        isFiltered={filters.projectId !== null}
+        emptyScope={filters.projectId !== null ? "filtered" : "all"}
+        newActionLabel={canWrite ? NEW_PAYMENT_LABEL : null}
       />
     </div>
   );

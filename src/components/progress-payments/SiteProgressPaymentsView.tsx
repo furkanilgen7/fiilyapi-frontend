@@ -23,6 +23,13 @@ import { computeSiteSubcontractorTotals } from "./shared/site-subcontractor-tota
 import "./progress-payments.css";
 import "./site-progress-payments.css";
 
+// F-SZLEKR T2: düğme etiketi ve boş-durum ipucu AYNI sabitten okunur (bkz.
+// `ProgressPaymentsView.tsx` üstündeki not). Bu ekranın etiketi ("+ Hakediş
+// Oluştur") `ProgressPaymentsView`inkinden ("+ Yeni Hakediş") KASITLI OLARAK
+// FARKLI — bu ayrı bir tutarsızlık, bu dilimin kapsamı DIŞINDA (rapora not
+// düşüldü), etiketler burada BİRLEŞTİRİLMEDİ.
+const NEW_PAYMENT_LABEL = "+ Hakediş Oluştur";
+
 // Şantiye "Hakedişler" sekmesi (P7 T6 iskeleti + F-TH T5 taşeron sütunu).
 // Mockup `Şantiye - Hakedişler.dc.html`. Kalıcı mimari karar (brief §Kalıcı
 // mimari karar, kullanıcı kararı S4): hakediş SÖZLEŞME (proje) düzeyinde tek
@@ -115,7 +122,7 @@ export function SiteProgressPaymentsView() {
         </div>
         {canWrite && (
           <Link href={`/hakedisler/yeni?project=${projectId}`} className="pp__new-btn">
-            + Hakediş Oluştur
+            {NEW_PAYMENT_LABEL}
           </Link>
         )}
       </div>
@@ -160,6 +167,7 @@ export function SiteProgressPaymentsView() {
             isLoading={paymentsQuery.isLoading}
             data={paymentsQuery.data}
             showProjectName={false}
+            newActionLabel={canWrite ? NEW_PAYMENT_LABEL : null}
           />
         </section>
 

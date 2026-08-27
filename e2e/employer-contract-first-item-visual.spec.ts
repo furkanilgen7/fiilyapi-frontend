@@ -71,6 +71,28 @@ import { login, prepareFrame } from "./contracts-visual-helpers";
 // Baseline `.png` YALNIZ Linux CI'da üretilir (visual-baselines.yml →
 // workflow_dispatch → artifact → `e2e/`); macOS'ta koşturulup commit edilmez.
 
+
+// ---------------------------------------------------------------------------
+// ⏱️ SAAT SABİTLEME (F-SZLEKR T1'de EKLENDİ — ZORUNLU)
+// ---------------------------------------------------------------------------
+// Başlık kartının "Bitiş Tarihi" metriğinin RENGİ artık bir TÜREVDİR
+// (`contract-end-tone.ts`): geçmiş = kırmızı · 0..30 gün = kehribar · ötesi
+// nötr. Fikstürün `end_date`i `2026-12-01`dir (`mock-backend.ts` ·
+// `EMPLOYER_CONTRACT_P1`; `p-4` de aynı değeri yayılımla devralır).
+// Saat DONDURULMAZSA kare 2026-11-01'de KENDİLİĞİNDEN kehribara döner ve
+// baseline hiçbir kod değişmeden kırılır (`purchasing-orders-visual.spec.ts`
+// ile aynı gerekçe ve yöntem).
+//
+// Sabit an 09:00 UTC seçilir: hem UTC hem TR (+03) yerel takviminde AYNI güne
+// düşer (`remainingDays` yerel takvimden türetir, TZ kayması olmaz).
+// 27.08.2026 → 01.12.2026'ya 96 gün → NÖTR ton.
+//
+// ⚠️ Saat GİRİŞTEN ÖNCE sabitlenir (`purchasing-orders-visual.spec.ts`
+// sırasının birebir taklidi).
+
+/** Kadrajın sabit "bugünü" — E14 "Bitiş Tarihi" tonunun TEK girdisi. */
+const FIXED_NOW = "2026-08-27T09:00:00Z";
+
 /** Boş (grupsuz) sözleşme fikstürü — bkz. `EMPTY_CONTRACT_PROJECT_ID`. */
 const EMPTY_CONTRACT_URL = "/sozlesmeler/isveren/p-4?tab=items";
 const EMPTY_ITEMS_PATH = "/api/backend/projects/p-4/contract/items";
@@ -108,6 +130,7 @@ async function pinEmptyContractItems(page: Page) {
 
 /** İki karenin de ORTAK ön koşulu: ekran grupsuz hâliyle TAM yüklendi. */
 async function gotoLoadedEmptyContract(page: Page) {
+  await page.clock.setFixedTime(new Date(FIXED_NOW));
   await login(page);
   await pinEmptyContractItems(page);
   await page.goto(EMPTY_CONTRACT_URL);

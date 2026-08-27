@@ -127,9 +127,18 @@
   font-weight: var(--weight-bold);
   font-family: var(--font-mono);
 }
-/* 84: Bitiş Tarihi kırmızıdır. */
+/* 84 · Bitiş Tarihi'nin RENGİ ARTIK BİR TÜREVDİR (F-SZLEKR, onaylı sapma).
+   Mockup 84 bu metriği sabit kırmızı basar ama bastığı tarih (31.12.2026)
+   GELECEKTEDİR — yani oradaki kırmızı anlam değil BOYAdır. Ton `contract-end
+   -tone.ts`ten gelir: geçmiş = kırmızı, 0..30 gün = kehribar, ötesi nötr
+   (nötrde hiç değiştirici sınıf basılmaz).
+   Kehribar için YENİ token İCAT EDİLMEZ: ürün çapında "yaklaşıyor" rengi
+   `--color-warning`dır (`.sip-delivery--soon` ile TEK ton). */
 .ecd-metrics__value--danger {
   color: var(--color-danger);
+}
+.ecd-metrics__value--warning {
+  color: var(--color-warning);
 }
 
 /* ── Sekme şeridi (90-95) ─────────────────────────────────────────────────── */

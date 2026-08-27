@@ -236,4 +236,26 @@ describe("ProgressPaymentsView", () => {
       expect(screen.queryByText("Henüz hakediş oluşturulmadı")).not.toBeInTheDocument();
     });
   });
+
+  // F-SZLEKR T2 — ÇAĞIRAN-DÜZEYİ BEKÇİ: düğme etiketi ile boş-durum ipucundaki
+  // eylem etiketinin AYNI sabitten geldiğini kanıtlar. Bu, "düğmeyi değiştir,
+  // ipucunu unut" çürümesini yakalayan TEK bekçidir (kusur tam bunun için
+  // oluştu: düğme "+ Hakediş Oluştur" oldu, ipucu "+ Yeni Hakediş"te kaldı).
+  it("düğme etiketi ile boş-durum ipucundaki eylem etiketi AYNI metindir", () => {
+    mockSession({ progress_payments: "draft" });
+    mockQuery({ data: { items: [] } });
+    render(<ProgressPaymentsView />);
+    const buttonLabel = screen.getByRole("link", { name: /Yeni Hakediş/ }).textContent;
+    expect(screen.getByText(`${buttonLabel} ile başlayın`)).toBeInTheDocument();
+  });
+
+  it("salt-okunur yetkide boş-durum ipucu eylem VAAT ETMEZ (dürüst metin)", () => {
+    mockSession({ progress_payments: "view" });
+    mockQuery({ data: { items: [] } });
+    render(<ProgressPaymentsView />);
+    expect(screen.queryByText(/ile başlayın/)).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Hakedişler ekranından oluşturulan kayıtlar burada listelenir"),
+    ).toBeInTheDocument();
+  });
 });

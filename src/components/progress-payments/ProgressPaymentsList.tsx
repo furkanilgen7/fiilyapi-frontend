@@ -18,12 +18,40 @@ import { formatPaymentTitle } from "./title";
 // mimari karar) — satır bileşeni burada TEK yerde yaşar, kopyalanmaz.
 // Yükleniyor/hata/boş/liste dört dalı da burada; her iki görünüm aynı
 // metinleri kullanır (T6 brief'te ayrı metin istenmedi).
+// F-SZLEKR T2 KUSUR DÜZELTMESİ: boş durum ipucu ("+ Yeni Hakediş ile
+// başlayın") ÖLÜ TALİMATTI — üç üretim çağıranının üçünde de yanlıştı (bir
+// yerde etiket tutmuyor, bir yerde düğme hiç yok). Kök çözüm: `isFiltered`
+// (boolean) yerine `emptyScope` (ayrık birlik) — iki bağımsız boolean dört
+// hâl üretirdi, ikisi anlamsızdı. İpucundaki eylem metni artık HER ZAMAN
+// `newActionLabel` prop'undan (çağıranın kendi düğme etiketiyle AYNI
+// sabitten) okunur; prop verilmezse (`null`) eylem hiç VAAT EDİLMEZ —
+// dürüst, eylemsiz bir metin basılır. Böylece düğme etiketi değişirse ipucu
+// otomatik izler; unutma imkânsız.
+export type ProgressPaymentsEmptyScope = "all" | "filtered" | "contract";
+
+const EMPTY_TITLE: Record<ProgressPaymentsEmptyScope, string> = {
+  all: "Henüz hakediş oluşturulmadı",
+  filtered: "Seçili projede hakediş yok",
+  contract: "Bu sözleşmede hakediş yok",
+};
+
+const NO_ACTION_HINT = "Hakedişler ekranından oluşturulan kayıtlar burada listelenir";
+
+function emptyHint(emptyScope: ProgressPaymentsEmptyScope, newActionLabel: string | null): string {
+  if (emptyScope === "filtered") {
+    return "Tüm hakedişleri görmek için proje süzgecini Tüm Projeler yapın";
+  }
+  if (newActionLabel) return `${newActionLabel} ile başlayın`;
+  return NO_ACTION_HINT;
+}
+
 export function ProgressPaymentsListBody({
   isError,
   isLoading,
   data,
   showProjectName = true,
-  isFiltered = false,
+  emptyScope = "all",
+  newActionLabel = null,
 }: {
   isError: boolean;
   isLoading: boolean;
@@ -38,25 +66,28 @@ export function ProgressPaymentsListBody({
   showProjectName?: boolean;
   /**
    * F-PRJTAB T3: liste bir süzgeçle daraltılmışken boş dönerse "hiç hakediş
-   * yok" demek YANLIŞ olur — kayıt olabilir, seçili projede yoktur. Boş durum
-   * metni bunu ayırt eder. Varsayılan `false` → mevcut çağıranların
-   * (şantiye sekmesi) davranışı DEĞİŞMEZ.
+   * yok" demek YANLIŞ olur — kayıt olabilir, seçili projede yoktur. `contract`
+   * F-SZLEKR T2'de eklendi: sözleşme-kapsamlı liste (`EmployerContractDetail
+   * View`) için de "hiç hakediş yok" yanlıştır — bu sözleşmede yoktur.
+   * Varsayılan `"all"` → mevcut çağıranların davranışı DEĞİŞMEZ.
    */
-  isFiltered?: boolean;
+  emptyScope?: ProgressPaymentsEmptyScope;
+  /**
+   * F-SZLEKR T2: boş durum ipucundaki eylem metni. Çağıran kendi "+ Yeni
+   * Hakediş" düğmesiyle AYNI sabitten geçirir (tek kaynak — düğme metni
+   * değişirse ipucu unutulmaz). `null` (varsayılan) = eylem ÖNERİLMEZ (yazma
+   * yetkisi yoksa ya da ekranda düğme hiç yoksa). `emptyScope === "filtered"`
+   * iken YOK SAYILIR — süzgeç ipucu her zaman süzgeç talimatını basar.
+   */
+  newActionLabel?: string | null;
 }) {
   if (isError) return <p className="pp-message">Hakedişler yüklenemedi</p>;
   if (isLoading || !data) return <p className="pp-message">Yükleniyor…</p>;
   if (data.items.length === 0) {
     return (
       <section className="pp-empty">
-        <p className="pp-empty__title">
-          {isFiltered ? "Seçili projede hakediş yok" : "Henüz hakediş oluşturulmadı"}
-        </p>
-        <p className="pp-empty__hint">
-          {isFiltered
-            ? "Tüm hakedişleri görmek için proje süzgecini Tüm Projeler yapın"
-            : "+ Yeni Hakediş ile başlayın"}
-        </p>
+        <p className="pp-empty__title">{EMPTY_TITLE[emptyScope]}</p>
+        <p className="pp-empty__hint">{emptyHint(emptyScope, newActionLabel)}</p>
       </section>
     );
   }
