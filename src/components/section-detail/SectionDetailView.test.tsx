@@ -434,12 +434,13 @@ describe("SectionDetailView — sekmeler (D99-105, hepsi BÖLÜM BAĞI bekleyen 
     const live = tabs.filter((tab) => tab.getAttribute("data-content-live") === "true");
     const pending = tabs.filter((tab) => tab.getAttribute("data-content-live") !== "true");
 
-    // 🔴 F-BLMPUAN: canlı sekme artık İKİ — "İşçiler & Puantaj" bölüm bağını
+    // 🔴 F-BLMSEK: canlı sekme artık ÜÇ — "Günlük Kayıt" da bölüm bağını
     // kazandı. Gerekçe TAŞIMAZLAR (canlı sekmenin gerekçesi olamaz).
-    expect(live.map((tab) => tab.textContent)).toEqual(["İş Kalemleri", "İşçiler & Puantaj"]);
+    const LIVE = ["İş Kalemleri", "İşçiler & Puantaj", "Günlük Kayıt"];
+    expect(live.map((tab) => tab.textContent)).toEqual(LIVE);
     for (const tab of live) expect(tab).not.toHaveAttribute("data-content-pending");
 
-    expect(pending).toHaveLength(3);
+    expect(pending).toHaveLength(2);
     for (const tab of pending) {
       expect(tab.getAttribute("data-content-pending")).toMatch(/^section_/);
     }
@@ -682,9 +683,11 @@ describe("SectionDetailView — İşçiler & Puantaj sekmesi (F-BLMPUAN)", () =>
     mockPermission("view");
     mockQueries();
     renderView();
-    await user.click(screen.getByRole("tab", { name: "Günlük Kayıt" }));
+    // F-BLMSEK: "Günlük Kayıt" CANLIYA geçti — hâlâ gerekçe taşıyan bir sekme
+    // seçilir ("Hakediş"), yoksa test canlı bir sekmeden gerekçe isterdi.
+    await user.click(screen.getByRole("tab", { name: "Hakediş" }));
     const panel = screen.getByRole("tabpanel");
-    expect(within(panel).getByText(/Günlük kayıt bu bölüme henüz kırılmıyor/)).toBeInTheDocument();
+    expect(within(panel).getByText(/Hakediş bu bölüme henüz kırılmıyor/)).toBeInTheDocument();
     expect(within(panel).queryByTestId("section-timesheet")).not.toBeInTheDocument();
   });
 });

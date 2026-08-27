@@ -322,3 +322,72 @@
 .section-timesheet {
   display: block;
 }
+
+/* --- F-BLMSEK · "Günlük Kayıt" sekme paneli --- */
+/* Önek ÖLÇÜLDÜ: `grep -rn "section-diary" src/ e2e/` bu dilimden ÖNCE SIFIR
+   isabet verdi. Satırların kendisi şantiye günlüğünün `.diary-recent__*`
+   sınıflarını YENİDEN KULLANIR (sunum tek kaynaktan) — burada yalnız kabuk,
+   başlık ve dışarıda kalanlar notu tanımlanır. Mockup bu panel için ÇİZİM
+   TAŞIMAZ (D102-104 yalnız sekme düğmeleri). */
+.section-diary {
+  display: block;
+}
+.section-diary__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+.section-diary__title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.section-diary__link {
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+}
+/* `.diary-recent__list` ile birlikte kullanılır; buradaki iş yalnız liste sıfırlaması. */
+.section-diary__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+/* `<li>` kabuğu `.diary-recent__row`un düğme sıfırlamalarına ihtiyaç duymaz;
+   imleç de göstermez — bu yüzey SALT OKUNURDUR. */
+.section-diary__row {
+  cursor: default;
+}
+.section-diary__row:hover {
+  background: none;
+}
+.section-diary__empty {
+  padding: 16px 14px;
+}
+.section-diary__empty-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.section-diary__empty-hint {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  line-height: var(--leading-normal);
+}
+.section-diary__note {
+  margin: 0;
+  padding: 8px 14px;
+  border-top: 1px solid var(--color-divider);
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+  line-height: var(--leading-normal);
+}
+.section-diary__note-link {
+  color: var(--color-primary);
+}
