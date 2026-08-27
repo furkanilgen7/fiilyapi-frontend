@@ -23,9 +23,33 @@ import { login, pinEmployerContractItems, prepareFrame } from "./contracts-visua
 //
 // Baseline `.png` YALNIZ Linux CI'da üretilir; macOS'ta commit edilmez.
 
+
+// ---------------------------------------------------------------------------
+// ⏱️ SAAT SABİTLEME (F-SZLEKR T1'de EKLENDİ — ZORUNLU)
+// ---------------------------------------------------------------------------
+// Başlık kartının "Bitiş Tarihi" metriğinin RENGİ artık bir TÜREVDİR
+// (`contract-end-tone.ts`): geçmiş = kırmızı · 0..30 gün = kehribar · ötesi
+// nötr. Fikstürün `end_date`i `2026-12-01`dir (`mock-backend.ts` ·
+// `EMPLOYER_CONTRACT_P1`; `p-4` de aynı değeri yayılımla devralır).
+// Saat DONDURULMAZSA kare 2026-11-01'de KENDİLİĞİNDEN kehribara döner ve
+// baseline hiçbir kod değişmeden kırılır (`purchasing-orders-visual.spec.ts`
+// ile aynı gerekçe ve yöntem).
+//
+// Sabit an 09:00 UTC seçilir: hem UTC hem TR (+03) yerel takviminde AYNI güne
+// düşer (`remainingDays` yerel takvimden türetir, TZ kayması olmaz).
+// 27.08.2026 → 01.12.2026'ya 96 gün → NÖTR ton.
+//
+// ⚠️ Saat GİRİŞTEN ÖNCE sabitlenir (`purchasing-orders-visual.spec.ts`
+// sırasının birebir taklidi).
+
 const URL = "/sozlesmeler/isveren/p-1";
 
+/** Kadrajın sabit "bugünü" — E14 "Bitiş Tarihi" tonunun TEK girdisi. */
+const FIXED_NOW = "2026-08-27T09:00:00Z";
+
+
 test("isveren sozlesme detayi genel sekmesi gorsel", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(FIXED_NOW));
   await login(page);
   await page.goto(URL);
 
@@ -43,6 +67,7 @@ test("isveren sozlesme detayi genel sekmesi gorsel", async ({ page }) => {
 });
 
 test("isveren sozlesme detayi is kalemleri sekmesi gorsel", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(FIXED_NOW));
   await login(page);
   await pinEmployerContractItems(page);
   await page.goto(`${URL}?tab=items`);
@@ -71,6 +96,7 @@ test("isveren sozlesme detayi is kalemleri sekmesi gorsel", async ({ page }) => 
 });
 
 test("isveren sozlesme detayi belgeler sekmesi gorsel", async ({ page }) => {
+  await page.clock.setFixedTime(new Date(FIXED_NOW));
   await login(page);
   await page.goto(`${URL}?tab=documents`);
 
