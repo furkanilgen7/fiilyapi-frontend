@@ -3,40 +3,33 @@ import { test, expect, type Page } from "@playwright/test";
 import { pinRoster } from "./personnel-roster";
 import { prepareFrame } from "./visual-scroll";
 
-// F-PT T5 · Puantaj görsel testleri — mockup'lar `Ekran 5 - Puantaj.dc.html`
-// (E5, genel) ve `Şantiye - Puantaj.dc.html` (ŞP, şantiye sekmesi).
-// `site-planning-visual.spec.ts` / `site-diary-visual.spec.ts` deseninin aynısı.
+// PUAN-SAAT T5 · Puantaj görsel testleri — kanon mockup
+// `Ekran 5 - Puantaj.dc.html` (E5, `5f3a944`). ŞP sekmesi AYNI haftalık
+// çekirdeği kullanır (ONAYLI SAPMA, bkz. `SiteTimesheetView.tsx`), farkı
+// kabuktur: bölüm süzgeci + özet şeridi + Excel + drill kenar çubuğu.
 //
-// SALT-OKUR: bu dosya hiçbir PUT tetiklemez. Popover kadrajı bile YALNIZ açar
-// (Uygula'ya basmaz), yani paylaşılan fikstür DEĞİŞMEZ ve `fullyParallel`
-// altında `timesheet.spec.ts` ile yarışmaz — o dosyanın mutasyonları AYRI ayda
-// (2026-09) yürür, buradaki kadrajlar 2026-08'e bakar.
+// SALT-OKUR: bu dosya hiçbir PUT tetiklemez. Kod popover'ı kadrajı bile YALNIZ
+// açar (rozete basmaz), yani paylaşılan fikstür DEĞİŞMEZ ve `fullyParallel`
+// altında `timesheet.spec.ts` ile yarışmaz — o dosyanın mutasyonları AYRI
+// HAFTADA (2026-W36) yürür, buradaki kadrajlar 2026-W32'ye bakar.
 //
-// ⚠️ AMA KENDİ SALT-OKURLUĞUMUZ YETMEZ (ilk baseline turunda fiilen yakalandı,
-// run 31219400575): matris satırları `GET /personnel`ten gelir ve o kartoteks
-// GLOBALDİR — `personnel-form.spec.ts`in POST ettiği "Zeki Karaca" kadraja
-// SIZDI. Ay ayırmak burada KORUMAZ, çünkü kartoteks döneme bağlı değildir ve
-// `fullyParallel` altında dosya sırası garanti değildir; baseline sıraya bağlı
-// olarak kâh Zeki'li kâh Zeki'siz üretilirdi (kaçınılmaz görsel CI kırmızısı).
-// Çözüm `pinRoster`: kadrajlar kartoteksi SABİTLER (bkz. aşağısı).
+// ⚠️ AMA KENDİ SALT-OKURLUĞUMUZ YETMEZ (ilk baseline turunda fiilen yakalandı):
+// ızgara satırları `GET /personnel`ten gelir ve o kartoteks GLOBALDİR —
+// `personnel-form.spec.ts`in POST ettiği "Zeki Karaca" kadraja SIZDI. Hafta
+// ayırmak burada KORUMAZ, çünkü kartoteks döneme bağlı değildir. Çözüm
+// `pinRoster`: kadrajlar kartoteksi SABİTLER.
 //
-// 📅 AY SABİTLEME (F-PL/F-SD dersi): ekranların varsayılan dönemi İÇİNDE
-// BULUNULAN aydır. Kadrajlar bu yüzden AÇIK `?year=&month=` ile kurulur —
-// aksi hâlde her ay başında gün sütunları/başlık değişir ve baseline
-// KENDİLİĞİNDEN kırmızıya döner. `page.clock` gerekmez: dönem parametreyle
-// verildiğinde ekranda tarihe bağlı başka türev kalmaz.
-//
-// Kadrajlar mock-backend'in 2026-08 · s-1 kümesine bakar: beş kodun HEPSİ,
-// saatli FM, `4+` ve `3G` ayak işaretleri o kümededir. Uzun/rastgele mock
-// metni kadraja SOKULMAZ (F-SD dersi).
+// 📅 HAFTA SABİTLEME: ekranların varsayılan haftası İÇİNDE BULUNULAN haftadır.
+// Kadrajlar bu yüzden AÇIK `?iso_year=&iso_week=` ile kurulur — aksi hâlde her
+// hafta gün sütunları/başlık değişir ve baseline KENDİLİĞİNDEN kırmızıya döner.
 //
 // Baseline `.png` YALNIZ Linux CI'da üretilir (visual-baselines.yml →
 // workflow_dispatch → artifact → `e2e/`); macOS'ta koşturulup commit edilmez.
 
-/** Kadraj dönemi — mock fikstürlerinin zengin ayı. */
-const AUGUST = "year=2026&month=8";
-const SITE_URL = `/projeler/p-1/santiyeler/s-1/puantaj?${AUGUST}`;
-const GENERAL_URL = `/puantaj?site=s-1&${AUGUST}`;
+/** Kadraj haftası — mock fikstürlerinin zengin haftası: 3–9 Ağustos 2026. */
+const WEEK = "iso_year=2026&iso_week=32";
+const SITE_URL = `/projeler/p-1/santiyeler/s-1/puantaj?${WEEK}`;
+const GENERAL_URL = `/puantaj?site=s-1&${WEEK}`;
 
 async function login(page: Page) {
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -48,125 +41,117 @@ async function login(page: Page) {
 }
 
 /**
- * Matris gerçekten doldu mu — yükleme durumu dondurulmasın.
+ * Izgara gerçekten doldu mu — yükleme durumu dondurulmasın.
  *
  * ⚠️ `.first()` ZORUNLU: akış-SSR sırasında sunucudan gelen ve hidrasyonla
  * eklenen KOPYA kısa bir an yan yana durur; kapsam daraltmadan yapılan
  * `getByText` strict-mode ihlali verir (F-PL T5'te YALNIZ Linux CI'da patladı).
  */
-async function expectMatrixLoaded(page: Page) {
-  await expect(page.locator(".ts-table").first().locator("tbody tr")).not.toHaveCount(0);
-  await expect(page.locator(".ts-table .ts-cell").first()).toBeVisible();
+async function expectGridLoaded(page: Page) {
+  await expect(page.locator(".ts-week-table").first().locator("tbody tr")).not.toHaveCount(0);
+  // Saat kutuları basıldı: hücre şekli gerçekten SAAT (kod rozeti değil).
+  await expect(page.locator(".ts-week-table .ts-hin").first()).toBeVisible();
 }
 
-test("genel puantaj (E5) matrisi gorsel", async ({ page }) => {
+test("genel puantaj (E5) haftalik izgara gorsel", async ({ page }) => {
   await login(page);
   await pinRoster(page);
   await page.goto(GENERAL_URL);
   await expect(page.getByRole("heading", { level: 1, name: "Puantaj" }).first()).toBeVisible();
-  await expectMatrixLoaded(page);
+  await expectGridLoaded(page);
 
-  // E5'in AYRI "Meslek" kolonu + DÖRTLÜ legend (G yok) kadrajdadır.
-  await expect(page.getByRole("columnheader", { name: "Meslek" }).first()).toBeVisible();
-  await expect(
-    page.locator(".ts-legend--general").first().locator(".ts-legend__item"),
-  ).toHaveCount(4);
+  // E5'in KENDİ parçaları kadrajdadır: hafta şeridi, KPI kartları, ay şeridi,
+  // meslek/tür/taşeron süzgeçleri ve "Gösterilen N / M" sayacı.
+  await expect(page.locator(".ts-week-nav__index").first()).toHaveText("32. Hafta");
+  await expect(page.locator(".ts-kpi")).toHaveCount(6);
+  await expect(page.locator(".ts-month-week").first()).toBeVisible();
+  await expect(page.getByLabel("Meslek").first()).toBeEnabled();
+  await expect(page.locator(".ts-shown").first()).toBeVisible();
   // Şantiye seçici çözüldü — "Yükleniyor…" durumu baseline'a girmesin.
   await expect(page.getByLabel("Şantiye").first()).toBeEnabled();
+  // 🔴 E5'te Excel YOKTUR (ŞP'de vardır) — kadraj bu ayrımı da kilitler.
+  await expect(page.getByRole("button", { name: "Excel" })).toHaveCount(0);
 
   // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("puantaj-genel.png", { fullPage: true });
 });
 
-test("santiye puantaji (SP) matrisi gorsel", async ({ page }) => {
+test("santiye puantaji (SP) haftalik izgara gorsel", async ({ page }) => {
   await login(page);
   await pinRoster(page);
   await page.goto(SITE_URL);
   await expect(
     page.getByRole("heading", { level: 1, name: "A-Blok Şantiyesi — Puantaj" }).first(),
   ).toBeVisible();
-  await expectMatrixLoaded(page);
+  await expectGridLoaded(page);
 
-  // ŞP farkları kadrajda: BEŞLİ legend, Tür rozeti, bölüm özet şeridi ve
-  // ayak satırının `4+` / `3G` işaretleri.
-  await expect(
-    page.locator(".ts-legend--site").first().locator(".ts-legend__item"),
-  ).toHaveCount(5);
+  // ŞP'nin KORUNAN farkları kadrajda: bölüm süzgeci, özet şeridi, Tür rozeti,
+  // Excel. (Onaylı sapmanın görsel kanıtı: yetenek KALDIRILMADI.)
+  await expect(page.getByLabel("Bölüm").first()).toBeEnabled();
   await expect(page.locator(".ts-summary__title").first()).toHaveText("Tüm Bölümler");
-  await expect(
-    page.locator(".ts-table__foot-row").first().getByText("4+", { exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.locator(".ts-table__foot-row").first().getByText("3G", { exact: true }),
-  ).toBeVisible();
-  // Beş kod rozetinin hepsi kadrajda — palet baseline'a tam giriyor.
-  for (const modifier of ["worked", "leave", "holiday", "overtime", "temporary-duty"]) {
-    await expect(page.locator(`.ts-table .ts-cell--${modifier}`).first(), modifier).toBeVisible();
+  await expect(page.locator(".ts-source").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Excel" }).first()).toBeEnabled();
+  // ŞP mockup'ında OLMAYAN satır süzgeçleri UYDURULMAZ.
+  await expect(page.getByLabel("Meslek")).toHaveCount(0);
+
+  // Hücre paletinin ÜÇ tonu + iki kod rozeti kadrajda — baseline paleti tam alsın.
+  for (const modifier of ["full", "short", "overtime", "off"]) {
+    await expect(
+      page.locator(`.ts-week-table .ts-hin--${modifier}`).first(),
+      modifier,
+    ).toBeVisible();
+  }
+  for (const modifier of ["leave", "temporary-duty"]) {
+    await expect(
+      page.locator(`.ts-week-table .ts-tag--${modifier}`).first(),
+      modifier,
+    ).toBeVisible();
   }
 
-  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("puantaj-santiye.png", { fullPage: true });
 });
 
-test("puantaj hucre popover'i gorsel", async ({ page }) => {
+test("puantaj hucre kod popover'i gorsel", async ({ page }) => {
   await login(page);
   await pinRoster(page);
   await page.goto(SITE_URL);
-  await expectMatrixLoaded(page);
+  await expectGridLoaded(page);
 
-  // DOLU bir FM hücresi seçilir: kadraj hem SEÇİLİ rozetin basılı durumunu
-  // hem de yalnız FM'de açılan saat alanını taşır.
+  // Mockup rozeti ÇİZER ama seçme yolunu çizmez; kod çapası o onaylı
+  // türetimdir. DOLU bir kod hücresi seçilir: kadraj hem SEÇİLİ rozetin basılı
+  // durumunu hem de üç seçeneği taşır.
   await page
-    .locator(".ts-table")
+    .locator(".ts-week-table")
     .first()
-    .getByRole("button", { name: "Ramazan Yıldız · 3 Ağu puantajı" })
+    .getByRole("button", { name: "Ramazan Yıldız · 4 Ağu puantajı" })
     .click();
   const popover = page
-    .getByRole("dialog", { name: "Ramazan Yıldız · 3 Ağu — puantaj hücresi" })
+    .getByRole("dialog", { name: "Ramazan Yıldız · 4 Ağu — puantaj hücresi" })
     .first();
-  await expect(popover.locator(".ts-pop__code")).toHaveCount(5);
-  await expect(popover.getByLabel("Fazla mesai saati")).toHaveValue("3");
-  await expect(popover.getByRole("button", { name: "Temizle" })).toBeVisible();
+  await expect(popover.locator(".ts-pop__code")).toHaveCount(3);
+  await expect(popover.locator(".ts-pop__code--active")).toHaveCount(1);
+  await expect(popover.getByRole("button", { name: "Saate dön" })).toBeVisible();
 
-  // Tıklama kaydırmış olabilir — kabuk ofsetli basılmasın (bkz. `visual-scroll.ts`).
-  // ⚠️ F-P10'un GERÇEK kusuru tam burada çıktı: hücre `.ts-table-scroll`ün
-  // İÇİNDE olduğu için tıklama pencereyi değil O KABI, üstelik YATAY eksende
-  // kaydırıyordu — korkuluğun eleman kaplarını da kapsaması bu yüzden ŞART.
-  await expect(popover).toBeVisible();
-
-  // ⚠️ KIRPILMA DENETİMİ (T3'ün açık bıraktığı soru, T5'te GERÇEK KUSUR
-  // çıktı): `.ts-table-scroll { overflow-x: auto }` dikey ekseni de `auto`ya
-  // çevirdiği için popover kabın İÇİNDE kesiliyordu. `escapeOverflow` ile
-  // yüzey artık `position: fixed`tir; aşağıdaki iddia kırpılmanın geri
-  // gelmesini yakalar. Ramazan Yıldız matrisin SON satırıdır — kırpılma tam
-  // orada ölçülmüştü.
+  // ⚠️ KIRPILMA DENETİMİ (F-PT T5'te GERÇEK KUSUR çıktı): `.ts-week-scroll`un
+  // `overflow-x: auto`su dikey ekseni de `auto`ya çevirdiği için popover kabın
+  // İÇİNDE kesiliyordu. `escapeOverflow` ile yüzey `position: fixed`tir;
+  // aşağıdaki iddia kırpılmanın geri gelmesini yakalar.
   //
-  // ⚠️ F-PT2 T1 KÖK-NEDEN DÜZELTMESİ (iki baseline turu, 31608574847 ↔
-  // 31609771927, arasında `puantaj-hucre-popover.png` 317px/şiddet ~218
-  // farkla ÇİFT-MODLU çıktı — "FM rozet kenarlığı" var/yok): bu geometri
-  // denetimi ÖNCEDEN `prepareFrame`den SONRA, `toHaveScreenshot`tan önce
-  // koşuyordu — WORKFLOW §4 GÖRSEL SPEC KURALI'nın "`prepareFrame` HER
-  // kadrajdan HEMEN ÖNCE, ARADA hiçbir evaluate/expect OLMADAN çağrılır"
-  // kuralını ihlal ediyordu. Kural gereği tüm iddia/`evaluate` çağrıları
-  // BURAYA, `prepareFrame`den ÖNCEYE taşındı — kırpılma kanıtı kaybolmadı,
-  // yalnız yeri değişti.
+  // ⚠️ WORKFLOW §4 GÖRSEL SPEC KURALI: tüm iddia/`evaluate` çağrıları
+  // `prepareFrame`den ÖNCE koşar — arada hiçbir şey olmadan kadraj alınır.
   const geometry = await popover.evaluate((node) => {
-    const scroll = node.closest(".ts-table-scroll");
+    const scroll = node.closest(".ts-week-scroll");
     const box = node.getBoundingClientRect();
     return {
       position: getComputedStyle(node).position,
       isWithinViewport: box.top >= 0 && box.bottom <= window.innerHeight,
-      // Kırpan kap popover yüzünden dikey kaydırma KAZANMAMALI (kusurdan önce
-      // 428px içerik / 364px kap ölçülmüştü).
       hiddenHeight: scroll === null ? -1 : scroll.scrollHeight - scroll.clientHeight,
     };
   });
   expect(geometry).toEqual({ position: "fixed", isWithinViewport: true, hiddenHeight: 0 });
 
-  // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `toHaveScreenshot`tan
-  // hemen önceki SON çağrı — `visual-scroll.ts`.
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("puantaj-hucre-popover.png", { fullPage: true });
 });
