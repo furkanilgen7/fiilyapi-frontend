@@ -21,7 +21,8 @@ import { test, expect, type Page } from "@playwright/test";
 // yana durur ve strict-mode ihlali verir (Linux CI run 31218793998, macOS'ta
 // görülmez). TEKİL eleman bekleyen her locator `.first()` alır.
 
-const SEPTEMBER = "year=2026&month=9";
+/** Puantajın fonksiyonel oyun alanı: 2026-W36 = 31 Ağu – 6 Eyl. */
+const WEEK_36 = "iso_year=2026&iso_week=36";
 const SITE_URL = "/projeler/p-1/santiyeler/s-1/puantaj";
 
 async function login(page: Page) {
@@ -63,7 +64,7 @@ async function fillPublishable(
 
 test("puantajdan girilir, personel kaydedilir ve matriste satır olur", async ({ page }) => {
   await login(page);
-  await page.goto(`${SITE_URL}?${SEPTEMBER}`);
+  await page.goto(`${SITE_URL}?${WEEK_36}`);
 
   // Giriş noktası (mockup'ta YOK — spec §4 S2(a) onaylı türetimi).
   await page.getByRole("link", { name: "Personel Ekle" }).first().click();
@@ -79,10 +80,10 @@ test("puantajdan girilir, personel kaydedilir ve matriste satır olur", async ({
 
   await submitButton(page).click();
 
-  // Geldiği puantaj ekranına DÖNER (dönem korunur) ve yeni kişi satır alır.
-  await expect(page).toHaveURL(new RegExp(`${SITE_URL}\\?.*month=9`));
+  // Geldiği puantaj ekranına DÖNER (hafta korunur) ve yeni kişi satır alır.
+  await expect(page).toHaveURL(new RegExp(`${SITE_URL}\\?.*iso_week=36`));
   await expect(
-    page.locator(".ts-table").first().getByRole("rowheader", { name: /Zeki Karaca/ }),
+    page.locator(".ts-week-table").first().getByRole("rowheader", { name: /Zeki Karaca/ }),
   ).toBeVisible();
 });
 
