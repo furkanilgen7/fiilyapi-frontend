@@ -67,82 +67,39 @@
   font-size: 16px;
 }
 
-/* ── Legend ────────────────────────────────────────────────────────────── */
-/* E5 79 — sağa yaslı; ŞP 106 — başlığın altında, sola yaslı */
+/* ── Legend (E5 200-209) ───────────────────────────────────────────────── */
+/* Kod açıklaması KALKTI: legend artık SAAT tonlarını anlatıyor. */
 .ts-legend {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-}
-.ts-legend--general {
-  gap: var(--space-2);
-  margin-left: auto;
-}
-.ts-legend--site {
   gap: var(--space-3);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
-/* E5 80 · ŞP 107 */
+/* E5 202 */
+.ts-legend__title {
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+/* E5 203 */
 .ts-legend__item {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
+/* Örnek kutu matristeki hücrenin TA KENDİSİDİR (`.ts-hours` / `.ts-tag`);
+   ikinci bir görsel dil icat edilmez — yalnız küçültülür. */
 .ts-legend__swatch {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--color-border);
-  font-weight: var(--weight-bold);
+  width: 26px;
+  height: 18px;
+  min-width: 26px;
+  font-size: var(--text-timesheet-cell);
 }
-/* E5 80 — 12×12 harfsiz kare, 2px yarıçap */
-.ts-legend--general .ts-legend__swatch {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-}
-/* ŞP 107 — 20×16 harfli kare, 3px yarıçap, 8px yazı */
-.ts-legend--site .ts-legend__swatch {
-  width: 20px;
-  height: 16px;
-  border-radius: 3px;
-  font-size: var(--text-timesheet-cell-sm);
-}
-/* E5 80 (11px) · ŞP 107 (12px) */
+/* E5 203 */
 .ts-legend__label {
-  color: var(--color-text-muted);
-}
-.ts-legend--general .ts-legend__label {
   font-size: var(--text-small);
-}
-.ts-legend--site .ts-legend__label {
-  font-size: 12px;
-}
-/* Kod renkleri — E5 80-83 · ŞP 107-111 */
-.ts-legend__swatch--worked {
-  background: var(--color-primary-soft);
-  border-color: var(--color-primary-border-soft);
-  color: var(--color-primary);
-}
-.ts-legend__swatch--leave {
-  background: var(--color-danger-soft);
-  border-color: var(--color-danger-border-soft);
-  color: var(--color-danger-strong);
-}
-.ts-legend__swatch--holiday {
-  background: var(--color-neutral-soft);
-  border-color: var(--color-border);
-  color: var(--color-text-subtle);
-}
-.ts-legend__swatch--overtime {
-  background: var(--color-warning-soft);
-  border-color: var(--color-warning-border-soft);
-  color: var(--color-warning-strong);
-}
-.ts-legend__swatch--temporary-duty {
-  background: var(--color-success-tint);
-  border-color: var(--color-success-border-soft);
-  color: var(--color-success);
+  color: var(--color-text-muted);
 }
 
 /* ── Gerekçe/uyarı satırları ───────────────────────────────────────────── */
@@ -212,9 +169,6 @@
   width: 100%;
 }
 /* E5 89 · ŞP 122 */
-.ts-table--general {
-  min-width: var(--min-width-timesheet-table);
-}
 .ts-table--site {
   min-width: var(--min-width-timesheet-table-sm);
 }
@@ -242,18 +196,10 @@
   background: var(--color-surface);
   z-index: 1;
 }
-.ts-table--general .ts-table__name-head,
-.ts-table--general .ts-table__name-cell {
-  padding: 10px var(--space-4);
-  min-width: var(--width-timesheet-name-col);
-}
 .ts-table--site .ts-table__name-head,
 .ts-table--site .ts-table__name-cell {
   padding: 9px 14px;
   min-width: var(--width-timesheet-name-col-sm);
-}
-.ts-table--general .ts-table__name-head {
-  font-size: 12px;
 }
 .ts-table--site .ts-table__name-head {
   font-size: var(--text-small);
@@ -263,9 +209,6 @@
   display: block;
   font-weight: var(--weight-semibold);
   color: var(--color-text);
-}
-.ts-table--general .ts-table__name {
-  font-size: var(--text-body);
 }
 .ts-table--site .ts-table__name {
   font-size: 12px;
@@ -277,20 +220,11 @@
   color: var(--color-text-subtle);
 }
 /* E5 93 (Meslek) · ŞP 126 (Tür) */
-.ts-table--general .ts-table__lead-head,
-.ts-table--general .ts-table__lead-cell {
-  padding: 10px var(--space-4);
-  text-align: left;
-  min-width: 110px;
-}
 .ts-table--site .ts-table__lead-head,
 .ts-table--site .ts-table__lead-cell {
   padding: 9px 6px;
   text-align: center;
   min-width: 26px;
-}
-.ts-table--general .ts-table__lead-head {
-  font-size: 12px;
 }
 .ts-table--site .ts-table__lead-head {
   font-size: var(--text-timesheet-cell);
@@ -315,11 +249,6 @@
   text-align: center;
   font-weight: var(--weight-regular);
 }
-.ts-table--general .ts-table__day-head {
-  padding: 10px var(--space-2);
-  font-size: var(--text-small);
-  min-width: var(--width-timesheet-day-col);
-}
 .ts-table--site .ts-table__day-head {
   padding: 9px 6px;
   font-size: var(--text-timesheet-cell);
@@ -328,11 +257,6 @@
 /* E5 110 · ŞP 143 */
 .ts-table__total-head {
   text-align: center;
-}
-.ts-table--general .ts-table__total-head {
-  padding: 10px var(--space-3);
-  font-size: var(--text-small);
-  min-width: var(--width-timesheet-total-col);
 }
 .ts-table--site .ts-table__total-head {
   padding: 9px var(--space-3);
@@ -347,9 +271,6 @@
 .ts-table__cell {
   text-align: center;
 }
-.ts-table--general .ts-table__cell {
-  padding: var(--space-2);
-}
 .ts-table--site .ts-table__cell {
   padding: 7px 3px;
 }
@@ -359,9 +280,6 @@
   font-size: var(--text-body);
   font-weight: var(--weight-bold);
   color: var(--color-text);
-}
-.ts-table--general .ts-table__row-total {
-  padding: 10px var(--space-3);
 }
 .ts-table--site .ts-table__row-total {
   padding: 9px var(--space-3);
@@ -379,46 +297,73 @@
   margin-left: var(--space-3);
 }
 
-/* ── Hücre kod rozeti (E5 117 · ŞP 151) ────────────────────────────────── */
-.ts-cell {
+/* ── Hücrenin iki hâli: SAAT ve KOD (E5 238/260) ───────────────────────── */
+/* Kod rozeti — E5 `.tag` (52×31, 6px köşe, 11px kalın). */
+.ts-tag {
   display: flex;
   align-items: center;
   justify-content: center;
   margin: auto;
-  font-weight: var(--weight-semibold);
-}
-.ts-table--general .ts-cell {
-  width: var(--size-timesheet-cell-w);
-  height: var(--size-timesheet-cell-h);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-timesheet-cell);
-}
-.ts-table--site .ts-cell {
-  width: var(--size-timesheet-cell-w-sm);
-  height: var(--size-timesheet-cell-h-sm);
-  border-radius: 3px;
-  font-size: var(--text-timesheet-cell-sm);
+  width: var(--size-timesheet-hin-w);
+  height: var(--size-timesheet-tag-h);
+  border: 1px solid transparent;
+  border-radius: var(--radius-6);
+  font-size: var(--text-small);
   font-weight: var(--weight-bold);
 }
-.ts-cell--worked {
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-}
-.ts-cell--leave {
+/* E5 206 */
+.ts-tag--leave {
   background: var(--color-danger-soft);
-  color: var(--color-danger-strong);
+  color: var(--color-danger-deep);
 }
-.ts-cell--holiday {
+/* E5 207 */
+.ts-tag--temporary-duty {
+  background: var(--color-success-tint);
+  color: var(--color-success-deep);
+}
+/* Mockup'ta çizilmedi; enum üyesi korundu — nötr tonla basılır. */
+.ts-tag--holiday {
   background: var(--color-neutral-soft);
   color: var(--color-text-subtle);
 }
-.ts-cell--overtime {
+
+/* Salt-okunur saat hücresi — E5 `.hin` ailesinin kutusuz hâli. */
+.ts-hours {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: auto;
+  width: var(--size-timesheet-hin-w);
+  height: var(--size-timesheet-tag-h);
+  border: var(--border-width-form) solid var(--color-border);
+  border-radius: var(--radius-6);
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+}
+/* E5 203 — tam gün */
+.ts-hours--full {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary-border-soft);
+  color: var(--color-primary-hover);
+}
+/* E5 204 — eksik gün */
+.ts-hours--short {
+  background: var(--color-info-soft);
+  border-color: var(--color-info-border-soft);
+  color: var(--color-info-strong);
+}
+/* E5 205 — normal gün saatini aşan gün. RENK BİR İPUCUDUR, HESAP DEĞİL:
+   haftalık FM türevi backend'dedir (bkz. `timesheet-codes.ts`). */
+.ts-hours--overtime {
   background: var(--color-warning-soft);
+  border-color: var(--color-warning-border-soft);
   color: var(--color-warning-strong);
 }
-.ts-cell--temporary-duty {
-  background: var(--color-success-tint);
-  color: var(--color-success);
+/* E5 208 — çalışılmadı */
+.ts-hours--off {
+  background: var(--color-surface-2);
+  border-color: var(--color-divider);
+  color: var(--color-border-strong);
 }
 
 /* ── Ayak satırı (E5 196-214 · ŞP 230-249) ─────────────────────────────── */
@@ -435,10 +380,6 @@
   left: 0;
   background: var(--color-surface-2);
 }
-.ts-table--general .ts-table__foot-label {
-  padding: 10px var(--space-4);
-  font-size: 12px;
-}
 .ts-table--site .ts-table__foot-label {
   padding: 9px 14px;
   font-size: var(--text-small);
@@ -448,9 +389,6 @@
   text-align: center;
   font-size: var(--text-small);
   font-weight: var(--weight-bold);
-}
-.ts-table--general .ts-table__foot-cell {
-  padding: var(--space-2);
 }
 .ts-table--site .ts-table__foot-cell {
   padding: 7px 3px;
@@ -464,14 +402,6 @@
   color: var(--color-text-subtle);
   font-weight: var(--weight-regular);
 }
-/* ŞP 237 — "4+" (fazla mesaili gün) */
-.ts-table__foot-cell--overtime {
-  color: var(--color-warning-strong);
-}
-/* ŞP 245 — "3G" (geçici görevli gün) */
-.ts-table__foot-cell--duty {
-  color: var(--color-success);
-}
 /* E5 213 · ŞP 248 — genel adam-gün */
 .ts-table__foot-total {
   text-align: center;
@@ -479,63 +409,24 @@
   font-weight: var(--weight-bold);
   color: var(--color-text);
 }
-.ts-table--general .ts-table__foot-total {
-  padding: 10px var(--space-3);
-}
 .ts-table--site .ts-table__foot-total {
   padding: 9px var(--space-3);
 }
 
-/* ── Hücre düzenleme + kaydetme (F-PT T3) ──────────────────────────────────
-   Mockup matrisi SALT-OKUNUR çizer (E5 117 · ŞP 151), yani bu bölümün doğrudan
-   çizimi YOKTUR. Her ölçü/renk matrisin KENDİ değerlerinden türetildi (rozet
-   ölçüleri, kart kenarlığı/gölgesi, `tokens.css`); çıplak hex/px yok. */
-
-/* Popover çapası hücrenin TAMAMINI kaplar — boş güne de tıklanabilsin
-   (F-PL T5'te gerçek kusur: sığ çapa boş hücrede sıfır genişlikteydi). */
+/* ── Kod yüzeyi çapası ─────────────────────────────────────────────────── */
+/* Çapa hücrenin TAMAMINI kaplar — boş güne de tıklanabilsin (F-PL T5'te
+   gerçek kusur: sığ çapa boş hücrede sıfır genişlikteydi). */
 .ts-pop-anchor {
   position: relative;
   display: block;
 }
-/* Tıklanabilir hücre: mockup'ın hizasını BOZMAZ (zeminsiz, kenarlıksız);
-   yalnız üzerine gelince ve odakta kenarlık kazanır. */
-.ts-cell-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 0;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-}
-.ts-table--general .ts-cell-button {
-  min-height: var(--size-timesheet-cell-h);
-}
-.ts-table--site .ts-cell-button {
-  min-height: var(--size-timesheet-cell-h-sm);
-}
-.ts-cell-button:hover {
-  border-color: var(--color-border);
-}
-.ts-cell-button:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-/* Kaydedilmemiş hücre: uyarı rengi zaten FM rozetinin rengidir (ŞP 237),
-   palete YENİ renk eklenmez. */
-.ts-cell-button--dirty {
-  border-color: var(--color-warning-strong);
-}
 
-/* Popover kabuğu — kartın (E5 88 · ŞP 115) küçük ölçekli hali: aynı kenarlık,
-   aynı zemin, `--shadow-md`. Hücrenin ortasına hizalanır.
+/* Popover kabuğu — kartın küçük ölçekli hâli: aynı kenarlık, aynı zemin,
+   `--shadow-md`.
 
-   ⚠️ KONUM BURADA DEĞİL (F-PT T5): `.ts-table-scroll` yatay kaydırıcısı dikey
-   ekseni de kırptığı için yüzey `AnchoredPopover`ın `escapeOverflow` kipinde
-   çalışır — `position: fixed` + ölçülmüş `top`/`left`
-   (`ui/popover/anchored-popover.css`). Burada YALNIZ görsel dil durur. */
+   ⚠️ KONUM BURADA DEĞİL: `.ts-week-scroll` yatay kaydırıcısı dikey ekseni de
+   kırptığı için yüzey `AnchoredPopover`ın `escapeOverflow` kipinde çalışır
+   (`position: fixed`, ölçülmüş `top`/`left`). Burada YALNIZ görsel dil durur. */
 .ts-pop {
   z-index: 30;
   width: var(--width-timesheet-popover);
@@ -551,31 +442,27 @@
   flex-direction: column;
   gap: var(--space-2);
 }
-/* Beş kod yan yana — seçenekler matristeki ROZETİN ta kendisidir. */
+.ts-pop__hint {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+/* Üç kod yan yana — seçenekler matristeki ROZETİN ta kendisidir. */
 .ts-pop__codes {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-1);
 }
-.ts-cell.ts-pop__code {
+.ts-tag.ts-pop__code {
   width: 100%;
-  height: var(--size-timesheet-cell-h);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  font-size: var(--text-timesheet-cell);
   cursor: pointer;
 }
 /* Seçili kodun çerçevesi KENDİ metin renginden gelir — palete renk eklenmez. */
-.ts-cell.ts-pop__code--active {
+.ts-tag.ts-pop__code--active {
   border-color: currentcolor;
 }
-.ts-cell.ts-pop__code:focus-visible {
+.ts-tag.ts-pop__code:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
-}
-.ts-pop__error {
-  font-size: var(--text-small);
-  color: var(--color-danger-strong);
 }
 .ts-pop__actions {
   display: flex;
@@ -583,7 +470,7 @@
   gap: var(--space-1);
 }
 .btn.ts-pop__clear {
-  color: var(--color-danger-strong);
+  color: var(--color-text-muted);
 }
 
 /* Kaydetme durum şeridi — `ts-notices` ile aynı sessiz tipografi. */
@@ -596,4 +483,639 @@
 }
 .ts-save-status__line--failed {
   color: var(--color-danger-strong);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PUAN-SAAT · HAFTALIK EKRAN
+   Kanon `Ekran 5 - Puantaj.dc.html` (`5f3a944`). Parantez içi sayılar o
+   dosyanın SATIR numaralarıdır. Çıplak hex/px yok — hepsi `tokens.css`ten.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Bilgi şeridi (E5 76-81) ───────────────────────────────────────────── */
+.ts-info {
+  background: var(--color-info-tint);
+  border: 1px solid var(--color-primary-ring);
+  border-radius: var(--radius-12);
+  padding: var(--space-info-banner-y) var(--space-info-banner-x);
+  margin-bottom: var(--space-4);
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--color-primary-hover);
+}
+
+/* ── Hafta gezinme (E5 87-96) ──────────────────────────────────────────── */
+.ts-week-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+/* E5 88 */
+.ts-week-nav__box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  padding: var(--space-1) 14px;
+}
+.btn.ts-week-nav__arrow {
+  font-size: 17px;
+  color: var(--color-text-muted);
+}
+.ts-week-nav__label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+/* E5 90 */
+.ts-week-nav__range {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+/* E5 91 */
+.ts-week-nav__index {
+  font-size: var(--text-timesheet-cell);
+  color: var(--color-text-subtle);
+}
+/* E5 95 */
+.btn.ts-week-nav__today {
+  background: var(--color-info-tint);
+  color: var(--color-primary);
+  border-color: transparent;
+}
+
+/* ── "Gösterilen 4 / 48" (E5 123-127) ──────────────────────────────────── */
+.ts-shown {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px var(--space-3);
+  background: var(--color-info-tint);
+  border-radius: var(--radius-8);
+  white-space: nowrap;
+}
+.ts-shown__label {
+  font-size: var(--text-small);
+  color: var(--color-primary-hover);
+}
+.ts-shown__value {
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--color-primary-hover);
+}
+.ts-shown__total {
+  font-size: var(--text-small);
+  color: var(--color-primary-light);
+}
+
+/* ── Ay içi hafta şeridi (E5 135-168) ──────────────────────────────────── */
+.ts-month-weeks {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-12);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+/* E5 137 */
+.ts-month-weeks__title {
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-section-head);
+  white-space: nowrap;
+}
+.ts-month-weeks__list {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+.ts-month-weeks__empty {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+/* E5 139 — kutular tıklanabilir (mockup `cursor:pointer`) */
+.ts-month-week {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 88px;
+  padding: 7px var(--space-2);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-7);
+  cursor: pointer;
+}
+.ts-month-week:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+/* E5 149 — aktif hafta */
+.ts-month-week--active {
+  background: var(--color-info-tint);
+  border: var(--border-width-total) solid var(--color-primary);
+}
+/* E5 154 — girilmemiş hafta: kesikli çerçeve, soluk metin */
+.ts-month-week--empty {
+  border-style: dashed;
+  border-color: var(--color-border-strong);
+}
+.ts-month-week__index {
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+.ts-month-week--active .ts-month-week__index {
+  color: var(--color-primary-hover);
+  font-weight: var(--weight-bold);
+}
+.ts-month-week--empty .ts-month-week__index {
+  color: var(--color-text-subtle);
+}
+.ts-month-week__range {
+  font-size: 9px;
+  color: var(--color-text-subtle);
+}
+.ts-month-week__value {
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+  color: var(--color-primary-hover);
+}
+.ts-month-week--empty .ts-month-week__value {
+  color: var(--color-border-strong);
+  font-weight: var(--weight-regular);
+}
+/* E5 165-167 */
+.ts-month-weeks__total {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-success-tint);
+  border-radius: var(--radius-8);
+  white-space: nowrap;
+}
+.ts-month-weeks__total-label {
+  font-size: var(--text-timesheet-cell);
+  font-weight: var(--weight-semibold);
+  color: var(--color-success-deep);
+}
+.ts-month-weeks__total-value {
+  font-size: 14px;
+  font-weight: var(--weight-bold);
+  color: var(--color-success);
+}
+
+/* ── KPI kartları (E5 171-198) ─────────────────────────────────────────── */
+/* Mockup BEŞ kart çizer; ONAYLI SAPMA ile ALTI karta çıktı (İzin ≠ Geçici
+   Görev). Izgara bu yüzden `auto-fit`tir — sabit `repeat(5,1fr)` altıncı
+   kartı kırardı. */
+.ts-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.ts-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-12);
+  padding: var(--space-form-section-gap);
+}
+/* E5 178/189 — sol kenar vurguları */
+.ts-kpi--overtime {
+  border-left: var(--space-1) solid var(--color-warning);
+}
+.ts-kpi--leave {
+  border-left: var(--space-1) solid var(--color-danger);
+}
+.ts-kpi--duty {
+  border-left: var(--space-1) solid var(--color-success);
+}
+.ts-kpi__label {
+  font-size: var(--text-timesheet-cell);
+  color: var(--color-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+.ts-kpi__value {
+  font-size: var(--text-numeric);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.ts-kpi--normal .ts-kpi__value {
+  color: var(--color-primary-hover);
+}
+.ts-kpi--overtime .ts-kpi__value {
+  color: var(--color-warning-strong);
+}
+.ts-kpi--leave .ts-kpi__value {
+  color: var(--color-danger);
+}
+.ts-kpi--duty .ts-kpi__value {
+  color: var(--color-success);
+}
+.ts-kpi__note {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+/* Bayat türev SESSİZ kalmaz — yıldız + başlık metni. */
+.ts-kpi__stale {
+  font-size: var(--text-body);
+  color: var(--color-warning-strong);
+  text-decoration: none;
+  cursor: help;
+}
+
+/* ── Haftalık ızgara (E5 211-330) ──────────────────────────────────────── */
+.ts-week-scroll {
+  overflow-x: auto;
+}
+.ts-week-table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: var(--min-width-timesheet-week-table);
+}
+/* E5 214 */
+.ts-week-table thead tr {
+  background: var(--color-surface-2);
+  border-bottom: var(--border-width-total) solid var(--color-border);
+}
+.ts-week-table th {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+/* E5 216 — yatay kaydırmada sabit ilk sütun */
+.ts-week-table__name-head,
+.ts-week-table__name-cell {
+  position: sticky;
+  left: 0;
+  text-align: left;
+  padding: 11px var(--space-4);
+  min-width: var(--width-timesheet-week-name-col);
+}
+.ts-week-table__name-head {
+  background: var(--color-surface-2);
+  z-index: 2;
+  font-size: var(--text-table-head);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-section-head);
+}
+.ts-week-table__name-cell {
+  background: var(--color-surface);
+  z-index: 1;
+  padding: 10px var(--space-4);
+}
+/* E5 235 */
+.ts-week-table__name {
+  display: block;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+/* E5 235 — "Kalıpçı Usta · Şirket" */
+.ts-week-table__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-timesheet-cell);
+  color: var(--color-text-subtle);
+}
+/* E5 217-223 */
+.ts-week-table__day-head {
+  padding: 11px var(--space-2);
+  text-align: center;
+  font-size: var(--text-table-head);
+  min-width: var(--width-timesheet-week-day-col);
+}
+.ts-week-table__weekday {
+  display: block;
+}
+.ts-week-table__daydate {
+  display: block;
+  font-size: var(--text-timesheet-cell);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-subtle);
+}
+/* E5 222 — Cumartesi */
+.ts-week-table__day-head--saturday {
+  background: var(--color-warning-tint);
+  color: var(--color-warning-strong);
+}
+.ts-week-table__day-head--saturday .ts-week-table__daydate {
+  color: var(--color-warning-strong);
+}
+/* E5 223 — Pazar */
+.ts-week-table__day-head--sunday {
+  background: var(--color-danger-tint-weak);
+  color: var(--color-danger-strong);
+}
+.ts-week-table__day-head--sunday .ts-week-table__daydate {
+  color: var(--color-danger-strong);
+}
+/* E5 224-226 — türev kolonları */
+.ts-week-table__total-head {
+  padding: 11px 10px;
+  text-align: center;
+  font-size: var(--text-timesheet-cell);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-group);
+  min-width: var(--width-timesheet-week-total-col);
+}
+.ts-week-table__total-head--normal {
+  background: var(--color-info-tint);
+  color: var(--color-primary-hover);
+}
+.ts-week-table__total-head--overtime {
+  background: var(--color-warning-tint);
+  color: var(--color-warning-strong);
+}
+/* E5 231 */
+.ts-week-table tbody tr {
+  border-bottom: 1px solid var(--color-divider);
+}
+.ts-week-table__cell {
+  padding: var(--space-2);
+  text-align: center;
+}
+.ts-week-table__cell--saturday {
+  background: var(--color-warning-tint);
+}
+.ts-week-table__cell--sunday {
+  background: var(--color-danger-tint-weak);
+}
+/* E5 247-249 */
+.ts-week-table__row-total {
+  padding: 10px;
+  text-align: center;
+  font-size: var(--text-timesheet-week-total);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.ts-week-table__row-total--normal {
+  background: var(--color-info-tint);
+  color: var(--color-primary-hover);
+}
+.ts-week-table__row-total--overtime {
+  background: var(--color-warning-tint);
+  color: var(--color-warning-strong);
+}
+.ts-week-table__row-total--sum {
+  font-size: var(--text-timesheet-week-sum);
+}
+/* Bayat backend türevi — sayı SOLUR, yıldız gerekçeyi taşır. */
+.ts-week-table__row-total--stale {
+  opacity: 0.65;
+}
+.ts-week-table__stale {
+  text-decoration: none;
+  cursor: help;
+}
+.ts-week-table__empty {
+  padding: var(--space-4);
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-align: left;
+}
+.ts-week-table__empty-action {
+  display: inline-block;
+  margin-left: var(--space-3);
+}
+/* E5 312-326 */
+.ts-week-table__foot-row {
+  background: var(--color-surface-2);
+  border-top: var(--border-width-total) solid var(--color-border);
+}
+.ts-week-table__foot-label {
+  position: sticky;
+  left: 0;
+  background: var(--color-surface-2);
+  padding: var(--space-boq-total-y) var(--space-4);
+  text-align: left;
+  font-size: var(--text-table-head);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-group);
+}
+.ts-week-table__foot-cell {
+  padding: var(--space-boq-total-y) var(--space-2);
+  text-align: center;
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  color: var(--color-primary-hover);
+}
+.ts-week-table__foot-total {
+  padding: var(--space-boq-total-y) 10px;
+  text-align: center;
+  font-size: var(--text-timesheet-week-sum);
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.ts-week-table__foot-total--normal {
+  background: var(--color-info-tint);
+  color: var(--color-primary-hover);
+}
+.ts-week-table__foot-total--overtime {
+  background: var(--color-warning-tint);
+  color: var(--color-warning-strong);
+}
+
+/* ── Düzenlenebilir hücre (E5 238) ─────────────────────────────────────── */
+.ts-week-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+/* E5 `.hin` — saat kutusu */
+.input.ts-hin {
+  width: var(--size-timesheet-hin-w);
+  padding: var(--space-1) var(--space-1);
+  text-align: center;
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  border-width: var(--border-width-form);
+  border-radius: var(--radius-6);
+}
+.input.ts-hin--full {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary-border-soft);
+  color: var(--color-primary-hover);
+}
+.input.ts-hin--short {
+  background: var(--color-info-soft);
+  border-color: var(--color-info-border-soft);
+  color: var(--color-info-strong);
+}
+.input.ts-hin--overtime {
+  background: var(--color-warning-soft);
+  border-color: var(--color-warning-border-soft);
+  color: var(--color-warning-strong);
+}
+.input.ts-hin--off {
+  background: var(--color-surface-2);
+  border-color: var(--color-divider);
+  color: var(--color-border-strong);
+}
+/* Kaydedilmemiş hücre: uyarı rengi — palete YENİ renk eklenmez. */
+.input.ts-week-cell--dirty,
+.ts-tag.ts-week-cell--dirty {
+  border-color: var(--color-warning-strong);
+}
+/* Kod çapası — mockup'ta YOK; olmadan `İzin`/`Görev` yazılamaz. */
+.ts-week-cell__code-anchor {
+  padding: 0 2px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-small);
+  line-height: 1;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+}
+.ts-week-cell__code-anchor:hover {
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}
+.ts-week-cell__code-anchor:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.ts-tag.ts-week-cell__tag {
+  cursor: pointer;
+}
+.ts-week-cell__error {
+  display: block;
+  font-size: 9px;
+  color: var(--color-danger-strong);
+}
+
+/* ── Kaydet / kopyala düğmeleri (E5 74-75) ─────────────────────────────── */
+.ts__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: var(--space-4);
+}
+
+/* ── Bordroya aktarım paneli (E5 333-360) ──────────────────────────────── */
+.ts-payroll {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14);
+  box-shadow: var(--shadow-card);
+  padding: 18px;
+  margin-bottom: var(--space-4);
+}
+.ts-payroll__title {
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--space-form-section-gap);
+}
+.ts-payroll__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-form-section-gap);
+}
+.ts-payroll__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-form-section-gap);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-10);
+}
+.ts-payroll__card--normal {
+  background: var(--color-info-tint);
+}
+.ts-payroll__card--overtime {
+  background: var(--color-warning-tint);
+}
+/* 🔴 Ucu olmayan kart SİLİNMEZ, devre dışı basılır — gerekçe notta yazar. */
+.ts-payroll__card--disabled {
+  opacity: 0.6;
+}
+.ts-payroll__label {
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+.ts-payroll__card--normal .ts-payroll__label {
+  color: var(--color-primary-hover);
+}
+.ts-payroll__card--overtime .ts-payroll__label {
+  color: var(--color-warning-strong);
+}
+.ts-payroll__value {
+  font-size: 17px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.ts-payroll__card--normal .ts-payroll__value {
+  color: var(--color-primary-hover);
+}
+.ts-payroll__card--overtime .ts-payroll__value {
+  color: var(--color-warning-strong);
+}
+.ts-payroll__note {
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+.ts-payroll__foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px var(--space-form-section-gap);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-9);
+}
+.ts-payroll__hint {
+  flex: 1;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+/* E5 359 — aktarım ucu YOK; mockup'ta da pasif çizilmiştir. */
+.ts-payroll__action {
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-neutral-soft);
+  border-radius: var(--radius-8);
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+  cursor: not-allowed;
+}
+/* E5 129-132 — okunur ama YAZILAMAZ (uçta ayar yazma yolu yok). */
+.ts-payroll__weekly {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--space-3);
+}
+.ts-payroll__weekly-label {
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+.input.ts-payroll__weekly-input {
+  width: 56px;
+  text-align: center;
+  font-weight: var(--weight-bold);
 }
