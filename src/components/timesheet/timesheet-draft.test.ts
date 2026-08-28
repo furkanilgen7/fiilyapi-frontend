@@ -108,7 +108,7 @@ describe("buildWeekSaveBody", () => {
         },
       ],
     });
-    expect(Object.keys(body.cells[0])).not.toContain("personnelId");
+    expect(Object.keys(body.cells?.[0] ?? {})).not.toContain("personnelId");
   });
 
   it("boş hücre gövdeye GİRMEZ (uç `saat XOR kod` bekler)", () => {

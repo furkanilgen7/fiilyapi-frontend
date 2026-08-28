@@ -847,8 +847,12 @@ describe("BFF /api/backend/[...path]", () => {
       },
     );
 
+    // PUAN-SAAT: haftalik uc EKLENDI (`.../timesheet/week`). Yeni KOK YOK —
+    // ilk segment yine "sites"tir; `timesheet` kokunu eklemek allow-list
+    // yuzeyini bosuna genisletirdi.
     it.each([
       "/sites/{site_id}/timesheet",
+      "/sites/{site_id}/timesheet/week",
       "/sites/{site_id}/timesheet/export.xlsx",
     ])("%s ucu allow-list'teki 'sites' kokunden gecer", (endpoint) => {
       const root = endpoint.split("/")[1];

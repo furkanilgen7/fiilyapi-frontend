@@ -157,8 +157,9 @@ function tsDay(day: number): string {
   return `${TS_PERIOD.year}-${String(TS_PERIOD.month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-function tsCell(work_date: string, section_id: string | null, code = "worked") {
-  return { work_date, code, overtime_hours: null, section_id };
+/** 🔴 PUAN-SAAT: hücre artık SAAT XOR KOD taşır (`worked` enum üyesi kalktı). */
+function tsCell(work_date: string, section_id: string | null, hours: string | null = "9") {
+  return { work_date, hours, code: hours === null ? "leave" : null, section_id };
 }
 
 const TS_MATRIX = {
@@ -624,11 +625,10 @@ describe("SectionDetailView — İşçiler & Puantaj sekmesi (F-BLMPUAN)", () =>
     renderView();
     const panel = await openTimesheetTab();
     // Zeki Dur'un TEK hücresi `sec-other`da; satırı kartoteksten gelir ama
-    // adam-günü 0'dır ve işçi sayımına GİRMEZ.
-    // Metin JSX'te birden fazla düğüme bölünüyor — kapsayıcıdan okunur.
-    expect(panel.querySelector(".ts-summary__metrics")).toHaveTextContent(
-      "3 adam/gün · 0 saat fazla mesai",
-    );
+    // saati bu bölüme SAYILMAZ ve işçi sayımına GİRMEZ.
+    // 🔴 ADAM-GÜN BASILMAZ (PUAN-SAAT): aylık uç bölen olan `normal_day_hours`u
+    // yayınlamıyor; uydurulacağına ekranda ölçülen büyüklük (saat) basılır.
+    expect(panel.querySelector(".ts-summary__metrics")).toHaveTextContent("27 saat");
     expect(within(panel).getByText("3 işçi")).toBeInTheDocument();
   });
 

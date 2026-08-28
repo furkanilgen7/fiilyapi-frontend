@@ -3,19 +3,19 @@ import { renderHook, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
-import { useSaveTimesheet, type TimesheetSave } from "./useTimesheetMutations";
-import { TIMESHEET_QUERY_KEY } from "./useTimesheet";
+import { useSaveTimesheetWeek, type TimesheetWeekSave } from "./useTimesheetMutations";
+import { TIMESHEET_QUERY_KEY, TIMESHEET_WEEK_QUERY_KEY } from "./useTimesheet";
 import { backendClient } from "@/lib/api/client";
 import { BackendError } from "@/lib/api/unwrap";
 
-// F-PT T1 · puantaj kaydetme ucu (`useSitePlanMutations.test.tsx` deseni):
+// PUAN-SAAT · haftalik puantaj kaydetme ucu (`useSitePlanMutations.test.tsx` deseni):
 // cagri sozlesmesi + KAPSAM KURALI + gecersiz kilma + hata dali.
 vi.mock("@/lib/api/client", () => ({
   backendClient: { GET: vi.fn(), POST: vi.fn(), PATCH: vi.fn(), PUT: vi.fn(), DELETE: vi.fn() },
 }));
 
 const SITE_ID = "s-1";
-const PERIOD = { year: 2026, month: 8 };
+const WEEK = { isoYear: 2026, isoWeek: 32 };
 
 function spyOnInvalidate(queryClient: QueryClient) {
   return vi.spyOn(queryClient, "invalidateQueries");
@@ -44,25 +44,25 @@ beforeEach(() => {
   invalidateSpy = spyOnInvalidate(client);
 });
 
-describe("useSaveTimesheet", () => {
-  it("PUT …/timesheet cagirir; year/month sorguda, section_id GONDERILMEZ", async () => {
+describe("useSaveTimesheetWeek", () => {
+  it("PUT …/timesheet/week cagirir; iso_year/iso_week sorguda, section_id GONDERILMEZ", async () => {
     // Arrange
     vi.mocked(backendClient.PUT).mockResolvedValue(okResponse({ rows: [] }));
-    const body: TimesheetSave = {
+    const body: TimesheetWeekSave = {
       cells: [
-        { personnel_id: "per-1", work_date: "2026-08-03", code: "worked", section_id: "sec-1" },
+        { personnel_id: "per-1", work_date: "2026-08-03", hours: "9", code: null, section_id: "sec-1" },
       ],
     };
 
     // Act
-    const { result } = renderHook(() => useSaveTimesheet(SITE_ID, PERIOD), { wrapper });
+    const { result } = renderHook(() => useSaveTimesheetWeek(SITE_ID, WEEK), { wrapper });
     await act(async () => {
       await result.current.mutateAsync(body);
     });
 
     // Assert
-    expect(backendClient.PUT).toHaveBeenCalledWith("/sites/{site_id}/timesheet", {
-      params: { path: { site_id: SITE_ID }, query: { year: 2026, month: 8 } },
+    expect(backendClient.PUT).toHaveBeenCalledWith("/sites/{site_id}/timesheet/week", {
+      params: { path: { site_id: SITE_ID }, query: { iso_year: 2026, iso_week: 32 } },
       body,
     });
     const call = vi.mocked(backendClient.PUT).mock.calls[0][1] as {
@@ -74,20 +74,22 @@ describe("useSaveTimesheet", () => {
   // ⚠️ KAPSAM KURALI (bu dilimin en kritik tuzagi): hook BOLUM ALMAZ. Imzasi
   // filtreli kumeyi kazara gondermeyi kolaylastirmamalidir — govde HER ZAMAN
   // santiyenin TAM hucre kumesidir, gecmeyen hucre backend'de SILINIR.
-  it("hook imzasi bolum filtresi ALMAZ — kapsam SANTIYE+DONEM'dir", async () => {
+  // 🔴 KAPSAM AY DEGIL HAFTADIR — gecmeyen hucre SILINIR, ama ayin obur
+  // haftalari etkilenmez.
+  it("hook imzasi bolum filtresi ALMAZ — kapsam SANTIYE+HAFTA'dir", async () => {
     // Arrange
     vi.mocked(backendClient.PUT).mockResolvedValue(okResponse({ rows: [] }));
 
     // Act
-    const { result } = renderHook(() => useSaveTimesheet(SITE_ID, PERIOD), { wrapper });
+    const { result } = renderHook(() => useSaveTimesheetWeek(SITE_ID, WEEK), { wrapper });
     await act(async () => {
       await result.current.mutateAsync({ cells: [] });
     });
 
     // Assert — cagriyi bicimlendiren TEK sey santiye + donem.
-    expect(useSaveTimesheet.length).toBe(2);
-    expect(backendClient.PUT).toHaveBeenCalledWith("/sites/{site_id}/timesheet", {
-      params: { path: { site_id: SITE_ID }, query: { year: 2026, month: 8 } },
+    expect(useSaveTimesheetWeek.length).toBe(2);
+    expect(backendClient.PUT).toHaveBeenCalledWith("/sites/{site_id}/timesheet/week", {
+      params: { path: { site_id: SITE_ID }, query: { iso_year: 2026, iso_week: 32 } },
       body: { cells: [] },
     });
   });
@@ -95,27 +97,27 @@ describe("useSaveTimesheet", () => {
   it("govde AYNEN gecirilir — hook hucre eklemez/cikarmaz (DEGISTIRME semantigi)", async () => {
     // Arrange
     vi.mocked(backendClient.PUT).mockResolvedValue(okResponse({ rows: [] }));
-    const body: TimesheetSave = {
+    const body: TimesheetWeekSave = {
       cells: [
-        { personnel_id: "per-1", work_date: "2026-08-03", code: "worked", section_id: "sec-1" },
+        { personnel_id: "per-1", work_date: "2026-08-03", hours: "9", code: null, section_id: "sec-1" },
         {
           personnel_id: "per-2",
-          work_date: "2026-08-03",
-          code: "overtime",
-          overtime_hours: "3.00",
+          work_date: "2026-08-04",
+          hours: null,
+          code: "leave",
           section_id: "sec-2",
         },
       ],
     };
 
     // Act
-    const { result } = renderHook(() => useSaveTimesheet(SITE_ID, PERIOD), { wrapper });
+    const { result } = renderHook(() => useSaveTimesheetWeek(SITE_ID, WEEK), { wrapper });
     await act(async () => {
       await result.current.mutateAsync(body);
     });
 
     // Assert
-    const call = vi.mocked(backendClient.PUT).mock.calls[0][1] as { body: TimesheetSave };
+    const call = vi.mocked(backendClient.PUT).mock.calls[0][1] as { body: TimesheetWeekSave };
     expect(call.body).toEqual(body);
     expect(call.body.cells).toHaveLength(2);
   });
@@ -125,12 +127,14 @@ describe("useSaveTimesheet", () => {
     vi.mocked(backendClient.PUT).mockResolvedValue(okResponse({ rows: [] }));
 
     // Act
-    const { result } = renderHook(() => useSaveTimesheet(SITE_ID, PERIOD), { wrapper });
+    const { result } = renderHook(() => useSaveTimesheetWeek(SITE_ID, WEEK), { wrapper });
     await act(async () => {
       await result.current.mutateAsync({ cells: [] });
     });
 
-    // Assert — prefix eslesme (donem/bolum tasimaz).
+    // Assert — prefix eslesme (hafta/bolum tasimaz). Aylik anahtar da tazelenir:
+    // bolum detay sekmesi ve Excel ayni yazmadan etkilenir.
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [TIMESHEET_WEEK_QUERY_KEY, SITE_ID] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [TIMESHEET_QUERY_KEY, SITE_ID] });
   });
 
@@ -141,7 +145,7 @@ describe("useSaveTimesheet", () => {
     );
 
     // Act
-    const { result } = renderHook(() => useSaveTimesheet(SITE_ID, PERIOD), { wrapper });
+    const { result } = renderHook(() => useSaveTimesheetWeek(SITE_ID, WEEK), { wrapper });
     const error = await act(async () =>
       result.current.mutateAsync({ cells: [] }).catch((err: unknown) => err),
     );

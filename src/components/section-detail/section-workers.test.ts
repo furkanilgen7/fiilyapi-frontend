@@ -25,8 +25,8 @@ function row(over: Partial<TimesheetViewRow> = {}): TimesheetViewRow {
     trade: null,
     source: "company",
     subcontractorName: null,
-    cells: { "2026-08-03": { code: "worked", overtimeHours: null, sectionId: "sec-1" } },
-    manDays: 1,
+    cells: { "2026-08-03": { hours: "9", code: null, sectionId: "sec-1" } },
+    totalHours: "9",
     ...over,
   };
 }
@@ -57,7 +57,7 @@ describe("groupSectionWorkers - mockup D215-250", () => {
   });
 
   it("hucresi olmayan satir SAYILMAZ (kartoteks sizintisi)", () => {
-    const rows = [row({ trade: "Kalıpçı" }), row({ trade: "Kalıpçı", cells: {}, manDays: 0 })];
+    const rows = [row({ trade: "Kalıpçı" }), row({ trade: "Kalıpçı", cells: {}, totalHours: "0" })];
     const groups = groupSectionWorkers(rows);
     expect(groups).toHaveLength(1);
     expect(groups[0].count).toBe(1);

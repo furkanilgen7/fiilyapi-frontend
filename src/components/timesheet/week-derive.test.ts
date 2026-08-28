@@ -317,7 +317,7 @@ describe("🔴 K2 KAPSAM KURALI · bölüm süzgeci YALNIZ görünüme uygulanı
         [timesheetDraftKey("p1", "2026-07-15")]: { hours: "7", code: null, sectionId: "sec-1" },
       },
     });
-    const dates = buildWeekSaveBody(view.allCells).cells.map((c) => c.work_date);
+    const dates = (buildWeekSaveBody(view.allCells).cells ?? []).map((c) => c.work_date);
     for (const date of dates) {
       expect(date >= "2026-07-13" && date <= "2026-07-19").toBe(true);
     }
