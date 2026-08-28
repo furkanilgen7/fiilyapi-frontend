@@ -209,7 +209,9 @@ describe("GeneralTimesheetView · E5 satır süzgeçleri (100-127)", () => {
   });
 
   it("🔴 satır süzgeci KAYDETME GÖVDESİNE dokunmaz — süzülen satırın hücresi durur", async () => {
-    const mutateAsync = vi.fn(async (_body: { cells?: { personnel_id: string }[] }) => WEEK);
+    const mutateAsync = vi.fn((body: { cells?: { personnel_id: string }[] }) =>
+      Promise.resolve({ ...WEEK, echoedCellCount: body.cells?.length ?? 0 }),
+    );
     vi.mocked(useSaveTimesheetWeek).mockReturnValue({ mutateAsync } as never);
     renderView();
     await userEvent.selectOptions(screen.getByLabelText("Meslek"), "Kalıpçı");
