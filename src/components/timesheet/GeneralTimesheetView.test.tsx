@@ -209,7 +209,7 @@ describe("GeneralTimesheetView · E5 satır süzgeçleri (100-127)", () => {
   });
 
   it("🔴 satır süzgeci KAYDETME GÖVDESİNE dokunmaz — süzülen satırın hücresi durur", async () => {
-    const mutateAsync = vi.fn(async () => WEEK);
+    const mutateAsync = vi.fn(async (_body: { cells?: { personnel_id: string }[] }) => WEEK);
     vi.mocked(useSaveTimesheetWeek).mockReturnValue({ mutateAsync } as never);
     renderView();
     await userEvent.selectOptions(screen.getByLabelText("Meslek"), "Kalıpçı");
@@ -219,9 +219,9 @@ describe("GeneralTimesheetView · E5 satır süzgeçleri (100-127)", () => {
     await userEvent.tab();
     await userEvent.click(screen.getByRole("button", { name: "Haftayı Kaydet" }));
 
-    const body = mutateAsync.mock.calls[0]?.[0] as { cells?: { personnel_id: string }[] };
+    const body = mutateAsync.mock.calls[0]?.[0];
     // POZİTİF KONTROL: ekranda GÖRÜNMEYEN Cem Aksoy'un hücresi gövdede DURUYOR.
-    expect(body.cells?.map((cell) => cell.personnel_id)).toContain("per-2");
+    expect(body?.cells?.map((cell) => cell.personnel_id)).toContain("per-2");
   });
 
   it("taşeron süzgeci firma adından süzer", async () => {

@@ -292,7 +292,9 @@ describe("SiteTimesheetView · K2 bölüm filtresi", () => {
       isoYear: 2026,
       isoWeek: 32,
     });
-    expect(vi.mocked(useTimesheetWeek).mock.calls[0]?.[2]).toBeUndefined();
+    // Ucuncu bir suzgec argumaninin HIC gecirilmemesi K2'nin yapisal
+    // guvencesidir: cagriyi bicimlendiren TEK sey santiye + haftadir.
+    expect(vi.mocked(useTimesheetWeek).mock.calls[0]).toHaveLength(2);
   });
 
   it("süzgeç açıkken özet ve toplamlar süzülmüş kümeden hesaplanır", () => {
