@@ -3760,7 +3760,8 @@ function buildSitePlanWeek(
 // ─────────────────────────────────────────────────────────────────────────────
 
 type MockWorkerSource = "company" | "subcontractor" | "general";
-type MockTimesheetCode = "worked" | "leave" | "holiday" | "overtime" | "temporary_duty";
+/** 🔴 PUAN-SAAT: `worked`/`overtime` KALKTI — çalışılan gün artık SAATtir. */
+type MockTimesheetCode = "leave" | "holiday" | "temporary_duty";
 
 /**
  * F-İK T2 — personel kaydı ARTIK şemaya BAĞLIDIR (F-SA dersi: elle yazılmış
@@ -3842,13 +3843,16 @@ function hrFieldsFromBody(body: Record<string, unknown>): MockHrFields {
   };
 }
 
-/** Hücreler SEYREKTİR: girilmemiş gün kayıt ÜRETMEZ (gerçek backend gibi). */
+/**
+ * Hücreler SEYREKTİR: girilmemiş gün kayıt ÜRETMEZ (gerçek backend gibi).
+ * 🔴 SAAT XOR KOD: `hours` doluysa `code` null, `code` doluysa `hours` null.
+ */
 interface MockTimesheetCell {
   site_id: string;
   personnel_id: string;
   work_date: string;
-  code: MockTimesheetCode;
-  overtime_hours: string | null;
+  hours: string | null;
+  code: MockTimesheetCode | null;
   section_id: string | null;
 }
 
@@ -4112,54 +4116,59 @@ const PERSONNEL_DOCUMENT_FIXTURES: Record<
 };
 
 /**
- * 🔒 FİKSTÜR İZOLASYONU (F-PL dersi, PT'ye uyarlanmış): `PUT .../timesheet`
- * kapsamı DÖNEM + ŞANTİYE'dir, bu yüzden ŞANTİYE ayırmak GEREKMEZ — AY
- * ayırmak yeterlidir:
- *   • 2026-08 · s-1 → GÖRSEL kadraj (zengin fikstür). Hiçbir spec bu ayı
- *     DEĞİŞTİRMEZ.
- *   • 2026-09 · s-1 → fonksiyonel oyun alanı (kaydetme akışı burada koşar).
- *     İKİ FARKLI bölüme (sec-1 + sec-2) ait hücre taşır — T3/T5'in kapsam
- *     kuralı kanıtı ("bölüm filtresi açıkken kaydet → diğer bölüm silinmedi")
- *     bu kümenin üzerinden yürür.
- *   • 2026-08 · s-2 → "başka şantiyeye dokunulmadı" kanıtı.
+ * 🔒 FİKSTÜR İZOLASYONU — kapsam artık HAFTAdır (`PUT .../timesheet/week`),
+ * bu yüzden izolasyon da HAFTA ekseninde kurulur:
+ *   • 2026-W32 (3–9 Ağu) · s-1 → GÖRSEL kadraj (zengin fikstür). Hiçbir spec
+ *     bu haftayı DEĞİŞTİRMEZ.
+ *   • 2026-W36 (31 Ağu – 6 Eyl) · s-1 → fonksiyonel oyun alanı. İKİ FARKLI
+ *     bölüme (sec-1 + sec-2) ait hücre taşır — kapsam kuralı kanıtı
+ *     ("bölüm filtresi açıkken kaydet → diğer bölüm silinmedi") bunun
+ *     üzerinden yürür.
+ *   • 2026-W35 (24–30 Ağu) · s-1 → "hafta kaydetmek AYIN ÖBÜR HAFTASINA
+ *     DOKUNMAZ" kanıtının komşu haftası (backend bekçisinin istemci ikizi).
+ *   • 2026-W37 · s-2 → kişi-gün 409 tetikleyicisi.
  *
- * 2026-08 · s-1 kümesi mockup'ın ayak satırını üretir:
- *   03 Ağu → 4 çalışan + FM  ⇒ `4+`
- *   04 Ağu → 3 çalışan + 1 geçici görev ⇒ `3G`
- * Beş kodun HEPSİ ve saatli en az bir FM hücresi bu kümede vardır.
+ * 2026-W32 kümesi mockup'ın hücre paletini üretir: tam gün (9), eksik gün (5),
+ * normal üstü gün (12 · FM tonu), izin rozeti, geçici görev rozeti, hafta sonu
+ * sütunları ve İKİ bölüm.
  */
 const TIMESHEET_CELL_FIXTURES: MockTimesheetCell[] = [
-  // 03 Ağu — dört kişi çalıştı, biri fazla mesai yaptı ⇒ ayak satırı "4+".
-  { site_id: "s-1", personnel_id: "per-1", work_date: "2026-08-03", code: "worked", overtime_hours: null, section_id: "sec-1" },
-  { site_id: "s-1", personnel_id: "per-2", work_date: "2026-08-03", code: "worked", overtime_hours: null, section_id: "sec-1" },
-  { site_id: "s-1", personnel_id: "per-3", work_date: "2026-08-03", code: "overtime", overtime_hours: "3.00", section_id: "sec-1" },
-  { site_id: "s-1", personnel_id: "per-4", work_date: "2026-08-03", code: "worked", overtime_hours: null, section_id: "sec-2" },
-  // 04 Ağu — üç kişi çalıştı, biri geçici görevde ⇒ ayak satırı "3G".
-  { site_id: "s-1", personnel_id: "per-1", work_date: "2026-08-04", code: "worked", overtime_hours: null, section_id: "sec-1" },
-  { site_id: "s-1", personnel_id: "per-2", work_date: "2026-08-04", code: "worked", overtime_hours: null, section_id: "sec-1" },
-  { site_id: "s-1", personnel_id: "per-5", work_date: "2026-08-04", code: "worked", overtime_hours: null, section_id: "sec-2" },
-  { site_id: "s-1", personnel_id: "per-3", work_date: "2026-08-04", code: "temporary_duty", overtime_hours: null, section_id: "sec-1" },
-  // 05 Ağu — izin + tatil kodları (beş kodun tamamı kadraja girsin).
-  { site_id: "s-1", personnel_id: "per-1", work_date: "2026-08-05", code: "leave", overtime_hours: null, section_id: "sec-1" },
-  { site_id: "s-1", personnel_id: "per-2", work_date: "2026-08-05", code: "worked", overtime_hours: null, section_id: "sec-1" },
-  { site_id: "s-1", personnel_id: "per-4", work_date: "2026-08-05", code: "holiday", overtime_hours: null, section_id: "sec-2" },
-  // 06 Ağu — ikinci saatli FM (toplam FM saati 5,50 olur).
-  { site_id: "s-1", personnel_id: "per-1", work_date: "2026-08-06", code: "worked", overtime_hours: null, section_id: "sec-1" },
-  { site_id: "s-1", personnel_id: "per-3", work_date: "2026-08-06", code: "overtime", overtime_hours: "2.50", section_id: "sec-1" },
+  // ── 2026-W32 · 3 Ağu Pazartesi → 9 Ağu Pazar (GÖRSEL KADRAJ, salt-okur) ──
+  { site_id: "s-1", personnel_id: "per-1", work_date: "2026-08-03", hours: "9.0", code: null, section_id: "sec-1" },
+  { site_id: "s-1", personnel_id: "per-2", work_date: "2026-08-03", hours: "9.0", code: null, section_id: "sec-1" },
+  // Normal gün saatini AŞAN gün — FM tonu (renk ipucu).
+  { site_id: "s-1", personnel_id: "per-3", work_date: "2026-08-03", hours: "12.0", code: null, section_id: "sec-1" },
+  { site_id: "s-1", personnel_id: "per-4", work_date: "2026-08-03", hours: "9.0", code: null, section_id: "sec-2" },
+  // Eksik gün tonu.
+  { site_id: "s-1", personnel_id: "per-1", work_date: "2026-08-04", hours: "5.0", code: null, section_id: "sec-1" },
+  { site_id: "s-1", personnel_id: "per-2", work_date: "2026-08-04", hours: "9.0", code: null, section_id: "sec-1" },
+  { site_id: "s-1", personnel_id: "per-5", work_date: "2026-08-04", hours: "9.0", code: null, section_id: "sec-2" },
+  // Geçici görev rozeti (izinden AYRI sayılır — KPI kanıtı).
+  { site_id: "s-1", personnel_id: "per-3", work_date: "2026-08-04", hours: null, code: "temporary_duty", section_id: "sec-1" },
+  // İzin rozeti + tatil kodu (enum üyesi korundu, veride varsa basılır).
+  { site_id: "s-1", personnel_id: "per-1", work_date: "2026-08-05", hours: null, code: "leave", section_id: "sec-1" },
+  { site_id: "s-1", personnel_id: "per-2", work_date: "2026-08-05", hours: "9.0", code: null, section_id: "sec-1" },
+  { site_id: "s-1", personnel_id: "per-4", work_date: "2026-08-05", hours: null, code: "holiday", section_id: "sec-2" },
+  { site_id: "s-1", personnel_id: "per-1", work_date: "2026-08-06", hours: "9.0", code: null, section_id: "sec-1" },
+  { site_id: "s-1", personnel_id: "per-3", work_date: "2026-08-06", hours: "9.0", code: null, section_id: "sec-1" },
+  // Cumartesi sütunu doludur — hafta sonu zemini kadraja girsin.
+  { site_id: "s-1", personnel_id: "per-2", work_date: "2026-08-08", hours: "6.0", code: null, section_id: "sec-1" },
 
-  // 2026-09 · s-1 — fonksiyonel oyun alanı; İKİ bölüm (kapsam kuralı kanıtı).
-  { site_id: "s-1", personnel_id: "per-1", work_date: "2026-09-01", code: "worked", overtime_hours: null, section_id: "sec-1" },
-  { site_id: "s-1", personnel_id: "per-2", work_date: "2026-09-02", code: "worked", overtime_hours: null, section_id: "sec-1" },
-  { site_id: "s-1", personnel_id: "per-4", work_date: "2026-09-01", code: "worked", overtime_hours: null, section_id: "sec-2" },
+  // ── 2026-W35 · 24–30 Ağu · s-1 — "öbür haftaya DOKUNULMADI" kanıtı ──
+  { site_id: "s-1", personnel_id: "per-1", work_date: "2026-08-26", hours: "9.0", code: null, section_id: "sec-1" },
 
-  // 2026-08 · s-2 — "başka şantiyeye DOKUNULMADI" kanıt kaydı (bölümsüz).
-  { site_id: "s-2", personnel_id: "per-5", work_date: "2026-08-03", code: "worked", overtime_hours: null, section_id: null },
+  // ── 2026-W36 · 31 Ağu – 6 Eyl · s-1 — fonksiyonel oyun alanı, İKİ bölüm ──
+  { site_id: "s-1", personnel_id: "per-1", work_date: "2026-09-01", hours: "9.0", code: null, section_id: "sec-1" },
+  { site_id: "s-1", personnel_id: "per-2", work_date: "2026-09-02", hours: "9.0", code: null, section_id: "sec-1" },
+  { site_id: "s-1", personnel_id: "per-4", work_date: "2026-09-01", hours: "8.0", code: null, section_id: "sec-2" },
 
-  // 🔴 409 TETİKLEYİCİSİ (F-PT T5) — Ramazan Yıldız 10 Eylül'de s-2'de kayıtlı.
-  // Aynı kişi-günü s-1'e yazmaya kalkan PUT çakışma alır. Bileşim BİLEREK
-  // ayrılmıştır: hiçbir başka spec per-3'ün 2026-09-10'una dokunmaz, bu yüzden
-  // ne kadraj fikstürleri ne de kapsam-kuralı akışı etkilenir.
-  { site_id: "s-2", personnel_id: "per-3", work_date: "2026-09-10", code: "worked", overtime_hours: null, section_id: null },
+  // ── 2026-W32 · s-2 — "başka şantiyeye DOKUNULMADI" kanıt kaydı (bölümsüz) ──
+  { site_id: "s-2", personnel_id: "per-5", work_date: "2026-08-03", hours: "9.0", code: null, section_id: null },
+
+  // 🔴 409 TETİKLEYİCİSİ — Ramazan Yıldız (per-3) 10 Eylül'de (W37) s-2'de
+  // kayıtlı. Aynı kişi-günü s-1'e yazmaya kalkan PUT çakışma alır. Hafta
+  // BİLEREK ayrıdır: oyun alanı (W36) ve kadraj (W32) etkilenmez.
+  { site_id: "s-2", personnel_id: "per-3", work_date: "2026-09-10", hours: "9.0", code: null, section_id: null },
 ];
 
 function timesheetMonthDays(year: number, month: number): string[] {
@@ -4174,13 +4183,127 @@ function cellInPeriod(cell: MockTimesheetCell, year: number, month: number): boo
   return cell.work_date.startsWith(`${year}-${String(month).padStart(2, "0")}-`);
 }
 
-/** `worked` + `overtime` adam-gün sayılır; `leave`/`holiday`/`G` SAYILMAZ. */
-function countsAsManDay(code: MockTimesheetCode): boolean {
-  return code === "worked" || code === "overtime";
+/* ── PUAN-SAAT · saat aritmetiği ────────────────────────────────────────────
+   🔴 Kural gerçek backend'in kuralıdır ve mockup'ın DÖRT satırıyla doğrulandı
+   (E5 244-249): fazla mesai = max(günlük tavan aşımlarının toplamı,
+   haftalık tavan aşımı). Normal = toplam − FM.
+     Mehmet 9+11+9+9+9+6 = 53 → günlük 2, haftalık 8 ⇒ FM 8 · Normal 45 ✔
+     Ali     9+9+12+9     = 39 → günlük 3, haftalık 0 ⇒ FM 3 · Normal 36 ✔
+     Hasan  9+9+9+10+9+8  = 54 → günlük 1, haftalık 9 ⇒ FM 9 · Normal 45 ✔
+     Ayşe   9+9+9+4+9+7+5 = 52 → günlük 0, haftalık 7 ⇒ FM 7 · Normal 45 ✔
+   (Ayşe'nin Pazar hücresi mockup'ta ÇİZİLMEMİŞTİR; fikstürde 5'tir — ekrana
+   uydurma sayı yazılmaz, mockup'ın kendi tfoot'u 13'ü doğrular.) */
+const NORMAL_DAY_HOURS = 9;
+const WEEKLY_NORMAL_HOURS = 45;
+
+function cellHoursNumber(cell: MockTimesheetCell): number {
+  return cell.hours === null ? 0 : Number(cell.hours);
+}
+
+function sumHours(cells: readonly MockTimesheetCell[]): number {
+  return cells.reduce((sum, cell) => sum + cellHoursNumber(cell), 0);
+}
+
+function hoursText(value: number): string {
+  return value.toFixed(1);
+}
+
+interface MockRowTotals {
+  normal_hours: string;
+  overtime_hours: string;
+  total_hours: string;
+}
+
+function rowTotals(cells: readonly MockTimesheetCell[]): MockRowTotals {
+  const total = sumHours(cells);
+  const dailyOvertime = cells.reduce(
+    (sum, cell) => sum + Math.max(0, cellHoursNumber(cell) - NORMAL_DAY_HOURS),
+    0,
+  );
+  const weeklyOvertime = Math.max(0, total - WEEKLY_NORMAL_HOURS);
+  const overtime = Math.max(dailyOvertime, weeklyOvertime);
+  return {
+    normal_hours: hoursText(total - overtime),
+    overtime_hours: hoursText(overtime),
+    total_hours: hoursText(total),
+  };
+}
+
+/** Adam-gün ARTIK TÜREVDİR ve ondalıklıdır: toplam saat ÷ normal gün saati. */
+function manDaysText(totalHours: number): string {
+  return (totalHours / NORMAL_DAY_HOURS).toFixed(1);
+}
+
+function toUtcDay(iso: string): number {
+  const [year, month, day] = iso.split("-").map(Number);
+  return Date.UTC(year ?? 0, (month ?? 1) - 1, day ?? 1);
+}
+
+function addDays(iso: string, days: number): string {
+  const date = new Date(toUtcDay(iso));
+  date.setUTCDate(date.getUTCDate() + days);
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
+}
+
+/** ISO haftasının Pazartesi'si (Pazar = haftanın SON günüdür). */
+function mondayOfDay(iso: string): string {
+  const weekday = new Date(toUtcDay(iso)).getUTCDay();
+  return addDays(iso, weekday === 0 ? -6 : 1 - weekday);
+}
+
+function isoWeekNumbers(iso: string): { isoYear: number; isoWeek: number } {
+  const weekday = new Date(toUtcDay(iso)).getUTCDay() || 7;
+  const thursday = addDays(iso, 4 - weekday);
+  const isoYear = Number(thursday.slice(0, 4));
+  const firstThursday = addDays(mondayOfDay(`${isoYear}-01-04`), 3);
+  return {
+    isoYear,
+    isoWeek: Math.round((toUtcDay(thursday) - toUtcDay(firstThursday)) / 604800000) + 1,
+  };
+}
+
+function mondayOfIsoWeekNumbers(isoYear: number, isoWeek: number): string {
+  return addDays(mondayOfDay(`${isoYear}-01-04`), (isoWeek - 1) * 7);
+}
+
+function weekDates(monday: string): string[] {
+  return Array.from({ length: 7 }, (_, index) => addDays(monday, index));
+}
+
+function dayTotals(
+  cells: readonly MockTimesheetCell[],
+  days: readonly string[],
+): components["schemas"]["TimesheetDayTotal"][] {
+  return days.map((workDate) => {
+    const dayCells = cells.filter((cell) => cell.work_date === workDate);
+    return {
+      work_date: workDate,
+      total_hours: hoursText(sumHours(dayCells)),
+      // SAATLİ hücre çalışılmış sayılır; kodlu hücre çalışılmış DEĞİLDİR.
+      worked_day_count: dayCells.filter((cell) => cell.code === null).length,
+      leave_count: dayCells.filter((cell) => cell.code === "leave").length,
+      temporary_duty_count: dayCells.filter((cell) => cell.code === "temporary_duty").length,
+    };
+  });
+}
+
+function personCells(
+  cells: readonly MockTimesheetCell[],
+  personnelId: string,
+): MockTimesheetCell[] {
+  return cells
+    .filter((cell) => cell.personnel_id === personnelId)
+    .slice()
+    .sort((a, b) => a.work_date.localeCompare(b.work_date));
+}
+
+function subcontractorName(person: MockPersonnel): string | null {
+  return person.subcontractor_id ? (SUBCONTRACTOR_NAMES[person.subcontractor_id] ?? null) : null;
 }
 
 /**
- * `GET|PUT /sites/{id}/timesheet` yanıtı.
+ * `GET /sites/{id}/timesheet` — AYLIK matris (artık YALNIZ OKUMA + Excel).
  *
  * `sectionId` YALNIZ görünümü süzer (satır hücreleri süzülür, hücresi kalmayan
  * satır düşer). Ayak satırı ve toplamlar da süzülmüş kümeden türetilir — ekran
@@ -4206,42 +4329,27 @@ function buildTimesheetMatrix(
   const rows = state.personnel
     .filter((p) => cells.some((c) => c.personnel_id === p.id))
     .map((person) => {
-      const personCells = cells
-        .filter((c) => c.personnel_id === person.id)
-        .slice()
-        .sort((a, b) => a.work_date.localeCompare(b.work_date));
+      const own = personCells(cells, person.id);
+      const total = sumHours(own);
       return {
         personnel_id: person.id,
         full_name: person.full_name,
         trade: person.trade,
         source: person.source,
-        subcontractor_name: person.subcontractor_id
-          ? (SUBCONTRACTOR_NAMES[person.subcontractor_id] ?? null)
-          : null,
-        man_days: personCells.filter((c) => countsAsManDay(c.code)).length,
-        cells: personCells.map((c) => ({
+        subcontractor_name: subcontractorName(person),
+        total_hours: hoursText(total),
+        man_days: manDaysText(total),
+        cells: own.map((c) => ({
           work_date: c.work_date,
+          hours: c.hours,
           code: c.code,
-          overtime_hours: c.overtime_hours,
           section_id: c.section_id,
         })),
       };
     });
 
   // Gün iskeleti AYIN TAMAMIDIR (hücreler seyrek, sütunlar değil).
-  const dayTotals = timesheetMonthDays(year, month).map((workDate) => {
-    const dayCells = cells.filter((c) => c.work_date === workDate);
-    return {
-      work_date: workDate,
-      // FM'li gün ÇALIŞILMIŞ sayılır; geçici görev SAYILMAZ.
-      worked_count: dayCells.filter((c) => countsAsManDay(c.code)).length,
-      has_overtime: dayCells.some((c) => c.code === "overtime"),
-      temporary_duty_count: dayCells.filter((c) => c.code === "temporary_duty").length,
-    };
-  });
-
-  const totalOvertime = cells.reduce((sum, c) => sum + Number(c.overtime_hours ?? 0), 0);
-
+  const monthTotal = sumHours(cells);
   return {
     site_id: site.id,
     site_name: site.name,
@@ -4252,10 +4360,120 @@ function buildTimesheetMatrix(
     section_id: sectionId,
     section_name: section?.name ?? null,
     worker_count: rows.length,
-    total_man_days: rows.reduce((sum, r) => sum + r.man_days, 0),
-    total_overtime_hours: totalOvertime.toFixed(2),
+    total_hours: hoursText(monthTotal),
+    total_man_days: manDaysText(monthTotal),
     rows,
-    day_totals: dayTotals,
+    day_totals: dayTotals(cells, timesheetMonthDays(year, month)),
+  };
+}
+
+/**
+ * `GET|PUT /sites/{id}/timesheet/week` — E5'in haftalık ekranı.
+ *
+ * 🔴 Ay bilgisi haftanın PERŞEMBEsinden okunur: hafta iki ayı bölüyorsa
+ * (31 Ağu – 6 Eyl) `start_date`in ayı yanlış cevap verirdi. `month_weeks` o
+ * ayın Perşembesi düşen TÜM ISO haftalarıdır.
+ */
+function buildTimesheetWeek(
+  state: MockState,
+  site: MockSite,
+  isoYear: number,
+  isoWeek: number,
+  sectionId: string | null,
+): components["schemas"]["TimesheetWeek"] {
+  const project = state.projects.find((p) => p.id === site.project_id);
+  const section = sectionId ? state.sections.find((s) => s.id === sectionId) : undefined;
+  const monday = mondayOfIsoWeekNumbers(isoYear, isoWeek);
+  const days = weekDates(monday);
+  const thursday = days[3];
+
+  const siteCells = state.timesheetCells.filter((c) => c.site_id === site.id);
+  const cells = siteCells.filter(
+    (c) => days.includes(c.work_date) && (sectionId === null || c.section_id === sectionId),
+  );
+
+  const rows = state.personnel
+    .filter((p) => cells.some((c) => c.personnel_id === p.id))
+    .map((person) => {
+      const own = personCells(cells, person.id);
+      return {
+        personnel_id: person.id,
+        full_name: person.full_name,
+        trade: person.trade,
+        source: person.source,
+        subcontractor_name: subcontractorName(person),
+        cells: own.map((c) => ({
+          work_date: c.work_date,
+          hours: c.hours,
+          code: c.code,
+          section_id: c.section_id,
+        })),
+        totals: rowTotals(own),
+      };
+    });
+
+  const monthYear = Number(thursday.slice(0, 4));
+  const monthMonth = Number(thursday.slice(5, 7));
+  const monthCells = siteCells.filter((c) => cellInPeriod(c, monthYear, monthMonth));
+
+  // Ayın Perşembesi düşen TÜM ISO haftaları — "girilmedi" rozetinin kaynağı.
+  const monthWeeks: components["schemas"]["TimesheetWeekSummary"][] = [];
+  const monthDays = timesheetMonthDays(monthYear, monthMonth);
+  for (const day of monthDays) {
+    const numbers = isoWeekNumbers(day);
+    if (monthWeeks.some((w) => w.iso_year === numbers.isoYear && w.iso_week === numbers.isoWeek)) {
+      continue;
+    }
+    const weekMonday = mondayOfIsoWeekNumbers(numbers.isoYear, numbers.isoWeek);
+    const weekDays = weekDates(weekMonday);
+    // Perşembesi bu ayda olmayan hafta ŞERİDE GİRMEZ (ayın haftası değildir).
+    if (!weekDays[3].startsWith(`${monthYear}-${String(monthMonth).padStart(2, "0")}-`)) continue;
+    const weekCells = siteCells.filter((c) => weekDays.includes(c.work_date));
+    monthWeeks.push({
+      iso_year: numbers.isoYear,
+      iso_week: numbers.isoWeek,
+      start_date: weekMonday,
+      end_date: weekDays[6],
+      total_hours: hoursText(sumHours(weekCells)),
+      // 🔴 `has_entries` saatin sıfırlığıyla AYNI ŞEY DEĞİLDİR: hepsi izinli
+      // geçmiş bir hafta GİRİLMİŞTİR ve 0 saattir.
+      has_entries: weekCells.length > 0,
+    });
+  }
+
+  const weekTotal = sumHours(cells);
+  const normalSum = rows.reduce((sum, row) => sum + Number(row.totals.normal_hours), 0);
+  const overtimeSum = rows.reduce((sum, row) => sum + Number(row.totals.overtime_hours), 0);
+  const monthTotal = sumHours(monthCells);
+
+  return {
+    site_id: site.id,
+    site_name: site.name,
+    project_id: site.project_id,
+    project_name: project?.name ?? "",
+    iso_year: isoYear,
+    iso_week: isoWeek,
+    start_date: monday,
+    end_date: days[6],
+    section_id: sectionId,
+    section_name: section?.name ?? null,
+    normal_day_hours: hoursText(NORMAL_DAY_HOURS),
+    weekly_normal_hours: hoursText(WEEKLY_NORMAL_HOURS),
+    worker_count: rows.length,
+    totals: {
+      normal_hours: hoursText(normalSum),
+      overtime_hours: hoursText(overtimeSum),
+      total_hours: hoursText(weekTotal),
+    },
+    leave_day_count: cells.filter((c) => c.code === "leave").length,
+    temporary_duty_day_count: cells.filter((c) => c.code === "temporary_duty").length,
+    rows,
+    day_totals: dayTotals(cells, days),
+    month_year: monthYear,
+    month_month: monthMonth,
+    month_total_hours: hoursText(monthTotal),
+    month_man_days: manDaysText(monthTotal),
+    month_weeks: monthWeeks,
   };
 }
 
@@ -9416,15 +9634,22 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       });
     }
 
-    // GET/PUT /sites/{site_id}/timesheet — ay matrisi.
+    // GET /sites/{site_id}/timesheet — AYLIK matris (salt-okur + Excel).
     // `year`/`month` ZORUNLU; eksikse gerçek backend 422 döner.
     const timesheetMatch = path.match(/^\/sites\/([^/]+)\/timesheet$/);
     const timesheetExportMatch = path.match(/^\/sites\/([^/]+)\/timesheet\/export\.xlsx$/);
+    const timesheetWeekMatch = path.match(/^\/sites\/([^/]+)\/timesheet\/week$/);
     const timesheetPeriod = (): { year: number; month: number } | null => {
       const year = parsed.searchParams.get("year");
       const month = parsed.searchParams.get("month");
       if (!year || !month) return null;
       return { year: Number(year), month: Number(month) };
+    };
+    const timesheetWeekParams = (): { isoYear: number; isoWeek: number } | null => {
+      const isoYear = parsed.searchParams.get("iso_year");
+      const isoWeek = parsed.searchParams.get("iso_week");
+      if (!isoYear || !isoWeek) return null;
+      return { isoYear: Number(isoYear), isoWeek: Number(isoWeek) };
     };
     /** Başka şantiyenin bölümü boş matris DEĞİL 404 alır (gerçek backend kuralı). */
     const visibleSection = (siteId: string): { ok: true; id: string | null } | { ok: false } => {
@@ -9456,30 +9681,57 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       return send(200, buildTimesheetMatrix(state, site, period.year, period.month, section.id));
     }
 
-    // PUT /sites/{site_id}/timesheet — DÖNEM + ŞANTİYE kapsamlı DEĞİŞTİRME.
-    // ⚠️ Kapsam kuralı MOCK'ta da uygulanır: gelen `cells` o dönem+şantiyenin
-    // TAM kümesi sayılır, gövdede geçmeyen hücre SİLİNİR. Başka ayın ya da
-    // başka şantiyenin hücrelerine DOKUNULMAZ. Aksi hâlde e2e "yeşil" olur
-    // ama canlıda bölüm filtresiyle kaydeden kullanıcı diğer bölümlerin ayını
-    // siler — bu dilimin en kritik tuzağı tam olarak budur.
-    // Yanıt GÜNCEL TAM matristir (bölüm süzgeci UYGULANMAZ).
-    if (method === "PUT" && timesheetMatch) {
-      const site = state.sites.find((s) => s.id === timesheetMatch[1]);
+    // GET /sites/{site_id}/timesheet/week — haftalık ekranın okuma ucu.
+    if (method === "GET" && timesheetWeekMatch) {
+      const site = state.sites.find((s) => s.id === timesheetWeekMatch[1]);
       if (!site) return send(404, { detail: "santiye yok" });
-      const period = timesheetPeriod();
-      if (!period) return send(422, { detail: "year/month zorunlu" });
+      const week = timesheetWeekParams();
+      if (!week) return send(422, { detail: "iso_year/iso_week zorunlu" });
+      const section = visibleSection(site.id);
+      if (!section.ok) return send(404, { detail: "bolum yok" });
+      return send(200, buildTimesheetWeek(state, site, week.isoYear, week.isoWeek, section.id));
+    }
+
+    // PUT /sites/{site_id}/timesheet/week — HAFTA + ŞANTİYE kapsamlı DEĞİŞTİRME.
+    // ⚠️ Kapsam kuralı MOCK'ta da uygulanır: gelen `cells` o hafta+şantiyenin
+    // TAM kümesi sayılır, gövdede geçmeyen hücre SİLİNİR.
+    // 🔴 KAPSAM AY DEĞİL HAFTADIR: aynı ayın BAŞKA haftalarına ve başka
+    // şantiyeye DOKUNULMAZ. Mock burada gerçek backend gibi davranmazsa e2e
+    // "yeşil" olur ama canlıda bölüm filtresiyle kaydeden kullanıcı diğer
+    // bölümlerin haftasını siler — bu dilimin en kritik tuzağı tam budur.
+    // Yanıt GÜNCEL TAM haftadır (bölüm süzgeci UYGULANMAZ).
+    if (method === "PUT" && timesheetWeekMatch) {
+      const site = state.sites.find((s) => s.id === timesheetWeekMatch[1]);
+      if (!site) return send(404, { detail: "santiye yok" });
+      const week = timesheetWeekParams();
+      if (!week) return send(422, { detail: "iso_year/iso_week zorunlu" });
+      const days = weekDates(mondayOfIsoWeekNumbers(week.isoYear, week.isoWeek));
       return withBody((body) => {
         const input = Array.isArray(body.cells) ? (body.cells as Record<string, unknown>[]) : [];
         const next: MockTimesheetCell[] = [];
         for (const raw of input) {
           const workDate = String(raw.work_date ?? "");
-          if (!cellInPeriod({ work_date: workDate } as MockTimesheetCell, period.year, period.month)) {
-            return send(422, { detail: "hucre istenen donemin disinda" });
+          if (!days.includes(workDate)) {
+            return send(422, { detail: "hucre istenen haftanin disinda" });
+          }
+          const rawHours = raw.hours;
+          const rawCode = raw.code;
+          const hours =
+            rawHours === undefined || rawHours === null ? null : Number(rawHours).toFixed(1);
+          const code = typeof rawCode === "string" ? (rawCode as MockTimesheetCode) : null;
+          // SAAT XOR KOD — uç kısıtı; ikisi birden dolu gövde 422'dir.
+          if (hours !== null && code !== null) {
+            return send(422, { detail: "hucre ya saat ya kod tasir" });
+          }
+          if (hours === null && code === null) {
+            return send(422, { detail: "hucre bos olamaz" });
+          }
+          if (hours !== null && (Number(hours) <= 0 || Number(hours) > 24)) {
+            return send(422, { detail: "saat 0 ile 24 arasinda olmali" });
           }
           // KİŞİ-GÜN ÇAKIŞMASI (409): gerçek backend bir personeli aynı güne
           // İKİ şantiyede puantajlamaya izin vermez. Kural DAR tutulur —
-          // yalnız BAŞKA şantiyedeki kayda bakılır, aynı şantiyenin kendi
-          // hücresi (değiştirme) çakışma değildir.
+          // yalnız BAŞKA şantiyedeki kayda bakılır.
           const personnelId = String(raw.personnel_id ?? "");
           const conflict = state.timesheetCells.find(
             (c) =>
@@ -9492,24 +9744,23 @@ export function startMockBackend(port: number): { server: Server; close: () => P
               detail: `${person?.full_name ?? personnelId} ${workDate} gunu ${other?.name ?? conflict.site_id} santiyesinde kayitli.`,
             });
           }
-          const overtime = raw.overtime_hours;
           next.push({
             site_id: site.id,
             personnel_id: personnelId,
             work_date: workDate,
-            code: raw.code as MockTimesheetCode,
-            overtime_hours:
-              overtime === undefined || overtime === null ? null : Number(overtime).toFixed(2),
+            hours,
+            code,
             section_id: typeof raw.section_id === "string" ? raw.section_id : null,
           });
         }
         state.timesheetCells = [
+          // 🔴 YALNIZ bu HAFTANIN hücreleri düşer — ayın öbür haftaları durur.
           ...state.timesheetCells.filter(
-            (c) => c.site_id !== site.id || !cellInPeriod(c, period.year, period.month),
+            (c) => c.site_id !== site.id || !days.includes(c.work_date),
           ),
           ...next,
         ];
-        return send(200, buildTimesheetMatrix(state, site, period.year, period.month, null));
+        return send(200, buildTimesheetWeek(state, site, week.isoYear, week.isoWeek, null));
       });
     }
 

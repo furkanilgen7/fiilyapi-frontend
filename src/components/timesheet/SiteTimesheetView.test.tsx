@@ -1,21 +1,31 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 
 import { SiteTimesheetView } from "./SiteTimesheetView";
 import { useSession } from "@/components/shell/SessionProvider";
 import { usePersonnel } from "@/lib/api/hooks/usePersonnel";
-import { useTimesheet } from "@/lib/api/hooks/useTimesheet";
-import { useSaveTimesheet, type TimesheetSave } from "@/lib/api/hooks/useTimesheetMutations";
+import { useTimesheetWeek, type TimesheetWeek } from "@/lib/api/hooks/useTimesheet";
+import {
+  useSaveTimesheetWeek,
+  type TimesheetWeekSave,
+} from "@/lib/api/hooks/useTimesheetMutations";
 import { useSiteSections } from "@/lib/api/hooks/useSiteSections";
 import { downloadTimesheetExport } from "@/lib/api/timesheet-client";
 import { BackendError } from "@/lib/api/unwrap";
 import type { MeResponse } from "@/lib/auth/types";
 
-// F-PT T2 · ŞP ekranının OKUMA davranışları: iki kolon düzeni, Tür rozeti,
-// bölüm filtresi (İSTEMCİ TARAFI — K2), özet şeridi ve izin dalları.
-// F-PT T3 · hücre popover'ı, KAPSAM KURALI kanıtı, 409 ve Excel indirme.
-// Saf türevler kendi dosyalarında test edilir (derive / month / timesheet-draft).
+/**
+ * PUAN-SAAT · ŞP ekranı — 🔴 ONAYLI SAPMA ile HAFTALIK saat çekirdeğine geçti
+ * (mockup `Şantiye - Puantaj.dc.html`in gün-kodu tasarımı yeni sözleşme
+ * altında uygulanamaz; gerekçe `SiteTimesheetView.tsx` docstring'inde).
+ *
+ * Bu dosya ŞP'nin KORUNAN yeteneklerini kilitler: bölüm süzgeci (K2), özet
+ * şeridi, Excel, yazma yetkisi — ve KAPSAM KURALININ iki bacağını ölçer.
+ * Saf türevler kendi dosyalarındadır (week-derive / iso-week / timesheet-draft).
+ */
 
 const replace = vi.fn();
 let searchParams = new URLSearchParams();
@@ -31,8 +41,11 @@ vi.mock("@/lib/api/hooks/usePersonnel", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/usePersonnel")>()),
   usePersonnel: vi.fn(),
 }));
-vi.mock("@/lib/api/hooks/useTimesheet", () => ({ useTimesheet: vi.fn() }));
-vi.mock("@/lib/api/hooks/useTimesheetMutations", () => ({ useSaveTimesheet: vi.fn() }));
+vi.mock("@/lib/api/hooks/useTimesheet", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useTimesheet")>()),
+  useTimesheetWeek: vi.fn(),
+}));
+vi.mock("@/lib/api/hooks/useTimesheetMutations", () => ({ useSaveTimesheetWeek: vi.fn() }));
 vi.mock("@/lib/api/timesheet-client", () => ({ downloadTimesheetExport: vi.fn() }));
 vi.mock("@/lib/api/hooks/useSiteSections", () => ({ useSiteSections: vi.fn() }));
 vi.mock("@/lib/api/hooks/useSites", () => ({
@@ -40,6 +53,9 @@ vi.mock("@/lib/api/hooks/useSites", () => ({
     data: { id: "s-1", name: "A-Blok", project: { id: "p-1", name: "Güneşkent Konut" } },
   })),
 }));
+
+/** Kadraj haftası: 2026-W32 = 3–9 Ağustos 2026 (Pazartesi başlangıçlı). */
+const WEEK_QUERY = { iso_year: "2026", iso_week: "32" };
 
 const BASE_ME = {
   id: "11111111-1111-1111-1111-111111111111",
@@ -56,19 +72,23 @@ function mockSession(level: string) {
   });
 }
 
-const MATRIX = {
+const WEEK: TimesheetWeek = {
   site_id: "s-1",
   site_name: "A-Blok",
   project_id: "p-1",
   project_name: "Güneşkent Konut",
-  year: 2026,
-  month: 8,
+  iso_year: 2026,
+  iso_week: 32,
+  start_date: "2026-08-03",
+  end_date: "2026-08-09",
   section_id: null,
   section_name: null,
+  normal_day_hours: "9.0",
+  weekly_normal_hours: "45.0",
   worker_count: 2,
-  total_man_days: 0,
-  total_overtime_hours: "0",
-  day_totals: [],
+  totals: { normal_hours: "18.0", overtime_hours: "3.0", total_hours: "21.0" },
+  leave_day_count: 0,
+  temporary_duty_day_count: 0,
   rows: [
     {
       personnel_id: "per-1",
@@ -76,10 +96,8 @@ const MATRIX = {
       trade: "Kalıpçı Usta",
       source: "company",
       subcontractor_name: null,
-      man_days: 0,
-      cells: [
-        { work_date: "2026-08-03", code: "worked", overtime_hours: null, section_id: "sec-1" },
-      ],
+      cells: [{ work_date: "2026-08-03", hours: "9.0", code: null, section_id: "sec-1" }],
+      totals: { normal_hours: "9.0", overtime_hours: "0.0", total_hours: "9.0" },
     },
     {
       personnel_id: "per-2",
@@ -87,44 +105,79 @@ const MATRIX = {
       trade: "Demir Ustası",
       source: "subcontractor",
       subcontractor_name: "Akın İnşaat",
-      man_days: 0,
-      cells: [
-        { work_date: "2026-08-03", code: "overtime", overtime_hours: "3.00", section_id: "sec-2" },
-      ],
+      cells: [{ work_date: "2026-08-03", hours: "12.0", code: null, section_id: "sec-2" }],
+      totals: { normal_hours: "9.0", overtime_hours: "3.0", total_hours: "12.0" },
     },
   ],
-};
+  day_totals: [],
+  month_year: 2026,
+  month_month: 8,
+  month_total_hours: "21.0",
+  month_man_days: "2.3",
+  month_weeks: [
+    {
+      iso_year: 2026,
+      iso_week: 32,
+      start_date: "2026-08-03",
+      end_date: "2026-08-09",
+      total_hours: "21.0",
+      has_entries: true,
+    },
+    {
+      iso_year: 2026,
+      iso_week: 33,
+      start_date: "2026-08-10",
+      end_date: "2026-08-16",
+      total_hours: "0.0",
+      has_entries: false,
+    },
+  ],
+} as TimesheetWeek;
 
 /** `PUT` gövdeleri — kapsam kanıtı bunların üzerinden yürür. */
-let saveBodies: TimesheetSave[] = [];
+let saveBodies: TimesheetWeekSave[] = [];
 
-/** İlk gövdenin hücreleri (`cells` şemada opsiyoneldir). */
 function savedCells() {
   return saveBodies[0]?.cells ?? [];
 }
 
 function mockSave(behaviour: { reject?: Error } = {}) {
-  vi.mocked(useSaveTimesheet).mockReturnValue({
-    mutateAsync: vi.fn(async (body: TimesheetSave) => {
+  vi.mocked(useSaveTimesheetWeek).mockReturnValue({
+    mutateAsync: vi.fn(async (body: TimesheetWeekSave) => {
       saveBodies.push(body);
       if (behaviour.reject) throw behaviour.reject;
-      return MATRIX;
+      return WEEK;
     }),
   } as never);
 }
 
-/** Hücreye tıklayıp popover'dan kod seçer ve uygular. */
-async function editCell(cellLabel: string, codeLabel: string) {
-  await userEvent.click(screen.getByRole("button", { name: `${cellLabel} puantajı` }));
+function renderView() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  function Wrapper({ children }: { children: ReactNode }) {
+    return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  }
+  return render(<SiteTimesheetView />, { wrapper: Wrapper });
+}
+
+/** Saat kutusuna yazar ve odaktan çıkarak taslağa işler (E5 238). */
+async function typeHours(cellLabel: string, value: string) {
+  const input = screen.getByLabelText(`${cellLabel} saati`);
+  await userEvent.clear(input);
+  if (value.length > 0) await userEvent.type(input, value);
+  await userEvent.tab();
+}
+
+/** Kod çapasını açıp rozet seçer (mockup rozeti çizer, seçme yolunu çizmez). */
+async function pickCode(cellLabel: string, codeLabel: string) {
+  await userEvent.click(screen.getByRole("button", { name: `${cellLabel} puantaj kodu` }));
   const popover = screen.getByRole("dialog", { name: `${cellLabel} — puantaj hücresi` });
   await userEvent.click(within(popover).getByRole("button", { name: codeLabel }));
-  await userEvent.click(within(popover).getByRole("button", { name: "Uygula" }));
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
   saveBodies = [];
-  searchParams = new URLSearchParams({ year: "2026", month: "8" });
+  searchParams = new URLSearchParams(WEEK_QUERY);
   mockSession("full");
   mockSave();
   vi.mocked(usePersonnel).mockReturnValue({
@@ -133,8 +186,8 @@ beforeEach(() => {
     isError: false,
     error: null,
   } as never);
-  vi.mocked(useTimesheet).mockReturnValue({
-    data: MATRIX,
+  vi.mocked(useTimesheetWeek).mockReturnValue({
+    data: WEEK,
     isLoading: false,
     isError: false,
     error: null,
@@ -152,135 +205,193 @@ beforeEach(() => {
   } as never);
 });
 
-describe("SiteTimesheetView · mockup iskeleti", () => {
-  it("baslik + alt satir + Tur kolonu + ay basar (SP 90, 91, 126)", () => {
-    render(<SiteTimesheetView />);
+describe("SiteTimesheetView · haftalık iskelet", () => {
+  it("başlık, hafta şeridi ve YEDİ gün sütunu basar", () => {
+    renderView();
     expect(screen.getByRole("heading", { name: "A-Blok — Puantaj" })).toBeInTheDocument();
-    expect(screen.getByText("Güneşkent Konut · Ağustos 2026")).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Tür" })).toBeInTheDocument();
-    // E5'in AYRI "Meslek" kolonu SP'de YOKTUR — alt satira iner.
-    expect(screen.queryByRole("columnheader", { name: "Meslek" })).not.toBeInTheDocument();
-    expect(screen.getByText("Demir Ustası — Akın İnşaat")).toBeInTheDocument();
+    expect(screen.getByText("3 – 9 Ağustos 2026")).toBeInTheDocument();
+    expect(document.querySelector(".ts-week-nav__index")?.textContent).toBe("32. Hafta");
+    for (const weekday of ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"]) {
+      expect(screen.getByText(weekday)).toBeInTheDocument();
+    }
+    expect(screen.getByText("3 Ağu")).toBeInTheDocument();
+  });
+
+  it("Normal/FM/Hafta Toplam kolonları BACKEND türevinden basılır", () => {
+    renderView();
+    expect(screen.getByRole("columnheader", { name: "Normal Saat" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "FM Saat" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Hafta Toplam" })).toBeInTheDocument();
+  });
+
+  it("ŞP'nin KORUNAN parçaları yerinde: Tür rozeti + meslek/firma + özet şeridi", () => {
+    renderView();
+    expect(screen.getByText("Demir Ustası · Akın İnşaat")).toBeInTheDocument();
     expect(screen.getByText("Taşeron")).toBeInTheDocument();
     expect(screen.getByText("Şirket")).toBeInTheDocument();
-  });
-
-  it("ayin TUM gunlerini sutun yapar (mockup'in '…' kirpmasi kopyalanmaz)", () => {
-    render(<SiteTimesheetView />);
-    expect(screen.getByRole("columnheader", { name: "31" })).toBeInTheDocument();
-    expect(screen.queryByRole("columnheader", { name: "…" })).not.toBeInTheDocument();
-  });
-
-  it("bes kodun tamami legend'de aciklanir (SP 107-111) — E5'ten AYRI", () => {
-    render(<SiteTimesheetView />);
-    for (const label of ["Çalıştı", "İzin", "Tatil", "Fazla Mesai", "Geçici Görev"]) {
-      expect(screen.getByText(label)).toBeInTheDocument();
-    }
-  });
-
-  it("ozet seridi isci/adam-gun/FM saatini basar (SP 118-119)", () => {
-    render(<SiteTimesheetView />);
+    expect(document.querySelector(".ts-summary__title")?.textContent).toBe("Tüm Bölümler");
     expect(screen.getByText("2 işçi")).toBeInTheDocument();
-    expect(screen.getByText("2 adam/gün · 3 saat fazla mesai")).toBeInTheDocument();
+  });
+
+  it("ŞP mockup'ında OLMAYAN meslek/tür/taşeron süzgeçleri UYDURULMAZ", () => {
+    renderView();
+    expect(screen.queryByLabelText("Meslek")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Çalışan türü")).not.toBeInTheDocument();
+  });
+
+  it("ay şeridi 'girilmedi' rozetini SAAT SIFIRLIĞINDAN değil `has_entries`ten basar", () => {
+    renderView();
+    expect(screen.getByText("girilmedi")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /33\. Hafta/ })).toBeInTheDocument();
   });
 });
 
-describe("SiteTimesheetView · K2 bolum filtresi", () => {
-  it("GET'e section_id GECMEZ — filtre yalniz gorunumu suzer", () => {
-    searchParams = new URLSearchParams({ year: "2026", month: "8", section: "sec-1" });
-    render(<SiteTimesheetView />);
-    // Ucuncu argumanin verilmemesi K2'nin yapisal guvencesidir.
-    expect(vi.mocked(useTimesheet).mock.calls[0]?.[2]).toBeUndefined();
+describe("SiteTimesheetView · KPI kartları", () => {
+  it("🔴 İzin ve Geçici Görev AYRI karttır (yönetim kararı) — mockup ikisini topluyordu", () => {
+    vi.mocked(useTimesheetWeek).mockReturnValue({
+      data: {
+        ...WEEK,
+        rows: [
+          {
+            ...WEEK.rows[0],
+            cells: [
+              { work_date: "2026-08-03", hours: null, code: "leave", section_id: "sec-1" },
+              { work_date: "2026-08-04", hours: null, code: "leave", section_id: "sec-1" },
+              {
+                work_date: "2026-08-05",
+                hours: null,
+                code: "temporary_duty",
+                section_id: "sec-1",
+              },
+            ],
+          },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as never);
+    renderView();
+    const kpiLabel = (text: string) =>
+      [...document.querySelectorAll<HTMLElement>(".ts-kpi__label")].find(
+        (node) => node.textContent === text,
+      );
+    const leaveCard = kpiLabel("İzin")?.closest(".ts-kpi") as HTMLElement;
+    const dutyCard = kpiLabel("Geçici Görev")?.closest(".ts-kpi") as HTMLElement;
+    expect(within(leaveCard).getByText("2")).toBeInTheDocument();
+    expect(within(dutyCard).getByText("1")).toBeInTheDocument();
+  });
+});
+
+describe("SiteTimesheetView · K2 bölüm filtresi", () => {
+  it("GET'e section_id GEÇMEZ — filtre yalnız görünümü süzer", () => {
+    searchParams = new URLSearchParams({ ...WEEK_QUERY, section: "sec-1" });
+    renderView();
+    // Hafta sorgusu YALNIZ şantiye + hafta alır; üçüncü bir süzgeç argümanı YOK.
+    expect(vi.mocked(useTimesheetWeek).mock.calls[0]?.[1]).toEqual({
+      isoYear: 2026,
+      isoWeek: 32,
+    });
+    // Ucuncu bir suzgec argumaninin HIC gecirilmemesi K2'nin yapisal
+    // guvencesidir: cagriyi bicimlendiren TEK sey santiye + haftadir.
+    expect(vi.mocked(useTimesheetWeek).mock.calls[0]).toHaveLength(2);
   });
 
-  it("suzgec acikken ozet ve ayak satiri suzulmus kumeden hesaplanir", () => {
-    searchParams = new URLSearchParams({ year: "2026", month: "8", section: "sec-1" });
-    render(<SiteTimesheetView />);
-    // Özet şeridi seçili bölümün adını taşır (option ile aynı metin — şerit
-    // düğümü sınıfından ayrıştırılır).
+  it("süzgeç açıkken özet ve toplamlar süzülmüş kümeden hesaplanır", () => {
+    searchParams = new URLSearchParams({ ...WEEK_QUERY, section: "sec-1" });
+    renderView();
     expect(document.querySelector(".ts-summary__title")?.textContent).toBe(
       "Kat 6–10 Kaba İnşaat",
     );
     expect(screen.getByText("1 işçi")).toBeInTheDocument();
-    expect(screen.getByText("1 adam/gün · 0 saat fazla mesai")).toBeInTheDocument();
   });
 
-  it("bolum secimi URL'ye yazilir (ag istegi tetiklemez)", async () => {
-    render(<SiteTimesheetView />);
+  it("bölüm seçimi URL'ye yazılır (ağ isteği tetiklemez)", async () => {
+    renderView();
     await userEvent.selectOptions(screen.getByLabelText("Bölüm"), "sec-2");
     expect(replace).toHaveBeenCalledWith(
-      "/projeler/p-1/santiyeler/s-1/puantaj?year=2026&month=8&section=sec-2",
+      "/projeler/p-1/santiyeler/s-1/puantaj?iso_year=2026&iso_week=32&section=sec-2",
       { scroll: false },
     );
   });
 });
 
-describe("SiteTimesheetView · ayak satiri isaretleri", () => {
-  it("FM'li gun '2+' basar — '+' sayiyi DEGISTIRMEZ (iki kisi calisti, biri FM)", () => {
-    render(<SiteTimesheetView />);
-    const footer = screen.getByRole("rowheader", { name: "Günlük Toplam" }).closest("tr");
-    expect(footer).not.toBeNull();
-    expect(within(footer as HTMLElement).getByText("2+")).toBeInTheDocument();
-  });
-});
-
-describe("SiteTimesheetView · izin dallari", () => {
-  it("PM (none) AccessDenied gorur", () => {
+describe("SiteTimesheetView · izin dalları", () => {
+  it("PM (none) AccessDenied görür", () => {
     mockSession("none");
-    render(<SiteTimesheetView />);
+    renderView();
     expect(screen.getByText("Bu alana yetkiniz yok")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "A-Blok — Puantaj" })).not.toBeInTheDocument();
   });
 
-  it("saha muhendisi (view) matrisi gorur; hucreler TIKLANAMAZ, Kaydet DEVRE DISI + gerekce", () => {
+  it("saha mühendisi (view) ızgarayı görür; kutular BASILMAZ, Kaydet DEVRE DIŞI + gerekçe", () => {
     mockSession("view");
-    render(<SiteTimesheetView />);
+    renderView();
     expect(screen.getByRole("heading", { name: "A-Blok — Puantaj" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Kaydet" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Haftayı Kaydet" })).toBeDisabled();
     expect(screen.getByText(/Puantaj kaydetme yetkiniz yok/)).toBeInTheDocument();
-    // Salt-okunur gorunum: hucre butonu HIC basilmaz (T2 davranisi korunur).
-    expect(screen.queryByRole("button", { name: /puantajı$/ })).not.toBeInTheDocument();
-    // Rozetler ise yerinde durur.
-    expect(document.querySelectorAll(".ts-cell").length).toBeGreaterThan(0);
+    expect(screen.queryByLabelText(/· \d+ \S+ saati$/)).not.toBeInTheDocument();
+    // Salt-okunur saat hücreleri yerinde durur.
+    expect(document.querySelectorAll(".ts-hours").length).toBeGreaterThan(0);
   });
 
-  it("yazma izinlide Kaydet degisiklik YOKKEN devre disi, Excel her zaman acik", () => {
-    render(<SiteTimesheetView />);
-    expect(screen.getByRole("button", { name: "Kaydet" })).toBeDisabled();
+  it("yazma izinlide Kaydet değişiklik YOKKEN devre dışı; Excel (ŞP 100) KORUNDU", () => {
+    renderView();
+    expect(screen.getByRole("button", { name: "Haftayı Kaydet" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Excel" })).toBeEnabled();
-    // T2'nin "sonraki adimda baglanacak" kalintisi KALMADI.
-    expect(screen.queryByText(/bir sonraki adımda bağlanacak/)).not.toBeInTheDocument();
   });
 });
 
-describe("SiteTimesheetView · hucre popover'i (T3)", () => {
-  it("DOLU hucre acilir, kod degistirilir ve matris ANINDA yansitir", async () => {
-    render(<SiteTimesheetView />);
-    await editCell("Ahmet Yılmaz · 3 Ağu", "İzin (İ)");
+describe("SiteTimesheetView · hücre düzenleme", () => {
+  it("saat kutusuna yazmak taslağa işler ve gövdeye SAAT olarak geçer", async () => {
+    renderView();
+    await typeHours("Ahmet Yılmaz · 5 Ağu", "7,5");
     expect(screen.getByText(/Kaydedilmemiş 1 hücre değişikliği var/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Kaydet" })).toBeEnabled();
-  });
-
-  it("BOS hucre de acilir — kaydi olmayan gune kod girilebilir", async () => {
-    render(<SiteTimesheetView />);
-    await editCell("Ahmet Yılmaz · 12 Ağu", "Çalıştı (Ç)");
-    await userEvent.click(screen.getByRole("button", { name: "Kaydet" }));
-    const cells = savedCells();
-    expect(cells).toContainEqual({
+    await userEvent.click(screen.getByRole("button", { name: "Haftayı Kaydet" }));
+    expect(savedCells()).toContainEqual({
       personnel_id: "per-1",
-      work_date: "2026-08-12",
-      code: "worked",
-      overtime_hours: null,
+      work_date: "2026-08-05",
+      hours: "7.5",
+      code: null,
       section_id: null,
     });
   });
 
-  it("HIC kaydi olmayan personel satiri da duzenlenebilir", async () => {
+  it("geçersiz saat REDDEDİLİR ve gerekçe hücrede kalır", async () => {
+    renderView();
+    await typeHours("Ahmet Yılmaz · 5 Ağu", "25");
+    expect(screen.getByText(/en çok 24 olmalı/)).toBeInTheDocument();
+    expect(screen.queryByText(/Kaydedilmemiş/)).not.toBeInTheDocument();
+  });
+
+  it("🔴 kod seçmek SAATİ DÜŞÜRÜR (saat XOR kod)", async () => {
+    renderView();
+    await pickCode("Ahmet Yılmaz · 3 Ağu", "İzin");
+    await userEvent.click(screen.getByRole("button", { name: "Haftayı Kaydet" }));
+    expect(savedCells()).toContainEqual({
+      personnel_id: "per-1",
+      work_date: "2026-08-03",
+      hours: null,
+      code: "leave",
+      section_id: "sec-1",
+    });
+  });
+
+  it("boş kutuyu boş bırakmak hücreyi GÖVDEDEN düşürür (silme)", async () => {
+    renderView();
+    await typeHours("Ahmet Yılmaz · 3 Ağu", "");
+    await userEvent.click(screen.getByRole("button", { name: "Haftayı Kaydet" }));
+    expect(
+      savedCells().some(
+        (cell) => cell.personnel_id === "per-1" && cell.work_date === "2026-08-03",
+      ),
+    ).toBe(false);
+  });
+
+  it("HİÇ kaydı olmayan personel satırı da düzenlenebilir (K1)", async () => {
     vi.mocked(usePersonnel).mockReturnValue({
       data: {
-        items: [
-          { id: "per-9", full_name: "Zeki Uçar", trade: "Sıvacı", source: "company" },
-        ],
+        items: [{ id: "per-9", full_name: "Zeki Uçar", trade: "Sıvacı", source: "company" }],
         total: 1,
         limit: 200,
         offset: 0,
@@ -289,148 +400,134 @@ describe("SiteTimesheetView · hucre popover'i (T3)", () => {
       isError: false,
       error: null,
     } as never);
-    render(<SiteTimesheetView />);
-    await editCell("Zeki Uçar · 4 Ağu", "Çalıştı (Ç)");
-    await userEvent.click(screen.getByRole("button", { name: "Kaydet" }));
+    renderView();
+    await typeHours("Zeki Uçar · 4 Ağu", "9");
+    await userEvent.click(screen.getByRole("button", { name: "Haftayı Kaydet" }));
     expect(savedCells()).toContainEqual({
       personnel_id: "per-9",
       work_date: "2026-08-04",
-      code: "worked",
-      overtime_hours: null,
+      hours: "9",
+      code: null,
       section_id: null,
     });
-  });
-
-  it("FM secilince saat alani acilir; saat GOVDEYE gecer", async () => {
-    render(<SiteTimesheetView />);
-    const label = "Ahmet Yılmaz · 7 Ağu";
-    await userEvent.click(screen.getByRole("button", { name: `${label} puantajı` }));
-    const popover = screen.getByRole("dialog", { name: `${label} — puantaj hücresi` });
-    expect(within(popover).queryByLabelText("Fazla mesai saati")).not.toBeInTheDocument();
-    await userEvent.click(within(popover).getByRole("button", { name: "Fazla Mesai (FM)" }));
-    await userEvent.type(within(popover).getByLabelText("Fazla mesai saati"), "3,5");
-    await userEvent.click(within(popover).getByRole("button", { name: "Uygula" }));
-    await userEvent.click(screen.getByRole("button", { name: "Kaydet" }));
-    expect(savedCells()).toContainEqual({
-      personnel_id: "per-1",
-      work_date: "2026-08-07",
-      code: "overtime",
-      overtime_hours: "3.5",
-      section_id: null,
-    });
-  });
-
-  it("gecersiz saat REDDEDILIR ve gerekce popover'da kalir", async () => {
-    render(<SiteTimesheetView />);
-    const label = "Ahmet Yılmaz · 7 Ağu";
-    await userEvent.click(screen.getByRole("button", { name: `${label} puantajı` }));
-    const popover = screen.getByRole("dialog", { name: `${label} — puantaj hücresi` });
-    await userEvent.click(within(popover).getByRole("button", { name: "Fazla Mesai (FM)" }));
-    await userEvent.type(within(popover).getByLabelText("Fazla mesai saati"), "25");
-    await userEvent.click(within(popover).getByRole("button", { name: "Uygula" }));
-    expect(within(popover).getByText(/en çok 24 olmalı/)).toBeInTheDocument();
-    expect(screen.queryByText(/Kaydedilmemiş/)).not.toBeInTheDocument();
-  });
-
-  it("Escape IPTALDIR — taslaga hicbir sey yazilmaz", async () => {
-    render(<SiteTimesheetView />);
-    const label = "Ahmet Yılmaz · 3 Ağu";
-    await userEvent.click(screen.getByRole("button", { name: `${label} puantajı` }));
-    const popover = screen.getByRole("dialog", { name: `${label} — puantaj hücresi` });
-    await userEvent.click(within(popover).getByRole("button", { name: "İzin (İ)" }));
-    await userEvent.keyboard("{Escape}");
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.queryByText(/Kaydedilmemiş/)).not.toBeInTheDocument();
-  });
-
-  it("Temizle hucreyi GOVDEDEN dusurur (silme)", async () => {
-    render(<SiteTimesheetView />);
-    const label = "Ahmet Yılmaz · 3 Ağu";
-    await userEvent.click(screen.getByRole("button", { name: `${label} puantajı` }));
-    const popover = screen.getByRole("dialog", { name: `${label} — puantaj hücresi` });
-    await userEvent.click(within(popover).getByRole("button", { name: "Temizle" }));
-    await userEvent.click(screen.getByRole("button", { name: "Kaydet" }));
-    expect(
-      savedCells().some(
-        (cell) => cell.personnel_id === "per-1" && cell.work_date === "2026-08-03",
-      ),
-    ).toBe(false);
   });
 });
 
-/* ═══ KAPSAM KANITI (ekran düzeyinde) ══════════════════════════════════════
- * `PUT` dönem+şantiye kapsamında DEĞİŞTİRMEDİR. Bölüm filtresi AÇIKKEN
- * gövde yine ŞANTİYENİN TAM kümesi olmalı; süzülmüş `rows`tan kurulsaydı
- * aşağıdaki iddia düşerdi ve canlıda sec-2'nin ayı silinirdi.
+/* ═══ 🔴 KAPSAM KANITI — İKİ BACAK, İKİSİ DE POZİTİF KONTROL ══════════════
+ * `PUT .../timesheet/week` HAFTA+şantiye kapsamında DEĞİŞTİRMEDİR.
+ *   (a) Bölüm filtresi AÇIKKEN gövde yine ŞANTİYENİN TAM kümesi olmalı —
+ *       süzülmüş `rows`tan kurulsaydı sec-2'nin haftası SİLİNİRDİ.
+ *   (b) Gövde YALNIZ bu haftanın günlerini taşımalı — ayın öbür haftası
+ *       kapsam dışıdır (backend ikizi: `test_hafta_kaydetmek_ayin_diger_
+ *       haftasina_DOKUNMAZ`).
+ * İKİSİ BİRDEN ölçülmezse "her şeyi silen" bozuk bir gövde de yeşil geçer
+ * (K-IKIZ1).
  * ═══════════════════════════════════════════════════════════════════════ */
 describe("SiteTimesheetView · KAPSAM KURALI", () => {
-  it("bolum filtresi ACIKKEN kaydet → govde DIGER bolumun hucresini DE tasir", async () => {
-    searchParams = new URLSearchParams({ year: "2026", month: "8", section: "sec-1" });
-    render(<SiteTimesheetView />);
+  it("(a) bölüm filtresi AÇIKKEN kaydet → süzgeç DIŞINDAKİ bölümün hücresi gövdede HAYATTA", async () => {
+    searchParams = new URLSearchParams({ ...WEEK_QUERY, section: "sec-1" });
+    renderView();
 
     // Görünüm süzülmüş: sec-2'li Cem Aksoy'un hücresi ekranda YOK.
     expect(screen.getByText("1 işçi")).toBeInTheDocument();
 
-    await editCell("Ahmet Yılmaz · 3 Ağu", "İzin (İ)");
-    await userEvent.click(screen.getByRole("button", { name: "Kaydet" }));
+    await pickCode("Ahmet Yılmaz · 3 Ağu", "İzin");
+    await userEvent.click(screen.getByRole("button", { name: "Haftayı Kaydet" }));
 
     const cells = savedCells();
-    // Düzenlenen sec-1 hücresi + DOKUNULMAYAN sec-2 hücresi.
     expect(cells).toHaveLength(2);
     expect(cells).toContainEqual({
       personnel_id: "per-2",
       work_date: "2026-08-03",
-      code: "overtime",
-      overtime_hours: "3.00",
+      hours: "12.0",
+      code: null,
       section_id: "sec-2",
     });
     // Aktif filtre, dokunulmayan hücrenin bölümünü DEĞİŞTİRMEZ.
     expect(cells.find((cell) => cell.personnel_id === "per-1")?.section_id).toBe("sec-1");
   });
 
-  it("filtre acikken acilan YENI hucre o bolumu alir", async () => {
-    searchParams = new URLSearchParams({ year: "2026", month: "8", section: "sec-1" });
-    render(<SiteTimesheetView />);
-    await editCell("Ahmet Yılmaz · 12 Ağu", "Çalıştı (Ç)");
-    await userEvent.click(screen.getByRole("button", { name: "Kaydet" }));
-    expect(
-      savedCells().find((cell) => cell.work_date === "2026-08-12")?.section_id,
-    ).toBe("sec-1");
+  it("(b) gövde YALNIZ bu haftanın günlerini taşır — ayın öbür haftası kapsam dışı", async () => {
+    // Sunucu yanıtı yalnız haftanın hücrelerini taşır; ekran gövdeye BAŞKA
+    // haftanın günlerini EKLEYEMEZ. Kanıt: her `work_date` 3–9 Ağustos'ta.
+    renderView();
+    await typeHours("Ahmet Yılmaz · 5 Ağu", "9");
+    await userEvent.click(screen.getByRole("button", { name: "Haftayı Kaydet" }));
+    const dates = savedCells().map((cell) => cell.work_date);
+    expect(dates.length).toBeGreaterThan(0);
+    for (const date of dates) {
+      expect(date >= "2026-08-03" && date <= "2026-08-09").toBe(true);
+    }
+    // 2026-08-26 (W35) gibi ayın başka haftası gövdeye HİÇ girmez.
+    expect(dates).not.toContain("2026-08-26");
+  });
+
+  it("filtre açıkken açılan YENİ hücre o bölümü alır", async () => {
+    searchParams = new URLSearchParams({ ...WEEK_QUERY, section: "sec-1" });
+    renderView();
+    await typeHours("Ahmet Yılmaz · 6 Ağu", "9");
+    await userEvent.click(screen.getByRole("button", { name: "Haftayı Kaydet" }));
+    expect(savedCells().find((cell) => cell.work_date === "2026-08-06")?.section_id).toBe(
+      "sec-1",
+    );
+  });
+});
+
+describe("SiteTimesheetView · taslak KAPSAMI", () => {
+  it("🔴 HAFTA değişince taslak DÜŞER — başka haftanın taslağı kaydedilemez", async () => {
+    const { rerender } = renderView();
+    await typeHours("Ahmet Yılmaz · 5 Ağu", "7");
+    expect(screen.getByText(/Kaydedilmemiş 1 hücre/)).toBeInTheDocument();
+
+    // Kullanıcı bir sonraki haftaya geçti (URL değişti, aynı ekran).
+    searchParams = new URLSearchParams({ iso_year: "2026", iso_week: "33" });
+    rerender(<SiteTimesheetView />);
+
+    // Taslak render SIRASINDA düşer. Efektle sıfırlansaydı bir kare boyunca
+    // BAŞKA haftanın taslağı görünür, kaydedilirse backend 422 verirdi.
+    expect(screen.queryByText(/Kaydedilmemiş/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Haftayı Kaydet" })).toBeDisabled();
+  });
+
+  it("ŞANTİYE aynı kalıp hafta aynıysa taslak KORUNUR (pozitif kontrol)", async () => {
+    const { rerender } = renderView();
+    await typeHours("Ahmet Yılmaz · 5 Ağu", "7");
+    rerender(<SiteTimesheetView />);
+    expect(screen.getByText(/Kaydedilmemiş 1 hücre/)).toBeInTheDocument();
   });
 });
 
 describe("SiteTimesheetView · kaydetme sonucu", () => {
-  it("basarili kayittan sonra 'kaydedildi' yazar ve taslak duser", async () => {
-    render(<SiteTimesheetView />);
-    await editCell("Ahmet Yılmaz · 3 Ağu", "İzin (İ)");
-    await userEvent.click(screen.getByRole("button", { name: "Kaydet" }));
-    expect(await screen.findByText("Puantaj kaydedildi.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Kaydet" })).toBeDisabled();
+  it("başarılı kayıttan sonra 'kaydedildi' yazar ve taslak düşer", async () => {
+    renderView();
+    await pickCode("Ahmet Yılmaz · 3 Ağu", "İzin");
+    await userEvent.click(screen.getByRole("button", { name: "Haftayı Kaydet" }));
+    expect(await screen.findByText("Hafta kaydedildi.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Haftayı Kaydet" })).toBeDisabled();
   });
 
-  it("409 kisi-gun cakismasi Turkce mesajla basilir ve taslak KORUNUR", async () => {
+  it("409 kişi-gün çakışması Türkçe mesajla basılır ve taslak KORUNUR", async () => {
     mockSave({
       reject: new BackendError(409, {
         detail: "Mehmet Kılıç 3 Ağustos günü B-Blok şantiyesinde kayıtlı.",
       }),
     });
-    render(<SiteTimesheetView />);
-    await editCell("Ahmet Yılmaz · 3 Ağu", "İzin (İ)");
-    await userEvent.click(screen.getByRole("button", { name: "Kaydet" }));
+    renderView();
+    await pickCode("Ahmet Yılmaz · 3 Ağu", "İzin");
+    await userEvent.click(screen.getByRole("button", { name: "Haftayı Kaydet" }));
     expect(
       await screen.findByText(
         "Kişi-gün çakışması: Mehmet Kılıç 3 Ağustos günü B-Blok şantiyesinde kayıtlı.",
       ),
     ).toBeInTheDocument();
-    // Taslak yazilmadigi icin KAYBOLMAZ — kullanici yeniden deneyebilir.
-    expect(screen.getByRole("button", { name: "Kaydet" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Haftayı Kaydet" })).toBeEnabled();
   });
 });
 
-describe("SiteTimesheetView · Excel indirme", () => {
-  it("bolum suzgeci SUNUCUYA gecirilir (K2 istisnasi)", async () => {
-    searchParams = new URLSearchParams({ year: "2026", month: "8", section: "sec-1" });
-    render(<SiteTimesheetView />);
+describe("SiteTimesheetView · Excel indirme (K2 istisnası)", () => {
+  it("bölüm süzgeci SUNUCUYA geçirilir; ay HAFTA YANITINDAN okunur", async () => {
+    searchParams = new URLSearchParams({ ...WEEK_QUERY, section: "sec-1" });
+    renderView();
     await userEvent.click(screen.getByRole("button", { name: "Excel" }));
     expect(vi.mocked(downloadTimesheetExport)).toHaveBeenCalledWith("s-1", {
       year: 2026,
@@ -439,8 +536,8 @@ describe("SiteTimesheetView · Excel indirme", () => {
     });
   });
 
-  it("filtre kapaliyken section_id GECMEZ", async () => {
-    render(<SiteTimesheetView />);
+  it("filtre kapalıyken section_id GEÇMEZ", async () => {
+    renderView();
     await userEvent.click(screen.getByRole("button", { name: "Excel" }));
     expect(vi.mocked(downloadTimesheetExport)).toHaveBeenCalledWith("s-1", {
       year: 2026,
@@ -448,11 +545,11 @@ describe("SiteTimesheetView · Excel indirme", () => {
     });
   });
 
-  it("indirme hatasi GORUNUR Turkce mesaj birakir", async () => {
+  it("indirme hatası GÖRÜNÜR Türkçe mesaj bırakır", async () => {
     vi.mocked(downloadTimesheetExport).mockRejectedValueOnce(
       new BackendError(404, { detail: "Şantiye bulunamadı." }),
     );
-    render(<SiteTimesheetView />);
+    renderView();
     await userEvent.click(screen.getByRole("button", { name: "Excel" }));
     expect(await screen.findByText("Şantiye bulunamadı.")).toBeInTheDocument();
   });

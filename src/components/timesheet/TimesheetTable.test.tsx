@@ -20,15 +20,15 @@ function rowFor(source: (typeof WORKER_SOURCE_VALUES)[number]): TimesheetViewRow
     source,
     subcontractorName: null,
     cells: {},
-    manDays: 0,
+    totalHours: "0",
   };
 }
 
-describe("TimesheetTable — Tür rozeti (site varyantı)", () => {
+describe("TimesheetTable — Tür rozeti", () => {
   it("worker_source enum'unun HER değeri Türkçe etiketle basılır", () => {
     const rows = WORKER_SOURCE_VALUES.map(rowFor);
     render(
-      <TimesheetTable variant="site" days={[]} rows={rows} totalManDays={0} />,
+      <TimesheetTable days={[]} rows={rows} totalHours="0" normalDayHours="9" />,
     );
 
     for (const source of WORKER_SOURCE_VALUES) {
@@ -39,7 +39,7 @@ describe("TimesheetTable — Tür rozeti (site varyantı)", () => {
   it("ham enum değeri (freelance/intern/general) METİN olarak sızmaz", () => {
     const rows = WORKER_SOURCE_VALUES.map(rowFor);
     render(
-      <TimesheetTable variant="site" days={[]} rows={rows} totalManDays={0} />,
+      <TimesheetTable days={[]} rows={rows} totalHours="0" normalDayHours="9" />,
     );
 
     for (const raw of ["general", "freelance", "intern"] as const) {
@@ -50,7 +50,7 @@ describe("TimesheetTable — Tür rozeti (site varyantı)", () => {
   it("Şirket/Taşeron DIŞINDAKİ kaynaklar nötr rozete düşer (mavi/amber uydurulmaz)", () => {
     const rows = WORKER_SOURCE_VALUES.map(rowFor);
     render(
-      <TimesheetTable variant="site" days={[]} rows={rows} totalManDays={0} />,
+      <TimesheetTable days={[]} rows={rows} totalHours="0" normalDayHours="9" />,
     );
 
     const companyBadge = screen.getByText(WORKER_SOURCE_LABELS.company);

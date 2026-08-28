@@ -1,17 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 
 import PuantajPage from "./page";
 import { useSession } from "@/components/shell/SessionProvider";
 import { usePersonnel } from "@/lib/api/hooks/usePersonnel";
 import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
-import { useTimesheet } from "@/lib/api/hooks/useTimesheet";
+import { useTimesheetWeek, type TimesheetWeek } from "@/lib/api/hooks/useTimesheet";
 import type { MeResponse } from "@/lib/auth/types";
 
-// F-PT T2 · `/puantaj` gerçek rota eklenince [...slug] catch-all bu segment
-// için devre dışı kalır — bu test sayfanın ComingSoon YERİNE gerçek E5
-// matrisini bastığını doğrular (catch-all'ın kendisi Next.js dosya-tabanlı
-// yönlendirmenin garantisidir, ayrıca test edilmez).
+// PUAN-SAAT · `/puantaj` gerçek rota: [...slug] catch-all bu segment için
+// devre dışı kalır — bu test sayfanın ComingSoon YERİNE gerçek E5 haftalık
+// ızgarasını bastığını ve "Personel Ekle" girişinin izin dallarını doğrular.
 
 const replace = vi.fn();
 let searchParams = new URLSearchParams();
@@ -27,25 +28,35 @@ vi.mock("@/lib/api/hooks/usePersonnel", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/usePersonnel")>()),
   usePersonnel: vi.fn(),
 }));
-vi.mock("@/lib/api/hooks/useTimesheet", () => ({ useTimesheet: vi.fn() }));
+vi.mock("@/lib/api/hooks/useTimesheet", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useTimesheet")>()),
+  useTimesheetWeek: vi.fn(),
+}));
 vi.mock("@/lib/api/hooks/useTimesheetMutations", () => ({
-  useSaveTimesheet: () => ({ mutateAsync: vi.fn(async () => ({})) }),
+  useSaveTimesheetWeek: () => ({ mutateAsync: vi.fn(async () => ({})) }),
 }));
 vi.mock("@/lib/api/timesheet-client", () => ({ downloadTimesheetExport: vi.fn() }));
 
-const MATRIX = {
+/** Kadraj haftası: 2026-W32 = 3–9 Ağustos 2026. */
+const WEEK_QUERY = { iso_year: "2026", iso_week: "32" };
+
+const WEEK: TimesheetWeek = {
   site_id: "s-1",
   site_name: "A-Blok",
   project_id: "p-1",
   project_name: "Güneşkent Konut",
-  year: 2026,
-  month: 8,
+  iso_year: 2026,
+  iso_week: 32,
+  start_date: "2026-08-03",
+  end_date: "2026-08-09",
   section_id: null,
   section_name: null,
+  normal_day_hours: "9.0",
+  weekly_normal_hours: "45.0",
   worker_count: 1,
-  total_man_days: 0,
-  total_overtime_hours: "0",
-  day_totals: [],
+  totals: { normal_hours: "9.0", overtime_hours: "0.0", total_hours: "9.0" },
+  leave_day_count: 0,
+  temporary_duty_day_count: 1,
   rows: [
     {
       personnel_id: "per-1",
@@ -53,21 +64,21 @@ const MATRIX = {
       trade: "Kalıpçı Usta",
       source: "company",
       subcontractor_name: null,
-      man_days: 0,
       cells: [
-        { work_date: "2026-08-03", code: "worked", overtime_hours: null, section_id: "sec-1" },
-        // D1 kaniti: E5'te FM ve G kodlu hucreler de VARDIR.
-        { work_date: "2026-08-04", code: "overtime", overtime_hours: "3.00", section_id: "sec-1" },
-        {
-          work_date: "2026-08-05",
-          code: "temporary_duty",
-          overtime_hours: null,
-          section_id: "sec-1",
-        },
+        { work_date: "2026-08-03", hours: "9.0", code: null, section_id: "sec-1" },
+        // Kod hücresi de veride VARDIR — rozeti basılır.
+        { work_date: "2026-08-05", hours: null, code: "temporary_duty", section_id: "sec-1" },
       ],
+      totals: { normal_hours: "9.0", overtime_hours: "0.0", total_hours: "9.0" },
     },
   ],
-};
+  day_totals: [],
+  month_year: 2026,
+  month_month: 8,
+  month_total_hours: "9.0",
+  month_man_days: "1.0",
+  month_weeks: [],
+} as TimesheetWeek;
 
 function mockSession(level: string, personnelLevel?: string) {
   vi.mocked(useSession).mockReturnValue({
@@ -81,9 +92,17 @@ function mockSession(level: string, personnelLevel?: string) {
   });
 }
 
+function renderPage() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  function Wrapper({ children }: { children: ReactNode }) {
+    return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  }
+  return render(<PuantajPage />, { wrapper: Wrapper });
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
-  searchParams = new URLSearchParams({ year: "2026", month: "8" });
+  searchParams = new URLSearchParams(WEEK_QUERY);
   mockSession("full");
   vi.mocked(useSiteOptions).mockReturnValue({
     options: [{ siteId: "s-1", projectId: "p-1", label: "Güneşkent Konut A-Blok" }],
@@ -96,8 +115,8 @@ beforeEach(() => {
     isError: false,
     error: null,
   } as never);
-  vi.mocked(useTimesheet).mockReturnValue({
-    data: MATRIX,
+  vi.mocked(useTimesheetWeek).mockReturnValue({
+    data: WEEK,
     isLoading: false,
     isError: false,
     error: null,
@@ -105,137 +124,117 @@ beforeEach(() => {
 });
 
 describe("PuantajPage rotasi", () => {
-  it("ComingSoon DEGIL gercek Puantaj matrisini basar", () => {
-    render(<PuantajPage />);
+  it("ComingSoon DEGIL gercek haftalik puantaj izgarasini basar", () => {
+    renderPage();
     expect(screen.getByRole("heading", { name: "Puantaj" })).toBeInTheDocument();
     expect(screen.queryByText("Bu modül yakında eklenecek.")).not.toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Hafta Toplam" })).toBeInTheDocument();
   });
 
-  it("E5'in AYRI 'Meslek' kolonu ve santiye secicisi vardir (E5 78, 93)", () => {
-    render(<PuantajPage />);
-    expect(screen.getByRole("columnheader", { name: "Meslek" })).toBeInTheDocument();
-    expect(screen.getByText("Kalıpçı Usta")).toBeInTheDocument();
+  it("santiye secicisi ve haftalik giris kurali basar", () => {
+    renderPage();
     expect(screen.getByLabelText("Şantiye")).toBeInTheDocument();
-    // SP'nin "Tür" kolonu E5'te YOKTUR.
-    expect(screen.queryByRole("columnheader", { name: "Tür" })).not.toBeInTheDocument();
+    expect(screen.getByText(/Giriş haftalık yapılır, birim saattir/)).toBeInTheDocument();
   });
 
   it("PM (none) AccessDenied gorur", () => {
     mockSession("none");
-    render(<PuantajPage />);
+    renderPage();
     expect(screen.getByText("Bu alana yetkiniz yok")).toBeInTheDocument();
   });
 
-  it("saha muhendisi (view) matrisi gorur, Kaydet devre disi + gerekce basilir", () => {
+  it("saha muhendisi (view) izgarayi gorur, Kaydet devre disi + gerekce basilir", () => {
     mockSession("view");
-    render(<PuantajPage />);
+    renderPage();
     expect(screen.getByRole("heading", { name: "Puantaj" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Kaydet" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Haftayı Kaydet" })).toBeDisabled();
     expect(screen.getByText(/Puantaj kaydetme yetkiniz yok/)).toBeInTheDocument();
-    // Salt-okunur: hucre butonu HIC basilmaz.
-    expect(screen.queryByRole("button", { name: /puantajı$/ })).not.toBeInTheDocument();
+    // Salt-okunur: saat kutusu HIC basilmaz.
+    expect(screen.queryByLabelText(/· \d+ \S+ saati$/)).not.toBeInTheDocument();
   });
 
-  it("'Disa Aktar' santiye seciliyken ACIKTIR (T3'te baglandi)", () => {
-    render(<PuantajPage />);
-    expect(screen.getByRole("button", { name: "Dışa Aktar" })).toBeEnabled();
-  });
-
-  it("yazma izinlide hucreler tiklanabilir, Kaydet degisiklik yokken devre disi", () => {
-    render(<PuantajPage />);
-    expect(screen.getAllByRole("button", { name: /puantajı$/ }).length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: "Kaydet" })).toBeDisabled();
+  it("yazma izinlide saat kutulari basilir, Kaydet degisiklik yokken devre disi", () => {
+    renderPage();
+    expect(screen.getAllByLabelText(/· \d+ \S+ saati$/).length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Haftayı Kaydet" })).toBeDisabled();
   });
 });
 
-// D1 — E5 mockup'i SP'den AYRIDIR (kullanici karari 2026-08-07).
-describe("PuantajPage · E5 mockup ayrimi", () => {
-  it("legend DORT ogedir (E5 79-84) — 'Geçici Görev (G)' aciklanmaz", () => {
-    render(<PuantajPage />);
-    for (const label of ["Çalıştı (Ç)", "İzin (İ)", "Tatil (T)", "Fazla Mesai (FM)"]) {
+describe("PuantajPage · hucre sekli (PUAN-SAAT)", () => {
+  it("kodlu hucre ROZET, saatli hucre KUTU basar (saat XOR kod)", () => {
+    renderPage();
+    const row = screen.getByRole("rowheader", { name: /Ahmet Yılmaz/ }).closest("tr");
+    expect(row).not.toBeNull();
+    // 5 Ağu geçici görev — rozet.
+    expect(within(row as HTMLElement).getByText("Görev")).toBeInTheDocument();
+    // 3 Ağu saatli — kutu, değeri 9.
+    expect(screen.getByLabelText("Ahmet Yılmaz · 3 Ağu saati")).toHaveValue("9");
+  });
+
+  it("legend SAAT tonlarini anlatir — eski kod legend'i (Ç/İ/T/FM) KALKTI", () => {
+    renderPage();
+    for (const label of ["Tam gün", "Eksik gün", "Fazla mesai", "Çalışılmadı"]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
-    expect(screen.queryByText("Geçici Görev (G)")).not.toBeInTheDocument();
-    expect(screen.queryByText("Geçici Görev")).not.toBeInTheDocument();
-  });
-
-  it("legend'de olmasa da G kodlu HUCRE rozeti BASILIR (kayit gizlenmez)", () => {
-    render(<PuantajPage />);
-    const body = screen.getByRole("rowheader", { name: /Ahmet Yılmaz/ }).closest("tr");
-    expect(body).not.toBeNull();
-    expect(within(body as HTMLElement).getByText("G")).toBeInTheDocument();
-    expect(within(body as HTMLElement).getByText("FM")).toBeInTheDocument();
-  });
-
-  it("ayak satirinda '+' ve 'G' isareti BASILMAZ — E5 203 duz sayi gosterir", () => {
-    render(<PuantajPage />);
-    const footer = screen.getByRole("rowheader", { name: "Günlük Toplam" }).closest("tr");
-    expect(footer).not.toBeNull();
-    const texts = within(footer as HTMLElement)
-      .getAllByRole("cell")
-      .map((cell) => cell.textContent ?? "");
-    expect(texts).not.toContain("1+");
-    expect(texts).not.toContain("0G");
-    expect(texts.some((text) => text.includes("+") || text.includes("G"))).toBe(false);
-    // FM'li gun (04 Agu) duz "1" basar — sayi degismez, yalniz isaret yoktur.
-    expect(texts[3]).toBe("1");
+    expect(screen.queryByText("Çalıştı (Ç)")).not.toBeInTheDocument();
+    expect(screen.queryByText("Fazla Mesai (FM)")).not.toBeInTheDocument();
   });
 });
 
-// F-PT T4 — "Personel Ekle" girisi (mockup'ta YOK; spec §4 S2(a) onayli turetimi).
+// "Personel Ekle" girisi — mockup'ta YOK; spec §4 S2(a) onayli turetimi.
 describe("PuantajPage · Personel Ekle girisi", () => {
   it("personnel:full olanda gorunur ve donus rotasini tasir", () => {
     mockSession("full", "full");
-    render(<PuantajPage />);
-    const link = screen.getByRole("link", { name: "Personel Ekle" });
+    renderPage();
+    const link = screen.getAllByRole("link", { name: "Personel Ekle" })[0];
     expect(link).toHaveAttribute(
       "href",
-      `/personel/yeni?donus=${encodeURIComponent("/puantaj?year=2026&month=8")}`,
+      `/personel/yeni?donus=${encodeURIComponent("/puantaj?iso_year=2026&iso_week=32")}`,
     );
   });
 
   it("personnel:none olanda HIC basilmaz", () => {
     mockSession("full", "none");
-    render(<PuantajPage />);
+    renderPage();
     expect(screen.queryByRole("link", { name: "Personel Ekle" })).not.toBeInTheDocument();
   });
 
   it("personnel:view de yetmez (form yalniz full+)", () => {
     mockSession("full", "view");
-    render(<PuantajPage />);
+    renderPage();
     expect(screen.queryByRole("link", { name: "Personel Ekle" })).not.toBeInTheDocument();
   });
 
   it("izin bilinmiyorsa gorunur kalir (bilinmezlik kurali)", () => {
     mockSession("full");
-    render(<PuantajPage />);
-    expect(screen.getByRole("link", { name: "Personel Ekle" })).toBeInTheDocument();
+    renderPage();
+    expect(screen.getAllByRole("link", { name: "Personel Ekle" }).length).toBeGreaterThan(0);
   });
 
-  it("hic personel yoksa matriste bos-durum + ekleme yonlendirmesi basilir", () => {
+  it("hic personel yoksa izgarada bos-durum + ekleme yonlendirmesi basilir", () => {
     mockSession("full", "full");
-    vi.mocked(useTimesheet).mockReturnValue({
-      data: { ...MATRIX, rows: [], worker_count: 0 },
+    vi.mocked(useTimesheetWeek).mockReturnValue({
+      data: { ...WEEK, rows: [], worker_count: 0 },
       isLoading: false,
       isError: false,
       error: null,
     } as never);
-    render(<PuantajPage />);
-    const empty = document.querySelector(".ts-table__empty") as HTMLElement;
-    expect(empty).toHaveTextContent("Bu ay için puantaj kaydı ve aktif personel bulunmuyor.");
+    renderPage();
+    const empty = document.querySelector(".ts-week-table__empty") as HTMLElement;
+    expect(empty).toHaveTextContent("Bu hafta için puantaj kaydı ve aktif personel bulunmuyor.");
     expect(within(empty).getByRole("link", { name: "Personel Ekle" })).toBeInTheDocument();
   });
 
-  it("bos matriste izinsiz kullaniciya yonlendirme BASILMAZ", () => {
+  it("bos izgarada izinsiz kullaniciya yonlendirme BASILMAZ", () => {
     mockSession("full", "none");
-    vi.mocked(useTimesheet).mockReturnValue({
-      data: { ...MATRIX, rows: [], worker_count: 0 },
+    vi.mocked(useTimesheetWeek).mockReturnValue({
+      data: { ...WEEK, rows: [], worker_count: 0 },
       isLoading: false,
       isError: false,
       error: null,
     } as never);
-    render(<PuantajPage />);
-    const empty = document.querySelector(".ts-table__empty") as HTMLElement;
+    renderPage();
+    const empty = document.querySelector(".ts-week-table__empty") as HTMLElement;
     expect(within(empty).queryByRole("link", { name: "Personel Ekle" })).not.toBeInTheDocument();
   });
 });

@@ -1,19 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 
 import { GeneralTimesheetView } from "./GeneralTimesheetView";
 import { useSession } from "@/components/shell/SessionProvider";
 import { usePersonnel } from "@/lib/api/hooks/usePersonnel";
 import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
-import { useTimesheet } from "@/lib/api/hooks/useTimesheet";
-import { useSaveTimesheet } from "@/lib/api/hooks/useTimesheetMutations";
+import { useTimesheetWeek, type TimesheetWeek } from "@/lib/api/hooks/useTimesheet";
+import { useSaveTimesheetWeek } from "@/lib/api/hooks/useTimesheetMutations";
 import type { MeResponse } from "@/lib/auth/types";
 
-// F-PT T5 · E5 ekranının KENDİ davranışları. ŞP ekranı `SiteTimesheetView`
-// dosyasında kapsanır; buradaki iddialar E5'in ŞP'den AYRILDIĞI yerlere
-// odaklanır (Meslek kolonu, dörtlü legend, işaretsiz ayak satırı, şantiye
-// seçicisi) + iki ekranın da paylaştığı ay gezinmesinin YIL SINIRI.
+/**
+ * PUAN-SAAT · E5 ekranının KENDİ davranışları. Ortak çekirdek
+ * (`TimesheetWeekScreen`) ŞP dosyasında da ölçülür; buradaki iddialar E5'in
+ * ŞP'den AYRILDIĞI yerlere odaklanır: şantiye seçici, meslek/tür/taşeron
+ * süzgeçleri (E5 100-127), Excel'in YOKLUĞU ve hafta gezinmesinin YIL SINIRI.
+ */
 
 const replace = vi.fn();
 let searchParams = new URLSearchParams();
@@ -28,10 +32,15 @@ vi.mock("@/lib/api/hooks/usePersonnel", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/usePersonnel")>()),
   usePersonnel: vi.fn(),
 }));
-vi.mock("@/lib/api/hooks/useTimesheet", () => ({ useTimesheet: vi.fn() }));
-vi.mock("@/lib/api/hooks/useTimesheetMutations", () => ({ useSaveTimesheet: vi.fn() }));
+vi.mock("@/lib/api/hooks/useTimesheet", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useTimesheet")>()),
+  useTimesheetWeek: vi.fn(),
+}));
+vi.mock("@/lib/api/hooks/useTimesheetMutations", () => ({ useSaveTimesheetWeek: vi.fn() }));
 vi.mock("@/lib/api/timesheet-client", () => ({ downloadTimesheetExport: vi.fn() }));
 vi.mock("@/lib/api/hooks/useSiteOptions", () => ({ useSiteOptions: vi.fn() }));
+
+const WEEK_QUERY = { site: "s-1", iso_year: "2026", iso_week: "32" };
 
 const BASE_ME = {
   id: "11111111-1111-1111-1111-111111111111",
@@ -48,203 +57,214 @@ function mockSession(level: string) {
   });
 }
 
-/** İki kişi · 3 Ağu: biri çalıştı, biri FM · 4 Ağu: biri geçici görevde. */
-const MATRIX = {
+const WEEK: TimesheetWeek = {
   site_id: "s-1",
   site_name: "A-Blok",
   project_id: "p-1",
   project_name: "Güneşkent Konut",
-  year: 2026,
-  month: 8,
+  iso_year: 2026,
+  iso_week: 32,
+  start_date: "2026-08-03",
+  end_date: "2026-08-09",
   section_id: null,
   section_name: null,
+  normal_day_hours: "9.0",
+  weekly_normal_hours: "45.0",
   worker_count: 2,
-  total_man_days: 0,
-  total_overtime_hours: "0",
-  day_totals: [],
+  totals: { normal_hours: "18.0", overtime_hours: "3.0", total_hours: "21.0" },
+  leave_day_count: 0,
+  temporary_duty_day_count: 0,
   rows: [
     {
       personnel_id: "per-1",
       full_name: "Ahmet Yılmaz",
-      trade: "Kalıpçı Usta",
+      trade: "Kalıpçı",
       source: "company",
       subcontractor_name: null,
-      man_days: 0,
-      cells: [
-        { work_date: "2026-08-03", code: "worked", overtime_hours: null, section_id: "sec-1" },
-      ],
+      cells: [{ work_date: "2026-08-03", hours: "9.0", code: null, section_id: null }],
+      totals: { normal_hours: "9.0", overtime_hours: "0.0", total_hours: "9.0" },
     },
     {
       personnel_id: "per-2",
       full_name: "Cem Aksoy",
-      trade: "Demir Ustası",
+      trade: "Demirci",
       source: "subcontractor",
       subcontractor_name: "Akın İnşaat",
-      man_days: 0,
-      cells: [
-        // Ondalık saatler: toplam 0.1 + 0.2 float aritmetiğiyle 0.30000000000000004
-        // olurdu; ekran STRING toplamı (`lib/decimal.ts`) kullanır.
-        { work_date: "2026-08-03", code: "overtime", overtime_hours: "0.10", section_id: "sec-1" },
-        { work_date: "2026-08-04", code: "temporary_duty", overtime_hours: null, section_id: "sec-1" },
-        { work_date: "2026-08-05", code: "overtime", overtime_hours: "0.20", section_id: "sec-1" },
-      ],
+      cells: [{ work_date: "2026-08-03", hours: "12.0", code: null, section_id: null }],
+      totals: { normal_hours: "9.0", overtime_hours: "3.0", total_hours: "12.0" },
     },
   ],
-};
+  day_totals: [],
+  month_year: 2026,
+  month_month: 8,
+  month_total_hours: "21.0",
+  month_man_days: "2.3",
+  month_weeks: [],
+} as TimesheetWeek;
 
-function mockMatrix(matrix: unknown, extra: { isLoading?: boolean; isError?: boolean } = {}) {
-  vi.mocked(useTimesheet).mockReturnValue({
-    data: matrix,
-    isLoading: extra.isLoading ?? false,
-    isError: extra.isError ?? false,
-    error: null,
-  } as never);
-}
-
-/** Ayak satırı (`Günlük Toplam`) — işaret kuralı varyanta göre AYRIDIR. */
-function footerRow() {
-  const row = screen.getByRole("rowheader", { name: "Günlük Toplam" }).closest("tr");
-  if (row === null) throw new Error("ayak satiri yok");
-  return row;
+function renderView() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  function Wrapper({ children }: { children: ReactNode }) {
+    return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  }
+  return render(<GeneralTimesheetView />, { wrapper: Wrapper });
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
-  searchParams = new URLSearchParams({ site: "s-1", year: "2026", month: "8" });
+  searchParams = new URLSearchParams(WEEK_QUERY);
   mockSession("full");
-  vi.mocked(useSaveTimesheet).mockReturnValue({ mutateAsync: vi.fn() } as never);
+  vi.mocked(useSaveTimesheetWeek).mockReturnValue({
+    mutateAsync: vi.fn(async () => WEEK),
+  } as never);
   vi.mocked(usePersonnel).mockReturnValue({
     data: { items: [], total: 0, limit: 200, offset: 0 },
     isLoading: false,
     isError: false,
     error: null,
   } as never);
+  vi.mocked(useTimesheetWeek).mockReturnValue({
+    data: WEEK,
+    isLoading: false,
+    isError: false,
+    error: null,
+  } as never);
   vi.mocked(useSiteOptions).mockReturnValue({
     options: [
-      { siteId: "s-1", projectId: "p-1", label: "Güneşkent A-Blok" },
-      { siteId: "s-2", projectId: "p-1", label: "Güneşkent B-Blok" },
+      { siteId: "s-1", label: "A-Blok" },
+      { siteId: "s-2", label: "B-Blok" },
     ],
     isLoading: false,
     isError: false,
-  });
-  mockMatrix(MATRIX);
+  } as never);
 });
 
-describe("GeneralTimesheetView · E5 mockup iskeleti", () => {
-  it("Meslek AYRI kolondur ve alt satir meta basilmaz (E5 93/116)", () => {
-    render(<GeneralTimesheetView />);
+describe("GeneralTimesheetView · E5 kabuğu", () => {
+  it("başlık + haftalık giriş kuralı + şantiye seçici basar", () => {
+    renderView();
     expect(screen.getByRole("heading", { level: 1, name: "Puantaj" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Meslek" })).toBeInTheDocument();
-    expect(screen.queryByRole("columnheader", { name: "Tür" })).not.toBeInTheDocument();
-    expect(screen.getByText("Kalıpçı Usta")).toBeInTheDocument();
-    // ŞP'nin "meslek — firma" alt satiri E5'te YOKTUR.
-    expect(screen.queryByText("Demir Ustası — Akın İnşaat")).not.toBeInTheDocument();
+    expect(screen.getByText(/Giriş haftalık yapılır, birim saattir/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Şantiye")).toHaveValue("s-1");
   });
 
-  it("legend DORTLUDUR — 'Gecici Gorev' aciklanmaz (E5 79-84)", () => {
-    render(<GeneralTimesheetView />);
-    // E5 harfli etiket kullanir ("Çalıştı (Ç)"); ŞP'de yalin etikettir.
-    for (const label of ["Çalıştı (Ç)", "İzin (İ)", "Tatil (T)", "Fazla Mesai (FM)"]) {
-      expect(screen.getByText(label)).toBeInTheDocument();
-    }
-    expect(screen.queryByText(/Geçici Görev/)).not.toBeInTheDocument();
-    // Ama G KODLU HUCRE yine basilir (kayit gizlenmez).
-    expect(document.querySelector(".ts-cell--temporary-duty")).not.toBeNull();
+  it("🔴 E5 mockup'ında Excel YOKTUR — uydurulmaz (ŞP'de vardır)", () => {
+    renderView();
+    expect(screen.queryByRole("button", { name: "Excel" })).not.toBeInTheDocument();
   });
 
-  it("ayak satiri YALNIZ SAYI basar — FM'li gunde bile '+' yok (E5 203)", () => {
-    render(<GeneralTimesheetView />);
-    const footer = within(footerRow());
-    // 3 Agu: biri calisti + biri FM ⇒ 2 (ŞP olsa "2+" olurdu).
-    expect(footer.getByText("2", { exact: true })).toBeInTheDocument();
-    expect(footer.queryByText("2+")).not.toBeInTheDocument();
-    expect(footer.queryByText(/G$/)).not.toBeInTheDocument();
-  });
-
-  it("ozet seridi (SP 116-120) E5'te YOKTUR", () => {
-    render(<GeneralTimesheetView />);
-    expect(document.querySelector(".ts-summary")).toBeNull();
+  it("E5'te bölüm süzgeci YOKTUR", () => {
+    renderView();
     expect(screen.queryByLabelText("Bölüm")).not.toBeInTheDocument();
   });
-});
 
-describe("GeneralTimesheetView · ay gezinmesi (YIL SINIRI)", () => {
-  it("Aralik'ta '›' bir SONRAKI yilin Ocak'ina gecer", async () => {
-    searchParams = new URLSearchParams({ site: "s-1", year: "2026", month: "12" });
-    render(<GeneralTimesheetView />);
-    await userEvent.click(screen.getByRole("button", { name: "Sonraki ay" }));
-    expect(replace).toHaveBeenCalledWith("/puantaj?site=s-1&year=2027&month=1", { scroll: false });
-  });
-
-  it("Ocak'ta '‹' bir ONCEKI yilin Aralik'ina gecer", async () => {
-    searchParams = new URLSearchParams({ site: "s-1", year: "2026", month: "1" });
-    render(<GeneralTimesheetView />);
-    await userEvent.click(screen.getByRole("button", { name: "Önceki ay" }));
-    expect(replace).toHaveBeenCalledWith("/puantaj?site=s-1&year=2025&month=12", { scroll: false });
-  });
-
-  it("santiye secimi URL'ye yazilir (donem KORUNUR)", async () => {
-    render(<GeneralTimesheetView />);
+  it("şantiye seçimi URL'ye yazılır", async () => {
+    renderView();
     await userEvent.selectOptions(screen.getByLabelText("Şantiye"), "s-2");
-    expect(replace).toHaveBeenCalledWith("/puantaj?site=s-2&year=2026&month=8", { scroll: false });
+    expect(replace).toHaveBeenCalledWith(
+      "/puantaj?site=s-2&iso_year=2026&iso_week=32",
+      { scroll: false },
+    );
   });
 });
 
-describe("GeneralTimesheetView · turevlerin uc durumlari", () => {
-  it("ondalik FM toplami STRING toplamidir (float 0.1+0.2 hatasi YOK)", () => {
-    render(<GeneralTimesheetView />);
-    // E5'te ozet seridi yoktur; toplam satir/ayak turevlerinden okunur —
-    // hucre basliginda (title) saat gorunur.
-    const cells = document.querySelectorAll<HTMLElement>(".ts-cell--overtime");
-    expect([...cells].map((cell) => cell.title)).toEqual([
-      "Fazla Mesai · 0,1 saat",
-      "Fazla Mesai · 0,2 saat",
-    ]);
+describe("GeneralTimesheetView · hafta gezinmesi", () => {
+  it("‹ / › haftayı kaydırır", async () => {
+    renderView();
+    await userEvent.click(screen.getByRole("button", { name: "Sonraki hafta" }));
+    expect(replace).toHaveBeenCalledWith(
+      "/puantaj?site=s-1&iso_year=2026&iso_week=33",
+      { scroll: false },
+    );
   });
 
-  it("BOS ay: satir yok ama gun iskeleti ve sifir toplam DURUR", () => {
-    mockMatrix({ ...MATRIX, rows: [] });
-    render(<GeneralTimesheetView />);
-    expect(screen.getByRole("columnheader", { name: "31" })).toBeInTheDocument();
-    expect(
-      screen.getByText("Bu ay için puantaj kaydı ve aktif personel bulunmuyor."),
-    ).toBeInTheDocument();
-    // Ayak satirinin genel adam-gunu 0'dir; her gun hucresi de 0 basar.
-    const footer = within(footerRow());
-    expect(footer.getAllByText("0")).toHaveLength(32);
+  it("🔴 ISO YIL SINIRI doğru geçilir: 2026-W1'den geriye 2025-W52", async () => {
+    searchParams = new URLSearchParams({ site: "s-1", iso_year: "2026", iso_week: "1" });
+    renderView();
+    await userEvent.click(screen.getByRole("button", { name: "Önceki hafta" }));
+    expect(replace).toHaveBeenCalledWith(
+      "/puantaj?site=s-1&iso_year=2025&iso_week=52",
+      { scroll: false },
+    );
   });
 
-  it("santiye secilmemisken neden GORUNUR yazar, sessiz bos tablo yok", () => {
-    searchParams = new URLSearchParams({ year: "2026", month: "8" });
-    vi.mocked(useSiteOptions).mockReturnValue({ options: [], isLoading: false, isError: false });
-    // Santiye yoksa matris ucu HIC cagrilmaz — veri de gelmez.
-    mockMatrix(undefined);
-    render(<GeneralTimesheetView />);
-    expect(screen.getByText("Şantiye seçin.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Dışa Aktar" })).toBeDisabled();
+  it("ay şeridi boşsa sessiz kalmaz — gerekçe yazar", () => {
+    renderView();
+    expect(screen.getByText("Bu ayın hafta özeti yüklenemedi.")).toBeInTheDocument();
   });
 });
 
-describe("GeneralTimesheetView · izin dallari", () => {
-  it("PM (none) AccessDenied gorur", () => {
+describe("GeneralTimesheetView · E5 satır süzgeçleri (100-127)", () => {
+  it("uç karşılığı olmayan süzgeçler SİLİNMEZ — istemci tarafında süzer", async () => {
+    renderView();
+    expect(screen.getByText("Gösterilen")).toBeInTheDocument();
+    expect(screen.getByLabelText("Meslek")).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText("Meslek"), "Kalıpçı");
+    expect(screen.getByText("Ahmet Yılmaz")).toBeInTheDocument();
+    expect(screen.queryByText("Cem Aksoy")).not.toBeInTheDocument();
+    // Sayaç süzgeçten ÖNCEKİ toplamı paydada tutar.
+    const shown = document.querySelector(".ts-shown") as HTMLElement;
+    expect(within(shown).getByText("1")).toBeInTheDocument();
+    expect(within(shown).getByText("/ 2")).toBeInTheDocument();
+  });
+
+  it("🔴 satır süzgeci KAYDETME GÖVDESİNE dokunmaz — süzülen satırın hücresi durur", async () => {
+    const mutateAsync = vi.fn((body: { cells?: { personnel_id: string }[] }) =>
+      Promise.resolve({ ...WEEK, echoedCellCount: body.cells?.length ?? 0 }),
+    );
+    vi.mocked(useSaveTimesheetWeek).mockReturnValue({ mutateAsync } as never);
+    renderView();
+    await userEvent.selectOptions(screen.getByLabelText("Meslek"), "Kalıpçı");
+
+    const input = screen.getByLabelText("Ahmet Yılmaz · 5 Ağu saati");
+    await userEvent.type(input, "9");
+    await userEvent.tab();
+    await userEvent.click(screen.getByRole("button", { name: "Haftayı Kaydet" }));
+
+    const body = mutateAsync.mock.calls[0]?.[0];
+    // POZİTİF KONTROL: ekranda GÖRÜNMEYEN Cem Aksoy'un hücresi gövdede DURUYOR.
+    expect(body?.cells?.map((cell) => cell.personnel_id)).toContain("per-2");
+  });
+
+  it("taşeron süzgeci firma adından süzer", async () => {
+    renderView();
+    await userEvent.selectOptions(screen.getByLabelText("Taşeron firması"), "Akın İnşaat");
+    expect(screen.getByText("Cem Aksoy")).toBeInTheDocument();
+    expect(screen.queryByText("Ahmet Yılmaz")).not.toBeInTheDocument();
+  });
+});
+
+describe("GeneralTimesheetView · izin dalları", () => {
+  it("PM (none) AccessDenied görür", () => {
     mockSession("none");
-    render(<GeneralTimesheetView />);
+    renderView();
     expect(screen.getByText("Bu alana yetkiniz yok")).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { level: 1, name: "Puantaj" })).not.toBeInTheDocument();
   });
 
-  it("saha muhendisi (view) matrisi gorur; hucreler TIKLANAMAZ, Kaydet DEVRE DISI", () => {
+  it("saha mühendisi (view) ızgarayı görür ama yazamaz", () => {
     mockSession("view");
-    render(<GeneralTimesheetView />);
-    expect(screen.getByRole("button", { name: "Kaydet" })).toBeDisabled();
+    renderView();
+    expect(screen.getByRole("button", { name: "Haftayı Kaydet" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Önceki Haftayı Kopyala" })).toBeDisabled();
     expect(screen.getByText(/Puantaj kaydetme yetkiniz yok/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /puantajı$/ })).not.toBeInTheDocument();
-    // Excel OKUMA ucudur — salt-okunur kullanicida da aciktir.
-    expect(screen.getByRole("button", { name: "Dışa Aktar" })).toBeEnabled();
   });
+});
 
-  it("personnel yetkisi olmayanda 'Personel Ekle' girisi HIC basilmaz", () => {
-    render(<GeneralTimesheetView />);
-    expect(screen.queryByRole("link", { name: "Personel Ekle" })).not.toBeInTheDocument();
+describe("GeneralTimesheetView · şantiye yoksa", () => {
+  it("boş ızgaranın gerekçesi yazılır — sessiz boş tablo YOK", () => {
+    vi.mocked(useSiteOptions).mockReturnValue({
+      options: [],
+      isLoading: false,
+      isError: false,
+    } as never);
+    searchParams = new URLSearchParams({ iso_year: "2026", iso_week: "32" });
+    vi.mocked(useTimesheetWeek).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as never);
+    renderView();
+    expect(screen.getByText("Şantiye seçin.")).toBeInTheDocument();
   });
 });

@@ -1,31 +1,43 @@
 import type { TimesheetCode } from "@/lib/api/hooks/useTimesheet";
 import type {
   TimesheetCellInput,
-  TimesheetSave,
+  TimesheetWeekSave,
 } from "@/lib/api/hooks/useTimesheetMutations";
 
-import type { TimesheetSourcedCell } from "./derive";
+import type { TimesheetSourcedCell } from "./week-derive";
 
 /**
- * Puantaj matrisinin YEREL TASLAK katmanı (F-PT T3) — SAF veri, React yok.
+ * Puantajın YEREL TASLAK katmanı (PUAN-SAAT) — SAF veri, React yok.
  *
  * ═══ KAPSAM KURALI — BU DİLİMİN EN KRİTİK TUZAĞI ═══
- * `PUT /sites/{site_id}/timesheet` dönem+şantiye kapsamında DEĞİŞTİRMEDİR:
- * gövdede geçmeyen hücre SİLİNİR. Bu yüzden gövde, EKRANDA BÖLÜM FİLTRESİ
- * AÇIKKEN BİLE, ŞANTİYENİN TAM hücre kümesidir.
+ * `PUT /sites/{site_id}/timesheet/week` HAFTA + ŞANTİYE kapsamında
+ * DEĞİŞTİRMEDİR: gövdede geçmeyen hücre SİLİNİR. Bu yüzden gövde, EKRANDA
+ * BÖLÜM FİLTRESİ AÇIKKEN BİLE, ŞANTİYENİN O HAFTAYA AİT TAM hücre kümesidir.
  *
- * Yapısal güvence (K2'nin devamı): taslak, GÖRÜNÜMLE değil `allCells` ile
- * birleşir. `buildTimesheetView` sunucunun SÜZGEÇSİZ tam kümesini alır,
+ * 🔴 KAPSAM AY DEĞİL HAFTADIR (uç `TimesheetWeekSave` docstring'i). Gövdeye
+ * haftanın DIŞINDAN hücre koymak backend'de 422'dir; ayın öbür haftaları
+ * kaydetmeden ETKİLENMEZ. Bekçi ikizleri: backend
+ * `test_hafta_kaydetmek_ayin_diger_haftasina_DOKUNMAZ`, istemci tarafında
+ * `SiteTimesheetView.test.tsx` kapsam testi.
+ *
+ * Yapısal güvence: taslak GÖRÜNÜMLE değil `allCells` ile birleşir.
+ * `buildTimesheetWeekView` sunucunun SÜZGEÇSİZ tam hafta kümesini alır,
  * `mergeDraftCells` ile taslağı üzerine bindirir ve sonucu `allCells` olarak
- * verir; `buildTimesheetSaveBody` YALNIZ bu kümeden gövde kurar. Süzülmüş
- * `rows` kaydetme yoluna hiç girmez — girseydi diğer bölümlerin o aya ait tüm
- * kayıtları sessizce silinirdi.
+ * verir; `buildWeekSaveBody` YALNIZ bu kümeden gövde kurar. Süzülmüş `rows`
+ * kaydetme yoluna HİÇ girmez.
  */
 
+/**
+ * Hücrenin YEREL hâli — **saat XOR kod** (uç `TimesheetCellInput`).
+ *
+ * Puantaj gün kodundan adam-SAATE geçti: çalışılan gün artık `hours`tur, kod
+ * yalnız "o gün çalışılmadı ama sebebi var" hâlini taşır (`leave` · `holiday` ·
+ * `temporary_duty`). `worked`/`overtime` enum üyeleri KALKTI; fazla mesai
+ * SAKLANMAZ, backend'in haftalık türevidir.
+ */
 export interface TimesheetDraftCell {
-  readonly code: TimesheetCode;
-  /** Yalnız `overtime` kodunda dolabilir; saat OPSİYONELDİR (saatsiz FM = 0 saat). */
-  readonly overtimeHours: string | null;
+  readonly hours: string | null;
+  readonly code: TimesheetCode | null;
   readonly sectionId: string | null;
 }
 
@@ -49,12 +61,21 @@ function splitDraftKey(key: string): { personnelId: string; workDate: string } {
   return { personnelId: key.slice(0, separator), workDate: key.slice(separator + 1) };
 }
 
+/** Hücre GERÇEKTEN bir şey söylüyor mu (saat ya da kod)? Boşu gövdeye girmez. */
+export function isEmptyCell(cell: {
+  hours: string | null;
+  code: TimesheetCode | null;
+}): boolean {
+  return cell.code === null && (cell.hours === null || cell.hours.trim().length === 0);
+}
+
 /**
- * Sunucu kümesinin ÜZERİNE taslağı bindirir — sonuç yine ŞANTİYENİN TAM
- * kümesidir (bölüm süzgeci UYGULANMAZ).
+ * Sunucu kümesinin ÜZERİNE taslağı bindirir — sonuç yine ŞANTİYENİN o
+ * haftaya ait TAM kümesidir (bölüm süzgeci UYGULANMAZ).
  *
  * Taslakta anahtarı olan hücrenin son sözünü taslak söyler: değer varsa
- * değiştirilmiş/eklenmiş hücredir, `null` ise silinmiştir.
+ * değiştirilmiş/eklenmiş hücredir, `null` ise silinmiştir. İçi boşalmış
+ * (saatsiz + kodsuz) hücre de DÜŞER — gövdede yeri yoktur.
  */
 export function mergeDraftCells(
   serverCells: readonly TimesheetSourcedCell[],
@@ -65,14 +86,14 @@ export function mergeDraftCells(
   );
   const edited: TimesheetSourcedCell[] = [];
   for (const [key, value] of Object.entries(draft)) {
-    if (value === null) continue; // "Temizle" — hücre gövdeye HİÇ girmez, yani silinir.
+    if (value === null || isEmptyCell(value)) continue; // "Temizle" → gövdeye HİÇ girmez.
     const { personnelId, workDate } = splitDraftKey(key);
     edited.push({
       personnelId,
       work_date: workDate,
+      // Saat XOR kod: kod seçilince eski saat SÜRÜKLENMEZ, saat yazılınca kod düşer.
+      hours: value.code === null ? value.hours : null,
       code: value.code,
-      // Saat YALNIZ fazla mesaide taşınır; kod değişince eski saat SÜRÜKLENMEZ.
-      overtime_hours: value.code === "overtime" ? value.overtimeHours : null,
       section_id: value.sectionId,
     });
   }
@@ -84,27 +105,29 @@ export function mergeDraftCells(
 }
 
 /**
- * `PUT` gövdesi. Girdi ZORUNLU olarak `TimesheetDerived.allCells`tir
- * (sunucunun tam kümesi + taslak); süzülmüş `rows` ya da görünüm durumu
- * BURAYA ASLA GİRMEZ — bkz. dosya başındaki kapsam kuralı.
+ * `PUT .../timesheet/week` gövdesi. Girdi ZORUNLU olarak
+ * `TimesheetWeekDerived.allCells`tir (sunucunun tam hafta kümesi + taslak);
+ * süzülmüş `rows` ya da görünüm durumu BURAYA ASLA GİRMEZ.
  *
  * Şema `additionalProperties: false` taşır: alanlar TEK TEK yazılır, nesne
  * yayılmaz (`...cell` ile `personnelId` gibi istemci alanları gövdeye sızardı).
  * `project_id` GÖNDERİLMEZ — kapsam alanını backend şantiyeden kopyalar.
  */
-export function buildTimesheetSaveBody(
+export function buildWeekSaveBody(
   allCells: readonly TimesheetSourcedCell[],
-): TimesheetSave {
+): TimesheetWeekSave {
   return {
-    cells: allCells.map(
-      (cell): TimesheetCellInput => ({
-        personnel_id: cell.personnelId,
-        work_date: cell.work_date,
-        code: cell.code,
-        overtime_hours: cell.overtime_hours,
-        section_id: cell.section_id,
-      }),
-    ),
+    cells: allCells
+      .filter((cell) => !isEmptyCell(cell))
+      .map(
+        (cell): TimesheetCellInput => ({
+          personnel_id: cell.personnelId,
+          work_date: cell.work_date,
+          hours: cell.hours,
+          code: cell.code,
+          section_id: cell.section_id,
+        }),
+      ),
   };
 }
 
@@ -127,34 +150,26 @@ export function resolveCellSectionId(
   return existing ? existing.section_id : activeSectionId;
 }
 
-/* ── Fazla mesai saati ──────────────────────────────────────────────────── */
+/* ── Gün saati ──────────────────────────────────────────────────────────── */
 
 /** Backend sınırı: `0 < saat <= 24`, en fazla BİR ondalık (`TimesheetCellInput`). */
-export const OVERTIME_MAX_HOURS = 24;
+export const MAX_DAY_HOURS = 24;
 
-export type OvertimeParseResult =
+export type HoursParseResult =
   | { readonly ok: true; readonly value: string | null }
   | { readonly ok: false; readonly message: string };
 
-const OVERTIME_PATTERN = /^\d{1,2}(\.\d)?$/;
+const HOURS_PATTERN = /^\d{1,2}(\.\d)?$/;
 
-/**
- * Saat alanının metnini gövdeye girecek ondalık STRING'e çevirir.
- *
- * Boş metin GEÇERLİDİR: saat opsiyoneldir, girilmezse hücre saatsiz FM olur ve
- * FM saat toplamına 0 katar. Türkçe klavyede ondalık ayırıcı virgüldür —
- * `3,5` de kabul edilir. Sınırlar backend şemasından birebir alınır; burada
- * eleme YAPILMAZ, kullanıcı gerekçeyi ekranda görür.
- */
 /**
  * Sunucudaki saati DÜZENLENEBİLİR metne çevirir.
  *
- * Backend `"3.00"` gibi iki basamaklı ondalık döndürür; alana olduğu gibi
- * yazılırsa kullanıcı hiçbir şey değiştirmeden "Uygula"ya bastığında tek
- * ondalık kuralına takılırdı. Sondaki sıfırlar atılır ve ayırıcı Türkçe
- * klavyenin virgülüne çevrilir (`parseOvertimeHours` ikisini de kabul eder).
+ * Backend `"9.00"` gibi iki basamaklı ondalık döndürür; alana olduğu gibi
+ * yazılırsa kullanıcı hiçbir şey değiştirmeden kaydettiğinde tek ondalık
+ * kuralına takılırdı. Sondaki sıfırlar atılır ve ayırıcı Türkçe klavyenin
+ * virgülüne çevrilir (`parseDayHours` ikisini de kabul eder).
  */
-export function overtimeHoursText(value: string | null): string {
+export function dayHoursText(value: string | null): string {
   if (value === null || value.trim().length === 0) return "";
   const trimmed = value
     .trim()
@@ -163,18 +178,22 @@ export function overtimeHoursText(value: string | null): string {
   return trimmed.replace(".", ",");
 }
 
-export function parseOvertimeHours(raw: string): OvertimeParseResult {
+/**
+ * Saat kutusunun metnini gövdeye girecek ondalık STRING'e çevirir.
+ *
+ * Boş metin GEÇERLİDİR ve `null` döner — hücre boşaltılmış demektir (o gün
+ * çalışılmadı). Sınırlar backend şemasından birebir alınır; burada eleme
+ * YAPILMAZ, kullanıcı gerekçeyi ekranda görür.
+ */
+export function parseDayHours(raw: string): HoursParseResult {
   const text = raw.trim().replace(",", ".");
   if (text.length === 0) return { ok: true, value: null };
-  if (!OVERTIME_PATTERN.test(text)) {
-    return { ok: false, message: "Saat en fazla bir ondalık basamakla yazılır (örn. 3,5)." };
+  if (!HOURS_PATTERN.test(text)) {
+    return { ok: false, message: "Saat en fazla bir ondalık basamakla yazılır (örn. 7,5)." };
   }
   const value = Number(text);
-  if (value <= 0 || value > OVERTIME_MAX_HOURS) {
-    return {
-      ok: false,
-      message: `Fazla mesai saati 0'dan büyük ve en çok ${OVERTIME_MAX_HOURS} olmalı.`,
-    };
+  if (value <= 0 || value > MAX_DAY_HOURS) {
+    return { ok: false, message: `Gün saati 0'dan büyük ve en çok ${MAX_DAY_HOURS} olmalı.` };
   }
   return { ok: true, value: text };
 }

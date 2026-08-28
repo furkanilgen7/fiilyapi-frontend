@@ -392,6 +392,24 @@
   --min-width-timesheet-table: 900px; /* E5 89 */
   --min-width-timesheet-table-sm: 1000px; /* ŞP 122 */
 
+  /* ── PUAN-SAAT · haftalık saat ızgarası ────────────────────────────────────
+     Kanon `Ekran 5 - Puantaj.dc.html` (`5f3a944`). Parantez içi sayılar o
+     dosyanın SATIR numaralarıdır. Mevcut palette karşılığı OLMAYAN üç ton
+     burada tanımlanır; geri kalan her renk yukarıdaki tokenlardan gelir. */
+  --color-info-soft: #e0f2fe; /* "eksik gün" hücresi zemini (E5 204) */
+  --color-info-border-soft: #7dd3fc; /* aynı hücrenin kenarlığı (E5 204) */
+  --color-info-strong: #0369a1; /* aynı hücrenin metni (E5 204) */
+  --color-warning-tint: #fffbeb; /* Cumartesi sütunu zemini (E5 222) */
+  --color-danger-tint-weak: #fff7f7; /* Pazar sütunu zemini (E5 223) */
+  --size-timesheet-hin-w: 52px; /* saat kutusu (E5 `.hin`) */
+  --size-timesheet-tag-h: 31px; /* kod rozeti (E5 `.tag`) */
+  --width-timesheet-week-day-col: 74px; /* gün sütunu (E5 217) */
+  --width-timesheet-week-total-col: 66px; /* Normal Saat sütunu (E5 224) */
+  --width-timesheet-week-name-col: 180px; /* Personel sütunu (E5 216) */
+  --min-width-timesheet-week-table: 1080px; /* 180 + 7×74 + 3×66 */
+  --text-timesheet-week-total: 14px; /* satır türev kolonu (E5 247) */
+  --text-timesheet-week-sum: 15px; /* Hafta Toplam (E5 249) */
+
   /* ── Personel Ekle formu (F-PT T4) ─────────────────────────────────────────
      Kanon: projedesign "Form - Personel Ekle.dc.html". Parantez içi sayılar o
      dosyanın SATIR numaralarıdır.

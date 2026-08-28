@@ -1,155 +1,137 @@
-import { useState } from "react";
-
 import { Badge } from "@/components/ui/badge/Badge";
 import { cx } from "@/lib/cx";
-import { formatDayMonthShort, formatDecimal } from "@/lib/format";
+import { formatDecimal } from "@/lib/format";
 
+import type { TimesheetDayColumn, TimesheetViewRow } from "./derive";
 import {
-  dayTotalModifier,
-  dayTotalText,
-  type TimesheetDayColumn,
-  type TimesheetViewRow,
-} from "./derive";
-import {
+  dayHoursModifier,
   resolveSourceBadgeVariant,
   resolveWorkerSourceLabel,
   timesheetCodeMeta,
-  type TimesheetVariant,
 } from "./timesheet-codes";
-import { TimesheetCellPopover } from "./TimesheetCellPopover";
-import { timesheetDraftKey } from "./timesheet-draft";
-import type { TimesheetCellEdit } from "./useTimesheetEditor";
 
 /**
- * Puantaj matrisi tablosu — E5 (88-217) ve ŞP (115-253) ORTAK çekirdeği.
+ * AYLIK puantaj matrisi — Bölüm Detay'ın "İşçiler & Puantaj" sekmesinin
+ * tablosu. Görsel dili ŞP (`Şantiye - Puantaj.dc.html`) mockup'ından gelir.
  *
- * İki varyantın mockup farkları:
- *   • `general` (E5 92-93): Personel + **Meslek AYRI KOLON**; hücre rozeti
- *     28×22 / 10px (E5 117).
- *   • `site` (ŞP 125-126): Personel hücresi ad + "meslek — firma" ALT SATIRI
- *     (ŞP 149, 169) taşır, yanında **Tür** kolonu (Şirket/Taşeron rozeti,
- *     ŞP 150/170); hücre rozeti 24×18 / 8px (ŞP 151).
+ * 🔴 SALT OKUNURDUR ve öyle KALIR. Yazma yolu HAFTALIKTIR
+ * (`TimesheetWeekTable` + `PUT .../timesheet/week`); aylık `PUT` uçtan
+ * kalktığı için bu tablodan kaydetmek YAPISAL OLARAK imkânsızdır. Gerekçe
+ * K2'nin kendisidir: bölüm kapsamlı bir yüzeyden yazmak diğer bölümlerin
+ * kayıtlarını silme riskini bu ekrana taşırdı.
  *
- *   • Ayak satırı İŞARETLERİ de AYRIDIR — bkz. `derive.ts/dayTotalText`:
- *     `site` `4+`/`3G` basar (ŞP 237/245), `general` YALNIZ SAYI basar
- *     (E5 203, FM hücresi varken bile).
+ * 🔴 HÜCRE ŞEKLİ DEĞİŞTİ (PUAN-SAAT): hücre artık ya SAATtir ya KOD rozeti.
+ * Saat hücresinin tonu `dayHoursModifier`dan gelir ve bir İPUCUDUR, hesap
+ * değil — fazla mesai haftalık türevdir ve bu ekranda YOKTUR.
  *
- * HÜCRE rozetleri her iki ekranda da veriye göre basılır: E5 mockup'ı (79-84)
- * 4'lü legend gösterir, ama `G` kodlu hücre veride varsa rozeti YİNE BASILIR
- * (kayıt gizlenmez) — yalnızca E5 legend'inde açıklanmaz.
- *
- * Mockup'ların "…" sütunu (E5 109/131 · ŞP 142/165) bir MOCKUP KIRPMASIDIR
- * (15 günden sonrası çizilmemiş) — gerçek ekran ayın TÜM günlerini basar,
- * bu yüzden kırpma sütunu yoktur.
- *
- * T3: hücreler YAZMA İZNİ olanda tıklanabilir (popover). `onCommit`
- * verilmezse (ya da `canWrite` yanlışsa) T2'nin salt-okunur görünümü aynen
- * korunur — saha mühendisi matrisi görür ama düzenleyemez.
+ * Ayın "…" sütunu (ŞP 142/165) bir MOCKUP KIRPMASIDIR — gerçek ekran ayın TÜM
+ * günlerini basar.
  */
 export interface TimesheetTableProps {
-  variant: TimesheetVariant;
   days: readonly TimesheetDayColumn[];
   rows: readonly TimesheetViewRow[];
-  totalManDays: number;
+  /** Ayın saat toplamı — tfoot sağ ucu. */
+  totalHours: string;
+  /** Saat renginin eşiği; `null` ise ton basılmaz (uydurma eşik yok). */
+  normalDayHours: string | null;
   /** Boş matris mesajı — yükleme/hata durumlarında görünüm dışarıdan verilir. */
   emptyMessage?: string;
-  /**
-   * Boş matriste mesajın ALTINA basılan yönlendirme (F-PT T4: izinliye
-   * "Personel Ekle"). Verilmezse eski DOM aynen korunur.
-   */
-  emptyAction?: React.ReactNode;
-  /** Hücre düzenleme yalnız yazma izninde açılır. */
-  canWrite?: boolean;
-  /** Kaydedilmemiş hücrelerin `timesheetDraftKey` anahtarları. */
-  dirtyKeys?: ReadonlySet<string>;
-  /** `null` = "Temizle". Verilmezse matris salt-okunurdur. */
-  onCommit?: (personnelId: string, workDate: string, edit: TimesheetCellEdit | null) => void;
 }
 
+/** Personel + Tür kolonları (ŞP 231 `colspan=2`). */
+const LEAD_COL_SPAN = 2;
+
 export function TimesheetTable({
-  variant,
   days,
   rows,
-  totalManDays,
+  totalHours,
+  normalDayHours,
   emptyMessage,
-  emptyAction,
-  canWrite = false,
-  dirtyKeys,
-  onCommit,
 }: TimesheetTableProps) {
-  const isSite = variant === "site";
-  // E5 197 `colspan=2` (Personel+Meslek) · ŞP 231 `colspan=2` (Personel+Tür).
-  const leadColSpan = 2;
-
   return (
-    <div className={cx("ts-table-scroll", `ts-table-scroll--${variant}`)}>
-      <table className={cx("ts-table", `ts-table--${variant}`)}>
+    <div className="ts-table-scroll ts-table-scroll--site">
+      <table className="ts-table ts-table--site">
         <thead>
           <tr>
-            {/* E5 92 · ŞP 125 */}
+            {/* ŞP 125 */}
             <th scope="col" className="ts-table__name-head">
               Personel
             </th>
-            {/* E5 93 (Meslek) · ŞP 126 (Tür) */}
+            {/* ŞP 126 */}
             <th scope="col" className="ts-table__lead-head">
-              {isSite ? "Tür" : "Meslek"}
+              Tür
             </th>
-            {/* E5 94-108 · ŞP 127-141 — mockup 15 gün çizer, gerçek ay tam basılır */}
+            {/* ŞP 127-141 — mockup 15 gün çizer, gerçek ay tam basılır */}
             {days.map((day) => (
               <th key={day.workDate} scope="col" className="ts-table__day-head">
                 {day.dayOfMonth}
               </th>
             ))}
-            {/* E5 110 · ŞP 143 */}
+            {/* ŞP 143 */}
             <th scope="col" className="ts-table__total-head">
-              Toplam
+              Saat
             </th>
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 && (
             <tr>
-              <td className="ts-table__empty" colSpan={leadColSpan + days.length + 1}>
+              <td className="ts-table__empty" colSpan={LEAD_COL_SPAN + days.length + 1}>
                 <span>{emptyMessage ?? "Bu ay için puantaj satırı yok."}</span>
-                {emptyAction && <span className="ts-table__empty-action">{emptyAction}</span>}
               </td>
             </tr>
           )}
           {rows.map((row) => (
-            <TimesheetTableRow
-              key={row.personnelId}
-              variant={variant}
-              row={row}
-              days={days}
-              canWrite={canWrite}
-              dirtyKeys={dirtyKeys}
-              onCommit={onCommit}
-            />
+            <tr key={row.personnelId}>
+              {/* ŞP 149 — "Kalıpçı Usta — Akın İnşaat"; firma yoksa tire uydurulmaz */}
+              <th scope="row" className="ts-table__name-cell">
+                <span className="ts-table__name">{row.fullName}</span>
+                <span className="ts-table__meta">{personMeta(row)}</span>
+              </th>
+              {/* ŞP 150/170 — Şirket (mavi) / Taşeron (amber); diğer kaynaklar nötre düşer */}
+              <td className="ts-table__lead-cell">
+                <Badge
+                  variant={resolveSourceBadgeVariant(row.source)}
+                  className={cx(
+                    "ts-source",
+                    row.source === "subcontractor" && "ts-source--subcontractor",
+                  )}
+                >
+                  {resolveWorkerSourceLabel(row.source)}
+                </Badge>
+              </td>
+              {days.map((day) => (
+                <td key={day.workDate} className="ts-table__cell">
+                  <TimesheetReadCell
+                    cell={row.cells[day.workDate]}
+                    normalDayHours={normalDayHours}
+                  />
+                </td>
+              ))}
+              {/* ŞP 166 */}
+              <td className="ts-table__row-total">{formatDecimal(row.totalHours, 1)}</td>
+            </tr>
           ))}
         </tbody>
         <tfoot>
-          {/* E5 196-214 · ŞP 230-249 */}
+          {/* ŞP 230-249 */}
           <tr className="ts-table__foot-row">
-            <th scope="row" className="ts-table__foot-label" colSpan={leadColSpan}>
+            <th scope="row" className="ts-table__foot-label" colSpan={LEAD_COL_SPAN}>
               Günlük Toplam
             </th>
-            {/* İŞARETLER VARYANTA GÖRE (D1): `site` ŞP 237/245'in `4+`/`3G`
-                işaretlerini basar; `general` E5 203 gereği YALNIZ SAYI basar —
-                E5 120'de FM hücresi VARKEN BİLE. İki ayrı kural
-                `dayTotalText`/`dayTotalModifier` içinde tek yerde durur. */}
             {days.map((day) => (
               <td
                 key={day.workDate}
                 className={cx(
                   "ts-table__foot-cell",
-                  `ts-table__foot-cell--${dayTotalModifier(day, variant)}`,
+                  `ts-table__foot-cell--${day.workedDayCount > 0 ? "worked" : "zero"}`,
                 )}
               >
-                {dayTotalText(day, variant)}
+                {formatDecimal(day.totalHours, 1)}
               </td>
             ))}
-            {/* E5 213 · ŞP 248 — genel adam-gün */}
-            <td className="ts-table__foot-total">{totalManDays}</td>
+            {/* ŞP 248 */}
+            <td className="ts-table__foot-total">{formatDecimal(totalHours, 1)}</td>
           </tr>
         </tfoot>
       </table>
@@ -157,110 +139,30 @@ export function TimesheetTable({
   );
 }
 
-function TimesheetTableRow({
-  variant,
-  row,
-  days,
-  canWrite,
-  dirtyKeys,
-  onCommit,
+/**
+ * Salt-okunur hücre: SAAT sayısı ya da KOD rozeti. Boş gün BOŞ hücredir —
+ * "0" basmak "sıfır saat çalıştı" derdi, oysa kayıt HİÇ YOKTUR.
+ */
+function TimesheetReadCell({
+  cell,
+  normalDayHours,
 }: {
-  variant: TimesheetVariant;
-  row: TimesheetViewRow;
-  days: readonly TimesheetDayColumn[];
-  canWrite: boolean;
-  dirtyKeys: ReadonlySet<string> | undefined;
-  onCommit:
-    | ((personnelId: string, workDate: string, edit: TimesheetCellEdit | null) => void)
-    | undefined;
+  cell: TimesheetViewRow["cells"][string] | undefined;
+  normalDayHours: string | null;
 }) {
-  const isSite = variant === "site";
-  // Aynı anda TEK popover açıktır; hangi günün açık olduğu satırda durur.
-  const [openDate, setOpenDate] = useState<string | null>(null);
-  const isEditable = canWrite && onCommit !== undefined;
-  return (
-    <tr>
-      {/* E5 115 · ŞP 149 */}
-      <th scope="row" className="ts-table__name-cell">
-        <span className="ts-table__name">{row.fullName}</span>
-        {/* ŞP 149/169: "Kalıpçı Usta" · "Demir Ustası — Akın İnşaat".
-            Firma adı yoksa yalnız meslek basılır, tire uydurulmaz. */}
-        {isSite && <span className="ts-table__meta">{personMeta(row)}</span>}
-      </th>
-      {isSite ? (
-        // ŞP 150/170 — Şirket (mavi) / Taşeron (sarı) Tür rozeti. Diğer
-        // kaynaklar (general/freelance/intern) NÖTR rozete düşer — mockup'ta
-        // yok ama `/personel` listesiyle AYNI eşlemeyle basılır (F-TB1 T5).
-        <td className="ts-table__lead-cell">
-          <Badge
-            variant={resolveSourceBadgeVariant(row.source)}
-            className={cx("ts-source", row.source === "subcontractor" && "ts-source--subcontractor")}
-          >
-            {resolveWorkerSourceLabel(row.source)}
-          </Badge>
-        </td>
-      ) : (
-        // E5 116 — Meslek AYRI kolon
-        <td className="ts-table__lead-cell ts-table__trade">{row.trade ?? "—"}</td>
-      )}
-      {days.map((day) => {
-        const cell = row.cells[day.workDate];
-        const isDirty = dirtyKeys?.has(timesheetDraftKey(row.personnelId, day.workDate)) ?? false;
-        // "Ahmet Yılmaz · 3 Ağu" — hem popover başlığı hem hücre butonunun adı.
-        const cellLabel = `${row.fullName} · ${formatDayMonthShort(day.workDate)}`;
-        return (
-          <td key={day.workDate} className="ts-table__cell">
-            {isEditable ? (
-              // Çapa hücrenin TAMAMINI kaplar: `inline-flex` bir çapa boş
-              // hücrede sıfır genişlikte kalır ve BOŞ güne kod girilemezdi
-              // (F-PL T5'te gerçek kusur olarak çıktı, jsdom görmez).
-              <span className="ts-pop-anchor">
-                <button
-                  type="button"
-                  className={cx("ts-cell-button", isDirty && "ts-cell-button--dirty")}
-                  aria-label={`${cellLabel} puantajı`}
-                  onClick={() => setOpenDate(day.workDate)}
-                >
-                  <TimesheetCellBadge cell={cell} />
-                </button>
-                {openDate === day.workDate && (
-                  <TimesheetCellPopover
-                    cell={cell ?? null}
-                    label={cellLabel}
-                    variant={variant}
-                    onClose={() => setOpenDate(null)}
-                    onSubmit={(edit) => {
-                      onCommit(row.personnelId, day.workDate, edit);
-                      setOpenDate(null);
-                    }}
-                  />
-                )}
-              </span>
-            ) : (
-              <TimesheetCellBadge cell={cell} />
-            )}
-          </td>
-        );
-      })}
-      {/* E5 132 · ŞP 166 */}
-      <td className="ts-table__row-total">{row.manDays}</td>
-    </tr>
-  );
-}
-
-/** Salt-okunur kod rozeti (E5 117 · ŞP 151). Boş gün BOŞ hücredir. */
-function TimesheetCellBadge({ cell }: { cell: TimesheetViewRow["cells"][string] | undefined }) {
   if (!cell) return null;
-  const meta = timesheetCodeMeta(cell.code);
-  if (!meta) return null;
-  // Saatli FM'de saat başlıkta gösterilir — mockup rozetin İÇİNE saat yazmaz.
-  const hoursTitle =
-    cell.code === "overtime" && cell.overtimeHours
-      ? `${meta.label} · ${formatDecimal(cell.overtimeHours, 2)} saat`
-      : meta.label;
+  if (cell.code !== null) {
+    const meta = timesheetCodeMeta(cell.code);
+    if (!meta) return null;
+    return <span className={cx("ts-tag", `ts-tag--${meta.modifier}`)}>{meta.letter}</span>;
+  }
+  if (cell.hours === null || cell.hours.trim().length === 0) return null;
+  // Eşik bilinmiyorsa TON BASILMAZ — uydurma bir "tam gün" rengi, olmayan bir
+  // sözleşmeyi ekrana yazardı.
+  const modifier = normalDayHours === null ? null : dayHoursModifier(cell.hours, normalDayHours);
   return (
-    <span className={cx("ts-cell", `ts-cell--${meta.modifier}`)} title={hoursTitle}>
-      {meta.letter}
+    <span className={cx("ts-hours", modifier !== null && `ts-hours--${modifier}`)}>
+      {formatDecimal(cell.hours, 1)}
     </span>
   );
 }

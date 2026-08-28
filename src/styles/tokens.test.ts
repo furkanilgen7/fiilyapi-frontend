@@ -76,7 +76,14 @@ const tokensCss = readFileSync(
  */
 // F-DKAP: 83 → 84 — `--color-purple-tint-border` (DK:71) mevcut token'larda
 // karşılanmıyordu, TEK yeni renk açıldı (bekçinin kendisi doğruladı).
-const EXPECTED_HEX_COUNT = 84;
+// PUAN-SAAT: 84 → 89 — haftalık saat ızgarasının BEŞ tonu mevcut palette
+// karşılanmıyordu (E5 `5f3a944`): `--color-info-soft`/`-border-soft`/`-strong`
+// ("eksik gün" hücresi, E5 204) ile `--color-warning-tint` (Cumartesi sütunu,
+// E5 222) ve `--color-danger-tint-weak` (Pazar sütunu, E5 223). Mevcut
+// `--color-danger-tint` (#fff0f0) Pazar zemininden PEMBE, `--color-warning-soft`
+// (#fef3c7) Cumartesi zemininden KOYUdur — ikisi de sütun zemini olarak
+// hücrenin kendi tonunu yutardı.
+const EXPECTED_HEX_COUNT = 89;
 
 describe("tokens.css", () => {
   it("çekirdek renk token'larını tanımlar (açık tema Slate + Blue)", () => {

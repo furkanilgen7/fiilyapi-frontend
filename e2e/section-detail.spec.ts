@@ -107,20 +107,25 @@ test("santiye detayindan bolum detayina link, hero + KPI + sekmeler + Hakedis Ol
     page.getByText(/Stok hareketi bölüm alanı taşımıyor/),
   ).toHaveCount(1);
   // ŞP 117-119 karşılığı: bölüm adı + dönem, ve GÖRÜNEN kümenin türevleri.
-  // sec-1'in 2026-08 kümesi: per-1 (3 gün + 1 izin), per-2 (3 gün),
-  // per-3 (1 FM 3,00 sa + 1 geçici görev + 1 FM 2,50 sa) ⇒ 3 işçi.
+  // sec-1'in 2026-08 kümesi: per-1 (3 saatli/izinli gün), per-2 (3 gün),
+  // per-3 (2 saatli gün + 1 geçici görev) ⇒ 3 işçi.
   await expect(page.locator(".ts-summary__title")).toHaveText(
     "Kat 6–10 Kaba İnşaat · Ağustos 2026",
   );
   await expect(page.locator(".ts-summary__count")).toHaveText("3 işçi");
-  // 🔴 POZİTİF KONTROL — `.ts-cell` seçicisi GERÇEKTİR: dolu bölümde hücre
-  // rozeti basılır. Bu iddia olmadan, boş bölümdeki `toHaveCount(0)` bekçisi
-  // yanlış yazılmış bir seçiciyle de yeşil kalırdı (boş küme her zaman 0'dır).
-  const filledCells = await page.getByTestId("section-timesheet").locator(".ts-cell").count();
-  expect(filledCells).toBeGreaterThan(0);
-  // 🔴 SALT OKUNUR (K2): hücre düzenleme yolu bu ekranda AÇILMAZ.
-  await expect(page.locator(".ts-cell-button")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Kaydet" })).toHaveCount(0);
+  // 🔴 POZİTİF KONTROL — seçici GERÇEKTİR: dolu bölümde SAAT hücresi basılır.
+  // Bu iddia olmadan, boş bölümdeki `toHaveCount(0)` bekçisi yanlış yazılmış
+  // bir seçiciyle de yeşil kalırdı (boş küme her zaman 0'dır).
+  // (PUAN-SAAT: hücre artık kod rozeti `.ts-cell` DEĞİL, saat `.ts-hours`tur.)
+  const panel = page.getByTestId("section-timesheet");
+  expect(await panel.locator(".ts-hours").count()).toBeGreaterThan(0);
+  // Kod rozeti de basılır — kayıt gizlenmez.
+  expect(await panel.locator(".ts-tag").count()).toBeGreaterThan(0);
+  // 🔴 SALT OKUNUR ve öyle KALIR: bu ekranda saat KUTUSU, kod çapası ve
+  // kaydetme düğmesi HİÇ basılmaz (yazma yolu HAFTALIK ekrandadır).
+  await expect(panel.locator(".ts-hin")).toHaveCount(0);
+  await expect(panel.locator(".ts-week-cell__code-anchor")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Haftayı Kaydet" })).toHaveCount(0);
   await page.getByRole("tab", { name: "İş Kalemleri" }).click();
   await expect(page.getByTestId("section-boq-row")).toHaveCount(3);
 
