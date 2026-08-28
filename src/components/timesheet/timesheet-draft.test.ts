@@ -1,232 +1,185 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { buildTimesheetView } from "./derive";
-import type { TimesheetSourcedCell } from "./derive";
 import {
-  buildTimesheetSaveBody,
+  buildWeekSaveBody,
+  dayHoursText,
+  isEmptyCell,
+  MAX_DAY_HOURS,
   mergeDraftCells,
-  overtimeHoursText,
-  parseOvertimeHours,
+  parseDayHours,
   resolveCellSectionId,
   timesheetDraftKey,
   type TimesheetDraft,
 } from "./timesheet-draft";
+import type { TimesheetSourcedCell } from "./week-derive";
 
-// F-PT T3 · Taslak katmanı ve KAPSAM KURALI (bu dilimin en kritik tuzağı).
-
-const SERVER_CELLS: TimesheetSourcedCell[] = [
-  {
-    personnelId: "per-1",
-    work_date: "2026-09-01",
-    code: "worked",
-    overtime_hours: null,
-    section_id: "sec-1",
-  },
-  {
-    personnelId: "per-4",
-    work_date: "2026-09-01",
-    code: "worked",
-    overtime_hours: null,
-    section_id: "sec-2",
-  },
-];
-
-const MATRIX = {
-  site_id: "s-1",
-  site_name: "A-Blok",
-  project_id: "p-1",
-  project_name: "Güneşkent",
-  year: 2026,
-  month: 9,
+const cell = (
+  personnelId: string,
+  workDate: string,
+  extra: Partial<TimesheetSourcedCell> = {},
+): TimesheetSourcedCell => ({
+  personnelId,
+  work_date: workDate,
+  hours: "9",
+  code: null,
   section_id: null,
-  section_name: null,
-  worker_count: 2,
-  total_man_days: 2,
-  total_overtime_hours: "0",
-  day_totals: [],
-  rows: [
-    {
-      personnel_id: "per-1",
-      full_name: "Ahmet Yılmaz",
-      trade: "Kalıpçı",
-      source: "company",
-      subcontractor_name: null,
-      man_days: 1,
-      cells: [SERVER_CELLS[0]],
-    },
-    {
-      personnel_id: "per-4",
-      full_name: "Cem Aksoy",
-      trade: "Demirci",
-      source: "company",
-      subcontractor_name: null,
-      man_days: 1,
-      cells: [SERVER_CELLS[1]],
-    },
-  ],
-} as never;
+  ...extra,
+});
 
 describe("mergeDraftCells", () => {
-  it("taslaksiz kume sunucu kumesinin AYNISIDIR", () => {
-    expect(mergeDraftCells(SERVER_CELLS, {})).toHaveLength(2);
-  });
-
-  it("yeni hucre EKLER (kaydi olmayan gune kod girilebilir)", () => {
+  it("taslak sunucu hücresini EZER (aynı kişi-gün)", () => {
+    const server = [cell("p1", "2026-07-13", { hours: "9" })];
     const draft: TimesheetDraft = {
-      [timesheetDraftKey("per-1", "2026-09-02")]: {
-        code: "overtime",
-        overtimeHours: "3.5",
-        sectionId: "sec-1",
-      },
+      [timesheetDraftKey("p1", "2026-07-13")]: { hours: "6", code: null, sectionId: null },
     };
-    const merged = mergeDraftCells(SERVER_CELLS, draft);
-    expect(merged).toHaveLength(3);
-    expect(merged).toContainEqual({
-      personnelId: "per-1",
-      work_date: "2026-09-02",
-      code: "overtime",
-      overtime_hours: "3.5",
-      section_id: "sec-1",
-    });
-  });
-
-  it("mevcut hucreyi DEGISTIRIR, 'Temizle' (null) hucreyi DUSURUR", () => {
-    const draft: TimesheetDraft = {
-      [timesheetDraftKey("per-1", "2026-09-01")]: {
-        code: "leave",
-        overtimeHours: null,
-        sectionId: "sec-1",
-      },
-      [timesheetDraftKey("per-4", "2026-09-01")]: null,
-    };
-    const merged = mergeDraftCells(SERVER_CELLS, draft);
-    expect(merged).toHaveLength(1);
-    expect(merged[0]).toMatchObject({ personnelId: "per-1", code: "leave" });
-  });
-
-  it("FM disindaki kodda saat SURUKLENMEZ", () => {
-    const draft: TimesheetDraft = {
-      [timesheetDraftKey("per-1", "2026-09-01")]: {
-        code: "worked",
-        overtimeHours: "4",
-        sectionId: "sec-1",
-      },
-    };
-    const merged = mergeDraftCells(SERVER_CELLS, draft);
-    expect(merged.find((c) => c.personnelId === "per-1")?.overtime_hours).toBeNull();
-  });
-});
-
-describe("buildTimesheetSaveBody", () => {
-  it("govdeye YALNIZ sema alanlarini yazar (additionalProperties: false)", () => {
-    const body = buildTimesheetSaveBody(SERVER_CELLS);
-    expect(Object.keys(body)).toEqual(["cells"]);
-    const cells = body.cells ?? [];
-    expect(Object.keys(cells[0]).sort()).toEqual([
-      "code",
-      "overtime_hours",
-      "personnel_id",
-      "section_id",
-      "work_date",
+    expect(mergeDraftCells(server, draft)).toEqual([
+      { personnelId: "p1", work_date: "2026-07-13", hours: "6", code: null, section_id: null },
     ]);
-    // `personnelId` (istemci alani) ve `project_id` govdeye SIZMAZ.
-    expect(cells[0]).not.toHaveProperty("personnelId");
-    expect(cells[0]).not.toHaveProperty("project_id");
-  });
-});
-
-/* ═══ KAPSAM KANITI ═══════════════════════════════════════════════════════
- * `PUT` donem+santiye kapsaminda DEGISTIRMEDIR: govdede gecmeyen hucre
- * SILINIR. Asagidaki iki test, bolum filtresi ACIKKEN kurulan govdenin DIGER
- * bolumun hucresini de tasidigini kanitlar. Govde `rows`tan kurulsaydi bu
- * testler kirmizi olurdu — canlida ise diger bolumun ayi silinirdi.
- * ═══════════════════════════════════════════════════════════════════════ */
-describe("KAPSAM KURALI · bolum filtresi acikken govde TAM kumedir", () => {
-  it("suzulmus gorunumde bile allCells iki bolumun hucresini de tasir", () => {
-    const view = buildTimesheetView({
-      year: 2026,
-      month: 9,
-      personnel: [],
-      matrix: MATRIX,
-      sectionId: "sec-1", // YALNIZ Kat 6-10 goruntuleniyor
-    });
-
-    // Gorunum SUZULMUS: sec-2'nin hucresi ekranda YOK.
-    const visible = view.rows.flatMap((row) => Object.keys(row.cells));
-    expect(visible).toHaveLength(1);
-
-    // Govde ise TAM: sec-2'nin hucresi de gonderilir.
-    const cells = buildTimesheetSaveBody(view.allCells).cells ?? [];
-    expect(cells).toHaveLength(2);
-    expect(cells.map((cell) => cell.section_id).sort()).toEqual(["sec-1", "sec-2"]);
   });
 
-  it("filtreli gorunumde yapilan duzenleme diger bolumun hucresini SILMEZ", () => {
+  it("dokunulmamış sunucu hücresi AYNEN kalır", () => {
+    const server = [cell("p1", "2026-07-13"), cell("p2", "2026-07-14", { hours: "8" })];
     const draft: TimesheetDraft = {
-      [timesheetDraftKey("per-1", "2026-09-03")]: {
-        code: "worked",
-        overtimeHours: null,
+      [timesheetDraftKey("p1", "2026-07-13")]: { hours: "4", code: null, sectionId: null },
+    };
+    const merged = mergeDraftCells(server, draft);
+    expect(merged).toContainEqual(
+      expect.objectContaining({ personnelId: "p2", work_date: "2026-07-14", hours: "8" }),
+    );
+  });
+
+  it("`null` taslak değeri (“Temizle”) hücreyi kümeden DÜŞÜRÜR — gövdede geçmeyen hücre silinir", () => {
+    const server = [cell("p1", "2026-07-13")];
+    const draft: TimesheetDraft = { [timesheetDraftKey("p1", "2026-07-13")]: null };
+    expect(mergeDraftCells(server, draft)).toEqual([]);
+  });
+
+  it("🔴 SAAT XOR KOD: kod seçilince saat SÜRÜKLENMEZ", () => {
+    const draft: TimesheetDraft = {
+      [timesheetDraftKey("p1", "2026-07-14")]: {
+        hours: "9",
+        code: "leave",
         sectionId: "sec-1",
       },
     };
-    const view = buildTimesheetView({
-      year: 2026,
-      month: 9,
-      personnel: [],
-      matrix: MATRIX,
-      sectionId: "sec-1",
-      draft,
+    expect(mergeDraftCells([], draft)).toEqual([
+      {
+        personnelId: "p1",
+        work_date: "2026-07-14",
+        hours: null,
+        code: "leave",
+        section_id: "sec-1",
+      },
+    ]);
+  });
+
+  it("içi boşalmış (saatsiz + kodsuz) taslak hücresi kümeye GİRMEZ", () => {
+    const draft: TimesheetDraft = {
+      [timesheetDraftKey("p1", "2026-07-15")]: { hours: "", code: null, sectionId: null },
+    };
+    expect(mergeDraftCells([], draft)).toEqual([]);
+  });
+
+  it("sonuç kişi + gün sırasına göre SABİTTİR (render sırasından bağımsız)", () => {
+    const merged = mergeDraftCells([cell("p2", "2026-07-14"), cell("p1", "2026-07-15")], {
+      [timesheetDraftKey("p1", "2026-07-13")]: { hours: "3", code: null, sectionId: null },
     });
-    const cells = buildTimesheetSaveBody(view.allCells).cells ?? [];
-    expect(cells).toHaveLength(3);
+    expect(merged.map((c) => `${c.personnelId}|${c.work_date}`)).toEqual([
+      "p1|2026-07-13",
+      "p1|2026-07-15",
+      "p2|2026-07-14",
+    ]);
+  });
+});
+
+describe("buildWeekSaveBody", () => {
+  it("gövde alanları TEK TEK yazılır — istemci alanı (`personnelId`) SIZMAZ", () => {
+    const body = buildWeekSaveBody([
+      cell("p1", "2026-07-13", { hours: "9", section_id: "sec-1" }),
+    ]);
+    expect(body).toEqual({
+      cells: [
+        {
+          personnel_id: "p1",
+          work_date: "2026-07-13",
+          hours: "9",
+          code: null,
+          section_id: "sec-1",
+        },
+      ],
+    });
+    expect(Object.keys(body.cells[0])).not.toContain("personnelId");
+  });
+
+  it("boş hücre gövdeye GİRMEZ (uç `saat XOR kod` bekler)", () => {
     expect(
-      cells.some((cell) => cell.personnel_id === "per-4" && cell.section_id === "sec-2"),
-    ).toBe(true);
+      buildWeekSaveBody([cell("p1", "2026-07-13", { hours: null, code: null })]).cells,
+    ).toEqual([]);
   });
 });
 
 describe("resolveCellSectionId", () => {
-  it("MEVCUT hucrenin bolumunu KORUR (aktif filtre bolumu degistirmez)", () => {
-    expect(resolveCellSectionId(SERVER_CELLS, "per-4", "2026-09-01", "sec-1")).toBe("sec-2");
+  it("MEVCUT hücrenin bölümü KORUNUR — aktif filtre onu değiştirmez", () => {
+    const cells = [cell("p1", "2026-07-13", { section_id: "sec-2" })];
+    expect(resolveCellSectionId(cells, "p1", "2026-07-13", "sec-1")).toBe("sec-2");
   });
 
-  it("YENI hucre aktif filtrenin bolumunu alir", () => {
-    expect(resolveCellSectionId(SERVER_CELLS, "per-1", "2026-09-09", "sec-1")).toBe("sec-1");
+  it("YENİ hücre aktif filtrenin bölümünü alır", () => {
+    expect(resolveCellSectionId([], "p1", "2026-07-13", "sec-1")).toBe("sec-1");
   });
 
-  it("filtre kapaliyken yeni hucre bolumsuzdur", () => {
-    expect(resolveCellSectionId(SERVER_CELLS, "per-1", "2026-09-09", null)).toBeNull();
-  });
-});
-
-describe("parseOvertimeHours", () => {
-  it("bos metin GECERLIDIR — saat opsiyoneldir (saatsiz FM)", () => {
-    expect(parseOvertimeHours("   ")).toEqual({ ok: true, value: null });
-  });
-
-  it("virgullu ondalik kabul edilir ve noktaya cevrilir", () => {
-    expect(parseOvertimeHours("3,5")).toEqual({ ok: true, value: "3.5" });
-  });
-
-  it("iki ondalik REDDEDILIR (backend en fazla bir basamak kabul eder)", () => {
-    expect(parseOvertimeHours("3,55").ok).toBe(false);
-  });
-
-  it("sinirlar: 0 REDDEDILIR, 24 gecerli, 24.1 REDDEDILIR", () => {
-    expect(parseOvertimeHours("0").ok).toBe(false);
-    expect(parseOvertimeHours("24")).toEqual({ ok: true, value: "24" });
-    expect(parseOvertimeHours("24,1").ok).toBe(false);
-  });
-
-  it("sayi olmayan metin REDDEDILIR", () => {
-    expect(parseOvertimeHours("abc").ok).toBe(false);
+  it("filtre kapalıyken yeni hücre bölümsüz (null) açılır", () => {
+    expect(resolveCellSectionId([], "p1", "2026-07-13", null)).toBeNull();
   });
 });
 
-describe("overtimeHoursText", () => {
-  it("sunucunun '3.00' degeri duzenlenebilir '3'e doner", () => {
-    expect(overtimeHoursText("3.00")).toBe("3");
-    expect(overtimeHoursText("2.50")).toBe("2,5");
-    expect(overtimeHoursText(null)).toBe("");
+describe("parseDayHours", () => {
+  it("boş metin GEÇERLİDİR ve `null` döner (gün boşaltıldı)", () => {
+    expect(parseDayHours("   ")).toEqual({ ok: true, value: null });
+  });
+
+  it("Türkçe klavyenin virgülünü kabul eder", () => {
+    expect(parseDayHours("7,5")).toEqual({ ok: true, value: "7.5" });
+  });
+
+  it("iki ondalık basamak REDDEDİLİR (uç deseni tek basamaktır)", () => {
+    const result = parseDayHours("7,55");
+    expect(result.ok).toBe(false);
+  });
+
+  it(`sıfır ve ${MAX_DAY_HOURS} üstü REDDEDİLİR (uç sınırı 0 < saat <= 24)`, () => {
+    expect(parseDayHours("0").ok).toBe(false);
+    expect(parseDayHours("24").ok).toBe(true);
+    expect(parseDayHours("24.1").ok).toBe(false);
+  });
+
+  it("harf/işaret REDDEDİLİR", () => {
+    expect(parseDayHours("-3").ok).toBe(false);
+    expect(parseDayHours("abc").ok).toBe(false);
+  });
+});
+
+describe("dayHoursText", () => {
+  it("sunucunun `9.00`ını düzenlenebilir `9`a indirger", () => {
+    expect(dayHoursText("9.00")).toBe("9");
+  });
+
+  it("anlamlı ondalığı KORUR ve TR virgülüne çevirir", () => {
+    expect(dayHoursText("7.50")).toBe("7,5");
+  });
+
+  it("boş/null boş metindir", () => {
+    expect(dayHoursText(null)).toBe("");
+    expect(dayHoursText("  ")).toBe("");
+  });
+});
+
+describe("isEmptyCell", () => {
+  it("kodlu hücre boş DEĞİLDİR (saati olmasa da)", () => {
+    expect(isEmptyCell({ hours: null, code: "leave" })).toBe(false);
+  });
+
+  it("saatsiz + kodsuz hücre boştur", () => {
+    expect(isEmptyCell({ hours: "", code: null })).toBe(true);
   });
 });

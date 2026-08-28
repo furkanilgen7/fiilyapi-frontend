@@ -3,16 +3,21 @@ import { backendClient } from "@/lib/api/client";
 import { unwrap } from "@/lib/api/unwrap";
 import type { components } from "@/lib/api/schema";
 
-// F-PT T1 · Puantaj matrisinin OKUMA sorgusu (E5 + ŞP ortak cekirdegi).
-// `useSitePlan.ts` deseniyle AYNI: tipler `pnpm gen:api` ciktisindan takma ad
-// olarak alinir, elle arayuz yazmak yasak.
+// PUAN-SAAT · Puantajin OKUMA sorgulari.
+// Tipler `pnpm gen:api` ciktisindan takma ad olarak alinir; elle arayuz yazmak
+// yasak (`useSitePlan.ts` deseni).
 export type TimesheetMatrix = components["schemas"]["TimesheetMatrix"];
 export type TimesheetMatrixRow = components["schemas"]["TimesheetMatrixRow"];
 export type TimesheetCell = components["schemas"]["TimesheetCell"];
 export type TimesheetDayTotal = components["schemas"]["TimesheetDayTotal"];
 export type TimesheetCode = components["schemas"]["TimesheetCode"];
+export type TimesheetWeek = components["schemas"]["TimesheetWeek"];
+export type TimesheetWeekRow = components["schemas"]["TimesheetWeekRow"];
+export type TimesheetWeekSummary = components["schemas"]["TimesheetWeekSummary"];
+export type TimesheetRowTotals = components["schemas"]["TimesheetRowTotals"];
 
 export const TIMESHEET_QUERY_KEY = "timesheet";
+export const TIMESHEET_WEEK_QUERY_KEY = "timesheet-week";
 
 /** `GET /sites/{site_id}/timesheet` — `year`/`month` ZORUNLU, bolum opsiyonel. */
 export interface TimesheetPeriod {
@@ -21,17 +26,14 @@ export interface TimesheetPeriod {
 }
 
 /**
- * Puantaj matrisi (`GET /sites/{site_id}/timesheet`).
+ * AYLIK matris (`GET /sites/{site_id}/timesheet`).
  *
- * `year`/`month` ZORUNLUDUR — eksik gonderilirse gercek backend 422 doner, bu
- * yuzden bos `siteId` ile aga CIKILMAZ (`useSitePlan` deseni).
+ * 🔴 Bu uc artik YALNIZ OKUMADIR: yazma yolu haftalik uctur. Ekranlarda
+ * kullanildigi tek yer Bolum Detay'in salt-okur puantaj sekmesi + Excel
+ * disa aktarimi.
  *
- * `sectionId` YALNIZ GORUNUMU suzer (ŞP 99 "Tüm Bölümler / Kat 6–10"): baska
- * santiyenin bolumu bos matris DEGIL 404 alir. Kaydetme kapsamiyla
- * KARISTIRILMAMALIDIR — bkz. `useSaveTimesheet`in kapsam uyarisi.
- *
- * Hucreler SEYREKTIR: girilmemis gun hucre URETMEZ, gun iskeleti
- * `day_totals`ten okunur.
+ * Hucreler SEYREKTIR: girilmemis gun hucre URETMEZ, gun iskeleti cagiranin
+ * takviminden kurulur.
  */
 export function useTimesheet(
   siteId: string,
@@ -55,4 +57,41 @@ export function useTimesheet(
         }),
       ),
   });
+}
+
+/** `GET /sites/{site_id}/timesheet/week` — hafta ISO SAYILARIYLA taşınır. */
+export interface TimesheetWeekParams {
+  isoYear: number;
+  isoWeek: number;
+}
+
+/**
+ * Haftalık ekranın sorgu tarifi — hem `useTimesheetWeek` hem de "Önceki
+ * Haftayı Kopyala" (`queryClient.fetchQuery`) AYNI tarifi kullanır, böylece
+ * önbellek anahtarı iki yolda ayrışmaz.
+ *
+ * ⚠️ ŞEF KARARI K2: `section_id` BİLEREK GEÇİRİLMEZ — hafta HER ZAMAN
+ * süzgeçsiz çekilir, bölüm filtresi yalnız görünüme uygulanır. Süzgeçli küme
+ * kaydetme gövdesine sızarsa diğer bölümlerin o haftası SİLİNİR.
+ */
+export function timesheetWeekQuery(siteId: string, week: TimesheetWeekParams) {
+  return {
+    queryKey: [TIMESHEET_WEEK_QUERY_KEY, siteId, week.isoYear, week.isoWeek] as const,
+    queryFn: async () =>
+      unwrap(
+        await backendClient.GET("/sites/{site_id}/timesheet/week", {
+          params: {
+            path: { site_id: siteId },
+            query: { iso_year: week.isoYear, iso_week: week.isoWeek },
+          },
+        }),
+      ),
+  };
+}
+
+export function useTimesheetWeek(
+  siteId: string,
+  week: TimesheetWeekParams,
+): UseQueryResult<TimesheetWeek, Error> {
+  return useQuery({ enabled: siteId.length > 0, ...timesheetWeekQuery(siteId, week) });
 }
