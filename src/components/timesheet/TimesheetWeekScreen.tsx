@@ -114,7 +114,11 @@ export function TimesheetWeekScreen({
 
   const { view, weekData, normalDayHours } = data;
   const monthWeeks = weekData?.month_weeks ?? [];
-  const missingWeekCount = monthWeeks.filter((entry) => !entry.has_entries).length;
+  // E5 356-357 — aktarım kapısının GERÇEK girdisi: ay şeridinin `has_entries`i.
+  // "girilmedi" rozetiyle AYNI kaynak; ikinci bir hesap yazılmaz.
+  const missingWeeks = monthWeeks
+    .filter((entry) => !entry.has_entries)
+    .map((entry) => entry.iso_week);
 
   return (
     <div className={className}>
@@ -252,7 +256,7 @@ export function TimesheetWeekScreen({
           monthTotalHours={weekData.month_total_hours}
           monthManDays={weekData.month_man_days}
           monthWeekCount={monthWeeks.length}
-          missingWeekCount={missingWeekCount}
+          missingWeeks={missingWeeks}
           workerCount={view.workerCount}
           weeklyNormalHours={weekData.weekly_normal_hours}
           normalDayHours={normalDayHours}

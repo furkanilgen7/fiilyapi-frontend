@@ -1,5 +1,15 @@
+import Link from "next/link";
+
 import { Input } from "@/components/ui/input/Input";
+import { cx } from "@/lib/cx";
 import { formatDecimal } from "@/lib/format";
+
+/**
+ * Bordro ekranının GERÇEK rotası (`nav-config.ts` · `src/app/(app)/bordro`).
+ * Mockup'ın `Bordro Yönetimi.dc.html` dosya adı KOPYALANMAZ — mockup dosya
+ * adları ürün rotası değildir.
+ */
+export const PAYROLL_ROUTE = "/bordro";
 
 export interface TimesheetPayrollPanelProps {
   normalHours: string;
@@ -7,8 +17,12 @@ export interface TimesheetPayrollPanelProps {
   monthTotalHours: string;
   monthManDays: string;
   monthWeekCount: number;
-  /** Ayın kaç haftası hâlâ girilmemiş — aktarım kapısının gerekçesi. */
-  missingWeekCount: number;
+  /**
+   * Ayın HENÜZ GİRİLMEMİŞ haftalarının ISO numaraları (E5 357'nin "30. ve 31.
+   * hafta eksik" cümlesi). Kaynak ay şeridinin `has_entries`idir — ikinci bir
+   * hesap YAZILMAZ.
+   */
+  missingWeeks: readonly number[];
   workerCount: number;
   weeklyNormalHours: string;
   normalDayHours: string;
@@ -22,8 +36,13 @@ export interface TimesheetPayrollPanelProps {
  *   • "Haftalık Brüt ₺29.070" (E5 352-354): brüt ücret hesabı bu uçta YOKTUR
  *     (saatlik ücret personel kartında, çarpan bordro ayarlarındadır). Sayı
  *     UYDURULMAZ — kart devre dışı basılır.
- *   • "Bordroya Aktar" düğmesi (E5 359): aktarım ucu yoktur; mockup'ta da
- *     `cursor:not-allowed` ile pasiftir.
+ * 🔴 "Bordroya Aktar" (E5 359) BUNLARDAN FARKLIDIR — kalıcı yer tutucu DEĞİL,
+ * VERİYE BAĞLI BİR HÂLDİR. Mockup düğmeyi `cursor:not-allowed` çizer ve
+ * sebebini hemen üstünde yazar (E5 356-357): *"Bordro aylık kapanır — ayın tüm
+ * haftaları girilmeden hesaplama yapılamaz (30. ve 31. hafta eksik)."* Yani
+ * düğme ayın BÜTÜN haftaları girilince AÇILIR. Eksik haftalar ay şeridinin
+ * `has_entries` alanından türetilir (ikinci bir hesap yazılmaz) ve hedef
+ * ürünün GERÇEK rotasıdır (`/bordro`), mockup dosya adı değil.
  *   • "Haftalık normal 45" kutusu (E5 129-132): değer sözleşmeden
  *     (`weekly_normal_hours`) OKUNUR ama YAZILAMAZ — uçta ayar yazma yolu yok.
  *
@@ -36,7 +55,7 @@ export function TimesheetPayrollPanel({
   monthTotalHours,
   monthManDays,
   monthWeekCount,
-  missingWeekCount,
+  missingWeeks,
   workerCount,
   weeklyNormalHours,
   normalDayHours,
@@ -79,18 +98,21 @@ export function TimesheetPayrollPanel({
       </div>
       <div className="ts-payroll__foot">
         <p className="ts-payroll__hint">
-          {/* E5 357-358 — sabitler SÖZLEŞMEDEN, mockup metninden DEĞİL */}
+          {/* E5 356-358 — sabitler SÖZLEŞMEDEN, mockup metninden DEĞİL */}
           Saatlik ücret = günlük ücret ÷ {formatDecimal(normalDayHours, 1)}. Haftalık{" "}
           {formatDecimal(weeklyNormalHours, 1)} saati aşan kısım <strong>%50 zamlı</strong>.
-          Bordro aylık kapanır —{" "}
-          {missingWeekCount > 0
-            ? `ayın ${missingWeekCount} haftası henüz girilmedi.`
-            : "ayın tüm haftaları girildi."}
+          Bordro aylık kapanır — {payrollGateReason(monthWeekCount, missingWeeks)}
         </p>
-        {/* E5 359 — aktarım ucu YOK; mockup'ta da pasif çizilmiştir */}
-        <span className="ts-payroll__action" aria-disabled="true">
-          Bordroya Aktar
-        </span>
+        {/* E5 359 — HÂL MAKİNESİ: ayın tüm haftaları girilince AÇILIR. */}
+        {canTransfer(monthWeekCount, missingWeeks) ? (
+          <Link href={PAYROLL_ROUTE} className={cx("ts-payroll__action", "ts-payroll__action--ready")}>
+            Bordroya Aktar
+          </Link>
+        ) : (
+          <span className="ts-payroll__action" aria-disabled="true">
+            Bordroya Aktar
+          </span>
+        )}
       </div>
       {/* E5 129-132 — okunur ama yazılamaz */}
       <label className="ts-payroll__weekly">
@@ -108,4 +130,24 @@ export function TimesheetPayrollPanel({
       </label>
     </section>
   );
+}
+
+/**
+ * Aktarım kapısı. 🔴 BOŞ ŞERİT "hepsi girildi" DEĞİLDİR: ay şeridi
+ * okunamadıysa (`monthWeekCount === 0`) kapı KAPALI kalır — bilinmezliği
+ * "tamam" saymak, eksik bir ayı bordroya aktarmaya davet ederdi.
+ */
+export function canTransfer(monthWeekCount: number, missingWeeks: readonly number[]): boolean {
+  return monthWeekCount > 0 && missingWeeks.length === 0;
+}
+
+/** E5 357'nin gerekçe cümlesi — eksik haftalar ADIYLA yazılır. */
+export function payrollGateReason(
+  monthWeekCount: number,
+  missingWeeks: readonly number[],
+): string {
+  if (monthWeekCount === 0) return "ayın hafta özeti okunamadı, aktarım kapalı.";
+  if (missingWeeks.length === 0) return "ayın tüm haftaları girildi, aktarıma hazır.";
+  const list = missingWeeks.map((week) => `${week}.`).join(" ve ");
+  return `${list} hafta girilmeden hesaplama yapılamaz.`;
 }

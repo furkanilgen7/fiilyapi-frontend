@@ -1119,3 +1119,9 @@
   text-align: center;
   font-weight: var(--weight-bold);
 }
+/* E5 359 — aktarım AÇIK hâli: kart şeridinin birincil rengini alır. */
+.ts-payroll__action--ready {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+  cursor: pointer;
+}
