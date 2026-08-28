@@ -1,42 +1,32 @@
 import type { PersonnelListItem, WorkerSource } from "@/lib/api/hooks/usePersonnel";
-import type { TimesheetCell, TimesheetCode, TimesheetMatrix } from "@/lib/api/hooks/useTimesheet";
+import type { TimesheetCode, TimesheetMatrix } from "@/lib/api/hooks/useTimesheet";
 import { sumDecimalStrings } from "@/lib/decimal";
 
 import { monthDayIsoList } from "./month";
-import type { TimesheetVariant } from "./timesheet-codes";
-import { EMPTY_TIMESHEET_DRAFT, mergeDraftCells, type TimesheetDraft } from "./timesheet-draft";
 
 /**
- * Puantaj matrisinin TÜREV KATMANI (F-PT T2) — saf, bileşensiz, test edilebilir.
+ * AYLIK puantaj matrisinin TÜREV KATMANI — saf, bileşensiz, test edilebilir.
  *
- * ═══ ŞEF KARARI K2 — BÖLÜM FİLTRESİ İSTEMCİ TARAFINDA SÜZER ═══
- * `GET /sites/{id}/timesheet` HER ZAMAN SÜZGEÇSİZ çekilir (`section_id`
- * GÖNDERİLMEZ); ekran şantiyenin TAM hücre kümesini elde tutar ve bölüm
- * filtresini YALNIZ bu görünüm katmanında uygular.
+ * 🔴 KAPSAM: bu katman artık YALNIZ SALT-OKUR yüzeylere hizmet eder — Bölüm
+ * Detay'ın "İşçiler & Puantaj" sekmesi ve "Bu Bölümdeki İşçiler" kartı.
+ * YAZMA yolu HAFTALIKTIR (`week-derive.ts` + `PUT .../timesheet/week`); aylık
+ * `PUT` uçtan KALKTI. Bu yüzden burada `allCells`/taslak KAVRAMI YOKTUR:
+ * kaydetme gövdesi bu dosyadan kurulamaz, yapısal olarak.
  *
- * GEREKÇE: `PUT .../timesheet` dönem+şantiye kapsamında DEĞİŞTİRMEDİR ve gövde
- * HER ZAMAN şantiyenin TAM hücre kümesi olmalıdır. Süzgeçli küme gönderilirse
- * diğer bölümlerin o aya ait TÜM kayıtları sessizce SİLİNİR. Tam kümeyi her an
- * elde tutmak bu tuzağı YAPISAL OLARAK imkânsız kılar — T3'ün kaydetme gövdesi
- * `TimesheetDerived.allCells` üzerinden kurulur, `rows` üzerinden DEĞİL.
- * (İstisna: Excel dışa aktarımını SUNUCU üretir; `section_id` ORAYA geçirilir.)
+ * ═══ K2 KORUNUR ═══
+ * `GET .../timesheet` süzgeçsiz çekilir, bölüm filtresi YALNIZ bu görünüm
+ * katmanında uygulanır — önbellek şantiye ekranıyla paylaşılsın diye.
  *
- * Süzülmüş kümeden yeniden hesaplanan türevler backend'in süzgeçli çıktısıyla
- * BİREBİR aynı sonucu verir — kurallar backend kanonundan:
- *   • adam-gün = `worked` + `overtime` (`temporary_duty`/`leave`/`holiday` SAYILMAZ)
- *   • `+` yalnız bir İŞARETTİR, sayıyı değiştirmez (o günde en az bir FM varsa)
- *   • `G` AYRI sayaçtır (`temporary_duty_count`)
- *   • FM saat toplamı YALNIZ girilmiş saatlerden (saatsiz FM 0 katar)
+ * ═══ 🔴 SAAT XOR KOD ═══
+ * Hücre artık ya SAATtir ya da KODtur (`leave`/`holiday`/`temporary_duty`).
+ * `worked`/`overtime` kodları KALKTI. Adam-gün ARTIK TÜREVDİR (saat ÷ normal
+ * gün saati) ve tek kaynağı backend'dir — aylık uç `normal_day_hours`
+ * YAYINLAMADIĞI için bu katman adam-gün HESAPLAMAZ, saat toplar.
  */
 
-/** Adam-güne sayılan kodlar — backend `countsAsManDay` ile birebir. */
-export function countsAsManDay(code: TimesheetCode): boolean {
-  return code === "worked" || code === "overtime";
-}
-
 export interface TimesheetViewCell {
-  code: TimesheetCode;
-  overtimeHours: string | null;
+  hours: string | null;
+  code: TimesheetCode | null;
   sectionId: string | null;
 }
 
@@ -48,43 +38,31 @@ export interface TimesheetViewRow {
   subcontractorName: string | null;
   /** `YYYY-MM-DD` → hücre. Girilmemiş gün ANAHTAR TAŞIMAZ (matris seyrektir). */
   cells: Record<string, TimesheetViewCell>;
-  /** Bu satırın adam-günü (görünen/süzülmüş kümeden). */
-  manDays: number;
+  /** Görünen hücrelerin saat toplamı. */
+  totalHours: string;
 }
 
 export interface TimesheetDayColumn {
   workDate: string;
-  /** Ayın günü (E5 94-109 · ŞP 127-142 başlıkları). */
+  /** Ayın günü — sütun başlığı. */
   dayOfMonth: number;
-  /** Günlük Toplam sayısı (E5 198 · ŞP 232). */
-  workedCount: number;
-  /** `4+` işareti (ŞP 237): o günde en az bir FM hücresi var. */
-  hasOvertime: boolean;
-  /** `3G` işareti (ŞP 245). */
+  /** Günün saat toplamı (görünen kümeden). */
+  totalHours: string;
+  /** SAATLİ hücre sayısı; kodlu hücre çalışılmış değildir. */
+  workedDayCount: number;
+  leaveCount: number;
   temporaryDutyCount: number;
 }
 
 export interface TimesheetDerived {
   days: TimesheetDayColumn[];
   rows: TimesheetViewRow[];
-  /** "48 işçi" (ŞP 118) — görünen kümede EN AZ BİR hücresi olan personel. */
+  /** Görünen kümede EN AZ BİR hücresi olan personel. */
   workerCount: number;
-  /** "864 adam/gün" (ŞP 119) + tfoot genel toplamı (E5 213 · ŞP 248). */
-  totalManDays: number;
-  /** "128 saat fazla mesai" (ŞP 119) — ondalık STRING, float aritmetiği yok. */
-  totalOvertimeHours: string;
-  /**
-   * Şantiyenin TAM (SÜZÜLMEMİŞ) hücre kümesi — K2'nin dayanağı: sunucunun
-   * süzgeçsiz kümesi + YEREL TASLAK düzenlemeleri. Kaydetme gövdesi (T3)
-   * BUNDAN kurulur; `rows` bölüm filtresine göre süzülmüştür ve kaydetme
-   * gövdesi olarak KULLANILAMAZ.
-   */
-  allCells: readonly TimesheetSourcedCell[];
-}
-
-/** Personel kimliğiyle etiketlenmiş ham hücre (kaydetme gövdesinin girdisi). */
-export interface TimesheetSourcedCell extends TimesheetCell {
-  personnelId: string;
+  /** Ay toplamı — düz saat toplaması (türev değil). */
+  totalHours: string;
+  /** Normal gün saati (renk eşiği) — uç yayınlamıyorsa `null`, UYDURULMAZ. */
+  normalDayHours: string | null;
 }
 
 export interface BuildTimesheetViewInput {
@@ -94,29 +72,27 @@ export interface BuildTimesheetViewInput {
   personnel: readonly PersonnelListItem[] | undefined;
   /** `GET .../timesheet` çıktısı — SÜZGEÇSİZ çekilmiş TAM matris (K2). */
   matrix: TimesheetMatrix | undefined;
-  /** Görünüm süzgeci; `null` = Tüm Bölümler (ŞP 99). */
+  /** Görünüm süzgeci; `null` = Tüm Bölümler. */
   sectionId: string | null;
   /**
-   * Kaydedilmemiş yerel düzenlemeler (T3). Sunucu kümesinin ÜZERİNE binerler,
-   * dolayısıyla satırlar, ayak satırı ve özet şeridi taslağı ANINDA yansıtır —
-   * kullanıcı "Kaydet"e basmadan da ne yazacağını görür.
+   * Saat renk eşiği. Aylık uç `normal_day_hours` YAYINLAMAZ; çağıran biliyorsa
+   * (haftalık uçtan) geçirir, bilmiyorsa `null` kalır ve renk eşiği basılmaz.
    */
-  draft?: TimesheetDraft;
+  normalDayHours?: string | null;
+}
+
+interface SourcedCell extends TimesheetViewCell {
+  personnelId: string;
+  workDate: string;
 }
 
 /**
  * ═══ ŞEF KARARI K1 — SATIR KÜMESİ `GET /personnel`'DEN KURULUR ═══
- * Backend matris satırlarını YALNIZ var olan hücrelerden türetir: o ay hiç
- * kaydı olmayan personel matriste GÖRÜNMEZ. Satırlar bu yüzden AKTİF PERSONEL
- * KARTOTEKSİNDEN kurulur, matristen gelen hücreler `personnel_id` ile bu
- * satırlara EŞLENİR. Aksi hâlde yeni eklenen işçiye puantaj hiç girilemez
- * (canlıda "matris sonsuza dek boş" hatası).
- *
- * BİRLEŞİM (union): kartotekste olmayan ama matriste hücresi olan personel de
- * satır alır (ör. sonradan pasifleştirilmiş işçi). Aksi hâlde hücreleri
- * ekranda görünmez olur ve T3'ün kaydetme gövdesinden düşerek SİLİNİRDİ.
- *
- * Sıralama backend'in ada göre sıralı çıktısıyla tutarlıdır (tr-TR).
+ * Backend satırları YALNIZ var olan hücrelerden türetir: o ay hiç kaydı
+ * olmayan personel matriste GÖRÜNMEZ. Satırlar bu yüzden AKTİF PERSONEL
+ * KARTOTEKSİNDEN kurulur; matristen gelen hücreler `personnel_id` ile eşlenir.
+ * BİRLEŞİM: kartotekste olmayan ama matriste hücresi olan personel de satır
+ * alır (ör. sonradan pasifleştirilmiş işçi) — kayıt gizlenmez.
  */
 export function buildTimesheetView({
   year,
@@ -124,46 +100,46 @@ export function buildTimesheetView({
   personnel,
   matrix,
   sectionId,
-  draft = EMPTY_TIMESHEET_DRAFT,
+  normalDayHours = null,
 }: BuildTimesheetViewInput): TimesheetDerived {
-  // Taslak SÜZGEÇSİZ küme üzerine biner — `allCells` böylece her an gövdeye
-  // hazır TAM kümedir (kapsam kuralı, bkz. `timesheet-draft.ts`).
-  const allCells = mergeDraftCells(collectSourcedCells(matrix), draft);
-  const rows = buildRows(personnel, matrix, allCells, sectionId);
-  const days = buildDayColumns(year, month, allCells, sectionId);
-
-  const visibleCells = allCells.filter((cell) => cellInSection(cell, sectionId));
-  const overtimeValues = visibleCells
-    .map((cell) => cell.overtime_hours)
-    .filter((hours): hours is string => hours !== null && hours.trim().length > 0);
+  const cells = collectSourcedCells(matrix).filter((cell) => cellInSection(cell, sectionId));
+  const rows = buildRows(personnel, matrix, cells);
+  const days = buildDayColumns(year, month, cells);
 
   return {
     days,
     rows,
     workerCount: rows.filter((row) => Object.keys(row.cells).length > 0).length,
-    totalManDays: rows.reduce((sum, row) => sum + row.manDays, 0),
-    // Ondalık toplama STRING üzerinden (`src/lib/decimal.ts`) — float yasak.
-    totalOvertimeHours: sumDecimalStrings(overtimeValues),
-    allCells,
+    totalHours: sumDecimalStrings(rows.map((row) => row.totalHours)),
+    normalDayHours,
   };
 }
 
-function collectSourcedCells(matrix: TimesheetMatrix | undefined): TimesheetSourcedCell[] {
+function collectSourcedCells(matrix: TimesheetMatrix | undefined): SourcedCell[] {
   if (!matrix) return [];
   return matrix.rows.flatMap((row) =>
-    row.cells.map((cell) => ({ ...cell, personnelId: row.personnel_id })),
+    row.cells.map((cell) => ({
+      personnelId: row.personnel_id,
+      workDate: cell.work_date,
+      hours: cell.hours,
+      code: cell.code,
+      sectionId: cell.section_id,
+    })),
   );
 }
 
-function cellInSection(cell: TimesheetSourcedCell, sectionId: string | null): boolean {
-  return sectionId === null || cell.section_id === sectionId;
+function cellInSection(cell: SourcedCell, sectionId: string | null): boolean {
+  return sectionId === null || cell.sectionId === sectionId;
+}
+
+function cellHours(cell: { hours: string | null }): string {
+  return cell.hours !== null && cell.hours.trim().length > 0 ? cell.hours : "0";
 }
 
 function buildRows(
   personnel: readonly PersonnelListItem[] | undefined,
   matrix: TimesheetMatrix | undefined,
-  allCells: readonly TimesheetSourcedCell[],
-  sectionId: string | null,
+  cells: readonly SourcedCell[],
 ): TimesheetViewRow[] {
   const byPersonnel = new Map<string, TimesheetViewRow>();
 
@@ -174,15 +150,15 @@ function buildRows(
       fullName: person.full_name,
       trade: person.trade,
       source: person.source,
-      // Kartoteks taşeron ADINI taşımaz (yalnız `subcontractor_id`); ad
-      // matristen gelir, gelmiyorsa UYDURULMAZ.
+      // Kartoteks taşeron ADINI taşımaz; ad matristen gelir, gelmiyorsa
+      // UYDURULMAZ.
       subcontractorName: null,
       cells: {},
-      manDays: 0,
+      totalHours: "0",
     });
   }
 
-  // 2) Matris satırları — kartotekste olmayanı EKLER, olanın adını zenginleştirir.
+  // 2) Matris satırları — kartotekste olmayanı EKLER, olanı zenginleştirir.
   for (const row of matrix?.rows ?? []) {
     const existing = byPersonnel.get(row.personnel_id);
     byPersonnel.set(row.personnel_id, {
@@ -192,84 +168,46 @@ function buildRows(
       source: row.source,
       subcontractorName: row.subcontractor_name,
       cells: existing?.cells ?? {},
-      manDays: 0,
+      totalHours: "0",
     });
   }
 
-  // 3) Hücreleri (bölüm süzgeciyle) satırlara dağıt + adam-günü say.
-  for (const cell of allCells) {
-    if (!cellInSection(cell, sectionId)) continue;
+  // 3) Hücreleri satırlara dağıt (küme ZATEN bölüm süzgeçlidir).
+  for (const cell of cells) {
     const row = byPersonnel.get(cell.personnelId);
     if (!row) continue;
-    row.cells[cell.work_date] = {
+    row.cells[cell.workDate] = {
+      hours: cell.hours,
       code: cell.code,
-      overtimeHours: cell.overtime_hours,
-      sectionId: cell.section_id,
+      sectionId: cell.sectionId,
     };
-    if (countsAsManDay(cell.code)) row.manDays += 1;
+  }
+
+  for (const row of byPersonnel.values()) {
+    row.totalHours = sumDecimalStrings(Object.values(row.cells).map(cellHours));
   }
 
   return [...byPersonnel.values()].sort((a, b) => a.fullName.localeCompare(b.fullName, "tr"));
 }
 
+/**
+ * Gün iskeleti AYIN TAMAMIDIR — matristen DEĞİL: hücreler seyrektir, hiç kaydı
+ * olmayan ay bile 31 sütun basmalıdır.
+ */
 function buildDayColumns(
   year: number,
   month: number,
-  allCells: readonly TimesheetSourcedCell[],
-  sectionId: string | null,
+  cells: readonly SourcedCell[],
 ): TimesheetDayColumn[] {
   return monthDayIsoList(year, month).map((workDate) => {
-    const dayCells = allCells.filter(
-      (cell) => cell.work_date === workDate && cellInSection(cell, sectionId),
-    );
+    const dayCells = cells.filter((cell) => cell.workDate === workDate);
     return {
       workDate,
       dayOfMonth: Number(workDate.slice(-2)),
-      // FM'li gün ÇALIŞILMIŞ sayılır (E5 203), geçici görev SAYILMAZ (ŞP 245).
-      workedCount: dayCells.filter((cell) => countsAsManDay(cell.code)).length,
-      hasOvertime: dayCells.some((cell) => cell.code === "overtime"),
+      totalHours: sumDecimalStrings(dayCells.map(cellHours)),
+      workedDayCount: dayCells.filter((cell) => cell.code === null).length,
+      leaveCount: dayCells.filter((cell) => cell.code === "leave").length,
       temporaryDutyCount: dayCells.filter((cell) => cell.code === "temporary_duty").length,
     };
   });
-}
-
-/**
- * Ayak satırı hücresinin METNİ (E5 198-213 · ŞP 232-248).
- *
- * ⚠️ İKİ AYRI KURAL — işaretler VARYANTA GÖRE basılır (kullanıcı kararı,
- * 2026-08-07: "mockup birebir, ekran başına ayrı"):
- *   • `site` (ŞP 232-246): `+` (ŞP 237) ve `G` (ŞP 245) BASILIR.
- *   • `general` (E5 198-211): İŞARET YOK — YALNIZ SAYI. E5 120'de Mehmet'in
- *     6. günü FM'dir ve E5 203'te o sütunun ayak değeri düz `4`tür; yani E5
- *     FM verisi VARKEN BİLE `+` basmaz. Bu mockup'ın bilinçli tercihidir,
- *     eksiklik değil.
- *
- * SAYI HER İKİ VARYANTTA DA `workedCount`tur; `+`/`G` sayıyı DEĞİŞTİRMEZ.
- * ŞP 245'in "3G"si bunun kanıtıdır: o sütunda DÖRT kişinin kaydı vardır
- * (üçü çalıştı, biri geçici görevde) ve sayı 3'tür — geçici görev adam-güne
- * de günlük toplama da girmez.
- *
- * İki işaretin AYNI günde düşmesi mockup'ta yoktur; `site`de ikisi de basılır
- * ("4+G") — biri sessizce yutulursa ekran veriyi gizlemiş olur.
- */
-export function dayTotalText(day: TimesheetDayColumn, variant: TimesheetVariant): string {
-  if (variant === "general") return String(day.workedCount);
-  const overtimeMark = day.hasOvertime ? "+" : "";
-  const dutyMark = day.temporaryDutyCount > 0 ? "G" : "";
-  return `${day.workedCount}${overtimeMark}${dutyMark}`;
-}
-
-/**
- * Ayak satırı hücresinin renk sınıfı eki.
- *
- * `site`: ŞP 232/235/237/245 DÖRT ayrı ton (mavi · soluk · amber · yeşil).
- * `general`: E5 198/201 İKİ ton (mavi · soluk) — işaret basılmadığı gibi
- * işaret rengi de basılmaz.
- */
-export function dayTotalModifier(day: TimesheetDayColumn, variant: TimesheetVariant): string {
-  if (variant === "site") {
-    if (day.temporaryDutyCount > 0) return "duty";
-    if (day.hasOvertime) return "overtime";
-  }
-  return day.workedCount > 0 ? "worked" : "zero";
 }

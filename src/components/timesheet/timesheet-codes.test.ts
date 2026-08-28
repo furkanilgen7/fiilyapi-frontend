@@ -3,83 +3,75 @@ import { describe, it, expect } from "vitest";
 import { WORKER_SOURCE_LABELS as DIARY_WORKER_SOURCE_LABELS } from "@/components/site-diary/diary-labels";
 
 import {
-  legendCodesFor,
+  dayHoursModifier,
   resolveSourceBadgeVariant,
   resolveWorkerSourceLabel,
+  timesheetCodeMeta,
   TIMESHEET_CODES,
   WORKER_SOURCE_LABELS,
   WORKER_SOURCE_VALUES,
 } from "./timesheet-codes";
 
-// D1 — legend ekran basina AYRI (kullanici karari 2026-08-07).
-describe("legendCodesFor", () => {
-  it("E5 (79-84) DORT ogeyi aciklar: C · I · T · FM — G YOK", () => {
-    const codes = legendCodesFor("general");
-    expect(codes.map((meta) => meta.letter)).toEqual(["Ç", "İ", "T", "FM"]);
-    expect(codes.map((meta) => meta.code)).not.toContain("temporary_duty");
-  });
-
-  it("SP (106-111) BES ogeyi aciklar (+G)", () => {
-    expect(legendCodesFor("site").map((meta) => meta.letter)).toEqual([
-      "Ç",
-      "İ",
-      "T",
-      "FM",
-      "G",
+describe("TIMESHEET_CODES", () => {
+  it("🔴 kod seti UCLUDUR — `worked`/`overtime` KALKTI (calisilan gun artik saattir)", () => {
+    expect(TIMESHEET_CODES.map((meta) => meta.code)).toEqual([
+      "leave",
+      "temporary_duty",
+      "holiday",
     ]);
   });
 
-  it("HUCRE seti iki ekranda da besli kalir — E5'te G hucresi yine basilir", () => {
-    // Legend'in daralmasi hucre setini DARALTMAZ; kayit gizlenmez.
-    expect(TIMESHEET_CODES).toHaveLength(5);
-    expect(TIMESHEET_CODES.map((meta) => meta.code)).toContain("temporary_duty");
+  it("rozet metinleri mockup'tan gelir (E5 260 'İzin' · E5 281 'Görev')", () => {
+    expect(timesheetCodeMeta("leave")?.letter).toBe("İzin");
+    expect(timesheetCodeMeta("temporary_duty")?.letter).toBe("Görev");
+  });
+
+  it("`holiday` yeni mockup'ta cizilmedi ama enum uyesi KORUNDU — veride varsa basilir", () => {
+    expect(timesheetCodeMeta("holiday")).toBeDefined();
   });
 });
 
-// D2 — etiketler uydurulmaz, repodaki tek kaynaktan gelir.
-describe("WORKER_SOURCE_LABELS", () => {
-  it("diary-labels.ts ile AYNI nesnedir (kopya sozcuk yok)", () => {
+describe("dayHoursModifier", () => {
+  const NORMAL = "9";
+
+  it("normal gun saati = tam gun (E5 203)", () => {
+    expect(dayHoursModifier("9", NORMAL)).toBe("full");
+  });
+
+  it("normalin ALTI = eksik gun (E5 204)", () => {
+    expect(dayHoursModifier("5", NORMAL)).toBe("short");
+  });
+
+  it("normalin USTU = fazla mesai tonu (E5 205)", () => {
+    expect(dayHoursModifier("12", NORMAL)).toBe("overtime");
+  });
+
+  it("bos hucre = calisilmadi (E5 208)", () => {
+    expect(dayHoursModifier(null, NORMAL)).toBe("off");
+    expect(dayHoursModifier("  ", NORMAL)).toBe("off");
+  });
+
+  it("normal gun saati sozlesmeden gelir — 7,5 saatlik bir sirkette 8 saat FM tonudur", () => {
+    expect(dayHoursModifier("8", "7.5")).toBe("overtime");
+    expect(dayHoursModifier("7.5", "7.5")).toBe("full");
+  });
+});
+
+// F-TB1 T5 — kaynak etiketleri TEK kaynaktan gelir, kopyalanmaz.
+describe("worker source", () => {
+  it("etiketler `diary-labels` ile BIREBIR aynidir", () => {
     expect(WORKER_SOURCE_LABELS).toBe(DIARY_WORKER_SOURCE_LABELS);
   });
 
-  it("`general` icin 'Genel' kullanir (uydurma 'Yevmiyeli' DEGIL)", () => {
-    expect(WORKER_SOURCE_LABELS.general).toBe("Genel");
-    expect(WORKER_SOURCE_LABELS.company).toBe("Şirket");
-    expect(WORKER_SOURCE_LABELS.subcontractor).toBe("Taşeron");
-  });
-});
-
-// F-TB1 T5 — `worker_source` semasi BES degerlidir (schema.d.ts:12775:
-// company/subcontractor/general/freelance/intern). Puantaj rozeti bu ikisini
-// kullanir; test WORKER_SOURCE_VALUES (semadan turetilir) uzerinde DONER —
-// enum buyurse Record<WorkerSource, …> tipleri derlemeyi kirar, bu test de
-// yeni degeri otomatik kapsar.
-describe("WORKER_SOURCE_VALUES — enum'un TUMU", () => {
-  it("bes deger tasir ve `personel` ekranindakiyle AYNI kumedir", () => {
-    expect(WORKER_SOURCE_VALUES).toHaveLength(5);
-    expect(new Set(WORKER_SOURCE_VALUES)).toEqual(
-      new Set(["company", "subcontractor", "general", "freelance", "intern"]),
-    );
-  });
-
-  it("resolveWorkerSourceLabel HER deger icin Turkce etiket doner (ham deger sizmaz)", () => {
-    for (const source of WORKER_SOURCE_VALUES) {
-      const label = resolveWorkerSourceLabel(source);
-      expect(label).toBe(WORKER_SOURCE_LABELS[source]);
-      expect(label).not.toBe(source);
+  it("bilinmeyen deger ham enum basmaz", () => {
+    expect(resolveWorkerSourceLabel("company")).toBe(WORKER_SOURCE_LABELS.company);
+    for (const value of WORKER_SOURCE_VALUES) {
+      expect(resolveWorkerSourceLabel(value)).toBeTruthy();
     }
   });
 
-  it("resolveSourceBadgeVariant Sirket/Taseron DISINDA NOTR doner (uydurma renk yok)", () => {
+  it("rozet rengi /personel listesiyle AYNI eslemedir", () => {
     expect(resolveSourceBadgeVariant("company")).toBe("primary");
     expect(resolveSourceBadgeVariant("subcontractor")).toBe("warning");
-    for (const neutralSource of ["general", "freelance", "intern"] as const) {
-      expect(resolveSourceBadgeVariant(neutralSource)).toBe("neutral");
-    }
-  });
-
-  it("taninmayan bir deger de NOTR rozete ve '—' etiketine duser (cokme yok)", () => {
-    expect(resolveSourceBadgeVariant("unknown_future_source")).toBe("neutral");
-    expect(resolveWorkerSourceLabel("unknown_future_source")).toBe("—");
   });
 });

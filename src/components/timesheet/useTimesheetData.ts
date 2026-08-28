@@ -12,15 +12,12 @@ import { isForbidden } from "@/lib/api/unwrap";
 import { buildListTruncation, type ListTruncation } from "@/lib/list-truncation";
 
 import { buildTimesheetView, type TimesheetDerived } from "./derive";
-import { EMPTY_TIMESHEET_DRAFT, type TimesheetDraft } from "./timesheet-draft";
 
 export interface UseTimesheetDataInput {
   siteId: string;
   period: TimesheetPeriod;
   /** Görünüm süzgeci — `null` = Tüm Bölümler. AĞA GİTMEZ (K2). */
   sectionId: string | null;
-  /** Kaydedilmemiş yerel düzenlemeler (T3) — türevlere anında yansır. */
-  draft?: TimesheetDraft;
 }
 
 export interface TimesheetDataState {
@@ -40,14 +37,15 @@ export interface TimesheetDataState {
 }
 
 /**
- * İki puantaj ekranının ORTAK veri katmanı (F-PT T2).
+ * AYLIK matrisin veri katmanı — 🔴 YALNIZ SALT-OKUR yüzeyler kullanır (Bölüm
+ * Detay'ın puantaj sekmesi + "Bu Bölümdeki İşçiler" kartı). Yazma yolu
+ * HAFTALIKTIR (`useTimesheetWeekData`); bu katmanda taslak KAVRAMI YOKTUR.
  *
  * ⚠️ ŞEF KARARI K2 — `useTimesheet` ÜÇÜNCÜ ARGÜMANI (`sectionId`) BİLEREK
  * VERİLMEZ: `GET .../timesheet` HER ZAMAN SÜZGEÇSİZ çekilir, bölüm filtresi
- * yalnız `buildTimesheetView` içinde GÖRÜNÜME uygulanır. Gerekçe `derive.ts`
- * başındadır: `PUT` dönem+şantiye kapsamında DEĞİŞTİRMEDİR, süzgeçli küme
- * kaydedilirse diğer bölümlerin kayıtları silinir. Buraya `section_id`
- * eklemek T3'ün kaydetme gövdesini yapısal olarak eksik bırakır.
+ * yalnız `buildTimesheetView` içinde GÖRÜNÜME uygulanır. Böylece önbellek
+ * şantiye ekranıyla PAYLAŞILIR ve süzgeçli bir küme hiçbir yoldan kaydetme
+ * gövdesine sızamaz.
  *
  * ⚠️ ŞEF KARARI K1 — satırlar `GET /personnel?is_active=true` kartoteksinden
  * kurulur (`limit` AÇIKÇA geçirilir; varsayılan 50'ye güvenip 51. personeli
@@ -57,7 +55,6 @@ export function useTimesheetData({
   siteId,
   period,
   sectionId,
-  draft = EMPTY_TIMESHEET_DRAFT,
 }: UseTimesheetDataInput): TimesheetDataState {
   const personnelQuery = usePersonnel({ isActive: true, limit: PERSONNEL_MAX_LIMIT });
   const matrixQuery = useTimesheet(siteId, period);
@@ -73,9 +70,8 @@ export function useTimesheetData({
         personnel,
         matrix,
         sectionId,
-        draft,
       }),
-    [period.year, period.month, personnel, matrix, sectionId, draft],
+    [period.year, period.month, personnel, matrix, sectionId],
   );
 
   return {

@@ -1,4 +1,4 @@
-import type { TimesheetSaveState } from "./useTimesheetEditor";
+import type { TimesheetCopyState, TimesheetSaveState } from "./useTimesheetWeekEditor";
 
 interface StatusLine {
   readonly text: string;
@@ -8,6 +8,8 @@ interface StatusLine {
 export interface TimesheetSaveStatusProps {
   dirtyCount: number;
   saveState: TimesheetSaveState;
+  /** "Önceki Haftayı Kopyala" sonucu — sessiz kalmaz. */
+  copyState: TimesheetCopyState;
   exportError: string | null;
 }
 
@@ -23,6 +25,7 @@ export interface TimesheetSaveStatusProps {
 export function TimesheetSaveStatus({
   dirtyCount,
   saveState,
+  copyState,
   exportError,
 }: TimesheetSaveStatusProps) {
   const lines: StatusLine[] = [];
@@ -31,11 +34,23 @@ export function TimesheetSaveStatus({
     lines.push({ text: "Kaydediliyor…", isFailure: false });
   } else if (dirtyCount > 0) {
     lines.push({
-      text: `Kaydedilmemiş ${dirtyCount} hücre değişikliği var — “Kaydet” ile yazın.`,
+      text: `Kaydedilmemiş ${dirtyCount} hücre değişikliği var — “Haftayı Kaydet” ile yazın.`,
       isFailure: false,
     });
   } else if (saveState.kind === "saved") {
-    lines.push({ text: "Puantaj kaydedildi.", isFailure: false });
+    lines.push({ text: "Hafta kaydedildi.", isFailure: false });
+  }
+
+  if (copyState.kind === "copying") {
+    lines.push({ text: "Önceki hafta kopyalanıyor…", isFailure: false });
+  } else if (copyState.kind === "copied") {
+    // Kopya TASLAĞA yazılır: kullanıcı kaydetmeden önce ne geleceğini görür.
+    lines.push({
+      text: `Önceki haftadan ${copyState.cellCount} hücre kopyalandı — “Haftayı Kaydet” ile yazın.`,
+      isFailure: false,
+    });
+  } else if (copyState.kind === "failed") {
+    lines.push({ text: copyState.message, isFailure: true });
   }
 
   if (saveState.kind === "failed") lines.push({ text: saveState.message, isFailure: true });

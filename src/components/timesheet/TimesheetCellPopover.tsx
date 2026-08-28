@@ -1,156 +1,92 @@
 "use client";
 
-import { useState } from "react";
-
 import { Button } from "@/components/ui/button/Button";
-import { Input } from "@/components/ui/input/Input";
 import { AnchoredPopover } from "@/components/ui/popover/AnchoredPopover";
 import type { TimesheetCode } from "@/lib/api/hooks/useTimesheet";
 import { cx } from "@/lib/cx";
 
-import type { TimesheetViewCell } from "./derive";
-import { TIMESHEET_CODES, type TimesheetVariant } from "./timesheet-codes";
-import {
-  overtimeHoursText,
-  parseOvertimeHours,
-  OVERTIME_MAX_HOURS,
-} from "./timesheet-draft";
-import type { TimesheetCellEdit } from "./useTimesheetEditor";
-
-/**
- * "24" + ondalık ayırıcı + bir basamak = 4 karakter (`3,5` / `12,5` / `24`).
- * Backend sınırı `0 < saat <= 24` ve TEK ondalıktır; alan da o sınırı aşmaz.
- */
-const MAX_HOURS_TEXT = 4;
+import { TIMESHEET_CODES } from "./timesheet-codes";
 
 export interface TimesheetCellPopoverProps {
-  /** Hücrenin şu anki hâli (taslak dâhil); `null` = boş gün. */
-  cell: TimesheetViewCell | null;
-  /** "Ahmet Yılmaz · 3 Ağu" — diyalogun erişilebilir adı. */
+  /** Hücrenin şu anki kodu (taslak dâhil); `null` = saat hücresi ya da boş. */
+  code: TimesheetCode | null;
+  /** "Ahmet Yılmaz · 13 Tem" — diyalogun erişilebilir adı. */
   label: string;
-  variant: TimesheetVariant;
-  onSubmit: (edit: TimesheetCellEdit | null) => void;
+  /** `null` = "Saate dön" (kodu kaldır, hücre yeniden saat kutusu olur). */
+  onSubmit: (code: TimesheetCode | null) => void;
   onClose: () => void;
 }
 
 /**
- * Hücre düzenleme yüzeyi (F-PT T3 · spec §3, kullanıcı ONAYLI türetim).
+ * Hücrenin KOD yüzeyi (PUAN-SAAT · onaylı türetim).
+ *
+ * ═══ NEDEN AYRI BİR YÜZEY VAR ═══
+ * Mockup hücreyi SAAT KUTUSU çizer (E5 238) ve kodu ROZET çizer (E5 260/281),
+ * ama rozeti NASIL seçtiğini ÇİZMEZ. Kod seçme yolu olmasaydı `İzin`/`Görev`
+ * verisi ekrandan yazılamaz — uçta var olan bir yetenek sessizce KAYBOLURDU.
+ * Bu yüzden hücrenin yanında küçük bir kod çapası durur ve bu yüzeyi açar.
  *
  * ═══ SIRIŞMA TESTİ SAVUNMASI ═══
- * Mockup hücreleri SALT-OKUNUR çizer, yani bu yüzeyin çizimi YOKTUR. Bu yüzden
- * her parçası matrisin KENDİ görsel dilinden alındı, yeni bir dil icat
- * EDİLMEDİ:
- *   • Beş kod seçeneği matristeki ROZETİN TA KENDİSİDİR — aynı `.ts-cell` +
- *     `.ts-cell--<modifier>` sınıfları (E5 117 · ŞP 151 renkleri), yalnız
- *     tıklanabilir. Seçili olanın çerçevesi `currentcolor`dur: palete YENİ
- *     renk eklenmez.
- *   • Kabuk F-PL popover'ının (`.plan-pop`) ölçü/zemin ailesini izler: kart
- *     kenarlığı + `--shadow-md` + `--radius-10`. Çıplak hex/px YOKTUR.
- *   • Saat alanı `ui/input` primitive'idir (ham `<input>` yasak), düğmeler
- *     `ui/button`.
+ * Her parçası matrisin KENDİ görsel dilinden alındı:
+ *   • Kod seçenekleri matristeki ROZETİN TA KENDİSİDİR — aynı `.ts-tag` +
+ *     `.ts-tag--<modifier>` sınıfları (E5 260/281 renkleri), yalnız
+ *     tıklanabilir. Seçili olanın çerçevesi `currentcolor`dur.
+ *   • Kabuk F-PL popover'ının ölçü/zemin ailesini izler; çıplak hex/px YOK.
  *
- * Escape / dış tık İPTALDİR: seçim bu bileşenin YEREL durumunda durur, yalnız
- * "Uygula" (ya da "Temizle") taslağa yazar.
+ * 🔴 SAAT BURADA DÜZENLENMEZ: saat hücrenin KENDİ kutusundadır (mockup
+ * birebir). İki yerde saat alanı olsaydı hangisinin kazandığı belirsizleşirdi.
+ *
+ * Escape / dış tık İPTALDİR; seçim ancak tıklanan rozetle taslağa yazılır.
  */
 export function TimesheetCellPopover({
-  cell,
+  code,
   label,
-  variant,
   onSubmit,
   onClose,
 }: TimesheetCellPopoverProps) {
-  const [code, setCode] = useState<TimesheetCode | null>(cell?.code ?? null);
-  const [hoursText, setHoursText] = useState(overtimeHoursText(cell?.overtimeHours ?? null));
-  const [error, setError] = useState<string | null>(null);
-
-  function handleSubmit() {
-    if (code === null) {
-      setError("Bir kod seçin ya da “Temizle” ile hücreyi boşaltın.");
-      return;
-    }
-    if (code !== "overtime") {
-      onSubmit({ code, overtimeHours: null });
-      return;
-    }
-    const parsed = parseOvertimeHours(hoursText);
-    if (!parsed.ok) {
-      setError(parsed.message);
-      return;
-    }
-    onSubmit({ code, overtimeHours: parsed.value });
-  }
-
   return (
     <AnchoredPopover
       label={`${label} — puantaj hücresi`}
       onClose={onClose}
-      className={cx("ts-pop", `ts-pop--${variant}`)}
-      // ⚠️ T5'te ÖLÇÜLEN GERÇEK KUSUR: `.ts-table-scroll { overflow-x: auto }`
-      // dikey ekseni de `auto`ya çevirir (CSS kuralı), bu yüzden SON SATIRIN
-      // popover'ı kabın altında KESİLİYOR ve tabloya sahte dikey kaydırma
-      // ekliyordu (ölçüm: 428px içerik / 364px kap). `escapeOverflow` yüzeyi
-      // kabın dışına çıkarır; görsel dil aynen kalır.
+      className="ts-pop"
+      // ⚠️ `.ts-week-scroll { overflow-x: auto }` dikey ekseni de `auto`ya
+      // çevirir; yüzey kabın içinde KESİLİR ve tabloya sahte dikey kaydırma
+      // ekler (F-PT T5'te ölçülen gerçek kusur). `escapeOverflow` yüzeyi kabın
+      // dışına çıkarır; görsel dil aynen kalır.
       escapeOverflow
     >
-      <form
-        className="ts-pop__form"
-        onSubmit={(event) => {
-          event.preventDefault();
-          handleSubmit();
-        }}
-      >
+      <div className="ts-pop__form">
+        <p className="ts-pop__hint">Çalışılmayan gün için sebep seçin.</p>
         <div className="ts-pop__codes" role="group" aria-label="Puantaj kodu">
           {TIMESHEET_CODES.map((meta) => (
             <button
               key={meta.code}
               type="button"
               aria-pressed={code === meta.code}
-              aria-label={meta.labelWithLetter}
+              aria-label={meta.label}
               className={cx(
-                "ts-cell",
-                `ts-cell--${meta.modifier}`,
+                "ts-tag",
+                `ts-tag--${meta.modifier}`,
                 "ts-pop__code",
                 code === meta.code && "ts-pop__code--active",
               )}
-              onClick={() => {
-                setCode(meta.code);
-                setError(null);
-              }}
+              onClick={() => onSubmit(meta.code)}
             >
               {meta.letter}
             </button>
           ))}
         </div>
-
-        {/* Saat alanı YALNIZ FM seçiliyken açılır (ŞP 119 saat toplamının
-            kaynağı) ve OPSİYONELDİR: boş bırakılırsa hücre saatsiz FM olur. */}
-        {code === "overtime" && (
-          <Input
-            size="row"
-            numeric
-            inputMode="decimal"
-            value={hoursText}
-            maxLength={MAX_HOURS_TEXT}
-            aria-label="Fazla mesai saati"
-            placeholder={`Saat (isteğe bağlı, en çok ${OVERTIME_MAX_HOURS})`}
-            onChange={(event) => {
-              setHoursText(event.target.value);
-              setError(null);
-            }}
-          />
-        )}
-
-        {error !== null && <p className="ts-pop__error">{error}</p>}
-
         <div className="ts-pop__actions">
-          <Button variant="ghost" size="sm" className="ts-pop__clear" onClick={() => onSubmit(null)}>
-            Temizle
-          </Button>
-          <Button type="submit" size="sm">
-            Uygula
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ts-pop__clear"
+            onClick={() => onSubmit(null)}
+          >
+            Saate dön
           </Button>
         </div>
-      </form>
+      </div>
     </AnchoredPopover>
   );
 }

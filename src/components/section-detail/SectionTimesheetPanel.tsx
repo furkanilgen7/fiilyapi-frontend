@@ -12,11 +12,12 @@ import "@/components/timesheet/timesheet.css";
  * ŞP (`Şantiye - Puantaj.dc.html`) mockup'ından türetilmiş `TimesheetTable`
  * (+ ŞP 116-120 özet şeridi) `variant="site"` ile YENİDEN KULLANILIR (K6/DRY).
  *
- * 🔴 SALT OKUNURDUR: `canWrite`/`onCommit` VERİLMEZ, "Kaydet"/"Excel"/ay
- * gezinmesi BASILMAZ. Gerekçe K2'nin kendisidir — `PUT .../timesheet` dönem +
- * şantiye kapsamında DEĞİŞTİRMEDİR; bölüm kapsamlı bir yüzeyden yazmak diğer
- * bölümlerin kayıtlarını silme riskini bu ekrana taşırdı. Yazma yolu tektir ve
- * kart başındaki "Puantaj →" bağlantısının götürdüğü şantiye ekranındadır.
+ * 🔴 SALT OKUNURDUR ve öyle KALIR (yönetim kararı 2026-08-28). `TimesheetTable`
+ * artık YAZMA UCUNU HİÇ TANIMIYOR: aylık `PUT` uçtan kalktı, yazma yolu
+ * HAFTALIKTIR. Gerekçe K2'nin kendisidir — bölüm kapsamlı bir yüzeyden yazmak
+ * diğer bölümlerin kayıtlarını silme riskini bu ekrana taşırdı. Yazma yolu
+ * tektir ve kart başındaki "Puantaj →" bağlantısının götürdüğü şantiye
+ * ekranındadır.
  *
  * 🔴 YÜKLEME/HATA dalları AYRI basılır (emsal: aynı ekranın BOQ dalı). Matris
  * yüklenmemişken tabloyu basmak, kartoteksten gelen (K1) BOŞ HÜCRELİ satırları
@@ -53,15 +54,14 @@ export function SectionTimesheetPanel({
       <TimesheetSummaryStrip
         title={`${sectionName} · ${periodLabel}`}
         workerCount={view.workerCount}
-        totalManDays={view.totalManDays}
-        totalOvertimeHours={view.totalOvertimeHours}
+        totalHours={view.totalHours}
       />
       {/* ŞP 115-253 — salt okunur (`canWrite`/`onCommit` YOK). */}
       <TimesheetTable
-        variant="site"
         days={view.days}
         rows={view.rows}
-        totalManDays={view.totalManDays}
+        totalHours={view.totalHours}
+        normalDayHours={view.normalDayHours}
         emptyMessage={`${periodLabel} döneminde bu bölümde puantaj kaydı ve aktif personel yok.`}
       />
     </div>

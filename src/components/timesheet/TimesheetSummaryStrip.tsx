@@ -2,27 +2,28 @@ import { Badge } from "@/components/ui/badge/Badge";
 import { formatDecimal } from "@/lib/format";
 
 export interface TimesheetSummaryStripProps {
-  /** ŞP 117 — seçili bölümün adı; "Tüm Bölümler"de şantiye/kapsam adı. */
+  /** ŞP 117 — seçili bölümün adı + dönem. */
   title: string;
   /** ŞP 118 — "48 işçi" */
   workerCount: number;
-  /** ŞP 119 — "864 adam/gün" */
-  totalManDays: number;
-  /** ŞP 119 — "128 saat fazla mesai"; ondalık STRING (float aritmetiği yok). */
-  totalOvertimeHours: string;
+  /** ŞP 119 — saat toplamı; ondalık STRING (float aritmetiği yok). */
+  totalHours: string;
 }
 
 /**
- * Bölüm özet şeridi (ŞP 116-120) — matris kartının başlık satırı.
+ * Bölüm özet şeridi (ŞP 116-120) — aylık matris kartının başlık satırı.
  *
- * Üç değer de GÖRÜNEN (bölüm filtresi uygulanmış) kümeden türer; backend'in
- * süzgeçli çıktısıyla birebir aynı sonucu verir (bkz. `derive.ts` K2 notu).
+ * 🔴 ADAM-GÜN BASILMAZ: adam-gün artık TÜREVDİR (saat ÷ normal gün saati) ve
+ * aylık uç bölen olan `normal_day_hours`u YAYINLAMAZ. Bölünecek sayıyı
+ * uydurmak yerine ekranda ölçülen büyüklük (saat) basılır — mockup'ın
+ * "864 adam/gün" değeri bu uçtan ÜRETİLEMEZ.
+ *
+ * İki değer de GÖRÜNEN (bölüm filtresi uygulanmış) kümeden türer.
  */
 export function TimesheetSummaryStrip({
   title,
   workerCount,
-  totalManDays,
-  totalOvertimeHours,
+  totalHours,
 }: TimesheetSummaryStripProps) {
   return (
     <div className="ts-summary">
@@ -33,9 +34,7 @@ export function TimesheetSummaryStrip({
         {workerCount} işçi
       </Badge>
       {/* ŞP 119 */}
-      <span className="ts-summary__metrics">
-        {totalManDays} adam/gün · {formatDecimal(totalOvertimeHours, 2)} saat fazla mesai
-      </span>
+      <span className="ts-summary__metrics">{formatDecimal(totalHours, 1)} saat</span>
     </div>
   );
 }
