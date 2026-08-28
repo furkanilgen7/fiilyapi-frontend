@@ -1,16 +1,24 @@
 /* F-MT T2 · Mali Tablolar ekranları. Kanon: projedesign
    `Mali Tablo - Bilanço.dc.html` (BL). Parantez içi sayılar O dosyanın SATIR
    numaralarıdır. Prefix `fs`.
-   Mockup'ın üst barı (BL:14-22) ve sol menüsü (BL:24-31) ayrı yüzeylerdir:
-   üst bar UYGULAMA KABUĞUdur (F3 Topbar), sol menü `FinancialStatementsSidebar`
-   olarak `financial-statements-shell.css`te yaşar — bu dosya ikisini de
-   YENİDEN ÇİZMEZ.
+   🔴 Drill sidebar (BL:24-31) KALDIRILDI (kullanıcı kararı 2026-08-27, F-MALI
+   dilimi) — `FinancialStatementsSidebar.tsx` + `financial-statements-shell.css`
+   silindi. `.mali-tablolar-content` o dosyadan BURAYA taşındı: üç ekranın da
+   `<div className="fs mali-tablolar-content">` sarmalayıcısı bu class'ı
+   kullanıyor ve tek canlı çağıran bu üç görünüm dosyasıdır.
    Palet YALNIZ token'dan gelir (çıplak hex yok); token karşılığı olmayan
    birkaç ölçü px olarak, BL satır numarasıyla gerekçelendirilerek yazılır
    (`accounting.css` emsali). */
 
 .fs {
   animation: var(--anim-fade-up); /* BL:32 */
+}
+
+/* Global `.app-content` zaten kabuk sidebar'ına göre ofset + iç boşluk
+   veriyor; burada ek bir ofset düzeltmesi YOKTUR. Sınıf yine de vardır: sayfa
+   alt ağacının tek bir tutamağı olsun. */
+.mali-tablolar-content {
+  min-width: 0;
 }
 
 .fs__eyebrow {
@@ -593,6 +601,27 @@
   border: 1px solid var(--color-border); /* E11:66 */
   border-radius: var(--radius-8); /* E11:66 */
   overflow: hidden; /* E11:66 — aktif bölmenin zemini köşeleri taşmasın */
+  /* 🔴 BÜZÜLME MUAFİYETİ (ölçülen kusur, 2026-08-27). Yapraklarda
+     (`/bilanco`, `/nakit-akisi`) bu denetim 276px doğal genişliğinden 148px'e
+     düşüyor, `Nakit Akışı` sekmesi HİÇ görünmüyordu — kaldırılan drill
+     sidebar'ın taşıdığı yaprak-yaprak geçişi FİİLEN ölüydü.
+
+     İki koşul BİRLİKTE gerekiyordu:
+       (1) `.fs__actions`teki `Select` primitive'inin sarmalayıcısı
+           `.select-wrap` kuralı `width: 100%` taşır
+           (`ui/select/select.css`) ⇒
+           esnek taban boyutu KAPSAYICININ TAMAMIdır ve satır her koşulda
+           aşırı-talep eder. Kökte `Select` YOKTUR: kusur da orada yoktur.
+       (2) Yukarıdaki `overflow: hidden` bir esnek öğenin otomatik asgari
+           boyutunu (`min-width: auto`) 0'a düşürür ⇒ denetim min-content'inin
+           ALTINA orantılı büzülebilir hâle gelir.
+
+     (2) E11:66 gerekçesiyle duruyor, (1) paylaşılan primitive'dir; ikisine de
+     dokunmadan denetimi büzülmeden MUAF tutuyoruz. Açığı `Select` emer:
+     ölçüldü, min-content'ine iner (132/152px) ve metni KIRPILMAZ. Kökte satır
+     zaten aşırı-talep etmediğinden bu kuralın orada PİKSEL ETKİSİ YOKTUR
+     (ölçüldü: kök geometrisi bit-bit aynı). */
+  flex-shrink: 0;
 }
 
 .fs-mt-seg__item {

@@ -481,11 +481,12 @@ const ME = {
 // spent/headcount/subcontractor_count/sales/profit alanlari yerine bu yapi kullanildi.
 // F-P10 T1: zarf tipleri artik ELLE yazilmaz, `schema.d.ts`ten TURETILIR —
 // fikstur ile sema arasindaki kayma typecheck'te patlar (F-P5 dersi).
-// ⚠️ Iki tam nitelikli `MetricPlaceholder` yasar: proje kartlari
-// `app__modules__projects__…` (P10'da `pending_module` NULLABLE oldu, dolu
-// zarf modul adi TASIMAZ), gosterge paneli `app__modules__dashboard__…`
-// (degismedi). Karistirma.
-type MockMetric = components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+// DASH-1 devri (backend 859ebfb) ile iki tam nitelikli `MetricPlaceholder`
+// (proje kartlari `app__modules__projects__…`, gosterge paneli
+// `app__modules__dashboard__…`) tek kanonik `MetricPlaceholder`ta birlesti;
+// P10'daki `pending_module` NULLABLE davranisi (dolu zarf modul adi TASIMAZ)
+// aynen gecerli.
+type MockMetric = components["schemas"]["MetricPlaceholder"];
 type MockCount = components["schemas"]["CountPlaceholder"];
 interface MockContracting {
   spent: MockMetric;
@@ -1142,7 +1143,7 @@ const METRIC_PENDING = (m: string): MockMetric => ({ available: false, value: nu
 const COUNT_PENDING = (m: string): MockCount => ({ available: false, count: null, pending_module: m });
 
 // F-P10: DOLU zarf. Sunucu sozlesmesi geregi dolu zarf `pending_module`
-// TASIMAZ (`app__modules__projects__schemas__MetricPlaceholder` aciklamasi) —
+// TASIMAZ (`MetricPlaceholder` aciklamasi) —
 // fikstur bunu birebir taklit eder, aksi halde ekran "hem deger hem bekliyor"
 // gibi imkansiz bir durumu test ederdi.
 const METRIC_VALUE = (value: string): MockMetric => ({ available: true, value, pending_module: null });

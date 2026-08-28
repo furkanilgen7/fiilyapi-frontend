@@ -1,9 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
-import { ACCOUNTING_PERMISSION_MODULE, shiftPeriod } from "@/components/accounting/accounting-labels";
+import {
+  ACCOUNTING_PERMISSION_MODULE,
+  shiftPeriod,
+} from "@/components/accounting/accounting-labels";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Button, Select } from "@/components/ui";
 import { backendErrorMessage } from "@/lib/api/error-message";
@@ -22,11 +24,12 @@ import {
   incomeStatementRangeLabel,
   isLatestIncomeStatementPeriod,
 } from "./income-statement";
+import { FinancialStatementsSegments } from "./FinancialStatementsSegments";
 import { IncomeStatementBanner } from "./IncomeStatementBanner";
 import { IncomeStatementTable } from "./IncomeStatementTable";
 import {
   FINANCIAL_NAV_HEADING,
-  FINANCIAL_SUB_NAV,
+  FINANCIAL_STATEMENTS_URL,
 } from "./shell/financial-statements-nav-config";
 import "./financial-statements.css";
 
@@ -40,9 +43,12 @@ import "./financial-statements.css";
  * Sonucu: sub-nav'daki `Gelir Tablosu` satırı bir bağlantı değil, üst öğeyi
  * YANSITAN işaretçidir (ikinci bir bağlantı sayfada iki `aria-current` doğurur).
  *
- * 🔴 DRILL SIDEBAR YOK. E11:36-58 TAM kabuk menüsünü çizer (girintili alt öğe
- * yok); BL/NA:24-31 ise drill menüyü çizer. Bu yüzden rota grubunda BİLEREK
- * `layout.tsx` YOKTUR ve iki yaprak ekran sidebar'ı kendi içinde basar.
+ * 🔴 DRILL SIDEBAR HİÇBİR MALİ TABLO EKRANINDA YOKTUR (kullanıcı kararı
+ * 2026-08-27). Yapraklardaki drill sidebar global kabuk sidebar'ıyla AYNI
+ * konum/genişlikteydi (`fixed; left: 0; 220px; z-index: 90`) ve ana menüyü
+ * ÖRTÜYORDU; kullanıcı ana menünün üç ekranda da SABİT kalmasını istedi.
+ * E11:36-58 zaten TAM kabuk menüsünü çizer. Yaprak geçişi `SegmentedControl`e
+ * (`FinancialStatementsSegments`) taşındı ve artık üç ekranda da basılır.
  *
  * 🔴 K2 — KAYNAKSIZ YÜZEYLER SİLİNMEZ, devre dışı basılır (F-TH kanonu) ve
  * gerekçeleri ÖĞENİN YANINA YAZILMAZ: `pending-modules` kaydından TÜRER
@@ -63,11 +69,14 @@ export function FinancialStatementsHomeView() {
   // deterministik olmaktan çıkarırdı.
   const [today] = useState(() => new Date());
   // 🔴 VARSAYILAN DÖNEM İSTEMCİNİN KARARIDIR: sunucu "bugün"ü hiç okumaz.
-  const [period, setPeriod] = useState(() => defaultIncomeStatementPeriod(new Date()));
+  const [period, setPeriod] = useState(() =>
+    defaultIncomeStatementPeriod(new Date()),
+  );
 
   const statementQuery = useIncomeStatement(period.year, period.month);
 
-  if (!permission.canView || isForbidden(statementQuery.error)) return <AccessDenied />;
+  if (!permission.canView || isForbidden(statementQuery.error))
+    return <AccessDenied />;
 
   const data = statementQuery.data;
   const errorMessage = statementQuery.isError
@@ -85,7 +94,10 @@ export function FinancialStatementsHomeView() {
         {/* E11:64 */}
         <h1 className="fs__title">Mali Tablolar</h1>
         <div className="fs__actions">
-          <SegmentedControl />
+          {/* E11:66-70 — geçiş denetimi ÜÇ ekranda ORTAKtır (paylaşıma
+              çıkarıldı, kullanıcı kararı 2026-08-27). Kökte CURRENT olan
+              `Gelir Tablosu`dur: bu ekran ODUR. */}
+          <FinancialStatementsSegments currentHref={FINANCIAL_STATEMENTS_URL} />
           {/* 🔴 K2 · E11:71 — ucu YOK; silinmez, devre dışı + gerekçesi EKRANDA. */}
           <Button variant="secondary" disabled data-testid="mt-export-pdf">
             PDF İndir
@@ -193,7 +205,10 @@ function IncomeStatementBody({ data }: { data: IncomeStatementResponse }) {
             {/* 🔴 E11:90 — dönem SUNUCUNUN yanıtından okunur, istemcinin
                 isteğinden DEĞİL: hangi dönemin görüldüğünün tek kanıtı budur. */}
             <p className="fs-mt-card__sub" data-testid="mt-is-period-label">
-              {incomeStatementRangeLabel({ year: data.year, month: data.month })}
+              {incomeStatementRangeLabel({
+                year: data.year,
+                month: data.month,
+              })}
             </p>
           </div>
           <IncomeStatementTable data={data} />
@@ -216,42 +231,6 @@ function IncomeStatementBody({ data }: { data: IncomeStatementResponse }) {
         </div>
       </div>
     </>
-  );
-}
-
-/**
- * E11:66-70 — segment denetimi. Sekmeler `FINANCIAL_SUB_NAV`ten TÜRER, elle
- * ikinci bir liste YAZILMAZ: drill sidebar'la aynı tek kaynak, aynı sıra.
- *
- * 🔴 `Gelir Tablosu` (E11:67) mockup'ta AKTİF segmenttir çünkü BULUNULAN
- * sayfa odur — bağlantı DEĞİLDİR. `aria-current="page"` de TAŞIMAZ: kabuk
- * sidebar'ının `Mali Tablolar` öğesi bu rotada zaten `aria-current="page"`
- * sürüyor ve ikincisi ekran okuyucuya "iki ayrı sayfadasınız" derdi (K3/K7).
- */
-function SegmentedControl() {
-  return (
-    <div className="fs-mt-seg" data-testid="mt-segments">
-      {FINANCIAL_SUB_NAV.map((item) =>
-        item.kind === "link" ? (
-          <Link
-            key={item.label}
-            href={item.href}
-            className="fs-mt-seg__item"
-            data-testid={`mt-seg-${item.href.split("/").pop()}`}
-          >
-            {item.label}
-          </Link>
-        ) : (
-          <span
-            key={item.label}
-            className="fs-mt-seg__item fs-mt-seg__item--current"
-            data-testid="mt-seg-current"
-          >
-            {item.label}
-          </span>
-        ),
-      )}
-    </div>
   );
 }
 

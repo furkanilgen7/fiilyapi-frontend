@@ -156,18 +156,26 @@ describe("Nakit Akış Tablosu — NA başlık şeridi", () => {
     );
   });
 
-  it("NA:24-31 drill sidebar BU ekranın içinde basılır (grup layout'u YOK)", () => {
+  /** 🔴 KULLANICI KARARI 2026-08-27 — bkz. `BalanceSheetView.test.tsx`. */
+  it("🔴 drill sidebar BASILMAZ — ana menü örtülmez (kullanıcı kararı 2026-08-27)", () => {
+    const { container } = render(<CashFlowStatementView />);
+    expect(screen.queryByRole("complementary", { name: "Mali tablolar menüsü" })).toBeNull();
+    expect(screen.queryByTestId("fs-nav-parent")).toBeNull();
+    expect(container.querySelectorAll('[aria-current="page"]')).toHaveLength(0);
+  });
+
+  it("🔴 geçiş segmentleri BU ekranda da basılır ve CURRENT `Nakit Akışı`dır", () => {
     render(<CashFlowStatementView />);
-    expect(
-      screen.getByRole("complementary", { name: "Mali tablolar menüsü" }),
-    ).toBeInTheDocument();
-    // 🔴 Sayfada TAM BİR `aria-current="page"` olur — üst öğe (NA:27) vurgulu
-    // ama `aria-current` TAŞIMAZ (iki katmanlı vurgu kararı).
-    const current = screen
-      .getAllByRole("link")
-      .filter((a) => a.getAttribute("aria-current") === "page");
-    expect(current.map((a) => a.textContent)).toEqual(["Nakit Akışı"]);
-    expect(screen.getByTestId("fs-nav-parent")).toHaveClass("fs-shell-item--ancestor");
+    const current = screen.getByTestId("mt-seg-current");
+    expect(current).toHaveTextContent("Nakit Akışı");
+    expect(current.tagName).not.toBe("A");
+    // 🔴 KARŞIT KANIT: yanlış olanlar CURRENT DEĞİL, gerçek bağlantı.
+    expect(screen.queryByTestId("mt-seg-nakit-akisi")).toBeNull();
+    expect(screen.getByTestId("mt-seg-bilanco")).toHaveAttribute(
+      "href",
+      "/mali-tablolar/bilanco",
+    );
+    expect(screen.getByTestId("mt-seg-mali-tablolar")).toHaveAttribute("href", "/mali-tablolar");
   });
 });
 

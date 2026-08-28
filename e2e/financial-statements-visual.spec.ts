@@ -111,9 +111,12 @@ test("mali tablolar bilanco gorsel", async ({ page }) => {
   await expect(page.getByTestId("bl-export-reason")).toBeVisible();
   await expect(page.getByTestId("bl-error")).toHaveCount(0);
 
-  // Drill sidebar kadrajın SOL sütunudur (BL:24-31) ve doğru öğesi işaretli.
-  const sidebar = page.getByRole("complementary", { name: "Mali tablolar menüsü" });
-  await expect(sidebar.locator("[aria-current='page']")).toHaveText("Bilanço");
+  // 🔴 KULLANICI KARARI 2026-08-27 — kadrajın SOL sütunu artık uygulamanın ANA
+  // MENÜSÜdür (drill sidebar onu örtüyordu, kaldırıldı). `aria-current`i o
+  // taşır; bu ekranın "buradasın" sinyali SEGMENT denetimindedir.
+  await expect(page.getByRole("complementary", { name: "Mali tablolar menüsü" })).toHaveCount(0);
+  await expect(page.locator("[aria-current='page']")).toHaveText("Mali Tablolar");
+  await expect(page.getByTestId("mt-seg-current")).toHaveText("Bilanço");
   await expectNoLoadingText(page);
 
   await prepareFrame(page);
@@ -211,8 +214,10 @@ test("mali tablolar nakit akisi gorsel", async ({ page }) => {
   await expect(page.getByTestId("na-export-reason")).toBeVisible();
   await expect(page.getByTestId("na-error")).toHaveCount(0);
 
-  const sidebar = page.getByRole("complementary", { name: "Mali tablolar menüsü" });
-  await expect(sidebar.locator("[aria-current='page']")).toHaveText("Nakit Akışı");
+  // 🔴 KULLANICI KARARI 2026-08-27 — bkz. bilanço karesi.
+  await expect(page.getByRole("complementary", { name: "Mali tablolar menüsü" })).toHaveCount(0);
+  await expect(page.locator("[aria-current='page']")).toHaveText("Mali Tablolar");
+  await expect(page.getByTestId("mt-seg-current")).toHaveText("Nakit Akışı");
   await expectNoLoadingText(page);
 
   await prepareFrame(page);
@@ -232,8 +237,8 @@ test("mali tablolar gelir tablosu gorsel", async ({ page }) => {
 
   await expect(page.getByRole("heading", { level: 1, name: "Mali Tablolar" })).toBeVisible();
 
-  // 🔴 KÖKTE DRILL SIDEBAR YOKTUR (E11 düz kabuğu çizer) — kadrajın sol
-  // sütunu bu yüzden BL/NA'dan farklıdır ve bu farkı kare kilitler.
+  // 🔴 DRILL SIDEBAR HİÇBİR MALİ TABLO EKRANINDA YOKTUR (kullanıcı kararı
+  // 2026-08-27) — üç karenin de sol sütunu artık AYNI ana menüdür.
   await expect(page.getByRole("complementary", { name: "Mali tablolar menüsü" })).toHaveCount(0);
 
   // Segment denetimi: bulunulan sekme + iki yaprak bağlantısı.

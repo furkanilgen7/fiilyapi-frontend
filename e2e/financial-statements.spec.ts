@@ -357,13 +357,23 @@ test.describe("Bilanço ekranı (BL)", () => {
     await expect(banner).toContainText("eşit değil");
   });
 
-  test("drill sidebar'da TAM BİR öğe aria-current taşır (K7)", async ({ page }) => {
+  /**
+   * 🔴 KULLANICI KARARI 2026-08-27 — drill sidebar KALDIRILDI: ana menüyü
+   * örtüyordu. Sol sütun artık BU ekranda da uygulamanın ANA MENÜSÜdür ve
+   * `aria-current="page"`i onun `Mali Tablolar` girdisi taşır (K7: TAM BİR).
+   */
+  test("ana menü YERİNDE kalır ve TAM BİR aria-current taşır (K7)", async ({ page }) => {
     await openBalanceSheet(page);
-    const sidebar = page.getByRole("complementary", { name: "Mali tablolar menüsü" });
-    const active = sidebar.locator("[aria-current='page']");
-    // 🔴 ÜST öğe (`Mali Tablolar`) `exact`tir; olmasaydı burada İKİ tane çıkardı.
+    await expect(
+      page.getByRole("complementary", { name: "Mali tablolar menüsü" }),
+    ).toHaveCount(0);
+
+    const active = page.locator("[aria-current='page']");
     await expect(active).toHaveCount(1);
-    await expect(active).toHaveText("Bilanço");
+    await expect(active).toHaveText("Mali Tablolar");
+
+    // Geçiş segmentleri bu ekranda da basılır; CURRENT olan BU ekrandır.
+    await expect(page.getByTestId("mt-seg-current")).toHaveText("Bilanço");
   });
 });
 
@@ -424,12 +434,18 @@ test.describe("Nakit Akış Tablosu ekranı (NA)", () => {
     await expect(page.getByTestId("na-projection-reason")).toBeVisible();
   });
 
-  test("drill sidebar'da TAM BİR öğe aria-current taşır (K7)", async ({ page }) => {
+  /** 🔴 KULLANICI KARARI 2026-08-27 — bkz. bilanço ekranının aynı bekçisi. */
+  test("ana menü YERİNDE kalır ve TAM BİR aria-current taşır (K7)", async ({ page }) => {
     await openCashFlowStatement(page);
-    const sidebar = page.getByRole("complementary", { name: "Mali tablolar menüsü" });
-    const active = sidebar.locator("[aria-current='page']");
+    await expect(
+      page.getByRole("complementary", { name: "Mali tablolar menüsü" }),
+    ).toHaveCount(0);
+
+    const active = page.locator("[aria-current='page']");
     await expect(active).toHaveCount(1);
-    await expect(active).toHaveText("Nakit Akışı");
+    await expect(active).toHaveText("Mali Tablolar");
+
+    await expect(page.getByTestId("mt-seg-current")).toHaveText("Nakit Akışı");
   });
 });
 
@@ -528,8 +544,8 @@ test.describe("Mali Tablolar kökü (E11) · GELİR TABLOSU ekranı", () => {
   });
 
   /**
-   * 🔴 KÖKTE DRILL SIDEBAR YOKTUR (E11 düz kabuğu çizer). Bu yüzden K7 bekçisi
-   * burada SAYFANIN TAMAMINA bakar: kabuk menüsünün `Mali Tablolar` girdisi
+   * 🔴 DRILL SIDEBAR HİÇBİR YERDE YOKTUR (kullanıcı kararı 2026-08-27). K7
+   * bekçisi SAYFANIN TAMAMINA bakar: kabuk menüsünün `Mali Tablolar` girdisi
    * TEK `aria-current`tır. Segment denetiminin "bulunulan" öğesi de
    * `aria-current` SÜRMEZ — ikincisi ekran okuyucuya iki sayfa derdi.
    */
@@ -543,38 +559,53 @@ test.describe("Mali Tablolar kökü (E11) · GELİR TABLOSU ekranı", () => {
   });
 
   /**
-   * 🔴 F-NAVRETRY T2 (kullanıcı kararı, 2026-08-19) — yaprak ekranların drill
-   * sidebar'ında `Gelir Tablosu` satırı artık TIKLANABİLİR bir `<a>`dır
-   * (hedefi üst öğeyle aynıdır) ama `aria-current` HÂLÂ SÜRMEZ. Bekçi
-   * ZAYIFLATILMADI: sayfada hâlâ TAM BİR `aria-current` vardır (K7).
+   * 🔴 F-NAVRETRY T2 (2026-08-19) drill sidebar'da `Gelir Tablosu` satırını
+   * TIKLANABİLİR yapmıştı; sidebar 2026-08-27'de kaldırılınca o karar SEGMENT
+   * denetimine taşındı. Yaprakta `Gelir Tablosu` bir `<a>`dır, hedefi köktür
+   * ve `aria-current` SÜRMEZ (K7: sayfada TAM BİR, o da kabuk menüsünde).
    */
-  test("K3/T2 · yaprak ekranda `Gelir Tablosu` satırı BAĞLANTIDIR, aria-current TEKtir", async ({
+  test("K3/T2 · yaprakta `Gelir Tablosu` segmenti BAĞLANTIDIR, aria-current TEKtir", async ({
     page,
   }) => {
     await openBalanceSheet(page);
-    const sidebar = page.getByRole("complementary", { name: "Mali tablolar menüsü" });
 
-    await expect(sidebar.locator("[aria-current='page']")).toHaveCount(1);
-    const mirrorLink = sidebar.locator("a", { hasText: "Gelir Tablosu" });
-    await expect(mirrorLink).toHaveCount(1);
-    await expect(mirrorLink).toHaveAttribute("href", FINANCIAL_STATEMENTS_URL);
-    await expect(mirrorLink).not.toHaveAttribute("aria-current", "page");
+    await expect(page.locator("[aria-current='page']")).toHaveCount(1);
+    const rootSegment = page.getByTestId("mt-seg-mali-tablolar");
+    await expect(rootSegment).toHaveText("Gelir Tablosu");
+    await expect(rootSegment).toHaveAttribute("href", FINANCIAL_STATEMENTS_URL);
+    await expect(rootSegment).not.toHaveAttribute("aria-current", "page");
   });
 
-  /**
-   * 🔴 F-NAVRETRY T2 — satır tıklanınca GERÇEKTEN üst öğenin hedefine gider
-   * ve kökte `aria-current` sayısı YİNE TEKtir (mirror satır onu asla almaz).
-   */
-  test("T2 · `Gelir Tablosu` satırına tıklamak `/mali-tablolar`a götürür", async ({ page }) => {
+  /** 🔴 Segment tıklanınca GERÇEKTEN köke gider ve `aria-current` YİNE TEKtir. */
+  test("T2 · `Gelir Tablosu` segmentine tıklamak `/mali-tablolar`a götürür", async ({ page }) => {
     await openBalanceSheet(page);
-    const sidebar = page.getByRole("complementary", { name: "Mali tablolar menüsü" });
 
-    await sidebar.locator("a", { hasText: "Gelir Tablosu" }).click();
+    await page.getByTestId("mt-seg-mali-tablolar").click();
 
     await expect(page).toHaveURL(new RegExp(`${FINANCIAL_STATEMENTS_URL}$`));
     const active = page.locator("[aria-current='page']");
     await expect(active).toHaveCount(1);
     await expect(active).toHaveText("Mali Tablolar");
+  });
+
+  /**
+   * 🔴 KUSURU BÜYÜTMEME BEKÇİSİ — sidebar `/bilanco ↔ /nakit-akisi` DOĞRUDAN
+   * geçişinin TEK taşıyıcısıydı (yapraktaki başka çıkış yalnız
+   * `← Mali Tablolar`dı). Segmentler o geçişi devraldı; bu test köke UĞRAMADAN
+   * iki yaprak arasında gidip gelindiğini ölçer.
+   */
+  test("🔴 iki yaprak arasında KÖKE UĞRAMADAN doğrudan geçilir", async ({ page }) => {
+    await openBalanceSheet(page);
+
+    await page.getByTestId("mt-seg-nakit-akisi").click();
+    await expect(page).toHaveURL(new RegExp(`${CASH_FLOW_STATEMENT_URL}$`));
+    await expect(page.getByTestId("na-loaded")).toBeAttached();
+    await expect(page.getByTestId("mt-seg-current")).toHaveText("Nakit Akışı");
+
+    await page.getByTestId("mt-seg-bilanco").click();
+    await expect(page).toHaveURL(new RegExp(`${BALANCE_SHEET_URL}$`));
+    await expect(page.getByTestId("bl-loaded")).toBeAttached();
+    await expect(page.getByTestId("mt-seg-current")).toHaveText("Bilanço");
   });
 
   test("segment denetimi iki yaprak ekrana gider", async ({ page }) => {

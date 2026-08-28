@@ -32,6 +32,10 @@ const COUNT_PENDING = (m: string) => ({ available: false, count: null, pending_m
 const CONTRACTING_PLACEHOLDERS = {
   spent: METRIC_PENDING("project_costs"),
   physical_progress: METRIC_PENDING("progress_payments"),
+  // Mali cubuk AYRI bir zarftan okur (`prj-financial-*` testid'leri); burada
+  // dolu birakilmasi bu dosyanin FIZIKSEL iddialarini kirletmemesi icindir —
+  // iki cubugun testid'leri ayridir, `getByTestId` tekil kalir.
+  financial_progress: METRIC_PENDING("progress_payments"),
   final_progress_payment: METRIC_PENDING("progress_payments"),
   worker_count: COUNT_PENDING("timesheet"),
   subcontractor_count: COUNT_PENDING("subcontracts"),

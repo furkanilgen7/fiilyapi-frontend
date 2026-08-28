@@ -173,16 +173,38 @@ describe("Bilanço ekranı — BL başlık şeridi", () => {
     );
   });
 
-  it("BL:24-31 drill sidebar BU ekranın içinde basılır (grup layout'u YOK)", () => {
+  /**
+   * 🔴 KULLANICI KARARI 2026-08-27 — drill sidebar KALDIRILDI. Konumu global
+   * kabuk sidebar'ıyla BİREBİR aynıydı (`position: fixed; left: 0; width:
+   * 220px; z-index: 90`) ve onu ÖRTÜYORDU: kullanıcı bu ekranda ana menünün
+   * kaybolmasını kusur olarak bildirdi. Ana menü artık üç yolda da yerinde.
+   */
+  it("🔴 drill sidebar BASILMAZ — ana menü örtülmez (kullanıcı kararı 2026-08-27)", () => {
+    const { container } = render(<BalanceSheetView />);
+    expect(screen.queryByRole("complementary", { name: "Mali tablolar menüsü" })).toBeNull();
+    expect(screen.queryByTestId("fs-nav-parent")).toBeNull();
+    // K7 — `aria-current="page"`i artık YALNIZ kabuk sidebar'ı taşır; bu
+    // ekranın kendi DOM'u hiç sürmez.
+    expect(container.querySelectorAll('[aria-current="page"]')).toHaveLength(0);
+  });
+
+  /**
+   * 🔴 Sidebar gidince `/bilanco ↔ /nakit-akisi` DOĞRUDAN geçişi ölürdü
+   * (yaprakta başka çıkış yalnız `← Mali Tablolar`dı). Geçiş segment
+   * denetimine taşındı; bu bekçi onun BU ekranda da basıldığını ölçer.
+   */
+  it("🔴 geçiş segmentleri BU ekranda da basılır ve CURRENT `Bilanço`dur", () => {
     render(<BalanceSheetView />);
-    expect(screen.getByRole("complementary", { name: "Mali tablolar menüsü" })).toBeInTheDocument();
-    // 🔴 Sayfada TAM BİR `aria-current="page"` olur — üst öğe (BL:27) vurgulu
-    // ama `aria-current` TAŞIMAZ (iki katmanlı vurgu kararı).
-    const current = screen
-      .getAllByRole("link")
-      .filter((a) => a.getAttribute("aria-current") === "page");
-    expect(current.map((a) => a.textContent)).toEqual(["Bilanço"]);
-    expect(screen.getByTestId("fs-nav-parent")).toHaveClass("fs-shell-item--ancestor");
+    const current = screen.getByTestId("mt-seg-current");
+    expect(current).toHaveTextContent("Bilanço");
+    expect(current.tagName).not.toBe("A");
+    // 🔴 KARŞIT KANIT: yanlış olanlar CURRENT DEĞİL, gerçek bağlantı.
+    expect(screen.queryByTestId("mt-seg-bilanco")).toBeNull();
+    expect(screen.getByTestId("mt-seg-nakit-akisi")).toHaveAttribute(
+      "href",
+      "/mali-tablolar/nakit-akisi",
+    );
+    expect(screen.getByTestId("mt-seg-mali-tablolar")).toHaveAttribute("href", "/mali-tablolar");
   });
 });
 

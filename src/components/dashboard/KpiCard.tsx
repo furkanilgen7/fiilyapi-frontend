@@ -4,9 +4,10 @@ import { formatCompactCurrency } from "@/lib/format";
 import { CardEmptyState } from "./CardEmptyState";
 import "./dashboard.css";
 
-// NOT: openapi-typescript "MetricPlaceholder" adini iki modulde (dashboard/projects) gordugu
-// icin ad-alani onekiyle ayristirdi; gosterge paneli kendi semasini kullanir.
-type MetricPlaceholder = components["schemas"]["app__modules__dashboard__schemas__MetricPlaceholder"];
+// NOT: DASH-1 devri (backend 859ebfb) ile panelin kendi MetricPlaceholder kopyasi
+// silinip kanonik projects zarfi re-export edildi; iki nitelenmis sema tek
+// "MetricPlaceholder" adinda birlesti.
+type MetricPlaceholder = components["schemas"]["MetricPlaceholder"];
 
 export function KpiCard({
   label,

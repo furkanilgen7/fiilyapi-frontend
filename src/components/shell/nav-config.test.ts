@@ -25,6 +25,22 @@ describe("NAV_GROUPS", () => {
     const hrefs = NAV_GROUPS.flatMap((g) => g.items.map((i) => i.href));
     expect(new Set(hrefs).size).toBe(hrefs.length);
   });
+  /**
+   * 🔴 KULLANICI KARARI 2026-08-27 — Mali Tablolar'ın drill sidebar'ı
+   * kaldırıldı; artık ÜÇ mali tablo ekranında da GÖRÜNEN sol menü BUDUR.
+   * Bu yüzden `Mali Tablolar` girdisinin üç yolda da aktif kalması artık
+   * kullanıcının GÖRDÜĞÜ davranıştır: `isActivePath`in prefix kuralı `exact`e
+   * dönerse yapraklarda hiçbir menü öğesi yanmaz.
+   */
+  it("🔴 Mali Tablolar girdisi UC YOLDA DA aktiftir (yapraklar dahil)", () => {
+    for (const pathname of [
+      "/mali-tablolar",
+      "/mali-tablolar/bilanco",
+      "/mali-tablolar/nakit-akisi",
+    ]) {
+      expect(activeNavHref(pathname)).toBe("/mali-tablolar");
+    }
+  });
   it("Gosterge Paneli / rotasina gider", () => {
     const dash = NAV_GROUPS[0].items[0];
     expect(dash.label).toBe("Gösterge Paneli");

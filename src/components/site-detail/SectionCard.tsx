@@ -9,7 +9,7 @@ import type { components } from "@/lib/api/schema";
 export type SectionResponse = components["schemas"]["SectionResponse"];
 type SectionStatus = SectionResponse["status"];
 type CountPlaceholder = components["schemas"]["CountPlaceholder"];
-type MetricPlaceholder = components["schemas"]["app__modules__projects__schemas__MetricPlaceholder"];
+type MetricPlaceholder = components["schemas"]["MetricPlaceholder"];
 
 // Yer tutucu "gercek deger tasiyor mu?" — `available` TEK BASINA yetmez:
 // available: true + deger null gelirse hucre bos kalirdi (kod inceleme
