@@ -37,7 +37,11 @@ import "./financial-statements.css";
  *
  * Mockup'ın üst barı (NA:14-22) BASILMAZ: kabuk canon'udur.
  *
- * 🔴 SOL MENÜ (NA:24-31) DA BASILMAZ — KULLANICI KARARI 2026-08-27. Drill
+ * 🔴 SOL MENÜ (NA:24-31) DA BASILMAZ — 🔴 ONAYLI SAPMA (kullanıcı kararı
+ * 2026-08-27). Mockup NA:24-31 bu menüyü ÇİZER; kullanıcı birebir şunu
+ * söyledi: «biliyorum bu mockupta öyle ama sen dediğimi yap». Yani bu
+ * mockup-birebir kuralından BİLİNÇLİ, ONAYLI bir sapmadır — SONRAKİ TUR
+ * "mockup çiziyor" DİYE GERİ ALMASIN. Drill
  * sidebar global kabuk sidebar'ıyla aynı konum/genişlikteydi ve ana menüyü
  * ÖRTÜYORDU; kullanıcı ana menünün sabit kalmasını istedi. Yaprak geçişi
  * `FinancialStatementsSegments`e taşındı (bkz. `BalanceSheetView`).

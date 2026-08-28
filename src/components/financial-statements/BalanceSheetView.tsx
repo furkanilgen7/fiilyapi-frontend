@@ -33,7 +33,11 @@ import "./financial-statements.css";
  *
  * Mockup'ın üst barı (BL:14-22) BASILMAZ: kabuk canon'udur.
  *
- * 🔴 SOL MENÜ (BL:24-31) DA BASILMAZ — KULLANICI KARARI 2026-08-27. Drill
+ * 🔴 SOL MENÜ (BL:24-31) DA BASILMAZ — 🔴 ONAYLI SAPMA (kullanıcı kararı
+ * 2026-08-27). Mockup BL:24-31 bu menüyü ÇİZER; kullanıcı birebir şunu
+ * söyledi: «biliyorum bu mockupta öyle ama sen dediğimi yap». Yani bu
+ * mockup-birebir kuralından BİLİNÇLİ, ONAYLI bir sapmadır — SONRAKİ TUR
+ * "mockup çiziyor" DİYE GERİ ALMASIN. Drill
  * sidebar global kabuk sidebar'ıyla BİREBİR aynı konum/genişlikteydi
  * (`fixed; top: 52px; left: 0; width: 220px; z-index: 90`) ve onu ÖRTÜYORDU:
  * bu ekrana girince ana menü kayboluyordu. Kullanıcı bunu kusur olarak
