@@ -473,6 +473,30 @@ describe("SiteTimesheetView · KAPSAM KURALI", () => {
   });
 });
 
+describe("SiteTimesheetView · taslak KAPSAMI", () => {
+  it("🔴 HAFTA değişince taslak DÜŞER — başka haftanın taslağı kaydedilemez", async () => {
+    const { rerender } = renderView();
+    await typeHours("Ahmet Yılmaz · 5 Ağu", "7");
+    expect(screen.getByText(/Kaydedilmemiş 1 hücre/)).toBeInTheDocument();
+
+    // Kullanıcı bir sonraki haftaya geçti (URL değişti, aynı ekran).
+    searchParams = new URLSearchParams({ iso_year: "2026", iso_week: "33" });
+    rerender(<SiteTimesheetView />);
+
+    // Taslak render SIRASINDA düşer. Efektle sıfırlansaydı bir kare boyunca
+    // BAŞKA haftanın taslağı görünür, kaydedilirse backend 422 verirdi.
+    expect(screen.queryByText(/Kaydedilmemiş/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Haftayı Kaydet" })).toBeDisabled();
+  });
+
+  it("ŞANTİYE aynı kalıp hafta aynıysa taslak KORUNUR (pozitif kontrol)", async () => {
+    const { rerender } = renderView();
+    await typeHours("Ahmet Yılmaz · 5 Ağu", "7");
+    rerender(<SiteTimesheetView />);
+    expect(screen.getByText(/Kaydedilmemiş 1 hücre/)).toBeInTheDocument();
+  });
+});
+
 describe("SiteTimesheetView · kaydetme sonucu", () => {
   it("başarılı kayıttan sonra 'kaydedildi' yazar ve taslak düşer", async () => {
     renderView();
