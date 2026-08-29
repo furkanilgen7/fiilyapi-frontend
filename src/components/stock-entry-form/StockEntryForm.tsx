@@ -79,10 +79,20 @@ const EMPTY_ERRORS: StockEntryFormErrors = { lineErrors: {} };
  */
 export function StockEntryForm() {
   const router = useRouter();
-  const { projectId, siteId } = useParams<{ projectId: string; siteId: string }>();
+  // 🔴 URL-3 — ADRES anahtarlari.
+  const { projectId: projectKey, siteId: siteKey } = useParams<{
+    projectId: string;
+    siteId: string;
+  }>();
 
   const permission = useModulePermission("stock");
-  const siteQuery = useSite(siteId);
+  const siteQuery = useSite(siteKey, { project: projectKey });
+  // 🔴 SLUG -> KANONIK KIMLIK. Burada AYRICA bir SESSIZ kusur kapaniyor:
+  // `defaultWarehouseId(...)` asagida `warehouse.site_id` (UUID) ile
+  // KARSILASTIRMA yapar. Adres anahtari slug oldugunda o karsilastirma HIC
+  // tutmaz ve form varsayilan deposunu sessizce kaybeder — hata yok, 422 yok,
+  // yalnizca bos kalan bir alan.
+  const siteId = siteQuery.data?.id ?? "";
   // Kırpılma korkuluğu (TB3/F-TH dersi): sunucu varsayılanı 50'dir.
   const warehousesQuery = useWarehouses({ limit: STOCK_LIST_MAX_LIMIT });
   const itemsQuery = useStockItems({ isActive: true, limit: STOCK_LIST_MAX_LIMIT });
@@ -139,7 +149,7 @@ export function StockEntryForm() {
   }
 
   const site = siteQuery.data;
-  const siteStockHref = routes.projects.sites.stock({ projectId, siteId });
+  const siteStockHref = routes.projects.sites.stock({ projectId: projectKey, siteId: siteKey });
   const warehouseRows = warehouses ?? [];
   const items = itemsQuery.data?.items ?? [];
 

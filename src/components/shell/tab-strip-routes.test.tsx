@@ -184,8 +184,8 @@ const ROUTELESS_STRIPS: readonly RoutelessStripCase[] = [
     expectedTabCount: 5,
     render: () => (
       <SectionDetailTabs
-        projectId={PROJECT_SENTINEL}
-        siteId={SITE_SENTINEL}
+        projectKey={PROJECT_SENTINEL}
+        siteKey={SITE_SENTINEL}
         activeIndex={0}
         onSelect={() => {}}
       />

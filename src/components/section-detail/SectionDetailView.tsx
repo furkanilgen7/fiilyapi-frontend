@@ -81,13 +81,26 @@ const SIDE_LINKS = {
 // iki alt kart — hepsi tek container'da orkestre edilir (`site-detail` desenin
 // aksine burada tüm içerik pending olduğu için ayrı bir "boş durum" dalı yok).
 export function SectionDetailView() {
-  const { projectId, siteId, sectionId } = useParams<{
+  // 🔴 URL-3 — UC rota parametresi de "slug VEYA UUID"dur (ADRES anahtarlari).
+  const {
+    projectId: projectKey,
+    siteId: siteKey,
+    sectionId: sectionKey,
+  } = useParams<{
     projectId: string;
     siteId: string;
     sectionId: string;
   }>();
-  const sectionQuery = useSection(sectionId);
-  const siteQuery = useSite(siteId);
+  // Kapsam IKI BASAMAKLI: `sections.slug` santiye icinde, `sites.slug` proje
+  // icinde tekildir. Belirsizlikte backend fail-closed 404 verir.
+  const sectionQuery = useSection(sectionKey, { site: siteKey, project: projectKey });
+  const siteQuery = useSite(siteKey, { project: projectKey });
+  // 🔴 SLUG -> KANONIK KIMLIK GECIS NOKTASI. Asagidaki ALTI cagrinin hepsi
+  // (`useBoq`, `useTimesheetData`, `useSectionStock`, `useSiteDiaryEntries`,
+  // `useSiteSubcontractorPayments`) UUID bekler.
+  const sectionId = sectionQuery.data?.id ?? "";
+  const siteId = siteQuery.data?.id ?? "";
+  const projectId = siteQuery.data?.project.id ?? "";
   // BOQ-SEC-F: bölüm süzgeçli BOQ. Hook koşullu ÇAĞRILAMAZ, bu yüzden sekme
   // seçili olmasa da bağlanır; `enabled` kapısı `siteId`dedir. Süzgeç sorgu
   // ANAHTARINDADIR — şantiye BOQ ekranının önbelleğini EZMEZ.
@@ -148,9 +161,12 @@ export function SectionDetailView() {
 
   /** Alt kart bağlantısının hedefi; süzgeci OKUYAN ekranda `?section=` taşınır. */
   function sideLinkHref(link: (typeof SIDE_LINKS)[keyof typeof SIDE_LINKS]): string {
+    // 🔴 YOL/SORGU KURALI TEK IFADEDE: yol segmentleri ADRES anahtarlarini
+    // tasir (okunur kalir), `?section=` ise KANONIK UUID'yi — cunku hedef
+    // ekran onu `section_id` olarak UUID bekleyen uca BESLER.
     return link.route({
-      projectId,
-      siteId,
+      projectId: projectKey,
+      siteId: siteKey,
       section: link.carriesSection ? sectionId : undefined,
     });
   }
@@ -193,7 +209,7 @@ export function SectionDetailView() {
             items={diaryEntries.data?.items ?? []}
             isLoading={diaryEntries.isLoading}
             isError={diaryEntries.isError}
-            diaryHref={routes.projects.sites.diary({ projectId, siteId })}
+            diaryHref={routes.projects.sites.diary({ projectId: projectKey, siteId: siteKey })}
           />
         );
       case "hakedisler":
@@ -207,7 +223,10 @@ export function SectionDetailView() {
             isError={subcontractorPayments.isError}
             isPartial={subcontractorPayments.isPartial}
             truncation={subcontractorPayments.truncation}
-            paymentsHref={routes.projects.sites.progressPayments({ projectId, siteId })}
+            paymentsHref={routes.projects.sites.progressPayments({
+              projectId: projectKey,
+              siteId: siteKey,
+            })}
           />
         );
       case "stok":
@@ -222,8 +241,10 @@ export function SectionDetailView() {
           <SectionStockPanel
             sectionName={section.name}
             siteStockHref={routes.projects.sites.stock({
-              projectId,
-              siteId,
+              projectId: projectKey,
+              siteId: siteKey,
+              // `?section=` KANONIK UUID — hedef ekran onu `section_id` olarak
+              // UUID bekleyen `GET /sites/{id}/stock` ucuna gecirir.
               section: sectionId,
             })}
             rows={sectionStock.data?.items}
@@ -257,14 +278,15 @@ export function SectionDetailView() {
       <SectionHeroCard
         section={section}
         siteName={siteName}
+        projectKey={projectKey}
+        siteKey={siteKey}
         projectId={projectId}
-        siteId={siteId}
         canEdit={canWrite}
       />
 
       <SectionDetailTabs
-        projectId={projectId}
-        siteId={siteId}
+        projectKey={projectKey}
+        siteKey={siteKey}
         activeIndex={activeTab}
         onSelect={setActiveTab}
       />

@@ -30,14 +30,19 @@ import { hasSectionFormErrors, MESSAGES, validateSectionForm, type SectionFormEr
 // Sıra önemli: önce paylaşılan kabuk, sonra forma özgü bloklar.
 import "@/styles/form-shell.css";
 import "./section-form.css";
-import { routes } from "@/lib/routes";
+import { routes, routeKeyOf } from "@/lib/routes";
 
 /** F-TKV T5 — devre dışı Gantt kutusunun GÖRÜNÜR gerekçesi (test bunu import eder). */
 export const GANTT_AUTO_ADD_REASON = pendingModuleLabel("gantt_auto_add");
 
+/**
+ * 🔴 URL-3 — bu propların hepsi ADRESTEKI anahtarlardır (slug VEYA UUID),
+ * kanonik kimlik DEĞİLDİR. Kanonik kimlikler gövdede sorgu yanıtlarından
+ * türetilir; ad bu yüzden `...Key`tir.
+ */
 export type SectionFormProps =
-  | { mode: "create"; projectId: string; siteId: string }
-  | { mode: "edit"; projectId: string; siteId: string; sectionId: string };
+  | { mode: "create"; projectKey: string; siteKey: string }
+  | { mode: "edit"; projectKey: string; siteKey: string; sectionKey: string };
 
 /** Bilgi kutusu ikonu (mockup F54) — SiteCreateView deseniyle aynı. */
 function InfoIcon() {
@@ -59,19 +64,26 @@ export function SectionForm(props: SectionFormProps) {
   const { canWrite } = useModulePermission("sites");
   const isEdit = props.mode === "edit";
 
-  const siteQuery = useSite(props.siteId);
-  const projectQuery = useProject(props.projectId);
-  const detailQuery = useSection(isEdit ? props.sectionId : "");
+  const siteQuery = useSite(props.siteKey, { project: props.projectKey });
+  const projectQuery = useProject(props.projectKey);
+  const detailQuery = useSection(isEdit ? props.sectionKey : "", {
+    site: props.siteKey,
+    project: props.projectKey,
+  });
+  // 🔴 SLUG -> KANONIK KIMLIK GECIS NOKTASI. Asagidaki UC cagri UUID bekler
+  // (`GET/POST /sites/{id}/sections`, `PATCH /sections/{id}`).
+  const siteId = siteQuery.data?.id ?? "";
+  const sectionId = detailQuery.data?.id ?? "";
   const detail = isEdit ? detailQuery.data : undefined;
   const users = useUserOptions();
   // F-TKV T5 — Bağımlılık seçicisinin seçenekleri: AYNI şantiyenin öbür
   // bölümleri. Backend "aynı şantiye / kendisi / döngü" ihlallerinde 422 verir;
   // listeden kendini çıkarmak o hatalardan yalnız BİRİNİ (self) önler,
   // öbürleri kullanıcıya GÖRÜNÜR hata olarak basılır (handleMutationError).
-  const siteSections = useSiteSections(props.siteId);
+  const siteSections = useSiteSections(siteId);
 
-  const createSection = useCreateSection(props.siteId);
-  const updateSection = useUpdateSection(isEdit ? props.sectionId : "");
+  const createSection = useCreateSection(siteId);
+  const updateSection = useUpdateSection(sectionId);
   const isSaving = createSection.isPending || updateSection.isPending;
 
   const [values, setValues] = useState<SectionFormValues>(emptySectionFormValues);
@@ -119,7 +131,10 @@ export function SectionForm(props: SectionFormProps) {
   const site = siteQuery.data;
   const project = projectQuery.data;
   const dependencyOptions = (siteSections.data?.items ?? [])
-    .filter((item) => !isEdit || item.id !== props.sectionId)
+    // 🔴 KANONIK kimlikle karsilastirilir: `item.id` bir UUID'dir. Adres
+    // anahtari (slug olabilir) ile karsilastirmak bolumun KENDISINI bagimlilik
+    // secenegi olarak birakirdi — 422 vermeyen, sessiz bir kusur.
+    .filter((item) => !isEdit || item.id !== sectionId)
     .map((item) => ({ id: item.id, name: item.name }));
   const existingMilestones = detail?.milestones ?? [];
 
@@ -129,8 +144,12 @@ export function SectionForm(props: SectionFormProps) {
 
   function handleCancel() {
     const target = isEdit
-      ? routes.projects.sites.sections.detail({ projectId: props.projectId, siteId: props.siteId, sectionId: props.sectionId })
-      : routes.projects.sites.detail({ projectId: props.projectId, siteId: props.siteId });
+      ? routes.projects.sites.sections.detail({
+          projectId: props.projectKey,
+          siteId: props.siteKey,
+          sectionId: props.sectionKey,
+        })
+      : routes.projects.sites.detail({ projectId: props.projectKey, siteId: props.siteKey });
     router.push(target);
   }
 
@@ -169,7 +188,14 @@ export function SectionForm(props: SectionFormProps) {
     if (!isEdit) {
       createSection.mutate(body, {
         onSuccess: (created) =>
-          router.push(routes.projects.sites.sections.detail({ projectId: props.projectId, siteId: props.siteId, sectionId: created.id })),
+          router.push(
+            routes.projects.sites.sections.detail({
+              projectId: props.projectKey,
+              siteId: props.siteKey,
+              // Yeni kaydin okunur anahtari YANITTAN gelir (`slug ?? id`).
+              sectionId: routeKeyOf(created),
+            }),
+          ),
         onError: handleMutationError,
       });
       return;
@@ -177,7 +203,13 @@ export function SectionForm(props: SectionFormProps) {
 
     updateSection.mutate(body, {
       onSuccess: (updated) =>
-        router.push(routes.projects.sites.sections.detail({ projectId: props.projectId, siteId: props.siteId, sectionId: updated.id })),
+        router.push(
+          routes.projects.sites.sections.detail({
+            projectId: props.projectKey,
+            siteId: props.siteKey,
+            sectionId: routeKeyOf(updated),
+          }),
+        ),
       onError: handleMutationError,
     });
   }
@@ -190,7 +222,9 @@ export function SectionForm(props: SectionFormProps) {
           <span className="pf-breadcrumb__sep" aria-hidden="true">
             /
           </span>
-          <Link href={routes.projects.sites.detail({ projectId: props.projectId, siteId: props.siteId })}>{site.name}</Link>
+          <Link href={routes.projects.sites.detail({ projectId: props.projectKey, siteId: props.siteKey })}>
+            {site.name}
+          </Link>
           <span className="pf-breadcrumb__sep" aria-hidden="true">
             /
           </span>
@@ -225,7 +259,10 @@ export function SectionForm(props: SectionFormProps) {
             Mevcut {site.section_count} bölüm var. Yeni bölüm eklendikten sonra{" "}
             <strong>iş kalemi ataması</strong> yapılmalı.
           </div>
-          <Link href={routes.projects.sites.detail({ projectId: props.projectId, siteId: props.siteId })} className="site-form__info-link">
+          <Link
+            href={routes.projects.sites.detail({ projectId: props.projectKey, siteId: props.siteKey })}
+            className="site-form__info-link"
+          >
             Mevcut Bölümler →
           </Link>
         </div>
@@ -254,8 +291,8 @@ export function SectionForm(props: SectionFormProps) {
           {isEdit ? (
             <BoqAssignmentCard
               mode="edit"
-              siteId={props.siteId}
-              sectionId={props.sectionId}
+              siteId={siteId}
+              sectionId={sectionId}
               canWrite={canWrite}
             />
           ) : (

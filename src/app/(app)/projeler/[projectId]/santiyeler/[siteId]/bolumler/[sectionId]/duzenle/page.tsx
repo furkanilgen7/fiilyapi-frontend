@@ -12,5 +12,7 @@ export default function EditSectionPage() {
     siteId: string;
     sectionId: string;
   }>();
-  return <SectionForm mode="edit" projectId={projectId} siteId={siteId} sectionId={sectionId} />;
+  return (
+    <SectionForm mode="edit" projectKey={projectId} siteKey={siteId} sectionKey={sectionId} />
+  );
 }

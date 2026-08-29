@@ -6,7 +6,7 @@ import { pendingModuleLabel, type PendingModuleKey } from "@/lib/pending-modules
 import { SECTION_STATUS_CLASS_SUFFIX, SECTION_STATUS_LABELS } from "@/lib/section-labels";
 import type { SectionDetailResponse } from "@/lib/api/hooks/useSection";
 import { remainingDays } from "./remainingDays";
-import { routes } from "@/lib/routes";
+import { routes, routeKeyOf } from "@/lib/routes";
 
 const NO_END_DATE_TITLE = "Bitiş tarihi girilmemiş";
 // D88: mockup "3 gecikme riski" basıyor ama backend bu veriyi BİLİNÇLİ
@@ -20,8 +20,11 @@ const REALIZED_AMOUNT_PENDING_MODULE = "progress_payments";
 export interface SectionHeroCardProps {
   section: SectionDetailResponse;
   siteName: string;
+  /** ADRESTEKI anahtarlar — "Duzenle" YOL baglantisidir. */
+  projectKey: string;
+  siteKey: string;
+  /** Kanonik proje UUID'si — "Hakedis Olustur" SORGU parametresi kurar. */
   projectId: string;
-  siteId: string;
   canEdit: boolean;
 }
 
@@ -171,9 +174,21 @@ function RemainingDaysCell({ endDate }: { endDate: string | null }) {
 // Bölüm Detay hero kartı (mockup D54-96). Beş KPI hücresinden yalnız Bölüm
 // Bedeli (`budget_amount`) ve Kalan Gün (`end_date` türevi) gerçek değerdir;
 // kalan üçü ilgili modülle birlikte gelir (task-2-brief §KPI şeridi).
-export function SectionHeroCard({ section, siteName, projectId, siteId, canEdit }: SectionHeroCardProps) {
+export function SectionHeroCard({
+  section,
+  siteName,
+  projectKey,
+  siteKey,
+  projectId,
+  canEdit,
+}: SectionHeroCardProps) {
   const meta = metaParts(section, siteName);
-  const editHref = routes.projects.sites.sections.edit({ projectId, siteId, sectionId: section.id });
+  // YOL: adres anahtarlari + bolumun KENDI okunur anahtari (`slug ?? id`).
+  const editHref = routes.projects.sites.sections.edit({
+    projectId: projectKey,
+    siteId: siteKey,
+    sectionId: routeKeyOf(section),
+  });
   const statusSuffix = SECTION_STATUS_CLASS_SUFFIX[section.status];
 
   return (
