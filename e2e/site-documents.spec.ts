@@ -83,9 +83,10 @@ test("kapsam kuralı: her belge/klasör isteği site_id taşır (telden kanıt)"
 
   await page.goto(DOCUMENTS_URL);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Belgeler");
-  // ⚠️ Locator KAPSAMLANIR: drill sidebar'da da "Hakedişler" adlı bir bağlantı
-  // vardır (`project-nav-config.ts`); kapsamsız locator onu tıklamaya çalışıp
-  // takılıyordu. Klasör bağlantıları her zaman panel içinden alınır.
+  // ⚠️ Locator KAPSAMLANIR. Eskiden drill kenar çubuğunda da "Hakedişler"
+  // adlı bir bağlantı vardı ve kapsamsız locator onu tıklamaya çalışıp
+  // takılıyordu; 🔴 DRILL-KALDIR (2026-08-29) o çubuğu sildi. Kapsam yine de
+  // KALIR: klasör bağlantıları her zaman panel içinden alınır.
   const panel = page.getByRole("navigation", { name: "Belge klasörleri" });
   // Klasör süzgeci de eklendiğinde site_id DÜŞMEMELİDİR.
   await panel.getByRole("link", { name: /Hakedişler/ }).first().click();
