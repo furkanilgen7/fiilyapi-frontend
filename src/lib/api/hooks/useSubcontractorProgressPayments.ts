@@ -3,6 +3,8 @@ import { backendClient } from "@/lib/api/client";
 import { unwrap } from "@/lib/api/unwrap";
 import type { components } from "@/lib/api/schema";
 
+import { isScopePending } from "@/lib/api/pending-scope";
+
 // F-TH T1 · Taşeron Hakedişi ekranları — okuma sorguları. `useProgressPayments.ts`
 // deseniyle AYNI (isimlendirme/hata-unwrap yardımcıları). Tipler `pnpm gen:api`
 // çıktısından takma ad olarak alınır; elle arayüz yazmak yasak.
@@ -117,7 +119,14 @@ export function useSubcontractorProgressPayments(
   options: { enabled?: boolean } = {},
 ): UseQueryResult<SubcontractorProgressPaymentListResponse, Error> {
   return useQuery({
-    enabled: options.enabled ?? true,
+    // 🔴 URL-3 — yukaridaki notun ANLATTIGI kusur artik SLUG YOLUNDA da dogar:
+    // URL slug tasidigi icin ekran once kanonik kimligi cozer ve o cozulene
+    // kadar `project_id`/`site_id` BOS gelir. Bos deger suzgec kurucusunda
+    // dusuyordu, yani "sozlesme detayi gelmeden cagirma" korkulugu ayni
+    // sebeple burada da gerekli. `undefined` (bilerek suzgecsiz) ile `""`
+    // (henuz cozulmedi) AYRILIR — ikisini esitlemek suzgecsiz cagiranlari
+    // sonsuza kadar bos birakirdi.
+    enabled: (options.enabled ?? true) && !isScopePending(filter.project_id, filter.site_id),
     queryKey: [
       SUBCONTRACTOR_PROGRESS_PAYMENTS_QUERY_KEY,
       filter.project_id ?? null,
