@@ -3620,7 +3620,23 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Project Endpoint */
+        /**
+         * Get Project Endpoint
+         * @description URL-2 — yol parametresi UUID **ya da** slug kabul eder (karar 2).
+         *
+         *     🔴 YOL ADI `project_id` OLARAK KALIR: yolun sablonu (`/projects/{project_id}`)
+         *     degismezse uretilmis istemcinin yol anahtari de degismez. Degisen tek sey
+         *     parametrenin TIPIDIR (`uuid` -> `string`) — sozlesme farkinda gorulecek
+         *     sey budur.
+         *
+         *     🔴 YAN ETKI: eskiden UUID olmayan bir deger 422 (`uuid_parsing`) alirdi,
+         *     artik 404 alir. Bu KACINILMAZDIR — slug uzayi tam olarak "UUID olmayan
+         *     metinler"dir; ikisi ayni yol parametresinde birlikte yasayamaz.
+         *
+         *     PATCH ucu BILEREK `uuid.UUID` KALIR: karar 2 "OKUMA uclari" der. Yazmanin
+         *     kimligi, okumanin dondurdugu `id`den gelir; yazma yuzeyini tahmin edilebilir
+         *     bir anahtara acmak icin sebep YOKTUR.
+         */
         get: operations["get_project_endpoint_projects__project_id__get"];
         put?: never;
         post?: never;
@@ -5006,7 +5022,17 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Site Endpoint */
+        /**
+         * Get Site Endpoint
+         * @description URL-2 — yol parametresi UUID **ya da** slug (karar 2).
+         *
+         *     `project` KAPSAM suzgecidir ve yalniz slug yolunda anlamlidir: `sites.slug`
+         *     PROJE ICINDE tekildir, bu uc ise DUZDUR (yolda proje yok). Frontend URL'i
+         *     (`/projeler/<p>/santiyeler/<s>`) nested oldugu icin bunu her zaman
+         *     verebilir. Verilmezse cozumleme gorunur kume icinde TEK ADAY sartina
+         *     baglidir — belirsizlik 404'tur (fail-closed), rastgele secim YOKTUR.
+         *     Ayrinti: `_visible_site` docstring'i.
+         */
         get: operations["get_site_endpoint_sites__site_id__get"];
         put?: never;
         post?: never;
@@ -13295,6 +13321,8 @@ export interface components {
             project_type: components["schemas"]["ProjectType"];
             /** Site Count */
             site_count: number;
+            /** Slug */
+            slug?: string | null;
             /** Start Date */
             start_date: string | null;
             status: components["schemas"]["ProjectStatus"];
@@ -13367,6 +13395,8 @@ export interface components {
             /** Progress Pct */
             progress_pct: string;
             project_type: components["schemas"]["ProjectType"];
+            /** Slug */
+            slug?: string | null;
             /** Start Date */
             start_date: string | null;
             status: components["schemas"]["ProjectStatus"];
@@ -14868,6 +14898,8 @@ export interface components {
              * Format: uuid
              */
             site_id: string;
+            /** Slug */
+            slug?: string | null;
             /** Sort Order */
             sort_order: number;
             /** Start Date */
@@ -14967,6 +14999,8 @@ export interface components {
             /** Planned Worker Count */
             planned_worker_count: number | null;
             progress_pct: components["schemas"]["MetricPlaceholder"];
+            /** Slug */
+            slug?: string | null;
             /** Sort Order */
             sort_order: number;
             /** Start Date */
@@ -15255,6 +15289,8 @@ export interface components {
             site_manager_name: string | null;
             /** Site Manager User Id */
             site_manager_user_id: string | null;
+            /** Slug */
+            slug?: string | null;
             /** Start Date */
             start_date: string | null;
             status: components["schemas"]["SiteStatus"];
@@ -15401,6 +15437,8 @@ export interface components {
             site_manager_name: string | null;
             /** Site Manager User Id */
             site_manager_user_id: string | null;
+            /** Slug */
+            slug?: string | null;
             /** Start Date */
             start_date: string | null;
             status: components["schemas"]["SiteStatus"];
@@ -16334,6 +16372,8 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /** Slug */
+            slug?: string | null;
         };
         /**
          * SiteSectionInput
@@ -31920,7 +31960,10 @@ export interface operations {
     };
     get_section_endpoint_sections__section_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                site?: string | null;
+                project?: string | null;
+            };
             header?: never;
             path: {
                 section_id: string;
@@ -32313,7 +32356,9 @@ export interface operations {
     };
     get_site_endpoint_sites__site_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                project?: string | null;
+            };
             header?: never;
             path: {
                 site_id: string;
