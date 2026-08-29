@@ -172,6 +172,7 @@ export function SectionDetailView() {
             sectionId={sectionId}
             sectionName={section.name}
             items={subcontractorPayments.items}
+            projectWideItems={subcontractorPayments.projectWideItems}
             isLoading={subcontractorPayments.isLoading}
             isError={subcontractorPayments.isError}
             isPartial={subcontractorPayments.isPartial}

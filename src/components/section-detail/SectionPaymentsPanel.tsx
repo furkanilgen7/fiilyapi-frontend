@@ -34,8 +34,23 @@ export interface SectionPaymentsPanelProps {
   sectionId: string;
   /** Başlıkta VE bu bölüme ait satırların alt metninde basılır. */
   sectionName: string;
-  /** `useSiteSubcontractorPayments` HAM listesi; süzgeç burada uygulanır. */
+  /** `useSiteSubcontractorPayments.items` — sözleşmesi BU şantiyeye bağlı
+   * satırlar; süzgeç (bölüm ekseni) burada uygulanır. */
   items: readonly SiteSubcontractorPaymentItem[];
+  /**
+   * HAK-NULL · sözleşmesi PROJE GENELİ olan satırlar.
+   *
+   * 🔴 NEDEN BU PANELE DE GİRİYOR: proje geneli bir sözleşme projenin tüm
+   * şantiyelerini — dolayısıyla bu şantiyenin BU bölümünü de — kapsar.
+   * Dışarıda bırakmak, eskiden sunucunun yaptığı hatanın istemcide
+   * tekrarlanması olurdu (canlıda sözleşmelerin HEPSİ proje geneliydi ve bu
+   * panel "bu bölümde taşeron hakedişi yok" diyordu).
+   *
+   * Bölüm ekseni ayrıca süzülür: `partitionSectionPayments` bu satırların
+   * `sectionId`ine bakar, BAŞKA bölüme atanmışlarsa yine düşer. İki eksen
+   * bağımsızdır.
+   */
+  projectWideItems?: readonly SiteSubcontractorPaymentItem[];
   isLoading: boolean;
   isError: boolean;
   /** Sunucu tavanı aşıldı — liste EKSİK, "yok" iddiası güvenilmez. */
@@ -49,13 +64,17 @@ export function SectionPaymentsPanel({
   sectionId,
   sectionName,
   items,
+  projectWideItems = [],
   isLoading,
   isError,
   isPartial,
   truncation,
   paymentsHref,
 }: SectionPaymentsPanelProps) {
-  const partition = partitionSectionPayments(items, sectionId);
+  // İKİ EKSEN, İKİ SÜZGEÇ: kapsam (şantiye/proje geneli) ekseni hook'ta
+  // ayrıldı; burada BÖLÜM ekseni süzülür. Proje geneli satırlar da bölüm
+  // süzgecinden geçer — başka bir bölüme atanmış olan yine düşer.
+  const partition = partitionSectionPayments([...items, ...projectWideItems], sectionId);
   const excluded = partition.otherSectionCount;
 
   return (

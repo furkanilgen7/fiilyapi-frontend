@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge/Badge";
 import { formatCurrencyPrecise } from "@/lib/format";
 import type { SiteSubcontractorPaymentItem } from "@/lib/api/hooks/useSiteSubcontractorPayments";
 
+import { projectWideNote } from "./shared/site-payment-scope";
 import { buildSubcontractorRowSubtitle } from "./shared/subcontractor-row-subtitle";
 import { PAYMENT_STATUS_BADGE } from "./shared/status";
 
@@ -13,16 +14,34 @@ import { PAYMENT_STATUS_BADGE } from "./shared/status";
 // "Taşeron Hakedişleri" paneli). Satır kabuğu (`pp-row*`) İŞVEREN sütunuyla
 // PAYLAŞILIR (`progress-payments.css`, aynı visual dil) — kopyalanmaz.
 export interface SiteSubcontractorPaymentsPanelProps {
+  /** Sözleşmesi BU şantiyeye bağlı hakedişler — KPI toplamlarının kaynağı. */
   items: SiteSubcontractorPaymentItem[];
+  /**
+   * HAK-NULL · sözleşmesi PROJE GENELİ olan hakedişler. Şantiyeyi kapsarlar,
+   * bu yüzden BASILIR; ama projenin her şantiyesinde tekrar döndükleri için
+   * KPI toplamına GİRMEZLER ve bu ayrım görünür bir notla SÖYLENİR.
+   *
+   * Varsayılan `[]`: bu paneli çağıran ama proje geneli kümeyi henüz
+   * geçirmeyen bir yer olursa panel eski davranışını aynen sürdürür.
+   */
+  projectWideItems?: readonly SiteSubcontractorPaymentItem[];
   isLoading: boolean;
   isError: boolean;
 }
 
 export function SiteSubcontractorPaymentsPanel({
   items,
+  projectWideItems = [],
   isLoading,
   isError,
 }: SiteSubcontractorPaymentsPanelProps) {
+  // 🔴 "Hakediş YOK" iddiası ancak İKİ küme de boşken doğrudur. Eskiden bu
+  // panel yalnız şantiyeye bağlı sözleşmelere bakıyordu ve proje geneli
+  // sözleşmelerin parası sunucuda eleniyordu: canlıda tüm sözleşmeler proje
+  // geneli olduğu için ekran "bu şantiyede taşeron hakedişi yok" diyordu —
+  // ekranda duran YALAN buydu.
+  const isTrulyEmpty = items.length === 0 && projectWideItems.length === 0;
+  const note = projectWideNote(projectWideItems.length);
   return (
     <section className="spp__panel spp__panel--subcontractor">
       <div className="spp__panel-head">
@@ -36,17 +55,37 @@ export function SiteSubcontractorPaymentsPanel({
         <p className="pp-message">Taşeron hakedişleri yüklenemedi</p>
       ) : isLoading ? (
         <p className="pp-message">Yükleniyor…</p>
-      ) : items.length === 0 ? (
+      ) : isTrulyEmpty ? (
         <section className="pp-empty">
           <p className="pp-empty__title">Bu şantiyede taşeron hakedişi yok</p>
           <p className="pp-empty__hint">Sözleşme bu şantiyeye bağlandığında burada listelenir</p>
         </section>
       ) : (
-        <ul className="pp-list">
-          {items.map((item) => (
-            <SubcontractorPaymentRow key={item.id} item={item} />
-          ))}
-        </ul>
+        <>
+          {items.length > 0 && (
+            <ul className="pp-list">
+              {items.map((item) => (
+                <SubcontractorPaymentRow key={item.id} item={item} />
+              ))}
+            </ul>
+          )}
+
+          {projectWideItems.length > 0 && (
+            <>
+              {/* 🔴 SESSİZ ATLAMA = İHLAL: satırlar basılıyor ama toplama
+                  girmiyorlar — kullanıcı listede gördüğü tutarın KPI'da neden
+                  olmadığını ancak bu notla anlayabilir. */}
+              <p className="pp-scope-note" data-testid="site-payments-project-wide-note">
+                {note}
+              </p>
+              <ul className="pp-list" data-testid="site-payments-project-wide">
+                {projectWideItems.map((item) => (
+                  <SubcontractorPaymentRow key={item.id} item={item} />
+                ))}
+              </ul>
+            </>
+          )}
+        </>
       )}
     </section>
   );
