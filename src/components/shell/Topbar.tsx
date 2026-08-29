@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { BellIcon } from "@/components/ui/icons";
 import { initials } from "@/lib/shell/initials";
+import { TopbarBreadcrumb } from "./breadcrumb/TopbarBreadcrumb";
 import { useSession } from "./SessionProvider";
 import "./topbar.css";
 
@@ -23,6 +24,12 @@ export default function Topbar() {
           className="topbar-logo__image"
         />
       </div>
+
+      {/* F-KIRINTI: mockup (`Şantiye - Günlük Kayıt.dc.html` 33-41) kırıntıyı
+          TAM BURAYA, logo bloğu ile eylemler arasına koyar. `DRILL-KALDIR`
+          dilimiyle karşılıksız kalan "şantiyeden projeye çıkış" gezinmesi
+          buradan geri gelir. */}
+      <TopbarBreadcrumb />
 
       <div className="topbar-actions">
         <button type="button" className="topbar-bell" aria-label="Bildirimler">
