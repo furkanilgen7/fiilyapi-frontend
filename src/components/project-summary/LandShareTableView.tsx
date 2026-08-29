@@ -26,6 +26,7 @@ import {
   unitSalesStatusLabel,
 } from "./project-summary-labels";
 import "./project-summary.css";
+import { routes } from "@/lib/routes";
 
 /**
  * F-PKK T3 · Paylaşım Tablosu (`Kat Karşılığı - Paylaşım.dc.html`).
@@ -126,7 +127,7 @@ export function LandShareTableView({ projectId, activePath }: LandShareTableView
           {/* KKP 25 "Paylaşımı Kaydet" — bu ekran OKUMA ekranıdır; yazma
               F-UNIT2'nin giriş ekranındadır (canlı). Düğme kendi işini
               yapmak yerine oraya GÖTÜRÜR. */}
-          <Link className="psum-actions__link" href="/satis/paylasim-girisi">
+          <Link className="psum-actions__link" href={routes.sales.landShareAllocation()}>
             Paylaşımı Düzenle
           </Link>
         </div>

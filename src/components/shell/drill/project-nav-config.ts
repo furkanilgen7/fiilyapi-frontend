@@ -1,4 +1,5 @@
 import type { DrillNavGroup } from "./DrillSidebar";
+import { routes } from "@/lib/routes";
 
 export interface ProjectNavContext {
   projectId: string;
@@ -20,34 +21,34 @@ const OPERATIONS_GROUPS: DrillNavGroup[] = [
   {
     heading: "SAHA & İK",
     items: [
-      { label: "Puantaj", href: "/puantaj", emoji: "👷" },
-      { label: "Personel", href: "/personel", emoji: "👤" },
-      { label: "Makine & Ekipman", href: "/makine", emoji: "🏗" },
-      { label: "Bordro", href: "/bordro", emoji: "💰" },
+      { label: "Puantaj", href: routes.timesheet(), emoji: "👷" },
+      { label: "Personel", href: routes.personnel.list(), emoji: "👤" },
+      { label: "Makine & Ekipman", href: routes.equipment.list(), emoji: "🏗" },
+      { label: "Bordro", href: routes.payroll.root(), emoji: "💰" },
     ],
   },
   {
     heading: "STOK & SATINALMA",
     items: [
-      { label: "Stok & Depo", href: "/stok", emoji: "📦" },
-      { label: "Satınalma", href: "/satinalma", emoji: "🛒" },
+      { label: "Stok & Depo", href: routes.stock(), emoji: "📦" },
+      { label: "Satınalma", href: routes.purchasing.root(), emoji: "🛒" },
     ],
   },
   {
     heading: "MALİ",
     items: [
-      { label: "Sözleşmeler", href: "/sozlesmeler", emoji: "📋" },
+      { label: "Sözleşmeler", href: routes.contracts.list(), emoji: "📋" },
       // F-P8 T2 · SY 40: mockup bu öğeyi PROJE bağlamındaki menüde çizer
       // (🏠 Satış Yönetimi). Drill sidebar proje bağlamının menüsüdür — öğe
       // buraya, kabuk nav'ıyla AYNI konuma (Sözleşmeler'in ardına) eklenir.
       // Rota proje-geneldir (`/satis`, spec K1); proje seçimi ekranın kendi
       // seçicisindedir.
-      { label: "Satış Yönetimi", href: "/satis", emoji: "🏠" },
-      { label: "Taşeron Hakediş", href: "/hakedisler/taseron", emoji: "🏗" },
-      { label: "İşveren Hakediş", href: "/hakedisler", emoji: "💼" },
-      { label: "Muhasebe", href: "/muhasebe", emoji: "📒" },
-      { label: "Hazine", href: "/hazine", emoji: "🏦" },
-      { label: "Mali Tablolar", href: "/mali-tablolar", emoji: "📊" },
+      { label: "Satış Yönetimi", href: routes.sales.root(), emoji: "🏠" },
+      { label: "Taşeron Hakediş", href: routes.progressPayments.subcontractor.list(), emoji: "🏗" },
+      { label: "İşveren Hakediş", href: routes.progressPayments.list(), emoji: "💼" },
+      { label: "Muhasebe", href: routes.accounting.root(), emoji: "📒" },
+      { label: "Hazine", href: routes.treasury.root(), emoji: "🏦" },
+      { label: "Mali Tablolar", href: routes.financialStatements.root(), emoji: "📊" },
     ],
   },
 ];
@@ -59,9 +60,9 @@ const OPERATIONS_GROUPS: DrillNavGroup[] = [
  */
 function backTarget(ctx: ProjectNavContext): Pick<ProjectNavResult, "backLabel" | "backHref"> {
   if (ctx.siteId) {
-    return { backLabel: ctx.projectName, backHref: `/projeler/${ctx.projectId}` };
+    return { backLabel: ctx.projectName, backHref: routes.projects.detail({ projectId: ctx.projectId }) };
   }
-  return { backLabel: "Projeler", backHref: "/projeler" };
+  return { backLabel: "Projeler", backHref: routes.projects.list() };
 }
 
 // Bağlam bloğunun iki öğesi de daha derin rotaların ATASIDIR ("/projeler" ⊂
@@ -71,8 +72,8 @@ function contextGroup(ctx: ProjectNavContext): DrillNavGroup {
   return {
     heading: "PROJELER",
     items: [
-      { label: "Tüm Projeler", href: "/projeler", emoji: "📁", exact: true },
-      { label: ctx.projectName, href: `/projeler/${ctx.projectId}`, emoji: "●", exact: true },
+      { label: "Tüm Projeler", href: routes.projects.list(), emoji: "📁", exact: true },
+      { label: ctx.projectName, href: routes.projects.detail({ projectId: ctx.projectId }), emoji: "●", exact: true },
     ],
   };
 }
@@ -85,7 +86,7 @@ function contextGroup(ctx: ProjectNavContext): DrillNavGroup {
 // "Belgeler" F-BC T2 ile, "Stok" F-ST T3 ile yazıldı. Sıra SiteDetailTabs.tsx ile birebir aynıdır
 // — ikisi ayrışmamalıdır (`written` bayrağı orada tutulur).
 function activeSiteGroup(ctx: Required<Pick<ProjectNavContext, "siteId" | "siteName">> & ProjectNavContext): DrillNavGroup {
-  const base = `/projeler/${ctx.projectId}/santiyeler/${ctx.siteId}`;
+  const base = routes.projects.sites.detail({ projectId: ctx.projectId, siteId: ctx.siteId });
   return {
     heading: ctx.siteName,
     items: [

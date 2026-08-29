@@ -52,6 +52,7 @@ import { defaultWarehouseId } from "./warehouse-options";
 // Sıra önemli: önce paylaşılan kabuk, sonra forma özgü bloklar.
 import "@/styles/form-shell.css";
 import "./stock-entry-form.css";
+import { routes } from "@/lib/routes";
 
 const EMPTY_ERRORS: StockEntryFormErrors = { lineErrors: {} };
 
@@ -117,7 +118,7 @@ export function StockEntryForm() {
   }
 
   const site = siteQuery.data;
-  const siteStockHref = `/projeler/${projectId}/santiyeler/${siteId}/stok`;
+  const siteStockHref = routes.projects.sites.stock({ projectId, siteId });
   const warehouseRows = warehouses ?? [];
   const items = itemsQuery.data?.items ?? [];
 
@@ -188,7 +189,7 @@ export function StockEntryForm() {
       {/* 31-42 — kabuk canonuna oturtulmuş üst şerit */}
       <div className="pf-topbar">
         <nav className="pf-breadcrumb" aria-label="Kırıntı yolu">
-          <Link href="/stok">Stok &amp; Depo</Link>
+          <Link href={routes.stock()}>Stok &amp; Depo</Link>
           <span className="pf-breadcrumb__sep" aria-hidden="true">
             /
           </span>

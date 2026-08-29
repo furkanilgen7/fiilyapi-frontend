@@ -18,6 +18,7 @@ import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
 import { EquipmentDetailBody } from "./EquipmentDetailBody";
 import "@/components/equipment/equipment.css";
 import "./equipment-detail.css";
+import { routes } from "@/lib/routes";
 
 /** İzin matrisi anahtarı — MK-1: 21. izin modülü `equipment` (M1 ile AYNI). */
 const EQUIPMENT_PERMISSION_MODULE = "equipment";
@@ -63,7 +64,7 @@ export function EquipmentDetailView({ equipmentId }: { equipmentId: string }) {
     <div className="makine-det">
       {/* MD:36-38 — kırıntı. Kabuk üst barı bunu basmaz. */}
       <nav className="makine-det__crumb" aria-label="Kırıntı">
-        <Link href="/makine">Makine &amp; Ekipman</Link>
+        <Link href={routes.equipment.list()}>Makine &amp; Ekipman</Link>
         <span className="makine-det__crumb-sep">/</span>
         <span className="makine-det__crumb-current">
           {detail?.equipment.name ?? "Ekipman Detay"}

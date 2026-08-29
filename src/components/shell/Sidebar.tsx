@@ -8,6 +8,7 @@ import { LockIcon } from "@/components/ui/icons";
 import { activeNavHref, NAV_GROUPS } from "./nav-config";
 import { useSession } from "./SessionProvider";
 import "./sidebar.css";
+import { routes } from "@/lib/routes";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -20,7 +21,7 @@ export default function Sidebar() {
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
+    router.push(routes.login());
   }
 
   return (
@@ -48,7 +49,7 @@ export default function Sidebar() {
       </nav>
 
       <div className="sidebar-user">
-        <Link href="/ayarlar" className="sidebar-user__row">
+        <Link href={routes.settings.root()} className="sidebar-user__row">
           <span className="sidebar-user__avatar" aria-hidden="true">{me ? initials(me.full_name) : ""}</span>
           <span className="sidebar-user__meta">
             <span className="sidebar-user__name">{me?.full_name ?? ""}</span>
@@ -57,7 +58,7 @@ export default function Sidebar() {
           <LockIcon className="sidebar-user__lock" />
         </Link>
         <div className="sidebar-user__actions">
-          <Link href="/ayarlar" className="sidebar-user__btn">
+          <Link href={routes.settings.root()} className="sidebar-user__btn">
             <span aria-hidden="true">⚙️</span> Ayarlar
           </Link>
           <button type="button" className="sidebar-user__btn sidebar-user__btn--logout" onClick={handleLogout}>

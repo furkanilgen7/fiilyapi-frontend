@@ -5,6 +5,7 @@ import type {
   InvoiceStatus,
 } from "@/lib/api/hooks/useInvoices";
 import type { PaymentMethodKind } from "@/lib/api/hooks/useInvoiceDetail";
+import { routes } from "@/lib/routes";
 
 /**
  * F-FAT2 · Fatura ekranlarının SAF katmanı: etiket eşlemeleri, rozet tonları,
@@ -23,8 +24,8 @@ import type { PaymentMethodKind } from "@/lib/api/hooks/useInvoiceDetail";
 /** İzin matrisi anahtarı — fatura uçlarını `invoicing` modülü denetler. */
 export const INVOICE_PERMISSION_MODULE = "invoicing";
 
-export const INVOICES_URL = "/faturalar";
-export const INVOICE_CREATE_URL = "/faturalar/kes";
+export const INVOICES_URL = routes.invoices.list();
+export const INVOICE_CREATE_URL = routes.invoices.new();
 
 /** Detay rotası — liste satırı ve kaynak bantları bunu üretir. */
 export function invoiceDetailUrl(invoiceId: string): string {
@@ -171,14 +172,14 @@ export function invoiceSource(fields: InvoiceSourceFields): InvoiceSource | null
   if (fields.progress_payment_id !== null) {
     return {
       label: "İşveren Hakedişi",
-      href: `/hakedisler/${fields.progress_payment_id}`,
+      href: routes.progressPayments.detail({ paymentId: fields.progress_payment_id }),
       reason: null,
     };
   }
   if (fields.subcontractor_progress_payment_id !== null) {
     return {
       label: "Taşeron Hakedişi",
-      href: `/hakedisler/taseron/${fields.subcontractor_progress_payment_id}`,
+      href: routes.progressPayments.subcontractor.detail({ paymentId: fields.subcontractor_progress_payment_id }),
       reason: null,
     };
   }
@@ -188,7 +189,7 @@ export function invoiceSource(fields: InvoiceSourceFields): InvoiceSource | null
     // (`progress_payment_id` dalıyla aynı biçim).
     return {
       label: "Makine Kira Faturası",
-      href: `/makine/kira/${fields.equipment_rental_invoice_id}`,
+      href: routes.equipment.rentalInvoiceDetail({ invoiceId: fields.equipment_rental_invoice_id }),
       reason: null,
     };
   }

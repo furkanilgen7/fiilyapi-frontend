@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useLogout } from "@/lib/shell/useLogout";
 import { settingsLabelForPath } from "./settings-nav-config";
 import "./settings-shell.css";
+import { routes } from "@/lib/routes";
 
 export function SettingsBreadcrumb() {
   const pathname = usePathname();
@@ -13,7 +14,7 @@ export function SettingsBreadcrumb() {
 
   return (
     <div className="settings-breadcrumb">
-      <Link href="/ayarlar/kullanicilar" className="settings-breadcrumb__link">
+      <Link href={routes.settings.users()} className="settings-breadcrumb__link">
         Ayarlar
       </Link>
       <span className="settings-breadcrumb__sep" aria-hidden="true">

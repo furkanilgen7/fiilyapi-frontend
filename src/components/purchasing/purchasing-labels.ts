@@ -5,6 +5,7 @@ import type {
   PurchaseRequestStatus,
 } from "@/lib/api/hooks/usePurchaseRequests";
 import type { PaymentTerms } from "@/lib/api/hooks/useSuppliers";
+import { routes } from "@/lib/routes";
 
 /**
  * F-SA T2 · SAT (`Satınalma & Teklif.dc.html`) + TED
@@ -175,15 +176,15 @@ export const PROJECT_NAME_UNRESOLVED_REASON =
  * SAT kökü — sekme şeridinin ilk sekmesi (SAT 90) ve TEK 34'ün
  * "← Satınalma & Teklif" dönüş bağlantısı AYNI rotadır; iki yere elle yazılmaz.
  */
-export const PURCHASING_ROOT_HREF = "/satinalma";
+export const PURCHASING_ROOT_HREF = routes.purchasing.root();
 
 /**
  * T3'ün açacağı talep formu (spec K1) — SAT 65 "+ Satın Alma Talebi".
  * Hedef rota TEK yerden kurulur; T3 rotayı açınca burası değişmez.
  */
-export const NEW_PURCHASE_REQUEST_HREF = "/satinalma/talep/yeni";
+export const NEW_PURCHASE_REQUEST_HREF = routes.purchasing.newRequest();
 
 /** T4'ün açacağı teklif karşılaştırma ekranı (spec K1) — satır hedefi. */
 export function purchaseRequestQuotesHref(requestId: string): string {
-  return `/satinalma/talepler/${requestId}/teklifler`;
+  return routes.purchasing.requestQuotes({ requestId });
 }

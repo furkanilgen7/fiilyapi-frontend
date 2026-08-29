@@ -1,5 +1,6 @@
 import type { components } from "@/lib/api/schema";
 import { pendingModuleLabel } from "@/lib/pending-modules";
+import { routes } from "@/lib/routes";
 
 /**
  * "Form - Personel Ekle.dc.html" (FP) sabitleri. Yorumlardaki sayılar o
@@ -185,7 +186,7 @@ export const PENDING_SGK = "SGK bildirim modülü henüz eklenmedi";
 export const PENDING_HR_SCREEN = "Belge takibi ekranı henüz eklenmedi";
 
 /** F-PT2 T2 · `/personel` gerçek liste rotası — kırıntı yolu bunu kullanır. */
-export const PERSONNEL_LIST_HREF = "/personel";
+export const PERSONNEL_LIST_HREF = routes.personnel.list();
 
 /** Düzenleme kipinde formdan seçilemeyen ama SEED edilebilen kaynak (K2). */
 export const PENDING_GENERAL_SOURCE =

@@ -43,6 +43,7 @@ import {
 } from "./th-lines";
 import "./progress-payment-form.css";
 import "./subcontractor-progress-payment-form.css";
+import { routes } from "@/lib/routes";
 
 export type SubcontractorProgressPaymentFormProps =
   | { mode: "create"; contractId: string }
@@ -160,7 +161,7 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
         <Alert variant="warning" className="pp-form__alert">
           Bu hakediş artık taslak durumunda değil, düzenlenemez.
         </Alert>
-        <Link href="/hakedisler/taseron" className="pp-form__crumb-link">
+        <Link href={routes.progressPayments.subcontractor.list()} className="pp-form__crumb-link">
           ← Taşeron Hakedişi listesine dön
         </Link>
       </div>
@@ -255,11 +256,11 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
 
     function afterLinesSaved(paymentId: string) {
       if (!alsoSubmit) {
-        router.push("/hakedisler/taseron");
+        router.push(routes.progressPayments.subcontractor.list());
         return;
       }
       submitPayment.mutate(paymentId, {
-        onSuccess: () => router.push("/hakedisler/taseron"),
+        onSuccess: () => router.push(routes.progressPayments.subcontractor.list()),
         onError: (err) => setFormError(backendErrorMessage(err, "Hakediş onaya gönderilemedi.")),
       });
     }
@@ -349,7 +350,7 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
               devre-dışı hâli + pending gerekçesi KALDIRILDI. */}
           <Link
             className="thf-crumb__contract-link"
-            href={`/sozlesmeler/taseron/${contract.id}`}
+            href={routes.contracts.subcontractorDetail({ contractId: contract.id })}
             data-testid="thf-contract-crumb-link"
           >
             {contract.subcontractor_name ?? "—"} {contract.contract_no ?? ""}
@@ -451,7 +452,7 @@ export function SubcontractorProgressPaymentForm(props: SubcontractorProgressPay
         </span>
         <Link
           className="thf-hierarchy__see-contract"
-          href={`/sozlesmeler/taseron/${contract.id}`}
+          href={routes.contracts.subcontractorDetail({ contractId: contract.id })}
           data-testid="thf-see-contract-link"
         >
           Sözleşmeyi Gör →

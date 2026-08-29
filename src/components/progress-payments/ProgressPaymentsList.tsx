@@ -12,6 +12,7 @@ import { formatCompactCurrency } from "@/lib/format";
 
 import { PROGRESS_PAYMENT_STATUS_BADGE } from "./status";
 import { formatPaymentTitle } from "./title";
+import { routes } from "@/lib/routes";
 
 // P7 T2 + T6 ortak hakediş liste gövdesi. `/hakedisler` (proje-genel) ve
 // şantiye "Hakedişler" sekmesi AYNI kaydın iki görünümüdür (T6 brief §Kalıcı
@@ -113,7 +114,7 @@ function ProgressPaymentRow({
   return (
     <li className="pp-row">
       <Link
-        href={`/hakedisler/${item.id}`}
+        href={routes.progressPayments.detail({ paymentId: item.id })}
         className="pp-row__link"
         aria-label={`${item.project_name} — ${formatPaymentTitle(item)}`}
       >

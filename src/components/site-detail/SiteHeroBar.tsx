@@ -4,6 +4,7 @@ import { cx } from "@/lib/cx";
 import { formatCompactCurrency, formatMonthYear, formatPercent } from "@/lib/format";
 import { pendingModuleLabel, type PendingModuleKey } from "@/lib/pending-modules";
 import type { SiteDetail } from "@/lib/api/hooks/useSites";
+import { routes } from "@/lib/routes";
 
 const NO_END_DATE_TITLE = "Bitiş tarihi girilmemiş";
 
@@ -162,7 +163,7 @@ function SectionCountCell({ site }: { site: SiteDetail }) {
 // 🔴 F-UNIT1 T5: iki modül de CANLIDIR (`/hakedisler`, `/puantaj`) — eksik olan
 // verinin BU ŞERİDE toplanmasıdır, modülün kendisi değil.
 export function SiteHeroBar({ site }: SiteHeroBarProps) {
-  const base = `/projeler/${site.project.id}/santiyeler/${site.id}`;
+  const base = routes.projects.sites.detail({ projectId: site.project.id, siteId: site.id });
   const meta = metaParts(site);
 
   return (

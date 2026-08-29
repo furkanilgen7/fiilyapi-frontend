@@ -31,6 +31,7 @@ import {
 } from "./rental-filters";
 import { rentalSiteLabel } from "./rental-derive";
 import "./equipment-rental.css";
+import { routes } from "@/lib/routes";
 
 const EQUIPMENT_PERMISSION_MODULE = "equipment";
 
@@ -83,7 +84,8 @@ export function EquipmentRentalInvoicesView() {
   function pushParams(patch: RentalFilterPatch) {
     const next = withRentalFilterParams(new URLSearchParams(searchParams.toString()), patch);
     const query = next.toString();
-    router.push(query ? `/makine/kira?${query}` : "/makine/kira");
+    // Boş sorgu dizesinde üretici "?" bile eklemez — ayrı bir dal GEREKMEZ.
+    router.push(routes.equipment.rentalInvoices(query));
   }
 
   const currentYear = new Date().getFullYear();
@@ -240,7 +242,7 @@ export function EquipmentRentalInvoicesView() {
               return (
                 <tr key={invoice.id} data-rental-invoice-id={invoice.id}>
                   <td>
-                    <Link className="makine-kira__link" href={`/makine/kira/${invoice.id}`}>
+                    <Link className="makine-kira__link" href={routes.equipment.rentalInvoiceDetail({ invoiceId: invoice.id })}>
                       {formatPeriod(invoice.period_year, invoice.period_month)}
                     </Link>
                   </td>

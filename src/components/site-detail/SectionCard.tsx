@@ -5,6 +5,7 @@ import { formatCompactCurrency, formatMonthYear, formatPercent } from "@/lib/for
 import { pendingModuleLabel, type PendingModuleKey } from "@/lib/pending-modules";
 import { SECTION_STATUS_CLASS_SUFFIX, SECTION_STATUS_LABELS } from "@/lib/section-labels";
 import type { components } from "@/lib/api/schema";
+import { routes } from "@/lib/routes";
 
 export type SectionResponse = components["schemas"]["SectionResponse"];
 type SectionStatus = SectionResponse["status"];
@@ -303,7 +304,7 @@ function ProgressMetricCell({
 // açacak, kart eylemi yalnız DETAYA gider).
 export function SectionCard({ projectId, siteId, section }: SectionCardProps) {
   const isPlanned = section.status === "planned";
-  const detayHref = `/projeler/${projectId}/santiyeler/${siteId}/bolumler/${section.id}`;
+  const detayHref = routes.projects.sites.sections.detail({ projectId, siteId, sectionId: section.id });
 
   return (
     <div className={cx("section-card", statusClass("section-card", section.status))}>

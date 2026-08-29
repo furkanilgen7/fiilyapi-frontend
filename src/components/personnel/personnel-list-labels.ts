@@ -5,6 +5,7 @@ import {
 import type { BadgeVariant } from "@/components/ui/badge/Badge";
 import { formatCurrencyPrecise } from "@/lib/format";
 import type { PersonnelListItem, WorkerSource } from "@/lib/api/hooks/usePersonnel";
+import { routes } from "@/lib/routes";
 
 /**
  * F-PT2 T2 · P — `/personel` liste ekranının etiket/rozet/pending gerekçe
@@ -98,13 +99,13 @@ export const EXPORT_PENDING_REASON = "Dışa aktarma ucu backend'de henüz yok."
  * "Belgeleri Gör →" düğmesi AYNI sabiti kullanır — ekran T5'te yazılır, link
  * şimdiden gerçektir (rota tek yerde tanımlı olsun).
  */
-export const HR_DOCUMENTS_ROUTE = "/personel/belgeler";
+export const HR_DOCUMENTS_ROUTE = routes.personnel.documents();
 
 /**
  * F-IZN T3/T5 · İzin Yönetimi ekranının rotası. Sekme şeridi bu sabiti
  * kullanır (rota tek yerde tanımlı olsun — `HR_DOCUMENTS_ROUTE` emsali).
  */
-export const LEAVES_ROUTE = "/personel/izinler";
+export const LEAVES_ROUTE = routes.personnel.leaves();
 
 /**
  * P 80-86 · uyarı bandı metni. ŞEF KARARI: sunucu (`GET /hr/documents/summary`)

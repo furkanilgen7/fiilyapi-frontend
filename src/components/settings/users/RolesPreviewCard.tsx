@@ -8,6 +8,7 @@ import { useRoles } from "@/lib/api/hooks/useRoles";
 import type { RoleResponse, UserResponse } from "@/lib/api/models";
 import "@/components/settings/settings.css";
 import "./users-preview.css";
+import { routes } from "@/lib/routes";
 
 // Kullanıcılar sayfasının altındaki "Roller" özet kartı (ref §B.1, §A.6-lite).
 // Not: kullanıcı sayısı yalnızca bu sayfada yüklü olan (mevcut sayfalanmış) kullanıcı
@@ -27,7 +28,7 @@ export function RolesPreviewCard({ users }: { users: UserResponse[] }) {
     <SettingsCard
       title="Roller"
       actions={
-        <Button variant="primary" size="sm" onClick={() => router.push("/ayarlar/roller")}>
+        <Button variant="primary" size="sm" onClick={() => router.push(routes.settings.roles())}>
           + Rol Ekle
         </Button>
       }
@@ -54,7 +55,7 @@ export function RolesPreviewCard({ users }: { users: UserResponse[] }) {
                     >
                       {countByRole(users, role.id)} kullanıcı
                     </span>
-                    <button className="users-edit" onClick={() => router.push("/ayarlar/roller")}>
+                    <button className="users-edit" onClick={() => router.push(routes.settings.roles())}>
                       Düzenle
                     </button>
                   </span>

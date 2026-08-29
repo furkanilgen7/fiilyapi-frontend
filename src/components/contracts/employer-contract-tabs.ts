@@ -1,3 +1,4 @@
+import { routes } from "@/lib/routes";
 /**
  * E14 sekme şeridi (mockup `Ekran 14 - Sözleşme Detay.dc.html` 90-95) —
  * dört sekme, sıra ve etiketler mockup'tan BİREBİR:
@@ -58,7 +59,7 @@ export function parseEmployerContractTab(
  * kodlamak aynı çürüme sınıfını üretirdi.
  */
 export function employerContractHref(projectId: string): string {
-  return `/sozlesmeler/isveren/${encodeURIComponent(projectId)}`;
+  return routes.contracts.employerDetail({ projectId });
 }
 
 /**

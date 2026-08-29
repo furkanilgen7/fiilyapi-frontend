@@ -38,6 +38,7 @@ import { SiteFormActions } from "./SiteFormActions";
 // Sıra önemli: önce paylaşılan kabuk, sonra forma özgü bloklar (özgü kazansın).
 import "@/styles/form-shell.css";
 import "./site-form.css";
+import { routes } from "@/lib/routes";
 
 function isNotFound(err: unknown): boolean {
   return err instanceof BackendError && err.status === 404;
@@ -136,7 +137,7 @@ export function SiteCreateView() {
 
   function handleCancel() {
     // `beforeunload` uyarısı YOKTUR (§12): veri kaybına karşı "Taslak Kaydet" var.
-    router.push(`/projeler/${projectId}`);
+    router.push(routes.projects.detail({ projectId }));
   }
 
   function submit(isDraft: boolean) {
@@ -160,7 +161,7 @@ export function SiteCreateView() {
       // Önbellek geçersizleştirmesi hook'un içinde (§9.5).
       onSuccess: (site) =>
         router.push(
-          isDraft ? `/projeler/${projectId}` : `/projeler/${projectId}/santiyeler/${site.id}`,
+          isDraft ? routes.projects.detail({ projectId }) : routes.projects.sites.detail({ projectId, siteId: site.id }),
         ),
       onError: (err) => {
         const isCodeConflict = err instanceof BackendError && err.status === 409;
@@ -176,7 +177,7 @@ export function SiteCreateView() {
   if (isNotFound(projectQuery.error)) {
     return (
       <p className="site-form__message">
-        <span>Proje bulunamadı</span> — <Link href="/projeler">Projeler</Link>
+        <span>Proje bulunamadı</span> — <Link href={routes.projects.list()}>Projeler</Link>
       </p>
     );
   }
@@ -190,12 +191,12 @@ export function SiteCreateView() {
     <div className="pf-shell">
       <div className="pf-topbar">
         <nav className="pf-breadcrumb" aria-label="Kırıntı yolu">
-          <Link href="/projeler">Projeler</Link>
+          <Link href={routes.projects.list()}>Projeler</Link>
           <span className="pf-breadcrumb__sep" aria-hidden="true">
             /
           </span>
           {project ? (
-            <Link href={`/projeler/${projectId}`}>{project.name}</Link>
+            <Link href={routes.projects.detail({ projectId })}>{project.name}</Link>
           ) : (
             <span>…</span>
           )}

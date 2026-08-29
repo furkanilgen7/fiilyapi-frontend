@@ -1,7 +1,7 @@
 import Link from "next/link";
 
-import { RETURN_PARAM } from "@/components/personnel-form/PersonnelForm";
 import { cx } from "@/lib/cx";
+import { routes } from "@/lib/routes";
 
 export interface AddPersonnelLinkProps {
   /** Kaydetme/İptal sonrası dönülecek uygulama içi yol (sorgu dizesi dâhil). */
@@ -18,7 +18,7 @@ export interface AddPersonnelLinkProps {
  * Görünürlük çağıranın işidir: `personnel:full` yoksa HİÇ basılmaz.
  */
 export function AddPersonnelLink({ returnTo, variant = "secondary" }: AddPersonnelLinkProps) {
-  const href = `/personel/yeni?${RETURN_PARAM}=${encodeURIComponent(returnTo)}`;
+  const href = routes.personnel.new({ returnTo });
   return (
     <Link href={href} className={cx("btn", `btn--${variant}`, "btn--md")}>
       Personel Ekle

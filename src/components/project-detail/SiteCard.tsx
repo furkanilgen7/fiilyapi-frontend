@@ -6,6 +6,7 @@ import { pendingModuleLabel, type PendingModuleKey } from "@/lib/pending-modules
 import type { SiteListItem } from "@/lib/api/hooks/useSites";
 
 import "./project-detail.css";
+import { routes } from "@/lib/routes";
 
 export interface SiteCardProps {
   projectId: string;
@@ -158,7 +159,7 @@ interface ChipDef {
 // kimliğini taşıdığı için kartta durur ve DEĞİŞMEZ; ayrımı, yeni gelen taraf
 // olan proje SEKMESİ kendi `title`ında anlatır (bkz. WORK_ITEMS_TAB_TITLE).
 function chipsFor(projectId: string, site: SiteListItem): ChipDef[] {
-  const siteBase = `/projeler/${projectId}/santiyeler/${site.id}`;
+  const siteBase = routes.projects.sites.detail({ projectId, siteId: site.id });
   const chips: ChipDef[] = [
     { label: "İş Kalemleri", emoji: "📋", href: `${siteBase}/is-kalemleri` },
   ];

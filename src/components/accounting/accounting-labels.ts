@@ -1,5 +1,6 @@
 import type { BadgeVariant } from "@/components/ui";
 import type { JournalEntryStatus } from "@/lib/api/hooks/useJournalEntries";
+import { routes } from "@/lib/routes";
 
 /**
  * F-MU1 · Muhasebe ekranlarının SAF katmanı: dönem aritmetiği, durum
@@ -13,7 +14,7 @@ import type { JournalEntryStatus } from "@/lib/api/hooks/useJournalEntries";
 /** İzin matrisi anahtarı — muhasebe uçlarını `accounting` modülü denetler. */
 export const ACCOUNTING_PERMISSION_MODULE = "accounting";
 
-export const ACCOUNTING_URL = "/muhasebe";
+export const ACCOUNTING_URL = routes.accounting.root();
 
 // --- Dönem (E8:74-77 `‹ Temmuz 2026 ›`) ----------------------------------
 

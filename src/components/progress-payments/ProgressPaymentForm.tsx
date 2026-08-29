@@ -38,6 +38,7 @@ import {
   type PivotRow,
 } from "./pivot";
 import "./progress-payment-form.css";
+import { routes } from "@/lib/routes";
 
 export type ProgressPaymentFormProps =
   | { mode: "create"; projectId: string }
@@ -145,7 +146,7 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
         <Alert variant="warning" className="pp-form__alert">
           Bu hakediş artık taslak durumunda değil, düzenlenemez.
         </Alert>
-        <Link href={`/hakedisler/${detail.id}`} className="pp-form__crumb-link">
+        <Link href={routes.progressPayments.detail({ paymentId: detail.id })} className="pp-form__crumb-link">
           ← Hakediş detayına dön
         </Link>
       </div>
@@ -248,7 +249,7 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
       createPayment.mutate(
         { projectId: props.projectId, body: { ...headerBody, lines: linesBody } },
         {
-          onSuccess: (data) => router.push(`/hakedisler/${data.id}`),
+          onSuccess: (data) => router.push(routes.progressPayments.detail({ paymentId: data.id })),
           onError: (err) => setFormError(backendErrorMessage(err, "Hakediş oluşturulamadı.")),
         },
       );
@@ -308,7 +309,7 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
   return (
     <div className="pp-form">
       <p className="pp-form__crumb">
-        <Link href="/hakedisler" className="pp-form__crumb-link">
+        <Link href={routes.progressPayments.list()} className="pp-form__crumb-link">
           ← Hakedişler
         </Link>
         {" · İşveren Hakediş "}

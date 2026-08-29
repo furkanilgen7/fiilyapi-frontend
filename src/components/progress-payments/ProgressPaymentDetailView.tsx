@@ -22,6 +22,7 @@ import { ProgressPaymentStatusActions } from "./ProgressPaymentStatusActions";
 import { PROGRESS_PAYMENT_STATUS_BADGE } from "./status";
 import { formatPaymentTitle } from "./title";
 import "./progress-payment-detail.css";
+import { routes } from "@/lib/routes";
 
 export interface ProgressPaymentDetailViewProps {
   paymentId: string;
@@ -57,7 +58,7 @@ export function ProgressPaymentDetailView({ paymentId }: ProgressPaymentDetailVi
   return (
     <div className="pp-detail">
       <p className="pp-detail__crumb">
-        <Link href="/hakedisler" className="pp-detail__crumb-link">
+        <Link href={routes.progressPayments.list()} className="pp-detail__crumb-link">
           ← Hakedişler
         </Link>
         {" · İşveren Hakedişi"}
@@ -79,7 +80,7 @@ export function ProgressPaymentDetailView({ paymentId }: ProgressPaymentDetailVi
               kuralı `useModulePermission.canWrite` üzerinden zaten uygulanır. */}
           {detail.status === "draft" && canWrite && (
             <Link
-              href={`/hakedisler/${detail.id}/duzenle`}
+              href={routes.progressPayments.edit({ paymentId: detail.id })}
               className={cx("btn", "btn--secondary", "btn--md")}
             >
               Düzenle

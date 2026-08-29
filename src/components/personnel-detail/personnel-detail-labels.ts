@@ -9,6 +9,7 @@ import {
 } from "@/components/personnel/personnel-list-labels";
 import { formatDateDots } from "@/lib/format";
 import { pendingModuleLabel } from "@/lib/pending-modules";
+import { routes } from "@/lib/routes";
 
 /**
  * F-PT2 T3 / F-İK T3 · PD — `/personel/[id]` detay ekranının etiket/rozet/
@@ -89,4 +90,4 @@ export const PAYROLL_PENDING_REASON = "Bordro modülü henüz eklenmedi.";
 export const EDIT_HREF_SUFFIX = "/duzenle";
 
 /** 70 · "Tümü →" — GERÇEK, genel puantaj ekranına gider (spec §1). */
-export const TIMESHEET_ALL_HREF = "/puantaj";
+export const TIMESHEET_ALL_HREF = routes.timesheet();

@@ -6,6 +6,7 @@ import type { EquipmentRentalTotals } from "@/lib/api/hooks/useEquipmentDetailSc
 
 import { DetailKv } from "./DetailKv";
 import { RATE_PERIOD_ROW_LABELS } from "./equipment-detail-labels";
+import { routes } from "@/lib/routes";
 
 export interface EquipmentRentalCardProps {
   equipment: EquipmentResponse;
@@ -121,7 +122,7 @@ export function EquipmentRentalCard({
           <>
             Bu ekipman <strong>kiralıktır</strong> — amortisman hesaplanmaz, satın alma
             bilgileri boştur. Kira bedeli{" "}
-            <Link href="/makine/kira" className="makine-det__card-more">
+            <Link href={routes.equipment.rentalInvoices()} className="makine-det__card-more">
               kira hakedişine
             </Link>{" "}
             yansır.

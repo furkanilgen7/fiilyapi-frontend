@@ -31,6 +31,7 @@ import {
 } from "./work-labels";
 import "@/components/site-diary/site-diary-summary.css";
 import "./equipment-work.css";
+import { routes } from "@/lib/routes";
 
 /** İzin matrisi anahtarı — MK-1: 21. izin modülü `equipment`. */
 const EQUIPMENT_PERMISSION_MODULE = "equipment";
@@ -124,7 +125,7 @@ export function EquipmentWorkView() {
     <div className="makine-cal">
       {/* 44 */}
       <p className="makine-cal__crumb">
-        <Link href="/makine">← Makine &amp; Ekipman</Link> · Çalışma Kaydı
+        <Link href={routes.equipment.list()}>← Makine &amp; Ekipman</Link> · Çalışma Kaydı
       </p>
 
       {/* 45-51 */}

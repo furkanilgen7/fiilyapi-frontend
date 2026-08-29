@@ -13,12 +13,13 @@ import { ProjectTabs } from "./ProjectTabs";
 import { TypeLegend } from "./TypeLegend";
 import { parseProjectTab, tabToFilter, type ProjectTab } from "./tabs";
 import "./projects.css";
+import { routes } from "@/lib/routes";
 
 /**
  * Proje Takvimi (Gantt) rotası — bekçiye kayıtlı olabilmesi için DIŞA AKTARILIR
  * (`projects-routes.test.ts`). Elle yazılmış bir kopya bayatlar.
  */
-export const PROJECT_TIMELINE_HREF = "/projeler/takvim";
+export const PROJECT_TIMELINE_HREF = routes.projects.calendar();
 
 export function ProjectsView() {
   const router = useRouter();
@@ -64,7 +65,7 @@ export function ProjectsView() {
           <Link href={PROJECT_TIMELINE_HREF} className="prj__timeline-btn">
             Proje Takvimi
           </Link>
-          <Link href="/projeler/yeni" className="prj__new-btn">
+          <Link href={routes.projects.new()} className="prj__new-btn">
             + Yeni Proje
           </Link>
         </div>

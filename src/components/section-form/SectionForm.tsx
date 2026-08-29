@@ -30,6 +30,7 @@ import { hasSectionFormErrors, MESSAGES, validateSectionForm, type SectionFormEr
 // Sıra önemli: önce paylaşılan kabuk, sonra forma özgü bloklar.
 import "@/styles/form-shell.css";
 import "./section-form.css";
+import { routes } from "@/lib/routes";
 
 /** F-TKV T5 — devre dışı Gantt kutusunun GÖRÜNÜR gerekçesi (test bunu import eder). */
 export const GANTT_AUTO_ADD_REASON = pendingModuleLabel("gantt_auto_add");
@@ -128,8 +129,8 @@ export function SectionForm(props: SectionFormProps) {
 
   function handleCancel() {
     const target = isEdit
-      ? `/projeler/${props.projectId}/santiyeler/${props.siteId}/bolumler/${props.sectionId}`
-      : `/projeler/${props.projectId}/santiyeler/${props.siteId}`;
+      ? routes.projects.sites.sections.detail({ projectId: props.projectId, siteId: props.siteId, sectionId: props.sectionId })
+      : routes.projects.sites.detail({ projectId: props.projectId, siteId: props.siteId });
     router.push(target);
   }
 
@@ -168,7 +169,7 @@ export function SectionForm(props: SectionFormProps) {
     if (!isEdit) {
       createSection.mutate(body, {
         onSuccess: (created) =>
-          router.push(`/projeler/${props.projectId}/santiyeler/${props.siteId}/bolumler/${created.id}`),
+          router.push(routes.projects.sites.sections.detail({ projectId: props.projectId, siteId: props.siteId, sectionId: created.id })),
         onError: handleMutationError,
       });
       return;
@@ -176,7 +177,7 @@ export function SectionForm(props: SectionFormProps) {
 
     updateSection.mutate(body, {
       onSuccess: (updated) =>
-        router.push(`/projeler/${props.projectId}/santiyeler/${props.siteId}/bolumler/${updated.id}`),
+        router.push(routes.projects.sites.sections.detail({ projectId: props.projectId, siteId: props.siteId, sectionId: updated.id })),
       onError: handleMutationError,
     });
   }
@@ -185,11 +186,11 @@ export function SectionForm(props: SectionFormProps) {
     <div className="pf-shell">
       <div className="pf-topbar">
         <nav className="pf-breadcrumb" aria-label="Kırıntı yolu">
-          <Link href="/projeler">Projeler</Link>
+          <Link href={routes.projects.list()}>Projeler</Link>
           <span className="pf-breadcrumb__sep" aria-hidden="true">
             /
           </span>
-          <Link href={`/projeler/${props.projectId}/santiyeler/${props.siteId}`}>{site.name}</Link>
+          <Link href={routes.projects.sites.detail({ projectId: props.projectId, siteId: props.siteId })}>{site.name}</Link>
           <span className="pf-breadcrumb__sep" aria-hidden="true">
             /
           </span>
@@ -224,7 +225,7 @@ export function SectionForm(props: SectionFormProps) {
             Mevcut {site.section_count} bölüm var. Yeni bölüm eklendikten sonra{" "}
             <strong>iş kalemi ataması</strong> yapılmalı.
           </div>
-          <Link href={`/projeler/${props.projectId}/santiyeler/${props.siteId}`} className="site-form__info-link">
+          <Link href={routes.projects.sites.detail({ projectId: props.projectId, siteId: props.siteId })} className="site-form__info-link">
             Mevcut Bölümler →
           </Link>
         </div>

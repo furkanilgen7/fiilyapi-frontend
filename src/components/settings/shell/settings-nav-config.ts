@@ -1,3 +1,4 @@
+import { routes } from "@/lib/routes";
 export interface SettingsNavItem {
   label: string;
   href: string;
@@ -12,17 +13,17 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
   {
     heading: "GENEL",
     items: [
-      { label: "Şirket Bilgileri", href: "/ayarlar/sirket-bilgileri", emoji: "🏢" },
-      { label: "Bildirimler", href: "/ayarlar/bildirimler", emoji: "🔔" },
-      { label: "Görünüm", href: "/ayarlar/gorunum", emoji: "🎨" },
+      { label: "Şirket Bilgileri", href: routes.settings.company(), emoji: "🏢" },
+      { label: "Bildirimler", href: routes.settings.notifications(), emoji: "🔔" },
+      { label: "Görünüm", href: routes.settings.appearance(), emoji: "🎨" },
     ],
   },
   {
     heading: "KULLANICI & ERİŞİM",
     items: [
-      { label: "Kullanıcılar", href: "/ayarlar/kullanicilar", emoji: "👤" },
-      { label: "Rol Yönetimi", href: "/ayarlar/roller", emoji: "🔐" },
-      { label: "İzin Matrisi", href: "/ayarlar/izin-matrisi", emoji: "📋" },
+      { label: "Kullanıcılar", href: routes.settings.users(), emoji: "👤" },
+      { label: "Rol Yönetimi", href: routes.settings.roles(), emoji: "🔐" },
+      { label: "İzin Matrisi", href: routes.settings.permissionMatrix(), emoji: "📋" },
       // F-OKROL — mockup `Ayarlar - Onay Rolleri.dc.html:82` bu bağlantıyı
       // "Kullanıcı & Erişim" grubunun SONUNA koyar. Rotası olmayan ekran
       // kullanıcıya görünmez: bağlantı ekranla AYNI dilimde iner.
@@ -32,7 +33,7 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
       // (kapsanan emoji aralığı `u+1f??`). Kapsanmayan glif sistem yedeğine
       // düşer ve kare `ubuntu-latest`te turdan tura oynar (F-MU2 kanonu).
       // Diğer dokuz öğenin hepsi gibi `u+1f??` içinden bir emoji seçildi.
-      { label: "Onay Rolleri ve Eşik", href: "/ayarlar/onay-rolleri", emoji: "\u{1F44D}" },
+      { label: "Onay Rolleri ve Eşik", href: routes.settings.approvalRoles(), emoji: "\u{1F44D}" },
     ],
   },
   {
@@ -42,10 +43,10 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
       // "Sistem" grubunun BAŞINA koyar. Rotası olmayan ekran kullanıcıya
       // görünmez: bağlantı ekranla AYNI dilimde iner.
       // 💰 (U+1F4B0) `src/styles/fonts.css`in `u+1f??` kümesindedir (ölçüldü).
-      { label: "Bordro Oranları", href: "/ayarlar/bordro-oranlari", emoji: "\u{1F4B0}" },
-      { label: "Entegrasyonlar", href: "/ayarlar/entegrasyonlar", emoji: "🔗" },
-      { label: "Yedekleme", href: "/ayarlar/yedekleme", emoji: "📦" },
-      { label: "Denetim Günlüğü", href: "/ayarlar/denetim-gunlugu", emoji: "📜" },
+      { label: "Bordro Oranları", href: routes.settings.payrollRates(), emoji: "\u{1F4B0}" },
+      { label: "Entegrasyonlar", href: routes.settings.integrations(), emoji: "🔗" },
+      { label: "Yedekleme", href: routes.settings.backup(), emoji: "📦" },
+      { label: "Denetim Günlüğü", href: routes.settings.auditLog(), emoji: "📜" },
     ],
   },
 ];

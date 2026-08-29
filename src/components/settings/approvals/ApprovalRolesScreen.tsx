@@ -54,6 +54,7 @@ import {
 } from "./approval-role-admin";
 import "@/components/settings/settings.css";
 import "./approval-roles.css";
+import { routes } from "@/lib/routes";
 
 /**
  * `GET /users` ve `GET /approvals/roles` `limit` tavanı (openapi.json `le=200`).
@@ -140,7 +141,7 @@ export function ApprovalRolesScreen() {
           izinleri). Bu ekran ise <strong>kimin onaylayacağını</strong> belirler — bir kullanıcı
           birden çok onay rolü taşıyabilir.
         </p>
-        <Link className="okr-intro__link" href="/ayarlar/izin-matrisi">
+        <Link className="okr-intro__link" href={routes.settings.permissionMatrix()}>
           İzin Matrisi
           <ApprovalFlowArrow />
         </Link>
@@ -204,7 +205,7 @@ export function ApprovalRolesScreen() {
               label={approvalThresholdAboveLabel(formattedThreshold)}
               chain={CHAIN_ABOVE}
             />
-            <Link className="okr-flow__link" href="/onay-kutusu">
+            <Link className="okr-flow__link" href={routes.approvalInbox()}>
               Onay Kutusu&apos;nda gör
               <ApprovalFlowArrow />
             </Link>

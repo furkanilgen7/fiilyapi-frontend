@@ -17,6 +17,7 @@ import {
   FolderIcon,
 } from "@/components/ui/icons";
 import { isActivePath } from "@/lib/shell/isActive";
+import { routes } from "@/lib/routes";
 
 export type NavItem = {
   label: string;
@@ -32,42 +33,42 @@ export const NAV_GROUPS: NavGroup[] = [
     heading: "Genel",
     items: [
       { label: "Gösterge Paneli", href: "/", Icon: DashboardIcon },
-      { label: "Onay Kutusu", href: "/onay-kutusu", Icon: InboxIcon },
-      { label: "Raporlar", href: "/raporlar", Icon: BarChartIcon },
-      { label: "Projeler", href: "/projeler", Icon: BuildingIcon },
+      { label: "Onay Kutusu", href: routes.approvalInbox(), Icon: InboxIcon },
+      { label: "Raporlar", href: routes.reports(), Icon: BarChartIcon },
+      { label: "Projeler", href: routes.projects.list(), Icon: BuildingIcon },
     ],
   },
   {
     heading: "Saha & İK",
     items: [
-      { label: "Puantaj", href: "/puantaj", Icon: CalendarCheckIcon },
-      { label: "Personel", href: "/personel", Icon: UserIcon },
-      { label: "Makine & Ekipman", href: "/makine", Icon: TruckIcon },
+      { label: "Puantaj", href: routes.timesheet(), Icon: CalendarCheckIcon },
+      { label: "Personel", href: routes.personnel.list(), Icon: UserIcon },
+      { label: "Makine & Ekipman", href: routes.equipment.list(), Icon: TruckIcon },
     ],
   },
   {
     heading: "Stok & Satınalma",
     items: [
-      { label: "Stok & Depo", href: "/stok", Icon: BoxIcon },
-      { label: "Satınalma & Teklif", href: "/satinalma", Icon: CartIcon },
+      { label: "Stok & Depo", href: routes.stock(), Icon: BoxIcon },
+      { label: "Satınalma & Teklif", href: routes.purchasing.root(), Icon: CartIcon },
     ],
   },
   {
     heading: "Sözleşme & Mali",
     items: [
-      { label: "Sözleşmeler", href: "/sozlesmeler", Icon: FileTextIcon },
+      { label: "Sözleşmeler", href: routes.contracts.list(), Icon: FileTextIcon },
       // F-P8 T2: SY (`Satış Yönetimi.dc.html` 40) mockup'ın PROJE bloğunda
       // çizilir; kabuk canon'unda karşılığı YOKTU — ünite satışı/tahsilatı
       // mali bir yüzey olduğu için "Sözleşme & Mali" grubuna, sözleşmelerin
       // hemen ardına eklendi. Rota GERÇEKTİR (`/satis`), ComingSoon DEĞİL;
       // nav href guard testi bunu ayrıca doğrular.
-      { label: "Satış Yönetimi", href: "/satis", Icon: BuildingIcon },
-      { label: "Muhasebe", href: "/muhasebe", Icon: BankIcon },
+      { label: "Satış Yönetimi", href: routes.sales.root(), Icon: BuildingIcon },
+      { label: "Muhasebe", href: routes.accounting.root(), Icon: BankIcon },
       // F-FAT2 T2: FY (`Fatura Yönetimi.dc.html` 39) mockup'ın "Mali" bloğunda
       // Muhasebe'nin hemen ardında durur; rota GERÇEKTİR (`/faturalar`),
       // ComingSoon DEĞİL.
-      { label: "Fatura Yönetimi", href: "/faturalar", Icon: FileTextIcon },
-      { label: "Hazine", href: "/hazine", Icon: WalletIcon },
+      { label: "Fatura Yönetimi", href: routes.invoices.list(), Icon: FileTextIcon },
+      { label: "Hazine", href: routes.treasury.root(), Icon: WalletIcon },
       // 🔴 F-UNIT1 T4 · ÖLÜ EKRAN DÜZELTMESİ. `/hazine/cek-senet` (E10 · Çek &
       // Ödeme) sayfası, görünümü, 401 satırlık testi ve 2 görsel karesiyle
       // AYLARDIR duruyordu ama repoda ona giden TEK BİR `Link`/`push` YOKTU:
@@ -87,15 +88,15 @@ export const NAV_GROUPS: NavGroup[] = [
       // Paylaşılan simge burada BİLGİ de taşır — bu ekran Hazine'nin alt
       // yüzeyidir. Simge tekrarı kabuk canonunda zaten var (`BuildingIcon` ×3,
       // `FileTextIcon` ×2); yeni glif İCAT EDİLMEDİ.
-      { label: "Çek & Ödeme", href: "/hazine/cek-senet", Icon: WalletIcon },
-      { label: "Hakedişler", href: "/hakedisler", Icon: ClockIcon },
-      { label: "Mali Tablolar", href: "/mali-tablolar", Icon: TrendingUpIcon },
-      { label: "Bordro", href: "/bordro", Icon: ListIcon },
-      { label: "Şirket Varlıkları", href: "/sirket-varliklari", Icon: BuildingIcon },
+      { label: "Çek & Ödeme", href: routes.treasury.financialInstruments(), Icon: WalletIcon },
+      { label: "Hakedişler", href: routes.progressPayments.list(), Icon: ClockIcon },
+      { label: "Mali Tablolar", href: routes.financialStatements.root(), Icon: TrendingUpIcon },
+      { label: "Bordro", href: routes.payroll.root(), Icon: ListIcon },
+      { label: "Şirket Varlıkları", href: routes.companyAssets(), Icon: BuildingIcon },
       // F-BC T4: Ekran 12 gerçek rotasıdır (`/belgeler`) — ComingSoon'dan çıktı.
       // Eski `/belge-arsivi` href'i hiç yazılmamış bir rotaydı; nav href guard
       // testi bu öğenin gerçek bir sayfaya düştüğünü ayrıca doğrular.
-      { label: "Belge Arşivi", href: "/belgeler", Icon: FolderIcon },
+      { label: "Belge Arşivi", href: routes.documents(), Icon: FolderIcon },
     ],
   },
 ];

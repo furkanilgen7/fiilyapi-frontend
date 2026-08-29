@@ -25,6 +25,7 @@ import { EquipmentCard } from "./EquipmentCard";
 import { EquipmentKpiStrip } from "./EquipmentKpiStrip";
 import { EquipmentTabsStrip } from "./EquipmentTabsStrip";
 import "./equipment.css";
+import { routes } from "@/lib/routes";
 
 /** İzin matrisi anahtarı — MK-1 backend spec: 21. izin modülü `equipment`. */
 const EQUIPMENT_PERMISSION_MODULE = "equipment";
@@ -89,7 +90,7 @@ export function EquipmentView() {
         <h1 className="makine__title">Makine &amp; Ekipman</h1>
         {/* 62 — hedef form (M2) bu dilimin kapsamı dışında; rota şimdiden bağlanır
             (K4 "Düzenle" ile aynı karar), catch-all ComingSoon karşılar. */}
-        <Link href="/makine/yeni" className="btn btn--primary btn--md">
+        <Link href={routes.equipment.new()} className="btn btn--primary btn--md">
           + Ekipman Ekle
         </Link>
       </div>

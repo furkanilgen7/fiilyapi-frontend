@@ -10,6 +10,7 @@ import type {
 import { barWidthPct } from "./bar-ratio";
 import { EMPTY_VALUE } from "./PendingCell";
 import { REASONS } from "./project-summary-labels";
+import { routes } from "@/lib/routes";
 
 /**
  * KY 205-249 / KK 210-247 taşeron maliyet tablosu — satır birimi SÖZLEŞMEdir.
@@ -82,7 +83,7 @@ export function SubcontractorCostTable({ rows, total, projectType }: Subcontract
               : "Kendi yatırımda da taşeron çalışır — inşaat maliyetinin ana kalemi"}
           </p>
         </div>
-        <Link className="psum-card__link" href="/hakedisler/taseron">
+        <Link className="psum-card__link" href={routes.progressPayments.subcontractor.list()}>
           Tümü
         </Link>
       </div>

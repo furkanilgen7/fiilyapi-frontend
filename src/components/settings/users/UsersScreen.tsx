@@ -26,15 +26,16 @@ import { PermissionMatrixPreviewCard } from "./PermissionMatrixPreviewCard";
 import "@/components/settings/settings.css";
 import "./users-screen.css";
 import "./users-preview.css";
+import { routes } from "@/lib/routes";
 
 // Ayarlar ana ekranı sekme şeridi — yalnız bu ekranda (mockup Ayarlar.dc.html §70-75);
 // diğer Ayarlar alt sayfaları (Rol Yönetimi, İzin Matrisi, Şirket...) kendi sub-header'ına
 // sahip, bu şeridi tekrar etmiyor.
 const SETTINGS_TABS = [
-  { href: "/ayarlar/kullanicilar", label: "Kullanıcılar" },
-  { href: "/ayarlar/roller", label: "Rol Yönetimi" },
-  { href: "/ayarlar/izin-matrisi", label: "İzin Matrisi" },
-  { href: "/ayarlar/sirket-bilgileri", label: "Şirket" },
+  { href: routes.settings.users(), label: "Kullanıcılar" },
+  { href: routes.settings.roles(), label: "Rol Yönetimi" },
+  { href: routes.settings.permissionMatrix(), label: "İzin Matrisi" },
+  { href: routes.settings.company(), label: "Şirket" },
 ] as const;
 
 type ModalState =

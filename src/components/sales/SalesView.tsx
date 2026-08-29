@@ -20,13 +20,14 @@ import { SalesTable } from "./SalesTable";
 import { UpcomingCollectionsCard } from "./UpcomingCollectionsCard";
 import { parseSalesStatusFilter, PRICE_LIST_PENDING_REASON } from "./sales-labels";
 import "./sales.css";
+import { routes } from "@/lib/routes";
 
 /** URL durumu anahtarları — seçili proje ve süzgeç paylaşılabilir olmalı. */
 const PROJECT_PARAM = "proje";
 const STATUS_PARAM = "durum";
 
 /** T3'ün açacağı satış formu (spec K1). */
-export const NEW_SALE_HREF = "/satis/yeni";
+export const NEW_SALE_HREF = routes.sales.new();
 
 /**
  * SY · `/satis` — mockup `Satış Yönetimi.dc.html` (kanonik). Yorumlardaki

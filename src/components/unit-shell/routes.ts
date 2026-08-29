@@ -1,3 +1,4 @@
+import { routes } from "@/lib/routes";
 /**
  * F-UNIT1 T2 · Blok/Ünite form AİLESİNİN ortak rota ve sekme sabitleri.
  *
@@ -8,22 +9,22 @@
  */
 
 /** BE 38/112 · UE 40/125 · TU 39/181 "İptal" hedefi ve başarılı kaydın dönüş yeri. */
-export const SALES_LIST_HREF = "/satis";
+export const SALES_LIST_HREF = routes.sales.root();
 
 /** BE'nin kendi rotası (`Form - Blok Ekle.dc.html`). */
-export const BLOCK_FORM_HREF = "/satis/blok-ekle";
+export const BLOCK_FORM_HREF = routes.sales.addBlock();
 
 /** UE'nin kendi rotası (`Form - Unite Ekle.dc.html`). */
-export const UNIT_FORM_HREF = "/satis/unite-ekle";
+export const UNIT_FORM_HREF = routes.sales.addUnit();
 
 /** TU'nun kendi rotası (`Form - Toplu Unite.dc.html`, F-UNIT2 T2a). */
-export const BULK_UNIT_FORM_HREF = "/satis/toplu-uretim";
+export const BULK_UNIT_FORM_HREF = routes.sales.bulkUnits();
 
 /** EI'nin kendi rotası (`Form - Unite Excel Import.dc.html`, F-UNIT2 T2b). */
-export const UNIT_IMPORT_FORM_HREF = "/satis/excel-ice-aktar";
+export const UNIT_IMPORT_FORM_HREF = routes.sales.importUnits();
 
 /** PG'nin kendi rotası (`Form - Paylasim Girisi.dc.html`, F-UNIT2 T2c). */
-export const LAND_SHARE_ALLOCATION_FORM_HREF = "/satis/paylasim-girisi";
+export const LAND_SHARE_ALLOCATION_FORM_HREF = routes.sales.landShareAllocation();
 
 export type UnitFormTabLabel =
   | "Blok Ekle"

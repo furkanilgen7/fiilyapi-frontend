@@ -2,6 +2,7 @@ import Link from "next/link";
 import { cx } from "@/lib/cx";
 import type { ProjectType } from "@/lib/api/hooks/useProjects";
 import { employerContractTabHref } from "../contracts/employer-contract-tabs";
+import { routes } from "@/lib/routes";
 
 export interface ProjectDetailTabsProps {
   projectId: string;
@@ -97,14 +98,14 @@ export const WORK_ITEMS_TAB_TITLE =
  * yazılsaydı aktif sekme sessizce hiç işaretlenmezdi.
  */
 export const projectSummaryHref = (projectId: string) =>
-  `/projeler/${encodeURIComponent(projectId)}/ozet`;
+  routes.projects.summary({ projectId });
 export const projectAllocationHref = (projectId: string) =>
-  `/projeler/${encodeURIComponent(projectId)}/paylasim`;
+  routes.projects.sharing({ projectId });
 
 const TABS: TabDef[] = [
   {
     label: "Şantiyeler",
-    hrefFor: (id) => `/projeler/${encodeURIComponent(id)}`,
+    hrefFor: (id) => routes.projects.detail({ projectId: id }),
   },
   // 🔴 F-PKK K1 · "Proje Özeti" — İKİ mockup, TEK rota. Ekran proje türüne
   // göre KY (`Proje - Kendi Yatırım`) ya da KK (`Proje - Kat Karşılığı`)
@@ -137,15 +138,15 @@ const TABS: TabDef[] = [
   },
   {
     label: "İşveren Hakediş",
-    hrefFor: (id) => `/hakedisler?project_id=${encodeURIComponent(id)}`,
+    hrefFor: (id) => routes.progressPayments.list({ projectId: id }),
   },
   {
     label: "Taşeron Hakediş",
-    hrefFor: (id) => `/hakedisler/taseron?project_id=${encodeURIComponent(id)}`,
+    hrefFor: (id) => routes.progressPayments.subcontractor.list({ projectId: id }),
   },
   {
     label: "Belgeler",
-    hrefFor: (id) => `/belgeler?proje=${encodeURIComponent(id)}`,
+    hrefFor: (id) => routes.documents({ projectId: id }),
   },
 ];
 

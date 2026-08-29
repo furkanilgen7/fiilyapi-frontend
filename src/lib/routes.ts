@@ -31,6 +31,17 @@
 /** URL'ye giren kaynak kimliği — bugün UUID, yarın slug; ikisi de `string`. */
 export type RouteId = string;
 
+/**
+ * `?donus=` — kayıt sonrası dönülecek uygulama içi yolun sorgu anahtarı.
+ *
+ * 🔴 Anahtar burada TEK tanımdır ve OKUYAN taraf (`PersonnelForm`) onu buradan
+ * alır. İki ayrı sabit olsaydı biri değiştirilip öteki unutulduğunda form
+ * dönüş hedefini SESSİZCE kaybederdi (kullanıcı kaydettikten sonra yanlış
+ * ekrana düşerdi) — üretim ile okumanın ayrışması tam olarak bu dilimin
+ * kapattığı çürüme sınıfıdır.
+ */
+export const PERSONNEL_RETURN_PARAM = "donus";
+
 /** Tek bir yol segmentini güvenle kodlar (slug'da Türkçe karakter olabilir). */
 function seg(value: RouteId): string {
   return encodeURIComponent(value);
@@ -225,7 +236,7 @@ export const routes = {
     list: () => "/personel",
     /** Kayıt sonrası dönüş hedefi `?donus=` ile taşınır (`RETURN_PARAM`). */
     new: (params: { returnTo?: string } = {}) =>
-      `/personel/yeni${qs({ donus: params.returnTo })}`,
+      `/personel/yeni${qs({ [PERSONNEL_RETURN_PARAM]: params.returnTo })}`,
     documents: () => "/personel/belgeler",
     leaves: () => "/personel/izinler",
     detail: (p: { personnelId: RouteId }) => `/personel/${seg(p.personnelId)}`,

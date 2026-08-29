@@ -33,6 +33,7 @@ import { PersonnelPagination } from "./PersonnelPagination";
 import { PersonnelTable } from "./PersonnelTable";
 import { PersonnelTabsStrip } from "./PersonnelTabsStrip";
 import "./personnel-list.css";
+import { routes } from "@/lib/routes";
 
 const QUERY_PARAM = "q";
 const PROJECT_PARAM = "proje";
@@ -142,7 +143,7 @@ export function PersonnelListView() {
           </Button>
           {/* 65 — mevcut formun oluşturma kipi */}
           {canWrite && (
-            <Link href="/personel/yeni?donus=/personel">
+            <Link href={routes.personnel.new({ returnTo: routes.personnel.list() })}>
               <Button variant="primary">+ Personel Ekle</Button>
             </Link>
           )}

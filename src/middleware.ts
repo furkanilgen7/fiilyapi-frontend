@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/auth/constants";
+import { routes } from "@/lib/routes";
 
 // Korumali sayfa rotalari: cookie yoksa /login'e yonlendir. Edge'de yalniz
 // cookie VARLIGI kontrol edilir; gercek gecerlilik API'de (backend /auth/me).
@@ -9,7 +10,7 @@ export function middleware(request: NextRequest): NextResponse {
   if (hasSession) return NextResponse.next();
 
   const url = request.nextUrl.clone();
-  url.pathname = "/login";
+  url.pathname = routes.login();
   url.searchParams.set("next", request.nextUrl.pathname);
   return NextResponse.redirect(url);
 }

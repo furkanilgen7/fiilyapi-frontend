@@ -7,6 +7,7 @@
  */
 
 import type { components } from "@/lib/api/schema";
+import { routes } from "@/lib/routes";
 
 export type BlockRoofType = components["schemas"]["BlockRoofType"];
 export type BlockGroundUsage = components["schemas"]["BlockGroundUsage"];
@@ -25,7 +26,7 @@ export const BLOCK_SUBMIT_LABEL = "Bloğu Kaydet"; // BE 113
 export const BLOCK_CANCEL_LABEL = "İptal"; // BE 112
 
 /** İptal/başarı dönüşü — kabuk canonu (mockup kendi üst barını çizmez). */
-export const UNITS_LIST_HREF = "/satis";
+export const UNITS_LIST_HREF = routes.sales.root();
 
 /**
  * Sunucu sözleşmesinin uzunluk sınırları (`units/schemas.py::_BlockFormFields`).

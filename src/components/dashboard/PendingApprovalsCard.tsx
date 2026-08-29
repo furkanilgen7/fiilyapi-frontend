@@ -4,6 +4,7 @@ import type { components } from "@/lib/api/schema";
 
 import { CardEmptyState } from "./CardEmptyState";
 import "./dashboard.css";
+import { routes } from "@/lib/routes";
 
 type Placeholder = components["schemas"]["PendingApprovalsPlaceholder"];
 
@@ -42,7 +43,7 @@ export function PendingApprovalsCard({ data }: { data: Placeholder }) {
     // "backend'in vermedigi alan -> zarif dusus + kullaniciya bildirim".
     body = (
       <div className="dash-list">
-        <Link className="dash-list__row dash-list__row--link" href="/onay-kutusu">
+        <Link className="dash-list__row dash-list__row--link" href={routes.approvalInbox()}>
           <span className="dash-list__row-title">Onay Kutusu</span>
           <span className="dash-list__row-meta">{data.count} bekleyen</span>
         </Link>

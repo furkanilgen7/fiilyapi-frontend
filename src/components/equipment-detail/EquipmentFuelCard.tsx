@@ -7,6 +7,7 @@ import type { EquipmentResponse } from "@/lib/api/hooks/useEquipment";
 import type { FuelSummaryResponse } from "@/lib/api/hooks/useEquipmentFuelSummary";
 
 import { NORM_UNIT_SUFFIX } from "./equipment-detail-labels";
+import { routes } from "@/lib/routes";
 
 export interface EquipmentFuelCardProps {
   equipment: EquipmentResponse;
@@ -40,7 +41,7 @@ export function EquipmentFuelCard({ equipment, summary }: EquipmentFuelCardProps
     <section className="makine-det__card" aria-label="Yakıt Takibi Özeti">
       <div className="makine-det__card-head">
         <h2 className="makine-det__card-title">⛽ Yakıt Takibi Özeti</h2>
-        <Link href="/makine/yakit" className="makine-det__card-more">
+        <Link href={routes.equipment.fuel()} className="makine-det__card-more">
           Tümü →
         </Link>
       </div>

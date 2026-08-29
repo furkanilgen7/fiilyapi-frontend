@@ -26,6 +26,7 @@ import { computeDiarySummaryKpis } from "./summary-kpis";
 import "@/components/site-detail/site-detail.css";
 import "./site-diary.css";
 import "./site-diary-summary.css";
+import { routes } from "@/lib/routes";
 
 /**
  * "Hakediş Özeti" modu — mockup `Şantiye - Hakediş Özeti.dc.html` (HÖ).
@@ -66,7 +67,7 @@ export function SiteDiarySummaryView() {
   if (isForbidden(siteQuery.error) || isForbidden(summaryQuery.error)) return <AccessDenied />;
 
   const site = siteQuery.data;
-  const base = `/projeler/${projectId}/santiyeler/${siteId}`;
+  const base = routes.projects.sites.detail({ projectId, siteId });
   // Sekme şeridi "Günlük Kayıt" sekmesini AKTİF gösterir: özet, o sekmenin bir
   // alt görünümüdür (mod anahtarı ikisini birbirine bağlar).
   const entryHref = `${base}/gunluk-kayit`;
@@ -122,7 +123,7 @@ export function SiteDiarySummaryView() {
           <DiaryMonthNav year={period.year} month={period.month} onShift={handleShiftMonth} />
           {/* HÖ94 — yazma izni yoksa öğe SİLİNMEZ, gerekçesiyle devre dışı basılır */}
           {paymentsPermission.canWrite ? (
-            <Link className="diary-summary__cta" href={`/hakedisler/yeni?project=${projectId}`}>
+            <Link className="diary-summary__cta" href={routes.progressPayments.new({ projectId })}>
               Hakediş Oluştur →
             </Link>
           ) : (
@@ -157,8 +158,8 @@ export function SiteDiarySummaryView() {
         />
         <DiarySummaryProfitPanel
           kpis={kpis}
-          subcontractorPaymentsHref="/hakedisler/taseron"
-          employerPaymentsHref="/hakedisler"
+          subcontractorPaymentsHref={routes.progressPayments.subcontractor.list()}
+          employerPaymentsHref={routes.progressPayments.list()}
         />
       </div>
 

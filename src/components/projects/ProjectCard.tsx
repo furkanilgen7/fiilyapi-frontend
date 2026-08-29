@@ -8,6 +8,7 @@ import { pendingModuleLabel } from "@/lib/pending-modules";
 
 import { ShareBar } from "./ShareBar";
 import "./projects.css";
+import { routes } from "@/lib/routes";
 
 type Project = ProjectListItem;
 // NOT: gercek semada tip-basi metrikler duz alanlar degil, ContractingCard /
@@ -333,7 +334,7 @@ export function ProjectCard({ project }: { project: Project }) {
     >
       {/* Kart icinde baska etkilesimli oge yok; tum govde tek link olarak sarilir. */}
       <Link
-        href={`/projeler/${project.id}`}
+        href={routes.projects.detail({ projectId: project.id })}
         className="prj-card__link"
         aria-label={`${project.name} projesini aç`}
       >
