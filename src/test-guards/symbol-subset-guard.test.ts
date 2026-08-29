@@ -96,7 +96,6 @@ const ALLOWED: readonly (readonly [number, string])[] = [
 
   // — Emoji=No dingbat/geometri: tek yazı tipi adayı, emoji ikamesi imkânsız —
   [0x22ef, "⋯ satır menüsü tetikleyicisi (PlanRowMenu); Emoji=No ⇒ tek aday"],
-  [0x25cf, "● gezinme madde imi (project-nav-config); Emoji=No ⇒ tek aday"],
   [0x270e, "✎ sprint düzenleme kalemi (PlanSprintEditor); Emoji=No ⇒ tek aday"],
 
   // — Hava durumu rozetleri (şantiye günlüğü, mockup GK264) —

@@ -5,7 +5,7 @@ import { routes } from "@/lib/routes";
 export interface SiteDetailTabsProps {
   projectId: string;
   siteId: string;
-  /** Aktif yol dışarıdan verilir; bileşen routing hook'u çağırmaz (DrillSidebar deseni). */
+  /** Aktif yol dışarıdan verilir; bileşen routing hook'u çağırmaz. */
   activePath: string;
 }
 
@@ -16,31 +16,27 @@ interface TabDef {
   written?: boolean;
 }
 
-// Sekmeler (spec §5.3, §7.3): Bölümler ve İş Kalemleri yazildi; digerleri
-// gorunur kalir ve henuz yazilmamis rotalara gider (catch-all -> ComingSoon).
+// Sekmeler (spec §5.3, §7.3). Yedisinin de gercek rotasi vardir; hicbiri
+// catch-all ComingSoon'a dusmez (`written` bayragi bunu tasir).
+//
+// 🔴 DRILL-KALDIR (2026-08-29): bu serit artik santiye gezinmesinin TEK
+// KAYNAGIDIR. Eskiden ayni yedi madde `project-nav-config.ts`teki drill
+// kenar cubugunda da duruyordu ve iki liste "ayrismamali" diye elle
+// hizalaniyordu; cubuk kaldirilinca o ikinci kopya silindi. Yani buradaki
+// SIRA ve KAPSAM artik baska bir dosyaya karsi degil, dogrudan mockup'a
+// karsi olculur.
 //
 // "İş Kalemleri" Ekran 13 spec §2.2 ile eklendi — Şantiye Detay mockup'inda bu
-// sekme YOKTUR, onayli sapma B'dir (§13). Drill sidebar ile ayrismamasi icin
-// project-nav-config.ts'teki sira ile birebir ayni: Bölümler'den hemen sonra.
-//
-// "Hakedişler" P7 T6 ile yazildi (`Şantiye - Hakedişler.dc.html`) —
-// project-nav-config.ts'teki sira ile ayrismamali.
-//
-// "Günlük Kayıt" F-SD T2 ile yazildi (`Şantiye - Günlük Kayıt.dc.html`);
-// artik catch-all ComingSoon'a DUSMEZ, gercek rotaya gider.
-//
-// "Puantaj" F-PT T2 ile yazildi (`Şantiye - Puantaj.dc.html`) — ayni sekilde
-// artik gercek rotasi var; project-nav-config.ts'teki sira ile ayrismamali.
-//
-// "Belgeler" F-BC T2 ile yazildi (`Şantiye - Belgeler.dc.html`); artik
-// catch-all ComingSoon'a DUSMEZ. SIRA DEGISMEDI — yalniz `written` bayragi
-// eklendi (project-nav-config.ts ile ayrismamali).
+// sekme YOKTUR, onayli sapma B'dir (§13); Bölümler'den hemen sonra durur.
+// "Hakedişler" P7 T6 (`Şantiye - Hakedişler.dc.html`), "Günlük Kayıt" F-SD T2
+// (`Şantiye - Günlük Kayıt.dc.html`), "Puantaj" F-PT T2
+// (`Şantiye - Puantaj.dc.html`), "Belgeler" F-BC T2
+// (`Şantiye - Belgeler.dc.html`), "Stok" F-ST T3 (`Şantiye - Stok.dc.html`)
+// ile yazildi.
 const TABS: TabDef[] = [
   { label: "Bölümler", slug: null, written: true },
   { label: "İş Kalemleri", slug: "is-kalemleri", written: true },
   { label: "Puantaj", slug: "puantaj", written: true },
-  // "Stok" F-ST T3 ile yazildi (`Şantiye - Stok.dc.html`); artik catch-all
-  // ComingSoon'a DUSMEZ. SIRA DEGISMEDI — yalniz `written` bayragi eklendi.
   { label: "Stok", slug: "stok", written: true },
   { label: "Hakedişler", slug: "hakedisler", written: true },
   { label: "Günlük Kayıt", slug: "gunluk-kayit", written: true },

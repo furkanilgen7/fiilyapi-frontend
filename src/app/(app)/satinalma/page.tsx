@@ -6,7 +6,7 @@ import { PurchaseRequestsView } from "@/components/purchasing/PurchaseRequestsVi
 // segment için devre dışı bırakır (Next.js App Router: özel segment her zaman
 // catch-all'dan önce eşleşir), yani kabuk sidebar'ındaki "Satınalma & Teklif"
 // ve drill sidebar'ındaki "Satınalma" artık ComingSoon'a DÜŞMEZ. Nav href
-// guard testleri (nav-config.test.ts + drill/project-nav-config.test.ts)
+// guard testi (nav-config.test.ts)
 // bunu doğrular.
 //
 // Sekme (durum) + proje + arama URL'de taşındığı için görünüm

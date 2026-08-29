@@ -37,9 +37,15 @@ const SITE: SiteDetail = {
 describe("SiteHeroBar — baslik ve meta (spec §5.2)", () => {
   it("ust satir, baslik ve meta satirini basar", () => {
     render(<SiteHeroBar site={SITE} />);
-    expect(
-      screen.getByText("Güneşkent Konut Projesi · İşveren: Güneşkent Gayrimenkul A.Ş."),
-    ).toBeInTheDocument();
+    // 🔴 DRILL-KALDIR: üst satır artık düz metin DEĞİL — proje adı bir <a>
+    // içindedir (Proje Detay'a çıkış). `getByText` yalnız DOĞRUDAN metin
+    // çocuklarını birleştirir, o yüzden satırın tamamı `textContent` ile
+    // ölçülür. Basılan METİN değişmedi, yalnız bir parçası sarmalandı.
+    const crumb = screen.getByRole("link", { name: "Güneşkent Konut Projesi" }).parentElement;
+    expect(crumb).toHaveClass("site-hero__breadcrumb");
+    expect(crumb?.textContent).toBe(
+      "Güneşkent Konut Projesi · İşveren: Güneşkent Gayrimenkul A.Ş.",
+    );
     expect(screen.getByRole("heading", { level: 1, name: "A-Blok Şantiyesi" })).toBeInTheDocument();
     expect(screen.getByText(/Kuyubaşı Mah\. Ankara/)).toBeInTheDocument();
     expect(screen.getByText(/Şantiye Şefi: Sercan Öztürk/)).toBeInTheDocument();

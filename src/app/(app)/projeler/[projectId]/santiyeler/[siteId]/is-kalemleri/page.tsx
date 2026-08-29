@@ -18,12 +18,12 @@ import "@/components/boq/boq.css";
 import { routes } from "@/lib/routes";
 
 // Ekran 13 · İş Kalemleri (BOQ) — spec §2.1. Rota `[projectId]/layout.tsx`
-// altindadir, DrillSidebar oradan gelir; bu sayfa KENDI LAYOUT'UNU KURMAZ
-// (kabugun sahibi tek seviyedir).
+// altindadir; o layout artik yalniz stylesheet yukler (DRILL-KALDIR
+// 2026-08-29). Bu sayfa KENDI LAYOUT'UNU KURMAZ.
 export default function BoqPage() {
   const { projectId, siteId } = useParams<{ projectId: string; siteId: string }>();
-  // Santiye sorgusu breadcrumb icindir; drill kabugu ayni anahtari zaten
-  // cektiginden ikinci bir ag istegi olusmaz (React Query onbellegi).
+  // Santiye sorgusu breadcrumb icindir. 🔴 DRILL-KALDIR: drill kabugu ayni
+  // anahtari cekiyordu, artik cekmiyor — bu ekranin TEK cagirani burasidir.
   const siteQuery = useSite(siteId);
   const boqQuery = useBoq(siteId);
   // Yazma yuzeyleri kapisi (spec §2.5). Yetki zorlamasi HER ZAMAN backend'de;

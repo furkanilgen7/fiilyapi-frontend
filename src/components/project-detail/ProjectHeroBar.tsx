@@ -6,7 +6,7 @@ import "./project-detail.css";
 
 export interface ProjectHeroBarProps {
   project: ProjectDetail;
-  /** DrillSidebar/ProjectDetailTabs deseni: aktif yol dışarıdan gelir. */
+  /** ProjectDetailTabs deseni: aktif yol dışarıdan gelir. */
   activePath: string;
 }
 
