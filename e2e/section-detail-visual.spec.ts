@@ -258,7 +258,10 @@ test("bolum detay hakedis sekmesi gorsel", async ({ page }) => {
   await expect(panel.getByRole("heading", { level: 2 })).toHaveText(
     "Kat 6–10 Kaba İnşaat · Taşeron Hakedişleri",
   );
-  await expect(panel.locator(".pp-row")).toHaveCount(3);
+  // HAK-NULL: proje geneli sözleşmenin (`sc-4`/`scpp-9`) hakedişi de bu bölümü
+  // KAPSAR → 3→4. Eskiden sunucudaki eşitlik süzgeci onu HİÇBİR bölümde
+  // göstermiyordu. İkizi `section-detail-tabs.spec.ts`te AYNI şekilde güncellendi.
+  await expect(panel.locator(".pp-row")).toHaveCount(4);
   // Kadrajın ASIL bekçilediği ayrım: bölüm adı basan satır ile "Tüm Bölümler"
   // basan satır AYNI karede yan yana görünür.
   await expect(panel).toContainText("Elektrik · Kat 6–10 Kaba İnşaat");

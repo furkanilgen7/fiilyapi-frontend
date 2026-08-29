@@ -50,7 +50,10 @@ test("sozlesmeler taseron sekmesi gorsel", async ({ page }) => {
   // yüzde × 2 + bedelsiz sözleşmenin "—"si) + yalnız bu sekmede çizilen giriş.
   // (Bu iddialar `--grep-invert "gorsel"` ile koşan 5. kapıda ÇALIŞMAZ,
   // yalnız Linux CI'ın `visual` işinde koşar — GÖRSEL SPEC'İN 1. PARÇASI.)
-  await expect(page.getByTestId("szl-progress")).toHaveCount(2);
+  // HAK-NULL: fikstüre PROJE GENELİ `sc-4` eklendi (kalemli → bedelli), gerçek
+  // yüzde basan sözleşme sayısı 2→3. "—" dalı DEĞİŞMEDİ (bedelsiz olan hâlâ
+  // yalnız sc-3). İkizi `contracts.spec.ts:93`te AYNI şekilde güncellendi.
+  await expect(page.getByTestId("szl-progress")).toHaveCount(3);
   await expect(page.getByTestId("szl-progress-pending")).toHaveCount(1);
   await expect(page.getByTestId("szl-kpi-payment-total")).not.toHaveText(/—/);
   await expect(page.getByRole("link", { name: "Taşeron Firmaları →" })).toBeVisible();
