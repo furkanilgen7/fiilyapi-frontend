@@ -2,8 +2,11 @@
    Mockup kanonu: `projedesign/Ekran 13 - İş Kalemleri.dc.html` (içerik 61–182).
    Her ölçü mockup satır numarasıyla gerekçelidir; çıplak hex/px yazılmaz. */
 
-/* İçerik alanı ofseti burada DEĞİL — .drill-content (drill-sidebar.css) sahibidir.
-   Mockup 61 `padding:28px 32px` ister, kabuk 24px 32px verir: onaylı sapma A (§13). */
+/* İçerik alanı ofseti burada DEĞİL — global `.app-content` (shell.css)
+   kuralındadır. 🔴 DRILL-KALDIR (2026-08-29): drill kabuğu ve onun
+   `.drill-content` ofseti kaldırıldı (bkz. `projeler/[projectId]/layout.tsx`).
+   🟢 ONAYLI SAPMA A (§13) BÖYLECE KAPANDI: mockup 61 `padding:28px 32px`
+   ister; drill kabuğu 24px 32px veriyordu, `.app-content` tam 28px 32px verir. */
 
 /* Breadcrumb (62) — onaylı sapma C: sözleşme numarası basılmaz. */
 .boq__crumb {

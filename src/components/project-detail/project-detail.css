@@ -1,7 +1,8 @@
 /* Proje Detay › Şantiyeler — spec §4.1, §4.2 (mockup: Proje Detay - Şantiyeler.dc.html) */
 
-/* İçerik alanı ofseti burada DEĞİL — drill-sidebar.css içindeki .drill-content
-   kuralında tanımlıdır (tek sahip, tek uygulama). */
+/* 🔴 DRILL-KALDIR (2026-08-29): drill kenar çubuğu ve `.drill-content` ofseti
+   KALDIRILDI (kullanıcı kararı; bkz. `projeler/[projectId]/layout.tsx`).
+   İçerik ofseti artık global `.app-content` (shell.css) kuralındadır. */
 
 .project-hero {
   background: var(--gradient-hero-project);

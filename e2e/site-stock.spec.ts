@@ -3,7 +3,7 @@ import { test, expect, type Page } from "@playwright/test";
 // F-ST T3 · Şantiye › Stok (ŞS) FONKSİYONEL e2e'si — görsel spec'ler T5'te
 // (dosya adında "gorsel"/"visual" GEÇMEZ ki beşinci kapıda koşsun).
 //
-// Kapsam: drill sekmesinin ComingSoon'dan ÇIKTIĞI · sekme aktifliğinin TEK
+// Kapsam: şantiye sekmesinin ComingSoon'dan ÇIKTIĞI · sekme aktifliğinin TEK
 // olduğu (F-SD çift aktiflik dersi) · KPI şeridi + tablo satırlarının SUNUCU
 // verisinden geldiği · pending iki sütunun gerekçeli "—" bastığı · satır
 // aksiyonlarının devre dışı olduğu · "+ Stok Girişi" link hedefi · şantiye
@@ -23,7 +23,7 @@ async function login(page: Page) {
   await expect(page.getByRole("heading", { name: "Gösterge Paneli" })).toBeVisible();
 }
 
-test("drill 'Stok' sekmesi gerçek ekranı açar (ComingSoon DEĞİL) ve TEK sekme aktiftir", async ({
+test("'Stok' sekmesi gerçek ekranı açar (ComingSoon DEĞİL) ve TEK sekme aktiftir", async ({
   page,
 }) => {
   await login(page);
@@ -39,10 +39,18 @@ test("drill 'Stok' sekmesi gerçek ekranı açar (ComingSoon DEĞİL) ve TEK sek
   // Çift aktiflik olmaz: kök sekme ("Bölümler") ön ek eşleşmesiyle seçilmez.
   await expect(page.locator('[role="tab"][aria-selected="true"]')).toHaveCount(1);
   await expect(page.getByRole("tab", { name: "Stok" })).toHaveAttribute("aria-selected", "true");
-  // Drill sidebar'da da tek aktif öğe (F-SD T7 bulgusu).
-  await expect(
-    page.getByRole("navigation").getByRole("link", { name: "Stok", exact: true }),
-  ).toHaveAttribute("aria-current", "page");
+  // 🔴 DRILL-KALDIR (kullanıcı kararı 2026-08-29) — KULLANICININ BİLDİRDİĞİ
+  // KUSURUN e2e BEKÇİSİ. Drill kenar çubuğu global kabuk sidebar'ıyla aynı
+  // konumdaydı (`fixed; top:52px; left:0; z-index:90`) ve onu ÖRTÜYORDU:
+  // şantiyeye girince ANA MENÜ KAYBOLUYORDU. Çubuk kaldırıldı; burada
+  // ölçülen şey ana menünün şantiye rotasında GÖRÜNÜR kaldığıdır.
+  await expect(page.locator("nav.drill-sidebar")).toHaveCount(0);
+  const shellNav = page.locator("nav.sidebar-nav");
+  await expect(shellNav).toHaveCount(1);
+  await expect(shellNav).toBeVisible();
+  await expect(shellNav.getByRole("link", { name: "Stok & Depo" })).toBeVisible();
+  // Sayfada başka hiçbir <nav> yoktur — çubuk geri gelirse bu düşer.
+  await expect(page.getByRole("navigation")).toHaveCount(1);
 });
 
 test("KPI şeridi ve tablo SUNUCU verisinden gelir; merkez depo bakiyeye GİRMEZ", async ({

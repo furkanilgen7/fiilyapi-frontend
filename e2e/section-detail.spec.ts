@@ -48,11 +48,10 @@ test("santiye detayindan bolum detayina link, hero + KPI + sekmeler + Hakedis Ol
   await expect(page.getByRole("heading", { level: 1, name: "Kat 6–10 Kaba İnşaat" })).toBeVisible();
   await expect(page.getByText("Aktif", { exact: true })).toBeVisible();
   // Düzeltme turu 2 (final review C1): "A-Blok Şantiyesi" hem hero meta
-  // satırında (D62) HEM DE DrillSidebar'ın `.drill-group__label`'ında
-  // (project-nav-config.ts:83, activeSiteGroup heading) basılıyor —
-  // kapsamsız `getByText` strict-mode ihlali verirdi (section-form.spec.ts'te
-  // `.field__error` ile kapatılan aynı sınıf hata). Assert'i hero meta
-  // satırına SCOPE ediyoruz.
+  // satırında (D62) HEM DE drill kenar çubuğunun grup başlığında basılıyordu;
+  // kapsamsız `getByText` strict-mode ihlali veriyordu. 🔴 DRILL-KALDIR
+  // (2026-08-29) çubuğu sildi, yani ÇAKIŞMA KALKTI — ama assert kapsamlı
+  // KALIR: hero meta satırını ölçmek zaten daha dar ve daha doğru iddiadır.
   await expect(page.locator(".section-hero__meta")).toContainText("A-Blok Şantiyesi");
   await expect(page.getByText("Sorumlu: Sercan Öztürk")).toBeVisible();
 

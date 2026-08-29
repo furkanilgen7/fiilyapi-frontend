@@ -6,7 +6,7 @@ import { routes } from "@/lib/routes";
 
 export interface ProjectDetailTabsProps {
   projectId: string;
-  /** Aktif yol dışarıdan verilir; bileşen routing hook'u çağırmaz (DrillSidebar deseni). */
+  /** Aktif yol dışarıdan verilir; bileşen routing hook'u çağırmaz. */
   activePath: string;
   /**
    * 🔴 F-PKK K1 — İKİ SEKME PROJE TÜRÜNE GÖRE KOŞULLUDUR.

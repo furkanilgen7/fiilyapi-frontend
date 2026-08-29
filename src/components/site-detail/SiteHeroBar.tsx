@@ -14,9 +14,28 @@ export interface SiteHeroBarProps {
 
 // "Güneşkent Konut Projesi · İşveren: Güneşkent Gayrimenkul A.Ş." — işveren
 // bos olabilir, o zaman yalniz proje adi basilir (spec §5.2).
-function topLine(site: SiteDetail): string {
-  const base = `${site.project.name} Projesi`;
-  return site.project.employer_name ? `${base} · İşveren: ${site.project.employer_name}` : base;
+//
+// 🔴 DRILL-KALDIR (kullanıcı kararı 2026-08-29): proje adı artık Proje
+// Detay'a giden bir BAĞLANTIDIR. Drill kenar çubuğu kaldırılınca ŞANTİYEDEN
+// PROJEYE ÇIKIŞ karşılıksız kalan TEK gezinme yoluydu (çubuğun `backHref`i +
+// bağlam grubundaki proje adı öğesi); kanon gereği sessizce kaybedilmez.
+// Kırıntı-bağlantı ürünün kendi desenidir (`.spp__crumb-link` /
+// `.boq__crumb-link`) — yeni tasarım İCAT EDİLMEDİ. Tek fark rengidir: bu
+// satır marka gradyanının (`--gradient-hero-site`) üstünde yaşar, oradaki
+// `--color-primary` mavisi okunmaz; `--color-on-brand` + altçizgi kullanılır.
+// Metin İÇERİĞİ değişmedi — yalnız proje adı parçası sarmalandı.
+function BreadcrumbLine({ site }: { site: SiteDetail }) {
+  return (
+    <p className="site-hero__breadcrumb">
+      <Link
+        href={routes.projects.detail({ projectId: site.project.id })}
+        className="site-hero__crumb-link"
+      >
+        {site.project.name} Projesi
+      </Link>
+      {site.project.employer_name ? ` · İşveren: ${site.project.employer_name}` : null}
+    </p>
+  );
 }
 
 // "📍 Kuyubaşı Mah. Ankara · 👷 Şantiye Şefi: Sercan Öztürk · Mar 2025 – Ara 2026"
@@ -170,7 +189,7 @@ export function SiteHeroBar({ site }: SiteHeroBarProps) {
     <div className="site-hero">
       <div className="site-hero__top">
         <div>
-          <p className="site-hero__breadcrumb">{topLine(site)}</p>
+          <BreadcrumbLine site={site} />
           <h1 className="site-hero__title">{site.name}</h1>
           {meta.length > 0 && (
             <div className="site-hero__meta">

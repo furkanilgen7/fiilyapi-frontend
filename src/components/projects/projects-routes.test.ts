@@ -9,7 +9,7 @@ import { PROJECT_TIMELINE_HREF } from "./ProjectsView";
  *
  * `/projeler` liste ekranı kullanıcıyı bir rotaya gönderen bir yüzeydir ama
  * bugüne kadar hiçbir rota bekçisine kayıtlı DEĞİLDİ (`nav-config.test.ts`,
- * `project-nav-config.test.ts`, `tab-strip-routes.test.tsx`,
+ * `tab-strip-routes.test.tsx`,
  * `accounting-nav-config.test.ts`, `financial-statements-nav-config.test.ts` —
  * beşi de bu ekranı kapsamıyor). F-TKV oraya bir bağlantı koyduğu için kaydı
  * da burada açar.

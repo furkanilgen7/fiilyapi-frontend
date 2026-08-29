@@ -1,7 +1,8 @@
 /* Şantiye Detay › Bölümler — spec §5.1–§5.3 (mockup: Şantiye Detay.dc.html) */
 
-/* İçerik alanı ofseti burada DEĞİL — drill-sidebar.css içindeki .drill-content
-   kuralında tanımlıdır (tek sahip, tek uygulama). */
+/* 🔴 DRILL-KALDIR (2026-08-29): drill kenar çubuğu ve onun `.drill-content`
+   ofseti KALDIRILDI. İçerik alanı ofseti artık global `.app-content`
+   (shell.css) kuralındadır; bu dosyada içerik ofseti YOKTUR. */
 
 .site-hero {
   background: var(--gradient-hero-site);
@@ -20,6 +21,17 @@
   font-size: 12px;
   color: var(--text-on-hero-muted);
   margin-bottom: 6px;
+}
+/* Proje Detay'a çıkış bağlantısı (DRILL-KALDIR). Marka gradyanının üstünde
+   yaşar: `--color-primary` mavisi burada okunmaz, `--color-on-brand` +
+   altçizgi kullanılır. */
+.site-hero__crumb-link {
+  color: var(--color-on-brand);
+  text-decoration: underline;
+}
+.site-hero__crumb-link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 .site-hero__title {
   font-size: 24px;

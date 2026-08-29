@@ -37,12 +37,38 @@ const SITE: SiteDetail = {
 describe("SiteHeroBar — baslik ve meta (spec §5.2)", () => {
   it("ust satir, baslik ve meta satirini basar", () => {
     render(<SiteHeroBar site={SITE} />);
-    expect(
-      screen.getByText("Güneşkent Konut Projesi · İşveren: Güneşkent Gayrimenkul A.Ş."),
-    ).toBeInTheDocument();
+    // 🔴 DRILL-KALDIR: üst satır artık düz metin DEĞİL — proje adı bir <a>
+    // içindedir (Proje Detay'a çıkış). `getByText` yalnız DOĞRUDAN metin
+    // çocuklarını birleştirir, o yüzden satırın tamamı `textContent` ile
+    // ölçülür. Basılan METİN değişmedi, yalnız bir parçası sarmalandı.
+    const crumb = screen.getByRole("link", { name: "Güneşkent Konut Projesi" }).parentElement;
+    expect(crumb).toHaveClass("site-hero__breadcrumb");
+    expect(crumb?.textContent).toBe(
+      "Güneşkent Konut Projesi · İşveren: Güneşkent Gayrimenkul A.Ş.",
+    );
     expect(screen.getByRole("heading", { level: 1, name: "A-Blok Şantiyesi" })).toBeInTheDocument();
     expect(screen.getByText(/Kuyubaşı Mah\. Ankara/)).toBeInTheDocument();
     expect(screen.getByText(/Şantiye Şefi: Sercan Öztürk/)).toBeInTheDocument();
+  });
+
+  // 🔴 DRILL-KALDIR (2026-08-29) · ÜST BAĞLAM BEKÇİSİ. Drill kenar çubuğu
+  // kaldırılınca ŞANTİYEDEN PROJEYE ÇIKIŞ karşılıksız kalan TEK gezinme
+  // yoluydu (çubuğun `backHref`i + bağlam grubundaki proje adı). Kanon:
+  // karşılığı olan bir gezinme yolu SESSİZCE KAYBEDİLMEZ. Bu bekçi düşerse
+  // kullanıcı şantiyeden projesine dönemiyor demektir.
+  it("proje adi Proje Detay'a giden BAGLANTIDIR (ust baglam)", () => {
+    render(<SiteHeroBar site={SITE} />);
+    expect(screen.getByRole("link", { name: "Güneşkent Konut Projesi" })).toHaveAttribute(
+      "href",
+      "/projeler/11111111-1111-1111-1111-111111111111",
+    );
+  });
+
+  it("isveren bossa yalniz proje adi baglantisi kalir (metin degismez)", () => {
+    render(<SiteHeroBar site={{ ...SITE, project: { ...SITE.project, employer_name: null } }} />);
+    const link = screen.getByRole("link", { name: "Güneşkent Konut Projesi" });
+    expect(link).toBeInTheDocument();
+    expect(link.parentElement?.textContent).toBe("Güneşkent Konut Projesi");
   });
 
   it("Gunluk Kayit ve + Bolum Ekle eylemlerini basar", () => {
