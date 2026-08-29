@@ -473,11 +473,12 @@
   color: var(--color-primary);
 }
 
-/* --- F-BLMSEK T3 · "Malzeme" sekme paneli --- */
-/* Önek ÖLÇÜLDÜ: `grep -rn "section-stock\|section-scope" src/ e2e/` bu
-   dilimden ÖNCE SIFIR isabet verdi. Bu panel diğerleri gibi VERİ BASMAZ —
-   sekme BİLİNÇLİ pending kalır (`CardEmptyState` içeriği `dash-empty*`
-   sınıflarını kullanır); burada yalnız kabuk, başlık ve bağlantı tanımlanır. */
+/* --- STOK-BOLUM · "Malzeme" sekme paneli --- */
+/* Önek ÖLÇÜLDÜ (F-BLMSEK T3): `section-stock` bu depoda YALNIZ bu panelindir.
+   🔴 GEREKÇE GÜNCELLENDİ: panel artık VERİ BASIYOR. Eski not "sekme BİLİNÇLİ
+   pending kalır" diyordu; o karar backend `186ffe9` ile çürüdü ve tablo/KPI
+   şeridi buraya eklendi. Kabuk (`__head`/`__title`/`__link`/`__body`) AYNEN
+   korunur — yalnız gövdenin içeriği değişti. */
 .section-stock {
   display: block;
 }
@@ -508,4 +509,127 @@
   font-size: var(--text-small);
   color: var(--color-text-muted);
   line-height: var(--leading-normal);
+}
+
+/* 🔴 KPI şeridi — DÖRT gerçek sayı (yer tutucu yok). Izgara `auto-fit`tir:
+   şantiye KPI şeridinin (`stok.css`) sabit dört sütunundan farklı olarak bu
+   panel sekme gövdesinin içinde dar bir alanda yaşar. */
+.section-stock__kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-2);
+  margin: 0 0 12px;
+}
+.section-stock__kpi {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+}
+.section-stock__kpi dt {
+  margin: 0;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.section-stock__kpi dd {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.section-stock__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.section-stock__table th,
+.section-stock__table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: top;
+}
+.section-stock__table th {
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+/* Sayısal sütunlar sağa yaslı + tabular: miktarlar göz hizasında karşılaştırılır. */
+.section-stock__num {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+/* 🔴 "Sarf" sütunu AYRI vurgulanır: ekranın cevapladığı asıl soru budur
+   ("bu bölümde ne harcandı"), "Atanan" ile aynı ağırlıkta basılmaz. */
+.section-stock__num--issued {
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.section-stock__item-name {
+  display: block;
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+.section-stock__item-code {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+/* Poz atfının YOKLUĞU meşrudur (fail-open) — "pending" gri tonu KULLANILMAZ,
+   çünkü bu bir eksiklik değil bir hâldir. */
+.section-stock__no-boq {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* STOK-BOLUM · D253-272 "Bölüm Malzeme Durumu" alt kartının satırları.
+   Kardeş kartın (`.section-workers`) ÖLÇÜLERİ AYNEN paylaşılır — iki alt kart
+   yan yana durur ve farklı satır yüksekliği ızgarayı bozardı. Ayrı sınıf
+   açılmasının sebebi sağ blokta İKİ sayı olmasıdır (Sarf + Atanan), kardeşte
+   tek sayı var. */
+.section-stock-card__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.section-stock-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-2);
+  border-radius: var(--radius-8);
+}
+.section-stock-card__name {
+  font-size: var(--text-body);
+  color: var(--color-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.section-stock-card__nums {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+/* 🔴 SARF baskın basılır: kartın cevapladığı asıl soru "ne harcandı"dır. */
+.section-stock-card__issued {
+  font-size: 13px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+.section-stock-card__assigned {
+  font-size: 11px;
+  color: var(--color-text-muted);
 }

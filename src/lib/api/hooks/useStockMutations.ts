@@ -4,6 +4,7 @@ import { unwrap } from "@/lib/api/unwrap";
 import type { components } from "@/lib/api/schema";
 import { STOCK_ITEMS_QUERY_KEY, type StockItemResponse } from "./useStockItems";
 import { STOCK_SUMMARY_QUERY_KEY } from "./useStockSummary";
+import { SECTION_STOCK_QUERY_KEY } from "./useSectionStock";
 import { SITE_STOCK_QUERY_KEY } from "./useSiteStock";
 import { WAREHOUSES_QUERY_KEY, type WarehouseResponse } from "./useWarehouses";
 
@@ -38,11 +39,17 @@ export type WarehouseCreate = components["schemas"]["WarehouseCreate"];
  * Bir hareket yazıldığında BAKİYE ve DURUM taşıyan HER şey bayatlar: E3 özeti,
  * künye listesi ve şantiye stok tablosu. Üçü birlikte geçersiz kılınır —
  * biri unutulursa ekran eski bakiyeyi basmaya devam eder.
+ *
+ * 🔴 STOK-BOLUM — DÖRDÜNCÜ anahtar eklendi. Satır artık `section_id`/
+ * `boq_item_id` taşıyabildiği için bir hareket BÖLÜM kırılımını da bayatlatır;
+ * `section-stock` geçersiz kılınmazsa `A1 › Malzeme` sekmesi az önce yazılan
+ * sarfı GÖSTERMEZ ve kullanıcı kaydın düştüğünü sanardı.
  */
 function invalidateStockDerived(queryClient: ReturnType<typeof useQueryClient>): void {
   queryClient.invalidateQueries({ queryKey: [STOCK_SUMMARY_QUERY_KEY] });
   queryClient.invalidateQueries({ queryKey: [STOCK_ITEMS_QUERY_KEY] });
   queryClient.invalidateQueries({ queryKey: [SITE_STOCK_QUERY_KEY] });
+  queryClient.invalidateQueries({ queryKey: [SECTION_STOCK_QUERY_KEY] });
 }
 
 /**

@@ -87,6 +87,29 @@ export interface SiteTimesheetParams extends SiteParams {
   section?: RouteId;
 }
 
+/**
+ * 🔴 STOK-BOLUM (2026-08-29) — şantiye stok ekranı ARTIK bölüm süzgeci OKUR.
+ *
+ * Önceki tur `stock`u bilerek `SiteParams` bırakmıştı ve gerekçesi ÖLÇÜLMÜŞTÜ:
+ * *"`SiteStockView` HİÇ `useSearchParams` kullanmaz → parametre eklemek ÖLÜ
+ * query yazmak olurdu"*. O ölçüm BUGÜN BAYATLADI: backend `186ffe9`
+ * `GET /sites/{site_id}/stock`a `?section_id=` süzgecini açtı ve ekran onu
+ * okumaya başladı.
+ *
+ * ⚠️ SÜZGECİN ANLAMI DAR: satır KÜMESİNİ daraltır, `balance`ı DEĞİŞTİRMEZ.
+ * Cümlesi *"bu bölümde kullanılmış malzemelerin ŞANTİYE bakiyesi"*dir — bölümün
+ * KENDİ miktarları `GET /sections/{id}/stock`tan gelir. Üretici bu ayrımı
+ * taşıyamaz; etiketi basan ekran (`SiteStockView`) taşır.
+ *
+ * Query anahtarı `section`tır — `timesheet` ile AYNI ad (iki ekran aynı kavramı
+ * aynı adla taşır); backend sorgu parametresi `section_id` ise HOOK katmanında
+ * kurulur, URL'de değil.
+ */
+export interface SiteStockParams extends SiteParams {
+  /** Verilmezse süzgeçsiz şantiye görünümü — `?section=` EKLENMEZ. */
+  section?: RouteId;
+}
+
 const PROJECTS = "/projeler";
 const SITES_SEGMENT = "santiyeler";
 const SECTIONS_SEGMENT = "bolumler";
@@ -131,7 +154,7 @@ export const routes = {
       boq: (p: SiteParams) => `${siteBase(p)}/is-kalemleri`,
       documents: (p: SiteParams) => `${siteBase(p)}/belgeler`,
       progressPayments: (p: SiteParams) => `${siteBase(p)}/hakedisler`,
-      stock: (p: SiteParams) => `${siteBase(p)}/stok`,
+      stock: ({ section, ...p }: SiteStockParams) => `${siteBase(p)}/stok${qs({ section })}`,
       stockEntry: (p: SiteParams) => `${siteBase(p)}/stok/giris`,
       timesheet: ({ section, ...p }: SiteTimesheetParams) =>
         `${siteBase(p)}/puantaj${qs({ section })}`,

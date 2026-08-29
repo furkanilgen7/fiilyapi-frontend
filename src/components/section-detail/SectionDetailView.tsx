@@ -5,12 +5,13 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
-import { CardEmptyState } from "@/components/dashboard/CardEmptyState";
 import { currentPeriod } from "@/components/timesheet/month";
 import { useTimesheetData } from "@/components/timesheet/useTimesheetData";
 import { useBoq } from "@/lib/api/hooks/useBoq";
 import { useSection } from "@/lib/api/hooks/useSection";
 import { useSite } from "@/lib/api/hooks/useSites";
+import { useSectionStock } from "@/lib/api/hooks/useSectionStock";
+import { STOCK_LIST_MAX_LIMIT } from "@/lib/api/hooks/useStockItems";
 import { useSiteDiaryEntries } from "@/lib/api/hooks/useSiteDiary";
 import { useSiteSubcontractorPayments } from "@/lib/api/hooks/useSiteSubcontractorPayments";
 import { isForbidden } from "@/lib/api/unwrap";
@@ -21,12 +22,13 @@ import { SectionBoqCard } from "./SectionBoqCard";
 import { SectionDiaryPanel } from "./SectionDiaryPanel";
 import { SectionPaymentsPanel } from "./SectionPaymentsPanel";
 import { SectionStockPanel } from "./SectionStockPanel";
+import { SectionStockSummaryList } from "./SectionStockSummaryList";
 import { SectionTimesheetPanel } from "./SectionTimesheetPanel";
 import { SectionWorkersList } from "./SectionWorkersList";
 import { SECTION_TABS, SectionDetailTabs } from "./SectionDetailTabs";
 import { SectionHeroCard } from "./SectionHeroCard";
 import "./section-detail.css";
-import { routes, type SiteTimesheetParams } from "@/lib/routes";
+import { routes, type SiteStockParams, type SiteTimesheetParams } from "@/lib/routes";
 
 // Sekme şeridi ve `SECTION_TABS` tanımı `SectionDetailTabs.tsx`tedir (F-BOLLINK
 // ayırması — bekçi testinin hook mock'u olmadan render edebilmesi için).
@@ -56,11 +58,22 @@ const SIDE_LINKS = {
     carriesSection: true,
     title: "Şantiye puantajını bu bölümün süzgeciyle açar",
   },
+  // 🔴 STOK-BOLUM — `carriesSection: false` KORUNUR ama GEREKÇESİ DEĞİŞTİ.
+  //
+  // Eski gerekçe ÖLÇÜMDÜ ve BAYATLADI: *"`SiteStockView` HİÇ `useSearchParams`
+  // kullanmaz → parametre eklemek ÖLÜ query yazmak olurdu"*. Ekran artık
+  // `?section=` OKUYOR (backend `?section_id=` süzgeci açıldı).
+  //
+  // Bağlantı yine de süzgeci TAŞIMAZ ve sebebi ETİKETİN KENDİSİDİR: bu kartın
+  // bağlantısı **"Tümü →"**dür — kullanıcıya şantiyenin TAMAMINI vaat eder.
+  // Süzgeci sessizce eklemek etiketle çelişirdi. Bölüm süzgeçli hedef "Malzeme"
+  // SEKMESİNİN kendi bağlantısındadır (`SectionStockPanel.siteStockHref`), ve
+  // orada etiket de o cümleyi kurar.
   stock: {
-    route: (p: SiteTimesheetParams) => routes.projects.sites.stock(p),
+    route: (p: SiteStockParams) => routes.projects.sites.stock(p),
     label: "Tümü →",
     carriesSection: false,
-    title: "Şantiye genelindeki stok ekranını açar (bölüm süzgeci henüz yok)",
+    title: "Şantiye genelindeki stok ekranını açar (bölüm süzgeci UYGULANMAZ)",
   },
 } as const;
 
@@ -102,6 +115,14 @@ export function SectionDetailView() {
   // de dönem süzgeci VERİLMEZ: böylece sorgu anahtarı şantiye günlüğü ekranıyla
   // AYNI kalır (`["site-diary-entries", siteId, null, null, null, null]`) ve
   // önbellek paylaşılır. Süzgeç yalnız GÖRÜNÜME uygulanır.
+  // 🔴 STOK-BOLUM — bölümün malzeme kırılımı. Hook koşullu ÇAĞRILAMAZ (kardeş
+  // notların aynısı), bu yüzden sekme seçili olmasa da bağlanır: alt kart
+  // ("Bölüm Malzeme Durumu") sekme seçili OLMADAN da bu veriyi basar, yani TEK
+  // çağrı iki yüzeyi birden besler (ikinci bir ağ isteği oluşmaz).
+  //
+  // Sayfalama tavanı AÇIKÇA gönderilir: sunucu varsayılanı 50'dir ve 51.
+  // (malzeme, poz) çiftini SESSİZCE düşürürdü (TB3/F-TH kırpılma dersi).
+  const sectionStock = useSectionStock(sectionId, { limit: STOCK_LIST_MAX_LIMIT });
   const diaryEntries = useSiteDiaryEntries(siteId);
   // F-BLMSEK T2 — bölüm süzgeçli TAŞERON hakedişi. Hook koşullu ÇAĞRILAMAZ
   // (yukarıdaki BOQ notunun aynısı), bu yüzden sekme seçili olmasa da bağlanır.
@@ -190,15 +211,25 @@ export function SectionDetailView() {
           />
         );
       case "stok":
-        // 🔴 F-BLMSEK T3 — TEK kalan pending sekme. Diğer üçünün aksine bölüm
-        // bağı AÇILAMAZ (ölçüldü, `inventory/` SIFIR `section_id` isabeti);
-        // panel bunu SÖYLER ve kullanıcıyı şantiye stok ekranına yönlendirir.
-        // `sideLinkHref` TEK tanımı korunur — `carriesSection: false` kararı
-        // burada da geçerlidir, `?section=` EKLENMEZ.
+        // 🔴 STOK-BOLUM — ARTIK PENDING DEĞİL. Beş sekmenin BEŞİ de gerçek veri
+        // basıyor; bu, `SECTION_TABS`taki son `contentPending` alanının da
+        // kalkması demektir (bkz. `SectionDetailTabs.tsx`).
+        //
+        // Bağlantı BURADA süzgeci TAŞIR (alt karttaki "Tümü →"nün aksine):
+        // sekmenin cümlesi zaten "bu bölümün malzemesi"dir, dolayısıyla
+        // `?section=` etiketle ÇELİŞMEZ, onu TAMAMLAR.
         return (
           <SectionStockPanel
             sectionName={section.name}
-            stockHref={sideLinkHref(SIDE_LINKS.stock)}
+            siteStockHref={routes.projects.sites.stock({
+              projectId,
+              siteId,
+              section: sectionId,
+            })}
+            rows={sectionStock.data?.items}
+            kpis={sectionStock.data?.kpis}
+            isLoading={sectionStock.isLoading}
+            isError={sectionStock.isError}
           />
         );
       default:
@@ -238,7 +269,7 @@ export function SectionDetailView() {
         onSelect={setActiveTab}
       />
 
-      {/* 🔴 F-BLMSEK T3 — Malzeme artık jenerik `CardEmptyState` dalına
+      {/* 🔴 STOK-BOLUM — BEŞ sekmenin BEŞİ de gerçek veri basıyor (eski not
           DÜŞMEZ: `livePanel()` dispatch'i BEŞ sekmenin BEŞİNİ de kapsar
           (dördü gerçek veri, "stok" `SectionStockPanel` ile kendi spesifik
           gerekçesini basar). Eski `activeTabDef.contentLive` dalı jenerik
@@ -288,9 +319,17 @@ export function SectionDetailView() {
               {SIDE_LINKS.stock.label}
             </Link>
           </div>
-          <CardEmptyState
-            title="Malzeme durumu bu bölümde henüz görüntülenemiyor"
-            pendingModule="section_stock"
+          {/* 🔴 D253-272 — YER TUTUCU SİLİNDİ. Eski hâli `CardEmptyState` +
+              `pendingModule="section_stock"` idi ve gerekçesi bir ÖLÇÜMDÜ
+              ("`inventory/` içinde `section_id` SIFIR isabet"); ölçüm backend
+              `186ffe9` ile BAYATLADI. Bağ AÇIK olduğu hâlde "henüz
+              görüntülenemiyor" basmak CANLIYI YALANLARDI ("Bu Bölümdeki
+              İşçiler" kartının aynı gerekçeyle silinmiş yer tutucusu emsaldir).
+              Veri "Malzeme" sekmesiyle AYNI çağrıdan gelir — ikinci istek yok. */}
+          <SectionStockSummaryList
+            rows={sectionStock.data?.items}
+            isLoading={sectionStock.isLoading}
+            isError={sectionStock.isError}
           />
         </div>
       </div>

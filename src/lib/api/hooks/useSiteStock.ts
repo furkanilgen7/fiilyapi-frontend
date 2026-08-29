@@ -17,13 +17,20 @@ export type SiteStockKpis = components["schemas"]["SiteStockKpis"];
 export const SITE_STOCK_QUERY_KEY = "site-stock";
 
 /**
- * Sayfalama DIŞINDA süzgeç YOKTUR (openapi.json): kategori/arama/durum
- * parametreleri bu uçta bilerek açılmamıştır — ŞS mockup'ında süzgeç şeridi
- * yok. Uydurma parametre gönderilmez.
+ * Kategori/arama/durum parametreleri bu uçta bilerek açılmamıştır — ŞS
+ * mockup'ında süzgeç şeridi yok. Uydurma parametre gönderilmez.
+ *
+ * 🔴 STOK-BOLUM (backend `186ffe9`) — `section_id` AÇILDI ve ANLAMI DARDIR:
+ * **SATIR KÜMESİNİ daraltır, `balance`ı DEĞİŞTİRMEZ.** Süzülmüş listedeki
+ * bakiye hâlâ ŞANTİYE bakiyesidir; bölümün kendi miktarları DEĞİLDİR (onlar
+ * `useSectionStock`tan gelir). Bu ayrımı ekran ETİKETLEMEK ZORUNDADIR —
+ * "bölümün stoğu" diye basmak canlı bir yalan olurdu.
  */
 export interface SiteStockFilter {
   limit?: number;
   offset?: number;
+  /** Verilmezse süzgeç GÖNDERİLMEZ (anahtar hiç kurulmaz). */
+  sectionId?: string;
 }
 
 export function useSiteStock(
@@ -32,7 +39,16 @@ export function useSiteStock(
 ): UseQueryResult<SiteStockResponse, Error> {
   return useQuery({
     enabled: siteId.length > 0,
-    queryKey: [SITE_STOCK_QUERY_KEY, siteId, filter.limit ?? null, filter.offset ?? null],
+    // 🔴 Süzgeç sorgu ANAHTARINDADIR: aksi hâlde süzülmüş yanıt süzgeçsiz
+    // görünümün önbelleğini EZER ve kullanıcı "Tümü"ye dönünce eksik liste
+    // görürdü (`useBoq` bölüm süzgeci emsali).
+    queryKey: [
+      SITE_STOCK_QUERY_KEY,
+      siteId,
+      filter.limit ?? null,
+      filter.offset ?? null,
+      filter.sectionId ?? null,
+    ],
     queryFn: async () =>
       unwrap(
         await backendClient.GET("/sites/{site_id}/stock", {
@@ -41,6 +57,7 @@ export function useSiteStock(
             query: {
               ...(filter.limit !== undefined ? { limit: filter.limit } : {}),
               ...(filter.offset !== undefined ? { offset: filter.offset } : {}),
+              ...(filter.sectionId ? { section_id: filter.sectionId } : {}),
             },
           },
         }),
