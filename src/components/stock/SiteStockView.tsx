@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname, useSearchParams } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { SiteDetailTabs } from "@/components/site-detail/SiteDetailTabs";
@@ -17,9 +17,11 @@ import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncatio
 
 import { SiteStockKpiStrip } from "./SiteStockKpiStrip";
 import { SiteStockTable } from "./SiteStockTable";
+import { routes } from "@/lib/routes";
 import {
   siteStockEntryHref,
-  SITE_STOCK_COLUMN_PENDING_REASON,
+  SITE_STOCK_NEED_PENDING_REASON,
+  SITE_STOCK_SECTION_FILTER_NOTICE,
   SITE_STOCK_DETAIL_PENDING_REASON,
   SITE_STOCK_ORDER_PENDING_REASON,
 } from "./stock-labels";
@@ -42,6 +44,7 @@ import "./stock.css";
  */
 export function SiteStockView() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { projectId, siteId } = useParams<{ projectId: string; siteId: string }>();
 
   const permission = useModulePermission("stock");
@@ -51,7 +54,17 @@ export function SiteStockView() {
   const siteQuery = useSite(siteId);
   // Kırpılma korkuluğu (TB3/F-TH dersi): sunucu varsayılanı 50'dir ve 51.
   // malzemeyi SESSİZCE düşürürdü — tavan AÇIKÇA gönderilir.
-  const stockQuery = useSiteStock(siteId, { limit: STOCK_LIST_MAX_LIMIT });
+  // 🔴 STOK-BOLUM — bölüm süzgeci URL'DEN okunur (`?section=`), yerel state'ten
+  // DEĞİL: bağlantı Bölüm Detayı › "Malzeme" sekmesinden gelir ve paylaşılabilir
+  // olmalıdır (`SiteTimesheetView` `?section=` emsali — AYNI query adı).
+  //
+  // ⚠️ Bu SUNUCU süzgecidir (puantajın istemci süzgecinin aksine): satır
+  // kümesini sunucu daraltır. Bakiye DEĞİŞMEZ — bkz. bandın metni.
+  const sectionParam = searchParams.get("section")?.trim() || null;
+  const stockQuery = useSiteStock(siteId, {
+    limit: STOCK_LIST_MAX_LIMIT,
+    ...(sectionParam ? { sectionId: sectionParam } : {}),
+  });
 
   if (!permission.canView || isForbidden(stockQuery.error)) return <AccessDenied />;
 
@@ -98,15 +111,36 @@ export function SiteStockView() {
 
       {/* Devre dışı yüzeylerin gerekçesi `title`da görünmez kalır — metne de
           basılır (WORKFLOW §3: zarif düşüş sessiz olamaz). */}
+      {/* 🔴 STOK-BOLUM — BANT BÖLÜNDÜ. Eski cümle "Aylık İhtiyaç VE Bölüm
+          sütunlarının veri kaynağı henüz yok" diyordu; "Bölüm" artık GERÇEK
+          (`stock_entry_lines.section_id`) ve o cümle canlıyı yalanlardı.
+          Yer tutucu KALAN tek sütun "Aylık İhtiyaç"tır. */}
       <p
         className="stok__notice stok__notice--muted"
         data-testid="santiye-stok-pending-notice"
       >
-        “Aylık İhtiyaç” ve “Bölüm” sütunlarının veri kaynağı henüz yok; değer
-        uydurulmaz, “—” gösterilir ({SITE_STOCK_COLUMN_PENDING_REASON}). Satır
+        “Aylık İhtiyaç” sütununun veri kaynağı henüz yok; değer uydurulmaz, “—”
+        gösterilir ({SITE_STOCK_NEED_PENDING_REASON}). “Bölüm” sütunu stok
+        hareketlerinde atfedilmiş bölümleri basar; atıf yoksa boş kalır. Satır
         sonundaki sipariş düğmeleri devre dışıdır (
         {SITE_STOCK_ORDER_PENDING_REASON}); {SITE_STOCK_DETAIL_PENDING_REASON}.
       </p>
+
+      {sectionParam !== null && (
+        // Süzgeç GÖRÜNÜR olmak ZORUNDADIR: sessizce daraltılmış bir liste,
+        // kullanıcıya şantiyede daha az malzeme olduğu YALANINI söylerdi.
+        // Metin süzgecin DAR anlamını da yazar (bakiye şantiye bakiyesidir).
+        <p className="stok__notice" data-testid="santiye-stok-section-filter">
+          {SITE_STOCK_SECTION_FILTER_NOTICE}{" "}
+          <Link
+            className="stok__notice-link"
+            href={routes.projects.sites.stock({ projectId, siteId })}
+            data-testid="santiye-stok-section-filter-clear"
+          >
+            Süzgeci kaldır
+          </Link>
+        </p>
+      )}
 
       {loadError && (
         <p className="stok__notice" data-testid="santiye-stok-error">

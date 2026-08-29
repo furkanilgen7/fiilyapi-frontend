@@ -168,13 +168,40 @@ export const SITE_STOCK_ORDER_PENDING_REASON = pendingModuleLabel(
 );
 
 /**
- * ŞS 100/101 "Aylık İhtiyaç" + "Bölüm" sütunlarının ORTAK gerekçesi. Satır
- * hücreleri kendi gerekçesini SUNUCUNUN zarfından okur (`pending_module`);
- * bu sabit yalnızca tablo üstündeki görünür açıklama bandı içindir.
+ * ŞS 100 "Aylık İhtiyaç" sütununun gerekçesi.
+ *
+ * 🔴 STOK-BOLUM (2026-08-29) — BU SABİT ARTIK **TEK** SÜTUNU ANLATIR. Eskiden
+ * "Aylık İhtiyaç" + "Bölüm" için ORTAK gerekçeydi; "Bölüm" sütunu backend
+ * `186ffe9` ile GERÇEĞE döndü (`stock_entry_lines.section_id`). İkisini ortak
+ * cümlede bırakmak, dolu basan bir sütun için "kaynağı henüz yok" demek
+ * olurdu — canlıyı yalanlayan bir metin.
+ *
+ * "Aylık İhtiyaç" hâlâ yer tutucudur ve KAYNAĞI YOKTUR: `PlanResourceKind`
+ * yalnız `crew`/`equipment` taşır, plan ızgarasında malzeme satırı yoktur
+ * (backend `SiteStockRow` docstring'i, P-YT3 denetimi). Bekleyen şey bir MODÜL
+ * değil, o modülün hiç taşımadığı bir KAVRAMdır.
+ *
+ * Satır hücreleri kendi gerekçesini SUNUCUNUN zarfından okumaya devam eder
+ * (`pending_module`); bu sabit yalnızca tablo üstündeki açıklama bandı içindir.
  */
-export const SITE_STOCK_COLUMN_PENDING_REASON = pendingModuleLabel(
+export const SITE_STOCK_NEED_PENDING_REASON = pendingModuleLabel(
   STOCK_SITE_PLANNING_PENDING_MODULE,
 );
+
+/**
+ * 🔴 `?section=` SÜZGECİNİN BANDI — ANLAMI DAR VE YANLIŞ ETİKETLENEMEZ.
+ *
+ * Backend `?section_id=` **SATIR KÜMESİNİ daraltır, `balance`ı DEĞİŞTİRMEZ**:
+ * bakiye depo düzeyindedir ("STOK DEPODA DURUR, BÖLÜM TÜKETİR"). Yani süzülmüş
+ * tabloda görülen sayı hâlâ ŞANTİYE bakiyesidir — bölümün kendi miktarları
+ * DEĞİLDİR. Bu bandı "bölümün stoğu" diye yazmak canlı bir yalan olurdu;
+ * bölümün kendi miktarları `GET /sections/{id}/stock`tan gelir ve Bölüm
+ * Detayı › "Malzeme" sekmesinde basılır.
+ */
+export const SITE_STOCK_SECTION_FILTER_NOTICE =
+  "Liste, bu bölümde kullanılmış malzemelerle sınırlandırıldı. Gösterilen bakiye " +
+  "ŞANTİYE bakiyesidir — bölümün kendi miktarları değildir; onlar bölüm detayındaki " +
+  "“Malzeme” sekmesindedir.";
 
 /**
  * ŞS 158/168 "Detay" düğmesi — malzeme detay ekranının mockup'ı ÇİZİLMEMİŞTİR

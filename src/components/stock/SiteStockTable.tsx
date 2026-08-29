@@ -54,12 +54,25 @@ function sectionText(placeholder: SiteStockRow["section"]): string | null {
  * ŞS 95-163 · şantiye bakiye tablosu: Malzeme (+kod) · Birim · Mevcut Stok ·
  * Aylık İhtiyaç · Bölüm · Durum · (başlıksız aksiyon sütunu).
  *
- * ⚠️ İKİ SÜTUNUN BACKEND KAYNAĞI YOKTUR (spec §1, backend `SiteStockRow`
- * açıklaması): "Aylık İhtiyaç" ve "Bölüm" birer YER TUTUCU ZARFI olarak gelir
- * (`monthly_need` = MetricPlaceholder, `section` = ListPlaceholder) ve bugün
- * `available: false`tur. Sütunlar SİLİNMEZ, mockup'ın "15"/"Kat 6–10 Kaba
- * İnşaat" örnekleri UYDURULMAZ: "—" + görünür gerekçe basılır. Zarf bir gün
- * `true` dönerse sunucunun değeri OLDUĞU GİBİ görünür.
+ * ⚠️ İKİ SÜTUN DA ZARF TAŞIR, AMA ARTIK YALNIZ BİRİ BOŞTUR.
+ *
+ * 🔴 STOK-BOLUM (2026-08-29): **"Bölüm" GERÇEĞE DÖNDÜ.** `section`
+ * (`ListPlaceholder`) artık `available: true` + gerçek bölüm ADLARI döner —
+ * kaynağı `stock_entry_lines.section_id`dir. Zarfın `pending_module` alanı
+ * `site_planning` olarak KORUNUR (dolu zarfta hiç okunmaz; anahtarı
+ * değiştirmek canlı bir gerekçe metnini bayatlatırdı) ve hücre gerekçeyi
+ * YALNIZ `available: false` iken basar — bu dal, atıf hiç yapılmamış kalemler
+ * için hâlâ çalışır.
+ *
+ * ⚠️ "Aylık İhtiyaç" HÂLÂ YER TUTUCUDUR ve kaynağı GELMEYECEKTİR:
+ * `PlanResourceKind` yalnız `crew`/`equipment` taşır, plan ızgarasında malzeme
+ * satırı yoktur. Sütun SİLİNMEZ, mockup'ın "15" örneği UYDURULMAZ: "—" +
+ * görünür gerekçe basılır.
+ *
+ * Aşağıdaki iki türev fonksiyon DEĞİŞMEDİ ve değişmemeliydi: ikisi de zaten
+ * "zarf doluysa sunucunun değerini bas" diyordu. `section`ın dolması bu yüzden
+ * hücrede EK KOD gerektirmedi — yalnız çevresindeki AÇIKLAMA metinleri
+ * bayatlamıştı.
  *
  * ⚠️ Rozet ve bakiye rengi SUNUCUNUN `status` damgasındandır; eşik formülü
  * istemcide YENİDEN HESAPLANMAZ. Eksi bakiye meşrudur ve kırmızı basılır.
@@ -140,7 +153,8 @@ export function SiteStockTable({ rows, isLoading, isError }: SiteStockTableProps
                     </span>
                   )}
                 </td>
-                {/* 111 — PENDING: kaynak yok, bölüm adı uydurulmaz */}
+                {/* 111 — GERÇEK: sunucu bölüm adlarını basar. Atıf YOKSA
+                    zarf boş gelir ve gerekçeli "—" basılır (uydurma yok). */}
                 <td className="stok-table__td">
                   {section ?? (
                     <span

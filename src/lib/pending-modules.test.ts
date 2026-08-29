@@ -87,26 +87,10 @@ describe("pendingModuleLabel", () => {
     expect(pendingModuleLabel("procurement")).toBe(pendingModuleLabel("purchasing"));
   });
 
-  // 🔴 F-BOLLINK: bölüm detayına özel anahtar. Metin "modül yok" DEMEZ —
-  // `/stok` modülünün şantiye seviyesinde yazılı rotası var, eksik olan bölüm
-  // bağı DEĞİL (F-BLMSEK T3 ölçümü) — stok hareketi kaydının ALANI.
-  // 🔴 BOQ-SEC-F GÖÇÜ: `section_boq` listeden ÇIKARILDI — o bağ artık AÇIK,
-  // sekme gerçek tablo basıyor. Anahtarın YOKLUĞU ayrıca çakılır (aşağıda).
-  it("F-BOLLINK section_stock esler ve 'modulle birlikte gelir' DEMEZ", () => {
-    const label = pendingModuleLabel("section_stock");
-    expect(label).not.toBe("İlgili modülle birlikte gelir");
-    expect(label).not.toMatch(/modülüyle birlikte gelir/);
-  });
-
-  // 🔴 F-BLMSEK T3 · `section_stock`'un YENİ metni MODÜL değil ALAN adlandırır
-  // (`work_category` emsali) — eski "bu bölüme henüz kırılmıyor" kalıbı
-  // `section_progress_payments`/`section_site_diary` ile AYNI sesteydi; artık
-  // ayrı ve dürüst: stok hareketi KAYDININ KENDİSİ bölüm alanı taşımıyor.
-  it("section_stock ALANI adlandirir (kayit bolum alani tasimiyor)", () => {
-    expect(pendingModuleLabel("section_stock")).toBe(
-      "Stok hareketi bölüm alanı taşımıyor (hareketler şantiye deposunda tutulur)",
-    );
-  });
+  // 🔴 F-BOLLINK'in BEŞ bölüm anahtarının BEŞİ DE kapandı: `section_boq`
+  // (BOQ-SEC-F) · `section_timesheet` (F-BLMPUAN) · `section_site_diary` +
+  // `section_progress_payments` (F-BLMSEK T1/T2) · `section_stock`
+  // (STOK-BOLUM). Beşinin de YOKLUĞU aşağıda tek tek çakılır.
 
   // BOQ-SEC-F bekçisi: anahtar geri gelirse birileri canlı sekmeye yeniden
   // "henüz bağlanamıyor" gerekçesi bağlamış demektir — bu test o çürümeyi
@@ -147,6 +131,34 @@ describe("pendingModuleLabel", () => {
   // sekmesine yeniden "bu bölüme kırılmıyor" gerekçesi bağlamış demektir.
   it("section_timesheet anahtari ARTIK YOK - bolum bagi acildi", () => {
     expect(pendingModuleLabel("section_timesheet")).toBe("İlgili modülle birlikte gelir");
+  });
+
+  // 🔴 STOK-BOLUM TERS BEKÇİSİ — bu dilimin SİLME kararını koruyan test.
+  //
+  // Silinen anahtarın gerekçesi bir ÖLÇÜMDÜ ("`inventory/` içinde `section_id`
+  // SIFIR isabet") ve ölçüm backend `186ffe9` ile çürüdü. Kanon: *"ölçüme
+  // dayanan silme kararı, ölçüm bayatlayınca GERİ ALINIR."* Bu tersine de
+  // işler ve BU DEPODA BİR KEZ İŞLEDİ: `site_diary` anahtarı silinmiş, ILR onu
+  // geri getirmiş ve ekran YALAN basmaya başlamıştı.
+  //
+  // Anahtar geri gelirse birileri CANLI "Malzeme" sekmesine (ve gerçek veri
+  // basan "Bölüm Malzeme Durumu" kartına) yeniden "bölüm alanı taşımıyor"
+  // gerekçesi bağlamış demektir. Yedek metne düşmesi, eşlenmemiş olmasının
+  // KANITIDIR — anahtarın varlığını değil YOKLUĞUNU çakar.
+  it("section_stock anahtari ARTIK YOK - bolum bagi acildi (STOK-BOLUM)", () => {
+    expect(pendingModuleLabel("section_stock")).toBe("İlgili modülle birlikte gelir");
+  });
+
+  // POZİTİF KONTROL — yukarıdaki ters bekçi "her anahtara kızan" bozuk bir
+  // kural DEĞİLDİR: hâlâ eşlenen bir bölüm anahtarı yedek metne DÜŞMEZ.
+  // Bu iddia olmadan `MODULE_LABELS` tamamen boşalsa bile ters bekçiler yeşil
+  // kalırdı.
+  it("POZITIF KONTROL - hala eslenen bolum anahtari yedek metne DUSMEZ", () => {
+    const label = pendingModuleLabel("section_employer_progress_payments");
+    expect(label).not.toBe("İlgili modülle birlikte gelir");
+    expect(label).toBe(
+      "İşveren hakedişi bölüme kırılmıyor (hakediş kaydı bölüm alanı taşımıyor)",
+    );
   });
 
   // 🔴 F-PKK T1 · Proje Özeti (KY/KK) + Paylaşım Tablosu (KKP) ekranlarının

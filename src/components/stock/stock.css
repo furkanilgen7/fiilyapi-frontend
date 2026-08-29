@@ -287,3 +287,11 @@
   font-size: 12px;
   color: var(--color-text-subtle);
 }
+
+/* STOK-BOLUM · `?section=` süzgeç bandındaki "Süzgeci kaldır" bağlantısı.
+   Bandın kendisi `.stok__notice`tir; yalnız bağlantı ayrıca renklenir. */
+.stok__notice-link {
+  color: var(--color-primary);
+  font-weight: var(--weight-medium);
+  text-decoration: underline;
+}
