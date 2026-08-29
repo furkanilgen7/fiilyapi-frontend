@@ -16640,7 +16640,7 @@ function buildPayrollLineResponse(
     personnel_id: line.personnel_id,
     personnel_name: line.personnel_name,
     personnel_source: line.personnel_source,
-    days: line.days,
+    days: line.days === null ? null : String(line.days),
     gross_amount: amounts === null ? null : payrollKurus(amounts.gross),
     deduction_amount: amounts === null ? null : payrollKurus(amounts.deduction),
     net_amount: amounts === null ? null : payrollKurus(amounts.net),

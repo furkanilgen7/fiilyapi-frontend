@@ -62,7 +62,7 @@ function line(overrides: Partial<PayrollLineResponse> = {}): PayrollLineResponse
     personnel_id: "p-1",
     personnel_name: "Ayşe Demir",
     personnel_source: "company",
-    days: 21,
+    days: "21",
     gross_amount: "37800.00",
     deduction_amount: "11262.00",
     net_amount: "26538.00",
