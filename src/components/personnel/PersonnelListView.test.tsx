@@ -165,11 +165,21 @@ describe("PersonnelListView — başlık, sekmeler, KPI", () => {
     expect(button).toHaveAttribute("title", expect.stringContaining("Dışa aktarma"));
   });
 
-  it("'+ Personel Ekle' mevcut forma döner (?donus=/personel)", () => {
+  // 🔴 URL-1 ÖLÇÜLMÜŞ SAPMA — `%2F`, eskiden ham `/` idi.
+  // `?donus=` anahtarını kuran İKİ çağıran vardı ve BİRBİRİNDEN FARKLI
+  // davranıyorlardı: burası değeri HAM yazıyordu, `AddPersonnelLink` ise
+  // `encodeURIComponent`ten geçiriyordu. Merkezîleştirme ikisinden birini
+  // seçmeyi ZORUNLU kıldı ve kodlayan hâl SEÇİLDİ — çünkü `AddPersonnelLink`
+  // sözleşmesi gereği dönüş hedefi SORGU DİZESİ TAŞIYABİLİR
+  // (`/puantaj?iso_year=2026&iso_week=32`); kodlanmazsa o `?` dönüş yolunu
+  // KESERDİ. Davranış AYNIDIR: `PersonnelForm` değeri
+  // `searchParams.get(RETURN_PARAM)` ile okur ve `URLSearchParams` `%2F`yi de
+  // ham `/`yi de aynı `/personel` dizesine çözer.
+  it("'+ Personel Ekle' mevcut forma döner (?donus=%2Fpersonel)", () => {
     render(<PersonnelListView />);
     expect(screen.getByRole("link", { name: "+ Personel Ekle" })).toHaveAttribute(
       "href",
-      "/personel/yeni?donus=/personel",
+      "/personel/yeni?donus=%2Fpersonel",
     );
   });
 

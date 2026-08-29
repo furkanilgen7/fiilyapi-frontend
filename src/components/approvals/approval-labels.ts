@@ -235,7 +235,11 @@ export function approvalDetailTarget(
   documentType: string,
   documentId: string,
 ): ApprovalDetailTarget {
-  const id = encodeURIComponent(documentId);
+  // 🔴 KİMLİK BURADA KODLANMAZ — `routes.*` üreticisi her segmenti kendisi
+  // `encodeURIComponent`ten geçirir. Önceden burada bir ön kodlama vardı ve
+  // göç sırasında ÇİFT KODLAMA üretti (`a/b` → `a%252Fb`); testteki elle
+  // yazılmış beklenti yakaladı.
+  const id = documentId;
   switch (documentType) {
     case "progress_payment":
       return { label: APPROVAL_DETAIL_LABEL, href: routes.progressPayments.detail({ paymentId: id }), reason: null };

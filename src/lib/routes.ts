@@ -51,15 +51,22 @@ function seg(value: RouteId): string {
  * Sorgu dizesini kurar; `undefined`/boş değerli anahtarlar ATLANIR ve hiç
  * anahtar kalmazsa "?" bile eklenmez — böylece süzgeçsiz çağrı bugünkü
  * çıplak yolla BİREBİR aynı string'i üretir.
+ *
+ * 🔴 `URLSearchParams` KULLANILMAZ, `encodeURIComponent` KULLANILIR. İlk
+ * yazımda `URLSearchParams` vardı ve ÜRETİLEN URL'İ DEĞİŞTİRDİ: o sınıf
+ * `application/x-www-form-urlencoded` kodlar — boşluk `%20` değil `+`, `/`
+ * ise `%2F` olur. `?donus=/personel` bağlantısı sessizce `?donus=%2Fpersonel`
+ * hâline geldi. Kusuru elle URL yazan testler yakaladı (bkz. bekçinin
+ * "testler kapsam dışı" gerekçesi) — üretici ile iddia aynı yardımcıyı
+ * paylaşsaydı ikisi BİRLİKTE kayar ve hiçbir şey kırılmazdı.
  */
 function qs(params: Record<string, string | number | undefined | null>): string {
-  const search = new URLSearchParams();
+  const pairs: string[] = [];
   for (const [key, value] of Object.entries(params)) {
     if (value === undefined || value === null || value === "") continue;
-    search.set(key, String(value));
+    pairs.push(`${key}=${encodeURIComponent(String(value))}`);
   }
-  const rendered = search.toString();
-  return rendered === "" ? "" : `?${rendered}`;
+  return pairs.length === 0 ? "" : `?${pairs.join("&")}`;
 }
 
 /* ─── Parametre nesneleri ──────────────────────────────────────────────── */
