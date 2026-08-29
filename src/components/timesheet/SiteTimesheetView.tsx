@@ -83,7 +83,6 @@ export function SiteTimesheetView() {
   // kendi `id`sini hem PROJESININ `id`sini tasir, yani ikinci bir istek YOK.
   // Cozulene kadar bos string gider ve hook'lar kendi `enabled` kapilarinda durur.
   const siteId = siteQuery.data?.id ?? "";
-  const projectId = siteQuery.data?.project.id ?? "";
   const sectionsQuery = useSiteSections(siteId);
 
   if (!permission.canView) return <AccessDenied />;

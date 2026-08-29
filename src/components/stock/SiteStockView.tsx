@@ -61,7 +61,6 @@ export function SiteStockView() {
   // kendi `id`sini hem PROJESININ `id`sini tasir, yani ikinci bir istek YOK.
   // Cozulene kadar bos string gider ve hook'lar kendi `enabled` kapilarinda durur.
   const siteId = siteQuery.data?.id ?? "";
-  const projectId = siteQuery.data?.project.id ?? "";
 
   // Kırpılma korkuluğu (TB3/F-TH dersi): sunucu varsayılanı 50'dir ve 51.
   // malzemeyi SESSİZCE düşürürdü — tavan AÇIKÇA gönderilir.

@@ -8269,7 +8269,7 @@ export interface components {
             /** Projects */
             projects: components["schemas"]["DashboardProjectCard"][];
             receivables: components["schemas"]["MetricPlaceholder"];
-            risks: components["schemas"]["ListPlaceholder"];
+            risks: components["schemas"]["RiskAlertsPlaceholder"];
             /** Role Name */
             role_name: string;
         };
@@ -14586,6 +14586,111 @@ export interface components {
             /** Expired Count */
             expired_count: number;
         };
+        /**
+         * RiskAlert
+         * @description Kartin TEK satiri — mockup'in her satirinda UC olgu vardir.
+         *
+         *     `title` ust satir (`13px`), `detail` alt satir (`11px`), `severity` sol
+         *     seridin rengi. `items: list[str]` bunlarin YALNIZ BIRINI tasiyabiliyordu; uc
+         *     olguyu tek metne yapistirmak, ekranin ayristirmak zorunda kalacagi bir sunum
+         *     kararini sunucuda uretmek olurdu (K10, `_pending_approvals` notunun emsali).
+         *
+         *     🔴 `module` var, `link` YOK ve bu bilinclidir. Emir bir `baglanti?` alani
+         *     onerdi; ISTEMCI ROTASI SUNUCUDA URETILMEZ — bir URL ("/stok") frontend'in
+         *     yonlendirme haritasini backend'e kopyalardi ve rota degistigi gun panel
+         *     sessizce olu baglanti basardi. Bunun yerine satir KAYNAK MODULUNU tasir;
+         *     hangi ekrana gidilecegi istemcinin karari kalir.
+         */
+        RiskAlert: {
+            /** Detail */
+            detail: string;
+            /** Module */
+            module: string;
+            severity: components["schemas"]["RiskSeverity"];
+            /** Title */
+            title: string;
+        };
+        /**
+         * RiskAlertsPlaceholder
+         * @description "Risk & Uyarilar" kartinin zarfi.
+         *
+         *     🔴 ZARF SINIFI OLCULDU: bu kart NE `MetricPlaceholder` NE `CountPlaceholder`
+         *     ailesine girer, cunku ikisi de TEK KAYNAKLI bir alani tarifler ve tri-state
+         *     bilgisini TEK bir `pending_module` stringine sikistirir. Bu kartin UC AYRI
+         *     kaynagi ve UC AYRI izin kapisi vardir; tek bir anahtar kartin ancak UCTE
+         *     BIRINI adlandirabilirdi — servis docstring'inin 2. kusuru tam olarak buydu
+         *     (`_RISKS_MODULE = "inventory"` yalnizca ilk satiri besliyordu).
+         *
+         *     Bu yuzden tri-state KARTTAN KAYNAGA TASINDI: her kaynak kendi modulunu ve
+         *     kendi durumunu bildirir (`sources`), kart ise yalnizca "en az bir kaynak
+         *     konustu mu" bilgisini tasir. `pending_module` alani BU ZARFTA YOKTUR —
+         *     bugun uc kaynagin ucu de BAGLIDIR, yani "modul henuz yazilmadi" hâli
+         *     URETILEMEZ; uretilemeyen bir hâli semada tasimak `available:false`in
+         *     sebebini yeniden belirsizlestirirdi (ILR-1/2'nin duzelttigi kusurun
+         *     aynisi).
+         *
+         *     🔴 BOS LISTE "RISK YOK" DEMEK DEGILDIR — ve bu zarfta oyle olmasi
+         *     SAGLANMISTIR: esigi girilmemis (`min_stock IS NULL`) kalemler AYRI bir
+         *     `warning` satiriyla sayilir (`risks._stock_alerts`). Yani
+         *     `items == []` yalnizca "bilinen uyari yok VE bilinmeyen esik yok" hâlinde
+         *     dogar. Emsal `inventory`nin `items_without_price` sayacidir: fiyatsiz kalem
+         *     sessizce 0 sayilmaz, AYRICA raporlanir.
+         */
+        RiskAlertsPlaceholder: {
+            /**
+             * Available
+             * @default false
+             */
+            available: boolean;
+            /** Items */
+            items?: components["schemas"]["RiskAlert"][];
+            /** Sources */
+            sources?: components["schemas"]["RiskSource"][];
+        };
+        /**
+         * RiskSeverity
+         * @description Uyari satirinin SIDDETI — mockup'in UC seridinden OLCULDU.
+         *
+         *     🔴 Kartin adi ("Risk & Uyarilar") icerigini KISMEN YALANLIYOR: ucuncu satir
+         *     bir risk DEGIL, IYI HABERDIR. Kart aslinda SIDDET ETIKETLI BIR UYARI
+         *     AKISIDIR; bu yuzden siddet bir alan olarak tasinir ve `success` gercek bir
+         *     uyedir, suslemesi degil.
+         *
+         *     Renkler `Ekran 1 - Gosterge Paneli.dc.html:378-395`ten BIREBIR okundu — emir
+         *     metnindeki esleme TERSTI ve olcum onu curuttu:
+         *       * `#f59e0b` (kehribar) -> "Stok kritik seviyede"  => `warning`
+         *       * `#ef4444` (kirmizi)  -> "Hakedis gecikmis"      => `danger`
+         *       * `#22c55e` (yesil)    -> "Hedef asildi"          => `success`
+         *
+         *     🔴 RENK DEGERI SUNUCUDA URETILMEZ (K10): burada donen sey ANLAMDIR, sinif
+         *     adi ya da hex degil. Renk/rozet karari istemcinindir — HZ-1'in "aciliyet
+         *     rozeti sunucuda uretilmez" kanonunun aynisi.
+         * @enum {string}
+         */
+        RiskSeverity: "danger" | "warning" | "success";
+        /**
+         * RiskSource
+         * @description Kartin UC kaynagindan biri ve o aktor icin durumu.
+         */
+        RiskSource: {
+            /** Module */
+            module: string;
+            state: components["schemas"]["RiskSourceState"];
+        };
+        /**
+         * RiskSourceState
+         * @description Bir KAYNAGIN o aktor icin durumu.
+         *
+         *     `ok` — izin var, kaynak sorgulandi (satir cikmamis olabilir; bu OTORITER
+         *     bir "o kaynakta uyari yok"tur).
+         *     `restricted` — 🔴 ROLUN IZNI YOK (ILR-1/2 ucuncu hâli). Kart KAPANMAZ,
+         *     yalnizca O KAYNAK susar: `inventory` gormeyen `accounting` stok satirlarini
+         *     gormez ama hakedis satirlarini GORUR (ILR kanonu: "izni olana veriyi ver,
+         *     olmayana `restricted()` dondur — kartin tamamini herkese kapatmak gereksiz
+         *     genistir").
+         * @enum {string}
+         */
+        RiskSourceState: "ok" | "restricted";
         /** RoleCreate */
         RoleCreate: {
             /**

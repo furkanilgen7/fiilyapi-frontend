@@ -7781,7 +7781,40 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           count: dashboardPendingApprovalsCount(state),
           pending_module: "approvals",
         },
-        risks: { available: false, items: [], pending_module: "inventory" },
+        // 🔴 RISK-1 — ZARF KIRICI DEGISTI (`ListPlaceholder` -> `RiskAlertsPlaceholder`).
+        // Ikiz ESKIDEN `available: false` donduruyordu ve TAM BU YUZDEN canli
+        // kusuru YAKALAYAMADI: kart hic satir basmadigi icin "nesneyi React
+        // cocugu olarak basma" yolu e2e'de HIC KOSMUYORDU. Artik ucu de
+        // gercek satir dondurur — uc SIDDET, uc kaynak, hepsi `ok`.
+        // Fikstur mockup 378-395'ten birebir (renk eslemesinin capasi).
+        risks: {
+          available: true,
+          items: [
+            {
+              severity: "warning",
+              title: "Stok kritik seviyede",
+              detail: "Liman Altyapı – Demir eksikliği",
+              module: "inventory",
+            },
+            {
+              severity: "danger",
+              title: "Hakediş gecikmiş",
+              detail: "Çelik OSB – 14 gün gecikme",
+              module: "progress_payments",
+            },
+            {
+              severity: "success",
+              title: "Hedef aşıldı",
+              detail: "Belediye Yol – %3 erken teslim",
+              module: "projects",
+            },
+          ],
+          sources: [
+            { module: "inventory", state: "ok" },
+            { module: "progress_payments", state: "ok" },
+            { module: "projects", state: "ok" },
+          ],
+        } satisfies components["schemas"]["RiskAlertsPlaceholder"],
       });
     }
 

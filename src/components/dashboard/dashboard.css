@@ -208,13 +208,51 @@
   font-size: 13px;
   line-height: 18px;
 }
+/* RISK-1 — "Risk & Uyarılar" satırı (mockup 378-395).
+   Mockup ölçüleri: padding 12px · radius 8px · sol şerit 3px · üst satır 13px
+   weight 500 · alt satır 11px, mt 2px. Şerit ESKİDEN 4px'ti ve TEK renkti
+   (`--color-warning`), çünkü zarf yalnız düz metin taşıyordu; şiddet alanı
+   geldiğinden üç varyant da mockup'tan birebir kuruldu. */
 .dash-risk {
+  display: flex;
+  flex-direction: column;
   padding: 12px;
   border-radius: var(--radius-8);
-  border-left: 4px solid var(--color-warning);
+  border-left: 3px solid var(--color-warning);
   background: var(--color-surface-2);
+}
+.dash-risk__title {
   font-size: 13px;
+  font-weight: 500;
   line-height: 18px;
+  color: var(--color-text);
+}
+.dash-risk__detail {
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--color-text-subtle);
+}
+/* Üç şiddet — hex DEĞERLERİ tokenlardan gelir, burada tekrar YAZILMAZ.
+   warning #f59e0b/#fff7ed · danger #ef4444/#fef2f2 · success #22c55e/#f0fdf4 */
+.dash-risk--warning {
+  border-left-color: var(--color-warning);
+  background: var(--color-orange-tint);
+}
+.dash-risk--danger {
+  border-left-color: var(--color-danger);
+  background: var(--color-danger-row-bg);
+}
+.dash-risk--success {
+  border-left-color: var(--color-success-strong);
+  background: var(--color-success-tint);
+}
+/* Kısmi liste bandı — yetkisiz susan kaynak varsa görünür olur. */
+.dash-risk__partial {
+  margin-top: 10px;
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--color-text-muted);
 }
 .dash-message {
   font-size: 14px;
