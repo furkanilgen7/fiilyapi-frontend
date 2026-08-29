@@ -169,7 +169,7 @@ describe("SiteCard çipleri — her hedef diskte VAR", () => {
     "%s durumunda basılan her çip gerçek bir rotaya gider",
     (status) => {
       const hrefs = renderedHrefs(
-        <SiteCard projectId={PROJECT_ID} site={{ ...SITE, status }} />,
+        <SiteCard projectKey={PROJECT_ID} site={{ ...SITE, status }} />,
       );
       expect(hrefs.length).toBeGreaterThan(0);
       const dead = hrefs.filter((href) => !routeExists(href));
@@ -197,7 +197,7 @@ describe("ProjectDetailTabs sekmeleri — her hedef diskte VAR", () => {
     (projectType) => {
       const hrefs = renderedHrefs(
         <ProjectDetailTabs
-          projectId={PROJECT_ID}
+          projectKey={PROJECT_ID} projectId={PROJECT_ID}
           activePath={`/projeler/${PROJECT_ID}`}
           projectType={projectType}
         />,

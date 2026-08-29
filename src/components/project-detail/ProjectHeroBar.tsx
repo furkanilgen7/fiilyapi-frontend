@@ -1,5 +1,6 @@
 import type { ProjectDetail } from "@/lib/api/hooks/useProjects";
 import { pendingModuleLabel } from "@/lib/pending-modules";
+import { routeKeyOf } from "@/lib/routes";
 
 import { ProjectDetailTabs } from "./ProjectDetailTabs";
 import "./project-detail.css";
@@ -60,6 +61,8 @@ export function ProjectHeroBar({ project, activePath }: ProjectHeroBarProps) {
       {/* F-PKK K1: tür bilgisi ZATEN elimizde (`ProjectDetailResponse`) —
           sekme şeridi ikinci bir istek AÇMAZ. */}
       <ProjectDetailTabs
+        // URL-3 — YOL sekmeleri okunur anahtari, SORGU sekmeleri UUID'yi alir.
+        projectKey={routeKeyOf(project)}
         projectId={project.id}
         activePath={activePath}
         projectType={project.project_type}

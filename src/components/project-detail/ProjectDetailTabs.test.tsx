@@ -10,7 +10,7 @@ const BASE = `/projeler/${PROJECT_ID}`;
 
 describe("ProjectDetailTabs", () => {
   it("bes sekmeyi de gorunur basar (spec §7.3 — rotasi olmayan sekme gizlenmez)", () => {
-    render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
+    render(<ProjectDetailTabs projectKey={PROJECT_ID} projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
     expect(screen.getByRole("tablist", { name: "Proje detay sekmeleri" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Şantiyeler" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "İş Kalemleri" })).toBeInTheDocument();
@@ -20,7 +20,7 @@ describe("ProjectDetailTabs", () => {
   });
 
   it("aktif yol Santiyeler sekmesini isaretler", () => {
-    render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
+    render(<ProjectDetailTabs projectKey={PROJECT_ID} projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
     expect(screen.getByRole("tab", { name: "Şantiyeler" })).toHaveAttribute(
       "aria-selected",
       "true",
@@ -42,7 +42,7 @@ describe("ProjectDetailTabs", () => {
 // SANTIYE BOQ'una (`/sites/{id}/boq`) gider. FARKLI KUMELERDIR.
 describe("ProjectDetailTabs — Is Kalemleri sekmesi sozlesme pozlarina baglanir", () => {
   it("Is Kalemleri CANLI bir <a>'dir: aria-disabled TASIMAZ", () => {
-    render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
+    render(<ProjectDetailTabs projectKey={PROJECT_ID} projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
     const tab = screen.getByRole("tab", { name: "İş Kalemleri" });
     expect(tab.tagName).toBe("A");
     expect(tab).not.toHaveAttribute("aria-disabled");
@@ -54,7 +54,7 @@ describe("ProjectDetailTabs — Is Kalemleri sekmesi sozlesme pozlarina baglanir
   // m1 bekcisi: href'ten `?tab=items` dusurulurse sekme sozlesmenin GENEL
   // sekmesine giderdi — kullanici poz tablosunu hic gormezdi.
   it("href SOZLESME DETAYININ 'items' sekmesidir (genel sekme DEGIL)", () => {
-    render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
+    render(<ProjectDetailTabs projectKey={PROJECT_ID} projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
     const tab = screen.getByRole("tab", { name: "İş Kalemleri" });
     expect(tab).toHaveAttribute("href", `/sozlesmeler/isveren/${PROJECT_ID}?tab=items`);
     expect(tab.getAttribute("href")).not.toBe(employerContractTabHref(PROJECT_ID, "general"));
@@ -63,7 +63,7 @@ describe("ProjectDetailTabs — Is Kalemleri sekmesi sozlesme pozlarina baglanir
   // m5 bekcisi: href elle yazilirsa kanonik kurucudan AYRISIR. Iddia
   // kurucunun ciktisina baglanir — kurucu degisirse burasi da tasinir.
   it("href kanonik kurucudan (employerContractTabHref) uretilir", () => {
-    render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
+    render(<ProjectDetailTabs projectKey={PROJECT_ID} projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
     expect(screen.getByRole("tab", { name: "İş Kalemleri" })).toHaveAttribute(
       "href",
       employerContractTabHref(PROJECT_ID, "items"),
@@ -72,7 +72,7 @@ describe("ProjectDetailTabs — Is Kalemleri sekmesi sozlesme pozlarina baglanir
 
   it("proje kimligi URL'e kodlanarak yazilir (sozlesme rotasinda da)", () => {
     render(
-      <ProjectDetailTabs projectId="a b&c" activePath="/projeler/a%20b%26c" projectType="taahhut" />,
+      <ProjectDetailTabs projectKey="a b&c" projectId="a b&c" activePath="/projeler/a%20b%26c" projectType="taahhut" />,
     );
     expect(screen.getByRole("tab", { name: "İş Kalemleri" })).toHaveAttribute(
       "href",
@@ -85,7 +85,7 @@ describe("ProjectDetailTabs — Is Kalemleri sekmesi sozlesme pozlarina baglanir
   // (5) ADAS AYRIMI: ayni ekranda ayni etiketle iki farkli kumeye gidiliyor.
   // Mockup'ta gorunur ayrim metni YOK, o yuzden `title` ile veriliyor.
   it("sekme, santiye cipiyle karismasin diye SOZLESME POZU oldugunu title'da soyler", () => {
-    render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
+    render(<ProjectDetailTabs projectKey={PROJECT_ID} projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
     expect(screen.getByRole("tab", { name: "İş Kalemleri" })).toHaveAttribute(
       "title",
       WORK_ITEMS_TAB_TITLE,
@@ -99,13 +99,13 @@ describe("ProjectDetailTabs — Is Kalemleri sekmesi sozlesme pozlarina baglanir
   });
 
   it("devre-disi gerekce notu EKRANDA YOKTUR", () => {
-    render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
+    render(<ProjectDetailTabs projectKey={PROJECT_ID} projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
     expect(screen.queryByTestId("project-tabs-work-items-reason")).toBeNull();
   });
 
   it("hicbir sekme devre-disi basilmaz (span/aria-disabled kalmadi)", () => {
     const { container } = render(
-      <ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="kat_karsiligi" />,
+      <ProjectDetailTabs projectKey={PROJECT_ID} projectId={PROJECT_ID} activePath={BASE} projectType="kat_karsiligi" />,
     );
     expect(container.querySelectorAll('[aria-disabled]')).toHaveLength(0);
     // 🔴 Baglanti toplarken `getAllByRole("link")` KULLANILMAZ: bu sekmeler
@@ -119,7 +119,7 @@ describe("ProjectDetailTabs — Is Kalemleri sekmesi sozlesme pozlarina baglanir
 // adlari hedef ekranin BUGUN okudugu adlardir (uydurma yok).
 describe("ProjectDetailTabs — yazili sekmeler gercek ekranlara baglanir", () => {
   it("Isveren Hakedis /hakedisler?project_id=... adresine gider", () => {
-    render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
+    render(<ProjectDetailTabs projectKey={PROJECT_ID} projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
     expect(screen.getByRole("tab", { name: "İşveren Hakediş" })).toHaveAttribute(
       "href",
       `/hakedisler?project_id=${PROJECT_ID}`,
@@ -127,7 +127,7 @@ describe("ProjectDetailTabs — yazili sekmeler gercek ekranlara baglanir", () =
   });
 
   it("Taseron Hakedis /hakedisler/taseron?project_id=... adresine gider", () => {
-    render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
+    render(<ProjectDetailTabs projectKey={PROJECT_ID} projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
     expect(screen.getByRole("tab", { name: "Taşeron Hakediş" })).toHaveAttribute(
       "href",
       `/hakedisler/taseron?project_id=${PROJECT_ID}`,
@@ -135,7 +135,7 @@ describe("ProjectDetailTabs — yazili sekmeler gercek ekranlara baglanir", () =
   });
 
   it("Belgeler /belgeler?proje=... adresine gider (ArchiveDocumentsView PROJECT_PARAM)", () => {
-    render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
+    render(<ProjectDetailTabs projectKey={PROJECT_ID} projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
     expect(screen.getByRole("tab", { name: "Belgeler" })).toHaveAttribute(
       "href",
       `/belgeler?proje=${PROJECT_ID}`,
@@ -143,12 +143,12 @@ describe("ProjectDetailTabs — yazili sekmeler gercek ekranlara baglanir", () =
   });
 
   it("Santiyeler sekmesi proje detayinin kok rotasina baglanir", () => {
-    render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
+    render(<ProjectDetailTabs projectKey={PROJECT_ID} projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
     expect(screen.getByRole("tab", { name: "Şantiyeler" })).toHaveAttribute("href", BASE);
   });
 
   it("proje kimligi URL'e kodlanarak yazilir", () => {
-    render(<ProjectDetailTabs projectId="a b&c" activePath="/projeler/a%20b%26c" projectType="taahhut" />);
+    render(<ProjectDetailTabs projectKey="a b&c" projectId="a b&c" activePath="/projeler/a%20b%26c" projectType="taahhut" />);
     expect(screen.getByRole("tab", { name: "Belgeler" })).toHaveAttribute(
       "href",
       "/belgeler?proje=a%20b%26c",
@@ -159,7 +159,7 @@ describe("ProjectDetailTabs — yazili sekmeler gercek ekranlara baglanir", () =
   // "İş Kalemleri"nin `title`i bir YOKLUK gerekcesi degil, ADAS AYRIMIDIR
   // (santiye cipiyle ayni etiket, farkli kume) — asagida ayrica bekcilenir.
   it("hicbir sekme 'yakinda' ipucu tasimaz — gercek rotalari var", () => {
-    render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
+    render(<ProjectDetailTabs projectKey={PROJECT_ID} projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
     for (const tab of screen.getAllByRole("tab")) {
       expect(tab.getAttribute("title") ?? "").not.toMatch(/yakında|yakinda/i);
     }
@@ -175,7 +175,7 @@ describe("ProjectDetailTabs — yazili sekmeler gercek ekranlara baglanir", () =
 describe("ProjectDetailTabs — klavye ile odaklanabilirlik ve sekme sirasi (davranissal)", () => {
   it("Tab ile butun BAGLANTI sekmelerine sirayla odaklanilabilir", async () => {
     const user = userEvent.setup();
-    render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
+    render(<ProjectDetailTabs projectKey={PROJECT_ID} projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
     const tabs = screen.getAllByRole("tab");
     expect(tabs).toHaveLength(5);
 
@@ -206,7 +206,7 @@ describe("ProjectDetailTabs — tür bazlı sekmeler (F-PKK K1)", () => {
     screen.getAllByRole("tab").map((tab) => tab.textContent?.trim() ?? "");
 
   it("taahhutte IKI YENI SEKME DE basilmaz", () => {
-    render(<ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
+    render(<ProjectDetailTabs projectKey={PROJECT_ID} projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
     expect(tabNames()).toEqual([
       "Şantiyeler",
       "İş Kalemleri",
@@ -218,7 +218,7 @@ describe("ProjectDetailTabs — tür bazlı sekmeler (F-PKK K1)", () => {
 
   it("kendi yatirimda YALNIZ 'Proje Ozeti' eklenir", () => {
     render(
-      <ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="kendi_yatirim" />,
+      <ProjectDetailTabs projectKey={PROJECT_ID} projectId={PROJECT_ID} activePath={BASE} projectType="kendi_yatirim" />,
     );
     expect(screen.getByRole("tab", { name: "Proje Özeti" })).toHaveAttribute(
       "href",
@@ -231,7 +231,7 @@ describe("ProjectDetailTabs — tür bazlı sekmeler (F-PKK K1)", () => {
 
   it("kat karsiliginda IKI SEKME de eklenir ve gercek rotalara gider", () => {
     render(
-      <ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="kat_karsiligi" />,
+      <ProjectDetailTabs projectKey={PROJECT_ID} projectId={PROJECT_ID} activePath={BASE} projectType="kat_karsiligi" />,
     );
     expect(screen.getByRole("tab", { name: "Proje Özeti" })).toHaveAttribute(
       "href",
@@ -245,7 +245,7 @@ describe("ProjectDetailTabs — tür bazlı sekmeler (F-PKK K1)", () => {
 
   it("sekme SIRASI turden ture kaymaz (Santiyeler hep once)", () => {
     render(
-      <ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType="kat_karsiligi" />,
+      <ProjectDetailTabs projectKey={PROJECT_ID} projectId={PROJECT_ID} activePath={BASE} projectType="kat_karsiligi" />,
     );
     expect(tabNames()).toEqual([
       "Şantiyeler",
@@ -261,7 +261,7 @@ describe("ProjectDetailTabs — tür bazlı sekmeler (F-PKK K1)", () => {
   it("ozet yolundayken 'Proje Ozeti' sekmesi AKTIF isaretlenir", () => {
     render(
       <ProjectDetailTabs
-        projectId={PROJECT_ID}
+        projectKey={PROJECT_ID} projectId={PROJECT_ID}
         activePath={`${BASE}/ozet`}
         projectType="kat_karsiligi"
       />,
@@ -281,7 +281,7 @@ describe("ProjectDetailTabs — tür bazlı sekmeler (F-PKK K1)", () => {
   it("Is Kalemleri her turde canli kalir (tur suzgeci onu etkilemez)", () => {
     for (const type of ["taahhut", "kendi_yatirim", "kat_karsiligi"] as const) {
       const { unmount } = render(
-        <ProjectDetailTabs projectId={PROJECT_ID} activePath={BASE} projectType={type} />,
+        <ProjectDetailTabs projectKey={PROJECT_ID} projectId={PROJECT_ID} activePath={BASE} projectType={type} />,
       );
       expect(screen.getByRole("tab", { name: "İş Kalemleri" })).toHaveAttribute(
         "href",

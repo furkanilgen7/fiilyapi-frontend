@@ -30,13 +30,20 @@ import "./project-summary.css";
  * kullanıcı kâr bloğu tamamen boş bir ekran görürdü.
  */
 export interface ProjectSummaryViewProps {
-  projectId: string;
+  /** URL'deki anahtar — slug VEYA UUID (URL-3; eski linkler yasar). */
+  projectKey: string;
   /** Aktif yol dışarıdan verilir (ProjectDetailTabs deseni). */
   activePath: string;
 }
 
-export function ProjectSummaryView({ projectId, activePath }: ProjectSummaryViewProps) {
-  const projectQuery = useProject(projectId);
+export function ProjectSummaryView({ projectKey, activePath }: ProjectSummaryViewProps) {
+  const projectQuery = useProject(projectKey);
+  // 🔴 URL-3 · SLUG -> KANONIK KIMLIK GECIS NOKTASI.
+  // `projectKey` URL'den gelir ve slug DA olabilir, UUID de. Slug'i KABUL EDEN
+  // tek yer `GET /projects/{project_id}`tir; asagidaki oteki uclarin HEPSI
+  // UUID bekler. Bu yuzden anahtar ONCE cozulur, sonra `project.id` dagitilir.
+  // Anahtari dogrudan gecirmek slug'li bir URL'de o uclari 422'ye dusururdu.
+  const projectId = projectQuery.data?.id ?? "";
   const costsQuery = useProjectCosts(projectId);
   // Ünite sayaçları AYRI bir uçtur ve BAĞIMSIZ başarısız olabilir; hero onsuz
   // da basılır (F-P6 dersi: tek `.data` dallanması 403'te sonsuz "Yükleniyor").
@@ -60,6 +67,7 @@ export function ProjectSummaryView({ projectId, activePath }: ProjectSummaryView
     return (
       <div className="psum">
         <div className="psum-tabbar">          <ProjectDetailTabs
+            projectKey={projectKey}
             projectId={projectId}
             activePath={activePath}
             projectType={project.project_type}
@@ -75,6 +83,7 @@ export function ProjectSummaryView({ projectId, activePath }: ProjectSummaryView
   return (
     <div className="psum">
       <div className="psum-tabbar">        <ProjectDetailTabs
+          projectKey={projectKey}
           projectId={projectId}
           activePath={activePath}
           projectType={project.project_type}

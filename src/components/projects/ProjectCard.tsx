@@ -8,7 +8,7 @@ import { pendingModuleLabel } from "@/lib/pending-modules";
 
 import { ShareBar } from "./ShareBar";
 import "./projects.css";
-import { routes } from "@/lib/routes";
+import { routes, routeKeyOf } from "@/lib/routes";
 
 type Project = ProjectListItem;
 // NOT: gercek semada tip-basi metrikler duz alanlar degil, ContractingCard /
@@ -334,7 +334,11 @@ export function ProjectCard({ project }: { project: Project }) {
     >
       {/* Kart icinde baska etkilesimli oge yok; tum govde tek link olarak sarilir. */}
       <Link
-        href={routes.projects.detail({ projectId: project.id })}
+        // 🔴 URL-3 — kullanicinin GORDUGU degisiklik BURADA dogar: liste
+        // kartindan detaya giris, projenin okunur anahtariyla kurulur
+        // (`/projeler/kopru-guclendirme`). `slug` NULLABLE oldugu icin dusus
+        // `routeKeyOf`ta yapilir; `project.slug!` canlida bozuk link uretirdi.
+        href={routes.projects.detail({ projectId: routeKeyOf(project) })}
         className="prj-card__link"
         aria-label={`${project.name} projesini aç`}
       >

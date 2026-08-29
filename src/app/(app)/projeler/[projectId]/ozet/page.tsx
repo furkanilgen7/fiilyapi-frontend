@@ -9,6 +9,7 @@ import { ProjectSummaryView } from "@/components/project-summary/ProjectSummaryV
 // `ProjectDetailPage` deseni.
 export default function ProjectSummaryPage() {
   const pathname = usePathname();
-  const { projectId } = useParams<{ projectId: string }>();
-  return <ProjectSummaryView projectId={projectId} activePath={pathname} />;
+  // URL-3 — rota parametresi artik "slug VEYA UUID"dur; cozumleme gorunumde.
+  const { projectId: projectKey } = useParams<{ projectId: string }>();
+  return <ProjectSummaryView projectKey={projectKey} activePath={pathname} />;
 }

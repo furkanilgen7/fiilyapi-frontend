@@ -71,6 +71,7 @@ const STRIPS: readonly StripCase[] = [
     expectedTabCount: 5,
     render: () => (
       <ProjectDetailTabs
+        projectKey={PROJECT_SENTINEL}
         projectId={PROJECT_SENTINEL}
         activePath={`/projeler/${PROJECT_SENTINEL}`}
         projectType="taahhut"
@@ -83,6 +84,7 @@ const STRIPS: readonly StripCase[] = [
     expectedTabCount: 6,
     render: () => (
       <ProjectDetailTabs
+        projectKey={PROJECT_SENTINEL}
         projectId={PROJECT_SENTINEL}
         activePath={`/projeler/${PROJECT_SENTINEL}`}
         projectType="kendi_yatirim"
@@ -95,6 +97,7 @@ const STRIPS: readonly StripCase[] = [
     expectedTabCount: 7,
     render: () => (
       <ProjectDetailTabs
+        projectKey={PROJECT_SENTINEL}
         projectId={PROJECT_SENTINEL}
         activePath={`/projeler/${PROJECT_SENTINEL}`}
         projectType="kat_karsiligi"
