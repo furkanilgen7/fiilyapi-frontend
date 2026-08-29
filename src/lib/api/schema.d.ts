@@ -5725,6 +5725,9 @@ export interface paths {
          * @description L83-101 filtreleri + `audit`/`users` sayfalama deseni (`total`/`limit`/`offset`).
          *
          *     `site_id` (TB2/U2) SÖZLEŞME üzerinden süzer — hakedişin şantiye kolonu yoktur.
+         *     HAK-NULL: süzgeç EŞİTLİK değil KAPSAMA sorar, proje geneli (`site_id IS
+         *     NULL`) sözleşmelerin hakedişleri DE döner ve `contract_site_id` ile
+         *     işaretlenir (gerekçe: `repository._list_stmt`).
          *     Kapsamı GENİŞLETMEZ: `visible_projects` süzgeci her hâlükârda üstte kalır.
          */
         get: operations["list_subcontractor_progress_payments_endpoint_subcontractor_progress_payments_get"];
@@ -17509,6 +17512,8 @@ export interface components {
             contract_id: string;
             /** Contract No */
             contract_no: string | null;
+            /** Contract Site Id */
+            contract_site_id: string | null;
             /**
              * Created At
              * Format: date-time
@@ -34000,7 +34005,7 @@ export interface operations {
         parameters: {
             query?: {
                 project_id?: string | null;
-                /** @description Sözleşmesi bu şantiyeye bağlı hakedişler (proje geneli olanlar hariç) */
+                /** @description Bu şantiyeyi KAPSAYAN hakedişler: sözleşmesi bu şantiyeye bağlı olanlar **ve** proje geneli (`site_id IS NULL`) sözleşmelerin hakedişleri. Satırın hangisi olduğu `contract_site_id` alanından okunur — proje geneli satırlar her şantiyede tekrar döner, şantiye toplamına EKLENMEZ. */
                 site_id?: string | null;
                 period_year?: number | null;
                 period_month?: number | null;
@@ -34054,7 +34059,7 @@ export interface operations {
         parameters: {
             query?: {
                 project_id?: string | null;
-                /** @description Sözleşmesi bu şantiyeye bağlı hakedişler (proje geneli olanlar hariç) */
+                /** @description Bu şantiyeyi KAPSAYAN hakedişler: sözleşmesi bu şantiyeye bağlı olanlar **ve** proje geneli (`site_id IS NULL`) sözleşmelerin hakedişleri. Satırın hangisi olduğu `contract_site_id` alanından okunur — proje geneli satırlar her şantiyede tekrar döner, şantiye toplamına EKLENMEZ. */
                 site_id?: string | null;
                 period_year?: number | null;
                 period_month?: number | null;
