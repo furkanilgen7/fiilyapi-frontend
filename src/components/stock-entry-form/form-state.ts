@@ -25,6 +25,23 @@ export interface StockEntryLineValues {
   quantity: string;
   unitPrice: string;
   quality: StockQuality;
+  /**
+   * 🔴 STOK-BOLUM — ATIF **SATIR** BAZINDADIR, başlıkta DEĞİL (kullanıcı kararı
+   * 2026-08-29, backend `stock_entry_lines.section_id`). Tek bir irsaliyenin
+   * farklı kalemleri farklı bölümlere gidebilir; başlığa konsaydı bu ayrım
+   * yapısal olarak imkânsız olurdu.
+   *
+   * Boş dize = ATIF YOK (meşru: ikisi de nullable). `build-body.ts` boş dizeyi
+   * gövdeye HİÇ koymaz — `null` göndermekle göndermemek aynı sonucu verir ama
+   * gövde gürültüsüz kalır.
+   */
+  sectionId: string;
+  /**
+   * Poz atfı. Bölümden BAĞIMSIZDIR: backend **fail-open**tur — pozun bölüme
+   * TAHSİS EDİLMİŞ olması ARANMAZ ("kayıt, planın rehinesi olmaz"). İstemci bu
+   * kararı DARALTMAZ; seçenek listesi tahsise göre süzülmez.
+   */
+  boqItemId: string;
 }
 
 export interface StockEntryFormValues {
@@ -54,6 +71,33 @@ export function createStockEntryLine(seq: number): StockEntryLineValues {
     // ⚠️ ÜRETİLMİŞ TİP TUZAĞI (T1 kaydı): `quality` şemada varsayılanlı ama
     // `openapi-typescript` çıktısında ZORUNLU görünür — hep dolu tutulur.
     quality: "ok",
+    sectionId: "",
+    boqItemId: "",
+  };
+}
+
+/**
+ * 🔴 `transfer` SEÇİLDİĞİNDE SATIRLARIN ATFI SİLİNİR — YAPISAL 1. KATMAN.
+ *
+ * Backend `transfer` + atıf kombinasyonunu **422** ile reddeder ve gerekçesi
+ * anlamsaldır: *"transfer tüketim değildir, iki bacaklıdır"* — bir depodan
+ * diğerine taşınan malzeme hiçbir bölüm tarafından harcanmamıştır.
+ *
+ * Kullanıcı önce "Satınalma"da bölüm seçip SONRA "Transfer"e geçebilir. Değer
+ * durumda kalsaydı ekran onu göstermese bile bir sonraki tip değişiminde geri
+ * gelir ve gövdeye sızabilirdi. Burada SİLİNİR; `build-body.ts` ayrıca anahtarı
+ * hiç kurmaz (2. katman). İki katman da tek başına yeterli DEĞİLDİR: bu katman
+ * olmasa ekran hayalet bir seçim gösterirdi, öteki olmasa yarış hâlinde sızardı.
+ */
+export function applyEntryTypeToLines(
+  values: StockEntryFormValues,
+  entryType: StockEntryType,
+): StockEntryFormValues {
+  if (entryType !== "transfer") return { ...values, entryType };
+  return {
+    ...values,
+    entryType,
+    lines: values.lines.map((line) => ({ ...line, sectionId: "", boqItemId: "" })),
   };
 }
 

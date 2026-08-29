@@ -69,24 +69,24 @@ describe("normalizeDecimalInput", () => {
 describe("tutar TÜREVİ (SG 116/142)", () => {
   it("miktar × birim fiyat KAYIPSIZ çarpılır", () => {
     expect(
-      stockEntryLineAmount({ key: "k", itemId: "i", quantity: "15", unitPrice: "21500", quality: "ok" }),
+      stockEntryLineAmount({ key: "k", itemId: "i", quantity: "15", unitPrice: "21500", quality: "ok", sectionId: "", boqItemId: "" }),
     ).toBe("322500");
     expect(
-      stockEntryLineAmount({ key: "k", itemId: "i", quantity: "0.1", unitPrice: "3", quality: "ok" }),
+      stockEntryLineAmount({ key: "k", itemId: "i", quantity: "0.1", unitPrice: "3", quality: "ok", sectionId: "", boqItemId: "" }),
     ).toBe("0.3");
   });
 
   it("miktar ya da fiyat eksikse tutar hesaplanmaz (NaN ekrana kaçmaz)", () => {
     expect(
-      stockEntryLineAmount({ key: "k", itemId: "i", quantity: "15", unitPrice: "", quality: "ok" }),
+      stockEntryLineAmount({ key: "k", itemId: "i", quantity: "15", unitPrice: "", quality: "ok", sectionId: "", boqItemId: "" }),
     ).toBeNull();
   });
 
   it("toplam yalnız FİYATLI satırları kapsar", () => {
     const total = stockEntryTotal([
-      { key: "a", itemId: "i", quantity: "15", unitPrice: "21500", quality: "ok" },
-      { key: "b", itemId: "j", quantity: "450", unitPrice: "168", quality: "ok" },
-      { key: "c", itemId: "k", quantity: "40", unitPrice: "", quality: "ok" },
+      { key: "a", itemId: "i", quantity: "15", unitPrice: "21500", quality: "ok", sectionId: "", boqItemId: "" },
+      { key: "b", itemId: "j", quantity: "450", unitPrice: "168", quality: "ok", sectionId: "", boqItemId: "" },
+      { key: "c", itemId: "k", quantity: "40", unitPrice: "", quality: "ok", sectionId: "", boqItemId: "" },
     ]);
 
     expect(Number(total)).toBe(398_100);

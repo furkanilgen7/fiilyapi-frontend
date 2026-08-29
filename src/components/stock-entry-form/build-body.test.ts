@@ -8,7 +8,7 @@ function values(overrides: Partial<StockEntryFormValues> = {}): StockEntryFormVa
   return {
     ...base,
     warehouseId: "wh-1",
-    lines: [{ key: "line-0", itemId: "it-1", quantity: "15", unitPrice: "21500", quality: "ok" }],
+    lines: [{ key: "line-0", itemId: "it-1", quantity: "15", unitPrice: "21500", quality: "ok", sectionId: "", boqItemId: "" }],
     ...overrides,
   };
 }
@@ -82,7 +82,7 @@ describe("buildStockEntryBody — GÖVDE ANAHTAR TESTİ (pending sızıntısı)"
   it("fiyatsız satırda `unit_price` anahtarı yoktur (uydurma 0 basılmaz)", () => {
     const body = buildStockEntryBody(
       values({
-        lines: [{ key: "line-0", itemId: "it-8", quantity: "40", unitPrice: "", quality: "ok" }],
+        lines: [{ key: "line-0", itemId: "it-8", quantity: "40", unitPrice: "", quality: "ok", sectionId: "", boqItemId: "" }],
       }),
     );
 
@@ -117,7 +117,7 @@ describe("buildStockEntryBody — sayı biçimi", () => {
     const body = buildStockEntryBody(
       values({
         lines: [
-          { key: "line-0", itemId: "it-1", quantity: "2,5", unitPrice: "21500,75", quality: "defective" },
+          { key: "line-0", itemId: "it-1", quantity: "2,5", unitPrice: "21500,75", quality: "defective", sectionId: "", boqItemId: "" },
         ],
       }),
     );
@@ -131,7 +131,7 @@ describe("buildStockEntryBody — sayı biçimi", () => {
     const body = buildStockEntryBody(
       values({
         entryType: "adjustment",
-        lines: [{ key: "line-0", itemId: "it-1", quantity: "-5", unitPrice: "", quality: "ok" }],
+        lines: [{ key: "line-0", itemId: "it-1", quantity: "-5", unitPrice: "", quality: "ok", sectionId: "", boqItemId: "" }],
       }),
     );
 

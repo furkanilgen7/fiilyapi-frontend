@@ -10,7 +10,9 @@ import { Button, Checkbox } from "@/components/ui";
 import { isoDate } from "@/components/site-diary/derive";
 import { STOCK_LIST_MAX_LIMIT, useStockItems } from "@/lib/api/hooks/useStockItems";
 import { useCreateStockEntry } from "@/lib/api/hooks/useStockMutations";
+import { useBoq } from "@/lib/api/hooks/useBoq";
 import { useSite } from "@/lib/api/hooks/useSites";
+import { useSiteSections } from "@/lib/api/hooks/useSiteSections";
 import { useUserOptions } from "@/lib/api/hooks/useUserOptions";
 import { useWarehouses } from "@/lib/api/hooks/useWarehouses";
 import { stockErrorMessage } from "@/lib/api/stock-error";
@@ -23,7 +25,10 @@ import {
 
 import { buildStockEntryBody } from "./build-body";
 import {
+  STOCK_ENTRY_BOQ_LOAD_ERROR,
+  STOCK_ENTRY_NO_SECTION_NOTICE,
   STOCK_ENTRY_NO_WAREHOUSE_NOTICE,
+  STOCK_ENTRY_SECTION_LOAD_ERROR,
   STOCK_ENTRY_NOTIFY_LABEL,
   STOCK_ENTRY_NOTIFY_PENDING_REASON,
   STOCK_ENTRY_SUBTITLE,
@@ -32,6 +37,7 @@ import {
 } from "./constants";
 import {
   addStockEntryLine,
+  applyEntryTypeToLines,
   emptyStockEntryFormValues,
   removeStockEntryLine,
   updateStockEntryLine,
@@ -81,6 +87,21 @@ export function StockEntryForm() {
   const warehousesQuery = useWarehouses({ limit: STOCK_LIST_MAX_LIMIT });
   const itemsQuery = useStockItems({ isActive: true, limit: STOCK_LIST_MAX_LIMIT });
   const users = useUserOptions();
+  // 🔴 STOK-BOLUM — atıf seçeneklerinin KAYNAĞI.
+  //
+  // İkisi de ROTANIN şantiyesine kapsanır ve bu bir DARALTMA DEĞİL, 422'nin
+  // ÖNLENMESİDİR: backend, hareket ŞANTİYELİ bir depoya yazılıyorsa bölümün ve
+  // pozun O şantiyeye ait olmasını ZORUNLU tutar (fail-closed, 422). Başka
+  // şantiyenin bölümünü listelemek kullanıcıyı doğrudan 422'ye çarptırırdı.
+  //
+  // ⚠️ MERKEZ DEPO SINIRI (bilinçli, raporlandı): merkez depoda (`site_id`
+  // NULL) backend şantiye çapası ARAMAZ, yani teknik olarak BAŞKA şantiyenin
+  // bölümü de kabul edilirdi. Form yine de rotanın şantiyesiyle kapsar —
+  // "A-Blok şantiyesinin stok girişi" formunda başka şantiyenin bölümlerini
+  // listelemek kullanıcı için anlamsız olurdu. Sözleşme DARALTILMADI; yalnız
+  // SEÇENEK LİSTESİ kapsandı.
+  const sectionsQuery = useSiteSections(siteId);
+  const boqQuery = useBoq(siteId);
   const createEntry = useCreateStockEntry();
 
   // Tarih `new Date()`ten TEK yerde türetilir (site-diary `isoDate` deseni:
@@ -121,6 +142,33 @@ export function StockEntryForm() {
   const siteStockHref = routes.projects.sites.stock({ projectId, siteId });
   const warehouseRows = warehouses ?? [];
   const items = itemsQuery.data?.items ?? [];
+
+  // Bölüm seçenekleri — kod varsa ada eklenir (bölüm listelerinin tek deseni).
+  const sectionOptions = (sectionsQuery.data?.items ?? []).map((section) => ({
+    id: section.id,
+    label: section.code ? `${section.code} · ${section.name}` : section.name,
+  }));
+  // 🔴 Poz seçenekleri BÖLÜME GÖRE SÜZÜLMEZ: `useBoq` süzgeçsiz çağrılır ve
+  // tahsis (`boq_item_section_allocations`) HİÇ okunmaz. Backend fail-open'dır
+  // ("kayıt, planın rehinesi olmaz") ve istemci o kararı daraltmaz.
+  // Yan fayda: sorgu anahtarı şantiye BOQ ekranıyla AYNI kalır, önbellek paylaşılır.
+  const boqOptions = (boqQuery.data?.groups ?? []).flatMap((group) =>
+    group.items.map((item) => ({
+      id: item.id,
+      label: `${item.code} · ${item.description}`,
+    })),
+  );
+
+  // Sessiz boş açılır liste YASAK — her durum görünür bir cümleyle anlatılır.
+  const attributionNote = sectionsQuery.isError
+    ? STOCK_ENTRY_SECTION_LOAD_ERROR
+    : boqQuery.isError
+      ? STOCK_ENTRY_BOQ_LOAD_ERROR
+      : sectionsQuery.isLoading || boqQuery.isLoading
+        ? "Bölüm ve iş kalemi listeleri yükleniyor…"
+        : sectionOptions.length === 0
+          ? STOCK_ENTRY_NO_SECTION_NOTICE
+          : null;
 
   // Sessiz boş açılır liste YASAK: her durum görünür bir cümleyle anlatılır.
   const warehouseNotice = warehousesQuery.isError
@@ -237,7 +285,12 @@ export function StockEntryForm() {
         <div className="pf-body" data-testid="stok-giris-body" ref={bodyRef}>
           <StockEntryTypeCards
             value={values.entryType}
-            onChange={(entryType) => handleChange("entryType", entryType)}
+            // 🔴 Tip DEĞİŞİNCE satırların atfı SİLİNİR (`transfer`a geçişte).
+            // `handleChange("entryType", …)` YETMEZ: eski bölüm seçimi durumda
+            // kalır ve tip geri değiştirilince hayalet gibi geri gelirdi.
+            onChange={(entryType) =>
+              setValues((prev) => applyEntryTypeToLines(prev, entryType))
+            }
           />
           <StockEntryInfoCard
             values={values}
@@ -265,6 +318,15 @@ export function StockEntryForm() {
             items={items}
             itemsDisabled={itemsQuery.isLoading || itemsQuery.isError}
             itemsNote={itemsNote}
+            sections={sectionOptions}
+            boqItems={boqOptions}
+            attributionDisabled={
+              sectionsQuery.isLoading ||
+              sectionsQuery.isError ||
+              boqQuery.isLoading ||
+              boqQuery.isError
+            }
+            attributionNote={attributionNote}
             onAddLine={handleAddLine}
             onRemoveLine={handleRemoveLine}
             onChangeLine={handleChangeLine}
