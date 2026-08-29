@@ -1,7 +1,8 @@
 /* Bölüm Detay — spec F-P6 T2 (mockup: Bölüm Detay.dc.html, "D"). */
 
-/* İçerik alanı ofseti burada DEĞİL — drill-sidebar.css içindeki .drill-content
-   kuralında tanımlıdır (site-detail.css ile aynı gerekçe). */
+/* İçerik alanı ofseti burada DEĞİL — global `.app-content` (shell.css)
+   kuralındadır. 🔴 DRILL-KALDIR (2026-08-29): drill kabuğu ve onun
+   `.drill-content` ofseti kaldırıldı (bkz. `projeler/[projectId]/layout.tsx`). */
 
 .section-hero {
   background: var(--color-surface);

@@ -3,8 +3,9 @@
    dosyanın SATIR numaralarıdır; göz kararı ölçü yoktur. Çıplak hex/px yasak —
    tüm değerler tokens.css'ten.
 
-   İçerik alanı ofseti burada DEĞİL — ŞB drill kabuğunun `.drill-content`
-   kuralını kullanır (site-diary.css / timesheet.css ile aynı gerekçe).
+   İçerik alanı ofseti burada DEĞİL — global `.app-content` (shell.css)
+   kuralındadır. 🔴 DRILL-KALDIR (2026-08-29): drill kabuğu ve onun
+   `.drill-content` ofseti kaldırıldı (bkz. `projeler/[projectId]/layout.tsx`).
    ŞB 35-69'da klasör paneli sayfa yüksekliğince, kabuk sidebar'ına bitişik
    çizilir; kabuk canon kazandığı için panel burada içerik alanının SOL
    SÜTUNU olarak, mockup'ın 240px genişliği ve yüzey/kenarlık tonlarıyla

@@ -3,8 +3,9 @@
    dosyanın SATIR numaralarıdır; göz kararı ölçü yoktur. Çıplak hex yasak —
    tüm renkler tokens.css'ten. */
 
-/* İçerik alanı ofseti burada DEĞİL — drill-sidebar.css `.drill-content`
-   kuralında (site-diary.css ile aynı gerekçe). */
+/* İçerik alanı ofseti burada DEĞİL — global `.app-content` (shell.css)
+   kuralındadır. 🔴 DRILL-KALDIR (2026-08-29): drill kabuğu ve onun
+   `.drill-content` ofseti kaldırıldı (bkz. `projeler/[projectId]/layout.tsx`). */
 
 /* ── Başlık şeridi (P86-99) ────────────────────────────────────────────── */
 .plan__head {
