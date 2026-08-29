@@ -14,6 +14,9 @@ function item(overrides: Partial<SiteSubcontractorPaymentItem>): SiteSubcontract
     periodMonth: 7,
     workCategory: "Betonarme İşleri",
     sectionId: null,
+    // HAK-NULL: varsayilan SANTIYE KAPSAMLI satir — proje geneli satirlar
+    // ayri kumede tasinir, bu fabrikanin varsayilani toplamlara GIREN hal.
+    contractSiteId: "site-1",
     grossTotal: "1240000.00",
     netTotal: "1016800.00",
     status: "pending_approval",

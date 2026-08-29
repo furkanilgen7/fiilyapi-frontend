@@ -144,6 +144,7 @@ const PAYMENT: SubcontractorProgressPaymentListItem = {
   description: null,
   status: "pending_approval",
   section_id: null,
+  contract_site_id: null,
   created_at: "2026-07-01T00:00:00Z",
   gross_total: "1240000.00",
   net_total: "1016800.00",

@@ -123,6 +123,7 @@ function mockAll() {
   } as never);
   vi.mocked(useSiteSubcontractorPayments).mockReturnValue({
     items: [],
+    projectWideItems: [],
     isLoading: false,
     isError: false,
     isPartial: false,
