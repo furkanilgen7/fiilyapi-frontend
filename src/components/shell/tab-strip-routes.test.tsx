@@ -109,8 +109,8 @@ const STRIPS: readonly StripCase[] = [
     expectedTabCount: 7,
     render: () => (
       <SiteDetailTabs
-        projectId={PROJECT_SENTINEL}
-        siteId={SITE_SENTINEL}
+        projectKey={PROJECT_SENTINEL}
+        siteKey={SITE_SENTINEL}
         activePath={`/projeler/${PROJECT_SENTINEL}/santiyeler/${SITE_SENTINEL}`}
       />
     ),

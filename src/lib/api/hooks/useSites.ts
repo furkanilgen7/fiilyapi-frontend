@@ -48,14 +48,41 @@ export function useSites(projectId: string): UseQueryResult<SiteListResponse, Er
 // `siteId` boşsa sorgu çalışmaz: drill kabuğu (proje layout'u) şantiye
 // seviyesinde olmadığında bu hook'u boş id ile çağırır (hook'lar koşullu
 // çağrılamaz), ağa çıkmamalıdır.
-export function useSite(siteId: string): UseQueryResult<SiteDetail, Error> {
+/**
+ * URL-3 · şantiye anahtarının KAPSAMI.
+ *
+ * 🔴 `GET /sites/{site_id}` DÜZ bir uçtur (yolda proje yoktur) ama
+ * `sites.slug` PROJE İÇİNDE tekildir, KÜRESEL değil. İki farklı projenin
+ * şantiyesi aynı slug'ı taşıyabilir; backend belirsizlikte **fail-closed 404**
+ * döner, rastgele seçmez. Kapsam bu yüzden `?project=` ile gönderilir.
+ *
+ * Bizim rotamız (`/projeler/<p>/santiyeler/<s>`) İÇ İÇE olduğu için kapsam
+ * HER ZAMAN elimizdedir — göndermemek için bir sebep yok, göndermemek ise
+ * ileride ikinci bir "A-Blok Şantiyesi" açıldığı gün ekranı 404'e düşürürdü.
+ *
+ * `siteId` bir UUID ise kapsam ZARARSIZDIR: kimlik eşleşmesi kapsamdan
+ * bağımsız çözülür (eski linkler kapsam olmadan da yaşar).
+ */
+export interface SiteScope {
+  /** Kapsam anahtarı — slug VEYA UUID. Verilmezse çözüm tek adaya bağlıdır. */
+  project?: string;
+}
+
+export function useSite(siteId: string, scope: SiteScope = {}): UseQueryResult<SiteDetail, Error> {
+  const project = scope.project ?? "";
   return useQuery({
     enabled: siteId.length > 0,
-    queryKey: [SITE_QUERY_KEY, siteId],
+    // Kapsam anahtarın ANLAMINI değiştirebilir (aynı slug iki projede), bu
+    // yüzden önbellek anahtarının PARÇASIDIR — yoksa iki proje aynı slug'la
+    // birbirinin şantiyesini önbellekten okurdu.
+    queryKey: [SITE_QUERY_KEY, siteId, project],
     queryFn: async () =>
       unwrap(
         await backendClient.GET("/sites/{site_id}", {
-          params: { path: { site_id: siteId } },
+          params: {
+            path: { site_id: siteId },
+            ...(project.length > 0 ? { query: { project } } : {}),
+          },
         }),
       ),
   });

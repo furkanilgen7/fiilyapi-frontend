@@ -31,7 +31,13 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
 vi.mock("@/lib/api/hooks/useSitePlan", () => ({ useSitePlan: vi.fn() }));
 vi.mock("@/lib/api/hooks/useSiteSections", () => ({ useSiteSections: vi.fn() }));
-vi.mock("@/lib/api/hooks/useSites", () => ({ useSite: vi.fn(() => ({ data: undefined })) }));
+// 🔴 URL-3 — planlama ekrani slug'i KANONIK KIMLIGE burada cozer: rota
+// parametresi slug olabilir, `useSitePlan`/`useSiteSections` ve dort PUT ise
+// UUID bekler. `data: undefined` birakilsaydi ekran (dogru sekilde) bos
+// kimlikle beklerdi ve hicbir plan sorgusu acilmazdi.
+vi.mock("@/lib/api/hooks/useSites", () => ({
+  useSite: vi.fn(() => ({ data: { id: "s-1", project: { id: "p-1" } } })),
+}));
 vi.mock("@/lib/api/hooks/useSitePlanMutations", () => ({
   useSaveSitePlanRows: vi.fn(),
   useSaveSitePlanCells: vi.fn(),

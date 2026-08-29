@@ -6,6 +6,7 @@ import { AccessDenied } from "@/components/settings/AccessDenied";
 import { DiaryModeSwitch } from "@/components/site-diary/DiaryModeSwitch";
 import { SiteDetailTabs } from "@/components/site-detail/SiteDetailTabs";
 import { Button } from "@/components/ui/button/Button";
+import { useSite } from "@/lib/api/hooks/useSites";
 import { useSitePlan } from "@/lib/api/hooks/useSitePlan";
 import { useSiteSections } from "@/lib/api/hooks/useSiteSections";
 import { isForbidden } from "@/lib/api/unwrap";
@@ -53,10 +54,21 @@ export function SitePlanningView() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { projectId, siteId } = useParams<{ projectId: string; siteId: string }>();
+  // 🔴 URL-3 — rota parametreleri "slug VEYA UUID"dur; ADRES anahtarlaridir.
+  const { projectId: projectKey, siteId: siteKey } = useParams<{
+    projectId: string;
+    siteId: string;
+  }>();
 
   const permission = useModulePermission("site_diary");
   const weekStart = resolveWeekStart(searchParams.get("week"));
+  // 🔴 URL-3 — bu ekranin cozumleme kaynagi YOKTU (tek `useSite` cagirmayan
+  // santiye ekraniydi). Slug'li adreste `useSitePlan`/`useSiteSections`/dort
+  // PUT'un HEPSI UUID bekledigi icin anahtar burada cozulmek ZORUNDA.
+  // Ek istek degil, onbellek paylasimi: ayni anahtar santiye detayindan
+  // zaten cekilmis olur.
+  const siteQuery = useSite(siteKey, { project: projectKey });
+  const siteId = siteQuery.data?.id ?? "";
   const planQuery = useSitePlan(siteId, weekStart);
   // Bölüm listesi ızgaradan DEĞİL şantiyeden gelir: ızgaranın grupları yalnız
   // mevcut satırlardan türer, henüz satırı olmayan bölüm orada görünmez (T5).
@@ -70,7 +82,7 @@ export function SitePlanningView() {
   if (isForbidden(planQuery.error)) return <AccessDenied />;
 
   const plan = planQuery.data;
-  const base = routes.projects.sites.detail({ projectId, siteId });
+  const base = routes.projects.sites.detail({ projectId: projectKey, siteId: siteKey });
   const canSave = permission.canWrite && isDirty && !saveHandle.isSaving;
   const sections = planSectionsState(
     sectionsQuery.data,
@@ -86,7 +98,7 @@ export function SitePlanningView() {
   return (
     <div className="plan">
       {/* Şantiye sekme barı — sıra `SiteDetailTabs` tek kaynağından. */}
-      <SiteDetailTabs projectId={projectId} siteId={siteId} activePath={pathname} />
+      <SiteDetailTabs projectKey={projectKey} siteKey={siteKey} activePath={pathname} />
 
       {/* P80-84 */}
       <DiaryModeSwitch

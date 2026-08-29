@@ -3,8 +3,17 @@ import { cx } from "@/lib/cx";
 import { routes } from "@/lib/routes";
 
 export interface SiteDetailTabsProps {
-  projectId: string;
-  siteId: string;
+  /**
+   * 🔴 URL-3 · ADRESTEKI anahtarlar (slug VEYA UUID) — kanonik UUID DEGIL.
+   *
+   * Bu serit YALNIZ YOL kurar ve aktif sekmeyi `activePath === href` TAM DIZE
+   * karsilastirmasiyla bulur. Kanonik UUID gecirilseydi, slug'li bir adreste
+   * href'ler UUID'ye kurulur, HICBIR sekme aktif gorunmez ve bir tikta
+   * kullanicinin okunur adresi UUID'ye geri duserdi. Kusur 422 vermez,
+   * yalnizca GOZLE gorulur — bu yuzden ad `...Key`tir, `...Id` degil.
+   */
+  projectKey: string;
+  siteKey: string;
   /** Aktif yol dışarıdan verilir; bileşen routing hook'u çağırmaz. */
   activePath: string;
 }
@@ -43,8 +52,8 @@ const TABS: TabDef[] = [
   { label: "Belgeler", slug: "belgeler", written: true },
 ];
 
-export function SiteDetailTabs({ projectId, siteId, activePath }: SiteDetailTabsProps) {
-  const base = routes.projects.sites.detail({ projectId, siteId });
+export function SiteDetailTabs({ projectKey, siteKey, activePath }: SiteDetailTabsProps) {
+  const base = routes.projects.sites.detail({ projectId: projectKey, siteId: siteKey });
 
   return (
     <div className="site-detail-tabs" role="tablist" aria-label="Şantiye detay sekmeleri">

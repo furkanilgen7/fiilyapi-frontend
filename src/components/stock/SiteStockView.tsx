@@ -45,13 +45,24 @@ import "./stock.css";
 export function SiteStockView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { projectId, siteId } = useParams<{ projectId: string; siteId: string }>();
+  // 🔴 URL-3 — rota parametreleri "slug VEYA UUID"dur; ADRES anahtarlaridir.
+  const { projectId: projectKey, siteId: siteKey } = useParams<{
+    projectId: string;
+    siteId: string;
+  }>();
 
   const permission = useModulePermission("stock");
 
   // Başlık için — drill kabuğu aynı anahtarı zaten çektiğinden ikinci bir ağ
   // isteği oluşmaz (React Query önbelleği; `belgeler`/`puantaj` deseni).
-  const siteQuery = useSite(siteId);
+  const siteQuery = useSite(siteKey, { project: projectKey });
+  // 🔴 SLUG -> KANONIK KIMLIK GECIS NOKTASI. Slug'i kabul eden TEK santiye ucu
+  // yukaridakidir; asagidaki uclarin HEPSI UUID bekler. Santiye yaniti hem
+  // kendi `id`sini hem PROJESININ `id`sini tasir, yani ikinci bir istek YOK.
+  // Cozulene kadar bos string gider ve hook'lar kendi `enabled` kapilarinda durur.
+  const siteId = siteQuery.data?.id ?? "";
+  const projectId = siteQuery.data?.project.id ?? "";
+
   // Kırpılma korkuluğu (TB3/F-TH dersi): sunucu varsayılanı 50'dir ve 51.
   // malzemeyi SESSİZCE düşürürdü — tavan AÇIKÇA gönderilir.
   // 🔴 STOK-BOLUM — bölüm süzgeci URL'DEN okunur (`?section=`), yerel state'ten
@@ -79,7 +90,7 @@ export function SiteStockView() {
   return (
     <div className="stok stok--santiye">
       {/* 66-73 — sekme şeridi tek kaynaktan (`SiteDetailTabs`) */}
-      <SiteDetailTabs projectId={projectId} siteId={siteId} activePath={pathname} />
+      <SiteDetailTabs projectKey={projectKey} siteKey={siteKey} activePath={pathname} />
 
       {/* 75-82 */}
       <div className="stok__head">
@@ -100,7 +111,8 @@ export function SiteStockView() {
           </Button>
           {/* 79 — T4 formuna gider; şantiye bağlamı ROTADAN taşınır */}
           <Link
-            href={siteStockEntryHref(projectId, siteId)}
+            // YOL baglantisi ADRESTEKI anahtarlarla kurulur (URL-3).
+            href={siteStockEntryHref(projectKey, siteKey)}
             className={cx("btn", "btn--primary", "btn--md")}
             data-testid="santiye-stok-giris-link"
           >
@@ -134,7 +146,7 @@ export function SiteStockView() {
           {SITE_STOCK_SECTION_FILTER_NOTICE}{" "}
           <Link
             className="stok__notice-link"
-            href={routes.projects.sites.stock({ projectId, siteId })}
+            href={routes.projects.sites.stock({ projectId: projectKey, siteId: siteKey })}
             data-testid="santiye-stok-section-filter-clear"
           >
             Süzgeci kaldır

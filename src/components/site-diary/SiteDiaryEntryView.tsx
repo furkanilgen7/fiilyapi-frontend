@@ -74,9 +74,16 @@ import { routes } from "@/lib/routes";
  */
 export function SiteDiaryEntryView() {
   const pathname = usePathname();
-  const { projectId, siteId } = useParams<{ projectId: string; siteId: string }>();
+  // 🔴 URL-3 — rota parametreleri "slug VEYA UUID"dur; ADRES anahtarlaridir.
+  const { projectId: projectKey, siteId: siteKey } = useParams<{
+    projectId: string;
+    siteId: string;
+  }>();
 
-  const siteQuery = useSite(siteId);
+  const siteQuery = useSite(siteKey, { project: projectKey });
+  // 🔴 SLUG -> KANONIK KIMLIK GECIS NOKTASI (bkz. `routes.ts` YOL/SORGU kurali).
+  const siteId = siteQuery.data?.id ?? "";
+  const projectId = siteQuery.data?.project.id ?? "";
   const boqQuery = useBoq(siteId);
   const permission = useModulePermission("site_diary");
 
@@ -153,7 +160,9 @@ export function SiteDiaryEntryView() {
   const canReopen = hasAtLeast(permission.level, "admin");
   const isDirty = entry ? isDiaryFormDirty(entry, form) : false;
 
-  const base = routes.projects.sites.detail({ projectId, siteId });
+  // YOL baglantisi ADRESTEKI anahtarlarla kurulur — kanonik UUID gecirilseydi
+  // kullanicinin okunur adresi bir tikta UUID'ye geri duserdi.
+  const base = routes.projects.sites.detail({ projectId: projectKey, siteId: siteKey });
 
   // Sağ panel türevleri — hepsi SAF fonksiyonlarda (ayrı `.ts` dosyaları),
   // bileşenin içinde hesap YOK.
@@ -276,7 +285,7 @@ export function SiteDiaryEntryView() {
   return (
     <div className="diary">
       {/* GK148-155 — şantiye sekme barı; sıra `SiteDetailTabs` tek kaynağından. */}
-      <SiteDetailTabs projectId={projectId} siteId={siteId} activePath={pathname} />
+      <SiteDetailTabs projectKey={projectKey} siteKey={siteKey} activePath={pathname} />
 
       {/* GK158-171 — başlık + mod anahtarı + aksiyonlar */}
       <div className="diary__head">

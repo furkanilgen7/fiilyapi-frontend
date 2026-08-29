@@ -56,7 +56,11 @@ export function SiteDocumentsView() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { projectId, siteId } = useParams<{ projectId: string; siteId: string }>();
+  // 🔴 URL-3 — rota parametreleri "slug VEYA UUID"dur; ADRES anahtarlaridir.
+  const { projectId: projectKey, siteId: siteKey } = useParams<{
+    projectId: string;
+    siteId: string;
+  }>();
 
   const permission = useModulePermission("documents");
   // Yazma yüzeyi (yükleme + klasör açma) `full` ister. `documents:admin`
@@ -68,7 +72,13 @@ export function SiteDocumentsView() {
 
   // Başlık için — drill kabuğu aynı anahtarı zaten çektiğinden ikinci bir ağ
   // isteği oluşmaz (React Query önbelleği).
-  const siteQuery = useSite(siteId);
+  const siteQuery = useSite(siteKey, { project: projectKey });
+  // 🔴 SLUG -> KANONIK KIMLIK GECIS NOKTASI. Slug'i kabul eden TEK santiye ucu
+  // yukaridakidir; asagidaki uclarin HEPSI UUID bekler. Santiye yaniti hem
+  // kendi `id`sini hem PROJESININ `id`sini tasir, yani ikinci bir istek YOK.
+  // Cozulene kadar bos string gider ve hook'lar kendi `enabled` kapilarinda durur.
+  const siteId = siteQuery.data?.id ?? "";
+  const projectId = siteQuery.data?.project.id ?? "";
   const foldersQuery = useDocumentFolders(projectId, siteId);
   const documentsQuery = useDocuments(projectId, {
     siteId,
@@ -154,7 +164,7 @@ export function SiteDocumentsView() {
 
       <div className="sdoc__main">
         {/* ŞB 73-80 — sekme şeridi tek kaynaktan (`SiteDetailTabs`) */}
-        <SiteDetailTabs projectId={projectId} siteId={siteId} activePath={pathname} />
+        <SiteDetailTabs projectKey={projectKey} siteKey={siteKey} activePath={pathname} />
 
         {/* ŞB 82-91 */}
         <div className="sdoc__head">

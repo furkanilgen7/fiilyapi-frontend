@@ -43,11 +43,19 @@ import { routes } from "@/lib/routes";
  *   - HÖ234-258 trend → PENDING kart; EK SORGU YOKTUR (spec §6 S4)
  */
 export function SiteDiarySummaryView() {
-  const { projectId, siteId } = useParams<{ projectId: string; siteId: string }>();
+  // 🔴 URL-3 — rota parametreleri "slug VEYA UUID"dur; ADRES anahtarlaridir.
+  const { projectId: projectKey, siteId: siteKey } = useParams<{
+    projectId: string;
+    siteId: string;
+  }>();
 
   const permission = useModulePermission("site_diary");
   const paymentsPermission = useModulePermission("progress_payments");
-  const siteQuery = useSite(siteId);
+  const siteQuery = useSite(siteKey, { project: projectKey });
+  // 🔴 SLUG -> KANONIK KIMLIK GECIS NOKTASI (bkz. `routes.ts` YOL/SORGU kurali).
+  const siteId = siteQuery.data?.id ?? "";
+  const projectId = siteQuery.data?.project.id ?? "";
+
 
   // Varsayılan dönem: içinde bulunulan GERÇEK ay (mockup'ın "Temmuz 2026"
   // sabiti KOPYALANMAZ — tarih artefaktı istisnası, spec başlığı).
@@ -67,7 +75,9 @@ export function SiteDiarySummaryView() {
   if (isForbidden(siteQuery.error) || isForbidden(summaryQuery.error)) return <AccessDenied />;
 
   const site = siteQuery.data;
-  const base = routes.projects.sites.detail({ projectId, siteId });
+  // YOL baglantisi ADRESTEKI anahtarlarla kurulur — kanonik UUID gecirilseydi
+  // kullanicinin okunur adresi bir tikta UUID'ye geri duserdi.
+  const base = routes.projects.sites.detail({ projectId: projectKey, siteId: siteKey });
   // Sekme şeridi "Günlük Kayıt" sekmesini AKTİF gösterir: özet, o sekmenin bir
   // alt görünümüdür (mod anahtarı ikisini birbirine bağlar).
   const entryHref = `${base}/gunluk-kayit`;
@@ -99,7 +109,7 @@ export function SiteDiarySummaryView() {
 
   return (
     <div className="diary">
-      <SiteDetailTabs projectId={projectId} siteId={siteId} activePath={entryHref} />
+      <SiteDetailTabs projectKey={projectKey} siteKey={siteKey} activePath={entryHref} />
 
       {/* HÖ77-81 */}
       <DiaryModeSwitch

@@ -10,7 +10,7 @@ const BASE = `/projeler/${PROJECT_ID}/santiyeler/${SITE_ID}`;
 
 describe("SiteDetailTabs (spec §5.3)", () => {
   it("role=tablist icinde 7 sekme basar", () => {
-    render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={BASE} />);
+    render(<SiteDetailTabs projectKey={PROJECT_ID} siteKey={SITE_ID} activePath={BASE} />);
     const tablist = screen.getByRole("tablist", { name: "Şantiye detay sekmeleri" });
     expect(tablist).toBeInTheDocument();
     const tabs = screen.getAllByRole("tab");
@@ -26,13 +26,13 @@ describe("SiteDetailTabs (spec §5.3)", () => {
   });
 
   it("yalniz Bolumler aktif yolda aria-selected tasir", () => {
-    render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={BASE} />);
+    render(<SiteDetailTabs projectKey={PROJECT_ID} siteKey={SITE_ID} activePath={BASE} />);
     expect(screen.getByRole("tab", { name: "Bölümler" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: "Puantaj" })).toHaveAttribute("aria-selected", "false");
   });
 
   it("YEDI sekmenin de gercek rotasi vardir — hicbiri 'Bu bolum yakinda' tasimaz", () => {
-    render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={BASE} />);
+    render(<SiteDetailTabs projectKey={PROJECT_ID} siteKey={SITE_ID} activePath={BASE} />);
     // F-ST T3: "Stok" yazildi; yazilmamis sekme KALMADI.
     for (const tab of screen.getAllByRole("tab")) {
       expect(tab).not.toHaveAttribute("title");
@@ -57,47 +57,47 @@ describe("SiteDetailTabs (spec §5.3)", () => {
   });
 
   it("Belgeler rotasindayken yalniz o sekme aria-selected tasir", () => {
-    render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={`${BASE}/belgeler`} />);
+    render(<SiteDetailTabs projectKey={PROJECT_ID} siteKey={SITE_ID} activePath={`${BASE}/belgeler`} />);
     expect(screen.getByRole("tab", { name: "Belgeler" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: "Bölümler" })).toHaveAttribute("aria-selected", "false");
   });
 
   it("Bolumler sekmesi title tasimaz (yazilmis rota)", () => {
-    render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={BASE} />);
+    render(<SiteDetailTabs projectKey={PROJECT_ID} siteKey={SITE_ID} activePath={BASE} />);
     expect(screen.getByRole("tab", { name: "Bölümler" })).not.toHaveAttribute("title");
   });
 
   // Onayli sapma B (spec §2.2, §13): mockup'ta bu sekme YOK, kullanici karariyla eklendi.
   it("İş Kalemleri sekmesi Bolumler'den hemen sonra gelir (7 sekmenin 2.'si)", () => {
-    render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={BASE} />);
+    render(<SiteDetailTabs projectKey={PROJECT_ID} siteKey={SITE_ID} activePath={BASE} />);
     const labels = screen.getAllByRole("tab").map((t) => t.textContent);
     expect(labels).toHaveLength(7);
     expect(labels[1]).toBe("İş Kalemleri");
   });
 
   it("İş Kalemleri sekmesi /is-kalemleri rotasina gider ve 'yakinda' basligi tasimaz", () => {
-    render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={BASE} />);
+    render(<SiteDetailTabs projectKey={PROJECT_ID} siteKey={SITE_ID} activePath={BASE} />);
     const tab = screen.getByRole("tab", { name: "İş Kalemleri" });
     expect(tab).toHaveAttribute("href", `${BASE}/is-kalemleri`);
     expect(tab).not.toHaveAttribute("title");
   });
 
   it("İş Kalemleri rotasindayken yalniz o sekme aria-selected tasir", () => {
-    render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={`${BASE}/is-kalemleri`} />);
+    render(<SiteDetailTabs projectKey={PROJECT_ID} siteKey={SITE_ID} activePath={`${BASE}/is-kalemleri`} />);
     expect(screen.getByRole("tab", { name: "İş Kalemleri" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: "Bölümler" })).toHaveAttribute("aria-selected", "false");
   });
 
   // P7 T6: "Hakedişler" gerçek rotaya bağlandı — artık "yazılmamış" degildir.
   it("Hakedişler sekmesi /hakedisler rotasina gider ve 'yakinda' basligi tasimaz", () => {
-    render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={BASE} />);
+    render(<SiteDetailTabs projectKey={PROJECT_ID} siteKey={SITE_ID} activePath={BASE} />);
     const tab = screen.getByRole("tab", { name: "Hakedişler" });
     expect(tab).toHaveAttribute("href", `${BASE}/hakedisler`);
     expect(tab).not.toHaveAttribute("title");
   });
 
   it("Hakedişler rotasindayken yalniz o sekme aria-selected tasir", () => {
-    render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={`${BASE}/hakedisler`} />);
+    render(<SiteDetailTabs projectKey={PROJECT_ID} siteKey={SITE_ID} activePath={`${BASE}/hakedisler`} />);
     expect(screen.getByRole("tab", { name: "Hakedişler" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: "Bölümler" })).toHaveAttribute("aria-selected", "false");
   });
@@ -105,7 +105,7 @@ describe("SiteDetailTabs (spec §5.3)", () => {
   // F-ST T3 + F-SD T7 dersi: kok sekme ("Bölümler") diger 6 sekmenin ATASIDIR;
   // eslesme `exact` olmazsa alt rotalarda IKI sekme birden aktif gorunur.
   it("Stok rotasindayken YALNIZ Stok aria-selected tasir (cift aktiflik YOK)", () => {
-    render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={`${BASE}/stok`} />);
+    render(<SiteDetailTabs projectKey={PROJECT_ID} siteKey={SITE_ID} activePath={`${BASE}/stok`} />);
     const selected = screen
       .getAllByRole("tab")
       .filter((tab) => tab.getAttribute("aria-selected") === "true");
@@ -120,7 +120,7 @@ describe("SiteDetailTabs (spec §5.3)", () => {
 describe("SiteDetailTabs — klavye ile odaklanabilirlik ve sekme sirasi (davranissal)", () => {
   it("Tab ile butun sekmelere sirayla odaklanilabilir", async () => {
     const user = userEvent.setup();
-    render(<SiteDetailTabs projectId={PROJECT_ID} siteId={SITE_ID} activePath={BASE} />);
+    render(<SiteDetailTabs projectKey={PROJECT_ID} siteKey={SITE_ID} activePath={BASE} />);
     const tabs = screen.getAllByRole("tab");
     expect(tabs).toHaveLength(7);
 
