@@ -2277,7 +2277,12 @@ const SUBCONTRACTOR_CONTRACTS: MockSubcontractorContract[] = [
   // notundaki tuzağın aynısı).
   {
     id: "sc-4", project_id: "p-1", site_id: null, subcontractor_id: "sub-1",
-    subcontractor_name: "Yılmaz Boya A.Ş.", work_category: "Genel İşler",
+    // ⚠️ AD sc-3'ten FARKLI olmak ZORUNDA: `subcontractor-progress-payments.
+    // spec.ts:119` seçim kutusunda "Yılmaz Boya A.Ş." seçeneğinin TAM 1 tane
+    // olduğunu iddia eder (U1 kanıtı). Aynı adı vermek o bekçiyi kırdı ve
+    // fiilen ölçüldü. `subcontractor_id` yine `sub-1` KALIR — "Aktif Taşeron"
+    // KPI'ı KİMLİK sayar, ad değil.
+    subcontractor_name: "Öz Genel Hizmetler", work_category: "Genel İşler",
     contract_no: "TSD-2026-04", signature_date: "2026-03-15", is_notarized: false,
     start_date: "2026-04-01", end_date: "2026-12-31", late_penalty_daily: null,
     advance_pct: "0.00", retainage_pct: "5.00", vat_pct: "20.00",

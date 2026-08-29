@@ -115,9 +115,13 @@ test("Hakedis sekmesi bolum + 'Tum Bolumler' satirlarini basar, baska bolumu DUS
   await expect(panel).toBeVisible();
   await expect(page.getByText("Yükleniyor…")).toHaveCount(0);
 
-  // Görünen küme: `scpp-2` (sec-1) + `scpp-1`, `scpp-4` (null = Tüm Bölümler).
+  // Görünen küme: `scpp-2` (sec-1) + `scpp-1`, `scpp-4` (null = Tüm Bölümler)
+  // + 🔴 HAK-NULL: `scpp-9` — sözleşmesi PROJE GENELİ (`sc-4`, `site_id: null`)
+  // olan hakediş. Eskiden bu satır sunucudaki eşitlik süzgeci yüzünden
+  // HİÇBİR bölümde görünmüyordu; canlıda sözleşmelerin HEPSİ proje geneli
+  // olduğu için bu panel fiilen boştu.
   // `scpp-3` sec-2'dedir → DÜŞER. `scpp-7` `hiddenFromLists`tir.
-  await expect(panel.locator(".pp-row")).toHaveCount(3);
+  await expect(panel.locator(".pp-row")).toHaveCount(4);
 
   // (a) BU bölümün satırı GERÇEK adı basar — ekran adı zaten biliyor, pending "—" basmaz.
   await expect(panel).toContainText("Aydın Elektrik Taah. #2");
@@ -127,6 +131,12 @@ test("Hakedis sekmesi bolum + 'Tum Bolumler' satirlarini basar, baska bolumu DUS
   await expect(panel).toContainText("Aydın Elektrik Taah. #1");
   await expect(panel).toContainText("Aydın Elektrik Taah. #4");
   await expect(panel.getByText("Elektrik · Tüm Bölümler")).toHaveCount(2);
+
+  // (b2) 🔴 HAK-NULL BEKÇİSİ: proje geneli sözleşmenin hakedişi BU bölümde
+  // görünür ve o da "Tüm Bölümler" kapsamı taşır. Bu satır kaybolursa kusur
+  // geri gelmiş demektir.
+  await expect(panel).toContainText("Öz Genel Hizmetler #1");
+  await expect(panel.getByText("Genel İşler · Tüm Bölümler")).toHaveCount(1);
 
   // (c) 🔴 KARŞI-KANIT: `scpp-3` (sec-2) GÖSTERİLMEZ.
   await expect(panel).not.toContainText("Aydın Elektrik Taah. #3");
