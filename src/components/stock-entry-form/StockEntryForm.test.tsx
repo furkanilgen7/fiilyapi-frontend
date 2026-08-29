@@ -2,7 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 import { StockEntryForm } from "./StockEntryForm";
+import { useBoq } from "@/lib/api/hooks/useBoq";
 import { useSite } from "@/lib/api/hooks/useSites";
+import { useSiteSections } from "@/lib/api/hooks/useSiteSections";
 import { useStockItems } from "@/lib/api/hooks/useStockItems";
 import { useCreateStockEntry } from "@/lib/api/hooks/useStockMutations";
 import { useUserOptions } from "@/lib/api/hooks/useUserOptions";
@@ -30,11 +32,37 @@ vi.mock("@/lib/api/hooks/useUserOptions", async (importOriginal) => ({
   useUserOptions: vi.fn(),
 }));
 vi.mock("@/lib/auth/useModulePermission", () => ({ useModulePermission: vi.fn() }));
+// 🔴 STOK-BOLUM — atıf seçeneklerinin iki kaynağı.
+vi.mock("@/lib/api/hooks/useSiteSections", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useSiteSections")>()),
+  useSiteSections: vi.fn(),
+}));
+vi.mock("@/lib/api/hooks/useBoq", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useBoq")>()),
+  useBoq: vi.fn(),
+}));
 
 const WAREHOUSES = [
   { id: "wh-0", name: "Merkez Depo (Sincan)", site_id: null, created_at: "2025-03-01T08:00:00Z" },
   { id: "wh-1", name: "D-1 Ambar", site_id: SITE_ID, created_at: "2025-03-01T08:01:00Z" },
   { id: "wh-3", name: "D-3 Kapalı", site_id: "s-2", created_at: "2025-03-01T08:03:00Z" },
+];
+
+const SECTIONS = [
+  { id: "sec-1", code: "A-01", name: "Kat 6–10 Kaba İnşaat" },
+  { id: "sec-2", code: null, name: "Zemin Kat" },
+];
+
+// 🔴 Bu poz "sec-1"e TAHSİS EDİLMEMİŞTİR ve listede DURMALIDIR (fail-open).
+const BOQ_GROUPS = [
+  {
+    id: "bg-1",
+    name: "BETONARME",
+    items: [
+      { id: "bi-3", code: "02.001", description: "C25/30 Beton" },
+      { id: "bi-9", code: "09.999", description: "Tahsis EDILMEMIS poz" },
+    ],
+  },
 ];
 
 const ITEMS = [
@@ -69,6 +97,16 @@ beforeEach(() => {
       isLoading: false,
       isError: false,
     }),
+  );
+  vi.mocked(useSiteSections).mockReturnValue(
+    stub({
+      data: { items: SECTIONS, total: SECTIONS.length, limit: 200, offset: 0 },
+      isLoading: false,
+      isError: false,
+    }),
+  );
+  vi.mocked(useBoq).mockReturnValue(
+    stub({ data: { groups: BOQ_GROUPS }, isLoading: false, isError: false }),
   );
   vi.mocked(useStockItems).mockReturnValue(
     stub({
@@ -190,6 +228,122 @@ describe("StockEntryForm — GÖVDE ANAHTAR TESTİ (telden gidecek gövde)", () 
     fireEvent.click(submitButton());
 
     expect(mutate.mock.calls[0][0].source_warehouse_id).toBe("wh-0");
+  });
+  /* ── STOK-BOLUM · SATIR BAZINDA ATIF ─────────────────────────────────── */
+
+  it("atif SECILINCE govdeye SATIR bazinda girer (baslikta DEGIL)", () => {
+    render(<StockEntryForm />);
+    fillValidLine();
+    fireEvent.change(screen.getByTestId("stok-giris-bolum-0"), { target: { value: "sec-1" } });
+    fireEvent.change(screen.getByTestId("stok-giris-poz-0"), { target: { value: "bi-3" } });
+    fireEvent.click(submitButton());
+
+    const body = mutate.mock.calls[0][0];
+    // 🔴 BAŞLIKTA atıf anahtarı OLMAMALI — etiket SATIR bazındadır.
+    expect(body).not.toHaveProperty("section_id");
+    expect(body).not.toHaveProperty("boq_item_id");
+    expect(body.lines[0].section_id).toBe("sec-1");
+    expect(body.lines[0].boq_item_id).toBe("bi-3");
+  });
+
+  it("atif BOS birakilirsa anahtar HIC KURULMAZ (null bile gonderilmez)", () => {
+    render(<StockEntryForm />);
+    fillValidLine();
+    fireEvent.click(submitButton());
+
+    const line = mutate.mock.calls[0][0].lines[0];
+    expect(line).not.toHaveProperty("section_id");
+    expect(line).not.toHaveProperty("boq_item_id");
+  });
+
+  // 🔴 BU DİLİMİN EN KRİTİK YAPISAL BEKÇİSİ. Backend `transfer` + atıf
+  // gövdesini 422 ile reddeder ("transfer tüketim değildir, iki bacaklıdır").
+  // Kullanıcı önce "Satınalma"da bölüm seçip SONRA "Transfer"e geçebilir;
+  // gövdeye SIZMAMALIDIR.
+  it("TRANSFER: onceden secilmis atif govdeye SIZMAZ (422 uretilemez)", () => {
+    render(<StockEntryForm />);
+    fillValidLine();
+    // Önce atıf yapılır (tip "purchase"),
+    fireEvent.change(screen.getByTestId("stok-giris-bolum-0"), { target: { value: "sec-1" } });
+    fireEvent.change(screen.getByTestId("stok-giris-poz-0"), { target: { value: "bi-3" } });
+    // sonra transfere geçilir.
+    fireEvent.click(screen.getByTestId("stok-giris-tip-transfer").querySelector("input")!);
+    fireEvent.change(screen.getByTestId("stok-giris-kaynak-depo"), { target: { value: "wh-0" } });
+    fireEvent.click(submitButton());
+
+    const line = mutate.mock.calls[0][0].lines[0];
+    expect(line).not.toHaveProperty("section_id");
+    expect(line).not.toHaveProperty("boq_item_id");
+  });
+});
+
+describe("StockEntryForm — atif yuzeyi (STOK-BOLUM)", () => {
+  it("TRANSFER'de iki Select DEVRE DISI ve gerekce GORUNUR", () => {
+    render(<StockEntryForm />);
+    fireEvent.click(screen.getByTestId("stok-giris-tip-transfer").querySelector("input")!);
+
+    expect(screen.getByTestId("stok-giris-bolum-0")).toBeDisabled();
+    expect(screen.getByTestId("stok-giris-poz-0")).toBeDisabled();
+    expect(screen.getByTestId("stok-giris-atif-note")).toHaveTextContent(
+      /Transferde bölüm\/iş kalemi atfı yapılmaz/,
+    );
+  });
+
+  // POZİTİF KONTROL — "her zaman devre dışı" bozuk bir kural da yukarıdaki
+  // testi yeşil geçirirdi.
+  it("POZITIF KONTROL - transfer DISINDA iki Select ACIKTIR", () => {
+    render(<StockEntryForm />);
+
+    expect(screen.getByTestId("stok-giris-bolum-0")).not.toBeDisabled();
+    expect(screen.getByTestId("stok-giris-poz-0")).not.toBeDisabled();
+  });
+
+  it("tip transfere gecince SECILI atif GORUNUMDEN de silinir (hayalet secim yok)", () => {
+    render(<StockEntryForm />);
+    fireEvent.change(screen.getByTestId("stok-giris-bolum-0"), { target: { value: "sec-1" } });
+    expect(screen.getByTestId("stok-giris-bolum-0")).toHaveValue("sec-1");
+
+    fireEvent.click(screen.getByTestId("stok-giris-tip-transfer").querySelector("input")!);
+    expect(screen.getByTestId("stok-giris-bolum-0")).toHaveValue("");
+
+    // Geri dönüldüğünde de geri GELMEZ — silinmiştir, gizlenmemiştir.
+    fireEvent.click(screen.getByTestId("stok-giris-tip-purchase").querySelector("input")!);
+    expect(screen.getByTestId("stok-giris-bolum-0")).toHaveValue("");
+  });
+
+  it("bolum secenekleri santiyenin bolumleridir (kod varsa ada eklenir)", () => {
+    render(<StockEntryForm />);
+
+    const select = screen.getByTestId("stok-giris-bolum-0");
+    const labels = Array.from(select.querySelectorAll("option")).map((o) => o.textContent);
+    expect(labels).toEqual(["Bölüm atanmadı", "A-01 · Kat 6–10 Kaba İnşaat", "Zemin Kat"]);
+  });
+
+  // 🔴 FAIL-OPEN BEKÇİSİ — backend tahsis ARAMAZ ("kayıt, planın rehinesi
+  // olmaz") ve istemci bu kararı DARALTMAZ: bölüm seçilse bile poz listesi
+  // süzülmez, tahsis edilmemiş poz listede KALIR.
+  it("FAIL-OPEN: bolum secilince poz listesi DARALMAZ", () => {
+    render(<StockEntryForm />);
+
+    const optionIds = () =>
+      Array.from(
+        screen.getByTestId("stok-giris-poz-0").querySelectorAll("option"),
+      ).map((o) => (o as HTMLOptionElement).value);
+
+    const before = optionIds();
+    fireEvent.change(screen.getByTestId("stok-giris-bolum-0"), { target: { value: "sec-1" } });
+    expect(optionIds()).toEqual(before);
+    // Tahsis EDİLMEMİŞ poz hâlâ seçilebilir.
+    expect(optionIds()).toContain("bi-9");
+  });
+
+  it("atif ZORUNLU DEGIL - bolumsuz satir kaydedilebilir", () => {
+    render(<StockEntryForm />);
+    fillValidLine();
+    fireEvent.click(submitButton());
+
+    expect(mutate).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("stok-giris-hata")).not.toBeInTheDocument();
   });
 });
 

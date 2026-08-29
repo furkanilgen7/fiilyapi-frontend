@@ -18,9 +18,17 @@ vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
 
 const PROJECT_ID = "p-1";
 const SITE_ID = "s-1";
+// 🔴 STOK-BOLUM — ekran artık `?section=` OKUYOR. Mock bir `URLSearchParams`
+// döndürür ve testler `setSearchParams(...)` ile onu değiştirir; sabit boş bir
+// nesne dönseydi süzgeç dalı HİÇ ölçülemezdi.
+let searchParams = new URLSearchParams();
+function setSearchParams(query: string): void {
+  searchParams = new URLSearchParams(query);
+}
 vi.mock("next/navigation", () => ({
   usePathname: () => `/projeler/${PROJECT_ID}/santiyeler/${SITE_ID}/stok`,
   useParams: () => ({ projectId: PROJECT_ID, siteId: SITE_ID }),
+  useSearchParams: () => searchParams,
 }));
 
 const ROWS: SiteStockRow[] = [
@@ -69,6 +77,7 @@ function queryStub(
 }
 
 beforeEach(() => {
+  setSearchParams("");
   vi.clearAllMocks();
   vi.mocked(useSession).mockReturnValue({
     me: { permissions: { stock: "full" } } as unknown as MeResponse,
@@ -147,13 +156,101 @@ describe("SiteStockView — pending yüzeyler ve aksiyonlar", () => {
     );
   });
 
-  it("pending sütunların gerekçesi ekranda GÖRÜNÜR metindir (sessiz düşüş YOK)", () => {
+  // 🔴 STOK-BOLUM — BU İDDİA BAYATTI VE DÜZELTİLDİ. Eski hâli bandın "Bölüm"
+  // KELİMESİNİ ve "Şantiye planlama … bağlanmadı" cümlesini AYRI AYRI arıyordu;
+  // `toHaveTextContent` düğümün TAMAMINA baktığı için iki metin farklı
+  // cümlelerde olsa bile YEŞİL kalıyordu — yani sütunlar ayrıldıktan sonra
+  // iddia hiçbir şeyi bekçilemiyordu (sahte-yeşil).
+  //
+  // Yeni iddia AYRIMI çakar: yer tutucu gerekçesi YALNIZ "Aylık İhtiyaç"a
+  // bağlıdır ve "Bölüm" o cümlenin İÇİNDE geçmez.
+  it("yer tutucu gerekcesi YALNIZ 'Aylik Ihtiyac'a baglidir - 'Bolum' o cumlede YOK", () => {
     render(<SiteStockView />);
     const notice = screen.getByTestId("santiye-stok-pending-notice");
-    expect(notice).toHaveTextContent("Aylık İhtiyaç");
-    expect(notice).toHaveTextContent("Bölüm");
-    expect(notice).toHaveTextContent("Şantiye planlama verisi bu yüzeye henüz bağlanmadı");
-    expect(notice).toHaveTextContent("Malzeme detay ekranı henüz tasarlanmadı");
+    const text = notice.textContent ?? "";
+
+    const needSentence = text.split(".")[0];
+    expect(needSentence).toContain("Aylık İhtiyaç");
+    expect(needSentence).toContain("Şantiye planlama verisi bu yüzeye henüz bağlanmadı");
+    // 🔴 ASIL BEKÇİ: "Bölüm" o cümlede GEÇMEZ — sütun artık gerçek basıyor ve
+    // onu "kaynağı yok" cümlesine geri koymak canlıyı yalanlardı.
+    expect(needSentence).not.toContain("Bölüm");
+  });
+
+  it("'Bolum' sutunu icin ARTIK 'kaynagi yok' DENMEZ - ne bastigi anlatilir", () => {
+    render(<SiteStockView />);
+    const notice = screen.getByTestId("santiye-stok-pending-notice");
+
+    expect(notice).toHaveTextContent(/“Bölüm” sütunu stok hareketlerinde atfedilmiş/);
+    expect(notice.textContent ?? "").not.toContain(
+      "“Aylık İhtiyaç” ve “Bölüm” sütunlarının veri kaynağı henüz yok",
+    );
+  });
+
+  it("satir sonu düğme gerekcesi bandda KALIR", () => {
+    render(<SiteStockView />);
+    expect(screen.getByTestId("santiye-stok-pending-notice")).toHaveTextContent(
+      "Malzeme detay ekranı henüz tasarlanmadı",
+    );
+  });
+
+  /* ── `?section=` SÜZGECİ ────────────────────────────────────────────── */
+
+  it("suzgec YOKKEN section_id AGA GONDERILMEZ ve band BASILMAZ", () => {
+    render(<SiteStockView />);
+
+    expect(vi.mocked(useSiteStock).mock.calls[0]?.[1]).toEqual({ limit: 200 });
+    expect(screen.queryByTestId("santiye-stok-section-filter")).not.toBeInTheDocument();
+  });
+
+  it("?section= verilince suzgec AGA gonderilir", () => {
+    setSearchParams("section=sec-1");
+    render(<SiteStockView />);
+
+    expect(vi.mocked(useSiteStock).mock.calls[0]?.[1]).toEqual({
+      limit: 200,
+      sectionId: "sec-1",
+    });
+  });
+
+  // 🔴 BU DİLİMİN EN KOLAY YANLIŞ YAPILACAK YERİ: süzgeç SATIR KÜMESİNİ
+  // daraltır, BAKİYEYİ DEĞİŞTİRMEZ. Band bunu SÖYLEMEK ZORUNDADIR; "bölümün
+  // stoğu" demek canlı bir yalan olurdu.
+  it("suzgec bandi bakiyenin SANTIYE bakiyesi oldugunu SOYLER", () => {
+    setSearchParams("section=sec-1");
+    render(<SiteStockView />);
+
+    const band = screen.getByTestId("santiye-stok-section-filter");
+    expect(band).toHaveTextContent(/ŞANTİYE bakiyesidir/);
+    expect(band).toHaveTextContent(/bölümün kendi miktarları değildir/);
+  });
+
+  it("suzgec bandi 'bolumun stogu' YALANINI kurmaz", () => {
+    setSearchParams("section=sec-1");
+    render(<SiteStockView />);
+
+    const text = screen.getByTestId("santiye-stok-section-filter").textContent ?? "";
+    expect(text).not.toMatch(/bölümün stoğu/i);
+    expect(text).not.toMatch(/bölüm bakiyesi/i);
+  });
+
+  it("suzgec kaldirma baglantisi SUZGECSIZ rotaya gider", () => {
+    setSearchParams("section=sec-1");
+    render(<SiteStockView />);
+
+    const clear = screen.getByTestId("santiye-stok-section-filter-clear");
+    expect(clear).toHaveAttribute("href", `/projeler/${PROJECT_ID}/santiyeler/${SITE_ID}/stok`);
+    expect(clear.getAttribute("href")).not.toContain("?section=");
+  });
+
+  // Boş/whitespace `?section=` süzgeç SAYILMAZ: ölü bir sorgu parametresiyle
+  // ağa çıkmak ve bandı basmak kullanıcıya olmayan bir süzgeç gösterirdi.
+  it("bos ?section= suzgec SAYILMAZ", () => {
+    setSearchParams("section=%20%20");
+    render(<SiteStockView />);
+
+    expect(vi.mocked(useSiteStock).mock.calls[0]?.[1]).toEqual({ limit: 200 });
+    expect(screen.queryByTestId("santiye-stok-section-filter")).not.toBeInTheDocument();
   });
 
   it("'+ Stok Girişi' T4'ün şantiye kapsamlı rotasına gider", () => {

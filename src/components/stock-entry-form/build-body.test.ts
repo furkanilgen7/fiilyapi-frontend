@@ -137,4 +137,79 @@ describe("buildStockEntryBody — sayı biçimi", () => {
 
     expect(body.lines[0].quantity).toBe("-5");
   });
+
+  /* ── STOK-BOLUM · ATIF ────────────────────────────────────────────────── */
+
+  it("dolu atif govdeye SATIR bazinda girer", () => {
+    const body = buildStockEntryBody(
+      values({
+        lines: [
+          { key: "line-0", itemId: "it-1", quantity: "5", unitPrice: "", quality: "ok", sectionId: "sec-1", boqItemId: "bi-3" },
+        ],
+      }),
+    );
+
+    expect(body.lines[0].section_id).toBe("sec-1");
+    expect(body.lines[0].boq_item_id).toBe("bi-3");
+    // Başlık atıf TAŞIMAZ — etiket SATIR bazındadır.
+    expect(body).not.toHaveProperty("section_id");
+    expect(body).not.toHaveProperty("boq_item_id");
+  });
+
+  it("yalniz BIRI dolu olabilir - oteki anahtar hic kurulmaz", () => {
+    const body = buildStockEntryBody(
+      values({
+        lines: [
+          { key: "line-0", itemId: "it-1", quantity: "5", unitPrice: "", quality: "ok", sectionId: "sec-1", boqItemId: "" },
+        ],
+      }),
+    );
+
+    expect(body.lines[0].section_id).toBe("sec-1");
+    expect(body.lines[0]).not.toHaveProperty("boq_item_id");
+  });
+
+  // 🔴🔴 BU TEST BİR ÖLÇÜMÜN SONUCUDUR — SİLİNMESİ REGRESYONDUR.
+  //
+  // `StockEntryForm.test.tsx`teki "transfer'de atıf sızmaz" testi, `build-body`
+  // katmanı KALDIRILDIĞINDA BİLE YEŞİL KALDI (mutasyonla ölçüldü): çünkü
+  // `form-state.applyEntryTypeToLines` değerleri zaten silmişti ve boş dize
+  // anahtarı zaten kurmuyordu. İKİ KATMAN BİRBİRİNİ MASKELİYORDU — yani o
+  // testin öldürdüğü mutant, bu katmanınki DEĞİLDİ.
+  //
+  // Bu test o boşluğu kapatır: DOLU atıflı bir `transfer` gövdesi kurulur (UI
+  // bu duruma ulaşamaz, ama fonksiyon TEK BAŞINA doğru olmak ZORUNDADIR —
+  // gövdenin tek kurucusu odur ve başka bir çağıran yarın gelebilir).
+  it("TRANSFER: satirda atif DOLU OLSA BILE anahtar govdeye GIRMEZ", () => {
+    const body = buildStockEntryBody(
+      values({
+        entryType: "transfer",
+        sourceWarehouseId: "wh-0",
+        lines: [
+          { key: "line-0", itemId: "it-1", quantity: "5", unitPrice: "", quality: "ok", sectionId: "sec-1", boqItemId: "bi-3" },
+        ],
+      }),
+    );
+
+    expect(body.lines[0]).not.toHaveProperty("section_id");
+    expect(body.lines[0]).not.toHaveProperty("boq_item_id");
+    // Transferin KENDİ anahtarı yine girer — bu test onu bozmamalı.
+    expect(body.source_warehouse_id).toBe("wh-0");
+  });
+
+  // POZİTİF KONTROL — yukarıdaki kural "her tipte atfı yutan" bozuk bir kural
+  // DEĞİLDİR: transfer OLMAYAN tiplerde aynı satır atfı GEÇİRİR.
+  it("POZITIF KONTROL - adjustment'ta AYNI satir atfi GECER", () => {
+    const body = buildStockEntryBody(
+      values({
+        entryType: "adjustment",
+        lines: [
+          { key: "line-0", itemId: "it-1", quantity: "-5", unitPrice: "", quality: "ok", sectionId: "sec-1", boqItemId: "bi-3" },
+        ],
+      }),
+    );
+
+    expect(body.lines[0].section_id).toBe("sec-1");
+    expect(body.lines[0].boq_item_id).toBe("bi-3");
+  });
 });

@@ -208,7 +208,11 @@ describe("SectionDetailView — Günlük Kayıt sekmesi (F-BLMSEK)", () => {
     await user.click(screen.getByRole("tab", { name: "Malzeme" }));
     const panel = screen.getByRole("tabpanel");
 
+    // 🔴 STOK-BOLUM — "Malzeme HÂLÂ yer tutucu" iddiası ÇÜRÜDÜ; sekme artık
+    // kendi verisini basıyor. Bu testin ASIL işi SIZINTIDIR ve o korunur:
+    // günlük kayıt paneli başka sekmeye SIZMAZ.
     expect(within(panel).queryByTestId("section-diary")).not.toBeInTheDocument();
-    expect(within(panel).getByText(/Stok hareketi bölüm alanı taşımıyor/)).toBeInTheDocument();
+    // Malzeme paneli KENDİ kabuğunu basar (boş bir tabpanel değil).
+    expect(within(panel).getByTestId("section-stock")).toBeInTheDocument();
   });
 });
