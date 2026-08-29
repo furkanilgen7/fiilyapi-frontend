@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { routes } from "@/lib/routes";
 
 /**
  * Oturumu kapatır: backend logout endpoint'ini çağırır ve /login'e yönlendirir.
@@ -12,6 +13,6 @@ export function useLogout(): () => Promise<void> {
 
   return async function logout(): Promise<void> {
     await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
+    router.push(routes.login());
   };
 }

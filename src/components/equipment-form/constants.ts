@@ -1,5 +1,6 @@
 import type { DocumentPlaceholderItem } from "@/components/form-shell";
 import type { components } from "@/lib/api/schema";
+import { routes } from "@/lib/routes";
 
 /**
  * "Form - Makine Ekle.dc.html" (M2) sabitleri. Yorumlardaki sayılar O DOSYANIN
@@ -38,7 +39,7 @@ export const SELECT_PLACEHOLDER = "Seçiniz...";
 export const BREADCRUMB_EQUIPMENT = "Makine & Ekipman";
 export const BREADCRUMB_CURRENT = "Yeni Ekipman"; // 35
 export const BREADCRUMB_CURRENT_EDIT = "Ekipmanı Düzenle"; // düzenleme kipi (K4)
-export const EQUIPMENT_LIST_HREF = "/makine";
+export const EQUIPMENT_LIST_HREF = routes.equipment.list();
 
 export const PAGE_TITLE = "Yeni Makine / Ekipman"; // 46
 export const PAGE_TITLE_EDIT = "Makine / Ekipman Düzenle";

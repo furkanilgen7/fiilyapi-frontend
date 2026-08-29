@@ -214,7 +214,10 @@ test("'+ Personel Ekle' mevcut forma döner, 'Dışa Aktar' devre-dışıdır", 
   await expect(page.getByRole("button", { name: "Dışa Aktar" }).first()).toBeDisabled();
 
   await page.getByRole("link", { name: "+ Personel Ekle" }).first().click();
-  await expect(page).toHaveURL(/\/personel\/yeni\?donus=\/personel/);
+  // URL-1 ölçülmüş sapma: `?donus=` artık HER çağırandan kodlanmış çıkar
+  // (gerekçe: `PersonnelListView.test.tsx`teki uzun not). Dönüş hedefi
+  // `PersonnelForm` tarafından aynı `/personel` olarak çözülür.
+  await expect(page).toHaveURL(/\/personel\/yeni\?donus=%2Fpersonel/);
   await expect(
     page.getByRole("heading", { level: 1, name: "Yeni Personel Kaydı" }).first(),
   ).toBeVisible();

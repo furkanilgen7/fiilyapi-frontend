@@ -4,6 +4,7 @@ import type {
   PayrollPeriodStatus,
   WorkerSource,
 } from "@/lib/api/hooks/usePayroll";
+import { routes } from "@/lib/routes";
 
 /**
  * F-BOR T2 · `/bordro` ekranının METİN TEK KAYNAĞI. Yorumlardaki sayılar
@@ -21,9 +22,9 @@ import type {
  * istemci sınırına çekerdi. Sabitler bu yüzden düz bir modülde yaşar
  * (`HR_DOCUMENTS_ROUTE` / `LEAVES_ROUTE` emsali), iki şerit de buradan okur.
  */
-export const PAYROLL_ROUTE = "/bordro";
-export const PAYROLL_HISTORY_ROUTE = "/bordro/gecmis";
-export const PAYROLL_SGK_ROUTE = "/bordro/sgk";
+export const PAYROLL_ROUTE = routes.payroll.root();
+export const PAYROLL_HISTORY_ROUTE = routes.payroll.history();
+export const PAYROLL_SGK_ROUTE = routes.payroll.sgk();
 
 /* ------------------------------------------------------------------ başlık */
 

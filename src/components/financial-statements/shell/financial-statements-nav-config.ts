@@ -1,3 +1,4 @@
+import { routes } from "@/lib/routes";
 /**
  * F-MT T2 · Mali Tablolar segment yapılandırması (BL:24-31 kaynaklı).
  *
@@ -17,9 +18,9 @@
 /** BL:25 — kök ekranda `mt-eyebrow` grup başlığı olarak basılır. */
 export const FINANCIAL_NAV_HEADING = "Sözleşme & Mali";
 
-export const FINANCIAL_STATEMENTS_URL = "/mali-tablolar";
-export const BALANCE_SHEET_URL = "/mali-tablolar/bilanco";
-export const CASH_FLOW_URL = "/mali-tablolar/nakit-akisi";
+export const FINANCIAL_STATEMENTS_URL = routes.financialStatements.root();
+export const BALANCE_SHEET_URL = routes.financialStatements.balanceSheet();
+export const CASH_FLOW_URL = routes.financialStatements.cashFlow();
 
 export type FinancialNavItem =
   | {

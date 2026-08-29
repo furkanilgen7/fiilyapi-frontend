@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
+import { routes } from "@/lib/routes";
 
 // /ayarlar → ilk sekme.
 export default function AyarlarIndexPage() {
-  redirect("/ayarlar/kullanicilar");
+  redirect(routes.settings.users());
 }

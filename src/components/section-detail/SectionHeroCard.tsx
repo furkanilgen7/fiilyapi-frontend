@@ -6,6 +6,7 @@ import { pendingModuleLabel, type PendingModuleKey } from "@/lib/pending-modules
 import { SECTION_STATUS_CLASS_SUFFIX, SECTION_STATUS_LABELS } from "@/lib/section-labels";
 import type { SectionDetailResponse } from "@/lib/api/hooks/useSection";
 import { remainingDays } from "./remainingDays";
+import { routes } from "@/lib/routes";
 
 const NO_END_DATE_TITLE = "Bitiş tarihi girilmemiş";
 // D88: mockup "3 gecikme riski" basıyor ama backend bu veriyi BİLİNÇLİ
@@ -172,7 +173,7 @@ function RemainingDaysCell({ endDate }: { endDate: string | null }) {
 // kalan üçü ilgili modülle birlikte gelir (task-2-brief §KPI şeridi).
 export function SectionHeroCard({ section, siteName, projectId, siteId, canEdit }: SectionHeroCardProps) {
   const meta = metaParts(section, siteName);
-  const editHref = `/projeler/${projectId}/santiyeler/${siteId}/bolumler/${section.id}/duzenle`;
+  const editHref = routes.projects.sites.sections.edit({ projectId, siteId, sectionId: section.id });
   const statusSuffix = SECTION_STATUS_CLASS_SUFFIX[section.status];
 
   return (
@@ -209,7 +210,7 @@ export function SectionHeroCard({ section, siteName, projectId, siteId, canEdit 
           )}
           {/* D66: "Hakediş Oluştur" — kalıcı karar, proje ön seçimiyle P7 ekranına gider. */}
           <Link
-            href={`/hakedisler/yeni?project=${projectId}`}
+            href={routes.progressPayments.new({ projectId })}
             className="section-hero__btn section-hero__btn--solid"
           >
             Hakediş Oluştur

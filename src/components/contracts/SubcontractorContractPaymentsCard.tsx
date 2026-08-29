@@ -7,6 +7,7 @@ import type { SubcontractorProgressPaymentListItem } from "@/lib/api/hooks/useSu
 
 import "./employer-contract-detail.css";
 import "./subcontractor-contract-detail.css";
+import { routes } from "@/lib/routes";
 
 /**
  * TSD 185-204 · "Hakediş Geçmişi".
@@ -94,7 +95,7 @@ export function SubcontractorContractPaymentsCard({
                     </td>
                     <td className="ecd-items__td ecd-items__td--center">
                       <Link
-                        href={`/hakedisler/taseron/${payment.id}`}
+                        href={routes.progressPayments.subcontractor.detail({ paymentId: payment.id })}
                         className="tsd-payments__detail"
                       >
                         Detay

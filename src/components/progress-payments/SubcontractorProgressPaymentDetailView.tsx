@@ -25,6 +25,7 @@ import { SubcontractorProgressPaymentStatusActions } from "./SubcontractorProgre
 import { PAYMENT_STATUS_BADGE } from "./shared/status";
 import "./progress-payment-detail.css";
 import "./subcontractor-progress-payment-detail.css";
+import { routes } from "@/lib/routes";
 
 export interface SubcontractorProgressPaymentDetailViewProps {
   paymentId: string;
@@ -70,7 +71,7 @@ export function SubcontractorProgressPaymentDetailView({
   return (
     <div className="pp-detail">
       <p className="pp-detail__crumb">
-        <Link href="/hakedisler/taseron" className="pp-detail__crumb-link">
+        <Link href={routes.progressPayments.subcontractor.list()} className="pp-detail__crumb-link">
           ← Hakedişler
         </Link>
         {" · Taşeron Hakedişi"}
@@ -102,7 +103,7 @@ export function SubcontractorProgressPaymentDetailView({
           </Button>
           {detail.status === "draft" && canWrite && (
             <Link
-              href={`/hakedisler/taseron/${detail.id}/duzenle`}
+              href={routes.progressPayments.subcontractor.edit({ paymentId: detail.id })}
               className={cx("btn", "btn--secondary", "btn--md")}
             >
               Düzenle

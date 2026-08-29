@@ -9,6 +9,7 @@ import type { SiteSubcontractorPaymentItem } from "@/lib/api/hooks/useSiteSubcon
 import { projectWideNote } from "./shared/site-payment-scope";
 import { buildSubcontractorRowSubtitle } from "./shared/subcontractor-row-subtitle";
 import { PAYMENT_STATUS_BADGE } from "./shared/status";
+import { routes } from "@/lib/routes";
 
 // Şantiye "Hakedişler" sekmesi sağ sütunu (F-TH T5, mockup satır 135-166:
 // "Taşeron Hakedişleri" paneli). Satır kabuğu (`pp-row*`) İŞVEREN sütunuyla
@@ -46,7 +47,7 @@ export function SiteSubcontractorPaymentsPanel({
     <section className="spp__panel spp__panel--subcontractor">
       <div className="spp__panel-head">
         <span className="spp__panel-title">Taşeron Hakedişleri</span>
-        <Link href="/hakedisler/taseron" className="spp__panel-link">
+        <Link href={routes.progressPayments.subcontractor.list()} className="spp__panel-link">
           Tümü →
         </Link>
       </div>
@@ -109,7 +110,7 @@ export function SubcontractorPaymentRow({
   resolvedSectionName?: string | null;
 }) {
   const badge = PAYMENT_STATUS_BADGE[item.status];
-  const href = `/hakedisler/taseron/${item.id}`;
+  const href = routes.progressPayments.subcontractor.detail({ paymentId: item.id });
   // Fix round 1 (coordinator review) — bileşik alt metin ("iş kategorisi ·
   // bölüm", mockup `Şantiye - Hakedişler.dc.html` satır 124; final inceleme
   // F-6: eski atıf "Ekran 2 satır 141" yanlıştı): iki parçanın "bilinmiyor" hâli AYRI anlamlar

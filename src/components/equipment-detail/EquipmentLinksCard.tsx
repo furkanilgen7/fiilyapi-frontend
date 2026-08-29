@@ -5,6 +5,7 @@ import { EQUIPMENT_EMPTY_VALUE } from "@/components/equipment/equipment-labels";
 import { formatCurrencyTight, formatPeriod } from "@/lib/format";
 import type { EquipmentResponse } from "@/lib/api/hooks/useEquipment";
 import type { RentalInvoiceResponse } from "@/lib/api/hooks/useEquipmentRentalInvoices";
+import { routes } from "@/lib/routes";
 
 /** Rotası olmayan mockup öğelerinin GÖRÜNÜR gerekçeleri (F-TH kalıcı kuralı:
  *  silinmez, devre-dışı basılır). */
@@ -40,7 +41,7 @@ export function EquipmentLinksCard({ equipment, latestInvoice }: EquipmentLinksC
         {/* MD:275-282 — en güncel kira hakedişi. */}
         {latestInvoice ? (
           <Link
-            href={`/makine/kira/${latestInvoice.id}`}
+            href={routes.equipment.rentalInvoiceDetail({ invoiceId: latestInvoice.id })}
             className="makine-det__link"
             data-testid="makine-det-link-invoice"
           >
@@ -76,7 +77,7 @@ export function EquipmentLinksCard({ equipment, latestInvoice }: EquipmentLinksC
                   : "Bu ekipmanın satırını taşıyan bir kira hakedişi yok."}
               </span>
             </span>
-            <Link href="/makine/kira" className="makine-det__link-more">
+            <Link href={routes.equipment.rentalInvoices()} className="makine-det__link-more">
               Tümü →
             </Link>
           </span>

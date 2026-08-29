@@ -4,6 +4,7 @@ import { cx } from "@/lib/cx";
 
 import { PURCHASING_ROOT_HREF, STATUS_PARAM } from "./purchasing-labels";
 import "./purchasing.css";
+import { routes } from "@/lib/routes";
 
 /**
  * SAT 89-94 · dört sekmeli şerit: Satın Alma Talepleri · Teklifler ·
@@ -43,8 +44,8 @@ const TABS: readonly TabDef[] = [
     label: "Teklifler",
     href: `${PURCHASING_ROOT_HREF}?${STATUS_PARAM}=quote_wait`,
   },
-  { key: "orders", label: "Siparişler", href: "/satinalma/siparisler" }, // 92
-  { key: "suppliers", label: "Tedarikçiler", href: "/satinalma/tedarikciler" }, // 93
+  { key: "orders", label: "Siparişler", href: routes.purchasing.orders() }, // 92
+  { key: "suppliers", label: "Tedarikçiler", href: routes.purchasing.suppliers() }, // 93
 ];
 
 export interface PurchasingTabsProps {

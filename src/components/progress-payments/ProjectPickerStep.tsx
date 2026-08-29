@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button, Field, Select } from "@/components/ui";
 import { useProjects } from "@/lib/api/hooks/useProjects";
 import "./progress-payment-form.css";
+import { routes } from "@/lib/routes";
 
 /**
  * `/hakedisler/yeni` rotası `?project=` sorgu parametresi OLMADAN açıldığında
@@ -19,7 +20,7 @@ export function ProjectPickerStep() {
 
   function handleContinue() {
     if (!selected) return;
-    router.push(`/hakedisler/yeni?project=${selected}`);
+    router.push(routes.progressPayments.new({ projectId: selected }));
   }
 
   return (

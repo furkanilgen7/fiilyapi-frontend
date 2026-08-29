@@ -1,3 +1,4 @@
+import { routes } from "@/lib/routes";
 /**
  * Personel belge formunun metin/seçenek envanteri (F-BLG T2c).
  *
@@ -78,7 +79,7 @@ export const PERSONNEL_DOCUMENT_TEXT = {
  * 160 · "Belge Takibi →" hedefi. Rota REPODA VARDIR (F-İK T5 açtı:
  * `src/app/(app)/personel/belgeler/page.tsx`) — bağlantı GERÇEKTİR.
  */
-export const HR_DOCUMENTS_ROUTE = "/personel/belgeler";
+export const HR_DOCUMENTS_ROUTE = routes.personnel.documents();
 
 /**
  * 🔴 108-117 · "Arşivden Mevcut Belge Seç" — KARŞILANAMAZ.

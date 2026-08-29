@@ -13,6 +13,7 @@ import type {
 } from "@/lib/api/hooks/useSubcontractorProgressPayments";
 
 import "./subcontractor-progress-payments.css";
+import { routes } from "@/lib/routes";
 
 export interface SubcontractorProgressPaymentsTableProps {
   isError: boolean;
@@ -63,7 +64,7 @@ export function SubcontractorProgressPaymentsTable({
 
 function SubcontractorPaymentRow({ item }: { item: SubcontractorProgressPaymentListItem }) {
   const router = useRouter();
-  const href = `/hakedisler/taseron/${item.id}`;
+  const href = routes.progressPayments.subcontractor.detail({ paymentId: item.id });
   const badge = PAYMENT_STATUS_BADGE[item.status];
   const subcontractorName = item.subcontractor_name ?? "—";
 

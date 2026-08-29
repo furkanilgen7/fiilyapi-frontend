@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { MeResponse } from "@/lib/auth/types";
+import { routes } from "@/lib/routes";
 
 type SessionValue = { me: MeResponse | null; isLoading: boolean };
 
@@ -24,7 +25,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     fetch("/api/auth/me")
       .then((res) => {
         if (!res.ok) {
-          if (active) router.push("/login");
+          if (active) router.push(routes.login());
           return null;
         }
         return res.json();
@@ -36,7 +37,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         }
       })
       .catch(() => {
-        if (active) router.push("/login");
+        if (active) router.push(routes.login());
       });
     return () => {
       active = false;

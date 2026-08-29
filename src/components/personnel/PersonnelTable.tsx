@@ -14,6 +14,7 @@ import {
   STATUS_LABEL,
 } from "./personnel-list-labels";
 import "./personnel-list.css";
+import { routes } from "@/lib/routes";
 
 export interface PersonnelTableProps {
   /** `undefined` ⇒ yükleniyor/hata; satır BASILMAZ. */
@@ -177,7 +178,7 @@ export function PersonnelTable({
                 </td>
                 {/* 156 */}
                 <td className="personel-table__td personel-table__td--center">
-                  <Link className="personel-detail-link" href={`/personel/${row.id}`}>
+                  <Link className="personel-detail-link" href={routes.personnel.detail({ personnelId: row.id })}>
                     Detay
                   </Link>
                 </td>

@@ -15,6 +15,7 @@ import {
   type TimelineWindow,
   type TimelineZoom,
 } from "./timeline-scale";
+import { routes } from "@/lib/routes";
 
 /** Aylık kipte bir ay sütununun taban genişliği (mockup: 1400px / 24 ay ≈ 58px). */
 const MONTH_COLUMN_PX = 58;
@@ -169,7 +170,7 @@ export const TimelineBoard = forwardRef<HTMLDivElement, TimelineBoardProps>(func
                       </span>
                     ) : (
                       <Link
-                        href={`/projeler/${row.project.id}`}
+                        href={routes.projects.detail({ projectId: row.project.id })}
                         data-testid={isProject ? "tkv-project-bar" : "tkv-section-bar"}
                         data-status={status ?? undefined}
                         data-clipped={bar.clippedStart || bar.clippedEnd ? "true" : undefined}
@@ -204,7 +205,7 @@ export const TimelineBoard = forwardRef<HTMLDivElement, TimelineBoardProps>(func
                         return (
                           <Link
                             key={milestone.id}
-                            href={`/projeler/${row.project.id}`}
+                            href={routes.projects.detail({ projectId: row.project.id })}
                             data-testid="tkv-milestone"
                             className="tkv__milestone"
                             style={{ left: `${left}%` }}

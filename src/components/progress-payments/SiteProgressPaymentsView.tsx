@@ -22,6 +22,7 @@ import { computeGrossMargin } from "./shared/margin";
 import { computeSiteSubcontractorTotals } from "./shared/site-subcontractor-totals";
 import "./progress-payments.css";
 import "./site-progress-payments.css";
+import { routes } from "@/lib/routes";
 
 // F-SZLEKR T2: düğme etiketi ve boş-durum ipucu AYNI sabitten okunur (bkz.
 // `ProgressPaymentsView.tsx` üstündeki not). Bu ekranın etiketi ("+ Hakediş
@@ -111,7 +112,7 @@ export function SiteProgressPaymentsView() {
     <div className="pp spp">
       {site && (
         <p className="spp__crumb">
-          <Link className="spp__crumb-link" href={`/projeler/${projectId}/santiyeler/${siteId}`}>
+          <Link className="spp__crumb-link" href={routes.projects.sites.detail({ projectId, siteId })}>
             ← {site.name}
           </Link>
           {` · ${site.project.name} / ${site.name}`}
@@ -124,7 +125,7 @@ export function SiteProgressPaymentsView() {
           <p className="spp__subtitle">İşveren &amp; Taşeron hakedişleri</p>
         </div>
         {canWrite && (
-          <Link href={`/hakedisler/yeni?project=${projectId}`} className="pp__new-btn">
+          <Link href={routes.progressPayments.new({ projectId })} className="pp__new-btn">
             {NEW_PAYMENT_LABEL}
           </Link>
         )}
@@ -158,7 +159,7 @@ export function SiteProgressPaymentsView() {
         <section className="spp__panel spp__panel--employer">
           <div className="spp__panel-head">
             <span className="spp__panel-title">İşveren Hakedişleri</span>
-            <Link href="/hakedisler" className="spp__panel-link">
+            <Link href={routes.progressPayments.list()} className="spp__panel-link">
               Tümü →
             </Link>
           </div>

@@ -4,6 +4,7 @@ import { PAYROLL_ROUTE, PAYROLL_SGK_ROUTE } from "@/components/payroll/payroll-l
 
 import { HR_DOCUMENTS_ROUTE, LEAVES_ROUTE } from "./personnel-list-labels";
 import "./personnel-list.css";
+import { routes } from "@/lib/routes";
 
 interface TabDef {
   label: string;
@@ -37,10 +38,10 @@ export type PersonnelTabLabel = "Personel Listesi" | "Belge & Sertifika" | "İzi
 // 🔴 "Bordroyu Gör" (`PersonnelDetailView`) DEVRE-DIŞI KALIR: kişi bazlı
 // bordro rotası mockup'ta YOKTUR, bu dilim onu açmaz.
 const TABS: readonly TabDef[] = [
-  { label: "Personel Listesi", href: "/personel" },
+  { label: "Personel Listesi", href: routes.personnel.list() },
   { label: "İzin Yönetimi", href: LEAVES_ROUTE },
   { label: "Belge & Sertifika", href: HR_DOCUMENTS_ROUTE },
-  { label: "Puantaj", href: "/puantaj" },
+  { label: "Puantaj", href: routes.timesheet() },
   { label: "Bordro", href: PAYROLL_ROUTE },
   { label: "SGK", href: PAYROLL_SGK_ROUTE },
 ];

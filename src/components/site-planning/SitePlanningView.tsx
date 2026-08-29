@@ -25,6 +25,7 @@ import { addDaysIso, resolveWeekStart, weekEndOf } from "./week";
 import "@/components/site-detail/site-detail.css";
 import "@/components/site-diary/site-diary.css";
 import "./site-planning.css";
+import { routes } from "@/lib/routes";
 
 /**
  * Şantiye Planlama ekranı — mockup `Şantiye - Planlama.dc.html` (P, kanonik).
@@ -69,7 +70,7 @@ export function SitePlanningView() {
   if (isForbidden(planQuery.error)) return <AccessDenied />;
 
   const plan = planQuery.data;
-  const base = `/projeler/${projectId}/santiyeler/${siteId}`;
+  const base = routes.projects.sites.detail({ projectId, siteId });
   const canSave = permission.canWrite && isDirty && !saveHandle.isSaving;
   const sections = planSectionsState(
     sectionsQuery.data,

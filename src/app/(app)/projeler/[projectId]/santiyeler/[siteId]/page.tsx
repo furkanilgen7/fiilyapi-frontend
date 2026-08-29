@@ -10,6 +10,7 @@ import { SiteHeroBar } from "@/components/site-detail/SiteHeroBar";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { isForbidden } from "@/lib/api/unwrap";
 import "@/components/site-detail/site-detail.css";
+import { routes } from "@/lib/routes";
 
 // "A-Blok Bölümleri (5)" — site adının sonundaki " Şantiyesi" ekini kırpar
 // (mockup deseni, spec §5.4 satır 211).
@@ -35,7 +36,7 @@ export default function SiteDetailPage() {
   }
 
   const site = siteQuery.data;
-  const newSectionHref = `/projeler/${site.project.id}/santiyeler/${site.id}/bolumler/yeni`;
+  const newSectionHref = routes.projects.sites.sections.new({ projectId: site.project.id, siteId: site.id });
 
   return (
     <div className="site-detail">

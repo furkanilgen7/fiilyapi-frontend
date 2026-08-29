@@ -12,6 +12,7 @@ import { useProject } from "@/lib/api/hooks/useProjects";
 import { useSites } from "@/lib/api/hooks/useSites";
 import { isForbidden } from "@/lib/api/unwrap";
 import "@/components/project-detail/project-detail.css";
+import { routes } from "@/lib/routes";
 
 // "+ Şantiye Ekle" eylemi hem ust bardaki butonda hem bos durum icinde
 // gorunur (spec §7.4); ikisi de AYNI tam sayfa forma gider (§2.3) — modal
@@ -19,7 +20,7 @@ import "@/components/project-detail/project-detail.css";
 function AddSiteLink({ projectId, className }: { projectId: string; className?: string }) {
   return (
     <Link
-      href={`/projeler/${projectId}/santiyeler/yeni`}
+      href={routes.projects.sites.new({ projectId })}
       className={cx("project-detail__add-btn", className)}
     >
       + Şantiye Ekle

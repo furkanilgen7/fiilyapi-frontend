@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { EQUIPMENT_TAB_MAINTENANCE_CALENDAR_REASON } from "./equipment-labels";
 import "./equipment.css";
+import { routes } from "@/lib/routes";
 
 interface TabDef {
   label: string;
@@ -31,10 +32,10 @@ export type EquipmentTabLabel =
 // artık gerçek bir rotaya iner. "Bakım Takvimi" (mockup'ı hiç yok) tek
 // devre-dışı sekmedir ve kalıcı gerekçeyle basılır.
 const TABS: TabDef[] = [
-  { label: "Ekipman Listesi", href: "/makine" },
-  { label: "Çalışma Kaydı", href: "/makine/calisma" },
-  { label: "Yakıt Takibi", href: "/makine/yakit" },
-  { label: "Kira Hakedişi", href: "/makine/kira" },
+  { label: "Ekipman Listesi", href: routes.equipment.list() },
+  { label: "Çalışma Kaydı", href: routes.equipment.work() },
+  { label: "Yakıt Takibi", href: routes.equipment.fuel() },
+  { label: "Kira Hakedişi", href: routes.equipment.rentalInvoices() },
   { label: "Bakım Takvimi", disabledReason: EQUIPMENT_TAB_MAINTENANCE_CALENDAR_REASON },
 ];
 

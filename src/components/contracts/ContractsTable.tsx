@@ -12,6 +12,7 @@ import type { ContractListItem, ContractType } from "@/lib/api/hooks/useContract
 import { contractProgressTone, contractProgressWidth } from "./contract-progress";
 import { CONTRACT_STATUS_BADGE } from "./contract-status";
 import "./contracts.css";
+import { routes } from "@/lib/routes";
 
 /**
  * SZL 41-106 · sözleşme tablosu. Kolonlar mockup 44-51'den BİREBİR, sırasıyla:
@@ -87,8 +88,8 @@ export function ContractsTable({ type, isError, isLoading, items }: ContractsTab
 
 function detailHref(item: ContractListItem, type: ContractType): string {
   return type === "employer"
-    ? `/sozlesmeler/isveren/${item.id}`
-    : `/sozlesmeler/taseron/${item.id}`;
+    ? routes.contracts.employerDetail({ projectId: item.id })
+    : routes.contracts.subcontractorDetail({ contractId: item.id });
 }
 
 function ContractRow({ item, type }: { item: ContractListItem; type: ContractType }) {

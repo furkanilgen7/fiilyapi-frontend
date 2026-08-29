@@ -1,6 +1,7 @@
 import type { BadgeVariant } from "@/components/ui/badge/Badge";
 import type { StockCategory, StockStatus } from "@/lib/api/hooks/useStockItems";
 import { pendingModuleLabel } from "@/lib/pending-modules";
+import { routes } from "@/lib/routes";
 
 /**
  * F-ST T2 · E3 (`Ekran 3 - Stok & Depo.dc.html`) etiket/renk sözlüğü.
@@ -206,5 +207,5 @@ export function siteStockRowAction(status: StockStatus | null): SiteStockRowActi
 
 /** T4'ün (`.../stok/giris`) rota sözleşmesi — link hedefi TEK yerden kurulur. */
 export function siteStockEntryHref(projectId: string, siteId: string): string {
-  return `/projeler/${projectId}/santiyeler/${siteId}/stok/giris`;
+  return routes.projects.sites.stockEntry({ projectId, siteId });
 }

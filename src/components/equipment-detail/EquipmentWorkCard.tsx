@@ -6,6 +6,7 @@ import type { WorkSummaryRow } from "@/lib/api/hooks/useEquipmentWorkSummary";
 
 import { USAGE_PCT_TILE_LABEL } from "./equipment-detail-labels";
 import type { DetailPeriod } from "./detail-period";
+import { routes } from "@/lib/routes";
 
 export interface WorkHistoryEntry {
   period: DetailPeriod;
@@ -42,7 +43,7 @@ export function EquipmentWorkCard({ currentRow, history }: EquipmentWorkCardProp
     <section className="makine-det__card" aria-label="Çalışma Kaydı Özeti">
       <div className="makine-det__card-head">
         <h2 className="makine-det__card-title">⏱ Çalışma Kaydı Özeti</h2>
-        <Link href="/makine/calisma" className="makine-det__card-more">
+        <Link href={routes.equipment.work()} className="makine-det__card-more">
           Tümü →
         </Link>
       </div>

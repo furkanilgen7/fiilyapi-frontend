@@ -4,6 +4,7 @@ import type {
   HrDocumentTypeBreakdown,
   HrDocumentsSummaryResponse,
 } from "@/lib/api/hooks/useHrDocuments";
+import { routes } from "@/lib/routes";
 
 /**
  * F-İK T5 · BT — `/personel/belgeler` (Belge & Sertifika) ekranının etiket /
@@ -22,11 +23,11 @@ export const PENDING_VALUE = "—";
 export const HR_DOCUMENTS_TAB_LABEL = "Belge & Sertifika";
 
 /** `/personel` liste rotası — sekme şeridinin "Personel Listesi" bağlantısı. */
-export const PERSONNEL_LIST_ROUTE = "/personel";
+export const PERSONNEL_LIST_ROUTE = routes.personnel.list();
 
 /** BT 181 · "Ayarla →" — `/ayarlar/bildirimler` rotası REPODA VARDIR (grep'le
  *  doğrulandı: `src/app/(app)/ayarlar/bildirimler`), bağlantı GERÇEKTİR. */
-export const NOTIFICATION_SETTINGS_ROUTE = "/ayarlar/bildirimler";
+export const NOTIFICATION_SETTINGS_ROUTE = routes.settings.notifications();
 
 /* ── Devre-dışı öğelerin GÖRÜNÜR gerekçeleri ───────────────────────────────
    Kalıcı kural: rotası/ucu olmayan mockup öğesi SİLİNMEZ, devre-dışı basılır
@@ -101,7 +102,7 @@ export const MISSING_KPI_HINT_FULL =
 
 /** Personel detayına gidiş — ad hücresi GERÇEK bağlantıdır. */
 export function personnelDetailHref(personnelId: string): string {
-  return `/personel/${personnelId}`;
+  return routes.personnel.detail({ personnelId });
 }
 
 /** BT 100/109/118/127 · "Gecikme" ve BT 147-150 · "Kalan" hücreleri. */

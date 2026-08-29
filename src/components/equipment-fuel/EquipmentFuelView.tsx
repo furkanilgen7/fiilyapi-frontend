@@ -26,6 +26,7 @@ import { EquipmentFuelLogTable } from "./EquipmentFuelLogTable";
 import { EquipmentFuelTrendPanel } from "./EquipmentFuelTrendPanel";
 import { ADD_FUEL_ENTRY_DISABLED_REASON } from "./fuel-labels";
 import "./equipment-fuel.css";
+import { routes } from "@/lib/routes";
 
 /** İzin matrisi anahtarı — MK-1: 21. izin modülü `equipment`. */
 const EQUIPMENT_PERMISSION_MODULE = "equipment";
@@ -114,7 +115,7 @@ export function EquipmentFuelView() {
   return (
     <div className="makine-yakit">
       <p className="makine-yakit__crumb">
-        <Link href="/makine">← Makine &amp; Ekipman</Link> · Yakıt Takibi
+        <Link href={routes.equipment.list()}>← Makine &amp; Ekipman</Link> · Yakıt Takibi
       </p>
 
       <div className="makine-yakit__head">

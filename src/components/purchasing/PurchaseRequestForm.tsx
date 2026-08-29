@@ -63,11 +63,12 @@ import { PURCHASING_LIST_MAX_LIMIT, PURCHASING_PERMISSION_MODULE } from "./purch
 // Sıra önemli: önce paylaşılan kabuk, sonra forma özgü bloklar.
 import "@/styles/form-shell.css";
 import "./purchase-request-form.css";
+import { routes } from "@/lib/routes";
 
 const EMPTY_ERRORS: PurchaseRequestFormErrors = { lineErrors: {} };
 
 /** SAT listesi — İptal ve başarılı gönderim buraya döner. */
-const PURCHASING_LIST_HREF = "/satinalma";
+const PURCHASING_LIST_HREF = routes.purchasing.root();
 
 /**
  * FST — Satın Alma Talebi formu

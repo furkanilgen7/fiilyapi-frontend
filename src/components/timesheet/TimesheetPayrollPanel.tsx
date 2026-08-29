@@ -3,13 +3,14 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input/Input";
 import { cx } from "@/lib/cx";
 import { formatDecimal } from "@/lib/format";
+import { routes } from "@/lib/routes";
 
 /**
  * Bordro ekranının GERÇEK rotası (`nav-config.ts` · `src/app/(app)/bordro`).
  * Mockup'ın `Bordro Yönetimi.dc.html` dosya adı KOPYALANMAZ — mockup dosya
  * adları ürün rotası değildir.
  */
-export const PAYROLL_ROUTE = "/bordro";
+export const PAYROLL_ROUTE = routes.payroll.root();
 
 export interface TimesheetPayrollPanelProps {
   normalHours: string;

@@ -58,6 +58,7 @@ import {
 } from "./form-state";
 import "@/components/site-detail/site-detail.css";
 import "./site-diary.css";
+import { routes } from "@/lib/routes";
 
 /**
  * "Kayıt Gir" ekranı — mockup `Şantiye - Günlük Kayıt.dc.html` (GK, kanonik)
@@ -152,7 +153,7 @@ export function SiteDiaryEntryView() {
   const canReopen = hasAtLeast(permission.level, "admin");
   const isDirty = entry ? isDiaryFormDirty(entry, form) : false;
 
-  const base = `/projeler/${projectId}/santiyeler/${siteId}`;
+  const base = routes.projects.sites.detail({ projectId, siteId });
 
   // Sağ panel türevleri — hepsi SAF fonksiyonlarda (ayrı `.ts` dosyaları),
   // bileşenin içinde hesap YOK.
@@ -421,7 +422,7 @@ export function SiteDiaryEntryView() {
             monthLabel={formatMonthName(period.month)}
             paymentsHref={`${base}/hakedisler`}
             createHref={
-              paymentsPermission.canWrite ? `/hakedisler/yeni?project=${projectId}` : null
+              paymentsPermission.canWrite ? routes.progressPayments.new({ projectId }) : null
             }
           />
           <DiaryWorkerCountsCard

@@ -42,6 +42,7 @@ import { SubcontractorContractPaymentsCard } from "./SubcontractorContractPaymen
 // Sıra önemli: önce paylaşılan tablo/kabuk kanonu (`.ecd-*`), sonra TSD farkları.
 import "./employer-contract-detail.css";
 import "./subcontractor-contract-detail.css";
+import { routes } from "@/lib/routes";
 
 /**
  * TSD · `/sozlesmeler/taseron/[contractId]` (F-P5 T7). Kanon: projedesign
@@ -167,14 +168,14 @@ export function SubcontractorContractDetailView({
       tone: "employer",
       primary: employerContract?.contract_no ?? "—",
       secondary: employerContract?.employer_name ?? null,
-      href: employerContract ? `/sozlesmeler/isveren/${detail.project_id}` : null,
+      href: employerContract ? routes.contracts.employerDetail({ projectId: detail.project_id }) : null,
       pendingReason: employerContract ? null : EMPLOYER_CONTRACT_PENDING_REASON,
     },
     {
       chip: "Proje",
       tone: "project",
       primary: projectQuery.data?.name ?? "—",
-      href: `/projeler/${detail.project_id}`,
+      href: routes.projects.detail({ projectId: detail.project_id }),
     },
     {
       chip: "Şantiye",
@@ -183,7 +184,7 @@ export function SubcontractorContractDetailView({
       // eksik veri DEĞİL, bu yüzden pending gerekçesi basılmaz.
       primary: detail.site_id ? (site?.name ?? "—") : SITE_PROJECT_WIDE,
       href: detail.site_id
-        ? `/projeler/${detail.project_id}/santiyeler/${detail.site_id}`
+        ? routes.projects.sites.detail({ projectId: detail.project_id, siteId: detail.site_id })
         : null,
     },
     {
@@ -193,7 +194,7 @@ export function SubcontractorContractDetailView({
     },
   ];
 
-  const createPaymentHref = `/hakedisler/taseron/yeni?contract=${detail.id}`;
+  const createPaymentHref = routes.progressPayments.subcontractor.new({ contractId: detail.id });
   const isProgressPending = paymentLines.isPending;
   const progressPctByItemId = isProgressPending
     ? null

@@ -47,6 +47,7 @@ import {
 // Sıra önemli: önce paylaşılan kabuk, sonra forma özgü bloklar (özgü kazansın).
 import "@/styles/form-shell.css";
 import "./project-form.css";
+import { routes } from "@/lib/routes";
 
 /** Şantiye Şefi seçicisini besleyen kullanıcı listesi (§4.7, §7.9). */
 const MANAGER_OPTIONS_LIMIT = 200;
@@ -88,7 +89,7 @@ export function ProjectCreateView() {
     : null;
 
   function handleCancel() {
-    router.push("/projeler");
+    router.push(routes.projects.list());
   }
 
   function updateBasic<K extends keyof BasicInfoValues>(
@@ -161,7 +162,7 @@ export function ProjectCreateView() {
     setFormError(null);
     createProject.mutate(buildProjectCreateBody(values, isDraft), {
       // Liste sorgusunun invalidate'i hook'un içinde (useCreateProject).
-      onSuccess: () => router.push("/projeler"),
+      onSuccess: () => router.push(routes.projects.list()),
       onError: (err) => {
         const isCodeConflict = err instanceof BackendError && err.status === 409;
         setFormError(
@@ -177,7 +178,7 @@ export function ProjectCreateView() {
     <div className="pf-shell">
       <div className="pf-topbar">
         <nav className="pf-breadcrumb" aria-label="Kırıntı yolu">
-          <Link href="/projeler">Projeler</Link>
+          <Link href={routes.projects.list()}>Projeler</Link>
           <span className="pf-breadcrumb__sep" aria-hidden="true">
             /
           </span>

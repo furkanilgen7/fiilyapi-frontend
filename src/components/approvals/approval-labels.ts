@@ -16,6 +16,7 @@ import type {
   ApprovalStepRead,
 } from "@/lib/api/hooks/useApprovals";
 import { formatCurrencyTight, formatPeriodLabel } from "@/lib/format";
+import { routes } from "@/lib/routes";
 
 /**
  * F-OK T5 · Onay Kutusu SAF katmanı — kanon `projedesign/Onay Kutusu.dc.html`
@@ -234,12 +235,16 @@ export function approvalDetailTarget(
   documentType: string,
   documentId: string,
 ): ApprovalDetailTarget {
-  const id = encodeURIComponent(documentId);
+  // 🔴 KİMLİK BURADA KODLANMAZ — `routes.*` üreticisi her segmenti kendisi
+  // `encodeURIComponent`ten geçirir. Önceden burada bir ön kodlama vardı ve
+  // göç sırasında ÇİFT KODLAMA üretti (`a/b` → `a%252Fb`); testteki elle
+  // yazılmış beklenti yakaladı.
+  const id = documentId;
   switch (documentType) {
     case "progress_payment":
-      return { label: APPROVAL_DETAIL_LABEL, href: `/hakedisler/${id}`, reason: null };
+      return { label: APPROVAL_DETAIL_LABEL, href: routes.progressPayments.detail({ paymentId: id }), reason: null };
     case "subcontractor_progress_payment":
-      return { label: APPROVAL_DETAIL_LABEL, href: `/hakedisler/taseron/${id}`, reason: null };
+      return { label: APPROVAL_DETAIL_LABEL, href: routes.progressPayments.subcontractor.detail({ paymentId: id }), reason: null };
     case "purchase_request":
       return {
         label: APPROVAL_DETAIL_LABEL,
@@ -280,7 +285,7 @@ export function approvalLinkChip(
     case "purchase_request":
       return { label: "Teklif Karşılaştırması", href: purchaseRequestQuotesHref(documentId) };
     case "progress_payment":
-      return { label: "Hakediş Detayı", href: `/hakedisler/${encodeURIComponent(documentId)}` };
+      return { label: "Hakediş Detayı", href: routes.progressPayments.detail({ paymentId: documentId }) };
     default:
       return null;
   }

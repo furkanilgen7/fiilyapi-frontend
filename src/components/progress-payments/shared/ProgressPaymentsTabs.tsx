@@ -3,6 +3,7 @@ import Link from "next/link";
 import { cx } from "@/lib/cx";
 
 import "./progress-payments-tabs.css";
+import { routes } from "@/lib/routes";
 
 /**
  * F-TH T2 · S3 kullanıcı kararı: `/hakedisler` (İşveren) ve
@@ -30,8 +31,8 @@ interface TabDef {
 }
 
 const TABS: readonly TabDef[] = [
-  { key: "employer", label: "İşveren", href: "/hakedisler" },
-  { key: "subcontractor", label: "Taşeron", href: "/hakedisler/taseron" },
+  { key: "employer", label: "İşveren", href: routes.progressPayments.list() },
+  { key: "subcontractor", label: "Taşeron", href: routes.progressPayments.subcontractor.list() },
 ];
 
 export interface ProgressPaymentsTabsProps {

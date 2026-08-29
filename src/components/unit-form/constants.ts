@@ -5,6 +5,7 @@
 
 import type { DocumentPlaceholderItem } from "@/components/form-shell";
 import type { components } from "@/lib/api/schema";
+import { routes } from "@/lib/routes";
 
 export type UnitKind = components["schemas"]["UnitKind"];
 export type UnitFacing = components["schemas"]["UnitFacing"];
@@ -24,7 +25,7 @@ export const UNIT_SUBMIT_AND_NEW_LABEL = "Kaydet & Yeni Ekle"; // UE 126
 export const UNIT_CANCEL_LABEL = "İptal"; // UE 125
 
 /** İptal/başarı dönüşü — kabuk canonu. */
-export const UNITS_LIST_HREF = "/satis";
+export const UNITS_LIST_HREF = routes.sales.root();
 
 /** Sunucu sözleşmesinin uzunluk sınırları (`units/schemas.py`). */
 export const UNIT_FLOOR_MAX_LENGTH = 20; // UE 66

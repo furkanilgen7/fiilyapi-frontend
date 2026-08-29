@@ -13,6 +13,7 @@ import { ContractsTable } from "./ContractsTable";
 import { ContractTypeTabs } from "./ContractTypeTabs";
 import { parseContractTab } from "./contract-tabs";
 import "./contracts.css";
+import { routes } from "@/lib/routes";
 
 /**
  * SZL · `/sozlesmeler` (F-P5 T2). Mockup `Sözleşmeler.dc.html` 21-108
@@ -58,7 +59,7 @@ export function ContractsView() {
               spec'in zorunlu kıldığı ek. Hedef `/sozlesmeler/taseronlar`
               (TL) T5'te yazılacak. */}
           {tab === "subcontractor" && (
-            <Link href="/sozlesmeler/taseronlar" className="szl__link-action">
+            <Link href={routes.contracts.subcontractorList()} className="szl__link-action">
               Taşeron Firmaları →
             </Link>
           )}
@@ -69,7 +70,7 @@ export function ContractsView() {
               formuna gider, işveren sekmesinde DEVRE DIŞI + görünür gerekçe
               (işveren sözleşmesi proje formunda kurulur). Buton SİLİNMEZ. */}
           {tab === "subcontractor" ? (
-            <Link href="/sozlesmeler/taseron/yeni" className="szl__new-btn">
+            <Link href={routes.contracts.newSubcontractor()} className="szl__new-btn">
               + Yeni Sözleşme
             </Link>
           ) : (

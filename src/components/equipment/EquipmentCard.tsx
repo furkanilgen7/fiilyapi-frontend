@@ -16,6 +16,7 @@ import {
   EQUIPMENT_UNASSIGNED_SITE_LABEL,
 } from "./equipment-labels";
 import "./equipment.css";
+import { routes } from "@/lib/routes";
 
 export interface EquipmentCardProps {
   equipment: EquipmentResponse;
@@ -84,7 +85,7 @@ export function EquipmentCard({
           bağlantısız kalsaydı hiçbir yerden AÇILAMAZDI. Bağlantı GÖRÜNÜMÜ
           değiştirmez (`makine-card__name` rengini/altını KORUR); yalnız
           gezinme kazandırır. */}
-      <Link href={`/makine/${equipment.id}`} className="makine-card__name">
+      <Link href={routes.equipment.detail({ equipmentId: equipment.id })} className="makine-card__name">
         {equipment.name}
       </Link>
       <div className="makine-card__meta">
@@ -134,7 +135,7 @@ export function EquipmentCard({
       {/* K4 — detay sayfası yok; tek eylem düzenleme formuna gider (T3'te açılır). */}
       <div className="makine-card__actions">
         <Link
-          href={`/makine/${equipment.id}/duzenle`}
+          href={routes.equipment.edit({ equipmentId: equipment.id })}
           className="makine-card__edit"
           data-testid="makine-card-edit-link"
         >

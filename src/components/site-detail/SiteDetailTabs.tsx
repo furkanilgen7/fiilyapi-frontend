@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cx } from "@/lib/cx";
+import { routes } from "@/lib/routes";
 
 export interface SiteDetailTabsProps {
   projectId: string;
@@ -47,7 +48,7 @@ const TABS: TabDef[] = [
 ];
 
 export function SiteDetailTabs({ projectId, siteId, activePath }: SiteDetailTabsProps) {
-  const base = `/projeler/${projectId}/santiyeler/${siteId}`;
+  const base = routes.projects.sites.detail({ projectId, siteId });
 
   return (
     <div className="site-detail-tabs" role="tablist" aria-label="Şantiye detay sekmeleri">

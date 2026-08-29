@@ -7,6 +7,7 @@
 import type { DocumentPlaceholderItem } from "@/components/form-shell";
 import type { DeedCondition, PaymentPlanType, SaleType } from "@/lib/api/hooks/useSales";
 import type { CustomerType } from "@/lib/api/hooks/useCustomers";
+import { routes } from "@/lib/routes";
 
 /**
  * 🔴 `CustomerCreate` korkulukları — SÖZLEŞMEDEN ölçülmüştür, mockup'tan değil
@@ -36,7 +37,7 @@ export const SALE_FORM_SUBTITLE =
   "Daire / dükkan satışı — ödeme planı ve tapu takibi otomatik oluşturulur"; // 48
 
 /** Üst breadcrumb + iptal rotası (kabuk canonu; mockup kendi üst barını çizmez). */
-export const SALES_LIST_HREF = "/satis";
+export const SALES_LIST_HREF = routes.sales.root();
 
 /**
  * "Satış Tipi" seçici (56) — sunucu `SaleType` enum'una birebir. Mockup metni

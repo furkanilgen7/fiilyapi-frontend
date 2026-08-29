@@ -26,6 +26,7 @@ import { SectionWorkersList } from "./SectionWorkersList";
 import { SECTION_TABS, SectionDetailTabs } from "./SectionDetailTabs";
 import { SectionHeroCard } from "./SectionHeroCard";
 import "./section-detail.css";
+import { routes, type SiteTimesheetParams } from "@/lib/routes";
 
 // Sekme şeridi ve `SECTION_TABS` tanımı `SectionDetailTabs.tsx`tedir (F-BOLLINK
 // ayırması — bekçi testinin hook mock'u olmadan render edebilmesi için).
@@ -43,15 +44,20 @@ import "./section-detail.css";
 //     eklemek ÖLÜ query yazmak olurdu, EKLENMEZ.
 // Görünür gerekçe (`title`) bağlantının kendi tanımından TÜRETİLİR — eski
 // "Bu bölüm yakında" metni BAYATTI: rotalar yazılmışken "yakında" diyordu.
+//
+// URL-1: `slug` YERİNE hedefin `routes` ÜRETİCİSİ taşınır — yol artık burada
+// elle birleştirilmez. `carriesSection` kararı OLDUĞU GİBİ korunur; tek fark,
+// süzgeci taşımayan bağlantının üreticisinin `?section=`i yapısal olarak
+// ÜRETEMEYECEK olmasıdır (`routes.projects.sites.stock` böyle bir alan almaz).
 const SIDE_LINKS = {
   timesheet: {
-    slug: "puantaj",
+    route: (p: SiteTimesheetParams) => routes.projects.sites.timesheet(p),
     label: "Puantaj →",
     carriesSection: true,
     title: "Şantiye puantajını bu bölümün süzgeciyle açar",
   },
   stock: {
-    slug: "stok",
+    route: (p: SiteTimesheetParams) => routes.projects.sites.stock(p),
     label: "Tümü →",
     carriesSection: false,
     title: "Şantiye genelindeki stok ekranını açar (bölüm süzgeci henüz yok)",
@@ -121,8 +127,11 @@ export function SectionDetailView() {
 
   /** Alt kart bağlantısının hedefi; süzgeci OKUYAN ekranda `?section=` taşınır. */
   function sideLinkHref(link: (typeof SIDE_LINKS)[keyof typeof SIDE_LINKS]): string {
-    const href = `/projeler/${projectId}/santiyeler/${siteId}/${link.slug}`;
-    return link.carriesSection ? `${href}?section=${encodeURIComponent(sectionId)}` : href;
+    return link.route({
+      projectId,
+      siteId,
+      section: link.carriesSection ? sectionId : undefined,
+    });
   }
 
   const section = sectionQuery.data;
@@ -163,7 +172,7 @@ export function SectionDetailView() {
             items={diaryEntries.data?.items ?? []}
             isLoading={diaryEntries.isLoading}
             isError={diaryEntries.isError}
-            diaryHref={`/projeler/${projectId}/santiyeler/${siteId}/gunluk-kayit`}
+            diaryHref={routes.projects.sites.diary({ projectId, siteId })}
           />
         );
       case "hakedisler":
@@ -177,7 +186,7 @@ export function SectionDetailView() {
             isError={subcontractorPayments.isError}
             isPartial={subcontractorPayments.isPartial}
             truncation={subcontractorPayments.truncation}
-            paymentsHref={`/projeler/${projectId}/santiyeler/${siteId}/hakedisler`}
+            paymentsHref={routes.projects.sites.progressPayments({ projectId, siteId })}
           />
         );
       case "stok":

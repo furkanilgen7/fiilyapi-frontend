@@ -1,4 +1,5 @@
 "use client";
+import { routes } from "@/lib/routes";
 
 /**
  * Bölüm detayı sekme şeridi (D99-105).
@@ -101,7 +102,7 @@ export function SectionDetailTabs({
   activeIndex,
   onSelect,
 }: SectionDetailTabsProps) {
-  const base = `/projeler/${projectId}/santiyeler/${siteId}`;
+  const base = routes.projects.sites.detail({ projectId, siteId });
 
   return (
     <div className="section-tabs" role="tablist" aria-label="Bölüm detay sekmeleri">

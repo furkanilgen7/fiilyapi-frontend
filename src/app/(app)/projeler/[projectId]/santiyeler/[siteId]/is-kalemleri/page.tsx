@@ -15,6 +15,7 @@ import { useSite } from "@/lib/api/hooks/useSites";
 import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import "@/components/boq/boq.css";
+import { routes } from "@/lib/routes";
 
 // Ekran 13 · İş Kalemleri (BOQ) — spec §2.1. Rota `[projectId]/layout.tsx`
 // altindadir, DrillSidebar oradan gelir; bu sayfa KENDI LAYOUT'UNU KURMAZ
@@ -61,7 +62,7 @@ export default function BoqPage() {
           Santiye adi bilinmeden hic basilmaz; uydurma etiket yazilmaz. */}
       {site && (
         <p className="boq__crumb">
-          <Link className="boq__crumb-link" href={`/projeler/${projectId}/santiyeler/${siteId}`}>
+          <Link className="boq__crumb-link" href={routes.projects.sites.detail({ projectId, siteId })}>
             ← {site.name}
           </Link>
           {` · ${site.project.name} / ${site.name}`}

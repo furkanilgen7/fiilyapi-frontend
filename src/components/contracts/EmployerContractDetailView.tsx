@@ -33,6 +33,7 @@ import { EmployerContractItemsTable } from "./EmployerContractItemsTable";
 import { EmployerContractTabs } from "./EmployerContractTabs";
 import { parseEmployerContractTab } from "./employer-contract-tabs";
 import "./employer-contract-detail.css";
+import { routes } from "@/lib/routes";
 
 /**
  * E14 · `/sozlesmeler/isveren/[projectId]` (F-P5 T3). Kanon: projedesign
@@ -127,7 +128,7 @@ export function EmployerContractDetailView({ projectId }: EmployerContractDetail
           {/* 76-77 · iki devre-dışı butonun gerekçesi `title`da saklı kalmaz. */}
           <p className="ecd__notice">
             PDF: {PDF_DISABLED_REASON}. Düzenle: {EDIT_DISABLED_REASON} —{" "}
-            <Link href={`/projeler/${projectId}`} className="ecd__notice-link">
+            <Link href={routes.projects.detail({ projectId })} className="ecd__notice-link">
               projeye git →
             </Link>
           </p>

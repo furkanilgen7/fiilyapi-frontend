@@ -18,6 +18,7 @@ import { SubcontractorProgressPaymentsTotals } from "./SubcontractorProgressPaym
 import { SubcontractorProgressPaymentsTable } from "./SubcontractorProgressPaymentsTable";
 import { parseSubcontractorFilters } from "./subcontractor-filters";
 import "./subcontractor-progress-payments.css";
+import { routes } from "@/lib/routes";
 
 /**
  * Ekran 2 · Taşeron Hakedişi (F-TH T2). Mockup `Ekran 2 - Taşeron
@@ -61,7 +62,7 @@ export function SubcontractorProgressPaymentsView() {
       <div className="thk__title-row">
         <h1 className="thk__title">Taşeron Hakedişi</h1>
         {canWrite && (
-          <Link href="/hakedisler/taseron/yeni" className="thk__new-btn">
+          <Link href={routes.progressPayments.subcontractor.new()} className="thk__new-btn">
             + Yeni Hakediş
           </Link>
         )}

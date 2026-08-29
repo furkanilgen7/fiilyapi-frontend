@@ -7,6 +7,7 @@ import { Button, Field, Select } from "@/components/ui";
 import { useSubcontractorContractOptions } from "@/lib/api/hooks/useSubcontractorContractOptions";
 import { listTruncationMessage } from "@/lib/list-truncation";
 import "./progress-payment-form.css";
+import { routes } from "@/lib/routes";
 
 /**
  * `/hakedisler/taseron/yeni` rotası `?contract=` sorgu parametresi OLMADAN
@@ -21,7 +22,7 @@ export function SubcontractorContractPickerStep() {
 
   function handleContinue() {
     if (!selected) return;
-    router.push(`/hakedisler/taseron/yeni?contract=${selected}`);
+    router.push(routes.progressPayments.subcontractor.new({ contractId: selected }));
   }
 
   return (

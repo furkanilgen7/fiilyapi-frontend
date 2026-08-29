@@ -14,6 +14,7 @@ import { ProgressPaymentsListBody } from "./ProgressPaymentsList";
 import { ProgressPaymentsTotalsStrip } from "./ProgressPaymentsTotalsStrip";
 import { ProgressPaymentsTabs } from "./shared/ProgressPaymentsTabs";
 import "./progress-payments.css";
+import { routes } from "@/lib/routes";
 
 // F-SZLEKR T2: düğme etiketi ve boş-durum ipucu AYNI sabitten okunur — ikisi
 // ayrı yerlerde elle tutarlı tutulursa (önceki durum) biri değişince öteki
@@ -61,7 +62,7 @@ export function ProgressPaymentsView() {
       <div className="pp__title-row">
         <h1 className="pp__title">Hakedişler</h1>
         {canWrite && (
-          <Link href="/hakedisler/yeni" className="pp__new-btn">
+          <Link href={routes.progressPayments.new()} className="pp__new-btn">
             {NEW_PAYMENT_LABEL}
           </Link>
         )}

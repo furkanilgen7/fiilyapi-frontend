@@ -18,6 +18,7 @@ import {
   TIMESHEET_SUMMARY_PENDING_REASON,
 } from "./personnel-detail-labels";
 import "./personnel-detail.css";
+import { routes } from "@/lib/routes";
 
 /**
  * F-PT2 T3 · PD — `/personel/[id]` detay ekranı (kanon `Personel Detay.dc.html`).
@@ -52,7 +53,7 @@ export function PersonnelDetailView() {
     <div className="pd">
       <PersonnelHeaderCard
         personnel={personnel}
-        editHref={`/personel/${id}/duzenle`}
+        editHref={routes.personnel.edit({ personnelId: id })}
         projectNames={projectNames}
       />
 

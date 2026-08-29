@@ -1,4 +1,5 @@
 import type { ContractType } from "@/lib/api/hooks/useContracts";
+import { routes } from "@/lib/routes";
 
 /**
  * SZL sekme durumu URL'dedir (F-P5 T2 görev emri): paylaşılabilir olsun ve
@@ -33,6 +34,6 @@ export function parseContractTab(params: ContractTabParams | null): ContractType
  */
 export function contractTabHref(tab: ContractType): string {
   return tab === DEFAULT_CONTRACT_TAB
-    ? "/sozlesmeler"
-    : `/sozlesmeler?${CONTRACT_TAB_PARAM}=${tab}`;
+    ? routes.contracts.list()
+    : routes.contracts.list({ tabParam: CONTRACT_TAB_PARAM, tab });
 }

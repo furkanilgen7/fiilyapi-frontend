@@ -1,4 +1,5 @@
 import { isActivePath } from "@/lib/shell/isActive";
+import { routes } from "@/lib/routes";
 
 /**
  * F-MUP T1 · Muhasebe modül SEKMELERİ — kanon `Muhasebe - Profesyonel.dc.html`
@@ -61,17 +62,17 @@ export type AccountingNavItem =
 export const ACCOUNTING_TABS: readonly AccountingNavItem[] = [
   // MP:106 — etiket mockup'ta `Yevmiye`dir (`Yevmiye Defteri` DEĞİL; o,
   // sayfanın İÇİNDEKİ panelin başlığıdır, MP:141). Kök `exact`tir.
-  { kind: "link", label: "Yevmiye", href: "/muhasebe", exact: true },
+  { kind: "link", label: "Yevmiye", href: routes.accounting.root(), exact: true },
   // MP:107
-  { kind: "link", label: "Hesap Planı", href: "/muhasebe/hesap-plani", exact: false },
+  { kind: "link", label: "Hesap Planı", href: routes.accounting.chartOfAccounts(), exact: false },
   // MP:108
-  { kind: "link", label: "Mizan", href: "/muhasebe/mizan", exact: false },
+  { kind: "link", label: "Mizan", href: routes.accounting.trialBalance(), exact: false },
   // MP:109 — 🔴 KK-10 bu sekmeyi AÇIKÇA bu ekrana bağlıyor. Ekranın ne kadarı
   // canlı, ne kadarı devre dışı: `BankReconciliationView` başlığındaki ölçüm.
   {
     kind: "link",
     label: "Banka Mutabakatı",
-    href: "/muhasebe/banka-mutabakati",
+    href: routes.accounting.bankReconciliation(),
     exact: false,
   },
   // MP:110 — GİB entegrasyonu KULLANICI KARARIYLA ertelendi; uç YOK.
@@ -82,7 +83,7 @@ export const ACCOUNTING_TABS: readonly AccountingNavItem[] = [
     reason: "e-Fatura/GİB entegrasyonu ertelendi (kullanıcı kararı).",
   },
   // MP:111
-  { kind: "link", label: "KDV Beyanı", href: "/muhasebe/kdv-beyani", exact: false },
+  { kind: "link", label: "KDV Beyanı", href: routes.accounting.vatReturn(), exact: false },
   // 🔴 MOCKUP SAPMASI (F-MUP, bildirildi) — `Dönem Kapanışı` MP'nin sekme
   // şeridinde YOKTUR. Ekran F-DKAP ile AÇILDI, canlıdır ve kendi mockup'ı
   // (`Muhasebe - Dönem Kapanışı.dc.html`) vardır. Sırf MP çizmiyor diye
@@ -93,7 +94,7 @@ export const ACCOUNTING_TABS: readonly AccountingNavItem[] = [
   {
     kind: "link",
     label: "Dönem Kapanışı",
-    href: "/muhasebe/donem-kapanisi",
+    href: routes.accounting.periodClosing(),
     exact: false,
   },
 ];

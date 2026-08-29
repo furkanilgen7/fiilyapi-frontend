@@ -28,6 +28,7 @@ import {
   RENTAL_STATUS_BADGE,
 } from "./rental-labels";
 import "./equipment-rental.css";
+import { routes } from "@/lib/routes";
 
 const EQUIPMENT_PERMISSION_MODULE = "equipment";
 const SUPPLIER_OPTIONS_LIMIT = 200;
@@ -163,9 +164,9 @@ export function EquipmentRentalInvoiceDetailView({
     <div className="makine-kira makine-kira--detail">
       {/* M5:18-24 — breadcrumb. */}
       <nav className="makine-kira__crumbs" aria-label="Konum">
-        <Link href="/makine">Makine &amp; Ekipman</Link>
+        <Link href={routes.equipment.list()}>Makine &amp; Ekipman</Link>
         <span aria-hidden="true">/</span>
-        <Link href="/makine/kira">Kira Hakedişi</Link>
+        <Link href={routes.equipment.rentalInvoices()}>Kira Hakedişi</Link>
         <span aria-hidden="true">/</span>
         <span className="makine-kira__crumb-current">
           {formatPeriod(detail.period_year, detail.period_month)}

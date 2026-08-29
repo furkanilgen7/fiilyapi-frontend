@@ -65,6 +65,7 @@ import {
 // Sıra önemli: önce paylaşılan kabuk, sonra forma özgü bloklar (özgü kazansın).
 import "@/styles/form-shell.css";
 import "./personnel-form.css";
+import { PERSONNEL_RETURN_PARAM, routes } from "@/lib/routes";
 
 /**
  * "İptal"/kaydetme sonrası dönülecek rotayı taşıyan sorgu parametresi
@@ -74,10 +75,10 @@ import "./personnel-form.css";
  * Form GELDİĞİ YERE döner: puantaj ekranlarındaki giriş noktaları bu
  * parametreyi doldurur, doğrudan URL ile gelen kullanıcı genel puantaja düşer.
  */
-export const RETURN_PARAM = "donus";
+export const RETURN_PARAM = PERSONNEL_RETURN_PARAM;
 
 /** Parametre yoksa ya da güvenilir değilse dönülecek rota. */
-export const DEFAULT_RETURN_TO = "/puantaj";
+export const DEFAULT_RETURN_TO = routes.timesheet();
 
 /** Yalnız uygulama içi mutlak yol kabul edilir (açık yönlendirme kapalı). */
 export function safeReturnTo(raw: string | null): string {
@@ -167,7 +168,7 @@ export function PersonnelForm(props: PersonnelFormProps) {
   }
 
   function handleCancel() {
-    router.push(isEdit ? `/personel/${props.personnelId}` : returnTo);
+    router.push(isEdit ? routes.personnel.detail({ personnelId: props.personnelId }) : returnTo);
   }
 
   /**
@@ -261,7 +262,7 @@ export function PersonnelForm(props: PersonnelFormProps) {
         omitFields: omittedSelectFields,
       }),
       {
-        onSuccess: () => router.push(`/personel/${props.personnelId}`),
+        onSuccess: () => router.push(routes.personnel.detail({ personnelId: props.personnelId })),
         onError,
       },
     );

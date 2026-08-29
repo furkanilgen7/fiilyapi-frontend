@@ -15,6 +15,7 @@ import {
 import type { PendingMoney, SubcontractorRow } from "./subcontractor-aggregate";
 import { categoryBadgeVariant, categoryTone } from "./subcontractor-category";
 import "./subcontractors.css";
+import { routes } from "@/lib/routes";
 
 /**
  * TL 41-107 · taşeron firma tablosu. Kolonlar 45-52'den BİREBİR sırasıyla:
@@ -85,7 +86,7 @@ export function SubcontractorsTable({
 }
 
 export function detailHref(contractId: string): string {
-  return `/sozlesmeler/taseron/${contractId}`;
+  return routes.contracts.subcontractorDetail({ contractId });
 }
 
 /** 56 · "VKN: 1234567890 · İletişim: 0212 555 00 01"; 86'da telefon YOK. */
