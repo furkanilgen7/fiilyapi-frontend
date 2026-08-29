@@ -7941,7 +7941,12 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       // olabilir; cozumleme `resolveByIdOrSlug`tadir (belirsizlikte 404).
       // Projeler icin kapsam YOKTUR: `projects.slug` KURESEL tekildir.
       const project = resolveByIdOrSlug(state.projects, projectIdMatch[1]);
-      if (!project) return send(404, { detail: "proje yok" });
+      // 🔴 GERCEK BACKEND'IN CUMLESI (`sites/guards.py: PROJECT_MISSING`).
+      // Ikiz eskiden "proje yok" derdi; o metin kullaniciya BASILAN cumleydi
+      // ve gercekle AYRISIYORDU (URL-3 bunu olcerek yakaladi: cozumleme
+      // basamagi eklenince hata yuzeyi bu uca tasindi ve ikizin kisa yazimi
+      // ekranda gorunur oldu).
+      if (!project) return send(404, { detail: "Proje bulunamadı" });
       // 🔴 BURADAN SONRASI KANONIK KIMLIKLE calisir: `project.id`. Anahtari
       // (slug olabilir) alt sorgulara gecirmek CANLIDA 422/404 verirdi —
       // kalan 42 yol parametresi UUID bekler.
@@ -8096,7 +8101,8 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         scope = scopeProject === null ? [] : state.sites.filter((s) => s.project_id === scopeProject.id);
       }
       const site = resolveByIdOrSlug(scope, siteIdMatch[1]);
-      if (!site) return send(404, { detail: "santiye yok" });
+      // Gercek backend: `sites/guards.py: SITE_MISSING`.
+      if (!site) return send(404, { detail: "Şantiye bulunamadı" });
       return send(200, buildSiteDetail(state, site));
     }
 
@@ -8210,7 +8216,8 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         scope = scopeSite === null ? [] : state.sections.filter((sec) => sec.site_id === scopeSite.id);
       }
       const section = resolveByIdOrSlug(scope, sectionIdMatch[1]);
-      if (!section) return send(404, { detail: "bolum yok" });
+      // Gercek backend: `sites/guards.py: SECTION_MISSING`.
+      if (!section) return send(404, { detail: "Bölüm bulunamadı" });
       return send(200, buildSectionDetail(state, section));
     }
 

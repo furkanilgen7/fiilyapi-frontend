@@ -280,6 +280,7 @@ export function SectionDetailView() {
         siteName={siteName}
         projectKey={projectKey}
         siteKey={siteKey}
+        sectionKey={sectionKey}
         projectId={projectId}
         canEdit={canWrite}
       />

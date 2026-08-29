@@ -6,7 +6,7 @@ import { pendingModuleLabel, type PendingModuleKey } from "@/lib/pending-modules
 import { SECTION_STATUS_CLASS_SUFFIX, SECTION_STATUS_LABELS } from "@/lib/section-labels";
 import type { SectionDetailResponse } from "@/lib/api/hooks/useSection";
 import { remainingDays } from "./remainingDays";
-import { routes, routeKeyOf } from "@/lib/routes";
+import { routes } from "@/lib/routes";
 
 const NO_END_DATE_TITLE = "Bitiş tarihi girilmemiş";
 // D88: mockup "3 gecikme riski" basıyor ama backend bu veriyi BİLİNÇLİ
@@ -20,9 +20,16 @@ const REALIZED_AMOUNT_PENDING_MODULE = "progress_payments";
 export interface SectionHeroCardProps {
   section: SectionDetailResponse;
   siteName: string;
-  /** ADRESTEKI anahtarlar — "Duzenle" YOL baglantisidir. */
+  /**
+   * ADRESTEKI anahtarlar — "Duzenle" bolumun KENDI alt agacinda bir YOL
+   * baglantisidir, dolayisiyla KAYDIN slug'ini degil ADRESI izler (URL-3
+   * kurali: disaridan GIRIS baglantisi `routeKeyOf`, alt agac ici baglanti
+   * ADRES). Aksi halde eski UUID linkiyle gelen kullanici "Duzenle"ye basinca
+   * adres bicimi bir anda slug'a atlar — yonlendirme YOK karariyla celisir.
+   */
   projectKey: string;
   siteKey: string;
+  sectionKey: string;
   /** Kanonik proje UUID'si — "Hakedis Olustur" SORGU parametresi kurar. */
   projectId: string;
   canEdit: boolean;
@@ -179,15 +186,16 @@ export function SectionHeroCard({
   siteName,
   projectKey,
   siteKey,
+  sectionKey,
   projectId,
   canEdit,
 }: SectionHeroCardProps) {
   const meta = metaParts(section, siteName);
-  // YOL: adres anahtarlari + bolumun KENDI okunur anahtari (`slug ?? id`).
+  // YOL, TAMAMEN ADRESTEN: uc segment de kullanicinin geldigi bicimi korur.
   const editHref = routes.projects.sites.sections.edit({
     projectId: projectKey,
     siteId: siteKey,
-    sectionId: routeKeyOf(section),
+    sectionId: sectionKey,
   });
   const statusSuffix = SECTION_STATUS_CLASS_SUFFIX[section.status];
 

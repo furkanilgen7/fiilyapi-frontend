@@ -42,7 +42,11 @@ test("santiye detayindan bolum detayina link, hero + KPI + sekmeler + Hakedis Ol
   await expect(page.getByRole("heading", { level: 1, name: "A-Blok Şantiyesi" })).toBeVisible();
   const secCard = page.getByTestId("section-list").locator("li", { hasText: "Kat 6–10 Kaba İnşaat" });
   await secCard.getByRole("link", { name: "Detay →" }).click();
-  await expect(page).toHaveURL(/\/santiyeler\/s-1\/bolumler\/sec-1$/);
+  // 🔴 URL-3 — bolume GIRIS baglantisi artik BOLUMUN OKUNUR ANAHTARINI tasir
+  // (`sec-1`in slug'i `kat-6-10-kaba-insaat`). Beklenen deger BILEREK ELLE
+  // yazilmaya devam ediyor: `routes.*`e baglanan bir iddia ureticiyle BIRLIKTE
+  // kayar ve gocun tek dis tanigi kaybolurdu.
+  await expect(page).toHaveURL(/\/santiyeler\/s-1\/bolumler\/kat-6-10-kaba-insaat$/);
 
   // 2) Hero alanları (D54-96): başlık, durum rozeti, meta satırı.
   await expect(page.getByRole("heading", { level: 1, name: "Kat 6–10 Kaba İnşaat" })).toBeVisible();
@@ -72,9 +76,13 @@ test("santiye detayindan bolum detayina link, hero + KPI + sekmeler + Hakedis Ol
   await expect(page.getByTestId("section-hero-kpi-days").locator(".section-hero__kpi-value--pending")).toHaveCount(0);
 
   // 4) Eylemler: "Düzenle" doğru rotaya, "Hakediş Oluştur" P7 ekranına gider.
+  // 🔴 URL-3 — "Duzenle" ADRESI izler: test bolume SLUG'li baglantidan girdigi
+  // icin (yukarida) adres `.../bolumler/kat-6-10-kaba-insaat`tir ve duzenleme
+  // baglantisi da o bicimi KORUR. Kaydin slug'ini degil ADRESI izlemesi
+  // bilincli bir karardir (yonlendirme YOK: kullanicinin geldigi bicim yasar).
   await expect(page.getByRole("link", { name: "Düzenle" })).toHaveAttribute(
     "href",
-    "/projeler/p-1/santiyeler/s-1/bolumler/sec-1/duzenle",
+    "/projeler/p-1/santiyeler/s-1/bolumler/kat-6-10-kaba-insaat/duzenle",
   );
   await expect(page.getByRole("link", { name: "Hakediş Oluştur" })).toHaveAttribute(
     "href",

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui";
 import { useSiteStock } from "@/lib/api/hooks/useSiteStock";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { STOCK_LIST_MAX_LIMIT } from "@/lib/api/hooks/useStockItems";
+import { resolutionAwareError } from "@/lib/api/route-key-resolution";
 import { stockErrorMessage } from "@/lib/api/stock-error";
 import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
@@ -84,7 +85,12 @@ export function SiteStockView() {
   const truncation = buildListTruncation(rows?.length ?? 0, stockQuery.data?.total);
   // IDOR kanonu (ST §4b): görünmeyen şantiye 404 alır ve kullanıcıya Türkçe,
   // GÖRÜNÜR bir cümle basılır — sessiz boş tablo YOK.
-  const loadError = stockQuery.isError ? stockErrorMessage(stockQuery.error) : undefined;
+  // 🔴 URL-3 — COZUMLEME HATASI DA BURADAN KONUSUR. Bilinmeyen bir santiye
+  // anahtarinda `siteQuery` 404 alir, `siteId` bos kalir ve `useSiteStock`
+  // KENDI bos-id kapisinda durur; yani `stockQuery.isError` FALSE olur.
+  // Yalniz alt sorguya bakan eski ifade o an HICBIR SEY basmiyordu ve
+  // kullanici bos bir tablo goruyordu (ST §4b: sessiz bos tablo YOK).
+  const loadError = resolutionAwareError(siteQuery, stockQuery, stockErrorMessage);
 
   return (
     <div className="stok stok--santiye">

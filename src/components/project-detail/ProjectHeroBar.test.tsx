@@ -31,7 +31,7 @@ const BASE: ProjectDetail = {
 
 describe("ProjectHeroBar", () => {
   it("kategori, sehir, baslik ve meta satirini basar (spec §4.1)", () => {
-    render(<ProjectHeroBar project={BASE} activePath={`/projeler/${BASE.id}`} />);
+    render(<ProjectHeroBar project={BASE} projectKey={BASE.id} activePath={`/projeler/${BASE.id}`} />);
     expect(screen.getByText("Konut Projesi · Ankara")).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1, name: "Güneşkent Konut" })).toBeInTheDocument();
     expect(screen.getByText(/SZL-2025-001/)).toBeInTheDocument();
@@ -39,25 +39,25 @@ describe("ProjectHeroBar", () => {
   });
 
   it("Toplam Sozlesme yer tutucudur — '—' basar, title'da contracts aciklamasi verir (spec §7.1)", () => {
-    render(<ProjectHeroBar project={BASE} activePath={`/projeler/${BASE.id}`} />);
+    render(<ProjectHeroBar project={BASE} projectKey={BASE.id} activePath={`/projeler/${BASE.id}`} />);
     expect(screen.getByText("Toplam Sözleşme")).toBeInTheDocument();
     const value = screen.getByTitle("Sözleşme verisi bu yüzeye henüz bağlanmadı");
     expect(value).toHaveTextContent("—");
   });
 
   it("santiye sayisini gercek veriden basar (yer tutucu degil)", () => {
-    render(<ProjectHeroBar project={BASE} activePath={`/projeler/${BASE.id}`} />);
+    render(<ProjectHeroBar project={BASE} projectKey={BASE.id} activePath={`/projeler/${BASE.id}`} />);
     expect(screen.getByText("2 şantiye")).toBeInTheDocument();
   });
 
   it("isveren/sozlesme no eksikken meta satirini zarifce daraltir", () => {
     const noEmployer: ProjectDetail = { ...BASE, employer_name: null, contract_no: null };
-    render(<ProjectHeroBar project={noEmployer} activePath={`/projeler/${BASE.id}`} />);
+    render(<ProjectHeroBar project={noEmployer} projectKey={BASE.id} activePath={`/projeler/${BASE.id}`} />);
     expect(screen.queryByText(/İşveren:/)).not.toBeInTheDocument();
   });
 
   it("sekme barini icerir", () => {
-    render(<ProjectHeroBar project={BASE} activePath={`/projeler/${BASE.id}`} />);
+    render(<ProjectHeroBar project={BASE} projectKey={BASE.id} activePath={`/projeler/${BASE.id}`} />);
     expect(screen.getByRole("tablist", { name: "Proje detay sekmeleri" })).toBeInTheDocument();
   });
 });

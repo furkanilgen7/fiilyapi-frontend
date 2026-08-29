@@ -85,7 +85,7 @@ export default function ProjectDetailPage() {
 
   return (
     <div className="project-detail">
-      <ProjectHeroBar project={project} activePath={pathname} />
+      <ProjectHeroBar project={project} projectKey={projectKey} activePath={pathname} />
       <div className="project-detail__section-head">
         <h2 className="project-detail__section-title">Şantiyeler ({project.site_count})</h2>
         <AddSiteLink projectKey={projectKey} />
