@@ -155,7 +155,9 @@ test("Hakedis sekmesi bolum + 'Tum Bolumler' satirlarini basar, baska bolumu DUS
   await expect(scope).toContainText("İşveren hakedişi bölüme kırılmıyor");
 });
 
-test("Malzeme sekmesi YER TUTUCU kalir ama kendi gerekcesini ve cikis yolunu basar", async ({
+// 🔴 STOK-BOLUM (2026-08-29) — BAŞLIK VE İDDİA TERSİNE ÇEVRİLDİ. Eski hâli
+// "YER TUTUCU kalir" diyordu; bölüm ↔ stok bağı backend `186ffe9` ile AÇILDI.
+test("Malzeme sekmesi GERCEK kirilim basar ve suzgecli cikis yolunu tasir", async ({
   page,
 }) => {
   await openSection(page, "sec-1", "Kat 6–10 Kaba İnşaat");
@@ -167,17 +169,25 @@ test("Malzeme sekmesi YER TUTUCU kalir ama kendi gerekcesini ve cikis yolunu bas
     "Kat 6–10 Kaba İnşaat · Stok Hareketleri",
   );
 
-  // Gerekçe MODÜL değil ALAN adlandırır (`/stok` CANLI, eksik olan alan).
-  await expect(panel).toContainText("Stok hareketi bölüm alanı taşımıyor");
-  await expect(panel).toContainText("Kat 6–10 Kaba İnşaat için ayrı stok kaydı basılmıyor");
+  // TERS BEKÇİ — eski pending gerekçesi geri gelirse KIRMIZI.
+  await expect(panel).not.toContainText("Stok hareketi bölüm alanı taşımıyor");
+  await expect(panel).not.toContainText("için ayrı stok kaydı basılmıyor");
 
-  // 🔴 Çıkış yolu ŞANTİYE stok ekranıdır ve `?section=` TAŞIMAZ — hedef ekran
-  // `useSearchParams` KULLANMAZ, parametre eklemek ÖLÜ query yazmak olurdu.
+  // 🔴 ATANAN ve SARF AYRI hücrelerdedir — tek toplam basılsaydı 0,6 tonun
+  // harcandığı HİÇ görünmezdi.
+  const row = panel.getByTestId("section-stock-row-SNK-0421");
+  await expect(row).toContainText("3 Ton");
+  await expect(panel.getByTestId("section-stock-issued-SNK-0421")).toContainText("0,6 Ton");
+
+  // Poz atfı OLMAYAN satır meşru bir hâl olarak basılır (fail-open).
+  await expect(panel.getByTestId("section-stock-noboq-SNK-0108")).toContainText("Poz atanmadı");
+
+  // 🔴 ÇIKIŞ YOLU ARTIK SÜZGECİ TAŞIR: hedef ekran `?section=` OKUYOR
+  // (eski gerekçe — "ölü query" — backend süzgeci açılınca çürüdü).
   const hrefs = await panel.evaluate((el) =>
     Array.from(el.querySelectorAll("a[href]")).map((a) => a.getAttribute("href")),
   );
-  expect(hrefs).toContain("/projeler/p-1/santiyeler/s-1/stok");
-  expect(hrefs.every((h) => h !== null && !h.includes("?section="))).toBe(true);
+  expect(hrefs).toContain("/projeler/p-1/santiyeler/s-1/stok?section=sec-1");
 });
 
 /**

@@ -95,17 +95,16 @@ test("santiye detayindan bolum detayina link, hero + KPI + sekmeler + Hakedis Ol
   // dilimde AÇILMADI, yani o metin DOĞRUDUR. Geniş regex ürünü değil KENDİNİ
   // yanlışlıyordu (iki e2e kırmızısının tek sebebi buydu).
   await expect(page.getByText(/[Pp]uantaj bu bölüme henüz kırılmıyor/)).toHaveCount(0);
-  // Pozitif kontrol — daraltma bir gerilemeyi GİZLEMİYOR: hâlâ pending olan
-  // stok kartı kendi dürüst gerekçesini basmaya devam ediyor.
+  // 🔴 STOK-BOLUM (2026-08-29) — POZİTİF KONTROLÜN ÇAPASI DEĞİŞTİ.
   //
-  // 🔴 F-BLMSEK T4 (2026-08-27) — METİN T3'TE YENİDEN YAZILDI, iddia BAYATTI.
-  // `section_stock` artık MODÜL değil ALAN adlandırıyor ("Stok hareketi bölüm
-  // alanı taşımıyor…"); eski regex hiçbir şeyle eşleşmiyordu ve `toHaveCount(1)`
-  // KIRMIZI olurdu. Pozitif kontrolün AMACI korunur (hâlâ pending olan tek
-  // yüzey gerekçesini basıyor), yalnız çapa güncel metne taşındı.
-  await expect(
-    page.getByText(/Stok hareketi bölüm alanı taşımıyor/),
-  ).toHaveCount(1);
+  // Eski çapa "hâlâ pending olan stok kartının gerekçesi" idi; stok bağı
+  // backend `186ffe9` ile AÇILDI ve o metin artık HİÇBİR YERDE basılmıyor —
+  // çapa olarak bırakılsaydı test KIRMIZI olurdu (ve haklı olarak).
+  //
+  // Pozitif kontrolün AMACI korunur: yukarıdaki dar regex bir gerilemeyi
+  // GİZLEMİYOR. Yeni çapa, alt kartın artık GERÇEK veri bastığıdır.
+  await expect(page.getByText(/Stok hareketi bölüm alanı taşımıyor/)).toHaveCount(0);
+  await expect(page.getByTestId("section-stock-card-list")).toBeVisible();
   // ŞP 117-119 karşılığı: bölüm adı + dönem, ve GÖRÜNEN kümenin türevleri.
   // sec-1'in 2026-08 kümesi: per-1 (3 saatli/izinli gün), per-2 (3 gün),
   // per-3 (2 saatli gün + 1 geçici görev) ⇒ 3 işçi.
@@ -269,17 +268,19 @@ test("puantaji olmayan bolumde 'bu ay kayit yok' der, 'modul yok' DEMEZ", async 
   // dilimde AÇILMADI, yani o metin DOĞRUDUR. Geniş regex ürünü değil KENDİNİ
   // yanlışlıyordu (iki e2e kırmızısının tek sebebi buydu).
   await expect(page.getByText(/[Pp]uantaj bu bölüme henüz kırılmıyor/)).toHaveCount(0);
-  // Pozitif kontrol — daraltma bir gerilemeyi GİZLEMİYOR: hâlâ pending olan
-  // stok kartı kendi dürüst gerekçesini basmaya devam ediyor.
+  // 🔴 STOK-BOLUM (2026-08-29) — POZİTİF KONTROLÜN ÇAPASI DEĞİŞTİ.
   //
-  // 🔴 F-BLMSEK T4 (2026-08-27) — METİN T3'TE YENİDEN YAZILDI, iddia BAYATTI.
-  // `section_stock` artık MODÜL değil ALAN adlandırıyor ("Stok hareketi bölüm
-  // alanı taşımıyor…"); eski regex hiçbir şeyle eşleşmiyordu ve `toHaveCount(1)`
-  // KIRMIZI olurdu. Pozitif kontrolün AMACI korunur (hâlâ pending olan tek
-  // yüzey gerekçesini basıyor), yalnız çapa güncel metne taşındı.
-  await expect(
-    page.getByText(/Stok hareketi bölüm alanı taşımıyor/),
-  ).toHaveCount(1);
+  // Eski çapa "hâlâ pending olan stok kartının gerekçesi" idi; stok bağı
+  // backend `186ffe9` ile AÇILDI ve o metin artık HİÇBİR YERDE basılmıyor —
+  // çapa olarak bırakılsaydı test KIRMIZI olurdu (ve haklı olarak).
+  //
+  // Pozitif kontrolün AMACI korunur: yukarıdaki dar regex bir gerilemeyi
+  // GİZLEMİYOR. Yeni çapa, alt kartın artık GERÇEK veri bastığıdır.
+  await expect(page.getByText(/Stok hareketi bölüm alanı taşımıyor/)).toHaveCount(0);
+  // ⚠️ `sec-3`e atfedilmiş malzeme YOKTUR — kart BOŞ dalını basar. Bu bir
+  // "pending" DEĞİLDİR: gerçek bir sorgunun gerçek boş cevabıdır ve cümlesi
+  // de öyle kurulur.
+  await expect(page.getByTestId("section-stock-card-empty")).toBeVisible();
   await expect(page.getByText(/modülle birlikte gelir/)).toHaveCount(0);
   // Kart yine de "Puantaj →" yolunu KORUR — sekme onun yerine geçmez.
   await expect(page.getByRole("link", { name: "Puantaj →" })).toHaveAttribute(

@@ -64,6 +64,11 @@ test("stok giris formu gorsel", async ({ page }) => {
   await expect(page.getByTestId("stok-giris-teslim-alan")).toBeEnabled();
   // (d) saat sabitlemesi İŞLEDİ: tarih alanı deterministik.
   await expect(page.getByTestId("stok-giris-tarih")).toHaveValue(FIXED_TODAY_DISPLAY);
+  // (e) 🔴 STOK-BOLUM — atıf sütunlarının İKİ BAĞIMSIZ kaynağı da GELDİ
+  //     (bölüm listesi + poz listesi). Yüklenmemişken select'ler devre
+  //     dışıdır ve kare "kapalı sütun" hâlini yanlışlıkla kilitlerdi.
+  await expect(page.getByTestId("stok-giris-bolum-0")).toBeEnabled();
+  await expect(page.getByTestId("stok-giris-poz-0")).toBeEnabled();
 
   // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
   await prepareFrame(page);
