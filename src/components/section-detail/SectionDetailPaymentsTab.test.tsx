@@ -142,6 +142,7 @@ function mockAll(items: SiteSubcontractorPaymentItem[], partial = false) {
   } as never);
   vi.mocked(useSiteSubcontractorPayments).mockReturnValue({
     items,
+    projectWideItems: [],
     isLoading: false,
     isError: false,
     isPartial: partial,

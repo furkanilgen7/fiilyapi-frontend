@@ -2206,6 +2206,13 @@ const SUBCONTRACTOR_CONTRACT_ITEMS_SC2: MockSubcontractorContractItem[] = [
   { id: "sci-5", code: "M.02", description: "Sıva İşleri", unit: "m²", contractUnitPrice: "145.00", contractQuantity: "9200.000", groupName: "Duvar İşleri" },
 ];
 
+// 🔴 HAK-NULL İKİZİ — proje geneli sözleşmenin GÖRÜNÜR hakedişi için kalemler.
+// `sc-3` KULLANILAMAZDI: o kayıt "HİÇ hakedişi olmayan sözleşme" U1 kanıtıdır
+// (bkz. aşağıdaki not) ve ona görünür bir hakediş eklemek o kanıtı yok ederdi.
+const SUBCONTRACTOR_CONTRACT_ITEMS_SC4: MockSubcontractorContractItem[] = [
+  { id: "sci-6", code: "G.01", description: "Genel Şantiye Temizliği", unit: "ay", contractUnitPrice: "18000.00", contractQuantity: "12.000", groupName: "Genel İşler" },
+];
+
 const SUBCONTRACTOR_CONTRACTS: MockSubcontractorContract[] = [
   {
     id: "sc-1", project_id: "p-1", site_id: "s-1", subcontractor_id: "sub-1",
@@ -2254,6 +2261,34 @@ const SUBCONTRACTOR_CONTRACTS: MockSubcontractorContract[] = [
     payment_period: "monthly", payment_term_days: 15,
     materials_by_contractor: false, subcontractor_files_own_sgk: true, vat_withholding: false,
     status: "active", is_draft: false, items: [],
+  },
+  // 🔴 HAK-NULL İKİZİ (K-IKIZ2) — PROJE GENELİ (`site_id: null`) sözleşme,
+  // `sc-3`ten farkı: BUNUN GÖRÜNÜR bir hakedişi VAR (`scpp-9`).
+  //
+  // NEDEN ŞART: canlıdaki kusur tam olarak "proje geneli sözleşmenin hakedişi
+  // şantiye süzgecinde kayboluyor"du. İkizde proje geneli + GÖRÜNÜR hakediş
+  // kombinasyonu HİÇ YOKTU (`sc-3`ün tek hakedişi `hiddenFromLists`), bu
+  // yüzden kusuru ölçen bir e2e YAZILAMAZDI — ikiz gerçeği doğrulayamıyordu.
+  //
+  // ⚠️ `subcontractor_id` BİLEREK mevcut `sub-1`dir: `active_subcontractor_
+  // count` TÜM aktif sözleşmelerin distinct `subcontractor_id`sini sayar
+  // (satır ~2677), yeni bir kimlik o KPI'ı 2→3 yapıp
+  // `taseron-hakedisleri-listesi.png` baseline'ını SESSİZCE bozardı (sc-3
+  // notundaki tuzağın aynısı).
+  {
+    id: "sc-4", project_id: "p-1", site_id: null, subcontractor_id: "sub-1",
+    // ⚠️ AD sc-3'ten FARKLI olmak ZORUNDA: `subcontractor-progress-payments.
+    // spec.ts:119` seçim kutusunda "Yılmaz Boya A.Ş." seçeneğinin TAM 1 tane
+    // olduğunu iddia eder (U1 kanıtı). Aynı adı vermek o bekçiyi kırdı ve
+    // fiilen ölçüldü. `subcontractor_id` yine `sub-1` KALIR — "Aktif Taşeron"
+    // KPI'ı KİMLİK sayar, ad değil.
+    subcontractor_name: "Öz Genel Hizmetler", work_category: "Genel İşler",
+    contract_no: "TSD-2026-04", signature_date: "2026-03-15", is_notarized: false,
+    start_date: "2026-04-01", end_date: "2026-12-31", late_penalty_daily: null,
+    advance_pct: "0.00", retainage_pct: "5.00", vat_pct: "20.00",
+    payment_period: "monthly", payment_term_days: 15,
+    materials_by_contractor: false, subcontractor_files_own_sgk: true, vat_withholding: false,
+    status: "active", is_draft: false, items: SUBCONTRACTOR_CONTRACT_ITEMS_SC4,
   },
 ];
 
@@ -2492,7 +2527,24 @@ function buildSubcontractorProgressPaymentFixtures(): MockSubcontractorProgressP
     hiddenFromLists: true,
   });
 
-  return [scpp1, scpp2, scpp3, scpp4, scpp5, scpp6, scpp7, scpp8];
+  // #9 — 🔴 HAK-NULL İKİZİ: sc-4 (PROJE GENELİ) üzerinde GÖRÜNÜR hakediş.
+  // `section_id: null` — proje geneli sözleşmenin hakedişi bölüme de
+  // kırılmamıştır; bölüm sekmesinde "Tüm Bölümler" olarak görünmesi ve
+  // ŞANTİYE toplamına GİRMEMESİ bu kayıtla ölçülür.
+  const scpp9 = withTotals({
+    id: "scpp-9", contract_id: "sc-4", project_id: "p-1", sequence_no: 1,
+    period_year: 2026, period_month: 7, description: "Temmuz genel işler hakedişi",
+    status: "approved", vat_pct: "20.00", advance_pct: "0.00", retainage_pct: "5.00",
+    default_coefficient: "1.00", section_id: null,
+    submitted_at: "2026-07-26T09:00:00Z", approved_at: "2026-07-29T09:00:00Z", approved_by: patronId,
+    paid_at: null, rejected_at: null, rejection_reason: null,
+    is_revision_required: false, created_by: patronId,
+    created_at: "2026-07-20T09:00:00Z", updated_at: "2026-07-29T09:00:00Z",
+    lines: linesFor("sc-4", [["sci-6", 2]]),
+    dropped_orphan_count: 0,
+  });
+
+  return [scpp1, scpp2, scpp3, scpp4, scpp5, scpp6, scpp7, scpp8, scpp9];
 }
 
 function buildSubcontractorPaymentDetail(state: MockState, payment: MockSubcontractorProgressPayment): components["schemas"]["SubcontractorProgressPaymentDetail"] {
@@ -2563,6 +2615,11 @@ function buildSubcontractorPaymentListItem(state: MockState, payment: MockSubcon
     description: payment.description,
     status: payment.status,
     section_id: payment.section_id,
+    // HAK-NULL · satırın KAPSAMI: sözleşmenin şantiyesi, `null` = proje geneli.
+    // İkiz bu alanı basmazsa `useSiteSubcontractorPayments` her satırı proje
+    // geneli sanar (`undefined === null` false → hepsi `siteScoped`e düşer,
+    // ya da tersi) ve kapsam ayrımını ölçen hiçbir e2e gerçeği doğrulayamaz.
+    contract_site_id: contract?.site_id ?? null,
     created_at: payment.created_at,
     gross_total: payment.calculation.gross,
     net_total: payment.calculation.net,
@@ -8732,7 +8789,15 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       let items = state.subcontractorProgressPayments.filter((p) => !p.hiddenFromLists);
       if (projectId) items = items.filter((p) => p.project_id === projectId);
       if (siteId) {
-        items = items.filter((p) => findSubcontractorContract(state, p.contract_id)?.site_id === siteId);
+        // 🔴 HAK-NULL — İKİZ GERÇEK UCU YANSITIR: süzgeç EŞİTLİK değil KAPSAMA
+        // sorar. Proje geneli (`site_id === null`) sözleşme projenin BÜTÜN
+        // şantiyelerini kapsar, dolayısıyla kümeye girer. Buradaki eski düz
+        // eşitlik, backend'deki kusurun BİREBİR ikiziydi: ikisi de proje geneli
+        // sözleşmelerin hakedişlerini hiçbir şantiyede göstermiyordu.
+        items = items.filter((p) => {
+          const contractSiteId = findSubcontractorContract(state, p.contract_id)?.site_id ?? null;
+          return contractSiteId === siteId || contractSiteId === null;
+        });
       }
       if (periodYear) items = items.filter((p) => p.period_year === Number(periodYear));
       if (periodMonth) items = items.filter((p) => p.period_month === Number(periodMonth));

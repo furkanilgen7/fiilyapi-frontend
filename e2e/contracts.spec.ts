@@ -90,7 +90,11 @@ test("sözleşmeler: taşeron sekmesi — ilerleme GERÇEK, '—' yalnız BEDELS
   // `progress_pct` sıfır/negatif paydada bölme yapmaz. Fikstürde üç dal da
   // temsil edilir → sc-1 gerçek yüzde, sc-2 GERÇEK `%0` (hakedişi yok ama
   // bedeli var), kalemsiz sc-3 "—".
-  await expect(page.getByTestId("szl-progress")).toHaveCount(2);
+  //
+  // HAK-NULL: fikstüre PROJE GENELİ `sc-4` eklendi (kalemli, dolayısıyla
+  // bedelli) → gerçek yüzde basan sözleşme sayısı 2→3. "—" dalı DEĞİŞMEDİ:
+  // bedelsiz olan hâlâ YALNIZ sc-3'tür, testin asıl iddiası odur.
+  await expect(page.getByTestId("szl-progress")).toHaveCount(3);
   await expect(page.getByTestId("szl-progress-pending")).toHaveCount(1);
   await expect(page.getByTestId("szl-progress-pending")).toHaveAttribute(
     "title",

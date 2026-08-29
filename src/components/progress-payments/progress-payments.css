@@ -148,3 +148,17 @@
   color: var(--color-text-subtle);
   margin-top: 2px;
 }
+
+/* HAK-NULL · "proje geneli" kapsam notu — proje geneli sözleşmelerin
+   hakedişleri BASILIR ama şantiyenin KPI toplamına girmez; not o ayrımı
+   görünür kılar. Token'lar `section-pp__note` ile AYNI (ikisi de aynı sınıf
+   bilgiyi taşır: "bu satırlar burada ama sayılmıyor"), yeni bir görsel dil
+   İCAT EDİLMEZ. */
+.pp-scope-note {
+  margin: 0;
+  padding: 8px 14px;
+  border-top: 1px solid var(--color-divider);
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+  line-height: var(--leading-normal);
+}

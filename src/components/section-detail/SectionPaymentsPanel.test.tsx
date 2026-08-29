@@ -25,6 +25,7 @@ function payment(overrides: Partial<SiteSubcontractorPaymentItem> = {}): SiteSub
     periodMonth: 7,
     workCategory: "Betonarme İşleri",
     sectionId: SECTION_ID,
+    contractSiteId: SITE_ID,
     grossTotal: "182400.00",
     netTotal: "160000.00",
     status: "approved",
@@ -211,5 +212,44 @@ describe("SectionPaymentsPanel — kırpılma dürüstlüğü (2d)", () => {
     renderPanel({ items: [payment()] });
 
     expect(screen.queryByTestId("section-payments-band")).not.toBeInTheDocument();
+  });
+
+  // --- 🔴 HAK-NULL · proje geneli sözleşmelerin hakedişleri ---
+  describe("HAK-NULL · proje geneli hakedişler", () => {
+    it("🔴 şantiyeye bağlı hakediş YOKKEN proje geneli hakediş VARSA 'bu bölümde hakediş yok' DEMEZ", () => {
+      // Canlıdaki kusurun bölüm ekranındaki yüzü: sözleşmelerin hepsi proje
+      // geneli olduğu için panel her bölümde "hakediş yok" basıyordu.
+      renderPanel({
+        items: [],
+        projectWideItems: [payment({ id: "genel", contractSiteId: null, sectionId: null })],
+      });
+
+      expect(screen.queryByTestId("section-payments-empty")).not.toBeInTheDocument();
+      expect(screen.getByText("Akın İnşaat #3")).toBeInTheDocument();
+      // `sectionId === null` → bölüm adıyla EZİLMEZ, "Tüm Bölümler" basar.
+      expect(screen.getByText("Tüm Bölümler")).toBeInTheDocument();
+    });
+
+    it("🔴 POZİTİF KONTROL: proje geneli olsa bile BAŞKA bölüme atanmış hakediş basılmaz", () => {
+      // İki eksen bağımsızdır. Bu bacak olmasaydı "proje geneli olan her şeyi
+      // koşulsuz basan" bir bozukluk da yukarıdaki testi yeşil geçerdi.
+      renderPanel({
+        items: [],
+        projectWideItems: [
+          payment({ id: "baska-bolum", contractSiteId: null, sectionId: OTHER_SECTION_ID }),
+        ],
+      });
+
+      expect(screen.queryByText("Akın İnşaat #3")).not.toBeInTheDocument();
+      expect(screen.getByTestId("section-payments-empty")).toBeInTheDocument();
+      // Sessizce düşmez — sayılır ve söylenir.
+      expect(screen.getByTestId("section-payments-note")).toHaveTextContent("1 hakediş");
+    });
+
+    it("🔴 POZİTİF KONTROL: iki küme de boşken boş hâl HÂLÂ basılır", () => {
+      renderPanel({ items: [], projectWideItems: [] });
+
+      expect(screen.getByTestId("section-payments-empty")).toBeInTheDocument();
+    });
   });
 });

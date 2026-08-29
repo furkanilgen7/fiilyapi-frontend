@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 
+import { partitionSitePayments } from "@/components/progress-payments/shared/site-payment-scope";
 import { buildListTruncation, type ListTruncation } from "@/lib/list-truncation";
 
 import {
@@ -13,11 +14,27 @@ import {
 // TB2 ile U2'ye (`GET /subcontractor-progress-payments`) `site_id` filtresi
 // eklendi: süzme artık SUNUCUDA yapılır, N+1 tamamen kaldırıldı.
 //
-// `site_id === null` (proje-geneli, şantiyeye bağlanmamış) sözleşmelerin
-// hakedişleri şantiye sekmesine BİLİNÇLİ olarak DAHİL EDİLMEZ (tek-anlamlılık
-// kararı, DEĞİŞMEDİ) — bu artık sunucu tarafındaki `site_id` filtresinin
-// kendisi tarafından sağlanır (`site_id` verilince proje-geneli sözleşmeler
-// zaten dönmez).
+// 🔴 HAK-NULL — ESKİ KARAR ÇÜRÜTÜLDÜ VE GERİ ALINDI.
+// Burada "proje geneli sözleşmelerin hakedişleri şantiye sekmesine BİLİNÇLİ
+// olarak DAHİL EDİLMEZ (tek-anlamlılık)" yazıyordu ve sunucudaki eşitlik
+// süzgecine dayanıyordu. Canlıda ölçüldü: projedeki taşeron sözleşmelerinin
+// YEDİSİ DE proje geneliydi, dolayısıyla bu "tek-anlamlılık" kararı modülün
+// PARASININ TAMAMINI gizliyordu — `?site_id=<Cevizli>` 0 satır dönüyordu,
+// süzgeçsiz çağrı 3 hakediş. Şantiye ve bölüm ekranları "hakediş yok" diyordu;
+// bu bir tercih değil, bir KUSURDU.
+//
+// Uç artık KAPSAYAN kümeyi döndürür (şantiyeye bağlı + proje geneli) ve her
+// satır kapsamını `contract_site_id` ile söyler. Ayrım KAYBOLMAZ, sadece yeri
+// değişti: sunucunun sessiz elemesi yerine, İSTEMCİDE GÖRÜNÜR bir ayrım.
+//
+// 🔴 BU HOOK'UN SÖZLEŞMESİ: `items` HÂLÂ YALNIZ ŞANTİYE KAPSAMLI satırlardır.
+// Proje geneli satırlar `projectWideItems`e gider. Sebep: `items` bu depoda
+// para TOPLAMLARINA besleniyor (`computeSiteSubcontractorTotals`,
+// `computeDiaryAccrual`) ve proje geneli hakediş projenin HER şantiyesinde
+// tekrar döner — `items`e karıştırılsaydı aynı para N şantiyede N kez sayılır,
+// brüt kâr marjı bozulurdu. Yeni kümeyi AYRI bir alanda vermek, her çağıranın
+// onu bilerek ele almasını ZORUNLU kılar; sessizce toplama sızmasını
+// İMKÂNSIZ kılar. Ayrım `progress-payments/shared/site-payment-scope.ts`de.
 //
 // `workCategory` (kullanıcı kararı — KORUNUR): **TB3 ile
 // `SubcontractorProgressPaymentListItem` şemasına DOĞRUDAN eklendi**
@@ -51,6 +68,16 @@ export interface SiteSubcontractorPaymentItem {
    * değerle "adı çözülemeyen bölüm" durumunu AYIRT ETMELİDİR; ikisi de
    * pending DEĞİLDİR — yalnız ikincisi pending gösterilir). */
   sectionId: string | null;
+  /**
+   * HAK-NULL · satırın KAPSAMI — sözleşmenin şantiyesi. `null` = **proje
+   * geneli** (projenin tüm şantiyelerini kapsar, bu yüzden `?site_id=` ile
+   * çağrılan HER şantiyede tekrar döner ve hiçbirinin toplamına girmez).
+   *
+   * `sectionId` ile KARIŞTIRILMAZ: eksenler bağımsızdır, bir satır ikisini
+   * birden `null` taşıyabilir. `sectionId === null` "bölüme kırılmamış",
+   * `contractSiteId === null` "sözleşme şantiyeye kırılmamış" demektir.
+   */
+  contractSiteId: string | null;
   grossTotal: string;
   netTotal: string;
   status: SubcontractorPaymentStatus;
@@ -58,8 +85,18 @@ export interface SiteSubcontractorPaymentItem {
 }
 
 export interface UseSiteSubcontractorPaymentsResult {
-  /** Şantiyeye ait hakedişler (sunucu tarafında `site_id` ile süzülmüş). */
+  /**
+   * Sözleşmesi BU şantiyeye bağlı hakedişler. 🔴 Para toplamlarının TEK meşru
+   * kaynağı budur — proje geneli satırlar bilerek DIŞARIDADIR (bkz. dosya
+   * başlığındaki HAK-NULL notu).
+   */
   items: SiteSubcontractorPaymentItem[];
+  /**
+   * HAK-NULL · sözleşmesi PROJE GENELİ olan hakedişler. Şantiyeyi KAPSARLAR,
+   * bu yüzden ekranda GÖSTERİLİR; ama projenin her şantiyesinde tekrar
+   * döndükleri için bu şantiyenin TOPLAMINA GİRMEZLER.
+   */
+  projectWideItems: SiteSubcontractorPaymentItem[];
   /** Hakediş listesi yükleniyor — çağıran taraf iskelet/spinner gösterir. */
   isLoading: boolean;
   /** Hakediş liste ucunun kendisi hata verdi — `items` GÜVENİLMEZ, tümüyle atlanır. */
@@ -104,6 +141,7 @@ export function useSiteSubcontractorPayments(
       // TB3: liste öğesinin KENDİ alanı — join yok.
       workCategory: payment.work_category,
       sectionId: payment.section_id,
+      contractSiteId: payment.contract_site_id,
       grossTotal: payment.gross_total,
       netTotal: payment.net_total,
       status: payment.status,
@@ -111,8 +149,13 @@ export function useSiteSubcontractorPayments(
     }));
   }, [payments]);
 
+  // 🔴 Kapsam ayrımı: `items` YALNIZ şantiye kapsamlı kalır (toplamlar ona
+  // bakar), proje geneli satırlar AYRI alana gider.
+  const scope = useMemo(() => partitionSitePayments(items), [items]);
+
   return {
-    items,
+    items: scope.siteScoped as SiteSubcontractorPaymentItem[],
+    projectWideItems: scope.projectWide as SiteSubcontractorPaymentItem[],
     isLoading: paymentsQuery.isLoading,
     isError: paymentsQuery.isError,
     isPartial: truncation.isTruncated,

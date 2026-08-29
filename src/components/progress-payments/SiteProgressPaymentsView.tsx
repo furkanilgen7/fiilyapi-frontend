@@ -44,8 +44,11 @@ const NEW_PAYMENT_LABEL = "+ Hakediş Oluştur";
 // F-TH T5/TB2 — taşeron tarafı GERÇEK veriyle dolduruldu:
 //   - `useSiteSubcontractorPayments` U2'ye (`GET /subcontractor-progress-
 //     payments`) `site_id` filtresiyle çıkar — süzme SUNUCUDA yapılır.
-//     `site_id === null` (proje-geneli) sözleşmeler BİLİNÇLİ olarak
-//     HARİÇ TUTULUR (tek-anlamlılık kararı, sunucu filtresinin kendisiyle).
+//     🔴 HAK-NULL: "proje geneli sözleşmeler HARİÇ TUTULUR" kararı ÇÜRÜTÜLDÜ
+//     ve geri alındı (canlıda sözleşmelerin HEPSİ proje geneliydi, ekran bu
+//     yüzden boştu). Uç artık KAPSAYAN kümeyi döndürür; hook onu ikiye ayırır
+//     (`items` = şantiye kapsamlı, `projectWideItems` = proje geneli) ve
+//     TOPLAMLAR yalnız `items`ten alınır.
 //   - "Toplam Taşeron Ödemesi" + "Brüt Kar Marjı" KPI'ları artık GERÇEK
 //     (`computeSiteSubcontractorTotals` + `computeGrossMargin`, S2 kararı:
 //     marj = (işveren−taşeron)/işveren). "Onay Bekleyen" iki tarafı toplar.
@@ -171,8 +174,13 @@ export function SiteProgressPaymentsView() {
           />
         </section>
 
+        {/* HAK-NULL: proje geneli hakedişler AYRI kümede geçirilir — panelde
+            görünürler, KPI şeridindeki `subcontractorTotals` ise YALNIZ
+            `items`ten (şantiye kapsamlı) hesaplanır. Aynı para projenin her
+            şantiyesinde tekrar döndüğü için toplanamaz. */}
         <SiteSubcontractorPaymentsPanel
           items={subcontractorPayments.items}
+          projectWideItems={subcontractorPayments.projectWideItems}
           isLoading={subcontractorPayments.isLoading}
           isError={subcontractorPayments.isError}
         />

@@ -57,6 +57,7 @@ function payment(
     description: null,
     status: "paid",
     section_id: null,
+    contract_site_id: null,
     created_at: "2026-08-01T00:00:00Z",
     gross_total: "1000000.00",
     net_total: "900000.00",

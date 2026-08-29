@@ -14,6 +14,9 @@ function item(overrides: Partial<SiteSubcontractorPaymentItem>): SiteSubcontract
     periodMonth: 7,
     workCategory: "Betonarme İşleri",
     sectionId: null,
+    // HAK-NULL: varsayilan SANTIYE KAPSAMLI satir — proje geneli satirlar
+    // ayri kumede tasinir, bu fabrikanin varsayilani toplamlara GIREN hal.
+    contractSiteId: "site-1",
     grossTotal: "1240000.00",
     netTotal: "1016800.00",
     status: "pending_approval",
@@ -132,5 +135,58 @@ describe("SiteSubcontractorPaymentsPanel", () => {
     );
     expect(screen.getByText("Revize Gerekli")).toBeInTheDocument();
     expect(screen.queryByText("Onaylandı")).not.toBeInTheDocument();
+  });
+
+  // --- 🔴 HAK-NULL · kapsam ayrımı ---
+  describe("HAK-NULL · proje geneli hakedişler", () => {
+    it("🔴 şantiyeye bağlı hakediş YOKKEN proje geneli hakediş VARSA 'hakediş yok' DEMEZ", () => {
+      // Canlıdaki kusurun BİREBİR hâli: yedi sözleşmenin yedisi de proje
+      // geneliydi, ekran "bu şantiyede taşeron hakedişi yok" basıyordu.
+      render(
+        <SiteSubcontractorPaymentsPanel
+          items={[]}
+          projectWideItems={[item({ id: "genel", contractSiteId: null })]}
+          isLoading={false}
+          isError={false}
+        />,
+      );
+
+      expect(screen.queryByText("Bu şantiyede taşeron hakedişi yok")).not.toBeInTheDocument();
+      expect(screen.getByTestId("site-payments-project-wide")).toBeInTheDocument();
+      expect(screen.getByText("Akın İnşaat #47")).toBeInTheDocument();
+    });
+
+    it("proje geneli satırlar GÖRÜNÜR bir notla ve toplama girmedikleri söylenerek basılır", () => {
+      render(
+        <SiteSubcontractorPaymentsPanel
+          items={[item({ id: "santiyeli" })]}
+          projectWideItems={[item({ id: "genel", contractSiteId: null })]}
+          isLoading={false}
+          isError={false}
+        />,
+      );
+
+      // 🔴 SESSİZ ATLAMA = İHLAL: not `title`/`sr-only` içinde SAKLANMAZ.
+      const note = screen.getByTestId("site-payments-project-wide-note");
+      expect(note).toBeVisible();
+      expect(note).toHaveTextContent("1 proje geneli hakediş");
+      expect(note).toHaveTextContent("eklenmez");
+    });
+
+    it("🔴 POZİTİF KONTROL: iki küme de boşken 'hakediş yok' HÂLÂ basılır", () => {
+      // Bu bacak olmasaydı "boş hâli hiç göstermeyen" bir bozukluk da
+      // yukarıdaki testi yeşil geçerdi.
+      render(
+        <SiteSubcontractorPaymentsPanel
+          items={[]}
+          projectWideItems={[]}
+          isLoading={false}
+          isError={false}
+        />,
+      );
+
+      expect(screen.getByText("Bu şantiyede taşeron hakedişi yok")).toBeInTheDocument();
+      expect(screen.queryByTestId("site-payments-project-wide-note")).not.toBeInTheDocument();
+    });
   });
 });

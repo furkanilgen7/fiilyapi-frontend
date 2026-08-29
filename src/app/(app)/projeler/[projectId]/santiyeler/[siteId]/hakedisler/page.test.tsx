@@ -100,6 +100,9 @@ function mockSummary(value: Partial<ReturnType<typeof useProgressPaymentSummary>
 function mockSubcontractor(value: Partial<UseSiteSubcontractorPaymentsResult>) {
   vi.mocked(useSiteSubcontractorPayments).mockReturnValue({
     items: [],
+    // HAK-NULL: varsayilan BOS — proje geneli kumesini olcen testler kendi
+    // senaryosunda acikca override eder.
+    projectWideItems: [],
     isLoading: false,
     isError: false,
     isPartial: false,
@@ -242,6 +245,7 @@ describe("SiteHakedislerPage rotasi", () => {
       periodMonth: 7,
       workCategory: "Betonarme İşleri",
       sectionId: null,
+    contractSiteId: "s-1",
       grossTotal: "1240000.00",
       netTotal: "1016800.00",
       status: "pending_approval" as const,
