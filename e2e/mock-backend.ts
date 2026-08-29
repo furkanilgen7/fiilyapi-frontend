@@ -4693,6 +4693,12 @@ interface MockStockEntryLine {
   quantity: string;
   unit_price: string | null;
   quality: "ok" | "defective" | "rejected";
+  // 🔴 STOK-BOLUM (K-IKIZ2): `StockEntryLineResponse.required` bu iki alanla
+  // GENİŞLEDİ — ikiz onları DÖNDÜRMEK ZORUNDA. Döndürmezse ikiz bir
+  // "onaylayıcı"dır, bekçi değil: gerçek backend'in döndürdüğü bir alanı
+  // taşımaz ve ekran canlıda çalışmayan bir varsayımla yeşil geçer.
+  section_id: string | null;
+  boq_item_id: string | null;
 }
 
 interface MockStockEntry {
@@ -4750,14 +4756,21 @@ const STOCK_ITEM_FIXTURES: MockStockItem[] = [
  * stok değerine GİRMEZ (`items_without_price` sayacı bu yüzden 1'dir).
  */
 const STOCK_ENTRY_FIXTURES: MockStockEntry[] = [
-  { id: "se-1", entry_type: "purchase", entry_date: "2026-07-02", warehouse_id: "wh-1", source_warehouse_id: null, supplier_name: "Çelik San. A.Ş.", delivery_note_no: "İRS-10421", received_by_user_id: "u-2", note: null, created_at: "2026-07-02T08:00:00Z", lines: [{ id: "sel-1", item_id: "it-1", quantity: "2.400", unit_price: "32000.00", quality: "ok" }] },
-  { id: "se-2", entry_type: "purchase", entry_date: "2026-07-03", warehouse_id: "wh-2", source_warehouse_id: null, supplier_name: "Çimsa Bayi", delivery_note_no: "İRS-10422", received_by_user_id: "u-2", note: null, created_at: "2026-07-03T08:00:00Z", lines: [{ id: "sel-2", item_id: "it-2", quantity: "840.000", unit_price: "180.00", quality: "ok" }] },
-  { id: "se-3", entry_type: "purchase", entry_date: "2026-07-04", warehouse_id: "wh-1", source_warehouse_id: null, supplier_name: "Elektrik Ticaret", delivery_note_no: "İRS-10423", received_by_user_id: "u-2", note: null, created_at: "2026-07-04T08:00:00Z", lines: [{ id: "sel-3", item_id: "it-3", quantity: "120.000", unit_price: "95.00", quality: "ok" }] },
-  { id: "se-4", entry_type: "purchase", entry_date: "2026-07-05", warehouse_id: "wh-2", source_warehouse_id: null, supplier_name: "Tuğla Sanayi", delivery_note_no: "İRS-10424", received_by_user_id: "u-2", note: null, created_at: "2026-07-05T08:00:00Z", lines: [{ id: "sel-4", item_id: "it-4", quantity: "12400.000", unit_price: "12.00", quality: "ok" }] },
-  { id: "se-5", entry_type: "purchase", entry_date: "2026-07-06", warehouse_id: "wh-4", source_warehouse_id: null, supplier_name: "Beton A.Ş.", delivery_note_no: "İRS-10425", received_by_user_id: "u-2", note: null, created_at: "2026-07-06T08:00:00Z", lines: [{ id: "sel-5", item_id: "it-5", quantity: "85.000", unit_price: "2400.00", quality: "ok" }] },
-  { id: "se-6", entry_type: "purchase", entry_date: "2026-07-07", warehouse_id: "wh-1", source_warehouse_id: null, supplier_name: "Mekanik Ltd.", delivery_note_no: "İRS-10426", received_by_user_id: "u-2", note: null, created_at: "2026-07-07T08:00:00Z", lines: [{ id: "sel-6", item_id: "it-6", quantity: "30.000", unit_price: "45.00", quality: "ok" }] },
-  { id: "se-7", entry_type: "purchase", entry_date: "2026-07-08", warehouse_id: "wh-3", source_warehouse_id: null, supplier_name: "İç Yapı Market", delivery_note_no: "İRS-10427", received_by_user_id: "u-2", note: null, created_at: "2026-07-08T08:00:00Z", lines: [{ id: "sel-7", item_id: "it-7", quantity: "2800.000", unit_price: "210.00", quality: "ok" }] },
-  { id: "se-8", entry_type: "adjustment", entry_date: "2026-07-09", warehouse_id: "wh-1", source_warehouse_id: null, supplier_name: null, delivery_note_no: null, received_by_user_id: null, note: "Sayım farkı", created_at: "2026-07-09T08:00:00Z", lines: [{ id: "sel-8", item_id: "it-8", quantity: "40.000", unit_price: null, quality: "ok" }] },
+  // 🔴 STOK-BOLUM — `se-1` İKİ SATIRA BÖLÜNDÜ: `+3.000` atama ve `−0.600` SARF.
+  // Toplam yine `2.400`, yani DEPO BAKİYESİ HİÇ DEĞİŞMEDİ (E3/ŞS baseline'ları
+  // ve bakiye iddiaları korunur) ama bölüm kırılımı artık SIFIR OLMAYAN bir
+  // `issued_quantity` taşır — sarf sütunu boş bir kareyle kilitlenemezdi.
+  { id: "se-1", entry_type: "purchase", entry_date: "2026-07-02", warehouse_id: "wh-1", source_warehouse_id: null, supplier_name: "Çelik San. A.Ş.", delivery_note_no: "İRS-10421", received_by_user_id: "u-2", note: null, created_at: "2026-07-02T08:00:00Z", lines: [{ id: "sel-1", item_id: "it-1", quantity: "3.000", unit_price: "32000.00", quality: "ok", section_id: "sec-1", boq_item_id: "bi-4" }] },
+  // Sarf bacağı: `adjustment` (§7 S4 — sarf için ayrı tip AÇILMAZ, negatif
+  // miktar YALNIZ düzeltmede meşrudur).
+  { id: "se-1b", entry_type: "adjustment", entry_date: "2026-07-10", warehouse_id: "wh-1", source_warehouse_id: null, supplier_name: null, delivery_note_no: null, received_by_user_id: null, note: "Kat 6-10 kaba inşaat sarfı", created_at: "2026-07-10T08:00:00Z", lines: [{ id: "sel-1b", item_id: "it-1", quantity: "-0.600", unit_price: "32000.00", quality: "ok", section_id: "sec-1", boq_item_id: "bi-4" }] },
+  { id: "se-2", entry_type: "purchase", entry_date: "2026-07-03", warehouse_id: "wh-2", source_warehouse_id: null, supplier_name: "Çimsa Bayi", delivery_note_no: "İRS-10422", received_by_user_id: "u-2", note: null, created_at: "2026-07-03T08:00:00Z", lines: [{ id: "sel-2", item_id: "it-2", quantity: "840.000", unit_price: "180.00", quality: "ok" , section_id: "sec-1", boq_item_id: null }] },
+  { id: "se-3", entry_type: "purchase", entry_date: "2026-07-04", warehouse_id: "wh-1", source_warehouse_id: null, supplier_name: "Elektrik Ticaret", delivery_note_no: "İRS-10423", received_by_user_id: "u-2", note: null, created_at: "2026-07-04T08:00:00Z", lines: [{ id: "sel-3", item_id: "it-3", quantity: "120.000", unit_price: "95.00", quality: "ok" , section_id: null, boq_item_id: null }] },
+  { id: "se-4", entry_type: "purchase", entry_date: "2026-07-05", warehouse_id: "wh-2", source_warehouse_id: null, supplier_name: "Tuğla Sanayi", delivery_note_no: "İRS-10424", received_by_user_id: "u-2", note: null, created_at: "2026-07-05T08:00:00Z", lines: [{ id: "sel-4", item_id: "it-4", quantity: "12400.000", unit_price: "12.00", quality: "ok" , section_id: null, boq_item_id: null }] },
+  { id: "se-5", entry_type: "purchase", entry_date: "2026-07-06", warehouse_id: "wh-4", source_warehouse_id: null, supplier_name: "Beton A.Ş.", delivery_note_no: "İRS-10425", received_by_user_id: "u-2", note: null, created_at: "2026-07-06T08:00:00Z", lines: [{ id: "sel-5", item_id: "it-5", quantity: "85.000", unit_price: "2400.00", quality: "ok" , section_id: null, boq_item_id: null }] },
+  { id: "se-6", entry_type: "purchase", entry_date: "2026-07-07", warehouse_id: "wh-1", source_warehouse_id: null, supplier_name: "Mekanik Ltd.", delivery_note_no: "İRS-10426", received_by_user_id: "u-2", note: null, created_at: "2026-07-07T08:00:00Z", lines: [{ id: "sel-6", item_id: "it-6", quantity: "30.000", unit_price: "45.00", quality: "ok" , section_id: "sec-2", boq_item_id: null }] },
+  { id: "se-7", entry_type: "purchase", entry_date: "2026-07-08", warehouse_id: "wh-3", source_warehouse_id: null, supplier_name: "İç Yapı Market", delivery_note_no: "İRS-10427", received_by_user_id: "u-2", note: null, created_at: "2026-07-08T08:00:00Z", lines: [{ id: "sel-7", item_id: "it-7", quantity: "2800.000", unit_price: "210.00", quality: "ok" , section_id: null, boq_item_id: null }] },
+  { id: "se-8", entry_type: "adjustment", entry_date: "2026-07-09", warehouse_id: "wh-1", source_warehouse_id: null, supplier_name: null, delivery_note_no: null, received_by_user_id: null, note: "Sayım farkı", created_at: "2026-07-09T08:00:00Z", lines: [{ id: "sel-8", item_id: "it-8", quantity: "40.000", unit_price: null, quality: "ok" , section_id: "sec-1", boq_item_id: null }] },
 ];
 
 /**
@@ -4854,6 +4867,40 @@ const SITE_STOCK_PENDING_SECTION = {
   items: [],
   pending_module: "site_planning",
 };
+
+/**
+ * 🔴 STOK-BOLUM (K-IKIZ2) — ŞS "Bölüm" sütununun GERÇEK kaynağı.
+ *
+ * Backend `section_names_by_item` ile birebir: kapsam `sections.site_id`dir
+ * (deponun değil), sonuç DISTINCT ve bölüm ADINA göre sıralıdır. Atıf yoksa
+ * zarf BOŞ ve `available: false` kalır — uydurma yok.
+ *
+ * `pending_module` DOLU zarfta da taşınır (`ListPlaceholder`da alan
+ * ZORUNLUDUR) ve anahtarı `site_planning` olarak KORUNUR; ekran onu yalnız
+ * `available: false` iken okur.
+ */
+function sectionNamesForItem(state: MockState, siteId: string, itemId: string): string[] {
+  const names = new Set<string>();
+  for (const entry of state.stockEntries) {
+    for (const line of entry.lines) {
+      if (line.item_id !== itemId || line.section_id === null) continue;
+      const section = state.sections.find((sec) => sec.id === line.section_id);
+      if (section && section.site_id === siteId) names.add(section.name);
+    }
+  }
+  return [...names].sort((a, b) => a.localeCompare(b, "tr"));
+}
+
+/** Bir bölüme atfı olan KART kimlikleri — ŞS `?section_id=` süzgecinin kümesi. */
+function itemIdsAttributedToSection(state: MockState, sectionId: string): Set<string> {
+  const ids = new Set<string>();
+  for (const entry of state.stockEntries) {
+    for (const line of entry.lines) {
+      if (line.section_id === sectionId) ids.add(line.item_id);
+    }
+  }
+  return ids;
+}
 
 function buildStockKpis(rows: ReturnType<typeof buildStockSummaryRow>[]): Omit<components["schemas"]["StockSummaryKpis"], "pending_orders"> {
   let totalValue = 0;
@@ -11138,6 +11185,64 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           }
         }
 
+        // 🔴 STOK-BOLUM (K-IKIZ2) — ATIF DOĞRULAMASI. Kontrol sorusu: "bu ikiz,
+        // gerçek backend'in REDDEDECEĞİ bir isteği reddediyor mu?" Aşağıdaki
+        // dört kural olmasa ikiz bir ONAYLAYICI olurdu: form 422 üretecek bir
+        // gövde gönderse bile e2e YEŞİL geçer, kusur yalnız canlıda görünürdü.
+        const sectionIds = lines
+          .map((line) => (typeof line.section_id === "string" ? line.section_id : null))
+          .filter((id): id is string => id !== null);
+        const boqIds = lines
+          .map((line) => (typeof line.boq_item_id === "string" ? line.boq_item_id : null))
+          .filter((id): id is string => id !== null);
+
+        // (a) 404 — gövde içi VARLIK referansı (T4-artçı kuralı).
+        for (const id of sectionIds) {
+          if (!state.sections.some((section) => section.id === id)) {
+            return send(404, { detail: "Seçilen bölüm bulunamadı" });
+          }
+        }
+        for (const id of boqIds) {
+          if (!ALL_BOQ_ITEMS.some((item) => item.id === id)) {
+            return send(404, { detail: "Seçilen iş kalemi bulunamadı" });
+          }
+        }
+
+        // (b) 422 — `transfer`da atıf YASAK: transfer tüketim değildir.
+        if (entryType === "transfer" && (sectionIds.length > 0 || boqIds.length > 0)) {
+          return send(422, {
+            detail:
+              "Bölüm/iş kalemi atfı transfer hareketinde verilmez " +
+              "(transfer tüketim değildir, iki bacaklıdır).",
+          });
+        }
+
+        // (c) 422 — ŞANTİYE ÇAPASI, yalnız ŞANTİYELİ depoda (merkezde çapa YOK).
+        const targetWarehouse = state.warehouses.find((w) => w.id === warehouseId);
+        if (targetWarehouse?.site_id) {
+          for (const id of sectionIds) {
+            const section = state.sections.find((sec) => sec.id === id);
+            if (section && section.site_id !== targetWarehouse.site_id) {
+              return send(422, {
+                detail: "Seçilen bölüm, hareketin deposunun şantiyesine ait değil",
+              });
+            }
+          }
+        }
+
+        // ⚠️ İKİZİN ÖLÇÜLMÜŞ SINIRI — POZ ÇAPASI KURULAMAZ, gizlenmiyor.
+        // Gerçek backend iki kapı daha uygular: "poz, deponun şantiyesine ait
+        // değil" ve "bölüm ile poz aynı şantiyede değil". İkiz bunları İFADE
+        // EDEMEZ çünkü `MockBoqItem`ın `site_id`si YOKTUR: `BOQ_FIXTURE` tek
+        // bir dizidir ve `/sites/{id}/boq` HANGİ şantiye sorulursa sorulsun
+        // AYNI kalemleri döndürür (ölçüldü). Poza şantiye vermek `/sites/s-2/
+        // boq` yanıtını değiştirir ve bu dilimin KAPSAMI DIŞINDAKİ BOQ
+        // spec'lerini kırardı.
+        //
+        // Kapsanmayan riskin BOYUTU dar: form seçenek listesini rotanın
+        // şantiyesiyle zaten kapsıyor, yani bu iki kapıyı tetikleyecek gövdeyi
+        // ÜRETEMİYOR. Yine de bir bekçi boşluğudur ve raporlanmıştır.
+
         // §4b — biçim/kural ihlalleri 422.
         if (entryType === "transfer") {
           if (!sourceWarehouseId) return send(422, { detail: "Transferde kaynak depo zorunludur." });
@@ -11178,6 +11283,9 @@ export function startMockBackend(port: number): { server: Server; close: () => P
                 ? null
                 : money2(Number(line.unit_price)),
             quality: (line.quality ?? "ok") as MockStockEntryLine["quality"],
+            // 🔴 Yazılan atıf GERİ OKUNUR (`StockEntryLineResponse.required`).
+            section_id: typeof line.section_id === "string" ? line.section_id : null,
+            boq_item_id: typeof line.boq_item_id === "string" ? line.boq_item_id : null,
           })),
         };
         state.stockEntries = [...state.stockEntries, entry];
@@ -11194,6 +11302,20 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       const limit = Number(parsed.searchParams.get("limit") ?? 50);
       if (limit > 200) return send(422, { detail: "limit en fazla 200 olabilir." });
       const offset = Number(parsed.searchParams.get("offset") ?? 0);
+      // 🔴 STOK-BOLUM — `?section_id=` süzgeci. Başka şantiyenin bölümü 404'tür
+      // (gerçek backend `_visible_section(..., site)` ile aynı kapı).
+      const sectionFilter = parsed.searchParams.get("section_id");
+      if (sectionFilter !== null) {
+        const section = state.sections.find((sec) => sec.id === sectionFilter);
+        if (!section || section.site_id !== siteId) {
+          return send(404, { detail: "Bölüm bulunamadı" });
+        }
+      }
+      // 🔴 SÜZGEÇ SATIR KÜMESİNİ daraltır, `balance`ı DEĞİŞTİRMEZ: aşağıdaki
+      // bakiye hesabı süzgeçten HABERSİZDİR ve öyle KALMALIDIR. Bakiyeyi de
+      // süzmek "bölüm bakiyesi" diye ikinci bir kaynak uydurmak olurdu.
+      const filteredItemIds =
+        sectionFilter === null ? null : itemIdsAttributedToSection(state, sectionFilter);
       const siteWarehouseIds = new Set(
         state.warehouses.filter((w) => w.site_id === siteId).map((w) => w.id),
       );
@@ -11205,6 +11327,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           for (const [warehouseId, value] of balances) {
             if (siteWarehouseIds.has(warehouseId)) balance += value;
           }
+          const sectionNames = sectionNamesForItem(state, siteId, item.id);
           return {
             id: item.id,
             code: item.code,
@@ -11214,13 +11337,18 @@ export function startMockBackend(port: number): { server: Server; close: () => P
             min_stock: item.min_stock,
             balance: qty3(balance),
             status: stockStatusOf(balance, item.min_stock),
-            // "Aylık İhtiyaç" ve "Bölüm" sütunlarının GİRİŞ YÜZEYİ YOKTUR —
-            // değer uydurulmaz, yer tutucu zarfları taşınır (spec §1).
+            // "Aylık İhtiyaç"ın GİRİŞ YÜZEYİ YOKTUR — değer uydurulmaz.
             monthly_need: SITE_STOCK_PENDING_NEED,
-            section: SITE_STOCK_PENDING_SECTION,
+            // 🔴 "Bölüm" GERÇEĞE döndü: kartın bu şantiyedeki hareketlerinde
+            // atfedilmiş bölüm ADLARI. Atıf yoksa zarf BOŞ ve `available:false`.
+            section:
+              sectionNames.length > 0
+                ? { available: true, items: sectionNames, pending_module: "site_planning" }
+                : SITE_STOCK_PENDING_SECTION,
           };
         })
-        .filter((row) => Number(row.balance) !== 0);
+        .filter((row) => Number(row.balance) !== 0)
+        .filter((row) => filteredItemIds === null || filteredItemIds.has(row.id));
 
       const priced = rows.filter((row) => stockLastUnitPrice(state, row.id) !== null);
       const totalValue = priced.reduce(
@@ -11238,6 +11366,117 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           low_count: rows.filter((r) => r.status === "low").length,
           total_items: rows.length,
           items_without_price: rows.length - priced.length,
+        },
+      });
+    }
+
+    // 🔴 STOK-BOLUM (K-IKIZ2) — `GET /sections/{section_id}/stock`.
+    //
+    // Aritmetik gerçek backend'in `_section_aggregates()` ifadeleriyle BİREBİR:
+    //   assigned = Σ(qty > 0)   ·   issued = Σ(−qty, qty < 0)   ·   net = Σ(qty)
+    //   total_value = Σ(qty × unit_price)  — FİYATSIZ satır atlanır (§7 S6)
+    // KPI: issued_value = Σ(−qty × price, qty < 0) · item_count = DISTINCT kart
+    //      lines_without_price = fiyatsız SATIR sayısı
+    //
+    // 🔴 BAKİYE DÖNMEZ — `stockBalancesByWarehouse` bu yolda HİÇ çağrılmaz.
+    // Sıralama DETERMİNİSTİK: kart kodu → poz kodu (NULL'lar SONA) → kart kimliği.
+    const sectionStockMatch = path.match(/^\/sections\/([^/]+)\/stock$/);
+    if (method === "GET" && sectionStockMatch) {
+      const sectionId = sectionStockMatch[1];
+      // Görünmeyen bölüm ile var olmayan bölüm AYNI gövdeyi alır.
+      if (!state.sections.some((sec) => sec.id === sectionId)) {
+        return send(404, { detail: "Bölüm bulunamadı" });
+      }
+      const limit = Number(parsed.searchParams.get("limit") ?? 50);
+      if (limit > 200) return send(422, { detail: "limit en fazla 200 olabilir." });
+      const offset = Number(parsed.searchParams.get("offset") ?? 0);
+
+      const scope = state.stockEntries.flatMap((entry) =>
+        entry.lines.filter((line) => line.section_id === sectionId),
+      );
+
+      const buckets = new Map<
+        string,
+        { itemId: string; boqItemId: string | null; assigned: number; issued: number; net: number; value: number }
+      >();
+      for (const line of scope) {
+        const key = `${line.item_id}:${line.boq_item_id ?? ""}`;
+        const bucket = buckets.get(key) ?? {
+          itemId: line.item_id,
+          boqItemId: line.boq_item_id,
+          assigned: 0,
+          issued: 0,
+          net: 0,
+          value: 0,
+        };
+        const quantity = Number(line.quantity);
+        if (quantity > 0) bucket.assigned += quantity;
+        if (quantity < 0) bucket.issued += -quantity;
+        bucket.net += quantity;
+        // Fiyatsız satır toplam değere GİRMEZ (çarpım NULL olur, sum atlar).
+        if (line.unit_price !== null) bucket.value += quantity * Number(line.unit_price);
+        buckets.set(key, bucket);
+      }
+
+      const allRows = [...buckets.values()]
+        .map((bucket) => {
+          const item = state.stockItems.find((i) => i.id === bucket.itemId);
+          const boq = bucket.boqItemId === null
+            ? null
+            : (ALL_BOQ_ITEMS.find((b) => b.id === bucket.boqItemId) ?? null);
+          return {
+            item_id: bucket.itemId,
+            code: item?.code ?? "",
+            name: item?.name ?? "",
+            category: item?.category ?? "structural",
+            unit: item?.unit ?? "",
+            boq_item_id: bucket.boqItemId,
+            boq_code: boq?.code ?? null,
+            boq_description: boq?.description ?? null,
+            assigned_quantity: qty3(bucket.assigned),
+            issued_quantity: qty3(bucket.issued),
+            net_quantity: qty3(bucket.net),
+            total_value: money2(bucket.value),
+          };
+        })
+        .sort((a, b) => {
+          const byCode = a.code.localeCompare(b.code, "tr");
+          if (byCode !== 0) return byCode;
+          // NULL poz kodu SONA (`nulls_last`).
+          if (a.boq_code === null && b.boq_code !== null) return 1;
+          if (a.boq_code !== null && b.boq_code === null) return -1;
+          if (a.boq_code !== null && b.boq_code !== null) {
+            const byBoq = a.boq_code.localeCompare(b.boq_code, "tr");
+            if (byBoq !== 0) return byBoq;
+          }
+          return a.item_id.localeCompare(b.item_id);
+        });
+
+      let issuedValue = 0;
+      let totalValue = 0;
+      let linesWithoutPrice = 0;
+      for (const line of scope) {
+        const quantity = Number(line.quantity);
+        if (line.unit_price === null) {
+          linesWithoutPrice += 1;
+          continue;
+        }
+        totalValue += quantity * Number(line.unit_price);
+        if (quantity < 0) issuedValue += -quantity * Number(line.unit_price);
+      }
+
+      return send(200, {
+        items: allRows.slice(offset, offset + limit),
+        total: allRows.length,
+        limit,
+        offset,
+        kpis: {
+          issued_value: money2(issuedValue),
+          total_value: money2(totalValue),
+          // DISTINCT KART sayısı — satır sayısı DEĞİL (aynı kart iki poza
+          // çıkmışsa "2 malzeme" yazmak yanlış olurdu).
+          item_count: new Set(scope.map((line) => line.item_id)).size,
+          lines_without_price: linesWithoutPrice,
         },
       });
     }
@@ -16640,7 +16879,7 @@ function buildPayrollLineResponse(
     personnel_id: line.personnel_id,
     personnel_name: line.personnel_name,
     personnel_source: line.personnel_source,
-    days: line.days,
+    days: line.days === null ? null : String(line.days),
     gross_amount: amounts === null ? null : payrollKurus(amounts.gross),
     deduction_amount: amounts === null ? null : payrollKurus(amounts.deduction),
     net_amount: amounts === null ? null : payrollKurus(amounts.net),

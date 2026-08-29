@@ -78,7 +78,15 @@ export const SECTION_TABS: readonly (SectionTabDef & SectionTabContent)[] = [
     moduleWritten: true,
     contentLive: true,
   },
-  { label: "Malzeme", siteSlug: "stok", moduleWritten: true, contentPending: "section_stock" },
+  // 🔴 STOK-BOLUM (2026-08-29): bölüm bağı AÇILDI — `stock_entry_lines.
+  // section_id`/`.boq_item_id` kolonları ve `GET /sections/{id}/stock` ucu
+  // geldi (backend `186ffe9`). Bu, `contentPending`in bu dizideki SON
+  // kullanımıydı; artık BEŞ sekmenin BEŞİ de `contentLive`dır.
+  //
+  // ⚠️ `SectionTabContent` ayrık birliği YİNE DE SİLİNMEZ: bekçinin
+  // (`tab-strip-routes.test.tsx`) tanıdığı iki hâl korunur, aksi hâlde bir
+  // sonraki pending sekme geldiğinde tip yeniden icat edilirdi.
+  { label: "Malzeme", siteSlug: "stok", moduleWritten: true, contentLive: true },
   // F-BLMSEK T2: bölüm bağı AÇILDI — `SubcontractorProgressPaymentListItem`
   // `section_id` taşır. İŞVEREN hakedişi taşımaz (ölçüldü, sıfır isabet); o
   // eksiklik sekmeyi yer tutucuda tutmak yerine panelin GÖRÜNÜR kapsam

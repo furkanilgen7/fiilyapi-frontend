@@ -426,12 +426,19 @@ export const MODULE_LABELS: Record<string, string> = {
   // "Hakediş" sekmeleri artık gerçek panel basıyor). Anahtarları bırakmak,
   // hiçbir yerin okumadığı ölü bir gerekçe metni olurdu.
   //
-  // `section_stock` TEK AÇILMAYAN kaldı — ölçüldü (`backend/app/modules/
-  // inventory/`): `section_id` SIFIR kolon isabeti, tek eşleşme bir YORUM
-  // satırı (`purchase_requests.section_id`ye değinir). Metin bu yüzden
-  // MODÜL değil ALANI adlandırır (`work_category` emsali): stok hareketi
-  // KAYDININ KENDİSİ bölüm alanı taşımıyor, `/stok` modülü YAZILIDIR.
-  section_stock: "Stok hareketi bölüm alanı taşımıyor (hareketler şantiye deposunda tutulur)",
+  // 🔴 STOK-BOLUM (2026-08-29): `section_stock` de AYNI gerekçeyle SİLİNDİ —
+  // bölüm ↔ stok bağı AÇILDI (`stock_entry_lines.section_id` +
+  // `GET /sections/{id}/stock`, backend `186ffe9`). "Malzeme" sekmesi ve
+  // "Bölüm Malzeme Durumu" kartı artık gerçek veri basıyor. Böylece
+  // F-BOLLINK'in beş bölüm anahtarının BEŞİ DE kapandı.
+  //
+  // 🔴 KANON: *"ölçüme dayanan silme kararı, ölçüm bayatlayınca GERİ ALINIR."*
+  // Bu anahtarın metni de bir ÖLÇÜME dayanıyordu ("`inventory/` içinde
+  // `section_id` SIFIR isabet") ve o ölçüm bugün çürüdü. Aynı şey TERS YÖNDE
+  // de olabilir: `site_diary` anahtarı bir kez silinmiş, ILR onu geri getirmiş
+  // ve ekran YALAN basmaya başlamıştı. Bu yüzden silme YALNIZ BAŞINA
+  // bırakılmaz — `pending-modules.test.ts` içindeki TERS BEKÇİ anahtarın GERİ
+  // GELMESİNİ yasaklar (yedek metne düşmesi, eşlenmemiş olmasının kanıtıdır).
   // 🔴 F-BLMSEK T2 (2026-08-27) — sekme artık CANLI: bölüm ↔ TAŞERON hakedişi
   // bağı AÇIK (`SubcontractorProgressPaymentListItem.section_id`). Açık
   // KALMAYAN taraf İŞVEREN hakedişidir — ölçüldü: `backend/app/modules/

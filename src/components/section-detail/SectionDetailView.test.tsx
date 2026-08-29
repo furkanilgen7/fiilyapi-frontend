@@ -408,17 +408,20 @@ describe("SectionDetailView — sekmeler (D99-105, hepsi BÖLÜM BAĞI bekleyen 
     ]);
   });
 
-  it("sekme değiştirince ilgili modülün yer tutucu kartı basılır", async () => {
+  // 🔴 STOK-BOLUM — "yer tutucu kartı basılır" iddiası ÇÜRÜDÜ: sekme kendi
+  // panelini basıyor. İddia SİLİNMEDİ, TERSİNE çevrildi.
+  it("sekme degistirince Malzeme paneli basilir - YER TUTUCU DEGIL", async () => {
     const user = userEvent.setup();
     mockPermission("view");
     mockQueries();
     renderView();
     await user.click(screen.getByRole("tab", { name: "Malzeme" }));
     const panel = screen.getByRole("tabpanel");
-    // 🔴 F-BOLLINK: gerekçe paylaşılan `stock` anahtarının metni DEĞİL —
-    // stok modülü YAZILI, eksik olan BÖLÜM BAĞI. Eski metin yanlış bilgiydi.
-    // (F-UNIT1 T5: `stock` metni de düzeltildi, iddia yeni metne taşındı.)
-    expect(within(panel).getByText(/Stok hareketi bölüm alanı taşımıyor/)).toBeInTheDocument();
+
+    expect(within(panel).getByTestId("section-stock")).toBeInTheDocument();
+    expect(
+      within(panel).queryByText(/Stok hareketi bölüm alanı taşımıyor/),
+    ).not.toBeInTheDocument();
     expect(
       within(panel).queryByText(/Stok verisi bu yüzeye henüz bağlanmadı/),
     ).not.toBeInTheDocument();
@@ -435,14 +438,19 @@ describe("SectionDetailView — sekmeler (D99-105, hepsi BÖLÜM BAĞI bekleyen 
     const live = tabs.filter((tab) => tab.getAttribute("data-content-live") === "true");
     const pending = tabs.filter((tab) => tab.getAttribute("data-content-live") !== "true");
 
-    // 🔴 F-BLMSEK: canlı sekme artık DÖRT — T1'de "Günlük Kayıt", T2'de
-    // "Hakediş" bölüm bağını kazandı. Gerekçe TAŞIMAZLAR (canlı sekmenin
-    // gerekçesi olamaz). Geriye gerekçeli TEK sekme kalır: "Malzeme".
-    const LIVE = ["İş Kalemleri", "İşçiler & Puantaj", "Hakediş", "Günlük Kayıt"];
+    // 🔴 STOK-BOLUM: canlı sekme artık BEŞ — "Malzeme" de bölüm bağını kazandı
+    // (`stock_entry_lines.section_id`). Gerekçe taşıyan sekme KALMADI.
+    //
+    // ⚠️ Bu, iddianın ZAYIFLADIĞI bir yer: `pending` kümesi BOŞ olduğu için
+    // "gerekçe `section_` ile başlar" döngüsü artık hiç dönmüyor. Döngü
+    // SİLİNMEZ (bir sonraki pending sekme geldiğinde bekçi hazır olsun) ama
+    // kümenin boşluğu AÇIKÇA iddia edilir — sessizce boş bir döngü, bekçinin
+    // kaybolduğunu gizlerdi.
+    const LIVE = ["İş Kalemleri", "İşçiler & Puantaj", "Malzeme", "Hakediş", "Günlük Kayıt"];
     expect(live.map((tab) => tab.textContent)).toEqual(LIVE);
     for (const tab of live) expect(tab).not.toHaveAttribute("data-content-pending");
 
-    expect(pending).toHaveLength(1);
+    expect(pending).toHaveLength(0);
     for (const tab of pending) {
       expect(tab.getAttribute("data-content-pending")).toMatch(/^section_/);
     }
@@ -565,11 +573,12 @@ describe("SectionDetailView — İş Kalemleri sekmesi (BOQ-SEC-F)", () => {
     mockPermission("view");
     mockQueries();
     renderView();
-    // F-BLMSEK T2: "Hakediş" CANLIYA geçti — gerekçe taşıyan TEK sekme
-    // "Malzeme"dir. Bekçi SİLİNMEZ, yalnız hâlâ pending olan sekmeye çevrilir.
+    // 🔴 STOK-BOLUM: "Malzeme" de CANLIYA geçti. Bekçinin ASIL işi SIZINTIDIR
+    // ("İş Kalemleri" satırı başka sekmeye sızmasın) ve o KORUNUR; değişen
+    // yalnız hedef sekmenin gerekçe yerine KENDİ panelini basması.
     await user.click(screen.getByRole("tab", { name: "Malzeme" }));
     const panel = screen.getByRole("tabpanel");
-    expect(within(panel).getByText(/Stok hareketi bölüm alanı taşımıyor/)).toBeInTheDocument();
+    expect(within(panel).getByTestId("section-stock")).toBeInTheDocument();
     expect(within(panel).queryByText("03.001")).not.toBeInTheDocument();
   });
 });
@@ -686,13 +695,11 @@ describe("SectionDetailView — İşçiler & Puantaj sekmesi (F-BLMPUAN)", () =>
     mockPermission("view");
     mockQueries();
     renderView();
-    // F-BLMSEK: "Günlük Kayıt" (T1) ve "Hakediş" (T2) CANLIYA geçti — hâlâ
-    // gerekçe taşıyan TEK sekme "Malzeme"dir, yoksa test canlı bir sekmeden
-    // gerekçe isterdi. Bekçi SİLİNMEZ: canlı sekmenin gerekçe basmadığını
-    // koruyan tek testtir.
+    // 🔴 STOK-BOLUM: "Malzeme" de CANLIYA geçti. Bekçinin ASIL işi SIZINTIDIR
+    // (puantaj matrisi başka sekmeye sızmasın) ve o KORUNUR.
     await user.click(screen.getByRole("tab", { name: "Malzeme" }));
     const panel = screen.getByRole("tabpanel");
-    expect(within(panel).getByText(/Stok hareketi bölüm alanı taşımıyor/)).toBeInTheDocument();
+    expect(within(panel).getByTestId("section-stock")).toBeInTheDocument();
     expect(within(panel).queryByTestId("section-timesheet")).not.toBeInTheDocument();
   });
 });

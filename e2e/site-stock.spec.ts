@@ -71,26 +71,71 @@ test("KPI şeridi ve tablo SUNUCU verisinden gelir; merkez depo bakiyeye GİRMEZ
   await expect(page.getByTestId("santiye-stok-status-ICY-0090")).toHaveText("—");
 });
 
-test("'Aylık İhtiyaç' ve 'Bölüm' sütunları GEREKÇELİ pending basar (sayı uydurulmaz)", async ({
-  page,
-}) => {
+// 🔴 STOK-BOLUM — İDDİA BÖLÜNDÜ. Eski test iki sütunu BİRLİKTE pending sayıyordu;
+// "Bölüm" backend `186ffe9` ile GERÇEĞE döndü ve o iddia artık bir YALAN olurdu.
+test("'Aylık İhtiyaç' HÂLÂ gerekçeli pending basar (sayı uydurulmaz)", async ({ page }) => {
   await login(page);
   await page.goto(SITE_STOCK_URL);
 
   const need = page.getByTestId("santiye-stok-need-SNK-0421");
-  const section = page.getByTestId("santiye-stok-section-SNK-0421");
   await expect(need).toHaveText("—");
-  await expect(section).toHaveText("—");
   await expect(need).toHaveAttribute("title", "Şantiye planlama verisi bu yüzeye henüz bağlanmadı");
-  await expect(section).toHaveAttribute("title", "Şantiye planlama verisi bu yüzeye henüz bağlanmadı");
-
-  // Mockup'ın örnek değerleri (15 / "Kat 6–10 Kaba İnşaat") BASILMAZ.
-  await expect(page.getByText("Kat 6–10 Kaba İnşaat")).toHaveCount(0);
 
   // Gerekçe `title`da görünmez kalmasın diye metne de basılır.
   await expect(page.getByTestId("santiye-stok-pending-notice")).toContainText(
     "Şantiye planlama verisi bu yüzeye henüz bağlanmadı",
   );
+});
+
+test("'Bölüm' sütunu GERÇEK bölüm adını basar; atfı olmayan kart hâlâ '—'", async ({ page }) => {
+  await login(page);
+  await page.goto(SITE_STOCK_URL);
+
+  // it-1 (SNK-0421) `sec-1`e atfedilmiştir → gerçek ad, yer tutucu hücre YOK.
+  await expect(page.getByTestId("santiye-stok-section-SNK-0421")).toHaveCount(0);
+  await expect(page.getByTestId("santiye-stok-row-SNK-0421")).toContainText(
+    "Kat 6–10 Kaba İnşaat",
+  );
+
+  // POZİTİF KONTROL — sütun "her satıra ad basan" hâle DÜŞMEDİ: it-3
+  // (ELK-0334) hiçbir bölüme atfedilmemiştir ve gerekçeli "—" basar.
+  const unattributed = page.getByTestId("santiye-stok-section-ELK-0334");
+  await expect(unattributed).toHaveText("—");
+  await expect(unattributed).toHaveAttribute(
+    "title",
+    "Şantiye planlama verisi bu yüzeye henüz bağlanmadı",
+  );
+});
+
+// 🔴 SÜZGECİN ANLAMI: SATIR KÜMESİNİ daraltır, BAKİYEYİ DEĞİŞTİRMEZ.
+test("?section= süzgeci satır kümesini daraltır, bakiyeyi DEĞİŞTİRMEZ", async ({ page }) => {
+  await login(page);
+
+  await page.goto(SITE_STOCK_URL);
+  const unfilteredBalance = await page
+    .getByTestId("santiye-stok-balance-SNK-0421")
+    .textContent();
+  // Süzgeçsiz görünümde `sec-2`ye atfedilmiş kart (it-6 · MKN-0192) DE vardır.
+  await expect(page.getByTestId("santiye-stok-row-MKN-0192")).toBeVisible();
+
+  await page.goto(`${SITE_STOCK_URL}?section=sec-1`);
+
+  // (a) satır kümesi daraldı — `sec-2`nin kartı DÜŞTÜ,
+  await expect(page.getByTestId("santiye-stok-row-SNK-0421")).toBeVisible();
+  await expect(page.getByTestId("santiye-stok-row-MKN-0192")).toHaveCount(0);
+  // (b) ama BAKİYE AYNI KALDI — süzgeç bakiyeyi yeniden hesaplamaz.
+  await expect(page.getByTestId("santiye-stok-balance-SNK-0421")).toHaveText(
+    unfilteredBalance ?? "",
+  );
+  // (c) ve band bunu SÖYLER — "bölümün stoğu" yalanı kurulmaz.
+  const band = page.getByTestId("santiye-stok-section-filter");
+  await expect(band).toContainText("ŞANTİYE bakiyesidir");
+  await expect(band).toContainText("bölümün kendi miktarları değildir");
+
+  // Süzgeci kaldırınca tam liste geri gelir (önbellek EZİLMEMİŞTİR).
+  await page.getByTestId("santiye-stok-section-filter-clear").click();
+  await expect(page.getByTestId("santiye-stok-row-MKN-0192")).toBeVisible();
+  await expect(page.getByTestId("santiye-stok-section-filter")).toHaveCount(0);
 });
 
 test("satır aksiyonları ve 'Satınalma Talebi →' SA'ya pending: devre dışı + gerekçe", async ({

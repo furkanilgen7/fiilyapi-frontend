@@ -7,7 +7,7 @@ import {
   siteStockEntryHref,
   siteStockRowAction,
   stockBalanceTone,
-  SITE_STOCK_COLUMN_PENDING_REASON,
+  SITE_STOCK_NEED_PENDING_REASON,
   SITE_STOCK_DETAIL_PENDING_REASON,
   SITE_STOCK_ORDER_PENDING_REASON,
   SITE_STOCK_STATUS_LABELS,
@@ -145,7 +145,7 @@ describe("siteStockRowAction — satır düğmesi (S5 pending)", () => {
 
 describe("pending sütun gerekçesi + T4 rota sözleşmesi", () => {
   it("'Aylık İhtiyaç'/'Bölüm' gerekçesi sunucunun `site_planning` anahtarındandır", () => {
-    expect(SITE_STOCK_COLUMN_PENDING_REASON).toBe("Şantiye planlama verisi bu yüzeye henüz bağlanmadı");
+    expect(SITE_STOCK_NEED_PENDING_REASON).toBe("Şantiye planlama verisi bu yüzeye henüz bağlanmadı");
     expect(STOCK_SITE_PLANNING_PENDING_MODULE).toBe("site_planning");
     expect(STOCK_PURCHASING_PENDING_MODULE).toBe("purchasing");
   });

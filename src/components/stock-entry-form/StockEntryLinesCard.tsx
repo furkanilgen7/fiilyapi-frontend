@@ -5,7 +5,9 @@ import type { StockQuality } from "@/lib/api/hooks/useStockMutations";
 
 import {
   EMPTY_VALUE,
+  STOCK_ENTRY_BOQ_FAIL_OPEN_HINT,
   STOCK_ENTRY_ORDER_COLUMN_PENDING_REASON,
+  STOCK_ENTRY_TRANSFER_NO_ATTRIBUTION_REASON,
   STOCK_QUALITY_OPTIONS,
 } from "./constants";
 import {
@@ -16,6 +18,12 @@ import {
 } from "./form-state";
 import type { StockEntryFormErrors } from "./validate";
 
+/** Bölüm/poz açılır listelerinin tek satırlık seçeneği (ad + kimlik). */
+export interface AttributionOption {
+  id: string;
+  label: string;
+}
+
 interface StockEntryLinesCardProps {
   values: StockEntryFormValues;
   errors: StockEntryFormErrors;
@@ -23,6 +31,18 @@ interface StockEntryLinesCardProps {
   itemsDisabled: boolean;
   /** Malzeme listesinin durumu — sessiz boş açılır liste yasak. */
   itemsNote: string | null;
+  /**
+   * 🔴 STOK-BOLUM — bu şantiyenin BÖLÜMLERİ. Liste ROTANIN şantiyesine
+   * kapsanır: backend, hareket ŞANTİYELİ bir depoya yazılıyorsa bölümün O
+   * şantiyeye ait olmasını ZORUNLU tutar (422, fail-closed). Kapsam bu yüzden
+   * bir daraltma değil, 422'nin ÖNLENMESİDİR.
+   */
+  sections: readonly AttributionOption[];
+  /** Bu şantiyenin POZLARI — bölüme göre SÜZÜLMEZ (fail-open, bkz. sabit). */
+  boqItems: readonly AttributionOption[];
+  attributionDisabled: boolean;
+  /** Bölüm/poz listelerinin durumu — sessiz boş açılır liste yasak. */
+  attributionNote: string | null;
   onAddLine: () => void;
   onRemoveLine: (key: string) => void;
   onChangeLine: (key: string, patch: Partial<Omit<StockEntryLineValues, "key">>) => void;
@@ -47,12 +67,21 @@ export function StockEntryLinesCard({
   items,
   itemsDisabled,
   itemsNote,
+  sections,
+  boqItems,
+  attributionDisabled,
+  attributionNote,
   onAddLine,
   onRemoveLine,
   onChangeLine,
 }: StockEntryLinesCardProps) {
   const itemsById = new Map(items.map((item) => [item.id, item]));
   const total = stockEntryTotal(values.lines);
+  // 🔴 `transfer`da atıf sütunları YAPISAL olarak kapalıdır — kullanıcı 422'ye
+  // çarptırılmaz. Bu UI katmanıdır; gövde katmanı `build-body.ts`tedir ve
+  // değer katmanı `form-state.applyEntryTypeToLines`tedir (üç katman).
+  const isTransfer = values.entryType === "transfer";
+  const attributionOff = isTransfer || attributionDisabled;
 
   return (
     <section className="pf-card sgf-lines">
@@ -83,6 +112,14 @@ export function StockEntryLinesCard({
           {errors.lines}
         </p>
       )}
+      {/* 🔴 Atıf sütunlarının durumu GÖRÜNÜR cümleyle anlatılır: transferde
+          neden kapalı olduğu, ya da liste neden boş — sessiz boş açılır liste
+          YASAK (formun kendi kanonu). */}
+      <p className="sgf-lines__note" data-testid="stok-giris-atif-note">
+        {isTransfer
+          ? STOCK_ENTRY_TRANSFER_NO_ATTRIBUTION_REASON
+          : (attributionNote ?? STOCK_ENTRY_BOQ_FAIL_OPEN_HINT)}
+      </p>
 
       <table className="sgf-table">
         <thead>
@@ -107,6 +144,10 @@ export function StockEntryLinesCard({
             <th scope="col" className="sgf-table__center">
               Kalite
             </th>
+            {/* 🔴 MOCKUP'TA OLMAYAN İKİ SÜTUN — tablonun kendi deseni
+                genişletildi, yeni görsel dil icat EDİLMEDİ (bkz. constants). */}
+            <th scope="col">Bölüm</th>
+            <th scope="col">İş Kalemi</th>
             <th scope="col">
               <span className="sr-only">Satırı sil</span>
             </th>
@@ -212,6 +253,55 @@ export function StockEntryLinesCard({
                     ))}
                   </Select>
                 </td>
+                {/* 🔴 STOK-BOLUM — Bölüm atfı. `transfer`da devre dışı ve
+                    gerekçe `title`da; alan gövdeye zaten GİREMEZ. */}
+                <td>
+                  <Select
+                    size="row"
+                    aria-label={`Bölüm (satır ${index + 1})`}
+                    data-testid={`stok-giris-bolum-${index}`}
+                    disabled={attributionOff}
+                    title={isTransfer ? STOCK_ENTRY_TRANSFER_NO_ATTRIBUTION_REASON : undefined}
+                    value={line.sectionId}
+                    onChange={(event) =>
+                      onChangeLine(line.key, { sectionId: event.target.value })
+                    }
+                  >
+                    {/* Atıf İSTEĞE BAĞLIDIR — "yok" meşru bir seçimdir. */}
+                    <option value="">Bölüm atanmadı</option>
+                    {sections.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </Select>
+                </td>
+                {/* 🔴 İş kalemi atfı. Liste bölüme göre SÜZÜLMEZ (fail-open:
+                    tahsis edilmemiş poz da seçilebilir — backend aramaz). */}
+                <td>
+                  <Select
+                    size="row"
+                    aria-label={`İş kalemi (satır ${index + 1})`}
+                    data-testid={`stok-giris-poz-${index}`}
+                    disabled={attributionOff}
+                    title={
+                      isTransfer
+                        ? STOCK_ENTRY_TRANSFER_NO_ATTRIBUTION_REASON
+                        : STOCK_ENTRY_BOQ_FAIL_OPEN_HINT
+                    }
+                    value={line.boqItemId}
+                    onChange={(event) =>
+                      onChangeLine(line.key, { boqItemId: event.target.value })
+                    }
+                  >
+                    <option value="">İş kalemi atanmadı</option>
+                    {boqItems.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </Select>
+                </td>
                 {/* 118 */}
                 <td className="sgf-table__center">
                   <Button
@@ -230,7 +320,7 @@ export function StockEntryLinesCard({
           })}
           {/* 130-137 */}
           <tr className="sgf-table__adder">
-            <td colSpan={8}>
+            <td colSpan={10}>
               <Button
                 variant="secondary"
                 size="sm"
@@ -250,7 +340,7 @@ export function StockEntryLinesCard({
             <td className="sgf-table__right" data-testid="stok-giris-toplam">
               ₺{formatAmount(total)}
             </td>
-            <td colSpan={2} />
+            <td colSpan={4} />
           </tr>
         </tfoot>
       </table>

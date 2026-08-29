@@ -136,3 +136,41 @@ export const STOCK_ENTRY_NO_WAREHOUSE_NOTICE =
 /** Depo listesi hiç yüklenemediğinde (sessiz boş açılır liste yasak). */
 export const STOCK_ENTRY_WAREHOUSE_LOAD_ERROR =
   "Depo listesi yüklenemedi — sayfayı tazeleyip tekrar deneyin.";
+
+/* ── STOK-BOLUM · SATIR BAZINDA BÖLÜM / İŞ KALEMİ ATFI ────────────────────
+ * 🔴 BU İKİ SÜTUNUN MOCKUP'I YOKTUR. `Form - Stok Girisi.dc.html` kalem
+ * tablosunda "Bölüm" ya da "İş Kalemi" sütunu ÇİZİLMEMİŞTİR (sütunlar 99-108:
+ * Malzeme · Birim · Sipariş · Gelen · Birim Fiyat · Tutar · Kalite).
+ *
+ * Repo kuralı gereği yeni bir görsel dil İCAT EDİLMEDİ: sütunlar tablonun KENDİ
+ * desenini genişletir — `Select size="row"` + satır başına `aria-label` +
+ * `data-testid`, yani "Malzeme" ve "Kalite" sütunlarıyla BİREBİR aynı kabuk.
+ * Yeni bir primitive, yeni bir yerleşim ya da yeni bir renk kararı YOKTUR.
+ * ---------------------------------------------------------------------- */
+
+/** 🔴 `transfer`da atıf YASAKTIR — alanlar devre dışıdır ve gerekçe GÖRÜNÜR. */
+export const STOCK_ENTRY_TRANSFER_NO_ATTRIBUTION_REASON =
+  "Transferde bölüm/iş kalemi atfı yapılmaz — transfer tüketim değildir, iki bacaklıdır";
+
+/** Bölüm listesi yüklenemediğinde (sessiz boş açılır liste YASAK). */
+export const STOCK_ENTRY_SECTION_LOAD_ERROR =
+  "Bölüm listesi yüklenemedi — atıf yapmadan da kaydedebilirsiniz.";
+
+/** Şantiyede hiç bölüm yoksa. Atıf ZORUNLU DEĞİLDİR, bu yüzden kilit DEĞİL uyarıdır. */
+export const STOCK_ENTRY_NO_SECTION_NOTICE =
+  "Bu şantiyede tanımlı bölüm yok — malzeme bölüm atfı olmadan kaydedilir.";
+
+/** İş kalemi listesi yüklenemediğinde. */
+export const STOCK_ENTRY_BOQ_LOAD_ERROR =
+  "İş kalemi listesi yüklenemedi — atıf yapmadan da kaydedebilirsiniz.";
+
+/**
+ * 🔴 POZ LİSTESİ BÖLÜME GÖRE SÜZÜLMEZ — FAIL-OPEN KORUNUR.
+ *
+ * Backend tahsisi (`boq_item_section_allocations`) ARAMAZ ve gerekçesi
+ * yazılıdır: *"tahsis şartı konsaydı planlama yapılmamış bir şantiye hiç
+ * malzeme çıkışı yazamazdı — kayıt, planın rehinesi olurdu."* İstemci bu kararı
+ * DARALTMAZ: seçilen bölüme tahsis EDİLMEMİŞ pozlar da listede kalır.
+ */
+export const STOCK_ENTRY_BOQ_FAIL_OPEN_HINT =
+  "İş kalemi listesi bölüme göre daraltılmaz — tahsis edilmemiş poz da seçilebilir";

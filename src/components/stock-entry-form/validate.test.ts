@@ -7,7 +7,7 @@ function values(overrides: Partial<StockEntryFormValues> = {}): StockEntryFormVa
   return {
     ...emptyStockEntryFormValues("2026-08-12"),
     warehouseId: "wh-1",
-    lines: [{ key: "line-0", itemId: "it-1", quantity: "15", unitPrice: "21500", quality: "ok" }],
+    lines: [{ key: "line-0", itemId: "it-1", quantity: "15", unitPrice: "21500", quality: "ok", sectionId: "", boqItemId: "" }],
     ...overrides,
   };
 }
@@ -50,7 +50,7 @@ describe("miktar işaret kuralı (§7 S4)", () => {
         values({
           entryType,
           sourceWarehouseId: "wh-0",
-          lines: [{ key: "line-0", itemId: "it-1", quantity: "-5", unitPrice: "", quality: "ok" }],
+          lines: [{ key: "line-0", itemId: "it-1", quantity: "-5", unitPrice: "", quality: "ok", sectionId: "", boqItemId: "" }],
         }),
       );
 
@@ -62,7 +62,7 @@ describe("miktar işaret kuralı (§7 S4)", () => {
     const errors = validateStockEntryForm(
       values({
         entryType: "adjustment",
-        lines: [{ key: "line-0", itemId: "it-1", quantity: "-5", unitPrice: "", quality: "ok" }],
+        lines: [{ key: "line-0", itemId: "it-1", quantity: "-5", unitPrice: "", quality: "ok", sectionId: "", boqItemId: "" }],
       }),
     );
 
@@ -73,7 +73,7 @@ describe("miktar işaret kuralı (§7 S4)", () => {
     const errors = validateStockEntryForm(
       values({
         entryType: "adjustment",
-        lines: [{ key: "line-0", itemId: "it-1", quantity: "0", unitPrice: "", quality: "ok" }],
+        lines: [{ key: "line-0", itemId: "it-1", quantity: "0", unitPrice: "", quality: "ok", sectionId: "", boqItemId: "" }],
       }),
     );
 
@@ -92,7 +92,7 @@ describe("zorunlu alanlar ve sınırlar", () => {
   it("malzeme seçilmemiş satır reddedilir", () => {
     const errors = validateStockEntryForm(
       values({
-        lines: [{ key: "line-0", itemId: "", quantity: "1", unitPrice: "", quality: "ok" }],
+        lines: [{ key: "line-0", itemId: "", quantity: "1", unitPrice: "", quality: "ok", sectionId: "", boqItemId: "" }],
       }),
     );
 
@@ -115,7 +115,7 @@ describe("zorunlu alanlar ve sınırlar", () => {
   it("negatif birim fiyat reddedilir", () => {
     const errors = validateStockEntryForm(
       values({
-        lines: [{ key: "line-0", itemId: "it-1", quantity: "1", unitPrice: "-1", quality: "ok" }],
+        lines: [{ key: "line-0", itemId: "it-1", quantity: "1", unitPrice: "-1", quality: "ok", sectionId: "", boqItemId: "" }],
       }),
     );
 

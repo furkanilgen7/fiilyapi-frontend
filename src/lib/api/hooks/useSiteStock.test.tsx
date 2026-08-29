@@ -58,7 +58,58 @@ describe("useSiteStock", () => {
     expect(backendClient.GET).toHaveBeenCalledWith("/sites/{site_id}/stock", {
       params: { path: { site_id: SITE_ID }, query: { limit: 200 } },
     });
-    expect(client.getQueryData([SITE_STOCK_QUERY_KEY, SITE_ID, 200, null])).toEqual(SITE_STOCK);
+    // 🔴 STOK-BOLUM: anahtar 5. bileşeni (`sectionId`) ile genişledi.
+    expect(client.getQueryData([SITE_STOCK_QUERY_KEY, SITE_ID, 200, null, null])).toEqual(
+      SITE_STOCK,
+    );
+  });
+
+  /* ── STOK-BOLUM · `?section_id=` SÜZGECİ ──────────────────────────────── */
+
+  it("sectionId verilince section_id sorgusu GONDERILIR", async () => {
+    vi.mocked(backendClient.GET).mockResolvedValue(okResponse(SITE_STOCK));
+
+    const { result } = renderHook(
+      () => useSiteStock(SITE_ID, { limit: 200, sectionId: "sec-1" }),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(backendClient.GET).toHaveBeenCalledWith("/sites/{site_id}/stock", {
+      params: { path: { site_id: SITE_ID }, query: { limit: 200, section_id: "sec-1" } },
+    });
+  });
+
+  it("sectionId YOKKEN section_id anahtari HIC KURULMAZ (olu sorgu yazilmaz)", async () => {
+    vi.mocked(backendClient.GET).mockResolvedValue(okResponse(SITE_STOCK));
+
+    const { result } = renderHook(() => useSiteStock(SITE_ID, { limit: 200 }), { wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const call = vi.mocked(backendClient.GET).mock.calls[0][1] as {
+      params: { query: Record<string, unknown> };
+    };
+    expect(Object.keys(call.params.query)).toEqual(["limit"]);
+  });
+
+  // 🔴 SÜZGEÇ SORGU ANAHTARINDA OLMAK ZORUNDA: değilse süzülmüş yanıt
+  // süzgeçsiz görünümün önbelleğini EZER ve kullanıcı "Süzgeci kaldır"a
+  // bastığında EKSİK listeyi görür — iki yanıt aynı şekle sahip olduğu için
+  // hiçbir tip hatası da vermez (sessizce yanlış sayı).
+  it("suzgecli ve suzgecsiz yanitlar AYRI onbellek girdisinde yasar", async () => {
+    vi.mocked(backendClient.GET).mockResolvedValue(okResponse(SITE_STOCK));
+
+    const { result } = renderHook(
+      () => useSiteStock(SITE_ID, { limit: 200, sectionId: "sec-1" }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(client.getQueryData([SITE_STOCK_QUERY_KEY, SITE_ID, 200, null, "sec-1"])).toEqual(
+      SITE_STOCK,
+    );
+    // Süzgeçsiz girdi DOLMAZ — ezilme olsaydı burası da dolu olurdu.
+    expect(client.getQueryData([SITE_STOCK_QUERY_KEY, SITE_ID, 200, null, null])).toBeUndefined();
   });
 
   it("bos siteId ile aga CIKMAZ", async () => {

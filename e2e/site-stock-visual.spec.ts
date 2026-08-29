@@ -42,9 +42,18 @@ test("santiye stok sekmesi gorsel", async ({ page }) => {
   await expect(page.getByTestId("santiye-stok-row-SNK-0421")).toBeVisible();
   await expect(page.getByTestId("santiye-stok-status-SNK-0421")).toHaveText("Kritik");
   await expect(page.getByTestId("santiye-stok-status-SNK-0055")).toHaveText("Yeterli");
-  // Pending iki sütun gerekçeli "—" basar (sayı uydurulmaz) — kadrajın konusu.
+  // 🔴 STOK-BOLUM — İKİ SÜTUN ARTIK AYRIŞTI, kadrajın asıl konusu bu:
+  // "Aylık İhtiyaç" HÂLÂ yer tutucudur ve gerekçeli "—" basar,
   await expect(page.getByTestId("santiye-stok-need-SNK-0421")).toHaveText("—");
-  await expect(page.getByTestId("santiye-stok-section-SNK-0421")).toHaveText("—");
+  // "Bölüm" ise GERÇEK bölüm adını basar — yer tutucu hücresi (ve dolayısıyla
+  // `santiye-stok-section-*` testid'i) atıf VARKEN DOM'da HİÇ OLMAZ.
+  await expect(page.getByTestId("santiye-stok-section-SNK-0421")).toHaveCount(0);
+  await expect(page.getByTestId("santiye-stok-row-SNK-0421")).toContainText(
+    "Kat 6–10 Kaba İnşaat",
+  );
+  // POZİTİF KONTROL — sütun "her satıra ad basan" bir hâle düşmedi: atfı
+  // OLMAYAN kart hâlâ gerekçeli "—" basar.
+  await expect(page.getByTestId("santiye-stok-section-ELK-0334")).toHaveText("—");
 
   // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
   await prepareFrame(page);

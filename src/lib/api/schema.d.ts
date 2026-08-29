@@ -4911,6 +4911,38 @@ export interface paths {
         patch: operations["update_section_endpoint_sections__section_id__patch"];
         trace?: never;
     };
+    "/sections/{section_id}/stock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Section Stock Endpoint
+         * @description `A1 › Malzeme` sekmesinin ve `Bölüm Malzeme Durumu` kartının verisi.
+         *
+         *     🔴 **BAKİYE DÖNMEZ** (ürün kararı): bakiye depo düzeyindedir ve bölüme
+         *     ikinci bir bakiye kaynağı açmak iki-kaynak problemini doğururdu. Bunun
+         *     yerine (malzeme, poz) çifti başına `assigned` / `issued` / `net` döner —
+         *     tanımları `SectionStockRow` docstring'indedir. **Sarf toplamı
+         *     `issued_quantity`dir.**
+         *
+         *     Kapı `inventory:view`tir: bu bir STOK ekranıdır, veri stok hareketinden
+         *     türer. `sites`/`boq` kapıları BURADA KULLANILMAZ — kullanılsaydı stok
+         *     okuyabilen `procurement` rolü kendi verisini göremezdi.
+         *
+         *     Görünmeyen bölüm ile var olmayan bölüm AYNI 404 gövdesini alır.
+         */
+        get: operations["section_stock_endpoint_sections__section_id__stock_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/notifications": {
         parameters: {
             query?: never;
@@ -5327,8 +5359,15 @@ export interface paths {
          *     bakiyesi "o şantiyenin depoları"dır. Görünmeyen şantiye 404 döner ve gövde
          *     var olmayan kimliğinkiyle aynıdır.
          *
-         *     "Aylık İhtiyaç" ve "Bölüm" sütunları YER TUTUCUDUR: giriş yüzeyi yoktur,
-         *     değer uydurulmaz (spec §3, §5).
+         *     "Aylık İhtiyaç" HÂLÂ YER TUTUCUDUR (plan ızgarası malzeme satırı taşımaz).
+         *     🔴 **"Bölüm" ise STOK-BOLUM ile GERÇEĞE döndü:** kartın bu şantiyedeki
+         *     hareketlerinde atfedilmiş bölüm adlarını taşır; atıf yoksa boş kalır.
+         *
+         *     `section_id` SÜZGECİ SATIR KÜMESİNİ daraltır, `balance`ı DEĞİŞTİRMEZ:
+         *     bakiye depo düzeyindedir ("STOK DEPODA DURUR, BÖLÜM TÜKETİR"). Cümlesi
+         *     *"bu bölümde kullanılmış malzemelerin ŞANTİYE bakiyesi"*dir. Bölümün kendi
+         *     miktarları `GET /sections/{id}/stock`tan gelir. Başka şantiyenin bölümü
+         *     verilirse **404**.
          */
         get: operations["site_stock_endpoint_sites__site_id__stock_get"];
         put?: never;
@@ -11719,7 +11758,7 @@ export interface components {
             /** Cumulative Tax Base */
             cumulative_tax_base: string | null;
             /** Days */
-            days: number | null;
+            days: string | null;
             /** Deduction Amount */
             deduction_amount: string | null;
             /** Excluded Reason */
@@ -14955,6 +14994,95 @@ export interface components {
             planned: number;
         };
         /**
+         * SectionStockKpis
+         * @description Bölüm malzeme şeridi. **YER TUTUCU YOKTUR** — dördü de gerçek sayıdır.
+         *
+         *     `lines_without_price`, `total_value`in EKSİKLİĞİNİ dürüstçe bildirir: fiyatsız
+         *     satır varken tutar "eksik" demektir ve ekran bunu söyleyebilmelidir
+         *     (`SiteStockKpis.items_without_price` emsali).
+         */
+        SectionStockKpis: {
+            /** Issued Value */
+            issued_value: string;
+            /** Item Count */
+            item_count: number;
+            /** Lines Without Price */
+            lines_without_price: number;
+            /** Total Value */
+            total_value: string;
+        };
+        /** SectionStockResponse */
+        SectionStockResponse: {
+            /** Items */
+            items: components["schemas"]["SectionStockRow"][];
+            kpis: components["schemas"]["SectionStockKpis"];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Total */
+            total: number;
+        };
+        /**
+         * SectionStockRow
+         * @description Bir bölümün BİR (malzeme, poz) çiftindeki hareket toplamı.
+         *
+         *     🔴 **BURADA "BAKİYE" YOKTUR ve bu bilinçlidir.** Ürün kararı *"STOK DEPODA
+         *     DURUR, BÖLÜM TÜKETİR"*: bakiye depo düzeyinde kalır (`balance.legs()`
+         *     değişmedi). Bölüme "bakiye" basmak, aynı malzemenin hem depo hem bölüm
+         *     bakiyesi olduğu izlenimini verir ve klasik iki-kaynak problemini doğururdu.
+         *
+         *     Onun yerine ÜÇ farklı sayı döner, üçü de tek bir toplamdan türetilir ve
+         *     tanımları ÖRTÜŞMEZ:
+         *
+         *     | alan | tanım |
+         *     |---|---|
+         *     | `assigned_quantity` | atfedilmiş POZİTİF miktarlar — "bu bölüm için depoya girdi" |
+         *     | `issued_quantity` | NEGATİF miktarların MUTLAK toplamı — "bu bölüme çıkıldı / sarf edildi" |
+         *     | `net_quantity` | `assigned − issued` (işaretli toplam) |
+         *
+         *     İkisi ayrı tutulur çünkü tek bir "toplam" basılsaydı `+5 alım` ile
+         *     `−5 sarf` birbirini götürür ve ekran *"bu bölümde hiç malzeme kullanılmadı"*
+         *     derdi — oysa 5 birim gerçekten harcanmıştır. Sarf ekranının okuduğu alan
+         *     `issued_quantity`dir.
+         *
+         *     `boq_item_id` NULL olabilir: bölüme çıkılmış ama bir poza bağlanmamış
+         *     malzeme meşrudur (poz kırılımı ZORUNLU DEĞİLDİR — fail-open, bkz. servis).
+         *     Satırlar (malzeme, poz) çifti başına açılır; poz kırılımı istemeyen ekran
+         *     malzemeye göre kendisi toplar.
+         *
+         *     `total_value` YALNIZCA fiyatı olan satırlardan gelir (`unit_price` NULL olan
+         *     transfer/düzeltme satırı toplam değere GİRMEZ — §7 S6 ile aynı kural).
+         */
+        SectionStockRow: {
+            /** Assigned Quantity */
+            assigned_quantity: string;
+            /** Boq Code */
+            boq_code: string | null;
+            /** Boq Description */
+            boq_description: string | null;
+            /** Boq Item Id */
+            boq_item_id: string | null;
+            category: components["schemas"]["StockCategory"];
+            /** Code */
+            code: string;
+            /** Issued Quantity */
+            issued_quantity: string;
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /** Name */
+            name: string;
+            /** Net Quantity */
+            net_quantity: string;
+            /** Total Value */
+            total_value: string;
+            /** Unit */
+            unit: string;
+        };
+        /**
          * SectionType
          * @description Bolum turu (`Form - Bolum Ekle` satir 70, spec §3). Etiketler:
          *     Temel & Altyapi · Kaba Insaat · Ince Isler · Cephe & Cati · Mekanik-Elektrik ·
@@ -16300,13 +16428,26 @@ export interface components {
          *     docstring'i *"Plan-gerçekleşen kıyas kolonu YOKTUR (spec §5)"* der. Yani
          *     bekleyen şey MODÜL değil, o modülün hiç taşımadığı bir KAVRAMdır.
          *
-         *     **`section` — TUZAK.** Görünüşte işleyen bir kaynak vardır:
-         *     `purchase_requests.section_id` + `purchase_request_lines.stock_item_id`
-         *     ikilisi bir stok kartını bir bölüme bağlar. K4 bunu engellemez (`inventory`
-         *     okuyup `procurement`ta `none` olan rol YOKTUR). Engel ANLAMdır: o bağ *"bu
-         *     malzemeyi HANGİ BÖLÜM TALEP ETTİ"*dir — stoğun bulunduğu bölüm değil.
-         *     Depolar şantiyeye bağlıdır, bölüme DEĞİL (`warehouses.site_id`; `sections`a
-         *     FK yok). Basılsaydı ekran makul görünen ama yanlış bir "Bölüm" gösterirdi.
+         *     🔴 **STOK-BOLUM (2026-08-29) — `section` ARTIK DOLAR.** Tablodaki sınıfı (C)
+         *     TUZAK'tan çıktı: `stock_entry_lines.section_id` açıldı ve o alan *"bu satırın
+         *     malzemesi hangi bölüm için hareket etti"* demektir — yani ekranın sorduğu
+         *     şeyin TA KENDİSİ. Zarf, o kalemin bu şantiyedeki hareketlerinde atfedilmiş
+         *     bölümlerin ADLARINI taşır; hiç atıf yoksa BOŞ kalır (uydurma yok).
+         *
+         *     ⚠️ **ESKİ TUZAK KAYDI DURUYOR ve hâlâ geçerlidir.** Görünüşte işleyen İKİNCİ
+         *     bir kaynak vardır: `purchase_requests.section_id` + `purchase_request_lines.
+         *     stock_item_id`. K4 onu engellemez (`inventory` okuyup `procurement`ta `none`
+         *     olan rol YOKTUR). Engel ANLAMdır: o bağ *"bu malzemeyi HANGİ BÖLÜM TALEP
+         *     ETTİ"*dir (satınalma niyeti) — stok gerçeği değil. Bu sütun ONDAN
+         *     BESLENMEZ ve beslenmemelidir; bekçisi
+         *     `test_pyt3_yer_tutucu_denetimi.py::test_PLAN_ve_TALEP_VARKEN_DE_zarflar_BOS_KALIR`
+         *     talep+plan varken ama stok atfı yokken zarfın BOŞ kaldığını çakar.
+         *
+         *     ⚠️ **Dolu zarf `pending_module` TAŞIR** (`ListPlaceholder`da alan zorunludur
+         *     ve `MetricPlaceholder`ın "dolu zarf taşımaz" kuralı oraya UYGULANMAZ —
+         *     `CountPlaceholder` emsali). Anahtar `site_planning` olarak KORUNUR: frontend
+         *     `SiteStockTable.tsx` etiketi YALNIZ `available=false` iken basar, dolu zarfta
+         *     hiç okumaz. Anahtarı değiştirmek canlı bir gerekçe metnini bayatlatırdı.
          *
          *     ⚠️ **İkinci engel — K4:** `site_planning` bir izin modülü DEĞİLDİR; router'ı
          *     `site_diary` kapısını kullanır ve `procurement` `inventory=full` iken
@@ -16484,6 +16625,8 @@ export interface components {
          *     ve fiyatsız kalem toplam stok değerine GİRMEZ (§7 S6).
          */
         StockEntryLineCreate: {
+            /** Boq Item Id */
+            boq_item_id?: string | null;
             /**
              * Item Id
              * Format: uuid
@@ -16493,6 +16636,8 @@ export interface components {
             quality: components["schemas"]["StockQuality"];
             /** Quantity */
             quantity: number | string;
+            /** Section Id */
+            section_id?: string | null;
             /** Unit Price */
             unit_price?: number | string | null;
         };
@@ -16501,6 +16646,8 @@ export interface components {
          * @description Satır künyesi. **Tutar alanı YOKTUR** — `quantity × unit_price` türevdir.
          */
         StockEntryLineResponse: {
+            /** Boq Item Id */
+            boq_item_id: string | null;
             /**
              * Id
              * Format: uuid
@@ -16514,6 +16661,8 @@ export interface components {
             quality: components["schemas"]["StockQuality"];
             /** Quantity */
             quantity: string;
+            /** Section Id */
+            section_id: string | null;
             /** Unit Price */
             unit_price: string | null;
         };
@@ -31906,6 +32055,54 @@ export interface operations {
             };
         };
     };
+    section_stock_endpoint_sections__section_id__stock_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                section_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SectionStockResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bölüm bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_notifications_endpoint_settings_notifications_get: {
         parameters: {
             query?: never;
@@ -32984,6 +33181,7 @@ export interface operations {
     site_stock_endpoint_sites__site_id__stock_get: {
         parameters: {
             query?: {
+                section_id?: string | null;
                 limit?: number;
                 offset?: number;
             };

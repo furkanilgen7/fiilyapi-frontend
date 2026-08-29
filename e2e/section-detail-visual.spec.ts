@@ -282,8 +282,10 @@ test("bolum detay hakedis sekmesi gorsel", async ({ page }) => {
  * Kullanıcının şikâyetinin merkezindeki ekran budur: eskiden jenerik
  * `${label} — bu bölümde henüz görüntülenemiyor` basıyordu, artık kendi
  * başlığını + ALANI adlandıran gerekçesini + çıkış bağlantısını basıyor.
- * Kare, "pending kalan tek sekme"nin de DÜRÜST ve AYIRT EDİLEBİLİR olduğunu
- * kilitler. Bu panelin kendi veri kaynağı YOKTUR (tamamen statik).
+ * 🔴 STOK-BOLUM — kare artık GERÇEK VERİ kilitliyor. Eski notu "bu panelin
+ * kendi veri kaynağı YOKTUR (tamamen statik)" diyordu; panel `GET /sections/
+ * {id}/stock` ucuna bağlandı ve kare (malzeme, poz) kırılımını + KPI şeridini
+ * gösteriyor.
  */
 test("bolum detay malzeme sekmesi gorsel", async ({ page }) => {
   await openSectionFrame(page, "sec-1", "Kat 6–10 Kaba İnşaat");
@@ -293,9 +295,21 @@ test("bolum detay malzeme sekmesi gorsel", async ({ page }) => {
   await expect(panel.getByRole("heading", { level: 2 })).toHaveText(
     "Kat 6–10 Kaba İnşaat · Stok Hareketleri",
   );
-  await expect(panel).toContainText("Stok hareketi bölüm alanı taşımıyor");
+  // 🔴 STOK-BOLUM — panel ARTIK PENDING DEĞİL. Eski iddia gerekçe metnini
+  // arıyordu; şimdi GERÇEK tablo ve KPI şeridi bekleniyor.
+  await expect(panel).not.toContainText("Stok hareketi bölüm alanı taşımıyor");
+  // "Yüklendi" iddiası HER BAĞIMSIZ VERİ KAYNAĞINI kapsar (görsel spec 5.
+  // parçası) — KAYNAK 1: bölüm stok kırılımı.
+  await expect(panel.getByTestId("section-stock-table")).toBeVisible();
+  await expect(panel.getByTestId("section-stock-row-SNK-0421")).toBeVisible();
+  // Sarf sütunu SIFIR OLMAYAN bir değer basıyor — kadraj boş bir sütunu
+  // kilitlemesin (fikstür `se-1`/`se-1b` bunun için bölündü).
+  await expect(panel.getByTestId("section-stock-issued-SNK-0421")).toContainText("0,6");
+  await expect(panel.getByTestId("section-stock-kpis")).toBeVisible();
   // KAYNAK 2.
   await expect(page.getByTestId("section-workers-row")).toHaveCount(3);
+  // KAYNAK 3 — alt kart aynı çağrıdan beslenir ve gerçek satır basar.
+  await expect(page.getByTestId("section-stock-card-list")).toBeVisible();
   await expect(page.getByText("Yükleniyor…")).toHaveCount(0);
 
   await prepareFrame(page);

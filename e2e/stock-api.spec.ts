@@ -225,3 +225,116 @@ test.describe("stok yazma sözleşmesi (durum DEĞİŞTİRMEYEN gövdeler)", () 
     expect(response.status()).toBe(404);
   });
 });
+
+/* ── STOK-BOLUM · bölüm kırılımı ucu + atıf reddi ────────────────────────────
+ * Neden UI'sız: aşağıdaki üç davranış jsdom'da KANITLANAMAZ.
+ *   1. `sections` BFF kökünün `/sections/{id}/stock` için de geçmesi — kök
+ *      düşerse modül YALNIZ CANLIDA 404 alır ve birim testleri görmez;
+ *   2. ucun BAKİYE DÖNDÜRMEMESİ (sözleşme kararı, ekran onu basamaz);
+ *   3. `transfer` + atıf gövdesinin SUNUCUDA reddedilmesi.
+ * Hepsi READ-ONLY ya da REDDEDİLEN gövdedir — fikstür izolasyonu korunur.
+ * ------------------------------------------------------------------------ */
+
+test("GET /sections/{id}/stock BFF'ten geçer ve BAKİYE DÖNDÜRMEZ", async ({ page }) => {
+  await login(page);
+  const response = await page.request.get("/api/backend/sections/sec-1/stock?limit=200");
+  expect(response.status()).toBe(200);
+  const body = await response.json();
+
+  expect(Array.isArray(body.items)).toBe(true);
+  expect(body.items.length).toBeGreaterThan(0);
+
+  // 🔴 SÖZLEŞME KARARI: satırda "bakiye" ALANI YOKTUR — bölüme ikinci bir
+  // bakiye kaynağı açılmaz ("STOK DEPODA DURUR, BÖLÜM TÜKETİR").
+  for (const row of body.items) {
+    expect(row).not.toHaveProperty("balance");
+    expect(row).not.toHaveProperty("status");
+    expect(row).toHaveProperty("assigned_quantity");
+    expect(row).toHaveProperty("issued_quantity");
+    expect(row).toHaveProperty("net_quantity");
+  }
+
+  // 🔴 ALIM ve SARF AYRI SAYILIR: `sec-1`de demir +3.000 atanmış, 0.600
+  // sarf edilmiştir. Tek toplam basılsaydı bu satır "2.400" der ve 0,6
+  // birimin harcandığını HİÇ söyleyemezdi.
+  const demir = body.items.find(
+    (row: { code: string; boq_code: string | null }) => row.code === "SNK-0421",
+  );
+  expect(demir.assigned_quantity).toBe("3.000");
+  expect(demir.issued_quantity).toBe("0.600");
+  expect(demir.net_quantity).toBe("2.400");
+
+  // KPI şeridinde YER TUTUCU YOKTUR — dördü de gerçek sayıdır.
+  for (const key of ["issued_value", "total_value", "item_count", "lines_without_price"]) {
+    expect(body.kpis).toHaveProperty(key);
+    expect(body.kpis[key]).not.toBeNull();
+  }
+  // Fiyatsız satır (it-8) `sec-1`e atfedilmiştir → eksiklik dürüstçe bildirilir.
+  expect(body.kpis.lines_without_price).toBeGreaterThan(0);
+});
+
+test("görünmeyen/olmayan bölüm AYNI 404 gövdesini alır", async ({ page }) => {
+  await login(page);
+  const response = await page.request.get(
+    "/api/backend/sections/00000000-0000-0000-0000-000000000000/stock",
+  );
+  expect(response.status()).toBe(404);
+});
+
+test("transfer + bölüm atfı gövdesi SUNUCUDA reddedilir (422)", async ({ page }) => {
+  await login(page);
+  // 🔴 Form bu gövdeyi ÜRETEMEZ (üç katmanlı yapısal engel) — bu test
+  // SUNUCUNUN da reddettiğini kanıtlar, yani ikiz bir ONAYLAYICI değildir.
+  const response = await page.request.post("/api/backend/stock/entries", {
+    data: {
+      entry_type: "transfer",
+      entry_date: "2026-08-12",
+      warehouse_id: "wh-1",
+      source_warehouse_id: "wh-2",
+      lines: [{ item_id: "it-1", quantity: "1.000", quality: "ok", section_id: "sec-1" }],
+    },
+  });
+  expect(response.status()).toBe(422);
+  expect((await response.json()).detail).toContain("transfer hareketinde verilmez");
+});
+
+test("deposunun şantiyesine ait olmayan bölüme atıf 422 alır (fail-closed çapa)", async ({
+  page,
+}) => {
+  await login(page);
+  // ⚠️ Yön TERSTEN kurulur: fikstürde s-2'nin BÖLÜMÜ yoktur (ölçüldü — üç
+  // bölümün üçü de s-1'dedir; s-2 bölümlerini `section-form.spec` KOŞU
+  // SIRASINDA yaratır ve ona bağlanmak paylaşılan fikstüre bağımlılık olurdu).
+  // Bunun yerine BAŞKA ŞANTİYENİN DEPOSU seçilir: `wh-3` s-2'nindir, `sec-1`
+  // s-1'in bölümüdür — aynı çapa, deterministik fikstürle.
+  const response = await page.request.post("/api/backend/stock/entries", {
+    data: {
+      entry_type: "purchase",
+      entry_date: "2026-08-12",
+      warehouse_id: "wh-3",
+      lines: [{ item_id: "it-1", quantity: "1.000", quality: "ok", section_id: "sec-1" }],
+    },
+  });
+  expect(response.status()).toBe(422);
+  expect((await response.json()).detail).toContain("şantiyesine ait değil");
+});
+
+test("olmayan bölüme atıf 404 alır (gövde içi VARLIK referansı)", async ({ page }) => {
+  await login(page);
+  const response = await page.request.post("/api/backend/stock/entries", {
+    data: {
+      entry_type: "purchase",
+      entry_date: "2026-08-12",
+      warehouse_id: "wh-1",
+      lines: [
+        {
+          item_id: "it-1",
+          quantity: "1.000",
+          quality: "ok",
+          section_id: "00000000-0000-0000-0000-000000000000",
+        },
+      ],
+    },
+  });
+  expect(response.status()).toBe(404);
+});

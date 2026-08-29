@@ -60,7 +60,7 @@ function line(overrides: Partial<PayrollLineResponse> = {}): PayrollLineResponse
     personnel_id: "p-1",
     personnel_name: "Ayşe Demir", // BY:134
     personnel_source: "company",
-    days: 21, // BY:138
+    days: "21", // BY:138
     gross_amount: "37800.00", // BY:139
     deduction_amount: "11262.00", // BY:140
     net_amount: "26538.00", // BY:141 — 37.800 − 11.262 ✓
@@ -86,7 +86,7 @@ const SUBCONTRACTOR_LINE = line({
   personnel_id: "p-2",
   personnel_name: "Mehmet Yılmaz", // BY:182
   personnel_source: "subcontractor",
-  days: 22,
+  days: "22",
   gross_amount: "26400.00", // BY:187
   deduction_amount: "7064.00", // BY:188
   net_amount: "19336.00", // BY:189 — 26.400 − 7.064 ✓

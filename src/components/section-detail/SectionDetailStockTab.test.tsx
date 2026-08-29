@@ -10,6 +10,7 @@ import { useBoq } from "@/lib/api/hooks/useBoq";
 import { useSession } from "@/components/shell/SessionProvider";
 import { useTimesheetData } from "@/components/timesheet/useTimesheetData";
 import { buildTimesheetView } from "@/components/timesheet/derive";
+import { useSectionStock } from "@/lib/api/hooks/useSectionStock";
 import { useSiteDiaryEntries } from "@/lib/api/hooks/useSiteDiary";
 import { useSiteSubcontractorPayments } from "@/lib/api/hooks/useSiteSubcontractorPayments";
 
@@ -17,10 +18,13 @@ import { useSiteSubcontractorPayments } from "@/lib/api/hooks/useSiteSubcontract
 // AYRI dosyadır: `SectionDetailView.test.tsx` 775 satırla 800 tavanındadır.
 //
 // 🔑 BU DOSYANIN ASIL İŞİ: kullanıcının şikâyeti üç sekmenin AYNI GÖRÜNMESİYDİ
-// (T1/T2 öncesi hepsi jenerik `CardEmptyState` basıyordu). T1/T2 ikisini
-// canlıya aldı; Malzeme BİLİNÇLİ OLARAK pending kaldı (stok hareketi kaydı
-// bölüm alanı taşımıyor — ölçüldü, `inventory/` SIFIR isabet). Bu dosya
+// (T1/T2 öncesi hepsi jenerik `CardEmptyState` basıyordu). Bu dosya
 // FARKLILAŞMA bekçisini taşır: üçü de basıldığında metinleri PAYLAŞMAMALI.
+//
+// 🔴 STOK-BOLUM (2026-08-29): Malzeme ARTIK PENDING DEĞİL. Eski "genuine
+// pending" iddiası bir ÖLÇÜME dayanıyordu (`inventory/` SIFIR `section_id`
+// isabeti) ve o ölçüm backend `186ffe9` ile ÇÜRÜDÜ. İddia silinmedi, YENİ
+// GERÇEĞE taşındı ve TERSİNE çevrildi (eski gerekçe geri gelirse KIRMIZI).
 
 vi.mock("@/lib/api/hooks/useSection", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useSection")>()),
@@ -33,6 +37,10 @@ vi.mock("@/lib/api/hooks/useSites", async (importOriginal) => ({
 vi.mock("@/lib/api/hooks/useBoq", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useBoq")>()),
   useBoq: vi.fn(),
+}));
+vi.mock("@/lib/api/hooks/useSectionStock", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useSectionStock")>()),
+  useSectionStock: vi.fn(),
 }));
 vi.mock("@/lib/api/hooks/useSiteDiary", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useSiteDiary")>()),
@@ -101,6 +109,38 @@ function mockAll() {
     error: null,
   } as never);
   vi.mocked(useBoq).mockReturnValue({ data: undefined, isLoading: true, isError: false, error: null } as never);
+  vi.mocked(useSectionStock).mockReturnValue({
+    data: {
+      items: [
+        {
+          item_id: "it-1",
+          code: "DMR-0421",
+          name: "Nervürlü Demir Ø12",
+          category: "steel",
+          unit: "Ton",
+          boq_item_id: "bi-4",
+          boq_code: "02.002",
+          boq_description: "Demir Donatı",
+          assigned_quantity: "10.000",
+          issued_quantity: "4.000",
+          net_quantity: "6.000",
+          total_value: "320000.00",
+        },
+      ],
+      total: 1,
+      limit: 200,
+      offset: 0,
+      kpis: {
+        issued_value: "128000.00",
+        total_value: "320000.00",
+        item_count: 1,
+        lines_without_price: 0,
+      },
+    },
+    isLoading: false,
+    isError: false,
+    error: null,
+  } as never);
   vi.mocked(useTimesheetData).mockImplementation((input) => ({
     view: buildTimesheetView({
       year: input.period.year,
@@ -159,24 +199,35 @@ describe("SectionDetailView — Malzeme sekmesi (F-BLMSEK T3)", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("sekme hâlâ GENUINE pending — section_stock gerekçesi basılır", async () => {
+  // 🔴 TERS BEKÇİ — eski pending gerekçesi geri gelirse KIRMIZI.
+  it("sekme ARTIK PENDING DEGIL - eski gerekce basilmaz, GERCEK veri basilir", async () => {
     mockAll();
     renderView();
     const panel = await openTab("Malzeme");
 
     expect(
-      within(panel).getByText(/Stok hareketi bölüm alanı taşımıyor/),
-    ).toBeInTheDocument();
+      within(panel).queryByText(/Stok hareketi bölüm alanı taşımıyor/),
+    ).not.toBeInTheDocument();
+    // POZİTİF YÜZ: gerçek satır GERÇEKTEN basılıyor (yokluk iddiası tek başına
+    // panel hiç render edilmese de yeşil kalırdı).
+    expect(within(panel).getByTestId("section-stock-row-DMR-0421")).toBeInTheDocument();
+    expect(within(panel).getByTestId("section-stock-issued-DMR-0421")).toHaveTextContent(
+      "4 Ton",
+    );
   });
 
-  it("şantiye stok ekranına giden bağlantı basılır, bölüm süzgeci TAŞIMAZ", async () => {
+  // 🔴 SEKMENİN bağlantısı süzgeci TAŞIR (alt karttaki "Tümü →"nün AKSİNE):
+  // sekmenin cümlesi zaten "bu bölümün malzemesi"dir.
+  it("santiye stok baglantisi bolum suzgecini TASIR", async () => {
     mockAll();
     renderView();
     const panel = await openTab("Malzeme");
 
     const link = within(panel).getByRole("link", { name: /stok/i });
-    expect(link).toHaveAttribute("href", `/projeler/${PROJECT_ID}/santiyeler/${SITE_ID}/stok`);
-    expect(link.getAttribute("href")).not.toContain("?section=");
+    expect(link).toHaveAttribute(
+      "href",
+      `/projeler/${PROJECT_ID}/santiyeler/${SITE_ID}/stok?section=${SECTION_ID}`,
+    );
   });
 
   // 🔴 BU TESTİN ASIL AMACI: kullanıcının şikâyetinin regresyon bekçisi.
@@ -199,16 +250,21 @@ describe("SectionDetailView — Malzeme sekmesi (F-BLMSEK T3)", () => {
     expect(stockText).not.toBe(diaryText);
     expect(paymentsText).not.toBe(diaryText);
 
-    // Yalnız Malzeme pending gerekçesi taşır — canlı iki sekme MODÜL/SEKME
-    // düzeyinde gerekçe BASMAZ. (Hakediş panelinin KAPSAM satırı — "İşveren
-    // hakedişi bölüme kırılmıyor" — AYRI ve MEŞRU bir alan iddiasıdır, o
-    // yüzden burada geniş bir "kırılmıyor" testi YAPILMAZ; ölü şablon
-    // ifadeleri ADIYLA aranır.)
-    expect(stockText).toMatch(/Stok hareketi bölüm alanı taşımıyor/);
+    // 🔴 STOK-BOLUM — ÜÇÜNÜN DE gerekçesi kalktı: üçü de GERÇEK veri basıyor.
+    // Eski hâlde bu blok "yalnız Malzeme pending gerekçesi taşır" diyordu; o
+    // iddia artık bir YALAN olurdu. Ölü şablon ifadeleri ADIYLA aranır ve
+    // ÜÇÜNDE DE bulunmamalıdır (biri geri gelirse KIRMIZI).
+    expect(stockText).not.toMatch(/Stok hareketi bölüm alanı taşımıyor/);
     expect(paymentsText).not.toMatch(/Stok hareketi bölüm alanı taşımıyor/);
     expect(diaryText).not.toMatch(/Stok hareketi bölüm alanı taşımıyor/);
     expect(paymentsText).not.toMatch(/Hakediş bu bölüme henüz kırılmıyor/);
     expect(diaryText).not.toMatch(/bu bölüme henüz kırılmıyor/);
+
+    // POZİTİF YÜZ — farklılığın kaynağı BOŞLUK değil İÇERİKTİR: Malzeme paneli
+    // gerçekten kendi tablosunu basıyor. Bu olmadan üç panel de boş olsa bile
+    // yukarıdaki "farklı" iddiaları (başlıklar farklı olduğu için) yeşil kalırdı.
+    expect(stockText).toMatch(/Stok Hareketleri/);
+    expect(stockText).toMatch(/Sarf/);
 
     // Jenerik şablon HİÇBİRİNDE basılmaz.
     expect(stockText).not.toMatch(/— bu bölümde henüz görüntülenemiyor/);
