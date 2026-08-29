@@ -162,12 +162,12 @@ beforeEach(() => {
 });
 
 function renderCreate() {
-  return render(<SectionForm mode="create" projectId={PROJECT_ID} siteId={SITE_ID} />);
+  return render(<SectionForm mode="create" projectKey={PROJECT_ID} siteKey={SITE_ID} />);
 }
 
 function renderEdit() {
   vi.mocked(useSection).mockReturnValue(queryResult({ data: SECTION_DETAIL }));
-  return render(<SectionForm mode="edit" projectId={PROJECT_ID} siteId={SITE_ID} sectionId={SECTION_ID} />);
+  return render(<SectionForm mode="edit" projectKey={PROJECT_ID} siteKey={SITE_ID} sectionKey={SECTION_ID} />);
 }
 
 describe("SectionForm — izin", () => {
@@ -434,7 +434,7 @@ describe("SectionForm — edit kipi", () => {
     vi.mocked(useSection).mockReturnValue(
       queryResult({ data: undefined, isLoading: false, isError: true, error: new Error("500") }),
     );
-    render(<SectionForm mode="edit" projectId={PROJECT_ID} siteId={SITE_ID} sectionId={SECTION_ID} />);
+    render(<SectionForm mode="edit" projectKey={PROJECT_ID} siteKey={SITE_ID} sectionKey={SECTION_ID} />);
 
     expect(screen.getByText("Bölüm yüklenemedi")).toBeInTheDocument();
     expect(screen.queryByText("Yükleniyor…")).not.toBeInTheDocument();
@@ -451,7 +451,7 @@ describe("SectionForm — edit kipi", () => {
         data: { ...(SECTION_DETAIL as Record<string, unknown>), manager_user_id: null, manager_name: "M. Arslan" },
       }),
     );
-    render(<SectionForm mode="edit" projectId={PROJECT_ID} siteId={SITE_ID} sectionId={SECTION_ID} />);
+    render(<SectionForm mode="edit" projectKey={PROJECT_ID} siteKey={SITE_ID} sectionKey={SECTION_ID} />);
 
     await clickFooterAction(user, "Kaydet");
 

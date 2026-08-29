@@ -26,10 +26,45 @@
  * project.id` geçirir, üretici aynı kalır. Eski UUID linklerinin çalışmaya
  * devam etmesi ise ÜRETİCİNİN değil ÇÖZÜCÜNÜN (sayfa/backend) işidir —
  * bu modül kimliği yorumlamaz, yalnız güvenle kodlar.
+ *
+ * ─── 🔴 KURAL: YOL SEGMENTİ OKUNUR ANAHTAR, SORGU PARAMETRESİ UUID ────────
+ * URL-3 bu ayrımı BİLEREK ve AÇIKÇA koyar; "karma URL" bir kaza değil, yazılı
+ * bir karardır. Gerekçe ÖLÇÜLDÜ:
+ *
+ * 1. Slug'ı kabul eden uç YALNIZ ÜÇTÜR (`GET /projects|sites|sections/{key}`).
+ *    Kalan 42 yol/sorgu parametresi UUID BEKLER. Sorgu parametreleri bu
+ *    depoda tam olarak o uçlara BESLENİR (`?section=` → `section_id`,
+ *    `?site=` → `site_id`, `?project_id=` → `project_id`); slug'a
+ *    çevrilselerdi ekran 422 alırdı.
+ * 2. Sorgu parametrelerini DOLDURAN seçicinin kaynağı `GET /sites`tir
+ *    (`SiteOptionListResponse`) ve o şemada `slug` alanı HİÇ YOKTUR — seçici
+ *    slug'ı ÜRETEMEZ. Yarım bir göç yerine kural yazıldı.
+ *
+ * Yani: `/projeler/<slug>/santiyeler/<slug>` ama `?section=<uuid>`. Kullanıcı
+ * ADRESİ okur; sorgu dizesi makine anahtarıdır. Bu kuralı değiştirmek
+ * `SiteOptionListResponse`e slug eklenmesini (BACKEND işi) gerektirir —
+ * URL-3'ün kapsamı DIŞINDA, borç olarak kayıtlıdır.
  */
 
 /** URL'ye giren kaynak kimliği — bugün UUID, yarın slug; ikisi de `string`. */
 export type RouteId = string;
+
+/**
+ * URL-3 · Bir kaydın URL'de taşınacak anahtarı: **`slug ?? id`**.
+ *
+ * 🔴 `slug` SÖZLEŞMEDE HEM OPSİYONEL HEM NULLABLE'dır (`slug?: string | null`
+ * — yedi şemanın yedisinde de). `slug!` yazmak ya da `slug` varmış gibi
+ * davranmak CANLIDA BOZUK LİNK üretir: adı slug'lanamayan kayıt (`null`)
+ * yalnız kimliğiyle yaşar. Bu yardımcı o düşüşü TEK yerde yapar, yoksa
+ * `?? id` ellinin üstünde çağrı noktasında tekrarlanır ve biri unutulduğunda
+ * kusur ancak kullanıcı tıklayınca görülür.
+ *
+ * ⚠️ NE DEĞİLDİR: bu bir çözücü DEĞİLDİR. Anahtarı ÜRETİR; onu geri kayda
+ * çevirmek okuma ucunun işidir (üç uç UUID'yi de slug'ı da kabul eder).
+ */
+export function routeKeyOf(entity: { id: string; slug?: string | null }): RouteId {
+  return entity.slug ?? entity.id;
+}
 
 /**
  * `?donus=` — kayıt sonrası dönülecek uygulama içi yolun sorgu anahtarı.

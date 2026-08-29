@@ -3620,7 +3620,23 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Project Endpoint */
+        /**
+         * Get Project Endpoint
+         * @description URL-2 — yol parametresi UUID **ya da** slug kabul eder (karar 2).
+         *
+         *     🔴 YOL ADI `project_id` OLARAK KALIR: yolun sablonu (`/projects/{project_id}`)
+         *     degismezse uretilmis istemcinin yol anahtari de degismez. Degisen tek sey
+         *     parametrenin TIPIDIR (`uuid` -> `string`) — sozlesme farkinda gorulecek
+         *     sey budur.
+         *
+         *     🔴 YAN ETKI: eskiden UUID olmayan bir deger 422 (`uuid_parsing`) alirdi,
+         *     artik 404 alir. Bu KACINILMAZDIR — slug uzayi tam olarak "UUID olmayan
+         *     metinler"dir; ikisi ayni yol parametresinde birlikte yasayamaz.
+         *
+         *     PATCH ucu BILEREK `uuid.UUID` KALIR: karar 2 "OKUMA uclari" der. Yazmanin
+         *     kimligi, okumanin dondurdugu `id`den gelir; yazma yuzeyini tahmin edilebilir
+         *     bir anahtara acmak icin sebep YOKTUR.
+         */
         get: operations["get_project_endpoint_projects__project_id__get"];
         put?: never;
         post?: never;
@@ -5006,7 +5022,17 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Site Endpoint */
+        /**
+         * Get Site Endpoint
+         * @description URL-2 — yol parametresi UUID **ya da** slug (karar 2).
+         *
+         *     `project` KAPSAM suzgecidir ve yalniz slug yolunda anlamlidir: `sites.slug`
+         *     PROJE ICINDE tekildir, bu uc ise DUZDUR (yolda proje yok). Frontend URL'i
+         *     (`/projeler/<p>/santiyeler/<s>`) nested oldugu icin bunu her zaman
+         *     verebilir. Verilmezse cozumleme gorunur kume icinde TEK ADAY sartina
+         *     baglidir — belirsizlik 404'tur (fail-closed), rastgele secim YOKTUR.
+         *     Ayrinti: `_visible_site` docstring'i.
+         */
         get: operations["get_site_endpoint_sites__site_id__get"];
         put?: never;
         post?: never;
@@ -8243,7 +8269,7 @@ export interface components {
             /** Projects */
             projects: components["schemas"]["DashboardProjectCard"][];
             receivables: components["schemas"]["MetricPlaceholder"];
-            risks: components["schemas"]["ListPlaceholder"];
+            risks: components["schemas"]["RiskAlertsPlaceholder"];
             /** Role Name */
             role_name: string;
         };
@@ -13295,6 +13321,8 @@ export interface components {
             project_type: components["schemas"]["ProjectType"];
             /** Site Count */
             site_count: number;
+            /** Slug */
+            slug?: string | null;
             /** Start Date */
             start_date: string | null;
             status: components["schemas"]["ProjectStatus"];
@@ -13367,6 +13395,8 @@ export interface components {
             /** Progress Pct */
             progress_pct: string;
             project_type: components["schemas"]["ProjectType"];
+            /** Slug */
+            slug?: string | null;
             /** Start Date */
             start_date: string | null;
             status: components["schemas"]["ProjectStatus"];
@@ -14556,6 +14586,111 @@ export interface components {
             /** Expired Count */
             expired_count: number;
         };
+        /**
+         * RiskAlert
+         * @description Kartin TEK satiri — mockup'in her satirinda UC olgu vardir.
+         *
+         *     `title` ust satir (`13px`), `detail` alt satir (`11px`), `severity` sol
+         *     seridin rengi. `items: list[str]` bunlarin YALNIZ BIRINI tasiyabiliyordu; uc
+         *     olguyu tek metne yapistirmak, ekranin ayristirmak zorunda kalacagi bir sunum
+         *     kararini sunucuda uretmek olurdu (K10, `_pending_approvals` notunun emsali).
+         *
+         *     🔴 `module` var, `link` YOK ve bu bilinclidir. Emir bir `baglanti?` alani
+         *     onerdi; ISTEMCI ROTASI SUNUCUDA URETILMEZ — bir URL ("/stok") frontend'in
+         *     yonlendirme haritasini backend'e kopyalardi ve rota degistigi gun panel
+         *     sessizce olu baglanti basardi. Bunun yerine satir KAYNAK MODULUNU tasir;
+         *     hangi ekrana gidilecegi istemcinin karari kalir.
+         */
+        RiskAlert: {
+            /** Detail */
+            detail: string;
+            /** Module */
+            module: string;
+            severity: components["schemas"]["RiskSeverity"];
+            /** Title */
+            title: string;
+        };
+        /**
+         * RiskAlertsPlaceholder
+         * @description "Risk & Uyarilar" kartinin zarfi.
+         *
+         *     🔴 ZARF SINIFI OLCULDU: bu kart NE `MetricPlaceholder` NE `CountPlaceholder`
+         *     ailesine girer, cunku ikisi de TEK KAYNAKLI bir alani tarifler ve tri-state
+         *     bilgisini TEK bir `pending_module` stringine sikistirir. Bu kartin UC AYRI
+         *     kaynagi ve UC AYRI izin kapisi vardir; tek bir anahtar kartin ancak UCTE
+         *     BIRINI adlandirabilirdi — servis docstring'inin 2. kusuru tam olarak buydu
+         *     (`_RISKS_MODULE = "inventory"` yalnizca ilk satiri besliyordu).
+         *
+         *     Bu yuzden tri-state KARTTAN KAYNAGA TASINDI: her kaynak kendi modulunu ve
+         *     kendi durumunu bildirir (`sources`), kart ise yalnizca "en az bir kaynak
+         *     konustu mu" bilgisini tasir. `pending_module` alani BU ZARFTA YOKTUR —
+         *     bugun uc kaynagin ucu de BAGLIDIR, yani "modul henuz yazilmadi" hâli
+         *     URETILEMEZ; uretilemeyen bir hâli semada tasimak `available:false`in
+         *     sebebini yeniden belirsizlestirirdi (ILR-1/2'nin duzelttigi kusurun
+         *     aynisi).
+         *
+         *     🔴 BOS LISTE "RISK YOK" DEMEK DEGILDIR — ve bu zarfta oyle olmasi
+         *     SAGLANMISTIR: esigi girilmemis (`min_stock IS NULL`) kalemler AYRI bir
+         *     `warning` satiriyla sayilir (`risks._stock_alerts`). Yani
+         *     `items == []` yalnizca "bilinen uyari yok VE bilinmeyen esik yok" hâlinde
+         *     dogar. Emsal `inventory`nin `items_without_price` sayacidir: fiyatsiz kalem
+         *     sessizce 0 sayilmaz, AYRICA raporlanir.
+         */
+        RiskAlertsPlaceholder: {
+            /**
+             * Available
+             * @default false
+             */
+            available: boolean;
+            /** Items */
+            items?: components["schemas"]["RiskAlert"][];
+            /** Sources */
+            sources?: components["schemas"]["RiskSource"][];
+        };
+        /**
+         * RiskSeverity
+         * @description Uyari satirinin SIDDETI — mockup'in UC seridinden OLCULDU.
+         *
+         *     🔴 Kartin adi ("Risk & Uyarilar") icerigini KISMEN YALANLIYOR: ucuncu satir
+         *     bir risk DEGIL, IYI HABERDIR. Kart aslinda SIDDET ETIKETLI BIR UYARI
+         *     AKISIDIR; bu yuzden siddet bir alan olarak tasinir ve `success` gercek bir
+         *     uyedir, suslemesi degil.
+         *
+         *     Renkler `Ekran 1 - Gosterge Paneli.dc.html:378-395`ten BIREBIR okundu — emir
+         *     metnindeki esleme TERSTI ve olcum onu curuttu:
+         *       * `#f59e0b` (kehribar) -> "Stok kritik seviyede"  => `warning`
+         *       * `#ef4444` (kirmizi)  -> "Hakedis gecikmis"      => `danger`
+         *       * `#22c55e` (yesil)    -> "Hedef asildi"          => `success`
+         *
+         *     🔴 RENK DEGERI SUNUCUDA URETILMEZ (K10): burada donen sey ANLAMDIR, sinif
+         *     adi ya da hex degil. Renk/rozet karari istemcinindir — HZ-1'in "aciliyet
+         *     rozeti sunucuda uretilmez" kanonunun aynisi.
+         * @enum {string}
+         */
+        RiskSeverity: "danger" | "warning" | "success";
+        /**
+         * RiskSource
+         * @description Kartin UC kaynagindan biri ve o aktor icin durumu.
+         */
+        RiskSource: {
+            /** Module */
+            module: string;
+            state: components["schemas"]["RiskSourceState"];
+        };
+        /**
+         * RiskSourceState
+         * @description Bir KAYNAGIN o aktor icin durumu.
+         *
+         *     `ok` — izin var, kaynak sorgulandi (satir cikmamis olabilir; bu OTORITER
+         *     bir "o kaynakta uyari yok"tur).
+         *     `restricted` — 🔴 ROLUN IZNI YOK (ILR-1/2 ucuncu hâli). Kart KAPANMAZ,
+         *     yalnizca O KAYNAK susar: `inventory` gormeyen `accounting` stok satirlarini
+         *     gormez ama hakedis satirlarini GORUR (ILR kanonu: "izni olana veriyi ver,
+         *     olmayana `restricted()` dondur — kartin tamamini herkese kapatmak gereksiz
+         *     genistir").
+         * @enum {string}
+         */
+        RiskSourceState: "ok" | "restricted";
         /** RoleCreate */
         RoleCreate: {
             /**
@@ -14868,6 +15003,8 @@ export interface components {
              * Format: uuid
              */
             site_id: string;
+            /** Slug */
+            slug?: string | null;
             /** Sort Order */
             sort_order: number;
             /** Start Date */
@@ -14967,6 +15104,8 @@ export interface components {
             /** Planned Worker Count */
             planned_worker_count: number | null;
             progress_pct: components["schemas"]["MetricPlaceholder"];
+            /** Slug */
+            slug?: string | null;
             /** Sort Order */
             sort_order: number;
             /** Start Date */
@@ -15255,6 +15394,8 @@ export interface components {
             site_manager_name: string | null;
             /** Site Manager User Id */
             site_manager_user_id: string | null;
+            /** Slug */
+            slug?: string | null;
             /** Start Date */
             start_date: string | null;
             status: components["schemas"]["SiteStatus"];
@@ -15401,6 +15542,8 @@ export interface components {
             site_manager_name: string | null;
             /** Site Manager User Id */
             site_manager_user_id: string | null;
+            /** Slug */
+            slug?: string | null;
             /** Start Date */
             start_date: string | null;
             status: components["schemas"]["SiteStatus"];
@@ -16334,6 +16477,8 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /** Slug */
+            slug?: string | null;
         };
         /**
          * SiteSectionInput
@@ -31920,7 +32065,10 @@ export interface operations {
     };
     get_section_endpoint_sections__section_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                site?: string | null;
+                project?: string | null;
+            };
             header?: never;
             path: {
                 section_id: string;
@@ -32313,7 +32461,9 @@ export interface operations {
     };
     get_site_endpoint_sites__site_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                project?: string | null;
+            };
             header?: never;
             path: {
                 site_id: string;

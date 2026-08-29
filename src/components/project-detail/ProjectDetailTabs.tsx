@@ -4,8 +4,27 @@ import type { ProjectType } from "@/lib/api/hooks/useProjects";
 import { employerContractTabHref } from "../contracts/employer-contract-tabs";
 import { routes } from "@/lib/routes";
 
-export interface ProjectDetailTabsProps {
+/**
+ * URL-3 · Sekme şeridinin İKİ ayrı proje anahtarına ihtiyacı vardır ve bunları
+ * birbirine karıştırmak SESSİZ iki kusur üretir:
+ *
+ *  · `projectKey` — YOL segmentine giren okunur anahtar (`slug ?? id`).
+ *    🔴 Aktif sekme `activePath === href` ile TAM DİZE karşılaştırmasıdır:
+ *    href slug'la, adres çubuğu UUID'yle kurulursa hiçbir sekme aktif
+ *    görünmez. Bu yüzden burada ADRESTEKİ anahtar taşınır, kaydın slug'ı değil.
+ *  · `projectId` — kanonik UUID. Üç sekme (İşveren/Taşeron Hakediş, Belgeler)
+ *    ve İş Kalemleri hedefi SORGU parametresi kurar (`?project_id=`, `?proje=`)
+ *    ve o değer UUID bekleyen uçlara BESLENİR. Oraya slug verilseydi hedef
+ *    ekran boş liste ya da 422 gösterirdi (`routes.ts` YOL/SORGU kuralı).
+ */
+export interface ProjectTabKeys {
+  /** Adres çubuğundaki anahtar — yol segmentleri ve aktif sekme eşleşmesi. */
+  projectKey: string;
+  /** Kanonik UUID — sorgu parametresi kuran sekmeler. */
   projectId: string;
+}
+
+export interface ProjectDetailTabsProps extends ProjectTabKeys {
   /** Aktif yol dışarıdan verilir; bileşen routing hook'u çağırmaz. */
   activePath: string;
   /**
@@ -44,7 +63,7 @@ interface TabDef {
    * silinmez, devre-dışı + görünür gerekçeyle basılır); mekanizma o gün
    * geri yazılır ve o gün BEKÇİSİ de olur.
    */
-  hrefFor: (projectId: string) => string;
+  hrefFor: (keys: ProjectTabKeys) => string;
   /**
    * İsteğe bağlı açıklama (`title`). Mockup'ta olmayan GÖRÜNÜR metin
    * eklenmez; `title` ise zaten kullanılan bir mekanizmadır
@@ -105,7 +124,8 @@ export const projectAllocationHref = (projectId: string) =>
 const TABS: TabDef[] = [
   {
     label: "Şantiyeler",
-    hrefFor: (id) => routes.projects.detail({ projectId: id }),
+    // YOL sekmesi — adresteki anahtar taşınır (aktif sekme eşleşmesi).
+    hrefFor: ({ projectKey }) => routes.projects.detail({ projectId: projectKey }),
   },
   // 🔴 F-PKK K1 · "Proje Özeti" — İKİ mockup, TEK rota. Ekran proje türüne
   // göre KY (`Proje - Kendi Yatırım`) ya da KK (`Proje - Kat Karşılığı`)
@@ -116,7 +136,7 @@ const TABS: TabDef[] = [
   {
     label: "Proje Özeti",
     types: ["kendi_yatirim", "kat_karsiligi"],
-    hrefFor: projectSummaryHref,
+    hrefFor: ({ projectKey }) => projectSummaryHref(projectKey),
   },
   // 🔴 F-PKK K1 · "Paylaşım Tablosu" (`Kat Karşılığı - Paylaşım`) YALNIZ kat
   // karşılığında. Öteki türlerde `GET /projects/{id}/land-share/summary`
@@ -125,7 +145,7 @@ const TABS: TabDef[] = [
   {
     label: "Paylaşım Tablosu",
     types: ["kat_karsiligi"],
-    hrefFor: projectAllocationHref,
+    hrefFor: ({ projectKey }) => projectAllocationHref(projectKey),
   },
   // 🔴 F-PRJKALEM · href ELLE YAZILMAZ: kanonik kurucu `employerContractTabHref`
   // kullanılır. Dize burada da yazılsaydı, sözleşme sekmelerinin param adı ya da
@@ -133,24 +153,26 @@ const TABS: TabDef[] = [
   // gerekçeyle `projectSummaryHref`/`projectAllocationHref` de tek yerde durur.
   {
     label: "İş Kalemleri",
-    hrefFor: (id) => employerContractTabHref(id, "items"),
+    // SORGU kuran hedef — kanonik UUID (bkz. `ProjectTabKeys`).
+    hrefFor: ({ projectId }) => employerContractTabHref(projectId, "items"),
     title: WORK_ITEMS_TAB_TITLE,
   },
   {
     label: "İşveren Hakediş",
-    hrefFor: (id) => routes.progressPayments.list({ projectId: id }),
+    hrefFor: ({ projectId }) => routes.progressPayments.list({ projectId }),
   },
   {
     label: "Taşeron Hakediş",
-    hrefFor: (id) => routes.progressPayments.subcontractor.list({ projectId: id }),
+    hrefFor: ({ projectId }) => routes.progressPayments.subcontractor.list({ projectId }),
   },
   {
     label: "Belgeler",
-    hrefFor: (id) => routes.documents({ projectId: id }),
+    hrefFor: ({ projectId }) => routes.documents({ projectId }),
   },
 ];
 
 export function ProjectDetailTabs({
+  projectKey,
   projectId,
   activePath,
   projectType,
@@ -160,7 +182,7 @@ export function ProjectDetailTabs({
   return (
     <div className="project-hero__tabs" role="tablist" aria-label="Proje detay sekmeleri">
       {visibleTabs.map((tab) => {
-        const href = tab.hrefFor(projectId);
+        const href = tab.hrefFor({ projectKey, projectId });
         // ⚠️ `activePath` `usePathname()`ten gelir ve QUERY TAŞIMAZ; query
         // içeren href'ler (Belgeler, İşveren/Taşeron Hakediş ve artık İş
         // Kalemleri) burada hiç eşleşmez. Bu MEVCUT ve KABUL EDİLMİŞ desendir:

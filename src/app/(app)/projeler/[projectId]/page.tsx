@@ -17,10 +17,10 @@ import { routes } from "@/lib/routes";
 // "+ Şantiye Ekle" eylemi hem ust bardaki butonda hem bos durum icinde
 // gorunur (spec §7.4); ikisi de AYNI tam sayfa forma gider (§2.3) — modal
 // kaldirildi. `project-detail__add-btn` sinifi KORUNUR: gorsel stil degismez.
-function AddSiteLink({ projectId, className }: { projectId: string; className?: string }) {
+function AddSiteLink({ projectKey, className }: { projectKey: string; className?: string }) {
   return (
     <Link
-      href={routes.projects.sites.new({ projectId })}
+      href={routes.projects.sites.new({ projectId: projectKey })}
       className={cx("project-detail__add-btn", className)}
     >
       + Şantiye Ekle
@@ -33,10 +33,10 @@ function AddSiteLink({ projectId, className }: { projectId: string; className?: 
 // sonsuza kadar "Yükleniyor…" gösteriyordu). Şantiye Detay'daki sıralamanın
 // aynısı: 403 → erişim reddi, diğer hatalar → dürüst hata metni, yükleniyor.
 function SiteListSection({
-  projectId,
+  projectKey,
   sitesQuery,
 }: {
-  projectId: string;
+  projectKey: string;
   sitesQuery: ReturnType<typeof useSites>;
 }) {
   if (isForbidden(sitesQuery.error)) return <AccessDenied />;
@@ -50,7 +50,7 @@ function SiteListSection({
   return (
     <div className="project-detail__site-grid" data-testid="site-list-grid">
       {sitesQuery.data.items.map((site) => (
-        <SiteCard key={site.id} projectId={projectId} site={site} />
+        <SiteCard key={site.id} projectKey={projectKey} site={site} />
       ))}
     </div>
   );
@@ -61,8 +61,16 @@ function SiteListSection({
 // modali T11'de KALDIRILDI — iki "+ Şantiye Ekle" de tam sayfa forma gider.
 export default function ProjectDetailPage() {
   const pathname = usePathname();
-  const { projectId } = useParams<{ projectId: string }>();
-  const projectQuery = useProject(projectId);
+  // 🔴 URL-3 · rota parametresi artik "slug VEYA UUID"dur (kullanicinin
+  // gordugu degisiklik: `/projeler/kopru-guclendirme`). Eski UUID linkleri de
+  // AYNEN calisir — uc okuma ucu ikisini de kabul eder, yonlendirme YOK.
+  const { projectId: projectKey } = useParams<{ projectId: string }>();
+  const projectQuery = useProject(projectKey);
+  // 🔴 SLUG -> KANONIK KIMLIK GECIS NOKTASI. `GET /projects/{project_id}/sites`
+  // UUID BEKLER (slug kabul eden yalniz UC uc var); anahtari dogrudan
+  // gecirmek slug'li URL'de bu listeyi 422/404'e dusururdu. Bos id ile aga
+  // cikilmaz — `sitesQueryOptions` kendi `enabled` kapisini tasir.
+  const projectId = projectQuery.data?.id ?? "";
   const sitesQuery = useSites(projectId);
 
   if (isForbidden(projectQuery.error)) return <AccessDenied />;
@@ -77,18 +85,18 @@ export default function ProjectDetailPage() {
 
   return (
     <div className="project-detail">
-      <ProjectHeroBar project={project} activePath={pathname} />
+      <ProjectHeroBar project={project} projectKey={projectKey} activePath={pathname} />
       <div className="project-detail__section-head">
         <h2 className="project-detail__section-title">Şantiyeler ({project.site_count})</h2>
-        <AddSiteLink projectId={projectId} />
+        <AddSiteLink projectKey={projectKey} />
       </div>
       {project.site_count === 0 ? (
         <div className="project-detail__empty">
           <p>Bu projede henüz şantiye yok.</p>
-          <AddSiteLink projectId={projectId} className="project-detail__empty-action" />
+          <AddSiteLink projectKey={projectKey} className="project-detail__empty-action" />
         </div>
       ) : (
-        <SiteListSection projectId={projectId} sitesQuery={sitesQuery} />
+        <SiteListSection projectKey={projectKey} sitesQuery={sitesQuery} />
       )}
       {sitesQuery.data && <SiteTotalsStrip totals={sitesQuery.data.totals} />}
     </div>

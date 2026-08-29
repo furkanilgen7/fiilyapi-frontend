@@ -20,8 +20,18 @@ const REALIZED_AMOUNT_PENDING_MODULE = "progress_payments";
 export interface SectionHeroCardProps {
   section: SectionDetailResponse;
   siteName: string;
+  /**
+   * ADRESTEKI anahtarlar — "Duzenle" bolumun KENDI alt agacinda bir YOL
+   * baglantisidir, dolayisiyla KAYDIN slug'ini degil ADRESI izler (URL-3
+   * kurali: disaridan GIRIS baglantisi `routeKeyOf`, alt agac ici baglanti
+   * ADRES). Aksi halde eski UUID linkiyle gelen kullanici "Duzenle"ye basinca
+   * adres bicimi bir anda slug'a atlar — yonlendirme YOK karariyla celisir.
+   */
+  projectKey: string;
+  siteKey: string;
+  sectionKey: string;
+  /** Kanonik proje UUID'si — "Hakedis Olustur" SORGU parametresi kurar. */
   projectId: string;
-  siteId: string;
   canEdit: boolean;
 }
 
@@ -171,9 +181,22 @@ function RemainingDaysCell({ endDate }: { endDate: string | null }) {
 // Bölüm Detay hero kartı (mockup D54-96). Beş KPI hücresinden yalnız Bölüm
 // Bedeli (`budget_amount`) ve Kalan Gün (`end_date` türevi) gerçek değerdir;
 // kalan üçü ilgili modülle birlikte gelir (task-2-brief §KPI şeridi).
-export function SectionHeroCard({ section, siteName, projectId, siteId, canEdit }: SectionHeroCardProps) {
+export function SectionHeroCard({
+  section,
+  siteName,
+  projectKey,
+  siteKey,
+  sectionKey,
+  projectId,
+  canEdit,
+}: SectionHeroCardProps) {
   const meta = metaParts(section, siteName);
-  const editHref = routes.projects.sites.sections.edit({ projectId, siteId, sectionId: section.id });
+  // YOL, TAMAMEN ADRESTEN: uc segment de kullanicinin geldigi bicimi korur.
+  const editHref = routes.projects.sites.sections.edit({
+    projectId: projectKey,
+    siteId: siteKey,
+    sectionId: sectionKey,
+  });
   const statusSuffix = SECTION_STATUS_CLASS_SUFFIX[section.status];
 
   return (

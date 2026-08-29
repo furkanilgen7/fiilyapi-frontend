@@ -1,3 +1,4 @@
+import { resolveByIdOrSlug, slugify } from "./slug-resolve";
 import { readFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import nodePath from "node:path";
@@ -537,6 +538,8 @@ interface MockLandShare {
 }
 interface MockProject {
   id: string;
+  /** URL-3 — URL'de tasinan okunur anahtar. NULLABLE: adi slug'lanamayan kayit kimligiyle yasar. */
+  slug: string | null;
   code: string;
   name: string;
   project_type: string;
@@ -641,6 +644,8 @@ function siteFacilitiesFrom(raw: unknown): components["schemas"]["SiteFacilities
 
 interface MockSite extends SiteContractFields {
   id: string;
+  /** URL-3 — PROJE ICINDE tekildir, kuresel DEGIL (bkz. `slug-resolve.ts`). */
+  slug: string | null;
   project_id: string;
   code: string;
   name: string;
@@ -664,6 +669,8 @@ interface MockSite extends SiteContractFields {
 // buildSiteDetail'daki desende oldugu gibi.
 interface MockSection {
   id: string;
+  /** URL-3 — SANTIYE ICINDE tekildir. `sec-3` BILEREK `null` (nullable kanit fikstru). */
+  slug: string | null;
   site_id: string;
   code: string | null;
   name: string;
@@ -1246,7 +1253,7 @@ const MOCK_TIMELINE_TODAY = "2026-07-17";
 
 const PROJECT_FIXTURES: MockProject[] = [
   {
-    id: "p-1", code: "PRJ-1", name: "Kule A", project_type: "taahhut", status: "active",
+    id: "p-1", slug: "kule-a", code: "PRJ-1", name: "Kule A", project_type: "taahhut", status: "active",
     category: "Konut", city: "Ankara", employer_name: "Güneşkent A.Ş.", contract_no: "SZL-2025-01",
     contract_amount: "11200000", start_date: "2025-03-01", end_date: "2026-12-01",
     budget: "1000000", progress_pct: "20",
@@ -1256,7 +1263,7 @@ const PROJECT_FIXTURES: MockProject[] = [
     investment: null, land_share: null,
   },
   {
-    id: "p-2", code: "PRJ-2", name: "Villa B", project_type: "kendi_yatirim", status: "active",
+    id: "p-2", slug: "villa-b", code: "PRJ-2", name: "Villa B", project_type: "kendi_yatirim", status: "active",
     category: "Konut Geliştirme", city: "Ankara", employer_name: null, contract_no: null,
     contract_amount: null, start_date: "2025-01-01", end_date: "2026-06-01",
     budget: "500000", progress_pct: "40", contracting: null,
@@ -1268,7 +1275,7 @@ const PROJECT_FIXTURES: MockProject[] = [
     land_share: null,
   },
   {
-    id: "p-3", code: "PRJ-3", name: "Bahçelievler Konut", project_type: "kat_karsiligi",
+    id: "p-3", slug: "bahcelievler-konut", code: "PRJ-3", name: "Bahçelievler Konut", project_type: "kat_karsiligi",
     status: "active", category: "Konut", city: "Ankara", employer_name: null, contract_no: null,
     contract_amount: null, start_date: "2025-06-01", end_date: "2027-03-01",
     budget: "700000", progress_pct: "42", contracting: null, investment: null,
@@ -1280,7 +1287,7 @@ const PROJECT_FIXTURES: MockProject[] = [
     }),
   },
   {
-    id: "p-4", code: "PRJ-4", name: "Güneşkent B-Blok", project_type: "taahhut",
+    id: "p-4", slug: "guneskent-b-blok", code: "PRJ-4", name: "Güneşkent B-Blok", project_type: "taahhut",
     status: "completed", category: "Konut", city: "Ankara", employer_name: "Güneşkent A.Ş.",
     contract_no: "SZL-2023-04", contract_amount: "9400000", start_date: "2023-01-01",
     end_date: "2025-01-01", budget: "900000", progress_pct: "100",
@@ -2851,13 +2858,13 @@ function seedState(): MockState {
   const sites: MockSite[] = [
     {
       ...siteContractDefaults(),
-      id: "s-1", project_id: "p-1", code: "A-BLOK", name: "A-Blok Şantiyesi", status: "active",
+      id: "s-1", slug: "a-blok-santiyesi", project_id: "p-1", code: "A-BLOK", name: "A-Blok Şantiyesi", status: "active",
       address: "Kuyubaşı Mah.", city: "Ankara", city_inherited: false, site_manager_name: "S. Öztürk",
       start_date: "2025-03-01", end_date: "2026-12-31", delivery_date: null, remaining_days: 157,
     },
     {
       ...siteContractDefaults(),
-      id: "s-2", project_id: "p-1", code: "B-BLOK", name: "B-Blok Şantiyesi", status: "completed",
+      id: "s-2", slug: "b-blok-santiyesi", project_id: "p-1", code: "B-BLOK", name: "B-Blok Şantiyesi", status: "completed",
       address: "Kuyubaşı Mah.", city: "Ankara", city_inherited: false, site_manager_name: "K. Arslan",
       start_date: "2024-01-01", end_date: null, delivery_date: "2026-05-01", remaining_days: null,
     },
@@ -2886,7 +2893,7 @@ function seedState(): MockState {
   // bu değerlere metinle bağlı (görsel baseline kırılmasın diye).
   const sections: MockSection[] = [
     {
-      id: "sec-1", site_id: "s-1", code: "A-01", name: "Kat 6–10 Kaba İnşaat", status: "active",
+      id: "sec-1", slug: "kat-6-10-kaba-insaat", site_id: "s-1", code: "A-01", name: "Kat 6–10 Kaba İnşaat", status: "active",
       manager_user_id: "u-2", manager_name: "Sercan Öztürk", start_date: "2026-01-01", end_date: "2026-09-30",
       sort_order: 0, section_type: "structural", description: "6-10 kat arası kaba inşaat imalatları.",
       deputy_manager_user_id: "u-4", deputy_manager_name: "Kadir Arslan", planned_worker_count: 24,
@@ -2900,7 +2907,7 @@ function seedState(): MockState {
       created_at: "2026-01-01T08:00:00Z", updated_at: "2026-01-01T08:00:00Z",
     },
     {
-      id: "sec-2", site_id: "s-1", code: "A-02", name: "Zemin Kat Kaba İnşaat", status: "completed",
+      id: "sec-2", slug: "zemin-kat-kaba-insaat", site_id: "s-1", code: "A-02", name: "Zemin Kat Kaba İnşaat", status: "completed",
       manager_user_id: null, manager_name: "M. Arslan", start_date: "2025-03-01", end_date: "2025-12-01",
       sort_order: 1, section_type: "structural", description: null, deputy_manager_user_id: null,
       deputy_manager_name: null, planned_worker_count: 12, budget_amount: "480000.00", is_draft: false,
@@ -2913,7 +2920,11 @@ function seedState(): MockState {
     // Taslak + `on_hold` — §4 zorunluluk kuralinin YALNIZ `is_draft: false`
     // iken uyguladigini kanitlayan kayit (bolum tipi/sorumlu/tarih/bedel bos).
     {
-      id: "sec-3", site_id: "s-1", code: null, name: "Peyzaj Düzenlemesi (Taslak)", status: "on_hold",
+      // 🔴 `slug: null` BILEREK: canlida `slug` NULLABLE'dir ve adi
+      // slug'lanamayan kayit YALNIZ kimligiyle yasar. Ekran `slug ?? id` desenini
+      // her yerde uygulamazsa bu satirin baglantisi BOZUK cikar — ucuncu pozitif
+      // kontrolun fikstru budur.
+      id: "sec-3", slug: null, site_id: "s-1", code: null, name: "Peyzaj Düzenlemesi (Taslak)", status: "on_hold",
       manager_user_id: null, manager_name: null, start_date: null, end_date: null, sort_order: 2,
       section_type: null, description: null, deputy_manager_user_id: null, deputy_manager_name: null,
       planned_worker_count: null, budget_amount: null, is_draft: true,
@@ -3149,7 +3160,7 @@ function buildSectionListItems(state: MockState, siteId: string): components["sc
     .map((sec) => {
       const boq = sectionBoqTotals(state, sec.id);
       return {
-        id: sec.id, code: sec.code, name: sec.name, status: sec.status, manager_name: sec.manager_name,
+        id: sec.id, slug: sec.slug, code: sec.code, name: sec.name, status: sec.status, manager_name: sec.manager_name,
         start_date: sec.start_date, end_date: sec.end_date, sort_order: sec.sort_order,
         // ⛔ `progress_pct` YER TUTUCU KALIR — BLM-SAY buna DOKUNMADI
         // (`pending_module: "progress_payments"`, besleyen taraf da yer tutucu).
@@ -3199,7 +3210,7 @@ function buildSiteDetail(
     // giren deger GET'ten AYNEN geri gelmelidir. Once tek tek yazilmadigi icin
     // hicbiri donmuyordu ve dort kapinin dordu de yesildi (K-MKD2).
     ...siteContractPayload(site),
-    id: site.id, code: site.code, name: site.name, status: site.status, address: site.address,
+    id: site.id, slug: site.slug, code: site.code, name: site.name, status: site.status, address: site.address,
     city: site.city, city_inherited: site.city_inherited, site_manager_name: site.site_manager_name,
     start_date: site.start_date, end_date: site.end_date, delivery_date: site.delivery_date,
     remaining_days: site.remaining_days, section_count: sectionItems.length,
@@ -3207,6 +3218,10 @@ function buildSiteDetail(
     progress_pct: METRIC_PENDING("progress_payments"),
     project: {
       id: project?.id ?? site.project_id,
+      // 🔴 UST KAYDIN slug'i da doner: santiye ekrani PROJEYE cikan baglantiyi
+      // bundan kurar (`SiteHeroBar`). Tasinmazsa o baglanti UUID'e duserdi ve
+      // kullanici slug'li bir URL'den cikinca adres ANLASILMAZ hale gelirdi.
+      slug: project?.slug ?? null,
       name: project?.name ?? "",
       city: project?.city ?? null,
       employer_name: project?.employer_name ?? null,
@@ -3237,6 +3252,7 @@ function buildSectionDetail(
   const boq = sectionBoqTotals(state, section.id);
   return {
     id: section.id,
+    slug: section.slug,
     code: section.code,
     name: section.name,
     status: section.status,
@@ -7765,7 +7781,40 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           count: dashboardPendingApprovalsCount(state),
           pending_module: "approvals",
         },
-        risks: { available: false, items: [], pending_module: "inventory" },
+        // 🔴 RISK-1 — ZARF KIRICI DEGISTI (`ListPlaceholder` -> `RiskAlertsPlaceholder`).
+        // Ikiz ESKIDEN `available: false` donduruyordu ve TAM BU YUZDEN canli
+        // kusuru YAKALAYAMADI: kart hic satir basmadigi icin "nesneyi React
+        // cocugu olarak basma" yolu e2e'de HIC KOSMUYORDU. Artik ucu de
+        // gercek satir dondurur — uc SIDDET, uc kaynak, hepsi `ok`.
+        // Fikstur mockup 378-395'ten birebir (renk eslemesinin capasi).
+        risks: {
+          available: true,
+          items: [
+            {
+              severity: "warning",
+              title: "Stok kritik seviyede",
+              detail: "Liman Altyapı – Demir eksikliği",
+              module: "inventory",
+            },
+            {
+              severity: "danger",
+              title: "Hakediş gecikmiş",
+              detail: "Çelik OSB – 14 gün gecikme",
+              module: "progress_payments",
+            },
+            {
+              severity: "success",
+              title: "Hedef aşıldı",
+              detail: "Belediye Yol – %3 erken teslim",
+              module: "projects",
+            },
+          ],
+          sources: [
+            { module: "inventory", state: "ok" },
+            { module: "progress_payments", state: "ok" },
+            { module: "projects", state: "ok" },
+          ],
+        } satisfies components["schemas"]["RiskAlertsPlaceholder"],
       });
     }
 
@@ -7794,6 +7843,9 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         const projectType = String(body.project_type ?? "taahhut");
         const project: MockProject = {
           id: `p-${state.projects.length + 1}`,
+          // URL-3 — slug OLUSTURULURKEN uretilir (kullanici karari: ad degisince
+          // DEGISMEZ, boylece paylasilan link olmez).
+          slug: slugify(String(body.name ?? "")),
           code: String(body.code ?? ""),
           name: String(body.name ?? ""),
           project_type: projectType,
@@ -7885,10 +7937,20 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     // /projects/{project_id} — Proje Detay hero + sekmeler (Task 8, spec §4.1).
     const projectIdMatch = path.match(/^\/projects\/([^/]+)$/);
     if (method === "GET" && projectIdMatch) {
-      const projectId = projectIdMatch[1];
-      const project = state.projects.find((p) => p.id === projectId);
-      if (!project) return send(404, { detail: "proje yok" });
-      const siteCount = state.sites.filter((s) => s.project_id === projectId).length;
+      // 🔴 URL-3 — SLUG KABUL EDEN UC UCTAN BIRI. Anahtar UUID ya da slug
+      // olabilir; cozumleme `resolveByIdOrSlug`tadir (belirsizlikte 404).
+      // Projeler icin kapsam YOKTUR: `projects.slug` KURESEL tekildir.
+      const project = resolveByIdOrSlug(state.projects, projectIdMatch[1]);
+      // 🔴 GERCEK BACKEND'IN CUMLESI (`sites/guards.py: PROJECT_MISSING`).
+      // Ikiz eskiden "proje yok" derdi; o metin kullaniciya BASILAN cumleydi
+      // ve gercekle AYRISIYORDU (URL-3 bunu olcerek yakaladi: cozumleme
+      // basamagi eklenince hata yuzeyi bu uca tasindi ve ikizin kisa yazimi
+      // ekranda gorunur oldu).
+      if (!project) return send(404, { detail: "Proje bulunamadı" });
+      // 🔴 BURADAN SONRASI KANONIK KIMLIKLE calisir: `project.id`. Anahtari
+      // (slug olabilir) alt sorgulara gecirmek CANLIDA 422/404 verirdi —
+      // kalan 42 yol parametresi UUID bekler.
+      const siteCount = state.sites.filter((s) => s.project_id === project.id).length;
       return send(200, { ...project, site_count: siteCount });
     }
 
@@ -7903,7 +7965,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           // `buildSiteDetail` ile ayni kaynaktan beslenmeseydi, kart ile detay
           // iki farkli gerceklik anlatirdi.
           ...siteContractPayload(s),
-          id: s.id, code: s.code, name: s.name, status: s.status, address: s.address, city: s.city,
+          id: s.id, slug: s.slug, code: s.code, name: s.name, status: s.status, address: s.address, city: s.city,
           city_inherited: s.city_inherited, site_manager_name: s.site_manager_name,
           start_date: s.start_date, end_date: s.end_date, delivery_date: s.delivery_date,
           remaining_days: s.remaining_days,
@@ -7945,6 +8007,8 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         const siteId = `s-${state.sites.length + 1}`;
         const city = body.city ? String(body.city) : null;
         const site: MockSite = {
+          // URL-3 — slug OLUSTURULURKEN uretilir; ad degisince DEGISMEZ.
+          slug: slugify(String(body.name ?? "")),
           // 🔴 K-MKD2 — YAZILAN 16 ALAN SAKLANIR. Once hicbiri saklanmiyordu:
           // Santiye Ekle formu ISG sorumlusunu, ada/parseli, alanlari, butceyi
           // ve tesisleri GONDERIYOR (`buildSiteCreateBody`), ikiz gelen govdeyi
@@ -7994,6 +8058,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           const managerUserId = typeof row.manager_user_id === "string" ? row.manager_user_id : null;
           state.sections.push({
             id: `sec-${state.sections.length + 1}`,
+            slug: slugify(String(row.name ?? "")),
             site_id: siteId,
             code: row.code ? String(row.code) : null,
             name: String(row.name ?? ""),
@@ -8023,9 +8088,21 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     // /sites/{site_id} — Şantiye Detay hero + sekmeler + bölüm listesi (Task 8/9, spec §5).
     const siteIdMatch = path.match(/^\/sites\/([^/]+)$/);
     if (method === "GET" && siteIdMatch) {
-      const siteId = siteIdMatch[1];
-      const site = state.sites.find((s) => s.id === siteId);
-      if (!site) return send(404, { detail: "santiye yok" });
+      // 🔴 URL-3 — `sites.slug` PROJE ICINDE tekildir, bu uc ise DUZDUR
+      // (yolda proje yok). Kapsam `?project=` ile gelir; frontend rotasi
+      // (`/projeler/<p>/santiyeler/<s>`) ic ice oldugu icin onu HER ZAMAN
+      // verebilir. Kapsam verilmezse cozum yalnizca TEK aday varsa yapilir.
+      const projectKey = parsed.searchParams.get("project");
+      let scope = state.sites;
+      if (projectKey !== null && projectKey !== "") {
+        const scopeProject = resolveByIdOrSlug(state.projects, projectKey);
+        // Kapsam verildi ama COZULEMEDI: bos kumeye daralt — sessizce KURESEL
+        // aramaya DUSME, yoksa yanlis projenin santiyesi acilabilirdi.
+        scope = scopeProject === null ? [] : state.sites.filter((s) => s.project_id === scopeProject.id);
+      }
+      const site = resolveByIdOrSlug(scope, siteIdMatch[1]);
+      // Gercek backend: `sites/guards.py: SITE_MISSING`.
+      if (!site) return send(404, { detail: "Şantiye bulunamadı" });
       return send(200, buildSiteDetail(state, site));
     }
 
@@ -8088,6 +8165,7 @@ export function startMockBackend(port: number): { server: Server; close: () => P
         const nowIso = new Date().toISOString();
         const section: MockSection = {
           id: `sec-${state.sections.length + 1}`,
+          slug: slugify(String(body.name ?? "")),
           site_id: siteId,
           // Kod boş gelirse sunucu `BLM-NN` biçiminde üretir (spec §5).
           code: code ?? `BLM-${String(state.sections.length + 1).padStart(2, "0")}`,
@@ -8122,9 +8200,24 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     // GET /sections/{section_id} — Bölüm Detay ekranının tekil kaynağı (P6 §5).
     const sectionIdMatch = path.match(/^\/sections\/([^/]+)$/);
     if (method === "GET" && sectionIdMatch) {
-      const sectionId = sectionIdMatch[1];
-      const section = state.sections.find((sec) => sec.id === sectionId);
-      if (!section) return send(404, { detail: "bolum yok" });
+      // 🔴 URL-3 — `sections.slug` SANTIYE ICINDE tekildir; kapsam iki
+      // basamaklidir (`?site=` + `?project=`), cunku santiye anahtari da slug
+      // olabilir ve o da proje icinde tekildir.
+      const siteKey = parsed.searchParams.get("site");
+      const projectKey = parsed.searchParams.get("project");
+      let scope = state.sections;
+      if (siteKey !== null && siteKey !== "") {
+        let siteScope = state.sites;
+        if (projectKey !== null && projectKey !== "") {
+          const scopeProject = resolveByIdOrSlug(state.projects, projectKey);
+          siteScope = scopeProject === null ? [] : state.sites.filter((s) => s.project_id === scopeProject.id);
+        }
+        const scopeSite = resolveByIdOrSlug(siteScope, siteKey);
+        scope = scopeSite === null ? [] : state.sections.filter((sec) => sec.site_id === scopeSite.id);
+      }
+      const section = resolveByIdOrSlug(scope, sectionIdMatch[1]);
+      // Gercek backend: `sites/guards.py: SECTION_MISSING`.
+      if (!section) return send(404, { detail: "Bölüm bulunamadı" });
       return send(200, buildSectionDetail(state, section));
     }
 

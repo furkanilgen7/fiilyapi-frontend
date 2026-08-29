@@ -98,19 +98,20 @@ export const SECTION_TABS: readonly (SectionTabDef & SectionTabContent)[] = [
 ];
 
 export interface SectionDetailTabsProps {
-  projectId: string;
-  siteId: string;
+  /** ADRESTEKI anahtarlar (slug VEYA UUID) — bu serit YALNIZ YOL kurar. */
+  projectKey: string;
+  siteKey: string;
   activeIndex: number;
   onSelect: (index: number) => void;
 }
 
 export function SectionDetailTabs({
-  projectId,
-  siteId,
+  projectKey,
+  siteKey,
   activeIndex,
   onSelect,
 }: SectionDetailTabsProps) {
-  const base = routes.projects.sites.detail({ projectId, siteId });
+  const base = routes.projects.sites.detail({ projectId: projectKey, siteId: siteKey });
 
   return (
     <div className="section-tabs" role="tablist" aria-label="Bölüm detay sekmeleri">

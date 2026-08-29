@@ -8,6 +8,7 @@ import { LandShareTableView } from "@/components/project-summary/LandShareTableV
 // parametresini çözer; ekranın kendisi bileşendedir.
 export default function ProjectAllocationPage() {
   const pathname = usePathname();
-  const { projectId } = useParams<{ projectId: string }>();
-  return <LandShareTableView projectId={projectId} activePath={pathname} />;
+  // URL-3 — rota parametresi artik "slug VEYA UUID"dur; cozumleme gorunumde.
+  const { projectId: projectKey } = useParams<{ projectId: string }>();
+  return <LandShareTableView projectKey={projectKey} activePath={pathname} />;
 }

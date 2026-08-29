@@ -40,7 +40,8 @@ import { routes } from "@/lib/routes";
  * ve kullanıcı veriyi kaybettiğini sanardı.
  */
 export interface LandShareTableViewProps {
-  projectId: string;
+  /** URL'deki anahtar — slug VEYA UUID (URL-3; eski linkler yasar). */
+  projectKey: string;
   activePath: string;
 }
 
@@ -53,12 +54,18 @@ function SummaryTile({ value, label }: { value: string; label: string }) {
   );
 }
 
-export function LandShareTableView({ projectId, activePath }: LandShareTableViewProps) {
+export function LandShareTableView({ projectKey, activePath }: LandShareTableViewProps) {
   const [offset, setOffset] = useState(0);
   const [exportError, setExportError] = useState<string | null>(null);
   const [isExporting, setExporting] = useState(false);
 
-  const projectQuery = useProject(projectId);
+  const projectQuery = useProject(projectKey);
+  // 🔴 URL-3 · SLUG -> KANONIK KIMLIK GECIS NOKTASI.
+  // `projectKey` URL'den gelir ve slug DA olabilir, UUID de. Slug'i KABUL EDEN
+  // tek yer `GET /projects/{project_id}`tir; asagidaki oteki uclarin HEPSI
+  // UUID bekler. Bu yuzden anahtar ONCE cozulur, sonra `project.id` dagitilir.
+  // Anahtari dogrudan gecirmek slug'li bir URL'de o uclari 422'ye dusururdu.
+  const projectId = projectQuery.data?.id ?? "";
   const summaryQuery = useLandShareSummary(projectId);
   const unitsQuery = useLandShareUnits(projectId, { offset });
 
@@ -105,6 +112,7 @@ export function LandShareTableView({ projectId, activePath }: LandShareTableView
   return (
     <div className="psum">
       <div className="psum-tabbar">        <ProjectDetailTabs
+          projectKey={projectKey}
           projectId={projectId}
           activePath={activePath}
           projectType={projectType}

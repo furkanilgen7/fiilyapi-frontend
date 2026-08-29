@@ -24,8 +24,15 @@ function sectionListTitle(siteName: string, count: number): string {
 // EMEKLİ edildi, bkz. task-3-brief.md).
 export default function SiteDetailPage() {
   const pathname = usePathname();
-  const { siteId } = useParams<{ projectId: string; siteId: string }>();
-  const siteQuery = useSite(siteId);
+  // 🔴 URL-3 — iki rota parametresi de "slug VEYA UUID"dur.
+  const { projectId: projectKey, siteId: siteKey } = useParams<{
+    projectId: string;
+    siteId: string;
+  }>();
+  // `GET /sites/{site_id}` slug KABUL EDER; kapsam (`?project=`) veriliyor
+  // cunku `sites.slug` PROJE ICINDE tekildir, kuresel DEGIL — kapsamsiz
+  // cagride belirsizlik 404 olurdu (fail-closed).
+  const siteQuery = useSite(siteKey, { project: projectKey });
 
   if (isForbidden(siteQuery.error)) return <AccessDenied />;
   if (siteQuery.isError) {
@@ -36,12 +43,16 @@ export default function SiteDetailPage() {
   }
 
   const site = siteQuery.data;
-  const newSectionHref = routes.projects.sites.sections.new({ projectId: site.project.id, siteId: site.id });
+  // YOL baglantilari ADRESTEKI anahtarlarla kurulur (bkz. `SiteDetailTabs`).
+  const newSectionHref = routes.projects.sites.sections.new({
+    projectId: projectKey,
+    siteId: siteKey,
+  });
 
   return (
     <div className="site-detail">
       <SiteHeroBar site={site} />
-      <SiteDetailTabs projectId={site.project.id} siteId={site.id} activePath={pathname} />
+      <SiteDetailTabs projectKey={projectKey} siteKey={siteKey} activePath={pathname} />
       {site.section_count === 0 ? (
         <div className="site-detail__empty">
           <p>Bu şantiyede henüz bölüm tanımlanmadı.</p>
@@ -55,7 +66,7 @@ export default function SiteDetailPage() {
           <ul className="section-card-list" data-testid="section-list">
             {site.sections.map((section) => (
               <li key={section.id}>
-                <SectionCard projectId={site.project.id} siteId={site.id} section={section} />
+                <SectionCard projectKey={projectKey} siteKey={siteKey} section={section} />
               </li>
             ))}
           </ul>

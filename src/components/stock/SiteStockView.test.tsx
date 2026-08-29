@@ -83,10 +83,15 @@ beforeEach(() => {
     me: { permissions: { stock: "full" } } as unknown as MeResponse,
     isLoading: false,
   } as ReturnType<typeof useSession>);
+  // 🔴 URL-3 — santiye yaniti artik ekranin KANONIK KIMLIK kaynagidir:
+  // rota parametresi slug olabilir, `useSiteStock` ise UUID bekler. `id` ve
+  // `project.id` eksik birakilirsa ekran (dogru sekilde) bos kimlikle bekler
+  // ve stok sorgusu HIC acilmaz — bu fikstur o gecisi ayakta tutar.
   vi.mocked(useSite).mockReturnValue(
     queryStub({
+      id: SITE_ID,
       name: "A-Blok Şantiyesi",
-      project: { name: "Güneşkent Konut" },
+      project: { id: PROJECT_ID, name: "Güneşkent Konut" },
     }) as unknown as ReturnType<typeof useSite>,
   );
   vi.mocked(useSiteStock).mockReturnValue(queryStub(siteStock()));

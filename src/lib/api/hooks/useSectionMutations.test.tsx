@@ -50,7 +50,13 @@ describe("useCreateSection — onSuccess sorgu gecersiz kilma", () => {
       params: { path: { site_id: SITE_ID } },
       body: { name: "Kat 6–10" },
     });
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [SITE_QUERY_KEY, SITE_ID] });
+    // 🔴 URL-3 — GECERSIZ KILMA ARTIK KIMLIK ADLAMAZ, TIP ON EKI KULLANIR.
+    // Ayni kayit birden cok onbellek anahtari altinda yasar (adres slug de
+    // olabilir; detay anahtari `[<tip>, <slug|uuid>, ...kapsam]`). Kanonik
+    // UUID'yi adlayan bir on ek slug'la onbelleklenmis girdiyi ESLESTIREMEZ
+    // ve ekran GUNCELLENMEDEN kalirdi — `section-form.spec.ts` bunu canli
+    // akista yakaladi (kaydedilen bolum bedeli detayda "—" kaliyordu).
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [SITE_QUERY_KEY] });
     expect(invalidateSpy).toHaveBeenCalledTimes(1);
   });
 
@@ -102,8 +108,14 @@ describe("useUpdateSection — onSuccess sorgu gecersiz kilma", () => {
       body: { name: "Kat 6–10 (guncel)" },
     });
     // Santiye id'si SectionUpdate govdesinde YOK — yanittan (site_id) turetilir.
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [SECTION_QUERY_KEY, "sec-1"] });
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [SITE_QUERY_KEY, SITE_ID] });
+    // 🔴 URL-3 — GECERSIZ KILMA ARTIK KIMLIK ADLAMAZ, TIP ON EKI KULLANIR.
+    // Ayni kayit birden cok onbellek anahtari altinda yasar (adres slug de
+    // olabilir; detay anahtari `[<tip>, <slug|uuid>, ...kapsam]`). Kanonik
+    // UUID'yi adlayan bir on ek slug'la onbelleklenmis girdiyi ESLESTIREMEZ
+    // ve ekran GUNCELLENMEDEN kalirdi — `section-form.spec.ts` bunu canli
+    // akista yakaladi (kaydedilen bolum bedeli detayda "—" kaliyordu).
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [SECTION_QUERY_KEY] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [SITE_QUERY_KEY] });
     expect(invalidateSpy).toHaveBeenCalledTimes(2);
   });
 

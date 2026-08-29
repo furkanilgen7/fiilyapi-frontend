@@ -71,6 +71,7 @@ const STRIPS: readonly StripCase[] = [
     expectedTabCount: 5,
     render: () => (
       <ProjectDetailTabs
+        projectKey={PROJECT_SENTINEL}
         projectId={PROJECT_SENTINEL}
         activePath={`/projeler/${PROJECT_SENTINEL}`}
         projectType="taahhut"
@@ -83,6 +84,7 @@ const STRIPS: readonly StripCase[] = [
     expectedTabCount: 6,
     render: () => (
       <ProjectDetailTabs
+        projectKey={PROJECT_SENTINEL}
         projectId={PROJECT_SENTINEL}
         activePath={`/projeler/${PROJECT_SENTINEL}`}
         projectType="kendi_yatirim"
@@ -95,6 +97,7 @@ const STRIPS: readonly StripCase[] = [
     expectedTabCount: 7,
     render: () => (
       <ProjectDetailTabs
+        projectKey={PROJECT_SENTINEL}
         projectId={PROJECT_SENTINEL}
         activePath={`/projeler/${PROJECT_SENTINEL}`}
         projectType="kat_karsiligi"
@@ -106,8 +109,8 @@ const STRIPS: readonly StripCase[] = [
     expectedTabCount: 7,
     render: () => (
       <SiteDetailTabs
-        projectId={PROJECT_SENTINEL}
-        siteId={SITE_SENTINEL}
+        projectKey={PROJECT_SENTINEL}
+        siteKey={SITE_SENTINEL}
         activePath={`/projeler/${PROJECT_SENTINEL}/santiyeler/${SITE_SENTINEL}`}
       />
     ),
@@ -181,8 +184,8 @@ const ROUTELESS_STRIPS: readonly RoutelessStripCase[] = [
     expectedTabCount: 5,
     render: () => (
       <SectionDetailTabs
-        projectId={PROJECT_SENTINEL}
-        siteId={SITE_SENTINEL}
+        projectKey={PROJECT_SENTINEL}
+        siteKey={SITE_SENTINEL}
         activeIndex={0}
         onSelect={() => {}}
       />

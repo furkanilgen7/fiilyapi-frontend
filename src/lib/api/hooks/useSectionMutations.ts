@@ -41,7 +41,20 @@ export function useCreateSection(
         }),
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [SITE_QUERY_KEY, siteId] });
+      // 🔴 URL-3 · KIMLIK ADLAYAN GECERSIZ KILMA ARTIK EKSIKTIR.
+      // Ayni kayit birden cok onbellek anahtari altinda yasar: URL slug de
+      // tasiyabildigi icin detay sorgusunun anahtari ADRESTEKI anahtar +
+      // KAPSAM'dir (`[SECTION_QUERY_KEY, <slug|uuid>, site, project]`), oysa
+      // mutasyonun elinde KANONIK UUID vardir (PATCH yolu onu bekler).
+      // `[SECTION_QUERY_KEY, <uuid>]` on eki slug'la onbelleklenmis girdiyi
+      // ESLESTIREMEZ ve ekran GUNCELLENMEDEN kalir — kullanici kaydettigi
+      // degeri goremez, hata da almaz.
+      // 🔴 BU KUSUR GERCEKTEN OLDU (`section-form.spec.ts` yakaladi: kaydedilen
+      // bolum bedeli detayda "—" kaliyordu; `origin/main`de ayni test geciyordu,
+      // yani goc kirdi).
+      // Cozum: TIP on ekini gecersiz kil. React Query on-ek eslestirmesi yapar,
+      // boylece kaydin HANGI anahtarla onbelleklendigi ONEMSIZLESIR.
+      queryClient.invalidateQueries({ queryKey: [SITE_QUERY_KEY] });
     },
   });
 }
@@ -65,9 +78,22 @@ export function useUpdateSection(
           body,
         }),
       ),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [SECTION_QUERY_KEY, sectionId] });
-      queryClient.invalidateQueries({ queryKey: [SITE_QUERY_KEY, data.site_id] });
+    onSuccess: () => {
+      // 🔴 URL-3 · KIMLIK ADLAYAN GECERSIZ KILMA ARTIK EKSIKTIR.
+      // Ayni kayit birden cok onbellek anahtari altinda yasar: URL slug de
+      // tasiyabildigi icin detay sorgusunun anahtari ADRESTEKI anahtar +
+      // KAPSAM'dir (`[SECTION_QUERY_KEY, <slug|uuid>, site, project]`), oysa
+      // mutasyonun elinde KANONIK UUID vardir (PATCH yolu onu bekler).
+      // `[SECTION_QUERY_KEY, <uuid>]` on eki slug'la onbelleklenmis girdiyi
+      // ESLESTIREMEZ ve ekran GUNCELLENMEDEN kalir — kullanici kaydettigi
+      // degeri goremez, hata da almaz.
+      // 🔴 BU KUSUR GERCEKTEN OLDU (`section-form.spec.ts` yakaladi: kaydedilen
+      // bolum bedeli detayda "—" kaliyordu; `origin/main`de ayni test geciyordu,
+      // yani goc kirdi).
+      // Cozum: TIP on ekini gecersiz kil. React Query on-ek eslestirmesi yapar,
+      // boylece kaydin HANGI anahtarla onbelleklendigi ONEMSIZLESIR.
+      queryClient.invalidateQueries({ queryKey: [SECTION_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [SITE_QUERY_KEY] });
     },
   });
 }

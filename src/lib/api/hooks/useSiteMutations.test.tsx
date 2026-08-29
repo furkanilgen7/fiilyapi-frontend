@@ -50,7 +50,11 @@ describe("useCreateSite — onSuccess sorgu gecersiz kilma", () => {
       body: { name: "A-Blok Şantiyesi" },
     });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [SITES_QUERY_KEY, PROJECT_ID] });
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [PROJECT_QUERY_KEY, PROJECT_ID] });
+    // 🔴 URL-3 — proje DETAY sorgusu ADRESTEKI anahtarla onbelleklenir (slug
+    // olabilir), bu yuzden kanonik UUID'yi adlayan on ek onu eslestiremez.
+    // Liste anahtari (`SITES_QUERY_KEY`) UUID tasimaya DEVAM eder — o uc
+    // zaten UUID bekler, dolayisiyla o eslesme dogrudur ve daraltilmis kalir.
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [PROJECT_QUERY_KEY] });
     expect(invalidateSpy).toHaveBeenCalledTimes(2);
   });
 

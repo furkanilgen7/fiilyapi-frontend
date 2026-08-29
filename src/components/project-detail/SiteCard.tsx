@@ -6,10 +6,15 @@ import { pendingModuleLabel, type PendingModuleKey } from "@/lib/pending-modules
 import type { SiteListItem } from "@/lib/api/hooks/useSites";
 
 import "./project-detail.css";
-import { routes } from "@/lib/routes";
+import { routes, routeKeyOf } from "@/lib/routes";
 
 export interface SiteCardProps {
-  projectId: string;
+  /**
+   * URL-3 · ADRESTEKI proje anahtari (slug VEYA UUID) — cip href'leri YOL
+   * kurar, dolayisiyla kanonik UUID DEGIL bu tasinir. Kullanici UUID'li bir
+   * linkle geldiyse ic baglantilar da UUID kalir (yonlendirme YOK karari).
+   */
+  projectKey: string;
   site: SiteListItem;
 }
 
@@ -158,8 +163,14 @@ interface ChipDef {
 // kavram yoktur, şantiye düzeyinde de sözleşme pozu tutulmaz. Çip şantiye
 // kimliğini taşıdığı için kartta durur ve DEĞİŞMEZ; ayrımı, yeni gelen taraf
 // olan proje SEKMESİ kendi `title`ında anlatır (bkz. WORK_ITEMS_TAB_TITLE).
-function chipsFor(projectId: string, site: SiteListItem): ChipDef[] {
-  const siteBase = routes.projects.sites.detail({ projectId, siteId: site.id });
+function chipsFor(projectKey: string, site: SiteListItem): ChipDef[] {
+  // 🔴 Santiye anahtari KAYITTAN gelir (`slug ?? id`): proje detayindan
+  // santiyeye GIRIS baglantisidir, yani okunur bicimi burada dogar.
+  // `SiteCard` semasi `slug`i tasir (URL-2) — ekstra istek YOK.
+  const siteBase = routes.projects.sites.detail({
+    projectId: projectKey,
+    siteId: routeKeyOf(site),
+  });
   const chips: ChipDef[] = [
     { label: "İş Kalemleri", emoji: "📋", href: `${siteBase}/is-kalemleri` },
   ];
@@ -187,7 +198,7 @@ function chipsFor(projectId: string, site: SiteListItem): ChipDef[] {
   return chips;
 }
 
-export function SiteCard({ projectId, site }: SiteCardProps) {
+export function SiteCard({ projectKey, site }: SiteCardProps) {
   const isCompleted = site.status === "completed";
   const sub = subtitle(site);
 
@@ -240,7 +251,7 @@ export function SiteCard({ projectId, site }: SiteCardProps) {
         <ProgressBar site={site} />
 
         <div className="site-card__chips">
-          {chipsFor(projectId, site).map((chip) => (
+          {chipsFor(projectKey, site).map((chip) => (
             <Link
               key={chip.label}
               href={chip.href}

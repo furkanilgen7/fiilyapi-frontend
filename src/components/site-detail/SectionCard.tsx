@@ -5,7 +5,7 @@ import { formatCompactCurrency, formatMonthYear, formatPercent } from "@/lib/for
 import { pendingModuleLabel, type PendingModuleKey } from "@/lib/pending-modules";
 import { SECTION_STATUS_CLASS_SUFFIX, SECTION_STATUS_LABELS } from "@/lib/section-labels";
 import type { components } from "@/lib/api/schema";
-import { routes } from "@/lib/routes";
+import { routes, routeKeyOf } from "@/lib/routes";
 
 export type SectionResponse = components["schemas"]["SectionResponse"];
 type SectionStatus = SectionResponse["status"];
@@ -30,8 +30,9 @@ type AnyPlaceholder = {
 };
 
 export interface SectionCardProps {
-  projectId: string;
-  siteId: string;
+  /** ADRESTEKI proje/santiye anahtarlari (slug VEYA UUID) — bkz. `SiteDetailTabs`. */
+  projectKey: string;
+  siteKey: string;
   section: SectionResponse;
 }
 
@@ -302,9 +303,15 @@ function ProgressMetricCell({
 // linklenir (task-2-brief.md "SectionCard güncellemesi") — önceki "planned ->
 // devre dışı Düzenle" placeholder'ı kaldırıldı (T3 ayrı bir düzenleme rotası
 // açacak, kart eylemi yalnız DETAYA gider).
-export function SectionCard({ projectId, siteId, section }: SectionCardProps) {
+export function SectionCard({ projectKey, siteKey, section }: SectionCardProps) {
   const isPlanned = section.status === "planned";
-  const detayHref = routes.projects.sites.sections.detail({ projectId, siteId, sectionId: section.id });
+  // Bolume GIRIS baglantisi: bolumun okunur anahtari KAYITTAN gelir
+  // (`SectionResponse.slug`, URL-2). `slug` NULLABLE — `routeKeyOf` duser.
+  const detayHref = routes.projects.sites.sections.detail({
+    projectId: projectKey,
+    siteId: siteKey,
+    sectionId: routeKeyOf(section),
+  });
 
   return (
     <div className={cx("section-card", statusClass("section-card", section.status))}>

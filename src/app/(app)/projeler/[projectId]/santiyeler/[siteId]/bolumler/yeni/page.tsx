@@ -10,5 +10,5 @@ import { SectionForm } from "@/components/section-form/SectionForm";
 // buraya link verir (SectionFormModal EMEKLİ edildi, bkz. task-3-brief.md).
 export default function NewSectionPage() {
   const { projectId, siteId } = useParams<{ projectId: string; siteId: string }>();
-  return <SectionForm mode="create" projectId={projectId} siteId={siteId} />;
+  return <SectionForm mode="create" projectKey={projectId} siteKey={siteId} />;
 }

@@ -28,8 +28,12 @@ export function useCreateSite(projectId: string): UseMutationResult<SiteCreateRe
         }),
       ),
     onSuccess: () => {
+      // Liste anahtari KANONIK UUID tasir (uc UUID bekler) — o eslesme dogru.
       queryClient.invalidateQueries({ queryKey: [SITES_QUERY_KEY, projectId] });
-      queryClient.invalidateQueries({ queryKey: [PROJECT_QUERY_KEY, projectId] });
+      // 🔴 URL-3 — proje DETAY sorgusu ADRESTEKI anahtarla onbelleklenir
+      // (slug olabilir); kanonik UUID'yi adlayan on ek onu ESLESTIREMEZ.
+      // Tip on eki kullanilir (bkz. `useSectionMutations` notu).
+      queryClient.invalidateQueries({ queryKey: [PROJECT_QUERY_KEY] });
     },
   });
 }

@@ -41,20 +41,20 @@ const COMPLETED_SITE: SiteListItem = {
 
 describe("SiteCard — aktif varyant (spec §4.3)", () => {
   it("ad, alt satir ve Aktif rozetini basar", () => {
-    render(<SiteCard projectId={PROJECT_ID} site={ACTIVE_SITE} />);
+    render(<SiteCard projectKey={PROJECT_ID} site={ACTIVE_SITE} />);
     expect(screen.getByRole("heading", { level: 3, name: "A-Blok Şantiyesi" })).toBeInTheDocument();
     expect(screen.getByText("Kuyubaşı Mah. · Şantiye Şefi: S. Öztürk")).toBeInTheDocument();
     expect(screen.getByText("Aktif")).toBeInTheDocument();
   });
 
   it("Kalan Gün gercek veriden pozitif basar", () => {
-    render(<SiteCard projectId={PROJECT_ID} site={ACTIVE_SITE} />);
+    render(<SiteCard projectKey={PROJECT_ID} site={ACTIVE_SITE} />);
     expect(screen.getByText("157")).toBeInTheDocument();
     expect(screen.getByText("Kalan Gün")).toBeInTheDocument();
   });
 
   it("4 cip basar: Is Kalemleri, Isveren Hak., Taseron Hak., Detay", () => {
-    render(<SiteCard projectId={PROJECT_ID} site={ACTIVE_SITE} />);
+    render(<SiteCard projectKey={PROJECT_ID} site={ACTIVE_SITE} />);
     expect(screen.getByRole("link", { name: /İş Kalemleri/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /İşveren Hak\./ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Taşeron Hak\./ })).toBeInTheDocument();
@@ -70,7 +70,7 @@ describe("SiteCard — aktif varyant (spec §4.3)", () => {
   // 404 aliyordu. Rota VARLIGINI `site-card-chip-routes.contract.test.ts`
   // diskten olcer; burasi ciplerin SANTIYE kimligini tasidigini olcer.
   it("her cip SANTIYE kapsamli hedefe gider (site.id href'te YASAR)", () => {
-    render(<SiteCard projectId={PROJECT_ID} site={ACTIVE_SITE} />);
+    render(<SiteCard projectKey={PROJECT_ID} site={ACTIVE_SITE} />);
     const siteBase = `/projeler/${PROJECT_ID}/santiyeler/${ACTIVE_SITE.id}`;
     expect(screen.getByRole("link", { name: /İş Kalemleri/ })).toHaveAttribute(
       "href",
@@ -94,7 +94,7 @@ describe("SiteCard — aktif varyant (spec §4.3)", () => {
   // Bayat ipucu bekcisi: dort cip de artik gercek rotaya gidiyor, "yakinda"
   // yalani basilmaz.
   it("hicbir cip 'Bu bolum yakinda' ipucu tasimaz", () => {
-    render(<SiteCard projectId={PROJECT_ID} site={ACTIVE_SITE} />);
+    render(<SiteCard projectKey={PROJECT_ID} site={ACTIVE_SITE} />);
     for (const chip of screen.getAllByRole("link")) {
       expect(chip).not.toHaveAttribute("title");
     }
@@ -104,7 +104,7 @@ describe("SiteCard — aktif varyant (spec §4.3)", () => {
 describe("SiteCard — on_hold rozeti (kod inceleme bulgusu)", () => {
   it("Beklemede rozeti kendi sinifini tasir, aktif (yesil) sinifina dusmez", () => {
     const onHoldSite: SiteListItem = { ...ACTIVE_SITE, status: "on_hold" };
-    render(<SiteCard projectId={PROJECT_ID} site={onHoldSite} />);
+    render(<SiteCard projectKey={PROJECT_ID} site={onHoldSite} />);
     const badge = screen.getByText("Beklemede");
     expect(badge.className).toContain("site-card__status--pending");
     expect(badge.className).not.toContain("site-card__status--active");
@@ -113,19 +113,19 @@ describe("SiteCard — on_hold rozeti (kod inceleme bulgusu)", () => {
 
 describe("SiteCard — tamamlanmis varyant (spec §4.3)", () => {
   it("Tamamlandi rozetini basar", () => {
-    render(<SiteCard projectId={PROJECT_ID} site={COMPLETED_SITE} />);
+    render(<SiteCard projectKey={PROJECT_ID} site={COMPLETED_SITE} />);
     expect(screen.getByText("Tamamlandı")).toBeInTheDocument();
   });
 
   it("ucuncu hucrede Teslim + tarihi basar, Kalan Gun basmaz", () => {
-    render(<SiteCard projectId={PROJECT_ID} site={COMPLETED_SITE} />);
+    render(<SiteCard projectKey={PROJECT_ID} site={COMPLETED_SITE} />);
     expect(screen.getByText("Teslim")).toBeInTheDocument();
     expect(screen.getByText("May 2026")).toBeInTheDocument();
     expect(screen.queryByText("Kalan Gün")).not.toBeInTheDocument();
   });
 
   it("3 cip basar (Taseron Hak. yok), Isveren Hak. yerine Final Hakedis gorunur", () => {
-    render(<SiteCard projectId={PROJECT_ID} site={COMPLETED_SITE} />);
+    render(<SiteCard projectKey={PROJECT_ID} site={COMPLETED_SITE} />);
     expect(screen.getByRole("link", { name: /İş Kalemleri/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Final Hakediş/ })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Taşeron Hak\./ })).not.toBeInTheDocument();
@@ -139,7 +139,7 @@ describe("SiteCard — tamamlanmis varyant (spec §4.3)", () => {
 
 describe("SiteCard — yer tutucu hucreler (spec §7.1)", () => {
   it("Isci ve Ilerleme yer tutucuysa '—' basar ve title'da aciklama verir", () => {
-    render(<SiteCard projectId={PROJECT_ID} site={ACTIVE_SITE} />);
+    render(<SiteCard projectKey={PROJECT_ID} site={ACTIVE_SITE} />);
     const worker = screen.getByTitle("Puantaj verisi bu yüzeye henüz bağlanmadı");
     expect(worker).toHaveTextContent("—");
     const progress = screen.getByTitle("Hakediş verisi bu yüzeye henüz bağlanmadı");
@@ -147,7 +147,7 @@ describe("SiteCard — yer tutucu hucreler (spec §7.1)", () => {
   });
 
   it("Ilerleme yer tutucuyken cubuk cizilmez (sahte %0 verilmez)", () => {
-    render(<SiteCard projectId={PROJECT_ID} site={ACTIVE_SITE} />);
+    render(<SiteCard projectKey={PROJECT_ID} site={ACTIVE_SITE} />);
     expect(screen.queryByTestId("site-card-progress-fill")).not.toBeInTheDocument();
   });
 
@@ -156,7 +156,7 @@ describe("SiteCard — yer tutucu hucreler (spec §7.1)", () => {
       ...ACTIVE_SITE,
       progress_pct: { available: true, value: "75", pending_module: "" },
     };
-    render(<SiteCard projectId={PROJECT_ID} site={withProgress} />);
+    render(<SiteCard projectKey={PROJECT_ID} site={withProgress} />);
     expect(screen.getByTestId("site-card-progress-fill")).toBeInTheDocument();
     expect(screen.getByText("%75")).toBeInTheDocument();
   });
@@ -165,7 +165,7 @@ describe("SiteCard — yer tutucu hucreler (spec §7.1)", () => {
 describe("SiteCard — gecikmis teslim (spec §7.5)", () => {
   it("remaining_days negatifse kirmizi 'X gun gecikme' basar", () => {
     const delayed: SiteListItem = { ...ACTIVE_SITE, remaining_days: -12 };
-    render(<SiteCard projectId={PROJECT_ID} site={delayed} />);
+    render(<SiteCard projectKey={PROJECT_ID} site={delayed} />);
     const value = screen.getByText("12 gün gecikme");
     expect(value.className).toContain("site-card__kpi-value--delay");
   });
@@ -177,7 +177,7 @@ describe("SiteCard — gecikmis teslim (spec §7.5)", () => {
 describe("SiteCard — kart cipleri klavyeyle odaklanabilir ve Tab sirasindadir (davranissal)", () => {
   it("4 cip de sirayla Tab ile odaklanir", async () => {
     const user = userEvent.setup();
-    render(<SiteCard projectId={PROJECT_ID} site={ACTIVE_SITE} />);
+    render(<SiteCard projectKey={PROJECT_ID} site={ACTIVE_SITE} />);
     const chips = screen.getAllByRole("link");
     expect(chips).toHaveLength(4);
 

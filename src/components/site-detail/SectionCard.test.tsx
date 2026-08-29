@@ -32,7 +32,7 @@ const BASE_SECTION: SectionResponse = {
 
 function renderCard(overrides: Partial<SectionResponse> = {}) {
   return render(
-    <SectionCard projectId={PROJECT_ID} siteId={SITE_ID} section={{ ...BASE_SECTION, ...overrides }} />,
+    <SectionCard projectKey={PROJECT_ID} siteKey={SITE_ID} section={{ ...BASE_SECTION, ...overrides }} />,
   );
 }
 

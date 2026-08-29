@@ -3,6 +3,8 @@ import { backendClient } from "@/lib/api/client";
 import { unwrap } from "@/lib/api/unwrap";
 import type { components } from "@/lib/api/schema";
 
+import { isScopePending } from "@/lib/api/pending-scope";
+
 // P7 · İşveren Hakedişi ekranları — okuma sorguları. Tipler `pnpm gen:api`
 // çıktısından takma ad olarak alınır; elle arayüz yazmak yasak.
 export type ProgressPaymentListResponse = components["schemas"]["ProgressPaymentListResponse"];
@@ -36,6 +38,12 @@ export function useProgressPayments(
   filter: ProgressPaymentListFilter = {},
 ): UseQueryResult<ProgressPaymentListResponse, Error> {
   return useQuery({
+    // 🔴 URL-3 — kimlik COZULENE kadar aga cikilmaz. Asagidaki suzgec kurucusu
+    // bos degeri DOGRULUK TESTIYLE atar, yani `project_id: ""` "suzgec yok"a
+    // donusur ve uc TUM projelerin hakedislerini dondurur; ekran o yaniti tek
+    // projenin verisi sanip TOPLAR. `undefined` (bilerek suzgecsiz liste
+    // ekrani) ile `""` (henuz cozulmedi) bu yuzden AYRILIR.
+    enabled: !isScopePending(filter.project_id, filter.site_id),
     queryKey: [
       PROGRESS_PAYMENTS_QUERY_KEY,
       filter.project_id ?? null,

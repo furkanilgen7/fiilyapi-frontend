@@ -6,6 +6,20 @@ import "./project-detail.css";
 
 export interface ProjectHeroBarProps {
   project: ProjectDetail;
+  /**
+   * 🔴 URL-3 · ADRESTEKI proje anahtari — kaydin slug'i DEGIL.
+   *
+   * ILK YAZIMDA `routeKeyOf(project)` KULLANILDI VE KUSURLUYDU (gorsel kapi
+   * yakaladi): kullanici `/projeler/p-1` (eski UUID linki) ile geldiginde
+   * sekme href'leri `/projeler/kule-a`ya kuruluyordu, `activePath` ise
+   * `/projeler/p-1` kaliyordu. `ProjectDetailTabs` aktif sekmeyi
+   * `activePath === href` TAM DIZE karsilastirmasiyla buldugu icin HICBIR
+   * sekme secili gorunmuyordu — 422 vermeyen, yalniz gozle gorulen kusur.
+   *
+   * Ders: "kaydin okunur anahtari" ile "adresteki anahtar" AYNI SEY DEGILDIR;
+   * aktif-hal karsilastirmasi HER ZAMAN ADRESI izler.
+   */
+  projectKey: string;
   /** ProjectDetailTabs deseni: aktif yol dışarıdan gelir. */
   activePath: string;
 }
@@ -25,7 +39,7 @@ function metaParts(project: ProjectDetail): string[] {
   return parts;
 }
 
-export function ProjectHeroBar({ project, activePath }: ProjectHeroBarProps) {
+export function ProjectHeroBar({ project, projectKey, activePath }: ProjectHeroBarProps) {
   const meta = metaParts(project);
 
   return (
@@ -60,6 +74,8 @@ export function ProjectHeroBar({ project, activePath }: ProjectHeroBarProps) {
       {/* F-PKK K1: tür bilgisi ZATEN elimizde (`ProjectDetailResponse`) —
           sekme şeridi ikinci bir istek AÇMAZ. */}
       <ProjectDetailTabs
+        // URL-3 — YOL sekmeleri ADRESTEKI anahtari, SORGU sekmeleri UUID'yi alir.
+        projectKey={projectKey}
         projectId={project.id}
         activePath={activePath}
         projectType={project.project_type}

@@ -21,10 +21,16 @@ import { routes } from "@/lib/routes";
 // altindadir; o layout artik yalniz stylesheet yukler (DRILL-KALDIR
 // 2026-08-29). Bu sayfa KENDI LAYOUT'UNU KURMAZ.
 export default function BoqPage() {
-  const { projectId, siteId } = useParams<{ projectId: string; siteId: string }>();
+  // 🔴 URL-3 — ADRES anahtarlari.
+  const { projectId: projectKey, siteId: siteKey } = useParams<{
+    projectId: string;
+    siteId: string;
+  }>();
   // Santiye sorgusu breadcrumb icindir. 🔴 DRILL-KALDIR: drill kabugu ayni
   // anahtari cekiyordu, artik cekmiyor — bu ekranin TEK cagirani burasidir.
-  const siteQuery = useSite(siteId);
+  const siteQuery = useSite(siteKey, { project: projectKey });
+  // SLUG -> KANONIK KIMLIK: `GET /sites/{id}/boq` (ve indirme ucu) UUID bekler.
+  const siteId = siteQuery.data?.id ?? "";
   const boqQuery = useBoq(siteId);
   // Yazma yuzeyleri kapisi (spec §2.5). Yetki zorlamasi HER ZAMAN backend'de;
   // bu kapi yalniz salt-okunur role calismayan buton gostermemek icin.
@@ -62,7 +68,10 @@ export default function BoqPage() {
           Santiye adi bilinmeden hic basilmaz; uydurma etiket yazilmaz. */}
       {site && (
         <p className="boq__crumb">
-          <Link className="boq__crumb-link" href={routes.projects.sites.detail({ projectId, siteId })}>
+          <Link
+            className="boq__crumb-link"
+            href={routes.projects.sites.detail({ projectId: projectKey, siteId: siteKey })}
+          >
             ← {site.name}
           </Link>
           {` · ${site.project.name} / ${site.name}`}

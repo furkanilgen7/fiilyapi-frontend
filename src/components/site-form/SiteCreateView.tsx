@@ -38,7 +38,7 @@ import { SiteFormActions } from "./SiteFormActions";
 // Sıra önemli: önce paylaşılan kabuk, sonra forma özgü bloklar (özgü kazansın).
 import "@/styles/form-shell.css";
 import "./site-form.css";
-import { routes } from "@/lib/routes";
+import { routes, routeKeyOf } from "@/lib/routes";
 
 function isNotFound(err: unknown): boolean {
   return err instanceof BackendError && err.status === 404;
@@ -104,8 +104,11 @@ function ProjectInfoBanner({ project }: { project: ProjectDetail | undefined }) 
  */
 export function SiteCreateView() {
   const router = useRouter();
-  const { projectId } = useParams<{ projectId: string }>();
-  const projectQuery = useProject(projectId);
+  // 🔴 URL-3 — rota parametresi ADRES anahtaridir (slug VEYA UUID).
+  const { projectId: projectKey } = useParams<{ projectId: string }>();
+  const projectQuery = useProject(projectKey);
+  // SLUG -> KANONIK KIMLIK: `POST /projects/{project_id}/sites` UUID BEKLER.
+  const projectId = projectQuery.data?.id ?? "";
   const createSite = useCreateSite(projectId);
   // Kartlarla AYNI sorgu anahtarı (React Query tekilleştirir): şef zorunluluğu
   // liste yüklenemediğinde kalkar (§10.1.1) — bu karar gönderim katmanında da
@@ -137,7 +140,7 @@ export function SiteCreateView() {
 
   function handleCancel() {
     // `beforeunload` uyarısı YOKTUR (§12): veri kaybına karşı "Taslak Kaydet" var.
-    router.push(routes.projects.detail({ projectId }));
+    router.push(routes.projects.detail({ projectId: projectKey }));
   }
 
   function submit(isDraft: boolean) {
@@ -161,7 +164,13 @@ export function SiteCreateView() {
       // Önbellek geçersizleştirmesi hook'un içinde (§9.5).
       onSuccess: (site) =>
         router.push(
-          isDraft ? routes.projects.detail({ projectId }) : routes.projects.sites.detail({ projectId, siteId: site.id }),
+          isDraft
+            ? routes.projects.detail({ projectId: projectKey })
+            : routes.projects.sites.detail({
+                projectId: projectKey,
+                // Yeni santiyenin okunur anahtari YANITTAN gelir.
+                siteId: routeKeyOf(site),
+              }),
         ),
       onError: (err) => {
         const isCodeConflict = err instanceof BackendError && err.status === 409;
@@ -196,7 +205,7 @@ export function SiteCreateView() {
             /
           </span>
           {project ? (
-            <Link href={routes.projects.detail({ projectId })}>{project.name}</Link>
+            <Link href={routes.projects.detail({ projectId: projectKey })}>{project.name}</Link>
           ) : (
             <span>…</span>
           )}

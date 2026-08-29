@@ -61,7 +61,11 @@ export function SiteTimesheetView() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { projectId, siteId } = useParams<{ projectId: string; siteId: string }>();
+  // 🔴 URL-3 — rota parametreleri "slug VEYA UUID"dur; ADRES anahtarlaridir.
+  const { projectId: projectKey, siteId: siteKey } = useParams<{
+    projectId: string;
+    siteId: string;
+  }>();
 
   const permission = useModulePermission("timesheet");
   const personnelPermission = useModulePermission("personnel");
@@ -73,7 +77,12 @@ export function SiteTimesheetView() {
 
   // Başlık için — drill kabuğu aynı anahtarı zaten çektiğinden ikinci bir ağ
   // isteği oluşmaz (React Query önbelleği).
-  const siteQuery = useSite(siteId);
+  const siteQuery = useSite(siteKey, { project: projectKey });
+  // 🔴 SLUG -> KANONIK KIMLIK GECIS NOKTASI. Slug'i kabul eden TEK santiye ucu
+  // yukaridakidir; asagidaki uclarin HEPSI UUID bekler. Santiye yaniti hem
+  // kendi `id`sini hem PROJESININ `id`sini tasir, yani ikinci bir istek YOK.
+  // Cozulene kadar bos string gider ve hook'lar kendi `enabled` kapilarinda durur.
+  const siteId = siteQuery.data?.id ?? "";
   const sectionsQuery = useSiteSections(siteId);
 
   if (!permission.canView) return <AccessDenied />;
@@ -120,7 +129,7 @@ export function SiteTimesheetView() {
       header={
         <>
           {/* ŞP 79-86 — sekme şeridi tek kaynaktan */}
-          <SiteDetailTabs projectId={projectId} siteId={siteId} activePath={pathname} />
+          <SiteDetailTabs projectKey={projectKey} siteKey={siteKey} activePath={pathname} />
           {/* ŞP 88-93 */}
           <div className="ts__head">
             <div>
