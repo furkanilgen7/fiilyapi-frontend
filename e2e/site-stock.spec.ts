@@ -49,8 +49,14 @@ test("'Stok' sekmesi gerçek ekranı açar (ComingSoon DEĞİL) ve TEK sekme akt
   await expect(shellNav).toHaveCount(1);
   await expect(shellNav).toBeVisible();
   await expect(shellNav.getByRole("link", { name: "Stok & Depo" })).toBeVisible();
-  // Sayfada başka hiçbir <nav> yoktur — çubuk geri gelirse bu düşer.
-  await expect(page.getByRole("navigation")).toHaveCount(1);
+  // 🔴 Landmark SAYIMI korunur ama artık KÖR DEĞİL: F-KIRINTI üst çubuğa bir
+  // yol göstergesi ekledi ve kırıntı ARIA'da bir `nav`dır, yani beklenen sayı
+  // 2'dir. Sayıyı 2'ye çekip bırakmak bekçiyi körleştirirdi (drill çubuğu
+  // kırıntı YOKKEN geri gelse yine 2 olurdu), bu yüzden İKİSİ DE ADIYLA
+  // iddia edilir: üçüncü bir `<nav>` ya da yanlış kimlikli bir ikinci `<nav>`
+  // hâlâ bu testi düşürür.
+  await expect(page.getByRole("navigation")).toHaveCount(2);
+  await expect(page.getByRole("navigation", { name: "Yol göstergesi" })).toHaveCount(1);
 });
 
 test("KPI şeridi ve tablo SUNUCU verisinden gelir; merkez depo bakiyeye GİRMEZ", async ({

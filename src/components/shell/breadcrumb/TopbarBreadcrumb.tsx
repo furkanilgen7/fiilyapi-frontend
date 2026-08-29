@@ -66,7 +66,21 @@ export function TopbarBreadcrumb() {
               )}
               {isLast || crumb.href === undefined ? (
                 // K3 — SON parça bağlantı değildir (mockup 40).
-                <span className="topbar-crumbs__current" aria-current="page">
+                //
+                // 🔴 `aria-current="page"` BİLEREK BASILMAZ (K7 canonu). W3C
+                // APG'nin kırıntı örneği onu son parçaya koyar, ama BU depoda
+                // yazılı ve gerekçeli bir karar var: sayfada TAM BİR
+                // `aria-current` bulunur ve o da kabuk menüsündedir —
+                // *"ikincisi ekran okuyucuya İKİ SAYFA derdi"*
+                // (`financial-statements.spec.ts` K7 bekçileri). En yakın
+                // emsal birebir aynı şekle sahip: Mali Tablolar'ın segment
+                // şeridi de bir yol göstergesidir ve "bulunulan" öğesine
+                // `aria-current` SÜRMEZ. İki trail bileşeninin farklı
+                // davranması tek başına bir kusur olurdu.
+                //
+                // Kararı değiştirmek K7'yi ve beş e2e bekçisini birden
+                // oynatır — bu dilimin kapsamı DEĞİL, yönetime rapor edildi.
+                <span className="topbar-crumbs__current">
                   <CrumbText crumb={crumb} />
                 </span>
               ) : (

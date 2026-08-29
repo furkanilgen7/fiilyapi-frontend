@@ -128,7 +128,7 @@ describe("son parça", () => {
 
     const current = within(list).getByText("Günlük Kayıt");
     expect(current.closest("a")).toBeNull();
-    expect(current).toHaveAttribute("aria-current", "page");
+    expect(current).toHaveClass("topbar-crumbs__current");
   });
 
   it("tek parçalı kırıntıda hiç bağlantı yoktur", () => {
@@ -175,7 +175,19 @@ describe("kırıntı kabuğu", () => {
   it("erişilebilir bir gezinme bölgesidir", () => {
     renderAt("/muhasebe/mizan");
     expect(screen.getByRole("navigation", { name: "Yol göstergesi" })).toBeInTheDocument();
-    expect(screen.getByText("Mizan")).toHaveAttribute("aria-current", "page");
+    expect(screen.getByText("Mizan")).toHaveClass("topbar-crumbs__current");
+  });
+
+  it("K7 — kırıntı `aria-current` SÜRMEZ (sayfadaki tek işaret kabuk menüsünde)", () => {
+    // 🔴 Bu deponun YAZILI kararı: sayfada TAM BİR `aria-current="page"`
+    // bulunur ve o da kabuk nav'ındadır; ikincisi ekran okuyucuya iki sayfa
+    // derdi. Mali Tablolar segment şeridi (aynı şekle sahip yol göstergesi)
+    // de sürmez. Mutasyon: son parçaya `aria-current="page"` ekle → kırmızı
+    // (burada ve `financial-statements.spec.ts`in BEŞ K7 bekçisinde).
+    renderAt("/muhasebe/mizan");
+    expect(
+      screen.getByTestId("topbar-crumbs").querySelectorAll("[aria-current]"),
+    ).toHaveLength(0);
   });
 
   it("yazılmamış rotada tek parça basar, geri tuşu basmaz", () => {
