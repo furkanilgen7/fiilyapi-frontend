@@ -98,7 +98,14 @@ test.describe("URL-3 · slug'li adres", () => {
 
     // Bolum detayi: kapsam IKI BASAMAKLI (`?site=` + `?project=`).
     await page.goto("/projeler/kule-a/santiyeler/a-blok-santiyesi/bolumler/kat-6-10-kaba-insaat");
-    await expect(page.getByText("Kat 6–10 Kaba İnşaat")).toBeVisible();
+    // 🔴 F-KIRINTI: bolum adi artik IKI yerde basilir (ust cubuk yol
+    // gostergesi + hero basligi), yani ciplak `getByText` strict-mode ihlali
+    // verir. Iddia ZAYIFLATILMADI, KESKINLESTIRILDI: cozumlemenin kanitI
+    // basliktir — statik bir metin degil, `?site=`+`?project=` kapsamiyla
+    // cozulen KAYDIN adi.
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Kat 6–10 Kaba İnşaat" }),
+    ).toBeVisible();
   });
 
   test("(c) POZITIF KONTROL — `slug`i NULL olan kayit KIMLIGIYLE yasar", async ({ page }) => {
