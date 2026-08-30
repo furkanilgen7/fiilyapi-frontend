@@ -100,18 +100,27 @@ describe("AuditLogScreen", () => {
   // devirde etiket zorunlu, filtre listesi ISTEGE BAGLIDIR. Bu ayrim olculdu ve
   // burada ACIK KUME iddiasiyla kayda geciriliyor: liste sessizce genisleyemez
   // ya da daralamaz.
-  it("işlem filtresi TAM OLARAK beş işlem + 'Tüm İşlemler' gösterir (bilinçli alt küme)", async () => {
+  it("işlem filtresi TAM OLARAK altı işlem + 'Tüm İşlemler' gösterir (bilinçli alt küme)", async () => {
     stubFetch(() => json({ items: [], total: 0, limit: 50, offset: 0 }));
 
     renderScreen();
 
     const select = await screen.findByLabelText("İşlem filtresi");
     const secenekler = [...select.querySelectorAll("option")].map((o) => o.textContent);
-    expect(secenekler).toEqual(["Tüm İşlemler", "Giriş", "Oluşturma", "Güncelleme", "Silme", "Onay"]);
-    // `backup` ve `ai_turn` BILEREK disarida: ikisinin de henuz uretici ucu YOK,
-    // listeye koymak her zaman bos donen bir filtre gostermek olurdu.
+    expect(secenekler).toEqual([
+      "Tüm İşlemler",
+      "Giriş",
+      "Oluşturma",
+      "Güncelleme",
+      "Silme",
+      "Onay",
+      "AI Turu",
+    ]);
+    // 🔴 AI-1 · "AI Turu" LISTEYE GIRDI cunku ureticisi artik VAR
+    // (`POST /ai/chat` tur basina tek ozet satiri yazar). `Yedekleme` HALA
+    // disarida: onun uretici ucu yazilmadi, secilse her zaman bos donerdi.
+    // Olcut "enumda var mi" DEGIL "ureticisi var mi"dir.
     expect(secenekler).not.toContain("Yedekleme");
-    expect(secenekler).not.toContain("AI Turu");
   });
 
   it("403 yanıtında yetki uyarısı gösterir", async () => {

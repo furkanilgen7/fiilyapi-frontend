@@ -305,6 +305,8 @@ export const ROUTE_TRAIL_ROOT: TrailNode = {
       },
     },
 
+    asistan: { label: "FİİL AI", href: () => routes.assistant() },
+
     "onay-kutusu": { label: "Onay Kutusu", href: () => routes.approvalInbox() },
 
     personel: {

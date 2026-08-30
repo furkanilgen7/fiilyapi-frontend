@@ -321,3 +321,15 @@ export const ArrowRightIcon = (p: IconProps) => (
     <path d="m13 6 6 6-6 6" />
   </svg>
 );
+
+// AI-1 · FİİL AI Asistanı nav simgesi. Sette "asistan/sohbet" anlamını taşıyan
+// bir glif YOKTU (ölçüldü: 32 simge, hiçbiri) ve mevcut birini ödünç almak
+// BİLGİ TAŞIMAZDI — nav'da simge tekrarı ancak akrabalık anlatırken meşrudur
+// (`WalletIcon`: Hazine ⊃ Çek & Ödeme). Set daha önce de büyüdü (BellIcon,
+// UploadIcon, ScalesIcon, LockIcon); parlama (sparkle) AI'ın yerleşik glifidir.
+export const SparkleIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3Z" />
+    <path d="M18 15.5l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9.9-2.1Z" />
+  </svg>
+);

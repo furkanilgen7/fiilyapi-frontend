@@ -35,17 +35,26 @@ import "./audit-screen.css";
 const ALL_VALUE = "all";
 const USER_OPTIONS_LIMIT = 200;
 
-// Mockup'taki işlem seçicisi bu beş seçeneği listeler; `backup` yalnızca tablo
+// Mockup'taki işlem seçicisi beş seçenek listeler; `backup` yalnızca tablo
 // rozetinde görünür (mockup'ta seçici seçeneği yok — birebir korunur).
-// 🔴 BİLİNÇLİ ALT KÜME — `AuditAction`ın TAMAMI DEĞİL.
-// Mockup filtre çubuğu beş işlem listeler; `backup` ve (AI-0b'den beri)
-// `ai_turn` dışarıdadır çünkü İKİSİNİN DE HENÜZ ÜRETİCİSİ YOKTUR — listeye
-// koymak, seçildiğinde her zaman boş dönen bir filtre göstermek olurdu.
+// 🔴 BİLİNÇLİ ALT KÜME — `AuditAction`ın TAMAMI DEĞİL. Ölçüt tek: bir işlemin
+// ÜRETİCİSİ VAR MI? Üreticisi olmayan seçenek, seçildiğinde her zaman boş
+// dönen bir filtredir.
+// ✅ AI-1: `ai_turn`ın üreticisi ARTIK VAR (`POST /ai/chat` her tur sonunda
+// tek bir özet satırı yazar), bu yüzden listeye GİRDİ. `backup` hâlâ
+// dışarıdadır — onun üretici ucu yazılmadı.
 // ⚠️ Tip `ReadonlyArray<AuditAction>` olduğu için enum'a üye eklemek burayı
 // KIRMAZ; yani bu satır `tsc` tarafından bekçilenmez. Bekçisi
-// `AuditLogScreen.test.tsx`teki açık küme iddiasıdır.
-// 👉 AI-1 `POST /ai/chat`i açtığında `ai_turn` BURAYA da eklenmelidir.
-const ACTION_OPTIONS: ReadonlyArray<AuditAction> = ["login", "create", "update", "delete", "approve"];
+// `AuditLogScreen.test.tsx`teki AÇIK KÜME iddiasıdır: liste sessizce
+// genişleyemez ya da daralamaz, her değişiklik o iddiayı elden geçirtir.
+const ACTION_OPTIONS: ReadonlyArray<AuditAction> = [
+  "login",
+  "create",
+  "update",
+  "delete",
+  "approve",
+  "ai_turn",
+];
 
 // Her tuş vuruşunda istek atmamak için arama metni sakinleşene kadar beklenir.
 const SEARCH_DEBOUNCE_MS = 300;
