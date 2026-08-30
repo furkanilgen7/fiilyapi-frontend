@@ -37,6 +37,14 @@ const USER_OPTIONS_LIMIT = 200;
 
 // Mockup'taki işlem seçicisi bu beş seçeneği listeler; `backup` yalnızca tablo
 // rozetinde görünür (mockup'ta seçici seçeneği yok — birebir korunur).
+// 🔴 BİLİNÇLİ ALT KÜME — `AuditAction`ın TAMAMI DEĞİL.
+// Mockup filtre çubuğu beş işlem listeler; `backup` ve (AI-0b'den beri)
+// `ai_turn` dışarıdadır çünkü İKİSİNİN DE HENÜZ ÜRETİCİSİ YOKTUR — listeye
+// koymak, seçildiğinde her zaman boş dönen bir filtre göstermek olurdu.
+// ⚠️ Tip `ReadonlyArray<AuditAction>` olduğu için enum'a üye eklemek burayı
+// KIRMAZ; yani bu satır `tsc` tarafından bekçilenmez. Bekçisi
+// `AuditLogScreen.test.tsx`teki açık küme iddiasıdır.
+// 👉 AI-1 `POST /ai/chat`i açtığında `ai_turn` BURAYA da eklenmelidir.
 const ACTION_OPTIONS: ReadonlyArray<AuditAction> = ["login", "create", "update", "delete", "approve"];
 
 // Her tuş vuruşunda istek atmamak için arama metni sakinleşene kadar beklenir.

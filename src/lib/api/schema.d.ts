@@ -95,6 +95,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Ai Context Endpoint
+         * @description AI'ın sınırı — S14'ün korkuluğu.
+         */
+        get: operations["get_ai_context_endpoint_ai_context_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/tools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Ai Tools Endpoint
+         * @description Aktörün **görebildiği** araçlar (Kapı A'nın yayınlanmış hâli).
+         *
+         *     Canlı doğrulama: iki farklı rolle çağrılıp listelerin FARKLI geldiği
+         *     ölçülür. Aynı gelirse Kapı A hiçbir şey yapmıyordur.
+         */
+        get: operations["list_ai_tools_endpoint_ai_tools_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/approvals": {
         parameters: {
             query?: never;
@@ -6626,6 +6669,57 @@ export interface components {
          */
         AccountingPeriodStatus: "open" | "closed";
         /**
+         * AiContextResponse
+         * @description S14'ün korkuluğu: AI sınırını **bilerek** çağırsın.
+         *
+         *     `/auth/me` kapsam taşımaz; AI sınırını bilmeden çağırır ve 404'ü yalana
+         *     çevirir. Bu uç `permissions` + görünür araç sicili + yetki dışı modülleri
+         *     birlikte verir.
+         */
+        AiContextResponse: {
+            /** Arac Adlari */
+            arac_adlari: string[];
+            /** Permissions */
+            permissions: {
+                [key: string]: string;
+            };
+            /** Proje Kimlikleri Notu */
+            proje_kimlikleri_notu: string;
+            /** Role Key */
+            role_key: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /** Yetkisiz Moduller */
+            yetkisiz_moduller: string[];
+        };
+        /** AiToolListResponse */
+        AiToolListResponse: {
+            /** Items */
+            items: components["schemas"]["AiToolRead"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * AiToolRead
+         * @description Aktörün görebildiği bir araç. 🔴 `ucler` ve `kapilar` YAYINLANMAZ.
+         *
+         *     Uç listesi bir iç uygulama detayıdır; yayınlamak istemciye "şu yolu çağır"
+         *     fikri verirdi ve `navigate_to`nun kapalı-enum kararını (S22) dolanırdı.
+         */
+        AiToolRead: {
+            /** Aciklama */
+            aciklama: string;
+            /** Ad */
+            ad: string;
+            /** Kapsam */
+            kapsam: string;
+            /** Kume */
+            kume: string;
+        };
+        /**
          * ApprovalDocumentType
          * @description Zincire giren evrak aileleri (K4 — bu dilim YALNIZ bu ucudur).
          *
@@ -6796,7 +6890,7 @@ export interface components {
          *     davranisini degistirir (bkz. pyproject.toml UP042 notu).
          * @enum {string}
          */
-        AuditAction: "login" | "create" | "update" | "delete" | "approve" | "backup";
+        AuditAction: "login" | "create" | "update" | "delete" | "approve" | "backup" | "ai_turn";
         /**
          * AuditActorRead
          * @description Denetim satirini yapan kullanici.
@@ -20185,6 +20279,74 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    get_ai_context_endpoint_ai_context_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiContextResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    list_ai_tools_endpoint_ai_tools_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiToolListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -59,7 +59,7 @@ describe("auditIpText", () => {
 });
 
 describe("AUDIT_ACTION_LABEL", () => {
-  it("backend enum'unun altı değerini de mockup rozet metinlerine eşler", () => {
+  it("backend enum'unun YEDİ değerini de mockup rozet metinlerine eşler", () => {
     expect(AUDIT_ACTION_LABEL).toEqual({
       login: "Giriş",
       create: "Oluşturma",
@@ -67,6 +67,8 @@ describe("AUDIT_ACTION_LABEL", () => {
       delete: "Silme",
       approve: "Onay",
       backup: "Yedekleme",
+      // AI-0b: yedinci üye. Üreticisi AI-1'de gelir.
+      ai_turn: "AI Turu",
     });
   });
 });
@@ -80,5 +82,13 @@ describe("isAuditAction", () => {
   it("enum dışı değerleri reddeder", () => {
     expect(isAuditAction("all")).toBe(false);
     expect(isAuditAction("toString")).toBe(false);
+  });
+
+  // 🔴 `isAuditAction` tip korumasını ETİKET HARİTASINDAN türetir
+  // (`Object.hasOwn(AUDIT_ACTION_LABEL, value)`), enum'dan değil. Yani harita
+  // eksik kalsaydı üye URL'den de OKUNAMAZDI. `tsc` haritayı zorluyor ama bu
+  // test bağı DAVRANIŞSAL olarak da kilitler.
+  it("yeni üye ai_turn URL'den okunabilir", () => {
+    expect(isAuditAction("ai_turn")).toBe(true);
   });
 });

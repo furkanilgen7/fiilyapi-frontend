@@ -284,6 +284,17 @@ const ALLOWED_ROOTS = new Set([
   // yoksa BFF kökü bekçisiz kalır). Eksikse Onay Kutusu ekranı YALNIZ
   // CANLIDA 404 alır; jsdom testleri bunu GÖRMEZ.
   "approvals",
+  // AI-0b T6 — FİİL AI'ın akış-DIŞI iki ucu: `GET /ai/tools` (aktörün gördüğü
+  // araç sicili) ve `GET /ai/context` (S14: AI'ın sınırı). İzin listesi dışı
+  // bir kök **404** döner (403 DEĞİL), gövde `{ok:false, code:"not_found"}` —
+  // yani eksik olsaydı araç katmanı bir YAPILANDIRMA hatasını "yetkin yok"
+  // diye raporlardı.
+  //
+  // 🔴 `POST /ai/chat` (SSE) BU KÖKTEN GEÇMEYECEK: catch-all `[...path]`
+  // gövdeyi tamponlar (`res.json()` / `arrayBuffer()`), akış ölür. O uç AI-1'de
+  // AYRI bir rota olarak gelir (`src/app/api/ai/chat/route.ts`) ve kendi
+  // bekçisini getirmek zorundadır — bu dosyanın bekçisi onu GÖRMEZ.
+  "ai",
 ]);
 
 // JSON/metin sayilan icerik tipleri: govde metne cozulup JSON olarak islenir.

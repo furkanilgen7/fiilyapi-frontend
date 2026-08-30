@@ -993,6 +993,55 @@ describe("BFF /api/backend/[...path]", () => {
       },
     );
 
+    // AI-0b · T6 — FİİL AI'in akis-DISI iki ucu (`GET /ai/tools`,
+    // `GET /ai/context`). 🔴 Bu kokU CAGIRAN KOD HENUZ YOK (panel AI-1'in
+    // isi), dolayisiyla `cagrilan ⊆ izinli` bekcisi onu HIC GORMEZ — MU-2 ve
+    // MT-1'de ayni bosluk yasandi ve kokler eklenmedigi icin uclar canlida
+    // `{"ok":false,"code":"not_found"}` donuyordu, dort kapi da yesildi.
+    // Ayni hataya DORDUNCU kez dusmemek icin ADLI bekci ONDEN yazilir.
+    it("ai koku (AI-0b) allow-list'te GERCEK girdi olarak tanimlidir", () => {
+      const source = readFileSync(
+        resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+        "utf8",
+      );
+      const allowList = source.slice(
+        source.indexOf("const ALLOWED_ROOTS"),
+        source.indexOf("]);", source.indexOf("const ALLOWED_ROOTS")),
+      );
+      // 🔴 Yorum metni DEGIL, tirnakli GERCEK girdiler okunur: "ai" dizesi
+      // `route.ts`in aciklama bloklarinda defalarca geciyor, dolayisiyla ham
+      // metin taramasi yapan bir test allow-list'ten silinse bile GECERDI.
+      const entries = [...allowList.matchAll(/^\s*"([a-z0-9-]+)",/gm)].map((m) => m[1]);
+      expect(entries).toContain("ai");
+    });
+
+    it.each(["ai/tools", "ai/context"])("%s forward edilir (AI-0b)", async (yol) => {
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response("{}", { status: 200, headers: { "content-type": "application/json" } }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+      const segmentler = yol.split("/");
+      const res = await GET(
+        req(`/api/backend/${yol}`, "GET", { [ACCESS_COOKIE]: "acc" }),
+        ctx(segmentler),
+      );
+      expect(res.status).toBe(200);
+      expect(String(fetchMock.mock.calls[0][0])).toContain(`/${yol}`);
+    });
+
+    // 🔴 `POST /ai/chat` (SSE) BU KOKTEN GECMEYECEK — catch-all govdeyi
+    // tamponlar ve akis olur. AI-1 onu AYRI bir rota olarak yazacak. Bugun
+    // olculen olgu: bu kok GET disi metodu `proxyAuthenticated` yoluna sokar,
+    // yani akis burada YASAMAZ. Bu test o karari KAYDA GECIRIR.
+    it("ai koku SSE icin KULLANILMAZ — POST govdeyi tamponlar", () => {
+      const source = readFileSync(
+        resolve(process.cwd(), "src/app/api/backend/[...path]/route.ts"),
+        "utf8",
+      );
+      expect(source).toContain("proxyAuthenticated");
+      expect(source).not.toContain("text/event-stream");
+    });
+
     it.each(["chart-of-accounts", "journal-entries"])(
       "%s koku forward edilir (F-MUF)",
       async (root) => {
