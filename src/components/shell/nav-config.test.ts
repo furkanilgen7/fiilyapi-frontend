@@ -192,6 +192,30 @@ describe("NAV_GROUPS — href geçerliliği (kırık link koruması)", () => {
     expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "static" });
   });
 
+  // 🔴 F-RAPOR · `/raporlar` bu dilimde GERÇEK bir sayfa oldu (mockup
+  // `Raporlar.dc.html` · rapor KATALOĞU). Nav öğesi (ve href'i) F3 kabuk
+  // canon'undan beri duruyordu — `nav-config.ts` DEĞİŞMEDİ, yalnız hedefi
+  // ComingSoon'dan gerçek sayfaya döndü. Kusur ÖLÜ LİNKti: kullanıcı menüden
+  // tıklayıp "yakında" görüyordu. Rota klasörü silinirse bu iddia kırmızıya
+  // döner (`/belgeler`, `/stok`, `/satis`, `/onay-kutusu` emsalleri).
+  it("'Raporlar' /raporlar statik rotasına düşer (catch-all DEĞİL)", () => {
+    const item = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.label === "Raporlar");
+    expect(item?.href).toBe("/raporlar");
+    expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "static" });
+  });
+
+  // 🔴 POZİTİF KONTROL — yukarıdaki iddia, `resolveHrefIn` her şeye
+  // `{kind:"static"}` döndürecek şekilde bozulsa da yeşil kalırdı. Kabuk
+  // nav'ında catch-all'a düşen ÖĞE hâlâ vardır ve o hâlâ ComingSoon'a düşer:
+  // yazılmamış bir rota "yakında" göstermeye DEVAM eder.
+  it("hâlâ yazılmamış 'Şirket Varlıkları' catch-all'a DÜŞER", () => {
+    const item = NAV_GROUPS.flatMap((g) => g.items).find(
+      (i) => i.label === "Şirket Varlıkları",
+    );
+    expect(item?.href).toBe("/sirket-varliklari");
+    expect(resolveHrefIn(ROUTE_TREE, item!.href, false)).toEqual({ kind: "catch-all" });
+  });
+
   // 🔴 KONTROL GRUBU. Yukarıdaki iddiaların HEPSİ `resolveHrefIn`in POZİTİF
   // yolunu sınar; dosyada hiç NEGATİF örnek kalmazsa `resolveHrefIn` her şeye
   // `{kind:"static"}` döndürecek şekilde bozulsa bile testlerin TAMAMI yeşil
@@ -219,6 +243,10 @@ describe("NAV_GROUPS — href geçerliliği (kırık link koruması)", () => {
   // rotaya taşındı (yukarıdaki "Onay Kutusu" iddiası) ve catch-all çözümleyen
   // nav öğeleri İKİYE düştü — `/raporlar`, `/sirket-varliklari`. Aşınma
   // sürüyor; UYDURMA yol seçiminin gerekçesi bir kez daha doğrulandı.
+  // 🔴 F-RAPOR · aşınmanın son adımı: `/raporlar` da statik rota oldu ve
+  // catch-all çözümleyen nav öğesi BİRE düştü (`/sirket-varliklari`, yukarıda
+  // pozitif kontrol olarak iddia edilir). O da yazıldığı gün GERÇEK bir öğeye
+  // bağlı hiçbir kontrol grubu kalmayacaktı — uydurma yol o yüzden seçilmişti.
   it("kontrol grubu: var olmayan bir yol catch-all'a düşer (NEGATİF yol)", () => {
     expect(NAV_GROUPS.flatMap((g) => g.items).some((i) => i.href === "/boyle-bir-rota-yok")).toBe(
       false,

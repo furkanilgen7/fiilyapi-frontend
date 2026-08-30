@@ -147,7 +147,9 @@ describe("backTarget — deterministik bir seviye yukarı", () => {
   it("POZİTİF KONTROL — kökte ve 'yakında' ekranında hedef YOKTUR", () => {
     expect(backTarget(buildTrail("/"))).toBeUndefined();
     expect(backTarget(buildTrail("/puantaj"))).toBeUndefined();
-    expect(backTarget(buildTrail("/raporlar"))).toBeUndefined();
+    // F-RAPOR: örnek `/raporlar`tan `/sirket-varliklari`ye taşındı —
+    // `/raporlar` artık GERÇEK bir sayfa, "yakında" ekranı DEĞİL.
+    expect(backTarget(buildTrail("/sirket-varliklari"))).toBeUndefined();
   });
 
   it("geri hedefi kırıntının SONDAN İKİNCİ parçasıdır, ayrı bir kural değil", () => {
@@ -272,10 +274,16 @@ describe("segment eşleştirme prototipten okumaz", () => {
 
 describe("yazılmamış rota", () => {
   it("ComingSoon ekranının BASTIĞI adı basar ve bağlantı kurmaz", () => {
-    expect(buildTrail("/raporlar")).toEqual([
-      { label: "Raporlar", href: undefined, pending: false },
+    // 🔴 F-RAPOR: örnek `/raporlar`tan `/sirket-varliklari`ye TAŞINDI (iddia
+    // SİLİNMEDİ — F-MT kanonu). `/raporlar` bu dilimde gerçek bir sayfa oldu,
+    // dolayısıyla ağaçta bir düğümü ve bir `href`i vardır; onu hâlâ
+    // "yazılmamış rota" örneği saymak testi YALANCI kılardı.
+    expect(buildTrail("/sirket-varliklari")).toEqual([
+      { label: "Şirket Varlıkları", href: undefined, pending: false },
     ]);
-    expect(buildTrail("/sirket-varliklari")[0].label).toBe("Şirket Varlıkları");
+    // ⚠️ Kabuk nav'ında catch-all'a düşen TEK öğe bu kaldı; o da yazıldığı gün
+    // bu describe'ın örneği tanınmayan bir yola (`/olmayan-modul`) taşınmalı.
+    expect(buildTrail("/olmayan-modul")[0].label).toBe("Olmayan Modul");
   });
 
   it("tanınmayan derin yolda da TEK parça kalır", () => {

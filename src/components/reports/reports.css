@@ -1,0 +1,146 @@
+/* R · Raporlar (F-RAPOR). Kanon: projedesign "Raporlar.dc.html"; parantez içi
+   sayılar o dosyanın SATIR numaralarıdır. Prefix `rap`.
+   Mockup'ın üst barı (20-30) ve sol menüsü (33-56) UYGULAMA KABUĞUdur
+   (F3 Topbar + Sidebar) — bu sayfa onları YENİDEN ÇİZMEZ. */
+.rap {
+  animation: var(--anim-fade-up); /* 58 */
+}
+
+/* Başlık şeridi (59-63). */
+.rap__eyebrow {
+  font-size: 12px; /* 59 */
+  color: var(--color-text-subtle);
+  margin-bottom: 6px;
+}
+.rap__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px; /* 60 — gerekçe satırları araya girdiği için 24 değil */
+}
+.rap__title {
+  font-size: 26px; /* 61 */
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.5px;
+  color: var(--color-text);
+}
+
+/* Devre dışı öğelerin GÖRÜNÜR gerekçeleri (K11 kanonu — `title`da saklanmaz). */
+.rap__notice {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+  margin-bottom: 6px;
+}
+.rap__notice:last-of-type {
+  margin-bottom: 24px;
+}
+
+/* İki sütunlu kategori ızgarası (66). */
+.rap__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 66 */
+  gap: 20px; /* 66 */
+}
+@media (max-width: 900px) {
+  .rap__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Kategori kartı (69). */
+.rap-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-14); /* 69 */
+  box-shadow: var(--shadow-card); /* 69 */
+  overflow: hidden;
+}
+.rap-card__head {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* 70 */
+  padding: 16px 20px; /* 70 */
+  border-bottom: 1px solid var(--color-border);
+}
+.rap-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px; /* 71 */
+  height: 32px;
+  border-radius: 8px;
+  background: var(--color-surface-muted);
+  font-size: 16px;
+}
+.rap-card__heading {
+  display: flex;
+  flex-direction: column;
+}
+.rap-card__title {
+  font-size: 14px; /* 72 */
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+.rap-card__subtitle {
+  font-size: 11px; /* 72 */
+  color: var(--color-text-subtle);
+}
+
+/* Rapor satırları (74-103). */
+.rap-card__list {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0; /* 74 */
+}
+.rap-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 20px; /* 75 */
+  border-bottom: 1px solid var(--color-surface-2);
+}
+.rap-row:last-child {
+  border-bottom: none; /* 96 — mockup son satırda çizgi çizmez */
+}
+.rap-row__main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-decoration: none;
+}
+.rap-row__title {
+  font-size: 13px; /* 76 */
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+.rap-row__subtitle {
+  font-size: 11px; /* 76 */
+  color: var(--color-text-subtle);
+}
+/* Etkin satır: bağlantı olduğunu göstermek İÇİN hover/focus durumları
+   tasarlanır — mockup'ın `cursor:pointer`ı (75) bu satırların karşılığıdır. */
+.rap-row__main--linked:hover .rap-row__title,
+.rap-row__main--linked:focus-visible .rap-row__title {
+  color: var(--color-primary);
+}
+.rap-row__main--linked:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* Devre dışı satır: soluk başlık + GÖRÜNÜR gerekçe. */
+.rap-row__main--pending .rap-row__title {
+  color: var(--color-text-muted);
+}
+.rap-row__reason {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--color-text-subtle);
+}
+.rap-row__formats {
+  display: flex;
+  gap: 6px; /* 77 */
+  flex-shrink: 0;
+}
