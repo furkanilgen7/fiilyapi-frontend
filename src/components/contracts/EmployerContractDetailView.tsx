@@ -21,7 +21,7 @@ import { isForbidden } from "@/lib/api/unwrap";
 
 import { contractTabHref } from "./contract-tabs";
 import { ContractDocumentsPendingCard } from "./ContractDocumentsPendingCard";
-import { ContractMilestonesPendingCard } from "./ContractMilestonesPendingCard";
+import { ContractMilestonesCard } from "./ContractMilestonesCard";
 import { ContractPaymentSummaryCard } from "./ContractPaymentSummaryCard";
 import { ContractTermsCard } from "./ContractTermsCard";
 import {
@@ -138,7 +138,7 @@ export function EmployerContractDetailView({ projectId }: EmployerContractDetail
           {tab === "general" && (
             <>
               <div className="ecd-grid">
-                <ContractMilestonesPendingCard />
+                <ContractMilestonesCard projectId={projectId} />
                 <ContractPaymentSummaryCard
                   summary={detail.progress_payment_summary}
                   retainagePct={detail.retainage_pct}

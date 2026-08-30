@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 import { login, pinEmployerContractItems, prepareFrame } from "./contracts-visual-helpers";
+import { pinTimeline } from "./takvim-helpers";
 
 // F-P5 T8 · E14 (`/sozlesmeler/isveren/p-1`) görsel testleri. Kanon:
 // projedesign `Ekran 14 - Sözleşme Detay.dc.html`.
@@ -15,11 +16,19 @@ import { login, pinEmployerContractItems, prepareFrame } from "./contracts-visua
 // FİİLEN yaşandı: durum-tabanlı iddia olmadan kare fade'in ortasında düşüyor.
 // Her karede kadrajdan ÖNCE sekmenin KENDİ içeriğine bakan bir iddia vardır.
 //
-// 🔒 FİKSTÜR İZOLASYONU: bu dosya HİÇBİR kayda dokunmaz. Genel/Belgeler
-// sekmeleri sabit `EMPLOYER_CONTRACT_P1`ten beslenir. İş Kalemleri sekmesi ise
+// 🔒 FİKSTÜR İZOLASYONU: bu dosya HİÇBİR kayda dokunmaz. Belgeler sekmesi sabit
+// `EMPLOYER_CONTRACT_P1`ten beslenir. İş Kalemleri sekmesi ise
 // `state.contractItems`ten türer — `contract-distribution.spec.ts`in geçici
 // 1.800 → 1.900 penceresiyle YARIŞIR, bu yüzden GET yanıtı `pinEmployerContract
 // Items` ile tohum kotalarına sabitlenir (paylaşılan mock durumu DEĞİŞMEZ).
+//
+// 🔴 F-MILESTONE — Genel sekmesi ARTIK ÜÇÜNCÜ bir kaynaktan da beslenir:
+// `GET /projects/timeline`. O yanıt PAYLAŞILAN state'ten türer ve
+// `section-form.spec.ts` p-1'in s-2 şantiyesine YENİ bölüm ekliyor. Süzgeçsiz
+// bırakılırsa kare, o spec'in koşup koşmadığına göre oynardı (bugün eklenen
+// bölümler milestone'suz olduğu için kart onları basmaz — ama bu bir GARANTİ
+// DEĞİL, RASTLANTI). `pinTimeline` yanıtı seed kümesine daraltır; `today`
+// damgası sunucudan gelmeye devam eder, UYDURULMAZ.
 //
 // Baseline `.png` YALNIZ Linux CI'da üretilir; macOS'ta commit edilmez.
 
@@ -51,6 +60,7 @@ const FIXED_NOW = "2026-08-27T09:00:00Z";
 test("isveren sozlesme detayi genel sekmesi gorsel", async ({ page }) => {
   await page.clock.setFixedTime(new Date(FIXED_NOW));
   await login(page);
+  await pinTimeline(page);
   await page.goto(URL);
 
   await expect(page.getByRole("heading", { level: 1, name: "Kule A" })).toBeVisible();
@@ -60,7 +70,12 @@ test("isveren sozlesme detayi genel sekmesi gorsel", async ({ page }) => {
   await expect(page.getByTestId("ecd-pps-caption")).toHaveText("%75 hakkedildi");
   // §7 S3 "Sözleşme Koşulları" bloğu kadrajda ZORUNLU (dilimin onaylı eki).
   await expect(page.getByTestId("ecd-term-index")).toHaveText("TÜFE");
-  await expect(page.getByTestId("ecd-milestones-pending")).toBeVisible();
+  // 🔴 Milestone Takvimi CANLI: kadraj YÜKLEME iskeletinde donmasın diye
+  // kartın GERÇEKTEN dolduğu durum-tabanlı olarak beklenir (iki grup + üç
+  // satır). `today` sunucu damgasıdır → `setFixedTime` bu türevi OYNATMAZ.
+  await expect(page.getByTestId("ecd-ms-group")).toHaveCount(2);
+  await expect(page.getByTestId("ecd-ms-row")).toHaveCount(3);
+  await expect(page.getByTestId("ecd-milestones-loading")).toHaveCount(0);
 
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("isveren-sozlesme-genel.png", { fullPage: true });

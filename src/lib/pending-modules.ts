@@ -218,17 +218,19 @@ export const MODULE_LABELS: Record<string, string> = {
   subcontractor_progress_payment_total: "Taşeron hakediş toplamı bu görünüme gelmedi",
   subcontractor_progress_pct: "Sözleşme bedeli girilmemiş — ilerleme oranı hesaplanamaz",
   // F-P5 T3 (E14 · İşveren sözleşme detayı) — mockup'ta ÇİZİLİ olup backend
-  // karşılığı OLMAYAN üç yüzey. Üst kural: bölüm/buton SİLİNMEZ, yerinde
+  // karşılığı OLMAYAN yüzeyler. Üst kural: bölüm/buton SİLİNMEZ, yerinde
   // devre dışı + görünür gerekçeyle basılır.
-  // 99-123 "Milestone Takvimi": `EmployerContractDetail.milestones` şemada
-  // AÇIKÇA `null` tipindedir (proje takvimi = P11).
-  // F-TB2 T2'de DÜZELTİLDİ: eski metin ("Proje takvimi (P11) ile birlikte
-  // gelir") P11 uçları açılıp `/projeler/takvim` yazıldıktan sonra YANLIŞ
-  // hâle gelmişti — eksik olan takvim modülü değil, `EmployerContractDetail
-  // .milestones` ALANININ kendisiydi (şemada hâlâ null). İki iddia + görsel
-  // baseline eşzamanlı güncellendi: `EmployerContractDetailView.test.tsx:348`,
-  // `e2e/employer-contract-detail.spec.ts:81`.
-  contract_milestones: "Sözleşme milestone'ları uçtan gelmiyor (şemada null)",
+  //
+  // 🔴 `contract_milestones` SİLİNDİ (F-MILESTONE, 2026-08-30). Gerekçesi
+  // ("Sözleşme milestone'ları uçtan gelmiyor (şemada null)") ÇÜRÜDÜ: kart artık
+  // `GET /projects/timeline`den GERÇEK milestone basıyor ve anahtarı okuyan
+  // ÜRÜN KODU KALMADI (dosya başındaki silme kuralı). `EmployerContractDetail
+  // .milestones` şemada hâlâ `null`dur ama kart o alanı OKUMAZ.
+  // Silme F-ILRUI tuzağına DÜŞMEZ, ÖLÇÜLDÜ: `git -C backend grep contract_
+  // milestones origin/main` → exit 1 (hiç eşleşme yok), `openapi/openapi.json`
+  // ve `schema.d.ts` → exit 1. Backend bu anahtarı HİÇBİR `pending_modules`
+  // gövdesinde YAYINLAMIYOR, dolayısıyla `FALLBACK_LABEL`e düşecek bir çağrı
+  // yoktur. Yayınlamaya başlarsa anahtar GERİ EKLENİR.
   // 77 "Düzenle": işveren sözleşmesinin kendi alanları için backend'de YAZMA
   // UCU YOKTUR (şema açıklaması: "Sözleşmenin kendi alanları için YENİ yazma
   // ucu AÇILMAZ … bu yalnız okuma şemasıdır") ve proje formu yalnız OLUŞTURMA
