@@ -174,6 +174,10 @@ export const routes = {
   /** Kabuk nav'ında var, rotası henüz YAZILMADI — `[...slug]` ComingSoon'a düşer. */
   companyAssets: () => "/sirket-varliklari",
   approvalInbox: () => "/onay-kutusu",
+  // AI-1 · FİİL AI Asistanı. Segment `/asistan` (`/ai` DEĞİL): bkz.
+  // `src/app/(app)/asistan/page.tsx` başlığı — `ai` kökü açılırsa BFF
+  // rotasındaki üst-kaynak yol sabiti kaçak URL sayılırdı.
+  assistant: () => "/asistan",
 
   projects: {
     list: () => PROJECTS,

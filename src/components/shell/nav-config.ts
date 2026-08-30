@@ -15,6 +15,7 @@ import {
   TrendingUpIcon,
   ListIcon,
   FolderIcon,
+  SparkleIcon,
 } from "@/components/ui/icons";
 import { isActivePath } from "@/lib/shell/isActive";
 import { routes } from "@/lib/routes";
@@ -34,6 +35,12 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Gösterge Paneli", href: "/", Icon: DashboardIcon },
       { label: "Onay Kutusu", href: routes.approvalInbox(), Icon: InboxIcon },
+      // AI-1 · FİİL AI Asistanı. Mockup (`AI Chat.dc.html`) kabuk sol menüsünü
+      // ÇİZMEZ (kendi sohbet-geçmişi sütununu çizer), bu yüzden konum kabuk
+      // canon'undan seçildi: "Genel" grubu tek bir modüle ait olmayan çapraz
+      // yüzeylerin yeridir (Gösterge Paneli · Onay Kutusu · Raporlar) ve asistan
+      // da tam olarak öyledir. Rota GERÇEKTİR (`/asistan`), ComingSoon DEĞİL.
+      { label: "FİİL AI", href: routes.assistant(), Icon: SparkleIcon },
       { label: "Raporlar", href: routes.reports(), Icon: BarChartIcon },
       { label: "Projeler", href: routes.projects.list(), Icon: BuildingIcon },
     ],

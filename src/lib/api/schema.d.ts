@@ -95,6 +95,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ai Chat Endpoint
+         * @description Tek bir kullanıcı mesajı için ajan turunu akıtır.
+         *
+         *     Kapı: `ai:view` (`_VIEW`). 🔴 `ai:full` diye bir şey YOKTUR.
+         *
+         *     🔴 Sağlayıcı yapılandırılmamışsa **503 + dürüst mesaj** döner, genel bir 500
+         *     DEĞİL: "sistem hatası" cümlesi operatörü yanlış yerde arattırır. Hata akış
+         *     BAŞLAMADAN verilir; yarısı akmış bir yanıtın içine hata gömmek, istemciye
+         *     "cevap geldi ama eksik" hissi verirdi.
+         */
+        post: operations["ai_chat_endpoint_ai_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai/context": {
         parameters: {
             query?: never;
@@ -6668,6 +6695,22 @@ export interface components {
          * @enum {string}
          */
         AccountingPeriodStatus: "open" | "closed";
+        /**
+         * AiChatRequest
+         * @description `POST /ai/chat` gövdesi — **durumsuz** tur (§9-A3 kararı bekliyor).
+         *
+         *     🔴 `conversation_id` alanı YOKTUR: `ai_conversations`/`ai_messages` tabloları
+         *     açılmadı ve olmayan bir kimliği kabul eden bir alan, istemciye "konuşma
+         *     sürüyor" yalanını söyletirdi.
+         *
+         *     🔴 `model` / `provider` / `temperature` alanları da YOKTUR: sağlayıcı ve
+         *     model **sunucu** yapılandırmasıdır. İstemcinin model seçebilmesi, maliyeti
+         *     ve veri işleyicisini istemciye devretmek olurdu.
+         */
+        AiChatRequest: {
+            /** Mesaj */
+            mesaj: string;
+        };
         /**
          * AiContextResponse
          * @description S14'ün korkuluğu: AI sınırını **bilerek** çağırsın.
@@ -20279,6 +20322,60 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    ai_chat_endpoint_ai_chat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Sunucu-gönderimli olay akışı (SSE). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description AI sağlayıcısı yapılandırılmadı ya da tanınmıyor. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
