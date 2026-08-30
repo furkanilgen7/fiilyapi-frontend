@@ -169,7 +169,12 @@ export const routes = {
   home: () => "/",
   login: () => "/login",
   designSystem: () => "/design-system",
-  /** Kabuk nav'ında var, rotası henüz YAZILMADI — `[...slug]` ComingSoon'a düşer. */
+  /**
+   * F-RAPOR (2026-08-30): rota ARTIK YAZILDI — `src/app/(app)/raporlar/page.tsx`
+   * (rapor KATALOĞU). Bu satırın eski notu ("rotası henüz YAZILMADI") bugün
+   * YALAN olurdu; `nav-config.test.ts` bu yolun statik bir sayfaya düştüğünü
+   * ayrıca çakar.
+   */
   reports: () => "/raporlar",
   /** Kabuk nav'ında var, rotası henüz YAZILMADI — `[...slug]` ComingSoon'a düşer. */
   companyAssets: () => "/sirket-varliklari",
