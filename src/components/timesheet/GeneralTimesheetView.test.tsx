@@ -267,4 +267,33 @@ describe("GeneralTimesheetView · şantiye yoksa", () => {
     renderView();
     expect(screen.getByText("Şantiye seçin.")).toBeInTheDocument();
   });
+
+  /**
+   * 🔴 E2E-IZOLASYON POZİTİF KONTROLÜ — boş `siteId` ile YAZMA YOLU AÇILAMAZ.
+   *
+   * Ağa giden hook'lar `enabled: siteId.length > 0` ile durur; "Önceki Haftayı
+   * Kopyala" ise ELDE çağrılan bir yoldur (`queryClient.fetchQuery`) ve o
+   * kapının dışındaydı. Basılınca `/sites//timesheet/week`
+   * istenir, hiçbir desene uymaz, 404 döner ve kullanıcı ham `"not found"`
+   * görür. CI run 33312094802 tam bunu bastı.
+   *
+   * Bu iddia `!isSiteResolved` kapısı KALDIRILINCA kırmızıya döner — mutant
+   * ölçüldü.
+   */
+  it("şantiye kimliği çözülmeden 'Önceki Haftayı Kopyala' AÇILMAZ (boş siteId → 404 'not found')", () => {
+    vi.mocked(useSiteOptions).mockReturnValue({
+      options: [],
+      isLoading: false,
+      isError: false,
+    } as never);
+    searchParams = new URLSearchParams({ iso_year: "2026", iso_week: "32" });
+    vi.mocked(useTimesheetWeek).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as never);
+    renderView();
+    expect(screen.getByRole("button", { name: "Önceki Haftayı Kopyala" })).toBeDisabled();
+  });
 });
