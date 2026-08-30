@@ -14,6 +14,10 @@ import {
 } from "@/lib/api/hooks/useProgressPayments";
 import { useProject } from "@/lib/api/hooks/useProjects";
 import {
+  useProjectTimeline,
+  type ProjectTimelineResponse,
+} from "@/lib/api/hooks/useProjectTimeline";
+import {
   EMPLOYER_ITEM_TEXT,
   EMPLOYER_NO_GROUPS_HINT,
   NEW_GROUP_OPTION,
@@ -44,6 +48,15 @@ vi.mock("@/lib/api/hooks/useContractMutations", () => ({
 vi.mock("@/lib/api/hooks/useProjects", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useProjects")>()),
   useProject: vi.fn(),
+}));
+// F-MILESTONE · "Milestone Takvimi" kartı ARTIK CANLI ve `GET /projects/timeline`
+// okur. Bu dosyada `QueryClientProvider` YOKTUR → hook sahtelenir. Kartın kendi
+// bekçileri (küme · sunucu damgası · iki boş hâl · ikinci istek yok)
+// `ContractMilestonesCard.test.tsx`tedir; buradaki iddia YALNIZ kartın ekrana
+// BAĞLI olduğunu ve mockup'ın sahte metinlerinin basılmadığını ölçer.
+vi.mock("@/lib/api/hooks/useProjectTimeline", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useProjectTimeline")>()),
+  useProjectTimeline: vi.fn(),
 }));
 
 // Sekme durumu URL'dedir; testler `?tab=` parametresini bu değişkenle sürer.
@@ -89,6 +102,53 @@ const DETAIL: EmployerContractDetail = {
   milestones: null,
   documents: null,
   pending_modules: [],
+};
+
+/**
+ * F-MILESTONE · proje takvimi gövdesi (`GET /projects/timeline`). `p-1`in İKİ
+ * bölümü de milestone taşır; küme kararı "PROJENİN TÜM BÖLÜMLERİ"dir.
+ * `today` SUNUCU damgasıdır — `new Date()` hiçbir yerde çağrılmaz.
+ */
+const TIMELINE: ProjectTimelineResponse = {
+  today: "2026-07-17",
+  items: [
+    {
+      id: "p-1",
+      code: "PRJ-1",
+      name: "Kule A",
+      status: "active",
+      start_date: "2025-03-01",
+      end_date: "2026-12-01",
+      contract_amount: "11200000",
+      sections: [
+        {
+          id: "sec-1",
+          name: "Kat 6–10 Kaba İnşaat",
+          status: "active",
+          start_date: "2026-01-01",
+          end_date: "2026-09-30",
+          sort_order: 0,
+          depends_on_section_id: "sec-2",
+          milestones: [
+            { id: "ms-1", title: "Kat 8 döşeme tamamlandı", milestone_date: "2026-05-15" },
+            { id: "ms-2", title: "Kaba inşaat teslim", milestone_date: "2026-09-30" },
+          ],
+        },
+        {
+          id: "sec-2",
+          name: "Zemin Kat Kaba İnşaat",
+          status: "completed",
+          start_date: "2025-03-01",
+          end_date: "2025-12-01",
+          sort_order: 1,
+          depends_on_section_id: null,
+          milestones: [
+            { id: "ms-3", title: "Zemin kat teslim", milestone_date: "2025-12-01" },
+          ],
+        },
+      ],
+    },
+  ],
 };
 
 const ITEMS: EmployerContractItemsResponse = {
@@ -181,6 +241,12 @@ function mockAll({
   } as never);
   vi.mocked(useProject).mockReturnValue({
     data: { id: "p-1", name: "Güneşkent Konut A-Blok İnşaatı" },
+    isLoading: false,
+    isError: false,
+    error: null,
+  } as never);
+  vi.mocked(useProjectTimeline).mockReturnValue({
+    data: TIMELINE,
     isLoading: false,
     isError: false,
     error: null,
@@ -345,15 +411,32 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
     });
   });
 
-  describe("Milestone Takvimi → PENDING (mockup 99-123)", () => {
-    it("bölüm SİLİNMEZ: başlık durur, içerik gerekçeli pending'dir", () => {
+  /**
+   * 🔴 F-MILESTONE · ESKİ GEREKÇE ÇÜRÜTÜLDÜ. Bu blok kartın PENDING olduğunu
+   * kilitliyordu; dayanağı *"proje takvimini veren bir uç bu repoda YOK"*tu.
+   * ÖLÇÜLDÜ: `GET /projects/timeline` VAR (`schema.d.ts:3639`) ve P11 ile
+   * canlıya indi — yani gerekçe bayatlamıştı ve test BİR YALANI bekçiliyordu.
+   * İddialar SİLİNMEDİ, YENİ GERÇEĞE TAŞINDI (F-MU2 kanonu) ve GÜÇLENDİ:
+   * sahte veri yasağı hâlâ ölçülüyor, üstüne GERÇEK verinin bağlandığı.
+   */
+  describe("Milestone Takvimi → CANLI (mockup 99-123)", () => {
+    it("proje takviminden gerçek milestone'ları basar", () => {
       mockAll();
       render(<EmployerContractDetailView projectId="p-1" />);
 
       expect(screen.getByText("Milestone Takvimi")).toBeInTheDocument();
-      expect(screen.getByTestId("ecd-milestones-pending")).toHaveTextContent(
-        "Sözleşme milestone'ları uçtan gelmiyor (şemada null)",
-      );
+      expect(
+        screen.getAllByTestId("ecd-ms-title").map((node) => node.textContent),
+      ).toEqual(["Zemin kat teslim", "Kat 8 döşeme tamamlandı", "Kaba inşaat teslim"]);
+      expect(screen.queryByTestId("ecd-milestones-empty")).not.toBeInTheDocument();
+    });
+
+    it("kart rota segmentini alır: proje kimliği kartın kendi tahmini DEĞİLDİR", () => {
+      mockAll();
+      render(<EmployerContractDetailView projectId="p-1" />);
+
+      // `useProject` üst görünümle AYNI anahtarla çağrılır (ikinci istek yok).
+      expect(vi.mocked(useProject).mock.calls.map(([id]) => id)).toContain("p-1");
     });
 
     it("mockup'ın sahte milestone metinleri BASILMAZ (uydurma veri yok)", () => {
@@ -361,7 +444,8 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
       render(<EmployerContractDetailView projectId="p-1" />);
 
       expect(screen.queryByText("Temel ve Bodrum Katlar")).not.toBeInTheDocument();
-      expect(screen.queryByText(/Devam Ediyor/)).not.toBeInTheDocument();
+      expect(screen.queryByText("Teslimat & Kesin Kabul")).not.toBeInTheDocument();
+      expect(screen.queryByText("Nis–Tem 2025")).not.toBeInTheDocument();
     });
   });
 

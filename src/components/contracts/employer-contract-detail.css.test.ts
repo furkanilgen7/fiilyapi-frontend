@@ -96,6 +96,34 @@ describe("employer-contract-detail.css — E14 mockup'ına bağlı kurallar", ()
   });
 
   /**
+   * F-MILESTONE · 103/107/111/115/119 · nokta rengi YALNIZ durumdan türer.
+   * Üç durumun ÜÇÜ de stylesheet'te YAŞAMALIDIR: `milestoneState`/
+   * `TimelineSection.status` bir sınıf adı üretip CSS'i olmasaydı ekranda
+   * GÖRÜNMEYEN bir durum adı kalırdı (`--warning` tonuyla aynı sessiz kusur).
+   */
+  it("milestone noktası: tamamlanan YEŞİL, süren MAVİ + açık mavi halka, planlanan GRİ", () => {
+    expect(css).toMatch(/\.ecd-ms__dot--completed\s*{[^}]*var\(--color-success\)/s);
+    expect(css).toMatch(
+      /\.ecd-ms__dot--active\s*{[^}]*var\(--color-primary\)[^}]*var\(--color-primary-border-soft\)/s,
+    );
+    expect(css).toMatch(/\.ecd-ms__dot--planned\s*{[^}]*var\(--color-border\)/s);
+  });
+
+  /**
+   * 🔴 `SectionStatus` DÖRT üyelidir; `palette.ts`in ONAYLI SAPMASI ile aynı
+   * gerekçe: dördüncüsünü "Planlandı" gibi boyamak durumu SESSİZCE yutardı.
+   */
+  it("dördüncü durum (`on_hold`) KENDİ rengini taşır — planlanana ÇÖKMEZ", () => {
+    expect(css).toMatch(/\.ecd-ms__dot--on_hold\s*{[^}]*var\(--color-warning\)/s);
+  });
+
+  it("son satırın bağlantı çizgisi çizilmez (mockup 118)", () => {
+    expect(css).toMatch(
+      /\.ecd-ms__group:last-child\s+\.ecd-ms__list\s+\.ecd-ms__row:last-child\s+\.ecd-ms__line\s*{[^}]*display:\s*none/s,
+    );
+  });
+
+  /**
    * 🔴 NÜKS BEKÇİSİ (F-BLG T5'te ÖLÇÜLEREK bulundu).
    *
    * Başlıktaki iki buton `Button` primitive'idir, yani `.btn--md` ZATEN bir
