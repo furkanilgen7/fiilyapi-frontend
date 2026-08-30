@@ -8,6 +8,15 @@ export const AUDIT_ACTION_LABEL: Record<AuditAction, string> = {
   delete: "Silme",
   approve: "Onay",
   backup: "Yedekleme",
+  // AI-0b — FİİL AI'ın bir TURUNUN özet satırı. Üreticisi AI-1'de gelir
+  // (`POST /ai/chat`); enum üyesi şimdi açıldı ki ikinci bir enum takas
+  // migration'ı gerekmesin.
+  //
+  // 🔴 Bu haritanın tipi `Record<AuditAction, string>`tir, yani TÜKETİCİDİR:
+  // backend enum'una üye eklendiğinde `tsc` **TS2741 ile patlar** ve etiket
+  // eklenmesini ZORLAR. (Bu satır bir "unutulmasın" notu değil, ölçülmüş bir
+  // olgunun sonucudur — devirde tam olarak öyle oldu.)
+  ai_turn: "AI Turu",
 };
 
 export function isAuditAction(value: string): value is AuditAction {
