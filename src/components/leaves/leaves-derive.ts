@@ -1,4 +1,4 @@
-import { formatDateDots, formatDecimal, formatPercent } from "@/lib/format";
+import { formatDateDots, formatDays, formatPercent } from "@/lib/format";
 import type { LeaveBalanceResponse, LeaveRequestResponse } from "@/lib/api/hooks/useLeaves";
 
 import {
@@ -23,14 +23,14 @@ import {
  * bileşen kurmadan, ayrıştırıcı kurulumlarla ölçebilsin.
  */
 
-export { formatDateDots };
-
-/** Gün sayısı gösterimi — Decimal alanlar string gelir ("9.00" → "9"). */
-const DAY_FRACTION_DIGITS = 1;
-
-export function formatDays(value: string | number): string {
-  return formatDecimal(value, DAY_FRACTION_DIGITS);
-}
+/**
+ * 🔴 BOR-GUN (2026-08-30): `formatDays` bu dosyada DOĞDU ama artık burada
+ * YAŞAMAZ — bordronun Gün sütunu da aynı biçime muhtaç kalınca yardımcı
+ * `@/lib/format`a taşındı (gerekçe orada yazılı). Buradaki re-export
+ * KORUNUR: bu ekranın altı çağıran noktası onu `./leaves-derive`ten alır ve
+ * gün sayısı gösterimi, tarih gösterimi gibi, TEK kaynaktan gelir.
+ */
+export { formatDateDots, formatDays };
 
 /* ── K4 · istemci tarafı JOIN ───────────────────────────────────────────── */
 

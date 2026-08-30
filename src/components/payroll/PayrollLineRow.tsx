@@ -6,7 +6,7 @@ import { Badge, Input } from "@/components/ui";
 import { backendErrorMessage } from "@/lib/api/error-message";
 import type { PayrollLineResponse } from "@/lib/api/hooks/usePayroll";
 import { useUpdatePayrollLineSplit } from "@/lib/api/hooks/usePayrollMutations";
-import { formatAmount } from "@/lib/format";
+import { formatAmount, formatDays } from "@/lib/format";
 import { initials } from "@/lib/shell/initials";
 
 import {
@@ -112,8 +112,11 @@ export function PayrollLineRow({ line, canWrite }: PayrollLineRowProps) {
       </td>
 
       {/* BY:138 — gün; `null` ise mockup'ın kendi `—`si (BY:254). */}
-      <td className="bor-cell bor-cell--center bor-cell--days">
-        {line.days ?? EMPTY_VALUE}
+      <td
+        className="bor-cell bor-cell--center bor-cell--days"
+        data-testid={`${testId}-days`}
+      >
+        {dayCount(line.days)}
       </td>
 
       {/* BY:139-141 — para sütunları; `null` = "hesaplanamadı", 0 DEĞİL. */}
@@ -183,4 +186,21 @@ export function PayrollLineRow({ line, canWrite }: PayrollLineRowProps) {
 /** `null` para = "hesaplanamadı" ⇒ `—`; sıfır ile karıştırılmaz (S4). */
 function money(value: string | null): string {
   return value === null ? EMPTY_VALUE : formatAmount(value);
+}
+
+/**
+ * 🔴 BOR-GUN (2026-08-30) — BY:138 Gün hücresi.
+ *
+ * KUSUR: PUAN-SAAT-3 `days`i `int` → `Decimal` yaptı (adam-gün = `saat ÷ 9`)
+ * ve JSON'da Decimal STRING gelir. Hücre değeri HAM basıyordu, ekran `23.00`
+ * yazıyordu; mockup ise düz `21`/`23` çizer (BY:138/155). Aynı satırdaki BEŞ
+ * para sütununun hepsi `money()`den geçiyordu, gün sütunu geçmiyordu —
+ * asimetri kusurun ta kendisiydi. Dört kapı da yeşil geçmişti: tip iki tarafta
+ * da `string | null`, yani "sözleşme kısıtı tipte yaşamaz" kanonu.
+ *
+ * 🔴 `null` hâli DEĞİŞMEDİ: `money()` ile aynı ayrım — `null` "hesaplanamadı"
+ * demektir (BY:254 taşeron/serbest satırı `—` çizer), `0` DEĞİL.
+ */
+function dayCount(value: string | null): string {
+  return value === null ? EMPTY_VALUE : formatDays(value);
 }
