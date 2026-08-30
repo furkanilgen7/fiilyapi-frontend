@@ -373,7 +373,7 @@
 }
 .ecd-ms__name {
   font-size: var(--text-body); /* 13px — 104 */
-  font-weight: var(--weight-medium);
+  font-weight: var(--weight-semibold);
   color: var(--color-text);
 }
 .ecd-ms__title {
@@ -388,6 +388,14 @@
 }
 .ecd-ms__row--milestone .ecd-ms__body {
   padding-bottom: 12px;
+}
+/* 🔴 ONAYLI SAPMANIN GÖRÜNÜR YARISI: mockup DÜZ bir liste çizer çünkü orada
+   bölüm/milestone ayrımı YOKTUR (satırların dördü aslında BÖLÜM, beşincisi
+   milestone). Gerçek veride iki SEVİYE var ve girinti olmadan "Zemin kat
+   teslim" bir üstündeki BÖLÜME mi ait yoksa onun kardeşi mi belirsiz kalır.
+   Girinti = rayın genişliği (12px) + satır boşluğu (14px). */
+.ecd-ms__list {
+  margin-left: 26px;
 }
 
 /* Nokta rengi YALNIZ durumdan türer (E14 103/107/111/115/119).

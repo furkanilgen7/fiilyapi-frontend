@@ -117,6 +117,16 @@ describe("employer-contract-detail.css — E14 mockup'ına bağlı kurallar", ()
     expect(css).toMatch(/\.ecd-ms__dot--on_hold\s*{[^}]*var\(--color-warning\)/s);
   });
 
+  /**
+   * ONAYLI SAPMA (F-MILESTONE): mockup DÜZ liste çizer çünkü orada bölüm ile
+   * milestone ayrimi YOKTUR. Gerçek veride İKİ SEVİYE var; girinti kalkarsa
+   * milestone'un hangi bölüme ait olduğu okunamaz hâle gelir.
+   */
+  it("milestone satırları bölümün ALTINA girintilenir (iki seviye okunur kalır)", () => {
+    expect(css).toMatch(/\.ecd-ms__list\s*{[^}]*margin-left:\s*26px/s);
+    expect(css).toMatch(/\.ecd-ms__name\s*{[^}]*var\(--weight-semibold\)/s);
+  });
+
   it("son satırın bağlantı çizgisi çizilmez (mockup 118)", () => {
     expect(css).toMatch(
       /\.ecd-ms__group:last-child\s+\.ecd-ms__list\s+\.ecd-ms__row:last-child\s+\.ecd-ms__line\s*{[^}]*display:\s*none/s,
