@@ -1,9 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { pinTimeline } from "./takvim-helpers";
+
 // F-P5 T3 · E14 (`/sozlesmeler/isveren/[projectId]`) fonksiyonel e2e.
 // Kapsam: rotanın ComingSoon'dan çıkması, başlık + 5 metrik, Hakediş Özeti,
 // sekme URL state'i (+ geri tuşu), İş Kalemleri kolonları, Hakedişler
-// sekmesinin proje filtresi, Belgeler/Milestone PENDING'leri, devre-dışı
+// sekmesinin proje filtresi, Milestone Takvimi (CANLI) + Belgeler PENDING'i, devre-dışı
 // PDF/Düzenle, POZ ekranına giriş.
 //
 // ⚠️ Dağılım/işveren sözleşmesi uçları YALNIZ `p-1` için veri döner (mock).
@@ -62,10 +64,16 @@ test("işveren sözleşme detayı: başlık kartı + 5 metrik + devre-dışı bu
   );
 });
 
-test("işveren sözleşme detayı: Genel sekmesi — özet kartı, milestone PENDING, S3 koşulları", async ({
+test("işveren sözleşme detayı: Genel sekmesi — özet kartı, milestone takvimi, S3 koşulları", async ({
   page,
 }) => {
   await login(page);
+  // 🔴 FİKSTÜR SÜZGECİ: `/projects/timeline` PAYLAŞILAN state'ten türer ve
+  // `section-form.spec.ts` p-1'in s-2 şantiyesine YENİ bölüm ekler. Süzgeç
+  // olmadan aşağıdaki grup/satır sayımları test SIRASINA bağlı olurdu.
+  // Yanıt UYDURULMAZ, yalnız seed kümesine daraltılır (`pinTimeline` doğrudan
+  // gerçek uca gider; `today` damgası sunucudan gelmeye devam eder).
+  await pinTimeline(page);
   await page.goto("/sozlesmeler/isveren/p-1");
 
   // Hakediş Özeti — `progress_payment_summary` birebir.
@@ -75,12 +83,35 @@ test("işveren sözleşme detayı: Genel sekmesi — özet kartı, milestone PEN
   await expect(page.getByTestId("ecd-pps-advance")).toHaveText("- ₺ 1.680.000");
   await expect(page.getByTestId("ecd-pps-retention")).toHaveText("- ₺ 420.000");
 
-  // Milestone Takvimi: bölüm SİLİNMEZ, PENDING + gerekçe; sahte veri YOK.
+  // 🔴 F-MILESTONE — kart artık CANLI: `GET /projects/timeline`den p-1'in
+  // İKİ bölümünün (sec-2 · sec-1) ÜÇ milestone'u basılır. Milestone'suz sec-3
+  // grup üretmez. Durum SUNUCUNUN `today`inden (2026-07-17) türer — istemci
+  // saati burada sabitlenmez ve TÜREVİ ETKİLEMEZ.
   await expect(page.getByRole("heading", { name: "Milestone Takvimi" })).toBeVisible();
-  await expect(page.getByTestId("ecd-milestones-pending")).toContainText(
-    "Sözleşme milestone'ları uçtan gelmiyor (şemada null)",
-  );
+  await expect(page.getByTestId("ecd-ms-group")).toHaveCount(2);
+  await expect(page.getByTestId("ecd-ms-section-name")).toHaveText([
+    "Zemin Kat Kaba İnşaat",
+    "Kat 6–10 Kaba İnşaat",
+  ]);
+  // Aralık GERÇEK bölüm tarihlerinden; üçüncü durum bölümün ENUM'undan.
+  await expect(page.getByTestId("ecd-ms-section-meta")).toHaveText([
+    "Mar–Ara 2025 · Tamamlandı",
+    "Oca–Eyl 2026 · Devam Ediyor",
+  ]);
+  await expect(page.getByTestId("ecd-ms-title")).toHaveText([
+    "Zemin kat teslim",
+    "Kat 8 döşeme tamamlandı",
+    "Kaba inşaat teslim",
+  ]);
+  await expect(page.getByTestId("ecd-ms-meta")).toHaveText([
+    "1 Aralık 2025 · Tamamlandı",
+    "15 Mayıs 2026 · Tamamlandı",
+    "30 Eylül 2026 · Planlandı",
+  ]);
+  // Milestone'suz bölüm grup ÜRETMEZ; mockup'ın sahte metinleri BASILMAZ.
+  await expect(page.getByText("Peyzaj Düzenlemesi (Taslak)")).toHaveCount(0);
   await expect(page.getByText("Temel ve Bodrum Katlar")).toHaveCount(0);
+  await expect(page.getByText("Teslimat & Kesin Kabul")).toHaveCount(0);
 
   // §7 S3 — salt-okunur koşullar; ızgaranın DIŞINDA ayrı bölüm.
   const terms = page.getByTestId("ecd-terms");
