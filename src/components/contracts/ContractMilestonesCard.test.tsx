@@ -384,6 +384,51 @@ describe("hata dalı", () => {
     );
   });
 
+  /**
+   * 🔴 403 GENEL HATAYA ÇÖKMEZ. Bu hâl ULAŞILABİLİR: ekran `contracts:view`,
+   * takvim `projects:view` ister (İKİ FARKLI MODÜL). "Yüklenemedi" demek
+   * geçici bir arıza vaat ederdi. Mutasyon: 403'ü hata dalına indir → kırmızı.
+   */
+  it("403: yetki sınırı SÖYLENİR, 'yüklenemedi' DENMEZ", async () => {
+    // 🔴 Hata NESNESİ elle kurulmaz: `fetch` GERÇEK bir 403 yanıtı döndürür ve
+    // `BackendError`ı ürünün kendi `unwrap`ı üretir. Bekçi böylece ölçtüğü yolu
+    // kendisi kurmaz.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(JSON.stringify({ detail: "forbidden" }), {
+          status: 403,
+          headers: { "content-type": "application/json" },
+        }),
+      ),
+    );
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    });
+    client.setQueryData([PROJECT_QUERY_KEY, "p-1"], { id: "p-1", name: "Kule A" });
+    renderCard(client);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("ecd-milestones-forbidden")).toHaveTextContent(
+        "Milestone takvimini görme yetkiniz yok.",
+      ),
+    );
+    expect(screen.queryByTestId("ecd-milestones-error")).not.toBeInTheDocument();
+  });
+
+  it("403 OLMAYAN hata yine 'yüklenemedi'dir (pozitif kontrol)", async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    });
+    client.setQueryData([PROJECT_QUERY_KEY, "p-1"], { id: "p-1", name: "Kule A" });
+    renderCard(client);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("ecd-milestones-error")).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId("ecd-milestones-forbidden")).not.toBeInTheDocument();
+  });
+
   it("başlık HER hâlde durur (bölüm SİLİNMEZ kuralı)", () => {
     vi.stubGlobal(
       "fetch",

@@ -6,6 +6,7 @@ import {
   useProjectTimeline,
   type ProjectTimelineResponse,
 } from "@/lib/api/hooks/useProjectTimeline";
+import { isForbidden } from "@/lib/api/unwrap";
 import { formatDateLong } from "@/lib/format";
 
 import { buildMilestoneTimeline, type MilestoneGroup } from "./milestone-timeline";
@@ -68,6 +69,7 @@ export function ContractMilestonesCard({ projectId }: ContractMilestonesCardProp
         Milestone Takvimi
       </h2>
       <MilestonesBody
+        isForbidden={isForbidden(timelineQuery.error) || isForbidden(projectQuery.error)}
         isError={timelineQuery.isError || projectQuery.isError}
         timeline={timelineQuery.data}
         projectUuid={projectQuery.data?.id}
@@ -77,12 +79,34 @@ export function ContractMilestonesCard({ projectId }: ContractMilestonesCardProp
 }
 
 interface MilestonesBodyProps {
+  /** 403 — `AccessDenied` DEĞİL: yalnız BU kart kapalıdır, ekranın kalanı açık. */
+  isForbidden: boolean;
   isError: boolean;
   timeline: ProjectTimelineResponse | undefined;
   projectUuid: string | undefined;
 }
 
-function MilestonesBody({ isError, timeline, projectUuid }: MilestonesBodyProps) {
+function MilestonesBody({ isForbidden, isError, timeline, projectUuid }: MilestonesBodyProps) {
+  /**
+   * 🔴 403 GENEL HATAYA ÇÖKMEZ — ve bu hâl ULAŞILABİLİRDİR, ÖLÇÜLDÜ:
+   * ekranın kendisi `contracts:view` ile korunur (backend `contracts/router.py:56`)
+   * ama `/projects/timeline` `projects:view` ister (`projects/router.py:118`).
+   * İKİ FARKLI MODÜL: `contracts` izni olup `projects` izni olmayan kullanıcı
+   * sözleşmeyi GÖRÜR, takvimi göremez. O kullanıcıya "yüklenemedi" demek
+   * geçici bir arıza vaat ederdi; doğru cümle yetki sınırını söyler.
+   */
+  if (isForbidden) {
+    return (
+      <>
+        <p className="ecd-ms__message" data-testid="ecd-milestones-forbidden">
+          Milestone takvimini görme yetkiniz yok.
+        </p>
+        <p className="ecd-ms__hint">
+          Takvim `projeler` modülü izniyle açılır; sözleşme izni onu kapsamaz.
+        </p>
+      </>
+    );
+  }
   if (isError) {
     return (
       <p className="ecd-ms__message" data-testid="ecd-milestones-error">
