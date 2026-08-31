@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -22,13 +20,6 @@ import {
  * yola ya da yazılı bir sebebe çözülür; sessiz bir üçüncü hâl yoktur. Backend
  * tarafındaki ikizi `test_ai0b_navigation.py`dir.
  */
-
-const MOCKUP_YOLU = join(
-  process.cwd(),
-  "..",
-  "projedesign",
-  "AI Chat.dc.html",
-);
 
 describe("ai-screen-routes", () => {
   it("HER anahtar ya bir YOLA ya da yazili bir SEBEBE cozulur", () => {
@@ -75,14 +66,22 @@ describe("ai-screen-routes", () => {
     expect(ekranYolu("ayarlar")).not.toContain("izin-matrisi");
   });
 
-  it("mockup'in KAYNAK rozetleri bilinen ekranlara denk duser", () => {
-    // Mockup 206-209 / 303-305: Hakediş · Taşeron Hakedişi · Nakit Akışı ·
-    // Şantiye Stok · Haftalık Plan. Bunların anahtar karşılıkları çözülmeli
-    // (Haftalık Plan hariç: `santiye_gunlugu` altındadır ve sebebi yazılı).
-    const mockup = readFileSync(MOCKUP_YOLU, "utf8");
-    expect(mockup).toContain("Hakediş Kayıtları");
-    for (const anahtar of ["hakedisler", "hazine", "stok"]) {
-      expect(ekranYolu(anahtar)).not.toBeNull();
+  it("mockup'in KAYNAK rozetlerinin anahtarlari COZULUR", () => {
+    // Mockup 206-209 / 303-305: Hakediş Kayıtları · Taşeron Hakedişleri ·
+    // Nakit Akışı · Şantiye Stok · Haftalık Plan.
+    //
+    // 🔴 ÖLÇÜLDÜ — bu test bir zamanlar mockup DOSYASINI okuyordu ve CI'da
+    // ENOENT ile düştü: `projedesign/` İKİ DEPONUN DA İÇİNDE DEĞİLDİR
+    // (yalnız yerel çalışma ağacında yan yana duruyorlar). Yani hiçbir birim
+    // testi mockup'la karşılaştırma yapamaz; mockup birebirliğinin TEK bekçisi
+    // Linux CI'da üretilen GÖRSEL BASELINE'lardır (`asistan-visual.spec.ts`).
+    // Burada ölçülen şey yalnız anahtarların çözülebildiğidir.
+    for (const anahtar of ["hakedisler", "hazine", "stok", "puantaj"]) {
+      expect(ekranYolu(anahtar), anahtar).not.toBeNull();
     }
+    // Mockup'ın "Haftalık Plan" rozeti `santiye_gunlugu` altındadır → çözülemez
+    // ve sebebi YAZILI. Sessiz bir ölü bağlantı DEĞİL.
+    expect(ekranYolu("santiye_gunlugu")).toBeNull();
+    expect(ekranSebebi("santiye_gunlugu")).toContain("tek başına bir ekranı yok");
   });
 });
