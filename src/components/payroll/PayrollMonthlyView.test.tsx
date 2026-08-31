@@ -626,6 +626,71 @@ describe("🔴 K7 — mutasyonlar, tek uçuş ve atlama sayaçları", () => {
     expect(screen.getByTestId("bordro-approve-all-reason")).toHaveTextContent("zaten onaylı");
   });
 
+  /**
+   * 🔴 KRIT-BORDRO — ödenecek satırı olmayan dönemde `Tümünü Onayla` KAPALIDIR.
+   *
+   * Ölçülen canlı kusur: puantaj girilmemiş dönemde düğme AÇIKTI; iki tık
+   * dönemi `approved` yapıyor, `compute` (409) ve satır `PATCH` (409) kapanıyor,
+   * `DELETE` ucu olmadığı ve UQ `(year, month)` aynı ayı ikinci kez açtırmadığı
+   * için o ayın bordrosu elle SQL dışında kurtarılamaz hâle geliyordu.
+   *
+   * 🔴 Düğme SİLİNMEZ, devre dışı basılır ve gerekçe GÖRÜNÜR (K11): sebebi
+   * söylenmeyen bir pasif düğme kullanıcıya yapması gereken işi anlatmaz.
+   */
+  it("🔴 ödenecek satırı olmayan dönemde `Tümünü Onayla` KAPALI ve gerekçe GÖRÜNÜR", () => {
+    vi.mocked(usePayrollPeriod).mockReturnValue(
+      queryResult<PayrollPeriodDetailResponse>({
+        data: detail({
+          status: "draft",
+          sections: [
+            section("subcontractor", [SUBCONTRACTOR_LINE]),
+            section("intern", [UNCOMPUTED_LINE]),
+          ],
+        }),
+      }),
+    );
+    render(<PayrollMonthlyView />);
+
+    expect(screen.getByTestId("bordro-approve-all")).toBeDisabled();
+    expect(screen.getByTestId("bordro-approve-all-reason")).toHaveTextContent(
+      "Dönemde ödenecek satır yok",
+    );
+  });
+
+  it("🔴 hiç satırı olmayan (hesaplanmamış) dönemde de `Tümünü Onayla` KAPALI", () => {
+    vi.mocked(usePayrollPeriod).mockReturnValue(
+      queryResult<PayrollPeriodDetailResponse>({
+        data: detail({ status: "draft", sections: [] }),
+      }),
+    );
+    render(<PayrollMonthlyView />);
+    expect(screen.getByTestId("bordro-approve-all")).toBeDisabled();
+  });
+
+  /**
+   * 🔴 KARŞIT KANIT (K-IKIZ1). Bu olmadan `approveDisabledReason`ı her zaman
+   * bir metin döndürecek şekilde bozmak da testleri yeşil geçirirdi: düğmenin
+   * KAPANDIĞINI gösteren testler, AÇILDIĞINI göstermez.
+   */
+  it("🔴 POZİTİF KONTROL — ödenebilir satırı OLAN dönemde `Tümünü Onayla` AÇIK", () => {
+    vi.mocked(usePayrollPeriod).mockReturnValue(
+      queryResult<PayrollPeriodDetailResponse>({
+        data: detail({
+          status: "draft",
+          sections: [
+            section("company", [COMPANY_LINE]),
+            section("subcontractor", [SUBCONTRACTOR_LINE]),
+            section("intern", [UNCOMPUTED_LINE]),
+          ],
+        }),
+      }),
+    );
+    render(<PayrollMonthlyView />);
+
+    expect(screen.getByTestId("bordro-approve-all")).toBeEnabled();
+    expect(screen.queryByTestId("bordro-approve-all-reason")).toBeNull();
+  });
+
   it("mutasyon beklerken onay düğmesi kilitlidir", () => {
     vi.mocked(useApprovePayrollPeriod).mockReturnValue(mutationResult({ isPending: true }));
     render(<PayrollMonthlyView />);

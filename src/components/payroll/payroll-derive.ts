@@ -174,6 +174,33 @@ export function totalLineCount(sections: readonly PayrollSectionResponse[]): num
   return sections.reduce((sum, section) => sum + section.line_count, 0);
 }
 
+/**
+ * 🔴 KRIT-BORDRO — dönemde ÖDENECEK bir satır var mı?
+ *
+ * Sunucunun `payroll/service/core.has_payable_line` bekçisinin AYNASIDIR ve
+ * küme ORADAN alınır (`PAYABLE_LINE_STATUSES` = `pending`/`approved`/`paid`);
+ * `uncomputed` (S4) ve `excluded` (K2) KASTEN dışarıdadır — ikisi de "ödenecek
+ * bir tutar" ifade etmez.
+ *
+ * 🔴 Sayaç alanlarından (`summary.net_personnel_count`) TÜRETİLMEZ, satırın
+ * KENDİ durumundan okunur: o sayaç neti `null` OLMAYAN satırları sayar, yani
+ * "ödenebilir" ile "neti hesaplanmış" kavramlarını birbirine bağlar. İkisi
+ * ayrışırsa (T1'e göre imkânsız ama sözleşmede yazılı değil) düğme sunucunun
+ * kabul edeceği bir dönemi kapatır ya da tersi.
+ *
+ * 🔴 Bu bir KORKULUKTUR, KAPI DEĞİL. Gerçek kapı sunucudadır (409): istemci
+ * denetimi tek başına olsaydı doğrudan uca atılan bir istek dönemi yine ölü
+ * bırakırdı.
+ */
+export function hasPayableLine(sections: readonly PayrollSectionResponse[]): boolean {
+  return sections.some((section) =>
+    section.lines.some(
+      (line) =>
+        line.status === "pending" || line.status === "approved" || line.status === "paid",
+    ),
+  );
+}
+
 /** Aktif sekme `null` ise (Tümü) hepsi, değilse yalnız o kaynak. */
 export function visibleSections(
   sections: readonly PayrollSectionResponse[],

@@ -30,6 +30,7 @@ import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncatio
 import {
   computeDisabledReason,
   defaultPeriodId,
+  hasPayableLine,
   orderedSections,
   periodNavigation,
   skipSummary,
@@ -520,6 +521,18 @@ function approveDisabledReason(
   if (detail.status === "paid") return "Dönem ödendi; onay zinciri tamamlandı.";
   if (detail.status === "approved") {
     return "Dönem zaten onaylı; sıradaki adım ödeme damgasıdır (Ödemeyi Onayla).";
+  }
+  // 🔴 KRIT-BORDRO — ödenecek satırı olmayan dönem onay zincirine GİRMEZ.
+  //
+  // Sunucudaki bekçinin (409 `PERIOD_EMPTY_NOT_APPROVABLE`) İSTEMCİ AYNASIDIR
+  // ve onun YERİNE GEÇMEZ: gerçek kapı sunucudadır, burası kullanıcının o
+  // duvara ancak tıkladıktan SONRA çarpmasını engeller.
+  //
+  // 🔴 Düğme SİLİNMEZ, devre dışı basılır ve gerekçe `title`da OKUNUR (K11):
+  // sebebi görünmeyen bir pasif düğme, kullanıcıya yapması gereken işi
+  // (puantajı girip dönemi hesaplamak) söylemez.
+  if (!hasPayableLine(detail.sections)) {
+    return "Dönemde ödenecek satır yok; önce puantajı girip dönemi hesaplayın.";
   }
   return undefined;
 }

@@ -24,6 +24,7 @@ import {
   sortPeriodsChronologically,
   toAmountPayload,
   totalLineCount,
+  hasPayableLine,
   visibleSections,
 } from "./payroll-derive";
 import {
@@ -87,6 +88,14 @@ function section(
   return { personnel_source: source, line_count: lineCount, lines: [] };
 }
 
+/** `hasPayableLine` SATIRIN durumunu okur, `line_count`u DEĞİL. */
+function sectionWith(
+  source: WorkerSource,
+  lines: PayrollLineResponse[],
+): PayrollSectionResponse {
+  return { personnel_source: source, line_count: lines.length, lines };
+}
+
 describe("dönem gezgini", () => {
   const rows = [periodRow("b", 2026, 7), periodRow("a", 2026, 6), periodRow("c", 2026, 8)];
 
@@ -148,6 +157,42 @@ describe("bölümler", () => {
 
   it("toplam satır sayısı `line_count` toplamıdır", () => {
     expect(totalLineCount([section("company", 12), section("subcontractor", 29)])).toBe(41);
+  });
+
+  /**
+   * 🔴 KRIT-BORDRO — sunucudaki `has_payable_line` bekçisinin aynası.
+   * Küme `pending`/`approved`/`paid`tir; `uncomputed` (S4) ve `excluded` (K2)
+   * ödenecek bir tutar İFADE ETMEZ.
+   */
+  describe("hasPayableLine", () => {
+    it("hiç bölüm yoksa `false` (dönem hesaplanmamıştır)", () => {
+      expect(hasPayableLine([])).toBe(false);
+    });
+
+    it("🔴 yalnız `uncomputed` ve `excluded` satır varsa `false`", () => {
+      expect(
+        hasPayableLine([
+          sectionWith("subcontractor", [line({ status: "excluded" })]),
+          sectionWith("intern", [line({ status: "uncomputed" })]),
+        ]),
+      ).toBe(false);
+    });
+
+    it("satırları olan ama HEPSİ boş bölümler `false` (sayaç değil SATIR okunur)", () => {
+      expect(hasPayableLine([section("company", 12)])).toBe(false);
+    });
+
+    it.each(["pending", "approved", "paid"] as const)(
+      "🔴 KARŞIT KANIT — tek bir `%s` satır bile `true` yapar",
+      (status) => {
+        expect(
+          hasPayableLine([
+            sectionWith("intern", [line({ status: "uncomputed" })]),
+            sectionWith("company", [line({ status })]),
+          ]),
+        ).toBe(true);
+      },
+    );
   });
 
   it("sekme süzgeci yalnız seçilen kaynağı bırakır", () => {
