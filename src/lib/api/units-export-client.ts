@@ -4,11 +4,24 @@ import { downloadExport } from "@/lib/api/download";
 //
 // 🔴 EXPORT-XLSX (2026-08-31) — BU DOSYA ESKİDEN ŞUNU YAZIYORDU: *"ORTAK bir
 // `downloadBlob` yardımcısı ÇIKARILMAZ: üç emsalin de kendi yol kurucusu, kendi
-// `toBackendError`ı ve kendi varsayılan adı vardır."* O karar ÖLÇÜMLE
-// ÇÜRÜTÜLDÜ: gövde DOKUZ istemcide birebir aynıydı ve altı yeni dışa aktarma
-// ucu sayıyı on beşe çıkaracaktı. Yardımcı yalnız DEĞİŞMEYEN kısmı (blob →
-// objectURL → `<a download>` → `finally revokeObjectURL`) sarar; yol kurucusu,
-// varsayılan ad ve süzgeç kararı HÂLÂ bu dosyanındır.
+// `toBackendError`ı ve kendi varsayılan adı vardır."*
+//
+// O karar ÖLÇÜMLE ÇÜRÜTÜLDÜ ve ölçüm şudur (kanıt, iddia değil):
+//   * Kanonu getiren commit `eff2773` (2026-08-23, F-PKK T1).
+//   * O commit'te `createObjectURL` taşıyan istemci sayısı **ÜÇ DEĞİL SEKİZDİ**
+//     (audit · boq · documents · payroll · purchase-quote · timesheet ·
+//     units-export · units-import). Kanon, EMSAL DİYE ANDIĞI üç dosyadan
+//     tüm popülasyona genelleme yapmıştı.
+//   * Ve asıl gerekçesi O GÜN ZATEN YANLIŞTI: `toBackendError` gövdesi o
+//     commit'te SEKİZİNDE DE bayt bayt aynıydı (md5 6630a8ed…), bugün de aynı.
+//     Yani "her istemcinin kendi `toBackendError`ı var" hiçbir zaman doğru
+//     olmadı; kopyanın kendisi gerekçe diye gösterilmişti.
+//   * Altı yeni dışa aktarma ucu sayıyı on beşe çıkaracaktı.
+//
+// Yardımcı yalnız DEĞİŞMEYEN kısmı (blob → objectURL → `<a download>` →
+// `finally revokeObjectURL`) sarar; yol kurucusu, varsayılan ad ve süzgeç
+// kararı HÂLÂ bu dosyanındır — yani kanonun GERÇEKTEN farklı olan üç şeyi
+// koruma amacı korunur, yalnız kopya olan kısım tekleşir.
 //
 // ⚠️ BFF İZİN LİSTESİ: ucun ilk segmenti `projects`tır ve o kök `ALLOWED_ROOTS`ta
 // ZATEN tanımlıdır. 🔴 `units` diye YENİ BİR KÖK EKLENMEZ
