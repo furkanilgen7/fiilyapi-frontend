@@ -238,12 +238,93 @@ async function expectXlsxDownload(page: Page, buttonName: string) {
 }
 
 /**
+ * 🔴 ŞANTİYE KİMLİĞİ ÇÖZÜLMEDEN YAZMA YOLU AÇILMAZ (SALT-OKUR — mutasyon yok).
+ *
+ * ŞP rotası şantiyeyi SLUG'la taşır; UUID `GET /sites/{key}` yanıtından gelir
+ * ve o ana kadar `siteId` BOŞ STRING'tir. Ağa giden hook'ların hepsi
+ * `enabled: siteId.length > 0` kapısında durur — ama "Önceki Haftayı Kopyala"
+ * HOOK DEĞİL, elde çağrılan `queryClient.fetchQuery` yoludur ve o kapının
+ * DIŞINDAYDI: boş kimlikle `/sites//timesheet/week` istenir, yol sahte
+ * backend'in HİÇBİR desenine uymaz ve catch-all 404 `{"detail":"not found"}`
+ * döner. Kullanıcı gerekçe olarak ham `"not found"` görürdü.
+ *
+ * CI run 33312094802'de canlı görüldü: `.ts-save-status` beklenen "Önceki
+ * haftadan" yerine `"not found"` bastı. Yerelde YÜKSÜZ koşuda görünmez —
+ * şantiye çözümü tıklamadan önce dönerdi; burada istek BİLEREK tutulur ve
+ * yarış deterministik hâle getirilir.
+ */
+test("şantiye kimliği çözülmeden 'Önceki Haftayı Kopyala' KAPALIDIR", async ({ page }) => {
+  await login(page);
+
+  let releaseSite = () => {};
+  const siteGate = new Promise<void>((resolve) => {
+    releaseSite = resolve;
+  });
+  // YALNIZ slug->UUID çözümü tutulur; `/sites/{id}/timesheet/week` bu desene
+  // uymaz (sonrasında `/` gelir), o yüzden hafta ucu serbesttir.
+  await page.route("**/api/backend/sites/s-1?*", async (route) => {
+    await siteGate;
+    await route.continue();
+  });
+
+  await page.goto(`${SITE_URL}?${WEEK_36}`);
+  const copyButton = page.getByRole("button", { name: "Önceki Haftayı Kopyala" }).first();
+  // Kimlik çözülmeden KAPALI. Açık olsaydı basış ham "not found" basardı.
+  await expect(copyButton).toBeDisabled();
+
+  releaseSite();
+  // Kimlik gelince düğme AÇILIR — kapı "hep kapalı" diye geçmiyor (K-IKIZ1).
+  await expect(copyButton).toBeEnabled();
+});
+
+/**
  * Mutasyon akışları TEK dosyada SIRAYLA koşar: hepsi 2026-W36 · s-1 kapsamını
  * yazar ve `PUT` o kapsamın TAMAMINI değiştirir — paralel koşarlarsa
  * birbirlerinin gövdesini ezerlerdi.
  */
 test.describe("puantaj düzenleme (MUTASYON, 2026-W36 · s-1)", () => {
   test.describe.configure({ mode: "serial" });
+
+  /**
+   * 🔴🔴 KANON: RETRY, PAYLAŞILAN FİKSTÜRÜ BOZAR.
+   *
+   * `mock-backend.ts` `globalSetup` üzerinden TEK paylaşımlı süreçte koşar ve
+   * durumu SIFIRLAYAN hiçbir ucu yoktur (`command grep -c
+   * 'resetMockState|__reset|resetState' e2e/mock-backend.ts` → 0, EXIT=1).
+   * Bu blok 2026-W36'yı MUTASYONA uğratır; `mode: "serial"` altında bir test
+   * düşünce Playwright BLOĞUN TAMAMINI yeniden koşar — ama fikstür ilk turdan
+   * kalan hâliyle durur. CI run 33312094802'de tam bu oldu: ilk turda "kod
+   * seçmek" testi Mehmet Kılıç'ın 1 Eyl hücresini SAATTEN KODA çevirdi,
+   * retry'da KAPSAM (a) aynı hücrede saat kutusu arayıp `element(s) not found`
+   * ile düştü — kusur KAPSAM (a)'da DEĞİLDİ.
+   *
+   * Çözüm: bu adanın (s-1 · 2026-W36) fikstürü HER testin başında kanonik
+   * hâline geri yazılır. Yazma, sahte backend'in KENDİ genel ucundan geçer —
+   * teste özel arka kapı açılmaz — ve YALNIZ bu haftayı + bu şantiyeyi
+   * kapsar, yani paralel koşan öbür işçinin verisine dokunmaz.
+   *
+   * `mock-backend.ts` içindeki `TIMESHEET_CELL_FIXTURES` bloğunun W36 · s-1
+   * satırlarının BİREBİR ikizidir; orası değişirse burası da değişir.
+   */
+  const MOCK_PORT = Number(process.env.MOCK_BACKEND_PORT ?? 4319);
+  const WEEK_36_FIXTURE = [
+    { personnel_id: "per-1", work_date: "2026-09-01", hours: "9.0", code: null, section_id: "sec-1" },
+    { personnel_id: "per-2", work_date: "2026-09-02", hours: "9.0", code: null, section_id: "sec-1" },
+    { personnel_id: "per-4", work_date: "2026-09-01", hours: "8.0", code: null, section_id: "sec-2" },
+  ];
+
+  test.beforeEach(async ({ request }) => {
+    const response = await request.put(
+      `http://127.0.0.1:${MOCK_PORT}/sites/s-1/timesheet/week?iso_year=2026&iso_week=36`,
+      {
+        headers: { authorization: "Bearer e2e-fixture-reset" },
+        data: { cells: WEEK_36_FIXTURE },
+      },
+    );
+    // Sessiz sıfırlama YOK: geri yükleme başarısızsa test SAHTE bir tabanla
+    // koşmaz, burada durur.
+    expect(response.status(), await response.text()).toBe(200);
+  });
 
   test("🔴 KAPSAM (a): bölüm filtresi açıkken kaydet → diğer bölümün kaydı SİLİNMEZ", async ({
     page,

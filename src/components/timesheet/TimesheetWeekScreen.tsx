@@ -95,6 +95,25 @@ export function TimesheetWeekScreen({
   emptyMessage,
 }: TimesheetWeekScreenProps) {
   const [filters, setFilters] = useState<TimesheetRowFilterState>(EMPTY_ROW_FILTERS);
+  /**
+   * 🔴 E2E-IZOLASYON — ŞANTİYE KİMLİĞİ ÇÖZÜLMEDEN YAZMA DÜĞMESİ AÇILMAZ.
+   *
+   * `siteId` iki çağıranda da GEÇİCİ OLARAK boştur: ŞP'de slug→UUID çözümü
+   * (`useSite`) bitene kadar, E5'te ise hiç şantiye seçilmemişken. Ağa giden
+   * HOOK'ların hepsinde `enabled: siteId.length > 0` kapısı vardır — ama
+   * "Önceki Haftayı Kopyala" HOOK DEĞİL, ELDE ÇAĞRILAN
+   * (`queryClient.fetchQuery`) bir yoldur ve o kapının DIŞINDAYDI. Boş
+   * kimlikle `/sites//timesheet/week` istenir; yol hiçbir desene uymaz ve
+   * backend catch-all 404 döner — kullanıcı gerekçe olarak ham `"not found"`
+   * görürdü. CI'da tam bu görüldü (run 33312094802).
+   *
+   * ⚠️ "Haftayı Kaydet" BİLEREK bu kapıya BAĞLANMADI: taslak ancak hücreler
+   * çizilince yazılabilir, hücreler ise `weekData` gelmeden çizilmez — yani
+   * `isDirty && !isSiteResolved` ULAŞILAMAZ bir hâldir. Oraya konan kapı
+   * hiçbir mutasyonla öldürülemeyen (eşdeğer) bir satır olurdu; bekçisiz kod
+   * eklemek yerine yazılmadı.
+   */
+  const isSiteResolved = siteId.length > 0;
   const editor = useTimesheetWeekEditor({ siteId, week, sectionId });
   const rowFilter = useCallback(
     (row: TimesheetWeekViewRow) => (showRowFilters ? rowMatchesFilters(row, filters) : true),
@@ -231,7 +250,7 @@ export function TimesheetWeekScreen({
         {/* E5 74 */}
         <Button
           variant="secondary"
-          disabled={!canWrite || editor.copyState.kind === "copying"}
+          disabled={!isSiteResolved || !canWrite || editor.copyState.kind === "copying"}
           onClick={() => void editor.copyPreviousWeek(view.allCells)}
         >
           Önceki Haftayı Kopyala
