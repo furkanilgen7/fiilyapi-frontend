@@ -519,6 +519,74 @@ describe("BY:106-307 — gruplu tablo", () => {
   });
 });
 
+/* ------------------------------------------------------------ BOR-GUN · gün */
+
+/**
+ * 🔴 BOR-GUN (2026-08-30) — BY:138 Gün sütununun BİÇİMİ.
+ *
+ * Kusur canlıydı: PUAN-SAAT-3 `days`i `int` → `Decimal` yapmıştı, JSON'da
+ * Decimal STRING gelir ve hücre HAM basıyordu → ekranda `23.00`. Mockup
+ * BY:138/155 düz `21`/`23` çizer, BY:254 ise `—`. Dört kapı da yeşil geçti
+ * çünkü tip iki tarafta da `string | null`tır.
+ *
+ * Bu bekçi üç ayrı iddiayı ayrı ayrı tutar; hiçbiri ötekinin yerine geçmez.
+ */
+function daysCellText(lineId: string): string | null {
+  return screen.getByTestId(`bordro-line-${lineId}-days`).textContent;
+}
+
+function detailWithDays(days: string | null): PayrollPeriodDetailResponse {
+  return detail({
+    sections: [section("company", [line({ id: "line-days", days })])],
+  });
+}
+
+function renderWithDays(days: string | null) {
+  vi.mocked(usePayrollPeriod).mockReturnValue(
+    queryResult<PayrollPeriodDetailResponse>({ data: detailWithDays(days) }),
+  );
+  render(<PayrollMonthlyView />);
+}
+
+describe("🔴 BOR-GUN — BY:138 Gün sütunu", () => {
+  it("D1 · TAM SAYI gün ONDALIKSIZ basılır (`\"23.00\"` → `23`)", () => {
+    renderWithDays("23.00");
+    // 🔴 `toHaveTextContent` DÜĞÜMÜN TAMAMINA bakar ve `"23"` iddiası
+    // `"23.00"` içinde de geçerdi — mutasyon (biçimlendiriciyi kaldır) SAĞ
+    // KALIRDI. Bu yüzden hücrenin TAM metni karşılaştırılır.
+    expect(daysCellText("line-days")).toBe("23");
+  });
+
+  it("D1 pozitif kontrol · `null` gün hâlâ `—` basar (0 DEĞİL)", () => {
+    // `null` = "hesaplanamadı" (BY:254 serbest/taşeron satırı). Biçimlendirici
+    // `null`ı SAYIYA çevirseydi burada `0` görünürdü.
+    renderWithDays(null);
+    expect(daysCellText("line-days")).toBe("—");
+  });
+
+  it("D2 · YARIM gün KORUNUR (`\"22.50\"` → `22,5`)", () => {
+    // Adam-gün artık `saat ÷ 9` türevidir (PUAN-SAAT-1); yarım gün GERÇEK bir
+    // değerdir. `Math.round`a çevirmek bu iddiayı kırar.
+    renderWithDays("22.50");
+    expect(daysCellText("line-days")).toBe("22,5");
+  });
+
+  it("D2 pozitif kontrol · tam sayıda ondalık BASILMAZ", () => {
+    renderWithDays("21");
+    expect(daysCellText("line-days")).toBe("21");
+  });
+
+  it("D3 · ondalık ayracı mockup'la AYNI (virgül; nokta DEĞİL)", () => {
+    // `Ayarlar - Bordro Oranları.dc.html` `34,50` yazar — ürünün ayracı tr-TR
+    // virgülüdür. Ayracı (ya da `format.ts`teki LOCALE'i) oynatan mutasyon
+    // burada kırmızı verir.
+    renderWithDays("22.50");
+    const text = daysCellText("line-days") ?? "";
+    expect(text).toContain(",");
+    expect(text).not.toContain(".");
+  });
+});
+
 /* ------------------------------------------------------------- mutasyonlar */
 
 describe("🔴 K7 — mutasyonlar, tek uçuş ve atlama sayaçları", () => {

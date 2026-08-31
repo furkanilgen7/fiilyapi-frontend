@@ -18,10 +18,13 @@ test("giris → kabuk → yakinda → cikis akisi", async ({ page }) => {
   await expect(page.getByRole("link", { name: /Gösterge Paneli/ })).toHaveAttribute("aria-current", "page");
 
   // Yapilmamis modul → yakinda
-  // NOT: P1 oncesi bu senaryo /projeler kullaniyordu; ekran artik gercek (bkz.
-  // e2e/projects.spec.ts) — hala catch-all'a dusen /raporlar'a gecirildi.
-  await page.getByRole("link", { name: /Raporlar/ }).click();
-  await expect(page).toHaveURL(/\/raporlar/);
+  // NOT: P1 oncesi bu senaryo /projeler kullaniyordu, sonra /raporlar'a
+  // gecirildi; F-RAPOR ikisini de gercek ekran yapti. Kabuk nav'inda
+  // catch-all'a dusen TEK oge kaldi: /sirket-varliklari. Bu senaryo o oge de
+  // yazildigi gun yeniden tasinmalidir (ya da silinmelidir) — bugun ComingSoon
+  // yolunun TEK canli e2e kaniti budur.
+  await page.getByRole("link", { name: /Şirket Varlıkları/ }).click();
+  await expect(page).toHaveURL(/\/sirket-varliklari/);
   await expect(page.getByText(/yakında/i)).toBeVisible();
 
   // Sidebar'dan cikis

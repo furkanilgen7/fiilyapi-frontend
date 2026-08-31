@@ -84,9 +84,40 @@ export function formatDecimal(value: string | number, maxFractionDigits: number)
   );
 }
 
+/** `formatDays` ondalik tavani — yarim gun (`,5`) korunur, daha incesi yuvarlanir. */
+const DAY_FRACTION_DIGITS = 1;
+
 /** Miktar sutunu: en fazla 3 ondalik — numeric(14,3) (mockup 114). */
 export function formatQuantity(value: string | number): string {
   return formatDecimal(value, 3);
+}
+
+/**
+ * ADAM-GUN sayisi — `formatQuantity`/`formatAmount` ile AYNI aile, tavan BIR
+ * ondalik: gun YARIM olabilir ama yarimdan ince okunmaz.
+ *
+ * NEDEN BURADA (BOR-GUN, 2026-08-30): bu yardimci `components/leaves/
+ * leaves-derive.ts` icinde dogmustu ve IZIN ekranlarinin altisi onu
+ * kullaniyordu. PUAN-SAAT-3 `PayrollLine.days`i `int` -> `Decimal` yapinca
+ * BORDRO satiri da ayni bicime muhtac kaldi (`"23.00"` basiyordu). Iki secenek
+ * olculdu:
+ *   - bordronun `leaves`ten import etmesi -> iki KARDES ozellik klasoru
+ *     arasinda bagimlilik; izin ekranini degistiren biri bordroyu sessizce
+ *     oynatabilirdi,
+ *   - bordroya IKINCI bir gun bicimleyicisi yazmak -> ayni sayi iki ekranda
+ *     farkli okunabilirdi.
+ * Ucuncusu secildi: yardimci PAYLASILAN bicim katmanina tasindi, `leaves`
+ * onu buradan RE-EXPORT eder (o dosya `formatDateDots`i zaten boyle tasir).
+ * Davranis izin ekranlarinda BIREBIR aynidir.
+ *
+ * ACIK BORC: adam-gun artik `saat / 9` turevidir (PUAN-SAAT-1), yani
+ * `22.444...` gibi ucte-bir kalintilar uretebilir ve bu tavan onu `22,4`e
+ * yuvarlar. Gun sutunu BILGIdir, para sunucudan gelir — yuvarlama hicbir
+ * tutari oynatmaz. Sunucu gun sayisini ikiden ince quantize etmeye baslarsa
+ * tavan BURADA, tek yerde degisir.
+ */
+export function formatDays(value: string | number): string {
+  return formatDecimal(value, DAY_FRACTION_DIGITS);
 }
 
 /** Birim fiyat / tutar / genel toplam: en fazla 2 ondalik (mockup 115, 116, 176). */

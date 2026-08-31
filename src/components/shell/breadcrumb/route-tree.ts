@@ -309,6 +309,12 @@ export const ROUTE_TRAIL_ROOT: TrailNode = {
 
     "onay-kutusu": { label: "Onay Kutusu", href: () => routes.approvalInbox() },
 
+    // F-RAPOR · `/raporlar` bu dilimde GERÇEK bir `page.tsx` oldu. Düğüm
+    // ZORUNLUDUR: "her `page.tsx` ağaçta" bekçisi (`trail.test.ts`) yeni
+    // klasörü görür ve karşılığı yoksa kırmızı verir. Etiket kabuk nav'ıyla
+    // BİREBİR aynıdır ("Raporlar") — o eşitlik de ayrıca bekçilidir.
+    raporlar: { label: "Raporlar", href: () => routes.reports() },
+
     personel: {
       label: "Personel",
       href: () => routes.personnel.list(),

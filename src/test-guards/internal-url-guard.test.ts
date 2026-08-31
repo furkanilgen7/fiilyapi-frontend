@@ -132,7 +132,9 @@ function filesystemRouteRoots(): string[] {
  * yok). Rotaları açıldığında bu listeden düşerler; `filesystemRouteRoots`
  * onları kendiliğinden kapsar ve tekrar sayılmaları zararsızdır.
  */
-const UNWRITTEN_ROUTE_ROOTS = ["raporlar", "sirket-varliklari"];
+// F-RAPOR: `raporlar` bu listeden DÜŞTÜ — `/raporlar` artık gerçek bir
+// klasördür ve `filesystemRouteRoots()` onu kendiliğinden kapsar.
+const UNWRITTEN_ROUTE_ROOTS = ["sirket-varliklari"];
 
 export function guardedRouteRoots(): string[] {
   return [...new Set([...filesystemRouteRoots(), ...UNWRITTEN_ROUTE_ROOTS])].sort();
