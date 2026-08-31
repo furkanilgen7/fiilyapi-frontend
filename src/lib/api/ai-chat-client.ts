@@ -25,6 +25,59 @@ export type AiTurSebebi =
   | "duraklatildi"
   | "filtrelendi";
 
+/**
+ * Yapısal cevap bloğu — **backend'in `blocks.py` birleşiminin ikizi.**
+ *
+ * 🔴 K1: bu bloklar modelin YAZDIĞI metinden ASLA türetilmez; backend onları
+ * araç sonucunun yapısal gövdesinden üretir. İstemci burada da hiçbir metin
+ * ayrıştırması yapmaz — düz alanları basar.
+ *
+ * 🔴 `url` alanı YOKTUR ve olmayacaktır: derin bağlantı hedefi kapalı bir
+ * **ekran anahtarıdır** ve yola `ai-screen-routes.ts` çevirir.
+ */
+export type AiBaglantiKalemi = {
+  etiket: string;
+  ekran: string;
+  kimlik: string | null;
+  birincil: boolean;
+};
+
+export type AiBlokTonu = "notr" | "bilgi" | "olumlu" | "uyari" | "kritik";
+
+export type AiVarlikKalemi = {
+  ad: string;
+  alt_metin: string | null;
+  /** 🔴 `null` ise çubuk ÇİZİLMEZ. `0` "bitti" demektir ve uydurma olurdu. */
+  doluluk_yuzde: number | null;
+  ton: AiBlokTonu;
+  rozet_metni: string | null;
+  baglanti: AiBaglantiKalemi | null;
+};
+
+export type AiBlok =
+  | {
+      tip: "metrik";
+      baslik: string;
+      deger_metni: string;
+      ton: AiBlokTonu;
+      alt_metin: string | null;
+      alt_ton: AiBlokTonu | null;
+    }
+  | {
+      tip: "oran_bari";
+      baslik: string;
+      deger_metni: string;
+      yuzde_metni: string;
+      yuzde_alt_etiketi: string;
+      dilimler: { etiket: string; yuzde: number; ton: AiBlokTonu; alt_etiket: string }[];
+      ton: AiBlokTonu;
+    }
+  | { tip: "uyari"; metin: string; ton: AiBlokTonu; vurgular: string[] }
+  | { tip: "varlik_listesi"; baslik: string | null; kalemler: AiVarlikKalemi[] }
+  | { tip: "ozet"; metin: string; vurgular: string[] }
+  | { tip: "kaynak"; kalemler: AiBaglantiKalemi[] }
+  | { tip: "aksiyon"; kalemler: AiBaglantiKalemi[] };
+
 export type AiEvent =
   | { tip: "metin"; metin: string }
   | { tip: "arac_basladi"; cagri_id: string; arac_adi: string }
@@ -38,6 +91,7 @@ export type AiEvent =
       mesaj: string;
       satir_sayisi: number | null;
     }
+  | { tip: "yapisal_blok"; cagri_id: string; arac_adi: string; bloklar: AiBlok[] }
   | {
       tip: "tur_bitti";
       sebep: AiTurSebebi;
@@ -65,6 +119,7 @@ const BILINEN_OLAYLAR = new Set<AiEvent["tip"]>([
   "arac_arguman",
   "arac_hazir",
   "arac_sonuc",
+  "yapisal_blok",
   "tur_bitti",
   "reddetme",
   "hata",
@@ -117,17 +172,29 @@ export function* framesFromBuffer(chunk: string): Generator<AiEvent> {
 }
 
 /**
- * Bir turu akıtır. 🔴 Sunucu **durumsuzdur**: geçmiş gönderilmez, çünkü
- * `ai_conversations` tablosu bu dilimde AÇILMADI (§9-A3 kararı bekliyor).
+ * Bir turu akıtır.
+ *
+ * 🔴 `conversationId` AI-CHAT-2'de açıldı (§9-A3 kararı kapandı). Verilmezse
+ * backend YENİ bir sohbet açar ve kimliğini akıştan DEĞİL, sonraki
+ * `GET /ai/conversations` listesinden öğreniriz — akışın içine bir kimlik karesi
+ * koymak, sohbet kimliğini olay sözleşmesine sokardı ve olay sözleşmesi
+ * sağlayıcı-bağımsızdır.
+ *
+ * 🔴 Başkasına ait bir kimlik gönderilirse backend **404** döner (403 DEĞİL);
+ * `AiChatError.detail` o dürüst cümleyi taşır.
  */
 export async function* streamAiChat(
   mesaj: string,
-  options: { signal?: AbortSignal } = {},
+  options: { signal?: AbortSignal; conversationId?: string | null } = {},
 ): AsyncGenerator<AiEvent> {
   const res = await globalThis.fetch(AI_CHAT_URL, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ mesaj }),
+    body: JSON.stringify(
+      options.conversationId
+        ? { mesaj, conversation_id: options.conversationId }
+        : { mesaj },
+    ),
     signal: options.signal,
   });
 

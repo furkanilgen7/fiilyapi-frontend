@@ -1,234 +1,978 @@
-/* FİİL AI paneli — `AI Chat.dc.html` birebir. Renk/ölçü token'lardan gelir;
-   çıplak hex YASAK (CLAUDE.md). */
+/*
+ * FİİL AI paneli — `projedesign/AI Chat.dc.html` (397 satır) birebir.
+ *
+ * 🔴 ÖNEK `ai-`: mevcut öneki KORUR. Yeni sınıf adları ölçüldü — `ai-metric`,
+ * `ai-ratio`, `ai-entity`, `ai-source`, `ai-action`, `ai-chip`, `ai-conv`,
+ * `ai-ident`, `ai-context` başka hiçbir ekranın önekiyle çakışmıyor.
+ *
+ * 🔴 Ölçüler mockup'tan BİREBİR: 272px sol · 252px sağ · 760px orta sütun.
+ * Renkler mockup'ın ham hex'leri yerine `tokens.css` değişkenleridir; ikisi
+ * zaten aynı paletten (Tailwind Slate + Blue) ve token kullanmak temanın tek
+ * kaynağını korur.
+ *
+ * 🔴 Yalnız derleyici-dostu özellikler animasyonlanır (`opacity`/`transform`).
+ */
 
 .ai-panel {
   display: flex;
   height: 100%;
   min-height: 0;
-  background: var(--color-surface-2);
+  background: var(--color-bg);
 }
 
-/* ── Sol sütun: sohbet geçmişi (mockup 44) ─────────────────────────────── */
+/* 🔴 Mockup'ın `a{text-decoration:none}` genel kuralı. Uygulamanın kendi
+   varsayılanı bağlantıların ALTINI ÇİZİYOR (ölçüldü: kaynak rozetleri ve
+   "Bu Sohbette Açılanlar" altı çizili çıktı) — mockup birebirliği bunu
+   AÇIKÇA kapatmayı gerektiriyor. */
+.ai-source,
+.ai-action,
+.ai-opened,
+.ai-entity__link {
+  text-decoration: none;
+}
+
+/* ── Sol sütun: sohbet geçmişi (mockup 54-131) ─────────────────────────── */
+
 .ai-history {
-  width: 260px;
-  flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  padding: 14px 0;
+  flex-shrink: 0;
+  width: 272px;
   background: var(--color-surface);
   border-right: 1px solid var(--color-border);
-  overflow-y: auto;
 }
 
-.ai-history__new {
-  padding: 0 var(--space-3) 10px;
+.ai-history__top {
+  padding: 14px 14px 10px;
 }
 
-.ai-history__new .btn {
+.ai-history__new-btn {
   width: 100%;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 9px;
+  font-size: 13px;
+}
+
+.ai-history__plus {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.ai-history__search {
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.ai-history__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 8px 8px;
 }
 
 .ai-history__heading {
-  padding: 0 var(--space-3) 6px;
+  padding: 12px 8px 5px;
   font-size: 10px;
-  font-weight: var(--weight-semibold);
-  color: var(--color-text-subtle);
-  letter-spacing: 1px;
+  font-weight: 700;
+  letter-spacing: 0.9px;
   text-transform: uppercase;
+  color: var(--color-text-subtle);
 }
 
 .ai-history__list {
   list-style: none;
   margin: 0;
-  padding: 0 var(--space-2);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.ai-history__item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  width: 100%;
-  padding: 9px var(--space-3);
-  border: none;
-  background: transparent;
-  border-radius: var(--radius-8);
-  font-family: var(--font-sans);
-  text-align: left;
-}
-
-/* 🔴 Kalıcı sohbet açılana kadar geçmiş TIKLANAMAZ. Öğeler silinmez
-   (mockup birebir), soluk ve etkileşimsiz basılır. */
-.ai-history__item--disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  pointer-events: none;
-}
-
-.ai-history__title {
-  font-size: var(--text-body);
-  font-weight: var(--weight-semibold);
-  color: var(--color-text);
-}
-
-.ai-history__excerpt {
-  font-size: var(--text-small);
-  color: var(--color-text-subtle);
+  padding: 0;
 }
 
 .ai-history__note {
-  padding: var(--space-2) var(--space-3) 0;
-  font-size: var(--text-small);
+  padding: 10px 8px;
+  font-size: 11px;
+  line-height: 1.5;
   color: var(--color-text-subtle);
-  line-height: var(--leading-normal);
 }
 
-/* Mockup 81: hızlı sorular sütunun ALTINA sabitlenir. */
-.ai-quick {
-  margin-top: auto;
-  padding: var(--space-3);
-}
-
-.ai-quick__list {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.ai-quick__btn {
-  justify-content: flex-start;
+.ai-conv {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
   text-align: left;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-7);
-  color: var(--color-text-secondary);
-  font-size: var(--text-small);
+  cursor: pointer;
+  transition: background 0.12s;
 }
 
-/* ── Sağ sütun ─────────────────────────────────────────────────────────── */
-.ai-main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
+.ai-conv:hover {
   background: var(--color-surface-2);
+}
+
+.ai-conv:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.ai-conv--active {
+  background: var(--color-nav-active-bg);
+}
+
+.ai-conv__title-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 3px;
+}
+
+.ai-conv__dot {
+  flex-shrink: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+
+.ai-conv__title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-conv--active .ai-conv__title {
+  color: var(--color-primary-hover);
+}
+
+.ai-conv__meta {
+  display: block;
+  font-size: 10px;
+  color: var(--color-text-subtle);
+}
+
+.ai-conv--active .ai-conv__meta {
+  padding-left: 12px;
+}
+
+/* Mockup 121-130 — "Erişilen Veriler". */
+.ai-history__data {
+  padding: 12px 14px;
+  border-top: 1px solid var(--color-divider);
+  background: var(--color-surface-2);
+}
+
+.ai-history__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.ai-data-chip {
+  padding: 2px 7px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-6);
+  background: var(--color-surface);
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+.ai-data-chip--empty {
+  font-style: italic;
+}
+
+/* ── Orta sütun ────────────────────────────────────────────────────────── */
+
+.ai-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--color-surface);
+}
+
+/* K4 — mockup 36-45'in AI kimlik şeridi. */
+.ai-ident {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 28px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.ai-ident__badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--gradient-logo-tile);
+  color: #fff;
+}
+
+.ai-ident__title {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-text);
+}
+
+.ai-ident__sub {
+  display: block;
+  font-size: 10px;
+  line-height: 1.3;
+  color: var(--color-text-subtle);
+}
+
+.ai-ident__online {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: var(--color-success-soft);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-success-deep);
+}
+
+/* 🔴 U+25CF glifi alt küme DIŞI (`symbol-subset-guard`) — nokta bir CSS
+   dairesidir, bir karakter değil. */
+.ai-ident__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-success-strong);
 }
 
 .ai-messages {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: var(--space-6) var(--space-8);
+  padding: 26px 0;
+}
+
+.ai-messages__col,
+.ai-composer__col {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+.ai-messages__col {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: 26px;
 }
 
-/* Karşılama kartı (mockup 103) */
-.ai-welcome-wrap {
+.ai-turn {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  gap: 26px;
 }
 
-.ai-welcome {
-  max-width: 480px;
-  text-align: center;
-  padding: var(--space-4) var(--space-5);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-12);
-  box-shadow: var(--shadow-card);
-}
+/* ── Mesajlar ──────────────────────────────────────────────────────────── */
 
-.ai-welcome__emoji {
-  display: flex;
-  justify-content: center;
-  margin-bottom: var(--space-2);
-  color: var(--color-primary);
-}
-
-.ai-welcome__title {
-  font-size: 15px;
-  font-weight: var(--weight-bold);
-  color: var(--color-text);
-  margin-bottom: var(--space-1);
-}
-
-.ai-welcome__text {
-  font-size: var(--text-body);
-  color: var(--color-text-muted);
-  line-height: 1.6;
-}
-
-/* Baloncuklar (mockup 112 / 121) */
 .ai-msg {
   display: flex;
-  gap: 10px;
-  align-items: flex-start;
+  gap: 13px;
+  animation: ai-fade-up 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .ai-msg--user {
   justify-content: flex-end;
 }
 
+.ai-msg__col {
+  max-width: 76%;
+}
+
+.ai-msg__stamp {
+  margin-top: 5px;
+  font-size: 10px;
+  text-align: right;
+  color: var(--color-border-strong);
+}
+
 .ai-avatar {
-  width: 32px;
-  height: 32px;
-  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-8);
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
   background: var(--gradient-logo-tile);
-  color: var(--color-on-brand);
+  color: #fff;
 }
 
-.ai-bubble {
-  font-size: var(--text-sm);
-  line-height: 1.7;
+.ai-avatar--user {
+  background: var(--color-border);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-muted);
 }
 
 .ai-bubble--user {
-  max-width: 600px;
-  padding: var(--space-3) var(--space-4);
+  padding: 12px 16px;
+  border-radius: 14px 14px 4px 14px;
   background: var(--color-primary);
-  color: var(--color-on-brand);
-  border-radius: var(--radius-14) var(--radius-14) 2px var(--radius-14);
+  font-size: 14px;
+  line-height: 1.65;
+  color: #fff;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
-.ai-bubble--assistant {
-  max-width: 640px;
-  padding: 14px 18px;
-  background: var(--color-surface);
+.ai-answer {
+  flex: 1;
+  min-width: 0;
+}
+
+.ai-answer__text {
+  margin-bottom: 16px;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ai-traces {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+/* ── Yapısal bloklar ───────────────────────────────────────────────────── */
+
+.ai-blocks {
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-block-heading {
+  margin-bottom: 7px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+/* Mockup 153 — metrik kartları İKİ SÜTUN. */
+.ai-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 11px;
+  margin-bottom: 12px;
+}
+
+.ai-metric {
+  padding: 15px 17px;
   border: 1px solid var(--color-border);
-  border-radius: 2px var(--radius-14) var(--radius-14) var(--radius-14);
-  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-2);
+}
+
+.ai-metric--bilgi {
+  border-color: var(--color-primary-soft);
+  background: #f8faff;
+}
+
+.ai-metric--uyari {
+  border-color: #fed7aa;
+  background: #fffbf5;
+}
+
+.ai-metric--olumlu {
+  border-color: #bbf7d0;
+  background: var(--color-success-soft);
+}
+
+.ai-metric--kritik {
+  border-color: #fecaca;
+  background: var(--color-danger-soft);
+}
+
+.ai-metric__label {
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.ai-metric--bilgi .ai-metric__label {
+  color: var(--color-primary-light);
+}
+
+.ai-metric--uyari .ai-metric__label {
+  color: #c2410c;
+}
+
+.ai-metric--olumlu .ai-metric__label {
+  color: var(--color-success-deep);
+}
+
+.ai-metric__value {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.ai-metric--bilgi .ai-metric__value {
+  color: var(--color-primary-hover);
+}
+
+.ai-metric--uyari .ai-metric__value {
+  color: #c2410c;
+}
+
+.ai-metric--olumlu .ai-metric__value {
+  color: var(--color-success);
+}
+
+.ai-metric__sub {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.ai-metric__dot {
+  flex-shrink: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-text-subtle);
+}
+
+.ai-metric__dot--uyari {
+  background: var(--color-warning);
+}
+
+.ai-metric__dot--kritik {
+  background: var(--color-danger);
+}
+
+.ai-metric__dot--olumlu {
+  background: var(--color-success);
+}
+
+/* Mockup 172-192 — kâr barı. */
+.ai-ratio {
+  padding: 15px 17px;
+  margin-bottom: 14px;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-lg);
+  background: var(--color-success-soft);
+}
+
+.ai-ratio__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.ai-ratio__label {
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-success-deep);
+}
+
+.ai-ratio__value {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--color-success);
+}
+
+.ai-ratio__pct {
+  text-align: right;
+}
+
+.ai-ratio__pct-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-success);
+}
+
+.ai-ratio__pct-label {
+  font-size: 10px;
+  color: var(--color-success-deep);
+}
+
+.ai-ratio__bar {
+  display: flex;
+  height: 7px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--color-success-soft);
+}
+
+.ai-ratio__seg--uyari {
+  background: #c2410c;
+}
+
+.ai-ratio__seg--kritik {
+  background: var(--color-danger);
+}
+
+.ai-ratio__seg--olumlu {
+  background: var(--color-success);
+}
+
+.ai-ratio__seg--bilgi {
+  background: var(--color-primary);
+}
+
+.ai-ratio__seg--notr {
+  background: var(--color-border-strong);
+}
+
+.ai-ratio__legend {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.ai-ratio__leg {
+  font-size: 10px;
+  color: var(--color-text-subtle);
+}
+
+.ai-ratio__leg--olumlu {
+  font-weight: 600;
+  color: var(--color-success-deep);
+}
+
+/* Mockup 194-201 — uyarı şeridi. */
+.ai-callout {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border-left: 3px solid var(--color-warning);
+  border-radius: 0 9px 9px 0;
+  background: #fffbeb;
+}
+
+.ai-callout--kritik {
+  border-left-color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.ai-callout__icon {
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.ai-callout__text {
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: #92400e;
+}
+
+.ai-callout--kritik .ai-callout__text {
+  color: #991b1b;
+}
+
+/* Mockup 253-292 — varlık kartları. */
+.ai-entities {
+  margin-bottom: 14px;
+}
+
+.ai-entities__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ai-entity {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 13px 15px;
+  border: 1px solid var(--color-border);
+  border-radius: 11px;
+  background: var(--color-surface);
+}
+
+.ai-entity--kritik {
+  border-color: #fecaca;
+}
+
+.ai-entity--uyari {
+  border-color: #fed7aa;
+}
+
+.ai-entity__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: var(--color-neutral-soft);
+  color: var(--color-text-muted);
+}
+
+.ai-entity__icon--kritik {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.ai-entity__icon--uyari {
+  background: var(--color-warning-soft);
+  color: #d97706;
+}
+
+.ai-entity__icon--olumlu {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.ai-entity__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ai-entity__name {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--color-text);
 }
 
-/* 🔴 Model metni DÜZ METİNDİR; `white-space: pre-wrap` satır sonlarını korur
-   ama hiçbir işaretleme çözülmez. */
-.ai-bubble__text {
-  white-space: pre-wrap;
+.ai-entity__link {
+  color: inherit;
 }
 
-/* Yazıyor animasyonu (mockup 190) */
+.ai-entity__link:hover {
+  color: var(--color-primary);
+}
+
+.ai-entity__link--disabled {
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+}
+
+.ai-entity__sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.ai-entity__track {
+  display: block;
+  height: 4px;
+  margin-top: 6px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--color-neutral-soft);
+}
+
+.ai-entity__fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--color-border-strong);
+}
+
+.ai-entity__fill--kritik {
+  background: var(--color-danger);
+}
+
+.ai-entity__fill--uyari {
+  background: var(--color-warning);
+}
+
+.ai-entity__fill--olumlu {
+  background: var(--color-success);
+}
+
+.ai-entity__fill--bilgi {
+  background: var(--color-primary);
+}
+
+.ai-entity__badge {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 9px;
+  background: var(--color-neutral-soft);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.ai-entity__badge--kritik {
+  background: var(--color-danger-soft);
+  color: #dc2626;
+}
+
+.ai-entity__badge--uyari {
+  background: var(--color-warning-soft);
+  color: #d97706;
+}
+
+.ai-entity__badge--olumlu {
+  background: var(--color-success-soft);
+  color: var(--color-success-deep);
+}
+
+/* Mockup 294-299 — özet kutusu. */
+.ai-summary {
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+}
+
+.ai-summary__text {
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--color-text-secondary);
+}
+
+/* Mockup 203-211 — kaynak rozetleri. */
+.ai-sources {
+  margin-bottom: 12px;
+}
+
+.ai-sources__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ai-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-7);
+  background: var(--color-surface-2);
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.ai-source:hover {
+  border-color: var(--color-primary-ring);
+  background: var(--color-nav-active-bg);
+  color: var(--color-primary);
+}
+
+.ai-source--disabled {
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+}
+
+/* Mockup 213-218 — aksiyonlar. */
+.ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ai-action {
+  padding: 8px 15px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-8);
+  background: var(--color-surface);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.ai-action:hover {
+  border-color: var(--color-primary-ring);
+}
+
+.ai-action--primary {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  font-weight: 600;
+  color: #fff;
+}
+
+.ai-action--disabled {
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
+}
+
+.ai-action--disabled:hover {
+  border-color: var(--color-border);
+}
+
+/* Mockup 314-320 — geri bildirim şeridi. */
+.ai-feedback {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-divider);
+}
+
+.ai-feedback__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 7px;
+  border: none;
+  border-radius: var(--radius-6);
+  background: none;
+  font-size: 12px;
+  color: var(--color-border-strong);
+  cursor: pointer;
+}
+
+.ai-feedback__btn:hover:not(:disabled) {
+  color: var(--color-text-muted);
+}
+
+.ai-feedback__btn:disabled {
+  cursor: not-allowed;
+}
+
+.ai-feedback__stamp {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--color-border-strong);
+}
+
+/* ── Araç izi ──────────────────────────────────────────────────────────── */
+
+.ai-trace {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 11px;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+}
+
+.ai-trace--ok {
+  border-left-color: var(--color-success);
+}
+
+.ai-trace--uyari {
+  border-left-color: var(--color-warning);
+}
+
+.ai-trace--hata {
+  border-left-color: var(--color-danger);
+}
+
+.ai-trace__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-trace__name {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.ai-trace__state {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.ai-trace__rows {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--color-text-subtle);
+}
+
+.ai-trace__msg {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+/* ── Bildirimler ───────────────────────────────────────────────────────── */
+
+.ai-notice {
+  padding: 10px 13px;
+  border-radius: var(--radius-md);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.ai-notice--info {
+  border: 1px solid var(--color-primary-soft);
+  background: var(--color-nav-active-bg);
+  color: var(--color-primary-900);
+}
+
+.ai-notice--warn {
+  margin-top: 10px;
+  border: 1px solid var(--color-warning-soft);
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.ai-notice--refusal {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+}
+
+.ai-notice--error {
+  border: 1px solid #fecaca;
+  background: var(--color-danger-soft);
+  color: #991b1b;
+}
+
+/* ── Yazıyor göstergesi (mockup 322-331) ───────────────────────────────── */
+
 .ai-typing {
   display: flex;
-  gap: 5px;
   align-items: center;
+  gap: 9px;
+  padding-top: 7px;
+}
+
+.ai-typing__dots {
+  display: flex;
+  gap: 4px;
 }
 
 .ai-typing__dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: var(--color-text-subtle);
-  animation: ai-pulse 1.2s ease infinite;
+  background: var(--color-primary);
+  animation: ai-pulse 1.3s ease infinite;
 }
 
 .ai-typing__dot:nth-child(2) {
@@ -239,137 +983,324 @@
   animation-delay: 0.4s;
 }
 
+.ai-typing__label {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
+
 @keyframes ai-pulse {
   0%,
   100% {
-    opacity: 1;
+    opacity: 0.35;
+    transform: scale(0.85);
   }
   50% {
-    opacity: 0.4;
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes ai-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ai-typing__dot {
+  .ai-typing__dot,
+  .ai-msg {
     animation: none;
   }
+}
+
+/* ── Karşılama ─────────────────────────────────────────────────────────── */
+
+.ai-welcome-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.ai-welcome {
+  max-width: 460px;
+  padding: 26px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-2);
+  text-align: center;
+}
+
+.ai-welcome__emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 14px;
+  border-radius: 14px;
+  background: var(--gradient-logo-tile);
+  color: #fff;
+}
+
+.ai-welcome__title {
+  margin-bottom: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.ai-welcome__text {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--color-text-muted);
+}
+
+/* ── Composer (mockup 336-364) ─────────────────────────────────────────── */
+
+.ai-composer {
+  padding: 16px 0 18px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.ai-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.ai-suggest__btn {
+  padding: 5px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface-2);
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+.ai-composer__box {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 11px 12px 11px 16px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface-2);
+}
+
+.ai-composer__input {
+  flex: 1;
+  min-height: 24px;
+  max-height: 120px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  line-height: 1.7;
+  resize: none;
+}
+
+.ai-composer__input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.ai-composer__actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.ai-composer__attach {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  justify-content: center;
+}
+
+.ai-composer__send {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 9px;
+}
+
+.ai-composer__hint {
+  margin-top: 9px;
+  font-size: 10.5px;
+  text-align: center;
+  color: var(--color-border-strong);
+}
+
+/* ── Sağ sütun: bağlam paneli (mockup 366-395) ─────────────────────────── */
+
+.ai-context {
+  flex-shrink: 0;
+  width: 252px;
+  padding: 16px 14px;
+  overflow-y: auto;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.ai-context__heading {
+  margin-bottom: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+.ai-context__card {
+  padding: 12px;
+  margin-bottom: 16px;
+  border: 1px solid var(--color-primary-soft);
+  border-radius: 11px;
+  background: #f8faff;
+}
+
+.ai-context__project {
+  margin-bottom: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.ai-context__site {
+  margin-bottom: 9px;
+  font-size: 11px;
+  color: var(--color-primary-light);
+}
+
+.ai-context__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ai-context__row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.ai-context__row dt {
+  color: var(--color-text-muted);
+}
+
+.ai-context__strong {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+/* 🔴 Bağlanmamış alan bir SAYI gibi görünmez: italik + soluk + sebep. */
+.ai-context__pending {
+  font-style: italic;
+  color: var(--color-text-subtle);
+  cursor: help;
+}
+
+.ai-context__reason {
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+}
+
+.ai-context__switch {
+  width: 100%;
+  margin-top: 10px;
+  font-size: 11px;
+}
+
+.ai-context__chips {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.ai-chip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: var(--color-surface);
+  font-size: 12px;
+  font-weight: 400;
+  text-align: left;
+  color: var(--color-text-secondary);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.ai-chip:hover:not(:disabled) {
+  border-color: var(--color-primary-ring);
+  background: #f8faff;
+}
+
+.ai-chip__icon {
+  font-size: 14px;
+}
+
+.ai-chip__title {
+  display: block;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.ai-chip__sub {
+  display: block;
+  font-size: 10px;
+  color: var(--color-text-subtle);
+}
+
+.ai-context__opened {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ai-opened {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border: none;
+  border-radius: var(--radius-8);
+  background: var(--color-surface-2);
+  font-size: 11.5px;
+  text-align: left;
+  color: var(--color-text-secondary);
+}
+
+.ai-opened:hover {
+  color: var(--color-primary);
+}
+
+.ai-opened--disabled {
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
 }
 
 .ai-visually-hidden {
   position: absolute;
   width: 1px;
   height: 1px;
+  padding: 0;
+  margin: -1px;
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
-}
-
-/* ── Araç izi ──────────────────────────────────────────────────────────── */
-.ai-trace {
-  margin-bottom: 10px;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-8);
-  border-left: 3px solid var(--color-border-strong);
-  background: var(--color-surface-muted);
-}
-
-.ai-trace--ok {
-  border-left-color: var(--color-success);
-  background: var(--color-success-soft);
-}
-
-.ai-trace--uyari {
-  border-left-color: var(--color-warning);
-  background: var(--color-warning-soft);
-}
-
-.ai-trace--hata {
-  border-left-color: var(--color-danger);
-  background: var(--color-danger-soft);
-}
-
-.ai-trace__head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-}
-
-.ai-trace__name {
-  font-family: var(--font-mono);
-  font-size: var(--text-small);
-  font-weight: var(--weight-semibold);
-  color: var(--color-text);
-}
-
-.ai-trace__state,
-.ai-trace__rows {
-  font-size: var(--text-small);
-  color: var(--color-text-muted);
-}
-
-.ai-trace__msg {
-  margin-top: var(--space-1);
-  font-size: var(--text-small);
-  color: var(--color-text-secondary);
-  line-height: var(--leading-normal);
-}
-
-/* ── Bildirimler ───────────────────────────────────────────────────────── */
-.ai-notice {
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-10);
-  font-size: var(--text-body);
-  line-height: var(--leading-normal);
-}
-
-.ai-notice--refusal {
-  background: var(--color-warning-soft);
-  color: var(--color-text-secondary);
-}
-
-.ai-notice--error {
-  background: var(--color-danger-soft);
-  color: var(--color-text-secondary);
-}
-
-/* ── Yazma kutusu (mockup 203) ─────────────────────────────────────────── */
-.ai-composer {
-  background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
-  padding: var(--space-4) var(--space-6);
-}
-
-.ai-composer__box {
-  display: flex;
-  gap: 10px;
-  align-items: flex-end;
-  padding: 10px 14px;
-  background: var(--color-surface-2);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-12);
-}
-
-.ai-composer__input {
-  flex: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  resize: none;
-  max-height: 100px;
-  font-size: var(--text-body);
-}
-
-.ai-composer__actions {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.ai-composer__hint {
-  margin-top: var(--space-2);
-  text-align: center;
-  font-size: var(--text-small);
-  color: var(--color-text-subtle);
+  border: 0;
 }

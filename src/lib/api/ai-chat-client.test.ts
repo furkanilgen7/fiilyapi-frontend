@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { AiChatError, streamAiChat, type AiEvent } from "./ai-chat-client";
+import { AiChatError, framesFromBuffer, streamAiChat, type AiEvent } from "./ai-chat-client";
 
 /**
  * 🔴 `vitest.setup.ts`te ReadableStream/TextDecoder polyfill'i YOKTUR.
@@ -150,5 +150,61 @@ describe("streamAiChat", () => {
   it("detay tasimayan hata yanitinda genel ama DURUST cumle kullanilir", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", { status: 502 })));
     await expect(topla()).rejects.toMatchObject({ status: 502 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// AI-CHAT-2 — `yapisal_blok` olayı + `conversation_id`
+// ---------------------------------------------------------------------------
+
+describe("AI-CHAT-2 sözleşmesi", () => {
+  it("🔴 `yapisal_blok` TANINIR ve bloklar OLDUGU GIBI tasinir", () => {
+    const kare =
+      'event: yapisal_blok\ndata: {"cagri_id":"c1","arac_adi":"gosterge_ozeti","bloklar":[{"tip":"metrik","baslik":"Portföy","deger_metni":"₺12.500.000","ton":"bilgi","alt_metin":null,"alt_ton":null}]}\n\n';
+    const olaylar = [...framesFromBuffer(kare)];
+    expect(olaylar).toHaveLength(1);
+    const olay = olaylar[0]!;
+    expect(olay.tip).toBe("yapisal_blok");
+    if (olay.tip !== "yapisal_blok") throw new Error("tip");
+    expect(olay.bloklar[0]).toEqual({
+      tip: "metrik",
+      baslik: "Portföy",
+      deger_metni: "₺12.500.000",
+      ton: "bilgi",
+      alt_metin: null,
+      alt_ton: null,
+    });
+  });
+
+  it("🔴 blok bir URL ALANI tasimaz — derin baglanti EKRAN ANAHTARIDIR", () => {
+    const kare =
+      'event: yapisal_blok\ndata: {"cagri_id":"c1","arac_adi":"navigate_to","bloklar":[{"tip":"aksiyon","kalemler":[{"etiket":"Stok","ekran":"stok","kimlik":null,"birincil":true}]}]}\n\n';
+    const olay = [...framesFromBuffer(kare)][0]!;
+    if (olay.tip !== "yapisal_blok") throw new Error("tip");
+    const blok = olay.bloklar[0]!;
+    if (blok.tip !== "aksiyon") throw new Error("blok tipi");
+    const kalem = blok.kalemler[0]! as unknown as Record<string, unknown>;
+    // 🔴 Sözleşme `ekran` taşır; `url`/`href` GELMEZ. Gelseydi istemcinin
+    // rota kataloğu (S22) baypas edilebilirdi.
+    expect(kalem.ekran).toBe("stok");
+    expect(kalem.url).toBeUndefined();
+    expect(kalem.href).toBeUndefined();
+  });
+
+  it("🔴 `conversationId` VERILMEZSE govdede ALAN HIC BULUNMAZ", async () => {
+    const yakalanan: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_u: unknown, init: RequestInit) => {
+        yakalanan.push(String(init.body));
+        return new Response(new ReadableStream({ start: (c) => c.close() }), { status: 200 });
+      }),
+    );
+    for await (const _ of streamAiChat("selam")) void _;
+    expect(JSON.parse(yakalanan[0]!)).toEqual({ mesaj: "selam" });
+
+    yakalanan.length = 0;
+    for await (const _ of streamAiChat("selam", { conversationId: "abc" })) void _;
+    expect(JSON.parse(yakalanan[0]!)).toEqual({ mesaj: "selam", conversation_id: "abc" });
   });
 });
