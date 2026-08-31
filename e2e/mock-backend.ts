@@ -14183,6 +14183,27 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       // Zincir TEK ADIM ilerler ve `approved`/`paid`ten ileri gitmez (S8).
       if (nextStatus === null) return send(409, { detail: "Dönem bu durumdan onaylanamaz." });
 
+      // 🔴 KRIT-BORDRO — İKİZ, GERÇEK BACKEND'İN REDDETTİĞİNİ REDDETMELİDİR.
+      //
+      // Sunucu `payroll/service/core.has_payable_line` ile ödenecek satırı
+      // olmayan dönemi 409'la geri çevirir. İkiz bunu taklit etmezse ekranın
+      // korkuluğu (`approveDisabledReason`) YALNIZ ikizin izin verdiği bir
+      // dünyada sınanır: korkuluk silinse bile e2e yeşil kalır ve ikiz bir
+      // ONAYLAYICI olur, bekçi değil.
+      //
+      // Küme sunucununkiyle AYNIdır (`pending`/`approved`/`paid`);
+      // `uncomputed` (S4) ve `excluded` (K2) ödenecek tutar ifade etmez.
+      const payrollHasPayableLine = period.lines.some((line) => {
+        const status = payrollLineStatus(line, payrollLineAmounts(payrollState, period, line));
+        return status === "pending" || status === "approved" || status === "paid";
+      });
+      if (!payrollHasPayableLine) {
+        return send(409, {
+          detail:
+            "Ödenecek satırı olmayan bordro dönemi onaylanamaz: önce puantajı girip dönemi hesaplayın",
+        });
+      }
+
       let approvedCount = 0;
       let approveSkippedUncomputed = 0;
       let approveSkippedExcluded = 0;

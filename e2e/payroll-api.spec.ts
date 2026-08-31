@@ -23,7 +23,7 @@ import { loginForPayroll } from "./payroll-helpers";
  * Ayrıca `compute` yanıtının BEŞİNCİ alanı `missing_prior_period_count`
  * (K4 · eksik kümülatif matrah uyarısı) sözleşmede ZORUNLUDUR.
  *
- * 🔒 MUTASYON ADASI: yalnız **2025** ve KENDİ ayları (01/02/03). Kadrajların
+ * 🔒 MUTASYON ADASI: yalnız **2025** ve KENDİ ayları (01/02/03/04). Kadrajların
  * yılı (2026) ve oransız yıl (2024) bu dosyadan HİÇ etkilenmez; yeni bir YIL
  * açmak `bordro-gecmis` karesinin yıl seçicisini oynatırdı — 2025 zaten
  * seçenekte olduğu için kare sabit kalır. `fullyParallel` altında aynı
@@ -188,6 +188,54 @@ test("acilmis ay 409, gecersiz ay 422, kilitli donem 409 doner", async ({ page }
   // Açılan dönem hâlâ hesaplanabilir durumdadır (kapı yalnız kilitliye kapalı).
   const ok = await compute(page, first.id);
   expect(ok.created).toBeGreaterThan(0);
+});
+
+/* ── 3b) 🔴 KRIT-BORDRO · ÖDENECEK SATIRI OLMAYAN DÖNEM ONAYLANAMAZ ──────── */
+
+/**
+ * 🔴 İKİZ, GERÇEK BACKEND'İN REDDETTİĞİNİ REDDETMELİDİR.
+ *
+ * Ölçülen canlı kusur: puantajı girilmemiş bir dönem İKİ tıkta `approved`
+ * oluyordu. O andan sonra `compute` **409**, satır `PATCH` **409**, dönem
+ * `DELETE` **405** (uç YOK) ve aynı ayı yeniden açmak **409** (UQ
+ * `year, month`) — o ayın bordrosu elle SQL dışında kurtarılamaz hâle
+ * geliyordu. Sunucu bunu artık `has_payable_line` ile 409'lar.
+ *
+ * Bu testin işi ekranı değil **İKİZİ** ölçmektir: mock bu 409'u taklit
+ * etmezse ekranın korkuluğu yalnız ikizin izin verdiği bir dünyada sınanır ve
+ * korkuluk silinse bile e2e yeşil kalırdı — ikiz bir ONAYLAYICI olurdu.
+ *
+ * 🔴 İkinci yarı KARŞIT KANITTIR: hesaplanmış AYNI dönem AYNI uçtan **200**
+ * ile geçer. Yoksa her gövdeye 409 veren bozuk bir uç da bu testi geçerdi.
+ */
+test("odenecek satiri olmayan donem onaylanamaz (409), hesaplanan donem gecer", async ({
+  page,
+}) => {
+  await loginForPayroll(page);
+
+  // Yeni açılan dönem SIFIR satırlıdır (bu dosyanın 1. testinin çekirdek iddiası).
+  const created = await createPeriod(page, { year: 2025, month: 4 });
+  expect(allLines(created).length, "yeni dönem SIFIR satırlıdır").toBe(0);
+
+  const bos = await page.request.post(
+    `/api/backend/payroll/periods/${created.id}/approve`,
+  );
+  expect(bos.status(), "ödenecek satırı olmayan dönem 409").toBe(409);
+
+  // 🔴 Dönem YAZILMAMIŞ olmalı: 409 "girip çıkma" değil "hiç girmeme"dir.
+  const reddedilenSonrasi = await getDetail(page, created.id);
+  expect(reddedilenSonrasi.status, "reddedilen onay dönemi ilerletmez").toBe("draft");
+
+  // --- KARŞIT KANIT: hesaplanan dönem AYNI uçtan GEÇER ---
+  const hesap = await compute(page, created.id);
+  expect(hesap.created, "hesap ödenebilir satır üretir").toBeGreaterThan(0);
+
+  const gecen = await page.request.post(
+    `/api/backend/payroll/periods/${created.id}/approve`,
+  );
+  expect(gecen.status(), "ödenebilir satırı olan dönem onaylanır").toBe(200);
+  const sonuc = (await gecen.json()) as { period_status: string };
+  expect(sonuc.period_status).toBe("approved");
 });
 
 /* ── 4) 🔴 SAHTE-YEŞİLİN YEDİNCİ HÂLİ · mock sorgu kısıtlarını DOĞRULAR ───── */
