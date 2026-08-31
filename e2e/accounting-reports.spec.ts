@@ -175,8 +175,9 @@ test.describe("Mizan ekranı (MZ)", () => {
     await expect(page.getByTestId("mz-totals")).toContainText("GENEL TOPLAM");
     await expect(page.getByTestId("mz-totals")).toContainText("27.466.500");
 
-    // Devre-dışı düğmeler ve GÖRÜNÜR gerekçe.
-    await expect(page.getByTestId("mz-export-excel")).toBeDisabled();
+    // 🔴 EXPORT-XLSX: "Excel" ETKİN; "PDF" hâlâ uçsuz ⇒ devre dışı + GÖRÜNÜR
+    // gerekçe (uçsuz öğe SİLİNMEZ kanonu).
+    await expect(page.getByTestId("mz-export-excel")).toBeEnabled();
     await expect(page.getByTestId("mz-export-pdf")).toBeDisabled();
     await expect(page.getByTestId("mz-export-reason")).toBeVisible();
   });

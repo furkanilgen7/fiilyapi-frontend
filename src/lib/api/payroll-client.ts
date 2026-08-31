@@ -1,54 +1,45 @@
-import { BackendError } from "@/lib/api/unwrap";
-import { exportFilename } from "@/lib/api/export-filename";
+import { downloadExport } from "@/lib/api/download";
 
 // F-BOR T2 · BY:55 "Excel" — `GET /payroll/periods/{id}/export` (XLSX ikili).
-// `boq-client.ts` / `audit-client.ts` kanonu BİREBİR izlenir; yeni desen icat
-// EDİLMEZ.
+// EXPORT-XLSX T2 · BG:22 "Excel İndir" — `GET /payroll/periods/export.xlsx`.
+// 🔴 İndirme gövdesi `@/lib/api/download` TEK kaynağındadır.
 
 const DEFAULT_EXPORT_FILENAME = "bordro.xlsx";
+
+/** `GET /payroll/periods/export.xlsx` — dönem-üstü liste çıktısı (BG:22). */
+const PERIODS_EXPORT_PATH = "/api/backend/payroll/periods/export.xlsx";
+const DEFAULT_PERIODS_EXPORT_FILENAME = "bordro-donemleri.xlsx";
 
 /** `periodId` UUID beklenir ama URL parçası olduğu için yine de kaçırılır. */
 function payrollExportPath(periodId: string): string {
   return `/api/backend/payroll/periods/${encodeURIComponent(periodId)}/export`;
 }
 
-async function toBackendError(response: Response): Promise<BackendError> {
-  const body = await response.json().catch(() => null);
-  return new BackendError(response.status, body);
-}
-
 /**
  * Dönem bordrosunu Excel olarak indirir.
  *
- * Uç şemada olsa da burada bilinçli olarak ham `fetch` kullanılır:
- * `openapi-fetch` yanıtı içerik tipine göre çözer ve ikili gövde (xlsx) için
- * `Blob` vermez. `status >= 400` BFF'te HER ZAMAN JSON dalıdır, bu yüzden
- * Türkçe `detail` gövdesi `BackendError` olarak okunabilir.
+ * Uç şemada olsa da bilinçli olarak ham `fetch` kullanılır: `openapi-fetch`
+ * yanıtı içerik tipine göre çözer ve ikili gövde (xlsx) için `Blob` vermez.
+ * `status >= 400` BFF'te HER ZAMAN JSON dalıdır, bu yüzden Türkçe `detail`
+ * gövdesi `BackendError` olarak okunabilir.
  *
  * Token yalnızca httpOnly cookie'de kalır — URL'e imzalı token/parametre
  * KOYULMAZ, istek `credentials: "same-origin"` ile gider.
  */
 export async function downloadPayrollExport(periodId: string): Promise<void> {
-  const response = await globalThis.fetch(payrollExportPath(periodId), {
-    method: "GET",
-    credentials: "same-origin",
-  });
-  if (!response.ok) throw await toBackendError(response);
+  await downloadExport(payrollExportPath(periodId), DEFAULT_EXPORT_FILENAME);
+}
 
-  const blob = await response.blob();
-  const objectUrl = URL.createObjectURL(blob);
-  try {
-    const link = document.createElement("a");
-    link.href = objectUrl;
-    link.download = exportFilename(
-      response.headers.get("content-disposition"),
-      DEFAULT_EXPORT_FILENAME,
-    );
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } finally {
-    // `finally`: tarayıcı indirmeyi reddetse bile obje URL'i sızdırılmaz.
-    URL.revokeObjectURL(objectUrl);
-  }
+/**
+ * EXPORT-XLSX · Bordro Geçmişi (BG:22) — `GET /payroll/periods/export.xlsx`.
+ *
+ * 🔴 SÜZGEÇ ALMAZ ve bu bir TERCİH DEĞİL ÖLÇÜMDÜR: liste ucu
+ * (`GET /payroll/periods`) da `year` parametresi ALMAZ — ekranın yıl seçici
+ * İSTEMCİDE süzer (`PayrollHistoryView` K6). Uydurma bir `year` parametresi
+ * GÖNDERİLMEZ; sunucu onu tanımaz ve 422 verirdi. Bunun sonucu, Excel'in
+ * ekranda görünen yıldan DAHA GENİŞ olmasıdır — ekran bunu düğmenin yanında
+ * GÖRÜNÜR bir cümleyle söyler, sessizce geçmez.
+ */
+export async function downloadPayrollPeriodsExport(): Promise<void> {
+  await downloadExport(PERIODS_EXPORT_PATH, DEFAULT_PERIODS_EXPORT_FILENAME);
 }

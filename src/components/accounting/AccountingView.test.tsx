@@ -25,6 +25,7 @@ import type { TrialBalanceResponse } from "@/lib/api/hooks/useTrialBalance";
 import { useTrialBalance } from "@/lib/api/hooks/useTrialBalance";
 import type { VatReturnResponse } from "@/lib/api/hooks/useVatReturn";
 import { useVatReturn } from "@/lib/api/hooks/useVatReturn";
+import { errorResponse, stubExportDownload } from "@/lib/api/export-test-stub";
 import { BackendError } from "@/lib/api/unwrap";
 import type { MeResponse } from "@/lib/auth/types";
 
@@ -372,16 +373,11 @@ describe("AccountingView — başlık ve eylemler (E8:62-67)", () => {
     expect(screen.getByTestId("mu-create-entry")).toBeInTheDocument();
   });
 
-  /**
-   * 🔴 KANON: ucu olmayan düğme SİLİNMEZ, devre dışı basılır ve gerekçesi
-   * `title`da SAKLANMAZ — EKRANDA görünür.
-   */
-  it("'Disa Aktar' devre disidir ve gerekcesi EKRANDA gorunur", () => {
+  /** 🔴 EXPORT-XLSX: `GET /journal/export.xlsx` açıldı; düğme artık GERÇEK. */
+  it("'Excel' ETKINDIR ve bekleyen-modul gerekcesi ARTIK BASILMAZ", () => {
     render(<AccountingView />);
-    expect(screen.getByTestId("mu-export")).toBeDisabled();
-    expect(screen.getByTestId("mu-export-reason")).toHaveTextContent(
-      "Yevmiye defteri dışa aktarma ucu henüz açılmadı",
-    );
+    expect(screen.getByTestId("mu-export")).toBeEnabled();
+    expect(screen.queryByTestId("mu-export-reason")).toBeNull();
   });
 
   it("'+ Yevmiye Kaydi' GERCEK diyalogu OLUSTURMA kipinde acar", async () => {
@@ -1295,12 +1291,11 @@ describe("F-MUP · MP:247-250 defter altı dönem toplamları", () => {
     expect(foot).toHaveTextContent("4.120.000");
   });
 
-  it("MP:146 Excel düğmesi defter panelinin BAŞLIĞINDA ve devre dışıdır", () => {
+  it("MP:146 Excel düğmesi defter panelinin BAŞLIĞINDA ve ETKİNDİR", () => {
     render(<AccountingView />);
     const button = screen.getByTestId("mu-export");
-    expect(button).toBeDisabled();
+    expect(button).toBeEnabled();
     expect(button).toHaveTextContent("Excel");
-    expect(screen.getByTestId("mu-export-reason").textContent?.length ?? 0).toBeGreaterThan(20);
   });
 });
 
@@ -1321,5 +1316,90 @@ describe("F-MUP · sağ rayın PENCERESİ sayfanınkinden farklıdır", () => {
     // UYGULAMAZ (uygulasaydı iki kaynak sessizce ayrışırdı).
     expect(vi.mocked(useTrialBalance)).toHaveBeenLastCalledWith(2026, 7);
     expect(vi.mocked(useJournalSummary)).toHaveBeenLastCalledWith(2026, 7);
+  });
+});
+
+/* ------------------------------------------------- EXPORT-XLSX · SIZINTI KAPISI */
+
+/**
+ * 🔴🔴 ANTI-SIZINTI BEKÇİSİ — defterin Excel'i, panelin O AN GÖSTERDİĞİ
+ * pencereyi taşımak ZORUNDADIR: dönem + hesap süzgeci. "102 Bankalar"a
+ * bakarken TÜM defteri indirmek, kullanıcının süzdüğünü sandığı bir sızıntıdır.
+ *
+ * Bekçi düğmeyi GERÇEKTEN tıklar ve GERÇEK istemciyi koşturur (`fetch`
+ * sahtelenir); ekranın `useLedger` çağrısı ile indirme sorgusu YAN YANA
+ * ölçülür — istemci bir süzgeci düşürürse iddia kırılır.
+ */
+describe("EXPORT-XLSX · Excel sorgusu = defter sorgusu", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("hesap süzgeci seçiliyken indirme AYNI hesabı ve dönemi taşır", async () => {
+    // Arrange
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const stub = stubExportDownload();
+    render(<AccountingView />);
+    await user.selectOptions(screen.getByTestId("mu-account-filter"), "acc-120");
+    const screenFilter = vi.mocked(useLedger).mock.lastCall?.[0];
+    expect(screenFilter).toMatchObject({ accountId: "acc-120" });
+
+    // Act
+    await user.click(screen.getByTestId("mu-export"));
+
+    // Assert
+    expect(stub.lastQuery()).toEqual({
+      year: String(screenFilter?.year),
+      month: String(screenFilter?.month),
+      account_id: "acc-120",
+    });
+  });
+
+  it("'Tüm Hesaplar' seçiliyken account_id GÖNDERİLMEZ", async () => {
+    // Arrange
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const stub = stubExportDownload();
+    render(<AccountingView />);
+    const screenFilter = vi.mocked(useLedger).mock.lastCall?.[0];
+
+    // Act
+    await user.click(screen.getByTestId("mu-export"));
+
+    // Assert
+    expect(stub.lastQuery()).toEqual({
+      year: String(screenFilter?.year),
+      month: String(screenFilter?.month),
+    });
+  });
+
+  it("dönem gezgini oynayınca indirme YENİ dönemi taşır", async () => {
+    // Arrange
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const stub = stubExportDownload();
+    render(<AccountingView />);
+    await user.click(screen.getByTestId("mu-period-prev"));
+    const screenFilter = vi.mocked(useLedger).mock.lastCall?.[0];
+
+    // Act
+    await user.click(screen.getByTestId("mu-export"));
+
+    // Assert
+    expect(stub.lastQuery()).toEqual({
+      year: String(screenFilter?.year),
+      month: String(screenFilter?.month),
+    });
+  });
+
+  it("indirme hatası YUTULMAZ — sunucunun Türkçe metni EKRANA basılır", async () => {
+    // Arrange
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    stubExportDownload(errorResponse(422, { detail: "Dönem kapalı." }));
+    render(<AccountingView />);
+
+    // Act
+    await user.click(screen.getByTestId("mu-export"));
+
+    // Assert
+    expect(await screen.findByTestId("mu-export-error")).toHaveTextContent("Dönem kapalı.");
   });
 });

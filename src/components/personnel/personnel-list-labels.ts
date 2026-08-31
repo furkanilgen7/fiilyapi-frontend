@@ -91,8 +91,24 @@ export const KPI_MONTHLY_COST_PENDING_REASON =
 export const STATUS_ON_LEAVE_PENDING_REASON =
   "İzin durumu backend'de henüz yok; bu seçenek aktif/pasif ile karıştırılamaz.";
 
-/** "Dışa Aktar" — dışa aktarma ucu yok (spec K5). */
-export const EXPORT_PENDING_REASON = "Dışa aktarma ucu backend'de henüz yok.";
+/** P 64 düğme metni. */
+export const EXPORT_LABEL = "Dışa Aktar";
+
+/**
+ * 🔴 EXPORT-XLSX (2026-08-31) — `GET /personnel/export.xlsx` AÇILDI; düğme
+ * artık gerçek. Eski `EXPORT_PENDING_REASON` ("Dışa aktarma ucu backend'de
+ * henüz yok.") YALAN söylerdi ve KALDIRILDI.
+ *
+ * Geriye TEK bir kapalı hâl kaldı: meslek süzgeci. `trade` sunucuda YOKTUR
+ * (spec K-B), süzme İSTEMCİDEDİR; uç meslek almadığı için dosya ekranda
+ * görülenden GENİŞ olurdu. Sessizce geniş dosya vermek yerine düğme devre
+ * dışı basılır ve gerekçe GÖRÜNÜR olur.
+ */
+export const EXPORT_TRADE_BLOCKED_REASON =
+  "Meslek süzgeci açıkken Excel indirilemez: meslek süzgeci yalnız bu ekranda çalışır, sunucu onu tanımaz ve dosya ekranda gördüğünüzden geniş olurdu. Meslek süzgecini “Tüm Meslekler”e alın.";
+
+/** İndirme başarısızsa basılacak Türkçe taban metin. */
+export const EXPORT_ERROR_FALLBACK = "Personel Excel dosyası indirilemedi.";
 
 /**
  * P 74/85 · Belge & Sertifika ekranının rotası. Sekme şeridi VE uyarı bandının

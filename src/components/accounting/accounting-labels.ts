@@ -124,12 +124,26 @@ export function hasCarriedBalance(value: string | undefined): boolean {
 // --- Devre-dışı gerekçeleri (kanon: SİLİNMEZ, gerekçesi GÖRÜNÜR) ---------
 
 export const ACCOUNTING_REASONS = {
-  /** E8:66 "Dışa Aktar" — muhasebe kökünde HİÇBİR dışa aktarma ucu yok. */
+  /**
+   * E8:66 / MP:146 "Excel" — 🔴 EXPORT-XLSX (2026-08-31) ile UÇ AÇILDI
+   * (`GET /journal/export.xlsx`) ve düğme GERÇEK; bu anahtar artık HİÇBİR
+   * ekrandan okunmuyor. SİLİNMEDİ çünkü backend'in `pending_module` alanı da
+   * bu adı gönderebiliyor; metni `pending-modules.ts`te durur.
+   */
   export: "accounting_export",
-  /** HP:49 "Excel" — hesap planının da dışa aktarma ucu yok (T3). */
+  /**
+   * HP:49 "Excel" — 🔴 EXPORT-XLSX ile UÇ AÇILDI
+   * (`GET /chart-of-accounts/export.xlsx`); anahtar aynı gerekçeyle
+   * (backend `pending_module` gönderebiliyor) SİLİNMEDİ, ekrandan okunmuyor.
+   */
   chartExport: "chart_of_accounts_export",
-  /** MZ:48-49 "Excel"/"PDF" — F-MU2 K6: mizanın KENDİ anahtarı. */
-  trialBalanceExport: "trial_balance_export",
+  /**
+   * MZ:49 "PDF" — 🔴 EXPORT-XLSX: MZ:48 "Excel" ARTIK GERÇEK
+   * (`GET /trial-balance/export.xlsx`), düğme etkinleştirildi. Geriye YALNIZ
+   * PDF kaldı ve o kendi anahtarını okur; eski `trial_balance_export` metni
+   * "Excel de PDF de" diyerek yalan söylerdi.
+   */
+  trialBalancePdfExport: "trial_balance_pdf_export",
   /** KDV:48-49 "XML İndir"/"GİB'e Gönder" — F-MU2 K6. */
   vatReturnGib: "vat_return_gib",
   /** BM:83 "↑ İçe Aktar" — F-MUP: ekstre satırları hiçbir yerde saklanmıyor. */

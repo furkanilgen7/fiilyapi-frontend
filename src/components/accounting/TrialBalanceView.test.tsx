@@ -10,6 +10,7 @@ import type {
   TrialBalanceTotals,
 } from "@/lib/api/hooks/useTrialBalance";
 import { useTrialBalance } from "@/lib/api/hooks/useTrialBalance";
+import { errorResponse, stubExportDownload } from "@/lib/api/export-test-stub";
 import { BackendError } from "@/lib/api/unwrap";
 import type { MeResponse } from "@/lib/auth/types";
 
@@ -167,13 +168,18 @@ describe("Mizan ekranı — MZ başlık şeridi", () => {
     expect(screen.getByTestId("mu-period-label")).toHaveTextContent("Ocak 2026");
   });
 
-  it("MZ:48-49 `Excel` ve `PDF` devre dışıdır, gerekçe EKRANDA görünür", () => {
+  /**
+   * 🔴 EXPORT-XLSX: Excel ucu AÇILDI, PDF AÇILMADI. PDF düğmesi SİLİNMEZ —
+   * devre dışı basılır ve gerekçesi EKRANDA (`title`da SAKLANMAZ) durur.
+   */
+  it("MZ:48 `Excel` ETKİN, MZ:49 `PDF` devre dışı + gerekçe EKRANDA", () => {
     render(<TrialBalanceView />);
-    expect(screen.getByTestId("mz-export-excel")).toBeDisabled();
+    expect(screen.getByTestId("mz-export-excel")).toBeEnabled();
     expect(screen.getByTestId("mz-export-pdf")).toBeDisabled();
-    expect(screen.getByTestId("mz-export-reason")).toHaveTextContent(
-      "Mizan dışa aktarma ucu henüz açılmadı",
-    );
+    const reason = screen.getByTestId("mz-export-reason");
+    expect(reason).toHaveTextContent("PDF");
+    // Metin artık "Excel de" DEMEZ — Excel çalışıyor, cümle yalan söyleyemez.
+    expect(reason.textContent).not.toContain("Excel de PDF de");
   });
 });
 
@@ -345,5 +351,47 @@ describe("yetki", () => {
     );
     render(<TrialBalanceView />);
     expect(screen.queryByRole("heading", { name: "Mizan" })).toBeNull();
+  });
+});
+
+/* ------------------------------------------------- EXPORT-XLSX · SIZINTI KAPISI */
+
+/**
+ * 🔴🔴 ANTI-SIZINTI BEKÇİSİ — indirme, EKRANIN O AN GÖSTERDİĞİ dönemi taşır.
+ * Ekranın TEK süzgeci dönem gezginidir; gezgin oynatılıp indirme tıklanır ve
+ * isteğin `year`/`month`u ekranın liste çağrısıyla YAN YANA ölçülür.
+ */
+describe("EXPORT-XLSX · Excel sorgusu = ekran sorgusu", () => {
+  it("dönem gezgini oynatıldıktan sonra indirme AYNI dönemi taşır", async () => {
+    // Arrange
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const stub = stubExportDownload();
+    render(<TrialBalanceView />);
+    for (let step = 0; step < 6; step += 1) {
+      await user.click(screen.getByTestId("mu-period-prev"));
+    }
+    expect(screen.getByTestId("mu-period-label")).toHaveTextContent("Ocak 2026");
+
+    // Act
+    await user.click(screen.getByTestId("mz-export-excel"));
+
+    // Assert — ekranın hook çağrısı da indirme sorgusu da Ocak 2026'yı söyler.
+    expect(vi.mocked(useTrialBalance)).toHaveBeenLastCalledWith(2026, 1);
+    expect(stub.lastQuery()).toEqual({ year: "2026", month: "1" });
+  });
+
+  it("indirme hatası YUTULMAZ — sunucunun Türkçe metni EKRANA basılır", async () => {
+    // Arrange
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    stubExportDownload(errorResponse(403, { detail: "Mizan yetkiniz yok." }));
+    render(<TrialBalanceView />);
+
+    // Act
+    await user.click(screen.getByTestId("mz-export-excel"));
+
+    // Assert
+    expect(await screen.findByTestId("mz-export-error")).toHaveTextContent(
+      "Mizan yetkiniz yok.",
+    );
   });
 });

@@ -1,5 +1,5 @@
 import { BackendError } from "@/lib/api/unwrap";
-import { attachmentFilename } from "@/lib/api/export-filename";
+import { downloadAttachment } from "@/lib/api/download";
 import type { components } from "@/lib/api/schema";
 
 // F-BLG T2b · Ekipman belgesi yükleme — ŞEMADA olan ama `openapi-fetch` ile
@@ -62,7 +62,8 @@ export async function uploadEquipmentDocument(
 /**
  * F-MKD · `GET /equipment/documents/{document_id}/download` — ikili indirme.
  *
- * `documents-client.ts::downloadDocument` gövdesi BİREBİR izlenir.
+ * 🔴 EXPORT-XLSX · gövde `@/lib/api/download` TEK kaynağındadır
+ * (`documents-client.ts::downloadDocument` ile AYNI çağrı).
  *
  * 🔴 BFF ÖLÇÜMÜ (yalnız canlıda kırılan sınıf, jsdom görmez): yol
  * `ALLOWED_ROOTS`taki **`equipment`** kökünden geçer (`route.ts:169`) ve ikili
@@ -78,26 +79,8 @@ export async function downloadEquipmentDocument(
   documentId: string,
   fallbackName: string,
 ): Promise<void> {
-  const response = await globalThis.fetch(
+  await downloadAttachment(
     `${EQUIPMENT_PATH}/documents/${encodeURIComponent(documentId)}/download`,
-    { method: "GET", credentials: "same-origin" },
+    fallbackName,
   );
-  if (!response.ok) throw await toBackendError(response);
-
-  const blob = await response.blob();
-  const objectUrl = URL.createObjectURL(blob);
-  try {
-    const link = document.createElement("a");
-    link.href = objectUrl;
-    link.download = attachmentFilename(
-      response.headers.get("content-disposition"),
-      fallbackName,
-    );
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } finally {
-    // `finally`: tarayıcı indirmeyi reddetse bile obje URL'i sızdırılmaz.
-    URL.revokeObjectURL(objectUrl);
-  }
 }

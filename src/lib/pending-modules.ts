@@ -335,6 +335,12 @@ export const MODULE_LABELS: Record<string, string> = {
   // Tek metin iki düğmeyi birden karşılar: ikisinin de eksiği AYNI şeydir
   // (mizanın hiçbir dışa aktarma ucu yok), biçim farkı değil.
   trial_balance_export: "Mizan dışa aktarma ucu henüz açılmadı (Excel de PDF de)",
+  // 🔴 EXPORT-XLSX (2026-08-31) — MİZANIN EXCEL UCU AÇILDI
+  // (`GET /trial-balance/export.xlsx`), PDF AÇILMADI. `trial_balance_export`
+  // metni artık "Excel de PDF de" diyerek YALAN söylerdi; o anahtar backend'in
+  // `pending_module` alanından da gelebildiği için SİLİNMEDİ, mizan ekranı
+  // PDF düğmesi için AYRI bir anahtar okur (K6: ekran/düğme başına ayrı metin).
+  trial_balance_pdf_export: "Mizan PDF çıktısı ayrı bir dilim; sunucu ucu henüz açılmadı (Excel çalışıyor)",
   // F-MT T2 (BL:38 "PDF") — AYNI K6 kuralı: EKRAN BAŞINA ayrı anahtar.
   // `trial_balance_export` adıyla "mizan" der ve bilanço ekranında YANLIŞ
   // yüzeyi işaret ederdi. Uç açıklaması kapsam dışını adıyla sayıyor:

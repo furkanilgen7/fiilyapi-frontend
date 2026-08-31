@@ -184,21 +184,21 @@ test.describe("modül sekmeleri (F-MUP: drill-in sidebar'ın YERİNE)", () => {
   });
 });
 
-test.describe("devre-dışı dışa aktarma düğmeleri", () => {
-  test("MP:146 'Excel' devre dışıdır ve gerekçesi EKRANDA basılır", async ({ page }) => {
+// 🔴 EXPORT-XLSX — iki düğme de GERÇEK oldu; indirmenin kendisi
+// `export-xlsx.spec.ts`te uçtan uca ölçülür (ikili gövde + dosya adı).
+test.describe("dışa aktarma düğmeleri ARTIK ETKİN", () => {
+  test("MP:146 'Excel' etkindir ve bekleyen-modül bandı YOKTUR", async ({ page }) => {
     await openAccounting(page);
 
-    await expect(page.getByTestId("mu-export")).toBeDisabled();
-    await expect(page.getByTestId("mu-export-reason")).toBeVisible();
-    await expect(page.getByTestId("mu-export-reason")).not.toBeEmpty();
+    await expect(page.getByTestId("mu-export")).toBeEnabled();
+    await expect(page.getByTestId("mu-export-reason")).toHaveCount(0);
   });
 
-  test("HP:49 'Excel' devre dışıdır ve gerekçesi EKRANDA basılır", async ({ page }) => {
+  test("HP:49 'Excel' etkindir ve bekleyen-modül bandı YOKTUR", async ({ page }) => {
     await openChartOfAccounts(page);
 
-    await expect(page.getByTestId("hp-export")).toBeDisabled();
-    await expect(page.getByTestId("hp-export-reason")).toBeVisible();
-    await expect(page.getByTestId("hp-export-reason")).not.toBeEmpty();
+    await expect(page.getByTestId("hp-export")).toBeEnabled();
+    await expect(page.getByTestId("hp-export-reason")).toHaveCount(0);
   });
 });
 

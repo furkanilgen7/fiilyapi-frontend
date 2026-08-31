@@ -1,13 +1,27 @@
-import { BackendError } from "@/lib/api/unwrap";
-import { exportFilename } from "@/lib/api/export-filename";
+import { downloadExport } from "@/lib/api/download";
 
 // F-PKK T1 · KKP 24 "Excel" — Kat Karşılığı Paylaşım tablosunun Excel çıktısı.
-// `timesheet-client.ts` / `purchase-quote-client.ts` / `audit-client.ts` kanonu
-// BİREBİR izlenir — yeni indirme deseni İCAT EDİLMEZ (WORKFLOW §4: ikili
-// indirme `Content-Type` tabanlı, `status >= 400` HER ZAMAN JSON dalı).
-// 🔴 ORTAK bir `downloadBlob` yardımcısı ÇIKARILMAZ: üç emsalin de kendi yol
-// kurucusu, kendi `toBackendError`ı ve kendi varsayılan adı vardır; tek fark
-// yaratan `exportFilename` ZATEN paylaşılmıştır.
+//
+// 🔴 EXPORT-XLSX (2026-08-31) — BU DOSYA ESKİDEN ŞUNU YAZIYORDU: *"ORTAK bir
+// `downloadBlob` yardımcısı ÇIKARILMAZ: üç emsalin de kendi yol kurucusu, kendi
+// `toBackendError`ı ve kendi varsayılan adı vardır."*
+//
+// O karar ÖLÇÜMLE ÇÜRÜTÜLDÜ ve ölçüm şudur (kanıt, iddia değil):
+//   * Kanonu getiren commit `eff2773` (2026-08-23, F-PKK T1).
+//   * O commit'te `createObjectURL` taşıyan istemci sayısı **ÜÇ DEĞİL SEKİZDİ**
+//     (audit · boq · documents · payroll · purchase-quote · timesheet ·
+//     units-export · units-import). Kanon, EMSAL DİYE ANDIĞI üç dosyadan
+//     tüm popülasyona genelleme yapmıştı.
+//   * Ve asıl gerekçesi O GÜN ZATEN YANLIŞTI: `toBackendError` gövdesi o
+//     commit'te SEKİZİNDE DE bayt bayt aynıydı (md5 6630a8ed…), bugün de aynı.
+//     Yani "her istemcinin kendi `toBackendError`ı var" hiçbir zaman doğru
+//     olmadı; kopyanın kendisi gerekçe diye gösterilmişti.
+//   * Altı yeni dışa aktarma ucu sayıyı on beşe çıkaracaktı.
+//
+// Yardımcı yalnız DEĞİŞMEYEN kısmı (blob → objectURL → `<a download>` →
+// `finally revokeObjectURL`) sarar; yol kurucusu, varsayılan ad ve süzgeç
+// kararı HÂLÂ bu dosyanındır — yani kanonun GERÇEKTEN farklı olan üç şeyi
+// koruma amacı korunur, yalnız kopya olan kısım tekleşir.
 //
 // ⚠️ BFF İZİN LİSTESİ: ucun ilk segmenti `projects`tır ve o kök `ALLOWED_ROOTS`ta
 // ZATEN tanımlıdır. 🔴 `units` diye YENİ BİR KÖK EKLENMEZ
@@ -24,19 +38,14 @@ function unitsExportPath(projectId: string): string {
   return `/api/backend/projects/${encodeURIComponent(projectId)}/units/export.xlsx`;
 }
 
-async function toBackendError(response: Response): Promise<BackendError> {
-  const body = await response.json().catch(() => null);
-  return new BackendError(response.status, body);
-}
-
 /**
- * Excel dosyasını BFF üzerinden indirir. Uç şemada olsa da burada bilinçli
- * olarak ham `fetch` kullanılır: openapi-fetch yanıtı içerik tipine göre
- * JSON/metin olarak çözer ve ikili gövde (xlsx) için `Blob` vermez.
+ * Excel dosyasını BFF üzerinden indirir. Uç şemada olsa da bilinçli olarak ham
+ * `fetch` kullanılır: openapi-fetch yanıtı içerik tipine göre JSON/metin olarak
+ * çözer ve ikili gövde (xlsx) için `Blob` vermez.
  *
  * BFF ikili/JSON kararını `Content-Type`tan verir ve `status >= 400` HER ZAMAN
- * JSON dalına gider — bu yüzden 403/404/422 gövdeleri burada `BackendError`
- * olarak okunabilir.
+ * JSON dalına gider — bu yüzden 403/404/422 gövdeleri `BackendError` olarak
+ * okunabilir.
  *
  * 🔴 SÜZGEÇ ALMAZ. Uç açıklaması gerekçeyi kendi yazıyor: *"SUZGEC ALMAZ …
  * KKP'nin Excel dugmesi paylasim tablosunun TAMAMINI indirir; kismi dosya,
@@ -47,26 +56,5 @@ async function toBackendError(response: Response): Promise<BackendError> {
  * KOYULMAZ, istek `credentials: "same-origin"` ile gider.
  */
 export async function downloadUnitsExport(projectId: string): Promise<void> {
-  const response = await globalThis.fetch(unitsExportPath(projectId), {
-    method: "GET",
-    credentials: "same-origin",
-  });
-  if (!response.ok) throw await toBackendError(response);
-
-  const blob = await response.blob();
-  const objectUrl = URL.createObjectURL(blob);
-  try {
-    const link = document.createElement("a");
-    link.href = objectUrl;
-    link.download = exportFilename(
-      response.headers.get("content-disposition"),
-      DEFAULT_EXPORT_FILENAME,
-    );
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } finally {
-    // `finally`: tarayıcı indirmeyi reddetse bile obje URL'i sızdırılmaz.
-    URL.revokeObjectURL(objectUrl);
-  }
+  await downloadExport(unitsExportPath(projectId), DEFAULT_EXPORT_FILENAME);
 }

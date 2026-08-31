@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Button, Select } from "@/components/ui";
+import { downloadJournalExport } from "@/lib/api/accounting-export-client";
 import { backendErrorMessage } from "@/lib/api/error-message";
 import {
   CHART_ACCOUNTS_MAX_LIMIT,
@@ -26,7 +27,6 @@ import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { formatAmount, formatCurrency } from "@/lib/format";
 import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncation";
-import { pendingModuleLabel } from "@/lib/pending-modules";
 
 import {
   ACCOUNTING_PERMISSION_MODULE,
@@ -81,14 +81,26 @@ export function AccountingView() {
   const [entryDialog, setEntryDialog] = useState<JournalEntryDialogState | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyEntryId, setBusyEntryId] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const summaryQuery = useJournalSummary(period.year, period.month);
-  const ledgerQuery = useLedger({
+
+  /**
+   * 🔴 EXPORT-XLSX · SIZINTI KURALI — defterin TEK süzgeç nesnesi. `useLedger`
+   * ve `GET /journal/export.xlsx` AYNI nesneden beslenir; ayrı kurulsalardı
+   * hesap süzgeci ya da dönem sessizce ayrışır ve kullanıcı "102 hesabı"
+   * sanarak TÜM defteri indirebilirdi.
+   *
+   * `limit` DIŞARIDA tutulur: sayfalama bir süzgeç değildir; liste çağrısına
+   * ayrıca eklenir, Excel onunla kısıtlanmaz.
+   */
+  const ledgerFilter = {
     year: period.year,
     month: period.month,
-    limit: LEDGER_MAX_LIMIT,
     ...(accountId.length > 0 ? { accountId } : {}),
-  });
+  };
+  const ledgerQuery = useLedger({ ...ledgerFilter, limit: LEDGER_MAX_LIMIT });
   // 🔴 T5 BULGUSU — `status: "draft"` SÜZGECİ KALDIRILDI (gerçek kusur).
   //
   // Panel yalnız taslakları çekerken `posted` bir fiş ekranın HİÇBİR YERİNDE
@@ -147,6 +159,21 @@ export function AccountingView() {
     accountsQuery.data?.total,
   );
   const carriedBalance = ledgerQuery.data?.carried_balance;
+
+  /** `AuditLogScreen` kanonu: uçuşta kilit, hata GÖRÜNÜR. */
+  async function handleExport() {
+    setExportError(null);
+    setIsExporting(true);
+    try {
+      await downloadJournalExport(ledgerFilter);
+    } catch (error) {
+      setExportError(
+        backendErrorMessage(error, "Yevmiye defteri Excel dosyası indirilemedi."),
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   /** Dönem değişince satır-içi işlem hatası bayatlar — birlikte temizlenir. */
   function handlePeriodChange(next: Period) {
@@ -241,18 +268,26 @@ export function AccountingView() {
               </option>
             ))}
           </Select>
-          {/* MP:146 "Excel" — ucu YOK; düğme SİLİNMEZ, devre dışı + gerekçesi
-              EKRANDA (`title`da SAKLANMAZ). E8'de bu düğme sayfa başlığındaydı
-              ve "Dışa Aktar" diyordu; MP onu defter panelinin başlığına
-              taşıyıp "Excel" adını veriyor. */}
-          <Button variant="secondary" disabled data-testid="mu-export">
+          {/* 🔴 MP:146 "Excel" — EXPORT-XLSX ile GERÇEK:
+              `GET /journal/export.xlsx`. Dosya, panelin dönem + hesap
+              süzgeçlerini AYNEN taşır. E8'de bu düğme sayfa başlığındaydı ve
+              "Dışa Aktar" diyordu; MP onu defter panelinin başlığına taşıyıp
+              "Excel" adını veriyor. */}
+          <Button
+            variant="secondary"
+            data-testid="mu-export"
+            disabled={isExporting}
+            onClick={handleExport}
+          >
             Excel
           </Button>
         </div>
 
-        <p className="mu-notice" data-testid="mu-export-reason">
-          “Excel”: {pendingModuleLabel(ACCOUNTING_REASONS.export)}.
-        </p>
+        {exportError !== null && (
+          <p className="mu-notice mu-notice--danger" data-testid="mu-export-error">
+            {exportError}
+          </p>
+        )}
 
         {hasCarriedBalance(carriedBalance) && carriedBalance !== undefined && (
           // 🔴 `carried_balance` pencere ÖNCESİ toplamdır: sıfır değilse ilk

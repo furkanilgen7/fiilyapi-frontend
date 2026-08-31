@@ -57,7 +57,8 @@ test("K10 — '+ Kayıt Ekle' devre-dışıdır ve gerekçesi ekranda GÖRÜNÜR
   await page.goto(EQUIPMENT_WORK_URL);
 
   await expect(page.getByTestId("makine-cal-add-record")).toBeDisabled();
-  await expect(page.getByTestId("makine-cal-export")).toBeDisabled();
+  // 🔴 EXPORT-XLSX: "Excel İndir" ARTIK ETKİN (uç açıldı).
+  await expect(page.getByTestId("makine-cal-export")).toBeEnabled();
   // Gerekçe `title` ipucunda SAKLI DEĞİL — kullanıcı fareyi bekletmeden görür.
   await expect(page.locator("#makine-cal-add-reason")).toContainText(
     "Çalışma kaydı giriş formunun mockup'ı henüz yok.",

@@ -1,7 +1,7 @@
 import type { UseQueryResult } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useSession } from "@/components/shell/SessionProvider";
 import type { CompanyRead } from "@/lib/api/models";
@@ -11,6 +11,7 @@ import type {
   PayrollPeriodListRow,
 } from "@/lib/api/hooks/usePayroll";
 import { usePayrollPeriods } from "@/lib/api/hooks/usePayroll";
+import { errorResponse, stubExportDownload } from "@/lib/api/export-test-stub";
 import { BackendError } from "@/lib/api/unwrap";
 import type { MeResponse } from "@/lib/auth/types";
 
@@ -367,12 +368,55 @@ describe("🔴 K3 — dürüst boş hâller", () => {
 
 /* ------------------------------------------------------------ K11 uçsuz öğe */
 
-describe("🔴 K11 — 'Excel İndir' uçsuzdur", () => {
-  it("düğme SİLİNMEZ, devre dışı basılır ve gerekçesi GÖRÜNÜR", () => {
+/**
+ * 🔴 EXPORT-XLSX — K11 KAPANDI: dönem-üstü uç açıldı
+ * (`GET /payroll/periods/export.xlsx`) ve düğme ETKİN.
+ *
+ * 🔴🔴 KAPSAM SESSİZ GEÇİLMEZ: uç süzgeç ALMAZ (liste ucu da `year` almaz, yıl
+ * seçici K6 gereği İSTEMCİDE süzer) ⇒ dosya ekranda görünen yıldan GENİŞtir.
+ * Bunu söylemeyen bir düğme kullanıcının "2026'yı indirdim" sanmasına yol
+ * açardı; kapsam notu düğmenin ALTINDA durur.
+ */
+describe("EXPORT-XLSX — 'Excel İndir' GERÇEK, kapsam notu GÖRÜNÜR", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("düğme ETKİNDİR ve kapsam notu ekranda durur", () => {
     render(<PayrollHistoryView />);
-    expect(screen.getByTestId("bordro-gecmis-export")).toBeDisabled();
+    expect(screen.getByTestId("bordro-gecmis-export")).toBeEnabled();
     expect(screen.getByTestId("bordro-gecmis-export-reason")).toHaveTextContent(
-      "Dönem-üstü Excel ucu yok",
+      "Excel TÜM dönemleri içerir",
+    );
+  });
+
+  it("indirme SORGU DİZESİ TAŞIMAZ (uç süzgeç almaz)", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    const stub = stubExportDownload();
+    render(<PayrollHistoryView />);
+
+    // Act
+    await user.click(screen.getByTestId("bordro-gecmis-export"));
+
+    // Assert
+    await waitFor(() => {
+      expect(stub.lastUrl()).toBe("/api/backend/payroll/periods/export.xlsx");
+    });
+  });
+
+  it("indirme hatası YUTULMAZ — sunucunun Türkçe metni EKRANA basılır", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    stubExportDownload(errorResponse(403, { detail: "Bordro yetkiniz yok." }));
+    render(<PayrollHistoryView />);
+
+    // Act
+    await user.click(screen.getByTestId("bordro-gecmis-export"));
+
+    // Assert
+    expect(await screen.findByTestId("bordro-gecmis-export-error")).toHaveTextContent(
+      "Bordro yetkiniz yok.",
     );
   });
 });
