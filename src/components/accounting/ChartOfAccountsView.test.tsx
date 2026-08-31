@@ -18,6 +18,7 @@ import {
   useDeleteChartAccount,
   useUpdateChartAccount,
 } from "@/lib/api/hooks/useChartOfAccountMutations";
+import { errorResponse, stubExportDownload } from "@/lib/api/export-test-stub";
 import { BackendError } from "@/lib/api/unwrap";
 import type { MeResponse } from "@/lib/auth/types";
 
@@ -159,12 +160,10 @@ describe("Hesap Planı ekranı — HP başlık şeridi", () => {
     expect(screen.getByRole("heading", { name: "Hesap Planı" })).toBeInTheDocument();
   });
 
-  it("HP:49 `Excel` devre dışıdır ve gerekçesi EKRANDA görünür", () => {
+  it("HP:49 `Excel` ETKİNDİR (EXPORT-XLSX ile uç açıldı)", () => {
     render(<ChartOfAccountsView />);
-    expect(screen.getByTestId("hp-export")).toBeDisabled();
-    expect(screen.getByTestId("hp-export-reason")).toHaveTextContent(
-      "Hesap planı dışa aktarma ucu henüz açılmadı",
-    );
+    expect(screen.getByTestId("hp-export")).toBeEnabled();
+    expect(screen.queryByTestId("hp-export-reason")).toBeNull();
   });
 
   it("HP:50 `+ Hesap Ekle` GERÇEK diyaloğu OLUŞTURMA kipinde açar", async () => {
@@ -724,5 +723,79 @@ describe("Hesap diyaloğu — kontra kontrolü + canlı önizleme (F-MUF T2)", (
     render(<ChartOfAccountsView />);
     await user.click(screen.getByTestId("hp-edit-100"));
     expect(screen.queryByTestId("hp-dialog-repeat")).toBeNull();
+  });
+});
+
+/* ------------------------------------------------- EXPORT-XLSX · SIZINTI KAPISI */
+
+/**
+ * 🔴🔴 ANTI-SIZINTI BEKÇİSİ — Excel isteği, EKRANIN O AN GÖSTERDİĞİ süzgeci
+ * TAŞIMAK ZORUNDADIR. Ekrandan geniş bir dosya, kullanıcının süzdüğünü sandığı
+ * bir veri sızıntısıdır.
+ *
+ * Bekçi düğmeyi GERÇEKTEN tıklar ve GERÇEK istemciyi koşturur (`fetch`
+ * sahtelenir): istemci bir süzgeci düşürürse bu iddia kırılır. Ekran sorgusu
+ * (`useChartOfAccounts` çağrısı) ile indirme sorgusu YAN YANA ölçülür.
+ */
+describe("EXPORT-XLSX · Excel sorgusu = ekran sorgusu", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("arama kutusu doluyken indirme AYNI `q`yu taşır", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    const stub = stubExportDownload();
+    render(<ChartOfAccountsView />);
+    await user.type(screen.getByTestId("hp-search"), "kasa");
+    await waitFor(() => {
+      expect(vi.mocked(useChartOfAccounts)).toHaveBeenLastCalledWith(
+        expect.objectContaining({ q: "kasa" }),
+      );
+    });
+
+    // Act
+    await user.click(screen.getByTestId("hp-export"));
+
+    // Assert — ekranın sunucuya gönderdiği süzgeç kümesi ile birebir
+    // (sayfalama anahtarları süzgeç DEĞİLDİR, karşılaştırmadan düşürülür).
+    const screenCall = vi.mocked(useChartOfAccounts).mock.calls.at(-1)?.[0] ?? {};
+    const screenFilters = Object.fromEntries(
+      Object.entries(screenCall).filter(([key]) => !["limit", "offset", "enabled"].includes(key)),
+    );
+    await waitFor(() => {
+      expect(stub.lastQuery()).toEqual({ q: "kasa" });
+    });
+    expect(screenFilters).toEqual({ q: "kasa" });
+  });
+
+  it("arama boşken indirme de süzgeçsizdir", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    const stub = stubExportDownload();
+    render(<ChartOfAccountsView />);
+
+    // Act
+    await user.click(screen.getByTestId("hp-export"));
+
+    // Assert
+    await waitFor(() => {
+      expect(stub.lastQuery()).toEqual({});
+    });
+  });
+
+  it("indirme hatası YUTULMAZ — sunucunun Türkçe metni EKRANA basılır", async () => {
+    // Arrange
+    const user = userEvent.setup();
+    stubExportDownload(errorResponse(403, { detail: "Hesap planı yetkiniz yok." }));
+    render(<ChartOfAccountsView />);
+
+    // Act
+    await user.click(screen.getByTestId("hp-export"));
+
+    // Assert
+    expect(await screen.findByTestId("hp-export-error")).toHaveTextContent(
+      "Hesap planı yetkiniz yok.",
+    );
   });
 });

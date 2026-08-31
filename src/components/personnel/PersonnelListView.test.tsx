@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 import { PersonnelListView } from "./PersonnelListView";
 import { usePersonnel } from "@/lib/api/hooks/usePersonnel";
@@ -12,6 +12,7 @@ import { useSession } from "@/components/shell/SessionProvider";
 import type { MeResponse } from "@/lib/auth/types";
 import type { PersonnelListItem, PersonnelListResponse } from "@/lib/api/hooks/usePersonnel";
 import { EMPTY_PERSONNEL_HR_FIELDS } from "@/lib/api/hooks/personnel-fixtures";
+import { errorResponse, stubExportDownload } from "@/lib/api/export-test-stub";
 
 vi.mock("@/lib/api/hooks/usePersonnel", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/usePersonnel")>()),
@@ -158,11 +159,13 @@ describe("PersonnelListView — başlık, sekmeler, KPI", () => {
     );
   });
 
-  it("'Dışa Aktar' devre-dışıdır ve gerekçesi title'dadır (K5)", () => {
+  /** 🔴 EXPORT-XLSX: `GET /personnel/export.xlsx` açıldı; düğme artık GERÇEK. */
+  it("'Dışa Aktar' ETKİNDİR ve bekleyen-modül gerekçesi ARTIK YOKTUR", () => {
     render(<PersonnelListView />);
     const button = screen.getByRole("button", { name: "Dışa Aktar" });
-    expect(button).toBeDisabled();
-    expect(button).toHaveAttribute("title", expect.stringContaining("Dışa aktarma"));
+    expect(button).toBeEnabled();
+    expect(button).not.toHaveAttribute("title");
+    expect(screen.queryByTestId("personel-export-blocked")).toBeNull();
   });
 
   // 🔴 URL-1 ÖLÇÜLMÜŞ SAPMA — `%2F`, eskiden ham `/` idi.
@@ -254,5 +257,95 @@ describe("PersonnelListView — süzgeçler", () => {
     render(<PersonnelListView />);
     expect(screen.getByTestId("personel-truncation-notice")).toHaveTextContent("liste eksik");
     expect(screen.getByTestId("personel-kpi-company-pending")).toBeInTheDocument();
+  });
+});
+
+/* ------------------------------------------------- EXPORT-XLSX · SIZINTI KAPISI */
+
+/**
+ * 🔴🔴 ANTI-SIZINTI BEKÇİSİ — Excel, EKRANIN O AN GÖSTERDİĞİ kadroyu taşımak
+ * ZORUNDADIR. "Kule A · pasifler" süzgeciyle bakarken TÜM kadroyu indirmek
+ * kullanıcının süzdüğünü sandığı bir veri sızıntısıdır.
+ *
+ * Bekçi düğmeyi GERÇEKTEN tıklar ve GERÇEK istemciyi koşturur (`fetch`
+ * sahtelenir); ekranın `usePersonnel` çağrısı ile indirme sorgusu YAN YANA
+ * ölçülür.
+ */
+describe("EXPORT-XLSX · Excel sorgusu = ekran sorgusu", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("arama + proje + durum süzgeçleri indirmeye AYNEN geçer", async () => {
+    // Arrange
+    searchParams = new URLSearchParams({ q: "mehmet", proje: "p-2", durum: "inactive" });
+    const stub = stubExportDownload();
+    render(<PersonnelListView />);
+    const screenFilter = vi.mocked(usePersonnel).mock.lastCall?.[0] ?? {};
+
+    // Act
+    fireEvent.click(screen.getByRole("button", { name: "Dışa Aktar" }));
+
+    // Assert — ekranın sunucuya gönderdiği süzgeç kümesiyle BİREBİR.
+    await waitFor(() => {
+      expect(stub.lastQuery()).toEqual({
+        q: "mehmet",
+        project_id: "p-2",
+        is_active: "false",
+      });
+    });
+    expect(screenFilter).toMatchObject({ q: "mehmet", projectId: "p-2", isActive: false });
+  });
+
+  it("süzgeçsiz ekranda indirme de süzgeçsizdir", async () => {
+    // Arrange
+    const stub = stubExportDownload();
+    render(<PersonnelListView />);
+
+    // Act
+    fireEvent.click(screen.getByRole("button", { name: "Dışa Aktar" }));
+
+    // Assert
+    await waitFor(() => {
+      expect(stub.lastQuery()).toEqual({});
+    });
+  });
+
+  /**
+   * 🔴🔴 EN KRİTİK DAL — `trade` SUNUCUDA YOKTUR (spec K-B), süzme
+   * İSTEMCİDEDİR. Uç meslek almadığı için indirilecek dosya ekranda
+   * görülenden GENİŞ olurdu: düğme KAPANIR, gerekçe GÖRÜNÜR olur ve HİÇBİR
+   * istek atılmaz.
+   */
+  it("meslek süzgeci açıkken düğme KAPALI, gerekçe GÖRÜNÜR ve istek ATILMAZ", async () => {
+    // Arrange
+    searchParams = new URLSearchParams({ meslek: "Elektrikçi" });
+    const stub = stubExportDownload();
+    render(<PersonnelListView />);
+
+    // Act
+    const button = screen.getByRole("button", { name: "Dışa Aktar" });
+    fireEvent.click(button);
+
+    // Assert
+    expect(button).toBeDisabled();
+    expect(screen.getByTestId("personel-export-blocked")).toHaveTextContent(
+      "Meslek süzgeci açıkken Excel indirilemez",
+    );
+    expect(stub.fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("indirme hatası YUTULMAZ — sunucunun Türkçe metni EKRANA basılır", async () => {
+    // Arrange
+    stubExportDownload(errorResponse(403, { detail: "Personel yetkiniz yok." }));
+    render(<PersonnelListView />);
+
+    // Act
+    fireEvent.click(screen.getByRole("button", { name: "Dışa Aktar" }));
+
+    // Assert
+    expect(await screen.findByTestId("personel-export-error")).toHaveTextContent(
+      "Personel yetkiniz yok.",
+    );
   });
 });

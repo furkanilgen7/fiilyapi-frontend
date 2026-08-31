@@ -7,6 +7,7 @@ import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Alert, Badge, Button } from "@/components/ui";
 import { Select } from "@/components/ui/select";
 import { backendErrorMessage } from "@/lib/api/error-message";
+import { downloadPayrollPeriodsExport } from "@/lib/api/payroll-client";
 import { useCompany } from "@/lib/api/hooks/useCompany";
 import type { PayrollPeriodListRow } from "@/lib/api/hooks/usePayroll";
 import { PAYROLL_PERMISSION_MODULE, usePayrollPeriods } from "@/lib/api/hooks/usePayroll";
@@ -40,8 +41,9 @@ import {
   HISTORY_EMPTY_TITLE,
   HISTORY_EMPTY_YEAR_TITLE,
   HISTORY_ERROR_FALLBACK,
-  HISTORY_EXPORT_DISABLED_REASON,
+  HISTORY_EXPORT_ERROR_FALLBACK,
   HISTORY_EXPORT_LABEL,
+  HISTORY_EXPORT_SCOPE_NOTE,
   HISTORY_LOADING_MESSAGE,
   HISTORY_PAGE_TITLE,
   HISTORY_UNPARSED_TITLE,
@@ -80,6 +82,8 @@ export function PayrollHistoryView() {
 
   // `null` = kullanıcı henüz seçim yapmadı ⇒ varsayılan (en yeni yıl).
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   if (!permission.canView || isForbidden(periodsQuery.error)) {
     return <AccessDenied />;
@@ -97,6 +101,27 @@ export function PayrollHistoryView() {
     : undefined;
 
   const hasNoPeriods = periodsQuery.data !== undefined && rows.length === 0;
+
+  /**
+   * 🔴 EXPORT-XLSX · `GET /payroll/periods/export.xlsx` — SÜZGEÇ ALMAZ ve bu
+   * bir tercih DEĞİL ölçümdür: liste ucu (`GET /payroll/periods`) de `year`
+   * parametresi almaz, yıl seçici K6 gereği İSTEMCİDE süzer. Uydurma bir
+   * `year` göndermek 422 verirdi.
+   *
+   * Sonuç: dosya, ekranda görünen yıldan GENİŞtir (tüm dönemler). Bu SESSİZ
+   * KALMAZ — düğmenin altında görünür bir cümle kapsamı söyler.
+   */
+  async function handleExport() {
+    setExportError(null);
+    setIsExporting(true);
+    try {
+      await downloadPayrollPeriodsExport();
+    } catch (error) {
+      setExportError(backendErrorMessage(error, HISTORY_EXPORT_ERROR_FALLBACK));
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   /**
    * 🔴 Şirket adı (BG:33 alt başlığı) AYRI bir veri kaynağıdır ve bu ekranın
@@ -135,13 +160,26 @@ export function PayrollHistoryView() {
         </div>
 
         <div className="borg__filter">
-          {/* BG:22 — 🔴 K11: dönem-üstü Excel ucu YOK. Düğme SİLİNMEZ; devre
-              dışı basılır ve gerekçe öğenin kendi alanından okunur. */}
-          <DisabledAction
-            label={HISTORY_EXPORT_LABEL}
-            disabledReason={HISTORY_EXPORT_DISABLED_REASON}
-            testId="bordro-gecmis-export"
-          />
+          {/* 🔴 BG:22 — EXPORT-XLSX ile GERÇEK: `GET /payroll/periods/export.xlsx`.
+              Kapsam notu düğmenin ALTINDA durur (`title`da SAKLANMAZ). */}
+          <div>
+            <Button
+              variant="secondary"
+              data-testid="bordro-gecmis-export"
+              disabled={isExporting}
+              onClick={handleExport}
+            >
+              {HISTORY_EXPORT_LABEL}
+            </Button>
+            <p className="borg__export-reason" data-testid="bordro-gecmis-export-reason">
+              {HISTORY_EXPORT_SCOPE_NOTE}
+            </p>
+            {exportError !== null && (
+              <p className="borg__export-reason" data-testid="bordro-gecmis-export-error">
+                {exportError}
+              </p>
+            )}
+          </div>
 
           {/* BG:34 — seçenekler GELEN VERİDEN türer; mockup'ın 2026/2025
               sabitleri kopyalanmaz. Etiket görsel olarak yoktur, erişilebilir
@@ -214,27 +252,6 @@ export function PayrollHistoryView() {
       )}
 
       {isLoaded && <span hidden data-testid="bordro-gecmis-loaded" />}
-    </div>
-  );
-}
-
-interface DisabledActionProps {
-  label: string;
-  /** 🔴 Gerekçe ÖĞENİN alanıdır; bileşen metni kendi yazmaz (T2 kanonu). */
-  disabledReason: string;
-  testId: string;
-}
-
-/** Uçsuz eylem: silinmez, devre dışı + görünür gerekçe (K11). */
-function DisabledAction({ label, disabledReason, testId }: DisabledActionProps) {
-  return (
-    <div>
-      <Button variant="secondary" disabled data-testid={testId}>
-        {label}
-      </Button>
-      <p className="borg__export-reason" data-testid={`${testId}-reason`}>
-        {disabledReason}
-      </p>
     </div>
   );
 }

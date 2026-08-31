@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Button } from "@/components/ui";
+import { downloadTrialBalanceExport } from "@/lib/api/accounting-export-client";
 import { backendErrorMessage } from "@/lib/api/error-message";
 import { useTrialBalance } from "@/lib/api/hooks/useTrialBalance";
 import { isForbidden } from "@/lib/api/unwrap";
@@ -46,8 +47,31 @@ export function TrialBalanceView() {
   // 🔴 K4 · varsayılan dönem YEREL takvimden (`currentPeriod`); `toISOString()`
   // UTC'ye çevirir ve TR saatinde ayın ilk/son gününde dönemi kaydırırdı (TB5).
   const [period, setPeriod] = useState<Period>(() => currentPeriod(new Date()));
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const trialBalanceQuery = useTrialBalance(period.year, period.month);
+
+  /**
+   * 🔴 EXPORT-XLSX · SIZINTI KURALI — dosya EKRANIN GÖRDÜĞÜ pencereden geniş
+   * OLAMAZ. Bu ekranın TEK süzgeci dönem gezginidir ve `period` hem
+   * `useTrialBalance`e hem buraya AYNI nesneden gider; ayrı bir "dışa aktarma
+   * dönemi" state'i YOKTUR, olsaydı sessizce bayatlayabilirdi.
+   *
+   * `AuditLogScreen`/`PayrollMonthlyView` kanonu: uçuş sırasında düğme kilitli,
+   * hata YUTULMAZ (sunucunun Türkçe `detail` metni ekrana basılır).
+   */
+  async function handleExport() {
+    setExportError(null);
+    setIsExporting(true);
+    try {
+      await downloadTrialBalanceExport({ year: period.year, month: period.month });
+    } catch (error) {
+      setExportError(backendErrorMessage(error, "Mizan Excel dosyası indirilemedi."));
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   if (!permission.canView || isForbidden(trialBalanceQuery.error)) {
     return <AccessDenied />;
@@ -81,12 +105,18 @@ export function TrialBalanceView() {
             onChange={setPeriod}
             label={trialBalanceRangeLabel(period)}
           />
-          {/* MZ:48-49 — iki dışa aktarma düğmesinin de UCU YOK; düğmeler
-              SİLİNMEZ (F-TH kanonu), devre dışı + gerekçeleri EKRANDA
-              (`title`da SAKLANMAZ). */}
-          <Button variant="secondary" disabled data-testid="mz-export-excel">
+          {/* 🔴 MZ:48 — EXPORT-XLSX ile GERÇEK: `GET /trial-balance/export.xlsx`. */}
+          <Button
+            variant="secondary"
+            data-testid="mz-export-excel"
+            disabled={isExporting}
+            onClick={handleExport}
+          >
             Excel
           </Button>
+          {/* MZ:49 — PDF ucu HÂLÂ YOK ve AYRI BİR DİLİMDİR; düğme SİLİNMEZ
+              (F-TH kanonu), devre dışı + gerekçesi EKRANDA (`title`da
+              SAKLANMAZ). */}
           <Button variant="secondary" disabled data-testid="mz-export-pdf">
             PDF
           </Button>
@@ -98,8 +128,13 @@ export function TrialBalanceView() {
       <AccountingTabs />
 
       <p className="mu-notice" data-testid="mz-export-reason">
-        “Excel” / “PDF”: {pendingModuleLabel(ACCOUNTING_REASONS.trialBalanceExport)}.
+        “PDF”: {pendingModuleLabel(ACCOUNTING_REASONS.trialBalancePdfExport)}.
       </p>
+      {exportError !== null && (
+        <p className="mu-notice mu-notice--danger" data-testid="mz-export-error">
+          {exportError}
+        </p>
+      )}
 
       {/* MZ:54-57 — kontrol banner'ı. Veri gelmeden BASILMAZ: `is_balanced`
           bilinmezken "dengede" demek de "dengesiz" demek de uydurma olurdu. */}

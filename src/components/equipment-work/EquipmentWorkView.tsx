@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { EquipmentTabsStrip } from "@/components/equipment/EquipmentTabsStrip";
@@ -10,6 +11,7 @@ import { monthDayIsoList, parsePeriod, shiftPeriod } from "@/components/timeshee
 import { Button } from "@/components/ui/button/Button";
 import { Select } from "@/components/ui/select/Select";
 import { backendErrorMessage } from "@/lib/api/error-message";
+import { downloadEquipmentWorkExport } from "@/lib/api/equipment-work-export-client";
 import { EQUIPMENT_LIST_MAX_LIMIT, useEquipment } from "@/lib/api/hooks/useEquipment";
 import { useEquipmentFuelSummary } from "@/lib/api/hooks/useEquipmentFuelSummary";
 import { useEquipmentWorkLogs } from "@/lib/api/hooks/useEquipmentWorkLogs";
@@ -26,7 +28,7 @@ import { EquipmentWorkWeeklyChart } from "./EquipmentWorkWeeklyChart";
 import {
   ADD_RECORD_DISABLED_REASON,
   EQUIPMENT_FILTER_DISABLED_REASON,
-  EXPORT_DISABLED_REASON,
+  EXPORT_ERROR_FALLBACK,
   VIEW_MODE_DISABLED_REASON,
 } from "./work-labels";
 import "@/components/site-diary/site-diary-summary.css";
@@ -67,12 +69,24 @@ export function EquipmentWorkView() {
   const period = parsePeriod(searchParams.get("year"), searchParams.get("month"));
   const siteParam = searchParams.get("site") ?? "";
 
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
   const days = monthDayIsoList(period.year, period.month);
-  const summaryQuery = useEquipmentWorkSummary({
+
+  /**
+   * 🔴 EXPORT-XLSX · SIZINTI KURALI — özet tablosunun TEK süzgeç nesnesi.
+   * `useEquipmentWorkSummary` ve `GET /equipment/work-summary/export.xlsx`
+   * AYNI nesneden beslenir; ayrı kurulsalardı şantiye süzgeci ya da dönem
+   * sessizce ayrışır ve kullanıcı bir şantiyeye bakarken TÜM şantiyelerin
+   * dosyasını indirebilirdi.
+   */
+  const summaryFilter = {
     year: period.year,
     month: period.month,
     ...(siteParam ? { siteId: siteParam } : {}),
-  });
+  };
+  const summaryQuery = useEquipmentWorkSummary(summaryFilter);
   const logsQuery = useEquipmentWorkLogs({
     dateFrom: days[0],
     dateTo: days[days.length - 1],
@@ -110,6 +124,19 @@ export function EquipmentWorkView() {
     return personnelNameById.get(operatorId) ?? null;
   }
 
+  /** `AuditLogScreen` kanonu: uçuşta kilit, hata GÖRÜNÜR. */
+  async function handleExport() {
+    setExportError(null);
+    setIsExporting(true);
+    try {
+      await downloadEquipmentWorkExport(summaryFilter);
+    } catch (error) {
+      setExportError(backendErrorMessage(error, EXPORT_ERROR_FALLBACK));
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   function pushParams(next: { site?: string; year?: number; month?: number }) {
     const params = new URLSearchParams(searchParams.toString());
     if (next.site !== undefined) {
@@ -132,11 +159,13 @@ export function EquipmentWorkView() {
       <div className="makine-cal__head">
         <h1 className="makine-cal__title">Çalışma Kaydı</h1>
         <div className="makine-cal__actions">
-          {/* 48 — sunucu üretimli dışa aktarma ucu YOK; öğe silinmez. */}
+          {/* 🔴 48 — EXPORT-XLSX ile GERÇEK:
+              `GET /equipment/work-summary/export.xlsx`. Dosya, dönem +
+              şantiye süzgeçlerini AYNEN taşır. */}
           <Button
             variant="secondary"
-            disabled
-            title={EXPORT_DISABLED_REASON}
+            disabled={isExporting}
+            onClick={handleExport}
             data-testid="makine-cal-export"
           >
             Excel İndir
@@ -157,8 +186,14 @@ export function EquipmentWorkView() {
       <EquipmentTabsStrip activeTab="Çalışma Kaydı" />
 
       <p id="makine-cal-add-reason" className="makine-cal__reason">
-        {ADD_RECORD_DISABLED_REASON} {EXPORT_DISABLED_REASON}
+        {ADD_RECORD_DISABLED_REASON}
       </p>
+
+      {exportError !== null && (
+        <p className="makine-cal__notice" data-testid="makine-cal-export-error">
+          {exportError}
+        </p>
+      )}
 
       {/* 54-76 — dönem + görünüm + süzgeçler */}
       <div className="makine-cal__controls">

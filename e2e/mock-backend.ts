@@ -7811,6 +7811,106 @@ export function startMockBackend(port: number): { server: Server; close: () => P
     const queryViolation = queryConstraintViolation(path, parsed.searchParams);
     if (queryViolation !== null) return send(422, queryViolation);
 
+    // ================================================================
+    // EXPORT-XLSX · ALTI YENİ EXCEL UCU
+    // ================================================================
+    //
+    // 🔴 KİMLİK KONTROLÜNDEN SONRA, LİSTE UÇLARINDAN ÖNCE durur. Sıra
+    // ÖNEMLİDİR: `/personnel/export.xlsx` aşağıdaki `/personnel/{id}` desenine
+    // de uyar; blok geç gelseydi ekran 404 alırdı (aynı tuzak `quotesExport`
+    // yorumunda da yazılı).
+    //
+    // 🔴 İKİZ SADECE "EVET" DEMEZ. Onaylayan bir ikiz bekçi değildir: gerçek
+    // backend neyi reddediyorsa burası da reddeder —
+    //   · `Bearer` yoksa **401** (yukarıdaki genel kapı; bu uçlar ondan sonra),
+    //   · `year`/`month` zorunlu olan iki uçta eksik/sayı-olmayan → **422**,
+    //   · `month` 1-12 dışında → **422** (FastAPI `ge/le` kısıtının ikizi),
+    //   · tanınmayan enum değeri (`account_type`, `status`, `source`) → **422**.
+    //
+    // ⚠️ MODÜL İZNİ (**403**) BU MOCK'TA MODELLENMİYOR: dosyada izin/rol
+    // mekanizması HİÇ YOKTUR (ölçüldü — `403` yalnız YORUMLARDA geçer) ve
+    // ekran testleri yetkiyi `/api/auth/me` yanıtını değiştirerek sınar. Uydurma
+    // bir 403 tetikleyicisi eklemek, gerçek backend'in kapısını TEMSİL
+    // ETMEYEN bir onay üretirdi; bu yüzden EKLENMEDİ ve devir notuna yazıldı.
+    //
+    // 🔴 GÖVDE İKİLİDİR: `send` JSON yazar, bu yüzden yanıt ELDE kurulur.
+    // İçerik gerçek bir XLSX değildir — sınanan sözleşme içerik tipi,
+    // `content-disposition` ve BFF'in ikili gövdeyi BOZMADAN geçirmesidir
+    // (`PK\x03\x04` zip imzası, `timesheet.spec.ts::expectXlsxDownload`).
+    const sendXlsx = (filename: string): void => {
+      res.writeHead(200, {
+        "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "content-disposition": `attachment; filename="${filename}"`,
+      });
+      res.end(Buffer.from([0x50, 0x4b, 0x03, 0x04]));
+    };
+
+    /** `year`+`month` ZORUNLU uçların ortak doğrulaması (gerçek uçla aynı). */
+    const requiredPeriod = (): { year: number; month: number } | null => {
+      const rawYear = parsed.searchParams.get("year");
+      const rawMonth = parsed.searchParams.get("month");
+      if (rawYear === null || rawMonth === null) return null;
+      const year = Number(rawYear);
+      const month = Number(rawMonth);
+      if (!Number.isInteger(year) || !Number.isInteger(month)) return null;
+      if (month < 1 || month > 12) return null;
+      return { year, month };
+    };
+
+    /** Tanınmayan enum değeri gerçek FastAPI'de 422'dir — ikizi de öyle. */
+    const badEnum = (name: string, allowed: readonly string[]): boolean => {
+      const value = parsed.searchParams.get(name);
+      return value !== null && !allowed.includes(value);
+    };
+
+    if (method === "GET" && path === "/trial-balance/export.xlsx") {
+      const period = requiredPeriod();
+      if (period === null) return send(422, { detail: "year/month zorunlu (month 1-12)" });
+      return sendXlsx(
+        `mizan-${period.year}-${String(period.month).padStart(2, "0")}.xlsx`,
+      );
+    }
+
+    if (method === "GET" && path === "/chart-of-accounts/export.xlsx") {
+      // Liste ucuyla AYNI süzgeç kümesi; hiçbiri zorunlu değildir.
+      if (badEnum("account_type", ["asset", "liability", "equity", "revenue", "expense"])) {
+        return send(422, { detail: "account_type gecersiz" });
+      }
+      return sendXlsx("hesap-plani.xlsx");
+    }
+
+    if (method === "GET" && path === "/journal/export.xlsx") {
+      const period = requiredPeriod();
+      if (period === null) return send(422, { detail: "year/month zorunlu (month 1-12)" });
+      if (badEnum("status", ["draft", "posted", "reversed"])) {
+        return send(422, { detail: "status gecersiz" });
+      }
+      return sendXlsx(
+        `yevmiye-${period.year}-${String(period.month).padStart(2, "0")}.xlsx`,
+      );
+    }
+
+    if (method === "GET" && path === "/personnel/export.xlsx") {
+      if (badEnum("source", ["company", "subcontractor"])) {
+        return send(422, { detail: "source gecersiz" });
+      }
+      return sendXlsx("personel.xlsx");
+    }
+
+    // 🔴 Uç `year` ALMAZ (liste ucu da almaz, K6) — gönderilse bile YOK
+    // SAYILIR; ekran kapsam farkını görünür bir cümleyle söyler.
+    if (method === "GET" && path === "/payroll/periods/export.xlsx") {
+      return sendXlsx("bordro-donemleri.xlsx");
+    }
+
+    if (method === "GET" && path === "/equipment/work-summary/export.xlsx") {
+      const period = requiredPeriod();
+      if (period === null) return send(422, { detail: "year/month zorunlu (month 1-12)" });
+      return sendXlsx(
+        `calisma-kaydi-${period.year}-${String(period.month).padStart(2, "0")}.xlsx`,
+      );
+    }
+
     // F-TKV T6 — milestone id sayaci. `Date.now()` YASAK (determinizm):
     // fikstürler `ms-1`..`ms-3` kullaniyor, yeni satirlar `ms-4`ten devam eder.
     const nextMilestoneId = () => `ms-${++milestoneSeq}`;

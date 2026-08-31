@@ -207,11 +207,12 @@ test("sekme şeridinden 'İzin Yönetimi' GERÇEK ekranı açar (ComingSoon DEĞ
   await expect(page).toHaveURL(/\/personel$/);
 });
 
-test("'+ Personel Ekle' mevcut forma döner, 'Dışa Aktar' devre-dışıdır", async ({ page }) => {
+test("'+ Personel Ekle' mevcut forma döner, 'Dışa Aktar' ETKİNDİR", async ({ page }) => {
   await login(page);
   await page.goto(PERSONNEL_URL);
 
-  await expect(page.getByRole("button", { name: "Dışa Aktar" }).first()).toBeDisabled();
+  // 🔴 EXPORT-XLSX: uç açıldı; indirmenin kendisi `export-xlsx.spec.ts`te.
+  await expect(page.getByRole("button", { name: "Dışa Aktar" }).first()).toBeEnabled();
 
   await page.getByRole("link", { name: "+ Personel Ekle" }).first().click();
   // URL-1 ölçülmüş sapma: `?donus=` artık HER çağırandan kodlanmış çıkar

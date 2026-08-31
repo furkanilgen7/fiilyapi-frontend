@@ -131,9 +131,10 @@ test("muhasebe yevmiye defteri gorsel", async ({ page }) => {
   // MP:105-112 sekme şeridi kadrajın parçasıdır; TEK hap aktiftir.
   await expect(page.getByTestId("mu-tabs").locator('[aria-current="page"]')).toHaveCount(1);
 
-  // Devre-dışı "Excel" ve gerekçe bandı da kadrajın parçasıdır.
-  await expect(page.getByTestId("mu-export")).toBeDisabled();
-  await expect(page.getByTestId("mu-export-reason")).toBeVisible();
+  // 🔴 EXPORT-XLSX: "Excel" ARTIK ETKİN ve bekleyen-modül bandı KALKTI —
+  // kadraj bu iki değişikliği de içerir.
+  await expect(page.getByTestId("mu-export")).toBeEnabled();
+  await expect(page.getByTestId("mu-export-reason")).toHaveCount(0);
   await expectNoLoadingText(page);
 
   // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
@@ -186,9 +187,9 @@ test("muhasebe hesap plani gorsel", async ({ page }) => {
   await expect(page.getByTestId("hp-contra-257")).toHaveAttribute("aria-label", "Kontra hesap");
   await expect(page.getByTestId("hp-contra-100")).toHaveCount(0);
 
-  // Devre-dışı "Excel" ve gerekçe bandı da kadrajın parçasıdır.
-  await expect(page.getByTestId("hp-export")).toBeDisabled();
-  await expect(page.getByTestId("hp-export-reason")).toBeVisible();
+  // 🔴 EXPORT-XLSX: "Excel" ARTIK ETKİN ve bekleyen-modül bandı KALKTI.
+  await expect(page.getByTestId("hp-export")).toBeEnabled();
+  await expect(page.getByTestId("hp-export-reason")).toHaveCount(0);
   await expectNoLoadingText(page);
 
   // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.

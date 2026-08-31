@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Button, Input } from "@/components/ui";
 import { SearchIcon } from "@/components/ui/icons";
+import { downloadChartOfAccountsExport } from "@/lib/api/accounting-export-client";
 import { backendErrorMessage } from "@/lib/api/error-message";
 import { useDeleteChartAccount, useUpdateChartAccount } from "@/lib/api/hooks/useChartOfAccountMutations";
 import type { ChartAccountResponse } from "@/lib/api/hooks/useChartOfAccounts";
@@ -17,7 +18,6 @@ import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncation";
-import { pendingModuleLabel } from "@/lib/pending-modules";
 
 import {
   ACCOUNTING_PERMISSION_MODULE,
@@ -61,12 +61,26 @@ export function ChartOfAccountsView() {
   const [dialog, setDialog] = useState<ChartAccountDialogState | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyAccountId, setBusyAccountId] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const trimmedSearch = debouncedSearch.trim();
-  const accountsQuery = useChartOfAccounts({
-    limit: CHART_ACCOUNTS_MAX_LIMIT,
-    ...(trimmedSearch.length > 0 ? { q: trimmedSearch } : {}),
-  });
+
+  /**
+   * 🔴 EXPORT-XLSX · SIZINTI KURALI — TEK süzgeç nesnesi. Liste sorgusu da
+   * Excel çağrısı da BU nesneden beslenir; iki ayrı yerde kurulsalardı biri
+   * (ör. arama kutusu) sessizce geride kalır ve kullanıcı SÜZDÜĞÜNÜ sanarak
+   * TÜM hesap planını indirirdi.
+   *
+   * `limit` bilerek DIŞARIDA: sayfalama bir süzgeç değildir (aşağıda liste
+   * çağrısına ayrıca eklenir), Excel tavanla kısıtlanmaz.
+   */
+  const filters = useMemo(
+    () => (trimmedSearch.length > 0 ? { q: trimmedSearch } : {}),
+    [trimmedSearch],
+  );
+
+  const accountsQuery = useChartOfAccounts({ limit: CHART_ACCOUNTS_MAX_LIMIT, ...filters });
 
   const updateMutation = useUpdateChartAccount();
   const deleteMutation = useDeleteChartAccount();
@@ -94,6 +108,19 @@ export function ChartOfAccountsView() {
           setActionError(backendErrorMessage(error, "Hesap pasifleştirilemedi.")),
       },
     );
+  }
+
+  /** `AuditLogScreen` kanonu: uçuşta kilit, hata GÖRÜNÜR. */
+  async function handleExport() {
+    setExportError(null);
+    setIsExporting(true);
+    try {
+      await downloadChartOfAccountsExport(filters);
+    } catch (error) {
+      setExportError(backendErrorMessage(error, "Hesap planı Excel dosyası indirilemedi."));
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   function handleDelete(accountId: string) {
@@ -131,9 +158,14 @@ export function ChartOfAccountsView() {
             data-testid="hp-search"
             onChange={(event) => setSearch(event.target.value)}
           />
-          {/* HP:49 — hesap planının dışa aktarma ucu YOK; düğme SİLİNMEZ,
-              devre dışı + gerekçesi EKRANDA (`title`da saklanmaz). */}
-          <Button variant="secondary" disabled data-testid="hp-export">
+          {/* 🔴 HP:49 — EXPORT-XLSX ile GERÇEK: `GET /chart-of-accounts/export.xlsx`.
+              Arama kutusu ne süzüyorsa dosya da ONU taşır. */}
+          <Button
+            variant="secondary"
+            data-testid="hp-export"
+            disabled={isExporting}
+            onClick={handleExport}
+          >
             Excel
           </Button>
           {/* HP:50 — `ChartAccountFormModal`ı açar (T4). */}
@@ -152,9 +184,11 @@ export function ChartOfAccountsView() {
           Şerit sayfa BAŞLIĞININ ALTINDADIR (MP:103 → MP:105). */}
       <AccountingTabs />
 
-      <p className="mu-notice" data-testid="hp-export-reason">
-        “Excel”: {pendingModuleLabel(ACCOUNTING_REASONS.chartExport)}.
-      </p>
+      {exportError !== null && (
+        <p className="mu-notice mu-notice--danger" data-testid="hp-export-error">
+          {exportError}
+        </p>
+      )}
       {!permission.canWrite && (
         <p className="mu-notice" data-testid="hp-write-notice">
           {ACCOUNTING_REASONS.write}

@@ -1,5 +1,5 @@
 import { BackendError } from "@/lib/api/unwrap";
-import { attachmentFilename } from "@/lib/api/export-filename";
+import { downloadAttachment } from "@/lib/api/download";
 import type { components } from "@/lib/api/schema";
 
 // F-UNIT2 T2b · EI ("Excel'den Ünite İçe Aktarma") — ŞEMADA olan ama
@@ -133,9 +133,10 @@ export async function importUnits(
  * EI 37/87 "Şablon İndir" — `GET …/units/import/template` (12 başlıklı boş
  * `.xlsx`).
  *
- * `documents-client.ts::downloadDocument` ile AYNI gövde: blob → objectURL →
- * `<a download>` → `revokeObjectURL` bir `finally` içinde (tarayıcı indirmeyi
- * reddetse bile obje URL'i sızdırılmaz). Ad `attachmentFilename` ile
+ * 🔴 EXPORT-XLSX · gövde `@/lib/api/download` TEK kaynağındadır: blob →
+ * objectURL → `<a download>` → `revokeObjectURL` bir `finally` içinde
+ * (tarayıcı indirmeyi reddetse bile obje URL'i sızdırılmaz). Ad
+ * `attachmentFilename` ile
  * `Content-Disposition`tan okunur — backend proje koduyla adlandırır
  * (`unite-sablonu-{code}.xlsx`), yol ayracı/kontrol karakteri taşıyan bir ad
  * reddedilip varsayılana düşülür.
@@ -145,25 +146,5 @@ export async function importUnits(
  * bırakırdı. Yine de görünürlük kapısı vardır (görünmeyen proje 404).
  */
 export async function downloadUnitsImportTemplate(projectId: string): Promise<void> {
-  const response = await globalThis.fetch(importPath(projectId, "/template"), {
-    method: "GET",
-    credentials: "same-origin",
-  });
-  if (!response.ok) throw await toBackendError(response);
-
-  const blob = await response.blob();
-  const objectUrl = URL.createObjectURL(blob);
-  try {
-    const link = document.createElement("a");
-    link.href = objectUrl;
-    link.download = attachmentFilename(
-      response.headers.get("content-disposition"),
-      IMPORT_TEMPLATE_FALLBACK_NAME,
-    );
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } finally {
-    URL.revokeObjectURL(objectUrl);
-  }
+  await downloadAttachment(importPath(projectId, "/template"), IMPORT_TEMPLATE_FALLBACK_NAME);
 }

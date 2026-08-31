@@ -25,8 +25,19 @@ export const HISTORY_EXPORT_LABEL = "Excel İndir"; // BG:22
  * ekranına bağlı). Bu ekranın düğmesi DÖNEM-ÜSTÜdür (yıl boyu tüm dönemler) —
  * karşılığı olan uç yoktur, uydurulmaz.
  */
-export const HISTORY_EXPORT_DISABLED_REASON =
-  "Dönem-üstü Excel ucu yok: bordro modülü yalnız TEK dönemi dışa aktarır. Bir dönemin Excel'i için o dönemi Aylık Bordro ekranında açın.";
+/**
+ * 🔴 EXPORT-XLSX (2026-08-31) — dönem-üstü uç AÇILDI
+ * (`GET /payroll/periods/export.xlsx`); düğme artık gerçek ve eski
+ * `HISTORY_EXPORT_DISABLED_REASON` KALDIRILDI.
+ *
+ * Yerine KAPSAM NOTU geçti: uç süzgeç ALMAZ (liste ucu da `year` almaz, yıl
+ * seçici K6 gereği istemcide süzer) ⇒ dosya ekranda görünen yıldan GENİŞtir.
+ * Bunu sessiz geçmek kullanıcının "2026'yı indirdim" sanmasına yol açardı.
+ */
+export const HISTORY_EXPORT_SCOPE_NOTE =
+  "Excel TÜM dönemleri içerir; yıl süzgeci yalnız bu ekranda çalışır. Tek bir dönemin ayrıntılı bordrosu için o dönemi Aylık Bordro ekranında açın.";
+
+export const HISTORY_EXPORT_ERROR_FALLBACK = "Bordro geçmişi Excel dosyası indirilemedi.";
 
 /* ------------------------------------------------------------- tablo başlığı */
 

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { UseQueryResult } from "@tanstack/react-query";
 
 import { EquipmentWorkView } from "./EquipmentWorkView";
@@ -19,6 +19,7 @@ import { usePersonnel } from "@/lib/api/hooks/usePersonnel";
 import type { PersonnelListItem } from "@/lib/api/hooks/usePersonnel";
 import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
 import type { MeResponse } from "@/lib/auth/types";
+import { errorResponse, stubExportDownload } from "@/lib/api/export-test-stub";
 
 // F-MK T4 · M3 (`/makine/calisma`) ekranının davranış iddiaları. Odak, spec'in
 // KIRMIZI kararlarıdır: §0 (toplam sunucudan) · K3 (`null` ⇒ "—") · K2 (yüzde
@@ -375,9 +376,14 @@ describe("K10 — kayıt ekleme formu YOK: buton devre-dışı + görünür gere
     expect(reason).toHaveTextContent("Çalışma kaydı giriş formunun mockup'ı henüz yok.");
   });
 
-  it("mockup'ın diğer uçsuz öğeleri de silinmedi (Excel İndir · görünüm · ekipman süzgeci)", () => {
+  /**
+   * 🔴 EXPORT-XLSX: "Excel İndir" ucu AÇILDI ve düğme ETKİN. Geri kalan uçsuz
+   * öğeler (haftalık/günlük görünüm, ekipman süzgeci) HÂLÂ silinmez —
+   * devre dışı + görünür gerekçe.
+   */
+  it("Excel İndir ETKİN; görünüm/ekipman süzgeci hâlâ devre dışı + gerekçeli", () => {
     render(<EquipmentWorkView />);
-    expect(screen.getByTestId("makine-cal-export")).toBeDisabled();
+    expect(screen.getByTestId("makine-cal-export")).toBeEnabled();
     expect(screen.getByTestId("makine-cal-equipment-filter")).toBeDisabled();
     expect(screen.getByTestId("makine-cal-view-weekly")).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByTestId("makine-cal-filter-reasons")).toHaveTextContent(
@@ -412,5 +418,67 @@ describe("boş durum + yükleme durumu", () => {
     expect(screen.getByTestId("makine-cal-kpi")).not.toHaveTextContent("0 Saat");
     expect(screen.getByTestId("makine-cal-kpi-fuel")).toHaveTextContent("—");
     expect(screen.queryByTestId("makine-cal-loaded-summary")).not.toBeInTheDocument();
+  });
+});
+
+/* ------------------------------------------------- EXPORT-XLSX · SIZINTI KAPISI */
+
+/**
+ * 🔴🔴 ANTI-SIZINTI BEKÇİSİ — Excel, EKRANIN O AN GÖSTERDİĞİ dönem + şantiye
+ * penceresini taşımak ZORUNDADIR. Bir şantiyeye bakarken TÜM şantiyelerin
+ * dosyasını indirmek kullanıcının süzdüğünü sandığı bir sızıntıdır.
+ *
+ * Bekçi düğmeyi GERÇEKTEN tıklar ve GERÇEK istemciyi koşturur (`fetch`
+ * sahtelenir); ekranın `useEquipmentWorkSummary` çağrısı ile indirme sorgusu
+ * YAN YANA ölçülür.
+ */
+describe("EXPORT-XLSX · Excel sorgusu = ekran sorgusu", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("şantiye süzgeci açıkken indirme AYNI şantiyeyi ve dönemi taşır", async () => {
+    // Arrange
+    searchParams = new URLSearchParams("year=2026&month=7&site=s-2");
+    const stub = stubExportDownload();
+    render(<EquipmentWorkView />);
+    const screenFilter = vi.mocked(useEquipmentWorkSummary).mock.lastCall?.[0];
+    expect(screenFilter).toEqual({ year: 2026, month: 7, siteId: "s-2" });
+
+    // Act
+    fireEvent.click(screen.getByTestId("makine-cal-export"));
+
+    // Assert
+    await waitFor(() => {
+      expect(stub.lastQuery()).toEqual({ year: "2026", month: "7", site_id: "s-2" });
+    });
+  });
+
+  it("'Tüm Projeler' seçiliyken site_id GÖNDERİLMEZ", async () => {
+    // Arrange
+    const stub = stubExportDownload();
+    render(<EquipmentWorkView />);
+
+    // Act
+    fireEvent.click(screen.getByTestId("makine-cal-export"));
+
+    // Assert
+    await waitFor(() => {
+      expect(stub.lastQuery()).toEqual({ year: "2026", month: "7" });
+    });
+  });
+
+  it("indirme hatası YUTULMAZ — sunucunun Türkçe metni EKRANA basılır", async () => {
+    // Arrange
+    stubExportDownload(errorResponse(403, { detail: "Makine yetkiniz yok." }));
+    render(<EquipmentWorkView />);
+
+    // Act
+    fireEvent.click(screen.getByTestId("makine-cal-export"));
+
+    // Assert
+    expect(await screen.findByTestId("makine-cal-export-error")).toHaveTextContent(
+      "Makine yetkiniz yok.",
+    );
   });
 });

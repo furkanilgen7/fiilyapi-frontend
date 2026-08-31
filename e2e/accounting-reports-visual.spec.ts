@@ -85,8 +85,8 @@ test("muhasebe mizan gorsel", async ({ page }) => {
   await expect(banner).toContainText("₺ 27.466.500");
   await expect(page.getByTestId("mz-totals")).toContainText("GENEL TOPLAM");
 
-  // Devre-dışı düğmeler ve gerekçe bandı da kadrajın parçasıdır.
-  await expect(page.getByTestId("mz-export-excel")).toBeDisabled();
+  // 🔴 EXPORT-XLSX: "Excel" ETKİN, "PDF" hâlâ devre dışı (ayrı dilim).
+  await expect(page.getByTestId("mz-export-excel")).toBeEnabled();
   await expect(page.getByTestId("mz-export-pdf")).toBeDisabled();
   await expect(page.getByTestId("mz-export-reason")).toBeVisible();
   await expectNoLoadingText(page);

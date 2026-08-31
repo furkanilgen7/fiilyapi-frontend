@@ -7,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Button } from "@/components/ui";
 import { backendErrorMessage } from "@/lib/api/error-message";
+import { downloadPersonnelExport } from "@/lib/api/personnel-export-client";
 import { isForbidden } from "@/lib/api/unwrap";
 import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
@@ -21,7 +22,11 @@ import {
   filterByTrade,
   paginateClientSide,
 } from "./personnel-derive";
-import { EXPORT_PENDING_REASON } from "./personnel-list-labels";
+import {
+  EXPORT_ERROR_FALLBACK,
+  EXPORT_LABEL,
+  EXPORT_TRADE_BLOCKED_REASON,
+} from "./personnel-list-labels";
 import { PersonnelDocumentAlertBanner } from "./PersonnelDocumentAlertBanner";
 import {
   PersonnelFilterBar,
@@ -70,17 +75,32 @@ export function PersonnelListView() {
   const status: PersonnelStatusFilter = rawStatus === "active" || rawStatus === "inactive" ? rawStatus : undefined;
 
   const [page, setPage] = useState(1);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   useEffect(() => {
     setPage(1);
   }, [query, projectId, trade, status]);
+
+  /**
+   * 🔴 EXPORT-XLSX · SIZINTI KURALI — TEK süzgeç nesnesi: liste sorgusu da
+   * `GET /personnel/export.xlsx` de BUNDAN beslenir. İki yerde kurulsalardı
+   * kullanıcı "A projesi" süzgeciyle bakarken TÜM kadroyu indirebilirdi.
+   *
+   * `limit`/`offset` DIŞARIDA: sayfalama bir süzgeç DEĞİLDİR (aşağıda liste
+   * çağrısına eklenir) — sayfalama zaten İSTEMCİDEDİR, Excel'i altı satıra
+   * kısmak anlamsız olurdu.
+   */
+  const serverFilters = {
+    ...(query ? { q: query } : {}),
+    ...(projectId ? { projectId } : {}),
+    ...(status !== undefined ? { isActive: status === "active" } : {}),
+  };
 
   // Kırpılma korkuluğu (TB3/F-TH dersi): tavan AÇIKÇA gönderilir.
   const personnelQuery = usePersonnel({
     limit: PERSONNEL_MAX_LIMIT,
     offset: 0,
-    ...(query ? { q: query } : {}),
-    ...(projectId ? { projectId } : {}),
-    ...(status !== undefined ? { isActive: status === "active" } : {}),
+    ...serverFilters,
   });
 
   // Proje ADI sunucudan personel kaydıyla GELMEZ (yalnız `assigned_project_id`)
@@ -120,6 +140,30 @@ export function PersonnelListView() {
   const filteredItems = serverItems ? filterByTrade(serverItems, trade) : undefined;
   const paged = filteredItems ? paginateClientSide(filteredItems, page, PAGE_SIZE) : undefined;
 
+  /**
+   * 🔴🔴 MESLEK SÜZGECİ AÇIKKEN EXCEL KAPALIDIR.
+   *
+   * `trade` sunucuda YOKTUR (spec K-B) ve süzme `filterByTrade` ile
+   * İSTEMCİDE yapılır. Uç meslek almadığı için indirilen dosya ekranda
+   * görülenden GENİŞ olurdu — kullanıcı "Elektrikçiler"i indirdiğini sanarak
+   * TÜM kadroyu alırdı. Bu bir veri sızıntısıdır; düğme SİLİNMEZ, devre dışı
+   * basılır ve gerekçe GÖRÜNÜR olur (repo kanonu).
+   */
+  const isExportBlockedByTrade = trade !== undefined;
+
+  /** `AuditLogScreen` kanonu: uçuşta kilit, hata GÖRÜNÜR. */
+  async function handleExport() {
+    setExportError(null);
+    setIsExporting(true);
+    try {
+      await downloadPersonnelExport(serverFilters);
+    } catch (error) {
+      setExportError(backendErrorMessage(error, EXPORT_ERROR_FALLBACK));
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   /** Süzgeç yazımı: diğer anahtarları KORUR, boş değeri URL'den DÜŞÜRÜR. */
   function pushParam(key: string, value: string | undefined) {
     const params = new URLSearchParams(searchParams.toString());
@@ -137,9 +181,15 @@ export function PersonnelListView() {
       <div className="personel__head">
         <h1 className="personel__title">İnsan Kaynakları</h1>
         <div className="personel__actions">
-          {/* 64 — spec K5: uç yok, devre-dışı + görünür gerekçe */}
-          <Button variant="secondary" disabled title={EXPORT_PENDING_REASON}>
-            Dışa Aktar
+          {/* 🔴 64 — EXPORT-XLSX ile GERÇEK: `GET /personnel/export.xlsx`.
+              TEK istisna meslek süzgecidir (aşağıdaki gerekçe). */}
+          <Button
+            variant="secondary"
+            data-testid="personel-export"
+            disabled={isExporting || isExportBlockedByTrade}
+            onClick={handleExport}
+          >
+            {EXPORT_LABEL}
           </Button>
           {/* 65 — mevcut formun oluşturma kipi */}
           {canWrite && (
@@ -152,6 +202,17 @@ export function PersonnelListView() {
 
       {/* 70-77 */}
       <PersonnelTabsStrip />
+
+      {isExportBlockedByTrade && (
+        <p className="personel__notice" data-testid="personel-export-blocked">
+          {EXPORT_TRADE_BLOCKED_REASON}
+        </p>
+      )}
+      {exportError !== null && (
+        <p className="personel__notice" role="status" data-testid="personel-export-error">
+          {exportError}
+        </p>
+      )}
 
       {/* 80-86 — GERÇEK (sayaçlar `GET /hr/documents/summary`ten) */}
       <PersonnelDocumentAlertBanner counts={documentCounts} />

@@ -7,8 +7,12 @@ export const ADD_RECORD_DISABLED_REASON =
   "Çalışma kaydı giriş formunun mockup'ı henüz yok.";
 
 /** M3:48 — çalışma kayıtları için sunucu üretimli bir dışa aktarma ucu YOK. */
-export const EXPORT_DISABLED_REASON =
-  "Çalışma kaydı dışa aktarma ucu sunucuda henüz yok.";
+/**
+ * 🔴 EXPORT-XLSX (2026-08-31) — `GET /equipment/work-summary/export.xlsx`
+ * AÇILDI; düğme gerçek ve eski `EXPORT_DISABLED_REASON` KALDIRILDI (metin
+ * artık yalan söylerdi).
+ */
+export const EXPORT_ERROR_FALLBACK = "Çalışma kaydı Excel dosyası indirilemedi.";
 
 /** M3:62-63 — sunucu özeti YALNIZ aylıktır (`year`+`month` zorunlu). */
 export const VIEW_MODE_DISABLED_REASON =

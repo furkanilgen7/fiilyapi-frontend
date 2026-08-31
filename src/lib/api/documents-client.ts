@@ -1,5 +1,5 @@
 import { BackendError } from "@/lib/api/unwrap";
-import { attachmentFilename } from "@/lib/api/export-filename";
+import { downloadAttachment } from "@/lib/api/download";
 import type { components } from "@/lib/api/schema";
 
 // F-BC T1 · Belge Arşivi — ŞEMADA olan ama `openapi-fetch` ile geçilemeyen iki
@@ -29,32 +29,15 @@ function downloadPath(documentId: string): string {
  * yanıt her zaman `Blob` olarak okunur. `status >= 400` BFF'te JSON dalına
  * gittiği için Türkçe `detail` gövdesi `BackendError` olarak okunabilir.
  *
+ * 🔴 EXPORT-XLSX · gövde `@/lib/api/download` TEK kaynağındadır;
+ * `downloadAttachment`ın `downloadExport`tan TEK farkı ad çözücüsüdür
+ * (arşivde uzantı kullanıcının yüklediği herhangi bir şey olabilir).
+ *
  * Token yalnızca httpOnly cookie'de kalır — URL'e imzalı token/parametre
  * KOYULMAZ, istek `credentials: "same-origin"` ile gider.
  */
 export async function downloadDocument(documentId: string, fallbackName: string): Promise<void> {
-  const response = await globalThis.fetch(downloadPath(documentId), {
-    method: "GET",
-    credentials: "same-origin",
-  });
-  if (!response.ok) throw await toBackendError(response);
-
-  const blob = await response.blob();
-  const objectUrl = URL.createObjectURL(blob);
-  try {
-    const link = document.createElement("a");
-    link.href = objectUrl;
-    link.download = attachmentFilename(
-      response.headers.get("content-disposition"),
-      fallbackName,
-    );
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } finally {
-    // `finally`: tarayıcı indirmeyi reddetse bile obje URL'i sızdırılmaz.
-    URL.revokeObjectURL(objectUrl);
-  }
+  await downloadAttachment(downloadPath(documentId), fallbackName);
 }
 
 export interface DocumentUploadInput {
