@@ -54,7 +54,13 @@ const SSE_HEADERS: Record<string, string> = {
   "x-accel-buffering": "no",
 };
 
-function upstreamRequest(mesaj: string, accessToken: string | undefined): Promise<Response> {
+/** İstemciden taşınan **tam** yük. 🔴 İki alan; üçüncüsü taşınmaz. */
+interface AiChatYuku {
+  mesaj: string;
+  conversationId: string | null;
+}
+
+function upstreamRequest(yuk: AiChatYuku, accessToken: string | undefined): Promise<Response> {
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (accessToken) headers.authorization = `Bearer ${accessToken}`;
   return fetch(backendUrl() + UPSTREAM_PATH, {
@@ -62,18 +68,36 @@ function upstreamRequest(mesaj: string, accessToken: string | undefined): Promis
     headers,
     // 🔴 Gövde YENİDEN KURULUR. İstemcinin gönderdiği nesne olduğu gibi
     // iletilseydi, oraya konan fazladan alanlar üst kaynağa sızardı.
-    body: JSON.stringify({ mesaj }),
+    // 🔴 `conversation_id` bir SAHİPLİK iddiasıdır, bir yetki DEĞİL: backend
+    // onu `WHERE user_id = :actor` ile doğrular ve başkasınınkine 404 verir.
+    // BFF burada hiçbir doğrulama YAPMAZ ve yapmamalıdır — kapının iki yerde
+    // olması, bir gün ikisinin ayrışması demektir.
+    body: JSON.stringify(
+      yuk.conversationId === null
+        ? { mesaj: yuk.mesaj }
+        : { mesaj: yuk.mesaj, conversation_id: yuk.conversationId },
+    ),
   });
 }
 
-/** Gövdeden YALNIZ `mesaj` okunur; başka hiçbir alan taşınmaz. */
-function readMesaj(payload: unknown): string | null {
+/** Kaba biçim kontrolü — UUID'nin GEÇERLİLİĞİ backend'in işidir. */
+const UUID_DESENI = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Gövdeden YALNIZ `mesaj` + `conversation_id` okunur; başka alan taşınmaz. */
+function readYuk(payload: unknown): AiChatYuku | null {
   if (typeof payload !== "object" || payload === null) return null;
-  const { mesaj } = payload as { mesaj?: unknown };
+  const { mesaj, conversation_id: konusma } = payload as {
+    mesaj?: unknown;
+    conversation_id?: unknown;
+  };
   if (typeof mesaj !== "string") return null;
   const kirpilmis = mesaj.trim();
   if (kirpilmis.length === 0 || kirpilmis.length > MAX_MESAJ) return null;
-  return kirpilmis;
+  if (konusma !== undefined && konusma !== null) {
+    if (typeof konusma !== "string" || !UUID_DESENI.test(konusma)) return null;
+    return { mesaj: kirpilmis, conversationId: konusma };
+  }
+  return { mesaj: kirpilmis, conversationId: null };
 }
 
 function unauthenticated(): NextResponse {
@@ -93,8 +117,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } catch {
     return NextResponse.json({ ok: false, code: "invalid_body" }, { status: 400 });
   }
-  const mesaj = readMesaj(payload);
-  if (mesaj === null) {
+  const yuk = readYuk(payload);
+  if (yuk === null) {
     return NextResponse.json({ ok: false, code: "invalid_body" }, { status: 400 });
   }
 
@@ -104,7 +128,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   let upstream: Response;
   let refreshedAccessToken: string | undefined;
   try {
-    upstream = await upstreamRequest(mesaj, access);
+    upstream = await upstreamRequest(yuk, access);
 
     // 🔴 401 → refresh AKIŞ BAŞLAMADAN çözülür. Akış açıldıktan sonra
     // yeniden kimliklenmek imkânsızdır: başlıklar gitmiş, gövde akmaya
@@ -120,7 +144,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         const pair = (await refreshed.json().catch(() => null)) as TokenPair | null;
         if (pair?.access_token) {
           refreshedAccessToken = pair.access_token;
-          upstream = await upstreamRequest(mesaj, pair.access_token);
+          upstream = await upstreamRequest(yuk, pair.access_token);
         }
       }
     }

@@ -223,3 +223,75 @@ describe("POST /api/ai/chat", () => {
     expect(source).toMatch(/export const maxDuration = \d+/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// AI-CHAT-2 / K2 — `conversation_id` geçişi
+// ---------------------------------------------------------------------------
+
+describe("POST /api/ai/chat · conversation_id (AI-CHAT-2)", () => {
+  beforeEach(() => {
+    process.env.BACKEND_URL = BACKEND;
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    delete process.env.BACKEND_URL;
+  });
+
+  function casusla() {
+    const { res: upstream } = streamingResponse(
+      sseStream(['event: metin\ndata: {"metin":"ok"}\n\n']),
+    );
+    const fetchSpy = vi.fn().mockResolvedValue(upstream);
+    vi.stubGlobal("fetch", fetchSpy);
+    return fetchSpy;
+  }
+
+  const GECERLI = "aa000000-0000-4000-8000-000000000001";
+
+  it("gecerli `conversation_id` UST KAYNAGA gecer", async () => {
+    const fetchSpy = casusla();
+    const res = await POST(chatReq({ mesaj: "x", conversation_id: GECERLI }));
+    expect(res.status).toBe(200);
+    expect(JSON.parse(String(fetchSpy.mock.calls[0]![1].body))).toEqual({
+      mesaj: "x",
+      conversation_id: GECERLI,
+    });
+  });
+
+  it("`conversation_id` YOKSA alan HIC GONDERILMEZ (null DEGIL)", async () => {
+    const fetchSpy = casusla();
+    await POST(chatReq({ mesaj: "x" }));
+    // 🔴 `conversation_id: null` göndermek backend'de "yeni sohbet" ile aynı
+    // sonucu verirdi ama gövdeyi sözleşmenin taşımadığı bir alanla kirletirdi.
+    expect(JSON.parse(String(fetchSpy.mock.calls[0]![1].body))).toEqual({ mesaj: "x" });
+  });
+
+  it("🔴 UUID OLMAYAN `conversation_id` 400 — ust kaynaga HIC gitmez", async () => {
+    const fetchSpy = casusla();
+    for (const kotu of ["../../users", "1 OR 1=1", "", "not-a-uuid", 42, {}]) {
+      const res = await POST(chatReq({ mesaj: "x", conversation_id: kotu }));
+      expect(res.status, String(kotu)).toBe(400);
+    }
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("🔴 BFF SAHIPLIGI DOGRULAMAZ — kapi TEK YERDE (backend)", () => {
+    // Biçimsel olarak geçerli ama BAŞKASINA ait bir kimlik üst kaynağa GEÇER;
+    // 404'ü backend verir. İkinci bir kapı, bir gün ikisinin ayrışması demektir.
+    // 🔴 Yorumlar SÖKÜLÜR: bu dosyanın kendi açıklaması `WHERE user_id`den
+    // söz ediyor ve yorum tarayan bir bekçi kendi gerekçesine takılırdı
+    // (ölçüldü — ilk hâli tam olarak buna düştü). Ölçülen şey KODDUR.
+    const ham = readFileSync(resolve(__dirname, "route.ts"), "utf8");
+    const kod = ham
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n")
+      .filter((satir) => !satir.trimStart().startsWith("//"))
+      .join("\n");
+    for (const yasak of ["user_id", "owner", "sahip", "getCurrentUser"]) {
+      expect(kod, `BFF sahiplik kapısı kurmaya çalışıyor: ${yasak}`).not.toContain(yasak);
+    }
+    // POZİTİF KONTROL: sökme işlemi her şeyi silmedi.
+    expect(kod).toContain("conversation_id");
+  });
+});

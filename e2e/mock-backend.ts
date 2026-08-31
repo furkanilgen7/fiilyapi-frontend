@@ -7702,6 +7702,75 @@ const TREASURY_UPCOMING: components["schemas"]["UpcomingPaymentsResponse"] = {
   ],
 };
 
+// ── AI-CHAT-2 / K2 · sohbet fikstürleri ───────────────────────────────────
+//
+// 🔴 `bloklar_saklanmadi_notu` backend'deki `schemas.BLOKLAR_SAKLANMADI`nın
+// BİREBİR ikizidir. Orası değişirse burası da değişir; ayrışırsa ekran, A3
+// kararının bedelini YANLIŞ cümleyle anlatır.
+const AI_BLOKLAR_SAKLANMADI =
+  "Bu sohbetin kartları saklanmadı; yalnız sorular, cevap metni ve araç " +
+  "izlerinin özeti gösteriliyor. Araç sonuçları (bordro satırı, personel " +
+  "verisi gibi) HİÇ SAKLANMAZ.";
+
+// 🔴 Tarihler SABİT: görsel kare koşulduğu güne göre "Bugün"/"Bu Hafta"
+// çizerse baseline her gün değişir. Panel `simdi`yi enjekte eder ve görsel
+// spec onu dondurur.
+const AI_CONVERSATION_FIXTURES = [
+  {
+    id: "aa000000-0000-4000-8000-000000000001",
+    title: "Güneşkent A-Blok'ta bu ayki toplam hakediş ne kadar?",
+    created_at: "2026-07-31T06:42:00+00:00",
+    updated_at: "2026-07-31T06:42:00+00:00",
+    messages: [
+      {
+        id: "bb000000-0000-4000-8000-000000000001",
+        role: "kullanici",
+        content: "Güneşkent A-Blok'ta bu ayki toplam hakediş ne kadar?",
+        created_at: "2026-07-31T06:42:00+00:00",
+        tool_names: [],
+        tool_states: [],
+        finish_reason: null,
+        duration_ms: null,
+      },
+      {
+        id: "bb000000-0000-4000-8000-000000000002",
+        role: "asistan",
+        content: "Temmuz 2026 dönemi için A-Blok Şantiyesi hakediş dağılımı hesaplandı.",
+        created_at: "2026-07-31T06:42:02+00:00",
+        tool_names: ["projeleri_listele", "gosterge_ozeti"],
+        tool_states: ["Ok", "Restricted"],
+        finish_reason: "bitti",
+        duration_ms: 1800,
+      },
+    ],
+  },
+  {
+    id: "aa000000-0000-4000-8000-000000000002",
+    title: "Kritik stok problemi olan malzemeleri listele",
+    created_at: "2026-07-31T05:15:00+00:00",
+    updated_at: "2026-07-31T05:15:00+00:00",
+    messages: [
+      {
+        id: "bb000000-0000-4000-8000-000000000003",
+        role: "kullanici",
+        content: "Kritik stok problemi olan malzemeleri listele",
+        created_at: "2026-07-31T05:15:00+00:00",
+        tool_names: [],
+        tool_states: [],
+        finish_reason: null,
+        duration_ms: null,
+      },
+    ],
+  },
+  {
+    id: "aa000000-0000-4000-8000-000000000003",
+    title: "48 personelin SGK maliyeti ne kadar?",
+    created_at: "2026-07-29T11:00:00+00:00",
+    updated_at: "2026-07-29T11:00:00+00:00",
+    messages: [],
+  },
+] as const;
+
 export function startMockBackend(port: number): { server: Server; close: () => Promise<void> } {
   const state = seedState();
   let milestoneSeq = 3;
@@ -13400,6 +13469,57 @@ export function startMockBackend(port: number): { server: Server; close: () => P
           approval_roles: tekil,
         });
       });
+    }
+
+    // ── AI-CHAT-2 / K2 · sohbet geçmişi ────────────────────────────────
+    //
+    // 🔴 İKİZ DEVRİ: bu uçlar gerçek backend'in REDDEDECEĞİNİ reddeder.
+    //   * `limit` tavanı 100 (openapi `le=100`) — aşım 422, sessiz kırpma DEĞİL.
+    //   * Bilinmeyen kimlik 404 + `BULUNAMADI` cümlesi (403 DEĞİL: 403 "bu var
+    //     ama senin değil" der ve bir VARLIK SIZINTISIDIR, S14).
+    // Onaylayıcı bir ikiz (her şeye 200 diyen) bir bekçi değildir.
+    //
+    // 🔴 Sahiplik kapısı burada YOKTUR ve olamaz: sahte backend'in tek bir
+    // kullanıcısı var. Sahipliğin bekçisi backend'dedir
+    // (`test_aichat2_sohbet.py::test_KIKIZ1_*`) ve bir e2e onun yerine GEÇMEZ.
+    if (method === "GET" && path === "/ai/conversations") {
+      const limit = Number(parsed.searchParams.get("limit") ?? "50");
+      const offset = Number(parsed.searchParams.get("offset") ?? "0");
+      if (!Number.isFinite(limit) || limit < 1 || limit > 100) {
+        return send(422, { detail: "limit 1-100 araliginda olmalidir" });
+      }
+      if (!Number.isFinite(offset) || offset < 0) {
+        return send(422, { detail: "offset 0 ya da daha buyuk olmalidir" });
+      }
+      const items = AI_CONVERSATION_FIXTURES.slice(offset, offset + limit).map((k) => ({
+        id: k.id,
+        title: k.title,
+        created_at: k.created_at,
+        updated_at: k.updated_at,
+        message_count: k.messages.length,
+      }));
+      return send(200, { items, total: AI_CONVERSATION_FIXTURES.length });
+    }
+
+    {
+      const eslesme = path.match(/^\/ai\/conversations\/([^/]+)$/);
+      if (eslesme && (method === "GET" || method === "DELETE")) {
+        const sohbet = AI_CONVERSATION_FIXTURES.find((k) => k.id === eslesme[1]);
+        if (!sohbet) {
+          return send(404, {
+            detail: "Erişebildiğiniz kapsamda bu kimlikte bir kayıt yok.",
+          });
+        }
+        if (method === "DELETE") return send(204);
+        return send(200, {
+          id: sohbet.id,
+          title: sohbet.title,
+          created_at: sohbet.created_at,
+          updated_at: sohbet.updated_at,
+          messages: sohbet.messages,
+          bloklar_saklanmadi_notu: AI_BLOKLAR_SAKLANMADI,
+        });
+      }
     }
 
     if (method === "GET" && path === "/approvals") {
