@@ -1,14 +1,23 @@
 import { test, expect } from "@playwright/test";
 
-import { akisiSabitle, openAsistan, VISUAL_VIEWPORT } from "./asistan-helpers";
+import {
+  akisiSabitle,
+  asistaniAc,
+  gecmisiSabitle,
+  openAsistan,
+  uzunGecmis,
+  VISUAL_VIEWPORT,
+} from "./asistan-helpers";
 import { prepareFrame } from "./visual-scroll";
 
 // AI-CHAT-2 · `/asistan` görsel kadrajları.
 // Kanonik mockup: `projedesign/AI Chat.dc.html` (397 satır).
 //
-// 🔴 ÖLÇÜM: bu ekranın bugüne kadar HİÇ karesi yoktu
-// (`command grep -rln "asistan\|AiPanel" e2e/` → EXIT=1), yani mockup
-// birebirliği ne dün ne bugün ölçülüyordu. Bu dosya o boşluğu kapatır.
+// 🔴 DÜZELTİLMİŞ ÖLÇÜM (F-AISOL, 2026-09-03): burada "bu ekranın hiç karesi
+// yoktu, `command grep -rln "asistan\|AiPanel" e2e/` → EXIT=1" yazıyordu.
+// O satır BUGÜN YANLIŞ ve yanlışlığı bir tur boyunca kopyalandı: aynı komut
+// bu depoda **EXIT=0** verir ve üç dosya döker. Bir "YOK" iddiası, iddia
+// edildiği ANDA yeniden ölçülmeden tekrar edilmez.
 //
 // 🔴 BAŞLIK KURALI: her testin adında "gorsel" GEÇER. Beşinci kapı
 // `--grep-invert "gorsel"` ile BAŞLIĞA göre süzer; içermeyen bir görsel test
@@ -100,4 +109,41 @@ test("asistan dar pencere gorsel", async ({ page }) => {
 
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("asistan-1024.png", { fullPage: true });
+});
+
+// ---------------------------------------------------------------------------
+// 5) BOŞ GEÇMİŞ — kullanıcının bildirdiği "bu boşluk ne" hâli
+//
+// 🔴 Mockup boş hâli HİÇ ÇİZMEDİ; kusur tam orada yaşıyordu. Kare, sol sütunun
+// altındaki deliğin kapalı KALDIĞINI bekçiler. Geometri iddiaları
+// `asistan-duzen.spec.ts`te; bu kare onların GÖRÜNEN karşılığıdır.
+// ---------------------------------------------------------------------------
+test("asistan bos gecmis gorsel", async ({ page }) => {
+  await gecmisiSabitle(page, []);
+  await akisiSabitle(page);
+  await asistaniAc(page);
+
+  await expect(page.getByText("Henüz sohbetiniz yok. İlk sorunuzu sorun.")).toBeVisible();
+  await expect(page.getByText("Erişilen Veriler")).toBeVisible();
+
+  await prepareFrame(page);
+  await expect(page).toHaveScreenshot("asistan-bos-gecmis.png", { fullPage: true });
+});
+
+// ---------------------------------------------------------------------------
+// 6) UZUN GEÇMİŞ — sol sütun TAŞIYOR (mockup 60-126'nın fiilî hâli)
+//
+// 🔴 `prepareFrame` her kaydırılabilir kabı tepeye sabitler, dolayısıyla kare
+// listenin BAŞINI basar ve deterministiktir.
+// ---------------------------------------------------------------------------
+test("asistan uzun gecmis gorsel", async ({ page }) => {
+  await gecmisiSabitle(page, uzunGecmis(40));
+  await akisiSabitle(page);
+  await asistaniAc(page);
+
+  await expect(page.getByText("Uzun geçmiş sohbeti 40")).toBeVisible();
+  await expect(page.getByText("Erişilen Veriler")).toBeVisible();
+
+  await prepareFrame(page);
+  await expect(page).toHaveScreenshot("asistan-uzun-gecmis.png", { fullPage: true });
 });
