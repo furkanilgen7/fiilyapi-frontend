@@ -15,7 +15,16 @@
 
 .ai-panel {
   display: flex;
-  height: 100%;
+  /* 🔴 F-AISOL — ÖLÇÜLMÜŞ KUSUR: burada `height: 100%` yazıyordu ve HİÇ
+     ÇÖZÜLMÜYORDU. `.app-content` (shell.css) yalnız `min-height` verir,
+     `height` VERMEZ; yüzde yükseklik belirsiz yükseklikli bir ebeveyne
+     dayanamaz ve `auto`ya düşer. Ölçüm (1440×900): panel 630px kalıyor,
+     `.app-content` içerik kutusu 792px → panelin ALTINDA 162px'lik tam
+     genişlikte ölü gri şerit; ayrıca üç sütun da kısa kalıyordu.
+     Mockup 57 düzeni `height:100vh` ile kurar. Aynı yükseklik burada
+     kabuğun ofsetleri düşülerek verilir: 52px üst çubuk + 2×28px
+     `.app-content` iç boşluğu. `coming-soon.css:5` aynı deseni kullanır. */
+  height: calc(100vh - 52px - 56px);
   min-height: 0;
   background: var(--color-bg);
 }
@@ -65,7 +74,16 @@
 }
 
 .ai-history__scroll {
-  flex: 1;
+  /* 🔴 F-AISOL — KULLANICININ BİLDİRDİĞİ BOŞLUK. Burada `flex: 1` yazıyordu:
+     alan liste kısa olsa da sütunun dibine kadar UZUYOR, "Erişilen Veriler"
+     bloğunu dibe çiviliyor ve arada beyaz bir delik bırakıyordu. Ölçüm
+     (1440×900, boş geçmiş): not ile blok arası 574px.
+     `0 1 auto` = içeriği kadar yer kapla, TAŞARSA daral. `min-height: 0` ile
+     birlikte daralan TEK kutu budur (komşuların otomatik en-küçük boyutu
+     onları zaten korur — ölçüldü, `flex-shrink: 0` yazmak ÖLÜ KODDU) ve
+     liste uzayınca blok mockup'taki yerine, sütunun dibine döner.
+     Kullanıcı kararı 2026-09-03: "böyle kalsın, alttaki boşluğu kapat". */
+  flex: 0 1 auto;
   min-height: 0;
   overflow-y: auto;
   padding: 0 8px 8px;
@@ -160,6 +178,12 @@
 .ai-history__data {
   padding: 12px 14px;
   border-top: 1px solid var(--color-divider);
+  /* 🔴 Alt kenarlık mockup'ta YOK ve olmaması da doğruydu: orada blok sütunun
+     DİBİNDE oturuyor, alt kenarı zaten panelin kenarı. Liste kısayken blok
+     artık yukarı geldiği için altında beyaz alan kalır; kenarlıksız hâlde
+     gri şerit havada asılı duruyordu. Uzun listede kenarlık panelin alt
+     kenarına oturur, yani mockup'ın görüntüsünü DEĞİŞTİRMEZ. */
+  border-bottom: 1px solid var(--color-divider);
   background: var(--color-surface-2);
 }
 

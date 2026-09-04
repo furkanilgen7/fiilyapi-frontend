@@ -1,5 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
+import type { AiConversationRead } from "@/lib/api/hooks/useAiConversations";
+
 /**
  * AI-CHAT-2 · `/asistan` görsel kadrajlarının ortak hazırlığı.
  *
@@ -88,16 +90,76 @@ export async function akisiSabitle(page: Page, govde: string = SABIT_SSE) {
  * kaynaktır ve biri hâlâ yoldayken çekilen kare KENDİ İÇİNDE tutarsız olurdu.
  */
 export async function openAsistan(page: Page, fixedTime = ASISTAN_TIME) {
+  await asistaniAc(page, fixedTime);
+  // Sol sütun: sohbet kartları GERÇEKTEN indi (yükleniyor değil).
+  await expect(
+    page.getByRole("button", { name: /Güneşkent A-Blok/ }),
+  ).toBeVisible();
+}
+
+/**
+ * Üç sütunu indirir ama sol sütunun İÇERİĞİ hakkında hiçbir şey VARSAYMAZ.
+ *
+ * 🔴 `openAsistan` paylaşılan fikstürün "Güneşkent A-Blok" kartını bekler;
+ * geçmişi `gecmisiSabitle` ile DEĞİŞTİREN bir kadraj o kartı hiç görmez ve
+ * orada takılıp kalırdı. Bekleme yine DURUM tabanlıdır — üç sütunun da indiği
+ * ayrı ayrı doğrulanır, sabit `waitForTimeout` YOK.
+ */
+export async function asistaniAc(page: Page, fixedTime = ASISTAN_TIME) {
   await page.setViewportSize({ ...VISUAL_VIEWPORT });
   await loginAt(page, fixedTime);
   await page.goto(ASISTAN_URL);
   await expect(page.getByLabel("Sohbet geçmişi")).toBeVisible();
   await expect(page.getByLabel("FİİL AI Asistanı")).toBeVisible();
   await expect(page.getByLabel("Sohbet bağlamı")).toBeVisible();
-  // Sol sütun: sohbet kartları GERÇEKTEN indi (yükleniyor değil).
-  await expect(
-    page.getByRole("button", { name: /Güneşkent A-Blok/ }),
-  ).toBeVisible();
   // Sağ sütun: proje bağlamı GERÇEKTEN indi.
   await expect(page.getByLabel("Bağlamı Değiştir")).toBeVisible();
+}
+
+/** `page.route`ın eşleştirdiği desen — `page.unroute` da AYNISINI ister. */
+export const GECMIS_ROTA_DESENI = "**/api/backend/ai/conversations**";
+
+/**
+ * `GET /ai/conversations` yanıtını **sayfaya özel** sabitler.
+ *
+ * 🔴 NEDEN `mock-backend.ts` DEĞİL: sahte backend globalSetup'ta TEK paylaşımlı
+ * süreçte koşar ve durumu sıfırlayan hiçbir ucu YOKTUR
+ * (`command grep -c 'resetMockState|__reset|resetState' e2e/mock-backend.ts`
+ * → 0). Oradaki fikstürü bir uzunluk denemesi için değiştirmek, aynı anda
+ * koşan öbür spec'lerin kadrajlarını bozardı. `page.route` sayfaya özeldir;
+ * retry aynı yanıtı üretir.
+ *
+ * 🔴 Gövde şekli backend'in İNANCINDAN değil, SÖZLEŞMEDEN gelir: kalem tipi
+ * üretilmiş `AiConversationRead`, zarf ise `mock-backend.ts`in
+ * `/ai/conversations` dalıyla birebir aynı (`{ items, total }`).
+ */
+export async function gecmisiSabitle(
+  page: Page,
+  kayitlar: readonly AiConversationRead[],
+) {
+  await page.route(GECMIS_ROTA_DESENI, async (route) => {
+    if (route.request().method() !== "GET") {
+      await route.fallback();
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ items: kayitlar, total: kayitlar.length }),
+    });
+  });
+}
+
+/**
+ * Sol sütunu TAŞIRAN geçmiş. Damgalar `ASISTAN_TIME`a göre "Bugün" grubuna
+ * düşer; sabit oldukları için kare de sabittir.
+ */
+export function uzunGecmis(adet: number): AiConversationRead[] {
+  return Array.from({ length: adet }, (_, i) => ({
+    id: `cc000000-0000-4000-8000-${String(i + 1).padStart(12, "0")}`,
+    title: `Uzun geçmiş sohbeti ${i + 1}`,
+    message_count: (i % 9) + 1,
+    created_at: "2026-07-31T06:00:00+00:00",
+    updated_at: "2026-07-31T06:42:00+00:00",
+  }));
 }

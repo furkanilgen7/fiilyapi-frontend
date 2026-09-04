@@ -2,6 +2,31 @@ import { test, expect } from "@playwright/test";
 
 import { prepareFrame } from "./visual-scroll";
 
+/**
+ * 🔴 ZAMAN BOMBASI ONARIMI (F-AISOL, 2026-09-03). Bu kadraj `create` kipinde
+ * dönem seçicisini `new Date()`ten dolduruyordu
+ * (`ProgressPaymentForm.tsx:108-109` · `SubcontractorProgressPaymentForm.tsx:125-126`)
+ * ve baseline AY ADINI taşıyordu. Saat DONMADIĞI için kare her ay başında,
+ * kod değişmeden kırmızıya dönüyordu: depo karesi "Ağustos" basıyordu, 3 Eylül
+ * turu "Eylül" bastı (153 piksel, 51×13'lük tek kutu). `main`in son yeşil turu
+ * 2026-08-31'di — kapı 1 Eylül'de kimse fark etmeden düştü.
+ *
+ * 🔴 TARİH ÖLÇÜLEREK SEÇİLDİ, keyfî değil:
+ *   · `mock-backend.ts`te `period_year` 11 kaydın 11'inde 2026; `period_month`
+ *     dağılımı 7→6, 8→3, 6→2, 5→2, 3/4/9→1 (ölçüm:
+ *     `command grep -oE "period_month: [0-9]+" e2e/mock-backend.ts | sort | uniq -c`).
+ *     Temmuz 2026 fikstürlerin BASKIN dönemidir.
+ *   · Bu kadrajların tam kayıtları da orada: işveren tarafında `pp-5`
+ *     (`project_id: "p-1"`, 2026-07) ve taşeron tarafında `scpp-3`
+ *     (`contract_id: "sc-1"`, 2026-07, "Temmuz hakedişi") — yani donmuş saat,
+ *     formun varsayılan döneminin ekrandaki veriyle AYNI aya düşmesini sağlar.
+ *   · `2026-07-20T09:00:00Z` damgası depoda ZATEN kullanılıyor
+ *     (`site-diary-visual.spec.ts` · `site-diary-summary-visual.spec.ts`),
+ *     yani yeni bir sabit icat edilmedi. Ayın ORTASI bilerek seçildi: ay
+ *     sınırına yakın bir damga, koşucunun saat diliminde başka aya kayabilirdi.
+ */
+const FIXED_TODAY = new Date("2026-07-20T09:00:00Z");
+
 // F-TH T6 · Taşeron Hakediş Oluştur formu + sözleşme seçim adımı görsel
 // testleri. `e2e/progress-payment-form-visual.spec.ts` deseninin BİREBİR
 // aynısı. Sözleşme kalemleri (`SUBCONTRACTOR_CONTRACT_ITEMS_SC1`,
@@ -18,6 +43,9 @@ import { prepareFrame } from "./visual-scroll";
 // kadrajda yok).
 
 async function login(page: import("@playwright/test").Page) {
+  // 🔴 Saat gezinmeden ÖNCE dondurulur — bkz. `FIXED_TODAY`. İKİ kadraj da
+  // buradan geçer; sözleşme seçim adımı ay basmasa bile aynı zemini paylaşır.
+  await page.clock.setFixedTime(FIXED_TODAY);
   await page.goto("/login");
   await page.getByLabel(/e-posta/i).fill("patron@fiil.com");
   await page.getByLabel(/^şifre$/i).fill("dogruparola");
