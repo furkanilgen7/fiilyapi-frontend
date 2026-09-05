@@ -415,3 +415,204 @@ describe("acilanlariTurets", () => {
     expect(sonuc[1]!.sebep).toContain("tek başına bir ekranı yok");
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AI-BAĞLAM — "Sohbet Bağlamı" paneli GERÇEK bağlam
+//
+// Kullanıcının bildirdiği hâl: *Dönem: bağlanmadı · İlerleme: %0 · Aktif işçi:
+// bağlanmadı*. Üçünün de kökü ÖLÇÜLDÜ ve üçü de burada bekçilenir.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** `SiteCard` zarflarının DOLU dalı — backend `_worker_count` / ILR-1 hâli. */
+const SANTIYE_DOLU = {
+  id: "s-1",
+  slug: "a-blok-santiyesi",
+  code: "A-BLOK",
+  name: "A-Blok Şantiyesi",
+  status: "active",
+  worker_count: { available: true, count: 48, pending_module: "timesheet" },
+  progress_pct: { available: true, value: "62", pending_module: null },
+};
+
+/** BOŞ dal — K-IKIZ1: fikstür evreni iki dalı da taşır. */
+const SANTIYE_BOS = {
+  id: "s-2",
+  slug: "b-blok-santiyesi",
+  code: "B-BLOK",
+  name: "B-Blok Şantiyesi",
+  status: "active",
+  worker_count: { available: false, count: null, pending_module: "timesheet" },
+  progress_pct: { available: false, value: null, pending_module: "site_diary" },
+};
+
+/** 3. HÂL — `restricted()`: izin yok, `pending_module` NULL, ipucu VERİLMEZ. */
+const SANTIYE_YASAK = {
+  id: "s-3",
+  slug: "c-blok",
+  code: "C-BLOK",
+  name: "C-Blok Şantiyesi",
+  status: "active",
+  worker_count: { available: false, count: null, pending_module: "timesheet" },
+  progress_pct: { available: false, value: null, pending_module: null },
+};
+
+const PROJE_FOSIL = {
+  id: "p-1",
+  name: "Kule A",
+  code: "PRJ-1",
+  // 🔴 FOSİL sütun: `projects.progress_pct` DAİMA 0'dır (yazma yolu yok).
+  // Panel bunu okursa ekran "%0" basar — kusurun ta kendisi.
+  progress_pct: "0",
+};
+
+/**
+ * `/projects` + `/projects/{id}/sites` yanıtlarını kurar.
+ * 🔴 Anahtar sırası ÖNEMLİ: `stubFetch` İLK eşleşen anahtarı alır ve
+ * `/projects` deseni şantiye yolunu da yakalar.
+ */
+function baglamStub(santiyeler: unknown[], projeler: unknown[] = [PROJE_FOSIL]) {
+  stubFetch(sse([]), {
+    "/sites": { items: santiyeler, counts: {}, totals: {} },
+    "/projects": { items: projeler, total: projeler.length, counts: {} },
+  });
+}
+
+describe("AiPanel · Sohbet Bağlamı (AI-BAĞLAM)", () => {
+  it("🔴 proje → SANTIYE kaskadi: ikinci secici basilir ve santiye ADI yazar", async () => {
+    baglamStub([SANTIYE_DOLU, SANTIYE_BOS]);
+    ciz(<AiPanel />);
+
+    const panel = screen.getByLabelText("Sohbet bağlamı");
+    // Mockup 368 "📍 A-Blok Şantiyesi" — burada PROJE KODU değil ŞANTİYE ADI.
+    await waitFor(() =>
+      expect(within(panel).getByTestId("ai-baglam-santiye")).toHaveTextContent(
+        "A-Blok Şantiyesi",
+      ),
+    );
+    expect(within(panel).getByLabelText("Bağlamı Değiştir")).toBeInTheDocument();
+    expect(within(panel).getByLabelText("Şantiye Seç")).toBeInTheDocument();
+    // Eski kusur: projenin `code`u basılıyordu.
+    expect(within(panel).queryByText(/PRJ-1/)).not.toBeInTheDocument();
+  });
+
+  it("🔴 DOLU zarf: gercek ilerleme + gercek isci sayisi basilir", async () => {
+    baglamStub([SANTIYE_DOLU]);
+    ciz(<AiPanel />);
+    const panel = screen.getByLabelText("Sohbet bağlamı");
+
+    await waitFor(() =>
+      expect(within(panel).getByTestId("ai-baglam-ilerleme")).toHaveTextContent("%62"),
+    );
+    expect(within(panel).getByTestId("ai-baglam-isci")).toHaveTextContent("48");
+    // Dönem TÜRETİLİR: mockup'ın "Temmuz 2026" sabiti kopyalanmaz.
+    expect(within(panel).getByTestId("ai-baglam-donem")).not.toBeEmptyDOMElement();
+    // 🔴 FOSİL sütun ARTIK OKUNMUYOR: "%0" hiçbir hâlde basılamaz.
+    expect(within(panel).queryByText("%0")).not.toBeInTheDocument();
+    // 🔴 "bağlanmadı" kelimesi ekrandan KALKTI — yalandı.
+    expect(within(panel).queryByText(/bağlanmadı/)).not.toBeInTheDocument();
+  });
+
+  it("🔴 BOS zarf: SAYI DEGIL sebep — `%0` uydurulmaz", async () => {
+    baglamStub([SANTIYE_BOS]);
+    ciz(<AiPanel />);
+    const panel = screen.getByLabelText("Sohbet bağlamı");
+
+    await waitFor(() =>
+      expect(within(panel).getByTestId("ai-baglam-santiye")).toHaveTextContent(
+        "B-Blok Şantiyesi",
+      ),
+    );
+    // Boş zarf "—" basar; `%0`/`0` gibi yetkili görünen bir sayı ASLA.
+    expect(within(panel).queryByText("%0")).not.toBeInTheDocument();
+    const ilerleme = within(panel).getByTestId("ai-baglam-ilerleme");
+    const isci = within(panel).getByTestId("ai-baglam-isci");
+    expect(ilerleme).toHaveTextContent("—");
+    expect(isci).toHaveTextContent("—");
+    // 2. hâl: gerekçe BİLİNİYOR → ipucu var.
+    expect(ilerleme).toHaveAttribute("title");
+    expect(isci).toHaveAttribute("title");
+  });
+
+  it("🔴 3. HAL (`restricted`): ipucu VERILMEZ — 'modul yok' demek yalan olurdu", async () => {
+    baglamStub([SANTIYE_YASAK]);
+    ciz(<AiPanel />);
+    const panel = screen.getByLabelText("Sohbet bağlamı");
+
+    await waitFor(() =>
+      expect(within(panel).getByTestId("ai-baglam-santiye")).toHaveTextContent(
+        "C-Blok Şantiyesi",
+      ),
+    );
+    // İlerleme satırı `restricted()` — `pending_module: null` → ipucu YOK.
+    expect(within(panel).getByTestId("ai-baglam-ilerleme")).not.toHaveAttribute("title");
+    // Kardeş satır 2. hâlde ve ipucunu TAŞIR — ayrım gerçekten yapılıyor.
+    expect(within(panel).getByTestId("ai-baglam-isci")).toHaveAttribute("title");
+  });
+
+  it("santiyesi olmayan projede uc satir da 'Şantiye seçin' der", async () => {
+    baglamStub([]);
+    ciz(<AiPanel />);
+    const panel = screen.getByLabelText("Sohbet bağlamı");
+
+    await waitFor(() =>
+      expect(within(panel).getByText("Bu projede görünen bir şantiye yok.")).toBeVisible(),
+    );
+    // 🔴 "bağlanmadı" DEĞİL: veri bağlıdır, eksik olan KAPSAMDIR.
+    // 📍 satırı + üç kapsam satırı = dört.
+    expect(within(panel).getAllByText("Şantiye seçin").length).toBe(4);
+    expect(within(panel).queryByLabelText("Şantiye Seç")).not.toBeInTheDocument();
+  });
+
+  it("🔴 SECILEN KAPSAM ISTEGE BINER — panel ile govde AYNI kimlikleri tasir", async () => {
+    baglamStub([SANTIYE_DOLU, SANTIYE_BOS]);
+    ciz(<AiPanel />);
+    const panel = screen.getByLabelText("Sohbet bağlamı");
+    await waitFor(() =>
+      expect(within(panel).getByTestId("ai-baglam-ilerleme")).toHaveTextContent("%62"),
+    );
+
+    await sor("merhaba");
+
+    const cagri = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls.find(
+      (c) => String(c[0]).includes("/api/ai/chat"),
+    );
+    expect(cagri).toBeDefined();
+    expect(JSON.parse(String((cagri![1] as RequestInit).body))).toEqual({
+      mesaj: "merhaba",
+      project_id: "p-1",
+      site_id: "s-1",
+    });
+  });
+
+  it("🔴 SANTIYE DEGISINCE govdedeki `site_id` de degisir", async () => {
+    baglamStub([SANTIYE_DOLU, SANTIYE_BOS]);
+    ciz(<AiPanel />);
+    const panel = screen.getByLabelText("Sohbet bağlamı");
+    await waitFor(() =>
+      expect(within(panel).getByTestId("ai-baglam-ilerleme")).toHaveTextContent("%62"),
+    );
+
+    const user = userEvent.setup();
+    await user.selectOptions(within(panel).getByLabelText("Şantiye Seç"), "s-2");
+    await waitFor(() =>
+      expect(within(panel).getByTestId("ai-baglam-santiye")).toHaveTextContent(
+        "B-Blok Şantiyesi",
+      ),
+    );
+
+    await sor("merhaba");
+    const cagri = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls.find(
+      (c) => String(c[0]).includes("/api/ai/chat"),
+    );
+    expect(JSON.parse(String((cagri![1] as RequestInit).body)).site_id).toBe("s-2");
+  });
+
+  it("🔴 'Erişilen veriler' bos kumede 'bilinmiyor' DEMEZ", async () => {
+    baglamStub([SANTIYE_DOLU]);
+    ciz(<AiPanel />);
+    const gecmis = screen.getByLabelText("Sohbet geçmişi");
+    // "bilinmiyor" = ÖLÇÜLEMEDİ. Oysa ölçüm tamdır, sonucu sıfırdır.
+    expect(within(gecmis).queryByText("bilinmiyor")).not.toBeInTheDocument();
+    expect(within(gecmis).getByText("henüz araç çağrılmadı")).toBeVisible();
+  });
+});

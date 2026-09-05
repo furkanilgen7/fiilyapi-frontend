@@ -177,8 +177,13 @@ export function AiHistory({
             </span>
           ))}
           {artan > 0 ? <span className="ai-data-chip">+{artan}</span> : null}
+          {/* 🔴 Eskiden burada "bilinmiyor" yazıyordu ve bu YANLIŞ bir
+              kelimeydi: *"bilinmiyor"* = ÖLÇÜLEMEDİ demektir. Oysa küme
+              boşken ölçüm TAMDIR ve sonucu sıfırdır — henüz hiçbir araç
+              çağrılmamıştır. Mockup (121-130) yalnız DOLU hâli çizer, boş hâl
+              için kopyalanacak bir metin yoktur; cümle durumu tarif eder. */}
           {erisilenVeriler.length === 0 ? (
-            <span className="ai-data-chip ai-data-chip--empty">bilinmiyor</span>
+            <span className="ai-data-chip ai-data-chip--empty">henüz araç çağrılmadı</span>
           ) : null}
         </div>
       </div>

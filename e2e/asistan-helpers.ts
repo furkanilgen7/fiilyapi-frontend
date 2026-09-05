@@ -12,7 +12,25 @@ import type { AiConversationRead } from "@/lib/api/hooks/useAiConversations";
  */
 export const VISUAL_VIEWPORT = { width: 1440, height: 900 } as const;
 
-/** Fikstürün en yeni sohbeti 31 Tem 06:42Z; bu an onu "Bugün"e düşürür. */
+/**
+ * Fikstürün en yeni sohbeti 31 Tem 06:42Z; bu an onu "Bugün"e düşürür.
+ *
+ * 🔴 AI-BAĞLAM · AY SINIRI ÖLÇÜLDÜ. Damga AYIN SON GÜNÜdür ve bağlam paneli
+ * artık `currentPeriod(simdi)`den bir AY ADI türetiyor ("Temmuz 2026"), yani
+ * kadraj bu damganın hangi aya düştüğüne BAĞLI. F-ZAMAN kanonu damganın ayın
+ * ORTASINDA olmasını ister; damga BİLEREK taşınmadı ve sebebi ölçüldü:
+ *   · Ofsetsiz tarih-saat metni YEREL saat sayılır (ES spec). Damgayı Node
+ *     çözer, tarayıcı basar ve İKİSİ DE AYNI MAKİNEDEDİR — `playwright.config.ts`
+ *     `timezoneId` İLAN ETMEZ (ölçüldü), yani tarayıcı koşucunun saat dilimini
+ *     miras alır ve iki taraf arasındaki kayma TAM SIFIRDIR. Yerel duvar saati
+ *     her iki ortamda da 31 Tem 12:00 → Temmuz.
+ *   · Damgayı ayın ortasına çekmek, fikstürün 31 Tem tarihli sohbetlerini
+ *     GELECEĞE düşürür ve sol sütunun "Bugün / Bu Hafta" gruplaması bozulur —
+ *     yani altı karenin altısı da başka bir sebeple oynardı.
+ * Kalan sınır KAPATILMADI ama GÖRÜNÜR: `ai-baglam-donem` iddiası ayı TAM
+ * METİNLE bekler; bir gün koşucu ile tarayıcının saat dilimi ayrışırsa test
+ * KIRMIZI olur ve damga yeniden karara bağlanır — sessizce kaymaz.
+ */
 export const ASISTAN_TIME = new Date("2026-07-31T12:00:00");
 
 export const ASISTAN_URL = "/asistan";
@@ -107,6 +125,8 @@ export async function openAsistan(page: Page, fixedTime = ASISTAN_TIME) {
  */
 export async function asistaniAc(page: Page, fixedTime = ASISTAN_TIME) {
   await page.setViewportSize({ ...VISUAL_VIEWPORT });
+  // 🔴 Rota gezinmeden ÖNCE kurulur; sonra kurmak ilk isteği kaçırırdı.
+  await santiyeleriSabitle(page);
   await loginAt(page, fixedTime);
   await page.goto(ASISTAN_URL);
   await expect(page.getByLabel("Sohbet geçmişi")).toBeVisible();
@@ -114,10 +134,121 @@ export async function asistaniAc(page: Page, fixedTime = ASISTAN_TIME) {
   await expect(page.getByLabel("Sohbet bağlamı")).toBeVisible();
   // Sağ sütun: proje bağlamı GERÇEKTEN indi.
   await expect(page.getByLabel("Bağlamı Değiştir")).toBeVisible();
+  // AI-BAĞLAM · şantiye kaskadı da indi. 🔴 Kadraj bu bekleme olmadan
+  // çekilirse üç satır bir kare boyunca "Şantiye seçin" gösterir ve
+  // baseline'ın hangi ara duruma oturduğu ŞANSA kalır.
+  await expect(page.getByLabel("Şantiye Seç")).toBeVisible();
+  await expect(page.getByTestId("ai-baglam-ilerleme")).toHaveText("%62");
 }
 
 /** `page.route`ın eşleştirdiği desen — `page.unroute` da AYNISINI ister. */
 export const GECMIS_ROTA_DESENI = "**/api/backend/ai/conversations**";
+
+/** Bağlam panelinin şantiye kaskadını besleyen uç. */
+export const SANTIYE_ROTA_DESENI = "**/api/backend/projects/*/sites**";
+
+/**
+ * AI-BAĞLAM · `GET /projects/{id}/sites` yanıtını **sayfaya özel** sabitler.
+ *
+ * 🔴🔴 NEDEN GEREKLİ — ÖLÇÜLMÜŞ İKİZ AYRIŞMASI (K-IKIZ1).
+ * `mock-backend.ts`in bu dalı her şantiye için `worker_count:
+ * COUNT_PENDING("timesheet")` ve `progress_pct: METRIC_PENDING(...)` döndürür.
+ * GERÇEK sunucu ikisini de DOLU döndürür: `worker_count` T4'te
+ * (`sites/service/presenters.py::_worker_count`), `progress_pct` ILR-1'de
+ * bağlandı. Yani ikiz, bu iki alanda sunucudan AYRIŞMIŞ durumda ve panelin
+ * DOLU dalı hiçbir kadrajda görünmezdi — kapılar yeşil kalır, ekran canlıda
+ * gerçek sayıyı basar ve kimse onu görmemiş olurdu. Aynı sınıfın kaydı bu
+ * dosyanın kardeşlerinde de var (`mock-backend.ts:8162` `active_worker_count`
+ * F-ILRUI'de tam bu sebeple düzeltildi — ama SATIR BAZINDAKİ sayaç
+ * düzeltilmemiş kalmış).
+ *
+ * 🔴 NEDEN `mock-backend.ts` DEĞİL: o fikstür PAYLAŞILAN tek süreçte koşar ve
+ * `SiteCard` Proje Detay ızgarasını da besler; oradaki düzeltme bu dilimin
+ * kapsamı dışındaki kadrajları da oynatırdı. `page.route` sayfaya özeldir.
+ * İkizin küresel ayrışması raporda **kapsam dışı bulgu** olarak açıldı.
+ *
+ * 🔴 İKİ DAL DA taşınır (K-IKIZ1): `s-1` DOLU (%62 · 48), `s-2` BOŞ — panel
+ * ikisini de doğru basmak zorunda.
+ */
+export async function santiyeleriSabitle(page: Page) {
+  await page.route(SANTIYE_ROTA_DESENI, async (route) => {
+    if (route.request().method() !== "GET") {
+      await route.fallback();
+      return;
+    }
+    const kart = (
+      id: string,
+      code: string,
+      name: string,
+      status: string,
+      dolu: boolean,
+    ) => ({
+      id,
+      slug: name.toLowerCase().replace(/[^a-z]+/g, "-"),
+      code,
+      name,
+      status,
+      address: "Kuyubaşı Mah.",
+      city: "Ankara",
+      city_inherited: false,
+      site_manager_name: "S. Öztürk",
+      start_date: "2025-03-01",
+      end_date: "2026-12-31",
+      delivery_date: null,
+      remaining_days: 157,
+      section_count: 2,
+      // Dolu `CountPlaceholder` `pending_module`u TAŞIMAYA DEVAM EDER
+      // (`MetricPlaceholder`in TERSİ kural — sunucunun bilinçli emsali).
+      worker_count: dolu
+        ? { available: true, count: 48, pending_module: "timesheet" }
+        : { available: false, count: null, pending_module: "timesheet" },
+      // Dolu `MetricPlaceholder` `pending_module` TAŞIMAZ.
+      progress_pct: dolu
+        ? { available: true, value: "62", pending_module: null }
+        : { available: false, value: null, pending_module: "site_diary" },
+      is_draft: false,
+      site_manager_user_id: null,
+      safety_officer_user_id: null,
+      safety_officer_name: null,
+      safety_officer_is_outsourced: false,
+      neighborhood: null,
+      parcel: null,
+      gps_coordinates: null,
+      land_area_m2: null,
+      construction_area_m2: null,
+      floor_info: null,
+      budget: null,
+      facilities: {
+        site_office: false,
+        canteen: false,
+        changing_room_wc: false,
+        dormitory: false,
+        infirmary: false,
+      },
+      electricity_subscription_no: null,
+      water_subscription_no: null,
+      planned_worker_count: null,
+    });
+    const items = [
+      kart("s-1", "A-BLOK", "A-Blok Şantiyesi", "active", true),
+      kart("s-2", "B-BLOK", "B-Blok Şantiyesi", "completed", false),
+    ];
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        counts: { all: 2, active: 1, on_hold: 0, completed: 1 },
+        items,
+        totals: {
+          total_progress_payment: { available: false, value: null, pending_module: "progress_payments" },
+          subcontractor_count: { available: false, count: null, pending_module: "subcontracts" },
+          active_worker_count: { available: true, count: 48, pending_module: "timesheet" },
+          average_margin: { available: false, value: null, pending_module: "project_costs" },
+        },
+      }),
+    });
+  });
+}
 
 /**
  * `GET /ai/conversations` yanıtını **sayfaya özel** sabitler.

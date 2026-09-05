@@ -1222,6 +1222,17 @@
   color: var(--color-text-muted);
 }
 
+/**
+ * 🔴 Mockup 371-373 ÜÇ satırı AYNI biçimde çizmez ve fark BİLİNÇLİDİR:
+ * "Dönem" ve "Aktif işçi" KOYU (`#1e293b`), yalnız "İlerleme" MAVİdir
+ * (`#2563eb`) — yüzde, kartın vurgulanan tek sayısıdır. Üçünü de maviye
+ * boyamak vurguyu yok ederdi.
+ */
+.ai-context__value {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
 .ai-context__strong {
   font-weight: 600;
   color: var(--color-primary);

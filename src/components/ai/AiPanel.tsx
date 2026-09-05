@@ -7,6 +7,7 @@ import { AccessDenied } from "@/components/settings/AccessDenied";
 import { useSession } from "@/components/shell/SessionProvider";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { useProjects, PROJECT_LIST_MAX_LIMIT } from "@/lib/api/hooks/useProjects";
+import { useSites } from "@/lib/api/hooks/useSites";
 import {
   useAiConversation,
   useAiConversations,
@@ -191,6 +192,7 @@ export function AiPanel() {
   const [akiyor, setAkiyor] = useState(false);
   const [aktifSohbet, setAktifSohbet] = useState<string | null>(null);
   const [seciliProje, setSeciliProje] = useState<string | null>(null);
+  const [seciliSantiye, setSeciliSantiye] = useState<string | null>(null);
   const iptalRef = useRef<AbortController | null>(null);
 
   const sohbetler = useAiConversations();
@@ -198,6 +200,29 @@ export function AiPanel() {
   const projeler = useProjects(
     projePermission.canView ? { limit: PROJECT_LIST_MAX_LIMIT, offset: 0 } : {},
   );
+
+  /**
+   * AI-BAĞLAM · ETKİN kapsam. Seçim durumu ile etkin kapsam AYNI ŞEY DEĞİLDİR:
+   * kullanıcı hiçbir şey seçmemişken de panel ilk projeyi/şantiyeyi gösterir ve
+   * `POST /ai/chat` gövdesine BU kimlikler biner. Hesap panelin İÇİNDE
+   * kalsaydı, ekranda görünen kapsam ile isteğe binen kapsam ayrışabilirdi —
+   * panel "A-Blok" yazarken model başka bir şantiyeye bakardı.
+   */
+  const projeListesi = projeler.data?.items ?? [];
+  const etkinProje =
+    projeListesi.find((p) => p.id === seciliProje) ?? projeListesi[0] ?? null;
+
+  // `projectId` boşsa hook AĞA ÇIKMAZ (`sitesQueryOptions`in boş-id kapısı).
+  const santiyeler = useSites(etkinProje?.id ?? "");
+  const santiyeListesi = santiyeler.data?.items ?? [];
+  /**
+   * 🔴 Proje değişince şantiye seçimi SIFIRLANMAZ, ÇÖZÜLEMEZ: eski projenin
+   * kimliği yeni listede bulunmaz ve arama `[0]`a düşer. `useEffect` ile
+   * sıfırlamak, bir kare boyunca "yeni projenin listesi + eski projenin
+   * şantiyesi" gibi imkânsız bir ara durum bırakırdı.
+   */
+  const etkinSantiye =
+    santiyeListesi.find((s) => s.id === seciliSantiye) ?? santiyeListesi[0] ?? null;
 
   useEffect(() => () => iptalRef.current?.abort(), []);
 
@@ -221,6 +246,10 @@ export function AiPanel() {
         for await (const olay of streamAiChat(kirpilmis, {
           signal: controller.signal,
           conversationId: aktifSohbet,
+          // 🔴 Panelin GÖSTERDİĞİ kapsam ile isteğe binen kapsam aynı iki
+          // değişkendir; ekran bir şey gösterip model başkasını göremez.
+          projectId: etkinProje?.id ?? null,
+          siteId: etkinSantiye?.id ?? null,
         })) {
           guncelle((t) => turaUygula(t, olay));
         }
@@ -243,7 +272,7 @@ export function AiPanel() {
         void sohbetler.refetch();
       }
     },
-    [akiyor, aktifSohbet, turlar.length, sohbetler],
+    [akiyor, aktifSohbet, turlar.length, sohbetler, etkinProje, etkinSantiye],
   );
 
   const yeniSohbet = useCallback(() => {
@@ -287,6 +316,9 @@ export function AiPanel() {
   if (!permission.canView) return <AccessDenied />;
 
   const gecmisGovde = gecmisSohbet.data;
+  // 🔴 TEK tarih yeri: sol sütunun gün gruplaması ile sağ sütunun dönemi AYNI
+  // ana bakar. İki ayrı `new Date()` gece yarısını iki farklı güne düşürebilir.
+  const simdi = new Date();
 
   return (
     <div className="ai-panel">
@@ -294,7 +326,7 @@ export function AiPanel() {
         sohbetler={sohbetler.data?.items ?? []}
         aktifId={aktifSohbet}
         yukleniyor={sohbetler.isLoading}
-        simdi={new Date()}
+        simdi={simdi}
         erisilenVeriler={erisilenVeriler}
         onYeniSohbet={yeniSohbet}
         onSec={sohbetSec}
@@ -498,12 +530,17 @@ export function AiPanel() {
       </section>
 
       <AiContextPanel
-        projeler={projeler.data?.items ?? []}
-        seciliProjeId={seciliProje}
+        projeler={projeListesi}
+        seciliProje={etkinProje}
+        santiyeler={santiyeListesi}
+        seciliSantiye={etkinSantiye}
+        santiyelerYukleniyor={santiyeler.isLoading}
         projeYetkisiVar={projePermission.canView}
         akiyor={akiyor}
+        simdi={simdi}
         acilanlar={acilanlar}
         onProjeSec={setSeciliProje}
+        onSantiyeSec={setSeciliSantiye}
         onHizliAnaliz={(soru) => void gonder(soru)}
       />
     </div>

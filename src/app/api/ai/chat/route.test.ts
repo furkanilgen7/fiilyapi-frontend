@@ -83,8 +83,12 @@ describe("POST /api/ai/chat", () => {
     const [url, init] = fetchSpy.mock.calls[0];
     // Hedef TAM OLARAK budur — istemcinin hiçbir alanı yola karışmaz.
     expect(url).toBe(`${BACKEND}/ai/chat`);
-    // Gövde YENİDEN kuruldu: yalnız `mesaj`.
-    expect(init.body).toBe(JSON.stringify({ mesaj: "x" }));
+    // Gövde YENİDEN kuruldu: yalnız izin listesindeki alanlar.
+    expect(JSON.parse(String(init.body))).toEqual({
+      mesaj: "x",
+      project_id: null,
+      site_id: null,
+    });
     expect(init.body).not.toContain("evil.example");
     expect(init.body).not.toContain("user_management");
   });
@@ -256,6 +260,8 @@ describe("POST /api/ai/chat · conversation_id (AI-CHAT-2)", () => {
     expect(JSON.parse(String(fetchSpy.mock.calls[0]![1].body))).toEqual({
       mesaj: "x",
       conversation_id: GECERLI,
+      project_id: null,
+      site_id: null,
     });
   });
 
@@ -264,7 +270,14 @@ describe("POST /api/ai/chat · conversation_id (AI-CHAT-2)", () => {
     await POST(chatReq({ mesaj: "x" }));
     // 🔴 `conversation_id: null` göndermek backend'de "yeni sohbet" ile aynı
     // sonucu verirdi ama gövdeyi sözleşmenin taşımadığı bir alanla kirletirdi.
-    expect(JSON.parse(String(fetchSpy.mock.calls[0]![1].body))).toEqual({ mesaj: "x" });
+    expect(JSON.parse(String(fetchSpy.mock.calls[0]![1].body))).toEqual({
+      mesaj: "x",
+      // 🔴 AI-BAĞLAM: bağlam alanları BUNUN TERSİ kuralı izler ve yokken de
+      // `null` olarak yazılır (`ai-chat-client.ts` gerekçesi) — gövde şekli
+      // seçime göre değişmez. `conversation_id` eski davranışını korur.
+      project_id: null,
+      site_id: null,
+    });
   });
 
   it("🔴 UUID OLMAYAN `conversation_id` 400 — ust kaynaga HIC gitmez", async () => {
@@ -293,5 +306,105 @@ describe("POST /api/ai/chat · conversation_id (AI-CHAT-2)", () => {
     }
     // POZİTİF KONTROL: sökme işlemi her şeyi silmedi.
     expect(kod).toContain("conversation_id");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// AI-BAĞLAM — "Sohbet Bağlamı" panelinin seçimi ÜST KAYNAĞA ULAŞIR
+//
+// 🔴🔴 BU BEKÇİNİN SEBEBİ ÖLÇÜLDÜ, VARSAYILMADI. `readYuk` gövdeyi YENİDEN
+// KURAR: izin listesinde olmayan her alan sessizce düşer. Bağlam alanları
+// listeye eklenmeden, istemci onları göndermiş olsa bile üst kaynağa HİÇ
+// ulaşmazdı ve panel yine süs kalırdı — üstelik kusur YALNIZ CANLIDA
+// görünürdü, çünkü jsdom panel testi BFF'i hiç koşturmaz.
+//
+// MUTASYON KANITI (rapora yazıldı): `upstreamRequest`ten `project_id` satırı
+// silindiğinde aşağıdaki ilk iki test KIRMIZI olur; `readYuk`tan alan okuması
+// silindiğinde de öyle. Kapı iki katmanı da tutar.
+// ---------------------------------------------------------------------------
+
+describe("POST /api/ai/chat · sohbet baglami (AI-BAGLAM)", () => {
+  beforeEach(() => {
+    process.env.BACKEND_URL = BACKEND;
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    delete process.env.BACKEND_URL;
+  });
+
+  function casusla() {
+    const { res: upstream } = streamingResponse(
+      sseStream(['event: metin\ndata: {"metin":"ok"}\n\n']),
+    );
+    const fetchSpy = vi.fn().mockResolvedValue(upstream);
+    vi.stubGlobal("fetch", fetchSpy);
+    return fetchSpy;
+  }
+
+  const PROJE = "bb000000-0000-4000-8000-000000000001";
+  const SANTIYE = "cc000000-0000-4000-8000-000000000002";
+
+  it("🔴 `project_id` + `site_id` UST KAYNAGA GECER (izin listesi tikaci)", async () => {
+    const fetchSpy = casusla();
+    const res = await POST(chatReq({ mesaj: "x", project_id: PROJE, site_id: SANTIYE }));
+    expect(res.status).toBe(200);
+    expect(JSON.parse(String(fetchSpy.mock.calls[0]![1].body))).toEqual({
+      mesaj: "x",
+      project_id: PROJE,
+      site_id: SANTIYE,
+    });
+  });
+
+  it("yalniz `project_id` verilebilir — `site_id` null olarak gider", async () => {
+    const fetchSpy = casusla();
+    await POST(chatReq({ mesaj: "x", project_id: PROJE }));
+    expect(JSON.parse(String(fetchSpy.mock.calls[0]![1].body))).toEqual({
+      mesaj: "x",
+      project_id: PROJE,
+      site_id: null,
+    });
+  });
+
+  it("acik `null` ile ALAN YOKLUGU AYNI govdeyi uretir", async () => {
+    const fetchSpy = casusla();
+    await POST(chatReq({ mesaj: "x", project_id: null, site_id: null }));
+    await POST(chatReq({ mesaj: "x" }));
+    expect(String(fetchSpy.mock.calls[0]![1].body)).toBe(
+      String(fetchSpy.mock.calls[1]![1].body),
+    );
+  });
+
+  it("🔴 UUID OLMAYAN kapsam 400 — ust kaynaga HIC gitmez", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    for (const govde of [
+      { mesaj: "x", project_id: "p-1" },
+      { mesaj: "x", site_id: "s-1" },
+      { mesaj: "x", project_id: 42 },
+      { mesaj: "x", site_id: { id: PROJE } },
+    ]) {
+      expect((await POST(chatReq(govde))).status).toBe(400);
+    }
+    // 🔴 Cop bir kimlik SESSIZCE "baglam yok"a cevrilmez: kullanici bir kapsam
+    // sectigini sanip modelin kapsamsiz cevap vermesi, hicbir hata gostermeyen
+    // bir yalan olurdu.
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("🔴 IZIN LISTESI HALA DAR — bagam alanlari disinda hicbir sey tasinmaz", async () => {
+    const fetchSpy = casusla();
+    await POST(
+      chatReq({
+        mesaj: "x",
+        project_id: PROJE,
+        // Sunucunun sozlesmesinde OLMAYAN alanlar: eklendiginde de dusmeli.
+        model: "gpt-4",
+        temperature: 0.9,
+        visible_projects: [PROJE],
+      }),
+    );
+    const govde = JSON.parse(String(fetchSpy.mock.calls[0]![1].body));
+    expect(Object.keys(govde).sort()).toEqual(["mesaj", "project_id", "site_id"]);
   });
 });
