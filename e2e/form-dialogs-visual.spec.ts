@@ -40,10 +40,30 @@ import { prepareFrame } from "./visual-scroll";
 // Fan-out'un bitişi ekranda görünmediği için `whf-sites-loaded` işareti
 // (hidden) okunur — yarım pencerede kare almak yasaktır.
 //
-// 📅 TARİH: altı formun HİÇBİRİNDE bugüne göre dolan alan yoktur (tarih
-// girişleri boş başlar, `EMPTY_VALUES`). `page.clock` yalnız ARŞ kadrajında
-// gerekir — altındaki `/belgeler` ekranı "Bugün"/"Dün" etiketi basar
-// (`archive-documents-visual.spec.ts` ile AYNI sabit an).
+// 📅 TARİH — F-ZAMAN'da ÖLÇÜLDÜ (paragraf yeniden yazıldı; eskisi doğru
+// sonuca YANLIŞ gerekçeyle varıyordu).
+//
+//   • ARŞ · `/belgeler` "Bugün"/"Dün" etiketi basar → `ARCHIVE_FIXED_NOW`.
+//   • İŞV · alttaki ekran (`EmployerContractDetailView.tsx:74`
+//     `useState(() => new Date())` → `contract-end-tone.ts`) "Bitiş Tarihi"
+//     metriğinin RENGİNİ bugünden türetir ve fikstür `end_date` 2026-12-01
+//     olduğu için ton 2026-11-01'de warning'e, 2026-12-02'de danger'a
+//     GEÇER — DOM'da ölçüldü: `rgb(30,41,59)` → `rgb(239,68,68)`.
+//     ⚠️ AMA KAREYE GİRMEZ: diyalog açıkken metrik hücresinin merkezinde
+//     `elementFromPoint` diyalog panelini (`pif-card`) döndürür, yani panel
+//     metriği ÖRTER. Ölçümle doğrulandı: aynı kadraj 2026-08-15 ve
+//     2027-01-15 damgalarıyla üretildiğinde iki `.png` BAYT AYNIdır.
+//     Bu yüzden buraya `page.clock` KONULMADI — koysaydık hiçbir şey
+//     bekçilemeyen ölü koruma olurdu (F-ZAMAN'ın kendi mutasyon kuralı).
+//     🔴 Muafiyet ÖRTÜLMEYE dayanır: diyalog paneli küçülür/kayarsa ya da
+//     metrik şeridi yer değiştirirse kadraj MARUZ hâle gelir. O gün
+//     `KASTEN_DISARIDA` girdisi silinip dondurma eklenir.
+//   • Kalan dört kadrajın (TAŞ · EKP · PB · DP) alttaki ekranlarının
+//     bileşen grafiğinde ürün kodunda `new Date()`/`Date.now()` YOKTUR
+//     (AST ile ölçüldü).
+//
+// İŞV dâhil beş kadraj `src/test-guards/visual-frame-guard.test.ts`
+// içindeki `KASTEN_DISARIDA` listesinde gerekçeleriyle yaşar.
 //
 // ⚠️ Sabit `waitForTimeout` YOKTUR; her bekleme durum tabanlıdır.
 //

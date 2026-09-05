@@ -19,6 +19,21 @@ import { prepareFrame } from "./visual-scroll";
 // gereği tüm yazma yüzeyleri ("+ Yeni Hakediş") GÖRÜNÜR hâlde baseline'a
 // girer.
 //
+// 📅 TARİH — F-ZAMAN'da ölçüldü, SONUÇ: bu kare MARUZ DEĞİL.
+// Dönem süzgecinin SEÇENEK listesi istemci saatinden türer
+// (`SubcontractorProgressPaymentsFilters.tsx:101` · `recentPeriods(new
+// Date(), 12)`) ve `.thk-filters .select { width: auto }` olduğu için
+// `<select>`in içsel genişliği EN GENİŞ SEÇENEĞE bağlıdır — yani teoride
+// pencere kaydıkça çubuk oynayabilirdi. ÖLÇÜLDÜ, oynamıyor: en geniş
+// seçenek her pencerede SABİT olan "Tüm Dönemler"dir, dönem etiketleri
+// ondan dardır. Tarayıcıda ölçülen genişlik 2026-08-15'te de 2044-03-15'te
+// de **136px**; kapalı seçicinin bastığı metin de her iki durumda
+// "Tüm Dönemler". Bu yüzden buraya `page.clock` KONULMADI — koysaydık
+// hiçbir şey bekçilemeyen ölü koruma olurdu.
+// 🔴 Muafiyet "Tüm Dönemler"in en geniş seçenek KALMASINA dayanır: etiket
+// kısalır ya da dönem biçimi uzarsa (`formatPeriod`) genişlik seçeneklere
+// bağlanır ve kadraj MARUZ hâle gelir.
+
 // Baseline `.png` YALNIZ Linux CI'da üretilir (visual-baselines.yml →
 // workflow_dispatch); macOS'ta koşturulup commit edilmez.
 test("taseron hakedisleri listesi ekrani gorsel", async ({ page }) => {
