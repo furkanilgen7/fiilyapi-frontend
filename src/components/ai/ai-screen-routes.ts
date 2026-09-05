@@ -14,8 +14,8 @@ import { routes } from "@/lib/routes";
  *
  * ## 🔴 ÖLÇÜM: İKİ ANAHTAR ÇÖZÜLEMİYOR — ve bu SESSİZ KALMAZ
  *
- * `EkranAnahtari` 14 üye taşır; rota kataloğunda 12'sinin **parametresiz** bir
- * karşılığı var. `santiyeler` ve `santiye_gunlugu` yalnız bir proje/şantiye
+ * `EkranAnahtari` **15** üye taşır; rota kataloğunda **13'ünün** parametresiz
+ * bir karşılığı var. `santiyeler` ve `santiye_gunlugu` yalnız bir proje/şantiye
  * kimliği altında yaşıyor (`routes.projects.sites.*`), yani parametresiz bir
  * "şantiyeler" ekranı YOKTUR. Uydurulmuş bir yol basmak yerine bu iki anahtar
  * `null` döner ve bağlantı **devre dışı + sebep** basılır — kanon: "rotası
@@ -41,6 +41,12 @@ export const EKRAN_ANAHTARLARI = [
   "muhasebe",
   "makineler",
   "belgeler",
+  // 🔴 AI-2b: backend `taseron_hakedisleri` aracıyla birlikte eklendi.
+  // Bu satır YOKKEN backend enum'u 15, buradaki küme 14 üyeydi ve anahtar
+  // bilinmeyen dalına düşüp genel yedeği basıyordu ("Bu ekranın uygulamada bir
+  // rotası henüz yok") — oysa rota VARDI (`/hakedisler/taseron`). İki deponun
+  // sessiz ayrışmasının ta kendisi.
+  "taseron_hakedisleri",
   "ayarlar",
 ] as const;
 
@@ -66,6 +72,9 @@ const COZUCULER: Readonly<Record<EkranAnahtari, (() => string) | null>> = {
   muhasebe: () => routes.accounting.root(),
   makineler: () => routes.equipment.list(),
   belgeler: () => routes.documents(),
+  // 🔴 `hakedisler` İŞVEREN tarafıdır; taşeron AYRI bir ekrandır. Tek anahtara
+  // indirmek kullanıcıyı yanlış listeye götürürdü.
+  taseron_hakedisleri: () => routes.progressPayments.subcontractor.list(),
   ayarlar: () => routes.settings.root(),
 };
 
