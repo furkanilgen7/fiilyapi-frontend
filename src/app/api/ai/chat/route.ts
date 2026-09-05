@@ -54,10 +54,25 @@ const SSE_HEADERS: Record<string, string> = {
   "x-accel-buffering": "no",
 };
 
-/** İstemciden taşınan **tam** yük. 🔴 İki alan; üçüncüsü taşınmaz. */
+/**
+ * İstemciden taşınan **tam** yük. 🔴 DÖRT alan; beşincisi taşınmaz.
+ *
+ * 🔴🔴 AI-BAĞLAM'IN GERÇEK TIKACI BURASIYDI. Görev emri devrin
+ * (`pnpm gen:api`) yapılmamasını tıkaç sanıyordu — ölçüm bunu çürüttü:
+ * akış istemcisi `backendClient`i DEĞİL ham `fetch` kullanır (bu dosyanın
+ * üst notu sebebini yazıyor), yani üretilmiş tipler o gövdeye hiç dokunmaz ve
+ * `project_id` göndermek `typecheck`i KIRMAZDI. Tıkaç, aşağıdaki `readYuk`un
+ * **izin listesiydi**: gövde burada YENİDEN KURULUYOR ve listede olmayan her
+ * alan sessizce düşüyordu. Bağlam alanları buraya eklenmeden, istemci onları
+ * göndermiş olsa bile üst kaynağa HİÇ ULAŞMAZDI — kusur yalnız CANLIDA
+ * görünürdü (BFF izin listesi tuzağı).
+ */
 interface AiChatYuku {
   mesaj: string;
   conversationId: string | null;
+  /** Sağ üstteki "Sohbet Bağlamı" panelinin seçimi (AI-BAĞLAM). */
+  projectId: string | null;
+  siteId: string | null;
 }
 
 function upstreamRequest(yuk: AiChatYuku, accessToken: string | undefined): Promise<Response> {
@@ -72,32 +87,69 @@ function upstreamRequest(yuk: AiChatYuku, accessToken: string | undefined): Prom
     // onu `WHERE user_id = :actor` ile doğrular ve başkasınınkine 404 verir.
     // BFF burada hiçbir doğrulama YAPMAZ ve yapmamalıdır — kapının iki yerde
     // olması, bir gün ikisinin ayrışması demektir.
-    body: JSON.stringify(
-      yuk.conversationId === null
-        ? { mesaj: yuk.mesaj }
-        : { mesaj: yuk.mesaj, conversation_id: yuk.conversationId },
-    ),
+    // 🔴 `project_id`/`site_id` her zaman yazılır (yokken `null`). Sunucu
+    // doldurmayı `is None` ile yapar; alanı atlamakla `null` göndermek aynı
+    // sonucu verir ama tek bir gövde şekli, testin de izin listesinin de tek
+    // bir şeyi ölçmesini sağlar.
+    // 🔴 Bunlar da bir SAHİPLİK iddiasıdır, yetki DEĞİL: görünmeyen bir
+    // proje/şantiye backend'de **404** alır (403 değil — S14 varlık sızıntısı).
+    // BFF burada görünürlük DOĞRULAMAZ; kapının iki yerde olması, bir gün
+    // ikisinin ayrışması demektir.
+    body: JSON.stringify({
+      mesaj: yuk.mesaj,
+      ...(yuk.conversationId === null ? {} : { conversation_id: yuk.conversationId }),
+      project_id: yuk.projectId,
+      site_id: yuk.siteId,
+    }),
   });
 }
 
 /** Kaba biçim kontrolü — UUID'nin GEÇERLİLİĞİ backend'in işidir. */
 const UUID_DESENI = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Gövdeden YALNIZ `mesaj` + `conversation_id` okunur; başka alan taşınmaz. */
+/**
+ * İsteğe bağlı bir kimlik alanını okur.
+ *
+ * Dönüş: `null` → alan yok/boş · `string` → geçerli biçim · `undefined` →
+ * GEÇERSİZ (istek 400). Üç hâl AYRI tutulur; `null` ile "geçersiz"i tek
+ * değere indirmek, çöp bir kimliği sessizce "bağlam yok"a çevirirdi.
+ */
+function readKimlik(ham: unknown): string | null | undefined {
+  if (ham === undefined || ham === null) return null;
+  if (typeof ham !== "string" || !UUID_DESENI.test(ham)) return undefined;
+  return ham;
+}
+
+/**
+ * Gövdeden YALNIZ `mesaj` + `conversation_id` + `project_id` + `site_id`
+ * okunur; başka alan taşınmaz.
+ */
 function readYuk(payload: unknown): AiChatYuku | null {
   if (typeof payload !== "object" || payload === null) return null;
-  const { mesaj, conversation_id: konusma } = payload as {
+  const {
+    mesaj,
+    conversation_id: konusma,
+    project_id: proje,
+    site_id: santiye,
+  } = payload as {
     mesaj?: unknown;
     conversation_id?: unknown;
+    project_id?: unknown;
+    site_id?: unknown;
   };
   if (typeof mesaj !== "string") return null;
   const kirpilmis = mesaj.trim();
   if (kirpilmis.length === 0 || kirpilmis.length > MAX_MESAJ) return null;
+
+  const projectId = readKimlik(proje);
+  const siteId = readKimlik(santiye);
+  if (projectId === undefined || siteId === undefined) return null;
+
   if (konusma !== undefined && konusma !== null) {
     if (typeof konusma !== "string" || !UUID_DESENI.test(konusma)) return null;
-    return { mesaj: kirpilmis, conversationId: konusma };
+    return { mesaj: kirpilmis, conversationId: konusma, projectId, siteId };
   }
-  return { mesaj: kirpilmis, conversationId: null };
+  return { mesaj: kirpilmis, conversationId: null, projectId, siteId };
 }
 
 function unauthenticated(): NextResponse {

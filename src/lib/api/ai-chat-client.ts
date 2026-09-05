@@ -182,19 +182,39 @@ export function* framesFromBuffer(chunk: string): Generator<AiEvent> {
  *
  * 🔴 Başkasına ait bir kimlik gönderilirse backend **404** döner (403 DEĞİL);
  * `AiChatError.detail` o dürüst cümleyi taşır.
+ *
+ * 🔴 `projectId`/`siteId` AI-BAĞLAM'da açıldı — sağ üstteki "Sohbet Bağlamı"
+ * panelinin seçimi. **Her mesajla gönderilir**: bağlam sunucuda SAKLANMAZ
+ * (v1 sınırı, takip dilimi AI-BAĞLAM-2), gövdede taşınır.
+ *
+ * 🔴 İkisi de **her zaman gövdeye yazılır**, yokken `null` olarak. Alanı hiç
+ * göndermemek ile `null` göndermek sunucuda aynı sonucu verir
+ * (`project_id: uuid | None = None`, doldurma `is None` ile yapılıyor) ama
+ * ikisi arasında gidip gelmek, gövdenin şeklini seçime göre değiştirirdi;
+ * BFF'in izin listesi ve rota testi tek bir şekil ölçer.
+ *
+ * `conversation_id` bu kurala DAHİL DEĞİLDİR ve bilerek eski davranışını
+ * korur (yokken hiç yazılmaz): o alanın BFF doğrulaması ve testleri AI-CHAT-2'de
+ * yazıldı, şeklini değiştirmek bu dilimin işi değil.
  */
 export async function* streamAiChat(
   mesaj: string,
-  options: { signal?: AbortSignal; conversationId?: string | null } = {},
+  options: {
+    signal?: AbortSignal;
+    conversationId?: string | null;
+    projectId?: string | null;
+    siteId?: string | null;
+  } = {},
 ): AsyncGenerator<AiEvent> {
   const res = await globalThis.fetch(AI_CHAT_URL, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify(
-      options.conversationId
-        ? { mesaj, conversation_id: options.conversationId }
-        : { mesaj },
-    ),
+    body: JSON.stringify({
+      mesaj,
+      ...(options.conversationId ? { conversation_id: options.conversationId } : {}),
+      project_id: options.projectId ?? null,
+      site_id: options.siteId ?? null,
+    }),
     signal: options.signal,
   });
 

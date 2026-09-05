@@ -42,6 +42,21 @@ test("asistan uc sutunlu kabuk gorsel", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Nakit akışı nasıl?" })).toBeVisible();
   await expect(page.getByText("Hızlı Analizler")).toBeVisible();
 
+  // ── AI-BAĞLAM · panel artık GERÇEK bağlam (kullanıcının bildirdiği kusur)
+  // 🔴 Kadraj tek başına yetmez: bir kare "bağlanmadı" ile "—" arasındaki
+  // farkı gözle ayırt ettirir ama HANGİ metnin bastığını KAYDA GEÇMEZ.
+  // İddialar bu yüzden metnin kendisini adlandırır.
+  await expect(page.getByTestId("ai-baglam-santiye")).toHaveText(/A-Blok Şantiyesi/);
+  // Dönem TÜRETİLİR (mockup'ın "Temmuz 2026" sabiti kopyalanmaz) ve saat
+  // `asistaniAc` içinde `ASISTAN_TIME`a DONDURULDUĞU için deterministiktir.
+  await expect(page.getByTestId("ai-baglam-donem")).toHaveText("Temmuz 2026");
+  await expect(page.getByTestId("ai-baglam-ilerleme")).toHaveText("%62");
+  await expect(page.getByTestId("ai-baglam-isci")).toHaveText("48");
+  // 🔴 Kalkan üç metin: ekranda BİR TANESİ BİLE kalmamalı.
+  await expect(page.getByText("bağlanmadı")).toHaveCount(0);
+  await expect(page.getByText("bilinmiyor")).toHaveCount(0);
+  await expect(page.getByText("%0")).toHaveCount(0);
+
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("asistan-kabuk.png", { fullPage: true });
 });
@@ -106,6 +121,9 @@ test("asistan dar pencere gorsel", async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: VISUAL_VIEWPORT.height });
 
   await expect(page.getByLabel("Sohbet bağlamı")).toBeVisible();
+  // Dar pencerede İKİ seçici de sığmalı — kaskad taşma üretmiyor.
+  await expect(page.getByLabel("Bağlamı Değiştir")).toBeVisible();
+  await expect(page.getByLabel("Şantiye Seç")).toBeVisible();
 
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("asistan-1024.png", { fullPage: true });
@@ -125,6 +143,9 @@ test("asistan bos gecmis gorsel", async ({ page }) => {
 
   await expect(page.getByText("Henüz sohbetiniz yok. İlk sorunuzu sorun.")).toBeVisible();
   await expect(page.getByText("Erişilen Veriler")).toBeVisible();
+  // 🔴 Hiç araç çağrılmamışken çip "bilinmiyor" DEMEZ: *"bilinmiyor"* =
+  // ölçülemedi; oysa ölçüm tamdır ve sonucu sıfırdır.
+  await expect(page.getByText("henüz araç çağrılmadı")).toBeVisible();
 
   await prepareFrame(page);
   await expect(page).toHaveScreenshot("asistan-bos-gecmis.png", { fullPage: true });

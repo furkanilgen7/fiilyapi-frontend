@@ -57,7 +57,12 @@ describe("streamAiChat", () => {
       { tip: "metin", metin: "Merhaba" },
       { tip: "tur_bitti", sebep: "bitti", kullanim: { girdi: 10, cikti: 5 } },
     ]);
-    expect(fetchSpy.mock.calls[0][1].body).toBe(JSON.stringify({ mesaj: "selam" }));
+    expect(JSON.parse(String(fetchSpy.mock.calls[0][1].body))).toEqual({
+      mesaj: "selam",
+      // AI-BAĞLAM: bağlam alanları seçilmemişken de gövdede DURUR (`null`).
+      project_id: null,
+      site_id: null,
+    });
   });
 
   it("🔴 YIGIN SINIRINA bolunmus kare KAYBOLMAZ", async () => {
@@ -201,10 +206,63 @@ describe("AI-CHAT-2 sözleşmesi", () => {
       }),
     );
     for await (const _ of streamAiChat("selam")) void _;
-    expect(JSON.parse(yakalanan[0]!)).toEqual({ mesaj: "selam" });
+    // 🔴 AI-BAĞLAM: bağlam alanları BUNUN TERSİ kuralı izler (yokken de `null`
+    // yazılır); `conversation_id` eski davranışını KORUR.
+    expect(JSON.parse(yakalanan[0]!)).toEqual({
+      mesaj: "selam",
+      project_id: null,
+      site_id: null,
+    });
 
     yakalanan.length = 0;
     for await (const _ of streamAiChat("selam", { conversationId: "abc" })) void _;
-    expect(JSON.parse(yakalanan[0]!)).toEqual({ mesaj: "selam", conversation_id: "abc" });
+    expect(JSON.parse(yakalanan[0]!)).toEqual({
+      mesaj: "selam",
+      conversation_id: "abc",
+      project_id: null,
+      site_id: null,
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // AI-BAĞLAM — "Sohbet Bağlamı" panelinin seçimi HER MESAJLA gider
+  // ─────────────────────────────────────────────────────────────────────────
+  it("🔴 `projectId`/`siteId` GOVDEYE yazilir — baglam saklanmaz, tasinir", async () => {
+    const yakalanan: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_u: unknown, init: RequestInit) => {
+        yakalanan.push(String(init.body));
+        return new Response(new ReadableStream({ start: (c) => c.close() }), { status: 200 });
+      }),
+    );
+    for await (const _ of streamAiChat("selam", {
+      projectId: "p-1",
+      siteId: "s-1",
+    })) void _;
+    expect(JSON.parse(yakalanan[0]!)).toEqual({
+      mesaj: "selam",
+      project_id: "p-1",
+      site_id: "s-1",
+    });
+  });
+
+  it("🔴 GOVDE SEKLI SECIME GORE DEGISMEZ — alanlar HER ZAMAN var", async () => {
+    const yakalanan: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_u: unknown, init: RequestInit) => {
+        yakalanan.push(String(init.body));
+        return new Response(new ReadableStream({ start: (c) => c.close() }), { status: 200 });
+      }),
+    );
+    for await (const _ of streamAiChat("a")) void _;
+    for await (const _ of streamAiChat("a", { projectId: "p-1" })) void _;
+    // Anahtar KÜMESİ iki çağrıda da aynı; yalnız DEĞER değişir. Şekil
+    // seçime göre oynasaydı BFF'in izin listesi ve rota testi iki ayrı
+    // gövdeyi ölçmek zorunda kalırdı.
+    expect(Object.keys(JSON.parse(yakalanan[0]!)).sort()).toEqual(
+      Object.keys(JSON.parse(yakalanan[1]!)).sort(),
+    );
   });
 });
