@@ -3,6 +3,8 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
+import { navGroupHeadingFor } from "@/components/shell/nav-config";
+import { routes } from "@/lib/routes";
 import { Select } from "@/components/ui/select/Select";
 import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
 import { hasAtLeast } from "@/lib/auth/permissions";
@@ -80,7 +82,7 @@ export function GeneralTimesheetView() {
       header={
         <>
           {/* E5 62 */}
-          <p className="ts__eyebrow">Saha &amp; İK</p>
+          <p className="ts__eyebrow">{navGroupHeadingFor(routes.timesheet())}</p>
           {/* E5 63-73 */}
           <div className="ts__head">
             <div>

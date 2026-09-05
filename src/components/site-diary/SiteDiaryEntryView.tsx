@@ -169,6 +169,33 @@ export function DiaryEntryScreen({
   if (isForbidden(siteQuery.error) || isForbidden(entriesQuery.error)) return <AccessDenied />;
 
   const site = siteQuery.data;
+  /**
+   * 🔴 ŞANTİYESİZ HÂL — kök rotada GERÇEKTİR (şantiye listesi boş, ya da
+   * kullanıcının erişebildiği şantiye yok). Şantiye kapsamlı rotada `siteKey`
+   * bir YOL segmentidir, yani orada bu hâl OLUŞAMAZ.
+   *
+   * Şantiyesizken ekran YAZILAMAZ olmalı: `useSite` bile koşmaz
+   * (`enabled: siteId.length > 0`), yani `POST` gövdesinin `site_id`si BOŞ
+   * giderdi. Ayrıca `base` bu hâlde `/projeler//santiyeler/` gibi ÇİFT SLAŞLI
+   * bozuk bir yol kurar — mod anahtarı da bu yüzden basılmaz.
+   */
+  const hasSite = siteKey.length > 0;
+  if (!hasSite) {
+    return (
+      <div className="diary">
+        {chrome}
+        <div className="diary__head">
+          <div>
+            <h1 className="diary__title">Günlük Kayıt &amp; Planlama</h1>
+            <p className="diary__subtitle">
+              Şantiye seçilmedi — kayıt girilebilecek bir şantiye yok.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const isSubmitted = entry?.status === "submitted";
   // Salt-okunur görünüm: yazma izni yok ya da kayıt gönderilmiş.
   const isReadOnly = !permission.canWrite || isSubmitted;

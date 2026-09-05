@@ -113,17 +113,36 @@ beforeEach(() => {
     isError: false,
     error: null,
   } as never);
-  vi.mocked(useSite).mockReturnValue({
-    data: {
-      id: "s-1",
-      name: "A-Blok Şantiyesi",
-      project: { id: "p-1", name: "Güneşkent" },
-      sections: [],
-    },
-    isLoading: false,
-    isError: false,
-    error: null,
-  } as never);
+  /**
+   * 🔴 MOCK İSTENEN ŞANTİYEYE CEVAP VERİR — sabit dönen bir mock, ekran
+   * hangi şantiyeyi sorarsa sorsun HEP `s-1`i döndürür ve "yeni şantiyenin
+   * kimliğiyle besleniyor mu" iddiası YAPISAL OLARAK sınanamaz hâle gelirdi
+   * (`useCreateSiteDiaryEntry` her zaman `s-1` görürdü).
+   */
+  vi.mocked(useSite).mockImplementation(
+    (siteId: string) =>
+      ({
+        data:
+          siteId === ""
+            ? undefined
+            : siteId === "s-2"
+              ? {
+                  id: "s-2",
+                  name: "OSB Fabrika",
+                  project: { id: "p-2", name: "Çelik OSB" },
+                  sections: [],
+                }
+              : {
+                  id: "s-1",
+                  name: "A-Blok Şantiyesi",
+                  project: { id: "p-1", name: "Güneşkent" },
+                  sections: [],
+                },
+        isLoading: false,
+        isError: false,
+        error: null,
+      }) as never,
+  );
   vi.mocked(useBoq).mockReturnValue({
     data: undefined,
     isLoading: false,
@@ -199,6 +218,34 @@ describe("GeneralSiteDiaryView · şantiye seçici", () => {
     expect(vi.mocked(useSite)).toHaveBeenCalledWith("s-1", { project: "p-1" });
   });
 
+  /**
+   * 🔴 ADRES ile EKRAN ÇELİŞMEZ. Bilinmeyen `?site=` sessizce ilk seçeneğe
+   * düşerse ama URL düzeltilmezse, kullanıcı `yok-boyle-bir-santiye` yazan
+   * adresi paylaşır ve karşı taraf BAŞKA şantiye görür.
+   */
+  it("BILINMEYEN ?site= URL'de DUZELTILIR", () => {
+    searchParams = new URLSearchParams({ site: "yok-boyle-bir-santiye" });
+    render(<GeneralSiteDiaryView />);
+    expect(replace).toHaveBeenCalledWith("/gunluk-kayit?site=s-1", { scroll: false });
+  });
+
+  it("?site= HIC YOKKEN de cozulon santiye URL'e yazilir (paylasilabilirlik)", () => {
+    render(<GeneralSiteDiaryView />);
+    expect(replace).toHaveBeenCalledWith("/gunluk-kayit?site=s-1", { scroll: false });
+  });
+
+  it("URL zaten hizaliysa TEKRAR yazilmaz (donguye girmez)", () => {
+    searchParams = new URLSearchParams({ site: "s-2" });
+    render(<GeneralSiteDiaryView />);
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("santiye YOKKEN URL'e uydurma deger YAZILMAZ", () => {
+    mockOptions([]);
+    render(<GeneralSiteDiaryView />);
+    expect(replace).not.toHaveBeenCalled();
+  });
+
   it("secim URL'e yazilir (paylasilabilir baglanti, yol ELLE kurulmaz)", async () => {
     const user = userEvent.setup();
     render(<GeneralSiteDiaryView />);
@@ -206,11 +253,62 @@ describe("GeneralSiteDiaryView · şantiye seçici", () => {
     expect(replace).toHaveBeenCalledWith("/gunluk-kayit?site=s-2", { scroll: false });
   });
 
-  it("santiye YOKKEN secici devre disi ve GEREKCE yazilir", () => {
+  /**
+   * 🔴 SAHTE-YEŞİL DÜZELTMESİ. Bu testin ilk hâli `useSite`ı ŞANTİYELİ
+   * bırakıyordu, yani "şantiye yok" derken ekran hâlâ A-Blok'un verisini
+   * basıyordu — gerçek boş hâli YAPISAL OLARAK göremiyordu. Üretimde
+   * `useSite` `enabled: siteId.length > 0` ile HİÇ koşmaz; mock da o hâle
+   * kurulur (`data: undefined`).
+   */
+  function mockSitesiz() {
     mockOptions([]);
+    // `useSite` zaten bos `siteId` icin `data: undefined` doner (uretimde
+    // `enabled: siteId.length > 0` ile HIC kosmaz) — mock o hali tasir.
+  }
+
+  it("santiye YOKKEN secici devre disi ve GEREKCE yazilir", () => {
+    mockSitesiz();
     render(<GeneralSiteDiaryView />);
     expect(screen.getByLabelText("Şantiye")).toBeDisabled();
     expect(screen.getByText("Kayıt girilebilecek şantiye bulunmuyor.")).toBeInTheDocument();
+  });
+
+  /**
+   * 🔴 ŞANTİYESİZKEN EKRAN YAZILAMAZ. Emrin boş-durum kuralı ("uydurma veri
+   * YOK") yalnız bir gerekçe paragrafı basmak DEĞİLDİR: form açık ve butonlar
+   * etkin kalırsa kullanıcı hedefi olmayan bir taslağı doldurmaya davet
+   * edilir ve `POST` gövdesinin `site_id`si BOŞ giderdi.
+   */
+  it("santiye YOKKEN yazma butonlari HIC basilmaz", () => {
+    mockSitesiz();
+    render(<GeneralSiteDiaryView />);
+    expect(screen.queryByRole("button", { name: "Taslak Kaydet" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Kaydet & Gönder/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/Şantiye seçilmedi/)).toBeInTheDocument();
+  });
+
+  /**
+   * 🔴 POZİTİF KONTROL — yukarıdaki iddia butonlar HİÇBİR ZAMAN basılmasa da
+   * yeşil kalırdı. Şantiye VARKEN aynı butonların GERÇEKTEN basıldığı ayrıca
+   * ölçülür, yoksa "yazma kapalı" bekçisi hiçbir şey bekçilemez.
+   */
+  it("kontrol: santiye VARKEN yazma butonlari basilir", () => {
+    render(<GeneralSiteDiaryView />);
+    expect(screen.getByRole("button", { name: "Taslak Kaydet" })).toBeInTheDocument();
+  });
+
+  /**
+   * 🔴 `base` şantiyesizken `/projeler//santiyeler/` gibi ÇİFT SLAŞLI bozuk
+   * bir yol kurar. Böyle bir href basılırsa kullanıcı 404'e/catch-all'a
+   * tıklar. Bu iddia o sınıfı bütünsel yakalar.
+   */
+  it("santiye YOKKEN hicbir href CIFT SLAS icermez", () => {
+    mockSitesiz();
+    const { container } = render(<GeneralSiteDiaryView />);
+    const bozuk = [...container.querySelectorAll("a[href]")]
+      .map((a) => a.getAttribute("href") ?? "")
+      .filter((href) => href.includes("//"));
+    expect(bozuk, `bozuk href: ${bozuk.join(", ")}`).toEqual([]);
   });
 
   it("liste YUKLENIRKEN gerekce 'Yukleniyor' olur (hata sanilmaz)", () => {
@@ -226,6 +324,50 @@ describe("GeneralSiteDiaryView · şantiye seçici", () => {
     mockOptions([], { isError: true });
     render(<GeneralSiteDiaryView />);
     expect(screen.getByText("Şantiye listesi yüklenemedi.")).toBeInTheDocument();
+  });
+});
+
+/**
+ * 🔴🔴 MERGE ENGELİ BEKÇİSİ — ÇAPRAZ-ŞANTİYE VERİ BULAŞMASI.
+ *
+ * Şantiye kapsamlı ikizde bu sınıf YAPISAL OLARAK imkânsızdı (şantiye
+ * değişmek = rota değişmek = yeniden montaj). Kök rotada şantiye bir SORGU
+ * parametresidir, bileşen monteli kalır — sınıfı BU DİLİM doğurdu.
+ *
+ * Mekanizma: `DiaryEntryScreen`in tohumlama anahtarı şantiye TAŞIMAZ
+ * (`seedKey = "new:<activeDate>"`) ve etkisi erken döner. Şantiye değişip
+ * TARİH aynı kalınca ve iki şantiyede de o gün kayıt yokken form OLDUĞU GİBİ
+ * kalır: önceki şantiyenin notu ve `sectionId`si yeni şantiyenin POST
+ * gövdesine sızar. `sectionId` başka bir PROJENİN bölümü olabilir ve
+ * seçicide görünmediği için kullanıcı gönderdiğini GÖREMEZ.
+ *
+ * Çözüm `key={siteId}` — alt ağaç sökülüp yeniden kurulur.
+ */
+describe("🔴 capraz-santiye veri bulasmasi", () => {
+  it("santiye degisince form SIFIRLANIR (not onceki santiyeden TASINMAZ)", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<GeneralSiteDiaryView />);
+
+    const not = screen.getByRole("textbox", { name: /Yapılan İşler/ });
+    await user.type(not, "A-Blok kalip sokuldu");
+    expect(not).toHaveValue("A-Blok kalip sokuldu");
+
+    searchParams = new URLSearchParams({ site: "s-2" });
+    rerender(<GeneralSiteDiaryView />);
+
+    // 🔴 Asıl iddia: `key` kaldırılırsa burası "A-Blok kalip sokuldu" kalır.
+    expect(screen.getByRole("textbox", { name: /Yapılan İşler/ })).toHaveValue("");
+  });
+
+  it("santiye degisince ortak govde YENI santiyenin kimligiyle beslenir", () => {
+    const { rerender } = render(<GeneralSiteDiaryView />);
+    expect(vi.mocked(useSite)).toHaveBeenCalledWith("s-1", { project: "p-1" });
+
+    searchParams = new URLSearchParams({ site: "s-2" });
+    rerender(<GeneralSiteDiaryView />);
+    expect(vi.mocked(useSite)).toHaveBeenLastCalledWith("s-2", { project: "p-2" });
+    // POST hedefi de yeni şantiyeye bağlanır.
+    expect(vi.mocked(useCreateSiteDiaryEntry)).toHaveBeenLastCalledWith("s-2");
   });
 });
 

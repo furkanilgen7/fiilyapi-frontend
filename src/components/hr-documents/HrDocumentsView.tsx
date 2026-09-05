@@ -1,6 +1,8 @@
 "use client";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
+import { navGroupHeadingFor } from "@/components/shell/nav-config";
+import { routes } from "@/lib/routes";
 import { PersonnelTabsStrip } from "@/components/personnel/PersonnelTabsStrip";
 import { Button } from "@/components/ui";
 import { backendErrorMessage } from "@/lib/api/error-message";
@@ -54,7 +56,7 @@ export function HrDocumentsView() {
 
   return (
     <div className="bt">
-      <p className="bt__eyebrow">Saha &amp; İK</p>
+      <p className="bt__eyebrow">{navGroupHeadingFor(routes.personnel.list())}</p>
       <div className="bt__head">
         <h1 className="bt__title">{HR_DOCUMENTS_TAB_LABEL}</h1>
         {/* 22-23 — ikisinin de ucu/form mockup'ı yok: devre-dışı + gerekçe */}

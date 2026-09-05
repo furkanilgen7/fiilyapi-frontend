@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { SiteDiaryEntryView } from "./SiteDiaryEntryView";
@@ -217,6 +217,34 @@ beforeEach(() => {
 function setupUser() {
   return userEvent.setup();
 }
+
+/**
+ * 🔴 F-NAVSAHA · POZİTİF İKİZ — DRILL SEKME ŞERİDİ BURADA VARDIR.
+ *
+ * Kök rota testi şeridin YOKLUĞUNU iddia eder (E7 onu çizmez). Tek başına o
+ * iddia, `chrome` prop'u sessizce silinse ya da `SiteDetailTabs` bu ekrandan
+ * düşse bile YEŞİL kalırdı — iki ekran da şeritsiz olurdu ve kimse görmezdi.
+ * Şeridin şantiye rotasında GERÇEKTEN basıldığı bu yüzden ayrıca ölçülür:
+ * ikisi birlikte "fark KABUKTUR" cümlesini bekçiler.
+ */
+describe("SiteDiaryEntryView · kabuk (drill sekme şeridi)", () => {
+  it("santiye rotasinda drill sekme seridi BASILIR", () => {
+    render(<SiteDiaryEntryView />);
+    expect(
+      screen.getByRole("tablist", { name: "Şantiye detay sekmeleri" }),
+    ).toBeInTheDocument();
+  });
+
+  it("seritteki 'Günlük Kayıt' sekmesi bu ekranin kendi yoluna bakar", () => {
+    render(<SiteDiaryEntryView />);
+    const tabs = screen.getByRole("tablist", { name: "Şantiye detay sekmeleri" });
+    const gunluk = within(tabs).getByRole("tab", { name: "Günlük Kayıt" });
+    expect(gunluk).toHaveAttribute(
+      "href",
+      "/projeler/p-1/santiyeler/s-1/gunluk-kayit",
+    );
+  });
+});
 
 describe("SiteDiaryEntryView · izin dalları", () => {
   it("site_diary=none ise ekran hiç basılmaz (erişim reddi)", () => {

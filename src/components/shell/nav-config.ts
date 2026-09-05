@@ -163,6 +163,24 @@ export function activeNavHref(pathname: string): string | undefined {
   return best;
 }
 
+/**
+ * 🔴 F-NAVSAHA · ÜST-ETİKET (eyebrow) NAV'DAN TÜRER, KOPYALANMAZ.
+ *
+ * Canon `ReportsCatalogView`de yazılıydı: *"Metin KOPYALANMAZ, nav'dan TÜRER:
+ * grup yeniden adlandırılırsa bu satır kendiliğinden ona uyar."* Ama dört ekran
+ * onu ELLE yazıyordu (`Saha &amp; İK`) ve grup ikiye ayrılınca sol menü `İK`
+ * derken Personel sayfası hâlâ `Saha & İK` dedi.
+ *
+ * Bu kusuru GÖRSEL KAPI YAKALAYAMAZ: etiket zaten öyle yazıyordu, yani içerik
+ * baytı değişmiyordu. Yakalayan tek şey türetmenin KENDİSİdir — bu yardımcı
+ * çağrıldığı sürece grup adı/üyeliği değişince etiket kendiliğinden düzelir.
+ *
+ * Ekranın nav href'ini verir, o href'i taşıyan grubun başlığını alır.
+ */
+export function navGroupHeadingFor(href: string): string | undefined {
+  return NAV_GROUPS.find((group) => group.items.some((item) => item.href === href))?.heading;
+}
+
 // Slug'dan modul adi: once nav'da ara, yoksa baslik-case fallback.
 export function moduleNameForSlug(slug: string): string {
   const href = "/" + slug;

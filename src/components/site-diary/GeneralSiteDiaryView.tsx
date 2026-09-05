@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { Select } from "@/components/ui/select/Select";
@@ -61,8 +62,52 @@ export function GeneralSiteDiaryView() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }
 
+  /**
+   * 🔴 ADRES ile EKRAN ÇELİŞMEZ. `?site=` yokken ya da TANINMAYAN bir değer
+   * taşırken (elle yazılmış / bayat bağlantı) ekran ilk seçeneğe düşer; URL
+   * düzeltilmezse kullanıcı `s-9` yazan bir adresi paylaşır ama karşı taraf
+   * BAŞKA bir şantiye görür. Bu yüzden çözülen şantiye URL'e geri yazılır.
+   *
+   * ⚠️ `/puantaj` İKİZİNDEN BİLEREK AYRILIYOR ve sebebi YAPISAL:
+   * `GeneralTimesheetView` `?site=`i HAM kullanır (`siteParam ?? ilk`), çünkü
+   * ortak gövdesine yalnız `siteId` geçer. Günlük kayıt ekranı AYRICA
+   * `projectId` ister (`useSite` kapsamı + `base` bağlantıları) ve o yalnız
+   * seçenek listesinden gelir; ham bir değerle `base`
+   * `/projeler//santiyeler/s-9` gibi ÇİFT SLAŞLI bozuk bir yol kurardı.
+   * Yani doğrulama burada tercih değil ZORUNLULUK — hizalama da onun bedeli.
+   */
+  useEffect(() => {
+    if (selected === undefined) return; // seçenek yok — URL'e uydurma yazılmaz
+    if (siteParam === selected.siteId) return; // zaten hizalı
+    pushSite(selected.siteId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected?.siteId, siteParam]);
+
   return (
     <DiaryEntryScreen
+      /**
+       * 🔴🔴 ÇAPRAZ-ŞANTİYE VERİ BULAŞMASI BEKÇİSİ — `key` DEKORATİF DEĞİL.
+       *
+       * Şantiye kapsamlı ikizde bu sınıf YAPISAL OLARAK imkânsızdı: şantiye
+       * değişmek ROTA değişmek demekti, Next bileşeni yeniden monte ediyordu.
+       * Kök rotada şantiye bir SORGU parametresidir — bileşen monteli kalır.
+       *
+       * `DiaryEntryScreen`in tohumlama anahtarı ŞANTİYE TAŞIMAZ
+       * (`seedKey = entry ? "entry:<id>:<updated_at>" : "new:<activeDate>"`)
+       * ve etkisi `if (seededRef.current === seedKey) return;` ile erken döner.
+       * Yani şantiye değişip TARİH aynı kalınca ve iki şantiyede de o gün
+       * kayıt yokken anahtar DEĞİŞMEZ → form olduğu gibi kalır: önceki
+       * şantiyenin notu, miktarları ve `sectionId`si yeni şantiyenin POST
+       * gövdesine sızar. `sectionId` başka bir şantiyenin (hatta başka bir
+       * PROJENİN) bölümüdür ve seçicide GÖRÜNMEZ — kullanıcı gönderdiği
+       * değeri göremez.
+       *
+       * `key` şantiyeye bağlandığı için React alt ağacı SÖKÜP yeniden kurar:
+       * `useState` başlatıcıları yeniden koşar, yani `activeDate` de bugüne
+       * döner. `seedKey`e `siteId` eklemek notu temizlerdi ama `activeDate`i
+       * ve diğer yerel durumu ELDE TUTARDI — bu yüzden `key` seçildi.
+       */
+      key={selected?.siteId ?? ""}
       // 🔴 Seçenekler KANONİK UUID taşır (`useSiteOptions`), slug değil — bu
       // rotada okunur bir slug'ı taşıyan bir YOL segmenti zaten yoktur, yani
       // `SiteDetailTabs`in slug koruma gerekçesi burada geçerli DEĞİLDİR.
