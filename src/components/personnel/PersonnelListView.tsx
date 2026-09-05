@@ -38,6 +38,7 @@ import { PersonnelPagination } from "./PersonnelPagination";
 import { PersonnelTable } from "./PersonnelTable";
 import { PersonnelTabsStrip } from "./PersonnelTabsStrip";
 import "./personnel-list.css";
+import { navGroupHeadingFor } from "@/components/shell/nav-config";
 import { routes } from "@/lib/routes";
 
 const QUERY_PARAM = "q";
@@ -176,7 +177,7 @@ export function PersonnelListView() {
   return (
     <div className="personel">
       {/* 60 */}
-      <p className="personel__eyebrow">Saha &amp; İK</p>
+      <p className="personel__eyebrow">{navGroupHeadingFor(routes.personnel.list())}</p>
       {/* 61-67 */}
       <div className="personel__head">
         <h1 className="personel__title">İnsan Kaynakları</h1>

@@ -99,7 +99,11 @@ describe("PersonnelListView — başlık, sekmeler, KPI", () => {
   it("mockup başlığı basılır, kabuk YENİDEN çizilmez", () => {
     render(<PersonnelListView />);
     expect(screen.getByRole("heading", { name: "İnsan Kaynakları" })).toBeInTheDocument();
-    expect(screen.getByText("Saha & İK")).toBeInTheDocument();
+    // 🔴 F-NAVSAHA · üst-etiket kabuk nav'ının GRUP BAŞLIĞIDIR. Grup ikiye
+    // ayrılınca (kullanıcı kararı 2026-09-05) burası `Saha & İK` kalsaydı sol
+    // menü `İK` derken sayfa `Saha & İK` derdi — görsel kapı bunu YAKALAYAMAZ
+    // (etiket zaten öyleydi, içerik baytı değişmezdi).
+    expect(screen.getByText("İK")).toBeInTheDocument();
     expect(screen.queryByText("Gösterge Paneli")).not.toBeInTheDocument();
   });
 

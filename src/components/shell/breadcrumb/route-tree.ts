@@ -309,6 +309,14 @@ export const ROUTE_TRAIL_ROOT: TrailNode = {
 
     "onay-kutusu": { label: "Onay Kutusu", href: () => routes.approvalInbox() },
 
+    // F-NAVSAHA · `/gunluk-kayit` bu dilimde GERÇEK bir `page.tsx` oldu (kabuk
+    // nav'ındaki `Saha › Günlük Kayıt`). Düğüm ZORUNLUDUR: "her `page.tsx`
+    // ağaçta" bekçisi (`trail.test.ts`) yeni klasörü görür ve karşılığı yoksa
+    // kırmızı verir. Etiket kabuk nav'ıyla BİREBİR aynıdır ("Günlük Kayıt");
+    // şantiye altındaki ikizinin kırıntısı `PROJECT_NODE` dalındadır ve orada
+    // ŞANTİYENİN altında yaşar — bu kök düğüm onun yerini ALMAZ.
+    "gunluk-kayit": { label: "Günlük Kayıt", href: () => routes.siteDiary() },
+
     // F-RAPOR · `/raporlar` bu dilimde GERÇEK bir `page.tsx` oldu. Düğüm
     // ZORUNLUDUR: "her `page.tsx` ağaçta" bekçisi (`trail.test.ts`) yeni
     // klasörü görür ve karşılığı yoksa kırmızı verir. Etiket kabuk nav'ıyla

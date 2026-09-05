@@ -20,12 +20,20 @@ afterEach(() => {
 });
 
 describe("Sidebar", () => {
-  it("dort grup basligini ve nav ogelerini gosterir", () => {
+  // 🔴 F-NAVSAHA · KULLANICI KARARI 2026-09-05 — `Saha & İK` başlığı İKİYE
+  // ayrıldı (`Saha` + `İK`). Beklenti GEVŞETİLMEDİ: eskiden iki başlık
+  // aranıyordu, şimdi BEŞİNİN HEPSİ DOM'da aranır, yani bir grup sessizce
+  // düşerse test kırmızıya döner.
+  it("bes grup basligini ve nav ogelerini gosterir", () => {
     render(<Sidebar />);
-    expect(screen.getByText("Genel")).toBeInTheDocument();
-    expect(screen.getByText("Saha & İK")).toBeInTheDocument();
+    for (const heading of ["Genel", "Saha", "İK", "Stok & Satınalma", "Sözleşme & Mali"]) {
+      expect(screen.getByText(heading), `"${heading}" grup başlığı`).toBeInTheDocument();
+    }
+    // Ayrılan grupların öğeleri DOM'da gerçekten duruyor mu.
     expect(screen.getByRole("link", { name: /Gösterge Paneli/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Projeler/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Günlük Kayıt/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Personel/ })).toBeInTheDocument();
   });
 
   it("aktif rotayi vurgular (aria-current)", () => {

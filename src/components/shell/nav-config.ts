@@ -4,6 +4,7 @@ import {
   BarChartIcon,
   BuildingIcon,
   CalendarCheckIcon,
+  CalendarIcon,
   UserIcon,
   TruckIcon,
   BoxIcon,
@@ -27,8 +28,9 @@ export type NavItem = {
 };
 export type NavGroup = { heading: string; items: NavItem[] };
 
-// Kabuk sol menusu — canon: Ekran 1 (4 duz grup). Cogu modul henuz yok;
-// yapilmamis rotalar [...slug] catch-all ile ComingSoon'a duser.
+// Kabuk sol menusu — canon: Ekran 1, BES duz grup (F-NAVSAHA'ya kadar DORTtu;
+// `Saha & İK` kullanici karariyla `Saha` + `İK` olarak ikiye ayrildi).
+// Yapilmamis rotalar [...slug] catch-all ile ComingSoon'a duser.
 export const NAV_GROUPS: NavGroup[] = [
   {
     heading: "Genel",
@@ -45,13 +47,41 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Projeler", href: routes.projects.list(), Icon: BuildingIcon },
     ],
   },
+  // 🔴 F-NAVSAHA · KULLANICI KARARI 2026-09-05 (tartışılmaz): tek `Saha & İK`
+  // grubu İKİYE ayrıldı — *"ik ve saha kısmını ayır; ik'da sadece personel
+  // olsun, saha kısmında da puantaj, makine ekipman ve günlük kayıt olacak"*.
+  //
+  // Bu bir SAPMADIR ve ölçüldü: mockup'ların sol menüsü `Saha & İK`ı TEK grup
+  // çizer ve `Günlük Kayıt`ı sol menüde HİÇ çizmez (`Ekran 7 - Şantiye
+  // Günlüğü Girişi.dc.html` 30-60 · `Şantiye - Günlük Kayıt.dc.html`: ikisinde
+  // de `Saha & İK` → Puantaj · Personel · Makine & Ekipman). Kullanıcı kararı
+  // mockup'ı EZER; gerekçe burada durur ki bir sonraki tur bunu "mockup'tan
+  // sapma kusuru" sanıp geri almasın.
+  //
+  // Grup SIRASI: `Saha` bugünkü `Saha & İK`ın yerini alır, `İK` hemen ardına
+  // girer — öğe sırası kullanıcının saydığı sıradır.
   {
-    heading: "Saha & İK",
+    heading: "Saha",
     items: [
       { label: "Puantaj", href: routes.timesheet(), Icon: CalendarCheckIcon },
-      { label: "Personel", href: routes.personnel.list(), Icon: UserIcon },
       { label: "Makine & Ekipman", href: routes.equipment.list(), Icon: TruckIcon },
+      // Rota GERÇEKTİR (`/gunluk-kayit`), ComingSoon DEĞİL — bu dilimde
+      // yazıldı. Ekran daha önce YALNIZ şantiye altında yaşıyordu
+      // (`.../santiyeler/[siteId]/gunluk-kayit`); kök ikizi `/puantaj` ↔
+      // `Şantiye › Puantaj` çiftinin aynı deseniyle açıldı.
+      //
+      // Simge `CalendarIcon`: settedeki 33 glif ölçüldü, `ClipboardIcon` diye
+      // bir glif YOK (yeni glif İCAT EDİLMEDİ). `CalendarIcon` kabuk nav'ında
+      // HİÇ kullanılmıyordu, yani tekrara gerek kalmadı; kardeşi
+      // `CalendarCheckIcon` Puantaj'ındır ve ikisi aynı grupta tutarlı okunur:
+      // Puantaj = günün TEYİDİ (takvim + tik), Günlük Kayıt = günün KAYDI
+      // (takvim). Ekran zaten gün eksenlidir (`derive.ts · isoDate`).
+      { label: "Günlük Kayıt", href: routes.siteDiary(), Icon: CalendarIcon },
     ],
+  },
+  {
+    heading: "İK",
+    items: [{ label: "Personel", href: routes.personnel.list(), Icon: UserIcon }],
   },
   {
     heading: "Stok & Satınalma",
@@ -131,6 +161,24 @@ export function activeNavHref(pathname: string): string | undefined {
     }
   }
   return best;
+}
+
+/**
+ * 🔴 F-NAVSAHA · ÜST-ETİKET (eyebrow) NAV'DAN TÜRER, KOPYALANMAZ.
+ *
+ * Canon `ReportsCatalogView`de yazılıydı: *"Metin KOPYALANMAZ, nav'dan TÜRER:
+ * grup yeniden adlandırılırsa bu satır kendiliğinden ona uyar."* Ama dört ekran
+ * onu ELLE yazıyordu (`Saha &amp; İK`) ve grup ikiye ayrılınca sol menü `İK`
+ * derken Personel sayfası hâlâ `Saha & İK` dedi.
+ *
+ * Bu kusuru GÖRSEL KAPI YAKALAYAMAZ: etiket zaten öyle yazıyordu, yani içerik
+ * baytı değişmiyordu. Yakalayan tek şey türetmenin KENDİSİdir — bu yardımcı
+ * çağrıldığı sürece grup adı/üyeliği değişince etiket kendiliğinden düzelir.
+ *
+ * Ekranın nav href'ini verir, o href'i taşıyan grubun başlığını alır.
+ */
+export function navGroupHeadingFor(href: string): string | undefined {
+  return NAV_GROUPS.find((group) => group.items.some((item) => item.href === href))?.heading;
 }
 
 // Slug'dan modul adi: once nav'da ara, yoksa baslik-case fallback.

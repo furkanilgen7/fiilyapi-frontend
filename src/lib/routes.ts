@@ -319,6 +319,22 @@ export const routes = {
 
   timesheet: () => "/puantaj",
 
+  /**
+   * F-NAVSAHA · "Günlük Kayıt"ın KÖK rotası — kabuk sol menüsündeki `Saha`
+   * grubunun üçüncü öğesi. Şantiye kapsamlı ikizi `projects.sites.diary`dir
+   * (`.../santiyeler/[siteId]/gunluk-kayit`); ikisi AYNI ekranı basar, fark
+   * şantiyenin NEREDEN geldiğidir (kökte seçici + `?site=`, şantiye altında
+   * rotadan sabit) — `timesheet()` ↔ `projects.sites.timesheet()` ikizliğinin
+   * birebir aynısı.
+   *
+   * Seçili şantiye `?site=` ile taşınır (`timesheet` ile AYNI anahtar: iki
+   * ekran aynı kavramı aynı adla taşır); değeri URL'de yaşadığı için bağlantı
+   * paylaşılabilirdir. Parametre üreticiye alınMADI — `GeneralTimesheetView`
+   * emsalinde olduğu gibi seçici `usePathname()` üzerine yazar, yani kök yol
+   * elle kurulmaz (URL-1).
+   */
+  siteDiary: () => "/gunluk-kayit",
+
   purchasing: {
     root: () => "/satinalma",
     orders: () => "/satinalma/siparisler",

@@ -25,6 +25,7 @@ import { EquipmentCard } from "./EquipmentCard";
 import { EquipmentKpiStrip } from "./EquipmentKpiStrip";
 import { EquipmentTabsStrip } from "./EquipmentTabsStrip";
 import "./equipment.css";
+import { navGroupHeadingFor } from "@/components/shell/nav-config";
 import { routes } from "@/lib/routes";
 
 /** İzin matrisi anahtarı — MK-1 backend spec: 21. izin modülü `equipment`. */
@@ -84,7 +85,7 @@ export function EquipmentView() {
   return (
     <div className="makine">
       {/* 59 */}
-      <p className="makine__eyebrow">Saha &amp; İK</p>
+      <p className="makine__eyebrow">{navGroupHeadingFor(routes.equipment.list())}</p>
       {/* 60-63 */}
       <div className="makine__head">
         <h1 className="makine__title">Makine &amp; Ekipman</h1>
