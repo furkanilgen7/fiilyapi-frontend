@@ -3,14 +3,43 @@ import { activeNavHref, NAV_GROUPS, moduleNameForSlug } from "./nav-config";
 import { buildRouteTree, COMING_SOON_PARENT_HREFS, resolveHrefIn } from "./route-tree.testkit";
 
 describe("NAV_GROUPS", () => {
-  it("4 grup icerir (canon)", () => {
-    expect(NAV_GROUPS).toHaveLength(4);
+  // 🔴 F-NAVSAHA · KULLANICI KARARI 2026-09-05 — `Saha & İK` İKİYE ayrıldı,
+  // grup sayısı 4 → 5. `toHaveLength` SİLİNMEDİ, yeni beklenti TAM BAŞLIK
+  // DİZİSİYLE yazıldı: sıra da iddianın parçasıdır (`Saha` eski `Saha & İK`ın
+  // yerini alır, `İK` hemen ardına girer).
+  it("5 grup icerir (canon)", () => {
+    expect(NAV_GROUPS).toHaveLength(5);
     expect(NAV_GROUPS.map((g) => g.heading)).toEqual([
       "Genel",
-      "Saha & İK",
+      "Saha",
+      "İK",
       "Stok & Satınalma",
       "Sözleşme & Mali",
     ]);
+  });
+
+  // 🔴 Kullanıcının saydığı KAPSAM — grup başlıkları doğru olup öğeler yanlış
+  // yerde dursaydı yukarıdaki iddia yeşil kalırdı. `İK`nın TEK öğeli olması
+  // ("ik'da SADECE personel olsun") ve `Saha`nın üçlüsü ayrıca kilitlenir.
+  it("Saha ve İK gruplarinin ogeleri kullanicinin saydigi sirada (2026-09-05)", () => {
+    const saha = NAV_GROUPS.find((g) => g.heading === "Saha");
+    expect(saha!.items.map((i) => i.label)).toEqual([
+      "Puantaj",
+      "Makine & Ekipman",
+      "Günlük Kayıt",
+    ]);
+    const ik = NAV_GROUPS.find((g) => g.heading === "İK");
+    expect(ik!.items.map((i) => i.label)).toEqual(["Personel"]);
+  });
+
+  // 🔴 `Günlük Kayıt` bu dilimde ComingSoon'dan GERÇEK rotaya döndü. Yukarıdaki
+  // href-geçerlilik döngüsü catch-all'ı da geçerli saydığı için (yazılmamış
+  // modüller adına doğru davranış) YAZILMIŞ öğe AYRICA sınanır: `/gunluk-kayit`
+  // klasörü silinirse kullanıcı menüden tıklayıp sessizce "yakında" görmez.
+  it("'Günlük Kayıt' /gunluk-kayit statik rotasina duser (catch-all DEGIL)", () => {
+    const item = NAV_GROUPS.flatMap((g) => g.items).find((i) => i.label === "Günlük Kayıt");
+    expect(item?.href).toBe("/gunluk-kayit");
+    expect(resolveHrefIn(buildRouteTree(), item!.href, false)).toEqual({ kind: "static" });
   });
   it("her ogenin label, href ve Icon'u vardir", () => {
     for (const g of NAV_GROUPS) {

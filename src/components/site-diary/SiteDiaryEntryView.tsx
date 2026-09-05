@@ -60,26 +60,41 @@ import "@/components/site-detail/site-detail.css";
 import "./site-diary.css";
 import { routes } from "@/lib/routes";
 
-/**
- * "Kayıt Gir" ekranı — mockup `Şantiye - Günlük Kayıt.dc.html` (GK, kanonik)
- * + `Ekran 7 - Şantiye Günlüğü Girişi.dc.html` (E7, "Taslak Kaydet" ve
- * "Şantiye Şefi Notu").
- *
- * Rota `[projectId]/layout.tsx` altındadır; sayfa KENDİ LAYOUT'UNU KURMAZ
- * (kabuğun sahibi tek seviyedir — `is-kalemleri` deseni).
- *
- * GÜNDE TEK KAYIT: gün için kayıt yoksa önce `POST` ile taslak açılır; satır
- * iskeleti sunucudan gelir. `submitted` kayıt SALT-OKUNURDUR (backend PATCH/
- * PUT lines'ı yalnız `draft`ta kabul eder) — "Yeniden Aç" ile taslağa döner.
- */
-export function SiteDiaryEntryView() {
-  const pathname = usePathname();
-  // 🔴 URL-3 — rota parametreleri "slug VEYA UUID"dur; ADRES anahtarlaridir.
-  const { projectId: projectKey, siteId: siteKey } = useParams<{
-    projectId: string;
-    siteId: string;
-  }>();
+export interface DiaryEntryScreenProps {
+  /**
+   * 🔴 URL-3 — "slug VEYA UUID"; ADRES anahtarlaridir, kanonik UUID DEGIL.
+   * Sayfa yolu bunlarla kurulur (`base`), yani kanonik UUID gecirilseydi
+   * kullanicinin okunur adresi bir tikta UUID'ye geri duserdi.
+   */
+  projectKey: string;
+  siteKey: string;
+  /**
+   * Basligin USTUNDE duran serit. Santiye rotasinda `SiteDetailTabs`
+   * (GK148-155), kok rotada santiye SECICISI (E5 98 deseni) — ekranin geri
+   * kalani IKISINDE DE aynidir.
+   */
+  chrome: React.ReactNode;
+}
 
+/**
+ * ═══ IKI ROTANIN TEK ORTAK GOVDESI (F-NAVSAHA) ═══
+ *
+ * `TimesheetWeekScreen`in gunluk-kayit ikizi. Ayni ekran IKI kabukta yasar:
+ *
+ * | | `/gunluk-kayit` (E7) | `Santiye › Gunluk Kayit` (GK) |
+ * |---|---|---|
+ * | Santiye | secici (`?site=`) | rotadan sabit |
+ * | Ust serit | secici | `SiteDetailTabs` |
+ * | Kabuk | ana kabuk | drill sidebar |
+ *
+ * Fark KABUKTUR, hesap degil — bu yuzden form, kaydetme, 409 akisi, izin
+ * dallari ve sag panel turevleri BURADA TEK YERDE durur.
+ */
+export function DiaryEntryScreen({
+  projectKey,
+  siteKey,
+  chrome,
+}: DiaryEntryScreenProps) {
   const siteQuery = useSite(siteKey, { project: projectKey });
   // 🔴 SLUG -> KANONIK KIMLIK GECIS NOKTASI (bkz. `routes.ts` YOL/SORGU kurali).
   const siteId = siteQuery.data?.id ?? "";
@@ -284,8 +299,9 @@ export function SiteDiaryEntryView() {
 
   return (
     <div className="diary">
-      {/* GK148-155 — şantiye sekme barı; sıra `SiteDetailTabs` tek kaynağından. */}
-      <SiteDetailTabs projectKey={projectKey} siteKey={siteKey} activePath={pathname} />
+      {/* Kabuğa özel üst şerit — şantiye rotasında sekme barı (GK148-155),
+          kök rotada şantiye seçici. Çağıran verir. */}
+      {chrome}
 
       {/* GK158-171 — başlık + mod anahtarı + aksiyonlar */}
       <div className="diary__head">
@@ -445,5 +461,37 @@ export function SiteDiaryEntryView() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Şantiye kapsamlı "Kayıt Gir" ekranı — rota
+ * `.../santiyeler/[siteId]/gunluk-kayit`, mockup `Şantiye - Günlük
+ * Kayıt.dc.html` (GK).
+ *
+ * 🔴 F-NAVSAHA · BU BİLEŞENİN GÖRÜNEN DAVRANIŞI DEĞİŞMEDİ. Gövde
+ * `DiaryEntryScreen`e taşındı (kök `/gunluk-kayit` ikizi onu paylaşsın diye);
+ * burada yalnız ROTADAN OKUMA kaldı. Ayrım kasıtlı: `useParams` yalnız rota
+ * altında anlamlıdır — kök rotada `{}` döner. Anahtarları prop'a çevirip
+ * "yoksa useParams" gibi SESSİZ bir varsayılan bırakmak, iki kabuğun
+ * ayrıştığını gizlerdi.
+ */
+export function SiteDiaryEntryView() {
+  const pathname = usePathname();
+  // 🔴 URL-3 — rota parametreleri "slug VEYA UUID"dur; ADRES anahtarlaridir.
+  const { projectId: projectKey, siteId: siteKey } = useParams<{
+    projectId: string;
+    siteId: string;
+  }>();
+
+  return (
+    <DiaryEntryScreen
+      projectKey={projectKey}
+      siteKey={siteKey}
+      /* GK148-155 — şantiye sekme barı; sıra `SiteDetailTabs` tek kaynağından. */
+      chrome={
+        <SiteDetailTabs projectKey={projectKey} siteKey={siteKey} activePath={pathname} />
+      }
+    />
   );
 }

@@ -797,3 +797,21 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ── Kök rota şantiye seçicisi (F-NAVSAHA) ─────────────────────────────────
+   `/gunluk-kayit` ekranında `SiteDetailTabs`in YERİNDE durur (E7'de drill
+   sekme şeridi YOKTUR, E7 30-60). Ölçü şeritten devralınır: aynı
+   `margin-bottom: 20px` ile başlık şeridine olan mesafe iki rotada da
+   AYNIDIR — yoksa kök ekran şantiye ekranına göre kayardı. */
+.diary__site-picker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  width: fit-content;
+  margin-bottom: 20px;
+}
+.diary__site-picker-empty {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+}
