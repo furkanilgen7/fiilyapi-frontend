@@ -44,6 +44,16 @@ describe("ai-screen-routes", () => {
     ]);
   });
 
+  it("taseron_hakedisleri KENDI ekranina cozulur, isveren ekranina DEGIL", () => {
+    // 🔴 AI-2b'de ölçülmüş SESSİZ AYRIŞMA: backend enum'u bu üyeyi taşıyordu,
+    // bu dosya taşımıyordu → anahtar bilinmeyen dalına düşüp "rotası henüz yok"
+    // basıyordu. Rota VARDI (`src/app/(app)/hakedisler/taseron/page.tsx`).
+    const taseron = ekranYolu("taseron_hakedisleri");
+    expect(taseron).toBe("/hakedisler/taseron");
+    // Ve iki hakediş ailesi AYRI ekranlardır — tek anahtara indirilmez.
+    expect(taseron).not.toBe(ekranYolu("hakedisler"));
+  });
+
   it("TANINMAYAN anahtar TAHMIN URETMEZ", () => {
     // 🔴 Backend yeni bir üye eklerse kullanıcı ölü bir bağlantı değil,
     // sebebi yazan kapalı bir düğme görür.
