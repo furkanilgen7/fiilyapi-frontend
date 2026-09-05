@@ -114,6 +114,9 @@ export interface paths {
          *     DEĞİL: "sistem hatası" cümlesi operatörü yanlış yerde arattırır. Hata akış
          *     BAŞLAMADAN verilir; yarısı akmış bir yanıtın içine hata gömmek, istemciye
          *     "cevap geldi ama eksik" hissi verirdi.
+         *
+         *     🔴 KAPI SIRASI (AI-BAĞLAM): görünürlük → sahiplik → sağlayıcı. Üçü de akış
+         *     başlamadan koşar ve ilk ikisi **aynı** 404 gövdesini üretir.
          */
         post: operations["ai_chat_endpoint_ai_chat_post"];
         delete?: never;
@@ -1168,6 +1171,26 @@ export interface paths {
          *     Künye + baytlar TEK transaction'da yazılır; `put` patlarsa künye de yazılmaz.
          */
         post: operations["upload_document_endpoint_documents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/slot-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Slot Types Endpoint
+         * @description 18 sabit slot (3+3+6+6), `scope` ile süzülür. CRUD ucu YOK.
+         */
+        get: operations["list_slot_types_endpoint_documents_slot_types_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4984,6 +5007,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sales/documents/{link_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Satış belgesi bağını kaldır */
+        delete: operations["detach_unit_sale_document"];
+        options?: never;
+        head?: never;
+        /** Satış belgesi künyesi */
+        patch: operations["update_unit_sale_document"];
+        trace?: never;
+    };
     "/sales/installments/{installment_id}/pay": {
         parameters: {
             query?: never;
@@ -5013,6 +5054,24 @@ export interface paths {
          *     döner ve var olmayanla AYNI gövdeyi verir.
          */
         post: operations["pay_sale_installment_endpoint_sales_installments__installment_id__pay_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sales/{owner_id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Satış belgeleri */
+        get: operations["list_unit_sale_documents"];
+        put?: never;
+        /** Satış belgesi bağla */
+        post: operations["attach_unit_sale_document"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5180,6 +5239,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sections/documents/{link_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Bölüm belgesi bağını kaldır */
+        delete: operations["detach_section_document"];
+        options?: never;
+        head?: never;
+        /** Bölüm belgesi künyesi */
+        patch: operations["update_section_document"];
+        trace?: never;
+    };
+    "/sections/{owner_id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bölüm belgeleri */
+        get: operations["list_section_documents"];
+        put?: never;
+        /** Bölüm belgesi bağla */
+        post: operations["attach_section_document"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sections/{section_id}": {
         parameters: {
             query?: never;
@@ -5201,7 +5296,18 @@ export interface paths {
         post?: never;
         /**
          * Delete Section Endpoint
-         * @description Spec §7.1. Bolum silme KOSULSUZDUR: `sections.id`'yi hedefleyen FK yok.
+         * @description Spec §7.1. 🔴 **BU CUMLE BAYATTI VE DUZELTILDI (BC-3, 2026-09-05).**
+         *
+         *     Eski metin *"`sections.id`'yi hedefleyen FK yok"* diyordu; `deletes.py`nin
+         *     servis docstring'i bunu zaten curutmustu ama router'daki kopya duruyordu.
+         *     ÖLÇÜLDÜ (`Base.metadata` uzerinden, kelime aramasiyla DEGIL): `sections.id`yi
+         *     **ON BIR** FK hedefliyor — ikisi CASCADE (`boq_item_section_allocations`,
+         *     `section_milestones` ve BC-3'un `section_documents`i), kalani SET NULL
+         *     (`personnel`, `purchase_requests`, `sections.depends_on_section_id`,
+         *     `site_diary_entries`, `site_plan_rows`, `stock_entry_lines`,
+         *     `subcontractor_progress_payments`, `timesheet_entries`).
+         *     Silme yine de kosulsuzdur cunku hicbiri RESTRICT DEGIL; kosulsuzlugun
+         *     gerekcesi "FK yok" DEGIL, "engelleyen FK yok"tur.
          *
          *     Kapi `_ADMIN`'dir — bolum santiyenin ic kirilimi oldugu icin `sites`
          *     modulunun seviyeleri kullanilir, AYRI izin modulu acilmaz.
@@ -5925,6 +6031,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/subcontractor-contracts/documents/{link_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Taşeron sözleşmesi belgesi bağını kaldır */
+        delete: operations["detach_subcontractor_contract_document"];
+        options?: never;
+        head?: never;
+        /** Taşeron sözleşmesi belgesi künyesi */
+        patch: operations["update_subcontractor_contract_document"];
+        trace?: never;
+    };
     "/subcontractor-contracts/items/{item_id}": {
         parameters: {
             query?: never;
@@ -6061,6 +6185,24 @@ export interface paths {
         get: operations["subcontractor_diary_suggestion_endpoint_subcontractor_contracts__contract_id__progress_payments_diary_suggestion_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/subcontractor-contracts/{owner_id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Taşeron sözleşmesi belgeleri */
+        get: operations["list_subcontractor_contract_documents"];
+        put?: never;
+        /** Taşeron sözleşmesi belgesi bağla */
+        post: operations["attach_subcontractor_contract_document"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6564,6 +6706,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/units/documents/{link_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Ünite belgesi bağını kaldır */
+        delete: operations["detach_unit_document"];
+        options?: never;
+        head?: never;
+        /** Ünite belgesi künyesi */
+        patch: operations["update_unit_document"];
+        trace?: never;
+    };
+    "/units/{owner_id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ünite belgeleri */
+        get: operations["list_unit_documents"];
+        put?: never;
+        /** Ünite belgesi bağla */
+        post: operations["attach_unit_document"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/units/{unit_id}": {
         parameters: {
             query?: never;
@@ -6960,12 +7138,25 @@ export interface components {
          *     🔴 `model` / `provider` / `temperature` alanları YOKTUR: sağlayıcı ve model
          *     **sunucu** yapılandırmasıdır. İstemcinin model seçebilmesi, maliyeti ve veri
          *     işleyicisini istemciye devretmek olurdu.
+         *
+         *     🔴 `project_id` / `site_id` AI-BAĞLAM'da AÇILDI — **ikisi de İSTEĞE
+         *     BAĞLIDIR** (additive, kırıcı değil). Ekranın sağ üstündeki "Sohbet Bağlamı"
+         *     paneli bu iki alanla gerçek olur: seçilen kapsam modele bir bağlam bloğu
+         *     olarak gider ve araçlara **varsayılan kapsam** olur. Görünmeyen bir kimlik
+         *     verilirse **404** döner — `conversation_id` ile birebir aynı duruş (S14).
+         *
+         *     🔴 Bağlam **saklanmaz**: her mesajla gövdede taşınır (v1 sınırı,
+         *     `context.py` modül notu). Takip dilimi AI-BAĞLAM-2.
          */
         AiChatRequest: {
             /** Conversation Id */
             conversation_id?: string | null;
             /** Mesaj */
             mesaj: string;
+            /** Project Id */
+            project_id?: string | null;
+            /** Site Id */
+            site_id?: string | null;
         };
         /**
          * AiContextResponse
@@ -9141,6 +9332,151 @@ export interface components {
             name: string;
             /** Tax Number */
             tax_number: string | null;
+        };
+        /**
+         * EntityDocumentLinkCreate
+         * @description `POST /<sahip>/{owner_id}/documents` gövdesi — İKİ ADIMLI akışın 2. adımı.
+         *
+         *     Dosya ÖNCE `POST /documents`a yüklenir (`project_id` orada zorunlu), dönen
+         *     künye kimliği burada `document_id` olarak bağlanır (`LeaveRequestFormModal`
+         *     emsali; taslak/staging tablosu AÇILMAZ). `document_id` bu uçta ZORUNLUDUR:
+         *     ucun adı "bağla"dır — dosyasız slot satırı yalnız arşiv kaydı sonradan
+         *     silinince (SET NULL) oluşur, elle açılmaz.
+         *
+         *     `project_id`/`site_id` GÖVDEDE YOKTUR: sahipten türetilir; gövdeden alınsaydı
+         *     görünürlük süzgeci bağ üzerinden delinirdi.
+         */
+        EntityDocumentLinkCreate: {
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /** Issued At */
+            issued_at?: string | null;
+            /** Note */
+            note?: string | null;
+            /**
+             * Type Id
+             * Format: uuid
+             */
+            type_id: string;
+            /** Valid Until */
+            valid_until?: string | null;
+        };
+        /**
+         * EntityDocumentLinkListResponse
+         * @description Düz liste, slot sırasıyla (`sort_order`, sonra `created_at`). Boş slotlar
+         *     LİSTEDE DEĞİLDİR — katalog `GET /documents/slot-types`tan çizilir.
+         */
+        EntityDocumentLinkListResponse: {
+            /** Items */
+            items: components["schemas"]["EntityDocumentLinkRead"][];
+        };
+        /**
+         * EntityDocumentLinkRead
+         * @description Bağ satırı + slot künyesi + (varsa) arşiv künyesi.
+         *
+         *     `document` NULL ise arşiv kaydı silinmiş demektir (SET NULL); satır bir
+         *     "belge vardı" kaydı olarak kalır ve ekran onu "dosya yok" rozetiyle basar.
+         */
+        EntityDocumentLinkRead: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            document: components["schemas"]["DocumentRead"] | null;
+            /** Document Id */
+            document_id: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Required */
+            is_required: boolean;
+            /** Issued At */
+            issued_at: string | null;
+            /** Note */
+            note: string | null;
+            /**
+             * Owner Id
+             * Format: uuid
+             */
+            owner_id: string;
+            scope: components["schemas"]["EntityDocumentScope"];
+            /** Type Code */
+            type_code: string;
+            /**
+             * Type Id
+             * Format: uuid
+             */
+            type_id: string;
+            /** Type Name */
+            type_name: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Valid Until */
+            valid_until: string | null;
+        };
+        /**
+         * EntityDocumentLinkUpdate
+         * @description `PATCH /<sahip>/documents/{link_id}` — KAPSAM DAR: üç künye alanı.
+         *
+         *     `type_id` ve `document_id` bu uçtan DEĞİŞTİRİLEMEZ; yanlış slot ya da yanlış
+         *     dosya bağı silinip yeniden bağlanır (`EquipmentDocumentUpdate` emsali).
+         *     Gövdeye gönderilse bile Pydantic yok sayar.
+         *
+         *     `exclude_unset`: gönderilmeyen alana DOKUNULMAZ, açıkça `null` gönderilen
+         *     alan TEMİZLENİR (`DocumentUpdate` deseni).
+         */
+        EntityDocumentLinkUpdate: {
+            /** Issued At */
+            issued_at?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Valid Until */
+            valid_until?: string | null;
+        };
+        /**
+         * EntityDocumentScope
+         * @description Slot kataloğunun bölmesi = bağ tablosunun sahibi (BC-3 emri §2, ölçülmüş).
+         *
+         *     `project_contract` (işveren sözleşmesi) BİLEREK YOKTUR: `Ekran 14` bir
+         *     "Belgeler" sekmesi çizer ama slot listesi çizilmemiştir; ölçülemeyen slot
+         *     uydurulmaz. Geldiğinde additive bir üye + bir bağ tablosuyla eklenir
+         *     (enum genişletmesi tip TAKASIYLA yapılır, `UnitKind` notu).
+         * @enum {string}
+         */
+        EntityDocumentScope: "section" | "unit" | "unit_sale" | "subcontractor_contract";
+        /** EntityDocumentTypeListResponse */
+        EntityDocumentTypeListResponse: {
+            /** Items */
+            items: components["schemas"]["EntityDocumentTypeRead"][];
+        };
+        /**
+         * EntityDocumentTypeRead
+         * @description `GET /documents/slot-types` satırı — sabit slot (CRUD ucu YOK).
+         */
+        EntityDocumentTypeRead: {
+            /** Code */
+            code: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Required */
+            is_required: boolean;
+            /** Name */
+            name: string;
+            scope: components["schemas"]["EntityDocumentScope"];
+            /** Sort Order */
+            sort_order: number;
         };
         /**
          * EquipmentCategory
@@ -23496,6 +23832,51 @@ export interface operations {
             };
         };
     };
+    list_slot_types_endpoint_documents_slot_types_get: {
+        parameters: {
+            query?: {
+                scope?: components["schemas"]["EntityDocumentScope"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityDocumentTypeListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     delete_document_endpoint_documents__document_id__delete: {
         parameters: {
             query?: never;
@@ -32563,6 +32944,98 @@ export interface operations {
             };
         };
     };
+    detach_unit_sale_document: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Belge bağı bulunamadı (görünmeyen kaydın bağı dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_unit_sale_document: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityDocumentLinkUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityDocumentLinkRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Belge bağı bulunamadı (görünmeyen kaydın bağı dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     pay_sale_installment_endpoint_sales_installments__installment_id__pay_post: {
         parameters: {
             query?: never;
@@ -32609,6 +33082,98 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    list_unit_sale_documents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                owner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityDocumentLinkListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı (görünmeyen dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attach_unit_sale_document: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                owner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityDocumentLinkCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityDocumentLinkRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı (görünmeyen dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Slot bu kayıt için geçersiz ya da belge bu projede değil */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -33024,6 +33589,190 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    detach_section_document: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Belge bağı bulunamadı (görünmeyen kaydın bağı dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_section_document: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityDocumentLinkUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityDocumentLinkRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Belge bağı bulunamadı (görünmeyen kaydın bağı dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_section_documents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                owner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityDocumentLinkListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı (görünmeyen dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attach_section_document: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                owner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityDocumentLinkCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityDocumentLinkRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı (görünmeyen dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Slot bu kayıt için geçersiz ya da belge bu projede değil */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -34893,6 +35642,98 @@ export interface operations {
             };
         };
     };
+    detach_subcontractor_contract_document: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Belge bağı bulunamadı (görünmeyen kaydın bağı dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_subcontractor_contract_document: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityDocumentLinkUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityDocumentLinkRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Belge bağı bulunamadı (görünmeyen kaydın bağı dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     delete_subcontract_item_endpoint_subcontractor_contracts_items__item_id__delete: {
         parameters: {
             query?: never;
@@ -35310,6 +36151,98 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    list_subcontractor_contract_documents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                owner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityDocumentLinkListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı (görünmeyen dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attach_subcontractor_contract_document: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                owner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityDocumentLinkCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityDocumentLinkRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı (görünmeyen dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Slot bu kayıt için geçersiz ya da belge bu projede değil */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -36436,6 +37369,190 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    detach_unit_document: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Belge bağı bulunamadı (görünmeyen kaydın bağı dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_unit_document: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityDocumentLinkUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityDocumentLinkRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Belge bağı bulunamadı (görünmeyen kaydın bağı dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_unit_documents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                owner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityDocumentLinkListResponse"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı (görünmeyen dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attach_unit_document: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                owner_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityDocumentLinkCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityDocumentLinkRead"];
+                };
+            };
+            /** @description Yetkisiz işlem */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Kayıt bulunamadı (görünmeyen dahil) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Slot bu kayıt için geçersiz ya da belge bu projede değil */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
