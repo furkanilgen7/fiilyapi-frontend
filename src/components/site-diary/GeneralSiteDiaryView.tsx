@@ -31,6 +31,16 @@ import "./site-diary.css";
  * DURUM URL'DE (`?site=`) — `GeneralTimesheetView` ile AYNI anahtar; bağlantı
  * paylaşılabilir olsun. Yol elle KURULMAZ (URL-1): `usePathname()` üzerine
  * yalnız sorgu yazılır.
+ *
+ * ⚠️ MOCKUP'IN CEVAPLAMADIĞI TEK NOKTA — MOD ANAHTARI. Ortak gövdedeki
+ * `DiaryModeSwitch` (GK164-168) üç görünüm taşır. Aktif olan ("Kayıt Gir")
+ * zaten BAĞLANTI DEĞİLDİR (`DiaryModeSwitch`: aktif öğe `<span>`), yani kök
+ * rotada kullanıcıyı bir yere savurmaz. Diğer ikisi ("Planlama" ·
+ * "Hakediş Özeti") SEÇİLİ ŞANTİYENİN şantiye kapsamlı rotalarına gider —
+ * o iki ekranın kök ikizi YOKTUR ve bu dilimde YAZILMADI. Davranış kasıtlı
+ * ve tutarlıdır (şantiyeni seç → o şantiyenin planlamasına in), ama
+ * mockup'tan gelmez: E7 mod anahtarını HİÇ çizmez. Kök ikizleri istenirse
+ * AYRI bir dilimdir.
  */
 export function GeneralSiteDiaryView() {
   const pathname = usePathname();
