@@ -342,3 +342,46 @@ describe("alt sınır TÜREVDİR", () => {
     expect(rows.length).toBeGreaterThan(3);
   });
 });
+
+/**
+ * 🔴 KUSUR `decimal-normalize-sessiz-kayip`: ekranın ÖZEL `normalize()`si
+ * `replace(",", ".")` ile YALNIZ İLK virgülü çeviriyor ve hiçbir doğrulama
+ * kapısı yok → çift ayraçlı string doğrudan `sumDecimalStrings`e giriyordu.
+ * İki ölçülmüş sonuç: (a) "1.234,56" → toplam sütununda SESSİZ yanlış sayı,
+ * (b) "1,2," → `BigInt("12,0")` RENDER SIRASINDA fırlatıyor (hata sınırı yok,
+ * tüm ekran kaybediliyor).
+ */
+describe("geçersiz ondalık girdi — toplam sütunu", () => {
+  function totalCellOf(employeeLabel: string): HTMLElement {
+    const row = screen.getByLabelText(employeeLabel).closest("tr");
+    const cell = row?.querySelector<HTMLElement>(".bro-td--total");
+    if (!cell) throw new Error(`toplam hücresi bulunamadı: ${employeeLabel}`);
+    return cell;
+  }
+
+  it("TR binlik ayraçlı girdide SESSİZ yanlış sayı basmaz, '—' basar", async () => {
+    render(<PayrollRatesScreen />);
+    const employee = screen.getByLabelText("SGK Primi işçi payı");
+    await userEvent.clear(employee);
+    await userEvent.type(employee, "1.234,56");
+    expect(employee).toHaveValue("1.234,56");
+    expect(totalCellOf("SGK Primi işçi payı")).toHaveTextContent("—");
+  });
+
+  it("ikinci virgül ekranı ÇÖKERTMEZ", async () => {
+    render(<PayrollRatesScreen />);
+    const employee = screen.getByLabelText("İşsizlik Sigortası işçi payı");
+    await userEvent.clear(employee);
+    await userEvent.type(employee, "1,2,");
+    expect(employee).toHaveValue("1,2,");
+    expect(totalCellOf("İşsizlik Sigortası işçi payı")).toHaveTextContent("—");
+  });
+
+  it("geçerli TR virgüllü girdi ÇALIŞMAYA DEVAM eder", async () => {
+    render(<PayrollRatesScreen />);
+    const employee = screen.getByLabelText("SGK Primi işçi payı");
+    await userEvent.clear(employee);
+    await userEvent.type(employee, "14,5");
+    expect(totalCellOf("SGK Primi işçi payı")).toHaveTextContent("35,00");
+  });
+});

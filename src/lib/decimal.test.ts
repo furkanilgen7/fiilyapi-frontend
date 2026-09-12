@@ -4,6 +4,7 @@ import {
   divideDecimalStrings,
   isZeroDecimalString,
   multiplyDecimalStrings,
+  normalizeDecimalInput,
   parseCountInput,
   subtractDecimalStrings,
   sumDecimalStrings,
@@ -194,5 +195,38 @@ describe("parseCountInput — tam sayi kutulari (BE 78/79/81/83/85 · UE 80)", (
   it("isaretli girdi okunur (sunucu sinirlarini istemci ZORLAMAZ)", () => {
     expect(parseCountInput("-2")).toBe(-2);
     expect(parseCountInput("+4")).toBe(4);
+  });
+});
+
+/**
+ * 🔴 26 modülün tükettiği kanon ayrıştırıcı BEKÇİSİZDİ (bu dosyada tek
+ * `normalizeDecimalInput` testi yoktu). `PayrollRatesScreen` artık özel
+ * kopya yerine BUNU çağırıyor: gövde gevşetilirse (satır 14'teki desen
+ * kapısı kalkarsa) çift ayraçlı string yeniden `BigInt`e kadar sızar ve
+ * ekran render sırasında fırlatır. Bu yüzden RED KÜMESİ kilitlenir.
+ */
+describe("normalizeDecimalInput — ÇİFT AYRAÇ REDDEDİLİR", () => {
+  it("TR binlik ayraçlı girdi `null` döner (kısmi çevrilmiş string SIZMAZ)", () => {
+    expect(normalizeDecimalInput("1.234,56")).toBeNull();
+    expect(normalizeDecimalInput("1.000.000,50")).toBeNull();
+  });
+
+  it("iki virgüllü / yarım girdi `null` döner", () => {
+    expect(normalizeDecimalInput("1,2,3")).toBeNull();
+    expect(normalizeDecimalInput("1,2,")).toBeNull();
+    expect(normalizeDecimalInput("")).toBeNull();
+  });
+
+  it("tek TR virgülü noktaya çevrilir (geçerli girdi çalışmaya DEVAM eder)", () => {
+    expect(normalizeDecimalInput("1234,56")).toBe("1234.56");
+    expect(normalizeDecimalInput(" 14,5 ")).toBe("14.5");
+  });
+
+  it("döndürdüğü her string `sumDecimalStrings`e GÜVENLE girer (fırlatmaz)", () => {
+    for (const raw of ["1,2", "1,", "14,5", "-3,25", "+2,5", "0,001"]) {
+      const normalized = normalizeDecimalInput(raw);
+      expect(normalized).not.toBeNull();
+      expect(() => sumDecimalStrings([normalized as string, "1"])).not.toThrow();
+    }
   });
 });

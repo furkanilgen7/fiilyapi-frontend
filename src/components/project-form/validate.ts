@@ -27,6 +27,8 @@ export const MESSAGES = {
   endBeforeStart: "Bitiş tarihi başlangıçtan önce olamaz.",
   pctOutOfRange: "Oran 0 ile 100 arasında olmalıdır.",
   negativeAmount: "Tutar negatif olamaz.",
+  /** Kardeş dilimin metni birebir (site-form/validate.ts:19) — uydurulmadı. */
+  notANumber: "Bu alan sayı olmalıdır.",
   escalationRequired: "Endeks tipi ve baz endeks değeri zorunludur.",
   siteNameRequired: "Şantiye adı zorunludur.",
   taxNumberFormat: "VKN 10 veya 11 haneli rakam olmalıdır.",
@@ -141,12 +143,32 @@ function pctError(value: string): string | undefined {
 }
 
 /**
- * Para alanı: boş geçerli, negatif hata. Sayıya çevrilemeyen giriş için §4.10'da
- * (sözleşme bedeli dışında) mesaj yok — sunucu 422'si kullanıcıya iletilir.
+ * tr-TR binlik ayraçlı tam sayı ("12.480.000" · "6.420"). `Number()` ilkini
+ * NaN, ikincisini SONLU bir sayı (6,42) yapar — ikisi de kullanıcının
+ * listelerde gördüğü biçimdir (`src/lib/format.ts` LOCALE="tr-TR"), ikisi de
+ * onun yazdığı tutar DEĞİLDİR. Baştaki basamak 0 olamaz; "0.500" gerçek bir
+ * ondalıktır ve reddedilmez.
+ */
+const TR_GROUPED_AMOUNT = /^[1-9]\d{0,2}(\.\d{3})+$/;
+
+/**
+ * Para alanı: boş geçerli, sayıya çevrilemeyen veya tr-TR binlik ayraçlı giriş
+ * hata, negatif hata.
+ *
+ * 🔴 Kusur (proje-formu-tr-sayi-sessiz-sifir): bu kapı eskiden YALNIZ negatifi
+ * yakalıyordu. `form-state.ts` `numberOrZero()` çevrilemeyen bütçe kalemini
+ * SESSİZCE `0` yapar, sunucu `0`'ı geçerli sayar (`ProjectBudgetInput.* ge=0`)
+ * ve bütçe `ProjectUpdate`te TAŞINMADIĞI için sıfırlanan tutar hiçbir ekrandan
+ * düzeltilemez; Maliyet/Kâr ekranı kârı o kadar yüksek gösterir. Sunucu için
+ * `0` geçerli bir değer olduğundan tek doğru kapı İSTEMCİDEDİR.
  */
 function moneyError(value: string): string | undefined {
-  const parsed = numberOrNull(value);
-  if (parsed !== null && parsed < 0) return MESSAGES.negativeAmount;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  if (TR_GROUPED_AMOUNT.test(trimmed)) return MESSAGES.notANumber;
+  const parsed = numberOrNull(trimmed);
+  if (parsed === null) return MESSAGES.notANumber;
+  if (parsed < 0) return MESSAGES.negativeAmount;
   return undefined;
 }
 

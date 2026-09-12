@@ -81,10 +81,18 @@ describe("formatCompactCurrencyTight — E9:103-104", () => {
 
 describe("formatDayMonth — TB5 sınıfı UTC kayması bekçisi (E9:113)", () => {
   const originalTz = process.env.TZ;
-  // Her testten sonra geri alınır — TZ süreç genelindedir, sızarsa komşu
-  // dosyaların gün/ay testlerini sessizce bozardı.
+  // Her testten sonra geri alınır — TZ süreç genelindedir, sızarsa BU
+  // DOSYADA sonra gelen her tarih testi sessizce başka bir zemine oturur.
+  // (Ölçüldü, vitest 2.1.9 + forks/isolate: sızıntı dosya SINIRINI geçmiyor,
+  // her test dosyası taze bir process.env ile başlıyor — dosya İÇİ gerçek.)
   afterEach(() => {
-    process.env.TZ = originalTz;
+    // `process.env.TZ = undefined` Node'da değişkeni SİLMEZ, "undefined"
+    // STRING'ini yazar; süreç UTC'ye ve geçersiz bir IANA adına düşer.
+    if (originalTz === undefined) {
+      delete process.env.TZ;
+    } else {
+      process.env.TZ = originalTz;
+    }
   });
 
   it("TR saatinde 'due_date' aynen basılır", () => {
@@ -100,18 +108,36 @@ describe("formatDayMonth — TB5 sınıfı UTC kayması bekçisi (E9:113)", () =
     // Act
     const formatted = formatDayMonth("2026-07-19");
 
-    // Assert — tuzak gerçek (18), bizim biçimlendirici etkilenmiyor (19).
-    expect([18, 19]).toContain(utcParsedLocalDay);
+    // Assert — POZİTİF KONTROL: tuzak gerçekten canlı (18). `[18, 19]`
+    // kabulü, TZ ataması etkisiz kalsa da (19) yeşil geçerdi.
+    expect(utcParsedLocalDay).toBe(18);
     expect(formatted).toBe("19 Temmuz");
     expect(formatted).not.toContain("18");
   });
 
   it("UTC'nin DOĞUSUNDA (Kiritimati, +14) da gün KAYMAZ", () => {
     process.env.TZ = "Pacific/Kiritimati";
+    // POZİTİF KONTROL: +14 diliminde UTC gece yarısı ayrıştırması AYNI güne
+    // (19) düşer, yani gün numarası tuzağı kanıtlamaz — atamanın etkili
+    // olduğunu ofset kanıtlar (+14 sa = -840 dk).
+    expect(new Date("2026-07-19").getTimezoneOffset()).toBe(-840);
     expect(formatDayMonth("2026-07-19")).toBe("19 Temmuz");
     // Ay sınırı: ayın ilk günü bir önceki aya düşmemeli.
     expect(formatDayMonth("2026-08-01")).toBe("1 Ağustos");
     // Yıl sınırı.
     expect(formatDayMonth("2027-01-01")).toBe("1 Ocak");
+  });
+
+  it("afterEach süreç dilimini GERÇEKTEN geri alır — TZ sızmaz", () => {
+    // 🔴 Bekçinin bekçisi: bu test yukarıdaki iki TZ testinden SONRA koşar,
+    // yani `afterEach`in geri alma dalı zaten işlemiştir. `process.env.TZ`e
+    // `undefined` ATAMAK Node'da değişkeni silmez, "undefined" STRING'ini
+    // yazar; süreç UTC'ye ve geçersiz bir IANA adına düşer, sonraki her tarih
+    // testi sessizce başka bir zemine oturur (satır 84-85'in önlemeyi vaat
+    // ettiği sızıntı).
+    expect(process.env.TZ).toBe(originalTz);
+    expect(Intl.DateTimeFormat().resolvedOptions().timeZone).not.toBe(
+      "undefined",
+    );
   });
 });
