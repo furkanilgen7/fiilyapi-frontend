@@ -445,4 +445,15 @@ describe("StockEntryForm — yetki", () => {
 
     expect(screen.queryByTestId("stok-giris-body")).toBeNull();
   });
+
+  // 🔴 Bu dosya `useModulePermission`ı TAMAMEN taklit ettiği için kapının
+  // AÇILIP KAPANDIĞINI görür ama DOĞRU MODÜLE bakıp bakmadığını göremez —
+  // yanlış anahtar bilinmezlik kuralına düşer ve kapı hiç kapanmaz. Sunucunun
+  // anahtarı `inventory`dir (`backend/app/modules/inventory/service.py` ·
+  // `PERMISSION_MODULE`), `stock` diye bir modül backend'de YOK.
+  it("izin kapısı sunucunun modül anahtarını (`inventory`) sorar", () => {
+    render(<StockEntryForm />);
+
+    expect(vi.mocked(useModulePermission)).toHaveBeenCalledWith("inventory");
+  });
 });

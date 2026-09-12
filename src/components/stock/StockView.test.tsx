@@ -88,11 +88,18 @@ function queryStub(data: unknown, extra: Partial<{ isLoading: boolean; isError: 
   } as unknown as ReturnType<typeof useStockSummary>;
 }
 
+// 🔴 İZİN ANAHTARI FİKSTÜRDE UYDURULMAZ. `/auth/me` sözlüğü MODÜL ANAHTARIYLA
+// kurulur (`backend/app/modules/auth/router.py` · `{module.key: access_level}`)
+// ve stok modülünün anahtarı `inventory`dir
+// (`backend/app/modules/inventory/service.py` · `PERMISSION_MODULE = "inventory"`;
+// `roles/seed_data.py` MODULES listesinde `stock` HİÇ YOK). Fikstür `stock`
+// derse `useModulePermission` seviyeyi bulamaz, BİLİNMEZLİK KURALI her rolü
+// "tam yetkili" yapar ve buradaki yetki testleri HİÇBİR ŞEY bekçilemez.
 beforeEach(() => {
   vi.clearAllMocks();
   searchParams = new URLSearchParams();
   vi.mocked(useSession).mockReturnValue({
-    me: { permissions: { stock: "full" } } as unknown as MeResponse,
+    me: { permissions: { inventory: "full" } } as unknown as MeResponse,
     isLoading: false,
   } as ReturnType<typeof useSession>);
   vi.mocked(useStockSummary).mockReturnValue(queryStub(summary()));
@@ -181,7 +188,7 @@ describe("StockView — aksiyonlar", () => {
 
   it("yazma izni yoksa iki tetikleyici de BASILMAZ (devre dışı düğme kalır)", () => {
     vi.mocked(useSession).mockReturnValue({
-      me: { permissions: { stock: "view" } } as unknown as MeResponse,
+      me: { permissions: { inventory: "view" } } as unknown as MeResponse,
       isLoading: false,
     } as ReturnType<typeof useSession>);
     render(<StockView />);
@@ -192,7 +199,7 @@ describe("StockView — aksiyonlar", () => {
 
   it("izinsiz kullanıcı erişim reddi görür", () => {
     vi.mocked(useSession).mockReturnValue({
-      me: { permissions: { stock: "none" } } as unknown as MeResponse,
+      me: { permissions: { inventory: "none" } } as unknown as MeResponse,
       isLoading: false,
     } as ReturnType<typeof useSession>);
     render(<StockView />);

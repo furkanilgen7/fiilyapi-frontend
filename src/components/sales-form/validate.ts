@@ -22,6 +22,7 @@ export const MESSAGES = {
   buyerPhoneRequired: "Telefon zorunludur.",
   salePriceRequired: "Satış bedeli zorunludur.",
   salePriceInvalid: "Satış bedeli geçerli bir sayı olmalıdır.",
+  installmentCountInvalid: "Taksit sayısı geçerli bir tam sayı olmalıdır.",
 } as const;
 
 export interface SaleFormErrors {
@@ -32,6 +33,7 @@ export interface SaleFormErrors {
   buyerNationalOrTaxId?: string;
   buyerPhone?: string;
   salePrice?: string;
+  installmentCount?: string;
 }
 
 export function validateSaleForm(values: SaleFormValues): SaleFormErrors {
@@ -59,6 +61,18 @@ export function validateSaleForm(values: SaleFormValues): SaleFormErrors {
     errors.salePrice = MESSAGES.salePriceInvalid;
   }
 
+  // Taksit sayısı isteğe bağlıdır ama DOLUYSA tam sayı olmak ZORUNDADIR: kutu
+  // `type="text"` olduğu için "12,5" / "12 ay" gibi girdi `Number(...)` ile NaN'a,
+  // gövdede `null`a düşer ve sunucu (`installment_count: int | None`) 422 DÖNMEZ —
+  // plan sessizce yalnız peşinat satırından kurulur. Kapı burada.
+  const installmentCount = values.installmentCount.trim();
+  if (installmentCount) {
+    const parsed = Number(installmentCount);
+    if (!Number.isInteger(parsed) || parsed < 0) {
+      errors.installmentCount = MESSAGES.installmentCountInvalid;
+    }
+  }
+
   return errors;
 }
 
@@ -72,6 +86,7 @@ export function firstSaleFormError(errors: SaleFormErrors): string | null {
     errors.buyerNationalOrTaxId ??
     errors.buyerPhone ??
     errors.salePrice ??
+    errors.installmentCount ??
     null
   );
 }

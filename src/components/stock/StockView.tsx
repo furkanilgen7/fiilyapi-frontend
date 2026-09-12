@@ -50,7 +50,7 @@ export function StockView() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const permission = useModulePermission("stock");
+  const permission = useModulePermission("inventory");
   const canWrite = hasAtLeast(permission.level, "full");
 
   const status = parseStockStatus(searchParams.get(STATUS_PARAM));

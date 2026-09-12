@@ -3,7 +3,7 @@ import { join, resolve } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { GET, POST } from "./route";
+import { DELETE, GET, PATCH, POST, PUT } from "./route";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/auth/constants";
 
 function req(url: string, method: string, cookies: Record<string, string>, body?: unknown): NextRequest {
@@ -1577,5 +1577,153 @@ describe("BFF /api/backend/[...path]", () => {
       const entries = [...allowList.matchAll(/^\s*"([a-z0-9-]+)",/gm)].map((m) => m[1]);
       expect(entries).toContain("financial-instruments");
     });
+  });
+});
+
+/**
+ * 🔴 ÇAPRAZ KAYNAK (CSRF) KAPISI — catch-all proxy'nin durum-değiştiren dalı.
+ *
+ * ÖLÇÜLMÜŞ İSTİSMAR: Railway'e bedava statik sayfa koyan saldırgan
+ * (`evil-production.up.railway.app`) oturumu açık bir kullanıcıya link yollar;
+ * sayfa `/api/backend/progress-payments/<id>/approve` adresine otomatik
+ * `<form method="POST">` gönderir. `up.railway.app` genel son-ek listesinde
+ * (PSL) DEĞİLDİR — iki dağıtımın kayıtlanabilir alanı da `railway.app`, yani
+ * istek SAME-SITE'tır ve `sameSite: "lax"` çerezi ALIKOYMAZ. Form POST basit
+ * istektir (preflight yok), proxy Bearer'ı kendisi ekler → hakediş ONAYLANIR,
+ * denetim günlüğüne kurbanın adı yazılır.
+ *
+ * Kapının şekli: tarayıcı GET/HEAD DIŞINDAKİ her istekte `Origin` gönderir
+ * (Fetch spec; referrer-policy yüzünden `null` olabilir ama YOK olamaz).
+ * Bu yüzden kapı "Origin VARSA host ile eşleşmek ZORUNDA" biçimindedir:
+ * tarayıcı kaynaklı her çapraz yazma reddedilir, Origin göndermeyen
+ * tarayıcı-dışı meşru çağıranlar (Playwright `page.request`, curl smoke)
+ * etkilenmez — onlar CSRF taşıyıcısı DEĞİLDİR (çerezleri yoktur).
+ * GET muaftır: yanıt çapraz kaynaktan OKUNAMAZ (CORS başlığı yok) ve
+ * same-origin GET'te bazı tarayıcılar `Origin` göndermez.
+ */
+describe("BFF catch-all — capraz kaynak (CSRF) kapisi", () => {
+  const AUTHED = { [ACCESS_COOKIE]: "acc", [REFRESH_COOKIE]: "ref" };
+
+  function originReq(
+    url: string,
+    method: string,
+    headers: Record<string, string>,
+    body?: unknown,
+  ): NextRequest {
+    const h: Record<string, string> = { host: "localhost:3000", ...headers };
+    const init: { method: string; headers: Record<string, string>; body?: string } = {
+      method,
+      headers: h,
+    };
+    if (body !== undefined) {
+      init.body = JSON.stringify(body);
+      h["content-type"] = "application/json";
+    }
+    const r = new NextRequest("http://localhost:3000" + url, init);
+    for (const [k, v] of Object.entries(AUTHED)) r.cookies.set(k, v);
+    return r;
+  }
+
+  beforeEach(() => {
+    process.env.BACKEND_URL = "http://backend:8000";
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    delete process.env.BACKEND_URL;
+  });
+
+  it("yabanci Origin'li govdesiz POST (hakedis onayi) 403 alir ve backend'e HIC istek gitmez", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = await POST(
+      originReq("/api/backend/progress-payments/pp-1/approve", "POST", {
+        origin: "https://evil-production.up.railway.app",
+      }),
+      ctx(["progress-payments", "pp-1", "approve"]),
+    );
+
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ ok: false, code: "forbidden" });
+    // 🔒 Asil iddia: yazma BACKEND'E HIC ULASMADI.
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["PUT", PUT],
+    ["PATCH", PATCH],
+    ["DELETE", DELETE],
+  ])("yabanci Origin'li %s de 403 alir, backend cagrilmaz", async (method, handler) => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = await handler(
+      originReq("/api/backend/projects/p-1", method, { origin: "https://evil-production.up.railway.app" }, { name: "kirletildi" }),
+      ctx(["projects", "p-1"]),
+    );
+
+    expect(res.status).toBe(403);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("`Origin: null` (referrer-policy ile gizlenmis capraz sayfa) da 403 alir", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = await POST(
+      originReq("/api/backend/projects", "POST", { origin: "null" }, { name: "x" }),
+      ctx(["projects"]),
+    );
+
+    expect(res.status).toBe(403);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("multipart yukleme de capraz kaynaktan 403 alir (ham govde dali bypass DEGILDIR)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const r = new NextRequest("http://localhost:3000/api/backend/documents", {
+      method: "POST",
+      body: "--b\r\nContent-Disposition: form-data; name=\"file\"\r\n\r\nx\r\n--b--\r\n",
+      headers: {
+        host: "localhost:3000",
+        origin: "https://evil-production.up.railway.app",
+        "content-type": "multipart/form-data; boundary=b",
+      },
+    });
+    for (const [k, v] of Object.entries(AUTHED)) r.cookies.set(k, v);
+
+    const res = await POST(r, ctx(["documents"]));
+    expect(res.status).toBe(403);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("KARSIT KANIT: ayni kaynakli POST kapiyi GECER, backend cagrilir", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: "p-9" }), { status: 201 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = await POST(
+      originReq("/api/backend/projects", "POST", { origin: "http://localhost:3000" }, { name: "yeni" }),
+      ctx(["projects"]),
+    );
+
+    expect(res.status).toBe(201);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("KARSIT KANIT: GET muaftir — yabanci Origin'le bile 200 doner (yanit capraz OKUNAMAZ)", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ items: [], total: 0 }), { status: 200 }),
+    ));
+
+    const res = await GET(
+      originReq("/api/backend/users", "GET", { origin: "https://evil-production.up.railway.app" }),
+      ctx(["users"]),
+    );
+
+    expect(res.status).toBe(200);
   });
 });

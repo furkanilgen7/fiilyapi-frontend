@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { proxyAuthenticated, proxyAuthenticatedRaw } from "@/lib/auth/backend";
 import { applyAuthCookies, buildAccessCookie, clearedAuthCookies } from "@/lib/auth/cookies";
 import { ACCESS_COOKIE, REFRESH_COOKIE } from "@/lib/auth/constants";
+import { assertSameOrigin } from "@/lib/auth/csrf";
 
 // Yalniz beklenen kokler forward edilir (SSRF/kesif yuzeyini daraltir).
 const ALLOWED_ROOTS = new Set([
@@ -429,6 +430,29 @@ async function handle(request: NextRequest, method: string, routeCtx: RouteCtx):
 
   if (method === "GET") {
     return handleGet(path, backendPath, query, access, refresh);
+  }
+
+  // 🔴 ÇAPRAZ KAYNAK (CSRF) KAPISI — buradan aşağısı DURUM DEĞİŞTİREN daldır.
+  // Tek savunma `sameSite: "lax"` çerezi DEĞİLDİ: `up.railway.app` genel son-ek
+  // listesinde (PSL) OLMADIĞI için başka bir Railway dağıtımı bu uygulamayla
+  // SAME-SITE'tır — çerez alıkonmaz. Çapraz `<form method="POST">` basit
+  // istektir (preflight YOK) ve Bearer'ı proxy'nin KENDİSİ ekler; yani dış bir
+  // sayfa, oturumu açık kullanıcıya link atarak gövdesiz para ucunu
+  // (`POST /progress-payments/{id}/approve`) tetikleyebiliyordu.
+  //
+  // Kapının şekli "Origin VARSA host ile eşleşmek ZORUNDA": tarayıcı GET/HEAD
+  // dışındaki HER istekte `Origin` gönderir (Fetch spec — referrer-policy
+  // yüzünden `null` olabilir, ama YOK olamaz), dolayısıyla tarayıcı kaynaklı
+  // her çapraz yazma buradan geçemez. `Origin` göndermeyen tarayıcı-DIŞI
+  // çağıranlar (Playwright `page.request`, curl smoke) CSRF taşıyıcısı
+  // değildir — CSRF, saldırganın KURBANIN TARAYICISINA istek attırmasıdır ve
+  // orada Origin daima vardır; tarayıcı dışı bir istemci zaten kendi
+  // kimliğiyle çağırır. Bu yüzden kapı onları kırmaz.
+  //
+  // GET muaf: yanıt çapraz kaynaktan OKUNAMAZ (proxy CORS başlığı basmaz) ve
+  // same-origin GET'te bazı tarayıcılar `Origin` göndermez.
+  if (request.headers.get("origin") !== null && !assertSameOrigin(request)) {
+    return NextResponse.json({ ok: false, code: "forbidden" }, { status: 403 });
   }
 
   // F-BC — multipart gövde (belge yükleme) JSON'a ÇEVRİLMEZ: `request.json()`

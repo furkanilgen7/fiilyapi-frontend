@@ -29,7 +29,9 @@ vi.mock("@/lib/api/hooks/useStockMutations", () => ({
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(useSession).mockReturnValue({
-    me: { permissions: { stock: "full" } } as unknown as MeResponse,
+    // Sunucunun stok izin anahtarı `inventory`dir (`inventory/service.py` ·
+    // `PERMISSION_MODULE`); `stock` diye bir modül backend'de YOK.
+    me: { permissions: { inventory: "full" } } as unknown as MeResponse,
     isLoading: false,
   } as ReturnType<typeof useSession>);
   vi.mocked(useStockSummary).mockReturnValue({

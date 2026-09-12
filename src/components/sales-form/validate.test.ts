@@ -62,6 +62,37 @@ describe("validateSaleForm — mockup req yıldızları", () => {
     expect(validateSaleForm(newCustomerValues({ salePrice: "1" })).salePrice).toBeUndefined();
   });
 
+  // 🔴 KUSUR (14 · satis-odeme-plani-aritmetigi): "Taksit Sayısı" kutusu `type="text"`
+  // (Input.tsx'te `type` özniteliği YOK, yalnız `inputMode="numeric"` ipucu var).
+  // Doğrulanmamış girdi build-body.ts:95'te `Number(...)` ile NaN'a, JSON'da
+  // `null`a düşüyordu; sunucu şeması `installment_count: int | None` olduğu için
+  // 422 DÖNMÜYOR — plan SESSİZCE yalnız peşinat satırından kuruluyordu.
+  it("taksit sayısı sayıya dönmüyorsa REDDEDİLİR (NaN gövdeye null olarak sızmaz)", () => {
+    for (const raw of ["12,5", "12 ay", "abc", "on iki"]) {
+      const errors = validateSaleForm(newCustomerValues({ installmentCount: raw }));
+      expect(errors.installmentCount, raw).toBeTruthy();
+      expect(errors.installmentCount, raw).toBe(MESSAGES.installmentCountInvalid);
+      expect(hasSaleFormErrors(errors), raw).toBe(true);
+      expect(firstSaleFormError(errors), raw).toBe(MESSAGES.installmentCountInvalid);
+    }
+  });
+
+  it("taksit sayısı tam sayı değilse ya da negatifse REDDEDİLİR", () => {
+    for (const raw of ["3.5", "3,5", "-2"]) {
+      const errors = validateSaleForm(newCustomerValues({ installmentCount: raw }));
+      expect(errors.installmentCount, raw).toBeTruthy();
+      expect(firstSaleFormError(errors), raw).toBe(MESSAGES.installmentCountInvalid);
+    }
+  });
+
+  it("geçerli taksit sayısı ve BOŞ alan geçer (alan isteğe bağlıdır)", () => {
+    for (const raw of ["", "0", "12", "120"]) {
+      const errors = validateSaleForm(newCustomerValues({ installmentCount: raw }));
+      expect(errors.installmentCount, raw).toBeUndefined();
+      expect(hasSaleFormErrors(errors), raw).toBe(false);
+    }
+  });
+
   it("firstSaleFormError öncelik sırasını korur", () => {
     const errors = validateSaleForm(newCustomerValues({ projectId: "", salePrice: "" }));
     expect(firstSaleFormError(errors)).toBe(MESSAGES.projectRequired);

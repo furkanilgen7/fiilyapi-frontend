@@ -207,6 +207,16 @@ export function InvoiceCreateView() {
       setFormError(built.message);
       return null;
     }
+    // 🔴 Kapı BURADA, `buildLines`ın içinde DEĞİL: orada "tamamen boş satır
+    // atlanır" semantiği korunmalı. Sunucu kalemsiz taslağı bilerek kabul
+    // ediyor (kalemler sonradan PUT /invoices/{id}/lines ile gelir, taslak
+    // silinebilir) ama frontend bu iki kaçış yolunun İKİSİNİ DE sunmuyor:
+    // kalemsiz taslak kullanılamaz bir kayıt olur ve giden fatura numara
+    // serisinden geri alınamaz bir numara tüketir.
+    if (built.lines.length === 0) {
+      setFormError("En az bir kalem gereklidir.");
+      return null;
+    }
     setFormError(null);
     return {
       // Bu ekran YALNIZ giden fatura keser (FK:52 "Yeni Fatura Kes");

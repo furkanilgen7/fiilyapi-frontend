@@ -23,6 +23,17 @@ export interface ChartAccountFilter {
   isActive?: boolean;
   limit?: number;
   offset?: number;
+  /**
+   * 🔴 `true` ⇒ katalogun TAMAMI toplanır: `limit` SAYFA BOYU olur ve `total`
+   * bitene kadar sayfa sayfa istenir. Tavan 200'dür ve aşımı 422'dir, yani
+   * "limit'i büyüt" bir çözüm DEĞİLDİR.
+   *
+   * Kimin ihtiyacı var: YAPRAK KURALI (`isLeafChartAccount`) kırpılmış kümede
+   * YANLIŞ cevap verir — çocuğu ikinci sayfada kalan bir grup yaprak sanılır.
+   * Sayfalanmış liste ekranı (`ChartOfAccountsView`) bunu istemez: orada
+   * kırpma GÖRÜNÜR bir bant + arama kutusuyla kullanıcıya söylenir.
+   */
+  allPages?: boolean;
   /** `false` ⇒ ağa çıkılmaz. */
   enabled?: boolean;
 }
@@ -46,20 +57,45 @@ export function useChartOfAccounts(
       filter.isActive ?? null,
       filter.limit ?? null,
       filter.offset ?? null,
+      filter.allPages ?? false,
     ],
-    queryFn: async () =>
-      unwrap(
-        await backendClient.GET("/chart-of-accounts", {
-          params: {
-            query: {
-              ...(filter.q ? { q: filter.q } : {}),
-              ...(filter.accountType ? { account_type: filter.accountType } : {}),
-              ...(filter.isActive !== undefined ? { is_active: filter.isActive } : {}),
-              ...(filter.limit !== undefined ? { limit: filter.limit } : {}),
-              ...(filter.offset !== undefined ? { offset: filter.offset } : {}),
-            },
-          },
-        }),
-      ),
+    queryFn: async () => {
+      // `allPages` KATALOGUN TAMAMI demektir: sayım 0'dan başlar, çağıranın
+      // `offset`i burada anlamsızdır (ikisi birlikte verilirse sayfa sayacı
+      // `total` ile tutmazdı).
+      if (filter.allPages !== true) return await fetchChartAccountPage(filter, filter.offset);
+      const first = await fetchChartAccountPage(filter, 0);
+
+      // Sayfa sayfa toplanır; her tur EN AZ bir satır eklediği için döngü
+      // `total` ile SINIRLIDIR. Boş sayfa (eşzamanlı silme) durdurucu olur,
+      // aksi hâlde `items.length < total` sonsuza kilitlenirdi.
+      const items = [...first.items];
+      while (items.length < first.total) {
+        const next = await fetchChartAccountPage(filter, items.length);
+        if (next.items.length === 0) break;
+        items.push(...next.items);
+      }
+      // Dönen pencere ARTIK katalogun tamamıdır; zarf bunu dürüstçe söyler.
+      return { ...first, items, limit: items.length, offset: 0 };
+    },
   });
+}
+
+async function fetchChartAccountPage(
+  filter: ChartAccountFilter,
+  offset: number | undefined,
+): Promise<ChartAccountListResponse> {
+  return unwrap(
+    await backendClient.GET("/chart-of-accounts", {
+      params: {
+        query: {
+          ...(filter.q ? { q: filter.q } : {}),
+          ...(filter.accountType ? { account_type: filter.accountType } : {}),
+          ...(filter.isActive !== undefined ? { is_active: filter.isActive } : {}),
+          ...(filter.limit !== undefined ? { limit: filter.limit } : {}),
+          ...(offset !== undefined ? { offset } : {}),
+        },
+      },
+    }),
+  );
 }

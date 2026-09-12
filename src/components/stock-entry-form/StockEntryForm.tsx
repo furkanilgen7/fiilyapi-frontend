@@ -85,7 +85,7 @@ export function StockEntryForm() {
     siteId: string;
   }>();
 
-  const permission = useModulePermission("stock");
+  const permission = useModulePermission("inventory");
   const siteQuery = useSite(siteKey, { project: projectKey });
   // 🔴 SLUG -> KANONIK KIMLIK. Burada AYRICA bir SESSIZ kusur kapaniyor:
   // `defaultWarehouseId(...)` asagida `warehouse.site_id` (UUID) ile

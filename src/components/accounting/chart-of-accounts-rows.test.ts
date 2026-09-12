@@ -109,13 +109,26 @@ describe("bakiye biçimi ve tonu", () => {
 // --- Sınıf bantları ------------------------------------------------------
 
 describe("SINIF bantları", () => {
-  it("mockup'ın dört bandı BİREBİR (HP:69/135/161/187)", () => {
+  it("mockup'ın üç bandı BİREBİR (HP:69/135/161)", () => {
     expect(classBandLabel("1")).toBe("SINIF 1 — DÖNEN VARLIKLAR");
     expect(classBandLabel("2")).toBe("SINIF 2 — DURAN VARLIKLAR");
     expect(classBandLabel("3")).toBe("SINIF 3 — KISA VADELİ YÜKÜMLÜLÜKLER");
-    expect(classBandLabel("5")).toBe("SINIF 5 — GELİR TABLOSU HESAPLARI");
     expect(classBandTheme("1")).toBe("1");
     expect(classBandTheme("5")).toBe("5");
+  });
+
+  /**
+   * 🔴 HP:187 KOPYALANMAZ. Mockup o bandı `SINIF 5 — GELİR TABLOSU HESAPLARI`
+   * yazıp ALTINA `600`/`730`/`760` (sınıf 6 ve 7) dizer; yani etiket bandın
+   * KENDİ satırlarıyla çelişir. Sınıf 5 TDHP'de ÖZKAYNAKLAR'dır ve canlı tohum
+   * `500 Sermaye`/`570 Geçmiş Yıllar Kârları`yı `equity` olarak basar
+   * (`chart_seed_data.py:372` yorumu da `# SINIF 5 — ÖZKAYNAKLAR` der).
+   * Şemanın K15 notu kararı zaten vermiştir: **satırlar kazanır**, bant
+   * etiketi bir sunucu alanı değildir. Aksi hâlde ekran kendini yalanlar:
+   * bant "gelir tablosu", satırın `Tür` sütunu "Özkaynak".
+   */
+  it("🔴 sınıf 5 bandı ÖZKAYNAKLAR der (mockup HP:187 kendi satırlarıyla çelişir)", () => {
+    expect(classBandLabel("5")).toBe("SINIF 5 — ÖZKAYNAKLAR");
   });
 
   it("🔴 çizilmemiş sınıfta BAŞLIK İCAT EDİLMEZ, düz `SINIF N` basılır", () => {
