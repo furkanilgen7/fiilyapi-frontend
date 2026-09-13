@@ -358,6 +358,92 @@ describe("SitePlanningView — hafta gezinme", () => {
   });
 });
 
+// KIRMIZI BEKÇİ (kusur: planlama-taslagi-kayboluyor) — `usePlanDraft` hafta
+// değişiminde kirliliği BİLEREK korumaz (usePlanDraft.ts:32-36 doğrudur,
+// başka haftanın gövdesi 422 alırdı). Korkuluk bu yüzden GÖRÜNÜM katmanında
+// olmak ZORUNDA: kirli taslakla hafta oku, onay alınmadan `router.replace`
+// çağıramaz. Onay diyalogu `window.confirm` DEĞİL (bu depoda hiç yok ve
+// Playwright tarayıcı diyaloglarını sessizce reddeder) — deponun kanonik
+// `ConfirmDialog`ı.
+describe("SitePlanningView — kirli taslakla hafta gezinme", () => {
+  const DISCARD_DIALOG = "Kaydedilmemiş değişiklikler";
+
+  /** Bir hücreye plan metni yazıp uygular; taslak KİRLİ olur. */
+  async function makeDraftDirty(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole("button", { name: "Kalıpçı (14) · Sal 4 Ağu planı" }));
+    const popover = screen.getByRole("dialog");
+    await user.type(within(popover).getByLabelText("Plan metni"), "Kat 9 Kalıp");
+    await user.click(within(popover).getByRole("button", { name: "Uygula" }));
+    expect(screen.getByRole("button", { name: "Kaydet" })).toBeEnabled();
+  }
+
+  it("kirli taslakta '›' haftayi DEGISTIRMEZ, once onay ister", async () => {
+    mockPlan();
+    render(<SitePlanningView />);
+    const user = userEvent.setup();
+    await makeDraftDirty(user);
+
+    await user.click(screen.getByRole("button", { name: "Sonraki hafta" }));
+
+    expect(replace).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: DISCARD_DIALOG })).toBeInTheDocument();
+  });
+
+  it("onay REDDEDILIRSE hafta degismez ve yazilan taslak yerinde kalir", async () => {
+    mockPlan();
+    render(<SitePlanningView />);
+    const user = userEvent.setup();
+    await makeDraftDirty(user);
+
+    await user.click(screen.getByRole("button", { name: "Önceki hafta" }));
+    await user.click(
+      within(screen.getByRole("dialog", { name: DISCARD_DIALOG })).getByRole("button", {
+        name: "Vazgeç",
+      }),
+    );
+
+    expect(replace).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog", { name: DISCARD_DIALOG })).not.toBeInTheDocument();
+    const grid = screen.getByLabelText("Haftalık plan ızgarası");
+    expect(within(grid).getAllByText("Kat 9 Kalıp")).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Kaydet" })).toBeEnabled();
+  });
+
+  it("onaylanirsa hafta URL'de kayar", async () => {
+    mockPlan();
+    render(<SitePlanningView />);
+    const user = userEvent.setup();
+    await makeDraftDirty(user);
+
+    await user.click(screen.getByRole("button", { name: "Sonraki hafta" }));
+    await user.click(
+      within(screen.getByRole("dialog", { name: DISCARD_DIALOG })).getByRole("button", {
+        name: "Değişiklikleri at",
+      }),
+    );
+
+    expect(replace).toHaveBeenCalledWith(
+      "/projeler/p-1/santiyeler/s-1/gunluk-kayit/planlama?week=2026-08-10",
+      { scroll: false },
+    );
+    expect(screen.queryByRole("dialog", { name: DISCARD_DIALOG })).not.toBeInTheDocument();
+  });
+
+  it("taslak TEMIZKEN onay HIC sorulmaz (mevcut akis bozulmaz)", async () => {
+    mockPlan();
+    render(<SitePlanningView />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Sonraki hafta" }));
+
+    expect(screen.queryByRole("dialog", { name: DISCARD_DIALOG })).not.toBeInTheDocument();
+    expect(replace).toHaveBeenCalledWith(
+      "/projeler/p-1/santiyeler/s-1/gunluk-kayit/planlama?week=2026-08-10",
+      { scroll: false },
+    );
+  });
+});
+
 describe("SitePlanningView — hedefler ve pending kart", () => {
   it("hedefler kutucuk + baslik/not + durum kontrolleriyle basilir (P205-227)", () => {
     mockPlan();

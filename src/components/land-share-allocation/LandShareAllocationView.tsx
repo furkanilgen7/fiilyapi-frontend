@@ -24,6 +24,7 @@ import { useModulePermission } from "@/lib/auth/useModulePermission";
 import {
   assignSelected,
   assignUnit,
+  clearPendingUnits,
   clearUnitSelection,
   emptyAllocationState,
   selectAllUnits,
@@ -293,7 +294,7 @@ export function LandShareAllocationView() {
    * yalnız BEKLEYEN atama üretir ve gerekçelerini görünür kılar.
    */
   function handleAutoDistribute() {
-    if (contract === null || countBalance === null) return;
+    if (contract === null || countBalance === null || valueBalance === null) return;
     const result = autoDistribute({
       rows,
       state,
@@ -302,6 +303,14 @@ export function LandShareAllocationView() {
       // 42 üniteyi 23+20=43 yapan ikinci bir hesap doğardı.
       ourExpectedCount: countBalance.our_expected_count,
       ownerExpectedCount: countBalance.owner_expected_count,
+      // 🔴 ZATEN ATANMIŞ ADET/DEĞER DE SUNUCUDAN: süzgeç (varsayılanı
+      // "Atanmayan") ve sayfalama listeyi daraltır, ÖZETİ DARALTMAZ. Sayaçlar
+      // görünen satırlardan doldurulsaydı kalan kapasite TÜM hedef sanılır ve
+      // dağıtım aşırı atama üretirdi.
+      ourAssignedCount: countBalance.our_assigned_count,
+      ownerAssignedCount: countBalance.owner_assigned_count,
+      ourAssignedValue: valueBalance.our_value,
+      ownerAssignedValue: valueBalance.owner_value,
     });
     setState(result.state);
     setAutoNotices(result.notices);
@@ -319,14 +328,15 @@ export function LandShareAllocationView() {
       return;
     }
     setFormError(null);
+    const body = buildAllocationBody(rows, state);
     try {
-      const response = await updateAllocation.mutateAsync({
-        projectId,
-        body: buildAllocationBody(rows, state),
-      });
+      const response = await updateAllocation.mutateAsync({ projectId, body });
       // 🔴 Cevap GÜNCEL TAM LİSTEDİR → tablo ondan çizilir, ikinci GET yok.
       setSaved(savedAllocationFromResponse(response));
-      setState(emptyAllocationState());
+      // 🔴 YALNIZ GÖNDERİLENLER temizlenir: gövde GÖRÜNEN satırlardan kurulur
+      // (`build-body.ts` kural 4), `pending`i büsbütün boşaltmak başka
+      // sayfadaki — HİÇ GÖNDERİLMEMİŞ — atamaları sessizce yok ederdi.
+      setState((prev) => clearPendingUnits(prev, body.items.map((item) => item.unit_id)));
       setBulkShareholderId("");
       setAutoNotices([]);
     } catch (error) {

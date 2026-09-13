@@ -1,5 +1,8 @@
 import type { BadgeVariant } from "@/components/ui/badge/Badge";
 import type { EquipmentOwnership, EquipmentStatus } from "@/lib/api/hooks/useEquipment";
+import type { components } from "@/lib/api/schema";
+
+type EquipmentRatePeriod = components["schemas"]["EquipmentRatePeriod"];
 
 /**
  * F-MK T2 · M1 (`Makine & Ekipman.dc.html`) etiket/renk sözlüğü.
@@ -39,6 +42,26 @@ export function equipmentCardTone(status: EquipmentStatus): EquipmentCardTone {
 
 /** Değer basılamıyorken (K3: `null` türev alan) ortak yer tutucu — asla "0" değil. */
 export const EQUIPMENT_EMPTY_VALUE = "—";
+
+/**
+ * M1 95-96 · kira kutusunun BAŞLIĞI `rate_period`ten TÜRER — mockup yalnız
+ * `daily` hâlini çiziyor, öteki ikisi sunucuda VARDIR (K21) ve M2 formunun
+ * varsayılanı `hourly`dir (`equipment-form/constants.ts` RATE_PERIOD_OPTIONS[0]).
+ * Sabit "Günlük Kira" basılsaydı saatlik bedelli bir ekipman kartta günlük
+ * sanılır, aynı kaydın detay ekranıyla (`equipment-detail-labels.ts`
+ * RATE_PERIOD_ROW_LABELS) ÇELİŞİRDİ.
+ *
+ * Burada ÇEVRİM/ÇARPMA YOKTUR: dönemler arası dönüşüm sunucunundur
+ * (`rental.py` DAILY_HOURS); bu yalnız enum→görünüm eşlemesidir.
+ */
+export const EQUIPMENT_RATE_PERIOD_CARD_LABELS: Record<EquipmentRatePeriod, string> = {
+  hourly: "Saatlik Kira",
+  daily: "Günlük Kira",
+  monthly: "Aylık Kira",
+};
+
+/** `rate_period` `null` ⇒ dönem İDDİA EDİLMEZ; başlık dönemsiz kalır. */
+export const EQUIPMENT_RATE_PERIOD_UNKNOWN_LABEL = "Kira Bedeli";
 
 /** K3 — `rate_amount`/`rate_period` yoksa günlük kira hücresine konan ipucu. */
 export const EQUIPMENT_RATE_UNKNOWN_HINT = "Günlük kira bedeli tanımlı değil";

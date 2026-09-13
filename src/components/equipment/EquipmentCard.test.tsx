@@ -58,6 +58,43 @@ describe("EquipmentCard — M1 88-165", () => {
     expect(screen.queryByTestId("makine-card-warning-box")).not.toBeInTheDocument();
   });
 
+  it("K3 — rate_period 'hourly' ise etiket 'Saatlik Kira' olur, 'Günlük Kira' BASILMAZ", () => {
+    // Arrange — M2 formunda kira tipi seçicisinin İLK seçeneği "Saatlik"tir
+    // (equipment-form/constants.ts RATE_PERIOD_OPTIONS[0]) ve oluşturma gövdesi
+    // bu değeri koşulsuz gönderir → `hourly` kayıt en OLASI hâldir.
+    const hourly: EquipmentResponse = { ...BASE, rate_period: "hourly", rate_amount: "500.00" };
+
+    // Act
+    render(<EquipmentCard equipment={hourly} siteLabel="Güneşkent A-Blok" operatorName="H. Çelik" />);
+
+    // Assert
+    const boxes = screen.getByTestId("makine-card-fact-boxes");
+    expect(boxes).toHaveTextContent("Saatlik Kira");
+    expect(boxes).not.toHaveTextContent("Günlük Kira");
+  });
+
+  it("K3 — rate_period 'monthly' ise etiket 'Aylık Kira' olur", () => {
+    const monthly: EquipmentResponse = { ...BASE, rate_period: "monthly" };
+
+    render(<EquipmentCard equipment={monthly} siteLabel="Güneşkent A-Blok" operatorName="H. Çelik" />);
+
+    const boxes = screen.getByTestId("makine-card-fact-boxes");
+    expect(boxes).toHaveTextContent("Aylık Kira");
+    expect(boxes).not.toHaveTextContent("Günlük Kira");
+  });
+
+  it("K3 — rate_period null ise DÖNEM İDDİA EDİLMEZ ('Kira Bedeli')", () => {
+    const unknownPeriod: EquipmentResponse = { ...BASE, rate_period: null };
+
+    render(
+      <EquipmentCard equipment={unknownPeriod} siteLabel="Güneşkent A-Blok" operatorName="H. Çelik" />,
+    );
+
+    const boxes = screen.getByTestId("makine-card-fact-boxes");
+    expect(boxes).toHaveTextContent("Kira Bedeli");
+    expect(boxes).not.toHaveTextContent("Günlük Kira");
+  });
+
   it("K12 — 'broken' durumu TEK geniş uyarı kutusu basar", () => {
     const broken: EquipmentResponse = {
       ...BASE,

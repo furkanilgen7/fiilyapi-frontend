@@ -44,3 +44,69 @@ export function useCreatePersonnelDocument(
     },
   });
 }
+
+export type PersonnelDocumentUpdate = components["schemas"]["PersonnelDocumentUpdate"];
+
+/**
+ * `PATCH /personnel/documents/{document_id}` — yanlış girilen künyeyi DÜZELTİR
+ * (`personnel:full`). Yol personelsizdir; `personnelId` YALNIZ geçersiz kılma
+ * anahtarı için alınır (`useUpdateBoqItem` deseni).
+ *
+ * ⚠️ `type_id`/`free_label` DEĞİŞMEZ (şema `PersonnelDocumentUpdate`): belgenin
+ * KİMLİĞİ sabittir, yanlış tiple açılan kayıt silinip yeniden açılır.
+ *
+ * ⚠️ İKİ liste tazelenir — `HR_DOCUMENTS_SUMMARY_QUERY_KEY` atlanırsa "süresi
+ * doldu" KPI'sı ve kritik bandı düzeltmeden sonra da eski sayıyı gösterir.
+ */
+export function useUpdatePersonnelDocument(
+  personnelId: string,
+): UseMutationResult<
+  PersonnelDocumentResponse,
+  Error,
+  { documentId: string; body: PersonnelDocumentUpdate }
+> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ documentId, body }) =>
+      unwrap(
+        await backendClient.PATCH("/personnel/documents/{document_id}", {
+          params: { path: { document_id: documentId } },
+          body,
+        }),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [PERSONNEL_DOCUMENTS_QUERY_KEY, personnelId] });
+      queryClient.invalidateQueries({ queryKey: [HR_DOCUMENTS_SUMMARY_QUERY_KEY] });
+    },
+  });
+}
+
+/**
+ * `DELETE /personnel/documents/{document_id}` — İK TAKİP KAYDINI siler
+ * (`personnel:admin`; `full` silmeyi KAPSAMAZ → çağıran taraf `canWrite` değil
+ * `canDelete` kapısını kullanmalıdır).
+ *
+ * ⚠️ Anlam: bağlı BC arşiv dosyasına DOKUNULMAZ (sunucuda SET NULL — dosya
+ * arşivde kalır). Çağıran yüzeyin metni "belgeyi sil" değil "takip kaydını sil"
+ * anlamını vermelidir.
+ *
+ * Başarı `204 No Content` — gövde yoktur; `unwrap` yalnız `response.ok`'a bakar.
+ */
+export function useDeletePersonnelDocument(
+  personnelId: string,
+): UseMutationResult<void, Error, string> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (documentId: string) => {
+      unwrap(
+        await backendClient.DELETE("/personnel/documents/{document_id}", {
+          params: { path: { document_id: documentId } },
+        }),
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [PERSONNEL_DOCUMENTS_QUERY_KEY, personnelId] });
+      queryClient.invalidateQueries({ queryKey: [HR_DOCUMENTS_SUMMARY_QUERY_KEY] });
+    },
+  });
+}

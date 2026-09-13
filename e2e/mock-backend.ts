@@ -323,6 +323,16 @@ const SITE_DIARY_ENTRY_CREATE_SCHEMA = loadBodySchema("SiteDiaryEntryCreate");
 const SITE_DIARY_ENTRY_UPDATE_SCHEMA = loadBodySchema("SiteDiaryEntryUpdate");
 const SITE_PLAN_CELL_INPUT_SCHEMA = loadBodySchema("SitePlanCellInput");
 
+/* 🔴 SAT-IKIZ · AYNI KAPI, SATIN ALMA TALEBİ GÖVDESİ. `justification`
+ * `maxLength: 2000`, `priority` üç üyeli bir enum'dur (`PurchasePriority`);
+ * ikiz İKİSİNİ DE denetlemiyor, önceliği `as MockPurchaseRequest["priority"]`
+ * ile körlemesine duruma yazıyordu. Yani istemcinin korkuluğunu
+ * (`MAX_LENGTH.justification` · `purchase-request-validate.ts`) kaldıran bir
+ * mutasyon hiçbir kapıyı kırmazdı; canlıda FastAPI 422 verirdi. Kısıtlar elle
+ * yazılmaz, `openapi.json`dan okunur. */
+const PURCHASE_REQUEST_CREATE_SCHEMA = loadBodySchema("PurchaseRequestCreate");
+const PURCHASE_REQUEST_UPDATE_SCHEMA = loadBodySchema("PurchaseRequestUpdate");
+
 /**
  * Enum daralt­ması — DARALTMA BİR SUSTURMA DEĞİL, BİR ÖLÇÜMDÜR: değer
  * `openapi.json`daki üye listesine karşı ÇALIŞMA ZAMANINDA sınanır, listede
@@ -12017,6 +12027,8 @@ export function startMockBackend(port: number): { server: Server; close: () => P
 
     if (method === "POST" && path === "/purchase-requests") {
       return withBody((body) => {
+        const schemaViolation = bodySchemaViolation(PURCHASE_REQUEST_CREATE_SCHEMA, body);
+        if (schemaViolation !== null) return send(422, schemaViolation);
         const projectId = String(body.project_id ?? "");
         if (!state.projects.some((p) => p.id === projectId)) {
           return send(404, { detail: "Proje bulunamadı." });
@@ -12071,6 +12083,10 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       if (method === "GET") return send(200, buildPurchaseRequestDetail(state, request));
       if (method === "PATCH") {
         return withBody((body) => {
+          // 🔴 Gövde doğrulaması durum kontrolünden ÖNCE gelir: FastAPI'de de
+          // Pydantic, uç gövdesi işleyiciye girmeden 422 verir (409 sonra).
+          const schemaViolation = bodySchemaViolation(PURCHASE_REQUEST_UPDATE_SCHEMA, body);
+          if (schemaViolation !== null) return send(422, schemaViolation);
           if (request.status !== "draft") {
             return send(409, { detail: "Yalnızca taslak talepler düzenlenebilir." });
           }

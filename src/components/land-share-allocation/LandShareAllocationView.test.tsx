@@ -595,6 +595,50 @@ describe("🔴 PG 101 'Otomatik Dağıt' — SUNUCUYA HİÇBİR ŞEY GİTMEZ", (
   });
 });
 
+describe("🔴 'Otomatik Dağıt' ZATEN ATANMIŞLARI SAYAR (varsayılan süzgeç onları GİZLER)", () => {
+  it("kalan kapasite ÖZETTEKİ atanmış adetten düşülür — hedef dolu taraf atlanır", async () => {
+    // 42 ünite · hedef 23/19 · 22'si bize, 2'si arsa sahibine ZATEN atanmış.
+    // Varsayılan "Atanmayan" süzgecinde listede yalnız atanmamışlar görünür.
+    vi.mocked(useLandShareSummary).mockReturnValue(
+      queryStub(
+        summary({
+          balance: {
+            count_balance: {
+              ...summary().balance.count_balance,
+              our_assigned_count: 22,
+              owner_assigned_count: 2,
+              unassigned_count: 18,
+            },
+            value_balance: {
+              ...summary().balance.value_balance,
+              our_value: "22000000",
+              owner_value: "2000000",
+            },
+          },
+        }),
+      ),
+    );
+    vi.mocked(useLandShareUnits).mockReturnValue(
+      queryStub({
+        items: [UNASSIGNED, unitRow({ unit_id: "u-9", unit_no: "A-10", appraisal_value: "1000000" })],
+        total: 18,
+        limit: 50,
+        offset: 0,
+      }),
+    );
+    render(<LandShareAllocationView />);
+    fireEvent.click(screen.getByTestId("paylasim-form-otomatik-dagit"));
+
+    // Bizim hedefimizde 1 yer kaldı, arsa sahibininkinde 17: ikisi de ARSA'ya
+    // gider. Sayaçlar sıfırdan sayılsaydı en pahalı ünite BİZE giderdi.
+    await waitFor(() =>
+      expect(screen.getByTestId("paylasim-form-arsa-A-9")).toHaveAttribute("aria-pressed", "true"),
+    );
+    expect(screen.getByTestId("paylasim-form-biz-A-9")).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByTestId("paylasim-form-arsa-A-10")).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
 describe("🔴 ATOMİK BAŞARISIZLIK — 'hiçbiri yazılmadı' AÇIKÇA söylenir", () => {
   it("reddedilen PATCH sonrası tablo SUNUCU hâlini gösterir ve hiçbir şey yazılmadığı yazılır", async () => {
     mutateAsync.mockRejectedValue(new BackendError(404, { detail: "Kayıt bulunamadı" }));
@@ -676,5 +720,53 @@ describe("PG 109 · 90 — toplu seçim", () => {
     expect(lastBody().items).toEqual([
       { unit_id: "u-3", owner_side: "landowner", shareholder_id: "sh-2" },
     ]);
+  });
+});
+
+/**
+ * 🔴 KUSUR 49 — SAYFA DEĞİŞTİREN KULLANICININ İŞİ SESSİZCE KAYBOLUYORDU.
+ * Gövde YALNIZ görünen satırlardan kurulur (`build-body.ts` kural 4) ve
+ * sayfa değişiminde bekleyen atamalar KASITLI olarak korunur (View:197-203);
+ * ama başarılı kayıt TÜM `pending`i siliyordu — gönderilmeyenler dâhil.
+ */
+describe("🔴 Başarılı kayıt YALNIZ GÖNDERİLEN satırların bekleyenini temizler", () => {
+  const PAGE_TWO_ROW = unitRow({ unit_id: "u-50", unit_no: "B-1" });
+
+  function stubPagedUnits() {
+    vi.mocked(useLandShareUnits).mockImplementation((...args: unknown[]) => {
+      const offset = (args[1] as { offset?: number } | undefined)?.offset ?? 0;
+      return queryStub({
+        items: offset === 0 ? [UNASSIGNED] : [PAGE_TWO_ROW],
+        total: 120,
+        limit: 50,
+        offset,
+      });
+    });
+  }
+
+  it("görünmeyen sayfanın bekleyen ataması kayıttan SONRA da durur", async () => {
+    stubPagedUnits();
+    mutateAsync.mockResolvedValue(
+      allocationResponse([{ id: "u-50", owner_side: "contractor", shareholder_id: null }]),
+    );
+    render(<LandShareAllocationView />);
+
+    // 1. sayfada A-9 bize atanır (bu satır HİÇ gönderilmeyecek).
+    fireEvent.click(screen.getByTestId("paylasim-form-biz-A-9"));
+    // 2. sayfaya geçilir ve B-1 atanır.
+    fireEvent.click(screen.getByTestId("paylasim-form-sonraki"));
+    fireEvent.click(await screen.findByTestId("paylasim-form-biz-B-1"));
+    fireEvent.click(screen.getByTestId("paylasim-form-kaydet"));
+
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
+    // Gövde sözleşmesi AYNI: yalnız görünen sayfanın değişen satırı gitti.
+    expect(lastBody().items).toEqual([
+      { unit_id: "u-50", owner_side: "contractor", shareholder_id: null },
+    ]);
+
+    // 1. sayfaya dönülür: A-9 ataması HÂLÂ ekranda olmalıdır.
+    fireEvent.click(screen.getByTestId("paylasim-form-onceki"));
+    const bizA9 = await screen.findByTestId("paylasim-form-biz-A-9");
+    expect(bizA9).toHaveAttribute("aria-pressed", "true");
   });
 });

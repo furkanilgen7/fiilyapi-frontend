@@ -50,6 +50,20 @@ export interface AutoDistributeInput {
   ourExpectedCount: number;
   /** `LandShareCountBalance.owner_expected_count` — SUNUCUDAN. */
   ownerExpectedCount: number;
+  /**
+   * 🔴 `LandShareCountBalance.our_assigned_count` — SUNUCUDAN, SÜZGEÇTEN
+   * BAĞIMSIZ. Sayaçlar yalnız GÖRÜNEN satırlardan doldurulamaz: bu ekranın
+   * varsayılan süzgeci "Atanmayan"dır ve o listede ATANMIŞ HİÇBİR SATIR
+   * YOKTUR — sıfırdan saymak kalan kapasiteyi TÜM hedef kadar gösterir ve
+   * dağıtım AŞIRI ATAMA üretir (sunucu adet hedefi doğrulaması YAPMAZ).
+   */
+  ourAssignedCount: number;
+  /** `LandShareCountBalance.owner_assigned_count` — SUNUCUDAN. */
+  ownerAssignedCount: number;
+  /** `LandShareValueBalance.our_value` — SUNUCUDAN (ATANMIŞ değer toplamı). */
+  ourAssignedValue: string;
+  /** `LandShareValueBalance.owner_value` — SUNUCUDAN. */
+  ownerAssignedValue: string;
 }
 
 export interface AutoDistributeResult {
@@ -78,15 +92,28 @@ function parseValue(raw: string | null): number | null {
 }
 
 export function autoDistribute(input: AutoDistributeInput): AutoDistributeResult {
-  const { rows, state, ourSharePct, ourExpectedCount, ownerExpectedCount } = input;
+  const {
+    rows,
+    state,
+    ourSharePct,
+    ourExpectedCount,
+    ownerExpectedCount,
+    ourAssignedCount,
+    ownerAssignedCount,
+    ourAssignedValue,
+    ownerAssignedValue,
+  } = input;
 
   const ratio = Number(ourSharePct) / 100;
   const ourRatio = Number.isFinite(ratio) ? ratio : FALLBACK_OUR_RATIO;
 
-  let ourCount = 0;
-  let ownerCount = 0;
-  let ourValue = 0;
-  let ownerValue = 0;
+  // 🔴 SAYAÇLAR SUNUCUNUN PROJE GENELİ SAYILARIYLA TOHUMLANIR, sıfırdan
+  // DEĞİL. Görünen satırlar bunların üzerine yalnız FARK uygular (aşağıda):
+  // sunucudaki tarafıyla aynı kalan satır YENİDEN sayılsaydı çift sayılırdı.
+  let ourCount = ourAssignedCount;
+  let ownerCount = ownerAssignedCount;
+  let ourValue = parseValue(ourAssignedValue) ?? 0;
+  let ownerValue = parseValue(ownerAssignedValue) ?? 0;
   const candidates: { unitId: string; value: number }[] = [];
   const skippedWithoutValue: string[] = [];
 
@@ -94,16 +121,26 @@ export function autoDistribute(input: AutoDistributeInput): AutoDistributeResult
     const side = effectiveAllocation(row, state).ownerSide;
     const value = parseValue(row.appraisal_value);
 
-    if (side === "contractor") {
-      ourCount += 1;
-      ourValue += value ?? 0; // atanmış satırda değer yoksa toplama katkısı yok
-      continue;
+    // FARK: yalnız kullanıcının bu oturumda değiştirdiği satırlar sayaçları
+    // oynatır. Değer yoksa 0 sayılır — sunucunun toplamına da 0 katmıştı.
+    if (side !== row.owner_side) {
+      if (row.owner_side === "contractor") {
+        ourCount -= 1;
+        ourValue -= value ?? 0;
+      } else if (row.owner_side === "landowner") {
+        ownerCount -= 1;
+        ownerValue -= value ?? 0;
+      }
+      if (side === "contractor") {
+        ourCount += 1;
+        ourValue += value ?? 0;
+      } else if (side === "landowner") {
+        ownerCount += 1;
+        ownerValue += value ?? 0;
+      }
     }
-    if (side === "landowner") {
-      ownerCount += 1;
-      ownerValue += value ?? 0;
-      continue;
-    }
+
+    if (side !== null) continue;
     // Atanmamış: rayici olmayan dağıtıma GİRMEZ (0 sayılmaz).
     if (value === null) skippedWithoutValue.push(row.unit_id);
     else candidates.push({ unitId: row.unit_id, value });

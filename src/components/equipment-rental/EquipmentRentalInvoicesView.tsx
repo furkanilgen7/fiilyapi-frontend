@@ -14,8 +14,15 @@ import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
 import { useSuppliers } from "@/lib/api/hooks/useSuppliers";
 import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
-import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncation";
-import { formatCurrencyPrecise, formatMonthName, formatPeriod } from "@/lib/format";
+import {
+  buildListTruncation,
+  listTruncationMessage,
+} from "@/lib/list-truncation";
+import {
+  formatCurrencyPrecise,
+  formatMonthName,
+  formatPeriod,
+} from "@/lib/format";
 
 import {
   RENTAL_CREATE_FORM_PENDING_REASON,
@@ -60,7 +67,9 @@ const PERIOD_YEAR_SPAN = 5;
 export function EquipmentRentalInvoicesView() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const filters = parseRentalFilters(new URLSearchParams(searchParams.toString()));
+  const filters = parseRentalFilters(
+    new URLSearchParams(searchParams.toString()),
+  );
   const { level, canWrite } = useModulePermission(EQUIPMENT_PERMISSION_MODULE);
 
   // TB3 sayfalama kanonu: `limit` AÇIKÇA gönderilir (sunucu varsayılanı 50).
@@ -73,23 +82,34 @@ export function EquipmentRentalInvoicesView() {
     limit: EQUIPMENT_RENTAL_INVOICES_MAX_LIMIT,
   });
 
-  const suppliersQuery = useSuppliers({ limit: EQUIPMENT_RENTAL_INVOICES_MAX_LIMIT });
+  const suppliersQuery = useSuppliers({
+    limit: EQUIPMENT_RENTAL_INVOICES_MAX_LIMIT,
+  });
   const siteOptions = useSiteOptions();
 
   if (isForbidden(invoicesQuery.error)) return <AccessDenied />;
 
   const items = invoicesQuery.data?.items ?? [];
-  const truncation = buildListTruncation(items.length, invoicesQuery.data?.total);
+  const truncation = buildListTruncation(
+    items.length,
+    invoicesQuery.data?.total,
+  );
 
   function pushParams(patch: RentalFilterPatch) {
-    const next = withRentalFilterParams(new URLSearchParams(searchParams.toString()), patch);
+    const next = withRentalFilterParams(
+      new URLSearchParams(searchParams.toString()),
+      patch,
+    );
     const query = next.toString();
     // Boş sorgu dizesinde üretici "?" bile eklemez — ayrı bir dal GEREKMEZ.
     router.push(routes.equipment.rentalInvoices(query));
   }
 
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: PERIOD_YEAR_SPAN }, (_, index) => currentYear - index);
+  const years = Array.from(
+    { length: PERIOD_YEAR_SPAN },
+    (_, index) => currentYear - index,
+  );
 
   return (
     <div className="makine-kira">
@@ -125,7 +145,11 @@ export function EquipmentRentalInvoicesView() {
           value={filters.periodYear ?? ""}
           data-testid="makine-kira-filter-year"
           onChange={(event) =>
-            pushParams({ period_year: event.target.value ? Number(event.target.value) : null })
+            pushParams({
+              period_year: event.target.value
+                ? Number(event.target.value)
+                : null,
+            })
           }
         >
           <option value="">Tüm Yıllar</option>
@@ -141,7 +165,11 @@ export function EquipmentRentalInvoicesView() {
           value={filters.periodMonth ?? ""}
           data-testid="makine-kira-filter-month"
           onChange={(event) =>
-            pushParams({ period_month: event.target.value ? Number(event.target.value) : null })
+            pushParams({
+              period_month: event.target.value
+                ? Number(event.target.value)
+                : null,
+            })
           }
         >
           <option value="">Tüm Aylar</option>
@@ -156,7 +184,9 @@ export function EquipmentRentalInvoicesView() {
           aria-label="Kiralama Firması"
           value={filters.supplierId ?? ""}
           data-testid="makine-kira-filter-supplier"
-          onChange={(event) => pushParams({ supplier_id: event.target.value || null })}
+          onChange={(event) =>
+            pushParams({ supplier_id: event.target.value || null })
+          }
         >
           <option value="">Tüm Firmalar</option>
           {(suppliersQuery.data?.items ?? []).map((supplier) => (
@@ -170,7 +200,9 @@ export function EquipmentRentalInvoicesView() {
           aria-label="Şantiye"
           value={filters.siteId ?? ""}
           data-testid="makine-kira-filter-site"
-          onChange={(event) => pushParams({ site_id: event.target.value || null })}
+          onChange={(event) =>
+            pushParams({ site_id: event.target.value || null })
+          }
         >
           <option value="">Tüm Şantiyeler</option>
           {siteOptions.options.map((option) => (
@@ -184,7 +216,9 @@ export function EquipmentRentalInvoicesView() {
           aria-label="Durum"
           value={filters.status ?? ""}
           data-testid="makine-kira-filter-status"
-          onChange={(event) => pushParams({ status: event.target.value || null })}
+          onChange={(event) =>
+            pushParams({ status: event.target.value || null })
+          }
         >
           <option value="">Tüm Durumlar</option>
           {RENTAL_STATUS_FILTER_OPTIONS.map((option) => (
@@ -196,9 +230,15 @@ export function EquipmentRentalInvoicesView() {
       </div>
 
       {/* Yüklendi işaretleri — görsel spec'in durum-tabanlı iddiaları bunlara bakar. */}
-      {invoicesQuery.isSuccess && <span hidden data-testid="makine-kira-loaded-list" />}
-      {suppliersQuery.isSuccess && <span hidden data-testid="makine-kira-loaded-suppliers" />}
-      {!siteOptions.isLoading && <span hidden data-testid="makine-kira-loaded-sites" />}
+      {invoicesQuery.isSuccess && (
+        <span hidden data-testid="makine-kira-loaded-list" />
+      )}
+      {suppliersQuery.isSuccess && (
+        <span hidden data-testid="makine-kira-loaded-suppliers" />
+      )}
+      {!siteOptions.isLoading && !siteOptions.isError && (
+        <span hidden data-testid="makine-kira-loaded-sites" />
+      )}
 
       <div className="makine-kira__panel">
         <table className="makine-kira__table">
@@ -242,12 +282,19 @@ export function EquipmentRentalInvoicesView() {
               return (
                 <tr key={invoice.id} data-rental-invoice-id={invoice.id}>
                   <td>
-                    <Link className="makine-kira__link" href={routes.equipment.rentalInvoiceDetail({ invoiceId: invoice.id })}>
+                    <Link
+                      className="makine-kira__link"
+                      href={routes.equipment.rentalInvoiceDetail({
+                        invoiceId: invoice.id,
+                      })}
+                    >
                       {formatPeriod(invoice.period_year, invoice.period_month)}
                     </Link>
                   </td>
                   <td>{invoice.supplier_name ?? RENTAL_EMPTY_CELL}</td>
-                  <td className="makine-kira__mono">{invoice.invoice_no ?? RENTAL_EMPTY_CELL}</td>
+                  <td className="makine-kira__mono">
+                    {invoice.invoice_no ?? RENTAL_EMPTY_CELL}
+                  </td>
                   <td>{rentalSiteLabel(invoice.site_name)}</td>
                   <td>{RATE_PERIOD_LABEL[invoice.rate_period]}</td>
                   <td className="makine-kira__num makine-kira__mono">
@@ -259,7 +306,10 @@ export function EquipmentRentalInvoicesView() {
                       : formatCurrencyPrecise(invoice.payable_total)}
                   </td>
                   <td>
-                    <Badge variant={badge.variant} data-testid="makine-kira-status">
+                    <Badge
+                      variant={badge.variant}
+                      data-testid="makine-kira-status"
+                    >
                       {badge.label}
                     </Badge>
                   </td>
@@ -271,7 +321,10 @@ export function EquipmentRentalInvoicesView() {
       </div>
 
       {truncation.isTruncated && (
-        <p className="makine-kira__limit-note" data-testid="makine-kira-limit-note">
+        <p
+          className="makine-kira__limit-note"
+          data-testid="makine-kira-limit-note"
+        >
           {listTruncationMessage(truncation)}
         </p>
       )}

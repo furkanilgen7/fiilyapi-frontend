@@ -64,7 +64,8 @@ export function EquipmentRentalInvoiceDetailView({
   const [error, setError] = useState<string | null>(null);
 
   const detail = detailQuery.data;
-  const editable = detail !== undefined && isRentalEditable(detail.status) && canWrite;
+  const editable =
+    detail !== undefined && isRentalEditable(detail.status) && canWrite;
 
   /*
    * 🔴 F-İK "touched" DERSİ: form taslağı sunucu değerinden TÜRER ama
@@ -120,7 +121,10 @@ export function EquipmentRentalInvoiceDetailView({
 
   const badge = RENTAL_STATUS_BADGE[detail.status];
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: PERIOD_YEAR_SPAN }, (_, index) => currentYear - index);
+  const years = Array.from(
+    { length: PERIOD_YEAR_SPAN },
+    (_, index) => currentYear - index,
+  );
 
   function handleSaveHeader() {
     if (draft === null || detail === undefined) return;
@@ -129,7 +133,8 @@ export function EquipmentRentalInvoiceDetailView({
     // Yalnız DEĞİŞEN alanlar gövdeye girer (dokunulmamış alan sunucudaki
     // değeri ezmez — `model_fields_set` korumasının istemci yüzü).
     const body: Record<string, unknown> = {};
-    if (draft.supplierId !== detail.supplier_id) body.supplier_id = draft.supplierId;
+    if (draft.supplierId !== detail.supplier_id)
+      body.supplier_id = draft.supplierId;
     if ((draft.invoiceNo || null) !== detail.invoice_no)
       body.invoice_no = draft.invoiceNo || null;
     if ((draft.invoiceAmount || null) !== detail.invoice_amount)
@@ -138,25 +143,39 @@ export function EquipmentRentalInvoiceDetailView({
       body.period_year = Number(draft.periodYear);
     if (Number(draft.periodMonth) !== detail.period_month)
       body.period_month = Number(draft.periodMonth);
-    if ((draft.siteId || null) !== detail.site_id) body.site_id = draft.siteId || null;
-    if (draft.ratePeriod !== detail.rate_period) body.rate_period = draft.ratePeriod;
+    if ((draft.siteId || null) !== detail.site_id)
+      body.site_id = draft.siteId || null;
+    if (draft.ratePeriod !== detail.rate_period)
+      body.rate_period = draft.ratePeriod;
 
     if (Object.keys(body).length === 0) return;
 
     updateInvoice.mutate(
       { invoiceId: detail.id, body },
-      { onError: (err) => setError(backendErrorMessage(err, "Hakediş bilgileri kaydedilemedi.")) },
+      {
+        onError: (err) =>
+          setError(
+            backendErrorMessage(err, "Hakediş bilgileri kaydedilemedi."),
+          ),
+      },
     );
   }
 
-  function handleSaveLine(lineId: string, field: RentalEditableField, value: string | null) {
+  function handleSaveLine(
+    lineId: string,
+    field: RentalEditableField,
+    value: string | null,
+  ) {
     if (detail === undefined) return;
     setError(null);
     // Yanıt SATIRDIR, fatura değil — toplamlar/varyans yalnız faturanın
     // yeniden çekilmesiyle tazelenir, bu yüzden `invoiceId` de geçilir.
     updateLine.mutate(
       { invoiceId: detail.id, lineId, body: { [field]: value } },
-      { onError: (err) => setError(backendErrorMessage(err, "Satır kaydedilemedi.")) },
+      {
+        onError: (err) =>
+          setError(backendErrorMessage(err, "Satır kaydedilemedi.")),
+      },
     );
   }
 
@@ -175,7 +194,8 @@ export function EquipmentRentalInvoiceDetailView({
 
       <div className="makine-kira__title-row">
         <h1 className="makine-kira__title">
-          Kira Hakedişi {"—"} {formatPeriod(detail.period_year, detail.period_month)}
+          Kira Hakedişi {"—"}{" "}
+          {formatPeriod(detail.period_year, detail.period_month)}
         </h1>
         <RentalStatusActions detail={detail} />
       </div>
@@ -184,13 +204,15 @@ export function EquipmentRentalInvoiceDetailView({
       <aside className="makine-kira__info" data-testid="makine-kira-info">
         <strong>Makine Kira Hakediş Akışı:</strong>
         <br />
-        <strong>Kiralama Firması {"→"} Sana</strong> fatura keser (kiralanan makinenin bedelini
-        firmaya ödersin).
+        <strong>Kiralama Firması {"→"} Sana</strong> fatura keser (kiralanan
+        makinenin bedelini firmaya ödersin).
         <br />
-        Çalışma kayıtlarındaki saatlerle <strong>gelen faturayı doğrularsın</strong> {"→"}{" "}
-        onaylarsın {"→"} ödersin.
+        Çalışma kayıtlarındaki saatlerle{" "}
+        <strong>gelen faturayı doğrularsın</strong> {"→"} onaylarsın {"→"}{" "}
+        ödersin.
         <br />
-        Bu maliyet <strong>proje maliyetine</strong> yansır ve işveren hakedişinde hesaba katılır.
+        Bu maliyet <strong>proje maliyetine</strong> yansır ve işveren
+        hakedişinde hesaba katılır.
       </aside>
 
       {error !== null && (
@@ -200,37 +222,43 @@ export function EquipmentRentalInvoiceDetailView({
       )}
 
       {/* KART B · M5:46-66 — kiralama firmasından gelen fatura. */}
-      <section className="makine-kira__card" aria-labelledby="makine-kira-incoming-title">
+      <section
+        className="makine-kira__card"
+        aria-labelledby="makine-kira-incoming-title"
+      >
         <div className="makine-kira__card-body makine-kira__incoming">
-          <h2 id="makine-kira-incoming-title" className="makine-kira__card-title">
+          <h2
+            id="makine-kira-incoming-title"
+            className="makine-kira__card-title"
+          >
             Kiralama Firmasından Gelen Fatura
           </h2>
 
           <Field label="Kiralama Firması" className="makine-kira__inline-field">
             {(control) => (
-            <Select
-              {...control}
-              value={draft.supplierId}
-              disabled={!editable}
-              data-testid="makine-kira-supplier"
-              onChange={(event) =>
-                setDraft({ ...draft, supplierId: event.target.value })
-              }
-            >
-              {(suppliersQuery.data?.items ?? []).map((supplier) => (
-                <option key={supplier.id} value={supplier.id}>
-                  {supplier.name}
-                </option>
-              ))}
-              {/* Sunucudaki tedarikçi listede yoksa seçenek KAYBOLMAZ. */}
-              {!(suppliersQuery.data?.items ?? []).some(
-                (supplier) => supplier.id === detail.supplier_id,
-              ) && (
-                <option value={detail.supplier_id}>
-                  {detail.supplier_name ?? detail.supplier_id}
-                </option>
-              )}
-            </Select>
+              <Select
+                {...control}
+                value={draft.supplierId}
+                disabled={!editable}
+                data-testid="makine-kira-supplier"
+                onChange={(event) =>
+                  setDraft({ ...draft, supplierId: event.target.value })
+                }
+              >
+                {(suppliersQuery.data?.items ?? []).map((supplier) => (
+                  <option key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                  </option>
+                ))}
+                {/* Sunucudaki tedarikçi listede yoksa seçenek KAYBOLMAZ. */}
+                {!(suppliersQuery.data?.items ?? []).some(
+                  (supplier) => supplier.id === detail.supplier_id,
+                ) && (
+                  <option value={detail.supplier_id}>
+                    {detail.supplier_name ?? detail.supplier_id}
+                  </option>
+                )}
+              </Select>
             )}
           </Field>
 
@@ -243,7 +271,9 @@ export function EquipmentRentalInvoiceDetailView({
                 disabled={!editable}
                 maxLength={100}
                 data-testid="makine-kira-invoice-no"
-                onChange={(event) => setDraft({ ...draft, invoiceNo: event.target.value })}
+                onChange={(event) =>
+                  setDraft({ ...draft, invoiceNo: event.target.value })
+                }
               />
             )}
           </Field>
@@ -258,7 +288,9 @@ export function EquipmentRentalInvoiceDetailView({
                 value={draft.invoiceAmount}
                 disabled={!editable}
                 data-testid="makine-kira-invoice-amount-input"
-                onChange={(event) => setDraft({ ...draft, invoiceAmount: event.target.value })}
+                onChange={(event) =>
+                  setDraft({ ...draft, invoiceAmount: event.target.value })
+                }
               />
             )}
           </Field>
@@ -273,7 +305,10 @@ export function EquipmentRentalInvoiceDetailView({
       </section>
 
       {/* KART C · M5:69-77 — hakediş bilgileri. */}
-      <section className="makine-kira__card" aria-labelledby="makine-kira-meta-title">
+      <section
+        className="makine-kira__card"
+        aria-labelledby="makine-kira-meta-title"
+      >
         <div className="makine-kira__card-body">
           <h2 id="makine-kira-meta-title" className="makine-kira__card-title">
             Hakediş Bilgileri
@@ -282,38 +317,44 @@ export function EquipmentRentalInvoiceDetailView({
           <div className="makine-kira__grid">
             <Field label="Dönem" className="makine-kira__field">
               {(control) => (
-              <div className="makine-kira__period">
-                <Select
-                  {...control}
-                  aria-label="Dönem ayı"
-                  value={draft.periodMonth}
-                  disabled={!editable}
-                  data-testid="makine-kira-period-month"
-                  onChange={(event) => setDraft({ ...draft, periodMonth: event.target.value })}
-                >
-                  {PERIOD_MONTHS.map((month) => (
-                    <option key={month.value} value={month.value}>
-                      {month.label}
-                    </option>
-                  ))}
-                </Select>
-                <Select
-                  aria-label="Dönem yılı"
-                  value={draft.periodYear}
-                  disabled={!editable}
-                  data-testid="makine-kira-period-year"
-                  onChange={(event) => setDraft({ ...draft, periodYear: event.target.value })}
-                >
-                  {years.map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                  {!years.includes(detail.period_year) && (
-                    <option value={detail.period_year}>{detail.period_year}</option>
-                  )}
-                </Select>
-              </div>
+                <div className="makine-kira__period">
+                  <Select
+                    {...control}
+                    aria-label="Dönem ayı"
+                    value={draft.periodMonth}
+                    disabled={!editable}
+                    data-testid="makine-kira-period-month"
+                    onChange={(event) =>
+                      setDraft({ ...draft, periodMonth: event.target.value })
+                    }
+                  >
+                    {PERIOD_MONTHS.map((month) => (
+                      <option key={month.value} value={month.value}>
+                        {month.label}
+                      </option>
+                    ))}
+                  </Select>
+                  <Select
+                    aria-label="Dönem yılı"
+                    value={draft.periodYear}
+                    disabled={!editable}
+                    data-testid="makine-kira-period-year"
+                    onChange={(event) =>
+                      setDraft({ ...draft, periodYear: event.target.value })
+                    }
+                  >
+                    {years.map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                    {!years.includes(detail.period_year) && (
+                      <option value={detail.period_year}>
+                        {detail.period_year}
+                      </option>
+                    )}
+                  </Select>
+                </div>
               )}
             </Field>
 
@@ -330,7 +371,9 @@ export function EquipmentRentalInvoiceDetailView({
                   value={draft.siteId}
                   disabled={!editable}
                   data-testid="makine-kira-site"
-                  onChange={(event) => setDraft({ ...draft, siteId: event.target.value })}
+                  onChange={(event) =>
+                    setDraft({ ...draft, siteId: event.target.value })
+                  }
                 >
                   <option value="">Tüm Şantiyeler</option>
                   {siteOptions.options.map((option) => (
@@ -344,21 +387,25 @@ export function EquipmentRentalInvoiceDetailView({
 
             <Field label="Kira Tipi" className="makine-kira__field">
               {(control) => (
-              <Select
-                {...control}
-                value={draft.ratePeriod}
-                disabled={!editable}
-                data-testid="makine-kira-rate-period"
-                onChange={(event) => setDraft({ ...draft, ratePeriod: event.target.value })}
-              >
-                {(Object.keys(RATE_PERIOD_LABEL) as (keyof typeof RATE_PERIOD_LABEL)[]).map(
-                  (period) => (
+                <Select
+                  {...control}
+                  value={draft.ratePeriod}
+                  disabled={!editable}
+                  data-testid="makine-kira-rate-period"
+                  onChange={(event) =>
+                    setDraft({ ...draft, ratePeriod: event.target.value })
+                  }
+                >
+                  {(
+                    Object.keys(
+                      RATE_PERIOD_LABEL,
+                    ) as (keyof typeof RATE_PERIOD_LABEL)[]
+                  ).map((period) => (
                     <option key={period} value={period}>
                       {RATE_PERIOD_LABEL[period]}
                     </option>
-                  ),
-                )}
-              </Select>
+                  ))}
+                </Select>
               )}
             </Field>
 
@@ -383,7 +430,10 @@ export function EquipmentRentalInvoiceDetailView({
               {/* 🔴 `POST …/reload` mockup'ta ÇİZİLMEMİŞ (K2) → basılmadı. Ama
                   sessiz kalınmaz: dönem/şantiye değişikliği satırları
                   KENDİLİĞİNDEN tazelemez ve kullanıcı bunu bilmelidir. */}
-              <p className="makine-kira__reason" data-testid="makine-kira-reload-note">
+              <p
+                className="makine-kira__reason"
+                data-testid="makine-kira-reload-note"
+              >
                 {RENTAL_RELOAD_PENDING_REASON}
               </p>
               <Button
@@ -412,9 +462,15 @@ export function EquipmentRentalInvoiceDetailView({
 
       {/* Yüklendi işaretleri — her BAĞIMSIZ veri kaynağı ayrı ayrı (F-İK dersi:
           "yüklendi" iddiası ekranı besleyen HER kaynağı kapsar). */}
-      {detailQuery.isSuccess && <span hidden data-testid="makine-kira-loaded-detail" />}
-      {suppliersQuery.isSuccess && <span hidden data-testid="makine-kira-loaded-suppliers" />}
-      {!siteOptions.isLoading && <span hidden data-testid="makine-kira-loaded-sites" />}
+      {detailQuery.isSuccess && (
+        <span hidden data-testid="makine-kira-loaded-detail" />
+      )}
+      {suppliersQuery.isSuccess && (
+        <span hidden data-testid="makine-kira-loaded-suppliers" />
+      )}
+      {!siteOptions.isLoading && !siteOptions.isError && (
+        <span hidden data-testid="makine-kira-loaded-sites" />
+      )}
     </div>
   );
 }

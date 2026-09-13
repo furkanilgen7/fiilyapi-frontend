@@ -9,6 +9,7 @@ import {
   type RentalInvoiceLineResponse,
   type RentalInvoiceResponse,
 } from "./useEquipmentRentalInvoices";
+import { EQUIPMENT_DETAIL_SCREEN_QUERY_KEY } from "./useEquipmentDetailScreen";
 
 // F-KIRA T-A · yazma/aksiyon uçları (`useSubcontractorProgressPaymentMutations`
 // deseniyle AYNI). Sekiz kapsanan operasyondan ALTISI burada; `POST …/reload` ve
@@ -28,6 +29,10 @@ function useRentalInvoiceInvalidator() {
   const queryClient = useQueryClient();
   return (invoiceId?: string) => {
     queryClient.invalidateQueries({ queryKey: [EQUIPMENT_RENTAL_INVOICES_QUERY_KEY] });
+    // MK-4 detay ekranının `rental.cumulative_paid`i `status = paid`
+    // hakedişlerin TÜREVİDİR → her hakediş yazımı onu da bayatlatır. KÖK
+    // anahtar: bir hakedişin satırları BİRDEN ÇOK ekipmana dokunabilir.
+    queryClient.invalidateQueries({ queryKey: [EQUIPMENT_DETAIL_SCREEN_QUERY_KEY] });
     if (invoiceId) {
       queryClient.invalidateQueries({
         queryKey: [EQUIPMENT_RENTAL_INVOICE_QUERY_KEY, invoiceId],

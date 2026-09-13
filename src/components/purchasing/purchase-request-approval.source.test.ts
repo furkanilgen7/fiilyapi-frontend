@@ -24,12 +24,16 @@ const THRESHOLD_LITERALS = [/\b500000\b/, /500\s*K/];
  * koddur.
  */
 function stripComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[^:])\/\/.*$/gm, "$1");
 }
 
 describe("onay eşiği tek kaynak (spec K6)", () => {
   const files = readdirSync(DIR).filter(
-    (name) => (name.endsWith(".ts") || name.endsWith(".tsx")) && !name.includes(".test."),
+    (name) =>
+      (name.endsWith(".ts") || name.endsWith(".tsx")) &&
+      !name.includes(".test."),
   );
 
   it("satınalma kaynak dosyaları taranabiliyor (tarama boşa düşmesin)", () => {
@@ -48,9 +52,24 @@ describe("onay eşiği tek kaynak (spec K6)", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("tek kaynak dosyası eşiği GERÇEKTEN tanımlar (tarama yanlış dosyayı korumasın)", () => {
-    const source = readFileSync(join(DIR, SOURCE_OF_TRUTH), "utf8");
+  /*
+   * 🔴 BU İDDİA KALDIRILDI: "tek kaynak dosyası eşiği GERÇEKTEN tanımlar"
+   * (`export const PURCHASE_APPROVAL_THRESHOLD = 500000;`). Bekçi YANLIŞ tek
+   * kaynağı kilitliyordu — gerçek doğruluk kaynağı sunucudur
+   * (`company.approval_threshold_try`, `GET/PUT /approvals/settings`) ve bu
+   * iddia eşiği sunucudan okumaya geçiren DOĞRU düzeltmenin önünde bariyerdi.
+   * Yerine geçen bekçi: `purchase-request-approval.test.ts` "eşik SUNUCUDAN
+   * gelir" kümesi + `PurchaseRequestApprovalBox.test.tsx`.
+   *
+   * Aşağıdaki literal taraması KALIR ve artık TÜM dosyaları kapsar: kimse
+   * eşiği yeniden koda gömmesin.
+   */
+  it("eşik sayısı ARTIK HİÇBİR satınalma dosyasında gömülü değil", () => {
+    const offenders = files.filter((name) => {
+      const source = stripComments(readFileSync(join(DIR, name), "utf8"));
+      return THRESHOLD_LITERALS.some((pattern) => pattern.test(source));
+    });
 
-    expect(source).toMatch(/export const PURCHASE_APPROVAL_THRESHOLD = 500000;/);
+    expect(offenders).toEqual([]);
   });
 });

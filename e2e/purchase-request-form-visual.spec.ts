@@ -61,8 +61,12 @@ test("satinalma talep formu gorsel", async ({ page }) => {
   // (e) talep numarası kayıttan ÖNCE BOŞTUR (sunucu üretir) — mockup'ın örnek
   //     numarası uydurulmaz,
   await expect(page.getByTestId("talep-no")).toHaveValue("");
-  // (f) onay akışı kutusu boş formun hükmünü basıyor.
+  // (f) onay akışı kutusu boş formun hükmünü basıyor,
   await expect(page.getByTestId("talep-onay-sonuc")).toContainText("Patron onayı");
+  // (g) ONAY EŞİĞİ GELDİ: rozet eşiği `GET /approvals/settings`ten okur ve ayar
+  //     yüklenene kadar eşik parçası DÜŞER ("Patron"). Bu bekleme olmadan kare
+  //     yarışa girer — boş formun hükmü (`unknown` dalı) eşiği BEKLEMEZ.
+  await expect(page.getByTestId("talep-patron-adimi")).toContainText("₺");
 
   // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.
   await prepareFrame(page);
