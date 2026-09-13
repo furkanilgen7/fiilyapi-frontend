@@ -36,13 +36,11 @@ import { UnitDocumentsCard } from "./UnitDocumentsCard";
 import { UnitInfoCard } from "./UnitInfoCard";
 import { UnitLocationCard } from "./UnitLocationCard";
 import { UnitPricingCard } from "./UnitPricingCard";
+import { PROJECT_PARAM } from "@/lib/navigation-params";
 // Sıra önemli: ortak kabuk → aile ortağı → forma özgü bloklar.
 import "@/styles/form-shell.css";
 import "@/components/unit-shell/unit-shell.css";
 import "./unit-form.css";
-
-/** Seçili proje URL'de taşınır (SY/`SalesView` ile aynı anahtar). */
-const PROJECT_PARAM = "proje";
 
 /**
  * UE — "Ünite Ekle" formu (`Form - Unite Ekle.dc.html`, kanonik).

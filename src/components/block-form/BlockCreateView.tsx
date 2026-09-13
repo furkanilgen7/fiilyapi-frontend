@@ -34,16 +34,11 @@ import {
 import { BlockExtraCard } from "./BlockExtraCard";
 import { BlockInfoCard } from "./BlockInfoCard";
 import { BlockStructureCard } from "./BlockStructureCard";
+import { PROJECT_PARAM, BLOCK_PARAM } from "@/lib/navigation-params";
 // Sıra önemli: ortak kabuk → aile ortağı → forma özgü bloklar.
 import "@/styles/form-shell.css";
 import "@/components/unit-shell/unit-shell.css";
 import "./block-form.css";
-
-/** Seçili proje URL'de taşınır (SY/`SalesView` ile aynı anahtar). */
-const PROJECT_PARAM = "proje";
-
-/** Toplu üretim ekranının blok bağlamı (`BulkUnitCreateView` aynı adı okur). */
-const BLOCK_PARAM = "blok";
 
 /**
  * BE — "Yeni Blok Ekle" formu (`Form - Blok Ekle.dc.html`, kanonik).

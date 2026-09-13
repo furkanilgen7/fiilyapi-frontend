@@ -146,6 +146,35 @@ describe("SiteCard — yer tutucu hucreler (spec §7.1)", () => {
     expect(progress).toHaveTextContent("—");
   });
 
+  // 🔴 ÜÇÜNCÜ HÂL (K-ZARF, src/lib/placeholder-cell.ts:14-20).
+  // `available:false` + `pending_module:null` = ROLÜN İZNİ YOK (backend
+  // `restricted()`, app/modules/projects/schemas.py:131-146 — o fabrika
+  // `MetricPlaceholder` döndürür ve `pending_module` TAŞIMAZ; şantiye
+  // kartında bu hâle düşebilen alan `progress_pct`tir, `worker_count`un
+  // `CountPlaceholder` sözleşmesinde `pending_module` zorunludur).
+  // O hâlde `pendingModuleLabel(null)`ın döndürdüğü "İlgili modülle birlikte
+  // gelir" cümlesi YALANDIR — modül vardır, izin yoktur. Aynı ekranın alt
+  // şeridi (SiteTotalsStrip) bunu doğru yapıyor; kart da title basmamalı.
+  it("UCUNCU HAL: Ilerleme available:false + pending_module null → '—' basar ama title VERILMEZ", () => {
+    const restricted: SiteListItem = {
+      ...ACTIVE_SITE,
+      progress_pct: { available: false, value: null, pending_module: null },
+    };
+    const { container } = render(<SiteCard projectKey={PROJECT_ID} site={restricted} />);
+
+    const progress = container.querySelector(".site-card__kpi-value--progress");
+    expect(progress).not.toBeNull();
+    expect(progress).toHaveTextContent("—");
+    expect(progress?.className).toContain("site-card__kpi-value--pending");
+    expect(progress).not.toHaveAttribute("title");
+
+    // KARŞIT KANIT: 2. hâl (gerekçe BİLİNİYOR) ipucunu vermeye DEVAM eder.
+    expect(screen.getByTitle("Puantaj verisi bu yüzeye henüz bağlanmadı")).toHaveTextContent("—");
+
+    // Yalan cumle EKRANDA HICBIR YERDE olmamali.
+    expect(screen.queryByTitle("İlgili modülle birlikte gelir")).not.toBeInTheDocument();
+  });
+
   it("Ilerleme yer tutucuyken cubuk cizilmez (sahte %0 verilmez)", () => {
     render(<SiteCard projectKey={PROJECT_ID} site={ACTIVE_SITE} />);
     expect(screen.queryByTestId("site-card-progress-fill")).not.toBeInTheDocument();

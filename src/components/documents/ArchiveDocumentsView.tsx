@@ -24,6 +24,7 @@ import { DocumentUploadModal } from "./DocumentUploadModal";
 import { documentGridMessage } from "./grid-message";
 import { RecentDocumentsList } from "./RecentDocumentsList";
 import { recentDocuments } from "./recent-documents";
+import { PROJECT_PARAM } from "@/lib/navigation-params";
 import "./documents.css";
 
 /**
@@ -41,7 +42,6 @@ import "./documents.css";
 export const ARCHIVE_ADD_DOCUMENT_LABEL = "+ Belge Ekle (proje seçerek)";
 
 /** URL durumu anahtarları — proje/klasör/arama paylaşılabilir olmalı. */
-const PROJECT_PARAM = "proje";
 const FOLDER_PARAM = "folder";
 const QUERY_PARAM = "q";
 

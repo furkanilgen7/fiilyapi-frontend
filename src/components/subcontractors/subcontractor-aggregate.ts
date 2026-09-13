@@ -37,6 +37,17 @@ import type { SubcontractorProgressPaymentListItem } from "@/lib/api/hooks/useSu
  * NORMALLEŞTİRİLMİŞ AD üzerinden kurulur. Adı hiçbir firmayla eşleşmeyen
  * sözleşmeler sessizce YUTULMAZ: `orphanContractCount` ile dışarı verilir ve
  * ekranda görünür not basılır.
+ *
+ * 🔴 AD TEKİL DEĞİLDİR. Kovalar FİRMA KİMLİĞİYLE (`firm.id`) tutulur, adla
+ * DEĞİL: ad hiçbir katmanda tekil değildir (backend `subcontractors`
+ * tablosunda yalnız KISMİ `uq_subcontractors_tax_number` ve NON-UNIQUE
+ * `ix_subcontractors_name` vardır; VKN bile zorunlu değildir). Adla
+ * anahtarlanınca `Map.set` ikinci firmanın kovasını birincinin üstüne yazar ve
+ * İKİ AYRI TÜZEL KİŞİNİN parası toplanıp her iki satıra da basılırdı.
+ * Ad tabanlı eşleştirme yalnız sözleşme/hakediş → firma yönünde ve YALNIZ
+ * eşleşme TEKSE yapılır; bir ad birden çok firmaya uyuyorsa sözleşme hiçbirine
+ * atfedilmez (uydurulmuş sayı basmayız) ve `ambiguousContractCount` ile
+ * dışarı verilir.
  */
 
 /** Firma ↔ sözleşme/hakediş eşleştirme anahtarı (ad tabanlı — yukarıdaki sınır). */
@@ -86,6 +97,8 @@ export interface SubcontractorDirectory {
   categories: string[];
   /** Adı hiçbir firmayla eşleşmeyen sözleşme sayısı — görünür not. */
   orphanContractCount: number;
+  /** Adı BİRDEN ÇOK firmaya uyduğu için atfedilemeyen sözleşme sayısı. */
+  ambiguousContractCount: number;
   /** Hakediş listesi kırpıldı — para kolonları/KPI'ları PENDING. */
   isPaymentPending: boolean;
 }
@@ -153,24 +166,45 @@ export function buildSubcontractorDirectory({
   currentYear,
   currentMonth,
 }: BuildDirectoryInput): SubcontractorDirectory {
-  const byKey = new Map<string, Accumulator>();
+  // Kova anahtarı FİRMA KİMLİĞİDİR (ad tekil değildir — üstteki nota bak).
+  const byId = new Map<string, Accumulator>();
+  // Ad → o adı taşıyan firma kimlikleri. Uzunluk > 1 ise ad BELİRSİZDİR.
+  const firmIdsByName = new Map<string, string[]>();
   for (const firm of subcontractors) {
-    byKey.set(subcontractorKey(firm.name), emptyAccumulator());
+    byId.set(firm.id, emptyAccumulator());
+    const nameKey = subcontractorKey(firm.name);
+    firmIdsByName.set(nameKey, [...(firmIdsByName.get(nameKey) ?? []), firm.id]);
   }
 
+  /** Ad TEK bir firmaya uyuyorsa onun kimliği; 0 ya da >1 eşleşmede `null`. */
+  const uniqueFirmIdOf = (nameKey: string): string | null => {
+    const ids = firmIdsByName.get(nameKey);
+    return ids && ids.length === 1 ? ids[0] : null;
+  };
+
   // Hakedişin firmasını sözleşme kimliği üzerinden çözebilmek için harita
-  // (hakediş satırının kendi `subcontractor_name`i yedek yoldur).
-  const contractKeyById = new Map<string, string>();
+  // (hakediş satırının kendi `subcontractor_name`i yedek yoldur). LİSTEDEKİ
+  // HER sözleşme girer; çözülemeyen sözleşme `null` taşır. `null` ile
+  // `undefined` ayrımı davranışsaldır: sözleşme listede VARSA ve firmasına
+  // bağlanamadıysa hakediş ADA GÖRE yeniden denenmez (eski davranış korunur),
+  // yalnız sözleşmesi hiç listede olmayan hakediş yedek yola düşer.
+  const firmIdByContractId = new Map<string, string | null>();
   let orphanContractCount = 0;
+  let ambiguousContractCount = 0;
 
   for (const contract of contracts) {
     const key = subcontractorKey(contract.counterparty_name);
-    contractKeyById.set(contract.id, key);
-    const bucket = byKey.get(key);
-    if (!bucket) {
-      if (!contract.is_draft) orphanContractCount += 1;
+    const firmId = uniqueFirmIdOf(key);
+    firmIdByContractId.set(contract.id, firmId);
+    if (firmId === null) {
+      if (!contract.is_draft) {
+        if (firmIdsByName.has(key)) ambiguousContractCount += 1;
+        else orphanContractCount += 1;
+      }
       continue;
     }
+    const bucket = byId.get(firmId);
+    if (!bucket) continue;
     bucket.contracts.push(contract);
     // Taslak sözleşme ne "aktif"tir ne de gerçekleşmiş bir bedeldir.
     if (contract.is_draft) continue;
@@ -186,9 +220,11 @@ export function buildSubcontractorDirectory({
     if (payment.period_year === currentYear && payment.period_month === currentMonth) {
       monthPaymentTotal += toNumber(payment.net_total);
     }
-    const key =
-      contractKeyById.get(payment.contract_id) ?? subcontractorKey(payment.subcontractor_name);
-    const bucket = byKey.get(key);
+    const mapped = firmIdByContractId.get(payment.contract_id);
+    const firmId =
+      mapped !== undefined ? mapped : uniqueFirmIdOf(subcontractorKey(payment.subcontractor_name));
+    if (firmId === null) continue;
+    const bucket = byId.get(firmId);
     if (!bucket) continue;
     if (payment.status === "paid") bucket.paidTotal += toNumber(payment.net_total);
     else bucket.pendingTotal += toNumber(payment.net_total);
@@ -196,7 +232,7 @@ export function buildSubcontractorDirectory({
 
   const rows: SubcontractorRow[] = subcontractors
     .map((firm) => {
-      const bucket = byKey.get(subcontractorKey(firm.name)) ?? emptyAccumulator();
+      const bucket = byId.get(firm.id) ?? emptyAccumulator();
       const detail = pickDetailContract(bucket.contracts);
       return {
         id: firm.id,
@@ -233,6 +269,7 @@ export function buildSubcontractorDirectory({
     },
     categories,
     orphanContractCount,
+    ambiguousContractCount,
     isPaymentPending: isPaymentTruncated,
   };
 }

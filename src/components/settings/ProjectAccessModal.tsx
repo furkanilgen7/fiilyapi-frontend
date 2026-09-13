@@ -3,13 +3,15 @@
 import { useEffect, useState } from "react";
 import { Button, Toggle, Checkbox } from "@/components/ui";
 import { Modal } from "./Modal";
-import { useProjects, useProjectAccess } from "@/lib/api/hooks/useProjects";
+import { useProjects, useProjectAccess, PROJECT_LIST_MAX_LIMIT } from "@/lib/api/hooks/useProjects";
 import { useSetProjectAccess } from "@/lib/api/hooks/useUserMutations";
 import { backendErrorMessage } from "@/lib/api/error-message";
 import type { UserResponse } from "@/lib/api/models";
 
 export function ProjectAccessModal({ user, onClose }: { user: UserResponse; onClose: () => void }) {
-  const projectsQuery = useProjects();
+  // Sunucu varsayılanı 50; limit gönderilmezse 51. proje onay kutusu
+  // listesinde HİÇ görünmez ve yöneticiye "böyle bir proje yok" der.
+  const projectsQuery = useProjects({ limit: PROJECT_LIST_MAX_LIMIT });
   const accessQuery = useProjectAccess(user.id);
   const setAccess = useSetProjectAccess();
 

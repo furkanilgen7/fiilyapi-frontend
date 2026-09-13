@@ -283,6 +283,31 @@ describe("LeavesView — onay bekleyen talepler (54-113)", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  /**
+   * 🔴 ÇİFT GÖNDERİM — onay GÖVDESİZDİR ve diyalog açmaz, yani düğme ile uç
+   * arasında hiçbir kapı yoktur. `approveRequest.isPending` okunmazsa aynı
+   * satıra iki hızlı tıklama İKİ POST üretir: ikincisi sunucunun satır
+   * kilidinden 409 yer ve ekrana "onay başarısız" gibi okunan bir hata basar —
+   * oysa onay GERÇEKLEŞMİŞTİR. İki diyalog (LeaveRequestFormModal /
+   * LeaveRejectModal) bu kilidi zaten kuruyor; onay yolu kurmuyordu.
+   */
+  it("🔴 onay isteği uçarken onay düğmesi KİLİTLİdir (çift gönderim yok)", async () => {
+    vi.mocked(useApproveLeaveRequest).mockReturnValue({
+      mutate: approveMutate,
+      isPending: true,
+    } as unknown as ReturnType<typeof useApproveLeaveRequest>);
+    render(<LeavesView currentYear={2026} />);
+
+    const approve = screen.getByTestId("iz-approve-lr-1");
+    expect(approve).toBeDisabled();
+
+    await userEvent.click(approve);
+    expect(approveMutate).not.toHaveBeenCalled();
+
+    // 🔴 Red AYRI mutasyondur — onayın kilidi reddi ENGELLEMEZ.
+    expect(screen.getByTestId("iz-reject-lr-1")).toBeEnabled();
+  });
+
   it("🔴 onayın 409'u (çakışma/hak aşımı/hesaplanamayan kalan) EKRANDA basılır", async () => {
     render(<LeavesView currentYear={2026} />);
     await userEvent.click(screen.getByTestId("iz-approve-lr-1"));

@@ -215,6 +215,44 @@ describe("buildSubcontractorDirectory · üç kaynaklı istemci agregasyonu", ()
     expect(directory.rows[0].contractTotal).toBe(0);
   });
 
+  // 🔴 VERİ BÜTÜNLÜĞÜ — AYNI AD, İKİ AYRI TÜZEL KİŞİ.
+  // Ad tekilliği HİÇBİR katmanda dayatılmıyor (backend `subcontractors`
+  // tablosunda yalnız KISMİ `uq_subcontractors_tax_number` ve NON-UNIQUE
+  // `ix_subcontractors_name` var; VKN bile zorunlu değil). İki firma aynı adı
+  // taşırsa ad tabanlı eşleştirme HANGİSİ olduğunu söyleyemez: bu durumda
+  // sözleşme İKİSİNE DE atfedilmez — uydurulmuş bir sayı basmaktansa
+  // atfedilemeyen sözleşme görünür sayaçla dışarı verilir.
+  it("aynı ada sahip iki ayrı firma TEK kovada birleşmez; sözleşme ikisine de atfedilmez", () => {
+    const directory = build({
+      subcontractors: [
+        firm({ id: "sub-a", name: "Akın İnşaat Ltd. Şti.", tax_number: "1111111111" }),
+        firm({ id: "sub-b", name: "Akın İnşaat Ltd. Şti.", tax_number: "2222222222" }),
+      ],
+      contracts: [contract({ id: "sc-1", amount: "3000000.00", status: "active" })],
+      payments: [
+        payment({ id: "a", contract_id: "sc-1", status: "paid", net_total: "900000.00" }),
+        payment({ id: "b", contract_id: "sc-1", status: "pending_approval", net_total: "400000.00" }),
+      ],
+    });
+
+    expect(directory.rows).toHaveLength(2);
+    for (const row of directory.rows) {
+      expect(row.activeContractCount).toBe(0);
+      expect(row.contractTotal).toBe(0);
+      expect(row.paidTotal).toBe(0);
+      expect(row.pendingTotal).toBe(0);
+      // Aynı "Detay →" hedefi iki firmaya birden verilmez.
+      expect(row.detailContractId).toBeNull();
+    }
+    // Sessizce yutulmaz: atfedilemeyen sözleşme sayılır.
+    expect(directory.ambiguousContractCount).toBe(1);
+    // Adı hiçbir firmayla eşleşmeyen sözleşme DEĞİL — eşleşme fazladır.
+    expect(directory.orphanContractCount).toBe(0);
+    // KPI'lar global sayımdır, değişmez.
+    expect(directory.summary.activeContractCount).toBe(1);
+    expect(directory.summary.monthPaymentTotal).toBe(1_300_000);
+  });
+
   it("kategori seçenekleri GERÇEK veriden türer, tekilleşir ve sıralanır", () => {
     const directory = build({
       subcontractors: [

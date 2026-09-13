@@ -160,6 +160,72 @@ describe("StockEntryForm — depo ÖN DOLDURMA (rotadan, query parametresi YOK)"
     expect(screen.getByTestId("stok-giris-depo")).toHaveValue("");
     expect(screen.getByTestId("stok-giris-depo-uyari")).toHaveTextContent("tanımlı depo yok");
   });
+
+  /**
+   * 🔴 YARIŞ — `useSite` ve `useWarehouses` İKİ AYRI sorgudur ve sıraları
+   * garanti DEĞİLDİR. Depo listesi ÖNCE gelirse `siteId` o an henüz `""`dır;
+   * tohumlama bekçisi o turda "tohumlandı" diye işaretlenirse şantiye kimliği
+   * sonradan geldiğinde ön doldurma BİR DAHA denenmez ve form varsayılan
+   * deposunu SESSİZCE kaybeder (hata yok, 422 yok — boş kalan bir alan).
+   */
+  it("🔴 şantiye kimliği depo listesinden SONRA gelirse ön doldurma YİNE yapılır", () => {
+    vi.mocked(useSite).mockReturnValue(stub({ data: undefined, isLoading: true, isError: false }));
+    const { rerender } = render(<StockEntryForm />);
+
+    // İlk turda şantiye kimliği yok: hiçbir depo eşleşemez.
+    expect(screen.getByTestId("stok-giris-depo")).toHaveValue("");
+
+    vi.mocked(useSite).mockReturnValue(
+      stub({ data: { id: SITE_ID, name: "A-Blok Şantiyesi" }, isLoading: false, isError: false }),
+    );
+    rerender(<StockEntryForm />);
+
+    expect(screen.getByTestId("stok-giris-depo")).toHaveValue("wh-1");
+  });
+
+  /**
+   * 🔴 Yarış onarımının KENDİ riski: tohumlama artık kimliği BEKLEDİĞİ için
+   * beklerken kullanıcı depo seçebilir. Geç gelen tohum o seçimi EZMEMELİDİR —
+   * yoksa bir sessiz kayıp yerine başkası konmuş olurdu.
+   */
+  it("🔴 kimlik gelmeden kullanıcı depo seçtiyse geç tohumlama onu EZMEZ", () => {
+    vi.mocked(useSite).mockReturnValue(stub({ data: undefined, isLoading: true, isError: false }));
+    const { rerender } = render(<StockEntryForm />);
+
+    fireEvent.change(screen.getByTestId("stok-giris-depo"), { target: { value: "wh-0" } });
+    expect(screen.getByTestId("stok-giris-depo")).toHaveValue("wh-0");
+
+    vi.mocked(useSite).mockReturnValue(
+      stub({ data: { id: SITE_ID, name: "A-Blok Şantiyesi" }, isLoading: false, isError: false }),
+    );
+    rerender(<StockEntryForm />);
+
+    expect(screen.getByTestId("stok-giris-depo")).toHaveValue("wh-0");
+  });
+
+  /**
+   * Tohumlamanın "YALNIZ BİR KEZ" sözleşmesi KORUNUR: yarış onarımı, sonraki
+   * liste yenilemelerinin kullanıcının seçimini ezmesine kapı AÇMAMALIDIR.
+   */
+  it("tohumlandıktan sonra liste yenilenirse kullanıcının seçimi EZİLMEZ", () => {
+    const { rerender } = render(<StockEntryForm />);
+    expect(screen.getByTestId("stok-giris-depo")).toHaveValue("wh-1");
+
+    fireEvent.change(screen.getByTestId("stok-giris-depo"), { target: { value: "wh-0" } });
+    expect(screen.getByTestId("stok-giris-depo")).toHaveValue("wh-0");
+
+    // Aynı içerik, YENİ dizi kimliği — efektin bağımlılığı değişir.
+    vi.mocked(useWarehouses).mockReturnValue(
+      stub({
+        data: { items: [...WAREHOUSES], total: WAREHOUSES.length, limit: 200, offset: 0 },
+        isLoading: false,
+        isError: false,
+      }),
+    );
+    rerender(<StockEntryForm />);
+
+    expect(screen.getByTestId("stok-giris-depo")).toHaveValue("wh-0");
+  });
 });
 
 describe("StockEntryForm — koşullu 'Kaynak Depo' (spec §5 S4)", () => {

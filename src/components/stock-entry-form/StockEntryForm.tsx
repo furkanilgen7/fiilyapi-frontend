@@ -130,9 +130,18 @@ export function StockEntryForm() {
   useEffect(() => {
     if (seededRef.current) return;
     if (!warehouses) return;
+    // 🔴 YARIŞ — `siteId` AYRI bir sorgudan (`useSite`) gelir ve depo listesi
+    // önce dönerse o an henüz `""`dır. Kimlik gelmeden tohumlanmış SAYILIRSA
+    // hiçbir depo eşleşmez, `prefill` null kalır ve kimlik sonradan geldiğinde
+    // efekt erken döner: form varsayılan deposunu SESSİZCE kaybeder.
+    if (!siteId) return;
     seededRef.current = true;
     const prefill = defaultWarehouseId(warehouses, siteId);
-    if (prefill) setValues((prev) => ({ ...prev, warehouseId: prefill }));
+    // Kimlik beklenirken kullanıcı depo seçmiş olabilir: geç gelen tohum onun
+    // seçimini EZMEZ (yalnız DOKUNULMAMIŞ alan doldurulur).
+    if (prefill) {
+      setValues((prev) => (prev.warehouseId === "" ? { ...prev, warehouseId: prefill } : prev));
+    }
   }, [warehouses, siteId]);
 
   const shouldFocusRef = useRef(false);

@@ -5,8 +5,30 @@ import type { UpcomingCollection } from "@/lib/api/hooks/useSalesSummary";
 import "./sales.css";
 
 export interface UpcomingCollectionsCardProps {
-  /** `undefined` ⇒ yükleniyor/hata (kart yine çizilir, satır basılmaz). */
+  /** `undefined` ⇒ veri YOK (yükleniyor/hata); kart yine çizilir, satır basılmaz. */
   items: UpcomingCollection[] | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  /** Sunucunun Türkçe hata cümlesi — sabit cümle SON çaredir (ST §4b kanonu). */
+  errorMessage?: string;
+}
+
+/**
+ * Satır basılamıyorken kutuya ne yazılacağı. "Taksit yok" KESİN bir iddiadır:
+ * yalnız sunucu GERÇEKTEN boş dizi verdiğinde doğrudur. Yükleniyor/hata hâlinde
+ * basılsaydı gecikmiş tahsilatları gizleyen bir yanlış-negatif üretirdi —
+ * kardeş `SalesKpiStrip` aynı kaynakta sahte sıfır basmaz, bu kart da basmaz.
+ */
+function emptyMessage(options: {
+  items: UpcomingCollection[] | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  errorMessage?: string;
+}): string {
+  if (options.isLoading) return "Yaklaşan tahsilatlar yükleniyor…";
+  if (options.isError) return options.errorMessage ?? "Yaklaşan tahsilatlar yüklenemedi.";
+  if (options.items === undefined) return "Yaklaşan tahsilat bilgisi henüz yüklenmedi.";
+  return "Önümüzdeki 30 günde vadesi gelen taksit yok.";
 }
 
 /**
@@ -24,7 +46,12 @@ export interface UpcomingCollectionsCardProps {
  * ÜRETİLMEZ — iki ton (gecikmiş kırmızı 221-224 · yaklaşan kehribar 225-228)
  * gerçek veriden basılır.
  */
-export function UpcomingCollectionsCard({ items }: UpcomingCollectionsCardProps) {
+export function UpcomingCollectionsCard({
+  items,
+  isLoading,
+  isError,
+  errorMessage,
+}: UpcomingCollectionsCardProps) {
   const rows = items ?? [];
 
   return (
@@ -36,7 +63,7 @@ export function UpcomingCollectionsCard({ items }: UpcomingCollectionsCardProps)
 
       {rows.length === 0 ? (
         <p className="satis-upcoming__empty" data-testid="satis-yaklasan-bos">
-          Önümüzdeki 30 günde vadesi gelen taksit yok.
+          {emptyMessage({ items, isLoading, isError, errorMessage })}
         </p>
       ) : (
         <ul className="satis-upcoming__list">

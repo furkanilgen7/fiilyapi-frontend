@@ -145,6 +145,16 @@ export function SubcontractorsView() {
         </p>
       )}
 
+      {/* Ad tekil değildir; aynı adı taşıyan iki firmada sözleşme HANGİSİNE ait
+          olduğu söylenemez. Uydurulmuş bir satır basmak yerine sayılır. */}
+      {directory.ambiguousContractCount > 0 && (
+        <p className="tl__notice" data-testid="tl-ambiguous-notice">
+          {directory.ambiguousContractCount} sözleşme AYNI ADI taşıyan birden
+          çok firmaya uyduğu için hiçbir satıra yazılmadı — ayırt etmek için
+          firma adlarını (ör. VKN ekleyerek) tekilleştirin.
+        </p>
+      )}
+
       <SubcontractorsSummaryStrip summary={directory.summary} />
 
       <SubcontractorsTable

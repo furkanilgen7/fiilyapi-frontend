@@ -139,6 +139,11 @@ export function LeavesView({ currentYear = new Date().getFullYear() }: LeavesVie
         balances={summary?.balances}
         isLoading={requestsQuery.isLoading}
         errorMessage={requestsError}
+        // 🔴 ÇİFT GÖNDERİM: onay gövdesizdir ve diyalog açmaz — düğme ile uç
+        // arasındaki TEK kapı budur. İki diyalogun kurduğu `isPending` kilidi
+        // onay yolunda da kurulur; yoksa iki hızlı tıklama iki POST üretir ve
+        // ikincisinin 409'u başarılı onayı başarısız gibi gösterir.
+        isApprovePending={approveRequest.isPending}
         onApproveRequest={handleApprove}
         onRejectRequest={setRejectTarget}
       />

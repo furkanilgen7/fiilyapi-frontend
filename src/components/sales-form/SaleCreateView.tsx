@@ -51,12 +51,12 @@ import { PaymentPlanCard } from "./PaymentPlanCard";
 import { SaleDocumentsCard } from "./SaleDocumentsCard";
 import { SalePriceCard } from "./SalePriceCard";
 import { SoldUnitCard } from "./SoldUnitCard";
+import { PROJECT_PARAM } from "@/lib/navigation-params";
 // Sıra önemli: önce paylaşılan kabuk, sonra forma özgü bloklar.
 import "@/styles/form-shell.css";
 import "./sales-form.css";
 
 /** `?proje=` / `?unit=` bağlam parametreleri (spec §1/DS "?unit ile de gelinebilir"). */
-const PROJECT_PARAM = "proje";
 const UNIT_PARAM = "unit";
 
 /**

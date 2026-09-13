@@ -270,6 +270,18 @@ describe("SubcontractorsView · TL taşeron firma listesi", () => {
     expect(screen.getByTestId("tl-orphan-notice")).toBeInTheDocument();
   });
 
+  it("AYNI ADLI iki firmada sözleşme hiçbir satıra yazılmaz, görünür not basılır", () => {
+    mockQueries({
+      firms: [...FIRMS, { ...FIRMS[0], id: "sub-3", tax_number: "5555555555" }],
+    });
+    render(<SubcontractorsView />);
+    expect(screen.getByTestId("tl-ambiguous-notice")).toBeInTheDocument();
+    // Aynı adı taşıyan İKİ satırın hiçbiri diğerinin sözleşmesini basmaz.
+    for (const row of screen.getAllByTestId("tl-detail-disabled")) {
+      expect(row).toHaveAttribute("aria-disabled", "true");
+    }
+  });
+
   it("'+ Taşeron Ekle' paylaşılan modalı açar", () => {
     render(<SubcontractorsView />);
     fireEvent.click(screen.getByRole("button", { name: "+ Taşeron Ekle" }));

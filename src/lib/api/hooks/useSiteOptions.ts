@@ -1,6 +1,6 @@
 import { useQueries } from "@tanstack/react-query";
 
-import { useProjects } from "./useProjects";
+import { useProjects, PROJECT_LIST_MAX_LIMIT } from "./useProjects";
 import { sitesQueryOptions } from "./useSites";
 
 /** E5 78 — "Güneşkent A-Blok" seçenek etiketi (proje adı + şantiye adı). */
@@ -26,7 +26,11 @@ export interface SiteOptionsState {
  * "önce proje seç" akışı UYDURULMAZ — etiket ikisini birleştirir.
  */
 export function useSiteOptions(): SiteOptionsState {
-  const projectsQuery = useProjects();
+  // Sunucu varsayılanı 50'dir (`projects/router.py` `limit = 50`): limit
+  // GÖNDERİLMEZSE 51. projenin şantiyeleri seçeneklere HİÇ girmez ve
+  // kullanan ekran onları "atanmamış" sanar. Tavan AÇIKÇA gönderilir
+  // (`useProjects.ts` kanonu: sessiz kırpma YOK).
+  const projectsQuery = useProjects({ limit: PROJECT_LIST_MAX_LIMIT });
   const projects = projectsQuery.data?.items ?? [];
   const siteQueries = useQueries({
     queries: projects.map((project) => sitesQueryOptions(project.id)),

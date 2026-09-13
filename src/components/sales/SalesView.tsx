@@ -21,9 +21,9 @@ import { UpcomingCollectionsCard } from "./UpcomingCollectionsCard";
 import { parseSalesStatusFilter, PRICE_LIST_PENDING_REASON } from "./sales-labels";
 import "./sales.css";
 import { routes } from "@/lib/routes";
+import { PROJECT_PARAM } from "@/lib/navigation-params";
 
 /** URL durumu anahtarları — seçili proje ve süzgeç paylaşılabilir olmalı. */
-const PROJECT_PARAM = "proje";
 const STATUS_PARAM = "durum";
 
 /** T3'ün açacağı satış formu (spec K1). */
@@ -183,7 +183,16 @@ export function SalesView() {
       />
 
       {/* 217-234 */}
-      <UpcomingCollectionsCard items={summaryQuery.data?.upcoming_collections} />
+      <UpcomingCollectionsCard
+        items={summaryQuery.data?.upcoming_collections}
+        isLoading={summaryQuery.isLoading}
+        isError={summaryQuery.isError}
+        errorMessage={
+          summaryQuery.isError
+            ? backendErrorMessage(summaryQuery.error, "Yaklaşan tahsilatlar yüklenemedi.")
+            : undefined
+        }
+      />
     </div>
   );
 }

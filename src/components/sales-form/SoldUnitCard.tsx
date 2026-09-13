@@ -9,6 +9,23 @@ import { deriveUnitInfoBoxes } from "./unit-info";
 
 const PLACEHOLDER = "Seçiniz...";
 
+/**
+ * Üniteyi SATIŞA KAPATAN sunucu damgası — yoksa `null`. İstemci kural
+ * UYDURMAZ, backend korkuluklarının okuduğu iki alanı okur:
+ *   • `ensure_unit_sellable` → `owner_side='landowner'` ise 422
+ *     (`is_landowner_share` bu karşılaştırmanın sunucudaki türevidir),
+ *   • `ensure_no_open_sale` → ünitede açık satış kaydı varsa 409; ünitenin
+ *     `sales_status`u (`reserved`/`sold`) o kaydın TÜREVİDİR (spec §3).
+ * Seçenek SİLİNMEZ, devre dışı + gerekçeli basılır: kullanıcı aradığı daireyi
+ * listede bulur ve neden seçemediğini okur.
+ */
+function unitBlockedReason(unit: UnitResponse): string | null {
+  if (unit.is_landowner_share) return "Arsa sahibi payı";
+  if (unit.sales_status === "sold") return "Satıldı";
+  if (unit.sales_status === "reserved") return "Rezerve";
+  return null;
+}
+
 interface SoldUnitCardProps {
   values: SaleFormValues;
   errors: SaleFormErrors;
@@ -99,12 +116,16 @@ export function SoldUnitCard({
               <option value="">{PLACEHOLDER}</option>
               {blocks.map((group) => (
                 <optgroup key={group.block.id} label={group.block.name}>
-                  {group.units.map((unit) => (
-                    <option key={unit.id} value={unit.id}>
-                      {unit.label}
-                      {unit.layout ? ` (${unit.layout})` : ""}
-                    </option>
-                  ))}
+                  {group.units.map((unit) => {
+                    const blockedReason = unitBlockedReason(unit);
+                    return (
+                      <option key={unit.id} value={unit.id} disabled={blockedReason !== null}>
+                        {unit.label}
+                        {unit.layout ? ` (${unit.layout})` : ""}
+                        {blockedReason ? ` — ${blockedReason}` : ""}
+                      </option>
+                    );
+                  })}
                 </optgroup>
               ))}
             </Select>

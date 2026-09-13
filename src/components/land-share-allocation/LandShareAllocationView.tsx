@@ -60,13 +60,11 @@ import { AllocationBalanceCard } from "./AllocationBalanceCard";
 import { AllocationBulkBar } from "./AllocationBulkBar";
 import { AllocationTargetCard } from "./AllocationTargetCard";
 import { AllocationUnitsCard, type AllocationRowFilter } from "./AllocationUnitsCard";
+import { PROJECT_PARAM } from "@/lib/navigation-params";
 // Sıra önemli: ortak kabuk → aile ortağı → forma özgü bloklar.
 import "@/styles/form-shell.css";
 import "@/components/unit-shell/unit-shell.css";
 import "./land-share-allocation.css";
-
-/** Seçili proje URL'de taşınır (SY/`SalesView`/UE/TU/EI ile aynı anahtar). */
-const PROJECT_PARAM = "proje";
 
 /** PG 112 mockup'ta AKTİF çizilen sekmedir — bu ekranın işi atanmayanları atamaktır. */
 const DEFAULT_FILTER: AllocationRowFilter = "unassigned";

@@ -50,21 +50,11 @@ import { BulkPreviewCard } from "./BulkPreviewCard";
 import { BulkRulesCard } from "./BulkRulesCard";
 import { BulkSlotTemplateCard } from "./BulkSlotTemplateCard";
 import { BulkTargetBlockCard } from "./BulkTargetBlockCard";
+import { PROJECT_PARAM, BLOCK_PARAM } from "@/lib/navigation-params";
 // Sıra önemli: ortak kabuk → aile ortağı → forma özgü bloklar.
 import "@/styles/form-shell.css";
 import "@/components/unit-shell/unit-shell.css";
 import "./bulk-unit-form.css";
-
-/** Seçili proje URL'de taşınır (SY/`SalesView`/UE ile aynı anahtar). */
-const PROJECT_PARAM = "proje";
-
-/**
- * 🔴 BE 109'un ("Kaydettikten sonra toplu ünite üretimine geç") getirdiği blok
- * bağlamı. `BlockCreateView` kayıttan sonra `?proje=…&blok=<yeni blok>` ile
- * buraya yönlendirir; bu parametre OKUNMAZSA kullanıcı blok seçicisi BOŞ bir
- * ekrana düşer ve o kutucuk süsten ibaret kalırdı.
- */
-const BLOCK_PARAM = "blok";
 
 /** `POST …/units/bulk`ın HEP-YA-HİÇ reddi. */
 const CONFLICT_STATUS = 409;
@@ -118,6 +108,11 @@ export function BulkUnitCreateView() {
   const createBulk = useCreateBulkUnits();
 
   // `?proje=` + `?blok=` tohumlaması — YALNIZ BİR KEZ (`UnitCreateView` deseni).
+  // 🔴 `BLOCK_PARAM` BE 109'un ("Kaydettikten sonra toplu ünite üretimine geç")
+  // getirdiği blok bağlamıdır: `BlockCreateView` kayıttan sonra
+  // `?proje=…&blok=<yeni blok>` ile buraya yönlendirir; OKUNMAZSA kullanıcı blok
+  // seçicisi BOŞ bir ekrana düşer ve o kutucuk süsten ibaret kalırdı. İki anahtar
+  // da `@/lib/navigation-params`ten gelir — üretici ile tüketici AYNI sabiti paylaşır.
   // Tek `useRef` ikisini birlikte korur: ayrı bayraklar, kullanıcı seçimi
   // değiştirdikten sonra URL güncellenince tohumu YENİDEN uygulayabilirdi.
   const contextSeededRef = useRef(false);

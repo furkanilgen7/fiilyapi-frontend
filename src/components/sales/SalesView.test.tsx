@@ -272,3 +272,29 @@ describe("SalesView — blok/ünite form girişleri (F-UNIT1 T3)", () => {
     }
   });
 });
+
+/**
+ * Kart ile çağıran arasındaki KABLO: bileşen üç hâli ayırsa bile `SalesView`
+ * bayrakları geçirmezse kullanıcı yine "taksit yok" okur.
+ */
+describe("SalesView — yaklaşan tahsilatlar kartına yükleniyor/hata GEÇİRİLİR", () => {
+  const EMPTY_CLAIM = "Önümüzdeki 30 günde vadesi gelen taksit yok.";
+
+  it("özet yüklenirken 'taksit yok' iddiası BASILMAZ", () => {
+    vi.mocked(useSalesSummary).mockReturnValue(queryStub(undefined, { isLoading: true }));
+    render(<SalesView />);
+    expect(screen.queryByText(EMPTY_CLAIM)).not.toBeInTheDocument();
+  });
+
+  it("özet 403 DIŞI bir hata verdiğinde 'taksit yok' yerine sunucunun cümlesi basılır", () => {
+    vi.mocked(useSalesSummary).mockReturnValue(
+      queryStub(undefined, {
+        isError: true,
+        error: new BackendError(500, { detail: "Özet hesaplanamadı." }),
+      }),
+    );
+    render(<SalesView />);
+    expect(screen.queryByText(EMPTY_CLAIM)).not.toBeInTheDocument();
+    expect(screen.getByTestId("satis-yaklasan-bos")).toHaveTextContent("Özet hesaplanamadı.");
+  });
+});

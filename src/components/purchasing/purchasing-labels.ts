@@ -27,8 +27,15 @@ export const PURCHASING_PERMISSION_MODULE = "procurement";
 
 /** URL durumu anahtarları — sekme/süzgeç paylaşılabilir olmalı (E12/E3 deseni). */
 export const STATUS_PARAM = "durum";
-export const PROJECT_PARAM = "proje";
 export const QUERY_PARAM = "q";
+
+/**
+ * `PROJECT_PARAM` bu ekranlara ÖZGÜ değildir: `/satis`, `/belgeler`, `/personel`
+ * de aynı `?proje=` anahtarını taşır. Burada YENİDEN tanımlanmaz, tek kaynaktan
+ * geçirilir — mevcut ithal edenler (`PurchaseRequestsView`, `PurchaseOrdersView`)
+ * değişmeden çalışır.
+ */
+export { PROJECT_PARAM } from "@/lib/navigation-params";
 
 /**
  * Durum rozeti metinleri (SAT 118 · 127 · 136 · 145 · 154).

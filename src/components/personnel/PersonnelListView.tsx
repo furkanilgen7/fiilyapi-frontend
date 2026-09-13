@@ -40,9 +40,9 @@ import { PersonnelTabsStrip } from "./PersonnelTabsStrip";
 import "./personnel-list.css";
 import { navGroupHeadingFor } from "@/components/shell/nav-config";
 import { routes } from "@/lib/routes";
+import { PROJECT_PARAM } from "@/lib/navigation-params";
 
 const QUERY_PARAM = "q";
-const PROJECT_PARAM = "proje";
 const TRADE_PARAM = "meslek";
 const STATUS_PARAM = "durum";
 const PAGE_SIZE = 6; // P 236 — mockup "1–6 gösteriliyor" ile birebir.

@@ -47,13 +47,11 @@ import { ImportFileCard } from "./ImportFileCard";
 import { ImportResultCard } from "./ImportResultCard";
 import { ImportRowsCard } from "./ImportRowsCard";
 import { ImportValidationCard } from "./ImportValidationCard";
+import { PROJECT_PARAM } from "@/lib/navigation-params";
 // Sıra önemli: ortak kabuk → aile ortağı → forma özgü bloklar.
 import "@/styles/form-shell.css";
 import "@/components/unit-shell/unit-shell.css";
 import "./unit-import.css";
-
-/** Seçili proje URL'de taşınır (SY/`SalesView`/UE/TU ile aynı anahtar). */
-const PROJECT_PARAM = "proje";
 
 /**
  * T1'in SAF kurucusundan istemci girdisine köprü.

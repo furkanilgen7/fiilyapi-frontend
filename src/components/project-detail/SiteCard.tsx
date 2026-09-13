@@ -58,7 +58,13 @@ function PlaceholderValue({
   return (
     <div
       className={cx(valueClassName, "site-card__kpi-value--pending")}
-      title={pendingModuleLabel(pendingModule)}
+      // 🔴 K-ZARF 3. HÂL (src/lib/placeholder-cell.ts:14-20): `available:false`
+      // + `pending_module:null` = ROLÜN İZNİ YOK (backend `restricted()`).
+      // O hâlde `pendingModuleLabel(null)`ın döndürdüğü "İlgili modülle
+      // birlikte gelir" cümlesi YALANDIR — modül vardır, izin yoktur. Gerekçe
+      // bilinmiyorsa ipucu HİÇ basılmaz (aynı ekranın alt şeridi de böyle
+      // yapar: SiteTotalsStrip.tsx:77-78).
+      title={pendingModule ? pendingModuleLabel(pendingModule) : undefined}
     >
       —
     </div>
