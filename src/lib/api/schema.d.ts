@@ -1545,6 +1545,9 @@ export interface paths {
          *
          *     🔴 K2: hiçbir sayı çalışma kaydından CANLI okunmaz — satırların KENDİ
          *     kolonlarından türer.
+         *
+         *     URL-4 — yol parametresi UUID **ya da** fatura no slug'ı kabul eder
+         *     (`/makine/kira/lt2026080211`). Yazma uçları `uuid.UUID` KALIR.
          */
         get: operations["get_rental_invoice_endpoint_equipment_rental_invoices__invoice_id__get"];
         put?: never;
@@ -1792,6 +1795,10 @@ export interface paths {
         /**
          * Get Equipment Endpoint
          * @description Görünmeyen kayıt var olmayanla AYNI 404'ü döner (spec §4).
+         *
+         *     URL-4 — yol parametresi UUID **ya da** ad slug'ı kabul eder
+         *     (`/makine/beko-loder`). Yol adı `equipment_id` KALIR (URL-2 kararı 1);
+         *     PATCH ucu `uuid.UUID` KALIR (kararı 3).
          */
         get: operations["get_equipment_endpoint_equipment__equipment_id__get"];
         put?: never;
@@ -2210,6 +2217,19 @@ export interface paths {
          *
          *     Görünmeyen fatura var olmayanla AYNI 404'ü alır. Toplamlar okuma anında
          *     yeniden HESAPLANMAZ (K7): fatura donmuş bir belgedir.
+         *
+         *     URL-4 — yol parametresi UUID **ya da** `invoice_no` kabul eder (yol adı
+         *     `invoice_id` KALIR, URL-2 kararı 1). Numara iki yönde de kayıtlıysa ve
+         *     ikisi de KULLANICIYA GÖRÜNÜYORSA **409** döner: sessizce biri seçilmez.
+         *
+         *     🔴 **KARDEŞ UÇLAR `uuid` KALIR** — sözleşme bu yol parametresi adı altında
+         *     BİLEREK ASİMETRİKTİR: `GET /invoices/{invoice_id}` `string`, ama
+         *     `…/{invoice_id}/payments` · `/approve` · `/send` · `/dispute` ·
+         *     `/mark-collected` `uuid` bekler. Anahtar YALNIZCA **link üretimi ve detay
+         *     okuması** içindir; istemci kardeş çağrılarda gövdeden dönen `id`yi
+         *     kullanır (URL-2 kararı 3). Detay yanıtındaki `slug`ı bir eylem ucuna
+         *     geçirmek 422 verir — bu bir kusur değil, yazma yüzeyini tahmin edilebilir
+         *     bir anahtara açmama kararının görünen yüzüdür.
          */
         get: operations["get_invoice_endpoint_invoices__invoice_id__get"];
         put?: never;
@@ -3585,7 +3605,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Personnel Endpoint */
+        /**
+         * Get Personnel Endpoint
+         * @description URL-4 — yol parametresi UUID **ya da** ad slug'ı kabul eder.
+         *
+         *     🔴 Bu modülde PROJE KAPSAMLI bir görünürlük süzgeci YOKTUR (ölçüldü:
+         *     `service/core.py`de `visible_*` kapısı yok) — personel kartı şirket
+         *     genelinde `personnel:view` iznine bağlıdır. Slug bu yüzden var olmayan bir
+         *     süzgeci DELMEZ; izinsiz kullanıcı slug'la da UUID'yle de aynı 403'ü alır.
+         */
         get: operations["get_personnel_endpoint_personnel__personnel_id__get"];
         put?: never;
         post?: never;
@@ -3651,7 +3679,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Progress Payment Endpoint */
+        /**
+         * Get Progress Payment Endpoint
+         * @description URL-4 — yol parametresi UUID **ya da** `<proje-slug>-<sıra>` slug'ı
+         *     kabul eder (`/hakedisler/kopru-guclendirme-5`).
+         *
+         *     Bileşik anahtar (`project_id`, `sequence_no`) AYRIŞTIRILMAZ: slug
+         *     oluşturulurken ÜRETİLİP SAKLANIR, böylece yol şablonu `/{payment_id}`
+         *     DEĞİŞMEZ (URL-2 kararı 1) ve `parse_ref` de değişmez.
+         *     Durum geçişleri ve PATCH/DELETE `uuid.UUID` KALIR (kararı 3).
+         */
         get: operations["get_progress_payment_endpoint_progress_payments__payment_id__get"];
         put?: never;
         post?: never;
@@ -3991,7 +4028,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Employer Contract Endpoint */
+        /**
+         * Get Employer Contract Endpoint
+         * @description URL-4 — proje anahtarı UUID **ya da** PROJE SLUG'ı olabilir
+         *     (`/sozlesmeler/isveren/kopru-guclendirme`).
+         *
+         *     🔴 Ayrı bir sözleşme slug'ı AÇILMADI ve `project_contracts` tablosuna kolon
+         *     EKLENMEDİ: bu ucun kimliği zaten PROJEDİR (`project_contracts` PK'sı
+         *     `project_id`) ve projenin slug'ı URL-2'de zaten üretilmiştir. İkinci bir
+         *     slug aynı kaydı iki adla anılır kılardı.
+         */
         get: operations["get_employer_contract_endpoint_projects__project_id__contract_get"];
         put?: never;
         post?: never;
@@ -4008,7 +4054,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Contract Distribution Endpoint */
+        /**
+         * Get Contract Distribution Endpoint
+         * @description URL-4 — proje anahtarı UUID ya da proje slug'ı (ekranın üçüncü isteği).
+         *
+         *     🔴 PUT ikizi (`save_contract_distribution`) `uuid.UUID` KALIR — URL-2
+         *     kararı 3: yalnız OKUMA uçları anahtar kabul eder.
+         */
         get: operations["get_contract_distribution_endpoint_projects__project_id__contract_distribution_get"];
         /**
          * Save Contract Distribution Endpoint
@@ -4046,7 +4098,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Employer Contract Items Endpoint */
+        /**
+         * Get Employer Contract Items Endpoint
+         * @description URL-4 — proje anahtarı UUID ya da proje slug'ı (ekranın ikinci isteği).
+         */
         get: operations["get_employer_contract_items_endpoint_projects__project_id__contract_items_get"];
         put?: never;
         /** Create Employer Contract Item Endpoint */
@@ -4665,6 +4720,17 @@ export interface paths {
          * Get Purchase Request Endpoint
          * @description FST detayı: başlık + kalemler + TÜREVLER (satır tutarı · tahmini toplam ·
          *     "Mevcut Stok"). Görünmeyen talep var olmayanla AYNI 404'ü alır.
+         *
+         *     URL-4 — yol parametresi UUID **ya da** `request_no` kabul eder.
+         *     🔴 YOL ADI `request_id` OLARAK KALIR (URL-2 kararı 1): şablon değişmezse
+         *     üretilmiş istemcinin yol anahtarı da değişmez; değişen yalnız TİPTİR
+         *     (`uuid` -> `string`).
+         *
+         *     🔴 **KARDEŞ UÇLAR `uuid` KALIR** — sözleşme bu yol parametresi adı altında
+         *     BİLEREK ASİMETRİKTİR: bu uç `string`, ama `…/{request_id}/quotes` ·
+         *     `/select-and-order` ve tüm PATCH/DELETE/durum geçişleri `uuid` bekler.
+         *     Anahtar YALNIZCA **link üretimi ve detay okuması** içindir; istemci kardeş
+         *     çağrılarda gövdeden dönen `id`yi kullanır (URL-2 kararı 3).
          */
         get: operations["get_purchase_request_endpoint_purchase_requests__request_id__get"];
         put?: never;
@@ -5865,15 +5931,23 @@ export interface paths {
          * Save Site Timesheet Week Endpoint
          * @description E5 76 "Haftayı Kaydet" — **DEĞİŞTİRME** semantiği.
          *
-         *     ⚠️ Gövde **hafta**+şantiye kapsamının TAM kümesidir: gövdede geçmeyen hücre
-         *     SİLİNİR. Aynı ayın BAŞKA haftalarına ve başka şantiyeye DOKUNULMAZ (kesin
-         *     karar `service.save_week`).
+         *     ⚠️ Gövde kaydedilen KAPSAMIN TAM kümesidir: kapsam içinde gövdede geçmeyen
+         *     hücre SİLİNİR. Aynı ayın BAŞKA haftalarına ve başka şantiyeye DOKUNULMAZ
+         *     (kesin karar `service.save_week`).
+         *
+         *     🔴 `section_id` GET ile AYNI süzgeçtir ve KAPSAMI DARALTIR: verildiğinde
+         *     yalnız o bölümün hücreleri kilitlenir, güncellenir ve silinir. Süzgeç
+         *     yazmada da tanınmasaydı, bölüm süzgeçli bir ızgarayı gönderen istemci aynı
+         *     haftanın DİĞER bölümlerini geri alınamaz biçimde silerdi. Süzgeç varken
+         *     gövdedeki her hücre o bölüme ait olmalıdır (422), başka şantiyenin bölümü
+         *     okumadaki ile aynı 404'tür.
          *
          *     Denetim TEK hafta-özeti olayıdır; hücre başına olay yazmak 7×48'lik bir
          *     kaydetmede denetim günlüğünü kullanılamaz hâle getirirdi (spec §3).
          *
-         *     Yanıt GÜNCEL haftadır (bölüm süzgeci UYGULANMAZ — kaydedilen kapsam
-         *     şantiyenin tamamıdır, ekran kaydettiğinin tamamını geri görmelidir).
+         *     Yanıt GÜNCEL haftadır ve KAYDEDİLEN kapsamı gösterir: süzgeçsiz istekte
+         *     şantiyenin tamamı, süzgeçli istekte o bölüm — ekran kaydettiğinin tamamını,
+         *     fazlasını DEĞİL, geri görmelidir.
          */
         put: operations["save_site_timesheet_week_endpoint_sites__site_id__timesheet_week_put"];
         post?: never;
@@ -6080,7 +6154,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Subcontractor Contract Endpoint */
+        /**
+         * Get Subcontractor Contract Endpoint
+         * @description URL-4 — yol parametresi UUID **ya da** sözleşme slug'ı kabul eder
+         *     (`/sozlesmeler/taseron/tsz-2026-004`). Yol adı `contract_id` KALIR.
+         *
+         *     Görünmeyen projedeki sözleşmenin slug'ı da **404** alır: `_visible_contract`
+         *     çözümden SONRA `_visible_project`e uğrar ve gövde var olmayan kaydınkiyle
+         *     BİREBİR aynıdır (IDOR — slug TAHMİN EDİLEBİLİR, UUID değil).
+         */
         get: operations["get_subcontractor_contract_endpoint_subcontractor_contracts__contract_id__get"];
         put?: never;
         post?: never;
@@ -6269,7 +6351,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Subcontractor Progress Payment Endpoint */
+        /**
+         * Get Subcontractor Progress Payment Endpoint
+         * @description URL-4 — yol parametresi UUID **ya da** `<sözleşme-slug>-<sıra>` slug'ı
+         *     kabul eder (`/hakedisler/taseron/tsz-2025-001-48`). Mockup ölçüldü:
+         *     `Taşeron Hakediş Oluştur` breadcrumb'ı `Akın İnşaat TSZ-2025-001 / Hakediş #48`.
+         *     Yazma uçları `uuid.UUID` KALIR (URL-2 kararı 3).
+         */
         get: operations["get_subcontractor_progress_payment_endpoint_subcontractor_progress_payments__payment_id__get"];
         put?: never;
         post?: never;
@@ -9955,6 +10043,8 @@ export interface components {
             serial_no: string | null;
             /** Site Id */
             site_id: string | null;
+            /** Slug */
+            slug?: string | null;
             status: components["schemas"]["EquipmentStatus"];
             /** Status Expected Date */
             status_expected_date: string | null;
@@ -10967,6 +11057,22 @@ export interface components {
             retention_rate: string | null;
             /** Site Id */
             site_id: string | null;
+            /**
+             * Slug
+             * @description URL-4 — URL'de taşınacak okunabilir anahtar; `invoice_no`nun kendisi.
+             *
+             *     AYRI BİR `slug` KOLONU AÇILMADI: `invoice_no` NOT NULL'dır ve zaten
+             *     yön başına tekildir; ikinci bir kolon aynı bilgiyi iki yerde tutar ve
+             *     migration doğururdu. Türev olduğu için LİSTE ve DETAY otomatik olarak
+             *     AYNI değeri taşır — `InvoiceResponse` ikisinin de şemasıdır, yani
+             *     URL-2'nin "liste şemasına slug eklenmedi" tuzağı burada YAPISAL olarak
+             *     imkânsızdır.
+             *
+             *     `None` olabilir: numara yol segmentine giremeyecek bir karakter
+             *     taşıyorsa (GELEN faturada `invoice_no` SERBEST METİNDİR — `2026/0001`
+             *     yazılabilir) istemci `slug ?? id` ile UUID'ye düşer.
+             */
+            readonly slug: string | null;
             status: components["schemas"]["InvoiceStatus"];
             /** Subcontractor Id */
             subcontractor_id: string | null;
@@ -11174,6 +11280,22 @@ export interface components {
             retention_rate: string | null;
             /** Site Id */
             site_id: string | null;
+            /**
+             * Slug
+             * @description URL-4 — URL'de taşınacak okunabilir anahtar; `invoice_no`nun kendisi.
+             *
+             *     AYRI BİR `slug` KOLONU AÇILMADI: `invoice_no` NOT NULL'dır ve zaten
+             *     yön başına tekildir; ikinci bir kolon aynı bilgiyi iki yerde tutar ve
+             *     migration doğururdu. Türev olduğu için LİSTE ve DETAY otomatik olarak
+             *     AYNI değeri taşır — `InvoiceResponse` ikisinin de şemasıdır, yani
+             *     URL-2'nin "liste şemasına slug eklenmedi" tuzağı burada YAPISAL olarak
+             *     imkânsızdır.
+             *
+             *     `None` olabilir: numara yol segmentine giremeyecek bir karakter
+             *     taşıyorsa (GELEN faturada `invoice_no` SERBEST METİNDİR — `2026/0001`
+             *     yazılabilir) istemci `slug ?? id` ile UUID'ye düşer.
+             */
+            readonly slug: string | null;
             status: components["schemas"]["InvoiceStatus"];
             /** Subcontractor Id */
             subcontractor_id: string | null;
@@ -13434,6 +13556,8 @@ export interface components {
             phone: string | null;
             /** Sgk No */
             sgk_no: string | null;
+            /** Slug */
+            slug?: string | null;
             source: components["schemas"]["WorkerSource"];
             /** Subcontractor Id */
             subcontractor_id: string | null;
@@ -13641,6 +13765,8 @@ export interface components {
             retainage_pct: string;
             /** Sequence No */
             sequence_no: number;
+            /** Slug */
+            slug?: string | null;
             status: components["schemas"]["ProgressPaymentStatus"];
             /** Submitted At */
             submitted_at: string | null;
@@ -13815,6 +13941,8 @@ export interface components {
             project_name: string;
             /** Sequence No */
             sequence_no: number;
+            /** Slug */
+            slug?: string | null;
             status: components["schemas"]["ProgressPaymentStatus"];
         };
         /** ProgressPaymentListResponse */
@@ -14852,6 +14980,8 @@ export interface components {
             section_id: string | null;
             /** Site Id */
             site_id: string | null;
+            /** Slug */
+            slug?: string | null;
             status: components["schemas"]["PurchaseRequestStatus"];
         };
         /**
@@ -14924,6 +15054,8 @@ export interface components {
             section_id: string | null;
             /** Site Id */
             site_id: string | null;
+            /** Slug */
+            slug?: string | null;
             status: components["schemas"]["PurchaseRequestStatus"];
         };
         /**
@@ -15122,6 +15254,8 @@ export interface components {
             site_id: string | null;
             /** Site Name */
             site_name: string | null;
+            /** Slug */
+            slug?: string | null;
             status: components["schemas"]["RentalInvoiceStatus"];
             /**
              * Supplier Id
@@ -15252,6 +15386,8 @@ export interface components {
             site_id: string | null;
             /** Site Name */
             site_name: string | null;
+            /** Slug */
+            slug?: string | null;
             status: components["schemas"]["RentalInvoiceStatus"];
             /**
              * Supplier Id
@@ -18028,6 +18164,8 @@ export interface components {
             signature_date: string | null;
             /** Site Id */
             site_id: string | null;
+            /** Slug */
+            slug?: string | null;
             /** Start Date */
             start_date: string | null;
             status: components["schemas"]["ContractStatus"];
@@ -18166,6 +18304,8 @@ export interface components {
             site_id: string | null;
             /** Site Name */
             site_name: string | null;
+            /** Slug */
+            slug?: string | null;
             status: components["schemas"]["ContractStatus"];
             /** Subcontractor Name */
             subcontractor_name: string | null;
@@ -18495,6 +18635,8 @@ export interface components {
             section_id: string | null;
             /** Sequence No */
             sequence_no: number;
+            /** Slug */
+            slug?: string | null;
             status: components["schemas"]["SubcontractorPaymentStatus"];
             /** Subcontractor Name */
             subcontractor_name: string | null;
@@ -18657,6 +18799,8 @@ export interface components {
             section_id: string | null;
             /** Sequence No */
             sequence_no: number;
+            /** Slug */
+            slug?: string | null;
             status: components["schemas"]["SubcontractorPaymentStatus"];
             /** Subcontractor Name */
             subcontractor_name: string | null;
@@ -26458,6 +26602,13 @@ export interface operations {
             };
             /** @description Fatura bulunamadı */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fatura numarası hem gelen hem giden faturada kayıtlı */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -35242,6 +35393,7 @@ export interface operations {
             query: {
                 iso_year: number;
                 iso_week: number;
+                section_id?: string | null;
             };
             header?: never;
             path: {
