@@ -347,4 +347,32 @@ describe("EquipmentDetailView", () => {
 
     expect(screen.queryByRole("heading", { level: 1, name: "Tower Crane TC-48" })).toBeNull();
   });
+
+  // kalan-4 #181: `siteOptions.isError` OKUNMUYORDU. Şantiye/proje sorgusu
+  // hata verirse `isLoading` false + `options` boş Map olur ve
+  // `resolveSiteLabel` null döner — ŞANTİYEYE ATANMIŞ bir makine yanlışlıkla
+  // "Depoda (Atanmadı)" basılırdı. Hata hâlinde de yükleniyor/bilinmez
+  // durumu (`undefined` → Hero'da "…") korunmalı, YANLIŞ "atanmadı" DEĞİL.
+  it("şantiye sorgusu hata verince YANLIŞ 'Depoda (Atanmadı)' BASILMAZ", () => {
+    vi.mocked(useSiteOptions).mockReturnValue({
+      options: [],
+      isLoading: false,
+      isError: true,
+    });
+    render(<EquipmentDetailView equipmentId="eq-1" />);
+
+    expect(screen.queryAllByText("Depoda (Atanmadı)")).toHaveLength(0);
+  });
+
+  // kalan-4 #180: work×3/fuel/invoices sorgularının isError'u hiç okunmuyordu
+  // — biri düşerse ilgili blok kalıcı "Yükleniyor…"/"—" basar, kullanıcıya
+  // hata hiç söylenmezdi.
+  it("çalışma özeti sorgusu HATA verince görünür bir uyarı basılır", () => {
+    vi.mocked(useEquipmentWorkSummary).mockReturnValue(
+      queryStub(undefined as never, { isError: true, error: new Error("boom") }),
+    );
+    render(<EquipmentDetailView equipmentId="eq-1" />);
+
+    expect(screen.getByTestId("makine-det-body-error")).toBeVisible();
+  });
 });

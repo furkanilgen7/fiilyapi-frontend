@@ -98,9 +98,13 @@ export function PersonnelListView() {
   };
 
   // Kırpılma korkuluğu (TB3/F-TH dersi): tavan AÇIKÇA gönderilir.
+  // Kayıt 101: `isDraft: false` de AÇIKÇA gönderilir — verilmezse backend
+  // süzgeci hiç uygulamaz ve "Taslak Kaydet" ile oluşturulan eksik personel
+  // kayıtları bu ana listeye/KPI şeridine karışır.
   const personnelQuery = usePersonnel({
     limit: PERSONNEL_MAX_LIMIT,
     offset: 0,
+    isDraft: false,
     ...serverFilters,
   });
 

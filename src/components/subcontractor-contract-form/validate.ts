@@ -9,7 +9,7 @@
  */
 
 import { PCT_MAX, PCT_MIN } from "./constants";
-import type { SubcontractorContractFormValues } from "./form-state";
+import type { ContractTermsValues, SubcontractorContractFormValues } from "./form-state";
 
 export const MESSAGES = {
   projectRequired: "Proje seçiniz.",
@@ -96,6 +96,37 @@ export function validateContractForm(
   if (!values.signatureDate) errors.signatureDate = MESSAGES.signatureDateRequired;
   if (!values.startDate) errors.startDate = MESSAGES.startDateRequired;
   if (!errors.endDate && !values.endDate) errors.endDate = MESSAGES.endDateRequired;
+
+  return errors;
+}
+
+/**
+ * Yalnız SAYISAL şart alanlarını doğrular (`advancePct`/`retainagePct`/
+ * `paymentTermDays`/`latePenaltyDaily`) — TSD'nin "Sözleşme Şartları"
+ * PATCH'i (`ContractTermsValues`) `projectId`/`siteId` gibi bağlam alanları
+ * TAŞIMAZ, bu yüzden `validateContractForm`in tamamı çağrılamaz (kalan-6
+ * no 320). Aynı sayısal kurallar burada TEKRAR EDİLİR, kod TEKİLDİR
+ * (yukarıdaki `pctError`/`numberOrNull` paylaşılır).
+ */
+export function validateContractTerms(
+  values: ContractTermsValues,
+): Partial<Record<keyof ContractTermsValues, string>> {
+  const errors: Partial<Record<keyof ContractTermsValues, string>> = {};
+
+  const advanceProblem = pctError(values.advancePct);
+  if (advanceProblem) errors.advancePct = advanceProblem;
+  const retainageProblem = pctError(values.retainagePct);
+  if (retainageProblem) errors.retainagePct = retainageProblem;
+
+  const termDays = numberOrNull(values.paymentTermDays);
+  if (termDays !== null && (!Number.isInteger(termDays) || termDays < 0)) {
+    errors.paymentTermDays = MESSAGES.termDaysInvalid;
+  }
+
+  const latePenalty = numberOrNull(values.latePenaltyDaily);
+  if (latePenalty !== null && (!Number.isFinite(latePenalty) || latePenalty < 0)) {
+    errors.latePenaltyDaily = MESSAGES.latePenaltyInvalid;
+  }
 
   return errors;
 }

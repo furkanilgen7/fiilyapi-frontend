@@ -85,6 +85,11 @@ describe("resizeSlots — 🔴 GUARD 2: satır sayısı `units_per_floor` ile K�
     expect(resizeSlots([filledSlot(1, "148")], 0)).toEqual([]);
     expect(resizeSlots([filledSlot(1, "148")], -3)).toEqual([]);
   });
+
+  it("üst sınırı (BULK_UNITS_PER_FLOOR_MAX=20) aşan daire sayısında satır ÜRETMEZ", () => {
+    expect(resizeSlots([], 21)).toEqual([]);
+    expect(resizeSlots([], 999)).toEqual([]);
+  });
 });
 
 describe("setSlotField — dokunma kaydı + değişmezlik", () => {

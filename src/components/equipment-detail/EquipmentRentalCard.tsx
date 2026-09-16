@@ -14,6 +14,10 @@ export interface EquipmentRentalCardProps {
   /** `undefined` ⇒ tedarikçi sorgusu pending · `null` ⇒ tedarikçi atanmamış
    *  ya da bulunamadı. İkisi AYRI basılır. */
   supplierName: string | null | undefined;
+  /** kalan-4 #182: tedarikçi sorgusu HATA verdi (ör. `procurement:view`
+   *  izni yok) — `supplierName` bu durumda da `undefined` kalır, bu bayrak
+   *  kalıcı "Yükleniyor…" yerine görünür bir hata notu basılmasını sağlar. */
+  supplierIsError?: boolean;
 }
 
 /**
@@ -40,6 +44,7 @@ export function EquipmentRentalCard({
   equipment,
   rental,
   supplierName,
+  supplierIsError = false,
 }: EquipmentRentalCardProps) {
   const isRented = equipment.ownership === "rented";
   const unknown = rental.cumulative_paid_unknown_count;
@@ -55,7 +60,13 @@ export function EquipmentRentalCard({
           diye basmak kullanıcıya var olmayan bir kira ilişkisi anlatırdı. */}
       <DetailKv
         label={isRented ? "Kiralayan Firma" : "Satıcı Firma"}
-        value={supplierName === undefined ? "Yükleniyor…" : supplierName}
+        value={
+          supplierName === undefined
+            ? supplierIsError
+              ? "Görüntüleme yetkiniz yok"
+              : "Yükleniyor…"
+            : supplierName
+        }
         testId="makine-det-supplier"
       />
       <DetailKv label="Sözleşme No" value={equipment.rental_contract_no} tones={["mono"]} />

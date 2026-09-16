@@ -159,6 +159,23 @@ describe("SalesView — satış formu girişi (25)", () => {
 });
 
 /**
+ * kalan-6 no 275 — `projectsQuery` 403 aldığında (kullanıcının `sales:view`
+ * var ama `projects:view` YOK) `projectsQuery.error` hiç okunmuyordu; proje
+ * listesi sessizce boş dizi olup ekran "Proje yok" gösteriyordu. Gerçek
+ * gerekçe (yetki eksikliği) hiç basılmıyordu — AccessDenied'a düşmesi gerekir.
+ */
+describe("SalesView — proje listesi 403'ü ekranı düşürür", () => {
+  it("projectsQuery 403 aldığında AccessDenied basılır, 'Proje yok' değil", () => {
+    vi.mocked(useProjects).mockReturnValue(
+      queryStub(undefined, { isError: true, error: new BackendError(403, null) }),
+    );
+    render(<SalesView />);
+    expect(screen.queryByRole("heading", { name: "Satış Yönetimi" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Proje yok")).not.toBeInTheDocument();
+  });
+});
+
+/**
  * Ünite ucunun kapısı `projects` modülüdür (`sales` DEĞİL) — 403 ekranı
  * DÜŞÜRMEZ, yalnız harita kartı gerekçeyle boş kalır.
  */

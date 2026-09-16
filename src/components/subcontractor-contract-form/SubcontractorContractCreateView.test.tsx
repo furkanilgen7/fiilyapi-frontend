@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 import { SubcontractorContractCreateView } from "./SubcontractorContractCreateView";
+import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { ADD_ITEM_PENDING_REASON, FSO_TEXT } from "./constants";
 import { CONTRACT_DOCUMENTS, CONTRACT_DOCUMENTS_SOON_TITLE } from "./documents";
 import { useProjects } from "@/lib/api/hooks/useProjects";
@@ -20,12 +21,12 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/auth/useModulePermission", () => ({
-  useModulePermission: () => ({
+  useModulePermission: vi.fn(() => ({
     level: "full",
     canView: true,
     canWrite: true,
     canDelete: true,
-  }),
+  })),
 }));
 
 vi.mock("@/lib/api/hooks/useProjects", () => ({ useProjects: vi.fn() }));
@@ -236,6 +237,24 @@ describe("Poz listesi — load-from-employer akışı", () => {
     expect(screen.getByText("Kat Döşemesi Betonu C25/30")).toBeInTheDocument();
     expect(screen.getByTestId("fso-missing-price")).toHaveTextContent(/1 pozun/);
     expect(screen.getByTestId("fso-items-total")).toHaveTextContent("1.440.000");
+  });
+
+  /**
+   * kalan-6 no 319 — DELETE /subcontractor-contracts/items/{id} backend'de
+   * `contracts:admin` kapısındadır (`PATCH` ise `full`); ekran silme
+   * butonunu yalnız `canWrite` (full) ile açıyordu — full seviyeli (admin
+   * olmayan) kullanıcı butonu etkin görür, tıklar, sessiz 403 alır.
+   */
+  it("canDelete=false iken satır silme butonu DEVRE DIŞIDIR", () => {
+    vi.mocked(useModulePermission).mockReturnValue({
+      level: "full",
+      canView: true,
+      canWrite: true,
+      canDelete: false,
+    });
+    vi.mocked(useSubcontractorContract).mockReturnValue(query(DETAIL));
+    render(<SubcontractorContractCreateView />);
+    expect(screen.getByRole("button", { name: "03.001 satırını sil" })).toBeDisabled();
   });
 
   it("fiyat hücresi boşaltılınca uca `null` gider — `0` DEĞİL", () => {

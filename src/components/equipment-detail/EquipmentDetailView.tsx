@@ -57,6 +57,10 @@ export function EquipmentDetailView({ equipmentId }: { equipmentId: string }) {
   function resolveSiteLabel(siteId: string | null): string | null | undefined {
     if (siteId === null) return null; // K6 — depoda, atama yok
     if (siteOptions.isLoading) return undefined;
+    // kalan-4 #181: hata hâlinde Map BOŞ kalır ve `?? null` "atanmadı" der —
+    // ama makine GERÇEKTEN bir şantiyeye atanmış olabilir, sorgu düşmüştür.
+    // `undefined` dönmek Hero'da nötr "…" bastırır, YANLIŞ "atanmadı" değil.
+    if (siteOptions.isError) return undefined;
     return siteLabelById.get(siteId) ?? null;
   }
 

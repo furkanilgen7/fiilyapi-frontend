@@ -105,8 +105,8 @@ export function hasErrors(errors: ProjectFormErrors): boolean {
 /**
  * Arsa payı oranı: ZORUNLU, `0 < x < 100`. Boş bırakmak `0` göndermek demekti.
  */
-function landSharePctError(value: string): string | undefined {
-  if (!value.trim()) return MESSAGES.landSharePctRequired;
+function landSharePctError(value: string, isDraft: boolean): string | undefined {
+  if (!value.trim()) return isDraft ? undefined : MESSAGES.landSharePctRequired;
   const parsed = numberOrNull(value);
   if (
     parsed === null ||
@@ -251,10 +251,11 @@ function validateInvestment(values: InvestmentValues): TextErrors<InvestmentValu
 
 function validateLandShare(
   values: LandShareValues,
+  isDraft: boolean,
 ): TextErrors<Omit<LandShareValues, "shareholders">> {
   let errors: TextErrors<Omit<LandShareValues, "shareholders">> = {};
-  errors = assign(errors, "ourSharePct", landSharePctError(values.ourSharePct));
-  errors = assign(errors, "ownerSharePct", landSharePctError(values.ownerSharePct));
+  errors = assign(errors, "ourSharePct", landSharePctError(values.ourSharePct, isDraft));
+  errors = assign(errors, "ownerSharePct", landSharePctError(values.ownerSharePct, isDraft));
   errors = assign(errors, "dailyPenalty", moneyError(values.dailyPenalty));
   errors = assign(errors, "guaranteeAmount", moneyError(values.guaranteeAmount));
   if (
@@ -315,7 +316,7 @@ export function validateProjectForm(
         : {},
     landShare:
       values.projectType === "kat_karsiligi"
-        ? validateLandShare(values.landShare)
+        ? validateLandShare(values.landShare, isDraft)
         : {},
     // Yalnız ADI DOLU satırlar gövdeye girer (`form-state.ts`) — doğrulama da
     // aynı satırları hedefler, boş şablon satırı hata BASMAZ.

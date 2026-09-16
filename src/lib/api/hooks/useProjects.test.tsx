@@ -21,7 +21,10 @@ const RESPONSE = {
 describe("useProjects", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("filtresiz istekte query bos gider", async () => {
+  // 🔴 KAYIT 139: `limit` VERİLMEZSE istek de limitsiz GİTMEZ — sunucu
+  // varsayılanı (50) 24 çağıran ekranda projeleri SESSİZCE kırpıyordu.
+  // Varsayılan artık `PROJECT_LIST_MAX_LIMIT` (200) olarak AÇIKÇA gönderilir.
+  it("filtresiz istekte varsayılan limit (PROJECT_LIST_MAX_LIMIT) AÇIKÇA gider", async () => {
     vi.mocked(backendClient.GET).mockResolvedValue({
       data: RESPONSE, error: undefined, response: new Response(),
     } as never);
@@ -30,7 +33,9 @@ describe("useProjects", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.counts.all).toBe(4);
-    expect(backendClient.GET).toHaveBeenCalledWith("/projects", { params: { query: {} } });
+    expect(backendClient.GET).toHaveBeenCalledWith("/projects", {
+      params: { query: { limit: PROJECT_LIST_MAX_LIMIT } },
+    });
   });
 
   it("tip ve durum filtrelerini query parametresine cevirir", async () => {

@@ -94,8 +94,25 @@ export function EquipmentDetailBody({
     ? undefined
     : (invoicesQuery.data.items[0] ?? null);
 
+  // kalan-4 #180: work×3/fuel/invoices sorgularının HİÇBİRİNİN isError'u
+  // okunmuyordu — düşen sorgu ilgili bloğu kalıcı "Yükleniyor…"/"—" ile
+  // dondurup kullanıcıya hiç söylemezdi. Supplier ayrı ele alınır (#182,
+  // EquipmentRentalCard'a `supplierIsError` ile geçirilir); documents zaten
+  // kendi hata alanını taşıyordu.
+  const hasSilentQueryError =
+    work0.isError || work1.isError || work2.isError || fuelQuery.isError || invoicesQuery.isError;
+
   return (
     <>
+      {hasSilentQueryError && (
+        <p
+          className="makine-det__band makine-det__band--warning"
+          data-testid="makine-det-body-error"
+        >
+          Bazı veriler yüklenemedi, aşağıdaki bloklardan biri veya birkaçı eksik ya da bayat
+          olabilir.
+        </p>
+      )}
       <EquipmentDetailHero
         equipment={detail.equipment}
         maintenance={detail.maintenance}
@@ -110,6 +127,7 @@ export function EquipmentDetailBody({
           equipment={detail.equipment}
           rental={detail.rental}
           supplierName={supplierName}
+          supplierIsError={supplierQuery.isError}
         />
       </div>
 

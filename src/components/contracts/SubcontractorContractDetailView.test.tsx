@@ -415,6 +415,21 @@ describe("TSD — Sözleşme Şartları (§7 S3 taşeron ayağı)", () => {
     }
   });
 
+  // kalan-6 no 320 — `handleSaveTerms` `validateContractForm`/`intOrUndefined`
+  // hiçbirini çağırmıyordu: "30.5" gibi ondalık bir vade PATCH'e ondalık
+  // olarak gidiyordu (backend 422). Kaydet ondalık vadede İSTEK AÇMAMALI.
+  it("Ödeme Vadesi ondalık girilince Kaydet PATCH AÇMAZ, alan hatası basar", async () => {
+    const user = userEvent.setup();
+    setup();
+    const termDays = screen.getByLabelText(/Ödeme Vadesi/);
+    await user.clear(termDays);
+    await user.type(termDays, "30.5");
+    await user.click(screen.getByTestId("tsd-terms-save"));
+
+    expect(updateContractMutate).not.toHaveBeenCalled();
+    expect(screen.getByText(/tam sayı olmalıdır/)).toBeInTheDocument();
+  });
+
   it("`vat_pct` SALT-OKUNUR gösterilir (FSO'da kontrolü yok — E14 emsali)", () => {
     setup();
     expect(screen.getByTestId("tsd-vat-readonly")).toHaveTextContent("%20");

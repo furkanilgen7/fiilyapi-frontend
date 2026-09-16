@@ -18,6 +18,7 @@ import {
   type UnitBulkPreview,
 } from "@/lib/api/hooks/useUnitBulk";
 import { BackendError, isForbidden } from "@/lib/api/unwrap";
+import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { parseCountInput } from "@/lib/decimal";
 
@@ -166,7 +167,7 @@ export function BulkUnitCreateView() {
     });
   }, [values.startFloor, values.endFloor, values.unitsPerFloor, range]);
 
-  if (!permission.canWrite) return <AccessDenied />;
+  if (!hasAtLeast(permission.level, "full")) return <AccessDenied />;
 
   const isPreviewing = previewMutation.isPending;
   const isSaving = createBulk.isPending;

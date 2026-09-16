@@ -195,14 +195,17 @@ export function buildSubcontractorDirectory({
   for (const contract of contracts) {
     const key = subcontractorKey(contract.counterparty_name);
     const firmId = uniqueFirmIdOf(key);
-    firmIdByContractId.set(contract.id, firmId);
     if (firmId === null) {
+      // Yetim sözleşme haritaya HİÇ girmez: aksi hâlde aşağıdaki hakediş
+      // döngüsündeki `??` yedeği (`subcontractor_name` üzerinden yeniden
+      // deneme) hiçbir zaman devreye giremezdi (kalan-6 no 324).
       if (!contract.is_draft) {
         if (firmIdsByName.has(key)) ambiguousContractCount += 1;
         else orphanContractCount += 1;
       }
       continue;
     }
+    firmIdByContractId.set(contract.id, firmId);
     const bucket = byId.get(firmId);
     if (!bucket) continue;
     bucket.contracts.push(contract);

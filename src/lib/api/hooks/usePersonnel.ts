@@ -31,6 +31,13 @@ export interface PersonnelListFilter {
   isActive?: boolean;
   /** İK-1 ile geldi: `GET /personnel?project_id=` — atanan proje süzgeci (P 122). */
   projectId?: string;
+  /**
+   * Kayıt 101: gönderilmezse backend süzgeci HİÇ UYGULAMAZ (varsayılan
+   * `None`) ve "Taslak Kaydet" ile oluşturulan eksik personel kayıtları
+   * varsayılan listeye karışır. `isActive` emsali gibi `false` de dahil
+   * AÇIKÇA gönderilir.
+   */
+  isDraft?: boolean;
   limit?: number;
   offset?: number;
 }
@@ -46,6 +53,7 @@ export function usePersonnel(
       filter.subcontractorId ?? null,
       filter.isActive ?? null,
       filter.projectId ?? null,
+      filter.isDraft ?? null,
       filter.limit ?? null,
       filter.offset ?? null,
     ],
@@ -61,6 +69,7 @@ export function usePersonnel(
                 : {}),
               ...(filter.isActive !== undefined ? { is_active: filter.isActive } : {}),
               ...(filter.projectId !== undefined ? { project_id: filter.projectId } : {}),
+              ...(filter.isDraft !== undefined ? { is_draft: filter.isDraft } : {}),
               ...(filter.limit !== undefined ? { limit: filter.limit } : {}),
               ...(filter.offset !== undefined ? { offset: filter.offset } : {}),
             },

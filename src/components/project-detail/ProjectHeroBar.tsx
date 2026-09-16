@@ -1,4 +1,5 @@
 import type { ProjectDetail } from "@/lib/api/hooks/useProjects";
+import { formatCompactCurrency } from "@/lib/format";
 import { pendingModuleLabel } from "@/lib/pending-modules";
 
 import { ProjectDetailTabs } from "./ProjectDetailTabs";
@@ -61,13 +62,20 @@ export function ProjectHeroBar({ project, projectKey, activePath }: ProjectHeroB
         </div>
         <div className="project-hero__contract">
           <div className="project-hero__contract-label">Toplam Sözleşme</div>
-          {/* Yer tutucu (spec §7.1): backend contracts modulunu daha saglamiyor. */}
-          <div
-            className="project-hero__contract-value project-hero__contract-value--pending"
-            title={pendingModuleLabel("contracts")}
-          >
-            —
-          </div>
+          {/* Kayıt 109: `contract_amount` doluysa gerçek tutar basılır — yer
+              tutucu yalnız değer NULL iken (backend henüz sağlamıyorsa). */}
+          {project.contract_amount != null ? (
+            <div className="project-hero__contract-value">
+              {formatCompactCurrency(project.contract_amount)}
+            </div>
+          ) : (
+            <div
+              className="project-hero__contract-value project-hero__contract-value--pending"
+              title={pendingModuleLabel("contracts")}
+            >
+              —
+            </div>
+          )}
           <div className="project-hero__contract-note">{project.site_count} şantiye</div>
         </div>
       </div>

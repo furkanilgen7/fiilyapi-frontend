@@ -59,13 +59,20 @@ describe("validateSectionForm — taslak dışı (is_draft: false, Bölümü Olu
     expect(errors.managerUserId).toBe(MESSAGES.managerRequired);
   });
 
-  it("kullanıcı listesi yüklenemediyse sorumlu zorunluluğu kalkar", () => {
+  // kalan-9/no287: OLUŞTURMA kipinde `hasExistingManagerName` HER ZAMAN
+  // false'tur (SectionForm.tsx) ve build-body `manager_name` ASLA göndermez
+  // (FORBIDDEN_KEYS). `isUserListUnavailable` TEK BAŞINA zorunluluğu
+  // kaldırırsa istemci "OK" der ama backend guards.py SECTION_MANAGER_REQUIRED
+  // ile HER ZAMAN 422 döner — kaçınılmaz bir çıkmaz. Zorunluluk yalnız
+  // `hasExistingManagerName` (kayıtta zaten geçerli bir sorumlu varsa) ile
+  // kalkabilir.
+  it("kullanici listesi yuklenemedi AMA hasExistingManagerName yoksa sorumlu YINE zorunlu (garanti 422 tuzagi kapali)", () => {
     const errors = validateSectionForm(values({ ...base, managerUserId: "" }), {
       isDraft: false,
       isUserListUnavailable: true,
       hasExistingManagerName: false,
     });
-    expect(errors.managerUserId).toBeUndefined();
+    expect(errors.managerUserId).toBe(MESSAGES.managerRequired);
   });
 
   // final review I1: sec-2 senaryosu (mock-backend.ts) — manager_user_id

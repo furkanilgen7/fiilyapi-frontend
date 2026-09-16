@@ -12,9 +12,10 @@ import { useSection } from "@/lib/api/hooks/useSection";
 import { useSite } from "@/lib/api/hooks/useSites";
 import { useSectionStock } from "@/lib/api/hooks/useSectionStock";
 import { STOCK_LIST_MAX_LIMIT } from "@/lib/api/hooks/useStockItems";
-import { useSiteDiaryEntries } from "@/lib/api/hooks/useSiteDiary";
+import { useSiteDiaryEntries, SITE_DIARY_LIST_MAX_LIMIT } from "@/lib/api/hooks/useSiteDiary";
 import { useSiteSubcontractorPayments } from "@/lib/api/hooks/useSiteSubcontractorPayments";
 import { isForbidden } from "@/lib/api/unwrap";
+import { listTruncationMessage } from "@/lib/list-truncation";
 import { formatPeriod } from "@/lib/format";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { groupSectionWorkers } from "./section-workers";
@@ -136,7 +137,7 @@ export function SectionDetailView() {
   // Sayfalama tavanı AÇIKÇA gönderilir: sunucu varsayılanı 50'dir ve 51.
   // (malzeme, poz) çiftini SESSİZCE düşürürdü (TB3/F-TH kırpılma dersi).
   const sectionStock = useSectionStock(sectionId, { limit: STOCK_LIST_MAX_LIMIT });
-  const diaryEntries = useSiteDiaryEntries(siteId);
+  const diaryEntries = useSiteDiaryEntries(siteId, { limit: SITE_DIARY_LIST_MAX_LIMIT });
   // F-BLMSEK T2 — bölüm süzgeçli TAŞERON hakedişi. Hook koşullu ÇAĞRILAMAZ
   // (yukarıdaki BOQ notunun aynısı), bu yüzden sekme seçili olmasa da bağlanır.
   //
@@ -249,6 +250,7 @@ export function SectionDetailView() {
             })}
             rows={sectionStock.data?.items}
             kpis={sectionStock.data?.kpis}
+            total={sectionStock.data?.total}
             isLoading={sectionStock.isLoading}
             isError={sectionStock.isError}
           />
@@ -326,6 +328,20 @@ export function SectionDetailView() {
             isError={timesheet.isError}
             periodLabel={periodLabel}
           />
+          {/* kalan-4 #280: `isPersonnelUnavailable`/`personnelTruncation`
+              HİÇ tüketilmiyordu — kartoteks okunamazsa ya da sunucu
+              tavanında kırpılırsa kart sessizce eksik satır basardı.
+              Kardeş ekranın (`TimesheetNotices`) dersinin aynısı. */}
+          {(timesheet.isPersonnelUnavailable || timesheet.personnelTruncation.isTruncated) && (
+            <p
+              className="section-detail__message"
+              data-testid="section-workers-personnel-notice"
+            >
+              {timesheet.isPersonnelUnavailable
+                ? "Personel kartoteksi okunamadı — yalnız bu ayda kaydı olan personel listeleniyor, yeni satır açılamaz."
+                : listTruncationMessage(timesheet.personnelTruncation)}
+            </p>
+          )}
         </div>
 
         {/* D253-272: "Bölüm Malzeme Durumu" */}

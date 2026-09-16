@@ -145,7 +145,7 @@ export function EquipmentInfoCard({ values, onChange, errors }: EquipmentInfoCar
           </Field>
 
           {/* 89 — sayı, monospace */}
-          <Field label="Model Yılı">
+          <Field label="Model Yılı" error={errors?.modelYear}>
             {(control) => (
               <Input
                 {...control}
@@ -156,6 +156,7 @@ export function EquipmentInfoCard({ values, onChange, errors }: EquipmentInfoCar
                 max={MODEL_YEAR_MAX}
                 value={values.modelYear}
                 placeholder="2022"
+                status={errors?.modelYear ? "error" : "default"}
                 onChange={(event) => onChange("modelYear", event.target.value)}
               />
             )}

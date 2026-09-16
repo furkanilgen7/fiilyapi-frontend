@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { SitePlanningView } from "./SitePlanningView";
 import { useSitePlan } from "@/lib/api/hooks/useSitePlan";
 import { useSiteSections } from "@/lib/api/hooks/useSiteSections";
+import { useSite } from "@/lib/api/hooks/useSites";
 import {
   useSaveSitePlanCells,
   useSaveSitePlanGoals,
@@ -493,6 +494,20 @@ describe("SitePlanningView — izin dalları", () => {
     });
     render(<SitePlanningView />);
     expect(screen.queryByRole("heading", { name: /^Planlama/ })).not.toBeInTheDocument();
+  });
+
+  it("🔴 şantiye çözülemezse (404/ağ) SESSİZCE boş ızgara basmaz, hata GÖRÜNÜR olur", () => {
+    vi.mocked(useSite).mockReturnValueOnce({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new BackendError(404, "Şantiye bulunamadı"),
+    } as never);
+    // Gerçek akışta siteId boş kalınca `useSitePlan`/`useSiteSections`
+    // `enabled:false` ile idle döner — bu da AYNI hâldir.
+    mockPlan({ data: undefined, isLoading: false, isError: false, error: null });
+    render(<SitePlanningView />);
+    expect(screen.getByText("Şantiye yüklenemedi")).toBeInTheDocument();
   });
 
   it("PM salt-okur: TUM giris yuzeyleri GIZLENMEZ, devre-disi basilir", async () => {

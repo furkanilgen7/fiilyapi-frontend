@@ -466,3 +466,6 @@
   font-weight: 400;
   color: var(--color-text-subtle);
 }
+.prj-card__margin--negative {
+  color: var(--color-danger);
+}

@@ -17,6 +17,8 @@ export interface EquipmentFuelLogTableProps {
   equipment: EquipmentListResponse | undefined;
   logs: FuelLogListResponse | undefined;
   isLoading: boolean;
+  /** `useEquipmentFuelLogs` hata verirse panel BOŞ kalmasın diye taşınır. */
+  isError?: boolean;
   /** Şantiye/proje adı çözümü AYRI kaynaktan gelir; `undefined` ⇒ hâlâ yükleniyor. */
   resolveSiteLabel: (siteId: string | null) => string | null | undefined;
   /** `entered_by_id` → ad; `undefined` ⇒ hâlâ yükleniyor, `null` ⇒ bulunamadı/yetkisiz. */
@@ -43,6 +45,7 @@ export function EquipmentFuelLogTable({
   equipment,
   logs,
   isLoading,
+  isError,
   resolveSiteLabel,
   resolveEnteredByName,
 }: EquipmentFuelLogTableProps) {
@@ -74,7 +77,12 @@ export function EquipmentFuelLogTable({
       </div>
 
       {isLoading && <p className="makine-yakit-panel__note">Yükleniyor…</p>}
-      {!isLoading && items?.length === 0 && (
+      {!isLoading && isError && (
+        <p className="makine-yakit-panel__note" data-testid="makine-yakit-log-error">
+          Kayıtlar yüklenemedi.
+        </p>
+      )}
+      {!isLoading && !isError && items?.length === 0 && (
         <p className="makine-yakit-panel__note" data-testid="makine-yakit-log-empty">
           Bu dönemde yakıt kaydı yok.
         </p>

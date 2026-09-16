@@ -70,7 +70,12 @@ export function SalesView() {
   const summaryQuery = useSalesSummary(selectedProjectId);
   const unitsQuery = useProjectUnits(selectedProjectId);
 
-  if (!permission.canView || isForbidden(salesQuery.error) || isForbidden(summaryQuery.error)) {
+  if (
+    !permission.canView ||
+    isForbidden(projectsQuery.error) ||
+    isForbidden(salesQuery.error) ||
+    isForbidden(summaryQuery.error)
+  ) {
     return <AccessDenied />;
   }
 

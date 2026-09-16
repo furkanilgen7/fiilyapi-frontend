@@ -83,7 +83,10 @@ const tokensCss = readFileSync(
 // `--color-danger-tint` (#fff0f0) Pazar zemininden PEMBE, `--color-warning-soft`
 // (#fef3c7) Cumartesi zemininden KOYUdur — ikisi de sütun zemini olarak
 // hücrenin kendi tonunu yutardı.
-const EXPECTED_HEX_COUNT = 89;
+// kalan-6 no 18: 89 → 91 — `--color-ai-info-tint` (#f8faff) ve
+// `--color-ai-warning-tint` (#fffbf5); ai-panel.css'teki çıplak hex'ler
+// mevcut token'larla karşılanmadı, iki YENİ ton açıldı (DEĞER değişmedi).
+const EXPECTED_HEX_COUNT = 91;
 
 describe("tokens.css", () => {
   it("çekirdek renk token'larını tanımlar (açık tema Slate + Blue)", () => {

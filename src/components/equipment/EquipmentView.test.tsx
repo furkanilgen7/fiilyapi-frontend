@@ -6,7 +6,7 @@ import { EquipmentView } from "./EquipmentView";
 import { useEquipment } from "@/lib/api/hooks/useEquipment";
 import { useEquipmentSummary } from "@/lib/api/hooks/useEquipmentSummary";
 import { usePersonnel } from "@/lib/api/hooks/usePersonnel";
-import type { PersonnelListItem } from "@/lib/api/hooks/usePersonnel";
+import type { PersonnelListItem, PersonnelListResponse } from "@/lib/api/hooks/usePersonnel";
 import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
 import { useSession } from "@/components/shell/SessionProvider";
 import type { MeResponse } from "@/lib/auth/types";
@@ -170,5 +170,33 @@ describe("EquipmentView — M1 başlık, sekme, KPI ve kart ızgarası", () => {
     render(<EquipmentView />);
     expect(screen.getByText("Kayıtlı ekipman yok.")).toBeInTheDocument();
     expect(screen.queryByTestId("makine-grid")).not.toBeInTheDocument();
+  });
+
+  it("kalan-9/no200: santiye secenekleri hata verirse kart 'Depoda (Atanmadi)' YAZMAZ", () => {
+    vi.mocked(useSiteOptions).mockReturnValue({
+      options: [],
+      isLoading: false,
+      isError: true,
+    });
+    render(<EquipmentView />);
+    const grid = screen.getByTestId("makine-grid");
+    // site_id="site-1" dolu bir kayıt; hata durumunda "atanmadı" dalına
+    // sessizce düşmemeli, ayırt edici bir "yüklenemedi" ifadesi görünmeli.
+    expect(grid).not.toHaveTextContent("Depoda (Atanmadı)");
+    expect(grid).toHaveTextContent("Yüklenemedi");
+  });
+
+  it("kalan-9/no200: personel listesi hata verirse operator 'atanmadi' ipucu YAZMAZ", () => {
+    vi.mocked(usePersonnel).mockReturnValue(
+      // Hata dalinda `data` undefined'dir; generic'i hook'un kendi veri tipiyle
+      // sabitlemezsek T=undefined cikarilir ve mockReturnValue tipi tutmaz.
+      queryStub<PersonnelListResponse>(
+        undefined as unknown as PersonnelListResponse,
+        { isError: true },
+      ),
+    );
+    render(<EquipmentView />);
+    const grid = screen.getByTestId("makine-grid");
+    expect(grid).toHaveTextContent("Yüklenemedi");
   });
 });

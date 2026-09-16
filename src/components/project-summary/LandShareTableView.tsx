@@ -70,6 +70,10 @@ export function LandShareTableView({ projectKey, activePath }: LandShareTableVie
   const unitsQuery = useLandShareUnits(projectId, { offset });
 
   if (isForbidden(summaryQuery.error) || isForbidden(projectQuery.error)) return <AccessDenied />;
+  // 🔴 F-P6 dersi: tek `.data` dallanması projectQuery 403 DIŞI bir hata
+  // verdiğinde (404/500/ağ) sonsuza kadar "Yükleniyor…" basardı — projectId
+  // hiç çözülmediği için summaryQuery `enabled:false` ile pending'de kalırdı.
+  if (projectQuery.isError) return <p className="psum-message">Proje yüklenemedi</p>;
 
   // 404 bir HATA gibi değil, AÇIKLAYICI BOŞ HÂL gibi basılır (hook notu).
   if (isLandShareMissing(summaryQuery.error)) {

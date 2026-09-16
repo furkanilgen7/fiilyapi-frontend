@@ -78,6 +78,11 @@ export function RisksCard({ data }: { data: RiskAlerts }) {
         <CardEmptyState
           title={isFullyRestricted ? "Uyarıları görme yetkiniz yok" : "Uyarı yok"}
         />
+        {isPartiallyRestricted && (
+          <p className="dash-risk__partial">
+            Bazı kaynaklar için yetkiniz yok; liste eksik olabilir.
+          </p>
+        )}
       </section>
     );
   }

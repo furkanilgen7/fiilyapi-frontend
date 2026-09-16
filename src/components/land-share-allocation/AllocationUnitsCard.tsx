@@ -254,6 +254,10 @@ function AllocationUnitRow({
   const current = effectiveAllocation(row, state);
   const isOurs = current.ownerSide === "contractor";
   const isOwner = current.ownerSide === "landowner";
+  // Satılmış/kapanmış ünitenin sahiplik tarafı arayüzden değiştirilemez
+  // (kalan-7 · #215) — sunucu bunu engellemiyor, kapı burada kurulur.
+  const isSold = row.sales_status === "sold" || row.sales_status === "closed";
+  const rowDisabled = disabled || isSold;
   // Bu satırda KAYDEDİLMEMİŞ bir değişiklik var mı? (Sunucudakiyle farklı mı?)
   const isPending =
     state.pending.has(row.unit_id) &&
@@ -303,7 +307,7 @@ function AllocationUnitRow({
             type="button"
             className={`pg-side__btn${isOurs ? " pg-side__btn--on-ours" : ""}`}
             aria-pressed={isOurs}
-            disabled={disabled}
+            disabled={rowDisabled}
             data-testid={`paylasim-form-biz-${row.unit_no}`}
             // Aynı düğmeye tekrar basmak atamayı KALDIRIR (PG 144 "Atanmadı"):
             // `owner_side: null` meşru bir değerdir ve UI'dan ulaşılabilir
@@ -317,7 +321,7 @@ function AllocationUnitRow({
             type="button"
             className={`pg-side__btn${isOwner ? " pg-side__btn--on-owner" : ""}`}
             aria-pressed={isOwner}
-            disabled={disabled}
+            disabled={rowDisabled}
             data-testid={`paylasim-form-arsa-${row.unit_no}`}
             onClick={() => onAssignRow(row, isOwner ? null : "landowner")}
           >
@@ -333,7 +337,7 @@ function AllocationUnitRow({
             size="row"
             aria-label={`${row.unit_no} hissedarı`}
             data-testid={`paylasim-form-hissedar-${row.unit_no}`}
-            disabled={disabled}
+            disabled={rowDisabled}
             value={current.shareholderId ?? ""}
             onChange={(event) =>
               onChangeRowShareholder(row, event.target.value === "" ? null : event.target.value)

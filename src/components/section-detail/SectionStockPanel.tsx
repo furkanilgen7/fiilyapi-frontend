@@ -5,6 +5,7 @@ import type {
   SectionStockKpis,
   SectionStockRow,
 } from "@/lib/api/hooks/useSectionStock";
+import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncation";
 
 import { boqLabel, SECTION_STOCK_NO_BOQ_REASON } from "./section-stock-derive";
 import "./section-detail.css";
@@ -49,6 +50,12 @@ export interface SectionStockPanelProps {
   kpis: SectionStockKpis | undefined;
   isLoading: boolean;
   isError: boolean;
+  /**
+   * kalan-4 #283: sunucunun SÜZGEÇLENMEMİŞ toplamı (`SectionStockResponse.total`).
+   * `limit=200` tavanına dayanan bir bölümde 201. (malzeme, poz) çifti
+   * SESSİZCE düşer — bu alan olmadan panel kırpılmayı GİZLERDİ.
+   */
+  total: number | undefined;
 }
 
 export function SectionStockPanel({
@@ -58,7 +65,9 @@ export function SectionStockPanel({
   kpis,
   isLoading,
   isError,
+  total,
 }: SectionStockPanelProps) {
+  const truncation = buildListTruncation(rows?.length ?? 0, total ?? 0);
   return (
     <section
       className="section-stock"
@@ -74,6 +83,12 @@ export function SectionStockPanel({
         </Link>
       </div>
       <div className="section-stock__body">
+        {!isLoading && !isError && truncation.isTruncated && (
+          <p className="section-stock__hint" data-testid="section-stock-truncation">
+            {listTruncationMessage(truncation)} Bu bölümün malzeme satırları listenin dışında
+            kalmış olabilir.
+          </p>
+        )}
         <SectionStockBody
           rows={rows}
           kpis={kpis}

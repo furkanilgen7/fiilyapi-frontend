@@ -114,6 +114,19 @@ describe("RisksCard — RISK-1 kirici zarf gecisi", () => {
     expect(screen.queryByText(/liste eksik olabilir/)).not.toBeInTheDocument();
   });
 
+  it("🔴 KISMI yetki + gorunur liste BOS ise 'Uyari yok' YALNIZ BASILMAZ", () => {
+    // isFullyRestricted=false, isPartiallyRestricted=true, items.length===0.
+    // Erken donus dali bu ucluyu ayirt etmezse kart otoriter "Uyari yok" basar.
+    card({
+      items: [],
+      sources: [
+        { module: "inventory", state: "restricted" },
+        { module: "progress_payments", state: "ok" },
+      ],
+    });
+    expect(screen.getByText(/liste eksik olabilir/)).toBeInTheDocument();
+  });
+
   it("`items`/`sources` HIC gelmezse cokmez (semada opsiyoneller)", () => {
     card({});
     expect(screen.getByText("Uyarı yok")).toBeInTheDocument();

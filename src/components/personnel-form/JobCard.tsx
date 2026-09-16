@@ -74,7 +74,7 @@ export function projectNote(state: ProjectPickerState): string {
     return "Proje listesi yüklenemedi — personeli projeye atamadan da kaydedebilirsiniz.";
   }
   if (state.items.length === 0) {
-    return "Kayıtlı proje yok — personeli projeye atamadan kaydedebilirsiniz.";
+    return "Kayıtlı proje yok — personeli taslak olarak kaydedebilirsiniz; yayımlamak için önce bir proje eklenmeli.";
   }
   return "Personelin çalışacağı proje; sonradan personel kartından değiştirilebilir.";
 }

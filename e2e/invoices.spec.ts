@@ -96,9 +96,9 @@ test("🔴 K1: 'Vadeli' AYRI DURUM DEĞİLDİR — vadesi olan `sent` öyle roze
 
   // Matrah/KDV/Toplam sunucudan, `₺` SEMBOLSÜZ (FY:115-117).
   const row = page.locator('[data-invoice-id="inv-out-1"]');
-  await expect(row).toContainText("4.201.890");
-  await expect(row).toContainText("840.378");
-  await expect(row).toContainText("5.042.268");
+  await expect(row).toContainText("2.631.420");
+  await expect(row).toContainText("526.284");
+  await expect(row).toContainText("3.157.704");
 });
 
 test("'Vadeli' süzgeci sunucuya `sent` gönderir ve bunu GÖRÜNÜR biçimde söyler", async ({
@@ -197,7 +197,7 @@ test("giden fatura detayı: toplamlar SUNUCUNUN, dışa aktarma ve GİB geçmiş
 
   await expect(page.getByTestId("fat-direction-badge")).toHaveText("GİDEN FATURA");
   await expect(page.getByRole("heading", { name: "FIL2026000184" })).toBeVisible();
-  await expect(page.getByTestId("fat-hero-total")).toHaveText("₺5.042.268");
+  await expect(page.getByTestId("fat-hero-total")).toHaveText("₺3.157.704");
   // FGI:68 — vade + kalan gün YEREL takvimden (25.07 → 18.08 = 24 gün).
   await expect(page.getByTestId("fat-hero-due")).toHaveText("Vade: 18.08.2026 (24 gün)");
   await expect(page.getByTestId("fat-status-badge")).toHaveText("Vadeli");
@@ -205,10 +205,10 @@ test("giden fatura detayı: toplamlar SUNUCUNUN, dışa aktarma ve GİB geçmiş
   // tfoot: kesinti satırları oranlı, toplam sunucudan.
   const lines = page.getByTestId("fat-detail-lines");
   await expect(lines).toContainText("Avans Kesintisi (%20)");
-  await expect(lines).toContainText("– 984.120");
+  await expect(lines).toContainText("– 701.712");
   await expect(lines).toContainText("Teminat Kesintisi (%5)");
   await expect(lines).toContainText("Vergi Matrahı");
-  await expect(page.getByTestId("fat-detail-total-row")).toContainText("5.042.268");
+  await expect(page.getByTestId("fat-detail-total-row")).toContainText("3.157.704");
 
   // FGI:24-25 — SİLİNMEDİ, devre dışı.
   await expect(page.getByTestId("fat-action-pdf")).toBeDisabled();
@@ -284,7 +284,7 @@ test("🔴 K6: fatura tutarını AŞAN tahsilat sunucuda reddedilir ve metni ekr
 
   // K5 türev toplamları sunucudan gelir (istemcide toplanmaz).
   await expect(page.getByTestId("fat-paid-total")).toHaveText("0");
-  await expect(page.getByTestId("fat-remaining")).toHaveText("5.042.268");
+  await expect(page.getByTestId("fat-remaining")).toHaveText("3.157.704");
 
   await page.getByTestId("fat-payment-account").selectOption({ index: 1 });
   await page.getByTestId("fat-payment-amount").fill("99999999");

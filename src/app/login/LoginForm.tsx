@@ -14,6 +14,7 @@ export function isSafeInternalPath(next: string | null): next is string {
   if (!next.startsWith("/")) return false;
   if (next.startsWith("//")) return false;
   if (next.startsWith("/\\")) return false;
+  if (/[\t\n\r]/.test(next)) return false;
   return true;
 }
 

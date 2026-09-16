@@ -7,6 +7,7 @@ import { useNotificationPrefs, useUpdateNotificationPrefs } from "@/lib/api/hook
 import { groupNotifications, NOTIF_EVENT_DISPLAY } from "./notification-groups";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { isForbidden } from "@/lib/api/unwrap";
+import { backendErrorMessage } from "@/lib/api/error-message";
 import type { NotificationPrefItem } from "@/lib/api/models";
 import "./notifications-screen.css";
 
@@ -19,6 +20,7 @@ export function NotificationsScreen() {
   const query = useNotificationPrefs();
   const update = useUpdateNotificationPrefs();
   const [items, setItems] = useState<NotificationPrefItem[]>([]);
+  const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
     if (query.data) setItems(query.data);
@@ -32,7 +34,10 @@ export function NotificationsScreen() {
     setItems((prev) => prev.map((it) => (it.event_key === key ? { ...it, [ch]: !it[ch] } : it)));
 
   const save = () =>
-    update.mutate({ items: items.map(({ event_key, email, in_app, sms }) => ({ event_key, email, in_app, sms })) });
+    update.mutate(
+      { items: items.map(({ event_key, email, in_app, sms }) => ({ event_key, email, in_app, sms })) },
+      { onError: (e) => setErr(backendErrorMessage(e)) },
+    );
 
   const grouped = groupNotifications(items);
 
@@ -69,6 +74,7 @@ export function NotificationsScreen() {
           </SettingsCard>
         ))}
       </div>
+      {err && <p className="settings-note settings-note--error">{err}</p>}
       <div className="notif-actions">
         <Button variant="primary" onClick={save} disabled={update.isPending}>
           Kaydet

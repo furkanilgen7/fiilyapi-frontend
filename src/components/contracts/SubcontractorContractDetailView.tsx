@@ -5,9 +5,10 @@ import Link from "next/link";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Button } from "@/components/ui";
-import { ContractTermsCard } from "@/components/subcontractor-contract-form/ContractTermsCard";
+import { ContractTermsCard, type ContractTermsErrors } from "@/components/subcontractor-contract-form/ContractTermsCard";
 import { SubcontractorItemFormModal } from "@/components/contract-item-form/SubcontractorItemFormModal";
 import { buildContractTermsUpdateBody } from "@/components/subcontractor-contract-form/build-body";
+import { validateContractTerms } from "@/components/subcontractor-contract-form/validate";
 import {
   contractTermsFromDetail,
   type ContractTermsValues,
@@ -110,6 +111,7 @@ export function SubcontractorContractDetailView({
 
   const [terms, setTerms] = useState<ContractTermsValues | null>(null);
   const [termsError, setTermsError] = useState<string | null>(null);
+  const [termsFieldErrors, setTermsFieldErrors] = useState<ContractTermsErrors>({});
   const [termsSaved, setTermsSaved] = useState(false);
   const [itemsError, setItemsError] = useState<string | null>(null);
   // 92 · "+ Poz Ekle" diyalogu (F-BLG T2a). Sahibi bu ekrandır; tablo yalnız
@@ -211,8 +213,17 @@ export function SubcontractorContractDetailView({
 
   function handleSaveTerms() {
     if (!terms) return;
-    setTermsError(null);
     setTermsSaved(false);
+    // kalan-6 no 320 — sayısal alanlar (ör. ondalık ödeme vadesi) PATCH'e
+    // GİTMEDEN doğrulanır; aksi hâlde backend 422 verirdi ve kullanıcı
+    // diğer değişikliklerini de kaydedemezdi.
+    const fieldErrors = validateContractTerms(terms);
+    setTermsFieldErrors(fieldErrors);
+    if (Object.keys(fieldErrors).length > 0) {
+      setTermsError(null);
+      return;
+    }
+    setTermsError(null);
     updateContract.mutate(buildContractTermsUpdateBody(terms), {
       onSuccess: () => setTermsSaved(true),
       onError: (error) => setTermsError(backendErrorMessage(error)),
@@ -301,6 +312,7 @@ export function SubcontractorContractDetailView({
         {terms && (
           <ContractTermsCard
             values={terms}
+            errors={termsFieldErrors}
             disabled={updateContract.isPending}
             headerAside={
               <Button
@@ -313,9 +325,14 @@ export function SubcontractorContractDetailView({
                 {updateContract.isPending ? "Kaydediliyor…" : "Kaydet"}
               </Button>
             }
-            onChange={(field, value) =>
-              setTerms((prev) => (prev ? { ...prev, [field]: value } : prev))
-            }
+            onChange={(field, value) => {
+              setTerms((prev) => (prev ? { ...prev, [field]: value } : prev));
+              setTermsFieldErrors((prev) => {
+                if (!(field in prev)) return prev;
+                const { [field]: _removed, ...rest } = prev;
+                return rest;
+              });
+            }}
           />
         )}
         {/* `vat_pct` FSO'da kontrolü olmadığı için salt-okunur (E14 emsali). */}

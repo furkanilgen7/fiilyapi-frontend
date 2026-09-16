@@ -16,23 +16,41 @@ import "./subcontractors.css";
  */
 export interface SubcontractorsSummaryStripProps {
   summary: SubcontractorSummary;
+  /**
+   * Firma/sözleşme sorgusu yükleniyor/hatalıyken `true` — `summary.totalCount`
+   * ve `activeContractCount` bu durumda sunucudan DEĞİL boş varsayılan
+   * dizilerden türer; sahte sıfır basmak yerine "—" gösterilir (kalan-6 no 322).
+   */
+  isPending?: boolean;
 }
 
 const PAYMENT_COUNT_SUFFIX = "Hakediş"; // 38 "3 Hakediş"
+const COUNT_PENDING_REASON = "Taşeron/sözleşme listesi henüz yüklenmedi.";
 
-export function SubcontractorsSummaryStrip({ summary }: SubcontractorsSummaryStripProps) {
+export function SubcontractorsSummaryStrip({
+  summary,
+  isPending = false,
+}: SubcontractorsSummaryStripProps) {
   return (
     <div className="tl-kpi" data-testid="tl-kpi-strip">
       <div className="tl-kpi__card">
         <div className="tl-kpi__label">Toplam Taşeron</div>
-        <div className="tl-kpi__value tl-kpi__value--neutral">{summary.totalCount}</div>
+        {isPending ? (
+          <PendingValue testId="tl-kpi-total-count" reason={COUNT_PENDING_REASON} />
+        ) : (
+          <div className="tl-kpi__value tl-kpi__value--neutral">{summary.totalCount}</div>
+        )}
       </div>
 
       <div className="tl-kpi__card">
         <div className="tl-kpi__label">Aktif Sözleşme</div>
-        <div className="tl-kpi__value tl-kpi__value--success">
-          {summary.activeContractCount}
-        </div>
+        {isPending ? (
+          <PendingValue testId="tl-kpi-active-count" reason={COUNT_PENDING_REASON} />
+        ) : (
+          <div className="tl-kpi__value tl-kpi__value--success">
+            {summary.activeContractCount}
+          </div>
+        )}
       </div>
 
       <div className="tl-kpi__card">
@@ -66,14 +84,16 @@ export function SubcontractorsSummaryStrip({ summary }: SubcontractorsSummaryStr
   );
 }
 
-function PendingValue({ testId }: { testId: string }) {
+function PendingValue({
+  testId,
+  reason = PAYMENT_PENDING_REASON,
+}: {
+  testId: string;
+  reason?: string;
+}) {
   return (
-    <div
-      className="tl-kpi__value tl-kpi__value--pending"
-      title={PAYMENT_PENDING_REASON}
-      data-testid={testId}
-    >
-      —<span className="sr-only">{PAYMENT_PENDING_REASON}</span>
+    <div className="tl-kpi__value tl-kpi__value--pending" title={reason} data-testid={testId}>
+      —<span className="sr-only">{reason}</span>
     </div>
   );
 }

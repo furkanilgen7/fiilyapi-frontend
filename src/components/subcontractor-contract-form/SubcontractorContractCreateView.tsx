@@ -74,7 +74,7 @@ import { routes } from "@/lib/routes";
  */
 export function SubcontractorContractCreateView() {
   const router = useRouter();
-  const { canWrite } = useModulePermission("contracts");
+  const { canWrite, canDelete } = useModulePermission("contracts");
 
   const [values, setValues] = useState<SubcontractorContractFormValues>(
     emptySubcontractorContractFormValues,
@@ -350,6 +350,7 @@ export function SubcontractorContractCreateView() {
             isLoadPending={loadItems.isPending || createContract.isPending || isLoadQueued}
             isBusy={isItemBusy || isSaving}
             loadDisabledReason={loadDisabledReason}
+            canDelete={canDelete}
             onLoadFromEmployer={handleLoadFromEmployer}
             onCommitItem={handleCommitItem}
             onDeleteItem={handleDeleteItem}

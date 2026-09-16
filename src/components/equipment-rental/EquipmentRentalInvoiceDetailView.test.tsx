@@ -154,6 +154,19 @@ const DETAIL_FIXTURE = {
   },
 } as unknown as RentalInvoiceDetailResponse;
 
+describe("EquipmentRentalInvoiceDetailView · izin eşiği backend ile eşleşir (kayıt 92)", () => {
+  it("`equipment` seviyesi `approve` iken form SALT-OKUNUR (backend yalnız `full` ister)", () => {
+    mockSession.mockReturnValue({
+      me: { permissions: { equipment: "approve" } } as unknown as MeResponse,
+    } as unknown as ReturnType<typeof useSession>);
+    mockDetail.mockReturnValue(detailQuery({ isSuccess: true, data: DETAIL_FIXTURE }));
+
+    renderView();
+
+    expect(screen.getByTestId("makine-kira-supplier")).toBeDisabled();
+  });
+});
+
 describe("EquipmentRentalInvoiceDetailView · şantiye seçeneklerinin 'yüklendi' işareti", () => {
   it("🔴 şantiye çağrısı HATA verdiğinde 'yüklendi' işareti TAKILMAZ", () => {
     mockDetail.mockReturnValue(

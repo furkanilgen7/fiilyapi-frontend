@@ -51,6 +51,7 @@ function setup(overrides: Partial<ContractItemsCardProps> = {}) {
       isLoadPending={false}
       isBusy={false}
       loadDisabledReason={null}
+      canDelete={true}
       onLoadFromEmployer={onLoadFromEmployer}
       onCommitItem={onCommitItem}
       onDeleteItem={onDeleteItem}
@@ -155,6 +156,13 @@ describe("load-from-employer bildirimi ve satır silme", () => {
     const { onDeleteItem } = setup();
     fireEvent.click(screen.getByRole("button", { name: "03.002 satırını sil" }));
     expect(onDeleteItem).toHaveBeenCalledWith("sci-2");
+  });
+
+  // kalan-6 no 319 — silme uçları `contracts:admin` kapısındadır; `canWrite`
+  // (full) yeterli değildir, buton `canDelete` ile kapatılmalıdır.
+  it("canDelete=false iken satır silme butonu DEVRE DIŞIDIR", () => {
+    setup({ canDelete: false });
+    expect(screen.getByRole("button", { name: "03.002 satırını sil" })).toBeDisabled();
   });
 });
 

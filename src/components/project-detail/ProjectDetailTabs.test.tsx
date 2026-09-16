@@ -19,6 +19,28 @@ describe("ProjectDetailTabs", () => {
     expect(screen.getByRole("tab", { name: "Belgeler" })).toBeInTheDocument();
   });
 
+  it("🔴 projectKey (slug) ve projectId (UUID) FARKLIYKEN karışmaz: YOL sekmesi projectKey, SORGU kuran sekme projectId taşır", () => {
+    const PROJECT_KEY = "kule-a-slug";
+    render(
+      <ProjectDetailTabs
+        projectKey={PROJECT_KEY}
+        projectId={PROJECT_ID}
+        activePath={`/projeler/${PROJECT_KEY}`}
+        projectType="taahhut"
+      />,
+    );
+    // "Şantiyeler" YOL sekmesidir — adresteki anahtar (slug) taşınır.
+    expect(screen.getByRole("tab", { name: "Şantiyeler" })).toHaveAttribute(
+      "href",
+      `/projeler/${PROJECT_KEY}`,
+    );
+    // "İşveren Hakediş" SORGU kuran sekmedir — kanonik UUID taşınır, slug DEĞİL.
+    const employerTab = screen.getByRole("tab", { name: "İşveren Hakediş" });
+    const href = employerTab.getAttribute("href") ?? "";
+    expect(href).toContain(PROJECT_ID);
+    expect(href).not.toContain(PROJECT_KEY);
+  });
+
   it("aktif yol Santiyeler sekmesini isaretler", () => {
     render(<ProjectDetailTabs projectKey={PROJECT_ID} projectId={PROJECT_ID} activePath={BASE} projectType="taahhut" />);
     expect(screen.getByRole("tab", { name: "Şantiyeler" })).toHaveAttribute(

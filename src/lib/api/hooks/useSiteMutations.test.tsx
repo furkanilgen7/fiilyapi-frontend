@@ -3,12 +3,12 @@ import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
-import { useCreateSite } from "./useSiteMutations";
-import { SITES_QUERY_KEY } from "./useSites";
+import { useCreateSite, useUpdateSite } from "./useSiteMutations";
+import { SITES_QUERY_KEY, SITE_QUERY_KEY } from "./useSites";
 import { PROJECT_QUERY_KEY } from "./useProjects";
 import { backendClient } from "@/lib/api/client";
 
-vi.mock("@/lib/api/client", () => ({ backendClient: { POST: vi.fn() } }));
+vi.mock("@/lib/api/client", () => ({ backendClient: { POST: vi.fn(), PATCH: vi.fn() } }));
 
 const PROJECT_ID = "p-1";
 
@@ -67,6 +67,58 @@ describe("useCreateSite — onSuccess sorgu gecersiz kilma", () => {
 
     const { result } = renderHook(() => useCreateSite(PROJECT_ID), { wrapper });
     act(() => result.current.mutate({ name: "A-Blok Şantiyesi" } as never));
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(invalidateSpy).not.toHaveBeenCalled();
+  });
+});
+
+// KAYIT 35 — backend'de `PATCH /sites/{site_id}` VAR ama frontend'te hicbir
+// cagiran yoktu; santiye olusturulduktan sonra hicbir alani duzeltilemiyordu.
+describe("useUpdateSite — PATCH /sites/{site_id}", () => {
+  const SITE_ID = "s-1";
+  let client: QueryClient;
+  let invalidateSpy: ReturnType<typeof spyOnInvalidate>;
+
+  function wrapper({ children }: { children: ReactNode }) {
+    return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    invalidateSpy = spyOnInvalidate(client);
+  });
+
+  it("santiye guncellenince PATCH /sites/{site_id} cagrilir ve ['site', id] + ['sites'] gecersiz kilinir", async () => {
+    vi.mocked(backendClient.PATCH).mockResolvedValue({
+      data: { id: SITE_ID, name: "Guncel Ad" }, error: undefined, response: new Response(),
+    } as never);
+
+    const { result } = renderHook(() => useUpdateSite(SITE_ID), { wrapper });
+    act(() => result.current.mutate({ name: "Guncel Ad" } as never));
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(backendClient.PATCH).toHaveBeenCalledWith("/sites/{site_id}", {
+      params: { path: { site_id: SITE_ID } },
+      body: { name: "Guncel Ad" },
+    });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [SITE_QUERY_KEY, SITE_ID] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [SITES_QUERY_KEY] });
+  });
+
+  it("backend hata verirse hicbir sorgu gecersiz kilinmaz", async () => {
+    vi.mocked(backendClient.PATCH).mockResolvedValue({
+      data: undefined,
+      error: { detail: "patladi" },
+      response: new Response(null, { status: 500 }),
+    } as never);
+
+    const { result } = renderHook(() => useUpdateSite(SITE_ID), { wrapper });
+    act(() => result.current.mutate({ name: "Guncel Ad" } as never));
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(invalidateSpy).not.toHaveBeenCalled();

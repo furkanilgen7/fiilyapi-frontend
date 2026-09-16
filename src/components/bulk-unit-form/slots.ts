@@ -26,7 +26,7 @@
  * bir kapı FİİLEN HİÇ KAPANMAZDI (`unit-form/build-body.ts` kural 3).
  */
 
-import { FACING_OPTIONS, type UnitFacing } from "./constants";
+import { BULK_UNITS_PER_FLOOR_MAX, FACING_OPTIONS, type UnitFacing } from "./constants";
 
 export type BulkSlotField = "layout" | "grossAreaM2" | "netAreaM2" | "facing" | "listPrice";
 
@@ -75,7 +75,12 @@ export function resizeSlots(
   slots: readonly BulkSlotValues[],
   unitsPerFloor: number | null,
 ): readonly BulkSlotValues[] {
-  if (unitsPerFloor === null || !Number.isSafeInteger(unitsPerFloor) || unitsPerFloor <= 0) {
+  if (
+    unitsPerFloor === null ||
+    !Number.isSafeInteger(unitsPerFloor) ||
+    unitsPerFloor <= 0 ||
+    unitsPerFloor > BULK_UNITS_PER_FLOOR_MAX
+  ) {
     return [];
   }
 

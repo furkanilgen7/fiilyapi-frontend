@@ -47,7 +47,11 @@ export function ProjectAccessModal({ user, onClose }: { user: UserResponse; onCl
           <Button variant="secondary" onClick={onClose} disabled={setAccess.isPending}>
             Vazgeç
           </Button>
-          <Button variant="primary" onClick={handleSubmit} disabled={setAccess.isPending}>
+          <Button
+            variant="primary"
+            onClick={handleSubmit}
+            disabled={setAccess.isPending || accessQuery.isLoading || !accessQuery.data}
+          >
             Kaydet
           </Button>
         </>

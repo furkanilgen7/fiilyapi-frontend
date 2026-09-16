@@ -70,7 +70,7 @@ interface ValidateOptions {
  */
 export function validateSectionForm(
   values: SectionFormValues,
-  { isDraft, isUserListUnavailable, hasExistingManagerName }: ValidateOptions,
+  { isDraft, hasExistingManagerName }: ValidateOptions,
 ): SectionFormErrors {
   const errors: SectionFormErrors = {};
 
@@ -110,7 +110,13 @@ export function validateSectionForm(
   if (!isDraft) {
     if (!values.sectionType) errors.sectionType = MESSAGES.sectionTypeRequired;
 
-    if (!values.managerUserId && !isUserListUnavailable && !hasExistingManagerName) {
+    // kalan-9/no287: `isUserListUnavailable` TEK BAŞINA zorunluluğu kaldırmaz.
+    // OLUŞTURMA kipinde `hasExistingManagerName` her zaman false'tur ve
+    // `manager_name` gövdeye hiç girmez (FORBIDDEN_KEYS); liste yokken
+    // gevşetme, backend'in HER ZAMAN 422 döneceği bir istemci-onayı üretirdi.
+    // Zorunluluk yalnız `hasExistingManagerName` ile (kayıtta zaten geçerli
+    // bir sorumlu varsa) kalkar.
+    if (!values.managerUserId && !hasExistingManagerName) {
       errors.managerUserId = MESSAGES.managerRequired;
     }
 

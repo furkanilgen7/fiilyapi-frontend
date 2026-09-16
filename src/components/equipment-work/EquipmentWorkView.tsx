@@ -42,6 +42,16 @@ const EQUIPMENT_PERMISSION_MODULE = "equipment";
 const RECENT_LOG_LIMIT = 8;
 
 /**
+ * `resolveEquipmentName`/`resolveOperatorName` İKİ farklı "yok" durumunu
+ * ayırt eder: sorgu henüz YÜKLENİYOR (undefined) ile kayıt haritada
+ * BULUNAMADI (ör. sorgu kalıcı hataya düştü, ya da 200'lük tavanın dışında
+ * kaldı). `null`, operatörün kaydında GERÇEKTEN olmadığı anlamına gelir
+ * (arıza kaydı) — bu iki işaretle KARIŞTIRILMAZ (kalan-3 #196/#197).
+ */
+const EQUIPMENT_NAME_UNKNOWN = "—";
+const OPERATOR_NAME_UNKNOWN = "—";
+
+/**
  * M3 · `/makine/calisma` — mockup `Makine - Çalışma Kaydı.dc.html` (kanonik).
  * Yorumlardaki sayılar o dosyanın SATIR numaralarıdır.
  *
@@ -115,13 +125,14 @@ export function EquipmentWorkView() {
   }
 
   function resolveEquipmentName(equipmentId: string): string | undefined {
-    return equipmentNameById.get(equipmentId);
+    if (equipmentQuery.isLoading) return undefined;
+    return equipmentNameById.get(equipmentId) ?? EQUIPMENT_NAME_UNKNOWN;
   }
 
   function resolveOperatorName(operatorId: string | null): string | null | undefined {
     if (operatorId === null) return null; // arıza kaydında operatör yoktur
     if (personnelQuery.isLoading) return undefined;
-    return personnelNameById.get(operatorId) ?? null;
+    return personnelNameById.get(operatorId) ?? OPERATOR_NAME_UNKNOWN;
   }
 
   /** `AuditLogScreen` kanonu: uçuşta kilit, hata GÖRÜNÜR. */
@@ -291,6 +302,7 @@ export function EquipmentWorkView() {
           <EquipmentWorkRecentList
             logs={logsQuery.data?.items}
             isLoading={logsQuery.isLoading}
+            isError={logsQuery.isError}
             resolveEquipmentName={resolveEquipmentName}
             resolveSiteLabel={resolveSiteLabel}
             resolveOperatorName={resolveOperatorName}

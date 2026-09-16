@@ -50,6 +50,7 @@ function renderPanel(
     <SectionStockPanel
       sectionName={SECTION_NAME}
       siteStockHref={STOCK_HREF}
+      total={1}
       rows={[row()]}
       kpis={KPIS}
       isLoading={false}
@@ -175,5 +176,21 @@ describe("SectionStockPanel", () => {
     const link = within(panel).getByRole("link");
     expect(link).toHaveAttribute("href", STOCK_HREF);
     expect(link.getAttribute("href")).toContain("?section=");
+  });
+
+  // kalan-4 #283: `total` HİÇ okunmuyordu. `limit=200` tavanına dayanan bir
+  // bölümde 201. (malzeme, poz) çifti SESSİZCE düşer, KPI'lar ve satırlar
+  // eksik kalırdı. Kardeş panel (`SectionPaymentsPanel`) aynı durumda bir
+  // kırpılma bandı basıyor — bu panel de aynısını yapmalı.
+  it("total > gosterilen satir sayisi ise KIRPILMA bandi basar", () => {
+    renderPanel({ total: 240 });
+
+    expect(screen.getByTestId("section-stock-truncation")).toBeVisible();
+  });
+
+  it("total gosterilene esit/kucukse KIRPILMA bandi BASILMAZ", () => {
+    renderPanel({ total: 1 });
+
+    expect(screen.queryByTestId("section-stock-truncation")).not.toBeInTheDocument();
   });
 });

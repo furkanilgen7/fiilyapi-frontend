@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui";
 import type { HrExpiringDocument } from "@/lib/api/hooks/useHrDocuments";
+import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncation";
 
 import {
   formatDateDots,
@@ -33,6 +34,8 @@ export function HrExpiringDocumentsTable({
   errorMessage,
   totalCount,
 }: HrExpiringDocumentsTableProps) {
+  const truncation = rows ? buildListTruncation(rows.length, totalCount) : undefined;
+
   return (
     <section className="bt-card" data-testid="bt-expiring-card" aria-labelledby="bt-expiring-title">
       {/* 138 */}
@@ -41,6 +44,10 @@ export function HrExpiringDocumentsTable({
           {`30 Gün İçinde Bitecek (${totalCount ?? PENDING_VALUE})`}
         </h2>
       </div>
+
+      {truncation?.isTruncated && (
+        <p className="bt-card__truncation">{listTruncationMessage(truncation)}</p>
+      )}
 
       {errorMessage ? (
         <div className="bt-empty">

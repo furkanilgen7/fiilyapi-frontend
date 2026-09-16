@@ -23,6 +23,8 @@ interface UnitLocationCardProps {
   blocksNotice: string | null;
   onChangeProject: (projectId: string) => void;
   onChangeSite: (siteId: string) => void;
+  /** Blok DOĞRUDAN değişince eski bloğun katını da sıfırlar (kalan-6 no 338). */
+  onChangeBlock: (blockId: string) => void;
   onChangeField: <K extends keyof UnitFormValues>(field: K, value: UnitFormValues[K]) => void;
 }
 
@@ -51,6 +53,7 @@ export function UnitLocationCard({
   blocksNotice,
   onChangeProject,
   onChangeSite,
+  onChangeBlock,
   onChangeField,
 }: UnitLocationCardProps) {
   const floors = deriveFloorOptions(selectedBlock);
@@ -114,7 +117,7 @@ export function UnitLocationCard({
               data-testid="unite-form-blok"
               disabled={blocksDisabled || values.projectId === ""}
               value={values.blockId}
-              onChange={(event) => onChangeField("blockId", event.target.value)}
+              onChange={(event) => onChangeBlock(event.target.value)}
             >
               <option value="">{PLACEHOLDER}</option>
               {blocks.map((block) => (

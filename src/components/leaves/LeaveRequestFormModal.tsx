@@ -226,6 +226,10 @@ export function LeaveRequestFormModal({ year, onClose }: LeaveRequestFormModalPr
             disabled={isPending}
             onChange={(event) => {
               setPersonnelId(event.target.value);
+              // Personel değişti ⇒ önceki personel için seçilmiş/yüklenmiş
+              // dosya bu forma miras kalmamalı (kalan-7 · #220).
+              setFile(null);
+              setUploadedDocumentId(null);
               setFormError(null);
             }}
             data-testid="iz-request-personnel"

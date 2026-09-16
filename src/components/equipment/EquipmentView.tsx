@@ -20,7 +20,11 @@ import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncation";
 
 import { equipmentCategoryIcon } from "./category-icon";
-import { EQUIPMENT_OWNERSHIP_LABELS } from "./equipment-labels";
+import {
+  EQUIPMENT_OPERATOR_LOAD_ERROR_LABEL,
+  EQUIPMENT_OWNERSHIP_LABELS,
+  EQUIPMENT_SITE_LOAD_ERROR_LABEL,
+} from "./equipment-labels";
 import { EquipmentCard } from "./EquipmentCard";
 import { EquipmentKpiStrip } from "./EquipmentKpiStrip";
 import { EquipmentTabsStrip } from "./EquipmentTabsStrip";
@@ -72,12 +76,14 @@ export function EquipmentView() {
 
   function resolveSiteLabel(siteId: string | null): string | null | undefined {
     if (siteId === null) return null; // K6 — depoda, atama yok
+    if (siteOptions.isError) return EQUIPMENT_SITE_LOAD_ERROR_LABEL;
     if (siteOptions.isLoading) return undefined;
     return siteLabelById.get(siteId) ?? null;
   }
 
   function resolveOperatorName(operatorId: string | null): string | null | undefined {
     if (operatorId === null) return null; // K3 — operatör/şoför atanmadı
+    if (personnelQuery.isError) return EQUIPMENT_OPERATOR_LOAD_ERROR_LABEL;
     if (personnelQuery.isLoading) return undefined;
     return personnelNameById.get(operatorId) ?? null;
   }

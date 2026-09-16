@@ -7,6 +7,7 @@ import { Alert, Badge, Button, Field, Input, Select } from "@/components/ui";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { backendErrorMessage } from "@/lib/api/error-message";
 import { isForbidden } from "@/lib/api/unwrap";
+import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { useEquipmentRentalInvoice } from "@/lib/api/hooks/useEquipmentRentalInvoices";
 import {
@@ -20,7 +21,7 @@ import { PERIOD_MONTHS, formatPeriod } from "@/lib/format";
 import { RentalLinesTable } from "./RentalLinesTable";
 import { RentalSiteDistributionCard } from "./RentalSiteDistributionCard";
 import { RentalStatusActions } from "./RentalStatusActions";
-import { isRentalEditable } from "./rental-actions";
+import { isRentalEditable, RENTAL_WRITE_LEVEL } from "./rental-actions";
 import type { RentalEditableField } from "./rental-derive";
 import {
   RATE_PERIOD_LABEL,
@@ -55,7 +56,8 @@ export function EquipmentRentalInvoiceDetailView({
   invoiceId,
 }: EquipmentRentalInvoiceDetailViewProps) {
   const detailQuery = useEquipmentRentalInvoice(invoiceId);
-  const { canWrite } = useModulePermission(EQUIPMENT_PERMISSION_MODULE);
+  const { level: permissionLevel } = useModulePermission(EQUIPMENT_PERMISSION_MODULE);
+  const canWrite = hasAtLeast(permissionLevel, RENTAL_WRITE_LEVEL);
   const suppliersQuery = useSuppliers({ limit: SUPPLIER_OPTIONS_LIMIT });
   const siteOptions = useSiteOptions();
 

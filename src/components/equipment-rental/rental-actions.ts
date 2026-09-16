@@ -24,7 +24,7 @@ import type { RentalInvoiceStatus } from "@/lib/api/hooks/useEquipmentRentalInvo
 export type RentalActionKind = "approve" | "pay" | "reject";
 
 /** Yazma uçlarının backend eşiği — tek yerde. */
-const RENTAL_WRITE_LEVEL: AccessLevel = "full";
+export const RENTAL_WRITE_LEVEL: AccessLevel = "full";
 
 export function permittedRentalActions(
   status: RentalInvoiceStatus,

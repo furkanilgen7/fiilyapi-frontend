@@ -78,16 +78,20 @@ export function StockFilterBar({
         ))}
       </Select>
 
-      {/* 100-103 */}
-      <Input
-        className="stok-filters__search"
-        type="search"
-        aria-label="Malzeme ara"
-        placeholder="Malzeme ara..."
-        leftIcon={<SearchIcon />}
-        value={query}
-        onChange={(event) => onQueryChange(event.target.value)}
-      />
+      {/* 100-103 — `Input`in `className`i SARMALAYAN `<span class="input-wrap">`e
+          değil DOĞRUDAN iç `<input>`e uygular; hizayı (margin-left/width)
+          burada dış bir `<span>`e taşımak Input primitive'ini DEĞİŞTİRMEZ
+          (kayıt 130). */}
+      <span className="stok-filters__search">
+        <Input
+          type="search"
+          aria-label="Malzeme ara"
+          placeholder="Malzeme ara..."
+          leftIcon={<SearchIcon />}
+          value={query}
+          onChange={(event) => onQueryChange(event.target.value)}
+        />
+      </span>
     </div>
   );
 }

@@ -196,6 +196,32 @@ describe("buildSubcontractorDirectory · üç kaynaklı istemci agregasyonu", ()
     expect(directory.summary.activeContractCount).toBe(2);
   });
 
+  // kalan-6 no 324 — yetim sözleşmeler `firmIdByContractId`e `null` olarak
+  // GİRİYORDU; bu yüzden o sözleşmeye bağlı bir hakedişin KENDİ
+  // `subcontractor_name`i doğru firmayla eşleşse bile yedek yol devreye
+  // GİRMİYORDU (`mapped !== undefined` her zaman doğruydu). Hakediş tutarı
+  // hiçbir firmaya eklenmiyordu.
+  it("yetim sözleşmeye bağlı hakediş KENDİ firma adından yedekle bulunur", () => {
+    const directory = build({
+      subcontractors: [firm()],
+      contracts: [
+        // Sözleşmenin karşı taraf adı hiçbir firmayla eşleşmiyor → yetim.
+        contract({ id: "sc-3", counterparty_name: "Kayıtsız Boya A.Ş.", amount: "999.00" }),
+      ],
+      payments: [
+        // Hakedişin KENDİ `subcontractor_name`i listedeki gerçek firmayla eşleşir.
+        payment({
+          id: "scpp-9",
+          contract_id: "sc-3",
+          subcontractor_name: "Akın İnşaat Ltd. Şti.",
+          status: "paid",
+          net_total: "500000.00",
+        }),
+      ],
+    });
+    expect(directory.rows[0].paidTotal).toBe(500_000);
+  });
+
   it("satır linki deterministiktir: aktif+taslak-olmayan sözleşme kazanır", () => {
     const directory = build({
       subcontractors: [firm()],

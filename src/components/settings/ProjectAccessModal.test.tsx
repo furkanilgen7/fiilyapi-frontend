@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
@@ -74,6 +75,44 @@ describe("ProjectAccessModal — proje listesi tavanı", () => {
     await screen.findByText("PRJ-1 — Proje 1");
     expect(backendClient.GET).toHaveBeenCalledWith("/projects", {
       params: { query: { limit: PROJECT_LIST_MAX_LIMIT } },
+    });
+  });
+});
+
+describe("ProjectAccessModal — mevcut erisim yuklenmeden Kaydet", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("accessQuery henuz cozulmemisken Kaydet devre disi kalir ve bos project_ids GONDERILMEZ", async () => {
+    const user = userEvent.setup();
+    // project-access sorgusu HIC cozulmuyor (kullanicinin gercek erisimi asla gelmiyor).
+    vi.mocked(backendClient.GET).mockImplementation((path: string) => {
+      if (path === "/projects") {
+        return Promise.resolve({
+          data: { counts: COUNTS, items: PROJECTS.slice(0, 50), limit: 50, offset: 0, total: PROJECT_COUNT },
+          error: undefined,
+          response: new Response(),
+        }) as never;
+      }
+      if (path === "/users/{user_id}/project-access") {
+        return new Promise(() => {}) as never; // sonsuza kadar pending
+      }
+      throw new Error(`beklenmeyen yol: ${path}`);
+    });
+    const putMock = vi.fn().mockResolvedValue({ data: {}, error: undefined, response: new Response() });
+    vi.mocked(backendClient.PUT).mockImplementation(putMock as never);
+
+    render(<ProjectAccessModal user={USER} onClose={() => {}} />, { wrapper });
+
+    await screen.findByText("PRJ-1 — Proje 1");
+    const saveButton = screen.getByRole("button", { name: "Kaydet" });
+    expect(saveButton).toBeDisabled();
+
+    await user.click(saveButton);
+
+    await waitFor(() => {
+      expect(putMock).not.toHaveBeenCalled();
     });
   });
 });

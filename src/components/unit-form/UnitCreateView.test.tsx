@@ -216,6 +216,19 @@ describe("UnitCreateView — kaskad: proje → şantiye (süzgeç) → blok", ()
     expect(screen.getByTestId("unite-form-kat")).toHaveValue("");
   });
 
+  // kalan-6 no 338 — proje/şantiye değişiminde `floor` sıfırlanıyordu ama
+  // BLOK doğrudan değiştirildiğinde (genel `onChangeField("blockId", …)`)
+  // hiçbir özel işleyici yoktu; eski bloğun katı kalıyor, kutu BOŞ görünse
+  // de `touched.has("floor")` doğru olduğu için build-body gövdeye yazıyordu.
+  it("BLOK doğrudan değişince de seçili kat sıfırlanır", () => {
+    render(<UnitCreateView />);
+    selectProject();
+    fireEvent.change(screen.getByTestId("unite-form-blok"), { target: { value: "blk-b" } });
+    fireEvent.change(screen.getByTestId("unite-form-kat"), { target: { value: "3. Kat" } });
+    fireEvent.change(screen.getByTestId("unite-form-blok"), { target: { value: "blk-c" } });
+    expect(screen.getByTestId("unite-form-kat")).toHaveValue("");
+  });
+
   it("proje seçimi URL'ye yazılır", () => {
     render(<UnitCreateView />);
     selectProject();

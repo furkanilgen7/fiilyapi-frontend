@@ -8,6 +8,7 @@ import "./equipment-work.css";
 export interface EquipmentWorkRecentListProps {
   logs: WorkLogResponse[] | undefined;
   isLoading: boolean;
+  isError?: boolean;
   /** Kayıt yalnız UUID taşır; adlar AYRI kaynaklardan çözülür. */
   resolveEquipmentName: (equipmentId: string) => string | undefined;
   resolveSiteLabel: (siteId: string | null) => string | null | undefined;
@@ -30,6 +31,7 @@ function clockText(time: string): string {
 export function EquipmentWorkRecentList({
   logs,
   isLoading,
+  isError,
   resolveEquipmentName,
   resolveSiteLabel,
   resolveOperatorName,
@@ -52,8 +54,13 @@ export function EquipmentWorkRecentList({
       </div>
       <p className="makine-cal-panel__reason">{RECENT_ALL_DISABLED_REASON}</p>
 
-      {isLoading && <p className="makine-cal-panel__note">Yükleniyor…</p>}
-      {!isLoading && logs?.length === 0 && (
+      {isError && (
+        <p className="makine-cal-panel__note" role="alert" data-testid="makine-cal-recent-error">
+          Son kayıtlar yüklenemedi.
+        </p>
+      )}
+      {isLoading && !isError && <p className="makine-cal-panel__note">Yükleniyor…</p>}
+      {!isLoading && !isError && logs?.length === 0 && (
         <p className="makine-cal-panel__note" data-testid="makine-cal-recent-empty">
           Bu dönemde kayıt yok.
         </p>

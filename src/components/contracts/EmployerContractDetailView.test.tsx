@@ -13,6 +13,7 @@ import {
   type ProgressPaymentListResponse,
 } from "@/lib/api/hooks/useProgressPayments";
 import { useProject } from "@/lib/api/hooks/useProjects";
+import { BackendError } from "@/lib/api/unwrap";
 import {
   useProjectTimeline,
   type ProjectTimelineResponse,
@@ -699,6 +700,28 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
       expect(screen.getByText("Temmuz hakedişi")).toBeInTheDocument();
       // `showProjectName={false}` — proje adı başlıkta zaten var.
       expect(screen.queryByText("Kule A")).not.toBeInTheDocument();
+    });
+
+    /**
+     * 🔴 `progress_payments` `contracts`tan AYRI bir izin anahtarıdır
+     * (backend `progress_payments/router.py:44`). `contracts:view` olan ama
+     * `progress_payments:none` olan kullanıcı bu sekmede 403 alır — "yüklenemedi"
+     * demek geçici bir arıza vaat ederdi, doğru cümle yetki sınırını söyler
+     * (`ContractMilestonesCard`teki 403 deseniyle AYNI).
+     */
+    it("403: yetki sınırı SÖYLENİR, 'yüklenemedi' DENMEZ", () => {
+      searchParams = new URLSearchParams("tab=payments");
+      mockAll({
+        paymentsExtra: {
+          data: undefined,
+          isError: true,
+          error: new BackendError(403, { detail: "forbidden" }),
+        },
+      });
+      render(<EmployerContractDetailView projectId="p-1" />);
+
+      expect(screen.getByTestId("ecd-payments-forbidden")).toBeInTheDocument();
+      expect(screen.queryByText("Hakedişler yüklenemedi")).not.toBeInTheDocument();
     });
   });
 

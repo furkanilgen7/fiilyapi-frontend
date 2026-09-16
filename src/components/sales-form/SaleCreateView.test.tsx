@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 import { SaleCreateView } from "./SaleCreateView";
 import { useProjects } from "@/lib/api/hooks/useProjects";
@@ -166,5 +166,62 @@ describe("SaleCreateView — Plan Oluştur akış sırası (POST → generate-pl
     expect(generateMock).toHaveBeenCalledWith("sl-new-1");
     // TOPLAM sunucunun total_amount'undan (Σ = sale_price).
     expect(screen.getByTestId("satis-form-plan-toplam")).toHaveTextContent("₺1.440.000");
+  });
+
+  /**
+   * no 269 · `resolveCustomerId` YENİ müşteri kipinde oluşturulan id'yi
+   * HİÇBİR YERDE saklamıyordu. Satış POST'u ilk denemede başarısız olup
+   * kullanıcı "Plan Oluştur"a TEKRAR basarsa, `createCustomer.mutateAsync`
+   * İKİNCİ bir POST /customers yapıp mükerrer müşteri kaydı açardı.
+   */
+  it("🔴 satış başarısız olup TEKRAR denendiğinde müşteri İKİNCİ KEZ oluşturulmaz", async () => {
+    const createCustomerMock = vi.fn().mockResolvedValue({ id: "cus-new-1" });
+    const createSaleMock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("409 çakışma"))
+      .mockResolvedValueOnce({ id: "sl-new-2" });
+    const generateMock = vi.fn().mockResolvedValue({
+      sale_price: "1440000.00",
+      total_amount: "1440000.00",
+      items: [
+        { id: "si-1", sale_id: "sl-new-2", sequence_no: 1, label: "Peşinat", due_date: "2026-09-01", amount: "440000.00", payment_method: "transfer", paid_amount: "0.00", paid_at: null, remaining_amount: "440000.00", is_overdue: false },
+      ],
+    });
+    vi.mocked(useCreateCustomer).mockReturnValue({
+      mutate: vi.fn(),
+      mutateAsync: createCustomerMock,
+      isPending: false,
+    } as never);
+    vi.mocked(useCreateSale).mockReturnValue({
+      mutate: vi.fn(),
+      mutateAsync: createSaleMock,
+      isPending: false,
+    } as never);
+    vi.mocked(useGenerateSalePlan).mockReturnValue({
+      mutate: vi.fn(),
+      mutateAsync: generateMock,
+      isPending: false,
+    } as never);
+
+    render(<SaleCreateView />);
+    selectUnit();
+    // Varsayılan kip "Yeni müşteri" (mockup 66-78 ONAYLI TÜRETİM).
+    fireEvent.change(screen.getByTestId("satis-form-alici-ad"), { target: { value: "Ayşe Yılmaz" } });
+    fireEvent.change(screen.getByTestId("satis-form-alici-kimlik"), { target: { value: "12345678901" } });
+    fireEvent.change(screen.getByTestId("satis-form-alici-telefon"), { target: { value: "05321234567" } });
+    fireEvent.change(screen.getByTestId("satis-form-satis-bedeli"), { target: { value: "1440000" } });
+
+    // 1. deneme: satış POST'u REDDEDİLİR.
+    fireEvent.click(screen.getByTestId("satis-form-plan-olustur"));
+    await waitFor(() => expect(createSaleMock).toHaveBeenCalledTimes(1));
+    expect(createCustomerMock).toHaveBeenCalledTimes(1);
+
+    // 2. deneme: kullanıcı düzeltip TEKRAR basar.
+    fireEvent.click(screen.getByTestId("satis-form-plan-olustur"));
+    await screen.findByTestId("satis-form-plan-tablo");
+
+    expect(createSaleMock).toHaveBeenCalledTimes(2);
+    // 🔴 Müşteri YALNIZ BİR KEZ oluşturulmuş olmalı.
+    expect(createCustomerMock).toHaveBeenCalledTimes(1);
   });
 });

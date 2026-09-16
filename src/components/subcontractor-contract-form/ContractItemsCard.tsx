@@ -39,6 +39,11 @@ export interface ContractItemsCardProps {
   isBusy: boolean;
   /** Yükleme butonu kapalıysa gerekçesi (proje seçilmedi vb.); yoksa `null`. */
   loadDisabledReason: string | null;
+  /**
+   * Silme kapısı — `contracts:admin` (backend), `canWrite`ten (`full`)
+   * AYRIDIR. `false` iken silme butonu DEVRE DIŞI basılır (kalan-6 no 319).
+   */
+  canDelete: boolean;
   onLoadFromEmployer: () => void;
   onCommitItem: (itemId: string, patch: { quantity?: string; unitPrice?: string }) => void;
   onDeleteItem: (itemId: string) => void;
@@ -61,6 +66,7 @@ export function ContractItemsCard({
   isLoadPending,
   isBusy,
   loadDisabledReason,
+  canDelete,
   onLoadFromEmployer,
   onCommitItem,
   onDeleteItem,
@@ -195,6 +201,7 @@ export function ContractItemsCard({
                   onDraft={setDraft}
                   onCommitQuantity={commitQuantity}
                   onCommitUnitPrice={commitUnitPrice}
+                  canDelete={canDelete}
                   onDeleteItem={onDeleteItem}
                 />
               ))
@@ -241,6 +248,7 @@ interface ItemGroupProps {
   onDraft: (itemId: string, patch: RowDraft) => void;
   onCommitQuantity: (item: SubcontractorContractItemResponse) => void;
   onCommitUnitPrice: (item: SubcontractorContractItemResponse) => void;
+  canDelete: boolean;
   onDeleteItem: (itemId: string) => void;
 }
 
@@ -252,6 +260,7 @@ function ItemGroup({
   onDraft,
   onCommitQuantity,
   onCommitUnitPrice,
+  canDelete,
   onDeleteItem,
 }: ItemGroupProps) {
   return (
@@ -321,7 +330,8 @@ function ItemGroup({
                 type="button"
                 className="fso-items__delete"
                 aria-label={`${item.code} satırını sil`}
-                disabled={isBusy}
+                disabled={isBusy || !canDelete}
+                title={canDelete ? undefined : "Satır silme yetkisi gerekiyor."}
                 onClick={() => onDeleteItem(item.id)}
               >
                 ×

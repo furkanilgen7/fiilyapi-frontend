@@ -43,7 +43,7 @@ export const PROJECT_ACCESS_QUERY_KEY = "project-access";
 export const PROJECT_LIST_MAX_LIMIT = 200;
 
 export function useProjects(
-  filter: ProjectListFilter = {},
+  filter: ProjectListFilter = { limit: PROJECT_LIST_MAX_LIMIT },
 ): UseQueryResult<ProjectListResponse, Error> {
   return useQuery({
     queryKey: [

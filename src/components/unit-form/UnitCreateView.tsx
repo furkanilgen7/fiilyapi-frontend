@@ -141,6 +141,18 @@ export function UnitCreateView() {
     router.replace(next.length > 0 ? `${pathname}?${next}` : pathname, { scroll: false });
   }
 
+  function handleChangeBlock(blockId: string) {
+    // Blok doğrudan değişince eski bloğun katı yeni blokta anlamsızlaşır;
+    // proje/şantiye değişimleriyle AYNI desende sıfırlanır (kalan-6 no 338).
+    setValues((prev) => ({ ...prev, blockId, floor: "" }));
+    setTouched((prev) => {
+      const next = new Set(prev);
+      next.add("blockId");
+      next.delete("floor");
+      return next;
+    });
+  }
+
   function handleChangeSite(siteId: string) {
     // Şantiye süzgeci değişince seçili blok listenin dışında kalabilir; blok ve
     // ona bağlı kat sıfırlanır (görünmeyen bir bloğu gövdeye göndermemek için).
@@ -284,6 +296,7 @@ export function UnitCreateView() {
             blocksNotice={blocksNotice}
             onChangeProject={handleChangeProject}
             onChangeSite={handleChangeSite}
+            onChangeBlock={handleChangeBlock}
             onChangeField={handleChangeField}
           />
 

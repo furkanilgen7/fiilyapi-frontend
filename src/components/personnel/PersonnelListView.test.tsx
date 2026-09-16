@@ -109,7 +109,7 @@ describe("PersonnelListView — başlık, sekmeler, KPI", () => {
 
   it("liste HER ZAMAN açık limit tavanıyla istenir", () => {
     render(<PersonnelListView />);
-    expect(vi.mocked(usePersonnel).mock.calls[0][0]).toEqual({ limit: 200, offset: 0 });
+    expect(vi.mocked(usePersonnel).mock.calls[0][0]).toEqual({ limit: 200, offset: 0, isDraft: false });
   });
 
   it("KPI'ları TÜREV olarak basar: toplam/şirket/taşeron", () => {
@@ -208,13 +208,13 @@ describe("PersonnelListView — süzgeçler", () => {
 
     searchParams = new URLSearchParams({ q: "mehmet" });
     render(<PersonnelListView />);
-    expect(vi.mocked(usePersonnel).mock.calls.at(-1)?.[0]).toEqual({ limit: 200, offset: 0, q: "mehmet" });
+    expect(vi.mocked(usePersonnel).mock.calls.at(-1)?.[0]).toEqual({ limit: 200, offset: 0, isDraft: false, q: "mehmet" });
   });
 
   it("durum süzgeci SUNUCUYA is_active olarak gider", () => {
     searchParams = new URLSearchParams({ durum: "inactive" });
     render(<PersonnelListView />);
-    expect(vi.mocked(usePersonnel).mock.calls[0][0]).toEqual({ limit: 200, offset: 0, isActive: false });
+    expect(vi.mocked(usePersonnel).mock.calls[0][0]).toEqual({ limit: 200, offset: 0, isDraft: false, isActive: false });
   });
 
   it("proje süzgeci SUNUCUYA project_id olarak gider", () => {
@@ -223,6 +223,7 @@ describe("PersonnelListView — süzgeçler", () => {
     expect(vi.mocked(usePersonnel).mock.calls[0][0]).toEqual({
       limit: 200,
       offset: 0,
+      isDraft: false,
       projectId: "p-2",
     });
   });
@@ -251,7 +252,7 @@ describe("PersonnelListView — süzgeçler", () => {
   it("meslek süzgeci İSTEMCİDE uygulanır — sunucu sorgusuna gitmez", () => {
     searchParams = new URLSearchParams({ meslek: "Elektrikçi" });
     render(<PersonnelListView />);
-    expect(vi.mocked(usePersonnel).mock.calls[0][0]).toEqual({ limit: 200, offset: 0 });
+    expect(vi.mocked(usePersonnel).mock.calls[0][0]).toEqual({ limit: 200, offset: 0, isDraft: false });
     expect(screen.getByText("Ramazan Yıldız")).toBeInTheDocument();
     expect(screen.queryByText("Mehmet Kılıç")).not.toBeInTheDocument();
   });

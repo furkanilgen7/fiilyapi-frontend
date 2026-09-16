@@ -206,7 +206,13 @@ const TS_MATRIX = {
 } as unknown as TimesheetMatrix;
 
 function mockTimesheet(
-  overrides: { isLoading?: boolean; isError?: boolean; matrix?: TimesheetMatrix | undefined } = {},
+  overrides: {
+    isLoading?: boolean;
+    isError?: boolean;
+    matrix?: TimesheetMatrix | undefined;
+    isPersonnelUnavailable?: boolean;
+    personnelTruncation?: { isTruncated: boolean; shownCount: number; totalCount: number };
+  } = {},
 ) {
   // 🔴 `matrix: undefined` AÇIKÇA verilebilmelidir — varsayılan parametre
   // sözdizimi (`matrix = TS_MATRIX`) açık `undefined`i de EZER ve "veri yok"
@@ -226,8 +232,12 @@ function mockTimesheet(
     isLoading,
     isError,
     isForbidden: false,
-    isPersonnelUnavailable: false,
-    personnelTruncation: { isTruncated: false, shownCount: 0, totalCount: 0 },
+    isPersonnelUnavailable: overrides.isPersonnelUnavailable ?? false,
+    personnelTruncation: overrides.personnelTruncation ?? {
+      isTruncated: false,
+      shownCount: 0,
+      totalCount: 0,
+    },
   }));
 }
 
@@ -778,5 +788,37 @@ describe("SectionDetailView — 'Bu Bölümdeki İşçiler' kartı (F-BLMPUAN, D
     renderView();
     expect(screen.getByText("Puantaj verisi yüklenemedi")).toBeInTheDocument();
     expect(screen.queryByTestId("section-workers-empty")).not.toBeInTheDocument();
+  });
+
+  // kalan-4 #280: `isPersonnelUnavailable`/`personnelTruncation` HİÇ
+  // tüketilmiyordu — kartoteks okunamazsa ya da 200 tavanında kırpılırsa
+  // kart sessizce eksik satır basıyordu, hiçbir uyarı yoktu. Kardeş ekran
+  // (`TimesheetWeekScreen` + `TimesheetNotices`) AYNI alanları görünür
+  // uyarıya çevirir.
+  it("personel kartoteksi okunamayınca GÖRÜNÜR bir uyarı basılır", () => {
+    mockPermission("view");
+    mockQueries();
+    mockTimesheet({ isPersonnelUnavailable: true });
+    renderView();
+    expect(screen.getByTestId("section-workers-personnel-notice")).toHaveTextContent(
+      "Personel kartoteksi okunamadı",
+    );
+  });
+
+  it("personel kartoteksi KIRPILINCA GÖRÜNÜR bir uyarı basılır", () => {
+    mockPermission("view");
+    mockQueries();
+    mockTimesheet({
+      personnelTruncation: { isTruncated: true, shownCount: 200, totalCount: 240 },
+    });
+    renderView();
+    expect(screen.getByTestId("section-workers-personnel-notice")).toBeVisible();
+  });
+
+  it("personel kartoteksi TAM okununca uyarı BASILMAZ", () => {
+    mockPermission("view");
+    mockQueries();
+    renderView();
+    expect(screen.queryByTestId("section-workers-personnel-notice")).not.toBeInTheDocument();
   });
 });

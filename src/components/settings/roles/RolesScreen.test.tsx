@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -91,5 +91,53 @@ describe("RolesScreen", () => {
 
     const deleteButton = await screen.findByRole("button", { name: "Sil" });
     expect(deleteButton).toBeEnabled();
+  });
+
+  it("rol silme reddedilince modal acik kalir ve hata metni gorunur", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: Request) => {
+        const url = input.url ?? String(input);
+        if (input.method === "DELETE" && url.includes("/roles/r2")) {
+          return new Response(JSON.stringify({ detail: "Bu role atanmış kullanıcılar var" }), {
+            status: 409,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        if (url.includes("/roles/") && url.includes("/permissions")) {
+          return new Response(JSON.stringify([{ module_key: "dashboard", access_level: "full", scope: "all" }]), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        if (url.includes("/roles")) {
+          return new Response(JSON.stringify(roles), { status: 200, headers: { "content-type": "application/json" } });
+        }
+        if (url.includes("/modules")) {
+          return new Response(JSON.stringify(modules), { status: 200, headers: { "content-type": "application/json" } });
+        }
+        if (url.includes("/users")) {
+          return new Response(JSON.stringify({ items: [], total: 0, limit: 200, offset: 0 }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify(null), { status: 200, headers: { "content-type": "application/json" } });
+      }),
+    );
+    renderScreen();
+    await screen.findByText("Modül Erişimleri");
+
+    await user.click(screen.getByText("Saha"));
+    await user.click(await screen.findByRole("button", { name: "Sil" }));
+    const silButtons = await screen.findAllByRole("button", { name: "Sil" });
+    await user.click(silButtons[silButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(screen.getByText(/atanmış kullanıcılar var|hata/i)).toBeInTheDocument();
+    });
+    // Modal acik kalmali: onay butonu hala DOM'da.
+    expect(screen.getByText(/rolünü silmek istediğinize emin misiniz/i)).toBeInTheDocument();
   });
 });

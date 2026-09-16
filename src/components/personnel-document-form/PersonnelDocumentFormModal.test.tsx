@@ -206,6 +206,22 @@ describe("PersonnelDocumentFormModal — iki adımlı dosya akışı", () => {
     expect(upload).toHaveBeenCalledTimes(1);
     expect(create.mock.calls[1][0]).toEqual({ type_id: TYPE_ID, document_id: DOCUMENT_ID });
   });
+
+  it("🔴 öksüz uyarısı varken BAŞKA dosya seçilince uyarı KAYBOLMAZ", async () => {
+    create.mockRejectedValue(new BackendError(422, { detail: "Belge türü bulunamadı." }));
+    renderModal();
+    selectFile("saglik.pdf");
+    fireEvent.change(screen.getByTestId("pdf-type"), { target: { value: TYPE_ID } });
+    submit();
+    const error = await screen.findByTestId("pdf-error");
+    expect(error).toHaveTextContent("saglik.pdf");
+    expect(error).toHaveTextContent("arşive YÜKLENDİ ama personel kaydına bağlanamadı");
+
+    // Kullanıcı öksüz uyarıyı okumadan başka bir dosya seçer.
+    selectFile("baska.pdf");
+
+    expect(screen.getByTestId("pdf-error")).toHaveTextContent("saglik.pdf");
+  });
 });
 
 describe("PersonnelDocumentFormModal — karşılıksız öğe ve bağlam", () => {

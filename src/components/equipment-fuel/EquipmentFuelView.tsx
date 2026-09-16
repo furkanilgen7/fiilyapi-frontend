@@ -170,6 +170,7 @@ export function EquipmentFuelView() {
         equipment={equipmentQuery.data}
         logs={fuelLogsQuery.data}
         isLoading={fuelLogsQuery.isLoading}
+        isError={fuelLogsQuery.isError}
         resolveSiteLabel={resolveSiteLabel}
         resolveEnteredByName={resolveEnteredByName}
       />

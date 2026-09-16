@@ -1,6 +1,21 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { renderHook, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 
-import { nextFanOutWindow, SITE_FAN_OUT_CONCURRENCY } from "./useSiteFanOutOptions";
+import {
+  nextFanOutWindow,
+  SITE_FAN_OUT_CONCURRENCY,
+  useSiteFanOutOptions,
+} from "./useSiteFanOutOptions";
+import { backendClient } from "@/lib/api/client";
+
+vi.mock("@/lib/api/client", () => ({ backendClient: { GET: vi.fn() } }));
+
+function wrapper({ children }: { children: ReactNode }) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
 
 // Hook'un ağ davranışı `WarehouseModal.test.tsx`te (çağıran taraf) doğrulanır;
 // burada SINIRLI EŞZAMANLILIĞIN saf çekirdeği sınanır.
@@ -25,5 +40,32 @@ describe("nextFanOutWindow — kayar pencere", () => {
 
   it("proje yoksa pencere sıfırdır", () => {
     expect(nextFanOutWindow(0, 0, 0)).toBe(0);
+  });
+});
+
+// KAYIT 360 — `GET /projects` yanıtı GERÇEKTEN `total` taşır (schema.d.ts
+// `ProjectListResponse.total`); hook bunu kullanmak yerine `buildListTruncation`e
+// sabit `undefined` geçiyordu, yani proje listesi kırpılsa bile `isPartial`
+// hiçbir zaman `true` olmuyordu.
+describe("useSiteFanOutOptions — proje listesi kırpılma bandı", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("projeler sayfa sınırına takılınca (total > items.length) isPartial true olur", async () => {
+    vi.mocked(backendClient.GET).mockResolvedValue({
+      data: {
+        counts: { all: 1, taahhut: 1, kendi_yatirim: 0, kat_karsiligi: 0, completed: 0 },
+        items: [{ id: "p-1", name: "Proje 1" }],
+        limit: 200,
+        offset: 0,
+        total: 250,
+      },
+      error: undefined,
+      response: new Response(),
+    } as never);
+
+    const { result } = renderHook(() => useSiteFanOutOptions(), { wrapper });
+
+    await waitFor(() => expect(result.current.isPartial).toBe(true));
+    expect(result.current.truncation.totalCount).toBe(250);
   });
 });

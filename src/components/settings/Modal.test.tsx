@@ -164,3 +164,22 @@ describe("Modal — odak yonetimi", () => {
     expect(trigger).toHaveFocus();
   });
 });
+
+// 🔴 KAYIT 58: diyalog açıkken ARKA PLAN kaydırılabilir kalıyordu —
+// `document.body.style.overflow`a dokunan hiçbir satır yoktu. 20+ form
+// modalı bu bileşeni paylaşıyor.
+describe("Modal · gövde kaydırma kilidi (kayıt 58)", () => {
+  it("açılışta `document.body.style.overflow` 'hidden' olur, kapanışta ESKİ DEĞERE döner", () => {
+    document.body.style.overflow = "auto";
+
+    const { unmount } = render(
+      <Modal title="Test" onClose={() => {}}>
+        <span>govde</span>
+      </Modal>,
+    );
+    expect(document.body.style.overflow).toBe("hidden");
+
+    unmount();
+    expect(document.body.style.overflow).toBe("auto");
+  });
+});

@@ -55,6 +55,15 @@ export function Modal({ title, onClose, children, footer, className }: ModalProp
     };
   }, []);
 
+  // Kayıt 58: diyalog açıkken ARKA PLAN kaydırılabilir kalıyordu.
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") {

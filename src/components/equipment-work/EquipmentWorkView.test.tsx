@@ -20,6 +20,7 @@ import type { PersonnelListItem } from "@/lib/api/hooks/usePersonnel";
 import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
 import type { MeResponse } from "@/lib/auth/types";
 import { errorResponse, stubExportDownload } from "@/lib/api/export-test-stub";
+import { BackendError } from "@/lib/api/unwrap";
 
 // F-MK T4 · M3 (`/makine/calisma`) ekranının davranış iddiaları. Odak, spec'in
 // KIRMIZI kararlarıdır: §0 (toplam sunucudan) · K3 (`null` ⇒ "—") · K2 (yüzde
@@ -259,6 +260,22 @@ describe("EquipmentWorkView — M3 iskeleti", () => {
     render(<EquipmentWorkView />);
     expect(screen.queryByRole("heading", { name: "Çalışma Kaydı", level: 1 })).not.toBeInTheDocument();
   });
+
+  // kalan-3 #413 — izin kapısının İKİNCİ bacağı: modül izni VAR ama backend
+  // 403 dönerse (`isForbidden(summaryQuery.error)`) de AccessDenied basılmalı.
+  // Önceki test yalnız `permissions.equipment === "none"` bacağını ölçüyordu.
+  it("modul izni VARKEN ozet ucu 403 donerse yine erisim reddi (AccessDenied) gorunur", () => {
+    vi.mocked(useEquipmentWorkSummary).mockReturnValue(
+      queryStub<WorkSummaryResponse>(undefined, {
+        isLoading: false,
+        isError: true,
+        error: new BackendError(403, { detail: "Bu şantiyeye erişiminiz kısıtlandı." }),
+      }),
+    );
+    render(<EquipmentWorkView />);
+    expect(screen.queryByRole("heading", { name: "Çalışma Kaydı", level: 1 })).not.toBeInTheDocument();
+    expect(screen.getByText("Bu alana yetkiniz yok")).toBeInTheDocument();
+  });
 });
 
 describe("§0 — tfoot SUNUCUNUN toplamıdır, mockup'ın sabiti değil", () => {
@@ -480,5 +497,38 @@ describe("EXPORT-XLSX · Excel sorgusu = ekran sorgusu", () => {
     expect(await screen.findByTestId("makine-cal-export-error")).toHaveTextContent(
       "Makine yetkiniz yok.",
     );
+  });
+});
+
+describe("kalan-3 #196 — equipmentQuery hatasinda ekipman adi kalici 'Yükleniyor…' basmaz", () => {
+  it("equipmentQuery hata verince ekipman adi yerine bir hata/bos metni gorunur", () => {
+    vi.mocked(useEquipment).mockReturnValue(
+      queryStub<EquipmentListResponse>(undefined, { isLoading: false, isError: true, error: new Error("network") }),
+    );
+    render(<EquipmentWorkView />);
+    const recent = screen.getByTestId("makine-cal-recent");
+    expect(recent).not.toHaveTextContent("Yükleniyor…");
+  });
+});
+
+describe("kalan-3 #197 — bulunamayan operator 'Operatör' bolumunu gizlemez", () => {
+  it("personnelNameById'de olmayan operator_id icin 'Operatör' bolumu YINE gorunur", () => {
+    // op-1, LOGS.items[0].operator_id, personel listesinde YOK.
+    vi.mocked(usePersonnel).mockReturnValue(
+      queryStub({ items: [], total: 0, limit: 200, offset: 0 }),
+    );
+    render(<EquipmentWorkView />);
+    const recent = screen.getByTestId("makine-cal-recent");
+    expect(recent).toHaveTextContent("Operatör");
+  });
+});
+
+describe("kalan-3 #198 — logsQuery hatasinda 'Son Kayıtlar' paneli sessizce bos kalmaz", () => {
+  it("logsQuery hata verince panelde gorunur bir hata notu vardir", () => {
+    vi.mocked(useEquipmentWorkLogs).mockReturnValue(
+      queryStub<WorkLogListResponse>(undefined, { isLoading: false, isError: true, error: new Error("network") }),
+    );
+    render(<EquipmentWorkView />);
+    expect(screen.getByTestId("makine-cal-recent-error")).toBeInTheDocument();
   });
 });

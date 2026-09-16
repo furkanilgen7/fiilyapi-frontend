@@ -17,6 +17,11 @@ export type DiaryStatus = components["schemas"]["DiaryStatus"];
 export type Weather = components["schemas"]["Weather"];
 export type WorkerSource = components["schemas"]["WorkerSource"];
 
+/** Backend tavanı (`site_diary/router.py` `Query(ge=1, le=200)`); varsayılan
+ *  50'dir — kalan-4 #281: tavan AÇIKÇA gönderilmezse 51. kayıt SESSİZCE
+ *  düşer (TB3/F-TH kırpılma dersi). */
+export const SITE_DIARY_LIST_MAX_LIMIT = 200;
+
 export const SITE_DIARY_ENTRIES_QUERY_KEY = "site-diary-entries";
 export const SITE_DIARY_ENTRY_QUERY_KEY = "site-diary-entry";
 export const SITE_DIARY_SUMMARY_QUERY_KEY = "site-diary-summary";

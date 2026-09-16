@@ -187,8 +187,11 @@ function MetricValue({
 }) {
   const value = realValue(metric);
   if (value !== null) {
+    // kalan-4 #262: `tone="profit"` isarete BAKMAZDI — negatif kar (zarar)
+    // ayni pozitif renkle (mor/turkuaz) basiliyordu. Negatifte danger'a don.
+    const effectiveTone = tone === "profit" && Number(value) < 0 ? "danger" : tone;
     return (
-      <span className={cx("prj-kpi__value", tone && `prj-kpi__value--${tone}`)}>
+      <span className={cx("prj-kpi__value", effectiveTone && `prj-kpi__value--${effectiveTone}`)}>
         {formatCompactCurrency(value)}
       </span>
     );
@@ -217,7 +220,9 @@ function MarginChip({ metric }: { metric: Metric | undefined }) {
         📈
       </span>
       {value !== null ? (
-        <span className="prj-card__margin">{`${formatPercent(value)} marj`}</span>
+        <span
+          className={cx("prj-card__margin", Number(value) < 0 && "prj-card__margin--negative")}
+        >{`${formatPercent(value)} marj`}</span>
       ) : (
         <span
           className="prj-card__margin prj-card__margin--pending"

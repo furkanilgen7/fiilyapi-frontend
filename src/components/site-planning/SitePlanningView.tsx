@@ -83,7 +83,12 @@ export function SitePlanningView() {
   const [pendingWeekShift, setPendingWeekShift] = useState<number | null>(null);
 
   if (!permission.canView) return <AccessDenied />;
-  if (isForbidden(planQuery.error)) return <AccessDenied />;
+  if (isForbidden(planQuery.error) || isForbidden(siteQuery.error)) return <AccessDenied />;
+  // 🔴 Şantiye çözülemezse (404/ağ) `siteId` boş kalır ve `planQuery`/
+  // `sectionsQuery` `enabled:false` ile sessizce idle'da durur — hiçbir hata
+  // basılmadan boş ızgara görünürdü. planQuery kontrolünden ÖNCE kontrol
+  // edilir, yoksa siteId boşken bu dal hiç tetiklenmez.
+  if (siteQuery.isError) return <p className="plan__message">Şantiye yüklenemedi</p>;
 
   const plan = planQuery.data;
   const base = routes.projects.sites.detail({ projectId: projectKey, siteId: siteKey });

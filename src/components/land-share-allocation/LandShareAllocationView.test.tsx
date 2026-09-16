@@ -454,6 +454,34 @@ describe("PG 105-241 — tablo, süzgeç ve sayfalama", () => {
     expect(screen.queryByTestId("paylasim-form-sayfa")).toBeNull();
   });
 
+  it("satılmış ünitenin sahiplik düğmeleri KİLİTLİDİR (kalan-7 · #215)", () => {
+    vi.mocked(useLandShareUnits).mockReturnValue(
+      queryStub(
+        unitList({
+          items: [
+            unitRow({
+              unit_id: "u-sold",
+              unit_no: "A-9",
+              sales_status: "sold",
+              buyer_name: "Zeynep Arslan",
+            }),
+          ],
+          total: 1,
+        }),
+      ),
+    );
+    render(<LandShareAllocationView />);
+
+    expect(screen.getByTestId("paylasim-form-biz-A-9")).toBeDisabled();
+    expect(screen.getByTestId("paylasim-form-arsa-A-9")).toBeDisabled();
+
+    fireEvent.click(screen.getByTestId("paylasim-form-biz-A-9"));
+    fireEvent.click(screen.getByTestId("paylasim-form-kaydet"));
+
+    // Sunucudan farklı bir gövde ÜRETİLMEMELİ — tıklama etkisiz kalmalı.
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
   it("blok süzgeci sorguya girer (gövdeye DEĞİL)", () => {
     render(<LandShareAllocationView />);
     fireEvent.change(screen.getByTestId("paylasim-form-blok-suzgec"), {

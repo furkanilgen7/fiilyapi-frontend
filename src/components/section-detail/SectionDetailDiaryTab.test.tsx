@@ -10,7 +10,7 @@ import { useBoq } from "@/lib/api/hooks/useBoq";
 import { useSession } from "@/components/shell/SessionProvider";
 import { useTimesheetData } from "@/components/timesheet/useTimesheetData";
 import { buildTimesheetView } from "@/components/timesheet/derive";
-import { useSiteDiaryEntries } from "@/lib/api/hooks/useSiteDiary";
+import { useSiteDiaryEntries, SITE_DIARY_LIST_MAX_LIMIT } from "@/lib/api/hooks/useSiteDiary";
 import type { SiteDiaryEntryListItem } from "@/lib/api/hooks/useSiteDiary";
 
 // F-BLMSEK · Bölüm Detay › "Günlük Kayıt" sekmesinin EKRAN BAĞLANTISI.
@@ -187,13 +187,19 @@ describe("SectionDetailView — Günlük Kayıt sekmesi (F-BLMSEK)", () => {
     expect(within(row).queryByText("Bölüm adı yok")).not.toBeInTheDocument();
   });
 
-  it("günlük listesi SÜZGEÇSİZ çekilir — şantiye ekranıyla AYNI önbellek anahtarı", async () => {
-    // 🔴 Dönem/limit süzgeci verilseydi anahtar farklılaşır, aynı veri İKİNCİ
-    // kez çekilirdi. `section_id` zaten liste ucunda YOK (sessizce yok sayılır).
+  it("günlük listesi DÖNEM süzgeçsiz ama TAVAN ile çekilir (kalan-4 #281)", async () => {
+    // 🔴 Dönem süzgeci hâlâ verilmez (`section_id` liste ucunda YOK, süzgeç
+    // GÖRÜNÜME uygulanır). Ama TAVAN açıkça gönderilmeli: verilmezse sunucu
+    // varsayılanı 50'dir ve 51. kayıt SESSİZCE düşer (TB3/F-TH dersi) — bu
+    // ekranın süzgeçsiz çağrısı `section-diary.ts`nin girdisidir, kırpılmış
+    // 50 kayıt üzerinde çalışırsa bölüm kartoteksi eksik kalır.
     mockAll([listItem()]);
     await openDiaryTab();
 
-    expect(useSiteDiaryEntries).toHaveBeenCalledWith(SITE_ID);
+    expect(useSiteDiaryEntries).toHaveBeenCalledWith(
+      SITE_ID,
+      expect.objectContaining({ limit: SITE_DIARY_LIST_MAX_LIMIT }),
+    );
   });
 
   it("öbür sekmeler HÂLÂ yer tutucu — canlılık sızmaz", async () => {

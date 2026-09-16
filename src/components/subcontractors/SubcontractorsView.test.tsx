@@ -188,6 +188,23 @@ describe("SubcontractorsView · TL taşeron firma listesi", () => {
     expect(screen.getByTestId("tl-kpi-pending-approval")).toHaveTextContent("1 Hakediş");
   });
 
+  // kalan-6 no 322 — `isLoading`/`isError` yalnız tabloya geçiyordu; başlık
+  // alt satırı ve KPI şeridi sorgular pending/hatalıyken de koşulsuz "0"
+  // basıyordu ("0 taşeron firma", KPI'ların hepsi 0). Yükleniyorken sahte
+  // sıfır basılmamalı.
+  it("sorgular yükleniyorken başlık alt satırı ve KPI'lar sahte SIFIR basmaz", () => {
+    vi.mocked(useSubcontractors).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+      error: null,
+    } as never);
+    render(<SubcontractorsView />);
+    expect(screen.queryByText("0 taşeron firma · 0 aktif sözleşme")).not.toBeInTheDocument();
+    const strip = screen.getByTestId("tl-kpi-strip");
+    expect(within(strip).queryByText("0")).not.toBeInTheDocument();
+  });
+
   it("satır para kolonlarını üç kaynaktan birleştirir (58-61)", () => {
     render(<SubcontractorsView />);
     const row = rowOf(/Akın İnşaat/);

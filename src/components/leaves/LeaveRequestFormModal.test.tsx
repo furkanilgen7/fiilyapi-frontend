@@ -309,6 +309,32 @@ describe("LeaveRequestFormModal — koşullu belge (T 161-174 · KARAR 3)", () =
     expect(screen.getByTestId("iz-request-no-project")).toBeVisible();
     expect(screen.getByTestId("iz-request-submit")).toBeDisabled();
   });
+
+  it("personel değiştirilince önceki personelin seçili dosyası TEMİZLENİR (kalan-7 · #220)", async () => {
+    setup({
+      personnel: [
+        person({ id: "per-1", full_name: "Hasan Çelik", assigned_project_id: "prj-1" }),
+        person({ id: "per-2", full_name: "Ayşe Kaya", assigned_project_id: "prj-2" }),
+      ],
+    });
+    const user = userEvent.setup();
+    render(<LeaveRequestFormModal year={2026} onClose={vi.fn()} />);
+    await fillBase(user, "lt-2");
+    await user.upload(
+      screen.getByTestId("iz-request-file"),
+      new File(["rapor"], "rapor.pdf", { type: "application/pdf" }),
+    );
+    expect(screen.getByTestId("iz-request-submit")).toBeEnabled();
+
+    await user.selectOptions(screen.getByTestId("iz-request-personnel"), "per-2");
+
+    // per-1 için seçilmiş dosya per-2'ye miras kalmamalı — belge zorunlu tip
+    // için gönderim yeniden KAPALI olmalı ve gerekçe yeniden görünmeli.
+    expect(screen.getByTestId("iz-request-submit")).toBeDisabled();
+    expect(screen.getByTestId("iz-request-block-reason")).toHaveTextContent(
+      "belge eki zorunludur",
+    );
+  });
 });
 
 describe("LeaveRequestFormModal — gönderim (POST /leave-requests)", () => {

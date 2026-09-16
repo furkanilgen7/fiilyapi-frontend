@@ -86,6 +86,9 @@ export function UsersScreen() {
 
   const [modal, setModal] = useState<ModalState>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  // Kayıt 68/138: `GET /users`da arama parametresi YOK — en küçük onarım
+  // GEÇERLİ SAYFA üzerinde ad/e-posta ile İSTEMCİ TARAFI süzgeçtir.
+  const [searchQuery, setSearchQuery] = useState("");
 
   const total = usersQuery.data?.total ?? 0;
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -115,7 +118,13 @@ export function UsersScreen() {
     return <p className="settings-note settings-note--error">Kullanıcılar yüklenemedi.</p>;
   if (page > pageCount) return null;
 
-  const { items } = usersQuery.data;
+  const normalizedQuery = searchQuery.trim().toLocaleLowerCase("tr");
+  const items = usersQuery.data.items.filter(
+    (user) =>
+      normalizedQuery === "" ||
+      user.full_name.toLocaleLowerCase("tr").includes(normalizedQuery) ||
+      user.email.toLocaleLowerCase("tr").includes(normalizedQuery),
+  );
 
   return (
     <>
@@ -143,7 +152,13 @@ export function UsersScreen() {
           <>
             <span className="users-search">
               <span aria-hidden="true">🔍</span>
-              <input type="search" placeholder="Kullanıcı ara..." aria-label="Kullanıcı ara" />
+              <input
+                type="search"
+                placeholder="Kullanıcı ara..."
+                aria-label="Kullanıcı ara"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+              />
             </span>
             <Button variant="primary" size="sm" onClick={() => setModal({ type: "create" })}>
               + Kullanıcı Ekle

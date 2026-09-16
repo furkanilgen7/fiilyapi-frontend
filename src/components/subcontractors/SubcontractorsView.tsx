@@ -93,10 +93,12 @@ export function SubcontractorsView() {
       <div className="tl__head">
         <div>
           <h1 className="tl__title">Taşeron Listesi</h1>
-          {/* 24: "12 taşeron firma · 8 aktif sözleşme" */}
+          {/* 24: "12 taşeron firma · 8 aktif sözleşme" — yüklenirken/hatalıyken
+              sahte sıfır basılmaz (kalan-6 no 322). */}
           <div className="tl__subtitle">
-            {directory.summary.totalCount} taşeron firma ·{" "}
-            {directory.summary.activeContractCount} aktif sözleşme
+            {isLoading || isError
+              ? "Taşeron/sözleşme listesi yükleniyor…"
+              : `${directory.summary.totalCount} taşeron firma · ${directory.summary.activeContractCount} aktif sözleşme`}
           </div>
         </div>
         <div className="tl__actions">
@@ -155,7 +157,7 @@ export function SubcontractorsView() {
         </p>
       )}
 
-      <SubcontractorsSummaryStrip summary={directory.summary} />
+      <SubcontractorsSummaryStrip summary={directory.summary} isPending={isLoading || isError} />
 
       <SubcontractorsTable
         isError={isError}

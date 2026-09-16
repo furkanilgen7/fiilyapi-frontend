@@ -81,6 +81,11 @@ export function SaleCreateView() {
   const [errors, setErrors] = useState<SaleFormErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [createdSaleId, setCreatedSaleId] = useState<string | null>(null);
+  // no 269 · Satış POST'u başarısız olup kullanıcı yeniden denediğinde
+  // `resolveCustomerId` YENİ müşteri kipinde İKİNCİ bir POST /customers
+  // yapıp mükerrer kayıt açmasın diye oluşan id burada saklanır
+  // (`createdSaleId` ile AYNI desen).
+  const [resolvedCustomerId, setResolvedCustomerId] = useState<string | null>(null);
   const [planRows, setPlanRows] = useState<PlanRowValues[]>([]);
   const [planTotalText, setPlanTotalText] = useState<string | null>(null);
   const [planEdited, setPlanEdited] = useState(false);
@@ -200,7 +205,9 @@ export function SaleCreateView() {
   /** Müşteri kimliğini çözer (yeni müşteri ise önce POST /customers). */
   async function resolveCustomerId(): Promise<string> {
     if (values.customerMode === "existing") return values.existingCustomerId;
+    if (resolvedCustomerId !== null) return resolvedCustomerId;
     const customer = await createCustomer.mutateAsync(buildCustomerCreateBody(values));
+    setResolvedCustomerId(customer.id);
     return customer.id;
   }
 

@@ -60,6 +60,23 @@ export function buildPurchaseRequestLines(
 }
 
 /**
+ * TAMAMEN dokunulmamış satır mı? (`createPurchaseRequestLine`in varsayılan
+ * hâli.) Taslak doğrulaması (`purchase-request-validate.ts`) bu satırı
+ * ARAMAZ — form HER ZAMAN böyle bir satırla açılır
+ * (`emptyPurchaseRequestFormValues`) — bu yüzden gövdeye girerse
+ * `stock_item_id: ""` / `quantity: ""` ile sunucudan 422 döner. Yalnız
+ * TAM boş satır elenir; kısmen doldurulmuş bir satır (kullanıcının girdiği
+ * veri) asla sessizce silinmez.
+ */
+function isLineEmpty(line: PurchaseRequestLineValues): boolean {
+  const identityEmpty =
+    line.source === "stock"
+      ? line.stockItemId.trim() === ""
+      : line.freeTextName.trim() === "" && line.freeTextUnit.trim() === "";
+  return identityEmpty && line.quantity.trim() === "" && line.unitPrice.trim() === "";
+}
+
+/**
  * "Taslak Kaydet" gövdesi. Boş bırakılan isteğe bağlı alanların anahtarı HİÇ
  * kurulmaz (`null` göndermekle aynı sonucu verir ama gövde gürültüsüz kalır ve
  * anahtar testi okunur olur).
@@ -77,7 +94,7 @@ export function buildPurchaseRequestCreateBody(
     ...(values.neededBy ? { needed_by: values.neededBy } : {}),
     ...(justification ? { justification } : {}),
     ...(values.quoteDeadline ? { quote_deadline: values.quoteDeadline } : {}),
-    lines: buildPurchaseRequestLines(values.lines),
+    lines: buildPurchaseRequestLines(values.lines.filter((line) => !isLineEmpty(line))),
   };
 }
 

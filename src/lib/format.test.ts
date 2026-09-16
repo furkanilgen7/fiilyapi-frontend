@@ -3,12 +3,16 @@ import { describe, it, expect } from "vitest";
 import {
   formatAmount,
   formatDateDots,
+  formatDateLong,
+  formatDays,
   parseDateDots,
   formatCompactCurrency,
   formatCurrency,
   formatCurrencyPrecise,
   formatDayMonthShort,
   formatDecimal,
+  formatMonthName,
+  formatMonthShort,
   formatMonthYear,
   formatPercent,
   formatPeriod,
@@ -16,6 +20,7 @@ import {
   formatPeriodShort,
   formatQuantity,
   formatWeekdayShort,
+  PERIOD_MONTHS,
 } from "./format";
 
 describe("formatCompactCurrency", () => {
@@ -243,5 +248,60 @@ describe("parseDateDots — formatDateDots'un TERSİ", () => {
 
   it("tek haneli gün/ay reddedilir (biçim sıkı)", () => {
     expect(parseDateDots("1.7.2026")).toBe("");
+  });
+});
+
+// 🔴 Kayıt 456: bu beş dışa aktarım hiçbir test dosyasında geçmiyordu.
+// `TR_MONTHS` off-by-one'ı (bir ay eklenir/çıkarılırsa) bordro/hakediş/mali
+// tablo ekranlarında sessizce bir ay kaydırır — hiçbir test kırılmazdı.
+describe("formatDays", () => {
+  it("tam sayıyı ondalıksız basar", () => {
+    expect(formatDays(23)).toBe("23");
+  });
+
+  it("kesirli değeri 1 ondalığa yuvarlar (saat/9 türevi kalıntı)", () => {
+    expect(formatDays(22.444)).toBe("22,4");
+  });
+});
+
+describe("PERIOD_MONTHS", () => {
+  it("12 ay içerir, 1'den başlar ve TR_MONTHS ile hizalıdır", () => {
+    expect(PERIOD_MONTHS).toHaveLength(12);
+    expect(PERIOD_MONTHS[0]).toEqual({ value: 1, label: "Ocak" });
+    expect(PERIOD_MONTHS[11]).toEqual({ value: 12, label: "Aralık" });
+  });
+});
+
+describe("formatMonthName", () => {
+  it("1 → Ocak, 12 → Aralık (sınır uçları)", () => {
+    expect(formatMonthName(1)).toBe("Ocak");
+    expect(formatMonthName(12)).toBe("Aralık");
+  });
+
+  it("aralık dışı ay sayıyı olduğu gibi basar", () => {
+    expect(formatMonthName(13)).toBe("13");
+    expect(formatMonthName(0)).toBe("0");
+  });
+});
+
+describe("formatMonthShort", () => {
+  it("1 → Oca, 12 → Ara (TR_MONTHS_SHORT ile hizalı)", () => {
+    expect(formatMonthShort(1)).toBe("Oca");
+    expect(formatMonthShort(12)).toBe("Ara");
+  });
+
+  it("aralık dışı ay sayıyı olduğu gibi basar", () => {
+    expect(formatMonthShort(13)).toBe("13");
+  });
+});
+
+describe("formatDateLong", () => {
+  it("YYYY-MM-DD'yi 'gün ay yıl' basar (baştaki sıfır düşer)", () => {
+    expect(formatDateLong("2026-07-19")).toBe("19 Temmuz 2026");
+    expect(formatDateLong("2026-01-05")).toBe("5 Ocak 2026");
+  });
+
+  it("eksik/bozuk ISO girdide değeri OLDUĞU GİBİ döner", () => {
+    expect(formatDateLong("2026-07")).toBe("2026-07");
   });
 });

@@ -72,6 +72,15 @@ export const EQUIPMENT_OPERATOR_UNKNOWN_HINT = "Operatör/şoför atanmadı";
 /** K6 — `site_id` `null` ⇒ ekipman depoda, hiçbir şantiyeye atanmamış. */
 export const EQUIPMENT_UNASSIGNED_SITE_LABEL = "Depoda (Atanmadı)";
 
+/**
+ * kalan-9/no200 — şantiye/personel seçenekleri sorgusu HATA verirse (isError),
+ * "yükleniyor" DEĞİL "atanmadı" da DEĞİL: ayrı bir "yüklenemedi" durumu.
+ * Aksi hâlde bir hata, dolu bir `site_id`/`operator_id`yi sessizce
+ * "atanmadı" gibi gösterip yanlış planlamaya yol açar.
+ */
+export const EQUIPMENT_SITE_LOAD_ERROR_LABEL = "Yüklenemedi";
+export const EQUIPMENT_OPERATOR_LOAD_ERROR_LABEL = "Yüklenemedi";
+
 /* ---------------------------------------------------------------------------
  * K1 — Alt-navigasyon (§1 birleşimi, BEŞ sekme). Devre-dışı sekmelerin
  * gerekçesi mockup'ın kendisinden DEĞİL, spec K1'den birebir alınır.

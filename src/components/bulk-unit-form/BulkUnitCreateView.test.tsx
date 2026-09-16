@@ -218,6 +218,15 @@ describe("BulkUnitCreateView — TAM SAYFA kabuğu (TU 31-56)", () => {
     expect(screen.queryByTestId("toplu-form-govde")).not.toBeInTheDocument();
   });
 
+  it("`projects` yetkisi `draft` iken AccessDenied basılır (sunucu yalnız `full` ister)", () => {
+    vi.mocked(useSession).mockReturnValue({
+      me: { permissions: { projects: "draft" } } as unknown as MeResponse,
+      isLoading: false,
+    } as ReturnType<typeof useSession>);
+    render(<BulkUnitCreateView />);
+    expect(screen.queryByTestId("toplu-form-govde")).not.toBeInTheDocument();
+  });
+
   it("blok listesi 403 dönerse yetki gerekçesi GÖRÜNÜR basılır", () => {
     vi.mocked(useProjectBlocks).mockReturnValue(
       queryStub(undefined, {
