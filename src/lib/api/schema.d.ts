@@ -14464,6 +14464,7 @@ export interface components {
             category?: string | null;
             /** City */
             city?: string | null;
+            contract?: components["schemas"]["ProjectContractInput"] | null;
             /** Contract Amount */
             contract_amount?: number | string | null;
             /** Contract No */
