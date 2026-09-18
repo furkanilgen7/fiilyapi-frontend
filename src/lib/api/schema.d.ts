@@ -1342,7 +1342,7 @@ export interface paths {
         /**
          * Equipment Documents Summary Endpoint
          * @description K7 özeti: `expiring_soon` (30 gün) + `expired` + `missing` (zorunlu tip
-         *     eksikleri, yalnız AKTİF ekipman).
+         *     eksikleri, yalnız AKTİF ekipman) — hepsi K20 kapsamından GEÇER.
          */
         get: operations["equipment_documents_summary_endpoint_equipment_documents_summary_get"];
         put?: never;
