@@ -34,7 +34,7 @@ export interface PlanRowValues {
   sequenceNo: number;
   label: string;
   dueDate: string;
-  amount: string;
+  amount: string | null;
   paymentMethod: InstallmentPaymentMethod | "";
   /** Peşinat satırı yeşil vurgulanır (117-122) — sunucudan gelen sıra/etikete göre. */
   isDownPayment: boolean;

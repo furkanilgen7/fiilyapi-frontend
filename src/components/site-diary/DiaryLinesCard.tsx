@@ -15,7 +15,10 @@ export interface DiaryLinesCardProps {
   onQuantityChange: (boqItemId: string, value: string) => void;
   disabled: boolean;
   /** `boq_item_id` → sözleşme (BOQ) miktarı; okunamadıysa boş nesne. */
-  contractQuantities: Record<string, string>;
+  // 🔴 KAPSAM MASKESİ (2026-09-19): `finance` kapsamlı rol metrajı göremez →
+  //    değer `null` gelir. Sözleşme kotası bilinmiyorsa hücre "—" basar;
+  //    `"0"` yazmak günlükte SAHTE bir kota gösterirdi.
+  contractQuantities: Record<string, string | null>;
   /** BOQ okuması başarısızsa sözleşme miktarı basılmaz, gerekçe görünür. */
   contractQuantitiesUnavailable: boolean;
   /** Kaydedilmemiş değişiklik var mı — türev sütunları için görünür uyarı. */
@@ -174,7 +177,7 @@ function DiaryLineRow({
   value: string;
   onChange: (boqItemId: string, value: string) => void;
   disabled: boolean;
-  contractQuantity: string | undefined;
+  contractQuantity: string | null | undefined;
 }) {
   const invalid = parseDiaryQuantity(value) === null;
   return (

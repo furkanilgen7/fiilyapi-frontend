@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { maskesiz } from "@/lib/masked";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -307,8 +308,8 @@ export function LandShareAllocationView() {
       // dağıtım aşırı atama üretirdi.
       ourAssignedCount: countBalance.our_assigned_count,
       ownerAssignedCount: countBalance.owner_assigned_count,
-      ourAssignedValue: valueBalance.our_value,
-      ownerAssignedValue: valueBalance.owner_value,
+      ourAssignedValue: maskesiz(valueBalance.our_value, "our_value"),
+      ownerAssignedValue: maskesiz(valueBalance.owner_value, "owner_value"),
     });
     setState(result.state);
     setAutoNotices(result.notices);

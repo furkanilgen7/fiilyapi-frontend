@@ -21,9 +21,12 @@ import type { SaleRow } from "./sales-labels";
  */
 export interface SalesTotals {
   count: number;
-  salePriceTotal: string;
-  paidTotal: string;
-  remainingTotal: string;
+  // 🔴 KAPSAM MASKESİ (2026-09-19): `limited` rol tutarları GÖREMEZ ve alanlar
+  //    `null` gelir. Toplam da `null`dır (bkz. `sumDecimalStrings`); ekran "—"
+  //    basar. `0` yazsaydı kullanıcı sahte bir toplama bakardı.
+  salePriceTotal: string | null;
+  paidTotal: string | null;
+  remainingTotal: string | null;
   /** `true` ⇒ toplam GÖRÜNEN satırlardan türetildi (süzgeç açık). */
   isDerived: boolean;
 }

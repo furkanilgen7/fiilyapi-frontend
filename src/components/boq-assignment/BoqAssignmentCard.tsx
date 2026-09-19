@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { maskesiz, maskesizKota } from "./masked-guard";
 
 import { Button, Input } from "@/components/ui";
 import { backendErrorMessage } from "@/lib/api/error-message";
@@ -277,7 +278,7 @@ function AssignmentTable({
   draft: ReadonlyMap<string, string>;
   onDraft: (itemId: string, raw: string) => void;
   disabled: boolean;
-  totalAmount?: string;
+  totalAmount?: string | null;
   onAddClick?: () => void;
 }) {
   return (
@@ -343,8 +344,8 @@ function AssignmentRowView({
   const raw = draft.get(row.item.id) ?? row.sectionQuantity;
   const normalized = normalizeDecimalInput(raw);
   const check = checkOvershoot({
-    siteQuota: siteQuotaOf(row.item),
-    allocatedTotal: row.item.allocated_quantity,
+    siteQuota: maskesizKota(row.item),
+    allocatedTotal: maskesiz(row.item.allocated_quantity, "allocated_quantity"),
     sectionCurrentQuantity: row.sectionQuantity,
     nextQuantity: normalized,
   });

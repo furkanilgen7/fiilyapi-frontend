@@ -26,8 +26,14 @@ import { sumDecimalStrings } from "@/lib/decimal";
  * 🔴 Bu kural bileşen İÇİNDE satır içi yazılmaz — tek kaynak burasıdır.
  */
 export function siteQuotaOf(item: {
-  readonly allocated_quantity: string;
-  readonly unallocated_quantity: string;
-}): string {
+  readonly allocated_quantity: string | null;
+  readonly unallocated_quantity: string | null;
+}): string | null {
+  // 🔴 KAPSAM MASKESİ (kullanıcı kararı 2026-09-19): `finance` kapsamındaki rol
+  //    metrajı GÖREMEZ ve alanlar `null` gelir. `sumDecimalStrings` bunları
+  //    yok sayıp "0" dönseydi ekran pozun şantiye kotasını SIFIR diye basar ve
+  //    kullanıcı o sahte sayıya dayanarak tahsis yapardı — gizlemekten kötüdür.
+  //    Bilinmeyen kota `null`dır; çağıran "—" basar.
+  if (item.allocated_quantity === null || item.unallocated_quantity === null) return null;
   return sumDecimalStrings([item.allocated_quantity, item.unallocated_quantity]);
 }

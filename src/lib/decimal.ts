@@ -17,6 +17,23 @@ export function normalizeDecimalInput(raw: string): string | null {
 }
 
 /**
+ * 🔴 KAPSAM MASKESİ (kullanıcı kararı 2026-09-19) — maskeli girdi `null` üretir.
+ *
+ * Backend `core/field_scope` para ve metraj alanlarını `null` döndürür
+ * (`limited` rol tutarı, `finance` rol metrajı GÖREMEZ). Doğru cevap "0"
+ * DEĞİLDİR: maskeli bir kalemi yok sayıp toplamak, ekranda EKSİK bir toplamı
+ * GERÇEK gibi basardı ve kullanıcı bilmediği bir eksikle karar verirdi.
+ * **Bilinmeyen bir bileşen içeren sonuç BİLİNMEZDİR.**
+ *
+ * 🔴 BOŞ liste maskeli DEĞİLDİR: hiç kalem yoksa toplam gerçekten "0"dır.
+ */
+export type MaskeliOndalik = string | null | undefined;
+
+function ondalikMaskeli(value: MaskeliOndalik): value is null | undefined {
+  return value === null || value === undefined;
+}
+
+/**
  * Ondalık string'leri KAYIPSIZ toplar (kuruş hassasiyeti korunur). `Number()`
  * ile toplama YASAK — büyük tutarlarda / çok terimli toplamlarda float
  * yuvarlama hatası üretir (IEEE-754). Bunun yerine her terim ortak bir
@@ -27,10 +44,18 @@ export function normalizeDecimalInput(raw: string): string | null {
  * dört tutar alanını (contract/previous/this/cumulative_amount) tfoot
  * satırında toplamak için kullanılır.
  */
-export function sumDecimalStrings(values: string[]): string {
+// 🔴 AŞIRI YÜKLEME: maskesiz girdi MASKESİZ sonuç döndürür. Tek imza
+//    (`string | null`) yazılsaydı maske ile HİÇ İLGİSİ OLMAYAN onlarca çağıran
+//    da `null` kontrolü yapmak zorunda kalırdı — gürültü, gerçek maske
+//    kontrollerini görünmez kılardı.
+export function sumDecimalStrings(values: readonly string[]): string;
+export function sumDecimalStrings(values: readonly MaskeliOndalik[]): string | null;
+export function sumDecimalStrings(values: readonly MaskeliOndalik[]): string | null {
   if (values.length === 0) return "0";
-  const scale = values.reduce((max, value) => Math.max(max, fractionLength(value)), 0);
-  const total = values.reduce((sum, value) => sum + toScaledBigInt(value, scale), 0n);
+  if (values.some(ondalikMaskeli)) return null;
+  const somut = values as readonly string[];
+  const scale = somut.reduce((max, value) => Math.max(max, fractionLength(value)), 0);
+  const total = somut.reduce((sum, value) => sum + toScaledBigInt(value, scale), 0n);
   return fromScaledBigInt(total, scale);
 }
 
@@ -44,7 +69,10 @@ export function sumDecimalStrings(values: string[]): string {
  * ⚠️ Sonuç TÜREVDİR — sunucuya GÖNDERİLMEZ (backend spec §2: satır tutarı
  * kolonu AÇILMAZ). Yalnız gösterim içindir.
  */
-export function multiplyDecimalStrings(a: string, b: string): string {
+export function multiplyDecimalStrings(a: string, b: string): string;
+export function multiplyDecimalStrings(a: MaskeliOndalik, b: MaskeliOndalik): string | null;
+export function multiplyDecimalStrings(a: MaskeliOndalik, b: MaskeliOndalik): string | null {
+  if (ondalikMaskeli(a) || ondalikMaskeli(b)) return null;
   const scaleA = fractionLength(a);
   const scaleB = fractionLength(b);
   const product = toScaledBigInt(a, scaleA) * toScaledBigInt(b, scaleB);
@@ -62,7 +90,10 @@ export function multiplyDecimalStrings(a: string, b: string): string {
  * üzerinde TOLERANSSIZ yapar (`validation.py` K1/HZ-1 K6); istemci aynı
  * aritmetiği kullanmazsa iki taraf farklı cevap verir.
  */
-export function subtractDecimalStrings(a: string, b: string): string {
+export function subtractDecimalStrings(a: string, b: string): string;
+export function subtractDecimalStrings(a: MaskeliOndalik, b: MaskeliOndalik): string | null;
+export function subtractDecimalStrings(a: MaskeliOndalik, b: MaskeliOndalik): string | null {
+  if (ondalikMaskeli(a) || ondalikMaskeli(b)) return null;
   const scale = Math.max(fractionLength(a), fractionLength(b));
   return fromScaledBigInt(toScaledBigInt(a, scale) - toScaledBigInt(b, scale), scale);
 }

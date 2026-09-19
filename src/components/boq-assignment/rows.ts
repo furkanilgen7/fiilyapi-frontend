@@ -1,4 +1,5 @@
 import { normalizeDecimalInput } from "@/lib/decimal";
+import { maskesiz } from "./masked-guard";
 import type { BoqGroup, BoqItem } from "@/lib/api/hooks/useBoq";
 
 /**
@@ -28,7 +29,7 @@ export function sectionQuantityMap(
 ): ReadonlyMap<string, string> {
   const map = new Map<string, string>();
   for (const group of groups) {
-    for (const item of group.items) map.set(item.id, item.quantity);
+    for (const item of group.items) map.set(item.id, maskesiz(item.quantity, "quantity"));
   }
   return map;
 }

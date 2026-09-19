@@ -1980,7 +1980,8 @@ function subcontractorCumulativeGross(state: MockState, contractId: string): num
  * Bedel yok ya da `<= 0` ise `null` — sahte `%0` "veri yok"u "ilerleme yok"
  * diye gösterirdi (backend `progress_pct` sıfır/negatif paydada bölme YAPMAZ).
  */
-function contractProgressPct(cumulativeGross: number, amount: string): string | null {
+function contractProgressPct(cumulativeGross: number, amount: string | null): string | null {
+  if (amount === null) return null;
   const total = Number(amount);
   if (!Number.isFinite(total) || total <= 0) return null;
   return money2((cumulativeGross / total) * 100);
@@ -2001,7 +2002,10 @@ function buildContractsListResponse(
     title: string;
     contract_no: string | null;
     counterparty_name: string | null;
-    amount: string;
+    // 🔴 KAPSAM MASKESİ (2026-09-19): sözleşme bedeli `limited` rolde
+    //    maskelenir ve sunucu `null` döndürür — sahte backend de sözleşmeye
+    //    uymak ZORUNDADIR, yoksa e2e gerçekte olmayan bir tip vaat eder.
+    amount: string | null;
     start_date: string | null;
     end_date: string | null;
     progress_pct: string | null;

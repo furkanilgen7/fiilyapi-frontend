@@ -211,7 +211,9 @@ export function buildSubcontractorDirectory({
     bucket.contracts.push(contract);
     // Taslak sözleşme ne "aktif"tir ne de gerçekleşmiş bir bedeldir.
     if (contract.is_draft) continue;
-    bucket.contractTotal += toNumber(contract.amount);
+    // 🔴 Maskeli bedel (kapsam kısıtlı rol) toplama GİRMEZ ve `0` sayılmaz;
+    //    `toNumber(null)` 0 verip toplamı sessizce eksiltirdi.
+    if (contract.amount !== null) bucket.contractTotal += toNumber(contract.amount);
     if (contract.status === "active") bucket.activeContractCount += 1;
   }
 

@@ -107,7 +107,10 @@ export function isUndistributedItem(item: ContractDistributionItem): boolean {
  * 0'da yeşil ✓, aksi hâlde kırmızı kalan miktardır. HARD VALIDATION YOKTUR —
  * backend yalnız `≤` uygular, aşımda 422 döner ve mesajı ekranda basılır.
  */
-export function isRemainingSettled(remainingQuantity: string): boolean {
+export function isRemainingSettled(remainingQuantity: string | null): boolean {
+  // 🔴 Maskeli kalıntı (kapsam kısıtlı rol) KAPANMIŞ SAYILMAZ: `Number(null)`
+  //    **0**'dır ve dağıtımı tamamlanmamış bir kalemi "tamam" diye işaretlerdi.
+  if (remainingQuantity === null) return false;
   const remaining = Number(remainingQuantity);
   return Number.isFinite(remaining) && remaining === 0;
 }

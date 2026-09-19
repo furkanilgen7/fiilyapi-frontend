@@ -198,7 +198,7 @@ export function PaymentPlanCard({
                       className="sf-amount-input"
                       inputMode="decimal"
                       aria-label={`${row.sequenceNo}. taksit tutarı`}
-                      value={row.amount}
+                      value={row.amount ?? ""}
                       onChange={(event) => patchRow(row.key, { amount: event.target.value })}
                     />
                   </td>

@@ -40,7 +40,7 @@ export interface SubcontractorItemFormModalProps {
   /** Sıra varsayılanı + "Sözleşme Durumu" sayaçları buradan türetilir. */
   items: readonly SubcontractorContractItemResponse[];
   /** 182 · sunucunun türev toplamı (başlıktaki sabit sayı KOPYALANMAZ). */
-  contractTotal: string;
+  contractTotal: string | null;
   /** 180 · `items_missing_price`. */
   itemsMissingPrice: number;
   onClose: () => void;

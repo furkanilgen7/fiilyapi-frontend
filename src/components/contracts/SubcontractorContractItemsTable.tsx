@@ -33,7 +33,7 @@ import "./subcontractor-contract-detail.css";
 export interface SubcontractorContractItemsTableProps {
   items: readonly SubcontractorContractItemResponse[];
   /** 176-177 · tfoot TEK KAYNAK. Mockup 73'teki ₺4,82M ile çelişir; şema kazanır. */
-  contractTotal: string;
+  contractTotal: string | null;
   /** `items_missing_price` — fiyatsız satır sayacı (görünür uyarı). */
   itemsMissingPrice: number;
   /** 91 rozetindeki işveren sözleşme no'su; yoksa rozet basılmaz. */

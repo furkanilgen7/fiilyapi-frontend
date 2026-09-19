@@ -20,6 +20,7 @@
  */
 
 import type { CustomerCreate } from "@/lib/api/hooks/useCustomerMutations";
+import { maskesiz } from "@/lib/masked";
 import type { SaleInstallmentInput, UnitSaleCreate } from "@/lib/api/hooks/useSaleMutations";
 import type { SaleType } from "@/lib/api/hooks/useSales";
 
@@ -110,7 +111,7 @@ export function buildInstallmentsSave(rows: readonly PlanRowValues[]): SaleInsta
     sequence_no: row.sequenceNo,
     label: row.label.trim(),
     due_date: row.dueDate,
-    amount: normalizeDecimalInput(row.amount) ?? row.amount.trim(),
+    amount: normalizeDecimalInput(maskesiz(row.amount, "amount")) ?? maskesiz(row.amount, "amount").trim(),
     ...(row.paymentMethod ? { payment_method: row.paymentMethod } : {}),
   }));
 }

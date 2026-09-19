@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { maskesiz, maskesizKota } from "./masked-guard";
 
 import { Button, Checkbox, Input } from "@/components/ui";
 import { Modal } from "@/components/settings/Modal";
@@ -105,8 +106,8 @@ export function BoqItemPickerModal({
     // miktarı bir daha düzenleyemezdi.
     if (!onlyWithQuota) return true;
     const max = checkOvershoot({
-      siteQuota: siteQuotaOf(row.item),
-      allocatedTotal: row.item.allocated_quantity,
+      siteQuota: maskesizKota(row.item),
+      allocatedTotal: maskesiz(row.item.allocated_quantity, "allocated_quantity"),
       sectionCurrentQuantity: row.sectionQuantity,
       nextQuantity: null,
     }).maxForSection;
@@ -129,8 +130,8 @@ export function BoqItemPickerModal({
     const normalized = normalizeDecimalInput(raw);
     if (normalized === null) return false;
     return checkOvershoot({
-      siteQuota: siteQuotaOf(row.item),
-      allocatedTotal: row.item.allocated_quantity,
+      siteQuota: maskesizKota(row.item),
+      allocatedTotal: maskesiz(row.item.allocated_quantity, "allocated_quantity"),
       sectionCurrentQuantity: row.sectionQuantity,
       nextQuantity: normalized,
     }).isOvershoot;
@@ -232,8 +233,8 @@ export function BoqItemPickerModal({
               const raw = entered.get(row.item.id) ?? "";
               const normalized = normalizeDecimalInput(raw);
               const check = checkOvershoot({
-                siteQuota: siteQuotaOf(row.item),
-                allocatedTotal: row.item.allocated_quantity,
+                siteQuota: maskesizKota(row.item),
+                allocatedTotal: maskesiz(row.item.allocated_quantity, "allocated_quantity"),
                 sectionCurrentQuantity: row.sectionQuantity,
                 nextQuantity: normalized,
               });

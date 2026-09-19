@@ -171,7 +171,10 @@ export function EmployerContractItemsTable({
    * geçersiz metnin ekranda "kaydedilmiş gibi" durması yasaktır.
    */
   function commitCell(
-    item: { id: string; quantity: string; unit_price: string },
+    // 🔴 KAPSAM MASKESİ (2026-09-19): metraj/fiyat `null` gelebilir; gösterim
+    //    `decimalInputValue` ile "" olur, kaydetme kararı ise `commitInlineCell`
+    //    içinde ham metinle verilir.
+    item: { id: string; quantity: string | null; unit_price: string | null },
     field: "quantity" | "unitPrice",
   ) {
     const draft = drafts[item.id]?.[field];
@@ -325,7 +328,10 @@ interface GroupRowsProps {
   newRow: NewRowValues;
   onDraft: (itemId: string, patch: InlineRowDraft) => void;
   onCommitCell: (
-    item: { id: string; quantity: string; unit_price: string },
+    // 🔴 KAPSAM MASKESİ (2026-09-19): metraj/fiyat `null` gelebilir; gösterim
+    //    `decimalInputValue` ile "" olur, kaydetme kararı ise `commitInlineCell`
+    //    içinde ham metinle verilir.
+    item: { id: string; quantity: string | null; unit_price: string | null },
     field: "quantity" | "unitPrice",
   ) => void;
   onOpenAddRow: () => void;

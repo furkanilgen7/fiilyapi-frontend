@@ -1,4 +1,26 @@
 const LOCALE = "tr-TR";
+
+/**
+ * Bos hucre — urunun kanonik gosterimi (`settings/audit-format` ile AYNI).
+ *
+ * 🔴 Kapsam maskesi (backend `core/field_scope`, kullanici karari 2026-09-19)
+ * para ve metraj alanlarini `null` dondurur: `limited` rol tutari, `finance`
+ * rol metraji GOREMEZ. Bicimlendiriciler bunu islemek ZORUNDADIR cunku
+ * `Number(null)` **0**'dir — null-toleranssiz bir bicimlendirici gizlenmis bir
+ * tutari ekranda "₺ 0,00" diye basar ve kullanici SAHTE bir sayiya dayanarak
+ * karar verir. Bu, gizlemekten daha kotudur.
+ *
+ * 🔴 SIFIR maskelenmis DEGILDIR: `0` gercek bir degerdir ve "₺ 0,00" basilir.
+ * Ayrimi `Maskeli` tipi tasir (`null`/`undefined` maskeli, `0` degil).
+ */
+export const EMPTY_CELL = "—";
+
+/** Maskelenebilir sayisal deger. */
+export type Maskeli = string | number | null | undefined;
+
+function maskeli(value: Maskeli): value is null | undefined {
+  return value === null || value === undefined;
+}
 const MILLION = 1_000_000;
 const THOUSAND = 1_000;
 
@@ -12,7 +34,8 @@ function short(value: number): string {
 }
 
 /** Kart tutarlari: mockup'taki "₺ 8,4M" gosterimi. */
-export function formatCompactCurrency(value: string | number): string {
+export function formatCompactCurrency(value: Maskeli): string {
+  if (maskeli(value)) return EMPTY_CELL;
   const n = toNumber(value);
   if (Math.abs(n) >= MILLION) return `₺ ${short(n / MILLION)}M`;
   if (Math.abs(n) >= THOUSAND) return `₺ ${short(n / THOUSAND)}B`;
@@ -42,7 +65,8 @@ function shortTight(value: number): string {
  * cagiran ona baglidir; tek ondalikli/bosluklu bicimi oynatmak o ekranlarin
  * baseline'larini sessizce kirardi. Bu yuzden AYRI bir varyant acildi.
  */
-export function formatCompactCurrencyTight(value: string | number): string {
+export function formatCompactCurrencyTight(value: Maskeli): string {
+  if (maskeli(value)) return EMPTY_CELL;
   const n = toNumber(value);
   if (Math.abs(n) >= MILLION) return `₺${shortTight(n / MILLION)}M`;
   if (Math.abs(n) >= THOUSAND) return `₺${shortTight(n / THOUSAND)}B`;
@@ -50,7 +74,8 @@ export function formatCompactCurrencyTight(value: string | number): string {
 }
 
 /** Portfoy tutari: mockup'taki "24.870.500" gosterimi. */
-export function formatCurrency(value: string | number): string {
+export function formatCurrency(value: Maskeli): string {
+  if (maskeli(value)) return EMPTY_CELL;
   const formatted = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 0 }).format(
     toNumber(value),
   );
@@ -63,12 +88,14 @@ export function formatCurrency(value: string | number): string {
  * ayni ekranda iki farkli bicim kullanir — kart bakiyesi bosluklu (E9:72
  * `₺ 2.840.500`), odeme satiri bosluksuz (E9:114) — ikisi de birebir uygulanir.
  */
-export function formatCurrencyTight(value: string | number): string {
+export function formatCurrencyTight(value: Maskeli): string {
+  if (maskeli(value)) return EMPTY_CELL;
   return `₺${new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 0 }).format(toNumber(value))}`;
 }
 
 /** Ilerleme yuzdesi: "%42,5" · "%75" */
-export function formatPercent(value: string | number): string {
+export function formatPercent(value: Maskeli): string {
+  if (maskeli(value)) return EMPTY_CELL;
   return `%${short(toNumber(value))}`;
 }
 
@@ -78,7 +105,8 @@ export function formatPercent(value: string | number): string {
  * icin bu ekranda kullanilamaz. tr-TR binlik ayrac, sondaki sifirlar atilir.
  * Backend Decimal alanlari string gonderir (`quantity: "1240.000"`).
  */
-export function formatDecimal(value: string | number, maxFractionDigits: number): string {
+export function formatDecimal(value: Maskeli, maxFractionDigits: number): string {
+  if (maskeli(value)) return EMPTY_CELL;
   return new Intl.NumberFormat(LOCALE, { maximumFractionDigits: maxFractionDigits }).format(
     toNumber(value),
   );
@@ -88,7 +116,8 @@ export function formatDecimal(value: string | number, maxFractionDigits: number)
 const DAY_FRACTION_DIGITS = 1;
 
 /** Miktar sutunu: en fazla 3 ondalik — numeric(14,3) (mockup 114). */
-export function formatQuantity(value: string | number): string {
+export function formatQuantity(value: Maskeli): string {
+  if (maskeli(value)) return EMPTY_CELL;
   return formatDecimal(value, 3);
 }
 
@@ -116,12 +145,14 @@ export function formatQuantity(value: string | number): string {
  * tutari oynatmaz. Sunucu gun sayisini ikiden ince quantize etmeye baslarsa
  * tavan BURADA, tek yerde degisir.
  */
-export function formatDays(value: string | number): string {
+export function formatDays(value: Maskeli): string {
+  if (maskeli(value)) return EMPTY_CELL;
   return formatDecimal(value, DAY_FRACTION_DIGITS);
 }
 
 /** Birim fiyat / tutar / genel toplam: en fazla 2 ondalik (mockup 115, 116, 176). */
-export function formatAmount(value: string | number): string {
+export function formatAmount(value: Maskeli): string {
+  if (maskeli(value)) return EMPTY_CELL;
   return formatDecimal(value, 2);
 }
 
@@ -139,7 +170,8 @@ export function formatMonthYear(iso: string): string {
  * `₺` ile başlar). `toLocaleString("tr-TR")` gibi ortam-bağımlı bir çağrı
  * DEĞİL; `Intl.NumberFormat` ile aynı desen (`formatCurrency`/`formatAmount`).
  */
-export function formatCurrencyPrecise(value: string | number): string {
+export function formatCurrencyPrecise(value: Maskeli): string {
+  if (maskeli(value)) return EMPTY_CELL;
   return `₺ ${formatDecimal(value, 2)}`;
 }
 

@@ -7615,7 +7615,7 @@ export interface components {
             /** Count */
             count: number;
             /** List Price Total */
-            list_price_total: string;
+            list_price_total: string | null;
         };
         /**
          * BalanceSheetLine
@@ -8078,8 +8078,14 @@ export interface components {
          * @description Spec §5.1 grup satiri. `group_total` turevdir: kalem tutarlarinin toplami.
          */
         BoqGroupResponse: {
-            /** Group Total */
-            readonly group_total: string;
+            /**
+             * Group Total
+             * @description Kalem tutarlarinin toplami; kalemlerden biri bile MASKELIYSE `None`.
+             *
+             *     Maskeli kalemleri ATLAYIP toplasaydi ekran EKSIK bir toplami GERCEK
+             *     gibi basardi — bu, gizlemekten daha kotudur.
+             */
+            readonly group_total: string | null;
             /**
              * Id
              * Format: uuid
@@ -8112,7 +8118,7 @@ export interface components {
          */
         BoqItemAllocation: {
             /** Quantity */
-            quantity: string;
+            quantity: string | null;
             /**
              * Section Id
              * Format: uuid
@@ -8213,9 +8219,16 @@ export interface components {
          */
         BoqItemResponse: {
             /** Allocated Quantity */
-            allocated_quantity: string;
-            /** Amount */
-            readonly amount: string;
+            allocated_quantity: string | null;
+            /**
+             * Amount
+             * @description 🔴 Girdisi maskelenmisse TUREV DE DUSER (`core.field_scope` kanonu).
+             *
+             *     `unit_price` `limited` kapsaminda gizlenir; `amount` maskelenmeseydi
+             *     birim fiyat `amount / quantity` ile GERI HESAPLANIRDI — maske hicbir sey
+             *     gizlememis olurdu.
+             */
+            readonly amount: string | null;
             /** Code */
             code: string;
             /** Description */
@@ -8227,15 +8240,15 @@ export interface components {
             id: string;
             progress_pct: components["schemas"]["MetricPlaceholder"];
             /** Quantity */
-            quantity: string;
+            quantity: string | null;
             /** Sort Order */
             sort_order: number;
             /** Unallocated Quantity */
-            unallocated_quantity: string;
+            unallocated_quantity: string | null;
             /** Unit */
             unit: string;
             /** Unit Price */
-            unit_price: string;
+            unit_price: string | null;
         };
         /**
          * BoqItemUpdate
@@ -8301,7 +8314,7 @@ export interface components {
             contract_total: components["schemas"]["MetricPlaceholder"];
             grand_progress_pct: components["schemas"]["MetricPlaceholder"];
             /** Grand Total */
-            grand_total: string;
+            grand_total: string | null;
             realized_total: components["schemas"]["MetricPlaceholder"];
             remaining_total: components["schemas"]["MetricPlaceholder"];
             revision_total: components["schemas"]["MetricPlaceholder"];
@@ -8598,11 +8611,11 @@ export interface components {
          */
         CollectionKpi: {
             /** Collected Amount */
-            collected_amount: string;
+            collected_amount: string | null;
             /** Collection Pct */
             collection_pct: string | null;
             /** Contracted Amount */
-            contracted_amount: string;
+            contracted_amount: string | null;
         };
         /**
          * CompanyRead
@@ -8716,7 +8729,7 @@ export interface components {
              */
             boq_item_id: string;
             /** Quantity */
-            quantity: string;
+            quantity: string | null;
             /**
              * Site Id
              * Format: uuid
@@ -8751,13 +8764,13 @@ export interface components {
              */
             id: string;
             /** Quantity */
-            quantity: string;
+            quantity: string | null;
             /** Remaining Quantity */
-            remaining_quantity: string;
+            remaining_quantity: string | null;
             /** Unit */
             unit: string;
             /** Unit Price */
-            unit_price: string;
+            unit_price: string | null;
         };
         /**
          * ContractDistributionResponse
@@ -8806,15 +8819,15 @@ export interface components {
          */
         ContractDistributionSiteItem: {
             /** Amount */
-            amount: string;
+            amount: string | null;
             /** Code */
             code: string;
             /** Description */
             description: string;
             /** Quantity */
-            quantity: string;
+            quantity: string | null;
             /** Unit Price */
-            unit_price: string;
+            unit_price: string | null;
         };
         /** ContractDistributionSiteSummary */
         ContractDistributionSiteSummary: {
@@ -8828,7 +8841,7 @@ export interface components {
             /** Site Name */
             site_name: string;
             /** Total Amount */
-            total_amount: string;
+            total_amount: string | null;
         };
         /**
          * ContractListItem
@@ -8837,7 +8850,7 @@ export interface components {
          */
         ContractListItem: {
             /** Amount */
-            amount: string;
+            amount: string | null;
             /** Contract No */
             contract_no: string | null;
             /** Counterparty Name */
@@ -8896,7 +8909,7 @@ export interface components {
             /** Progress Payment Total */
             progress_payment_total?: string | null;
             /** Total Amount */
-            total_amount: string;
+            total_amount: string | null;
         };
         /**
          * ContractingCard
@@ -9004,7 +9017,7 @@ export interface components {
         /** DashboardProjectCard */
         DashboardProjectCard: {
             /** Budget */
-            budget: string;
+            budget: string | null;
             /** Code */
             code: string;
             /**
@@ -9015,7 +9028,7 @@ export interface components {
             /** Name */
             name: string;
             /** Progress Pct */
-            progress_pct: string;
+            progress_pct: string | null;
             status: components["schemas"]["ProjectStatus"];
         };
         /** DashboardSummaryResponse */
@@ -9191,7 +9204,7 @@ export interface components {
          */
         EmployerContractDetail: {
             /** Advance Amount */
-            advance_amount: string;
+            advance_amount: string | null;
             /** Advance Pct */
             advance_pct: string;
             /** Amount */
@@ -9210,9 +9223,9 @@ export interface components {
             has_price_escalation: boolean;
             index_type: components["schemas"]["PriceIndexType"] | null;
             /** Items Total */
-            items_total: string;
+            items_total: string | null;
             /** Items Total Diff */
-            items_total_diff: string;
+            items_total_diff: string | null;
             /** Late Penalty Daily */
             late_penalty_daily: string | null;
             /** Milestones */
@@ -9315,7 +9328,7 @@ export interface components {
             /** Description */
             description: string;
             /** Distributed Quantity */
-            distributed_quantity: string;
+            distributed_quantity: string | null;
             /**
              * Group Id
              * Format: uuid
@@ -9327,15 +9340,15 @@ export interface components {
              */
             id: string;
             /** Quantity */
-            quantity: string;
+            quantity: string | null;
             /** Remaining Quantity */
-            remaining_quantity: string;
+            remaining_quantity: string | null;
             /** Sort Order */
             sort_order: number;
             /** Unit */
             unit: string;
             /** Unit Price */
-            unit_price: string;
+            unit_price: string | null;
         };
         /**
          * EmployerContractItemUpdate
@@ -11731,7 +11744,7 @@ export interface components {
             /** Land Area M2 */
             land_area_m2: string | null;
             /** Land Cost */
-            land_cost: string;
+            land_cost: string | null;
             /** Landowner Name */
             landowner_name: string;
             margin: components["schemas"]["MetricPlaceholder"];
@@ -11827,17 +11840,17 @@ export interface components {
             /** Available Count */
             available_count: number;
             /** Remaining Value */
-            remaining_value: string;
+            remaining_value: string | null;
             /** Reserved Count */
             reserved_count: number;
             /** Sold Count */
             sold_count: number;
             /** Sold Value */
-            sold_value: string;
+            sold_value: string | null;
             /** Unit Count */
             unit_count: number;
             /** Value Total */
-            value_total: string;
+            value_total: string | null;
         };
         /**
          * LandShareOwnerSide
@@ -11849,7 +11862,7 @@ export interface components {
             /** Unit Count */
             unit_count: number;
             /** Value Total */
-            value_total: string;
+            value_total: string | null;
         };
         /**
          * LandSharePartition
@@ -11859,7 +11872,7 @@ export interface components {
             /** Unit Count */
             unit_count: number;
             /** Value Total */
-            value_total: string;
+            value_total: string | null;
         };
         /**
          * LandShareShareholderRow
@@ -11883,7 +11896,7 @@ export interface components {
             /** Unit Count */
             unit_count: number;
             /** Value Total */
-            value_total: string;
+            value_total: string | null;
         };
         /**
          * LandShareSummaryResponse
@@ -11983,7 +11996,7 @@ export interface components {
          */
         LandShareValueBalance: {
             /** Assigned Value Total */
-            assigned_value_total: string;
+            assigned_value_total: string | null;
             /** Deviation Pct */
             deviation_pct: string | null;
             /** Is Within Tolerance */
@@ -11991,11 +12004,11 @@ export interface components {
             /** Our Actual Pct */
             our_actual_pct: string | null;
             /** Our Value */
-            our_value: string;
+            our_value: string | null;
             /** Owner Actual Pct */
             owner_actual_pct: string | null;
             /** Owner Value */
-            owner_value: string;
+            owner_value: string | null;
             /** Tolerance Pct */
             tolerance_pct: string;
         };
@@ -12482,11 +12495,11 @@ export interface components {
          */
         OverdueKpi: {
             /** Amount */
-            amount: string;
+            amount: string | null;
             /** Installment Count */
             installment_count: number;
             /** Late Fee Amount */
-            late_fee_amount: string;
+            late_fee_amount: string | null;
         };
         /** PasswordReset */
         PasswordReset: {
@@ -14050,13 +14063,13 @@ export interface components {
          */
         ProjectBudgetLines: {
             /** Labor */
-            labor: string;
+            labor: string | null;
             /** Material */
-            material: string;
+            material: string | null;
             /** Overhead */
-            overhead: string;
+            overhead: string | null;
             /** Subcontractor */
-            subcontractor: string;
+            subcontractor: string | null;
         };
         /**
          * ProjectContractInput
@@ -14146,16 +14159,16 @@ export interface components {
          */
         ProjectCostBreakdown: {
             /** Construction Budget */
-            construction_budget: string;
+            construction_budget: string | null;
             /** Construction Spent */
-            construction_spent: string;
+            construction_spent: string | null;
             financing: components["schemas"]["MetricPlaceholder"];
             /** Land Cost */
             land_cost: string | null;
             marketing: components["schemas"]["MetricPlaceholder"];
             permits: components["schemas"]["MetricPlaceholder"];
             /** Total Spent */
-            total_spent: string;
+            total_spent: string | null;
         };
         /**
          * ProjectCostsResponse
@@ -14230,7 +14243,7 @@ export interface components {
         /** ProjectDetailResponse */
         ProjectDetailResponse: {
             /** Budget */
-            budget: string;
+            budget: string | null;
             budget_lines: components["schemas"]["ProjectBudgetLines"];
             /** Category */
             category: string | null;
@@ -14261,7 +14274,7 @@ export interface components {
             /** Name */
             name: string;
             /** Progress Pct */
-            progress_pct: string;
+            progress_pct: string | null;
             project_type: components["schemas"]["ProjectType"];
             /** Site Count */
             site_count: number;
@@ -14306,7 +14319,7 @@ export interface components {
         /** ProjectListItem */
         ProjectListItem: {
             /** Budget */
-            budget: string;
+            budget: string | null;
             budget_lines: components["schemas"]["ProjectBudgetLines"];
             /** Category */
             category: string | null;
@@ -14337,7 +14350,7 @@ export interface components {
             /** Name */
             name: string;
             /** Progress Pct */
-            progress_pct: string;
+            progress_pct: string | null;
             project_type: components["schemas"]["ProjectType"];
             /** Slug */
             slug?: string | null;
@@ -15533,7 +15546,7 @@ export interface components {
          */
         ReservedKpi: {
             /** Amount */
-            amount: string;
+            amount: string | null;
             /** Count */
             count: number;
             /** Expired Count */
@@ -15731,7 +15744,7 @@ export interface components {
         /** SaleInstallmentResponse */
         SaleInstallmentResponse: {
             /** Amount */
-            amount: string;
+            amount: string | null;
             /**
              * Due Date
              * Format: date
@@ -15750,12 +15763,12 @@ export interface components {
             /** Label */
             label: string;
             /** Paid Amount */
-            paid_amount: string;
+            paid_amount: string | null;
             /** Paid At */
             paid_at: string | null;
             payment_method: components["schemas"]["InstallmentPaymentMethod"] | null;
             /** Remaining Amount */
-            remaining_amount: string;
+            remaining_amount: string | null;
             /**
              * Sale Id
              * Format: uuid
@@ -15783,18 +15796,18 @@ export interface components {
             /** Items */
             items: components["schemas"]["SaleInstallmentResponse"][];
             /** Paid Amount */
-            paid_amount: string;
+            paid_amount: string | null;
             /**
              * Sale Id
              * Format: uuid
              */
             sale_id: string;
             /** Sale Price */
-            sale_price: string;
+            sale_price: string | null;
             /** Term Interest Amount */
-            term_interest_amount: string;
+            term_interest_amount: string | null;
             /** Total Amount */
-            total_amount: string;
+            total_amount: string | null;
         };
         /**
          * SaleType
@@ -17640,7 +17653,7 @@ export interface components {
          */
         SoldKpi: {
             /** Amount */
-            amount: string;
+            amount: string | null;
             /** Count */
             count: number;
             /** Deed Transferred Count */
@@ -18125,7 +18138,7 @@ export interface components {
             /** Contract No */
             contract_no: string | null;
             /** Contract Total */
-            contract_total: string;
+            contract_total: string | null;
             /** Documents */
             documents?: null;
             /** End Date */
@@ -18238,7 +18251,7 @@ export interface components {
             /** Line Total */
             readonly line_total: string;
             /** Quantity */
-            quantity: string;
+            quantity: string | null;
             /** Sort Order */
             sort_order: number;
             /** Source Contract Item Id */
@@ -18419,7 +18432,7 @@ export interface components {
          */
         SubcontractorCostRow: {
             /** Contract Amount */
-            contract_amount: string;
+            contract_amount: string | null;
             /**
              * Contract Id
              * Format: uuid
@@ -18428,9 +18441,9 @@ export interface components {
             /** Contract No */
             contract_no: string | null;
             /** Paid */
-            paid: string;
+            paid: string | null;
             /** Pending */
-            pending: string;
+            pending: string | null;
             /** Progress Pct */
             progress_pct: string | null;
             /** Subcontractor Id */
@@ -18456,11 +18469,11 @@ export interface components {
          */
         SubcontractorCostSummary: {
             /** Contract Amount */
-            contract_amount: string;
+            contract_amount: string | null;
             /** Paid */
-            paid: string;
+            paid: string | null;
             /** Pending */
-            pending: string;
+            pending: string | null;
         };
         /** SubcontractorCreate */
         SubcontractorCreate: {
@@ -20137,7 +20150,7 @@ export interface components {
             /** Overdue Installment Count */
             overdue_installment_count: number;
             /** Paid Amount */
-            paid_amount: string;
+            paid_amount: string | null;
             payment_plan_type: components["schemas"]["PaymentPlanType"] | null;
             /** Pending Modules */
             pending_modules?: string[];
@@ -20149,13 +20162,13 @@ export interface components {
              */
             project_id: string;
             /** Remaining Amount */
-            remaining_amount: string;
+            remaining_amount: string | null;
             /** Reservation Deposit */
             reservation_deposit: string | null;
             /** Reservation Due Date */
             reservation_due_date: string | null;
             /** Sale Price */
-            sale_price: string;
+            sale_price: string | null;
             sale_profit: components["schemas"]["MetricPlaceholder"];
             sale_type: components["schemas"]["SaleType"];
             status: components["schemas"]["UnitSaleStatus"];
@@ -20197,11 +20210,11 @@ export interface components {
             /** Count */
             count: number;
             /** Paid Total */
-            paid_total: string;
+            paid_total: string | null;
             /** Remaining Total */
-            remaining_total: string;
+            remaining_total: string | null;
             /** Sale Price Total */
-            sale_price_total: string;
+            sale_price_total: string | null;
         };
         /**
          * UnitSaleUpdate
@@ -20367,7 +20380,7 @@ export interface components {
          */
         UpcomingCollection: {
             /** Amount */
-            amount: string;
+            amount: string | null;
             /** Customer Name */
             customer_name: string;
             /** Days Overdue */
@@ -20387,11 +20400,11 @@ export interface components {
             /** Label */
             label: string;
             /** Late Fee Amount */
-            late_fee_amount: string;
+            late_fee_amount: string | null;
             /** Paid Amount */
-            paid_amount: string;
+            paid_amount: string | null;
             /** Remaining Amount */
-            remaining_amount: string;
+            remaining_amount: string | null;
             /**
              * Sale Id
              * Format: uuid

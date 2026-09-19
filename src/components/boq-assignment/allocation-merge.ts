@@ -1,4 +1,5 @@
 import { isZeroDecimalString, subtractDecimalStrings, sumDecimalStrings } from "@/lib/decimal";
+import { maskesiz } from "./masked-guard";
 import type {
   BoqItemAllocation,
   BoqItemAllocationInput,
@@ -46,7 +47,7 @@ export function mergeSectionAllocation({
     .filter((allocation) => allocation.section_id !== sectionId)
     .map((allocation) => ({
       section_id: allocation.section_id,
-      quantity: allocation.quantity,
+      quantity: maskesiz(allocation.quantity, "quantity"),
     }));
 
   if (nextQuantity === null || isZeroDecimalString(nextQuantity)) return others;
