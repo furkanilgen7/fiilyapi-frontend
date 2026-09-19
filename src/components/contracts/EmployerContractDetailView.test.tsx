@@ -389,7 +389,39 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
       expect(bar.firstElementChild).toHaveStyle({ width: "75%" });
     });
 
-    it("`progress_pct` null → çubuk çizilmez, kart silinmez, gerekçe basılır", () => {
+    // 🔴 F-KAPSAM (2026-09-19) — FİKSTÜR DÜZELTİLDİ, KURAL DARALDI.
+    //
+    // Eski fikstür `contract_amount: null` ile "bedel girilmemiş" demek
+    // istiyordu. Kapsam maskesinden sonra o `null` ARTIK İKİ ANLAMLIDIR:
+    // `contract_amount` `Gorunurluk.para`dır ve `limited` kapsamda gizlenir.
+    // Gerekçe o hâlde basılamaz (yalan olurdu), bu yüzden "bedel yok" hâli
+    // fikstürde GÖRÜNÜR SIFIR olarak kurulur.
+    it("bedel GÖRÜNÜR ve 0 iken `progress_pct` null → çubuk çizilmez, gerekçe basılır", () => {
+      mockAll({
+        detail: {
+          ...DETAIL,
+          progress_payment_summary: {
+            ...SUMMARY,
+            contract_amount: "0.00",
+            progress_pct: null,
+            remaining: null,
+          },
+        },
+      });
+      render(<EmployerContractDetailView projectId="p-1" />);
+
+      expect(screen.queryByTestId("ecd-pps-bar")).not.toBeInTheDocument();
+      expect(screen.getByTestId("ecd-pps-pct-pending")).toHaveTextContent(
+        "Sözleşme bedeli girilmeden hakediş yüzdesi hesaplanamaz",
+      );
+      expect(screen.getByText("Hakediş Özeti")).toBeInTheDocument();
+    });
+
+    // 🔴 POZİTİF KONTROL'ün AYNASI: maskeli bedelde (`null`) kart SİLİNMEZ,
+    // tutar "—" basar ama YANLIŞ gerekçe YAZILMAZ. Kartın bütününün ayakta
+    // kaldığını burada, dalın kendi kuralını `ContractPaymentSummaryCard
+    // .masked.test.tsx`te çakıyoruz.
+    it("bedel MASKELİ iken kart silinmez, tutar '—' basar, gerekçe YAZILMAZ", () => {
       mockAll({
         detail: {
           ...DETAIL,
@@ -403,11 +435,10 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
       });
       render(<EmployerContractDetailView projectId="p-1" />);
 
-      expect(screen.queryByTestId("ecd-pps-bar")).not.toBeInTheDocument();
-      expect(screen.getByTestId("ecd-pps-pct-pending")).toHaveTextContent(
+      expect(screen.getByTestId("ecd-pps-contract-amount")).toHaveTextContent("—");
+      expect(screen.getByTestId("ecd-pps-pct-pending")).not.toHaveTextContent(
         "Sözleşme bedeli girilmeden hakediş yüzdesi hesaplanamaz",
       );
-      expect(screen.getByTestId("ecd-pps-contract-amount")).toHaveTextContent("—");
       expect(screen.getByText("Hakediş Özeti")).toBeInTheDocument();
     });
   });

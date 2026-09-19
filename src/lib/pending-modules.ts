@@ -215,7 +215,35 @@ export const MODULE_LABELS: Record<string, string> = {
   //     "taşeron sekmesinde ilerleme hiç hesaplanmıyor" demek artık YALANDI.
   //     Gerekçe iki sekmede de aynı ProgressCell'den okunur (işveren sözleşmesi
   //     de bedelsiz olabilir) — bu yüzden metin sekmeden BAĞIMSIZ yazılır.
-  subcontractor_progress_payment_total: "Taşeron hakediş toplamı bu görünüme gelmedi",
+  //
+  // 🔴 `subcontractor_progress_payment_total` SİLİNDİ (F-KAPSAM, 2026-09-19).
+  //
+  // F-SZLPCT'in yukarıdaki *"Anahtar SİLİNMEZ"* kararı BAYATLADI. O karar
+  // "kart hâlâ savunmacı `null` dalını taşır" diyordu — doğru, ama o dalın
+  // artık TEK kaynağı kapsam maskesidir ve maske "bu yüzeye gelmedi" DEMEZ,
+  // "görmeye yetkin yok" der. Yani metin, basıldığı HER hâlde yalandı.
+  //
+  // Dosyanın kendi silme kuralı ("gerekçeyi okuyan kimse kalmamış → ANAHTAR
+  // silinir") uygulandı ve F-ILRUI tuzağına (bayat ölçüme dayanan silme)
+  // DÜŞMEMEK için ölçüm bu turda YENİDEN yapıldı:
+  //   · `git -C backend grep subcontractor_progress_payment_total` → exit 1,
+  //   · `backend/openapi/openapi.json` ve `schema.d.ts` → 0 eşleşme,
+  //   · tek okuyucu `ContractsSummaryStrip` idi ve bu turda gerekçeyi bıraktı.
+  // Backend bu anahtarı HİÇBİR `pending_modules` gövdesinde yayınlamıyor,
+  // dolayısıyla `FALLBACK_LABEL`e düşecek bir çağrı da yoktur.
+  // Yayınlamaya başlarsa anahtar GERİ EKLENİR.
+  // 🔴 KAPSAM MASKESİ (kullanıcı kararı 2026-09-19) — METİN DEĞİŞMEDİ, ÇAĞRISI
+  // DARALDI. `ContractListItem.progress_pct` artık `Gorunurluk.operasyonel`
+  // etiketlidir ve `finance` kapsamlı rolde de `null` gelir. Hücre `null`u tek
+  // anlamla okuduğu sürece bu cümle o rolde YALANDI: bedel yan kolonda
+  // görünüyor, "girilmemiş" demek ekranı yalancı yapıyordu — deponun kendi
+  // kanonu bunu adıyla yasaklar (`projects/schemas.py::restricted`).
+  //
+  // Anahtar SİLİNMEDİ ve metin DÜZELTİLMEDİ, çünkü cümle HÂLÂ DOĞRUdur —
+  // yalnız dar bir hâlde: `ContractsTable::ProgressCell` ve
+  // `ContractPaymentSummaryCard` onu artık SADECE bedel GÖRÜNÜR ve `<= 0` iken
+  // basar (`contract-progress.ts::isProvenZeroAmount`). Diğer hâllerde sebep
+  // ölçülemez ve `placeholder-cell.ts`in 3. hâli uygulanır: "—", ipucu YOK.
   subcontractor_progress_pct: "Sözleşme bedeli girilmemiş — ilerleme oranı hesaplanamaz",
   // F-P5 T3 (E14 · İşveren sözleşme detayı) — mockup'ta ÇİZİLİ olup backend
   // karşılığı OLMAYAN yüzeyler. Üst kural: bölüm/buton SİLİNMEZ, yerinde

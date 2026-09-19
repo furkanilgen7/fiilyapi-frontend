@@ -32,6 +32,23 @@ function emptyMessage(options: {
 }
 
 /**
+ * 223 · gecikme faizi satırı basılır mı?
+ *
+ * ÜÇ hâl vardır ve ikisi "hayır" demez:
+ *   · `null` → MASKELİ (`Gorunurluk.para`, `limited` kapsam). Basılır; tutarı
+ *     `formatCurrency` "—" yapar. Gizlemek, "faiz yok" demenin sessiz hâli
+ *     olurdu — gecikmiş bir taksitte bu YANLIŞ bir olumlu iddiadır.
+ *   · `"0.00"` → GERÇEK sıfır. Basılmaz: mockup faizsiz satırda ikinci satırı
+ *     çizmez ve sıfır maskelenmiş değildir.
+ *   · pozitif → basılır.
+ */
+function isPrintableLateFee(lateFee: string | null | undefined): boolean {
+  if (lateFee === null || lateFee === undefined) return true;
+  const value = Number(lateFee);
+  return Number.isFinite(value) && value > 0;
+}
+
+/**
  * SY 217-234 · "Yaklaşan Tahsilatlar (30 Gün)".
  *
  * ⚠️ SATIRLARIN TAMAMI SUNUCU TÜREVİDİR (`SalesSummaryResponse.upcoming_
@@ -106,8 +123,15 @@ export function UpcomingCollectionsCard({
                 >
                   {formatCurrency(item.remaining_amount)}
                 </span>
-                {/* 223 · gecikme faizi SUNUCU türevidir — istemci hesaplamaz */}
-                {item.is_overdue && Number(item.late_fee_amount) > 0 && (
+                {/* 223 · gecikme faizi SUNUCU türevidir — istemci hesaplamaz.
+                    🔴 Maskeli (`null`) faiz "faiz yok" DEĞİLDİR:
+                    `late_fee_amount` `Gorunurluk.para`dır ve `Number(null)`
+                    **0** olduğu için eski koşul satırı GİZLİYORDU — ekran
+                    gecikmiş bir taksitte "faiz yok" diye SESSİZ bir olumlu
+                    iddia basıyordu. Maskeli hâlde satır basılır ve tutarı
+                    biçimlendirici "—" yapar; GERÇEK 0'da satır mockup kuralı
+                    gereği hiç basılmaz. */}
+                {item.is_overdue && isPrintableLateFee(item.late_fee_amount) && (
                   <div
                     className="satis-upcoming__fee"
                     data-testid={`satis-gecikme-faizi-${item.installment_id}`}

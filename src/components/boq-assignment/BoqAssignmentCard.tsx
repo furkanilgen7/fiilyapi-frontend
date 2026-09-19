@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { maskesiz, maskesizKota } from "./masked-guard";
 
 import { Button, Input } from "@/components/ui";
 import { backendErrorMessage } from "@/lib/api/error-message";
@@ -16,7 +15,12 @@ import {
 
 import { BoqItemPickerModal } from "./BoqItemPickerModal";
 import { checkOvershoot, mergeSectionAllocation } from "./allocation-merge";
-import { buildAssignmentRows, sectionQuantityMap, type AssignmentRow } from "./rows";
+import {
+  buildAssignmentRows,
+  isQuantityMasked,
+  sectionQuantityMap,
+  type AssignmentRow,
+} from "./rows";
 import "./boq-assignment.css";
 
 /**
@@ -35,6 +39,25 @@ import "./boq-assignment.css";
  */
 export const CREATE_MODE_DISABLED_REASON =
   "İş kalemi ataması bölüm kaydedildikten sonra yapılır — tahsis kaydı bölüme bağlıdır.";
+
+/**
+ * 🔴 METRAJ GİZLİ — atama yüzeyi GÖRÜNÜR GEREKÇEYLE kapanır (2026-09-19 denetimi).
+ *
+ * `boq` kapsamı `finance` olan rol (muhasebe) metrajı göremez: `quantity`,
+ * `allocated_quantity` ve `unallocated_quantity` `null` gelir. Eskiden bu hâl
+ * render sırasında ATIYORDU ve ekran BEYAZ kalıyordu (`lib/masked.ts` hikâyesi).
+ *
+ * Ekran artık AÇILIR — kullanıcı bölümün poz listesini, birimlerini ve (kapsamı
+ * para görüyorsa) fiyatlarını okur; miktarlar "—" basılır. Ama YAZMA kapanır ve
+ * gerekçe EKRANDA durur: görülmeyen bir kotanın üstüne tahsis yazmak, kullanıcının
+ * bilmediği bir sayıyı değiştirmesi demektir.
+ *
+ * 🔴 `canWrite` tek başına YETMEZ ve bu ölçüldü: o bayrak `sites` modülünden
+ * okunur (`SectionForm.tsx`), maske ise `boq` modülünün KAPSAMINDAN doğar —
+ * `sites = full/all` + `boq = view/finance` atanabilir bir bileşimdir.
+ */
+export const MASKED_QUANTITY_REASON =
+  "Metraj alanları bu rolde gizli — atanan miktarlar “—” basılır ve atama yapılamaz.";
 
 /** Kart kendi kaydını yapar; form gövdesinden AYRIDIR ve bu söylenir. */
 export const SEPARATE_SAVE_NOTE =
@@ -145,6 +168,12 @@ function LiveCard({
   const sectionQuantities = sectionQuantityMap(sectionBoq.data.groups);
   const rows = buildAssignmentRows(siteBoq.data.groups, sectionQuantities, draft);
   const hasChanges = draft.size > 0;
+  // 🔴 `some` (FAIL-CLOSED): tek satırın metrajı bile gizliyse yazma yüzeyi
+  //    tümden kapanır. Maske kapsam başınadır, yani pratikte hep-ya-hiçtir;
+  //    karışık bir yanıt gelirse de kısmi bir kotaya yazmak kullanıcıyı
+  //    göremediği bir toplamla karşı karşıya bırakırdı.
+  const hasMaskedQuantity = rows.some(isQuantityMasked);
+  const canAssign = canWrite && !hasMaskedQuantity;
 
   /**
    * 🔴 KAYDETME — poz BAŞINA, ve her poz için önce KÜMENİN TAMAMI okunur.
@@ -178,6 +207,11 @@ function LiveCard({
       } catch (error: unknown) {
         // Sunucunun 409 gövdesi (ör. "Bölümlere dağıtılan miktar poz miktarını
         // aşamaz") AYNEN geçer — yutulmaz, uydurulmaz.
+        //
+        // 🔴 `mergeSectionAllocation` BU `try` içinde değerlendirilir ve bu
+        //    bilinçlidir: maskeli bir pay gövdeye girmeye kalkarsa fren
+        //    (`maskesiz`) burada atar ve kullanıcı GÖRÜNÜR bir hata bandı
+        //    görür — sessiz bir çökme ya da sessiz bir veri kaybı değil.
         failures.push(`${label}: ${backendErrorMessage(error)}`);
       }
     }
@@ -208,6 +242,7 @@ function LiveCard({
       note={
         <>
           {SEPARATE_SAVE_NOTE}
+          {hasMaskedQuantity && <span className="sf-boq-card__muted"> {MASKED_QUANTITY_REASON}</span>}
           {savedNote && <span className="sf-boq-card__ok"> {savedNote}</span>}
         </>
       }
@@ -217,7 +252,7 @@ function LiveCard({
           variant="ghost"
           size="sm"
           className="sf-boq-card__add"
-          disabled={!canWrite}
+          disabled={!canAssign}
           onClick={() => setPickerOpen(true)}
         >
           + Poz Seç
@@ -228,7 +263,7 @@ function LiveCard({
         rows={rows}
         draft={draft}
         onDraft={setRowQuantity}
-        disabled={!canWrite || isSaving}
+        disabled={!canAssign || isSaving}
         totalAmount={totalAmount}
         onAddClick={() => setPickerOpen(true)}
       />
@@ -244,7 +279,7 @@ function LiveCard({
           <Button type="button" variant="secondary" disabled={isSaving} onClick={() => setDraft(new Map())}>
             Değişiklikleri geri al
           </Button>
-          <Button type="button" variant="primary" disabled={isSaving || !canWrite} onClick={handleSave}>
+          <Button type="button" variant="primary" disabled={isSaving || !canAssign} onClick={handleSave}>
             {isSaving ? "Kaydediliyor…" : "Atamaları Kaydet"}
           </Button>
         </div>
@@ -341,11 +376,21 @@ function AssignmentRowView({
   onDraft: (itemId: string, raw: string) => void;
   disabled: boolean;
 }) {
-  const raw = draft.get(row.item.id) ?? row.sectionQuantity;
+  // 🔴 GÖSTERİM YOLU: `maskesiz()` BURADA ÇAĞRILMAZ (kanon: `lib/masked.ts`).
+  //    Eskiden çağrılıyordu ve `boq = finance` rolünde bu satır render sırasında
+  //    ATIYOR, error boundary olmadığı için TÜM SAYFAYI çökertiyordu.
+  const isMasked = isQuantityMasked(row);
+  // Tek hesap, iki kullanım (kota hücresi + aşım kontrolü) — iki ayrı çağrı
+  // bir gün ayrışırdı.
+  const siteQuota = siteQuotaOf(row.item);
+  // `?? ""` yalnız MASKELİ dalda devreye girer ve o dalda kutu hiç basılmaz;
+  // maskesiz satırda değer sunucudan/taslaktan gelir. Maskeli payı `"0"` diye
+  // okumak "payı yok" yalanını söylerdi.
+  const raw = draft.get(row.item.id) ?? row.sectionQuantity ?? "";
   const normalized = normalizeDecimalInput(raw);
   const check = checkOvershoot({
-    siteQuota: maskesizKota(row.item),
-    allocatedTotal: maskesiz(row.item.allocated_quantity, "allocated_quantity"),
+    siteQuota,
+    allocatedTotal: row.item.allocated_quantity,
     sectionCurrentQuantity: row.sectionQuantity,
     nextQuantity: normalized,
   });
@@ -365,19 +410,26 @@ function AssignmentRowView({
         )}
       </td>
       <td className="sf-boq-table__center">{row.item.unit}</td>
-      <td className="sf-boq-table__num">{formatQuantity(siteQuotaOf(row.item))}</td>
+      <td className="sf-boq-table__num">{formatQuantity(siteQuota)}</td>
       <td className="sf-boq-table__num">
-        <Input
-          numeric
-          size="row"
-          inputMode="decimal"
-          value={raw}
-          disabled={disabled}
-          status={check.isOvershoot || isInvalid ? "error" : "default"}
-          aria-invalid={check.isOvershoot || isInvalid}
-          aria-label={`${row.item.code} için bu bölüme atanan miktar`}
-          onChange={(e) => onDraft(row.item.id, e.target.value)}
-        />
+        {/* 🔴 Maskeli satırda KUTU BASILMAZ. Boş ya da devre dışı bir kutu
+            "pay yok / sıfır" diye okunurdu; hücre öbür maskeli sayılarla AYNI
+            dili konuşur ve "—" basar (`lib/format.ts` kanonu). */}
+        {isMasked ? (
+          <span title={MASKED_QUANTITY_REASON}>{formatQuantity(row.sectionQuantity)}</span>
+        ) : (
+          <Input
+            numeric
+            size="row"
+            inputMode="decimal"
+            value={raw}
+            disabled={disabled}
+            status={check.isOvershoot || isInvalid ? "error" : "default"}
+            aria-invalid={check.isOvershoot || isInvalid}
+            aria-label={`${row.item.code} için bu bölüme atanan miktar`}
+            onChange={(e) => onDraft(row.item.id, e.target.value)}
+          />
+        )}
       </td>
       <td className="sf-boq-table__num">{formatAmount(row.item.unit_price)}</td>
       <td className="sf-boq-table__num">{formatAmount(amount)}</td>
@@ -387,7 +439,7 @@ function AssignmentRowView({
         <button
           type="button"
           className="sf-boq-table__remove"
-          disabled={disabled}
+          disabled={disabled || isMasked}
           aria-label={`${row.item.code} pozunu bu bölümden çıkar`}
           onClick={() => onDraft(row.item.id, "")}
         >

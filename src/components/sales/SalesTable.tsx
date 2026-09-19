@@ -175,11 +175,18 @@ export function SalesTable({
                 <td className="satis-table__td satis-table__td--right satis-table__td--mono satis-table__paid">
                   {formatAmount(row.paid_amount)}
                 </td>
-                {/* 164 — kalan SIFIRSA soluk, aksi hâlde kehribar/kırmızı */}
+                {/* 164 — kalan SIFIRSA soluk, aksi hâlde kehribar/kırmızı.
+                    🔴 Maskeli (`null`) kalan SIFIR SAYILMAZ: `remaining_amount`
+                    `Gorunurluk.para`dır ve `Number(null)` **0**'dır — ham okuma
+                    gizlenmiş bir borcu "kapanmış" tonuyla boyardı. Tutarın
+                    kendisi zaten "—" basılıyor; yanlış olan yanındaki İDDİAydı.
+                    (`sales` matrisinde bugün `limited` hücre yok, yani kusur
+                    LATENTtir — bir izin satırı değiştiğinde kod incelemesi
+                    olmadan canlıya çıkardı.) */}
                 <td
                   className={cx(
                     "satis-table__td satis-table__td--right satis-table__td--mono",
-                    Number(row.remaining_amount) === 0
+                    row.remaining_amount !== null && Number(row.remaining_amount) === 0
                       ? "satis-table__remaining--zero"
                       : tone === "overdue"
                         ? "satis-table__remaining--overdue"

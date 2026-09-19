@@ -114,16 +114,22 @@ describe("ContractsView · SZL sekmeli liste", () => {
     // 🔴 F-SZLPCT: bu SAVUNMACI daldır, backend davranışı DEĞİL. TH-SUM
     // (`cb9e26e`) `progress_payment_total`ı bağladı ve backend yorumu
     // *"`None` bir daha DÖNMEZ"* diyor; alan yalnız ŞEMA UYUMLULUĞU için
-    // `Decimal | None` kaldı. Dal silinmez (şema hâlâ null'a izin veriyor),
-    // ama testin adı ve GEREKÇE METNİ artık modülün eksik olduğunu SÖYLEMEZ.
-    it("`progress_payment_total` null gelirse kart silinmez, '—' + gerekçe basar", () => {
+    // `Decimal | None` kaldı.
+    //
+    // 🔴 F-KAPSAM (2026-09-19) — İDDİA DÜZELTİLDİ. Yukarıdaki ölçüm bu turda
+    // DOĞRULANDI (`contracts/service.py:264` ve `:289` iki dalda da `0.00`
+    // üretir) ve SONUCU değişti: sunucu `None` üretemiyorsa, yanıttaki `null`un
+    // TEK kaynağı kapsam maskesidir (`Gorunurluk.para`). O hâlde "bu görünüme
+    // gelmedi" cümlesi basıldığı HER seferde yalandır — kart artık gerekçesiz
+    // "—" basar. Dalın kendi bekçisi `ContractsSummaryStrip.masked.test.tsx`.
+    it("`progress_payment_total` null gelirse kart silinmez, gerekçesiz '—' basar", () => {
       searchParams = new URLSearchParams("type=subcontractor");
       mockContracts(subcontractorResponse());
       render(<ContractsView />);
 
       const card = screen.getByTestId("szl-kpi-payment-total");
       expect(card).toHaveTextContent("—");
-      expect(card).toHaveAttribute("title", "Taşeron hakediş toplamı bu görünüme gelmedi");
+      expect(card).not.toHaveAttribute("title");
       expect(screen.getByText("Toplam Hakediş")).toBeInTheDocument();
     });
   });
@@ -282,9 +288,23 @@ describe("ContractsView · SZL sekmeli liste", () => {
     // BAĞLANDI. `null` artık "taşeron sekmesi" demek değil, "sözleşme bedeli
     // yok/`<= 0`" demektir (`progress_pct` sıfır paydada bölme yapmaz) — dal
     // İKİ sekmede de yaşar, çünkü işveren sözleşmesi de bedelsiz olabilir.
-    it("`progress_pct` null (bedelsiz sözleşme) → çubuk yerine '—' + gerekçe", () => {
+    // 🔴 F-KAPSAM (2026-09-19) — FİKSTÜR DÜZELTİLDİ, KURAL DARALDI.
+    //
+    // Bu test eskiden `SUBCONTRACTOR_ROW`u olduğu gibi kullanıyordu ve satırın
+    // `amount`una BAKMADAN gerekçenin basıldığını çakıyordu. `progress_pct`
+    // artık `Gorunurluk.operasyonel` etiketli olduğu için `finance` kapsamlı
+    // rolde de `null` gelir — o hâlde "bedel girilmemiş" cümlesi YALANDIR ve
+    // hücre onu basmaz (`contract-progress.ts::isProvenZeroAmount`).
+    //
+    // Testin ÖLÇMEK İSTEDİĞİ şey ("bedelsiz sözleşme") artık fikstürde AÇIKÇA
+    // kurulur: bedel GÖRÜNÜR ve sıfırdır. Maskeli hâlin kendi bekçisi
+    // `ContractsTable.masked.test.tsx`tedir.
+    it("bedel GÖRÜNÜR ve 0 iken `progress_pct` null → çubuk yerine '—' + gerekçe", () => {
       searchParams = new URLSearchParams("type=subcontractor");
-      mockContracts(subcontractorResponse());
+      mockContracts({
+        ...subcontractorResponse(),
+        items: [{ ...SUBCONTRACTOR_ROW, amount: "0.00", progress_pct: null }],
+      });
       render(<ContractsView />);
 
       const cell = screen.getByTestId("szl-progress-pending");

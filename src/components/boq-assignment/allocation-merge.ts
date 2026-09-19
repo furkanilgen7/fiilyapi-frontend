@@ -1,5 +1,5 @@
 import { isZeroDecimalString, subtractDecimalStrings, sumDecimalStrings } from "@/lib/decimal";
-import { maskesiz } from "./masked-guard";
+import { maskeli, maskesiz } from "@/lib/masked";
 import type {
   BoqItemAllocation,
   BoqItemAllocationInput,
@@ -47,6 +47,11 @@ export function mergeSectionAllocation({
     .filter((allocation) => allocation.section_id !== sectionId)
     .map((allocation) => ({
       section_id: allocation.section_id,
+      // 🔴 BURASI YAZMA YOLUDUR ve `maskesiz()` BİLEREK DURUR. 2026-09-19
+      //    denetiminde `maskesiz()` çağrıları GÖSTERİM yollarından söküldü;
+      //    bu SÖKÜLMEZ. Maskeli bir pay gövdeye `?? "0"` ile girseydi ya da
+      //    atlansaydı `PUT` TAM KÜME DEĞİŞTİRMESİ öbür bölümün payını SESSİZCE
+      //    yok ederdi — istek 200 döner, ekran doğru görünür, veri kaybolur.
       quantity: maskesiz(allocation.quantity, "quantity"),
     }));
 
@@ -62,12 +67,25 @@ export function allocationsTotal(
 }
 
 export interface OvershootCheck {
-  /** Toplam kotayı aşıyor mu? */
+  /** Toplam kotayı aşıyor mu? `isUnknown` iken DAİMA `false`dır — aşağıya bkz. */
   readonly isOvershoot: boolean;
-  /** Bu bölümün en fazla yazabileceği miktar (kendi mevcut payı DAHİL). */
-  readonly maxForSection: string;
-  /** Aşım miktarı — aşım yoksa `"0"`. */
-  readonly excess: string;
+  /**
+   * 🔴 METRAJ GİZLİ: aşım hesaplanamaz.
+   *
+   * "Aşım yok" (`isOvershoot: false`) ile "BİLİNMİYOR" AYRI hâllerdir ve ayrı
+   * alanlarda durur. Tek bayrakla yazılsaydı iki seçenek kalırdı ve ikisi de
+   * yanlıştı: `false` dönmek seçicinin "Ata" kapısını maskeli satırda AÇIK
+   * bırakır (kullanıcı GÖREMEDİĞİ kotanın üstüne yazar); `true` dönmek ise
+   * uydurma bir `excess` ile ekranda sebepsiz KIRMIZI basardı.
+   */
+  readonly isUnknown: boolean;
+  /**
+   * Bu bölümün en fazla yazabileceği miktar (kendi mevcut payı DAHİL).
+   * `null` = bilinmiyor; çağıran `formatQuantity` ile "—" basar.
+   */
+  readonly maxForSection: string | null;
+  /** Aşım miktarı — aşım yoksa `"0"`, bilinmiyorsa `null`. */
+  readonly excess: string | null;
 }
 
 /**
@@ -90,19 +108,28 @@ export function checkOvershoot({
   sectionCurrentQuantity,
   nextQuantity,
 }: {
-  readonly siteQuota: string;
+  /** Pozun GERÇEK şantiye kotası — `siteQuotaOf()`. `null` = metraj gizli. */
+  readonly siteQuota: string | null;
   /** Pozun BÜTÜN bölümlere dağıtılmış toplamı (`allocated_quantity`). */
-  readonly allocatedTotal: string;
+  readonly allocatedTotal: string | null;
   /** Bu bölümün SUNUCUDAKİ mevcut payı. */
-  readonly sectionCurrentQuantity: string;
+  readonly sectionCurrentQuantity: string | null;
   readonly nextQuantity: string | null;
 }): OvershootCheck {
+  // 🔴 BU FONKSİYON GÖSTERİM YOLUNDADIR: satır ve seçici JSX'i her karede
+  //    çağırır. Bu yüzden maskeli girdide `maskesiz()` ile ATMAZ — atsaydı
+  //    `boq` kapsamı `finance` olan rolün ekranı çökerdi (`lib/masked.ts`
+  //    docstring'indeki hikâye). Maske `subtractDecimalStrings` üzerinden
+  //    KENDİLİĞİNDEN yayılır: bilinmeyen bir bileşen içeren sonuç BİLİNMEZDİR.
   const otherSectionsTotal = subtractDecimalStrings(allocatedTotal, sectionCurrentQuantity);
   const maxForSection = subtractDecimalStrings(siteQuota, otherSectionsTotal);
+  if (maskeli(maxForSection)) {
+    return { isOvershoot: false, isUnknown: true, maxForSection: null, excess: null };
+  }
   if (nextQuantity === null) {
-    return { isOvershoot: false, maxForSection, excess: "0" };
+    return { isOvershoot: false, isUnknown: false, maxForSection, excess: "0" };
   }
   const excess = subtractDecimalStrings(nextQuantity, maxForSection);
   const isOvershoot = !excess.startsWith("-") && !isZeroDecimalString(excess);
-  return { isOvershoot, maxForSection, excess: isOvershoot ? excess : "0" };
+  return { isOvershoot, isUnknown: false, maxForSection, excess: isOvershoot ? excess : "0" };
 }

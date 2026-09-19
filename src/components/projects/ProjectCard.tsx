@@ -206,6 +206,44 @@ function MetricValue({
   );
 }
 
+/**
+ * "Arsa Maliyeti" hucresi (mockup 156).
+ *
+ * 🔴 `?? 0` KESTIRMESI KALDIRILDI. `LandShareCard.land_cost`
+ * `Gorunurluk.para` etiketlidir ve `limited` kapsamli rollerde — `projects`
+ * matris satirinda UC hucre `_LIM`dir — `null` gelir. `?? 0`,
+ * `formatCompactCurrency(0)` ile ekrana **"₺ 0"** basiyordu: kullanici
+ * gizlenmis bir tutari GERCEK bir sayi olarak okuyor ve arsanin bedava
+ * oldugunu saniyordu. Bu, gizlemekten daha kotudur.
+ *
+ * 🔴 SIFIR MASKELENMIS DEGILDIR ve dal bunu korur: alanin tanimsal gercegi
+ * "daima 0"dir (backend saklamaz, spec §3.3), yani gorunur `"0"` icin "₺ 0"
+ * DOGRU cevaptir ve basilmaya devam eder. Ayrimi `null` tasir.
+ *
+ * Ton da maskeyle birlikte duser: yesil `--success` bir OLUMLU iddiadir
+ * ("maliyet yok"); bilinmeyen bir tutarin uzerine boyanmaz. Komsu hucrelerin
+ * (`MetricValue` / `MarginChip`) bos hali hangi sinifi kullaniyorsa o kullanilir.
+ *
+ * 🔴 IPUCU (title) VERILMEZ: bu alan `MetricPlaceholder` zarfi DEGIL duz bir
+ * `Decimal | None`dir, yani `pending_module` tasimaz ve sebep OLCULEMEZ.
+ * `placeholder-cell.ts`in 3. hali burada da gecerlidir — uydurma gerekce
+ * yerine sessiz "—".
+ */
+function LandCostValue({ value }: { value: string | null | undefined }) {
+  if (value === null || value === undefined) {
+    return (
+      <span className="prj-kpi__value prj-kpi__value--pending" data-testid="prj-land-cost">
+        —
+      </span>
+    );
+  }
+  return (
+    <span className="prj-kpi__value prj-kpi__value--success" data-testid="prj-land-cost">
+      {formatCompactCurrency(value)}
+    </span>
+  );
+}
+
 // Kart alt seridi — mockup 126-129 (kendi yatirim) / 158-161 (kat karsiligi).
 // Bu dilimde yalniz MARJ cipi baglanir (mockup 128 / 160, P10 zarfi); seridin
 // diger ogeleri ("48 daire + 4 dükkan" 127, "3 hissedar" 159) `units`
@@ -305,10 +343,7 @@ function KatKarsiligiKpis({ project }: { project: Project }) {
         <MetricValue metric={landShare?.our_share_value} />
       </KpiCell>
       <KpiCell label="Arsa Maliyeti">
-        {/* Tipin tanimsal gercegi: backend land_share.land_cost hep 0 doner, yer tutucu degil (spec §7.3) */}
-        <span className="prj-kpi__value prj-kpi__value--success">
-          {formatCompactCurrency(landShare?.land_cost ?? 0)}
-        </span>
+        <LandCostValue value={landShare?.land_cost} />
       </KpiCell>
       <KpiCell label="İnşaat Maliyeti">
         <MetricValue metric={landShare?.construction_cost} tone="danger" />

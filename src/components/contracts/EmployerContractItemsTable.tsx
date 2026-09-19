@@ -30,6 +30,7 @@ import {
   type InlineRowDraft,
 } from "./employer-item-inline";
 import { employerContractDistributionHref } from "./employer-contract-tabs";
+import { isRemainingSettled } from "./distribution-derive";
 import "./employer-contract-detail.css";
 
 /**
@@ -362,8 +363,14 @@ function GroupRows({
         </td>
       </tr>
       {group.items.map((item) => {
-        const remaining = Number(item.remaining_quantity);
-        const isSettled = Number.isFinite(remaining) && remaining === 0;
+        // 🔴 KAPSAM MASKESİ — `Number()` ile okunmaz. `remaining_quantity`
+        //    `Gorunurluk.operasyonel`dir ve `finance` kapsamlı rol onu `null`
+        //    görür; `Number(null)` **0**'dır, yani ham okuma HER satırı yeşil
+        //    "✓ 0" ile "tamamı dağıtıldı" diye damgalardı. Kural POZ 100'ün
+        //    ikiz yüzeyi `ContractDistributionGrid` ile ORTAKTIR ve oradan
+        //    TÜRETİLİR — ikinci bir eşik kopyası açmak, iki tablonun aynı
+        //    satıra farklı cevap verdiği bir gelecek kurardı.
+        const isSettled = isRemainingSettled(item.remaining_quantity);
         const draft = drafts[item.id] ?? {};
         return (
           <tr className="ecd-items__row" key={item.id}>

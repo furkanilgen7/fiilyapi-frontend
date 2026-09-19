@@ -1,7 +1,7 @@
 import { formatCompactCurrency, formatPercent } from "@/lib/format";
 import type { SalesSummaryResponse } from "@/lib/api/hooks/useSalesSummary";
 
-import { COLLECTION_PCT_UNKNOWN_REASON } from "./sales-labels";
+import { COLLECTION_PCT_UNKNOWN_REASON, isProvenZeroContracted } from "./sales-labels";
 import "./sales.css";
 
 export interface SalesKpiStripProps {
@@ -19,7 +19,12 @@ const EMPTY_VALUE = "—";
  * ⚠️ BEŞİNİN DE TEK KAYNAĞI `GET /projects/{id}/sales/summary`dir. Ekran hiçbir
  * KPI'yı HESAPLAMAZ: "Boş Ünite" için ayrı bir ünite ucuna gidilmez
  * (`available_units`), tahsilat yüzdesi bölme ile bulunmaz (`collection_pct`
- * sunucudan; sözleşme tutarı 0 iken `null` → "—" + görünür gerekçe).
+ * sunucudan).
+ *
+ * 🔴 58'in `null` yüzdesi ARTIK İKİ ANLAMLIDIR (kapsam maskesi, 2026-09-19):
+ * ya payda gerçekten 0'dır ya da `collection_pct` (`Gorunurluk.operasyonel`)
+ * muhasebe rolünden GİZLENMİŞTİR. Gerekçe bu yüzden koşullu basılır; ayrım
+ * paydanın (`contracted_amount`) görünürlüğünden ÖLÇÜLÜR.
  */
 export function SalesKpiStrip({ summary }: SalesKpiStripProps) {
   const collectionPct = summary?.collection.collection_pct ?? null;
@@ -70,7 +75,14 @@ export function SalesKpiStrip({ summary }: SalesKpiStripProps) {
         {collectionPct === null ? (
           <div
             className="satis-kpi__hint satis-kpi__hint--pending"
-            title={COLLECTION_PCT_UNKNOWN_REASON}
+            // 🔴 Gerekçe YALNIZ kanıtlıyken yazılır: maskeli oranda (muhasebe
+            //    rolü) "satış tutarı yok" demek, tutarı hemen ÜSTTE basarken
+            //    ekranı yalancı yapardı. Gerekçesi `isProvenZeroContracted`ta.
+            title={
+              isProvenZeroContracted(summary?.collection.contracted_amount)
+                ? COLLECTION_PCT_UNKNOWN_REASON
+                : undefined
+            }
             data-testid="satis-kpi-collection-pct"
           >
             {EMPTY_VALUE} tahsilat

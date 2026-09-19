@@ -5554,6 +5554,28 @@ export interface paths {
          *     BOQ-SEC K5: `section_id` ekran ucuyla AYNI cagriyi besler
          *     (`get_boq_export_for_site`) — ikinci bir suzme kodu yazilmaz, yoksa Excel
          *     ile ekran zamanla ayrisirdi.
+         *
+         *     🔴 **MASKE BURADA ELLE UYGULANIR** (2026-09-19 kacak-uc onarimi). Rota
+         *     sarmalayicisi yalnizca `BaseModel` donuslerini maskeler ve bu uc `Response`
+         *     (xlsx baytlari) doner — yani sarmalayici onu AYNEN geciriyordu. Sonuc:
+         *     `boq = view/limited` olan rol (santiye sefi, satinalma) ekranda `—` gordugu
+         *     birim fiyati ve tutari AYNI KAPIDAN (`boq:view`) dosya olarak tam degeriyle
+         *     indiriyordu. Maskenin en buyuk tek deligi buydu.
+         *
+         *     🔴 **Neden 403 DEGIL, MASKE.** Iki secenek de kacagi kapatirdi; olculdu ve
+         *     maske secildi:
+         *       * Dosyanin ISI kisitli rol icin de gecerlidir: `limited` rolde metraj ve
+         *         poz kimligi GORUNURDUR (kova tablosu), yani santiye sefinin sahada
+         *         kullandigi metraj listesi maskeden sonra da calisir. 403 vermek onu
+         *         bugun yapabildigi isi yapamaz hale getirirdi — kapsam kisiti bir
+         *         GIZLEME karari, bir IS DURDURMA karari degildir.
+         *       * Ekran ile dosya AYNI zarftan uretilir (yukaridaki K5 gerekcesi); ekranda
+         *         gorunen kume ile dosyada gorunen kume de boylece AYNI kalir. 403,
+         *         "ekranda var ama indiremiyorum" diye aciklanamaz bir ayrisma yaratirdi.
+         *
+         *     Zarf **build_boq_workbook'a girmeden ONCE** maskelenir: kitaba ham deger
+         *     yazip sonra hucre silmek iki ayri gizleme kuralı uretir ve zamanla ayrisirdi.
+         *     Bekcisi `tests/core/test_kapsam_kacak_uclar.py`.
          */
         get: operations["export_boq_endpoint_sites__site_id__boq_export_get"];
         put?: never;
@@ -13975,16 +13997,46 @@ export interface components {
          * @description `GET /projects/{project_id}/progress-payments/summary` yanıtı (E14
          *     sekmesi + SHK kartları, spec §9.6). Eksik sözleşme bedeli → `progress_pct`/
          *     `remaining` `None` (zarif düşüş, §8 deseninin aynısı).
+         *
+         *     ## 🔴 Bu şema İKİ uçtan döner ve İKİNCİSİ KAPSAM KISITLIDIR
+         *
+         *     Kendi ucunun yanında `contracts.schemas.EmployerContractDetail.
+         *     progress_payment_summary` olarak E14 detayına GÖMÜLÜR. `contracts` kapsam
+         *     kısıtlı bir modüldür; `field_scope.maskele()` iç içe `BaseModel`lere İNER,
+         *     yani maske buraya ULAŞIR. 2026-09-19 denetimine kadar alanlar ETİKETSİZDİ ve
+         *     etiketsiz alan `kimlik` sayıldığı için (fail-OPEN, gerekçe
+         *     `core/field_scope.py`) hiçbir kapsamda gizlenmiyordu: `limited` kapsamda
+         *     `EmployerContractDetail.amount` `null` dönerken AYNI sözleşme bedeli gömülü
+         *     `contract_amount`ta AÇIKTA kalıyordu. Bekçisi
+         *     `tests/modules/test_kapsam_capraz_sizinti.py`.
+         *
+         *     🔴 **Etiketler KENDİ ucunu DEĞİŞTİRMEZ** ve bu ölçüldü: `progress_payments`
+         *     matriste kısıtlı değildir (bütün hücreleri `Scope.all`) ve routerı
+         *     `kapsam_rotasi`ya bağlı değildir — o uçta maske hiç koşmaz. Yani etiketler
+         *     burada ATIL durur, yalnız gömüldükleri bağlamda iş görürler. Bağlamdan
+         *     bağımsız olarak doğrudurlar da: `contract_amount`/`net_total` HER iki uçta
+         *     da paradır, `progress_pct` HER iki uçta da ilerlemedir.
+         *
+         *     ## 🔴 Neden dört alan `| None` OLDU (şema değişikliği)
+         *
+         *     `cumulative_gross`/`advance_deduction_total`/`retention_total`/`net_total`
+         *     üretimde ASLA `None` dönmez — `build_summary` her yolda sayı üretir. `None`
+         *     hâli YALNIZ maskenin yazdığı hâldir. Tip `Decimal` KALSAYDI OpenAPI
+         *     sözleşmesi "bu alan hep sayıdır" derken gövde `null` taşırdı: frontend'in
+         *     üretilmiş tipi alanı sayı sanıp üzerinde aritmetik yapar ve ekran
+         *     maskelenmiş rolde ÇÖKERDİ. `contracts.EmployerContractDetail.items_total`
+         *     aynı gerekçeyle `Decimal` → `Decimal | None` oldu (2026-09-19); bu onun
+         *     emsalidir, yeni bir desen değildir.
          */
         ProgressPaymentSummary: {
             /** Advance Deduction Total */
-            advance_deduction_total: string;
+            advance_deduction_total: string | null;
             /** Contract Amount */
             contract_amount: string | null;
             /** Cumulative Gross */
-            cumulative_gross: string;
+            cumulative_gross: string | null;
             /** Net Total */
-            net_total: string;
+            net_total: string | null;
             /** Payment Count */
             payment_count: number;
             /** Pending Count */
@@ -13994,7 +14046,7 @@ export interface components {
             /** Remaining */
             remaining: string | null;
             /** Retention Total */
-            retention_total: string;
+            retention_total: string | null;
         };
         /**
          * ProgressPaymentUpdate
@@ -18229,8 +18281,11 @@ export interface components {
         };
         /**
          * SubcontractorContractItemResponse
-         * @description `FORM`/`TSD` kalem satırı. `line_total` türevdir, saklanmaz — `unit_price`
-         *     NULL olan satır toplama 0 katkı verir (spec §3.6).
+         * @description `FORM`/`TSD` kalem satırı. `line_total` türevdir, saklanmaz.
+         *
+         *     `unit_price` NULL olan satır SÖZLEŞME BEDELİNE 0 katkı verir (spec §3.6) —
+         *     ama satırın KENDİ `line_total`ı `null`dır, `0` değil; gerekçesi türevin
+         *     docstring'indedir. Toplama kuralı `service._subcontractor_amount`ta yaşar.
          */
         SubcontractorContractItemResponse: {
             /** Code */
@@ -18248,8 +18303,33 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /** Line Total */
-            readonly line_total: string;
+            /**
+             * Line Total
+             * @description Girdilerinden HERHANGİ BİRİ yoksa `None` — 0 DEĞİL.
+             *
+             *     🔴 **Neden `Decimal("0")` değil** (eski hâli buydu ve İKİ kusur
+             *     üretiyordu):
+             *
+             *     * `quantity` `operasyonel` etiketlidir ve `finance` kapsamında maske onu
+             *       `None`a çeker. Korumasız çarpım `None * Decimal` → `TypeError` verir ve
+             *       maske SERİLEŞTİRMEDEN ÖNCE uygulandığı için hata yanıt yolunda patlar:
+             *       muhasebe rolü taşeron sözleşme detayını **500** ile karşılardı.
+             *     * `unit_price` `para` etiketlidir ve `limited` kapsamında gizlenir. `0`
+             *       dönen bir türev, GİZLENMİŞ bir bedeli ekrana `"0,00 TL"` diye basardı
+             *       (`frontend/src/lib/format.ts` yalnız `null` görünce `—` yazar). Yanlış
+             *       bir sayı göstermek, hiç göstermemekten daha kötüdür.
+             *
+             *     🔴 **Neden maskeli bileşeni ATLAYIP hesaplamıyoruz:** eksik bir toplamı
+             *     gerçek gibi basmak da aynı yalanı söylerdi (`boq/schemas.py::group_total`
+             *     aynı kararı aynı gerekçeyle verir).
+             *
+             *     🔴 **Spec §3.6'nın "fiyatsız satır toplama 0 katkı verir" kuralı DEĞİŞMEDİ**
+             *     ve burada YAŞAMIYOR: sözleşme bedelini `service._subcontractor_amount`
+             *     hesaplar, fiyatsız satırı kendisi eler. O kural bir TOPLAMA kuralıdır;
+             *     satırın kendi tutarı "girilmedi" iken `0 TL` DEĞİLDİR (spec §3.6 bu iki
+             *     hâli zaten ayırır).
+             */
+            readonly line_total: string | null;
             /** Quantity */
             quantity: string | null;
             /** Sort Order */
@@ -19678,7 +19758,7 @@ export interface components {
             /** Rows */
             rows: components["schemas"]["UnitBulkPreviewRow"][];
             /** Total List Value */
-            total_list_value: string;
+            total_list_value: string | null;
             /** Total Units */
             total_units: number;
         };
@@ -20287,7 +20367,7 @@ export interface components {
             /** Sold */
             sold: number;
             /** Total Value */
-            total_value: string;
+            total_value: string | null;
         };
         /** UnitTotals */
         UnitTotals: {
@@ -20305,19 +20385,19 @@ export interface components {
             /** Reserved Units */
             reserved_units: number;
             /** Sales Revenue */
-            sales_revenue: string;
+            sales_revenue: string | null;
             /** Sides */
             sides: components["schemas"]["UnitSideSummary"][];
             /** Sold Units */
             sold_units: number;
             /** Total Appraisal Value */
-            total_appraisal_value: string;
+            total_appraisal_value: string | null;
             /** Total Gross Area M2 */
-            total_gross_area_m2: string;
+            total_gross_area_m2: string | null;
             /** Total List Price */
-            total_list_price: string;
+            total_list_price: string | null;
             /** Total Value */
-            total_value: string;
+            total_value: string | null;
             value_basis: components["schemas"]["UnitValueBasis"];
         };
         /**

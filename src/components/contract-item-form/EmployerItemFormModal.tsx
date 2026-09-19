@@ -19,6 +19,9 @@ import type {
 } from "@/lib/api/hooks/useContract";
 
 import { employerContractDistributionHref } from "@/components/contracts/employer-contract-tabs";
+// Kapanmış-poz eşiği TEK kaynaktır (POZ 100); bu panel de o karardan türer.
+import { isRemainingSettled } from "@/components/contracts/distribution-derive";
+import { cx } from "@/lib/cx";
 
 import { buildEmployerItemBody, nextSortOrder } from "./build-body";
 import { lineTotalPreview } from "./line-total";
@@ -128,9 +131,25 @@ export function EmployerItemFormModal({
   const preview = lineTotalPreview(values.quantity, values.unitPrice);
 
   const allItems = groups.flatMap((group) => group.items);
-  const distributedCount = allItems.filter(
-    (item) => Number(item.remaining_quantity) === 0,
-  ).length;
+  // 🔴 KAPSAM MASKESİ (kullanıcı kararı 2026-09-19) — sayaç UYDURULMAZ.
+  //
+  // Eski hâl `Number(item.remaining_quantity) === 0` sayıyordu. `finance`
+  // kapsamlı rolde `remaining_quantity` `null` gelir ve `Number(null)` **0**
+  // olduğu için TÜM pozlar "dağıtılmış" sayılıyor, "dağıtılmamış" sayacı da
+  // `uzunluk − hepsi` = **0** basıyordu. İki sayı da sahteydi ve ikisi de canlı
+  // renkle (`--ok` / `--warn`) gerçek veri gibi gösteriliyordu.
+  //
+  // 🔴 Neden `isRemainingSettled` ile SAYMAK da yanlış olurdu: o, maskeli pozu
+  // "kapanmamış" sayar ve bu sefer "dağıtılmamış" sayacı YUKARI doğru yalan
+  // söylerdi. Kalan metraj görünmeden bu iki sayı BİLİNEMEZ — doğru cevap bir
+  // sayı değil "—"dir (maske kanonu: eksik toplamı gerçek gibi basma).
+  //
+  // Tek bir poz bile maskeliyse TOPLAM bilinemez: kısmî sayım, bütünü temsil
+  // ediyormuş gibi okunurdu.
+  const hasMaskedRemaining = allItems.some((item) => item.remaining_quantity === null);
+  const distributedCount = hasMaskedRemaining
+    ? null
+    : allItems.filter((item) => isRemainingSettled(item.remaining_quantity)).length;
 
   function set<K extends keyof EmployerItemFormValues>(key: K, value: string) {
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -471,12 +490,24 @@ export function EmployerItemFormModal({
               </div>
               <div className="pif-stats__row">
                 <span className="pif-stats__label">{TEXT.contractDistributedCount}</span>
-                <span className="pif-stats__value pif-stats__value--ok">{distributedCount}</span>
+                {/* Maskeli hâlde ton sınıfı da DÜŞER: yeşil/kehribar bir
+                    OLUMLU/UYARI iddiasıdır ve bilinmeyen sayının üzerine
+                    boyanmaz. */}
+                <span
+                  className={cx("pif-stats__value", distributedCount !== null && "pif-stats__value--ok")}
+                >
+                  {distributedCount ?? SUMMARY_DASH}
+                </span>
               </div>
               <div className="pif-stats__row">
                 <span className="pif-stats__label">{TEXT.contractUndistributedCount}</span>
-                <span className="pif-stats__value pif-stats__value--warn">
-                  {allItems.length - distributedCount}
+                <span
+                  className={cx(
+                    "pif-stats__value",
+                    distributedCount !== null && "pif-stats__value--warn",
+                  )}
+                >
+                  {distributedCount === null ? SUMMARY_DASH : allItems.length - distributedCount}
                 </span>
               </div>
               <div className="pif-stats__rule" />

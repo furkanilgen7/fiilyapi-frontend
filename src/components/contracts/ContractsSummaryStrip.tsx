@@ -1,5 +1,4 @@
 import { formatCompactCurrency } from "@/lib/format";
-import { pendingModuleLabel } from "@/lib/pending-modules";
 import type { ContractSummary } from "@/lib/api/hooks/useContracts";
 
 import "./contracts.css";
@@ -14,9 +13,23 @@ import "./contracts.css";
  * Mockup'ta ikon YOKTUR (kartlar yalnız etiket + değer taşır) — bu yüzden
  * ikon EKLENMEZ.
  *
- * Zarif düşüş: `progress_payment_total` TAŞERON sekmesinde backend'de
- * `None`dır (şema açıklaması: taşeron hakedişi ayrı dilim, sahte `0`
- * dönmüyor). Kart SİLİNMEZ — "—" + görünür gerekçe (title + sr-only) basılır.
+ * 🔴 ZARİF DÜŞÜŞ — GEREKÇE KALDIRILDI (F-KAPSAM, 2026-09-19).
+ *
+ * Eski not *"`progress_payment_total` TAŞERON sekmesinde backend'de `None`dır"*
+ * diyordu ve kart o `null`a "Taşeron hakediş toplamı bu görünüme gelmedi"
+ * gerekçesini yazıyordu. O gerekçe ÖLDÜ; kodda ÖLÇÜLDÜ, varsayılmadı:
+ *
+ *   · `contracts/service.py:264` (işveren) ve `:289` (taşeron) — İKİ dal da
+ *     `_quantize_money(sum(..., Decimal("0")))` döndürür. Boş küme bile `0.00`
+ *     üretir; sunucunun `None` döndüreceği bir yol KALMAMIŞTIR (TH-SUM dilimi
+ *     taşeron dalını bağladı).
+ *   · `contracts/schemas.py:116` — alan `Gorunurluk.para` etiketlidir.
+ *
+ * Yani yanıttaki `null`un TEK kaynağı kapsam maskesidir: anlamı "bu yüzeye
+ * gelmedi" DEĞİL "bu tutarı görmeye yetkin yok"tur. İki hâli aynı cümleyle
+ * anlatmak ekranı yalancı yapar (`projects/schemas.py::restricted` kanonu).
+ * Kart yine SİLİNMEZ — "—" basar, ipucu VERİLMEZ (`placeholder-cell.ts` 3.
+ * hâli). `null` dalı savunmacı olarak KALIR: şema tipi hâlâ `Decimal | None`.
  */
 export interface ContractsSummaryStripProps {
   summary?: ContractSummary;
@@ -50,13 +63,9 @@ export function ContractsSummaryStrip({ summary }: ContractsSummaryStripProps) {
         {paymentTotal === null || paymentTotal === undefined ? (
           <div
             className="szl-kpi__value szl-kpi__value--pending"
-            title={pendingModuleLabel("subcontractor_progress_payment_total")}
             data-testid="szl-kpi-payment-total"
           >
             —
-            <span className="sr-only">
-              {pendingModuleLabel("subcontractor_progress_payment_total")}
-            </span>
           </div>
         ) : (
           <div

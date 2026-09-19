@@ -274,10 +274,21 @@ function ItemGroup({
             {/* 117-120 · Hakediş % */}
             <td className="ecd-items__td" data-testid={`tsd-progress-${item.code}`}>
               {pct === undefined ? (
-                <span className="tsd-progress__pending" title={progressPendingReason}>
-                  {DASH}
-                  <span className="sr-only">{progressPendingReason}</span>
-                </span>
+                // 🔴 GEREKÇE KOŞULLU (kapsam maskesi, kullanıcı kararı
+                //    2026-09-19). `progressPendingReason` "Hakediş listesi
+                //    eksik" der; metraj maskeliyken (`finance` kapsamı,
+                //    `quantity: null`) hakediş listesi PEKÂLÂ TAM olabilir —
+                //    eksik olan metrajdır ve o da eksik değil GİZLİdir. Yanlış
+                //    bir sebep, sessiz bir "—"den kötüdür; bu yüzden o hâlde
+                //    gerekçe bastırılır (`placeholder-cell.ts` 3. hâli).
+                item.quantity === null ? (
+                  <span className="tsd-progress__pending">{DASH}</span>
+                ) : (
+                  <span className="tsd-progress__pending" title={progressPendingReason}>
+                    {DASH}
+                    <span className="sr-only">{progressPendingReason}</span>
+                  </span>
+                )
               ) : (
                 <>
                   <div className="tsd-progress__track">

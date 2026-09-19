@@ -255,11 +255,38 @@ export const PRICE_LIST_PENDING_REASON =
   "Fiyat listesi ekranı henüz tasarlanmadı — mockup çizilince açılacak";
 
 /**
- * 58 · "%79 tahsilat" — `collection_pct` sunucudan gelir ve sözleşme tutarı
- * SIFIRKEN `null`dur. İstemci `collected/contracted` bölmesi YAPMAZ.
+ * 58 · "%79 tahsilat" — `collection_pct` sunucudan gelir. İstemci
+ * `collected/contracted` bölmesi YAPMAZ.
+ *
+ * 🔴 GEREKÇE ARTIK KOŞULLUDUR (kapsam maskesi, kullanıcı kararı 2026-09-19).
+ * Eski not *"sözleşme tutarı SIFIRKEN `null`dur"* diyordu; bu artık `null`un
+ * İKİ sebebinden YALNIZ BİRİ. `collection_pct` `Gorunurluk.operasyonel`
+ * etiketlidir ve `finance` kapsamında maskelenir — `sales` matrisinde kapsam
+ * taşıyan tek rol `accounting` olduğu için bu, tahsilat takibini FİİLEN yapan
+ * rolü vurur. O rolde cümle yalandır: kartın üst satırı tahsil edilen tutarı
+ * gerçek bir sayı olarak basıyor.
  */
 export const COLLECTION_PCT_UNKNOWN_REASON =
   "Sözleşmeye bağlanmış satış tutarı yok — tahsilat oranı hesaplanmaz";
+
+/**
+ * Yukarıdaki gerekçe KANITLI MI? Payda (`contracted_amount`) GÖRÜNÜR ve `<= 0`
+ * ise evet; aksi hâlde sebep ölçülemez ve gerekçe hiç yazılmaz
+ * (`placeholder-cell.ts` 3. hâli: "—", ipucu YOK).
+ *
+ * 🔴 `null` payda "tutar yok" SAYILMAZ: `contracted_amount` `Gorunurluk.para`
+ * etiketlidir; o `null` "tutar yok" değil "tutarı göremiyorsun" demektir.
+ *
+ * ⚠️ İkizi `contracts/contract-progress.ts::isProvenZeroAmount`tır ve kural
+ * AYNIDIR. Birleştirilmedi: `sales`in `contracts`ı içe aktarması iki özelliği
+ * birbirine bağlardı. Ortak bir `lib/` yuvası açmak bu dilimin dosya
+ * sahipliğinin dışındadır — şefe bildirildi.
+ */
+export function isProvenZeroContracted(contracted: string | null | undefined): boolean {
+  if (contracted === null || contracted === undefined) return false;
+  const value = Number(contracted);
+  return Number.isFinite(value) && value <= 0;
+}
 
 /**
  * Taksit satırının "Ödeme Şekli" seçicisi (DS 114 · 122 · 129 · 136). Enum
