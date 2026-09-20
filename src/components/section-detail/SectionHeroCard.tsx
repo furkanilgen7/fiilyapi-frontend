@@ -2,7 +2,11 @@ import Link from "next/link";
 
 import { cx } from "@/lib/cx";
 import { formatCompactCurrency, formatMonthYear, formatPercent } from "@/lib/format";
-import { pendingModuleLabel, type PendingModuleKey } from "@/lib/pending-modules";
+import {
+  pendingModuleHint,
+  pendingModuleLabel,
+  type PendingModuleKey,
+} from "@/lib/pending-modules";
 import { SECTION_STATUS_CLASS_SUFFIX, SECTION_STATUS_LABELS } from "@/lib/section-labels";
 import type { SectionDetailResponse } from "@/lib/api/hooks/useSection";
 import { remainingDays } from "./remainingDays";
@@ -52,7 +56,7 @@ function metaParts(section: SectionDetailResponse, siteName: string): string[] {
 // korur, "—" basar, title'da açıklama verir (spec §7.1).
 function PlaceholderValue({ pendingModule }: { pendingModule: PendingModuleKey }) {
   return (
-    <div className="section-hero__kpi-value section-hero__kpi-value--pending" title={pendingModuleLabel(pendingModule)}>
+    <div className="section-hero__kpi-value section-hero__kpi-value--pending" title={pendingModuleHint(pendingModule)}>
       —
     </div>
   );
@@ -96,9 +100,10 @@ function BudgetCell({ budgetAmount }: { budgetAmount: string | null }) {
           {formatCompactCurrency(budgetAmount)}
         </div>
       ) : (
-        <div className="section-hero__kpi-value section-hero__kpi-value--pending" title="Bölüm bedeli girilmemiş">
-          —
-        </div>
+        // 🔴 GEREKÇE YAZILMAZ — ikizi `site-detail/SectionCard.tsx`te
+        // gerekçesiyle yazılı: maskeli `null` ile girilmemiş `null` istemcide
+        // ayırt edilemez, o yüzden "—" basılır ve susulur.
+        <div className="section-hero__kpi-value section-hero__kpi-value--pending">—</div>
       )}
       <div
         className="section-hero__kpi-note section-hero__kpi-note--pending"

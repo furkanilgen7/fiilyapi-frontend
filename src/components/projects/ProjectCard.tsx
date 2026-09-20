@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { cx } from "@/lib/cx";
 import type { ProjectListItem } from "@/lib/api/hooks/useProjects";
 import { formatCompactCurrency, formatMonthYear, formatPercent } from "@/lib/format";
-import { pendingModuleLabel } from "@/lib/pending-modules";
+import { pendingModuleHint, pendingModuleLabel } from "@/lib/pending-modules";
 
 import { ShareBar } from "./ShareBar";
 import "./projects.css";
@@ -199,7 +199,7 @@ function MetricValue({
   return (
     <span
       className="prj-kpi__value prj-kpi__value--pending"
-      title={pendingModuleLabel(metric?.pending_module)}
+      title={pendingModuleHint(metric?.pending_module)}
     >
       —
     </span>
@@ -264,7 +264,7 @@ function MarginChip({ metric }: { metric: Metric | undefined }) {
       ) : (
         <span
           className="prj-card__margin prj-card__margin--pending"
-          title={pendingModuleLabel(metric?.pending_module)}
+          title={pendingModuleHint(metric?.pending_module)}
         >
           — marj
         </span>

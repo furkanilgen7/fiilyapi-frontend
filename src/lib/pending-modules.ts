@@ -575,7 +575,33 @@ const FALLBACK_LABEL = "İlgili modülle birlikte gelir";
 // `pendingModule: string` bildirimi yeniden uretilmez.
 export type PendingModuleKey = string | null | undefined;
 
-export function pendingModuleLabel(key: PendingModuleKey): string {
-  if (!key) return FALLBACK_LABEL;
+/**
+ * BİLİNEN bir anahtarın gerekçe metni. Tanınmayan anahtar `FALLBACK_LABEL`e düşer.
+ *
+ * 🔴 İMZA `string` — `null`/`undefined` ARTIK KABUL EDİLMİYOR (2026-09-20).
+ *
+ * Eski imza `PendingModuleKey` (yani `string | null | undefined`) idi ve `!key`
+ * dalı `FALLBACK_LABEL` döndürüyordu. Bu, zarfın ÜÇÜNCÜ hâlinde ("rolün izni
+ * yok", `pending_module: null`) ekrana **"İlgili modülle birlikte gelir"**
+ * yazdırıyordu — modül VARDIR, eksik olan izindir; cümle YALANDI. Ölçüldü: altı
+ * yüzey bu dala koşulsuz giriyordu (şantiye/bölüm KPI'ları, proje kartı).
+ *
+ * Dallanmayı her çağrı yerinde tekrar yazmak yerine (ve unutulmasına açık
+ * bırakmak yerine) AYRIM TİPE TAŞINDI: nullable bir anahtarla çağırmak artık
+ * `tsc` hatasıdır ve yazar `pendingModuleHint`i kullanmak zorunda kalır.
+ * Bekçi bir liste değil DERLEYİCİDİR — bu depoda elle tutulan listelerin
+ * çürüdüğü defalarca ölçüldü.
+ */
+export function pendingModuleLabel(key: string): string {
   return MODULE_LABELS[key] ?? FALLBACK_LABEL;
+}
+
+/**
+ * Zarfın gerekçe İPUCU: 2. hâlde metin, 3. hâlde **`undefined`**.
+ *
+ * `undefined` bilinçlidir: gerekçe BİLİNMİYORSA uydurulmaz. Ekran "—" basar ve
+ * susar (`lib/placeholder-cell.ts`in aynı kararı; kullanıcı kararı 2026-08-27).
+ */
+export function pendingModuleHint(key: PendingModuleKey): string | undefined {
+  return key ? pendingModuleLabel(key) : undefined;
 }

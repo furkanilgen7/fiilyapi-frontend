@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { MODULE_LABELS, pendingModuleLabel } from "./pending-modules";
+import { MODULE_LABELS, pendingModuleHint, pendingModuleLabel } from "./pending-modules";
 
 /**
  * 🔴 F-UNIT1 T5 · METİNLER TOPLUCA DÜZELTİLDİ. Eski iddialar "<Modül>
@@ -227,11 +227,24 @@ describe("pendingModuleLabel", () => {
     expect(pendingModuleLabel("bilinmeyen")).toBe("İlgili modülle birlikte gelir");
   });
 
-  // P10 devri: `app__modules__projects__schemas__MetricPlaceholder.pending_module`
-  // artik `string | null` (ve zorunlu degil). Anahtar yoksa da genel metne dusulur.
-  it("null/undefined anahtarda genel metne duser", () => {
-    expect(pendingModuleLabel(null)).toBe("İlgili modülle birlikte gelir");
-    expect(pendingModuleLabel(undefined)).toBe("İlgili modülle birlikte gelir");
+  // 🔴 BU İDDİA 2026-09-20'de TERSİNE ÇEVRİLDİ ve bir KUSURUN kaydıdır.
+  //
+  // Eski hâli `pendingModuleLabel(null)` → "İlgili modülle birlikte gelir"
+  // bekliyordu. O cümle zarfın ÜÇÜNCÜ hâlinde ("rolün izni yok",
+  // `pending_module: null`) bir YALANDIR: modül vardır, eksik olan izindir.
+  // Ölçüldü: sekiz ekran yüzeyi koşulsuz bu dala giriyordu.
+  //
+  // Artık `null`/`undefined` ile çağırmak bir DERLEME hatasıdır; nullable
+  // anahtar `pendingModuleHint`e gider ve o 3. hâlde `undefined` döner —
+  // yani ekran "—" basar ve SUSAR. Bekçi bir liste değil, DERLEYİCİDİR.
+  it("3. hâlde (null/undefined) İPUCU VERİLMEZ", () => {
+    expect(pendingModuleHint(null)).toBeUndefined();
+    expect(pendingModuleHint(undefined)).toBeUndefined();
+  });
+
+  it("🔴 POZİTİF KONTROL — 2. hâlde ipucu AYNEN metni döner", () => {
+    expect(pendingModuleHint("documents")).toBe(pendingModuleLabel("documents"));
+    expect(pendingModuleHint("bilinmeyen")).toBe("İlgili modülle birlikte gelir");
   });
 });
 
