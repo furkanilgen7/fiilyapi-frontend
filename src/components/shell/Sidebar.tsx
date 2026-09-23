@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cx } from "@/lib/cx";
@@ -10,18 +11,37 @@ import { useSession } from "./SessionProvider";
 import "./sidebar.css";
 import { routes } from "@/lib/routes";
 
+const LOGOUT_ERROR_MESSAGE = "Çıkış yapılamadı, tekrar deneyin.";
+
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { me } = useSession();
+  const [logoutError, setLogoutError] = useState<string | null>(null);
   // ⚠️ Aktiflik SATIR BAŞINA değil, nav'ın TAMAMINA bakılarak seçilir:
   // `/hazine/cek-senet` yolunda `/hazine` de eşleşir ve iki öğe birden yanardı
   // (bkz. `activeNavHref` notu).
   const currentHref = activeNavHref(pathname);
 
+  // 🔴 KAYIT NO 297 — eskiden ne `response.ok` kontrolu ne `try/catch` vardi:
+  // (a) BFF 403/500 donse bile KOSULSUZ /login'e atilirdi — sunucu oturumu
+  //     GERCEKTEN kapatmamis olsa bile kullanici "cikis yaptim" saniyordu.
+  // (b) `fetch` ag hatasiyla REDDEDERSE (offline) `await` firlatir, `push` HIC
+  //     calismazdi ve yakalanmamis bir promise reddi kullaniciya sessizce
+  //     kalirdi. Simdi yalniz BASARILI yanitta yonlendirilir; digerlerinde
+  //     kullaniciya GORUNUR bir hata basilir, sessiz yutma YOKTUR.
   async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push(routes.login());
+    setLogoutError(null);
+    try {
+      const res = await fetch("/api/auth/logout", { method: "POST" });
+      if (!res.ok) {
+        setLogoutError(LOGOUT_ERROR_MESSAGE);
+        return;
+      }
+      router.push(routes.login());
+    } catch {
+      setLogoutError(LOGOUT_ERROR_MESSAGE);
+    }
   }
 
   return (
@@ -65,6 +85,11 @@ export default function Sidebar() {
             <span aria-hidden="true">🚪</span> Çıkış
           </button>
         </div>
+        {logoutError !== null && (
+          <p role="alert" className="sidebar-user__error">
+            {logoutError}
+          </p>
+        )}
       </div>
     </aside>
   );

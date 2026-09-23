@@ -361,5 +361,16 @@ describe("EmployerItemFormModal · ilk poz regresyonu (F-POZGRUP)", () => {
       const retryBody = createItem.mock.calls[1][0] as Record<string, unknown>;
       expect(retryBody.group_id).toBe(NEW_GROUP_ID);
     });
+
+    /**
+     * no 46 · `selectedGroup` yalnız PROP'taki `groups` içinde aranıyordu;
+     * yaratılmış grup kalem sorgusu tazelenene kadar o listede YOK. Özet
+     * satırı boş kalıyor ve kullanıcı hangi grubu yarattığını göremiyordu.
+     */
+    it("46 · özet satırı yarım kalma sırasında YARATILMIŞ GRUBUN adını gösterir", async () => {
+      await submitHalfFailure();
+      const groupRow = screen.getByText(TEXT.summaryGroup).closest(".pif-summary__row");
+      expect(groupRow).toHaveTextContent(NEW_GROUP_NAME);
+    });
   });
 });

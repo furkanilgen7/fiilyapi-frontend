@@ -132,11 +132,16 @@ export async function proxyAuthenticated(
     body: JSON.stringify({ refresh_token: refreshToken }),
   });
   if (!refreshed.ok) {
-    return { status: 401, body: null };
+    // 🔴 Refresh basarisizsa `first`in govdesi (backend'in Turkce 401 hata
+    // metni) DUSURULMEZ — `proxyAuthenticatedRaw`in AYNI dalindaki
+    // `rawResult(first)` deseniyle simetrik (o ikiz govdeyi zaten koruyordu).
+    return { status: 401, body: await parseBody(first) };
   }
   const pair = (await parseBody(refreshed)) as TokenPair | null;
   if (!pair?.access_token) {
-    return { status: 401, body: null };
+    // Ayni gerekce: refresh yaniti 200 ama beklenen sekilde degilse de
+    // `first`in orijinal govdesi kullaniciya ULASMALI, `null` DEGIL.
+    return { status: 401, body: await parseBody(first) };
   }
   const retry = await request(path, pair.access_token, options);
   return {

@@ -380,11 +380,12 @@ function GroupRows({
             <td className="ecd-items__td ecd-items__td--input">
               <Input
                 size="row"
-                type="number"
+                inputMode="decimal"
                 numeric
                 // 🔴 `min` yalnız TARAYICI ipucudur; gerçek korkuluk
                 // `commitInlineCell`dedir (yapıştırma/otomatik doldurma bu
-                // özniteliği atlar).
+                // özniteliği atlar). `type="number"` DEĞİLDİR (no 51): Türkçe
+                // klavyenin virgülünü tarayıcı sessizce ""a indirger.
                 min={0}
                 className="ecd-items__cell-input"
                 aria-label={`${item.code} birim fiyatı`}
@@ -397,7 +398,7 @@ function GroupRows({
             <td className="ecd-items__td ecd-items__td--input">
               <Input
                 size="row"
-                type="number"
+                inputMode="decimal"
                 numeric
                 min={0}
                 className="ecd-items__cell-input"
@@ -483,7 +484,7 @@ function GroupRows({
           <td className="ecd-items__td ecd-items__td--input">
             <Input
               size="row"
-              type="number"
+              inputMode="decimal"
               numeric
               min={0}
               className="ecd-items__cell-input"
@@ -497,7 +498,7 @@ function GroupRows({
           <td className="ecd-items__td ecd-items__td--input">
             <Input
               size="row"
-              type="number"
+              inputMode="decimal"
               numeric
               min={0}
               className="ecd-items__cell-input"

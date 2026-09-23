@@ -355,6 +355,7 @@ export function SaleCreateView() {
 
           <PaymentPlanCard
             values={values}
+            errors={errors}
             planRows={planRows}
             planTotalText={planTotalText}
             planEdited={planEdited}
@@ -363,7 +364,13 @@ export function SaleCreateView() {
             onChangeField={handleChangeField}
             onGeneratePlan={handleGeneratePlan}
             onChangePlanRows={handleChangePlanRows}
-            locked={locked}
+            // no 246 · `locked` (satış oluşturuldu) TEK BAŞINA burayı
+            // kilitlerse: `generate-plan` PATLADIĞINDA `createdSaleId` zaten
+            // set edilmiş olur ve plan HİÇ üretilmeden "Plan Oluştur" kalıcı
+            // kilitlenir. Plan kartı yalnız plan GERÇEKTEN üretildiğinde
+            // (`planRows` dolduğunda) donar; aksi hâlde satış oluşmuş olsa
+            // bile aynı `saleId` ile yeniden denenebilir.
+            locked={locked && planRows.length > 0}
           />
 
           <DeedDeliveryCard values={values} onChangeField={handleChangeField} locked={locked} />

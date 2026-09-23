@@ -82,4 +82,27 @@ describe("useCreateProject", () => {
       body: { code: "PRJ-2026-001", name: "Yeni Proje", project_type: "taahhut", is_draft: true },
     });
   });
+
+  // Kayit no 452 (DUZELTME TURU 2) — bekci: donus tipi `ProjectListItem`e
+  // (dar govde) geri duserse bu dosya DERLENMEZ, cunku `site_count`
+  // yalniz `ProjectDetailResponse`de vardir. `useSectionMutations.ts`teki
+  // "DUZELTME TURU 1" bekcisinin birebir esi — mutasyon `tsc` ile kanitlanir,
+  // vitest bu alani calistirmaz (tip-duzeyinde iddia).
+  it("cozulen veri site_count tasir (ProjectDetailResponse, ProjectListItem DEGIL)", async () => {
+    vi.mocked(backendClient.POST).mockResolvedValue({
+      data: { ...PROJECT_RESPONSE, site_count: 3 },
+      error: undefined,
+      response: new Response(),
+    } as never);
+
+    const { result } = renderHook(() => useCreateProject(), { wrapper });
+    act(() => result.current.mutate({ name: "Yeni Proje", project_type: "taahhut", is_draft: true } as never));
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // `site_count` `ProjectDetailResponse`in ZORUNLU alanidir; `ProjectListItem`de
+    // YOKTUR. Hook donus tipi dar govdeye geri duserse su satir `pnpm tsc`i kirar.
+    const siteCount: number = result.current.data!.site_count;
+    expect(siteCount).toBe(3);
+  });
 });

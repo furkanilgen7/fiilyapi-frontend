@@ -123,7 +123,15 @@ export function EmployerItemFormModal({
   const pendingGroupOption =
     createdGroup && !groups.some((group) => group.id === createdGroup.id) ? createdGroup : null;
 
-  const selectedGroup = groups.find((group) => group.id === values.groupId) ?? null;
+  // no 46 · `groups` PROP'u kalem sorgusu tazelenene kadar YARATILMIŞ grubu
+  // içermez (`pendingGroupOption` bu geçici pencerenin karşılığıdır). Yalnız
+  // prop'ta aramak, ikinci adım (kalem yaratma) patladığında özet satırının
+  // grup adını KAYBETMESİNE yol açıyordu — id gerçek ama görünüşte "yok".
+  const selectedGroup =
+    groups.find((group) => group.id === values.groupId) ??
+    (pendingGroupOption && pendingGroupOption.id === values.groupId
+      ? { ...pendingGroupOption, items: [], sort_order: 0 }
+      : null);
   // 126 · mockup'ın "11"i GÖSTERMELİKtir: sıra GRUP İÇİNDE hesaplanır (127).
   const defaultSortOrder = nextSortOrder(
     (selectedGroup?.items ?? []).map((item) => item.sort_order),

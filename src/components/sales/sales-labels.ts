@@ -107,7 +107,7 @@ export function saleRowTone(sale: SaleRow): SaleRowTone {
  * count > 0` türevidir) — bu yüzden süzgeç anahtarları ayrı bir kümedir.
  * ------------------------------------------------------------------------ */
 
-export type SalesStatusFilter = "deed_transferred" | "reservation" | "overdue";
+export type SalesStatusFilter = "deed_transferred" | "reservation" | "overdue" | "exclude_cancelled";
 
 export interface SalesStatusFilterOption {
   value: SalesStatusFilter;
@@ -117,10 +117,24 @@ export interface SalesStatusFilterOption {
 /** 146 — "Tüm Durumlar" seçeneği süzgeci KALDIRIR (`undefined`). */
 export const SALES_STATUS_FILTER_ALL_LABEL = "Tüm Durumlar";
 
+/**
+ * no 239 · ONAYLI SAPMA — mockup'ın üç seçeneği (146) BİREBİR korunur;
+ * "İptal Hariç" DÖRDÜNCÜ seçenek mockup'ta ÇİZİLİ DEĞİLDİR.
+ *
+ * Gerekçe: `GET /projects/{id}/sales` `cancelled` kayıtları da DÖNDÜRÜR
+ * (sunucu süzmez) ve yanıtın `totals` alanı bunları da TOPLAR — backend'de
+ * `exclude_cancelled` bayrağı `list_sale_rows`ta VAR ama `service.py` bu
+ * bayrağı totals hesabına HİÇ geçirmiyor. İstemci tarafında iptalleri
+ * dışlayacak başka bir yol yoktu; kullanıcı "gerçek" (iptal hariç) toplamı
+ * hiçbir zaman göremiyordu. Süzgeç AÇILDIĞINDA `resolveSalesTotals` zaten
+ * GÖRÜNEN satırlardan türetir (`isDerived`) — bu seçenek o mekanizmayı
+ * iptalleri dışlamak için kullanır, yeni bir hesap İCAT ETMEZ.
+ */
 export const SALES_STATUS_FILTER_OPTIONS: SalesStatusFilterOption[] = [
   { value: "deed_transferred", label: "Tapulu" }, // 146
   { value: "reservation", label: "Rezerve" }, // 146
   { value: "overdue", label: "Vadesi Geçen" }, // 146
+  { value: "exclude_cancelled", label: "İptal Hariç" }, // ONAYLI SAPMA — no 239
 ];
 
 /** URL'den okunan serbest metni güvenli bir süzgece daraltır. */
@@ -134,6 +148,7 @@ export function matchesSalesStatusFilter(
 ): boolean {
   if (filter === undefined) return true;
   if (filter === "overdue") return sale.overdue_installment_count > 0;
+  if (filter === "exclude_cancelled") return sale.status !== "cancelled";
   return sale.status === filter;
 }
 

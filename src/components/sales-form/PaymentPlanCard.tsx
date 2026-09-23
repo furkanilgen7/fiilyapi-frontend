@@ -4,10 +4,12 @@ import { formatAmount } from "@/lib/format";
 
 import { PAYMENT_PLAN_OPTIONS, PLAN_EMPTY_NOTICE, PLAN_REPLACE_WARNING } from "./constants";
 import { updatePlanRow, type PlanRowValues, type SaleFormValues } from "./form-state";
+import type { SaleFormErrors } from "./validate";
 import type { InstallmentPaymentMethod } from "@/lib/api/hooks/useSaleInstallments";
 
 interface PaymentPlanCardProps {
   values: SaleFormValues;
+  errors: SaleFormErrors;
   /** Sunucudan üretilmiş plan satırları (düzenlenebilir). */
   planRows: readonly PlanRowValues[];
   /** Sunucunun plan toplamı (Σ = sale_price) — istemci `items`ten toplamaz. */
@@ -35,6 +37,7 @@ interface PaymentPlanCardProps {
  */
 export function PaymentPlanCard({
   values,
+  errors,
   planRows,
   planTotalText,
   planEdited,
@@ -89,7 +92,7 @@ export function PaymentPlanCard({
 
       {/* 102-107 — plan parametreleri */}
       <div className="sf-plan__params">
-        <Field label="Peşinat (₺)">
+        <Field label="Peşinat (₺)" error={errors.downPayment}>
           {(control) => (
             <Input
               {...control}
@@ -126,7 +129,7 @@ export function PaymentPlanCard({
             />
           )}
         </Field>
-        <Field label="Vade Farkı (%)">
+        <Field label="Vade Farkı (%)" error={errors.termInterestPct}>
           {(control) => (
             <Input
               {...control}

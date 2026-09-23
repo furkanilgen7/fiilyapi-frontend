@@ -207,6 +207,20 @@ describe("Poz listesi — load-from-employer akışı", () => {
     expect(screen.getByRole("button", { name: FSO_TEXT.loadFromEmployer })).toBeDisabled();
   });
 
+  /**
+   * no 330 · proje seçilir seçilmez `employerContractQuery` henüz YANITLANMADAN
+   * (`isLoading: true`) buton AÇIK kalıyordu — kullanıcı işveren sözleşmesi
+   * yokken de tıklayabiliyordu.
+   */
+  it("330 · proje seçili ama işveren sözleşme sorgusu SÜRERKEN buton kapalı kalır", () => {
+    vi.mocked(useEmployerContract).mockReturnValue(query(undefined, { isLoading: true }));
+    render(<SubcontractorContractCreateView />);
+    fireEvent.change(screen.getByRole("combobox", { name: "Proje" }), {
+      target: { value: "p-1" },
+    });
+    expect(screen.getByRole("button", { name: FSO_TEXT.loadFromEmployer })).toBeDisabled();
+  });
+
   it("önce taslak açar, sonra created/skipped bildirimini basar", async () => {
     createContractMock.mockImplementation(
       (_body: unknown, options?: { onSuccess?: (data: unknown) => void }) =>
@@ -368,5 +382,44 @@ describe("doğrulama ve alt eylemler", () => {
     render(<SubcontractorContractCreateView />);
     fireEvent.click(screen.getAllByRole("button", { name: "İptal" })[0]);
     expect(pushMock).toHaveBeenCalledWith("/sozlesmeler?type=subcontractor");
+  });
+
+  /**
+   * no 336 · taslak A projesinde kurulduktan SONRA kullanıcı B projesine
+   * geçerse `contractId` düşmüyordu; `submit` A projesindeki sözleşmeyi PATCH
+   * ediyor ve B'nin `site_id`sini oraya yazıyordu. Proje değişince taslak
+   * bağlamı da sıfırlanmalı — bir sonraki kaydetme YENİ sözleşme açmalı.
+   */
+  it("336 · taslak kurulduktan sonra PROJE değişirse ikinci sözleşme AÇILIR, eskisi PATCH edilmez", async () => {
+    vi.mocked(useProjects).mockReturnValue(
+      query({
+        items: [
+          { id: "p-1", name: "Güneşkent Konut" },
+          { id: "p-2", name: "Deniz Sitesi" },
+        ],
+        counts: {},
+      }),
+    );
+    createContractMock.mockImplementation(
+      (_body: unknown, options?: { onSuccess?: (data: unknown) => void }) =>
+        options?.onSuccess?.({ id: "sc-new-1" }),
+    );
+    render(<SubcontractorContractCreateView />);
+    fireEvent.change(screen.getByRole("combobox", { name: "Proje" }), {
+      target: { value: "p-1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: FSO_TEXT.loadFromEmployer }));
+    await waitFor(() => expect(loadItemsMock).toHaveBeenCalled());
+    expect(createContractMock).toHaveBeenCalledTimes(1);
+
+    // Kullanıcı başka bir projeye geçer — taslak bağlamı A projesine aittir.
+    fireEvent.change(screen.getByRole("combobox", { name: "Proje" }), {
+      target: { value: "p-2" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
+    // Eski sözleşme PATCH EDİLMEZ — yeni bir taslak POST edilir.
+    expect(updateContractMock).not.toHaveBeenCalled();
+    expect(createContractMock).toHaveBeenCalledTimes(2);
   });
 });

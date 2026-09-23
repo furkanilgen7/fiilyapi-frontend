@@ -794,8 +794,10 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
     it("miktar ve birim fiyat hücreleri DÜZENLENEBİLİR kontroldür, salt metin değil", () => {
       renderItemsTab();
 
-      expect(screen.getByLabelText("03.001 miktar")).toHaveValue(3200);
-      expect(screen.getByLabelText("03.001 birim fiyatı")).toHaveValue(1850);
+      // no 51 · hücreler artık `type="number"` DEĞİLDİR (`inputMode="decimal"`)
+      // — değer metin olarak karşılaştırılır.
+      expect(screen.getByLabelText("03.001 miktar")).toHaveValue("3200");
+      expect(screen.getByLabelText("03.001 birim fiyatı")).toHaveValue("1850");
     });
 
     it("odak çıkışında (emsal tetikleyicisi) yalnız DEĞİŞEN alan PATCH'lenir", () => {
@@ -838,7 +840,7 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
       expect(screen.getByTestId("ecd-items-error")).toHaveTextContent(
         "Miktar sıfırdan büyük olmalıdır.",
       );
-      expect(screen.getByLabelText("03.001 miktar")).toHaveValue(3200);
+      expect(screen.getByLabelText("03.001 miktar")).toHaveValue("3200");
     });
 
     it("negatif birim fiyat gönderilmez (`minimum: 0`)", () => {

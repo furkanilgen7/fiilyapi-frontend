@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge/Badge";
 import { Input } from "@/components/ui/input/Input";
 import type { TimesheetCode } from "@/lib/api/hooks/useTimesheet";
 import { cx } from "@/lib/cx";
 import { formatDecimal } from "@/lib/format";
+import { useSyncedFieldState } from "@/lib/hooks/useSyncedFieldState";
 
 import {
   dayHoursModifier,
@@ -266,7 +267,15 @@ function WeekCell({
   const label = `${row.fullName} · ${formatDayLabel(workDate)}`;
 
   const [openPopover, setOpenPopover] = useState(false);
-  const [text, setText] = useState(() => dayHoursText(hours));
+  // 🔴 triyaj #352 — `useState(() => dayHoursText(hours))` yalnız ilk
+  // render'da kurulurdu; `WeekCell` remount olmadığı için sunucu/taslak
+  // saati değişince (ör. "Önceki Haftayı Kopyala") yerel `text` BAYAT
+  // kalıyordu ve Enter yolu o bayat metni yazıyordu. `useSyncedFieldState`
+  // hücre odaktayken (yazarken) senkronu ERTELER, aksi hâlde `hours` prop'u
+  // değişince metni günceller — `key`/`defaultValue` remount hilesine gerek
+  // kalmaz.
+  const isEditingRef = useRef(false);
+  const [text, setText] = useSyncedFieldState(dayHoursText(hours), () => isEditingRef.current);
   const [error, setError] = useState<string | null>(null);
 
   if (!isEditable) {
@@ -286,6 +295,10 @@ function WeekCell({
       return;
     }
     setError(null);
+    // 🔴 triyaj #353 — değer GERÇEKTEN değişmediyse draft'a yazma: aksi
+    // hâlde her koşulsuz blur `dirtyKeys`i şişirir, satırı `isStale` yapar
+    // ve "Kaydedilmemiş N hücre" mesajını gereksiz yere açar.
+    if (dayHoursText(parsed.value) === dayHoursText(hours)) return;
     onCommitHours?.(row.personnelId, workDate, parsed.value);
   }
 
@@ -308,10 +321,9 @@ function WeekCell({
         </button>
       ) : (
         <>
-          {/* E5 238 — saat kutusu; `key` sunucu/taslak değeri değişince
-              yeniden kurulur (hafta değişince eski metin kalmasın). */}
+          {/* E5 238 — saat kutusu; KONTROLLÜ girdi, `useSyncedFieldState`
+              sunucu/taslak değeri değişince metni günceller. */}
           <Input
-            key={dayHoursText(hours)}
             size="row"
             numeric
             inputMode="decimal"
@@ -324,9 +336,15 @@ function WeekCell({
             status={error === null ? "default" : "error"}
             aria-label={`${label} saati`}
             placeholder="—"
-            defaultValue={dayHoursText(hours)}
+            value={text}
+            onFocus={() => {
+              isEditingRef.current = true;
+            }}
             onChange={(event) => setText(event.target.value)}
-            onBlur={(event) => commit(event.target.value)}
+            onBlur={(event) => {
+              isEditingRef.current = false;
+              commit(event.target.value);
+            }}
             onKeyDown={(event) => {
               if (event.key !== "Enter") return;
               event.preventDefault();

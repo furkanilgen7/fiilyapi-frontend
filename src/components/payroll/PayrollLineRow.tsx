@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Badge, Input } from "@/components/ui";
 import { backendErrorMessage } from "@/lib/api/error-message";
 import type { PayrollLineResponse } from "@/lib/api/hooks/usePayroll";
 import { useUpdatePayrollLineSplit } from "@/lib/api/hooks/usePayrollMutations";
 import { formatAmount, formatDays } from "@/lib/format";
+import { useSyncedFieldState } from "@/lib/hooks/useSyncedFieldState";
 import { initials } from "@/lib/shell/initials";
 
 import {
@@ -50,8 +51,20 @@ export function PayrollLineRow({ line, canWrite }: PayrollLineRowProps) {
   const updateSplit = useUpdatePayrollLineSplit();
   const isPending = updateSplit.isPending;
 
-  const [bank, setBank] = useState(() => amountFieldValue(line.bank_amount));
-  const [cash, setCash] = useState(() => amountFieldValue(line.cash_amount));
+  // 🔴 triyaj #150 — `useState(() => amountFieldValue(...))` yalnız ilk
+  // mount'ta kurulurdu; satır `key={line.id}` ile hiç remount olmadığı için
+  // PATCH sonrası invalidation'la gelen yeni `bank_amount`/`cash_amount`
+  // kutulara YANSIMIYORDU. `useSyncedFieldState` sunucu değeri değişince
+  // senkronize eder, satır odaktayken (kullanıcı yazarken) EZMEZ.
+  const isEditingRef = useRef(false);
+  const [bank, setBank] = useSyncedFieldState(
+    amountFieldValue(line.bank_amount),
+    () => isEditingRef.current,
+  );
+  const [cash, setCash] = useSyncedFieldState(
+    amountFieldValue(line.cash_amount),
+    () => isEditingRef.current,
+  );
   const [rowError, setRowError] = useState<string | null>(null);
 
   const editable = isLineSplitEditable(line) && canWrite;
@@ -66,8 +79,14 @@ export function PayrollLineRow({ line, canWrite }: PayrollLineRowProps) {
    * bölüşüm (yeni banka + eski elden) gönderirdi; iki alan sunucuya BİRLİKTE
    * gider (şema kararı), dolayısıyla ara durum hiç oluşmamalıdır.
    */
+  function handleRowFocus(event: React.FocusEvent<HTMLTableRowElement>) {
+    if (event.currentTarget.contains(event.relatedTarget)) return;
+    isEditingRef.current = true;
+  }
+
   async function handleRowBlur(event: React.FocusEvent<HTMLTableRowElement>) {
     if (event.currentTarget.contains(event.relatedTarget)) return;
+    isEditingRef.current = false;
     if (!editable || !isDirty || isPending) return;
     if (!isValid) {
       setRowError("Tutar yalnız rakam ve tek ondalık ayracı içerebilir.");
@@ -92,6 +111,7 @@ export function PayrollLineRow({ line, canWrite }: PayrollLineRowProps) {
       className={`bor-row${line.status === "excluded" ? " bor-row--excluded" : ""}`}
       data-testid={testId}
       data-line-status={line.status}
+      onFocus={handleRowFocus}
       onBlur={handleRowBlur}
     >
       {/* BY:131-136 — avatar + ad. */}

@@ -97,4 +97,33 @@ describe("validateSaleForm — mockup req yıldızları", () => {
     const errors = validateSaleForm(newCustomerValues({ projectId: "", salePrice: "" }));
     expect(firstSaleFormError(errors)).toBe(MESSAGES.projectRequired);
   });
+
+  /**
+   * no 250 · `build-body.ts::optionalDecimal` geçersiz ondalık girdide anahtarı
+   * SESSİZCE düşürüyordu (`discount_amount`/`down_payment`/`term_interest_pct`
+   * gövdeye hiç girmiyordu) — kullanıcı hiçbir uyarı görmeden bedeli eksik
+   * gönderiyordu. İki ayraçlı girdi (`normalizeDecimalInput` yalnız İLK
+   * virgülü çevirir) bunun en net örneğidir: "40.000,50" → "40.000.50" → red.
+   */
+  it("250 · İndirim / Peşinat / Vade Farkı: geçersiz ondalık SESSİZCE yutulmaz, hata basılır", () => {
+    for (const field of ["discountAmount", "downPayment", "termInterestPct"] as const) {
+      const errors = validateSaleForm(newCustomerValues({ [field]: "40.000,50" }));
+      expect(errors[field], field).toBeTruthy();
+      expect(hasSaleFormErrors(errors), field).toBe(true);
+    }
+  });
+
+  it("250 · aynı üç alan BOŞSA (isteğe bağlı) hata YOKTUR", () => {
+    for (const field of ["discountAmount", "downPayment", "termInterestPct"] as const) {
+      const errors = validateSaleForm(newCustomerValues({ [field]: "" }));
+      expect(errors[field], field).toBeUndefined();
+    }
+  });
+
+  it("250 · aynı üç alan GEÇERLİ tek-virgüllü girdide hata YOKTUR", () => {
+    for (const field of ["discountAmount", "downPayment", "termInterestPct"] as const) {
+      const errors = validateSaleForm(newCustomerValues({ [field]: "1500,50" }));
+      expect(errors[field], field).toBeUndefined();
+    }
+  });
 });

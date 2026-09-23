@@ -328,7 +328,9 @@ describe("TSD — tfoot TEK KAYNAK `contract_total` (K5 emsali)", () => {
 describe("TSD — poz tablosu (88-182)", () => {
   it("YALNIZ Taşeron B.F. yazılabilir; miktar SALT-OKUNUR düz metindir (114)", () => {
     setup();
-    const inputs = within(screen.getByTestId("tsd-items")).getAllByRole("spinbutton");
+    // no 51 · hücre `type="number"` DEĞİLDİR (Türkçe virgülü tarayıcı
+    // sessizce siler) — `inputMode="decimal"` ile rolü "textbox"tur.
+    const inputs = within(screen.getByTestId("tsd-items")).getAllByRole("textbox");
     expect(inputs).toHaveLength(DETAIL.items.length);
     for (const input of inputs) {
       expect(input).toHaveAttribute("aria-label", expect.stringContaining("taşeron birim fiyatı"));

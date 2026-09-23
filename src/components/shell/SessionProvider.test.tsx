@@ -39,4 +39,30 @@ describe("SessionProvider", () => {
     await screen.findByText("Ali");
     expect(spy).toHaveBeenCalledTimes(1);
   });
+
+  it("403'te de /login'e yonlendirir", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue(new Response("{}", { status: 403 }));
+    render(<SessionProvider><Probe /></SessionProvider>);
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/login"));
+  });
+
+  // 🔴 KAYIT NO 463 — bekci: 429/502/503 GECICI hatalardir, /login'e ATILMAZ.
+  // Eskiden `!res.ok` HER durumu 401 gibi ele alirdi; bu test o satiri geri
+  // getirirse KIRMIZI doner (bkz. rapor MUTASYON KANITI).
+  it.each([429, 502, 503])(
+    "%d'de /login'e YONLENDIRMEZ, yukleniyor durumundan cikar",
+    async (status) => {
+      vi.spyOn(global, "fetch").mockResolvedValue(new Response("{}", { status }));
+      render(<SessionProvider><Probe /></SessionProvider>);
+      await waitFor(() => expect(screen.queryByText("yukleniyor")).not.toBeInTheDocument());
+      expect(pushMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it("ag hatasinda (fetch reddi) /login'e YONLENDIRMEZ", async () => {
+    vi.spyOn(global, "fetch").mockRejectedValue(new TypeError("Failed to fetch"));
+    render(<SessionProvider><Probe /></SessionProvider>);
+    await waitFor(() => expect(screen.queryByText("yukleniyor")).not.toBeInTheDocument());
+    expect(pushMock).not.toHaveBeenCalled();
+  });
 });

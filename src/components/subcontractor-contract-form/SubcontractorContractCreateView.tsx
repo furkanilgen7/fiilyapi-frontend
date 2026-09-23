@@ -157,9 +157,11 @@ export function SubcontractorContractCreateView() {
 
   const loadDisabledReason = !values.projectId
     ? ITEMS_NEED_PROJECT_REASON
-    : !employerContractQuery.isLoading && !employerContractNo
-      ? "Seçili projenin işveren sözleşmesi yok — poz listesi buradan gelir"
-      : null;
+    : employerContractQuery.isLoading
+      ? "İşveren sözleşmesi yükleniyor…"
+      : !employerContractNo
+        ? "Seçili projenin işveren sözleşmesi yok — poz listesi buradan gelir"
+        : null;
 
   function handleChange<K extends keyof SubcontractorContractFormValues>(
     field: K,
@@ -181,6 +183,15 @@ export function SubcontractorContractCreateView() {
     // Şantiye projeye bağlıdır — proje değişince seçim DÜŞER, aksi hâlde
     // başka projenin şantiyesi gövdeye sızardı.
     setValues((prev) => ({ ...prev, projectId, siteId: "" }));
+    // no 336 · Taslak (varsa) ESKİ projeye aittir. `contractId` düşmezse
+    // `submit` yeni projenin alanlarını (özellikle `site_id`) eski projedeki
+    // sözleşmeye PATCH eder — başka projenin şantiyesi o kayda sızar. Proje
+    // değişince taslak bağlamı TAMAMEN sıfırlanır: bir sonraki kaydetme YENİ
+    // bir sözleşme açar (poz listesi de bu kimliğe bağlıydı — o da düşer).
+    setContractId(null);
+    setLoadNotice(null);
+    setLoadError(null);
+    setIsLoadQueued(false);
   }
 
   function handleCancel() {

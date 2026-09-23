@@ -1,3 +1,5 @@
+import { Fragment } from "react";
+
 import { Checkbox, Input, Select } from "@/components/ui";
 
 import {
@@ -21,7 +23,7 @@ import {
   type UnitFacing,
 } from "./constants";
 import type { BulkUnitFormValues } from "./form-state";
-import type { BulkSlotField, BulkSlotValues } from "./slots";
+import { SLOT_DECIMAL_INVALID_MESSAGE, slotErrors, type BulkSlotField, type BulkSlotValues } from "./slots";
 
 interface BulkSlotTemplateCardProps {
   values: BulkUnitFormValues;
@@ -103,8 +105,14 @@ export function BulkSlotTemplateCard({
             </tr>
           </thead>
           <tbody>
-            {slots.map((slot, index) => (
-              <tr key={slot.sequence} data-testid="toplu-form-sablon-satir">
+            {slots.map((slot, index) => {
+              // 🔴 KUSUR no 39: geçersiz ondalık artık SESSİZCE düşmez —
+              // hücre GÖRÜNÜR biçimde işaretlenir (kırmızı kenarlık +
+              // aria-invalid + satır altı özet notu).
+              const errors = slotErrors(slot);
+              return (
+              <Fragment key={slot.sequence}>
+              <tr data-testid="toplu-form-sablon-satir">
                 {/* 108 — `resizeSlots` üretir; kullanıcı YAZMAZ */}
                 <td className="tu-slot-table__seq">{slot.sequence}</td>
 
@@ -134,6 +142,8 @@ export function BulkSlotTemplateCard({
                     aria-label={`${slot.sequence}. sıra brüt m²`}
                     data-testid={`toplu-form-brut-${slot.sequence}`}
                     value={slot.grossAreaM2}
+                    status={errors.grossAreaM2 ? "error" : "default"}
+                    aria-invalid={errors.grossAreaM2 ? true : undefined}
                     onChange={(event) => onChangeSlot(index, "grossAreaM2", event.target.value)}
                   />
                 </td>
@@ -147,6 +157,8 @@ export function BulkSlotTemplateCard({
                     aria-label={`${slot.sequence}. sıra net m²`}
                     data-testid={`toplu-form-net-${slot.sequence}`}
                     value={slot.netAreaM2}
+                    status={errors.netAreaM2 ? "error" : "default"}
+                    aria-invalid={errors.netAreaM2 ? true : undefined}
                     onChange={(event) => onChangeSlot(index, "netAreaM2", event.target.value)}
                   />
                 </td>
@@ -179,6 +191,8 @@ export function BulkSlotTemplateCard({
                     aria-label={`${slot.sequence}. sıra liste fiyatı`}
                     data-testid={`toplu-form-liste-fiyat-${slot.sequence}`}
                     value={slot.listPrice}
+                    status={errors.listPrice ? "error" : "default"}
+                    aria-invalid={errors.listPrice ? true : undefined}
                     onChange={(event) => onChangeSlot(index, "listPrice", event.target.value)}
                   />
                 </td>
@@ -198,7 +212,20 @@ export function BulkSlotTemplateCard({
                   />
                 </td>
               </tr>
-            ))}
+              {Object.keys(errors).length > 0 && (
+                <tr data-testid={`toplu-form-sablon-hata-${slot.sequence}`}>
+                  <td colSpan={7} className="tu-slot-table__error">
+                    {slot.sequence}. sıra:{" "}
+                    {[errors.grossAreaM2 && "Brüt m²", errors.netAreaM2 && "Net m²", errors.listPrice && "Liste Fiyatı"]
+                      .filter(Boolean)
+                      .join(", ")}{" "}
+                    — {SLOT_DECIMAL_INVALID_MESSAGE}
+                  </td>
+                </tr>
+              )}
+              </Fragment>
+              );
+            })}
           </tbody>
         </table>
       )}

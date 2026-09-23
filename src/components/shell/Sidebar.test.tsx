@@ -72,4 +72,28 @@ describe("Sidebar", () => {
     await userEvent.click(screen.getByRole("button", { name: /çıkış/i }));
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/login"));
   });
+
+  // 🔴 KAYIT NO 297 — bekci (a): BFF basarisiz donerse (403/500) KOSULSUZ
+  // /login'e atilmamali — sunucu oturumu GERCEKTEN kapatmamis olabilir.
+  // MUTASYON KANITI: `if (!res.ok) { ...; return; }` satiri silinirse bu test
+  // KIRMIZI doner (pushMock cagrilir).
+  it("cikis BFF basarisiz donerse /login'e ATILMAZ, hata gosterilir", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue(new Response(null, { status: 403 }));
+    render(<Sidebar />);
+    await userEvent.click(screen.getByRole("button", { name: /çıkış/i }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/tekrar deneyin/i));
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  // 🔴 KAYIT NO 297 — bekci (b): ag hatasinda (fetch reddi) yakalanmamis bir
+  // promise reddi OLMAMALI ve kullaniciya GORUNUR bir hata basilmali.
+  // MUTASYON KANITI: `try/catch` kaldirilirsa bu test bir unhandled rejection
+  // ile KIRMIZI doner.
+  it("cikista ag hatasi olursa yakalanmamis reddi OLMAZ, hata gosterilir", async () => {
+    vi.spyOn(global, "fetch").mockRejectedValue(new TypeError("Failed to fetch"));
+    render(<Sidebar />);
+    await userEvent.click(screen.getByRole("button", { name: /çıkış/i }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/tekrar deneyin/i));
+    expect(pushMock).not.toHaveBeenCalled();
+  });
 });

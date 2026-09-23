@@ -402,6 +402,20 @@ describe("UnitImportView — EI 91-103 doğrulama sonucu", () => {
     expect(screen.queryByTestId("excel-form-sayaclar")).toBeNull();
   });
 
+  it("🔴 KUSUR no 384: sunucu hatası geldiğinde 'henüz doğrulanmadı' notu İKİ KATLI basılmaz", async () => {
+    validateAsync.mockRejectedValue(
+      new BackendError(422, { detail: "Beklenmeyen sütun başlığı." }),
+    );
+    render(<UnitImportView />);
+    selectProject();
+    selectFile(xlsxFile());
+    expect(await screen.findByTestId("excel-form-dogrulama-hata")).toHaveTextContent(
+      "Beklenmeyen sütun başlığı.",
+    );
+    // Karşılıklı dışlayan koşul: hata GÖRÜNÜRKEN boş/gerekçe notu BASILMAZ.
+    expect(screen.queryByTestId("excel-form-dogrulama-bos")).toBeNull();
+  });
+
   it("proje seçilmeden dosya seçmek istek KURMAZ, gerekçe basar", () => {
     render(<UnitImportView />);
     selectFile(xlsxFile());

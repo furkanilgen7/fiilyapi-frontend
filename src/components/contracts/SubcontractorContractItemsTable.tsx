@@ -249,7 +249,7 @@ function ItemGroup({
             <td className="ecd-items__td tsd-items__td--input">
               <Input
                 size="row"
-                type="number"
+                inputMode="decimal"
                 numeric
                 min={0}
                 className="tsd-items__price-input"

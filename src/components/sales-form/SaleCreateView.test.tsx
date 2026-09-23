@@ -224,4 +224,49 @@ describe("SaleCreateView — Plan Oluştur akış sırası (POST → generate-pl
     // 🔴 Müşteri YALNIZ BİR KEZ oluşturulmuş olmalı.
     expect(createCustomerMock).toHaveBeenCalledTimes(1);
   });
+
+  /**
+   * no 246 · `locked = createdSaleId !== null` — satış BAŞARIYLA oluşur ama
+   * `generate-plan` PATLARSA `createdSaleId` zaten set edilmiş olduğu için
+   * `locked` kalıcı `true` kalıyordu. "Plan Oluştur" bir daha TIKLANAMIYOR ve
+   * satış planı hiç üretilmeden askıda kalıyordu.
+   */
+  it("246 · satış oluşur ama plan üretimi PATLARSA 'Plan Oluştur' YENİDEN denenebilir", async () => {
+    const createMock = vi.fn().mockResolvedValue({ id: "sl-new-3" });
+    const generateMock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("500 sunucu hatası"))
+      .mockResolvedValueOnce({
+        sale_price: "1440000.00",
+        total_amount: "1440000.00",
+        items: [
+          { id: "si-1", sale_id: "sl-new-3", sequence_no: 1, label: "Peşinat", due_date: "2026-09-01", amount: "1440000.00", payment_method: "transfer", paid_amount: "0.00", paid_at: null, remaining_amount: "1440000.00", is_overdue: false },
+        ],
+      });
+    vi.mocked(useCreateSale).mockReturnValue({ mutate: vi.fn(), mutateAsync: createMock, isPending: false } as never);
+    vi.mocked(useGenerateSalePlan).mockReturnValue({ mutate: vi.fn(), mutateAsync: generateMock, isPending: false } as never);
+    vi.mocked(useCustomers).mockReturnValue(queryStub({ items: [{ id: "cus-1", customer_type: "person", name: "Ayşe", national_id: "12345678901", tax_number: null, phone: "0532", email: null, address: null }] }));
+
+    render(<SaleCreateView />);
+    selectUnit();
+    fireEvent.change(screen.getByTestId("satis-form-musteri-sec"), { target: { value: "cus-1" } });
+    fireEvent.change(screen.getByTestId("satis-form-satis-bedeli"), { target: { value: "1440000" } });
+
+    // 1. deneme: satış oluşur, plan üretimi PATLAR.
+    fireEvent.click(screen.getByTestId("satis-form-plan-olustur"));
+    await waitFor(() => expect(createMock).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(generateMock).toHaveBeenCalledTimes(1));
+
+    // 🔴 Buton KALICI KİLİTLENMEMELİ — yeniden tıklanabilir olmalı.
+    const generateButton = screen.getByTestId("satis-form-plan-olustur");
+    await waitFor(() => expect(generateButton).not.toBeDisabled());
+
+    // 2. deneme: satış İKİNCİ KEZ oluşturulmaz, yalnız plan yeniden üretilir.
+    fireEvent.click(generateButton);
+    await screen.findByTestId("satis-form-plan-tablo");
+
+    expect(createMock).toHaveBeenCalledTimes(1);
+    expect(generateMock).toHaveBeenCalledTimes(2);
+    expect(generateMock).toHaveBeenNthCalledWith(2, "sl-new-3");
+  });
 });

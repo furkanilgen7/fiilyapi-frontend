@@ -5,6 +5,8 @@ import { cx } from "@/lib/cx";
 import { formatDecimal } from "@/lib/format";
 import { routes } from "@/lib/routes";
 
+import { OVERTIME_MULTIPLIER_TEXT } from "./overtime-rule";
+
 /**
  * Bordro ekranının GERÇEK rotası (`nav-config.ts` · `src/app/(app)/bordro`).
  * Mockup'ın `Bordro Yönetimi.dc.html` dosya adı KOPYALANMAZ — mockup dosya
@@ -76,7 +78,7 @@ export function TimesheetPayrollPanel({
         <div className="ts-payroll__card ts-payroll__card--overtime">
           <span className="ts-payroll__label">Bu Hafta FM</span>
           <span className="ts-payroll__value">{formatDecimal(overtimeHours, 1)} saat</span>
-          <span className="ts-payroll__note">× saatlik ücret × 1,5</span>
+          <span className="ts-payroll__note">× saatlik ücret × {OVERTIME_MULTIPLIER_TEXT}</span>
         </div>
         {/* E5 346-350 */}
         <div className="ts-payroll__card">

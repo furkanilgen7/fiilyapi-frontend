@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { Button, Input } from "@/components/ui";
+import { ConfirmDialog } from "@/components/settings/ConfirmDialog";
 import { cx } from "@/lib/cx";
 import { formatAmount } from "@/lib/format";
 import type { SubcontractorContractItemResponse } from "@/lib/api/hooks/useSubcontractorContractMutations";
@@ -72,7 +73,16 @@ export function ContractItemsCard({
   onDeleteItem,
 }: ContractItemsCardProps) {
   const [drafts, setDrafts] = useState<Record<string, RowDraft>>({});
+  // no 331 · silme geri dönüşsüzdür (kalıcı DELETE); tek yanlış tıklama
+  // artık DOĞRUDAN silmiyor, bir onay diyaloğu araya giriyor.
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; code: string } | null>(null);
   const groups = groupContractItems(items);
+
+  function confirmDelete() {
+    if (!pendingDelete) return;
+    onDeleteItem(pendingDelete.id);
+    setPendingDelete(null);
+  }
 
   function setDraft(itemId: string, patch: RowDraft) {
     setDrafts((prev) => ({ ...prev, [itemId]: { ...prev[itemId], ...patch } }));
@@ -202,7 +212,7 @@ export function ContractItemsCard({
                   onCommitQuantity={commitQuantity}
                   onCommitUnitPrice={commitUnitPrice}
                   canDelete={canDelete}
-                  onDeleteItem={onDeleteItem}
+                  onRequestDelete={(item) => setPendingDelete({ id: item.id, code: item.code })}
                 />
               ))
             )}
@@ -236,6 +246,17 @@ export function ContractItemsCard({
           </tfoot>
         </table>
       </div>
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title="Poz Satırını Sil"
+          message={`"${pendingDelete.code}" pozunu sözleşmeden silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`}
+          confirmLabel="Sil"
+          danger
+          onConfirm={confirmDelete}
+          onClose={() => setPendingDelete(null)}
+        />
+      )}
     </section>
   );
 }
@@ -249,7 +270,7 @@ interface ItemGroupProps {
   onCommitQuantity: (item: SubcontractorContractItemResponse) => void;
   onCommitUnitPrice: (item: SubcontractorContractItemResponse) => void;
   canDelete: boolean;
-  onDeleteItem: (itemId: string) => void;
+  onRequestDelete: (item: SubcontractorContractItemResponse) => void;
 }
 
 function ItemGroup({
@@ -261,7 +282,7 @@ function ItemGroup({
   onCommitQuantity,
   onCommitUnitPrice,
   canDelete,
-  onDeleteItem,
+  onRequestDelete,
 }: ItemGroupProps) {
   return (
     <>
@@ -332,7 +353,7 @@ function ItemGroup({
                 aria-label={`${item.code} satırını sil`}
                 disabled={isBusy || !canDelete}
                 title={canDelete ? undefined : "Satır silme yetkisi gerekiyor."}
-                onClick={() => onDeleteItem(item.id)}
+                onClick={() => onRequestDelete(item)}
               >
                 ×
               </button>

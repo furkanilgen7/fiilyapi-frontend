@@ -152,10 +152,31 @@ describe("load-from-employer bildirimi ve satır silme", () => {
     expect(button).toHaveAttribute("title", "Proje seçilmedi");
   });
 
-  it("140 · satır silme çağrıyı kalem kimliğiyle yapar", () => {
+  /**
+   * no 331 · silme butonu ESKİDEN onay sormadan doğrudan `onDeleteItem`
+   * çağırıyordu (yanlış tıklama = geri dönüşsüz silme). Artık bir onay
+   * diyaloğu araya girer; çağrı YALNIZ diyalog onaylanınca gider.
+   */
+  it("331 · satır silme ÖNCE onay ister; tek tıklama silmez", () => {
     const { onDeleteItem } = setup();
     fireEvent.click(screen.getByRole("button", { name: "03.002 satırını sil" }));
+    expect(onDeleteItem).not.toHaveBeenCalled();
+    expect(screen.getByRole("heading", { name: /Poz.*Sil|Satırı Sil/i })).toBeInTheDocument();
+  });
+
+  it("331 · onay diyaloğunda 'Sil' çağrıyı kalem kimliğiyle yapar", () => {
+    const { onDeleteItem } = setup();
+    fireEvent.click(screen.getByRole("button", { name: "03.002 satırını sil" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sil" }));
     expect(onDeleteItem).toHaveBeenCalledWith("sci-2");
+  });
+
+  it("331 · onay diyaloğunda 'Vazgeç' çağrıyı iptal eder", () => {
+    const { onDeleteItem } = setup();
+    fireEvent.click(screen.getByRole("button", { name: "03.002 satırını sil" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vazgeç" }));
+    expect(onDeleteItem).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Sil" })).not.toBeInTheDocument();
   });
 
   // kalan-6 no 319 — silme uçları `contracts:admin` kapısındadır; `canWrite`

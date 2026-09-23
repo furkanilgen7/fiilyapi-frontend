@@ -33,8 +33,10 @@ import {
   BULK_PREVIEW_ERROR_FALLBACK,
   BULK_PREVIEW_LABEL,
   BULK_PREVIEW_STALE_NOTICE,
+  BULK_PRICE_INCREASE_PCT_REQUIRED_MESSAGE,
   BULK_PROJECT_REQUIRED_MESSAGE,
   BULK_SAVE_ERROR_FALLBACK,
+  BULK_SLOT_INVALID_MESSAGE,
   BULK_WARNING_TEXT,
   bulkSubmitLabel,
 } from "./constants";
@@ -46,7 +48,7 @@ import {
   setUnitsPerFloor,
   type BulkUnitFormValues,
 } from "./form-state";
-import { setSlotField, type BulkSlotField, type BulkSlotValues } from "./slots";
+import { hasSlotErrors, setSlotField, type BulkSlotField, type BulkSlotValues } from "./slots";
 import { BulkPreviewCard } from "./BulkPreviewCard";
 import { BulkRulesCard } from "./BulkRulesCard";
 import { BulkSlotTemplateCard } from "./BulkSlotTemplateCard";
@@ -254,9 +256,23 @@ export function BulkUnitCreateView() {
     return null;
   }
 
+  /**
+   * 🔴 KUSUR no 39 + 44 — "gövdeye giremeyen bir alan kullanıcıya GÖRÜNÜR bir
+   * hata olarak dönmelidir" kuralı: kat şablonunda geçersiz ondalık VEYA
+   * "üst katlarda fiyat artışı" kutucuğu açıkken yüzde boşsa istek hiç
+   * KURULMAZ — sessizce eksik gövde gönderilmez.
+   */
+  function invalidFieldsMessage(): string | null {
+    if (hasSlotErrors(values.slots)) return BULK_SLOT_INVALID_MESSAGE;
+    if (values.floorPriceIncreaseEnabled && !values.floorPriceIncreasePct.trim()) {
+      return BULK_PRICE_INCREASE_PCT_REQUIRED_MESSAGE;
+    }
+    return null;
+  }
+
   /** 182 — önizleme: HİÇBİR ŞEY YAZMAZ, denetim üretmez. */
   async function handlePreview() {
-    const missing = missingTargetMessage();
+    const missing = missingTargetMessage() ?? invalidFieldsMessage();
     if (missing !== null) {
       setPreviewError(missing);
       return;
@@ -278,7 +294,7 @@ export function BulkUnitCreateView() {
 
   /** 40/183 — gerçek üretim: HEP-YA-HİÇ. */
   async function handleSubmit() {
-    const missing = missingTargetMessage();
+    const missing = missingTargetMessage() ?? invalidFieldsMessage();
     if (missing !== null) {
       setFormError(missing);
       return;

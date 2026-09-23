@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
 import { GeneralTimesheetView } from "./GeneralTimesheetView";
+import { OVERTIME_SURCHARGE_PERCENT_TEXT } from "./overtime-rule";
 import { useSession } from "@/components/shell/SessionProvider";
 import { usePersonnel } from "@/lib/api/hooks/usePersonnel";
 import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
@@ -147,6 +148,13 @@ describe("GeneralTimesheetView · E5 kabuğu", () => {
     expect(screen.getByLabelText("Şantiye")).toHaveValue("s-1");
   });
 
+  it("🔴 triyaj #350 — giriş şeridi FM zam yüzdesini panel ile AYNI kaynaktan basar", () => {
+    renderView();
+    expect(
+      screen.getByText(new RegExp(`${OVERTIME_SURCHARGE_PERCENT_TEXT} zamlı hesaplanır`)),
+    ).toBeInTheDocument();
+  });
+
   it("🔴 E5 mockup'ında Excel YOKTUR — uydurulmaz (ŞP'de vardır)", () => {
     renderView();
     expect(screen.queryByRole("button", { name: "Excel" })).not.toBeInTheDocument();
@@ -224,6 +232,27 @@ describe("GeneralTimesheetView · E5 satır süzgeçleri (100-127)", () => {
     const body = mutateAsync.mock.calls[0]?.[0];
     // POZİTİF KONTROL: ekranda GÖRÜNMEYEN Cem Aksoy'un hücresi gövdede DURUYOR.
     expect(body?.cells?.map((cell) => cell.personnel_id)).toContain("per-2");
+  });
+
+  it("🔴 triyaj #357 — bir meslek seçilince DİĞER süzgeçlerin seçenekleri DARALMAZ", async () => {
+    renderView();
+    // Başlangıçta "Akın İnşaat" seçeneği listede.
+    expect(
+      within(screen.getByLabelText("Taşeron firması")).getByRole("option", {
+        name: "Akın İnşaat",
+      }),
+    ).toBeInTheDocument();
+
+    // Meslek "Kalıpçı" seçilince yalnız Ahmet (company, taşeronsuz) görünür
+    // KALIR — ama taşeron seçeneği listesi SÜZGEÇTEN ÖNCEKİ kümeden kurulur,
+    // "Akın İnşaat" seçeneği KAYBOLMAMALI.
+    await userEvent.selectOptions(screen.getByLabelText("Meslek"), "Kalıpçı");
+    expect(screen.queryByText("Cem Aksoy")).not.toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText("Taşeron firması")).getByRole("option", {
+        name: "Akın İnşaat",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("taşeron süzgeci firma adından süzer", async () => {

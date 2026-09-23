@@ -26,6 +26,8 @@
  * bir kapı FİİLEN HİÇ KAPANMAZDI (`unit-form/build-body.ts` kural 3).
  */
 
+import { normalizeDecimalInput } from "@/lib/decimal";
+
 import { BULK_UNITS_PER_FLOOR_MAX, FACING_OPTIONS, type UnitFacing } from "./constants";
 
 export type BulkSlotField = "layout" | "grossAreaM2" | "netAreaM2" | "facing" | "listPrice";
@@ -137,4 +139,44 @@ export function isSlotFilled(slot: BulkSlotValues): boolean {
  */
 export function hasFilledSlot(slots: readonly BulkSlotValues[]): boolean {
   return slots.some(isSlotFilled);
+}
+
+/** Ondalık hücrelerin (gross/net/list) ortak hata metni — `build-body.ts`teki
+ *  `entry()` deseniyle BİREBİR aynı ayraç: `normalizeDecimalInput` `null`
+ *  dönerse gövdeye anahtar HİÇ girmez. */
+export const SLOT_DECIMAL_INVALID_MESSAGE = "Bu alan sayı olmalıdır.";
+
+export type SlotDecimalField = "grossAreaM2" | "netAreaM2" | "listPrice";
+
+/**
+ * 🔴 KUSUR no 39: `buildSlot()` geçersiz ondalık girdide (`"abc"`, `"12,5,5"`)
+ * hücreyi SESSİZCE gövdeden düşürüyordu (`entry()` `null`ı hiç anahtar
+ * kurmadan atlar) — kullanıcı "girdim" sandığı bir alanın hiç kaydedilmediğini
+ * fark edemiyordu. Ekran artık aynı ayracı (`normalizeDecimalInput`) burada
+ * TEKRAR kullanır ve GÖRÜNÜR bir hata üretir; sessiz düşme yerine kayıt
+ * engellenir.
+ */
+export function slotFieldError(raw: string): string | undefined {
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+  return normalizeDecimalInput(trimmed) === null ? SLOT_DECIMAL_INVALID_MESSAGE : undefined;
+}
+
+export type SlotErrors = Partial<Record<SlotDecimalField, string>>;
+
+/** Tek satırın üç ondalık hücresi için hata haritası (boşsa `{}`). */
+export function slotErrors(slot: BulkSlotValues): SlotErrors {
+  let errors: SlotErrors = {};
+  const gross = slotFieldError(slot.grossAreaM2);
+  const net = slotFieldError(slot.netAreaM2);
+  const list = slotFieldError(slot.listPrice);
+  if (gross) errors = { ...errors, grossAreaM2: gross };
+  if (net) errors = { ...errors, netAreaM2: net };
+  if (list) errors = { ...errors, listPrice: list };
+  return errors;
+}
+
+/** Tablodaki HERHANGİ bir satırda geçersiz ondalık var mı? (gönderim kapısı) */
+export function hasSlotErrors(slots: readonly BulkSlotValues[]): boolean {
+  return slots.some((slot) => Object.keys(slotErrors(slot)).length > 0);
 }

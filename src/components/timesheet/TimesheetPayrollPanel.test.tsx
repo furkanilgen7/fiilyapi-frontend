@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 
 import { NAV_GROUPS } from "@/components/shell/nav-config";
 
+import { OVERTIME_MULTIPLIER_TEXT } from "./overtime-rule";
 import {
   canTransfer,
   payrollGateReason,
@@ -93,6 +94,13 @@ describe("TimesheetPayrollPanel", () => {
     expect(card).toHaveTextContent("brüt ücret hesabı bu uçta yayınlanmıyor");
     // Uydurma bir tutar BASILMAZ.
     expect(card).not.toHaveTextContent("₺");
+  });
+
+  it("🔴 triyaj #350 — FM çarpanı TEK KAYNAKTAN basılır, ikinci bir sabit yazılmaz", () => {
+    render(<TimesheetPayrollPanel {...BASE} missingWeeks={[]} />);
+    expect(
+      screen.getByText(`× saatlik ücret × ${OVERTIME_MULTIPLIER_TEXT}`),
+    ).toBeInTheDocument();
   });
 
   it("haftalık normal saat OKUNUR ama YAZILAMAZ (uçta ayar yazma yolu yok)", () => {

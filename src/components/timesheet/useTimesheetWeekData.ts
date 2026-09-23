@@ -48,6 +48,13 @@ export interface TimesheetWeekDataState {
   personnelTruncation: ListTruncation;
   /** Süzgeçten ÖNCEKİ satır sayısı — "Gösterilen 4 / 48" için (E5 123-127). */
   totalRowCount: number;
+  /**
+   * 🔴 triyaj #357 — `TimesheetRowFilters`in KENDİ sözleşmesi süzgeçten
+   * ÖNCEKİ satırları ister (seçenek listesi + per-seçenek sayılar bundan
+   * kurulur). `view.rows` SÜZÜLMÜŞ kümedir; bunu kullanmak bir meslek
+   * seçilince diğer meslek/tür/taşeron seçeneklerini YANLIŞ daraltırdı.
+   */
+  unfilteredRows: readonly TimesheetWeekViewRow[];
 }
 
 /**
@@ -97,5 +104,6 @@ export function useTimesheetWeekData({
     isPersonnelUnavailable: personnelQuery.isError,
     personnelTruncation: buildListTruncation(personnel?.length ?? 0, personnelQuery.data?.total),
     totalRowCount: unfiltered.rows.length,
+    unfilteredRows: unfiltered.rows,
   };
 }
