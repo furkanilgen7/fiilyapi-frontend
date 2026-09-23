@@ -270,9 +270,17 @@ export function BulkUnitCreateView() {
     return null;
   }
 
-  /** 182 — önizleme: HİÇBİR ŞEY YAZMAZ, denetim üretmez. */
+  /** 182 — önizleme: HİÇBİR ŞEY YAZMAZ, denetim üretmez.
+   *
+   * 🔴 `invalidFieldsMessage()` BURADA ÇALIŞMAZ (2026-09-23, e2e kırmızısı):
+   * "üst katlarda fiyat artışı" kutucuğu mockup gereği VARSAYILAN İŞARETLİ ve
+   * yüzde BOŞ doğar — o kuralı önizlemeye de uygulamak, formu daha kullanıcı
+   * hiçbir şey yazmadan KİLİTLİ doğuruyordu (e2e: önizleme tablosu 24 satır
+   * yerine 0). Önizleme hiçbir şey YAZMAZ; kural YAZAN yola (`handleSubmit`)
+   * aittir. Alan hatası kullanıcıya zaten hücrede görünür.
+   */
   async function handlePreview() {
-    const missing = missingTargetMessage() ?? invalidFieldsMessage();
+    const missing = missingTargetMessage();
     if (missing !== null) {
       setPreviewError(missing);
       return;
