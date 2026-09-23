@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import { Checkbox, Input, Select } from "@/components/ui";
 
 import {
+  BULK_PRICE_INCREASE_PCT_EMPTY_NOTE,
   BULK_EMPTY_TOTAL,
   BULK_PRICE_INCREASE_LABEL,
   BULK_PRICE_INCREASE_PREFIX,
@@ -261,6 +262,13 @@ export function BulkSlotTemplateCard({
           />
           <span>{BULK_PRICE_INCREASE_SUFFIX}</span>
         </span>
+        {/* 🔴 Ekran YALAN SÖYLEMEZ (kullanıcı kararı 2026-09-23): kutucuk açık
+            ama yüzde boşsa gövde artışı taşımaz — bunu kullanıcıya SÖYLE. */}
+        {values.floorPriceIncreaseEnabled && !values.floorPriceIncreasePct.trim() && (
+          <p className="tu-slot-foot__note" data-testid="toplu-form-artis-bos-notu">
+            {BULK_PRICE_INCREASE_PCT_EMPTY_NOTE}
+          </p>
+        )}
       </div>
     </section>
   );

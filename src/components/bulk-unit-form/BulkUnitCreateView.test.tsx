@@ -642,18 +642,34 @@ describe("BulkUnitCreateView — TU 40/183 üretim (HEP-YA-HİÇ)", () => {
     expect(screen.getByTestId("toplu-form-brut-1")).toHaveAttribute("aria-invalid", "true");
   });
 
-  it("🔴 KUSUR no 44: fiyat artışı kutucuğu işaretliyken yüzde boş bırakılırsa kaydetmeye çalışmak istek KURMAZ", () => {
+  // 🔴 KULLANICI KARARI (2026-09-23): boş yüzde = ARTIŞ YOK; akış ENGELLENMEZ.
+  // İlk onarım turu engellemişti ve form varsayılan hâliyle (kutucuk mockup
+  // gereği işaretli, yüzde boş) KİLİTLİ doğuyordu — e2e'de toplu üretim akışı
+  // tamamen durdu. Kusur "ekranın yalan söylemesi"ydi; çözüm ekranı DOĞRU
+  // konuşturmak, kapı koymak değil.
+  it("🔴 KUSUR no 44: kutucuk işaretli + yüzde boş → NOT basılır, istek KURULUR, gövde artış TAŞIMAZ", async () => {
     render(<BulkUnitCreateView />);
     selectProject();
     selectBlock();
     fillRules();
-    // fillTarget() KULLANILMAZ: yüzde BİLEREK boş bırakılır (kutucuk zaten
-    // varsayılan işaretlidir).
-    fireEvent.click(screen.getByTestId("toplu-form-olustur"));
-    expect(createAsync).not.toHaveBeenCalled();
-    expect(screen.getByTestId("toplu-form-hata")).toHaveTextContent(
-      "Üst katlarda fiyat artışı işaretli ama yüzde boş",
+    // fillTarget() KULLANILMAZ: yüzde BİLEREK boş bırakılır.
+    expect(screen.getByTestId("toplu-form-artis-bos-notu")).toHaveTextContent(
+      "UYGULANMAYACAK",
     );
+    fireEvent.click(screen.getByTestId("toplu-form-olustur"));
+    await waitFor(() => expect(createAsync).toHaveBeenCalled());
+    const body = createAsync.mock.calls[0][0].body as Record<string, unknown>;
+    expect(body).not.toHaveProperty("floor_price_increase_pct");
+  });
+
+  it("🔴 yüzde DOLUNCA not KAYBOLUR (ekran durumu izler)", () => {
+    render(<BulkUnitCreateView />);
+    selectProject();
+    selectBlock();
+    fillRules();
+    expect(screen.getByTestId("toplu-form-artis-bos-notu")).toBeInTheDocument();
+    fireEvent.change(screen.getByTestId("toplu-form-artis-yuzde"), { target: { value: "5" } });
+    expect(screen.queryByTestId("toplu-form-artis-bos-notu")).not.toBeInTheDocument();
   });
 
   it("🔴 KUSUR no 44: kutucuk kapatılırsa boş yüzde ARTIK sorun DEĞİLDİR", async () => {

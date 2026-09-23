@@ -33,7 +33,6 @@ import {
   BULK_PREVIEW_ERROR_FALLBACK,
   BULK_PREVIEW_LABEL,
   BULK_PREVIEW_STALE_NOTICE,
-  BULK_PRICE_INCREASE_PCT_REQUIRED_MESSAGE,
   BULK_PROJECT_REQUIRED_MESSAGE,
   BULK_SAVE_ERROR_FALLBACK,
   BULK_SLOT_INVALID_MESSAGE,
@@ -264,9 +263,9 @@ export function BulkUnitCreateView() {
    */
   function invalidFieldsMessage(): string | null {
     if (hasSlotErrors(values.slots)) return BULK_SLOT_INVALID_MESSAGE;
-    if (values.floorPriceIncreaseEnabled && !values.floorPriceIncreasePct.trim()) {
-      return BULK_PRICE_INCREASE_PCT_REQUIRED_MESSAGE;
-    }
+    // Fiyat artışı yüzdesi BOŞSA akış ENGELLENMEZ (kullanıcı kararı 2026-09-23):
+    // boş yüzde = artış yok. Ekranın yalan söylememesi `BulkSlotTemplateCard`ta
+    // basılan notla sağlanır, kapıyla değil.
     return null;
   }
 
