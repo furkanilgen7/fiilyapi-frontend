@@ -7,9 +7,17 @@
  * ve `sales-form/form-state` içinde İKİ KEZ kopyalanmıştı. Üçüncü kopya
  * yazmak yerine kanon buraya taşındı; iki eski yer artık BURADAN yeniden
  * dışa verir (davranış birebir aynı, çağıranların ithalatı değişmedi).
+ *
+ * 🔴 KAYIT 426: virgül VARSA TR biçimi kabul edilir — virgül ONDALIK
+ * ayıracıdır, virgülden önceki her nokta BİNLİK ayıracı sayılır ve silinir
+ * ("1.234,56" → "1234.56"). Virgül YOKSA eski davranış (nokta = ondalık)
+ * DEĞİŞMEZ — geri uyumluluk korunur, iki gösterim aynı girdide asla karışmaz.
  */
 export function normalizeDecimalInput(raw: string): string | null {
-  const trimmed = raw.trim().replace(",", ".");
+  let trimmed = raw.trim();
+  if (trimmed.includes(",")) {
+    trimmed = trimmed.replace(/\./g, "").replace(",", ".");
+  }
   if (!trimmed) return null;
   if (!/^[-+]?\d*\.?\d*$/.test(trimmed)) return null;
   if (!Number.isFinite(Number(trimmed))) return null;

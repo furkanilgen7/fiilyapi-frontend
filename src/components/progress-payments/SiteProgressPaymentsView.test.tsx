@@ -34,6 +34,7 @@ vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
 
 vi.mock("next/navigation", () => ({
   useParams: () => ({ projectId: "p-1", siteId: "s-1" }),
+  usePathname: () => "/projeler/p-1/santiyeler/s-1/hakedisler",
 }));
 
 const BASE_ME = {
@@ -105,5 +106,19 @@ describe("SiteProgressPaymentsView — boş durum eylem etiketi tek kaynak", () 
     mockSession({ progress_payments: "draft" });
     render(<SiteProgressPaymentsView />);
     expect(screen.getByRole("link", { name: "+ Hakediş Oluştur" })).toBeInTheDocument();
+  });
+});
+
+// Kayıt 303 — `SiteDetailTabs` kardeş görünümlerin (Stok/Puantaj/Belgeler/
+// Günlük/İş Kalemleri) hepsinin bastığı şeridi bu ekran hiç basmıyordu.
+describe("SiteProgressPaymentsView — sekme şeridi (kayıt 303)", () => {
+  it("SiteDetailTabs'ı basar ve Hakedişler sekmesi aktif işaretlenir", () => {
+    mockSession({ progress_payments: "draft" });
+    render(<SiteProgressPaymentsView />);
+    expect(
+      screen.getByRole("tablist", { name: "Şantiye detay sekmeleri" }),
+    ).toBeInTheDocument();
+    const activeTab = screen.getByRole("tab", { name: "Hakedişler" });
+    expect(activeTab).toHaveAttribute("aria-selected", "true");
   });
 });

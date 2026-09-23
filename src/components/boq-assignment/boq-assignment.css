@@ -101,6 +101,11 @@
   font-size: var(--text-small);
 }
 
+/* Kayıt 33 — dar ekranda (≤768px) 8 sütunlu poz seçici tablo `.modal`
+   kabuğundan taşıyordu (`modal.css` yalnız dikey taşmayı çözer). */
+.sf-boq-picker__table-scroll {
+  overflow-x: auto;
+}
 .sf-boq-ptable {
   width: 100%;
   border-collapse: collapse;

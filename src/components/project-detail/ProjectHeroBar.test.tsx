@@ -64,6 +64,6 @@ describe("ProjectHeroBar", () => {
 
   it("sekme barini icerir", () => {
     render(<ProjectHeroBar project={BASE} projectKey={BASE.id} activePath={`/projeler/${BASE.id}`} />);
-    expect(screen.getByRole("tablist", { name: "Proje detay sekmeleri" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Proje detay sekmeleri" })).toBeInTheDocument();
   });
 });

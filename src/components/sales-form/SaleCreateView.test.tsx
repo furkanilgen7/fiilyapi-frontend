@@ -270,3 +270,20 @@ describe("SaleCreateView — Plan Oluştur akış sırası (POST → generate-pl
     expect(generateMock).toHaveBeenNthCalledWith(2, "sl-new-3");
   });
 });
+
+describe("SaleCreateView — ?unit= tohumlaması (no 248)", () => {
+  it("ilk denemede bulunamayan ünite, sonradan listede belirse bile kullanıcının BOŞ seçimini EZMEZ", () => {
+    searchParams = new URLSearchParams("unit=u-1");
+    // İlk render: ünite listesi henüz BOŞ — `u-1` yok, efekt "bulunamadı" der.
+    vi.mocked(useProjectUnits).mockReturnValue(queryStub({ blocks: [] }));
+    const { rerender } = render(<SaleCreateView />);
+    expect(screen.getByTestId("satis-form-unite")).toHaveValue("");
+
+    // Ünite listesi SONRADAN gelir ve `u-1` artık GERÇEKTEN vardır — ama
+    // kullanıcı bu arada üniteyi kendi elleriyle boş bırakmış olabilir.
+    // Tohumlama YALNIZ BİR KEZ denenmelidir (deneme başarısız olsa da).
+    mockUnits(makeUnit({ id: "u-1" }));
+    rerender(<SaleCreateView />);
+    expect(screen.getByTestId("satis-form-unite")).toHaveValue("");
+  });
+});

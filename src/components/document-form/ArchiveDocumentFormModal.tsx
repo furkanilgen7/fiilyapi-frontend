@@ -212,6 +212,7 @@ export function ArchiveDocumentFormModal({
               <FileInput
                 {...control}
                 ref={fileRef}
+                disabled={isPending}
                 status={formError && !values.file ? "error" : "default"}
                 onChange={(event) => {
                   set("file", event.target.files?.[0] ?? null);

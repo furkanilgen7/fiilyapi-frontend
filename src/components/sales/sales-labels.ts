@@ -82,6 +82,12 @@ export function saleStatusBadge(sale: SaleRow): SaleStatusBadge {
     return { label: "Gecikmiş", variant: "danger", modifier: "overdue" };
   }
   if (sale.payment_plan_type === "down_payment_installments") {
+    // no 243 · `installment_total === 0` ⇒ taksit satırları henüz üretilmedi
+    // (`paymentPlanCell`in "Plan üretilmedi" dalıyla AYNI koşul) — rozet
+    // "Taksitli" derken hücre "Plan üretilmedi" diyen çelişkiyi önler.
+    if (sale.installment_total === 0) {
+      return { label: "Plan Bekliyor", variant: "warning", modifier: "plan-pending" };
+    }
     return { label: "Taksitli", variant: "primary", modifier: "installments" };
   }
   return { label: SALE_STATUS_LABELS.active, variant: "primary", modifier: "active" };
@@ -178,7 +184,10 @@ export interface PaymentPlanCell {
  * `installment_paid_count`) — istemci ödenmiş taksit SAYMAZ.
  */
 export function paymentPlanCell(sale: SaleRow): PaymentPlanCell {
-  const isOverdue = sale.overdue_installment_count > 0;
+  // no 244 · `saleStatusBadge`/`saleRowTone` ile AYNI desen: iptal edilmiş bir
+  // satışta gecikme sayacı henüz sıfırlanmamışsa bile hücre kırmızı basılmaz
+  // (rozet "İptal" derken hücre "N taksit gecikmiş" diyen çelişkiyi önler).
+  const isOverdue = sale.status !== "cancelled" && sale.overdue_installment_count > 0;
   if (sale.installment_total > 0 && sale.payment_plan_type === "down_payment_installments") {
     return {
       text: `${sale.installment_total} taksit · ${sale.installment_paid_count}/${sale.installment_total}`,
@@ -230,7 +239,8 @@ export interface CustomerLine {
  * mockup 197'de AÇIK basılır — maskeleme oraya taşınmaz.
  */
 export function customerLine(sale: SaleRow): CustomerLine | null {
-  if (sale.overdue_installment_count > 0) {
+  // no 244 · `saleStatusBadge`/`saleRowTone`/`paymentPlanCell` ile AYNI desen.
+  if (sale.status !== "cancelled" && sale.overdue_installment_count > 0) {
     // 179 — `⚠` metne GÖMÜLMEZ, `icon` alanıyla taşınır (F-SEM).
     return {
       text: `${sale.overdue_installment_count} taksit gecikmiş`,
@@ -255,9 +265,14 @@ export function customerLine(sale: SaleRow): CustomerLine | null {
   return null;
 }
 
-/** 161 · "123****789" — baş ve son üç hane açık, ortası maskeli. */
+/**
+ * 161 · "123****789" — baş ve son üç hane açık, ortası maskeli.
+ *
+ * no 238 · ≤6 haneli (kısa/bozuk) girdi baş/son üçe bölünemez — bu durumda
+ * kimlik numarası MASKESİZ dönmüyordu, tamamı yıldızla kapatılır.
+ */
 export function maskNationalId(nationalId: string): string {
-  if (nationalId.length <= 6) return nationalId;
+  if (nationalId.length <= 6) return "*".repeat(nationalId.length);
   return `${nationalId.slice(0, 3)}****${nationalId.slice(-3)}`;
 }
 

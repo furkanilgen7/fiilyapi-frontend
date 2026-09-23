@@ -376,6 +376,19 @@ describe("eksik ve geçersiz girdi", () => {
     expect(result.reason).toContain("Avans");
   });
 
+  it("no 135 · satır KDV oranı %100'ü aşarsa çözülemeyen sayılır (backend/invoice-line-math ile SİMETRİK)", () => {
+    const result = computeAmountPreview({
+      lines: [line("1", "100.00", "20"), line("1", "100.00", "150")],
+      advanceRate: null,
+      retentionRate: null,
+      withholdingRate: null,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.unknownCount).toBe(1);
+    expect(result.preview.subtotal).toBe("100.00");
+  });
+
   it("kesintiler toplamı aşarsa önizleme gerekçeyle kapanır (backend 422)", () => {
     const result = computeAmountPreview({
       lines: [line("1", "1000.00", "20")],

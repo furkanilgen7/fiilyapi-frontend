@@ -107,6 +107,27 @@ describe("EquipmentDocumentFormModal (EKP · Form - Ekipman Belgesi)", () => {
     expect(screen.getByTestId("edf-note-reason")).toHaveTextContent(EQUIPMENT_NOTE_REASON);
   });
 
+  // Kayıt 61 — `FileInput`e `disabled={isPending}` EKSİKTİ; yükleme
+  // sürüyorken (ikinci tıklamada) diğer alanlar kilitlenirken dosya seçici
+  // hâlâ etkileşime açık kalıyordu.
+  it("yükleme sürerken (isPending) dosya seçici de diğer alanlar gibi kilitlenir (kayıt 61)", () => {
+    vi.mocked(useUploadEquipmentDocument).mockReturnValue({
+      mutateAsync: upload,
+      isPending: true,
+    } as never);
+    renderModal();
+    expect(screen.getByLabelText(TEXT.file)).toBeDisabled();
+  });
+
+  // Kayıt 65/83 — backend beyaz listesi (pdf/jpg/jpeg/png/heic) `image/*`i
+  // kapsamıyordu (svg/gif/webp vb. seçilebilir ama 422 alırdı); tavan da
+  // 20 MB değil 50 MB'dır.
+  it("dosya seçici yalnız backend beyaz listesindeki uzantıları kabul eder, tavan 50 MB yazar (kayıt 65/83)", () => {
+    renderModal();
+    expect(screen.getByLabelText(TEXT.file)).toHaveAttribute("accept", ".pdf,.jpg,.jpeg,.png,.heic");
+    expect(screen.getByText("PDF veya fotoğraf · Maks 50 MB")).toBeInTheDocument();
+  });
+
   it("🔴 devre-dışı alanlar gövdeye GİRMEZ — istek yalnız file/type_id taşır", async () => {
     renderModal();
     const file = selectFile();

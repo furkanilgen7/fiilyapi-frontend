@@ -450,6 +450,26 @@ describe("TSD — Sözleşme Şartları (§7 S3 taşeron ayağı)", () => {
       contract_no: "TSZ-2026-009",
     });
   });
+
+  // no 53 — kaydedilmiş bir şart daha sonra değiştirildiğinde "Sözleşme
+  // şartları kaydedildi." bandı ekranda ASILI kalıyordu; `onChange` geri
+  // çağırması `setTermsSaved(false)` çağırmıyordu (emsal:
+  // `ContractDistributionView.tsx::handleCellChange`).
+  it("kaydedilmiş banner, şart TEKRAR değiştirilince kaybolur (no 53)", async () => {
+    const user = userEvent.setup();
+    updateContractMutate.mockImplementation(
+      (_body: unknown, opts?: { onSuccess?: () => void }) => opts?.onSuccess?.(),
+    );
+    setup();
+
+    await user.click(screen.getByTestId("tsd-terms-save"));
+    expect(await screen.findByTestId("tsd-terms-saved")).toBeInTheDocument();
+
+    const contractNo = screen.getByLabelText(/Sözleşme No/);
+    await user.type(contractNo, "X");
+
+    expect(screen.queryByTestId("tsd-terms-saved")).not.toBeInTheDocument();
+  });
 });
 
 describe("TSD — hakediş geçmişi ve oluşturma bağlantıları", () => {

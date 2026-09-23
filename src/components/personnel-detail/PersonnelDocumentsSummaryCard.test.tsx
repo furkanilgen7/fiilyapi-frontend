@@ -131,4 +131,13 @@ describe("PersonnelDocumentsSummaryCard — PD 130-141", () => {
       within(screen.getByTestId("personnel-document-pd-2")).getByRole("button", { name: "İndir" }),
     ).toHaveAttribute("title", DOCUMENT_NO_FILE_REASON);
   });
+
+  // Kayıt 128 — indirme gerekçesi önceden yalnız `title`da duruyordu
+  // (klavye/ekran okuyucuyla erişilemez); F-BLG T3/G7 kanonuyla EKRANDA.
+  it("indirme gerekçesi EKRANDA okunur, yalnız title'da SAKLANMAZ (kayıt 128)", () => {
+    render(<PersonnelDocumentsSummaryCard personnel={personnel()} />);
+    const reason = screen.getByTestId("pd-download-reason");
+    expect(reason).toBeVisible();
+    expect(reason).toHaveTextContent(DOCUMENT_DOWNLOAD_PENDING_REASON);
+  });
 });

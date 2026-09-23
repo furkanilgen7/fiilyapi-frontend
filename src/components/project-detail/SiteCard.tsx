@@ -4,6 +4,7 @@ import { cx } from "@/lib/cx";
 import { formatMonthYear, formatPercent } from "@/lib/format";
 import { pendingModuleLabel, type PendingModuleKey } from "@/lib/pending-modules";
 import type { SiteListItem } from "@/lib/api/hooks/useSites";
+import type { ProjectType } from "@/lib/api/hooks/useProjects";
 
 import "./project-detail.css";
 import { routes, routeKeyOf } from "@/lib/routes";
@@ -16,6 +17,13 @@ export interface SiteCardProps {
    */
   projectKey: string;
   site: SiteListItem;
+  /**
+   * Kayıt 201 — kart şeridi/ilerleme çubuğu proje TÜRÜNE göre boyanır
+   * (`ProjectCard`teki `prj-card--{type}` deseniyle aynı); önceden bu bilgi
+   * taşınmadığı için ayrım YAPISAL OLARAK imkânsızdı ve şerit her zaman
+   * taahhüt gradyanına düşüyordu.
+   */
+  projectType: ProjectType;
 }
 
 const STATUS_LABELS: Record<SiteListItem["status"], string> = {
@@ -173,12 +181,15 @@ function chipsFor(projectKey: string, site: SiteListItem): ChipDef[] {
   // 🔴 Santiye anahtari KAYITTAN gelir (`slug ?? id`): proje detayindan
   // santiyeye GIRIS baglantisidir, yani okunur bicimi burada dogar.
   // `SiteCard` semasi `slug`i tasir (URL-2) — ekstra istek YOK.
-  const siteBase = routes.projects.sites.detail({
-    projectId: projectKey,
-    siteId: routeKeyOf(site),
-  });
+  // 🔴 Kayıt 198 — segmentler ELLE EKLENMEZ: `routes.ts`teki kanonik
+  // kurucular (`boq`/`progressPayments`) kullanılır. Dize burada da elle
+  // kurulsaydı, segment adı ya da kanonik-kısa-URL kuralı değiştiğinde çip
+  // sessizce ayrışırdı (`ProjectDetailTabs`in `employerContractTabHref`
+  // için uyguladığı kanonla aynı gerekçe).
+  const siteParams = { projectId: projectKey, siteId: routeKeyOf(site) };
+  const siteBase = routes.projects.sites.detail(siteParams);
   const chips: ChipDef[] = [
-    { label: "İş Kalemleri", emoji: "📋", href: `${siteBase}/is-kalemleri` },
+    { label: "İş Kalemleri", emoji: "📋", href: routes.projects.sites.boq(siteParams) },
   ];
   // 🔴 "İşveren Hak." / "Final Hakediş" / "Taşeron Hak." çiplerinin ÜÇÜ DE
   // aynı şantiye hakediş ekranına gider ve bu ÖLÇÜLMÜŞ bir karardır, tembellik
@@ -189,11 +200,12 @@ function chipsFor(projectKey: string, site: SiteListItem): ChipDef[] {
   // ise şantiye kimliğini DÜŞÜRÜR ve kullanıcıyı kartın kapsamından dışarı
   // atardı. Çipi silmek de yanlıştır (kanon: karşılığı olan öğe silinmez) —
   // karşılığı VARDIR, aynı ekranın taşeron panelidir.
+  const progressPaymentsHref = routes.projects.sites.progressPayments(siteParams);
   if (site.status === "completed") {
-    chips.push({ label: "Final Hakediş", emoji: "💰", href: `${siteBase}/hakedisler` });
+    chips.push({ label: "Final Hakediş", emoji: "💰", href: progressPaymentsHref });
   } else {
-    chips.push({ label: "İşveren Hak.", emoji: "💰", href: `${siteBase}/hakedisler` });
-    chips.push({ label: "Taşeron Hak.", emoji: "🏗", href: `${siteBase}/hakedisler` });
+    chips.push({ label: "İşveren Hak.", emoji: "💰", href: progressPaymentsHref });
+    chips.push({ label: "Taşeron Hak.", emoji: "🏗", href: progressPaymentsHref });
   }
   chips.push({
     label: "→ Detay",
@@ -204,12 +216,18 @@ function chipsFor(projectKey: string, site: SiteListItem): ChipDef[] {
   return chips;
 }
 
-export function SiteCard({ projectKey, site }: SiteCardProps) {
+export function SiteCard({ projectKey, site, projectType }: SiteCardProps) {
   const isCompleted = site.status === "completed";
   const sub = subtitle(site);
 
   return (
-    <article className={cx("site-card", isCompleted && "site-card--completed")}>
+    <article
+      className={cx(
+        "site-card",
+        `site-card--${projectType}`,
+        isCompleted && "site-card--completed",
+      )}
+    >
       <div className="site-card__strip" aria-hidden="true" />
       <div className="site-card__body">
         <div className="site-card__head">

@@ -111,6 +111,26 @@ describe("K4 · kalan hak istemci tarafı JOIN'i (66/77)", () => {
     expect(cell.label).not.toBe("—");
     expect(cell.tone).toBe("exceeded");
   });
+
+  // 🔴 KAYIT 149 (2026-09-23): bozuk sunucu verisi — `remaining` şemada
+  // `string | null`dır ama boş dize ya da sayıya çevrilemeyen bir dize
+  // gelirse eski davranış SESSİZCE yanlıştı: "" → "0 gün" basardı (0
+  // BASILMAZ kuralını çiğner), "abc" → `Number("abc")=NaN` karşılaştırması
+  // HER ZAMAN false döner, hak aşımı GİZLENİRDİ. İkisi de artık "bilinmiyor".
+  it("`remaining = \"\"` (boş dize) bilinmiyordur → '—', '0' BASILMAZ", () => {
+    const emptyIndex = buildBalanceIndex([balance({ personnel_id: "per-1", remaining: "" })]);
+    const cell = deriveRemainingCell(request({ days: 1 }), emptyIndex);
+    expect(cell).toEqual({ label: "—", tone: "unknown" });
+    expect(cell.label).not.toBe("0 gün");
+  });
+
+  it("`remaining = \"abc\"` (sayıya çevrilemez) bilinmiyordur, aşım GİZLENMEZ", () => {
+    const brokenIndex = buildBalanceIndex([balance({ personnel_id: "per-1", remaining: "abc" })]);
+    const cell = deriveRemainingCell(request({ days: 5 }), brokenIndex);
+    expect(cell).toEqual({ label: "—", tone: "unknown" });
+    // Eski kusurda tone "ok" olurdu (5 > NaN === false) — aşım gizlenirdi.
+    expect(cell.tone).not.toBe("ok");
+  });
 });
 
 describe("K9 · yıllık haktan düşmeyen tip (87)", () => {

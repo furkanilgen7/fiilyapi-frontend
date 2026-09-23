@@ -1,4 +1,4 @@
-import type { EquipmentDetailResponse } from "@/lib/api/hooks/useEquipmentDetail";
+import type { EquipmentEditResponse } from "@/lib/api/hooks/useEquipmentDetail";
 
 import {
   DEPRECIATION_YEARS_DEFAULT,
@@ -142,7 +142,7 @@ export function emptyEquipmentFormValues(): EquipmentFormValues {
  * gitmez (`omit-fields.ts` + `build-body.ts`, spec K5).
  */
 export function equipmentFormValuesFromDetail(
-  detail: EquipmentDetailResponse,
+  detail: EquipmentEditResponse,
 ): EquipmentFormValues {
   return {
     ownership: detail.ownership,

@@ -332,6 +332,10 @@ export function SubcontractorContractDetailView({
                 const { [field]: _removed, ...rest } = prev;
                 return rest;
               });
+              // no 53 · `ContractDistributionView::handleCellChange` ile AYNI
+              // desen: kaydedilmiş bir şart değiştirilince "kaydedildi" bandı
+              // yalanı basmaya devam etmemeli.
+              setTermsSaved(false);
             }}
           />
         )}

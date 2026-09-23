@@ -76,6 +76,7 @@ export function SubcontractorProgressPaymentsView() {
         isError={paymentsQuery.isError}
         isLoading={paymentsQuery.isLoading}
         data={paymentsQuery.data}
+        newActionLabel={canWrite ? "+ Yeni Hakediş" : null}
       />
 
       {truncation.isTruncated && (

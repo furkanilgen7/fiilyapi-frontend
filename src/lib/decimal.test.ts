@@ -204,14 +204,22 @@ describe("parseCountInput — tam sayi kutulari (BE 78/79/81/83/85 · UE 80)", (
  * kopya yerine BUNU çağırıyor: gövde gevşetilirse (satır 14'teki desen
  * kapısı kalkarsa) çift ayraçlı string yeniden `BigInt`e kadar sızar ve
  * ekran render sırasında fırlatır. Bu yüzden RED KÜMESİ kilitlenir.
+ *
+ * 🔴 KAYIT 426 (2026-09-23): "TR binlik ayraçlı girdi `null` döner" iddiası
+ * BİR KUSURDU, kanon DEĞİLDİ — `raw.trim().replace(",", ".")` yalnız İLK
+ * virgülü çevirdiği için "1.234,56" gibi GEÇERLİ bir TR sayısı iki nokta
+ * üretip reddediliyordu, kullanıcı doğru yazdığı tutarı "geçersiz" görüyordu.
+ * Düzeltme: virgül VARSA ondan önceki noktalar binlik ayıracı sayılıp
+ * silinir. Aşağıdaki iki durum artık KABUL EDİLİR; RED KÜMESİ yalnız GERÇEKTEN
+ * bozuk (çoklu virgül / yarım) girdiler için kilitli kalır.
  */
-describe("normalizeDecimalInput — ÇİFT AYRAÇ REDDEDİLİR", () => {
-  it("TR binlik ayraçlı girdi `null` döner (kısmi çevrilmiş string SIZMAZ)", () => {
-    expect(normalizeDecimalInput("1.234,56")).toBeNull();
-    expect(normalizeDecimalInput("1.000.000,50")).toBeNull();
+describe("normalizeDecimalInput — TR binlik ayıracı", () => {
+  it("TR binlik ayraçlı girdi doğru ondalığa çevrilir (KAYIT 426 düzeltmesi)", () => {
+    expect(normalizeDecimalInput("1.234,56")).toBe("1234.56");
+    expect(normalizeDecimalInput("1.000.000,50")).toBe("1000000.50");
   });
 
-  it("iki virgüllü / yarım girdi `null` döner", () => {
+  it("iki virgüllü / yarım girdi HÂLÂ `null` döner", () => {
     expect(normalizeDecimalInput("1,2,3")).toBeNull();
     expect(normalizeDecimalInput("1,2,")).toBeNull();
     expect(normalizeDecimalInput("")).toBeNull();
@@ -220,6 +228,11 @@ describe("normalizeDecimalInput — ÇİFT AYRAÇ REDDEDİLİR", () => {
   it("tek TR virgülü noktaya çevrilir (geçerli girdi çalışmaya DEVAM eder)", () => {
     expect(normalizeDecimalInput("1234,56")).toBe("1234.56");
     expect(normalizeDecimalInput(" 14,5 ")).toBe("14.5");
+  });
+
+  it("virgülsüz nokta hâlâ ondalık ayıracı olarak okunur (geri uyumluluk)", () => {
+    expect(normalizeDecimalInput("1234.56")).toBe("1234.56");
+    expect(normalizeDecimalInput("1.5")).toBe("1.5");
   });
 
   it("döndürdüğü her string `sumDecimalStrings`e GÜVENLE girer (fırlatmaz)", () => {

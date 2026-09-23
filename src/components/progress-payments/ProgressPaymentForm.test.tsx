@@ -514,7 +514,11 @@ describe("ProgressPaymentForm — geçersiz-değer koruması (kontrolcü bulgusu
     expect(cell.quantity).toBe("0");
   });
 
-  it("Hakediş yılı boş bırakılırsa gövdeye period_year: null gider (0 UYDURULMAZ)", async () => {
+  // no 180 · DAVRANIŞ DEĞİŞTİ: eskiden boş yıl `period_year: null` ile
+  // İSTEK UÇURUYORDU (uydurma `0` yoktu ama sunucuya boş bir dönem
+  // gidiyordu); artık ikiz taşeron formuyla AYNI kural — dönem eksikse
+  // istek hiç açılmaz, kullanıcı alan hatası görür.
+  it("Hakediş yılı boş bırakılırsa istek UÇMAZ, dönem hatası basılır", async () => {
     const mutate = vi.fn();
     vi.mocked(useCreateProgressPayment).mockReturnValue(mutationResult({ mutate }));
     renderForm({ mode: "create", projectId: PROJECT_ID });
@@ -525,8 +529,8 @@ describe("ProgressPaymentForm — geçersiz-değer koruması (kontrolcü bulgusu
     const [saveButton] = await screen.findAllByRole("button", { name: "Taslak Kaydet" });
     await userEvent.click(saveButton);
 
-    const [{ body }] = mutate.mock.calls[0];
-    expect(body.period_year).toBeNull();
+    expect(mutate).not.toHaveBeenCalled();
+    expect(await screen.findByText("Dönem seçimi zorunludur.")).toBeInTheDocument();
   });
 });
 
@@ -637,6 +641,25 @@ describe("ProgressPaymentForm — hata gösterimi (Türkçe, hiçbiri sessiz de�
     expect(
       await screen.findByText("Kümülatif hakediş miktarı şantiye kotasını aşamaz."),
     ).toBeInTheDocument();
+  });
+
+  // no 179 — PATCH (başlık) başarılı olduktan SONRA PUT (satırlar) patlarsa
+  // başlık zaten sunucuda kaydedilmiş, geri alma YOKTUR; kullanıcı bu KISMİ
+  // durumu görmeli.
+  it("PATCH başarılı + PUT hatalı: başlığın kaydedildiği AYRI bir bantla görünür olur", async () => {
+    const updateMutate = vi.fn((_vars, opts) => opts?.onSuccess?.());
+    const replaceMutate = vi.fn((_vars, opts) =>
+      opts?.onError?.(backendError(422, "Kümülatif hakediş miktarı şantiye kotasını aşamaz.")),
+    );
+    vi.mocked(useProgressPayment).mockReturnValue(queryResult({ data: detailFixture() }));
+    vi.mocked(useUpdateProgressPayment).mockReturnValue(mutationResult({ mutate: updateMutate }));
+    vi.mocked(useReplaceProgressPaymentLines).mockReturnValue(mutationResult({ mutate: replaceMutate }));
+    renderForm({ mode: "edit", paymentId: PAYMENT_ID });
+    const [saveButton] = await screen.findAllByRole("button", { name: "Taslak Kaydet" });
+    await userEvent.click(saveButton);
+    expect(await screen.findByTestId("pp-form-header-saved-lines-failed")).toHaveTextContent(
+      "başlığı KAYDEDİLDİ",
+    );
   });
 
   it("422 — dağıtılmamış poz mesajını gösterir", async () => {

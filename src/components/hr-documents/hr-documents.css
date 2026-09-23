@@ -181,6 +181,12 @@
   border-radius: var(--radius-8);
   padding: 8px 12px;
 }
+/* Kayıt 122 — HATA bandı sarı/uyarı paletiyle basılıyordu; danger paleti. */
+.bt-filters__note--danger {
+  color: var(--color-danger-text);
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger-border, var(--color-danger));
+}
 
 /* Tablo/kart kabukları (79-133, 137-153). */
 .bt-card {

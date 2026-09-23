@@ -452,6 +452,17 @@ describe("🔴 K3 — dürüst hâller", () => {
     render(<PayrollMonthlyView />);
     expect(screen.getByTestId("bordro-loaded")).toBeInTheDocument();
   });
+
+  it("dönem listesi HATAYLA çözülünce de nöbetçi basılır (sonsuz yükleniyor kalmaz)", () => {
+    vi.mocked(usePayrollPeriods).mockReturnValue(
+      queryResult<PayrollPeriodListResponse>({
+        isError: true,
+        error: new BackendError(500, null),
+      }),
+    );
+    render(<PayrollMonthlyView />);
+    expect(screen.getByTestId("bordro-loaded")).toBeInTheDocument();
+  });
 });
 
 /* ---------------------------------------------------------------- tablo */
@@ -813,6 +824,8 @@ describe("🔴 F-BORDRO T3 — Hesapla", () => {
     const button = screen.getByTestId("bordro-compute");
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute("title", expect.stringContaining("ödendi"));
+    // K11: gerekçe yalnız `title`da SAKLANMAZ, GÖRÜNÜR de basılır.
+    expect(screen.getByTestId("bordro-compute-reason")).toHaveTextContent("ödendi");
   });
 
   it("başarılı hesap sayaçları GÖSTERİR (sessiz atlama yok)", async () => {
@@ -856,6 +869,25 @@ describe("🔴 F-BORDRO T3 — Hesapla", () => {
     // sayıları "doğru" sanmamalıdır.
     const band = await screen.findByTestId("bordro-missing-prior-band");
     expect(band).toHaveTextContent("2 dönem");
+  });
+
+  it("dönem değişince K4 bandı ESKİ döneme YAPIŞMAZ", async () => {
+    const user = userEvent.setup();
+    const mutateAsync = vi.fn().mockResolvedValue({
+      created: 3,
+      updated: 0,
+      skipped_overridden: 0,
+      skipped_approved: 0,
+      missing_prior_period_count: 2,
+    });
+    vi.mocked(useComputePayrollPeriod).mockReturnValue(mutationResult({ mutateAsync }));
+
+    render(<PayrollMonthlyView />);
+    await user.click(screen.getByTestId("bordro-compute"));
+    expect(await screen.findByTestId("bordro-missing-prior-band")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("bordro-prev"));
+    expect(screen.queryByTestId("bordro-missing-prior-band")).not.toBeInTheDocument();
   });
 
   it("sayaç 0 iken K4 bandı BASILMAZ (gürültü yok)", async () => {

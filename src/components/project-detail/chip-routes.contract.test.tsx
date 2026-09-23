@@ -109,11 +109,10 @@ const SITE: SiteListItem = {
 /**
  * Bir render'daki BÜTÜN bağlantı href'leri.
  *
- * 🔴 `getAllByRole("link")` KULLANILMAZ — ÖLÇÜLDÜ: `ProjectDetailTabs`
- * sekmeleri `<a role="tab">` basar, açık `role` ERİŞİLEBİLİRLİK ROLÜNÜ EZER ve
- * o bağlantılar `link` sorgusunda GÖRÜNMEZ. Rol sorgusuyla yazılsaydı bekçi
- * sekme şeridini hiç ölçmeden yeşil geçerdi (sahte-yeşil). DOM'daki `a[href]`
- * düğümleri doğrudan okunur.
+ * `getAllByRole("link")` yerine DOM'daki `a[href]` düğümleri doğrudan okunur:
+ * bu bekçi hem `SiteCard` çiplerini hem `ProjectDetailTabs` sekmelerini aynı
+ * fonksiyonla tarar ve rol sorgusuna bağımlı kalmak istemez (a11y rolü
+ * ilerde değişse bile bekçi kör kalmaz).
  */
 function renderedHrefs(ui: React.ReactElement): readonly string[] {
   const { container, unmount } = render(ui);
@@ -169,7 +168,7 @@ describe("SiteCard çipleri — her hedef diskte VAR", () => {
     "%s durumunda basılan her çip gerçek bir rotaya gider",
     (status) => {
       const hrefs = renderedHrefs(
-        <SiteCard projectKey={PROJECT_ID} site={{ ...SITE, status }} />,
+        <SiteCard projectKey={PROJECT_ID} projectType="taahhut" site={{ ...SITE, status }} />,
       );
       expect(hrefs.length).toBeGreaterThan(0);
       const dead = hrefs.filter((href) => !routeExists(href));

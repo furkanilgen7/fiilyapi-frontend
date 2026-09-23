@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { Button } from "@/components/ui";
+import { Button, Input } from "@/components/ui";
 import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
 import { UserAvatar } from "@/components/settings/primitives/UserAvatar";
 import { RolePill } from "@/components/settings/primitives/RolePill";
@@ -152,7 +152,7 @@ export function UsersScreen() {
           <>
             <span className="users-search">
               <span aria-hidden="true">🔍</span>
-              <input
+              <Input
                 type="search"
                 placeholder="Kullanıcı ara..."
                 aria-label="Kullanıcı ara"

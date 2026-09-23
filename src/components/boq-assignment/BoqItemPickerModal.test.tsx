@@ -91,6 +91,15 @@ describe("mockup'ın karşılığı olmayan öğesi SİLİNMEZ", () => {
     renderPicker();
     expect(screen.getByText(OTHER_SECTIONS_PRESERVED_NOTE)).toBeInTheDocument();
   });
+
+  // Kayıt 33 — `.modal` yalnız dikey taşmayı çözer (`overflow-y`); 8 sütunlu
+  // tablo dar ekranda kabuktan yatay taşıyordu. Tablo artık kendi
+  // `overflow-x: auto` kabuğuna sarılı.
+  it("8 sütunlu tablo yatay kaydırma kabuğuna sarılıdır (kayıt 33)", () => {
+    renderPicker();
+    const table = screen.getByRole("table");
+    expect(table.parentElement).toHaveClass("sf-boq-picker__table-scroll");
+  });
 });
 
 describe("süzgeç ve aşım kapısı", () => {

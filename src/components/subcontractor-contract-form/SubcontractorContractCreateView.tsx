@@ -53,7 +53,6 @@ import {
 // Sıra önemli: önce paylaşılan kabuk, sonra ekrana özgü bloklar.
 import "@/styles/form-shell.css";
 import "./subcontractor-contract-form.css";
-import { routes } from "@/lib/routes";
 
 /**
  * FSO · `/sozlesmeler/taseron/yeni` — Yeni Taşeron Sözleşmesi formu
@@ -281,7 +280,11 @@ export function SubcontractorContractCreateView() {
       {/* 31-42 · üst şerit: kırıntı yolu + İptal + birincil eylem */}
       <div className="pf-topbar">
         <nav className="pf-breadcrumb" aria-label="Kırıntı yolu">
-          <Link href={routes.contracts.subcontractorList()}>{FSO_TEXT.breadcrumbRoot}</Link>
+          {/* no 329 · kırıntı `routes.contracts.subcontractorList()`
+              (`/sozlesmeler/taseronlar`) İptal/başarı `listHref`inden
+              (`contractTabHref("subcontractor")` → `/sozlesmeler?type=
+              subcontractor`) FARKLI bir rotaydı — TEK hedef kullanılır. */}
+          <Link href={listHref}>{FSO_TEXT.breadcrumbRoot}</Link>
           <span className="pf-breadcrumb__sep" aria-hidden="true">
             /
           </span>

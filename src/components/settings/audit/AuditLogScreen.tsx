@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Button } from "@/components/ui";
+import { Button, Input } from "@/components/ui";
 import { Select } from "@/components/ui/select";
 import { SearchIcon } from "@/components/ui/icons";
 import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
@@ -103,7 +103,7 @@ export function AuditLogScreen() {
       {/* Mockup'ta kutu içinde büyüteç ikonu var; görünüm birebir korunur. */}
       <span className="audit-search">
         <SearchIcon />
-        <input
+        <Input
           type="text"
           placeholder="Kullanıcı veya işlem ara..."
           aria-label="Kullanıcı veya işlem ara"

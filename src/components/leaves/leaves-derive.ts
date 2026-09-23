@@ -75,8 +75,22 @@ export function deriveRemainingCell(
     return { label: UNKNOWN_VALUE, tone: "unknown" };
   }
 
+  // KAYIT 149: `remaining` şemada `string | null`dır — `format.ts::maskeli`
+  // yalnız `null`/`undefined`i yakalar, boş dizeyi ya da sayıya çevrilemeyen
+  // bir dizeyi YAKALAMAZ. Bozuk sunucu verisinde ("" ya da "abc") bu satır
+  // `Number("")=0` → "0 gün" SESSİZCE basardı (`leaves-labels.ts`in "0
+  // BASILMAZ" kuralını çiğner) ya da `Number("abc")=NaN` → karşılaştırma
+  // HER ZAMAN `false` döner, hak aşımı GİZLENİRDİ. İkisi de burada "bilinmiyor"
+  // sayılır — `maskeli()` genişletilmedi: bu tip-güvensizliği yalnız BU
+  // ekranın özel sözleşmesidir (`string | null`), yaymak `format.ts`teki 20+
+  // başka çağıranı etkilerdi.
+  const remainingNumber = remaining === "" ? NaN : Number(remaining);
+  if (!Number.isFinite(remainingNumber)) {
+    return { label: UNKNOWN_VALUE, tone: "unknown" };
+  }
+
   const label = `${formatDays(remaining)} ${UNIT_DAYS}`;
-  return { label, tone: request.days > Number(remaining) ? "exceeded" : "ok" };
+  return { label, tone: request.days > remainingNumber ? "exceeded" : "ok" };
 }
 
 /**

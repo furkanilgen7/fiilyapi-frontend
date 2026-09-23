@@ -120,7 +120,6 @@ export function PersonnelListView() {
 
   const serverItems = personnelQuery.data?.items;
   const serverTotal = personnelQuery.data?.total;
-  const kpis = serverItems && serverTotal !== undefined ? deriveKpis(serverItems, serverTotal) : undefined;
   const tradeOptions = serverItems ? deriveTradeOptions(serverItems) : [];
   const truncation = buildListTruncation(serverItems?.length ?? 0, serverTotal);
   const hasFilter =
@@ -145,6 +144,21 @@ export function PersonnelListView() {
   const filteredItems = serverItems ? filterByTrade(serverItems, trade) : undefined;
   const paged = filteredItems ? paginateClientSide(filteredItems, page, PAGE_SIZE) : undefined;
 
+  // Kayıt 160 — KPI şeridi önceden süzülmemiş `serverItems`ten kuruluyordu;
+  // meslek süzgeci seçiliyken tablo süzülmüş kadroyu, KPI şeridi süzülmemiş
+  // toplamı gösteriyordu (kullanıcı yanıltıcı tutarsızlık görüyordu). KPI
+  // artık tablonun GÖRDÜĞÜ AYNI kümeden (`filteredItems`) kurulur.
+  //
+  // "Kırpılma" GERÇEK sunucu tavanı anlamına gelmeli (`serverItems` vs
+  // `serverTotal`) — meslek süzgecinin kendisi bir kırpılma DEĞİLDİR, aksi
+  // halde herhangi bir meslek seçildiğinde kartlar hep "—" gösterirdi.
+  const isServerClipped =
+    serverItems && serverTotal !== undefined ? serverTotal > serverItems.length : false;
+  const kpis =
+    filteredItems && serverTotal !== undefined
+      ? deriveKpis(filteredItems, serverTotal, isServerClipped)
+      : undefined;
+
   /**
    * 🔴🔴 MESLEK SÜZGECİ AÇIKKEN EXCEL KAPALIDIR.
    *
@@ -161,7 +175,12 @@ export function PersonnelListView() {
     setExportError(null);
     setIsExporting(true);
     try {
-      await downloadPersonnelExport(serverFilters);
+      // 🔴 EXPORT SINIFI — liste sorgusu `isDraft: false`i AYRICA (satır
+      // 104-109) ekliyordu, `serverFilters` içinde değildi; `handleExport`
+      // yalnız `serverFilters` geçtiği için Excel TASLAK personeli de
+      // indiriyordu. TEK süzgeç nesnesinden beslenme kuralı burada kırılmış
+      // — export de aynı `isDraft: false`i AÇIKÇA taşır.
+      await downloadPersonnelExport({ ...serverFilters, isDraft: false });
     } catch (error) {
       setExportError(backendErrorMessage(error, EXPORT_ERROR_FALLBACK));
     } finally {

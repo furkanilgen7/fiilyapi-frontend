@@ -62,6 +62,12 @@ export function BlockOccupancyMap({ blocks, notice }: BlockOccupancyMapProps) {
         </p>
       )}
 
+      {blocks === undefined && notice === undefined && (
+        <p className="satis-map__notice" data-testid="satis-harita-yukleniyor">
+          Blok haritası yükleniyor…
+        </p>
+      )}
+
       {/* 72-139 · iki sütunlu blok ızgarası */}
       <div className="satis-map__blocks">
         {(blocks ?? []).map((group) => {

@@ -179,8 +179,15 @@ export function ProjectDetailTabs({
 }: ProjectDetailTabsProps) {
   const visibleTabs = TABS.filter((tab) => !tab.types || tab.types.includes(projectType));
 
+  // 🔴 Final inceleme F-4 (a11y) — `ProgressPaymentsTabs`in kanonu burada da
+  // uygulanır: `role="tablist"`/`role="tab"`/`aria-selected` KALDIRILDI. Bu
+  // roller ekran okuyucuya "burada ok tuşlarıyla dolaşılan, aynı sayfada
+  // panel değiştiren bir sekme grubu var" der; oysa burada gerçek `tabpanel`
+  // YOKTUR ve her sekme SAYFA DEĞİŞTİREN bir `<Link>`tir. Doğru semantik:
+  // gezinme bölgesi (`<nav>`) + aktif linkte `aria-current="page"`. Görsel
+  // sunum DEĞİŞMEZ (sınıf adları aynı kalır).
   return (
-    <div className="project-hero__tabs" role="tablist" aria-label="Proje detay sekmeleri">
+    <nav className="project-hero__tabs" aria-label="Proje detay sekmeleri">
       {visibleTabs.map((tab) => {
         const href = tab.hrefFor({ projectKey, projectId });
         // ⚠️ `activePath` `usePathname()`ten gelir ve QUERY TAŞIMAZ; query
@@ -194,8 +201,7 @@ export function ProjectDetailTabs({
           <Link
             key={tab.label}
             href={href}
-            role="tab"
-            aria-selected={active}
+            aria-current={active ? "page" : undefined}
             title={tab.title}
             className={cx("project-hero__tab", active && "project-hero__tab--active")}
           >
@@ -203,6 +209,6 @@ export function ProjectDetailTabs({
           </Link>
         );
       })}
-    </div>
+    </nav>
   );
 }

@@ -169,11 +169,23 @@ export function formatAmount(value: Maskeli): string {
   return formatDecimal(value, 2);
 }
 
-/** Kart tarihleri: mockup'taki "Mar 2025" gosterimi. */
+/**
+ * Kart tarihleri: mockup'taki "Mar 2025" gosterimi. Girdi `YYYY-MM-DD` ISO
+ * tarihidir ve STRING olarak ayrıştırılır.
+ *
+ * 🔴 KAYIT 428 (2026-09-23): bu fonksiyon ÖNCEDEN `new Date(iso)` +
+ * `Intl.DateTimeFormat` kullanıyordu — dosyadaki `formatDayMonth`/
+ * `formatDateLong`/`formatDayMonthShort`/`formatPeriod`/`formatPeriodShort`
+ * yorumlarının AÇIKÇA yasakladığı desen (UTC yorumlanır, TR saatinde bir gün
+ * geri kayar; `Intl.DateTimeFormat` de jsdom/CI'da ICU verisi eksikse
+ * güvenilmez). `TR_MONTHS_SHORT` tek kaynağından türetilerek aynı ortam-
+ * bağımsız desene getirildi.
+ */
 export function formatMonthYear(iso: string): string {
-  return new Intl.DateTimeFormat(LOCALE, { month: "short", year: "numeric" }).format(
-    new Date(iso),
-  );
+  const [year, month] = iso.split("-");
+  const name = TR_MONTHS_SHORT[Number(month) - 1];
+  if (year === undefined || name === undefined) return iso;
+  return `${name} ${year}`;
 }
 
 /**

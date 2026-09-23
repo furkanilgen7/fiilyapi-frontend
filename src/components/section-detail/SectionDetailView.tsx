@@ -10,8 +10,7 @@ import { useTimesheetData } from "@/components/timesheet/useTimesheetData";
 import { useBoq } from "@/lib/api/hooks/useBoq";
 import { useSection } from "@/lib/api/hooks/useSection";
 import { useSite } from "@/lib/api/hooks/useSites";
-import { useSectionStock } from "@/lib/api/hooks/useSectionStock";
-import { STOCK_LIST_MAX_LIMIT } from "@/lib/api/hooks/useStockItems";
+import { useSectionStock, SECTION_STOCK_LIST_MAX_LIMIT } from "@/lib/api/hooks/useSectionStock";
 import { useSiteDiaryEntries, SITE_DIARY_LIST_MAX_LIMIT } from "@/lib/api/hooks/useSiteDiary";
 import { useSiteSubcontractorPayments } from "@/lib/api/hooks/useSiteSubcontractorPayments";
 import { isForbidden } from "@/lib/api/unwrap";
@@ -136,7 +135,7 @@ export function SectionDetailView() {
   //
   // Sayfalama tavanı AÇIKÇA gönderilir: sunucu varsayılanı 50'dir ve 51.
   // (malzeme, poz) çiftini SESSİZCE düşürürdü (TB3/F-TH kırpılma dersi).
-  const sectionStock = useSectionStock(sectionId, { limit: STOCK_LIST_MAX_LIMIT });
+  const sectionStock = useSectionStock(sectionId, { limit: SECTION_STOCK_LIST_MAX_LIMIT });
   const diaryEntries = useSiteDiaryEntries(siteId, { limit: SITE_DIARY_LIST_MAX_LIMIT });
   // F-BLMSEK T2 — bölüm süzgeçli TAŞERON hakedişi. Hook koşullu ÇAĞRILAMAZ
   // (yukarıdaki BOQ notunun aynısı), bu yüzden sekme seçili olmasa da bağlanır.

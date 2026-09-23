@@ -350,6 +350,13 @@ describe("alt sınır TÜREVDİR", () => {
  * İki ölçülmüş sonuç: (a) "1.234,56" → toplam sütununda SESSİZ yanlış sayı,
  * (b) "1,2," → `BigInt("12,0")` RENDER SIRASINDA fırlatıyor (hata sınırı yok,
  * tüm ekran kaybediliyor).
+ *
+ * 🔴 KAYIT 426 (2026-09-23): (a) davranışı `lib/decimal.ts::normalizeDecimalInput`
+ * düzeltmesiyle DEĞİŞTİ — "1.234,56" GEÇERLİ bir TR sayısıdır (1234,56),
+ * artık virgülden önceki nokta binlik ayıracı sayılıp doğru ayrıştırılır.
+ * "—" basmak ARTIK YANLIŞ olurdu (geçerli bir tutarı gizlerdi); test bu
+ * yüzden DOĞRU TOPLAMIN basıldığını doğrular. (b) davranışı DEĞİŞMEDİ — çift
+ * virgüllü girdi hâlâ gerçekten bozuktur, aşağıdaki test korunur.
  */
 describe("geçersiz ondalık girdi — toplam sütunu", () => {
   function totalCellOf(employeeLabel: string): HTMLElement {
@@ -359,13 +366,13 @@ describe("geçersiz ondalık girdi — toplam sütunu", () => {
     return cell;
   }
 
-  it("TR binlik ayraçlı girdide SESSİZ yanlış sayı basmaz, '—' basar", async () => {
+  it("TR binlik ayraçlı girdi doğru ayrıştırılır, toplam SESSİZCE gizlenmez (KAYIT 426)", async () => {
     render(<PayrollRatesScreen />);
     const employee = screen.getByLabelText("SGK Primi işçi payı");
     await userEvent.clear(employee);
     await userEvent.type(employee, "1.234,56");
     expect(employee).toHaveValue("1.234,56");
-    expect(totalCellOf("SGK Primi işçi payı")).toHaveTextContent("—");
+    expect(totalCellOf("SGK Primi işçi payı")).toHaveTextContent("1.255,06");
   });
 
   it("ikinci virgül ekranı ÇÖKERTMEZ", async () => {

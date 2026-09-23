@@ -242,6 +242,7 @@ export function BoqItemPickerModal({
         <p className="sf-boq-picker__note">{MASKED_PICKER_REASON}</p>
       )}
 
+      <div className="sf-boq-picker__table-scroll">
       <table className="sf-boq-ptable">
         <caption className="sr-only">Şantiye kotasından seçilebilecek pozlar</caption>
         <thead>
@@ -326,6 +327,7 @@ export function BoqItemPickerModal({
           )}
         </tbody>
       </table>
+      </div>
     </Modal>
   );
 }

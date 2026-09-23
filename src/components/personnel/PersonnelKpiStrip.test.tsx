@@ -5,7 +5,14 @@ import { PersonnelKpiStrip } from "./PersonnelKpiStrip";
 import type { PersonnelKpis } from "./personnel-derive";
 
 function kpis(overrides: Partial<PersonnelKpis> = {}): PersonnelKpis {
-  return { total: 6, isClipped: false, companyCount: 2, subcontractorCount: 3, ...overrides };
+  return {
+    total: 6,
+    isClipped: false,
+    companyCount: 2,
+    subcontractorCount: 3,
+    otherSourceCount: 1,
+    ...overrides,
+  };
 }
 
 describe("PersonnelKpiStrip", () => {

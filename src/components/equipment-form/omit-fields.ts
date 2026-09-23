@@ -1,4 +1,4 @@
-import type { EquipmentDetailResponse } from "@/lib/api/hooks/useEquipmentDetail";
+import type { EquipmentEditResponse } from "@/lib/api/hooks/useEquipmentDetail";
 
 import type { EquipmentFormValues } from "./form-state";
 
@@ -81,7 +81,7 @@ export const OMITTABLE_EQUIPMENT_FIELDS = Object.keys(
  * orada ezilecek bir sunucu değeri YOKTUR.
  */
 export function omittedEquipmentFields(
-  detail: EquipmentDetailResponse | undefined,
+  detail: EquipmentEditResponse | undefined,
   touched: ReadonlySet<keyof EquipmentFormValues>,
 ): readonly OmittableEquipmentField[] {
   if (!detail) return [];

@@ -8,7 +8,7 @@ import { AccessDenied } from "@/components/settings/AccessDenied";
 import { ProjectHeroBar } from "@/components/project-detail/ProjectHeroBar";
 import { SiteCard } from "@/components/project-detail/SiteCard";
 import { SiteTotalsStrip } from "@/components/project-detail/SiteTotalsStrip";
-import { useProject } from "@/lib/api/hooks/useProjects";
+import { useProject, type ProjectType } from "@/lib/api/hooks/useProjects";
 import { useSites } from "@/lib/api/hooks/useSites";
 import { isForbidden } from "@/lib/api/unwrap";
 import "@/components/project-detail/project-detail.css";
@@ -34,9 +34,11 @@ function AddSiteLink({ projectKey, className }: { projectKey: string; className?
 // aynısı: 403 → erişim reddi, diğer hatalar → dürüst hata metni, yükleniyor.
 function SiteListSection({
   projectKey,
+  projectType,
   sitesQuery,
 }: {
   projectKey: string;
+  projectType: ProjectType;
   sitesQuery: ReturnType<typeof useSites>;
 }) {
   if (isForbidden(sitesQuery.error)) return <AccessDenied />;
@@ -50,7 +52,7 @@ function SiteListSection({
   return (
     <div className="project-detail__site-grid" data-testid="site-list-grid">
       {sitesQuery.data.items.map((site) => (
-        <SiteCard key={site.id} projectKey={projectKey} site={site} />
+        <SiteCard key={site.id} projectKey={projectKey} projectType={projectType} site={site} />
       ))}
     </div>
   );
@@ -96,7 +98,11 @@ export default function ProjectDetailPage() {
           <AddSiteLink projectKey={projectKey} className="project-detail__empty-action" />
         </div>
       ) : (
-        <SiteListSection projectKey={projectKey} sitesQuery={sitesQuery} />
+        <SiteListSection
+          projectKey={projectKey}
+          projectType={project.project_type}
+          sitesQuery={sitesQuery}
+        />
       )}
       {sitesQuery.data && <SiteTotalsStrip totals={sitesQuery.data.totals} />}
     </div>

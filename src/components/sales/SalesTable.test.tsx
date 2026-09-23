@@ -224,4 +224,10 @@ describe("SalesTable — boş / yükleniyor / hata", () => {
     expect(screen.queryByTestId("satis-toplam")).not.toBeInTheDocument();
     expect(screen.getByTestId("satis-bos-durum")).toHaveTextContent("yükleniyor");
   });
+
+  it("no 235 · proje seçilmemişken 'proje yok' metni değil 'önce proje seçin' basılır", () => {
+    renderTable({ rows: undefined, isLoading: false, hasSelectedProject: false });
+    expect(screen.getByTestId("satis-bos-durum")).toHaveTextContent("Önce bir proje seçin.");
+    expect(screen.queryByText("Bu projede henüz satış kaydı yok.")).not.toBeInTheDocument();
+  });
 });

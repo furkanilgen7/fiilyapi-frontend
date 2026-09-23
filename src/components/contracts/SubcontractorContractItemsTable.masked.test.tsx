@@ -79,4 +79,10 @@ describe("SubcontractorContractItemsTable 'Hakediş %' — maskeli metrajda yanl
     expect(cell).toHaveTextContent("%40");
     expect(cell.textContent).not.toContain(REASON);
   });
+
+  it("no 54 · ondalıklı oran `formatPercent`in yuvarlama kuralıyla basılır (tam sayıya YUVARLANMAZ)", () => {
+    renderTable({ quantity: "100.000" }, new Map([["it-1", 42.5]]));
+    const cell = screen.getByTestId("tsd-progress-03.001");
+    expect(cell).toHaveTextContent("%42,5");
+  });
 });

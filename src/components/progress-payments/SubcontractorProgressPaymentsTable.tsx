@@ -19,12 +19,21 @@ export interface SubcontractorProgressPaymentsTableProps {
   isError: boolean;
   isLoading: boolean;
   data?: SubcontractorProgressPaymentListResponse;
+  /**
+   * no 183 · `ProgressPaymentsList.tsx::newActionLabel` deseniyle AYNI: boş
+   * durum ipucundaki eylem metni. Çağıran kendi "+ Yeni Hakediş" düğmesiyle
+   * AYNI sabitten geçirir; `null` (varsayılan) = eylem HİÇ VAAT EDİLMEZ —
+   * salt-okunur kullanıcı, ekranda olmayan bir düğmeyi tarif eden metin
+   * GÖRMEZ.
+   */
+  newActionLabel?: string | null;
 }
 
 export function SubcontractorProgressPaymentsTable({
   isError,
   isLoading,
   data,
+  newActionLabel = null,
 }: SubcontractorProgressPaymentsTableProps) {
   if (isError) return <p className="thk-message">Taşeron hakedişleri yüklenemedi</p>;
   if (isLoading || !data) return <p className="thk-message">Yükleniyor…</p>;
@@ -32,7 +41,11 @@ export function SubcontractorProgressPaymentsTable({
     return (
       <section className="thk-empty">
         <p className="thk-empty__title">Henüz taşeron hakedişi oluşturulmadı</p>
-        <p className="thk-empty__hint">+ Yeni Hakediş ile başlayın</p>
+        <p className="thk-empty__hint">
+          {newActionLabel
+            ? `${newActionLabel} ile başlayın`
+            : "Yeni Hakediş ekranından oluşturulan kayıtlar burada listelenir"}
+        </p>
       </section>
     );
   }

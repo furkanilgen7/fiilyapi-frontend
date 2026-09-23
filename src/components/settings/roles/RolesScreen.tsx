@@ -45,6 +45,26 @@ const MODULE_EMOJI: Record<string, string> = {
   user_management: "👤",
 };
 
+/**
+ * Kayıt 293 — `MODULE_EMOJI` yalnız 13 anahtar taşıyordu; backend
+ * `seed_data.py` 22 modül tohumluyor, eksik dokuzu (projects, sites,
+ * invoicing, boq, contracts, sales, documents, equipment, ai) sessizce
+ * ikonsuz basılıyordu. Haritada olmayan modül İCAT bir ikon almaz — nötr
+ * bir yer tutucu basar, satır ikonsuz kalmaz.
+ */
+// 🔴 SİMGE ALT KÜMESİ (F-SEM T3.2): yer tutucu, `symbol-subset-guard`ın
+// İZİN VERDİĞİ kümeden seçilir. İlk denemede 🔹 (U+1F539) yazılmıştı ve bekçi
+// onu YAKALADI — alt küme dışı bir kod noktası ubuntu-latest'te fontconfig
+// ikamesine düşer ve görsel kapıyı turdan tura oynatır. Yeni simge eklemek,
+// izin listesine "ölçüldü, kare oynamadı" gerekçesi yazmayı gerektirir; bu
+// ölçüm yapılmadığı için ZATEN İZİNLİ olan 📋 (liste/form, 15 yüzeyde kararlı)
+// kullanılıyor.
+const MODULE_EMOJI_FALLBACK = "📋";
+
+function moduleEmoji(key: string): string {
+  return MODULE_EMOJI[key] ?? MODULE_EMOJI_FALLBACK;
+}
+
 const USERS_PAGE_SIZE = 200;
 
 export function RolesScreen() {
@@ -226,7 +246,7 @@ export function RolesScreen() {
               return (
                 <div key={m.id} className={cx("role-module-row", emph && "role-module-row--emph")}>
                   <span className="role-module-row__name">
-                    {MODULE_EMOJI[m.key] ?? ""} {m.name}
+                    {moduleEmoji(m.key)} {m.name}
                   </span>
                   <span className="role-module-row__badge">
                     {label}

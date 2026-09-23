@@ -135,6 +135,22 @@ describe("SubcontractorProgressPaymentsView", () => {
     expect(screen.queryByRole("link", { name: "+ Yeni Hakediş" })).not.toBeInTheDocument();
   });
 
+  // no 183 — boş liste ipucu düğmesi olmayan salt-okunur kullanıcıya
+  // "+ Yeni Hakediş ile başlayın" TARİF ETMEMELİ (tabloya `canWrite`e göre
+  // türetilen `newActionLabel` geçirilir).
+  it("no 183 · salt-okunurda boş liste ipucu 'Yeni Hakediş' düğmesi VAAT ETMEZ", () => {
+    mockSession({ progress_payments: "view" });
+    mockListQuery({ data: { items: [], total: 0, limit: 50, offset: 0 } });
+    renderView();
+    expect(screen.queryByText(/\+ Yeni Hakediş ile başlayın/)).not.toBeInTheDocument();
+  });
+
+  it("no 183 · yazma yetkisinde boş liste ipucu 'Yeni Hakediş' düğmesini işaret eder", () => {
+    mockListQuery({ data: { items: [], total: 0, limit: 50, offset: 0 } });
+    renderView();
+    expect(screen.getByText("+ Yeni Hakediş ile başlayın")).toBeInTheDocument();
+  });
+
   it("KPI serit ozet verisiyle basar", () => {
     mockListQuery({ data: { items: [], total: 0, limit: 50, offset: 0 } });
     mockSummaryQuery({

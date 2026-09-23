@@ -117,9 +117,13 @@ export function SaleCreateView() {
     const exists = unitsQuery.data.blocks.some((group) =>
       group.units.some((unit) => unit.id === unitParam),
     );
+    // no 248 · deneme sonucu BAĞIMSIZ (bulunamasa da) işaretlenir — aksi
+    // hâlde `unitsQuery.data` her değiştiğinde (proje değişimi/refetch) bu
+    // efekt yeniden çalışır ve kullanıcı üniteyi elle boşaltsa bile parametre
+    // listede varsa değeri GERİ YAZAR.
+    unitSeededRef.current = true;
     if (exists) {
       setValues((prev) => ({ ...prev, unitId: unitParam }));
-      unitSeededRef.current = true;
     }
   }, [searchParams, unitsQuery.data]);
 

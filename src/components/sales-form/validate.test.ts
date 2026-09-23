@@ -102,12 +102,20 @@ describe("validateSaleForm — mockup req yıldızları", () => {
    * no 250 · `build-body.ts::optionalDecimal` geçersiz ondalık girdide anahtarı
    * SESSİZCE düşürüyordu (`discount_amount`/`down_payment`/`term_interest_pct`
    * gövdeye hiç girmiyordu) — kullanıcı hiçbir uyarı görmeden bedeli eksik
-   * gönderiyordu. İki ayraçlı girdi (`normalizeDecimalInput` yalnız İLK
-   * virgülü çevirir) bunun en net örneğidir: "40.000,50" → "40.000.50" → red.
+   * gönderiyordu. Gerçekten bozuk (çift virgülü) bir girdi bunun en net
+   * örneğidir: "40,000,50" → tek virgül çevrilir, kalan virgül deseni
+   * kırar → red.
+   *
+   * 🔴 KAYIT 426 (2026-09-23): bu test ÖNCEDEN "40.000,50" kullanıyordu —
+   * bu GEÇERLİ bir TR binlik-ayraçlı sayıdır (40000,50), ama eski
+   * `normalizeDecimalInput` yalnız İLK virgülü çevirdiği için YANLIŞLIKLA
+   * reddediyordu. `decimal.ts` düzeltildikten sonra o değer artık KABUL
+   * EDİLİR; test niyetini (gerçekten bozuk girdide hata basılması) korumak
+   * için örnek GERÇEKTEN geçersiz bir değerle değiştirildi.
    */
   it("250 · İndirim / Peşinat / Vade Farkı: geçersiz ondalık SESSİZCE yutulmaz, hata basılır", () => {
     for (const field of ["discountAmount", "downPayment", "termInterestPct"] as const) {
-      const errors = validateSaleForm(newCustomerValues({ [field]: "40.000,50" }));
+      const errors = validateSaleForm(newCustomerValues({ [field]: "40,000,50" }));
       expect(errors[field], field).toBeTruthy();
       expect(hasSaleFormErrors(errors), field).toBe(true);
     }

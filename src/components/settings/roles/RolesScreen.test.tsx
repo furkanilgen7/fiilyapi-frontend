@@ -56,7 +56,52 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+// Kayıt 293 — `MODULE_EMOJI` yalnız 13 anahtar taşıyordu; backend 22 modül
+// tohumluyor (`seed_data.py`), eksik dokuzu (ör. `projects`) sessizce
+// ikonsuz ("") basılıyordu — satır ikonsuz kalıyordu.
+function stubFetchWithMissingIconModule() {
+  const modulesWithMissingIcon = [...modules, { id: "m3", key: "projects", name: "Projeler", group: "GENEL", sort_order: 3 }];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/roles/") && url.includes("/permissions")) {
+        return new Response(JSON.stringify([{ module_key: "dashboard", access_level: "full", scope: "all" }]), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      if (url.includes("/roles")) {
+        return new Response(JSON.stringify(roles), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (url.includes("/modules")) {
+        return new Response(JSON.stringify(modulesWithMissingIcon), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ items: [], total: 0, limit: 200, offset: 0 }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }),
+  );
+}
+
 describe("RolesScreen", () => {
+  it("MODULE_EMOJI'de olmayan modül (projects) İKONSUZ değil, yer tutucu ikonla basılır", async () => {
+    stubFetchWithMissingIconModule();
+    renderScreen();
+    await screen.findByText("Modül Erişimleri");
+    const row = document.querySelector(".role-module-row__name");
+    const projectsRow = [...document.querySelectorAll(".role-module-row__name")].find((el) =>
+      el.textContent?.includes("Projeler"),
+    );
+    expect(row).not.toBeNull();
+    expect(projectsRow?.textContent?.trim()).not.toBe("Projeler");
+    expect(projectsRow?.textContent?.trim().length).toBeGreaterThan("Projeler".length);
+  });
+
   it("rol listesini gösterir ve seçili rolün detayında Modül Erişimleri listelenir", async () => {
     stubFetch();
     renderScreen();

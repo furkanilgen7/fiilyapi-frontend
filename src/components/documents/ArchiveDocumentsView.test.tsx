@@ -303,6 +303,19 @@ describe("ArchiveDocumentsView · izin kapıları", () => {
     expect(screen.getByRole("button", { name: "Dosya Yükle" })).toBeInTheDocument();
   });
 
+  /**
+   * 🔴 Kayıt 72 — `DocumentFolderPanel`e geçen `canWrite` yalnız yazma
+   * iznine bakıyordu, diğer ÜÇ yazma tetikleyicisinin ("↑ Yükle" · "+ Yeni
+   * Klasör" · panel diyaloğunun kendisi) hepsi `selectedProjectId`e de
+   * bağlıyken panelin '+' düğmesi (aria-label "Yeni klasör") unutulmuştu —
+   * proje seçilmeden de tıklanabilir görünüyordu.
+   */
+  it("proje SEÇİLMEDEN documents:full olsa bile panelin '+' düğmesi basılmaz", () => {
+    searchParams = new URLSearchParams();
+    render(<ArchiveDocumentsView />);
+    expect(screen.queryByRole("button", { name: "Yeni klasör" })).not.toBeInTheDocument();
+  });
+
   // F-BLG T3/G3 — İKİ yükleme girişi de KALIR (yönetim kararı), şartı
   // kullanıcının ayırt edebilmesidir. Ayrım ETİKETTEDİR, `title`da değil.
   it("iki yükleme girişi ekranda AYIRT EDİLEBİLİR etiketlerle durur", () => {

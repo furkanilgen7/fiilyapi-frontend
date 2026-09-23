@@ -79,6 +79,16 @@ export function LandShareTableView({ projectKey, activePath }: LandShareTableVie
   if (isLandShareMissing(summaryQuery.error)) {
     return (
       <div className="psum">
+        {/* Kayıt 209 — sekme şeridi bu dalda da basılır: kullanıcı geri gitmek
+            için şeritten çıkamıyordu (diğer boş hâller şeridi basıyor). */}
+        <div className="psum-tabbar">
+          <ProjectDetailTabs
+            projectKey={projectKey}
+            projectId={projectId}
+            activePath={activePath}
+            projectType={projectQuery.data?.project_type ?? "kat_karsiligi"}
+          />
+        </div>
         <p className="psum-message">
           Bu projede kat karşılığı sözleşmesi tanımlı değil; paylaşım tablosu yalnız kat karşılığı
           projelerinde tutulur.

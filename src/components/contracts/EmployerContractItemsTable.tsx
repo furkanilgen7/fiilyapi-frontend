@@ -182,7 +182,12 @@ export function EmployerContractItemsTable({
     const serverValue = field === "quantity" ? item.quantity : item.unit_price;
     const result = commitInlineCell(field, draft, serverValue);
     clearDraft(item.id, field);
-    if (result.kind === "noop") return;
+    if (result.kind === "noop") {
+      // no 52 · noop = "değer değişmedi/dokunulmadı", önceki bir hücrenin
+      // ihlal hatası buna rağmen ekranda ASILI kalmamalı.
+      setClientError(null);
+      return;
+    }
     if (result.kind === "error") {
       setClientError(result.message);
       return;

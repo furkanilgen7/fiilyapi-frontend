@@ -83,6 +83,19 @@ describe("buildBreakdownRow — BT 158-177", () => {
     ]);
   });
 
+  // Kayıt 125 — `documentCount` önceden `valid+expiring+expired`i istemcide
+  // yeniden HESAPLIYORDU; sunucu hazır `total_documents` alanını taşıdığı
+  // hâlde (spec K6: istemci KPI hesaplamaz). Aşağıdaki sayaçlar KASITLI
+  // toplamla UYUŞMAZ — fonksiyon `total_documents`i AYNEN kullanmalı.
+  it("documentCount sunucunun total_documents'ini AYNEN kullanır, yeniden HESAPLAMAZ", () => {
+    const row = buildBreakdownRow(
+      breakdown({ valid: 10, expiring: 0, expired: 0, total_documents: 999, missing: 1 }),
+    );
+
+    // valid+expiring+expired = 10, ama sunucu total_documents = 999 diyor.
+    expect(row.ratioLabel).toBe("999 / 1000");
+  });
+
   it("tüm sayaçlar sıfırsa çubuk ÇÖKMEZ (bölme hatası yok)", () => {
     const row = buildBreakdownRow(breakdown({}));
 

@@ -53,6 +53,30 @@ describe("project-detail.css — KAYIT NO 200: kpi-value--pending özgüllük ç
   });
 });
 
+describe("project-detail.css — KAYIT 201: şerit/ilerleme çubuğu proje türüne göre boyanır", () => {
+  it("kendi_yatirim ve kat_karsiligi tür sınıfları TANIMLIDIR (yalnız taahhüde sabit KALMAZ)", () => {
+    expect(css).toMatch(/\.site-card--kendi_yatirim \.site-card__strip\s*{[^}]*--gradient-type-kendi-yatirim/);
+    expect(css).toMatch(/\.site-card--kat_karsiligi \.site-card__strip\s*{[^}]*--gradient-type-kat-karsiligi/);
+    expect(css).toMatch(
+      /\.site-card--kendi_yatirim \.site-card__progress-fill\s*{[^}]*--gradient-type-kendi-yatirim/,
+    );
+    expect(css).toMatch(
+      /\.site-card--kat_karsiligi \.site-card__progress-fill\s*{[^}]*--gradient-type-kat-karsiligi/,
+    );
+  });
+
+  // `.site-card--completed` her tür sınıfıyla AYNI ANDA basılabilir (aktif
+  // hâlde iki modifier de sınıf listesindedir) — eşit özgüllükte tamamlanmış
+  // rengin KAZANMASI için `--completed` kuralı tür kurallarından SONRA gelmelidir.
+  it("--completed kuralı tür kurallarından SONRA gelir (kaynak sırası koruması)", () => {
+    const kendiYatirimIndex = css.indexOf(".site-card--kendi_yatirim .site-card__strip");
+    const completedStripIndex = css.indexOf(".site-card--completed .site-card__strip");
+    expect(kendiYatirimIndex).toBeGreaterThan(-1);
+    expect(completedStripIndex).toBeGreaterThan(-1);
+    expect(completedStripIndex).toBeGreaterThan(kendiYatirimIndex);
+  });
+});
+
 describe("project-detail.css — '+ Şantiye Ekle' <a> olarak da buton gibi görünür (T11)", () => {
   // Buton → bağlantı dönüşümü (spec §2.3): sınıf korunur ama tarayıcının
   // varsayılan <a> davranışı (altı çizili, satır içi kutu) stili kaydırır.

@@ -106,6 +106,14 @@ export function SalesView() {
       : backendErrorMessage(unitsQuery.error, "Ünite listesi yüklenemedi.")
     : undefined;
 
+  // no 237 · 403 dışı bir proje listesi hatası (ağ/500) `AccessDenied`a
+  // düşmez ama sessiz de kalmamalı — proje seçici boş, KPI/tablo "—"/"yok"
+  // gösterirken gerçek sebep burada görünür yazılır.
+  const projectsErrorNotice =
+    projectsQuery.isError && !isForbidden(projectsQuery.error)
+      ? backendErrorMessage(projectsQuery.error, "Proje listesi yüklenemedi.")
+      : undefined;
+
   return (
     <div className="satis">
       {/* 19-21 · breadcrumb'ın son öğesi sayfa başlığıdır */}
@@ -153,7 +161,7 @@ export function SalesView() {
           )}
           {/* 25 · satış formu (spec K1) */}
           {permission.canWrite && (
-            <Link href={NEW_SALE_HREF} className="btn btn--primary btn--md">
+            <Link href={formHref(NEW_SALE_HREF)} className="btn btn--primary btn--md">
               + Satış Kaydı
             </Link>
           )}
@@ -165,6 +173,12 @@ export function SalesView() {
         “Fiyat Listesi” ekranı henüz tasarlanmadı; ünite liste fiyatları proje
         ünite kartlarından yönetilir.
       </p>
+
+      {projectsErrorNotice !== undefined && (
+        <p className="satis__notice" data-testid="satis-proje-hatasi">
+          {projectsErrorNotice}
+        </p>
+      )}
 
       {/* 54-60 */}
       <SalesKpiStrip summary={summaryQuery.data} />
@@ -185,6 +199,7 @@ export function SalesView() {
             ? backendErrorMessage(salesQuery.error, "Satış listesi yüklenemedi.")
             : undefined
         }
+        hasSelectedProject={selectedProjectId !== ""}
       />
 
       {/* 217-234 */}

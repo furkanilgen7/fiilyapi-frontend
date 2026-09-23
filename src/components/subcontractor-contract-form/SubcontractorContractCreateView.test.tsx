@@ -110,6 +110,16 @@ beforeEach(() => {
   } as never);
 });
 
+describe("FSO — kırıntı yolu (no 329)", () => {
+  it("kırıntı 'Sözleşmeler' bağlantısı, İptal/başarı ile AYNI listeye (contractTabHref) gider", () => {
+    render(<SubcontractorContractCreateView />);
+    expect(screen.getByRole("link", { name: FSO_TEXT.breadcrumbRoot })).toHaveAttribute(
+      "href",
+      "/sozlesmeler?type=subcontractor",
+    );
+  });
+});
+
 describe("FSO — beş kart", () => {
   it("mockup'ın beş kartını da basar", () => {
     render(<SubcontractorContractCreateView />);

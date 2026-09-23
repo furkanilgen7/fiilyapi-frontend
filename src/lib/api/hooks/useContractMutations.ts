@@ -73,9 +73,13 @@ export function useCreateEmployerContractGroup(
           body,
         }),
       ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [EMPLOYER_CONTRACT_ITEMS_QUERY_KEY, projectId] });
-    },
+    // no 47 · `mutateAsync`in DÖNÜŞÜNÜ bu tazeleme SETTLE olana kadar
+    // BEKLETMEK için `onSuccess` promise'i DÖNDÜRÜR (`await` ile). Aksi
+    // hâlde `EmployerItemFormModal.handleSubmit` iki grubu art arda hızlı
+    // açarsa ikincisi `nextSortOrder`ı hâlâ TAZELENMEMİŞ `groups` listesinden
+    // hesaplar (dar ama gerçek yarış durumu).
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: [EMPLOYER_CONTRACT_ITEMS_QUERY_KEY, projectId] }),
   });
 }
 

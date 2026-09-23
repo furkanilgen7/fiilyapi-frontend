@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { EquipmentDetailResponse } from "@/lib/api/hooks/useEquipmentDetail";
+import type { EquipmentEditResponse } from "@/lib/api/hooks/useEquipmentDetail";
 
 import type { EquipmentFormValues } from "./form-state";
 import {
@@ -11,7 +11,7 @@ import {
 } from "./omit-fields";
 
 /** Kapıya giren ALTI alanın hepsi `null` olan künye. */
-const NULL_DETAIL: EquipmentDetailResponse = {
+const NULL_DETAIL: EquipmentEditResponse = {
   id: "eq-1",
   name: "Tower Crane TC-48",
   category: "crane",
@@ -55,7 +55,7 @@ const NULL_DETAIL: EquipmentDetailResponse = {
 };
 
 /** Kapıya giren ALTI alanın hepsi DOLU olan künye. */
-const FILLED_DETAIL: EquipmentDetailResponse = {
+const FILLED_DETAIL: EquipmentEditResponse = {
   ...NULL_DETAIL,
   depreciation_years: 15,
   financing: "leasing",

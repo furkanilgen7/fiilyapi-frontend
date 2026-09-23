@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
+import { SiteDetailTabs } from "@/components/site-detail/SiteDetailTabs";
 import { useProgressPayments, useProgressPaymentSummary } from "@/lib/api/hooks/useProgressPayments";
 import { useSite } from "@/lib/api/hooks/useSites";
 import {
@@ -76,6 +77,7 @@ function subcontractorBandMessage(state: UseSiteSubcontractorPaymentsResult): st
 }
 
 export function SiteProgressPaymentsView() {
+  const pathname = usePathname();
   // 🔴 URL-3 — rota parametreleri "slug VEYA UUID"dur; ADRES anahtarlaridir.
   const { projectId: projectKey, siteId: siteKey } = useParams<{
     projectId: string;
@@ -121,6 +123,10 @@ export function SiteProgressPaymentsView() {
 
   return (
     <div className="pp spp">
+      {/* Kayıt 303 — sekme şeridi TEK kaynaktan (`SiteDetailTabs`); bu ekran
+          kardeş görünümlerin (Stok/Puantaj/Belgeler/Günlük) hepsinin bastığı
+          şeridi hiç basmıyordu. */}
+      <SiteDetailTabs projectKey={projectKey} siteKey={siteKey} activePath={pathname} />
       {site && (
         <p className="spp__crumb">
           <Link

@@ -69,6 +69,14 @@ describe("saleStatusBadge — SY 166/175/184/193/202", () => {
   it("iptal edilmiş satış uydurma rozet almaz, enum çevirisi basılır", () => {
     expect(saleStatusBadge(row({ status: "cancelled" })).label).toBe("İptal");
   });
+
+  it("no 243 · taksitli plan tipi seçili ama installment_total 0 ise 'Taksitli' YALAN basılmaz", () => {
+    const badge = saleStatusBadge(
+      row({ payment_plan_type: "down_payment_installments", installment_total: 0 }),
+    );
+    expect(badge.label).not.toBe("Taksitli");
+    expect(badge.label).toBe("Plan Bekliyor");
+  });
 });
 
 describe("saleRowTone — SY 177/186", () => {
@@ -182,13 +190,25 @@ describe("paymentPlanCell — SY 165/174/183/192", () => {
       paymentPlanCell(row({ payment_plan_type: "down_payment_installments" })).text,
     ).toBe("Plan üretilmedi");
   });
+
+  it("no 244 · iptal edilmiş satışta gecikme sayacı sıfırlanmamış olsa da kırmızı basılmaz", () => {
+    const cell = paymentPlanCell(
+      row({ status: "cancelled", overdue_installment_count: 2 }),
+    );
+    expect(cell.isOverdue).toBe(false);
+  });
 });
 
 describe("customerLine — SY 161/179/188/197", () => {
   it("TCKN maskelenir (161)", () => {
     expect(customerLine(row())).toEqual({ text: "TCKN: 123****901", tone: "muted" });
     expect(maskNationalId("12345678901")).toBe("123****901");
-    expect(maskNationalId("123")).toBe("123");
+  });
+
+  it("no 238 · kısa/bozuk TCKN (≤6 hane) de tamamen maskelenir, maskesiz basılmaz", () => {
+    expect(maskNationalId("123")).toBe("***");
+    expect(maskNationalId("123456")).toBe("******");
+    expect(maskNationalId("")).toBe("");
   });
 
   it("VKN maskelenmez (197 kurumsal kimlik)", () => {
@@ -222,5 +242,10 @@ describe("customerLine — SY 161/179/188/197", () => {
 
   it("kimlik alanlarının ikisi de boşsa satır BASILMAZ (uydurma yok)", () => {
     expect(customerLine(row({ customer_national_id: null, customer_tax_number: null }))).toBeNull();
+  });
+
+  it("no 244 · iptal edilmiş satışta gecikme sayacı sıfırlanmamış olsa da '⚠ N taksit gecikmiş' basılmaz", () => {
+    const line = customerLine(row({ status: "cancelled", overdue_installment_count: 2 }));
+    expect(line?.icon).not.toBe("warning");
   });
 });

@@ -131,6 +131,9 @@ export function DocumentUploadModal({
           {(control) => (
             <Textarea
               {...control}
+              // Kayıt 73 — backend `description` max_length=2000 dayatır;
+              // istemci tavanı taşımıyordu.
+              maxLength={2000}
               value={description}
               onChange={(event) => setDescription(event.target.value)}
             />

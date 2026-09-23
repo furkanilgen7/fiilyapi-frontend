@@ -183,3 +183,44 @@ describe("Modal · gövde kaydırma kilidi (kayıt 58)", () => {
     expect(document.body.style.overflow).toBe("auto");
   });
 });
+
+// 🔴 KAYIT 50: arka plana yanlışlıkla tıklamak, dolu bir formda onay
+// sormadan diyaloğu kapatıp veri kaybına yol açıyordu. `isDirty` OPSİYONEL
+// bir opt-in'dir — geçmeyen 19 çağıranın davranışı DEĞİŞMEZ.
+describe("Modal · overlay tıklaması onay kapısı (kayıt 50, isDirty opt-in)", () => {
+  it("isDirty verilmezse (varsayılan) overlay tıklaması DOĞRUDAN kapatır — eski davranış AYNI", async () => {
+    const onClose = vi.fn();
+    render(
+      <Modal title="Test" onClose={onClose}>
+        <span>gövde</span>
+      </Modal>,
+    );
+    await userEvent.click(screen.getByRole("presentation"));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("isDirty=true iken onaylanırsa kapanır", async () => {
+    const onClose = vi.fn();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(
+      <Modal title="Test" onClose={onClose} isDirty>
+        <span>gövde</span>
+      </Modal>,
+    );
+    await userEvent.click(screen.getByRole("presentation"));
+    expect(window.confirm).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("isDirty=true iken REDDEDİLİRSE kapanmaz — veri kaybı önlenir", async () => {
+    const onClose = vi.fn();
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(
+      <Modal title="Test" onClose={onClose} isDirty>
+        <span>gövde</span>
+      </Modal>,
+    );
+    await userEvent.click(screen.getByRole("presentation"));
+    expect(onClose).not.toHaveBeenCalled();
+  });
+});

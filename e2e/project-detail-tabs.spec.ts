@@ -29,8 +29,8 @@ test("proje detay: Is Kalemleri sekmesi sozlesme pozu tablosuna GOTURUR", async 
   await page.goto("/projeler/p-1");
   await expect(page.getByRole("heading", { level: 1, name: "Kule A" })).toBeVisible();
 
-  const tabs = page.getByRole("tablist", { name: "Proje detay sekmeleri" });
-  await tabs.getByRole("tab", { name: "İş Kalemleri" }).click();
+  const tabs = page.getByRole("navigation", { name: "Proje detay sekmeleri" });
+  await tabs.getByRole("link", { name: "İş Kalemleri" }).click();
 
   // Sekme `?tab=items` taşır: parametre düşerse sözleşmenin GENEL sekmesine
   // varılırdı ve kullanıcı poz tablosunu hiç görmezdi.
@@ -55,8 +55,8 @@ test("proje detay: sekme SOZLESME POZU, santiye cipi SANTIYE BOQ'u — farkli he
   // burada kilitlenir — biri ötekine kaydırılırsa (ör. çip sözleşmeye, sekme
   // BOQ'a) bu iddia kırmızı verir.
   const tabHref = await page
-    .getByRole("tablist", { name: "Proje detay sekmeleri" })
-    .getByRole("tab", { name: "İş Kalemleri" })
+    .getByRole("navigation", { name: "Proje detay sekmeleri" })
+    .getByRole("link", { name: "İş Kalemleri" })
     .getAttribute("href");
   expect(tabHref).toBe("/sozlesmeler/isveren/p-1?tab=items");
 

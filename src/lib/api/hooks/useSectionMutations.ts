@@ -3,6 +3,7 @@ import { backendClient } from "@/lib/api/client";
 import { unwrap } from "@/lib/api/unwrap";
 import type { components } from "@/lib/api/schema";
 import { SITE_QUERY_KEY } from "./useSites";
+import { SITE_SECTIONS_QUERY_KEY } from "./useSiteSections";
 import { SECTION_QUERY_KEY, type SectionDetailResponse } from "./useSection";
 
 export type SectionCreateRequest = components["schemas"]["SectionCreate"];
@@ -55,6 +56,10 @@ export function useCreateSection(
       // Cozum: TIP on ekini gecersiz kil. React Query on-ek eslestirmesi yapar,
       // boylece kaydin HANGI anahtarla onbelleklendigi ONEMSIZLESIR.
       queryClient.invalidateQueries({ queryKey: [SITE_QUERY_KEY] });
+      // KAYIT 266: SectionForm.tsx bağımlılık seçicisinin (`dependencyOptions`)
+      // kaynağı budur — yeni bölüm oluşunca aynı oturumda ikinci bir form
+      // açılırsa liste bayat kalmasın.
+      queryClient.invalidateQueries({ queryKey: [SITE_SECTIONS_QUERY_KEY] });
     },
   });
 }
@@ -94,6 +99,9 @@ export function useUpdateSection(
       // boylece kaydin HANGI anahtarla onbelleklendigi ONEMSIZLESIR.
       queryClient.invalidateQueries({ queryKey: [SECTION_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: [SITE_QUERY_KEY] });
+      // KAYIT 266: aynı sebep — bölüm adı/durumu değiştikten sonra bağımlılık
+      // seçicisi bayat kalmasın.
+      queryClient.invalidateQueries({ queryKey: [SITE_SECTIONS_QUERY_KEY] });
     },
   });
 }

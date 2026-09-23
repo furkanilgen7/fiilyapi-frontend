@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui";
+import { Button, Checkbox } from "@/components/ui";
 import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
 import { useNotificationPrefs, useUpdateNotificationPrefs } from "@/lib/api/hooks/useNotificationPrefs";
 import { groupNotifications, NOTIF_EVENT_DISPLAY } from "./notification-groups";
@@ -63,7 +63,7 @@ export function NotificationsScreen() {
                     <div className="notif-row__channels">
                       {CHANNELS.map((ch) => (
                         <label key={ch} className="notif-channel">
-                          <input type="checkbox" checked={it[ch]} onChange={() => toggle(it.event_key, ch)} /> {CHANNEL_LABEL[ch]}
+                          <Checkbox checked={it[ch]} onChange={() => toggle(it.event_key, ch)} /> {CHANNEL_LABEL[ch]}
                         </label>
                       ))}
                     </div>

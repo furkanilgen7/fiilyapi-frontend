@@ -71,4 +71,28 @@ describe("CompanyScreen", () => {
 
     await waitFor(() => expect(vat).toHaveValue("10"));
   });
+
+  // Kayıt 276 — `default_vat_rate: null` daha önce sessizce "%20"ye
+  // eşleniyordu; kullanıcı gerçekte hiç seçim yapılmadığını göremiyordu.
+  it("default_vat_rate null ise secici sessizce %20 GOSTERMEZ", async () => {
+    stubFetch(() => json({ ...COMPANY, default_vat_rate: null }));
+
+    renderScreen();
+
+    const vat = await screen.findByLabelText("KDV Oranı (Varsayılan)");
+    expect(vat).toHaveValue("");
+    expect(vat).not.toHaveValue("20");
+  });
+
+  // Kayıt 276 — listede olmayan bir değer (ör. ondalıklı) sessizce en
+  // yakın seçeneğe yuvarlanmaz; kendi görünür seçeneğiyle basılır.
+  it("listede olmayan KDV orani (18.5) sessizce yuvarlanmaz, ozel secenek olarak gorunur", async () => {
+    stubFetch(() => json({ ...COMPANY, default_vat_rate: "18.5" }));
+
+    renderScreen();
+
+    const vat = await screen.findByLabelText("KDV Oranı (Varsayılan)");
+    expect(vat).toHaveValue("18.5");
+    expect(screen.getByRole("option", { name: "%18.5 (özel)" })).toBeInTheDocument();
+  });
 });

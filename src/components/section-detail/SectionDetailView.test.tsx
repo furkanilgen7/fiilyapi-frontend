@@ -822,3 +822,20 @@ describe("SectionDetailView — 'Bu Bölümdeki İşçiler' kartı (F-BLMPUAN, D
     expect(screen.queryByTestId("section-workers-personnel-notice")).not.toBeInTheDocument();
   });
 });
+
+// Kayıt 255 — kaynak düzeyi bekçi: bölüm stok sorgusu KATALOG sabitine
+// (`STOCK_LIST_MAX_LIMIT`) değil kendi bağımsız sabitine
+// (`SECTION_STOCK_LIST_MAX_LIMIT`) bağlanır. İki uç BAĞIMSIZDIR; katalog
+// sabiti burada kullanılsaydı biri değişince diğeri sessizce sürüklenirdi.
+describe("SectionDetailView — bölüm stok tavanı katalog sabitinden BAĞIMSIZ (kayıt 255, kaynak düzeyi)", () => {
+  it("SECTION_STOCK_LIST_MAX_LIMIT kullanır, STOCK_LIST_MAX_LIMIT'i İTHAL ETMEZ", async () => {
+    const { readFileSync } = await import("node:fs");
+    const path = await import("node:path");
+    const source = readFileSync(
+      path.resolve(process.cwd(), "src/components/section-detail/SectionDetailView.tsx"),
+      "utf8",
+    );
+    expect(source).toMatch(/SECTION_STOCK_LIST_MAX_LIMIT/);
+    expect(source).not.toMatch(/from "@\/lib\/api\/hooks\/useStockItems"/);
+  });
+});

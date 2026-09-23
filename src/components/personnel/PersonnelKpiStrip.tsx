@@ -21,6 +21,15 @@ export interface PersonnelKpiStripProps {
  * sahte sayı basmak yerine "—" + görünür gerekçe basılır.
  */
 export function PersonnelKpiStrip({ kpis }: PersonnelKpiStripProps) {
+  // Kayıt 162 — `WorkerSource` beş değerlidir; Şirket+Taşeron dışındaki
+  // (general/freelance/intern) kayıtlar bu iki kartta HİÇ görünmez. Mockup
+  // yalnız bu iki türetilmiş kartı çizdiği için yeni bir kart İCAT EDİLMEZ
+  // (kritik tasarım kuralı) — fark yerine gerekçe (`title`) ile açıklanır.
+  const hasOtherSources = Boolean(kpis && !kpis.isClipped && (kpis.otherSourceCount ?? 0) > 0);
+  const otherSourcesHint = hasOtherSources
+    ? `Toplam Personel'e ${kpis!.otherSourceCount} kişi daha dahildir (genel/serbest/stajyer kaynaklı) — bu kart yalnız Şirket+Taşeron toplamını gösterir.`
+    : undefined;
+
   return (
     <div className="personel-kpi" data-testid="personel-kpi-strip">
       {/* 90-93 */}
@@ -31,7 +40,9 @@ export function PersonnelKpiStrip({ kpis }: PersonnelKpiStripProps) {
 
       {/* 94-97 — TÜREV, kırpılmada pending'e düşer */}
       <div className="personel-kpi__card personel-kpi__card--company">
-        <div className="personel-kpi__label">Şirket Kadrosu</div>
+        <div className="personel-kpi__label" title={otherSourcesHint} data-testid="personel-kpi-company-label">
+          Şirket Kadrosu
+        </div>
         {kpis && !kpis.isClipped ? (
           <div className="personel-kpi__value personel-kpi__value--company">
             {kpis.companyCount}

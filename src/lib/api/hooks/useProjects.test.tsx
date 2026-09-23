@@ -3,7 +3,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
-import { useProjects, useProject, PROJECT_LIST_MAX_LIMIT } from "./useProjects";
+import { useProjects, useProject, useProjectAccess, PROJECT_LIST_MAX_LIMIT } from "./useProjects";
 import { backendClient } from "@/lib/api/client";
 
 vi.mock("@/lib/api/client", () => ({ backendClient: { GET: vi.fn() } }));
@@ -86,5 +86,41 @@ describe("useProject", () => {
     expect(backendClient.GET).toHaveBeenCalledWith("/projects/{project_id}", {
       params: { path: { project_id: "p-1" } },
     });
+  });
+
+  // 🔴 KAYIT 456: boş id ile ağa ÇIKILMAZ — `useSites.ts` emsaliyle AYNI
+  // desen. Rota parametresi boşken (ör. henüz çözülmemiş) 422 sınıfı kusura
+  // açılmasın diye sorgu kapalı kalmalı.
+  it("boş projectId ile ağa çıkmaz (enabled=false)", async () => {
+    const { result } = renderHook(() => useProject(""), { wrapper });
+
+    expect(result.current.fetchStatus).toBe("idle");
+    expect(backendClient.GET).not.toHaveBeenCalled();
+  });
+});
+
+describe("useProjectAccess", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("userId ile erişim listesini çeker", async () => {
+    const access = { project_ids: ["p-1"] };
+    vi.mocked(backendClient.GET).mockResolvedValue({
+      data: access, error: undefined, response: new Response(),
+    } as never);
+
+    const { result } = renderHook(() => useProjectAccess("u-1"), { wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(backendClient.GET).toHaveBeenCalledWith("/users/{user_id}/project-access", {
+      params: { path: { user_id: "u-1" } },
+    });
+  });
+
+  // 🔴 KAYIT 456: boş userId ile ağa ÇIKILMAZ.
+  it("boş userId ile ağa çıkmaz (enabled=false)", async () => {
+    const { result } = renderHook(() => useProjectAccess(""), { wrapper });
+
+    expect(result.current.fetchStatus).toBe("idle");
+    expect(backendClient.GET).not.toHaveBeenCalled();
   });
 });

@@ -54,7 +54,11 @@ export function PermissionMatrix() {
   const mutation = usePermissionMutation();
   const [cellError, setCellError] = useState<string | null>(null);
 
-  if (modulesQuery.isLoading || rolesQuery.isLoading) {
+  // Kayıt 281 — `permQueries` (rol başına izin hücreleri) bu bekleyişe
+  // dahil değildi: modüller+roller gelir gelmez matris etkileşime açılıyor,
+  // henüz yüklenmemiş roller için hücreler `[]`e düşüyor ve kullanıcı GERÇEK
+  // değeri görmeden yazabiliyordu.
+  if (modulesQuery.isLoading || rolesQuery.isLoading || permQueries.some((q) => q.isLoading)) {
     return <p className="settings-note">Yükleniyor…</p>;
   }
   const permForbidden = permQueries.some((q) => isForbidden(q.error));

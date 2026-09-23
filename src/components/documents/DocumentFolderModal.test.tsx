@@ -50,6 +50,13 @@ describe("DocumentFolderModal", () => {
     expect(screen.queryByLabelText(/ikon/i)).toBeNull();
   });
 
+  // Kayıt 73 — backend `DocumentFolderCreate.name` max_length=150 dayatır;
+  // istemci tavanı taşımıyordu (150+ karakter girilip gönderilince 422 alırdı).
+  it("ad alanı backend'in 150 karakter tavanını taşır (kayıt 73)", () => {
+    render(<DocumentFolderModal projectId="p-1" siteId="s-1" onClose={vi.fn()} />);
+    expect(screen.getByLabelText("Klasör Adı")).toHaveAttribute("maxLength", "150");
+  });
+
   it("proje kimliğini hook'a YOL parametresi olarak verir, gövdeye koymaz", async () => {
     const user = userEvent.setup();
     render(<DocumentFolderModal projectId="p-1" siteId="s-1" onClose={vi.fn()} />);

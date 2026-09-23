@@ -37,3 +37,29 @@ describe("LandShareTableView — proje sorgusu hata verdiğinde", () => {
     expect(screen.queryByText("Yükleniyor…")).not.toBeInTheDocument();
   });
 });
+
+// Kayıt 209 — 404 (kat karşılığı sözleşmesi yok) dalı sekme şeridini
+// basmıyordu; kullanıcı geri gitmek için şeritten çıkamıyordu.
+describe("LandShareTableView — kat karşılığı sözleşmesi YOK (404) dalı", () => {
+  it("açıklayıcı boş hâli basar VE sekme şeridini KORUR", () => {
+    vi.mocked(useProject).mockReturnValue({
+      data: { id: "p-1", project_type: "kat_karsiligi" },
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as never);
+    vi.mocked(useLandShareSummary).mockReturnValue(
+      errorStub(new BackendError(404, { detail: "yok" })),
+    );
+    vi.mocked(useLandShareUnits).mockReturnValue(idleStub());
+
+    render(<LandShareTableView projectKey="p-1" activePath="/projeler/p-1/paylasim" />);
+
+    expect(
+      screen.getByText(/kat karşılığı sözleşmesi tanımlı değil/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("navigation", { name: "Proje detay sekmeleri" }),
+    ).toBeInTheDocument();
+  });
+});

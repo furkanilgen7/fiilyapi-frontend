@@ -94,6 +94,50 @@ describe("PermissionMatrix", () => {
     expect(rowHeaders).toEqual(["Muhasebe", "Fatura Yönetimi", "Hazine"]);
   });
 
+  // Kayıt 281 — `permQueries` (rol başına izin hücreleri) bekleyişe dahil
+  // DEĞİLDİ: modüller+roller gelir gelmez matris etkileşime açılıyor, henüz
+  // yüklenmemiş roller için hücreler `[]`e (→ "— (Yok)" preset'i) düşüyor ve
+  // kullanıcı GERÇEK değeri görmeden yazabiliyordu.
+  it("/permissions henuz gelmemisken matris hala 'Yukleniyor…' basar, sahte '— (Yok)' GOSTERMEZ", async () => {
+    let resolvePermissions: (value: Response) => void = () => undefined;
+    const permissionsPromise = new Promise<Response>((resolve) => {
+      resolvePermissions = resolve;
+    });
+    const json = (body: unknown) =>
+      new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/api/backend/modules")) {
+        return json([{ id: "m1", key: "raporlar", name: "Raporlar", group: "GENEL", sort_order: 1 }]);
+      }
+      if (url.includes("/permissions")) {
+        return permissionsPromise;
+      }
+      if (url.includes("/api/backend/roles")) {
+        return json([{ id: "r1", key: "saha", name: "Saha", emoji: "", description: "", is_system: false }]);
+      }
+      return json([]);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderMatrix();
+
+    // Modüller+roller ÇÖZÜLDÜ (kanıt: `/permissions` isteği atıldı — bu
+    // istek roller gelmeden ATILAMAZ, `roleIds` rollerin kendisinden gelir)
+    // ama izin hücreleri HÂLÂ uçuşta — matris hücreleri GERÇEK değer
+    // olmadan interaktif basılmamalı.
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/permissions"))).toBe(true);
+    });
+    expect(screen.getByText("Yükleniyor…")).toBeInTheDocument();
+    expect(screen.queryByText("Raporlar")).not.toBeInTheDocument();
+
+    resolvePermissions(json([{ module_key: "raporlar", access_level: "view", scope: "all" }]));
+
+    expect(await screen.findByText("Raporlar")).toBeInTheDocument();
+  });
+
   it("hucre guncellemesi reddedilince hata mesaji gosterir", async () => {
     const user = userEvent.setup();
     const json = (body: unknown, status = 200) =>

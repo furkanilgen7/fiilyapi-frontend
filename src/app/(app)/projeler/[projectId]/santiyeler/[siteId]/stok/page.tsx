@@ -9,8 +9,8 @@ import { SiteStockView } from "@/components/stock/SiteStockView";
 // (belgeler/gunluk-kayit/puantaj deseni).
 // 🔴 STOK-BOLUM — `Suspense` EKLENDİ. Görünüm artık `?section=` süzgecini
 // `useSearchParams` ile okuyor; Next 15'te bu hook Suspense sınırı GEREKTİRİR
-// (sarılmazsa sayfa build'de prerender hatası verir — `/stok` ve `/belgeler`
-// aynı sınırı taşır).
+// (sarılmazsa sayfa build'de prerender hatası verir — kardeş `/belgeler`
+// sayfası da AYNI SINIRI taşır, kayıt 387 ile eklendi).
 export default function SiteStockPage() {
   return (
     <Suspense>

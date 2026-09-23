@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { Button, Input } from "@/components/ui";
 import { cx } from "@/lib/cx";
-import { formatAmount, formatQuantity } from "@/lib/format";
+import { formatAmount, formatCurrencyPrecise, formatPercent, formatQuantity } from "@/lib/format";
 import type { SubcontractorContractItemResponse } from "@/lib/api/hooks/useSubcontractorContractMutations";
 import { decimalInputValue, groupContractItems } from "@/components/subcontractor-contract-form/item-rows";
 import { FSO_TEXT } from "@/components/subcontractor-contract-form/constants";
@@ -179,7 +179,7 @@ export function SubcontractorContractItemsTable({
                 className="tsd-items__foot-cell tsd-items__foot-cell--value"
                 data-testid="tsd-items-total"
               >
-                ₺ {formatAmount(contractTotal)}
+                {formatCurrencyPrecise(contractTotal)}
               </td>
               <td className="tsd-items__foot-cell" />
             </tr>
@@ -306,7 +306,7 @@ function ItemGroup({
                       `tsd-progress__pct--${tsdProgressTone(pct)}`,
                     )}
                   >
-                    %{Math.round(pct)}
+                    {formatPercent(pct)}
                   </div>
                 </>
               )}

@@ -10,6 +10,7 @@ import {
   useSaveSitePlanSprint,
 } from "./useSitePlanMutations";
 import { SITE_PLAN_QUERY_KEY } from "./useSitePlan";
+import { SITE_PLAN_DAY_SUMMARY_QUERY_KEY } from "./useSitePlanDaySummary";
 import { backendClient } from "@/lib/api/client";
 import { BackendError } from "@/lib/api/unwrap";
 
@@ -44,6 +45,11 @@ function errorResponse(status: number, detail: string) {
 
 function expectSiteInvalidation() {
   expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [SITE_PLAN_QUERY_KEY, SITE_ID] });
+  // 🔴 KAYIT 320: `useSitePlanDaySummary` AYRI kök anahtar kullanır — Şantiye
+  // Günlüğü'ndeki gömülü "Planlama" özeti de aynı yazmadan sonra tazelenmeli.
+  expect(invalidateSpy).toHaveBeenCalledWith({
+    queryKey: [SITE_PLAN_DAY_SUMMARY_QUERY_KEY, SITE_ID],
+  });
 }
 
 beforeEach(() => {

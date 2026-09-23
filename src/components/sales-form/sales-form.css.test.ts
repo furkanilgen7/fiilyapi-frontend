@@ -44,4 +44,12 @@ describe("sales-form.css — DS mockup'ına bağlı kurallar", () => {
     const withoutComments = css.replace(/\/\*[\s\S]*?\*\//g, "");
     expect(withoutComments).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });
+
+  // 🔴 KAYIT 252 (2026-09-23): `.select-wrap` (select.css) `width: 100%`
+  // taşır — `.sf-plan__head` flex konteynerinde `<Select>` şeridin TAMAMINI
+  // kaplayıp başlık + "Plan Oluştur" düğmesini ikinci satıra iterdi.
+  it("plan tipi seçicisi (.select-wrap) flex ile daralır, width:auto olur", () => {
+    expect(css).toMatch(/\.sf-plan__head\s*>\s*\.select-wrap\s*\{[^}]*flex:\s*0\s+0\s+auto[^}]*\}/);
+    expect(css).toMatch(/\.sf-plan__head\s*>\s*\.select-wrap\s*\{[^}]*width:\s*auto[^}]*\}/);
+  });
 });

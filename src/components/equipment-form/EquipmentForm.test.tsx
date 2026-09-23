@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { EquipmentForm } from "./EquipmentForm";
 import {
   useEquipmentDetail,
-  type EquipmentDetailResponse,
+  type EquipmentEditResponse,
 } from "@/lib/api/hooks/useEquipmentDetail";
 import {
   useCreateEquipment,
@@ -48,7 +48,7 @@ function mockSession(level: string) {
  * Düzenleme kipinin künyesi — K5 kapısına giren ALTI alan `null`, yani sunucu
  * bu kararların hiçbirini taşımıyor ama ekranda hepsi DOLU görünecek.
  */
-const DETAIL_FIXTURE: EquipmentDetailResponse = {
+const DETAIL_FIXTURE: EquipmentEditResponse = {
   id: "eq-9",
   name: "Tower Crane TC-48",
   category: "crane",
@@ -91,7 +91,7 @@ const DETAIL_FIXTURE: EquipmentDetailResponse = {
   created_at: "2026-08-14T00:00:00Z",
 };
 
-function mockDetail(overrides: Partial<EquipmentDetailResponse> = {}) {
+function mockDetail(overrides: Partial<EquipmentEditResponse> = {}) {
   vi.mocked(useEquipmentDetail).mockReturnValue({
     data: { ...DETAIL_FIXTURE, ...overrides },
     isLoading: false,

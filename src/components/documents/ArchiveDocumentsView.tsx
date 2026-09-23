@@ -207,7 +207,11 @@ export function ArchiveDocumentsView() {
           isFoldersError: foldersQuery.isError,
           hasFolders: folders.length > 0,
         })}
-        canWrite={canWrite}
+        // Kayıt 72 — panelin '+' düğmesi diğer üç yazma tetikleyicisinden
+        // (238/238/260) farklı olarak `selectedProjectId` ile kısıtlanmamıştı;
+        // proje seçilmeden basılabiliyordu (diyalog kendisi kapıda duruyor
+        // ama düğme yanlışlıkla etkin görünüyordu).
+        canWrite={canWrite && Boolean(selectedProjectId)}
         onCreateFolderClick={() => setOpenDialog("folder")}
       />
 

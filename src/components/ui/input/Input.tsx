@@ -20,6 +20,13 @@ export interface InputProps
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   numeric?: boolean;
+  /**
+   * KAYIT 373: `className` yalnız iç `<input>`e gider (`.input-wrap` sabit
+   * `width: 100%` taşır) — yerleşim sınıfı (ör. flex öğesi genişliği) vermek
+   * isteyen çağıran yanlış elemana inerdi. Bu prop DIŞ `<span>`e uygulanır;
+   * eklenmesi eski `className` davranışını DEĞİŞTİRMEZ (geriye uyumlu, opt-in).
+   */
+  wrapperClassName?: string;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -31,11 +38,19 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       rightIcon,
       numeric,
       className,
+      wrapperClassName,
       ...rest
     },
     ref,
   ) => (
-    <span className={cx("input-wrap", Boolean(leftIcon) && "input-wrap--left", Boolean(rightIcon) && "input-wrap--right")}>
+    <span
+      className={cx(
+        "input-wrap",
+        Boolean(leftIcon) && "input-wrap--left",
+        Boolean(rightIcon) && "input-wrap--right",
+        wrapperClassName,
+      )}
+    >
       {leftIcon && <span className="input-icon input-icon--left">{leftIcon}</span>}
       <input
         ref={ref}

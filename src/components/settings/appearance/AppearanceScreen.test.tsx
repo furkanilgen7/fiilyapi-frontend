@@ -64,4 +64,16 @@ describe("AppearanceScreen", () => {
 
     await waitFor(() => expect(currency).toHaveValue("USD"));
   });
+
+  // Kayıt 419/482 — vurgu rengi/yoğunluk seçimi kaydediliyor ama arayüze
+  // HİÇBİR yerde uygulanmıyordu (CSS köprüsü yok); kullanıcı yanılmasın
+  // diye durum artık açıkça yazılır.
+  it("vurgu rengi ve yoğunluk kartlarında 'yakında' notu görünür (kayıt 419/482)", async () => {
+    stubFetch(() => json(PREFERENCES));
+    renderScreen();
+    await screen.findByLabelText("Arayüz Dili");
+
+    const notes = screen.getAllByText("Seçiminiz kaydedilir; arayüze yansıtılması yakında gelecek.");
+    expect(notes).toHaveLength(2);
+  });
 });

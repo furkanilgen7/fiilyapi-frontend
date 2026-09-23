@@ -68,6 +68,15 @@ describe("DocumentUploadModal", () => {
     expect(screen.getByLabelText("Klasör")).toHaveValue("df-2");
   });
 
+  // Kayıt 73 — backend `description` max_length=2000 dayatır; istemci
+  // tavanı taşımıyordu.
+  it("açıklama alanı backend'in 2000 karakter tavanını taşır (kayıt 73)", () => {
+    render(
+      <DocumentUploadModal projectId="p-1" folders={FOLDERS} onClose={vi.fn()} />,
+    );
+    expect(screen.getByLabelText("Açıklama")).toHaveAttribute("maxLength", "2000");
+  });
+
   it("dosya seçilmeden gönderilirse istek ATILMAZ, görünür Türkçe hata basar", async () => {
     const user = userEvent.setup();
     render(

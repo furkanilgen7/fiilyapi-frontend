@@ -15,6 +15,14 @@ interface ModalProps {
    * kolonlu çizilmiş formlara dar geldiğinde kullanılır — davranış değişmez.
    */
   className?: string;
+  /**
+   * Kayıt 50 — form "kirli" (touched/dirty) iken arka plana yanlışlıkla
+   * tıklamak, onay sormadan diyaloğu kapatıp veri kaybına yol açıyordu.
+   * `true` verilirse arka plan tıklamasında `window.confirm` sorulur;
+   * OPSİYONELdir ve varsayılan `false` — geçmeyen çağıranların davranışı
+   * DEĞİŞMEZ (additive, F-BLG T2a deseni).
+   */
+  isDirty?: boolean;
 }
 
 // Odaklanabilir ogeler — `aria-modal` tek basina tarayicida Tab'i hapsetmez,
@@ -37,8 +45,15 @@ function focusableElementsOf(root: HTMLElement): HTMLElement[] {
   );
 }
 
-export function Modal({ title, onClose, children, footer, className }: ModalProps) {
+export function Modal({ title, onClose, children, footer, className, isDirty = false }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+
+  function handleOverlayClick() {
+    if (isDirty && !window.confirm("Kaydedilmemiş değişiklikleriniz var. Kapatmak istediğinize emin misiniz?")) {
+      return;
+    }
+    onClose();
+  }
 
   // Acilista odagi diyalogun icine tasi; kapanista tetikleyen ogeye geri ver.
   // Bagimlilik listesi bilerek bos: yeniden render'da odak calinmamali.
@@ -109,7 +124,7 @@ export function Modal({ title, onClose, children, footer, className }: ModalProp
   if (typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="modal-overlay" role="presentation" onClick={onClose}>
+    <div className="modal-overlay" role="presentation" onClick={handleOverlayClick}>
       <div
         ref={dialogRef}
         tabIndex={-1}

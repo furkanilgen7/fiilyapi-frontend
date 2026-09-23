@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 import { useCreateSection, useUpdateSection } from "./useSectionMutations";
 import { SITE_QUERY_KEY } from "./useSites";
+import { SITE_SECTIONS_QUERY_KEY } from "./useSiteSections";
 import { SECTION_QUERY_KEY } from "./useSection";
 import { backendClient } from "@/lib/api/client";
 
@@ -57,7 +58,11 @@ describe("useCreateSection — onSuccess sorgu gecersiz kilma", () => {
     // ve ekran GUNCELLENMEDEN kalirdi — `section-form.spec.ts` bunu canli
     // akista yakaladi (kaydedilen bolum bedeli detayda "—" kaliyordu).
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [SITE_QUERY_KEY] });
-    expect(invalidateSpy).toHaveBeenCalledTimes(1);
+    // 🔴 KAYIT 266: SectionForm.tsx bağımlılık seçicisi `useSiteSections`ı
+    // (`site-sections`) okur — yeni bölüm bu kapsamı da geçersiz kılmalı,
+    // aksi hâlde aynı oturumda ikinci bir form eski listeyi gösterir.
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [SITE_SECTIONS_QUERY_KEY] });
+    expect(invalidateSpy).toHaveBeenCalledTimes(2);
   });
 
   it("backend hata verirse hicbir sorgu gecersiz kilinmaz", async () => {
@@ -116,7 +121,10 @@ describe("useUpdateSection — onSuccess sorgu gecersiz kilma", () => {
     // akista yakaladi (kaydedilen bolum bedeli detayda "—" kaliyordu).
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [SECTION_QUERY_KEY] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [SITE_QUERY_KEY] });
-    expect(invalidateSpy).toHaveBeenCalledTimes(2);
+    // 🔴 KAYIT 266: aynı sebep — bölüm adı/durumu değişince bağımlılık
+    // seçicisi de tazelenmeli.
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [SITE_SECTIONS_QUERY_KEY] });
+    expect(invalidateSpy).toHaveBeenCalledTimes(3);
   });
 
   it("backend hata verirse hicbir sorgu gecersiz kilinmaz", async () => {

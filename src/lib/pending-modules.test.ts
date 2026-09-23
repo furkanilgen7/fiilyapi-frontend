@@ -284,6 +284,25 @@ describe("MODULE_LABELS — bayat 'modül gelecek' kalıbı yasağı", () => {
     expect(offenders).toEqual([]);
   });
 
+  // 🔴 KAYIT 429 (2026-09-23): yukarıdaki iki test yalnız `MODULE_LABELS`
+  // haritasını tarıyordu — `FALLBACK_LABEL` ("İlgili modülle birlikte gelir",
+  // tanınmayan anahtar için dönen yedek metin) haritanın DIŞINDA, ayrı bir
+  // sabit olduğu için süzgece hiç girmiyordu.
+  //
+  // FALLBACK_LABEL'i haritadaki "birlikte gelir" kusuruyla AYNI kefeye
+  // koyup metni değiştirmek BURADA YAPILMADI: bu tam metin 20+ testte
+  // (`pendingModuleLabel(null)`/`("bilinmeyen")` vb. — `CardEmptyState`,
+  // `ProjectCard`, `BoqTotalsStrip`, `FinancialStatementsHomeView`…)
+  // BİLEREK sabitlenmiş, GERÇEKTEN sınıflandırılmamış/bilinmeyen anahtar
+  // durumunun kanonik metnidir; değiştirmek ürün metni kararı olur (bu
+  // partinin kapsamı DIŞINDA — DUR VE RAPORLA maddesi). Bunun yerine metin
+  // BİLİNÇLİ bir istisna olarak BURADA belgelenir ve kilitlenir: FALLBACK_LABEL
+  // sessizce değişirse (ör. birileri onu haritadaki gibi "düzeltmeye" kalkarsa)
+  // bu test KIRMIZIYA döner ve değişiklik GÖRÜNÜR olur — artık kör nokta değil.
+  it("yedek metin BİLİNÇLİ bir istisnadır — sessizce değişmez (kanon: pendingModuleLabel(\"bilinmeyen\"))", () => {
+    expect(pendingModuleLabel("tanınmayan-modül-anahtarı")).toBe("İlgili modülle birlikte gelir");
+  });
+
   it("her anahtarin metni bos degildir", () => {
     for (const [key, label] of Object.entries(MODULE_LABELS)) {
       expect(label.length, `"${key}" boş`).toBeGreaterThan(0);

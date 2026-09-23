@@ -85,6 +85,12 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
   const [description, setDescription] = useState("");
   const [defaultCoefficient, setDefaultCoefficient] = useState("1");
   const [formError, setFormError] = useState<string | null>(null);
+  // no 179 · `edit` kaydetmesi PATCH-SONRA-PUT sıralıdır: PATCH başarılı olup
+  // PUT (satırlar) PATLARSA başlık zaten sunucuda kaydedilmiştir ve geri
+  // alma (rollback) YOKTUR. `formError` sunucunun ham cümlesini taşımaya
+  // devam eder (mevcut testler bunu birebir bekler); bu bayrak AYRI bir
+  // bantla kullanıcıya "başlık kaydedildi, satırlar kaydedilmedi" der.
+  const [headerSavedLinesFailed, setHeaderSavedLinesFailed] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [refreshConfirmOpen, setRefreshConfirmOpen] = useState(false);
   // Kullanıcının GERÇEKTEN dokunduğu dönem alanları. Mockup'ta ay seçicisinin
@@ -233,8 +239,21 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
     return hasPriceEscalation ? defaultCoefficient || "1" : DEFAULT_COEFFICIENT_WHEN_LOCKED;
   }
 
+  // no 180 · ikiz taşeron formuyla (`SubcontractorProgressPaymentForm
+  // ::validateHeader`) AYNI kontrol — dönem seçimi olmadan istek UÇMAZ.
+  function validateHeader(): string | null {
+    if (periodYear === null || periodMonth === null) return "Dönem seçimi zorunludur.";
+    return null;
+  }
+
   function handleSave() {
     setFormError(null);
+    setHeaderSavedLinesFailed(false);
+    const validationError = validateHeader();
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
     // Kaydetmeden HEMEN önce normalize edilir (kontrolcü bulgusu §2): boş/
     // geçersiz ara haller ("", ".") `"0"`a çevrilir — `buildLinesSaveBody`nin
     // KENDİSİ değiştirilmedi, kritik testleri korunur (bkz. `pivot.ts`).
@@ -265,8 +284,12 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
             { paymentId, body: { lines: linesBody } },
             {
               onSuccess: () => setDirty(false),
-              onError: (err) =>
-                setFormError(backendErrorMessage(err, "Hakediş satırları kaydedilemedi.")),
+              onError: (err) => {
+                // no 179 · başlık ZATEN sunucuda kaydedildi (PATCH başarılıydı);
+                // geri alma yok — kullanıcı kısmi kayıt durumunu görmeli.
+                setHeaderSavedLinesFailed(true);
+                setFormError(backendErrorMessage(err, "Hakediş satırları kaydedilemedi."));
+              },
             },
           );
         },
@@ -382,6 +405,16 @@ export function ProgressPaymentForm(props: ProgressPaymentFormProps) {
       {formError && (
         <Alert variant="danger" className="pp-form__alert" data-testid="pp-form-error">
           {formError}
+        </Alert>
+      )}
+
+      {headerSavedLinesFailed && (
+        <Alert
+          variant="warning"
+          className="pp-form__alert"
+          data-testid="pp-form-header-saved-lines-failed"
+        >
+          Hakediş başlığı KAYDEDİLDİ; satırlar kaydedilemedi — tekrar deneyin.
         </Alert>
       )}
 

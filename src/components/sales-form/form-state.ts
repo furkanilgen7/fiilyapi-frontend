@@ -142,7 +142,10 @@ export function planRowsFromServer(items: readonly SaleInstallmentResponse[]): P
     dueDate: item.due_date,
     amount: item.amount,
     paymentMethod: item.payment_method ?? "",
-    isDownPayment: index === 0 && /peşinat/i.test(item.label),
+    // no 251 · `/i` bayrağı Türkçe büyük İ (U+0130) ↔ küçük i eşlemesini
+    // TANIMAZ (`/peşinat/i.test("PEŞİNAT")` → `false`); yerelleştirilmiş
+    // büyütme kullanılır.
+    isDownPayment: index === 0 && item.label.toLocaleUpperCase("tr").includes("PEŞİNAT"),
   }));
 }
 

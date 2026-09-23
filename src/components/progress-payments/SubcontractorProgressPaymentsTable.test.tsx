@@ -56,6 +56,26 @@ describe("SubcontractorProgressPaymentsTable", () => {
     expect(screen.getByText("Henüz taşeron hakedişi oluşturulmadı")).toBeInTheDocument();
   });
 
+  // no 183 — ipucu `canWrite`e BAKMADAN sabit "+ Yeni Hakediş ile başlayın"
+  // basıyordu; salt-okunur kullanıcı ekranda olmayan bir düğmeyi tarif eden
+  // metin görüyordu. Emsal `ProgressPaymentsList::newActionLabel` deseni.
+  it("no 183 · newActionLabel verilmezse (salt-okunur) ipucu düğme VAAT ETMEZ", () => {
+    renderTable([]);
+    expect(screen.queryByText(/\+ Yeni Hakediş ile başlayın/)).not.toBeInTheDocument();
+  });
+
+  it("no 183 · newActionLabel verilince ipucu O metni kullanır", () => {
+    render(
+      <SubcontractorProgressPaymentsTable
+        isError={false}
+        isLoading={false}
+        data={{ items: [], total: 0, limit: 50, offset: 0 }}
+        newActionLabel="+ Yeni Hakediş"
+      />,
+    );
+    expect(screen.getByText("+ Yeni Hakediş ile başlayın")).toBeInTheDocument();
+  });
+
   it("8 kolon basligini birebir mockup siralamasiyla basar", () => {
     renderTable([BASE_ITEM]);
     const headers = screen.getAllByRole("columnheader").map((h) => h.textContent);

@@ -56,14 +56,42 @@ describe("SectionDiaryPanel", () => {
     renderPanel({ isError: true, items: [listItem()] });
 
     expect(screen.getByText("Günlük kayıtlar yüklenemedi")).toBeInTheDocument();
-    expect(screen.queryByTestId("section-diary")).not.toBeInTheDocument();
+    expect(screen.queryByText("15 Temmuz")).not.toBeInTheDocument();
   });
 
   it("yükleme dalında listeyi DEĞİL, 'Yükleniyor…' basar", () => {
     renderPanel({ isLoading: true, items: [] });
 
     expect(screen.getByText("Yükleniyor…")).toBeInTheDocument();
-    expect(screen.queryByTestId("section-diary")).not.toBeInTheDocument();
+  });
+
+  // Kayıt 259 — kabuk (başlık + "Şantiye günlüğü →" çıkış bağlantısı) hata/
+  // yükleme dalında da KORUNUR; yalnız gövde değişir. Eskiden bileşenin
+  // TAMAMI erken dönüyordu ve kullanıcı bu iki dalda başlığı da çıkış
+  // bağlantısını da kaybediyordu.
+  it("hata dalında da BAŞLIK ve 'Şantiye günlüğü →' çıkış bağlantısı KORUNUR", () => {
+    renderPanel({ isError: true });
+
+    expect(screen.getByTestId("section-diary")).toBeInTheDocument();
+    expect(screen.getByText(`${SECTION_NAME} · Günlük Kayıtlar`)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Şantiye günlüğü →" })).toHaveAttribute(
+      "href",
+      DIARY_HREF,
+    );
+    expect(screen.getByTestId("section-diary-error")).toHaveTextContent(
+      "Günlük kayıtlar yüklenemedi",
+    );
+  });
+
+  it("yükleme dalında da BAŞLIK ve 'Şantiye günlüğü →' çıkış bağlantısı KORUNUR", () => {
+    renderPanel({ isLoading: true });
+
+    expect(screen.getByTestId("section-diary")).toBeInTheDocument();
+    expect(screen.getByText(`${SECTION_NAME} · Günlük Kayıtlar`)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Şantiye günlüğü →" })).toHaveAttribute(
+      "href",
+      DIARY_HREF,
+    );
   });
 
   it("hata dalı yükleme dalını EZER (ikisi birdenken hata basılır)", () => {

@@ -63,6 +63,20 @@ describe("formatMonthYear", () => {
   it("aralik ayini Ara olarak basar", () => {
     expect(formatMonthYear("2026-12-01")).toBe("Ara 2026");
   });
+
+  // 🔴 KAYIT 428: eski uygulama `new Date(iso)` kullanıyordu — bu, UTC'nin
+  // BATISINDAKİ bir saat diliminde ayın İLK gününü BİR ÖNCEKİ AYA kaydırır
+  // (`new Date("2026-03-01")` UTC gece yarısıdır; UTC-3 gibi bir dilimde
+  // yerel saate çevrilince hâlâ 28/29 Şubat akşamıdır). String ayrıştırma bu
+  // sınıfa KAPALIDIR — TZ ortam değişkeninden bağımsız çalışır.
+  it("ayın ilk günü — saat dilimi kaymasına KAPALI (string ayrıştırma)", () => {
+    expect(formatMonthYear("2026-03-01")).toBe("Mar 2026");
+    expect(formatMonthYear("2026-01-01")).toBe("Oca 2026");
+  });
+
+  it("bilinmeyen/bozuk ISO girdide ham metni aynen döner", () => {
+    expect(formatMonthYear("bozuk-tarih")).toBe("bozuk-tarih");
+  });
 });
 
 // Ekran 13 · İş Kalemleri (BOQ) — tablo sayıları (spec §3.4).

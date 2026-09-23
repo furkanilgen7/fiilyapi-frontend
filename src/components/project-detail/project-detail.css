@@ -144,6 +144,14 @@
   height: 5px;
   background: var(--gradient-type-taahhut);
 }
+/* Kayıt 201 — şerit proje TÜRÜNE göre boyanır (`prj-card--{type}` deseniyle
+   aynı), önceden yalnız taahhüt gradyanına sabitliydi. */
+.site-card--kendi_yatirim .site-card__strip {
+  background: var(--gradient-type-kendi-yatirim);
+}
+.site-card--kat_karsiligi .site-card__strip {
+  background: var(--gradient-type-kat-karsiligi);
+}
 .site-card--completed .site-card__strip {
   background: var(--color-border);
 }
@@ -259,6 +267,12 @@
   height: 100%;
   background: var(--gradient-type-taahhut);
   border-radius: 3px;
+}
+.site-card--kendi_yatirim .site-card__progress-fill {
+  background: var(--gradient-type-kendi-yatirim);
+}
+.site-card--kat_karsiligi .site-card__progress-fill {
+  background: var(--gradient-type-kat-karsiligi);
 }
 .site-card--completed .site-card__progress-fill {
   background: var(--color-success);

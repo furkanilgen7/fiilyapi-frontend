@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Field, Toggle } from "@/components/ui";
+import { Button, Field, Input, Toggle } from "@/components/ui";
 import { Select } from "@/components/ui/select";
 import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
 import { useCompany, useUpdateCompany } from "@/lib/api/hooks/useCompany";
@@ -17,10 +17,19 @@ const EARSIV_PORTAL_OPTIONS = ["Logo e-Fatura", "Mikro e-Fatura", "Paraşüt", "
 // KDV oranı seçenekleri (ref mockup).
 const VAT_RATE_OPTIONS = ["20", "10", "1", "0"];
 
+/** Kayıt 276 — "seçilmedi" değeri GERÇEK boşluğu temsil eder; "%20"ye
+ * sessizce eşlenmez (kullanıcı "zaten %20" sanıp başka alanı kaydedebilirdi). */
+const VAT_RATE_UNSET_VALUE = "";
+
+/**
+ * Sunucu değeri seçim kutusunun değerine çevrilir. `null` ⇒ GERÇEK boşluk
+ * (önceden sessizce "20"ye düşüyordu). Listede olmayan bir değer (ör.
+ * ondalıklı "18.5") de sessizce yuvarlanıp bir seçeneğe eşlenmez — ham
+ * değer AYNEN döner ki çağıran onu listeye ek bir seçenek olarak basabilsin.
+ */
 function vatRateToSelectValue(rate: CompanyUpdate["default_vat_rate"]): string {
-  if (rate == null) return "20";
-  const parsed = Math.trunc(Number(rate));
-  return Number.isFinite(parsed) ? String(parsed) : "20";
+  if (rate == null) return VAT_RATE_UNSET_VALUE;
+  return String(rate);
 }
 
 export function CompanyScreen() {
@@ -60,7 +69,7 @@ export function CompanyScreen() {
   const field = (label: string, key: keyof CompanyUpdate, mono = false) => (
     <Field key={key} label={label} className="company-field">
       {(control) => (
-        <input
+        <Input
           {...control}
           className={mono ? "is-mono" : undefined}
           value={(form[key] as string) ?? ""}
@@ -131,7 +140,7 @@ export function CompanyScreen() {
             {(control) => (
               <span className="company-color-row">
                 <span className="company-swatch" style={{ background: form.brand_color ?? "#2563eb" }} />
-                <input
+                <Input
                   {...control}
                   className="is-mono"
                   value={form.brand_color ?? ""}
@@ -162,19 +171,33 @@ export function CompanyScreen() {
               )}
             </Field>
             <Field label="KDV Oranı (Varsayılan)" className="company-field">
-              {(control) => (
-                <Select
-                  {...control}
-                  value={vatRateToSelectValue(form.default_vat_rate)}
-                  onChange={(e) => set({ default_vat_rate: e.target.value })}
-                >
-                  {VAT_RATE_OPTIONS.map((rate) => (
-                    <option key={rate} value={rate}>
-                      %{rate}
+              {(control) => {
+                const selectValue = vatRateToSelectValue(form.default_vat_rate);
+                // Kayıt 276 — sunucu değeri listedeki dört seçenekten biri
+                // değilse (ör. ondalıklı "18.5") sessizce yuvarlanıp bir
+                // seçeneğe İTİLMEZ: kendi görünür seçeneği eklenir.
+                const isCustomValue =
+                  selectValue !== VAT_RATE_UNSET_VALUE && !VAT_RATE_OPTIONS.includes(selectValue);
+                return (
+                  <Select
+                    {...control}
+                    value={selectValue}
+                    onChange={(e) => set({ default_vat_rate: e.target.value })}
+                  >
+                    <option value={VAT_RATE_UNSET_VALUE} disabled>
+                      Seçilmedi
                     </option>
-                  ))}
-                </Select>
-              )}
+                    {isCustomValue && (
+                      <option value={selectValue}>%{selectValue} (özel)</option>
+                    )}
+                    {VAT_RATE_OPTIONS.map((rate) => (
+                      <option key={rate} value={rate}>
+                        %{rate}
+                      </option>
+                    ))}
+                  </Select>
+                );
+              }}
             </Field>
             <div className="company-toggle-row">
               <span className="company-toggle-row__text">
