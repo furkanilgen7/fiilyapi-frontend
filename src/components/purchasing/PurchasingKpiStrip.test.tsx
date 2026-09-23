@@ -28,12 +28,15 @@ describe("PurchasingKpiStrip — SAT 68-86", () => {
     ]);
   });
 
+  // M5_3 #232 — mockup SAT:80 `₺1,24M` boşluksuz + iki ondalık basar
+  // (`formatCompactCurrencyTight`); `formatCompactCurrency` (boşluklu, tek
+  // ondalık) burada sapmaydı.
   it("sayıları sunucudan basar; para kartı kısaltılır (80: ₺1,24M)", () => {
     render(<PurchasingKpiStrip summary={SUMMARY} />);
     expect(screen.getByText("8")).toBeInTheDocument();
     expect(screen.getByText("5")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
-    expect(screen.getByText("₺ 1,2M")).toBeInTheDocument();
+    expect(screen.getByText("₺1,24M")).toBeInTheDocument();
   });
 
   // Zarf YOKTUR: `0` GERÇEK bir cevaptır ("hiç açık talep yok"), pending değil.

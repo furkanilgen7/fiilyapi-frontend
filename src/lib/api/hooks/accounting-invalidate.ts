@@ -1,9 +1,12 @@
 import type { useQueryClient } from "@tanstack/react-query";
 
+import { ACCOUNTING_PERIODS_QUERY_KEY } from "./useAccountingPeriods";
 import { CHART_OF_ACCOUNTS_QUERY_KEY } from "./useChartOfAccounts";
 import { JOURNAL_ENTRIES_QUERY_KEY } from "./useJournalEntries";
 import { JOURNAL_SUMMARY_QUERY_KEY } from "./useJournalSummary";
 import { LEDGER_QUERY_KEY } from "./useLedger";
+import { TRIAL_BALANCE_QUERY_KEY } from "./useTrialBalance";
+import { VAT_RETURN_QUERY_KEY } from "./useVatReturn";
 
 /**
  * F-MU1 · muhasebe okumalarının ORTAK geçersizleştirme kapsamı.
@@ -26,4 +29,11 @@ export function invalidateAccountingScope(
   queryClient.invalidateQueries({ queryKey: [LEDGER_QUERY_KEY] });
   queryClient.invalidateQueries({ queryKey: [JOURNAL_SUMMARY_QUERY_KEY] });
   queryClient.invalidateQueries({ queryKey: [CHART_OF_ACCOUNTS_QUERY_KEY] });
+  // KAYIT 15: fiş yazma/hesap değişikliği mizanı (`trial-balance`) ve KDV
+  // beyanını (`vat-return`) da türetir — ikisi bu kapsamda EKSİKTİ, yalnız
+  // dönem kapatma/açma mutasyonlarında (`useAccountingPeriodMutations`)
+  // geçersiz kılınıyordu, fiş kaydından SONRA değil.
+  queryClient.invalidateQueries({ queryKey: [ACCOUNTING_PERIODS_QUERY_KEY] });
+  queryClient.invalidateQueries({ queryKey: [TRIAL_BALANCE_QUERY_KEY] });
+  queryClient.invalidateQueries({ queryKey: [VAT_RETURN_QUERY_KEY] });
 }

@@ -110,7 +110,10 @@ test("İK alanları ETKİN; PENDING kalan tek alan Bölüm'dür", async ({ page 
 
   // Gerekçeler GÖRÜNÜR yazar.
   const notices = page.getByTestId("personnel-form-notices").first();
-  await expect(notices).toContainText("Serbest Meslek");
+  // 🔴 "Serbest Meslek" gerekçesi 2026-09-23'te KALKTI (kayıt 397): o iki tür
+  // backend enum'unda ZATEN vardı, ekran onları kapatıyordu. Artık seçilebilir,
+  // dolayısıyla gerekçe de basılmaz — pozitif kontrol olarak YOKLUĞU ölçülür.
+  await expect(notices).not.toContainText("Serbest Meslek");
   await expect(notices).toContainText("Bölüm");
 });
 

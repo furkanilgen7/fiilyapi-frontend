@@ -51,12 +51,12 @@ import { PaymentPlanCard } from "./PaymentPlanCard";
 import { SaleDocumentsCard } from "./SaleDocumentsCard";
 import { SalePriceCard } from "./SalePriceCard";
 import { SoldUnitCard } from "./SoldUnitCard";
+import { PROJECT_PARAM } from "@/lib/navigation-params";
 // Sıra önemli: önce paylaşılan kabuk, sonra forma özgü bloklar.
 import "@/styles/form-shell.css";
 import "./sales-form.css";
 
 /** `?proje=` / `?unit=` bağlam parametreleri (spec §1/DS "?unit ile de gelinebilir"). */
-const PROJECT_PARAM = "proje";
 const UNIT_PARAM = "unit";
 
 /**
@@ -81,6 +81,11 @@ export function SaleCreateView() {
   const [errors, setErrors] = useState<SaleFormErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [createdSaleId, setCreatedSaleId] = useState<string | null>(null);
+  // no 269 · Satış POST'u başarısız olup kullanıcı yeniden denediğinde
+  // `resolveCustomerId` YENİ müşteri kipinde İKİNCİ bir POST /customers
+  // yapıp mükerrer kayıt açmasın diye oluşan id burada saklanır
+  // (`createdSaleId` ile AYNI desen).
+  const [resolvedCustomerId, setResolvedCustomerId] = useState<string | null>(null);
   const [planRows, setPlanRows] = useState<PlanRowValues[]>([]);
   const [planTotalText, setPlanTotalText] = useState<string | null>(null);
   const [planEdited, setPlanEdited] = useState(false);
@@ -112,9 +117,13 @@ export function SaleCreateView() {
     const exists = unitsQuery.data.blocks.some((group) =>
       group.units.some((unit) => unit.id === unitParam),
     );
+    // no 248 · deneme sonucu BAĞIMSIZ (bulunamasa da) işaretlenir — aksi
+    // hâlde `unitsQuery.data` her değiştiğinde (proje değişimi/refetch) bu
+    // efekt yeniden çalışır ve kullanıcı üniteyi elle boşaltsa bile parametre
+    // listede varsa değeri GERİ YAZAR.
+    unitSeededRef.current = true;
     if (exists) {
       setValues((prev) => ({ ...prev, unitId: unitParam }));
-      unitSeededRef.current = true;
     }
   }, [searchParams, unitsQuery.data]);
 
@@ -200,7 +209,9 @@ export function SaleCreateView() {
   /** Müşteri kimliğini çözer (yeni müşteri ise önce POST /customers). */
   async function resolveCustomerId(): Promise<string> {
     if (values.customerMode === "existing") return values.existingCustomerId;
+    if (resolvedCustomerId !== null) return resolvedCustomerId;
     const customer = await createCustomer.mutateAsync(buildCustomerCreateBody(values));
+    setResolvedCustomerId(customer.id);
     return customer.id;
   }
 
@@ -348,6 +359,7 @@ export function SaleCreateView() {
 
           <PaymentPlanCard
             values={values}
+            errors={errors}
             planRows={planRows}
             planTotalText={planTotalText}
             planEdited={planEdited}
@@ -356,7 +368,13 @@ export function SaleCreateView() {
             onChangeField={handleChangeField}
             onGeneratePlan={handleGeneratePlan}
             onChangePlanRows={handleChangePlanRows}
-            locked={locked}
+            // no 246 · `locked` (satış oluşturuldu) TEK BAŞINA burayı
+            // kilitlerse: `generate-plan` PATLADIĞINDA `createdSaleId` zaten
+            // set edilmiş olur ve plan HİÇ üretilmeden "Plan Oluştur" kalıcı
+            // kilitlenir. Plan kartı yalnız plan GERÇEKTEN üretildiğinde
+            // (`planRows` dolduğunda) donar; aksi hâlde satış oluşmuş olsa
+            // bile aynı `saleId` ile yeniden denenebilir.
+            locked={locked && planRows.length > 0}
           />
 
           <DeedDeliveryCard values={values} onChangeField={handleChangeField} locked={locked} />

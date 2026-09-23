@@ -67,8 +67,14 @@ export const TAX_NO_PENDING_REASON =
 export const TIMESHEET_SUMMARY_PENDING_REASON =
   "Personel bazlı puantaj özeti ucu backend'de henüz yok — bu kart hiçbir ek sorgu atmaz.";
 
-/** 88-113 · "İzin & Haklar" — İK dilimi. */
-export const LEAVE_PENDING_REASON = "İzin ve hak takibi İnsan Kaynakları dilimiyle birlikte gelir.";
+/**
+ * 88-113 · "İzin & Haklar". Kayıt 169 — bu metin "İK dilimiyle birlikte
+ * gelir" diyordu ama `/personel/izinler` rotası ve BFF `leave-balances`
+ * ucu (kişi bazlı `GET/PUT`) CANLIDA VARDIR — modül YOK değil, bu kart
+ * henüz o veriye BAĞLANMADI.
+ */
+export const LEAVE_PENDING_REASON =
+  "İzin ve hak takibi modülü var (bkz. İzinler ekranı) ama bu kart henüz kişi bazlı veriye bağlanmadı.";
 
 /** 115-128 · "Proje Geçmişi" — İK dilimi. */
 export const PROJECT_HISTORY_PENDING_REASON =
@@ -83,8 +89,14 @@ export const PROJECT_HISTORY_PENDING_REASON =
  */
 export const DOCUMENTS_PENDING_REASON = pendingModuleLabel("documents");
 
-/** 23 · "Bordroyu Gör" — bordro/maaş ucu yok. */
-export const PAYROLL_PENDING_REASON = "Bordro modülü henüz eklenmedi.";
+/**
+ * 23 · "Bordroyu Gör". Kayıt 169 — "Bordro modülü henüz eklenmedi" metni
+ * YANLIŞ hâle geldi: `/bordro` rotası CANLIDA VARDIR. Kişi bazlı (bu
+ * personelin net maaşına doğrudan giden) bir entegrasyon henüz yok — kart
+ * bunu söyler, modülün var olmadığını değil.
+ */
+export const PAYROLL_PENDING_REASON =
+  "Bordro modülü var (bkz. Bordro ekranı) ama bu karttan kişiye özel bordroya doğrudan geçiş henüz bağlanmadı.";
 
 /** 22 · "Düzenle" — GERÇEK, `/personel/[id]/duzenle`e gider. */
 export const EDIT_HREF_SUFFIX = "/duzenle";

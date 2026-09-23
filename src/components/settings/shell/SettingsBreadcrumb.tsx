@@ -10,7 +10,7 @@ import { routes } from "@/lib/routes";
 export function SettingsBreadcrumb() {
   const pathname = usePathname();
   const current = settingsLabelForPath(pathname);
-  const handleLogout = useLogout();
+  const { logout, error } = useLogout();
 
   return (
     <div className="settings-breadcrumb">
@@ -21,9 +21,14 @@ export function SettingsBreadcrumb() {
         /
       </span>
       <span className="settings-breadcrumb__current">{current}</span>
-      <button type="button" className="settings-breadcrumb__logout" onClick={handleLogout}>
+      <button type="button" className="settings-breadcrumb__logout" onClick={logout}>
         Çıkış Yap
       </button>
+      {error !== null && (
+        <p role="alert" className="settings-breadcrumb__error">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

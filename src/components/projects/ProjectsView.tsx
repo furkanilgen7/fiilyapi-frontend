@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { PROJECT_LIST_MAX_LIMIT, useProjects } from "@/lib/api/hooks/useProjects";
 import { isForbidden } from "@/lib/api/unwrap";
+import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncation";
 
 import { ProjectCard } from "./ProjectCard";
@@ -26,6 +27,11 @@ export function ProjectsView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tab = parseProjectTab(searchParams.get("tab"));
+  // M5_3 #400 — "+ Yeni Proje" eskiden HİÇ izin kontrolüyle sarılmadan
+  // render ediliyordu; kapı yalnız hedef formda (ProjectCreateView) vardı.
+  // Backend yine de yazmayı reddeder ama liste ekranında görünür/tıklanabilir
+  // bir buton yanlış bir yetki izlenimi verirdi.
+  const permission = useModulePermission("projects");
 
   // Kırpma korkuluğu (F-FIN emsali): tavan AÇIKÇA gönderilir, eksik kalan
   // kayıt `total` üzerinden GÖRÜNÜR bir bantla bildirilir — sessizce
@@ -65,9 +71,19 @@ export function ProjectsView() {
           <Link href={PROJECT_TIMELINE_HREF} className="prj__timeline-btn">
             Proje Takvimi
           </Link>
-          <Link href={routes.projects.new()} className="prj__new-btn">
-            + Yeni Proje
-          </Link>
+          {permission.canWrite ? (
+            <Link href={routes.projects.new()} className="prj__new-btn">
+              + Yeni Proje
+            </Link>
+          ) : (
+            <span
+              className="prj__new-btn prj__new-btn--disabled"
+              aria-disabled="true"
+              title="Bu modülde yazma yetkiniz yok"
+            >
+              + Yeni Proje
+            </span>
+          )}
         </div>
       </div>
       <TypeLegend counts={counts} />

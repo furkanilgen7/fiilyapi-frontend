@@ -325,6 +325,7 @@ export function InvoicesView() {
             approvingId={approvingId}
             canWrite={permission.canWrite}
             writeDisabledReason={WRITE_DISABLED_REASON}
+            tab={tab}
           />
         </div>
       </section>

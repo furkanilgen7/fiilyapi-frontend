@@ -13,17 +13,24 @@ import {
   validatePurchaseRequestForm,
 } from "./purchase-request-validate";
 
-function line(patch: Partial<PurchaseRequestLineValues>): PurchaseRequestLineValues {
+function line(
+  patch: Partial<PurchaseRequestLineValues>,
+): PurchaseRequestLineValues {
   return { ...createPurchaseRequestLine(0), ...patch };
 }
 
-function values(patch: Partial<PurchaseRequestFormValues> = {}): PurchaseRequestFormValues {
+function values(
+  patch: Partial<PurchaseRequestFormValues> = {},
+): PurchaseRequestFormValues {
   return { ...emptyPurchaseRequestFormValues("2026-08-13"), ...patch };
 }
 
 describe("TASLAK GEVŞEKTİR — zorunlu tek alan proje", () => {
   it("yarım form taslak olarak kaydedilebilir", () => {
-    const errors = validatePurchaseRequestForm(values({ projectId: "p-1" }), "draft");
+    const errors = validatePurchaseRequestForm(
+      values({ projectId: "p-1" }),
+      "draft",
+    );
 
     expect(hasPurchaseRequestErrors(errors)).toBe(false);
   });
@@ -40,7 +47,9 @@ describe("TASLAK GEVŞEKTİR — zorunlu tek alan proje", () => {
       "draft",
     );
 
-    expect(errors.lineErrors.a.quantity).toBe(PURCHASE_REQUEST_MESSAGES.quantityNotPositive);
+    expect(errors.lineErrors.a.quantity).toBe(
+      PURCHASE_REQUEST_MESSAGES.quantityNotPositive,
+    );
   });
 });
 
@@ -48,23 +57,38 @@ describe("ONAYA GÖNDER — submit_blockers'ın aynası", () => {
   const submitReady = values({
     projectId: "p-1",
     neededBy: "2026-08-20",
-    lines: [line({ key: "a", stockItemId: "s-1", quantity: "15", unitPrice: "21500" })],
+    lines: [
+      line({
+        key: "a",
+        stockItemId: "s-1",
+        quantity: "15",
+        unitPrice: "21500",
+      }),
+    ],
   });
 
   it("eksiksiz form geçer", () => {
-    expect(hasPurchaseRequestErrors(validatePurchaseRequestForm(submitReady, "submit"))).toBe(
-      false,
-    );
+    expect(
+      hasPurchaseRequestErrors(
+        validatePurchaseRequestForm(submitReady, "submit"),
+      ),
+    ).toBe(false);
   });
 
   it("ihtiyaç tarihi zorunludur (NEEDED_BY_REQUIRED)", () => {
-    const errors = validatePurchaseRequestForm({ ...submitReady, neededBy: "" }, "submit");
+    const errors = validatePurchaseRequestForm(
+      { ...submitReady, neededBy: "" },
+      "submit",
+    );
 
     expect(errors.neededBy).toBe(PURCHASE_REQUEST_MESSAGES.neededByRequired);
   });
 
   it("en az bir kalem gereklidir (LINES_REQUIRED)", () => {
-    const errors = validatePurchaseRequestForm({ ...submitReady, lines: [] }, "submit");
+    const errors = validatePurchaseRequestForm(
+      { ...submitReady, lines: [] },
+      "submit",
+    );
 
     expect(errors.lines).toBe(PURCHASE_REQUEST_MESSAGES.linesRequired);
   });
@@ -76,14 +100,21 @@ describe("ONAYA GÖNDER — submit_blockers'ın aynası", () => {
     const errors = validatePurchaseRequestForm(
       {
         ...submitReady,
-        lines: [line({ key: "a", stockItemId: "s-1", quantity: "15", unitPrice: "" })],
+        lines: [
+          line({ key: "a", stockItemId: "s-1", quantity: "15", unitPrice: "" }),
+        ],
       },
       "submit",
     );
 
-    expect(errors.lineErrors.a.unitPrice).toBe(PURCHASE_REQUEST_MESSAGES.unitPriceRequired);
-    // Eşik metni tek kaynaktan gelir — mesaj "500K" gösterimini TAŞIR.
-    expect(errors.lineErrors.a.unitPrice).toContain("₺500K");
+    expect(errors.lineErrors.a.unitPrice).toBe(
+      PURCHASE_REQUEST_MESSAGES.unitPriceRequired,
+    );
+    // 🔴 Mesaj EŞİK SAYISI TAŞIMAZ: eşik sunucu ayarıdır ve bu sabit modül
+    // yüklenirken kurulur — gömülü bir "₺500K" yönetici eşiği değiştirdiğinde
+    // kullanıcıya yanlış sayı gösterirdi.
+    expect(errors.lineErrors.a.unitPrice).not.toMatch(/\d/);
+    expect(errors.lineErrors.a.unitPrice).toContain("onay eşiği");
   });
 
   it("kalem KAYNAĞI eksik olamaz: stok kartı ya da ad + birim (LINE_SOURCE_REQUIRED)", () => {
@@ -98,9 +129,15 @@ describe("ONAYA GÖNDER — submit_blockers'ın aynası", () => {
       "submit",
     );
 
-    expect(errors.lineErrors.a.stockItemId).toBe(PURCHASE_REQUEST_MESSAGES.stockItemRequired);
-    expect(errors.lineErrors.b.freeTextName).toBe(PURCHASE_REQUEST_MESSAGES.freeTextNameRequired);
-    expect(errors.lineErrors.b.freeTextUnit).toBe(PURCHASE_REQUEST_MESSAGES.freeTextUnitRequired);
+    expect(errors.lineErrors.a.stockItemId).toBe(
+      PURCHASE_REQUEST_MESSAGES.stockItemRequired,
+    );
+    expect(errors.lineErrors.b.freeTextName).toBe(
+      PURCHASE_REQUEST_MESSAGES.freeTextNameRequired,
+    );
+    expect(errors.lineErrors.b.freeTextUnit).toBe(
+      PURCHASE_REQUEST_MESSAGES.freeTextUnitRequired,
+    );
   });
 
   it("uzunluk tavanları şemadan gelir", () => {
@@ -122,17 +159,28 @@ describe("ONAYA GÖNDER — submit_blockers'ın aynası", () => {
       "submit",
     );
 
-    expect(errors.justification).toBe(PURCHASE_REQUEST_MESSAGES.justificationTooLong);
-    expect(errors.lineErrors.a.freeTextName).toBe(PURCHASE_REQUEST_MESSAGES.freeTextNameTooLong);
-    expect(errors.lineErrors.a.freeTextUnit).toBe(PURCHASE_REQUEST_MESSAGES.freeTextUnitTooLong);
+    expect(errors.justification).toBe(
+      PURCHASE_REQUEST_MESSAGES.justificationTooLong,
+    );
+    expect(errors.lineErrors.a.freeTextName).toBe(
+      PURCHASE_REQUEST_MESSAGES.freeTextNameTooLong,
+    );
+    expect(errors.lineErrors.a.freeTextUnit).toBe(
+      PURCHASE_REQUEST_MESSAGES.freeTextUnitTooLong,
+    );
   });
 });
 
 describe("firstPurchaseRequestError", () => {
   it("başlık hataları kalem hatalarından ÖNCE gelir (formdaki sıra)", () => {
-    const errors = validatePurchaseRequestForm(values({ lines: [line({ key: "a", quantity: "-1" })] }), "submit");
+    const errors = validatePurchaseRequestForm(
+      values({ lines: [line({ key: "a", quantity: "-1" })] }),
+      "submit",
+    );
 
-    expect(firstPurchaseRequestError(errors)).toBe(PURCHASE_REQUEST_MESSAGES.projectRequired);
+    expect(firstPurchaseRequestError(errors)).toBe(
+      PURCHASE_REQUEST_MESSAGES.projectRequired,
+    );
   });
 
   it("hata yoksa null döner", () => {

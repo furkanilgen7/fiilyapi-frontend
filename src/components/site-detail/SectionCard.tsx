@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { cx } from "@/lib/cx";
 import { formatCompactCurrency, formatMonthYear, formatPercent } from "@/lib/format";
-import { pendingModuleLabel, type PendingModuleKey } from "@/lib/pending-modules";
+import { pendingModuleHint, type PendingModuleKey } from "@/lib/pending-modules";
 import { SECTION_STATUS_CLASS_SUFFIX, SECTION_STATUS_LABELS } from "@/lib/section-labels";
 import type { components } from "@/lib/api/schema";
 import { routes, routeKeyOf } from "@/lib/routes";
@@ -90,7 +90,7 @@ const PLANNED_WORKER_STATUSES: ReadonlySet<SectionStatus> = new Set<SectionStatu
 // (spec §7.1, SiteHeroBar/SiteCard'daki PlaceholderValue deseniyle ayni).
 function PlaceholderValue({ valueClassName, pendingModule }: { valueClassName: string; pendingModule: PendingModuleKey }) {
   return (
-    <div className={cx(valueClassName, "section-card__metric-value--pending")} title={pendingModuleLabel(pendingModule)}>
+    <div className={cx(valueClassName, "section-card__metric-value--pending")} title={pendingModuleHint(pendingModule)}>
       —
     </div>
   );
@@ -152,7 +152,8 @@ const BOQ_NOTE_TITLE = "İş kalemi tahsislerinden türeyen tutar (miktar × bir
 // tipografi ICAT EDILMEDI.
 //
 // `budget_amount` `null` iken sahte sifir basilmaz — SectionHeroCard'daki
-// `BudgetCell` ile AYNI metin/baslik kullanilir ("Bölüm bedeli girilmemiş").
+// `BudgetCell` ile AYNI davranis: "—" basilir ve GEREKCE VERILMEZ (2026-09-20;
+// eski ortak baslik "Bölüm bedeli girilmemiş" idi ve maskeli rolde YALANDI).
 function BudgetMetricCell({
   label,
   budgetAmount,
@@ -176,12 +177,15 @@ function BudgetMetricCell({
       {isManualReal ? (
         <div className={moneyClass}>{formatCompactCurrency(budgetAmount)}</div>
       ) : (
-        <div
-          className={cx(moneyClass, "section-card__metric-value--pending")}
-          title="Bölüm bedeli girilmemiş"
-        >
-          —
-        </div>
+        // 🔴 GEREKÇE YAZILMAZ (2026-09-20). Eskiden burada
+        // `title="Bölüm bedeli girilmemiş"` vardı; bu bir İDDİADIR ve ekranın
+        // onu kanıtlayacak bilgisi YOKTUR: `budget_amount` null gelmesinin iki
+        // sebebi var (girilmemiş · KAPSAM MASKESİ düşürmüş) ve `/auth/me` yükü
+        // kapsam taşımadığı için ikisi istemcide ayırt EDİLEMEZ. `sites =
+        // view/limited` olan rol (şantiye şefi) gerçek bir bedeli "girilmemiş"
+        // diye okuyordu. Kanon: gerekçe ancak KANITLIYSA basılır
+        // (`contract-progress.ts::isProvenZeroAmount` emsali).
+        <div className={cx(moneyClass, "section-card__metric-value--pending")}>—</div>
       )}
       {isBoqReal ? (
         <div className="section-card__metric-note" title={BOQ_NOTE_TITLE}>
@@ -190,7 +194,7 @@ function BudgetMetricCell({
       ) : (
         <div
           className={cx("section-card__metric-note", "section-card__metric-note--pending")}
-          title={pendingModuleLabel(boqBudget.pending_module)}
+          title={pendingModuleHint(boqBudget.pending_module)}
         >
           BOQ: —
         </div>

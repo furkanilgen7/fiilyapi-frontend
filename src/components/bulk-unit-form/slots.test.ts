@@ -3,9 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   emptySlot,
   hasFilledSlot,
+  hasSlotErrors,
   isSlotFilled,
   resizeSlots,
   setSlotField,
+  slotErrors,
+  slotFieldError,
   type BulkSlotValues,
 } from "./slots";
 
@@ -85,6 +88,11 @@ describe("resizeSlots — 🔴 GUARD 2: satır sayısı `units_per_floor` ile K�
     expect(resizeSlots([filledSlot(1, "148")], 0)).toEqual([]);
     expect(resizeSlots([filledSlot(1, "148")], -3)).toEqual([]);
   });
+
+  it("üst sınırı (BULK_UNITS_PER_FLOOR_MAX=20) aşan daire sayısında satır ÜRETMEZ", () => {
+    expect(resizeSlots([], 21)).toEqual([]);
+    expect(resizeSlots([], 999)).toEqual([]);
+  });
 });
 
 describe("setSlotField — dokunma kaydı + değişmezlik", () => {
@@ -131,5 +139,43 @@ describe("isSlotFilled / hasFilledSlot — `slots` gövdeye NE ZAMAN girer", () 
     const slots = setSlotField(resizeSlots([], 2), 1, "facing", "north");
     expect(isSlotFilled(slots[1])).toBe(true);
     expect(hasFilledSlot(slots)).toBe(true);
+  });
+});
+
+describe("slotFieldError / slotErrors / hasSlotErrors — 🔴 KUSUR no 39", () => {
+  it("geçersiz ondalık GÖRÜNÜR bir hata döner (eskiden `buildSlot()` sessizce düşürüyordu)", () => {
+    expect(slotFieldError("abc")).toBe("Bu alan sayı olmalıdır.");
+    expect(slotFieldError("12,5,5")).toBe("Bu alan sayı olmalıdır.");
+  });
+
+  it("boş hücre hatasızdır — dokunulmamış alan zorunlu DEĞİLDİR", () => {
+    expect(slotFieldError("")).toBeUndefined();
+    expect(slotFieldError("   ")).toBeUndefined();
+  });
+
+  it("geçerli ondalık hatasızdır", () => {
+    expect(slotFieldError("148")).toBeUndefined();
+    expect(slotFieldError("148,5")).toBeUndefined();
+  });
+
+  it("slotErrors satırdaki ÜÇ ondalık hücreyi de bağımsız denetler", () => {
+    const slot: BulkSlotValues = {
+      ...emptySlot(1),
+      grossAreaM2: "abc",
+      netAreaM2: "128",
+      listPrice: "xyz",
+    };
+    expect(slotErrors(slot)).toEqual({
+      grossAreaM2: "Bu alan sayı olmalıdır.",
+      listPrice: "Bu alan sayı olmalıdır.",
+    });
+  });
+
+  it("hasSlotErrors — tablodaki HERHANGİ bir satırda geçersizlik varsa true", () => {
+    const valid = [{ ...emptySlot(1), grossAreaM2: "148" }];
+    const invalid = [{ ...emptySlot(1), grossAreaM2: "abc" }];
+    expect(hasSlotErrors(valid)).toBe(false);
+    expect(hasSlotErrors(invalid)).toBe(true);
+    expect(hasSlotErrors([])).toBe(false);
   });
 });

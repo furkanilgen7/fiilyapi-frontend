@@ -32,9 +32,17 @@ function isVisualSpecFile(fileName: string): boolean {
   return fileName.endsWith(".spec.ts") && !fileName.includes("-snapshots");
 }
 
-/** Yalnız `prepareFrame`ı GERÇEKTEN kullanan dosyalar taranır. */
+/**
+ * Yalnız `prepareFrame`ı GERÇEKTEN kullanan dosyalar taranır.
+ *
+ * 🔴 KAYIT 382: `prepareFrame`i doğrudan `./visual-scroll`ten DEĞİL bir
+ * barrel'dan (ör. `e2e/contracts-visual-helpers.ts` → `export { prepareFrame }
+ * from "./visual-scroll"`) alan dosyalar eski literal kontrolden geçemiyordu.
+ * Çağrının kendisi (`prepareFrame(page)`) tek başına yeterli koşuldur — import
+ * kaynağından bağımsızdır.
+ */
 function usesPrepareFrame(content: string): boolean {
-  return content.includes('from "./visual-scroll"') && content.includes("prepareFrame(page)");
+  return content.includes("prepareFrame(page)");
 }
 
 const PREPARE_FRAME_CALL = "await prepareFrame(page);";
@@ -661,5 +669,19 @@ describe("gorsel kare takvim bagimsizligi — her kadraj DONDURULUR ya da GEREKC
       }
     }
     expect(rot, rot.join("\n")).toEqual([]);
+  });
+});
+
+describe("usesPrepareFrame · barrel'dan re-export edilen prepareFrame de tanınmalı (kayıt 382)", () => {
+  it("`contracts-visual-helpers.ts` gibi bir barrel'dan içe aktarılan dosyalarda da tanınır", () => {
+    const barrelImportContent = [
+      'import { prepareFrame } from "./contracts-visual-helpers";',
+      "test('kare', async ({ page }) => {",
+      "  await prepareFrame(page);",
+      "  await expect(page).toHaveScreenshot('foo.png');",
+      "});",
+    ].join("\n");
+
+    expect(usesPrepareFrame(barrelImportContent)).toBe(true);
   });
 });

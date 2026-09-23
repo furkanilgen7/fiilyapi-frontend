@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button, Input } from "@/components/ui";
+import { ConfirmDialog } from "@/components/settings/ConfirmDialog";
 import { cx } from "@/lib/cx";
 import { formatAmount } from "@/lib/format";
 import type { SubcontractorContractItemResponse } from "@/lib/api/hooks/useSubcontractorContractMutations";
@@ -39,6 +40,11 @@ export interface ContractItemsCardProps {
   isBusy: boolean;
   /** Yükleme butonu kapalıysa gerekçesi (proje seçilmedi vb.); yoksa `null`. */
   loadDisabledReason: string | null;
+  /**
+   * Silme kapısı — `contracts:admin` (backend), `canWrite`ten (`full`)
+   * AYRIDIR. `false` iken silme butonu DEVRE DIŞI basılır (kalan-6 no 319).
+   */
+  canDelete: boolean;
   onLoadFromEmployer: () => void;
   onCommitItem: (itemId: string, patch: { quantity?: string; unitPrice?: string }) => void;
   onDeleteItem: (itemId: string) => void;
@@ -61,12 +67,34 @@ export function ContractItemsCard({
   isLoadPending,
   isBusy,
   loadDisabledReason,
+  canDelete,
   onLoadFromEmployer,
   onCommitItem,
   onDeleteItem,
 }: ContractItemsCardProps) {
   const [drafts, setDrafts] = useState<Record<string, RowDraft>>({});
+  // no 328 · bir hücre yazma isteği UÇTUĞUNDA taslak HEMEN silinmez (yukarıda
+  // `commitQuantity`/`commitUnitPrice`). Mutasyon SETTLE olduğunda (`isBusy`
+  // true→false) — başarılı da olsa hata da olsa — taslaklar TÜMÜYLE temizlenir:
+  // başarıda `item` prop'u zaten taze değeri taşır, hatada hücre sunucu
+  // değerine döner (mevcut davranış KORUNUR).
+  const wasBusyRef = useRef(isBusy);
+  useEffect(() => {
+    if (wasBusyRef.current && !isBusy) {
+      setDrafts({});
+    }
+    wasBusyRef.current = isBusy;
+  }, [isBusy]);
+  // no 331 · silme geri dönüşsüzdür (kalıcı DELETE); tek yanlış tıklama
+  // artık DOĞRUDAN silmiyor, bir onay diyaloğu araya giriyor.
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; code: string } | null>(null);
   const groups = groupContractItems(items);
+
+  function confirmDelete() {
+    if (!pendingDelete) return;
+    onDeleteItem(pendingDelete.id);
+    setPendingDelete(null);
+  }
 
   function setDraft(itemId: string, patch: RowDraft) {
     setDrafts((prev) => ({ ...prev, [itemId]: { ...prev[itemId], ...patch } }));
@@ -84,23 +112,35 @@ export function ContractItemsCard({
     });
   }
 
+  // no 328 · `clearDraft` mutasyondan ÖNCE çağrılırsa, henüz tazelenmemiş
+  // `item` prop'una düşen hücre bir AN için sunucunun ESKİ değerini gösterir
+  // (kullanıcının yazdığı değil). Değişiklik GERÇEKTEN uçan durumlarda taslak
+  // `isBusy` yanıt verene kadar KORUNUR; yalnız "değişmedi/boş" (istek hiç
+  // açılmayan) dallarda hemen temizlenir.
   function commitQuantity(item: SubcontractorContractItemResponse) {
     const draft = drafts[item.id]?.quantity;
-    clearDraft(item.id, "quantity");
     if (draft === undefined) return;
     // Boş miktar GÖNDERİLMEZ: şemada `quantity > 0` zorunludur, boşaltmak
     // silmek demek değildir — hücre sunucu değerine geri döner.
-    if (!draft.trim()) return;
-    if (draft.trim() === decimalInputValue(item.quantity)) return;
+    if (!draft.trim()) {
+      clearDraft(item.id, "quantity");
+      return;
+    }
+    if (draft.trim() === decimalInputValue(item.quantity)) {
+      clearDraft(item.id, "quantity");
+      return;
+    }
     onCommitItem(item.id, { quantity: draft.trim() });
   }
 
   function commitUnitPrice(item: SubcontractorContractItemResponse) {
     const draft = drafts[item.id]?.unitPrice;
-    clearDraft(item.id, "unitPrice");
     if (draft === undefined) return;
     const next = draft.trim();
-    if (next === decimalInputValue(item.unit_price)) return;
+    if (next === decimalInputValue(item.unit_price)) {
+      clearDraft(item.id, "unitPrice");
+      return;
+    }
     // Boş → "girilmedi" (`null`); `0` ASLA türetilmez.
     onCommitItem(item.id, { unitPrice: next });
   }
@@ -195,7 +235,8 @@ export function ContractItemsCard({
                   onDraft={setDraft}
                   onCommitQuantity={commitQuantity}
                   onCommitUnitPrice={commitUnitPrice}
-                  onDeleteItem={onDeleteItem}
+                  canDelete={canDelete}
+                  onRequestDelete={(item) => setPendingDelete({ id: item.id, code: item.code })}
                 />
               ))
             )}
@@ -229,6 +270,17 @@ export function ContractItemsCard({
           </tfoot>
         </table>
       </div>
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title="Poz Satırını Sil"
+          message={`"${pendingDelete.code}" pozunu sözleşmeden silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`}
+          confirmLabel="Sil"
+          danger
+          onConfirm={confirmDelete}
+          onClose={() => setPendingDelete(null)}
+        />
+      )}
     </section>
   );
 }
@@ -241,7 +293,8 @@ interface ItemGroupProps {
   onDraft: (itemId: string, patch: RowDraft) => void;
   onCommitQuantity: (item: SubcontractorContractItemResponse) => void;
   onCommitUnitPrice: (item: SubcontractorContractItemResponse) => void;
-  onDeleteItem: (itemId: string) => void;
+  canDelete: boolean;
+  onRequestDelete: (item: SubcontractorContractItemResponse) => void;
 }
 
 function ItemGroup({
@@ -252,7 +305,8 @@ function ItemGroup({
   onDraft,
   onCommitQuantity,
   onCommitUnitPrice,
-  onDeleteItem,
+  canDelete,
+  onRequestDelete,
 }: ItemGroupProps) {
   return (
     <>
@@ -321,8 +375,9 @@ function ItemGroup({
                 type="button"
                 className="fso-items__delete"
                 aria-label={`${item.code} satırını sil`}
-                disabled={isBusy}
-                onClick={() => onDeleteItem(item.id)}
+                disabled={isBusy || !canDelete}
+                title={canDelete ? undefined : "Satır silme yetkisi gerekiyor."}
+                onClick={() => onRequestDelete(item)}
               >
                 ×
               </button>

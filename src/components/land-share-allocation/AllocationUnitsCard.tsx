@@ -149,6 +149,10 @@ export function AllocationUnitsCard({
               type="button"
               className={`pg-filter${filter === item.key ? " pg-filter--on" : ""}`}
               aria-pressed={filter === item.key}
+              // M5_1 kayıt #140: eskiden `disabled` hiç okunmuyordu — kaydetme
+              // sürerken (`isSaving`) kullanıcı süzgeç değiştirebiliyor, bu da
+              // `resetSelection()`ı tetikleyip seçim/bildirimleri boşaltıyordu.
+              disabled={disabled}
               data-testid={`paylasim-form-suzgec-${item.key}`}
               onClick={() => onChangeFilter(item.key)}
             >
@@ -209,7 +213,7 @@ export function AllocationUnitsCard({
           <Button
             variant="secondary"
             size="sm"
-            disabled={page <= 1}
+            disabled={disabled || page <= 1}
             data-testid="paylasim-form-onceki"
             onClick={() => onChangePage(page - 1)}
           >
@@ -219,7 +223,7 @@ export function AllocationUnitsCard({
           <Button
             variant="secondary"
             size="sm"
-            disabled={page >= pageCount}
+            disabled={disabled || page >= pageCount}
             data-testid="paylasim-form-sonraki"
             onClick={() => onChangePage(page + 1)}
           >
@@ -254,6 +258,10 @@ function AllocationUnitRow({
   const current = effectiveAllocation(row, state);
   const isOurs = current.ownerSide === "contractor";
   const isOwner = current.ownerSide === "landowner";
+  // Satılmış/kapanmış ünitenin sahiplik tarafı arayüzden değiştirilemez
+  // (kalan-7 · #215) — sunucu bunu engellemiyor, kapı burada kurulur.
+  const isSold = row.sales_status === "sold" || row.sales_status === "closed";
+  const rowDisabled = disabled || isSold;
   // Bu satırda KAYDEDİLMEMİŞ bir değişiklik var mı? (Sunucudakiyle farklı mı?)
   const isPending =
     state.pending.has(row.unit_id) &&
@@ -303,7 +311,7 @@ function AllocationUnitRow({
             type="button"
             className={`pg-side__btn${isOurs ? " pg-side__btn--on-ours" : ""}`}
             aria-pressed={isOurs}
-            disabled={disabled}
+            disabled={rowDisabled}
             data-testid={`paylasim-form-biz-${row.unit_no}`}
             // Aynı düğmeye tekrar basmak atamayı KALDIRIR (PG 144 "Atanmadı"):
             // `owner_side: null` meşru bir değerdir ve UI'dan ulaşılabilir
@@ -317,7 +325,7 @@ function AllocationUnitRow({
             type="button"
             className={`pg-side__btn${isOwner ? " pg-side__btn--on-owner" : ""}`}
             aria-pressed={isOwner}
-            disabled={disabled}
+            disabled={rowDisabled}
             data-testid={`paylasim-form-arsa-${row.unit_no}`}
             onClick={() => onAssignRow(row, isOwner ? null : "landowner")}
           >
@@ -333,7 +341,7 @@ function AllocationUnitRow({
             size="row"
             aria-label={`${row.unit_no} hissedarı`}
             data-testid={`paylasim-form-hissedar-${row.unit_no}`}
-            disabled={disabled}
+            disabled={rowDisabled}
             value={current.shareholderId ?? ""}
             onChange={(event) =>
               onChangeRowShareholder(row, event.target.value === "" ? null : event.target.value)

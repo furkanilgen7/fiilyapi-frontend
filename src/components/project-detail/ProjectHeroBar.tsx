@@ -1,8 +1,18 @@
 import type { ProjectDetail } from "@/lib/api/hooks/useProjects";
-import { pendingModuleLabel } from "@/lib/pending-modules";
+import { formatCompactCurrency } from "@/lib/format";
 
 import { ProjectDetailTabs } from "./ProjectDetailTabs";
 import "./project-detail.css";
+
+/**
+ * M5_1 kayıt #202: `pendingModuleLabel("contracts")` ("Sözleşme verisi bu
+ * yüzeye henüz bağlanmadı") BAYATTI bu satırda — `contract_amount` GERÇEKTEN
+ * bağlı bir alandır (`ProjectDetailResponse.contract_amount`,
+ * `service.py:115`, dört ayrı response şemasında `Decimal | None`). `null`
+ * burada "bağlantı eksik" değil "bu projeye sözleşme bedeli girilmedi"
+ * demektir — ayrı, doğru bir gerekçe metni gerekir.
+ */
+const CONTRACT_AMOUNT_UNSET_REASON = "Bu proje için sözleşme bedeli tanımlanmadı";
 
 export interface ProjectHeroBarProps {
   project: ProjectDetail;
@@ -61,13 +71,21 @@ export function ProjectHeroBar({ project, projectKey, activePath }: ProjectHeroB
         </div>
         <div className="project-hero__contract">
           <div className="project-hero__contract-label">Toplam Sözleşme</div>
-          {/* Yer tutucu (spec §7.1): backend contracts modulunu daha saglamiyor. */}
-          <div
-            className="project-hero__contract-value project-hero__contract-value--pending"
-            title={pendingModuleLabel("contracts")}
-          >
-            —
-          </div>
+          {/* Kayıt 109: `contract_amount` doluysa gerçek tutar basılır — yer
+              tutucu yalnız değer NULL iken (bu PROJEYE bedel girilmediğinde,
+              bkz. M5_1 #202: alan bağlantısı EKSİK değil, DEĞER eksik). */}
+          {project.contract_amount != null ? (
+            <div className="project-hero__contract-value">
+              {formatCompactCurrency(project.contract_amount)}
+            </div>
+          ) : (
+            <div
+              className="project-hero__contract-value project-hero__contract-value--pending"
+              title={CONTRACT_AMOUNT_UNSET_REASON}
+            >
+              —
+            </div>
+          )}
           <div className="project-hero__contract-note">{project.site_count} şantiye</div>
         </div>
       </div>

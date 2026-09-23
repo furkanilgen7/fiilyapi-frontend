@@ -28,6 +28,14 @@ export type SectionStockKpis = components["schemas"]["SectionStockKpis"];
 export const SECTION_STOCK_QUERY_KEY = "section-stock";
 
 /**
+ * Kayıt 255 — bölüm stok ucunun (`GET /sections/{section_id}/stock`) sayfalama
+ * tavanı `useStockItems.ts::STOCK_LIST_MAX_LIMIT` (katalog ucu) ile PAYLAŞILMAZ:
+ * ikisi BAĞIMSIZ uçlardır, bugün ikisi de backend `le=200` ile aynı olsa da
+ * biri değişirse diğeri sessizce 422 ya da gereksiz kısıtlama alır.
+ */
+export const SECTION_STOCK_LIST_MAX_LIMIT = 200;
+
+/**
  * Sayfalama DIŞINDA süzgeç YOKTUR (openapi.json `parameters`: `section_id`
  * path · `limit`/`offset` query). Uydurma parametre gönderilmez.
  */

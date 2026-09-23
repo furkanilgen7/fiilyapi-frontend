@@ -18,6 +18,7 @@ import {
   type UnitBulkPreview,
 } from "@/lib/api/hooks/useUnitBulk";
 import { BackendError, isForbidden } from "@/lib/api/unwrap";
+import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { parseCountInput } from "@/lib/decimal";
 
@@ -34,6 +35,7 @@ import {
   BULK_PREVIEW_STALE_NOTICE,
   BULK_PROJECT_REQUIRED_MESSAGE,
   BULK_SAVE_ERROR_FALLBACK,
+  BULK_SLOT_INVALID_MESSAGE,
   BULK_WARNING_TEXT,
   bulkSubmitLabel,
 } from "./constants";
@@ -45,26 +47,16 @@ import {
   setUnitsPerFloor,
   type BulkUnitFormValues,
 } from "./form-state";
-import { setSlotField, type BulkSlotField, type BulkSlotValues } from "./slots";
+import { hasSlotErrors, setSlotField, type BulkSlotField, type BulkSlotValues } from "./slots";
 import { BulkPreviewCard } from "./BulkPreviewCard";
 import { BulkRulesCard } from "./BulkRulesCard";
 import { BulkSlotTemplateCard } from "./BulkSlotTemplateCard";
 import { BulkTargetBlockCard } from "./BulkTargetBlockCard";
+import { PROJECT_PARAM, BLOCK_PARAM } from "@/lib/navigation-params";
 // Sıra önemli: ortak kabuk → aile ortağı → forma özgü bloklar.
 import "@/styles/form-shell.css";
 import "@/components/unit-shell/unit-shell.css";
 import "./bulk-unit-form.css";
-
-/** Seçili proje URL'de taşınır (SY/`SalesView`/UE ile aynı anahtar). */
-const PROJECT_PARAM = "proje";
-
-/**
- * 🔴 BE 109'un ("Kaydettikten sonra toplu ünite üretimine geç") getirdiği blok
- * bağlamı. `BlockCreateView` kayıttan sonra `?proje=…&blok=<yeni blok>` ile
- * buraya yönlendirir; bu parametre OKUNMAZSA kullanıcı blok seçicisi BOŞ bir
- * ekrana düşer ve o kutucuk süsten ibaret kalırdı.
- */
-const BLOCK_PARAM = "blok";
 
 /** `POST …/units/bulk`ın HEP-YA-HİÇ reddi. */
 const CONFLICT_STATUS = 409;
@@ -118,6 +110,11 @@ export function BulkUnitCreateView() {
   const createBulk = useCreateBulkUnits();
 
   // `?proje=` + `?blok=` tohumlaması — YALNIZ BİR KEZ (`UnitCreateView` deseni).
+  // 🔴 `BLOCK_PARAM` BE 109'un ("Kaydettikten sonra toplu ünite üretimine geç")
+  // getirdiği blok bağlamıdır: `BlockCreateView` kayıttan sonra
+  // `?proje=…&blok=<yeni blok>` ile buraya yönlendirir; OKUNMAZSA kullanıcı blok
+  // seçicisi BOŞ bir ekrana düşer ve o kutucuk süsten ibaret kalırdı. İki anahtar
+  // da `@/lib/navigation-params`ten gelir — üretici ile tüketici AYNI sabiti paylaşır.
   // Tek `useRef` ikisini birlikte korur: ayrı bayraklar, kullanıcı seçimi
   // değiştirdikten sonra URL güncellenince tohumu YENİDEN uygulayabilirdi.
   const contextSeededRef = useRef(false);
@@ -171,7 +168,7 @@ export function BulkUnitCreateView() {
     });
   }, [values.startFloor, values.endFloor, values.unitsPerFloor, range]);
 
-  if (!permission.canWrite) return <AccessDenied />;
+  if (!hasAtLeast(permission.level, "full")) return <AccessDenied />;
 
   const isPreviewing = previewMutation.isPending;
   const isSaving = createBulk.isPending;
@@ -258,7 +255,29 @@ export function BulkUnitCreateView() {
     return null;
   }
 
-  /** 182 — önizleme: HİÇBİR ŞEY YAZMAZ, denetim üretmez. */
+  /**
+   * 🔴 KUSUR no 39 + 44 — "gövdeye giremeyen bir alan kullanıcıya GÖRÜNÜR bir
+   * hata olarak dönmelidir" kuralı: kat şablonunda geçersiz ondalık VEYA
+   * "üst katlarda fiyat artışı" kutucuğu açıkken yüzde boşsa istek hiç
+   * KURULMAZ — sessizce eksik gövde gönderilmez.
+   */
+  function invalidFieldsMessage(): string | null {
+    if (hasSlotErrors(values.slots)) return BULK_SLOT_INVALID_MESSAGE;
+    // Fiyat artışı yüzdesi BOŞSA akış ENGELLENMEZ (kullanıcı kararı 2026-09-23):
+    // boş yüzde = artış yok. Ekranın yalan söylememesi `BulkSlotTemplateCard`ta
+    // basılan notla sağlanır, kapıyla değil.
+    return null;
+  }
+
+  /** 182 — önizleme: HİÇBİR ŞEY YAZMAZ, denetim üretmez.
+   *
+   * 🔴 `invalidFieldsMessage()` BURADA ÇALIŞMAZ (2026-09-23, e2e kırmızısı):
+   * "üst katlarda fiyat artışı" kutucuğu mockup gereği VARSAYILAN İŞARETLİ ve
+   * yüzde BOŞ doğar — o kuralı önizlemeye de uygulamak, formu daha kullanıcı
+   * hiçbir şey yazmadan KİLİTLİ doğuruyordu (e2e: önizleme tablosu 24 satır
+   * yerine 0). Önizleme hiçbir şey YAZMAZ; kural YAZAN yola (`handleSubmit`)
+   * aittir. Alan hatası kullanıcıya zaten hücrede görünür.
+   */
   async function handlePreview() {
     const missing = missingTargetMessage();
     if (missing !== null) {
@@ -282,7 +301,7 @@ export function BulkUnitCreateView() {
 
   /** 40/183 — gerçek üretim: HEP-YA-HİÇ. */
   async function handleSubmit() {
-    const missing = missingTargetMessage();
+    const missing = missingTargetMessage() ?? invalidFieldsMessage();
     if (missing !== null) {
       setFormError(missing);
       return;

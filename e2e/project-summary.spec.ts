@@ -163,19 +163,19 @@ test.describe("Sekme şeridi — tür bazlı (K1)", () => {
   test("taahhut projesinde iki yeni sekme YOKTUR", async ({ page }) => {
     await login(page);
     await page.goto("/projeler/p-1");
-    const tabs = page.getByRole("tablist", { name: "Proje detay sekmeleri" });
-    await expect(tabs.getByRole("tab")).toHaveCount(5);
-    await expect(tabs.getByRole("tab", { name: "Proje Özeti" })).toHaveCount(0);
-    await expect(tabs.getByRole("tab", { name: "Paylaşım Tablosu" })).toHaveCount(0);
+    const tabs = page.getByRole("navigation", { name: "Proje detay sekmeleri" });
+    await expect(tabs.getByRole("link")).toHaveCount(5);
+    await expect(tabs.getByRole("link", { name: "Proje Özeti" })).toHaveCount(0);
+    await expect(tabs.getByRole("link", { name: "Paylaşım Tablosu" })).toHaveCount(0);
   });
 
   test("kat karsiligi projesinde iki sekme de GERCEK rotaya gider", async ({ page }) => {
     await login(page);
     await page.goto("/projeler/p-3");
-    const tabs = page.getByRole("tablist", { name: "Proje detay sekmeleri" });
-    await expect(tabs.getByRole("tab")).toHaveCount(7);
+    const tabs = page.getByRole("navigation", { name: "Proje detay sekmeleri" });
+    await expect(tabs.getByRole("link")).toHaveCount(7);
 
-    await tabs.getByRole("tab", { name: "Paylaşım Tablosu" }).click();
+    await tabs.getByRole("link", { name: "Paylaşım Tablosu" }).click();
     await expect(page).toHaveURL(/\/projeler\/p-3\/paylasim$/);
     // Ölü sayfa (catch-all ComingSoon) DEĞİL.
     await expect(page.getByText("Bu modül yakında eklenecek.")).toHaveCount(0);

@@ -112,6 +112,15 @@
   color: var(--color-text-subtle);
 }
 
+/* 🔴 KUSUR no 39: geçersiz ondalık hücre altı GÖRÜNÜR özet satırı. */
+.tu-slot-table__error {
+  padding: var(--space-2) var(--space-5);
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-danger-strong);
+  background: var(--color-danger-tint);
+}
+
 /* ── TU 136-139 alt şerit: fiyat artışı ───────────────────────────────────── */
 .tu-slot-foot {
   display: flex;

@@ -27,7 +27,7 @@ export function BackupScreen() {
     <>
       <div className="backup-banner">
         <span className="backup-banner__icon" aria-hidden="true">
-          ✅
+          {"👍"}
         </span>
         <div>
           <div className="backup-banner__title">Son Yedekleme Başarılı</div>

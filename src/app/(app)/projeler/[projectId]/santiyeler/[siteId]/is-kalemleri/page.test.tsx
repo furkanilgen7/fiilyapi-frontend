@@ -26,6 +26,7 @@ const SITE_ID = "44444444-4444-4444-4444-444444444444";
 
 vi.mock("next/navigation", () => ({
   useParams: () => ({ projectId: PROJECT_ID, siteId: SITE_ID }),
+  usePathname: () => `/projeler/${PROJECT_ID}/santiyeler/${SITE_ID}/is-kalemleri`,
 }));
 
 // Modal gercek bilesen olarak render edilir (baglantiyi dogrulamak icin);
@@ -419,11 +420,20 @@ describe("BoqPage — a11y (spec §10)", () => {
     mockBoq({ data: FULL_BOQ });
   });
 
-  it("odak sırası okuma yönünü izler: breadcrumb → Excel İndir → + İş Kalemi → satır", async () => {
+  it("odak sırası okuma yönünü izler: sekme şeridi → breadcrumb → Excel İndir → + İş Kalemi → satır", async () => {
     mockPermission("full");
     const user = userEvent.setup();
     render(<BoqPage />);
     const expected = [
+      // Kayıt 303 — `SiteDetailTabs` artık bu sayfada da basılır (kardeş
+      // görünümlerle aynı desen), yani şerit ilk odaklanabilir öğe olur.
+      "Bölümler",
+      "İş Kalemleri",
+      "Puantaj",
+      "Stok",
+      "Hakedişler",
+      "Günlük Kayıt",
+      "Belgeler",
       "← A-Blok Şantiyesi",
       "Excel İndir",
       "+ İş Kalemi",
@@ -439,6 +449,19 @@ describe("BoqPage — a11y (spec §10)", () => {
     mockPermission("view");
     const user = userEvent.setup();
     render(<BoqPage />);
+    // Kayıt 303 — sekme şeridi (7 sekme) breadcrumb'tan ÖNCE gelir.
+    for (const label of [
+      "Bölümler",
+      "İş Kalemleri",
+      "Puantaj",
+      "Stok",
+      "Hakedişler",
+      "Günlük Kayıt",
+      "Belgeler",
+    ]) {
+      await user.tab();
+      expect(document.activeElement).toHaveTextContent(label);
+    }
     await user.tab();
     expect(document.activeElement).toHaveTextContent("← A-Blok Şantiyesi");
     await user.tab();
@@ -460,5 +483,19 @@ describe("BoqPage — a11y (spec §10)", () => {
     render(<BoqPage />);
     fireEvent.click(screen.getByRole("button", { name: /Excel İndir/ }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Excel dosyası indirilemedi.");
+  });
+});
+
+// Kayıt 303 — `SiteDetailTabs` kardeş görünümlerin (Stok/Puantaj/Belgeler/
+// Günlük/Hakedişler) hepsinin bastığı şeridi bu sayfa hiç basmıyordu.
+describe("BoqPage — sekme şeridi (kayıt 303)", () => {
+  it("SiteDetailTabs'ı basar ve İş Kalemleri sekmesi aktif işaretlenir", () => {
+    mockPermission("full");
+    render(<BoqPage />);
+    expect(
+      screen.getByRole("tablist", { name: "Şantiye detay sekmeleri" }),
+    ).toBeInTheDocument();
+    const activeTab = screen.getByRole("tab", { name: "İş Kalemleri" });
+    expect(activeTab).toHaveAttribute("aria-selected", "true");
   });
 });

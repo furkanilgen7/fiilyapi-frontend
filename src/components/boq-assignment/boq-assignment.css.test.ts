@@ -24,4 +24,22 @@ describe("boq-assignment.css — token disiplini", () => {
     expect(declarations).not.toMatch(/^\.sf-boq-card\s*\{/m);
     expect(declarations).not.toMatch(/^\.sf-boq-table\s*\{/m);
   });
+
+  /**
+   * M5_3 #35 — mockup (`Form - Poz Secici.dc.html:136`) aşım satırını
+   * `#fff7f7` zeminle + `#fecaca` alt kenarlıkla çizer. `--color-danger-tint`
+   * (#fff0f0) mockup'ın rengi DEĞİLDİR; doğru ton `--color-danger-tint-weak`
+   * (#fff7f7) + `--color-danger-tint-border` (#fecaca) token çiftidir.
+   */
+  it.each([".sf-boq-table__row--over", ".sf-boq-ptable__row--over"])(
+    "%s satırı mockup'ın #fff7f7 zemini + #fecaca kenarlığını taşır",
+    (selector) => {
+      const escaped = selector.replace(/\./g, "\\.");
+      const rule = new RegExp(`${escaped} td\\s*{([^}]*)}`).exec(declarations)?.[1] ?? "";
+      expect(rule).toContain("var(--color-danger-tint-weak)");
+      expect(rule).toContain("var(--color-danger-tint-border)");
+      // Eski (mockup'a aykırı) ton geri sızmasın.
+      expect(rule).not.toMatch(/background:\s*var\(--color-danger-tint\)/);
+    },
+  );
 });

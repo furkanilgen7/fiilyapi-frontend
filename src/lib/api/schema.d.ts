@@ -1342,7 +1342,7 @@ export interface paths {
         /**
          * Equipment Documents Summary Endpoint
          * @description K7 özeti: `expiring_soon` (30 gün) + `expired` + `missing` (zorunlu tip
-         *     eksikleri, yalnız AKTİF ekipman).
+         *     eksikleri, yalnız AKTİF ekipman) — hepsi K20 kapsamından GEÇER.
          */
         get: operations["equipment_documents_summary_endpoint_equipment_documents_summary_get"];
         put?: never;
@@ -1545,6 +1545,9 @@ export interface paths {
          *
          *     🔴 K2: hiçbir sayı çalışma kaydından CANLI okunmaz — satırların KENDİ
          *     kolonlarından türer.
+         *
+         *     URL-4 — yol parametresi UUID **ya da** fatura no slug'ı kabul eder
+         *     (`/makine/kira/lt2026080211`). Yazma uçları `uuid.UUID` KALIR.
          */
         get: operations["get_rental_invoice_endpoint_equipment_rental_invoices__invoice_id__get"];
         put?: never;
@@ -1792,6 +1795,10 @@ export interface paths {
         /**
          * Get Equipment Endpoint
          * @description Görünmeyen kayıt var olmayanla AYNI 404'ü döner (spec §4).
+         *
+         *     URL-4 — yol parametresi UUID **ya da** ad slug'ı kabul eder
+         *     (`/makine/beko-loder`). Yol adı `equipment_id` KALIR (URL-2 kararı 1);
+         *     PATCH ucu `uuid.UUID` KALIR (kararı 3).
          */
         get: operations["get_equipment_endpoint_equipment__equipment_id__get"];
         put?: never;
@@ -2210,6 +2217,19 @@ export interface paths {
          *
          *     Görünmeyen fatura var olmayanla AYNI 404'ü alır. Toplamlar okuma anında
          *     yeniden HESAPLANMAZ (K7): fatura donmuş bir belgedir.
+         *
+         *     URL-4 — yol parametresi UUID **ya da** `invoice_no` kabul eder (yol adı
+         *     `invoice_id` KALIR, URL-2 kararı 1). Numara iki yönde de kayıtlıysa ve
+         *     ikisi de KULLANICIYA GÖRÜNÜYORSA **409** döner: sessizce biri seçilmez.
+         *
+         *     🔴 **KARDEŞ UÇLAR `uuid` KALIR** — sözleşme bu yol parametresi adı altında
+         *     BİLEREK ASİMETRİKTİR: `GET /invoices/{invoice_id}` `string`, ama
+         *     `…/{invoice_id}/payments` · `/approve` · `/send` · `/dispute` ·
+         *     `/mark-collected` `uuid` bekler. Anahtar YALNIZCA **link üretimi ve detay
+         *     okuması** içindir; istemci kardeş çağrılarda gövdeden dönen `id`yi
+         *     kullanır (URL-2 kararı 3). Detay yanıtındaki `slug`ı bir eylem ucuna
+         *     geçirmek 422 verir — bu bir kusur değil, yazma yüzeyini tahmin edilebilir
+         *     bir anahtara açmama kararının görünen yüzüdür.
          */
         get: operations["get_invoice_endpoint_invoices__invoice_id__get"];
         put?: never;
@@ -3585,7 +3605,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Personnel Endpoint */
+        /**
+         * Get Personnel Endpoint
+         * @description URL-4 — yol parametresi UUID **ya da** ad slug'ı kabul eder.
+         *
+         *     🔴 Bu modülde PROJE KAPSAMLI bir görünürlük süzgeci YOKTUR (ölçüldü:
+         *     `service/core.py`de `visible_*` kapısı yok) — personel kartı şirket
+         *     genelinde `personnel:view` iznine bağlıdır. Slug bu yüzden var olmayan bir
+         *     süzgeci DELMEZ; izinsiz kullanıcı slug'la da UUID'yle de aynı 403'ü alır.
+         */
         get: operations["get_personnel_endpoint_personnel__personnel_id__get"];
         put?: never;
         post?: never;
@@ -3651,7 +3679,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Progress Payment Endpoint */
+        /**
+         * Get Progress Payment Endpoint
+         * @description URL-4 — yol parametresi UUID **ya da** `<proje-slug>-<sıra>` slug'ı
+         *     kabul eder (`/hakedisler/kopru-guclendirme-5`).
+         *
+         *     Bileşik anahtar (`project_id`, `sequence_no`) AYRIŞTIRILMAZ: slug
+         *     oluşturulurken ÜRETİLİP SAKLANIR, böylece yol şablonu `/{payment_id}`
+         *     DEĞİŞMEZ (URL-2 kararı 1) ve `parse_ref` de değişmez.
+         *     Durum geçişleri ve PATCH/DELETE `uuid.UUID` KALIR (kararı 3).
+         */
         get: operations["get_progress_payment_endpoint_progress_payments__payment_id__get"];
         put?: never;
         post?: never;
@@ -3991,7 +4028,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Employer Contract Endpoint */
+        /**
+         * Get Employer Contract Endpoint
+         * @description URL-4 — proje anahtarı UUID **ya da** PROJE SLUG'ı olabilir
+         *     (`/sozlesmeler/isveren/kopru-guclendirme`).
+         *
+         *     🔴 Ayrı bir sözleşme slug'ı AÇILMADI ve `project_contracts` tablosuna kolon
+         *     EKLENMEDİ: bu ucun kimliği zaten PROJEDİR (`project_contracts` PK'sı
+         *     `project_id`) ve projenin slug'ı URL-2'de zaten üretilmiştir. İkinci bir
+         *     slug aynı kaydı iki adla anılır kılardı.
+         */
         get: operations["get_employer_contract_endpoint_projects__project_id__contract_get"];
         put?: never;
         post?: never;
@@ -4008,7 +4054,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Contract Distribution Endpoint */
+        /**
+         * Get Contract Distribution Endpoint
+         * @description URL-4 — proje anahtarı UUID ya da proje slug'ı (ekranın üçüncü isteği).
+         *
+         *     🔴 PUT ikizi (`save_contract_distribution`) `uuid.UUID` KALIR — URL-2
+         *     kararı 3: yalnız OKUMA uçları anahtar kabul eder.
+         */
         get: operations["get_contract_distribution_endpoint_projects__project_id__contract_distribution_get"];
         /**
          * Save Contract Distribution Endpoint
@@ -4046,7 +4098,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Employer Contract Items Endpoint */
+        /**
+         * Get Employer Contract Items Endpoint
+         * @description URL-4 — proje anahtarı UUID ya da proje slug'ı (ekranın ikinci isteği).
+         */
         get: operations["get_employer_contract_items_endpoint_projects__project_id__contract_items_get"];
         put?: never;
         /** Create Employer Contract Item Endpoint */
@@ -4665,6 +4720,17 @@ export interface paths {
          * Get Purchase Request Endpoint
          * @description FST detayı: başlık + kalemler + TÜREVLER (satır tutarı · tahmini toplam ·
          *     "Mevcut Stok"). Görünmeyen talep var olmayanla AYNI 404'ü alır.
+         *
+         *     URL-4 — yol parametresi UUID **ya da** `request_no` kabul eder.
+         *     🔴 YOL ADI `request_id` OLARAK KALIR (URL-2 kararı 1): şablon değişmezse
+         *     üretilmiş istemcinin yol anahtarı da değişmez; değişen yalnız TİPTİR
+         *     (`uuid` -> `string`).
+         *
+         *     🔴 **KARDEŞ UÇLAR `uuid` KALIR** — sözleşme bu yol parametresi adı altında
+         *     BİLEREK ASİMETRİKTİR: bu uç `string`, ama `…/{request_id}/quotes` ·
+         *     `/select-and-order` ve tüm PATCH/DELETE/durum geçişleri `uuid` bekler.
+         *     Anahtar YALNIZCA **link üretimi ve detay okuması** içindir; istemci kardeş
+         *     çağrılarda gövdeden dönen `id`yi kullanır (URL-2 kararı 3).
          */
         get: operations["get_purchase_request_endpoint_purchase_requests__request_id__get"];
         put?: never;
@@ -5488,6 +5554,28 @@ export interface paths {
          *     BOQ-SEC K5: `section_id` ekran ucuyla AYNI cagriyi besler
          *     (`get_boq_export_for_site`) — ikinci bir suzme kodu yazilmaz, yoksa Excel
          *     ile ekran zamanla ayrisirdi.
+         *
+         *     🔴 **MASKE BURADA ELLE UYGULANIR** (2026-09-19 kacak-uc onarimi). Rota
+         *     sarmalayicisi yalnizca `BaseModel` donuslerini maskeler ve bu uc `Response`
+         *     (xlsx baytlari) doner — yani sarmalayici onu AYNEN geciriyordu. Sonuc:
+         *     `boq = view/limited` olan rol (santiye sefi, satinalma) ekranda `—` gordugu
+         *     birim fiyati ve tutari AYNI KAPIDAN (`boq:view`) dosya olarak tam degeriyle
+         *     indiriyordu. Maskenin en buyuk tek deligi buydu.
+         *
+         *     🔴 **Neden 403 DEGIL, MASKE.** Iki secenek de kacagi kapatirdi; olculdu ve
+         *     maske secildi:
+         *       * Dosyanin ISI kisitli rol icin de gecerlidir: `limited` rolde metraj ve
+         *         poz kimligi GORUNURDUR (kova tablosu), yani santiye sefinin sahada
+         *         kullandigi metraj listesi maskeden sonra da calisir. 403 vermek onu
+         *         bugun yapabildigi isi yapamaz hale getirirdi — kapsam kisiti bir
+         *         GIZLEME karari, bir IS DURDURMA karari degildir.
+         *       * Ekran ile dosya AYNI zarftan uretilir (yukaridaki K5 gerekcesi); ekranda
+         *         gorunen kume ile dosyada gorunen kume de boylece AYNI kalir. 403,
+         *         "ekranda var ama indiremiyorum" diye aciklanamaz bir ayrisma yaratirdi.
+         *
+         *     Zarf **build_boq_workbook'a girmeden ONCE** maskelenir: kitaba ham deger
+         *     yazip sonra hucre silmek iki ayri gizleme kuralı uretir ve zamanla ayrisirdi.
+         *     Bekcisi `tests/core/test_kapsam_kacak_uclar.py`.
          */
         get: operations["export_boq_endpoint_sites__site_id__boq_export_get"];
         put?: never;
@@ -5865,15 +5953,23 @@ export interface paths {
          * Save Site Timesheet Week Endpoint
          * @description E5 76 "Haftayı Kaydet" — **DEĞİŞTİRME** semantiği.
          *
-         *     ⚠️ Gövde **hafta**+şantiye kapsamının TAM kümesidir: gövdede geçmeyen hücre
-         *     SİLİNİR. Aynı ayın BAŞKA haftalarına ve başka şantiyeye DOKUNULMAZ (kesin
-         *     karar `service.save_week`).
+         *     ⚠️ Gövde kaydedilen KAPSAMIN TAM kümesidir: kapsam içinde gövdede geçmeyen
+         *     hücre SİLİNİR. Aynı ayın BAŞKA haftalarına ve başka şantiyeye DOKUNULMAZ
+         *     (kesin karar `service.save_week`).
+         *
+         *     🔴 `section_id` GET ile AYNI süzgeçtir ve KAPSAMI DARALTIR: verildiğinde
+         *     yalnız o bölümün hücreleri kilitlenir, güncellenir ve silinir. Süzgeç
+         *     yazmada da tanınmasaydı, bölüm süzgeçli bir ızgarayı gönderen istemci aynı
+         *     haftanın DİĞER bölümlerini geri alınamaz biçimde silerdi. Süzgeç varken
+         *     gövdedeki her hücre o bölüme ait olmalıdır (422), başka şantiyenin bölümü
+         *     okumadaki ile aynı 404'tür.
          *
          *     Denetim TEK hafta-özeti olayıdır; hücre başına olay yazmak 7×48'lik bir
          *     kaydetmede denetim günlüğünü kullanılamaz hâle getirirdi (spec §3).
          *
-         *     Yanıt GÜNCEL haftadır (bölüm süzgeci UYGULANMAZ — kaydedilen kapsam
-         *     şantiyenin tamamıdır, ekran kaydettiğinin tamamını geri görmelidir).
+         *     Yanıt GÜNCEL haftadır ve KAYDEDİLEN kapsamı gösterir: süzgeçsiz istekte
+         *     şantiyenin tamamı, süzgeçli istekte o bölüm — ekran kaydettiğinin tamamını,
+         *     fazlasını DEĞİL, geri görmelidir.
          */
         put: operations["save_site_timesheet_week_endpoint_sites__site_id__timesheet_week_put"];
         post?: never;
@@ -6080,7 +6176,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Subcontractor Contract Endpoint */
+        /**
+         * Get Subcontractor Contract Endpoint
+         * @description URL-4 — yol parametresi UUID **ya da** sözleşme slug'ı kabul eder
+         *     (`/sozlesmeler/taseron/tsz-2026-004`). Yol adı `contract_id` KALIR.
+         *
+         *     Görünmeyen projedeki sözleşmenin slug'ı da **404** alır: `_visible_contract`
+         *     çözümden SONRA `_visible_project`e uğrar ve gövde var olmayan kaydınkiyle
+         *     BİREBİR aynıdır (IDOR — slug TAHMİN EDİLEBİLİR, UUID değil).
+         */
         get: operations["get_subcontractor_contract_endpoint_subcontractor_contracts__contract_id__get"];
         put?: never;
         post?: never;
@@ -6269,7 +6373,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Subcontractor Progress Payment Endpoint */
+        /**
+         * Get Subcontractor Progress Payment Endpoint
+         * @description URL-4 — yol parametresi UUID **ya da** `<sözleşme-slug>-<sıra>` slug'ı
+         *     kabul eder (`/hakedisler/taseron/tsz-2025-001-48`). Mockup ölçüldü:
+         *     `Taşeron Hakediş Oluştur` breadcrumb'ı `Akın İnşaat TSZ-2025-001 / Hakediş #48`.
+         *     Yazma uçları `uuid.UUID` KALIR (URL-2 kararı 3).
+         */
         get: operations["get_subcontractor_progress_payment_endpoint_subcontractor_progress_payments__payment_id__get"];
         put?: never;
         post?: never;
@@ -7527,7 +7637,7 @@ export interface components {
             /** Count */
             count: number;
             /** List Price Total */
-            list_price_total: string;
+            list_price_total: string | null;
         };
         /**
          * BalanceSheetLine
@@ -7990,8 +8100,14 @@ export interface components {
          * @description Spec §5.1 grup satiri. `group_total` turevdir: kalem tutarlarinin toplami.
          */
         BoqGroupResponse: {
-            /** Group Total */
-            readonly group_total: string;
+            /**
+             * Group Total
+             * @description Kalem tutarlarinin toplami; kalemlerden biri bile MASKELIYSE `None`.
+             *
+             *     Maskeli kalemleri ATLAYIP toplasaydi ekran EKSIK bir toplami GERCEK
+             *     gibi basardi — bu, gizlemekten daha kotudur.
+             */
+            readonly group_total: string | null;
             /**
              * Id
              * Format: uuid
@@ -8024,7 +8140,7 @@ export interface components {
          */
         BoqItemAllocation: {
             /** Quantity */
-            quantity: string;
+            quantity: string | null;
             /**
              * Section Id
              * Format: uuid
@@ -8125,9 +8241,16 @@ export interface components {
          */
         BoqItemResponse: {
             /** Allocated Quantity */
-            allocated_quantity: string;
-            /** Amount */
-            readonly amount: string;
+            allocated_quantity: string | null;
+            /**
+             * Amount
+             * @description 🔴 Girdisi maskelenmisse TUREV DE DUSER (`core.field_scope` kanonu).
+             *
+             *     `unit_price` `limited` kapsaminda gizlenir; `amount` maskelenmeseydi
+             *     birim fiyat `amount / quantity` ile GERI HESAPLANIRDI — maske hicbir sey
+             *     gizlememis olurdu.
+             */
+            readonly amount: string | null;
             /** Code */
             code: string;
             /** Description */
@@ -8139,15 +8262,15 @@ export interface components {
             id: string;
             progress_pct: components["schemas"]["MetricPlaceholder"];
             /** Quantity */
-            quantity: string;
+            quantity: string | null;
             /** Sort Order */
             sort_order: number;
             /** Unallocated Quantity */
-            unallocated_quantity: string;
+            unallocated_quantity: string | null;
             /** Unit */
             unit: string;
             /** Unit Price */
-            unit_price: string;
+            unit_price: string | null;
         };
         /**
          * BoqItemUpdate
@@ -8213,7 +8336,7 @@ export interface components {
             contract_total: components["schemas"]["MetricPlaceholder"];
             grand_progress_pct: components["schemas"]["MetricPlaceholder"];
             /** Grand Total */
-            grand_total: string;
+            grand_total: string | null;
             realized_total: components["schemas"]["MetricPlaceholder"];
             remaining_total: components["schemas"]["MetricPlaceholder"];
             revision_total: components["schemas"]["MetricPlaceholder"];
@@ -8510,11 +8633,11 @@ export interface components {
          */
         CollectionKpi: {
             /** Collected Amount */
-            collected_amount: string;
+            collected_amount: string | null;
             /** Collection Pct */
             collection_pct: string | null;
             /** Contracted Amount */
-            contracted_amount: string;
+            contracted_amount: string | null;
         };
         /**
          * CompanyRead
@@ -8628,7 +8751,7 @@ export interface components {
              */
             boq_item_id: string;
             /** Quantity */
-            quantity: string;
+            quantity: string | null;
             /**
              * Site Id
              * Format: uuid
@@ -8663,13 +8786,13 @@ export interface components {
              */
             id: string;
             /** Quantity */
-            quantity: string;
+            quantity: string | null;
             /** Remaining Quantity */
-            remaining_quantity: string;
+            remaining_quantity: string | null;
             /** Unit */
             unit: string;
             /** Unit Price */
-            unit_price: string;
+            unit_price: string | null;
         };
         /**
          * ContractDistributionResponse
@@ -8718,15 +8841,15 @@ export interface components {
          */
         ContractDistributionSiteItem: {
             /** Amount */
-            amount: string;
+            amount: string | null;
             /** Code */
             code: string;
             /** Description */
             description: string;
             /** Quantity */
-            quantity: string;
+            quantity: string | null;
             /** Unit Price */
-            unit_price: string;
+            unit_price: string | null;
         };
         /** ContractDistributionSiteSummary */
         ContractDistributionSiteSummary: {
@@ -8740,7 +8863,7 @@ export interface components {
             /** Site Name */
             site_name: string;
             /** Total Amount */
-            total_amount: string;
+            total_amount: string | null;
         };
         /**
          * ContractListItem
@@ -8749,7 +8872,7 @@ export interface components {
          */
         ContractListItem: {
             /** Amount */
-            amount: string;
+            amount: string | null;
             /** Contract No */
             contract_no: string | null;
             /** Counterparty Name */
@@ -8808,7 +8931,7 @@ export interface components {
             /** Progress Payment Total */
             progress_payment_total?: string | null;
             /** Total Amount */
-            total_amount: string;
+            total_amount: string | null;
         };
         /**
          * ContractingCard
@@ -8916,7 +9039,7 @@ export interface components {
         /** DashboardProjectCard */
         DashboardProjectCard: {
             /** Budget */
-            budget: string;
+            budget: string | null;
             /** Code */
             code: string;
             /**
@@ -8927,7 +9050,7 @@ export interface components {
             /** Name */
             name: string;
             /** Progress Pct */
-            progress_pct: string;
+            progress_pct: string | null;
             status: components["schemas"]["ProjectStatus"];
         };
         /** DashboardSummaryResponse */
@@ -9103,7 +9226,7 @@ export interface components {
          */
         EmployerContractDetail: {
             /** Advance Amount */
-            advance_amount: string;
+            advance_amount: string | null;
             /** Advance Pct */
             advance_pct: string;
             /** Amount */
@@ -9122,9 +9245,9 @@ export interface components {
             has_price_escalation: boolean;
             index_type: components["schemas"]["PriceIndexType"] | null;
             /** Items Total */
-            items_total: string;
+            items_total: string | null;
             /** Items Total Diff */
-            items_total_diff: string;
+            items_total_diff: string | null;
             /** Late Penalty Daily */
             late_penalty_daily: string | null;
             /** Milestones */
@@ -9227,7 +9350,7 @@ export interface components {
             /** Description */
             description: string;
             /** Distributed Quantity */
-            distributed_quantity: string;
+            distributed_quantity: string | null;
             /**
              * Group Id
              * Format: uuid
@@ -9239,15 +9362,15 @@ export interface components {
              */
             id: string;
             /** Quantity */
-            quantity: string;
+            quantity: string | null;
             /** Remaining Quantity */
-            remaining_quantity: string;
+            remaining_quantity: string | null;
             /** Sort Order */
             sort_order: number;
             /** Unit */
             unit: string;
             /** Unit Price */
-            unit_price: string;
+            unit_price: string | null;
         };
         /**
          * EmployerContractItemUpdate
@@ -9955,6 +10078,8 @@ export interface components {
             serial_no: string | null;
             /** Site Id */
             site_id: string | null;
+            /** Slug */
+            slug?: string | null;
             status: components["schemas"]["EquipmentStatus"];
             /** Status Expected Date */
             status_expected_date: string | null;
@@ -10967,6 +11092,22 @@ export interface components {
             retention_rate: string | null;
             /** Site Id */
             site_id: string | null;
+            /**
+             * Slug
+             * @description URL-4 — URL'de taşınacak okunabilir anahtar; `invoice_no`nun kendisi.
+             *
+             *     AYRI BİR `slug` KOLONU AÇILMADI: `invoice_no` NOT NULL'dır ve zaten
+             *     yön başına tekildir; ikinci bir kolon aynı bilgiyi iki yerde tutar ve
+             *     migration doğururdu. Türev olduğu için LİSTE ve DETAY otomatik olarak
+             *     AYNI değeri taşır — `InvoiceResponse` ikisinin de şemasıdır, yani
+             *     URL-2'nin "liste şemasına slug eklenmedi" tuzağı burada YAPISAL olarak
+             *     imkânsızdır.
+             *
+             *     `None` olabilir: numara yol segmentine giremeyecek bir karakter
+             *     taşıyorsa (GELEN faturada `invoice_no` SERBEST METİNDİR — `2026/0001`
+             *     yazılabilir) istemci `slug ?? id` ile UUID'ye düşer.
+             */
+            readonly slug: string | null;
             status: components["schemas"]["InvoiceStatus"];
             /** Subcontractor Id */
             subcontractor_id: string | null;
@@ -11174,6 +11315,22 @@ export interface components {
             retention_rate: string | null;
             /** Site Id */
             site_id: string | null;
+            /**
+             * Slug
+             * @description URL-4 — URL'de taşınacak okunabilir anahtar; `invoice_no`nun kendisi.
+             *
+             *     AYRI BİR `slug` KOLONU AÇILMADI: `invoice_no` NOT NULL'dır ve zaten
+             *     yön başına tekildir; ikinci bir kolon aynı bilgiyi iki yerde tutar ve
+             *     migration doğururdu. Türev olduğu için LİSTE ve DETAY otomatik olarak
+             *     AYNI değeri taşır — `InvoiceResponse` ikisinin de şemasıdır, yani
+             *     URL-2'nin "liste şemasına slug eklenmedi" tuzağı burada YAPISAL olarak
+             *     imkânsızdır.
+             *
+             *     `None` olabilir: numara yol segmentine giremeyecek bir karakter
+             *     taşıyorsa (GELEN faturada `invoice_no` SERBEST METİNDİR — `2026/0001`
+             *     yazılabilir) istemci `slug ?? id` ile UUID'ye düşer.
+             */
+            readonly slug: string | null;
             status: components["schemas"]["InvoiceStatus"];
             /** Subcontractor Id */
             subcontractor_id: string | null;
@@ -11609,7 +11766,7 @@ export interface components {
             /** Land Area M2 */
             land_area_m2: string | null;
             /** Land Cost */
-            land_cost: string;
+            land_cost: string | null;
             /** Landowner Name */
             landowner_name: string;
             margin: components["schemas"]["MetricPlaceholder"];
@@ -11705,17 +11862,17 @@ export interface components {
             /** Available Count */
             available_count: number;
             /** Remaining Value */
-            remaining_value: string;
+            remaining_value: string | null;
             /** Reserved Count */
             reserved_count: number;
             /** Sold Count */
             sold_count: number;
             /** Sold Value */
-            sold_value: string;
+            sold_value: string | null;
             /** Unit Count */
             unit_count: number;
             /** Value Total */
-            value_total: string;
+            value_total: string | null;
         };
         /**
          * LandShareOwnerSide
@@ -11727,7 +11884,7 @@ export interface components {
             /** Unit Count */
             unit_count: number;
             /** Value Total */
-            value_total: string;
+            value_total: string | null;
         };
         /**
          * LandSharePartition
@@ -11737,7 +11894,7 @@ export interface components {
             /** Unit Count */
             unit_count: number;
             /** Value Total */
-            value_total: string;
+            value_total: string | null;
         };
         /**
          * LandShareShareholderRow
@@ -11761,7 +11918,7 @@ export interface components {
             /** Unit Count */
             unit_count: number;
             /** Value Total */
-            value_total: string;
+            value_total: string | null;
         };
         /**
          * LandShareSummaryResponse
@@ -11861,7 +12018,7 @@ export interface components {
          */
         LandShareValueBalance: {
             /** Assigned Value Total */
-            assigned_value_total: string;
+            assigned_value_total: string | null;
             /** Deviation Pct */
             deviation_pct: string | null;
             /** Is Within Tolerance */
@@ -11869,11 +12026,11 @@ export interface components {
             /** Our Actual Pct */
             our_actual_pct: string | null;
             /** Our Value */
-            our_value: string;
+            our_value: string | null;
             /** Owner Actual Pct */
             owner_actual_pct: string | null;
             /** Owner Value */
-            owner_value: string;
+            owner_value: string | null;
             /** Tolerance Pct */
             tolerance_pct: string;
         };
@@ -12360,11 +12517,11 @@ export interface components {
          */
         OverdueKpi: {
             /** Amount */
-            amount: string;
+            amount: string | null;
             /** Installment Count */
             installment_count: number;
             /** Late Fee Amount */
-            late_fee_amount: string;
+            late_fee_amount: string | null;
         };
         /** PasswordReset */
         PasswordReset: {
@@ -13434,6 +13591,8 @@ export interface components {
             phone: string | null;
             /** Sgk No */
             sgk_no: string | null;
+            /** Slug */
+            slug?: string | null;
             source: components["schemas"]["WorkerSource"];
             /** Subcontractor Id */
             subcontractor_id: string | null;
@@ -13641,6 +13800,8 @@ export interface components {
             retainage_pct: string;
             /** Sequence No */
             sequence_no: number;
+            /** Slug */
+            slug?: string | null;
             status: components["schemas"]["ProgressPaymentStatus"];
             /** Submitted At */
             submitted_at: string | null;
@@ -13815,6 +13976,8 @@ export interface components {
             project_name: string;
             /** Sequence No */
             sequence_no: number;
+            /** Slug */
+            slug?: string | null;
             status: components["schemas"]["ProgressPaymentStatus"];
         };
         /** ProgressPaymentListResponse */
@@ -13834,16 +13997,46 @@ export interface components {
          * @description `GET /projects/{project_id}/progress-payments/summary` yanıtı (E14
          *     sekmesi + SHK kartları, spec §9.6). Eksik sözleşme bedeli → `progress_pct`/
          *     `remaining` `None` (zarif düşüş, §8 deseninin aynısı).
+         *
+         *     ## 🔴 Bu şema İKİ uçtan döner ve İKİNCİSİ KAPSAM KISITLIDIR
+         *
+         *     Kendi ucunun yanında `contracts.schemas.EmployerContractDetail.
+         *     progress_payment_summary` olarak E14 detayına GÖMÜLÜR. `contracts` kapsam
+         *     kısıtlı bir modüldür; `field_scope.maskele()` iç içe `BaseModel`lere İNER,
+         *     yani maske buraya ULAŞIR. 2026-09-19 denetimine kadar alanlar ETİKETSİZDİ ve
+         *     etiketsiz alan `kimlik` sayıldığı için (fail-OPEN, gerekçe
+         *     `core/field_scope.py`) hiçbir kapsamda gizlenmiyordu: `limited` kapsamda
+         *     `EmployerContractDetail.amount` `null` dönerken AYNI sözleşme bedeli gömülü
+         *     `contract_amount`ta AÇIKTA kalıyordu. Bekçisi
+         *     `tests/modules/test_kapsam_capraz_sizinti.py`.
+         *
+         *     🔴 **Etiketler KENDİ ucunu DEĞİŞTİRMEZ** ve bu ölçüldü: `progress_payments`
+         *     matriste kısıtlı değildir (bütün hücreleri `Scope.all`) ve routerı
+         *     `kapsam_rotasi`ya bağlı değildir — o uçta maske hiç koşmaz. Yani etiketler
+         *     burada ATIL durur, yalnız gömüldükleri bağlamda iş görürler. Bağlamdan
+         *     bağımsız olarak doğrudurlar da: `contract_amount`/`net_total` HER iki uçta
+         *     da paradır, `progress_pct` HER iki uçta da ilerlemedir.
+         *
+         *     ## 🔴 Neden dört alan `| None` OLDU (şema değişikliği)
+         *
+         *     `cumulative_gross`/`advance_deduction_total`/`retention_total`/`net_total`
+         *     üretimde ASLA `None` dönmez — `build_summary` her yolda sayı üretir. `None`
+         *     hâli YALNIZ maskenin yazdığı hâldir. Tip `Decimal` KALSAYDI OpenAPI
+         *     sözleşmesi "bu alan hep sayıdır" derken gövde `null` taşırdı: frontend'in
+         *     üretilmiş tipi alanı sayı sanıp üzerinde aritmetik yapar ve ekran
+         *     maskelenmiş rolde ÇÖKERDİ. `contracts.EmployerContractDetail.items_total`
+         *     aynı gerekçeyle `Decimal` → `Decimal | None` oldu (2026-09-19); bu onun
+         *     emsalidir, yeni bir desen değildir.
          */
         ProgressPaymentSummary: {
             /** Advance Deduction Total */
-            advance_deduction_total: string;
+            advance_deduction_total: string | null;
             /** Contract Amount */
             contract_amount: string | null;
             /** Cumulative Gross */
-            cumulative_gross: string;
+            cumulative_gross: string | null;
             /** Net Total */
-            net_total: string;
+            net_total: string | null;
             /** Payment Count */
             payment_count: number;
             /** Pending Count */
@@ -13853,7 +14046,7 @@ export interface components {
             /** Remaining */
             remaining: string | null;
             /** Retention Total */
-            retention_total: string;
+            retention_total: string | null;
         };
         /**
          * ProgressPaymentUpdate
@@ -13922,13 +14115,13 @@ export interface components {
          */
         ProjectBudgetLines: {
             /** Labor */
-            labor: string;
+            labor: string | null;
             /** Material */
-            material: string;
+            material: string | null;
             /** Overhead */
-            overhead: string;
+            overhead: string | null;
             /** Subcontractor */
-            subcontractor: string;
+            subcontractor: string | null;
         };
         /**
          * ProjectContractInput
@@ -14018,16 +14211,16 @@ export interface components {
          */
         ProjectCostBreakdown: {
             /** Construction Budget */
-            construction_budget: string;
+            construction_budget: string | null;
             /** Construction Spent */
-            construction_spent: string;
+            construction_spent: string | null;
             financing: components["schemas"]["MetricPlaceholder"];
             /** Land Cost */
             land_cost: string | null;
             marketing: components["schemas"]["MetricPlaceholder"];
             permits: components["schemas"]["MetricPlaceholder"];
             /** Total Spent */
-            total_spent: string;
+            total_spent: string | null;
         };
         /**
          * ProjectCostsResponse
@@ -14102,7 +14295,7 @@ export interface components {
         /** ProjectDetailResponse */
         ProjectDetailResponse: {
             /** Budget */
-            budget: string;
+            budget: string | null;
             budget_lines: components["schemas"]["ProjectBudgetLines"];
             /** Category */
             category: string | null;
@@ -14133,7 +14326,7 @@ export interface components {
             /** Name */
             name: string;
             /** Progress Pct */
-            progress_pct: string;
+            progress_pct: string | null;
             project_type: components["schemas"]["ProjectType"];
             /** Site Count */
             site_count: number;
@@ -14178,7 +14371,7 @@ export interface components {
         /** ProjectListItem */
         ProjectListItem: {
             /** Budget */
-            budget: string;
+            budget: string | null;
             budget_lines: components["schemas"]["ProjectBudgetLines"];
             /** Category */
             category: string | null;
@@ -14209,7 +14402,7 @@ export interface components {
             /** Name */
             name: string;
             /** Progress Pct */
-            progress_pct: string;
+            progress_pct: string | null;
             project_type: components["schemas"]["ProjectType"];
             /** Slug */
             slug?: string | null;
@@ -14336,6 +14529,7 @@ export interface components {
             category?: string | null;
             /** City */
             city?: string | null;
+            contract?: components["schemas"]["ProjectContractInput"] | null;
             /** Contract Amount */
             contract_amount?: number | string | null;
             /** Contract No */
@@ -14852,6 +15046,8 @@ export interface components {
             section_id: string | null;
             /** Site Id */
             site_id: string | null;
+            /** Slug */
+            slug?: string | null;
             status: components["schemas"]["PurchaseRequestStatus"];
         };
         /**
@@ -14924,6 +15120,8 @@ export interface components {
             section_id: string | null;
             /** Site Id */
             site_id: string | null;
+            /** Slug */
+            slug?: string | null;
             status: components["schemas"]["PurchaseRequestStatus"];
         };
         /**
@@ -15122,6 +15320,8 @@ export interface components {
             site_id: string | null;
             /** Site Name */
             site_name: string | null;
+            /** Slug */
+            slug?: string | null;
             status: components["schemas"]["RentalInvoiceStatus"];
             /**
              * Supplier Id
@@ -15252,6 +15452,8 @@ export interface components {
             site_id: string | null;
             /** Site Name */
             site_name: string | null;
+            /** Slug */
+            slug?: string | null;
             status: components["schemas"]["RentalInvoiceStatus"];
             /**
              * Supplier Id
@@ -15396,7 +15598,7 @@ export interface components {
          */
         ReservedKpi: {
             /** Amount */
-            amount: string;
+            amount: string | null;
             /** Count */
             count: number;
             /** Expired Count */
@@ -15594,7 +15796,7 @@ export interface components {
         /** SaleInstallmentResponse */
         SaleInstallmentResponse: {
             /** Amount */
-            amount: string;
+            amount: string | null;
             /**
              * Due Date
              * Format: date
@@ -15613,12 +15815,12 @@ export interface components {
             /** Label */
             label: string;
             /** Paid Amount */
-            paid_amount: string;
+            paid_amount: string | null;
             /** Paid At */
             paid_at: string | null;
             payment_method: components["schemas"]["InstallmentPaymentMethod"] | null;
             /** Remaining Amount */
-            remaining_amount: string;
+            remaining_amount: string | null;
             /**
              * Sale Id
              * Format: uuid
@@ -15639,25 +15841,31 @@ export interface components {
          * SalePlanResponse
          * @description F110-147 tablosu + F143 TOPLAM satırı.
          *
-         *     `total_amount` HER ZAMAN `sale_price`a eşittir (sunucu doğrular, spec §2);
-         *     yine de yanıtta durur ki ekran toplamı kendisi toplamak zorunda kalmasın.
+         *     Eşitlik `total_amount == sale_price` yalnız PLAN YAZAN uçlarda zorlanır
+         *     (`POST generate-plan` ve `PUT installments` → `INSTALLMENT_TOTAL_MISMATCH`,
+         *     spec §2). Ardından gelen bir `PATCH /sales/{id}` bedel değişimi (kapı yalnız
+         *     bedeli TAHSİLATA bağlar, plan toplamına değil — bkz.
+         *     `guards.SALE_PRICE_BELOW_COLLECTED` gerekçesi) planı GEÇİCİ olarak hizasız
+         *     bırakabilir; kullanıcı `generate-plan`/`PUT installments` ile yeniden
+         *     hizalar. `total_amount` satırlardan CANLI toplanır, yanıtta durur ki ekran
+         *     toplamı kendisi toplamak zorunda kalmasın.
          */
         SalePlanResponse: {
             /** Items */
             items: components["schemas"]["SaleInstallmentResponse"][];
             /** Paid Amount */
-            paid_amount: string;
+            paid_amount: string | null;
             /**
              * Sale Id
              * Format: uuid
              */
             sale_id: string;
             /** Sale Price */
-            sale_price: string;
+            sale_price: string | null;
             /** Term Interest Amount */
-            term_interest_amount: string;
+            term_interest_amount: string | null;
             /** Total Amount */
-            total_amount: string;
+            total_amount: string | null;
         };
         /**
          * SaleType
@@ -17503,7 +17711,7 @@ export interface components {
          */
         SoldKpi: {
             /** Amount */
-            amount: string;
+            amount: string | null;
             /** Count */
             count: number;
             /** Deed Transferred Count */
@@ -17988,7 +18196,7 @@ export interface components {
             /** Contract No */
             contract_no: string | null;
             /** Contract Total */
-            contract_total: string;
+            contract_total: string | null;
             /** Documents */
             documents?: null;
             /** End Date */
@@ -18028,6 +18236,8 @@ export interface components {
             signature_date: string | null;
             /** Site Id */
             site_id: string | null;
+            /** Slug */
+            slug?: string | null;
             /** Start Date */
             start_date: string | null;
             status: components["schemas"]["ContractStatus"];
@@ -18077,8 +18287,11 @@ export interface components {
         };
         /**
          * SubcontractorContractItemResponse
-         * @description `FORM`/`TSD` kalem satırı. `line_total` türevdir, saklanmaz — `unit_price`
-         *     NULL olan satır toplama 0 katkı verir (spec §3.6).
+         * @description `FORM`/`TSD` kalem satırı. `line_total` türevdir, saklanmaz.
+         *
+         *     `unit_price` NULL olan satır SÖZLEŞME BEDELİNE 0 katkı verir (spec §3.6) —
+         *     ama satırın KENDİ `line_total`ı `null`dır, `0` değil; gerekçesi türevin
+         *     docstring'indedir. Toplama kuralı `service._subcontractor_amount`ta yaşar.
          */
         SubcontractorContractItemResponse: {
             /** Code */
@@ -18096,10 +18309,35 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /** Line Total */
-            readonly line_total: string;
+            /**
+             * Line Total
+             * @description Girdilerinden HERHANGİ BİRİ yoksa `None` — 0 DEĞİL.
+             *
+             *     🔴 **Neden `Decimal("0")` değil** (eski hâli buydu ve İKİ kusur
+             *     üretiyordu):
+             *
+             *     * `quantity` `operasyonel` etiketlidir ve `finance` kapsamında maske onu
+             *       `None`a çeker. Korumasız çarpım `None * Decimal` → `TypeError` verir ve
+             *       maske SERİLEŞTİRMEDEN ÖNCE uygulandığı için hata yanıt yolunda patlar:
+             *       muhasebe rolü taşeron sözleşme detayını **500** ile karşılardı.
+             *     * `unit_price` `para` etiketlidir ve `limited` kapsamında gizlenir. `0`
+             *       dönen bir türev, GİZLENMİŞ bir bedeli ekrana `"0,00 TL"` diye basardı
+             *       (`frontend/src/lib/format.ts` yalnız `null` görünce `—` yazar). Yanlış
+             *       bir sayı göstermek, hiç göstermemekten daha kötüdür.
+             *
+             *     🔴 **Neden maskeli bileşeni ATLAYIP hesaplamıyoruz:** eksik bir toplamı
+             *     gerçek gibi basmak da aynı yalanı söylerdi (`boq/schemas.py::group_total`
+             *     aynı kararı aynı gerekçeyle verir).
+             *
+             *     🔴 **Spec §3.6'nın "fiyatsız satır toplama 0 katkı verir" kuralı DEĞİŞMEDİ**
+             *     ve burada YAŞAMIYOR: sözleşme bedelini `service._subcontractor_amount`
+             *     hesaplar, fiyatsız satırı kendisi eler. O kural bir TOPLAMA kuralıdır;
+             *     satırın kendi tutarı "girilmedi" iken `0 TL` DEĞİLDİR (spec §3.6 bu iki
+             *     hâli zaten ayırır).
+             */
+            readonly line_total: string | null;
             /** Quantity */
-            quantity: string;
+            quantity: string | null;
             /** Sort Order */
             sort_order: number;
             /** Source Contract Item Id */
@@ -18166,6 +18404,8 @@ export interface components {
             site_id: string | null;
             /** Site Name */
             site_name: string | null;
+            /** Slug */
+            slug?: string | null;
             status: components["schemas"]["ContractStatus"];
             /** Subcontractor Name */
             subcontractor_name: string | null;
@@ -18278,7 +18518,7 @@ export interface components {
          */
         SubcontractorCostRow: {
             /** Contract Amount */
-            contract_amount: string;
+            contract_amount: string | null;
             /**
              * Contract Id
              * Format: uuid
@@ -18287,9 +18527,9 @@ export interface components {
             /** Contract No */
             contract_no: string | null;
             /** Paid */
-            paid: string;
+            paid: string | null;
             /** Pending */
-            pending: string;
+            pending: string | null;
             /** Progress Pct */
             progress_pct: string | null;
             /** Subcontractor Id */
@@ -18315,11 +18555,11 @@ export interface components {
          */
         SubcontractorCostSummary: {
             /** Contract Amount */
-            contract_amount: string;
+            contract_amount: string | null;
             /** Paid */
-            paid: string;
+            paid: string | null;
             /** Pending */
-            pending: string;
+            pending: string | null;
         };
         /** SubcontractorCreate */
         SubcontractorCreate: {
@@ -18495,6 +18735,8 @@ export interface components {
             section_id: string | null;
             /** Sequence No */
             sequence_no: number;
+            /** Slug */
+            slug?: string | null;
             status: components["schemas"]["SubcontractorPaymentStatus"];
             /** Subcontractor Name */
             subcontractor_name: string | null;
@@ -18657,6 +18899,8 @@ export interface components {
             section_id: string | null;
             /** Sequence No */
             sequence_no: number;
+            /** Slug */
+            slug?: string | null;
             status: components["schemas"]["SubcontractorPaymentStatus"];
             /** Subcontractor Name */
             subcontractor_name: string | null;
@@ -19520,7 +19764,7 @@ export interface components {
             /** Rows */
             rows: components["schemas"]["UnitBulkPreviewRow"][];
             /** Total List Value */
-            total_list_value: string;
+            total_list_value: string | null;
             /** Total Units */
             total_units: number;
         };
@@ -19992,7 +20236,7 @@ export interface components {
             /** Overdue Installment Count */
             overdue_installment_count: number;
             /** Paid Amount */
-            paid_amount: string;
+            paid_amount: string | null;
             payment_plan_type: components["schemas"]["PaymentPlanType"] | null;
             /** Pending Modules */
             pending_modules?: string[];
@@ -20004,13 +20248,13 @@ export interface components {
              */
             project_id: string;
             /** Remaining Amount */
-            remaining_amount: string;
+            remaining_amount: string | null;
             /** Reservation Deposit */
             reservation_deposit: string | null;
             /** Reservation Due Date */
             reservation_due_date: string | null;
             /** Sale Price */
-            sale_price: string;
+            sale_price: string | null;
             sale_profit: components["schemas"]["MetricPlaceholder"];
             sale_type: components["schemas"]["SaleType"];
             status: components["schemas"]["UnitSaleStatus"];
@@ -20052,11 +20296,11 @@ export interface components {
             /** Count */
             count: number;
             /** Paid Total */
-            paid_total: string;
+            paid_total: string | null;
             /** Remaining Total */
-            remaining_total: string;
+            remaining_total: string | null;
             /** Sale Price Total */
-            sale_price_total: string;
+            sale_price_total: string | null;
         };
         /**
          * UnitSaleUpdate
@@ -20129,7 +20373,7 @@ export interface components {
             /** Sold */
             sold: number;
             /** Total Value */
-            total_value: string;
+            total_value: string | null;
         };
         /** UnitTotals */
         UnitTotals: {
@@ -20147,19 +20391,19 @@ export interface components {
             /** Reserved Units */
             reserved_units: number;
             /** Sales Revenue */
-            sales_revenue: string;
+            sales_revenue: string | null;
             /** Sides */
             sides: components["schemas"]["UnitSideSummary"][];
             /** Sold Units */
             sold_units: number;
             /** Total Appraisal Value */
-            total_appraisal_value: string;
+            total_appraisal_value: string | null;
             /** Total Gross Area M2 */
-            total_gross_area_m2: string;
+            total_gross_area_m2: string | null;
             /** Total List Price */
-            total_list_price: string;
+            total_list_price: string | null;
             /** Total Value */
-            total_value: string;
+            total_value: string | null;
             value_basis: components["schemas"]["UnitValueBasis"];
         };
         /**
@@ -20222,7 +20466,7 @@ export interface components {
          */
         UpcomingCollection: {
             /** Amount */
-            amount: string;
+            amount: string | null;
             /** Customer Name */
             customer_name: string;
             /** Days Overdue */
@@ -20242,11 +20486,11 @@ export interface components {
             /** Label */
             label: string;
             /** Late Fee Amount */
-            late_fee_amount: string;
+            late_fee_amount: string | null;
             /** Paid Amount */
-            paid_amount: string;
+            paid_amount: string | null;
             /** Remaining Amount */
-            remaining_amount: string;
+            remaining_amount: string | null;
             /**
              * Sale Id
              * Format: uuid
@@ -26458,6 +26702,13 @@ export interface operations {
             };
             /** @description Fatura bulunamadı */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Fatura numarası hem gelen hem giden faturada kayıtlı */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -35242,6 +35493,7 @@ export interface operations {
             query: {
                 iso_year: number;
                 iso_week: number;
+                section_id?: string | null;
             };
             header?: never;
             path: {

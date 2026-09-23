@@ -123,6 +123,30 @@ describe("buildPurchaseRequestCreateBody — gövde anahtar kümesi", () => {
     expect(body).not.toHaveProperty("request_no");
     expect(body.justification).toBe("Kat 9 kolon demiri");
   });
+
+  /**
+   * no 266 · Form her zaman DOKUNULMAMIŞ bir ilk satırla açılır
+   * (`emptyPurchaseRequestFormValues`). Taslak doğrulaması bu satırı
+   * ARAMAZ (`purchase-request-validate.ts` draft modunda `quantity`/
+   * `stockItemId` zorunlu değildir) — bu yüzden yalnız proje seçip
+   * "Taslak Kaydet"e basan kullanıcı, gövdeye giden `stock_item_id: ""` /
+   * `quantity: ""` yüzünden sunucudan 422 alırdı.
+   */
+  it("🔴 tamamen dokunulmamış satır gövdeye HİÇ girmez (taslakta 422 üretmez)", () => {
+    const body = buildPurchaseRequestCreateBody(
+      filledValues({ lines: [createPurchaseRequestLine(0)] }),
+    );
+
+    expect(body.lines).toEqual([]);
+  });
+
+  it("kısmen doldurulmuş satır SİLİNMEZ (yalnız TAM boş satır elenir)", () => {
+    const body = buildPurchaseRequestCreateBody(
+      filledValues({ lines: [line({ source: "stock", stockItemId: "s-1" })] }),
+    );
+
+    expect(body.lines).toHaveLength(1);
+  });
 });
 
 describe("buildPurchaseRequestUpdateBody — `lines` TAM DEĞİŞTİRMEDİR", () => {

@@ -215,7 +215,35 @@ export const MODULE_LABELS: Record<string, string> = {
   //     "taşeron sekmesinde ilerleme hiç hesaplanmıyor" demek artık YALANDI.
   //     Gerekçe iki sekmede de aynı ProgressCell'den okunur (işveren sözleşmesi
   //     de bedelsiz olabilir) — bu yüzden metin sekmeden BAĞIMSIZ yazılır.
-  subcontractor_progress_payment_total: "Taşeron hakediş toplamı bu görünüme gelmedi",
+  //
+  // 🔴 `subcontractor_progress_payment_total` SİLİNDİ (F-KAPSAM, 2026-09-19).
+  //
+  // F-SZLPCT'in yukarıdaki *"Anahtar SİLİNMEZ"* kararı BAYATLADI. O karar
+  // "kart hâlâ savunmacı `null` dalını taşır" diyordu — doğru, ama o dalın
+  // artık TEK kaynağı kapsam maskesidir ve maske "bu yüzeye gelmedi" DEMEZ,
+  // "görmeye yetkin yok" der. Yani metin, basıldığı HER hâlde yalandı.
+  //
+  // Dosyanın kendi silme kuralı ("gerekçeyi okuyan kimse kalmamış → ANAHTAR
+  // silinir") uygulandı ve F-ILRUI tuzağına (bayat ölçüme dayanan silme)
+  // DÜŞMEMEK için ölçüm bu turda YENİDEN yapıldı:
+  //   · `git -C backend grep subcontractor_progress_payment_total` → exit 1,
+  //   · `backend/openapi/openapi.json` ve `schema.d.ts` → 0 eşleşme,
+  //   · tek okuyucu `ContractsSummaryStrip` idi ve bu turda gerekçeyi bıraktı.
+  // Backend bu anahtarı HİÇBİR `pending_modules` gövdesinde yayınlamıyor,
+  // dolayısıyla `FALLBACK_LABEL`e düşecek bir çağrı da yoktur.
+  // Yayınlamaya başlarsa anahtar GERİ EKLENİR.
+  // 🔴 KAPSAM MASKESİ (kullanıcı kararı 2026-09-19) — METİN DEĞİŞMEDİ, ÇAĞRISI
+  // DARALDI. `ContractListItem.progress_pct` artık `Gorunurluk.operasyonel`
+  // etiketlidir ve `finance` kapsamlı rolde de `null` gelir. Hücre `null`u tek
+  // anlamla okuduğu sürece bu cümle o rolde YALANDI: bedel yan kolonda
+  // görünüyor, "girilmemiş" demek ekranı yalancı yapıyordu — deponun kendi
+  // kanonu bunu adıyla yasaklar (`projects/schemas.py::restricted`).
+  //
+  // Anahtar SİLİNMEDİ ve metin DÜZELTİLMEDİ, çünkü cümle HÂLÂ DOĞRUdur —
+  // yalnız dar bir hâlde: `ContractsTable::ProgressCell` ve
+  // `ContractPaymentSummaryCard` onu artık SADECE bedel GÖRÜNÜR ve `<= 0` iken
+  // basar (`contract-progress.ts::isProvenZeroAmount`). Diğer hâllerde sebep
+  // ölçülemez ve `placeholder-cell.ts`in 3. hâli uygulanır: "—", ipucu YOK.
   subcontractor_progress_pct: "Sözleşme bedeli girilmemiş — ilerleme oranı hesaplanamaz",
   // F-P5 T3 (E14 · İşveren sözleşme detayı) — mockup'ta ÇİZİLİ olup backend
   // karşılığı OLMAYAN yüzeyler. Üst kural: bölüm/buton SİLİNMEZ, yerinde
@@ -547,7 +575,33 @@ const FALLBACK_LABEL = "İlgili modülle birlikte gelir";
 // `pendingModule: string` bildirimi yeniden uretilmez.
 export type PendingModuleKey = string | null | undefined;
 
-export function pendingModuleLabel(key: PendingModuleKey): string {
-  if (!key) return FALLBACK_LABEL;
+/**
+ * BİLİNEN bir anahtarın gerekçe metni. Tanınmayan anahtar `FALLBACK_LABEL`e düşer.
+ *
+ * 🔴 İMZA `string` — `null`/`undefined` ARTIK KABUL EDİLMİYOR (2026-09-20).
+ *
+ * Eski imza `PendingModuleKey` (yani `string | null | undefined`) idi ve `!key`
+ * dalı `FALLBACK_LABEL` döndürüyordu. Bu, zarfın ÜÇÜNCÜ hâlinde ("rolün izni
+ * yok", `pending_module: null`) ekrana **"İlgili modülle birlikte gelir"**
+ * yazdırıyordu — modül VARDIR, eksik olan izindir; cümle YALANDI. Ölçüldü: altı
+ * yüzey bu dala koşulsuz giriyordu (şantiye/bölüm KPI'ları, proje kartı).
+ *
+ * Dallanmayı her çağrı yerinde tekrar yazmak yerine (ve unutulmasına açık
+ * bırakmak yerine) AYRIM TİPE TAŞINDI: nullable bir anahtarla çağırmak artık
+ * `tsc` hatasıdır ve yazar `pendingModuleHint`i kullanmak zorunda kalır.
+ * Bekçi bir liste değil DERLEYİCİDİR — bu depoda elle tutulan listelerin
+ * çürüdüğü defalarca ölçüldü.
+ */
+export function pendingModuleLabel(key: string): string {
   return MODULE_LABELS[key] ?? FALLBACK_LABEL;
+}
+
+/**
+ * Zarfın gerekçe İPUCU: 2. hâlde metin, 3. hâlde **`undefined`**.
+ *
+ * `undefined` bilinçlidir: gerekçe BİLİNMİYORSA uydurulmaz. Ekran "—" basar ve
+ * susar (`lib/placeholder-cell.ts`in aynı kararı; kullanıcı kararı 2026-08-27).
+ */
+export function pendingModuleHint(key: PendingModuleKey): string | undefined {
+  return key ? pendingModuleLabel(key) : undefined;
 }

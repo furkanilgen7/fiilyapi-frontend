@@ -4,6 +4,10 @@ import { unwrap } from "@/lib/api/unwrap";
 import type { components } from "@/lib/api/schema";
 import { EQUIPMENT_QUERY_KEY, type EquipmentResponse } from "./useEquipment";
 import { EQUIPMENT_DETAIL_QUERY_KEY } from "./useEquipmentDetail";
+// 🔴 AD TUZAĞI: yukarıdaki anahtar M2 DÜZENLEME FORMUNUN ucudur
+// (`GET /equipment/{id}`). MK-4 detay EKRANI (`…/detail`) AYRI bir
+// anahtarda yaşar; tazelenmezse `staleTime` (30 sn) boyunca bayat kalır.
+import { EQUIPMENT_DETAIL_SCREEN_QUERY_KEY } from "./useEquipmentDetailScreen";
 import { EQUIPMENT_SUMMARY_QUERY_KEY } from "./useEquipmentSummary";
 
 export type EquipmentCreateRequest = components["schemas"]["EquipmentCreate"];
@@ -62,6 +66,9 @@ export function useUpdateEquipment(
       queryClient.invalidateQueries({ queryKey: [EQUIPMENT_SUMMARY_QUERY_KEY] });
       queryClient.invalidateQueries({
         queryKey: [EQUIPMENT_DETAIL_QUERY_KEY, equipmentId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [EQUIPMENT_DETAIL_SCREEN_QUERY_KEY, equipmentId],
       });
     },
   });

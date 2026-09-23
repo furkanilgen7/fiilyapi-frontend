@@ -60,7 +60,7 @@ describe("usePersonnel", () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(backendClient.GET).toHaveBeenCalledWith("/personnel", { params: { query: {} } });
     expect(
-      client.getQueryData([PERSONNEL_QUERY_KEY, null, null, null, null, null, null, null]),
+      client.getQueryData([PERSONNEL_QUERY_KEY, null, null, null, null, null, null, null, null]),
     ).toEqual(LIST);
   });
 
@@ -97,6 +97,20 @@ describe("usePersonnel", () => {
           offset: 0,
         },
       },
+    });
+  });
+
+  // 🔴 KAYIT 101: `isDraft: false` verildiğinde `is_draft=false` GİDER —
+  // gönderilmezse backend süzgeci hiç uygulamıyor ve taslak personel
+  // varsayılan listeye karışıyordu.
+  it("isDraft: false suzgeci gonderilir (taslak personel varsayilan listeden dislanir)", async () => {
+    vi.mocked(backendClient.GET).mockResolvedValue(okResponse(LIST));
+
+    const { result } = renderHook(() => usePersonnel({ isDraft: false, offset: 0 }), { wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(backendClient.GET).toHaveBeenCalledWith("/personnel", {
+      params: { query: { is_draft: false, offset: 0 } },
     });
   });
 

@@ -28,12 +28,11 @@ export const SETTINGS_NAV: SettingsNavGroup[] = [
       // "Kullanıcı & Erişim" grubunun SONUNA koyar. Rotası olmayan ekran
       // kullanıcıya görünmez: bağlantı ekranla AYNI dilimde iner.
       //
-      // ⚠️ ONAYLI SAPMA — mockup `✅` (U+2705) çiziyor; o kod noktası
-      // `src/styles/fonts.css`in HİÇBİR `unicode-range` kümesinde YOK
-      // (kapsanan emoji aralığı `u+1f??`). Kapsanmayan glif sistem yedeğine
-      // düşer ve kare `ubuntu-latest`te turdan tura oynar (F-MU2 kanonu).
-      // Diğer dokuz öğenin hepsi gibi `u+1f??` içinden bir emoji seçildi.
-      { label: "Onay Rolleri ve Eşik", href: routes.settings.approvalRoles(), emoji: "\u{1F44D}" },
+      // ⚠️ ONAYLI SAPMA — mockup `✅` (U+2705) çiziyor; kapsam dışı bir emoji
+      // (👍, U+1F44D) ikame edildi. Literal yazılır (kaçış dizisi DEĞİL) ki
+      // symbol-subset-guard kod noktasını görebilsin; onay guard'ın ALLOWED
+      // listesindedir (bkz. kalan-3 #438 — kaçış dizisi bekçiyi kör bırakır).
+      { label: "Onay Rolleri ve Eşik", href: routes.settings.approvalRoles(), emoji: "👍" },
     ],
   },
   {

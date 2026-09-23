@@ -57,9 +57,15 @@ describe("BOQ tip üretimi (Ekran 13 kapısı)", () => {
     expectTypeOf<BoqItemResponse>().toHaveProperty("amount");
     expectTypeOf<BoqItemResponse>().toHaveProperty("progress_pct");
     // Decimal alanlar string olarak gelir (hassasiyet korunur).
-    expectTypeOf<BoqItemResponse["quantity"]>().toEqualTypeOf<string>();
-    expectTypeOf<BoqItemResponse["amount"]>().toEqualTypeOf<string>();
-    expectTypeOf<BoqTotals["grand_total"]>().toEqualTypeOf<string>();
+    //
+    // 🔴 KAPSAM MASKESİ (2026-09-19): para ve metraj alanları artık
+    //    `string | null`dır — `limited` rol tutarı, `finance` rol metrajı
+    //    GÖREMEZ ve sunucu `null` döndürür. Tipin bunu SÖYLEMESİ gerekir:
+    //    `string` deseydi TypeScript maskeyi gizler ve ekran `null`a
+    //    hazırlıksız yakalanırdı.
+    expectTypeOf<BoqItemResponse["quantity"]>().toEqualTypeOf<string | null>();
+    expectTypeOf<BoqItemResponse["amount"]>().toEqualTypeOf<string | null>();
+    expectTypeOf<BoqTotals["grand_total"]>().toEqualTypeOf<string | null>();
     expect(true).toBe(true);
   });
 

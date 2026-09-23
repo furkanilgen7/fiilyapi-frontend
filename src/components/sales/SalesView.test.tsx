@@ -127,11 +127,11 @@ describe("SalesView — 'Fiyat Listesi' (24) devre dışı, gerekçeli", () => {
 });
 
 describe("SalesView — satış formu girişi (25)", () => {
-  it("'+ Satış Kaydı' /satis/yeni rotasına gider", () => {
+  it("'+ Satış Kaydı' /satis/yeni rotasına, seçili proje bağlamıyla gider (no 236)", () => {
     render(<SalesView />);
     expect(screen.getByRole("link", { name: "+ Satış Kaydı" })).toHaveAttribute(
       "href",
-      "/satis/yeni",
+      "/satis/yeni?proje=p-1",
     );
   });
 
@@ -155,6 +155,42 @@ describe("SalesView — satış formu girişi (25)", () => {
     } as ReturnType<typeof useSession>);
     render(<SalesView />);
     expect(screen.queryByRole("heading", { name: "Satış Yönetimi" })).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * kalan-6 no 275 — `projectsQuery` 403 aldığında (kullanıcının `sales:view`
+ * var ama `projects:view` YOK) `projectsQuery.error` hiç okunmuyordu; proje
+ * listesi sessizce boş dizi olup ekran "Proje yok" gösteriyordu. Gerçek
+ * gerekçe (yetki eksikliği) hiç basılmıyordu — AccessDenied'a düşmesi gerekir.
+ */
+describe("SalesView — proje listesi 403'ü ekranı düşürür", () => {
+  it("projectsQuery 403 aldığında AccessDenied basılır, 'Proje yok' değil", () => {
+    vi.mocked(useProjects).mockReturnValue(
+      queryStub(undefined, { isError: true, error: new BackendError(403, null) }),
+    );
+    render(<SalesView />);
+    expect(screen.queryByRole("heading", { name: "Satış Yönetimi" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Proje yok")).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * no 237 — `projectsQuery.isError` 403 DIŞI bir hatada (ağ/500) hiç
+ * okunmuyordu; ekran sessizce "Proje yok" + boş KPI gösterip gerçek hatayı
+ * gizliyordu.
+ */
+describe("SalesView — proje listesi 403 DIŞI hatası görünür olmalı (no 237)", () => {
+  it("500/ağ hatasında ekran düşmez ama hata bandı basılır", () => {
+    vi.mocked(useProjects).mockReturnValue(
+      queryStub(undefined, {
+        isError: true,
+        error: new BackendError(500, { detail: "Sunucu hatası" }),
+      }),
+    );
+    render(<SalesView />);
+    expect(screen.getByRole("heading", { name: "Satış Yönetimi" })).toBeInTheDocument();
+    expect(screen.getByTestId("satis-proje-hatasi")).toBeInTheDocument();
   });
 });
 
@@ -270,5 +306,31 @@ describe("SalesView — blok/ünite form girişleri (F-UNIT1 T3)", () => {
     for (const label of ["Toplu Üretim", "Excel İçe Aktar", "Paylaşım Girişi"]) {
       expect(screen.queryByText(label)).not.toBeInTheDocument();
     }
+  });
+});
+
+/**
+ * Kart ile çağıran arasındaki KABLO: bileşen üç hâli ayırsa bile `SalesView`
+ * bayrakları geçirmezse kullanıcı yine "taksit yok" okur.
+ */
+describe("SalesView — yaklaşan tahsilatlar kartına yükleniyor/hata GEÇİRİLİR", () => {
+  const EMPTY_CLAIM = "Önümüzdeki 30 günde vadesi gelen taksit yok.";
+
+  it("özet yüklenirken 'taksit yok' iddiası BASILMAZ", () => {
+    vi.mocked(useSalesSummary).mockReturnValue(queryStub(undefined, { isLoading: true }));
+    render(<SalesView />);
+    expect(screen.queryByText(EMPTY_CLAIM)).not.toBeInTheDocument();
+  });
+
+  it("özet 403 DIŞI bir hata verdiğinde 'taksit yok' yerine sunucunun cümlesi basılır", () => {
+    vi.mocked(useSalesSummary).mockReturnValue(
+      queryStub(undefined, {
+        isError: true,
+        error: new BackendError(500, { detail: "Özet hesaplanamadı." }),
+      }),
+    );
+    render(<SalesView />);
+    expect(screen.queryByText(EMPTY_CLAIM)).not.toBeInTheDocument();
+    expect(screen.getByTestId("satis-yaklasan-bos")).toHaveTextContent("Özet hesaplanamadı.");
   });
 });

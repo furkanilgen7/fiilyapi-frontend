@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
+import { ConfirmDialog } from "@/components/settings/ConfirmDialog";
 import { DiaryModeSwitch } from "@/components/site-diary/DiaryModeSwitch";
 import { SiteDetailTabs } from "@/components/site-detail/SiteDetailTabs";
 import { Button } from "@/components/ui/button/Button";
@@ -77,9 +79,16 @@ export function SitePlanningView() {
   // render'da aynı kalmalı (izin dalı hook atlatamaz).
   const { draft, dispatch, isDirty } = usePlanDraft(planQuery.data, weekStart);
   const saveHandle = usePlanSave(siteId, weekStart, dispatch);
+  // Onay bekleyen hafta kaydırması (gün farkı); `null` = bekleyen yok.
+  const [pendingWeekShift, setPendingWeekShift] = useState<number | null>(null);
 
   if (!permission.canView) return <AccessDenied />;
-  if (isForbidden(planQuery.error)) return <AccessDenied />;
+  if (isForbidden(planQuery.error) || isForbidden(siteQuery.error)) return <AccessDenied />;
+  // 🔴 Şantiye çözülemezse (404/ağ) `siteId` boş kalır ve `planQuery`/
+  // `sectionsQuery` `enabled:false` ile sessizce idle'da durur — hiçbir hata
+  // basılmadan boş ızgara görünürdü. planQuery kontrolünden ÖNCE kontrol
+  // edilir, yoksa siteId boşken bu dal hiç tetiklenmez.
+  if (siteQuery.isError) return <p className="plan__message">Şantiye yüklenemedi</p>;
 
   const plan = planQuery.data;
   const base = routes.projects.sites.detail({ projectId: projectKey, siteId: siteKey });
@@ -91,14 +100,31 @@ export function SitePlanningView() {
   );
 
   /** `‹`/`›` — hafta URL'de taşınır; `replace` geçmişi hafta hafta şişirmez. */
-  function handleShiftWeek(deltaDays: number) {
+  function shiftWeek(deltaDays: number) {
     router.replace(`${pathname}?week=${addDaysIso(weekStart, deltaDays)}`, { scroll: false });
+  }
+
+  /**
+   * KORKULUK: hafta değişince `usePlanDraft` taslağı BİLEREK sıfırlar (hücreler
+   * hafta kapsamlıdır); yani kirli taslakla hafta kaydırmak kaydedilmemiş işi
+   * ATAR. Kayıp sessiz olamaz — kirliyken önce onay istenir, reddedilirse
+   * `router.replace` HİÇ çağrılmaz. Temiz taslakta kapı yoktur.
+   */
+  function handleShiftWeek(deltaDays: number) {
+    if (isDirty) {
+      setPendingWeekShift(deltaDays);
+      return;
+    }
+    shiftWeek(deltaDays);
   }
 
   return (
     <div className="plan">
-      {/* Şantiye sekme barı — sıra `SiteDetailTabs` tek kaynağından. */}
-      <SiteDetailTabs projectKey={projectKey} siteKey={siteKey} activePath={pathname} />
+      {/* Şantiye sekme barı — sıra `SiteDetailTabs` tek kaynağından. `activePath`
+          TAM DİZE karşılaştırır, o yüzden planlama son ekli `pathname` DEĞİL
+          "Günlük Kayıt" sekmesinin href'iyle aynı temel yol geçilir (bkz.
+          SiteDiarySummaryView). */}
+      <SiteDetailTabs projectKey={projectKey} siteKey={siteKey} activePath={`${base}/gunluk-kayit`} />
 
       {/* P80-84 */}
       <DiaryModeSwitch
@@ -185,6 +211,20 @@ export function SitePlanningView() {
           />
         )}
       </section>
+
+      {pendingWeekShift !== null && (
+        <ConfirmDialog
+          title="Kaydedilmemiş değişiklikler"
+          message="Bu haftanın planında kaydedilmemiş değişiklikler var. Hafta değiştirirseniz bu değişiklikler kaybolur."
+          confirmLabel="Değişiklikleri at"
+          danger
+          onConfirm={() => {
+            setPendingWeekShift(null);
+            shiftWeek(pendingWeekShift);
+          }}
+          onClose={() => setPendingWeekShift(null)}
+        />
+      )}
 
       {/* P184-228 — alt iki kart */}
       <div className="plan__bottom">

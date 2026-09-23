@@ -28,6 +28,14 @@ export interface SalesTableProps {
   isError: boolean;
   /** Sunucunun Türkçe hata cümlesi — sabit cümle SON çaredir (ST §4b kanonu). */
   errorMessage?: string;
+  /**
+   * no 235 · `false` ⇒ proje seçilmemiş (`selectedProjectId === ""`), sorgular
+   * `enabled:false`. `isLoading` bu durumda `false`dır (TanStack v5'te devre
+   * dışı sorguda `isLoading` = `isPending && isFetching` → `isFetching` hiç
+   * `true` olmaz) — bu yüzden ayrı bir hâl olarak taşınır, `isLoading`dan
+   * TÜRETİLMEZ.
+   */
+  hasSelectedProject?: boolean;
 }
 
 function emptyMessage(options: {
@@ -35,7 +43,9 @@ function emptyMessage(options: {
   isError: boolean;
   errorMessage?: string;
   isFiltered: boolean;
+  hasSelectedProject: boolean;
 }): { title: string; hint?: string } {
+  if (!options.hasSelectedProject) return { title: "Önce bir proje seçin." };
   if (options.isLoading) return { title: "Satış listesi yükleniyor…" };
   if (options.isError) return { title: options.errorMessage ?? "Satış listesi yüklenemedi." };
   if (options.isFiltered) {
@@ -68,13 +78,14 @@ export function SalesTable({
   isLoading,
   isError,
   errorMessage,
+  hasSelectedProject = true,
 }: SalesTableProps) {
   const visibleRows = filterSales(rows ?? [], statusFilter);
   const isFiltered = statusFilter !== undefined;
   const totals = resolveSalesTotals({ visibleRows, serverTotals, isFiltered });
   const message =
     visibleRows.length === 0
-      ? emptyMessage({ isLoading, isError, errorMessage, isFiltered })
+      ? emptyMessage({ isLoading, isError, errorMessage, isFiltered, hasSelectedProject })
       : undefined;
 
   return (
@@ -175,11 +186,18 @@ export function SalesTable({
                 <td className="satis-table__td satis-table__td--right satis-table__td--mono satis-table__paid">
                   {formatAmount(row.paid_amount)}
                 </td>
-                {/* 164 — kalan SIFIRSA soluk, aksi hâlde kehribar/kırmızı */}
+                {/* 164 — kalan SIFIRSA soluk, aksi hâlde kehribar/kırmızı.
+                    🔴 Maskeli (`null`) kalan SIFIR SAYILMAZ: `remaining_amount`
+                    `Gorunurluk.para`dır ve `Number(null)` **0**'dır — ham okuma
+                    gizlenmiş bir borcu "kapanmış" tonuyla boyardı. Tutarın
+                    kendisi zaten "—" basılıyor; yanlış olan yanındaki İDDİAydı.
+                    (`sales` matrisinde bugün `limited` hücre yok, yani kusur
+                    LATENTtir — bir izin satırı değiştiğinde kod incelemesi
+                    olmadan canlıya çıkardı.) */}
                 <td
                   className={cx(
                     "satis-table__td satis-table__td--right satis-table__td--mono",
-                    Number(row.remaining_amount) === 0
+                    row.remaining_amount !== null && Number(row.remaining_amount) === 0
                       ? "satis-table__remaining--zero"
                       : tone === "overdue"
                         ? "satis-table__remaining--overdue"

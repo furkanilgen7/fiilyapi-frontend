@@ -148,6 +148,27 @@ describe("🔴 K2 · ORAN sütunu — GİDER payı hesaplanır, TREND hesaplanma
         ?.textContent,
     ).toBe("");
   });
+
+  // M5_1 kayıt #118: `section.key === "expenses"` karşılaştırması TİP
+  // SİSTEMİ tarafından bekçilenmiyor (`IncomeStatementSection.key` üretilen
+  // tipte düz `string`). Backend anahtarı sürüklenirse (`gider` yazılırsa
+  // vb.) sonuç KAZA DEĞİL sessiz DERECELENMEDİR — oran sütunu uydurulmuş bir
+  // yüzde basmak yerine boş kalır. Bu test o dereceleneni PİNLER.
+  it("🔴 GİDER anahtarı SÜRÜKLENİRSE oran uydurulmaz — hücre boş kalır (uydurulmuş yüzde YASAK)", () => {
+    const data = fixture();
+    const drifted: IncomeStatementResponse = {
+      ...data,
+      sections: data.sections.map((section) =>
+        section.key === "expenses" ? { ...section, key: "gider" } : section,
+      ),
+    };
+    render(<IncomeStatementTable data={drifted} />);
+
+    expect(
+      screen.getByTestId("mt-is-section-gider-material_costs").querySelector(".fs-is-ratio")
+        ?.textContent,
+    ).toBe("—");
+  });
 });
 
 describe("🔴 K1 · DÖNEM KARI satırı `period_profit` basar", () => {

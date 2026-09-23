@@ -146,6 +146,30 @@ const REGISTRY: readonly Registration[] = [
       filename: "`filename` YALNIZ `PATCH /documents/{id}` ile değişir, bu formda alan YOK",
     },
   },
+  {
+    // no 434 · ÖLÇÜLDÜ: bu harita hiç kayıtlı DEĞİLDİ. Üç alan İKİ AYRI
+    // şemaya dağılır (satır vs gövde) — tek `Registration` tek şema kabul
+    // ettiğinden harita iki kayda bölünür, her kayıt kendi şemasına
+    // AİT OLMAYAN anahtarları `clientOnly` ile GEÇER (değer eşitliği o
+    // anahtar için atlanır, aşağıdaki kardeş kayıt onu asıl doğrular).
+    label: "satınalma talebi formu · satır alanları",
+    file: "src/components/purchasing/purchase-request-form-constants.ts",
+    constName: "MAX_LENGTH",
+    schema: "PurchaseRequestLineCreate",
+    clientOnly: {
+      justification: "PurchaseRequestCreate alanı — bkz. kardeş kayıt (gövde alanları)",
+    },
+  },
+  {
+    label: "satınalma talebi formu · gövde alanları",
+    file: "src/components/purchasing/purchase-request-form-constants.ts",
+    constName: "MAX_LENGTH",
+    schema: "PurchaseRequestCreate",
+    clientOnly: {
+      freeTextName: "PurchaseRequestLineCreate alanı — bkz. kardeş kayıt (satır alanları)",
+      freeTextUnit: "PurchaseRequestLineCreate alanı — bkz. kardeş kayıt (satır alanları)",
+    },
+  },
 ];
 
 describe("🔴 form korkulukları ↔ sözleşme gövde kısıtları", () => {

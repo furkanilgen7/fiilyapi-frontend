@@ -294,6 +294,10 @@ export function useSetApprovalRoles(): UseMutationResult<
  * 🔴 Sözleşme kısıtları (`ge=0`, `max_digits=18`, `decimal_places=2`) TS
  * tipinde YAŞAMAZ — çağıran `checkApprovalThreshold` korkuluğundan geçmiş
  * değeri gönderir.
+ *
+ * Onay kutusu da bayatlar: `useSetApprovalRoles` emsaliyle AYNI sebep —
+ * eşik değiştikten sonra onay şeridi eski eşikle karar vermeye devam ederdi
+ * (KAYIT 446).
  */
 export function useUpdateApprovalSettings(): UseMutationResult<
   ApprovalSettingsRead,
@@ -310,6 +314,7 @@ export function useUpdateApprovalSettings(): UseMutationResult<
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [APPROVAL_SETTINGS_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [APPROVALS_QUERY_KEY] });
     },
   });
 }

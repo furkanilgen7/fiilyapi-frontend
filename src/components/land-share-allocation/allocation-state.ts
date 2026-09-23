@@ -98,6 +98,23 @@ export function clearUnitSelection(state: AllocationState): AllocationState {
   return { pending: state.pending, selected: new Set<string>() };
 }
 
+/**
+ * 🔴 KAYITTAN SONRA YALNIZ GÖNDERİLEN ÜNİTELERİN BEKLEYENİ SİLİNİR.
+ * Gövde YALNIZ GÖRÜNEN satırlardan kurulur (`build-body.ts` kural 4) ve sayfa
+ * değişiminde bekleyen atamalar KASITLI olarak korunur; `pending`in tamamını
+ * boşaltmak, başka sayfada yapılmış ve HİÇ GÖNDERİLMEMİŞ atamaları sessizce
+ * yok ederdi (kullanıcı kaydettiğini sanır, sayfaya döndüğünde satırları
+ * "Atanmadı" bulur).
+ */
+export function clearPendingUnits(
+  state: AllocationState,
+  unitIds: readonly string[],
+): AllocationState {
+  const pending = new Map(state.pending);
+  for (const unitId of unitIds) pending.delete(unitId);
+  return { pending, selected: state.selected };
+}
+
 /** PG 140/141 — satır içi ikili düğme. */
 export function assignUnit(
   state: AllocationState,

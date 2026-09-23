@@ -30,6 +30,10 @@ jobs:
           node-version: "20"
           cache: "pnpm"
       - run: pnpm install --frozen-lockfile
+      # KAYIT 38 — `schema.d.ts` (38k+ satır, üretilmiş) `openapi/openapi.json`
+      # ile eşzamanlı kaldığını sınayan hiçbir kapı YOKTU: bayat bir dosya,
+      # backend sözleşmesi değişmişken typecheck'i sessizce YEŞİL geçirirdi.
+      - run: pnpm gen:api && git diff --exit-code src/lib/api/schema.d.ts
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test

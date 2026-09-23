@@ -73,12 +73,18 @@ type ParsedCell =
  * edilir (Türkçe klavye), backend'e her zaman nokta gider. Sayı `Number`a
  * ÇEVRİLİP geri basılmaz — kullanıcının yazdığı ondalık basamaklar kayıpsız
  * korunsun diye string olarak taşınır (`decimal.ts` disiplini).
+ *
+ * 🔴 KAYIT 426: `decimal.ts::normalizeDecimalInput` ile AYNI kural — virgül
+ * VARSA ondan önceki noktalar TR binlik ayıracı sayılır ve silinir
+ * ("1.234,56" → "1234.56"); virgül yoksa nokta ondalık ayıracı olarak KALIR.
  */
 function parseCellValue(rawValue: string): ParsedCell {
   const trimmed = rawValue.trim();
   if (trimmed.length === 0) return { kind: "clear" };
 
-  const normalized = trimmed.replace(",", ".");
+  const normalized = trimmed.includes(",")
+    ? trimmed.replace(/\./g, "").replace(",", ".")
+    : trimmed;
   if (!DECIMAL_PATTERN.test(normalized)) return { kind: "rejected", reason: "invalid" };
   if (Number(normalized) === 0) return { kind: "rejected", reason: "zero" };
 

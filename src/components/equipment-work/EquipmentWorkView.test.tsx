@@ -20,6 +20,7 @@ import type { PersonnelListItem } from "@/lib/api/hooks/usePersonnel";
 import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
 import type { MeResponse } from "@/lib/auth/types";
 import { errorResponse, stubExportDownload } from "@/lib/api/export-test-stub";
+import { BackendError } from "@/lib/api/unwrap";
 
 // F-MK T4 · M3 (`/makine/calisma`) ekranının davranış iddiaları. Odak, spec'in
 // KIRMIZI kararlarıdır: §0 (toplam sunucudan) · K3 (`null` ⇒ "—") · K2 (yüzde
@@ -78,7 +79,9 @@ function row(overrides: Partial<WorkSummaryRow> = {}): WorkSummaryRow {
     usage_pct: "93.00",
     usage_reason: null,
     breakdown_hours: "0.00",
-    cost: "59520.00",
+    // M5_3 #103 — kuruşlu değer BİLEREK: `formatCurrency` (kuruşsuz) ile
+    // `formatCurrencyPrecise` (2 ondalık) burada GERÇEKTEN ayrışır.
+    cost: "59520.40",
     ...overrides,
   };
 }
@@ -106,7 +109,7 @@ function summary(overrides: Partial<WorkSummaryResponse> = {}): WorkSummaryRespo
     totals: {
       hours: "999.00",
       breakdown_hours: "38.00",
-      cost: "777777.00",
+      cost: "777777.30",
       usage_pct_avg: "57.70",
     },
     weeks: [
@@ -251,6 +254,57 @@ describe("EquipmentWorkView — M3 iskeleti", () => {
     expect(recent).toHaveTextContent("Arıza — 8 Saat"); // record_type
   });
 
+  it("resolveSiteLabel — siteOptions.isError iken atanmış kayıt için YANLIŞ 'Şantiye atanmadı' BASILMAZ", () => {
+    vi.mocked(useSiteOptions).mockReturnValue({
+      options: [],
+      isLoading: false,
+      isError: true,
+    });
+    render(<EquipmentWorkView />);
+    const recent = screen.getByTestId("makine-cal-recent");
+    expect(recent).not.toHaveTextContent("Şantiye atanmadı");
+    expect(recent).toHaveTextContent("Yükleniyor…");
+  });
+
+  /**
+   * M5_3 #107 — eskiden `summaryQuery`/`logsQuery` dışındaki dört kaynak
+   * (`fuelQuery` · `equipmentQuery` · `personnelQuery` · `siteOptions`)
+   * hataya düşünce HİÇBİR görünür uyarı basılmıyordu; adlar/kartlar
+   * gerekçesiz "—"ye düşüyordu.
+   */
+  it("siteOptions.isError iken GÖRÜNÜR bir uyarı basılır (sessiz '—' düşüşü YOK)", () => {
+    vi.mocked(useSiteOptions).mockReturnValue({
+      options: [],
+      isLoading: false,
+      isError: true,
+    });
+    render(<EquipmentWorkView />);
+    expect(screen.getByTestId("makine-cal-auxiliary-error")).toHaveTextContent(
+      "yüklenemedi",
+    );
+  });
+
+  it("fuelQuery/equipmentQuery/personnelQuery hatasız iken uyarı BASILMAZ", () => {
+    render(<EquipmentWorkView />);
+    expect(screen.queryByTestId("makine-cal-auxiliary-error")).not.toBeInTheDocument();
+  });
+
+  it("siteOptions.isError iken YÜKLENDİ izi BASILMAZ — görsel kapı yanlış olguyu yeşil geçirmez", () => {
+    vi.mocked(useSiteOptions).mockReturnValue({
+      options: [],
+      isLoading: false,
+      isError: true,
+    });
+    render(<EquipmentWorkView />);
+    expect(screen.queryByTestId("makine-cal-loaded-sites")).not.toBeInTheDocument();
+  });
+
+  it("Yakıt Tüketimi kartı ŞANTİYE süzgeci açıkken 'tüm şantiyeler' gerekçesi basar (uç süzgeci almıyor)", () => {
+    searchParams = new URLSearchParams("year=2026&month=7&site=site-1");
+    render(<EquipmentWorkView />);
+    expect(screen.getByTestId("makine-cal-kpi-fuel-unfiltered")).toBeInTheDocument();
+  });
+
   it("izinsiz kullanıcı erişim reddi görür", () => {
     vi.mocked(useSession).mockReturnValue({
       me: { permissions: { equipment: "none" } } as unknown as MeResponse,
@@ -258,6 +312,22 @@ describe("EquipmentWorkView — M3 iskeleti", () => {
     } as ReturnType<typeof useSession>);
     render(<EquipmentWorkView />);
     expect(screen.queryByRole("heading", { name: "Çalışma Kaydı", level: 1 })).not.toBeInTheDocument();
+  });
+
+  // kalan-3 #413 — izin kapısının İKİNCİ bacağı: modül izni VAR ama backend
+  // 403 dönerse (`isForbidden(summaryQuery.error)`) de AccessDenied basılmalı.
+  // Önceki test yalnız `permissions.equipment === "none"` bacağını ölçüyordu.
+  it("modul izni VARKEN ozet ucu 403 donerse yine erisim reddi (AccessDenied) gorunur", () => {
+    vi.mocked(useEquipmentWorkSummary).mockReturnValue(
+      queryStub<WorkSummaryResponse>(undefined, {
+        isLoading: false,
+        isError: true,
+        error: new BackendError(403, { detail: "Bu şantiyeye erişiminiz kısıtlandı." }),
+      }),
+    );
+    render(<EquipmentWorkView />);
+    expect(screen.queryByRole("heading", { name: "Çalışma Kaydı", level: 1 })).not.toBeInTheDocument();
+    expect(screen.getByText("Bu alana yetkiniz yok")).toBeInTheDocument();
   });
 });
 
@@ -287,6 +357,28 @@ describe("§0 — tfoot SUNUCUNUN toplamıdır, mockup'ın sabiti değil", () =>
     const kpi = screen.getByTestId("makine-cal-kpi");
     expect(kpi).toHaveTextContent("999 Saat");
     expect(kpi).toHaveTextContent("₺ 777.777");
+  });
+
+  /**
+   * M5_3 #103 — KPI şeridi `formatCurrency` (0 ondalık) kullanırken tablo
+   * `formatCurrencyPrecise` (2 ondalık) kullanıyordu, aynı `totals.cost`
+   * iki farklı yuvarlamayla basılıyordu (M3:209 mockup'ı da 0 ondalıktır:
+   * `₺ 124.800`). İkisi artık AYNI biçimlendirici.
+   */
+  it("tfoot toplamı KPI ile AYNI biçimdedir — kuruş EKLEMEZ (sunucu .30 gönderir)", () => {
+    render(<EquipmentWorkView />);
+    const totals = screen.getByTestId("makine-cal-summary-totals");
+    expect(totals).toHaveTextContent("₺ 777.777");
+    // `formatCurrencyPrecise` bu tutarı "777.777,3" olarak basardı.
+    expect(totals).not.toHaveTextContent("777.777,3");
+  });
+
+  it("satır maliyeti de kuruşsuz basılır (mockup M3:135 — sunucu .40 gönderir)", () => {
+    render(<EquipmentWorkView />);
+    const rows = screen.getAllByTestId("makine-cal-summary-row");
+    expect(rows[0]).toHaveTextContent("₺ 59.520");
+    // `formatCurrencyPrecise` bu tutarı "59.520,4" olarak basardı.
+    expect(rows[0]).not.toHaveTextContent("59.520,4");
   });
 });
 
@@ -480,5 +572,38 @@ describe("EXPORT-XLSX · Excel sorgusu = ekran sorgusu", () => {
     expect(await screen.findByTestId("makine-cal-export-error")).toHaveTextContent(
       "Makine yetkiniz yok.",
     );
+  });
+});
+
+describe("kalan-3 #196 — equipmentQuery hatasinda ekipman adi kalici 'Yükleniyor…' basmaz", () => {
+  it("equipmentQuery hata verince ekipman adi yerine bir hata/bos metni gorunur", () => {
+    vi.mocked(useEquipment).mockReturnValue(
+      queryStub<EquipmentListResponse>(undefined, { isLoading: false, isError: true, error: new Error("network") }),
+    );
+    render(<EquipmentWorkView />);
+    const recent = screen.getByTestId("makine-cal-recent");
+    expect(recent).not.toHaveTextContent("Yükleniyor…");
+  });
+});
+
+describe("kalan-3 #197 — bulunamayan operator 'Operatör' bolumunu gizlemez", () => {
+  it("personnelNameById'de olmayan operator_id icin 'Operatör' bolumu YINE gorunur", () => {
+    // op-1, LOGS.items[0].operator_id, personel listesinde YOK.
+    vi.mocked(usePersonnel).mockReturnValue(
+      queryStub({ items: [], total: 0, limit: 200, offset: 0 }),
+    );
+    render(<EquipmentWorkView />);
+    const recent = screen.getByTestId("makine-cal-recent");
+    expect(recent).toHaveTextContent("Operatör");
+  });
+});
+
+describe("kalan-3 #198 — logsQuery hatasinda 'Son Kayıtlar' paneli sessizce bos kalmaz", () => {
+  it("logsQuery hata verince panelde gorunur bir hata notu vardir", () => {
+    vi.mocked(useEquipmentWorkLogs).mockReturnValue(
+      queryStub<WorkLogListResponse>(undefined, { isLoading: false, isError: true, error: new Error("network") }),
+    );
+    render(<EquipmentWorkView />);
+    expect(screen.getByTestId("makine-cal-recent-error")).toBeInTheDocument();
   });
 });

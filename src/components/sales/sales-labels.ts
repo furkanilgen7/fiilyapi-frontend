@@ -82,6 +82,12 @@ export function saleStatusBadge(sale: SaleRow): SaleStatusBadge {
     return { label: "Gecikmiş", variant: "danger", modifier: "overdue" };
   }
   if (sale.payment_plan_type === "down_payment_installments") {
+    // no 243 · `installment_total === 0` ⇒ taksit satırları henüz üretilmedi
+    // (`paymentPlanCell`in "Plan üretilmedi" dalıyla AYNI koşul) — rozet
+    // "Taksitli" derken hücre "Plan üretilmedi" diyen çelişkiyi önler.
+    if (sale.installment_total === 0) {
+      return { label: "Plan Bekliyor", variant: "warning", modifier: "plan-pending" };
+    }
     return { label: "Taksitli", variant: "primary", modifier: "installments" };
   }
   return { label: SALE_STATUS_LABELS.active, variant: "primary", modifier: "active" };
@@ -107,7 +113,7 @@ export function saleRowTone(sale: SaleRow): SaleRowTone {
  * count > 0` türevidir) — bu yüzden süzgeç anahtarları ayrı bir kümedir.
  * ------------------------------------------------------------------------ */
 
-export type SalesStatusFilter = "deed_transferred" | "reservation" | "overdue";
+export type SalesStatusFilter = "deed_transferred" | "reservation" | "overdue" | "exclude_cancelled";
 
 export interface SalesStatusFilterOption {
   value: SalesStatusFilter;
@@ -117,10 +123,24 @@ export interface SalesStatusFilterOption {
 /** 146 — "Tüm Durumlar" seçeneği süzgeci KALDIRIR (`undefined`). */
 export const SALES_STATUS_FILTER_ALL_LABEL = "Tüm Durumlar";
 
+/**
+ * no 239 · ONAYLI SAPMA — mockup'ın üç seçeneği (146) BİREBİR korunur;
+ * "İptal Hariç" DÖRDÜNCÜ seçenek mockup'ta ÇİZİLİ DEĞİLDİR.
+ *
+ * Gerekçe: `GET /projects/{id}/sales` `cancelled` kayıtları da DÖNDÜRÜR
+ * (sunucu süzmez) ve yanıtın `totals` alanı bunları da TOPLAR — backend'de
+ * `exclude_cancelled` bayrağı `list_sale_rows`ta VAR ama `service.py` bu
+ * bayrağı totals hesabına HİÇ geçirmiyor. İstemci tarafında iptalleri
+ * dışlayacak başka bir yol yoktu; kullanıcı "gerçek" (iptal hariç) toplamı
+ * hiçbir zaman göremiyordu. Süzgeç AÇILDIĞINDA `resolveSalesTotals` zaten
+ * GÖRÜNEN satırlardan türetir (`isDerived`) — bu seçenek o mekanizmayı
+ * iptalleri dışlamak için kullanır, yeni bir hesap İCAT ETMEZ.
+ */
 export const SALES_STATUS_FILTER_OPTIONS: SalesStatusFilterOption[] = [
   { value: "deed_transferred", label: "Tapulu" }, // 146
   { value: "reservation", label: "Rezerve" }, // 146
   { value: "overdue", label: "Vadesi Geçen" }, // 146
+  { value: "exclude_cancelled", label: "İptal Hariç" }, // ONAYLI SAPMA — no 239
 ];
 
 /** URL'den okunan serbest metni güvenli bir süzgece daraltır. */
@@ -134,6 +154,7 @@ export function matchesSalesStatusFilter(
 ): boolean {
   if (filter === undefined) return true;
   if (filter === "overdue") return sale.overdue_installment_count > 0;
+  if (filter === "exclude_cancelled") return sale.status !== "cancelled";
   return sale.status === filter;
 }
 
@@ -163,7 +184,10 @@ export interface PaymentPlanCell {
  * `installment_paid_count`) — istemci ödenmiş taksit SAYMAZ.
  */
 export function paymentPlanCell(sale: SaleRow): PaymentPlanCell {
-  const isOverdue = sale.overdue_installment_count > 0;
+  // no 244 · `saleStatusBadge`/`saleRowTone` ile AYNI desen: iptal edilmiş bir
+  // satışta gecikme sayacı henüz sıfırlanmamışsa bile hücre kırmızı basılmaz
+  // (rozet "İptal" derken hücre "N taksit gecikmiş" diyen çelişkiyi önler).
+  const isOverdue = sale.status !== "cancelled" && sale.overdue_installment_count > 0;
   if (sale.installment_total > 0 && sale.payment_plan_type === "down_payment_installments") {
     return {
       text: `${sale.installment_total} taksit · ${sale.installment_paid_count}/${sale.installment_total}`,
@@ -215,7 +239,8 @@ export interface CustomerLine {
  * mockup 197'de AÇIK basılır — maskeleme oraya taşınmaz.
  */
 export function customerLine(sale: SaleRow): CustomerLine | null {
-  if (sale.overdue_installment_count > 0) {
+  // no 244 · `saleStatusBadge`/`saleRowTone`/`paymentPlanCell` ile AYNI desen.
+  if (sale.status !== "cancelled" && sale.overdue_installment_count > 0) {
     // 179 — `⚠` metne GÖMÜLMEZ, `icon` alanıyla taşınır (F-SEM).
     return {
       text: `${sale.overdue_installment_count} taksit gecikmiş`,
@@ -240,9 +265,14 @@ export function customerLine(sale: SaleRow): CustomerLine | null {
   return null;
 }
 
-/** 161 · "123****789" — baş ve son üç hane açık, ortası maskeli. */
+/**
+ * 161 · "123****789" — baş ve son üç hane açık, ortası maskeli.
+ *
+ * no 238 · ≤6 haneli (kısa/bozuk) girdi baş/son üçe bölünemez — bu durumda
+ * kimlik numarası MASKESİZ dönmüyordu, tamamı yıldızla kapatılır.
+ */
 export function maskNationalId(nationalId: string): string {
-  if (nationalId.length <= 6) return nationalId;
+  if (nationalId.length <= 6) return "*".repeat(nationalId.length);
   return `${nationalId.slice(0, 3)}****${nationalId.slice(-3)}`;
 }
 
@@ -255,11 +285,38 @@ export const PRICE_LIST_PENDING_REASON =
   "Fiyat listesi ekranı henüz tasarlanmadı — mockup çizilince açılacak";
 
 /**
- * 58 · "%79 tahsilat" — `collection_pct` sunucudan gelir ve sözleşme tutarı
- * SIFIRKEN `null`dur. İstemci `collected/contracted` bölmesi YAPMAZ.
+ * 58 · "%79 tahsilat" — `collection_pct` sunucudan gelir. İstemci
+ * `collected/contracted` bölmesi YAPMAZ.
+ *
+ * 🔴 GEREKÇE ARTIK KOŞULLUDUR (kapsam maskesi, kullanıcı kararı 2026-09-19).
+ * Eski not *"sözleşme tutarı SIFIRKEN `null`dur"* diyordu; bu artık `null`un
+ * İKİ sebebinden YALNIZ BİRİ. `collection_pct` `Gorunurluk.operasyonel`
+ * etiketlidir ve `finance` kapsamında maskelenir — `sales` matrisinde kapsam
+ * taşıyan tek rol `accounting` olduğu için bu, tahsilat takibini FİİLEN yapan
+ * rolü vurur. O rolde cümle yalandır: kartın üst satırı tahsil edilen tutarı
+ * gerçek bir sayı olarak basıyor.
  */
 export const COLLECTION_PCT_UNKNOWN_REASON =
   "Sözleşmeye bağlanmış satış tutarı yok — tahsilat oranı hesaplanmaz";
+
+/**
+ * Yukarıdaki gerekçe KANITLI MI? Payda (`contracted_amount`) GÖRÜNÜR ve `<= 0`
+ * ise evet; aksi hâlde sebep ölçülemez ve gerekçe hiç yazılmaz
+ * (`placeholder-cell.ts` 3. hâli: "—", ipucu YOK).
+ *
+ * 🔴 `null` payda "tutar yok" SAYILMAZ: `contracted_amount` `Gorunurluk.para`
+ * etiketlidir; o `null` "tutar yok" değil "tutarı göremiyorsun" demektir.
+ *
+ * ⚠️ İkizi `contracts/contract-progress.ts::isProvenZeroAmount`tır ve kural
+ * AYNIDIR. Birleştirilmedi: `sales`in `contracts`ı içe aktarması iki özelliği
+ * birbirine bağlardı. Ortak bir `lib/` yuvası açmak bu dilimin dosya
+ * sahipliğinin dışındadır — şefe bildirildi.
+ */
+export function isProvenZeroContracted(contracted: string | null | undefined): boolean {
+  if (contracted === null || contracted === undefined) return false;
+  const value = Number(contracted);
+  return Number.isFinite(value) && value <= 0;
+}
 
 /**
  * Taksit satırının "Ödeme Şekli" seçicisi (DS 114 · 122 · 129 · 136). Enum

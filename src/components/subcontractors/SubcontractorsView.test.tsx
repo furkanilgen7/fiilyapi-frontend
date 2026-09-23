@@ -8,6 +8,7 @@ import { useSubcontractorProgressPayments } from "@/lib/api/hooks/useSubcontract
 import type { ContractListItem } from "@/lib/api/hooks/useContracts";
 import type { SubcontractorListItem } from "@/lib/api/hooks/useSubcontractors";
 import type { SubcontractorProgressPaymentListItem } from "@/lib/api/hooks/useSubcontractorProgressPayments";
+import { BackendError } from "@/lib/api/unwrap";
 
 vi.mock("@/lib/api/hooks/useSubcontractors", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useSubcontractors")>()),
@@ -188,6 +189,23 @@ describe("SubcontractorsView · TL taşeron firma listesi", () => {
     expect(screen.getByTestId("tl-kpi-pending-approval")).toHaveTextContent("1 Hakediş");
   });
 
+  // kalan-6 no 322 — `isLoading`/`isError` yalnız tabloya geçiyordu; başlık
+  // alt satırı ve KPI şeridi sorgular pending/hatalıyken de koşulsuz "0"
+  // basıyordu ("0 taşeron firma", KPI'ların hepsi 0). Yükleniyorken sahte
+  // sıfır basılmamalı.
+  it("sorgular yükleniyorken başlık alt satırı ve KPI'lar sahte SIFIR basmaz", () => {
+    vi.mocked(useSubcontractors).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+      error: null,
+    } as never);
+    render(<SubcontractorsView />);
+    expect(screen.queryByText("0 taşeron firma · 0 aktif sözleşme")).not.toBeInTheDocument();
+    const strip = screen.getByTestId("tl-kpi-strip");
+    expect(within(strip).queryByText("0")).not.toBeInTheDocument();
+  });
+
   it("satır para kolonlarını üç kaynaktan birleştirir (58-61)", () => {
     render(<SubcontractorsView />);
     const row = rowOf(/Akın İnşaat/);
@@ -229,6 +247,30 @@ describe("SubcontractorsView · TL taşeron firma listesi", () => {
     expect(within(rowOf(/Akın İnşaat/)).getByText("₺ 4,8M")).toBeInTheDocument();
   });
 
+  // M5_1 kayıt #339: hakediş ucu 403 (yetki eksikliği) verdiğinde eskiden
+  // "liste eksik" gerekçesi ve YALNIZ kırpılma bandı basılıyordu — yetki
+  // hatası "liste eksik" DEĞİLDİR, ayrı bir bant + gerekçe gerekir.
+  it("403: hakediş ucu yetkisiz verince ayrı 'yetki yok' bant ve gerekçe basar", () => {
+    vi.mocked(useSubcontractorProgressPayments).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new BackendError(403, { detail: "yasak" }),
+    } as never);
+    render(<SubcontractorsView />);
+
+    expect(screen.getByTestId("tl-payment-forbidden-notice")).toHaveTextContent(
+      "Hakediş listesini görüntüleme yetkiniz yok",
+    );
+    // Kırpılma bandı (liste eksik) AYNI anda basılmaz — sebep farklı.
+    expect(screen.queryByTestId("tl-truncation-notice")).not.toBeInTheDocument();
+    const pendingCell = screen.getAllByTestId("tl-pending-money")[0];
+    expect(pendingCell).toHaveAttribute(
+      "title",
+      "Hakediş listesini görüntüleme yetkiniz yok — tutar hesaplanmadı",
+    );
+  });
+
   it("arama İSTEMCİDE süzer", () => {
     render(<SubcontractorsView />);
     fireEvent.change(screen.getByLabelText("Taşeron ara"), { target: { value: "Yılmaz" } });
@@ -268,6 +310,18 @@ describe("SubcontractorsView · TL taşeron firma listesi", () => {
     });
     render(<SubcontractorsView />);
     expect(screen.getByTestId("tl-orphan-notice")).toBeInTheDocument();
+  });
+
+  it("AYNI ADLI iki firmada sözleşme hiçbir satıra yazılmaz, görünür not basılır", () => {
+    mockQueries({
+      firms: [...FIRMS, { ...FIRMS[0], id: "sub-3", tax_number: "5555555555" }],
+    });
+    render(<SubcontractorsView />);
+    expect(screen.getByTestId("tl-ambiguous-notice")).toBeInTheDocument();
+    // Aynı adı taşıyan İKİ satırın hiçbiri diğerinin sözleşmesini basmaz.
+    for (const row of screen.getAllByTestId("tl-detail-disabled")) {
+      expect(row).toHaveAttribute("aria-disabled", "true");
+    }
   });
 
   it("'+ Taşeron Ekle' paylaşılan modalı açar", () => {

@@ -233,7 +233,7 @@
   height: 26px;
   border-radius: 7px;
   background: var(--gradient-logo-tile);
-  color: #fff;
+  color: var(--color-on-brand);
 }
 
 .ai-ident__title {
@@ -330,7 +330,7 @@
   height: 30px;
   border-radius: 9px;
   background: var(--gradient-logo-tile);
-  color: #fff;
+  color: var(--color-on-brand);
 }
 
 .ai-avatar--user {
@@ -346,7 +346,7 @@
   background: var(--color-primary);
   font-size: 14px;
   line-height: 1.65;
-  color: #fff;
+  color: var(--color-on-brand);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -405,21 +405,21 @@
 
 .ai-metric--bilgi {
   border-color: var(--color-primary-soft);
-  background: #f8faff;
+  background: var(--color-ai-info-tint);
 }
 
 .ai-metric--uyari {
-  border-color: #fed7aa;
-  background: #fffbf5;
+  border-color: var(--color-orange-tint-border);
+  background: var(--color-ai-warning-tint);
 }
 
 .ai-metric--olumlu {
-  border-color: #bbf7d0;
+  border-color: var(--color-success-tint-border);
   background: var(--color-success-soft);
 }
 
 .ai-metric--kritik {
-  border-color: #fecaca;
+  border-color: var(--color-danger-tint-border);
   background: var(--color-danger-soft);
 }
 
@@ -435,7 +435,7 @@
 }
 
 .ai-metric--uyari .ai-metric__label {
-  color: #c2410c;
+  color: var(--color-orange-tint-text);
 }
 
 .ai-metric--olumlu .ai-metric__label {
@@ -456,7 +456,7 @@
 }
 
 .ai-metric--uyari .ai-metric__value {
-  color: #c2410c;
+  color: var(--color-orange-tint-text);
 }
 
 .ai-metric--olumlu .ai-metric__value {
@@ -496,7 +496,7 @@
 .ai-ratio {
   padding: 15px 17px;
   margin-bottom: 14px;
-  border: 1px solid #bbf7d0;
+  border: 1px solid var(--color-success-tint-border);
   border-radius: var(--radius-lg);
   background: var(--color-success-soft);
 }
@@ -547,7 +547,7 @@
 }
 
 .ai-ratio__seg--uyari {
-  background: #c2410c;
+  background: var(--color-orange-tint-text);
 }
 
 .ai-ratio__seg--kritik {
@@ -590,7 +590,7 @@
   margin-bottom: 14px;
   border-left: 3px solid var(--color-warning);
   border-radius: 0 9px 9px 0;
-  background: #fffbeb;
+  background: var(--color-warning-tint);
 }
 
 .ai-callout--kritik {
@@ -606,11 +606,11 @@
 .ai-callout__text {
   font-size: 12.5px;
   line-height: 1.65;
-  color: #92400e;
+  color: var(--color-warning-deep-text);
 }
 
 .ai-callout--kritik .ai-callout__text {
-  color: #991b1b;
+  color: var(--color-danger-deep);
 }
 
 /* Mockup 253-292 — varlık kartları. */
@@ -638,11 +638,11 @@
 }
 
 .ai-entity--kritik {
-  border-color: #fecaca;
+  border-color: var(--color-danger-tint-border);
 }
 
 .ai-entity--uyari {
-  border-color: #fed7aa;
+  border-color: var(--color-orange-tint-border);
 }
 
 .ai-entity__icon {
@@ -664,7 +664,7 @@
 
 .ai-entity__icon--uyari {
   background: var(--color-warning-soft);
-  color: #d97706;
+  color: var(--color-warning-strong);
 }
 
 .ai-entity__icon--olumlu {
@@ -751,12 +751,12 @@
 
 .ai-entity__badge--kritik {
   background: var(--color-danger-soft);
-  color: #dc2626;
+  color: var(--color-danger-strong);
 }
 
 .ai-entity__badge--uyari {
   background: var(--color-warning-soft);
-  color: #d97706;
+  color: var(--color-warning-strong);
 }
 
 .ai-entity__badge--olumlu {
@@ -839,7 +839,7 @@
   border-color: var(--color-primary);
   background: var(--color-primary);
   font-weight: 600;
-  color: #fff;
+  color: var(--color-on-brand);
 }
 
 .ai-action--disabled {
@@ -961,8 +961,8 @@
 .ai-notice--warn {
   margin-top: 10px;
   border: 1px solid var(--color-warning-soft);
-  background: #fffbeb;
-  color: #92400e;
+  background: var(--color-warning-tint);
+  color: var(--color-warning-deep-text);
 }
 
 .ai-notice--refusal {
@@ -972,9 +972,9 @@
 }
 
 .ai-notice--error {
-  border: 1px solid #fecaca;
+  border: 1px solid var(--color-danger-tint-border);
   background: var(--color-danger-soft);
-  color: #991b1b;
+  color: var(--color-danger-deep);
 }
 
 /* ── Yazıyor göstergesi (mockup 322-331) ───────────────────────────────── */
@@ -1068,7 +1068,7 @@
   margin: 0 auto 14px;
   border-radius: 14px;
   background: var(--gradient-logo-tile);
-  color: #fff;
+  color: var(--color-on-brand);
 }
 
 .ai-welcome__title {
@@ -1190,7 +1190,7 @@
   margin-bottom: 16px;
   border: 1px solid var(--color-primary-soft);
   border-radius: 11px;
-  background: #f8faff;
+  background: var(--color-ai-info-tint);
 }
 
 .ai-context__project {
@@ -1281,7 +1281,7 @@
 
 .ai-chip:hover:not(:disabled) {
   border-color: var(--color-primary-ring);
-  background: #f8faff;
+  background: var(--color-ai-info-tint);
 }
 
 .ai-chip__icon {

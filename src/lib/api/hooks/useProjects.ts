@@ -29,6 +29,14 @@ export interface ProjectListFilter {
   status?: "completed";
   limit?: number;
   offset?: number;
+  /**
+   * `useSites`teki (useSites.ts:32) boş-id kapısıyla aynı desen: `false`
+   * verildiğinde sorgu AĞA ÇIKMAZ. Varsayılan `true` — mevcut çağıranların
+   * davranışı değişmez. Görüntüleme izni olmayan çağıranlar (ör. AiPanel)
+   * bunu KOŞULSUZ `false` geçmeli; üçlü işleçle yalnız süzgeci boşaltmak
+   * sorguyu KAPATMAZ (KAYIT NO 22).
+   */
+  enabled?: boolean;
 }
 
 export const PROJECTS_QUERY_KEY = "projects";
@@ -43,9 +51,10 @@ export const PROJECT_ACCESS_QUERY_KEY = "project-access";
 export const PROJECT_LIST_MAX_LIMIT = 200;
 
 export function useProjects(
-  filter: ProjectListFilter = {},
+  filter: ProjectListFilter = { limit: PROJECT_LIST_MAX_LIMIT },
 ): UseQueryResult<ProjectListResponse, Error> {
   return useQuery({
+    enabled: filter.enabled ?? true,
     queryKey: [
       PROJECTS_QUERY_KEY,
       filter.type ?? null,
@@ -72,8 +81,11 @@ export function useProjects(
 export const PROJECT_QUERY_KEY = "project";
 
 // Proje Detay (P2) — hero seridi + sekmeler icin tekil proje.
+// KAYIT 456: `useSites.ts`teki boş-id kapısıyla AYNI desen — id boşsa ağa
+// ÇIKILMAZ (422 sınıfı kusura kapalı).
 export function useProject(projectId: string): UseQueryResult<ProjectDetail, Error> {
   return useQuery({
+    enabled: projectId.length > 0,
     queryKey: [PROJECT_QUERY_KEY, projectId],
     queryFn: async () =>
       unwrap(
@@ -84,8 +96,10 @@ export function useProject(projectId: string): UseQueryResult<ProjectDetail, Err
   });
 }
 
+// KAYIT 456: aynı boş-id kapısı.
 export function useProjectAccess(userId: string): UseQueryResult<ProjectAccessResponse, Error> {
   return useQuery({
+    enabled: userId.length > 0,
     queryKey: [PROJECT_ACCESS_QUERY_KEY, userId],
     queryFn: async () =>
       unwrap(

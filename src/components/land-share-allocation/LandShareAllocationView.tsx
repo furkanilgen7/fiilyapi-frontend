@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { maskesiz } from "@/lib/masked";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -24,6 +25,7 @@ import { useModulePermission } from "@/lib/auth/useModulePermission";
 import {
   assignSelected,
   assignUnit,
+  clearPendingUnits,
   clearUnitSelection,
   emptyAllocationState,
   selectAllUnits,
@@ -59,13 +61,11 @@ import { AllocationBalanceCard } from "./AllocationBalanceCard";
 import { AllocationBulkBar } from "./AllocationBulkBar";
 import { AllocationTargetCard } from "./AllocationTargetCard";
 import { AllocationUnitsCard, type AllocationRowFilter } from "./AllocationUnitsCard";
+import { PROJECT_PARAM } from "@/lib/navigation-params";
 // Sıra önemli: ortak kabuk → aile ortağı → forma özgü bloklar.
 import "@/styles/form-shell.css";
 import "@/components/unit-shell/unit-shell.css";
 import "./land-share-allocation.css";
-
-/** Seçili proje URL'de taşınır (SY/`SalesView`/UE/TU/EI ile aynı anahtar). */
-const PROJECT_PARAM = "proje";
 
 /** PG 112 mockup'ta AKTİF çizilen sekmedir — bu ekranın işi atanmayanları atamaktır. */
 const DEFAULT_FILTER: AllocationRowFilter = "unassigned";
@@ -205,6 +205,10 @@ export function LandShareAllocationView() {
     setState((prev) => clearUnitSelection(prev));
     setBulkShareholderId("");
     setAutoNotices([]);
+    // M5_1 kayıt #139: blok/süzgeç/sayfa değişince eski hata banner'ı da
+    // temizlenmeli — eskiden yalnız `handleChangeProject` bunu yapıyordu,
+    // diğer üç çağıran (block/filter/page) bayat hatayı ekranda bırakıyordu.
+    setFormError(null);
   }
 
   function handleChangeProject(nextProjectId: string) {
@@ -293,7 +297,7 @@ export function LandShareAllocationView() {
    * yalnız BEKLEYEN atama üretir ve gerekçelerini görünür kılar.
    */
   function handleAutoDistribute() {
-    if (contract === null || countBalance === null) return;
+    if (contract === null || countBalance === null || valueBalance === null) return;
     const result = autoDistribute({
       rows,
       state,
@@ -302,6 +306,14 @@ export function LandShareAllocationView() {
       // 42 üniteyi 23+20=43 yapan ikinci bir hesap doğardı.
       ourExpectedCount: countBalance.our_expected_count,
       ownerExpectedCount: countBalance.owner_expected_count,
+      // 🔴 ZATEN ATANMIŞ ADET/DEĞER DE SUNUCUDAN: süzgeç (varsayılanı
+      // "Atanmayan") ve sayfalama listeyi daraltır, ÖZETİ DARALTMAZ. Sayaçlar
+      // görünen satırlardan doldurulsaydı kalan kapasite TÜM hedef sanılır ve
+      // dağıtım aşırı atama üretirdi.
+      ourAssignedCount: countBalance.our_assigned_count,
+      ownerAssignedCount: countBalance.owner_assigned_count,
+      ourAssignedValue: maskesiz(valueBalance.our_value, "our_value"),
+      ownerAssignedValue: maskesiz(valueBalance.owner_value, "owner_value"),
     });
     setState(result.state);
     setAutoNotices(result.notices);
@@ -319,14 +331,15 @@ export function LandShareAllocationView() {
       return;
     }
     setFormError(null);
+    const body = buildAllocationBody(rows, state);
     try {
-      const response = await updateAllocation.mutateAsync({
-        projectId,
-        body: buildAllocationBody(rows, state),
-      });
+      const response = await updateAllocation.mutateAsync({ projectId, body });
       // 🔴 Cevap GÜNCEL TAM LİSTEDİR → tablo ondan çizilir, ikinci GET yok.
       setSaved(savedAllocationFromResponse(response));
-      setState(emptyAllocationState());
+      // 🔴 YALNIZ GÖNDERİLENLER temizlenir: gövde GÖRÜNEN satırlardan kurulur
+      // (`build-body.ts` kural 4), `pending`i büsbütün boşaltmak başka
+      // sayfadaki — HİÇ GÖNDERİLMEMİŞ — atamaları sessizce yok ederdi.
+      setState((prev) => clearPendingUnits(prev, body.items.map((item) => item.unit_id)));
       setBulkShareholderId("");
       setAutoNotices([]);
     } catch (error) {

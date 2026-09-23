@@ -142,7 +142,17 @@ function JournalEntryFormBody({
   const [nextKey, setNextKey] = useState(0);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const accountsQuery = useChartOfAccounts({ limit: CHART_ACCOUNTS_MAX_LIMIT });
+  // 🔴 `allPages`: SEÇİCİ KATALOGUN TAMAMINI İSTER. Tek sayfa (tavan 200)
+  // çekildiğinde canlı tohumun 316 hesabının 116'sı seçenekte HİÇ görünmüyordu
+  // (ilk sayfa `49`da bitiyor) — hiçbir 5xx/6xx/7xx hesabına elle fiş
+  // kesilemiyordu. Üstelik `selectableLineAccounts`in YAPRAK KURALI kırpılmış
+  // kümede yanlış çalışıp çocukları sayfa dışında kalan grubu (`49`) seçenek
+  // olarak basıyor, kullanıcı onu seçince sunucu `leaf_blockers` ile 422
+  // dönüyordu. Tavanı büyütmek çözüm DEĞİL: aşım 422'dir.
+  const accountsQuery = useChartOfAccounts({
+    limit: CHART_ACCOUNTS_MAX_LIMIT,
+    allPages: true,
+  });
   const createMutation = useCreateJournalEntry();
   const updateMutation = useUpdateJournalEntry();
   const replaceLinesMutation = useReplaceJournalLines();

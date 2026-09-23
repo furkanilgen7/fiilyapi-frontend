@@ -1,4 +1,4 @@
-import { formatCurrencyPrecise, formatDecimal, formatPercent, formatPeriod } from "@/lib/format";
+import { formatCurrency, formatDecimal, formatPercent, formatPeriod } from "@/lib/format";
 import type {
   WorkSummaryRow,
   WorkSummaryTotals,
@@ -156,7 +156,7 @@ export function EquipmentWorkSummaryTable({
                         {EMPTY_VALUE}
                       </span>
                     ) : (
-                      formatCurrencyPrecise(row.cost)
+                      formatCurrency(row.cost)
                     )}
                   </td>
                 </tr>
@@ -185,7 +185,7 @@ export function EquipmentWorkSummaryTable({
                   {hoursText(totals.breakdown_hours)}
                 </td>
                 <td className="makine-cal-table__right makine-cal-table__mono">
-                  {formatCurrencyPrecise(totals.cost)}
+                  {formatCurrency(totals.cost)}
                 </td>
               </tr>
             </tfoot>

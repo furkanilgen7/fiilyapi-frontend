@@ -30,6 +30,7 @@ import {
   type InlineRowDraft,
 } from "./employer-item-inline";
 import { employerContractDistributionHref } from "./employer-contract-tabs";
+import { isRemainingSettled } from "./distribution-derive";
 import "./employer-contract-detail.css";
 
 /**
@@ -171,14 +172,22 @@ export function EmployerContractItemsTable({
    * geçersiz metnin ekranda "kaydedilmiş gibi" durması yasaktır.
    */
   function commitCell(
-    item: { id: string; quantity: string; unit_price: string },
+    // 🔴 KAPSAM MASKESİ (2026-09-19): metraj/fiyat `null` gelebilir; gösterim
+    //    `decimalInputValue` ile "" olur, kaydetme kararı ise `commitInlineCell`
+    //    içinde ham metinle verilir.
+    item: { id: string; quantity: string | null; unit_price: string | null },
     field: "quantity" | "unitPrice",
   ) {
     const draft = drafts[item.id]?.[field];
     const serverValue = field === "quantity" ? item.quantity : item.unit_price;
     const result = commitInlineCell(field, draft, serverValue);
     clearDraft(item.id, field);
-    if (result.kind === "noop") return;
+    if (result.kind === "noop") {
+      // no 52 · noop = "değer değişmedi/dokunulmadı", önceki bir hücrenin
+      // ihlal hatası buna rağmen ekranda ASILI kalmamalı.
+      setClientError(null);
+      return;
+    }
     if (result.kind === "error") {
       setClientError(result.message);
       return;
@@ -325,7 +334,10 @@ interface GroupRowsProps {
   newRow: NewRowValues;
   onDraft: (itemId: string, patch: InlineRowDraft) => void;
   onCommitCell: (
-    item: { id: string; quantity: string; unit_price: string },
+    // 🔴 KAPSAM MASKESİ (2026-09-19): metraj/fiyat `null` gelebilir; gösterim
+    //    `decimalInputValue` ile "" olur, kaydetme kararı ise `commitInlineCell`
+    //    içinde ham metinle verilir.
+    item: { id: string; quantity: string | null; unit_price: string | null },
     field: "quantity" | "unitPrice",
   ) => void;
   onOpenAddRow: () => void;
@@ -356,8 +368,14 @@ function GroupRows({
         </td>
       </tr>
       {group.items.map((item) => {
-        const remaining = Number(item.remaining_quantity);
-        const isSettled = Number.isFinite(remaining) && remaining === 0;
+        // 🔴 KAPSAM MASKESİ — `Number()` ile okunmaz. `remaining_quantity`
+        //    `Gorunurluk.operasyonel`dir ve `finance` kapsamlı rol onu `null`
+        //    görür; `Number(null)` **0**'dır, yani ham okuma HER satırı yeşil
+        //    "✓ 0" ile "tamamı dağıtıldı" diye damgalardı. Kural POZ 100'ün
+        //    ikiz yüzeyi `ContractDistributionGrid` ile ORTAKTIR ve oradan
+        //    TÜRETİLİR — ikinci bir eşik kopyası açmak, iki tablonun aynı
+        //    satıra farklı cevap verdiği bir gelecek kurardı.
+        const isSettled = isRemainingSettled(item.remaining_quantity);
         const draft = drafts[item.id] ?? {};
         return (
           <tr className="ecd-items__row" key={item.id}>
@@ -367,11 +385,12 @@ function GroupRows({
             <td className="ecd-items__td ecd-items__td--input">
               <Input
                 size="row"
-                type="number"
+                inputMode="decimal"
                 numeric
                 // 🔴 `min` yalnız TARAYICI ipucudur; gerçek korkuluk
                 // `commitInlineCell`dedir (yapıştırma/otomatik doldurma bu
-                // özniteliği atlar).
+                // özniteliği atlar). `type="number"` DEĞİLDİR (no 51): Türkçe
+                // klavyenin virgülünü tarayıcı sessizce ""a indirger.
                 min={0}
                 className="ecd-items__cell-input"
                 aria-label={`${item.code} birim fiyatı`}
@@ -384,7 +403,7 @@ function GroupRows({
             <td className="ecd-items__td ecd-items__td--input">
               <Input
                 size="row"
-                type="number"
+                inputMode="decimal"
                 numeric
                 min={0}
                 className="ecd-items__cell-input"
@@ -470,7 +489,7 @@ function GroupRows({
           <td className="ecd-items__td ecd-items__td--input">
             <Input
               size="row"
-              type="number"
+              inputMode="decimal"
               numeric
               min={0}
               className="ecd-items__cell-input"
@@ -484,7 +503,7 @@ function GroupRows({
           <td className="ecd-items__td ecd-items__td--input">
             <Input
               size="row"
-              type="number"
+              inputMode="decimal"
               numeric
               min={0}
               className="ecd-items__cell-input"

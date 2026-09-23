@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Badge, Button } from "@/components/ui";
 import type { HrExpiredDocument } from "@/lib/api/hooks/useHrDocuments";
+import { buildListTruncation, listTruncationMessage } from "@/lib/list-truncation";
 
 import {
   APPOINTMENT_PENDING_REASON,
@@ -45,6 +46,8 @@ export function HrExpiredDocumentsTable({
   errorMessage,
   totalCount,
 }: HrExpiredDocumentsTableProps) {
+  const truncation = rows ? buildListTruncation(rows.length, totalCount) : undefined;
+
   return (
     <section className="bt-card" data-testid="bt-expired-card" aria-labelledby="bt-expired-title">
       {/* 80-83 */}
@@ -54,6 +57,10 @@ export function HrExpiredDocumentsTable({
         </h2>
         <span className="bt-card__subtitle">Acil aksiyon gerekli</span>
       </div>
+
+      {truncation?.isTruncated && (
+        <p className="bt-card__truncation">{listTruncationMessage(truncation)}</p>
+      )}
 
       {errorMessage ? (
         <div className="bt-empty">

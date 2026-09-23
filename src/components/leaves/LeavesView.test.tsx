@@ -283,6 +283,31 @@ describe("LeavesView — onay bekleyen talepler (54-113)", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  /**
+   * 🔴 ÇİFT GÖNDERİM — onay GÖVDESİZDİR ve diyalog açmaz, yani düğme ile uç
+   * arasında hiçbir kapı yoktur. `approveRequest.isPending` okunmazsa aynı
+   * satıra iki hızlı tıklama İKİ POST üretir: ikincisi sunucunun satır
+   * kilidinden 409 yer ve ekrana "onay başarısız" gibi okunan bir hata basar —
+   * oysa onay GERÇEKLEŞMİŞTİR. İki diyalog (LeaveRequestFormModal /
+   * LeaveRejectModal) bu kilidi zaten kuruyor; onay yolu kurmuyordu.
+   */
+  it("🔴 onay isteği uçarken onay düğmesi KİLİTLİdir (çift gönderim yok)", async () => {
+    vi.mocked(useApproveLeaveRequest).mockReturnValue({
+      mutate: approveMutate,
+      isPending: true,
+    } as unknown as ReturnType<typeof useApproveLeaveRequest>);
+    render(<LeavesView currentYear={2026} />);
+
+    const approve = screen.getByTestId("iz-approve-lr-1");
+    expect(approve).toBeDisabled();
+
+    await userEvent.click(approve);
+    expect(approveMutate).not.toHaveBeenCalled();
+
+    // 🔴 Red AYRI mutasyondur — onayın kilidi reddi ENGELLEMEZ.
+    expect(screen.getByTestId("iz-reject-lr-1")).toBeEnabled();
+  });
+
   it("🔴 onayın 409'u (çakışma/hak aşımı/hesaplanamayan kalan) EKRANDA basılır", async () => {
     render(<LeavesView currentYear={2026} />);
     await userEvent.click(screen.getByTestId("iz-approve-lr-1"));
@@ -381,7 +406,31 @@ describe("LeavesView — izin bakiyeleri (116-171)", () => {
     expect(useHrLeavesSummary).toHaveBeenCalledWith(2026);
     await userEvent.selectOptions(screen.getByTestId("iz-year-select"), "2025");
 
-    expect(useHrLeavesSummary).toHaveBeenLastCalledWith(2025);
+    // Bakiye tablosunun sorgusu SEÇİLEN yıla döner (2025). Bekleyen talepler
+    // için ayrıca sabit `currentYear` (2026) sorgusu da PARALEL yaşamaya
+    // devam eder — KAYIT NO 145, bkz. aşağıdaki test.
+    expect(useHrLeavesSummary).toHaveBeenCalledWith(2025);
+    expect(useHrLeavesSummary).toHaveBeenCalledWith(2026);
+  });
+
+  it("🔴 KAYIT NO 145 — bekleyen talepler tablosu bakiye tablosunun yıl seçiminden ETKİLENMEZ", async () => {
+    // 2026 bakiyesi: kalan 11. 2025 bakiyesi (geçmiş yıl seçilince) FARKLI: kalan 2.
+    vi.mocked(useHrLeavesSummary).mockImplementation(
+      (queryYear: number) =>
+        queryStub(
+          summary({ year: queryYear, balances: [balance({ year: queryYear, remaining: queryYear === 2026 ? "11" : "2" })] }),
+        ) as ReturnType<typeof useHrLeavesSummary>,
+    );
+    render(<LeavesView currentYear={2026} />);
+
+    // lr-2: gün 14, kalan 11 (2026) → "1 gün aşım" (K9 tonu "exceeded").
+    expect(screen.getByTestId("iz-remaining-lr-2")).toHaveTextContent("11");
+
+    await userEvent.selectOptions(screen.getByTestId("iz-year-select"), "2025");
+
+    // Bakiye tablosu 2025'e geçse de bekleyen talepler HÂLÂ currentYear (2026)
+    // bakiyesiyle eşleşmeli — 2025'in "2" kalanı SIZMAMALI.
+    expect(screen.getByTestId("iz-remaining-lr-2")).toHaveTextContent("11");
   });
 });
 

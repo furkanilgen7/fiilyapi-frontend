@@ -61,7 +61,7 @@ export function SalePriceCard({
         </Field>
 
         {/* 85 */}
-        <Field label="İndirim (₺)">
+        <Field label="İndirim (₺)" error={errors.discountAmount}>
           {(control) => (
             <Input
               {...control}

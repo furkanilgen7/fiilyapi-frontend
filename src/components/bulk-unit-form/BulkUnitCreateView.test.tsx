@@ -152,6 +152,11 @@ function fillTarget() {
   selectProject();
   selectBlock();
   fillRules();
+  // 🔴 KUSUR no 44 fix: TU 137 kutucuğu VARSAYILAN İŞARETLİDİR (mockup); boş
+  // yüzdeyle gönderim artık ENGELLENİR. Kutucuğun KENDİSİ dokunulmaz kalır
+  // (varsayılan işaretli davranışını test eden senaryolar bozulmasın diye);
+  // geçerli bir gönderim için yüzde alanı doldurulur.
+  fireEvent.change(screen.getByTestId("toplu-form-artis-yuzde"), { target: { value: "5" } });
 }
 
 function optionLabels(testId: string): string[] {
@@ -212,6 +217,15 @@ describe("BulkUnitCreateView — TAM SAYFA kabuğu (TU 31-56)", () => {
   it("`projects` yetkisi yoksa AccessDenied basılır (`sales` DEĞİL)", () => {
     vi.mocked(useSession).mockReturnValue({
       me: { permissions: { projects: "none", sales: "full" } } as unknown as MeResponse,
+      isLoading: false,
+    } as ReturnType<typeof useSession>);
+    render(<BulkUnitCreateView />);
+    expect(screen.queryByTestId("toplu-form-govde")).not.toBeInTheDocument();
+  });
+
+  it("`projects` yetkisi `draft` iken AccessDenied basılır (sunucu yalnız `full` ister)", () => {
+    vi.mocked(useSession).mockReturnValue({
+      me: { permissions: { projects: "draft" } } as unknown as MeResponse,
       isLoading: false,
     } as ReturnType<typeof useSession>);
     render(<BulkUnitCreateView />);
@@ -544,6 +558,9 @@ describe("BulkUnitCreateView — TU 40/183 üretim (HEP-YA-HİÇ)", () => {
         numbering: "block_sequence",
         prefix: "",
         start_number: 1,
+        // 🔴 KUSUR no 44 fix: `fillTarget()` artık geçerli bir gönderim için
+        // yüzdeyi doldurur (kutucuk varsayılan işaretlidir).
+        floor_price_increase_pct: "5",
       },
     });
     await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/satis"));
@@ -558,6 +575,9 @@ describe("BulkUnitCreateView — TU 40/183 üretim (HEP-YA-HİÇ)", () => {
     fillRules();
     // Kat şablonuna gerçek veri yazılır ki `slots` gövdeye girsin.
     fireEvent.change(screen.getByTestId("toplu-form-brut-1"), { target: { value: "148" } });
+    // 🔴 KUSUR no 44 fix: kutucuk varsayılan işaretli — yüzde doldurulmadan
+    // gönderim engellenir.
+    fireEvent.change(screen.getByTestId("toplu-form-artis-yuzde"), { target: { value: "5" } });
     fireEvent.click(screen.getByTestId("toplu-form-olustur"));
     await waitFor(() => expect(createAsync).toHaveBeenCalled());
 
@@ -607,5 +627,60 @@ describe("BulkUnitCreateView — TU 40/183 üretim (HEP-YA-HİÇ)", () => {
     fireEvent.click(screen.getByTestId("toplu-form-olustur"));
     expect(createAsync).not.toHaveBeenCalled();
     expect(screen.getByTestId("toplu-form-hata")).toHaveTextContent("Önce hedef bloğu seçin.");
+  });
+
+  it("🔴 KUSUR no 39: kat şablonunda geçersiz ondalık varken kaydetmeye çalışmak istek KURMAZ", () => {
+    render(<BulkUnitCreateView />);
+    fillTarget();
+    fireEvent.change(screen.getByTestId("toplu-form-brut-1"), { target: { value: "abc" } });
+    fireEvent.click(screen.getByTestId("toplu-form-olustur"));
+    expect(createAsync).not.toHaveBeenCalled();
+    expect(screen.getByTestId("toplu-form-hata")).toHaveTextContent(
+      "Kat şablonunda geçersiz sayı var",
+    );
+    // Hücrenin kendisi de GÖRÜNÜR biçimde işaretlenir (sessiz düşme yok).
+    expect(screen.getByTestId("toplu-form-brut-1")).toHaveAttribute("aria-invalid", "true");
+  });
+
+  // 🔴 KULLANICI KARARI (2026-09-23): boş yüzde = ARTIŞ YOK; akış ENGELLENMEZ.
+  // İlk onarım turu engellemişti ve form varsayılan hâliyle (kutucuk mockup
+  // gereği işaretli, yüzde boş) KİLİTLİ doğuyordu — e2e'de toplu üretim akışı
+  // tamamen durdu. Kusur "ekranın yalan söylemesi"ydi; çözüm ekranı DOĞRU
+  // konuşturmak, kapı koymak değil.
+  it("🔴 KUSUR no 44: kutucuk işaretli + yüzde boş → NOT basılır, istek KURULUR, gövde artış TAŞIMAZ", async () => {
+    render(<BulkUnitCreateView />);
+    selectProject();
+    selectBlock();
+    fillRules();
+    // fillTarget() KULLANILMAZ: yüzde BİLEREK boş bırakılır.
+    expect(screen.getByTestId("toplu-form-artis-bos-notu")).toHaveTextContent(
+      "UYGULANMAYACAK",
+    );
+    fireEvent.click(screen.getByTestId("toplu-form-olustur"));
+    await waitFor(() => expect(createAsync).toHaveBeenCalled());
+    const body = createAsync.mock.calls[0][0].body as Record<string, unknown>;
+    expect(body).not.toHaveProperty("floor_price_increase_pct");
+  });
+
+  it("🔴 yüzde DOLUNCA not KAYBOLUR (ekran durumu izler)", () => {
+    render(<BulkUnitCreateView />);
+    selectProject();
+    selectBlock();
+    fillRules();
+    expect(screen.getByTestId("toplu-form-artis-bos-notu")).toBeInTheDocument();
+    fireEvent.change(screen.getByTestId("toplu-form-artis-yuzde"), { target: { value: "5" } });
+    expect(screen.queryByTestId("toplu-form-artis-bos-notu")).not.toBeInTheDocument();
+  });
+
+  it("🔴 KUSUR no 44: kutucuk kapatılırsa boş yüzde ARTIK sorun DEĞİLDİR", async () => {
+    render(<BulkUnitCreateView />);
+    selectProject();
+    selectBlock();
+    fillRules();
+    fireEvent.click(screen.getByTestId("toplu-form-fiyat-artisi")); // kapat
+    fireEvent.click(screen.getByTestId("toplu-form-olustur"));
+    await waitFor(() => expect(createAsync).toHaveBeenCalled());
+    const body = createAsync.mock.calls[0][0].body as Record<string, unknown>;
+    expect(body).not.toHaveProperty("floor_price_increase_pct");
   });
 });

@@ -29,3 +29,25 @@ export const RECENT_ALL_DISABLED_REASON =
 /** M3:83 — sunucu önceki ay karşılaştırması vermiyor; istemcide UYDURULMAZ. */
 export const MONTH_OVER_MONTH_MISSING_REASON =
   "Geçen ay karşılaştırması sunucuda yok.";
+
+/**
+ * 🔴 O5b #105 — `GET /equipment/fuel-summary` şantiye süzgeci ALMIYOR
+ * (yalnız `year`/`month`/`equipment_id`). Ekranın kendi şantiye süzgeci
+ * açıkken Yakıt Tüketimi kartı yine TÜM şantiyelerin toplamını gösterir —
+ * bu, diğer kartlarla (özet tablo, son kayıtlar) TUTARSIZ bir sessiz
+ * genişleme olurdu. Backend'e `site_id` eklenene kadar kart yanına GÖRÜNÜR
+ * bir not basılır (uydurma bir süzülmüş toplam ÜRETİLMEZ).
+ */
+export const FUEL_KPI_SITE_FILTER_UNSUPPORTED_NOTE =
+  "Yakıt özeti ucu şantiye süzgeci almıyor — bu kart tüm şantiyelerin toplamıdır.";
+
+/**
+ * M5_3 #107 — `summaryQuery`/`logsQuery` dışındaki DÖRT kaynak
+ * (`fuelQuery` · `equipmentQuery` · `personnelQuery` · `siteOptions`)
+ * hataya düşerse View bunu HİÇ okumuyordu: yakıt kartı gerekçesiz "—"
+ * basıyor, ekipman/operatör/şantiye adları sessizce "—" düşüyordu.
+ * `EquipmentWorkRecentList`in `logsQuery.isError` deseniyle AYNI: görünür
+ * bir uyarı, sessiz düşüş yok.
+ */
+export const AUXILIARY_DATA_ERROR_NOTICE =
+  "Yakıt / ekipman / personel / şantiye bilgilerinden biri yüklenemedi — bazı adlar veya kartlar eksik görünebilir.";

@@ -7,6 +7,7 @@ import {
   type SitePlanSprintRead,
   type SitePlanWeek,
 } from "./useSitePlan";
+import { SITE_PLAN_DAY_SUMMARY_QUERY_KEY } from "./useSitePlanDaySummary";
 
 // F-PL T1 · Şantiye Planlama — dort DEGISTIRME (replace) ucu.
 // ⚠️ Sema adlari `…Save` / `…Input` diye ayrisir; takma adlar `pnpm gen:api`
@@ -31,6 +32,11 @@ function useSitePlanInvalidator() {
   const queryClient = useQueryClient();
   return (siteId: string) => {
     queryClient.invalidateQueries({ queryKey: [SITE_PLAN_QUERY_KEY, siteId] });
+    // KAYIT 320: `useSitePlanDaySummary` AYRI bir kök anahtar kullanır
+    // ("site-plan-day-summary") — `[SITE_PLAN_QUERY_KEY, siteId]` önek
+    // eşleşmesi bunu YAKALAMAZ. Şantiye Günlüğü'ndeki gömülü "Planlama"
+    // özeti bu yüzden kaydettikten sonra `staleTime` boyunca bayat kalırdı.
+    queryClient.invalidateQueries({ queryKey: [SITE_PLAN_DAY_SUMMARY_QUERY_KEY, siteId] });
   };
 }
 

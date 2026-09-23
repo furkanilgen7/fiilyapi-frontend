@@ -72,6 +72,17 @@ describe("buildDistributionSaveBody — girdi ayrıştırma", () => {
     expect(body.allocations[0].quantity).toBe("1250.400");
   });
 
+  // 🔴 KAYIT 426: `decimal.ts::normalizeDecimalInput` ile AYNI kusur burada
+  // da vardı — `replace(",", ".")` yalnız İLK virgülü çevirdiği için TR
+  // binlik ayraçlı girdi ("1.234,56") iki nokta üretip REDDEDİLİYORDU.
+  it("TR binlik ayraçlı girdi kabul edilir (KAYIT 426 düzeltmesi)", () => {
+    const { body, rejections } = buildDistributionSaveBody([
+      { contractItemId: "ci-1", siteId: "s-1", value: "1.234,56" },
+    ]);
+    expect(rejections).toEqual([]);
+    expect(body.allocations[0].quantity).toBe("1234.56");
+  });
+
   it("sayı olmayan ve negatif değerler reddedilir", () => {
     const { body, rejections } = buildDistributionSaveBody([
       { contractItemId: "ci-1", siteId: "s-1", value: "abc" },

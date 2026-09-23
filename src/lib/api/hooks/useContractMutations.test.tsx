@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
 import {
+  useCreateEmployerContractGroup,
   useCreateEmployerContractItem,
   useSaveContractDistribution,
   useUpdateEmployerContractItem,
@@ -192,6 +193,43 @@ describe("useCreateEmployerContractItem", () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(invalidateSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("useCreateEmployerContractGroup — no 47 (yarış durumu)", () => {
+  it("mutateAsync, grup listesini tazeleyen invalidateQueries SETTLE olmadan RESOLVE OLMAZ", async () => {
+    vi.mocked(backendClient.POST).mockResolvedValue({
+      data: { id: "g-new", name: "Yeni Grup", sort_order: 5 },
+      error: undefined,
+      response: new Response(),
+    } as never);
+    let resolveInvalidate: () => void = () => {};
+    const invalidatePromise = new Promise<void>((resolve) => {
+      resolveInvalidate = resolve;
+    });
+    const invalidateSpy = vi
+      .spyOn(client, "invalidateQueries")
+      .mockReturnValue(invalidatePromise);
+
+    const { result } = renderHook(() => useCreateEmployerContractGroup(PROJECT_ID), { wrapper });
+
+    let settled = false;
+    const mutatePromise = result.current
+      .mutateAsync({ name: "Yeni Grup", sort_order: 5 })
+      .then(() => {
+        settled = true;
+      });
+
+    await waitFor(() => expect(invalidateSpy).toHaveBeenCalled());
+    // `invalidateQueries` HENÜZ tamamlanmadı — `mutateAsync` da BEKLEMELİ,
+    // aksi hâlde çağıran (`EmployerItemFormModal`) İKİNCİ bir grup için
+    // `nextSortOrder`ı hâlâ ESKİ `groups` listesinden hesaplar.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(settled).toBe(false);
+
+    resolveInvalidate();
+    await mutatePromise;
+    expect(settled).toBe(true);
   });
 });
 

@@ -17,6 +17,17 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(nav.search),
 }));
 
+// M5_3 #400 — "+ Yeni Proje" izin kapısı testi (ContractDistributionView.test.tsx deseni).
+let permissionLevel: string | undefined = "full";
+vi.mock("@/lib/auth/useModulePermission", () => ({
+  useModulePermission: () => ({
+    level: permissionLevel,
+    canView: true,
+    canWrite: permissionLevel !== "read",
+    canDelete: permissionLevel === "full",
+  }),
+}));
+
 const CONTRACTING_PLACEHOLDERS = {
   spent: { available: false, value: null, pending_module: "project_costs" },
   physical_progress: { available: false, value: null, pending_module: "progress_payments" },
@@ -71,6 +82,7 @@ describe("ProjectsView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     nav.search = "";
+    permissionLevel = "full";
   });
 
   it("breadcrumb aktif sayisi counts'tan turer (all - completed)", () => {
@@ -86,6 +98,23 @@ describe("ProjectsView", () => {
     render(<ProjectsView />);
     const link = screen.getByRole("link", { name: "+ Yeni Proje" });
     expect(link).toHaveAttribute("href", "/projeler/yeni");
+  });
+
+  /**
+   * M5_3 #400 — eskiden "+ Yeni Proje" HİÇBİR izin kontrolüyle sarılmadan
+   * render ediliyordu; kapı yalnız hedef formdaydı (ProjectCreateView).
+   * Backend yazmayı reddeder ama liste ekranında tıklanabilir bir buton
+   * yanlış bir yetki izlenimi verirdi.
+   */
+  it("yazma yetkisi yoksa LINK DEĞİL, gerekçeli devre-dışı öğe basılır", () => {
+    permissionLevel = "read";
+    mockQuery({ data });
+    render(<ProjectsView />);
+
+    expect(screen.queryByRole("link", { name: "+ Yeni Proje" })).not.toBeInTheDocument();
+    const placeholder = screen.getByText("+ Yeni Proje");
+    expect(placeholder).toHaveAttribute("aria-disabled", "true");
+    expect(placeholder).toHaveAttribute("title", "Bu modülde yazma yetkiniz yok");
   });
 
   it("sekme tiklaninca URL'e yazar", () => {

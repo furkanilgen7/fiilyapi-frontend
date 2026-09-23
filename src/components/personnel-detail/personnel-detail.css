@@ -216,3 +216,10 @@
   color: var(--color-text-subtle);
   line-height: var(--leading-relaxed);
 }
+/* Kayıt 128 — "İndir" gerekçesi önceden yalnız `title`da duruyordu
+   (klavye/ekran okuyucuyla erişilemez); F-BLG T3/G7 kanonuyla EKRANDA. */
+.pd-card__note {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  margin: -4px 0 10px;
+}

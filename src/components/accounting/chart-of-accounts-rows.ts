@@ -165,7 +165,19 @@ const CLASS_BAND_LABELS: Record<string, string> = {
   "1": "SINIF 1 — DÖNEN VARLIKLAR", // HP:69
   "2": "SINIF 2 — DURAN VARLIKLAR", // HP:135
   "3": "SINIF 3 — KISA VADELİ YÜKÜMLÜLÜKLER", // HP:161
-  "5": "SINIF 5 — GELİR TABLOSU HESAPLARI", // HP:187
+  // 🔴 HP:187 BİREBİR KOPYALANMAZ — ONAYLI SAPMA. Mockup o bandı `SINIF 5 —
+  // GELİR TABLOSU HESAPLARI` yazıp ALTINA `600`/`730`/`760` dizer, yani etiket
+  // bandın KENDİ satırlarıyla çelişir (sınıf 6 ve 7). Sınıf 5 TDHP'de
+  // ÖZKAYNAKLAR'dır: canlı tohum `500 Sermaye`/`501 Ödenmemiş Sermaye (-)`/
+  // `570 Geçmiş Yıllar Kârları`yı `equity` olarak basar
+  // (`chart_seed_data.py:372` yorumu da `# SINIF 5 — ÖZKAYNAKLAR` der) ve
+  // Bilanço ekranı aynı hesapları `III. ÖZKAYNAKLAR` altında gösterir.
+  // Şemanın K15 notu kararı zaten vermiştir: **satırlar kazanır**, bant bir
+  // sunucu alanı değildir. Mockup'ın etiketi basılsaydı aynı ekran kendini
+  // yalanlardı: bant "gelir tablosu", satırın `Tür` sütunu "Özkaynak".
+  // 🔴 `6` için bant EKLENMEZ: çizilmemiş sınıfta başlık icat edilmez (aşağı),
+  // `SINIF 6 — GELİR TABLOSU HESAPLARI` bir MOCKUP/KULLANICI kararıdır.
+  "5": "SINIF 5 — ÖZKAYNAKLAR",
 };
 
 /**

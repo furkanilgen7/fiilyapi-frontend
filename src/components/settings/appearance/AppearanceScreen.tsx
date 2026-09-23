@@ -120,6 +120,11 @@ export function AppearanceScreen() {
 
         <SettingsCard>
           <div className="appearance-card__title">Vurgu Rengi</div>
+          {/* Kayıt 419/482 — seçim kaydediliyor ama arayüzde HİÇBİR yerde
+              uygulanmıyor (CSS köprüsü yok); kullanıcı yanılmasın diye
+              durum açıkça yazılır (theme-card'ların "Yakında" deseniyle
+              aynı dürüstlük ilkesi). */}
+          <p className="appearance-card__note">Seçiminiz kaydedilir; arayüze yansıtılması yakında gelecek.</p>
           <div className="accent-swatches">
             {ACCENT_COLORS.map((color) => (
               <button
@@ -187,6 +192,7 @@ export function AppearanceScreen() {
 
         <SettingsCard>
           <div className="appearance-card__title">Arayüz Yoğunluğu</div>
+          <p className="appearance-card__note">Seçiminiz kaydedilir; arayüze yansıtılması yakında gelecek.</p>
           <div className="density-rows">
             {DENSITY_OPTIONS.map((opt) => {
               const active = form.density === opt.value;

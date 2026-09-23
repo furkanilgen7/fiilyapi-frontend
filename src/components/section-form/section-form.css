@@ -2,8 +2,9 @@
    Mockup: projedesign "Form - Bolum Ekle.dc.html" (1000px sütun).
    Paylaşılan `.pf-*` kabuğu `src/styles/form-shell.css`'tedir; bu dosya ONDAN
    SONRA import edilir. Bağlam bilgi kutusu `.site-form__info` sınıfını
-   YENİDEN KULLANIR (site-form.css'te tanımlı, aynı görsel — çift tanım
-   önlemek için burada tekrar YAZILMAZ). Çıplak hex/px yok — tokens.css. */
+   YENİDEN KULLANIR — kural artık form-shell.css'te tanımlı (M5_1 kayıt #269:
+   eskiden yalnız site-form.css'teydi ve bu form onu import ETMİYORDU, kutu
+   canlıda stilsiz basılıyordu). Çıplak hex/px yok — tokens.css. */
 
 /* F73: "Bölüm Bilgileri" kartında açıklama ızgarasının üstü (mockup satır
    içi margin-top:14px) — paylaşılan `.pf-grid` ile aynı sütun/gap, yalnız

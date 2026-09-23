@@ -43,6 +43,18 @@
   margin-bottom: var(--space-4);
 }
 
+/*
+ * KAYIT 101: `.select-wrap` (select.css) `width: 100%` taşır — bu flex
+ * konteynerin içinde her süzgeç kendi satırını zorluyordu, mockup'ın tek
+ * satırda yan yana dizdiği beş süzgeç (Dönem yıl/ay, Firma, Şantiye, Durum)
+ * alt alta diziliyordu. `select.css` DEĞİŞTİRİLMEDİ (paylaşılan katman,
+ * onlarca ekranı besler) — genişlik burada, ÇAĞIRAN kapsamında geri alınır.
+ */
+.makine-kira__filters > .select-wrap {
+  flex: 0 1 auto;
+  width: auto;
+}
+
 .makine-kira__panel {
   background: var(--color-surface);
   border: 1px solid var(--color-border);

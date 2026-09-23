@@ -197,9 +197,14 @@ export function AiPanel() {
 
   const sohbetler = useAiConversations();
   const gecmisSohbet = useAiConversation(turlar.length === 0 ? aktifSohbet : null);
-  const projeler = useProjects(
-    projePermission.canView ? { limit: PROJECT_LIST_MAX_LIMIT, offset: 0 } : {},
-  );
+  // 🔴 KAYIT NO 22 — üçlü işleç eskiden yalnız süzgeci/limiti değiştiriyordu,
+  // sorguyu KAPATMIYORDU: `canView=false` olan kullanıcıda da `GET /projects`
+  // ağa çıkıyordu (yalnız limitsiz). `enabled` KOŞULSUZ kapı olmalı.
+  const projeler = useProjects({
+    limit: PROJECT_LIST_MAX_LIMIT,
+    offset: 0,
+    enabled: projePermission.canView,
+  });
 
   /**
    * AI-BAĞLAM · ETKİN kapsam. Seçim durumu ile etkin kapsam AYNI ŞEY DEĞİLDİR:
@@ -395,7 +400,7 @@ export function AiPanel() {
                         </div>
                       ) : null}
                       {m.finish_reason && SEBEP_CUMLELERI[m.finish_reason] ? (
-                        <p className="ai-notice ai-notice--warn">
+                        <p className="ai-notice ai-notice--warn" role="status">
                           {SEBEP_CUMLELERI[m.finish_reason]}
                         </p>
                       ) : null}

@@ -69,11 +69,22 @@ export function SiteInfoCard({ values, onChange, projectName, errors }: SiteInfo
         </Field>
 
         {/* Kilitli (spec §4.1.1): rota projectId taşır, `SiteCreate`'te
-            `project_id` yoktur, şantiye başka projeye taşınamaz. */}
+            `project_id` yoktur, şantiye başka projeye taşınamaz.
+            M5_1 kayıt #308: proje sorgusu çözülmeden `projectName` boş
+            dizedir — eskiden bu durumda seçici tek bir boş `<option>` basardı
+            ve üç yüzeyden (skeleton banner, "…" kırıntı, seçici) yalnız
+            seçici yükleme hâlini belli ETMİYORDU. */}
         <Field label="Bağlı Proje" required>
           {(control) => (
-            <Select {...control} disabled value={projectName} title={LINKED_PROJECT_TITLE}>
-              <option value={projectName}>{projectName}</option>
+            <Select
+              {...control}
+              disabled
+              value={projectName}
+              title={LINKED_PROJECT_TITLE}
+            >
+              <option value={projectName}>
+                {projectName || "Yükleniyor…"}
+              </option>
             </Select>
           )}
         </Field>

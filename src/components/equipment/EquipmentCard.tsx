@@ -10,6 +10,8 @@ import {
   equipmentCardTone,
   EQUIPMENT_EMPTY_VALUE,
   EQUIPMENT_OPERATOR_UNKNOWN_HINT,
+  EQUIPMENT_RATE_PERIOD_CARD_LABELS,
+  EQUIPMENT_RATE_PERIOD_UNKNOWN_LABEL,
   EQUIPMENT_RATE_UNKNOWN_HINT,
   EQUIPMENT_STATUS_BADGE_VARIANTS,
   EQUIPMENT_STATUS_LABELS,
@@ -108,7 +110,11 @@ export function EquipmentCard({
       ) : (
         <div className="makine-card__facts" data-testid="makine-card-fact-boxes">
           <div className="makine-card__fact">
-            <div className="makine-card__fact-label">Günlük Kira</div>
+            <div className="makine-card__fact-label">
+              {equipment.rate_period
+                ? EQUIPMENT_RATE_PERIOD_CARD_LABELS[equipment.rate_period]
+                : EQUIPMENT_RATE_PERIOD_UNKNOWN_LABEL}
+            </div>
             <div className="makine-card__fact-value makine-card__fact-value--mono">
               {equipment.rate_amount ? (
                 formatCurrency(equipment.rate_amount)

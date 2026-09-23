@@ -8,7 +8,6 @@ import {
   EMPLOYEE_TYPE_OPTIONS,
   NO_SUBCONTRACTOR_LABEL,
   PAYMENT_METHOD_OPTIONS,
-  PENDING_EMPLOYEE_TYPE,
   PENDING_GENERAL_SOURCE,
   PENDING_SECTION_SOURCE,
   PERSONNEL_FIELD_MAX_LENGTH,
@@ -74,7 +73,7 @@ export function projectNote(state: ProjectPickerState): string {
     return "Proje listesi yüklenemedi — personeli projeye atamadan da kaydedebilirsiniz.";
   }
   if (state.items.length === 0) {
-    return "Kayıtlı proje yok — personeli projeye atamadan kaydedebilirsiniz.";
+    return "Kayıtlı proje yok — personeli taslak olarak kaydedebilirsiniz; yayımlamak için önce bir proje eklenmeli.";
   }
   return "Personelin çalışacağı proje; sonradan personel kartından değiştirilebilir.";
 }
@@ -127,14 +126,7 @@ export function JobCard({
             >
               <option value="">{SELECT_PLACEHOLDER}</option>
               {EMPLOYEE_TYPE_OPTIONS.map((option) => (
-                <option
-                  key={option.label}
-                  value={option.source ?? ""}
-                  // Karşılıksız seçenek (Serbest Meslek · Stajyer) SİLİNMEZ,
-                  // devre-dışı basılır — sessizce `general`'a EŞLENMEZ.
-                  disabled={option.source === null}
-                  title={option.source === null ? PENDING_EMPLOYEE_TYPE : undefined}
-                >
+                <option key={option.label} value={option.source}>
                   {option.label}
                 </option>
               ))}

@@ -1,0 +1,51 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { renderHook, waitFor, act } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
+
+import { useUpdateApprovalSettings, APPROVALS_QUERY_KEY, APPROVAL_SETTINGS_QUERY_KEY } from "./useApprovals";
+import { backendClient } from "@/lib/api/client";
+
+vi.mock("@/lib/api/client", () => ({ backendClient: { PUT: vi.fn() } }));
+
+const SETTINGS_RESPONSE = { approval_threshold_try: "1000.00" };
+
+function spyOnInvalidate(queryClient: QueryClient) {
+  return vi.spyOn(queryClient, "invalidateQueries");
+}
+
+describe("useUpdateApprovalSettings", () => {
+  let client: QueryClient;
+  let invalidateSpy: ReturnType<typeof spyOnInvalidate>;
+
+  function wrapper({ children }: { children: ReactNode }) {
+    return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    invalidateSpy = spyOnInvalidate(client);
+    vi.mocked(backendClient.PUT).mockResolvedValue({
+      data: SETTINGS_RESPONSE,
+      error: undefined,
+      response: new Response(),
+    } as never);
+  });
+
+  // KAYIT 446: eşik değiştikten sonra onay kutusu (APPROVALS_QUERY_KEY) eski
+  // eşikle karar vermeye devam etmemeli — kardeş mutasyon useSetApprovalRoles
+  // ile AYNI kapsamı geçersiz kılmalı.
+  it("eşik güncellenince hem approval-settings hem approvals geçersiz kılınır", async () => {
+    const { result } = renderHook(() => useUpdateApprovalSettings(), { wrapper });
+
+    act(() => result.current.mutate("1000.00"));
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [APPROVAL_SETTINGS_QUERY_KEY] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: [APPROVALS_QUERY_KEY] });
+  });
+});

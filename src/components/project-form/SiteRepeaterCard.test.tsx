@@ -31,6 +31,27 @@ describe("SiteRepeaterCard yardımcıları (F9)", () => {
     expect(siteRowError(row({ name: "A" }))).toBeNull();
   });
 
+  it("🔴 KUSUR no 204: sayıya çevrilemeyen inşaat alanı SESSİZ null'a düşmez, görünür hata döner", () => {
+    expect(siteRowError(row({ name: "A", constructionAreaM2: "abc" }))).toBe(
+      "Bu alan sayı olmalıdır.",
+    );
+    expect(siteRowError(row({ name: "A", constructionAreaM2: "12,5,5" }))).toBe(
+      "Bu alan sayı olmalıdır.",
+    );
+  });
+
+  it("negatif inşaat alanı ayrı bir mesajla reddedilir", () => {
+    expect(siteRowError(row({ name: "A", constructionAreaM2: "-50" }))).toBe(
+      "Alan negatif olamaz.",
+    );
+  });
+
+  it("geçerli sayısal/boş alan hatasızdır", () => {
+    expect(siteRowError(row({ name: "A", constructionAreaM2: "6420" }))).toBeNull();
+    expect(siteRowError(row({ name: "A", constructionAreaM2: "" }))).toBeNull();
+    expect(siteRowError(row({ name: "A", constructionAreaM2: "0" }))).toBeNull();
+  });
+
   it("boş satırlar gönderime dahil edilmez; şef adı metne dönüşür", () => {
     const rows = [
       row({ name: "A-Blok", siteManagerName: "Sercan Öztürk", constructionAreaM2: "6420" }),
@@ -110,5 +131,22 @@ describe("SiteRepeaterCard bileşeni (F9)", () => {
       />,
     );
     expect(screen.getByText("Şantiye adı zorunludur.")).toBeInTheDocument();
+  });
+
+  it("🔴 KUSUR no 204: alan hatası ADIN ALTINDA değil, İNŞAAT ALANI alanının altında gösterilir", () => {
+    render(
+      <SiteRepeaterCard
+        rows={[row({ name: "A-Blok", constructionAreaM2: "abc" })]}
+        onChange={() => {}}
+        managerNames={managers}
+        errors={["Bu alan sayı olmalıdır."]}
+      />,
+    );
+    // Ad alanı geçerli: aria-invalid TAŞIMAMALI.
+    expect(screen.getByLabelText("Şantiye Adı")).not.toHaveAttribute("aria-invalid");
+    // Hata metni İnşaat Alanı kutusuna bağlı (describedby) olmalı.
+    const areaInput = screen.getByLabelText("İnşaat Alanı (m²)");
+    expect(areaInput).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByText("Bu alan sayı olmalıdır.")).toBeInTheDocument();
   });
 });

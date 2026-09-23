@@ -12,6 +12,9 @@ import { JOURNAL_ENTRIES_QUERY_KEY } from "./useJournalEntries";
 import { JOURNAL_SUMMARY_QUERY_KEY } from "./useJournalSummary";
 import { LEDGER_QUERY_KEY } from "./useLedger";
 import { CHART_OF_ACCOUNTS_QUERY_KEY } from "./useChartOfAccounts";
+import { ACCOUNTING_PERIODS_QUERY_KEY } from "./useAccountingPeriods";
+import { TRIAL_BALANCE_QUERY_KEY } from "./useTrialBalance";
+import { VAT_RETURN_QUERY_KEY } from "./useVatReturn";
 import { backendClient } from "@/lib/api/client";
 import { BackendError } from "@/lib/api/unwrap";
 
@@ -62,19 +65,28 @@ beforeEach(() => {
 });
 
 /**
- * 🔴 BEKÇİ: bir fişin DURUMUNU oynatan her yazma DÖRT okumayı bayatlatır —
- * fiş listesi · defter · KPI şeridi · hesap planı (`balance` TÜREVDİR).
- * Biri unutulursa ekran, kaydettiği fişin etkisini göremez.
+ * 🔴 BEKÇİ: bir fişin DURUMUNU oynatan her yazma YEDİ okumayı bayatlatır —
+ * fiş listesi · defter · KPI şeridi · hesap planı (`balance` TÜREVDİR) · mizan
+ * · KDV beyanı · dönem listesi. Biri unutulursa ekran, kaydettiği fişin
+ * etkisini göremez.
+ *
+ * 🔴 KAYIT 15 (2026-09-23): son üç anahtar (`accounting-periods`/
+ * `trial-balance`/`vat-return`) BU KAPSAMDA EKSİKTİ — yalnız dönem kapatma/
+ * açma mutasyonlarında geçersiz kılınıyordu, fiş kaydından SONRA değil.
+ * `invalidateAccountingScope`e eklendi (`accounting-invalidate.ts`).
  */
 const EXPECTED_SCOPE = [
   [JOURNAL_ENTRIES_QUERY_KEY],
   [LEDGER_QUERY_KEY],
   [JOURNAL_SUMMARY_QUERY_KEY],
   [CHART_OF_ACCOUNTS_QUERY_KEY],
+  [ACCOUNTING_PERIODS_QUERY_KEY],
+  [TRIAL_BALANCE_QUERY_KEY],
+  [VAT_RETURN_QUERY_KEY],
 ];
 
 describe("usePostJournalEntry", () => {
-  it("POST /journal-entries/{id}/post cagirir ve DORT okumayi tazeler", async () => {
+  it("POST /journal-entries/{id}/post cagirir ve YEDI okumayi tazeler", async () => {
     vi.mocked(backendClient.POST).mockResolvedValue(okResponse(DETAIL));
 
     const { result } = renderHook(() => usePostJournalEntry(), { wrapper });
@@ -105,7 +117,7 @@ describe("usePostJournalEntry", () => {
 });
 
 describe("useReverseJournalEntry", () => {
-  it("POST /journal-entries/{id}/reverse cagirir ve DORT okumayi tazeler", async () => {
+  it("POST /journal-entries/{id}/reverse cagirir ve YEDI okumayi tazeler", async () => {
     vi.mocked(backendClient.POST).mockResolvedValue(okResponse(DETAIL));
 
     const { result } = renderHook(() => useReverseJournalEntry(), { wrapper });
@@ -130,7 +142,7 @@ describe("useReverseJournalEntry", () => {
 });
 
 describe("useDeleteJournalEntry", () => {
-  it("DELETE /journal-entries/{id} cagirir ve DORT okumayi tazeler", async () => {
+  it("DELETE /journal-entries/{id} cagirir ve YEDI okumayi tazeler", async () => {
     vi.mocked(backendClient.DELETE).mockResolvedValue(okResponse(undefined));
 
     const { result } = renderHook(() => useDeleteJournalEntry(), { wrapper });

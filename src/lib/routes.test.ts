@@ -113,7 +113,11 @@ describe("routes — uretilen her yol GERCEK bir rotaya cozulur", () => {
   const SENTINEL = new Set([P, S, SEC, "c-2", "i-7", "e-3", "r-5"]);
 
   const hrefs: ReadonlyArray<readonly [string, string]> = [
+    ["home", routes.home()],
     ["login", routes.login()],
+    ["assistant", routes.assistant()],
+    ["reports", routes.reports()],
+    ["siteDiary", routes.siteDiary()],
     ["approvalInbox", routes.approvalInbox()],
     ["projects.list", routes.projects.list()],
     ["projects.new", routes.projects.new()],
@@ -211,6 +215,16 @@ describe("routes — uretilen her yol GERCEK bir rotaya cozulur", () => {
 
   it("kapsam bos KALMAZ", () => {
     expect(hrefs.length).toBeGreaterThan(80);
+  });
+
+  it("kalan-9/no457: home/assistant/reports/siteDiary hrefs KAPSAMDA", () => {
+    // Bu dört gerçek sayfa (`/`, `/asistan`, `/raporlar`, `/gunluk-kayit`)
+    // ölçüldüğünde `hrefs` dizisinde hiç yoktu — bir yazım hatası burada
+    // yakalanmadan sızabilirdi.
+    const names = hrefs.map(([name]) => name);
+    expect(names).toEqual(
+      expect.arrayContaining(["home", "assistant", "reports", "siteDiary"]),
+    );
   });
 
   it.each(hrefs)("%s -> gercek rota", (_name, href) => {

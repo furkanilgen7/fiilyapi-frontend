@@ -26,7 +26,10 @@ export function recentDocuments(
   return [...documents]
     .sort((a, b) => {
       if (a.created_at !== b.created_at) return a.created_at < b.created_at ? 1 : -1;
-      return a.id < b.id ? -1 : 1;
+      // Kayıt 71 — backend eşit `created_at`te `Document.id.desc()` ile
+      // kırar (repository.py:90); istemci ARTAN (`a.id < b.id`) kırıyordu.
+      // Aynı saniyede yüklenen belgelerde iki panel TERS sırada görünüyordu.
+      return a.id > b.id ? -1 : 1;
     })
     .slice(0, limit);
 }

@@ -21,9 +21,9 @@ import { UpcomingCollectionsCard } from "./UpcomingCollectionsCard";
 import { parseSalesStatusFilter, PRICE_LIST_PENDING_REASON } from "./sales-labels";
 import "./sales.css";
 import { routes } from "@/lib/routes";
+import { PROJECT_PARAM } from "@/lib/navigation-params";
 
 /** URL durumu anahtarları — seçili proje ve süzgeç paylaşılabilir olmalı. */
-const PROJECT_PARAM = "proje";
 const STATUS_PARAM = "durum";
 
 /** T3'ün açacağı satış formu (spec K1). */
@@ -70,7 +70,12 @@ export function SalesView() {
   const summaryQuery = useSalesSummary(selectedProjectId);
   const unitsQuery = useProjectUnits(selectedProjectId);
 
-  if (!permission.canView || isForbidden(salesQuery.error) || isForbidden(summaryQuery.error)) {
+  if (
+    !permission.canView ||
+    isForbidden(projectsQuery.error) ||
+    isForbidden(salesQuery.error) ||
+    isForbidden(summaryQuery.error)
+  ) {
     return <AccessDenied />;
   }
 
@@ -100,6 +105,14 @@ export function SalesView() {
       ? "Blok doluluk haritası için ünite (proje) yetkisi gerekiyor."
       : backendErrorMessage(unitsQuery.error, "Ünite listesi yüklenemedi.")
     : undefined;
+
+  // no 237 · 403 dışı bir proje listesi hatası (ağ/500) `AccessDenied`a
+  // düşmez ama sessiz de kalmamalı — proje seçici boş, KPI/tablo "—"/"yok"
+  // gösterirken gerçek sebep burada görünür yazılır.
+  const projectsErrorNotice =
+    projectsQuery.isError && !isForbidden(projectsQuery.error)
+      ? backendErrorMessage(projectsQuery.error, "Proje listesi yüklenemedi.")
+      : undefined;
 
   return (
     <div className="satis">
@@ -148,7 +161,7 @@ export function SalesView() {
           )}
           {/* 25 · satış formu (spec K1) */}
           {permission.canWrite && (
-            <Link href={NEW_SALE_HREF} className="btn btn--primary btn--md">
+            <Link href={formHref(NEW_SALE_HREF)} className="btn btn--primary btn--md">
               + Satış Kaydı
             </Link>
           )}
@@ -160,6 +173,12 @@ export function SalesView() {
         “Fiyat Listesi” ekranı henüz tasarlanmadı; ünite liste fiyatları proje
         ünite kartlarından yönetilir.
       </p>
+
+      {projectsErrorNotice !== undefined && (
+        <p className="satis__notice" data-testid="satis-proje-hatasi">
+          {projectsErrorNotice}
+        </p>
+      )}
 
       {/* 54-60 */}
       <SalesKpiStrip summary={summaryQuery.data} />
@@ -180,10 +199,20 @@ export function SalesView() {
             ? backendErrorMessage(salesQuery.error, "Satış listesi yüklenemedi.")
             : undefined
         }
+        hasSelectedProject={selectedProjectId !== ""}
       />
 
       {/* 217-234 */}
-      <UpcomingCollectionsCard items={summaryQuery.data?.upcoming_collections} />
+      <UpcomingCollectionsCard
+        items={summaryQuery.data?.upcoming_collections}
+        isLoading={summaryQuery.isLoading}
+        isError={summaryQuery.isError}
+        errorMessage={
+          summaryQuery.isError
+            ? backendErrorMessage(summaryQuery.error, "Yaklaşan tahsilatlar yüklenemedi.")
+            : undefined
+        }
+      />
     </div>
   );
 }

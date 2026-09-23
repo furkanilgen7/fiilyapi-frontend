@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { useState } from "react";
 
 import { downloadBoqExport } from "@/lib/api/boq-client";
@@ -9,6 +9,7 @@ import { BoqItemFormModal, type BoqItemFormMode } from "@/components/boq/BoqItem
 import { BoqTable } from "@/components/boq/BoqTable";
 import { BoqTotalsStrip } from "@/components/boq/BoqTotalsStrip";
 import { AccessDenied } from "@/components/settings/AccessDenied";
+import { SiteDetailTabs } from "@/components/site-detail/SiteDetailTabs";
 import { Button } from "@/components/ui/button/Button";
 import { useBoq, type BoqItem, type BoqListResponse } from "@/lib/api/hooks/useBoq";
 import { useSite } from "@/lib/api/hooks/useSites";
@@ -21,6 +22,7 @@ import { routes } from "@/lib/routes";
 // altindadir; o layout artik yalniz stylesheet yukler (DRILL-KALDIR
 // 2026-08-29). Bu sayfa KENDI LAYOUT'UNU KURMAZ.
 export default function BoqPage() {
+  const pathname = usePathname();
   // 🔴 URL-3 — ADRES anahtarlari.
   const { projectId: projectKey, siteId: siteKey } = useParams<{
     projectId: string;
@@ -64,6 +66,10 @@ export default function BoqPage() {
 
   return (
     <div className="boq">
+      {/* Kayıt 303 — sekme şeridi TEK kaynaktan (`SiteDetailTabs`); bu sayfa
+          kardeş görünümlerin (Stok/Puantaj/Belgeler/Günlük) hepsinin bastığı
+          şeridi hiç basmıyordu. */}
+      <SiteDetailTabs projectKey={projectKey} siteKey={siteKey} activePath={pathname} />
       {/* Breadcrumb (mockup 62) — onayli sapma C: sozlesme numarasi basilmaz.
           Santiye adi bilinmeden hic basilmaz; uydurma etiket yazilmaz. */}
       {site && (

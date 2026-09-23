@@ -3,9 +3,10 @@
 import { useParams } from "next/navigation";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
+import { backendErrorMessage } from "@/lib/api/error-message";
 import { usePersonnelDetail } from "@/lib/api/hooks/usePersonnelDetail";
 import { useProjects } from "@/lib/api/hooks/useProjects";
-import { isForbidden } from "@/lib/api/unwrap";
+import { BackendError, isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 
 import { PersonnelDocumentsSummaryCard } from "./PersonnelDocumentsSummaryCard";
@@ -37,7 +38,15 @@ export function PersonnelDetailView() {
 
   if (!canView || isForbidden(detailQuery.error)) return <AccessDenied />;
   if (detailQuery.isError) {
-    return <p className="pd-message">Personel bulunamadı.</p>;
+    // Kayıt 164 — 404 dışındaki hatalar (500/ağ/422) da aynı "kayıt yok"
+    // cümlesiyle basılıyordu; kullanıcı gerçek nedeni (ör. sunucu hatası)
+    // hiç göremiyordu. Yalnız GERÇEK 404'te sabit metin kalır.
+    const isNotFound = detailQuery.error instanceof BackendError && detailQuery.error.status === 404;
+    return (
+      <p className="pd-message">
+        {isNotFound ? "Personel bulunamadı." : backendErrorMessage(detailQuery.error, "Personel bulunamadı.")}
+      </p>
+    );
   }
   if (detailQuery.isLoading || !detailQuery.data) {
     return <p className="pd-message">Yükleniyor…</p>;

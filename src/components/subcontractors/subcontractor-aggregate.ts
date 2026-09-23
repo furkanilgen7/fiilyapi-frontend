@@ -37,6 +37,17 @@ import type { SubcontractorProgressPaymentListItem } from "@/lib/api/hooks/useSu
  * NORMALLEŞTİRİLMİŞ AD üzerinden kurulur. Adı hiçbir firmayla eşleşmeyen
  * sözleşmeler sessizce YUTULMAZ: `orphanContractCount` ile dışarı verilir ve
  * ekranda görünür not basılır.
+ *
+ * 🔴 AD TEKİL DEĞİLDİR. Kovalar FİRMA KİMLİĞİYLE (`firm.id`) tutulur, adla
+ * DEĞİL: ad hiçbir katmanda tekil değildir (backend `subcontractors`
+ * tablosunda yalnız KISMİ `uq_subcontractors_tax_number` ve NON-UNIQUE
+ * `ix_subcontractors_name` vardır; VKN bile zorunlu değildir). Adla
+ * anahtarlanınca `Map.set` ikinci firmanın kovasını birincinin üstüne yazar ve
+ * İKİ AYRI TÜZEL KİŞİNİN parası toplanıp her iki satıra da basılırdı.
+ * Ad tabanlı eşleştirme yalnız sözleşme/hakediş → firma yönünde ve YALNIZ
+ * eşleşme TEKSE yapılır; bir ad birden çok firmaya uyuyorsa sözleşme hiçbirine
+ * atfedilmez (uydurulmuş sayı basmayız) ve `ambiguousContractCount` ile
+ * dışarı verilir.
  */
 
 /** Firma ↔ sözleşme/hakediş eşleştirme anahtarı (ad tabanlı — yukarıdaki sınır). */
@@ -84,8 +95,19 @@ export interface SubcontractorDirectory {
   summary: SubcontractorSummary;
   /** 30 · kategori süzgecinin GERÇEK seçenekleri (mockup'ın sabit üçlüsü artefakt). */
   categories: string[];
-  /** Adı hiçbir firmayla eşleşmeyen sözleşme sayısı — görünür not. */
+  /** Adı hiçbir firmayla eşleşmeyen sözleşme sayısı (taslak hariç) — görünür not. */
   orphanContractCount: number;
+  /**
+   * M5_1 kayıt #344: adı hiçbir firmayla eşleşmeyen TASLAK sözleşme sayısı.
+   * Eskiden `!contract.is_draft` dalı yalnız yayınlanmış yetimleri sayardı —
+   * taslak yetimler hiçbir sayaca girmiyor, dolayısıyla hiçbir banta düşmüyordu.
+   * Ayrı sayaçla dışarı verilir; "sessizce yutulmaz" invariantı taslak için de
+   * geçerli olsun diye `orphanContractCount`e KARIŞTIRILMAZ (taslak/yayın
+   * ayrımı çağıran tarafın işine yarayabilir).
+   */
+  orphanDraftContractCount: number;
+  /** Adı BİRDEN ÇOK firmaya uyduğu için atfedilemeyen sözleşme sayısı. */
+  ambiguousContractCount: number;
   /** Hakediş listesi kırpıldı — para kolonları/KPI'ları PENDING. */
   isPaymentPending: boolean;
 }
@@ -153,28 +175,58 @@ export function buildSubcontractorDirectory({
   currentYear,
   currentMonth,
 }: BuildDirectoryInput): SubcontractorDirectory {
-  const byKey = new Map<string, Accumulator>();
+  // Kova anahtarı FİRMA KİMLİĞİDİR (ad tekil değildir — üstteki nota bak).
+  const byId = new Map<string, Accumulator>();
+  // Ad → o adı taşıyan firma kimlikleri. Uzunluk > 1 ise ad BELİRSİZDİR.
+  const firmIdsByName = new Map<string, string[]>();
   for (const firm of subcontractors) {
-    byKey.set(subcontractorKey(firm.name), emptyAccumulator());
+    byId.set(firm.id, emptyAccumulator());
+    const nameKey = subcontractorKey(firm.name);
+    firmIdsByName.set(nameKey, [...(firmIdsByName.get(nameKey) ?? []), firm.id]);
   }
 
+  /** Ad TEK bir firmaya uyuyorsa onun kimliği; 0 ya da >1 eşleşmede `null`. */
+  const uniqueFirmIdOf = (nameKey: string): string | null => {
+    const ids = firmIdsByName.get(nameKey);
+    return ids && ids.length === 1 ? ids[0] : null;
+  };
+
   // Hakedişin firmasını sözleşme kimliği üzerinden çözebilmek için harita
-  // (hakediş satırının kendi `subcontractor_name`i yedek yoldur).
-  const contractKeyById = new Map<string, string>();
+  // (hakediş satırının kendi `subcontractor_name`i yedek yoldur). LİSTEDEKİ
+  // HER sözleşme girer; çözülemeyen sözleşme `null` taşır. `null` ile
+  // `undefined` ayrımı davranışsaldır: sözleşme listede VARSA ve firmasına
+  // bağlanamadıysa hakediş ADA GÖRE yeniden denenmez (eski davranış korunur),
+  // yalnız sözleşmesi hiç listede olmayan hakediş yedek yola düşer.
+  const firmIdByContractId = new Map<string, string | null>();
   let orphanContractCount = 0;
+  let orphanDraftContractCount = 0;
+  let ambiguousContractCount = 0;
 
   for (const contract of contracts) {
     const key = subcontractorKey(contract.counterparty_name);
-    contractKeyById.set(contract.id, key);
-    const bucket = byKey.get(key);
-    if (!bucket) {
-      if (!contract.is_draft) orphanContractCount += 1;
+    const firmId = uniqueFirmIdOf(key);
+    if (firmId === null) {
+      // Yetim sözleşme haritaya HİÇ girmez: aksi hâlde aşağıdaki hakediş
+      // döngüsündeki `??` yedeği (`subcontractor_name` üzerinden yeniden
+      // deneme) hiçbir zaman devreye giremezdi (kalan-6 no 324).
+      if (!contract.is_draft) {
+        if (firmIdsByName.has(key)) ambiguousContractCount += 1;
+        else orphanContractCount += 1;
+      } else if (!firmIdsByName.has(key)) {
+        // M5_1 kayıt #344: taslak yetimler AYRI sayaçta — sessizce yutulmaz.
+        orphanDraftContractCount += 1;
+      }
       continue;
     }
+    firmIdByContractId.set(contract.id, firmId);
+    const bucket = byId.get(firmId);
+    if (!bucket) continue;
     bucket.contracts.push(contract);
     // Taslak sözleşme ne "aktif"tir ne de gerçekleşmiş bir bedeldir.
     if (contract.is_draft) continue;
-    bucket.contractTotal += toNumber(contract.amount);
+    // 🔴 Maskeli bedel (kapsam kısıtlı rol) toplama GİRMEZ ve `0` sayılmaz;
+    //    `toNumber(null)` 0 verip toplamı sessizce eksiltirdi.
+    if (contract.amount !== null) bucket.contractTotal += toNumber(contract.amount);
     if (contract.status === "active") bucket.activeContractCount += 1;
   }
 
@@ -183,20 +235,38 @@ export function buildSubcontractorDirectory({
 
   for (const payment of payments) {
     if (payment.status === "pending_approval") pendingApprovalCount += 1;
-    if (payment.period_year === currentYear && payment.period_month === currentMonth) {
+    // 🔴 KAYIT NO 341 — "Bu Ay Ödeme" (SubcontractorsSummaryStrip 37 KPI'ı)
+    // ÖDEME anlamına gelir; aynı ekranda "Ödenen" kolonu (aşağıda) yalnız
+    // `paid` sayar. Statü süzgeci olmadan taslak/onay bekleyen hakedişler de
+    // buraya girerdi — iki KPI aynı kelimeyi (Ödeme) iki farklı tanımla
+    // kullanırdı. Yalnız GERÇEKLEŞMİŞ ödeme (paid) sayılır.
+    if (
+      payment.status === "paid" &&
+      payment.period_year === currentYear &&
+      payment.period_month === currentMonth
+    ) {
       monthPaymentTotal += toNumber(payment.net_total);
     }
-    const key =
-      contractKeyById.get(payment.contract_id) ?? subcontractorKey(payment.subcontractor_name);
-    const bucket = byKey.get(key);
+    const mapped = firmIdByContractId.get(payment.contract_id);
+    const firmId =
+      mapped !== undefined ? mapped : uniqueFirmIdOf(subcontractorKey(payment.subcontractor_name));
+    if (firmId === null) continue;
+    const bucket = byId.get(firmId);
     if (!bucket) continue;
-    if (payment.status === "paid") bucket.paidTotal += toNumber(payment.net_total);
-    else bucket.pendingTotal += toNumber(payment.net_total);
+    if (payment.status === "paid") {
+      bucket.paidTotal += toNumber(payment.net_total);
+    } else if (payment.status !== "draft") {
+      // 🔴 KAYIT NO 342 — taslak hakediş, taslak SÖZLEŞMENİN eşi (satır
+      // ~213 `if (contract.is_draft) continue;`): henüz sunulmamış bir
+      // hakediş "Bekleyen Hak." toplamına giremez, aksi hâlde hiç onaya
+      // girmemiş bir taslak "bekliyor" gibi görünür.
+      bucket.pendingTotal += toNumber(payment.net_total);
+    }
   }
 
   const rows: SubcontractorRow[] = subcontractors
     .map((firm) => {
-      const bucket = byKey.get(subcontractorKey(firm.name)) ?? emptyAccumulator();
+      const bucket = byId.get(firm.id) ?? emptyAccumulator();
       const detail = pickDetailContract(bucket.contracts);
       return {
         id: firm.id,
@@ -233,6 +303,8 @@ export function buildSubcontractorDirectory({
     },
     categories,
     orphanContractCount,
+    orphanDraftContractCount,
+    ambiguousContractCount,
     isPaymentPending: isPaymentTruncated,
   };
 }

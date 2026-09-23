@@ -1,5 +1,5 @@
 import { formatCompactCurrency } from "@/lib/format";
-import { pendingModuleLabel } from "@/lib/pending-modules";
+import { pendingModuleHint } from "@/lib/pending-modules";
 import type { StockSummaryKpis } from "@/lib/api/hooks/useStockSummary";
 
 import "./stock.css";
@@ -31,7 +31,7 @@ export function StockKpiStrip({ kpis }: StockKpiStripProps) {
   const pending = kpis?.pending_orders;
   const isPendingOrdersReal =
     pending !== undefined && pending.available && pending.value !== null && pending.value !== undefined;
-  const pendingReason = pendingModuleLabel(pending?.pending_module);
+  const pendingReason = pendingModuleHint(pending?.pending_module);
 
   return (
     <div className="stok-kpi" data-testid="stok-kpi-strip">

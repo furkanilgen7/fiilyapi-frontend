@@ -106,6 +106,27 @@ describe("ArchiveDocumentFormModal (ARŞ · Form - Belge Ekle)", () => {
     expect(screen.getByTestId("adf-site")).toHaveValue("");
   });
 
+  it("🔴 şantiye seçilince klasör sorgusu SEÇİLİ ŞANTİYE ile atılır (kapsam eşleşmesi)", () => {
+    renderModal(PROJECT_ID);
+
+    fireEvent.change(screen.getByTestId("adf-site"), { target: { value: SITE_ID } });
+
+    // Şantiye seçiliyken klasör sorgusu YALNIZ proje-düzeyi (siteId=undefined)
+    // klasörleri getirirse backend `folder.site_id != site_id` kontrolüyle
+    // HER ZAMAN 422 (FOLDER_SCOPE_MISMATCH) döner — bu yüzden ikinci argüman
+    // SEÇİLİ ŞANTİYE olmalı.
+    expect(vi.mocked(useDocumentFolders)).toHaveBeenCalledWith(PROJECT_ID, SITE_ID);
+  });
+
+  it("🔴 şantiye değişince klasör seçimi DÜŞER (artık başka kapsamın klasörü)", () => {
+    renderModal(PROJECT_ID);
+    fireEvent.change(screen.getByTestId("adf-folder"), { target: { value: FOLDER_ID } });
+    expect(screen.getByTestId("adf-folder")).toHaveValue(FOLDER_ID);
+
+    fireEvent.change(screen.getByTestId("adf-site"), { target: { value: SITE_ID } });
+    expect(screen.getByTestId("adf-folder")).toHaveValue("");
+  });
+
   it("🔴 'Belge Adı' (121-125) SİLİNMEZ: devre-dışı + hint korunur + gerekçe görünür", () => {
     renderModal(PROJECT_ID);
     const field = screen.getByTestId("adf-document-name");
@@ -115,6 +136,28 @@ describe("ArchiveDocumentFormModal (ARŞ · Form - Belge Ekle)", () => {
     expect(screen.getByTestId("adf-document-name-reason")).toHaveTextContent(
       ARCHIVE_DOCUMENT_NAME_REASON,
     );
+  });
+
+  it("🔴 şantiye sorgusu hata dönerse EKRANDA basılır (sessizce yutulmaz)", () => {
+    vi.mocked(useSites).mockReturnValue({
+      data: undefined,
+      isError: true,
+      error: new Error("Şantiyeler alınamadı"),
+    } as never);
+    renderModal(PROJECT_ID);
+
+    expect(screen.getByTestId("adf-sites-error")).toBeInTheDocument();
+  });
+
+  it("🔴 klasör sorgusu hata dönerse EKRANDA basılır (sessizce yutulmaz)", () => {
+    vi.mocked(useDocumentFolders).mockReturnValue({
+      data: undefined,
+      isError: true,
+      error: new Error("Klasörler alınamadı"),
+    } as never);
+    renderModal(PROJECT_ID);
+
+    expect(screen.getByTestId("adf-folders-error")).toBeInTheDocument();
   });
 
   it("boş bırakılan şantiye/klasör/açıklama gövdeye GİRMEZ", async () => {

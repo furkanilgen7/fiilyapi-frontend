@@ -202,5 +202,5 @@ export function planDraftReducer(state: PlanDraft, action: PlanDraftAction): Pla
 
 /** Hücre düzenleyicinin ürettiği değer — boş metin `null` demektir. */
 export function planCellValue(text: string, tag: PlanCellTag | null): PlanDraftCell | null {
-  return text.trim().length === 0 ? null : { text, tag };
+  return text.trim().length === 0 ? null : { text: text.trim(), tag };
 }

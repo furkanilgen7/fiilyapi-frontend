@@ -40,3 +40,32 @@ export function contractProgressWidth(pct: number): string {
   const clamped = Math.min(Math.max(pct, 0), 100);
   return `${clamped}%`;
 }
+
+/**
+ * `progress_pct === null` HÂLİNİN GEREKÇESİ KANITLI MI? (kapsam maskesi,
+ * kullanıcı kararı 2026-09-19)
+ *
+ * İki yüzey aynı soruyu sorar — sözleşme LİSTESİ (`ContractsTable`) ve E14
+ * "Hakediş Özeti" kartı (`ContractPaymentSummaryCard`) — bu yüzden kural TEK
+ * yerde yaşar. İki kopya olsaydı biri düzeltilip diğeri unutulduğunda aynı
+ * sözleşme iki ekranda farklı gerekçe basardı.
+ *
+ * `progress_pct` (`Gorunurluk.operasyonel`) `finance` kapsamında maskelenir ve
+ * `null` gelir. Aynı `null`, bedel yok/sıfırken de gelir
+ * (`progress_payments/summary.py`: payda `<= 0` ise `None`). Şema bu iki hâli
+ * AYIRMAZ — ama sözleşmenin KENDİ bedeli ayırt ettirir:
+ *
+ *   · bedel GÖRÜNÜR ve `<= 0`  → "bedel girilmemiş" gerekçesi KANITLI,
+ *   · bedel GÖRÜNÜR ve `> 0`   → gerekçe YANLIŞ olurdu (bedel var!),
+ *   · bedel `null`             → bedelin KENDİSİ maskeli (`Gorunurluk.para`,
+ *     `limited` kapsam) — "bedel yok" değil "bedeli göremiyorsun" demektir,
+ *     dolayısıyla yine kanıtsızdır.
+ *
+ * Kanıtsız hâlde gerekçe BASILMAZ (`placeholder-cell.ts` 3. hâli): uydurma bir
+ * sebep, sessiz bir "—"den daha kötüdür.
+ */
+export function isProvenZeroAmount(amount: string | null | undefined): boolean {
+  if (amount === null || amount === undefined) return false;
+  const value = Number(amount);
+  return Number.isFinite(value) && value <= 0;
+}

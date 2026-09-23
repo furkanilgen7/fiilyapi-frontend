@@ -72,4 +72,10 @@ describe("isSafeInternalPath", () => {
     expect(isSafeInternalPath(null)).toBe(false);
     expect(isSafeInternalPath("")).toBe(false);
   });
+
+  it("rejects paths with control characters that browsers strip during URL parsing", () => {
+    expect(isSafeInternalPath("/\t/evil.com")).toBe(false);
+    expect(isSafeInternalPath("/\n/evil.com")).toBe(false);
+    expect(isSafeInternalPath("/\r/evil.com")).toBe(false);
+  });
 });

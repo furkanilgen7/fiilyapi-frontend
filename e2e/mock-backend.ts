@@ -323,6 +323,16 @@ const SITE_DIARY_ENTRY_CREATE_SCHEMA = loadBodySchema("SiteDiaryEntryCreate");
 const SITE_DIARY_ENTRY_UPDATE_SCHEMA = loadBodySchema("SiteDiaryEntryUpdate");
 const SITE_PLAN_CELL_INPUT_SCHEMA = loadBodySchema("SitePlanCellInput");
 
+/* 🔴 SAT-IKIZ · AYNI KAPI, SATIN ALMA TALEBİ GÖVDESİ. `justification`
+ * `maxLength: 2000`, `priority` üç üyeli bir enum'dur (`PurchasePriority`);
+ * ikiz İKİSİNİ DE denetlemiyor, önceliği `as MockPurchaseRequest["priority"]`
+ * ile körlemesine duruma yazıyordu. Yani istemcinin korkuluğunu
+ * (`MAX_LENGTH.justification` · `purchase-request-validate.ts`) kaldıran bir
+ * mutasyon hiçbir kapıyı kırmazdı; canlıda FastAPI 422 verirdi. Kısıtlar elle
+ * yazılmaz, `openapi.json`dan okunur. */
+const PURCHASE_REQUEST_CREATE_SCHEMA = loadBodySchema("PurchaseRequestCreate");
+const PURCHASE_REQUEST_UPDATE_SCHEMA = loadBodySchema("PurchaseRequestUpdate");
+
 /**
  * Enum daralt­ması — DARALTMA BİR SUSTURMA DEĞİL, BİR ÖLÇÜMDÜR: değer
  * `openapi.json`daki üye listesine karşı ÇALIŞMA ZAMANINDA sınanır, listede
@@ -1970,7 +1980,8 @@ function subcontractorCumulativeGross(state: MockState, contractId: string): num
  * Bedel yok ya da `<= 0` ise `null` — sahte `%0` "veri yok"u "ilerleme yok"
  * diye gösterirdi (backend `progress_pct` sıfır/negatif paydada bölme YAPMAZ).
  */
-function contractProgressPct(cumulativeGross: number, amount: string): string | null {
+function contractProgressPct(cumulativeGross: number, amount: string | null): string | null {
+  if (amount === null) return null;
   const total = Number(amount);
   if (!Number.isFinite(total) || total <= 0) return null;
   return money2((cumulativeGross / total) * 100);
@@ -1991,7 +2002,10 @@ function buildContractsListResponse(
     title: string;
     contract_no: string | null;
     counterparty_name: string | null;
-    amount: string;
+    // 🔴 KAPSAM MASKESİ (2026-09-19): sözleşme bedeli `limited` rolde
+    //    maskelenir ve sunucu `null` döndürür — sahte backend de sözleşmeye
+    //    uymak ZORUNDADIR, yoksa e2e gerçekte olmayan bir tip vaat eder.
+    amount: string | null;
     start_date: string | null;
     end_date: string | null;
     progress_pct: string | null;
@@ -12017,6 +12031,8 @@ export function startMockBackend(port: number): { server: Server; close: () => P
 
     if (method === "POST" && path === "/purchase-requests") {
       return withBody((body) => {
+        const schemaViolation = bodySchemaViolation(PURCHASE_REQUEST_CREATE_SCHEMA, body);
+        if (schemaViolation !== null) return send(422, schemaViolation);
         const projectId = String(body.project_id ?? "");
         if (!state.projects.some((p) => p.id === projectId)) {
           return send(404, { detail: "Proje bulunamadı." });
@@ -12071,6 +12087,10 @@ export function startMockBackend(port: number): { server: Server; close: () => P
       if (method === "GET") return send(200, buildPurchaseRequestDetail(state, request));
       if (method === "PATCH") {
         return withBody((body) => {
+          // 🔴 Gövde doğrulaması durum kontrolünden ÖNCE gelir: FastAPI'de de
+          // Pydantic, uç gövdesi işleyiciye girmeden 422 verir (409 sonra).
+          const schemaViolation = bodySchemaViolation(PURCHASE_REQUEST_UPDATE_SCHEMA, body);
+          if (schemaViolation !== null) return send(422, schemaViolation);
           if (request.status !== "draft") {
             return send(409, { detail: "Yalnızca taslak talepler düzenlenebilir." });
           }
@@ -14584,6 +14604,7 @@ const INVOICE_FIXTURES: MockInvoice[] = [
     id: "inv-out-1",
     direction: "outgoing",
     invoice_no: "FIL2026000184",
+    slug: "FIL2026000184",
     document_type: "einvoice",
     status: "sent",
     issue_date: "2026-07-18",
@@ -14592,13 +14613,13 @@ const INVOICE_FIXTURES: MockInvoice[] = [
     party_tax_number: "9876543210",
     progress_payment_id: "pp-1",
     advance_rate: "20",
-    advance_amount: "984120.00",
+    advance_amount: "701712.00",
     retention_rate: "5",
-    retention_amount: "246030.00",
-    subtotal: "5432040.00",
-    tax_base: "4201890.00",
-    vat_amount: "840378.00",
-    total: "5042268.00",
+    retention_amount: "175428.00",
+    subtotal: "3508560.00",
+    tax_base: "2631420.00",
+    vat_amount: "526284.00",
+    total: "3157704.00",
     lines: [
       mockLine("li-1", 0, "Kat Döşemesi Betonu C25/30 (Poz 03.001)", "m³", "1320.000", "2113.00"),
       mockLine("li-2", 1, "Kolon Betonu C30/37 (Poz 03.002)", "m³", "300.000", "2398.00"),
@@ -14609,6 +14630,7 @@ const INVOICE_FIXTURES: MockInvoice[] = [
     id: "inv-out-2",
     direction: "outgoing",
     invoice_no: "FIL2026000183",
+    slug: "FIL2026000183",
     document_type: "einvoice",
     status: "collected",
     issue_date: "2026-07-15",
@@ -14626,6 +14648,7 @@ const INVOICE_FIXTURES: MockInvoice[] = [
     id: "inv-in-1",
     direction: "incoming",
     invoice_no: "LT2026070184",
+    slug: "LT2026070184",
     document_type: "einvoice",
     status: "pending",
     issue_date: "2026-07-16",
@@ -14651,6 +14674,7 @@ const INVOICE_FIXTURES: MockInvoice[] = [
     id: "inv-in-2",
     direction: "incoming",
     invoice_no: "DMS2026001122",
+    slug: "DMS2026001122",
     document_type: "einvoice",
     status: "pending",
     issue_date: "2026-07-15",
@@ -14687,6 +14711,7 @@ const INVOICE_FIXTURES: MockInvoice[] = [
     id: "inv-in-mut",
     direction: "incoming",
     invoice_no: "MUT2026000001",
+    slug: "MUT2026000001",
     document_type: "einvoice",
     status: "pending",
     issue_date: "2026-07-17",
@@ -14704,6 +14729,7 @@ const INVOICE_FIXTURES: MockInvoice[] = [
     id: "inv-out-old",
     direction: "outgoing",
     invoice_no: "FIL2026000150",
+    slug: "FIL2026000150",
     document_type: "earchive",
     status: "draft",
     issue_date: "2026-06-10", // 🔴 Temmuz penceresinin DIŞINDA
@@ -15129,6 +15155,7 @@ function buildMockInvoice(
     id: `inv-new-${seq}`,
     direction: "outgoing",
     invoice_no: `FIL20260002${String(seq).padStart(2, "0")}`,
+    slug: `FIL20260002${String(seq).padStart(2, "0")}`,
     document_type: (body.document_type as MockInvoice["document_type"]) ?? "einvoice",
     // Giden fatura `draft` doğar (K2); `status` gövdeden GELMEZ.
     status: "draft",

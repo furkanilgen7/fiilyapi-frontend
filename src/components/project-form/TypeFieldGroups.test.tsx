@@ -27,6 +27,13 @@ describe("InvestmentFields (F8, kendi_yatirim)", () => {
     await userEvent.type(screen.getByLabelText("Satış Hedefi (₺)"), "5");
     expect(onChange).toHaveBeenCalledWith("salesTarget", "5");
   });
+
+  it("🔴 KUSUR no 205: Satış Hedefi DEKORATİF olarak zorunlu işaretlenmez (validateInvestment zorunluluk uygulamaz)", () => {
+    render(
+      <InvestmentFields values={emptyInvestmentValues()} onChange={() => {}} />,
+    );
+    expect(screen.getByLabelText("Satış Hedefi (₺)")).not.toHaveAttribute("aria-required");
+  });
 });
 
 describe("LandShareFields (F8, kat_karsiligi)", () => {
@@ -64,5 +71,20 @@ describe("LandShareFields (F8, kat_karsiligi)", () => {
       screen.getByRole("button", { name: "Hissedar satırını sil" }),
     );
     expect(onChange).toHaveBeenCalledWith("shareholders", []);
+  });
+
+  it("🔴 KUSUR no 206: Günlük Ceza / Teminat hatalıyken input kırmızı kenarlık ALIR (status prop)", () => {
+    render(
+      <LandShareFields
+        values={emptyLandShareValues()}
+        onChange={() => {}}
+        errors={{
+          dailyPenalty: "Bu alan sayı olmalıdır.",
+          guaranteeAmount: "Bu alan sayı olmalıdır.",
+        }}
+      />,
+    );
+    expect(screen.getByLabelText("Günlük Ceza (₺/gün)")).toHaveClass("input--error");
+    expect(screen.getByLabelText("Teminat (₺)")).toHaveClass("input--error");
   });
 });

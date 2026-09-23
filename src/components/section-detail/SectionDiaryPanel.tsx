@@ -25,6 +25,12 @@ import { partitionSectionDiaryEntries } from "./section-diary";
  * 🔴 YÜKLEME/HATA dalları AYRI basılır (emsal: `SectionTimesheetPanel`,
  * `SectionBoqCard`). Veri yüklenmemişken boş listeyi basmak kullanıcıya
  * *"bu bölümde hiç günlük tutulmamış"* YALANINI söylerdi.
+ *
+ * 🔴 Kayıt 259 — KABUK (başlık + "Şantiye günlüğü →" çıkış bağlantısı) hata/
+ * yükleme dalında da KORUNUR; yalnız GÖVDE değişir. Eskiden bileşenin TAMAMI
+ * erken dönüyordu ve kullanıcı hata/yükleme sırasında hem başlığı hem çıkış
+ * bağlantısını kaybediyordu — kardeş panel `SectionStockPanel` bu ayrımı
+ * zaten yapıyordu (kabuk + `SectionStockBody`), burada hizalanır.
  */
 export interface SectionDiaryPanelProps {
   sectionId: string;
@@ -49,8 +55,45 @@ export function SectionDiaryPanel({
   isError,
   diaryHref,
 }: SectionDiaryPanelProps) {
+  return (
+    <section className="section-diary" data-testid="section-diary" aria-labelledby="section-diary-title">
+      <div className="section-diary__head">
+        <h2 className="section-diary__title" id="section-diary-title">
+          {sectionName} · Günlük Kayıtlar
+        </h2>
+        <Link className="section-diary__link" href={diaryHref}>
+          Şantiye günlüğü →
+        </Link>
+      </div>
+      <SectionDiaryBody
+        sectionId={sectionId}
+        sections={sections}
+        items={items}
+        isLoading={isLoading}
+        isError={isError}
+        diaryHref={diaryHref}
+      />
+    </section>
+  );
+}
+
+function SectionDiaryBody({
+  sectionId,
+  sections,
+  items,
+  isLoading,
+  isError,
+  diaryHref,
+}: Pick<
+  SectionDiaryPanelProps,
+  "sectionId" | "sections" | "items" | "isLoading" | "isError" | "diaryHref"
+>) {
   if (isError) {
-    return <p className="section-detail__message">Günlük kayıtlar yüklenemedi</p>;
+    return (
+      <p className="section-detail__message" data-testid="section-diary-error">
+        Günlük kayıtlar yüklenemedi
+      </p>
+    );
   }
   if (isLoading) {
     return <p className="section-detail__message">Yükleniyor…</p>;
@@ -65,16 +108,7 @@ export function SectionDiaryPanel({
   const excluded = partition.unassignedCount + partition.otherSectionCount;
 
   return (
-    <section className="section-diary" data-testid="section-diary" aria-labelledby="section-diary-title">
-      <div className="section-diary__head">
-        <h2 className="section-diary__title" id="section-diary-title">
-          {sectionName} · Günlük Kayıtlar
-        </h2>
-        <Link className="section-diary__link" href={diaryHref}>
-          Şantiye günlüğü →
-        </Link>
-      </div>
-
+    <>
       {rows.length === 0 ? (
         // 🔴 "Veri YOK" ≠ "modül bu bölüme KIRILMIYOR". Bağ AÇIK; eksik olan
         // kayıttır. `CardEmptyState` + `pendingModule` burada YANLIŞ bilgi olurdu.
@@ -111,6 +145,6 @@ export function SectionDiaryPanel({
           görünür
         </p>
       )}
-    </section>
+    </>
   );
 }

@@ -65,3 +65,22 @@ describe("siteQuotaOf", () => {
     ).toBe("44");
   });
 });
+
+describe("kapsam maskesi (2026-09-19)", () => {
+  it("🔴 metraj MASKELIYSE kota null doner — SAHTE sifir basilmaz", () => {
+    // `finance` kapsamindaki rol metraji goremez; alanlar `null` gelir.
+    // `sumDecimalStrings([null, null])` "0" dondurseydi ekran pozun kotasini
+    // SIFIR diye basar ve kullanici o sayiya dayanarak tahsis yapardi.
+    expect(siteQuotaOf({ allocated_quantity: null, unallocated_quantity: null })).toBeNull();
+    expect(siteQuotaOf({ allocated_quantity: "5", unallocated_quantity: null })).toBeNull();
+    expect(siteQuotaOf({ allocated_quantity: null, unallocated_quantity: "5" })).toBeNull();
+  });
+
+  it("🔴 POZITIF KONTROL — maskesiz hesap BOZULMAZ", () => {
+    expect(siteQuotaOf({ allocated_quantity: "5", unallocated_quantity: "7" })).toBe("12");
+  });
+
+  it("🔴 SIFIR maskeli DEGILDIR", () => {
+    expect(siteQuotaOf({ allocated_quantity: "0", unallocated_quantity: "0" })).toBe("0");
+  });
+});

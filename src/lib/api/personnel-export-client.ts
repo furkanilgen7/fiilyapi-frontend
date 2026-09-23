@@ -42,6 +42,10 @@ export function personnelExportSearchParams(
       : {}),
     ...(filter.isActive !== undefined ? { is_active: String(filter.isActive) } : {}),
     ...(filter.projectId !== undefined ? { project_id: filter.projectId } : {}),
+    // 🔴 EXPORT SINIFI (2026-09-23 ölçümü) — `isDraft` bu haritada YOKTU;
+    // ekranın kendisi listeyi `isDraft: false` ile çekerken export ucu bu
+    // süzgeci hiç almıyordu ⇒ Excel TASLAK personeli de indiriyordu.
+    ...(filter.isDraft !== undefined ? { is_draft: String(filter.isDraft) } : {}),
   };
 }
 

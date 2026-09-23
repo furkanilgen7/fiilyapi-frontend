@@ -85,7 +85,7 @@ export function StockEntryForm() {
     siteId: string;
   }>();
 
-  const permission = useModulePermission("stock");
+  const permission = useModulePermission("inventory");
   const siteQuery = useSite(siteKey, { project: projectKey });
   // 🔴 SLUG -> KANONIK KIMLIK. Burada AYRICA bir SESSIZ kusur kapaniyor:
   // `defaultWarehouseId(...)` asagida `warehouse.site_id` (UUID) ile
@@ -130,9 +130,18 @@ export function StockEntryForm() {
   useEffect(() => {
     if (seededRef.current) return;
     if (!warehouses) return;
+    // 🔴 YARIŞ — `siteId` AYRI bir sorgudan (`useSite`) gelir ve depo listesi
+    // önce dönerse o an henüz `""`dır. Kimlik gelmeden tohumlanmış SAYILIRSA
+    // hiçbir depo eşleşmez, `prefill` null kalır ve kimlik sonradan geldiğinde
+    // efekt erken döner: form varsayılan deposunu SESSİZCE kaybeder.
+    if (!siteId) return;
     seededRef.current = true;
     const prefill = defaultWarehouseId(warehouses, siteId);
-    if (prefill) setValues((prev) => ({ ...prev, warehouseId: prefill }));
+    // Kimlik beklenirken kullanıcı depo seçmiş olabilir: geç gelen tohum onun
+    // seçimini EZMEZ (yalnız DOKUNULMAMIŞ alan doldurulur).
+    if (prefill) {
+      setValues((prev) => (prev.warehouseId === "" ? { ...prev, warehouseId: prefill } : prev));
+    }
   }, [warehouses, siteId]);
 
   const shouldFocusRef = useRef(false);
@@ -170,20 +179,33 @@ export function StockEntryForm() {
   );
 
   // Sessiz boş açılır liste YASAK — her durum görünür bir cümleyle anlatılır.
+  //
+  // 🔴 M5_3 #326 — `sectionsQuery`/`boqQuery` `siteId` gelene kadar
+  // `enabled: false`dır; devre dışı sorguda `isFetching`/`isLoading` de
+  // `false`e döner. `!siteId` kontrolü OLMADAN bu dal atlanır ve sayfa
+  // açılışında (siteQuery hâlâ yüklenirken, `siteId === ""`) hiçbir bölüm
+  // olgusal olmadan "Bölüm tanımlı değil" notu basılırdı.
   const attributionNote = sectionsQuery.isError
     ? STOCK_ENTRY_SECTION_LOAD_ERROR
     : boqQuery.isError
       ? STOCK_ENTRY_BOQ_LOAD_ERROR
-      : sectionsQuery.isLoading || boqQuery.isLoading
+      : !siteId || sectionsQuery.isLoading || boqQuery.isLoading
         ? "Bölüm ve iş kalemi listeleri yükleniyor…"
         : sectionOptions.length === 0
           ? STOCK_ENTRY_NO_SECTION_NOTICE
           : null;
 
   // Sessiz boş açılır liste YASAK: her durum görünür bir cümleyle anlatılır.
+  //
+  // 🔴 M5_3 #325 — `defaultWarehouseId` `warehouse.site_id === siteId`
+  // eşleşmesi arar; `siteQuery` hâlâ yüklenirken `siteId === ""` olduğu için
+  // hiçbir depo eşleşmez ve depo listesi `warehousesQuery`den ÖNCE dolarsa
+  // kullanıcı gerçekte depo tanımlıyken geçici olarak "depo yok" notu görürdü.
   const warehouseNotice = warehousesQuery.isError
     ? STOCK_ENTRY_WAREHOUSE_LOAD_ERROR
-    : !warehousesQuery.isLoading && defaultWarehouseId(warehouseRows, siteId) === null
+    : !warehousesQuery.isLoading &&
+        !!siteId &&
+        defaultWarehouseId(warehouseRows, siteId) === null
       ? STOCK_ENTRY_NO_WAREHOUSE_NOTICE
       : null;
 
@@ -330,12 +352,8 @@ export function StockEntryForm() {
             itemsNote={itemsNote}
             sections={sectionOptions}
             boqItems={boqOptions}
-            attributionDisabled={
-              sectionsQuery.isLoading ||
-              sectionsQuery.isError ||
-              boqQuery.isLoading ||
-              boqQuery.isError
-            }
+            sectionAttributionDisabled={sectionsQuery.isLoading || sectionsQuery.isError}
+            boqAttributionDisabled={boqQuery.isLoading || boqQuery.isError}
             attributionNote={attributionNote}
             onAddLine={handleAddLine}
             onRemoveLine={handleRemoveLine}

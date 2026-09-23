@@ -22,22 +22,41 @@ export interface PersonnelKpis {
   /** Kirpilma varsa `null` (pending zarfi ekranin gorevi). */
   companyCount: number | null;
   subcontractorCount: number | null;
+  /**
+   * Kayıt 162 — `WorkerSource` beş değerlidir (`company`/`subcontractor`/
+   * `general`/`freelance`/`intern`); şirket+taşeron DIŞINDAKİ üç kaynak
+   * önceden hiçbir kartta sayılmıyordu (sessizce KAYBOLUYORDU). Bu üçü
+   * burada toplanır; kirpilmada aynı pending kuralına tabidir.
+   */
+  otherSourceCount: number | null;
 }
+
+const COMPANY_SUBCONTRACTOR_SOURCES = new Set(["company", "subcontractor"]);
 
 /**
  * KPI seridinin uc TUREV degeri: Toplam (sunucu `total`i) + Sirket/Taseron
  * sayilari (yuklenen `items`ten sayilir). Kirpilma korkuluğu: `items.length`
  * `total`den KUCUKSE (backend'in tavanina takilmis) sayim EKSIK kayittan
  * hesaplanacagi icin Sirket/Taseron pending'e duser.
+ *
+ * Kayıt 160 — `isClipped` OPSİYONEL 3. parametre olarak DIŞARIDAN da
+ * geçilebilir: `PersonnelListView` meslek süzgeciyle daralmış `items`
+ * (`filteredItems`) verirken "kırpılma" GERÇEK sunucu tavanını (serverItems
+ * vs serverTotal) anlatmalı, meslek süzgecinin kendisi kırpılma SAYILMAZ.
+ * Varsayılan (parametre verilmezse) ESKİ davranışla AYNIdır.
  */
-export function deriveKpis(items: readonly PersonnelDeriveItem[], total: number): PersonnelKpis {
-  const isClipped = total > items.length;
+export function deriveKpis(
+  items: readonly PersonnelDeriveItem[],
+  total: number,
+  isClipped: boolean = total > items.length,
+): PersonnelKpis {
   if (isClipped) {
-    return { total, isClipped, companyCount: null, subcontractorCount: null };
+    return { total, isClipped, companyCount: null, subcontractorCount: null, otherSourceCount: null };
   }
   const companyCount = items.filter((item) => item.source === "company").length;
   const subcontractorCount = items.filter((item) => item.source === "subcontractor").length;
-  return { total, isClipped, companyCount, subcontractorCount };
+  const otherSourceCount = items.filter((item) => !COMPANY_SUBCONTRACTOR_SOURCES.has(item.source)).length;
+  return { total, isClipped, companyCount, subcontractorCount, otherSourceCount };
 }
 
 /**

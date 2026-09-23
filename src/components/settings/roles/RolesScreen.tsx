@@ -15,6 +15,7 @@ import { CheckCircleIcon, CheckIcon, inlineSymbolProps } from "@/components/ui/i
 import { matchPreset } from "@/lib/api/permission-presets";
 import { roleModuleSummary } from "./role-summary";
 import { isForbidden } from "@/lib/api/unwrap";
+import { backendErrorMessage } from "@/lib/api/error-message";
 import { cx } from "@/lib/cx";
 import type { PermissionCell, RoleResponse } from "@/lib/api/models";
 import "./roles-screen.css";
@@ -25,7 +26,12 @@ const EMPH_MODULES = new Set(["settings", "user_management"]);
 // Modül anahtarı -> emoji (ref görsel eşleşme; backend ModuleResponse'ta emoji alanı yok).
 const MODULE_EMOJI: Record<string, string> = {
   dashboard: "🏠",
-  approvals: "✅",
+  // ⚠️ ONAYLI SAPMA — mockup `✅` (U+2705) çiziyor ama o kod noktası
+  // `fonts.css`in `u+1f??` aralığı DIŞINDA kalır ve CI runner'ının sistem
+  // yedek fontuna düşer (kare turdan tura oynar). `settings-nav-config.ts:35`
+  // ile aynı ikame: 👍 (U+1F44D). LİTERAL yazılır, kaçış dizisi DEĞİL —
+  // kaçış dizisi symbol-subset-guard'ı kör bırakır.
+  approvals: "👍",
   site_diary: "📝",
   timesheet: "👷",
   personnel: "👥",
@@ -38,6 +44,26 @@ const MODULE_EMOJI: Record<string, string> = {
   settings: "⚙️",
   user_management: "👤",
 };
+
+/**
+ * Kayıt 293 — `MODULE_EMOJI` yalnız 13 anahtar taşıyordu; backend
+ * `seed_data.py` 22 modül tohumluyor, eksik dokuzu (projects, sites,
+ * invoicing, boq, contracts, sales, documents, equipment, ai) sessizce
+ * ikonsuz basılıyordu. Haritada olmayan modül İCAT bir ikon almaz — nötr
+ * bir yer tutucu basar, satır ikonsuz kalmaz.
+ */
+// 🔴 SİMGE ALT KÜMESİ (F-SEM T3.2): yer tutucu, `symbol-subset-guard`ın
+// İZİN VERDİĞİ kümeden seçilir. İlk denemede 🔹 (U+1F539) yazılmıştı ve bekçi
+// onu YAKALADI — alt küme dışı bir kod noktası ubuntu-latest'te fontconfig
+// ikamesine düşer ve görsel kapıyı turdan tura oynatır. Yeni simge eklemek,
+// izin listesine "ölçüldü, kare oynamadı" gerekçesi yazmayı gerektirir; bu
+// ölçüm yapılmadığı için ZATEN İZİNLİ olan 📋 (liste/form, 15 yüzeyde kararlı)
+// kullanılıyor.
+const MODULE_EMOJI_FALLBACK = "📋";
+
+function moduleEmoji(key: string): string {
+  return MODULE_EMOJI[key] ?? MODULE_EMOJI_FALLBACK;
+}
 
 const USERS_PAGE_SIZE = 200;
 
@@ -57,6 +83,7 @@ export function RolesScreen() {
   >(null);
   const [isCopying, setIsCopying] = useState(false);
   const [copyError, setCopyError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   if (rolesQuery.isLoading || modulesQuery.isLoading) {
     return <p className="settings-note">Yükleniyor…</p>;
@@ -115,12 +142,14 @@ export function RolesScreen() {
   }
 
   function handleDeleteConfirm(id: string) {
+    setDeleteError(null);
     deleteRole.mutate(id, {
       onSuccess: () => {
         setModal(null);
         const remaining = roles.filter((r) => r.id !== id);
         setSelectedId(remaining[0]?.id ?? null);
       },
+      onError: (e) => setDeleteError(backendErrorMessage(e)),
     });
   }
 
@@ -185,7 +214,10 @@ export function RolesScreen() {
                   <button
                     type="button"
                     className="role-detail__action role-detail__action--danger"
-                    onClick={() => setModal({ type: "delete", id: selected.id, name: selected.name })}
+                    onClick={() => {
+                      setDeleteError(null);
+                      setModal({ type: "delete", id: selected.id, name: selected.name });
+                    }}
                   >
                     Sil
                   </button>
@@ -214,7 +246,7 @@ export function RolesScreen() {
               return (
                 <div key={m.id} className={cx("role-module-row", emph && "role-module-row--emph")}>
                   <span className="role-module-row__name">
-                    {MODULE_EMOJI[m.key] ?? ""} {m.name}
+                    {moduleEmoji(m.key)} {m.name}
                   </span>
                   <span className="role-module-row__badge">
                     {label}
@@ -245,8 +277,12 @@ export function RolesScreen() {
           confirmLabel="Sil"
           danger
           isPending={deleteRole.isPending}
+          errorText={deleteError}
           onConfirm={() => handleDeleteConfirm(modal.id)}
-          onClose={() => setModal(null)}
+          onClose={() => {
+            setDeleteError(null);
+            setModal(null);
+          }}
         />
       )}
     </div>

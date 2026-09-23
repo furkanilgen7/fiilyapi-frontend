@@ -109,7 +109,7 @@ describe("PersonnelListView — başlık, sekmeler, KPI", () => {
 
   it("liste HER ZAMAN açık limit tavanıyla istenir", () => {
     render(<PersonnelListView />);
-    expect(vi.mocked(usePersonnel).mock.calls[0][0]).toEqual({ limit: 200, offset: 0 });
+    expect(vi.mocked(usePersonnel).mock.calls[0][0]).toEqual({ limit: 200, offset: 0, isDraft: false });
   });
 
   it("KPI'ları TÜREV olarak basar: toplam/şirket/taşeron", () => {
@@ -208,13 +208,13 @@ describe("PersonnelListView — süzgeçler", () => {
 
     searchParams = new URLSearchParams({ q: "mehmet" });
     render(<PersonnelListView />);
-    expect(vi.mocked(usePersonnel).mock.calls.at(-1)?.[0]).toEqual({ limit: 200, offset: 0, q: "mehmet" });
+    expect(vi.mocked(usePersonnel).mock.calls.at(-1)?.[0]).toEqual({ limit: 200, offset: 0, isDraft: false, q: "mehmet" });
   });
 
   it("durum süzgeci SUNUCUYA is_active olarak gider", () => {
     searchParams = new URLSearchParams({ durum: "inactive" });
     render(<PersonnelListView />);
-    expect(vi.mocked(usePersonnel).mock.calls[0][0]).toEqual({ limit: 200, offset: 0, isActive: false });
+    expect(vi.mocked(usePersonnel).mock.calls[0][0]).toEqual({ limit: 200, offset: 0, isDraft: false, isActive: false });
   });
 
   it("proje süzgeci SUNUCUYA project_id olarak gider", () => {
@@ -223,6 +223,7 @@ describe("PersonnelListView — süzgeçler", () => {
     expect(vi.mocked(usePersonnel).mock.calls[0][0]).toEqual({
       limit: 200,
       offset: 0,
+      isDraft: false,
       projectId: "p-2",
     });
   });
@@ -251,7 +252,7 @@ describe("PersonnelListView — süzgeçler", () => {
   it("meslek süzgeci İSTEMCİDE uygulanır — sunucu sorgusuna gitmez", () => {
     searchParams = new URLSearchParams({ meslek: "Elektrikçi" });
     render(<PersonnelListView />);
-    expect(vi.mocked(usePersonnel).mock.calls[0][0]).toEqual({ limit: 200, offset: 0 });
+    expect(vi.mocked(usePersonnel).mock.calls[0][0]).toEqual({ limit: 200, offset: 0, isDraft: false });
     expect(screen.getByText("Ramazan Yıldız")).toBeInTheDocument();
     expect(screen.queryByText("Mehmet Kılıç")).not.toBeInTheDocument();
   });
@@ -261,6 +262,28 @@ describe("PersonnelListView — süzgeçler", () => {
     render(<PersonnelListView />);
     expect(screen.getByTestId("personel-truncation-notice")).toHaveTextContent("liste eksik");
     expect(screen.getByTestId("personel-kpi-company-pending")).toBeInTheDocument();
+  });
+
+  /**
+   * 🔴 Kayıt 160 — KPI şeridi önceden SÜZÜLMEMİŞ `serverItems`ten kuruluyordu;
+   * meslek süzgeci seçiliyken tablo (2 çalışan, 1 şirket + 1 taşeron dışı
+   * hesaba katmadan filtrelenmiş) süzülmüş kadroyu, KPI şeridi ise TÜM
+   * kadronun türetilmiş sayılarını (2 şirket) gösteriyordu — sunucu GERÇEKTEN
+   * kırpmadığı halde kartlar tutarsızdı. Meslek süzgeci bir "kırpılma"
+   * SAYILMAMALI (kart pending'e düşmemeli), sayı SADECE filtrelenmiş kümeyi
+   * yansıtmalı.
+   */
+  it("meslek süzgeci açıkken KPI şeridi TABLONUN GÖRDÜĞÜ (süzülmüş) kümeyi yansıtır", () => {
+    searchParams = new URLSearchParams({ meslek: "Kalıpçı" });
+    render(<PersonnelListView />);
+    // Yalnız per-1 (Mehmet Kılıç, source: company) kalır.
+    const strip = screen.getByTestId("personel-kpi-strip");
+    // Gerçek sunucu kırpması YOK — kart pending'e düşmemeli.
+    expect(screen.queryByTestId("personel-kpi-company-pending")).not.toBeInTheDocument();
+    expect(strip).toHaveTextContent("Toplam Personel");
+    // Şirket kadrosu artık süzülmüş kümeden (1), TÜM kadrodan (2) DEĞİL.
+    const companyCard = strip.querySelector(".personel-kpi__card--company");
+    expect(companyCard).toHaveTextContent("1");
   });
 });
 
@@ -290,18 +313,22 @@ describe("EXPORT-XLSX · Excel sorgusu = ekran sorgusu", () => {
     // Act
     fireEvent.click(screen.getByRole("button", { name: "Dışa Aktar" }));
 
-    // Assert — ekranın sunucuya gönderdiği süzgeç kümesiyle BİREBİR.
+    // Assert — ekranın sunucuya gönderdiği süzgeç kümesiyle BİREBİR
+    // (`isDraft: false` dahil — 🔴 EXPORT SINIFI, 2026-09-23 ölçümü: bu
+    // bekçinin kendi başlığı "Excel sorgusu = ekran sorgusu" derken önceden
+    // `is_draft` istisna bırakılmıştı, bekçi kendi kuralını ihlal ediyordu).
     await waitFor(() => {
       expect(stub.lastQuery()).toEqual({
         q: "mehmet",
         project_id: "p-2",
         is_active: "false",
+        is_draft: "false",
       });
     });
-    expect(screenFilter).toMatchObject({ q: "mehmet", projectId: "p-2", isActive: false });
+    expect(screenFilter).toMatchObject({ q: "mehmet", projectId: "p-2", isActive: false, isDraft: false });
   });
 
-  it("süzgeçsiz ekranda indirme de süzgeçsizdir", async () => {
+  it("süzgeçsiz ekranda indirme diger sunucu süzgeçlerinden serbesttir (isDraft HARIÇ)", async () => {
     // Arrange
     const stub = stubExportDownload();
     render(<PersonnelListView />);
@@ -309,9 +336,11 @@ describe("EXPORT-XLSX · Excel sorgusu = ekran sorgusu", () => {
     // Act
     fireEvent.click(screen.getByRole("button", { name: "Dışa Aktar" }));
 
-    // Assert
+    // Assert — 🔴 EXPORT SINIFI (2026-09-23): liste sorgusu `isDraft: false`i
+    // AÇIKÇA taşır (satır 104-109); export de AYNI süzgeci taşımalı, aksi
+    // halde Excel TASLAK personeli de indirir.
     await waitFor(() => {
-      expect(stub.lastQuery()).toEqual({});
+      expect(stub.lastQuery()).toEqual({ is_draft: "false" });
     });
   });
 

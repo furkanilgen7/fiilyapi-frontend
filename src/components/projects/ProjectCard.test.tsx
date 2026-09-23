@@ -287,7 +287,13 @@ describe("ProjectCard — dolu zarf `available` bayragina bakar", () => {
   });
 
   // Zarf dolu ama deger null gelirse (sozlesme disi yuk) pending gorunumu KALIR.
-  it("available=true fakat deger null ise pending gorunumune duser", () => {
+  //
+  // 🔴 İDDİA 2026-09-20'de DÜZELTİLDİ. Eskiden burada
+  // `getByTitle("İlgili modülle birlikte gelir")` vardı ve test, ÖLÇÜLMÜŞ bir
+  // kusuru çivilemiş oluyordu: `pending_module: null` zarfın ÜÇÜNCÜ hâlidir
+  // ("rolün izni yok") ve o cümle O HÂLDE YALANDIR — modül vardır. Artık ipucu
+  // VERİLMEZ (`pendingModuleHint` → `undefined`); hücre "—" basar ve SUSAR.
+  it("available=true fakat deger null ise pending gorunumune duser (İPUCU VERMEDEN)", () => {
     render(
       <ProjectCard
         project={{
@@ -299,7 +305,14 @@ describe("ProjectCard — dolu zarf `available` bayragina bakar", () => {
         }}
       />,
     );
-    expect(screen.getByTitle("İlgili modülle birlikte gelir")).toHaveTextContent("—");
+    const bekleyen = document.querySelectorAll<HTMLElement>(".prj-kpi__value--pending");
+    expect(bekleyen.length).toBeGreaterThan(0);
+    for (const hucre of bekleyen) {
+      expect(hucre).toHaveTextContent("—");
+      // 3. hâlde ipucu YOK: `title` niteliği hiç basılmaz.
+      expect(hucre.hasAttribute("title")).toBe(false);
+    }
+    expect(screen.queryByTitle("İlgili modülle birlikte gelir")).not.toBeInTheDocument();
   });
 
   it("taahhutte marj cipi YOKTUR (mockup 186-189 iscilik/taseron satiri)", () => {

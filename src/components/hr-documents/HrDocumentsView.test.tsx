@@ -257,4 +257,25 @@ describe("HrDocumentsView — BT", () => {
     expect(within(strip).getAllByText("—")).toHaveLength(5);
     expect(screen.getByTestId("bt-summary-error")).toBeInTheDocument();
   });
+
+  // Kayıt 122 — HATA bandı önceden WARNING (turuncu) sınıfıyla basılıyordu.
+  it("özet HATASI danger paletiyle basılır, warning sınıfıyla DEĞİL (kayıt 122)", () => {
+    vi.mocked(useHrDocumentsSummary).mockReturnValue(
+      queryStub(undefined, { isError: true, error: new Error("boom") }),
+    );
+    render(<HrDocumentsView />);
+
+    const errorNote = screen.getByTestId("bt-summary-error");
+    expect(errorNote).toHaveClass("bt-filters__note--danger");
+  });
+
+  // Kayıt 123 — "Toplu Randevu" gerekçesi önceden yalnız `title`da duruyordu
+  // (klavye/ekran okuyucuyla erişilemez); F-BLG T3/G7 kanonuyla EKRANDA.
+  it("'Toplu Randevu' gerekçesi EKRANDA okunur, yalnız title'da SAKLANMAZ (kayıt 123)", () => {
+    render(<HrDocumentsView />);
+
+    const reason = screen.getByTestId("bt-appointment-reason");
+    expect(reason).toBeVisible();
+    expect(reason).toHaveTextContent(/randevu/i);
+  });
 });

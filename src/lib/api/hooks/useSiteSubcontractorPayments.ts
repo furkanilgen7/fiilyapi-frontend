@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
-import { partitionSitePayments } from "@/components/progress-payments/shared/site-payment-scope";
 import { buildListTruncation, type ListTruncation } from "@/lib/list-truncation";
+import { partitionSitePayments } from "@/lib/site-payment-scope";
 
 import {
   useSubcontractorProgressPayments,

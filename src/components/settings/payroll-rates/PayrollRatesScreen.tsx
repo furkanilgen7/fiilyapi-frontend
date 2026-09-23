@@ -22,7 +22,7 @@ import { usePayrollPeriods } from "@/lib/api/hooks/usePayroll";
 import { hasAtLeast } from "@/lib/auth/permissions";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { cx } from "@/lib/cx";
-import { sumDecimalStrings } from "@/lib/decimal";
+import { normalizeDecimalInput, sumDecimalStrings } from "@/lib/decimal";
 import { formatDecimal } from "@/lib/format";
 import {
   BRACKETS_CARD_TITLE,
@@ -707,7 +707,7 @@ const RATE_TOTAL_FORMAT = new Intl.NumberFormat("tr-TR", {
 
 function formatRate(value: string): string {
   const normalized = normalize(value);
-  if (normalized === "") return "—";
+  if (normalized === null) return "—";
   const numeric = Number(normalized);
   return Number.isFinite(numeric) ? RATE_TOTAL_FORMAT.format(numeric) : "—";
 }
@@ -765,10 +765,12 @@ function PairRow({
   const employer = draft[employerField];
   // 🔴 `Number(a) + Number(b)` YASAK (WORKFLOW §4 para kuralı): toplam
   // ondalık string aritmetiğiyle kurulur.
+  const employeeValue = normalize(employee);
+  const employerValue = normalize(employer);
   const total =
-    employee.trim() === "" || employer.trim() === ""
+    employeeValue === null || employerValue === null
       ? "—"
-      : formatRate(sumDecimalStrings([normalize(employee), normalize(employer)]));
+      : formatRate(sumDecimalStrings([employeeValue, employerValue]));
   return (
     <tr>
       <th scope="row">{label}</th>
@@ -835,7 +837,19 @@ function SingleRow({
   );
 }
 
-/** TR virgülünü noktaya çevirir; `sumDecimalStrings` nokta bekler. */
-function normalize(value: string): string {
-  return value.trim().replace(",", ".");
+/**
+ * TR virgülünü noktaya çevirir; `sumDecimalStrings` nokta bekler.
+ *
+ * 🔴 KANON AYRIŞTIRICIYI ÇAĞIRIR, özel kopya YOK: eski gövde
+ * (`value.trim().replace(",", ".")`) kapısızdı ve `String.replace` string
+ * desenle YALNIZ İLK virgülü çevirdiği için "1.234,56" → "1.234.56" ya da
+ * "1,2," → "1.2," gibi ÇİFT AYRAÇLI string'ler doğrudan
+ * `sumDecimalStrings`e sızıyordu: biri sessiz YANLIŞ toplam bastı
+ * ("1.234,56" + "20.500" → "21,734"), öteki `BigInt("12,0")` ile RENDER
+ * SIRASINDA fırlattı (hata sınırı yok → tüm ekran kaybedilir).
+ * Geçersiz/yarım girdi artık `null` döner; çağıran "toplam yok" (—) dalını
+ * seçer. Geçerli TR virgülü ("14,5") aynen çalışmaya devam eder.
+ */
+function normalize(value: string): string | null {
+  return normalizeDecimalInput(value);
 }

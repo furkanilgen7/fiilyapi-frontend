@@ -56,11 +56,11 @@ export interface SiteFanOutState {
   /** Şantiyeleri ÇEKİLEMEYEN projelerin adları — seçenekler EKSİK demektir. */
   failedProjectNames: string[];
   /**
-   * Proje listesi kırpılması. `GET /projects` `limit`/`offset` ALMAZ ve
-   * yanıtında `total` YOKTUR (şema teyidi: `ProjectListResponse` = `counts` +
-   * `items`) — yani bildirilmiş bir tavan yoktur ve korkuluk hiçbir zaman
-   * kırpılma İDDİA ETMEZ (`buildListTruncation` bilinmeyen `total`da sessiz
-   * kalır). Uç sayfalanırsa bu alan kendiliğinden konuşmaya başlar.
+   * Proje listesi kırpılması. `useProjects()` `PROJECT_LIST_MAX_LIMIT` (200)
+   * ile çağrılır; yanıttaki gerçek `total` bu tavanı aşarsa (`>200` proje)
+   * `buildListTruncation` `isTruncated: true` döner ve çağıran görünür bant
+   * basmak ZORUNDADIR (KAYIT 360 — önceden `total` yerine sabit `undefined`
+   * geçiliyordu, korkuluk hiçbir zaman kırpılma iddia etmiyordu).
    */
   truncation: ListTruncation;
   isPartial: boolean;
@@ -101,7 +101,7 @@ export function useSiteFanOutOptions(): SiteFanOutState {
     .filter((_, index) => siteQueries[index]?.isError === true)
     .map((project) => project.name);
 
-  const truncation = buildListTruncation(projects.length, undefined);
+  const truncation = buildListTruncation(projects.length, projectsQuery.data?.total);
 
   return {
     options,

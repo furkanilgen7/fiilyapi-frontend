@@ -108,6 +108,16 @@
   padding: var(--space-4) var(--space-5); /* 97 — 16px 20px */
   border-bottom: 1px solid var(--color-border);
 }
+/*
+ * KAYIT 252: `.select-wrap` (select.css) `width: 100%` taşır — flex öğesi
+ * içinde `<Select>` şeridin TAMAMINI kaplıyor, başlık + "Plan Oluştur"
+ * düğmesi ikinci satıra taşıyordu (mockup'ta select otomatik genişliktedir).
+ * `select.css` DEĞİŞTİRİLMEDİ — genişlik burada, ÇAĞIRAN kapsamında geri alınır.
+ */
+.sf-plan__head > .select-wrap {
+  flex: 0 0 auto;
+  width: auto;
+}
 .sf-plan__title {
   font-size: 14px; /* 98 */
   font-weight: var(--weight-semibold);

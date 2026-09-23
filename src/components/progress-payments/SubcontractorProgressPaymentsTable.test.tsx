@@ -56,6 +56,26 @@ describe("SubcontractorProgressPaymentsTable", () => {
     expect(screen.getByText("Henüz taşeron hakedişi oluşturulmadı")).toBeInTheDocument();
   });
 
+  // no 183 — ipucu `canWrite`e BAKMADAN sabit "+ Yeni Hakediş ile başlayın"
+  // basıyordu; salt-okunur kullanıcı ekranda olmayan bir düğmeyi tarif eden
+  // metin görüyordu. Emsal `ProgressPaymentsList::newActionLabel` deseni.
+  it("no 183 · newActionLabel verilmezse (salt-okunur) ipucu düğme VAAT ETMEZ", () => {
+    renderTable([]);
+    expect(screen.queryByText(/\+ Yeni Hakediş ile başlayın/)).not.toBeInTheDocument();
+  });
+
+  it("no 183 · newActionLabel verilince ipucu O metni kullanır", () => {
+    render(
+      <SubcontractorProgressPaymentsTable
+        isError={false}
+        isLoading={false}
+        data={{ items: [], total: 0, limit: 50, offset: 0 }}
+        newActionLabel="+ Yeni Hakediş"
+      />,
+    );
+    expect(screen.getByText("+ Yeni Hakediş ile başlayın")).toBeInTheDocument();
+  });
+
   it("8 kolon basligini birebir mockup siralamasiyla basar", () => {
     renderTable([BASE_ITEM]);
     const headers = screen.getAllByRole("columnheader").map((h) => h.textContent);
@@ -111,11 +131,25 @@ describe("SubcontractorProgressPaymentsTable", () => {
     expect(paidBadge).toHaveClass("badge--primary");
   });
 
-  it("uc zarif dusus alani (is kategorisi, KDV, ilerleme) yerinde pending gosterge ile basilir, sessizce atlanmaz", () => {
+  it("KDV ve ilerleme — semada YOK, pending gosterge ile basilir, sessizce atlanmaz", () => {
     renderTable([BASE_ITEM]);
-    expect(screen.getByTitle("İş kategorisi liste ucundan gelmiyor")).toBeInTheDocument();
     expect(screen.getByTitle("KDV liste ucundan gelmiyor (hakediş formunda hesaplanır)")).toBeInTheDocument();
     expect(screen.getByTitle("İlerleme liste ucundan gelmiyor (hakediş detayında gösterilir)")).toBeInTheDocument();
+  });
+
+  it("is kategorisi — SEMADA VAR (work_category), pending DEGIL dogrudan basilir (O5a-194)", () => {
+    // `SubcontractorProgressPaymentListItem.work_category: string | null`
+    // schema.d.ts'te GERÇEKTEN vardır (SiteSubcontractorPaymentsPanel kardeş
+    // bileşeni aynı alanı zaten basıyor) — bu tablo veriyi görmezden gelip
+    // yanlışlıkla "liste ucundan gelmiyor" pending göstergesi basıyordu.
+    renderTable([BASE_ITEM]);
+    expect(screen.getByText("Kaba İnşaat")).toBeInTheDocument();
+    expect(screen.queryByTitle("İş kategorisi liste ucundan gelmiyor")).not.toBeInTheDocument();
+  });
+
+  it("is kategorisi null ise tire basar (turetme yok, pending de basmaz)", () => {
+    renderTable([{ ...BASE_ITEM, work_category: null }]);
+    expect(screen.queryByTitle("İş kategorisi liste ucundan gelmiyor")).not.toBeInTheDocument();
   });
 
   it("donem null ise tire basar (turetme yok)", () => {

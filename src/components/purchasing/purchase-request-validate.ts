@@ -18,7 +18,6 @@
 
 import { normalizeDecimalInput } from "@/lib/decimal";
 
-import { purchaseApprovalThresholdLabel } from "./purchase-request-approval";
 import { MAX_LENGTH } from "./purchase-request-form-constants";
 import type {
   PurchaseRequestFormValues,
@@ -42,9 +41,14 @@ export const PURCHASE_REQUEST_MESSAGES = {
   unitPriceNegative: "Tahmini birim fiyat negatif olamaz.",
   // 🔴 NULL-EŞİK KANONU'nun kullanıcıya dönük yüzü: fiyat, ONAY EŞİĞİNİN
   // girdisidir — boş bırakılan bir fiyat büyük bir talebi "toplam 0"
-  // gösterirdi (backend `LINE_PRICE_REQUIRED` ile aynı gerekçe). Eşik metni
-  // BURAYA DA yazılmaz, tek kaynaktan TÜRETİLİR (spec K6).
-  unitPriceRequired: `Tahmini birim fiyat zorunludur — onay eşiği (${purchaseApprovalThresholdLabel()}) tahmini toplamdan hesaplanır.`,
+  // gösterirdi (backend `LINE_PRICE_REQUIRED` ile aynı gerekçe).
+  //
+  // 🔴 EŞİĞİN SAYISI BU MESAJA GİRMEZ: eşik sunucu ayarıdır
+  // (`GET /approvals/settings`) ve bu nesne MODÜL YÜKLENİRKEN kurulur — o anda
+  // okunabilecek bir eşik YOKTUR. Sabit bir "₺500K" yazmak, yönetici eşiği
+  // değiştirdiğinde kullanıcıya yanlış sayı göstermek demekti.
+  unitPriceRequired:
+    "Tahmini birim fiyat zorunludur — onay eşiği tahmini toplamdan hesaplanır.",
   freeTextNameTooLong: `Malzeme adı en fazla ${MAX_LENGTH.freeTextName} karakter olabilir.`,
   freeTextUnitTooLong: `Birim en fazla ${MAX_LENGTH.freeTextUnit} karakter olabilir.`,
   justificationTooLong: `Talep gerekçesi en fazla ${MAX_LENGTH.justification} karakter olabilir.`,
@@ -68,22 +72,35 @@ export interface PurchaseRequestFormErrors {
   lineErrors: Record<string, PurchaseRequestLineErrors>;
 }
 
-function validateQuantity(raw: string, mode: PurchaseRequestFormMode): string | undefined {
-  if (!raw.trim()) return mode === "submit" ? PURCHASE_REQUEST_MESSAGES.quantityRequired : undefined;
+function validateQuantity(
+  raw: string,
+  mode: PurchaseRequestFormMode,
+): string | undefined {
+  if (!raw.trim())
+    return mode === "submit"
+      ? PURCHASE_REQUEST_MESSAGES.quantityRequired
+      : undefined;
   const normalized = normalizeDecimalInput(raw);
   if (normalized === null) return PURCHASE_REQUEST_MESSAGES.quantityInvalid;
   // Şema `exclusiveMinimum: 0` — sıfır ve negatif HER ZAMAN reddedilir.
-  if (Number(normalized) <= 0) return PURCHASE_REQUEST_MESSAGES.quantityNotPositive;
+  if (Number(normalized) <= 0)
+    return PURCHASE_REQUEST_MESSAGES.quantityNotPositive;
   return undefined;
 }
 
-function validateUnitPrice(raw: string, mode: PurchaseRequestFormMode): string | undefined {
+function validateUnitPrice(
+  raw: string,
+  mode: PurchaseRequestFormMode,
+): string | undefined {
   if (!raw.trim()) {
-    return mode === "submit" ? PURCHASE_REQUEST_MESSAGES.unitPriceRequired : undefined;
+    return mode === "submit"
+      ? PURCHASE_REQUEST_MESSAGES.unitPriceRequired
+      : undefined;
   }
   const normalized = normalizeDecimalInput(raw);
   if (normalized === null) return PURCHASE_REQUEST_MESSAGES.unitPriceInvalid;
-  if (Number(normalized) < 0) return PURCHASE_REQUEST_MESSAGES.unitPriceNegative;
+  if (Number(normalized) < 0)
+    return PURCHASE_REQUEST_MESSAGES.unitPriceNegative;
   return undefined;
 }
 
@@ -128,7 +145,8 @@ export function validatePurchaseRequestForm(
 ): PurchaseRequestFormErrors {
   const errors: PurchaseRequestFormErrors = { lineErrors: {} };
 
-  if (!values.projectId) errors.projectId = PURCHASE_REQUEST_MESSAGES.projectRequired;
+  if (!values.projectId)
+    errors.projectId = PURCHASE_REQUEST_MESSAGES.projectRequired;
   if (values.justification.trim().length > MAX_LENGTH.justification) {
     errors.justification = PURCHASE_REQUEST_MESSAGES.justificationTooLong;
   }
@@ -141,17 +159,23 @@ export function validatePurchaseRequestForm(
 
   for (const line of values.lines) {
     const lineErrors = validateLine(line, mode);
-    if (Object.keys(lineErrors).length > 0) errors.lineErrors[line.key] = lineErrors;
+    if (Object.keys(lineErrors).length > 0)
+      errors.lineErrors[line.key] = lineErrors;
   }
 
   return errors;
 }
 
 /** İlk hata cümlesi — genel uyarı bandında gösterilir. */
-export function firstPurchaseRequestError(errors: PurchaseRequestFormErrors): string | null {
-  const top = [errors.projectId, errors.neededBy, errors.justification, errors.lines].find(
-    Boolean,
-  );
+export function firstPurchaseRequestError(
+  errors: PurchaseRequestFormErrors,
+): string | null {
+  const top = [
+    errors.projectId,
+    errors.neededBy,
+    errors.justification,
+    errors.lines,
+  ].find(Boolean);
   if (top) return top;
   for (const lineErrors of Object.values(errors.lineErrors)) {
     const message =
@@ -165,6 +189,8 @@ export function firstPurchaseRequestError(errors: PurchaseRequestFormErrors): st
   return null;
 }
 
-export function hasPurchaseRequestErrors(errors: PurchaseRequestFormErrors): boolean {
+export function hasPurchaseRequestErrors(
+  errors: PurchaseRequestFormErrors,
+): boolean {
   return firstPurchaseRequestError(errors) !== null;
 }

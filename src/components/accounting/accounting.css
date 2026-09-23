@@ -11,6 +11,11 @@
 .mu {
   animation: var(--anim-fade-up); /* E8:61 */
 }
+@media (prefers-reduced-motion: reduce) {
+  .mu {
+    animation: none;
+  }
+}
 
 .mu__eyebrow {
   font-size: var(--text-xs);
@@ -78,6 +83,11 @@
 }
 .mu-period__nav:hover {
   color: var(--color-primary);
+}
+.mu-period__nav:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
 }
 .mu-period__label {
   font-size: var(--text-body); /* E8:75 — 13/600 */

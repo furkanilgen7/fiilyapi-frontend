@@ -59,6 +59,13 @@ interface StripCase {
    * kendi sayfası silinir/yeniden adlandırılırsa test KIRMIZI olur.
    */
   readonly selfRoute?: string;
+  /**
+   * F-4 a11y hizalaması (`ProjectDetailTabs`): gerçek `tabpanel` taşımayan
+   * şeritler artık `role="tab"` DEĞİL, sıradan gezinme `<a>`sı (`link`)
+   * basar — aktif sekme `aria-current="page"` taşır, `aria-selected` değil.
+   * Varsayılan `"tab"`tır (eski/öteki şeritlerin bugünkü davranışı).
+   */
+  readonly role?: "tab" | "link";
 }
 
 const STRIPS: readonly StripCase[] = [
@@ -69,6 +76,7 @@ const STRIPS: readonly StripCase[] = [
   {
     name: "ProjectDetailTabs · taahhüt (proje detay şeridi)",
     expectedTabCount: 5,
+    role: "link",
     render: () => (
       <ProjectDetailTabs
         projectKey={PROJECT_SENTINEL}
@@ -82,6 +90,7 @@ const STRIPS: readonly StripCase[] = [
     // "Proje Özeti" EKLENİR (`/projeler/{id}/ozet`), "Paylaşım Tablosu" YOK.
     name: "ProjectDetailTabs · kendi yatırım (proje detay şeridi)",
     expectedTabCount: 6,
+    role: "link",
     render: () => (
       <ProjectDetailTabs
         projectKey={PROJECT_SENTINEL}
@@ -95,6 +104,7 @@ const STRIPS: readonly StripCase[] = [
     // İKİ sekme de EKLENİR (`/ozet` + `/paylasim`).
     name: "ProjectDetailTabs · kat karşılığı (proje detay şeridi)",
     expectedTabCount: 7,
+    role: "link",
     render: () => (
       <ProjectDetailTabs
         projectKey={PROJECT_SENTINEL}
@@ -224,13 +234,13 @@ describe("Sekme şeritleri — her sekme gerçek bir rotaya gider veya devre-dı
   describe.each(STRIPS)("$name", (strip) => {
     it("beklenen sayıda sekme basar (boş/vakumlu geçiş yasağı)", () => {
       render(strip.render());
-      expect(screen.getAllByRole("tab")).toHaveLength(strip.expectedTabCount);
+      expect(screen.getAllByRole(strip.role ?? "tab")).toHaveLength(strip.expectedTabCount);
       cleanup();
     });
 
     it("her sekme ya var olan bir rotaya bağlanır ya da devre-dışı işaretlidir", () => {
       render(strip.render());
-      const tabs = screen.getAllByRole("tab");
+      const tabs = screen.getAllByRole(strip.role ?? "tab");
       // Vakumlu geçişe karşı ikinci kilit: iddia hiç sekme yokken de koşmaz.
       expect(tabs.length).toBeGreaterThanOrEqual(strip.expectedTabCount);
 

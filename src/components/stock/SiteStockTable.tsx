@@ -1,7 +1,7 @@
 import { Badge, Button } from "@/components/ui";
 import { cx } from "@/lib/cx";
 import { formatQuantity } from "@/lib/format";
-import { pendingModuleLabel } from "@/lib/pending-modules";
+import { pendingModuleHint } from "@/lib/pending-modules";
 import type { SiteStockRow } from "@/lib/api/hooks/useSiteStock";
 
 import {
@@ -117,8 +117,8 @@ export function SiteStockTable({ rows, isLoading, isError }: SiteStockTableProps
             const action = siteStockRowAction(row.status);
             const need = monthlyNeedText(row.monthly_need);
             const section = sectionText(row.section);
-            const needReason = pendingModuleLabel(row.monthly_need.pending_module);
-            const sectionReason = pendingModuleLabel(row.section.pending_module);
+            const needReason = pendingModuleHint(row.monthly_need.pending_module);
+            const sectionReason = pendingModuleHint(row.section.pending_module);
             return (
               <tr
                 key={row.id}

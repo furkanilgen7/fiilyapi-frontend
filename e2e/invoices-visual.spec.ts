@@ -218,14 +218,14 @@ test("giden fatura detayi gorsel", async ({ page }) => {
   await expect(page.getByTestId("fat-match-table")).toHaveCount(0);
 
   await expect(page.getByRole("heading", { name: "FIL2026000184" })).toBeVisible();
-  await expect(page.getByTestId("fat-hero-total")).toHaveText("₺5.042.268");
+  await expect(page.getByTestId("fat-hero-total")).toHaveText("₺3.157.704");
   // 📅 `page.clock` KANITI: kalan gün 25.07 → 18.08 farkından türer.
   await expect(page.getByTestId("fat-hero-due")).toHaveText("Vade: 18.08.2026 (24 gün)");
   await expect(page.getByTestId("fat-party-buyer")).toContainText("Güneşkent Gayrimenkul A.Ş.");
-  await expect(page.getByTestId("fat-detail-total-row")).toContainText("5.042.268");
+  await expect(page.getByTestId("fat-detail-total-row")).toContainText("3.157.704");
   // K5 türev toplamları: "—" değil, sunucunun rakamı.
   await expect(page.getByTestId("fat-paid-total")).toHaveText("0");
-  await expect(page.getByTestId("fat-remaining")).toHaveText("5.042.268");
+  await expect(page.getByTestId("fat-remaining")).toHaveText("3.157.704");
   await expectNoLoadingText(page);
 
   await prepareFrame(page);

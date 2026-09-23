@@ -84,6 +84,12 @@ export function PersonnelDocumentsSummaryCard({
           <p className="pd-card__pending-text">Bu personele ait belge kaydı yok.</p>
         </div>
       ) : (
+        <>
+          {/* Kayıt 128 — indirme gerekçesi ekranda basılır, yalnız `title`da
+              saklanmaz (F-BLG T3/G7). */}
+          <p className="pd-card__note" data-testid="pd-download-reason">
+            {DOCUMENT_DOWNLOAD_PENDING_REASON}
+          </p>
         <div className="pd-doc-list">
           {documents.map((document) => (
             <div
@@ -117,6 +123,7 @@ export function PersonnelDocumentsSummaryCard({
             </div>
           ))}
         </div>
+        </>
       )}
     </section>
   );

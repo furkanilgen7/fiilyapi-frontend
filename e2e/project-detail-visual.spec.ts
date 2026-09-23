@@ -42,14 +42,14 @@ test("proje detay ekrani gorsel", async ({ page }) => {
   await expect(page.getByText("Yükleniyor…")).toHaveCount(0);
 
   // --- Sekme şeridinin ANLAM iddiaları (kadrajdan ÖNCE) -------------------
-  const tabs = page.getByRole("tablist", { name: "Proje detay sekmeleri" });
+  const tabs = page.getByRole("navigation", { name: "Proje detay sekmeleri" });
   await expect(tabs).toBeVisible();
 
   // 🔴 F-PRJKALEM · "İş Kalemleri" ARTIK CANLI: proje düzeyinde SÖZLEŞME POZU
   // vardır (`GET /projects/{id}/contract/items`) ve ekranı yazılıdır
   // (E14 `?tab=items`). Şantiye kartındaki çip ise ŞANTİYE BOQ'una gider —
   // farklı kümeler; ayrım `title`da anlatılır.
-  const workItemsTab = tabs.getByRole("tab", { name: "İş Kalemleri" });
+  const workItemsTab = tabs.getByRole("link", { name: "İş Kalemleri" });
   await expect(workItemsTab).toBeVisible();
   await expect(workItemsTab).not.toHaveAttribute("aria-disabled", /.*/);
   await expect(workItemsTab).toHaveAttribute("href", "/sozlesmeler/isveren/p-1?tab=items");
@@ -63,22 +63,22 @@ test("proje detay ekrani gorsel", async ({ page }) => {
 
   // Canlı sekmeler gerçek ekranlara gider; proje kimliği query string'de
   // taşınır ve param adları hedef ekranların BUGÜN okuduğu adlardır.
-  await expect(tabs.getByRole("tab", { name: "İşveren Hakediş" })).toHaveAttribute(
+  await expect(tabs.getByRole("link", { name: "İşveren Hakediş" })).toHaveAttribute(
     "href",
     "/hakedisler?project_id=p-1",
   );
-  await expect(tabs.getByRole("tab", { name: "Taşeron Hakediş" })).toHaveAttribute(
+  await expect(tabs.getByRole("link", { name: "Taşeron Hakediş" })).toHaveAttribute(
     "href",
     "/hakedisler/taseron?project_id=p-1",
   );
-  await expect(tabs.getByRole("tab", { name: "Belgeler" })).toHaveAttribute(
+  await expect(tabs.getByRole("link", { name: "Belgeler" })).toHaveAttribute(
     "href",
     "/belgeler?proje=p-1",
   );
   // Bu ekranın kendisi seçili sekmedir (şeridin aktif varyantı baseline'da).
-  await expect(tabs.getByRole("tab", { name: "Şantiyeler" })).toHaveAttribute(
-    "aria-selected",
-    "true",
+  await expect(tabs.getByRole("link", { name: "Şantiyeler" })).toHaveAttribute(
+    "aria-current",
+    "page",
   );
 
   // Kadraj hazırlığı (kaydırma sıfırlama + imleç parkı): `visual-scroll.ts`.

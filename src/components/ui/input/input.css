@@ -24,6 +24,11 @@
 .input-wrap--left .input { padding-left: var(--space-8); }
 .input-wrap--right .input { padding-right: var(--space-8); }
 .input-icon { position: absolute; display: inline-flex; color: var(--color-text-muted); pointer-events: none; }
+/* Yuva `React.ReactNode` kabul ediyor: dekoratif ikon icin pass-through
+   (tiklama input'a gecer) dogru davranis, ama yuvaya etkilesimli bir dugum
+   konursa (LoginForm sifre goster/gizle dugmesi) sessizce tiklanamaz hale
+   gelir. Etkilesimli cocuk hit-target olmali. Kutu/boya degismez. */
+.input-icon button { pointer-events: auto; }
 .input-icon--left { left: var(--space-3); }
 .input-icon--right { right: var(--space-3); }
 

@@ -32,6 +32,28 @@ export function invoiceDetailUrl(invoiceId: string): string {
   return `${INVOICES_URL}/${invoiceId}`;
 }
 
+/**
+ * FY:73 "KDV Farkı" ipucu — tutar İŞARETİNE göre değişmelidir (O5a-133):
+ * `vat_difference` NEGATİF olabilir (devreden KDV, dosya yorumundaki gibi)
+ * ve sıfıra KIRPILMAZ. Sabit "Ödenecek KDV" metni negatifken YALAN söyler —
+ * kullanıcı borcu olmadığı hâlde ödeyecek sanır.
+ */
+export function vatDifferenceHint(vatDifference: string): string {
+  return Number(vatDifference) < 0 ? "Devreden KDV" : "Ödenecek KDV";
+}
+
+/**
+ * Gelen fatura panelinin boş-durum metni SEKMEYE göre değişmelidir
+ * (O5a-130): "giden" sekmesindeyken `IncomingInvoicesTable` yalnız
+ * `status: pending` süzgeçli kayıtları görür (InvoicesView.tsx incomingQuery),
+ * ama "gelen" sekmesindeyken süzgeç KALKAR ve tüm gelen faturalar listelenir.
+ * Boş liste iki sekmede FARKLI anlama gelir — metin başlıkla (FY panel
+ * başlığı "Onay Bekleyen" ↔ "Gelen Faturalar") TUTARLI olmalı.
+ */
+export function incomingInvoicesEmptyMessage(tab: "giden" | "gelen"): string {
+  return tab === "giden" ? "Onay bekleyen gelen fatura yok." : "Gelen fatura yok.";
+}
+
 // --- Belge tipi (FK:136-139 KAPALI kümesi BİREBİR) -----------------------
 
 export const DOCUMENT_TYPE_LABELS: Record<InvoiceDocumentType, string> = {

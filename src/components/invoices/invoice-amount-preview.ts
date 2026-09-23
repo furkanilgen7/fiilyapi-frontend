@@ -227,7 +227,16 @@ export function computeAmountPreview(input: AmountPreviewInput): AmountPreviewRe
     const quantity = parseScaled(line.quantity);
     const unitPrice = parseScaled(line.unitPrice);
     const vatRate = parseScaled(line.vatRate);
-    if (quantity === null || unitPrice === null || vatRate === null || vatRate.value < 0n) {
+    // no 135 · üst sınır (100) `invoice-line-math.ts` ve backend
+    // `schemas.py::_VAT_RATE` ile SİMETRİKTİR — yalnız negatiflik elenirse
+    // asimetri doğar (kesinti oranlarında `parseRate` bu tavanı ZATEN uygular).
+    if (
+      quantity === null ||
+      unitPrice === null ||
+      vatRate === null ||
+      vatRate.value < 0n ||
+      vatRate.value > pow10(vatRate.scale) * YUZ
+    ) {
       unknownCount += 1;
       continue;
     }

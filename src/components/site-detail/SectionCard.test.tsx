@@ -135,7 +135,17 @@ describe("SectionCard — 4 metrik hepsi yer tutucu (spec §5.4, §7.1)", () => 
     renderCard();
     const dashes = screen.getAllByText("—");
     expect(dashes).toHaveLength(4);
-    dashes.forEach((el) => expect(el).toHaveAttribute("title"));
+    // 🔴 DÖRDÜN ÜÇÜ ipucu taşır, BİRİ TAŞIMAZ (2026-09-20). "Bölüm Bedeli"
+    //    hücresinin `null`u İKİ ANLAMLIDIR (girilmemiş · kapsam maskesi) ve
+    //    ekranın ayırt edecek bilgisi yoktur; uydurma gerekçe yerine susar.
+    //    Gerekçesi `SectionCard.tsx::BudgetMetricCell`de yazılı.
+    const [bedelHucresi, ipuclu] = [
+      dashes.filter((el) => el.classList.contains("section-card__metric-value--money")),
+      dashes.filter((el) => !el.classList.contains("section-card__metric-value--money")),
+    ];
+    expect(bedelHucresi).toHaveLength(1);
+    expect(bedelHucresi[0].hasAttribute("title")).toBe(false);
+    ipuclu.forEach((el) => expect(el).toHaveAttribute("title"));
   });
 
   it("gercek deger geldiginde yer tutucu yerine gercek deger basilir", () => {
@@ -155,7 +165,17 @@ describe("SectionCard — 4 metrik hepsi yer tutucu (spec §5.4, §7.1)", () => 
     });
     const dashes = screen.getAllByText("—");
     expect(dashes).toHaveLength(4);
-    dashes.forEach((el) => expect(el).toHaveAttribute("title"));
+    // 🔴 DÖRDÜN ÜÇÜ ipucu taşır, BİRİ TAŞIMAZ (2026-09-20). "Bölüm Bedeli"
+    //    hücresinin `null`u İKİ ANLAMLIDIR (girilmemiş · kapsam maskesi) ve
+    //    ekranın ayırt edecek bilgisi yoktur; uydurma gerekçe yerine susar.
+    //    Gerekçesi `SectionCard.tsx::BudgetMetricCell`de yazılı.
+    const [bedelHucresi, ipuclu] = [
+      dashes.filter((el) => el.classList.contains("section-card__metric-value--money")),
+      dashes.filter((el) => !el.classList.contains("section-card__metric-value--money")),
+    ];
+    expect(bedelHucresi).toHaveLength(1);
+    expect(bedelHucresi[0].hasAttribute("title")).toBe(false);
+    ipuclu.forEach((el) => expect(el).toHaveAttribute("title"));
   });
 });
 
@@ -306,12 +326,30 @@ describe("SectionCard — 'Bölüm Bedeli' kutusu İKİ değeri de gösterir (ü
     expect(screen.getByText("BOQ: ₺ 3,5M")).toBeInTheDocument();
   });
 
-  it("budget_amount null iken sahte sıfır basılmaz, BOQ satırı yine de görünür", () => {
+  // 🔴 İDDİA 2026-09-20'de DÜZELTİLDİ — eski hâli bir KUSURU çiviliyordu.
+  //
+  // Eskiden burada `getByTitle("Bölüm bedeli girilmemiş")` vardı. O cümle bir
+  // İDDİADIR ve ekranın onu kanıtlayacak bilgisi YOKTUR: `budget_amount` null
+  // gelmesinin İKİ sebebi var ve ikisi ayırt edilemez —
+  //   (1) gerçekten girilmemiş,
+  //   (2) KAPSAM MASKESİ düşürmüş (`sites = view/limited`, ör. şantiye şefi).
+  // `/auth/me` yükü kapsam TAŞIMAZ, yani ikinci hâl istemcide bilinemez.
+  //
+  // Deponun kanonu bu soruyu zaten yanıtlıyor: gerekçe ancak KANITLIYSA basılır
+  // (`contract-progress.ts::isProvenZeroAmount` emsali) ve `restricted()`
+  // hâlinde "—" basılıp SUSULUR. Burada da öyle yapılır.
+  it("budget_amount null iken sahte sıfır BASILMAZ ve UYDURMA GEREKÇE verilmez", () => {
     renderCard({
       budget_amount: null,
       budget: { available: true, value: "3520000.00", pending_module: null },
     });
-    expect(screen.getByTitle("Bölüm bedeli girilmemiş")).toHaveTextContent("—");
+    const bedel = document.querySelector<HTMLElement>(
+      ".section-card__metric-value--money.section-card__metric-value--pending",
+    );
+    expect(bedel).not.toBeNull();
+    expect(bedel).toHaveTextContent("—");
+    expect(bedel!.hasAttribute("title")).toBe(false);
+    expect(screen.queryByTitle("Bölüm bedeli girilmemiş")).not.toBeInTheDocument();
     expect(screen.getByText("BOQ: ₺ 3,5M")).toBeInTheDocument();
   });
 

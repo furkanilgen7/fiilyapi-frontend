@@ -401,3 +401,81 @@ describe("SIRA-B K3.2 — taslak VE sıra birlikte engelliyken TASLAK bandı bas
     expect(closeButton).not.toHaveAttribute("title", sequenceBlockedTitle(2026, 7));
   });
 });
+
+/**
+ * 🔴 GERİ-AÇ-HATA (kusur öbeği `eszamanli-ustyazma`, kayıt 140) — CANLI KUSUR.
+ *
+ * `handleReopen` catch'i `setActionError(...)` yazıyordu ama `actionError`ın
+ * TEK okuyucusu `confirmRow !== null` iken mount edilen
+ * `PeriodCloseConfirmModal.errorText`ti. Geri açma onay diyaloğu AÇMADIĞI
+ * için `confirmRow` null kalır ⇒ 409/403/500 sessizce yutulurdu: düğme
+ * `isBusy` bitince eski hâline dönüyor, satır "Kapalı" okumaya devam ediyor
+ * (başarısızlıkta invalidate da yok) ve kullanıcı "hiçbir şey olmadı" sanıyordu.
+ * 409'da ekranda gördüğü durum GERÇEĞİN TERSİDİR.
+ *
+ * K6'nın (tek gerçek kapı sunucudur) KAPATMA dalı test:291'de kanıtlı;
+ * bu ayna dal bekçisizdi.
+ *
+ * İkinci vaka yanlış onarımın korkuluğudur: bandı `confirmRow` kontrolü
+ * OLMADAN basmak kapatma hatasını modal + band olarak İKİ KEZ gösterirdi.
+ */
+describe("GERİ-AÇ-HATA — 'Geri Aç' başarısızlığı ekrana ÇIKAR", () => {
+  it("🔴 409 yutulmaz: sunucunun metni ekranda basılır", async () => {
+    setSession("admin");
+    reopenMutate.mockRejectedValueOnce(
+      new BackendError(409, { detail: "Dönem zaten açık." }),
+    );
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<PeriodClosingView />);
+
+    await user.click(screen.getByTestId("dkap-reopen-1"));
+
+    expect(reopenMutate).toHaveBeenCalledWith({ year: 2026, month: 1 });
+    expect(await screen.findByTestId("dkap-action-error")).toHaveTextContent(
+      "Dönem zaten açık.",
+    );
+  });
+
+  it("gövdesiz hata (502) düşüş metnini basar — 'hiçbir şey olmadı' hâli YOK", async () => {
+    setSession("admin");
+    reopenMutate.mockRejectedValueOnce(new BackendError(502, null));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<PeriodClosingView />);
+
+    await user.click(screen.getByTestId("dkap-reopen-1"));
+
+    expect(await screen.findByTestId("dkap-action-error")).toHaveTextContent(
+      "Dönem yeniden açılamadı.",
+    );
+  });
+
+  it("başarılı geri açmada band BASILMAZ", async () => {
+    setSession("admin");
+    reopenMutate.mockResolvedValueOnce({});
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<PeriodClosingView />);
+
+    await user.click(screen.getByTestId("dkap-reopen-1"));
+
+    expect(reopenMutate).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("dkap-action-error")).toBeNull();
+  });
+
+  it("KAPATMA hatası ÇİFT basılmaz: modal açıkken band görünmez", async () => {
+    setSession("admin");
+    closeMutate.mockRejectedValueOnce(
+      new BackendError(409, { detail: "Dönem zaten kapalı." }),
+    );
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<PeriodClosingView />);
+
+    await user.click(screen.getByTestId("dkap-close-8"));
+    await user.click(screen.getByTestId("dkap-confirm-ack"));
+    await user.click(screen.getByTestId("dkap-confirm-close"));
+
+    expect(await screen.findByTestId("dkap-confirm-error")).toHaveTextContent(
+      "Dönem zaten kapalı.",
+    );
+    expect(screen.queryByTestId("dkap-action-error")).toBeNull();
+  });
+});

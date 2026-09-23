@@ -153,9 +153,12 @@ test("'Fiyat Listesi' devre dışı + gerekçeli; '+ Satış Kaydı' forma gider
   await expect(page.getByTestId("satis-fiyat-listesi-notu")).toContainText("henüz tasarlanmadı");
 
   // 25 · T3'ün açacağı form rotası.
+  // 🔴 2026-09-23 (kayıt 236): birincil eylem artık PROJE BAĞLAMINI taşır —
+  // blok/ünite düğmeleri zaten taşıyordu, bu düğme ham `NEW_SALE_HREF`
+  // kullanıyordu ve kullanıcı forma proje seçilmemiş olarak düşüyordu.
   await expect(page.getByRole("link", { name: "+ Satış Kaydı" })).toHaveAttribute(
     "href",
-    "/satis/yeni",
+    "/satis/yeni?proje=p-1",
   );
 });
 

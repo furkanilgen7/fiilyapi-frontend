@@ -75,8 +75,22 @@ export function deriveRemainingCell(
     return { label: UNKNOWN_VALUE, tone: "unknown" };
   }
 
+  // KAYIT 149: `remaining` şemada `string | null`dır — `format.ts::maskeli`
+  // yalnız `null`/`undefined`i yakalar, boş dizeyi ya da sayıya çevrilemeyen
+  // bir dizeyi YAKALAMAZ. Bozuk sunucu verisinde ("" ya da "abc") bu satır
+  // `Number("")=0` → "0 gün" SESSİZCE basardı (`leaves-labels.ts`in "0
+  // BASILMAZ" kuralını çiğner) ya da `Number("abc")=NaN` → karşılaştırma
+  // HER ZAMAN `false` döner, hak aşımı GİZLENİRDİ. İkisi de burada "bilinmiyor"
+  // sayılır — `maskeli()` genişletilmedi: bu tip-güvensizliği yalnız BU
+  // ekranın özel sözleşmesidir (`string | null`), yaymak `format.ts`teki 20+
+  // başka çağıranı etkilerdi.
+  const remainingNumber = remaining === "" ? NaN : Number(remaining);
+  if (!Number.isFinite(remainingNumber)) {
+    return { label: UNKNOWN_VALUE, tone: "unknown" };
+  }
+
   const label = `${formatDays(remaining)} ${UNIT_DAYS}`;
-  return { label, tone: request.days > Number(remaining) ? "exceeded" : "ok" };
+  return { label, tone: request.days > remainingNumber ? "exceeded" : "ok" };
 }
 
 /**
@@ -198,7 +212,10 @@ export function usageCell(balance: LeaveBalanceResponse): UsageCell {
   if (balance.usage_pct === null) return { pct: null, text: NO_ENTITLEMENT_HINT };
   const pct = Math.min(Math.max(balance.usage_pct, 0), 100);
   if (hasCarryoverRisk(balance)) return { pct, text: CARRYOVER_RISK_LABEL };
-  return { pct, text: `${formatPercent(balance.usage_pct)} kullanıldı` };
+  // 🔴 KAYIT NO 147 — metin çubukla AYNI kırpılmış `pct`i kullanır. `usage_pct`
+  // 100'ü aşarsa (ör. 140) çubuk %100 dolu görünürken metin eskiden HAM
+  // değeri ("%140 kullanıldı") basardı — çubuk ile metin çelişirdi.
+  return { pct, text: `${formatPercent(pct)} kullanıldı` };
 }
 
 /* ═══ F-IZN T4 · form türetmeleri ═══════════════════════════════════════════

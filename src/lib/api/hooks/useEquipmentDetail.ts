@@ -9,13 +9,19 @@ import type { EquipmentResponse } from "./useEquipment";
 //
 // `GET /equipment/{equipment_id}` yanıtı liste ögesiyle AYNI şemadır
 // (`EquipmentResponse`) — ikinci bir takma ad türetilmez.
-export type EquipmentDetailResponse = EquipmentResponse;
+//
+// 🔴 KAYIT 448: bu tipin adı BİLEREK `EquipmentDetailResponse` DEĞİLDİR —
+// openapi'nin ÜRETTİĞİ `components["schemas"]["EquipmentDetailResponse"]`
+// (schema.d.ts) TAMAMEN FARKLI bir gövdedir (as_of/equipment/maintenance/
+// rental, bkz. `useEquipmentDetailScreen.ts`). Aynı adı burada da kullanmak
+// iki farklı şekli aynı isim altında gizlerdi.
+export type EquipmentEditResponse = EquipmentResponse;
 
 export const EQUIPMENT_DETAIL_QUERY_KEY = "equipment-detail";
 
 export function useEquipmentDetail(
   equipmentId: string,
-): UseQueryResult<EquipmentDetailResponse, Error> {
+): UseQueryResult<EquipmentEditResponse, Error> {
   return useQuery({
     enabled: equipmentId.length > 0,
     queryKey: [EQUIPMENT_DETAIL_QUERY_KEY, equipmentId],

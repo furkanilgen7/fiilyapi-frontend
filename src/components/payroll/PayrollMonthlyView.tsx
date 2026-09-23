@@ -241,6 +241,9 @@ export function PayrollMonthlyView() {
     setSelectedId(nextId);
     setActionMessage(null);
     setActionError(null);
+    // Dönem değişince önceki dönemin bantları YENİ döneme yapışmaz.
+    setMissingPriorCount(0);
+    setExportError(null);
   }
 
   /**
@@ -253,7 +256,9 @@ export function PayrollMonthlyView() {
   // 🔴 "Yüklendi" nöbetçisi TÜM bağımsız veri kaynakları çözüldüğünde basılır:
   // dönem listesi + (dönem varsa) detay. Erken basılırsa görsel spec
   // "Yükleniyor…" karesini baseline'a gömerdi.
-  const isLoaded = periodsQuery.data !== undefined && (hasNoPeriods || detail !== undefined);
+  const isLoaded =
+    (periodsQuery.data !== undefined || periodsQuery.isError) &&
+    (hasNoPeriods || detail !== undefined || detailQuery.isError);
 
   return (
     <div className="bor">
@@ -362,6 +367,15 @@ export function PayrollMonthlyView() {
             )}
             {hasComputedLines(detail) ? RECOMPUTE_LABEL : COMPUTE_LABEL}
           </Button>
+          {/* K11: gerekçe yalnız `title`da SAKLANMAZ, görünür de basılır
+              (PayrollTable/PayrollSgkView desenine hizalanmıştır). Şerit
+              sırası bekçisi (F-BORDONEM) yalnız gerekçesiz hâli sınar, bu
+              yüzden düğmeyle KARDEŞ olarak eklenir (DOM sırası bozulmaz). */}
+          {computeReason !== undefined && (
+            <span className="bor__button-reason" data-testid="bordro-compute-reason">
+              {computeReason}
+            </span>
+          )}
 
           {/* 🔴 BY:56 — `/pay` ucu (gerekçe `usePayrollMutations.ts`te). */}
           <Button

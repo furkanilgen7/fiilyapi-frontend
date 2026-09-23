@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button/Button";
 import { cx } from "@/lib/cx";
 import { formatDecimal, formatPeriod } from "@/lib/format";
 import type { TimesheetWeekSummary } from "@/lib/api/hooks/useTimesheet";
@@ -45,9 +46,10 @@ export function TimesheetMonthWeeks({
         {weeks.map((week) => {
           const isActive = week.iso_year === active.isoYear && week.iso_week === active.isoWeek;
           return (
-            <button
+            <Button
               key={`${week.iso_year}-${week.iso_week}`}
-              type="button"
+              variant="ghost"
+              size="sm"
               aria-current={isActive ? "true" : undefined}
               className={cx(
                 "ts-month-week",
@@ -66,7 +68,7 @@ export function TimesheetMonthWeeks({
               <span className="ts-month-week__value">
                 {week.has_entries ? `${formatDecimal(week.total_hours, 1)} sa` : "girilmedi"}
               </span>
-            </button>
+            </Button>
           );
         })}
       </div>

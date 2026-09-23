@@ -27,6 +27,8 @@ export const MESSAGES = {
   endBeforeStart: "Bitiş tarihi başlangıçtan önce olamaz.",
   pctOutOfRange: "Oran 0 ile 100 arasında olmalıdır.",
   negativeAmount: "Tutar negatif olamaz.",
+  /** Kardeş dilimin metni birebir (site-form/validate.ts:19) — uydurulmadı. */
+  notANumber: "Bu alan sayı olmalıdır.",
   escalationRequired: "Endeks tipi ve baz endeks değeri zorunludur.",
   siteNameRequired: "Şantiye adı zorunludur.",
   taxNumberFormat: "VKN 10 veya 11 haneli rakam olmalıdır.",
@@ -103,8 +105,8 @@ export function hasErrors(errors: ProjectFormErrors): boolean {
 /**
  * Arsa payı oranı: ZORUNLU, `0 < x < 100`. Boş bırakmak `0` göndermek demekti.
  */
-function landSharePctError(value: string): string | undefined {
-  if (!value.trim()) return MESSAGES.landSharePctRequired;
+function landSharePctError(value: string, isDraft: boolean): string | undefined {
+  if (!value.trim()) return isDraft ? undefined : MESSAGES.landSharePctRequired;
   const parsed = numberOrNull(value);
   if (
     parsed === null ||
@@ -141,12 +143,32 @@ function pctError(value: string): string | undefined {
 }
 
 /**
- * Para alanı: boş geçerli, negatif hata. Sayıya çevrilemeyen giriş için §4.10'da
- * (sözleşme bedeli dışında) mesaj yok — sunucu 422'si kullanıcıya iletilir.
+ * tr-TR binlik ayraçlı tam sayı ("12.480.000" · "6.420"). `Number()` ilkini
+ * NaN, ikincisini SONLU bir sayı (6,42) yapar — ikisi de kullanıcının
+ * listelerde gördüğü biçimdir (`src/lib/format.ts` LOCALE="tr-TR"), ikisi de
+ * onun yazdığı tutar DEĞİLDİR. Baştaki basamak 0 olamaz; "0.500" gerçek bir
+ * ondalıktır ve reddedilmez.
+ */
+const TR_GROUPED_AMOUNT = /^[1-9]\d{0,2}(\.\d{3})+$/;
+
+/**
+ * Para alanı: boş geçerli, sayıya çevrilemeyen veya tr-TR binlik ayraçlı giriş
+ * hata, negatif hata.
+ *
+ * 🔴 Kusur (proje-formu-tr-sayi-sessiz-sifir): bu kapı eskiden YALNIZ negatifi
+ * yakalıyordu. `form-state.ts` `numberOrZero()` çevrilemeyen bütçe kalemini
+ * SESSİZCE `0` yapar, sunucu `0`'ı geçerli sayar (`ProjectBudgetInput.* ge=0`)
+ * ve bütçe `ProjectUpdate`te TAŞINMADIĞI için sıfırlanan tutar hiçbir ekrandan
+ * düzeltilemez; Maliyet/Kâr ekranı kârı o kadar yüksek gösterir. Sunucu için
+ * `0` geçerli bir değer olduğundan tek doğru kapı İSTEMCİDEDİR.
  */
 function moneyError(value: string): string | undefined {
-  const parsed = numberOrNull(value);
-  if (parsed !== null && parsed < 0) return MESSAGES.negativeAmount;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  if (TR_GROUPED_AMOUNT.test(trimmed)) return MESSAGES.notANumber;
+  const parsed = numberOrNull(trimmed);
+  if (parsed === null) return MESSAGES.notANumber;
+  if (parsed < 0) return MESSAGES.negativeAmount;
   return undefined;
 }
 
@@ -229,10 +251,11 @@ function validateInvestment(values: InvestmentValues): TextErrors<InvestmentValu
 
 function validateLandShare(
   values: LandShareValues,
+  isDraft: boolean,
 ): TextErrors<Omit<LandShareValues, "shareholders">> {
   let errors: TextErrors<Omit<LandShareValues, "shareholders">> = {};
-  errors = assign(errors, "ourSharePct", landSharePctError(values.ourSharePct));
-  errors = assign(errors, "ownerSharePct", landSharePctError(values.ownerSharePct));
+  errors = assign(errors, "ourSharePct", landSharePctError(values.ourSharePct, isDraft));
+  errors = assign(errors, "ownerSharePct", landSharePctError(values.ownerSharePct, isDraft));
   errors = assign(errors, "dailyPenalty", moneyError(values.dailyPenalty));
   errors = assign(errors, "guaranteeAmount", moneyError(values.guaranteeAmount));
   if (
@@ -293,7 +316,7 @@ export function validateProjectForm(
         : {},
     landShare:
       values.projectType === "kat_karsiligi"
-        ? validateLandShare(values.landShare)
+        ? validateLandShare(values.landShare, isDraft)
         : {},
     // Yalnız ADI DOLU satırlar gövdeye girer (`form-state.ts`) — doğrulama da
     // aynı satırları hedefler, boş şablon satırı hata BASMAZ.

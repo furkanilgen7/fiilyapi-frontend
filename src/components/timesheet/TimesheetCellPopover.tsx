@@ -59,9 +59,10 @@ export function TimesheetCellPopover({
         <p className="ts-pop__hint">Çalışılmayan gün için sebep seçin.</p>
         <div className="ts-pop__codes" role="group" aria-label="Puantaj kodu">
           {TIMESHEET_CODES.map((meta) => (
-            <button
+            <Button
               key={meta.code}
-              type="button"
+              variant="ghost"
+              size="sm"
               aria-pressed={code === meta.code}
               aria-label={meta.label}
               className={cx(
@@ -73,7 +74,7 @@ export function TimesheetCellPopover({
               onClick={() => onSubmit(meta.code)}
             >
               {meta.letter}
-            </button>
+            </Button>
           ))}
         </div>
         <div className="ts-pop__actions">

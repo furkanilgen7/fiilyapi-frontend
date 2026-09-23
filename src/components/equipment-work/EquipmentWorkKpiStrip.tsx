@@ -6,7 +6,7 @@ import type {
 } from "@/lib/api/hooks/useEquipmentWorkSummary";
 
 import { EMPTY_VALUE, usageBarWidth } from "./usage-tone";
-import { MONTH_OVER_MONTH_MISSING_REASON } from "./work-labels";
+import { FUEL_KPI_SITE_FILTER_UNSUPPORTED_NOTE, MONTH_OVER_MONTH_MISSING_REASON } from "./work-labels";
 import "./equipment-work.css";
 
 export interface EquipmentWorkKpiStripProps {
@@ -15,6 +15,13 @@ export interface EquipmentWorkKpiStripProps {
   rows: WorkSummaryRow[] | undefined;
   /** Yakıt kartı AYRI uçtan (`/equipment/fuel-summary`) beslenir. */
   fuel: FuelSummaryResponse | undefined;
+  /**
+   * 🔴 O5b #105 — ekranın şantiye süzgeci açık mı. `/equipment/fuel-summary`
+   * bir `site_id` süzgeci ALMAZ, yani bu kart açıkken bile HER ZAMAN tüm
+   * şantiyelerin toplamıdır — diğer kartlarla tutarsızlığı GÖRÜNÜR kılmak
+   * için bir gerekçe basılır.
+   */
+  fuelSiteFiltered: boolean;
 }
 
 /** En çok arıza saati olan ekipmanın adı (88/98 alt satırı) — yoksa `null`. */
@@ -33,7 +40,12 @@ function topBreakdownName(rows: WorkSummaryRow[] | undefined): string | null {
  * hesaplanmaz (bir önceki ayı çekip fark uydurmak da UYDURMADIR) — kart
  * korunur, alt satır GÖRÜNÜR bir gerekçeye döner (sessiz düşüş yok).
  */
-export function EquipmentWorkKpiStrip({ totals, rows, fuel }: EquipmentWorkKpiStripProps) {
+export function EquipmentWorkKpiStrip({
+  totals,
+  rows,
+  fuel,
+  fuelSiteFiltered,
+}: EquipmentWorkKpiStripProps) {
   const usageWidth = totals ? usageBarWidth(totals.usage_pct_avg) : null;
   const worstName = topBreakdownName(rows);
 
@@ -103,6 +115,14 @@ export function EquipmentWorkKpiStrip({ totals, rows, fuel }: EquipmentWorkKpiSt
         <div className="makine-cal-kpi__hint">
           {fuel ? formatCurrency(fuel.total_amount) : EMPTY_VALUE}
         </div>
+        {fuelSiteFiltered && (
+          <div
+            className="makine-cal-kpi__hint makine-cal-kpi__hint--warning"
+            data-testid="makine-cal-kpi-fuel-unfiltered"
+          >
+            {FUEL_KPI_SITE_FILTER_UNSUPPORTED_NOTE}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -119,11 +119,14 @@ export function ProjectTimelineView() {
   return (
     <div className="tkv" data-testid="tkv">
       <div className="tkv__toolbar">
+        {/* KAYIT 218 — yıllık kipte ızgara sabit %100'dür ve kaydırılamaz;
+            butonlar tıklandığında sessizce hiçbir şey yapmazdı. */}
         <button
           type="button"
           className="tkv__nav-btn"
           aria-label="Izgarayı geriye kaydır"
           onClick={() => scrollGrid(-1)}
+          disabled={zoom === "yearly"}
         >
           ‹
         </button>
@@ -135,10 +138,16 @@ export function ProjectTimelineView() {
           className="tkv__nav-btn"
           aria-label="Izgarayı ileriye kaydır"
           onClick={() => scrollGrid(1)}
+          disabled={zoom === "yearly"}
         >
           ›
         </button>
-        <button type="button" className="tkv__today-btn" onClick={scrollToToday}>
+        <button
+          type="button"
+          className="tkv__today-btn"
+          onClick={scrollToToday}
+          disabled={zoom === "yearly"}
+        >
           Bugün
         </button>
 

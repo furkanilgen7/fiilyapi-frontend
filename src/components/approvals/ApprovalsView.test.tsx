@@ -315,6 +315,15 @@ describe("ApprovalsView — kart içeriği (mockup :118-148)", () => {
     expect(screen.getByTestId("ok-card-meta")).toHaveTextContent("20 Temmuz 2026 · Sercan Öztürk");
     expect(screen.getByTestId("ok-card-meta").textContent).not.toContain("(");
   });
+
+  it("🔴 KAYIT NO 24 — 21:00Z sonrası oluşan onay bir gün GERİDE görünmez (UTC→TR)", () => {
+    // 2026-07-20T21:30:00Z = 2026-07-21T00:30:00 Europe/Istanbul (UTC+3).
+    // `slice(0,10)` UTC gününü ("20 Temmuz") basardı; TR takvim günü 21'idir.
+    mockInbox({ items: [item({ created_at: "2026-07-20T21:30:00Z" })] });
+    mockSettings(THRESHOLD);
+    renderView();
+    expect(screen.getByTestId("ok-card-meta")).toHaveTextContent("21 Temmuz 2026 · Sercan Öztürk");
+  });
 });
 
 describe("ApprovalsView — ret diyaloğunun ZORUNLU gerekçe kapısı", () => {

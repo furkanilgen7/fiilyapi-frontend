@@ -45,6 +45,8 @@ describe("deriveKpis", () => {
       isClipped: false,
       companyCount: 2,
       subcontractorCount: 1,
+      // Kayıt 162 — "general" kaynağı şirket/taşeron DIŞINDADIR.
+      otherSourceCount: 1,
     });
   });
 
@@ -58,7 +60,23 @@ describe("deriveKpis", () => {
       isClipped: true,
       companyCount: null,
       subcontractorCount: null,
+      otherSourceCount: null,
     });
+  });
+
+  // Kayıt 162 — `WorkerSource` beş değerlidir; general/freelance/intern
+  // önceden HİÇBİR kartta sayılmıyordu (sessizce kayboluyordu).
+  it("company/subcontractor DISINDAKI kaynaklar (general/freelance/intern) otherSourceCount'a girer", () => {
+    const items = [
+      item({ id: "1", source: "company" }),
+      item({ id: "2", source: "general" }),
+      item({ id: "3", source: "freelance" }),
+      item({ id: "4", source: "intern" }),
+    ];
+
+    const kpis = deriveKpis(items, 4);
+
+    expect(kpis.otherSourceCount).toBe(3);
   });
 
   it("toplam HER ZAMAN sunucunun total'idir — kirpilmada bile GERCEK kalir", () => {

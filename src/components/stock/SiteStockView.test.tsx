@@ -76,11 +76,15 @@ function queryStub(
   } as unknown as ReturnType<typeof useSiteStock>;
 }
 
+// 🔴 İZİN ANAHTARI FİKSTÜRDE UYDURULMAZ — sunucunun stok modül anahtarı
+// `inventory`dir (`backend/app/modules/inventory/service.py` ·
+// `PERMISSION_MODULE`). `stock` yazan fikstür bilinmezlik kuralını tetikler ve
+// aşağıdaki yetki testini kör bırakır.
 beforeEach(() => {
   setSearchParams("");
   vi.clearAllMocks();
   vi.mocked(useSession).mockReturnValue({
-    me: { permissions: { stock: "full" } } as unknown as MeResponse,
+    me: { permissions: { inventory: "full" } } as unknown as MeResponse,
     isLoading: false,
   } as ReturnType<typeof useSession>);
   // 🔴 URL-3 — santiye yaniti artik ekranin KANONIK KIMLIK kaynagidir:
@@ -270,7 +274,7 @@ describe("SiteStockView — pending yüzeyler ve aksiyonlar", () => {
 describe("SiteStockView — yetki ve hata yolları", () => {
   it("izinsiz kullanıcı erişim reddi görür", () => {
     vi.mocked(useSession).mockReturnValue({
-      me: { permissions: { stock: "none" } } as unknown as MeResponse,
+      me: { permissions: { inventory: "none" } } as unknown as MeResponse,
       isLoading: false,
     } as ReturnType<typeof useSession>);
     render(<SiteStockView />);

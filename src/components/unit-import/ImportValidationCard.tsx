@@ -77,13 +77,18 @@ export function ImportValidationCard({
         {IMPORT_VALIDATION_CARD_TITLE}
       </h2>
 
-      {errorMessage && (
+      {/*
+       * 🔴 KUSUR no 384: `errorMessage` ve `validation === null` BAĞIMSIZ
+       * koşullardı — sunucu hatası geldiğinde (`runValidation` catch'i hem
+       * `setValidationError` hem `setValidation(null)` çağırır) İKİSİ BİRDEN
+       * basılıyordu: hata metni + "henüz doğrulanmadı" notu ÜST ÜSTE. Artık
+       * KARŞILIKLI DIŞLAYAN: hata varsa YALNIZ hata, yoksa boş/yükleniyor notu.
+       */}
+      {errorMessage ? (
         <p className="ei-inline-error" data-testid="excel-form-dogrulama-hata">
           {errorMessage}
         </p>
-      )}
-
-      {validation === null || outcome === null ? (
+      ) : validation === null || outcome === null ? (
         <p className="ei-notice" data-testid="excel-form-dogrulama-bos">
           {isLoading ? "Dosya doğrulanıyor…" : emptyNotice}
         </p>

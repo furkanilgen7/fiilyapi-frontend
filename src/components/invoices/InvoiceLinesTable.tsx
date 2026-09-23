@@ -121,7 +121,11 @@ export function InvoiceLinesTable({ invoice }: { invoice: InvoiceDetailResponse 
               <FootRow
                 colSpan={footSpan}
                 tone="danger"
-                label={`Avans Kesintisi (${formatPercent(invoice.advance_rate ?? 0)})`}
+                // no 134 · `advance_rate` `string | null`dır ama `advance_amount`
+                // ASLA null değildir (tutar DOLU, oran BİLİNMİYOR olabilir).
+                // `?? 0` gerçek oranı SIFIRA düşürüp yalan söylerdi;
+                // `formatPercent`in kendi maskeleme dalı ("—") kullanılır.
+                label={`Avans Kesintisi (${formatPercent(invoice.advance_rate)})`}
                 value={`– ${formatAmount(invoice.advance_amount)}`}
               />
             )}
@@ -129,7 +133,7 @@ export function InvoiceLinesTable({ invoice }: { invoice: InvoiceDetailResponse 
               <FootRow
                 colSpan={footSpan}
                 tone="danger"
-                label={`Teminat Kesintisi (${formatPercent(invoice.retention_rate ?? 0)})`}
+                label={`Teminat Kesintisi (${formatPercent(invoice.retention_rate)})`}
                 value={`– ${formatAmount(invoice.retention_amount)}`}
               />
             )}
@@ -147,7 +151,7 @@ export function InvoiceLinesTable({ invoice }: { invoice: InvoiceDetailResponse 
               <FootRow
                 colSpan={footSpan}
                 tone="danger"
-                label={`Tevkifat (${formatPercent(invoice.withholding_rate ?? 0)})`}
+                label={`Tevkifat (${formatPercent(invoice.withholding_rate)})`}
                 value={`– ${formatAmount(invoice.withholding_amount)}`}
               />
             )}

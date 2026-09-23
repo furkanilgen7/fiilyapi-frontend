@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { cx } from "@/lib/cx";
 import type { ProjectListItem } from "@/lib/api/hooks/useProjects";
 import { formatCompactCurrency, formatMonthYear, formatPercent } from "@/lib/format";
-import { pendingModuleLabel } from "@/lib/pending-modules";
+import { pendingModuleHint, pendingModuleLabel } from "@/lib/pending-modules";
 
 import { ShareBar } from "./ShareBar";
 import "./projects.css";
@@ -187,8 +187,11 @@ function MetricValue({
 }) {
   const value = realValue(metric);
   if (value !== null) {
+    // kalan-4 #262: `tone="profit"` isarete BAKMAZDI — negatif kar (zarar)
+    // ayni pozitif renkle (mor/turkuaz) basiliyordu. Negatifte danger'a don.
+    const effectiveTone = tone === "profit" && Number(value) < 0 ? "danger" : tone;
     return (
-      <span className={cx("prj-kpi__value", tone && `prj-kpi__value--${tone}`)}>
+      <span className={cx("prj-kpi__value", effectiveTone && `prj-kpi__value--${effectiveTone}`)}>
         {formatCompactCurrency(value)}
       </span>
     );
@@ -196,9 +199,47 @@ function MetricValue({
   return (
     <span
       className="prj-kpi__value prj-kpi__value--pending"
-      title={pendingModuleLabel(metric?.pending_module)}
+      title={pendingModuleHint(metric?.pending_module)}
     >
       —
+    </span>
+  );
+}
+
+/**
+ * "Arsa Maliyeti" hucresi (mockup 156).
+ *
+ * 🔴 `?? 0` KESTIRMESI KALDIRILDI. `LandShareCard.land_cost`
+ * `Gorunurluk.para` etiketlidir ve `limited` kapsamli rollerde — `projects`
+ * matris satirinda UC hucre `_LIM`dir — `null` gelir. `?? 0`,
+ * `formatCompactCurrency(0)` ile ekrana **"₺ 0"** basiyordu: kullanici
+ * gizlenmis bir tutari GERCEK bir sayi olarak okuyor ve arsanin bedava
+ * oldugunu saniyordu. Bu, gizlemekten daha kotudur.
+ *
+ * 🔴 SIFIR MASKELENMIS DEGILDIR ve dal bunu korur: alanin tanimsal gercegi
+ * "daima 0"dir (backend saklamaz, spec §3.3), yani gorunur `"0"` icin "₺ 0"
+ * DOGRU cevaptir ve basilmaya devam eder. Ayrimi `null` tasir.
+ *
+ * Ton da maskeyle birlikte duser: yesil `--success` bir OLUMLU iddiadir
+ * ("maliyet yok"); bilinmeyen bir tutarin uzerine boyanmaz. Komsu hucrelerin
+ * (`MetricValue` / `MarginChip`) bos hali hangi sinifi kullaniyorsa o kullanilir.
+ *
+ * 🔴 IPUCU (title) VERILMEZ: bu alan `MetricPlaceholder` zarfi DEGIL duz bir
+ * `Decimal | None`dir, yani `pending_module` tasimaz ve sebep OLCULEMEZ.
+ * `placeholder-cell.ts`in 3. hali burada da gecerlidir — uydurma gerekce
+ * yerine sessiz "—".
+ */
+function LandCostValue({ value }: { value: string | null | undefined }) {
+  if (value === null || value === undefined) {
+    return (
+      <span className="prj-kpi__value prj-kpi__value--pending" data-testid="prj-land-cost">
+        —
+      </span>
+    );
+  }
+  return (
+    <span className="prj-kpi__value prj-kpi__value--success" data-testid="prj-land-cost">
+      {formatCompactCurrency(value)}
     </span>
   );
 }
@@ -217,11 +258,13 @@ function MarginChip({ metric }: { metric: Metric | undefined }) {
         📈
       </span>
       {value !== null ? (
-        <span className="prj-card__margin">{`${formatPercent(value)} marj`}</span>
+        <span
+          className={cx("prj-card__margin", Number(value) < 0 && "prj-card__margin--negative")}
+        >{`${formatPercent(value)} marj`}</span>
       ) : (
         <span
           className="prj-card__margin prj-card__margin--pending"
-          title={pendingModuleLabel(metric?.pending_module)}
+          title={pendingModuleHint(metric?.pending_module)}
         >
           — marj
         </span>
@@ -300,10 +343,7 @@ function KatKarsiligiKpis({ project }: { project: Project }) {
         <MetricValue metric={landShare?.our_share_value} />
       </KpiCell>
       <KpiCell label="Arsa Maliyeti">
-        {/* Tipin tanimsal gercegi: backend land_share.land_cost hep 0 doner, yer tutucu degil (spec §7.3) */}
-        <span className="prj-kpi__value prj-kpi__value--success">
-          {formatCompactCurrency(landShare?.land_cost ?? 0)}
-        </span>
+        <LandCostValue value={landShare?.land_cost} />
       </KpiCell>
       <KpiCell label="İnşaat Maliyeti">
         <MetricValue metric={landShare?.construction_cost} tone="danger" />

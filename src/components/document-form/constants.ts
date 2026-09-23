@@ -26,9 +26,15 @@ export const EQUIPMENT_DOCUMENT_TEXT = {
   documentCountSuffix: "belge kayıtlı", // 81
   fileCard: "📎 Dosya", // 86
   file: "Dosya", // 86
-  fileAccept: ".pdf,image/*", // 88
+  // Kayıt 65 — backend beyaz listesi (`config.py::allowed_document_extensions`)
+  // yalnız pdf/jpg/jpeg/png/heic'i "belge veya fotoğraf" kapsamında kabul
+  // eder; `image/*` svg/gif/webp/bmp/tiff'i de SEÇTİRİYORDU ve bunlar
+  // sunucuda UZANTI otoritesiyle 422 alıyordu.
+  fileAccept: ".pdf,.jpg,.jpeg,.png,.heic", // 88
   dropTitle: "Belgeyi buraya sürükleyin veya tıklayın", // 90
-  dropHint: "PDF veya fotoğraf · Maks 20 MB", // 91
+  // Kayıt 83 — gerçek sunucu tavanı 50 MB'dır (`config.py::document_max_bytes`);
+  // mockup metni 20 MB yazıyordu, kullanıcı yanlış bilgilendiriliyordu.
+  dropHint: "PDF veya fotoğraf · Maks 50 MB", // 91
   infoCard: "📋 Belge Bilgileri", // 97
   type: "Belge Türü", // 100
   typePlaceholderOption: "Tür seçiniz...", // 102

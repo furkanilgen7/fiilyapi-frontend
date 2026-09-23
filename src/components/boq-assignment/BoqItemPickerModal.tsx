@@ -10,6 +10,7 @@ import { siteQuotaOf } from "@/lib/boq-quota";
 import type { BoqGroup, BoqItem } from "@/lib/api/hooks/useBoq";
 
 import { checkOvershoot } from "./allocation-merge";
+import { isQuantityMasked } from "./rows";
 import "./boq-assignment.css";
 
 /**
@@ -43,23 +44,40 @@ export const OTHER_SECTIONS_PRESERVED_NOTE =
  */
 export const DISTRIBUTION_COLUMN_REASON = "Bölüm bölüm dağılım listede taşınmıyor";
 
+/**
+ * 🔴 Metraj gizliyken seçicinin GÖRÜNÜR gerekçesi (2026-09-19 denetimi).
+ *
+ * Gerekçe `BoqAssignmentCard.MASKED_QUANTITY_REASON`dan AYRI bir cümledir ve
+ * bu bilinçlidir: kart "atama yapılamaz" der, seçici ise NEYİN okunamadığını
+ * söylemelidir — kullanıcı burada kota/kalan sütunlarına bakarak seçim yapar.
+ */
+export const MASKED_PICKER_REASON =
+  "Metraj alanları bu rolde gizli — kota ve kalan okunamadığı için poz seçilemez.";
+
 export interface PickerRow {
   readonly item: BoqItem;
   readonly groupName: string;
-  /** Bu bölümün SUNUCUDAKİ mevcut payı ("0" = pay yok). */
-  readonly sectionQuantity: string;
+  /**
+   * Bu bölümün SUNUCUDAKİ mevcut payı. `"0"` = pay yok, `null` = METRAJ GİZLİ
+   * (`rows.ts::AssignmentRow.sectionQuantity` ile AYNI üç hâl).
+   */
+  readonly sectionQuantity: string | null;
 }
 
 /** Süzgeçsiz şantiye BOQ yanıtını düz satır listesine indirger. */
 export function pickerRows(
   groups: readonly BoqGroup[],
-  sectionQuantities: ReadonlyMap<string, string>,
+  sectionQuantities: ReadonlyMap<string, string | null>,
 ): readonly PickerRow[] {
   return groups.flatMap((group) =>
     group.items.map((item) => ({
       item,
       groupName: group.name,
-      sectionQuantity: sectionQuantities.get(item.id) ?? "0",
+      // 🔴 `get(...) ?? "0"` YAZILAMAZ: maskeli payı (`null`) "payı yok" ile
+      //    aynı değere düşürürdü. `has()` ikisini ayırır (`rows.ts` aynı kural).
+      sectionQuantity: sectionQuantities.has(item.id)
+        ? (sectionQuantities.get(item.id) ?? null)
+        : "0",
     })),
   );
 }
@@ -76,8 +94,8 @@ export function matchesSearch(row: PickerRow, query: string): boolean {
 
 export interface BoqItemPickerModalProps {
   groups: readonly BoqGroup[];
-  /** itemId → bu bölümün sunucudaki payı. */
-  sectionQuantities: ReadonlyMap<string, string>;
+  /** itemId → bu bölümün sunucudaki payı (`null` = metraj gizli). */
+  sectionQuantities: ReadonlyMap<string, string | null>;
   /** itemId → kullanıcının bu oturumda girdiği taslak miktar. */
   draft: ReadonlyMap<string, string>;
   onApply: (picked: ReadonlyMap<string, string>) => void;
@@ -110,6 +128,10 @@ export function BoqItemPickerModal({
       sectionCurrentQuantity: row.sectionQuantity,
       nextQuantity: null,
     }).maxForSection;
+    // 🔴 Metraj gizliyken süzgeç KARAR VEREMEZ ve satırı DÜŞÜRMEZ. Düşürmek
+    //    "bu pozun kotası tükendi" diye ölçülmemiş bir şey söylemek olurdu;
+    //    satır görünür kalır, sayıları "—" basar ve kutusu kapalıdır.
+    if (max === null) return true;
     return !max.startsWith("-") && Number(max) > 0;
   });
 
@@ -136,6 +158,18 @@ export function BoqItemPickerModal({
     }).isOvershoot;
   });
 
+  /**
+   * 🔴 Metraj gizli bir satıra girilmiş miktar — kapıyı KAPATIR.
+   *
+   * Kutu zaten devre dışıdır, ama `entered` `draft`ten TOHUMLANIR: karttaki
+   * taslak maskeli bir satıra aitse değer buraya sızabilir. `checkOvershoot`
+   * o satırda `isOvershoot: false` döner (aşım BİLİNMİYOR, yok değil) — yani
+   * yalnız `overshootRows`a bakan bir kapı bu gövdeyi GEÇİRİRDİ.
+   */
+  const maskedEnteredRows = visible.filter(
+    (row) => isQuantityMasked(row) && entered.has(row.item.id),
+  );
+
   /** Geçersiz metin (harf, çift nokta…) — sessizce yok sayılmaz. */
   const invalidRows = [...entered.entries()].filter(
     ([, raw]) => raw.trim() !== "" && normalizeDecimalInput(raw) === null,
@@ -146,7 +180,8 @@ export function BoqItemPickerModal({
     return n !== null && Number(n) > 0;
   }).length;
 
-  const canApply = overshootRows.length === 0 && invalidRows.length === 0;
+  const canApply =
+    overshootRows.length === 0 && invalidRows.length === 0 && maskedEnteredRows.length === 0;
 
   function handleApply() {
     if (!canApply) return;
@@ -203,7 +238,11 @@ export function BoqItemPickerModal({
       </div>
 
       <p className="sf-boq-picker__note">{OTHER_SECTIONS_PRESERVED_NOTE}</p>
+      {visible.some(isQuantityMasked) && (
+        <p className="sf-boq-picker__note">{MASKED_PICKER_REASON}</p>
+      )}
 
+      <div className="sf-boq-picker__table-scroll">
       <table className="sf-boq-ptable">
         <caption className="sr-only">Şantiye kotasından seçilebilecek pozlar</caption>
         <thead>
@@ -231,12 +270,16 @@ export function BoqItemPickerModal({
             visible.map((row) => {
               const raw = entered.get(row.item.id) ?? "";
               const normalized = normalizeDecimalInput(raw);
+              // 🔴 GÖSTERİM YOLU — `maskesiz()` yok (kanon: `lib/masked.ts`).
+              //    Bu JSX her karede çalışır; maskeli metrajda atsaydı seçici
+              //    açılır açılmaz sayfayı çökertirdi.
               const check = checkOvershoot({
                 siteQuota: siteQuotaOf(row.item),
                 allocatedTotal: row.item.allocated_quantity,
                 sectionCurrentQuantity: row.sectionQuantity,
                 nextQuantity: normalized,
               });
+              const isMasked = isQuantityMasked(row);
               const isInvalid = raw.trim() !== "" && normalized === null;
               return (
                 <tr key={row.item.id} className={check.isOvershoot ? "sf-boq-ptable__row--over" : undefined}>
@@ -264,6 +307,10 @@ export function BoqItemPickerModal({
                       size="row"
                       inputMode="decimal"
                       value={raw}
+                      // Görülmeyen bir kotanın üstüne yazılamaz; satır görünür
+                      // kalır, kutu kapanır (kanon: sil değil, devre dışı bas).
+                      disabled={isMasked}
+                      title={isMasked ? MASKED_PICKER_REASON : undefined}
                       status={check.isOvershoot || isInvalid ? "error" : "default"}
                       aria-invalid={check.isOvershoot || isInvalid}
                       aria-label={`${row.item.code} için bu bölüme atanacak miktar`}
@@ -280,6 +327,7 @@ export function BoqItemPickerModal({
           )}
         </tbody>
       </table>
+      </div>
     </Modal>
   );
 }

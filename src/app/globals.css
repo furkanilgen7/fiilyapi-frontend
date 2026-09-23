@@ -36,7 +36,10 @@ body {
 
 body {
   font-family: var(--font-sans);
-  font-size: var(--text-base);
+  /* Kayıt 472 — gövde kanonu `--text-body` (13px)dir, 228 kullanımla tasarım
+     sisteminin kendi ölçeği. `--text-base` (1rem/16px) jenerik bir Tailwind
+     benzeri artıktı ve sınıfsız/gövdeden miras alan HER metni 16px basıyordu. */
+  font-size: var(--text-body);
   line-height: var(--leading-normal);
   background: var(--color-bg);
   color: var(--color-text);

@@ -134,3 +134,8 @@
   border-color: var(--color-danger-tint-border);
   color: var(--color-danger);
 }
+.sidebar-user__error {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--color-danger);
+}

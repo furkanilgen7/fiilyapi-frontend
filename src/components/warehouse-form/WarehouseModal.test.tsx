@@ -159,6 +159,26 @@ describe("WarehouseModal — 'stok girişine dön' onay kutusu (119-127)", () =>
     expect(push).not.toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
   });
+
+  // M5_1 kayıt #58: şantiye boşalınca eski niyet HAM STATE'te diriliyordu —
+  // görünen `checked` türevi kutuyu boş gösterse de `onSuccess`teki gerçek
+  // okuma ham `shouldReturnToEntry`i okuyordu.
+  it("şantiye boşaltılıp YENİDEN seçilirse eski 'dön' niyeti DİRİLMEZ", () => {
+    mutate.mockImplementation((_body, options) => options.onSuccess());
+    render(<WarehouseModal onClose={onClose} />);
+    fireEvent.change(screen.getByTestId("whf-name"), { target: { value: "D-1" } });
+    fireEvent.change(screen.getByTestId("whf-site"), { target: { value: SITE_ID } });
+    fireEvent.click(screen.getByTestId("whf-keep-flow"));
+
+    // Şantiye boşaltılır (ör. "MERKEZ DEPO" seçilir) — kutu görünmez/kapanır.
+    fireEvent.change(screen.getByTestId("whf-site"), { target: { value: "" } });
+    // Şantiye YENİDEN seçilir — kullanıcı kutuyu bir daha işaretlemedi.
+    fireEvent.change(screen.getByTestId("whf-site"), { target: { value: SITE_ID } });
+    submit();
+
+    expect(push).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
 });
 
 describe("WarehouseModal — fan-out eksikleri", () => {

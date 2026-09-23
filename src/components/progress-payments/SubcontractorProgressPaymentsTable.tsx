@@ -19,12 +19,21 @@ export interface SubcontractorProgressPaymentsTableProps {
   isError: boolean;
   isLoading: boolean;
   data?: SubcontractorProgressPaymentListResponse;
+  /**
+   * no 183 · `ProgressPaymentsList.tsx::newActionLabel` deseniyle AYNI: boş
+   * durum ipucundaki eylem metni. Çağıran kendi "+ Yeni Hakediş" düğmesiyle
+   * AYNI sabitten geçirir; `null` (varsayılan) = eylem HİÇ VAAT EDİLMEZ —
+   * salt-okunur kullanıcı, ekranda olmayan bir düğmeyi tarif eden metin
+   * GÖRMEZ.
+   */
+  newActionLabel?: string | null;
 }
 
 export function SubcontractorProgressPaymentsTable({
   isError,
   isLoading,
   data,
+  newActionLabel = null,
 }: SubcontractorProgressPaymentsTableProps) {
   if (isError) return <p className="thk-message">Taşeron hakedişleri yüklenemedi</p>;
   if (isLoading || !data) return <p className="thk-message">Yükleniyor…</p>;
@@ -32,7 +41,11 @@ export function SubcontractorProgressPaymentsTable({
     return (
       <section className="thk-empty">
         <p className="thk-empty__title">Henüz taşeron hakedişi oluşturulmadı</p>
-        <p className="thk-empty__hint">+ Yeni Hakediş ile başlayın</p>
+        <p className="thk-empty__hint">
+          {newActionLabel
+            ? `${newActionLabel} ile başlayın`
+            : "Yeni Hakediş ekranından oluşturulan kayıtlar burada listelenir"}
+        </p>
       </section>
     );
   }
@@ -78,15 +91,11 @@ function SubcontractorPaymentRow({ item }: { item: SubcontractorProgressPaymentL
         <Link href={href} className="thk-table__name-link" onClick={(event) => event.stopPropagation()}>
           {subcontractorName}
         </Link>
-        {/* Zarif düşüş 1/3: iş kategorisi — şemada YOK (brief §Zarif düşüş).
-            Mockup satır 141'de isim altında ikinci satır olarak durur; kolon
-            SİLİNMEZ, sessizce atlanmaz. */}
-        <div
-          className="thk-table__category thk-table__category--pending"
-          title={pendingModuleLabel("work_category")}
-        >
-          —<span className="sr-only">{pendingModuleLabel("work_category")}</span>
-        </div>
+        {/* İş kategorisi — `SubcontractorProgressPaymentListItem.work_category`
+            SEMADA VARDIR (O5a-194); SiteSubcontractorPaymentsPanel kardeş
+            bileşeniyle AYNI alan doğrudan basılır, TÜRETME/uydurma yok.
+            Mockup satır 141'de isim altında ikinci satır olarak durur. */}
+        <div className="thk-table__category">{item.work_category ?? "—"}</div>
       </td>
       <td className="thk-table__td thk-table__td--mono">#{item.sequence_no}</td>
       <td className="thk-table__td">

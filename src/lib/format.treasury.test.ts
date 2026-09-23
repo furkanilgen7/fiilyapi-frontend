@@ -29,6 +29,26 @@ describe("formatCurrencyTight — E9:114", () => {
   it("ondalık BASMAZ (E9:72/114 kuruş göstermiyor)", () => {
     expect(formatCurrencyTight("1016800.49")).toBe("₺1.016.800");
   });
+
+  it("KESER, YUVARLAMAZ — .50+ kuruş bir üst liraya SIÇRAMAZ (O5a-111/362)", () => {
+    // Intl.NumberFormat maximumFractionDigits:0 varsayılanı YARIM-YUKARI
+    // yuvarlar: 1.200.000,50 → "1.200.001" basardı — sunucudaki tutardan
+    // BÜYÜK, var olmayan bir kuruşu var gösterirdi. Form katmanı kuruşu
+    // ZORUNLU tutarken (financial-instrument-form.ts AMOUNT_MAX_FRACTION_DIGITS=2)
+    // ekran onu göstermeden ÜSTE yuvarlarsa tutar YALAN olur.
+    expect(formatCurrency("1200000.50")).toBe("₺ 1.200.000");
+    expect(formatCurrency("2840500.60")).toBe("₺ 2.840.500");
+    expect(formatCurrencyTight("1200000.50")).toBe("₺1.200.000");
+    expect(formatCurrencyTight("2840500.60")).toBe("₺2.840.500");
+  });
+
+  it("NEGATİF tutarda büyüklüğü ABARTMAZ (sıfıra doğru keser)", () => {
+    // KDV farkı gibi negatif tutarlar (devreden KDV) için de aynı ilke:
+    // -1.200.000,50 "-₺1.200.001" basılırsa borç/alacak OLDUĞUNDAN BÜYÜK
+    // görünür. Sıfıra doğru kesmek (trunc) büyüklüğü asla ABARTMAZ.
+    expect(formatCurrency("-1200000.50")).toBe("₺ -1.200.000");
+    expect(formatCurrencyTight("-1200000.50")).toBe("₺-1.200.000");
+  });
 });
 
 describe("formatCompactCurrencyTight — E9:103-104", () => {
@@ -81,10 +101,18 @@ describe("formatCompactCurrencyTight — E9:103-104", () => {
 
 describe("formatDayMonth — TB5 sınıfı UTC kayması bekçisi (E9:113)", () => {
   const originalTz = process.env.TZ;
-  // Her testten sonra geri alınır — TZ süreç genelindedir, sızarsa komşu
-  // dosyaların gün/ay testlerini sessizce bozardı.
+  // Her testten sonra geri alınır — TZ süreç genelindedir, sızarsa BU
+  // DOSYADA sonra gelen her tarih testi sessizce başka bir zemine oturur.
+  // (Ölçüldü, vitest 2.1.9 + forks/isolate: sızıntı dosya SINIRINI geçmiyor,
+  // her test dosyası taze bir process.env ile başlıyor — dosya İÇİ gerçek.)
   afterEach(() => {
-    process.env.TZ = originalTz;
+    // `process.env.TZ = undefined` Node'da değişkeni SİLMEZ, "undefined"
+    // STRING'ini yazar; süreç UTC'ye ve geçersiz bir IANA adına düşer.
+    if (originalTz === undefined) {
+      delete process.env.TZ;
+    } else {
+      process.env.TZ = originalTz;
+    }
   });
 
   it("TR saatinde 'due_date' aynen basılır", () => {
@@ -100,18 +128,36 @@ describe("formatDayMonth — TB5 sınıfı UTC kayması bekçisi (E9:113)", () =
     // Act
     const formatted = formatDayMonth("2026-07-19");
 
-    // Assert — tuzak gerçek (18), bizim biçimlendirici etkilenmiyor (19).
-    expect([18, 19]).toContain(utcParsedLocalDay);
+    // Assert — POZİTİF KONTROL: tuzak gerçekten canlı (18). `[18, 19]`
+    // kabulü, TZ ataması etkisiz kalsa da (19) yeşil geçerdi.
+    expect(utcParsedLocalDay).toBe(18);
     expect(formatted).toBe("19 Temmuz");
     expect(formatted).not.toContain("18");
   });
 
   it("UTC'nin DOĞUSUNDA (Kiritimati, +14) da gün KAYMAZ", () => {
     process.env.TZ = "Pacific/Kiritimati";
+    // POZİTİF KONTROL: +14 diliminde UTC gece yarısı ayrıştırması AYNI güne
+    // (19) düşer, yani gün numarası tuzağı kanıtlamaz — atamanın etkili
+    // olduğunu ofset kanıtlar (+14 sa = -840 dk).
+    expect(new Date("2026-07-19").getTimezoneOffset()).toBe(-840);
     expect(formatDayMonth("2026-07-19")).toBe("19 Temmuz");
     // Ay sınırı: ayın ilk günü bir önceki aya düşmemeli.
     expect(formatDayMonth("2026-08-01")).toBe("1 Ağustos");
     // Yıl sınırı.
     expect(formatDayMonth("2027-01-01")).toBe("1 Ocak");
+  });
+
+  it("afterEach süreç dilimini GERÇEKTEN geri alır — TZ sızmaz", () => {
+    // 🔴 Bekçinin bekçisi: bu test yukarıdaki iki TZ testinden SONRA koşar,
+    // yani `afterEach`in geri alma dalı zaten işlemiştir. `process.env.TZ`e
+    // `undefined` ATAMAK Node'da değişkeni silmez, "undefined" STRING'ini
+    // yazar; süreç UTC'ye ve geçersiz bir IANA adına düşer, sonraki her tarih
+    // testi sessizce başka bir zemine oturur (satır 84-85'in önlemeyi vaat
+    // ettiği sızıntı).
+    expect(process.env.TZ).toBe(originalTz);
+    expect(Intl.DateTimeFormat().resolvedOptions().timeZone).not.toBe(
+      "undefined",
+    );
   });
 });

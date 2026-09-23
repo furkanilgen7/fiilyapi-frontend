@@ -37,9 +37,13 @@ export function shiftPeriod(
  * TAŞIMAZ — bu yüzden şantiyenin BOQ'u ayrıca okunur (GK226'nın "Sözleşme:
  * 1.200 m³" alt satırı da aynı kaynaktan gelir).
  */
-export function boqQuantityById(boq: BoqListResponse | undefined): Record<string, string> {
+export function boqQuantityById(
+  boq: BoqListResponse | undefined,
+): Record<string, string | null> {
   if (!boq) return {};
-  const map: Record<string, string> = {};
+  // Maskeli metraj (`finance` kapsamı) `null` taşınır — "0" yazmak
+  // günlükte sahte bir kota gösterirdi.
+  const map: Record<string, string | null> = {};
   for (const group of boq.groups) {
     for (const item of group.items) {
       map[item.id] = item.quantity;

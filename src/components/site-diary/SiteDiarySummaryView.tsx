@@ -77,10 +77,11 @@ export function SiteDiarySummaryView() {
   const site = siteQuery.data;
   // YOL baglantisi ADRESTEKI anahtarlarla kurulur — kanonik UUID gecirilseydi
   // kullanicinin okunur adresi bir tikta UUID'ye geri duserdi.
-  const base = routes.projects.sites.detail({ projectId: projectKey, siteId: siteKey });
+  //
   // Sekme şeridi "Günlük Kayıt" sekmesini AKTİF gösterir: özet, o sekmenin bir
   // alt görünümüdür (mod anahtarı ikisini birbirine bağlar).
-  const entryHref = `${base}/gunluk-kayit`;
+  const siteParams = { projectId: projectKey, siteId: siteKey };
+  const entryHref = routes.projects.sites.diary(siteParams);
 
   const accrual = computeDiaryAccrual({
     employerItems: employerPaymentsQuery.data?.items ?? [],
@@ -115,8 +116,8 @@ export function SiteDiarySummaryView() {
       <DiaryModeSwitch
         active="summary"
         entryHref={entryHref}
-        planningHref={`${entryHref}/planlama`}
-        summaryHref={`${entryHref}/ozet`}
+        planningHref={routes.projects.sites.diaryPlanning(siteParams)}
+        summaryHref={routes.projects.sites.diarySummary(siteParams)}
       />
 
       {/* HÖ83-96 */}

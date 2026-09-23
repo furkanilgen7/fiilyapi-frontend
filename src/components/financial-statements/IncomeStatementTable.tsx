@@ -117,6 +117,16 @@ function IncomeSectionRows({
  * (`revenue` → 2 kalem, `expenses` → 4 kalem); ton/anlam kararı SIRAYA
  * (`sections[1]`) bağlanmaz — üçüncü bir bölüm eklenirse index kayar ve
  * yanlış bölüm gider gibi işlenirdi (`sectionTone` kanonu).
+ *
+ * 🔴 M5_1 kayıt #118 — `IncomeStatementSection.key` üretilen tipte DÜZ
+ * `string`dir (literal birleşim DEĞİL, `schema.d.ts`), yani bu sabitle
+ * karşılaştırma TİP SİSTEMİ tarafından bekçilenmiyor. Kaynak değer backend'de
+ * `app/modules/accounting/statement_map/income_statement_map.py`
+ * (`INCOME_STATEMENT_EXPENSE_SECTION = "expenses"`) — iki taraf da elle
+ * senkron tutulmalı. Anahtar SÜRÜKLENİRSE bu bekçilenmez ama sonucu
+ * KAZA DEĞİL SESSİZ DERECELENMEDİR: `showsShare` `false` kalır, oran sütunu
+ * o bölümde boş basılır ("—"), yanlış bir yüzde ASLA uydurulmaz (bkz. altta
+ * "tanınmayan bölüm anahtarı" testi).
  */
 const EXPENSE_SECTION_KEY = "expenses";
 

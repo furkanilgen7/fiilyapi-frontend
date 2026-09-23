@@ -105,18 +105,22 @@ describe("FinancialInstrumentCreate · gövde sözleşmesi", () => {
 
   it("🔴 `status` gövdeye GİRMEZ — yeni kayıt her zaman `portfolio` doğar", () => {
     expect(Object.keys(CREATE.properties!)).not.toContain("status");
-    expect(Object.keys(buildInstrumentCreateBody(EMPTY_INSTRUMENT_FORM))).not.toContain(
-      "status",
-    );
+    expect(
+      Object.keys(buildInstrumentCreateBody(EMPTY_INSTRUMENT_FORM)),
+    ).not.toContain("status");
   });
 
   it("uzunluk sınırları ekranın sabitleriyle AYNIDIR", () => {
     expect(CREATE.properties!.serial_no!.maxLength).toBe(SERIAL_NO_MAX_LENGTH);
-    expect(CREATE.properties!.drawer_name!.maxLength).toBe(DRAWER_NAME_MAX_LENGTH);
+    expect(CREATE.properties!.drawer_name!.maxLength).toBe(
+      DRAWER_NAME_MAX_LENGTH,
+    );
     expect(stringBranch(CREATE.properties!.description!).maxLength).toBe(
       DESCRIPTION_MAX_LENGTH,
     );
-    expect(stringBranch(CREATE.properties!.bank_name!).maxLength).toBe(BANK_NAME_MAX_LENGTH);
+    expect(stringBranch(CREATE.properties!.bank_name!).maxLength).toBe(
+      BANK_NAME_MAX_LENGTH,
+    );
   });
 
   it("🔴 DENETİM SAPMASI 1 · `bank_name` SERBEST METİNDİR, kapalı liste DEĞİL", () => {
@@ -135,20 +139,23 @@ describe("FinancialInstrumentCreate · gövde sözleşmesi", () => {
       (branch) => branch.type === "number",
     )!;
     expect(numeric.exclusiveMinimum).toBe(0);
-    const text = CREATE.properties!.amount!.anyOf!.find((branch) => branch.type === "string")!;
+    const text = CREATE.properties!.amount!.anyOf!.find(
+      (branch) => branch.type === "string",
+    )!;
     // Desen `\d{0,2}` ile kuruşu sınırlar — sabit ondan TÜRETİLİR.
     expect(text.pattern).toContain(`\\.\\d{0,${AMOUNT_MAX_FRACTION_DIGITS}}`);
   });
 
   it("tür ve yön KAPALI kümedir; segment seçenekleri kümenin TAMAMIDIR", () => {
     const kinds = OPENAPI.components.schemas.FinancialInstrumentKind!.enum!;
-    const directions = OPENAPI.components.schemas.FinancialInstrumentDirection!.enum!;
-    expect([...INSTRUMENT_KIND_OPTIONS.map((option) => option.value)].sort()).toEqual(
-      [...kinds].sort(),
-    );
-    expect([...INSTRUMENT_DIRECTION_OPTIONS.map((option) => option.value)].sort()).toEqual(
-      [...directions].sort(),
-    );
+    const directions =
+      OPENAPI.components.schemas.FinancialInstrumentDirection!.enum!;
+    expect(
+      [...INSTRUMENT_KIND_OPTIONS.map((option) => option.value)].sort(),
+    ).toEqual([...kinds].sort());
+    expect(
+      [...INSTRUMENT_DIRECTION_OPTIONS.map((option) => option.value)].sort(),
+    ).toEqual([...directions].sort());
     // 🔴 DÖRT bileşimin dördü de geçerlidir (FCE:41-45) — segment sayısı
     // 2×2'dir ve birleşik tek seçim YAPILMAZ.
     expect(kinds.length * directions.length).toBe(4);
@@ -176,17 +183,26 @@ describe("instrumentFormBlockReason · sınır DEĞERİ kabul, bir fazlası RED"
     ["drawerName", "drawer_name", DRAWER_NAME_MAX_LENGTH],
     ["description", "description", DESCRIPTION_MAX_LENGTH],
     ["bankName", "bank_name", BANK_NAME_MAX_LENGTH],
-  ] as const)("%s: şemanın maxLength'i kabul, bir fazlası RED", (field, schemaName, max) => {
-    const schema = stringBranch(CREATE.properties![schemaName]!);
-    // Sınır ŞEMADAN okunur — sabit tekrar edilmez.
-    expect(schema.maxLength).toBe(max);
-    expect(
-      instrumentFormBlockReason({ ...VALID, [field]: "x".repeat(schema.maxLength!) }),
-    ).toBeUndefined();
-    expect(
-      instrumentFormBlockReason({ ...VALID, [field]: "x".repeat(schema.maxLength! + 1) }),
-    ).toBeDefined();
-  });
+  ] as const)(
+    "%s: şemanın maxLength'i kabul, bir fazlası RED",
+    (field, schemaName, max) => {
+      const schema = stringBranch(CREATE.properties![schemaName]!);
+      // Sınır ŞEMADAN okunur — sabit tekrar edilmez.
+      expect(schema.maxLength).toBe(max);
+      expect(
+        instrumentFormBlockReason({
+          ...VALID,
+          [field]: "x".repeat(schema.maxLength!),
+        }),
+      ).toBeUndefined();
+      expect(
+        instrumentFormBlockReason({
+          ...VALID,
+          [field]: "x".repeat(schema.maxLength! + 1),
+        }),
+      ).toBeDefined();
+    },
+  );
 
   it("`amount` sıfır ve negatif REDDEDİLİR, en küçük kuruş KABUL edilir", () => {
     expect(amountError("0")).toBeDefined();
@@ -201,25 +217,75 @@ describe("instrumentFormBlockReason · sınır DEĞERİ kabul, bir fazlası RED"
 
   it("vade keşideden ÖNCEYSE gönderilemez; AYNI GÜN geçerlidir", () => {
     expect(
-      instrumentFormBlockReason({ ...VALID, issueDate: "2026-08-20", dueDate: "2026-08-10" }),
+      instrumentFormBlockReason({
+        ...VALID,
+        issueDate: "2026-08-20",
+        dueDate: "2026-08-10",
+      }),
     ).toBeDefined();
     expect(
-      instrumentFormBlockReason({ ...VALID, issueDate: "2026-08-20", dueDate: "2026-08-20" }),
+      instrumentFormBlockReason({
+        ...VALID,
+        issueDate: "2026-08-20",
+        dueDate: "2026-08-20",
+      }),
     ).toBeUndefined();
   });
 
-  it.each(["serialNo", "drawerName", "issueDate", "dueDate", "amountText"] as const)(
-    "%s BOŞ bırakılırsa gönderilemez (zorunlu alan)",
-    (field) => {
-      expect(instrumentFormBlockReason({ ...VALID, [field]: "" })).toBeDefined();
+  it.each([
+    "serialNo",
+    "drawerName",
+    "issueDate",
+    "dueDate",
+    "amountText",
+  ] as const)("%s BOŞ bırakılırsa gönderilemez (zorunlu alan)", (field) => {
+    expect(instrumentFormBlockReason({ ...VALID, [field]: "" })).toBeDefined();
+  });
+
+  /*
+   * 🔴 KÖR BEKÇİ DÜZELTMESİ: bu tablo tek sütunluydu ve gövde iddiası FORM
+   * alan adıyla kuruluyordu. Form adları camelCase (`projectId`), gövde
+   * anahtarları snake_case (`project_id`) — yani üç satırda iddia TOTOLOJİYDİ:
+   * gövdeye boş `project_id: ""` koyan bir mutasyon testi KIRMIZIYA
+   * ÇEVİRMEZDİ. Tablo artık gövde anahtarını da taşır ve gövde MUTE EDİLMİŞ
+   * formdan kurulur (iddia girdiye bağlanır).
+   */
+  it.each([
+    ["description", "description"],
+    ["bankName", "bank_name"],
+    ["projectId", "project_id"],
+    ["bankAccountId", "bank_account_id"],
+  ] as const)(
+    "%s BOŞ bırakılabilir (opsiyonel) ve gövdeye HİÇ girmez",
+    (formField, bodyKey) => {
+      expect(
+        instrumentFormBlockReason({ ...VALID, [formField]: "" }),
+      ).toBeUndefined();
+      expect(
+        Object.keys(buildInstrumentCreateBody({ ...VALID, [formField]: "" })),
+      ).not.toContain(bodyKey);
     },
   );
 
-  it.each(["description", "bankName", "projectId", "bankAccountId"] as const)(
-    "%s BOŞ bırakılabilir (opsiyonel) ve gövdeye HİÇ girmez",
-    (field) => {
-      expect(instrumentFormBlockReason({ ...VALID, [field]: "" })).toBeUndefined();
-      expect(Object.keys(buildInstrumentCreateBody(VALID))).not.toContain(field);
+  // POZİTİF KONTROL — yoksa yukarıdaki iddia "hiç var olmayan" bir anahtarı ölçer.
+  it.each([
+    ["description", "description", "Açıklama"],
+    ["bankName", "bank_name", "Ziraat"],
+    ["projectId", "project_id", "11111111-1111-4111-8111-111111111111"],
+    [
+      "bankAccountId",
+      "bank_account_id",
+      "22222222-2222-4222-8222-222222222222",
+    ],
+  ] as const)(
+    "%s DOLDURULDUĞUNDA gövdeye `%s` olarak girer",
+    (formField, bodyKey, value) => {
+      const body = buildInstrumentCreateBody({
+        ...VALID,
+        [formField]: value,
+      }) as Record<string, unknown>;
+      expect(Object.keys(body)).toContain(bodyKey);
+      expect(body[bodyKey]).toBe(value);
     },
   );
 });

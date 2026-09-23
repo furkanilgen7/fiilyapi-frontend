@@ -40,9 +40,9 @@ import { PersonnelTabsStrip } from "./PersonnelTabsStrip";
 import "./personnel-list.css";
 import { navGroupHeadingFor } from "@/components/shell/nav-config";
 import { routes } from "@/lib/routes";
+import { PROJECT_PARAM } from "@/lib/navigation-params";
 
 const QUERY_PARAM = "q";
-const PROJECT_PARAM = "proje";
 const TRADE_PARAM = "meslek";
 const STATUS_PARAM = "durum";
 const PAGE_SIZE = 6; // P 236 — mockup "1–6 gösteriliyor" ile birebir.
@@ -98,9 +98,13 @@ export function PersonnelListView() {
   };
 
   // Kırpılma korkuluğu (TB3/F-TH dersi): tavan AÇIKÇA gönderilir.
+  // Kayıt 101: `isDraft: false` de AÇIKÇA gönderilir — verilmezse backend
+  // süzgeci hiç uygulamaz ve "Taslak Kaydet" ile oluşturulan eksik personel
+  // kayıtları bu ana listeye/KPI şeridine karışır.
   const personnelQuery = usePersonnel({
     limit: PERSONNEL_MAX_LIMIT,
     offset: 0,
+    isDraft: false,
     ...serverFilters,
   });
 
@@ -116,7 +120,6 @@ export function PersonnelListView() {
 
   const serverItems = personnelQuery.data?.items;
   const serverTotal = personnelQuery.data?.total;
-  const kpis = serverItems && serverTotal !== undefined ? deriveKpis(serverItems, serverTotal) : undefined;
   const tradeOptions = serverItems ? deriveTradeOptions(serverItems) : [];
   const truncation = buildListTruncation(serverItems?.length ?? 0, serverTotal);
   const hasFilter =
@@ -141,6 +144,21 @@ export function PersonnelListView() {
   const filteredItems = serverItems ? filterByTrade(serverItems, trade) : undefined;
   const paged = filteredItems ? paginateClientSide(filteredItems, page, PAGE_SIZE) : undefined;
 
+  // Kayıt 160 — KPI şeridi önceden süzülmemiş `serverItems`ten kuruluyordu;
+  // meslek süzgeci seçiliyken tablo süzülmüş kadroyu, KPI şeridi süzülmemiş
+  // toplamı gösteriyordu (kullanıcı yanıltıcı tutarsızlık görüyordu). KPI
+  // artık tablonun GÖRDÜĞÜ AYNI kümeden (`filteredItems`) kurulur.
+  //
+  // "Kırpılma" GERÇEK sunucu tavanı anlamına gelmeli (`serverItems` vs
+  // `serverTotal`) — meslek süzgecinin kendisi bir kırpılma DEĞİLDİR, aksi
+  // halde herhangi bir meslek seçildiğinde kartlar hep "—" gösterirdi.
+  const isServerClipped =
+    serverItems && serverTotal !== undefined ? serverTotal > serverItems.length : false;
+  const kpis =
+    filteredItems && serverTotal !== undefined
+      ? deriveKpis(filteredItems, serverTotal, isServerClipped)
+      : undefined;
+
   /**
    * 🔴🔴 MESLEK SÜZGECİ AÇIKKEN EXCEL KAPALIDIR.
    *
@@ -157,7 +175,12 @@ export function PersonnelListView() {
     setExportError(null);
     setIsExporting(true);
     try {
-      await downloadPersonnelExport(serverFilters);
+      // 🔴 EXPORT SINIFI — liste sorgusu `isDraft: false`i AYRICA (satır
+      // 104-109) ekliyordu, `serverFilters` içinde değildi; `handleExport`
+      // yalnız `serverFilters` geçtiği için Excel TASLAK personeli de
+      // indiriyordu. TEK süzgeç nesnesinden beslenme kuralı burada kırılmış
+      // — export de aynı `isDraft: false`i AÇIKÇA taşır.
+      await downloadPersonnelExport({ ...serverFilters, isDraft: false });
     } catch (error) {
       setExportError(backendErrorMessage(error, EXPORT_ERROR_FALLBACK));
     } finally {

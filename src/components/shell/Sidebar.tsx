@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { cx } from "@/lib/cx";
 import { initials } from "@/lib/shell/initials";
+import { useLogout } from "@/lib/shell/useLogout";
 import { LockIcon } from "@/components/ui/icons";
 import { activeNavHref, NAV_GROUPS } from "./nav-config";
 import { useSession } from "./SessionProvider";
@@ -12,17 +13,17 @@ import { routes } from "@/lib/routes";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const { me } = useSession();
+  // 🔴 KAYIT NO 297 — çıkış mantığı `useLogout` (src/lib/shell/useLogout.ts)
+  // ortak kancasında yaşar: ne `response.ok` kontrolsüz ne `try/catch`siz
+  // bırakılır (aksi hâlde sunucu oturumu kapatamasa bile kullanıcı "çıktım"
+  // sanır, ya da ağ hatası yakalanmamış bir promise reddi olarak kalır).
+  // Ayarlar sidebar/breadcrumb ile TEK mantık paylaşılır (DRY).
+  const { logout: handleLogout, error: logoutError } = useLogout();
   // ⚠️ Aktiflik SATIR BAŞINA değil, nav'ın TAMAMINA bakılarak seçilir:
   // `/hazine/cek-senet` yolunda `/hazine` de eşleşir ve iki öğe birden yanardı
   // (bkz. `activeNavHref` notu).
   const currentHref = activeNavHref(pathname);
-
-  async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push(routes.login());
-  }
 
   return (
     <aside className="sidebar">
@@ -65,6 +66,11 @@ export default function Sidebar() {
             <span aria-hidden="true">🚪</span> Çıkış
           </button>
         </div>
+        {logoutError !== null && (
+          <p role="alert" className="sidebar-user__error">
+            {logoutError}
+          </p>
+        )}
       </div>
     </aside>
   );

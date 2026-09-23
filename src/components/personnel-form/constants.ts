@@ -20,23 +20,26 @@ export const SELECT_PLACEHOLDER = "Seçiniz...";
 export const NO_SUBCONTRACTOR_LABEL = "— (Şirket kadrosu)";
 
 /**
- * Çalışan Tipi seçenekleri (91) — mockup'ın DÖRDÜ de basılır.
+ * Çalışan Tipi seçenekleri (91) — mockup'ın DÖRDÜ de basılır ve DÖRDÜ de
+ * etkindir.
  *
- * `source` DOLU olan iki seçenek etkindir; `source: null` olan ikisi
- * (Serbest Meslek · Stajyer) `WorkerSource` enum'unda KARŞILIKSIZDIR ve
- * devre-dışı basılır. Sessizce `general`'a eşlemek VERİ KAYBIDIR: kullanıcı
- * "stajyer" seçer, sunucuya "genel işçi" gider ve kimse fark etmez.
+ * M5_1 kayıt #397: "Serbest Meslek" ve "Stajyer" eskiden `source: null` ile
+ * devre-dışı basılıyordu, gerekçesi "WorkerSource enum'unda KARŞILIKSIZDIR"
+ * diyordu — bu ARTIK BAYAT. Ölçüldü: backend `WorkerSource` enum'u
+ * `freelance`/`intern` üyelerini taşıyor (schema.d.ts), oran tablosu
+ * (`rate_seed_data.py`) ikisi için de oran tanımlıyor, bordro hesaplaması
+ * (`compute.py`) `freelance` dalını işliyor.
  */
 export interface EmployeeTypeOption {
   label: string;
-  source: WorkerSource | null;
+  source: WorkerSource;
 }
 
 export const EMPLOYEE_TYPE_OPTIONS: readonly EmployeeTypeOption[] = [
   { label: "Şirket Kadrosu (4a)", source: "company" },
   { label: "Taşeron İşçisi", source: "subcontractor" },
-  { label: "Serbest Meslek", source: null },
-  { label: "Stajyer", source: null },
+  { label: "Serbest Meslek", source: "freelance" },
+  { label: "Stajyer", source: "intern" },
 ];
 
 /** Meslek / Görev seçenekleri (99) — mockup'ın SEKİZİ AYNEN, sırası korunur. */
@@ -163,10 +166,6 @@ export const PENDING_DOCUMENTS = pendingModuleLabel("documents");
 export const PENDING_SECTION_SOURCE =
   "Bölümler şantiyeye bağlıdır — proje seçimine göre bölüm listeleyen bir sunucu ucu yok";
 
-/** Karşılıksız iki çalışan tipi (Serbest Meslek · Stajyer). */
-export const PENDING_EMPLOYEE_TYPE =
-  "Sunucu bu çalışan tipini henüz tanımıyor — seçilemez";
-
 /**
  * Düzenleme kipinde YAYINLANMIŞ kayıt için "Taslak Kaydet" (PE 39, 211).
  * Buton SİLİNMEZ, devre-dışı basılır: yayındaki bir kaydı formdan sessizce
@@ -177,13 +176,6 @@ export const PENDING_DRAFT_PUBLISHED =
 
 /** SGK bildirge kutucuğu (205-208). */
 export const PENDING_SGK = "SGK bildirim modülü henüz eklenmedi";
-
-/**
- * Belge kartındaki "Belge Takibi" bağlantısı (198) — BC-2 form-slot bekliyor.
- * ⚠️ Üst şeritteki "İnsan Kaynakları" kırıntısı ARTIK PENDING DEĞİL: F-PT2 T2
- * `/personel` listesini açtı, kırıntı GERÇEK linke döndü (`PERSONNEL_LIST_HREF`).
- */
-export const PENDING_HR_SCREEN = "Belge takibi ekranı henüz eklenmedi";
 
 /** F-PT2 T2 · `/personel` gerçek liste rotası — kırıntı yolu bunu kullanır. */
 export const PERSONNEL_LIST_HREF = routes.personnel.list();
@@ -200,7 +192,6 @@ export const PENDING_GENERAL_SOURCE =
 export const PENDING_NOTICES: readonly string[] = [
   "Fotoğraf ve belge yükleme alanları devre dışı — belge modülünün form eklentisi sonraki dilimde gelir.",
   "“Bölüm” seçimi devre dışı — bölümler şantiyeye bağlıdır; proje seçimine göre bölüm listeleyen bir sunucu ucu henüz yok.",
-  "“Serbest Meslek” ve “Stajyer” çalışan tipleri seçilemez — sunucu bugün yalnız şirket kadrosu, taşeron işçisi ve genel işçi kaynaklarını tanıyor; bu ikisi sessizce başka bir kaynağa YAZILMAZ.",
   "“Kayıt sonrası SGK işe giriş bildirgesi” kutucuğu devre dışı — SGK bildirim modülü henüz eklenmedi.",
   "Belge kartındaki “Belge Takibi” bağlantısı edilgen — belge takibi ekranı henüz eklenmedi.",
 ];

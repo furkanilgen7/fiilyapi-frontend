@@ -9,7 +9,11 @@ import { formatCompactCurrency, formatDateDots, formatPercent } from "@/lib/form
 import { pendingModuleLabel } from "@/lib/pending-modules";
 import type { ContractListItem, ContractType } from "@/lib/api/hooks/useContracts";
 
-import { contractProgressTone, contractProgressWidth } from "./contract-progress";
+import {
+  contractProgressTone,
+  contractProgressWidth,
+  isProvenZeroAmount,
+} from "./contract-progress";
 import { CONTRACT_STATUS_BADGE } from "./contract-status";
 import "./contracts.css";
 import { routes } from "@/lib/routes";
@@ -115,7 +119,8 @@ function ContractRow({ item, type }: { item: ContractListItem; type: ContractTyp
         {item.end_date ? formatDateDots(item.end_date) : "—"}
       </td>
       <td className="szl-table__td">
-        <ProgressCell pct={item.progress_pct} />
+        {/* Bedel de geciyor: hucre gerekceyi ancak ONDAN kanitlayabilir. */}
+        <ProgressCell pct={item.progress_pct} amount={item.amount} />
       </td>
       <td className="szl-table__td szl-table__td--center">
         <Badge
@@ -139,19 +144,52 @@ function ContractRow({ item, type }: { item: ContractListItem; type: ContractTyp
 }
 
 /**
- * SZL 60 · ray + dolgu + altında yüzde metni. Taşeron sekmesinde backend
- * `progress_pct: null` döner (spec §2) → çubuk HİÇ çizilmez, hücre "—" +
- * görünür gerekçeyle basılır (kolon silinmez, sessiz boşluk bırakılmaz).
+ * SZL 60 · ray + dolgu + altında yüzde metni. `progress_pct: null` gelince
+ * çubuk HİÇ çizilmez, hücre "—" basılır (kolon silinmez, sessiz boşluk
+ * bırakılmaz).
+ *
+ * 🔴 GEREKÇE ARTIK KOŞULLUDUR (kapsam maskesi, kullanıcı kararı 2026-09-19).
+ *
+ * Eski hâl `null`u TEK anlamla okuyup SABİT bir cümle yazıyordu: *"Sözleşme
+ * bedeli girilmemiş — ilerleme oranı hesaplanamaz"*. `progress_pct` artık
+ * `Gorunurluk.operasyonel` etiketlidir ve `finance` kapsamlı rolde (muhasebe)
+ * de `null` gelir — o hâlde bedel HEMEN YANDAKİ kolonda GÖRÜNÜRKEN ekran
+ * kullanıcıya YALAN söylüyordu. Deponun kendi kanonu bunu adıyla yasaklar
+ * (`projects/schemas.py::restricted`): *"'bu modül daha yazılmadı' ile 'bunu
+ * görmeye yetkin yok' FARKLI iki durumdur ve ilkini ikincisi için kullanmak
+ * ekranı YALANCI yapar."*
+ *
+ * 🔴 Neden `available` zarfına dallanılmadı (görev emrinin önerisi): bu alan
+ * `MetricPlaceholder` DEĞİL düz `Decimal | None`dir, yani ekranda okunacak bir
+ * `available` bayrağı YOKTUR. Ayrım yine de ÖLÇÜLEBİLİR — satırın KENDİ
+ * `amount`undan: backend `progress_pct`i yalnız payda yok/sıfırken `None`
+ * bırakır (`progress_payments/summary.py:36-44`). Yani gerekçe SADECE `amount`
+ * görünür (maskesiz) VE `<= 0` iken kanıtlıdır. Diğer her hâlde sebep bilinmez
+ * ve `placeholder-cell.ts`in 3. hâli uygulanır: "—", ipucu VERİLMEZ.
+ *
+ * 🔴 `amount === null` de "bedel girilmemiş" SAYILMAZ: `amount`
+ * `Gorunurluk.para`dır ve `limited` kapsamda maskelenir — o `null` "bedel yok"
+ * değil "bedeli göremiyorsun" demektir. Kural `isProvenZeroAmount`ta yaşar ve
+ * E14 "Hakediş Özeti" kartıyla PAYLAŞILIR (tek kaynak, gerekçesi orada).
  */
-function ProgressCell({ pct }: { pct: string | null | undefined }) {
+function ProgressCell({
+  pct,
+  amount,
+}: {
+  pct: string | null | undefined;
+  amount: string | null | undefined;
+}) {
   if (pct === null || pct === undefined) {
+    const reason = isProvenZeroAmount(amount)
+      ? pendingModuleLabel("subcontractor_progress_pct")
+      : undefined;
     return (
       <div
         className="szl-progress szl-progress--pending"
-        title={pendingModuleLabel("subcontractor_progress_pct")}
+        title={reason}
         data-testid="szl-progress-pending"
       >
-        —<span className="sr-only">{pendingModuleLabel("subcontractor_progress_pct")}</span>
+        —{reason && <span className="sr-only">{reason}</span>}
       </div>
     );
   }

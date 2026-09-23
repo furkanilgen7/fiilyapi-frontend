@@ -118,6 +118,28 @@ describe("buildCashFlowGeometry — E9:92-101", () => {
     }
   });
 
+  /**
+   * M5_3 #363 — `maxValue` hesabı zaten `amount()` (NaN'ı 0'a çeviren
+   * savunmacı yardımcı) ile korunuyordu; `toPoints`teki y-koordinatı ham
+   * `Number(pick(bucket))` çağırdığı için korunmuyordu. Sayıya çevrilemeyen
+   * bir değer (`"abc"`) gelirse `NaN` üretip SVG path dizesine "NaN" yazardı.
+   */
+  it("🔴 sayıya çevrilemeyen bir değer NaN üretmez — path dizesinde 'NaN' GEÇMEZ", () => {
+    const malformed: CashFlowBucket[] = [
+      { day: "2026-04-03", inflow: "abc", outflow: "11.00" },
+      { day: "2026-04-07", inflow: "101.00", outflow: "abc" },
+    ];
+    const geo = buildCashFlowGeometry(malformed, 2026, 4);
+
+    for (const path of [geo.inflowLine, geo.inflowArea, geo.outflowLine, geo.outflowArea]) {
+      expect(path).not.toContain("NaN");
+    }
+    for (const point of [...geo.inflowPoints, ...geo.outflowPoints]) {
+      expect(Number.isNaN(point.y)).toBe(false);
+      expect(Number.isInteger(point.y)).toBe(true);
+    }
+  });
+
   it("dolgu yolu taban çizgisine kapanır (E9:97/99)", () => {
     const geo = buildCashFlowGeometry(SERIES, 2026, 7);
     expect(geo.inflowArea.startsWith(`M0,${CHART_FILL_BOTTOM}`)).toBe(true);

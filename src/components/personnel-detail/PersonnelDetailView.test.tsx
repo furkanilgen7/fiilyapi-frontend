@@ -310,6 +310,20 @@ describe("PersonnelDetailView · hata/boş durumlar", () => {
     expect(screen.getByText("Personel bulunamadı.")).toBeVisible();
   });
 
+  // Kayıt 164 — 404 DIŞINDAKİ hatalar (500/ağ/422) da aynı "kayıt yok"
+  // cümlesiyle basılıyordu; kullanıcı gerçek nedeni hiç göremiyordu.
+  it("404 DIŞINDAKİ hatada (500) sunucunun GERÇEK mesajı basılır (kayıt 164)", () => {
+    vi.mocked(usePersonnelDetail).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new BackendError(500, { detail: "Sunucu hatası oluştu." }),
+    } as never);
+    render(<PersonnelDetailView />);
+    expect(screen.getByText("Sunucu hatası oluştu.")).toBeVisible();
+    expect(screen.queryByText("Personel bulunamadı.")).not.toBeInTheDocument();
+  });
+
   it("403 AccessDenied gösterir", () => {
     vi.mocked(usePersonnelDetail).mockReturnValue({
       data: undefined,

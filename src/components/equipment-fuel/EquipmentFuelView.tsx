@@ -17,6 +17,7 @@ import {
 } from "@/lib/api/hooks/useEquipmentFuelLogs";
 import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
 import { useUserOptions, userOptionLabel } from "@/lib/api/hooks/useUserOptions";
+import { resolveLookup } from "@/lib/api/query-state";
 import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 
@@ -80,19 +81,31 @@ export function EquipmentFuelView() {
   const normUnitById = new Map(
     (equipmentQuery.data?.items ?? []).map((item) => [item.id, item.norm_unit]),
   );
+  const equipmentNameById = new Map(
+    (equipmentQuery.data?.items ?? []).map((item) => [item.id, item.name]),
+  );
   const userNameById = new Map(
     userOptions.options.map((user) => [user.id, userOptionLabel(user)]),
   );
 
+  // kalan-4 #181 / query-state.ts kanonu: sorgu hataya düşerse `undefined`
+  // (nötr) dönülür — Map boşken `?? null` YANLIŞ "Şantiye atanmadı" basardı,
+  // ama makine gerçekten atanmış olabilir (91. kayıt, fail-open onarımı).
   function resolveSiteLabel(siteId: string | null): string | null | undefined {
-    if (siteId === null) return null; // kayıt bir şantiyeye bağlı değil
-    if (siteOptions.isLoading) return undefined;
-    return siteLabelById.get(siteId) ?? null;
+    return resolveLookup(siteId, siteOptions, (id) => siteLabelById.get(id));
   }
 
   function resolveNormUnit(equipmentId: string): EquipmentNormUnit | null | undefined {
     if (equipmentQuery.isLoading) return undefined;
     return normUnitById.get(equipmentId) ?? null;
+  }
+
+  // KAYIT 90 — kardeş çözücülerle AYNI disiplin: sorgu yüklenmedi/hataya
+  // düştüyse nötr `undefined` ("Yükleniyor…"); yüklendi ama id listede yoksa
+  // (silinmiş/tavan aşımı) `null` ("—") — önceden hiçbir ayrım yapılmıyordu
+  // ve hücre kalıcı "Yükleniyor…" basıyordu.
+  function resolveEquipmentName(equipmentId: string): string | null | undefined {
+    return resolveLookup(equipmentId, equipmentQuery, (id) => equipmentNameById.get(id));
   }
 
   function resolveEnteredByName(enteredById: string | null): string | null | undefined {
@@ -170,8 +183,10 @@ export function EquipmentFuelView() {
         equipment={equipmentQuery.data}
         logs={fuelLogsQuery.data}
         isLoading={fuelLogsQuery.isLoading}
+        isError={fuelLogsQuery.isError}
         resolveSiteLabel={resolveSiteLabel}
         resolveEnteredByName={resolveEnteredByName}
+        resolveEquipmentName={resolveEquipmentName}
       />
 
       {/* Görsel spec (T6) "yüklendi" iddiasını KAYNAK BAŞINA kurar — F-İK dersi. */}

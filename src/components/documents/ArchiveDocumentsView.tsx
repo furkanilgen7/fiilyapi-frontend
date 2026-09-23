@@ -24,6 +24,7 @@ import { DocumentUploadModal } from "./DocumentUploadModal";
 import { documentGridMessage } from "./grid-message";
 import { RecentDocumentsList } from "./RecentDocumentsList";
 import { recentDocuments } from "./recent-documents";
+import { PROJECT_PARAM } from "@/lib/navigation-params";
 import "./documents.css";
 
 /**
@@ -41,7 +42,6 @@ import "./documents.css";
 export const ARCHIVE_ADD_DOCUMENT_LABEL = "+ Belge Ekle (proje seçerek)";
 
 /** URL durumu anahtarları — proje/klasör/arama paylaşılabilir olmalı. */
-const PROJECT_PARAM = "proje";
 const FOLDER_PARAM = "folder";
 const QUERY_PARAM = "q";
 
@@ -207,7 +207,11 @@ export function ArchiveDocumentsView() {
           isFoldersError: foldersQuery.isError,
           hasFolders: folders.length > 0,
         })}
-        canWrite={canWrite}
+        // Kayıt 72 — panelin '+' düğmesi diğer üç yazma tetikleyicisinden
+        // (238/238/260) farklı olarak `selectedProjectId` ile kısıtlanmamıştı;
+        // proje seçilmeden basılabiliyordu (diyalog kendisi kapıda duruyor
+        // ama düğme yanlışlıkla etkin görünüyordu).
+        canWrite={canWrite && Boolean(selectedProjectId)}
         onCreateFolderClick={() => setOpenDialog("folder")}
       />
 

@@ -31,6 +31,14 @@ describe("project-summary.css — tür renkleri", () => {
   });
 });
 
+describe("project-summary.css — KAYIT 479: baslik boyutu", () => {
+  it(".psum-hero__title --text-page-title (26px) kullanir, --text-2xl (32px) DEGIL", () => {
+    const rule = rules.match(/\.psum-hero__title\s*{[^}]*}/)?.[0] ?? "";
+    expect(rule).toMatch(/font-size:\s*var\(--text-page-title/);
+    expect(rule).not.toMatch(/--text-2xl/);
+  });
+});
+
 describe("project-summary.css — ölçüler", () => {
   it("KY 92 maliyet cubugu 7px ve tasmayi KIRPAR", () => {
     const rule = rules.match(/\.psum-cost__bar\s*{[^}]*}/)?.[0] ?? "";

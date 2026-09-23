@@ -328,7 +328,9 @@ describe("TSD — tfoot TEK KAYNAK `contract_total` (K5 emsali)", () => {
 describe("TSD — poz tablosu (88-182)", () => {
   it("YALNIZ Taşeron B.F. yazılabilir; miktar SALT-OKUNUR düz metindir (114)", () => {
     setup();
-    const inputs = within(screen.getByTestId("tsd-items")).getAllByRole("spinbutton");
+    // no 51 · hücre `type="number"` DEĞİLDİR (Türkçe virgülü tarayıcı
+    // sessizce siler) — `inputMode="decimal"` ile rolü "textbox"tur.
+    const inputs = within(screen.getByTestId("tsd-items")).getAllByRole("textbox");
     expect(inputs).toHaveLength(DETAIL.items.length);
     for (const input of inputs) {
       expect(input).toHaveAttribute("aria-label", expect.stringContaining("taşeron birim fiyatı"));
@@ -415,6 +417,21 @@ describe("TSD — Sözleşme Şartları (§7 S3 taşeron ayağı)", () => {
     }
   });
 
+  // kalan-6 no 320 — `handleSaveTerms` `validateContractForm`/`intOrUndefined`
+  // hiçbirini çağırmıyordu: "30.5" gibi ondalık bir vade PATCH'e ondalık
+  // olarak gidiyordu (backend 422). Kaydet ondalık vadede İSTEK AÇMAMALI.
+  it("Ödeme Vadesi ondalık girilince Kaydet PATCH AÇMAZ, alan hatası basar", async () => {
+    const user = userEvent.setup();
+    setup();
+    const termDays = screen.getByLabelText(/Ödeme Vadesi/);
+    await user.clear(termDays);
+    await user.type(termDays, "30.5");
+    await user.click(screen.getByTestId("tsd-terms-save"));
+
+    expect(updateContractMutate).not.toHaveBeenCalled();
+    expect(screen.getByText(/tam sayı olmalıdır/)).toBeInTheDocument();
+  });
+
   it("`vat_pct` SALT-OKUNUR gösterilir (FSO'da kontrolü yok — E14 emsali)", () => {
     setup();
     expect(screen.getByTestId("tsd-vat-readonly")).toHaveTextContent("%20");
@@ -432,6 +449,26 @@ describe("TSD — Sözleşme Şartları (§7 S3 taşeron ayağı)", () => {
     expect(updateContractMutate.mock.calls[0][0]).toMatchObject({
       contract_no: "TSZ-2026-009",
     });
+  });
+
+  // no 53 — kaydedilmiş bir şart daha sonra değiştirildiğinde "Sözleşme
+  // şartları kaydedildi." bandı ekranda ASILI kalıyordu; `onChange` geri
+  // çağırması `setTermsSaved(false)` çağırmıyordu (emsal:
+  // `ContractDistributionView.tsx::handleCellChange`).
+  it("kaydedilmiş banner, şart TEKRAR değiştirilince kaybolur (no 53)", async () => {
+    const user = userEvent.setup();
+    updateContractMutate.mockImplementation(
+      (_body: unknown, opts?: { onSuccess?: () => void }) => opts?.onSuccess?.(),
+    );
+    setup();
+
+    await user.click(screen.getByTestId("tsd-terms-save"));
+    expect(await screen.findByTestId("tsd-terms-saved")).toBeInTheDocument();
+
+    const contractNo = screen.getByLabelText(/Sözleşme No/);
+    await user.type(contractNo, "X");
+
+    expect(screen.queryByTestId("tsd-terms-saved")).not.toBeInTheDocument();
   });
 });
 

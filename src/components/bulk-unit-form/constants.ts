@@ -249,3 +249,27 @@ export function bulkSubmitLabel(total: number | null): string {
  */
 export const BULK_SLOT_EMPTY_NOTICE =
   "Kat başına daire sayısını girin — şablon satırları o sayıya göre açılır.";
+
+/**
+ * 🔴 KUSUR no 39: kat şablonunda geçersiz bir ondalık varken gönderim
+ * ENGELLENİR — aksi hâlde `buildSlot()` hücreyi sessizce gövdeden düşürür
+ * (`entry()` `null`ı hiç anahtar kurmadan atlar) ve kullanıcı "girdim" sandığı
+ * bir alanın hiç kaydedilmediğini fark edemez.
+ */
+export const BULK_SLOT_INVALID_MESSAGE =
+  "Kat şablonunda geçersiz sayı var — kırmızı işaretli hücreleri düzeltin.";
+
+/**
+ * 🔴 KUSUR no 44: TU 137 kutucuğu mockup'ta VARSAYILAN İŞARETLİ açılır ama
+ * TU 138 yüzdesi BOŞTUR. Kutucuk açıkken yüzde boş bırakılırsa
+ * `build-body.ts` `floor_price_increase_pct` anahtarını HİÇ KURMAZ — ekran
+ * "artış uygulanacak" der ama gövde artışı TAŞIMAZDI ve hiçbir uyarı basılmazdı.
+ *
+ * 🔴 KULLANICI KARARI (2026-09-23): boş yüzde = ARTIŞ YOK. Akış ENGELLENMEZ —
+ * ilk onarım turu engellemişti ve form varsayılan hâliyle (kutucuk mockup
+ * gereği işaretli, yüzde boş) KİLİTLİ doğuyordu; e2e'de toplu üretim akışı
+ * tamamen durdu. Kusur "ekranın yalan söylemesi"ydi, çözümü de ekranı DOĞRU
+ * konuşturmaktır: aşağıdaki not basılır, işlem serbest devam eder.
+ */
+export const BULK_PRICE_INCREASE_PCT_EMPTY_NOTE =
+  "Yüzde boş — üst katlara fiyat artışı UYGULANMAYACAK.";

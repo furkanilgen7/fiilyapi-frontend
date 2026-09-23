@@ -22,6 +22,10 @@ export const MESSAGES = {
   buyerPhoneRequired: "Telefon zorunludur.",
   salePriceRequired: "Satış bedeli zorunludur.",
   salePriceInvalid: "Satış bedeli geçerli bir sayı olmalıdır.",
+  installmentCountInvalid: "Taksit sayısı geçerli bir tam sayı olmalıdır.",
+  discountAmountInvalid: "İndirim geçerli bir sayı olmalıdır.",
+  downPaymentInvalid: "Peşinat geçerli bir sayı olmalıdır.",
+  termInterestPctInvalid: "Vade farkı geçerli bir sayı olmalıdır.",
 } as const;
 
 export interface SaleFormErrors {
@@ -32,6 +36,10 @@ export interface SaleFormErrors {
   buyerNationalOrTaxId?: string;
   buyerPhone?: string;
   salePrice?: string;
+  installmentCount?: string;
+  discountAmount?: string;
+  downPayment?: string;
+  termInterestPct?: string;
 }
 
 export function validateSaleForm(values: SaleFormValues): SaleFormErrors {
@@ -59,6 +67,33 @@ export function validateSaleForm(values: SaleFormValues): SaleFormErrors {
     errors.salePrice = MESSAGES.salePriceInvalid;
   }
 
+  // Taksit sayısı isteğe bağlıdır ama DOLUYSA tam sayı olmak ZORUNDADIR: kutu
+  // `type="text"` olduğu için "12,5" / "12 ay" gibi girdi `Number(...)` ile NaN'a,
+  // gövdede `null`a düşer ve sunucu (`installment_count: int | None`) 422 DÖNMEZ —
+  // plan sessizce yalnız peşinat satırından kurulur. Kapı burada.
+  const installmentCount = values.installmentCount.trim();
+  if (installmentCount) {
+    const parsed = Number(installmentCount);
+    if (!Number.isInteger(parsed) || parsed < 0) {
+      errors.installmentCount = MESSAGES.installmentCountInvalid;
+    }
+  }
+
+  // no 250 · Bu üç alan isteğe bağlıdır ama DOLUYSA `build-body.ts`in
+  // `optionalDecimal`i `normalizeDecimalInput() === null` döndüğünde anahtarı
+  // SESSİZCE gövdeden düşürür ("40.000,50" gibi iki ayraçlı bir girdi bunu
+  // tetikler). Kullanıcı hiçbir uyarı görmeden bedeli eksik gönderirdi —
+  // kapı burada, `salePrice`in aynı deseniyle.
+  if (values.discountAmount.trim() && normalizeDecimalInput(values.discountAmount) === null) {
+    errors.discountAmount = MESSAGES.discountAmountInvalid;
+  }
+  if (values.downPayment.trim() && normalizeDecimalInput(values.downPayment) === null) {
+    errors.downPayment = MESSAGES.downPaymentInvalid;
+  }
+  if (values.termInterestPct.trim() && normalizeDecimalInput(values.termInterestPct) === null) {
+    errors.termInterestPct = MESSAGES.termInterestPctInvalid;
+  }
+
   return errors;
 }
 
@@ -72,6 +107,10 @@ export function firstSaleFormError(errors: SaleFormErrors): string | null {
     errors.buyerNationalOrTaxId ??
     errors.buyerPhone ??
     errors.salePrice ??
+    errors.discountAmount ??
+    errors.downPayment ??
+    errors.termInterestPct ??
+    errors.installmentCount ??
     null
   );
 }

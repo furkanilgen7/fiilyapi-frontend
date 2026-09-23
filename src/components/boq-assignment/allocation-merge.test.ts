@@ -108,7 +108,12 @@ describe("checkOvershoot — kendi payı DAHİL edilir", () => {
       nextQuantity: "52",
     });
     // mockup üçüncü satırı: kota 120, dağıtılmış 76, kalan 44, girilen 52 → 8 aşım
-    expect(result).toEqual({ isOvershoot: true, maxForSection: "44", excess: "8" });
+    expect(result).toEqual({
+      isOvershoot: true,
+      isUnknown: false,
+      maxForSection: "44",
+      excess: "8",
+    });
   });
 
   it("tam sınırda aşım YOKTUR (sınır günü tuzağı: < değil <=)", () => {
@@ -119,7 +124,7 @@ describe("checkOvershoot — kendi payı DAHİL edilir", () => {
         sectionCurrentQuantity: "0",
         nextQuantity: "44",
       }),
-    ).toEqual({ isOvershoot: false, maxForSection: "44", excess: "0" });
+    ).toEqual({ isOvershoot: false, isUnknown: false, maxForSection: "44", excess: "0" });
   });
 
   it("miktar girilmemişse aşım hesaplanmaz", () => {
@@ -131,5 +136,69 @@ describe("checkOvershoot — kendi payı DAHİL edilir", () => {
         nextQuantity: null,
       }).isOvershoot,
     ).toBe(false);
+  });
+});
+
+/**
+ * 🔴 KAPSAM MASKESİ — `checkOvershoot` GÖSTERİM yolundadır (satır ve seçici
+ * JSX'i her karede çağırır), bu yüzden maskeli girdide ATMAZ.
+ *
+ * Doğru cevap "aşım YOK" DEĞİL, **"BİLİNMİYOR"**dur ve bu AYRI bir alandır:
+ * `isOvershoot: false` tek başına dönseydi seçicinin "Ata" kapısı maskeli
+ * satırda AÇIK kalır ve kullanıcı GÖREMEDİĞİ bir kotanın üstüne yazardı.
+ */
+describe("checkOvershoot — METRAJ MASKELİYKEN bilinmez, ÇARPMAZ", () => {
+  it.each([
+    ["kota gizli", { siteQuota: null, allocatedTotal: "76", sectionCurrentQuantity: "0" }],
+    ["dağıtılan gizli", { siteQuota: "120", allocatedTotal: null, sectionCurrentQuantity: "0" }],
+    ["bölüm payı gizli", { siteQuota: "120", allocatedTotal: "76", sectionCurrentQuantity: null }],
+  ])("%s → isUnknown ve sayılar null (sahte 0 YOK)", (_ad, girdi) => {
+    expect(checkOvershoot({ ...girdi, nextQuantity: "52" })).toEqual({
+      isOvershoot: false,
+      isUnknown: true,
+      maxForSection: null,
+      excess: null,
+    });
+  });
+
+  it("🔴 POZİTİF KONTROL — maskesiz girdi BİLİNİR kalır", () => {
+    expect(
+      checkOvershoot({
+        siteQuota: "120",
+        allocatedTotal: "76",
+        sectionCurrentQuantity: "0",
+        nextQuantity: "52",
+      }).isUnknown,
+    ).toBe(false);
+  });
+});
+
+/**
+ * 🔴🔴 YAZMA YOLU KORUNUR — bu testin işi "aşırı düzeltmeyi" çakmaktır.
+ *
+ * Gösterim yolundan `maskesiz()` sökülürken onu HER YERDEN sökmek kolaydı;
+ * o hâlde maskeli bir pay sessizce gövdeye girer ve `PUT` tam küme
+ * değiştirmesiyle öbür bölümün payını YOK EDERDİ. `mergeSectionAllocation`
+ * GÖVDE kurar — orada durmak doğrudur.
+ */
+describe("mergeSectionAllocation — maskeli pay GÖVDEYE GİREMEZ", () => {
+  it("öbür bölümün payı maskeliyse ATAR (sessizce 0 yazmaz, satırı atmaz)", () => {
+    expect(() =>
+      mergeSectionAllocation({
+        current: [alloc(SEC_A, "480"), { ...alloc(SEC_B, "300"), quantity: null } as BoqItemAllocation],
+        sectionId: SEC_A,
+        nextQuantity: "500",
+      }),
+    ).toThrow(/Maskelenmiş alan/);
+  });
+
+  it("🔴 POZİTİF KONTROL — maskesiz küme ATMAZ", () => {
+    expect(() =>
+      mergeSectionAllocation({
+        current: [alloc(SEC_A, "480"), alloc(SEC_B, "300")],
+        sectionId: SEC_A,
+        nextQuantity: "500",
+      }),
+    ).not.toThrow();
   });
 });

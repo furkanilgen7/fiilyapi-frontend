@@ -47,6 +47,8 @@ export interface PendingLeaveRequestsTableProps extends LeaveDecisionHandlers {
   balances: readonly LeaveBalanceResponse[] | undefined;
   isLoading: boolean;
   errorMessage?: string;
+  /** 🔴 Onay isteği uçarken TÜM onay düğmeleri kilitlenir (çift gönderim yok). */
+  isApprovePending?: boolean;
 }
 
 const COLUMN_COUNT = 8;
@@ -66,6 +68,7 @@ export function PendingLeaveRequestsTable({
   balances,
   isLoading,
   errorMessage,
+  isApprovePending = false,
   onApproveRequest,
   onRejectRequest,
 }: PendingLeaveRequestsTableProps) {
@@ -252,7 +255,7 @@ export function PendingLeaveRequestsTable({
                           size="sm"
                           className="iz-action"
                           // 99 — hak aşımında onay PASİF
-                          disabled={isBlocked || onApproveRequest === undefined}
+                          disabled={isBlocked || onApproveRequest === undefined || isApprovePending}
                           title={isBlocked ? APPROVE_BLOCKED_REASON : undefined}
                           // Aynı personelin BİRDEN ÇOK bekleyen talebi olabilir;
                           // erişilebilir ad tarihi de taşır ki iki düğme

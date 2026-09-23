@@ -62,8 +62,76 @@ describe("validateSaleForm — mockup req yıldızları", () => {
     expect(validateSaleForm(newCustomerValues({ salePrice: "1" })).salePrice).toBeUndefined();
   });
 
+  // 🔴 KUSUR (14 · satis-odeme-plani-aritmetigi): "Taksit Sayısı" kutusu `type="text"`
+  // (Input.tsx'te `type` özniteliği YOK, yalnız `inputMode="numeric"` ipucu var).
+  // Doğrulanmamış girdi build-body.ts:95'te `Number(...)` ile NaN'a, JSON'da
+  // `null`a düşüyordu; sunucu şeması `installment_count: int | None` olduğu için
+  // 422 DÖNMÜYOR — plan SESSİZCE yalnız peşinat satırından kuruluyordu.
+  it("taksit sayısı sayıya dönmüyorsa REDDEDİLİR (NaN gövdeye null olarak sızmaz)", () => {
+    for (const raw of ["12,5", "12 ay", "abc", "on iki"]) {
+      const errors = validateSaleForm(newCustomerValues({ installmentCount: raw }));
+      expect(errors.installmentCount, raw).toBeTruthy();
+      expect(errors.installmentCount, raw).toBe(MESSAGES.installmentCountInvalid);
+      expect(hasSaleFormErrors(errors), raw).toBe(true);
+      expect(firstSaleFormError(errors), raw).toBe(MESSAGES.installmentCountInvalid);
+    }
+  });
+
+  it("taksit sayısı tam sayı değilse ya da negatifse REDDEDİLİR", () => {
+    for (const raw of ["3.5", "3,5", "-2"]) {
+      const errors = validateSaleForm(newCustomerValues({ installmentCount: raw }));
+      expect(errors.installmentCount, raw).toBeTruthy();
+      expect(firstSaleFormError(errors), raw).toBe(MESSAGES.installmentCountInvalid);
+    }
+  });
+
+  it("geçerli taksit sayısı ve BOŞ alan geçer (alan isteğe bağlıdır)", () => {
+    for (const raw of ["", "0", "12", "120"]) {
+      const errors = validateSaleForm(newCustomerValues({ installmentCount: raw }));
+      expect(errors.installmentCount, raw).toBeUndefined();
+      expect(hasSaleFormErrors(errors), raw).toBe(false);
+    }
+  });
+
   it("firstSaleFormError öncelik sırasını korur", () => {
     const errors = validateSaleForm(newCustomerValues({ projectId: "", salePrice: "" }));
     expect(firstSaleFormError(errors)).toBe(MESSAGES.projectRequired);
+  });
+
+  /**
+   * no 250 · `build-body.ts::optionalDecimal` geçersiz ondalık girdide anahtarı
+   * SESSİZCE düşürüyordu (`discount_amount`/`down_payment`/`term_interest_pct`
+   * gövdeye hiç girmiyordu) — kullanıcı hiçbir uyarı görmeden bedeli eksik
+   * gönderiyordu. Gerçekten bozuk (çift virgülü) bir girdi bunun en net
+   * örneğidir: "40,000,50" → tek virgül çevrilir, kalan virgül deseni
+   * kırar → red.
+   *
+   * 🔴 KAYIT 426 (2026-09-23): bu test ÖNCEDEN "40.000,50" kullanıyordu —
+   * bu GEÇERLİ bir TR binlik-ayraçlı sayıdır (40000,50), ama eski
+   * `normalizeDecimalInput` yalnız İLK virgülü çevirdiği için YANLIŞLIKLA
+   * reddediyordu. `decimal.ts` düzeltildikten sonra o değer artık KABUL
+   * EDİLİR; test niyetini (gerçekten bozuk girdide hata basılması) korumak
+   * için örnek GERÇEKTEN geçersiz bir değerle değiştirildi.
+   */
+  it("250 · İndirim / Peşinat / Vade Farkı: geçersiz ondalık SESSİZCE yutulmaz, hata basılır", () => {
+    for (const field of ["discountAmount", "downPayment", "termInterestPct"] as const) {
+      const errors = validateSaleForm(newCustomerValues({ [field]: "40,000,50" }));
+      expect(errors[field], field).toBeTruthy();
+      expect(hasSaleFormErrors(errors), field).toBe(true);
+    }
+  });
+
+  it("250 · aynı üç alan BOŞSA (isteğe bağlı) hata YOKTUR", () => {
+    for (const field of ["discountAmount", "downPayment", "termInterestPct"] as const) {
+      const errors = validateSaleForm(newCustomerValues({ [field]: "" }));
+      expect(errors[field], field).toBeUndefined();
+    }
+  });
+
+  it("250 · aynı üç alan GEÇERLİ tek-virgüllü girdide hata YOKTUR", () => {
+    for (const field of ["discountAmount", "downPayment", "termInterestPct"] as const) {
+      const errors = validateSaleForm(newCustomerValues({ [field]: "1500,50" }));
+      expect(errors[field], field).toBeUndefined();
+    }
   });
 });

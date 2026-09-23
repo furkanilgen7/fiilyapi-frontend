@@ -1,6 +1,7 @@
 import { formatCurrency, formatPercent } from "@/lib/format";
 import type { ProgressPaymentSummary } from "@/lib/api/hooks/useProgressPayments";
 
+import { isProvenZeroAmount } from "./contract-progress";
 import "./employer-contract-detail.css";
 
 /**
@@ -34,6 +35,20 @@ export interface ContractPaymentSummaryCardProps {
 }
 
 const DASH = "—";
+/**
+ * 131-132 · yüzde yerine basılan gerekçe.
+ *
+ * 🔴 ARTIK KOŞULLU. `ProgressPaymentSummary` KENDİ ucunda maskelenmez
+ * (`progress_payments` kısıtlı bir modül değildir) AMA bu kart onu
+ * `EmployerContractDetail.progress_payment_summary` GÖMÜSÜNDEN okur ve
+ * `field_scope.maskele()` iç içe şemalara İNER — yani `finance` kapsamlı rolde
+ * `progress_pct` burada da `null`dır (backend şema docstring'i bunu adıyla
+ * yazar ve bekçisi `test_kapsam_capraz_sizinti.py`dir).
+ *
+ * O hâlde bu cümle YALAN olurdu: bedel hemen ÜSTTEKİ satırda görünüyor. Kural
+ * kardeş yüzey `ContractsTable::ProgressCell` ile ORTAKTIR —
+ * `isProvenZeroAmount` tek kaynaktır, gerekçesi `contract-progress.ts`tedir.
+ */
 const PCT_PENDING_REASON = "Sözleşme bedeli girilmeden hakediş yüzdesi hesaplanamaz";
 
 export function ContractPaymentSummaryCard({
@@ -67,7 +82,7 @@ export function ContractPaymentSummaryCard({
 
         {pct === null ? (
           <p className="ecd-pps__caption" data-testid="ecd-pps-pct-pending">
-            {PCT_PENDING_REASON}
+            {isProvenZeroAmount(summary.contract_amount) ? PCT_PENDING_REASON : DASH}
           </p>
         ) : (
           <>
@@ -109,15 +124,20 @@ function DeductionBox({
   testId,
 }: {
   label: string;
-  value: string;
+  value: string | null;
   testId: string;
 }) {
+  // 🔴 KAPSAM MASKESİ (2026-09-19): `ProgressPaymentSummary`nin para alanları
+  //    `limited` kapsamında `null` gelir. Eksi işareti bir KESİNTİ işaretidir;
+  //    gizlenmiş bir sayının YÖNÜ YOKTUR — `- {formatCurrency(null)}` ekrana
+  //    anlamsız bir **"- —"** basardı.
+  const maskeli = value === null;
   return (
     <div className="ecd-pps__box">
       <span className="ecd-pps__box-label">{label}</span>
       {/* 137, 141: kesintiler eksi işaretiyle basılır. */}
       <span className="ecd-pps__box-value" data-testid={testId}>
-        - {formatCurrency(value)}
+        {maskeli ? formatCurrency(value) : `- ${formatCurrency(value)}`}
       </span>
     </div>
   );

@@ -13,6 +13,9 @@ import {
   Badge,
   Alert,
   Card,
+  Textarea,
+  FileInput,
+  AnchoredPopover,
   type ButtonVariant,
   type ButtonSize,
 } from "@/components/ui";
@@ -33,6 +36,7 @@ export default function DesignSystemPage() {
   const [demoDate, setDemoDate] = useState("2026-07-19");
   const [checked, setChecked] = useState(true);
   const [toggled, setToggled] = useState(true);
+  const [isPopoverOpen, setPopoverOpen] = useState(false);
 
   return (
     <main
@@ -153,6 +157,37 @@ export default function DesignSystemPage() {
         <DateInput aria-label="Hata" value={demoDate} status="error" onValueChange={() => {}} />
         <DateInput aria-label="Devre disi" value={demoDate} disabled onValueChange={() => {}} />
         <DateInput aria-label="Satir ici" value={demoDate} size="row" onValueChange={() => {}} />
+      </section>
+
+      {/* Kayıt 376 — vitrinde EKSİKTİ. Sona eklendi (yukarıdaki `DateInput`
+          notundaki kanon): önceki bölümlerin kadrajını KAYDIRMAZ. */}
+      <section data-testid="section-textarea" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", maxWidth: 360 }}>
+        <h2 style={{ fontSize: "var(--text-section)", fontWeight: 600 }}>Textarea</h2>
+        <Textarea aria-label="Normal" placeholder="Normal" />
+        <Textarea aria-label="Hata" placeholder="Hata" status="error" />
+        <Textarea aria-label="Basari" placeholder="Basari" status="success" />
+        <Textarea aria-label="Devre disi" placeholder="Devre disi" disabled />
+      </section>
+
+      <section data-testid="section-file-input" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", maxWidth: 360 }}>
+        <h2 style={{ fontSize: "var(--text-section)", fontWeight: 600 }}>FileInput</h2>
+        <FileInput aria-label="Normal" />
+        <FileInput aria-label="Hata" status="error" />
+        <FileInput aria-label="Devre disi" disabled />
+      </section>
+
+      <section data-testid="section-anchored-popover" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+        <h2 style={{ fontSize: "var(--text-section)", fontWeight: 600 }}>AnchoredPopover</h2>
+        <div style={{ position: "relative", display: "inline-block" }}>
+          <Button size="sm" onClick={() => setPopoverOpen((v) => !v)}>
+            Yüzeyi aç
+          </Button>
+          {isPopoverOpen && (
+            <AnchoredPopover label="Örnek düzenleme yüzeyi" onClose={() => setPopoverOpen(false)}>
+              <div style={{ padding: "var(--space-3)" }}>Çapasına göre konumlanan yüzey.</div>
+            </AnchoredPopover>
+          )}
+        </div>
       </section>
     </main>
   );

@@ -36,13 +36,11 @@ import { UnitDocumentsCard } from "./UnitDocumentsCard";
 import { UnitInfoCard } from "./UnitInfoCard";
 import { UnitLocationCard } from "./UnitLocationCard";
 import { UnitPricingCard } from "./UnitPricingCard";
+import { PROJECT_PARAM } from "@/lib/navigation-params";
 // Sıra önemli: ortak kabuk → aile ortağı → forma özgü bloklar.
 import "@/styles/form-shell.css";
 import "@/components/unit-shell/unit-shell.css";
 import "./unit-form.css";
-
-/** Seçili proje URL'de taşınır (SY/`SalesView` ile aynı anahtar). */
-const PROJECT_PARAM = "proje";
 
 /**
  * UE — "Ünite Ekle" formu (`Form - Unite Ekle.dc.html`, kanonik).
@@ -141,6 +139,18 @@ export function UnitCreateView() {
     else params.delete(PROJECT_PARAM);
     const next = params.toString();
     router.replace(next.length > 0 ? `${pathname}?${next}` : pathname, { scroll: false });
+  }
+
+  function handleChangeBlock(blockId: string) {
+    // Blok doğrudan değişince eski bloğun katı yeni blokta anlamsızlaşır;
+    // proje/şantiye değişimleriyle AYNI desende sıfırlanır (kalan-6 no 338).
+    setValues((prev) => ({ ...prev, blockId, floor: "" }));
+    setTouched((prev) => {
+      const next = new Set(prev);
+      next.add("blockId");
+      next.delete("floor");
+      return next;
+    });
   }
 
   function handleChangeSite(siteId: string) {
@@ -286,6 +296,7 @@ export function UnitCreateView() {
             blocksNotice={blocksNotice}
             onChangeProject={handleChangeProject}
             onChangeSite={handleChangeSite}
+            onChangeBlock={handleChangeBlock}
             onChangeField={handleChangeField}
           />
 

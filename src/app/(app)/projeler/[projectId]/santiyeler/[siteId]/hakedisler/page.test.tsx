@@ -32,6 +32,7 @@ const SITE_ID = "44444444-4444-4444-4444-444444444444";
 
 vi.mock("next/navigation", () => ({
   useParams: () => ({ projectId: PROJECT_ID, siteId: SITE_ID }),
+  usePathname: () => `/projeler/${PROJECT_ID}/santiyeler/${SITE_ID}/hakedisler`,
 }));
 
 const SITE = {

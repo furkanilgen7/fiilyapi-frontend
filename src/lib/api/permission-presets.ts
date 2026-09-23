@@ -7,9 +7,6 @@ export type PresetKey =
   | "view"
   | "limited"
   | "finance"
-  | "own"
-  | "project"
-  | "stock"
   | "draft"
   | "request"
   | "approve";
@@ -21,7 +18,14 @@ export interface Preset {
   label: string;
 }
 
-// 12 adlandirilmis preset — spec §4.3 tablosu. Her (level, scope) kombinasyonu tekildir.
+// 9 adlandirilmis preset — spec §4.3 tablosu. Her (level, scope) kombinasyonu tekildir.
+//
+// 🔴 2026-09-19 (kullanici karari): "Kendi"/"Proje"/"Stok" preset'leri KALDIRILDI
+//    ve "Taslak"in kapsami `project` -> `all` oldu. Backend bu uc kapsami artik
+//    REDDEDIYOR (`core/access.py::DROPPED_SCOPES`), cunku hicbiri uygulanmiyordu:
+//    `own` uygulansaydi onay kutusunun "kendi evragini onaylayamazsin" bekcisini
+//    TERS CEVIRIRDI, `project` ise `UserProjectAccess`in ZATEN yaptigi seydi.
+//    Bunlar birakilsaydi UI, backend'in 423 ile reddedecegi bir dugme sunardi.
 export const PRESETS: Preset[] = [
   { key: "super", access_level: "admin", scope: "all", label: "Süper (silme dahil)" },
   { key: "full", access_level: "full", scope: "all", label: "Tam" },
@@ -29,10 +33,7 @@ export const PRESETS: Preset[] = [
   { key: "view", access_level: "view", scope: "all", label: "Görüntüle" },
   { key: "limited", access_level: "view", scope: "limited", label: "Sınırlı" },
   { key: "finance", access_level: "view", scope: "finance", label: "Mali" },
-  { key: "own", access_level: "view", scope: "own", label: "Kendi" },
-  { key: "project", access_level: "view", scope: "project", label: "Proje" },
-  { key: "stock", access_level: "view", scope: "stock", label: "Stok" },
-  { key: "draft", access_level: "draft", scope: "project", label: "Taslak" },
+  { key: "draft", access_level: "draft", scope: "all", label: "Taslak" },
   { key: "request", access_level: "request", scope: "all", label: "Talep" },
   { key: "approve", access_level: "approve", scope: "all", label: "Onay" },
 ];
@@ -46,10 +47,7 @@ export const PRESET_DESCRIPTIONS: Record<PresetKey, string> = {
   view: "Tüm kayıtları görüntüler (salt-okunur).",
   limited: "Sınırlı bir alt kümeyi görüntüler (salt-okunur).",
   finance: "Yalnız mali/finans verilerini görüntüler.",
-  own: "Yalnız kendi oluşturduğu kayıtları görüntüler.",
-  project: "Yalnız kendi projesine ait kayıtları görüntüler.",
-  stock: "Yalnız stok verilerini görüntüler.",
-  draft: "Kendi projesinde taslak oluşturabilir (onaya girmemiş kayıt).",
+  draft: "Taslak oluşturabilir (onaya girmemiş kayıt).",
   request: "Talep oluşturabilir (ör. satınalma talebi).",
   approve: "Kayıtları onaylayabilir.",
 };

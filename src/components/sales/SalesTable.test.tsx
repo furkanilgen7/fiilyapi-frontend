@@ -136,10 +136,30 @@ describe("SalesTable — tfoot'un iki kaynağı (205-215)", () => {
     renderTable({ rows: [], statusFilter: undefined });
     expect(screen.queryByTestId("satis-toplam")).not.toBeInTheDocument();
   });
+
+  /**
+   * no 239 · sunucunun `totals`ı `cancelled` satışları da sayar; "İptal
+   * Hariç" seçilince toplam GÖRÜNEN (iptal HARİÇ) satırlardan türer — aynı
+   * "süzgeç açıkken türet" mekanizması, artık iptalleri dışlamak için de
+   * kullanılabiliyor.
+   */
+  it("239 · 'İptal Hariç' seçilince toplam iptal edilmiş satışı SAYMAZ", () => {
+    renderTable({
+      rows: [
+        row({ id: "sl-1", status: "deed_transferred", sale_price: "1120000.00" }),
+        row({ id: "sl-2", status: "cancelled", sale_price: "500000.00" }),
+      ],
+      statusFilter: "exclude_cancelled",
+    });
+    const total = screen.getByTestId("satis-toplam");
+    expect(total).toHaveTextContent("TOPLAM (1 satış)");
+    expect(total).toHaveTextContent("1.120.000");
+    expect(total).not.toHaveTextContent("1.620.000");
+  });
 });
 
 describe("SalesTable — durum süzgeci (146) İSTEMCİDE", () => {
-  it("mockup'ın dört seçeneğini basar ('Tüm Durumlar' + üç durum)", () => {
+  it("mockup'ın üçü + ONAYLI SAPMA 'İptal Hariç' basılır ('Tüm Durumlar' + dört seçenek)", () => {
     renderTable();
     const select = screen.getByLabelText("Durum filtresi");
     expect(within(select).getAllByRole("option").map((o) => o.textContent)).toEqual([
@@ -147,6 +167,7 @@ describe("SalesTable — durum süzgeci (146) İSTEMCİDE", () => {
       "Tapulu",
       "Rezerve",
       "Vadesi Geçen",
+      "İptal Hariç",
     ]);
   });
 
@@ -202,5 +223,11 @@ describe("SalesTable — boş / yükleniyor / hata", () => {
     renderTable({ rows: undefined, serverTotals: undefined, isLoading: true });
     expect(screen.queryByTestId("satis-toplam")).not.toBeInTheDocument();
     expect(screen.getByTestId("satis-bos-durum")).toHaveTextContent("yükleniyor");
+  });
+
+  it("no 235 · proje seçilmemişken 'proje yok' metni değil 'önce proje seçin' basılır", () => {
+    renderTable({ rows: undefined, isLoading: false, hasSelectedProject: false });
+    expect(screen.getByTestId("satis-bos-durum")).toHaveTextContent("Önce bir proje seçin.");
+    expect(screen.queryByText("Bu projede henüz satış kaydı yok.")).not.toBeInTheDocument();
   });
 });

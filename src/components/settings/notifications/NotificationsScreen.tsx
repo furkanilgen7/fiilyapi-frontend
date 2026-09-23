@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui";
+import { Button, Checkbox } from "@/components/ui";
 import { SettingsCard } from "@/components/settings/primitives/SettingsCard";
 import { useNotificationPrefs, useUpdateNotificationPrefs } from "@/lib/api/hooks/useNotificationPrefs";
 import { groupNotifications, NOTIF_EVENT_DISPLAY } from "./notification-groups";
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { isForbidden } from "@/lib/api/unwrap";
+import { backendErrorMessage } from "@/lib/api/error-message";
 import type { NotificationPrefItem } from "@/lib/api/models";
 import "./notifications-screen.css";
 
@@ -19,6 +20,7 @@ export function NotificationsScreen() {
   const query = useNotificationPrefs();
   const update = useUpdateNotificationPrefs();
   const [items, setItems] = useState<NotificationPrefItem[]>([]);
+  const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
     if (query.data) setItems(query.data);
@@ -32,7 +34,10 @@ export function NotificationsScreen() {
     setItems((prev) => prev.map((it) => (it.event_key === key ? { ...it, [ch]: !it[ch] } : it)));
 
   const save = () =>
-    update.mutate({ items: items.map(({ event_key, email, in_app, sms }) => ({ event_key, email, in_app, sms })) });
+    update.mutate(
+      { items: items.map(({ event_key, email, in_app, sms }) => ({ event_key, email, in_app, sms })) },
+      { onError: (e) => setErr(backendErrorMessage(e)) },
+    );
 
   const grouped = groupNotifications(items);
 
@@ -58,7 +63,7 @@ export function NotificationsScreen() {
                     <div className="notif-row__channels">
                       {CHANNELS.map((ch) => (
                         <label key={ch} className="notif-channel">
-                          <input type="checkbox" checked={it[ch]} onChange={() => toggle(it.event_key, ch)} /> {CHANNEL_LABEL[ch]}
+                          <Checkbox checked={it[ch]} onChange={() => toggle(it.event_key, ch)} /> {CHANNEL_LABEL[ch]}
                         </label>
                       ))}
                     </div>
@@ -69,6 +74,7 @@ export function NotificationsScreen() {
           </SettingsCard>
         ))}
       </div>
+      {err && <p className="settings-note settings-note--error">{err}</p>}
       <div className="notif-actions">
         <Button variant="primary" onClick={save} disabled={update.isPending}>
           Kaydet

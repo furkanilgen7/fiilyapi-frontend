@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Select } from "@/components/ui";
 import { CheckIcon, inlineSymbolProps } from "@/components/ui/icons";
@@ -18,6 +18,7 @@ import {
   type PresetKey,
 } from "@/lib/api/permission-presets";
 import { isForbidden } from "@/lib/api/unwrap";
+import { backendErrorMessage } from "@/lib/api/error-message";
 import { cx } from "@/lib/cx";
 import { AccessDenied } from "../AccessDenied";
 import type { ModuleGroup, ModuleResponse, PermissionCell } from "@/lib/api/models";
@@ -51,8 +52,13 @@ export function PermissionMatrix() {
   const roleIds = roles.map((role) => role.id);
   const permQueries = useAllRolePermissions(roleIds);
   const mutation = usePermissionMutation();
+  const [cellError, setCellError] = useState<string | null>(null);
 
-  if (modulesQuery.isLoading || rolesQuery.isLoading) {
+  // Kayıt 281 — `permQueries` (rol başına izin hücreleri) bu bekleyişe
+  // dahil değildi: modüller+roller gelir gelmez matris etkileşime açılıyor,
+  // henüz yüklenmemiş roller için hücreler `[]`e düşüyor ve kullanıcı GERÇEK
+  // değeri görmeden yazabiliyordu.
+  if (modulesQuery.isLoading || rolesQuery.isLoading || permQueries.some((q) => q.isLoading)) {
     return <p className="settings-note">Yükleniyor…</p>;
   }
   const permForbidden = permQueries.some((q) => isForbidden(q.error));
@@ -83,7 +89,11 @@ export function PermissionMatrix() {
 
   function handleChange(roleId: string, moduleKey: string, value: string) {
     if (value === "") return;
-    mutation.mutate({ roleId, moduleKey, update: presetToUpdate(value as PresetKey) });
+    setCellError(null);
+    mutation.mutate(
+      { roleId, moduleKey, update: presetToUpdate(value as PresetKey) },
+      { onError: (e) => setCellError(backendErrorMessage(e)) },
+    );
   }
 
   return (
@@ -104,6 +114,8 @@ export function PermissionMatrix() {
           ))}
         </dl>
       </section>
+
+      {cellError && <p className="settings-note settings-note--error">{cellError}</p>}
 
       <SettingsCard bodyPad="flush">
         <div className="matrix-scroll">

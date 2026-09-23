@@ -51,6 +51,7 @@ function setup(overrides: Partial<ContractItemsCardProps> = {}) {
       isLoadPending={false}
       isBusy={false}
       loadDisabledReason={null}
+      canDelete={true}
       onLoadFromEmployer={onLoadFromEmployer}
       onCommitItem={onCommitItem}
       onDeleteItem={onDeleteItem}
@@ -134,6 +135,82 @@ describe("`unit_price` boş = 'girilmedi' (0 DEĞİL)", () => {
     fireEvent.blur(input);
     expect(onCommitItem).toHaveBeenCalledWith("sci-1", { quantity: "1500" });
   });
+
+  // no 328 — `clearDraft` mutasyondan ÖNCE çağrılıyordu; hücre, sunucu
+  // yanıtı dönene kadar (item prop TAZELENMEDEN) sunucunun ESKİ değerine bir
+  // an için geri dönüyordu (yazdığı değer değil, eski değer flaşlanıyordu).
+  it("mutasyon SÜRERKEN (isBusy) hücre kullanıcının yazdığı değeri göstermeye devam eder, ESKİ sunucu değerine dönmez", () => {
+    const onCommitItem = vi.fn();
+    const { rerender } = render(
+      <ContractItemsCard
+        items={ITEMS}
+        contractTotal="1440000.00"
+        itemsMissingPrice={1}
+        employerContractNo="SZL-2025-001"
+        loadNotice={null}
+        loadError={null}
+        isLoadPending={false}
+        isBusy={false}
+        loadDisabledReason={null}
+        canDelete={true}
+        onLoadFromEmployer={vi.fn()}
+        onCommitItem={onCommitItem}
+        onDeleteItem={vi.fn()}
+      />,
+    );
+    const input = screen.getByLabelText("03.001 miktar");
+    fireEvent.change(input, { target: { value: "1500" } });
+    fireEvent.blur(input);
+    expect(onCommitItem).toHaveBeenCalledWith("sci-1", { quantity: "1500" });
+
+    // Mutasyon başladı (isBusy=true); sunucu (item prop) HENÜZ tazelenmedi.
+    rerender(
+      <ContractItemsCard
+        items={ITEMS}
+        contractTotal="1440000.00"
+        itemsMissingPrice={1}
+        employerContractNo="SZL-2025-001"
+        loadNotice={null}
+        loadError={null}
+        isLoadPending={false}
+        isBusy={true}
+        loadDisabledReason={null}
+        canDelete={true}
+        onLoadFromEmployer={vi.fn()}
+        onCommitItem={onCommitItem}
+        onDeleteItem={vi.fn()}
+      />,
+    );
+    expect(screen.getByLabelText("03.001 miktar")).toHaveValue(1500);
+  });
+
+  it("no 328 · mutasyon SETTLE olunca (isBusy geri false) taslak temizlenir — HATADA sunucu değerine geri döner", () => {
+    const onCommitItem = vi.fn();
+    const baseProps = {
+      items: ITEMS,
+      contractTotal: "1440000.00",
+      itemsMissingPrice: 1,
+      employerContractNo: "SZL-2025-001",
+      loadNotice: null,
+      loadError: null,
+      isLoadPending: false,
+      loadDisabledReason: null,
+      canDelete: true,
+      onLoadFromEmployer: vi.fn(),
+      onCommitItem,
+      onDeleteItem: vi.fn(),
+    };
+    const { rerender } = render(<ContractItemsCard {...baseProps} isBusy={false} />);
+    const input = screen.getByLabelText("03.001 miktar");
+    fireEvent.change(input, { target: { value: "1500" } });
+    fireEvent.blur(input);
+
+    rerender(<ContractItemsCard {...baseProps} isBusy={true} />);
+    // Mutasyon HATAYLA settle olur — item prop DEĞİŞMEDEN kalır (1200.000).
+    rerender(<ContractItemsCard {...baseProps} isBusy={false} />);
+
+    expect(screen.getByLabelText("03.001 miktar")).toHaveValue(1200);
+  });
 });
 
 describe("load-from-employer bildirimi ve satır silme", () => {
@@ -151,10 +228,38 @@ describe("load-from-employer bildirimi ve satır silme", () => {
     expect(button).toHaveAttribute("title", "Proje seçilmedi");
   });
 
-  it("140 · satır silme çağrıyı kalem kimliğiyle yapar", () => {
+  /**
+   * no 331 · silme butonu ESKİDEN onay sormadan doğrudan `onDeleteItem`
+   * çağırıyordu (yanlış tıklama = geri dönüşsüz silme). Artık bir onay
+   * diyaloğu araya girer; çağrı YALNIZ diyalog onaylanınca gider.
+   */
+  it("331 · satır silme ÖNCE onay ister; tek tıklama silmez", () => {
     const { onDeleteItem } = setup();
     fireEvent.click(screen.getByRole("button", { name: "03.002 satırını sil" }));
+    expect(onDeleteItem).not.toHaveBeenCalled();
+    expect(screen.getByRole("heading", { name: /Poz.*Sil|Satırı Sil/i })).toBeInTheDocument();
+  });
+
+  it("331 · onay diyaloğunda 'Sil' çağrıyı kalem kimliğiyle yapar", () => {
+    const { onDeleteItem } = setup();
+    fireEvent.click(screen.getByRole("button", { name: "03.002 satırını sil" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sil" }));
     expect(onDeleteItem).toHaveBeenCalledWith("sci-2");
+  });
+
+  it("331 · onay diyaloğunda 'Vazgeç' çağrıyı iptal eder", () => {
+    const { onDeleteItem } = setup();
+    fireEvent.click(screen.getByRole("button", { name: "03.002 satırını sil" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vazgeç" }));
+    expect(onDeleteItem).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Sil" })).not.toBeInTheDocument();
+  });
+
+  // kalan-6 no 319 — silme uçları `contracts:admin` kapısındadır; `canWrite`
+  // (full) yeterli değildir, buton `canDelete` ile kapatılmalıdır.
+  it("canDelete=false iken satır silme butonu DEVRE DIŞIDIR", () => {
+    setup({ canDelete: false });
+    expect(screen.getByRole("button", { name: "03.002 satırını sil" })).toBeDisabled();
   });
 });
 

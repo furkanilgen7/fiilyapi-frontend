@@ -52,7 +52,7 @@ export function SiteStockView() {
     siteId: string;
   }>();
 
-  const permission = useModulePermission("stock");
+  const permission = useModulePermission("inventory");
 
   // Başlık için — drill kabuğu aynı anahtarı zaten çektiğinden ikinci bir ağ
   // isteği oluşmaz (React Query önbelleği; `belgeler`/`puantaj` deseni).

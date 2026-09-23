@@ -13,6 +13,7 @@ import {
   type ProgressPaymentListResponse,
 } from "@/lib/api/hooks/useProgressPayments";
 import { useProject } from "@/lib/api/hooks/useProjects";
+import { BackendError } from "@/lib/api/unwrap";
 import {
   useProjectTimeline,
   type ProjectTimelineResponse,
@@ -388,7 +389,39 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
       expect(bar.firstElementChild).toHaveStyle({ width: "75%" });
     });
 
-    it("`progress_pct` null → çubuk çizilmez, kart silinmez, gerekçe basılır", () => {
+    // 🔴 F-KAPSAM (2026-09-19) — FİKSTÜR DÜZELTİLDİ, KURAL DARALDI.
+    //
+    // Eski fikstür `contract_amount: null` ile "bedel girilmemiş" demek
+    // istiyordu. Kapsam maskesinden sonra o `null` ARTIK İKİ ANLAMLIDIR:
+    // `contract_amount` `Gorunurluk.para`dır ve `limited` kapsamda gizlenir.
+    // Gerekçe o hâlde basılamaz (yalan olurdu), bu yüzden "bedel yok" hâli
+    // fikstürde GÖRÜNÜR SIFIR olarak kurulur.
+    it("bedel GÖRÜNÜR ve 0 iken `progress_pct` null → çubuk çizilmez, gerekçe basılır", () => {
+      mockAll({
+        detail: {
+          ...DETAIL,
+          progress_payment_summary: {
+            ...SUMMARY,
+            contract_amount: "0.00",
+            progress_pct: null,
+            remaining: null,
+          },
+        },
+      });
+      render(<EmployerContractDetailView projectId="p-1" />);
+
+      expect(screen.queryByTestId("ecd-pps-bar")).not.toBeInTheDocument();
+      expect(screen.getByTestId("ecd-pps-pct-pending")).toHaveTextContent(
+        "Sözleşme bedeli girilmeden hakediş yüzdesi hesaplanamaz",
+      );
+      expect(screen.getByText("Hakediş Özeti")).toBeInTheDocument();
+    });
+
+    // 🔴 POZİTİF KONTROL'ün AYNASI: maskeli bedelde (`null`) kart SİLİNMEZ,
+    // tutar "—" basar ama YANLIŞ gerekçe YAZILMAZ. Kartın bütününün ayakta
+    // kaldığını burada, dalın kendi kuralını `ContractPaymentSummaryCard
+    // .masked.test.tsx`te çakıyoruz.
+    it("bedel MASKELİ iken kart silinmez, tutar '—' basar, gerekçe YAZILMAZ", () => {
       mockAll({
         detail: {
           ...DETAIL,
@@ -402,11 +435,10 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
       });
       render(<EmployerContractDetailView projectId="p-1" />);
 
-      expect(screen.queryByTestId("ecd-pps-bar")).not.toBeInTheDocument();
-      expect(screen.getByTestId("ecd-pps-pct-pending")).toHaveTextContent(
+      expect(screen.getByTestId("ecd-pps-contract-amount")).toHaveTextContent("—");
+      expect(screen.getByTestId("ecd-pps-pct-pending")).not.toHaveTextContent(
         "Sözleşme bedeli girilmeden hakediş yüzdesi hesaplanamaz",
       );
-      expect(screen.getByTestId("ecd-pps-contract-amount")).toHaveTextContent("—");
       expect(screen.getByText("Hakediş Özeti")).toBeInTheDocument();
     });
   });
@@ -700,6 +732,28 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
       // `showProjectName={false}` — proje adı başlıkta zaten var.
       expect(screen.queryByText("Kule A")).not.toBeInTheDocument();
     });
+
+    /**
+     * 🔴 `progress_payments` `contracts`tan AYRI bir izin anahtarıdır
+     * (backend `progress_payments/router.py:44`). `contracts:view` olan ama
+     * `progress_payments:none` olan kullanıcı bu sekmede 403 alır — "yüklenemedi"
+     * demek geçici bir arıza vaat ederdi, doğru cümle yetki sınırını söyler
+     * (`ContractMilestonesCard`teki 403 deseniyle AYNI).
+     */
+    it("403: yetki sınırı SÖYLENİR, 'yüklenemedi' DENMEZ", () => {
+      searchParams = new URLSearchParams("tab=payments");
+      mockAll({
+        paymentsExtra: {
+          data: undefined,
+          isError: true,
+          error: new BackendError(403, { detail: "forbidden" }),
+        },
+      });
+      render(<EmployerContractDetailView projectId="p-1" />);
+
+      expect(screen.getByTestId("ecd-payments-forbidden")).toBeInTheDocument();
+      expect(screen.queryByText("Hakedişler yüklenemedi")).not.toBeInTheDocument();
+    });
   });
 
   describe("Belgeler sekmesi (`?tab=documents`) → PENDING (ONAYLI KARAR)", () => {
@@ -740,8 +794,10 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
     it("miktar ve birim fiyat hücreleri DÜZENLENEBİLİR kontroldür, salt metin değil", () => {
       renderItemsTab();
 
-      expect(screen.getByLabelText("03.001 miktar")).toHaveValue(3200);
-      expect(screen.getByLabelText("03.001 birim fiyatı")).toHaveValue(1850);
+      // no 51 · hücreler artık `type="number"` DEĞİLDİR (`inputMode="decimal"`)
+      // — değer metin olarak karşılaştırılır.
+      expect(screen.getByLabelText("03.001 miktar")).toHaveValue("3200");
+      expect(screen.getByLabelText("03.001 birim fiyatı")).toHaveValue("1850");
     });
 
     it("odak çıkışında (emsal tetikleyicisi) yalnız DEĞİŞEN alan PATCH'lenir", () => {
@@ -784,7 +840,7 @@ describe("EmployerContractDetailView · E14 işveren sözleşme detayı", () => 
       expect(screen.getByTestId("ecd-items-error")).toHaveTextContent(
         "Miktar sıfırdan büyük olmalıdır.",
       );
-      expect(screen.getByLabelText("03.001 miktar")).toHaveValue(3200);
+      expect(screen.getByLabelText("03.001 miktar")).toHaveValue("3200");
     });
 
     it("negatif birim fiyat gönderilmez (`minimum: 0`)", () => {

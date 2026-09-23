@@ -230,10 +230,16 @@ export function PersonnelDocumentFormModal({
                 disabled={isPending}
                 status={formError && values.file === null ? "error" : "default"}
                 onChange={(event) => {
+                  // 🔴 Öksüz dosya uyarısı (1. adım başarılı + 2. adım düştü)
+                  // varken dosya değiştirilirse uyarı KORUNUR — yoksa ilk
+                  // dosya kullanıcıya hiç iz bırakmadan arşivde öksüz kalır.
+                  const hadOrphanWarning = uploadedDocumentId !== null;
                   set("file", event.target.files?.[0] ?? null);
                   // Dosya DEĞİŞTİ ⇒ önceki yükleme bu form için geçersiz.
                   setUploadedDocumentId(null);
-                  setFormError(null);
+                  if (!hadOrphanWarning) {
+                    setFormError(null);
+                  }
                 }}
               />
             )}

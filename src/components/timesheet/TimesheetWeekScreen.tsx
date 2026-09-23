@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 
 import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Button } from "@/components/ui/button/Button";
+import { formatDecimal } from "@/lib/format";
 
 import { AddPersonnelLink } from "./AddPersonnelLink";
 import type { TimesheetIsoWeek } from "./iso-week";
@@ -21,6 +22,7 @@ import { TimesheetSaveStatus } from "./TimesheetSaveStatus";
 import { TimesheetWeekKpis } from "./TimesheetWeekKpis";
 import { TimesheetWeekNav } from "./TimesheetWeekNav";
 import { TimesheetWeekTable } from "./TimesheetWeekTable";
+import { OVERTIME_SURCHARGE_PERCENT_TEXT } from "./overtime-rule";
 import { useTimesheetWeekData } from "./useTimesheetWeekData";
 import { useTimesheetWeekEditor } from "./useTimesheetWeekEditor";
 import type { TimesheetWeekViewRow } from "./week-derive";
@@ -146,9 +148,9 @@ export function TimesheetWeekScreen({
       {/* E5 76-81 — giriş kuralının kendisi ekranda yazar: birim SAATtir */}
       <p className="ts-info">
         <strong>Giriş haftalık yapılır, birim saattir.</strong> Her güne o gün çalışılan saat
-        yazılır. Haftalık normal mesai {weekData?.weekly_normal_hours ?? "—"} saat; üzeri fazla
-        mesai olarak ayrılır ve bordroda %50 zamlı hesaplanır. Aylık bordro, ayın haftalarının
-        toplamından türetilir.
+        yazılır. Haftalık normal mesai {formatDecimal(weekData?.weekly_normal_hours, 1)} saat; üzeri fazla
+        mesai olarak ayrılır ve bordroda {OVERTIME_SURCHARGE_PERCENT_TEXT} zamlı hesaplanır. Aylık
+        bordro, ayın haftalarının toplamından türetilir.
       </p>
 
       {/* E5 86-133 */}
@@ -162,7 +164,11 @@ export function TimesheetWeekScreen({
         {controls}
         {showRowFilters && (
           <TimesheetRowFilters
-            rows={view.rows}
+            // 🔴 triyaj #357 — SÜZGEÇTEN ÖNCEKİ satırlar: seçenek listesi ve
+            // per-seçenek sayılar `view.rows` (süzülmüş) DEĞİL, bundan
+            // kurulur; aksi hâlde bir meslek seçilince diğer seçenekler
+            // yanlış daralırdı.
+            rows={data.unfilteredRows}
             value={filters}
             onChange={setFilters}
             shownCount={view.rows.length}

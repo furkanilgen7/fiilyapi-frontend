@@ -76,11 +76,19 @@ export function HrDocumentsView() {
         {UPLOAD_PENDING_REASON}
       </p>
 
+      {/* Kayıt 123 — "Toplu Randevu" gerekçesi önceden yalnız `title`da
+          duruyordu (klavye/ekran okuyucuyla erişilemez); F-BLG T3/G7
+          kanonuyla EKRANDA basılır. Aynı gerekçe aşağıdaki bant düğmesi
+          (99-107) için de geçerlidir. */}
+      <p className="bt__pending-reason" data-testid="bt-appointment-reason">
+        {APPOINTMENT_PENDING_REASON}
+      </p>
+
       {/* `/personel` ile ORTAK sekme şeridi; burada bu sekme AKTİFtir. */}
       <PersonnelTabsStrip activeTab={HR_DOCUMENTS_TAB_LABEL} />
 
       {errorMessage && (
-        <p className="bt-filters__note" data-testid="bt-summary-error">
+        <p className="bt-filters__note bt-filters__note--danger" data-testid="bt-summary-error">
           Belge özeti yüklenemedi: {errorMessage}
         </p>
       )}

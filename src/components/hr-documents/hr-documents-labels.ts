@@ -158,7 +158,10 @@ const SEGMENT_LABEL: Record<BreakdownSegment["key"], string> = {
  * yok).
  */
 export function buildBreakdownRow(type: HrDocumentTypeBreakdown): BreakdownRow {
-  const documentCount = type.valid + type.expiring + type.expired;
+  // Kayıt 125 — sunucu bu toplamı zaten hazır veriyor (`total_documents` =
+  // valid+expiring+expired); istemci yeniden HESAPLAMAZ (spec K6: istemci
+  // KPI hesaplamaz) — tanım değişirse sessizce ayrışmaz.
+  const documentCount = type.total_documents;
   const barTotal = documentCount + type.missing;
 
   const rawSegments: ReadonlyArray<readonly [BreakdownSegment["key"], number]> = [

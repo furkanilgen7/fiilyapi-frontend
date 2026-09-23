@@ -1,4 +1,5 @@
 import { Field, Input, Select } from "@/components/ui";
+import { normalizeDecimalInput } from "@/lib/decimal";
 
 // Satır eklenip silinebildiği için React key'i index olamaz (silme, sonraki
 // satırları reindex eder ve odak/seçim yanlış satıra yapışabilir) — her satıra
@@ -36,10 +37,27 @@ export function isSiteRowEmpty(row: SiteRow): boolean {
   );
 }
 
-/** Adı boş ama diğer alanları dolu satır hatadır (§4.7). */
+/** §4.10 tablosuyla birebir aynı metinler (bkz. `validate.ts` MESSAGES.notANumber/negativeAmount). */
+const SITE_NAME_REQUIRED = "Şantiye adı zorunludur.";
+const SITE_AREA_INVALID = "Bu alan sayı olmalıdır.";
+const SITE_AREA_NEGATIVE = "Alan negatif olamaz.";
+
+/**
+ * Adı boş ama diğer alanları dolu satır hatadır (§4.7). Alan (m²) doluysa
+ * ayrıca sayısal/negatif denetlenir — aksi hâlde `Number("abc")` NaN'i
+ * `collectSiteInputs`te sessizce `null`a çevirir ve kullanıcı hiçbir uyarı
+ * görmeden verisini kaybeder (🔴 KUSUR no 204).
+ */
 export function siteRowError(row: SiteRow): string | null {
-  if (!isSiteRowEmpty(row) && !row.name.trim()) {
-    return "Şantiye adı zorunludur.";
+  if (isSiteRowEmpty(row)) return null;
+  if (!row.name.trim()) {
+    return SITE_NAME_REQUIRED;
+  }
+  const area = row.constructionAreaM2.trim();
+  if (area) {
+    const normalized = normalizeDecimalInput(area);
+    if (normalized === null) return SITE_AREA_INVALID;
+    if (Number(normalized) < 0) return SITE_AREA_NEGATIVE;
   }
   return null;
 }
@@ -95,15 +113,22 @@ export function SiteRepeaterCard({
       </h2>
 
       <div className="pf-sites">
-        {rows.map((row, index) => (
+        {rows.map((row, index) => {
+          // `siteRowError` ÖNCE adı denetler: satırın hatası varsa VE ad
+          // doluysa hata alan (m²) alanına AİTTİR (🔴 KUSUR no 204 — eskiden
+          // her hata adın altına basılıyordu, alan geçersizken bile).
+          const rowError = errors?.[index] ?? undefined;
+          const nameError = row.name.trim() ? undefined : rowError;
+          const areaError = row.name.trim() ? rowError : undefined;
+          return (
           <div className="pf-site-row" key={row.id}>
-            <Field label="Şantiye Adı" error={errors?.[index] ?? undefined}>
+            <Field label="Şantiye Adı" error={nameError}>
               {(control) => (
                 <Input
                   {...control}
                   value={row.name}
                   placeholder="A-Blok Şantiyesi"
-                  status={errors?.[index] ? "error" : "default"}
+                  status={nameError ? "error" : "default"}
                   onChange={(e) => updateRow(index, { name: e.target.value })}
                 />
               )}
@@ -126,13 +151,14 @@ export function SiteRepeaterCard({
                 </Select>
               )}
             </Field>
-            <Field label="İnşaat Alanı (m²)">
+            <Field label="İnşaat Alanı (m²)" error={areaError}>
               {(control) => (
                 <Input
                   {...control}
                   numeric
                   value={row.constructionAreaM2}
                   placeholder="6420"
+                  status={areaError ? "error" : "default"}
                   onChange={(e) =>
                     updateRow(index, { constructionAreaM2: e.target.value })
                   }
@@ -148,7 +174,8 @@ export function SiteRepeaterCard({
               ×
             </button>
           </div>
-        ))}
+          );
+        })}
 
         <button type="button" className="pf-site-add" onClick={addRow}>
           + Şantiye Ekle

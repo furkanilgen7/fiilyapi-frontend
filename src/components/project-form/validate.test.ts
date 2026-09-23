@@ -143,6 +143,20 @@ describe("validateProjectForm — taslak semantiği (§5.2)", () => {
     expect(errors.contract).toEqual({});
   });
 
+  it("🔴 kat_karşılığı taslakta arsa payı oranı ZORUNLU sayılmaz", () => {
+    const base = emptyProjectFormValues();
+    const errors = validateProjectForm(
+      {
+        ...base,
+        projectType: "kat_karsiligi",
+        basic: { ...base.basic, name: "Taslak Kat Karşılığı" },
+      },
+      { isDraft: true },
+    );
+    expect(errors.landShare.ourSharePct).toBeUndefined();
+    expect(errors.landShare.ownerSharePct).toBeUndefined();
+  });
+
   it("taslakta tutarlılık kuralları YİNE uygulanır", () => {
     const base = emptyProjectFormValues();
     const errors = validateProjectForm(

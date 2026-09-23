@@ -65,6 +65,22 @@ describe("downloadPersonnelExport", () => {
   });
 
   /**
+   * 🔴 EXPORT SINIFI (2026-09-23) — `isDraft` önceden bu haritada YOKTU;
+   * `PersonnelListView` listeyi `isDraft: false` ile çekerken export ucu bu
+   * süzgeci hiç almıyordu ⇒ Excel TASLAK personeli de indiriyordu.
+   */
+  it("isDraft:false süzgeci is_draft olarak sorguya GEÇER", async () => {
+    // Arrange
+    const stub = stubExportDownload();
+
+    // Act
+    await downloadPersonnelExport({ isDraft: false });
+
+    // Assert
+    expect(stub.lastQuery()).toEqual({ is_draft: "false" });
+  });
+
+  /**
    * 🔴 SAYFALAMA SÜZGEÇ DEĞİLDİR — personel sayfalaması zaten İSTEMCİDEDİR
    * ("1–6 gösteriliyor" bir pencere), Excel'i altı satıra kısmak saçma olurdu.
    */

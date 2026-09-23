@@ -55,4 +55,20 @@ describe("Input", () => {
     render(<Input aria-label="Bolum adi" size="row" />);
     expect(screen.getByRole("textbox")).not.toHaveAttribute("size");
   });
+
+  // 🔴 KAYIT 373: `className` yalnız iç `<input>`e gider — yerleşim sınıfı
+  // vermek isteyen çağıran (ör. flex genişliği) yanlış elemana inerdi.
+  it("className iç <input>'e gider, dış <span>'e SIZMAZ", () => {
+    render(<Input aria-label="Ad" className="ozel-sinif" />);
+    expect(screen.getByRole("textbox").className).toContain("ozel-sinif");
+    expect(screen.getByRole("textbox").parentElement?.className).not.toContain("ozel-sinif");
+  });
+
+  it("wrapperClassName dış <span>'e (.input-wrap) gider, iç <input>'e SIZMAZ", () => {
+    render(<Input aria-label="Ad" wrapperClassName="genislik-oto" />);
+    const input = screen.getByRole("textbox");
+    expect(input.parentElement?.className).toContain("input-wrap");
+    expect(input.parentElement?.className).toContain("genislik-oto");
+    expect(input.className).not.toContain("genislik-oto");
+  });
 });

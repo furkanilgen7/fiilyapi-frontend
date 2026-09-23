@@ -402,6 +402,20 @@ describe("UnitImportView — EI 91-103 doğrulama sonucu", () => {
     expect(screen.queryByTestId("excel-form-sayaclar")).toBeNull();
   });
 
+  it("🔴 KUSUR no 384: sunucu hatası geldiğinde 'henüz doğrulanmadı' notu İKİ KATLI basılmaz", async () => {
+    validateAsync.mockRejectedValue(
+      new BackendError(422, { detail: "Beklenmeyen sütun başlığı." }),
+    );
+    render(<UnitImportView />);
+    selectProject();
+    selectFile(xlsxFile());
+    expect(await screen.findByTestId("excel-form-dogrulama-hata")).toHaveTextContent(
+      "Beklenmeyen sütun başlığı.",
+    );
+    // Karşılıklı dışlayan koşul: hata GÖRÜNÜRKEN boş/gerekçe notu BASILMAZ.
+    expect(screen.queryByTestId("excel-form-dogrulama-bos")).toBeNull();
+  });
+
   it("proje seçilmeden dosya seçmek istek KURMAZ, gerekçe basar", () => {
     render(<UnitImportView />);
     selectFile(xlsxFile());
@@ -409,6 +423,17 @@ describe("UnitImportView — EI 91-103 doğrulama sonucu", () => {
     expect(screen.getByTestId("excel-form-dogrulama-hata")).toHaveTextContent(
       IMPORT_PROJECT_REQUIRED_MESSAGE,
     );
+  });
+
+  it("KAYIT 385: reddedilmiş dosyadan sonra proje değişince dosya hatası TEMİZLENİR", () => {
+    render(<UnitImportView />);
+    selectProject();
+    selectFile(xlsxFile("uniteler.csv"));
+    expect(screen.getByText(IMPORT_BAD_TYPE_MESSAGE)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId("excel-form-proje"), { target: { value: "" } });
+
+    expect(screen.queryByText(IMPORT_BAD_TYPE_MESSAGE)).not.toBeInTheDocument();
   });
 
   it("proje değişince doğrulama ATILIR (başka projenin raporu gösterilmez)", async () => {

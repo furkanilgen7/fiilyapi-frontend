@@ -34,6 +34,13 @@ export function buildItemProgressPct(
 
   const pctByItemId = new Map<string, number>();
   for (const item of items) {
+    // 🔴 MASKE AÇIKÇA ELENİR (kapsam maskesi, kullanıcı kararı 2026-09-19).
+    //    `quantity` `Gorunurluk.operasyonel`dir ve `finance` kapsamında `null`
+    //    gelir. Eski kod bunu yalnız TESADÜFEN atlıyordu: `Number(null)` **0**
+    //    olduğu için aşağıdaki `<= 0` eşiğine takılıyordu. Eşik bir gün
+    //    değişseydi maskeli poz `billed / 0` ile `Infinity` yüzde basardı ve
+    //    hiçbir test görmezdi. Kural artık eşikten BAĞIMSIZ durur.
+    if (item.quantity === null) continue;
     const contractQuantity = Number(item.quantity);
     if (!Number.isFinite(contractQuantity) || contractQuantity <= 0) continue;
     const billed = billedByItemId.get(item.id) ?? 0;

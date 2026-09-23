@@ -74,6 +74,9 @@ export function DocumentFolderModal({ projectId, siteId, onClose }: DocumentFold
           {(control) => (
             <Input
               {...control}
+              // Kayıt 73 — backend `DocumentFolderCreate.name` max_length=150
+              // dayatır; istemci tavanı taşımıyordu (150+ karakter 422 alırdı).
+              maxLength={150}
               value={name}
               onChange={(event) => {
                 setName(event.target.value);

@@ -161,6 +161,17 @@ export function PeriodClosingView() {
           {errorMessage}
         </p>
       )}
+
+      {/* 🔴 GERİ-AÇ-HATA — `actionError`ın İKİNCİ okuyucusu. Geri açma onay
+          diyaloğu AÇMADIĞI için (düğme `onReopen`i doğrudan çağırır)
+          `confirmRow` null kalır ve hata modal'a hiç ulaşmazdı: 409/403/500
+          sessizce yutuluyordu. Koşuldaki `confirmRow === null` ZORUNLUDUR —
+          yoksa KAPATMA hatası modal + band olarak İKİ KEZ basılır. */}
+      {actionError !== null && confirmRow === null && (
+        <p className="mu-notice mu-notice--danger" data-testid="dkap-action-error">
+          {actionError}
+        </p>
+      )}
       {errorMessage === undefined && rows === undefined && (
         <p className="mu-notice" data-testid="dkap-loading">
           Dönemler yükleniyor…

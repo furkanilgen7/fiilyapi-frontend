@@ -17,10 +17,19 @@ export interface EquipmentFuelLogTableProps {
   equipment: EquipmentListResponse | undefined;
   logs: FuelLogListResponse | undefined;
   isLoading: boolean;
+  /** `useEquipmentFuelLogs` hata verirse panel BOŞ kalmasın diye taşınır. */
+  isError?: boolean;
   /** Şantiye/proje adı çözümü AYRI kaynaktan gelir; `undefined` ⇒ hâlâ yükleniyor. */
   resolveSiteLabel: (siteId: string | null) => string | null | undefined;
   /** `entered_by_id` → ad; `undefined` ⇒ hâlâ yükleniyor, `null` ⇒ bulunamadı/yetkisiz. */
   resolveEnteredByName: (enteredById: string | null) => string | null | undefined;
+  /**
+   * KAYIT 90 — `equipment_id` → ad; `undefined` ⇒ ekipman sorgusu hâlâ
+   * yükleniyor/hataya düştü, `null` ⇒ yüklendi ama id listede yok (silinmiş/
+   * tavan aşımı). Kardeş çözücülerle (site/entered-by) AYNI üç durumlu
+   * disiplin — önceden yerel `.find` hiçbir ayrım yapmıyordu.
+   */
+  resolveEquipmentName: (equipmentId: string) => string | null | undefined;
 }
 
 /**
@@ -43,8 +52,10 @@ export function EquipmentFuelLogTable({
   equipment,
   logs,
   isLoading,
+  isError,
   resolveSiteLabel,
   resolveEnteredByName,
+  resolveEquipmentName,
 }: EquipmentFuelLogTableProps) {
   const items = logs?.items;
 
@@ -74,7 +85,12 @@ export function EquipmentFuelLogTable({
       </div>
 
       {isLoading && <p className="makine-yakit-panel__note">Yükleniyor…</p>}
-      {!isLoading && items?.length === 0 && (
+      {!isLoading && isError && (
+        <p className="makine-yakit-panel__note" data-testid="makine-yakit-log-error">
+          Kayıtlar yüklenemedi.
+        </p>
+      )}
+      {!isLoading && !isError && items?.length === 0 && (
         <p className="makine-yakit-panel__note" data-testid="makine-yakit-log-empty">
           Bu dönemde yakıt kaydı yok.
         </p>
@@ -105,9 +121,7 @@ export function EquipmentFuelLogTable({
           </thead>
           <tbody>
             {items.map((log) => {
-              const equipmentName =
-                (equipment?.items ?? []).find((item) => item.id === log.equipment_id)?.name ??
-                undefined;
+              const equipmentName = resolveEquipmentName(log.equipment_id);
               const siteLabel = resolveSiteLabel(log.site_id);
               const enteredByName = resolveEnteredByName(log.entered_by_id);
 
@@ -117,7 +131,9 @@ export function EquipmentFuelLogTable({
                   <td className="makine-yakit-table__mono">{formatDateDots(log.fuel_date)}</td>
                   {/* 119 */}
                   <td className="makine-yakit-table__name">
-                    {equipmentName ?? "Yükleniyor…"}
+                    {equipmentName === undefined
+                      ? "Yükleniyor…"
+                      : (equipmentName ?? EMPTY_VALUE)}
                   </td>
                   {/* 120 */}
                   <td className="makine-yakit-table__muted">

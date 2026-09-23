@@ -208,9 +208,59 @@ describe("useChartOfAccounts", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(queryOf()).toEqual({ q: "kasa", account_type: "asset", limit: 200 });
+    // Anahtarın SONU `allPages`tir: kırpılmış sayfa ile TAM katalog aynı
+    // süzgeçte FARKLI yanıtlardır, tek anahtar paylaşsalardı biri ötekinin
+    // önbelleğini okurdu.
     expect(
-      client.getQueryData([CHART_OF_ACCOUNTS_QUERY_KEY, "kasa", "asset", null, 200, null]),
+      client.getQueryData([CHART_OF_ACCOUNTS_QUERY_KEY, "kasa", "asset", null, 200, null, false]),
     ).toEqual(ACCOUNT_LIST);
+  });
+
+  /**
+   * 🔴 Tavan 200 ve aşım 422'dir (kırpma DEĞİL) — 200'den çok hesabı olan bir
+   * katalog TEK istekle alınamaz. `allPages` sayfaları YÜRÜR; yaprak kuralı
+   * (`isLeafChartAccount`) kırpılmış kümede yanlış cevap verdiği için fiş
+   * satırı seçicisinin tam kümeye ihtiyacı vardır.
+   */
+  it("allPages=true sayfalari YURUR ve TEK kumede birlestirir", async () => {
+    const page = (codes: readonly string[], offset: number) =>
+      okResponse({
+        items: codes.map((code) => ({ code })),
+        total: 3,
+        limit: 2,
+        offset,
+      });
+    vi.mocked(backendClient.GET)
+      .mockResolvedValueOnce(page(["100", "120"], 0))
+      .mockResolvedValueOnce(page(["600"], 2));
+
+    const { result } = renderHook(() => useChartOfAccounts({ limit: 2, allPages: true }), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(backendClient.GET).toHaveBeenCalledTimes(2);
+    expect(queryOf(0)).toEqual({ limit: 2, offset: 0 });
+    expect(queryOf(1)).toEqual({ limit: 2, offset: 2 });
+    expect(result.current.data?.items.map((item) => item.code)).toEqual(["100", "120", "600"]);
+    // Zarf dönen PENCEREYİ anlatır: tamamı geldi, `total` değişmez.
+    expect(result.current.data?.limit).toBe(3);
+    expect(result.current.data?.total).toBe(3);
+  });
+
+  /** Boş sayfa DURDURUR: `total` yanlış büyük gelse bile döngü kilitlenmez. */
+  it("allPages=true bos sayfada DURUR (sonsuz donmez)", async () => {
+    vi.mocked(backendClient.GET)
+      .mockResolvedValueOnce(okResponse({ items: [{ code: "100" }], total: 9, limit: 1, offset: 0 }))
+      .mockResolvedValueOnce(okResponse({ items: [], total: 9, limit: 1, offset: 1 }));
+
+    const { result } = renderHook(() => useChartOfAccounts({ limit: 1, allPages: true }), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(backendClient.GET).toHaveBeenCalledTimes(2);
+    expect(result.current.data?.items).toHaveLength(1);
   });
 
   /** `isActive: false` MEŞRU bir süzgeçtir (kaldırılmış hesaplar). */

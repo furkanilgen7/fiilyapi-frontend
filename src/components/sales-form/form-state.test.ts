@@ -55,6 +55,13 @@ describe("planRowsFromServer", () => {
     // null ödeme yöntemi "" olur (Select boş seçenek).
     expect(rows[1].paymentMethod).toBe("");
   });
+
+  it("no 251 · sunucu etiketi BÜYÜK harfle ('PEŞİNAT', noktalı İ) dönse de peşinat işaretlenir", () => {
+    const rows = planRowsFromServer([
+      installment({ sequence_no: 1, label: "PEŞİNAT", payment_method: "transfer" }),
+    ]);
+    expect(rows[0].isDownPayment).toBe(true);
+  });
 });
 
 describe("updatePlanRow", () => {

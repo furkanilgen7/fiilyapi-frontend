@@ -35,7 +35,11 @@ export function InvestmentFields({
     <section className="pf-card">
       <h2 className="pf-card__title">🏠 Yatırım Bilgileri</h2>
       <div className="pf-grid pf-grid--2">
-        <Field label="Satış Hedefi (₺)" required error={errors?.salesTarget}>
+        {/* 🔴 KUSUR no 205: `required` DEKORATİF idi — `validateInvestment`
+            yalnız `moneyError` uygular, zorunluluk YOKTUR (openapi
+            `ProjectInvestmentInput.sales_target` de required değildir).
+            Yanlış zorunluluk yıldızı + yanlış aria-required kaldırıldı. */}
+        <Field label="Satış Hedefi (₺)" error={errors?.salesTarget}>
           {(control) => (
             <Input
               {...control}
@@ -200,6 +204,10 @@ export function LandShareFields({
               {...control}
               numeric
               value={values.dailyPenalty}
+              // 🔴 KUSUR no 206: `status` eksikti — hata metni basılıyordu
+              // ama kenarlık kırmızı olmuyordu (aynı formda iki farklı hata
+              // görünümü).
+              status={errors?.dailyPenalty ? "error" : "default"}
               onChange={(e) => onChange("dailyPenalty", e.target.value)}
             />
           )}
@@ -210,6 +218,7 @@ export function LandShareFields({
               {...control}
               numeric
               value={values.guaranteeAmount}
+              status={errors?.guaranteeAmount ? "error" : "default"}
               onChange={(e) => onChange("guaranteeAmount", e.target.value)}
             />
           )}

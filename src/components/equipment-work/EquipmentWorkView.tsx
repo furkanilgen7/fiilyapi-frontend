@@ -18,6 +18,7 @@ import { useEquipmentWorkLogs } from "@/lib/api/hooks/useEquipmentWorkLogs";
 import { useEquipmentWorkSummary } from "@/lib/api/hooks/useEquipmentWorkSummary";
 import { usePersonnel, PERSONNEL_MAX_LIMIT } from "@/lib/api/hooks/usePersonnel";
 import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
+import { isLoaded, resolveLookup } from "@/lib/api/query-state";
 import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 
@@ -27,6 +28,7 @@ import { EquipmentWorkSummaryTable } from "./EquipmentWorkSummaryTable";
 import { EquipmentWorkWeeklyChart } from "./EquipmentWorkWeeklyChart";
 import {
   ADD_RECORD_DISABLED_REASON,
+  AUXILIARY_DATA_ERROR_NOTICE,
   EQUIPMENT_FILTER_DISABLED_REASON,
   EXPORT_ERROR_FALLBACK,
   VIEW_MODE_DISABLED_REASON,
@@ -40,6 +42,16 @@ const EQUIPMENT_PERMISSION_MODULE = "equipment";
 
 /** "Son Kayıtlar" bilerek kısa bir listedir (mockup dört kayıt çizer). */
 const RECENT_LOG_LIMIT = 8;
+
+/**
+ * `resolveEquipmentName`/`resolveOperatorName` İKİ farklı "yok" durumunu
+ * ayırt eder: sorgu henüz YÜKLENİYOR (undefined) ile kayıt haritada
+ * BULUNAMADI (ör. sorgu kalıcı hataya düştü, ya da 200'lük tavanın dışında
+ * kaldı). `null`, operatörün kaydında GERÇEKTEN olmadığı anlamına gelir
+ * (arıza kaydı) — bu iki işaretle KARIŞTIRILMAZ (kalan-3 #196/#197).
+ */
+const EQUIPMENT_NAME_UNKNOWN = "—";
+const OPERATOR_NAME_UNKNOWN = "—";
 
 /**
  * M3 · `/makine/calisma` — mockup `Makine - Çalışma Kaydı.dc.html` (kanonik).
@@ -108,20 +120,21 @@ export function EquipmentWorkView() {
     (personnelQuery.data?.items ?? []).map((person) => [person.id, person.full_name]),
   );
 
+  // query-state.ts kanonu (#91 emsali): sorgu hataya düşerse `undefined`
+  // (nötr) dönülür — Map boşken `?? null` YANLIŞ "Şantiye atanmadı" basardı.
   function resolveSiteLabel(siteId: string | null): string | null | undefined {
-    if (siteId === null) return null; // kayıt bir şantiyeye bağlı değil
-    if (siteOptions.isLoading) return undefined;
-    return siteLabelById.get(siteId) ?? null;
+    return resolveLookup(siteId, siteOptions, (id) => siteLabelById.get(id));
   }
 
   function resolveEquipmentName(equipmentId: string): string | undefined {
-    return equipmentNameById.get(equipmentId);
+    if (equipmentQuery.isLoading) return undefined;
+    return equipmentNameById.get(equipmentId) ?? EQUIPMENT_NAME_UNKNOWN;
   }
 
   function resolveOperatorName(operatorId: string | null): string | null | undefined {
     if (operatorId === null) return null; // arıza kaydında operatör yoktur
     if (personnelQuery.isLoading) return undefined;
-    return personnelNameById.get(operatorId) ?? null;
+    return personnelNameById.get(operatorId) ?? OPERATOR_NAME_UNKNOWN;
   }
 
   /** `AuditLogScreen` kanonu: uçuşta kilit, hata GÖRÜNÜR. */
@@ -265,11 +278,27 @@ export function EquipmentWorkView() {
         </p>
       )}
 
+      {/* M5_3 #107 — summaryQuery/logsQuery DIŞINDAKİ dört kaynak hataya
+          düşerse sessizce "—"ye düşmez; görünür bir uyarı basılır. */}
+      {(fuelQuery.isError ||
+        equipmentQuery.isError ||
+        personnelQuery.isError ||
+        siteOptions.isError) && (
+        <p
+          className="makine-cal__notice"
+          role="alert"
+          data-testid="makine-cal-auxiliary-error"
+        >
+          {AUXILIARY_DATA_ERROR_NOTICE}
+        </p>
+      )}
+
       {/* 79-105 */}
       <EquipmentWorkKpiStrip
         totals={summaryQuery.data?.totals}
         rows={summaryQuery.data?.rows}
         fuel={fuelQuery.data}
+        fuelSiteFiltered={siteParam !== ""}
       />
 
       {/* 108-301 — sol: tablo · sağ: grafik + son kayıtlar */}
@@ -291,6 +320,7 @@ export function EquipmentWorkView() {
           <EquipmentWorkRecentList
             logs={logsQuery.data?.items}
             isLoading={logsQuery.isLoading}
+            isError={logsQuery.isError}
             resolveEquipmentName={resolveEquipmentName}
             resolveSiteLabel={resolveSiteLabel}
             resolveOperatorName={resolveOperatorName}
@@ -303,7 +333,7 @@ export function EquipmentWorkView() {
       {summaryQuery.data !== undefined && <span hidden data-testid="makine-cal-loaded-summary" />}
       {logsQuery.data !== undefined && <span hidden data-testid="makine-cal-loaded-logs" />}
       {fuelQuery.data !== undefined && <span hidden data-testid="makine-cal-loaded-fuel" />}
-      {!siteOptions.isLoading && <span hidden data-testid="makine-cal-loaded-sites" />}
+      {isLoaded(siteOptions) && <span hidden data-testid="makine-cal-loaded-sites" />}
     </div>
   );
 }

@@ -8,14 +8,20 @@ import {
   PAYROLL_PERIODS_QUERY_KEY,
   type PayrollLineResponse,
 } from "./usePayroll";
+import { PAYROLL_SGK_SUMMARY_QUERY_KEY } from "./usePayrollSgk";
 
 /**
  * F-BOR T2 · `/bordro` ekranının ÜÇ yazma ucu (BY:56 · BY:142-147 · BY:303).
  *
- * 🔴 Üçü de AYNI İKİ sorguyu tazeler: dönem DETAYI (satırlar + özet kartları)
- * ve dönem LİSTESİ (ay gezgininin durum bilgisi). Yalnız detayı tazelemek
- * gezginin durum etiketini bayat bırakırdı — onay/ödeme dönemin `status`unu
- * oynatır ve o alan liste satırında da vardır.
+ * 🔴 Üçü de AYNI ÜÇ sorguyu tazeler: dönem DETAYI (satırlar + özet kartları),
+ * dönem LİSTESİ (ay gezgininin durum bilgisi) ve SGK ÖZETİ. Yalnız detayı
+ * tazelemek gezginin durum etiketini bayat bırakırdı — onay/ödeme dönemin
+ * `status`unu oynatır ve o alan liste satırında da vardır. SGK özeti
+ * (`usePayrollSgk.ts::usePayrollSgkSummary`) `compute`/`approve`/`pay`in
+ * ÜRETTİĞİ satırlardan türer (dört KPI kartı + prim tablosu); bu üçü onu
+ * tazelemezse SGK ekranı yeniden mount edilene kadar ESKİ primleri gösterir
+ * (kayıt no 158 — `useSubmitPayrollSgk` zaten üçünü BİRDEN tazeliyordu, bu
+ * asimetriyi kapatır).
  */
 export type PayrollLineUpdate = components["schemas"]["PayrollLineUpdate"];
 export type PayrollPeriodApproveResult =
@@ -31,6 +37,7 @@ function usePayrollInvalidator(): () => void {
   return () => {
     queryClient.invalidateQueries({ queryKey: [PAYROLL_PERIOD_QUERY_KEY] });
     queryClient.invalidateQueries({ queryKey: [PAYROLL_PERIODS_QUERY_KEY] });
+    queryClient.invalidateQueries({ queryKey: [PAYROLL_SGK_SUMMARY_QUERY_KEY] });
   };
 }
 

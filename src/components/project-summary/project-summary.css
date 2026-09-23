@@ -67,7 +67,7 @@
 }
 
 .psum-hero__title {
-  font-size: var(--text-2xl, 26px);
+  font-size: var(--text-page-title, 26px);
   font-weight: 700;
   letter-spacing: -0.4px;
   margin-bottom: var(--space-1, 6px);

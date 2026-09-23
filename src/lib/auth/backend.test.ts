@@ -63,6 +63,36 @@ describe("proxyAuthenticated", () => {
     expect(r.status).toBe(401);
   });
 
+  // 🔴 KAYIT (prose) — `proxyAuthenticatedRaw`in AYNI dalda govdeyi koruduğu
+  // ikiz davranis: refresh basarisizken backend'in ILK yanitinin (Turkce
+  // hata metni) DUSMEMESI gerekir. MUTASYON KANITI: `body: await
+  // parseBody(first)` yerine `body: null` yazilirsa bu test KIRMIZI doner.
+  it("401 + refresh basarisiz ise ILK yanitin govdesini (Turkce hata) KORUR", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse(401, { detail: "oturum suresi doldu" })) // ilk /auth/me
+        .mockResolvedValueOnce(jsonResponse(401, { detail: "refresh token gecersiz" })), // /auth/refresh basarisiz
+    );
+    const r = await proxyAuthenticated("acc", "ref", "/auth/me");
+    expect(r.status).toBe(401);
+    expect(r.body).toEqual({ detail: "oturum suresi doldu" });
+  });
+
+  it("401 + refresh 200 ama access_token eksikse ILK yanitin govdesini KORUR", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse(401, { detail: "oturum suresi doldu" })) // ilk /auth/me
+        .mockResolvedValueOnce(jsonResponse(200, {})), // /auth/refresh 200 ama pair eksik
+    );
+    const r = await proxyAuthenticated("acc", "ref", "/auth/me");
+    expect(r.status).toBe(401);
+    expect(r.body).toEqual({ detail: "oturum suresi doldu" });
+  });
+
   it("refresh token yoksa 401'i dogrudan doner", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(401, {})));
     const r = await proxyAuthenticated("acc", undefined, "/auth/me");

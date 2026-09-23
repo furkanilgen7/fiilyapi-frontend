@@ -38,10 +38,19 @@ describe("ProjectHeroBar", () => {
     expect(screen.getByText(/İşveren: Güneşkent Gayrimenkul A\.Ş\./)).toBeInTheDocument();
   });
 
-  it("Toplam Sozlesme yer tutucudur — '—' basar, title'da contracts aciklamasi verir (spec §7.1)", () => {
+  it("Toplam Sozlesme DOLUYSA gercek tutari basar, '—' DEGIL (kayit 109)", () => {
     render(<ProjectHeroBar project={BASE} projectKey={BASE.id} activePath={`/projeler/${BASE.id}`} />);
     expect(screen.getByText("Toplam Sözleşme")).toBeInTheDocument();
-    const value = screen.getByTitle("Sözleşme verisi bu yüzeye henüz bağlanmadı");
+    expect(screen.getByText("₺ 22,4M")).toBeInTheDocument();
+  });
+
+  // M5_1 kayıt #202: eskiden ortak `pendingModuleLabel("contracts")` metni
+  // basılıyordu ("bu yüzeye henüz bağlanmadı") — BAYAT, alan GERÇEKTEN bağlı;
+  // null yalnız BU projeye bedel girilmediğini gösterir.
+  it("Toplam Sozlesme NULL ise yer tutucudur — '—' basar, title DEĞER eksikliğini söyler (spec §7.1)", () => {
+    const noContract: ProjectDetail = { ...BASE, contract_amount: null };
+    render(<ProjectHeroBar project={noContract} projectKey={BASE.id} activePath={`/projeler/${BASE.id}`} />);
+    const value = screen.getByTitle("Bu proje için sözleşme bedeli tanımlanmadı");
     expect(value).toHaveTextContent("—");
   });
 
@@ -58,6 +67,6 @@ describe("ProjectHeroBar", () => {
 
   it("sekme barini icerir", () => {
     render(<ProjectHeroBar project={BASE} projectKey={BASE.id} activePath={`/projeler/${BASE.id}`} />);
-    expect(screen.getByRole("tablist", { name: "Proje detay sekmeleri" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Proje detay sekmeleri" })).toBeInTheDocument();
   });
 });

@@ -176,17 +176,29 @@ export function EmployerContractDetailView({ projectId }: EmployerContractDetail
             </>
           )}
 
-          {tab === "payments" && (
-            /* F-P7 bileşeni PAYLAŞILIR (yeniden yazılmaz). Proje adı bu ekranda
-               başlıkta zaten var → `showProjectName={false}` (mevcut prop). */
-            <ProgressPaymentsListBody
-              isError={paymentsQuery.isError}
-              isLoading={paymentsQuery.isLoading}
-              data={paymentsQuery.data}
-              showProjectName={false}
-              emptyScope="contract"
-            />
-          )}
+          {tab === "payments" &&
+            /*
+             * 🔴 `progress_payments` `contracts`tan AYRI bir izin anahtarıdır
+             * (backend `progress_payments/router.py:44`). `contracts:view`
+             * olan ama `progress_payments:none` olan kullanıcı bu sekmede
+             * 403 alır — `ContractMilestonesCard`teki 403 deseniyle AYNI:
+             * "yüklenemedi" demek yerine yetki sınırı SÖYLENİR.
+             */
+            (isForbidden(paymentsQuery.error) ? (
+              <p className="ecd__message" data-testid="ecd-payments-forbidden">
+                Hakedişleri görme yetkiniz yok.
+              </p>
+            ) : (
+              /* F-P7 bileşeni PAYLAŞILIR (yeniden yazılmaz). Proje adı bu ekranda
+                 başlıkta zaten var → `showProjectName={false}` (mevcut prop). */
+              <ProgressPaymentsListBody
+                isError={paymentsQuery.isError}
+                isLoading={paymentsQuery.isLoading}
+                data={paymentsQuery.data}
+                showProjectName={false}
+                emptyScope="contract"
+              />
+            ))}
 
           {tab === "documents" && <ContractDocumentsPendingCard />}
         </>

@@ -31,6 +31,11 @@ describe("document-form.css — belge formu mockup'larına bağlı kurallar", ()
     expect(css).toMatch(/\.dcf-legend__badge--danger\s*{[^}]*var\(--color-danger-soft\)/s);
   });
 
+  it("bağlam bandındaki ad/meta satırları BLOK'tur — JSX'te <span> (66. kayıt, margin-top inline'da etkisiz kalır)", () => {
+    expect(css).toMatch(/\.dcf-context__name\s*{[^}]*display:\s*block/s);
+    expect(css).toMatch(/\.dcf-context__meta\s*{[^}]*display:\s*block/s);
+  });
+
   it("çıplak hex YOKTUR — tüm renkler token üzerinden gelir", () => {
     const withoutComments = css.replace(/\/\*[\s\S]*?\*\//g, "");
     expect(withoutComments).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);

@@ -7,6 +7,11 @@
   color: var(--color-success);
   font-weight: var(--weight-semibold);
 }
+/* Kapsam maskesi gerekçesi — not satırının İÇİNDE, uyarı DEĞİL bilgi tonunda:
+   kullanıcı bir şeyi yanlış yapmadı, rolü o alanı görmüyor. */
+.sf-boq-card__muted {
+  color: var(--color-text-muted);
+}
 .sf-boq-card__error {
   margin: var(--space-3) var(--space-5);
   padding: var(--space-3);
@@ -34,8 +39,12 @@
 .sf-boq-table__num {
   text-align: right;
 }
+/* M5_3 #35 — mockup (Form - Poz Secici.dc.html:136) zemin #fff7f7 + alt
+   kenarlık #fecaca çizer; `--color-danger-tint` (#fff0f0) mockup'ın rengi
+   DEĞİLDİR ve kenarlık hiç ezilmiyordu (nötr `--color-divider`de kalıyordu). */
 .sf-boq-table__row--over td {
-  background: var(--color-danger-tint);
+  background: var(--color-danger-tint-weak);
+  border-bottom-color: var(--color-danger-tint-border);
 }
 .sf-boq-table__warn {
   display: block;
@@ -96,6 +105,11 @@
   font-size: var(--text-small);
 }
 
+/* Kayıt 33 — dar ekranda (≤768px) 8 sütunlu poz seçici tablo `.modal`
+   kabuğundan taşıyordu (`modal.css` yalnız dikey taşmayı çözer). */
+.sf-boq-picker__table-scroll {
+  overflow-x: auto;
+}
 .sf-boq-ptable {
   width: 100%;
   border-collapse: collapse;
@@ -150,8 +164,11 @@
   color: var(--color-success);
   font-weight: var(--weight-semibold);
 }
+/* M5_3 #35 — .sf-boq-table__row--over ile AYNI kusur sınıfı (poz seçici
+   diyaloğunun kendi tablosunda tekrarı): mockup #136 #fff7f7 + #fecaca ister. */
 .sf-boq-ptable__row--over td {
-  background: var(--color-danger-tint);
+  background: var(--color-danger-tint-weak);
+  border-bottom-color: var(--color-danger-tint-border);
 }
 .sf-boq-ptable__pending {
   font-size: var(--text-xs);

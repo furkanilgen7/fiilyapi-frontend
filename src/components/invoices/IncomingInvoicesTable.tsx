@@ -5,7 +5,13 @@ import { formatAmount, formatDateDots } from "@/lib/format";
 import type { InvoiceResponse } from "@/lib/api/hooks/useInvoices";
 
 import { InvoiceSourceChip } from "./InvoiceSourceChip";
-import { invoiceDetailUrl, invoiceStatusLabel, invoiceStatusVariant, REASONS } from "./invoice-labels";
+import {
+  incomingInvoicesEmptyMessage,
+  invoiceDetailUrl,
+  invoiceStatusLabel,
+  invoiceStatusVariant,
+  REASONS,
+} from "./invoice-labels";
 
 /**
  * FY:148-193 "Gelen Faturalar — Onay Bekleyen" tablosu — YEDİ sütun
@@ -28,6 +34,7 @@ export function IncomingInvoicesTable({
   approvingId,
   canWrite,
   writeDisabledReason,
+  tab,
 }: {
   rows: readonly InvoiceResponse[] | undefined;
   isLoading: boolean;
@@ -36,6 +43,11 @@ export function IncomingInvoicesTable({
   approvingId: string | null;
   canWrite: boolean;
   writeDisabledReason: string;
+  /**
+   * O5a-130: boş-durum metni SEKMEYE göre değişir — çağıran (InvoicesView)
+   * hangi sekmede olduğumuzu bilir, tablo kendi başına UYDURMAZ.
+   */
+  tab: "giden" | "gelen";
 }) {
   if (isLoading) return <p className="fat-notice">Yükleniyor…</p>;
   if (errorMessage !== undefined) {
@@ -49,7 +61,7 @@ export function IncomingInvoicesTable({
   if (rows.length === 0) {
     return (
       <p className="fat-notice" data-testid="fat-incoming-empty">
-        Onay bekleyen gelen fatura yok.
+        {incomingInvoicesEmptyMessage(tab)}
       </p>
     );
   }

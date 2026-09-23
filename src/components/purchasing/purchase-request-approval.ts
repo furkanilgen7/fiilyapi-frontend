@@ -17,8 +17,8 @@
  * engellemez, yalnız ne olacağını önceden söyler.
  */
 
-import { sumDecimalStrings } from "@/lib/decimal";
-import { formatAmount } from "@/lib/format";
+import { subtractDecimalStrings, sumDecimalStrings } from "@/lib/decimal";
+import { formatAmount, formatCurrencyTight } from "@/lib/format";
 
 import {
   isPurchaseRequestLinePriced,
@@ -27,34 +27,57 @@ import {
 } from "./purchase-request-form-state";
 
 /**
- * Patron onayının devreye girdiği tahmini tutar eşiği (₺).
- *
- * 🔴 **TEK KAYNAK (spec §3 K6):** hem rozet metni (FST 165 "Patron (₺500K+)")
- * hem sonuç cümlesi (FST 166) BU SABİTTEN türer. İki ayrı yere "500K" yazmak
- * yasaktır — eşik değişince biri güncellenip öbürü unutulursa ekran kendi
- * kendiyle çelişir. Testi: "eşik metni tek kaynaktan türer".
+ * 🔴 **EŞİK BU DOSYADA SABİT DEĞİLDİR — SUNUCU AYARIDIR.**
+ * Kaynak `GET /approvals/settings.approval_threshold_try`
+ * (`company.approval_threshold_try`, `PUT /approvals/settings` ile değişir) ve
+ * hükmü sunucu o değerle verir (`procurement/transitions.py`
+ * `_assert_approver_level`). Ekranda sabit tutulduğu sürece yönetici eşiği
+ * düşürdüğünde form "gerekmiyor" der, onay ise REDDEDİLİRDİ; üstelik aynı
+ * ürünün `/onaylar` şeridi ile Ayarlar ekranı (ikisi de ayardan okur) ters
+ * sayı gösterirdi. Bu dosya artık eşiği yalnız PARAMETRE olarak alır.
  */
-export const PURCHASE_APPROVAL_THRESHOLD = 500000;
-
 const THOUSAND = 1000;
 
-/** "₺500K" — eşiğin insan okunur kısa gösterimi (FST 165 · 166 ortak kaynağı). */
-export function purchaseApprovalThresholdLabel(): string {
-  return `₺${PURCHASE_APPROVAL_THRESHOLD / THOUSAND}K`;
+/**
+ * "₺500K" — eşiğin insan okunur kısa gösterimi (FST 165 · 166 ortak kaynağı).
+ *
+ * Mockup'ın "K" kısaltması YALNIZ tam bine oturan eşiklerde kullanılır; keyfi
+ * bir eşiği K/M ile kısaltacak kural mockup'tan ÖLÇÜLEMEZ, o yüzden tam biçime
+ * düşülür (`approval-labels.ts`teki ONAYLI SAPMA ile aynı yön).
+ */
+export function purchaseApprovalThresholdLabel(threshold: string): string {
+  const value = Number(threshold);
+  if (!Number.isFinite(value) || value % THOUSAND !== 0)
+    return formatCurrencyTight(threshold);
+  return `₺${value / THOUSAND}K`;
 }
 
-/** FST 165 — onay zincirinin son adımı. Etiket eşikten TÜRETİLİR. */
-export function bossApprovalStepLabel(): string {
-  return `Patron (${purchaseApprovalThresholdLabel()}+)`;
+/**
+ * FST 165 — onay zincirinin son adımı. Etiket eşikten TÜRETİLİR.
+ *
+ * Eşik henüz yüklenmediyse eşik parçası DÜŞER (`ApprovalFlowStrip` kanonu):
+ * sahte bir sayı basmaktansa parantez hiç kurulmaz.
+ */
+export function bossApprovalStepLabel(threshold: string | undefined): string {
+  if (threshold === undefined) return "Patron";
+  return `Patron (${purchaseApprovalThresholdLabel(threshold)}+)`;
 }
 
 /**
  * `required` eşik AŞILDI · `not_required` eşik altında · `unknown` toplam
- * BİLİNMİYOR (tutarı hesaplanamayan kalem var) → fail-closed.
+ * BİLİNMİYOR (tutarı hesaplanamayan kalem var) → fail-closed ·
+ * `threshold_unknown` EŞİK bilinmiyor (ayar yüklenmedi) → hüküm KURULMAZ.
  */
-export type PurchaseApprovalOutcome = "required" | "not_required" | "unknown";
+export type PurchaseApprovalOutcome =
+  "required" | "not_required" | "unknown" | "threshold_unknown";
 
 export interface PurchaseApprovalEstimate {
+  /**
+   * Hükmün verildiği SUNUCU eşiği (`approval_threshold_try`); ayar
+   * yüklenmediyse `undefined`. Hüküm ile eşik AYNI nesneden çıkar ki ekran
+   * bir sayı basıp yanına başka bir eşikten türeyen cümle koymasın.
+   */
+  threshold: string | undefined;
   /** Tutarı BİLİNEN kalemlerin toplamı — bilinmeyenler GİRMEZ. */
   knownTotal: string;
   /** Tutarı hesaplanamayan (fiyatı ya da miktarı eksik) kalem sayısı. */
@@ -70,23 +93,50 @@ export interface PurchaseApprovalEstimate {
  */
 export function estimatePurchaseApproval(
   lines: readonly PurchaseRequestLineValues[],
+  /**
+   * `GET /approvals/settings.approval_threshold_try`; yüklenmediyse
+   * `undefined`. AÇIKÇA geçilir — sessiz varsayılan YOKTUR: varsayılanı olan
+   * bir parametre, eşiği vermeyi unutan çağıranda hükmü sessizce düşürürdü.
+   */
+  threshold: string | undefined,
 ): PurchaseApprovalEstimate {
   const totals = lines.map(purchaseRequestLineTotal);
   const knownTotal = sumDecimalStrings(
     totals.filter((total): total is string => total !== null),
   );
   const unknownLineCount = totals.filter((total) => total === null).length;
-  const unpricedLineCount = lines.filter((line) => !isPurchaseRequestLinePriced(line)).length;
+  const unpricedLineCount = lines.filter(
+    (line) => !isPurchaseRequestLinePriced(line),
+  ).length;
 
   if (unknownLineCount > 0) {
     // 🔴 FAIL-CLOSED: bilinmeyen tutar KÜÇÜK değil BÜYÜK sayılır.
-    return { knownTotal, unknownLineCount, unpricedLineCount, outcome: "unknown" };
+    return {
+      threshold,
+      knownTotal,
+      unknownLineCount,
+      unpricedLineCount,
+      outcome: "unknown",
+    };
   }
+  if (threshold === undefined) {
+    return {
+      threshold,
+      knownTotal,
+      unknownLineCount: 0,
+      unpricedLineCount: 0,
+      outcome: "threshold_unknown",
+    };
+  }
+  // 🔴 `Number()` KARŞILAŞTIRMASI YOK: eşik `Numeric(18,2)`dir ve 16 haneli bir
+  // eşik IEEE-754'te kuruş kaybeder (`lib/api/approval-threshold.ts` kanonu).
+  const overshoot = subtractDecimalStrings(knownTotal, threshold);
   return {
+    threshold,
     knownTotal,
     unknownLineCount: 0,
     unpricedLineCount: 0,
-    outcome: Number(knownTotal) >= PURCHASE_APPROVAL_THRESHOLD ? "required" : "not_required",
+    outcome: overshoot.startsWith("-") ? "not_required" : "required",
   };
 }
 
@@ -96,13 +146,24 @@ export function estimatePurchaseApproval(
  * `unknown` dalında **"gerekmiyor" YAZILMAZ** — cümle hem tutarın eksik
  * olduğunu hem de onayın gerekebileceğini AÇIKÇA söyler.
  */
-export function purchaseApprovalMessage(estimate: PurchaseApprovalEstimate): string {
+export function purchaseApprovalMessage(
+  estimate: PurchaseApprovalEstimate,
+): string | null {
   const amount = `₺${formatAmount(estimate.knownTotal)}`;
+  // Eşik bilinmiyorsa CÜMLE KURULMAZ (`ApprovalFlowStrip` kanonu): "gerekmiyor"
+  // da "gerekli" de o anda YALAN olabilir.
+  if (estimate.outcome === "threshold_unknown") return null;
   if (estimate.outcome === "unknown") {
     return `${amount} + tutarı bilinmeyen ${estimate.unknownLineCount} kalem · Patron onayı gerekebilir`;
   }
   if (estimate.outcome === "required") {
-    return `${amount} · Patron onayı gerekli (${purchaseApprovalThresholdLabel()} ve üzeri)`;
+    // `required` dalına yalnız eşik BİLİNİRKEN girilir; yine de dal TOTALdir
+    // (bilinmeyen eşikte parantez DÜŞER, uydurma sayı basılmaz).
+    const suffix =
+      estimate.threshold === undefined
+        ? ""
+        : ` (${purchaseApprovalThresholdLabel(estimate.threshold)} ve üzeri)`;
+    return `${amount} · Patron onayı gerekli${suffix}`;
   }
   return `${amount} · Patron onayı gerekmiyor`;
 }

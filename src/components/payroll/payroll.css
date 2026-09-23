@@ -456,6 +456,13 @@
   color: var(--color-text-subtle);
 }
 
+.bor__button-reason {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--text-small);
+  color: var(--color-text-subtle);
+}
+
 /* --------------------------------------------------- ödeme kutuları (311-330) */
 
 .bor-payboxes {

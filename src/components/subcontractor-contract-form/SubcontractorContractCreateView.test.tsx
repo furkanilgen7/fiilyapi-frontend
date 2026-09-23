@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 import { SubcontractorContractCreateView } from "./SubcontractorContractCreateView";
+import { useModulePermission } from "@/lib/auth/useModulePermission";
 import { ADD_ITEM_PENDING_REASON, FSO_TEXT } from "./constants";
 import { CONTRACT_DOCUMENTS, CONTRACT_DOCUMENTS_SOON_TITLE } from "./documents";
 import { useProjects } from "@/lib/api/hooks/useProjects";
@@ -20,12 +21,12 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/auth/useModulePermission", () => ({
-  useModulePermission: () => ({
+  useModulePermission: vi.fn(() => ({
     level: "full",
     canView: true,
     canWrite: true,
     canDelete: true,
-  }),
+  })),
 }));
 
 vi.mock("@/lib/api/hooks/useProjects", () => ({ useProjects: vi.fn() }));
@@ -107,6 +108,16 @@ beforeEach(() => {
     mutate: vi.fn(),
     isPending: false,
   } as never);
+});
+
+describe("FSO — kırıntı yolu (no 329)", () => {
+  it("kırıntı 'Sözleşmeler' bağlantısı, İptal/başarı ile AYNI listeye (contractTabHref) gider", () => {
+    render(<SubcontractorContractCreateView />);
+    expect(screen.getByRole("link", { name: FSO_TEXT.breadcrumbRoot })).toHaveAttribute(
+      "href",
+      "/sozlesmeler?type=subcontractor",
+    );
+  });
 });
 
 describe("FSO — beş kart", () => {
@@ -206,6 +217,20 @@ describe("Poz listesi — load-from-employer akışı", () => {
     expect(screen.getByRole("button", { name: FSO_TEXT.loadFromEmployer })).toBeDisabled();
   });
 
+  /**
+   * no 330 · proje seçilir seçilmez `employerContractQuery` henüz YANITLANMADAN
+   * (`isLoading: true`) buton AÇIK kalıyordu — kullanıcı işveren sözleşmesi
+   * yokken de tıklayabiliyordu.
+   */
+  it("330 · proje seçili ama işveren sözleşme sorgusu SÜRERKEN buton kapalı kalır", () => {
+    vi.mocked(useEmployerContract).mockReturnValue(query(undefined, { isLoading: true }));
+    render(<SubcontractorContractCreateView />);
+    fireEvent.change(screen.getByRole("combobox", { name: "Proje" }), {
+      target: { value: "p-1" },
+    });
+    expect(screen.getByRole("button", { name: FSO_TEXT.loadFromEmployer })).toBeDisabled();
+  });
+
   it("önce taslak açar, sonra created/skipped bildirimini basar", async () => {
     createContractMock.mockImplementation(
       (_body: unknown, options?: { onSuccess?: (data: unknown) => void }) =>
@@ -236,6 +261,24 @@ describe("Poz listesi — load-from-employer akışı", () => {
     expect(screen.getByText("Kat Döşemesi Betonu C25/30")).toBeInTheDocument();
     expect(screen.getByTestId("fso-missing-price")).toHaveTextContent(/1 pozun/);
     expect(screen.getByTestId("fso-items-total")).toHaveTextContent("1.440.000");
+  });
+
+  /**
+   * kalan-6 no 319 — DELETE /subcontractor-contracts/items/{id} backend'de
+   * `contracts:admin` kapısındadır (`PATCH` ise `full`); ekran silme
+   * butonunu yalnız `canWrite` (full) ile açıyordu — full seviyeli (admin
+   * olmayan) kullanıcı butonu etkin görür, tıklar, sessiz 403 alır.
+   */
+  it("canDelete=false iken satır silme butonu DEVRE DIŞIDIR", () => {
+    vi.mocked(useModulePermission).mockReturnValue({
+      level: "full",
+      canView: true,
+      canWrite: true,
+      canDelete: false,
+    });
+    vi.mocked(useSubcontractorContract).mockReturnValue(query(DETAIL));
+    render(<SubcontractorContractCreateView />);
+    expect(screen.getByRole("button", { name: "03.001 satırını sil" })).toBeDisabled();
   });
 
   it("fiyat hücresi boşaltılınca uca `null` gider — `0` DEĞİL", () => {
@@ -349,5 +392,44 @@ describe("doğrulama ve alt eylemler", () => {
     render(<SubcontractorContractCreateView />);
     fireEvent.click(screen.getAllByRole("button", { name: "İptal" })[0]);
     expect(pushMock).toHaveBeenCalledWith("/sozlesmeler?type=subcontractor");
+  });
+
+  /**
+   * no 336 · taslak A projesinde kurulduktan SONRA kullanıcı B projesine
+   * geçerse `contractId` düşmüyordu; `submit` A projesindeki sözleşmeyi PATCH
+   * ediyor ve B'nin `site_id`sini oraya yazıyordu. Proje değişince taslak
+   * bağlamı da sıfırlanmalı — bir sonraki kaydetme YENİ sözleşme açmalı.
+   */
+  it("336 · taslak kurulduktan sonra PROJE değişirse ikinci sözleşme AÇILIR, eskisi PATCH edilmez", async () => {
+    vi.mocked(useProjects).mockReturnValue(
+      query({
+        items: [
+          { id: "p-1", name: "Güneşkent Konut" },
+          { id: "p-2", name: "Deniz Sitesi" },
+        ],
+        counts: {},
+      }),
+    );
+    createContractMock.mockImplementation(
+      (_body: unknown, options?: { onSuccess?: (data: unknown) => void }) =>
+        options?.onSuccess?.({ id: "sc-new-1" }),
+    );
+    render(<SubcontractorContractCreateView />);
+    fireEvent.change(screen.getByRole("combobox", { name: "Proje" }), {
+      target: { value: "p-1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: FSO_TEXT.loadFromEmployer }));
+    await waitFor(() => expect(loadItemsMock).toHaveBeenCalled());
+    expect(createContractMock).toHaveBeenCalledTimes(1);
+
+    // Kullanıcı başka bir projeye geçer — taslak bağlamı A projesine aittir.
+    fireEvent.change(screen.getByRole("combobox", { name: "Proje" }), {
+      target: { value: "p-2" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
+    // Eski sözleşme PATCH EDİLMEZ — yeni bir taslak POST edilir.
+    expect(updateContractMock).not.toHaveBeenCalled();
+    expect(createContractMock).toHaveBeenCalledTimes(2);
   });
 });

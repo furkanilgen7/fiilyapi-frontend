@@ -194,6 +194,7 @@ export function EquipmentDocumentFormModal({
                 {...control}
                 ref={fileRef}
                 accept={TEXT.fileAccept}
+                disabled={isPending}
                 status={formError && !values.file ? "error" : "default"}
                 onChange={(event) => {
                   set("file", event.target.files?.[0] ?? null);

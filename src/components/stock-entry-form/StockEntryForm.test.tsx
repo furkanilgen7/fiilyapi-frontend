@@ -160,6 +160,105 @@ describe("StockEntryForm — depo ÖN DOLDURMA (rotadan, query parametresi YOK)"
     expect(screen.getByTestId("stok-giris-depo")).toHaveValue("");
     expect(screen.getByTestId("stok-giris-depo-uyari")).toHaveTextContent("tanımlı depo yok");
   });
+
+  /**
+   * M5_3 #325 — `siteQuery` hâlâ yüklenirken (`siteId === ""`) hiçbir depo
+   * `site_id === ""` eşleşmez ve eskiden `warehouseNotice` bunu "bu
+   * şantiyeye tanımlı depo yok" diye YANLIŞ yorumlardı; kullanıcı gerçekte
+   * depo tanımlıyken geçici bir yalan uyarı görürdü.
+   */
+  it("siteQuery hâlâ yüklenirken YANLIŞ 'tanımlı depo yok' uyarısı BASILMAZ", () => {
+    vi.mocked(useSite).mockReturnValue(stub({ data: undefined, isLoading: true, isError: false }));
+    render(<StockEntryForm />);
+
+    expect(screen.queryByTestId("stok-giris-depo-uyari")).not.toBeInTheDocument();
+  });
+
+  /**
+   * M5_3 #326 — #325 ile AYNI kusur sınıfı: `sectionsQuery`/`boqQuery`
+   * `siteId` gelene kadar `enabled: false`dır, devre dışı sorguda
+   * `isLoading` de `false`e döner. `siteId === ""` iken eskiden
+   * `attributionNote` doğrudan "sectionOptions.length === 0" dalına düşüp
+   * "Bölüm tanımlı değil" notunu olgusal olmadan basardı.
+   */
+  it("siteQuery hâlâ yüklenirken YANLIŞ 'bölüm tanımlı değil' notu BASILMAZ — 'yükleniyor' basar", () => {
+    vi.mocked(useSite).mockReturnValue(stub({ data: undefined, isLoading: true, isError: false }));
+    vi.mocked(useSiteSections).mockReturnValue(
+      stub({ data: undefined, isLoading: false, isError: false }),
+    );
+    vi.mocked(useBoq).mockReturnValue(stub({ data: undefined, isLoading: false, isError: false }));
+    render(<StockEntryForm />);
+
+    const note = screen.getByTestId("stok-giris-atif-note");
+    expect(note).toHaveTextContent("yükleniyor");
+    expect(note).not.toHaveTextContent("tanımlı bölüm yok");
+  });
+
+  /**
+   * 🔴 YARIŞ — `useSite` ve `useWarehouses` İKİ AYRI sorgudur ve sıraları
+   * garanti DEĞİLDİR. Depo listesi ÖNCE gelirse `siteId` o an henüz `""`dır;
+   * tohumlama bekçisi o turda "tohumlandı" diye işaretlenirse şantiye kimliği
+   * sonradan geldiğinde ön doldurma BİR DAHA denenmez ve form varsayılan
+   * deposunu SESSİZCE kaybeder (hata yok, 422 yok — boş kalan bir alan).
+   */
+  it("🔴 şantiye kimliği depo listesinden SONRA gelirse ön doldurma YİNE yapılır", () => {
+    vi.mocked(useSite).mockReturnValue(stub({ data: undefined, isLoading: true, isError: false }));
+    const { rerender } = render(<StockEntryForm />);
+
+    // İlk turda şantiye kimliği yok: hiçbir depo eşleşemez.
+    expect(screen.getByTestId("stok-giris-depo")).toHaveValue("");
+
+    vi.mocked(useSite).mockReturnValue(
+      stub({ data: { id: SITE_ID, name: "A-Blok Şantiyesi" }, isLoading: false, isError: false }),
+    );
+    rerender(<StockEntryForm />);
+
+    expect(screen.getByTestId("stok-giris-depo")).toHaveValue("wh-1");
+  });
+
+  /**
+   * 🔴 Yarış onarımının KENDİ riski: tohumlama artık kimliği BEKLEDİĞİ için
+   * beklerken kullanıcı depo seçebilir. Geç gelen tohum o seçimi EZMEMELİDİR —
+   * yoksa bir sessiz kayıp yerine başkası konmuş olurdu.
+   */
+  it("🔴 kimlik gelmeden kullanıcı depo seçtiyse geç tohumlama onu EZMEZ", () => {
+    vi.mocked(useSite).mockReturnValue(stub({ data: undefined, isLoading: true, isError: false }));
+    const { rerender } = render(<StockEntryForm />);
+
+    fireEvent.change(screen.getByTestId("stok-giris-depo"), { target: { value: "wh-0" } });
+    expect(screen.getByTestId("stok-giris-depo")).toHaveValue("wh-0");
+
+    vi.mocked(useSite).mockReturnValue(
+      stub({ data: { id: SITE_ID, name: "A-Blok Şantiyesi" }, isLoading: false, isError: false }),
+    );
+    rerender(<StockEntryForm />);
+
+    expect(screen.getByTestId("stok-giris-depo")).toHaveValue("wh-0");
+  });
+
+  /**
+   * Tohumlamanın "YALNIZ BİR KEZ" sözleşmesi KORUNUR: yarış onarımı, sonraki
+   * liste yenilemelerinin kullanıcının seçimini ezmesine kapı AÇMAMALIDIR.
+   */
+  it("tohumlandıktan sonra liste yenilenirse kullanıcının seçimi EZİLMEZ", () => {
+    const { rerender } = render(<StockEntryForm />);
+    expect(screen.getByTestId("stok-giris-depo")).toHaveValue("wh-1");
+
+    fireEvent.change(screen.getByTestId("stok-giris-depo"), { target: { value: "wh-0" } });
+    expect(screen.getByTestId("stok-giris-depo")).toHaveValue("wh-0");
+
+    // Aynı içerik, YENİ dizi kimliği — efektin bağımlılığı değişir.
+    vi.mocked(useWarehouses).mockReturnValue(
+      stub({
+        data: { items: [...WAREHOUSES], total: WAREHOUSES.length, limit: 200, offset: 0 },
+        isLoading: false,
+        isError: false,
+      }),
+    );
+    rerender(<StockEntryForm />);
+
+    expect(screen.getByTestId("stok-giris-depo")).toHaveValue("wh-0");
+  });
 });
 
 describe("StockEntryForm — koşullu 'Kaynak Depo' (spec §5 S4)", () => {
@@ -296,6 +395,32 @@ describe("StockEntryForm — atif yuzeyi (STOK-BOLUM)", () => {
 
     expect(screen.getByTestId("stok-giris-bolum-0")).not.toBeDisabled();
     expect(screen.getByTestId("stok-giris-poz-0")).not.toBeDisabled();
+  });
+
+  // 🔴 O5b #323 — BOQ ayrı bir izin modülüdür. `boq=none` rolünde
+  // `useBoq` 403 döner (`boqQuery.isError = true`) ama Bölüm ucu (`useSiteSections`)
+  // kendi izniyle çalışmaya devam edebilir. Tek `attributionDisabled` bayrağı
+  // ikisini BİRLİKTE kapatıyordu — Bölüm atfı da SESSİZCE kapanıyordu.
+  it("BOQ ucu hataya düşse bile (boq=none) Bölüm Select'i AÇIK kalır", () => {
+    vi.mocked(useBoq).mockReturnValue(
+      stub({ data: undefined, isLoading: false, isError: true }),
+    );
+
+    render(<StockEntryForm />);
+
+    expect(screen.getByTestId("stok-giris-bolum-0")).not.toBeDisabled();
+    expect(screen.getByTestId("stok-giris-poz-0")).toBeDisabled();
+  });
+
+  // POZİTİF KONTROL — Bölüm ucu kendisi hataya düşerse Bölüm Select'i de kapanmalı.
+  it("POZİTİF KONTROL — sections ucu hataya düşerse Bölüm Select'i KAPANIR", () => {
+    vi.mocked(useSiteSections).mockReturnValue(
+      stub({ data: undefined, isLoading: false, isError: true }),
+    );
+
+    render(<StockEntryForm />);
+
+    expect(screen.getByTestId("stok-giris-bolum-0")).toBeDisabled();
   });
 
   it("tip transfere gecince SECILI atif GORUNUMDEN de silinir (hayalet secim yok)", () => {
@@ -444,5 +569,16 @@ describe("StockEntryForm — yetki", () => {
     render(<StockEntryForm />);
 
     expect(screen.queryByTestId("stok-giris-body")).toBeNull();
+  });
+
+  // 🔴 Bu dosya `useModulePermission`ı TAMAMEN taklit ettiği için kapının
+  // AÇILIP KAPANDIĞINI görür ama DOĞRU MODÜLE bakıp bakmadığını göremez —
+  // yanlış anahtar bilinmezlik kuralına düşer ve kapı hiç kapanmaz. Sunucunun
+  // anahtarı `inventory`dir (`backend/app/modules/inventory/service.py` ·
+  // `PERMISSION_MODULE`), `stock` diye bir modül backend'de YOK.
+  it("izin kapısı sunucunun modül anahtarını (`inventory`) sorar", () => {
+    render(<StockEntryForm />);
+
+    expect(vi.mocked(useModulePermission)).toHaveBeenCalledWith("inventory");
   });
 });

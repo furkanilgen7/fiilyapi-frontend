@@ -15,6 +15,7 @@ import {
   useSubmitPurchaseRequest,
   useUpdatePurchaseRequest,
 } from "@/lib/api/hooks/usePurchaseRequestMutations";
+import { useApprovalSettings } from "@/lib/api/hooks/useApprovals";
 import type { MeResponse } from "@/lib/auth/types";
 import type { components } from "@/lib/api/schema";
 
@@ -23,7 +24,9 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
 vi.mock("@/lib/api/hooks/useProjects", () => ({ useProjects: vi.fn() }));
 vi.mock("@/lib/api/hooks/useSites", () => ({ useSites: vi.fn() }));
-vi.mock("@/lib/api/hooks/useSiteSections", () => ({ useSiteSections: vi.fn() }));
+vi.mock("@/lib/api/hooks/useSiteSections", () => ({
+  useSiteSections: vi.fn(),
+}));
 vi.mock("@/lib/api/hooks/useStockSummary", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useStockSummary")>()),
   useStockSummary: vi.fn(),
@@ -36,6 +39,11 @@ vi.mock("@/lib/api/hooks/usePurchaseRequestMutations", () => ({
   useCreatePurchaseRequest: vi.fn(),
   useUpdatePurchaseRequest: vi.fn(),
   useSubmitPurchaseRequest: vi.fn(),
+}));
+/* Onay eşiği artık SUNUCUDAN gelir — kutu `GET /approvals/settings` okur. */
+vi.mock("@/lib/api/hooks/useApprovals", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/hooks/useApprovals")>()),
+  useApprovalSettings: vi.fn(),
 }));
 
 /**
@@ -86,12 +94,20 @@ beforeEach(() => {
   vi.clearAllMocks();
   createMutateAsync = vi.fn().mockResolvedValue(createdRequest);
   updateMutateAsync = vi.fn().mockResolvedValue(createdRequest);
-  submitMutateAsync = vi.fn().mockResolvedValue({ ...createdRequest, status: "pending_approval" });
+  submitMutateAsync = vi
+    .fn()
+    .mockResolvedValue({ ...createdRequest, status: "pending_approval" });
 
   vi.mocked(useSession).mockReturnValue({
     me: { permissions: { procurement: "full" } } as unknown as MeResponse,
     isLoading: false,
   } as ReturnType<typeof useSession>);
+  // Sunucu eşiği (`approval_threshold_try`) — bu kümenin hükümleri onunla kurulur.
+  vi.mocked(useApprovalSettings).mockReturnValue(
+    queryStub<ReturnType<typeof useApprovalSettings>>({
+      approval_threshold_try: "500000.00",
+    }),
+  );
   vi.mocked(useProjects).mockReturnValue(
     queryStub<ReturnType<typeof useProjects>>({
       items: [{ id: "p-1", name: "Güneşkent A-Blok" }],
@@ -99,7 +115,9 @@ beforeEach(() => {
     }),
   );
   vi.mocked(useSites).mockReturnValue(
-    queryStub<ReturnType<typeof useSites>>({ items: [{ id: "st-1", name: "Kuzey Şantiye" }] }),
+    queryStub<ReturnType<typeof useSites>>({
+      items: [{ id: "st-1", name: "Kuzey Şantiye" }],
+    }),
   );
   vi.mocked(useSiteSections).mockReturnValue(
     queryStub<ReturnType<typeof useSiteSections>>({ items: [] }),
@@ -157,22 +175,34 @@ function submitButton(): HTMLElement {
 
 /** Onaya gönderilebilir bir formu doldurur (proje + tarih + tam kalem). */
 function fillSubmittableForm() {
-  fireEvent.change(screen.getByTestId("talep-proje"), { target: { value: "p-1" } });
+  fireEvent.change(screen.getByTestId("talep-proje"), {
+    target: { value: "p-1" },
+  });
   fireEvent.change(screen.getByTestId("talep-ihtiyac-tarihi"), {
     target: { value: "20.08.2026" },
   });
-  fireEvent.change(screen.getByTestId("talep-malzeme-0"), { target: { value: "s-1" } });
-  fireEvent.change(screen.getByTestId("talep-miktar-0"), { target: { value: "15" } });
-  fireEvent.change(screen.getByTestId("talep-fiyat-0"), { target: { value: "21500" } });
+  fireEvent.change(screen.getByTestId("talep-malzeme-0"), {
+    target: { value: "s-1" },
+  });
+  fireEvent.change(screen.getByTestId("talep-miktar-0"), {
+    target: { value: "15" },
+  });
+  fireEvent.change(screen.getByTestId("talep-fiyat-0"), {
+    target: { value: "21500" },
+  });
 }
 
 describe("FST · başlık ve talep numarası", () => {
   it("mockup başlığını ve alt cümlesini basar (47-48)", () => {
     render(<PurchaseRequestForm />);
 
-    expect(screen.getByRole("heading", { name: "Satın Alma Talebi" })).toBeInTheDocument();
     expect(
-      screen.getByText("Talep onaylandıktan sonra tedarikçilerden teklif toplanır"),
+      screen.getByRole("heading", { name: "Satın Alma Talebi" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Talep onaylandıktan sonra tedarikçilerden teklif toplanır",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -216,9 +246,13 @@ describe("FST · kalem satırları", () => {
   it("stok kartı seçilince birim ve MEVCUT STOK sunucudan gelir (75/84/85)", () => {
     render(<PurchaseRequestForm />);
 
-    fireEvent.change(screen.getByTestId("talep-malzeme-0"), { target: { value: "s-1" } });
+    fireEvent.change(screen.getByTestId("talep-malzeme-0"), {
+      target: { value: "s-1" },
+    });
 
-    expect(screen.getByTestId("talep-mevcut-stok-0").textContent).toContain("2,4");
+    expect(screen.getByTestId("talep-mevcut-stok-0").textContent).toContain(
+      "2,4",
+    );
     expect(screen.getByText("Ton")).toBeInTheDocument();
     // `⚠` inline SVG'dir (F-SEM) ⇒ metinle aranamaz. İddia ZAYIFLAMAZ:
     // kritik notun VARLIĞI + tam metni + uyarı ikonunu birlikte doğrular.
@@ -230,7 +264,9 @@ describe("FST · kalem satırları", () => {
   it("SERBEST kalemde “Mevcut Stok” 0 DEĞİL “—” + gerekçedir", () => {
     render(<PurchaseRequestForm />);
 
-    fireEvent.change(screen.getByTestId("talep-kaynak-0"), { target: { value: "free" } });
+    fireEvent.change(screen.getByTestId("talep-kaynak-0"), {
+      target: { value: "free" },
+    });
 
     const cell = screen.getByTestId("talep-mevcut-stok-0");
     expect(cell.textContent).toContain("—");
@@ -242,10 +278,14 @@ describe("FST · kalem satırları", () => {
   it("fiyatsız satırın tutarı “—”dır ve toplam EKSİK olduğunu söyler", () => {
     render(<PurchaseRequestForm />);
 
-    fireEvent.change(screen.getByTestId("talep-miktar-0"), { target: { value: "15" } });
+    fireEvent.change(screen.getByTestId("talep-miktar-0"), {
+      target: { value: "15" },
+    });
 
     expect(screen.getByTestId("talep-tutar-0").textContent).toBe("—");
-    expect(screen.getByTestId("talep-toplam-eksik").textContent).toContain("EKSİKTİR");
+    expect(screen.getByTestId("talep-toplam-eksik").textContent).toContain(
+      "EKSİKTİR",
+    );
   });
 
   it("kalem eklenip silinebilir (69 / 100-107 / 89)", () => {
@@ -263,7 +303,9 @@ describe("🔴 Onay Akışı kutusu (156-168) — NULL-EŞİK KANONU", () => {
   it("fiyatsız kalem varken “gerekmiyor” DEĞİL “gerekebilir” yazar (fail-closed)", () => {
     render(<PurchaseRequestForm />);
 
-    fireEvent.change(screen.getByTestId("talep-miktar-0"), { target: { value: "1000" } });
+    fireEvent.change(screen.getByTestId("talep-miktar-0"), {
+      target: { value: "1000" },
+    });
 
     const result = screen.getByTestId("talep-onay-sonuc").textContent ?? "";
     expect(result).toContain("Patron onayı gerekebilir");
@@ -273,8 +315,12 @@ describe("🔴 Onay Akışı kutusu (156-168) — NULL-EŞİK KANONU", () => {
   it("eşik altındaki TAM fiyatlı talepte patron onayı gerekmez", () => {
     render(<PurchaseRequestForm />);
 
-    fireEvent.change(screen.getByTestId("talep-miktar-0"), { target: { value: "15" } });
-    fireEvent.change(screen.getByTestId("talep-fiyat-0"), { target: { value: "21500" } });
+    fireEvent.change(screen.getByTestId("talep-miktar-0"), {
+      target: { value: "15" },
+    });
+    fireEvent.change(screen.getByTestId("talep-fiyat-0"), {
+      target: { value: "21500" },
+    });
 
     expect(screen.getByTestId("talep-onay-sonuc").textContent).toContain(
       "Patron onayı gerekmiyor",
@@ -284,8 +330,12 @@ describe("🔴 Onay Akışı kutusu (156-168) — NULL-EŞİK KANONU", () => {
   it("onay/red düğmesi BASILMAZ (spec K6 — ayrı dilim)", () => {
     render(<PurchaseRequestForm />);
 
-    expect(screen.queryByRole("button", { name: /onayla/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /reddet/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /onayla/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /reddet/i }),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -295,11 +345,15 @@ describe("FST · pending yüzeyler yerinde ve devre dışı", () => {
 
     expect(screen.getByLabelText("Demirsan A.Ş.")).toBeDisabled();
     expect(screen.getByTestId("talep-odeme-vadesi")).toBeDisabled();
-    const email = screen.getByTestId("talep-eposta-bildirim") as HTMLInputElement;
+    const email = screen.getByTestId(
+      "talep-eposta-bildirim",
+    ) as HTMLInputElement;
     expect(email).toBeDisabled();
     // Mockup kutucuğu SEÇİLİ çizer; gönderim olmadığı için SEÇİLMEDEN basılır.
     expect(email.checked).toBe(false);
-    expect(screen.getByText("E-posta bildirimleri henüz yok")).toBeInTheDocument();
+    expect(
+      screen.getByText("E-posta bildirimleri henüz yok"),
+    ).toBeInTheDocument();
   });
 
   it("Ekler bölümü silinmez, “Yakında” olarak durur (140-153)", () => {
@@ -318,21 +372,31 @@ describe("FST · Taslak Kaydet + Onaya Gönder GERÇEKTİR", () => {
     fireEvent.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
 
     expect(createMutateAsync).not.toHaveBeenCalled();
-    expect(screen.getByTestId("talep-hata").textContent).toContain("Proje seçimi zorunludur");
+    expect(screen.getByTestId("talep-hata").textContent).toContain(
+      "Proje seçimi zorunludur",
+    );
   });
 
   it("Taslak Kaydet POST atar, numarayı basar ve GÖRÜNÜR sonuç verir", async () => {
     render(<PurchaseRequestForm />);
 
-    fireEvent.change(screen.getByTestId("talep-proje"), { target: { value: "p-1" } });
+    fireEvent.change(screen.getByTestId("talep-proje"), {
+      target: { value: "p-1" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
 
     await waitFor(() => expect(createMutateAsync).toHaveBeenCalledTimes(1));
-    expect(createMutateAsync.mock.calls[0][0]).toMatchObject({ project_id: "p-1" });
+    expect(createMutateAsync.mock.calls[0][0]).toMatchObject({
+      project_id: "p-1",
+    });
     await waitFor(() =>
-      expect((screen.getByTestId("talep-no") as HTMLInputElement).value).toBe("SAT-2026-0101"),
+      expect((screen.getByTestId("talep-no") as HTMLInputElement).value).toBe(
+        "SAT-2026-0101",
+      ),
     );
-    expect(screen.getByTestId("talep-kayit-sonuc").textContent).toContain("SAT-2026-0101");
+    expect(screen.getByTestId("talep-kayit-sonuc").textContent).toContain(
+      "SAT-2026-0101",
+    );
   });
 
   it("Onaya Gönder ÖNCE oluşturur SONRA submit çağırır", async () => {
@@ -348,41 +412,59 @@ describe("FST · Taslak Kaydet + Onaya Gönder GERÇEKTİR", () => {
 
   it("fiyatsız kalemle onaya gönderilemez (eşik girdisi eksik olurdu)", () => {
     render(<PurchaseRequestForm />);
-    fireEvent.change(screen.getByTestId("talep-proje"), { target: { value: "p-1" } });
+    fireEvent.change(screen.getByTestId("talep-proje"), {
+      target: { value: "p-1" },
+    });
     fireEvent.change(screen.getByTestId("talep-ihtiyac-tarihi"), {
       target: { value: "20.08.2026" },
     });
-    fireEvent.change(screen.getByTestId("talep-malzeme-0"), { target: { value: "s-1" } });
-    fireEvent.change(screen.getByTestId("talep-miktar-0"), { target: { value: "15" } });
+    fireEvent.change(screen.getByTestId("talep-malzeme-0"), {
+      target: { value: "s-1" },
+    });
+    fireEvent.change(screen.getByTestId("talep-miktar-0"), {
+      target: { value: "15" },
+    });
 
     fireEvent.click(submitButton());
 
     expect(createMutateAsync).not.toHaveBeenCalled();
-    expect(screen.getByTestId("talep-hata").textContent).toContain("Tahmini birim fiyat zorunludur");
+    expect(screen.getByTestId("talep-hata").textContent).toContain(
+      "Tahmini birim fiyat zorunludur",
+    );
   });
 
   it("🔴 submit patlarsa kullanıcı KAYBOLMAZ: talep numarasıyla taslakta olduğu söylenir", async () => {
-    submitMutateAsync.mockRejectedValue(new BackendError(409, { detail: "Durum uygun değil." }));
+    submitMutateAsync.mockRejectedValue(
+      new BackendError(409, { detail: "Durum uygun değil." }),
+    );
     render(<PurchaseRequestForm />);
     fillSubmittableForm();
 
     fireEvent.click(submitButton());
 
     await waitFor(() =>
-      expect(screen.getByTestId("talep-hata").textContent).toContain("SAT-2026-0101"),
+      expect(screen.getByTestId("talep-hata").textContent).toContain(
+        "SAT-2026-0101",
+      ),
     );
-    expect(screen.getByTestId("talep-hata").textContent).toContain("TASLAK olarak kaydedildi");
+    expect(screen.getByTestId("talep-hata").textContent).toContain(
+      "TASLAK olarak kaydedildi",
+    );
     expect(push).not.toHaveBeenCalled();
   });
 
   it("🔴 submit patladıktan sonra yeniden deneme İKİNCİ talep AÇMAZ (PATCH yolu)", async () => {
-    submitMutateAsync.mockRejectedValueOnce(new BackendError(409, { detail: "Durum uygun değil." }));
+    submitMutateAsync.mockRejectedValueOnce(
+      new BackendError(409, { detail: "Durum uygun değil." }),
+    );
     render(<PurchaseRequestForm />);
     fillSubmittableForm();
 
     fireEvent.click(submitButton());
     await waitFor(() =>
-      expect(screen.getByTestId("talep-hata").textContent).toContain("SAT-2026-0101"),
+      expect(screen.getByTestId("talep-hata").textContent).toContain(
+        "SAT-2026-0101",
+      ),
     );
 
     fireEvent.click(submitButton());
@@ -394,14 +476,20 @@ describe("FST · Taslak Kaydet + Onaya Gönder GERÇEKTİR", () => {
   });
 
   it("oluşturma hatası görünür basılır", async () => {
-    createMutateAsync.mockRejectedValue(new BackendError(404, { detail: "Proje bulunamadı." }));
+    createMutateAsync.mockRejectedValue(
+      new BackendError(404, { detail: "Proje bulunamadı." }),
+    );
     render(<PurchaseRequestForm />);
-    fireEvent.change(screen.getByTestId("talep-proje"), { target: { value: "p-1" } });
+    fireEvent.change(screen.getByTestId("talep-proje"), {
+      target: { value: "p-1" },
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "Taslak Kaydet" }));
 
     await waitFor(() =>
-      expect(screen.getByTestId("talep-hata").textContent).toContain("Proje bulunamadı."),
+      expect(screen.getByTestId("talep-hata").textContent).toContain(
+        "Proje bulunamadı.",
+      ),
     );
   });
 });

@@ -53,7 +53,6 @@ import {
 // Sıra önemli: önce paylaşılan kabuk, sonra ekrana özgü bloklar.
 import "@/styles/form-shell.css";
 import "./subcontractor-contract-form.css";
-import { routes } from "@/lib/routes";
 
 /**
  * FSO · `/sozlesmeler/taseron/yeni` — Yeni Taşeron Sözleşmesi formu
@@ -74,7 +73,7 @@ import { routes } from "@/lib/routes";
  */
 export function SubcontractorContractCreateView() {
   const router = useRouter();
-  const { canWrite } = useModulePermission("contracts");
+  const { canWrite, canDelete } = useModulePermission("contracts");
 
   const [values, setValues] = useState<SubcontractorContractFormValues>(
     emptySubcontractorContractFormValues,
@@ -157,9 +156,11 @@ export function SubcontractorContractCreateView() {
 
   const loadDisabledReason = !values.projectId
     ? ITEMS_NEED_PROJECT_REASON
-    : !employerContractQuery.isLoading && !employerContractNo
-      ? "Seçili projenin işveren sözleşmesi yok — poz listesi buradan gelir"
-      : null;
+    : employerContractQuery.isLoading
+      ? "İşveren sözleşmesi yükleniyor…"
+      : !employerContractNo
+        ? "Seçili projenin işveren sözleşmesi yok — poz listesi buradan gelir"
+        : null;
 
   function handleChange<K extends keyof SubcontractorContractFormValues>(
     field: K,
@@ -181,6 +182,15 @@ export function SubcontractorContractCreateView() {
     // Şantiye projeye bağlıdır — proje değişince seçim DÜŞER, aksi hâlde
     // başka projenin şantiyesi gövdeye sızardı.
     setValues((prev) => ({ ...prev, projectId, siteId: "" }));
+    // no 336 · Taslak (varsa) ESKİ projeye aittir. `contractId` düşmezse
+    // `submit` yeni projenin alanlarını (özellikle `site_id`) eski projedeki
+    // sözleşmeye PATCH eder — başka projenin şantiyesi o kayda sızar. Proje
+    // değişince taslak bağlamı TAMAMEN sıfırlanır: bir sonraki kaydetme YENİ
+    // bir sözleşme açar (poz listesi de bu kimliğe bağlıydı — o da düşer).
+    setContractId(null);
+    setLoadNotice(null);
+    setLoadError(null);
+    setIsLoadQueued(false);
   }
 
   function handleCancel() {
@@ -270,7 +280,11 @@ export function SubcontractorContractCreateView() {
       {/* 31-42 · üst şerit: kırıntı yolu + İptal + birincil eylem */}
       <div className="pf-topbar">
         <nav className="pf-breadcrumb" aria-label="Kırıntı yolu">
-          <Link href={routes.contracts.subcontractorList()}>{FSO_TEXT.breadcrumbRoot}</Link>
+          {/* no 329 · kırıntı `routes.contracts.subcontractorList()`
+              (`/sozlesmeler/taseronlar`) İptal/başarı `listHref`inden
+              (`contractTabHref("subcontractor")` → `/sozlesmeler?type=
+              subcontractor`) FARKLI bir rotaydı — TEK hedef kullanılır. */}
+          <Link href={listHref}>{FSO_TEXT.breadcrumbRoot}</Link>
           <span className="pf-breadcrumb__sep" aria-hidden="true">
             /
           </span>
@@ -350,6 +364,7 @@ export function SubcontractorContractCreateView() {
             isLoadPending={loadItems.isPending || createContract.isPending || isLoadQueued}
             isBusy={isItemBusy || isSaving}
             loadDisabledReason={loadDisabledReason}
+            canDelete={canDelete}
             onLoadFromEmployer={handleLoadFromEmployer}
             onCommitItem={handleCommitItem}
             onDeleteItem={handleDeleteItem}

@@ -69,6 +69,14 @@ describe("saleStatusBadge — SY 166/175/184/193/202", () => {
   it("iptal edilmiş satış uydurma rozet almaz, enum çevirisi basılır", () => {
     expect(saleStatusBadge(row({ status: "cancelled" })).label).toBe("İptal");
   });
+
+  it("no 243 · taksitli plan tipi seçili ama installment_total 0 ise 'Taksitli' YALAN basılmaz", () => {
+    const badge = saleStatusBadge(
+      row({ payment_plan_type: "down_payment_installments", installment_total: 0 }),
+    );
+    expect(badge.label).not.toBe("Taksitli");
+    expect(badge.label).toBe("Plan Bekliyor");
+  });
 });
 
 describe("saleRowTone — SY 177/186", () => {
@@ -84,11 +92,15 @@ describe("saleRowTone — SY 177/186", () => {
 });
 
 describe("durum süzgeci (SY 146) — İSTEMCİDE", () => {
-  it("mockup'ın üç seçeneğini taşır", () => {
+  it("mockup'ın üç seçeneğini + ONAYLI SAPMA 'İptal Hariç'i taşır", () => {
+    // no 239 · mockup'ın üçü BİREBİR korunur; dördüncü seçenek ONAYLI SAPMADIR
+    // (bkz. dosya başı notu no 239): backend `totals`ı iptalleri de sayar ve
+    // istemcide iptalleri dışlayacak BAŞKA bir yol yoktur.
     expect(SALES_STATUS_FILTER_OPTIONS.map((o) => o.label)).toEqual([
       "Tapulu",
       "Rezerve",
       "Vadesi Geçen",
+      "İptal Hariç",
     ]);
   });
 
@@ -111,6 +123,29 @@ describe("durum süzgeci (SY 146) — İSTEMCİDE", () => {
     ];
     expect(filterSales(rows, "deed_transferred").map((r) => r.id)).toEqual(["a", "c"]);
     expect(filterSales(rows, undefined)).toHaveLength(3);
+  });
+
+  /**
+   * no 239 · liste ucu `cancelled` kayıtları da döndürür (sunucu süzmez,
+   * `saleStatusBadge`in kendi yorumu) ve backend `totals` bunları DA sayar.
+   * İstemcide iptalleri dışlayacak bir süzgeç YOKTU — kullanıcı toplamdan
+   * iptalleri asla çıkaramıyordu.
+   */
+  it("239 · 'İptal Hariç' iptal edilmiş satışları dışlar, gerisini bırakır", () => {
+    const rows = [
+      row({ id: "a", status: "deed_transferred" }),
+      row({ id: "b", status: "cancelled" }),
+      row({ id: "c", status: "reservation" }),
+    ];
+    expect(filterSales(rows, "exclude_cancelled").map((r) => r.id)).toEqual(["a", "c"]);
+    expect(matchesSalesStatusFilter(row({ status: "cancelled" }), "exclude_cancelled")).toBe(
+      false,
+    );
+    expect(matchesSalesStatusFilter(row({ status: "active" }), "exclude_cancelled")).toBe(true);
+  });
+
+  it("239 · 'İptal Hariç' geçerli bir URL değeridir", () => {
+    expect(parseSalesStatusFilter("exclude_cancelled")).toBe("exclude_cancelled");
   });
 });
 
@@ -155,13 +190,25 @@ describe("paymentPlanCell — SY 165/174/183/192", () => {
       paymentPlanCell(row({ payment_plan_type: "down_payment_installments" })).text,
     ).toBe("Plan üretilmedi");
   });
+
+  it("no 244 · iptal edilmiş satışta gecikme sayacı sıfırlanmamış olsa da kırmızı basılmaz", () => {
+    const cell = paymentPlanCell(
+      row({ status: "cancelled", overdue_installment_count: 2 }),
+    );
+    expect(cell.isOverdue).toBe(false);
+  });
 });
 
 describe("customerLine — SY 161/179/188/197", () => {
   it("TCKN maskelenir (161)", () => {
     expect(customerLine(row())).toEqual({ text: "TCKN: 123****901", tone: "muted" });
     expect(maskNationalId("12345678901")).toBe("123****901");
-    expect(maskNationalId("123")).toBe("123");
+  });
+
+  it("no 238 · kısa/bozuk TCKN (≤6 hane) de tamamen maskelenir, maskesiz basılmaz", () => {
+    expect(maskNationalId("123")).toBe("***");
+    expect(maskNationalId("123456")).toBe("******");
+    expect(maskNationalId("")).toBe("");
   });
 
   it("VKN maskelenmez (197 kurumsal kimlik)", () => {
@@ -195,5 +242,10 @@ describe("customerLine — SY 161/179/188/197", () => {
 
   it("kimlik alanlarının ikisi de boşsa satır BASILMAZ (uydurma yok)", () => {
     expect(customerLine(row({ customer_national_id: null, customer_tax_number: null }))).toBeNull();
+  });
+
+  it("no 244 · iptal edilmiş satışta gecikme sayacı sıfırlanmamış olsa da '⚠ N taksit gecikmiş' basılmaz", () => {
+    const line = customerLine(row({ status: "cancelled", overdue_installment_count: 2 }));
+    expect(line?.icon).not.toBe("warning");
   });
 });

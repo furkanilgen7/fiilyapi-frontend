@@ -200,6 +200,12 @@
      yukarıdaki iki token'la karşılanıyor, kenarlığın karşılığı YOKTU. */
   --color-orange-tint-border: #fed7aa;
 
+  /* AI paneli "bilgi"/"uyarı" metrik kartı zemini (kalan-6 no 18 — çıplak hex
+     kaldırılırken karşılığı yoktu, mevcut --color-info-tint/--color-orange-tint
+     değerlerinden FARKLI tonlar; yeni token eklendi, DEĞER değişmedi). */
+  --color-ai-info-tint: #f8faff;
+  --color-ai-warning-tint: #fffbf5;
+
   /* Sistem rolü gradyan/çerçeve + koyu grup başlığı */
   --color-slate-700: #334155;
 

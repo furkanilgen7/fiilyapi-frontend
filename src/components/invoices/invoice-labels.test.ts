@@ -5,12 +5,14 @@ import {
   DOCUMENT_TYPE_LABELS,
   INVOICE_PAYMENT_METHOD_LABELS,
   PAYMENT_KIND_LABELS,
+  incomingInvoicesEmptyMessage,
   invoiceSource,
   invoiceStatusLabel,
   invoiceStatusVariant,
   monthRangeOf,
   OUTGOING_STATUS_FILTERS,
   statusForFilterValue,
+  vatDifferenceHint,
 } from "./invoice-labels";
 
 const NO_SOURCE = {
@@ -19,6 +21,34 @@ const NO_SOURCE = {
   equipment_rental_invoice_id: null,
   purchase_order_id: null,
 };
+
+describe("vatDifferenceHint — O5a-133 FY:73 ipucu İŞARETE göre değişir", () => {
+  it("pozitif fark 'Ödenecek KDV' der", () => {
+    expect(vatDifferenceHint("1250.00")).toBe("Ödenecek KDV");
+    expect(vatDifferenceHint("0")).toBe("Ödenecek KDV");
+  });
+
+  it("NEGATİF fark (devreden KDV) 'Devreden KDV' der, 'Ödenecek' YAZMAZ", () => {
+    expect(vatDifferenceHint("-1250.00")).toBe("Devreden KDV");
+    expect(vatDifferenceHint("-1250.00")).not.toContain("Ödenecek");
+  });
+});
+
+describe("incomingInvoicesEmptyMessage — O5a-130 sekmeye göre değişir", () => {
+  it("'giden' sekmesinde durum süzgeci uygulanır — metin 'onay bekleyen' der", () => {
+    expect(incomingInvoicesEmptyMessage("giden")).toBe("Onay bekleyen gelen fatura yok.");
+  });
+
+  it("'gelen' sekmesinde durum süzgeci YOKTUR — metin genel bir 'gelen fatura yok' der", () => {
+    // InvoicesView.tsx incomingQuery yalnız tab==='giden' iken status:pending
+    // gönderir; 'gelen' sekmesinde TÜM gelen faturalar listelenir, bu yüzden
+    // boş liste "onay bekleyen yok" DEMEZ — panel başlığıyla (FY "Gelen
+    // Faturalar") tutarlı, koşulsuz bir metin döner.
+    expect(incomingInvoicesEmptyMessage("gelen")).toBe("Gelen fatura yok.");
+    expect(incomingInvoicesEmptyMessage("gelen")).not.toContain("onay bekleyen");
+    expect(incomingInvoicesEmptyMessage("gelen")).not.toContain("Onay bekleyen");
+  });
+});
 
 describe("invoiceStatusLabel — K1 'Vadeli' AYRI DURUM DEĞİLDİR", () => {
   it("vadesi DOLU `sent` fatura 'Vadeli' yazar (FY:119)", () => {

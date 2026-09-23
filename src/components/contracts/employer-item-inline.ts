@@ -56,7 +56,10 @@ export type InlineCommit =
 export function commitInlineCell(
   field: InlineCellField,
   draft: string | undefined,
-  serverValue: string,
+  // 🔴 KAPSAM MASKESİ (2026-09-19): sunucu değeri `null` gelebilir. `""` ile
+  //    karşılaştırmak DOĞRUDUR: `decimalInputValue(null)` da `""` üretir, yani
+  //    maskeli hücreye dokunmayan kullanıcı istek UÇURMAZ.
+  serverValue: string | null,
 ): InlineCommit {
   if (draft === undefined) return { kind: "noop" };
   const next = draft.trim();

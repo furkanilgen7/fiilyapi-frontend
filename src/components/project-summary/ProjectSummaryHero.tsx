@@ -146,15 +146,22 @@ export function ProjectSummaryHero({ project, costs, totals }: ProjectSummaryHer
           }
         />
 
-        {/* KK 103-107 · arsa maliyeti. Kat karşılığında `0` GERÇEK bir
-            sıfırdır (arsa parası ödenmez) — yer tutucu değil. */}
+        {/* KK 103-107 · arsa maliyeti.
+            🔴 KAYIT NO 210 — `costs.breakdown.land_cost` (ProjectCostBreakdown)
+            kat karşılığında TANIM GEREĞİ `0`dır (arsa parası ödenmez, bkz.
+            ProjectCostBreakdown şema yorumu). Burada gösterilmesi gereken,
+            arsa sahibiyle yapılan SÖZLEŞMEDEKİ gerçek arsa bedelidir —
+            kanonik kaynak `land_share.land_cost` (LandShareCard), TIPKI
+            LandShareTableView'in "Arsa Maliyeti" kutusunun kullandığı kaynak
+            gibi. `costs.breakdown.land_cost` kullanılsaydı bu KPI HER ZAMAN
+            "₺0" basardı. */}
         {isLandShare ? (
           <Kpi
             label="Arsa Maliyeti"
             value={
-              costs.breakdown.land_cost === null
+              landShare?.land_cost === null || landShare?.land_cost === undefined
                 ? EMPTY_VALUE
-                : formatCurrency(costs.breakdown.land_cost)
+                : formatCurrency(landShare.land_cost)
             }
             note="Kat karşılığı"
           />

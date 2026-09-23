@@ -54,7 +54,17 @@ const ROWS: readonly LandShareUnitRow[] = [
   unitRow("u10", "100000"),
 ];
 
-const TARGETS = { ourSharePct: "55.00", ourExpectedCount: 6, ownerExpectedCount: 4 };
+const TARGETS = {
+  ourSharePct: "55.00",
+  ourExpectedCount: 6,
+  ownerExpectedCount: 4,
+  // SUNUCUNUN proje geneli sayıları — bu fixture'da görünen satırlarla AYNI
+  // (süzgeç "Tümü"), yani fark uygulanmaz ve sonuç değişmez.
+  ourAssignedCount: 2,
+  ownerAssignedCount: 2,
+  ourAssignedValue: "2000000",
+  ownerAssignedValue: "2000000",
+};
 
 function countBySide(rows: readonly LandShareUnitRow[], state: ReturnType<typeof emptyAllocationState>) {
   let ours = 0;
@@ -119,6 +129,10 @@ describe("autoDistribute — 🔴 rayiç değeri OLMAYAN ünite SIFIR SAYILMAZ",
     ourSharePct: "55.00",
     ourExpectedCount: 3,
     ownerExpectedCount: 2,
+    ourAssignedCount: 1,
+    ownerAssignedCount: 1,
+    ourAssignedValue: "1000000",
+    ownerAssignedValue: "1000000",
   });
 
   it("değersiz ünite dağıtıma GİRMEZ ve bekleyen atama almaz", () => {
@@ -149,6 +163,10 @@ describe("autoDistribute — hedefler dolduğunda", () => {
       ourSharePct: "55.00",
       ourExpectedCount: 1,
       ownerExpectedCount: 1,
+      ourAssignedCount: 0,
+      ownerAssignedCount: 0,
+      ourAssignedValue: "0",
+      ownerAssignedValue: "0",
     });
 
     expect(result.assignedToUs.length + result.assignedToOwner.length).toBe(2);
@@ -168,6 +186,10 @@ describe("autoDistribute — hedefler dolduğunda", () => {
       ourSharePct: "55.00",
       ourExpectedCount: 1,
       ownerExpectedCount: 1,
+      ourAssignedCount: 1,
+      ownerAssignedCount: 1,
+      ourAssignedValue: "500000",
+      ownerAssignedValue: "400000",
     });
     expect(result.assignedToUs).toEqual([]);
     expect(result.assignedToOwner).toEqual([]);
@@ -200,5 +222,70 @@ describe("autoDistribute — 🔴 SUNUCUYA HİÇBİR ŞEY YAZILMAZ", () => {
     expect(result.assignedToUs).not.toContain("u5");
     expect(effectiveAllocation(ROWS[4], result.state).ownerSide).toBe("contractor");
     expect(countBySide(ROWS, result.state).unassigned).toBe(0);
+  });
+});
+
+/**
+ * 🔴 KUSUR 76 — VARSAYILAN SÜZGEÇ ("Atanmayan") LİSTEDE ATANMIŞ SATIR
+ * BIRAKMAZ. Sayaçlar yalnız GÖRÜNEN satırlardan doldurulursa `remainingOur`
+ * TÜM hedefi sayar ve dağıtım AŞIRI ATAMA üretir. Hedefler de, zaten atanmış
+ * adet/değer de SUNUCUDAN gelir (`LandShareCountBalance` · `LandShareValueBalance`)
+ * ve süzgeçten BAĞIMSIZDIR (`land_share.py:213`).
+ */
+describe("autoDistribute — 🔴 ZATEN ATANMIŞ ÜNİTELER SÜZGEÇ YÜZÜNDEN GÖRÜNMESE DE SAYILIR", () => {
+  // 42 ünite · %55/%45 → hedef 23 / 19. Noter sonrası 24'ü elle girilmiş
+  // (22 bize, 2 arsa sahibine); ekranda YALNIZ 18 atanmamış satır görünür.
+  const rows: readonly LandShareUnitRow[] = Array.from({ length: 18 }, (_, index) =>
+    unitRow(`v${String(index + 1).padStart(2, "0")}`, String(1_000_000 - (index + 1) * 10_000)),
+  );
+
+  const result = autoDistribute({
+    rows,
+    state: emptyAllocationState(),
+    ourSharePct: "55.00",
+    ourExpectedCount: 23,
+    ownerExpectedCount: 19,
+    ourAssignedCount: 22,
+    ownerAssignedCount: 2,
+    ourAssignedValue: "22000000",
+    ownerAssignedValue: "2000000",
+  });
+
+  it("kalan kapasite SUNUCUNUN atanmış adetlerinden düşülür: 1 bize, 17 arsa sahibine", () => {
+    expect(result.assignedToUs).toHaveLength(1);
+    expect(result.assignedToOwner).toHaveLength(17);
+  });
+
+  it("hedef aşılmaz: 18 ünite tam kapasiteye oturur, atanmadan kalan YOKTUR", () => {
+    expect(result.leftUnassigned).toEqual([]);
+    expect(result.state.pending.size).toBe(18);
+  });
+});
+
+describe("autoDistribute — 🔴 DEĞER DENGESİ de sunucudan TOHUMLANIR", () => {
+  // Adet kapasitesi İKİ TARAFTA DA EŞİT (4/4) — tek ayrım zaten atanmış DEĞER.
+  const rows: readonly LandShareUnitRow[] = [
+    unitRow("w1", "500000"),
+    unitRow("w2", "500000"),
+    unitRow("w3", "500000"),
+    unitRow("w4", "500000"),
+  ];
+
+  const result = autoDistribute({
+    rows,
+    state: emptyAllocationState(),
+    ourSharePct: "50.00",
+    ourExpectedCount: 6,
+    ownerExpectedCount: 6,
+    ourAssignedCount: 2,
+    ownerAssignedCount: 2,
+    // Bizim iki ünitemiz PAHALI, arsa sahibininki UCUZ: değer açığı ONDA.
+    ourAssignedValue: "3000000",
+    ownerAssignedValue: "1000000",
+  });
+
+  it("değerce GERİDE olan taraf önceliklidir — dördü de arsa sahibine gider", () => {
+    expect([...result.assignedToOwner]).toEqual(["w1", "w2", "w3", "w4"]);
+    expect(result.assignedToUs).toEqual([]);
   });
 });

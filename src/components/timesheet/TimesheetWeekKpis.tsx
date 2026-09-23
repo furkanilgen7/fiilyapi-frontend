@@ -65,12 +65,17 @@ export function TimesheetWeekKpis({
         isStale={isStale}
         staleTitle={staleTitle}
       />
-      {/* E5 183-187 */}
+      {/* E5 183-187 — 🔴 triyaj #351: notu "Normal + FM" der, o toplamla AYNI
+          bayatlık riskini taşır (totalHours düz toplamdan taze, normal/FM
+          backend türevinden taslak varken bayat) → diğer iki kart gibi
+          işaretlenir. */}
       <KpiCard
         label="Hafta Toplamı"
         value={formatDecimal(totalHours, 1)}
         note="Normal + FM"
         tone="total"
+        isStale={isStale}
+        staleTitle={staleTitle}
       />
       {/* E5 188-193 — YALNIZ izin */}
       <KpiCard label="İzin" value={String(leaveDayCount)} note="gün" tone="leave" />

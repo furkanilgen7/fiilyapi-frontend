@@ -154,16 +154,18 @@ test.describe("URL-3 · aktif sekme HER IKI adres biciminde de isaretlenir", () 
       await page.goto(url);
       await expect(page.getByTestId("site-list-grid")).toBeVisible();
 
-      const active = page.getByRole("tab", { name: "Şantiyeler" });
-      await expect(active).toHaveAttribute("aria-selected", "true");
+      // 🔴 `role="tablist"/"tab"` 2026-09-23'te KALDIRILDI (kayıt 214/403):
+      // gerçek `tabpanel` yoktu, kardeş şerit bu deseni zaten `<nav>` +
+      // `aria-current="page"` ile değiştirmişti. Şerit artık GEZİNMEDİR.
+      const active = page.getByRole("link", { name: "Şantiyeler" });
+      await expect(active).toHaveAttribute("aria-current", "page");
       // Serit ADRESI izler: href adres bicimiyle AYNI olmalidir.
       await expect(active).toHaveAttribute("href", url);
       // Pozitif kontrol: baska bir sekme secili DEGIL (hepsi true olsaydi
       // yukaridaki iddia bir bekciyi degil bir yanilsamayi dogrulardi).
-      await expect(page.getByRole("tab", { name: "İşveren Hakediş" })).toHaveAttribute(
-        "aria-selected",
-        "false",
-      );
+      await expect(
+        page.getByRole("link", { name: "İşveren Hakediş" }),
+      ).not.toHaveAttribute("aria-current", "page");
     });
   }
 

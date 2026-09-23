@@ -10,6 +10,8 @@ import {
 } from "@/lib/api/hooks/useBoqAllocations";
 import type { BoqGroup } from "@/lib/api/hooks/useBoq";
 import { BackendError } from "@/lib/api/unwrap";
+import { useSession } from "@/components/shell/SessionProvider";
+import type { MeResponse } from "@/lib/auth/types";
 
 vi.mock("@/lib/api/hooks/useBoq", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api/hooks/useBoq")>()),
@@ -20,6 +22,15 @@ vi.mock("@/lib/api/hooks/useBoqAllocations", async (importOriginal) => ({
   fetchBoqItemAllocations: vi.fn(),
   useReplaceBoqItemAllocations: vi.fn(),
 }));
+vi.mock("@/components/shell/SessionProvider", () => ({ useSession: vi.fn() }));
+
+/** `boq` modülü için tekil izin seviyesi kurar — `undefined` bilinmezlik dalına düşer (varsayılan). */
+function setBoqPermission(level: string | undefined) {
+  vi.mocked(useSession).mockReturnValue({
+    me: level === undefined ? null : ({ permissions: { boq: level } } as unknown as MeResponse),
+    isLoading: false,
+  } as unknown as ReturnType<typeof useSession>);
+}
 
 const SITE_ID = "11111111-1111-4111-8111-111111111111";
 const SECTION_ID = "22222222-2222-4222-8222-222222222222";
@@ -88,6 +99,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mutateAsync.mockResolvedValue({});
   mockQueries();
+  setBoqPermission(undefined);
 });
 
 function renderEdit() {
@@ -251,5 +263,29 @@ describe("yazma yetkisi olmayan kullanıcı", () => {
     );
     expect(screen.getByRole("button", { name: "+ Poz Seç" })).toBeDisabled();
     expect(screen.getByLabelText("03.001 için bu bölüme atanan miktar")).toBeDisabled();
+  });
+});
+
+// M5_1 kayıt #262: `sites:full` + `boq:view` bileşimi eskiden canAssign=true
+// görüyordu (yalnız `sites` modülünün canWrite'ına bakılıyordu) ve backend
+// `PUT /boq/items/{id}/allocations` 403 dönerdi — `boq` modülü `full`
+// eşiğinin ALTINDAYKEN kontroller de devre dışı kalmalı.
+describe("sites:full ama boq:view (backend full eşiği karşılanmıyor)", () => {
+  it("canWrite=true olsa bile kontroller devre dışıdır", () => {
+    setBoqPermission("view");
+    render(
+      <BoqAssignmentCard mode="edit" siteId={SITE_ID} sectionId={SECTION_ID} canWrite />,
+    );
+    expect(screen.getByRole("button", { name: "+ Poz Seç" })).toBeDisabled();
+    expect(screen.getByLabelText("03.001 için bu bölüme atanan miktar")).toBeDisabled();
+  });
+
+  it("boq:full ise kontroller AÇIKTIR (karşıt kanıt)", () => {
+    setBoqPermission("full");
+    render(
+      <BoqAssignmentCard mode="edit" siteId={SITE_ID} sectionId={SECTION_ID} canWrite />,
+    );
+    expect(screen.getByRole("button", { name: "+ Poz Seç" })).not.toBeDisabled();
+    expect(screen.getByLabelText("03.001 için bu bölüme atanan miktar")).not.toBeDisabled();
   });
 });

@@ -2,7 +2,7 @@ import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/r
 import { backendClient } from "@/lib/api/client";
 import { unwrap } from "@/lib/api/unwrap";
 import type { components } from "@/lib/api/schema";
-import { PROJECTS_QUERY_KEY, type ProjectListItem } from "./useProjects";
+import { PROJECTS_QUERY_KEY, type ProjectDetail } from "./useProjects";
 
 // NOT: Plan "ProjectCreateRequest" adini varsayiyordu; gercek semada istek govdesi
 // "ProjectCreate" (bkz. src/lib/api/schema.d.ts). Gercek adi kullaniyoruz.
@@ -25,7 +25,13 @@ function normalizeProjectCreateBody(body: ProjectCreateRequest): ProjectCreateRe
   return normalized;
 }
 
-export function useCreateProject(): UseMutationResult<ProjectListItem, Error, ProjectCreateRequest> {
+// DUZELTME TURU 2 (kayit no 452 — F-BFF onarim turu): donus tipi ONCEDEN
+// `ProjectListItem` (dar govde) idi ama gercek uc (`POST /projects`,
+// schema.d.ts:30319 `create_project_endpoint_projects_post`) 201'de
+// `ProjectDetailResponse` doner — `site_count` dahil TUM proje detay
+// kolonlarini tasir. `useSectionMutations.ts::useCreateSection`teki AYNI
+// sinif hatanin (DUZELTME TURU 1) birebir esi.
+export function useCreateProject(): UseMutationResult<ProjectDetail, Error, ProjectCreateRequest> {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (body) =>

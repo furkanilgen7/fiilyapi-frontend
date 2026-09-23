@@ -70,11 +70,25 @@ export function LandShareTableView({ projectKey, activePath }: LandShareTableVie
   const unitsQuery = useLandShareUnits(projectId, { offset });
 
   if (isForbidden(summaryQuery.error) || isForbidden(projectQuery.error)) return <AccessDenied />;
+  // 🔴 F-P6 dersi: tek `.data` dallanması projectQuery 403 DIŞI bir hata
+  // verdiğinde (404/500/ağ) sonsuza kadar "Yükleniyor…" basardı — projectId
+  // hiç çözülmediği için summaryQuery `enabled:false` ile pending'de kalırdı.
+  if (projectQuery.isError) return <p className="psum-message">Proje yüklenemedi</p>;
 
   // 404 bir HATA gibi değil, AÇIKLAYICI BOŞ HÂL gibi basılır (hook notu).
   if (isLandShareMissing(summaryQuery.error)) {
     return (
       <div className="psum">
+        {/* Kayıt 209 — sekme şeridi bu dalda da basılır: kullanıcı geri gitmek
+            için şeritten çıkamıyordu (diğer boş hâller şeridi basıyor). */}
+        <div className="psum-tabbar">
+          <ProjectDetailTabs
+            projectKey={projectKey}
+            projectId={projectId}
+            activePath={activePath}
+            projectType={projectQuery.data?.project_type ?? "kat_karsiligi"}
+          />
+        </div>
         <p className="psum-message">
           Bu projede kat karşılığı sözleşmesi tanımlı değil; paylaşım tablosu yalnız kat karşılığı
           projelerinde tutulur.

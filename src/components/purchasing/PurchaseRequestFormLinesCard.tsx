@@ -33,7 +33,10 @@ interface PurchaseRequestFormLinesCardProps {
   stockIsError: boolean;
   onAddLine: () => void;
   onRemoveLine: (key: string) => void;
-  onChangeLine: (key: string, patch: Partial<Omit<PurchaseRequestLineValues, "key">>) => void;
+  onChangeLine: (
+    key: string,
+    patch: Partial<Omit<PurchaseRequestLineValues, "key">>,
+  ) => void;
 }
 
 /** FST 85 kırmızı · 94 kehribar — renk SUNUCUNUN `status` damgasından türer. */
@@ -73,7 +76,10 @@ export function PurchaseRequestFormLinesCard({
   onChangeLine,
 }: PurchaseRequestFormLinesCardProps) {
   const rowsById = new Map(stockRows.map((row) => [row.id, row]));
-  const estimate = estimatePurchaseApproval(values.lines);
+  // Bu kart HÜKÜM BASMAZ (yalnız toplam + eksiklik notu), o yüzden eşik
+  // BİLİNÇLİ olarak geçilmez — `undefined` açıkça yazılır ki parametreyi
+  // unutmakla bilerek atlamak karışmasın.
+  const estimate = estimatePurchaseApproval(values.lines, undefined);
   const incompleteNote = purchaseTotalIncompleteNote(estimate);
   const stockNote = stockIsError
     ? STOCK_ITEMS_LOAD_ERROR
@@ -104,7 +110,10 @@ export function PurchaseRequestFormLinesCard({
         </p>
       )}
       {errors.lines && (
-        <p className="saf-lines__note saf-lines__note--error" data-testid="talep-kalem-hata">
+        <p
+          className="saf-lines__note saf-lines__note--error"
+          data-testid="talep-kalem-hata"
+        >
           {errors.lines}
         </p>
       )}
@@ -136,12 +145,18 @@ export function PurchaseRequestFormLinesCard({
         </thead>
         <tbody>
           {values.lines.map((line, index) => {
-            const stockRow = line.source === "stock" ? rowsById.get(line.stockItemId) : undefined;
+            const stockRow =
+              line.source === "stock"
+                ? rowsById.get(line.stockItemId)
+                : undefined;
             const lineErrors = errors.lineErrors[line.key];
             const total = purchaseRequestLineTotal(line);
             const isCritical = stockRow?.status === "critical";
             // 84 — birim stok kartlı kalemde KARTIN birimidir, elle girilmez.
-            const unit = line.source === "stock" ? stockRow?.unit : line.freeTextUnit.trim();
+            const unit =
+              line.source === "stock"
+                ? stockRow?.unit
+                : line.freeTextUnit.trim();
             const currentStockReason =
               line.source === "free"
                 ? CURRENT_STOCK_FREE_TEXT_REASON
@@ -165,7 +180,8 @@ export function PurchaseRequestFormLinesCard({
                       value={line.source}
                       onChange={(event) =>
                         onChangeLine(line.key, {
-                          source: event.target.value as PurchaseRequestLineSource,
+                          source: event.target
+                            .value as PurchaseRequestLineSource,
                         })
                       }
                     >
@@ -184,7 +200,9 @@ export function PurchaseRequestFormLinesCard({
                         disabled={stockDisabled}
                         value={line.stockItemId}
                         onChange={(event) =>
-                          onChangeLine(line.key, { stockItemId: event.target.value })
+                          onChangeLine(line.key, {
+                            stockItemId: event.target.value,
+                          })
                         }
                       >
                         <option value="">Stok kartından malzeme seç…</option>
@@ -195,7 +213,9 @@ export function PurchaseRequestFormLinesCard({
                         ))}
                       </Select>
                       {lineErrors?.stockItemId && (
-                        <span className="saf-table__error">{lineErrors.stockItemId}</span>
+                        <span className="saf-table__error">
+                          {lineErrors.stockItemId}
+                        </span>
                       )}
                       {/* 83 alt not (kritik) · 92 alt not (kart kodu) */}
                       {isCritical ? (
@@ -203,10 +223,15 @@ export function PurchaseRequestFormLinesCard({
                           className="saf-table__sub saf-table__sub--critical"
                           data-testid={`talep-kritik-stok-${index}`}
                         >
-                          <WarningTriangleIcon {...inlineSymbolProps} /> Kritik stok
+                          <WarningTriangleIcon {...inlineSymbolProps} /> Kritik
+                          stok
                         </span>
                       ) : (
-                        stockRow && <span className="saf-table__sub">{stockRow.code}</span>
+                        stockRow && (
+                          <span className="saf-table__sub">
+                            {stockRow.code}
+                          </span>
+                        )
                       )}
                     </>
                   ) : (
@@ -220,11 +245,15 @@ export function PurchaseRequestFormLinesCard({
                         placeholder="Yeni malzeme tanımla…"
                         value={line.freeTextName}
                         onChange={(event) =>
-                          onChangeLine(line.key, { freeTextName: event.target.value })
+                          onChangeLine(line.key, {
+                            freeTextName: event.target.value,
+                          })
                         }
                       />
                       {lineErrors?.freeTextName && (
-                        <span className="saf-table__error">{lineErrors.freeTextName}</span>
+                        <span className="saf-table__error">
+                          {lineErrors.freeTextName}
+                        </span>
                       )}
                     </>
                   )}
@@ -245,11 +274,15 @@ export function PurchaseRequestFormLinesCard({
                         placeholder="Adet"
                         value={line.freeTextUnit}
                         onChange={(event) =>
-                          onChangeLine(line.key, { freeTextUnit: event.target.value })
+                          onChangeLine(line.key, {
+                            freeTextUnit: event.target.value,
+                          })
                         }
                       />
                       {lineErrors?.freeTextUnit && (
-                        <span className="saf-table__error">{lineErrors.freeTextUnit}</span>
+                        <span className="saf-table__error">
+                          {lineErrors.freeTextUnit}
+                        </span>
                       )}
                     </>
                   )}
@@ -266,7 +299,9 @@ export function PurchaseRequestFormLinesCard({
                     <>
                       {EMPTY_VALUE}
                       <span className="sr-only">{currentStockReason}</span>
-                      <span className="saf-table__sub">{currentStockReason}</span>
+                      <span className="saf-table__sub">
+                        {currentStockReason}
+                      </span>
                     </>
                   )}
                 </td>
@@ -282,10 +317,14 @@ export function PurchaseRequestFormLinesCard({
                     data-testid={`talep-miktar-${index}`}
                     status={lineErrors?.quantity ? "error" : "default"}
                     value={line.quantity}
-                    onChange={(event) => onChangeLine(line.key, { quantity: event.target.value })}
+                    onChange={(event) =>
+                      onChangeLine(line.key, { quantity: event.target.value })
+                    }
                   />
                   {lineErrors?.quantity && (
-                    <span className="saf-table__error">{lineErrors.quantity}</span>
+                    <span className="saf-table__error">
+                      {lineErrors.quantity}
+                    </span>
                   )}
                 </td>
 
@@ -300,10 +339,14 @@ export function PurchaseRequestFormLinesCard({
                     data-testid={`talep-fiyat-${index}`}
                     status={lineErrors?.unitPrice ? "error" : "default"}
                     value={line.unitPrice}
-                    onChange={(event) => onChangeLine(line.key, { unitPrice: event.target.value })}
+                    onChange={(event) =>
+                      onChangeLine(line.key, { unitPrice: event.target.value })
+                    }
                   />
                   {lineErrors?.unitPrice && (
-                    <span className="saf-table__error">{lineErrors.unitPrice}</span>
+                    <span className="saf-table__error">
+                      {lineErrors.unitPrice}
+                    </span>
                   )}
                 </td>
 
@@ -352,14 +395,21 @@ export function PurchaseRequestFormLinesCard({
           {/* 110-114 */}
           <tr>
             <td colSpan={5}>TAHMİNİ TOPLAM</td>
-            <td className="saf-table__right saf-table__total" data-testid="talep-toplam">
+            <td
+              className="saf-table__right saf-table__total"
+              data-testid="talep-toplam"
+            >
               ₺{formatAmount(estimate.knownTotal)}
             </td>
             <td />
           </tr>
           {incompleteNote && (
             <tr>
-              <td colSpan={7} className="saf-table__incomplete" data-testid="talep-toplam-eksik">
+              <td
+                colSpan={7}
+                className="saf-table__incomplete"
+                data-testid="talep-toplam-eksik"
+              >
                 {incompleteNote}
               </td>
             </tr>

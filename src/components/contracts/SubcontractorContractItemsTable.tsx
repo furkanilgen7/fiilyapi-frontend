@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { Button, Input } from "@/components/ui";
 import { cx } from "@/lib/cx";
-import { formatAmount, formatQuantity } from "@/lib/format";
+import { formatAmount, formatCurrencyPrecise, formatPercent, formatQuantity } from "@/lib/format";
 import type { SubcontractorContractItemResponse } from "@/lib/api/hooks/useSubcontractorContractMutations";
 import { decimalInputValue, groupContractItems } from "@/components/subcontractor-contract-form/item-rows";
 import { FSO_TEXT } from "@/components/subcontractor-contract-form/constants";
@@ -33,7 +33,7 @@ import "./subcontractor-contract-detail.css";
 export interface SubcontractorContractItemsTableProps {
   items: readonly SubcontractorContractItemResponse[];
   /** 176-177 · tfoot TEK KAYNAK. Mockup 73'teki ₺4,82M ile çelişir; şema kazanır. */
-  contractTotal: string;
+  contractTotal: string | null;
   /** `items_missing_price` — fiyatsız satır sayacı (görünür uyarı). */
   itemsMissingPrice: number;
   /** 91 rozetindeki işveren sözleşme no'su; yoksa rozet basılmaz. */
@@ -179,7 +179,7 @@ export function SubcontractorContractItemsTable({
                 className="tsd-items__foot-cell tsd-items__foot-cell--value"
                 data-testid="tsd-items-total"
               >
-                ₺ {formatAmount(contractTotal)}
+                {formatCurrencyPrecise(contractTotal)}
               </td>
               <td className="tsd-items__foot-cell" />
             </tr>
@@ -249,7 +249,7 @@ function ItemGroup({
             <td className="ecd-items__td tsd-items__td--input">
               <Input
                 size="row"
-                type="number"
+                inputMode="decimal"
                 numeric
                 min={0}
                 className="tsd-items__price-input"
@@ -274,10 +274,21 @@ function ItemGroup({
             {/* 117-120 · Hakediş % */}
             <td className="ecd-items__td" data-testid={`tsd-progress-${item.code}`}>
               {pct === undefined ? (
-                <span className="tsd-progress__pending" title={progressPendingReason}>
-                  {DASH}
-                  <span className="sr-only">{progressPendingReason}</span>
-                </span>
+                // 🔴 GEREKÇE KOŞULLU (kapsam maskesi, kullanıcı kararı
+                //    2026-09-19). `progressPendingReason` "Hakediş listesi
+                //    eksik" der; metraj maskeliyken (`finance` kapsamı,
+                //    `quantity: null`) hakediş listesi PEKÂLÂ TAM olabilir —
+                //    eksik olan metrajdır ve o da eksik değil GİZLİdir. Yanlış
+                //    bir sebep, sessiz bir "—"den kötüdür; bu yüzden o hâlde
+                //    gerekçe bastırılır (`placeholder-cell.ts` 3. hâli).
+                item.quantity === null ? (
+                  <span className="tsd-progress__pending">{DASH}</span>
+                ) : (
+                  <span className="tsd-progress__pending" title={progressPendingReason}>
+                    {DASH}
+                    <span className="sr-only">{progressPendingReason}</span>
+                  </span>
+                )
               ) : (
                 <>
                   <div className="tsd-progress__track">
@@ -295,7 +306,7 @@ function ItemGroup({
                       `tsd-progress__pct--${tsdProgressTone(pct)}`,
                     )}
                   >
-                    %{Math.round(pct)}
+                    {formatPercent(pct)}
                   </div>
                 </>
               )}

@@ -43,9 +43,12 @@ describe("recentDocuments — 'Son Eklenenler' sıralaması İSTEMCİDE (spec §
     expect(all.map((d) => d.id)).toEqual(before);
   });
 
-  it("eşit tarihlerde kimliğe göre kararlı sıralar (aynı saniyede yüklenen iki dosya)", () => {
-    const all = [doc("z", "2026-07-10T06:00:00Z"), doc("a", "2026-07-10T06:00:00Z")];
-    expect(recentDocuments(all).map((d) => d.id)).toEqual(["a", "z"]);
+  // Kayıt 71 — backend eşit `created_at`te `Document.id.desc()` ile kırar
+  // (repository.py:90); istemci önceden ARTAN kırıyordu (["a","z"]) ve iki
+  // panel (Son Eklenenler vs. ana grid) TERS sırada görünüyordu.
+  it("eşit tarihlerde backend'le AYNI yönde (kimliğe göre AZALAN) kararlı sıralar", () => {
+    const all = [doc("a", "2026-07-10T06:00:00Z"), doc("z", "2026-07-10T06:00:00Z")];
+    expect(recentDocuments(all).map((d) => d.id)).toEqual(["z", "a"]);
   });
 
   it("boş listede boş dizi döndürür (boş durum ekranda basılır)", () => {

@@ -19,6 +19,7 @@ import { useProgressPayments } from "@/lib/api/hooks/useProgressPayments";
 import { useSiteSubcontractorPayments } from "@/lib/api/hooks/useSiteSubcontractorPayments";
 import { useSession } from "@/components/shell/SessionProvider";
 import { BackendError } from "@/lib/api/unwrap";
+import { routes } from "@/lib/routes";
 import type { MeResponse } from "@/lib/auth/types";
 
 // F-SD T6 · "Kayıt Gir" ekranının DAL testleri: 409 akışı, izin dalları,
@@ -363,6 +364,49 @@ describe("SiteDiaryEntryView · türev kuralları", () => {
       screen.getByText(/İş kalemi satırları, gün için kayıt açıldığında/),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Kaydet & Gönder" })).toBeDisabled();
+  });
+});
+
+/**
+ * M5_3 #305 — mod anahtarının/hakediş bağlantısının hrefleri eskiden elle
+ * `${base}/...` birleştiriliyordu; `routes.ts`teki `diary`/`diarySummary`/
+ * `diaryPlanning`/`progressPayments` üreticileri ATLANIYORDU. Bu, tek
+ * kaynak ilkesini (routes.ts) deler — üretici bir gün değişirse burası
+ * SESSİZCE geride kalır. Test, ekranın bastığı hrefin routes.ts'in ÜRETTİĞİ
+ * değerle AYNI olduğunu doğrular (ikisi ayrı hesaplanmaz).
+ */
+describe("SiteDiaryEntryView · rota bağlantıları routes.ts'ten gelir (#305)", () => {
+  it("mod anahtarının bağlantıları routes.ts üreticileriyle AYNIdır ('Kayıt Gir' aktif olduğu için LINK DEĞİLDİR)", () => {
+    mockScreen();
+    render(<SiteDiaryEntryView />);
+
+    expect(screen.getByText("Kayıt Gir")).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Planlama" })).toHaveAttribute(
+      "href",
+      routes.projects.sites.diaryPlanning({ projectId: "p-1", siteId: "s-1" }),
+    );
+    expect(screen.getByRole("link", { name: "Hakediş Özeti" })).toHaveAttribute(
+      "href",
+      routes.projects.sites.diarySummary({ projectId: "p-1", siteId: "s-1" }),
+    );
+  });
+
+  it("hakediş bağlantıları (GK264 + GK406) routes.ts'in progressPayments üreticisiyle AYNIdır", () => {
+    mockScreen({ entry: entryDetail() });
+    render(<SiteDiaryEntryView />);
+
+    const expected = routes.projects.sites.progressPayments({
+      projectId: "p-1",
+      siteId: "s-1",
+    });
+    expect(screen.getByRole("link", { name: "Hakediş Durumu →" })).toHaveAttribute(
+      "href",
+      expected,
+    );
+    expect(screen.getByRole("link", { name: "Hakedişler →" })).toHaveAttribute(
+      "href",
+      expected,
+    );
   });
 });
 

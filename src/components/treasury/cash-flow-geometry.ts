@@ -74,7 +74,10 @@ function toPoints(
 ): ChartPoint[] {
   return series.map((bucket) => ({
     x: scaleX(dayOfMonth(bucket.day), monthLength),
-    y: scaleY(Number(pick(bucket)), maxValue),
+    // M5_3 #363 — `Number()` sayıya çevrilemeyen bir değerde `NaN` üretirdi
+    // ve SVG path dizesine "NaN" yazılırdı; `maxValue` hesabı zaten `amount()`
+    // ile korunuyordu, y-koordinatı KORUNMUYORDU. Aynı savunmacı yardımcı.
+    y: scaleY(amount(pick(bucket)), maxValue),
   }));
 }
 

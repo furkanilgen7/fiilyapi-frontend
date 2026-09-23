@@ -70,7 +70,14 @@ export function ArchiveDocumentFormModal({
   // 🔴 Boş-id kapısı: proje seçilmeden şantiye sorgusu AĞA ÇIKMAZ
   // (`useSites` `enabled: projectId.length > 0`).
   const sitesQuery = useSites(values.projectId);
-  const foldersQuery = useDocumentFolders(values.projectId);
+  // Seçili şantiye VARSA klasör sorgusu O ŞANTİYE ile süzülür: geçmemek
+  // "proje düzeyi" demektir (site_id IS NULL), backend `folder.site_id !=
+  // site_id` kontrolüyle şantiye+klasör birlikte seçilen her gönderimi 422
+  // (FOLDER_SCOPE_MISMATCH) ile reddederdi.
+  const foldersQuery = useDocumentFolders(
+    values.projectId,
+    values.siteId ? values.siteId : undefined,
+  );
   const uploadDocument = useUploadDocument();
 
   const fileRef = useRef<HTMLInputElement>(null);
@@ -81,8 +88,6 @@ export function ArchiveDocumentFormModal({
   const hasProject = values.projectId.length > 0;
   const projects = projectsQuery.data?.items ?? [];
   const sites = hasProject ? (sitesQuery.data?.items ?? []) : [];
-  // ⚠️ İKİNCİ ARGÜMAN (siteId) VERİLMEZ: proje düzeyi klasörler (BC kapsam
-  // kuralı — geçmemek "hepsi" demek DEĞİLDİR).
   const folders = hasProject ? (foldersQuery.data?.folders ?? []) : [];
 
   function set<K extends keyof ArchiveDocumentFormValues>(
@@ -105,6 +110,15 @@ export function ArchiveDocumentFormModal({
       folderId: EMPTY_OPTION_VALUE,
     }));
     setFormError(null);
+  }
+
+  /**
+   * Şantiye değişince klasör seçimi DÜŞER: klasör listesi seçili şantiyeye
+   * göre sorgulanır (yukarıdaki `foldersQuery`), önceki seçim artık başka
+   * bir kapsama ait olabilir.
+   */
+  function handleSiteChange(siteId: string) {
+    setValues((prev) => ({ ...prev, siteId, folderId: EMPTY_OPTION_VALUE }));
   }
 
   function focusField(field: ArchiveDocumentField) {
@@ -198,6 +212,7 @@ export function ArchiveDocumentFormModal({
               <FileInput
                 {...control}
                 ref={fileRef}
+                disabled={isPending}
                 status={formError && !values.file ? "error" : "default"}
                 onChange={(event) => {
                   set("file", event.target.files?.[0] ?? null);
@@ -245,7 +260,7 @@ export function ArchiveDocumentFormModal({
                 {...control}
                 value={values.siteId}
                 disabled={isPending || !hasProject}
-                onChange={(event) => set("siteId", event.target.value)}
+                onChange={(event) => handleSiteChange(event.target.value)}
                 data-testid="adf-site"
               >
                 <option value={EMPTY_OPTION_VALUE}>{TEXT.siteEmptyOption}</option>
@@ -321,6 +336,16 @@ export function ArchiveDocumentFormModal({
       {projectsQuery.isError && (
         <p className="dcf__error" data-testid="adf-projects-error">
           {backendErrorMessage(projectsQuery.error, "Projeler yüklenemedi.")}
+        </p>
+      )}
+      {sitesQuery.isError && (
+        <p className="dcf__error" data-testid="adf-sites-error">
+          {backendErrorMessage(sitesQuery.error, "Şantiyeler yüklenemedi.")}
+        </p>
+      )}
+      {foldersQuery.isError && (
+        <p className="dcf__error" data-testid="adf-folders-error">
+          {backendErrorMessage(foldersQuery.error, "Klasörler yüklenemedi.")}
         </p>
       )}
       {formError && (
