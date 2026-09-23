@@ -205,6 +205,23 @@ describe("EquipmentFuelView — M4 iskeleti", () => {
   });
 });
 
+describe("resolveSiteLabel — şantiye sorgusu hataya düşerse fail-open YASAK", () => {
+  it("siteOptions.isError iken atanmış bir kayıt için de YANLIŞ 'Şantiye atanmadı' BASILMAZ", () => {
+    vi.mocked(useSiteOptions).mockReturnValue({
+      options: [],
+      isLoading: false,
+      isError: true,
+    });
+    render(<EquipmentFuelView />);
+    // log-1 kaydı site-1'e atanmış (LOGS fikstürü); sorgu hataya düşmüş
+    // olsa bile bu ASLA "Şantiye atanmadı" olarak okunamaz — nötr metin
+    // (Yükleniyor…) basılmalıdır.
+    const rows = screen.getAllByTestId("makine-yakit-log-row");
+    expect(rows[0]).not.toHaveTextContent("Şantiye atanmadı");
+    expect(rows[0]).toHaveTextContent("Yükleniyor…");
+  });
+});
+
 describe("§0 — KPI'lar SUNUCUNUN özetidir, mockup'ın sabiti değil", () => {
   it("mockup'ın sabit sayıları hiçbir yerde geçmez (yalnız YAPI birebir)", () => {
     vi.mocked(useEquipmentFuelSummary).mockReturnValue(

@@ -10,7 +10,7 @@ import "./settings-shell.css";
 
 export function SettingsSidebar() {
   const pathname = usePathname();
-  const handleLogout = useLogout();
+  const { logout, error } = useLogout();
 
   return (
     <aside className="settings-sidebar" aria-label="Ayarlar menüsü">
@@ -41,9 +41,14 @@ export function SettingsSidebar() {
         </div>
       ))}
       <div className="settings-divider" />
-      <button type="button" className="settings-logout" onClick={handleLogout}>
+      <button type="button" className="settings-logout" onClick={logout}>
         🚪 Çıkış Yap
       </button>
+      {error !== null && (
+        <p role="alert" className="settings-logout__error">
+          {error}
+        </p>
+      )}
     </aside>
   );
 }

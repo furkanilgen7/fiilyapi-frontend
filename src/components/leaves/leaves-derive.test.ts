@@ -245,6 +245,13 @@ describe("kullanım hücresi (140/158/167)", () => {
   it("yüzde 100'ü aşsa bile çubuk taşmaz", () => {
     expect(usageCell(balance({ usage_pct: 140, carried_over: "0" })).pct).toBe(100);
   });
+
+  it("🔴 KAYIT NO 147 — metin de kırpılmış yüzdeyi yazar, çubukla ÇELİŞMEZ", () => {
+    expect(usageCell(balance({ usage_pct: 140, carried_over: "0" }))).toEqual({
+      pct: 100,
+      text: "%100 kullanıldı",
+    });
+  });
 });
 
 describe("TR tarih biçimi (74-75)", () => {

@@ -6,6 +6,7 @@ import { useEmployers } from "@/lib/api/hooks/useEmployers";
 import { useProgressPayments } from "@/lib/api/hooks/useProgressPayments";
 import { useCreateInvoice, useInvoiceAction } from "@/lib/api/hooks/useInvoiceMutations";
 import { useSession } from "@/components/shell/SessionProvider";
+import { BackendError } from "@/lib/api/unwrap";
 import type { MeResponse } from "@/lib/auth/types";
 
 // `useModulePermission` ağ isteği atmaz, kaynağı `useSession`'dır.
@@ -92,5 +93,54 @@ describe("InvoiceCreateView — kalemsiz fatura kapısı", () => {
     expect(createMutate).toHaveBeenCalledTimes(1);
     const body = createMutate.mock.calls[0]?.[0] as { lines: unknown[] };
     expect(body.lines).toHaveLength(1);
+  });
+});
+
+describe("InvoiceCreateView — sunucu 403'ü de AccessDenied'e döner (O5a-131)", () => {
+  // InvoicesView.tsx ve InvoiceDetailView.tsx `isForbidden(query.error)`i
+  // istemci izin matrisine (permission.canView) EK olarak kontrol eder —
+  // sunucu izni geç ANLIK olarak iptal edebilir (rol değişimi, kapsam
+  // daraltma). InvoiceCreateView bu deseni employersQuery/progressPaymentsQuery
+  // için tekrarlamıyordu; formu (ve gizli veriyi) 403 alan bir kullanıcıya
+  // ÇIPLAK gösteriyordu.
+  it("employersQuery 403 dönerse form DEĞİL AccessDenied basılır", () => {
+    vi.mocked(useEmployers).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new BackendError(403, null),
+    } as never);
+
+    render(<InvoiceCreateView />);
+
+    expect(screen.getByText("Bu alana yetkiniz yok")).toBeInTheDocument();
+    expect(screen.queryByTestId("fat-party-name")).not.toBeInTheDocument();
+  });
+
+  it("progressPaymentsQuery 403 dönerse form DEĞİL AccessDenied basılır", () => {
+    vi.mocked(useProgressPayments).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new BackendError(403, null),
+    } as never);
+
+    render(<InvoiceCreateView />);
+
+    expect(screen.getByText("Bu alana yetkiniz yok")).toBeInTheDocument();
+    expect(screen.queryByTestId("fat-party-name")).not.toBeInTheDocument();
+  });
+
+  it("500 gibi 403 OLMAYAN hatada AccessDenied basılmaz (form kendi hata yolunu işletir)", () => {
+    vi.mocked(useEmployers).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new BackendError(500, null),
+    } as never);
+
+    render(<InvoiceCreateView />);
+
+    expect(screen.queryByText("Bu alana yetkiniz yok")).not.toBeInTheDocument();
   });
 });

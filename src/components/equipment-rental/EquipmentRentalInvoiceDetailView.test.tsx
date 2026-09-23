@@ -167,6 +167,20 @@ describe("EquipmentRentalInvoiceDetailView · izin eşiği backend ile eşleşir
   });
 });
 
+describe("EquipmentRentalInvoiceDetailView · Şantiye alanı DÜZENLENEBİLİR bir alandır, süzgeç değil (kayıt 94)", () => {
+  it("boş seçenek 'Tüm Şantiyeler' DEĞİL, depoya özdeş 'Atanmamış' metnini taşır", () => {
+    mockDetail.mockReturnValue(detailQuery({ isSuccess: true, data: DETAIL_FIXTURE }));
+
+    renderView();
+
+    const select = screen.getByTestId("makine-kira-site") as HTMLSelectElement;
+    const emptyOption = select.querySelector('option[value=""]');
+    expect(emptyOption).not.toBeNull();
+    expect(emptyOption?.textContent).toBe("Atanmamış");
+    expect(emptyOption?.textContent).not.toBe("Tüm Şantiyeler");
+  });
+});
+
 describe("EquipmentRentalInvoiceDetailView · şantiye seçeneklerinin 'yüklendi' işareti", () => {
   it("🔴 şantiye çağrısı HATA verdiğinde 'yüklendi' işareti TAKILMAZ", () => {
     mockDetail.mockReturnValue(

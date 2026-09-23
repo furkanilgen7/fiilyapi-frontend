@@ -615,4 +615,20 @@ describe("AiPanel · Sohbet Bağlamı (AI-BAĞLAM)", () => {
     expect(within(gecmis).queryByText("bilinmiyor")).not.toBeInTheDocument();
     expect(within(gecmis).getByText("henüz araç çağrılmadı")).toBeVisible();
   });
+
+  it("🔴 KAYIT NO 22 — projects görüntüleme izni yokken GET /projects ağa çıkmaz", async () => {
+    mockSession.me = {
+      full_name: "Ahmet Yılmaz",
+      permissions: { ai: "view", projects: "none" },
+    };
+    baglamStub([SANTIYE_DOLU]);
+    ciz(<AiPanel />);
+
+    // Panel yine de açılır (ai görünür), ama proje listesi hiç istenmemelidir.
+    await screen.findByLabelText("FİİL AI'ya sorun");
+    const projeCagrisi = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls.find(
+      (c) => String(c[0]).includes("/projects"),
+    );
+    expect(projeCagrisi).toBeUndefined();
+  });
 });

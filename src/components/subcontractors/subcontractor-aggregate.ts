@@ -222,7 +222,16 @@ export function buildSubcontractorDirectory({
 
   for (const payment of payments) {
     if (payment.status === "pending_approval") pendingApprovalCount += 1;
-    if (payment.period_year === currentYear && payment.period_month === currentMonth) {
+    // 🔴 KAYIT NO 341 — "Bu Ay Ödeme" (SubcontractorsSummaryStrip 37 KPI'ı)
+    // ÖDEME anlamına gelir; aynı ekranda "Ödenen" kolonu (aşağıda) yalnız
+    // `paid` sayar. Statü süzgeci olmadan taslak/onay bekleyen hakedişler de
+    // buraya girerdi — iki KPI aynı kelimeyi (Ödeme) iki farklı tanımla
+    // kullanırdı. Yalnız GERÇEKLEŞMİŞ ödeme (paid) sayılır.
+    if (
+      payment.status === "paid" &&
+      payment.period_year === currentYear &&
+      payment.period_month === currentMonth
+    ) {
       monthPaymentTotal += toNumber(payment.net_total);
     }
     const mapped = firmIdByContractId.get(payment.contract_id);
@@ -231,8 +240,15 @@ export function buildSubcontractorDirectory({
     if (firmId === null) continue;
     const bucket = byId.get(firmId);
     if (!bucket) continue;
-    if (payment.status === "paid") bucket.paidTotal += toNumber(payment.net_total);
-    else bucket.pendingTotal += toNumber(payment.net_total);
+    if (payment.status === "paid") {
+      bucket.paidTotal += toNumber(payment.net_total);
+    } else if (payment.status !== "draft") {
+      // 🔴 KAYIT NO 342 — taslak hakediş, taslak SÖZLEŞMENİN eşi (satır
+      // ~213 `if (contract.is_draft) continue;`): henüz sunulmamış bir
+      // hakediş "Bekleyen Hak." toplamına giremez, aksi hâlde hiç onaya
+      // girmemiş bir taslak "bekliyor" gibi görünür.
+      bucket.pendingTotal += toNumber(payment.net_total);
+    }
   }
 
   const rows: SubcontractorRow[] = subcontractors

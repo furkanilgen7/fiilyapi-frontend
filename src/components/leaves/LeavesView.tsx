@@ -71,6 +71,16 @@ export function LeavesView({ currentYear = new Date().getFullYear() }: LeavesVie
   const permission = useModulePermission("personnel");
   const [year, setYear] = useState(currentYear);
   const summaryQuery = useHrLeavesSummary(year);
+  /**
+   * 🔴 KAYIT NO 145 — `PendingLeaveRequestsTable`in bakiye JOIN'i (aşağıda
+   * `balances=`) BAKİYE TABLOSUNUN yıl seçicisine BAĞLI OLAMAZ: bekleyen
+   * talepler HER ZAMAN bugünün yılına aittir (`LeaveRequestFormModal` da
+   * `currentYear`e sabitlenir — aynı gerekçe). Kullanıcı bakiye tablosunda
+   * geçmiş bir yıl seçtiğinde `summaryQuery` o yılın bakiyesini döner ve
+   * bekleyen talepler yanlış yılın bakiyesiyle eşleşirdi. `year === currentYear`
+   * iken react-query aynı anahtarı paylaşır, ikinci bir ağ isteği doğmaz.
+   */
+  const currentYearSummaryQuery = useHrLeavesSummary(currentYear);
   const requestsQuery = usePendingLeaveRequests();
   const approveRequest = useApproveLeaveRequest();
 
@@ -136,7 +146,7 @@ export function LeavesView({ currentYear = new Date().getFullYear() }: LeavesVie
       <PendingLeaveRequestsTable
         rows={requestsQuery.data?.items}
         total={requestsQuery.data?.total}
-        balances={summary?.balances}
+        balances={currentYearSummaryQuery.data?.balances}
         isLoading={requestsQuery.isLoading}
         errorMessage={requestsError}
         // 🔴 ÇİFT GÖNDERİM: onay gövdesizdir ve diyalog açmaz — düğme ile uç

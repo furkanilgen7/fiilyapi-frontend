@@ -7,6 +7,7 @@ import { AccessDenied } from "@/components/settings/AccessDenied";
 import { Button, Checkbox, DateInput, Field, Input, Select, Textarea } from "@/components/ui";
 import { isoDate } from "@/components/site-diary/derive";
 import { backendErrorMessage } from "@/lib/api/error-message";
+import { isForbidden } from "@/lib/api/unwrap";
 import { useEmployers } from "@/lib/api/hooks/useEmployers";
 import {
   useProgressPayments,
@@ -153,7 +154,16 @@ export function InvoiceCreateView() {
   const createMutation = useCreateInvoice();
   const actionMutation = useInvoiceAction();
 
-  if (!permission.canView) return <AccessDenied />;
+  // InvoicesView.tsx / InvoiceDetailView.tsx deseniyle AYNI: istemci izin
+  // matrisi yeterli değildir, sunucunun ANLIK 403'ü de AccessDenied'e döner
+  // (O5a-131 — rol/kapsam sunucuda değişmiş olabilir).
+  if (
+    !permission.canView ||
+    isForbidden(employersQuery.error) ||
+    isForbidden(progressPaymentsQuery.error)
+  ) {
+    return <AccessDenied />;
+  }
 
   const busy = createMutation.isPending || actionMutation.isPending;
   // FK:246-250 — backend `invoicing/amounts.py`in yedi adımının PORTU.

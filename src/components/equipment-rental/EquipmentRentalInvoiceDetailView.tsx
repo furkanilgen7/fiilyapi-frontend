@@ -27,6 +27,7 @@ import {
   RATE_PERIOD_LABEL,
   RENTAL_RELOAD_PENDING_REASON,
   RENTAL_STATUS_BADGE,
+  RENTAL_UNASSIGNED_SITE_LABEL,
 } from "./rental-labels";
 import "./equipment-rental.css";
 import { routes } from "@/lib/routes";
@@ -377,7 +378,12 @@ export function EquipmentRentalInvoiceDetailView({
                     setDraft({ ...draft, siteId: event.target.value })
                   }
                 >
-                  <option value="">Tüm Şantiyeler</option>
+                  {/* Bu bir SÜZGEÇ değil DÜZENLENEBİLİR alandır (94. kayıt) —
+                      "Tüm Şantiyeler" liste süzgeçlerinin dilidir. Boş seçenek
+                      `site_id: null` yazar, yani depodaki tek kaynak etiketle
+                      (`rentalSiteLabel` → `RENTAL_UNASSIGNED_SITE_LABEL`)
+                      hizalanır. */}
+                  <option value="">{RENTAL_UNASSIGNED_SITE_LABEL}</option>
                   {siteOptions.options.map((option) => (
                     <option key={option.siteId} value={option.siteId}>
                       {option.label}

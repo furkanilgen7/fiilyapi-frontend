@@ -364,6 +364,32 @@ describe("StockEntryForm — atif yuzeyi (STOK-BOLUM)", () => {
     expect(screen.getByTestId("stok-giris-poz-0")).not.toBeDisabled();
   });
 
+  // 🔴 O5b #323 — BOQ ayrı bir izin modülüdür. `boq=none` rolünde
+  // `useBoq` 403 döner (`boqQuery.isError = true`) ama Bölüm ucu (`useSiteSections`)
+  // kendi izniyle çalışmaya devam edebilir. Tek `attributionDisabled` bayrağı
+  // ikisini BİRLİKTE kapatıyordu — Bölüm atfı da SESSİZCE kapanıyordu.
+  it("BOQ ucu hataya düşse bile (boq=none) Bölüm Select'i AÇIK kalır", () => {
+    vi.mocked(useBoq).mockReturnValue(
+      stub({ data: undefined, isLoading: false, isError: true }),
+    );
+
+    render(<StockEntryForm />);
+
+    expect(screen.getByTestId("stok-giris-bolum-0")).not.toBeDisabled();
+    expect(screen.getByTestId("stok-giris-poz-0")).toBeDisabled();
+  });
+
+  // POZİTİF KONTROL — Bölüm ucu kendisi hataya düşerse Bölüm Select'i de kapanmalı.
+  it("POZİTİF KONTROL — sections ucu hataya düşerse Bölüm Select'i KAPANIR", () => {
+    vi.mocked(useSiteSections).mockReturnValue(
+      stub({ data: undefined, isLoading: false, isError: true }),
+    );
+
+    render(<StockEntryForm />);
+
+    expect(screen.getByTestId("stok-giris-bolum-0")).toBeDisabled();
+  });
+
   it("tip transfere gecince SECILI atif GORUNUMDEN de silinir (hayalet secim yok)", () => {
     render(<StockEntryForm />);
     fireEvent.change(screen.getByTestId("stok-giris-bolum-0"), { target: { value: "sec-1" } });

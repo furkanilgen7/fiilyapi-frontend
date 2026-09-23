@@ -339,12 +339,8 @@ export function StockEntryForm() {
             itemsNote={itemsNote}
             sections={sectionOptions}
             boqItems={boqOptions}
-            attributionDisabled={
-              sectionsQuery.isLoading ||
-              sectionsQuery.isError ||
-              boqQuery.isLoading ||
-              boqQuery.isError
-            }
+            sectionAttributionDisabled={sectionsQuery.isLoading || sectionsQuery.isError}
+            boqAttributionDisabled={boqQuery.isLoading || boqQuery.isError}
             attributionNote={attributionNote}
             onAddLine={handleAddLine}
             onRemoveLine={handleRemoveLine}

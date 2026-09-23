@@ -210,10 +210,6 @@
 .site-card__kpi-value--days {
   font-size: 16px;
 }
-.site-card__kpi-value--pending {
-  color: var(--color-text-subtle);
-  cursor: help;
-}
 .site-card__kpi-value--delay {
   color: var(--color-danger);
 }
@@ -235,6 +231,18 @@
 }
 .site-card__kpi-value--progress {
   color: var(--color-primary);
+}
+/*
+ * 🔴 KAYIT NO 200 — `--pending` ile `--progress` AYNI ÖZGÜLLÜKTE (0,1,0);
+ * `SiteCard.tsx`teki `PlaceholderValue` yer tutucu İlerleme hücresine HER
+ * İKİ sınıfı birden veriyor. `--pending` bu blokta DAHA ÖNCE gelirse
+ * `--progress` (mavi/yeşil) onu ezer ve boş "—" değeri marka rengiyle
+ * basılır. `--pending` bilerek SONRA tanımlanır — kaynakta hangi KPI'a ait
+ * olursa olsun yer tutucu HER ZAMAN soluk gri kazanmalı.
+ */
+.site-card__kpi-value--pending {
+  color: var(--color-text-subtle);
+  cursor: help;
 }
 
 .site-card__progress-track {

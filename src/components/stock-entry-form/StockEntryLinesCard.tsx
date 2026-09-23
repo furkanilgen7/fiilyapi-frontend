@@ -40,7 +40,15 @@ interface StockEntryLinesCardProps {
   sections: readonly AttributionOption[];
   /** Bu şantiyenin POZLARI — bölüme göre SÜZÜLMEZ (fail-open, bkz. sabit). */
   boqItems: readonly AttributionOption[];
-  attributionDisabled: boolean;
+  /**
+   * 🔴 O5b #323 — Bölüm (`useSiteSections`) ve İş Kalemi (`useBoq`) AYRI izin
+   * modülleridir; `boq=none` rolünde `boqQuery` 403 verir ama Bölüm ucu
+   * kendi izniyle çalışmaya devam edebilir. Tek bir birleşik bayrak
+   * kullanmak Bölüm atfını da SESSİZCE kapatırdı — iki alan kendi
+   * kaynağının durumuna göre AYRI kapanır.
+   */
+  sectionAttributionDisabled: boolean;
+  boqAttributionDisabled: boolean;
   /** Bölüm/poz listelerinin durumu — sessiz boş açılır liste yasak. */
   attributionNote: string | null;
   onAddLine: () => void;
@@ -69,7 +77,8 @@ export function StockEntryLinesCard({
   itemsNote,
   sections,
   boqItems,
-  attributionDisabled,
+  sectionAttributionDisabled,
+  boqAttributionDisabled,
   attributionNote,
   onAddLine,
   onRemoveLine,
@@ -81,7 +90,8 @@ export function StockEntryLinesCard({
   // çarptırılmaz. Bu UI katmanıdır; gövde katmanı `build-body.ts`tedir ve
   // değer katmanı `form-state.applyEntryTypeToLines`tedir (üç katman).
   const isTransfer = values.entryType === "transfer";
-  const attributionOff = isTransfer || attributionDisabled;
+  const sectionAttributionOff = isTransfer || sectionAttributionDisabled;
+  const boqAttributionOff = isTransfer || boqAttributionDisabled;
 
   return (
     <section className="pf-card sgf-lines">
@@ -260,7 +270,7 @@ export function StockEntryLinesCard({
                     size="row"
                     aria-label={`Bölüm (satır ${index + 1})`}
                     data-testid={`stok-giris-bolum-${index}`}
-                    disabled={attributionOff}
+                    disabled={sectionAttributionOff}
                     title={isTransfer ? STOCK_ENTRY_TRANSFER_NO_ATTRIBUTION_REASON : undefined}
                     value={line.sectionId}
                     onChange={(event) =>
@@ -283,7 +293,7 @@ export function StockEntryLinesCard({
                     size="row"
                     aria-label={`İş kalemi (satır ${index + 1})`}
                     data-testid={`stok-giris-poz-${index}`}
-                    disabled={attributionOff}
+                    disabled={boqAttributionOff}
                     title={
                       isTransfer
                         ? STOCK_ENTRY_TRANSFER_NO_ATTRIBUTION_REASON

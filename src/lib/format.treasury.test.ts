@@ -29,6 +29,26 @@ describe("formatCurrencyTight — E9:114", () => {
   it("ondalık BASMAZ (E9:72/114 kuruş göstermiyor)", () => {
     expect(formatCurrencyTight("1016800.49")).toBe("₺1.016.800");
   });
+
+  it("KESER, YUVARLAMAZ — .50+ kuruş bir üst liraya SIÇRAMAZ (O5a-111/362)", () => {
+    // Intl.NumberFormat maximumFractionDigits:0 varsayılanı YARIM-YUKARI
+    // yuvarlar: 1.200.000,50 → "1.200.001" basardı — sunucudaki tutardan
+    // BÜYÜK, var olmayan bir kuruşu var gösterirdi. Form katmanı kuruşu
+    // ZORUNLU tutarken (financial-instrument-form.ts AMOUNT_MAX_FRACTION_DIGITS=2)
+    // ekran onu göstermeden ÜSTE yuvarlarsa tutar YALAN olur.
+    expect(formatCurrency("1200000.50")).toBe("₺ 1.200.000");
+    expect(formatCurrency("2840500.60")).toBe("₺ 2.840.500");
+    expect(formatCurrencyTight("1200000.50")).toBe("₺1.200.000");
+    expect(formatCurrencyTight("2840500.60")).toBe("₺2.840.500");
+  });
+
+  it("NEGATİF tutarda büyüklüğü ABARTMAZ (sıfıra doğru keser)", () => {
+    // KDV farkı gibi negatif tutarlar (devreden KDV) için de aynı ilke:
+    // -1.200.000,50 "-₺1.200.001" basılırsa borç/alacak OLDUĞUNDAN BÜYÜK
+    // görünür. Sıfıra doğru kesmek (trunc) büyüklüğü asla ABARTMAZ.
+    expect(formatCurrency("-1200000.50")).toBe("₺ -1.200.000");
+    expect(formatCurrencyTight("-1200000.50")).toBe("₺-1.200.000");
+  });
 });
 
 describe("formatCompactCurrencyTight — E9:103-104", () => {

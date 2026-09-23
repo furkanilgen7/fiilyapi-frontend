@@ -38,6 +38,21 @@ describe("project-detail.css — focus-visible kural metni var mı (regresyon ko
   });
 });
 
+describe("project-detail.css — KAYIT NO 200: kpi-value--pending özgüllük çakışması", () => {
+  // `.site-card__kpi-value--pending` ile `.site-card__kpi-value--progress`
+  // AYNI özgüllüktedir (0,1,0) — `PlaceholderValue` yer tutucu İlerleme
+  // hücresine ikisini BİRDEN verir (bkz. SiteCard.test.tsx "ÜÇÜNCÜ HÂL").
+  // Dosya sırasında SONRA gelen kazanır: `--pending` `--progress`den ÖNCE
+  // gelirse yer tutucu soluk gri yerine marka mavisi/yeşil basılır.
+  it("--pending kuralı --progress kuralından SONRA gelir (kaynak sırası koruması)", () => {
+    const pendingIndex = css.indexOf(".site-card__kpi-value--pending {");
+    const progressIndex = css.indexOf(".site-card__kpi-value--progress {");
+    expect(pendingIndex).toBeGreaterThan(-1);
+    expect(progressIndex).toBeGreaterThan(-1);
+    expect(pendingIndex).toBeGreaterThan(progressIndex);
+  });
+});
+
 describe("project-detail.css — '+ Şantiye Ekle' <a> olarak da buton gibi görünür (T11)", () => {
   // Buton → bağlantı dönüşümü (spec §2.3): sınıf korunur ama tarayıcının
   // varsayılan <a> davranışı (altı çizili, satır içi kutu) stili kaydırır.

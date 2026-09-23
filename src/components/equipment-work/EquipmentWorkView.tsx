@@ -18,6 +18,7 @@ import { useEquipmentWorkLogs } from "@/lib/api/hooks/useEquipmentWorkLogs";
 import { useEquipmentWorkSummary } from "@/lib/api/hooks/useEquipmentWorkSummary";
 import { usePersonnel, PERSONNEL_MAX_LIMIT } from "@/lib/api/hooks/usePersonnel";
 import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
+import { isLoaded, resolveLookup } from "@/lib/api/query-state";
 import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 
@@ -118,10 +119,10 @@ export function EquipmentWorkView() {
     (personnelQuery.data?.items ?? []).map((person) => [person.id, person.full_name]),
   );
 
+  // query-state.ts kanonu (#91 emsali): sorgu hataya düşerse `undefined`
+  // (nötr) dönülür — Map boşken `?? null` YANLIŞ "Şantiye atanmadı" basardı.
   function resolveSiteLabel(siteId: string | null): string | null | undefined {
-    if (siteId === null) return null; // kayıt bir şantiyeye bağlı değil
-    if (siteOptions.isLoading) return undefined;
-    return siteLabelById.get(siteId) ?? null;
+    return resolveLookup(siteId, siteOptions, (id) => siteLabelById.get(id));
   }
 
   function resolveEquipmentName(equipmentId: string): string | undefined {
@@ -281,6 +282,7 @@ export function EquipmentWorkView() {
         totals={summaryQuery.data?.totals}
         rows={summaryQuery.data?.rows}
         fuel={fuelQuery.data}
+        fuelSiteFiltered={siteParam !== ""}
       />
 
       {/* 108-301 — sol: tablo · sağ: grafik + son kayıtlar */}
@@ -315,7 +317,7 @@ export function EquipmentWorkView() {
       {summaryQuery.data !== undefined && <span hidden data-testid="makine-cal-loaded-summary" />}
       {logsQuery.data !== undefined && <span hidden data-testid="makine-cal-loaded-logs" />}
       {fuelQuery.data !== undefined && <span hidden data-testid="makine-cal-loaded-fuel" />}
-      {!siteOptions.isLoading && <span hidden data-testid="makine-cal-loaded-sites" />}
+      {isLoaded(siteOptions) && <span hidden data-testid="makine-cal-loaded-sites" />}
     </div>
   );
 }

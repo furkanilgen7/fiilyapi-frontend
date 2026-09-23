@@ -252,6 +252,34 @@ describe("EquipmentWorkView — M3 iskeleti", () => {
     expect(recent).toHaveTextContent("Arıza — 8 Saat"); // record_type
   });
 
+  it("resolveSiteLabel — siteOptions.isError iken atanmış kayıt için YANLIŞ 'Şantiye atanmadı' BASILMAZ", () => {
+    vi.mocked(useSiteOptions).mockReturnValue({
+      options: [],
+      isLoading: false,
+      isError: true,
+    });
+    render(<EquipmentWorkView />);
+    const recent = screen.getByTestId("makine-cal-recent");
+    expect(recent).not.toHaveTextContent("Şantiye atanmadı");
+    expect(recent).toHaveTextContent("Yükleniyor…");
+  });
+
+  it("siteOptions.isError iken YÜKLENDİ izi BASILMAZ — görsel kapı yanlış olguyu yeşil geçirmez", () => {
+    vi.mocked(useSiteOptions).mockReturnValue({
+      options: [],
+      isLoading: false,
+      isError: true,
+    });
+    render(<EquipmentWorkView />);
+    expect(screen.queryByTestId("makine-cal-loaded-sites")).not.toBeInTheDocument();
+  });
+
+  it("Yakıt Tüketimi kartı ŞANTİYE süzgeci açıkken 'tüm şantiyeler' gerekçesi basar (uç süzgeci almıyor)", () => {
+    searchParams = new URLSearchParams("year=2026&month=7&site=site-1");
+    render(<EquipmentWorkView />);
+    expect(screen.getByTestId("makine-cal-kpi-fuel-unfiltered")).toBeInTheDocument();
+  });
+
   it("izinsiz kullanıcı erişim reddi görür", () => {
     vi.mocked(useSession).mockReturnValue({
       me: { permissions: { equipment: "none" } } as unknown as MeResponse,

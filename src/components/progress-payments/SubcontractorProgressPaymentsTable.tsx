@@ -78,15 +78,11 @@ function SubcontractorPaymentRow({ item }: { item: SubcontractorProgressPaymentL
         <Link href={href} className="thk-table__name-link" onClick={(event) => event.stopPropagation()}>
           {subcontractorName}
         </Link>
-        {/* Zarif düşüş 1/3: iş kategorisi — şemada YOK (brief §Zarif düşüş).
-            Mockup satır 141'de isim altında ikinci satır olarak durur; kolon
-            SİLİNMEZ, sessizce atlanmaz. */}
-        <div
-          className="thk-table__category thk-table__category--pending"
-          title={pendingModuleLabel("work_category")}
-        >
-          —<span className="sr-only">{pendingModuleLabel("work_category")}</span>
-        </div>
+        {/* İş kategorisi — `SubcontractorProgressPaymentListItem.work_category`
+            SEMADA VARDIR (O5a-194); SiteSubcontractorPaymentsPanel kardeş
+            bileşeniyle AYNI alan doğrudan basılır, TÜRETME/uydurma yok.
+            Mockup satır 141'de isim altında ikinci satır olarak durur. */}
+        <div className="thk-table__category">{item.work_category ?? "—"}</div>
       </td>
       <td className="thk-table__td thk-table__td--mono">#{item.sequence_no}</td>
       <td className="thk-table__td">

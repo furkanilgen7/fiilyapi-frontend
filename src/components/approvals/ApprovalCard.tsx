@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { Badge, Button } from "@/components/ui";
 import { cx } from "@/lib/cx";
-import { formatDateLong } from "@/lib/format";
+import { formatDateLong, toIstanbulDateOnly } from "@/lib/format";
 import type { ApprovalInboxItem, ApprovalRole } from "@/lib/api/hooks/useApprovals";
 
 import { ApprovalStepStrip } from "./ApprovalStepStrip";
@@ -97,7 +97,8 @@ export function ApprovalCard({ item, myRoles, isPending, onApprove, onReject }: 
               </Badge>
             )}
             <span className="ok-card__meta" data-testid="ok-card-meta">
-              {formatDateLong(item.created_at.slice(0, 10))} · {item.created_by_name ?? UNKNOWN_VALUE}
+              {formatDateLong(toIstanbulDateOnly(item.created_at))} ·{" "}
+              {item.created_by_name ?? UNKNOWN_VALUE}
             </span>
           </div>
 

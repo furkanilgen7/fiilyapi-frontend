@@ -198,7 +198,10 @@ export function usageCell(balance: LeaveBalanceResponse): UsageCell {
   if (balance.usage_pct === null) return { pct: null, text: NO_ENTITLEMENT_HINT };
   const pct = Math.min(Math.max(balance.usage_pct, 0), 100);
   if (hasCarryoverRisk(balance)) return { pct, text: CARRYOVER_RISK_LABEL };
-  return { pct, text: `${formatPercent(balance.usage_pct)} kullanıldı` };
+  // 🔴 KAYIT NO 147 — metin çubukla AYNI kırpılmış `pct`i kullanır. `usage_pct`
+  // 100'ü aşarsa (ör. 140) çubuk %100 dolu görünürken metin eskiden HAM
+  // değeri ("%140 kullanıldı") basardı — çubuk ile metin çelişirdi.
+  return { pct, text: `${formatPercent(pct)} kullanıldı` };
 }
 
 /* ═══ F-IZN T4 · form türetmeleri ═══════════════════════════════════════════

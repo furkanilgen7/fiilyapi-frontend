@@ -1,6 +1,8 @@
 import { formatCompactCurrencyTight } from "@/lib/format";
 import type { InvoiceSummaryResponse } from "@/lib/api/hooks/useInvoices";
 
+import { vatDifferenceHint } from "./invoice-labels";
+
 /**
  * FY:69-75 KPI şeridi — BEŞ kart, mockup sırasıyla.
  *
@@ -54,7 +56,9 @@ export function InvoiceKpiStrip({ summary }: { summary: InvoiceSummaryResponse |
         <div className="fat-kpi__value fat-kpi__value--primary">
           {summary ? formatCompactCurrencyTight(summary.vat_difference) : dash}
         </div>
-        <div className="fat-kpi__hint">Ödenecek KDV</div>
+        <div className="fat-kpi__hint">
+          {summary ? vatDifferenceHint(summary.vat_difference) : "Ödenecek KDV"}
+        </div>
       </div>
 
       {/* FY:74 — ADET, para DEĞİL. */}

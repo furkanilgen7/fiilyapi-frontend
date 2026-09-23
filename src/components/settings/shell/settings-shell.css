@@ -81,6 +81,11 @@
   width: calc(100% - 16px);
   text-align: left;
 }
+.settings-logout__error {
+  margin: 0 8px 8px;
+  font-size: 11px;
+  color: var(--color-danger);
+}
 
 /* Breadcrumb bar — global topbar orta/sağını örter (ref §A.1) */
 .settings-breadcrumb {
@@ -118,6 +123,11 @@
   background: none;
   border: none;
   cursor: pointer;
+}
+.settings-breadcrumb__error {
+  margin: 0;
+  font-size: 11px;
+  color: var(--color-danger);
 }
 
 /* İçerik alanı — 240px sidebar'a göre.

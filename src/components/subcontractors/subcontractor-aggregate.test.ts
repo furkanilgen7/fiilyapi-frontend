@@ -126,6 +126,20 @@ describe("buildSubcontractorDirectory · üç kaynaklı istemci agregasyonu", ()
     expect(yilmaz.pendingTotal).toBe(0);
   });
 
+  it("🔴 KAYIT NO 342 — taslak hakediş 'Bekleyen Hak.' toplamına GİRMEZ", () => {
+    const directory = build({
+      subcontractors: [firm()],
+      contracts: [contract({ id: "sc-1", status: "active" })],
+      payments: [
+        payment({ id: "a", contract_id: "sc-1", status: "pending_approval", net_total: "1240000.00" }),
+        // Henüz sunulmamış taslak — taslak SÖZLEŞMENİN eşi, "bekleyen" sayılmaz.
+        payment({ id: "b", contract_id: "sc-1", status: "draft", net_total: "500000.00" }),
+      ],
+    });
+
+    expect(directory.rows[0].pendingTotal).toBe(1_240_000);
+  });
+
   it("4 KPI'ı aynı kaynaklardan üretir (dönem filtresi + onay bekleyen sayısı)", () => {
     const directory = build({
       subcontractors: [firm(), firm({ id: "sub-2", name: "Yılmaz Elektrik A.Ş." })],
@@ -148,6 +162,27 @@ describe("buildSubcontractorDirectory · üç kaynaklı istemci agregasyonu", ()
     expect(directory.summary.activeContractCount).toBe(1);
     expect(directory.summary.monthPaymentTotal).toBe(4_820_000);
     expect(directory.summary.pendingApprovalCount).toBe(3);
+  });
+
+  it("🔴 KAYIT NO 341 — 'Bu Ay Ödeme' yalnız GERÇEKLEŞMİŞ (paid) hakedişi sayar", () => {
+    const directory = build({
+      subcontractors: [firm()],
+      contracts: [contract({ id: "sc-1", status: "active" })],
+      payments: [
+        payment({ id: "a", status: "paid", period_year: 2026, period_month: 8, net_total: "2000000.00" }),
+        // Bu ayki taslak/onay bekleyen hakedişler bir ÖDEME değildir, sayılmaz.
+        payment({ id: "b", status: "draft", period_year: 2026, period_month: 8, net_total: "500000.00" }),
+        payment({
+          id: "c",
+          status: "pending_approval",
+          period_year: 2026,
+          period_month: 8,
+          net_total: "300000.00",
+        }),
+      ],
+    });
+
+    expect(directory.summary.monthPaymentTotal).toBe(2_000_000);
   });
 
   it("taslak sözleşme ne aktif sayılır ne de bedele girer", () => {
@@ -276,7 +311,9 @@ describe("buildSubcontractorDirectory · üç kaynaklı istemci agregasyonu", ()
     expect(directory.orphanContractCount).toBe(0);
     // KPI'lar global sayımdır, değişmez.
     expect(directory.summary.activeContractCount).toBe(1);
-    expect(directory.summary.monthPaymentTotal).toBe(1_300_000);
+    // KAYIT NO 341 sonrası yalnız `paid` sayılır (900K); `pending_approval`
+    // olan 400K bir ÖDEME değildir.
+    expect(directory.summary.monthPaymentTotal).toBe(900_000);
   });
 
   it("kategori seçenekleri GERÇEK veriden türer, tekilleşir ve sıralanır", () => {

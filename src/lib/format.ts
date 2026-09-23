@@ -73,11 +73,24 @@ export function formatCompactCurrencyTight(value: Maskeli): string {
   return `₺${shortTight(n)}`;
 }
 
+/**
+ * Ondalik basmayan para bicimleyicileri `maximumFractionDigits: 0` ile
+ * `Intl.NumberFormat`e verilirse Intl kurusu KESMEZ, YARIM-YUKARI YUVARLAR:
+ * 1.200.000,50 → "1.200.001" basardi — sunucudaki tutardan BUYUK, var
+ * olmayan bir kurusu var gosterirdi (O5a-111/362). Form katmani kurusu
+ * ZORUNLU tutarken (financial-instrument-form.ts) ekran onu gostermeden
+ * USTE yuvarlarsa tutar YALAN olur — bu yuzden basmadan ONCE `Math.trunc`
+ * ile sifira dogru kesilir (negatifte de buyuklugu ABARTMAZ).
+ */
+function truncateToWhole(n: number): number {
+  return Math.trunc(n);
+}
+
 /** Portfoy tutari: mockup'taki "24.870.500" gosterimi. */
 export function formatCurrency(value: Maskeli): string {
   if (maskeli(value)) return EMPTY_CELL;
   const formatted = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 0 }).format(
-    toNumber(value),
+    truncateToWhole(toNumber(value)),
   );
   return `₺ ${formatted}`;
 }
@@ -90,7 +103,7 @@ export function formatCurrency(value: Maskeli): string {
  */
 export function formatCurrencyTight(value: Maskeli): string {
   if (maskeli(value)) return EMPTY_CELL;
-  return `₺${new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 0 }).format(toNumber(value))}`;
+  return `₺${new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 0 }).format(truncateToWhole(toNumber(value)))}`;
 }
 
 /** Ilerleme yuzdesi: "%42,5" · "%75" */
@@ -267,6 +280,22 @@ export function formatDateLong(iso: string): string {
   const name = TR_MONTHS[Number(month) - 1];
   if (year === undefined || day === undefined || name === undefined) return iso;
   return `${Number(day)} ${name} ${year}`;
+}
+
+/**
+ * UTC bir zaman damgasını (backend `created_at`/`occurred_at` gibi) Europe/Istanbul
+ * takvim gününe çevirir, `YYYY-MM-DD` döner — `formatDateLong`/`formatDayMonth` gibi
+ * yalnız ISO TARİH kabul eden fonksiyonların girdisidir.
+ *
+ * 🔴 KAYIT NO 24 — `isoTimestamp.slice(0, 10)` UTC gününü verir, yerel güne ÇEVİRMEZ:
+ * 21:00Z sonrası oluşan kayıtlar (00:00-02:59 TR) bir gün GERİDE görünür. `en-CA`
+ * locale'i doğrudan `YYYY-MM-DD` üretir (audit-format.ts'teki `AUDIT_TIME_ZONE`
+ * deseniyle aynı sabit saat dilimi).
+ */
+export function toIstanbulDateOnly(isoTimestamp: string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(
+    new Date(isoTimestamp),
+  );
 }
 
 /**

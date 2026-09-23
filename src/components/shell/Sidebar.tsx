@@ -1,48 +1,29 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { cx } from "@/lib/cx";
 import { initials } from "@/lib/shell/initials";
+import { useLogout } from "@/lib/shell/useLogout";
 import { LockIcon } from "@/components/ui/icons";
 import { activeNavHref, NAV_GROUPS } from "./nav-config";
 import { useSession } from "./SessionProvider";
 import "./sidebar.css";
 import { routes } from "@/lib/routes";
 
-const LOGOUT_ERROR_MESSAGE = "Çıkış yapılamadı, tekrar deneyin.";
-
 export default function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const { me } = useSession();
-  const [logoutError, setLogoutError] = useState<string | null>(null);
+  // 🔴 KAYIT NO 297 — çıkış mantığı `useLogout` (src/lib/shell/useLogout.ts)
+  // ortak kancasında yaşar: ne `response.ok` kontrolsüz ne `try/catch`siz
+  // bırakılır (aksi hâlde sunucu oturumu kapatamasa bile kullanıcı "çıktım"
+  // sanır, ya da ağ hatası yakalanmamış bir promise reddi olarak kalır).
+  // Ayarlar sidebar/breadcrumb ile TEK mantık paylaşılır (DRY).
+  const { logout: handleLogout, error: logoutError } = useLogout();
   // ⚠️ Aktiflik SATIR BAŞINA değil, nav'ın TAMAMINA bakılarak seçilir:
   // `/hazine/cek-senet` yolunda `/hazine` de eşleşir ve iki öğe birden yanardı
   // (bkz. `activeNavHref` notu).
   const currentHref = activeNavHref(pathname);
-
-  // 🔴 KAYIT NO 297 — eskiden ne `response.ok` kontrolu ne `try/catch` vardi:
-  // (a) BFF 403/500 donse bile KOSULSUZ /login'e atilirdi — sunucu oturumu
-  //     GERCEKTEN kapatmamis olsa bile kullanici "cikis yaptim" saniyordu.
-  // (b) `fetch` ag hatasiyla REDDEDERSE (offline) `await` firlatir, `push` HIC
-  //     calismazdi ve yakalanmamis bir promise reddi kullaniciya sessizce
-  //     kalirdi. Simdi yalniz BASARILI yanitta yonlendirilir; digerlerinde
-  //     kullaniciya GORUNUR bir hata basilir, sessiz yutma YOKTUR.
-  async function handleLogout() {
-    setLogoutError(null);
-    try {
-      const res = await fetch("/api/auth/logout", { method: "POST" });
-      if (!res.ok) {
-        setLogoutError(LOGOUT_ERROR_MESSAGE);
-        return;
-      }
-      router.push(routes.login());
-    } catch {
-      setLogoutError(LOGOUT_ERROR_MESSAGE);
-    }
-  }
 
   return (
     <aside className="sidebar">

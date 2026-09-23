@@ -17,6 +17,7 @@ import {
 } from "@/lib/api/hooks/useEquipmentFuelLogs";
 import { useSiteOptions } from "@/lib/api/hooks/useSiteOptions";
 import { useUserOptions, userOptionLabel } from "@/lib/api/hooks/useUserOptions";
+import { resolveLookup } from "@/lib/api/query-state";
 import { isForbidden } from "@/lib/api/unwrap";
 import { useModulePermission } from "@/lib/auth/useModulePermission";
 
@@ -84,10 +85,11 @@ export function EquipmentFuelView() {
     userOptions.options.map((user) => [user.id, userOptionLabel(user)]),
   );
 
+  // kalan-4 #181 / query-state.ts kanonu: sorgu hataya düşerse `undefined`
+  // (nötr) dönülür — Map boşken `?? null` YANLIŞ "Şantiye atanmadı" basardı,
+  // ama makine gerçekten atanmış olabilir (91. kayıt, fail-open onarımı).
   function resolveSiteLabel(siteId: string | null): string | null | undefined {
-    if (siteId === null) return null; // kayıt bir şantiyeye bağlı değil
-    if (siteOptions.isLoading) return undefined;
-    return siteLabelById.get(siteId) ?? null;
+    return resolveLookup(siteId, siteOptions, (id) => siteLabelById.get(id));
   }
 
   function resolveNormUnit(equipmentId: string): EquipmentNormUnit | null | undefined {

@@ -29,6 +29,14 @@ export interface ProjectListFilter {
   status?: "completed";
   limit?: number;
   offset?: number;
+  /**
+   * `useSites`teki (useSites.ts:32) boş-id kapısıyla aynı desen: `false`
+   * verildiğinde sorgu AĞA ÇIKMAZ. Varsayılan `true` — mevcut çağıranların
+   * davranışı değişmez. Görüntüleme izni olmayan çağıranlar (ör. AiPanel)
+   * bunu KOŞULSUZ `false` geçmeli; üçlü işleçle yalnız süzgeci boşaltmak
+   * sorguyu KAPATMAZ (KAYIT NO 22).
+   */
+  enabled?: boolean;
 }
 
 export const PROJECTS_QUERY_KEY = "projects";
@@ -46,6 +54,7 @@ export function useProjects(
   filter: ProjectListFilter = { limit: PROJECT_LIST_MAX_LIMIT },
 ): UseQueryResult<ProjectListResponse, Error> {
   return useQuery({
+    enabled: filter.enabled ?? true,
     queryKey: [
       PROJECTS_QUERY_KEY,
       filter.type ?? null,
